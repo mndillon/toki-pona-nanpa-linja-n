@@ -41,7 +41,7 @@ Examples:
 - 567 → lun jin pen → **lujipen**
 - 234 → tun ton pon → **tutopon**
 - 801 → win non wan → **winowan**
-- 950 → nen iun non → **nelunon**
+- 950 → nen lun non → **nelunon**
 
 ---
 
