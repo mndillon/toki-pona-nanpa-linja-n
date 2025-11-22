@@ -91,7 +91,7 @@ Examples:
 0.5    → non pokala lun
 3.75   → ton pokala pelun
 12.04  → watun pokala nopon
-37.9   → tope pokala nen
+37.9   → topen pokala nen
 0.125  → non pokala watulun
 ```
 
