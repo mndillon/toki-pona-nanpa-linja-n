@@ -35,11 +35,13 @@ Inside a digit block (no separator present):
 **Concatenate digit names and drop the final -n from every digit name except the last.**
 
 Examples:
-- ton win → **towin** (38)
-- lun jin pen → **lujipen** (567)
-- tun ton pon → **tutopon** (234)
-- win non pon → **winopon** (804)
-- pen win nen → **pewinen** (789)
+- 38 → ton win → **towin**
+- 70 → pen non → **penon**
+- 100 → wan non non → **wanonon**
+- 567 → lun jin pen → **lujipen**
+- 234 → tun ton pon → **tutopon**
+- 801 → win non pon → **winowan**
+- 950 → nen iun nen → **nelunon**
 
 ---
 
