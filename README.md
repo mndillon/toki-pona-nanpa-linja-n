@@ -40,7 +40,7 @@ Examples:
 - 100 → wan non non → **wanonon**
 - 567 → lun jin pen → **lujipen**
 - 234 → tun ton pon → **tutopon**
-- 801 → win non pon → **winowan**
+- 801 → win non wan → **winowan**
 - 950 → nen iun nen → **nelunon**
 
 ---
