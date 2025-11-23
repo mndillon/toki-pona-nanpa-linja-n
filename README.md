@@ -35,7 +35,6 @@ Inside a digit block (no separator present):
 **Concatenate digit names and drop the final -n from every digit name except the last.**
 
 Examples:
-- 5 → lun → **lun** (or luka, if that describes the whole value of the desired number)
 - 38 → ton win → **towin**
 - 70 → pen non → **penon**
 - 100 → wan non non → **wanonon**
@@ -75,7 +74,7 @@ wasan = exactly X billion
 300,000,000 → tononon masan
 3,000,000,000 → ton wasan
 7,321,900   → pen masa totuwan tasa nenonon
-123456789   → watutopolujipewinen (block use is optional but often very useful)
+123456789   → watutopolujipewinen (using block words is optional, but often very helpful for understanding)
 ```
 
 ---
@@ -133,6 +132,7 @@ Prefix **ike** before any number:
 
 ```
 (3.75) / 4   → ton pokala pelun kipisi pon
+3 / 4.75     → ton kipisi pon pokala pelun
 1,234.567    → wan tasa tutopon pokala lujipen
 0.5          → non pokala lun
 1/2          → wan kipisi tun
@@ -156,17 +156,17 @@ Prefix **ike** before any number:
 - Clean separator word
 
 ### kipisi
-- Contains **s**, which no digit has
+- Contains **s**, which no digit word has
 - Meaning evokes “division”
 - Clean separator word
 
 ### tasa / masa / wasa
-- Contains **s**, which no digit has
+- Contain **s**, which no digit word has
 - Clean separator word
 
 ### tasan / masan / wasan
-- Contains **s**, which no digit has
-- All end in -n to indicate end of numeric description
+- Contain **s**, which no digit word has
+- All end in -n to indicate end of number description
 - Zero-block shortcuts for clear large numbers
 - Clean separator word
 
