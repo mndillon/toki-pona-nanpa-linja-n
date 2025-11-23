@@ -184,11 +184,11 @@ Prefix **ike** before any number:
 
 ### sitelen pona suggestion
 - Could pragmatically use latin numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
-- This alligns glyphs for numbers with the rectangular box used for names
-- so might have this glyph for 42,386.75 (numeric glyphs starting with nanpa surrounded in a rectangular box like a proper name and using poka glyph):
-- .---------------------.
-- | # 42386||75 |
-- .---------------------.
+- This alligns glyphs for numbers with the rectangular box used for proper names
+- so might have this glyph for 42,386.75 (numeric glyphs starting with nanpa surrounded in a rectangular box like a proper name and re-purposing poki and meso glyphs):
+- .-------------------------.
+- | # 42||386|.|75 |
+- .-------------------------.
 
 
 ---
