@@ -35,6 +35,7 @@ Inside a digit block (no separator present):
 **Concatenate digit names and drop the final -n from every digit name except the last.**
 
 Examples:
+- 5 → lun → **lun** (or luka, if that describes the whole value of the desired number)
 - 38 → ton win → **towin**
 - 70 → pen non → **penon**
 - 100 → wan non non → **wanonon**
