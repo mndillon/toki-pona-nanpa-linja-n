@@ -182,10 +182,10 @@ ton kipisi pon li sama non pokala pelun.
 
 12 → watun<br>
 5 → lun<br>
-60 → jinon<br>
+60 → junon<br>
 
 **nanpa-linja-n:**
-watun kipisi ala lun li sama jinon.
+watun kipisi ala lun li sama junon.
 
 ---
 

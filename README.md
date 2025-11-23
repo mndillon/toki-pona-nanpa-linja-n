@@ -19,7 +19,7 @@ Each digit uses a distinct CVN form and does not conflict with any Toki Pona wor
 3  ton
 4  pon
 5  lun
-6  jin
+6  jun
 7  pen
 8  win
 9  nen
@@ -41,7 +41,7 @@ Inside a digit block (no separator present):
 - 38 → ton win → **towin**
 - 70 → pen non → **penon**
 - 100 → wan non non → **wanonon**
-- 567 → lun jin pen → **lujipen**
+- 567 → lun jun pen → **lujupen**
 - 234 → tun ton pon → **tutopon**
 - 801 → win non wan → **winowan**
 - 950 → nen lun non → **nelunon**
@@ -78,7 +78,7 @@ wasan = exactly X billion
 300,000,000 → tononon masan
 3,000,000,000 → ton wasan
 7,321,900   → pen masa totuwan tasa nenonon
-123456789   → watutopolujipewinen (using block words is optional, but often very helpful for understanding)
+123456789   → watutopolujupewinen (using block words is optional, but often very helpful for understanding)
 ```
 
 ---
@@ -117,8 +117,8 @@ Examples:
 1/2                 → wan kipisi tun
 3/4                 → ton kipisi pon
 5/8                 → lun kipisi win
-567/890             → lujipen kipisi winenon
-1,234 / 56          → wan tasa tutopon kipisi lujin
+567/890             → lujupen kipisi winenon
+1,234 / 56          → wan tasa tutopon kipisi lujun
 3 / 1,000,000,000   → ton kipisi wan wasan
 ```
 
@@ -141,11 +141,11 @@ Prefix **ike** before any number:
 ```
 (3.75) / 4   → ton pokala pelun kipisi pon
 3 / 4.75     → ton kipisi pon pokala pelun
-1,234.567    → wan tasa tutopon pokala lujipen
+1,234.567    → wan tasa tutopon pokala lujupen
 0.5          → non pokala lun
 1/2          → wan kipisi tun
 5:38         → tenpo lun pokala towin
-19:46:27     → tenpo wanen pokala pojin pokala tupen
+19:46:27     → tenpo wanen pokala pojun pokala tupen
 ```
 
 ---
