@@ -34,7 +34,10 @@ Inside a digit block (no separator present):
 
 **Concatenate digit names and drop the final -n from every digit name except the last.**
 
-Examples:
+
+### Examples
+
+- 10 → wan non → **wanon**
 - 38 → ton win → **towin**
 - 70 → pen non → **penon**
 - 100 → wan non non → **wanonon**
@@ -42,6 +45,7 @@ Examples:
 - 234 → tun ton pon → **tutopon**
 - 801 → win non wan → **winowan**
 - 950 → nen lun non → **nelunon**
+
 
 ---
 
@@ -83,10 +87,12 @@ wasan = exactly X billion
 **pokala** separates whole and decimal parts.
 
 Rules:
+
 - Whole part ends in full -n form
 - Decimal block follows the digit-block rule
 
 Examples:
+
 ```
 0.5    → non pokala lun
 3.75   → ton pokala pelun
@@ -101,17 +107,19 @@ Examples:
 **kipisi** expresses fractions “over / divided by”.
 
 Rule:
+
 - Both numerator and denominator use full final -n
 - Internal block compression applies
 
 Examples:
+
 ```
-1/2    → wan kipisi tun
-3/4    → ton kipisi pon
-5/8    → lun kipisi win
-567/890 → lujipen kipisi winenon
-1,234 / 56 → wan tasa tutopon kipisi lujin
-3 / 1,000,000,000 → ton kipisi wan wasan
+1/2                 → wan kipisi tun
+3/4                 → ton kipisi pon
+5/8                 → lun kipisi win
+567/890             → lujipen kipisi winenon
+1,234 / 56          → wan tasa tutopon kipisi lujin
+3 / 1,000,000,000   → ton kipisi wan wasan
 ```
 
 ---
@@ -136,6 +144,8 @@ Prefix **ike** before any number:
 1,234.567    → wan tasa tutopon pokala lujipen
 0.5          → non pokala lun
 1/2          → wan kipisi tun
+5:38         → tenpo lun pokala towin
+19:46:27     → tenpo wanen pokala pojin pokala tupen
 ```
 
 ---
@@ -154,6 +164,7 @@ Prefix **ike** before any number:
 - Ends in -la (safe from digit collision)
 - Means “next section/context” (poka la)
 - Clean separator word
+- Can be used with tenpo for hour and minute delimiter
 
 ### kipisi
 - Contains **s**, which no digit word has
