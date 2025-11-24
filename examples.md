@@ -216,16 +216,16 @@ tupen kipisi ala non li sama non.
 **nanpa-linja-n:**
 tomo ni li tomo nanpa tunopon.
 
-### “Your ID number is 47268.”
+### “Your ID number is 40251.”
 
 4 → pon<br>
-7 → pen<br>
+0 → non<br>
 2 → tun<br>
-6 → jun<br>
-8 → win<br>
+5 → lun<br>
+1 → wan<br>
 
 **nanpa-linja-n:**
-nanpa sona sina li popetujuwin.
+nanpa sona sina li ponotuluwan.
 
 ### “My telephone number is 555-123-6789.”
 
