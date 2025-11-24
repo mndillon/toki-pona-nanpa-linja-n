@@ -189,14 +189,14 @@ Prefix **ike** before any number:
 - Zero-block shortcuts for clear large numbers
 - Clean separator word
 
-### sitelen pona suggestion
+### sitelen pona (only suggestions)
 - Could pragmatically use arabic numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
 - This alligns glyphs for numbers with the rectangular box used for proper names
-- so might have this glyph for 42,386.75 (numeric glyphs starting with nanpa surrounded in a rectangular box like a proper name and re-purposing poki and meso glyphs):
+- So might have this glyph for 42,386.75 (numeric glyphs starting with nanpa surrounded in a rectangular box like a proper name and re-purposing poki and meso glyphs):
 - .-------------------------.
 - | # 42||386|.|75 |
 - .-------------------------.
-
+- Glyphs for numerals should be distinct and not rely on observing subtle changes in the glyphs.  This is (partly) why the arabic numerals are so effective.  (So why not reuse glyphs that work.)
 
 ---
 
