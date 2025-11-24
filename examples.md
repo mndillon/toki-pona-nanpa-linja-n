@@ -216,6 +216,17 @@ tupen kipisi ala non li sama non.
 **nanpa-linja-n:**
 tomo ni li tomo nanpa tunopon.
 
+### “Your ID number is 47268.”
+
+4 → pon<br>
+7 → pen<br>
+2 → tun<br>
+6 → jun<br>
+8 → win<br>
+
+**nanpa-linja-n:**
+nanpa sona sina li popetujuwin.
+
 ---
 
 # 🚆 12. Schedules
