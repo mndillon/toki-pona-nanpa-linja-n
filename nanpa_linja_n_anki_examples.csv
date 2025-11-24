@@ -1,0 +1,103 @@
+concatinate rule,write out each number name then drop last -n from every number except last then concatenate eg. 23 -> tun ton -> tuton
+large block rule,every block of a large number ends with -n
+0,non
+non,0
+1,wan
+wan,1
+2,tun
+tun,2
+3,ton
+ton,3
+4,pon
+pon,4
+5,lun
+lun,5
+6,jun
+jun,6
+7,pen
+pen,7
+8,win
+win,8
+9,nen
+nen,9
+tasa,thousand marker
+"2,345",tun tasa topolun
+thousand marker,tasa
+masa,million marker
+million marker,masa
+"1,234,567",wan masa tutopon tasa lujupen
+wasa,billion marker
+"30,567,209,481",tonon wasa lujupen masa tunonen tasa powiwan
+billion marker,wasa
+tasan,exact thousand
+"73,000",peton tasan
+exact thousand,tasan
+masan,exact million
+"492,000,000",ponetun masan
+exact million,masan
+wasan,exact billion
+"33,000,000,000",toton wasa
+exact billion,wasan
+pokala,decimal separator
+decimal separator,pokala
+12.04,watun pokala nopon
+kapisi,fraction separator
+fraction separator,kapisi
+5/8,lun kipisi win
+ike,minus marker
+minus marker,ike
+-0.4,ike non pokala pon
+25 January 2025,tenpo suno nanpa tulun pi mun nanpa wan pi sike nanpa tun tasa tulun
+tenpo suno nanpa tulun pi mun nanpa wan pi sike nanpa tun tasa tulun,25 January 2025
+04/11/2023,tenpo suno nanpa pon pi mun nanpa wawan pi sike nanpa tun tasa tuton
+tenpo suno nanpa pon pi mun nanpa wawan pi sike nanpa tun tasa tuton,04/11/2023
+I am 37 years old,tenpo sike nanpa topen la mi jan suli
+tenpo sike nanpa topen la mi jan suli,I am 37 years old
+She is 12,ona li jo e tenpo sike nanpa watun
+ona li jo e tenpo sike nanpa watun,She is 12
+The meeting is at 14:30,tenpo suno la ni li lon tenpo wapon pokala tonon
+tenpo suno la ni li lon tenpo wapon pokala tonon,The meeting is at 14:30
+It is 7:05,tenpo ni li pen pokala nolun
+tenpo ni li pen pokala nolun,It is 7:05
+The logs say 21:34:56 UTC,toki pi lipu sona li toki e tenpo tuwan pokala topon pokala lujun lon ma UTC
+toki pi lipu sona li toki e tenpo tuwan pokala topon pokala lujun lon ma UTC,The logs say 21:34:56 UTC
+This costs 12 dollars,mani pi ijo ni li watun
+mani pi ijo ni li watun,This costs 12 dollars
+The total is 3.75,mani ale li nanpa ton pokala pelun
+mani ale li nanpa ton pokala pelun,The total is 3.75
+Length: 2.5 m,linja ni li suli tun pokala lun mije
+linja ni li suli tun pokala lun mije,Length: 2.5 m
+Weight: 0.75 kg,kiwen ni li walo non pokala pelun kilokilo
+kiwen ni li walo non pokala pelun kilokilo,Weight: 0.75 kg
+Today it is 18 degrees,tenpo suno ni li seli wawin
+tenpo suno ni li seli wawin,Today it is 18 degrees
+Minus 3 degrees,tenpo suno ni li seli ike ton
+tenpo suno ni li seli ike ton,Minus 3 degrees
+The city is 12 km away,tomo tawa li weka watun kilometo tan ni
+tomo tawa li weka watun kilometo tan ni,The city is 12 km away
+The car is moving at 57 km/h,tomo tawa li tawa kepeken wawa lupen kilometo lon tenpo wan
+tomo tawa li tawa kepeken wawa lupen kilometo lon tenpo wan,The car is moving at 57 km/h
+I have 23 apples,mi jo e kili nanpa tuton
+mi jo e kili nanpa tuton,I have 23 apples
+There are 100 people here,jan li wanonon lon ni
+jan li wanonon lon ni,There are 100 people here
+"The point is at (3,12)",poki li lon sitelen ton en sitelen watun
+poki li lon sitelen ton en sitelen watun,"The point is at (3,12)"
+3/4 is 0.75,ton kipisi pon li sama non pokala pelun
+ton kipisi pon li sama non pokala pelun,3/4 is 0.75
+12 × 5 = 60,watun kipisi ala lun li sama junon
+watun kipisi ala lun li sama junon,12 × 5 = 60
+27 × 0 = 0,tupen kipisi ala non li sama non
+tupen kipisi ala non li sama non,27 × 0 = 0
+Room 204,tomo ni li tomo nanpa tunopon
+tomo ni li tomo nanpa tunopon,Room 204
+Your ID number is 40251,nanpa sona sina li ponotuluwan
+nanpa sona sina li ponotuluwan,Your ID number is 40251
+My telephone number is 555-123-6789,"nanpa pi ilo toki mi li: lululun, watuton, jupewinen"
+"nanpa pi ilo toki mi li: lululun, watuton, jupewinen",My telephone number is 555-123-6789
+"Call 999!","o tawa nenenen!"
+"o tawa nenenen!","Call 999!"
+Train arrives at 19:48,tomo tawa li kama lon tenpo wanen pokala powin
+tomo tawa li kama lon tenpo wanen pokala powin,Train arrives at 19:48
+Add 250 ml of water,o pana e telo nanpa tulunon mililita
+o pana e telo nanpa tulunon mililita,Add 250 ml of water
