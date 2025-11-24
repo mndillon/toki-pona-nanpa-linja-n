@@ -64,6 +64,15 @@ tenpo suno la ni li lon tenpo wapon pokala tonon.
 **nanpa-linja-n:**
 tenpo ni li pen pokala nolun.
 
+### “The logs say 21:34:56 UTC.”
+
+21 → tuwan<br>
+34 → topon<br>
+56 → lujun<br>
+
+**nanpa-linja-n:**
+toki pi lipu sona li toki e tenpo tuwan pokala topon pokala lujun lon ma UTC.
+
 ---
 
 # 💰 4. Prices
