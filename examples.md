@@ -227,6 +227,22 @@ tomo ni li tomo nanpa tunopon.
 **nanpa-linja-n:**
 nanpa sona sina li popetujuwin.
 
+### “My telephone number is 555-123-6789.”
+
+555  → lululun<br>
+123  → watuton<br>
+6789 → jupewinen<br>
+
+**nanpa-linja-n:**
+nanpa pi ilo toki mi li: lululun, watuton, jupewinen.
+
+### “Call 999!”
+
+999  → nenenen<br>
+
+**nanpa-linja-n:**
+o tawa nenenen!
+
 ---
 
 # 🚆 12. Schedules
