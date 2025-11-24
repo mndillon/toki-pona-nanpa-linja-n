@@ -187,6 +187,15 @@ ton kipisi pon li sama non pokala pelun.
 **nanpa-linja-n:**
 watun kipisi ala lun li sama junon.
 
+### “27 × 0 = 0”
+
+27 → tupen<br>
+0 → non<br>
+0 → non<br>
+
+**nanpa-linja-n:**
+tupen kipisi ala non li sama non.
+
 ---
 
 # 📦 11. Addresses and Identifiers
