@@ -15,6 +15,10 @@ It’s big enough to be functional while still keeping the language simple.
 This number system aims to follow that same idea: staying as simple as possible while still being practical for everyday use.
 It’s not meant to replace anything—just to offer a tool that fits naturally into the language’s minimal design.
 
+
+<img src="images/ChatGPT Image Phone Number Conversation.png" width="256"/>
+
+
 ## Digit Words (0–9)
 Each digit uses a distinct CVN form and does not conflict with any Toki Pona words:
 
