@@ -34,8 +34,10 @@ tenpo suno nanpa pon pi mun nanpa wawan pi sike nanpa tun tasa tuton.
 5 → lun<br>
 
 **nanpa-linja-n:**
-tenpo sike li nanpa tun tasa tuton.
-tenpo sike li nanpa tunon pasan tuton.
+tenpo sike li nanpa tun tasa tulun.
+
+**nanpa-linja-n:**
+tenpo sike li nanpa tunon pasan tulun.
 
 ---
 
