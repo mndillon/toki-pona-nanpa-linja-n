@@ -44,7 +44,7 @@ Inside a digit block (no separator present):
 ### Examples
 
 - 10 → wan non → **wanon**
-- 38 → ton win → **towin**
+- 46 → pon jun → **pojun**
 - 70 → pen non → **penon**
 - 100 → wan non non → **wanonon**
 - 567 → lun jun pen → **lujupen**
