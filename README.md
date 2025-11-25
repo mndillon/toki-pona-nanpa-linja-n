@@ -16,7 +16,7 @@ This number system aims to follow that same idea: staying as simple as possible 
 It’s not meant to replace anything—just to offer a tool that fits naturally into the language’s minimal design.
 
 
-<img src="images/ChatGPT Image Phone Number Conversation.png" width="256"/>
+<img src="images/ChatGPT Image Phone Number Conversation.png" width="384"/>
 
 
 ## Digit Words (0–9)
