@@ -26,6 +26,17 @@ tenpo suno nanpa tulun pi mun nanpa wan pi sike nanpa tun tasa tulun.
 **nanpa-linja-n:**
 tenpo suno nanpa pon pi mun nanpa wawan pi sike nanpa tun tasa tuton.
 
+### Year is 2025
+
+2 → tun<br>
+0 → non<br>
+2 → tun<br>
+5 → lun<br>
+
+**nanpa-linja-n:**
+tenpo sike li nanpa tun tasa tuton.
+tenpo sike li nanpa tunon pasan tuton.
+
 ---
 
 # 🎂 2. Ages
@@ -234,7 +245,7 @@ nanpa sona sina li ponotuluwan.
 6789 → jupewinen<br>
 
 **nanpa-linja-n:**
-nanpa pi ilo toki mi li: lululun, watuton, jupewinen.
+nanpa pi ilo toki mi li: lululun pasa watuton pasan jupewinen.
 
 ### “Call 999!”
 

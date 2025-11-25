@@ -64,6 +64,8 @@ Used when non-zero digits follow the block:
 tasa = thousand
 masa = million
 wasa = billion
+
+pasa = any number of parts
 ```
 
 ### Zero-Block Units  
@@ -73,6 +75,8 @@ Used only when *everything after* the block is zero:
 tasan = exactly X thousand
 masan = exactly X million
 wasan = exactly X billion
+
+pasan = last part of number follows
 ```
 
 ### Examples
@@ -84,9 +88,11 @@ wasan = exactly X billion
 300,000,000 → tononon masan
 3,000,000,000 → ton wasan
 7,321,900   → pen masa totuwan tasa nenonon
-123456789   → watutopolujupewinen (using block words is optional, but often very helpful for understanding)
-```
 
+123456789   → watutopolujupewinen (using block words is optional, but often very helpful for understanding)
+123456789   → watun pasa topolun pasan jupewinen (pasa and pasan can be used anywhere to break up large numbers)
+123456789   → watutopolun pasan jupewinen (pasa and pasan don't have any specific values)
+123456789   → watuton pasa polujupewin passan nen
 ---
 
 ## Decimal Separator — pokala
@@ -187,6 +193,11 @@ Prefix **ike** before any number:
 - Contain **s**, which no digit word has
 - All end in -n to indicate end of number description
 - Zero-block shortcuts for clear large numbers
+- Clean separator word
+
+### pasa / pasan
+- Contain **s**, which no digit word has
+- Meaning evokes “pass over”
 - Clean separator word
 
 ### sitelen pona (only suggestions)
