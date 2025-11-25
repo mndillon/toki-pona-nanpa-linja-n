@@ -105,6 +105,7 @@ pasan = last part of number follows
 2025        → tunotulun
 2025        → tun tasa tulun
 2025        → tunon pasan tulun
+2025        → tun pasa non pasa tun pasan lun
 ```
 
 ---
