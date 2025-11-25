@@ -219,7 +219,7 @@ Prefix **ike** before any number:
 - .-------------------------.
 - | # 42||386|.|75 |
 - .-------------------------.
-- Glyphs for numerals should be distinct and not rely on observing subtle changes in the glyphs.  This is (partly) why the arabic numerals are so effective.  (So why not reuse glyphs that work.)
+- Glyphs for numerals should be distinct and not rely on observing subtle changes in the glyphs.
 - Examples:
 - <img src="images/0.png" width="32"/>&nbsp;<img src="images/1.png" width="32"/>&nbsp;<img src="images/2.png" width="32"/>&nbsp;<img src="images/3.png" width="32"/>&nbsp;<img src="images/4.png" width="32"/>&nbsp;<img src="images/5.png" width="32"/>&nbsp;<img src="images/6.png" width="32"/>&nbsp;<img src="images/7.png" width="32"/>&nbsp;<img src="images/8.png" width="32"/>&nbsp;<img src="images/9.png" width="32"/>&nbsp;
 - <img src="images/horizontal 0.png" width="32"/>&nbsp;<img src="images/horizontal 1.png" width="32"/>&nbsp;<img src="images/horizontal 2.png" width="32"/>&nbsp;<img src="images/horizontal 3.png" width="32"/>&nbsp;<img src="images/horizontal 4.png" width="32"/>&nbsp;<img src="images/horizontal 5.png" width="32"/>&nbsp;<img src="images/horizontal 6.png" width="32"/>&nbsp;<img src="images/horizontal 7.png" width="32"/>&nbsp;<img src="images/horizontal 8.png" width="32"/>&nbsp;<img src="images/horizontal 9.png" width="32"/>&nbsp;
