@@ -80,7 +80,7 @@ wasan = exactly X billion
 Used for any number of blocks, these separators have no specific values:
 
 ```
-pasa = any number of parts to follow
+pasa  = more than one part of number to follow
 pasan = last part of number follows
 ```
 
@@ -97,7 +97,10 @@ pasan = last part of number follows
 123456789   → watutopolujupewinen (using block words is optional, but often very helpful for understanding)
 123456789   → watun pasa topolun pasan jupewinen (pasa and pasan can be used anywhere to break up large numbers)
 123456789   → watutopolun pasan jupewinen
-123456789   → watuton pasa polujupewin pasan nen
+123456789   → watuton pasa polun pasa jupewin pasan nen
+2025        → tunotulun
+2025        → tun tasa tulun
+2025        → tunon pasan tulun
 ```
 
 ---
