@@ -182,17 +182,19 @@ Prefix **ike** before any number:
 
 ### Digit Roots
 - Unique initials
-- End in -n for structural consistency, for long digit sequences the end is clearly determined
+- Easy to remember
+- End in **-n** for structural consistency, for long digit sequences the end is clearly determined
 - No conflict with Toki Pona vocabulary
+- Where possible, respects the first syllable of existing Toki Pona digit names
 - Uses a decimal (base-10) structure because this is the system most people encounter every day
 - Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
-- Designed to replace ala, tu, luka, if the whole numeric value needs any more words to fully describe (for example: lun masan, wan kipisi tun)
+- Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe (for example: lun masan, wan kipisi tun, wanon)
 - Can be used as a drop-in replacement for digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
-- Very useful when speaking the digits of long values
+- Very useful when speaking and hearing the digits of long values ( 5021 → lunotuwan )
 
 ### pokala
 - Contains **k**, which no digit word has
-- Ends in -la (safe from digit collision)
+- Ends in **-la** (safe from digit collision)
 - Meaning evokes “next section/context” (poka la)
 - Clean separator word
 - Can be used with tenpo for hour and minute delimiter
@@ -209,7 +211,7 @@ Prefix **ike** before any number:
 
 ### tasan / masan / wasan
 - Contain **s**, which no digit word has
-- All end in -n to indicate end of number description
+- All end in **-n** to indicate end of number description
 - Zero-block shortcuts for clear large numbers
 - Clean separator word
 
@@ -217,7 +219,7 @@ Prefix **ike** before any number:
 - Contain **s**, which no digit word has
 - Meaning evokes “to pass over”
 - A bridge joining different parts of the whole numeric value
-- pasan ends in -n to indicate that the last part of the number follows
+- pasan ends in **-n** to indicate that the last part of the number follows
 - Clean separator word
 
 ### sitelen pona (only suggestions)
