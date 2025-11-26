@@ -20,7 +20,7 @@ It’s not meant to replace anything—just to offer a tool that fits naturally 
 
 
 ## Digit Words (0–9)
-Each digit uses a distinct CVN form and does not conflict with any Toki Pona words:
+Each digit uses a distinct, single syllable, CVN form and does not conflict with any Toki Pona words:
 
 ```
 0  non
@@ -106,6 +106,7 @@ pasan = last part of number follows
 2025        → tun tasa tulun
 2025        → tunon pasan tulun
 2025        → tun pasa non pasa tun pasan lun
+3.141592    → ton pokala wapowalunetun
 ```
 
 ---
