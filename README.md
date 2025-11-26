@@ -245,6 +245,13 @@ See the LICENSE file for details.
 
 ---
 
+## Exercises
+Have someone read the nanpa-linja-n sentences in the [examples](examples.md), and check how many of them you can correctly understand.
+
+This demonstrates the motivation behind this number system.
+
+---
+
 ## Community & Contributions
 Discussion welcome via:
 
