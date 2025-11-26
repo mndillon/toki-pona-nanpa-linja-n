@@ -245,6 +245,9 @@ See the LICENSE file for details.
 
 ## Community & Contributions
 Discussion welcome via:
+
 - ma pona pi toki pona Discord
+
+- https://sona.pona.la/wiki/User:JanMatun
 
 Pull requests, corrections, and refinements are encouraged.
