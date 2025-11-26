@@ -211,7 +211,7 @@ Prefix **ike** before any number:
 
 ### tasan / masan / wasan
 - Contain **s**, which no digit word has
-- All end in **-n** to indicate end of number description
+- All end in **-n** to signal end of number description
 - Zero-block shortcuts for clear large numbers
 - Clean separator word
 
