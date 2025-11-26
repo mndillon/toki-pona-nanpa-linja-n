@@ -190,7 +190,7 @@ Prefix **ike** before any number:
 - Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
 - Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe (for example: lun masan, wan kipisi tun, wanon)
 - Can be used as a drop-in replacement for digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
-- Very useful when speaking and hearing the digits of long values ( 5021 → lunotuwan )
+- Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan )
 
 ### pokala
 - Contains **k**, which no digit word has
