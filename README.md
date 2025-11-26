@@ -184,14 +184,16 @@ Prefix **ike** before any number:
 - Unique initials
 - End in -n for structural consistency, for long digit sequences the end is clearly determined
 - No conflict with Toki Pona vocabulary
-- Uses a decimal (base-10) structure because this is the system most people use every day
+- Uses a decimal (base-10) structure because this is the system most people encounter every day
 - Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
 - Designed to replace ala, tu, luka, if the whole numeric value needs any more words to fully describe (for example: lun masan, wan kipisi tun)
 - Can be used as a drop-in replacement for digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
+- Very useful when speaking the digits of long values
 
 ### pokala
+- Contains **k**, which no digit word has
 - Ends in -la (safe from digit collision)
-- Means “next section/context” (poka la)
+- Meaning evokes “next section/context” (poka la)
 - Clean separator word
 - Can be used with tenpo for hour and minute delimiter
 
