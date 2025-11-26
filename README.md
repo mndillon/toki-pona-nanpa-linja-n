@@ -183,7 +183,7 @@ Prefix **ike** before any number:
 ### Digit Roots
 - Unique initials
 - Easy to remember
-- End in **-n** for structural consistency, for long digit sequences the end is clearly determined
+- End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names
 - Uses a decimal (base-10) structure because this is the system most people encounter every day
@@ -219,7 +219,7 @@ Prefix **ike** before any number:
 - Contain **s**, which no digit word has
 - Meaning evokes “to pass over”
 - A bridge joining different parts of the whole numeric value
-- pasan ends in **-n** to indicate that the last part of the number follows
+- pasan ends in **-n** to signal that the last part of the number follows
 - Clean separator word
 
 ### sitelen pona (only suggestions)
