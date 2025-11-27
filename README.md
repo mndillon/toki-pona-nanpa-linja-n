@@ -183,15 +183,15 @@ Prefix **ike** before any number:
 ### Digit Roots
 - Unique syllables
 - Easy to remember and use
+- Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
-- Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters
+- Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
 - Uses a decimal (base-10) structure (because this is the system most people encounter every day)
 - Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
-- Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe (for example: lun masan, wan kipisi tun, wanon)
+- Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe the whole value
 - Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
-- Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
 - (Can be easily parsed with lex/yacc)
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
 
