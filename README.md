@@ -255,6 +255,6 @@ Discussion welcome via:
 
 - ma pona pi toki pona Discord
 
-- https://sona.pona.la/wiki/nasin_nanpa_linja_n
+- https://sona.pona.la/wiki/nasin_nanpa_linja_n (you need an account on sona pona to view this page)
 
 Pull requests, corrections, and refinements are encouraged.
