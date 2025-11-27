@@ -251,6 +251,8 @@ Have someone read the nanpa-linja-n sentences in the [examples](examples.md), an
 
 This demonstrates the motivation behind this number system.
 
+Use other Toki Pona number systems, that you know, to expresss the sentences in the [examples](examples.md) and compare with **nanpa-linja-n** for ease of listing effort and understanding.  This feedback would be appreciated.
+
 ---
 
 ## Community & Contributions
