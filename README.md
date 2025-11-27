@@ -262,8 +262,23 @@ Discussion welcome via:
 
 - ma pona pi toki pona Discord
 
-- On https://sona.pona.la/wiki/nasin_nanpa_ali_ike list looks most closest to (at first glance):
+- On https://sona.pona.la/wiki/nasin_nanpa_ali_ike list, **nanpa-linja-n** looks most closest to (at first glance):
 
   - [decimal] [humorous] kijetesantakalu polinpin, tan jan Kita (shameless self-promotion)
 
   - [decimal] lojban, tan jan Tepo
+
+  - how **nanpa-linja-n** compares to these (at first glance):
+
+    - it uses the first syllable of the pu words for digits for better compatability (where possible), reducing cognative load
+
+    - it uses **-n** at the end of the base name for the digits (CVN format), so that single digit names are consistent with the descriptions of other numbers
+
+    - it consistently uses the **-n** to indicate the end of numbers
+
+    - it consistently uses **-n** to indicate the end of numerical structures that end with delimiters (tasan/masan/wasan)
+
+    - it uses less letters to describe digits, this leave more letters for delimiters and so there is less chance of clashing with other vocabulary
+
+    - while using similar principles, it provides a more consistent way to express numbers — including large ones — reducing learning effort and cognitive load
+
