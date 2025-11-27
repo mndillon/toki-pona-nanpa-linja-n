@@ -191,6 +191,7 @@ Prefix **ike** before any number:
 - Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe (for example: lun masan, wan kipisi tun, wanon)
 - Can be used as a drop-in replacement for digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
 - Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan )
+- (Can be easily parsed with lex/yacc)
 
 ### pokala
 - Contains **k**, which no digit word has
@@ -226,13 +227,11 @@ Prefix **ike** before any number:
 - Could pragmatically use arabic numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
 - This alligns glyphs for numbers with the rectangular box used for proper names
 - So might have this glyph for 42,386.75 (numeric glyphs starting with nanpa surrounded in a rectangular box like a proper name and re-purposing poki and meso glyphs):
-- .-------------------------.
-- | # 42||386|.|75 |
-- .-------------------------.
+- <img src="images/number 42386_75 glyph.png" width="320"/>
 - Glyphs for numerals should be distinct and not rely on observing subtle changes in the glyphs.
 - Examples:
 - <img src="images/0.png" width="32"/>&nbsp;<img src="images/1.png" width="32"/>&nbsp;<img src="images/2.png" width="32"/>&nbsp;<img src="images/3.png" width="32"/>&nbsp;<img src="images/4.png" width="32"/>&nbsp;<img src="images/5.png" width="32"/>&nbsp;<img src="images/6.png" width="32"/>&nbsp;<img src="images/7.png" width="32"/>&nbsp;<img src="images/8.png" width="32"/>&nbsp;<img src="images/9.png" width="32"/>&nbsp;
-- <img src="images/horizontal 0.png" width="32"/>&nbsp;<img src="images/horizontal 1.png" width="32"/>&nbsp;<img src="images/horizontal 2.png" width="32"/>&nbsp;<img src="images/horizontal 3.png" width="32"/>&nbsp;<img src="images/horizontal 4.png" width="32"/>&nbsp;<img src="images/horizontal 5.png" width="32"/>&nbsp;<img src="images/horizontal 6.png" width="32"/>&nbsp;<img src="images/horizontal 7.png" width="32"/>&nbsp;<img src="images/horizontal 8.png" width="32"/>&nbsp;<img src="images/horizontal 9.png" width="32"/>&nbsp;
+- <img src="images/horizontal 0.png" width="32"/>&nbsp;<img src="images/horizontal 1.png" width="32"/>&nbsp;<img src="images/horizontal 2.png" width="32"/>&nbsp;<img src="images/horizontal 3 revised.png" width="32"/>&nbsp;<img src="images/horizontal 4.png" width="32"/>&nbsp;<img src="images/horizontal 5.png" width="32"/>&nbsp;<img src="images/horizontal 6.png" width="32"/>&nbsp;<img src="images/horizontal 7.png" width="32"/>&nbsp;<img src="images/horizontal 8.png" width="32"/>&nbsp;<img src="images/horizontal 9.png" width="32"/>&nbsp;
 - The straight lines at the top and bottom of each glyph could be replaced with vertical lines at the left and right of each glyph to stack them vertically.
 
 
