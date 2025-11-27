@@ -181,18 +181,19 @@ Prefix **ike** before any number:
 ## Design Rationale
 
 ### Digit Roots
-- Unique initials
-- Easy to remember
+- Unique syllables
+- Easy to remember and use
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
+- Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters
 - Uses a decimal (base-10) structure (because this is the system most people encounter every day)
 - Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
 - Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe (for example: lun masan, wan kipisi tun, wanon)
 - Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
 - Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
 - (Can be easily parsed with lex/yacc)
-- (Yet another attempt at simply being functional, without copy and paste)
+- (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
 
 
 ### pokala
@@ -257,6 +258,6 @@ Discussion welcome via:
 
 - https://sona.pona.la/wiki/nasin_nanpa_linja_n (you need an account on sona pona to view this page)
 
-- Comments on tokipona channel on reddit (mention nanpa-linja-n in your posts, so its clear what subject your post is about, you may reference this Github repository)
+- Comments on tokipona channel on Reddit (mention nanpa-linja-n in your posts, so its clear what subject your post is about, you may reference this Github repository)
 
 - ma pona pi toki pona Discord
