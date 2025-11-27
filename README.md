@@ -280,7 +280,7 @@ Discussion welcome via:
 
     - it consistently uses **-n** to indicate the end of numerical structures that end with delimiters (tasan/masan/wasan)
 
-    - it uses less letters to describe digits, this leave more letters for delimiters and also there is less chance of clashing with other vocabulary
+    - it uses less letters to describe digits, this leaves more letters for delimiters and also there is less chance of clashing with other vocabulary
 
     - its consistent use of **-n** makes it immediately clear when a numeric description ends, no matter how large the number. The listener never has to spend mental effort deciding whether the number is complete
 
