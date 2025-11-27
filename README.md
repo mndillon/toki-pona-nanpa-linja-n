@@ -185,13 +185,15 @@ Prefix **ike** before any number:
 - Easy to remember
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
 - No conflict with Toki Pona vocabulary
-- Where possible, respects the first syllable of existing Toki Pona digit names
-- Uses a decimal (base-10) structure because this is the system most people encounter every day
+- Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
+- Uses a decimal (base-10) structure (because this is the system most people encounter every day)
 - Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
 - Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe (for example: lun masan, wan kipisi tun, wanon)
-- Can be used as a drop-in replacement for digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
-- Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan )
+- Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
+- Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
 - (Can be easily parsed with lex/yacc)
+- (Yet another attempt at simply being functional, without copy and paste)
+
 
 ### pokala
 - Contains **k**, which no digit word has
