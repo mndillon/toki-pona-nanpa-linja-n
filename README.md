@@ -218,7 +218,7 @@ Prefix **ike** before any number:
 
 ### pasa / pasan
 - Contain **s**, which no digit word has
-- Meaning evokes “to pass over”
+- Meaning inspired by pana but with an **s**
 - A bridge joining different parts of the whole numeric value
 - pasan ends in **-n** to signal that the last part of the number follows
 - Clean separator word
