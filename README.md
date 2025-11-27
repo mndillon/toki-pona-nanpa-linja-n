@@ -255,8 +255,8 @@ This demonstrates the motivation behind this number system.
 ## Community & Contributions
 Discussion welcome via:
 
-- ma pona pi toki pona Discord
-
 - https://sona.pona.la/wiki/nasin_nanpa_linja_n (you need an account on sona pona to view this page)
 
-Pull requests, corrections, and refinements are encouraged.
+- Comments on tokipona channel on reddit (mention nanpa-linja-n in your posts, so its clear what subject your post is about, you may reference this Github repository)
+
+- ma pona pi toki pona Discord
