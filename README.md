@@ -193,6 +193,7 @@ Prefix **ike** before any number:
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
+- By avoiding using **k**, **m** and **s**, words are more easily identified as numeric ( petuton → 723 )
 - Uses a decimal (base-10) structure (because this is the system most people encounter every day)
 - Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
 - Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe the whole value
@@ -201,10 +202,11 @@ Prefix **ike** before any number:
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
 
 
-### pokala
-- Contains **k**, which no digit word has
-- Ends in **-la** (safe from digit collision)
+### pokala / pakala
+- Contain **k**, which no digit word has
+- End in **-la** (safe from digit collision)
 - Meaning evokes “next section/context” (poka la)
+- Meaning evokes “broken” (at decimal point) (pakala)
 - Clean separator word
 - Can be used with tenpo for hour and minute delimiter
 
@@ -256,7 +258,7 @@ Have someone read the nanpa-linja-n sentences in the [examples](examples.md), an
 
 This demonstrates the motivation behind this number system.
 
-Use other Toki Pona number systems, that you know, to expresss the sentences in the [examples](examples.md) and compare with **nanpa-linja-n** for ease of listening effort and understanding.  When seeing a number for the first time, how much mental effort does the speaker have to exert in order to determine what the numeric description will be?  Do the number descriptions dominate the spoken sentences?  This feedback would be appreciated.
+Use other Toki Pona number systems, that you know, to expresss the sentences in the [examples](examples.md) and compare with **nanpa-linja-n** for ease of listening effort and understanding.  When seeing a (decimal) number for the first time, how much mental effort does the speaker have to exert in order to determine what the numeric description will be?  Do the number descriptions dominate the spoken sentences?  This feedback would be appreciated.
 
 ---
 
