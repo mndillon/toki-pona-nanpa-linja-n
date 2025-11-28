@@ -267,7 +267,7 @@ Discussion welcome via:
 
 - Comments on tokipona channel on Reddit (mention nanpa-linja-n in your posts, so its clear what subject your post is about, you may reference this Github repository)
 
-- ma pona pi toki pona Discord
+- kama sano Discord: https://discord.com/channels/969386329513295872/1442150091816440000
 
 - On https://sona.pona.la/wiki/nasin_nanpa_ali_ike list, **nanpa-linja-n** looks most closest to (at first glance):
 
