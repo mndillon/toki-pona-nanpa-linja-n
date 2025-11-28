@@ -282,7 +282,7 @@ Discussion welcome via:
 
 - https://sona.pona.la/wiki/nasin_nanpa_linja_n (you need an account on sona pona to view this page)
 
-- Comments on tokipona channel on Reddit (mention nanpa-linja-n in your posts, so its clear what subject your post is about, you may reference this Github repository)
+- Comments on tokipona channel on Reddit (mention nanpa-linja-n in your posts, so its clear what subject your post is about)
 
 - kama sano Discord: https://discord.com/channels/969386329513295872/1442150091816440000
 
