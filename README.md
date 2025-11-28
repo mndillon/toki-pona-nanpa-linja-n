@@ -194,9 +194,19 @@ Prefix **ike** before any number:
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
 - By avoiding using **k**, **m** and **s**, words are more easily identified as (nanpa-linja-n) numeric ( petuton → 723 )
-- Uses a decimal (base-10) structure (because this is the system most people encounter every day)
-- Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
-- Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe the whole value
+- Respects the speaker’s freedom to choose how to express numbers:
+  - Additive (**pu** style) numerals:
+    - The speaker uses **pu** names ala, wan, tu, luka, mute, ale
+    - The speaker thinks: 10 = 5 add 5
+    - The speaker says (the way they think): luka luka
+    - The listener recognizes **pu** semantics
+    - The listener understands: 10
+  - Positional decimal (**nanpa-linja-n** style) numerals:
+    - The speaker uses **nanpa-linja-n** digit names with concatenation and **-n** signalling the end of the number
+    - The speaker thinks: 10 = 1 followed by 0
+    - The speaker says (the way they think): wanon
+    - The listener recognizes **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
+    - The listener understands: 10
 - Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
 - (Can be easily parsed with lex/yacc)
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
