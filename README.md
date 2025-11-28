@@ -216,6 +216,11 @@ Prefix **ike** before any number:
 - Clean separator word
 - Can use **kipisi ala** for multiply without getting confused with divide by zero
 
+### ike
+- Contains **k**, which no digit word has
+- Meaning evokes "negative"
+- Clean separator word
+
 ### tasa / masa / wasa
 - Contain **s**, which no digit word has
 - Clean separator word
