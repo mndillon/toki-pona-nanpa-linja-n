@@ -197,16 +197,16 @@ Prefix **ike** before any number:
 - Respects the speaker’s freedom to choose how to express numbers:
   - Additive (**pu** style) numerals:
     - The speaker uses **pu** names ala, wan, tu, luka, mute, ale
-    - The speaker thinks: 10 = 5 add 5
-    - The speaker says (the way they think): luka luka
+    - The speaker thinks: 78 = 20 add 20 and 20 and 5 and 5 and 5 and 2 and 1
+    - The speaker says (the way they think): mute mute mute luka luka luka tu wan
     - The listener recognizes **pu** semantics
-    - The listener understands: 10
+    - The listener understands: 78
   - Positional decimal (**nanpa-linja-n** style) numerals:
     - The speaker uses **nanpa-linja-n** digit names with concatenation and **-n** signalling the end of the number
-    - The speaker thinks: 10 = 1 followed by 0
-    - The speaker says (the way they think): wanon
+    - The speaker thinks: 78 = 7 followed by 8
+    - The speaker says (the way they think): pewin
     - The listener recognizes **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
-    - The listener understands: 10
+    - The listener understands: 78
 - Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
 - (Can be easily parsed with lex/yacc)
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
