@@ -304,7 +304,7 @@ Discussion welcome via:
 
     - it uses less letters to describe digits, this leaves more letters for delimiters and also there is less chance of clashing with other vocabulary
 
-    - its consistent use of **-n** makes it immediately clear when a numeric description ends, no matter how large the number. The listener never has to spend mental effort deciding whether the number is complete
+    - its consistent use of **-n** makes it immediately clear when a numeric description ends, no matter how large the number. The listener spends little mental effort deciding whether the number is complete
 
     - while using similar principles, it provides a more consistent way to express numbers — including large ones — reducing learning effort and cognitive load on both speaker and listener
 
