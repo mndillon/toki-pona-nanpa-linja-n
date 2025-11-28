@@ -193,7 +193,7 @@ Prefix **ike** before any number:
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
-- By avoiding using **k**, **m** and **s**, words are more easily identified as numeric ( petuton → 723 )
+- By avoiding using **k**, **m** and **s**, words are more easily identified as (nanpa-linja-n) numeric ( petuton → 723 )
 - Uses a decimal (base-10) structure (because this is the system most people encounter every day)
 - Can still use ala, wan, tu, luka, mute, ale, if these words describe the whole numeric value
 - Designed to complement ala, wan, tu, luka, if the whole numeric value needs any more words to fully describe the whole value
