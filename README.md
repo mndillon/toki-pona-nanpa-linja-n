@@ -1,5 +1,10 @@
 # nanpa-linja-n — A Complete Numeric System for Toki Pona
 
+## TL;DR:
+Explained on a napkin:
+
+<img src="images/TLDR Explained On Napkin.png" width="384"/>
+
 ## Overview
 nanpa-linja-n is a fully structured numeric system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of numbers including integers, decimals, fractions, negatives, and large values.
 
