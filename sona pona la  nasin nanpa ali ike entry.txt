@@ -29,6 +29,14 @@ uses '''-n''' to clearly signal the end of numeric values:
 *** says: '''"watun pasa ton pasan pon"'''
 *** says: '''"watuton pasan pon"'''
 *** says: '''"wan pasa tun pasa ton pasan pon"'''
+* Respects the speaker's freedom to choose how to express numbers:
+** speaker says: '''"mute mute mute luka luka luka tu wan"'''
+*** listener recognises additive '''pu''' style
+*** listener understands: '''78'''
+** speaker says: '''"pewin"'''
+*** listener recognises positional '''nanpa-linja-n''' style
+*** listener understands: '''78'''
+*** less cognitive load for anyone that is familiar with positional decimal descriptions of numbers
 
 
 '''nanpa-linja-n''' full description (Github link):

@@ -216,13 +216,13 @@ Prefix **ike** before any number:
     - The speaker uses **pu** names ala, wan, tu, luka, mute, ale
     - The speaker thinks: 78 = 20 add 20 and 20 and 5 and 5 and 5 and 2 and 1
     - The speaker says (the way they think): mute mute mute luka luka luka tu wan
-    - The listener recognizes **pu** semantics
+    - The listener recognises **pu** semantics
     - The listener understands: 78
   - Positional decimal (**nanpa-linja-n** style) numerals:
     - The speaker uses **nanpa-linja-n** digit names with concatenation and **-n** signalling the end of the number
     - The speaker thinks: 78 = 7 followed by 8
     - The speaker says (the way they think): pewin
-    - The listener recognizes **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
+    - The listener recognises **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
     - The listener understands: 78
   - Any system that groups digits before speaking adds cognitive load for the speaker, because they must pre-determine consistent groupings before saying anything.  **nanpa-linja-n** works with the conventional digital markers (tasa/tasan)
   - By contrast, speaking one digit at a time lets you break long sequences anywhere without losing meaning.  This is the approach that **nanpa-linja-n** takes (using pasa / pasan)
