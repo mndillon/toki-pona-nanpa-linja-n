@@ -292,6 +292,8 @@ Discussion welcome via:
 
   - [decimal] [humorous] kijetesantakalu polinpin, tan jan Kita (shameless self-promotion)
 
+  - [decimal] nasin nanpa nimi, tan kijetesantakalu Iwan
+
   - [decimal] lojban, tan jan Tepo
 
   - how **nanpa-linja-n** compares to these (at first glance):
