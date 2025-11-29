@@ -300,6 +300,8 @@ Use other Toki Pona number systems, that you know, to expresss the sentences in 
 ## Community & Contributions
 Discussion welcome via:
 
+- The 'Discussions' tab on this Github repository
+
 - https://sona.pona.la/wiki/nasin_nanpa_linja_n (you need an account on sona pona to view this page)
 
 - Comments on tokipona channel on Reddit (mention nanpa-linja-n in your posts, so its clear what subject your post is about)
