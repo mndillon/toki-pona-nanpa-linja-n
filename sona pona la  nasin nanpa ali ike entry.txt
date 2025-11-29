@@ -1,0 +1,36 @@
+=== [decimal] {{tp|nanpa-linja-n}} ===
+{{Main|user:janMatun/nasin nanpa linja n|l1={{tp|nanpa-linja-n}}}}
+
+{{tp|nanpa-linja-n}} is a minimal decimal digit system for Toki Pona created by {{tok|jan Matun}}. It uses a single syllable word for each digit and is designed to make saying, hearing and understanding long sequences of decimal digits very natural.  "Say it the way you think it".
+
+'''TL;DR:''' '''nanpa-linja-n''' explained on a napkin (Github link):
+
+https://github.com/mndillon/toki-pona-nanpa-linja-n/blob/main/images/TLDR%20Explained%20On%20Napkin.png
+
+'''TL;DR:''' '''nanpa-linja-n''' motivation (Github link):
+
+https://github.com/mndillon/toki-pona-nanpa-linja-n/blob/main/images/Phone%20Number%20Conversation%20v1.png
+
+'''TL;DR:''' '''nanpa-linja-n'''
+uses '''-n''' to clearly signal the end of numeric values:
+* This works with Toki Pona syntax to enhance communication.
+* The speaker wants to communicate '''"1 2 3 4"''':
+** for counting:
+*** says: '''"wan tun ton pon"'''
+** for the value 1,234:
+*** says: '''"wan tasa tutopon"'''
+** for a sequence of digits, such as an ID:
+*** says: '''"watutopon"'''
+** for emphasizing digits:
+*** says: '''"wan pasa tun pasa ton pasan pon"'''
+** for breaking up long sequences with no change in value (pasa/pasan can be used anywhere):
+*** says: '''"watun pasan topon"'''
+*** says: '''"wan pasa tun pasan topon"'''
+*** says: '''"watun pasa ton pasan pon"'''
+*** says: '''"watuton pasan pon"'''
+*** says: '''"wan pasa tun pasa ton pasan pon"'''
+
+
+'''nanpa-linja-n''' full description (Github link):
+
+https://github.com/mndillon/toki-pona-nanpa-linja-n
