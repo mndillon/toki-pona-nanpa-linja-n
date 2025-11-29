@@ -223,7 +223,7 @@ Prefix **ike** before any number:
 - Can be used with tenpo for hour and minute delimiter
 
 ### kipisi
-- Contains **s**, which no digit word has
+- Contains **k**, which no digit word has
 - Meaning evokes “division”
 - Clean separator word
 - Can use **kipisi ala** for multiply without getting confused with divide by zero
