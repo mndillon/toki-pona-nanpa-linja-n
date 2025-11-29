@@ -5,6 +5,10 @@
 
 <img src="images/TLDR Explained On Napkin.png" width="384"/>
 
+**nanpa-linja-n** motivation:
+
+<img src="images/Phone Number Conversation v1.png" width="384"/>
+
 ## Overview
 **nanpa-linja-n** is a fully structured numeric system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of numbers including integers, decimals, fractions, negatives, and large values.
 
@@ -19,9 +23,6 @@ Toki Pona’s vocabulary is small, but not too small.
 It’s big enough to be functional while still keeping the language simple.
 This number system aims to follow that same idea: staying as simple as possible while still being practical for everyday use.
 It’s not meant to replace anything—just to offer a tool that fits naturally into the language’s minimal design.
-
-
-<img src="images/Phone Number Conversation v1.png" width="384"/>
 
 
 ## Digit Words (0–9)
@@ -190,10 +191,26 @@ Prefix **ike** before any number:
 - Easy to remember and use
 - Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
+  - This works with the language syntax to enhance communication
+  - The speaker wants to communicate "1 2 3 4":
+    - for counting,
+      - says: "wan tun ton pon"
+    - for value 1,234,
+      - says: "wan tasa tutopon"
+    - for sequence of numbers, like an id,
+      - says: "watutopon"
+    - for 1-2-3-4 digit emphasis,
+      - says: "wan pasa tun pasa ton pasan pon"
+    - for breaking up long sequences with no change in value, (pasa/pasan can be used anywhere)
+      - says: "watun pasan topon"
+      - says: "wan pasa tun pasan topon"
+      - says: "watun pasa ton pasan pon"
+      - says: "watuton pasan pon"
+      - says: "wan pasa tun pasa ton pasan pon"
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
-- By avoiding using **k**, **m** and **s**, words are more easily identified as (nanpa-linja-n) numeric ( petuton → 723 )
+- By avoiding using **k**, **m** and **s**, words are more easily identified as **nanpa-linja-n** numeric ( petuton → 723 )
 - Respects the speaker’s freedom to choose how to express numbers:
   - Additive (**pu** style) numerals:
     - The speaker uses **pu** names ala, wan, tu, luka, mute, ale
@@ -207,7 +224,7 @@ Prefix **ike** before any number:
     - The speaker says (the way they think): pewin
     - The listener recognizes **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
     - The listener understands: 78
-  - Any system that groups digits before speaking adds cognitive load for the speaker, because they must pre-determine consistent groupings before saying anything
+  - Any system that groups digits before speaking adds cognitive load for the speaker, because they must pre-determine consistent groupings before saying anything.  **nanpa-linja-n** works with the conventional digital markers (tasa/tasan)
   - By contrast, speaking one digit at a time lets you break long sequences anywhere without losing meaning.  This is the approach that **nanpa-linja-n** takes (using pasa / pasan)
 - Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
 - (Can be easily parsed with lex/yacc)
@@ -248,6 +265,7 @@ Prefix **ike** before any number:
 - Meaning inspired by pana but with an **s**
 - A bridge joining different parts of the whole numeric value
 - pasan ends in **-n** to signal that the last part of the number follows
+- Have no value, only used to break up long sequences of digits
 - Clean separator word
 
 ### sitelen pona (only suggestions)
