@@ -38,6 +38,12 @@ exact million,masan
 wasan,exact billion
 "33,000,000,000",toton wasa
 exact billion,wasan
+pasa,breakup long sequences of digits more parts to follow
+breakup long sequences of digits more parts to follow,pasa
+pasan,breakup long sequences of digits last part to follow
+breakup long sequences of digits last part to follow,pasan
+"243-555-0179",tupoton pasa lululun pasan nowapenen
+tupoton pasa lululun pasan nowapenen,"243-555-0179"
 pokala,decimal separator
 decimal separator,pokala
 12.04,watun pokala nopon
@@ -93,8 +99,8 @@ Room 204,tomo ni li tomo nanpa tunopon
 tomo ni li tomo nanpa tunopon,Room 204
 Your ID number is 40251,nanpa sona sina li ponotuluwan
 nanpa sona sina li ponotuluwan,Your ID number is 40251
-My telephone number is 555-123-6789,"nanpa pi ilo toki mi li: lululun, watuton, jupewinen"
-"nanpa pi ilo toki mi li: lululun, watuton, jupewinen",My telephone number is 555-123-6789
+My telephone number is 555-123-6789,"nanpa pi ilo toki mi li: lululun pasa watuton pasan jupewinen"
+"nanpa pi ilo toki mi li: lululun pasa watuton pasan jupewinen",My telephone number is 555-123-6789
 "Call 999!","o tawa nenenen!"
 "o tawa nenenen!","Call 999!"
 Train arrives at 19:48,tomo tawa li kama lon tenpo wanen pokala powin
