@@ -16,19 +16,20 @@ uses '''-n''' to clearly signal the end of numeric values:
 * This works with Toki Pona syntax to enhance communication.
 * The speaker wants to communicate '''"1 2 3 4"''':
 ** for counting:
-*** says: '''"wan tun ton pon"'''
+*** might say: '''"wan tun ton pon"'''
 ** for the value 1,234:
-*** says: '''"wan tasa tutopon"'''
+*** might say: '''"wan tasa tutopon"'''
 ** for a sequence of digits, such as an ID:
-*** says: '''"watutopon"'''
+*** might say: '''"watutopon"'''
 ** for emphasizing digits:
-*** says: '''"wan pasa tun pasa ton pasan pon"'''
+*** might say: '''"wan pasa tun pasa ton pasan pon"'''
 ** for breaking up long sequences with no change in value (pasa/pasan can be used anywhere):
-*** says: '''"watun pasan topon"'''
-*** says: '''"wan pasa tun pasan topon"'''
-*** says: '''"watun pasa ton pasan pon"'''
-*** says: '''"watuton pasan pon"'''
-*** says: '''"wan pasa tun pasa ton pasan pon"'''
+*** might say: '''"watun pasan topon"'''
+*** might say: '''"wan pasa tun pasan topon"'''
+*** might say: '''"watun pasa ton pasan pon"'''
+*** might say: '''"watuton pasan pon"'''
+*** might say: '''"wan pasa tun pasa ton pasan pon"'''
+** In all cases the listener has understood the speaker as saying '''"1234"'''
 * Respects the speaker's freedom to choose how to express numbers:
 ** speaker says: '''"mute mute mute luka luka luka tu wan"'''
 *** listener recognises additive '''pu''' style
