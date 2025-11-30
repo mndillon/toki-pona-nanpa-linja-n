@@ -279,6 +279,49 @@ Prefix **ike** before any number:
 
 ---
 
+## Arithmetic Operations
+Here we are moving away from describing numbers to describing simple arithmetic expressions.
+This is not the main focus of this proposal.
+Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan jan Emalan
+
+### Equals: sama
+- Contains **s**, which no digit word has
+- Good candidate
+
+### Addition: em
+- Contains **m**, which no digit word has
+- Meaning inspired by en but with an **m**
+- ton em tun li sama lun
+
+### Subtract: em ala
+- Contains **m**, which no digit word has
+- Good candidate
+- ton em ala ike tun li sama lun
+
+### Multiply: kipisi ala
+- Contains **k**, which no digit word has
+- Good candidate
+- ton kipisi ala tun li sama jun
+
+### Division: kipisi
+- Contains **k**, which no digit word has
+- Good candidate
+- win kipisi ike tun li sama ike pon
+
+### Power: sewi
+- Contains **s**, which no digit word has
+- Good candidate
+- tun sewi ton li sama win
+
+Other mathematical expressions like log, ln, exp, roots, cos, pi are heading in the direction of "square pegs".
+
+- In the spirit of "say it as you think it", we could "jail break" them with nimi.
+- nimi sqrt nen li sama ton
+- nimi cos tun pi li sama wan
+- nimi f x li pona (positive)
+
+---
+
 ## License
 This project is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
 
