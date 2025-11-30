@@ -192,6 +192,9 @@ Prefix **ike** before any number:
 - Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - This works with the language syntax to enhance communication
+    - Say "2010": "tun tasa wanon"
+    - Say "2001" followed by "0": "tun tasa wan non"
+    - Say "243-555-0169": "tupoton pasa lululun pasan nowajunen"
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
       - might say: **"wan tun ton pon lun"**
@@ -204,8 +207,6 @@ Prefix **ike** before any number:
     - for breaking up long sequences with no change in value, (pasa/pasan can be used anywhere)
       - might say: **"watuton pasan polun"**
     - In all cases the listener has understood the speaker as communicating **"12345"**
-    - Say "2010": "tun tasa wanon"
-    - Say "2001" followed by "0": "tun tasa wan non"
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
