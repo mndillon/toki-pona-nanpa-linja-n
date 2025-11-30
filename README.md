@@ -323,13 +323,13 @@ Discussion welcome via:
 
     - it uses the first syllable of the pu words for digits for better compatability (where possible), reducing cognative load
 
+    - it uses less letters to describe digits, this leaves more letters for delimiters and also there is less chance of clashing with other vocabulary, so words can be immediately identified as describing numbers
+
     - it uses **-n** at the end of the base name for the digits (CVN format), so that single digit names are consistent with the descriptions of other numbers
 
     - it consistently uses the **-n** to indicate the end of numbers
 
     - it consistently uses **-n** to indicate the end of numerical structures that end with delimiters (tasan/masan/wasan)
-
-    - it uses less letters to describe digits, this leaves more letters for delimiters and also there is less chance of clashing with other vocabulary
 
     - its consistent use of **-n** makes it immediately clear when a numeric description ends, no matter how large the number. The listener spends little mental effort deciding whether the number is complete
 
