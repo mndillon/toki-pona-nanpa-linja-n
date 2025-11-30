@@ -226,7 +226,7 @@ Prefix **ike** before any number:
     - The listener recognises **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
     - The listener understands: 78
   - Any system that groups digits before speaking adds cognitive load for the speaker, because they must pre-determine consistent groupings before saying anything.  **nanpa-linja-n** works with the conventional digital markers (tasa/tasan)
-  - By contrast, speaking one digit at a time lets you break long sequences anywhere without losing meaning.  This is the approach that **nanpa-linja-n** takes (using pasa / pasan)
+  - By contrast, speaking one digit at a time lets the speaker break long sequences anywhere without losing meaning.  This is the approach that **nanpa-linja-n** takes (using pasa / pasan)
 - Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
 - (Can be easily parsed with lex/yacc)
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
