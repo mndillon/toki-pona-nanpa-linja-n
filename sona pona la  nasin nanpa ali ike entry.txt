@@ -14,22 +14,20 @@ https://github.com/mndillon/toki-pona-nanpa-linja-n/blob/main/images/Phone%20Num
 '''TL;DR:''' '''nanpa-linja-n'''
 uses '''-n''' to clearly signal the end of numeric values:
 * This works with Toki Pona syntax to enhance communication.
-* The speaker wants to communicate '''"1 2 3 4"''':
+* The speaker wants to communicate '''"1 2 3 4 5"''':
 ** for counting:
-*** might say: '''"wan tun ton pon"'''
-** for the value 1,234:
-*** might say: '''"wan tasa tutopon"'''
+*** might say: '''"wan tun ton pon lun"'''
+** for the value 12,345:
+*** might say: '''"watun tasa topolun"'''
 ** for a sequence of digits, such as an ID:
-*** might say: '''"watutopon"'''
+*** might say: '''"watutopolun"'''
 ** for emphasizing digits:
-*** might say: '''"wan pasa tun pasa ton pasan pon"'''
+*** might say: '''"wan pasa tun pasa ton pasa pon pasan lun"'''
 ** for breaking up long sequences with no change in value (pasa/pasan can be used anywhere):
-*** might say: '''"watun pasan topon"'''
-*** might say: '''"wan pasa tun pasan topon"'''
-*** might say: '''"watun pasa ton pasan pon"'''
-*** might say: '''"watuton pasan pon"'''
-*** might say: '''"wan pasa tun pasa ton pasan pon"'''
-** In all cases the listener has understood the speaker as saying '''"1234"'''
+*** might say: '''"watuton pasan polun"'''
+** In all cases the listener has understood the speaker as communicating '''"12345"'''
+** Say "2010": "tun tasa wanon"
+** Say "2001" followed by "0": "tun tasa wan non"
 * Respects the speaker's freedom to choose how to express numbers:
 ** speaker says: '''"mute mute mute luka luka luka tu wan"'''
 *** listener recognises additive '''pu''' style

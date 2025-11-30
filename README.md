@@ -192,22 +192,20 @@ Prefix **ike** before any number:
 - Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - This works with the language syntax to enhance communication
-  - The speaker wants to communicate **"1 2 3 4"**:
+  - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
-      - might say: **"wan tun ton pon"**
-    - for value 1,234,
-      - might say: **"wan tasa tutopon"**
+      - might say: **"wan tun ton pon lun"**
+    - for value 12,345,
+      - might say: **"watun tasa topolun"**
     - for sequence of numbers, like an id,
-      - might say: **"watutopon"**
-    - for 1-2-3-4 digit emphasis,
-      - might say: **"wan pasa tun pasa ton pasan pon"**
+      - might say: **"watutopolun"**
+    - for 1-2-3-4-5 digit emphasis,
+      - might say: **"wan pasa tun pasa ton pasa pon pasan lun"**
     - for breaking up long sequences with no change in value, (pasa/pasan can be used anywhere)
-      - might say: **"watun pasan topon"**
-      - might say: **"wan pasa tun pasan topon"**
-      - might say: **"watun pasa ton pasan pon"**
-      - might say: **"watuton pasan pon"**
-      - might say: **"wan pasa tun pasa ton pasan pon"**
-    - In all cases the listener has understood the speaker as saying **"1234"**
+      - might say: **"watuton pasan polun"**
+    - In all cases the listener has understood the speaker as communicationg **"12345"**
+    - Say "2010": "tun tasa wanon"
+    - Say "2001" followed by "0": "tun tasa wan non"
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
