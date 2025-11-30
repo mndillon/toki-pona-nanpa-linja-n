@@ -232,40 +232,38 @@ Prefix **ike** before any number:
 
 ### pokala / pakala
 - Contain **k**, which no digit word has
-- End in **-la** (safe from digit collision)
+- Do not end in **-n** signalling more of the number to follow
 - Meaning evokes “next section/context” (poka la)
 - Meaning evokes “broken” (at decimal point) (pakala)
-- Clean separator word
 - Can be used with tenpo for hour and minute delimiter
 
 ### kipisi
 - Contains **k**, which no digit word has
+- Does not end in **-n** signalling more of the number to follow
 - Meaning evokes “division”
-- Clean separator word
 - Can use **kipisi ala** for multiply without getting confused with divide by zero
 
 ### ike
 - Contains **k**, which no digit word has
+- Does not end in **-n** signalling more of the number to follow
 - Meaning evokes "negative"
-- Clean separator word
 
 ### tasa / masa / wasa
 - Contain **s**, which no digit word has
-- Clean separator word
+- Does not end in **-n** signalling more of the number to follow
 
 ### tasan / masan / wasan
 - Contain **s**, which no digit word has
 - All end in **-n** to signal end of number description
 - Zero-block shortcuts for clear large numbers
-- Clean separator word
 
 ### pasa / pasan
 - Contain **s**, which no digit word has
 - Meaning inspired by pana but with an **s**
 - A bridge joining different parts of the whole numeric value
+- pasa does not ends in **-n** signalling more of the number to follow
 - pasan ends in **-n** to signal that the last part of the number follows
 - Have no value, only used to break up long sequences of digits
-- Clean separator word
 
 ### sitelen pona (only suggestions)
 - Could pragmatically use arabic numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
