@@ -315,7 +315,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi are heading in the direction of "square pegs".
 
-- In the spirit of "say it as you think it", we could "jail break" them with nimi.
+- In the spirit of "say it as you think it", we could use nimi.
 - nimi sqrt nen li sama ton
 - nimi cos tun pi li sama wan
 - nimi f x li pona (positive)
