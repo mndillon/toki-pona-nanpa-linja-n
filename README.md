@@ -203,7 +203,7 @@ Prefix **ike** before any number:
       - might say: **"wan pasa tun pasa ton pasa pon pasan lun"**
     - for breaking up long sequences with no change in value, (pasa/pasan can be used anywhere)
       - might say: **"watuton pasan polun"**
-    - In all cases the listener has understood the speaker as communicationg **"12345"**
+    - In all cases the listener has understood the speaker as communicating **"12345"**
     - Say "2010": "tun tasa wanon"
     - Say "2001" followed by "0": "tun tasa wan non"
 - No conflict with Toki Pona vocabulary
