@@ -261,7 +261,7 @@ Prefix **ike** before any number:
 - Contain **s**, which no digit word has
 - Meaning inspired by pana but with an **s**
 - A bridge joining different parts of the whole numeric value
-- pasa does not ends in **-n** signalling more of the number to follow
+- pasa does not end in **-n** signalling more of the number to follow
 - pasan ends in **-n** to signal that the last part of the number follows
 - Have no value, only used to break up long sequences of digits
 
