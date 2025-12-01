@@ -207,7 +207,7 @@ Prefix **ike** before any number:
     - for breaking up long sequences with no change in value, (pasa/pasan can be used anywhere)
       - might say: **"watuton pasan polun"**
     - In all cases the listener has understood the speaker as communicating **"12345"**
-  - Screen readers for visually impared users can communicate larger numbers with less cognitive load
+  - Screen readers for visually impaired users can communicate larger numbers with less cognitive load
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
