@@ -290,16 +290,13 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Contains **s**, which no digit word has
 - Good candidate
 
-### Addition: em
-- Contains **m**, which no digit word has
-- Meaning inspired by en but with an **m**
+### Addition: en
 - Good candidate
-- ton em tun li sama lun
+- ton en tun li sama lun
 
-### Subtract: em ala
-- Contains **m**, which no digit word has
+### Subtract: en ala
 - Good candidate
-- ton em ala ike tun li sama lun
+- ton en ala ike tun li sama lun
 
 ### Multiply: kipisi ala
 - Contains **k**, which no digit word has
