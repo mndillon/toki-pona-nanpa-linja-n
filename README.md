@@ -290,13 +290,14 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Contains **s**, which no digit word has
 - Good candidate
 
-### Addition: en
+### Addition: kepeken
+- Contains **k**, which no digit word has
 - Good candidate
-- ton en tun li sama lun
+- ton kepeken tun li sama lun
 
-### Subtract: en ala
+### Subtract: kepeken ala
 - Good candidate
-- ton en ala ike tun li sama lun
+- ton kepeken ala ike tun li sama lun
 
 ### Multiply: kipisi ala
 - Contains **k**, which no digit word has
