@@ -296,6 +296,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - ton kepeken tun li sama lun
 
 ### Subtract: kepeken ala
+- Contains **k**, which no digit word has
 - Good candidate
 - ton kepeken ala ike tun li sama lun
 
