@@ -314,7 +314,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Contains **s**, which no digit word has
 - Good candidate
 - tun sewi ton li sama win
-- penonon li sama pen kipisi ala ten sewi tun
+- pen tasan li sama pen kipisi ala ten sewi ton
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi are heading in the direction of "square pegs".
 
