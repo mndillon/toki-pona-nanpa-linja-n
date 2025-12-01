@@ -322,6 +322,7 @@ Other mathematical expressions like log, ln, exp, roots, cos, pi are heading in 
 - nimi sqrt(nen) li sama ton
 - nimi cos(tun * pi) li sama wan
 - nimi f(x) li pona (positive)
+- nimi df/dx li sama nimi g(x)
 
 ---
 
