@@ -1,4 +1,4 @@
-# nanpa-linja-n — A Complete Numeric System for Toki Pona
+# nanpa-linja-n — A Simple, Easy Way to Communicate Numbers in Toki Pona
 
 ## TL;DR:
 **nanpa-linja-n** explained on a napkin:
