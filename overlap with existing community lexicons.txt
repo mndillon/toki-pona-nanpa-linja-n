@@ -1,0 +1,147 @@
+Digit words (from the spec):
+GitHub
+
+0 non, 1 wan, 2 tun, 3 ton, 4 pon, 5 lun, 6 jun, 7 pen, 8 win, 9 nen
+
+I’ll go through (1) phonotactics, (2) collisions with existing words, and (3) mutual distinctness.
+
+1. Phonotactics check
+
+All ten are CVN forms, which are fully valid Toki Pona syllables. The official grid of valid syllables includes exactly these shapes: non, wan, tun, ton, pon, lun, jun, pen, win, nen.
+Wikipedia
++1
+
+No ji, ti, wo, wu
+
+No vowel clusters or weird consonant clusters
+
+All stress on first syllable, which is trivial for one-syllable words
+
+So purely phonotactically: 10/10 clean.
+
+2. Collisions with Toki Pona vocabulary
+1. wan
+
+Already a core pu/ku word meaning “one, single, part”.
+Wikipedia
+
+Here it’s reused as the digit 1, which is actually semantically aligned.
+
+Potential ambiguity:
+
+jan wan = “one person / first person”
+
+nanpa wan / nanpa-linja-n wan = digit 1
+
+But that’s more polysemy than collision. TP already leans on context, so this is totally in-character.
+
+👉 Verdict: Deliberate overlap, actually helpful.
+
+2. non, tun, ton, pon, lun, nen, pen
+
+As far as pu + ku go, none of these are official words.
+Wikipedia
++1
+
+Lipu-sona’s “creating unofficial words” page even lists non, nen, pen, pon, lun etc. as example free CVN syllables — i.e. syllables that are valid but not used by official vocabulary and often suggested as good raw material for new words.
+lipu sona pona
+
+So for the core language:
+
+non – completely free
+
+tun – completely free
+
+ton – completely free
+
+pon – completely free (close to pona but not identical)
+
+lun – completely free
+
+pen – completely free
+
+nen – completely free
+
+Any “close–sound” issues like pon vs pona, nen vs nena, are just normal minimal pairs — Toki Pona already has those (e.g. moku vs moli), so this isn’t special.
+
+👉 Verdict: No direct pu/ku collisions; only normal-level similarity.
+
+3. jun & win and nimisin territory
+
+Here’s where it gets slightly spicy.
+
+Community / nimisin resources have:
+
+win as a non-pu word for “autism / neurodivergent / to stim”, tracked in linku’s sandbox.
+nimi.li | Toki Pona Dictionary
+
+jun appears in at least one fan dictionary as “hair, wool, fur, feather”.
+tokima.neocities.org
+
+Neither of these are pu or ku suli, but they do exist in some people’s mental lexicon.
+
+So:
+
+jan win could mean “neurodivergent person” or be read as “person eight” if someone is very number-brain in that moment.
+
+soweli jun vs nanpa jun (digit 6) – possible double-take in a context where both numbers and nimisin are used.
+
+This is not fatal, but:
+
+In conservative “only pu/ku words” circles → no problem at all.
+
+In “deep nimisin + nanpa-linja-n” circles → some soft semantics overlap you just have to live with.
+
+👉 Verdict: Good in pu/ku world, mild squishiness in nimisin-heavy contexts. If you ever did want to tweak digits, 6 and 8 (jun & win) are the only ones with real community competition.
+
+3. Distinctness inside the digit set
+
+From a “how likely am I to mishear digits in a long string” standpoint:
+
+Every digit is one syllable ending in -n → rhythmically very regular.
+
+Within the set, no two digits share both consonant and vowel:
+
+non / nen / wan / tun / ton / pon / lun / jun / pen / win
+
+Closest pairs:
+
+tun / ton – minimal vowel pair
+
+non / nen – same consonant + different vowel
+
+pen / pon – different vowel, same onset
+
+TP vowels are pretty distinct, and there’s no banned / marginal syllable here (no ji/ti/wo/wu, no rare jo/lu/we/wi front-glide weirdness).
+Wikipedia
++1
+
+Plus the design deliberately avoids k, m, s in digit words so that things like pokala, kipisi, tasa/masa/wasa, pasa/pasan, sama sit in a separate acoustic “zone” from the digits.
+GitHub
+ That’s really nice for parsing.
+
+👉 Verdict: Internally, the set is solid and easy to keep apart, especially in longer sequences.
+
+4. Overall judgement
+
+Putting it all together:
+
+Phonotactics: perfect CVN; no illegal or marginal syllables.
+
+Collisions with official lexicon:
+
+Only wan overlaps, and that’s intentional and semantically aligned.
+
+The others are exactly the kind of unused CVN blocks guides recommend using.
+
+Collisions with nimisin:
+
+Real but limited overlap with win and jun in some subcommunities.
+
+Mutual distinctness:
+
+Digits are short, regular, cleanly separated from separators (k/s), and overall low collision risk.
+
+So, in short:
+
+The set is very well-designed for sound and collisions in pu/ku-land; the only nontrivial friction points are with nimisin “win” and “jun”, which matter only if you’re aiming for perfect coexistence with every unofficial word in circulation.
