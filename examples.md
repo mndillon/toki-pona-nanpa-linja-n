@@ -162,6 +162,17 @@ tomo tawa li tawa kepeken wawa lupen kilometo lon tenpo wan.
 
 # 📦 8. Counting Items
 
+### “5 4 3 2 1.”
+
+5 → lun<br>
+4 → pon<br>
+3 → ton<br>
+2 → tun<br>
+1 → wan<br>
+
+**nanpa-linja-n:**
+lun pon ton tun wan.
+
 ### “I have 23 apples.”
 
 23 → tuton<br>
