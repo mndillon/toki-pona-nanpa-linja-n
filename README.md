@@ -42,7 +42,7 @@ Each digit uses a distinct, single syllable, CVN form and does not conflict with
 8  win
 9  nen
 
-10 = ten (if used by itself or wanon for digit-emphasis)
+10 = ten (if only used by itself otherwise wanon)
 ```
 
 ---
@@ -321,7 +321,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Contains **s**, which no digit word has
 - Good candidate
 - tun sewi ton li sama win
-- pen tasan li sama pen emute ten sewi ton
+- pen tasan li sama pen emute wanon sewi ton
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers) are better left in mathematical notation:
 
