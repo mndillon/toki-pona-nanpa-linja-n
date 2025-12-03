@@ -364,6 +364,8 @@ Discussion welcome via:
 
 - On https://sona.pona.la/wiki/nasin_nanpa_ali_ike list, **nanpa-linja-n** looks most closest to (at first glance):
 
+  - [decimal] socks numeral (based on cantonese), tan socks
+
   - [decimal] [humorous] kijetesantakalu polinpin, tan jan Kita (shameless self-promotion)
 
   - [decimal] nasin nanpa nimi, tan kijetesantakalu Iwan
