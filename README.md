@@ -191,8 +191,9 @@ Prefix **ike** before any number:
 - Easy to remember and use
 - Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
-  - This works with the language syntax to enhance communication
+  - This works with the Toki Pona language syntax to enhance communication
     - Say "2010": "tun tasa wanon"
+    - Say "2000" followed by "10": "tun tasan wanon"
     - Say "2001" followed by "0": "tun tasa wan non"
     - Say "243-555-0169": "tupoton pasa lululun pasan nowajunen"
     - Screen readers for visually impaired users can communicate larger numbers with less cognitive load
@@ -267,7 +268,7 @@ Prefix **ike** before any number:
 - pasan ends in **-n** to signal that the last part of the number follows
 - Have no value, only used to break up long sequences of digits
 
-### sitelen pona (only suggestions)
+### sitelen pona
 - Could pragmatically use arabic numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
 - This alligns glyphs for numbers with the rectangular box used for proper names
 - Glyphs for numerals should be distinct and not rely on observing subtle changes in the glyphs.
@@ -293,7 +294,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Contains **m**, which no digit word has
 - Meaning inspired by **en** but ending in **-me**
 - Good candidate
-- ton eme tun li sama lun
+- ton eme tun eme wan li sama jun
 
 ### Subtract: weka
 - Contains **k**, which no digit word has
@@ -323,11 +324,9 @@ Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even
 
 cos(2π) = 1
 
-then described: tan nasin pi ilo nanpa la, cos(tun emute π) li sama wan
-
 √9 = 3
 
-tan nasin pi ilo nanpa la,  √nen li sama ton
+and have the community calque what are useful ways to describe these expressions
 
 ---
 
