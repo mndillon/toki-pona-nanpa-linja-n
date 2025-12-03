@@ -195,6 +195,7 @@ Prefix **ike** before any number:
     - Say "2010": "tun tasa wanon"
     - Say "2000" followed by "10": "tun tasan wanon"
     - Say "2001" followed by "0": "tun tasa wan non"
+    - Say "2001.0": "tun tasa wan pokala non"
     - Say "243-555-0169": "tupoton pasa lululun pasan nowajunen"
     - Screen readers for visually impaired users can communicate larger numbers with less cognitive load
     - Automated text-to-speech systems can communicate larger numbers with less cognitive load
