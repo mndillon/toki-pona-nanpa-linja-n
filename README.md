@@ -1,4 +1,4 @@
-# nanpa-linja-n — A Simple, Easy Way to Communicate Numbers in Toki Pona
+# nanpa-linja-n — A Simple, Easy Way to Communicate Decimal Numbers in Toki Pona
 
 ## TL;DR:
 **nanpa-linja-n** explained on a napkin:
