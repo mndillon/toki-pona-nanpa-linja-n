@@ -316,14 +316,15 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - tun sewi ton li sama win
 - pen tasan li sama pen kipisi ala ten sewi ton
 
-Other mathematical expressions like log, ln, exp, roots, cos, pi are heading in the direction of "square pegs".
+Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers) are better left in mathematical notation:
 
-- In the spirit of "say it as you think it", we could use nimi with the Unicode characters for mathematical symbols (and not re-invent the wheel):
-- nimi sqrt(nen) li sama ton
-- nimi cos(tun * pi) li sama wan
-- nimi f(x) li pona (positive)
-- nimi df/dx li sama nimi g(x)
-- these are just suggestions, the community will calque what is most useful
+cos(2π) = 1
+
+then described: tan nasin pi ilo nanpa la, cos(tun kipisi ala π) li sama wan
+
+√9 = 3
+
+tan nasin pi ilo nanpa la,  √nen li sama ton
 
 ---
 
