@@ -218,7 +218,7 @@ ton kipisi pon li sama non pokala pelun.
 60 → junon<br>
 
 **nanpa-linja-n:**
-watun kipisi ala lun li sama junon.
+watun emute lun li sama junon.
 
 ### “27 × 0 = 0”
 
@@ -227,7 +227,7 @@ watun kipisi ala lun li sama junon.
 0 → non<br>
 
 **nanpa-linja-n:**
-tupen kipisi ala non li sama non.
+tupen emute non li sama non.
 
 ---
 

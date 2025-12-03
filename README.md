@@ -244,7 +244,6 @@ Prefix **ike** before any number:
 - Contains **k**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
 - Meaning evokes “division”
-- Can use **kipisi ala** for multiply without getting confused with divide by zero
 
 ### ike
 - Contains **k**, which no digit word has
@@ -290,23 +289,27 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Contains **s**, which no digit word has
 - Good candidate
 
-### Addition: kepeken
-- Contains **k**, which no digit word has
+### Addition: eme
+- Contains **m**, which no digit word has
+- Meaning inspired by **en** but ending in **-me**
 - Good candidate
-- ton kepeken tun li sama lun
+- ton eme tun li sama lun
 
-### Subtract: kepeken ala
+### Subtract: weka
 - Contains **k**, which no digit word has
+- Meaning invokes "away"
 - Good candidate
-- ton kepeken ala ike tun li sama lun
+- ton weka ike tun li sama lun
 
-### Multiply: kipisi ala
-- Contains **k**, which no digit word has
+### Multiply: emute
+- Contains **m**, which no digit word has
+- Meaning inspired by **eme** + **mute** (add many)
 - Good candidate
-- ton kipisi ala tun li sama jun
+- ton emute tun li sama jun
 
 ### Division: kipisi
 - Contains **k**, which no digit word has
+- Already used to describe fractions
 - Good candidate
 - win kipisi ike tun li sama ike pon
 
@@ -314,13 +317,13 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Contains **s**, which no digit word has
 - Good candidate
 - tun sewi ton li sama win
-- pen tasan li sama pen kipisi ala ten sewi ton
+- pen tasan li sama pen emute ten sewi ton
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers) are better left in mathematical notation:
 
 cos(2π) = 1
 
-then described: tan nasin pi ilo nanpa la, cos(tun kipisi ala π) li sama wan
+then described: tan nasin pi ilo nanpa la, cos(tun emute π) li sama wan
 
 √9 = 3
 
