@@ -1,5 +1,7 @@
 # nanpa-linja-n — A Simple, Easy Way to Communicate Decimal Numbers in Toki Pona
 
+o weka e nimi ike.
+
 ## TL;DR:
 **nanpa-linja-n** explained on a napkin:
 
