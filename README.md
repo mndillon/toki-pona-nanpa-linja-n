@@ -331,6 +331,17 @@ cos(2π) = 1
 
 and have the community calque what are useful ways to describe these expressions
 
+### musi nanpa
+
+- o pilin e nanpa tan wan kepeken wanon.
+- pana e nimi uno tawa nanpa ni.
+- o eme e ton tan ni.
+- o sewi e tun tan ni.
+- o weka e nen tan ni.
+- o kipisi e ni kepeken nanpa nimi uno.
+- o weka e nanpa nimi uno tan ni.
+- o lukin! nanpa sina li jun.
+
 ---
 
 ## License
