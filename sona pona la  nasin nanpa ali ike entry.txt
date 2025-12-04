@@ -14,6 +14,13 @@ https://github.com/mndillon/toki-pona-nanpa-linja-n/blob/main/images/Phone%20Num
 '''TL;DR:''' '''nanpa-linja-n'''
 uses '''-n''' to clearly signal the end of numeric values:
 * This works with Toki Pona syntax to enhance communication.
+** Say "2010": "tun tasa wanon"
+** Say "2000" followed by "10": "tun tasan wanon"
+** Say "2001" followed by "0": "tun tasa wan non"
+** Say "2001.0": "tun tasa wan pokala non"
+** Say "243-555-0169": "tupoton pasa lululun pasan nowajunen"
+** Screen readers for visually impaired users can communicate larger numbers with less cognitive load
+** Automated text-to-speech systems can communicate larger numbers with less cognitive load
 * The speaker wants to communicate '''"1 2 3 4 5"''':
 ** for counting:
 *** might say: '''"wan tun ton pon lun"'''
@@ -26,8 +33,6 @@ uses '''-n''' to clearly signal the end of numeric values:
 ** for breaking up long sequences with no change in value (pasa/pasan can be used anywhere):
 *** might say: '''"watuton pasan polun"'''
 ** In all cases the listener has understood the speaker as communicating '''"12345"'''
-** Say "2010": "tun tasa wanon"
-** Say "2001" followed by "0": "tun tasa wan non"
 * Respects the speaker's freedom to choose how to express numbers:
 ** speaker says: '''"mute mute mute luka luka luka tu wan"'''
 *** listener recognises additive '''pu''' style
