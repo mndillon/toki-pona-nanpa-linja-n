@@ -336,7 +336,7 @@ and have the community calque what are useful ways to describe these expressions
 - o pilin e nanpa tan wan kepeken wanon.
 - pana e nimi uno tawa nanpa ni.
 - o eme e ton tan ni.
-- o sewi e tun tan ni.
+- o sewi e ni kepeken tun.
 - o weka e nen tan ni.
 - o kipisi e ni kepeken nanpa nimi uno.
 - o weka e nanpa nimi uno tan ni.
