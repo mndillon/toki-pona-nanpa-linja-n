@@ -1,0 +1,117 @@
+Short answer: there are no well-attested natural languages or traditional numeral systems that use an additive system and a true positional base-100 system.
+But there are a few edge cases, partial systems, and historical proposals that come close to what you're asking for.
+
+Below is the clearest breakdown.
+
+✅ What you asked for
+
+You want systems that have:
+
+Additive numerals (numbers within a place or magnitude are created by adding units),
+
+Positional structure,
+
+With each position representing powers of 100 (i.e., base-100).
+
+No known ancient or modern culture used base-100 positional notation in daily life.
+However, there are relevant cases where 100 acts as a major grouping unit or where systems approach base-100 behavior.
+
+🌍 1. Chinese & East Asian large-number groupings
+Why it’s relevant:
+
+East Asian numerals group by 10,000 (wan), 100,000,000 (yi), etc.
+This creates something like base-10,000 positional blocks.
+Within each block (0–9999), the numerals are purely additive-multiplicative, not positional.
+
+How it compares to base-100:
+
+The structure is:
+
+[block][wan-block][yi-block] …
+
+Each block acts like a positional digit, but the base isn’t 100 — it’s 10,000.
+
+Still, it is one of the only cultures with a non-decimal higher-order “base.”
+
+Conclusion:
+
+✔ Positions exist, but the base is 10,000, not 100.
+
+🌍 2. South Asian numbering system (Hindi, Bengali, etc.)
+
+These languages use grouping units of:
+
+100 (śata)
+
+1,000 (sahasra)
+
+100,000 (lakh)
+
+10,000,000 (crore)
+
+Numbers are built additively (e.g., “hundred five” = 105).
+
+Why it's relevant:
+
+“Hundred” serves as a major structural milestone, though not a true positional base.
+
+Why it’s not base-100 positional:
+
+The writing system (Indian numerals → Arabic numerals) is still decimal place-value.
+
+“Hundred” is lexical, not positional.
+
+Conclusion:
+
+✖ Not positional.
+✔ Uses “hundred” as a key additive building block.
+
+🌍 3. Old Turkic / Mongolic large-number naming traditions
+
+These systems use “hundred” (yüz) as a central additive component and sometimes combine into huge lexical units for large numbers.
+
+But again:
+
+✔ Additive within phrases
+
+✖ Not positional at base 100
+
+🌍 4. Hypothetical / invented / mathematical usage
+Base-100 positional numerals do exist — but only in artificial systems, such as:
+
+Hexadecimal (base-16) extended to “hexbytes” (base-256)
+
+Computer-science base-100 or base-256 encodings
+
+20th-century proposals for base-100 bookkeeping systems
+
+These sometimes use additive internal structure for each “digit,” but they were never cultural or linguistic systems.
+
+🌍 5. The closest natural precedent: Mayan vigesimal blocks
+
+The Mayan system is:
+
+Positional (base-20)
+
+Digits are additive (bars = 5, dots = 1)
+
+But 20, not 100, is the base, except for the second place (18×20) used for calendrical reasons.
+
+This is the only major known system that is both positional and additive within digits — but not base-100.
+
+❌ Is there any known culture that truly used base-100 positional numerals?
+
+No.
+No natural culture is known to have:
+
+positional blocks of 1, 100, 10,000, 1,000,000, …
+
+and additive digits.
+
+This combination simply never arose historically because:
+
+Base-10 and base-20 dominate worldwide.
+
+Additive systems usually appear before positional ones, and the shift to positional almost always ended up being base-10 or base-20.
+
+Base-100 requires a written symbol set large enough for 100 digits, which rarely emerged organically.
