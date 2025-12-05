@@ -106,6 +106,7 @@ pasan = last part of number follows
 300,000,000 → tononon masan
 3,000,000,000 → ton wasan
 7,321,900   → pen masa totuwan tasa nenonon
+64.5M       → jupon pokala lun masan
 123456789   → watutopolujupewinen (using block words is optional, but often very helpful for understanding)
 123456789   → watun pasa topolun pasan jupewinen (pasa and pasan can be used anywhere to break up large numbers)
 123456789   → watutopolun pasan jupewinen
