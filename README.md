@@ -1,4 +1,4 @@
-# nanpa-linja-n — A Simple, Easy Way to Communicate a String (Line) of Decimal Digits in Toki Pona
+# nanpa-linja-n — A Simple, Easy Way to Communicate a String of Decimal Digits in Toki Pona
 
 o weka e nimi ike.
 
@@ -12,7 +12,7 @@ o weka e nimi ike.
 <img src="images/Phone Number Conversation v1.png" width="384"/>
 
 ## Overview
-**nanpa-linja-n** is a fully structured system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of strings (lines) of digits including integers, decimals, fractions, negatives, large values and IDs.
+**nanpa-linja-n** is a fully structured system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of strings of digits including integers, decimals, fractions, negatives, large values and IDs.
 
 This system emphasizes:
 - digit-block compression
@@ -424,5 +424,23 @@ Discussion welcome via:
     - its consistent use of **-n** makes it immediately clear when a string of digits stops, no matter how long the sequence of digits. The listener spends little mental effort deciding whether the digit sequence is complete, and context will determine if the digit sequence represents a numeric value
 
     - while using similar principles, it provides a more consistent way to express numbers — including large ones — reducing learning effort and cognitive load on both speaker and listener
+
+- Comparison with Esperanto number system:
+
+  - **nanpa-linja-n** is string based while Esperanto is value based
+
+    - in Esperanto tridek = 30 meaning 3x10
+
+    - in **nanpa-linja-n** tonon = 30 meaning digit 3 followed by digit 0, this might be a numerical value depending on context
+
+  - **nanpa-linja-n** digit names are single syllable while in Esperanto the digit names are not all single syllable
+
+    - this gives **nanpa-linja-n** an hugh advantage with digit compression without loss of meaning
+
+  - **nanpa-linja-n** uses **-n** to terminate digit sequences, this is phonetic, while Esperanto relies on spacing to determine if digit sequence has ended
+
+    - this allows **nanpa-linja-n** listeners and computer parsers to phonetically determine the end of each digit sequence and only delimiters can continue a digit sequence.
+
+
 
 
