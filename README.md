@@ -425,22 +425,5 @@ Discussion welcome via:
 
     - while using similar principles, it provides a more consistent way to express numbers — including large ones — reducing learning effort and cognitive load on both speaker and listener
 
-- Comparison with Esperanto number system:
-
-  - **nanpa-linja-n** is string based while Esperanto is value based
-
-    - in Esperanto tridek = 30 meaning 3x10
-
-    - in **nanpa-linja-n** tonon = 30 meaning digit 3 followed by digit 0, this might be a numerical value depending on context.  This allows **nanpa-linja-n** to express sequences of digits without assuming a numerical value.
-
-  - **nanpa-linja-n** digit names are single syllable while in Esperanto the digit names are not all single syllable
-
-    - this gives **nanpa-linja-n** a hugh advantage with digit compression without loss of meaning
-
-  - **nanpa-linja-n** uses **-n** to terminate digit sequences, this is phonetic, while Esperanto relies on spacing to determine if digit sequence has ended
-
-    - this allows **nanpa-linja-n** listeners and computer parsers to phonetically determine the end of each digit sequence and only delimiters can continue a digit sequence.
-
-
 
 
