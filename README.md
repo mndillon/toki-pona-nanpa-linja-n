@@ -1,4 +1,4 @@
-# nanpa-linja-n — A Simple, Easy Way to Communicate Decimal Numbers in Toki Pona
+# nanpa-linja-n — A Simple, Easy Way to Communicate a String (Line) of Decimal Digits in Toki Pona
 
 o weka e nimi ike.
 
@@ -12,18 +12,18 @@ o weka e nimi ike.
 <img src="images/Phone Number Conversation v1.png" width="384"/>
 
 ## Overview
-**nanpa-linja-n** is a fully structured numeric system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of numbers including integers, decimals, fractions, negatives, and large values.
+**nanpa-linja-n** is a fully structured system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of strings (lines) of digits including integers, decimals, fractions, negatives, large values and IDs.
 
 This system emphasizes:
 - digit-block compression
-- concatenated number construction
+- concatenated digit construction
 - phonotactically valid roots
 - compatibility with the Toki Pona lexicon
 
 
 Toki Pona’s vocabulary is small, but not too small.
 It’s big enough to be functional while still keeping the language simple.
-This number system aims to follow that same idea: staying as simple as possible while still being practical for everyday use.
+This system aims to follow that same idea: staying as simple as possible while still being practical for everyday use.
 It’s not meant to replace anything—just to offer a tool that fits naturally into the language’s minimal design.
 
 
@@ -42,7 +42,7 @@ Each digit uses a distinct, single syllable, CVN form and does not conflict with
 8  win
 9  nen
 
-10 = ten (if only used by itself otherwise wanon)
+10 = ten (only used to represent the whole numeric value of 10 on it's own otherwise wanon)
 ```
 
 ---
@@ -70,7 +70,9 @@ Inside a digit block (no separator present):
 ## Large Number Units
 
 ### Standard Units
-Used when non-zero digits follow the block:
+Used when non-zero digits follow the block.
+
+Adds more context, makes the assumption that the string of digits represents a numeric value:
 
 ```
 tasa = thousand
@@ -79,7 +81,9 @@ wasa = billion
 ```
 
 ### Zero-Block Units  
-Used only when *everything after* the block is zero:
+Used only when *everything after* the block is zero.
+
+Adds more context, makes the assumption that the string of digits represents a numeric value:
 
 ```
 tasan = exactly X thousand
@@ -89,11 +93,13 @@ wasan = exactly X billion
 
 
 ### Any number of blocks
-Used for any number of blocks, these separators have no specific values:
+Used for any number of blocks, these separators have no specific values.
+
+Does not add more context, makes no assumption that the string of digits represents a numeric value:
 
 ```
-pasa  = more than one part of number to follow
-pasan = last part of number follows
+pasa  = more than one part of digit sequence to follow
+pasan = last part of digit sequence follows
 ```
 
 
@@ -127,6 +133,7 @@ Rules:
 
 - Whole part ends in full -n form
 - Decimal block follows the digit-block rule
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 
 Examples:
 
@@ -147,6 +154,7 @@ Rule:
 
 - Both numerator and denominator use full final -n
 - Internal block compression applies
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 
 Examples:
 
@@ -163,6 +171,8 @@ Examples:
 
 ## Negative Numbers — ike
 Prefix **ike** before any number:
+
+- Adds more context, makes the assumption that the string of digits represents a numeric value
 
 ```
 −5         → ike lun
@@ -192,7 +202,7 @@ Prefix **ike** before any number:
 ### Digit Roots
 - Unique syllables
 - Easy to remember and use
-- Very useful when speaking and hearing the digits of long values ( 5201 → lutunowan → 5201 )
+- Very useful when speaking and hearing long sequences of digits ( 5201 → lutunowan → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - This works with the Toki Pona language syntax to enhance communication
     - Say "2010": "tun tasa wanon"
@@ -200,13 +210,14 @@ Prefix **ike** before any number:
     - Say "2001" followed by "0": "tun tasa wan non"
     - Say "2001.0": "tun tasa wan pokala non"
     - Say "243-555-0169": "tupoton pasa lululun pasan nowajunen"
-    - Screen readers for visually impaired users can communicate larger numbers with less cognitive load
-    - Automated text-to-speech systems can communicate larger numbers with less cognitive load
+    - Screen readers for visually impaired users can communicate longer digit sequences with less cognitive load
+    - Automated text-to-speech systems can communicate longer digit sequences with less cognitive load
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
       - might say: **"wan tun ton pon lun"**
     - for value 12,345,
       - might say: **"watun tasa topolun"**
+      - saying "tasa" adds the assumption that the strings of digits represent numbers
     - for sequence of numbers, like an id,
       - might say: **"watutopolun"**
     - for 1-2-3-4-5 digit emphasis,
@@ -217,7 +228,7 @@ Prefix **ike** before any number:
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **m** and **s** in digit names to reduce overlap with delimiters (and other words)
-- By avoiding using **k**, **m** and **s**, words are more easily identified as **nanpa-linja-n** numeric ( petuton → 723 )
+- By avoiding using **k**, **m** and **s**, words are more easily identified as **nanpa-linja-n** digit strings ( petuton → 723 )
 - Respects the speaker’s freedom to choose how to express numbers:
   - Additive (**pu** style) numerals:
     - The speaker uses **pu** names ala, wan, tu, luka, mute, ale
@@ -225,15 +236,16 @@ Prefix **ike** before any number:
     - The speaker says (the way they think): mute mute mute luka luka luka tu wan
     - The listener recognises **pu** semantics
     - The listener understands: 78
-  - Positional decimal (**nanpa-linja-n** style) numerals:
-    - The speaker uses **nanpa-linja-n** digit names with concatenation and **-n** signalling the end of the number
+  - Positional decimal (**nanpa-linja-n** style) strings:
+    - The speaker uses **nanpa-linja-n** digit names with concatenation and **-n** signalling the end of the string of digits
     - The speaker thinks: 78 = 7 followed by 8
     - The speaker says (the way they think): pewin
     - The listener recognises **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
     - The listener understands: 78
+    - The listener may understand that 78 represents a numeric value, but this is determined by context
   - Any system that groups digits before speaking adds cognitive load for the speaker, because they must pre-determine consistent groupings before saying anything.  **nanpa-linja-n** works with the conventional digital markers using tasa/tasan
-  - By contrast, speaking one digit at a time lets the speaker break long sequences anywhere without losing meaning.  **nanpa-linja-n** can break large numbers up using pasa/pasan
-- Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise numeric information is needed
+  - By contrast, speaking one digit at a time lets the speaker break long sequences anywhere without losing meaning.  **nanpa-linja-n** can break large strings of digits up using pasa/pasan, without assuming that the string of digits represents a numeric value
+- Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise digit information is needed
 - (Can be easily parsed with lex/yacc)
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
 
@@ -244,33 +256,39 @@ Prefix **ike** before any number:
 - Meaning evokes “next section/context” (poka la)
 - Meaning evokes “broken” (at decimal point) (pakala)
 - Can be used with tenpo for hour and minute delimiter
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 
 ### kipisi
 - Contains **k**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
 - Meaning evokes “division”
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 
 ### ike
 - Contains **k**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
 - Meaning evokes "negative"
+- Adds more context, makes the assumption that the string of digits represents a numeric value
 
 ### tasa / masa / wasa
 - Contain **s**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 
 ### tasan / masan / wasan
 - Contain **s**, which no digit word has
 - All end in **-n** to signal end of number description
 - Zero-block shortcuts for clear large numbers
+- Adds more context, makes the assumption that the string of digits represents a numeric value
 
 ### pasa / pasan
 - Contain **s**, which no digit word has
 - Meaning inspired by pana but with an **s**
-- A bridge joining different parts of the whole numeric value
-- pasa does not end in **-n** signalling more of the number to follow
-- pasan ends in **-n** to signal that the last part of the number follows
+- A bridge joining different parts of the whole string of digits
+- pasa does not end in **-n** signalling more of the string of digits to follow
+- pasan ends in **-n** to signal that the last part of the string of digits follows
 - Have no value, only used to break up long sequences of digits
+- Does not add more context, makes no assumption that the string of digits represents a numeric value
 
 ### sitelen pona
 - Could pragmatically use arabic numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
@@ -298,29 +316,34 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Contains **m**, which no digit word has
 - Meaning inspired by **en** but ending in **-me**
 - Good candidate
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 - ton eme tun eme wan li sama jun
 
 ### Subtract: weka
 - Contains **k**, which no digit word has
 - Meaning invokes "away"
 - Good candidate
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 - ton weka ike tun li sama lun
 
 ### Multiply: emute
 - Contains **m**, which no digit word has
 - Meaning inspired by **eme** + **mute** (add many)
 - Good candidate
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 - ton emute tun li sama jun
 
 ### Division: kipisi
 - Contains **k**, which no digit word has
 - Already used to describe fractions
 - Good candidate
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 - win kipisi ike tun li sama ike pon
 
 ### Power: sewi
 - Contains **s**, which no digit word has
 - Good candidate
+- Adds more context, makes the assumption that the strings of digits represent numeric values
 - tun sewi ton li sama win
 - pen tasan li sama pen emute wanon sewi ton
 
@@ -386,17 +409,19 @@ Discussion welcome via:
 
   - how **nanpa-linja-n** compares to these (at first glance):
 
+    - it describes a string of digits, the context will determine if the string of digits represents a numeric value
+
     - it uses the first syllable of the pu words for digits for better compatability (where possible), reducing cognative load
 
-    - it uses less letters to describe digits, this leaves more letters for delimiters and also there is less chance of clashing with other vocabulary, so words can be immediately identified as describing numbers
+    - it uses less letters to describe digits, this leaves more letters for delimiters and also there is less chance of clashing with other vocabulary, so words can be immediately identified as describing sequences of digits
 
-    - it uses **-n** at the end of the base name for the digits (CVN format), so that single digit names are consistent with the descriptions of other numbers
+    - it uses **-n** at the end of the base name for the digits (CVN format), so that single digit names are consistent with the descriptions of other digit strings
 
-    - it consistently uses the **-n** to indicate the end of numbers
+    - it consistently uses the **-n** to indicate the end of digit strings
 
     - it consistently uses **-n** to indicate the end of numerical structures that end with delimiters (tasan/masan/wasan)
 
-    - its consistent use of **-n** makes it immediately clear when a numeric description ends, no matter how large the number. The listener spends little mental effort deciding whether the number is complete
+    - its consistent use of **-n** makes it immediately clear when a string of digits stops, no matter how long the sequence of digits. The listener spends little mental effort deciding whether the digit sequence is complete, and context will determine if the digit sequence represents a numeric value
 
     - while using similar principles, it provides a more consistent way to express numbers — including large ones — reducing learning effort and cognitive load on both speaker and listener
 
