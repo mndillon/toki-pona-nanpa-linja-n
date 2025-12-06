@@ -213,6 +213,7 @@ Prefix **ike** before any number:
     - The **-n** is a phonetic marker, indicating the end of a digit sequence
     - Screen readers can communicate longer digit sequences with less cognitive load
     - Automated text-to-speech systems can communicate longer digit sequences with less cognitive load
+    - Can enhance compatability with WCAG 2.2
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
       - might say: **"wan tun ton pon lun"**
@@ -408,6 +409,8 @@ Discussion welcome via:
 
   - [decimal] lojban, tan jan Tepo
 
+  - Esperanto
+
   - how **nanpa-linja-n** compares to these (at first glance):
 
     - it describes a string of digits, the context will determine if the string of digits represents a numeric value
@@ -422,9 +425,10 @@ Discussion welcome via:
 
     - it consistently uses **-n** to indicate the end of numerical structures that end with delimiters (tasan/masan/wasan)
 
-    - its consistent use of **-n** is a phonetic marker and makes it immediately clear when a string of digits stops, no matter how long the sequence of digits. The listener spends little mental effort deciding whether the digit sequence is complete, and context will determine if the digit sequence represents a numeric value
+    - the consistent use of **-n** is a phonetic marker and makes it immediately clear when a string of digits stops, no matter how long the sequence of digits. The listener spends little mental effort deciding whether the digit sequence is complete, and context will determine if the digit sequence represents a numeric value
 
     - while using similar principles, it provides a more consistent way to express numbers — including large ones — reducing learning effort and cognitive load on both speaker and listener
 
+\#~n
 
 
