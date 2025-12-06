@@ -19,7 +19,8 @@ uses '''-n''' to clearly signal the end of numeric values:
 ** Say "2001" followed by "0": "tun tasa wan non"
 ** Say "2001.0": "tun tasa wan pokala non"
 ** Say "243-555-0169": "tupoton pasa lululun pasan nowajunen"
-** Screen readers for visually impaired users can communicate larger numbers with less cognitive load
+** The '''-n''' is a phonetic marker, indicating the end of a digit sequence
+** Screen readers can communicate larger numbers with less cognitive load
 ** Automated text-to-speech systems can communicate larger numbers with less cognitive load
 * The speaker wants to communicate '''"1 2 3 4 5"''':
 ** for counting:
