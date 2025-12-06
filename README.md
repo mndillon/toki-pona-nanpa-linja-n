@@ -107,6 +107,7 @@ pasan = last part of digit sequence follows
 ```
 1,234       → wan tasa tutopon
 12,000      → watun tasan
+12000       → watun pasan nononon
 3,000,000   → ton masan
 30,000,000  → tonon masan
 300,000,000 → tononon masan
