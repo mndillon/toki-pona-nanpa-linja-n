@@ -42,7 +42,7 @@ Each digit uses a distinct, single syllable, CVN form and does not conflict with
 8  win
 9  nen
 
-10 = ten (only used to represent the whole numeric value of 10 on it's own otherwise wanon)
+10 = ten (use wanon, may use ten only if it represents the whole numeric value with no other parts)
 ```
 
 ---
