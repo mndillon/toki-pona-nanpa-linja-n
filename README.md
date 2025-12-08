@@ -220,8 +220,8 @@ Prefix **ike** before any number:
       - might say: **"wan tun ton pon lun"**
     - for value 12,345,
       - might say: **"watun tasa topolun"**
-      - saying "tasa" adds the assumption that the strings of digits represent numbers
-    - for sequence of numbers, like an id,
+      - saying "tasa" adds the context that the strings of digits represent numbers
+    - for sequence of digits, like an id,
       - might say: **"watutopolun"**
     - for 1-2-3-4-5 digit emphasis,
       - might say: **"wan pasa tun pasa ton pasa pon pasan lun"**
