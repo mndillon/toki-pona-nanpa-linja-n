@@ -435,6 +435,18 @@ Discussion welcome via:
 
     - while using similar principles, it provides a more consistent way to express numbers — including large ones — reducing learning effort and cognitive load on both speaker and listener
 
+---
+
+## Some Light-Hearted Humour
+
+Nothing to see here, move along!
+
+<img src="images/toki pona speed adding.png" width="384"/>
+
+<img src="images/toki pona spelling bee.png" width="384"/>
+
+<img src="images/toki pona bingo in real time.png" width="384"/>
+
 \#~n
 
 
