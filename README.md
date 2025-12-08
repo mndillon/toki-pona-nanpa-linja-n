@@ -447,6 +447,8 @@ Nothing new to see here. Like we said, there’s no problem—move along!
 
 <img src="images/toki pona bingo in real time.png" width="384"/>
 
+And now for some culture: [A poem about π](pi by nanpa-linja-n.txt)
+
 \#~n
 
 
