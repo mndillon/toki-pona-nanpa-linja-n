@@ -246,7 +246,7 @@ Prefix **ike** before any number:
     - The listener recognises **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
     - The listener understands: "78"
     - The listener may understand that "78" represents a numeric value, but that understanding is determined by context
-  - Any system that groups digits before speaking adds cognitive load for the speaker, because they must pre-determine consistent groupings before saying anything.  **nanpa-linja-n** works with the conventional digital markers using tasa/tasan
+  - Any system that groups digits before speaking adds cognitive load for the speaker, because they must pre-determine consistent groupings before saying anything.  **nanpa-linja-n** works with the ISO conventional digit separators using tasa/tasan
   - By contrast, speaking one digit at a time lets the speaker break long sequences anywhere without losing meaning.  **nanpa-linja-n** can break large strings of digits up using pasa/pasan, without assuming that the string of digits represents a numeric value
 - **nanpa-linja-n** is closest in spirit to Lojban’s digit-by-digit numbers, but:
   - it uses syllable compression
