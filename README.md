@@ -439,7 +439,7 @@ Discussion welcome via:
 
 ## Some Light-Hearted Humour
 
-Nothing to see here, move along!
+Nothing to see here, there is no problem, move along!
 
 <img src="images/toki pona speed adding.png" width="384"/>
 
