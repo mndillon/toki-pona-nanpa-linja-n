@@ -435,6 +435,13 @@ Discussion welcome via:
 
 ---
 
+## Bigger Picture
+
+**nanpa-linja-n** can be considered part of a bigger Unicode project described here: [Big Picture](toki%20pona%20bigger%20unicode%20picture.md)
+
+
+---
+
 ## Some Light-Hearted Humour
 
 Nothing new to see here. Like we said, there’s no problem—move along!
