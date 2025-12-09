@@ -27,22 +27,20 @@ This system aims to follow that same idea: staying as simple as possible while s
 It’s not meant to replace anything—just to offer a tool that fits naturally into the language’s minimal design.
 
 
-## Digit Words (0–9)
-Each digit uses a distinct, single syllable, CVN form and does not conflict with any Toki Pona words:
+## Digit Symbol Words (0–9)
+Each digit symbol uses a distinct, single syllable, CVN form and does not conflict with any Toki Pona words:
 
 ```
-0  non
-1  wan
-2  tun
-3  ton
-4  pon
-5  lun
-6  jun
-7  pen
-8  win
-9  nen
-
-10 = ten (use wanon, may use ten only if it represents the whole numeric value with no other parts)
+"0"  non
+"1"  wan
+"2"  tun
+"3"  ton
+"4"  pon
+"5"  lun
+"6"  jun
+"7"  pen
+"8"  win
+"9"  nen
 ```
 
 ---
@@ -444,6 +442,8 @@ Nothing new to see here. Like we said, there’s no problem—move along!
 <img src="images/toki pona speed adding.png" width="384"/>
 
 <img src="images/toki pona spelling bee.png" width="384"/>
+
+<img src="images/toki pona time lords.png" width="384"/>
 
 <img src="images/toki pona bingo in real time.png" width="384"/>
 
