@@ -297,7 +297,7 @@ Prefix **ike** before any number:
 - Does not add more context, makes no assumption that the string of digits represents a numeric value
 
 ### sitelen pona
-- Could pragmatically use arabic numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
+- Could pragmatically use Hindu-Arabic numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
 - This alligns glyphs for numbers with the cartouche used for proper names
 - Glyphs for numerals should be distinct and not rely on observing subtle changes in the glyphs.
 - Examples:
