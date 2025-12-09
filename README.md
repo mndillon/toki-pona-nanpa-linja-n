@@ -442,7 +442,7 @@ Discussion welcome via:
 
 ---
 
-## Some Light-Hearted Humour
+## toki musi pona
 
 Nothing new to see here. Like we said, there’s no problem—move along!
 
