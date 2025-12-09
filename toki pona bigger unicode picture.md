@@ -143,7 +143,7 @@ From that table, we can:
 1. List each character (`" "`, `"!"`, `"A"`, `"a"`, digits, punctuation, etc.).
 2. Give it a **reasonable English name** (“exclamation mark”, “capital letter A”, “tilde”, …).
 3. Assign a **Toki Pona-style name** to the **character itself**, not its semantic meaning in text.
-4. The full Unicode character set is vast, there may be other characters that we may want name.
+4. The full Unicode character set is vast, there may be other characters that we may want to name.
 5. Table source: [https://www.utf8-chartable.de/unicode-utf8-table.pl?utf8=dec&unicodeinhtml=dec](https://www.utf8-chartable.de/unicode-utf8-table.pl?utf8=dec&unicodeinhtml=dec)
 
 ### 3.1. General naming pattern
