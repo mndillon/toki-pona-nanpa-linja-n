@@ -448,6 +448,8 @@ o lukin sona e nanpa:
 
 ### musi sitelen
 
+<img src="images/toki pona nfl table6.png" width="384"/>
+
 <img src="images/toki pona bingo in real time.png" width="384"/>
 
 \#~n
