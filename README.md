@@ -420,7 +420,7 @@ Discussion welcome via:
 
     - it uses **-n** at the end of the base name for the digits (CVN format), so that single digit names are consistent with the descriptions of other digit strings
 
-    - it consistently uses the **-n** to indicate the end of digit strings
+    - it consistently uses **-n** to indicate the end of digit strings
 
     - it consistently uses **-n** to indicate the end of numerical structures that end with delimiters (tasan/masan/wasan)
 
