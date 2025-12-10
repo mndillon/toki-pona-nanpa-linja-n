@@ -441,17 +441,7 @@ Discussion welcome via:
 
 ## toki musi pona
 
-Nothing new to see here. Like we said, there’s no problem—move along!
-
-<img src="images/toki pona speed adding.png" width="384"/>
-
-<img src="images/toki pona time lords.png" width="384"/>
-
-<img src="images/toki pona old timer.png" width="384"/>
-
 <img src="images/toki pona bingo in real time.png" width="384"/>
-
-And now for some culture: [A poem about π](pi%20by%20nanpa-linja-n.txt)
 
 \#~n
 
