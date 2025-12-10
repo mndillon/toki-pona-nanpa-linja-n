@@ -297,10 +297,10 @@ Prefix **ike** before any number:
 - Glyphs for numerals should be distinct and not rely on observing subtle changes in the glyphs.
 - Examples:
 - <img src="images/0.png" width="32"/>&nbsp;<img src="images/1.png" width="32"/>&nbsp;<img src="images/2.png" width="32"/>&nbsp;<img src="images/3.png" width="32"/>&nbsp;<img src="images/4.png" width="32"/>&nbsp;<img src="images/5.png" width="32"/>&nbsp;<img src="images/6.png" width="32"/>&nbsp;<img src="images/7.png" width="32"/>&nbsp;<img src="images/8.png" width="32"/>&nbsp;<img src="images/9.png" width="32"/>&nbsp;
-- <img src="images/horizontal 0.png" width="32"/>&nbsp;<img src="images/horizontal 1.png" width="32"/>&nbsp;<img src="images/horizontal 2 revised v3.png" width="32"/>&nbsp;<img src="images/horizontal 3 revised.png" width="32"/>&nbsp;<img src="images/horizontal 4.png" width="32"/>&nbsp;<img src="images/horizontal 5.png" width="32"/>&nbsp;<img src="images/horizontal 6.png" width="32"/>&nbsp;<img src="images/horizontal 7.png" width="32"/>&nbsp;<img src="images/horizontal 8.png" width="32"/>&nbsp;<img src="images/horizontal 9.png" width="32"/>&nbsp;
+- <img src="images/horizontal 0.png" width="32"/>&nbsp;<img src="images/horizontal 1 revised v2.png" width="32"/>&nbsp;<img src="images/horizontal 2 revised v4.png" width="32"/>&nbsp;<img src="images/horizontal 3 revised.png" width="32"/>&nbsp;<img src="images/horizontal 4.png" width="32"/>&nbsp;<img src="images/horizontal 5.png" width="32"/>&nbsp;<img src="images/horizontal 6.png" width="32"/>&nbsp;<img src="images/horizontal 7.png" width="32"/>&nbsp;<img src="images/horizontal 8.png" width="32"/>&nbsp;<img src="images/horizontal 9.png" width="32"/>&nbsp;
 - The straight lines at the top and bottom of each glyph could be replaced with vertical lines at the left and right of each glyph to stack them vertically.
 - So might have this glyph for 42,386.75 (numeric glyphs starting with nanpa inside a cartouche like a proper name and re-purposing poki and meso glyphs for separators):
-- <img src="images/number 42386_75 glyph v2.png" width="320"/>
+- <img src="images/number 42386_75 glyph v3.png" width="320"/>
 
 ---
 
@@ -356,16 +356,6 @@ cos(2π) = 1
 
 and have the community calque what are useful ways to describe these expressions
 
-### musi nanpa
-
-- o pilin e nanpa tan wan kepeken wanon.
-- pana e nimi uno tawa nanpa ni.
-- o eme e ton tan ni.
-- o sewi e ni kepeken tun.
-- o weka e nen tan ni.
-- o kipisi e ni kepeken nanpa nimi uno.
-- o weka e nanpa nimi uno tan ni.
-- o lukin! nanpa sina li jun.
 
 ---
 
@@ -434,12 +424,26 @@ Discussion welcome via:
 
 ## Bigger Picture
 
-**nanpa-linja-n** can be considered part of a bigger Unicode project described here: [Big Picture](toki%20pona%20bigger%20unicode%20picture.md)
+**nanpa-linja-n** can be considered part of a bigger Unicode project described here: [Unicode Discussion](toki%20pona%20bigger%20unicode%20picture.md)
 
 
 ---
 
 ## toki musi pona
+
+### musi nanpa
+
+- o pilin e nanpa tan wan kepeken wanon.
+- pana e nimi uno tawa nanpa ni.
+- o eme e ton tan ni.
+- o sewi e ni kepeken tun.
+- o weka e nen tan ni.
+- o kipisi e ni kepeken nanpa nimi uno.
+- o weka e nanpa nimi uno tan ni.
+- o lukin! nanpa sina li jun.
+
+
+### musi sitelen
 
 <img src="images/toki pona bingo in real time.png" width="384"/>
 
