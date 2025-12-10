@@ -246,11 +246,6 @@ Prefix **ike** before any number:
     - The listener may understand that "78" represents a numeric value, but that understanding is determined by context
   - Any system that groups digits before speaking adds cognitive load for the speaker, because they must pre-determine consistent groupings before saying anything.  **nanpa-linja-n** works with the ISO conventional digit separators using tasa/tasan
   - By contrast, speaking one digit at a time lets the speaker break long sequences anywhere without losing meaning.  **nanpa-linja-n** can break large strings of digits up using pasa/pasan, without assuming that the string of digits represents a numeric value
-- **nanpa-linja-n** is closest in spirit to Lojban’s digit-by-digit numbers, but has advantages:
-  - it uses syllable compression
-  - always ends digit sequences in **-n** as a phonetic end-marker
-  - lets you break long digit sequences anywhere without changing the value
-  - communicates a string of digits, not a numeric value, the context will determine how the string of digits is interpreted
 - Can be used as a drop-in replacement for (base 10) digits in dates, times, phone numbers, codes, and any context where precise digit information is needed
 - (Can be easily parsed with lex/yacc)
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
@@ -413,7 +408,7 @@ Discussion welcome via:
 
   - [decimal] lojban, tan jan Tepo
 
-  - Esperanto
+  - Esperanto and Lojban
 
   - how **nanpa-linja-n** compares to these (at first glance):
 
@@ -429,7 +424,9 @@ Discussion welcome via:
 
     - it consistently uses **-n** to indicate the end of numerical structures that end with delimiters (tasan/masan/wasan)
 
-    - the consistent use of **-n** is a phonetic marker and makes it immediately clear when a string of digits stops, no matter how long the sequence of digits. The listener spends little mental effort deciding whether the digit sequence is complete, and context will determine if the digit sequence represents a numeric value
+    - the consistent use of **-n** as a phonetic marker is original
+
+    - the consistent use of **-n** makes it immediately clear when a string of digits stops, no matter how long the sequence of digits. The listener spends little mental effort deciding whether the digit sequence is complete, and context will determine if the digit sequence represents a numeric value
 
     - while using similar principles, it provides a more consistent way to express numbers — including large ones — reducing learning effort and cognitive load on both speaker and listener
 
