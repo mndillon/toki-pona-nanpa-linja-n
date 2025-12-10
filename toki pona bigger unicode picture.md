@@ -177,15 +177,6 @@ Number words are **reserved** for the **digit characters themselves**, in the na
 - vs.
 - “This *is* a specific digit character like `"3"`”.
 
-Because of this, for example, we changed the plus sign row from something like:
-
-- `+` → `un sitelen wan` (which mentions *wan*, a number word)
-
-to a non-numeric description:
-
-- `+` → `un sitelen kama`
-  (*kama* = come / become → “make more / add”, but without explicit numeric vocabulary)
-
 This rule applies to all characters in the 32–126 range **except** the digit characters `"0"`–`"9"`, which are handled separately.
 
 ---
@@ -208,19 +199,19 @@ Each digit character gets a **CVN-shaped** (consonant-vowel-nasal) Toki Pona-sty
 
 - short
 - easily pronounceable
-- ends with `-n`
+- ends with `-n`, which can act as a phonetic end of digit sequence marker
 
-The advantage of keeping these names in **CVN** format is that they can be easily **concatenated** into longer words that represent multi-digit sequences.
+The advantage of keeping these digit names in **CVN** format is that they can be easily **concatenated** into longer words that represent multi-digit sequences.
 
 - The idea is:
-  write the character names in sequence and then **compress** them slightly (typically by dropping an internal `n` where two `n`’s would meet).
+  write the digit names in sequence and then **compress** them slightly (by dropping every `n` at the end of each digit name, except the last).
 
 Example:
 
 - `"9"` → `nen`
 - `"8"` → `win`
 
-So `"98"` can be represented as **newin**, a single word derived from the digit character names.
+So `"98"` can be represented as **newin**, a single word derived from the digit character names and still ending in `-n`.
 
 ### 4.2. Mapping table for digit characters
 
@@ -243,9 +234,7 @@ Here is a compact table for decimal codes 48–57, which correspond to the ASCII
 
 Notes:
 
-These names (non, wan, tun, ton, pon, lun, jun, pen, win, nen) are names for the Unicode characters "0"–"9", **not** for the abstract numbers themselves.
-
-Multi-digit sequences are formed by concatenating these names in order, with optional phonological simplification (like dropping repeated n).
+These names (non, wan, tun, ton, pon, lun, jun, pen, win, nen) are names for the Unicode characters "0"–"9", **not** names for the value of the numbers themselves.
 
 ---
 
@@ -266,9 +255,7 @@ Consecutive digit characters are grouped together and rendered as a single conca
 Non-digit characters are named individually using the sitelen … pattern.
 
 
-### 5.1. Example: Consider a randomly chosen 16-character password:
-
-"F9q!27m$k30Z&b4?"
+### 5.1. Example: Consider a randomly chosen password: "F9q!27m$k30Z&b4?"
 
 Group digits and name:
 
