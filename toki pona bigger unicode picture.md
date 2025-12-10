@@ -234,7 +234,12 @@ Here is a compact table for decimal codes 48–57, which correspond to the ASCII
 
 Notes:
 
-These names (non, wan, tun, ton, pon, lun, jun, pen, win, nen) are names for the Unicode characters "0"–"9", **not** names for the value of the numbers themselves.
+The English name for character "9" is "digit nine" and **not** the value 9, the name of the character code is completely different from any value that might be associated to the character.
+
+The Toki Pona nanpa-linja-n names (non, wan, tun, ton, pon, lun, jun, pen, win, nen) are names for the Unicode characters "0"–"9", **not** names for the value of the numbers themselves.
+
+In communications, if the context determines that the digit sequence is communicating a numeric value, then the decimal numeric value can be very easily determined from the sequence of the character code names.
+This is a key advantage of using the Hindu-Arabic positional decimal system for expressing numeric values.
 
 ---
 
