@@ -442,6 +442,9 @@ Discussion welcome via:
 - o weka e nanpa nimi uno tan ni.
 - o lukin! nanpa sina li jun.
 
+o lukin sona e nanpa:
+
+<img src="images/pi_e_phi_custom_digits.png" width="384"/>
 
 ### musi sitelen
 
