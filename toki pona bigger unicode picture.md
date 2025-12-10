@@ -18,7 +18,7 @@ This document collects those ideas and makes them a bit more systematic.
 As of this writing, the Toki Pona *sitelen* glyphs (e.g. *sitelen pona*) **do not yet have a permanent home in the Unicode character set**.
 
 - There is an active desire to eventually have these glyphs encoded.
-- One reason to publish texts in *sitelen* is to create **citable material** that can support a serious, formal Unicode proposal later.
+- One reason to publish texts in *sitelen* is to create **citable material** that can support a Unicode proposal.
 
 It’s reasonable to assume that **when** these sitelen glyphs are finally encoded:
 
