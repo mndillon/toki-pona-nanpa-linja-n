@@ -459,7 +459,7 @@ This pattern lets us talk about positions in a family in a way that:
 - lines up 1:1 with decimal digits in UIs and data,
 - reuses the same lexical machinery across many domains, and
 - avoids inventing separate lexical items like “Sunday”, “March”, “Level 05” in every case.
-- zero based indexing (where appropriate) is natural
+- zero based indexing (where appropriate) is possible and naturally addressed with **non**
 - can also easily reference expressions that start with zero: 'musi utala sike nanpa nolun'
 
 Below are two practical examples.
