@@ -3,15 +3,12 @@
 o weka e nimi ike.
 
 ## TL;DR:
-**nanpa-linja-n** explained on a napkin:
-
-<img src="images/TLDR Explained On Napkin.png" width="384"/>
 
 **nanpa-linja-n** motivation:
 
 <img src="images/Phone Number Conversation v1.png" width="384"/>
 
-### Saying the number "23,645"
+### Saying the number "23,645":
 
 | Language                 | Spoken number phrase                    | Feels                      |
 |--------------------------|------------------------------------------|----------------------------|
@@ -23,6 +20,9 @@ o weka e nimi ike.
 | Toki Pona (pona)         | M?                                       | contrived, difficult      |
 | Toki Pona (nanpa-linja-n)| tuton tasa jupolun                       | natural                   |
 
+**nanpa-linja-n** explained on a napkin:
+
+<img src="images/TLDR Explained On Napkin.png" width="384"/>
 
 ## Overview
 **nanpa-linja-n** is a fully structured system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of strings of digits including integers, decimals, fractions, negatives, large values and IDs.
