@@ -18,7 +18,7 @@ o weka e nimi ike.
 | Lojban                   | (li) re ci xa vo mu (boi)                | functional, sterile       |
 | Toki Pona (pu)           | mute                                     | useless                   |
 | Toki Pona (pona)         | M?                                       | contrived, difficult      |
-| Toki Pona (nanpa-linja-n)| tuton tasa jupolun                       | natural                   |
+| Toki Pona (nanpa-linja-n)| **tuton tasa jupolun**                       | natural                   |
 
 **nanpa-linja-n** explained on a napkin:
 
@@ -144,17 +144,18 @@ pasan = last part of digit sequence follows
 Rules:
 
 - Whole part ends in full -n form
-- Decimal block follows the digit-block rule
+- Decimal block only uses pasa/pasan to break up long digit sequences
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
 Examples:
 
 ```
-0.5    → non pokala lun
-3.75   → ton pokala pelun
-12.04  → watun pokala nopon
-37.9   → topen pokala nen
-0.125  → non pokala watulun
+0.5       → non pokala lun
+3.75      → ton pokala pelun
+12.04     → watun pokala nopon
+37.9      → topen pokala nen
+0.125     → non pokala watulun
+3.141592  → ton pokala wapowan pasan lunetun
 ```
 
 ---
@@ -165,7 +166,6 @@ Examples:
 Rule:
 
 - Both numerator and denominator use full final -n
-- Internal block compression applies
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
 Examples:
