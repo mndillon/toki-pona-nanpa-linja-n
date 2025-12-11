@@ -11,6 +11,19 @@ o weka e nimi ike.
 
 <img src="images/Phone Number Conversation v1.png" width="384"/>
 
+### Saying the number "23,645"
+
+| Language                 | Spoken number phrase                    | Feels                      |
+|--------------------------|------------------------------------------|----------------------------|
+| English                  | twenty three thousand six hundred (and) forty five | natural          |
+| French                   | vingt trois mille six cent quarante cinq | natural                   |
+| Esperanto                | dudek tri mil sescent kvardek kvin       | natural                   |
+| Lojban                   | (li) re ci xa vo mu (boi)                | functional, sterile       |
+| Toki Pona (pu)           | mute                                     | useless                   |
+| Toki Pona (pona)         | M?                                       | contrived, difficult      |
+| Toki Pona (nanpa-linja-n)| tuton tasa jupolun                       | natural                   |
+
+
 ## Overview
 **nanpa-linja-n** is a fully structured system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of strings of digits including integers, decimals, fractions, negatives, large values and IDs.
 
