@@ -225,7 +225,7 @@ Prefix **ike** before any number:
     - The **-n** is a phonetic marker, indicating the end of a digit sequence
     - Screen readers can communicate longer digit sequences with less cognitive load
     - Automated text-to-speech systems can communicate longer digit sequences with less cognitive load
-    - Can enhance compatability with WCAG 2.2
+    - Can enhance compatability with [WCAG 2.2](WCAG 2.2 compliance claims.md)
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
       - might say: **"wan tun ton pon lun"**
