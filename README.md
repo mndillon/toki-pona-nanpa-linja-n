@@ -442,6 +442,187 @@ Discussion welcome via:
 
 ---
 
+
+## Paying the lexical price: indexed families with nanpa-linja-n
+
+If we accept the cost of adding the **nanpa-linja-n** digit roots to the language, we can use them for more than just the great advantage of reading raw digits. They give us a clean, reusable structure for talking about **indices in ordered families**:
+
+> **`[FAMILY] sike nanpa [nanpa-linja-n]` = the N-th member of that family**
+
+- `[FAMILY] sike` names some ordered cycle or sequence (weekdays, months, levels, modes, etc.).
+- `nanpa` marks that what follows is an index.
+- `[nanpa-linja-n]` is a digit or digit-string name (with compression) that corresponds exactly to the written index.
+
+
+This pattern lets us talk about positions in a family in a way that:
+
+- lines up 1:1 with decimal digits in UIs and data,
+- reuses the same lexical machinery across many domains, and
+- avoids inventing separate lexical items like “Sunday”, “March”, “Level 05” in every case.
+- zero based indexing (where appropriate) is natural
+- can also easily reference expressions that start with zero: 'musi utala sike nanpa nolun'
+
+Below are two practical examples.
+
+---
+
+### Example 1: Weekdays (`suno sike`, Sunday = 1)
+
+Define the ordered family of weekdays as:
+
+- `suno sike` = “cycle of suns” → the weekly cycle.
+
+We choose a **Sunday-first, 1-based** convention:
+
+> `suno sike nanpa X` = weekday with index X in this cycle
+> `wan = Sunday, tun = Monday, …, pen = Saturday`
+
+Using nanpa-linja-n digit names:
+
+- `suno sike nanpa **wan**` = weekday 1 = Sunday
+- `suno sike nanpa **tun**` = weekday 2 = Monday
+- `suno sike nanpa **ton**` = weekday 3 = Tuesday
+- `suno sike nanpa **pon**` = weekday 4 = Wednesday
+- `suno sike nanpa **lun**` = weekday 5 = Thursday
+- `suno sike nanpa **jun**` = weekday 6 = Friday
+- `suno sike nanpa **pen**` = weekday 7 = Saturday
+
+Usage:
+
+```
+suno sike nanpa wan la mi awen tomo.
+= On weekday 1 (Sunday) I stay home.
+
+suno sike nanpa tun la mi pali.
+= On weekday 2 (Monday) I work.
+
+suno sike nanpa jun la mi tawa utala.
+= On weekday 6 (Friday) I go to sport.
+
+The index you speak (wan .. pen) can match the digit shown in a calendar UI (1..7, Sunday-first) with no extra mapping layer.
+```
+
+### Example 2: Months of the year (mun sike)
+Define the ordered family of months as:
+
+- `mun sike` = “cycle of moons” → the 12 Gregorian months.
+
+We use a 1-based convention:
+
+- mun sike nanpa X = month with index X in the year (1 = January … 12 = December)
+
+Using digit name compression for multi-digit indices:
+
+- mun sike nanpa **wan** = month 1 = January
+
+- mun sike nanpa **tun** = month 2 = February
+
+- mun sike nanpa **ton** = month 3 = March
+
+- mun sike nanpa **pon** = month 4 = April
+
+- mun sike nanpa **lun** = month 5 = May
+
+- mun sike nanpa **jun** = month 6 = June
+
+- mun sike nanpa **pen** = month 7 = July
+
+- mun sike nanpa **win** = month 8 = August
+
+- mun sike nanpa **nen** = month 9 = September
+
+- mun sike nanpa **wanon** = month 10 = October (compressed wan+non → “10”)
+
+- mun sike nanpa **wawan** = month 11 = November (compressed wan+wan → “11”)
+
+- mun sike nanpa **watun** = month 12 = December (compressed wan+tun → “12”)
+
+Usage:
+
+```
+tenpo suno nanpa tun lon mun sike nanpa ton la mi tawa.
+= On day 2 of month 3 (2 March) I travel.
+
+mi pali mute lon mun sike nanpa wawan.
+= I work a lot in month 11 (November).
+
+suno sike nanpa wan lon mun sike nanpa watun la mi kama tomo mama.
+= On a Sunday in month 12 (a Sunday in December) I go to my parents' house.
+
+Here the spoken index (wanon, wawan, watun) encodes the same digit pairs that appear in dates like 10/…, 11/…, 12/….
+```
+
+### Families that naturally start at zero
+Most human-facing families (weekdays, months, school years) are easiest to understand with 1-based indexing, and nanpa-linja-n supports that directly, as shown above.
+
+However, some families naturally start at zero in the outside world:
+
+- programming arrays and lists (item 0, item 1, …),
+
+- test or trial runs (run 0, run 1, …),
+
+- floor systems or counters that label the street level as 0,
+
+- any API or protocol that is explicitly 0-based.
+
+nanpa-linja-n includes a dedicated root for the digit 0:
+
+- non = 0
+
+So the same pattern works immediately for 0-based sequences:
+
+- [FAMILY] sike nanpa **non** = the member at index 0 of that sequence
+- [FAMILY] sike nanpa **wan** = the member at index 1 of that sequence, and so on.
+
+Examples:
+
+```
+pali alasa sike nanpa non  = test run #0
+pali alasa sike nanpa wan  = test run #1
+
+supa tomo sike nanpa non   = floor index 0 (ground floor, in a 0-based system)
+supa tomo sike nanpa wan   = floor index 1 (first floor above ground)
+
+ijo sike nanpa non         = element at index 0 in a list/array
+ijo sike nanpa tun         = element at index 2
+```
+
+The recommendation is:
+
+- Use 1-based indexing for ordinary human concepts (weekdays, months, “Round 2”, etc.).
+
+- Use 0-based indexing only where the external system is already 0-based and that convention is important (code examples, APIs, certain building standards, trial numbers).
+
+Within a given [FAMILY] sike, the choice (0-based or 1-based) should be stated once (or naturally assumed) and kept consistent. nanpa-linja-n’s **non** makes it easy to support 0-based indexing when it is appropriate, without changing the general pattern.
+
+### Why this justifies the lexical cost
+Once the digit roots exist, we get a general template:
+
+- suno sike nanpa … → weekdays
+
+- mun sike nanpa … → months
+
+- musi sike nanpa … → game levels
+
+- pali sike nanpa … → steps in a process
+
+- lipu sike nanpa … → pages or slides
+
+- musi utala sike nanpa … → competition rounds
+
+- pali alasa sike nanpa non/wan/tun… → 0- or 1-based test runs
+
+- ijo sike nanpa non/wan/tun… → 0- or 1-based indices in lists/arrays
+
+All reuse the same **[family] sike nanpa [nanpa-linja-n]** structure.
+
+So the argument is:
+
+> If we pay the one-time price of adding **nanpa-linja-n** digit roots to the language, we not only get a precise way to name digit strings, but also unlock a uniform, compact pattern for talking about positions in any ordered family (days, months, levels, modes, etc.) that already use numeric labels in the wider world. When those families are 1-based, we can match them directly; and when they are naturally 0-based, we can use **non** to match that convention just as cleanly.  We can easily use non at the start of any index like 'Level 05'.
+
+
+---
+
 ## toki musi pona
 
 ### musi nanpa
