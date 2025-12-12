@@ -487,6 +487,7 @@ Using nanpa-linja-n digit names:
 - `suno sike nanpa **jun**` = weekday 6 = Friday
 - `suno sike nanpa **pen**` = weekday 7 = Saturday
 
+
 Usage:
 
 ```
@@ -501,6 +502,9 @@ suno sike nanpa jun la mi tawa utala.
 
 The index you speak (wan .. pen) can match the digit shown in a calendar UI (1..7, Sunday-first) with no extra mapping layer.
 ```
+
+NOTE: this usage is not the same as tenpo suno nanpa wan → the first day
+
 
 ### Example 2: Months of the year (mun sike)
 Define the ordered family of months as:
