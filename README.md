@@ -312,7 +312,7 @@ Prefix **ike** before any number:
 
 | Glyph                                                     | Name | Glyph                                                                         | Name                      |
 |-----------------------------------------------------------|------|-------------------------------------------------------------------------------|---------------------------|
-| <img src="images/horizontal 0 No Lines.png" width="16"/>  | non  | <img src="images/horizontal Decimal Delimiter No Lines.png" width="16"/>      | pokala                    |
+| <img src="images/horizontal 0 No Lines.png" width="16"/>  | non  | <img src="images/horizontal Decimal Delimiter No Lines.png" width="16"/>      | pokala/pakala             |
 | <img src="images/horizontal 1 No Lines.png" width="16"/>  | wan  | <img src="images/horizontal Tasan No Lines.png" width="16"/>                  | tasan                     |
 | <img src="images/horizontal 2 No Lines.png" width="16"/>  | tun  | <img src="images/horizontal Masan No Lines.png" width="16"/>                  | masan                     |
 | <img src="images/horizontal 3 No Lines.png" width="16"/>  | ton  | <img src="images/horizontal Wasan No Lines.png" width="16"/>                  | wasan                     |
