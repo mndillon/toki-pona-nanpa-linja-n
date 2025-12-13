@@ -305,7 +305,7 @@ Prefix **ike** before any number:
 - Does not add more context, makes no assumption that the string of digits represents a numeric value
 
 ### sitelen pona
-- numeric glyphs start with nanpa inside a cartouche, like a proper name, and re-purposing poki glyph for separators
+- numeric glyphs start with nanpa inside a cartouche, like a proper name, and re-purposing poki glyph for separators (nanpa and cartouche are optional)
 - can be displayed horizontally or vertically
 - example glyph for 42,386.75:
 - <img src="images/number_42386_75_glyph_v4.png" width="320"/>
