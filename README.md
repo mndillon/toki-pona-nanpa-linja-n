@@ -305,26 +305,24 @@ Prefix **ike** before any number:
 - Does not add more context, makes no assumption that the string of digits represents a numeric value
 
 ### sitelen pona
-- Could pragmatically use Hindu-Arabic numerals as numeric glyphs with a horizontal straight line at top and bottom of each glyph
-- This alligns glyphs for numbers with the cartouche used for proper names
-- Glyphs for numerals should be distinct and not rely on observing subtle changes in the glyphs.
-- Examples:
-- <img src="images/0.png" width="32"/>&nbsp;<img src="images/1.png" width="32"/>&nbsp;<img src="images/2.png" width="32"/>&nbsp;<img src="images/3.png" width="32"/>&nbsp;<img src="images/4.png" width="32"/>&nbsp;<img src="images/5.png" width="32"/>&nbsp;<img src="images/6.png" width="32"/>&nbsp;<img src="images/7.png" width="32"/>&nbsp;<img src="images/8.png" width="32"/>&nbsp;<img src="images/9.png" width="32"/>&nbsp;
-- <img src="images/horizontal 0 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 1 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 2 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 3 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 4 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 5 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 6 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 7 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 8 No Lines.png" width="32"/>&nbsp;<img src="images/horizontal 9 No Lines.png" width="32"/>&nbsp;
-- The straight lines at the top and bottom of each glyph could be replaced with vertical lines at the left and right of each glyph to stack them vertically.
-- So might have this glyph for 42,386.75 (numeric glyphs starting with nanpa inside a cartouche like a proper name and re-purposing poki glyph for separators):
+- numeric glyphs start with nanpa inside a cartouche, like a proper name, and re-purposing poki glyph for separators
+- can be displayed horizontally or vertically
+- example glyph for 42,386.75:
 - <img src="images/number_42386_75_glyph_v4.png" width="320"/>
-- other sitelen glyphs:
 
-| Glyph | Name                 |
-|------------------------------------------|--------------------------|
-| <img src="images/horizontal Decimal Delimiter No Lines.png" width="16"/> | pokala                |
-| <img src="images/horizontal Tasan No Lines.png" width="16"/> | tasan                   |
-| <img src="images/horizontal Masan No Lines.png" width="16"/> | masan          |
-| <img src="images/horizontal Wasan No Lines.png" width="16"/> | wasan        |
-| <img src="images/horizontal Thousands Delimiter No Lines.png" width="16"/> | tasa/masa/wasa/pasa/pasan |
-| <img src="images/horizontal Negative No Lines.png" width="16"/> | ike                  |
-| <img src="images/horizontal Fraction Delimiter No Lines.png" width="16"/> | kipisi                   |
+| Glyph                                                     | Name | Glyph                                                                         | Name                      |
+|-----------------------------------------------------------|------|-------------------------------------------------------------------------------|---------------------------|
+| <img src="images/horizontal 0 No Lines.png" width="16"/>  | non  | <img src="images/horizontal Decimal Delimiter No Lines.png" width="16"/>      | pokala                    |
+| <img src="images/horizontal 1 No Lines.png" width="16"/>  | wan  | <img src="images/horizontal Tasan No Lines.png" width="16"/>                  | tasan                     |
+| <img src="images/horizontal 2 No Lines.png" width="16"/>  | tun  | <img src="images/horizontal Masan No Lines.png" width="16"/>                  | masan                     |
+| <img src="images/horizontal 3 No Lines.png" width="16"/>  | ton  | <img src="images/horizontal Wasan No Lines.png" width="16"/>                  | wasan                     |
+| <img src="images/horizontal 4 No Lines.png" width="16"/>  | pon  | <img src="images/horizontal Thousands Delimiter No Lines v2.png" width="16"/> | tasa/masa/wasa/pasa/pasan |
+| <img src="images/horizontal 5 No Lines.png" width="16"/>  | lun  | <img src="images/horizontal Negative No Lines.png" width="16"/>               | ike                       |
+| <img src="images/horizontal 6 No Lines.png" width="16"/>  | jum  | <img src="images/horizontal Fraction Delimiter No Lines.png" width="16"/>     | kipisi                    |
+| <img src="images/horizontal 7 No Lines.png" width="16"/>  | pen  |                                                                               |                           |
+| <img src="images/horizontal 8 No Lines.png" width="16"/>  | win  |                                                                               |                           |
+| <img src="images/horizontal 9 No Lines.png" width="16"/>  | nen  |                                                                               |                           |
+
 
 ---
 
