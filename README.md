@@ -651,7 +651,7 @@ So the argument is:
 
 o lukin sona e nanpa:
 
-<img src="images/pi_e_phi_custom_digits.png" width="384"/>
+<img src="images/pi_e_phi_custom_digits_v2.png" width="768"/>
 
 ### musi sitelen
 
