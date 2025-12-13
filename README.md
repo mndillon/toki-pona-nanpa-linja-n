@@ -477,41 +477,39 @@ Below are two practical examples.
 
 ---
 
-### Example 1: Weekdays (`suno sike`, Sunday = 1)
+### Example 1: Weekdays (`suno sike`, Monday = 1, ISO Standard)
 
 Define the ordered family of weekdays as:
 
 - `suno sike` = “cycle of suns” → the weekly cycle.
 
-We choose a **Sunday-first, 1-based** convention:
+We choose a **Monday-first, 1-based** convention:
 
 > `suno sike nanpa X` = weekday with index X in this cycle
-> `wan = Sunday, tun = Monday, …, pen = Saturday`
+> `wan = Monday, tun = Tuesday, …, pen = Sunday`
 
 Using nanpa-linja-n digit names:
 
-- `suno sike nanpa **wan**` = weekday 1 = Sunday
-- `suno sike nanpa **tun**` = weekday 2 = Monday
-- `suno sike nanpa **ton**` = weekday 3 = Tuesday
-- `suno sike nanpa **pon**` = weekday 4 = Wednesday
-- `suno sike nanpa **lun**` = weekday 5 = Thursday
-- `suno sike nanpa **jun**` = weekday 6 = Friday
-- `suno sike nanpa **pen**` = weekday 7 = Saturday
+- `suno sike nanpa **wan**` = weekday 1 = Monday
+- `suno sike nanpa **tun**` = weekday 2 = Tuesday
+- `suno sike nanpa **ton**` = weekday 3 = Wednesday
+- `suno sike nanpa **pon**` = weekday 4 = Thursday
+- `suno sike nanpa **lun**` = weekday 5 = Friday
+- `suno sike nanpa **jun**` = weekday 6 = Saturday
+- `suno sike nanpa **pen**` = weekday 7 = Sunday
 
 
 Usage:
 
 ```
-suno sike nanpa wan la mi awen tomo.
-= On weekday 1 (Sunday) I stay home.
+suno sike nanpa pen la mi awen tomo.
+= On weekday 7 (Sunday) I stay home.
 
 suno sike nanpa tun la mi pali.
-= On weekday 2 (Monday) I work.
+= On weekday 2 (Tuesday) I work.
 
-suno sike nanpa jun la mi tawa utala.
-= On weekday 6 (Friday) I go to sport.
-
-The index you speak (wan .. pen) can match the digit shown in a calendar UI (1..7, Sunday-first) with no extra mapping layer.
+suno sike nanpa lun la mi tawa utala.
+= On weekday 5 (Friday) I go to sport.
 ```
 
 NOTE: this usage is not the same as tenpo suno nanpa wan → the first day
@@ -555,16 +553,14 @@ Using digit name compression for multi-digit indices:
 Usage:
 
 ```
-tenpo suno nanpa tun lon mun sike nanpa ton la mi tawa.
+tenpo suno nanpa tu lon mun sike nanpa ton la mi tawa.
 = On day 2 of month 3 (2 March) I travel.
 
 mi pali mute lon mun sike nanpa wawan.
 = I work a lot in month 11 (November).
 
-suno sike nanpa wan lon mun sike nanpa watun la mi kama tomo mama.
+suno sike nanpa pen lon mun sike nanpa watun la mi kama tomo mama.
 = On a Sunday in month 12 (a Sunday in December) I go to my parents' house.
-
-Here the spoken index (wanon, wawan, watun) encodes the same digit pairs that appear in dates like 10/…, 11/…, 12/….
 ```
 
 ### Families that naturally start at zero
