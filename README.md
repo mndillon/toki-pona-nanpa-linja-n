@@ -490,13 +490,13 @@ We choose a **Monday-first, 1-based** convention:
 
 Using nanpa-linja-n digit names:
 
-- `suno sike nanpa **wan**` = weekday 1 = Monday
-- `suno sike nanpa **tun**` = weekday 2 = Tuesday
-- `suno sike nanpa **ton**` = weekday 3 = Wednesday
-- `suno sike nanpa **pon**` = weekday 4 = Thursday
-- `suno sike nanpa **lun**` = weekday 5 = Friday
-- `suno sike nanpa **jun**` = weekday 6 = Saturday
-- `suno sike nanpa **pen**` = weekday 7 = Sunday
+- suno sike nanpa **wan** = weekday 1 = Monday
+- suno sike nanpa **tun** = weekday 2 = Tuesday
+- suno sike nanpa **ton** = weekday 3 = Wednesday
+- suno sike nanpa **pon** = weekday 4 = Thursday
+- suno sike nanpa **lun** = weekday 5 = Friday
+- suno sike nanpa **jun** = weekday 6 = Saturday
+- suno sike nanpa **pen** = weekday 7 = Sunday
 
 
 Usage:
