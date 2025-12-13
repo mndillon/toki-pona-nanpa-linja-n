@@ -101,7 +101,7 @@ By providing this explicit, regular end-marker for a digit sequence, nanpa-linja
 
 nanpa-linja-n introduces specific tokens for structure:
 
-- Group markers: `tasa`, `masan`, `wasan`
+- Group markers: `tasa/tasan`, `masa/masan`, `wasa/wasan`
 - Block continuation vs final block: `pasa`, `pasan`
 - Decimal marker: `pokala`
 - Fraction marker: `kipisi`
@@ -143,7 +143,7 @@ WCAG requires that information and relationships not be conveyed by visual forma
 
 nanpa-linja-n:
 
-- Encodes grouping and hierarchy using specific words (`tasa`, `masan`, `wasan`)
+- Encodes grouping and hierarchy using specific words (`tasa`, `masa`, `wasa`)
 - Marks decimal points, fractions, and sign with unambiguous tokens (`pokala`, `kipisi`, `ike`)
 - Uses the final `-n` as a consistent, phonological “end of digits” marker
 
@@ -171,4 +171,4 @@ This aligns with the WCAG principle of “Understandable”, which (as summarise
 
 In one concise statement:
 
-> nanpa-linja-n enhances WCAG 2.2 compatibility because it encodes digit strings in a phonologically regular, structurally explicit, and unambiguous way that is tuned for Toki Pona speech, and that can in many real-world Toki Pona contexts be easier for screen-reader and text-to-speech users to interpret than either traditional additive Toki Pona numerals or raw Arabic numerals read in a different language with no explicit structural cues. By reducing cognitive load, exposing number structure directly in the text, and keeping numeric expressions in the same language and rhythm as the rest of the content, nanpa-linja-n supports the accessibility goals that WCAG 2.2 is designed to advance, especially for users with visual, cognitive, or language impairments.
+> **nanpa-linja-n** enhances WCAG 2.2 compatibility because it encodes digit strings in a phonologically regular, structurally explicit, and unambiguous way that is tuned for Toki Pona speech, and that can in many real-world Toki Pona contexts be easier for screen-reader and text-to-speech users to interpret than either traditional additive Toki Pona numerals or raw Arabic numerals read in a different language with no explicit structural cues. By reducing cognitive load, exposing number structure directly in the text, and keeping numeric expressions in the same language and rhythm as the rest of the content, nanpa-linja-n supports the accessibility goals that WCAG 2.2 is designed to advance, especially for users with visual, cognitive, or language impairments.
