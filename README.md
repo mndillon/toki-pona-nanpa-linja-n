@@ -313,7 +313,7 @@ Prefix **ike** before any number:
 - <img src="images/horizontal 0.png" width="32"/>&nbsp;<img src="images/horizontal 1 revised v2.png" width="32"/>&nbsp;<img src="images/horizontal 2 revised v4.png" width="32"/>&nbsp;<img src="images/horizontal 3 revised.png" width="32"/>&nbsp;<img src="images/horizontal 4.png" width="32"/>&nbsp;<img src="images/horizontal 5.png" width="32"/>&nbsp;<img src="images/horizontal 6.png" width="32"/>&nbsp;<img src="images/horizontal 7.png" width="32"/>&nbsp;<img src="images/horizontal 8.png" width="32"/>&nbsp;<img src="images/horizontal 9.png" width="32"/>&nbsp;
 - The straight lines at the top and bottom of each glyph could be replaced with vertical lines at the left and right of each glyph to stack them vertically.
 - So might have this glyph for 42,386.75 (numeric glyphs starting with nanpa inside a cartouche like a proper name and re-purposing poki and meso glyphs for separators):
-- <img src="images/number 42386_75 glyph v3.png" width="320"/>
+- <img src="images/number_42386_75_glyph_v4.png" width="320"/>
 
 ---
 
