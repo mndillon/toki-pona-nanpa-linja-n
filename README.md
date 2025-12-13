@@ -318,7 +318,7 @@ Prefix **ike** before any number:
 | <img src="images/horizontal 3 No Lines.png" width="16"/>  | ton  | <img src="images/horizontal Wasan No Lines.png" width="16"/>                  | wasan                     |
 | <img src="images/horizontal 4 No Lines.png" width="16"/>  | pon  | <img src="images/horizontal Thousands Delimiter No Lines v2.png" width="16"/> | tasa/masa/wasa/pasa/pasan |
 | <img src="images/horizontal 5 No Lines.png" width="16"/>  | lun  | <img src="images/horizontal Negative No Lines.png" width="16"/>               | ike                       |
-| <img src="images/horizontal 6 No Lines.png" width="16"/>  | jum  | <img src="images/horizontal Fraction Delimiter No Lines.png" width="16"/>     | kipisi                    |
+| <img src="images/horizontal 6 No Lines.png" width="16"/>  | jun  | <img src="images/horizontal Fraction Delimiter No Lines.png" width="16"/>     | kipisi                    |
 | <img src="images/horizontal 7 No Lines.png" width="16"/>  | pen  |                                                                               |                           |
 | <img src="images/horizontal 8 No Lines.png" width="16"/>  | win  |                                                                               |                           |
 | <img src="images/horizontal 9 No Lines.png" width="16"/>  | nen  |                                                                               |                           |
