@@ -629,7 +629,7 @@ All reuse the same **[family] sike nanpa [nanpa-linja-n]** structure.
 
 So the argument is:
 
-> If we pay the one-time price of adding **nanpa-linja-n** digit roots to the language, we not only get a precise way to name digit strings, but also unlock a uniform, compact pattern for talking about positions in any ordered family (days, months, levels, modes, etc.) that already use numeric labels in the wider world. When those families are 1-based, we can match them directly; and when they are naturally 0-based, we can use **non** to match that convention just as cleanly.  We can easily use non at the start of any index like 'Level 05'.
+> If we pay the one-time price of adding **nanpa-linja-n** digit roots to the language, we not only get a precise way to name digit strings, but also gain a uniform, compact pattern for talking about positions in any ordered family (days, months, levels, modes, etc.) that already use numeric labels in the wider world. When those families are 1-based, we can match them directly; and when they are naturally 0-based, we can use **non** to match that convention just as cleanly. We can also put 'non' at the start of any index name (for example: 'musi utala sike nanpa nolun'). The index labels are consistently single-word forms, which makes them predictable to read, say, and parse (all practical index labels are treated the same).
 
 
 ---
