@@ -309,6 +309,8 @@ Prefix **ike** before any number:
 - can be displayed horizontally or vertically
 - example glyph for 42,386.75:
 - <img src="images/number_42386_75_glyph_v4.png" width="320"/>
+- example glyph for 64.5M:
+- <img src="images/number_64_5_M_glyph.png" width="160"/>
 
 | Glyph                                                     | Name | Glyph                                                                         | Name                      |
 |-----------------------------------------------------------|------|-------------------------------------------------------------------------------|---------------------------|
