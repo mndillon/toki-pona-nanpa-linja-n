@@ -127,6 +127,8 @@ pasan = last part of digit sequence follows
 3,000,000,000 → win wasan
 7,321,900   → pen masa wituwan tasa nenonon
 64.5M       → jupon pokala lun masan
+64.5B       → jupon pokala lun wasan
+64.5T       → jupon pokala lun tasa wasan
 123456789   → watuwipolujupetonen (using block words is optional, but often very helpful for understanding)
 123456789   → watun pasa wipolun pasan jupetonen (pasa and pasan can be used anywhere to break up large numbers)
 123456789   → watuwipolun pasan jupetonen
