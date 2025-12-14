@@ -22,7 +22,7 @@ tenpo suno nanpa tulun pi mun sike nanpa wan pi sike nanpa tun tasa tulun.
 2023 → tun tasa tuwin<br>
 
 **nanpa-linja-n:**
-tenpo suno nanpa pon pi mun sike nanpa wawan pi sike nanpa tun tasa tuwin.
+tenpo suno nanpa pon pi mun nanpa wawan pi sike nanpa tun tasa tuwin.
 
 ### “Year is 2025“
 
