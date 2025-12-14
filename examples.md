@@ -275,11 +275,11 @@ tomo ni li tomo nanpa tunopon.
 **nanpa-linja-n:**
 nanpa sona sina li ponotuluwan.
 
-### “My telephone number is 555-123-6789”
+### “My telephone number is 243-555-0189”
 
+243  → tupoton<br>
 555  → lululun<br>
-123  → watuton<br>
-6789 → jupewinen<br>
+0189 → nowawinen<br>
 
 **nanpa-linja-n:**
 nanpa pi ilo toki mi li: lululun pasa watuton pasan jupewinen.
