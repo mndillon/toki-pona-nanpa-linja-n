@@ -19,10 +19,10 @@ tenpo suno nanpa tulun pi mun sike nanpa wan pi sike nanpa tun tasa tulun.
 
 4 → pon<br>
 11 → wawan<br>
-2023 → tun tasa tuton<br>
+2023 → tun tasa tutwin<br>
 
 **nanpa-linja-n:**
-tenpo suno nanpa pon pi mun sike nanpa wawan pi sike nanpa tun tasa tuton.
+tenpo suno nanpa pon pi mun sike nanpa wawan pi sike nanpa tun tasa tuwin.
 
 ### “Year is 2025“
 
@@ -59,10 +59,10 @@ tenpo suno nanpa tu lon mun sike nanpa wanon la mi tawa.
 
 ### “I am 37 years old”
 
-37 → topen<br>
+37 → wipen<br>
 
 **nanpa-linja-n:**
-tenpo sike nanpa topen la mi jan suli.
+tenpo sike nanpa wipen la mi jan suli.
 
 ### “She is 29”
 
@@ -78,10 +78,10 @@ ona li jo e tenpo sike nanpa tunen.
 ### “The meeting is at 14:30”
 
 14 → wapon<br>
-30 → tonon<br>
+30 → winon<br>
 
 **nanpa-linja-n:**
-tenpo suno la ni li lon tenpo wapon pokala tonon.
+tenpo suno la ni li lon tenpo wapon pokala winon.
 
 ### “It is 7:05”
 
@@ -94,11 +94,11 @@ tenpo ni li pen pokala nolun.
 ### “The logs say 21:34:56 UTC”
 
 21 → tuwan<br>
-34 → topon<br>
+34 → wipon<br>
 56 → lujun<br>
 
 **nanpa-linja-n:**
-toki pi lipu sona li toki e tenpo tuwan pokala topon pokala lujun lon ma UTC.
+toki pi lipu sona li toki e tenpo tuwan pokala wipon pokala lujun lon ma UTC.
 
 ---
 
@@ -113,10 +113,10 @@ mani pi ijo ni li watun.
 
 ### “The total is 3.75”
 
-3.75 → ton pokala pelun<br>
+3.75 → win pokala pelun<br>
 
 **nanpa-linja-n:**
-mani ale li nanpa ton pokala pelun.
+mani ale li nanpa win pokala pelun.
 
 ---
 
@@ -142,17 +142,17 @@ kiwen ni li walo non pokala pelun kilokilo.
 
 ### “Today it is 18 degrees”
 
-18 → wawin<br>
+18 → waton<br>
 
 **nanpa-linja-n:**
-tenpo suno ni li seli wawin.
+tenpo suno ni li seli waton.
 
 ### “Minus 3 degrees”
 
-−3 → ike ton<br>
+−3 → ike win<br>
 
 **nanpa-linja-n:**
-tenpo suno ni li seli ike ton.
+tenpo suno ni li seli ike win.
 
 ---
 
@@ -180,19 +180,19 @@ tomo tawa li tawa kepeken wawa lupen kilometo lon tenpo wan.
 
 5 → lun<br>
 4 → pon<br>
-3 → ton<br>
+3 → win<br>
 2 → tun<br>
 1 → wan<br>
 
 **nanpa-linja-n:**
-lun pon ton tun wan.
+lun pon win tun wan.
 
 ### “I have 23 apples”
 
-23 → tuton<br>
+23 → tuwin<br>
 
 **nanpa-linja-n:**
-mi jo e kili nanpa tuton.
+mi jo e kili nanpa tuwin.
 
 ### “There are 100 people here”
 
@@ -207,11 +207,11 @@ jan li wanonon lon ni.
 
 ### “The point is at (3, 12)”
 
-3 → ton<br>
+3 → win<br>
 12 → watun<br>
 
 **nanpa-linja-n:**
-poki li lon sitelen ton en sitelen watun.
+poki li lon sitelen win en sitelen watun.
 
 ---
 
@@ -219,21 +219,21 @@ poki li lon sitelen ton en sitelen watun.
 
 ### “3 divided by 4 is 0.75”
 
-3/4 → ton kipisi pon<br>
+3/4 → win kipisi pon<br>
 0.75 → non pokala pelun<br>
 
 **nanpa-linja-n:**
-ton kipisi pon li sama non pokala pelun.
+win kipisi pon li sama non pokala pelun.
 
 
 ### “17.3 + 9.5 = 26.8”
 
-17.3 → wapen pokala ton<br>
+17.3 → wapen pokala win<br>
 9.5 → nen pokala lun<br>
-26.8 → tujun pokala win<br>
+26.8 → tujun pokala ton<br>
 
 **nanpa-linja-n:**
-wapen pokala ton eme nen pokala lun li sama tujun pokala win.
+wapen pokala win eme nen pokala lun li sama tujun pokala ton.
 
 ### “12 × 5 = 60”
 
@@ -277,12 +277,12 @@ nanpa sona sina li ponotuluwan.
 
 ### “My telephone number is 243-555-0189”
 
-243  → tupoton<br>
+243  → tupowin<br>
 555  → lululun<br>
-0189 → nowawinen<br>
+0189 → nowatonen<br>
 
 **nanpa-linja-n:**
-nanpa pi ilo toki mi li: lululun pasa watuton pasan jupewinen.
+nanpa pi ilo toki mi li: lululun pasa watuwin pasan jupetonen.
 
 ### “Call 999!”
 
@@ -298,10 +298,10 @@ o tawa nenenen!
 ### “Train arrives at 19:48”
 
 19 → wanen<br>
-48 → powin<br>
+48 → poton<br>
 
 **nanpa-linja-n:**
-tomo tawa li kama lon tenpo wanen pokala powin.
+tomo tawa li kama lon tenpo wanen pokala poton.
 
 ---
 

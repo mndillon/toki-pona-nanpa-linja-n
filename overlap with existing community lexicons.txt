@@ -1,13 +1,13 @@
 Digit words (from the spec):
 GitHub
 
-0 non, 1 wan, 2 tun, 3 ton, 4 pon, 5 lun, 6 jun, 7 pen, 8 win, 9 nen
+0 non, 1 wan, 2 tun, 3 win, 4 pon, 5 lun, 6 jun, 7 pen, 8 ton, 9 nen
 
 I’ll go through (1) phonotactics, (2) collisions with existing words, and (3) mutual distinctness.
 
 1. Phonotactics check
 
-All ten are CVN forms, which are fully valid Toki Pona syllables. The official grid of valid syllables includes exactly these shapes: non, wan, tun, ton, pon, lun, jun, pen, win, nen.
+All ten are CVN forms, which are fully valid Toki Pona syllables. The official grid of valid syllables includes exactly these shapes: non, wan, tun, win, pon, lun, jun, pen, ton, nen.
 Wikipedia
 +1
 
@@ -37,7 +37,7 @@ But that’s more polysemy than collision. TP already leans on context, so this 
 
 👉 Verdict: Deliberate overlap, actually helpful.
 
-2. non, tun, ton, pon, lun, nen, pen
+2. non, tun, win, pon, lun, nen, pen
 
 As far as pu + ku go, none of these are official words.
 Wikipedia
@@ -102,7 +102,7 @@ Every digit is one syllable ending in -n → rhythmically very regular.
 
 Within the set, no two digits share both consonant and vowel:
 
-non / nen / wan / tun / ton / pon / lun / jun / pen / win
+non / wan / tun / win / pon / lun / jun / pen / ton / nen
 
 Closest pairs:
 

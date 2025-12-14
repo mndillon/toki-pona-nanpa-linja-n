@@ -61,12 +61,12 @@ To explore this, we look at the standard Unicode / UTF-8 table for basic Latin c
 |  48 | 0           | digit zero               | non                          |
 |  49 | 1           | digit one                | wan                          |
 |  50 | 2           | digit two                | tun                          |
-|  51 | 3           | digit three              | ton                          |
+|  51 | 3           | digit three              | win                          |
 |  52 | 4           | digit four               | pon                          |
 |  53 | 5           | digit five               | lun                          |
 |  54 | 6           | digit six                | jun                          |
 |  55 | 7           | digit seven              | pen                          |
-|  56 | 8           | digit eight              | win                          |
+|  56 | 8           | digit eight              | ton                          |
 |  57 | 9           | digit nine               | nen                          |
 |  58 | :           | colon                    | sitlen tenpo                 |
 |  59 | ;           | semicolon                | sitlen tenpo lili            |
@@ -223,12 +223,12 @@ Here is a compact table for decimal codes 48–57, which correspond to the ASCII
 |  48 | 0    | digit zero  | non     |
 |  49 | 1    | digit one   | wan     |
 |  50 | 2    | digit two   | tun     |
-|  51 | 3    | digit three | ton     |
+|  51 | 3    | digit three | win     |
 |  52 | 4    | digit four  | pon     |
 |  53 | 5    | digit five  | lun     |
 |  54 | 6    | digit six   | jun     |
 |  55 | 7    | digit seven | pen     |
-|  56 | 8    | digit eight | win     |
+|  56 | 8    | digit eight | ton     |
 |  57 | 9    | digit nine  | nen     |
 
 
@@ -264,17 +264,17 @@ Non-digit characters are named individually using the sitelen … pattern.
 
 Group digits and name:
 
-| Segment | Chars | Explanation                                               | proposed TP name|
-|---------|-------|-----------------------------------------------------------|-----------------|
+| Segment | Chars | Explanation                                              | proposed TP name|
+|---------|-------|----------------------------------------------------------|-----------------|
 | 1       | F     | capital letter F                                         | sitelen suli F  |
 | 2       | 9     | digit 9 → nen                                            | nen             |
 | 3       | q     | small letter q                                           | sitelen lili q  |
 | 4       | !     | exclamation mark                                         | sitelen a       |
-| 5       | 27    | 2 = tun, 7 = pen → tunpen → (compressed) tupen          | tupen           |
+| 5       | 27    | 2 = tun, 7 = pen → tun pen → (compressed) tupen          | tupen           |
 | 6       | m     | small letter m                                           | sitelen lili m  |
 | 7       | $     | dollar sign                                              | sitelen mani    |
 | 8       | k     | small letter k                                           | sitelen lili k  |
-| 9       | 30    | 3 = ton, 0 = non → tonnon → (compressed) tonon          | tonon           |
+| 9       | 30    | 3 = win, 0 = non → win non → (compressed) winon          | winon           |
 | 10      | Z     | capital letter Z                                         | sitelen suli Z  |
 | 11      | &     | ampersand                                                | sitelen en      |
 | 12      | b     | small letter b                                           | sitelen lili b  |
@@ -284,7 +284,7 @@ Group digits and name:
 
 So the whole password can be described as:
 
-sitelen suli F, nen, sitelen lili q, sitelen a, tupen, sitelen lili m, sitelen mani, sitelen lili k, tonon, sitelen suli Z, sitelen en, sitelen lili b, pon, sitelen seme.
+sitelen suli F, nen, sitelen lili q, sitelen a, tupen, sitelen lili m, sitelen mani, sitelen lili k, winon, sitelen suli Z, sitelen en, sitelen lili b, pon, sitelen seme.
 
 ---
 

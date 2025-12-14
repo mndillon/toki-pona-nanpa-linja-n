@@ -18,7 +18,7 @@ o weka e nimi ike.
 | Lojban                   | (li) re ci xa vo mu (boi)                          | functional, sterile       |
 | Toki Pona (pu)           | mute                                               | useless                   |
 | Toki Pona (pona)         | ? (what do screen readers say?)                    | contrived, difficult      |
-| Toki Pona (nanpa-linja-n)| **tuton tasa jupolun**                             | natural                   |
+| Toki Pona (nanpa-linja-n)| **tuwin tasa jupolun**                             | natural                   |
 
 **nanpa-linja-n** explained on a napkin:
 
@@ -47,12 +47,12 @@ Each digit symbol uses a distinct, single syllable, CVN form and does not confli
 "0"  non
 "1"  wan
 "2"  tun
-"3"  ton
+"3"  win
 "4"  pon
 "5"  lun
 "6"  jun
 "7"  pen
-"8"  win
+"8"  ton
 "9"  nen
 ```
 
@@ -71,8 +71,8 @@ Inside a digit block (no separator present):
 - 70 → pen non → **penon**
 - 100 → wan non non → **wanonon**
 - 567 → lun jun pen → **lujupen**
-- 234 → tun ton pon → **tutopon**
-- 801 → win non wan → **winowan**
+- 234 → tun win pon → **tuwipon**
+- 801 → ton non wan → **tonowan**
 - 950 → nen lun non → **nelunon**
 
 
@@ -116,24 +116,24 @@ pasan = last part of digit sequence follows
 
 ### Examples
 ```
-1,234       → wan tasa tutopon
+1,234       → wan tasa tuwipon
 12,000      → watun tasan
 12000       → watun pasan nononon
-3,000,000   → ton masan
-30,000,000  → tonon masan
-300,000,000 → tononon masan
-3,000,000,000 → ton wasan
-7,321,900   → pen masa totuwan tasa nenonon
+3,000,000   → win masan
+30,000,000  → winon masan
+300,000,000 → winonon masan
+3,000,000,000 → win wasan
+7,321,900   → pen masa wituwan tasa nenonon
 64.5M       → jupon pokala lun masan
-123456789   → watutopolujupewinen (using block words is optional, but often very helpful for understanding)
-123456789   → watun pasa topolun pasan jupewinen (pasa and pasan can be used anywhere to break up large numbers)
-123456789   → watutopolun pasan jupewinen
-123456789   → watuton pasa polun pasa jupewin pasan nen
+123456789   → watuwipolujupetonen (using block words is optional, but often very helpful for understanding)
+123456789   → watun pasa wipolun pasan jupetonen (pasa and pasan can be used anywhere to break up large numbers)
+123456789   → watuwipolun pasan jupetonen
+123456789   → watuwin pasa polun pasa jupeton pasan nen
 2025        → tunotulun
 2025        → tun tasa tulun
 2025        → tunon pasan tulun
 2025        → tun pasa non pasa tun pasan lun
-3.141592    → ton pokala wapowalunetun
+3.141592    → win pokala wapowalunetun
 ```
 
 ---
@@ -151,11 +151,11 @@ Examples:
 
 ```
 0.5       → non pokala lun
-3.75      → ton pokala pelun
+3.75      → win pokala pelun
 12.04     → watun pokala nopon
-37.9      → topen pokala nen
+37.9      → wipen pokala nen
 0.125     → non pokala watulun
-3.141592  → ton pokala wapowan pasan lunetun
+3.141592  → win pokala wapowan pasan lunetun
 ```
 
 ---
@@ -172,11 +172,11 @@ Examples:
 
 ```
 1/2                 → wan kipisi tun
-3/4                 → ton kipisi pon
-5/8                 → lun kipisi win
-567/890             → lujupen kipisi winenon
-1,234 / 56          → wan tasa tutopon kipisi lujun
-3 / 1,000,000,000   → ton kipisi wan wasan
+3/4                 → win kipisi pon
+5/8                 → lun kipisi ton
+567/890             → lujupen kipisi tonenon
+1,234 / 56          → wan tasa tutwion kipisi lujun
+3 / 1,000,000,000   → win kipisi wan wasan
 ```
 
 ---
@@ -190,7 +190,7 @@ Prefix **ike** before any number:
 −5         → ike lun
 −12        → ike watun
 −0.4       → ike non pokala pon
-−30,000    → ike tonon tasan
+−30,000    → ike winon tasan
 ```
 
 ---
@@ -198,12 +198,12 @@ Prefix **ike** before any number:
 ## Mixed Expressions
 
 ```
-(3.75) / 4   → ton pokala pelun kipisi pon
-3 / 4.75     → ton kipisi pon pokala pelun
-1,234.567    → wan tasa tutopon pokala lujupen
+(3.75) / 4   → win pokala pelun kipisi pon
+3 / 4.75     → win kipisi pon pokala pelun
+1,234.567    → wan tasa tuwipon pokala lujupen
 0.5          → non pokala lun
 1/2          → wan kipisi tun
-5:38         → tenpo lun pokala towin
+5:38         → tenpo lun pokala witon
 19:46:27     → tenpo wanen pokala pojun pokala tupen
 ```
 
@@ -221,23 +221,23 @@ Prefix **ike** before any number:
     - Say "2000" followed by "10": "tun tasan wanon"
     - Say "2001" followed by "0": "tun tasa wan non"
     - Say "2001.0": "tun tasa wan pokala non"
-    - Say "243-555-0169": "tupoton pasa lululun pasan nowajunen"
+    - Say "243-555-0169": "tupowin pasa lululun pasan nowajunen"
     - The **-n** is a phonetic marker, indicating the end of a digit sequence
     - Screen readers can communicate longer digit sequences with less cognitive load
     - Automated text-to-speech systems can communicate longer digit sequences with less cognitive load
     - Can enhance compatability with [WCAG 2.2](WCAG%202.2%20compliance%20claims.md)
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
-      - might say: **"wan tun ton pon lun"**
+      - might say: **"wan tun win pon lun"**
     - for value 12,345,
-      - might say: **"watun tasa topolun"**
+      - might say: **"watun tasa wipolun"**
       - saying "tasa" adds the context that the strings of digits represent numbers
     - for sequence of digits, like an id,
-      - might say: **"watutopolun"**
+      - might say: **"watuwipolun"**
     - for 1-2-3-4-5 digit emphasis,
-      - might say: **"wan pasa tun pasa ton pasa pon pasan lun"**
+      - might say: **"wan pasa tun pasa win pasa pon pasan lun"**
     - for breaking up long sequences with no change in value, (pasa/pasan can be used anywhere)
-      - might say: **"watuton pasan polun"**
+      - might say: **"watuwin pasan polun"**
     - In all cases the listener has understood the speaker as communicating **"12345"**
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
@@ -253,7 +253,7 @@ Prefix **ike** before any number:
   - Positional decimal (**nanpa-linja-n** style) strings:
     - The speaker uses **nanpa-linja-n** digit names with concatenation and **-n** signalling the end of the string of digits
     - The speaker thinks: 78 = 7 followed by 8
-    - The speaker says (the way they think): pewin
+    - The speaker says (the way they think): peton
     - The listener recognises **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
     - The listener understands: "78"
     - The listener may understand that "78" represents a numeric value, but that understanding is determined by context
@@ -317,12 +317,12 @@ Prefix **ike** before any number:
 | <img src="images/horizontal 0 No Lines.png" width="32"/>  | non  | <img src="images/horizontal Decimal Delimiter No Lines.png" width="16"/>      | pokala/pakala             |
 | <img src="images/horizontal 1 No Lines.png" width="32"/>  | wan  | <img src="images/horizontal Tasan No Lines.png" width="16"/>                  | tasan                     |
 | <img src="images/horizontal 2 No Lines.png" width="32"/>  | tun  | <img src="images/horizontal Masan No Lines.png" width="16"/>                  | masan                     |
-| <img src="images/horizontal 3 No Lines.png" width="32"/>  | ton  | <img src="images/horizontal Wasan No Lines.png" width="16"/>                  | wasan                     |
+| <img src="images/horizontal 3 No Lines.png" width="32"/>  | win  | <img src="images/horizontal Wasan No Lines.png" width="16"/>                  | wasan                     |
 | <img src="images/horizontal 4 No Lines.png" width="32"/>  | pon  | <img src="images/horizontal Thousands Delimiter No Lines v2.png" width="16"/> | tasa/masa/wasa/pasa/pasan |
 | <img src="images/horizontal 5 No Lines.png" width="32"/>  | lun  | <img src="images/horizontal Negative No Lines Slim.png" width="16"/>          | ike                       |
 | <img src="images/horizontal 6 No Lines.png" width="32"/>  | jun  | <img src="images/horizontal Fraction Delimiter No Lines.png" width="16"/>     | kipisi                    |
 | <img src="images/horizontal 7 No Lines.png" width="32"/>  | pen  | <img src="images/horizontal Number Symbol Slim.png" width="16"/>              | nanpa                     |
-| <img src="images/horizontal 8 No Lines.png" width="32"/>  | win  | <img src="images/horizontal Plus No Lines Slim.png" width="16"/>              | eme                       |
+| <img src="images/horizontal 8 No Lines.png" width="32"/>  | ton  | <img src="images/horizontal Plus No Lines Slim.png" width="16"/>              | eme                       |
 | <img src="images/horizontal 9 No Lines.png" width="32"/>  | nen  | <img src="images/horizontal Multiply No Lines Slim.png" width="16"/>          | emute                     |
 
 
@@ -342,35 +342,35 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Meaning inspired by **en** but ending in **-me**
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- ton eme tun eme wan li sama jun
+- win eme tun eme wan li sama jun
 
 ### Subtract: weka
 - Contains **k**, which no digit word has
 - Meaning invokes "away"
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- ton weka ike tun li sama lun
+- win weka ike tun li sama lun
 
 ### Multiply: emute
 - Contains **m**, which no digit word has
 - Meaning inspired by **eme** + **mute** (add many)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- ton emute tun li sama jun
+- win emute tun li sama jun
 
 ### Division: kipisi
 - Contains **k**, which no digit word has
 - Already used to describe fractions
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- win kipisi ike tun li sama ike pon
+- ton kipisi ike tun li sama ike pon
 
 ### Power: sewi
 - Contains **s**, which no digit word has
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- tun sewi ton li sama win
-- pen tasan li sama pen emute wanon sewi ton
+- tun sewi win li sama ton
+- pen tasan li sama pen emute wanon sewi win
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers) are better left in mathematical notation:
 
@@ -492,7 +492,7 @@ Using nanpa-linja-n digit names:
 
 - suno sike nanpa **wan** = weekday 1 = Monday
 - suno sike nanpa **tun** = weekday 2 = Tuesday
-- suno sike nanpa **ton** = weekday 3 = Wednesday
+- suno sike nanpa **win** = weekday 3 = Wednesday
 - suno sike nanpa **pon** = weekday 4 = Thursday
 - suno sike nanpa **lun** = weekday 5 = Friday
 - suno sike nanpa **jun** = weekday 6 = Saturday
@@ -530,7 +530,7 @@ Using digit name compression for multi-digit indices:
 
 - mun sike nanpa **tun** = month 2 = February
 
-- mun sike nanpa **ton** = month 3 = March
+- mun sike nanpa **win** = month 3 = March
 
 - mun sike nanpa **pon** = month 4 = April
 
@@ -540,7 +540,7 @@ Using digit name compression for multi-digit indices:
 
 - mun sike nanpa **pen** = month 7 = July
 
-- mun sike nanpa **win** = month 8 = August
+- mun sike nanpa **ton** = month 8 = August
 
 - mun sike nanpa **nen** = month 9 = September
 
@@ -553,7 +553,7 @@ Using digit name compression for multi-digit indices:
 Usage:
 
 ```
-tenpo suno nanpa tu lon mun sike nanpa ton la mi tawa.
+tenpo suno nanpa tu lon mun sike nanpa win la mi tawa.
 = On day 2 of month 3 (2 March) I travel.
 
 mi pali mute lon mun sike nanpa wawan.
@@ -640,7 +640,7 @@ So the argument is:
 
 - o pilin e nanpa tan wan kepeken wanon.
 - pana e nimi uno tawa nanpa ni.
-- o eme e ton tan ni.
+- o eme e win tan ni.
 - o sewi e ni kepeken tun.
 - o weka e nen tan ni.
 - o kipisi e ni kepeken nanpa nimi uno.

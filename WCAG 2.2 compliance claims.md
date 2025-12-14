@@ -78,7 +78,7 @@ nanpa-linja-n redesigns numeric expression to be more accessible in audio.
 
 ### 4.1 One short, regular CVN root per digit
 
-- Ten digit roots: `non, wan, tun, ton, pon, lun, jun, pen, win, nen`
+- Ten digit roots: `non, wan, tun, win, pon, lun, jun, pen, ton, nen`
 - All are short, phonotactically regular, and easy to distinguish by ear
 - For audio users, this is far easier to keep in working memory than long additive phrases
 
