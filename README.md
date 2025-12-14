@@ -10,15 +10,15 @@ o weka e nimi ike.
 
 ### Saying the number "23,645":
 
-| Language                 | Spoken number phrase                               | Feels                     |
-|--------------------------|----------------------------------------------------|---------------------------|
-| English                  | twenty three thousand six hundred (and) forty five | natural                   |
-| French                   | vingt trois mille six cent quarante cinq           | natural                   |
-| Esperanto                | dudek tri mil sescent kvardek kvin                 | natural                   |
-| Lojban                   | (li) re ci xa vo mu (boi)                          | functional, sterile       |
-| Toki Pona (pu)           | mute                                               | useless                   |
-| Toki Pona (nanpa pona)   | ? (what do screen readers say?)                    | contrived, difficult      |
-| Toki Pona (nanpa-linja-n)| **tuwin tasa jupolun**                             | natural                   |
+| Language                 | Spoken number phrase                                 | Feels                     |
+|--------------------------|------------------------------------------------------|---------------------------|
+| English                  | twenty three thousand six hundred (and) forty five   | natural                   |
+| French                   | vingt trois mille six cent quarante cinq             | natural                   |
+| Esperanto                | dudek tri mil sescent kvardek kvin                   | natural                   |
+| Lojban                   | (li) re ci xa vo mu (boi)                            | functional, sterile       |
+| Toki Pona (pu)           | mute                                                 | useless                   |
+| Toki Pona (nanpa pona)   | ? (what do screen readers say? what about WCAG 2.2?) | contrived, difficult      |
+| Toki Pona (nanpa-linja-n)| **tuwin tasa jupolun**                               | natural                   |
 
 
 ## Overview
