@@ -209,9 +209,9 @@ The advantage of keeping these digit names in **CVN** format is that they can be
 Example:
 
 - `"9"` → `nen`
-- `"8"` → `win`
+- `"8"` → `ton`
 
-So `"98"` can be represented as **newin**, a single word derived from the digit character names and still ending in `-n`.
+So `"98"` can be represented as **neton**, a single word derived from the digit character names and still ending in `-n`.
 
 ### 4.2. Mapping table for digit characters
 
@@ -236,7 +236,7 @@ Notes:
 
 The English name for character "9" is "digit nine" and **not** the value 9, the name of the character code is completely different from any value that might be associated to the character.
 
-The Toki Pona nanpa-linja-n names (non, wan, tun, ton, pon, lun, jun, pen, win, nen) are names for the Unicode characters "0"–"9", **not** names for the values of the numbers themselves.
+The Toki Pona nanpa-linja-n names (non, wan, tun, win, pon, lun, jun, pen, ton, nen) are names for the Unicode characters "0"–"9", **not** names for the values of the numbers themselves.
 
 In communications, if the context determines that the digit sequence is communicating a numeric value, then the decimal numeric value can be very easily determined from the sequence of the character code names.
 This is a key advantage of using the Hindu-Arabic positional decimal system for expressing numeric values.
