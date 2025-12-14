@@ -42,11 +42,11 @@ nanpa-linja-n specifically targets numeric content in Toki Pona, which is a know
 
 If you want WCAG-friendly Toki Pona content today, you essentially have two unsatisfactory options for “serious” numbers.
 
-### 3.1 Raw Arabic numerals
+### 3.1 Raw Hindu-Arabic numerals
 
 Using plain digits:
 
-- Modern screen readers can read Arabic numerals perfectly well, typically either:
+- Modern screen readers can read Hindu-Arabic numerals perfectly well, typically either:
   - as a cardinal number in the UI language (e.g. “two hundred forty-three”), or
   - as individual digits, depending on settings and context.
 - However, in a Toki Pona context this can still cause issues:
@@ -171,4 +171,4 @@ This aligns with the WCAG principle of “Understandable”, which (as summarise
 
 In one concise statement:
 
-> **nanpa-linja-n** enhances WCAG 2.2 compatibility because it encodes digit strings in a phonologically regular, structurally explicit, and unambiguous way that is tuned for Toki Pona speech, and that can in many real-world Toki Pona contexts be easier for screen-reader and text-to-speech users to interpret than either traditional additive Toki Pona numerals or raw Arabic numerals read in a different language with no explicit structural cues. By reducing cognitive load, exposing number structure directly in the text, and keeping numeric expressions in the same language and rhythm as the rest of the content, nanpa-linja-n supports the accessibility goals that WCAG 2.2 is designed to advance, especially for users with visual, cognitive, or language impairments.
+> **nanpa-linja-n** enhances WCAG 2.2 compatibility because it encodes digit strings in a phonologically regular, structurally explicit, and unambiguous way that is tuned for Toki Pona speech, and that can in many real-world Toki Pona contexts be easier for screen-reader and text-to-speech users to interpret than either traditional additive Toki Pona numerals or raw Hindu-Arabic numerals read in a different language with no explicit structural cues. By reducing cognitive load, exposing number structure directly in the text, and keeping numeric expressions in the same language and rhythm as the rest of the content, nanpa-linja-n supports the accessibility goals that WCAG 2.2 is designed to advance, especially for users with visual, cognitive, or language impairments.
