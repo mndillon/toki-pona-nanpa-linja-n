@@ -412,7 +412,7 @@ Discussion welcome via:
 
 - kama sano Discord: https://discord.com/channels/969386329513295872/1442150091816440000
 
-- On https://sona.pona.la/wiki/nasin_nanpa_ali_ike list, **nanpa-linja-n** looks most closest to (at first glance):
+- On [https://sona.pona.la/wiki/nasin_nanpa_ali_ike](https://sona.pona.la/wiki/nasin_nanpa_ali_ike#[decimal]_nanpa-linja-n) list, **nanpa-linja-n** looks most closest to (at first glance):
 
   - [decimal] socks numeral (based on cantonese), tan socks
 
