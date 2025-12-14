@@ -19,7 +19,7 @@ tenpo suno nanpa tulun pi mun sike nanpa wan pi sike nanpa tun tasa tulun.
 
 4 → pon<br>
 11 → wawan<br>
-2023 → tun tasa tutwin<br>
+2023 → tun tasa tuwin<br>
 
 **nanpa-linja-n:**
 tenpo suno nanpa pon pi mun sike nanpa wawan pi sike nanpa tun tasa tuwin.
