@@ -511,6 +511,8 @@ suno sike nanpa lun la mi tawa utala.
 
 NOTE: this usage is not the same as tenpo suno nanpa wan → the first day
 
+sike nanpa (cycle number) gives an absolute index not a relative index
+
 
 ### Example 2: Months of the year (mun sike)
 Define the ordered family of months as:
