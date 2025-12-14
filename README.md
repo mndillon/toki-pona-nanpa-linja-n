@@ -114,6 +114,10 @@ pasan = last part of digit sequence follows
 
 ### Examples
 ```
+1           → wan
+08          → noton
+23          → tuwin
+179         → wapenen
 1,234       → wan tasa tuwipon
 12,000      → watun tasan
 12000       → watun pasan nononon
