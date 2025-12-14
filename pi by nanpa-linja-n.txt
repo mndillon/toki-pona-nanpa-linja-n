@@ -39,7 +39,7 @@ With its simple yet overly accurate numeric description,
 the poem oddly enhances Toki Pona’s WCAG 2.2 compliance,
 though the critic remains disappointed by the poet’s neglect
 of the time-consuming mystic art of patiently hand-crafting numeric descriptions,
-even though not all digit sequences represent numberic values.
+even though not all digit sequences represent numeric values.
 
 The poem is an accurate yet sterile description of a number.
 Should the poet really be allowed to use an arbitrary dialect
