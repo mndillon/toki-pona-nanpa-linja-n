@@ -17,7 +17,7 @@ o weka e nimi ike.
 | Esperanto                | dudek tri mil sescent kvardek kvin                   | natural                   |
 | Lojban                   | (li) re ci xa vo mu (boi)                            | functional, sterile       |
 | Toki Pona (pu)           | mute                                                 | useless                   |
-| Toki Pona (nanpa pona)   | ? (what do screen readers say? what about WCAG 2.2?) | contrived, difficult      |
+| Toki Pona (nanpa pona)   | ? (what do screen readers say? what about [WCAG 2.2](https://www.w3.org/TR/WCAG22/)?) | contrived, difficult      |
 | Toki Pona (nanpa-linja-n)| **tuwin tasa jupolun**                               | natural                   |
 
 
