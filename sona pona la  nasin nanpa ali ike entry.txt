@@ -3,13 +3,14 @@
 
 {{tp|nanpa-linja-n}} is a minimal decimal digit system for Toki Pona created by {{tok|jan Matun}}. It uses a single syllable word for each digit and is designed to make saying, hearing and understanding long sequences of decimal digits very natural.  "Say it the way you think it".
 
-'''TL;DR:''' '''nanpa-linja-n''' explained on a napkin (Github link):
-
-https://github.com/mndillon/toki-pona-nanpa-linja-n/blob/main/images/TLDR%20Explained%20On%20Napkin.png
-
 '''TL;DR:''' '''nanpa-linja-n''' motivation (Github link):
 
 https://github.com/mndillon/toki-pona-nanpa-linja-n/blob/main/images/Phone%20Number%20Conversation%20v1.png
+
+'''nanpa-linja-n''' full description (Github link):
+
+https://github.com/mndillon/toki-pona-nanpa-linja-n
+
 
 '''TL;DR:''' '''nanpa-linja-n'''
 uses '''-n''' to clearly signal the end of numeric values:
@@ -44,6 +45,3 @@ uses '''-n''' to clearly signal the end of numeric values:
 *** less cognitive load for anyone that is familiar with positional decimal descriptions of numbers
 
 
-'''nanpa-linja-n''' full description (Github link):
-
-https://github.com/mndillon/toki-pona-nanpa-linja-n
