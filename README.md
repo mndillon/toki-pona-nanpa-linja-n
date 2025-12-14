@@ -29,6 +29,7 @@ This system emphasizes:
 - concatenated digit construction
 - phonotactically valid roots
 - compatibility with the Toki Pona lexicon
+- consistently using **-n** as a morphological marker at the end of digit sequences
 
 
 Toki Pona’s vocabulary is small, but not too small.
@@ -219,7 +220,7 @@ Prefix **ike** before any number:
     - Say "2001" followed by "0": "tun tasa wan non"
     - Say "2001.0": "tun tasa wan pokala non"
     - Say "243-555-0169": "tupowin pasa lululun pasan nowajunen"
-    - The **-n** is a phonetic marker, indicating the end of a digit sequence
+    - The **-n** is a morphological marker, indicating the end of a digit sequence
     - Screen readers can communicate longer digit sequences with less cognitive load
     - Automated text-to-speech systems can communicate longer digit sequences with less cognitive load
     - Can enhance compatability with [WCAG 2.2](WCAG%202.2%20compliance%20claims.md)
@@ -435,7 +436,7 @@ Discussion welcome via:
 
     - it consistently uses **-n** to indicate the end of numerical structures that end with delimiters (tasan/masan/wasan)
 
-    - the consistent use of **-n** as a phonetic marker is original
+    - the consistent use of **-n** as a morphological marker is original
 
     - the consistent use of **-n** makes it immediately clear when a string of digits stops, no matter how long the sequence of digits. The listener spends little mental effort deciding whether the digit sequence is complete, and context will determine if the digit sequence represents a numeric value
 
