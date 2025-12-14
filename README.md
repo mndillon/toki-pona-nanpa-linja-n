@@ -464,11 +464,13 @@ If we accept the cost of adding the **nanpa-linja-n** digit roots to the languag
 
 This pattern lets us talk about positions in a family in a way that:
 
-- lines up 1:1 with decimal digits in UIs and data,
-- reuses the same lexical machinery across many domains, and
-- avoids inventing separate lexical items like “Sunday”, “March”, “Level 05” in every case.
+- reuses the same lexical machinery across many domains
+- avoids inventing separate lexical items like “Sunday”, “March”, “Level 05” in every case
 - zero based indexing (where appropriate) is possible and naturally addressed with **non**
 - can also easily reference expressions that start with zero: 'musi utala sike nanpa nolun'
+- sike nanpa (cycle number) usage is not the same as tenpo X nanpa Y
+  - relative index: tenpo suno nanpa wan → the first day
+  - absolute index: (tenpo) suno sike nanpa wan → Monday
 
 Below are two practical examples.
 
@@ -508,10 +510,6 @@ suno sike nanpa tun la mi pali.
 suno sike nanpa lun la mi tawa utala.
 = On weekday 5 (Friday) I go to sport.
 ```
-
-NOTE: this usage is not the same as tenpo suno nanpa wan → the first day
-
-sike nanpa (cycle number) gives an absolute index not a relative index
 
 
 ### Example 2: Months of the year (mun sike)
