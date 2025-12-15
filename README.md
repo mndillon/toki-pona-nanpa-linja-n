@@ -178,6 +178,8 @@ Examples:
 1/2                 → wan kipisi tun
 3/4                 → win kipisi pon
 5/8                 → lun kipisi ton
+8½                  → ton eme wan kipisi tun
+8½                  → wapen kipisi tun
 567/890             → lujupen kipisi tonenon
 1,234 / 56          → wan tasa tuwipon kipisi lujun
 3 / 1,000,000,000   → win kipisi wan wasan
