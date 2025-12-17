@@ -42,11 +42,11 @@ of the time-consuming mystic art of patiently hand-crafting numeric descriptions
 even though not all digit sequences represent numeric values.
 
 The poem is an accurate yet sterile description of a number.
-Should the poet really be allowed to use an arbitrary dialect
+While numbers may be a fundamental and necessary human concept,
+should the poet really be allowed to use an arbitrary dialect
 that carefully introduces new lexicon
 to only describe strings of decimal digits accurately.
-While numbers may be a fundamental and necessary human concept,
-in a copy and paste world, we can afterall just copy and send MMMMLLLTT,
+In a copy and paste world, we can afterall just copy and send MMMMLLLTT,
 and pretend we where able to say it properly in the first place.
 
 The critic is repulsed by these foreign logical ideas and the disregard for tradition.
@@ -54,9 +54,10 @@ And in fact, the critic—speaking with the full weight of tradition—would say
 in the traditional system, the number should always be written in full as
 “mute mute mute mute luka luka luka tu tu”.
 Forms such as “MMMMLLLTT” are not syntactically valid Toki Pona,
-and “99” is decimal notation rather than traditional wording.
+and “99” is an internationaly accepted decimal notation rather than traditional wording (although it did exist long before Toki Pona).
 If we allowed “99”, we would also have to accept any other logical description of the number that respects syntax,
-so we instead must ban all other numeric expressions and restrict ourselves to always using the full traditional Toki Pona forms.
+so the critic insists that we instead must ban all other numeric expressions
+and restrict ourselves to always using the full traditional Toki Pona forms.
 
 Yet neither the critic nor the poet can speak for the poem; the poem must speak for itself.
 

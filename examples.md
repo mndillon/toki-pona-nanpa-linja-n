@@ -284,12 +284,12 @@ nanpa sona sina li ponotuluwan.
 **nanpa-linja-n:**
 nanpa pi ilo toki mi li: lululun pasa watuwin pasan jupetonen.
 
-### “Call 999!”
+### “Call 731!”
 
-999  → nenenen<br>
+731  → pewiwan<br>
 
 **nanpa-linja-n:**
-o tawa nenenen!
+o tawa pewiwan!
 
 ---
 
