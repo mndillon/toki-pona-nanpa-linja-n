@@ -314,22 +314,22 @@ Prefix **ike** before any number:
 - numeric glyphs start with nanpa inside a cartouche, like a proper name, and re-purposing poki glyph for separators (nanpa and cartouche are optional)
 - can be displayed horizontally or vertically
 - example glyph for 42,386.75:
-- <img src="images/number_42386_75_glyph_v5.png" width="320"/>
+- <img src="images/number_42386_75_glyph_v6.png" width="320"/>
 - example glyph for 64.5M:
-- <img src="images/number_64_5_M_glyph_v2.png" width="160"/>
+- <img src="images/number_64_5_M_glyph_v3.png" width="160"/>
 
-| Glyph                                                                 | Name | Glyph                                                                         | Name                      |
-|----------------------------------------------------------       ------|------|-------------------------------------------------------------------------------|---------------------------|
-| <img src="images/horizontal 0 Circle No Lines Slim.png" width="32"/>  | non  | <img src="images/horizontal Decimal Delimiter No Lines.png" width="16"/>      | pokala/pakala             |
-| <img src="images/horizontal 1 No Lines Slim.png" width="32"/>         | wan  | <img src="images/horizontal Tasan No Lines Slim.png" width="16"/>             | tasan                     |
-| <img src="images/horizontal 2 No Lines Slim.png" width="32"/>         | tun  | <img src="images/horizontal Masan No Lines Slim.png" width="16"/>             | masan                     |
-| <img src="images/horizontal 3 No Lines Slim.png" width="32"/>         | win  | <img src="images/horizontal Wasan No Lines Slim.png" width="16"/>             | wasan                     |
-| <img src="images/horizontal 4 No Lines Slim.png" width="32"/>         | pon  | <img src="images/horizontal Thousands Delimiter No Lines v2.png" width="16"/> | tasa/masa/wasa/pasa/pasan |
-| <img src="images/horizontal 5 No Lines Slim.png" width="32"/>         | lun  | <img src="images/horizontal Negative No Lines Slim.png" width="16"/>          | ike                       |
-| <img src="images/horizontal 6 No Lines Slim.png" width="32"/>         | jun  | <img src="images/horizontal Fraction Delimiter No Lines.png" width="16"/>     | kipisi                    |
-| <img src="images/horizontal 7 No Lines Slim.png" width="32"/>         | pen  | <img src="images/horizontal Number Symbol Slim.png" width="16"/>              | nanpa                     |
-| <img src="images/horizontal 8 No Lines Slim.png" width="32"/>         | ton  | <img src="images/horizontal Plus No Lines Slim.png" width="16"/>              | eme                       |
-| <img src="images/horizontal 9 No Lines Slim.png" width="32"/>         | nen  | <img src="images/horizontal Multiply No Lines Slim.png" width="16"/>          | emute                     |
+| Glyph                                                                    | Name | Glyph                                                                            | Name                      |
+|--------------------------------------------------------------------------|------|----------------------------------------------------------------------------------|---------------------------|
+| <img src="images/horizontal 0 Circle No Lines Slim Pu.png" width="32"/>  | non  | <img src="images/horizontal Decimal Delimiter Pu.png" width="16"/>               | pokala/pakala             |
+| <img src="images/horizontal 1 No Lines Slim Pu.png" width="32"/>         | wan  | <img src="images/horizontal Tasan No Lines Slim Pu.png" width="16"/>             | tasan                     |
+| <img src="images/horizontal 2 No Lines Slim Pu.png" width="32"/>         | tun  | <img src="images/horizontal Masan No Lines Slim Pu.png" width="16"/>             | masan                     |
+| <img src="images/horizontal 3 No Lines Slim Pu.png" width="32"/>         | win  | <img src="images/horizontal Wasan No Lines Slim Pu.png" width="16"/>             | wasan                     |
+| <img src="images/horizontal 4 No Lines Slim Pu.png" width="32"/>         | pon  | <img src="images/horizontal Thousands Delimiter No Lines Pu.png" width="16"/>    | tasa/masa/wasa/pasa/pasan |
+| <img src="images/horizontal 5 No Lines Slim Pu.png" width="32"/>         | lun  | <img src="images/horizontal Negative No Lines Slim Pu.png" width="16"/>          | ike                       |
+| <img src="images/horizontal 6 No Lines Slim Pu.png" width="32"/>         | jun  | <img src="images/horizontal Fraction Delimiter Pu.png" width="16"/>              | kipisi                    |
+| <img src="images/horizontal 7 No Lines Slim Pu.png" width="32"/>         | pen  | <img src="images/horizontal Number Symbol Slim Pu.png" width="16"/>              | nanpa                     |
+| <img src="images/horizontal 8 No Lines Slim Pu.png" width="32"/>         | ton  | <img src="images/horizontal Plus No Lines Slim Pu.png" width="16"/>              | eme                       |
+| <img src="images/horizontal 9 No Lines Slim Pu.png" width="32"/>         | nen  | <img src="images/horizontal Multiply No Lines Slim Pu.png" width="16"/>          | emute                     |
 
 
 ---
