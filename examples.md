@@ -275,6 +275,15 @@ tomo ni li tomo nanpa tunopon.
 **nanpa-linja-n:**
 nanpa sona sina li ponotuluwan.
 
+### “007”
+
+0 → non<br>
+0 → non<br>
+7 → pen<br>
+
+**nanpa-linja-n:**
+nonopen
+
 ### “My telephone number is 243-555-0189”
 
 243  → tupowin<br>
