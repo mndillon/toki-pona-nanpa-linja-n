@@ -17,7 +17,7 @@ o weka e nimi ike.
 | Esperanto                | dudek tri mil sescent kvardek kvin                   | natural                   |
 | Lojban                   | (li) re ci xa vo mu (boi)                            | functional, sterile       |
 | Toki Pona (pu)           | mute                                                 | useless                   |
-| Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, difficult      |
+| Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, error prone    |
 | Toki Pona (nanpa-linja-n)| **tuwin tasa jupolun**                               | natural                   |
 
 
@@ -314,22 +314,22 @@ Prefix **ike** before any number:
 - numeric glyphs start with nanpa inside a cartouche, like a proper name, and re-purposing poki glyph for separators (nanpa and cartouche are optional)
 - can be displayed horizontally or vertically
 - example glyph for 42,386.75:
-- <img src="images/number_42386_75_glyph_v6.png" width="320"/>
+- <img src="images/number_42386_75_glyph_v7.png" width="320"/>
 - example glyph for 64.5M:
-- <img src="images/number_64_5_M_glyph_v3.png" width="160"/>
+- <img src="images/number_64_5_M_glyph_v4.png" width="160"/>
 
-| Glyph                                                                    | Name | Glyph                                                                            | Name                      |
-|--------------------------------------------------------------------------|------|----------------------------------------------------------------------------------|---------------------------|
-| <img src="images/horizontal 0 Circle No Lines Slim Pu.png" width="32"/>  | non  | <img src="images/horizontal Decimal Delimiter Pu.png" width="16"/>               | pokala/pakala             |
-| <img src="images/horizontal 1 No Lines Slim Pu.png" width="32"/>         | wan  | <img src="images/horizontal Tasan No Lines Slim Pu.png" width="16"/>             | tasan                     |
-| <img src="images/horizontal 2 No Lines Slim Pu.png" width="32"/>         | tun  | <img src="images/horizontal Masan No Lines Slim Pu.png" width="16"/>             | masan                     |
-| <img src="images/horizontal 3 No Lines Slim Pu.png" width="32"/>         | win  | <img src="images/horizontal Wasan No Lines Slim Pu.png" width="16"/>             | wasan                     |
-| <img src="images/horizontal 4 No Lines Slim Pu.png" width="32"/>         | pon  | <img src="images/horizontal Thousands Delimiter No Lines Pu.png" width="16"/>    | tasa/masa/wasa/pasa/pasan |
-| <img src="images/horizontal 5 No Lines Slim Pu.png" width="32"/>         | lun  | <img src="images/horizontal Negative No Lines Slim Pu.png" width="16"/>          | ike                       |
-| <img src="images/horizontal 6 No Lines Slim Pu.png" width="32"/>         | jun  | <img src="images/horizontal Fraction Delimiter Pu.png" width="16"/>              | kipisi                    |
-| <img src="images/horizontal 7 No Lines Slim Pu.png" width="32"/>         | pen  | <img src="images/horizontal Number Symbol Slim Pu.png" width="16"/>              | nanpa                     |
-| <img src="images/horizontal 8 No Lines Slim Pu.png" width="32"/>         | ton  | <img src="images/horizontal Plus No Lines Slim Pu.png" width="16"/>              | eme                       |
-| <img src="images/horizontal 9 No Lines Slim Pu.png" width="32"/>         | nen  | <img src="images/horizontal Multiply No Lines Slim Pu.png" width="16"/>          | emute                     |
+| Glyph                                                               | Name | Glyph                                                                            | Name                      |
+|---------------------------------------------------------------------|------|----------------------------------------------------------------------------------|---------------------------|
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>         | non  | <img src="images/horizontal Decimal Delimiter nasin nanpa.png" width="16"/>               | pokala/pakala             |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>         | wan  | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>             | tasan                     |
+| <img src="images/horizontal 2 nasin nanpa.png" width="32"/>         | tun  | <img src="images/horizontal Masan nasin nanpa.png" width="16"/>             | masan                     |
+| <img src="images/horizontal 3 nasin nanpa.png" width="32"/>         | win  | <img src="images/horizontal Wasan nasin nanpa.png" width="16"/>             | wasan                     |
+| <img src="images/horizontal 4 nasin nanpa.png" width="32"/>         | pon  | <img src="images/horizontal Thousands Delimiter nasin nanpa.png" width="16"/>    | tasa/masa/wasa/pasa/pasan |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>         | lun  | <img src="images/horizontal Negative nasin nanpa.png" width="16"/>          | ike                       |
+| <img src="images/horizontal 6 nasin nanpa.png" width="32"/>         | jun  | <img src="images/horizontal Fraction Delimiter nasin nanpa.png" width="16"/>              | kipisi                    |
+| <img src="images/horizontal 7 nasin nanpa.png" width="32"/>         | pen  | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>              | nanpa                     |
+| <img src="images/horizontal 8 nasin nanpa.png" width="32"/>         | ton  | <img src="images/horizontal Plus nasin nanpa.png" width="16"/>              | eme                       |
+| <img src="images/horizontal 9 nasin nanpa.png" width="32"/>         | nen  | <img src="images/horizontal Multiply nasin nanpa.png" width="16"/>          | emute                     |
 
 
 ---
@@ -655,7 +655,7 @@ So the argument is:
 
 o lukin sona e nanpa:
 
-<img src="images/pi_e_phi_custom_digits_v3.png" width="768"/>
+<img src="images/pi_e_phi_custom_digits_v4.png" width="768"/>
 
 ### musi sitelen
 
