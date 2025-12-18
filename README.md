@@ -322,8 +322,8 @@ Prefix **ike** before any number:
 |---------------------------------------------------------------------|------|----------------------------------------------------------------------------------|---------------------------|
 | <img src="images/horizontal 0 nasin nanpa.png" width="32"/>         | non  | <img src="images/horizontal Decimal Delimiter nasin nanpa.png" width="16"/>               | pokala/pakala             |
 | <img src="images/horizontal 1 nasin nanpa.png" width="32"/>         | wan  | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>             | tasan                     |
-| <img src="images/horizontal 2 nasin nanpa.png" width="32"/>         | tun  | <img src="images/horizontal Masan nasin nanpa.png" width="16"/>             | masan                     |
-| <img src="images/horizontal 3 nasin nanpa.png" width="32"/>         | win  | <img src="images/horizontal Wasan nasin nanpa.png" width="16"/>             | wasan                     |
+| <img src="images/horizontal 2 nasin nanpa.png" width="32"/>         | tun  | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>             | masan                     |
+| <img src="images/horizontal 3 nasin nanpa.png" width="32"/>         | win  | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>             | wasan                     |
 | <img src="images/horizontal 4 nasin nanpa.png" width="32"/>         | pon  | <img src="images/horizontal Thousands Delimiter nasin nanpa.png" width="16"/>    | tasa/masa/wasa/pasa/pasan |
 | <img src="images/horizontal 5 nasin nanpa.png" width="32"/>         | lun  | <img src="images/horizontal Negative nasin nanpa.png" width="16"/>          | ike                       |
 | <img src="images/horizontal 6 nasin nanpa.png" width="32"/>         | jun  | <img src="images/horizontal Fraction Delimiter nasin nanpa.png" width="16"/>              | kipisi                    |
