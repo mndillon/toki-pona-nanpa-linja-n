@@ -311,7 +311,7 @@ Prefix **ike** before any number:
 - Does not add more context, makes no assumption that the string of digits represents a numeric value
 
 ### sitelen pona
-- numeric glyphs start with nanpa inside a cartouche, like a proper name, and re-purposing poki glyph for separators (nanpa and cartouche are optional)
+- numeric glyphs start with nanpa inside a cartouche, like a proper name
 - can be displayed horizontally or vertically
 - example glyph for 42,386.75:
 - <img src="images/number_42386_75_glyph_v8.png" width="320"/>
@@ -329,7 +329,7 @@ Prefix **ike** before any number:
 | <img src="images/horizontal 5 nasin nanpa.png" width="32"/>         | lun  | <img src="images/horizontal Negative nasin nanpa v2.png" width="16"/>            | ike                       |
 | <img src="images/horizontal 6 nasin nanpa.png" width="32"/>         | jun  | <img src="images/horizontal Fraction Delimiter nasin nanpa.png" width="16"/>     | kipisi                    |
 | <img src="images/horizontal 7 nasin nanpa.png" width="32"/>         | pen  | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>          | nanpa                     |
-| <img src="images/horizontal 8 nasin nanpa.png" width="32"/>         | ton  | <img src="images/horizontal Plus nasin nanpa.png" width="16"/>                   | eme                       |
+| <img src="images/horizontal 8 nasin nanpa v2.png" width="32"/>      | ton  | <img src="images/horizontal Plus nasin nanpa.png" width="16"/>                   | eme                       |
 | <img src="images/horizontal 9 nasin nanpa.png" width="32"/>         | nen  | <img src="images/horizontal Multiply nasin nanpa.png" width="16"/>               | emute                     |
 
 
