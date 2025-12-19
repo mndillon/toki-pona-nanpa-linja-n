@@ -46,16 +46,18 @@ While numbers may be a fundamental and necessary human concept,
 should the poet really be allowed to use an arbitrary dialect
 that carefully introduces new lexicon
 to only describe strings of decimal digits accurately.
-In a copy and paste world, we can afterall just copy and send MMMMLLLTT,
+In a copy and paste world,
+we can afterall just copy and send TWALLTTALLLAMMMMLLTAMMMLAMLLLW,
 and pretend we where able to say it properly in the first place.
 
 The critic is repulsed by these foreign logical ideas and the disregard for tradition.
 And in fact, the critic—speaking with the full weight of tradition—would say, ne, that,
 in the traditional system, the number should always be written in full as
 “mute mute mute mute luka luka luka tu tu”.
-Forms such as “MMMMLLLTT” are not syntactically valid Toki Pona,
-and “99” is an internationaly accepted decimal notation rather than traditional wording (although it did exist long before Toki Pona).
-If we allowed “99”, we would also have to accept any other logical description of the number that respects syntax,
+Forms such as TWALLTTALLLAMMMMLLTAMMMLAMLLLW are not syntactically valid Toki Pona,
+and “3.1415926536" is an internationaly accepted decimal notation
+rather than traditional wording (although it did exist long before Toki Pona).
+If we allowed “3.1415926536", we would also have to accept any other logical description of the number that respects syntax,
 so the critic insists that we instead must ban all other numeric expressions
 and restrict ourselves to always using the full traditional Toki Pona forms.
 
