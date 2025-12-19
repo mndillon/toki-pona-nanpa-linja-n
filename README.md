@@ -311,7 +311,7 @@ Prefix **ike** before any number:
 - Does not add more context, makes no assumption that the string of digits represents a numeric value
 
 ### sitelen pona
-- numeric glyphs start with nanpa inside a cartouche, like a proper name
+- nanpa-linja-n numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
 - can be displayed horizontally or vertically
 - example glyph for 42,386.75:
 - <img src="images/number_42386_75_glyph_v8.png" width="320"/>
