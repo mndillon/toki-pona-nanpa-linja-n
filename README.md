@@ -316,7 +316,7 @@ Prefix **ike** before any number:
 ### sitelen pona
 - **nanpa-linja-n** numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
 - the nanpa glyph will never be found anywhere else except at the start of a nanpa-linja-n number
-- there is a **UNIQUE** one-to-one mapping from numbers to "names"
+- there is a **UNIQUE** one-to-one mapping from numbers to cartouche "names"
   - all the digits and separators are mapped to separate letters (see tables below)
   - when a cartouche starts with a nanpa glyph and all the glyphs in the cartouche belong to the set below, then we interpret the cartouche as a nanpa-linja-n number
   - when writing down the word from the cartouche, we will write it out as all capitals, so we can easily see that it encodes a number
@@ -363,7 +363,7 @@ Prefix **ike** before any number:
     - K can be repeated many times to show any number of 000 groups at the end of a number
   - O is duplicated
     - O by itself represents pokala, the decimal point
-    - O doubled represents eme, the integer from fraction delimiter (when integers have additional fraction parts)
+    - O doubled represents eme, the delimiter between integer part and fraction part of a number (when integers have additional fraction parts)
 
 | Glyph                                                                                          | Letter(s)    |  Name                     | Design Rationale                                      |
 |------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
