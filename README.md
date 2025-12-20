@@ -312,25 +312,41 @@ Prefix **ike** before any number:
 
 ### sitelen pona
 - nanpa-linja-n numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
+- when a cartouche starts with a nanpa glyph and all the glyphs in the cartouche belong to the set below, then we interpret the cartouche as a nanpa-linja-n number
+- the nanpa glyph will never be found anywhere else except at the start of a nanpa-linja-n number
+- the table below has some duplicate letters, but the letter placements will determine how the letter is interpreted:
+  - n is duplicated
+    - n at start is always nanpa, this is the only place that nanpa will be found
+    - n after n is ni representing ike negative
+    - n after e is ni representing ike negative
+    - n after anything else is ni representing tasa/masa/wasa/pasa/pasan
+  - k is duplicated
+    - k can repeat but that maps to repeated kupulu representing tasan, masan, wasan
+  - e is duplicated
+    - e by itself is eme, plus describing addition, or an integer followed by a fraction
+    - e doubled is esun, esun representing kipisi, represents fraction divisor
+  - a nanpa-linja-n literal string of **Nniowtsnalunmpj**, can be decoded as **#-0.123456789** (with the pasa/pasan removed)
+  - a nanpa-linja-n literal string of **Naeweet**, can be decoded as **#8½**
+  - a nanpa-linja-n literal string of **Nusolkk**, can be decoded as **#64.5M**
 - can be displayed horizontally or vertically
-- example glyph for 42,386.75:
+- example glyph for 42,386.75 (literally Natnspuoml):
 - <img src="images/number_42386_75_glyph_v8.png" width="320"/>
-- example glyph for 64.5M:
+- example glyph for 64.5M (literally Nusolkk):
 - <img src="images/number_64_5_M_glyph_v5.png" width="160"/>
 - We will reuse existing glyphs and think of them as having extra names in the context of nanpa-linja-n:
 
-| Glyph                                                               | Name | Glyph                                                                            | Name                      |
-|---------------------------------------------------------------------|------|----------------------------------------------------------------------------------|---------------------------|
-| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>         | non  | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>   | pokala/pakala             |
-| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>         | wan  | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                  | tasan                     |
-| <img src="images/horizontal 2 nasin nanpa.png" width="32"/>         | tun  | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                  | masan                     |
-| <img src="images/horizontal 3 nasin nanpa.png" width="32"/>         | win  | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                  | wasan                     |
-| <img src="images/horizontal 4 nasin nanpa.png" width="32"/>         | pon  | <img src="images/horizontal Thousands Delimiter nasin nanpa.png" width="16"/>    | tasa/masa/wasa/pasa/pasan |
-| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>         | lun  | <img src="images/horizontal Negative nasin nanpa v2.png" width="16"/>            | ike                       |
-| <img src="images/horizontal 6 nasin nanpa.png" width="32"/>         | jun  | <img src="images/horizontal Fraction Delimiter nasin nanpa.png" width="16"/>     | kipisi                    |
-| <img src="images/horizontal 7 nasin nanpa.png" width="32"/>         | pen  | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>          | nanpa                     |
-| <img src="images/horizontal 8 nasin nanpa v2.png" width="32"/>      | ton  | <img src="images/horizontal Plus nasin nanpa.png" width="16"/>                   | eme                       |
-| <img src="images/horizontal 9 nasin nanpa.png" width="32"/>         | nen  | <img src="images/horizontal Multiply nasin nanpa.png" width="16"/>               | emute                     |
+| Glyph                                                             | First Letter | Name  | Glyph                                                                                | First Letter |  Name                     |
+|-------------------------------------------------------------------|--------------|-------|--------------------------------------------------------------------------------------|--------------|---------------------------|
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | i            | non   | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>       | o            | pokala/pakala             |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | w            | wan   | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                      | k            | tasan                     |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | t            | tun   | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                      | kk           | masan                     |
+| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | s            | win   | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                      | kkk          |  wasan                    |
+| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | a            | pon   | <img src="images/horizontal Thousands Delimiter nasin nanpa v2.png" width="16"/>     | n            | tasa/masa/wasa/pasa/pasan |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | l            | lun   | <img src="images/horizontal Negative nasin nanpa v3.png" width="16"/>                | n            | ike                       |
+| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | u            | jun   | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>              | n            | nanpa                     |
+| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | m            | pen   | <img src="images/horizontal Plus nasin nanpa.png" width="16"/>                       | e            | eme                       |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | p            | ton   | <img src="images/horizontal Fraction Delimiter nasin nanpa v2.png" width="16"/>      | ee           |  kipisi                   |
+| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | j            | nen   |                                                                                      |              |                           |
 
 
 ---
