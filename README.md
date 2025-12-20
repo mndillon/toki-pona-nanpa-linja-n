@@ -378,7 +378,9 @@ Prefix **ike** before any number:
 | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | nanpa                     | nanpa, always at start of numeric description         |
 
 
+
 <img src="images/nanpa_linja_n_examples_with_descriptions_fact_sheet.png" width="760"/>
+
 
 
 ---
