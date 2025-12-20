@@ -337,7 +337,7 @@ Prefix **ike** before any number:
   - the number 3 → (NS) → win
   - the third → nanpa (written outside of cartouche) (NS) → nanpa win
 
-| Glyph                                                             | Letter       | Name  | Design Rationale               |
+| Glyph                                                             | Letter       | #~n Name  | Design Rationale               |
 |-------------------------------------------------------------------|--------------|-------|--------------------------------|
 | <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | non   | round like zero                |
 | <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | wan   | wan                            |
@@ -365,7 +365,7 @@ Prefix **ike** before any number:
     - O by itself represents pokala, the decimal point
     - O doubled represents eme, the delimiter between integer part and fraction part of a number (when integers have additional fraction parts)
 
-| Glyph                                                                                          | Letter(s)    |  Name                     | Design Rationale                                      |
+| Glyph                                                                                          | Letter(s)    |  #~n Name                     | Design Rationale                                      |
 |------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
 | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | pokala/pakala             | decimal point, has small circle at the bottom         |
 | <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa.png" width="16"/>      | OO           | eme                       | needed to split integer from fraction part            |
