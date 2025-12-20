@@ -339,13 +339,13 @@ Prefix **ike** before any number:
 |-------------------------------------------------------------------|--------------|-------|--------------------------------------------------------------------------------------|--------------|---------------------------|
 | <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | i            | non   | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>       | o            | pokala/pakala             |
 | <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | w            | wan   | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                      | k            | tasan                     |
-| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | t            | tun   | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                      | kk           | masan                     |
-| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | s            | win   | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                      | kkk          |  wasan                    |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | t            | tun   | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                      | k            | masan                     |
+| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | s            | win   | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                      | k            |  wasan                    |
 | <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | a            | pon   | <img src="images/horizontal Thousands Delimiter nasin nanpa v2.png" width="16"/>     | n            | tasa/masa/wasa/pasa/pasan |
 | <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | l            | lun   | <img src="images/horizontal Negative nasin nanpa v3.png" width="16"/>                | n            | ike                       |
 | <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | u            | jun   | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>              | n            | nanpa                     |
 | <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | m            | pen   | <img src="images/horizontal Plus nasin nanpa.png" width="16"/>                       | e            | eme                       |
-| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | p            | ton   | <img src="images/horizontal Fraction Delimiter nasin nanpa v2.png" width="16"/>      | ee           |  kipisi                   |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | p            | ton   | <img src="images/horizontal Fraction Delimiter nasin nanpa v2.png" width="16"/>      | e            |  kipisi                   |
 | <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | j            | nen   |                                                                                      |              |                           |
 
 
