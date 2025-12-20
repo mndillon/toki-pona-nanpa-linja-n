@@ -338,17 +338,17 @@ Prefix **ike** before any number:
   - the third → nanpa (written outside of cartouche) (NS) → nanpa win
 
 | Glyph                                                             | Letter       | #~n Name  | Design Rationale               |
-|-------------------------------------------------------------------|--------------|-------|--------------------------------|
-| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | non   | round like zero                |
-| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | wan   | wan                            |
-| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | tun   | tu                             |
-| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | win   | looks like 3 on its side       |
-| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | A            | pon   | has four lines towards center  |
-| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | lun   | luka                           |
-| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | jun   | has six short lines            |
-| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | pen   | seven days in week             |
-| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | ton   | spiders have eight legs        |
-| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | nen   | nine months to carry pregnancy |
+|-------------------------------------------------------------------|--------------|-----------|--------------------------------|
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | non       | round like zero                |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | wan       | wan                            |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | tun       | tu                             |
+| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | win       | looks like 3 on its side       |
+| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | A            | pon       | has four lines towards center  |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | lun       | luka                           |
+| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | jun       | has six short lines            |
+| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | pen       | seven days in week             |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | ton       | spiders have eight legs        |
+| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | nen       | nine months to carry pregnancy |
 
 
 - the table below has some other delimiters used in numeric expressions inside cartouches:
@@ -378,7 +378,7 @@ Prefix **ike** before any number:
 | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | nanpa                     | nanpa, always at start of numeric description         |
 
 
-
+<img src="images/nanpa_linja_n_examples_with_descriptions_fact_sheet.png" width="760"/>
 
 
 ---
