@@ -288,6 +288,7 @@ Prefix **ike** before any number:
 - Contains **k**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
 - Meaning evokes "negative"
+- Always occurs at the start of a numeric expression (after nanpa)
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 
 ### tasa / masa / wasa
@@ -300,6 +301,7 @@ Prefix **ike** before any number:
 - All end in **-n** to signal end of number description
 - Zero-block shortcuts for clear large numbers
 - Adds more context, makes the assumption that the string of digits represents a numeric value
+- can repeat any number of times to express more 000 groupings at the end of numbers (e.g. masan wasan wasan)
 
 ### pasa / pasan
 - Contain **s**, which no digit word has
@@ -308,45 +310,75 @@ Prefix **ike** before any number:
 - pasa does not end in **-n** signalling more of the string of digits to follow
 - pasan ends in **-n** to signal that the last part of the string of digits follows
 - Have no value, only used to break up long sequences of digits
+- Never occurs at the start of a numeric expression or after a decimal point
 - Does not add more context, makes no assumption that the string of digits represents a numeric value
 
 ### sitelen pona
-- nanpa-linja-n numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
-- when a cartouche starts with a nanpa glyph and all the glyphs in the cartouche belong to the set below, then we interpret the cartouche as a nanpa-linja-n number
+- **nanpa-linja-n** numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
 - the nanpa glyph will never be found anywhere else except at the start of a nanpa-linja-n number
-- the table below has some duplicate letters, but the letter placements will determine how the letter is interpreted:
-  - n is duplicated
-    - n at start is always nanpa, this is the only place that nanpa will be found
-    - n after n is ni representing ike negative
-    - n after e is ni representing ike negative
-    - n after anything else is ni representing tasa/masa/wasa/pasa/pasan
-  - k is duplicated
-    - k can repeat but that maps to repeated kupulu representing tasan, masan, wasan
-  - e is duplicated
-    - e by itself is eme, plus describing addition, or an integer followed by a fraction
-    - e doubled is esun, esun representing kipisi, represents fraction divisor
-  - a nanpa-linja-n literal string of **Nniowtsnalunmpj**, can be decoded as **#-0.123456789** (with the pasa/pasan removed)
-  - a nanpa-linja-n literal string of **Naeweet**, can be decoded as **#8½**
-  - a nanpa-linja-n literal string of **Nusolkk**, can be decoded as **#64.5M**
+- there is a **UNIQUE** one-to-one mapping from numbers to "names"
+  - all the digits and separators are mapped to separate letters (see tables below)
+  - when a cartouche starts with a nanpa glyph and all the glyphs in the cartouche belong to the set below, then we interpret the cartouche as a nanpa-linja-n number
+  - when writing down the word from the cartouche, we will write it out as all capitals, so we can easily see that it encodes a number
+    - a nanpa-linja-n literal string of **NNIOWTSNALUNMPJ**, can be decoded as **-0.123456789** (with the pasa/pasan removed)
+      - <img src="images/number_negative_decimal_digits_glyph.png" width="320"/>
+    - a nanpa-linja-n literal string of **NAOOWET**, can be decoded as **8½**
+      - <img src="images/number_8_fraction_half_glyph.png" width="160"/>
+    - a nanpa-linja-n literal string of **NATNSPUOML**, can be decoded as **42,386.75**
+      - <img src="images/number_42386_75_glyph_v9.png" width="320"/>
+    - a nanpa-linja-n literal string of **NUSOLKK**, can be decoded as **64.5M**
+      - <img src="images/number_64_5_M_glyph_v5.png" width="160"/>
 - can be displayed horizontally or vertically
-- example glyph for 42,386.75 (literally Natnspuoml):
-- <img src="images/number_42386_75_glyph_v8.png" width="320"/>
-- example glyph for 64.5M (literally Nusolkk):
-- <img src="images/number_64_5_M_glyph_v5.png" width="160"/>
-- We will reuse existing glyphs and think of them as having extra names in the context of nanpa-linja-n:
+- We will reuse existing glyphs (and think of them as having extra names in the context of **nanpa-linja-n** cartouches), all letters will be written out in capitals:
+  - the brackets in these examples are just to depict the cartouche (and not written down):
+  - 17 → (NWM) → wapen
+  - 2,860 → (NTNPUI) → tun tasa tojunon
+  - 3.14159 → (NSOWAWNLJ) → win pokala wapowan pasan lunen
+  - the number 3 → (NS) → win
+  - the third → nanpa (written outside of cartouche) (NS) → nanpa win
 
-| Glyph                                                             | First Letter | Name  | Glyph                                                                                | First Letter |  Name                     |
-|-------------------------------------------------------------------|--------------|-------|--------------------------------------------------------------------------------------|--------------|---------------------------|
-| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | i            | non   | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>       | o            | pokala/pakala             |
-| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | w            | wan   | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                      | k            | tasan                     |
-| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | t            | tun   | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                      | k            | masan                     |
-| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | s            | win   | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                      | k            |  wasan                    |
-| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | a            | pon   | <img src="images/horizontal Thousands Delimiter nasin nanpa v2.png" width="16"/>     | n            | tasa/masa/wasa/pasa/pasan |
-| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | l            | lun   | <img src="images/horizontal Negative nasin nanpa v3.png" width="16"/>                | n            | ike                       |
-| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | u            | jun   | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>              | n            | nanpa                     |
-| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | m            | pen   | <img src="images/horizontal Plus nasin nanpa.png" width="16"/>                       | e            | eme                       |
-| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | p            | ton   | <img src="images/horizontal Fraction Delimiter nasin nanpa v2.png" width="16"/>      | e            |  kipisi                   |
-| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | j            | nen   |                                                                                      |              |                           |
+| Glyph                                                             | Letter       | Name  | Design Rationale               |
+|-------------------------------------------------------------------|--------------|-------|--------------------------------|
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | non   | round like zero                |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | wan   | wan                            |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | tun   | tu                             |
+| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | win   | looks like 3 on its side       |
+| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | A            | pon   | has four lines towards center  |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | lun   | luka                           |
+| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | jun   | has six short lines            |
+| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | pen   | seven days in week             |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | ton   | spiders have eight legs        |
+| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | nen   | nine months to carry pregnancy |
+
+
+- the table below has some other delimiters used in numeric expressions inside cartouches:
+- the table has some duplicate letters, but the letter placements will determine how the letter is interpreted:
+  - N is duplicated
+    - N at start is always nanpa, this is the only place that nanpa will be found
+    - N after N (depicted with ni) represents ike, negative
+    - N after O (depicted with ni) represents ike, negative
+    - N after anything else (depicted with ni) represents tasa/masa/wasa/pasa/pasan
+  - K is duplicated
+    - K can repeat but that maps to repeated kulupu representing tasan, masan, wasan
+    - K can be repeated many times to show any number of 000 groups at the end of a number
+  - O is duplicated
+    - O by itself represents pokala, the decimal point
+    - O doubled represents eme, the integer from fraction delimiter (when integers have additional fraction parts)
+
+| Glyph                                                                                          | Letter(s)    |  Name                     | Design Rationale                                      |
+|------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
+| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | pokala/pakala             | decimal point, has small circle at the bottom         |
+| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa.png" width="16"/>      | OO           | eme                       | needed to split integer from fraction part            |
+| <img src="images/horizontal Fraction Delimiter nasin nanpa v3.png" width="16"/>                | E            | kipisi                    | needed to split numerator and denominator of fraction |
+| <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | tasan                     | kulupu has three circles, thousands                   |
+| <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | masan                     | millions                                              |
+| <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | wasan                     | billions                                              |
+| <img src="images/horizontal Thousands Delimiter nasin nanpa v2.png" width="16"/>               | N            | tasa/masa/wasa/pasa/pasan | natural break                                         |
+| <img src="images/horizontal Negative nasin nanpa v3.png" width="16"/>                          | N            | ike                       | downwards suggests negative                           |
+| <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | nanpa                     | nanpa, always at start of numeric description         |
+
+
+
 
 
 ---
@@ -359,12 +391,14 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 ### Equals: sama
 - Contains **s**, which no digit word has
 - Good candidate
+- Never appears in a numeric cartouche
 
 ### Addition: eme
 - Contains **m**, which no digit word has
 - Meaning inspired by **en** but ending in **-me**
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
+- Never appears in a numeric cartouche
 - win eme tun eme wan li sama jun
 
 ### Subtract: weka
@@ -372,6 +406,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Meaning invokes "away"
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
+- Never appears in a numeric cartouche
 - win weka ike tun li sama lun
 
 ### Multiply: emute
@@ -379,6 +414,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Meaning inspired by **eme** + **mute** (add many)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
+- Never appears in a numeric cartouche
 - win emute tun li sama jun
 
 ### Division: kipisi
@@ -386,12 +422,14 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Already used to describe fractions
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
+- Never appears in a numeric cartouche (but fraction symbol can appear in a numeric cartouche)
 - ton kipisi ike tun li sama ike pon
 
 ### Power: sewi
 - Contains **s**, which no digit word has
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
+- Never appears in a numeric cartouche
 - tun sewi win li sama ton
 - pen tasan li sama pen emute wanon sewi win
 
