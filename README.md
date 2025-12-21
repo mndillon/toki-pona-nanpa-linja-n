@@ -325,7 +325,7 @@ Prefix **nike** before any number:
       - <img src="images/number_8_fraction_half_glyph.png" width="160"/>
     - a nanpa-linja-n literal string of **NATNSPUOML**, can be decoded as **42,386.75**
       - <img src="images/number_42386_75_glyph_v9.png" width="320"/>
-    - a nanpa-linja-n literal string of **NUSOLKK**, can be decoded as **64.5M**
+    - a nanpa-linja-n literal string of **NUAOLKK**, can be decoded as **64.5M**
       - <img src="images/number_64_5_M_glyph_v5.png" width="160"/>
 - can be displayed horizontally or vertically
 - We will reuse existing glyphs (and think of them as having extra names in the context of **nanpa-linja-n** cartouches), all letters will be written out in capitals:
