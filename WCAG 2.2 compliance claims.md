@@ -103,9 +103,9 @@ nanpa-linja-n introduces specific tokens for structure:
 
 - Group markers: `tasa/tasan`, `masa/masan`, `wasa/wasan`
 - Block continuation vs final block: `pasa`, `pasan`
-- Decimal marker: `pokala`
-- Fraction marker: `kipisi`
-- Negative sign: `ike`
+- Decimal marker: `okala`
+- Fraction marker: `ekipi`
+- Negative sign: `nike`
 
 All of these are ordinary Toki Pona–style words. A speech engine can read them as normal text, but their presence makes the *structure* of the number explicit:
 
@@ -144,7 +144,7 @@ WCAG requires that information and relationships not be conveyed by visual forma
 nanpa-linja-n:
 
 - Encodes grouping and hierarchy using specific words (`tasa`, `masa`, `wasa`)
-- Marks decimal points, fractions, and sign with unambiguous tokens (`pokala`, `kipisi`, `ike`)
+- Marks decimal points, fractions, and sign with unambiguous tokens (`okala`, `ekipi`, `nike`)
 - Uses the final `-n` as a consistent, phonological “end of digits” marker
 
 This means:

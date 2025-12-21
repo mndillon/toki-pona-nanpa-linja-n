@@ -81,7 +81,7 @@ ona li jo e tenpo sike nanpa tunen.
 30 → winon<br>
 
 **nanpa-linja-n:**
-tenpo suno la ni li lon tenpo wapon pokala winon.
+tenpo suno la ni li lon tenpo wapon okala winon.
 
 ### “It is 7:05”
 
@@ -89,7 +89,7 @@ tenpo suno la ni li lon tenpo wapon pokala winon.
 05 → nolun<br>
 
 **nanpa-linja-n:**
-tenpo ni li pen pokala nolun.
+tenpo ni li pen okala nolun.
 
 ### “The logs say 21:34:56 UTC”
 
@@ -98,7 +98,7 @@ tenpo ni li pen pokala nolun.
 56 → lujun<br>
 
 **nanpa-linja-n:**
-toki pi lipu sona li toki e tenpo tuwan pokala wipon pokala lujun lon ma UTC.
+toki pi lipu sona li toki e tenpo tuwan okala wipon okala lujun lon ma UTC.
 
 ---
 
@@ -113,10 +113,10 @@ mani pi ijo ni li watun.
 
 ### “The total is 3.75”
 
-3.75 → win pokala pelun<br>
+3.75 → win okala pelun<br>
 
 **nanpa-linja-n:**
-mani ale li nanpa win pokala pelun.
+mani ale li nanpa win okala pelun.
 
 ---
 
@@ -124,17 +124,17 @@ mani ale li nanpa win pokala pelun.
 
 ### “Length: 2.5 m“
 
-2.5 → tun pokala lun<br>
+2.5 → tun okala lun<br>
 
 **nanpa-linja-n:**
-linja ni li suli tun pokala lun mije.
+linja ni li suli tun okala lun mije.
 
 ### “Weight: 0.75 kg“
 
-0.75 → non pokala pelun<br>
+0.75 → non okala pelun<br>
 
 **nanpa-linja-n:**
-kiwen ni li walo non pokala pelun kilokilo.
+kiwen ni li walo non okala pelun kilokilo.
 
 ---
 
@@ -149,10 +149,10 @@ tenpo suno ni li seli waton.
 
 ### “Minus 3 degrees”
 
-−3 → ike win<br>
+−3 → nike win<br>
 
 **nanpa-linja-n:**
-tenpo suno ni li seli ike win.
+tenpo suno ni li seli nike win.
 
 ---
 
@@ -219,21 +219,21 @@ poki li lon sitelen win en sitelen watun.
 
 ### “3 divided by 4 is 0.75”
 
-3/4 → win kipisi pon<br>
-0.75 → non pokala pelun<br>
+3/4 → win ekipi pon<br>
+0.75 → non okala pelun<br>
 
 **nanpa-linja-n:**
-win kipisi pon li sama non pokala pelun.
+win ekipi pon li sama non okala pelun.
 
 
 ### “17.3 + 9.5 = 26.8”
 
-17.3 → wapen pokala win<br>
-9.5 → nen pokala lun<br>
-26.8 → tujun pokala ton<br>
+17.3 → wapen okala win<br>
+9.5 → nen okala lun<br>
+26.8 → tujun okala ton<br>
 
 **nanpa-linja-n:**
-wapen pokala win eme nen pokala lun li sama tujun pokala ton.
+wapen okala win omo nen okala lun li sama tujun okala ton.
 
 ### “12 × 5 = 60”
 
@@ -310,7 +310,7 @@ o tawa pewiwan!
 48 → poton<br>
 
 **nanpa-linja-n:**
-tomo tawa li kama lon tenpo wanen pokala poton.
+tomo tawa li kama lon tenpo wanen okala poton.
 
 ---
 
