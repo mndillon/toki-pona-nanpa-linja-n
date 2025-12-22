@@ -315,7 +315,7 @@ Prefix **nike** before any number:
 ### sitelen pona
 - **nanpa-linja-n** numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
 - the nanpa glyph will never be found anywhere else except at the start of a nanpa-linja-n number
-- there is a **UNIQUE** one-to-one mapping from numbers to cartouche "names"
+- there is a **UNIQUE** one-to-one mapping from numbers to cartouche "labels"
   - all the digits and separators are mapped to separate letters (see tables below)
   - when a cartouche starts with a nanpa glyph and all the glyphs in the cartouche belong to the set below, then we interpret the cartouche as a nanpa-linja-n number
   - when writing down the word from the cartouche, we will write it out as all capitals, so we can easily see that it encodes a number
