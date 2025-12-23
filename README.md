@@ -400,7 +400,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Meaning inspired by **en** but ending in **-me** then transformed to **omo**
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- Never appears in a numeric cartouche
+- Never appears in a numeric cartouche (but integer and fraction separator can appear in a numeric cartouche)
 - win omo tun omo wan li sama jun
 
 ### Subtract: weka
@@ -408,7 +408,7 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Meaning invokes "away"
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- Never appears in a numeric cartouche
+- Never appears in a numeric cartouche (but negative symbol can appear in a numeric cartouche)
 - win weka nike tun li sama lun
 
 ### Multiply: emute
