@@ -164,8 +164,8 @@ Examples:
 
 ---
 
-## Fractions — ekipi
-**ekipi** expresses fractions “over / divided by”.
+## Fractions — esewi
+**esewi** expresses fractions “over / divided by”.
 
 Rule:
 
@@ -175,14 +175,14 @@ Rule:
 Examples:
 
 ```
-1/2                 → wan ekipi tun
-3/4                 → win ekipi pon
-5/8                 → lun ekipi ton
-9¾                  → nen omo win ekipi pon
-9¾                  → winen ekipi pon
-567/890             → lujupen ekipi tonenon
-1,234 / 56          → wan tasa tuwipon ekipi lujun
-3 / 1,000,000,000   → win ekipi wan wasan
+1/2                 → wan esewi tun
+3/4                 → win esewi pon
+5/8                 → lun esewi ton
+9¾                  → nen omo win esewi pon
+9¾                  → winen esewi pon
+567/890             → lujupen esewi tonenon
+1,234 / 56          → wan tasa tuwipon esewi lujun
+3 / 1,000,000,000   → win esewi wan wasan
 ```
 
 ---
@@ -204,11 +204,11 @@ Prefix **nike** before any number:
 ## Mixed Expressions
 
 ```
-(3.75) / 4   → win okala pelun ekipi pon
-3 / 4.75     → win ekipi pon okala pelun
+(3.75) / 4   → win okala pelun esewi pon
+3 / 4.75     → win esewi pon okala pelun
 1,234.567    → wan tasa tuwipon okala lujupen
 0.5          → non okala lun
-1/2          → wan ekipi tun
+1/2          → wan esewi tun
 5:38         → tenpo lun okala witon
 19:46:27     → tenpo wanen okala pojun okala tupen
 ```
@@ -273,20 +273,20 @@ Prefix **nike** before any number:
 ### okala
 - Contain **k**, which no digit word has
 - Do not end in **-n** signalling more of the number to follow
-- Meaning evokes “next section/context” (poka la), then drop 'p' at start
+- Meaning derived from “next section/context” (poka la), then drop 'p' at start
 - Can be used with tenpo for hour and minute delimiter
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
-### ekipi
-- Contains **k**, which no digit word has
+### esewi
+- Contains **S**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
-- Meaning evokes “division”, derived from "kipisi"
+- Meaning derived from "sewi"
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
 ### nike
 - Contains **k**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
-- Meaning evokes "negative", derived from "ike"
+- Meaning derived from "ike"
 - Always occurs at the start of a numeric expression (after nanpa)
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 
@@ -368,7 +368,7 @@ Prefix **nike** before any number:
 |------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
 | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | okala                     | decimal point, has small circle at the bottom         |
 | <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa.png" width="16"/>      | OO           | omo                       | needed to split integer from fraction part            |
-| <img src="images/horizontal Fraction Delimiter nasin nanpa v3.png" width="16"/>                | E            | ekipi                     | needed to split numerator and denominator of fraction |
+| <img src="images/horizontal Fraction Delimiter nasin nanpa v3.png" width="16"/>                | E            | esewi                     | needed to split numerator and denominator of fraction |
 | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | tasan                     | kulupu has three circles, thousands                   |
 | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | masan                     | millions                                              |
 | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | wasan                     | billions                                              |

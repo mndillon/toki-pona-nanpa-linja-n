@@ -219,11 +219,11 @@ poki li lon sitelen win en sitelen watun.
 
 ### “3 divided by 4 is 0.75”
 
-3/4 → win ekipi pon<br>
+3/4 → win esewi pon<br>
 0.75 → non okala pelun<br>
 
 **nanpa-linja-n:**
-win ekipi pon li sama non okala pelun.
+win esewi pon li sama non okala pelun.
 
 
 ### “17.3 + 9.5 = 26.8”
