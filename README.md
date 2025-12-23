@@ -178,8 +178,8 @@ Examples:
 1/2                 → wan ekipi tun
 3/4                 → win ekipi pon
 5/8                 → lun ekipi ton
-8½                  → ton omo wan ekipi tun
-8½                  → wapen ekipi tun
+9¾                  → nen omo win ekipi pon
+9¾                  → winen ekipi pon
 567/890             → lujupen ekipi tonenon
 1,234 / 56          → wan tasa tuwipon ekipi lujun
 3 / 1,000,000,000   → win ekipi wan wasan
@@ -321,8 +321,8 @@ Prefix **nike** before any number:
   - when writing down the word from the cartouche, we will write it out as all capitals, so we can easily see that it encodes a number
     - a nanpa-linja-n literal string of **NNIOWTSNALUNMPJ**, can be decoded as **-0.123456789** (with the pasa/pasan removed)
       - <img src="images/number_negative_decimal_digits_glyph.png" width="320"/>
-    - a nanpa-linja-n literal string of **NPOOWET**, can be decoded as **8½**
-      - <img src="images/number_8_fraction_half_glyph.png" width="160"/>
+    - a nanpa-linja-n literal string of **NJOOSEA**, can be decoded as **9¾**
+      - <img src="images/number_nine_fraction_three_quarters.png" width="160"/>
     - a nanpa-linja-n literal string of **NATNSPUOML**, can be decoded as **42,386.75**
       - <img src="images/number_42386_75_glyph_v9.png" width="320"/>
     - a nanpa-linja-n literal string of **NUAOLKK**, can be decoded as **64.5M**
