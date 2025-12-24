@@ -81,7 +81,7 @@ ona li jo e tenpo sike nanpa tunen.
 30 → winon<br>
 
 **nanpa-linja-n:**
-tenpo suno la ni li lon tenpo wapon okala winon.
+tenpo suno la ni li lon tenpo wapon oselo winon.
 
 ### “It is 7:05”
 
@@ -89,7 +89,7 @@ tenpo suno la ni li lon tenpo wapon okala winon.
 05 → nolun<br>
 
 **nanpa-linja-n:**
-tenpo ni li pen okala nolun.
+tenpo ni li pen oselo nolun.
 
 ### “The logs say 21:34:56 UTC”
 
@@ -98,7 +98,7 @@ tenpo ni li pen okala nolun.
 56 → lujun<br>
 
 **nanpa-linja-n:**
-toki pi lipu sona li toki e tenpo tuwan okala wipon okala lujun lon ma UTC.
+toki pi lipu sona li toki e tenpo tuwan oselo wipon oselo lujun lon ma UTC.
 
 ---
 
@@ -113,10 +113,10 @@ mani pi ijo ni li watun.
 
 ### “The total is 3.75”
 
-3.75 → win okala pelun<br>
+3.75 → win oselo pelun<br>
 
 **nanpa-linja-n:**
-mani ale li nanpa win okala pelun.
+mani ale li nanpa win oselo pelun.
 
 ---
 
@@ -124,17 +124,17 @@ mani ale li nanpa win okala pelun.
 
 ### “Length: 2.5 m“
 
-2.5 → tun okala lun<br>
+2.5 → tun oselo lun<br>
 
 **nanpa-linja-n:**
-linja ni li suli tun okala lun mije.
+linja ni li suli tun oselo lun mije.
 
 ### “Weight: 0.75 kg“
 
-0.75 → non okala pelun<br>
+0.75 → non oselo pelun<br>
 
 **nanpa-linja-n:**
-kiwen ni li walo non okala pelun kilokilo.
+kiwen ni li walo non oselo pelun kilokilo.
 
 ---
 
@@ -220,20 +220,20 @@ poki li lon sitelen win en sitelen watun.
 ### “3 divided by 4 is 0.75”
 
 3/4 → win esewi pon<br>
-0.75 → non okala pelun<br>
+0.75 → non oselo pelun<br>
 
 **nanpa-linja-n:**
-win esewi pon li sama non okala pelun.
+win esewi pon li sama non oselo pelun.
 
 
 ### “17.3 + 9.5 = 26.8”
 
-17.3 → wapen okala win<br>
-9.5 → nen okala lun<br>
-26.8 → tujun okala ton<br>
+17.3 → wapen oselo win<br>
+9.5 → nen oselo lun<br>
+26.8 → tujun oselo ton<br>
 
 **nanpa-linja-n:**
-wapen okala win omo nen okala lun li sama tujun okala ton.
+wapen oselo win okin nen oselo lun li sama tujun oselo ton.
 
 ### “12 × 5 = 60”
 
@@ -310,7 +310,7 @@ o tawa pewiwan!
 48 → poton<br>
 
 **nanpa-linja-n:**
-tomo tawa li kama lon tenpo wanen okala poton.
+tomo tawa li kama lon tenpo wanen oselo poton.
 
 ---
 

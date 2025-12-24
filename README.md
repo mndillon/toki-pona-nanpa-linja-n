@@ -126,9 +126,9 @@ pasan = last part of digit sequence follows
 300,000,000 → winonon masan
 3,000,000,000 → win wasan
 7,321,900   → pen masa wituwan tasa nenonon
-64.5M       → jupon okala lun masan
-64.5B       → jupon okala lun wasan
-64.5T       → jupon okala lun tasa wasan
+64.5M       → jupon oselo lun masan
+64.5B       → jupon oselo lun wasan
+64.5T       → jupon oselo lun tasa wasan
 123456789   → watuwipolujupetonen (using block words is optional, but often very helpful for understanding)
 123456789   → watun pasa wipolun pasan jupetonen (pasa and pasan can be used anywhere to break up large numbers)
 123456789   → watuwipolun pasan jupetonen
@@ -137,13 +137,13 @@ pasan = last part of digit sequence follows
 2025        → tun tasa tulun
 2025        → tunon pasan tulun
 2025        → tun pasa non pasa tun pasan lun
-3.141592    → win okala wapowalunetun
+3.141592    → win oselo wapowalunetun
 ```
 
 ---
 
-## Decimal Separator — okala
-**okala** separates whole and decimal parts.
+## Decimal Separator — oselo
+**oselo** separates whole and decimal parts.
 
 Rules:
 
@@ -154,12 +154,12 @@ Rules:
 Examples:
 
 ```
-0.5       → non okala lun
-3.75      → win okala pelun
-12.04     → watun okala nopon
-37.9      → wipen okala nen
-0.125     → non okala watulun
-3.141592  → win okala wapowan pasan lunetun
+0.5       → non oselo lun
+3.75      → win oselo pelun
+12.04     → watun oselo nopon
+37.9      → wipen oselo nen
+0.125     → non oselo watulun
+3.141592  → win oselo wapowan pasan lunetun
 ```
 
 ---
@@ -178,7 +178,7 @@ Examples:
 1/2                 → wan esewi tun
 3/4                 → win esewi pon
 5/8                 → lun esewi ton
-9¾                  → nen omo win esewi pon
+9¾                  → nen okin win esewi pon
 9¾                  → winen esewi pon
 567/890             → lujupen esewi tonenon
 1,234 / 56          → wan tasa tuwipon esewi lujun
@@ -195,7 +195,7 @@ Prefix **nike** before any number:
 ```
 −5         → nike lun
 −12        → nike watun
-−0.4       → nike non okala pon
+−0.4       → nike non oselo pon
 −30,000    → nike winon tasan
 ```
 
@@ -204,13 +204,13 @@ Prefix **nike** before any number:
 ## Mixed Expressions
 
 ```
-(3.75) / 4   → win okala pelun esewi pon
-3 / 4.75     → win esewi pon okala pelun
-1,234.567    → wan tasa tuwipon okala lujupen
-0.5          → non okala lun
+(3.75) / 4   → win oselo pelun esewi pon
+3 / 4.75     → win esewi pon oselo pelun
+1,234.567    → wan tasa tuwipon oselo lujupen
+0.5          → non oselo lun
 1/2          → wan esewi tun
-5:38         → tenpo lun okala witon
-19:46:27     → tenpo wanen okala pojun okala tupen
+5:38         → tenpo lun oselo witon
+19:46:27     → tenpo wanen oselo pojun oselo tupen
 ```
 
 ---
@@ -226,7 +226,7 @@ Prefix **nike** before any number:
     - Say "2010": "tun tasa wanon"
     - Say "2000" followed by "10": "tun tasan wanon"
     - Say "2001" followed by "0": "tun tasa wan non"
-    - Say "2001.0": "tun tasa wan okala non"
+    - Say "2001.0": "tun tasa wan oselo non"
     - Say "243-555-0169": "tupowin pasa lululun pasan nowajunen"
     - The **-n** is a morphological marker, indicating the end of a digit sequence
     - Screen readers can communicate longer digit sequences with less cognitive load
@@ -270,15 +270,15 @@ Prefix **nike** before any number:
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
 
 
-### okala
-- Contain **k**, which no digit word has
+### oselo
+- Contain **s**, which no digit word has
 - Do not end in **-n** signalling more of the number to follow
-- Meaning derived from “next section/context” (poka la), then drop 'p' at start
+- Meaning derived from “selo”
 - Can be used with tenpo for hour and minute delimiter
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
 ### esewi
-- Contains **S**, which no digit word has
+- Contains **s**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
 - Meaning derived from "sewi"
 - Adds more context, makes the assumption that the strings of digits represent numeric values
@@ -329,10 +329,11 @@ Prefix **nike** before any number:
       - <img src="images/number_64_5_M_glyph_v5.png" width="160"/>
 - can be displayed horizontally or vertically
 - We will reuse existing glyphs (and think of them as having extra names in the context of **nanpa-linja-n** cartouches), all letters will be written out in capitals:
+  - there already exist glyphs in pu that have more than one name (we are just adding extra names to more existing glyphs to map to this decimal system)
   - the brackets in these examples are just to depict the cartouche (and not written down):
   - 17 → (NWM) → wapen
   - 2,860 → (NTNPUI) → tun tasa tojunon
-  - 3.14159 → (NSOWAWNLJ) → win okala wapowan pasan lunen
+  - 3.14159 → (NSOWAWNLJ) → win oselo wapowan pasan lunen
   - the number 3 → (NS) → win
   - the third → nanpa (written outside of cartouche) (NS) → nanpa win
 
@@ -361,13 +362,13 @@ Prefix **nike** before any number:
     - K can repeat but that maps to repeated kulupu representing tasan, masan, wasan
     - K can be repeated many times to show any number of 000 groups at the end of a number
   - O is duplicated
-    - O by itself represents okala, the decimal point
-    - O doubled represents omo, the delimiter between integer part and fraction part of a number (when integers have additional fraction parts)
+    - O by itself represents oselo, the decimal point
+    - O doubled represents okin, the delimiter between integer part and fraction part of a number (when integers have additional fraction parts)
 
 | Glyph                                                                                          | Letter(s)    |  #~n Name                 | Design Rationale                                      |
 |------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
-| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | okala                     | decimal point, has small circle at the bottom         |
-| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa.png" width="16"/>      | OO           | omo                       | needed to split integer from fraction part            |
+| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | oselo                     | decimal point, has small circle at the bottom         |
+| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa.png" width="16"/>      | OO           | okin                       | needed to split integer from fraction part            |
 | <img src="images/horizontal Fraction Delimiter nasin nanpa v3.png" width="16"/>                | E            | esewi                     | needed to split numerator and denominator of fraction |
 | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | tasan                     | kulupu has three circles, thousands                   |
 | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | masan                     | millions                                              |
@@ -379,7 +380,7 @@ Prefix **nike** before any number:
 
 Sitelen Glyph Summary:
 
-<img src="images/nanpa_linja_n_examples_with_rationale_fact_sheet.png" width="760"/>
+<img src="images/nanpa_linja_n_examples_with_rationale_and_descriptions_fact_sheet.png" width="760"/>
 
 
 
@@ -395,13 +396,13 @@ Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan ja
 - Good candidate
 - Never appears in a numeric cartouche
 
-### Addition: omo
-- Contains **m**, which no digit word has
-- Meaning inspired by **en** but ending in **-me** then transformed to **omo**
+### Addition: okin
+- Contains **k**, which no digit word has
+- Meaning inspired by "kin"
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but integer and fraction separator can appear in a numeric cartouche)
-- win omo tun omo wan li sama jun
+- win okin tun okin wan li sama jun
 
 ### Subtract: weka
 - Contains **k**, which no digit word has
@@ -702,7 +703,7 @@ So the argument is:
 
 - o pilin e nanpa tan wan kepeken wanon.
 - pana e nimi uno tawa nanpa ni.
-- o omo e win tan ni.
+- o okin e win tan ni.
 - o sewi e ni kepeken tun.
 - o weka e nen tan ni.
 - o kipisi e ni kepeken nanpa nimi uno.
