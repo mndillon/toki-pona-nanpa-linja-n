@@ -380,7 +380,7 @@ Prefix **nike** before any number:
 
 Sitelen Glyph Summary:
 
-<img src="images/nanpa_linja_n_examples_with_rationale_and_descriptions_fact_sheet.png" width="760"/>
+<img src="images/nanpa_linja_n_examples_with_rationale_fact_sheet.png" width="760"/>
 
 
 
