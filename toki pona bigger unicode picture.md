@@ -58,16 +58,16 @@ To explore this, we look at the standard Unicode / UTF-8 table for basic Latin c
 |  45 | -           | hyphen-minus             | sitlen linja                 |
 |  46 | .           | full stop / period       | sitlen pini lili             |
 |  47 | /           | slash                    | sitlen linja anpa            |
-|  48 | 0           | digit zero               | non                          |
-|  49 | 1           | digit one                | wan                          |
-|  50 | 2           | digit two                | tun                          |
-|  51 | 3           | digit three              | win                          |
-|  52 | 4           | digit four               | pon                          |
-|  53 | 5           | digit five               | lun                          |
-|  54 | 6           | digit six                | jun                          |
-|  55 | 7           | digit seven              | pen                          |
-|  56 | 8           | digit eight              | ton                          |
-|  57 | 9           | digit nine               | nen                          |
+|  48 | 0           | digit zero               | nenin                        |
+|  49 | 1           | digit one                | newen                        |
+|  50 | 2           | digit two                | neten                        |
+|  51 | 3           | digit three              | nesen                        |
+|  52 | 4           | digit four               | nenan                        |
+|  53 | 5           | digit five               | nelen                        |
+|  54 | 6           | digit six                | nenun                        |
+|  55 | 7           | digit seven              | nemen                        |
+|  56 | 8           | digit eight              | nepen                        |
+|  57 | 9           | digit nine               | nejen                        |
 |  58 | :           | colon                    | sitlen tenpo                 |
 |  59 | ;           | semicolon                | sitlen tenpo lili            |
 |  60 | <           | less-than sign           | sitlen lili                  |
@@ -208,10 +208,10 @@ The advantage of keeping these digit names in **CVN** format is that they can be
 
 Example:
 
-- `"9"` → `nen`
-- `"8"` → `ton`
+- `"9"` → `nejen`
+- `"8"` → `nepen`
 
-So `"98"` can be represented as **neton**, a single word derived from the digit character names and still ending in `-n`.
+So `"98"` can be represented as **nejepen**, a single word derived from the digit character names and still ending in `-n`.
 
 ### 4.2. Mapping table for digit characters
 
@@ -220,23 +220,23 @@ Here is a compact table for decimal codes 48–57, which correspond to the ASCII
 
 | Dec | Char | Name        | TP name |
 |-----|------|-------------|---------|
-|  48 | 0    | digit zero  | non     |
-|  49 | 1    | digit one   | wan     |
-|  50 | 2    | digit two   | tun     |
-|  51 | 3    | digit three | win     |
-|  52 | 4    | digit four  | pon     |
-|  53 | 5    | digit five  | lun     |
-|  54 | 6    | digit six   | jun     |
-|  55 | 7    | digit seven | pen     |
-|  56 | 8    | digit eight | ton     |
-|  57 | 9    | digit nine  | nen     |
+|  48 | 0    | digit zero  | nenin   |
+|  49 | 1    | digit one   | newen   |
+|  50 | 2    | digit two   | neten   |
+|  51 | 3    | digit three | nesen   |
+|  52 | 4    | digit four  | nenan   |
+|  53 | 5    | digit five  | nelen   |
+|  54 | 6    | digit six   | nenun   |
+|  55 | 7    | digit seven | nemen   |
+|  56 | 8    | digit eight | nepen   |
+|  57 | 9    | digit nine  | nejen   |
 
 
 Notes:
 
 The English name for character "9" is "digit nine" and **not** the value 9, the name of the character code is completely different from any value that might be associated to the character.
 
-The Toki Pona nanpa-linja-n names (non, wan, tun, win, pon, lun, jun, pen, ton, nen) are names for the Unicode characters "0"–"9", **not** names for the values of the numbers themselves.
+The Toki Pona nanpa-linja-n names (nenin, newen, neten, nesen, nenan, nelen, nenun, nemen, nepen, nejen) are names for the Unicode characters "0"–"9", **not** names for the values of the numbers themselves.
 
 In communications, if the context determines that the digit sequence is communicating a numeric value, then the decimal numeric value can be very easily determined from the sequence of the character code names.
 This is a key advantage of using the Hindu-Arabic positional decimal system for expressing numeric values.
@@ -267,24 +267,24 @@ Group digits and name:
 | Segment | Chars | Explanation                                              | proposed TP name|
 |---------|-------|----------------------------------------------------------|-----------------|
 | 1       | F     | capital letter F                                         | sitelen suli F  |
-| 2       | 9     | digit 9 → nen                                            | nen             |
+| 2       | 9     | digit 9 → nejen                                          | nejen           |
 | 3       | q     | small letter q                                           | sitelen lili q  |
 | 4       | !     | exclamation mark                                         | sitelen a       |
-| 5       | 27    | 2 = tun, 7 = pen → tun pen → (compressed) tupen          | tupen           |
+| 5       | 27    | 2 = neten, 7 = nemen → (compressed) netemen              | netemen         |
 | 6       | m     | small letter m                                           | sitelen lili m  |
 | 7       | $     | dollar sign                                              | sitelen mani    |
 | 8       | k     | small letter k                                           | sitelen lili k  |
-| 9       | 30    | 3 = win, 0 = non → win non → (compressed) winon          | winon           |
+| 9       | 30    | 3 = nesen, 0 = nenin → (compressed) nesenin              | nesenin         |
 | 10      | Z     | capital letter Z                                         | sitelen suli Z  |
 | 11      | &     | ampersand                                                | sitelen en      |
 | 12      | b     | small letter b                                           | sitelen lili b  |
-| 13      | 4     | digit 4 → pon                                            | pon             |
+| 13      | 4     | digit 4 → nenan                                          | nenan           |
 | 14      | ?     | question mark                                            | sitelen seme    |
 
 
 So the whole password can be described as:
 
-sitelen suli F, nen, sitelen lili q, sitelen a, tupen, sitelen lili m, sitelen mani, sitelen lili k, winon, sitelen suli Z, sitelen en, sitelen lili b, pon, sitelen seme.
+sitelen suli F, nejen, sitelen lili q, sitelen a, netemen, sitelen lili m, sitelen mani, sitelen lili k, nesenin, sitelen suli Z, sitelen en, sitelen lili b, nenan, sitelen seme.
 
 ---
 
