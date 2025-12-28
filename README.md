@@ -228,10 +228,10 @@ Examples:
 - Very useful when speaking and hearing long sequences of digits ( 5201 → neleteniwin → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - This works with the Toki Pona language syntax to enhance communication
-    - Say "2010": "neten ene niwenin"
+    - Say "2010": "neten eke niwenin"
     - Say "2000" followed by "10": "neten eken newenin"
-    - Say "2001" followed by "0": "neten ene niniwen nenin"
-    - Say "2001.0": "neten ene niniwen one nin"
+    - Say "2001" followed by "0": "neten eke niniwen nenin"
+    - Say "2001.0": "neten eke niniwen one nin"
     - Say "243-555-0169": "netenasen ene lelelen ene niwenujen"
     - The **-n** is a morphological marker, indicating the end of a digit sequence
     - Screen readers can communicate longer digit sequences with less cognitive load
