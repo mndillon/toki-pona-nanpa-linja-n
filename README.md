@@ -84,7 +84,7 @@ Inside a digit block (no separator present):
 Used when non-zero digits follow the block.
 
 ```
-ene     = more parts to follow
+eke     = more parts to follow
 ```
 
 ### Zero-Block Units  
