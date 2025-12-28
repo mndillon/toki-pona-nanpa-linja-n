@@ -1,109 +1,119 @@
-concatinate rule,write out each number name then drop last -n from every number except last then concatenate eg. 23 -> tun ton -> tuton
+concatinate rule,write out each number name then keep the first ne- and drop start ne- and end -n from every number except last then concatenate eg. 23 -> neten nesen -> netesen
 large block rule,every block of a large number ends with -n
-0,non
-non,0
-1,wan
-wan,1
-2,tun
-tun,2
-3,win
-win,3
-4,pon
-pon,4
-5,lun
-lun,5
-6,jun
-jun,6
-7,pen
-pen,7
-8,ton
-ton,8
-9,nen
-nen,9
-tasa,thousand marker
-"2,345",tun tasa wipolun
-thousand marker,tasa
-masa,million marker
-million marker,masa
-"1,234,567",wan masa tuwipon tasa lujupen
-wasa,billion marker
-"30,567,209,481",winon wasa lujupen masa tunonen tasa potowan
-billion marker,wasa
-tasan,exact thousand
-"73,000",pewin tasan
-exact thousand,tasan
-masan,exact million
-"492,000,000",ponetun masan
-exact million,masan
-wasan,exact billion
-"33,000,000,000",wiwin wasa
-exact billion,wasan
-pasa,breakup long sequences of digits more parts to follow
-breakup long sequences of digits more parts to follow,pasa
-pasan,breakup long sequences of digits last part to follow
-breakup long sequences of digits last part to follow,pasan
-"243-555-0179",tupowin pasa lululun pasan nowapenen
-tupowin pasa lululun pasan nowapenen,"243-555-0179"
-oselo,decimal separator
-decimal separator,oselo
-12.04,watun oselo nopon
-kapisi,fraction separator
-fraction separator,kapisi
-5/8,lun esewi ton
-nike,minus marker
-minus marker,nike
--0.4,nike non oselo pon
-25 January 2025,tenpo suno nanpa tulun pi mun nanpa wan pi sike nanpa tun tasa tulun
-tenpo suno nanpa tulun pi mun nanpa wan pi sike nanpa tun tasa tulun,25 January 2025
-04/11/2023,tenpo suno nanpa pon pi mun nanpa wawan pi sike nanpa tun tasa tuwin
-tenpo suno nanpa pon pi mun nanpa wawan pi sike nanpa tun tasa tuton,04/11/2023
-I am 37 years old,tenpo sike nanpa wipen la mi jan suli
-tenpo sike nanpa wipen la mi jan suli,I am 37 years old
-She is 29,ona li jo e tenpo sike nanpa tunen
-ona li jo e tenpo sike nanpa tunen,She is 29
-The meeting is at 14:30,tenpo suno la ni li lon tenpo wapon oselo winon
-tenpo suno la ni li lon tenpo wapon oselo winon,The meeting is at 14:30
-It is 7:05,tenpo ni li pen oselo nolun
-tenpo ni li pen oselo nolun,It is 7:05
-The logs say 21:34:56 UTC,toki pi lipu sona li toki e tenpo tuwan oselo wipon oselo lujun lon ma UTC
-toki pi lipu sona li toki e tenpo tuwan oselo wipon oselo lujun lon ma UTC,The logs say 21:34:56 UTC
-This costs 12 dollars,mani pi ijo ni li watun
-mani pi ijo ni li watun,This costs 12 dollars
-The total is 3.75,mani ale li nanpa win oselo pelun
-mani ale li nanpa win oselo pelun,The total is 3.75
-Length: 2.5 m,linja ni li suli tun oselo lun mije
-linja ni li suli tun oselo lun mije,Length: 2.5 m
-Weight: 0.75 kg,kiwen ni li walo non oselo pelun kilokilo
-kiwen ni li walo non oselo pelun kilokilo,Weight: 0.75 kg
-Today it is 18 degrees,tenpo suno ni li seli waton
-tenpo suno ni li seli wawin,Today it is 18 degrees
-Minus 3 degrees,tenpo suno ni li seli nike win
-tenpo suno ni li seli nike ton,Minus 3 degrees
-The city is 12 km away,tomo tawa li weka watun kilometo tan ni
-tomo tawa li weka watun kilometo tan ni,The city is 12 km away
-The car is moving at 57 km/h,tomo tawa li tawa kepeken wawa lupen kilometo lon tenpo wan
-tomo tawa li tawa kepeken wawa lupen kilometo lon tenpo wan,The car is moving at 57 km/h
-I have 23 apples,mi jo e kili nanpa tuwin
-mi jo e kili nanpa tuwin,I have 23 apples
-There are 100 people here,jan li wanonon lon ni
-jan li wanonon lon ni,There are 100 people here
-"The point is at (3,12)",poki li lon sitelen win en sitelen watun
-poki li lon sitelen win en sitelen watun,"The point is at (3,12)"
-3/4 is 0.75,win esewi pon li sama non oselo pelun
-win esewi pon li sama non oselo pelun,3/4 is 0.75
-12 × 5 = 60,watun emute ala lun li sama junon
-watun emute ala lun li sama junon,12 × 5 = 60
-27 × 0 = 0,tupen emute ala non li sama non
-tupen emute ala non li sama non,27 × 0 = 0
-Room 204,tomo ni li tomo nanpa tunopon
-tomo ni li tomo nanpa tunopon,Room 204
-Your ID number is 40251,nanpa sona sina li ponotuluwan
-nanpa sona sina li ponotuluwan,Your ID number is 40251
-My telephone number is 423-555-0189,"nanpa pi ilo toki mi li: potuwin pasa lululun pasan nowatonen"
-"nanpa pi ilo toki mi li: lululun pasa potuwin pasa lululun pasan nowatonen",My telephone number is 423-555-0189
-"Call 731!","o tawa pewiwan!"
-"o tawa pewiwan!","Call 731!"
-Train arrives at 19:48,tomo tawa li kama lon tenpo wanen oselo poton
-tomo tawa li kama lon tenpo wanen oselo poton,Train arrives at 19:48
-Add 250 ml of water,o pana e telo nanpa tulunon mililita
-o pana e telo nanpa tulunon mililita,Add 250 ml of water
+0,nenin
+nenin,0
+1,newen
+newen,1
+2,neten
+neten,2
+3,nesen
+nesen,3
+4,nenan
+nenan,4
+5,nelen
+nelen,5
+6,nenun
+nenun,6
+7,nemen
+nemen,7
+8,nepen
+nepen,8
+9,nejen
+nejen,9
+eke,thousand marker
+"2,345",neten ene senalen
+thousand marker,eke
+eke,million marker
+million marker,eke
+"1,234,567",newen eke tesenan eke lenumen
+eke,billion marker
+"30,567,209,481",senin eke lenumen eke tenijen eke napewen
+billion marker,eke
+eken,exact thousand
+"73,000",nemesen eken
+exact thousand,eken
+ekeken,exact million
+"492,000,000",nenajeten ekeken
+exact million,ekeken
+ekekeken,exact billion
+"33,000,000,000",nesesen ekekeken
+exact billion,ekekeken
+ene,breakup long sequences of digits more parts to follow
+breakup long sequences of digits more parts to follow,ene
+"243-555-0179",netenasen ene lelelen ene niwemejen
+netenasen ene lelelen ene niwemejen,"243-555-0179"
+one,decimal separator
+decimal separator,one
+12.04,neweten one ninan
+ono,fraction separator
+fraction separator,ono
+5/8,nelen ono pen
+no,minus marker
+minus marker,no
+-0.4,nenonin ono nan
+25 January 2025,tenpo suno nanpa netelen pi mun sike nanpa newen pi sike nanpa neten ene nitelen
+tenpo suno nanpa netelen pi mun sike nanpa newen pi sike nanpa neten ene nitelen,25 January 2025
+04/11/2023,tenpo suno nanpa nenan pi mun nanpa newewen pi sike nanpa neten ene nitesen
+tenpo suno nanpa nenan pi mun nanpa newewen pi sike nanpa neten ene nitesen,04/11/2023
+Year is 2025,tenpo sike li nanpa neten ene nitelen
+tenpo sike li nanpa neten ene nitelen,Year is 2025
+Year is 2025,tenpo sike li nanpa netenitelen
+tenpo sike li nanpa netenitelen,Year is 2025
+On Friday I go to sport,suno sike nanpa nelen la mi tawa utala
+suno sike nanpa nelen la mi tawa utala,On Friday I go to sport
+On 2nd of October I travel,tenpo suno nanpa tu lon mun sike nanpa newenin la mi tawa
+tenpo suno nanpa tu lon mun sike nanpa newenin la mi tawa,On 2nd of October I travel
+I am 37 years old,tenpo sike nanpa nesemen la mi jan suli
+tenpo sike nanpa nesemen la mi jan suli,I am 37 years old
+She is 29,ona li jo e tenpo sike nanpa netejen
+ona li jo e tenpo sike nanpa netejen,She is 29
+The meeting is at 14:30,tenpo suno la ni li lon tenpo newenan one senin
+tenpo suno la ni li lon tenpo newenan one senin,The meeting is at 14:30
+It is 7:05,tenpo ni li nesen one nilen
+tenpo ni li nesen one nilen,It is 7:05
+The logs say 21:34:56 UTC,toki pi lipu sona li toki e tenpo netewen one senan one lenun lon ma UTC
+toki pi lipu sona li toki e tenpo netewen one senan one lenun lon ma UTC,The logs say 21:34:56 UTC
+This costs 12 dollars,mani pi ijo ni li neweten
+mani pi ijo ni li neweten,This costs 12 dollars
+The total is 3.75,mani ale li nanpa nesen one melen
+mani ale li nanpa nesen one melen,The total is 3.75
+Length: 2.5 m,linja ni li suli neten one len mije
+linja ni li suli neten one len mije,Length: 2.5 m
+Weight: 0.75 kg,kiwen ni li walo nenin one melen kilokilo
+kiwen ni li walo nenin one melen kilokilo,Weight: 0.75 kg
+Today it is 18 degrees,tenpo suno ni li seli newepen
+tenpo suno ni li seli newepen,Today it is 18 degrees
+Minus 3 degrees,tenpo suno ni li seli nenosen
+tenpo suno ni li seli nenosen,Minus 3 degrees
+The city is 12 km away,tomo tawa li weka neweten kilometo tan ni
+tomo tawa li weka neweten kilometo tan ni,The city is 12 km away
+The car is moving at 57 km/h,tomo tawa li tawa kepeken wawa nelemen kilometo lon tenpo wan
+tomo tawa li tawa kepeken wawa nelemen kilometo lon tenpo wan,The car is moving at 57 km/h
+5 4 3 2 1,nelen nenan nesen neten newen
+nelen nenan nesen neten newen,5 4 3 2 1
+I have 23 apples,mi jo e kili nanpa netesen
+mi jo e kili nanpa netesen,I have 23 apples
+There are 100 people here,jan li neweninin lon ni
+jan li neweninin lon ni,There are 100 people here
+"The point is at (3,12)",poki li lon sitelen nesen en sitelen neweten
+poki li lon sitelen nesen en sitelen neweten,"The point is at (3,12)"
+3/4 is 0.75,nesen ono nan li sama nenin one melen
+nesen ono nan li sama nenin one melen,3/4 is 0.75
+17.3 + 9.5 = 26.8,newemen one sen en nejen one len li sama netenun one pen
+newemen one sen en nejen one len li sama netenun one pen,17.3 + 9.5 = 26.8
+12 × 5 = 60,neweten emute nelen li sama nenunin
+neweten emute nelen li sama nenunin,12 × 5 = 60
+27 × 0 = 0,netemen emute nenin li sama nenin
+netemen emute nenin li sama nenin,27 × 0 = 0
+Room 204,tomo ni li tomo nanpa neteninan
+tomo ni li tomo nanpa neteninan,Room 204
+Your ID number is 40251,nanpa sona sina li nenanitelewen
+nanpa sona sina li nenanitelewen,Your ID number is 40251
+My telephone number is 243-555-0189,"nanpa pi ilo toki mi li: netenasen ene lelelen ene niwepejen"
+"nanpa pi ilo toki mi li: netenasen ene lelelen ene niwepejen",My telephone number is 243-555-0189
+"Call 731!","o tawa nemesewen!"
+"o tawa nemesewen!","Call 731!"
+Train arrives at 19:48,tomo tawa li kama lon tenpo newejen one napen
+tomo tawa li kama lon tenpo newejen one napen,Train arrives at 19:48
+Add 250 ml of water,o pana e telo nanpa netelenin mililita
+o pana e telo nanpa netelenin mililita,Add 250 ml of water
