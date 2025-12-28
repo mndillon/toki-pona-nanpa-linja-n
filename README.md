@@ -241,7 +241,7 @@ Examples:
     - for counting,
       - might say: **"newen neten nesen nenan nelen"**
     - for value 12,345,
-      - might say: **"neweten ene senalen"**
+      - might say: **"neweten eke senalen"**
     - for sequence of digits, like an id,
       - might say: **"newetesenalen"**
     - for 1-2-3-4-5 digit emphasis,
@@ -291,6 +291,11 @@ Examples:
 - Always occurs at the start of a numeric expression (after ne-)
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 
+### eke
+- Contain **k**, which no digit word has
+- Does not end in **-n** signalling more of the number to follow
+- Adds more context, makes the assumption that the string of digits represents a numeric value
+
 ### eken / ekeken / ekekeken
 - Contain **k**, which no digit word has
 - All end in **-n** to signal end of number description
@@ -326,7 +331,7 @@ Examples:
   - there already exist glyphs in pu that have more than one name (we are just adding extra names to more existing glyphs to map to this decimal system)
   - the brackets in these examples are just to depict the cartouche (and not written down):
   - 17 → (neWeMen) → newemen
-  - 2,860 → (neTenenePenAnIn) → neten ene penanin
+  - 2,860 → (neTenenePenAnIn) → neten eke penanin
   - 3.14159 → (neSenOneWenAWeneneLeJen) → nesen one wenawen ene lejen
   - the number 3 → (neSen) → nesen
   - the third → nanpa (written outside of cartouche) (neSen) → nanpa nesen
