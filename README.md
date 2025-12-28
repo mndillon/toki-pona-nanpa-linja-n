@@ -18,7 +18,7 @@ o weka e nimi ike.
 | Lojban                   | (li) re ci xa vo mu (boi)                            | functional, sterile       |
 | Toki Pona (pu)           | mute                                                 | useless                   |
 | Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, error prone    |
-| Toki Pona (nanpa-linja-n)| **netesen ene nunalen**                              | natural                   |
+| Toki Pona (nanpa-linja-n)| **netesen eke nunalen**                              | natural                   |
 
 
 ## Overview
@@ -115,14 +115,14 @@ ene  = more parts of digit sequence to follow
 08          → nenipen
 23          → netesen
 679         → nenumejen
-1,234       → newen ene tesenan
+1,234       → newen eke tesenan
 12,000      → neweten eken
 12000       → newenininin
 3,000,000   → nesen ekeken
 30,000,000  → nesenin ekeken
 300,000,000 → neseninin ekeken
 3,000,000,000 → nesen ekekeken
-7,321,900   → nemen ene setewen ene jeninin
+7,321,900   → nemen eke setewen eke jeninin
 64.5M       → nenunan one len ekeken
 64.5B       → nenunan one len ekekeken
 64.5T       → nenunan one len ekekekeken
@@ -211,7 +211,7 @@ Examples:
 ```
 (3.75) / 4   → nesen one melen ono nan
 3 / 4.75     → nesen ono nan one melen
-1,234.567    → newen ekeke tesenan eke lenumen
+1,234.567    → newen eke tesenan eke lenumen
 0.5          → nenon one len
 1/2          → newen ono ten
 5:38         → tenpo nelen one wepen
@@ -317,7 +317,7 @@ Examples:
       - <img src="images/number_negative_decimal_digits_glyph.png" width="320"/>
     - a nanpa-linja-n literal string of **neJenOnOSenOnOnAn**, can be decoded as **9¾**
       - <img src="images/number_9_fraction_three_quarters_glyph.png" width="160"/>
-    - a nanpa-linja-n literal string of **nenATenekeSePenUOneMeLen**, can be decoded as **42,386.75**
+    - a nanpa-linja-n literal string of **nenATeneKeSePenUOneMeLen**, can be decoded as **42,386.75**
       - <img src="images/number_42386_75_glyph_v8.png" width="320"/>
     - a nanpa-linja-n literal string of **nenUnAnOneLeKeKen**, can be decoded as **64.5M**
       - <img src="images/number_64_5_M_glyph_v9.png" width="160"/>
