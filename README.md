@@ -58,6 +58,13 @@ If we ignore 'n' and ignore 'e' in the words, then each digit word maps to a dif
 
 ---
 
+## General Number Rule
+Applies to all numbers no matter what form they take:
+
+**All numbers start with ne- and end with -n**
+
+---
+
 ## Internal Digit-Block Rule
 Inside a digit block (no separator present):
 
@@ -84,28 +91,28 @@ Inside a digit block (no separator present):
 Used when non-zero digits follow the block.
 
 ```
-eke     = more parts to follow
+neke     = more parts to follow
 ```
 
 ### Zero-Block Units  
-Used only when *everything after* the block is zero.
+Used only when *everything after* the ISO block is zero, used at the end of a number.
 
 Adds more context, makes the assumption that the string of digits represents a numeric value:
 
 ```
-eken     = exactly X thousand
-ekeken   = exactly X million
-ekekeken = exactly X billion
+neke     = exactly X thousand
+nekeke   = exactly X million
+nekekeke = exactly X billion
 ```
 
 
 ### Any number of blocks
-Used for any number of blocks, these separators have no specific values.
+Used for any number of blocks, this separator has no specific value.  It can be used to split up long digit sequences.
 
 Does not add more context, makes no assumption that the string of digits represents a numeric value:
 
 ```
-ene  = more parts of digit sequence to follow
+nene  = more parts of digit sequence to follow
 ```
 
 
@@ -117,7 +124,7 @@ ene  = more parts of digit sequence to follow
 679         → nenumejen
 1,234       → newen eke tesenan
 12,000      → neweten eken
-12000       → newenininin
+12000       → newetenininin
 3,000,000   → nesen ekeken
 30,000,000  → nesenin ekeken
 300,000,000 → neseninin ekeken
@@ -130,6 +137,7 @@ ene  = more parts of digit sequence to follow
 123456789   → neniweten ene senalenumepejen (ene can be used anywhere to break up large numbers)
 123456789   → neniweten ene senalenun ene mepejen
 2025        → netenitelen
+2,025       → neten eke nitelen
 2025        → neten ene nitelen
 2025        → neten ene nin ene ten ene len
 3.141592    → nesen one wenawelejeten
@@ -137,14 +145,13 @@ ene  = more parts of digit sequence to follow
 
 ---
 
-## Decimal Separator — one
-**one** separates whole and decimal parts.
+## Decimal Separator — none
+**none** separates whole and decimal parts.
 
 Rules:
 
 - number starts with ne-
-- Whole part ends in full -n form
-- Decimal block only uses pasa/pasan to break up long digit sequences
+- Can split "none" into "n one " to split up long sequences
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - number ends with -n
 
@@ -161,13 +168,13 @@ Examples:
 
 ---
 
-## Fractions — ono
-**onone** expresses fractions “over / divided by”.
+## Fractions — nono
+**nono** expresses fractions “over / divided by”.
 
 Rule:
 
 - number starts with ne-
-- Both numerator and denominator use full final -n
+- Can split "nono" into "n ono " to split up long sequences
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - number ends with -n
 
@@ -187,11 +194,12 @@ Examples:
 ---
 
 ## Negative Numbers — no
-Prefix **no** before any number, must be at the start:
+Prefix **no** before any digits, must only appear at the start of a digit sequence:
 
 Rule:
 
 - number starts with ne-
+- Can add a space to "no" to get "no " to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 - number ends with -n
 
@@ -233,7 +241,7 @@ Examples:
     - Say "2001" followed by "0": "neten eke niniwen nenin"
     - Say "2001.0": "neten eke niniwen one nin"
     - Say "243-555-0169": "netenasen ene lelelen ene niwenujen"
-    - The **-n** is a morphological marker, indicating the end of a digit sequence
+    - The **ne-** and **-n** are morphological markers, indicating the start and end of a digit sequence
     - Screen readers can communicate longer digit sequences with less cognitive load
     - Automated text-to-speech systems can communicate longer digit sequences with less cognitive load
     - Can enhance compatability with [WCAG 2.2](WCAG%202.2%20compliance%20claims.md)
@@ -250,7 +258,7 @@ Examples:
       - might say: **"neweten ene senalen"**
     - In all cases the listener has understood the speaker as communicating **"12345"**
 - No conflict with Toki Pona vocabulary
-- Where possible, respects the first syllable of existing Toki Pona digit names (from pu)
+- Where possible, respects the first letter of existing Toki Pona digit names (from pu)
 - Avoids using **k**, **o**, **n** and **e** in digit names to reduce overlap with delimiters (and other words)
 - By starting digit sequences with **ne-** and ending digit sequences with **-n**, words are more easily identified as **nanpa-linja-n** digit strings ( nemetesen → 723 )
 - Respects the speaker’s freedom to choose how to express numbers:
@@ -274,39 +282,49 @@ Examples:
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
 
 
-### one
+### none
 - Contain **o**, which no digit word has
 - Do not end in **-n** signalling more of the number to follow
 - Can be used with tenpo for hour and minute delimiter
+- Can be split as "n one ", to split up long sequences
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
-### onone
+### nono
 - Contains **o**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
+- Can be split as "n ono ", to split up long sequences
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
 ### no
 - Contains **o**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
 - Always occurs at the start of a numeric expression (after ne-)
+- Can be written as "no ", to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 
-### eke
+### neke
 - Contain **k**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
+- Can be used as ISO-block narker in large numbers, can only appear when other digits follow block marker
+- Never appears in decimal part of number, only in the integer part
+- Can be split as "n eke ", to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 
-### eken / ekeken / ekekeken
+### neke / nekeke / nekekeke
 - Contain **k**, which no digit word has
 - All end in **-n** to signal end of number description
-- Zero-block shortcuts for clear large numbers
+- Zero-block shortcuts for clear large numbers, can only appear at the end of large numbers
+- Never appears in decimal part of number, only in the integer part
+- Can be split as "n eke" / "n ekeke" / "n ekekeke", to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 - can repeat ke letter group any number of times to express more 000 groupings at the end of numbers (e.g. ekeken ekekeken ekekeken )
 
-### ene
-- Contains **ene**, which no digit word has
+### nene
+- Contains **nene**, which no digit word has
 - A bridge joining different parts of the whole string of digits
 - Have no value, only used to break up long sequences of digits
+- Can appear in decimal part and in the integer part of large numbers
+- Can be split as "n ene ", to split up long sequences
 - Never occurs at the start of a numeric expression or after a decimal point
 - Does not add more context, makes no assumption that the string of digits represents a numeric value
 
@@ -318,13 +336,13 @@ Examples:
   - all the digits and separators are mapped to separate letters (see tables below)
   - when a cartouche starts with a nanpa glyph and all the glyphs in the cartouche belong to the set below, then we interpret the cartouche as a nanpa-linja-n number
   - when writing down the word from the cartouche, we will write it out as all capitals, so we can easily see that it encodes a number
-    - a nanpa-linja-n literal string of **nenInOneWeTeSeNenALenUNeMePeJen**, can be decoded as **-0.123456789**
+    - a nanpa-linja-n literal string of **nenOnInOneWeTeSenenenALenUneneMePeJen**, can be decoded as **-0.123456789**
       - <img src="images/number_negative_decimal_digits_glyph.png" width="320"/>
-    - a nanpa-linja-n literal string of **neJenOnOSenOnOnAn**, can be decoded as **9¾**
+    - a nanpa-linja-n literal string of **neJenOnOnOSenOnOnAn**, can be decoded as **9¾**
       - <img src="images/number_9_fraction_three_quarters_glyph.png" width="160"/>
-    - a nanpa-linja-n literal string of **nenATeneKeSePenUOneMeLen**, can be decoded as **42,386.75**
+    - a nanpa-linja-n literal string of **nenATeneKeSePenUnOneMeLen**, can be decoded as **42,386.75**
       - <img src="images/number_42386_75_glyph_v8.png" width="320"/>
-    - a nanpa-linja-n literal string of **nenUnAnOneLeKeKen**, can be decoded as **64.5M**
+    - a nanpa-linja-n literal string of **nenUnAnOneLeneKeKen**, can be decoded as **64.5M**
       - <img src="images/number_64_5_M_glyph_v9.png" width="160"/>
 - can be displayed horizontally or vertically
 - We will reuse existing glyphs (and think of them as having extra names in the context of **nanpa-linja-n** cartouches), all letters will be written out in capitals:
@@ -366,13 +384,13 @@ Examples:
 
 | Glyph                                                                                          | Letter(s)    |  #~n Name                 | Design Rationale                                      |
 |------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
-| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | one                       | decimal point, has small circle at the bottom         |
-| <img src="images/horizontal Fraction Delimiter nasin nanpa v3.png" width="16"/>                | OO           | ono                       | needed to split numerator and denominator of fraction |
-| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa.png" width="16"/>      | OOO          | onono                     | needed to split integer from fraction part            |
-| <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | eken                      | kulupu has three circles, thousands                   |
-| <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | ekeken                    | millions                                              |
-| <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | ekekeken                  | billions                                              |
-| <img src="images/horizontal Thousands Delimiter nasin nanpa v2.png" width="16"/>               | N            | ene                       | natural break                                         |
+| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | none                      | decimal point, has small circle at the bottom         |
+| <img src="images/horizontal Fraction Delimiter nasin nanpa v3.png" width="16"/>                | OO           | nono                      | needed to split numerator and denominator of fraction |
+| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa.png" width="16"/>      | OOO          | nonono                    | needed to split integer from fraction part            |
+| <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands                   |
+| <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | nekeke                    | millions                                              |
+| <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | nekekeke                  | billions                                              |
+| <img src="images/horizontal Thousands Delimiter nasin nanpa v2.png" width="16"/>               | N            | nene                      | natural break                                         |
 | <img src="images/horizontal Negative nasin nanpa v3.png" width="16"/>                          | N            | no                        | downwards suggests negative (always after ne-)        |
 | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | ne                        | nanpa, always at start of numeric description         |
 
@@ -388,45 +406,51 @@ Sitelen Glyph Summary:
 ## Arithmetic Operations
 Here we are moving away from describing numbers to describing simple arithmetic expressions.
 This is not the main focus of this proposal.
-Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan jan Emalan
+Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan jan Emalan.
+They never appear in a numeric cartouche.
+Words primarialy chosen for the shape of their sitelen pona glyphs.
 
 ### Equals: sama
+- Shape of sitelen pona glyph
 - Good candidate
 - Never appears in a numeric cartouche
 
 ### Addition: en
+- Shape of sitelen pona glyph
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
 - newin en neten en nesen li sama nenun
 - o pana e nejen tawa nesen
 
-### Subtract: weka
-- Meaning invokes "away"
+### Subtract: lape
+- Shape of sitelen pona glyph
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but negative symbol can appear in a numeric cartouche)
-- nesen weka nenoten li sama nelen
+- nesen lape nenoten li sama nelen
 
-### Multiply: emute
-- Meaning inspired by **en** + **mute** (add many)
+### Multiply: lete
+- Shape of sitelen pona glyph
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nesen emute neten li sama nenun
+- nesen lete neten li sama nenun
 
 ### Division: kipisi
+- Shape of sitelen pona glyph
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but fraction symbol can appear in a numeric cartouche)
 - nepen kipisi nenoten li sama nenonan
 
 ### Power: sewi
+- Shape of sitelen pona glyph
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
 - neten sewi newen li sama nepen
-- nemen eken li sama nemen emute newenin sewi nesen
+- nemen eken li sama nemen lete newenin sewi nesen
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers) are better left in mathematical notation:
 
@@ -675,9 +699,9 @@ Once the digit roots exist, we get a general template:
 
 - musi utala sike nanpa … → competition rounds
 
-- pali alasa sike nanpa non/wan/tun… → 0- or 1-based test runs
+- pali alasa sike nanpa nenin/newen/neten… → 0- or 1-based test runs
 
-- ijo sike nanpa non/wan/tun… → 0- or 1-based indices in lists/arrays
+- ijo sike nanpa nenin/newen/neten… → 0- or 1-based indices in lists/arrays
 
 All reuse the same **[family] sike nanpa [nanpa-linja-n]** structure.
 
@@ -692,7 +716,7 @@ So the argument is:
 
 ### musi nanpa
 
-- o pilin e nanpa tan wan kepeken wanon.
+- o pilin e nanpa tan newen kepeken newenin.
 - pana e nimi uno tawa nanpa ni.
 - o pana e nesen tawa ni.
 - o sewi e ni kepeken neten.
