@@ -254,7 +254,7 @@ Examples:
       - might say: **"newetesenalen"**
     - for 1-2-3-4-5 digit emphasis,
       - might say: **"newen ene ten ene sen ene nan ene len"**
-    - for breaking up long sequences with no change in value, (ene can be used anywhere)
+    - for breaking up long sequences with no change in value, (nene can be used anywhere)
       - might say: **"neweten ene senalen"**
     - In all cases the listener has understood the speaker as communicating **"12345"**
 - No conflict with Toki Pona vocabulary
