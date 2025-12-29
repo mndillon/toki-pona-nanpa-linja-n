@@ -731,7 +731,7 @@ o lukin sona e nanpa:
 
 ### musi sitelen
 
-<img src="images/nfl_touchdown_fact_sheet.png" width="500"/>
+<img src="images/render_restaurant_menu.png" width="768"/>
 
 <img src="images/toki pona bingo in real time.png" width="384"/>
 
