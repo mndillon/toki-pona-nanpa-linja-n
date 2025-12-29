@@ -411,45 +411,45 @@ They never appear in a numeric cartouche.
 Words primarialy chosen for the shape of their sitelen pona glyphs.
 
 ### Equals: sama
-- Shape of sitelen pona glyph
+- Shape of sitelen pona glyph (looks like equals)
 - Good candidate
 - Never appears in a numeric cartouche
 
 ### Addition: en
-- Shape of sitelen pona glyph
+- Shape of sitelen pona glyph (looks like plus)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- newin en neten en nesen li sama nenun
+- newen en neten en nesen li sama nenun
 - o pana e nejen tawa nesen
 
 ### Subtract: lape
-- Shape of sitelen pona glyph
+- Shape of sitelen pona glyph (looks like subtract)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but negative symbol can appear in a numeric cartouche)
 - nesen lape nenoten li sama nelen
 
 ### Multiply: lete
-- Shape of sitelen pona glyph
+- Shape of sitelen pona glyph (looks like multiply in ascii)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
 - nesen lete neten li sama nenun
 
 ### Division: kipisi
-- Shape of sitelen pona glyph
+- Shape of sitelen pona glyph (looks like divide)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but fraction symbol can appear in a numeric cartouche)
 - nepen kipisi nenoten li sama nenonan
 
 ### Power: sewi
-- Shape of sitelen pona glyph
+- Shape of sitelen pona glyph (looks like rising up)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- neten sewi newen li sama nepen
+- neten sewi nesen li sama nepen
 - nemen eken li sama nemen lete newenin sewi nesen
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers) are better left in mathematical notation:
