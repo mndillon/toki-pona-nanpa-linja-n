@@ -228,7 +228,7 @@
           <label for="tpWordsIn">Enter Toki Pona words (space-separated)</label>
           <input id="tpWordsIn" type="text" class="mono" placeholder="nanpa esun o nanpa" maxlength="2500"/>
           <div class="help">
-            Only valid Toki Pona words are allowed (case-insensitive).
+            Only valid Toki Pona words are allowed (case-insensitive) or a nanpa-linja-n proper name for a decimal value.
           </div>
         </div>
         <div style="flex: 0 0 auto;">
@@ -1131,6 +1131,178 @@
       return splitCartoucheCapsLetters(caps);
     }
 
+    // Validate whether a (possibly messy) string could be a nanpa-linja-n proper name.
+    // Rule: we ignore whitespace entirely, then require that the remaining characters
+    // correspond to a valid nanpa-caps string (tokenizable by tokenizeNanpaCaps).
+    function isValidNanpaLinjanProperName(raw) {
+      // 1) Normalize: lowercase, strip ALL whitespace
+      const s = String(raw ?? "")
+        .toLowerCase()
+        .replace(/\s+/g, "");
+
+      if (!s) return false;
+
+      // 2) Must be letters only after whitespace is removed
+      if (!/^[a-z]+$/.test(s)) return false;
+
+      // 3) Proper names always end with the final terminator 'n' (lowercase)
+      if (!s.endsWith("n")) return false;
+
+      // 4) Remove final terminator; remaining length must be even (two-letter chunks)
+      const core = s.slice(0, -1);
+      if (core.length < 2 || (core.length % 2) !== 0) return false;
+
+      // 5) Reconstruct caps and validate using your existing tokenizer
+      //    (core is effectively the caps body lowercased; add final 'N' terminator)
+      const caps = core.toUpperCase() + "N";
+
+      // Fast sanity checks (optional but cheap)
+      if (!caps.startsWith("NE")) return false;
+
+      try {
+        tokenizeNanpaCaps(caps); // throws if invalid
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+
+    // Like splitCartoucheCapsLetters(), but inserts spaces ONLY around delimiters
+    // (ene / one / o... / eke... / initial neno). Digit runs stay contiguous.
+    // Also: final terminator 'n' is always attached to the last chunk.
+    function splitCartoucheCapsLettersSpaced(caps) {
+      if (caps == null) throw new Error("caps must be a string, not None");
+      const s0 = String(caps).trim().toUpperCase();
+      if (!s0) return "";
+      if (s0.length < 3 || !s0.startsWith("NE") || !s0.endsWith("N")) {
+        throw new Error(`Not a valid nanpa-caps label: "${caps}"`);
+      }
+
+      const parts = [];
+      let current = "";
+      let i = 0;
+      const end = s0.length - 1; // exclude final 'N'
+
+      function flushCurrent() {
+        if (current) {
+          parts.push(current);
+          current = "";
+        }
+      }
+
+      // Attach a delimiter-leading "n" to the immediately preceding chunk (no extra spaces).
+      function attachDelimiterN() {
+        if (current) {
+          current += "n";
+          flushCurrent();
+          return;
+        }
+        if (parts.length === 0) {
+          parts.push("n"); // should be rare, but keeps behavior defined
+          return;
+        }
+        parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
+      }
+
+      while (i < end) {
+        if (i + 2 > end) throw new Error(`Malformed caps at position ${i} in "${caps}"`);
+
+        const pair = s0.slice(i, i + 2);
+        const nextPair = (i + 4 <= end) ? s0.slice(i + 2, i + 4) : null;
+
+        // Initial "NE NO" at start -> "neno" as its own chunk
+        if (pair === "NE" && nextPair === "NO" && i === 0) {
+          flushCurrent();
+          parts.push("neno");
+          i += 4;
+          continue;
+        }
+
+        // "NE NE" -> attach 'n' to previous, then add "ene"
+        if (pair === "NE" && nextPair === "NE") {
+          flushCurrent();
+          attachDelimiterN();
+          parts.push("ene");
+          i += 4;
+          continue;
+        }
+
+        // "NO NE" (i>0) -> attach 'n' to previous, then add "one"
+        if (pair === "NO" && nextPair === "NE" && i > 0) {
+          flushCurrent();
+          attachDelimiterN();
+          parts.push("one");
+          i += 4;
+          continue;
+        }
+
+        // "NO NO..." (i>0) -> attach 'n' to previous, then add "o"+"no"*count
+        if (pair === "NO" && nextPair === "NO" && i > 0) {
+          flushCurrent();
+          let countNo = 1;
+          let j = i;
+          while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "NO") {
+            countNo += 1;
+            j += 2;
+          }
+          attachDelimiterN();
+          parts.push("o" + "no".repeat(countNo));
+          i += 2 + 2 * countNo;
+          continue;
+        }
+
+        // "NE KE..." -> attach 'n' to previous, then add "e"+"ke"*count (eke, ekeke, ...)
+        if (pair === "NE" && nextPair === "KE") {
+          flushCurrent();
+          let countKe = 1;
+          let j = i;
+          while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE") {
+            countKe += 1;
+            j += 2;
+          }
+          attachDelimiterN();
+          parts.push("e" + "ke".repeat(countKe));
+          i += 2 + 2 * countKe;
+          continue;
+        }
+
+        // Default: keep contiguous (digits/pairs not split)
+        current += pair.toLowerCase();
+        i += 2;
+      }
+
+      flushCurrent();
+
+      // Final terminator 'n' always attached to the last chunk (no separate space)
+      if (parts.length === 0) return "n";
+      parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
+
+      return parts.join(" ").replace(/\s+/g, " ").trim();
+    }
+
+
+
+
+    function nanpaLinjanProperNameToUcsurCodepoints(nameStr) {
+      // Remove whitespace, lowercase, must end with 'n'
+      const s = String(nameStr ?? "").toLowerCase().replace(/\s+/g, "");
+      if (!s || !s.endsWith("n")) throw new Error("Not a nanpa-linja-n proper name (missing final 'n').");
+
+      // Convert proper-name core to nanpa-caps (re-add final terminator as 'N')
+      const core = s.slice(0, -1);
+      const caps = core.toUpperCase() + "N";
+
+      // Validate and convert caps -> tokens -> TP words -> UCSUR codepoints
+      const tokens = tokenizeNanpaCaps(caps);
+      const tpWords = nanpaCapsTokensToTpWords(tokens);
+      const cps = tpWordsToUcsurCodepoints(tpWords);
+
+      assertAllAllowedTpUcsur(cps);
+      return cps;
+    }
+
+
     function codepointsToHexString(codepoints) {
       return codepoints.map(cp => cp.toString(16).toUpperCase().padStart(4, "0")).join(" ");
     }
@@ -1552,6 +1724,52 @@
         await ensureFontLoaded();
         enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS);
 
+        const rawInput = String(elTpWordsIn.value ?? "");
+
+        // If the WHOLE input is a nanpa-linja-n proper name, treat it as such.
+        if (isValidNanpaLinjanProperName(rawInput)) {
+          const cps = nanpaLinjanProperNameToUcsurCodepoints(rawInput);
+
+          // Canonicalize + pretty-print with spacing around delimiters
+          const compact = rawInput.toLowerCase().replace(/\s+/g, "");
+          const core = compact.slice(0, -1);
+          const caps = core.toUpperCase() + "N";
+
+          // Outputs (spaced, readable proper name)
+          const prettyName = splitCartoucheCapsLettersSpaced(caps);
+
+          elLatinOut.value = prettyName;
+          elNumberCodeOut.value = latinNameToNumberCode(prettyName);
+
+
+          elCodepointsOut.value = codepointsToHexString(cps);
+          elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
+
+          // Mixed-font render (small then large)
+          const smallSet = getSmallCodepointsSet();
+
+          renderMixedCartoucheToCanvas(
+            canvasSmall,
+            cps,
+            LARGE_TINY_FONT_SIZE,
+            SMALL_TINY_FONT_SIZE,
+            smallSet,
+            { padding: 18, border: 2, cornerRadius: 16, letterGap: LETTER_SPACING_GAP }
+          );
+
+          renderMixedCartoucheToCanvas(
+            canvasLarge,
+            cps,
+            LARGE_FONT_SIZE,
+            SMALL_FONT_SIZE,
+            smallSet,
+            { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
+          );
+
+          return; // IMPORTANT: do not fall through
+        }
+
+        // Otherwise, process as Toki Pona words (existing behavior)
         const cps = parseTpWordsToCodepoints(elTpWordsIn.value);
 
         // Show outputs
