@@ -93,6 +93,14 @@
 
 <body>
   <div class="card">
+
+    <!-- NEW: link to main branch README -->
+    <div class="small" style="margin-bottom:10px;">
+      <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
+        nanpa-linja-n main documentation
+      </a>
+    </div>
+
     <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer</h1>
     <div class="small">Inputs are treated as text to preserve formatting (e.g., trailing zeros).</div>
 
@@ -394,6 +402,23 @@
       return withoutNE.toUpperCase();
     }
 
+    function normalizeLooseSeparators(raw) {
+      // Collapses runs of spaces and runs of hyphens (after the leading minus, if any).
+      // Leading '-' is preserved as a minus sign.
+      if (raw == null) return "";
+      let s = String(raw);
+
+      const isNeg = s.startsWith("-");
+      const head = isNeg ? "-" : "";
+      const rest = isNeg ? s.slice(1) : s;
+
+      // Collapse whitespace runs and hyphen runs
+      let r = rest.replace(/\s+/g, " ");
+      r = r.replace(/-+/g, "-");
+
+      return (head + r).trim();
+    }
+
     function numberStrToNanpaCaps(
       s,
       {
@@ -403,7 +428,7 @@
       } = {}
     ) {
       if (s == null) throw new Error("s must be a string, not null");
-      let raw = String(s).trim();
+      let raw = normalizeLooseSeparators(String(s));
       if (!raw) throw new Error("Empty value cannot be encoded");
 
       if (groupFractionTriplets) {
@@ -427,6 +452,12 @@
 
         const out = [];
         if (includeInitialNe) out.push("NE");
+
+        // Helper: collapse consecutive separators into one NENE
+        function pushNene() {
+          if (out.length > 0 && out[out.length - 1] === "NENE") return;
+          out.push("NENE");
+        }
 
         if (seg.startsWith("-")) {
           if (seg.startsWith("-.")) seg = "-0." + seg.slice(2);
@@ -459,42 +490,90 @@
         let ip = String(intPart ?? "").trim();
         if (ip === "") ip = "0";
 
-        const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+        // NEW: if integer part contains spaces or internal hyphens, treat them as separators => NENE
+        const hasLooseSep = /[ -]/.test(ip);
 
-        for (const g of groups) {
-          if (g === "" || !/^\d+$/.test(g)) {
-            throw new Error(`Invalid integer group "${g}" in "${s}"`);
+        if (hasLooseSep) {
+          let ip2 = String(ip)
+            .replace(/\s+/g, " ")
+            .replace(/-+/g, "-")
+            .trim();
+
+          // Trim leading/trailing separators inside the integer part
+          ip2 = ip2.replace(/^[ -]+/, "").replace(/[ -]+$/, "");
+          if (ip2 === "") ip2 = "0";
+
+          for (const ch of ip2) {
+            if (/\d/.test(ch)) {
+              out.push(DIGIT_TO_TOKEN[ch]);
+              continue;
+            }
+            if (ch === " " || ch === "-") {
+              pushNene();
+              continue;
+            }
+            // If you want comma to act as separator under loose-sep mode:
+            if (thousandsChar && ch === thousandsChar) {
+              pushNene();
+              continue;
+            }
+            throw new Error(`Unsupported character "${ch}" in integer part of "${s}"`);
           }
-        }
+        } else {
+          // Existing comma-group logic unchanged
+          const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
 
-        let trailingZeroGroups = 0;
-        for (let k = groups.length - 1; k >= 1; k--) {
-          const g = groups[k];
-          if (g.length === 3 && g === "000") trailingZeroGroups += 1;
-          else break;
-        }
+          for (const g of groups) {
+            if (g === "" || !/^\d+$/.test(g)) {
+              throw new Error(`Invalid integer group "${g}" in "${s}"`);
+            }
+          }
 
-        for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
+          let trailingZeroGroups = 0;
+          for (let k = groups.length - 1; k >= 1; k--) {
+            const g = groups[k];
+            if (g.length === 3 && g === "000") trailingZeroGroups += 1;
+            else break;
+          }
 
-        const nGroups = groups.length;
-        const lastNonTrailingIdx = nGroups - trailingZeroGroups;
+          for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
 
-        for (let idx = 1; idx < lastNonTrailingIdx; idx++) {
-          out.push("NEKE");
-          for (const d of groups[idx]) out.push(DIGIT_TO_TOKEN[d]);
-        }
+          const nGroups = groups.length;
+          const lastNonTrailingIdx = nGroups - trailingZeroGroups;
 
-        if (trailingZeroGroups > 0) {
-          out.push("NE");
-          for (let i = 0; i < trailingZeroGroups; i++) out.push("KE");
+          for (let idx = 1; idx < lastNonTrailingIdx; idx++) {
+            out.push("NEKE");
+            for (const d of groups[idx]) out.push(DIGIT_TO_TOKEN[d]);
+          }
+
+          if (trailingZeroGroups > 0) {
+            out.push("NE");
+            for (let i = 0; i < trailingZeroGroups; i++) out.push("KE");
+          }
         }
 
         if (hasDecimal) {
           out.push(OPCHAR_TO_TOKEN["."]);
+
+          // NEW: spaces/hyphens in fraction part become separators => NENE
           for (const ch of fracPart) {
-            if (ch === " " || ch === "_") continue;
-            if (thousandsChar && ch === thousandsChar) { out.push("NENE"); continue; }
-            if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
+            if (ch === "_" ) continue;
+
+            if (ch === " " || ch === "-") {
+              pushNene();
+              continue;
+            }
+
+            if (thousandsChar && ch === thousandsChar) {
+              pushNene();
+              continue;
+            }
+
+            if (/\d/.test(ch)) {
+              out.push(DIGIT_TO_TOKEN[ch]);
+              continue;
+            }
+
             throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
           }
         }
@@ -507,6 +586,7 @@
         out.push("N");
         return out.join("");
       }
+
 
       if (raw.includes("+")) {
         const [left, right] = raw.split("+", 2);
