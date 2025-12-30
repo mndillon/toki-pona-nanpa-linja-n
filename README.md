@@ -184,7 +184,7 @@ Examples:
 1/2                 → newen ono ten
 3/4                 → nesen ono nan
 5/8                 → nelen ono pen
-9¾                  → nejen onono nesen ono nan
+9¾                  → nejen onono sen ono nan
 9¾                  → nesejen ono nan
 567/890             → nelenumen ono pejenin
 1,234 / 56          → newen eke tesenan ono lenun
