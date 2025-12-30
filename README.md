@@ -9,11 +9,6 @@ o weka e nimi ike.
 <img src="images/Phone Number Conversation v1.png" width="384"/>
 
 
-### Interactive Decimal to Cartouche generator:
-
-https://mndillon.github.io/toki-pona-nanpa-linja-n/
-
-
 ### Saying the number "23,645":
 
 | Language                 | Spoken number phrase                                 | Feels                     |
@@ -25,6 +20,11 @@ https://mndillon.github.io/toki-pona-nanpa-linja-n/
 | Toki Pona (pu)           | mute                                                 | useless                   |
 | Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, error prone    |
 | Toki Pona (nanpa-linja-n)| **netesen eke nunalen**                              | natural                   |
+
+### Interactive Decimal to nanpa-linja-n spoken phrase generator:
+
+https://mndillon.github.io/toki-pona-nanpa-linja-n/
+
 
 
 ## Overview
