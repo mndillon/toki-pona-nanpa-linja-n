@@ -98,6 +98,9 @@
         grid-template-rows: 1fr auto; /* canvas row + label row */
         align-items: center;
         justify-items: center;
+
+        box-sizing: border-box;
+
     }
 
     .btn:active { transform: translateY(1px); }
@@ -593,6 +596,107 @@ const OP_BUTTON_WORDS = {
       }
     }
 
+// Button-only: fixed-width cartouche with CENTER-aligned glyphs (for wide "0" key)
+function renderMixedCartoucheToCanvasFixedWidthCentered(
+  canvas,
+  codepoints,
+  largePx,
+  smallPx,
+  smallCodepoints,
+  targetOuterWidthPx,
+  options = {}
+) {
+  const pad = options.padding ?? 18;
+  const border = options.border ?? 2;
+  const corner = options.cornerRadius ?? 16;
+  const letterGap = options.letterGap ?? 0;
+
+  const dpr = window.devicePixelRatio || 1;
+
+  // Measure glyph runs (CSS pixels)
+  const ctxMeasure = canvas.getContext("2d");
+  ctxMeasure.textBaseline = "alphabetic";
+
+  const glyphRuns = [];
+  let totalWidth = 0;
+  let maxAscent = 0;
+  let maxDescent = 0;
+
+  for (const cp of codepoints) {
+    const ch = String.fromCodePoint(cp);
+    const px = smallCodepoints.has(cp) ? smallPx : largePx;
+
+    ctxMeasure.font = `${px}px "${FONT_FAMILY}"`;
+    const m = ctxMeasure.measureText(ch);
+
+    const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+    const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+    const left = m.actualBoundingBoxLeft ?? 0;
+    const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+    const tightW = Math.ceil(left + right);
+
+    glyphRuns.push({ ch, px, tightW, left, ascent, descent });
+
+    totalWidth += tightW + letterGap;
+    if (ascent > maxAscent) maxAscent = ascent;
+    if (descent > maxDescent) maxDescent = descent;
+  }
+
+  if (glyphRuns.length > 0) totalWidth -= letterGap;
+
+  const textHeight = Math.ceil(maxAscent + maxDescent);
+
+  // Target outer width -> inner cartouche width
+  const targetOuterW = Math.max(0, Math.floor(targetOuterWidthPx));
+  const targetCartW = Math.max(0, targetOuterW - border * 2);
+
+  // Never narrower than content requires
+  const minCartW = Math.ceil(totalWidth + pad * 2);
+  const cartW = Math.max(targetCartW, minCartW);
+
+  const cartH = Math.ceil(textHeight + pad * 2);
+
+  const outerW = cartW + border * 2;
+  const outerH = cartH + border * 2;
+
+  // HiDPI sizing while preserving CSS layout size
+  canvas.style.width = `${outerW}px`;
+  canvas.style.height = `${outerH}px`;
+  canvas.width = Math.ceil(outerW * dpr);
+  canvas.height = Math.ceil(outerH * dpr);
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.textBaseline = "alphabetic";
+  ctx.clearRect(0, 0, outerW, outerH);
+
+  // Border
+  drawRoundedRect(ctx, border, border, cartW, cartH, corner);
+  ctx.lineWidth = border;
+  ctx.strokeStyle = "#111";
+  ctx.stroke();
+
+  const baselineY = border + pad + maxAscent;
+
+  const innerLeft = border + pad;
+  const innerRight = border + cartW - pad;
+  const innerAvail = Math.max(0, innerRight - innerLeft);
+
+  // Center shift (clamped so it never goes negative)
+  const shift = Math.max(0, Math.floor((innerAvail - totalWidth) / 2));
+  let x = innerLeft + shift;
+
+  ctx.fillStyle = "#111";
+  for (const g of glyphRuns) {
+    ctx.font = `${g.px}px "${FONT_FAMILY}"`;
+    const drawX = x + (g.left ?? 0);
+    ctx.fillText(g.ch, drawX, baselineY);
+    x += g.tightW + letterGap;
+  }
+}
+
+
 // Display-only: fixed-width cartouche with RIGHT-aligned glyphs (does not affect buttons)
 function renderMixedCartoucheToCanvasFixedWidthRightAligned(
   canvas,
@@ -1000,8 +1104,35 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
         );
     }
 
+    function resolveReduceWidthPx(reduceWidthPx, btn) {
+      if (reduceWidthPx == null) return 0;
 
-    function makeButton({ id, kind, labelText, onPress, renderFn, wide=false }) {
+      // number => px
+      if (typeof reduceWidthPx === "number" && Number.isFinite(reduceWidthPx)) {
+        return Math.max(0, reduceWidthPx);
+      }
+
+      // "12%" => percentage of current button width
+      if (typeof reduceWidthPx === "string") {
+        const s = reduceWidthPx.trim();
+        const m = s.match(/^(\d+(?:\.\d+)?)%$/);
+        if (m) {
+          const pct = parseFloat(m[1]);
+          if (!Number.isFinite(pct)) return 0;
+          const w = btn.getBoundingClientRect().width;
+          return Math.max(0, (pct / 100) * w);
+        }
+
+        // numeric string => px
+        const n = Number(s);
+        if (Number.isFinite(n)) return Math.max(0, n);
+      }
+
+      return 0;
+    }
+
+
+    function makeButton({ id, kind, labelText, onPress, renderFn, wide=false, reduceWidthPx=0 }) {
       const btn = document.createElement("button");
       btn.className = "btn" + (wide ? " btnWide" : "");
       btn.type = "button";
@@ -1020,23 +1151,57 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
 
       btn.addEventListener("click", onPress);
 
-      // Render visuals (cartouche or glyphs)
-      renderFn(c);
+      // Render once (may be rerendered after padding is applied)
+      renderFn(c, btn);
+
+      // Apply reduction AFTER layout, if any
+      requestAnimationFrame(() => {
+        const rwPx = resolveReduceWidthPx(reduceWidthPx, btn);
+        if (rwPx > 0) {
+          const BASE_PAD = 10; // your .btn padding
+          btn.style.paddingLeft = `${BASE_PAD + rwPx}px`;
+          btn.style.paddingRight = `${BASE_PAD + rwPx}px`;
+
+          // Optional but usually necessary: rerender after padding changes (width changes)
+          if (typeof renderFn === "function") {
+            renderFn(c, btn);
+          }
+        }
+      });
 
       return btn;
     }
 
-    function renderDigitButtonCanvas(canvas, digitStr) {
+
+
+    function renderDigitButtonCanvas(canvas, digitStr, targetOuterWidthPx = null) {
       const cps = decimalToUcsurCodepoints(digitStr);
-      renderMixedCartoucheToCanvas(
+
+      // If no target width is provided, keep existing tight behavior (all normal digit buttons)
+      if (targetOuterWidthPx == null) {
+        renderMixedCartoucheToCanvas(
+          canvas,
+          cps,
+          BTN_LARGE_PX,
+          BTN_SMALL_PX,
+          smallSet,
+          { padding: BTN_PAD, border: BTN_BORDER, cornerRadius: BTN_CORNER, letterGap: BTN_GAP }
+        );
+        return;
+      }
+
+      // For wide digit buttons (only "0" in your layout): fixed width + centered
+      renderMixedCartoucheToCanvasFixedWidthCentered(
         canvas,
         cps,
         BTN_LARGE_PX,
         BTN_SMALL_PX,
         smallSet,
+        targetOuterWidthPx,
         { padding: BTN_PAD, border: BTN_BORDER, cornerRadius: BTN_CORNER, letterGap: BTN_GAP }
       );
     }
+
 
     function renderOpButtonCanvas(canvas, opKey, fontPx=34) {
       const cps = opWordsToCodepoints(opKey);
@@ -1136,9 +1301,28 @@ function buildKeypad() {
     id: "d0", kind: "digit",
     labelText: "0",
     onPress: () => pressDigit("0"),
-    renderFn: (c) => renderDigitButtonCanvas(c, "0"),
+    reduceWidthPx: "14%",   // CHANGE HERE (or keep number pixels)
+    renderFn: (c) => {
+      requestAnimationFrame(() => {
+        const btn = c.closest("button");
+        if (!btn) { renderDigitButtonCanvas(c, "0"); return; }
+
+        const rect = btn.getBoundingClientRect();
+
+        // Compute inner content width = button width minus horizontal padding
+        const cs = window.getComputedStyle(btn);
+        const padL = parseFloat(cs.paddingLeft) || 0;
+        const padR = parseFloat(cs.paddingRight) || 0;
+
+        const innerW = Math.max(0, rect.width - padL - padR);
+
+        renderDigitButtonCanvas(c, "0", innerW);
+      });
+    },
     wide: true
   });
+
+
 
   add({
     id: "dot", kind: "op", labelText: ".",
@@ -1153,6 +1337,25 @@ function buildKeypad() {
   });
 }
 
+
+function rerenderWideZeroKey() {
+  const c = document.querySelector('button[data-id="d0"] canvas.btnCanvas');
+  if (!c) return;
+
+  const btn = c.closest("button");
+  if (!btn) return;
+
+  const rect = btn.getBoundingClientRect();
+  const cs = window.getComputedStyle(btn);
+  const padL = parseFloat(cs.paddingLeft) || 0;
+  const padR = parseFloat(cs.paddingRight) || 0;
+
+  const innerW = Math.max(0, rect.width - padL - padR);
+  renderDigitButtonCanvas(c, "0", innerW);
+}
+
+
+
     /* ============================================================
        Init
        ============================================================ */
@@ -1164,7 +1367,8 @@ function buildKeypad() {
     });
 
     window.addEventListener("resize", () => {
-        renderDisplay();
+      renderDisplay();
+      rerenderWideZeroKey();
     });
 
   </script>
