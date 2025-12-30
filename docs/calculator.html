@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>nanpa-linja-n Cartouche Calculator</title>
+
+  <style>
+    :root {
+      --pad: 14px;
+      --gap: 12px;
+      --border: #d0d7de;
+      --bg: #F3DFC0;
+      --muted: #57606a;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 24px;
+      background: var(--bg);
+    }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      max-width: 980px;
+    }
+
+    .small { font-size: 12px; color: var(--muted); }
+    .help { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .calc {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .displayBox {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0;              /* CHANGED */
+        background: var(--bg);
+    }
+
+    .displayRow {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 12px;           /* CHANGED: moved padding here */
+    }
+
+    canvas {
+      display: block;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      max-width: 100%;
+    }
+
+    .displayRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .displayMeta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .btn {
+        border: 1px solid var(--border);
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 10px;
+        cursor: pointer;
+        user-select: none;
+
+        /* CHANGED: make keys more square */
+        min-height: 96px;
+
+        display: grid;
+        grid-template-rows: 1fr auto; /* canvas row + label row */
+        align-items: center;
+        justify-items: center;
+    }
+
+    .btn:active { transform: translateY(1px); }
+    .btnWide { grid-column: span 2; }
+
+    .btnLabel {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .btnCanvas {
+        /* CHANGED: do NOT force a fixed display height; it distorts the canvas */
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        display: block;
+    }
+
+
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf") format("opentype");
+      font-display: swap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <div class="small" style="margin-bottom:10px;">
+      <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
+        nanpa-linja-n main documentation
+      </a>
+    </div>
+
+    <div class="small" style="margin-bottom:10px;">
+      <a class="repoLink" href="./index.html" target="_blank" rel="noopener noreferrer">
+        nanpa-linja-n decimal number encoder + cartouche renderer
+      </a>
+    </div>
+
+
+    <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n cartouche calculator</h1>
+
+    <div class="help" style="margin-top:10px;">
+      <strong>Note:</strong> The “nanpa-linja-n proper name” generated here is a number-encoding label only.
+      It is intended as a proper-name style identifier and does not propose or add any new Toki Pona lexicon.
+    </div>
+
+    <div class="help">
+      <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
+      complete, or suitable for any purpose. You are responsible for verifying results.
+    </div>
+
+    <div class="calc">
+
+      <div class="displayBox">
+        <div class="displayRow">
+          <canvas id="displayCanvas"></canvas>
+
+          <div class="displayMeta">
+            <div class="small">Input: <span id="displayText" class="mono"></span></div>
+            <div class="small">Pending: <span id="pendingText" class="mono"></span></div>
+          </div>
+
+          <div class="help">
+            Display is rendered as a cartouche using the same UCSUR font pipeline as the encoder page.
+          </div>
+        </div>
+      </div>
+
+      <div class="keys" id="keys"></div>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    /* ============================================================
+       CONFIG (CHANGE HERE)
+       Operator button glyphs are configurable as Toki Pona words
+       from the same UCSUR mapping.
+       ============================================================ */
+
+    // CHANGE HERE: choose which Toki Pona glyphs appear on operator buttons.
+    // Provide ONE word (string) or multiple words (array) per operator.
+    // Examples below are defaults; replace with your preferred glyph words.
+const OP_BUTTON_WORDS = {
+  add: "en",                // +
+  sub: "lape",              // -
+  mul: "ala",               // ×  (CHANGED)
+  div: "kipisi",            // ÷
+  eq:  "sama",              // =  (CHANGED)
+  clr: "kijetesantakalu",   // C  (CHANGED)
+  bk:  "monsi",             // ⌫
+  dot: "o",                 // .
+  sign:"ike"                // ± (optional)
+};
+
+    // Minimal UCSUR mapping (add more if you want more operator glyph choices)
+    const WORD_TO_UCSUR_CP = {
+      // pipeline words
+      "nanpa": 0xF193D, "esun": 0xF190B, "e": 0xF1909, "nasa": 0xF193E,
+      "ni": 0xF1941, "nena": 0xF1940, "o": 0xF1944, "kulupu": 0xF191F,
+
+      // digit-name words
+      "ijo": 0xF190C, "wan": 0xF1973, "tu": 0xF196E, "sijelo": 0xF195B, "ante": 0xF1906,
+      "luka": 0xF192D, "utala": 0xF1971, "mun": 0xF193A, "pipi": 0xF1951, "jo": 0xF1913,
+
+      // common operator label choices (defaults used above)
+      "pana": 0xF194C, "weka": 0xF1976, "mute": 0xF193C, "kipisi": 0xF197B,
+      "pona": 0xF1954, "ala": 0xF1902, "monsi": 0xF1938, "ike": 0xF190D,
+
+      // operator button words you are using now
+"en":   0xF190A,
+"lape": 0xF1922,
+
+"sama": 0xF1956,
+"kijetesantakalu": 0xF1980,
+
+    };
+
+    /* ============================================================
+       Shared pipeline (subset of your existing page)
+       - decimal string -> nanpa-caps -> tokens -> TP words -> UCSUR cps
+       - render cartouche from UCSUR cps
+       ============================================================ */
+
+    const FONT_FAMILY = "TP-Cartouche-Font";
+
+    // --- SMALL glyph set (same idea as your Python SMALL_UNC_CHARS_CODES) ---
+    function getSmallCodepointsSet() {
+      return new Set([
+        0xF193D, // NANPA
+        0xF1940, // NENA
+        0xF1941, // NI
+        0xF193E, // NASA
+        0xF1909, // E
+        0xF190B, // ESUN
+      ]);
+    }
+
+    const TP_UCSUR_MIN = 0xF1900;
+    const TP_UCSUR_MAX = 0xF1988;
+
+    function isAllowedTpUcsurCodepoint(cp) {
+      return Number.isInteger(cp) && cp >= TP_UCSUR_MIN && cp <= TP_UCSUR_MAX;
+    }
+
+    function assertAllAllowedTpUcsur(codepoints) {
+      for (const cp of codepoints) {
+        if (!isAllowedTpUcsurCodepoint(cp)) {
+          const hex = cp.toString(16).toUpperCase();
+          throw new Error(
+            `Disallowed code point U+${hex}. Allowed range is U+${TP_UCSUR_MIN.toString(16).toUpperCase()}..U+${TP_UCSUR_MAX.toString(16).toUpperCase()}.`
+          );
+        }
+      }
+    }
+
+    const DIGIT_TO_TOKEN = {
+      "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
+      "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
+    };
+
+    const TOKEN_TO_DIGIT_WORD = {
+      "NI": "ijo", "WE": "wan", "TE": "tu", "SE": "sijelo", "NA": "ante",
+      "LE": "luka", "NU": "utala", "ME": "mun", "PE": "pipi", "JE": "jo",
+    };
+
+    const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
+    const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
+
+    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
+
+    function looksLikeNanpaCaps(s) {
+      if (!s) return false;
+      const t = String(s).trim();
+      if (!t) return false;
+      if (!/^[A-Za-z]+[Nn]$/.test(t)) return false;
+      return t.slice(0, 2).toUpperCase() === "NE";
+    }
+
+    function normalizeLooseSeparators(raw) {
+      if (raw == null) return "";
+      let s = String(raw);
+
+      const isNeg = s.startsWith("-");
+      const head = isNeg ? "-" : "";
+      const rest = isNeg ? s.slice(1) : s;
+
+      let r = rest.replace(/\s+/g, " ");
+      r = r.replace(/-+/g, "-");
+
+      return (head + r).trim();
+    }
+
+    function numberStrToNanpaCaps(
+      s,
+      {
+        thousandsChar = ",",
+        groupFractionTriplets = false,
+        fractionGroupSize = 3,
+      } = {}
+    ) {
+      if (s == null) throw new Error("s must be a string, not null");
+      let raw = normalizeLooseSeparators(String(s));
+      if (!raw) throw new Error("Empty value cannot be encoded");
+
+      function groupFractionDigitsOnly(str, decimalChar=".", groupSize=3, sepChar=",") {
+        const idx = str.indexOf(decimalChar);
+        if (idx < 0) return str;
+
+        const left = str.slice(0, idx);
+        const right = str.slice(idx + 1);
+
+        let i = 0;
+        while (i < right.length && /[0-9]/.test(right[i])) i++;
+        const fracDigits = right.slice(0, i);
+        const suffix = right.slice(i);
+
+        if (fracDigits.length <= groupSize) return str;
+        if (sepChar && fracDigits.includes(sepChar)) return str;
+
+        const groups = [];
+        for (let j = 0; j < fracDigits.length; j += groupSize) {
+          groups.push(fracDigits.slice(j, j + groupSize));
+        }
+        return `${left}${decimalChar}${groups.join(sepChar)}${suffix}`;
+      }
+
+      if (groupFractionTriplets) {
+        raw = groupFractionDigitsOnly(raw, ".", fractionGroupSize, thousandsChar);
+      }
+
+      function encodeSingleNumberSegment(segment, includeInitialNe) {
+        let seg = String(segment).trim();
+        if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
+
+        const out = [];
+        if (includeInitialNe) out.push("NE");
+
+        function pushNene() {
+          if (out.length > 0 && out[out.length - 1] === "NENE") return;
+          out.push("NENE");
+        }
+
+        if (seg.startsWith("-")) {
+          if (seg.startsWith("-.")) seg = "-0." + seg.slice(2);
+          out.push("NO");
+          seg = seg.slice(1).trim();
+        }
+
+        if ((seg.match(/\./g) || []).length > 1) {
+          throw new Error(`Invalid numeric segment with multiple decimals: ${segment}`);
+        }
+
+        let intPart = seg;
+        let fracPart = "";
+        let hasDecimal = false;
+        if (seg.includes(".")) {
+          [intPart, fracPart] = seg.split(".", 2);
+          hasDecimal = true;
+        }
+
+        let ip = String(intPart ?? "").trim();
+        if (ip === "") ip = "0";
+
+        // Comma-grouped integer (simple path)
+        const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+        for (const g of groups) {
+          if (g === "" || !/^\d+$/.test(g)) {
+            throw new Error(`Invalid integer group "${g}" in "${s}"`);
+          }
+        }
+
+        for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
+
+        for (let idx = 1; idx < groups.length; idx++) {
+          out.push("NEKE");
+          for (const d of groups[idx]) out.push(DIGIT_TO_TOKEN[d]);
+        }
+
+        if (hasDecimal) {
+          out.push(OPCHAR_TO_TOKEN["."]);
+
+          for (const ch of fracPart) {
+            if (ch === "_" ) continue;
+
+            if (ch === " " || ch === "-") { pushNene(); continue; }
+            if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
+
+            if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
+
+            throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
+          }
+        }
+
+        out.push("N");
+        return out.join("");
+      }
+
+      return encodeSingleNumberSegment(raw, true);
+    }
+
+    function tokenizeNanpaCaps(caps) {
+      if (caps == null) throw new Error("caps must be a string, not None");
+      const s = String(caps).trim().toUpperCase();
+      if (!s) throw new Error("caps is empty");
+      if (!s.endsWith("N")) throw new Error("nanpa-caps must end with final terminator 'N'");
+      if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
+
+      const tokens = [];
+      let i = 0;
+      const n = s.length;
+
+      while (i < n - 1) {
+        let matched = null;
+        for (const pref of TOKEN_PREFIXES) {
+          if (s.startsWith(pref, i)) { matched = pref; break; }
+        }
+        if (matched != null) { tokens.push(matched); i += matched.length; continue; }
+
+        if (i + 2 <= n - 1) {
+          const two = s.slice(i, i + 2);
+          if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
+        }
+        throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
+      }
+
+      tokens.push("N");
+      return tokens;
+    }
+
+    function nanpaCapsTokensToTpWords(tokens) {
+      const out = [];
+      const E_WORD = "esun";
+      const E_WORD_FOR_NE_AFTER_START = "e";
+      const N_WORD = "nasa";
+      const N_WORD_DECIMAL_POINT = "ni";
+      const N_END_WORD = "nanpa";
+
+      let afterStartingNe = false;
+
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+
+        if (t === "NE") {
+          if (out.length === 0) { out.push("nanpa", E_WORD); afterStartingNe = true; }
+          else { out.push(N_WORD, E_WORD_FOR_NE_AFTER_START); afterStartingNe = false; }
+          continue;
+        }
+
+        if (DIGIT_TOKENS.has(t)) {
+          afterStartingNe = false;
+          const digitWord = TOKEN_TO_DIGIT_WORD[t];
+          if (t === "NI" || t === "NA" || t === "NU") out.push(N_WORD, digitWord);
+          else out.push(digitWord, E_WORD);
+          continue;
+        }
+
+        if (t === "NO") {
+          // for calculator: treat as decimal-ish minus marker glyph word "ni o" behavior is fine
+          if (afterStartingNe) { out.push(N_WORD, "o"); afterStartingNe = false; }
+          else { out.push(N_WORD_DECIMAL_POINT, "o"); afterStartingNe = false; }
+          continue;
+        }
+
+        if (t === "N") { out.push(N_END_WORD); afterStartingNe = false; continue; }
+
+        // Keep calculator strict/simple (no fractions/magnitudes here unless you add them)
+        throw new Error(`Unsupported token "${t}" in calculator mode`);
+      }
+
+      return out;
+    }
+
+
+
+    function tpWordsToUcsurCodepoints(words) {
+      const cps = [];
+      for (const w of words) {
+        const key = String(w).toLowerCase();
+        const cp = WORD_TO_UCSUR_CP[key];
+        if (cp == null) throw new Error(`No UCSUR code point for word "${w}"`);
+        cps.push(cp);
+      }
+      assertAllAllowedTpUcsur(cps);
+      return cps;
+    }
+
+    function decimalToUcsurCodepoints(decimalStr) {
+      const s = String(decimalStr ?? "").trim();
+      if (!s) return [];
+
+      const caps = looksLikeNanpaCaps(s)
+        ? s.toUpperCase()
+        : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: false });
+
+      const tokens = tokenizeNanpaCaps(caps);
+      const tpWords = nanpaCapsTokensToTpWords(tokens);
+      const cps = tpWordsToUcsurCodepoints(tpWords);
+
+      assertAllAllowedTpUcsur(cps);
+      return cps;
+    }
+
+    /* ============================================================
+       Rendering helpers
+       ============================================================ */
+
+    function drawRoundedRect(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+
+    function renderMixedCartoucheToCanvas(canvas, codepoints, largePx, smallPx, smallCodepoints, options = {}) {
+      const pad = options.padding ?? 18;
+      const border = options.border ?? 2;
+      const corner = options.cornerRadius ?? 16;
+      const letterGap = options.letterGap ?? 0;
+
+      const ctx = canvas.getContext("2d");
+      ctx.textBaseline = "alphabetic";
+
+      const glyphRuns = [];
+      let totalWidth = 0;
+      let maxAscent = 0;
+      let maxDescent = 0;
+
+      for (const cp of codepoints) {
+        const ch = String.fromCodePoint(cp);
+        const px = smallCodepoints.has(cp) ? smallPx : largePx;
+
+        ctx.font = `${px}px "${FONT_FAMILY}"`;
+        const m = ctx.measureText(ch);
+
+        const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+        const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+        const left = m.actualBoundingBoxLeft ?? 0;
+        const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+        const tightW = Math.ceil(left + right);
+
+        glyphRuns.push({ ch, px, tightW, left, ascent, descent });
+
+        totalWidth += tightW + letterGap;
+        if (ascent > maxAscent) maxAscent = ascent;
+        if (descent > maxDescent) maxDescent = descent;
+      }
+
+      if (glyphRuns.length > 0) totalWidth -= letterGap;
+
+      const textHeight = Math.ceil(maxAscent + maxDescent);
+      const cartW = Math.ceil(totalWidth + pad * 2);
+      const cartH = Math.ceil(textHeight + pad * 2);
+
+      canvas.width = cartW + border * 2;
+      canvas.height = cartH + border * 2;
+
+      // OPTIONAL: crisp lines on high-DPI displays
+      //const dpr = window.devicePixelRatio || 1;
+      //canvas.style.width = canvas.width + "px";
+      //canvas.style.height = canvas.height + "px";
+
+
+      const ctx2 = canvas.getContext("2d");
+      ctx2.textBaseline = "alphabetic";
+      ctx2.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawRoundedRect(ctx2, border, border, cartW, cartH, corner);
+      ctx2.lineWidth = border;
+      ctx2.strokeStyle = "#111";
+      ctx2.stroke();
+
+      const baselineY = border + pad + maxAscent;
+      let x = border + pad;
+
+      ctx2.fillStyle = "#111";
+
+      for (const g of glyphRuns) {
+        ctx2.font = `${g.px}px "${FONT_FAMILY}"`;
+        const drawX = x + (g.left ?? 0);
+        ctx2.fillText(g.ch, drawX, baselineY);
+        x += g.tightW + letterGap;
+      }
+    }
+
+// Display-only: fixed-width cartouche with RIGHT-aligned glyphs (does not affect buttons)
+function renderMixedCartoucheToCanvasFixedWidthRightAligned(
+  canvas,
+  codepoints,
+  largePx,
+  smallPx,
+  smallCodepoints,
+  targetOuterWidthPx,
+  options = {}
+) {
+  const pad = options.padding ?? 18;
+  const border = options.border ?? 2;
+  const corner = options.cornerRadius ?? 16;
+  const letterGap = options.letterGap ?? 0;
+
+  const dpr = window.devicePixelRatio || 1;
+
+  // Measure glyph runs (in CSS pixels)
+  const ctxMeasure = canvas.getContext("2d");
+  ctxMeasure.textBaseline = "alphabetic";
+
+  const glyphRuns = [];
+  let totalWidth = 0;
+  let maxAscent = 0;
+  let maxDescent = 0;
+
+  for (const cp of codepoints) {
+    const ch = String.fromCodePoint(cp);
+    const px = smallCodepoints.has(cp) ? smallPx : largePx;
+
+    ctxMeasure.font = `${px}px "${FONT_FAMILY}"`;
+    const m = ctxMeasure.measureText(ch);
+
+    const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+    const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+    const left = m.actualBoundingBoxLeft ?? 0;
+    const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+    const tightW = Math.ceil(left + right);
+
+    glyphRuns.push({ ch, px, tightW, left, ascent, descent });
+
+    totalWidth += tightW + letterGap;
+    if (ascent > maxAscent) maxAscent = ascent;
+    if (descent > maxDescent) maxDescent = descent;
+  }
+
+  if (glyphRuns.length > 0) totalWidth -= letterGap;
+
+  const textHeight = Math.ceil(maxAscent + maxDescent);
+
+  // Fixed outer width target (match keypad width)
+  // Convert to inner cartouche width (excluding border on both sides)
+  const targetOuterW = Math.max(0, Math.floor(targetOuterWidthPx));
+  const targetCartW = Math.max(0, targetOuterW - border * 2);
+
+  // Ensure we never make it narrower than content requires
+  const minCartW = Math.ceil(totalWidth + pad * 2);
+  const cartW = Math.max(targetCartW, minCartW);
+
+  const cartH = Math.ceil(textHeight + pad * 2);
+
+  const outerW = cartW + border * 2;
+  const outerH = cartH + border * 2;
+
+  // Size canvas for HiDPI while preserving layout size
+  canvas.style.width = `${outerW}px`;
+  canvas.style.height = `${outerH}px`;
+  canvas.width = Math.ceil(outerW * dpr);
+  canvas.height = Math.ceil(outerH * dpr);
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.textBaseline = "alphabetic";
+  ctx.clearRect(0, 0, outerW, outerH);
+
+  // Border
+  drawRoundedRect(ctx, border, border, cartW, cartH, corner);
+  ctx.lineWidth = border;
+  ctx.strokeStyle = "#111";
+  ctx.stroke();
+
+  // Baseline and RIGHT alignment
+  const baselineY = border + pad + maxAscent;
+
+  const innerLeft = border + pad;
+  const innerRight = border + cartW - pad;
+  const innerAvail = Math.max(0, innerRight - innerLeft);
+
+  // If content is wider than available, this clamps to left padding (no negative)
+  const shift = Math.max(0, innerAvail - totalWidth);
+
+  let x = innerLeft + shift;
+
+  ctx.fillStyle = "#111";
+  for (const g of glyphRuns) {
+    ctx.font = `${g.px}px "${FONT_FAMILY}"`;
+    const drawX = x + (g.left ?? 0);
+    ctx.fillText(g.ch, drawX, baselineY);
+    x += g.tightW + letterGap;
+  }
+}
+
+
+
+    // Render operator glyphs WITHOUT a cartouche border (centered in the canvas)
+    function renderGlyphsCentered(canvas, codepoints, fontPx) {
+      const ctx = canvas.getContext("2d");
+      const chars = codepoints.map(cp => String.fromCodePoint(cp)).join("");
+
+      ctx.font = `${fontPx}px "${FONT_FAMILY}"`;
+      const m = ctx.measureText(chars);
+
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(fontPx * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(fontPx * 0.2);
+      const h = Math.ceil(ascent + descent);
+
+      const w = Math.ceil(m.width + 10);
+
+      canvas.width = Math.max(60, w);
+      canvas.height = Math.max(48, h + 10);
+
+      const ctx2 = canvas.getContext("2d");
+      ctx2.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx2.fillStyle = "#111";
+      ctx2.textBaseline = "alphabetic";
+      ctx2.font = `${fontPx}px "${FONT_FAMILY}"`;
+
+      const x = Math.floor((canvas.width - m.width) / 2);
+      const y = Math.floor((canvas.height + ascent - descent) / 2);
+
+      ctx2.fillText(chars, x, y);
+    }
+
+    async function ensureFontLoaded() {
+      const sampleCp = 0xF190B; // ESUN
+      const sampleChar = String.fromCodePoint(sampleCp);
+      const fontSpec = `24px "${FONT_FAMILY}"`;
+
+      if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
+
+      await document.fonts.load(fontSpec, sampleChar);
+      await document.fonts.ready;
+    }
+
+    /* ============================================================
+       Calculator state + logic
+       ============================================================ */
+
+    const displayCanvas = document.getElementById("displayCanvas");
+    const elDisplayText = document.getElementById("displayText");
+    const elPendingText = document.getElementById("pendingText");
+
+    const smallSet = getSmallCodepointsSet();
+
+    // Display/cartouche sizing
+    const DISPLAY_LARGE_PX = 92;
+    const DISPLAY_SMALL_PX = 26;
+    const DISPLAY_PAD = 24;
+    const DISPLAY_BORDER = 3;
+    const DISPLAY_CORNER = 18;
+    const DISPLAY_GAP = 4;
+
+    // Button/cartouche sizing
+    const BTN_LARGE_PX = 28;
+    const BTN_SMALL_PX = 10;
+    const BTN_PAD = 10;
+    const BTN_BORDER = 2;
+    const BTN_CORNER = 14;
+    const BTN_GAP = 2;
+
+    // Calculator state
+    let inputStr = "0";      // what user is typing
+    let acc = null;          // accumulator (number) or null
+    let pendingOp = null;    // "+", "-", "*", "/"
+    let lastOp = null;       // for repeated "=" (optional)
+    let lastArg = null;
+
+    // CHANGE HERE: maximum digits after "." when displaying computed results
+    const MAX_DECIMALS = 5;
+
+    function isError() { return inputStr === "Error"; }
+
+    function setError() {
+      inputStr = "Error";
+      // keep acc/pending as-is; user can Clear to reset
+      renderDisplay();
+    }
+
+    function normalizeInputString(s) {
+      // Basic normalization for display typing only:
+      // - keep "-" only at start
+      // - allow one "."
+      // - keep "0" rules simple
+      if (!s || s === "-") return s;
+
+      // remove leading zeros (but keep "0." and "-0.")
+      const neg = s.startsWith("-");
+      const core = neg ? s.slice(1) : s;
+
+      if (core.includes(".")) {
+        const [a, b] = core.split(".", 2);
+        const a2 = a.replace(/^0+(?=\d)/, "") || "0";
+        return (neg ? "-" : "") + a2 + "." + b;
+      } else {
+        const a2 = core.replace(/^0+(?=\d)/, "") || "0";
+        return (neg ? "-" : "") + a2;
+      }
+    }
+
+    function parseInputToNumber(s) {
+      if (!s || s === "-" || s === "." || s === "-.") return 0;
+      const n = Number(s);
+      if (!Number.isFinite(n)) throw new Error("Invalid number");
+      return n;
+    }
+
+    function formatNumberForInput(n) {
+        if (!Number.isFinite(n)) return "Error";
+
+        // Avoid "-0"
+        if (Object.is(n, -0)) n = 0;
+
+        // If it's already an integer, keep it clean
+        if (Number.isInteger(n)) return String(n);
+
+        // Clamp fractional digits
+        const fixed = n.toFixed(MAX_DECIMALS);
+
+        // Trim trailing zeros and any trailing "."
+        const trimmed = fixed.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+
+        // If it became "-0" after trimming, normalize
+        if (trimmed === "-0") return "0";
+
+        return trimmed;
+    }
+
+
+    function compute(a, op, b) {
+      if (op === "+") return a + b;
+      if (op === "-") return a - b;
+      if (op === "*") return a * b;
+      if (op === "/") {
+        if (b === 0) return NaN;
+        return a / b;
+      }
+      throw new Error("Unknown op");
+    }
+
+    function applyPendingIfReady(nextOpForRepeat = null) {
+      // Apply pending operation using current input as b
+      if (pendingOp == null || acc == null) return;
+
+      const b = parseInputToNumber(inputStr);
+      const r = compute(acc, pendingOp, b);
+
+      if (!Number.isFinite(r)) { setError(); return; }
+
+      // Save for repeated "="
+      lastOp = nextOpForRepeat ?? pendingOp;
+      lastArg = b;
+
+      acc = r;
+      inputStr = formatNumberForInput(r);
+    }
+
+    function pressDigit(d) {
+      if (isError()) return;
+      if (inputStr === "0") inputStr = d;
+      else if (inputStr === "-0") inputStr = "-" + d;
+      else inputStr += d;
+
+      inputStr = normalizeInputString(inputStr);
+      renderDisplay();
+    }
+
+    function pressDot() {
+      if (isError()) return;
+      if (!inputStr.includes(".")) {
+        inputStr = inputStr + ".";
+        renderDisplay();
+      }
+    }
+
+    function pressSign() {
+      if (isError()) return;
+      if (inputStr.startsWith("-")) inputStr = inputStr.slice(1) || "0";
+      else inputStr = (inputStr === "0") ? "0" : "-" + inputStr;
+      renderDisplay();
+    }
+
+    function pressBackspace() {
+      if (isError()) return;
+      if (inputStr.length <= 1) { inputStr = "0"; renderDisplay(); return; }
+      inputStr = inputStr.slice(0, -1);
+      if (inputStr === "-" || inputStr === "-0") inputStr = "0";
+      renderDisplay();
+    }
+
+    function pressClear() {
+      inputStr = "0";
+      acc = null;
+      pendingOp = null;
+      lastOp = null;
+      lastArg = null;
+      renderDisplay();
+    }
+
+    function pressOp(op) {
+      if (isError()) return;
+
+      // If we already have a pending op and user has typed something, apply it
+      if (pendingOp != null && acc != null) {
+        applyPendingIfReady(pendingOp);
+        if (isError()) return;
+      } else {
+        // No pending op: set accumulator from input
+        acc = parseInputToNumber(inputStr);
+      }
+
+      pendingOp = op;
+      // Start a fresh input for next operand
+      inputStr = "0";
+      renderDisplay();
+    }
+
+    function pressEquals() {
+      if (isError()) return;
+
+      if (pendingOp != null && acc != null) {
+        applyPendingIfReady(pendingOp);
+        pendingOp = null;
+        renderDisplay();
+        return;
+      }
+
+      // Repeat last operation if available
+      if (lastOp != null && lastArg != null) {
+        const a = parseInputToNumber(inputStr);
+        const r = compute(a, lastOp, lastArg);
+        if (!Number.isFinite(r)) { setError(); return; }
+        inputStr = formatNumberForInput(r);
+        renderDisplay();
+      }
+    }
+
+    /* ============================================================
+       UI: Build keys with canvases
+       ============================================================ */
+
+    function wordOrWordsToArray(v) {
+      if (Array.isArray(v)) return v;
+      if (typeof v === "string") return [v];
+      return [];
+    }
+
+    function opWordsToCodepoints(opKey) {
+      const words = wordOrWordsToArray(OP_BUTTON_WORDS[opKey]);
+      if (words.length === 0) throw new Error(`No words configured for operator "${opKey}"`);
+      return tpWordsToUcsurCodepoints(words);
+    }
+
+    function renderDisplay() {
+        elDisplayText.textContent = inputStr;
+
+        const pending = (pendingOp != null && acc != null)
+            ? `${formatNumberForInput(acc)} ${pendingOp}`
+            : "";
+        elPendingText.textContent = pending;
+
+        // If "Error", render a small fallback (no cartouche pipeline)
+        if (inputStr === "Error") {
+            const ctx = displayCanvas.getContext("2d");
+            displayCanvas.style.width = "520px";
+            displayCanvas.style.height = "120px";
+            displayCanvas.width = 520 * (window.devicePixelRatio || 1);
+            displayCanvas.height = 120 * (window.devicePixelRatio || 1);
+
+            const dpr = window.devicePixelRatio || 1;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, 520, 120);
+            ctx.fillStyle = "#111";
+            ctx.font = `48px system-ui`;
+            ctx.fillText("Error", 24, 76);
+            return;
+        }
+
+        // Render cartouche for current input string
+        const cps = decimalToUcsurCodepoints(inputStr);
+
+        // Force the display cartouche to match keypad width
+        const keysEl = document.getElementById("keys");
+        const targetW = keysEl ? keysEl.getBoundingClientRect().width : displayCanvas.getBoundingClientRect().width;
+
+        renderMixedCartoucheToCanvasFixedWidthRightAligned(
+            displayCanvas,
+            cps,
+            DISPLAY_LARGE_PX,
+            DISPLAY_SMALL_PX,
+            smallSet,
+            targetW,
+            { padding: DISPLAY_PAD, border: DISPLAY_BORDER, cornerRadius: DISPLAY_CORNER, letterGap: DISPLAY_GAP }
+        );
+    }
+
+
+    function makeButton({ id, kind, labelText, onPress, renderFn, wide=false }) {
+      const btn = document.createElement("button");
+      btn.className = "btn" + (wide ? " btnWide" : "");
+      btn.type = "button";
+      btn.setAttribute("data-id", id);
+
+      const c = document.createElement("canvas");
+      c.className = "btnCanvas";
+      btn.appendChild(c);
+
+      if (labelText) {
+        const lab = document.createElement("div");
+        lab.className = "btnLabel mono";
+        lab.textContent = labelText;
+        btn.appendChild(lab);
+      }
+
+      btn.addEventListener("click", onPress);
+
+      // Render visuals (cartouche or glyphs)
+      renderFn(c);
+
+      return btn;
+    }
+
+    function renderDigitButtonCanvas(canvas, digitStr) {
+      const cps = decimalToUcsurCodepoints(digitStr);
+      renderMixedCartoucheToCanvas(
+        canvas,
+        cps,
+        BTN_LARGE_PX,
+        BTN_SMALL_PX,
+        smallSet,
+        { padding: BTN_PAD, border: BTN_BORDER, cornerRadius: BTN_CORNER, letterGap: BTN_GAP }
+      );
+    }
+
+    function renderOpButtonCanvas(canvas, opKey, fontPx=34) {
+      const cps = opWordsToCodepoints(opKey);
+      renderGlyphsCentered(canvas, cps, fontPx);
+    }
+
+function buildKeypad() {
+  const keys = document.getElementById("keys");
+  keys.innerHTML = "";
+
+  // Layout (after swap + with −):
+  // Row1: C, ⌫, ±, +
+  // Row2: 7, 8, 9, −
+  // Row3: 4, 5, 6, ×
+  // Row4: 1, 2, 3, ÷
+  // Row5: 0 (wide), ., =
+
+  const add = (spec) => keys.appendChild(makeButton(spec));
+
+  // Row 1
+  add({
+    id: "clr", kind: "op", labelText: "C",
+    onPress: pressClear,
+    renderFn: (c) => renderOpButtonCanvas(c, "clr", 34)
+  });
+
+  add({
+    id: "bk", kind: "op", labelText: "⌫",
+    onPress: pressBackspace,
+    renderFn: (c) => renderOpButtonCanvas(c, "bk", 34)
+  });
+
+  add({
+    id: "sign", kind: "op", labelText: "±",
+    onPress: pressSign,
+    renderFn: (c) => renderOpButtonCanvas(c, "sign", 34)
+  });
+
+  // swapped: add goes where sub was
+  add({
+    id: "add", kind: "op", labelText: "+",
+    onPress: () => pressOp("+"),
+    renderFn: (c) => renderOpButtonCanvas(c, "add", 34)
+  });
+
+  // Row 2
+  for (const d of ["7","8","9"]) {
+    add({
+      id: "d"+d, kind: "digit",
+      labelText: d,
+      onPress: () => pressDigit(d),
+      renderFn: (c) => renderDigitButtonCanvas(c, d)
+    });
+  }
+
+  // swapped: sub goes where add was
+  add({
+    id: "sub", kind: "op", labelText: "−",
+    onPress: () => pressOp("-"),
+    renderFn: (c) => renderOpButtonCanvas(c, "sub", 34)
+  });
+
+  // Row 3
+  for (const d of ["4","5","6"]) {
+    add({
+      id: "d"+d, kind: "digit",
+      labelText: d,
+      onPress: () => pressDigit(d),
+      renderFn: (c) => renderDigitButtonCanvas(c, d)
+    });
+  }
+
+  add({
+    id: "mul", kind: "op", labelText: "×",
+    onPress: () => pressOp("*"),
+    renderFn: (c) => renderOpButtonCanvas(c, "mul", 34)
+  });
+
+  // Row 4
+  for (const d of ["1","2","3"]) {
+    add({
+      id: "d"+d, kind: "digit",
+      labelText: d,
+      onPress: () => pressDigit(d),
+      renderFn: (c) => renderDigitButtonCanvas(c, d)
+    });
+  }
+
+  add({
+    id: "div", kind: "op", labelText: "÷",
+    onPress: () => pressOp("/"),
+    renderFn: (c) => renderOpButtonCanvas(c, "div", 34)
+  });
+
+  // Row 5
+  add({
+    id: "d0", kind: "digit",
+    labelText: "0",
+    onPress: () => pressDigit("0"),
+    renderFn: (c) => renderDigitButtonCanvas(c, "0"),
+    wide: true
+  });
+
+  add({
+    id: "dot", kind: "op", labelText: ".",
+    onPress: pressDot,
+    renderFn: (c) => renderOpButtonCanvas(c, "dot", 34)
+  });
+
+  add({
+    id: "eq", kind: "op", labelText: "=",
+    onPress: pressEquals,
+    renderFn: (c) => renderOpButtonCanvas(c, "eq", 34)
+  });
+}
+
+    /* ============================================================
+       Init
+       ============================================================ */
+
+    window.addEventListener("load", async () => {
+      await ensureFontLoaded();
+      buildKeypad();
+      renderDisplay();
+    });
+
+    window.addEventListener("resize", () => {
+        renderDisplay();
+    });
+
+  </script>
+</body>
+</html>
