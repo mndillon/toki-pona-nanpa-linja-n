@@ -192,12 +192,12 @@
       <!-- CHANGED: small above large (swap order) -->
       <div class="grid2" style="margin-top:14px;">
         <div>
-          <h3>Cartouche (small)</h3>
+          <h3>sitelen pona cartouche (small)</h3>
           <canvas id="canvasSmall"></canvas>
           <div class="help">Rendered with your font at a smaller size.</div>
         </div>
         <div>
-          <h3>Cartouche (large)</h3>
+          <h3>ditelen pona cartouche (large)</h3>
           <canvas id="canvasLarge"></canvas>
           <div class="help">Rendered with your font at a large size.</div>
         </div>
@@ -244,7 +244,8 @@
           <tr>
             <th style="width:80px;">Digit</th>
             <th>nanpa-linja-n proper name</th>
-            <th style="width:220px;">Cartouche</th>
+            <th>nanpa-linja-n unique number code</th>
+            <th style="width:220px;">sitelen pona cartouche</th>
           </tr>
         </thead>
         <tbody id="digitTableBody">
@@ -252,6 +253,7 @@
         </tbody>
       </table>
 
+      <div class="help">#~n</div>
     </div>
   </div>
 
@@ -488,7 +490,7 @@
       // Remove spaces, then remove n/N and e/E, then uppercase the rest.
       const noSpaces = s.replace(/\s+/g, "");
       const withoutNE = noSpaces.replace(/[nNeE]/g, "");
-      return withoutNE.toUpperCase();
+      return "#~" + withoutNE.toUpperCase();
     }
 
     function normalizeLooseSeparators(raw) {
@@ -1420,6 +1422,9 @@
         // Code points for cartouche rendering
         const cps = decimalToUcsurCodepoints(digitStr);
 
+        // nanpa-linja-n unique name
+        const unique_number_code = latinNameToNumberCode(latinName);
+
         // Build row
         const tr = document.createElement("tr");
 
@@ -1431,6 +1436,10 @@
         tdName.className = "mono";
         tdName.textContent = latinName;
 
+        const tdUniqueNumberCode = document.createElement("td");
+        tdUniqueNumberCode.className = "mono";
+        tdUniqueNumberCode.textContent = unique_number_code;
+
         const tdCanvas = document.createElement("td");
         const canvas = document.createElement("canvas");
         canvas.className = "digitCanvas";
@@ -1438,6 +1447,7 @@
 
         tr.appendChild(tdDigit);
         tr.appendChild(tdName);
+        tr.appendChild(tdUniqueNumberCode);
         tr.appendChild(tdCanvas);
 
         elDigitTableBody.appendChild(tr);
