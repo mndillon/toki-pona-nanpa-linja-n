@@ -82,6 +82,10 @@
       gap: 14px;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     @font-face {
       font-family: "TP-Cartouche-Font";
       src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf") format("opentype");
@@ -107,9 +111,9 @@
     <div class="row" style="margin-top:14px;">
       <div class="col">
         <label for="decimalInput">Decimal value</label>
-        <input id="decimalInput" type="text" class="mono" value="28.95" />
+        <input id="decimalInput" type="text" class="mono" value="28.95" maxlength="500" />
         <div class="help">
-          Example formats: <span class="mono">0.00</span>, <span class="mono">.75</span>, <span class="mono">-12.340</span>.
+          Example formats: <span class="mono">0.00</span>, <span class="mono">.75</span>, <span class="mono">-12.340</span>, <span class="mono">9+3/4</span>.
           nanpa-linja-n encoder decides how to represent these.
         </div>
       </div>
@@ -129,10 +133,19 @@
       <div class="help">Derived from the nanpa-linja-n name: remove letters <span class="mono">n</span> and <span class="mono">e</span>, uppercase everything else.</div>
 
 
-      <h3>Code points (hex)</h3>
-      <textarea id="codepointsOut" class="mono" readonly></textarea>
+      <div id="hexSection" class="hidden">
+        <h3>Code points (hex)</h3>
+        <textarea id="codepointsOut" class="mono" readonly></textarea>
+        <div class="help">
+          Space-separated hex code points (e.g., <span class="mono">F190B F1944 ...</span>) that nasin nanpa font uses.
+        </div>
+      </div>
+
+
+      <h3>Toki Pona words (for code points)</h3>
+      <textarea id="tpWordsOut" class="mono" readonly></textarea>
       <div class="help">
-        Space-separated hex code points (e.g., <span class="mono">F190B F1944 ...</span>) that nasin nanpa font uses.
+        One Toki Pona word per code point, in the same order as the code points output.
       </div>
 
       <!-- CHANGED: small above large (swap order) -->
@@ -149,18 +162,36 @@
         </div>
       </div>
 
-      <h3 style="margin-top:20px;">Reverse tool: code points → glyphs</h3>
-      <div class="row">
+      <h3 style="margin-top:20px;">Reverse tool: Toki Pona words → glyphs</h3>
+
+      <div id="fromCodesSection" class="hidden">
+        <div class="row">
+          <div class="col">
+            <label for="codepointsIn">Paste code points (hex, space-separated)</label>
+            <input id="codepointsIn" type="text" class="mono" placeholder="F190B F1944 F193D" maxlength="3500"/>
+            <div class="help">
+              Accepts <span class="mono">F190B</span> or <span class="mono">U+F190B</span>.
+              Input is restricted to the Toki Pona UCSUR block (<span class="mono">F1900</span>–<span class="mono">F1988</span>).
+            </div>
+          </div>
+          <div style="flex: 0 0 auto;">
+            <button id="btnFromCodes">Render From Code Points</button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- NEW: words input WORD_TO_UCSUR_CP map -->
+      <div class="row" style="margin-top:10px;">
         <div class="col">
-          <label for="codepointsIn">Paste code points (hex, space-separated)</label>
-          <input id="codepointsIn" type="text" class="mono" placeholder="F190B F1944 F193D" />
+          <label for="tpWordsIn">Enter Toki Pona words (space-separated)</label>
+          <input id="tpWordsIn" type="text" class="mono" placeholder="nanpa esun o nanpa" maxlength="2500"/>
           <div class="help">
-            Accepts <span class="mono">F190B</span> or <span class="mono">U+F190B</span>.
-            Input is restricted to the Toki Pona UCSUR block that the nasin nanpa font defined (<span class="mono">F1900</span>–<span class="mono">F1988</span>).
+            Only valid Toki Pona words are allowed (case-insensitive).
           </div>
         </div>
         <div style="flex: 0 0 auto;">
-          <button id="btnFromCodes">Render From Code Points</button>
+          <button id="btnFromWords">Render From Toki Pona Words</button>
         </div>
       </div>
     </div>
@@ -719,7 +750,10 @@
       return out;
     }
 
+
+    // Replace your existing WORD_TO_UCSUR_CP with this full UCSUR block mapping.
     const WORD_TO_UCSUR_CP = {
+      //words used by decimal value cartouche
       "nanpa": 0xF193D,
       "esun":  0xF190B,
       "e":     0xF1909,
@@ -729,6 +763,7 @@
       "o":     0xF1944,
       "kulupu":0xF191F,
 
+      //digits to first letter mappings
       "ijo":   0xF190C,
       "wan":   0xF1973,
       "tu":    0xF196E,
@@ -739,7 +774,210 @@
       "mun":   0xF193A,
       "pipi":  0xF1951,
       "jo":    0xF1913,
+
+
+
+      // F1900..F1977 (core)
+      "a": 0xF1900,
+      "akesi": 0xF1901,
+      "ala": 0xF1902,
+      "alasa": 0xF1903,
+      "ale": 0xF1904,
+      // Optional alias (common spelling variant):
+      "ali": 0xF1904,
+
+      "anpa": 0xF1905,
+      //"ante": 0xF1906,
+      "anu": 0xF1907,
+      "awen": 0xF1908,
+      //"e": 0xF1909,
+      "en": 0xF190A,
+      //"esun": 0xF190B,
+      //"ijo": 0xF190C,
+      "ike": 0xF190D,
+      "ilo": 0xF190E,
+      "insa": 0xF190F,
+      "jaki": 0xF1910,
+      "jan": 0xF1911,
+      "jelo": 0xF1912,
+      //"jo": 0xF1913,
+      "kala": 0xF1914,
+      "kalama": 0xF1915,
+      "kama": 0xF1916,
+      "kasi": 0xF1917,
+      "ken": 0xF1918,
+      "kepeken": 0xF1919,
+      "kili": 0xF191A,
+      "kiwen": 0xF191B,
+      "ko": 0xF191C,
+      "kon": 0xF191D,
+      "kule": 0xF191E,
+      //"kulupu": 0xF191F,
+      "kute": 0xF1920,
+      "la": 0xF1921,
+      "lape": 0xF1922,
+      "laso": 0xF1923,
+      "lawa": 0xF1924,
+      "len": 0xF1925,
+      "lete": 0xF1926,
+      "li": 0xF1927,
+      "lili": 0xF1928,
+      "linja": 0xF1929,
+      "lipu": 0xF192A,
+      "loje": 0xF192B,
+      "lon": 0xF192C,
+      //"luka": 0xF192D,
+      "lukin": 0xF192E,
+      "lupa": 0xF192F,
+      "ma": 0xF1930,
+      "mama": 0xF1931,
+      "mani": 0xF1932,
+      "meli": 0xF1933,
+      "mi": 0xF1934,
+      "mije": 0xF1935,
+      "moku": 0xF1936,
+      "moli": 0xF1937,
+      "monsi": 0xF1938,
+      "mu": 0xF1939,
+      //"mun": 0xF193A,
+      "musi": 0xF193B,
+      "mute": 0xF193C,
+      //"nanpa": 0xF193D,
+      //"nasa": 0xF193E,
+      "nasin": 0xF193F,
+      //"nena": 0xF1940,
+      //"ni": 0xF1941,
+      "nimi": 0xF1942,
+      "noka": 0xF1943,
+      //"o": 0xF1944,
+      "olin": 0xF1945,
+      "ona": 0xF1946,
+      "open": 0xF1947,
+      "pakala": 0xF1948,
+      "pali": 0xF1949,
+      "palisa": 0xF194A,
+      "pan": 0xF194B,
+      "pana": 0xF194C,
+      "pi": 0xF194D,
+      "pilin": 0xF194E,
+      "pimeja": 0xF194F,
+      "pini": 0xF1950,
+      //"pipi": 0xF1951,
+      "poka": 0xF1952,
+      "poki": 0xF1953,
+      "pona": 0xF1954,
+      "pu": 0xF1955,
+      "sama": 0xF1956,
+      "seli": 0xF1957,
+      "selo": 0xF1958,
+      "seme": 0xF1959,
+      "sewi": 0xF195A,
+      //"sijelo": 0xF195B,
+      "sike": 0xF195C,
+      "sin": 0xF195D,
+      "sina": 0xF195E,
+      "sinpin": 0xF195F,
+      "sitelen": 0xF1960,
+      "sona": 0xF1961,
+      "soweli": 0xF1962,
+      "suli": 0xF1963,
+      "suno": 0xF1964,
+      "supa": 0xF1965,
+      "suwi": 0xF1966,
+      "tan": 0xF1967,
+      "taso": 0xF1968,
+      "tawa": 0xF1969,
+      "telo": 0xF196A,
+      "tenpo": 0xF196B,
+      "toki": 0xF196C,
+      "tomo": 0xF196D,
+      //"tu": 0xF196E,
+      "unpa": 0xF196F,
+      "uta": 0xF1970,
+      //"utala": 0xF1971,
+      "walo": 0xF1972,
+      //"wan": 0xF1973,
+      "waso": 0xF1974,
+      "wawa": 0xF1975,
+      "weka": 0xF1976,
+      "wile": 0xF1977,
+
+      // F1978..F1988 (additional UCSUR assignments commonly associated with ku)
+      "namako": 0xF1978,
+      "kin": 0xF1979,
+      "oko": 0xF197A,
+      "kipisi": 0xF197B,
+      "leko": 0xF197C,
+      "monsuta": 0xF197D,
+      "tonsi": 0xF197E,
+      "jasima": 0xF197F,
+      "kijetesantakalu": 0xF1980,
+      "soko": 0xF1981,
+      "meso": 0xF1982,
+      "epiku": 0xF1983,
+      "kokosila": 0xF1984,
+      "lanpan": 0xF1985,
+      "n": 0xF1986,
+      "misikeke": 0xF1987,
+      "ku": 0xF1988,
     };
+
+
+
+
+/* =========================
+   2) JS: ADD these helpers near WORD_TO_UCSUR_CP (right after it is declared is ideal)
+   ========================= */
+
+    // Build reverse map: code point -> word
+    const UCSUR_CP_TO_WORD = new Map(
+    Object.entries(WORD_TO_UCSUR_CP).map(([w, cp]) => [cp, w])
+    );
+
+    // Convert code points to words (best-effort; throws if unknown)
+    function ucsurCodepointsToTpWords(codepoints) {
+      const words = [];
+      for (const cp of codepoints) {
+        const w = UCSUR_CP_TO_WORD.get(cp);
+        if (!w) {
+          const hex = cp.toString(16).toUpperCase();
+          throw new Error(`No Toki Pona word mapping for code point U+${hex}`);
+        }
+        words.push(w);
+      }
+      return words;
+    }
+
+    function tpWordsToText(words) {
+      return (words ?? []).join(" ");
+    }
+
+      // Parse user-entered words (space-separated), validate against WORD_TO_UCSUR_CP, return codepoints
+    function parseTpWordsToCodepoints(input) {
+      const raw = String(input ?? "").trim();
+      if (!raw) return [];
+
+      // Split on whitespace
+      const parts = raw.split(/\s+/).filter(Boolean);
+
+      const cps = [];
+      for (const p of parts) {
+        const w = p.toLowerCase();
+
+        // validate strictly: only words in mapping
+        const cp = WORD_TO_UCSUR_CP[w];
+        if (cp == null) {
+          throw new Error(`Invalid Toki Pona word "${p}". Only mapped words are allowed.`);
+        }
+
+        cps.push(cp);
+      }
+
+      // Defensive: ensure in your allowed block
+      assertAllAllowedTpUcsur(cps);
+
+      return cps;
+    }
 
     function tpWordsToUcsurCodepoints(words) {
       const cps = [];
@@ -1063,9 +1301,48 @@
 
     const elCodesIn = document.getElementById("codepointsIn");
 
+    /* =========================
+   3) JS: Wire up new output textarea + new input + new button
+   Put these with your other element lookups and handlers.
+   ========================= */
+
+    // ADD this element lookup with the others:
+    const elTpWordsOut = document.getElementById("tpWordsOut");
+
+    // ADD this lookup (new input):
+    const elTpWordsIn = document.getElementById("tpWordsIn");
+
+    const MAX_DECIMAL_INPUT_CHARS = 500;
+    const MAX_HEX_CODE_INPUT_CHARS = 3500;
+    const MAX_TOKI_PONA_WORD_INPUT_CHARS = 2500;
+
+    function enforceMaxLen(el, maxLen = MAX_DECIMAL_INPUT_CHARS) {
+      if (!el) return;
+      const s = String(el.value ?? "");
+      if (s.length > maxLen) el.value = s.slice(0, maxLen);
+    }
+
+    // Enforce at load time (in case of prefilled values)
+    enforceMaxLen(elDecimal,  MAX_DECIMAL_INPUT_CHARS);
+    enforceMaxLen(elCodesIn,  MAX_HEX_CODE_INPUT_CHARS);
+    enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS);
+
+    // Enforce while typing/pasting
+    if (elDecimal) {
+      elDecimal.addEventListener("input", () => enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS));
+    }
+    if (elCodesIn) {
+      elCodesIn.addEventListener("input", () => enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS));
+    }
+    if (elTpWordsIn) {
+      elTpWordsIn.addEventListener("input", () => enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS));
+    }
+
+
     document.getElementById("btnEncode").addEventListener("click", async () => {
       try {
         await ensureFontLoaded();
+        enforceMaxLen(elDecimal,  MAX_DECIMAL_INPUT_CHARS);
 
         const raw = normalizeVulgarFractionInput(elDecimal.value);
         const latin = encodeDecimalToLatin(raw);
@@ -1074,6 +1351,8 @@
 
         const cps = decimalToUcsurCodepoints(raw);
         elCodepointsOut.value = codepointsToHexString(cps);
+        elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
+
 
         const smallSet = getSmallCodepointsSet();
 
@@ -1104,6 +1383,7 @@
     document.getElementById("btnFromCodes").addEventListener("click", async () => {
       try {
         await ensureFontLoaded();
+        enforceMaxLen(elCodesIn,  MAX_HEX_CODE_INPUT_CHARS);
 
         const cps = parseHexCodepoints(elCodesIn.value);
 
@@ -1111,6 +1391,8 @@
         elLatinOut.value = String.fromCodePoint(...cps);
         elCodepointsOut.value = codepointsToHexString(cps);
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
+        elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
+
 
         // Small then large (uniform)
         renderUniformCartoucheFromCodepoints(
@@ -1131,6 +1413,66 @@
         alert(err?.message ?? String(err));
       }
     });
+
+    // NEW BUTTON: add this event listener near the others:
+    document.getElementById("btnFromWords").addEventListener("click", async () => {
+      try {
+        await ensureFontLoaded();
+        enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS);
+
+        const cps = parseTpWordsToCodepoints(elTpWordsIn.value);
+
+        // Show outputs
+        elCodepointsOut.value = codepointsToHexString(cps);
+        elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
+
+        // Show direct UCSUR glyphs in LatinOut (best-effort)
+        elLatinOut.value = String.fromCodePoint(...cps);
+        elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
+
+        // Render (uniform)
+        renderUniformCartoucheFromCodepoints(
+          canvasSmall,
+          cps,
+          LARGE_TINY_FONT_SIZE,
+          { padding: 18, border: 2, cornerRadius: 16, letterGap: LETTER_SPACING_GAP }
+        );
+
+        renderUniformCartoucheFromCodepoints(
+          canvasLarge,
+          cps,
+          LARGE_FONT_SIZE,
+          { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
+        );
+
+      } catch (err) {
+        alert(err?.message ?? String(err));
+      }
+    });
+
+    /* =========================
+   4) OPTIONAL: make word input “only valid words” as the user types
+   (Add this if you want immediate validation feedback.)
+   ========================= */
+
+    function validateTpWordsInputLive() {
+      const raw = String(elTpWordsIn?.value ?? "").trim();
+      if (!raw) { elTpWordsIn.setCustomValidity(""); return; }
+
+      const parts = raw.split(/\s+/).filter(Boolean);
+      for (const p of parts) {
+        if (WORD_TO_UCSUR_CP[p.toLowerCase()] == null) {
+          elTpWordsIn.setCustomValidity(`Invalid word: ${p}`);
+          return;
+        }
+      }
+      elTpWordsIn.setCustomValidity("");
+    }
+
+    if (elTpWordsIn) {
+      elTpWordsIn.addEventListener("input", validateTpWordsInputLive);
+    }
+
 
     window.addEventListener("load", async () => {
       await ensureFontLoaded();
