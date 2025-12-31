@@ -7,16 +7,13 @@
 
 https://www.nanpa-linja-n.com/calculator.html
 
-
 '''TL;DR:''' '''nanpa-linja-n''' motivation (Github link):
 
 https://github.com/mndillon/toki-pona-nanpa-linja-n/blob/main/images/Phone%20Number%20Conversation%20v1.png
 
-
 '''nanpa-linja-n''' full description (Github link):
 
 https://github.com/mndillon/toki-pona-nanpa-linja-n
-
 
 '''TL;DR:''' '''nanpa-linja-n'''
 uses '''ne-''' and '''-n''' to clearly signal the start and end of numeric values:
