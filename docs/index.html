@@ -10,18 +10,18 @@
       --pad: 14px;
       --gap: 12px;
       --border: #d0d7de;
-      --bg: #F3DFC0;     /* CHANGED: unify background color */
-      --muted: #57606a;
+      --bg: #F3DFC0;     /* unify background color */
+      --muted: #3f4750;  /* CHANGED: darker for better contrast */
     }
 
     body {
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       margin: 24px;
-      background: var(--bg); /* CHANGED */
+      background: var(--bg);
     }
 
     .card {
-      background: var(--bg); /* CHANGED */
+      background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 16px;
@@ -38,7 +38,7 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 10px;
-      background: var(--bg); /* CHANGED */
+      background: var(--bg);
       font: inherit;
     }
 
@@ -48,7 +48,7 @@
 
     button {
       border: 1px solid var(--border);
-      background: var(--bg); /* CHANGED */
+      background: var(--bg);
       padding: 10px 12px;
       border-radius: 8px;
       cursor: pointer;
@@ -56,7 +56,7 @@
     }
 
     button:hover {
-      background: var(--bg); /* CHANGED: keep same background */
+      background: var(--bg);
     }
 
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
@@ -71,14 +71,15 @@
       display: block;
       border: 1px dashed var(--border);
       border-radius: 10px;
-      background: var(--bg); /* CHANGED */
+      background: var(--bg);
+      max-width: 100%;
     }
 
     .small { font-size: 12px; color: var(--muted); }
 
     .grid2 {
       display: grid;
-      grid-template-columns: 1fr; /* always one column */
+      grid-template-columns: 1fr;
       gap: 14px;
     }
 
@@ -93,20 +94,19 @@
     }
 
     /* Digit reference table */
-    /* Keep the "nanpa-linja-n proper name" column from stretching */
     .digitTable {
-      table-layout: fixed; /* enables predictable column widths */
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
     }
 
     .digitTable th:nth-child(2),
     .digitTable td:nth-child(2) {
-      width: 320px;          /* adjust to taste */
+      width: 320px;
       max-width: 320px;
       white-space: normal;
       overflow-wrap: anywhere;
-
     }
-
 
     .digitTable th,
     .digitTable td {
@@ -128,20 +128,70 @@
 
     .digitCanvas {
       display: block;
-      /* canvas width/height is set by your renderer; this just prevents layout weirdness */
       max-width: 100%;
     }
 
+    /* =========================
+       WCAG-oriented affordances
+       ========================= */
+
+    /* Strong focus indicators */
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    .skipLink:focus-visible {
+      outline: 3px solid #111;
+      outline-offset: 3px;
+    }
+
+    /* Skip link (keyboard navigation) */
+    .skipLink {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: #fff;
+      border: 2px solid #111;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: #111;
+      text-decoration: none;
+    }
+    .skipLink:focus {
+      left: 24px;
+      top: 24px;
+      z-index: 9999;
+    }
+
+    /* Visually hidden but still accessible to screen readers */
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    /* Prevent user agent forced color adjustments from destroying contrast in HC modes */
+    .no-forced-adjust {
+      forced-color-adjust: none;
+    }
   </style>
 
 </head>
 
 <body>
-  <div class="card">
+  <!-- Skip link for keyboard users -->
+  <a href="#main" class="skipLink">Skip to content</a>
 
-    <!-- NEW: link to main branch README -->
+  <!-- Main landmark for assistive tech -->
+  <main class="card" id="main" role="main" aria-labelledby="pageTitle">
 
-    <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n main documentation</h1>
+    <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n main documentation</h1>
     <div class="small" style="margin-bottom:10px;">
       <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
         nanpa-linja-n main documentation
@@ -156,7 +206,6 @@
     </div>
 
     <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer</h1>
-    
 
     <div class="help" style="margin-top:10px;">
       <strong>Note:</strong> The “nanpa-linja-n proper name” shown here is an encoding label for numbers only.
@@ -170,90 +219,128 @@
 
     <div class="help" style="margin-top:10px;">Inputs are treated as text to preserve formatting (e.g., trailing zeros).</div>
 
-    <div class="row" style="margin-top:14px;">
+    <!-- Screen-reader live region for status/errors -->
+    <div id="srStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="row" style="margin-top:14px;" role="group" aria-label="Decimal input and encode action">
       <div class="col">
         <label for="decimalInput">Enter decimal value (in en-US locale format)</label>
-        <input id="decimalInput" type="text" class="mono" value="28.95" maxlength="500" />
-        <div class="help">
+        <input
+          id="decimalInput"
+          type="text"
+          class="mono"
+          value="28.95"
+          maxlength="500"
+          inputmode="text"
+          aria-describedby="decimalHelp"
+          aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge digitTable"
+        />
+        <div id="decimalHelp" class="help">
           Example formats: <span class="mono">0.00</span>; <span class="mono">.75</span>; <span class="mono">-12,340</span>;  <span class="mono">2000</span>; <span class="mono">5,000</span>; <span class="mono">9¾</span>; <span class="mono">8+1/2</span>; <span class="mono">7/8</span>; <span class="mono">64.5M</span>; <span class="mono">432-555-0189</span>.
           nanpa-linja-n encoder decides how to represent these.
         </div>
       </div>
 
       <div style="flex: 0 0 auto;">
-        <button id="btnEncode">Encode & Render</button>
+        <button id="btnEncode" type="button" aria-describedby="btnEncodeHelp">
+          Encode &amp; Render
+        </button>
+        <div id="btnEncodeHelp" class="sr-only">
+          Encodes the decimal input into a nanpa-linja-n proper name and renders the sitelen pona cartouches below.
+        </div>
       </div>
     </div>
 
-    <div class="out">
+    <div class="out" role="region" aria-label="Outputs">
       <h3>nanpa-linja-n proper name for decimal value</h3>
-      <textarea id="latinOut" class="mono" readonly></textarea>
+      <textarea id="latinOut" class="mono" readonly aria-readonly="true"></textarea>
       <div class="help">This is the Latin string you generate from the decimal input (nanpa-linja-n custom encoding). Spaces are added for readability and will NOT affect glyph mapping.</div>
 
       <h3>nanpa-linja-n unique number code</h3>
-      <textarea id="numberCodeOut" class="mono" readonly></textarea>
+      <textarea id="numberCodeOut" class="mono" readonly aria-readonly="true"></textarea>
       <div class="help">Derived from the nanpa-linja-n proper name: remove letters <span class="mono">n</span> and <span class="mono">e</span>, uppercase everything else.</div>
-
 
       <div id="hexSection" class="hidden">
         <h3>Code points (hex)</h3>
-        <textarea id="codepointsOut" class="mono" readonly></textarea>
+        <textarea id="codepointsOut" class="mono" readonly aria-readonly="true"></textarea>
         <div class="help">
           Space-separated hex code points (e.g., <span class="mono">F190B F1944 ...</span>) that nasin nanpa font uses.
         </div>
       </div>
 
-
       <h3>Toki Pona words (for code points)</h3>
-      <textarea id="tpWordsOut" class="mono" readonly></textarea>
+      <textarea id="tpWordsOut" class="mono" readonly aria-readonly="true"></textarea>
       <div class="help">
         One Toki Pona word per code point, in the same order as the code points output.
       </div>
 
-      <!-- CHANGED: small above large (swap order) -->
-      <div class="grid2" style="margin-top:14px;">
+      <!-- Canvases are decorative; authoritative text is the words/outputs above -->
+      <div class="grid2" style="margin-top:14px;" role="group" aria-label="Cartouche renderings">
         <div>
           <h3>sitelen pona cartouche (small)</h3>
-          <canvas id="canvasSmall"></canvas>
+          <canvas id="canvasSmall" aria-hidden="true"></canvas>
           <div class="help">Rendered with your font at a smaller size.</div>
+          <div class="sr-only" id="canvasSmallDesc">
+            Decorative cartouche rendering. Use the text outputs above for the accessible value.
+          </div>
         </div>
         <div>
           <h3>sitelen pona cartouche (large)</h3>
-          <canvas id="canvasLarge"></canvas>
+          <canvas id="canvasLarge" aria-hidden="true"></canvas>
           <div class="help">Rendered with your font at a large size.</div>
+          <div class="sr-only" id="canvasLargeDesc">
+            Decorative cartouche rendering. Use the text outputs above for the accessible value.
+          </div>
         </div>
       </div>
 
       <h3 style="margin-top:20px;">Reverse tool: Toki Pona words → glyphs</h3>
 
       <div id="fromCodesSection" class="hidden">
-        <div class="row">
+        <div class="row" role="group" aria-label="Render from code points">
           <div class="col">
             <label for="codepointsIn">Paste code points (hex, space-separated)</label>
-            <input id="codepointsIn" type="text" class="mono" placeholder="F190B F1944 F193D" maxlength="3500"/>
-            <div class="help">
+            <input
+              id="codepointsIn"
+              type="text"
+              class="mono"
+              placeholder="F190B F1944 F193D"
+              maxlength="3500"
+              aria-describedby="codepointsHelp"
+              aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge"
+            />
+            <div id="codepointsHelp" class="help">
               Accepts <span class="mono">F190B</span> or <span class="mono">U+F190B</span>.
               Input is restricted to the Toki Pona UCSUR block (<span class="mono">F1900</span>–<span class="mono">F1988</span>).
             </div>
           </div>
           <div style="flex: 0 0 auto;">
-            <button id="btnFromCodes">Render From Code Points</button>
+            <button id="btnFromCodes" type="button">Render From Code Points</button>
           </div>
         </div>
       </div>
 
-
-      <!-- NEW: words input WORD_TO_UCSUR_CP map -->
-      <div class="row" style="margin-top:10px;">
+      <div class="row" style="margin-top:10px;" role="group" aria-label="Render from Toki Pona words">
         <div class="col">
           <label for="tpWordsIn">Enter Toki Pona words (space-separated)</label>
-          <input id="tpWordsIn" type="text" class="mono" placeholder="nanpa esun o nanpa" maxlength="2500"/>
-          <div class="help">
+          <input
+            id="tpWordsIn"
+            type="text"
+            class="mono"
+            placeholder="nanpa esun o nanpa"
+            maxlength="2500"
+            aria-describedby="tpWordsHelp"
+            aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge"
+            spellcheck="false"
+            autocapitalize="none"
+            autocomplete="off"
+          />
+          <div id="tpWordsHelp" class="help">
             Only valid Toki Pona words are allowed (case-insensitive) or a nanpa-linja-n proper name for a decimal value.
           </div>
         </div>
         <div style="flex: 0 0 auto;">
-          <button id="btnFromWords">Render From Toki Pona Words</button>
+          <button id="btnFromWords" type="button">Render From Toki Pona Words</button>
         </div>
       </div>
 
@@ -261,12 +348,15 @@
       <div class="help">Digit, its nanpa-linja-n proper name, its nanpa-linja-n unique number code, and a sitelen pona mixed-font cartouche.</div>
 
       <table class="digitTable" id="digitTable">
+        <caption class="sr-only">
+          Reference table for digits 0 through 9, including nanpa-linja-n labels and decorative cartouches.
+        </caption>
         <thead>
           <tr>
-            <th style="width:80px;">Digit</th>
-            <th>nanpa-linja-n proper name</th>
-            <th>nanpa-linja-n unique number code</th>
-            <th style="width:220px;">sitelen pona cartouche</th>
+            <th scope="col" style="width:80px;">Digit</th>
+            <th scope="col">nanpa-linja-n proper name</th>
+            <th scope="col">nanpa-linja-n unique number code</th>
+            <th scope="col" style="width:220px;">sitelen pona cartouche</th>
           </tr>
         </thead>
         <tbody id="digitTableBody">
@@ -276,22 +366,30 @@
 
       <div class="help">#~n</div>
     </div>
-  </div>
+  </main>
 
   <script>
     "use strict";
 
+    /* ============================================================
+       Accessibility helpers
+       ============================================================ */
 
-    
+    const elSrStatus = document.getElementById("srStatus");
 
+    function announceStatus(msg) {
+      if (!elSrStatus) return;
+      elSrStatus.textContent = String(msg ?? "");
+    }
+
+    function showAlertAndAnnounce(msg) {
+      const s = String(msg ?? "Unknown error");
+      announceStatus(s);
+      alert(s);
+    }
 
     /* ============================================================
        Vulgar fraction input support (e.g., 9¾, ¾, ⅜, etc.)
-       Normalizes to forms your existing parser already supports:
-         "¾"   -> "3/4"
-         "9¾"  -> "9+3/4"
-         "-9¾" -> "-9+-3/4"   (so it means -(9 + 3/4))
-       Also converts fraction slash "⁄" (U+2044) to "/".
        ============================================================ */
 
     const VULGAR_FRACTIONS = new Map([
@@ -301,31 +399,26 @@
       ["⅕", [1, 5]], ["⅖", [2, 5]], ["⅗", [3, 5]], ["⅘", [4, 5]],
       ["⅙", [1, 6]], ["⅚", [5, 6]],
       ["⅛", [1, 8]], ["⅜", [3, 8]], ["⅝", [5, 8]], ["⅞", [7, 8]],
-      ["↉", [0, 3]], // optional: "0/3"
+      ["↉", [0, 3]],
     ]);
-
 
     function normalizeVulgarFractionInput(raw) {
       if (raw == null) return "";
       let s = String(raw).trim();
       if (!s) return s;
 
-      // Normalize fraction slash "⁄" to "/"
       s = s.replace(/\u2044/g, "/");
 
-      // Fast exit if no vulgar fraction char present
       let found = null;
       for (const ch of s) {
         if (VULGAR_FRACTIONS.has(ch)) { found = ch; break; }
       }
       if (!found) return s;
 
-      // Only support a SINGLE vulgar fraction character, and it must be last
       const lastChar = s.slice(-1);
       if (!VULGAR_FRACTIONS.has(lastChar)) {
         throw new Error("Vulgar fraction characters must appear at the end (e.g., 9¾ or ¾).");
       }
-      // Disallow any '-' not at the very start (your rule)
       if (s.slice(1).includes("-")) {
         throw new Error("Only one negative sign is allowed, and it must be at the start.");
       }
@@ -333,24 +426,19 @@
       const [num, den] = VULGAR_FRACTIONS.get(lastChar);
       const prefixRaw = s.slice(0, -1).trim();
 
-      // Case: just "¾"
       if (!prefixRaw) return `${num}/${den}`;
 
-      // Handle leading negative sign: "-9¾" -> "-9+3/4", "-¾" -> "-3/4"
       const isNeg = prefixRaw.startsWith("-");
       const prefix = isNeg ? prefixRaw.slice(1).trim() : prefixRaw;
 
       if (!prefix) {
-        // "-¾"
         return `-${num}/${den}`;
       }
 
-      // Allow optional space: "9 ¾" already collapses via trim logic
       const normalized = isNeg
         ? `-${prefix}+${num}/${den}`
         : `${prefix}+${num}/${den}`;
 
-      // Final safety: enforce "only one '-' and only at start"
       if (normalized.slice(1).includes("-")) {
         throw new Error("Normalization produced an invalid negative sign placement.");
       }
@@ -364,7 +452,6 @@
 
     const FONT_FAMILY = "TP-Cartouche-Font";
 
-    // Placeholder mapping remains, but the main pipeline does NOT depend on it.
     const LATIN_CHAR_TO_CODEPOINT = {
       "0": 0xF1901,
       "1": 0xF1901,
@@ -384,7 +471,6 @@
       Object.entries(LATIN_CHAR_TO_CODEPOINT).map(([ch, cp]) => [cp, ch])
     );
 
-    // --- SMALL glyph set mirrors your Python SMALL_UNC_CHARS_CODES ---
     function getSmallCodepointsSet() {
       return new Set([
         0xF193D, // NANPA
@@ -395,11 +481,6 @@
         0xF190B, // ESUN
       ]);
     }
-
-    /* ============================================================
-       RESTRICT allowed input code points to your defined TP UCSUR range
-       UNC_CODES_TO_WORDS_MAP shows F1900 .. F1988 inclusive.
-       ============================================================ */
 
     const TP_UCSUR_MIN = 0xF1900;
     const TP_UCSUR_MAX = 0xF1988;
@@ -424,55 +505,20 @@
        ============================================================ */
 
     const DIGIT_TO_TOKEN = {
-      "0": "NI",
-      "1": "WE",
-      "2": "TE",
-      "3": "SE",
-      "4": "NA",
-      "5": "LE",
-      "6": "NU",
-      "7": "ME",
-      "8": "PE",
-      "9": "JE",
+      "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
+      "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
     };
 
     const TOKEN_TO_DIGIT_WORD = {
-      "NI": "ijo",
-      "WE": "wan",
-      "TE": "tu",
-      "SE": "sijelo",
-      "NA": "ante",
-      "LE": "luka",
-      "NU": "utala",
-      "ME": "mun",
-      "PE": "pipi",
-      "JE": "jo",
+      "NI": "ijo", "WE": "wan", "TE": "tu", "SE": "sijelo", "NA": "ante",
+      "LE": "luka", "NU": "utala", "ME": "mun", "PE": "pipi", "JE": "jo",
     };
 
-    const OPCHAR_TO_TOKEN = {
-      ".": "NONE",
-      "-": "NO",
-      "/": "NONO",
-      "+": "NONONO",
-    };
-
-    const MAGCHAR_TO_TOKEN = {
-      "T": "KE",
-      "M": "KEKE",
-      "W": "KEKEKE",
-    };
-
+    const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
+    const MAGCHAR_TO_TOKEN = { "T": "KE", "M": "KEKE", "W": "KEKEKE" };
     const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
 
-    const TOKEN_PREFIXES = [
-      "KEKEKE",
-      "KEKE",
-      "KE",
-      "NONONO",
-      "NONO",
-      "NE",
-      "NO",
-    ];
+    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
 
     function looksLikeNanpaCaps(s) {
       if (!s) return false;
@@ -508,15 +554,12 @@
 
     function latinNameToNumberCode(latinName) {
       const s = String(latinName ?? "");
-      // Remove spaces, then remove n/N and e/E, then uppercase the rest.
       const noSpaces = s.replace(/\s+/g, "");
       const withoutNE = noSpaces.replace(/[nNeE]/g, "");
       return "#~" + withoutNE.toUpperCase();
     }
 
     function normalizeLooseSeparators(raw) {
-      // Collapses runs of spaces and runs of hyphens (after the leading minus, if any).
-      // Leading '-' is preserved as a minus sign.
       if (raw == null) return "";
       let s = String(raw);
 
@@ -524,7 +567,6 @@
       const head = isNeg ? "-" : "";
       const rest = isNeg ? s.slice(1) : s;
 
-      // Collapse whitespace runs and hyphen runs
       let r = rest.replace(/\s+/g, " ");
       r = r.replace(/-+/g, "-");
 
@@ -533,11 +575,7 @@
 
     function numberStrToNanpaCaps(
       s,
-      {
-        thousandsChar = ",",
-        groupFractionTriplets = false,
-        fractionGroupSize = 3,
-      } = {}
+      { thousandsChar = ",", groupFractionTriplets = false, fractionGroupSize = 3 } = {}
     ) {
       if (s == null) throw new Error("s must be a string, not null");
       let raw = normalizeLooseSeparators(String(s));
@@ -565,7 +603,6 @@
         const out = [];
         if (includeInitialNe) out.push("NE");
 
-        // Helper: collapse consecutive separators into one NENE
         function pushNene() {
           if (out.length > 0 && out[out.length - 1] === "NENE") return;
           out.push("NENE");
@@ -602,7 +639,6 @@
         let ip = String(intPart ?? "").trim();
         if (ip === "") ip = "0";
 
-        // NEW: if integer part contains spaces or internal hyphens, treat them as separators => NENE
         const hasLooseSep = /[ -]/.test(ip);
 
         if (hasLooseSep) {
@@ -611,34 +647,19 @@
             .replace(/-+/g, "-")
             .trim();
 
-          // Trim leading/trailing separators inside the integer part
           ip2 = ip2.replace(/^[ -]+/, "").replace(/[ -]+$/, "");
           if (ip2 === "") ip2 = "0";
 
           for (const ch of ip2) {
-            if (/\d/.test(ch)) {
-              out.push(DIGIT_TO_TOKEN[ch]);
-              continue;
-            }
-            if (ch === " " || ch === "-") {
-              pushNene();
-              continue;
-            }
-            // If you want comma to act as separator under loose-sep mode:
-            if (thousandsChar && ch === thousandsChar) {
-              pushNene();
-              continue;
-            }
+            if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
+            if (ch === " " || ch === "-") { pushNene(); continue; }
+            if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
             throw new Error(`Unsupported character "${ch}" in integer part of "${s}"`);
           }
         } else {
-          // Existing comma-group logic unchanged
           const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
-
           for (const g of groups) {
-            if (g === "" || !/^\d+$/.test(g)) {
-              throw new Error(`Invalid integer group "${g}" in "${s}"`);
-            }
+            if (g === "" || !/^\d+$/.test(g)) throw new Error(`Invalid integer group "${g}" in "${s}"`);
           }
 
           let trailingZeroGroups = 0;
@@ -666,26 +687,11 @@
 
         if (hasDecimal) {
           out.push(OPCHAR_TO_TOKEN["."]);
-
-          // NEW: spaces/hyphens in fraction part become separators => NENE
           for (const ch of fracPart) {
             if (ch === "_" ) continue;
-
-            if (ch === " " || ch === "-") {
-              pushNene();
-              continue;
-            }
-
-            if (thousandsChar && ch === thousandsChar) {
-              pushNene();
-              continue;
-            }
-
-            if (/\d/.test(ch)) {
-              out.push(DIGIT_TO_TOKEN[ch]);
-              continue;
-            }
-
+            if (ch === " " || ch === "-") { pushNene(); continue; }
+            if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
+            if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
             throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
           }
         }
@@ -698,7 +704,6 @@
         out.push("N");
         return out.join("");
       }
-
 
       if (raw.includes("+")) {
         const [left, right] = raw.split("+", 2);
@@ -743,19 +748,11 @@
         for (const pref of TOKEN_PREFIXES) {
           if (s.startsWith(pref, i)) { matched = pref; break; }
         }
-        if (matched != null) {
-          tokens.push(matched);
-          i += matched.length;
-          continue;
-        }
+        if (matched != null) { tokens.push(matched); i += matched.length; continue; }
 
         if (i + 2 <= n - 1) {
           const two = s.slice(i, i + 2);
-          if (DIGIT_TOKENS.has(two)) {
-            tokens.push(two);
-            i += 2;
-            continue;
-          }
+          if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
         }
 
         throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
@@ -783,13 +780,8 @@
         const t = tokens[i];
 
         if (t === "NE") {
-          if (out.length === 0) {
-            out.push("nanpa", E_WORD);
-            afterStartingNe = true;
-          } else {
-            out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
-            afterStartingNe = false;
-          }
+          if (out.length === 0) { out.push("nanpa", E_WORD); afterStartingNe = true; }
+          else { out.push(N_WORD, E_WORD_FOR_NE_AFTER_START); afterStartingNe = false; }
           continue;
         }
 
@@ -831,10 +823,7 @@
       return out;
     }
 
-
-    // Replace your existing WORD_TO_UCSUR_CP with this full UCSUR block mapping.
     const WORD_TO_UCSUR_CP = {
-      //words used by decimal value cartouche
       "nanpa": 0xF193D,
       "esun":  0xF190B,
       "e":     0xF1909,
@@ -844,7 +833,6 @@
       "o":     0xF1944,
       "kulupu":0xF191F,
 
-      //digits to first letter mappings
       "ijo":   0xF190C,
       "wan":   0xF1973,
       "tu":    0xF196E,
@@ -856,32 +844,22 @@
       "pipi":  0xF1951,
       "jo":    0xF1913,
 
-
-
-      // F1900..F1977 (core)
       "a": 0xF1900,
       "akesi": 0xF1901,
       "ala": 0xF1902,
       "alasa": 0xF1903,
       "ale": 0xF1904,
-      // Optional alias (common spelling variant):
       "ali": 0xF1904,
-
       "anpa": 0xF1905,
-      //"ante": 0xF1906,
       "anu": 0xF1907,
       "awen": 0xF1908,
-      //"e": 0xF1909,
       "en": 0xF190A,
-      //"esun": 0xF190B,
-      //"ijo": 0xF190C,
       "ike": 0xF190D,
       "ilo": 0xF190E,
       "insa": 0xF190F,
       "jaki": 0xF1910,
       "jan": 0xF1911,
       "jelo": 0xF1912,
-      //"jo": 0xF1913,
       "kala": 0xF1914,
       "kalama": 0xF1915,
       "kama": 0xF1916,
@@ -893,7 +871,6 @@
       "ko": 0xF191C,
       "kon": 0xF191D,
       "kule": 0xF191E,
-      //"kulupu": 0xF191F,
       "kute": 0xF1920,
       "la": 0xF1921,
       "lape": 0xF1922,
@@ -907,7 +884,6 @@
       "lipu": 0xF192A,
       "loje": 0xF192B,
       "lon": 0xF192C,
-      //"luka": 0xF192D,
       "lukin": 0xF192E,
       "lupa": 0xF192F,
       "ma": 0xF1930,
@@ -920,17 +896,11 @@
       "moli": 0xF1937,
       "monsi": 0xF1938,
       "mu": 0xF1939,
-      //"mun": 0xF193A,
       "musi": 0xF193B,
       "mute": 0xF193C,
-      //"nanpa": 0xF193D,
-      //"nasa": 0xF193E,
       "nasin": 0xF193F,
-      //"nena": 0xF1940,
-      //"ni": 0xF1941,
       "nimi": 0xF1942,
       "noka": 0xF1943,
-      //"o": 0xF1944,
       "olin": 0xF1945,
       "ona": 0xF1946,
       "open": 0xF1947,
@@ -943,7 +913,6 @@
       "pilin": 0xF194E,
       "pimeja": 0xF194F,
       "pini": 0xF1950,
-      //"pipi": 0xF1951,
       "poka": 0xF1952,
       "poki": 0xF1953,
       "pona": 0xF1954,
@@ -953,7 +922,6 @@
       "selo": 0xF1958,
       "seme": 0xF1959,
       "sewi": 0xF195A,
-      //"sijelo": 0xF195B,
       "sike": 0xF195C,
       "sin": 0xF195D,
       "sina": 0xF195E,
@@ -972,18 +940,13 @@
       "tenpo": 0xF196B,
       "toki": 0xF196C,
       "tomo": 0xF196D,
-      //"tu": 0xF196E,
       "unpa": 0xF196F,
       "uta": 0xF1970,
-      //"utala": 0xF1971,
       "walo": 0xF1972,
-      //"wan": 0xF1973,
       "waso": 0xF1974,
       "wawa": 0xF1975,
       "weka": 0xF1976,
       "wile": 0xF1977,
-
-      // F1978..F1988 (additional UCSUR assignments commonly associated with ku)
       "namako": 0xF1978,
       "kin": 0xF1979,
       "oko": 0xF197A,
@@ -1003,19 +966,10 @@
       "ku": 0xF1988,
     };
 
-
-
-
-/* =========================
-   2) JS: ADD these helpers near WORD_TO_UCSUR_CP (right after it is declared is ideal)
-   ========================= */
-
-    // Build reverse map: code point -> word
     const UCSUR_CP_TO_WORD = new Map(
-    Object.entries(WORD_TO_UCSUR_CP).map(([w, cp]) => [cp, w])
+      Object.entries(WORD_TO_UCSUR_CP).map(([w, cp]) => [cp, w])
     );
 
-    // Convert code points to words (best-effort; throws if unknown)
     function ucsurCodepointsToTpWords(codepoints) {
       const words = [];
       for (const cp of codepoints) {
@@ -1033,30 +987,23 @@
       return (words ?? []).join(" ");
     }
 
-      // Parse user-entered words (space-separated), validate against WORD_TO_UCSUR_CP, return codepoints
     function parseTpWordsToCodepoints(input) {
       const raw = String(input ?? "").trim();
       if (!raw) return [];
 
-      // Split on whitespace
       const parts = raw.split(/\s+/).filter(Boolean);
 
       const cps = [];
       for (const p of parts) {
         const w = p.toLowerCase();
-
-        // validate strictly: only words in mapping
         const cp = WORD_TO_UCSUR_CP[w];
         if (cp == null) {
           throw new Error(`Invalid Toki Pona word "${p}". Only mapped words are allowed.`);
         }
-
         cps.push(cp);
       }
 
-      // Defensive: ensure in your allowed block
       assertAllAllowedTpUcsur(cps);
-
       return cps;
     }
 
@@ -1083,9 +1030,7 @@
       const tpWords = nanpaCapsTokensToTpWords(tokens);
       const cps = tpWordsToUcsurCodepoints(tpWords);
 
-      // Defensive: ensure we never emit code points outside your defined block.
       assertAllAllowedTpUcsur(cps);
-
       return cps;
     }
 
@@ -1138,9 +1083,7 @@
         i += 2;
       }
 
-      // NEW: remove spaces before a lone "n" token (only when "n" stands alone)
       outStr = outStr.replace(/\s+n(?=\s|$)/g, "n");
-
       outStr = outStr.trim();
       outStr += "n";
       return outStr;
@@ -1155,46 +1098,22 @@
       return splitCartoucheCapsLetters(caps);
     }
 
-    // Validate whether a (possibly messy) string could be a nanpa-linja-n proper name.
-    // Rule: we ignore whitespace entirely, then require that the remaining characters
-    // correspond to a valid nanpa-caps string (tokenizable by tokenizeNanpaCaps).
     function isValidNanpaLinjanProperName(raw) {
-      // 1) Normalize: lowercase, strip ALL whitespace
-      const s = String(raw ?? "")
-        .toLowerCase()
-        .replace(/\s+/g, "");
-
+      const s = String(raw ?? "").toLowerCase().replace(/\s+/g, "");
       if (!s) return false;
-
-      // 2) Must be letters only after whitespace is removed
       if (!/^[a-z]+$/.test(s)) return false;
-
-      // 3) Proper names always end with the final terminator 'n' (lowercase)
       if (!s.endsWith("n")) return false;
 
-      // 4) Remove final terminator; remaining length must be even (two-letter chunks)
       const core = s.slice(0, -1);
       if (core.length < 2 || (core.length % 2) !== 0) return false;
 
-      // 5) Reconstruct caps and validate using your existing tokenizer
-      //    (core is effectively the caps body lowercased; add final 'N' terminator)
       const caps = core.toUpperCase() + "N";
-
-      // Fast sanity checks (optional but cheap)
       if (!caps.startsWith("NE")) return false;
 
-      try {
-        tokenizeNanpaCaps(caps); // throws if invalid
-        return true;
-      } catch {
-        return false;
-      }
+      try { tokenizeNanpaCaps(caps); return true; }
+      catch { return false; }
     }
 
-
-    // Like splitCartoucheCapsLetters(), but inserts spaces ONLY around delimiters
-    // (ene / one / o... / eke... / initial neno). Digit runs stay contiguous.
-    // Also: final terminator 'n' is always attached to the last chunk.
     function splitCartoucheCapsLettersSpaced(caps) {
       if (caps == null) throw new Error("caps must be a string, not None");
       const s0 = String(caps).trim().toUpperCase();
@@ -1206,26 +1125,15 @@
       const parts = [];
       let current = "";
       let i = 0;
-      const end = s0.length - 1; // exclude final 'N'
+      const end = s0.length - 1;
 
       function flushCurrent() {
-        if (current) {
-          parts.push(current);
-          current = "";
-        }
+        if (current) { parts.push(current); current = ""; }
       }
 
-      // Attach a delimiter-leading "n" to the immediately preceding chunk (no extra spaces).
       function attachDelimiterN() {
-        if (current) {
-          current += "n";
-          flushCurrent();
-          return;
-        }
-        if (parts.length === 0) {
-          parts.push("n"); // should be rare, but keeps behavior defined
-          return;
-        }
+        if (current) { current += "n"; flushCurrent(); return; }
+        if (parts.length === 0) { parts.push("n"); return; }
         parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
       }
 
@@ -1235,89 +1143,53 @@
         const pair = s0.slice(i, i + 2);
         const nextPair = (i + 4 <= end) ? s0.slice(i + 2, i + 4) : null;
 
-        // Initial "NE NO" at start -> "neno" as its own chunk
-        if (pair === "NE" && nextPair === "NO" && i === 0) {
-          flushCurrent();
-          parts.push("neno");
-          i += 4;
-          continue;
-        }
+        if (pair === "NE" && nextPair === "NO" && i === 0) { flushCurrent(); parts.push("neno"); i += 4; continue; }
 
-        // "NE NE" -> attach 'n' to previous, then add "ene"
-        if (pair === "NE" && nextPair === "NE") {
-          flushCurrent();
-          attachDelimiterN();
-          parts.push("ene");
-          i += 4;
-          continue;
-        }
+        if (pair === "NE" && nextPair === "NE") { flushCurrent(); attachDelimiterN(); parts.push("ene"); i += 4; continue; }
 
-        // "NO NE" (i>0) -> attach 'n' to previous, then add "one"
-        if (pair === "NO" && nextPair === "NE" && i > 0) {
-          flushCurrent();
-          attachDelimiterN();
-          parts.push("one");
-          i += 4;
-          continue;
-        }
+        if (pair === "NO" && nextPair === "NE" && i > 0) { flushCurrent(); attachDelimiterN(); parts.push("one"); i += 4; continue; }
 
-        // "NO NO..." (i>0) -> attach 'n' to previous, then add "o"+"no"*count
         if (pair === "NO" && nextPair === "NO" && i > 0) {
           flushCurrent();
           let countNo = 1;
           let j = i;
-          while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "NO") {
-            countNo += 1;
-            j += 2;
-          }
+          while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "NO") { countNo += 1; j += 2; }
           attachDelimiterN();
           parts.push("o" + "no".repeat(countNo));
           i += 2 + 2 * countNo;
           continue;
         }
 
-        // "NE KE..." -> attach 'n' to previous, then add "e"+"ke"*count (eke, ekeke, ...)
         if (pair === "NE" && nextPair === "KE") {
           flushCurrent();
           let countKe = 1;
           let j = i;
-          while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE") {
-            countKe += 1;
-            j += 2;
-          }
+          while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE") { countKe += 1; j += 2; }
           attachDelimiterN();
           parts.push("e" + "ke".repeat(countKe));
           i += 2 + 2 * countKe;
           continue;
         }
 
-        // Default: keep contiguous (digits/pairs not split)
         current += pair.toLowerCase();
         i += 2;
       }
 
       flushCurrent();
 
-      // Final terminator 'n' always attached to the last chunk (no separate space)
       if (parts.length === 0) return "n";
       parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
 
       return parts.join(" ").replace(/\s+/g, " ").trim();
     }
 
-
-
-
     function nanpaLinjanProperNameToUcsurCodepoints(nameStr) {
-      // Remove whitespace, lowercase, must end with 'n'
       const s = String(nameStr ?? "").toLowerCase().replace(/\s+/g, "");
       if (!s || !s.endsWith("n")) throw new Error("Not a nanpa-linja-n proper name (missing final 'n').");
 
-      // Convert proper-name core to nanpa-caps (re-add final terminator as 'N')
       const core = s.slice(0, -1);
       const caps = core.toUpperCase() + "N";
 
-      // Validate and convert caps -> tokens -> TP words -> UCSUR codepoints
       const tokens = tokenizeNanpaCaps(caps);
       const tpWords = nanpaCapsTokensToTpWords(tokens);
       const cps = tpWordsToUcsurCodepoints(tpWords);
@@ -1325,7 +1197,6 @@
       assertAllAllowedTpUcsur(cps);
       return cps;
     }
-
 
     function codepointsToHexString(codepoints) {
       return codepoints.map(cp => cp.toString(16).toUpperCase().padStart(4, "0")).join(" ");
@@ -1341,9 +1212,7 @@
         return cp;
       });
 
-      // NEW: restriction to your defined Toki Pona UCSUR range
       assertAllAllowedTpUcsur(cps);
-
       return cps;
     }
 
@@ -1496,7 +1365,7 @@
     }
 
     async function ensureFontLoaded() {
-      const sampleCp = 0xF190B; // ESUN
+      const sampleCp = 0xF190B;
       const sampleChar = String.fromCodePoint(sampleCp);
       const fontSpec = `24px "${FONT_FAMILY}"`;
 
@@ -1550,22 +1419,12 @@
     const elCodepointsOut = document.getElementById("codepointsOut");
     const elNumberCodeOut = document.getElementById("numberCodeOut");
 
-
-    // NOTE: variables keep same IDs; order on page is swapped via HTML above
     const canvasLarge = document.getElementById("canvasLarge");
     const canvasSmall = document.getElementById("canvasSmall");
 
     const elCodesIn = document.getElementById("codepointsIn");
 
-    /* =========================
-   3) JS: Wire up new output textarea + new input + new button
-   Put these with your other element lookups and handlers.
-   ========================= */
-
-    // ADD this element lookup with the others:
     const elTpWordsOut = document.getElementById("tpWordsOut");
-
-    // ADD this lookup (new input):
     const elTpWordsIn = document.getElementById("tpWordsIn");
 
     const MAX_DECIMAL_INPUT_CHARS = 500;
@@ -1578,50 +1437,30 @@
       if (s.length > maxLen) el.value = s.slice(0, maxLen);
     }
 
-    // Enforce at load time (in case of prefilled values)
     enforceMaxLen(elDecimal,  MAX_DECIMAL_INPUT_CHARS);
     enforceMaxLen(elCodesIn,  MAX_HEX_CODE_INPUT_CHARS);
     enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS);
 
-    // Enforce while typing/pasting
-    if (elDecimal) {
-      elDecimal.addEventListener("input", () => enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS));
-    }
-    if (elCodesIn) {
-      elCodesIn.addEventListener("input", () => enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS));
-    }
-    if (elTpWordsIn) {
-      elTpWordsIn.addEventListener("input", () => enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS));
-    }
-
+    if (elDecimal) elDecimal.addEventListener("input", () => enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS));
+    if (elCodesIn) elCodesIn.addEventListener("input", () => enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS));
+    if (elTpWordsIn) elTpWordsIn.addEventListener("input", () => enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS));
 
     const elDigitTableBody = document.getElementById("digitTableBody");
 
     function buildDigitReferenceTable() {
       if (!elDigitTableBody) return;
-
-      // Clear existing rows (safe if called multiple times)
       elDigitTableBody.innerHTML = "";
 
       const smallSet = getSmallCodepointsSet();
-
-      // Tiny cartouche sizing (mixed fonts)
       const TINY_LARGE_PX = 22;
       const TINY_SMALL_PX = 8;
 
       for (let d = 0; d <= 9; d++) {
         const digitStr = String(d);
-
-        // nanpa-linja-n name (Latin output)
         const latinName = encodeDecimalToLatin(digitStr);
-
-        // Code points for cartouche rendering
         const cps = decimalToUcsurCodepoints(digitStr);
-
-        // nanpa-linja-n unique name
         const unique_number_code = latinNameToNumberCode(latinName);
 
-        // Build row
         const tr = document.createElement("tr");
 
         const tdDigit = document.createElement("td");
@@ -1639,6 +1478,7 @@
         const tdCanvas = document.createElement("td");
         const canvas = document.createElement("canvas");
         canvas.className = "digitCanvas";
+        canvas.setAttribute("aria-hidden", "true");
         tdCanvas.appendChild(canvas);
 
         tr.appendChild(tdDigit);
@@ -1648,81 +1488,75 @@
 
         elDigitTableBody.appendChild(tr);
 
-        // Render tiny mixed-font cartouche
         renderMixedCartoucheToCanvas(
           canvas,
           cps,
           TINY_LARGE_PX,
           TINY_SMALL_PX,
           smallSet,
-          {
-            padding: 8,
-            border: 1,
-            cornerRadius: 10,
-            letterGap: 2,
-          }
+          { padding: 8, border: 1, cornerRadius: 10, letterGap: 2 }
         );
       }
     }
 
+    async function runEncodeFromDecimal() {
+      await ensureFontLoaded();
+      enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS);
 
+      const raw = normalizeVulgarFractionInput(elDecimal.value);
+      const latin = encodeDecimalToLatin(raw);
+
+      elLatinOut.value = latin;
+      elNumberCodeOut.value = latinNameToNumberCode(latin);
+
+      const cps = decimalToUcsurCodepoints(raw);
+
+      if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+      if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
+
+      const smallSet = getSmallCodepointsSet();
+
+      renderMixedCartoucheToCanvas(
+        canvasSmall,
+        cps,
+        LARGE_TINY_FONT_SIZE,
+        SMALL_TINY_FONT_SIZE,
+        smallSet,
+        { padding: 18, border: 2, cornerRadius: 16, letterGap: LETTER_SPACING_GAP }
+      );
+
+      renderMixedCartoucheToCanvas(
+        canvasLarge,
+        cps,
+        LARGE_FONT_SIZE,
+        SMALL_FONT_SIZE,
+        smallSet,
+        { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
+      );
+
+      announceStatus(`Rendered value ${raw}.`);
+    }
 
     document.getElementById("btnEncode").addEventListener("click", async () => {
       try {
-        await ensureFontLoaded();
-        enforceMaxLen(elDecimal,  MAX_DECIMAL_INPUT_CHARS);
-
-        const raw = normalizeVulgarFractionInput(elDecimal.value);
-        const latin = encodeDecimalToLatin(raw);
-        elLatinOut.value = latin;
-        elNumberCodeOut.value = latinNameToNumberCode(latin);
-
-        const cps = decimalToUcsurCodepoints(raw);
-        elCodepointsOut.value = codepointsToHexString(cps);
-        elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
-
-
-        const smallSet = getSmallCodepointsSet();
-
-        // CHANGED: small canvas first, then large (mirrors your UI request)
-        renderMixedCartoucheToCanvas(
-          canvasSmall,
-          cps,
-          LARGE_TINY_FONT_SIZE,
-          SMALL_TINY_FONT_SIZE,
-          smallSet,
-          { padding: 18, border: 2, cornerRadius: 16, letterGap: LETTER_SPACING_GAP }
-        );
-
-        renderMixedCartoucheToCanvas(
-          canvasLarge,
-          cps,
-          LARGE_FONT_SIZE,
-          SMALL_FONT_SIZE,
-          smallSet,
-          { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
-        );
-
+        await runEncodeFromDecimal();
       } catch (err) {
-        alert(err?.message ?? String(err));
+        showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
 
-    document.getElementById("btnFromCodes").addEventListener("click", async () => {
+    document.getElementById("btnFromCodes")?.addEventListener("click", async () => {
       try {
         await ensureFontLoaded();
-        enforceMaxLen(elCodesIn,  MAX_HEX_CODE_INPUT_CHARS);
+        enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS);
 
         const cps = parseHexCodepoints(elCodesIn.value);
 
-        // Show direct UCSUR glyphs in LatinOut (best-effort)
         elLatinOut.value = String.fromCodePoint(...cps);
-        elCodepointsOut.value = codepointsToHexString(cps);
+        if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
-        elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
+        if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
-
-        // Small then large (uniform)
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
@@ -1737,12 +1571,12 @@
           { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
         );
 
+        announceStatus("Rendered from code points.");
       } catch (err) {
-        alert(err?.message ?? String(err));
+        showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
 
-    // NEW BUTTON: add this event listener near the others:
     document.getElementById("btnFromWords").addEventListener("click", async () => {
       try {
         await ensureFontLoaded();
@@ -1750,26 +1584,21 @@
 
         const rawInput = String(elTpWordsIn.value ?? "");
 
-        // If the WHOLE input is a nanpa-linja-n proper name, treat it as such.
         if (isValidNanpaLinjanProperName(rawInput)) {
           const cps = nanpaLinjanProperNameToUcsurCodepoints(rawInput);
 
-          // Canonicalize + pretty-print with spacing around delimiters
           const compact = rawInput.toLowerCase().replace(/\s+/g, "");
           const core = compact.slice(0, -1);
           const caps = core.toUpperCase() + "N";
 
-          // Outputs (spaced, readable proper name)
           const prettyName = splitCartoucheCapsLettersSpaced(caps);
 
           elLatinOut.value = prettyName;
           elNumberCodeOut.value = latinNameToNumberCode(prettyName);
 
+          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+          if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
-          elCodepointsOut.value = codepointsToHexString(cps);
-          elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
-
-          // Mixed-font render (small then large)
           const smallSet = getSmallCodepointsSet();
 
           renderMixedCartoucheToCanvas(
@@ -1790,21 +1619,18 @@
             { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
           );
 
-          return; // IMPORTANT: do not fall through
+          announceStatus("Rendered from nanpa-linja-n proper name.");
+          return;
         }
 
-        // Otherwise, process as Toki Pona words (existing behavior)
         const cps = parseTpWordsToCodepoints(elTpWordsIn.value);
 
-        // Show outputs
-        elCodepointsOut.value = codepointsToHexString(cps);
-        elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
+        if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+        if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
-        // Show direct UCSUR glyphs in LatinOut (best-effort)
         elLatinOut.value = String.fromCodePoint(...cps);
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
 
-        // Render (uniform)
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
@@ -1819,19 +1645,21 @@
           { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
         );
 
+        announceStatus("Rendered from Toki Pona words.");
       } catch (err) {
-        alert(err?.message ?? String(err));
+        showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
-
-    /* =========================
-   4) OPTIONAL: make word input “only valid words” as the user types
-   (Add this if you want immediate validation feedback.)
-   ========================= */
 
     function validateTpWordsInputLive() {
       const raw = String(elTpWordsIn?.value ?? "").trim();
       if (!raw) { elTpWordsIn.setCustomValidity(""); return; }
+
+      // If it is a valid nanpa-linja-n proper name, treat as valid
+      if (isValidNanpaLinjanProperName(raw)) {
+        elTpWordsIn.setCustomValidity("");
+        return;
+      }
 
       const parts = raw.split(/\s+/).filter(Boolean);
       for (const p of parts) {
@@ -1843,20 +1671,27 @@
       elTpWordsIn.setCustomValidity("");
     }
 
-    if (elTpWordsIn) {
-      elTpWordsIn.addEventListener("input", validateTpWordsInputLive);
+    if (elTpWordsIn) elTpWordsIn.addEventListener("input", validateTpWordsInputLive);
+
+    /* Keyboard support: Enter triggers encode when focused in decimal input */
+    if (elDecimal) {
+      elDecimal.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.altKey && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          document.getElementById("btnEncode").click();
+        }
+      });
     }
 
-
     window.addEventListener("load", async () => {
-      await ensureFontLoaded();
-
-      // Build the digit reference table (needs font loaded for correct measurements)
-      buildDigitReferenceTable();
-
-      document.getElementById("btnEncode").click();
+      try {
+        await ensureFontLoaded();
+        buildDigitReferenceTable();
+        await runEncodeFromDecimal();
+      } catch (err) {
+        showAlertAndAnnounce(err?.message ?? String(err));
+      }
     });
-
   </script>
 </body>
 </html>

@@ -11,7 +11,7 @@
       --gap: 12px;
       --border: #d0d7de;
       --bg: #F3DFC0;
-      --muted: #57606a;
+      --muted: #3f4750;
     }
 
     body {
@@ -28,9 +28,9 @@
       max-width: 980px;
     }
 
-    .small { font-size: 12px; color: var(--muted); }
-    .help { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .small { font-size: 13px; color: var(--muted); }
+    .help  { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+    .mono  { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
 
     .calc {
       display: grid;
@@ -40,18 +40,18 @@
     }
 
     .displayBox {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 0;              /* CHANGED */
-        background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0;
+      background: var(--bg);
     }
 
     .displayRow {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 10px;
-        align-items: center;
-        padding: 12px;           /* CHANGED: moved padding here */
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
     }
 
     canvas {
@@ -60,13 +60,6 @@
       border-radius: 10px;
       background: var(--bg);
       max-width: 100%;
-    }
-
-    .displayRow {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      align-items: center;
     }
 
     .displayMeta {
@@ -84,23 +77,21 @@
     }
 
     .btn {
-        border: 1px solid var(--border);
-        background: var(--bg);
-        border-radius: 10px;
-        padding: 10px;
-        cursor: pointer;
-        user-select: none;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      user-select: none;
 
-        /* CHANGED: make keys more square */
-        min-height: 96px;
+      min-height: 96px;
 
-        display: grid;
-        grid-template-rows: 1fr auto; /* canvas row + label row */
-        align-items: center;
-        justify-items: center;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      align-items: center;
+      justify-items: center;
 
-        box-sizing: border-box;
-
+      box-sizing: border-box;
     }
 
     .btn:active { transform: translateY(1px); }
@@ -113,13 +104,48 @@
     }
 
     .btnCanvas {
-        /* CHANGED: do NOT force a fixed display height; it distorts the canvas */
-        width: auto;
-        height: auto;
-        max-width: 100%;
-        display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      display: block;
     }
 
+    .btn:focus-visible,
+    a:focus-visible,
+    .skipLink:focus-visible {
+      outline: 3px solid #111;
+      outline-offset: 3px;
+    }
+
+    .skipLink {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: #fff;
+      border: 2px solid #111;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: #111;
+      text-decoration: none;
+    }
+    .skipLink:focus {
+      left: 24px;
+      top: 24px;
+      z-index: 9999;
+    }
+
+    /* Visually hidden but still accessible to screen readers */
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
 
     @font-face {
       font-family: "TP-Cartouche-Font";
@@ -130,8 +156,9 @@
 </head>
 
 <body>
-  <div class="card">
+  <a href="#calculator" class="skipLink">Skip to calculator</a>
 
+  <main class="card" id="calculator" role="main">
     <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n main documentation</h1>
     <div class="small" style="margin-bottom:10px;">
       <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
@@ -145,7 +172,6 @@
         nanpa-linja-n decimal number encoder + cartouche renderer
       </a>
     </div>
-
 
     <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n cartouche calculator</h1>
 
@@ -161,11 +187,26 @@
 
     <div class="calc">
 
-      <div class="displayBox">
+      <div class="displayBox" role="group" aria-label="Calculator display">
         <div class="displayRow">
-          <canvas id="displayCanvas"></canvas>
+          <!-- Decorative canvas -->
+          <canvas id="displayCanvas" aria-hidden="true"></canvas>
 
-          <div class="displayMeta">
+          <!-- RESTORED (visible): small help sections for value + pending -->
+          <div class="displayMeta" aria-hidden="true">
+            <div class="small">Input: <span id="displayTextVisible" class="mono"></span></div>
+            <div class="small">Pending: <span id="pendingTextVisible" class="mono"></span></div>
+          </div>
+
+          <!-- Screen reader-only: description + live region + authoritative text -->
+          <p id="displayA11yDesc" class="help sr-only">
+            The cartouche display is decorative. The accessible text value is provided via a live region.
+          </p>
+
+          <div id="displayLive" class="mono sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+          <!-- Screen reader-only: original DOM fields retained for AT -->
+          <div class="displayMeta sr-only" aria-hidden="false">
             <div class="small">Input: <span id="displayText" class="mono"></span></div>
             <div class="small">Pending: <span id="pendingText" class="mono"></span></div>
           </div>
@@ -176,75 +217,54 @@
         </div>
       </div>
 
-      <div class="keys" id="keys"></div>
+      <div class="keys" id="keys" role="group" aria-label="Calculator keypad"></div>
+
+      <div class="help">#~n</div>
     </div>
-  </div>
+  </main>
 
   <script>
     "use strict";
 
-    /* ============================================================
-       CONFIG (CHANGE HERE)
-       Operator button glyphs are configurable as Toki Pona words
-       from the same UCSUR mapping.
-       ============================================================ */
+    const OP_BUTTON_WORDS = {
+      add: "en",
+      sub: "lape",
+      mul: "lete",
+      div: "kipisi",
+      eq:  "sama",
+      clr: "kijetesantakalu",
+      bk:  "monsi",
+      dot: "o",
+      sign:"ike"
+    };
 
-    // CHANGE HERE: choose which Toki Pona glyphs appear on operator buttons.
-    // Provide ONE word (string) or multiple words (array) per operator.
-    // Examples below are defaults; replace with your preferred glyph words.
-const OP_BUTTON_WORDS = {
-  add: "en",                // +
-  sub: "lape",              // -
-  mul: "lete",               // ×  (CHANGED)
-  div: "kipisi",            // ÷
-  eq:  "sama",              // =  (CHANGED)
-  clr: "kijetesantakalu",   // C  (CHANGED)
-  bk:  "monsi",             // ⌫
-  dot: "o",                 // .
-  sign:"ike"                // ± (optional)
-};
-
-    // Minimal UCSUR mapping (add more if you want more operator glyph choices)
     const WORD_TO_UCSUR_CP = {
-      // pipeline words
       "nanpa": 0xF193D, "esun": 0xF190B, "e": 0xF1909, "nasa": 0xF193E,
       "ni": 0xF1941, "nena": 0xF1940, "o": 0xF1944, "kulupu": 0xF191F,
 
-      // digit-name words
       "ijo": 0xF190C, "wan": 0xF1973, "tu": 0xF196E, "sijelo": 0xF195B, "ante": 0xF1906,
       "luka": 0xF192D, "utala": 0xF1971, "mun": 0xF193A, "pipi": 0xF1951, "jo": 0xF1913,
 
-      // common operator label choices (defaults used above)
       "pana": 0xF194C, "weka": 0xF1976, "mute": 0xF193C, "kipisi": 0xF197B,
       "pona": 0xF1954, "ala": 0xF1902, "monsi": 0xF1938, "ike": 0xF190D,
 
-      // operator button words you are using now
-"en":   0xF190A,
-"lape": 0xF1922,
-
-"sama": 0xF1956,
-"kijetesantakalu": 0xF1980,
-"lete": 0xF1926,
-
+      "en":   0xF190A,
+      "lape": 0xF1922,
+      "sama": 0xF1956,
+      "kijetesantakalu": 0xF1980,
+      "lete": 0xF1926,
     };
-
-    /* ============================================================
-       Shared pipeline (subset of your existing page)
-       - decimal string -> nanpa-caps -> tokens -> TP words -> UCSUR cps
-       - render cartouche from UCSUR cps
-       ============================================================ */
 
     const FONT_FAMILY = "TP-Cartouche-Font";
 
-    // --- SMALL glyph set (same idea as your Python SMALL_UNC_CHARS_CODES) ---
     function getSmallCodepointsSet() {
       return new Set([
-        0xF193D, // NANPA
-        0xF1940, // NENA
-        0xF1941, // NI
-        0xF193E, // NASA
-        0xF1909, // E
-        0xF190B, // ESUN
+        0xF193D,
+        0xF1940,
+        0xF1941,
+        0xF193E,
+        0xF1909,
+        0xF190B,
       ]);
     }
 
@@ -278,7 +298,6 @@ const OP_BUTTON_WORDS = {
 
     const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
     const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
-
     const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
 
     function looksLikeNanpaCaps(s) {
@@ -374,7 +393,6 @@ const OP_BUTTON_WORDS = {
         let ip = String(intPart ?? "").trim();
         if (ip === "") ip = "0";
 
-        // Comma-grouped integer (simple path)
         const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
         for (const g of groups) {
           if (g === "" || !/^\d+$/.test(g)) {
@@ -394,12 +412,9 @@ const OP_BUTTON_WORDS = {
 
           for (const ch of fracPart) {
             if (ch === "_" ) continue;
-
             if (ch === " " || ch === "-") { pushNene(); continue; }
             if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
-
             if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
-
             throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
           }
         }
@@ -468,7 +483,6 @@ const OP_BUTTON_WORDS = {
         }
 
         if (t === "NO") {
-          // for calculator: treat as decimal-ish minus marker glyph word "ni o" behavior is fine
           if (afterStartingNe) { out.push(N_WORD, "o"); afterStartingNe = false; }
           else { out.push(N_WORD_DECIMAL_POINT, "o"); afterStartingNe = false; }
           continue;
@@ -476,14 +490,11 @@ const OP_BUTTON_WORDS = {
 
         if (t === "N") { out.push(N_END_WORD); afterStartingNe = false; continue; }
 
-        // Keep calculator strict/simple (no fractions/magnitudes here unless you add them)
         throw new Error(`Unsupported token "${t}" in calculator mode`);
       }
 
       return out;
     }
-
-
 
     function tpWordsToUcsurCodepoints(words) {
       const cps = [];
@@ -512,10 +523,6 @@ const OP_BUTTON_WORDS = {
       assertAllAllowedTpUcsur(cps);
       return cps;
     }
-
-    /* ============================================================
-       Rendering helpers
-       ============================================================ */
 
     function drawRoundedRect(ctx, x, y, w, h, r) {
       const radius = Math.min(r, w / 2, h / 2);
@@ -572,12 +579,6 @@ const OP_BUTTON_WORDS = {
       canvas.width = cartW + border * 2;
       canvas.height = cartH + border * 2;
 
-      // OPTIONAL: crisp lines on high-DPI displays
-      //const dpr = window.devicePixelRatio || 1;
-      //canvas.style.width = canvas.width + "px";
-      //canvas.style.height = canvas.height + "px";
-
-
       const ctx2 = canvas.getContext("2d");
       ctx2.textBaseline = "alphabetic";
       ctx2.clearRect(0, 0, canvas.width, canvas.height);
@@ -600,213 +601,192 @@ const OP_BUTTON_WORDS = {
       }
     }
 
-// Button-only: fixed-width cartouche with CENTER-aligned glyphs (for wide "0" key)
-function renderMixedCartoucheToCanvasFixedWidthCentered(
-  canvas,
-  codepoints,
-  largePx,
-  smallPx,
-  smallCodepoints,
-  targetOuterWidthPx,
-  options = {}
-) {
-  const pad = options.padding ?? 18;
-  const border = options.border ?? 2;
-  const corner = options.cornerRadius ?? 16;
-  const letterGap = options.letterGap ?? 0;
+    function renderMixedCartoucheToCanvasFixedWidthCentered(
+      canvas,
+      codepoints,
+      largePx,
+      smallPx,
+      smallCodepoints,
+      targetOuterWidthPx,
+      options = {}
+    ) {
+      const pad = options.padding ?? 18;
+      const border = options.border ?? 2;
+      const corner = options.cornerRadius ?? 16;
+      const letterGap = options.letterGap ?? 0;
 
-  const dpr = window.devicePixelRatio || 1;
+      const dpr = window.devicePixelRatio || 1;
 
-  // Measure glyph runs (CSS pixels)
-  const ctxMeasure = canvas.getContext("2d");
-  ctxMeasure.textBaseline = "alphabetic";
+      const ctxMeasure = canvas.getContext("2d");
+      ctxMeasure.textBaseline = "alphabetic";
 
-  const glyphRuns = [];
-  let totalWidth = 0;
-  let maxAscent = 0;
-  let maxDescent = 0;
+      const glyphRuns = [];
+      let totalWidth = 0;
+      let maxAscent = 0;
+      let maxDescent = 0;
 
-  for (const cp of codepoints) {
-    const ch = String.fromCodePoint(cp);
-    const px = smallCodepoints.has(cp) ? smallPx : largePx;
+      for (const cp of codepoints) {
+        const ch = String.fromCodePoint(cp);
+        const px = smallCodepoints.has(cp) ? smallPx : largePx;
 
-    ctxMeasure.font = `${px}px "${FONT_FAMILY}"`;
-    const m = ctxMeasure.measureText(ch);
+        ctxMeasure.font = `${px}px "${FONT_FAMILY}"`;
+        const m = ctxMeasure.measureText(ch);
 
-    const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
-    const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+        const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+        const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
 
-    const left = m.actualBoundingBoxLeft ?? 0;
-    const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
-    const tightW = Math.ceil(left + right);
+        const left = m.actualBoundingBoxLeft ?? 0;
+        const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+        const tightW = Math.ceil(left + right);
 
-    glyphRuns.push({ ch, px, tightW, left, ascent, descent });
+        glyphRuns.push({ ch, px, tightW, left, ascent, descent });
 
-    totalWidth += tightW + letterGap;
-    if (ascent > maxAscent) maxAscent = ascent;
-    if (descent > maxDescent) maxDescent = descent;
-  }
+        totalWidth += tightW + letterGap;
+        if (ascent > maxAscent) maxAscent = ascent;
+        if (descent > maxDescent) maxDescent = descent;
+      }
 
-  if (glyphRuns.length > 0) totalWidth -= letterGap;
+      if (glyphRuns.length > 0) totalWidth -= letterGap;
 
-  const textHeight = Math.ceil(maxAscent + maxDescent);
+      const textHeight = Math.ceil(maxAscent + maxDescent);
 
-  // Target outer width -> inner cartouche width
-  const targetOuterW = Math.max(0, Math.floor(targetOuterWidthPx));
-  const targetCartW = Math.max(0, targetOuterW - border * 2);
+      const targetOuterW = Math.max(0, Math.floor(targetOuterWidthPx));
+      const targetCartW = Math.max(0, targetOuterW - border * 2);
 
-  // Never narrower than content requires
-  const minCartW = Math.ceil(totalWidth + pad * 2);
-  const cartW = Math.max(targetCartW, minCartW);
+      const minCartW = Math.ceil(totalWidth + pad * 2);
+      const cartW = Math.max(targetCartW, minCartW);
 
-  const cartH = Math.ceil(textHeight + pad * 2);
+      const cartH = Math.ceil(textHeight + pad * 2);
 
-  const outerW = cartW + border * 2;
-  const outerH = cartH + border * 2;
+      const outerW = cartW + border * 2;
+      const outerH = cartH + border * 2;
 
-  // HiDPI sizing while preserving CSS layout size
-  canvas.style.width = `${outerW}px`;
-  canvas.style.height = `${outerH}px`;
-  canvas.width = Math.ceil(outerW * dpr);
-  canvas.height = Math.ceil(outerH * dpr);
+      canvas.style.width = `${outerW}px`;
+      canvas.style.height = `${outerH}px`;
+      canvas.width = Math.ceil(outerW * dpr);
+      canvas.height = Math.ceil(outerH * dpr);
 
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.textBaseline = "alphabetic";
-  ctx.clearRect(0, 0, outerW, outerH);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.textBaseline = "alphabetic";
+      ctx.clearRect(0, 0, outerW, outerH);
 
-  // Border
-  drawRoundedRect(ctx, border, border, cartW, cartH, corner);
-  ctx.lineWidth = border;
-  ctx.strokeStyle = "#111";
-  ctx.stroke();
+      drawRoundedRect(ctx, border, border, cartW, cartH, corner);
+      ctx.lineWidth = border;
+      ctx.strokeStyle = "#111";
+      ctx.stroke();
 
-  const baselineY = border + pad + maxAscent;
+      const baselineY = border + pad + maxAscent;
 
-  const innerLeft = border + pad;
-  const innerRight = border + cartW - pad;
-  const innerAvail = Math.max(0, innerRight - innerLeft);
+      const innerLeft = border + pad;
+      const innerRight = border + cartW - pad;
+      const innerAvail = Math.max(0, innerRight - innerLeft);
 
-  // Center shift (clamped so it never goes negative)
-  const shift = Math.max(0, Math.floor((innerAvail - totalWidth) / 2));
-  let x = innerLeft + shift;
+      const shift = Math.max(0, Math.floor((innerAvail - totalWidth) / 2));
+      let x = innerLeft + shift;
 
-  ctx.fillStyle = "#111";
-  for (const g of glyphRuns) {
-    ctx.font = `${g.px}px "${FONT_FAMILY}"`;
-    const drawX = x + (g.left ?? 0);
-    ctx.fillText(g.ch, drawX, baselineY);
-    x += g.tightW + letterGap;
-  }
-}
+      ctx.fillStyle = "#111";
+      for (const g of glyphRuns) {
+        ctx.font = `${g.px}px "${FONT_FAMILY}"`;
+        const drawX = x + (g.left ?? 0);
+        ctx.fillText(g.ch, drawX, baselineY);
+        x += g.tightW + letterGap;
+      }
+    }
 
+    function renderMixedCartoucheToCanvasFixedWidthRightAligned(
+      canvas,
+      codepoints,
+      largePx,
+      smallPx,
+      smallCodepoints,
+      targetOuterWidthPx,
+      options = {}
+    ) {
+      const pad = options.padding ?? 18;
+      const border = options.border ?? 2;
+      const corner = options.cornerRadius ?? 16;
+      const letterGap = options.letterGap ?? 0;
 
-// Display-only: fixed-width cartouche with RIGHT-aligned glyphs (does not affect buttons)
-function renderMixedCartoucheToCanvasFixedWidthRightAligned(
-  canvas,
-  codepoints,
-  largePx,
-  smallPx,
-  smallCodepoints,
-  targetOuterWidthPx,
-  options = {}
-) {
-  const pad = options.padding ?? 18;
-  const border = options.border ?? 2;
-  const corner = options.cornerRadius ?? 16;
-  const letterGap = options.letterGap ?? 0;
+      const dpr = window.devicePixelRatio || 1;
 
-  const dpr = window.devicePixelRatio || 1;
+      const ctxMeasure = canvas.getContext("2d");
+      ctxMeasure.textBaseline = "alphabetic";
 
-  // Measure glyph runs (in CSS pixels)
-  const ctxMeasure = canvas.getContext("2d");
-  ctxMeasure.textBaseline = "alphabetic";
+      const glyphRuns = [];
+      let totalWidth = 0;
+      let maxAscent = 0;
+      let maxDescent = 0;
 
-  const glyphRuns = [];
-  let totalWidth = 0;
-  let maxAscent = 0;
-  let maxDescent = 0;
+      for (const cp of codepoints) {
+        const ch = String.fromCodePoint(cp);
+        const px = smallCodepoints.has(cp) ? smallPx : largePx;
 
-  for (const cp of codepoints) {
-    const ch = String.fromCodePoint(cp);
-    const px = smallCodepoints.has(cp) ? smallPx : largePx;
+        ctxMeasure.font = `${px}px "${FONT_FAMILY}"`;
+        const m = ctxMeasure.measureText(ch);
 
-    ctxMeasure.font = `${px}px "${FONT_FAMILY}"`;
-    const m = ctxMeasure.measureText(ch);
+        const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+        const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
 
-    const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
-    const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+        const left = m.actualBoundingBoxLeft ?? 0;
+        const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+        const tightW = Math.ceil(left + right);
 
-    const left = m.actualBoundingBoxLeft ?? 0;
-    const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
-    const tightW = Math.ceil(left + right);
+        glyphRuns.push({ ch, px, tightW, left, ascent, descent });
 
-    glyphRuns.push({ ch, px, tightW, left, ascent, descent });
+        totalWidth += tightW + letterGap;
+        if (ascent > maxAscent) maxAscent = ascent;
+        if (descent > maxDescent) maxDescent = descent;
+      }
 
-    totalWidth += tightW + letterGap;
-    if (ascent > maxAscent) maxAscent = ascent;
-    if (descent > maxDescent) maxDescent = descent;
-  }
+      if (glyphRuns.length > 0) totalWidth -= letterGap;
 
-  if (glyphRuns.length > 0) totalWidth -= letterGap;
+      const textHeight = Math.ceil(maxAscent + maxDescent);
 
-  const textHeight = Math.ceil(maxAscent + maxDescent);
+      const targetOuterW = Math.max(0, Math.floor(targetOuterWidthPx));
+      const targetCartW = Math.max(0, targetOuterW - border * 2);
 
-  // Fixed outer width target (match keypad width)
-  // Convert to inner cartouche width (excluding border on both sides)
-  const targetOuterW = Math.max(0, Math.floor(targetOuterWidthPx));
-  const targetCartW = Math.max(0, targetOuterW - border * 2);
+      const minCartW = Math.ceil(totalWidth + pad * 2);
+      const cartW = Math.max(targetCartW, minCartW);
 
-  // Ensure we never make it narrower than content requires
-  const minCartW = Math.ceil(totalWidth + pad * 2);
-  const cartW = Math.max(targetCartW, minCartW);
+      const cartH = Math.ceil(textHeight + pad * 2);
 
-  const cartH = Math.ceil(textHeight + pad * 2);
+      const outerW = cartW + border * 2;
+      const outerH = cartH + border * 2;
 
-  const outerW = cartW + border * 2;
-  const outerH = cartH + border * 2;
+      canvas.style.width = `${outerW}px`;
+      canvas.style.height = `${outerH}px`;
+      canvas.width = Math.ceil(outerW * dpr);
+      canvas.height = Math.ceil(outerH * dpr);
 
-  // Size canvas for HiDPI while preserving layout size
-  canvas.style.width = `${outerW}px`;
-  canvas.style.height = `${outerH}px`;
-  canvas.width = Math.ceil(outerW * dpr);
-  canvas.height = Math.ceil(outerH * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.textBaseline = "alphabetic";
+      ctx.clearRect(0, 0, outerW, outerH);
 
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.textBaseline = "alphabetic";
-  ctx.clearRect(0, 0, outerW, outerH);
+      drawRoundedRect(ctx, border, border, cartW, cartH, corner);
+      ctx.lineWidth = border;
+      ctx.strokeStyle = "#111";
+      ctx.stroke();
 
-  // Border
-  drawRoundedRect(ctx, border, border, cartW, cartH, corner);
-  ctx.lineWidth = border;
-  ctx.strokeStyle = "#111";
-  ctx.stroke();
+      const baselineY = border + pad + maxAscent;
 
-  // Baseline and RIGHT alignment
-  const baselineY = border + pad + maxAscent;
+      const innerLeft = border + pad;
+      const innerRight = border + cartW - pad;
+      const innerAvail = Math.max(0, innerRight - innerLeft);
 
-  const innerLeft = border + pad;
-  const innerRight = border + cartW - pad;
-  const innerAvail = Math.max(0, innerRight - innerLeft);
+      const shift = Math.max(0, innerAvail - totalWidth);
+      let x = innerLeft + shift;
 
-  // If content is wider than available, this clamps to left padding (no negative)
-  const shift = Math.max(0, innerAvail - totalWidth);
+      ctx.fillStyle = "#111";
+      for (const g of glyphRuns) {
+        ctx.font = `${g.px}px "${FONT_FAMILY}"`;
+        const drawX = x + (g.left ?? 0);
+        ctx.fillText(g.ch, drawX, baselineY);
+        x += g.tightW + letterGap;
+      }
+    }
 
-  let x = innerLeft + shift;
-
-  ctx.fillStyle = "#111";
-  for (const g of glyphRuns) {
-    ctx.font = `${g.px}px "${FONT_FAMILY}"`;
-    const drawX = x + (g.left ?? 0);
-    ctx.fillText(g.ch, drawX, baselineY);
-    x += g.tightW + letterGap;
-  }
-}
-
-
-
-    // Render operator glyphs WITHOUT a cartouche border (centered in the canvas)
     function renderGlyphsCentered(canvas, codepoints, fontPx) {
       const ctx = canvas.getContext("2d");
       const chars = codepoints.map(cp => String.fromCodePoint(cp)).join("");
@@ -837,27 +817,26 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
     }
 
     async function ensureFontLoaded() {
-      const sampleCp = 0xF190B; // ESUN
+      const sampleCp = 0xF190B;
       const sampleChar = String.fromCodePoint(sampleCp);
       const fontSpec = `24px "${FONT_FAMILY}"`;
 
       if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
-
       await document.fonts.load(fontSpec, sampleChar);
       await document.fonts.ready;
     }
 
-    /* ============================================================
-       Calculator state + logic
-       ============================================================ */
-
     const displayCanvas = document.getElementById("displayCanvas");
     const elDisplayText = document.getElementById("displayText");
     const elPendingText = document.getElementById("pendingText");
+    const elDisplayLive = document.getElementById("displayLive");
+
+    // NEW: visible help fields (restored)
+    const elDisplayTextVisible = document.getElementById("displayTextVisible");
+    const elPendingTextVisible = document.getElementById("pendingTextVisible");
 
     const smallSet = getSmallCodepointsSet();
 
-    // Display/cartouche sizing
     const DISPLAY_LARGE_PX = 92;
     const DISPLAY_SMALL_PX = 26;
     const DISPLAY_PAD = 24;
@@ -865,7 +844,6 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
     const DISPLAY_CORNER = 18;
     const DISPLAY_GAP = 4;
 
-    // Button/cartouche sizing
     const BTN_LARGE_PX = 28;
     const BTN_SMALL_PX = 10;
     const BTN_PAD = 10;
@@ -873,32 +851,24 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
     const BTN_CORNER = 14;
     const BTN_GAP = 2;
 
-    // Calculator state
-    let inputStr = "0";      // what user is typing
-    let acc = null;          // accumulator (number) or null
-    let pendingOp = null;    // "+", "-", "*", "/"
-    let lastOp = null;       // for repeated "=" (optional)
+    let inputStr = "0";
+    let acc = null;
+    let pendingOp = null;
+    let lastOp = null;
     let lastArg = null;
 
-    // CHANGE HERE: maximum digits after "." when displaying computed results
     const MAX_DECIMALS = 5;
 
     function isError() { return inputStr === "Error"; }
 
     function setError() {
       inputStr = "Error";
-      // keep acc/pending as-is; user can Clear to reset
       renderDisplay();
     }
 
     function normalizeInputString(s) {
-      // Basic normalization for display typing only:
-      // - keep "-" only at start
-      // - allow one "."
-      // - keep "0" rules simple
       if (!s || s === "-") return s;
 
-      // remove leading zeros (but keep "0." and "-0.")
       const neg = s.startsWith("-");
       const core = neg ? s.slice(1) : s;
 
@@ -920,26 +890,15 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
     }
 
     function formatNumberForInput(n) {
-        if (!Number.isFinite(n)) return "Error";
+      if (!Number.isFinite(n)) return "Error";
+      if (Object.is(n, -0)) n = 0;
+      if (Number.isInteger(n)) return String(n);
 
-        // Avoid "-0"
-        if (Object.is(n, -0)) n = 0;
-
-        // If it's already an integer, keep it clean
-        if (Number.isInteger(n)) return String(n);
-
-        // Clamp fractional digits
-        const fixed = n.toFixed(MAX_DECIMALS);
-
-        // Trim trailing zeros and any trailing "."
-        const trimmed = fixed.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
-
-        // If it became "-0" after trimming, normalize
-        if (trimmed === "-0") return "0";
-
-        return trimmed;
+      const fixed = n.toFixed(MAX_DECIMALS);
+      const trimmed = fixed.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+      if (trimmed === "-0") return "0";
+      return trimmed;
     }
-
 
     function compute(a, op, b) {
       if (op === "+") return a + b;
@@ -953,7 +912,6 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
     }
 
     function applyPendingIfReady(nextOpForRepeat = null) {
-      // Apply pending operation using current input as b
       if (pendingOp == null || acc == null) return;
 
       const b = parseInputToNumber(inputStr);
@@ -961,7 +919,6 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
 
       if (!Number.isFinite(r)) { setError(); return; }
 
-      // Save for repeated "="
       lastOp = nextOpForRepeat ?? pendingOp;
       lastArg = b;
 
@@ -1014,17 +971,14 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
     function pressOp(op) {
       if (isError()) return;
 
-      // If we already have a pending op and user has typed something, apply it
       if (pendingOp != null && acc != null) {
         applyPendingIfReady(pendingOp);
         if (isError()) return;
       } else {
-        // No pending op: set accumulator from input
         acc = parseInputToNumber(inputStr);
       }
 
       pendingOp = op;
-      // Start a fresh input for next operand
       inputStr = "0";
       renderDisplay();
     }
@@ -1039,7 +993,6 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
         return;
       }
 
-      // Repeat last operation if available
       if (lastOp != null && lastArg != null) {
         const a = parseInputToNumber(inputStr);
         const r = compute(a, lastOp, lastArg);
@@ -1049,9 +1002,29 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
       }
     }
 
-    /* ============================================================
-       UI: Build keys with canvases
-       ============================================================ */
+    function handleKeydown(e) {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+      const k = e.key;
+
+      if (k >= "0" && k <= "9") { e.preventDefault(); pressDigit(k); return; }
+
+      if (k === "+") { e.preventDefault(); pressOp("+"); return; }
+      if (k === "-") { e.preventDefault(); pressOp("-"); return; }
+      if (k === "*") { e.preventDefault(); pressOp("*"); return; }
+      if (k === "/") { e.preventDefault(); pressOp("/"); return; }
+
+      if (k === ".") { e.preventDefault(); pressDot(); return; }
+
+      if (k === "Enter" || k === "=") { e.preventDefault(); pressEquals(); return; }
+
+      if (k === "Backspace") { e.preventDefault(); pressBackspace(); return; }
+      if (k === "Escape") { e.preventDefault(); pressClear(); return; }
+
+      if (k === "F9") { e.preventDefault(); pressSign(); return; }
+    }
+
+    window.addEventListener("keydown", handleKeydown);
 
     function wordOrWordsToArray(v) {
       if (Array.isArray(v)) return v;
@@ -1066,57 +1039,68 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
     }
 
     function renderDisplay() {
-        elDisplayText.textContent = inputStr;
+      // Screen-reader-only (existing)
+      elDisplayText.textContent = inputStr;
 
-        const pending = (pendingOp != null && acc != null)
-            ? `${formatNumberForInput(acc)} ${pendingOp}`
-            : "";
-        elPendingText.textContent = pending;
+      const pending = (pendingOp != null && acc != null)
+        ? `${formatNumberForInput(acc)} ${pendingOp}`
+        : "";
+      elPendingText.textContent = pending;
 
-        // If "Error", render a small fallback (no cartouche pipeline)
+      // Visible (restored) — mirrors the sr-only values
+      if (elDisplayTextVisible) elDisplayTextVisible.textContent = inputStr;
+      if (elPendingTextVisible) elPendingTextVisible.textContent = pending;
+
+      if (elDisplayLive) {
         if (inputStr === "Error") {
-            const ctx = displayCanvas.getContext("2d");
-            displayCanvas.style.width = "520px";
-            displayCanvas.style.height = "120px";
-            displayCanvas.width = 520 * (window.devicePixelRatio || 1);
-            displayCanvas.height = 120 * (window.devicePixelRatio || 1);
-
-            const dpr = window.devicePixelRatio || 1;
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.clearRect(0, 0, 520, 120);
-            ctx.fillStyle = "#111";
-            ctx.font = `48px system-ui`;
-            ctx.fillText("Error", 24, 76);
-            return;
+          elDisplayLive.textContent = "Error. Press Clear to reset.";
+        } else {
+          const pendingText = (pendingOp != null && acc != null)
+            ? `${formatNumberForInput(acc)} ${pendingOp}`
+            : "none";
+          elDisplayLive.textContent = `Value: ${inputStr}. Pending operation: ${pendingText}.`;
         }
+      }
 
-        // Render cartouche for current input string
-        const cps = decimalToUcsurCodepoints(inputStr);
+      if (inputStr === "Error") {
+        const ctx = displayCanvas.getContext("2d");
+        displayCanvas.style.width = "520px";
+        displayCanvas.style.height = "120px";
+        displayCanvas.width = 520 * (window.devicePixelRatio || 1);
+        displayCanvas.height = 120 * (window.devicePixelRatio || 1);
 
-        // Force the display cartouche to match keypad width
-        const keysEl = document.getElementById("keys");
-        const targetW = keysEl ? keysEl.getBoundingClientRect().width : displayCanvas.getBoundingClientRect().width;
+        const dpr = window.devicePixelRatio || 1;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, 520, 120);
+        ctx.fillStyle = "#111";
+        ctx.font = `48px system-ui`;
+        ctx.fillText("Error", 24, 76);
+        return;
+      }
 
-        renderMixedCartoucheToCanvasFixedWidthRightAligned(
-            displayCanvas,
-            cps,
-            DISPLAY_LARGE_PX,
-            DISPLAY_SMALL_PX,
-            smallSet,
-            targetW,
-            { padding: DISPLAY_PAD, border: DISPLAY_BORDER, cornerRadius: DISPLAY_CORNER, letterGap: DISPLAY_GAP }
-        );
+      const cps = decimalToUcsurCodepoints(inputStr);
+
+      const keysEl = document.getElementById("keys");
+      const targetW = keysEl ? keysEl.getBoundingClientRect().width : displayCanvas.getBoundingClientRect().width;
+
+      renderMixedCartoucheToCanvasFixedWidthRightAligned(
+        displayCanvas,
+        cps,
+        DISPLAY_LARGE_PX,
+        DISPLAY_SMALL_PX,
+        smallSet,
+        targetW,
+        { padding: DISPLAY_PAD, border: DISPLAY_BORDER, cornerRadius: DISPLAY_CORNER, letterGap: DISPLAY_GAP }
+      );
     }
 
     function resolveReduceWidthPx(reduceWidthPx, btn) {
       if (reduceWidthPx == null) return 0;
 
-      // number => px
       if (typeof reduceWidthPx === "number" && Number.isFinite(reduceWidthPx)) {
         return Math.max(0, reduceWidthPx);
       }
 
-      // "12%" => percentage of current button width
       if (typeof reduceWidthPx === "string") {
         const s = reduceWidthPx.trim();
         const m = s.match(/^(\d+(?:\.\d+)?)%$/);
@@ -1127,7 +1111,6 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
           return Math.max(0, (pct / 100) * w);
         }
 
-        // numeric string => px
         const n = Number(s);
         if (Number.isFinite(n)) return Math.max(0, n);
       }
@@ -1135,15 +1118,17 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
       return 0;
     }
 
-
-    function makeButton({ id, kind, labelText, onPress, renderFn, wide=false, reduceWidthPx=0 }) {
+    function makeButton({ id, kind, labelText, ariaLabel, onPress, renderFn, wide=false, reduceWidthPx=0 }) {
       const btn = document.createElement("button");
       btn.className = "btn" + (wide ? " btnWide" : "");
       btn.type = "button";
       btn.setAttribute("data-id", id);
 
+      btn.setAttribute("aria-label", ariaLabel || labelText || id);
+
       const c = document.createElement("canvas");
       c.className = "btnCanvas";
+      c.setAttribute("aria-hidden", "true");
       btn.appendChild(c);
 
       if (labelText) {
@@ -1155,18 +1140,15 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
 
       btn.addEventListener("click", onPress);
 
-      // Render once (may be rerendered after padding is applied)
       renderFn(c, btn);
 
-      // Apply reduction AFTER layout, if any
       requestAnimationFrame(() => {
         const rwPx = resolveReduceWidthPx(reduceWidthPx, btn);
         if (rwPx > 0) {
-          const BASE_PAD = 10; // your .btn padding
+          const BASE_PAD = 10;
           btn.style.paddingLeft = `${BASE_PAD + rwPx}px`;
           btn.style.paddingRight = `${BASE_PAD + rwPx}px`;
 
-          // Optional but usually necessary: rerender after padding changes (width changes)
           if (typeof renderFn === "function") {
             renderFn(c, btn);
           }
@@ -1176,12 +1158,9 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
       return btn;
     }
 
-
-
     function renderDigitButtonCanvas(canvas, digitStr, targetOuterWidthPx = null) {
       const cps = decimalToUcsurCodepoints(digitStr);
 
-      // If no target width is provided, keep existing tight behavior (all normal digit buttons)
       if (targetOuterWidthPx == null) {
         renderMixedCartoucheToCanvas(
           canvas,
@@ -1194,7 +1173,6 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
         return;
       }
 
-      // For wide digit buttons (only "0" in your layout): fixed width + centered
       renderMixedCartoucheToCanvasFixedWidthCentered(
         canvas,
         cps,
@@ -1206,163 +1184,149 @@ function renderMixedCartoucheToCanvasFixedWidthRightAligned(
       );
     }
 
-
     function renderOpButtonCanvas(canvas, opKey, fontPx=34) {
       const cps = opWordsToCodepoints(opKey);
       renderGlyphsCentered(canvas, cps, fontPx);
     }
 
-function buildKeypad() {
-  const keys = document.getElementById("keys");
-  keys.innerHTML = "";
+    function buildKeypad() {
+      const keys = document.getElementById("keys");
+      keys.innerHTML = "";
 
-  // Layout (after swap + with −):
-  // Row1: C, ⌫, ±, +
-  // Row2: 7, 8, 9, −
-  // Row3: 4, 5, 6, ×
-  // Row4: 1, 2, 3, ÷
-  // Row5: 0 (wide), ., =
+      const add = (spec) => keys.appendChild(makeButton(spec));
 
-  const add = (spec) => keys.appendChild(makeButton(spec));
-
-  // Row 1
-  add({
-    id: "clr", kind: "op", labelText: "C",
-    onPress: pressClear,
-    renderFn: (c) => renderOpButtonCanvas(c, "clr", 34)
-  });
-
-  add({
-    id: "bk", kind: "op", labelText: "⌫",
-    onPress: pressBackspace,
-    renderFn: (c) => renderOpButtonCanvas(c, "bk", 34)
-  });
-
-  add({
-    id: "sign", kind: "op", labelText: "±",
-    onPress: pressSign,
-    renderFn: (c) => renderOpButtonCanvas(c, "sign", 34)
-  });
-
-  // swapped: add goes where sub was
-  add({
-    id: "add", kind: "op", labelText: "+",
-    onPress: () => pressOp("+"),
-    renderFn: (c) => renderOpButtonCanvas(c, "add", 34)
-  });
-
-  // Row 2
-  for (const d of ["7","8","9"]) {
-    add({
-      id: "d"+d, kind: "digit",
-      labelText: d,
-      onPress: () => pressDigit(d),
-      renderFn: (c) => renderDigitButtonCanvas(c, d)
-    });
-  }
-
-  // swapped: sub goes where add was
-  add({
-    id: "sub", kind: "op", labelText: "−",
-    onPress: () => pressOp("-"),
-    renderFn: (c) => renderOpButtonCanvas(c, "sub", 34)
-  });
-
-  // Row 3
-  for (const d of ["4","5","6"]) {
-    add({
-      id: "d"+d, kind: "digit",
-      labelText: d,
-      onPress: () => pressDigit(d),
-      renderFn: (c) => renderDigitButtonCanvas(c, d)
-    });
-  }
-
-  add({
-    id: "mul", kind: "op", labelText: "×",
-    onPress: () => pressOp("*"),
-    renderFn: (c) => renderOpButtonCanvas(c, "mul", 34)
-  });
-
-  // Row 4
-  for (const d of ["1","2","3"]) {
-    add({
-      id: "d"+d, kind: "digit",
-      labelText: d,
-      onPress: () => pressDigit(d),
-      renderFn: (c) => renderDigitButtonCanvas(c, d)
-    });
-  }
-
-  add({
-    id: "div", kind: "op", labelText: "÷",
-    onPress: () => pressOp("/"),
-    renderFn: (c) => renderOpButtonCanvas(c, "div", 34)
-  });
-
-  // Row 5
-  add({
-    id: "d0", kind: "digit",
-    labelText: "0",
-    onPress: () => pressDigit("0"),
-    reduceWidthPx: "14%",   // CHANGE HERE (or keep number pixels)
-    renderFn: (c) => {
-      requestAnimationFrame(() => {
-        const btn = c.closest("button");
-        if (!btn) { renderDigitButtonCanvas(c, "0"); return; }
-
-        const rect = btn.getBoundingClientRect();
-
-        // Compute inner content width = button width minus horizontal padding
-        const cs = window.getComputedStyle(btn);
-        const padL = parseFloat(cs.paddingLeft) || 0;
-        const padR = parseFloat(cs.paddingRight) || 0;
-
-        const innerW = Math.max(0, rect.width - padL - padR);
-
-        renderDigitButtonCanvas(c, "0", innerW);
+      add({
+        id: "clr", kind: "op", labelText: "C",
+        ariaLabel: "Clear",
+        onPress: pressClear,
+        renderFn: (c) => renderOpButtonCanvas(c, "clr", 34)
       });
-    },
-    wide: true
-  });
 
+      add({
+        id: "bk", kind: "op", labelText: "⌫",
+        ariaLabel: "Backspace",
+        onPress: pressBackspace,
+        renderFn: (c) => renderOpButtonCanvas(c, "bk", 34)
+      });
 
+      add({
+        id: "sign", kind: "op", labelText: "±",
+        ariaLabel: "Toggle sign",
+        onPress: pressSign,
+        renderFn: (c) => renderOpButtonCanvas(c, "sign", 34)
+      });
 
-  add({
-    id: "dot", kind: "op", labelText: ".",
-    onPress: pressDot,
-    renderFn: (c) => renderOpButtonCanvas(c, "dot", 34)
-  });
+      add({
+        id: "add", kind: "op", labelText: "+",
+        ariaLabel: "Add",
+        onPress: () => pressOp("+"),
+        renderFn: (c) => renderOpButtonCanvas(c, "add", 34)
+      });
 
-  add({
-    id: "eq", kind: "op", labelText: "=",
-    onPress: pressEquals,
-    renderFn: (c) => renderOpButtonCanvas(c, "eq", 34)
-  });
-}
+      for (const d of ["7","8","9"]) {
+        add({
+          id: "d"+d, kind: "digit",
+          labelText: d,
+          ariaLabel: `Digit ${d}`,
+          onPress: () => pressDigit(d),
+          renderFn: (c) => renderDigitButtonCanvas(c, d)
+        });
+      }
 
+      add({
+        id: "sub", kind: "op", labelText: "−",
+        ariaLabel: "Subtract",
+        onPress: () => pressOp("-"),
+        renderFn: (c) => renderOpButtonCanvas(c, "sub", 34)
+      });
 
-function rerenderWideZeroKey() {
-  const c = document.querySelector('button[data-id="d0"] canvas.btnCanvas');
-  if (!c) return;
+      for (const d of ["4","5","6"]) {
+        add({
+          id: "d"+d, kind: "digit",
+          labelText: d,
+          ariaLabel: `Digit ${d}`,
+          onPress: () => pressDigit(d),
+          renderFn: (c) => renderDigitButtonCanvas(c, d)
+        });
+      }
 
-  const btn = c.closest("button");
-  if (!btn) return;
+      add({
+        id: "mul", kind: "op", labelText: "×",
+        ariaLabel: "Multiply",
+        onPress: () => pressOp("*"),
+        renderFn: (c) => renderOpButtonCanvas(c, "mul", 34)
+      });
 
-  const rect = btn.getBoundingClientRect();
-  const cs = window.getComputedStyle(btn);
-  const padL = parseFloat(cs.paddingLeft) || 0;
-  const padR = parseFloat(cs.paddingRight) || 0;
+      for (const d of ["1","2","3"]) {
+        add({
+          id: "d"+d, kind: "digit",
+          labelText: d,
+          ariaLabel: `Digit ${d}`,
+          onPress: () => pressDigit(d),
+          renderFn: (c) => renderDigitButtonCanvas(c, d)
+        });
+      }
 
-  const innerW = Math.max(0, rect.width - padL - padR);
-  renderDigitButtonCanvas(c, "0", innerW);
-}
+      add({
+        id: "div", kind: "op", labelText: "÷",
+        ariaLabel: "Divide",
+        onPress: () => pressOp("/"),
+        renderFn: (c) => renderOpButtonCanvas(c, "div", 34)
+      });
 
+      add({
+        id: "d0", kind: "digit",
+        labelText: "0",
+        ariaLabel: "Digit 0",
+        onPress: () => pressDigit("0"),
+        reduceWidthPx: "14%",
+        renderFn: (c) => {
+          requestAnimationFrame(() => {
+            const btn = c.closest("button");
+            if (!btn) { renderDigitButtonCanvas(c, "0"); return; }
 
+            const rect = btn.getBoundingClientRect();
+            const cs = window.getComputedStyle(btn);
+            const padL = parseFloat(cs.paddingLeft) || 0;
+            const padR = parseFloat(cs.paddingRight) || 0;
 
-    /* ============================================================
-       Init
-       ============================================================ */
+            const innerW = Math.max(0, rect.width - padL - padR);
+            renderDigitButtonCanvas(c, "0", innerW);
+          });
+        },
+        wide: true
+      });
+
+      add({
+        id: "dot", kind: "op", labelText: ".",
+        ariaLabel: "Decimal point",
+        onPress: pressDot,
+        renderFn: (c) => renderOpButtonCanvas(c, "dot", 34)
+      });
+
+      add({
+        id: "eq", kind: "op", labelText: "=",
+        ariaLabel: "Equals",
+        onPress: pressEquals,
+        renderFn: (c) => renderOpButtonCanvas(c, "eq", 34)
+      });
+    }
+
+    function rerenderWideZeroKey() {
+      const c = document.querySelector('button[data-id="d0"] canvas.btnCanvas');
+      if (!c) return;
+
+      const btn = c.closest("button");
+      if (!btn) return;
+
+      const rect = btn.getBoundingClientRect();
+      const cs = window.getComputedStyle(btn);
+      const padL = parseFloat(cs.paddingLeft) || 0;
+      const padR = parseFloat(cs.paddingRight) || 0;
+
+      const innerW = Math.max(0, rect.width - padL - padR);
+      renderDigitButtonCanvas(c, "0", innerW);
+    }
 
     window.addEventListener("load", async () => {
       await ensureFontLoaded();
@@ -1374,7 +1338,6 @@ function rerenderWideZeroKey() {
       renderDisplay();
       rerenderWideZeroKey();
     });
-
   </script>
 </body>
 </html>
