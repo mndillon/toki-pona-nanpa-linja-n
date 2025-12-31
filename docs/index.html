@@ -76,7 +76,7 @@
     .tpLine {
       display: block;
       margin-top: 2px;
-      font-size: 10pt; 
+      font-size: 10pt;
       color: var(--muted);
       line-height: 1.25;
     }
@@ -269,6 +269,41 @@
     <!-- Screen-reader live region for status/errors -->
     <div id="srStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
+    <!-- MOVED: Canvases now appear ABOVE the decimal input -->
+    <div class="out" role="region" aria-label="Cartouche renderings">
+      <!-- Canvases are decorative; authoritative text is the words/outputs below -->
+      <div class="grid2" style="margin-top:14px;" role="group" aria-label="Cartouche renderings">
+        <div>
+          <h3>
+            sitelen pona cartouche (small)
+            <span class="tpLine">poki nimi sitelen pona (lili)</span>
+          </h3>
+          <canvas id="canvasSmall" aria-hidden="true"></canvas>
+          <div class="help">
+            Rendered with your font at a smaller size.
+            <span class="tpLine">sitelen li kepeken font sina, lon suli lili.</span>
+          </div>
+          <div class="sr-only" id="canvasSmallDesc">
+            Decorative cartouche rendering. Use the text outputs below for the accessible value.
+          </div>
+        </div>
+        <div>
+          <h3>
+            sitelen pona cartouche (large)
+            <span class="tpLine">poki nimi sitelen pona (suli)</span>
+          </h3>
+          <canvas id="canvasLarge" aria-hidden="true"></canvas>
+          <div class="help">
+            Rendered with your font at a large size.
+            <span class="tpLine">sitelen li kepeken font sina, lon suli mute.</span>
+          </div>
+          <div class="sr-only" id="canvasLargeDesc">
+            Decorative cartouche rendering. Use the text outputs below for the accessible value.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="row" style="margin-top:14px;" role="group" aria-label="Decimal input and encode action">
       <div class="col">
         <label for="decimalInput">
@@ -300,7 +335,7 @@
           <span class="tpLine">o pana e nimi nanpa, o sitelen e poki nimi</span>
         </button>
         <div id="btnEncodeHelp" class="sr-only">
-          Encodes the decimal input into a nanpa-linja-n proper name and renders the sitelen pona cartouches below.
+          Encodes the decimal input into a nanpa-linja-n proper name and renders the sitelen pona cartouches.
         </div>
       </div>
     </div>
@@ -354,38 +389,6 @@
         <span class="tpLine">
           nanpa sitelen wan la, nimi toki pona wan. nasin li sama lon poka pi nanpa sitelen.
         </span>
-      </div>
-
-      <!-- Canvases are decorative; authoritative text is the words/outputs above -->
-      <div class="grid2" style="margin-top:14px;" role="group" aria-label="Cartouche renderings">
-        <div>
-          <h3>
-            sitelen pona cartouche (small)
-            <span class="tpLine">poki nimi sitelen pona (lili)</span>
-          </h3>
-          <canvas id="canvasSmall" aria-hidden="true"></canvas>
-          <div class="help">
-            Rendered with your font at a smaller size.
-            <span class="tpLine">sitelen li kepeken font sina, lon suli lili.</span>
-          </div>
-          <div class="sr-only" id="canvasSmallDesc">
-            Decorative cartouche rendering. Use the text outputs above for the accessible value.
-          </div>
-        </div>
-        <div>
-          <h3>
-            sitelen pona cartouche (large)
-            <span class="tpLine">poki nimi sitelen pona (suli)</span>
-          </h3>
-          <canvas id="canvasLarge" aria-hidden="true"></canvas>
-          <div class="help">
-            Rendered with your font at a large size.
-            <span class="tpLine">sitelen li kepeken font sina, lon suli mute.</span>
-          </div>
-          <div class="sr-only" id="canvasLargeDesc">
-            Decorative cartouche rendering. Use the text outputs above for the accessible value.
-          </div>
-        </div>
       </div>
 
       <h3 style="margin-top:20px;">
@@ -1550,8 +1553,12 @@
     const LARGE_FONT_SIZE = 72;
     const SMALL_FONT_SIZE = 20;
 
-    const LARGE_TINY_FONT_SIZE = 40;
-    const SMALL_TINY_FONT_SIZE = 10;
+    // CHANGED: smaller "small cartouche" glyph sizes
+    const LARGE_TINY_FONT_SIZE = 28;  // was 40
+    const SMALL_TINY_FONT_SIZE = 7;   // was 10
+
+    // NEW: consistent smaller box options for canvasSmall
+    const SMALL_CANVAS_RENDER_OPTS = { padding: 10, border: 1, cornerRadius: 10, letterGap: 2 };
 
     const elDecimal = document.getElementById("decimalInput");
     const elLatinOut = document.getElementById("latinOut");
@@ -1655,15 +1662,17 @@
 
       const smallSet = getSmallCodepointsSet();
 
+      // CHANGED: smaller cartouche options + smaller font sizes for canvasSmall
       renderMixedCartoucheToCanvas(
         canvasSmall,
         cps,
         LARGE_TINY_FONT_SIZE,
         SMALL_TINY_FONT_SIZE,
         smallSet,
-        { padding: 18, border: 2, cornerRadius: 16, letterGap: LETTER_SPACING_GAP }
+        SMALL_CANVAS_RENDER_OPTS
       );
 
+      // unchanged large canvas
       renderMixedCartoucheToCanvas(
         canvasLarge,
         cps,
@@ -1696,11 +1705,12 @@
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
         if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
+        // CHANGED: smaller options for canvasSmall
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
           LARGE_TINY_FONT_SIZE,
-          { padding: 18, border: 2, cornerRadius: 16, letterGap: LETTER_SPACING_GAP }
+          SMALL_CANVAS_RENDER_OPTS
         );
 
         renderUniformCartoucheFromCodepoints(
@@ -1740,13 +1750,14 @@
 
           const smallSet = getSmallCodepointsSet();
 
+          // CHANGED: smaller options for canvasSmall
           renderMixedCartoucheToCanvas(
             canvasSmall,
             cps,
             LARGE_TINY_FONT_SIZE,
             SMALL_TINY_FONT_SIZE,
             smallSet,
-            { padding: 18, border: 2, cornerRadius: 16, letterGap: LETTER_SPACING_GAP }
+            SMALL_CANVAS_RENDER_OPTS
           );
 
           renderMixedCartoucheToCanvas(
@@ -1770,11 +1781,12 @@
         elLatinOut.value = String.fromCodePoint(...cps);
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
 
+        // CHANGED: smaller options for canvasSmall
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
           LARGE_TINY_FONT_SIZE,
-          { padding: 18, border: 2, cornerRadius: 16, letterGap: LETTER_SPACING_GAP }
+          SMALL_CANVAS_RENDER_OPTS
         );
 
         renderUniformCartoucheFromCodepoints(
