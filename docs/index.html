@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Toki Pona → Cartouche Calculator</title>
+  <title>Toki Pona → Cartouche Calculator — toki pona tawa poki nimi</title>
 
   <style>
     :root {
@@ -59,9 +59,27 @@
       background: var(--bg);
     }
 
+    /* NEW: bilingual button layout */
+    .btnBi {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      line-height: 1.15;
+    }
+
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
 
     .help { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+
+    /* NEW: Toki Pona line (10pt) */
+    .tpLine {
+      display: block;
+      margin-top: 2px;
+      font-size: 10pt; 
+      color: var(--muted);
+      line-height: 1.25;
+    }
 
     .out { margin-top: 12px; }
 
@@ -101,7 +119,6 @@
       border-collapse: collapse;
     }
 
-
     /* Keep the unique number code from overflowing into the cartouche column */
     .digitTable th:nth-child(3),
     .digitTable td:nth-child(3) {
@@ -112,7 +129,6 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
-
 
     .digitTable th,
     .digitTable td {
@@ -192,45 +208,73 @@
 
 <body>
   <!-- Skip link for keyboard users -->
-  <a href="#main" class="skipLink">Skip to content</a>
+  <a href="#main" class="skipLink">
+    Skip to content
+    <span class="tpLine">o tawa lipu ni</span>
+  </a>
 
   <!-- Main landmark for assistive tech -->
   <main class="card" id="main" role="main" aria-labelledby="pageTitle">
 
-    <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n main documentation</h1>
+    <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
+      Toki Pona nanpa-linja-n main documentation
+      <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
+    </h1>
     <div class="small" style="margin-bottom:10px;">
       <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
         nanpa-linja-n main documentation
       </a>
+      <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
     </div>
 
-    <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n cartouche calculator</h1>
+    <h1 style="margin:0 0 6px;font-size:18px;">
+      Toki Pona nanpa-linja-n cartouche calculator
+      <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
+    </h1>
     <div class="small" style="margin-bottom:10px;">
       <a class="repoLink" href="./calculator.html" target="_blank" rel="noopener noreferrer">
         nanpa-linja-n cartouche calculator
       </a>
+      <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
     </div>
 
-    <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer</h1>
+    <h1 style="margin:0 0 6px;font-size:18px;">
+      Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
+      <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
+    </h1>
 
     <div class="help" style="margin-top:10px;">
       <strong>Note:</strong> The “nanpa-linja-n proper name” shown here is an encoding label for numbers only.
       It is intended as a proper-name style identifier and does not propose or add any new Toki Pona lexicon.
+      <span class="tpLine">
+        sona: nimi “nanpa-linja-n proper name” li nimi pi pana nanpa taso.
+        ona li sama nimi pi jan (nimi pi nimi) taso; ona li pana ala e nimi sin pi toki pona.
+      </span>
     </div>
 
     <div class="help">
       <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
       complete, or suitable for any purpose. You are responsible for verifying results.
+      <span class="tpLine">
+        sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pi pona.
+        sina o lukin e ni: sitelen li pona anu seme.
+      </span>
     </div>
 
-    <div class="help" style="margin-top:10px;">Inputs are treated as text to preserve formatting (e.g., trailing zeros).</div>
+    <div class="help" style="margin-top:10px;">
+      Inputs are treated as text to preserve formatting (e.g., trailing zeros).
+      <span class="tpLine">pana li sitelen taso, tan ni: nanpa pini (0) li awen sama.</span>
+    </div>
 
     <!-- Screen-reader live region for status/errors -->
     <div id="srStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <div class="row" style="margin-top:14px;" role="group" aria-label="Decimal input and encode action">
       <div class="col">
-        <label for="decimalInput">Enter decimal value (in en-US locale format)</label>
+        <label for="decimalInput">
+          Enter decimal value (in en-US locale format)
+          <span class="tpLine">o pana e nanpa poka (nasin en-US)</span>
+        </label>
         <input
           id="decimalInput"
           type="text"
@@ -244,12 +288,16 @@
         <div id="decimalHelp" class="help">
           Example formats: <span class="mono">0.00</span>; <span class="mono">.75</span>; <span class="mono">-12,340</span>;  <span class="mono">2000</span>; <span class="mono">5,000</span>; <span class="mono">9¾</span>; <span class="mono">8+1/2</span>; <span class="mono">7/8</span>; <span class="mono">64.5M</span>; <span class="mono">432-555-0189</span>.
           nanpa-linja-n encoder decides how to represent these.
+          <span class="tpLine">
+            nasin pi pana nanpa li ken ante. ilo nanpa-linja-n li kama e nasin sitelen pi nanpa ni.
+          </span>
         </div>
       </div>
 
       <div style="flex: 0 0 auto;">
-        <button id="btnEncode" type="button" aria-describedby="btnEncodeHelp">
-          Encode &amp; Render
+        <button id="btnEncode" type="button" class="btnBi" aria-describedby="btnEncodeHelp">
+          <span>Encode &amp; Render</span>
+          <span class="tpLine">o pana e nimi nanpa, o sitelen e poki nimi</span>
         </button>
         <div id="btnEncodeHelp" class="sr-only">
           Encodes the decimal input into a nanpa-linja-n proper name and renders the sitelen pona cartouches below.
@@ -258,54 +306,100 @@
     </div>
 
     <div class="out" role="region" aria-label="Outputs">
-      <h3>nanpa-linja-n proper name for decimal value</h3>
+      <h3>
+        nanpa-linja-n proper name for decimal value
+        <span class="tpLine">nimi pi pana nanpa (nanpa-linja-n)</span>
+      </h3>
       <textarea id="latinOut" class="mono" readonly aria-readonly="true"></textarea>
-      <div class="help">This is the Latin string you generate from the decimal input (nanpa-linja-n custom encoding). Spaces are added for readability and will NOT affect glyph mapping.</div>
+      <div class="help">
+        This is the Latin string you generate from the decimal input (nanpa-linja-n custom encoding). Spaces are added for readability and will NOT affect glyph mapping.
+        <span class="tpLine">
+          ni li sitelen Lasina tan nanpa pana. spasi li pona lukin taso; ona li ante ala e mapu pi sitelen.
+        </span>
+      </div>
 
-      <h3>nanpa-linja-n unique number code</h3>
+      <h3>
+        nanpa-linja-n unique number code
+        <span class="tpLine">nimi nanpa wan pi nanpa-linja-n</span>
+      </h3>
       <textarea id="numberCodeOut" class="mono" readonly aria-readonly="true"></textarea>
-      <div class="help">Derived from the nanpa-linja-n proper name: remove letters <span class="mono">n</span> and <span class="mono">e</span>, uppercase everything else.</div>
+      <div class="help">
+        Derived from the nanpa-linja-n proper name: remove letters <span class="mono">n</span> and <span class="mono">e</span>, uppercase everything else.
+        <span class="tpLine">
+          ni li tan nimi pi nanpa-linja-n: o weka e sitelen <span class="mono">n</span> en <span class="mono">e</span>; o ante e sitelen ante tawa sitelen suli.
+        </span>
+      </div>
 
       <div id="hexSection" class="hidden">
-        <h3>Code points (hex)</h3>
+        <h3>
+          Code points (hex)
+          <span class="tpLine">nanpa sitelen (nasin hex)</span>
+        </h3>
         <textarea id="codepointsOut" class="mono" readonly aria-readonly="true"></textarea>
         <div class="help">
           Space-separated hex code points (e.g., <span class="mono">F190B F1944 ...</span>) that nasin nanpa font uses.
+          <span class="tpLine">
+            ni li nanpa sitelen (hex) weka-spasi: ilo sitelen nasin nanpa li kepeken ona.
+          </span>
         </div>
       </div>
 
-      <h3>Toki Pona words (for code points)</h3>
+      <h3>
+        Toki Pona words (for code points)
+        <span class="tpLine">nimi pi toki pona (tan nanpa sitelen)</span>
+      </h3>
       <textarea id="tpWordsOut" class="mono" readonly aria-readonly="true"></textarea>
       <div class="help">
         One Toki Pona word per code point, in the same order as the code points output.
+        <span class="tpLine">
+          nanpa sitelen wan la, nimi toki pona wan. nasin li sama lon poka pi nanpa sitelen.
+        </span>
       </div>
 
       <!-- Canvases are decorative; authoritative text is the words/outputs above -->
       <div class="grid2" style="margin-top:14px;" role="group" aria-label="Cartouche renderings">
         <div>
-          <h3>sitelen pona cartouche (small)</h3>
+          <h3>
+            sitelen pona cartouche (small)
+            <span class="tpLine">poki nimi sitelen pona (lili)</span>
+          </h3>
           <canvas id="canvasSmall" aria-hidden="true"></canvas>
-          <div class="help">Rendered with your font at a smaller size.</div>
+          <div class="help">
+            Rendered with your font at a smaller size.
+            <span class="tpLine">sitelen li kepeken font sina, lon suli lili.</span>
+          </div>
           <div class="sr-only" id="canvasSmallDesc">
             Decorative cartouche rendering. Use the text outputs above for the accessible value.
           </div>
         </div>
         <div>
-          <h3>sitelen pona cartouche (large)</h3>
+          <h3>
+            sitelen pona cartouche (large)
+            <span class="tpLine">poki nimi sitelen pona (suli)</span>
+          </h3>
           <canvas id="canvasLarge" aria-hidden="true"></canvas>
-          <div class="help">Rendered with your font at a large size.</div>
+          <div class="help">
+            Rendered with your font at a large size.
+            <span class="tpLine">sitelen li kepeken font sina, lon suli mute.</span>
+          </div>
           <div class="sr-only" id="canvasLargeDesc">
             Decorative cartouche rendering. Use the text outputs above for the accessible value.
           </div>
         </div>
       </div>
 
-      <h3 style="margin-top:20px;">Reverse tool: Toki Pona words → glyphs</h3>
+      <h3 style="margin-top:20px;">
+        Reverse tool: Toki Pona words → glyphs
+        <span class="tpLine">ilo ante: nimi toki pona → sitelen</span>
+      </h3>
 
       <div id="fromCodesSection" class="hidden">
         <div class="row" role="group" aria-label="Render from code points">
           <div class="col">
-            <label for="codepointsIn">Paste code points (hex, space-separated)</label>
+            <label for="codepointsIn">
+              Paste code points (hex, space-separated)
+              <span class="tpLine">o pana e nanpa sitelen (hex, weka-spasi)</span>
+            </label>
             <input
               id="codepointsIn"
               type="text"
@@ -318,17 +412,27 @@
             <div id="codepointsHelp" class="help">
               Accepts <span class="mono">F190B</span> or <span class="mono">U+F190B</span>.
               Input is restricted to the Toki Pona UCSUR block (<span class="mono">F1900</span>–<span class="mono">F1988</span>).
+              <span class="tpLine">
+                sina ken pana e <span class="mono">F190B</span> anu <span class="mono">U+F190B</span>.
+                pana li ken lon poki UCSUR pi toki pona taso (<span class="mono">F1900</span>–<span class="mono">F1988</span>).
+              </span>
             </div>
           </div>
           <div style="flex: 0 0 auto;">
-            <button id="btnFromCodes" type="button">Render From Code Points</button>
+            <button id="btnFromCodes" type="button" class="btnBi">
+              <span>Render From Code Points</span>
+              <span class="tpLine">o sitelen tan nanpa sitelen</span>
+            </button>
           </div>
         </div>
       </div>
 
       <div class="row" style="margin-top:10px;" role="group" aria-label="Render from Toki Pona words">
         <div class="col">
-          <label for="tpWordsIn">Enter Toki Pona words (space-separated)</label>
+          <label for="tpWordsIn">
+            Enter Toki Pona words (space-separated)
+            <span class="tpLine">o pana e nimi toki pona (weka-spasi)</span>
+          </label>
           <input
             id="tpWordsIn"
             type="text"
@@ -343,15 +447,30 @@
           />
           <div id="tpWordsHelp" class="help">
             Only valid Toki Pona words are allowed (case-insensitive) or a nanpa-linja-n proper name for a decimal value.
+            <span class="tpLine">
+              nimi toki pona lon mapu taso li ken. (suli/lili pi sitelen li wile ala.)
+              sina ken kin pana e nimi pi nanpa-linja-n (nimi pi pana nanpa).
+            </span>
           </div>
         </div>
         <div style="flex: 0 0 auto;">
-          <button id="btnFromWords" type="button">Render From Toki Pona Words</button>
+          <button id="btnFromWords" type="button" class="btnBi">
+            <span>Render From Toki Pona Words</span>
+            <span class="tpLine">o sitelen tan nimi toki pona</span>
+          </button>
         </div>
       </div>
 
-      <h3 style="margin-top:20px;">Digit reference: 0–9</h3>
-      <div class="help">Digit, its nanpa-linja-n proper name, its nanpa-linja-n unique number code, and a sitelen pona mixed-font cartouche.</div>
+      <h3 style="margin-top:20px;">
+        Digit reference: 0–9
+        <span class="tpLine">lipu sona pi nanpa: 0–9</span>
+      </h3>
+      <div class="help">
+        Digit, its nanpa-linja-n proper name, its nanpa-linja-n unique number code, and a sitelen pona mixed-font cartouche.
+        <span class="tpLine">
+          nanpa, nimi pi nanpa-linja-n, nimi nanpa wan, en poki nimi sitelen pona (font tu).
+        </span>
+      </div>
 
       <div class="tableWrap">
         <table class="digitTable" id="digitTable">
@@ -360,10 +479,22 @@
           </caption>
           <thead>
             <tr>
-              <th scope="col" style="width:80px;">Digit</th>
-              <th scope="col">nanpa-linja-n proper name</th>
-              <th scope="col">nanpa-linja-n unique number code</th>
-              <th scope="col" style="width:220px;">sitelen pona cartouche</th>
+              <th scope="col" style="width:80px;">
+                Digit
+                <span class="tpLine">nanpa</span>
+              </th>
+              <th scope="col">
+                nanpa-linja-n proper name
+                <span class="tpLine">nimi pi nanpa-linja-n</span>
+              </th>
+              <th scope="col">
+                nanpa-linja-n unique number code
+                <span class="tpLine">nimi nanpa wan</span>
+              </th>
+              <th scope="col" style="width:220px;">
+                sitelen pona cartouche
+                <span class="tpLine">poki nimi sitelen pona</span>
+              </th>
             </tr>
           </thead>
           <tbody id="digitTableBody">

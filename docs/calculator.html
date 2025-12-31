@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>nanpa-linja-n Cartouche Calculator</title>
+  <title>nanpa-linja-n Cartouche Calculator — ilo nanpa pi poki nimi</title>
 
   <style>
     :root {
@@ -31,6 +31,14 @@
     .small { font-size: 13px; color: var(--muted); }
     .help  { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
     .mono  { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    /* NEW: Toki Pona line helper */
+    .tpLine {
+      display: block;
+      margin-top: 2px;
+      font-size: 10pt;
+      color: var(--muted);
+    }
 
     .calc {
       display: grid;
@@ -156,33 +164,52 @@
 </head>
 
 <body>
-  <a href="#calculator" class="skipLink">Skip to calculator</a>
+  <a href="#calculator" class="skipLink">Skip to calculator — o tawa ilo nanpa</a>
 
   <main class="card" id="calculator" role="main">
-    <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n main documentation</h1>
+    <h1 style="margin:0 0 6px;font-size:18px;">
+      Toki Pona nanpa-linja-n main documentation
+      <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
+    </h1>
     <div class="small" style="margin-bottom:10px;">
       <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
         nanpa-linja-n main documentation
       </a>
+      <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
     </div>
 
-    <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer</h1>
+    <h1 style="margin:0 0 6px;font-size:18px;">
+      Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
+      <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
+    </h1>
     <div class="small" style="margin-bottom:10px;">
       <a class="repoLink" href="./index.html" target="_blank" rel="noopener noreferrer">
         nanpa-linja-n decimal number encoder + cartouche renderer
       </a>
+      <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
     </div>
 
-    <h1 style="margin:0 0 6px;font-size:18px;">Toki Pona nanpa-linja-n cartouche calculator</h1>
+    <h1 style="margin:0 0 6px;font-size:18px;">
+      Toki Pona nanpa-linja-n cartouche calculator
+      <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
+    </h1>
 
     <div class="help" style="margin-top:10px;">
       <strong>Note:</strong> The “nanpa-linja-n proper name” generated here is a number-encoding label only.
       It is intended as a proper-name style identifier and does not propose or add any new Toki Pona lexicon.
+      <span class="tpLine">
+        sona: nimi “nanpa-linja-n proper name” li nimi pi pana nanpa taso.
+        ona li sama nimi pi jan (nimi pi nimi) taso; ona li pana ala e nimi sin pi toki pona.
+      </span>
     </div>
 
     <div class="help">
       <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
       complete, or suitable for any purpose. You are responsible for verifying results.
+      <span class="tpLine">
+        sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pi pona.
+        sina o lukin e ni: sitelen li pona anu seme.
+      </span>
     </div>
 
     <div class="calc">
@@ -192,10 +219,16 @@
           <!-- Decorative canvas -->
           <canvas id="displayCanvas" aria-hidden="true"></canvas>
 
-          <!-- RESTORED (visible): small help sections for value + pending -->
+          <!-- Visible: value + pending, now bilingual -->
           <div class="displayMeta" aria-hidden="true">
-            <div class="small">Input: <span id="displayTextVisible" class="mono"></span></div>
-            <div class="small">Pending: <span id="pendingTextVisible" class="mono"></span></div>
+            <div class="small">
+              Input: <span id="displayTextVisible" class="mono"></span>
+              <span class="tpLine">pana: <span id="displayTextVisibleTp" class="mono"></span></span>
+            </div>
+            <div class="small">
+              Pending: <span id="pendingTextVisible" class="mono"></span>
+              <span class="tpLine">pali awen: <span id="pendingTextVisibleTp" class="mono"></span></span>
+            </div>
           </div>
 
           <!-- Screen reader-only: description + live region + authoritative text -->
@@ -213,6 +246,7 @@
 
           <div class="help">
             Display is rendered as a cartouche using the same approach as the decimal number encoder page.
+            <span class="tpLine">sitelen ni li lon poki nimi. ona li kepeken nasin sama lon lipu pi pana nanpa.</span>
           </div>
         </div>
       </div>
@@ -831,9 +865,11 @@
     const elPendingText = document.getElementById("pendingText");
     const elDisplayLive = document.getElementById("displayLive");
 
-    // NEW: visible help fields (restored)
+    // Visible help fields (bilingual)
     const elDisplayTextVisible = document.getElementById("displayTextVisible");
     const elPendingTextVisible = document.getElementById("pendingTextVisible");
+    const elDisplayTextVisibleTp = document.getElementById("displayTextVisibleTp");
+    const elPendingTextVisibleTp = document.getElementById("pendingTextVisibleTp");
 
     const smallSet = getSmallCodepointsSet();
 
@@ -1047,18 +1083,23 @@
         : "";
       elPendingText.textContent = pending;
 
-      // Visible (restored) — mirrors the sr-only values
+      // Visible (bilingual) — mirrors the values
       if (elDisplayTextVisible) elDisplayTextVisible.textContent = inputStr;
       if (elPendingTextVisible) elPendingTextVisible.textContent = pending;
+      if (elDisplayTextVisibleTp) elDisplayTextVisibleTp.textContent = inputStr;
+      if (elPendingTextVisibleTp) elPendingTextVisibleTp.textContent = pending;
 
+      // Live region: bilingual
       if (elDisplayLive) {
         if (inputStr === "Error") {
-          elDisplayLive.textContent = "Error. Press Clear to reset.";
+          elDisplayLive.textContent = "Error. Press Clear to reset. pakala. o pilin e nena Clear la, sina kama sin.";
         } else {
           const pendingText = (pendingOp != null && acc != null)
             ? `${formatNumberForInput(acc)} ${pendingOp}`
             : "none";
-          elDisplayLive.textContent = `Value: ${inputStr}. Pending operation: ${pendingText}.`;
+          elDisplayLive.textContent =
+            `Value: ${inputStr}. Pending operation: ${pendingText}. ` +
+            `nanpa: ${inputStr}. pali awen: ${pendingText}.`;
         }
       }
 
@@ -1124,6 +1165,7 @@
       btn.type = "button";
       btn.setAttribute("data-id", id);
 
+      // ariaLabel is now expected to be bilingual (English / Toki Pona)
       btn.setAttribute("aria-label", ariaLabel || labelText || id);
 
       const c = document.createElement("canvas");
@@ -1197,28 +1239,28 @@
 
       add({
         id: "clr", kind: "op", labelText: "C",
-        ariaLabel: "Clear",
+        ariaLabel: "Clear / o weka e ale",
         onPress: pressClear,
         renderFn: (c) => renderOpButtonCanvas(c, "clr", 34)
       });
 
       add({
         id: "bk", kind: "op", labelText: "⌫",
-        ariaLabel: "Backspace",
+        ariaLabel: "Backspace / o weka e sitelen pini",
         onPress: pressBackspace,
         renderFn: (c) => renderOpButtonCanvas(c, "bk", 34)
       });
 
       add({
         id: "sign", kind: "op", labelText: "±",
-        ariaLabel: "Toggle sign",
+        ariaLabel: "Toggle sign / o ante e sinpin (+/-)",
         onPress: pressSign,
         renderFn: (c) => renderOpButtonCanvas(c, "sign", 34)
       });
 
       add({
         id: "add", kind: "op", labelText: "+",
-        ariaLabel: "Add",
+        ariaLabel: "Add / o pana",
         onPress: () => pressOp("+"),
         renderFn: (c) => renderOpButtonCanvas(c, "add", 34)
       });
@@ -1227,7 +1269,7 @@
         add({
           id: "d"+d, kind: "digit",
           labelText: d,
-          ariaLabel: `Digit ${d}`,
+          ariaLabel: `Digit ${d} / nanpa ${d}`,
           onPress: () => pressDigit(d),
           renderFn: (c) => renderDigitButtonCanvas(c, d)
         });
@@ -1235,7 +1277,7 @@
 
       add({
         id: "sub", kind: "op", labelText: "−",
-        ariaLabel: "Subtract",
+        ariaLabel: "Subtract / o weka",
         onPress: () => pressOp("-"),
         renderFn: (c) => renderOpButtonCanvas(c, "sub", 34)
       });
@@ -1244,7 +1286,7 @@
         add({
           id: "d"+d, kind: "digit",
           labelText: d,
-          ariaLabel: `Digit ${d}`,
+          ariaLabel: `Digit ${d} / nanpa ${d}`,
           onPress: () => pressDigit(d),
           renderFn: (c) => renderDigitButtonCanvas(c, d)
         });
@@ -1252,7 +1294,7 @@
 
       add({
         id: "mul", kind: "op", labelText: "×",
-        ariaLabel: "Multiply",
+        ariaLabel: "Multiply / o mute",
         onPress: () => pressOp("*"),
         renderFn: (c) => renderOpButtonCanvas(c, "mul", 34)
       });
@@ -1261,7 +1303,7 @@
         add({
           id: "d"+d, kind: "digit",
           labelText: d,
-          ariaLabel: `Digit ${d}`,
+          ariaLabel: `Digit ${d} / nanpa ${d}`,
           onPress: () => pressDigit(d),
           renderFn: (c) => renderDigitButtonCanvas(c, d)
         });
@@ -1269,7 +1311,7 @@
 
       add({
         id: "div", kind: "op", labelText: "÷",
-        ariaLabel: "Divide",
+        ariaLabel: "Divide / o kipisi",
         onPress: () => pressOp("/"),
         renderFn: (c) => renderOpButtonCanvas(c, "div", 34)
       });
@@ -1277,7 +1319,7 @@
       add({
         id: "d0", kind: "digit",
         labelText: "0",
-        ariaLabel: "Digit 0",
+        ariaLabel: "Digit 0 / nanpa 0",
         onPress: () => pressDigit("0"),
         reduceWidthPx: "14%",
         renderFn: (c) => {
@@ -1299,14 +1341,14 @@
 
       add({
         id: "dot", kind: "op", labelText: ".",
-        ariaLabel: "Decimal point",
+        ariaLabel: "Decimal point / poka pi nanpa lili",
         onPress: pressDot,
         renderFn: (c) => renderOpButtonCanvas(c, "dot", 34)
       });
 
       add({
         id: "eq", kind: "op", labelText: "=",
-        ariaLabel: "Equals",
+        ariaLabel: "Equals / sama",
         onPress: pressEquals,
         renderFn: (c) => renderOpButtonCanvas(c, "eq", 34)
       });
