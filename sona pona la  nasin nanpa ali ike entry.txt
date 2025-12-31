@@ -3,9 +3,15 @@
 
 {{tp|nanpa-linja-n}} is a minimal decimal digit system for Toki Pona created by {{tok|jan Matun}}. It uses a single syllable word for each digit and is designed to make saying, hearing and understanding long sequences of decimal digits very natural.  "Say it the way you think it".
 
+'''TL;DR:''' '''nanpa-linja-n''' Toki Pona interactive decimal calculator:
+
+https://www.nanpa-linja-n.com/calculator.html
+
+
 '''TL;DR:''' '''nanpa-linja-n''' motivation (Github link):
 
 https://github.com/mndillon/toki-pona-nanpa-linja-n/blob/main/images/Phone%20Number%20Conversation%20v1.png
+
 
 '''nanpa-linja-n''' full description (Github link):
 
