@@ -95,19 +95,17 @@
 
     /* Digit reference table */
     .digitTable {
-      table-layout: fixed;
-      width: 100%;
+      table-layout: auto;          /* natural column sizing */
+      width: max-content;          /* allow table to be wider than viewport */
+      min-width: 100%;             /* but don't shrink below container */
       border-collapse: collapse;
     }
+
 
     /* Keep the unique number code from overflowing into the cartouche column */
     .digitTable th:nth-child(3),
     .digitTable td:nth-child(3) {
-      white-space: normal;
-      overflow-wrap: anywhere;   /* preferred modern behavior */
-      word-break: break-word;    /* fallback */
-      /* If you want to guarantee no spill even if a browser ignores wrap rules: */
-      overflow: hidden;
+      white-space: nowrap;   /* keep code on one line */
     }
 
     .tableWrap {
