@@ -23,7 +23,7 @@ o weka e nimi ike.
 
 ### Interactive Decimal to nanpa-linja-n spoken phrase generator and calculator:
 
-https://www.nanpa-linja-n.com/
+https://mndillon.github.io/toki-pona-nanpa-linja-n/
 
 
 
