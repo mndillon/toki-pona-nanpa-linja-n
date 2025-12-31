@@ -175,7 +175,7 @@
         <label for="decimalInput">Decimal value</label>
         <input id="decimalInput" type="text" class="mono" value="28.95" maxlength="500" />
         <div class="help">
-          Example formats: <span class="mono">0.00</span>, <span class="mono">.75</span>, <span class="mono">-12,340</span>,  <span class="mono">5,000</span>, <span class="mono">9¾</span>, <span class="mono">8+1/2</span>, <span class="mono">7/8</span>, <span class="mono">64.5M</span>.
+          Example formats: <span class="mono">0.00</span>; <span class="mono">.75</span>; <span class="mono">-12,340</span>;  <span class="mono">2000</span>; <span class="mono">5,000</span>; <span class="mono">9¾</span>; <span class="mono">8+1/2</span>; <span class="mono">7/8</span>; <span class="mono">64.5M</span>.
           nanpa-linja-n encoder decides how to represent these.
         </div>
       </div>
@@ -188,7 +188,7 @@
     <div class="out">
       <h3>nanpa-linja-n proper name for decimal value</h3>
       <textarea id="latinOut" class="mono" readonly></textarea>
-      <div class="help">This is the Latin string you generate from the decimal input (nanpa-linja-n custom encoding). Spaces here will NOT affect glyph mapping.</div>
+      <div class="help">This is the Latin string you generate from the decimal input (nanpa-linja-n custom encoding). Spaces are added for readability and will NOT affect glyph mapping.</div>
 
       <h3>nanpa-linja-n unique number code</h3>
       <textarea id="numberCodeOut" class="mono" readonly></textarea>
@@ -218,7 +218,7 @@
           <div class="help">Rendered with your font at a smaller size.</div>
         </div>
         <div>
-          <h3>ditelen pona cartouche (large)</h3>
+          <h3>sitelen pona cartouche (large)</h3>
           <canvas id="canvasLarge"></canvas>
           <div class="help">Rendered with your font at a large size.</div>
         </div>
