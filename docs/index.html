@@ -1138,6 +1138,9 @@
         i += 2;
       }
 
+      // NEW: remove spaces before a lone "n" token (only when "n" stands alone)
+      outStr = outStr.replace(/\s+n(?=\s|$)/g, "n");
+
       outStr = outStr.trim();
       outStr += "n";
       return outStr;
