@@ -20,7 +20,8 @@ a constraint both absurdly strict and oddly admirable.
 The critic is stunned by the poet’s audacity:
 to use nanpa-linja-n,
 a system engineered for simplicty, functionality and clarity,
-and it's original use of -n everywhere as a phonetic marker for ending strings of digits,
+and it's original use of ne- and -n everywhere as phonetic markers for starting and ending strings of digits,
+while introducing no new Toki Pona lexicon,
 and then astonishingly succeeding in expressing the subject matter so accurately and eloquently.
 
 Vogon poets, infamous for causing listeners’ internal organs
@@ -43,11 +44,8 @@ even though not all digit sequences represent numeric values.
 
 The poem is an accurate yet sterile description of a number.
 While numbers may be a fundamental and necessary human concept,
-should the poet really be allowed to use an arbitrary dialect
-that carefully introduces new lexicon
-to only describe strings of decimal digits accurately.
-In a copy and paste world,
-we can afterall just copy and send TWALLTTALLLAMMMMLLTAMMMLAMLLLW,
+in a copy and paste world,
+can we afterall not just copy and send TWALLTTALLLAMMMMLLTAMMMLAMLLLW,
 and pretend we where able to say it properly in the first place.
 
 The critic is repulsed by these foreign logical ideas and the disregard for tradition.
@@ -55,7 +53,7 @@ And in fact, the critic—speaking with the full weight of tradition—would say
 in the traditional system, the number should always be written in full as
 “mute mute mute mute luka luka luka tu tu”.
 Forms such as TWALLTTALLLAMMMMLLTAMMMLAMLLLW are not syntactically valid Toki Pona,
-and “3.1415926536" is an internationaly accepted decimal notation
+and “3.1415926536" is an internationaly accepted ISO decimal notation
 rather than traditional wording (although it did exist long before Toki Pona).
 If we allowed “3.1415926536", we would also have to accept any other logical description of the number that respects syntax,
 so the critic insists that we instead must ban all other numeric expressions
