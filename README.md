@@ -330,7 +330,7 @@ Examples:
 ### sitelen pona
 - **nanpa-linja-n** numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
 - the digit names were selected so that the glyphs would suggest the decimal value and so that all digits map to distinct unique letters
-- the nanpa glyph will never be found anywhere else except at the start of a nanpa-linja-n number
+- the nanpa glyph will never be found anywhere else except at the start and end of a nanpa-linja-n number
 - there is a **UNIQUE** one-to-one mapping from numbers to cartouche "labels"
   - all the digits and separators are mapped to separate letters (see tables below)
   - when a cartouche starts with a nanpa glyph and all the glyphs in the cartouche belong to the set below, then we interpret the cartouche as a nanpa-linja-n number
@@ -370,22 +370,22 @@ Examples:
 - the table below has some other delimiters used in numeric expressions inside cartouches:
 - the table has some duplicate letters, but the letter placements will determine how the letter is interpreted:
   - N is duplicated
-    - Ne at start is always nanpa, this is the only place that nanpa will be found
-    - No after Ne (depicted with ni) represents negative
-    - eNe after anything else (depicted with ni) represents an ISO break
+    - ne at start is always nanpa
+    - no after Ne (depicted with ni) represents negative
+    - ene after anything else (depicted with ni) represents an ISO break
   - K is duplicated
-    - Ke can repeat but that maps to repeated kulupu representing tasan, masan, wasan
-    - Ke can be repeated many times to show any number of 000 groups at the end of a number
+    - ke can repeat but that maps to repeated kulupu representing thousands, millions, billions
+    - ke can be repeated many times to show any number of 000 groups at the end of a number
   - O is duplicated
-    - One by itself represents the decimal point
-    - OnO doubled represents the delimiter between numerator and denominator of a fraction
-    - OnOnO tripled represents the delimiter between integer part and fraction part of a number (when integers have additional fraction parts)
+    - one by itself represents the decimal point
+    - ono doubled represents the delimiter between numerator and denominator of a fraction
+    - onono tripled represents the delimiter between integer part and fraction part of a number (when integers have additional fraction parts)
 
 | Glyph                                                                                          | Letter(s)    |  #~n Name                 | Design Rationale                                      |
 |------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
 | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | none                      | decimal point, has small circle at the bottom         |
-| <img src="images/horizontal Fraction Delimiter nasin nanpa v3.png" width="16"/>                | OO           | nono                      | needed to split numerator and denominator of fraction |
-| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa.png" width="16"/>      | OOO          | nonono                    | needed to split integer from fraction part            |
+| <img src="images/horizontal Fraction Delimiter nasin nanpa v4.png" width="16"/>                | OO           | nono                      | needed to split numerator and denominator of fraction |
+| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa v2.png" width="16"/>      | OOO          | nonono                    | needed to split integer from fraction part            |
 | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands                   |
 | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | nekeke                    | millions                                              |
 | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | nekekeke                  | billions                                              |
