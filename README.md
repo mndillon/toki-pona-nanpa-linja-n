@@ -21,7 +21,7 @@ o weka e nimi ike.
 | Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, error prone    |
 | Toki Pona (nanpa-linja-n)| **netesen eke nunalen**                              | natural                   |
 
-### Interactive Decimal to nanpa-linja-n spoken phrase generator and calculator:
+### Interactive decimal cartouche calculator:
 
 https://mndillon.github.io/toki-pona-nanpa-linja-n/
 
