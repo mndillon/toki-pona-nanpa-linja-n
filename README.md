@@ -384,14 +384,14 @@ Examples:
 | Glyph                                                                                          | Letter(s)    |  #~n Name                 | Design Rationale                                      |
 |------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
 | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | none                      | decimal point, has small circle at the bottom         |
-| <img src="images/horizontal Fraction Delimiter nasin nanpa v4.png" width="16"/>                | OO           | nono                      | needed to split numerator and denominator of fraction |
-| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa v2.png" width="16"/>      | OOO          | nonono                    | needed to split integer from fraction part            |
+| <img src="images/horizontal Fraction Delimiter nasin nanpa v4.png" width="32"/>                | OO           | nono                      | needed to split numerator and denominator of fraction |
+| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa v2.png" width="48"/>   | OOO          | nonono                    | needed to split integer from fraction part            |
 | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands                   |
 | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | nekeke                    | millions                                              |
 | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | nekekeke                  | billions                                              |
 | <img src="images/horizontal Thousands Delimiter nasin nanpa v2.png" width="16"/>               | N            | nene                      | natural break                                         |
 | <img src="images/horizontal Negative nasin nanpa v3.png" width="16"/>                          | N            | no                        | downwards suggests negative (always after ne-)        |
-| <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | ne                        | nanpa, always at start of numeric description         |
+| <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | ne                        | nanpa, always at start and end of numeric description |
 
 
 Sitelen Glyph Summary:
@@ -506,8 +506,6 @@ Discussion welcome via:
   - how **nanpa-linja-n** compares to these (at first glance):
 
     - it describes a string of digits, the context will determine if the string of digits represents a numeric value
-
-    - it uses less letters to describe digits, this leaves more letters for delimiters and also there is less chance of clashing with other vocabulary, so words can be immediately identified as describing sequences of digits
 
     - it uses **ne-** at the start and **-n** at the end of the base name for the digits (CVN format), so that single digit names are consistent with the descriptions of other digit strings
 
