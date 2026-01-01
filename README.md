@@ -544,7 +544,7 @@ This pattern lets us talk about positions in a family in a way that:
 
 - reuses the same lexical machinery across many domains
 - avoids inventing separate lexical items like “Sunday”, “March”, “Level 05” in every case
-- zero based indexing (where appropriate) is possible and naturally addressed with **nin**
+- zero based indexing (where appropriate) is possible and naturally addressed with **nenin**
 - can also easily reference expressions that start with zero: 'musi utala sike nanpa nenilen'
 - sike nanpa (cycle number) usage is not the same as tenpo X nanpa Y
   - relative index: tenpo suno nanpa newen → the first day
