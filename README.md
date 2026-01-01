@@ -28,14 +28,7 @@ https://mndillon.github.io/toki-pona-nanpa-linja-n/
 
 
 ## Overview
-**nanpa-linja-n** is a fully structured system designed to integrate seamlessly with Toki Pona phonology, grammar, and semantics while providing a full-featured representation of strings of digits including integers, decimals, fractions, negatives, large values and IDs.
-
-This system emphasizes:
-- digit-block compression
-- concatenated digit construction
-- phonotactically valid roots
-- compatibility with the Toki Pona lexicon
-- consistently using **-n** as a morphological marker at the end of digit sequences
+**nanpa-linja-n** in sitelen pona is written using cartouches. The cartouche content is a pure encoding: it defines a unique, reversible mapping from decimal digits (and delimiters such as the decimal point) to designated sitelen pona glyphs and corresponding Latin letters, so the original decimal sequence can be reconstructed exactly. This does not introduce any new Toki Pona words or lexicon; it is notation-only. Any “words” discussed below refer only to identifier strings / proper-name labels derived from the cartouche encoding.
 
 
 Toki Pona’s vocabulary is small, but not too small.
@@ -50,16 +43,16 @@ The digit words all start with 'ne' and have been carefully picked, so that they
 If we ignore 'n' and ignore 'e' in the words, then each digit word maps to a different, unique letter:
 
 ```
-"0"  nenin
-"1"  newen
-"2"  neten
-"3"  nesen
-"4"  nenan
-"5"  nelen
-"6"  nenun
-"7"  nemen
-"8"  nepen
-"9"  nejen
+"0"  nenin  I
+"1"  newen  W
+"2"  neten  T
+"3"  nesen  S
+"4"  nenan  A
+"5"  nelen  L
+"6"  nenun  U
+"7"  nemen  M
+"8"  nepen  P
+"9"  nejen  J
 ```
 
 ---
@@ -239,7 +232,7 @@ Examples:
 ### Digit Roots
 - Unique syllables
 - Easy to remember and use
-- Very useful when speaking and hearing long sequences of digits ( 5201 → neleteniwin → 5201 )
+- Very useful when speaking and hearing long sequences of digits ( 5201 → neleteniwen → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - This works with the Toki Pona language syntax to enhance communication
     - Say "2010": "neten eke niwenin"
