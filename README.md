@@ -60,6 +60,27 @@ If we ignore 'n' and ignore 'e' in the words, then each digit word maps to a dif
 
 ---
 
+## sitelen pona digit cartouches
+
+| Glyph                                                             | Letter       | #~n Cartouche                                                               | #~n Proper Name | Design Rationale               |
+|-------------------------------------------------------------------|--------------|-----------------------------------------------------------------------------|-----------------|--------------------------------|
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | nenin           | round like zero                |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | newen           | wan                            |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | neten           | tu                             |
+| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche.png" width="64"/>       | nesen           | looks like 3 on its side       |
+| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche.png" width="64"/>       | nenan           | has four lines towards center  |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | nelen           | luka                           |
+| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | nenun           | has six short lines            |
+| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | nemen           | seven days in week             |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | nepen           | spiders have eight legs        |
+| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | nejen           | nine months to carry pregnancy |
+
+Sitelen Cartouche Summary:
+
+<img src="images/nanpa_linja_n_examples_with_rationale_fact_sheet.png" width="760"/>
+
+---
+
 ## General Number Rule
 Applies to all numbers no matter what form they take:
 
@@ -333,53 +354,43 @@ Examples:
 ### sitelen pona
 - **nanpa-linja-n** numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
 - the digit names were selected so that the glyphs would suggest the decimal value and so that all digits map to distinct unique letters
-- the nanpa glyph will never be found anywhere else except at the start and end of a nanpa-linja-n number
-- there is a **UNIQUE** one-to-one mapping from numbers to cartouche "labels"
-  - all the digits and separators are mapped to separate letters (see tables below)
-  - when a cartouche starts with a nanpa glyph and all the glyphs in the cartouche belong to the set below, then we interpret the cartouche as a nanpa-linja-n number
-  - when writing down the word from the cartouche, we will write it out as all capitals, so we can easily see that it encodes a number
-    - a nanpa-linja-n literal string of **nenOnInOneWeTeSenenenALenUneneMePeJen**, can be decoded as **-0.123456789**
+- there is a **UNIQUE** one-to-one mapping from numbers to cartouche proper names
+  - all the digits and delimiters are mapped to separate letters
+  - when writing down the proper name from the cartouche, we will add spaces at decimal delimiters, for ease of reading long proper names
+    - the proper name of **neno nin one wetesen ene nalenun ene mepejen**, can be decoded as **-0.123456789**
       - <img src="images/number_negative_decimal_digits_glyph.png" width="320"/>
-    - a nanpa-linja-n literal string of **neJenOnOnOSenOnOnAn**, can be decoded as **9¾**
+    - the proper name of **nejen onono sen ono nan**, can be decoded as **9¾**
       - <img src="images/number_9_fraction_three_quarters_glyph.png" width="160"/>
-    - a nanpa-linja-n literal string of **nenATeneKeSePenUnOneMeLen**, can be decoded as **42,386.75**
+    - the proper name of **nenaten eke sepenun one melen**, can be decoded as **42,386.75**
       - <img src="images/number_42386_75_glyph_v8.png" width="320"/>
-    - a nanpa-linja-n literal string of **nenUnAnOneLeneKeKen**, can be decoded as **64.5M**
+    - the proper name of **nenunan one len ekeken**, can be decoded as **64.5M**
       - <img src="images/number_64_5_M_glyph_v9.png" width="160"/>
 - can be displayed horizontally or vertically
-- We will reuse existing glyphs (and think of them as having extra names in the context of **nanpa-linja-n** cartouches), all letters will be written out in capitals:
-  - there already exist glyphs in pu that have more than one name (we are just adding extra names to more existing glyphs to map to this decimal system)
-  - the brackets in these examples are just to depict the cartouche (and not written down):
-  - 17 → (neWeMen) → newemen
-  - 2,860 → (neTeneKePenAnIn) → neten eke penanin
-  - 3.14159 → (neSenOneWenAWeneneLeJen) → nesen one wenawen ene lejen
-  - the number 3 → (neSen) → nesen
-  - the third → nanpa (written outside of cartouche) (neSen) → nanpa nesen
 
-| Glyph                                                             | Letter       | #~n Name    | Design Rationale               |
-|-------------------------------------------------------------------|--------------|-------------|--------------------------------|
-| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | nenin       | round like zero                |
-| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | newen       | wan                            |
-| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | neten       | tu                             |
-| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | nesen       | looks like 3 on its side       |
-| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | A            | nenan       | has four lines towards center  |
-| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | nelen       | luka                           |
-| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | nenun       | has six short lines            |
-| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | nemen       | seven days in week             |
-| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | nepen       | spiders have eight legs        |
-| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | nejen       | nine months to carry pregnancy |
+| Glyph                                                             | Letter       | #~n Cartouche                                                               | #~n Proper Name | Design Rationale               |
+|-------------------------------------------------------------------|--------------|-----------------------------------------------------------------------------|-----------------|--------------------------------|
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | nenin           | round like zero                |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | newen           | wan                            |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | neten           | tu                             |
+| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche.png" width="64"/>       | nesen           | looks like 3 on its side       |
+| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche.png" width="64"/>       | nenan           | has four lines towards center  |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | nelen           | luka                           |
+| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | nenun           | has six short lines            |
+| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | nemen           | seven days in week             |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | nepen           | spiders have eight legs        |
+| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | nejen           | nine months to carry pregnancy |
 
 
 - the table below has some other delimiters used in numeric expressions inside cartouches:
-- the table has some duplicate letters, but the letter placements will determine how the letter is interpreted:
-  - N is duplicated
+- the table has some repeating letters, but the letter placements will determine how the letter is interpreted:
+  - N is repeated
     - ne at start is always nanpa
     - no after Ne (depicted with ni) represents negative
     - ene after anything else (depicted with ni) represents an ISO break
-  - K is duplicated
+  - K is repeated
     - ke can repeat but that maps to repeated kulupu representing thousands, millions, billions
     - ke can be repeated many times to show any number of 000 groups at the end of a number
-  - O is duplicated
+  - O is repeated
     - one by itself represents the decimal point
     - ono doubled represents the delimiter between numerator and denominator of a fraction
     - onono tripled represents the delimiter between integer part and fraction part of a number (when integers have additional fraction parts)
@@ -397,9 +408,7 @@ Examples:
 | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | ne                        | nanpa, always at start and end of numeric description |
 
 
-Sitelen Glyph Summary:
 
-<img src="images/nanpa_linja_n_examples_with_rationale_fact_sheet.png" width="760"/>
 
 
 
