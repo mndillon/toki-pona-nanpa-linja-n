@@ -84,7 +84,7 @@ Sitelen Cartouche Summary:
 ## General Number Rule
 Applies to all numbers no matter what form they take:
 
-**All numbers start with ne- and end with -n**
+**All number proper names start with ne- and end with -n**
 
 ---
 
