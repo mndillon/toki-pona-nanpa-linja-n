@@ -93,20 +93,25 @@ Inside a digit block (no separator present):
 Used when non-zero digits follow the block.
 
 ```
-neke     = more parts to follow
+neke     = more parts after ISO block marker to follow
 ```
+
+- 2,534 → **neten eke lesenan**
 
 ### Zero-Block Units  
 Used only when *everything after* the ISO block is zero, used at the end of a number.
 
 Adds more context, makes the assumption that the string of digits represents a numeric value:
 
+Join naturally to the -n at the end of numbers, since they are only allowed to appear at the end of numbers.
+
 ```
-neke     = exactly X thousand
-nekeke   = exactly X million
-nekekeke = exactly X billion
+neken     = exactly X thousand
+nekeken   = exactly X million
+nekekeken = exactly X billion
 ```
 
+- 2,000,000 → **neten ekeken**
 
 ### Any number of blocks
 Used for any number of blocks, this separator has no specific value.  It can be used to split up long digit sequences.
@@ -116,6 +121,8 @@ Does not add more context, makes no assumption that the string of digits represe
 ```
 nene  = more parts of digit sequence to follow
 ```
+
+- 123-4567 → **newetesen ene nalenumen**
 
 
 ### Examples
@@ -139,8 +146,8 @@ nene  = more parts of digit sequence to follow
 123456789   → neniweten ene senalenun ene mepejen
 2025        → netenitelen
 2,025       → neten eke nitelen
-2025        → neten ene nitelen
-2025        → neten ene nin ene ten ene len
+20-25       → netenin ene telen
+2-0-2-5     → neten ene nin ene ten ene len
 3.141592    → nesen one wenawelejeten
 ```
 
@@ -151,10 +158,9 @@ nene  = more parts of digit sequence to follow
 
 Rules:
 
-- number starts with ne-
 - Can split "none" into "n one " to split up long sequences
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- number ends with -n
+
 
 Examples:
 
@@ -174,10 +180,9 @@ Examples:
 
 Rule:
 
-- number starts with ne-
 - Can split "nono" into "n ono " to split up long sequences
 - Adds more context, makes the assumption that the strings of digits represent numeric values
-- number ends with -n
+
 
 Examples:
 
@@ -198,10 +203,9 @@ Prefix **no** before any digits, must only appear at the start of a digit sequen
 
 Rule:
 
-- number starts with ne-
 - Can add a space to "no" to get "no " to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
-- number ends with -n
+
 
 Examples:
 
