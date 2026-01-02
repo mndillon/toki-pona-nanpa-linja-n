@@ -141,9 +141,9 @@ nene  = more parts of digit sequence to follow
 7,321,900   → nemen eke setewen eke jeninin
 64.5M       → nenunan one len ekeken
 64.5B       → nenunan one len ekekeken
-123456789   → neniwetesenalenumepejen (using block words is optional, but often very helpful for understanding)
-123456789   → neniweten ene senalenumepejen (nene can be used anywhere to break up large numbers)
-123456789   → neniweten ene senalenun ene mepejen
+0123456789  → neniwetesenalenumepejen (using block words is optional, but often very helpful for understanding)
+012-3456789 → neniweten ene senalenumepejen (nene can be used anywhere to break up large numbers)
+012-3456-789 → neniweten ene senalenun ene mepejen
 2025        → netenitelen
 2,025       → neten eke nitelen
 20-25       → netenin ene telen
