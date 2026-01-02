@@ -223,7 +223,7 @@ Examples:
 ```
 (3.75) / 4   → nesen one melen ono nan
 3 / 4.75     → nesen ono nan one melen
-1,234.567    → newen eke tesenan eke lenumen
+1,234.567    → newen eke tesenan one lenumen
 0.5          → nenon one len
 1/2          → newen ono ten
 5:38         → tenpo nelen one wepen
