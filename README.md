@@ -21,7 +21,7 @@ o weka e nimi ike.
 | Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, error prone    |
 | Toki Pona (nanpa-linja-n)| **netesen eke nunalen**                              | natural                   |
 
-### Interactive decimal cartouche calculator:
+### Interactive decimal cartouche renderer:
 
 https://mndillon.github.io/toki-pona-nanpa-linja-n/
 
@@ -245,9 +245,9 @@ Examples:
 (3.75) / 4   → nesen one melen ono nan
 3 / 4.75     → nesen ono nan one melen
 1,234.567    → newen eke tesenan one lenumen
-0.5          → nenon one len
+0.5          → nenin one len
 1/2          → newen ono ten
-5:38         → tenpo nelen one wepen
+5:38         → tenpo nelen one sepen
 19:46:27     → tenpo newejen one nanun one temen
 ```
 
@@ -425,6 +425,7 @@ Words primarialy chosen for the shape of their sitelen pona glyphs.
 - Shape of sitelen pona glyph (looks like equals)
 - Good candidate
 - Never appears in a numeric cartouche
+- nenin one len li sama newen ono ten
 
 ### Addition: en
 - Shape of sitelen pona glyph (looks like plus)
