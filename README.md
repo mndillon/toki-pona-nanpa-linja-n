@@ -23,7 +23,7 @@ o weka e nimi ike.
 
 ### Interactive decimal cartouche renderer:
 
-https://mndillon.github.io/toki-pona-nanpa-linja-n/
+https://mndillon.github.io/toki-pona-nanpa-linja-n/renderer.html
 
 
 
