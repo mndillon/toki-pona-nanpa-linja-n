@@ -305,7 +305,7 @@ Examples:
 - Can be written as "no ", to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 
-### neke
+### neke / nekeke / nekekeke
 - Contain **k**, which no digit word has
 - Does not end in **-n** signalling more of the number to follow
 - Can be used as ISO-block narker in large numbers, can only appear when other digits follow block marker
@@ -313,14 +313,13 @@ Examples:
 - Can be split as "n eke ", to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 
-### neke / nekeke / nekekeke
+### neken / nekeken / nekekeken
 - Contain **k**, which no digit word has
-- All end in **-n** to signal end of number description
 - Zero-block shortcuts for clear large numbers, can only appear at the end of large numbers
+- Naturally join with the **-n** at the end of numbers to signal end of numeric description
 - Never appears in decimal part of number, only in the integer part
-- Can be split as "n eke" / "n ekeke" / "n ekekeke", to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
-- can repeat ke letter group any number of times to express more 000 groupings at the end of numbers (e.g. ekeken ekekeken ekekeken )
+- can repeat ke letter group any number of times to express more ISO 000 block groupings at the end of numbers (e.g. ekeken ekekeken ekekeken )
 
 ### nene
 - Contains **nene**, which no digit word has
