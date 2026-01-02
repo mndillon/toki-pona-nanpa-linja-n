@@ -77,7 +77,7 @@ Inside a digit block (no separator present):
 
 - 10 → newen nenin → **newenin**
 - 46 → nenan nenun → **nenanun**
-- 70 → nemen nenin → **newenin**
+- 78 → nemen nepen → **nemepen**
 - 100 → newen nenin nenin → **neweninin**
 - 567 → nelen nenun nemen → **nelenumen**
 - 234 → neten nesen nenan → **netesenan**
