@@ -263,7 +263,6 @@ Examples:
     - In all cases the listener has understood the speaker as communicating **"12345"**
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first letter of existing Toki Pona digit names (from pu)
-- Avoids using **k**, **o**, **n** and **e** in digit names to reduce overlap with delimiters (and other words)
 - By starting digit sequences with **ne-** and ending digit sequences with **-n**, words are more easily identified as **nanpa-linja-n** digit strings ( nemetesen → 723 )
 - Respects the speaker’s freedom to choose how to express numbers:
   - Additive (**pu** style) numerals:
