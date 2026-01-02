@@ -351,7 +351,7 @@ Examples:
   - there already exist glyphs in pu that have more than one name (we are just adding extra names to more existing glyphs to map to this decimal system)
   - the brackets in these examples are just to depict the cartouche (and not written down):
   - 17 → (neWeMen) → newemen
-  - 2,860 → (neTenenePenAnIn) → neten eke penanin
+  - 2,860 → (neTeneKePenAnIn) → neten eke penanin
   - 3.14159 → (neSenOneWenAWeneneLeJen) → nesen one wenawen ene lejen
   - the number 3 → (neSen) → nesen
   - the third → nanpa (written outside of cartouche) (neSen) → nanpa nesen
