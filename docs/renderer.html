@@ -273,6 +273,9 @@
             <span class="tpLine">poki nimi sitelen pona (suli)</span>
           </h3>
           <canvas id="canvasLarge" aria-hidden="true"></canvas>
+          <div id="decimalValueLine" class="help hidden">
+            <strong>Value:</strong> <span id="decimalValueText" class="mono"></span>
+          </div>
           <div class="help">
             Rendered with your font at a large size.
             <span class="tpLine">sitelen li kepeken font sina, lon suli mute.</span>
@@ -1135,6 +1138,161 @@
       return tokens;
     }
 
+    const TOKEN_TO_DIGIT_CHAR = {
+      "NI": "0", "WE": "1", "TE": "2", "SE": "3", "NA": "4",
+      "LE": "5", "NU": "6", "ME": "7", "PE": "8", "JE": "9",
+    };
+
+    function keTokenCount(t) {
+      if (t === "KE") return 1;
+      if (t === "KEKE") return 2;
+      if (t === "KEKEKE") return 3;
+      return 0;
+    }
+
+    /**
+    * Attempt to decode a nanpa-caps label into a display string for “decimal-style” values.
+    * Returns string on success, or null if it is not a decimal-style value (e.g. fractions/mixed).
+    *
+    * Notes:
+    * - Treats NO+NE token sequence as a decimal point (your encoder’s "NONE").
+    * - Treats terminal NE + KE{...} as a multiplier group:
+    *     - 1..3 => show as suffix T/M/B (compact)
+    *     - >3  => show as ×1000^k
+    */
+    function tryDecodeCapsToDecimalValue(caps) {
+      if (!caps) return null;
+
+      const tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase());
+
+      // Not “decimal style” if it contains fraction/mixed markers.
+      if (tokens.includes("NONO") || tokens.includes("NONONO")) return null;
+
+      // Expect NE .... N
+      if (tokens.length < 2 || tokens[0] !== "NE" || tokens[tokens.length - 1] !== "N") return null;
+
+      let i = 1; // after starting NE
+      const end = tokens.length - 1; // before final N
+
+      let neg = false;
+      if (i < end && tokens[i] === "NO" && !(i + 1 < end && tokens[i + 1] === "NE")) {
+        // Leading NO = negative sign (not decimal point marker)
+        neg = true;
+        i += 1;
+      }
+
+      let mode = "int"; // "int" or "frac"
+      let intStr = "";
+      let fracStr = "";
+
+      let suffixKeCount = 0;
+
+      function appendInt(ch) { intStr += ch; }
+      function appendFrac(ch) { fracStr += ch; }
+
+      function ensureIntNonEmpty() {
+        if (!intStr) intStr = "0";
+      }
+
+      function appendGroupSep() {
+        // Use comma as a canonical separator
+        if (mode === "int") {
+          if (!intStr) return; // don't start with comma
+          if (!intStr.endsWith(",")) intStr += ",";
+        } else {
+          if (!fracStr) return;
+          if (!fracStr.endsWith(",")) fracStr += ",";
+        }
+      }
+
+      while (i < end) {
+        const t = tokens[i];
+
+        // Digits
+        if (TOKEN_TO_DIGIT_CHAR[t] != null) {
+          if (mode === "int") appendInt(TOKEN_TO_DIGIT_CHAR[t]);
+          else appendFrac(TOKEN_TO_DIGIT_CHAR[t]);
+          i += 1;
+          continue;
+        }
+
+        // Decimal point marker: NO then NE (your encoder’s "NONE" token becomes NO+NE)
+        if (t === "NO" && (i + 1 < end) && tokens[i + 1] === "NE") {
+          if (mode !== "int") return null; // multiple decimals
+          ensureIntNonEmpty();
+          mode = "frac";
+          i += 2; // consume NO, NE
+          continue;
+        }
+
+        // Loose separator marker: NE NE (your "NENE")
+        if (t === "NE" && (i + 1 < end) && tokens[i + 1] === "NE") {
+          appendGroupSep();
+          i += 2;
+          continue;
+        }
+
+        // Group boundary / suffix marker: NE + one or more KE / KEKE / KEKEKE
+        if (t === "NE" && (i + 1 < end)) {
+          // Count KE-family tokens immediately after this NE
+          let j = i + 1;
+          let count = 0;
+
+          while (j < end) {
+            const c = keTokenCount(tokens[j]);
+            if (!c) break;
+            count += c;
+            j += 1;
+          }
+
+          if (count > 0) {
+            // If followed by a digit, treat as a group boundary (thousands grouping)
+            if (j < end && TOKEN_TO_DIGIT_CHAR[tokens[j]] != null) {
+              appendGroupSep();
+              i = j; // consume NE + KE* and continue at first digit
+              continue;
+            }
+
+            // Otherwise treat as terminal suffix multiplier and stop parsing
+            suffixKeCount += count;
+            i = j;
+            continue;
+          }
+        }
+
+        // Anything else is not a supported “decimal-style” decode
+        return null;
+      }
+
+      ensureIntNonEmpty();
+
+      // Build suffix
+      let suffix = "";
+      if (suffixKeCount > 0) {
+        if (suffixKeCount === 1) suffix = "T";
+        else if (suffixKeCount === 2) suffix = "M";
+        else if (suffixKeCount === 3) suffix = "B";
+        else suffix = `×1000^${suffixKeCount}`;
+      }
+
+      const sign = neg ? "-" : "";
+      const dot = (mode === "frac") ? "." : "";
+      const frac = (mode === "frac") ? fracStr : "";
+
+      // If fraction part is empty but decimal point was present, keep it as "X."? Prefer "X.0" for display.
+      const fracNormalized = (mode === "frac" && frac === "") ? "0" : frac;
+
+      return sign + intStr + dot + (mode === "frac" ? fracNormalized : "") + suffix;
+    }
+
+    /**
+    * Convenience wrapper: derive display value from caps and update UI.
+    */
+    function setDecimalValueFromCapsOrClear(caps) {
+      const v = tryDecodeCapsToDecimalValue(caps);
+      setDecimalValueLine(v); // v may be null => hides line
+    }
+
     function nanpaCapsTokensToTpWords(tokens) {
       if (!tokens || tokens.length === 0) return [];
 
@@ -1808,6 +1966,23 @@
     const MAX_HEX_CODE_INPUT_CHARS = 3500;
     const MAX_TOKI_PONA_WORD_INPUT_CHARS = 2500;
 
+    const elDecimalValueLine = document.getElementById("decimalValueLine");
+    const elDecimalValueText = document.getElementById("decimalValueText");
+
+    function setDecimalValueLine(valueOrNull) {
+      if (!elDecimalValueLine || !elDecimalValueText) return;
+
+      const s = (valueOrNull == null) ? "" : String(valueOrNull).trim();
+      if (!s) {
+        elDecimalValueText.textContent = "";
+        elDecimalValueLine.classList.add("hidden");
+        return;
+      }
+
+      elDecimalValueText.textContent = s;
+      elDecimalValueLine.classList.remove("hidden");
+    }
+
     function enforceMaxLen(el, maxLen = MAX_DECIMAL_INPUT_CHARS) {
       if (!el) return;
       const s = String(el.value ?? "");
@@ -1881,6 +2056,12 @@
       enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS);
 
       const raw = normalizeVulgarFractionInput(elDecimal.value);
+      const caps = looksLikeNanpaCaps(raw)
+        ? raw.toUpperCase()
+        : numberStrToNanpaCaps(raw, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+
+      setDecimalValueFromCapsOrClear(caps);
+
       const latin = encodeDecimalToLatin(raw);
 
       elLatinOut.value = latin;
@@ -1920,6 +2101,7 @@
       try {
         await runEncodeFromDecimal();
       } catch (err) {
+        setDecimalValueLine(null);
         showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
@@ -1935,6 +2117,17 @@
         if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
         if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
+
+        // Try to recognize if these codepoints correspond to an encoded nanpa-linja-n number phrase
+        try {
+          const tpWords = ucsurCodepointsToTpWords(cps).join(" ");
+          const parsed = tryParseNanpaLinjanTpPhraseToCaps(tpWords);
+          if (parsed) setDecimalValueFromCapsOrClear(parsed.caps);
+          else setDecimalValueLine(null);
+        } catch {
+          setDecimalValueLine(null);
+        }
+
 
         // CHANGED: smaller options for canvasSmall
         renderUniformCartoucheFromCodepoints(
@@ -1953,6 +2146,7 @@
 
         announceStatus("Rendered from code points.");
       } catch (err) {
+        setDecimalValueLine(null);
         showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
@@ -1968,6 +2162,8 @@
         const parsedNumberCode = tryParseNanpaLinjanNumberCodeToCaps(rawInput);
         if (parsedNumberCode) {
           const { caps, canonicalCode } = parsedNumberCode;
+
+          setDecimalValueFromCapsOrClear(caps);
 
           const tokens = tokenizeNanpaCaps(caps);
           const tpWords = nanpaCapsTokensToTpWords(tokens);
@@ -2010,6 +2206,8 @@
         if (parsedTpPhrase) {
           const { caps, words } = parsedTpPhrase;
 
+          setDecimalValueFromCapsOrClear(caps);
+
           // Code points come directly from the TP words the user typed
           const cps = parseTpWordsToCodepoints(words.join(" "));
 
@@ -2051,6 +2249,8 @@
           const compact = rawInput.toLowerCase().replace(/\s+/g, "");
           const core = compact.slice(0, -1);
           const caps = core.toUpperCase() + "N";
+
+          setDecimalValueFromCapsOrClear(caps);
 
           const prettyName = splitCartoucheCapsLettersSpaced(caps);
 
@@ -2108,8 +2308,11 @@
           { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
         );
 
+        setDecimalValueLine(null);
+
         announceStatus("Rendered from Toki Pona words.");
       } catch (err) {
+        setDecimalValueLine(null);
         showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
@@ -2167,6 +2370,7 @@
         buildDigitReferenceTable();
         await runEncodeFromDecimal();
       } catch (err) {
+        setDecimalValueLine(null);
         showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
