@@ -726,14 +726,9 @@ So the argument is:
 
 ### musi nanpa
 
-- o pilin e nanpa tan newen kepeken newenin.
-- pana e nimi uno tawa nanpa ni.
-- o pana e nesen tawa ni.
-- o sewi e ni kepeken neten.
-- o weka e nejen tan ni.
-- o kipisi e ni kepeken nanpa nimi uno.
-- o weka e nanpa nimi uno tan ni.
-- o lukin! nanpa sina li nenun.
+musi pi nanpa:
+
+<img src="images/sitelen_multi_line_guess_number.png" width="384"/>
 
 o lukin sona e nanpa:
 
