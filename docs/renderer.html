@@ -429,7 +429,7 @@
             autocomplete="off"
           />
           <div id="tpWordsHelp" class="help">
-            Only valid Toki Pona words are allowed (case-insensitive) or a nanpa-linja-n proper name for a decimal value.
+            Only valid Toki Pona words are allowed (case-insensitive) or a nanpa-linja-n proper name for a decimal value or a number code (starting with #~).
             <span class="tpLine">
               nimi toki pona lon mapu taso li ken. (suli/lili pi sitelen li wile ala.)
               sina ken kin pana e nimi pi nanpa-linja-n (nimi pi pana nanpa).
@@ -663,6 +663,235 @@
     const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
 
     const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
+
+    // Reverse map: digit word -> token (e.g., "wan" -> "WE")
+    const DIGIT_WORD_TO_TOKEN = Object.fromEntries(
+      Object.entries(TOKEN_TO_DIGIT_WORD).map(([tok, w]) => [w, tok])
+    );
+
+    function normalizeTpWord(raw) {
+      // keep only a-z so "nanpa," still works
+      return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, "");
+    }
+
+    /**
+     * Try to recognize and decode a nanpa-linja-n TP-words encoded number phrase:
+     *   nanpa esun ... nanpa
+     *
+     * If it matches, return { caps, words } where caps is like "NEWENIN".
+     * If it does not match, return null.
+     */
+    function tryParseNanpaLinjanTpPhraseToCaps(input) {
+      const words = String(input ?? "")
+        .trim()
+        .split(/\s+/)
+        .map(normalizeTpWord)
+        .filter(Boolean);
+
+      // Must be at least: "nanpa esun ... nanpa"
+      if (words.length < 3) return null;
+      if (words[0] !== "nanpa" || words[1] !== "esun") return null;
+      if (words[words.length - 1] !== "nanpa") return null;
+
+      // We will parse everything except the final "nanpa" (which corresponds to token "N")
+      const end = words.length - 1;
+
+      const capsParts = ["NE"]; // start token is always NE
+      let i = 2;
+
+      while (i < end) {
+        // 1) NONONO: "nasa o nasa o nasa o"
+        if (
+          i + 5 < end &&
+          words[i] === "nasa" && words[i + 1] === "o" &&
+          words[i + 2] === "nasa" && words[i + 3] === "o" &&
+          words[i + 4] === "nasa" && words[i + 5] === "o"
+        ) {
+          capsParts.push("NONONO");
+          i += 6;
+          continue;
+        }
+
+        // 2) NONO: "nena o nena o"
+        if (
+          i + 3 < end &&
+          words[i] === "nena" && words[i + 1] === "o" &&
+          words[i + 2] === "nena" && words[i + 3] === "o"
+        ) {
+          capsParts.push("NONO");
+          i += 4;
+          continue;
+        }
+
+        // 3) NE (non-initial): "nasa e"
+        if (i + 1 < end && words[i] === "nasa" && words[i + 1] === "e") {
+          capsParts.push("NE");
+          i += 2;
+          continue;
+        }
+
+        // 4) KE... : one or more "kulupu e" pairs become "KE" repeated
+        if (i + 1 < end && words[i] === "kulupu" && words[i + 1] === "e") {
+          let count = 0;
+          while (i + 1 < end && words[i] === "kulupu" && words[i + 1] === "e") {
+            count += 1;
+            i += 2;
+          }
+          // Append "KE" count times; tokenizer will collapse to KE/KEKE/KEKEKE as needed.
+          capsParts.push("KE".repeat(count));
+          continue;
+        }
+
+        // 5) Digits: either "<digitWord> esun" OR "nasa <digitWord>" (for NI/NA/NU style)
+        if (i + 1 < end) {
+          // "nasa ijo" / "nasa ante" / "nasa utala"
+          if (words[i] === "nasa" && DIGIT_WORD_TO_TOKEN[words[i + 1]]) {
+            const tok = DIGIT_WORD_TO_TOKEN[words[i + 1]];
+            // only accept the cases that are actually emitted by your encoder ("nasa ijo/ante/utala")
+            if (tok === "NI" || tok === "NA" || tok === "NU") {
+              capsParts.push(tok);
+              i += 2;
+              continue;
+            }
+          }
+
+          // "wan esun", "tu esun", ...
+          if (DIGIT_WORD_TO_TOKEN[words[i]] && words[i + 1] === "esun") {
+            capsParts.push(DIGIT_WORD_TO_TOKEN[words[i]]);
+            i += 2;
+            continue;
+          }
+        }
+
+        // 6) NO: "nasa o" (after starting NE case) or "ni o" or "nena o"
+        if (i + 1 < end) {
+          const w0 = words[i], w1 = words[i + 1];
+          if (
+            (w0 === "nasa" && w1 === "o") ||
+            (w0 === "ni" && w1 === "o") ||
+            (w0 === "nena" && w1 === "o")
+          ) {
+            capsParts.push("NO");
+            i += 2;
+            continue;
+          }
+        }
+
+        // If we reach here, it doesn't match the nanpa-linja-n TP-phrase grammar
+        return null;
+      }
+
+      const caps = capsParts.join("") + "N";
+
+      // Validate that it tokenizes as a real nanpa-caps label
+      tokenizeNanpaCaps(caps);
+
+      return { caps, words };
+    }
+
+
+
+    // -------------------------------
+    // NEW: #~ number-code parsing
+    // -------------------------------
+
+    const NUMBER_CODE_LETTER_TO_PAIR = {
+      "I": "NI",
+      "W": "WE",
+      "T": "TE",
+      "S": "SE",
+      "A": "NA",
+      "L": "LE",
+      "U": "NU",
+      "M": "ME",
+      "P": "PE",
+      "J": "JE",
+      // O and K are handled as run-length tokens (NO / KE).
+    };
+
+    function normalizeNumberCodeInput(raw) {
+      // remove whitespace, keep everything else
+      return String(raw ?? "").trim().replace(/\s+/g, "");
+    }
+
+    /**
+     * Parse a nanpa-linja-n unique number code of the form "#~....."
+     * and reconstruct a nanpa-caps string.
+     *
+     * Returns: { caps, canonicalCode } or null if it doesn't look like #~ input.
+     * Throws on malformed #~ input.
+     */
+    function tryParseNanpaLinjanNumberCodeToCaps(raw) {
+      const s0 = normalizeNumberCodeInput(raw);
+      if (!s0) return null;
+
+      if (!s0.toUpperCase().startsWith("#~")) return null;
+
+      const body = s0.slice(2).toUpperCase();
+      if (!body) throw new Error("Number code '#~' must have letters after it.");
+
+      // For safety, restrict to A–Z only.
+      if (!/^[A-Z]+$/.test(body)) {
+        throw new Error("Number code may only contain letters A–Z after '#~'.");
+      }
+
+      const parts = ["NE"];
+      let i = 0;
+
+      while (i < body.length) {
+        const ch = body[i];
+
+        // Run-length handling for O (NO/NO... = delimiter family)
+        if (ch === "O") {
+          let j = i;
+          while (j < body.length && body[j] === "O") j++;
+          const count = j - i;
+
+          // Allow 1..3; if you ever need more, relax this and ensure tokenizer rules stay valid.
+          if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
+
+          parts.push("NO".repeat(count));
+          i = j;
+          continue;
+        }
+
+        // Run-length handling for K (KE/KE... = magnitude/group family)
+        if (ch === "K") {
+          let j = i;
+          while (j < body.length && body[j] === "K") j++;
+          const count = j - i;
+
+          if (count < 1 || count > 3) throw new Error("Invalid run of 'K' in number code (max 3).");
+
+          parts.push("KE".repeat(count));
+          i = j;
+          continue;
+        }
+
+        // Single-letter digit tokens
+        const pair = NUMBER_CODE_LETTER_TO_PAIR[ch];
+        if (!pair) {
+          throw new Error(`Invalid letter '${ch}' in number code. Allowed: I,W,T,S,A,L,U,M,P,J plus O/K runs.`);
+        }
+
+        parts.push(pair);
+        i += 1;
+      }
+
+      const caps = parts.join("") + "N";
+
+      // Validate it is a real nanpa-caps label according to your tokenizer.
+      tokenizeNanpaCaps(caps);
+
+      // Canonical form for displaying (remove spaces, uppercase)
+      const canonicalCode = "#~" + body;
+      return { caps, canonicalCode };
+    }
+
+
+
+
+
 
     function looksLikeNanpaCaps(s) {
       if (!s) return false;
@@ -1735,6 +1964,87 @@
 
         const rawInput = String(elTpWordsIn.value ?? "");
 
+        // NEW: accept nanpa-linja-n unique number code "#~...."
+        const parsedNumberCode = tryParseNanpaLinjanNumberCodeToCaps(rawInput);
+        if (parsedNumberCode) {
+          const { caps, canonicalCode } = parsedNumberCode;
+
+          const tokens = tokenizeNanpaCaps(caps);
+          const tpWords = nanpaCapsTokensToTpWords(tokens);
+          const cps = tpWordsToUcsurCodepoints(tpWords);
+
+          const prettyName = splitCartoucheCapsLettersSpaced(caps);
+
+          elLatinOut.value = prettyName;
+          elNumberCodeOut.value = canonicalCode;
+
+          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+          if (elTpWordsOut) elTpWordsOut.value = tpWords.join(" ");
+
+          const smallSet = getSmallCodepointsSet();
+
+          renderMixedCartoucheToCanvas(
+            canvasSmall,
+            cps,
+            LARGE_TINY_FONT_SIZE,
+            SMALL_TINY_FONT_SIZE,
+            smallSet,
+            SMALL_CANVAS_RENDER_OPTS
+          );
+
+          renderMixedCartoucheToCanvas(
+            canvasLarge,
+            cps,
+            LARGE_FONT_SIZE,
+            SMALL_FONT_SIZE,
+            smallSet,
+            { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
+          );
+
+          announceStatus("Rendered from nanpa-linja-n number code.");
+          return;
+        }
+
+        // NEW: detect "nanpa esun ... nanpa" as a nanpa-linja-n encoded number phrase
+        const parsedTpPhrase = tryParseNanpaLinjanTpPhraseToCaps(rawInput);
+        if (parsedTpPhrase) {
+          const { caps, words } = parsedTpPhrase;
+
+          // Code points come directly from the TP words the user typed
+          const cps = parseTpWordsToCodepoints(words.join(" "));
+
+          const prettyName = splitCartoucheCapsLettersSpaced(caps);
+
+          elLatinOut.value = prettyName;
+          elNumberCodeOut.value = latinNameToNumberCode(prettyName);
+
+          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+          if (elTpWordsOut) elTpWordsOut.value = words.join(" ");
+
+          const smallSet = getSmallCodepointsSet();
+
+          renderMixedCartoucheToCanvas(
+            canvasSmall,
+            cps,
+            LARGE_TINY_FONT_SIZE,
+            SMALL_TINY_FONT_SIZE,
+            smallSet,
+            SMALL_CANVAS_RENDER_OPTS
+          );
+
+          renderMixedCartoucheToCanvas(
+            canvasLarge,
+            cps,
+            LARGE_FONT_SIZE,
+            SMALL_FONT_SIZE,
+            smallSet,
+            { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
+          );
+
+          announceStatus("Recognized and rendered nanpa-linja-n TP-phrase number.");
+          return;
+        }
+        
         if (isValidNanpaLinjanProperName(rawInput)) {
           const cps = nanpaLinjanProperNameToUcsurCodepoints(rawInput);
 
@@ -1807,6 +2117,21 @@
     function validateTpWordsInputLive() {
       const raw = String(elTpWordsIn?.value ?? "").trim();
       if (!raw) { elTpWordsIn.setCustomValidity(""); return; }
+
+      // NEW: validate #~ number code input live
+      try {
+        const parsedCode = tryParseNanpaLinjanNumberCodeToCaps(raw);
+        if (parsedCode) {
+          elTpWordsIn.setCustomValidity("");
+          return;
+        }
+      } catch (e) {
+        // It looks like #~ input but is malformed
+        if (String(raw).trim().toUpperCase().startsWith("#~")) {
+          elTpWordsIn.setCustomValidity(e?.message ?? "Invalid number code.");
+          return;
+        }
+      }
 
       // If it is a valid nanpa-linja-n proper name, treat as valid
       if (isValidNanpaLinjanProperName(raw)) {
