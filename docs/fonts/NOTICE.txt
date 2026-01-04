@@ -41,7 +41,7 @@ CARTOUCHE_END_UCSUR   = chr(0xF1991)
 # OpenType features (safe fallback below if unsupported)
 _OT_FEATURES = ["calt", "liga", "ccmp"]
 
-#draw text (Unicode code points) on to image using font, fill=(0,0,0,255)
+#draw text (Unicode sitelen code points) on to image using font, fill=(0,0,0,255)
 def _safe_draw_text(draw: ImageDraw.ImageDraw, xy: Tuple[int, int], s: str, font: ImageFont.FreeTypeFont, fill) -> None:
     if not s:
         return
