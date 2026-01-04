@@ -1,7 +1,7 @@
 MIT License
 
 Copyright (c) 2022 jan Itan
-Copyright (c) 2026 jan Matun (nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf)
+Copyright (c) 2026 jan Matun (only for nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.otf)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
