@@ -7,9 +7,15 @@ NOTE: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf font file
 is derived from the nasin-nanpa-5.0.0-beta.3-UCSUR.otf font file and is only used to render
 cartouches that have glyphs that define nanpa-linja-n decimal numbers,
 any Unicode code point that represents a Toki Pona word that begins with 'n' or 'e' will be displayed as
-one quarter original font size in any cartouche that uses this font file.
+one quarter original font size inside any cartouche that uses this font file.
+
+DISCLAIMER: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf font file is provided “as is”,
+with no claim, guarantee, or warranty that the output is correct,
+complete, or suitable for any purpose. You are responsible for verifying results.
+
 
 --------------------------
+
 
 Using the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf font in Python:
 
