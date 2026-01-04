@@ -1,10 +1,43 @@
 The OFL.txt file covers the licnece for PatrickHead-Regular.ttf font file
 
 The LICENCE.txt file covers the licence for the nasin-nanpa-5.0.0-beta.3-UCSUR.otf
-and nasin-nanpa-5.0.0-beta.3-UCSUR-cartouche-quarter-ne-series-tight240-overlap30-compactnorm20-overlap40.otf font files
+and nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf font files
 
-NOTE: The nasin-nanpa-5.0.0-beta.3-UCSUR-cartouche-quarter-ne-series-tight240-overlap30-compactnorm20-overlap40.otf font file
+NOTE: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf font file
 is derived from the nasin-nanpa-5.0.0-beta.3-UCSUR.otf font file and is only used to render
 cartouches that have glyphs that define nanpa-linja-n decimal numbers,
 any Unicode code point that represents a Toki Pona word that begins with 'n' or 'e' will be displayed as
 one quarter original font size in any cartouche that uses this font file.
+
+
+
+
+
+
+
+Using the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf font in Python:
+
+#import functionality from PIL
+from PIL import Image, ImageDraw, ImageFont
+
+#font file name
+SITELEN_NANPA_LINJA_N_FONT = "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf"
+
+#define font
+sitelen_modified_font = ImageFont.truetype(
+        str(SITELEN_NANPA_LINJA_N_FONT),
+        size=72,
+        layout_engine=ImageFont.Layout.RAQM
+    )
+
+# OpenType features (safe fallback below if unsupported)
+_OT_FEATURES = ["calt", "liga", "ccmp"]
+
+#draw text (unicode code points) on to image using font, fill=(0,0,0,255)
+def _safe_draw_text(draw: ImageDraw.ImageDraw, xy: Tuple[int, int], s: str, font: ImageFont.FreeTypeFont, fill) -> None:
+    if not s:
+        return
+    try:
+        draw.text(xy, s, font=font, fill=fill, features=_OT_FEATURES)
+    except TypeError:
+        draw.text(xy, s, font=font, fill=fill)
