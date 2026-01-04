@@ -1,0 +1,3 @@
+The OFL.txt file covers the licnece for PatrickHead-Regular.ttf font file
+
+The LICENCE.tst file covers the licence for the nasin-nanpa-5.0.0-beta.3-UCSUR.otf and nasin-nanpa-5.0.0-beta.3-UCSUR-cartouche-quarter-ne-series-tight240-overlap30-compactnorm20-overlap40.otf font files
