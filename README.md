@@ -728,7 +728,7 @@ So the argument is:
 
 musi pi nanpa:
 
-<img src="images/sitelen_multi_line_guess_number.png" width="384"/>
+<img src="images/sitelen_multi_line_guess_number_with_modified_font.png" width="384"/>
 
 o lukin sona e nanpa:
 
