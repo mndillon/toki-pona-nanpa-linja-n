@@ -1191,15 +1191,18 @@
       }
 
       function appendGroupSep() {
-        // Canonical separator
+        // Integer grouping stays comma; fraction grouping uses underscore.
+        const sep = (mode === "int") ? "," : "_";
+
         if (mode === "int") {
           if (!intStr) return;
-          if (!intStr.endsWith(",")) intStr += ",";
+          if (!intStr.endsWith(sep)) intStr += sep;
         } else {
           if (!fracStr) return;
-          if (!fracStr.endsWith(",")) fracStr += ",";
+          if (!fracStr.endsWith(sep)) fracStr += sep;
         }
       }
+
 
       while (i < end) {
         const t = tokens[i];
