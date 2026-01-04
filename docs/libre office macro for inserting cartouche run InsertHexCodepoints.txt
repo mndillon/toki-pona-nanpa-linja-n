@@ -1,0 +1,101 @@
+Option Explicit
+
+Sub InsertHexCodepoints()
+    Dim doc As Object, cursor As Object
+    Dim s As String, toks() As String
+    Dim i As Long, tok As String
+    Dim cp As Long
+    Dim bytes() As Byte, n As Long
+    Dim seqIn As Object, txtIn As Object
+    Dim out As String
+
+    doc = ThisComponent
+    If IsNull(doc) Or (Not doc.supportsService("com.sun.star.text.TextDocument")) Then
+        MsgBox "Open a Writer document and click into the document body first.", 16, "InsertHexCodepoints"
+        Exit Sub
+    End If
+    cursor = doc.CurrentController.getViewCursor()
+    If IsNull(cursor) Then
+        MsgBox "No text cursor found. Click into the document body first.", 16, "InsertHexCodepoints"
+        Exit Sub
+    End If
+
+    s = InputBox("Enter hex code points separated by spaces/commas.", "Insert Unicode Code Points")
+    s = Trim(s)
+    If Len(s) = 0 Then Exit Sub
+
+    s = Replace(s, ",", " ")
+    Do While InStr(s, "  ") > 0
+        s = Replace(s, "  ", " ")
+    Loop
+    toks = Split(s, " ")
+
+    ReDim bytes(0)
+    n = 0
+
+    For i = LBound(toks) To UBound(toks)
+        tok = Trim(toks(i))
+        If Len(tok) = 0 Then GoTo NextTok
+
+        tok = UCase(tok)
+        If Left(tok, 2) = "U+" Then tok = Mid(tok, 3)
+        If Left(tok, 2) = "0X" Then tok = Mid(tok, 3)
+        If Left(tok, 2) = "\U" Then tok = Mid(tok, 3)
+        If Left(tok, 2) = "\u" Then tok = Mid(tok, 3)
+        If Len(tok) > 8 Then tok = Right(tok, 8)
+
+        cp = CLng("&H" & tok)
+        AppendUtf8 bytes(), n, cp
+
+NextTok:
+    Next i
+
+    If n = 0 Then Exit Sub
+    ReDim Preserve bytes(n - 1)
+
+    seqIn = CreateUnoService("com.sun.star.io.SequenceInputStream")
+    seqIn.initialize(Array(bytes()))
+
+    txtIn = CreateUnoService("com.sun.star.io.TextInputStream")
+    txtIn.setInputStream(seqIn)
+    txtIn.setEncoding("utf-8")
+
+    out = txtIn.readString(Array(), False)
+    txtIn.closeInput()
+
+    ' IMPORTANT: insert via doc.Text, not cursor.insertString
+    doc.Text.insertString(cursor, out, False)
+End Sub
+
+
+Private Sub AppendUtf8(ByRef bytes() As Byte, ByRef n As Long, ByVal cp As Long)
+    If cp < 0 Or cp > &H10FFFF Then Exit Sub
+
+    If cp <= &H7F Then
+        AppendByte bytes(), n, cp
+    ElseIf cp <= &H7FF Then
+        AppendByte bytes(), n, (&HC0 Or (cp \ &H40))
+        AppendByte bytes(), n, (&H80 Or (cp And &H3F))
+    ElseIf cp <= &HFFFF Then
+        AppendByte bytes(), n, (&HE0 Or (cp \ &H1000))
+        AppendByte bytes(), n, (&H80 Or ((cp \ &H40) And &H3F))
+        AppendByte bytes(), n, (&H80 Or (cp And &H3F))
+    Else
+        AppendByte bytes(), n, (&HF0 Or (cp \ &H40000))
+        AppendByte bytes(), n, (&H80 Or ((cp \ &H1000) And &H3F))
+        AppendByte bytes(), n, (&H80 Or ((cp \ &H40) And &H3F))
+        AppendByte bytes(), n, (&H80 Or (cp And &H3F))
+    End If
+End Sub
+
+
+Private Sub AppendByte(ByRef bytes() As Byte, ByRef n As Long, ByVal b As Long)
+    If n = 0 Then
+        ReDim bytes(0)
+    Else
+        ReDim Preserve bytes(n)
+    End If
+    bytes(n) = CByte(b And &HFF)
+    n = n + 1
+End Sub
+
