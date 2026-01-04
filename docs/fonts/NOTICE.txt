@@ -9,11 +9,7 @@ cartouches that have glyphs that define nanpa-linja-n decimal numbers,
 any Unicode code point that represents a Toki Pona word that begins with 'n' or 'e' will be displayed as
 one quarter original font size in any cartouche that uses this font file.
 
-
-
-
-
-
+--------------------------
 
 Using the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf font in Python:
 
@@ -23,8 +19,8 @@ from PIL import Image, ImageDraw, ImageFont
 #font file name
 SITELEN_NANPA_LINJA_N_FONT = "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf"
 
-#define font
-sitelen_modified_font = ImageFont.truetype(
+#define font (with RAQM renderer)
+sitelen_nanpa_linja_n_font = ImageFont.truetype(
         str(SITELEN_NANPA_LINJA_N_FONT),
         size=72,
         layout_engine=ImageFont.Layout.RAQM
