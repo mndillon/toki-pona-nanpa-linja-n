@@ -68,7 +68,7 @@ If we ignore 'n' and ignore 'e' in the words, then each digit word maps to a dif
 | <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | newen           | wan                            |
 | <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | neten           | tu                             |
 | <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche.png" width="64"/>       | nesen           | looks like 3 on its side       |
-| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche.png" width="64"/>       | nenan           | has four lines towards center  |
+| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | nenan           | has four lines towards center  |
 | <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | nelen           | luka                           |
 | <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | nenun           | has six short lines            |
 | <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | nemen           | seven days in week             |
@@ -373,7 +373,7 @@ Examples:
 | <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | newen           | wan                            |
 | <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | neten           | tu                             |
 | <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche.png" width="64"/>       | nesen           | looks like 3 on its side       |
-| <img src="images/horizontal 4 nasin nanpa v2.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche.png" width="64"/>       | nenan           | has four lines towards center  |
+| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | nenan           | has four lines                 |
 | <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | nelen           | luka                           |
 | <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | nenun           | has six short lines            |
 | <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | nemen           | seven days in week             |
