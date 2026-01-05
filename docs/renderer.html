@@ -216,8 +216,6 @@
   <!-- Main landmark for assistive tech -->
   <main class="card" id="main" role="main" aria-labelledby="pageTitle">
 
-    
-
     <h1 style="margin:0 0 6px;font-size:18px;">
       Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
       <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
@@ -348,9 +346,9 @@
         </span>
       </div>
 
-      <div id="hexSection" class="hidden">
+      <div id="hexSection">
         <h3>
-          Code points (hex)
+          nasin-nanpa font code points (including cartouche start and end codes) (hex)
           <span class="tpLine">nanpa sitelen (nasin hex)</span>
         </h3>
         <textarea id="codepointsOut" class="mono" readonly aria-readonly="true"></textarea>
@@ -363,7 +361,7 @@
       </div>
 
       <h3>
-        Toki Pona words (for code points)
+        Toki Pona words (for code points excluding cartouche start and end codes)
         <span class="tpLine">nimi pi toki pona (tan nanpa sitelen)</span>
       </h3>
       <textarea id="tpWordsOut" class="mono" readonly aria-readonly="true"></textarea>
@@ -397,10 +395,10 @@
             />
             <div id="codepointsHelp" class="help">
               Accepts <span class="mono">F190B</span> or <span class="mono">U+F190B</span>.
-              Input is restricted to the Toki Pona UCSUR block (<span class="mono">F1900</span>–<span class="mono">F1988</span>).
+              Input is restricted to the Toki Pona UCSUR block (<span class="mono">F1900</span>–<span class="mono">F1988</span>) plus cartouche start/end markers.
               <span class="tpLine">
                 sina ken pana e <span class="mono">F190B</span> anu <span class="mono">U+F190B</span>.
-                pana li ken lon poki UCSUR pi toki pona taso (<span class="mono">F1900</span>–<span class="mono">F1988</span>).
+                pana li ken lon poki UCSUR pi toki pona taso (<span class="mono">F1900</span>–<span class="mono">F1988</span>) en sitelen open/pini pi poki nimi.
               </span>
             </div>
           </div>
@@ -510,7 +508,7 @@
         </a>
         <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
       </div>
-      
+
       <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n main documentation
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
@@ -544,6 +542,27 @@
       const s = String(msg ?? "Unknown error");
       announceStatus(s);
       alert(s);
+    }
+
+    /* ============================================================
+       NEW: Proper-name display formatting (Title Case per word)
+       - Ensures each word is "Capitalized" (first letter uppercase, rest lowercase).
+       - Keeps the underlying encoding untouched; this is display-only.
+       ============================================================ */
+
+    function titleCaseNanpaProperNameForDisplay(nameStr) {
+      const s = String(nameStr ?? "").trim();
+      if (!s) return s;
+      // Preserve whitespace normalization and Title-Case each token.
+      return s
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(w => {
+          const lower = w.toLowerCase();
+          if (lower.length === 1) return lower.toUpperCase(); // e.g., "n" -> "N"
+          return lower[0].toUpperCase() + lower.slice(1);
+        })
+        .join(" ");
     }
 
     /* ============================================================
@@ -643,8 +662,32 @@
     const TP_UCSUR_MIN = 0xF1900;
     const TP_UCSUR_MAX = 0xF1988;
 
+    // cartouche start/end markers to show in HEX output
+    const CARTOUCHE_START_CP = 0xF1990; // cartouche start hex code
+    const CARTOUCHE_END_CP   = 0xF1991; // cartouche end hex code
+
+    function withCartoucheMarkers(codepoints) {
+      const cps = Array.from(codepoints ?? []);
+      return [CARTOUCHE_START_CP, ...cps, CARTOUCHE_END_CP];
+    }
+
+    function stripCartoucheMarkers(codepoints) {
+      const cps = Array.from(codepoints ?? []);
+      if (cps.length >= 2 && cps[0] === CARTOUCHE_START_CP && cps[cps.length - 1] === CARTOUCHE_END_CP) {
+        return cps.slice(1, -1);
+      }
+      return cps;
+    }
+
     function isAllowedTpUcsurCodepoint(cp) {
-      return Number.isInteger(cp) && cp >= TP_UCSUR_MIN && cp <= TP_UCSUR_MAX;
+      return (
+        Number.isInteger(cp) &&
+        (
+          (cp >= TP_UCSUR_MIN && cp <= TP_UCSUR_MAX) ||
+          cp === CARTOUCHE_START_CP ||
+          cp === CARTOUCHE_END_CP
+        )
+      );
     }
 
     function assertAllAllowedTpUcsur(codepoints) {
@@ -652,7 +695,7 @@
         if (!isAllowedTpUcsurCodepoint(cp)) {
           const hex = cp.toString(16).toUpperCase();
           throw new Error(
-            `Disallowed code point U+${hex}. Allowed range is U+${TP_UCSUR_MIN.toString(16).toUpperCase()}..U+${TP_UCSUR_MAX.toString(16).toUpperCase()}.`
+            `Disallowed code point U+${hex}. Allowed range is U+${TP_UCSUR_MIN.toString(16).toUpperCase()}..U+${TP_UCSUR_MAX.toString(16).toUpperCase()} plus cartouche markers U+${CARTOUCHE_START_CP.toString(16).toUpperCase()} and U+${CARTOUCHE_END_CP.toString(16).toUpperCase()}.`
           );
         }
       }
@@ -758,10 +801,10 @@
 
         // 5) Digits: either "<digitWord> esun" OR "nasa <digitWord>" (for NI/NA/NU style)
         if (i + 1 < end) {
-          // "nasa ijo" / "nasa ante" / "nasa utala"
+          // "nasa ijo" / "nasa awen" / "nasa utala"
           if (words[i] === "nasa" && DIGIT_WORD_TO_TOKEN[words[i + 1]]) {
             const tok = DIGIT_WORD_TO_TOKEN[words[i + 1]];
-            // only accept the cases that are actually emitted by your encoder ("nasa ijo/ante/utala")
+            // only accept the cases that are actually emitted by your encoder
             if (tok === "NI" || tok === "NA" || tok === "NU") {
               capsParts.push(tok);
               i += 2;
@@ -791,22 +834,18 @@
           }
         }
 
-        // If we reach here, it doesn't match the nanpa-linja-n TP-phrase grammar
         return null;
       }
 
       const caps = capsParts.join("") + "N";
 
-      // Validate that it tokenizes as a real nanpa-caps label
       tokenizeNanpaCaps(caps);
 
       return { caps, words };
     }
 
-
-
     // -------------------------------
-    // NEW: #~ number-code parsing
+    // #~ number-code parsing
     // -------------------------------
 
     const NUMBER_CODE_LETTER_TO_PAIR = {
@@ -824,17 +863,9 @@
     };
 
     function normalizeNumberCodeInput(raw) {
-      // remove whitespace, keep everything else
       return String(raw ?? "").trim().replace(/\s+/g, "");
     }
 
-    /**
-     * Parse a nanpa-linja-n unique number code of the form "#~....."
-     * and reconstruct a nanpa-caps string.
-     *
-     * Returns: { caps, canonicalCode } or null if it doesn't look like #~ input.
-     * Throws on malformed #~ input.
-     */
     function tryParseNanpaLinjanNumberCodeToCaps(raw) {
       const s0 = normalizeNumberCodeInput(raw);
       if (!s0) return null;
@@ -844,7 +875,6 @@
       const body = s0.slice(2).toUpperCase();
       if (!body) throw new Error("Number code '#~' must have letters after it.");
 
-      // For safety, restrict to A–Z only.
       if (!/^[A-Z]+$/.test(body)) {
         throw new Error("Number code may only contain letters A–Z after '#~'.");
       }
@@ -855,13 +885,11 @@
       while (i < body.length) {
         const ch = body[i];
 
-        // Run-length handling for O (NO/NO... = delimiter family)
         if (ch === "O") {
           let j = i;
           while (j < body.length && body[j] === "O") j++;
           const count = j - i;
 
-          // Allow 1..3; if you ever need more, relax this and ensure tokenizer rules stay valid.
           if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
 
           parts.push("NO".repeat(count));
@@ -869,7 +897,6 @@
           continue;
         }
 
-        // Run-length handling for K (KE/KE... = magnitude/group family)
         if (ch === "K") {
           let j = i;
           while (j < body.length && body[j] === "K") j++;
@@ -882,7 +909,6 @@
           continue;
         }
 
-        // Single-letter digit tokens
         const pair = NUMBER_CODE_LETTER_TO_PAIR[ch];
         if (!pair) {
           throw new Error(`Invalid letter '${ch}' in number code. Allowed: I,W,T,S,A,L,U,M,P,J plus O/K runs.`);
@@ -894,18 +920,11 @@
 
       const caps = parts.join("") + "N";
 
-      // Validate it is a real nanpa-caps label according to your tokenizer.
       tokenizeNanpaCaps(caps);
 
-      // Canonical form for displaying (remove spaces, uppercase)
       const canonicalCode = "#~" + body;
       return { caps, canonicalCode };
     }
-
-
-
-
-
 
     function looksLikeNanpaCaps(s) {
       if (!s) return false;
@@ -935,8 +954,8 @@
       for (let j = 0; j < fracDigits.length; j += groupSize) {
         groups.push(fracDigits.slice(j, j + groupSize));
       }
-      const groupedFrac = groups.join(sepChar);
-      return `${left}${decimalChar}${groupedFrac}${suffix}`;
+      const codeGroupedFrac = groups.join(sepChar);
+      return `${left}${decimalChar}${codeGroupedFrac}${suffix}`;
     }
 
     function latinNameToNumberCode(latinName) {
@@ -1161,8 +1180,6 @@
       return 0;
     }
 
-    // Decode one “decimal-style segment” (digits, separators, optional decimal point, optional suffix)
-    // Segment tokens do NOT include the starting "NE" or the final "N".
     function decodeDecimalStyleTokensToString(segmentTokens) {
       if (!segmentTokens) return null;
 
@@ -1171,14 +1188,13 @@
       let i = 0;
       const end = tokens.length;
 
-      // Leading NO can mean a negative sign, but NOT if it is directly followed by NE (that pattern means decimal point)
       let neg = false;
       if (i < end && tokens[i] === "NO" && !(i + 1 < end && tokens[i + 1] === "NE")) {
         neg = true;
         i += 1;
       }
 
-      let mode = "int"; // "int" or "frac"
+      let mode = "int";
       let intStr = "";
       let fracStr = "";
       let suffixKeCount = 0;
@@ -1191,7 +1207,6 @@
       }
 
       function appendGroupSep() {
-        // Integer grouping stays comma; fraction grouping uses underscore.
         const sep = (mode === "int") ? "," : "_";
 
         if (mode === "int") {
@@ -1203,11 +1218,9 @@
         }
       }
 
-
       while (i < end) {
         const t = tokens[i];
 
-        // Digits
         if (TOKEN_TO_DIGIT_CHAR[t] != null) {
           if (mode === "int") appendInt(TOKEN_TO_DIGIT_CHAR[t]);
           else appendFrac(TOKEN_TO_DIGIT_CHAR[t]);
@@ -1215,23 +1228,20 @@
           continue;
         }
 
-        // Decimal point marker: NO then NE (your encoder’s "NONE" becomes NO+NE in token stream)
         if (t === "NO" && (i + 1 < end) && tokens[i + 1] === "NE") {
-          if (mode !== "int") return null; // multiple decimals
+          if (mode !== "int") return null;
           ensureIntNonEmpty();
           mode = "frac";
           i += 2;
           continue;
         }
 
-        // Loose separator marker: NENE becomes NE + NE in token stream
         if (t === "NE" && (i + 1 < end) && tokens[i + 1] === "NE") {
           appendGroupSep();
           i += 2;
           continue;
         }
 
-        // Group boundary or suffix: NE + KE{...}
         if (t === "NE" && (i + 1 < end)) {
           let j = i + 1;
           let count = 0;
@@ -1244,24 +1254,20 @@
           }
 
           if (count > 0) {
-            // If followed by a digit, treat as group boundary (thousands grouping)
             if (j < end && TOKEN_TO_DIGIT_CHAR[tokens[j]] != null) {
               appendGroupSep();
               i = j;
               continue;
             }
 
-            // Otherwise treat as terminal suffix multiplier
             suffixKeCount += count;
             i = j;
             continue;
           }
 
-          // Bare NE without NE/KE context is not expected in a decimal-style segment
           return null;
         }
 
-        // KE tokens should only appear after NE in this encoding
         if (keTokenCount(t) > 0) return null;
 
         return null;
@@ -1269,7 +1275,6 @@
 
       ensureIntNonEmpty();
 
-      // Suffix (T/M/B) or expanded if larger
       let suffix = "";
       if (suffixKeCount > 0) {
         if (suffixKeCount === 1) suffix = "T";
@@ -1287,14 +1292,6 @@
       return sign + intStr + suffix;
     }
 
-    /**
-     * Attempt to decode a nanpa-caps label into a display string:
-     * - decimal-style: [-]int[.frac][suffix]
-     * - fraction-only: numerator/denominator (minus may be on numerator)
-     * - mixed: integer+numerator/denominator (minus may be on integer and/or numerator)
-     *
-     * Returns string on success, or null on failure.
-     */
     function tryDecodeCapsToDisplayValue(caps) {
       if (!caps) return null;
 
@@ -1303,7 +1300,6 @@
 
       const finalNIdx = tokens.length - 1;
 
-      // Mixed number case: ... NONONO ... NONO ... N
       const mixedIdx = tokens.indexOf("NONONO");
       if (mixedIdx >= 0) {
         const fracIdx = tokens.indexOf("NONO", mixedIdx + 1);
@@ -1319,11 +1315,9 @@
 
         if (!intStr || !numStr || !denStr) return null;
 
-        // Display rule requested
         return `${intStr}+${numStr}/${denStr}`;
       }
 
-      // Fraction-only case: ... NONO ... N
       const fracIdx = tokens.indexOf("NONO");
       if (fracIdx >= 0) {
         const numTokens = tokens.slice(1, fracIdx);
@@ -1334,21 +1328,16 @@
 
         if (!numStr || !denStr) return null;
 
-        // Display rule requested
         return `${numStr}/${denStr}`;
       }
 
-      // Decimal-style case
       const segTokens = tokens.slice(1, finalNIdx);
       return decodeDecimalStyleTokensToString(segTokens);
     }
 
-    /**
-     * Convenience wrapper: derive display value from caps and update UI.
-     */
     function setDecimalValueFromCapsOrClear(caps) {
       const v = tryDecodeCapsToDisplayValue(caps);
-      setDecimalValueLine(v); // v may be null => hides line
+      setDecimalValueLine(v);
     }
 
     function nanpaCapsTokensToTpWords(tokens) {
@@ -1426,7 +1415,7 @@
       "wan":   0xF1973,
       "tu":    0xF196E,
       "sijelo":0xF195B,
-      "ante":  0xF1906,
+      "awen":  0xF1908,
       "luka":  0xF192D,
       "utala": 0xF1971,
       "mun":   0xF193A,
@@ -1440,8 +1429,8 @@
       "ale": 0xF1904,
       "ali": 0xF1904,
       "anpa": 0xF1905,
+      "ante": 0xF1906,
       "anu": 0xF1907,
-      "awen": 0xF1908,
       "en": 0xF190A,
       "ike": 0xF190D,
       "ilo": 0xF190E,
@@ -1687,11 +1676,12 @@
       return splitCartoucheCapsLetters(caps);
     }
 
+    // CHANGED: now accepts capitalized proper names too (A–Z / a–z), and final n/N
     function isValidNanpaLinjanProperName(raw) {
-      const s = String(raw ?? "").toLowerCase().replace(/\s+/g, "");
+      const s = String(raw ?? "").replace(/\s+/g, "");
       if (!s) return false;
-      if (!/^[a-z]+$/.test(s)) return false;
-      if (!s.endsWith("n")) return false;
+      if (!/^[a-zA-Z]+$/.test(s)) return false;
+      if (!/[nN]$/.test(s)) return false;
 
       const core = s.slice(0, -1);
       if (core.length < 2 || (core.length % 2) !== 0) return false;
@@ -1791,6 +1781,10 @@
       return codepoints.map(cp => cp.toString(16).toUpperCase().padStart(4, "0")).join(" ");
     }
 
+    function codepointsToHexStringWithCartouche(codepoints) {
+      return codepointsToHexString(withCartoucheMarkers(codepoints));
+    }
+
     function parseHexCodepoints(input) {
       const raw = input.trim();
       if (!raw) return [];
@@ -1802,7 +1796,8 @@
       });
 
       assertAllAllowedTpUcsur(cps);
-      return cps;
+
+      return stripCartoucheMarkers(cps);
     }
 
     /* =======================
@@ -2000,11 +1995,10 @@
     const LARGE_FONT_SIZE = 72;
     const SMALL_FONT_SIZE = 20;
 
-    // CHANGED: smaller "small cartouche" glyph sizes
-    const LARGE_TINY_FONT_SIZE = 28;  // was 40
-    const SMALL_TINY_FONT_SIZE = 7;   // was 10
+    // smaller "small cartouche" glyph sizes
+    const LARGE_TINY_FONT_SIZE = 28;
+    const SMALL_TINY_FONT_SIZE = 7;
 
-    // NEW: consistent smaller box options for canvasSmall
     const SMALL_CANVAS_RENDER_OPTS = { padding: 10, border: 1, cornerRadius: 10, letterGap: 2 };
 
     const elDecimal = document.getElementById("decimalInput");
@@ -2067,9 +2061,11 @@
 
       for (let d = 0; d <= 9; d++) {
         const digitStr = String(d);
-        const latinName = encodeDecimalToLatin(digitStr);
+        const latinNameRaw = encodeDecimalToLatin(digitStr);
+        const latinNameDisplay = titleCaseNanpaProperNameForDisplay(latinNameRaw);
+
         const cps = decimalToUcsurCodepoints(digitStr);
-        const unique_number_code = latinNameToNumberCode(latinName);
+        const unique_number_code = latinNameToNumberCode(latinNameRaw);
 
         const tr = document.createElement("tr");
 
@@ -2079,7 +2075,7 @@
 
         const tdName = document.createElement("td");
         tdName.className = "mono";
-        tdName.textContent = latinName;
+        tdName.textContent = latinNameDisplay;
 
         const tdUniqueNumberCode = document.createElement("td");
         tdUniqueNumberCode.className = "mono";
@@ -2120,19 +2116,23 @@
 
       setDecimalValueFromCapsOrClear(caps);
 
-      const latin = encodeDecimalToLatin(raw);
+      const latinRaw = encodeDecimalToLatin(raw);
+      const latinDisplay = titleCaseNanpaProperNameForDisplay(latinRaw);
 
-      elLatinOut.value = latin;
-      elNumberCodeOut.value = latinNameToNumberCode(latin);
+      // CHANGED: proper-name output is Title Cased per word
+      elLatinOut.value = latinDisplay;
+
+      // Use the raw (not display) proper name to derive the number-code deterministically
+      elNumberCodeOut.value = latinNameToNumberCode(latinRaw);
 
       const cps = decimalToUcsurCodepoints(raw);
 
-      if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+      if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
+
       if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
       const smallSet = getSmallCodepointsSet();
 
-      // CHANGED: smaller cartouche options + smaller font sizes for canvasSmall
       renderMixedCartoucheToCanvas(
         canvasSmall,
         cps,
@@ -2142,7 +2142,6 @@
         SMALL_CANVAS_RENDER_OPTS
       );
 
-      // unchanged large canvas
       renderMixedCartoucheToCanvas(
         canvasLarge,
         cps,
@@ -2171,12 +2170,14 @@
 
         const cps = parseHexCodepoints(elCodesIn.value);
 
+        // NOTE: this path displays glyph characters, not a nanpa-linja-n proper name (no Title Case applied)
         elLatinOut.value = String.fromCodePoint(...cps);
-        if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+
+        if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
+
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
         if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
-        // Try to recognize if these codepoints correspond to an encoded nanpa-linja-n number phrase
         try {
           const tpWords = ucsurCodepointsToTpWords(cps).join(" ");
           const parsed = tryParseNanpaLinjanTpPhraseToCaps(tpWords);
@@ -2186,8 +2187,6 @@
           setDecimalValueLine(null);
         }
 
-
-        // CHANGED: smaller options for canvasSmall
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
@@ -2216,7 +2215,6 @@
 
         const rawInput = String(elTpWordsIn.value ?? "");
 
-        // NEW: accept nanpa-linja-n unique number code "#~...."
         const parsedNumberCode = tryParseNanpaLinjanNumberCodeToCaps(rawInput);
         if (parsedNumberCode) {
           const { caps, canonicalCode } = parsedNumberCode;
@@ -2227,12 +2225,14 @@
           const tpWords = nanpaCapsTokensToTpWords(tokens);
           const cps = tpWordsToUcsurCodepoints(tpWords);
 
-          const prettyName = splitCartoucheCapsLettersSpaced(caps);
+          const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
+          const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
 
-          elLatinOut.value = prettyName;
+          elLatinOut.value = prettyNameDisplay;
           elNumberCodeOut.value = canonicalCode;
 
-          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
+
           if (elTpWordsOut) elTpWordsOut.value = tpWords.join(" ");
 
           const smallSet = getSmallCodepointsSet();
@@ -2259,22 +2259,24 @@
           return;
         }
 
-        // NEW: detect "nanpa esun ... nanpa" as a nanpa-linja-n encoded number phrase
         const parsedTpPhrase = tryParseNanpaLinjanTpPhraseToCaps(rawInput);
         if (parsedTpPhrase) {
           const { caps, words } = parsedTpPhrase;
 
           setDecimalValueFromCapsOrClear(caps);
 
-          // Code points come directly from the TP words the user typed
           const cps = parseTpWordsToCodepoints(words.join(" "));
 
-          const prettyName = splitCartoucheCapsLettersSpaced(caps);
+          const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
+          const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
 
-          elLatinOut.value = prettyName;
-          elNumberCodeOut.value = latinNameToNumberCode(prettyName);
+          elLatinOut.value = prettyNameDisplay;
 
-          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+          // Derive from raw proper-name (not display)
+          elNumberCodeOut.value = latinNameToNumberCode(prettyNameRaw);
+
+          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
+
           if (elTpWordsOut) elTpWordsOut.value = words.join(" ");
 
           const smallSet = getSmallCodepointsSet();
@@ -2300,7 +2302,7 @@
           announceStatus("Recognized and rendered nanpa-linja-n TP-phrase number.");
           return;
         }
-        
+
         if (isValidNanpaLinjanProperName(rawInput)) {
           const cps = nanpaLinjanProperNameToUcsurCodepoints(rawInput);
 
@@ -2310,17 +2312,19 @@
 
           setDecimalValueFromCapsOrClear(caps);
 
-          const prettyName = splitCartoucheCapsLettersSpaced(caps);
+          const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
+          const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
 
-          elLatinOut.value = prettyName;
-          elNumberCodeOut.value = latinNameToNumberCode(prettyName);
+          elLatinOut.value = prettyNameDisplay;
 
-          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+          elNumberCodeOut.value = latinNameToNumberCode(prettyNameRaw);
+
+          if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
+
           if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
           const smallSet = getSmallCodepointsSet();
 
-          // CHANGED: smaller options for canvasSmall
           renderMixedCartoucheToCanvas(
             canvasSmall,
             cps,
@@ -2345,13 +2349,14 @@
 
         const cps = parseTpWordsToCodepoints(elTpWordsIn.value);
 
-        if (elCodepointsOut) elCodepointsOut.value = codepointsToHexString(cps);
+        if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
+
         if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
+        // NOTE: this fallback path displays glyph characters, not a nanpa-linja-n proper name (no Title Case applied)
         elLatinOut.value = String.fromCodePoint(...cps);
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
 
-        // CHANGED: smaller options for canvasSmall
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
@@ -2379,7 +2384,6 @@
       const raw = String(elTpWordsIn?.value ?? "").trim();
       if (!raw) { elTpWordsIn.setCustomValidity(""); return; }
 
-      // NEW: validate #~ number code input live
       try {
         const parsedCode = tryParseNanpaLinjanNumberCodeToCaps(raw);
         if (parsedCode) {
@@ -2387,14 +2391,12 @@
           return;
         }
       } catch (e) {
-        // It looks like #~ input but is malformed
         if (String(raw).trim().toUpperCase().startsWith("#~")) {
           elTpWordsIn.setCustomValidity(e?.message ?? "Invalid number code.");
           return;
         }
       }
 
-      // If it is a valid nanpa-linja-n proper name, treat as valid
       if (isValidNanpaLinjanProperName(raw)) {
         elTpWordsIn.setCustomValidity("");
         return;
@@ -2412,7 +2414,6 @@
 
     if (elTpWordsIn) elTpWordsIn.addEventListener("input", validateTpWordsInputLive);
 
-    /* Keyboard support: Enter triggers encode when focused in decimal input */
     if (elDecimal) {
       elDecimal.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.altKey && !e.ctrlKey && !e.metaKey) {

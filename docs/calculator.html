@@ -441,6 +441,8 @@
         let ip = String(intPart ?? "").trim();
         if (ip === "") ip = "0";
 
+        // Calculator path: we expect commas in integer if grouping is desired.
+        // Still validate the groups.
         const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
         for (const g of groups) {
           if (g === "" || !/^\d+$/.test(g)) {
@@ -448,12 +450,33 @@
           }
         }
 
+        // ---- NEW: trailing ",000" compression (from renderer logic) ----
+        // Count trailing groups equal to "000", excluding the first group
+        let trailingZeroGroups = 0;
+        for (let k = groups.length - 1; k >= 1; k--) {
+          const g = groups[k];
+          if (g.length === 3 && g === "000") trailingZeroGroups += 1;
+          else break;
+        }
+
+        // Emit first group digits
         for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
 
-        for (let idx = 1; idx < groups.length; idx++) {
+        const nGroups = groups.length;
+        const lastNonTrailingIdx = nGroups - trailingZeroGroups;
+
+        // Emit normal groups up to the last non-trailing group, using NEKE between groups
+        for (let idx = 1; idx < lastNonTrailingIdx; idx++) {
           out.push("NEKE");
           for (const d of groups[idx]) out.push(DIGIT_TO_TOKEN[d]);
         }
+
+        // If we had trailing ",000" groups, emit "NE" + "KE" repeated (=> n e k... in the cartouche)
+        if (trailingZeroGroups > 0) {
+          out.push("NE");
+          for (let i = 0; i < trailingZeroGroups; i++) out.push("KE");
+        }
+        // ---- end trailing compression ----
 
         if (hasDecimal) {
           out.push(OPCHAR_TO_TOKEN["."]);
@@ -473,6 +496,7 @@
 
       return encodeSingleNumberSegment(raw, true);
     }
+
 
     function tokenizeNanpaCaps(caps) {
       if (caps == null) throw new Error("caps must be a string, not None");
@@ -536,6 +560,19 @@
           continue;
         }
 
+        // NEW: KE tokens => kulupu e (supports KE, KEKE, KEKEKE)
+        if (t === "KE")   { out.push("kulupu", E_WORD_FOR_NE_AFTER_START); afterStartingNe = false; continue; }
+        if (t === "KEKE") { out.push("kulupu", E_WORD_FOR_NE_AFTER_START, "kulupu", E_WORD_FOR_NE_AFTER_START); afterStartingNe = false; continue; }
+        if (t === "KEKEKE") {
+          out.push(
+            "kulupu", E_WORD_FOR_NE_AFTER_START,
+            "kulupu", E_WORD_FOR_NE_AFTER_START,
+            "kulupu", E_WORD_FOR_NE_AFTER_START
+          );
+          afterStartingNe = false;
+          continue;
+        }
+
         if (t === "N") { out.push(N_END_WORD); afterStartingNe = false; continue; }
 
         throw new Error(`Unsupported token "${t}" in calculator mode`);
@@ -557,12 +594,14 @@
     }
 
     function decimalToUcsurCodepoints(decimalStr) {
-      const s = String(decimalStr ?? "").trim();
-      if (!s) return [];
+      const raw0 = String(decimalStr ?? "").trim();
+      if (!raw0) return [];
 
-      const caps = looksLikeNanpaCaps(s)
-        ? s.toUpperCase()
-        : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: false });
+      const rawForEncode = formatForCartoucheEncoding(raw0, ",");
+
+      const caps = looksLikeNanpaCaps(rawForEncode)
+        ? rawForEncode.toUpperCase()
+        : numberStrToNanpaCaps(rawForEncode, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
 
       const tokens = tokenizeNanpaCaps(caps);
       const tpWords = nanpaCapsTokensToTpWords(tokens);
@@ -571,6 +610,7 @@
       assertAllAllowedTpUcsur(cps);
       return cps;
     }
+
 
     function drawRoundedRect(ctx, x, y, w, h, r) {
       const radius = Math.min(r, w / 2, h / 2);
@@ -916,6 +956,81 @@
       renderDisplay();
     }
 
+    function formatNumberForDisplay(raw, { groupSize = 3, intSep = ",", fracSep = "_" } = {}) {
+      const s0 = String(raw ?? "");
+
+      // Preserve calculator special/mid-entry states
+      if (s0 === "" || s0 === "-" || s0 === "Error") return s0;
+
+      const neg = s0.startsWith("-");
+      const s = neg ? s0.slice(1) : s0;
+
+      const dot = s.indexOf(".");
+      const hasDot = dot >= 0;
+
+      const intPartRaw = hasDot ? s.slice(0, dot) : s;
+      const fracRaw = hasDot ? s.slice(dot + 1) : "";
+
+      // Preserve "12." form (no fraction digits yet)
+      const endsWithDot = hasDot && dot === s.length - 1;
+
+      // Integer grouping (from right)
+      const intPart = (intPartRaw === "" ? "0" : intPartRaw);
+      const intGrouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, intSep);
+
+      if (!hasDot) return (neg ? "-" : "") + intGrouped;
+      if (endsWithDot) return (neg ? "-" : "") + intGrouped + ".";
+
+      // Fraction grouping (from left, in groups of 3)
+      let i = 0;
+      while (i < fracRaw.length && /[0-9]/.test(fracRaw[i])) i++;
+      const fracDigits = fracRaw.slice(0, i);
+      const suffix = fracRaw.slice(i);
+
+      if (fracDigits.length <= groupSize) {
+        return (neg ? "-" : "") + intGrouped + "." + fracDigits + suffix;
+      }
+
+      const fracGrouped = fracDigits.replace(new RegExp(`(\\d{${groupSize}})(?=\\d)`, "g"), `$1${fracSep}`);
+      return (neg ? "-" : "") + intGrouped + "." + fracGrouped + suffix;
+    }
+
+
+
+    function formatForCartoucheEncoding(raw, thousandsSep = ",") {
+      const s0 = String(raw ?? "").trim();
+      if (!s0) return s0;
+      if (s0 === "Error") return s0;
+
+      // If it is already nanpa-caps, do not touch it
+      if (looksLikeNanpaCaps(s0)) return s0;
+
+      // Preserve mid-entry states
+      if (s0 === "-" || s0 === "." || s0 === "-.") return s0;
+
+      const neg = s0.startsWith("-");
+      const s = neg ? s0.slice(1) : s0;
+
+      const dot = s.indexOf(".");
+      const hasDot = dot >= 0;
+
+      const intRaw = hasDot ? s.slice(0, dot) : s;
+      const fracRaw = hasDot ? s.slice(dot + 1) : "";
+
+      // Preserve trailing dot (e.g. "12.")
+      const endsWithDot = hasDot && dot === s.length - 1;
+
+      // If user already has thousands separators, keep them
+      let intPart = intRaw === "" ? "0" : intRaw;
+      if (!intPart.includes(thousandsSep)) {
+        intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSep);
+      }
+
+      const out = (neg ? "-" : "") + intPart + (hasDot ? "." : "") + (endsWithDot ? "" : fracRaw);
+      return out;
+    }
+
+
     function normalizeInputString(s) {
       if (!s || s === "-") return s;
 
@@ -1089,31 +1204,32 @@
     }
 
     function renderDisplay() {
-      // Screen-reader-only (existing)
-      elDisplayText.textContent = inputStr;
+      // Display text under the cartouche: commas in integer, underscores in fraction triplets
+      const displayValue = formatNumberForDisplay(inputStr, { intSep: ",", fracSep: "_" });
 
-      const pending = (pendingOp != null && acc != null)
-        ? `${formatNumberForInput(acc)} ${pendingOp}`
+      elDisplayText.textContent = displayValue;
+
+      const pendingDisplay = (pendingOp != null && acc != null)
+        ? `${formatNumberForDisplay(formatNumberForInput(acc), { intSep: ",", fracSep: "_" })} ${pendingOp}`
         : "";
-      elPendingText.textContent = pending;
 
-      // Visible (bilingual) — mirrors the values
-      if (elDisplayTextVisible) elDisplayTextVisible.textContent = inputStr;
-      if (elPendingTextVisible) elPendingTextVisible.textContent = pending;
-      if (elDisplayTextVisibleTp) elDisplayTextVisibleTp.textContent = inputStr;
-      if (elPendingTextVisibleTp) elPendingTextVisibleTp.textContent = pending;
+      elPendingText.textContent = pendingDisplay;
+
+      // Visible (bilingual) — mirrors the display values
+      if (elDisplayTextVisible) elDisplayTextVisible.textContent = displayValue;
+      if (elPendingTextVisible) elPendingTextVisible.textContent = pendingDisplay;
+      if (elDisplayTextVisibleTp) elDisplayTextVisibleTp.textContent = displayValue;
+      if (elPendingTextVisibleTp) elPendingTextVisibleTp.textContent = pendingDisplay;
 
       // Live region: bilingual
       if (elDisplayLive) {
         if (inputStr === "Error") {
           elDisplayLive.textContent = "Error. Press Clear to reset. pakala. o pilin e nena Clear la, sina kama sin.";
         } else {
-          const pendingText = (pendingOp != null && acc != null)
-            ? `${formatNumberForInput(acc)} ${pendingOp}`
-            : "none";
+          const pendingTextLive = (pendingOp != null && acc != null) ? pendingDisplay : "none";
           elDisplayLive.textContent =
-            `Value: ${inputStr}. Pending operation: ${pendingText}. ` +
-            `nanpa: ${inputStr}. pali awen: ${pendingText}.`;
+            `Value: ${displayValue}. Pending operation: ${pendingTextLive}. ` +
+            `nanpa: ${displayValue}. pali awen: ${pendingTextLive}.`;
         }
       }
 
@@ -1133,6 +1249,7 @@
         return;
       }
 
+      // Cartouche rendering (encoding behavior unchanged)
       const cps = decimalToUcsurCodepoints(inputStr);
 
       const keysEl = document.getElementById("keys");
@@ -1148,6 +1265,9 @@
         { padding: DISPLAY_PAD, border: DISPLAY_BORDER, cornerRadius: DISPLAY_CORNER, letterGap: DISPLAY_GAP }
       );
     }
+
+
+
 
     function resolveReduceWidthPx(reduceWidthPx, btn) {
       if (reduceWidthPx == null) return 0;
