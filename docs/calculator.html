@@ -160,6 +160,39 @@
       src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf") format("opentype");
       font-display: swap;
     }
+
+    /* =========================
+       NEW: Cartouche display mode chooser (subtle)
+       ========================= */
+    .displayChooser {
+      margin: 10px 0 6px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+
+    .displayChooser legend {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 6px;
+      font-weight: 700;
+    }
+
+    .displayOpt {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 14px;
+      font-size: 13px;
+      color: #111;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .displayOpt input {
+      transform: translateY(1px);
+    }
   </style>
 </head>
 
@@ -167,8 +200,6 @@
   <a href="#calculator" class="skipLink">Skip to calculator — o tawa ilo nanpa</a>
 
   <main class="card" id="calculator" role="main">
-    
-
     <h1 style="margin:0 0 6px;font-size:18px;">
       Toki Pona nanpa-linja-n cartouche calculator
       <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
@@ -233,6 +264,27 @@
 
       <div class="keys" id="keys" role="group" aria-label="Calculator keypad"></div>
 
+      <!-- NEW: Cartouche display mode selector (below keypad) -->
+      <fieldset class="displayChooser" aria-label="Cartouche display mode">
+        <legend>Cartouche display</legend>
+
+        <label class="displayOpt">
+          <input type="radio" name="cartoucheDisplay" value="traditional" checked>
+          <span>Traditional</span>
+        </label>
+
+        <label class="displayOpt">
+          <input type="radio" name="cartoucheDisplay" value="uniform">
+          <span>Uniform</span>
+        </label>
+
+        <div class="help small" style="margin-top:6px;">
+          Traditional: existing wording. Uniform: every <span class="mono">esun</span> → <span class="mono">en</span>,
+          every <span class="mono">nasa</span> → <span class="mono">nena</span>, and every standalone
+          <span class="mono">e</span> → <span class="mono">en</span>. Only <span class="mono">nanpa</span> at start and end is unchanged.
+        </div>
+      </fieldset>
+
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
         <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
@@ -254,7 +306,7 @@
         </a>
         <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
       </div>
-      
+
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n main documentation
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
@@ -272,6 +324,85 @@
 
   <script>
     "use strict";
+
+    /* ============================================================
+       NEW: Cartouche display mode (Traditional vs Uniform)
+       - Query param: ?cartoucheDisplay=traditional|uniform
+       - Persists: localStorage
+       ============================================================ */
+
+    const CARTOUCHE_DISPLAY_STORAGE_KEY = "cartoucheDisplayMode";
+    const CARTOUCHE_DISPLAY_QUERY_KEY = "cartoucheDisplay";
+
+    function getCartoucheDisplayMode() {
+      const el = document.querySelector('input[name="cartoucheDisplay"]:checked');
+      return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
+    }
+
+    function setCartoucheDisplayMode(mode) {
+      const v = (mode === "uniform") ? "uniform" : "traditional";
+      const target = document.querySelector(`input[name="cartoucheDisplay"][value="${v}"]`);
+      if (target) target.checked = true;
+      try { localStorage.setItem(CARTOUCHE_DISPLAY_STORAGE_KEY, v); } catch {}
+    }
+
+    function loadCartoucheDisplayModeFromStorage() {
+      try {
+        const v = localStorage.getItem(CARTOUCHE_DISPLAY_STORAGE_KEY);
+        if (v === "uniform" || v === "traditional") setCartoucheDisplayMode(v);
+      } catch {}
+    }
+
+    function loadCartoucheDisplayModeFromQueryParam() {
+      try {
+        const qs = new URLSearchParams(window.location.search);
+        const v = (qs.get(CARTOUCHE_DISPLAY_QUERY_KEY) || "").toLowerCase();
+        if (v === "uniform" || v === "traditional") {
+          setCartoucheDisplayMode(v);
+          return true;
+        }
+      } catch {}
+      return false;
+    }
+
+    function updateCrossLinksWithCartoucheDisplay() {
+      const mode = getCartoucheDisplayMode();
+      document.querySelectorAll('a.repoLink[href]').forEach(a => {
+        const href = String(a.getAttribute("href") || "");
+
+        // Do not rewrite absolute/external links
+        if (/^https?:\/\//i.test(href)) return;
+
+        try {
+          const url = new URL(href, window.location.href);
+          const p = new URLSearchParams(url.search);
+          p.set(CARTOUCHE_DISPLAY_QUERY_KEY, mode);
+          url.search = p.toString();
+
+          const outHref =
+            url.pathname +
+            (url.search ? ("?" + url.searchParams.toString()) : "") +
+            (url.hash || "");
+
+          a.setAttribute("href", outHref);
+        } catch {}
+      });
+    }
+
+    function wireCartoucheDisplayRadios() {
+      const radios = document.querySelectorAll('input[name="cartoucheDisplay"]');
+      radios.forEach(r => {
+        r.addEventListener("change", () => {
+          setCartoucheDisplayMode(getCartoucheDisplayMode());
+          updateCrossLinksWithCartoucheDisplay();
+
+          // Re-render everything that depends on wording.
+          buildKeypad();
+          renderDisplay();
+          rerenderWideZeroKey();
+        });
+      });
+    }
 
     const OP_BUTTON_WORDS = {
       add: "en",
@@ -307,12 +438,13 @@
 
     function getSmallCodepointsSet() {
       return new Set([
-        0xF193D,
-        0xF1940,
-        0xF1941,
-        0xF193E,
-        0xF1909,
-        0xF190B,
+        0xF193D, // nanpa
+        0xF1940, // nena
+        0xF1941, // ni
+        0xF193E, // nasa
+        0xF1909, // e
+        0xF190B, // esun
+        0xF190A, // en  (added for uniform mode)
       ]);
     }
 
@@ -450,8 +582,7 @@
           }
         }
 
-        // ---- NEW: trailing ",000" compression (from renderer logic) ----
-        // Count trailing groups equal to "000", excluding the first group
+        // trailing ",000" compression
         let trailingZeroGroups = 0;
         for (let k = groups.length - 1; k >= 1; k--) {
           const g = groups[k];
@@ -459,24 +590,20 @@
           else break;
         }
 
-        // Emit first group digits
         for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
 
         const nGroups = groups.length;
         const lastNonTrailingIdx = nGroups - trailingZeroGroups;
 
-        // Emit normal groups up to the last non-trailing group, using NEKE between groups
         for (let idx = 1; idx < lastNonTrailingIdx; idx++) {
           out.push("NEKE");
           for (const d of groups[idx]) out.push(DIGIT_TO_TOKEN[d]);
         }
 
-        // If we had trailing ",000" groups, emit "NE" + "KE" repeated (=> n e k... in the cartouche)
         if (trailingZeroGroups > 0) {
           out.push("NE");
           for (let i = 0; i < trailingZeroGroups; i++) out.push("KE");
         }
-        // ---- end trailing compression ----
 
         if (hasDecimal) {
           out.push(OPCHAR_TO_TOKEN["."]);
@@ -496,7 +623,6 @@
 
       return encodeSingleNumberSegment(raw, true);
     }
-
 
     function tokenizeNanpaCaps(caps) {
       if (caps == null) throw new Error("caps must be a string, not None");
@@ -527,12 +653,22 @@
       return tokens;
     }
 
-    function nanpaCapsTokensToTpWords(tokens) {
+    /* ============================================================
+       UPDATED: TP-word rendering with Traditional vs Uniform modes
+       - Uniform affects ALL occurrences of:
+         - esun -> en
+         - nasa -> nena
+         - e -> en
+       - Only "nanpa" at start and end remains "nanpa".
+       ============================================================ */
+    function nanpaCapsTokensToTpWords(tokens, { mode = "traditional" } = {}) {
+      const uniform = (mode === "uniform");
       const out = [];
-      const E_WORD = "esun";
-      const E_WORD_FOR_NE_AFTER_START = "e";
-      const N_WORD = "nasa";
-      const N_WORD_DECIMAL_POINT = "ni";
+
+      const E_WORD = uniform ? "en" : "esun";
+      const E_WORD_FOR_NE_AFTER_START = uniform ? "en" : "e";
+      const N_WORD = uniform ? "nena" : "nasa";
+      const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
       const N_END_WORD = "nanpa";
 
       let afterStartingNe = false;
@@ -541,8 +677,13 @@
         const t = tokens[i];
 
         if (t === "NE") {
-          if (out.length === 0) { out.push("nanpa", E_WORD); afterStartingNe = true; }
-          else { out.push(N_WORD, E_WORD_FOR_NE_AFTER_START); afterStartingNe = false; }
+          if (out.length === 0) {
+            out.push("nanpa", E_WORD);
+            afterStartingNe = true;
+          } else {
+            out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
+            afterStartingNe = false;
+          }
           continue;
         }
 
@@ -555,12 +696,12 @@
         }
 
         if (t === "NO") {
-          if (afterStartingNe) { out.push(N_WORD, "o"); afterStartingNe = false; }
-          else { out.push(N_WORD_DECIMAL_POINT, "o"); afterStartingNe = false; }
+          if (afterStartingNe) out.push(N_WORD, "o");
+          else out.push(N_WORD_DECIMAL_POINT, "o");
+          afterStartingNe = false;
           continue;
         }
 
-        // NEW: KE tokens => kulupu e (supports KE, KEKE, KEKEKE)
         if (t === "KE")   { out.push("kulupu", E_WORD_FOR_NE_AFTER_START); afterStartingNe = false; continue; }
         if (t === "KEKE") { out.push("kulupu", E_WORD_FOR_NE_AFTER_START, "kulupu", E_WORD_FOR_NE_AFTER_START); afterStartingNe = false; continue; }
         if (t === "KEKEKE") {
@@ -604,13 +745,12 @@
         : numberStrToNanpaCaps(rawForEncode, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
 
       const tokens = tokenizeNanpaCaps(caps);
-      const tpWords = nanpaCapsTokensToTpWords(tokens);
+      const tpWords = nanpaCapsTokensToTpWords(tokens, { mode: getCartoucheDisplayMode() });
       const cps = tpWordsToUcsurCodepoints(tpWords);
 
       assertAllAllowedTpUcsur(cps);
       return cps;
     }
-
 
     function drawRoundedRect(ctx, x, y, w, h, r) {
       const radius = Math.min(r, w / 2, h / 2);
@@ -995,8 +1135,6 @@
       return (neg ? "-" : "") + intGrouped + "." + fracGrouped + suffix;
     }
 
-
-
     function formatForCartoucheEncoding(raw, thousandsSep = ",") {
       const s0 = String(raw ?? "").trim();
       if (!s0) return s0;
@@ -1029,7 +1167,6 @@
       const out = (neg ? "-" : "") + intPart + (hasDot ? "." : "") + (endsWithDot ? "" : fracRaw);
       return out;
     }
-
 
     function normalizeInputString(s) {
       if (!s || s === "-") return s;
@@ -1249,7 +1386,7 @@
         return;
       }
 
-      // Cartouche rendering (encoding behavior unchanged)
+      // Cartouche rendering (encoding behavior depends on display mode)
       const cps = decimalToUcsurCodepoints(inputStr);
 
       const keysEl = document.getElementById("keys");
@@ -1265,9 +1402,6 @@
         { padding: DISPLAY_PAD, border: DISPLAY_BORDER, cornerRadius: DISPLAY_CORNER, letterGap: DISPLAY_GAP }
       );
     }
-
-
-
 
     function resolveReduceWidthPx(reduceWidthPx, btn) {
       if (reduceWidthPx == null) return 0;
@@ -1506,6 +1640,14 @@
 
     window.addEventListener("load", async () => {
       await ensureFontLoaded();
+
+      // Query param takes precedence; otherwise fall back to localStorage.
+      const setByQuery = loadCartoucheDisplayModeFromQueryParam();
+      if (!setByQuery) loadCartoucheDisplayModeFromStorage();
+
+      wireCartoucheDisplayRadios();
+      updateCrossLinksWithCartoucheDisplay();
+
       buildKeypad();
       renderDisplay();
     });

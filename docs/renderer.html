@@ -191,7 +191,7 @@
       width: 1px !important;
       height: 1px !important;
       padding: 0 !important;
-      margin: -1px !important;
+      margin: 0 !important;
       overflow: hidden !important;
       clip: rect(0, 0, 0, 0) !important;
       white-space: nowrap !important;
@@ -201,6 +201,39 @@
     /* Prevent user agent forced color adjustments from destroying contrast in HC modes */
     .no-forced-adjust {
       forced-color-adjust: none;
+    }
+
+    /* =========================
+       NEW: Cartouche display mode chooser (subtle)
+       ========================= */
+    .displayChooser {
+      margin: 10px 0 6px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+
+    .displayChooser legend {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 6px;
+      font-weight: 700;
+    }
+
+    .displayOpt {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: 14px;
+      font-size: 13px;
+      color: #111;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .displayOpt input {
+      transform: translateY(1px);
     }
   </style>
 
@@ -320,6 +353,25 @@
         </div>
       </div>
     </div>
+
+    <!-- NEW: Cartouche display mode selector (subtle) -->
+    <fieldset class="displayChooser" aria-label="Cartouche display mode">
+      <legend>Cartouche display</legend>
+
+      <label class="displayOpt">
+        <input type="radio" name="cartoucheDisplay" value="traditional" checked>
+        <span>Traditional</span>
+      </label>
+
+      <label class="displayOpt">
+        <input type="radio" name="cartoucheDisplay" value="uniform">
+        <span>Uniform</span>
+      </label>
+
+      <div class="help small" style="margin-top:6px;">
+        Traditional: existing wording. Uniform: every <span class="mono">esun</span> → <span class="mono">en</span>, every <span class="mono">nasa</span> → <span class="mono">nena</span>, and every standalone <span class="mono">e</span> → <span class="mono">en</span>. Only <span class="mono">nanpa</span> at start and end is unchanged.
+      </div>
+    </fieldset>
 
     <div class="out" role="region" aria-label="Outputs">
       <h3>
@@ -492,7 +544,8 @@
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
       </h1>
       <div class="small" style="margin-bottom:10px;">
-        <a class="repoLink" href="./calculator.html" target="_blank" rel="noopener noreferrer">
+        <!-- CHANGED: give this link an id so JS can append the query param -->
+        <a id="calculatorLink" class="repoLink" href="./calculator.html" target="_blank" rel="noopener noreferrer">
           nanpa-linja-n cartouche calculator
         </a>
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
@@ -545,21 +598,112 @@
     }
 
     /* ============================================================
-       NEW: Proper-name display formatting (Title Case per word)
-       - Ensures each word is "Capitalized" (first letter uppercase, rest lowercase).
-       - Keeps the underlying encoding untouched; this is display-only.
+       NEW: Cartouche display mode (Traditional vs Uniform)
+       - Traditional: existing wording
+       - Uniform: every "esun" -> "en", every "nasa" -> "nena", every standalone "e" -> "en"
+       - Only "nanpa" at start and end remains unchanged.
+       ============================================================ */
+
+    const CARTOUCHE_DISPLAY_STORAGE_KEY = "cartoucheDisplayMode";
+
+    // NEW: query-param name so this page can be linked consistently
+    // Example: ?cartoucheDisplay=uniform
+    const CARTOUCHE_DISPLAY_QUERY_PARAM = "cartoucheDisplay";
+
+    let lastAction = "decimal"; // "decimal" | "codes" | "words"
+
+    function getCartoucheDisplayMode() {
+      const el = document.querySelector('input[name="cartoucheDisplay"]:checked');
+      return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
+    }
+
+    function setCartoucheDisplayMode(mode) {
+      const v = (mode === "uniform") ? "uniform" : "traditional";
+      const target = document.querySelector(`input[name="cartoucheDisplay"][value="${v}"]`);
+      if (target) target.checked = true;
+      try { localStorage.setItem(CARTOUCHE_DISPLAY_STORAGE_KEY, v); } catch {}
+    }
+
+    function loadCartoucheDisplayModeFromStorage() {
+      try {
+        const v = localStorage.getItem(CARTOUCHE_DISPLAY_STORAGE_KEY);
+        if (v === "uniform" || v === "traditional") setCartoucheDisplayMode(v);
+      } catch {}
+    }
+
+    // NEW: read display mode from query param; returns "uniform" | "traditional" | null
+    function readCartoucheDisplayModeFromQuery() {
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+        const v = String(params.get(CARTOUCHE_DISPLAY_QUERY_PARAM) ?? "").toLowerCase().trim();
+        if (v === "uniform" || v === "traditional") return v;
+      } catch {}
+      return null;
+    }
+
+    // NEW: apply precedence: query param (if valid) overrides localStorage; otherwise localStorage
+    function applyCartoucheDisplayModeFromQueryOrStorage() {
+      const q = readCartoucheDisplayModeFromQuery();
+      if (q) {
+        setCartoucheDisplayMode(q); // also persists to localStorage
+        return;
+      }
+      loadCartoucheDisplayModeFromStorage();
+    }
+
+    // NEW: update the calculator.html link so it includes the current selection
+    function updateCalculatorLinkWithDisplayParam() {
+      const a = document.getElementById("calculatorLink");
+      if (!a) return;
+
+      try {
+        const href = a.getAttribute("href") || "./calculator.html";
+        const u = new URL(href, window.location.href);
+        u.searchParams.set(CARTOUCHE_DISPLAY_QUERY_PARAM, getCartoucheDisplayMode());
+
+        // keep href relative-ish (works for ./calculator.html and for absolute URLs)
+        if (u.origin === window.location.origin) {
+          const rel = u.pathname + (u.search || "") + (u.hash || "");
+          a.setAttribute("href", rel);
+        } else {
+          a.setAttribute("href", u.toString());
+        }
+      } catch {
+        // If URL construction fails, fall back to appending manually (best-effort)
+        const base = (a.getAttribute("href") || "./calculator.html").split("?")[0];
+        a.setAttribute("href", `${base}?${CARTOUCHE_DISPLAY_QUERY_PARAM}=${encodeURIComponent(getCartoucheDisplayMode())}`);
+      }
+    }
+
+    function wireCartoucheDisplayRadios() {
+      const radios = document.querySelectorAll('input[name="cartoucheDisplay"]');
+      radios.forEach(r => {
+        r.addEventListener("change", () => {
+          setCartoucheDisplayMode(getCartoucheDisplayMode());
+          updateCalculatorLinkWithDisplayParam(); // NEW
+          buildDigitReferenceTable();
+
+          // Re-render based on the user's most recent action.
+          if (lastAction === "words") document.getElementById("btnFromWords")?.click();
+          else if (lastAction === "codes") document.getElementById("btnFromCodes")?.click();
+          else document.getElementById("btnEncode")?.click();
+        });
+      });
+    }
+
+    /* ============================================================
+       Proper-name display formatting (Title Case per word)
        ============================================================ */
 
     function titleCaseNanpaProperNameForDisplay(nameStr) {
       const s = String(nameStr ?? "").trim();
       if (!s) return s;
-      // Preserve whitespace normalization and Title-Case each token.
       return s
         .split(/\s+/)
         .filter(Boolean)
         .map(w => {
           const lower = w.toLowerCase();
-          if (lower.length === 1) return lower.toUpperCase(); // e.g., "n" -> "N"
+          if (lower.length === 1) return lower.toUpperCase();
           return lower[0].toUpperCase() + lower.slice(1);
         })
         .join(" ");
@@ -656,6 +800,7 @@
         0xF193E, // NASA
         0xF1909, // E
         0xF190B, // ESUN
+        0xF190A, // EN
       ]);
     }
 
@@ -663,8 +808,8 @@
     const TP_UCSUR_MAX = 0xF1988;
 
     // cartouche start/end markers to show in HEX output
-    const CARTOUCHE_START_CP = 0xF1990; // cartouche start hex code
-    const CARTOUCHE_END_CP   = 0xF1991; // cartouche end hex code
+    const CARTOUCHE_START_CP = 0xF1990;
+    const CARTOUCHE_END_CP   = 0xF1991;
 
     function withCartoucheMarkers(codepoints) {
       const cps = Array.from(codepoints ?? []);
@@ -721,22 +866,25 @@
 
     const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
 
-    // Reverse map: digit word -> token (e.g., "wan" -> "WE")
+    // Reverse map: digit word -> token
     const DIGIT_WORD_TO_TOKEN = Object.fromEntries(
       Object.entries(TOKEN_TO_DIGIT_WORD).map(([tok, w]) => [w, tok])
     );
 
     function normalizeTpWord(raw) {
-      // keep only a-z so "nanpa," still works
       return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, "");
     }
 
     /**
      * Try to recognize and decode a nanpa-linja-n TP-words encoded number phrase:
-     *   nanpa esun ... nanpa
+     *   nanpa esun|en ... nanpa
      *
-     * If it matches, return { caps, words } where caps is like "NEWENIN".
-     * If it does not match, return null.
+     * Accepts both Traditional and Uniform mode wordings:
+     * - Start: "nanpa esun" or "nanpa en"
+     * - After digits: "<digitWord> esun" or "<digitWord> en"
+     * - NE (non-initial): "(nasa|nena) (e|en)"
+     * - KE: "kulupu (e|en)"
+     * - NONONO: (nasa|nena) o x3
      */
     function tryParseNanpaLinjanTpPhraseToCaps(input) {
       const words = String(input ?? "")
@@ -745,24 +893,24 @@
         .map(normalizeTpWord)
         .filter(Boolean);
 
-      // Must be at least: "nanpa esun ... nanpa"
+      // Must be at least: "nanpa esun|en ... nanpa"
       if (words.length < 3) return null;
-      if (words[0] !== "nanpa" || words[1] !== "esun") return null;
+      if (words[0] !== "nanpa") return null;
+      if (!(words[1] === "esun" || words[1] === "en")) return null;
       if (words[words.length - 1] !== "nanpa") return null;
 
-      // We will parse everything except the final "nanpa" (which corresponds to token "N")
       const end = words.length - 1;
 
       const capsParts = ["NE"]; // start token is always NE
       let i = 2;
 
       while (i < end) {
-        // 1) NONONO: "nasa o nasa o nasa o"
+        // 1) NONONO: "(nasa|nena) o" repeated 3 times
         if (
           i + 5 < end &&
-          words[i] === "nasa" && words[i + 1] === "o" &&
-          words[i + 2] === "nasa" && words[i + 3] === "o" &&
-          words[i + 4] === "nasa" && words[i + 5] === "o"
+          (words[i] === "nasa" || words[i] === "nena") && words[i + 1] === "o" &&
+          (words[i + 2] === "nasa" || words[i + 2] === "nena") && words[i + 3] === "o" &&
+          (words[i + 4] === "nasa" || words[i + 4] === "nena") && words[i + 5] === "o"
         ) {
           capsParts.push("NONONO");
           i += 6;
@@ -780,31 +928,35 @@
           continue;
         }
 
-        // 3) NE (non-initial): "nasa e"
-        if (i + 1 < end && words[i] === "nasa" && words[i + 1] === "e") {
+        // 3) NE (non-initial): "(nasa|nena) (e|en)"
+        if (
+          i + 1 < end &&
+          (words[i] === "nasa" || words[i] === "nena") &&
+          (words[i + 1] === "e" || words[i + 1] === "en")
+        ) {
           capsParts.push("NE");
           i += 2;
           continue;
         }
 
-        // 4) KE... : one or more "kulupu e" pairs become "KE" repeated
-        if (i + 1 < end && words[i] === "kulupu" && words[i + 1] === "e") {
+        // 4) KE... : one or more "kulupu (e|en)" pairs become "KE" repeated
+        if (i + 1 < end && words[i] === "kulupu" && (words[i + 1] === "e" || words[i + 1] === "en")) {
           let count = 0;
-          while (i + 1 < end && words[i] === "kulupu" && words[i + 1] === "e") {
+          while (i + 1 < end && words[i] === "kulupu" && (words[i + 1] === "e" || words[i + 1] === "en")) {
             count += 1;
             i += 2;
           }
-          // Append "KE" count times; tokenizer will collapse to KE/KEKE/KEKEKE as needed.
           capsParts.push("KE".repeat(count));
           continue;
         }
 
-        // 5) Digits: either "<digitWord> esun" OR "nasa <digitWord>" (for NI/NA/NU style)
+        // 5) Digits:
+        //    - "<digitWord> (esun|en)"
+        //    - "(nasa|nena) <digitWord>" for NI/NA/NU style
         if (i + 1 < end) {
-          // "nasa ijo" / "nasa awen" / "nasa utala"
-          if (words[i] === "nasa" && DIGIT_WORD_TO_TOKEN[words[i + 1]]) {
+          // "(nasa|nena) ijo/awen/utala"
+          if ((words[i] === "nasa" || words[i] === "nena") && DIGIT_WORD_TO_TOKEN[words[i + 1]]) {
             const tok = DIGIT_WORD_TO_TOKEN[words[i + 1]];
-            // only accept the cases that are actually emitted by your encoder
             if (tok === "NI" || tok === "NA" || tok === "NU") {
               capsParts.push(tok);
               i += 2;
@@ -812,21 +964,19 @@
             }
           }
 
-          // "wan esun", "tu esun", ...
-          if (DIGIT_WORD_TO_TOKEN[words[i]] && words[i + 1] === "esun") {
+          // "wan (esun|en)", "tu (esun|en)", ...
+          if (DIGIT_WORD_TO_TOKEN[words[i]] && (words[i + 1] === "esun" || words[i + 1] === "en")) {
             capsParts.push(DIGIT_WORD_TO_TOKEN[words[i]]);
             i += 2;
             continue;
           }
         }
 
-        // 6) NO: "nasa o" (after starting NE case) or "ni o" or "nena o"
+        // 6) NO: "(nasa|nena|ni) o"
         if (i + 1 < end) {
           const w0 = words[i], w1 = words[i + 1];
           if (
-            (w0 === "nasa" && w1 === "o") ||
-            (w0 === "ni" && w1 === "o") ||
-            (w0 === "nena" && w1 === "o")
+            ((w0 === "nasa" || w0 === "nena" || w0 === "ni") && w1 === "o")
           ) {
             capsParts.push("NO");
             i += 2;
@@ -839,6 +989,7 @@
 
       const caps = capsParts.join("") + "N";
 
+      // Validate tokenization
       tokenizeNanpaCaps(caps);
 
       return { caps, words };
@@ -1340,16 +1491,35 @@
       setDecimalValueLine(v);
     }
 
-    function nanpaCapsTokensToTpWords(tokens) {
+    /**
+     * Convert nanpa-caps tokens into TP words.
+     * Traditional vs Uniform controlled by { mode }:
+     * - Uniform affects ALL occurrences of:
+     *   - esun -> en
+     *   - nasa -> nena
+     *   - e -> en
+     * - Only "nanpa" at start and end remains "nanpa".
+     */
+    function nanpaCapsTokensToTpWords(tokens, { mode = "traditional" } = {}) {
       if (!tokens || tokens.length === 0) return [];
 
+      const uniform = (mode === "uniform");
       const out = [];
 
-      const E_WORD = "esun";
-      const E_WORD_FOR_NE_AFTER_START = "e";
-      const N_WORD = "nasa";
-      const N_WORD_DECIMAL_POINT = "ni";
+      // Uniform: esun -> en everywhere
+      const E_WORD = uniform ? "en" : "esun";
+
+      // Uniform: standalone e -> en everywhere
+      const E_WORD_FOR_NE_AFTER_START = uniform ? "en" : "e";
+
+      // Uniform: nasa -> nena everywhere
+      const N_WORD = uniform ? "nena" : "nasa";
+
+      // In traditional, NO is context-sensitive: ni/nena; in uniform, NO uses nena anyway
+      const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
       const N_WORD_FRACTION = "nena";
+
+      // Start/end are always nanpa
       const N_END_WORD = "nanpa";
 
       let afterStartingNe = false;
@@ -1358,21 +1528,31 @@
         const t = tokens[i];
 
         if (t === "NE") {
-          if (out.length === 0) { out.push("nanpa", E_WORD); afterStartingNe = true; }
-          else { out.push(N_WORD, E_WORD_FOR_NE_AFTER_START); afterStartingNe = false; }
+          if (out.length === 0) {
+            // Start is always "nanpa", but the second word is affected (esun -> en)
+            out.push("nanpa", E_WORD);
+            afterStartingNe = true;
+          } else {
+            // Non-initial NE: (nasa|nena) (e|en)
+            out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
+            afterStartingNe = false;
+          }
           continue;
         }
 
         if (DIGIT_TOKENS.has(t)) {
           afterStartingNe = false;
           const digitWord = TOKEN_TO_DIGIT_WORD[t];
+          // These digit tokens historically use "nasa <digitWord>" for NI/NA/NU
+          // Uniform changes "nasa" -> "nena" via N_WORD.
           if (t === "NI" || t === "NA" || t === "NU") out.push(N_WORD, digitWord);
-          else out.push(digitWord, E_WORD);
+          else out.push(digitWord, E_WORD); // Uniform changes esun -> en via E_WORD.
           continue;
         }
 
         if (t === "NO") {
           if (afterStartingNe) {
+            // Right after start NE, it's "nasa o" traditionally; uniform makes it "nena o"
             out.push(N_WORD, "o");
             afterStartingNe = false;
           } else {
@@ -1386,9 +1566,20 @@
           continue;
         }
 
-        if (t === "NONO") { out.push("nena","o","nena","o"); afterStartingNe=false; continue; }
-        if (t === "NONONO") { out.push("nasa","o","nasa","o","nasa","o"); afterStartingNe=false; continue; }
+        if (t === "NONO") {
+          out.push("nena","o","nena","o");
+          afterStartingNe = false;
+          continue;
+        }
 
+        if (t === "NONONO") {
+          // Uniform affects nasa -> nena via N_WORD
+          out.push(N_WORD,"o",N_WORD,"o",N_WORD,"o");
+          afterStartingNe = false;
+          continue;
+        }
+
+        // Uniform affects "e" -> "en" via E_WORD_FOR_NE_AFTER_START
         if (t === "KE") { out.push("kulupu", E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
         if (t === "KEKE") { out.push("kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
         if (t === "KEKEKE") { out.push("kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
@@ -1404,6 +1595,7 @@
     const WORD_TO_UCSUR_CP = {
       "nanpa": 0xF193D,
       "esun":  0xF190B,
+      "en":    0xF190A,
       "e":     0xF1909,
       "nasa":  0xF193E,
       "ni":    0xF1941,
@@ -1431,7 +1623,6 @@
       "anpa": 0xF1905,
       "ante": 0xF1906,
       "anu": 0xF1907,
-      "en": 0xF190A,
       "ike": 0xF190D,
       "ilo": 0xF190E,
       "insa": 0xF190F,
@@ -1484,12 +1675,6 @@
       "open": 0xF1947,
       "pakala": 0xF1948,
       "pali": 0xF1949,
-      "palisa": 0xF194A,
-      "pan": 0xF194B,
-      "pana": 0xF194C,
-      "pi": 0xF194D,
-      "pilin": 0xF194E,
-      "pimeja": 0xF194F,
       "pini": 0xF1950,
       "poka": 0xF1952,
       "poki": 0xF1953,
@@ -1605,7 +1790,7 @@
         : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
 
       const tokens = tokenizeNanpaCaps(caps);
-      const tpWords = nanpaCapsTokensToTpWords(tokens);
+      const tpWords = nanpaCapsTokensToTpWords(tokens, { mode: getCartoucheDisplayMode() });
       const cps = tpWordsToUcsurCodepoints(tpWords);
 
       assertAllAllowedTpUcsur(cps);
@@ -1676,7 +1861,6 @@
       return splitCartoucheCapsLetters(caps);
     }
 
-    // CHANGED: now accepts capitalized proper names too (A–Z / a–z), and final n/N
     function isValidNanpaLinjanProperName(raw) {
       const s = String(raw ?? "").replace(/\s+/g, "");
       if (!s) return false;
@@ -1770,7 +1954,7 @@
       const caps = core.toUpperCase() + "N";
 
       const tokens = tokenizeNanpaCaps(caps);
-      const tpWords = nanpaCapsTokensToTpWords(tokens);
+      const tpWords = nanpaCapsTokensToTpWords(tokens, { mode: getCartoucheDisplayMode() });
       const cps = tpWordsToUcsurCodepoints(tpWords);
 
       assertAllAllowedTpUcsur(cps);
@@ -2119,16 +2303,12 @@
       const latinRaw = encodeDecimalToLatin(raw);
       const latinDisplay = titleCaseNanpaProperNameForDisplay(latinRaw);
 
-      // CHANGED: proper-name output is Title Cased per word
       elLatinOut.value = latinDisplay;
-
-      // Use the raw (not display) proper name to derive the number-code deterministically
       elNumberCodeOut.value = latinNameToNumberCode(latinRaw);
 
       const cps = decimalToUcsurCodepoints(raw);
 
       if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
-
       if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
       const smallSet = getSmallCodepointsSet();
@@ -2156,6 +2336,7 @@
 
     document.getElementById("btnEncode").addEventListener("click", async () => {
       try {
+        lastAction = "decimal";
         await runEncodeFromDecimal();
       } catch (err) {
         setDecimalValueLine(null);
@@ -2165,14 +2346,13 @@
 
     document.getElementById("btnFromCodes")?.addEventListener("click", async () => {
       try {
+        lastAction = "codes";
         await ensureFontLoaded();
         enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS);
 
         const cps = parseHexCodepoints(elCodesIn.value);
 
-        // NOTE: this path displays glyph characters, not a nanpa-linja-n proper name (no Title Case applied)
         elLatinOut.value = String.fromCodePoint(...cps);
-
         if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
 
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
@@ -2210,6 +2390,7 @@
 
     document.getElementById("btnFromWords").addEventListener("click", async () => {
       try {
+        lastAction = "words";
         await ensureFontLoaded();
         enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS);
 
@@ -2222,7 +2403,7 @@
           setDecimalValueFromCapsOrClear(caps);
 
           const tokens = tokenizeNanpaCaps(caps);
-          const tpWords = nanpaCapsTokensToTpWords(tokens);
+          const tpWords = nanpaCapsTokensToTpWords(tokens, { mode: getCartoucheDisplayMode() });
           const cps = tpWordsToUcsurCodepoints(tpWords);
 
           const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
@@ -2232,7 +2413,6 @@
           elNumberCodeOut.value = canonicalCode;
 
           if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
-
           if (elTpWordsOut) elTpWordsOut.value = tpWords.join(" ");
 
           const smallSet = getSmallCodepointsSet();
@@ -2271,12 +2451,9 @@
           const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
 
           elLatinOut.value = prettyNameDisplay;
-
-          // Derive from raw proper-name (not display)
           elNumberCodeOut.value = latinNameToNumberCode(prettyNameRaw);
 
           if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
-
           if (elTpWordsOut) elTpWordsOut.value = words.join(" ");
 
           const smallSet = getSmallCodepointsSet();
@@ -2316,11 +2493,9 @@
           const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
 
           elLatinOut.value = prettyNameDisplay;
-
           elNumberCodeOut.value = latinNameToNumberCode(prettyNameRaw);
 
           if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
-
           if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
           const smallSet = getSmallCodepointsSet();
@@ -2350,10 +2525,8 @@
         const cps = parseTpWordsToCodepoints(elTpWordsIn.value);
 
         if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
-
         if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
-        // NOTE: this fallback path displays glyph characters, not a nanpa-linja-n proper name (no Title Case applied)
         elLatinOut.value = String.fromCodePoint(...cps);
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
 
@@ -2402,6 +2575,7 @@
         return;
       }
 
+      // Accept valid mapped words (including en)
       const parts = raw.split(/\s+/).filter(Boolean);
       for (const p of parts) {
         if (WORD_TO_UCSUR_CP[p.toLowerCase()] == null) {
@@ -2426,6 +2600,13 @@
     window.addEventListener("load", async () => {
       try {
         await ensureFontLoaded();
+
+        // CHANGED: query param overrides localStorage, then we update the calculator link
+        applyCartoucheDisplayModeFromQueryOrStorage();
+        updateCalculatorLinkWithDisplayParam();
+
+        wireCartoucheDisplayRadios();
+
         buildDigitReferenceTable();
         await runEncodeFromDecimal();
       } catch (err) {
