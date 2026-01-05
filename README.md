@@ -64,16 +64,16 @@ If we ignore 'n' and ignore 'e' in the words, then each digit word maps to a dif
 
 | Glyph                                                             | Letter       | #~n Cartouche                                                               | #~n Proper Name | Design Rationale               |
 |-------------------------------------------------------------------|--------------|-----------------------------------------------------------------------------|-----------------|--------------------------------|
-| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | nenin           | round like zero                |
-| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | newen           | wan                            |
-| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | neten           | tu                             |
-| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche.png" width="64"/>       | nesen           | looks like 3 on its side       |
-| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | nenan           | has four lines towards center  |
-| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | nelen           | luka                           |
-| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | nenun           | has six short lines            |
-| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | nemen           | seven days in week             |
-| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | nepen           | spiders have eight legs        |
-| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | nejen           | nine months to carry pregnancy |
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | Nenin           | round like zero                |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | Newen           | wan                            |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | Neten           | tu                             |
+| <img src="images/horizontal 3 nasin nanpa v3.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche v2.png" width="64"/>    | Nesen           | has three lines                |
+| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | Nenan           | has four lines                 |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | Nelen           | luka                           |
+| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | Nenun           | has six short lines            |
+| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | Nemen           | seven days in week             |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | Nepen           | spiders have eight legs        |
+| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | Nejen           | nine months to carry pregnancy |
 
 Sitelen Cartouche Summary:
 
@@ -357,28 +357,28 @@ Examples:
 - there is a **UNIQUE** one-to-one mapping from numbers to cartouche proper names
   - all the digits and delimiters are mapped to separate letters
   - when writing down the proper name from the cartouche, we will add spaces at decimal delimiters, for ease of reading long proper names
-    - the proper name of **neno nin one wetesen ene nalenun ene mepejen**, can be decoded as **-0.123456789**
+    - the proper name of **Neno Nin One Wetesen Ene Nalenun Ene Mepejen**, can be decoded as **-0.123456789**
       - <img src="images/number_negative_decimal_digits_glyph.png" width="320"/>
-    - the proper name of **nejen onono sen ono nan**, can be decoded as **9¾**
+    - the proper name of **Nejen Onono Sen Ono Nan**, can be decoded as **9¾**
       - <img src="images/number_9_fraction_three_quarters_glyph.png" width="160"/>
-    - the proper name of **nenaten eke sepenun one melen**, can be decoded as **42,386.75**
+    - the proper name of **Nenaten Eke Sepenun One Melen**, can be decoded as **42,386.75**
       - <img src="images/number_42386_75_glyph_v8.png" width="320"/>
-    - the proper name of **nenunan one len ekeken**, can be decoded as **64.5M**
+    - the proper name of **Nenunan One Len Ekeken**, can be decoded as **64.5M**
       - <img src="images/number_64_5_M_glyph_v9.png" width="160"/>
 - can be displayed horizontally or vertically
 
 | Glyph                                                             | Letter       | #~n Cartouche                                                               | #~n Proper Name | Design Rationale               |
 |-------------------------------------------------------------------|--------------|-----------------------------------------------------------------------------|-----------------|--------------------------------|
-| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | nenin           | round like zero                |
-| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | newen           | wan                            |
-| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | neten           | tu                             |
-| <img src="images/horizontal 3 nasin nanpa v2.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche.png" width="64"/>       | nesen           | looks like 3 on its side       |
-| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | nenan           | has four lines                 |
-| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | nelen           | luka                           |
-| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | nenun           | has six short lines            |
-| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | nemen           | seven days in week             |
-| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | nepen           | spiders have eight legs        |
-| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | nejen           | nine months to carry pregnancy |
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | Nenin           | round like zero                |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | Newen           | wan                            |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | Neten           | tu                             |
+| <img src="images/horizontal 3 nasin nanpa v3.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche v2.png" width="64"/>    | Nesen           | has three lines                |
+| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | Nenan           | has four lines                 |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | Nelen           | luka                           |
+| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | Nenun           | has six short lines            |
+| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | Nemen           | seven days in week             |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | Nepen           | spiders have eight legs        |
+| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | Nejen           | nine months to carry pregnancy |
 
 
 - the table below has some other delimiters used in numeric expressions inside cartouches:
