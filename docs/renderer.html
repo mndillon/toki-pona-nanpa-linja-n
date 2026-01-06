@@ -400,7 +400,7 @@
 
       <div id="hexSection">
         <h3>
-          nasin-nanpa font code points (including cartouche start and end codes) (hex)
+          nasin-nanpa UCSUR code points (including cartouche start and end codes) (hex)
           <span class="tpLine">nanpa sitelen (nasin hex)</span>
         </h3>
         <textarea id="codepointsOut" class="mono" readonly aria-readonly="true"></textarea>
@@ -413,7 +413,7 @@
       </div>
 
       <h3>
-        Toki Pona words (for code points excluding cartouche start and end codes)
+        Toki Pona words (for UCSUR code points excluding cartouche start and end codes)
         <span class="tpLine">nimi pi toki pona (tan nanpa sitelen)</span>
       </h3>
       <textarea id="tpWordsOut" class="mono" readonly aria-readonly="true"></textarea>
@@ -583,6 +583,8 @@
     /* ============================================================
        Accessibility helpers
        ============================================================ */
+
+    const WORD_FOR_NEGATIVE_SIGN = "ona" //"o" // could use ona
 
     const elSrStatus = document.getElementById("srStatus");
 
@@ -1553,7 +1555,7 @@
         if (t === "NO") {
           if (afterStartingNe) {
             // Right after start NE, it's "nasa o" traditionally; uniform makes it "nena o"
-            out.push(N_WORD, "o");
+            out.push(N_WORD, WORD_FOR_NEGATIVE_SIGN);
             afterStartingNe = false;
           } else {
             let nWordToUse = N_WORD_DECIMAL_POINT;

@@ -334,6 +334,8 @@
     const CARTOUCHE_DISPLAY_STORAGE_KEY = "cartoucheDisplayMode";
     const CARTOUCHE_DISPLAY_QUERY_KEY = "cartoucheDisplay";
 
+    const WORD_FOR_NEGATIVE_SIGN = "ona" //"o" // could use ona
+
     function getCartoucheDisplayMode() {
       const el = document.querySelector('input[name="cartoucheDisplay"]:checked');
       return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
@@ -433,6 +435,7 @@
       "lete": 0xF1926,
       "awen": 0xF1908,
       "seli": 0xF1957,
+      "ona": 0xF1946,
     };
 
     const FONT_FAMILY = "TP-Cartouche-Font";
@@ -697,7 +700,7 @@
         }
 
         if (t === "NO") {
-          if (afterStartingNe) out.push(N_WORD, "o");
+          if (afterStartingNe) out.push(N_WORD, WORD_FOR_NEGATIVE_SIGN);
           else out.push(N_WORD_DECIMAL_POINT, "o");
           afterStartingNe = false;
           continue;
