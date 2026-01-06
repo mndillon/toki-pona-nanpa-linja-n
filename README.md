@@ -19,7 +19,7 @@ o weka e nimi ike.
 | Lojban                   | (li) re ci xa vo mu (boi)                            | functional, sterile       |
 | Toki Pona (pu)           | mute                                                 | useless                   |
 | Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, error prone    |
-| Toki Pona (nanpa-linja-n)| **netesen eke nunalen**                              | natural                   |
+| Toki Pona (nanpa-linja-n)| **Netesen Eke Nunalen**                              | natural                   |
 
 ### Interactive decimal cartouche renderer:
 
