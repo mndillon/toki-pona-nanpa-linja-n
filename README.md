@@ -239,20 +239,6 @@ Examples:
 
 ---
 
-## Mixed Expressions
-
-```
-(3.75) / 4   → nesen one melen ono nan
-3 / 4.75     → nesen ono nan one melen
-1,234.567    → newen eke tesenan one lenumen
-0.5          → nenin one len
-1/2          → newen ono ten
-5:38         → tenpo nelen one sepen
-19:46:27     → tenpo newejen one nanun one temen
-```
-
----
-
 ## Design Rationale
 
 ### Digit Roots
@@ -328,7 +314,7 @@ Examples:
 ### neke / nekeke / nekekeke / neke...ke
 - Contain **k**, which no digit word has
 - Do not end in **-n** signalling more of the number to follow
-- Can be used as ISO-block narker in large numbers
+- Can be used as ISO-block marker in large numbers
 - Never appears in decimal part of number, only in the integer part
 - Can be split as "n Eke ", to split up long sequences
 - Adds more context, makes the assumption that the string of digits represents a numeric value
@@ -357,13 +343,13 @@ Examples:
   - all the digits and delimiters are mapped to separate letters
   - when writing down the proper name from the cartouche, we will add spaces at decimal delimiters, for ease of reading long proper names
     - the proper name of **Neno Nin One Wetesen Ene Nalenun Ene Mepejen**, can be decoded as **-0.123456789**
-      - <img src="images/number_negative_decimal_digits_glyph.png" width="320"/>
+      - <img src="images/number_negative_decimal_digits_glyph.png" width="520"/>
     - the proper name of **Nejen Onono Sen Ono Nan**, can be decoded as **9¾**
-      - <img src="images/number_9_fraction_three_quarters_glyph.png" width="160"/>
+      - <img src="images/number_9_fraction_three_quarters_glyph.png" width="300"/>
     - the proper name of **Nenaten Eke Sepenun One Melen**, can be decoded as **42,386.75**
-      - <img src="images/number_42386_75_glyph_v8.png" width="320"/>
+      - <img src="images/number_42386_75_glyph_v8.png" width="340"/>
     - the proper name of **Nenunan One Len Ekeken**, can be decoded as **64.5M**
-      - <img src="images/number_64_5_M_glyph_v9.png" width="160"/>
+      - <img src="images/number_64_5_M_glyph_v9.png" width="260"/>
 - can be displayed horizontally or vertically
 
 | Glyph                                                             | Letter       | #~n Cartouche                                                               | #~n Proper Name | Design Rationale               |
@@ -382,17 +368,17 @@ Examples:
 
 - the table below has some other delimiters used in numeric expressions inside cartouches:
 
-| Glyph                                                                                          | Letter(s)    |  #~n Proper Name          | Design Rationale                                      |
-|------------------------------------------------------------------------------------------------|--------------|---------------------------|-------------------------------------------------------|
-| <img src="images/horizontal Negative Delimiter nasin nanpa v4.png" width="16"/>                | O            | no                        | negative sign, always at the start of a number        |
-| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | none                      | decimal point, never at the start of a number         |
-| <img src="images/horizontal Fraction Delimiter nasin nanpa v4.png" width="32"/>                | OO           | nono                      | needed to split numerator and denominator of fraction |
-| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa v2.png" width="48"/>   | OOO          | nonono                    | needed to split integer from fraction part            |
-| <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands                   |
-| <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | nekeke                    | millions                                              |
-| <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | nekekeke                  | billions                                              |
-| <img src="images/horizontal ISO Breeak nasin nanpa v3.png" width="16"/>                        | N            | ne                        | natural break                                         |
-| <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | n                         | nanpa, always at start and end of numeric description |
+| Glyph                                                                                          | Letter(s)    |  #~n Proper Name          | Design Rationale                                             |
+|------------------------------------------------------------------------------------------------|--------------|---------------------------|--------------------------------------------------------------|
+| <img src="images/horizontal Negative Delimiter nasin nanpa v4.png" width="16"/>                | O            | no                        | negative sign, optional, but always at the start of a number |
+| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | none                      | decimal point, never at the start of a number                |
+| <img src="images/horizontal Fraction Delimiter nasin nanpa v4.png" width="32"/>                | OO           | nono                      | needed to split numerator and denominator of fraction        |
+| <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa v2.png" width="48"/>   | OOO          | nonono                    | needed to split integer from fraction part                   |
+| <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands                          |
+| <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | nekeke                    | millions                                                     |
+| <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | nekekeke                  | billions                                                     |
+| <img src="images/horizontal ISO Breeak nasin nanpa v3.png" width="16"/>                        | N            | ne                        | natural break                                                |
+| <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | n                         | nanpa, always at start and end of numeric description        |
 
 
 
