@@ -371,7 +371,7 @@ Examples:
 | Glyph                                                                                          | Letter(s)    |  #~n Proper Name          | Design Rationale                                             |
 |------------------------------------------------------------------------------------------------|--------------|---------------------------|--------------------------------------------------------------|
 | <img src="images/horizontal Negative Delimiter nasin nanpa v4.png" width="16"/>                | O            | no                        | negative sign, optional, but always at the start of a number |
-| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | none                      | decimal point, never at the start of a number                |
+| <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | none                      | decimal point, optional, but never at the start of a number  |
 | <img src="images/horizontal Fraction Delimiter nasin nanpa v4.png" width="32"/>                | OO           | nono                      | needed to split numerator and denominator of fraction        |
 | <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa v2.png" width="48"/>   | OOO          | nonono                    | needed to split integer from fraction part                   |
 | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands                          |
