@@ -107,7 +107,11 @@
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf") format("opentype");
+      src: 
+        /* Web-hosted files (order matters) */
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff2") format("woff2"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff")  format("woff"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf")   format("opentype");
       font-display: swap;
     }
 

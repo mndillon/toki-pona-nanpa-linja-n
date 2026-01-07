@@ -1,7 +1,12 @@
 The OFL.txt file covers the license for PatrickHead-Regular.ttf font file
 
-The LICENSE.txt file covers the MIT license for the nasin-nanpa-5.0.0-beta.3-UCSUR.otf font file
-and the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.otf font file
+The LICENCE.txt file covers the licence for the font files:
+nasin-nanpa-5.0.0-beta.3-UCSUR.otf
+nasin-nanpa-5.0.0-beta.3-UCSUR.woff
+nasin-nanpa-5.0.0-beta.3-UCSUR.woff2
+nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf
+nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.woff
+nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.woff2
 
 The original site for nasin-nanpa-5.0.0-beta.3-UCSUR.otf is loacated here: https://github.com/etbcor/nasin-nanpa
 

@@ -157,7 +157,11 @@
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf") format("opentype");
+      src: 
+        /* Web-hosted files (order matters) */
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff2") format("woff2"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff")  format("woff"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf")   format("opentype"); 
       font-display: swap;
     }
 
@@ -255,10 +259,11 @@
             <div class="small">Pending: <span id="pendingText" class="mono"></span></div>
           </div>
 
-          <div class="help">
-            Display is rendered as a cartouche using the same approach as the decimal number encoder page.
-            <span class="tpLine">sitelen ni li lon poki nimi. ona li kepeken nasin sama lon lipu pi pana nanpa.</span>
+          <div class="help" aria-label="nanpa-linja-n proper name">
+            <strong>nanpa-linja-n proper name:</strong>
+            <span id="properNameText"></span>
           </div>
+
         </div>
       </div>
 
@@ -656,6 +661,114 @@
       tokens.push("N");
       return tokens;
     }
+
+
+
+    /* Display nanpa-linja-n proper name */
+
+    function titleCaseNanpaProperNameForDisplay(nameStr) {
+      const s = String(nameStr ?? "").trim();
+      if (!s) return s;
+      return s
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(w => {
+          const lower = w.toLowerCase();
+          if (lower.length === 1) return lower.toUpperCase();
+          return lower[0].toUpperCase() + lower.slice(1);
+        })
+        .join(" ");
+    }
+
+    function splitCartoucheCapsLettersSpaced(caps) {
+      if (caps == null) throw new Error("caps must be a string, not None");
+      const s0 = String(caps).trim().toUpperCase();
+      if (!s0) return "";
+      if (s0.length < 3 || !s0.startsWith("NE") || !s0.endsWith("N")) {
+        throw new Error(`Not a valid nanpa-caps label: "${caps}"`);
+      }
+
+      const parts = [];
+      let current = "";
+      let i = 0;
+      const end = s0.length - 1;
+
+      function flushCurrent() {
+        if (current) { parts.push(current); current = ""; }
+      }
+
+      function attachDelimiterN() {
+        if (current) { current += "n"; flushCurrent(); return; }
+        if (parts.length === 0) { parts.push("n"); return; }
+        parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
+      }
+
+      while (i < end) {
+        if (i + 2 > end) throw new Error(`Malformed caps at position ${i} in "${caps}"`);
+
+        const pair = s0.slice(i, i + 2);
+        const nextPair = (i + 4 <= end) ? s0.slice(i + 2, i + 4) : null;
+
+        if (pair === "NE" && nextPair === "NO" && i === 0) { flushCurrent(); parts.push("neno"); i += 4; continue; }
+        if (pair === "NE" && nextPair === "NE") { flushCurrent(); attachDelimiterN(); parts.push("ene"); i += 4; continue; }
+        if (pair === "NO" && nextPair === "NE" && i > 0) { flushCurrent(); attachDelimiterN(); parts.push("one"); i += 4; continue; }
+
+        if (pair === "NO" && nextPair === "NO" && i > 0) {
+          flushCurrent();
+          let countNo = 1;
+          let j = i;
+          while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "NO") { countNo += 1; j += 2; }
+          attachDelimiterN();
+          parts.push("o" + "no".repeat(countNo));
+          i += 2 + 2 * countNo;
+          continue;
+        }
+
+        if (pair === "NE" && nextPair === "KE") {
+          flushCurrent();
+          let countKe = 1;
+          let j = i;
+          while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE") { countKe += 1; j += 2; }
+          attachDelimiterN();
+          parts.push("e" + "ke".repeat(countKe));
+          i += 2 + 2 * countKe;
+          continue;
+        }
+
+        current += pair.toLowerCase();
+        i += 2;
+      }
+
+      flushCurrent();
+      if (parts.length === 0) return "n";
+      parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
+      return parts.join(" ").replace(/\s+/g, " ").trim();
+    }
+
+    function encodeDecimalToProperNameDisplay(rawValueStr) {
+      const raw0 = String(rawValueStr ?? "").trim();
+
+      // Nothing meaningful to show in these states:
+      if (!raw0 || raw0 === "Error") return "";
+      if (raw0 === "-" || raw0 === "." || raw0 === "-.") return "";
+
+      // Match your cartouche encoding path (grouping etc.)
+      const rawForEncode = formatForCartoucheEncoding(raw0, ",");
+
+      const caps = looksLikeNanpaCaps(rawForEncode)
+        ? rawForEncode.toUpperCase()
+        : numberStrToNanpaCaps(rawForEncode, {
+            thousandsChar: ",",
+            groupFractionTriplets: true,
+            fractionGroupSize: 3,
+          });
+
+      const prettyRaw = splitCartoucheCapsLettersSpaced(caps);
+      return titleCaseNanpaProperNameForDisplay(prettyRaw);
+    }
+
+
+
 
     /* ============================================================
        UPDATED: TP-word rendering with Traditional vs Uniform modes
@@ -1069,6 +1182,9 @@
     const elDisplayTextVisibleTp = document.getElementById("displayTextVisibleTp");
     const elPendingTextVisibleTp = document.getElementById("pendingTextVisibleTp");
 
+    //display proper name
+    const elProperNameText = document.getElementById("properNameText");
+
     const smallSet = getSmallCodepointsSet();
 
     const DISPLAY_LARGE_PX = 92;
@@ -1362,10 +1478,14 @@
       if (elDisplayTextVisibleTp) elDisplayTextVisibleTp.textContent = displayValue;
       if (elPendingTextVisibleTp) elPendingTextVisibleTp.textContent = pendingDisplay;
 
+      const properName = encodeDecimalToProperNameDisplay(inputStr);
+      if (elProperNameText) elProperNameText.textContent = properName;
+
       // Live region: bilingual
       if (elDisplayLive) {
         if (inputStr === "Error") {
           elDisplayLive.textContent = "Error. Press Clear to reset. pakala. o pilin e nena Clear la, sina kama sin.";
+          if (elProperNameText) elProperNameText.textContent = "";
         } else {
           const pendingTextLive = (pendingOp != null && acc != null) ? pendingDisplay : "none";
           elDisplayLive.textContent =
@@ -1373,6 +1493,8 @@
             `nanpa: ${displayValue}. pali awen: ${pendingTextLive}.`;
         }
       }
+
+
 
       if (inputStr === "Error") {
         const ctx = displayCanvas.getContext("2d");
