@@ -110,12 +110,16 @@ Sitelen Cartouche Summary:
 ## Unique Numeric Codes:
 Every decimal number can be encoded into a unique cartouche.
 The numeric cartouche can be spelled in Latin script as a unique proper name for the number.
-The proper name for the number gives a unique code for the number.
-The unique code for the number can be used to reconstruct the original number.
+The proper name for the number gives a unique abbreviation for the number.
+The unique abbreviation for the number can be used to reconstruct the original number.
+
+
+This gives us four uniquely decodable representations of the same underlying number: standard decimal notation, sitelen pona in a cartouche, Latin pona proper name, and a unique numeric abbreviation.
+
 
 Rule:
 
-- Take numeric proper name, remove any letter 'n', remove any letter 'e', remove any spaces, capitalize remaining letters, add #~ to the start of the code
+- Take numeric proper name, remove any letter 'n', remove any letter 'e', remove any spaces, capitalize remaining letters, add #~ at the start to produce numeric abbreviation
 
 
 Example:
