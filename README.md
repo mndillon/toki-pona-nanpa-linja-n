@@ -79,6 +79,66 @@ Sitelen Cartouche Summary:
 
 <img src="images/nanpa_linja_n_examples_with_rationale_fact_sheet.png" width="1024"/>
 
+**nanpa-lnja-n** unique letter to digit mapping (number → cartouche → proper name → unique number code → same number):
+
+| digit | glyph  | cartouche letter | comments                                                                                       |
+|-------|--------|------------------|------------------------------------------------------------------------------------------------|
+| 0     | ijo    | i                | unique letter to digit mapping                                                                 |
+| 1     | wan    | w                | unique letter to digit mapping                                                                 |
+| 2     | tu     | t                | unique letter to digit mapping                                                                 |
+| 3     | seli   | s                | unique letter to digit mapping                                                                 |
+| 4     | awen   | a                | unique letter to digit mapping                                                                 |
+| 5     | luka   | l                | unique letter to digit mapping                                                                 |
+| 6     | utala  | u                | unique letter to digit mapping                                                                 |
+| 7     | mun    | m                | unique letter to digit mapping                                                                 |
+| 8     | pipi   | p                | unique letter to digit mapping                                                                 |
+| 9     | jo     | j                | unique letter to digit mapping                                                                 |
+| -     | ona    | o                | negative sign, only at start                                                                   |
+| .     | o      | o                | decimal point, never at start                                                                  |
+| ,     | kulupu | k                | ISO block separator                                                                            |
+|       | nanpa  | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
+|       | nena   | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
+|       | nasa   | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
+|       | ni     | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
+|       | e      | e                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
+|       | en     | e                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
+|       | esun   | e                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
+
+
+---
+
+## Unique Numeric Codes:
+Every decimal number can be encoded into a unique cartouche.
+The numeric cartouche can be spelled in Latin script as a unique proper name for the number.
+The proper name for the number gives a unique code for the number.
+The unique code for the number can be used to reconstruct the original number.
+
+Rule:
+
+- Take numeric proper name, remove any letter 'n', remove any letter 'e', remove any spaces, capitalize remaining letters, add #~ to the start of the code
+
+
+Example:
+
+<div style="
+  border:1px solid #d0d7de;
+  border-radius:6px;
+  padding:12px;
+  background:#f6f8fa;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.95em;
+  line-height: 1.6;
+">
+  -5,432.10 →<br>
+  <img src="images/number-minus-5-thousand-432-point-10.png" width="150" alt="-5,432.10"/> →<br>
+  Neno Len Eke Naseten One Wenin →<br>
+  #~OLKASTOWI →<br>
+  -5,432.10
+</div>
+
+
+
+
 ---
 
 ## General Number Rule
