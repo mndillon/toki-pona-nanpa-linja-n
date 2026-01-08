@@ -977,17 +977,33 @@
           }
         }
 
-        // 6) NO: "(nasa|nena|ni) o"
+        // 6) Decimal point marker:
+        // - Short form: (ni o) or (nena o) => NO + NE
+        // - Visible "NONE" form: (ni o nasa e) / (nena o nena en) => NO + NE
         if (i + 1 < end) {
           const w0 = words[i], w1 = words[i + 1];
+          const w2 = (i + 2 < end) ? words[i + 2] : null;
+          const w3 = (i + 3 < end) ? words[i + 3] : null;
+
+          // Visible "NONE" form: (ni|nena) o (nasa|nena) (e|en)
           if (
-            ((w0 === "nasa" || w0 === "nena" || w0 === "ni") && w1 === "o")
+            (w0 === "nasa" || w0 === "ni" || w0 === "nena") && w1 === "o" &&
+            (w2 === "nasa" || w2 === "nena") &&
+            (w3 === "e" || w3 === "en")
           ) {
-            capsParts.push("NO");
+            capsParts.push("NO", "NE");
+            i += 4;
+            continue;
+          }
+
+          // Short form: (ni|nena) o
+          if ((w0 === "nasa" || w0 === "ni" || w0 === "nena") && w1 === "o") {
+            capsParts.push("NO", "NE");
             i += 2;
             continue;
           }
         }
+
 
         return null;
       }
@@ -1041,17 +1057,34 @@
       while (i < body.length) {
         const ch = body[i];
 
-        if (ch === "O") {
+                if (ch === "O") {
           let j = i;
           while (j < body.length && body[j] === "O") j++;
           const count = j - i;
 
           if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
 
-          parts.push("NO".repeat(count));
+          // IMPORTANT:
+          // - O at the very start of the number-code body represents a leading negative sign (NO).
+          // - O elsewhere represents the decimal point operator (NO + NE), i.e. "NONE" in caps.
+          // - OO represents NONO, OOO represents NONONO (kept as before).
+          if (count === 1) {
+            if (i === 0) {
+              // Leading sign
+              parts.push("NO");
+            } else {
+              // Decimal point marker: NO + NE => "NONE"
+              parts.push("NO", "NE");
+            }
+          } else {
+            // OO => "NONO", OOO => "NONONO"
+            parts.push("NO".repeat(count));
+          }
+
           i = j;
           continue;
         }
+
 
         if (ch === "K") {
           let j = i;
@@ -1590,20 +1623,32 @@
         }
 
         if (t === "NO") {
+          // Case A: immediately after starting NE => leading negative sign
           if (afterStartingNe) {
-            // Right after start NE, it's "nasa o" traditionally; uniform makes it "nena o"
             out.push(N_WORD, WORD_FOR_NEGATIVE_SIGN);
             afterStartingNe = false;
-          } else {
-            let nWordToUse = N_WORD_DECIMAL_POINT;
-            const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
-            const prev = (i - 1 > 0) ? tokens[i - 1] : null;
-            if (prev === "NO" || nxt === "NO") nWordToUse = N_WORD_FRACTION;
-            out.push(nWordToUse, "o");
-            afterStartingNe = false;
+            continue;
           }
+
+          // Case B: decimal point operator is encoded as NO + NE (caps "NONE")
+          // To make the cartouche visibly show "NONE", render it as:
+          //   Traditional:  ni o nasa e
+          //   Uniform:      nena o nena en
+          const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
+          if (nxt === "NE") {
+            out.push(N_WORD_DECIMAL_POINT, "o", N_WORD, E_WORD_FOR_NE_AFTER_START);
+            afterStartingNe = false;
+            i += 1; // consume the following NE (already rendered)
+            continue;
+          }
+
+          // Fallback (should not normally occur mid-stream)
+          out.push(N_WORD_DECIMAL_POINT, "o");
+          afterStartingNe = false;
           continue;
         }
+
+
 
         if (t === "NONO") {
           out.push("nena","o","nena","o");
