@@ -117,8 +117,9 @@ The unique abbreviation for the number can be used to reconstruct the original n
 This gives us four uniquely decodable representations of the same underlying number: standard decimal notation, sitelen pona in a cartouche, Latin pona proper name, and a unique numeric abbreviation.
 
 
-Rule:
+Rules:
 
+- Take decimal number and convert to proper name using the rules below.  In sitelen pona, display the proper name in a cartouche using specific glyphs from the table above.
 - Take numeric proper name, remove any letter 'n', remove any letter 'e', remove any spaces, capitalize remaining letters, add #~ at the start to produce numeric abbreviation
 
 
