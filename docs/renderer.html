@@ -290,19 +290,22 @@
       <div class="grid2" style="margin-top:14px;" role="group" aria-label="Cartouche renderings">
         <div>
           <h3>
-            sitelen pona cartouche (small)
-            <span class="tpLine">poki nimi sitelen pona (lili)</span>
+            sitelen pona cartouche
+            <span class="tpLine">poki nimi sitelen pona</span>
           </h3>
           <canvas id="canvasSmall" aria-hidden="true"></canvas>
-          <div class="help">
-            Rendered with your font at a smaller size.
-            <span class="tpLine">sitelen li kepeken font sina, lon suli lili.</span>
+          <div id="cartoucheValueBox" class="help hidden" aria-label="Cartouche value">
+            <strong>Cartouche value:</strong>
+            <span id="cartoucheValueText" class="mono"></span>
+            <span class="tpLine">
+              nanpa: <span id="cartoucheValueTextTp" class="mono"></span>
+            </span>
           </div>
           <div class="sr-only" id="canvasSmallDesc">
             Decorative cartouche rendering. Use the text outputs below for the accessible value.
           </div>
         </div>
-        <div>
+        <div class="hidden">
           <h3>
             sitelen pona cartouche (large)
             <span class="tpLine">poki nimi sitelen pona (suli)</span>
@@ -355,6 +358,74 @@
         <div id="btnEncodeHelp" class="sr-only">
           Encodes the decimal input into a nanpa-linja-n proper name and renders the sitelen pona cartouches.
         </div>
+      </div>
+    </div>
+
+    <div id="fromCodesSection" class="hidden">
+      <div class="row" role="group" aria-label="Render from code points">
+        <div class="col">
+          <label for="codepointsIn">
+            Paste code points (hex, space-separated)
+            <span class="tpLine">o pana e nanpa sitelen (hex, weka-spasi)</span>
+          </label>
+          <input
+            id="codepointsIn"
+            type="text"
+            class="mono"
+            placeholder="F190B F1944 F193D"
+            maxlength="3500"
+            aria-describedby="codepointsHelp"
+            aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge"
+          />
+          <div id="codepointsHelp" class="help">
+            Accepts <span class="mono">F190B</span> or <span class="mono">U+F190B</span>.
+            Input is restricted to the Toki Pona UCSUR block (<span class="mono">F1900</span>–<span class="mono">F1988</span>) plus cartouche start/end markers.
+            <span class="tpLine">
+              sina ken pana e <span class="mono">F190B</span> anu <span class="mono">U+F190B</span>.
+              pana li ken lon poki UCSUR pi toki pona taso (<span class="mono">F1900</span>–<span class="mono">F1988</span>) en sitelen open/pini pi poki nimi.
+            </span>
+          </div>
+        </div>
+        <div style="flex: 0 0 auto;">
+          <button id="btnFromCodes" type="button" class="btnBi">
+            <span>Render From Code Points</span>
+            <span class="tpLine">o sitelen tan nanpa sitelen</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;" role="group" aria-label="Render from Toki Pona words">
+      <div class="col">
+        <label for="tpWordsIn">
+          Enter Toki Pona words (space-separated)
+          <span class="tpLine">o pana e nimi toki pona (weka-spasi)</span>
+        </label>
+        <input
+          id="tpWordsIn"
+          type="text"
+          class="mono"
+          placeholder="Nenin"
+          maxlength="2500"
+          aria-describedby="tpWordsHelp"
+          aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge"
+          spellcheck="false"
+          autocapitalize="none"
+          autocomplete="off"
+        />
+        <div id="tpWordsHelp" class="help">
+          Allowed input: Valid Toki Pona words (case-insensitive) or a nanpa-linja-n proper name for a decimal value or a number code (starting with #~).
+          <span class="tpLine">
+            nimi toki pona lon mapu taso li ken. (suli/lili pi sitelen li wile ala.)
+            sina ken kin pana e nimi pi nanpa-linja-n (nimi pi pana nanpa).
+          </span>
+        </div>
+      </div>
+      <div style="flex: 0 0 auto;">
+        <button id="btnFromWords" type="button" class="btnBi">
+          <span>Render From Toki Pona Words</span>
+          <span class="tpLine">o sitelen tan nimi toki pona</span>
+        </button>
       </div>
     </div>
 
@@ -426,79 +497,6 @@
         <span class="tpLine">
           nanpa sitelen wan la, nimi toki pona wan. nasin li sama lon poka pi nanpa sitelen.
         </span>
-      </div>
-
-      <h3 style="margin-top:20px;">
-        Reverse tool: Toki Pona words → glyphs
-        <span class="tpLine">ilo ante: nimi toki pona → sitelen</span>
-      </h3>
-
-      <div id="fromCodesSection" class="hidden">
-        <div class="row" role="group" aria-label="Render from code points">
-          <div class="col">
-            <label for="codepointsIn">
-              Paste code points (hex, space-separated)
-              <span class="tpLine">o pana e nanpa sitelen (hex, weka-spasi)</span>
-            </label>
-            <input
-              id="codepointsIn"
-              type="text"
-              class="mono"
-              placeholder="F190B F1944 F193D"
-              maxlength="3500"
-              aria-describedby="codepointsHelp"
-              aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge"
-            />
-            <div id="codepointsHelp" class="help">
-              Accepts <span class="mono">F190B</span> or <span class="mono">U+F190B</span>.
-              Input is restricted to the Toki Pona UCSUR block (<span class="mono">F1900</span>–<span class="mono">F1988</span>) plus cartouche start/end markers.
-              <span class="tpLine">
-                sina ken pana e <span class="mono">F190B</span> anu <span class="mono">U+F190B</span>.
-                pana li ken lon poki UCSUR pi toki pona taso (<span class="mono">F1900</span>–<span class="mono">F1988</span>) en sitelen open/pini pi poki nimi.
-              </span>
-            </div>
-          </div>
-          <div style="flex: 0 0 auto;">
-            <button id="btnFromCodes" type="button" class="btnBi">
-              <span>Render From Code Points</span>
-              <span class="tpLine">o sitelen tan nanpa sitelen</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px;" role="group" aria-label="Render from Toki Pona words">
-        <div class="col">
-          <label for="tpWordsIn">
-            Enter Toki Pona words (space-separated)
-            <span class="tpLine">o pana e nimi toki pona (weka-spasi)</span>
-          </label>
-          <input
-            id="tpWordsIn"
-            type="text"
-            class="mono"
-            placeholder="nanpa esun o nanpa"
-            maxlength="2500"
-            aria-describedby="tpWordsHelp"
-            aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge"
-            spellcheck="false"
-            autocapitalize="none"
-            autocomplete="off"
-          />
-          <div id="tpWordsHelp" class="help">
-            Only valid Toki Pona words are allowed (case-insensitive) or a nanpa-linja-n proper name for a decimal value or a number code (starting with #~).
-            <span class="tpLine">
-              nimi toki pona lon mapu taso li ken. (suli/lili pi sitelen li wile ala.)
-              sina ken kin pana e nimi pi nanpa-linja-n (nimi pi pana nanpa).
-            </span>
-          </div>
-        </div>
-        <div style="flex: 0 0 auto;">
-          <button id="btnFromWords" type="button" class="btnBi">
-            <span>Render From Toki Pona Words</span>
-            <span class="tpLine">o sitelen tan nimi toki pona</span>
-          </button>
-        </div>
       </div>
 
       <h3 style="margin-top:20px;">
@@ -689,10 +687,11 @@
           updateCalculatorLinkWithDisplayParam(); // NEW
           buildDigitReferenceTable();
 
-          // Re-render based on the user's most recent action.
-          if (lastAction === "words") document.getElementById("btnFromWords")?.click();
-          else if (lastAction === "codes") document.getElementById("btnFromCodes")?.click();
-          else document.getElementById("btnEncode")?.click();
+          // Re-render based on the user's most recent action, but do NOT clear inputs.
+          if (lastAction === "words") handleFromWordsClick({ clearOthers: false });
+          else if (lastAction === "codes") handleFromCodesClick({ clearOthers: false });
+          else handleEncodeClick({ clearOthers: false });
+
         });
       });
     }
@@ -1180,8 +1179,10 @@
         let magnitudeSuffixKeCount = 0;
         if (seg.length > 0) {
           const last = seg.slice(-1).toUpperCase();
-          if (last === "T" || last === "M" || last === "B") {
-            magnitudeSuffixKeCount = (last === "T") ? 1 : (last === "M") ? 2 : 3;
+          if (last === "K" || last === "T" || last === "M" || last === "B") {
+            magnitudeSuffixKeCount =
+              (last === "K" || last === "T") ? 1 :
+              (last === "M") ? 2 : 3;
             seg = seg.slice(0, -1).trim();
             if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
           }
@@ -1337,8 +1338,21 @@
       return 0;
     }
 
-    function decodeDecimalStyleTokensToString(segmentTokens) {
+    // ============================
+    // CHANGED: separator controls
+    // - NENE (NE NE) uses ene separators (can be "_")
+    // - NE + KE... + digit uses group separators (keeps "," for thousands)
+    // ============================
+    function decodeDecimalStyleTokensToString(segmentTokens, opts = {}) {
       if (!segmentTokens) return null;
+
+      // Two different “group separators”:
+      // - eneSep: used ONLY for NENE (NE NE)
+      // - groupSep: used for NE + KE... when it is followed by digits (thousands grouping)
+      const intEneSep     = (opts.intEneSep     != null) ? String(opts.intEneSep)     : ",";
+      const intGroupSep   = (opts.intGroupSep   != null) ? String(opts.intGroupSep)   : ",";
+      const fracEneSep    = (opts.fracEneSep    != null) ? String(opts.fracEneSep)    : "_";
+      const fracGroupSep  = (opts.fracGroupSep  != null) ? String(opts.fracGroupSep)  : "_";
 
       const tokens = Array.from(segmentTokens);
 
@@ -1363,8 +1377,11 @@
         if (!intStr) intStr = "0";
       }
 
-      function appendGroupSep() {
-        const sep = (mode === "int") ? "," : "_";
+      function appendSep(isEne) {
+        const sep =
+          (mode === "int")
+            ? (isEne ? intEneSep : intGroupSep)
+            : (isEne ? fracEneSep : fracGroupSep);
 
         if (mode === "int") {
           if (!intStr) return;
@@ -1374,6 +1391,8 @@
           if (!fracStr.endsWith(sep)) fracStr += sep;
         }
       }
+      function appendEneSep() { appendSep(true); }
+      function appendGroupSep() { appendSep(false); }
 
       while (i < end) {
         const t = tokens[i];
@@ -1393,12 +1412,14 @@
           continue;
         }
 
+        // CHANGED: NENE gets ene-separator (can be "_")
         if (t === "NE" && (i + 1 < end) && tokens[i + 1] === "NE") {
-          appendGroupSep();
+          appendEneSep();
           i += 2;
           continue;
         }
 
+        // NE + KE... : either thousands grouping (if followed by digits) or suffix magnitude (if not)
         if (t === "NE" && (i + 1 < end)) {
           let j = i + 1;
           let count = 0;
@@ -1411,12 +1432,14 @@
           }
 
           if (count > 0) {
+            // If followed by digits => thousands grouping separator (must remain "," for int)
             if (j < end && TOKEN_TO_DIGIT_CHAR[tokens[j]] != null) {
               appendGroupSep();
               i = j;
               continue;
             }
 
+            // Otherwise it's a magnitude suffix (K/M/B)
             suffixKeCount += count;
             i = j;
             continue;
@@ -1434,7 +1457,7 @@
 
       let suffix = "";
       if (suffixKeCount > 0) {
-        if (suffixKeCount === 1) suffix = "T";
+        if (suffixKeCount === 1) suffix = "K";
         else if (suffixKeCount === 2) suffix = "M";
         else if (suffixKeCount === 3) suffix = "B";
         else suffix = `×1000^${suffixKeCount}`;
@@ -1449,7 +1472,8 @@
       return sign + intStr + suffix;
     }
 
-    function tryDecodeCapsToDisplayValue(caps) {
+    // CHANGED: opts passthrough so cartouche value can differ
+    function tryDecodeCapsToDisplayValue(caps, opts = {}) {
       if (!caps) return null;
 
       const tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase());
@@ -1466,9 +1490,9 @@
         const numTokens = tokens.slice(mixedIdx + 1, fracIdx);
         const denTokens = tokens.slice(fracIdx + 1, finalNIdx);
 
-        const intStr = decodeDecimalStyleTokensToString(intTokens);
-        const numStr = decodeDecimalStyleTokensToString(numTokens);
-        const denStr = decodeDecimalStyleTokensToString(denTokens);
+        const intStr = decodeDecimalStyleTokensToString(intTokens, opts);
+        const numStr = decodeDecimalStyleTokensToString(numTokens, opts);
+        const denStr = decodeDecimalStyleTokensToString(denTokens, opts);
 
         if (!intStr || !numStr || !denStr) return null;
 
@@ -1480,8 +1504,8 @@
         const numTokens = tokens.slice(1, fracIdx);
         const denTokens = tokens.slice(fracIdx + 1, finalNIdx);
 
-        const numStr = decodeDecimalStyleTokensToString(numTokens);
-        const denStr = decodeDecimalStyleTokensToString(denTokens);
+        const numStr = decodeDecimalStyleTokensToString(numTokens, opts);
+        const denStr = decodeDecimalStyleTokensToString(denTokens, opts);
 
         if (!numStr || !denStr) return null;
 
@@ -1489,12 +1513,21 @@
       }
 
       const segTokens = tokens.slice(1, finalNIdx);
-      return decodeDecimalStyleTokensToString(segTokens);
+      return decodeDecimalStyleTokensToString(segTokens, opts);
     }
 
+    // CHANGED: drive two different strings:
+    // - Display value: default commas
+    // - Cartouche value: "_" for NENE breaks, but "," for true thousands grouping
     function setDecimalValueFromCapsOrClear(caps) {
-      const v = tryDecodeCapsToDisplayValue(caps);
-      setDecimalValueLine(v);
+      const vDisplay = tryDecodeCapsToDisplayValue(caps); // default behavior (commas for int)
+      const vCartouche = tryDecodeCapsToDisplayValue(caps, {
+        intEneSep: "_",     // NENE breaks in integer part
+        intGroupSep: ",",   // thousands grouping stays comma
+        fracEneSep: "_",    // keep underscores in fractional groupings
+        fracGroupSep: "_"   // keep underscores in fractional groupings
+      });
+      setDecimalValueLine(vDisplay, vCartouche);
     }
 
     /**
@@ -2211,18 +2244,69 @@
     const elDecimalValueLine = document.getElementById("decimalValueLine");
     const elDecimalValueText = document.getElementById("decimalValueText");
 
-    function setDecimalValueLine(valueOrNull) {
-      if (!elDecimalValueLine || !elDecimalValueText) return;
+    const elCartoucheValueBox = document.getElementById("cartoucheValueBox");
+    const elCartoucheValueText = document.getElementById("cartoucheValueText");
+    const elCartoucheValueTextTp = document.getElementById("cartoucheValueTextTp");
 
-      const s = (valueOrNull == null) ? "" : String(valueOrNull).trim();
-      if (!s) {
-        elDecimalValueText.textContent = "";
-        elDecimalValueLine.classList.add("hidden");
-        return;
+    // ------------------------------------------------------
+    // NEW: silent input clearing (no user-facing input events)
+    // ------------------------------------------------------
+    let suppressInputHandlers = false;
+
+    function withSuppressedInputHandlers(fn) {
+      const prev = suppressInputHandlers;
+      suppressInputHandlers = true;
+      try { fn(); } finally { suppressInputHandlers = prev; }
+    }
+
+    function setValueSilently(el, v = "") {
+      if (!el) return;
+      withSuppressedInputHandlers(() => { el.value = v; });
+    }
+
+    function clearOtherInputs(active) {
+      // active: "decimal" | "codes" | "words"
+      withSuppressedInputHandlers(() => {
+        if (active !== "decimal") setValueSilently(elDecimal, "");
+        if (active !== "codes")   setValueSilently(elCodesIn, "");
+        if (active !== "words")   setValueSilently(elTpWordsIn, "");
+
+        // If you want, also clear validity state when we clear the TP words box
+        if (active !== "words" && elTpWordsIn) elTpWordsIn.setCustomValidity("");
+      });
+    }
+
+    // CHANGED: accept two values
+    // - displayValueOrNull: used for the (hidden) large "Value:" line
+    // - cartoucheValueOrNull: used for the small-cartouche value under cartouche
+    //   (falls back to displayValueOrNull if omitted)
+    function setDecimalValueLine(displayValueOrNull, cartoucheValueOrNull = displayValueOrNull) {
+      const sDisplay = (displayValueOrNull == null) ? "" : String(displayValueOrNull).trim();
+      const sCart = (cartoucheValueOrNull == null) ? "" : String(cartoucheValueOrNull).trim();
+
+      // Existing (large section) line
+      if (elDecimalValueLine && elDecimalValueText) {
+        if (!sDisplay) {
+          elDecimalValueText.textContent = "";
+          elDecimalValueLine.classList.add("hidden");
+        } else {
+          elDecimalValueText.textContent = sDisplay;
+          elDecimalValueLine.classList.remove("hidden");
+        }
       }
 
-      elDecimalValueText.textContent = s;
-      elDecimalValueLine.classList.remove("hidden");
+      // Small-cartouche “Cartouche value” line
+      if (elCartoucheValueBox && elCartoucheValueText && elCartoucheValueTextTp) {
+        if (!sCart) {
+          elCartoucheValueText.textContent = "";
+          elCartoucheValueTextTp.textContent = "";
+          elCartoucheValueBox.classList.add("hidden");
+        } else {
+          elCartoucheValueText.textContent = sCart;
+          elCartoucheValueTextTp.textContent = sCart;
+          elCartoucheValueBox.classList.remove("hidden");
+        }
+      }
     }
 
     function enforceMaxLen(el, maxLen = MAX_DECIMAL_INPUT_CHARS) {
@@ -2235,9 +2319,22 @@
     enforceMaxLen(elCodesIn,  MAX_HEX_CODE_INPUT_CHARS);
     enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS);
 
-    if (elDecimal) elDecimal.addEventListener("input", () => enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS));
-    if (elCodesIn) elCodesIn.addEventListener("input", () => enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS));
-    if (elTpWordsIn) elTpWordsIn.addEventListener("input", () => enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS));
+    function onDecimalInput() {
+      if (suppressInputHandlers) return;
+      enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS);
+    }
+    function onCodesInput() {
+      if (suppressInputHandlers) return;
+      enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS);
+    }
+    function onTpWordsInputMaxLen() {
+      if (suppressInputHandlers) return;
+      enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS);
+    }
+
+    if (elDecimal)  elDecimal.addEventListener("input", onDecimalInput);
+    if (elCodesIn)  elCodesIn.addEventListener("input", onCodesInput);
+    if (elTpWordsIn) elTpWordsIn.addEventListener("input", onTpWordsInputMaxLen);
 
     const elDigitTableBody = document.getElementById("digitTableBody");
 
@@ -2340,19 +2437,26 @@
       announceStatus(`Rendered value ${raw}.`);
     }
 
-    document.getElementById("btnEncode").addEventListener("click", async () => {
+    async function handleEncodeClick({ clearOthers = true } = {}) {
       try {
         lastAction = "decimal";
+        if (clearOthers) clearOtherInputs("decimal");
         await runEncodeFromDecimal();
       } catch (err) {
-        setDecimalValueLine(null);
+        setDecimalValueLine(null, null);
         showAlertAndAnnounce(err?.message ?? String(err));
       }
+    }
+
+    document.getElementById("btnEncode").addEventListener("click", () => {
+      handleEncodeClick({ clearOthers: true });
     });
 
-    document.getElementById("btnFromCodes")?.addEventListener("click", async () => {
+    async function handleFromCodesClick({ clearOthers = true } = {}) {
       try {
         lastAction = "codes";
+        if (clearOthers) clearOtherInputs("codes");
+
         await ensureFontLoaded();
         enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS);
 
@@ -2368,9 +2472,9 @@
           const tpWords = ucsurCodepointsToTpWords(cps).join(" ");
           const parsed = tryParseNanpaLinjanTpPhraseToCaps(tpWords);
           if (parsed) setDecimalValueFromCapsOrClear(parsed.caps);
-          else setDecimalValueLine(null);
+          else setDecimalValueLine(null, null);
         } catch {
-          setDecimalValueLine(null);
+          setDecimalValueLine(null, null);
         }
 
         renderUniformCartoucheFromCodepoints(
@@ -2389,14 +2493,20 @@
 
         announceStatus("Rendered from code points.");
       } catch (err) {
-        setDecimalValueLine(null);
+        setDecimalValueLine(null, null);
         showAlertAndAnnounce(err?.message ?? String(err));
       }
+    }
+
+    document.getElementById("btnFromCodes")?.addEventListener("click", () => {
+      handleFromCodesClick({ clearOthers: true });
     });
 
-    document.getElementById("btnFromWords").addEventListener("click", async () => {
+    async function handleFromWordsClick({ clearOthers = true } = {}) {
       try {
         lastAction = "words";
+        if (clearOthers) clearOtherInputs("words");
+
         await ensureFontLoaded();
         enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS);
 
@@ -2550,16 +2660,21 @@
           { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
         );
 
-        setDecimalValueLine(null);
+        setDecimalValueLine(null, null);
 
         announceStatus("Rendered from Toki Pona words.");
       } catch (err) {
-        setDecimalValueLine(null);
+        setDecimalValueLine(null, null);
         showAlertAndAnnounce(err?.message ?? String(err));
       }
+    }
+
+    document.getElementById("btnFromWords").addEventListener("click", () => {
+      handleFromWordsClick({ clearOthers: true });
     });
 
     function validateTpWordsInputLive() {
+      if (suppressInputHandlers) return; // NEW: ignore programmatic clears
       const raw = String(elTpWordsIn?.value ?? "").trim();
       if (!raw) { elTpWordsIn.setCustomValidity(""); return; }
 
@@ -2603,6 +2718,26 @@
       });
     }
 
+    // NEW: Press Enter in TP-words input to trigger "Render From Toki Pona Words"
+    if (elTpWordsIn) {
+      elTpWordsIn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.altKey && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          document.getElementById("btnFromWords").click();
+        }
+      });
+    }
+
+    // OPTIONAL (recommended): Press Enter in codepoints input to trigger "Render From Code Points"
+    if (elCodesIn) {
+      elCodesIn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.altKey && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          document.getElementById("btnFromCodes")?.click();
+        }
+      });
+    }
+
     window.addEventListener("load", async () => {
       try {
         await ensureFontLoaded();
@@ -2616,7 +2751,7 @@
         buildDigitReferenceTable();
         await runEncodeFromDecimal();
       } catch (err) {
-        setDecimalValueLine(null);
+        setDecimalValueLine(null, null);
         showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
