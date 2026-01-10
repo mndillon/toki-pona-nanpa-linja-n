@@ -89,8 +89,8 @@
       display: block;
       border: 1px dashed var(--border);
       border-radius: 10px;
-      background: var(--bg);
-      max-width: 100%;
+      background: transparent;    /* background: var(--bg); */
+      max-width: 100%;  
     }
 
     .small { font-size: 12px; color: var(--muted); }
@@ -299,6 +299,21 @@
             <span id="cartoucheValueText" class="mono"></span>
             <span class="tpLine">
               nanpa: <span id="cartoucheValueTextTp" class="mono"></span>
+            </span>
+          </div>
+          <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button id="btnDownloadCartouchePng" type="button" class="btnBi" aria-describedby="btnDownloadHelp">
+              <span>Download PNG</span>
+              <span class="tpLine">o kama jo e sitelen PNG</span>
+            </button>
+
+            <div id="btnDownloadHelp" class="sr-only">
+              Downloads the rendered cartouche as a transparent PNG image.
+            </div>
+
+            <span class="small">
+              (Transparent background)
+              <span class="tpLine">(poka sitelen li lon ala)</span>
             </span>
           </div>
           <div class="sr-only" id="canvasSmallDesc">
@@ -2318,6 +2333,91 @@
       });
     }
 
+
+    //PNG download
+    function safeFilenamePart(s) {
+      const t = String(s ?? "").trim();
+      if (!t) return "cartouche";
+      // keep it filesystem-friendly
+      return t.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80) || "cartouche";
+    }
+
+    /**
+     * Export a canvas to PNG with transparency preserved.
+     * `scale` lets you export a higher-res image (e.g., 4 = 4x).
+     */
+    function downloadCanvasAsTransparentPng(canvas, { filenameBase = "cartouche", scale = 1 } = {}) {
+      if (!canvas) throw new Error("Canvas not found.");
+
+      const w = canvas.width | 0;
+      const h = canvas.height | 0;
+      if (w <= 0 || h <= 0) throw new Error("Canvas is empty (nothing to download yet).");
+
+      // Offscreen copy so we can scale and guarantee we only export drawn pixels.
+      const out = document.createElement("canvas");
+      out.width = Math.max(1, Math.floor(w * scale));
+      out.height = Math.max(1, Math.floor(h * scale));
+
+      const ctx = out.getContext("2d", { alpha: true });
+      // Do NOT fill a background: keep it transparent.
+      ctx.clearRect(0, 0, out.width, out.height);
+
+      // Scale copy
+      ctx.imageSmoothingEnabled = true; // fine for fonts/curves; set false if you want hard pixels
+      ctx.drawImage(canvas, 0, 0, out.width, out.height);
+
+      const filename = safeFilenamePart(filenameBase) + ".png";
+
+      // Prefer toBlob (better memory behavior)
+      if (out.toBlob) {
+        out.toBlob((blob) => {
+          if (!blob) throw new Error("PNG export failed (no blob).");
+
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          // cleanup
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, "image/png");
+        return;
+      }
+
+      // Fallback
+      const dataUrl = out.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function wireDownloadButton() {
+      const btn = document.getElementById("btnDownloadCartouchePng");
+      if (!btn) return;
+
+      btn.addEventListener("click", () => {
+        try {
+          // Choose a meaningful filename. Number code tends to be short and unique.
+          const code = (document.getElementById("numberCodeOut")?.value ?? "").trim();
+          const base = code ? code : "cartouche";
+
+          // Export the visible/primary cartouche. Increase scale if you want a larger PNG.
+          downloadCanvasAsTransparentPng(canvasSmall, { filenameBase: base, scale: 1 });
+
+          announceStatus("Downloaded cartouche PNG.");
+        } catch (err) {
+          showAlertAndAnnounce(err?.message ?? String(err));
+        }
+      });
+    }
+
+
     // CHANGED: accept two values
     // - displayValueOrNull: used for the (hidden) large "Value:" line
     // - cartoucheValueOrNull: used for the small-cartouche value under cartouche
@@ -2784,11 +2884,12 @@
       try {
         await ensureFontLoaded();
 
-        // CHANGED: query param overrides localStorage, then we update the calculator link
         applyCartoucheDisplayModeFromQueryOrStorage();
         updateCalculatorLinkWithDisplayParam();
 
         wireCartoucheDisplayRadios();
+
+        wireDownloadButton(); // <-- ADD THIS
 
         buildDigitReferenceTable();
         await runEncodeFromDecimal();
@@ -2797,6 +2898,7 @@
         showAlertAndAnnounce(err?.message ?? String(err));
       }
     });
+
   </script>
 </body>
 </html>
