@@ -136,7 +136,7 @@ Example:
 ">
   -5,432.10 →<br>
   <img src="images/number-minus-5-thousand-432-point-10_v2.png" width="220" alt="-5,432.10"/> →<br>
-  Neno Len Eke Naseten One Wenin →<br>
+  nanpa Neno Len Eke Naseten One Wenin →<br>
   #~OLKASTOWI →<br>
   -5,432.10
 </div>
