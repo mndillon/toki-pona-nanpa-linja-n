@@ -1,0 +1,1456 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Multiline Text → Sitelen Pona Canvas</title>
+
+  <style>
+    :root {
+      --pad: 14px;
+      --gap: 12px;
+      --border: #d0d7de;
+      --bg: #F3DFC0;
+      --muted: #3f4750;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 24px;
+      background: var(--bg);
+    }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      max-width: 980px;
+    }
+
+    .row { display:flex; gap: var(--gap); flex-wrap: wrap; align-items: flex-end; }
+    .col { flex: 1 1 320px; }
+
+    .controlsStack { display:flex; flex-direction:column; gap: 12px; margin-top:14px; }
+    .btnRow { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+
+    label { display:block; font-size:12px; color: var(--muted); margin-bottom:6px; }
+
+    textarea, input[type="text"], select {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--bg);
+      font: inherit;
+    }
+
+    textarea { min-height: 180px; resize: vertical; }
+
+    button {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { background: var(--bg); }
+
+    .btnBi {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      line-height: 1.15;
+    }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .help { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+
+    .tpLine {
+      display: block;
+      margin-top: 2px;
+      font-size: 10pt;
+      color: var(--muted);
+      line-height: 1.25;
+    }
+
+    canvas {
+      display:block;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background: transparent;
+      max-width: 100%;
+    }
+
+    .small { font-size: 12px; color: var(--muted); }
+
+    button:focus-visible,
+    a:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible,
+    .skipLink:focus-visible {
+      outline: 3px solid #111;
+      outline-offset: 3px;
+    }
+
+    .skipLink {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: #fff;
+      border: 2px solid #111;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: #111;
+      text-decoration: none;
+    }
+    .skipLink:focus {
+      left: 24px;
+      top: 24px;
+      z-index: 9999;
+    }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    /* NEW: compact inline select next to Render */
+    .inlineControl {
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width: 140px;
+    }
+    .inlineControl label {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .inlineControl select {
+      padding: 8px 10px;
+      width: 160px;      /* keeps it compact */
+      max-width: 100%;
+    }
+
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src:
+        /* CHANGE HERE if your font files differ */
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.woff2") format("woff2"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.woff")  format("woff"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.otf")   format("opentype");
+      font-display: swap;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="#main" class="skipLink">
+    Skip to content
+    <span class="tpLine">o tawa lipu ni</span>
+  </a>
+
+  <main class="card" id="main" role="main" aria-labelledby="pageTitle">
+    <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
+      Multiline Toki Pona text → sitelen pona canvas
+      <span class="tpLine">sitelen toki pona mute-linja tawa sitelen pona lon ilo sitelen</span>
+    </h1>
+
+    <div class="help" style="margin-top:10px;">
+      <strong>Note:</strong> Any “nanpa-linja-n proper name” used here are encoding labels for numbers only, and do not propose or add any new Toki Pona lexicon.
+      <span class="tpLine">
+        sona: nimi “nanpa-linja-n proper name” li nimi pi pana nanpa taso.
+        ona li sama nimi pi jan (nimi pi nimi) taso; ona li pana ala e nimi sin pi toki pona.
+      </span>
+    </div>
+
+    <div class="help">
+      <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
+      complete, or suitable for any purpose. You are responsible for verifying results.
+      <span class="tpLine">
+        sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pi pona.
+        sina o lukin e ni: sitelen li pona anu seme.
+      </span>
+    </div>
+
+    <div class="help" style="margin-top:10px;">
+      Rules:
+      <ul style="margin:6px 0 0 18px; padding:0;">
+        <li>Unknown words are ignored (except after “nanpa”, where unknown name-tokens are cartouched as letters).</li>
+        <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as font cartouches.</li>
+        <li>Inside <span class="mono">[ ... ]</span>:
+          <ul style="margin:6px 0 0 18px; padding:0;">
+            <li>If all bracket words are known TP words: render a cartouche containing exactly those glyph(s).</li>
+            <li>Otherwise: treat bracket content as letters → random glyphs, inside a cartouche.</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div id="srStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="controlsStack" role="group" aria-label="Input and render action">
+
+      <div>
+        <label for="textIn">
+          Enter multi-line Toki Pona text
+          <span class="tpLine">o pana e sitelen toki pona lon linja mute</span>
+        </label>
+        <textarea id="textIn" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
+          placeholder="Example:
+toki pona li pona
+[o] li pona
+[ala] li ike
+nanpa esun luka esun nanpa
+o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
+      </div>
+
+      <!-- CHANGED: Render row now includes Font size select next to Render -->
+      <div class="btnRow" aria-label="Actions">
+        <button id="btnRender" type="button" class="btnBi">
+          <span>Render</span>
+          <span class="tpLine">o sitelen</span>
+        </button>
+
+        <div class="inlineControl" role="group" aria-label="Font size">
+          <label for="fontSizeSel">
+            Font size
+            <span class="tpLine" style="display:inline; margin:0 0 0 6px;">suli pi sitelen</span>
+          </label>
+          <select id="fontSizeSel" aria-describedby="fontSizeHelp">
+            <option value="12">12 px</option>
+            <option value="16">16 px</option>
+            <option value="20">20 px</option>
+            <option value="24">24 px</option>
+            <option value="28">28 px</option>
+            <option value="32">32 px</option>
+            <option value="36">36 px</option>
+            <option value="40">40 px</option>
+            <option value="44">44 px</option>
+            <option value="48">48 px</option>
+            <option value="56" selected>56 px</option>
+            <option value="64">64 px</option>
+            <option value="72">72 px</option>
+            <option value="80">80 px</option>
+            <option value="88">88 px</option>
+            <option value="96">96 px</option>
+            <option value="120">120 px</option>
+          </select>
+          <div id="fontSizeHelp" class="sr-only">Changes the glyph and cartouche rendering size in the output.</div>
+        </div>
+      </div>
+
+      <div>
+        <fieldset style="border:1px solid var(--border); border-radius:10px; padding:10px 12px; max-width: 560px;">
+          <legend class="sr-only">Nanpa-linja-n render mode</legend>
+
+          <div style="font-size:12px; color: var(--muted); margin-bottom:6px;">
+            Nanpa-linja-n number output
+          </div>
+
+          <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+            <label style="display:flex; align-items:center; gap:8px; margin:0;">
+              <input type="radio" name="nlMode" value="traditional" checked>
+              <span>Traditional</span>
+            </label>
+
+            <label style="display:flex; align-items:center; gap:8px; margin:0;">
+              <input type="radio" name="nlMode" value="uniform">
+              <span>Uniform</span>
+            </label>
+          </div>
+        </fieldset>
+      </div>
+
+    </div>
+
+    <div style="margin-top:14px;">
+      <label>
+        Output canvas
+        <span class="tpLine">ilo sitelen kama</span>
+      </label>
+      <canvas id="outCanvas" aria-hidden="true"></canvas>
+
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button id="btnDownloadPng" type="button" class="btnBi" aria-describedby="btnDownloadHelp">
+          <span>Download PNG</span>
+          <span class="tpLine">o kama jo e sitelen PNG</span>
+        </button>
+        <div id="btnDownloadHelp" class="sr-only">Downloads the output canvas as a transparent PNG.</div>
+
+        <span class="small">
+          (Transparent background)
+          <span class="tpLine">(poka sitelen li lon ala)</span>
+        </span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    "use strict";
+
+    const elSrStatus = document.getElementById("srStatus");
+    function announceStatus(msg) {
+      if (!elSrStatus) return;
+      elSrStatus.textContent = String(msg ?? "");
+    }
+    function showAlertAndAnnounce(msg) {
+      const s = String(msg ?? "Unknown error");
+      announceStatus(s);
+      alert(s);
+    }
+
+    const FONT_FAMILY = "TP-Cartouche-Font";
+
+    /* ============================
+       NEW: Font size selection (remember + query param)
+       ============================ */
+    const FONT_SIZE_STORAGE_KEY = "tpFontPx";
+    const FONT_SIZE_QUERY_PARAM = "fontPx";
+    const FONT_SIZE_QUERY_PARAM_ALIAS = "fontSize";
+
+    const FONT_SIZE_ALLOWED = [12,16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88, 96, 120];
+
+    function clampAllowedFontPx(px) {
+      const n = Number(px);
+      if (!Number.isFinite(n)) return null;
+      const i = Math.round(n);
+      if (FONT_SIZE_ALLOWED.includes(i)) return i;
+      // If someone passes an arbitrary value, accept it only if it's sane.
+      if (i >= 18 && i <= 220) return i;
+      return null;
+    }
+
+    function getFontPx() {
+      const sel = document.getElementById("fontSizeSel");
+      const v = sel ? sel.value : "";
+      const px = clampAllowedFontPx(v);
+      return px ?? 56;
+    }
+
+    function setFontPx(px) {
+      const val = clampAllowedFontPx(px) ?? 56;
+      const sel = document.getElementById("fontSizeSel");
+      if (sel) {
+        // If the value isn't in the dropdown, add it dynamically so the UI matches.
+        const exists = Array.from(sel.options).some(o => Number(o.value) === val);
+        if (!exists) {
+          const opt = document.createElement("option");
+          opt.value = String(val);
+          opt.textContent = `${val} px`;
+          sel.appendChild(opt);
+        }
+        sel.value = String(val);
+      }
+      try { localStorage.setItem(FONT_SIZE_STORAGE_KEY, String(val)); } catch {}
+      return val;
+    }
+
+    function readFontPxFromQuery() {
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+        const raw = params.get(FONT_SIZE_QUERY_PARAM) ?? params.get(FONT_SIZE_QUERY_PARAM_ALIAS) ?? "";
+        const val = clampAllowedFontPx(raw);
+        return val;
+      } catch {
+        return null;
+      }
+    }
+
+    function loadFontPxFromStorage() {
+      try {
+        const raw = localStorage.getItem(FONT_SIZE_STORAGE_KEY);
+        const val = clampAllowedFontPx(raw);
+        return val;
+      } catch {
+        return null;
+      }
+    }
+
+    function applyFontPxFromQueryOrStorage() {
+      const q = readFontPxFromQuery();
+      if (q != null) { setFontPx(q); return; }
+      const s = loadFontPxFromStorage();
+      if (s != null) setFontPx(s);
+      else setFontPx(56);
+    }
+
+    function wireFontSizeSelect() {
+      const sel = document.getElementById("fontSizeSel");
+      if (!sel) return;
+      sel.addEventListener("change", async () => {
+        try {
+          setFontPx(sel.value);
+          await renderFromTextarea();
+        } catch (e) {
+          showAlertAndAnnounce(e?.message ?? String(e));
+        }
+      });
+    }
+
+    /* ============================
+       Existing constants become defaults; actual size comes from getFontPx()
+       ============================ */
+    const GLYPH_GAP_PX = 6;
+    const WORD_GAP_PX  = 12;
+    const LINE_GAP_PX  = 18;
+
+    const CARTOUCHE_START_CP = 0xF1990;
+    const CARTOUCHE_END_CP   = 0xF1991;
+
+    async function ensureFontLoaded() {
+      const sampleCp = 0xF190B;
+      const sampleChar = String.fromCodePoint(sampleCp);
+      const fontSpec = `24px "${FONT_FAMILY}"`;
+
+      if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
+
+      try {
+        await document.fonts.load(fontSpec, sampleChar);
+        await document.fonts.ready;
+      } catch (e) {
+        console.warn("[font] load threw error:", e);
+      }
+    }
+
+    /* ============================
+       Remember Traditional/Uniform + query param
+       ============================ */
+    const NL_MODE_STORAGE_KEY = "nlMode";
+    const NL_MODE_QUERY_PARAM = "nlMode";
+    const NL_MODE_QUERY_PARAM_ALIAS = "cartoucheDisplay";
+
+    function getNanpaLinjanMode() {
+      const el = document.querySelector('input[name="nlMode"]:checked');
+      return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
+    }
+
+    function setNanpaLinjanMode(mode) {
+      const v = (mode === "uniform") ? "uniform" : "traditional";
+      const target = document.querySelector(`input[name="nlMode"][value="${v}"]`);
+      if (target) target.checked = true;
+      try { localStorage.setItem(NL_MODE_STORAGE_KEY, v); } catch {}
+    }
+
+    function loadNanpaLinjanModeFromStorage() {
+      try {
+        const v = localStorage.getItem(NL_MODE_STORAGE_KEY);
+        if (v === "uniform" || v === "traditional") setNanpaLinjanMode(v);
+      } catch {}
+    }
+
+    function readNanpaLinjanModeFromQuery() {
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+        const raw =
+          params.get(NL_MODE_QUERY_PARAM) ??
+          params.get(NL_MODE_QUERY_PARAM_ALIAS) ??
+          "";
+        const v = String(raw).toLowerCase().trim();
+        if (v === "uniform" || v === "traditional") return v;
+      } catch {}
+      return null;
+    }
+
+    /* ============================
+    NEW: Optional default input from query param (not remembered)
+    ============================ */
+    const INPUT_TEXT_QUERY_PARAM = "text";
+    const INPUT_TEXT_QUERY_PARAM_ALIAS = "input";
+
+    function readDefaultInputFromQuery() {
+        try {
+            const params = new URLSearchParams(window.location.search || "");
+            // URLSearchParams decodes percent-encoding automatically.
+            const raw = params.get(INPUT_TEXT_QUERY_PARAM) ?? params.get(INPUT_TEXT_QUERY_PARAM_ALIAS);
+            if (raw == null) return null;
+
+            // Treat explicit empty string as "no default"
+            const s = String(raw);
+            if (!s.trim()) return null;
+
+            // Optional: normalize any literal "\n" sequences to real newlines
+            // (useful if someone builds URLs without actual newlines)
+            return s.replace(/\\n/g, "\n");
+        } catch {
+            return null;
+        }
+    }
+
+    function applyDefaultInputFromQuery() {
+        const s = readDefaultInputFromQuery();
+        if (s == null) return;
+        if (elTextIn) elTextIn.value = s;
+        // Do NOT store this anywhere. No localStorage. No cookies.
+    }
+
+
+
+    function applyNanpaLinjanModeFromQueryOrStorage() {
+      const q = readNanpaLinjanModeFromQuery();
+      if (q) { setNanpaLinjanMode(q); return; }
+      loadNanpaLinjanModeFromStorage();
+    }
+
+    function wireNanpaLinjanModeRadios() {
+      const radios = document.querySelectorAll('input[name="nlMode"]');
+      radios.forEach(r => {
+        r.addEventListener("change", async () => {
+          try {
+            setNanpaLinjanMode(getNanpaLinjanMode());
+            await renderFromTextarea();
+          } catch (e) {
+            showAlertAndAnnounce(e?.message ?? String(e));
+          }
+        });
+      });
+    }
+
+    /* ============================
+       Word → UCSUR map
+       ============================ */
+    const WORD_TO_UCSUR_CP = {
+      "a": 0xF1900, "akesi": 0xF1901, "ala": 0xF1902, "alasa": 0xF1903,
+      "ale": 0xF1904, "ali": 0xF1904, "anpa": 0xF1905, "ante": 0xF1906, "anu": 0xF1907,
+      "awen": 0xF1908, "e": 0xF1909, "en": 0xF190A, "esun": 0xF190B, "ijo": 0xF190C,
+      "ike": 0xF190D, "ilo": 0xF190E, "insa": 0xF190F, "jaki": 0xF1910, "jan": 0xF1911,
+      "jelo": 0xF1912, "jo": 0xF1913, "kala": 0xF1914, "kalama": 0xF1915, "kama": 0xF1916,
+      "kasi": 0xF1917, "ken": 0xF1918, "kepeken": 0xF1919, "kili": 0xF191A, "kiwen": 0xF191B,
+      "ko": 0xF191C, "kon": 0xF191D, "kule": 0xF191E, "kulupu": 0xF191F, "kute": 0xF1920,
+      "la": 0xF1921, "lape": 0xF1922, "laso": 0xF1923, "lawa": 0xF1924, "len": 0xF1925,
+      "lete": 0xF1926, "li": 0xF1927, "lili": 0xF1928, "linja": 0xF1929, "lipu": 0xF192A,
+      "loje": 0xF192B, "lon": 0xF192C, "luka": 0xF192D, "lukin": 0xF192E, "lupa": 0xF192F,
+      "ma": 0xF1930, "mama": 0xF1931, "mani": 0xF1932, "meli": 0xF1933, "mi": 0xF1934,
+      "mije": 0xF1935, "moku": 0xF1936, "moli": 0xF1937, "monsi": 0xF1938, "mu": 0xF1939,
+      "mun": 0xF193A, "musi": 0xF193B, "mute": 0xF193C, "nanpa": 0xF193D, "nasa": 0xF193E,
+      "nasin": 0xF193F, "nena": 0xF1940, "ni": 0xF1941, "nimi": 0xF1942, "noka": 0xF1943,
+      "o": 0xF1944, "olin": 0xF1945, "ona": 0xF1946, "open": 0xF1947, "pakala": 0xF1948,
+      "pali": 0xF1949, "palisa": 0xF194A, "pan": 0xF194B, "pana": 0xF194C, "pi": 0xF194D,
+      "pilin": 0xF194E, "pimeja": 0xF194F, "pini": 0xF1950, "pipi": 0xF1951, "poka": 0xF1952,
+      "poki": 0xF1953, "pona": 0xF1954, "pu": 0xF1955, "sama": 0xF1956, "seli": 0xF1957,
+      "selo": 0xF1958, "seme": 0xF1959, "sewi": 0xF195A, "sike": 0xF195C, "sin": 0xF195D,
+      "sina": 0xF195E, "sinpin": 0xF195F, "sitelen": 0xF1960, "sona": 0xF1961, "soweli": 0xF1962,
+      "suli": 0xF1963, "suno": 0xF1964, "supa": 0xF1965, "suwi": 0xF1966, "tan": 0xF1967,
+      "taso": 0xF1968, "tawa": 0xF1969, "telo": 0xF196A, "tenpo": 0xF196B, "toki": 0xF196C,
+      "tomo": 0xF196D, "tu": 0xF196E, "unpa": 0xF196F, "uta": 0xF1970, "utala": 0xF1971,
+      "walo": 0xF1972, "wan": 0xF1973, "waso": 0xF1974, "wawa": 0xF1975, "weka": 0xF1976,
+      "wile": 0xF1977, "namako": 0xF1978, "kin": 0xF1979, "oko": 0xF197A, "kipisi": 0xF197B,
+      "leko": 0xF197C, "monsuta": 0xF197D, "tonsi": 0xF197E, "jasima": 0xF197F,
+      "kijetesantakalu": 0xF1980, "soko": 0xF1981, "meso": 0xF1982, "epiku": 0xF1983,
+      "kokosila": 0xF1984, "lanpan": 0xF1985, "n": 0xF1986, "misikeke": 0xF1987, "ku": 0xF1988
+    };
+
+    function isKnownTpWord(w) { return WORD_TO_UCSUR_CP[w] != null; }
+    function normalizeTpWord(raw) { return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, ""); }
+    function lettersOnly(raw) { return String(raw ?? "").replace(/[^A-Za-z]/g, ""); }
+
+    /* ============================
+       Nanpa-linja-n mappings
+       ============================ */
+    const NANPA_LINJA_N_WORD_TO_CP = {
+      "nanpa": 0xF193D,
+      "nasa":  0xF193E,
+      "nasin": 0xF193F,
+      "nena":  0xF1940,
+      "ni":    0xF1941,
+      "nimi":  0xF1942,
+      "noka":  0xF1943,
+
+      "esun":  0xF190B,
+      "en":    0xF190A,
+      "e":     0xF1909,
+
+      "o":     0xF1944,
+      "ona":   0xF1946,
+
+      "kulupu":0xF191F,
+
+      "ijo":   0xF190C,
+      "wan":   0xF1973,
+      "tu":    0xF196E,
+      "seli":  0xF1957,
+      "awen":  0xF1908,
+      "luka":  0xF192D,
+      "utala": 0xF1971,
+      "mun":   0xF193A,
+      "pipi":  0xF1951,
+      "jo":    0xF1913,
+    };
+
+    const CP_NANPA = NANPA_LINJA_N_WORD_TO_CP["nanpa"];
+    const CP_NENA  = NANPA_LINJA_N_WORD_TO_CP["nena"];
+    const CP_EN    = NANPA_LINJA_N_WORD_TO_CP["en"];
+
+    const UNIFORM_TO_NENA = new Set([
+      NANPA_LINJA_N_WORD_TO_CP["nasa"],
+      NANPA_LINJA_N_WORD_TO_CP["nasin"],
+      NANPA_LINJA_N_WORD_TO_CP["ni"],
+      NANPA_LINJA_N_WORD_TO_CP["nimi"],
+      NANPA_LINJA_N_WORD_TO_CP["noka"],
+      NANPA_LINJA_N_WORD_TO_CP["nena"],
+    ]);
+
+    const UNIFORM_TO_EN = new Set([
+      NANPA_LINJA_N_WORD_TO_CP["e"],
+      NANPA_LINJA_N_WORD_TO_CP["en"],
+      NANPA_LINJA_N_WORD_TO_CP["esun"],
+    ]);
+
+    function uniformizeNanpaLinjanCartoucheCps(cps) {
+      const a = Array.from(cps ?? []);
+      if (a.length === 0) return a;
+
+      for (let i = 0; i < a.length; i++) {
+        const cp = a[i];
+
+        if (cp === CP_NANPA) {
+          if (i !== 0 && i !== a.length - 1) a[i] = CP_NENA;
+          continue;
+        }
+        if (UNIFORM_TO_NENA.has(cp)) { a[i] = CP_NENA; continue; }
+        if (UNIFORM_TO_EN.has(cp))   { a[i] = CP_EN; continue; }
+      }
+      return a;
+    }
+
+    const DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
+    const TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","NE","NO"];
+
+    function tokenizeNanpaCaps(caps) {
+      if (caps == null) throw new Error("caps must be a string");
+      const s = String(caps).trim().toUpperCase();
+      if (!s) throw new Error("caps is empty");
+      if (!s.endsWith("N")) throw new Error("nanpa-caps must end with final terminator 'N'");
+      if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
+
+      const tokens = [];
+      let i = 0;
+      const end = s.length;
+
+      while (i < end - 1) {
+        let matched = null;
+        for (const pref of TOKEN_PREFIXES) {
+          if (s.startsWith(pref, i)) { matched = pref; break; }
+        }
+        if (matched != null) { tokens.push(matched); i += matched.length; continue; }
+
+        if (i + 2 <= end - 1) {
+          const two = s.slice(i, i + 2);
+          if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
+        }
+
+        throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
+      }
+
+      tokens.push("N");
+      return tokens;
+    }
+
+    function isValidNanpaLinjanProperName(raw) {
+      const s = String(raw ?? "").replace(/\s+/g, "");
+      if (!s) return false;
+      if (!/^[a-zA-Z]+$/.test(s)) return false;
+      if (!/[nN]$/.test(s)) return false;
+
+      const core = s.slice(0, -1);
+      if (core.length < 2 || (core.length % 2) !== 0) return false;
+
+      const caps = core.toUpperCase() + "N";
+      if (!caps.startsWith("NE")) return false;
+
+      try { tokenizeNanpaCaps(caps); return true; }
+      catch { return false; }
+    }
+
+    const NUMBER_CODE_LETTER_TO_PAIR = {
+      "I":"NI","W":"WE","T":"TE","S":"SE","A":"NA",
+      "L":"LE","U":"NU","M":"ME","P":"PE","J":"JE",
+    };
+
+    function normalizeNumberCodeInput(raw) {
+      return String(raw ?? "").trim().replace(/\s+/g, "");
+    }
+
+    function tryParseNanpaLinjanNumberCodeToCaps(raw) {
+      const s0 = normalizeNumberCodeInput(raw);
+      if (!s0) return null;
+      if (!s0.toUpperCase().startsWith("#~")) return null;
+
+      const body = s0.slice(2).toUpperCase();
+      if (!body) throw new Error("Number code '#~' must have letters after it.");
+      if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may only contain letters A–Z after '#~'.");
+
+      const parts = ["NE"];
+      let i = 0;
+
+      while (i < body.length) {
+        const ch = body[i];
+
+        if (ch === "O") {
+          let j = i;
+          while (j < body.length && body[j] === "O") j++;
+          const count = j - i;
+          if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
+
+          if (count === 1) {
+            if (i === 0) parts.push("NO");
+            else parts.push("NO", "NE");
+          } else {
+            parts.push("NO".repeat(count));
+          }
+
+          i = j;
+          continue;
+        }
+
+        if (ch === "K") {
+          let j = i;
+          while (j < body.length && body[j] === "K") j++;
+          const count = j - i;
+          if (count < 1 || count > 3) throw new Error("Invalid run of 'K' in number code (max 3).");
+          parts.push("KE".repeat(count));
+          i = j;
+          continue;
+        }
+
+        const pair = NUMBER_CODE_LETTER_TO_PAIR[ch];
+        if (!pair) throw new Error(`Invalid letter '${ch}' in number code.`);
+        parts.push(pair);
+        i += 1;
+      }
+
+      const caps = parts.join("") + "N";
+      tokenizeNanpaCaps(caps);
+      return { caps };
+    }
+
+    const TOKEN_TO_DIGIT_WORD = {
+      "NI":"ijo","WE":"wan","TE":"tu","SE":"seli","NA":"awen",
+      "LE":"luka","NU":"utala","ME":"mun","PE":"pipi","JE":"jo",
+    };
+
+    function nanpaCapsTokensToTpWords(tokens) {
+      const out = [];
+      let afterStartingNe = false;
+
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+
+        if (t === "NE") {
+          if (out.length === 0) { out.push("nanpa","esun"); afterStartingNe = true; }
+          else { out.push("nasa","e"); afterStartingNe = false; }
+          continue;
+        }
+
+        if (DIGIT_TOKENS.has(t)) {
+          const dw = TOKEN_TO_DIGIT_WORD[t];
+          if (t === "NI" || t === "NA" || t === "NU") out.push("nasa", dw);
+          else out.push(dw, "esun");
+          afterStartingNe = false;
+          continue;
+        }
+
+        if (t === "NO") {
+          const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
+
+          if (afterStartingNe && nxt !== "NE") {
+            out.push("nasa", "ona");
+            afterStartingNe = false;
+            continue;
+          }
+
+          if (nxt === "NE") {
+            out.push("ni","o","nasa","e");
+            afterStartingNe = false;
+            i += 1;
+            continue;
+          }
+
+          out.push("ni","o");
+          afterStartingNe = false;
+          continue;
+        }
+
+        if (t === "NONO") { out.push("nena","o","nena","o"); afterStartingNe=false; continue; }
+        if (t === "NONONO") { out.push("nasa","o","nasa","o","nasa","o"); afterStartingNe=false; continue; }
+
+        if (t === "KE") { out.push("kulupu","e"); afterStartingNe=false; continue; }
+        if (t === "KEKE") { out.push("kulupu","e","kulupu","e"); afterStartingNe=false; continue; }
+        if (t === "KEKEKE") { out.push("kulupu","e","kulupu","e","kulupu","e"); afterStartingNe=false; continue; }
+
+        if (t === "N") { out.push("nanpa"); afterStartingNe=false; continue; }
+
+        throw new Error(`Unknown token "${t}"`);
+      }
+
+      return out;
+    }
+
+    function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional" } = {}) {
+      const tokens = tokenizeNanpaCaps(caps);
+      const tpWords = nanpaCapsTokensToTpWords(tokens);
+
+      const cps = [];
+      for (const w of tpWords) {
+        const cp = NANPA_LINJA_N_WORD_TO_CP[w];
+        if (cp == null) return null;
+        cps.push(cp);
+      }
+
+      if (mode === "uniform") return uniformizeNanpaLinjanCartoucheCps(cps);
+      return cps;
+    }
+
+    function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "traditional" } = {}) {
+      const s = String(rawText ?? "").trim();
+      if (!s) return null;
+
+      try {
+        const parsed = tryParseNanpaLinjanNumberCodeToCaps(s);
+        if (parsed?.caps) return nanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode });
+      } catch {
+        return null;
+      }
+
+      if (!isValidNanpaLinjanProperName(s)) return null;
+
+      const compact = s.replace(/\s+/g, "");
+      const core = compact.slice(0, -1);
+      const caps = core.toUpperCase() + "N";
+      return nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
+    }
+
+    function consumeStandaloneNumberCodeAt(tokenObjs, i, { mode = "traditional" } = {}) {
+      if (!tokenObjs || i < 0 || i >= tokenObjs.length) return null;
+
+      const raw0 = String(tokenObjs[i]?.raw ?? "");
+      const starts = raw0.toUpperCase().startsWith("#~") || raw0.trim() === "#~";
+      if (!starts) return null;
+
+      let j = i;
+      const candidates = [];
+      while (j < tokenObjs.length) {
+        const norm = tokenObjs[j]?.norm;
+        if (!norm && j !== i) break;
+        if (j !== i && norm && isKnownTpWord(norm)) break;
+        candidates.push(tokenObjs[j]);
+        j += 1;
+      }
+      if (candidates.length === 0) return null;
+
+      for (let cut = candidates.length; cut >= 1; cut--) {
+        const partNoSpace = candidates.slice(0, cut).map(o => o.raw).join("");
+        const part = partNoSpace.replace(/\s+/g, "");
+        const cleaned = part.replace(/[^A-Za-z#~]/g, "");
+        if (!cleaned.toUpperCase().startsWith("#~")) continue;
+
+        try {
+          const parsed = tryParseNanpaLinjanNumberCodeToCaps(cleaned);
+          if (!parsed) continue;
+
+          const cps = nanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode });
+          if (!cps || !cps.length) continue;
+
+          return { cps, nextIndex: i + cut };
+        } catch {}
+      }
+
+      return null;
+    }
+
+    function consumeNanpaLinjanIdentifierAfterNanpa(tokenObjs, iWordIndex, { mode = "traditional" } = {}) {
+      const start = iWordIndex + 1;
+      if (!tokenObjs || start >= tokenObjs.length) return null;
+
+      const nextRaw = String(tokenObjs[start]?.raw ?? "").trim();
+      if (nextRaw.toUpperCase().startsWith("#~") || nextRaw === "#~") {
+        const cleaned = nextRaw.replace(/[^A-Za-z#~]/g, "");
+        const cps = tryDecodeNanpaLinjanIdentifierToCodepoints(cleaned, { mode });
+        if (cps) return { nextIndex: start + 1, cps };
+        return null;
+      }
+
+      const MAX_LOOKAHEAD_TOKENS = 12;
+      const limit = Math.min(tokenObjs.length, start + MAX_LOOKAHEAD_TOKENS);
+
+      let endMax = start - 1;
+      while (endMax + 1 < limit) {
+        const raw = String(tokenObjs[endMax + 1]?.raw ?? "");
+        const lo = lettersOnly(raw);
+        if (!lo) break;
+        endMax += 1;
+      }
+      if (endMax < start) return null;
+
+      for (let end = endMax; end >= start; end--) {
+        const candidate = tokenObjs
+          .slice(start, end + 1)
+          .map(o => lettersOnly(o.raw))
+          .filter(Boolean)
+          .join(" ");
+
+        const cps = tryDecodeNanpaLinjanIdentifierToCodepoints(candidate, { mode });
+        if (cps) return { nextIndex: end + 1, cps };
+      }
+
+      return null;
+    }
+
+    function consumeNanpaLinjanIdentifierAt(tokenObjs, iWordIndex, { mode = "traditional" } = {}) {
+      if (!tokenObjs || iWordIndex < 0 || iWordIndex >= tokenObjs.length) return null;
+
+      const raw0 = String(tokenObjs[iWordIndex]?.raw ?? "").trim();
+      if (raw0.toUpperCase().startsWith("#~")) return null;
+
+      const MAX_LOOKAHEAD_TOKENS = 12;
+      const limit = Math.min(tokenObjs.length, iWordIndex + MAX_LOOKAHEAD_TOKENS);
+
+      let endMax = iWordIndex - 1;
+      while (endMax + 1 < limit) {
+        const raw = String(tokenObjs[endMax + 1]?.raw ?? "");
+        const lo = lettersOnly(raw);
+        if (!lo) break;
+        endMax += 1;
+      }
+      if (endMax < iWordIndex) return null;
+
+      for (let end = endMax; end >= iWordIndex; end--) {
+        const candidate = tokenObjs
+          .slice(iWordIndex, end + 1)
+          .map(o => lettersOnly(o.raw))
+          .filter(Boolean)
+          .join(" ");
+
+        const cps = tryDecodeNanpaLinjanIdentifierToCodepoints(candidate, { mode });
+        if (cps) return { nextIndex: end + 1, cps };
+      }
+
+      return null;
+    }
+
+    function tryParseNanpaLinjanTpPhraseWords(inputWords) {
+      const words = Array.from(inputWords ?? []).map(normalizeTpWord).filter(Boolean);
+
+      if (words.length < 3) return null;
+      if (words[0] !== "nanpa") return null;
+      if (!(words[1] === "esun" || words[1] === "en")) return null;
+      if (words[words.length - 1] !== "nanpa") return null;
+
+      for (const w of words) {
+        if (NANPA_LINJA_N_WORD_TO_CP[w] == null) return null;
+      }
+
+      return { words };
+    }
+
+    function consumeNumberPhraseAt(words, i) {
+      if (words[i] !== "nanpa") return null;
+      for (let j = i + 2; j < words.length; j++) {
+        if (words[j] !== "nanpa") continue;
+        const slice = words.slice(i, j + 1);
+        const parsed = tryParseNanpaLinjanTpPhraseWords(slice);
+        if (parsed) return { len: slice.length, words: parsed.words };
+      }
+      return null;
+    }
+
+    function nanpaLinjanWordsToCodepoints(words, { mode = "traditional" } = {}) {
+      const cps = [];
+      for (const w0 of (words ?? [])) {
+        const w = normalizeTpWord(w0);
+        const cp = NANPA_LINJA_N_WORD_TO_CP[w];
+        if (cp == null) return null;
+        cps.push(cp);
+      }
+      if (mode === "uniform") return uniformizeNanpaLinjanCartoucheCps(cps);
+      return cps;
+    }
+
+    function tpWordsToCodepoints(words) {
+      const cps = [];
+      for (const w of (words ?? [])) {
+        const cp = WORD_TO_UCSUR_CP[w];
+        if (cp != null) cps.push(cp);
+      }
+      return cps;
+    }
+
+    function setTextQuality(ctx) {
+      try { ctx.textRendering = "optimizeLegibility"; } catch (_) {}
+      try { ctx.fontKerning = "normal"; } catch (_) {}
+    }
+
+    function buildLetterBuckets() {
+      const buckets = new Map();
+      for (const w of Object.keys(WORD_TO_UCSUR_CP)) {
+        const k = String(w);
+        if (!k) continue;
+        const first = k[0].toLowerCase();
+        if (!/^[a-z]$/.test(first)) continue;
+        if (!buckets.has(first)) buckets.set(first, []);
+        buckets.get(first).push(k);
+      }
+      return buckets;
+    }
+    const LETTER_BUCKETS = buildLetterBuckets();
+
+    function randInt(n) {
+      if (n <= 0) return 0;
+      if (crypto && crypto.getRandomValues) {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        return buf[0] % n;
+      }
+      return Math.floor(Math.random() * n);
+    }
+
+    function randomGlyphCpForLetter(letter) {
+      const l = String(letter ?? "").toLowerCase();
+      const arr = LETTER_BUCKETS.get(l);
+      if (!arr || arr.length === 0) return null;
+      const word = arr[randInt(arr.length)];
+      return WORD_TO_UCSUR_CP[word] ?? null;
+    }
+
+    function lettersToRandomGlyphCps(letters) {
+      const cps = [];
+      const s = String(letters ?? "").toLowerCase().replace(/[^a-z]/g, "");
+      for (const ch of s) {
+        const cp = randomGlyphCpForLetter(ch);
+        if (cp != null) cps.push(cp);
+      }
+      return cps;
+    }
+
+    function splitLineIntoSegments(line) {
+      const s = String(line ?? "");
+      const parts = s.split(/(\[[^\]]*\])/g);
+      const out = [];
+      for (const p of parts) {
+        if (!p) continue;
+        if (p.startsWith("[") && p.endsWith("]")) out.push({ kind: "bracket", value: p.slice(1, -1) });
+        else out.push({ kind: "text", value: p });
+      }
+      return out;
+    }
+
+    function pushGapIfNeeded(elements, px) {
+      if (elements.length === 0) return;
+      const last = elements[elements.length - 1];
+      if (last && last.type === "gap") return;
+      elements.push({ type: "gap", px: px });
+    }
+
+    /* CHANGED: cartouche sizing is now derived from current font size */
+    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx }) {
+      if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
+      if (!innerCps || innerCps.length === 0) return { w: 0, h: 0 };
+
+      const px = fontPx;
+      const pad = padPx;
+
+      const run =
+        String.fromCodePoint(CARTOUCHE_START_CP) +
+        innerCps.map(cp => String.fromCodePoint(cp)).join("") +
+        String.fromCodePoint(CARTOUCHE_END_CP);
+
+      const ctx = canvas.getContext("2d");
+      ctx.textBaseline = "alphabetic";
+      ctx.font = `${px}px "${FONT_FAMILY}"`;
+      setTextQuality(ctx);
+      const m = ctx.measureText(run);
+
+      const ascent  = (m.actualBoundingBoxAscent  != null) ? m.actualBoundingBoxAscent  : Math.ceil(px * 0.95);
+      const descent = (m.actualBoundingBoxDescent != null) ? m.actualBoundingBoxDescent : Math.ceil(px * 0.35);
+
+      const left  = (m.actualBoundingBoxLeft  != null) ? m.actualBoundingBoxLeft  : 0;
+      const right = (m.actualBoundingBoxRight != null) ? m.actualBoundingBoxRight : Math.ceil(m.width);
+
+      const w = Math.max(1, Math.ceil(left + right + pad * 2));
+      const h = Math.max(1, Math.ceil(ascent + descent + pad * 2));
+
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx2 = canvas.getContext("2d", { alpha: true });
+      ctx2.clearRect(0, 0, w, h);
+      ctx2.textBaseline = "alphabetic";
+      ctx2.font = `${px}px "${FONT_FAMILY}"`;
+      setTextQuality(ctx2);
+      ctx2.fillStyle = "#111";
+
+      const x = pad + left;
+      const y = pad + ascent;
+
+      ctx2.fillText(run, x, y);
+
+      return { w, h };
+    }
+
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx }) {
+      if (!cps || cps.length === 0) return;
+      pushGapIfNeeded(elements, WORD_GAP_PX);
+
+      const cart = document.createElement("canvas");
+
+      // pad scales gently with font size to avoid touching the border
+      const padPx = Math.max(4, Math.round(fontPx * 0.11));
+
+      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx });
+
+      if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
+
+      elements.push({ type: "cartouche", canvas: cart, w: r.w, h: r.h });
+    }
+
+    function parseTextSegmentToElements(segmentText, elements, { fontPx }) {
+      const rawTokens = String(segmentText ?? "").trim().split(/\s+/).filter(Boolean);
+      const tokenObjs = rawTokens
+        .map(t => ({ raw: t, norm: normalizeTpWord(t) }))
+        .filter(o => o.norm);
+
+      const words = tokenObjs.map(o => o.norm);
+      const mode = getNanpaLinjanMode();
+
+      for (let i = 0; i < words.length; ) {
+        const codeHit = consumeStandaloneNumberCodeAt(tokenObjs, i, { mode });
+        if (codeHit && codeHit.cps) {
+          makeCartoucheElementFromCodepoints(elements, codeHit.cps, { fontPx });
+          i = codeHit.nextIndex;
+          continue;
+        }
+
+        const idHit = consumeNanpaLinjanIdentifierAt(tokenObjs, i, { mode });
+        if (idHit && idHit.cps) {
+          makeCartoucheElementFromCodepoints(elements, idHit.cps, { fontPx });
+          i = idHit.nextIndex;
+          continue;
+        }
+
+        const m = consumeNumberPhraseAt(words, i);
+        if (m) {
+          const cps = nanpaLinjanWordsToCodepoints(m.words, { mode });
+          if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx });
+          i += m.len;
+          continue;
+        }
+
+        const w = words[i];
+
+        if (w === "nanpa") {
+          const hit = consumeNanpaLinjanIdentifierAfterNanpa(tokenObjs, i, { mode });
+          if (hit && hit.cps) {
+            pushGapIfNeeded(elements, WORD_GAP_PX);
+            elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP["nanpa"], px: fontPx });
+            makeCartoucheElementFromCodepoints(elements, hit.cps, { fontPx });
+            i = hit.nextIndex;
+            continue;
+          }
+        }
+
+        if (w === "nanpa" && i + 1 < words.length) {
+          const next = words[i + 1];
+          if (next !== "esun" && next !== "en" && !isKnownTpWord(next)) {
+            pushGapIfNeeded(elements, WORD_GAP_PX);
+            elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP["nanpa"], px: fontPx });
+
+            let j = i + 1;
+            while (j < words.length && !isKnownTpWord(words[j])) j++;
+
+            const rawName = tokenObjs.slice(i + 1, j).map(o => o.raw).join("");
+            const cps = lettersToRandomGlyphCps(rawName);
+            makeCartoucheElementFromCodepoints(elements, cps, { fontPx });
+
+            i = j;
+            continue;
+          }
+        }
+
+        if (isKnownTpWord(w)) {
+          pushGapIfNeeded(elements, WORD_GAP_PX);
+          elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[w], px: fontPx });
+        }
+
+        i += 1;
+      }
+    }
+
+    function parseBracketSegmentToElements(bracketContent, elements, { fontPx }) {
+      const content = String(bracketContent ?? "").trim();
+      if (!content) return;
+
+      const wordsRaw = content.split(/\s+/).filter(Boolean);
+      const words = wordsRaw.map(normalizeTpWord).filter(Boolean);
+
+      const mode = getNanpaLinjanMode();
+
+      const parsedNumber = tryParseNanpaLinjanTpPhraseWords(words);
+      if (parsedNumber) {
+        const cps = nanpaLinjanWordsToCodepoints(parsedNumber.words, { mode });
+        if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx });
+        return;
+      }
+
+      if (words.length >= 1 && words.every(isKnownTpWord)) {
+        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(words), { fontPx });
+        return;
+      }
+
+      makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx });
+    }
+
+    function lineToElements(line, { fontPx }) {
+      const segs = splitLineIntoSegments(line);
+      const elements = [];
+
+      for (const seg of segs) {
+        if (seg.kind === "text") parseTextSegmentToElements(seg.value, elements, { fontPx });
+        else parseBracketSegmentToElements(seg.value, elements, { fontPx });
+      }
+
+      while (elements.length > 0 && elements[elements.length - 1].type === "gap") elements.pop();
+      return elements;
+    }
+
+    /* CHANGED: glyph measurement uses fontPx */
+    function measureGlyph(ctx, cp, px) {
+      const ch = String.fromCodePoint(cp);
+      ctx.font = `${px}px "${FONT_FAMILY}"`;
+      setTextQuality(ctx);
+      const m = ctx.measureText(ch);
+
+      const ascent  = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      return { ch, ascent, descent, left, tightW, w: tightW, h: Math.ceil(ascent + descent), px };
+    }
+
+    /* CHANGED: baseline/line box uses fontPx instead of fixed TEXT_GLYPH_PX */
+    function renderAllLinesToCanvas(outCanvas, linesElements, { fontPx }) {
+      const pad = 18;
+
+      const tmp = document.createElement("canvas");
+      const ctx = tmp.getContext("2d");
+      ctx.textBaseline = "alphabetic";
+
+      const measuredLines = [];
+      let maxLineW = 0;
+      let totalH = 0;
+
+      for (const lineEls of linesElements) {
+        let w = 0;
+        let maxAscent = 0;
+        let maxDescent = 0;
+        let maxBoxH = 0;
+
+        const measuredEls = [];
+
+        for (const el of lineEls) {
+          if (el.type === "gap") {
+            measuredEls.push(el);
+            w += Math.max(0, el.px | 0);
+            continue;
+          }
+
+          if (el.type === "glyph") {
+            const g = measureGlyph(ctx, el.cp, el.px ?? fontPx);
+            measuredEls.push({ ...el, m: g });
+            w += g.w;
+
+            if (g.ascent > maxAscent) maxAscent = g.ascent;
+            if (g.descent > maxDescent) maxDescent = g.descent;
+
+            const boxH = g.ascent + g.descent;
+            if (boxH > maxBoxH) maxBoxH = boxH;
+            continue;
+          }
+
+          if (el.type === "cartouche") {
+            measuredEls.push(el);
+            w += (el.w | 0);
+            if ((el.h | 0) > maxBoxH) maxBoxH = (el.h | 0);
+            continue;
+          }
+        }
+
+        const lineBoxH = Math.max(maxBoxH, maxAscent + maxDescent, fontPx);
+        measuredLines.push({ measuredEls, w, lineBoxH, maxAscent, maxDescent });
+
+        if (w > maxLineW) maxLineW = w;
+        totalH += lineBoxH;
+      }
+
+      totalH += Math.max(0, (measuredLines.length - 1) * LINE_GAP_PX);
+
+      const outW = Math.max(1, Math.ceil(maxLineW + pad * 2));
+      const outH = Math.max(1, Math.ceil(totalH + pad * 2));
+
+      outCanvas.width = outW;
+      outCanvas.height = outH;
+
+      const outCtx = outCanvas.getContext("2d", { alpha: true });
+      outCtx.clearRect(0, 0, outW, outH);
+      outCtx.textBaseline = "alphabetic";
+      outCtx.fillStyle = "#111";
+      setTextQuality(outCtx);
+
+      let y = pad;
+
+      for (let li = 0; li < measuredLines.length; li++) {
+        const L = measuredLines[li];
+        let x = pad;
+
+        const glyphBaseline =
+          y + Math.floor((L.lineBoxH - (L.maxAscent + L.maxDescent)) / 2) + L.maxAscent;
+
+        for (const el of L.measuredEls) {
+          if (el.type === "gap") {
+            x += Math.max(0, el.px | 0);
+            continue;
+          }
+
+          if (el.type === "glyph") {
+            const m = el.m;
+            outCtx.font = `${(el.px ?? fontPx)}px "${FONT_FAMILY}"`;
+            const drawX = x + (m.left ?? 0);
+            outCtx.fillText(m.ch, drawX, glyphBaseline);
+            x += m.w;
+            continue;
+          }
+
+          if (el.type === "cartouche") {
+            const drawY = y + Math.floor((L.lineBoxH - el.h) / 2);
+            outCtx.drawImage(el.canvas, x, drawY);
+            x += el.w;
+            continue;
+          }
+        }
+
+        y += L.lineBoxH;
+        if (li < measuredLines.length - 1) y += LINE_GAP_PX;
+      }
+    }
+
+    function safeFilenamePart(s) {
+      const t = String(s ?? "").trim();
+      if (!t) return "sitelen";
+      return t.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80) || "sitelen";
+    }
+
+    function downloadCanvasAsTransparentPng(canvas, { filenameBase = "sitelen", scale = 1 } = {}) {
+      if (!canvas) throw new Error("Canvas not found.");
+
+      const w = canvas.width | 0;
+      const h = canvas.height | 0;
+      if (w <= 0 || h <= 0) throw new Error("Canvas is empty (nothing to download yet).");
+
+      const out = document.createElement("canvas");
+      out.width = Math.max(1, Math.floor(w * scale));
+      out.height = Math.max(1, Math.floor(h * scale));
+
+      const ctx = out.getContext("2d", { alpha: true });
+      ctx.clearRect(0, 0, out.width, out.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(canvas, 0, 0, out.width, out.height);
+
+      const filename = safeFilenamePart(filenameBase) + ".png";
+
+      if (out.toBlob) {
+        out.toBlob((blob) => {
+          if (!blob) throw new Error("PNG export failed (no blob).");
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, "image/png");
+        return;
+      }
+
+      const dataUrl = out.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    const elTextIn = document.getElementById("textIn");
+    const outCanvas = document.getElementById("outCanvas");
+    const btnRender = document.getElementById("btnRender");
+    const btnDownload = document.getElementById("btnDownloadPng");
+
+    async function renderFromTextarea() {
+      await ensureFontLoaded();
+
+      const fontPx = getFontPx();
+
+      const raw = String(elTextIn.value ?? "");
+      const lines = raw.replace(/\r\n/g, "\n").split("\n");
+      const linesElements = lines.map(line => lineToElements(line, { fontPx }));
+
+      const anyContent = linesElements.some(els => els.some(e => e.type === "glyph" || e.type === "cartouche"));
+      if (!anyContent) {
+        outCanvas.width = 1;
+        outCanvas.height = 1;
+        const ctx = outCanvas.getContext("2d");
+        ctx.clearRect(0, 0, 1, 1);
+        announceStatus("Nothing to render (no recognized words).");
+        return;
+      }
+
+      renderAllLinesToCanvas(outCanvas, linesElements, { fontPx });
+      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px.`);
+    }
+
+    btnRender.addEventListener("click", async () => {
+      try { await renderFromTextarea(); }
+      catch (e) { showAlertAndAnnounce(e?.message ?? String(e)); }
+    });
+
+    btnDownload.addEventListener("click", () => {
+      try {
+        downloadCanvasAsTransparentPng(outCanvas, { filenameBase: "sitelen", scale: 1 });
+        announceStatus("Downloaded PNG.");
+      } catch (e) {
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
+    });
+
+    window.addEventListener("load", async () => {
+        try {
+            await ensureFontLoaded();
+            applyNanpaLinjanModeFromQueryOrStorage();
+            applyFontPxFromQueryOrStorage();
+            applyDefaultInputFromQuery();   // NEW (does not persist)
+            wireNanpaLinjanModeRadios();
+            wireFontSizeSelect();
+        } catch (e) {
+            console.warn(e);
+        }
+    });
+
+  </script>
+</body>
+</html>
