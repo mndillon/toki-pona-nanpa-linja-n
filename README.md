@@ -135,10 +135,12 @@ Example:
   line-height: 1.6;
 ">
   -5,432.10 →<br>
-  <span style="display:inline-flex; align-items:center; gap:8px;">
-    <span style="display:inline-block; transform: scale(1.4); transform-origin: left center;">#</span>
-    <img src="images/number-minus-5-thousand-432-point-10_v2.png" width="220" alt="-5,432.10" style="display:block;">
-    <span>→</span>
+  <span style="display:inline-flex; align-items:center; gap:8px; line-height:1;">
+    <span style="font-size:1.4em; line-height:1;">#</span>
+    <img src="images/number-minus-5-thousand-432-point-10_v2.png"
+        width="220" alt="-5,432.10"
+        style="display:block;">
+    <span style="line-height:1;">→</span>
   </span><br>
   nanpa Neno Len Eke Naseten One Wenin →<br>
   #~OLKASTOWI →<br>
