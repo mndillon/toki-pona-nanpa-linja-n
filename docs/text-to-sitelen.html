@@ -198,6 +198,7 @@
         <li><strong>Cartouche:</strong> Inside of <span class="mono">[...]</span>, if all words are toki pona words, then they will all use thier own glyphs, otherwise each letter of every word is mapped randomly.</li>
         <li><strong>Cartouche:</strong> Outside of <span class="mono">[...]</span>, only decimals, <span class="mono">#~</span> codes, nanpa-linja-n proper names, and nanpa-linja-n number phrases can produce cartouches.</li>
         <li><strong>Long pi:</strong> A long “pi” container can be written as <span class="mono">pi { ... }</span>.  Must have at least two words inside { ... }.  Cartouche inside long pi isn't working properly.</li>
+        <li><strong>Middle dot:</strong> The Unicode character U+00B7 &#x2014; '&#x00B7;' is used to display the middle dot glyph.</li>
       </ul>
     </div>
 
@@ -469,8 +470,6 @@ nanpa #~WI."></textarea>
     }
 
     function extractCurlyContentFromTokens(tokens, startIdx) {
-      // tokens[startIdx] must contain "{"
-      // Collect until we find a token containing "}"
       let j = startIdx;
       while (j < tokens.length && !tokenHasCloseCurly(tokens[j])) j++;
       if (j >= tokens.length) return null; // no closing brace
@@ -485,7 +484,7 @@ nanpa #~WI."></textarea>
     }
 
     function parseKnownTpWords(innerText) {
-      // ignore spaces; accept only known TP words
+      // ignore spaces; accept only known TP words (letters only)
       const raw = String(innerText ?? "");
       const parts = raw.split(/\s+/).map(normalizeTpWord).filter(Boolean);
       const known = parts.filter(w => isKnownTpWord(w));
@@ -624,11 +623,41 @@ nanpa #~WI."></textarea>
       "wile": 0xF1977, "namako": 0xF1978, "kin": 0xF1979, "oko": 0xF197A, "kipisi": 0xF197B,
       "leko": 0xF197C, "monsuta": 0xF197D, "tonsi": 0xF197E, "jasima": 0xF197F,
       "kijetesantakalu": 0xF1980, "soko": 0xF1981, "meso": 0xF1982, "epiku": 0xF1983,
-      "kokosila": 0xF1984, "lanpan": 0xF1985, "n": 0xF1986, "misikeke": 0xF1987, "ku": 0xF1988
+      "kokosila": 0xF1984, "lanpan": 0xF1985, "n": 0xF1986, "misikeke": 0xF1987, "ku": 0xF1988,
+      "pake": 0xF19A0, "apeja": 0xF19A1, "majuna": 0xF19A2, "powe": 0xF19A3,
+      "·": 0xF199C, ":": 0xF199D
     };
 
     function isKnownTpWord(w) { return WORD_TO_UCSUR_CP[w] != null; }
+
+    // Letters-only normalization (used by number-phrase parsing etc.)
     function normalizeTpWord(raw) { return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, ""); }
+
+    // NEW: glyph-token normalization that preserves ":" and "·" and also handles trailing punctuation
+    // Examples:
+    //   ":"   -> ":"
+    //   "·"   -> "·"
+    //   "toki:" -> "toki" (and ":" can be its own token if separated)
+    //   "·,"  -> "·"
+    function normalizeTpGlyphToken(raw) {
+      const s0 = String(raw ?? "").trim().toLowerCase();
+      if (!s0) return "";
+
+      // direct hits
+      if (s0 === ":" || s0 === "·") return s0;
+
+      // strip leading/trailing non-letters, but explicitly allow ":" and "·" to survive
+      const stripped = s0.replace(/^[^a-z:·]+|[^a-z:·]+$/g, "");
+      if (!stripped) return "";
+
+      // if the result is exactly ":" or "·", keep it
+      if (stripped === ":" || stripped === "·") return stripped;
+
+      // otherwise letters-only for TP words
+      return stripped.replace(/[^a-z]/g, "");
+    }
+
+    function isKnownTpGlyphToken(t) { return WORD_TO_UCSUR_CP[t] != null; }
 
     /* ============================
        Nanpa-linja-n mappings
@@ -1475,9 +1504,10 @@ nanpa #~WI."></textarea>
       return cps;
     }
 
-    function tpWordsToCodepoints(words) {
+    // Note: this accepts TP words AND punctuation tokens like ":" and "·"
+    function tpWordsToCodepoints(wordsOrTokens) {
       const cps = [];
-      for (const w of (words ?? [])) {
+      for (const w of (wordsOrTokens ?? [])) {
         const cp = WORD_TO_UCSUR_CP[w];
         if (cp != null) cps.push(cp);
       }
@@ -1652,22 +1682,51 @@ nanpa #~WI."></textarea>
     function renderTpWordsFromText(text, elements, { fontPx, mode }) {
       const rawTokens = String(text ?? "").trim().split(/\s+/).filter(Boolean);
 
+      // Render punctuation glyphs from WORD_TO_UCSUR_CP if present
+      function emitPunctGlyph(ch) {
+        if (ch !== ":" && ch !== "·") return false;
+        const cp = WORD_TO_UCSUR_CP[ch];
+        if (cp == null) return false;
+        pushGapIfNeeded(elements, WORD_GAP_PX);
+        elements.push({ type: "glyph", cp, px: fontPx, fontFamily: FONT_FAMILY_TEXT });
+        return true;
+      }
+
+      // Split a token into: leading punct chars, core, trailing punct chars
+      // Only the *core* is used for word / number detection.
+      function splitTokenPunct(tok) {
+        const s = String(tok ?? "");
+        if (!s) return { lead: "", core: "", trail: "" };
+
+        let a = 0;
+        let b = s.length;
+
+        // Leading: anything that is not #~A-Za-z0-9 is punctuation
+        while (a < b && !/[#~A-Za-z0-9]/.test(s[a])) a++;
+
+        // Trailing
+        while (b > a && !/[#~A-Za-z0-9]/.test(s[b - 1])) b--;
+
+        return {
+          lead: s.slice(0, a),
+          core: s.slice(a, b),
+          trail: s.slice(b)
+        };
+      }
+
       for (let i = 0; i < rawTokens.length; i++) {
         const tok = rawTokens[i];
-
         const normTok = normalizeTpWord(tok);
 
         // --- Long pi: pi { ... } ---
         if (normTok === "pi") {
           const nextTok = rawTokens[i + 1];
-
           if (nextTok != null && tokenHasOpenCurly(nextTok)) {
             const extracted = extractCurlyContentFromTokens(rawTokens, i + 1);
 
             if (extracted && extracted.inner != null) {
               const innerWords = parseKnownTpWords(extracted.inner);
 
-              // As requested: must be multiple TP words
               if (innerWords.length >= 2) {
                 const cps = [];
                 cps.push(LONG_PI_START_CP);
@@ -1678,10 +1737,7 @@ nanpa #~WI."></textarea>
                   cps.push(WORD_TO_UCSUR_CP[innerWords[k]]);
                 }
 
-                // CRITICAL: render as ONE run so the combining extension joins properly
                 makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_TEXT });
-
-                // Skip consumed tokens through the closing "}"
                 i = extracted.endIndex;
                 continue;
               }
@@ -1690,28 +1746,42 @@ nanpa #~WI."></textarea>
           // fall through and render "pi" normally if not matched/valid
         }
 
-        // Trim punctuation so things like "toki." still work
-        const trimmed = String(tok).replace(/^[^#~A-Za-z0-9]+|[^#~A-Za-z0-9]+$/g, "");
+        // NEW: render lead/trail punctuation glyphs (":" and "·") before core handling
+        const { lead, core, trail } = splitTokenPunct(tok);
+
+        // Lead punctuation (render in order)
+        for (const ch of lead) emitPunctGlyph(ch);
+
+        // Core token is what we use for ID / word matching
+        const trimmed = core; // core already removed edge punctuation
 
         // Existing: nanpa-linja-n identifier cartouche detection (proper name or #~)
-        const idCps =
-          tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ??
-          tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
+        if (trimmed) {
+          const idCps =
+            tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ??
+            tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
 
-        if (idCps && idCps.length) {
-          makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
-          continue;
+          if (idCps && idCps.length) {
+            makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+
+            // Trail punctuation (render after the cartouche)
+            for (const ch of trail) emitPunctGlyph(ch);
+            continue;
+          }
         }
 
-        // Ordinary TP words
-        const norm = normalizeTpWord(tok);
-        if (!norm) continue;
-        if (!isKnownTpWord(norm)) continue;
+        // Ordinary TP words (based on ORIGINAL token, but normalized)
+        const norm = normalizeTpWord(trimmed);
+        if (norm && isKnownTpWord(norm)) {
+          pushGapIfNeeded(elements, WORD_GAP_PX);
+          elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[norm], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
+        }
 
-        pushGapIfNeeded(elements, WORD_GAP_PX);
-        elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[norm], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
+        // Trail punctuation (render in order)
+        for (const ch of trail) emitPunctGlyph(ch);
       }
     }
+
 
     function parseTextSegmentToElements(segmentText, elements, { fontPx }) {
       const mode = getNanpaLinjanMode();
@@ -1780,7 +1850,7 @@ nanpa #~WI."></textarea>
         }
       } catch {}
 
-      // 2) TP number phrase inside brackets
+      // 2) TP number phrase inside brackets (letters-only)
       const wordsRaw = content.split(/\s+/).filter(Boolean);
       const words = wordsRaw.map(normalizeTpWord).filter(Boolean);
 
@@ -1801,9 +1871,11 @@ nanpa #~WI."></textarea>
         return;
       }
 
-      // 4) bracketed TP words => cartouche with text font
-      if (words.length >= 1 && words.every(isKnownTpWord)) {
-        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(words), { fontPx, fontFamily: FONT_FAMILY_TEXT });
+      // 4) bracketed TP tokens => cartouche with text font
+      // NEW: uses glyph-token normalization so ":" and "·" can be used in [...]
+      const glyphTokens = wordsRaw.map(normalizeTpGlyphToken).filter(Boolean);
+      if (glyphTokens.length >= 1 && glyphTokens.every(isKnownTpGlyphToken)) {
+        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(glyphTokens), { fontPx, fontFamily: FONT_FAMILY_TEXT });
         return;
       }
 
