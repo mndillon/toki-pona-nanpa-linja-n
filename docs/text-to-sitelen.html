@@ -28,9 +28,6 @@
       max-width: 980px;
     }
 
-    .row { display:flex; gap: var(--gap); flex-wrap: wrap; align-items: flex-end; }
-    .col { flex: 1 1 320px; }
-
     .controlsStack { display:flex; flex-direction:column; gap: 12px; margin-top:14px; }
     .btnRow { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
 
@@ -125,7 +122,6 @@
       border: 0 !important;
     }
 
-    /* NEW: compact inline select next to Render */
     .inlineControl {
       display:flex;
       flex-direction:column;
@@ -139,17 +135,25 @@
     }
     .inlineControl select {
       padding: 8px 10px;
-      width: 160px;      /* keeps it compact */
+      width: 160px;
       max-width: 100%;
     }
 
     @font-face {
       font-family: "TP-Cartouche-Font";
       src:
-        /* CHANGE HERE if your font files differ */
         url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.woff2") format("woff2"),
         url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.woff")  format("woff"),
         url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.otf")   format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Nasin-Nanpa-Font";
+      src:
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff2") format("woff2"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff")  format("woff"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf")   format("opentype");
       font-display: swap;
     }
   </style>
@@ -163,15 +167,14 @@
 
   <main class="card" id="main" role="main" aria-labelledby="pageTitle">
     <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
-      Multiline Toki Pona text → sitelen pona canvas
-      <span class="tpLine">sitelen toki pona mute-linja tawa sitelen pona lon ilo sitelen</span>
+      Toki Pona Multiline text → sitelen pona glyphs
+      <span class="tpLine">toki pona sitelen mute-linja tawa sitelen pona lon ilo sitelen</span>
     </h1>
 
     <div class="help" style="margin-top:10px;">
       <strong>Note:</strong> Any “nanpa-linja-n proper name” used here are encoding labels for numbers only, and do not propose or add any new Toki Pona lexicon.
       <span class="tpLine">
-        sona: nimi “nanpa-linja-n proper name” li nimi pi pana nanpa taso.
-        ona li sama nimi pi jan (nimi pi nimi) taso; ona li pana ala e nimi sin pi toki pona.
+        sona: nimi “nanpa-linja-n proper name” ale lon ni li nimi pi pana nanpa taso. ona li pana ala e nimi sin pi toki pona.
       </span>
     </div>
 
@@ -187,14 +190,12 @@
     <div class="help" style="margin-top:10px;">
       Rules:
       <ul style="margin:6px 0 0 18px; padding:0;">
+        <li>Converts Toki Pona words to sitelen pona glyphs.</li>
         <li>Unknown words are ignored (except after “nanpa”, where unknown name-tokens are cartouched as letters).</li>
-        <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as font cartouches.</li>
-        <li>Inside <span class="mono">[ ... ]</span>:
-          <ul style="margin:6px 0 0 18px; padding:0;">
-            <li>If all bracket words are known TP words: render a cartouche containing exactly those glyph(s).</li>
-            <li>Otherwise: treat bracket content as letters → random glyphs, inside a cartouche.</li>
-          </ul>
-        </li>
+        <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as nanpa-linja-n cartouches.</li>
+        <li>Decimal-form numbers like <span class="mono">-5,432.10</span>, <span class="mono">1.2K</span>, or <span class="mono">.06</span> render as nanpa-linja-n cartouches.</li>
+        <li>End-of-line full stops are not treated as part of a number (e.g. <span class="mono">06.</span>).</li>
+        <li><strong>Important:</strong> Outside of <span class="mono">[...]</span>, only decimals, <span class="mono">#~</span> codes, nanpa-linja-n proper names, and nanpa-linja-n number phrases can produce cartouches.</li>
       </ul>
     </div>
 
@@ -210,13 +211,13 @@
         <textarea id="textIn" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
           placeholder="Example:
 toki pona li pona
-[o] li pona
-[ala] li ike
-nanpa esun luka esun nanpa
-o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
+-12,340 li nanpa.
+64.5M li nanpa.
+3/4 li nanpa.
+12+3/4 li nanpa.
+5,000.2 li nanpa."></textarea>
       </div>
 
-      <!-- CHANGED: Render row now includes Font size select next to Render -->
       <div class="btnRow" aria-label="Actions">
         <button id="btnRender" type="button" class="btnBi">
           <span>Render</span>
@@ -294,6 +295,56 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
           <span class="tpLine">(poka sitelen li lon ala)</span>
         </span>
       </div>
+
+      <div class="help">&nbsp;</div>
+
+      <h1 style="margin:0 0 6px;font-size:18px;">
+        Check out the Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
+        <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
+      </h1>
+      <div class="small" style="margin-bottom:10px;">
+        <a id="rendererLink" class="repoLink" href="./renderer.html" target="_blank" rel="noopener noreferrer">
+          nanpa-linja-n decimal number encoder + cartouche renderer
+        </a>
+        <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
+      </div>
+
+      <h1 style="margin:0 0 6px;font-size:18px;">
+        Check out the Toki Pona nanpa-linja-n cartouche calculator
+        <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
+      </h1>
+      <div class="small" style="margin-bottom:10px;">
+        <!-- CHANGED: give this link an id so JS can append the query param -->
+        <a id="calculatorLink" class="repoLink" href="./calculator.html" target="_blank" rel="noopener noreferrer">
+          nanpa-linja-n cartouche calculator
+        </a>
+        <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
+      </div>
+
+      <h1 style="margin:0 0 6px;font-size:18px;">
+        Check out the Toki Pona sitelen pona fonts
+        <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
+      </h1>
+      <div class="small" style="margin-bottom:10px;">
+        <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n/tree/main/docs/fonts" target="_blank" rel="noopener noreferrer">
+          sitelen pona nanpa-linja-n fonts
+        </a>
+        <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
+      </div>
+
+      <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
+        Check out the Toki Pona nanpa-linja-n main documentation
+        <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
+      </h1>
+      <div class="help">The main documentation contains all the rules for converting decimal numbers into cartouches.</div>
+      <div class="small" style="margin-bottom:10px;">
+        <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
+          nanpa-linja-n main documentation
+        </a>
+        <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
+      </div>
+
+      <div class="help">#~n</div>
     </div>
   </main>
 
@@ -311,15 +362,15 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       alert(s);
     }
 
-    const FONT_FAMILY = "TP-Cartouche-Font";
+    const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
+    const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
 
     /* ============================
-       NEW: Font size selection (remember + query param)
+       Font size selection (remember + query param)
        ============================ */
     const FONT_SIZE_STORAGE_KEY = "tpFontPx";
     const FONT_SIZE_QUERY_PARAM = "fontPx";
     const FONT_SIZE_QUERY_PARAM_ALIAS = "fontSize";
-
     const FONT_SIZE_ALLOWED = [12,16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88, 96, 120];
 
     function clampAllowedFontPx(px) {
@@ -327,7 +378,6 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       if (!Number.isFinite(n)) return null;
       const i = Math.round(n);
       if (FONT_SIZE_ALLOWED.includes(i)) return i;
-      // If someone passes an arbitrary value, accept it only if it's sane.
       if (i >= 18 && i <= 220) return i;
       return null;
     }
@@ -343,7 +393,6 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       const val = clampAllowedFontPx(px) ?? 56;
       const sel = document.getElementById("fontSizeSel");
       if (sel) {
-        // If the value isn't in the dropdown, add it dynamically so the UI matches.
         const exists = Array.from(sel.options).some(o => Number(o.value) === val);
         if (!exists) {
           const opt = document.createElement("option");
@@ -399,10 +448,6 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       });
     }
 
-    /* ============================
-       Existing constants become defaults; actual size comes from getFontPx()
-       ============================ */
-    const GLYPH_GAP_PX = 6;
     const WORD_GAP_PX  = 12;
     const LINE_GAP_PX  = 18;
 
@@ -410,14 +455,14 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
     const CARTOUCHE_END_CP   = 0xF1991;
 
     async function ensureFontLoaded() {
-      const sampleCp = 0xF190B;
-      const sampleChar = String.fromCodePoint(sampleCp);
-      const fontSpec = `24px "${FONT_FAMILY}"`;
-
       if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
 
+      const sampleTextChar = String.fromCodePoint(0xF196C);
+      const sampleCartChar = String.fromCodePoint(0xF1990);
+
       try {
-        await document.fonts.load(fontSpec, sampleChar);
+        await document.fonts.load(`24px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
+        await document.fonts.load(`24px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
         await document.fonts.ready;
       } catch (e) {
         console.warn("[font] load threw error:", e);
@@ -463,40 +508,6 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       return null;
     }
 
-    /* ============================
-    NEW: Optional default input from query param (not remembered)
-    ============================ */
-    const INPUT_TEXT_QUERY_PARAM = "text";
-    const INPUT_TEXT_QUERY_PARAM_ALIAS = "input";
-
-    function readDefaultInputFromQuery() {
-        try {
-            const params = new URLSearchParams(window.location.search || "");
-            // URLSearchParams decodes percent-encoding automatically.
-            const raw = params.get(INPUT_TEXT_QUERY_PARAM) ?? params.get(INPUT_TEXT_QUERY_PARAM_ALIAS);
-            if (raw == null) return null;
-
-            // Treat explicit empty string as "no default"
-            const s = String(raw);
-            if (!s.trim()) return null;
-
-            // Optional: normalize any literal "\n" sequences to real newlines
-            // (useful if someone builds URLs without actual newlines)
-            return s.replace(/\\n/g, "\n");
-        } catch {
-            return null;
-        }
-    }
-
-    function applyDefaultInputFromQuery() {
-        const s = readDefaultInputFromQuery();
-        if (s == null) return;
-        if (elTextIn) elTextIn.value = s;
-        // Do NOT store this anywhere. No localStorage. No cookies.
-    }
-
-
-
     function applyNanpaLinjanModeFromQueryOrStorage() {
       const q = readNanpaLinjanModeFromQuery();
       if (q) { setNanpaLinjanMode(q); return; }
@@ -515,6 +526,33 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
           }
         });
       });
+    }
+
+    /* ============================
+       Optional default input from query param (not remembered)
+       ============================ */
+    const INPUT_TEXT_QUERY_PARAM = "text";
+    const INPUT_TEXT_QUERY_PARAM_ALIAS = "input";
+
+    function readDefaultInputFromQuery() {
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+        const raw = params.get(INPUT_TEXT_QUERY_PARAM) ?? params.get(INPUT_TEXT_QUERY_PARAM_ALIAS);
+        if (raw == null) return null;
+
+        const s = String(raw);
+        if (!s.trim()) return null;
+
+        return s.replace(/\\n/g, "\n");
+      } catch {
+        return null;
+      }
+    }
+
+    function applyDefaultInputFromQuery() {
+      const s = readDefaultInputFromQuery();
+      if (s == null) return;
+      if (elTextIn) elTextIn.value = s;
     }
 
     /* ============================
@@ -553,7 +591,6 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
 
     function isKnownTpWord(w) { return WORD_TO_UCSUR_CP[w] != null; }
     function normalizeTpWord(raw) { return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, ""); }
-    function lettersOnly(raw) { return String(raw ?? "").replace(/[^A-Za-z]/g, ""); }
 
     /* ============================
        Nanpa-linja-n mappings
@@ -585,7 +622,7 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       "utala": 0xF1971,
       "mun":   0xF193A,
       "pipi":  0xF1951,
-      "jo":    0xF1913,
+      "jo":    0xF1913
     };
 
     const CP_NANPA = NANPA_LINJA_N_WORD_TO_CP["nanpa"];
@@ -598,13 +635,13 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       NANPA_LINJA_N_WORD_TO_CP["ni"],
       NANPA_LINJA_N_WORD_TO_CP["nimi"],
       NANPA_LINJA_N_WORD_TO_CP["noka"],
-      NANPA_LINJA_N_WORD_TO_CP["nena"],
+      NANPA_LINJA_N_WORD_TO_CP["nena"]
     ]);
 
     const UNIFORM_TO_EN = new Set([
       NANPA_LINJA_N_WORD_TO_CP["e"],
       NANPA_LINJA_N_WORD_TO_CP["en"],
-      NANPA_LINJA_N_WORD_TO_CP["esun"],
+      NANPA_LINJA_N_WORD_TO_CP["esun"]
     ]);
 
     function uniformizeNanpaLinjanCartoucheCps(cps) {
@@ -626,6 +663,13 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
 
     const DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
     const TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","NE","NO"];
+
+    function nanpaCapsHasAtLeastOneDigitToken(tokens) {
+      for (const t of (tokens ?? [])) {
+        if (DIGIT_TOKENS.has(t)) return true;
+      }
+      return false;
+    }
 
     function tokenizeNanpaCaps(caps) {
       if (caps == null) throw new Error("caps must be a string");
@@ -675,7 +719,7 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
 
     const NUMBER_CODE_LETTER_TO_PAIR = {
       "I":"NI","W":"WE","T":"TE","S":"SE","A":"NA",
-      "L":"LE","U":"NU","M":"ME","P":"PE","J":"JE",
+      "L":"LE","U":"NU","M":"ME","P":"PE","J":"JE"
     };
 
     function normalizeNumberCodeInput(raw) {
@@ -691,8 +735,12 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       if (!body) throw new Error("Number code '#~' must have letters after it.");
       if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may only contain letters A–Z after '#~'.");
 
-      const parts = ["NE"];
+      const tokens = ["NE"];
       let i = 0;
+
+      function ensureNEBeforeOperatorRun() {
+        if (tokens[tokens.length - 1] !== "NE") tokens.push("NE");
+      }
 
       while (i < body.length) {
         const ch = body[i];
@@ -704,10 +752,10 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
           if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
 
           if (count === 1) {
-            if (i === 0) parts.push("NO");
-            else parts.push("NO", "NE");
+            if (i === 0) tokens.push("NO");
+            else tokens.push("NO","NE");
           } else {
-            parts.push("NO".repeat(count));
+            tokens.push("NO".repeat(count)); // NONO / NONONO
           }
 
           i = j;
@@ -719,25 +767,29 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
           while (j < body.length && body[j] === "K") j++;
           const count = j - i;
           if (count < 1 || count > 3) throw new Error("Invalid run of 'K' in number code (max 3).");
-          parts.push("KE".repeat(count));
+
+          ensureNEBeforeOperatorRun();
+          tokens.push("KE".repeat(count)); // KE / KEKE / KEKEKE
           i = j;
           continue;
         }
 
         const pair = NUMBER_CODE_LETTER_TO_PAIR[ch];
         if (!pair) throw new Error(`Invalid letter '${ch}' in number code.`);
-        parts.push(pair);
+        tokens.push(pair);
         i += 1;
       }
 
-      const caps = parts.join("") + "N";
+      tokens.push("N");
+
+      const caps = tokens.join("");
       tokenizeNanpaCaps(caps);
       return { caps };
     }
 
     const TOKEN_TO_DIGIT_WORD = {
       "NI":"ijo","WE":"wan","TE":"tu","SE":"seli","NA":"awen",
-      "LE":"luka","NU":"utala","ME":"mun","PE":"pipi","JE":"jo",
+      "LE":"luka","NU":"utala","ME":"mun","PE":"pipi","JE":"jo"
     };
 
     function nanpaCapsTokensToTpWords(tokens) {
@@ -764,23 +816,21 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
         if (t === "NO") {
           const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
 
-          if (afterStartingNe && nxt !== "NE") {
-            out.push("nasa", "ona");
-            afterStartingNe = false;
-            continue;
-          }
-
+          // Keep your decimal operator behavior: NO + NE
           if (nxt === "NE") {
             out.push("ni","o","nasa","e");
             afterStartingNe = false;
-            i += 1;
+            i += 1; // consume the NE
             continue;
           }
 
+          // CHANGED: unary minus (and any other standalone NO) is rendered as the literal NO operator.
+          // This preserves traditional/uniform behavior (uniform can still map "ni" to "nena" later).
           out.push("ni","o");
           afterStartingNe = false;
           continue;
         }
+
 
         if (t === "NONO") { out.push("nena","o","nena","o"); afterStartingNe=false; continue; }
         if (t === "NONONO") { out.push("nasa","o","nasa","o","nasa","o"); afterStartingNe=false; continue; }
@@ -799,6 +849,9 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
 
     function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional" } = {}) {
       const tokens = tokenizeNanpaCaps(caps);
+
+      if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
+
       const tpWords = nanpaCapsTokensToTpWords(tokens);
 
       const cps = [];
@@ -831,114 +884,545 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       return nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
     }
 
-    function consumeStandaloneNumberCodeAt(tokenObjs, i, { mode = "traditional" } = {}) {
-      if (!tokenObjs || i < 0 || i >= tokenObjs.length) return null;
+    /* ============================================================
+       Decimal recognizer + caps encoder
+       ============================================================ */
+    const VULGAR_FRACTIONS = new Map([
+      ["¼", [1, 4]], ["½", [1, 2]], ["¾", [3, 4]],
+      ["⅐", [1, 7]], ["⅑", [1, 9]], ["⅒", [1, 10]],
+      ["⅓", [1, 3]], ["⅔", [2, 3]],
+      ["⅕", [1, 5]], ["⅖", [2, 5]], ["⅗", [3, 5]], ["⅘", [4, 5]],
+      ["⅙", [1, 6]], ["⅚", [5, 6]],
+      ["⅛", [1, 8]], ["⅜", [3, 8]], ["⅝", [5, 8]], ["⅞", [7, 8]],
+      ["↉", [0, 3]],
+    ]);
 
-      const raw0 = String(tokenObjs[i]?.raw ?? "");
-      const starts = raw0.toUpperCase().startsWith("#~") || raw0.trim() === "#~";
-      if (!starts) return null;
+    function normalizeVulgarFractionInput(raw) {
+      if (raw == null) return "";
+      let s = String(raw).trim();
+      if (!s) return s;
 
-      let j = i;
-      const candidates = [];
-      while (j < tokenObjs.length) {
-        const norm = tokenObjs[j]?.norm;
-        if (!norm && j !== i) break;
-        if (j !== i && norm && isKnownTpWord(norm)) break;
-        candidates.push(tokenObjs[j]);
-        j += 1;
+      s = s.replace(/\u2044/g, "/");
+
+      let found = null;
+      for (const ch of s) {
+        if (VULGAR_FRACTIONS.has(ch)) { found = ch; break; }
       }
-      if (candidates.length === 0) return null;
+      if (!found) return s;
 
-      for (let cut = candidates.length; cut >= 1; cut--) {
-        const partNoSpace = candidates.slice(0, cut).map(o => o.raw).join("");
-        const part = partNoSpace.replace(/\s+/g, "");
-        const cleaned = part.replace(/[^A-Za-z#~]/g, "");
-        if (!cleaned.toUpperCase().startsWith("#~")) continue;
+      const lastChar = s.slice(-1);
+      if (!VULGAR_FRACTIONS.has(lastChar)) {
+        throw new Error("Vulgar fraction characters must appear at the end (e.g., 9¾ or ¾).");
+      }
+
+      if (s.slice(1).includes("-")) {
+        throw new Error("Only one negative sign is allowed, and it must be at the start.");
+      }
+
+      const [num, den] = VULGAR_FRACTIONS.get(lastChar);
+      const prefixRaw = s.slice(0, -1).trim();
+
+      if (!prefixRaw) return `${num}/${den}`;
+
+      const isNeg = prefixRaw.startsWith("-");
+      const prefix = isNeg ? prefixRaw.slice(1).trim() : prefixRaw;
+
+      if (!prefix) return `-${num}/${den}`;
+
+      return isNeg ? `-${prefix}+${num}/${den}` : `${prefix}+${num}/${den}`;
+    }
+
+    function looksLikeNanpaCaps(s) {
+      if (!s) return false;
+      const t = String(s).trim();
+      if (!t) return false;
+      if (!/^[A-Za-z]+[Nn]$/.test(t)) return false;
+      return t.slice(0, 2).toUpperCase() === "NE";
+    }
+
+    function groupFractionDigitsOnly(s, decimalChar=".", groupSize=3, sepChar="_") {
+      const str = String(s);
+      const idx = str.indexOf(decimalChar);
+      if (idx < 0) return str;
+
+      const left = str.slice(0, idx);
+      const right = str.slice(idx + 1);
+
+      let i = 0;
+      while (i < right.length && /[0-9]/.test(right[i])) i++;
+      const fracDigits = right.slice(0, i);
+      const suffix = right.slice(i);
+
+      if (fracDigits.length <= groupSize) return str;
+      if (sepChar && fracDigits.includes(sepChar)) return str;
+
+      const groups = [];
+      for (let j = 0; j < fracDigits.length; j += groupSize) {
+        groups.push(fracDigits.slice(j, j + groupSize));
+      }
+      return `${left}${decimalChar}${groups.join(sepChar)}${suffix}`;
+    }
+
+    function normalizeLooseSeparators(raw) {
+      if (raw == null) return "";
+      let s = String(raw);
+
+      s = s.replace(/[−‒–—]/g, "-");
+
+      const isNeg = s.startsWith("-");
+      const head = isNeg ? "-" : "";
+      const rest = isNeg ? s.slice(1) : s;
+
+      let r = rest.replace(/\s+/g, " ");
+      r = r.replace(/-+/g, "-");
+
+      return (head + r).trim();
+    }
+
+    const DEC_DIGIT_TO_TOKEN = {
+      "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
+      "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
+    };
+
+    function numberStrToNanpaCaps(
+      s,
+      { thousandsChar = ",", groupFractionTriplets = true, fractionGroupSize = 3 } = {}
+    ) {
+      if (s == null) throw new Error("s must be a string");
+      let raw = normalizeLooseSeparators(String(s));
+      if (!raw) throw new Error("Empty value cannot be encoded");
+
+      if (groupFractionTriplets) {
+        raw = groupFractionDigitsOnly(raw, ".", fractionGroupSize, "_");
+      }
+
+      function stripFinalTerminator(segCaps) {
+        if (!segCaps) return segCaps;
+        if (!segCaps.endsWith("N")) throw new Error(`Segment caps did not end with 'N': ${segCaps}`);
+        return segCaps.slice(0, -1);
+      }
+
+      function encodeSingleNumberSegment(segment, includeInitialNe) {
+        let seg = String(segment).trim();
+        if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
+
+        if (seg.slice(0, 1).toUpperCase() === "N") {
+          seg = seg.slice(1).trim();
+          if (seg === "") throw new Error(`Missing numeric part after leading 'N' prefix in ${s}`);
+        }
+
+        const out = [];
+        if (includeInitialNe) out.push("NE");
+
+        function pushNene() {
+          const L = out.length;
+          if (L >= 2 && out[L-2] === "NE" && out[L-1] === "NE") return;
+          out.push("NE", "NE");
+        }
+
+        if (seg.startsWith("-")) {
+          if (seg.startsWith("-.")) seg = "-0." + seg.slice(2);
+          out.push("NO");
+          seg = seg.slice(1).trim();
+        }
+
+        let magnitudeSuffixKeCount = 0;
+        if (seg.length > 0) {
+          const last = seg.slice(-1).toUpperCase();
+          if (last === "K" || last === "T" || last === "M" || last === "B") {
+            magnitudeSuffixKeCount =
+              (last === "K" || last === "T") ? 1 :
+              (last === "M") ? 2 : 3;
+            seg = seg.slice(0, -1).trim();
+            if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
+          }
+        }
+
+        if ((seg.match(/\./g) || []).length > 1) {
+          throw new Error(`Invalid numeric segment with multiple decimals: ${segment}`);
+        }
+
+        let intPart = seg;
+        let fracPart = "";
+        let hasDecimal = false;
+        if (seg.includes(".")) {
+          [intPart, fracPart] = seg.split(".", 2);
+          hasDecimal = true;
+        }
+
+        let ip = String(intPart ?? "").trim();
+        if (ip === "") ip = "0";
+
+        const intHasThousandsComma = (thousandsChar && ip.includes(thousandsChar));
+        const hasLooseSep = /[ -]/.test(ip);
+
+        if (hasLooseSep) {
+          let ip2 = String(ip)
+            .replace(/\s+/g, " ")
+            .replace(/-+/g, "-")
+            .trim();
+
+          ip2 = ip2.replace(/^[ -]+/, "").replace(/[ -]+$/, "");
+          if (ip2 === "") ip2 = "0";
+
+          for (const ch of ip2) {
+            if (/\d/.test(ch)) { out.push(DEC_DIGIT_TO_TOKEN[ch]); continue; }
+            if (ch === " " || ch === "-") { pushNene(); continue; }
+            if (thousandsChar && ch === thousandsChar) { out.push("NE","KE"); continue; }
+            throw new Error(`Unsupported character "${ch}" in integer part of "${s}"`);
+          }
+        } else {
+          const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+          for (const g of groups) {
+            if (g === "" || !/^\d+$/.test(g)) throw new Error(`Invalid integer group "${g}" in "${s}"`);
+          }
+
+          let trailingZeroGroups = 0;
+          for (let k = groups.length - 1; k >= 1; k--) {
+            const g = groups[k];
+            if (g.length === 3 && g === "000") trailingZeroGroups += 1;
+            else break;
+          }
+
+          for (const d of groups[0]) out.push(DEC_DIGIT_TO_TOKEN[d]);
+
+          const nGroups = groups.length;
+          const lastNonTrailingIdx = nGroups - trailingZeroGroups;
+
+          for (let idx = 1; idx < lastNonTrailingIdx; idx++) {
+            out.push("NE","KE");
+            for (const d of groups[idx]) out.push(DEC_DIGIT_TO_TOKEN[d]);
+          }
+
+          if (trailingZeroGroups > 0) {
+            out.push("NE");
+            let remaining = trailingZeroGroups;
+            while (remaining > 0) {
+              const chunk = Math.min(3, remaining);
+              if (out[out.length - 1] !== "NE") out.push("NE");
+              out.push("KE".repeat(chunk));
+              remaining -= chunk;
+              if (remaining > 0) out.push("NE");
+            }
+          }
+        }
+
+        if (hasDecimal) {
+          if (intHasThousandsComma) out.push("NO");
+          else out.push("NO","NE");
+
+          if (!fracPart) throw new Error(`Missing fraction digits after '.' in "${s}"`);
+
+          for (const ch of fracPart) {
+            if (/\d/.test(ch)) { out.push(DEC_DIGIT_TO_TOKEN[ch]); continue; }
+            if (ch === "_") { pushNene(); continue; }
+            if (ch === ",") { pushNene(); continue; }
+            if (ch === " " || ch === "-") { pushNene(); continue; }
+            throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
+          }
+        }
+
+        if (magnitudeSuffixKeCount > 0) {
+          out.push("NE");
+          let remaining = magnitudeSuffixKeCount;
+          while (remaining > 0) {
+            const chunk = Math.min(3, remaining);
+            if (out[out.length - 1] !== "NE") out.push("NE");
+            out.push("KE".repeat(chunk));
+            remaining -= chunk;
+            if (remaining > 0) out.push("NE");
+          }
+        }
+
+        out.push("N");
+        return out.join("");
+      }
+
+      if (raw.includes("+")) {
+        const [left, right] = raw.split("+", 2);
+        let leftCaps = encodeSingleNumberSegment(left, true);
+
+        if (!right.includes("/")) throw new Error(`Mixed number must contain '/' after '+': ${s}`);
+        const [num, den] = right.split("/", 2);
+
+        let numCaps = encodeSingleNumberSegment(num, false);
+        let denCaps = encodeSingleNumberSegment(den, false);
+
+        leftCaps = stripFinalTerminator(leftCaps);
+        numCaps = stripFinalTerminator(numCaps);
+
+        return leftCaps + "NONONO" + numCaps + "NONO" + denCaps;
+      }
+
+      if (raw.includes("/")) {
+        const [num, den] = raw.split("/", 2);
+        let numCaps = encodeSingleNumberSegment(num, true);
+        let denCaps = encodeSingleNumberSegment(den, false);
+        numCaps = stripFinalTerminator(numCaps);
+        return numCaps + "NONO" + denCaps;
+      }
+
+      return encodeSingleNumberSegment(raw, true);
+    }
+
+    function decimalStringToCaps(rawDecimal, opts = {}) {
+      const normalized = normalizeVulgarFractionInput(rawDecimal);
+      const caps = looksLikeNanpaCaps(normalized)
+        ? normalized.toUpperCase()
+        : numberStrToNanpaCaps(normalized, opts);
+
+      tokenizeNanpaCaps(caps);
+      return caps;
+    }
+
+    function findDecimalSequencesWithCaps(text, opts = {}) {
+        const original = String(text ?? "");
+        if (!original) return [];
+
+        // IMPORTANT: normalize Unicode minus/dash characters to ASCII '-' BEFORE regex scanning.
+        // This replacement keeps string length identical (1 char -> 1 char), so indices remain valid.
+        const s = original.replace(/[−‒–—]/g, "-");
+
+      const vulgarChars = "¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞↉";
+      const re = new RegExp(
+        String.raw`(?<![A-Za-z])` +
+        String.raw`(` +
+          String.raw`-?\s*\d*\s*[${vulgarChars}]` +
+          "|" +
+          String.raw`-?\s*\d[\d, _-]*\s*\+\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
+          "|" +
+          String.raw`-?\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
+          "|" +
+          String.raw`-?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?` +
+        String.raw`)` +
+        String.raw`(?![A-Za-z])`,
+        "g"
+      );
+
+      const results = [];
+      let m;
+
+      while ((m = re.exec(s)) !== null) {
+        const rawMatch = m[1];
+        if (!rawMatch) continue;
+
+        let candidate = rawMatch.trim().replace(/[)\]}.,;:!?]+$/g, "").trim();
+        if (!candidate) continue;
+        if (candidate === "-" || candidate === "+") continue;
+
+        const rel = rawMatch.indexOf(candidate);
+        const start = (rel >= 0) ? (m.index + rel) : m.index;
+        const end = start + candidate.length;
 
         try {
-          const parsed = tryParseNanpaLinjanNumberCodeToCaps(cleaned);
-          if (!parsed) continue;
+          const caps = decimalStringToCaps(candidate, {
+            thousandsChar: ",",
+            groupFractionTriplets: true,
+            fractionGroupSize: 3,
+            ...opts,
+          });
 
-          const cps = nanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode });
-          if (!cps || !cps.length) continue;
-
-          return { cps, nextIndex: i + cut };
-        } catch {}
+          results.push({ kind: "decimal", match: candidate, index: start, end, caps });
+        } catch {
+          // ignore
+        }
       }
 
-      return null;
+      results.sort((a, b) => a.index - b.index || b.end - a.end);
+      const filtered = [];
+      let lastEnd = -1;
+      for (const r of results) {
+        if (r.index < lastEnd) continue;
+        filtered.push(r);
+        lastEnd = r.end;
+      }
+      return filtered;
     }
 
-    function consumeNanpaLinjanIdentifierAfterNanpa(tokenObjs, iWordIndex, { mode = "traditional" } = {}) {
-      const start = iWordIndex + 1;
-      if (!tokenObjs || start >= tokenObjs.length) return null;
+    /* ============================================================
+       #~ code and proper-name scanners
+       ============================================================ */
+    function findNumberCodeSequencesWithCaps(text) {
+      const s = String(text ?? "");
+      if (!s) return [];
 
-      const nextRaw = String(tokenObjs[start]?.raw ?? "").trim();
-      if (nextRaw.toUpperCase().startsWith("#~") || nextRaw === "#~") {
-        const cleaned = nextRaw.replace(/[^A-Za-z#~]/g, "");
-        const cps = tryDecodeNanpaLinjanIdentifierToCodepoints(cleaned, { mode });
-        if (cps) return { nextIndex: start + 1, cps };
-        return null;
+      const re = /#~[A-Za-z]+/g;
+      const out = [];
+      let m;
+
+      while ((m = re.exec(s)) !== null) {
+        const raw = m[0];
+        if (!raw) continue;
+
+        const start = m.index | 0;
+        const end = start + raw.length;
+
+        try {
+          const parsed = tryParseNanpaLinjanNumberCodeToCaps(raw);
+          if (parsed?.caps) out.push({ kind: "code", index: start, end, caps: parsed.caps });
+        } catch {
+          // ignore invalid codes
+        }
       }
 
-      const MAX_LOOKAHEAD_TOKENS = 12;
-      const limit = Math.min(tokenObjs.length, start + MAX_LOOKAHEAD_TOKENS);
-
-      let endMax = start - 1;
-      while (endMax + 1 < limit) {
-        const raw = String(tokenObjs[endMax + 1]?.raw ?? "");
-        const lo = lettersOnly(raw);
-        if (!lo) break;
-        endMax += 1;
-      }
-      if (endMax < start) return null;
-
-      for (let end = endMax; end >= start; end--) {
-        const candidate = tokenObjs
-          .slice(start, end + 1)
-          .map(o => lettersOnly(o.raw))
-          .filter(Boolean)
-          .join(" ");
-
-        const cps = tryDecodeNanpaLinjanIdentifierToCodepoints(candidate, { mode });
-        if (cps) return { nextIndex: end + 1, cps };
-      }
-
-      return null;
+      return out;
     }
 
-    function consumeNanpaLinjanIdentifierAt(tokenObjs, iWordIndex, { mode = "traditional" } = {}) {
-      if (!tokenObjs || iWordIndex < 0 || iWordIndex >= tokenObjs.length) return null;
+    function findNanpaLinjanProperNameSequencesWithCaps(text) {
+      const s = String(text ?? "");
+      if (!s) return [];
 
-      const raw0 = String(tokenObjs[iWordIndex]?.raw ?? "").trim();
-      if (raw0.toUpperCase().startsWith("#~")) return null;
+      /*
+        Case-insensitive proper-name scan:
+          - begins with "ne" (any case)
+          - letters only, possibly multiple words separated by spaces
+          - ends with n/N
+        We capture a leading delimiter separately so index math is correct.
+      */
+      const re = /(^|[^A-Za-z])((?:ne)[A-Za-z]*(?:\s+[A-Za-z]{2,}){0,20}[A-Za-z]*[nN])(?![A-Za-z])/gi;
 
-      const MAX_LOOKAHEAD_TOKENS = 12;
-      const limit = Math.min(tokenObjs.length, iWordIndex + MAX_LOOKAHEAD_TOKENS);
+      const hits = [];
+      let m;
 
-      let endMax = iWordIndex - 1;
-      while (endMax + 1 < limit) {
-        const raw = String(tokenObjs[endMax + 1]?.raw ?? "");
-        const lo = lettersOnly(raw);
-        if (!lo) break;
-        endMax += 1;
+      while ((m = re.exec(s)) !== null) {
+        const lead = m[1] ?? "";
+        const rawMatch = m[2] ?? "";
+        if (!rawMatch) continue;
+
+        const start = (m.index | 0) + lead.length;
+        const end = start + rawMatch.length;
+
+        const compact = rawMatch.replace(/\s+/g, "");
+
+        // CHANGED: allow 5-letter names like Newen / Nesen / Nenun
+        if (compact.length < 5) continue;
+
+        // Must validate as a nanpa-linja-n proper name in your tokenizer rules
+        if (!isValidNanpaLinjanProperName(compact)) continue;
+
+        const core = compact.slice(0, -1);       // drop final n/N
+        const caps = core.toUpperCase() + "N";   // re-add terminator
+
+        hits.push({ kind: "name", index: start, end, caps });
       }
-      if (endMax < iWordIndex) return null;
 
-      for (let end = endMax; end >= iWordIndex; end--) {
-        const candidate = tokenObjs
-          .slice(iWordIndex, end + 1)
-          .map(o => lettersOnly(o.raw))
-          .filter(Boolean)
-          .join(" ");
-
-        const cps = tryDecodeNanpaLinjanIdentifierToCodepoints(candidate, { mode });
-        if (cps) return { nextIndex: end + 1, cps };
-      }
-
-      return null;
+      return hits;
     }
 
+
+    /* ============================================================
+       ADD: nanpa-linja-n TP number-phrase scanner in plain text
+         - matches: "nanpa (esun|en) ... nanpa"
+         - only words from NANPA_LINJA_N_WORD_TO_CP
+         - must contain at least one digit-word payload
+       ============================================================ */
+    function findNanpaLinjanTpPhraseSequences(text) {
+      const s = String(text ?? "");
+      if (!s) return [];
+
+      const tokens = [];
+      const reTok = /\S+/g;
+      let m;
+      while ((m = reTok.exec(s)) !== null) {
+        const raw = m[0];
+        tokens.push({
+          raw,
+          norm: normalizeTpWord(raw),
+          start: m.index,
+          end: (m.index + raw.length)
+        });
+      }
+      if (tokens.length < 3) return [];
+
+      const digitWords = new Set(
+        Object.values(TOKEN_TO_DIGIT_WORD).filter(w => NANPA_LINJA_N_WORD_TO_CP[w] != null)
+      );
+
+      const hits = [];
+      for (let i = 0; i < tokens.length - 2; i++) {
+        if (tokens[i].norm !== "nanpa") continue;
+        const n1 = tokens[i + 1]?.norm;
+        if (!(n1 === "esun" || n1 === "en")) continue;
+
+        // Greedy: choose the farthest valid closing "nanpa"
+        let bestJ = -1;
+        let bestWords = null;
+
+        for (let j = i + 2; j < tokens.length; j++) {
+          if (tokens[j].norm !== "nanpa") continue;
+
+          const words = [];
+          let allOk = true;
+          let hasDigit = false;
+
+          for (let k = i; k <= j; k++) {
+            const w = tokens[k].norm;
+            if (!w) { allOk = false; break; }
+            if (NANPA_LINJA_N_WORD_TO_CP[w] == null) { allOk = false; break; }
+            if (k >= i + 2 && k <= j - 1 && digitWords.has(w)) hasDigit = true;
+            words.push(w);
+          }
+
+          if (!allOk || !hasDigit) continue;
+
+          bestJ = j;
+          bestWords = words;
+          // keep going to find a longer valid one
+        }
+
+        if (bestJ >= 0 && bestWords) {
+          hits.push({
+            kind: "tpPhrase",
+            index: tokens[i].start,
+            end: tokens[bestJ].end,
+            words: bestWords
+          });
+          i = bestJ; // skip past this phrase
+        }
+      }
+
+      return hits;
+    }
+
+    function mergeAndGreedyFilterHits(allHits) {
+      const hits = Array.from(allHits ?? []).filter(h =>
+        h &&
+        Number.isFinite(h.index) &&
+        Number.isFinite(h.end) &&
+        h.end > h.index &&
+        (h.caps || (Array.isArray(h.words) && h.words.length > 0))
+      );
+
+      function priority(kind) {
+        if (kind === "decimal") return 4;
+        if (kind === "tpPhrase") return 3;
+        if (kind === "code") return 2;
+        return 1; // "name"
+      }
+
+      hits.sort((a, b) => {
+        if (a.index !== b.index) return a.index - b.index;
+        const la = (a.end - a.index);
+        const lb = (b.end - b.index);
+        if (la !== lb) return lb - la;
+        return priority(b.kind) - priority(a.kind);
+      });
+
+      const out = [];
+      let lastEnd = -1;
+
+      for (const h of hits) {
+        if (h.index < lastEnd) continue;
+        out.push(h);
+        lastEnd = h.end;
+      }
+
+      return out;
+    }
+
+    /* ============================
+       TP phrase helpers
+       ============================ */
     function tryParseNanpaLinjanTpPhraseWords(inputWords) {
       const words = Array.from(inputWords ?? []).map(normalizeTpWord).filter(Boolean);
 
@@ -951,18 +1435,15 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
         if (NANPA_LINJA_N_WORD_TO_CP[w] == null) return null;
       }
 
-      return { words };
-    }
+      const digitWords = new Set(
+        Object.values(TOKEN_TO_DIGIT_WORD).filter(w => NANPA_LINJA_N_WORD_TO_CP[w] != null)
+      );
 
-    function consumeNumberPhraseAt(words, i) {
-      if (words[i] !== "nanpa") return null;
-      for (let j = i + 2; j < words.length; j++) {
-        if (words[j] !== "nanpa") continue;
-        const slice = words.slice(i, j + 1);
-        const parsed = tryParseNanpaLinjanTpPhraseWords(slice);
-        if (parsed) return { len: slice.length, words: parsed.words };
-      }
-      return null;
+      const payload = words.slice(2, -1);
+      const hasDigit = payload.some(w => digitWords.has(w));
+      if (!hasDigit) return null;
+
+      return { words };
     }
 
     function nanpaLinjanWordsToCodepoints(words, { mode = "traditional" } = {}) {
@@ -991,6 +1472,9 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       try { ctx.fontKerning = "normal"; } catch (_) {}
     }
 
+    /* ============================
+       Random letters → glyphs
+       ============================ */
     function buildLetterBuckets() {
       const buckets = new Map();
       for (const w of Object.keys(WORD_TO_UCSUR_CP)) {
@@ -1007,9 +1491,9 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
 
     function randInt(n) {
       if (n <= 0) return 0;
-      if (crypto && crypto.getRandomValues) {
+      if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function") {
         const buf = new Uint32Array(1);
-        crypto.getRandomValues(buf);
+        globalThis.crypto.getRandomValues(buf);
         return buf[0] % n;
       }
       return Math.floor(Math.random() * n);
@@ -1052,13 +1536,13 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       elements.push({ type: "gap", px: px });
     }
 
-    /* CHANGED: cartouche sizing is now derived from current font size */
-    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx }) {
+    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily }) {
       if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
-      if (!innerCps || innerCps.length === 0) return { w: 0, h: 0 };
+      if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
 
       const px = fontPx;
       const pad = padPx;
+      const fam = fontFamily || FONT_FAMILY_TEXT;
 
       const run =
         String.fromCodePoint(CARTOUCHE_START_CP) +
@@ -1067,7 +1551,7 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
 
       const ctx = canvas.getContext("2d");
       ctx.textBaseline = "alphabetic";
-      ctx.font = `${px}px "${FONT_FAMILY}"`;
+      ctx.font = `${px}px "${fam}"`;
       setTextQuality(ctx);
       const m = ctx.measureText(run);
 
@@ -1086,103 +1570,128 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       const ctx2 = canvas.getContext("2d", { alpha: true });
       ctx2.clearRect(0, 0, w, h);
       ctx2.textBaseline = "alphabetic";
-      ctx2.font = `${px}px "${FONT_FAMILY}"`;
+      ctx2.font = `${px}px "${fam}"`;
       setTextQuality(ctx2);
       ctx2.fillStyle = "#111";
 
       const x = pad + left;
-      const y = pad + ascent;
+      const baselineY = pad + ascent;
 
-      ctx2.fillText(run, x, y);
+      ctx2.fillText(run, x, baselineY);
 
-      return { w, h };
+      return { w, h, baselineY };
     }
 
-    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx }) {
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, WORD_GAP_PX);
 
       const cart = document.createElement("canvas");
-
-      // pad scales gently with font size to avoid touching the border
       const padPx = Math.max(4, Math.round(fontPx * 0.11));
 
-      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx });
-
+      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily });
       if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
-      elements.push({ type: "cartouche", canvas: cart, w: r.w, h: r.h });
+      const baselineY = r.baselineY | 0;
+      const ascent = baselineY;
+      const descent = (r.h | 0) - baselineY;
+
+      elements.push({
+        type: "cartouche",
+        canvas: cart,
+        w: r.w,
+        h: r.h,
+        baselineY,
+        ascent,
+        descent,
+        fontFamily: fontFamily || FONT_FAMILY_TEXT
+      });
     }
 
+    /* IMPORTANT: Outside brackets, we do NOT special-case "nanpa <word>" anymore.
+       Everything outside [] is ordinary TP rendering except:
+         - decimals
+         - #~ codes
+         - nanpa-linja-n proper names
+         - nanpa-linja-n TP number phrases: "nanpa esun|en ... nanpa"
+    */
+    function renderTpWordsFromText(text, elements, { fontPx, mode }) {
+      const rawTokens = String(text ?? "").trim().split(/\s+/).filter(Boolean);
+
+      for (const tok of rawTokens) {
+        // Trim common trailing/leading punctuation so "Newenin." still works
+        const trimmed = String(tok).replace(/^[^#~A-Za-z0-9]+|[^#~A-Za-z0-9]+$/g, "");
+
+        // Fallback: if this token is a nanpa-linja-n identifier (proper name or #~ code), cartouche it
+        // This is intentionally narrow: it only triggers when your existing decoder accepts it.
+        const idCps =
+          tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ??
+          tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
+
+        if (idCps && idCps.length) {
+          makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+          continue;
+        }
+
+        // Otherwise render ordinary TP words
+        const norm = normalizeTpWord(tok);
+        if (!norm) continue;
+        if (!isKnownTpWord(norm)) continue;
+
+        pushGapIfNeeded(elements, WORD_GAP_PX);
+        elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[norm], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
+      }
+    }
+
+
     function parseTextSegmentToElements(segmentText, elements, { fontPx }) {
-      const rawTokens = String(segmentText ?? "").trim().split(/\s+/).filter(Boolean);
-      const tokenObjs = rawTokens
-        .map(t => ({ raw: t, norm: normalizeTpWord(t) }))
-        .filter(o => o.norm);
-
-      const words = tokenObjs.map(o => o.norm);
       const mode = getNanpaLinjanMode();
+      const s = String(segmentText ?? "");
+      if (!s.trim()) return;
 
-      for (let i = 0; i < words.length; ) {
-        const codeHit = consumeStandaloneNumberCodeAt(tokenObjs, i, { mode });
-        if (codeHit && codeHit.cps) {
-          makeCartoucheElementFromCodepoints(elements, codeHit.cps, { fontPx });
-          i = codeHit.nextIndex;
-          continue;
+      const decHits = findDecimalSequencesWithCaps(s);
+      const codeHits = findNumberCodeSequencesWithCaps(s);
+      const nameHits = findNanpaLinjanProperNameSequencesWithCaps(s);
+      const phraseHits = findNanpaLinjanTpPhraseSequences(s);
+
+      const hits = mergeAndGreedyFilterHits([...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+
+      if (!hits || hits.length === 0) {
+        renderTpWordsFromText(s, elements, { fontPx, mode });
+        return;
+      }
+
+      let pos = 0;
+
+      for (const h of hits) {
+        const a = Math.max(0, h.index | 0);
+        const b = Math.max(a, h.end | 0);
+
+        if (a > pos) {
+          renderTpWordsFromText(s.slice(pos, a), elements, { fontPx, mode });
         }
 
-        const idHit = consumeNanpaLinjanIdentifierAt(tokenObjs, i, { mode });
-        if (idHit && idHit.cps) {
-          makeCartoucheElementFromCodepoints(elements, idHit.cps, { fontPx });
-          i = idHit.nextIndex;
-          continue;
-        }
-
-        const m = consumeNumberPhraseAt(words, i);
-        if (m) {
-          const cps = nanpaLinjanWordsToCodepoints(m.words, { mode });
-          if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx });
-          i += m.len;
-          continue;
-        }
-
-        const w = words[i];
-
-        if (w === "nanpa") {
-          const hit = consumeNanpaLinjanIdentifierAfterNanpa(tokenObjs, i, { mode });
-          if (hit && hit.cps) {
-            pushGapIfNeeded(elements, WORD_GAP_PX);
-            elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP["nanpa"], px: fontPx });
-            makeCartoucheElementFromCodepoints(elements, hit.cps, { fontPx });
-            i = hit.nextIndex;
-            continue;
+        if (h.kind === "tpPhrase") {
+          const cps = nanpaLinjanWordsToCodepoints(h.words, { mode });
+          if (cps && cps.length) {
+            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+          } else {
+            renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
+          }
+        } else {
+          const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode });
+          if (cps && cps.length) {
+            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+          } else {
+            renderTpWordsFromText(s.slice(a, b), elements, { fontPx });
           }
         }
 
-        if (w === "nanpa" && i + 1 < words.length) {
-          const next = words[i + 1];
-          if (next !== "esun" && next !== "en" && !isKnownTpWord(next)) {
-            pushGapIfNeeded(elements, WORD_GAP_PX);
-            elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP["nanpa"], px: fontPx });
+        pos = b;
+      }
 
-            let j = i + 1;
-            while (j < words.length && !isKnownTpWord(words[j])) j++;
-
-            const rawName = tokenObjs.slice(i + 1, j).map(o => o.raw).join("");
-            const cps = lettersToRandomGlyphCps(rawName);
-            makeCartoucheElementFromCodepoints(elements, cps, { fontPx });
-
-            i = j;
-            continue;
-          }
-        }
-
-        if (isKnownTpWord(w)) {
-          pushGapIfNeeded(elements, WORD_GAP_PX);
-          elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[w], px: fontPx });
-        }
-
-        i += 1;
+      if (pos < s.length) {
+        renderTpWordsFromText(s.slice(pos), elements, { fontPx, mode });
       }
     }
 
@@ -1190,28 +1699,56 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       const content = String(bracketContent ?? "").trim();
       if (!content) return;
 
+      const mode = getNanpaLinjanMode();
+
+      // 1) If bracket content is a number-like expression => numeric cartouche
+      try {
+        const caps = decimalStringToCaps(content, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
+        if (cps && cps.length) {
+          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+          return;
+        }
+      } catch {
+        // not numeric per your rules
+      }
+
+      // 2) TP number phrase inside brackets
       const wordsRaw = content.split(/\s+/).filter(Boolean);
       const words = wordsRaw.map(normalizeTpWord).filter(Boolean);
-
-      const mode = getNanpaLinjanMode();
 
       const parsedNumber = tryParseNanpaLinjanTpPhraseWords(words);
       if (parsedNumber) {
         const cps = nanpaLinjanWordsToCodepoints(parsedNumber.words, { mode });
-        if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx });
+        if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
         return;
       }
 
+      // 3) nanpa-linja-n identifier (proper name) or #~ code inside brackets
+      const idCps =
+        tryDecodeNanpaLinjanIdentifierToCodepoints(content, { mode }) ??
+        tryDecodeNanpaLinjanIdentifierToCodepoints(content.replace(/\s+/g, ""), { mode });
+
+      if (idCps && idCps.length) {
+        makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+        return;
+      }
+
+      // 4) bracketed TP words => cartouche with text font
       if (words.length >= 1 && words.every(isKnownTpWord)) {
-        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(words), { fontPx });
+        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(words), { fontPx, fontFamily: FONT_FAMILY_TEXT });
         return;
       }
 
-      makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx });
+      // 5) fallback => random glyphs from letters
+      makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx, fontFamily: FONT_FAMILY_TEXT });
     }
 
     function lineToElements(line, { fontPx }) {
-      const segs = splitLineIntoSegments(line);
+      let s = String(line ?? "");
+      s = s.replace(/\.\s*$/, ""); // end-of-line period stripped
+
+      const segs = splitLineIntoSegments(s);
       const elements = [];
 
       for (const seg of segs) {
@@ -1223,10 +1760,9 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       return elements;
     }
 
-    /* CHANGED: glyph measurement uses fontPx */
-    function measureGlyph(ctx, cp, px) {
+    function measureGlyph(ctx, cp, px, fontFamily) {
       const ch = String.fromCodePoint(cp);
-      ctx.font = `${px}px "${FONT_FAMILY}"`;
+      ctx.font = `${px}px "${fontFamily}"`;
       setTextQuality(ctx);
       const m = ctx.measureText(ch);
 
@@ -1237,10 +1773,9 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
       const tightW = Math.ceil(left + right);
 
-      return { ch, ascent, descent, left, tightW, w: tightW, h: Math.ceil(ascent + descent), px };
+      return { ch, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
     }
 
-    /* CHANGED: baseline/line box uses fontPx instead of fixed TEXT_GLYPH_PX */
     function renderAllLinesToCanvas(outCanvas, linesElements, { fontPx }) {
       const pad = 18;
 
@@ -1256,7 +1791,6 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
         let w = 0;
         let maxAscent = 0;
         let maxDescent = 0;
-        let maxBoxH = 0;
 
         const measuredEls = [];
 
@@ -1268,27 +1802,30 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
           }
 
           if (el.type === "glyph") {
-            const g = measureGlyph(ctx, el.cp, el.px ?? fontPx);
+            const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const g = measureGlyph(ctx, el.cp, el.px ?? fontPx, fam);
             measuredEls.push({ ...el, m: g });
             w += g.w;
 
             if (g.ascent > maxAscent) maxAscent = g.ascent;
             if (g.descent > maxDescent) maxDescent = g.descent;
-
-            const boxH = g.ascent + g.descent;
-            if (boxH > maxBoxH) maxBoxH = boxH;
             continue;
           }
 
           if (el.type === "cartouche") {
             measuredEls.push(el);
             w += (el.w | 0);
-            if ((el.h | 0) > maxBoxH) maxBoxH = (el.h | 0);
+
+            const a = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
+            const d = el.descent ?? Math.ceil((el.h | 0) * 0.3);
+
+            if (a > maxAscent) maxAscent = a;
+            if (d > maxDescent) maxDescent = d;
             continue;
           }
         }
 
-        const lineBoxH = Math.max(maxBoxH, maxAscent + maxDescent, fontPx);
+        const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
         measuredLines.push({ measuredEls, w, lineBoxH, maxAscent, maxDescent });
 
         if (w > maxLineW) maxLineW = w;
@@ -1315,18 +1852,15 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
         const L = measuredLines[li];
         let x = pad;
 
-        const glyphBaseline =
-          y + Math.floor((L.lineBoxH - (L.maxAscent + L.maxDescent)) / 2) + L.maxAscent;
+        const glyphBaseline = y + L.maxAscent;
 
         for (const el of L.measuredEls) {
-          if (el.type === "gap") {
-            x += Math.max(0, el.px | 0);
-            continue;
-          }
+          if (el.type === "gap") { x += Math.max(0, el.px | 0); continue; }
 
           if (el.type === "glyph") {
             const m = el.m;
-            outCtx.font = `${(el.px ?? fontPx)}px "${FONT_FAMILY}"`;
+            const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
             const drawX = x + (m.left ?? 0);
             outCtx.fillText(m.ch, drawX, glyphBaseline);
             x += m.w;
@@ -1334,7 +1868,8 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
           }
 
           if (el.type === "cartouche") {
-            const drawY = y + Math.floor((L.lineBoxH - el.h) / 2);
+            const by = (el.baselineY != null) ? (el.baselineY | 0) : Math.floor((el.h | 0) * 0.75);
+            const drawY = glyphBaseline - by;
             outCtx.drawImage(el.canvas, x, drawY);
             x += el.w;
             continue;
@@ -1438,19 +1973,65 @@ o pilin e nanpa tan nanpa Newen tawa nanpa Newenin."></textarea>
       }
     });
 
-    window.addEventListener("load", async () => {
-        try {
-            await ensureFontLoaded();
-            applyNanpaLinjanModeFromQueryOrStorage();
-            applyFontPxFromQueryOrStorage();
-            applyDefaultInputFromQuery();   // NEW (does not persist)
-            wireNanpaLinjanModeRadios();
-            wireFontSizeSelect();
-        } catch (e) {
-            console.warn(e);
-        }
-    });
+    function setQueryParamOnLink(a, key, value) {
+      if (!a) return;
+      try {
+        // Build an absolute URL so URL() works for relative hrefs
+        const u = new URL(a.getAttribute("href"), window.location.href);
+        u.searchParams.set(key, value);
+        a.setAttribute("href", u.pathname + "?" + u.searchParams.toString() + u.hash);
+      } catch (e) {
+        console.warn("[link] failed to set query param:", e);
+      }
+    }
 
+    function updateExternalLinksWithCartoucheDisplay() {
+      const mode = getNanpaLinjanMode(); // "traditional" | "uniform"
+
+      const calc = document.getElementById("calculatorLink");
+      const rend = document.getElementById("rendererLink");
+
+      setQueryParamOnLink(calc, "cartoucheDisplay", mode);
+      setQueryParamOnLink(rend, "cartoucheDisplay", mode);
+    }
+
+    function wireCartoucheDisplayLinks() {
+      // Update immediately on load
+      updateExternalLinksWithCartoucheDisplay();
+
+      // Update whenever the mode changes
+      const radios = document.querySelectorAll('input[name="nlMode"]');
+      radios.forEach(r => {
+        r.addEventListener("change", () => {
+          updateExternalLinksWithCartoucheDisplay();
+        });
+      });
+
+      // Also update right before navigation (covers edge cases)
+      const linkIds = ["calculatorLink", "rendererLink"];
+      for (const id of linkIds) {
+        const a = document.getElementById(id);
+        if (!a) continue;
+        a.addEventListener("click", () => {
+          updateExternalLinksWithCartoucheDisplay();
+        });
+      }
+    }
+
+    window.addEventListener("load", async () => {
+      try {
+        await ensureFontLoaded();
+        applyNanpaLinjanModeFromQueryOrStorage();
+        applyFontPxFromQueryOrStorage();
+        applyDefaultInputFromQuery();
+        wireNanpaLinjanModeRadios();
+        wireFontSizeSelect();
+
+        wireCartoucheDisplayLinks(); // <-- ADD THIS
+      } catch (e) {
+        console.warn(e);
+      }
+    });
   </script>
 </body>
 </html>

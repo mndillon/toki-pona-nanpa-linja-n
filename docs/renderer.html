@@ -552,6 +552,19 @@
         </table>
       </div>
 
+      <div class="help">&nbsp;</div>
+
+      <h1 style="margin:0 0 6px;font-size:18px;">
+        Check out the Toki Pona Multiline text → sitelen pona glyphs
+        <span class="tpLine">o lukin e ilo ni: sitelen toki pona mute-linja tawa sitelen pona</span>
+      </h1>
+      <div class="small" style="margin-bottom:10px;">
+        <a id="textToSitelenLink" class="repoLink" href="./text-to-sitelen.html" target="_blank" rel="noopener noreferrer">
+          Multiline text → sitelen pona glyphs
+        </a>
+        <span class="tpLine">o lukin e ilo ni: sitelen toki pona mute-linja tawa sitelen pona</span>
+      </div>
+
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n cartouche calculator
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
@@ -691,12 +704,39 @@
       }
     }
 
+    // NEW: update the text-to-sitelen.html link so it includes the current selection
+    function updateTextToSitelenLinkWithDisplayParam() {
+      const a = document.getElementById("textToSitelenLink");
+      if (!a) return;
+
+      try {
+        const href = a.getAttribute("href") || "./text-to-sitelen.html";
+        const u = new URL(href, window.location.href);
+        u.searchParams.set(CARTOUCHE_DISPLAY_QUERY_PARAM, getCartoucheDisplayMode());
+
+        // keep href relative-ish (works for ./text-to-sitelen.html and for absolute URLs)
+        if (u.origin === window.location.origin) {
+          const rel = u.pathname + (u.search || "") + (u.hash || "");
+          a.setAttribute("href", rel);
+        } else {
+          a.setAttribute("href", u.toString());
+        }
+      } catch {
+        const base = (a.getAttribute("href") || "./text-to-sitelen.html").split("?")[0];
+        a.setAttribute(
+          "href",
+          `${base}?${CARTOUCHE_DISPLAY_QUERY_PARAM}=${encodeURIComponent(getCartoucheDisplayMode())}`
+        );
+      }
+    }
+
     function wireCartoucheDisplayRadios() {
       const radios = document.querySelectorAll('input[name="cartoucheDisplay"]');
       radios.forEach(r => {
         r.addEventListener("change", () => {
           setCartoucheDisplayMode(getCartoucheDisplayMode());
           updateCalculatorLinkWithDisplayParam(); // NEW
+          updateTextToSitelenLinkWithDisplayParam();
           buildDigitReferenceTable();
 
           // Re-render based on the user's most recent action, but do NOT clear inputs.
@@ -2892,6 +2932,7 @@
 
         applyCartoucheDisplayModeFromQueryOrStorage();
         updateCalculatorLinkWithDisplayParam();
+        updateTextToSitelenLinkWithDisplayParam();
 
         wireCartoucheDisplayRadios();
 
