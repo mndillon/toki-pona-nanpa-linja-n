@@ -195,8 +195,9 @@
         <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as nanpa-linja-n cartouches.</li>
         <li>Decimal-form numbers like <span class="mono">-5,432.10</span>, <span class="mono">1.2K</span>, or <span class="mono">.06</span> render as nanpa-linja-n cartouches.</li>
         <li>End-of-line full stops are not treated as part of a number (e.g. <span class="mono">06.</span>).</li>
-        <li><strong>Important:</strong> Outside of <span class="mono">[...]</span>, only decimals, <span class="mono">#~</span> codes, nanpa-linja-n proper names, and nanpa-linja-n number phrases can produce cartouches.</li>
-        <li><strong>Long pi:</strong> A long “pi” container can be written as <span class="mono">pi { ... }</span>.  Example: <span class="mono">mi tawa tomo pi { telo nasa }</span> renders <span class="mono">telo nasa</span> inside a long-pi container.</li>
+        <li><strong>Cartouche:</strong> Inside of <span class="mono">[...]</span>, if all words are toki pona words, then they will all use thier own glyphs, otherwise each letter of every word is mapped randomly.</li>
+        <li><strong>Cartouche:</strong> Outside of <span class="mono">[...]</span>, only decimals, <span class="mono">#~</span> codes, nanpa-linja-n proper names, and nanpa-linja-n number phrases can produce cartouches.</li>
+        <li><strong>Long pi:</strong> A long “pi” container can be written as <span class="mono">pi { ... }</span>.  Must have at least two words inside { ... }.  Cartouche inside long pi isn't working properly.</li>
       </ul>
     </div>
 
