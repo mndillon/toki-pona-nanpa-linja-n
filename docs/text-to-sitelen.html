@@ -196,6 +196,7 @@
         <li>Decimal-form numbers like <span class="mono">-5,432.10</span>, <span class="mono">1.2K</span>, or <span class="mono">.06</span> render as nanpa-linja-n cartouches.</li>
         <li>End-of-line full stops are not treated as part of a number (e.g. <span class="mono">06.</span>).</li>
         <li><strong>Important:</strong> Outside of <span class="mono">[...]</span>, only decimals, <span class="mono">#~</span> codes, nanpa-linja-n proper names, and nanpa-linja-n number phrases can produce cartouches.</li>
+        <li><strong>Long pi:</strong> A long “pi” container can be written as <span class="mono">pi { ... }</span>.  Example: <span class="mono">mi tawa tomo pi { telo nasa }</span> renders <span class="mono">telo nasa</span> inside a long-pi container.</li>
       </ul>
     </div>
 
@@ -314,7 +315,6 @@ toki pona li pona
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
       </h1>
       <div class="small" style="margin-bottom:10px;">
-        <!-- CHANGED: give this link an id so JS can append the query param -->
         <a id="calculatorLink" class="repoLink" href="./calculator.html" target="_blank" rel="noopener noreferrer">
           nanpa-linja-n cartouche calculator
         </a>
@@ -453,6 +453,42 @@ toki pona li pona
 
     const CARTOUCHE_START_CP = 0xF1990;
     const CARTOUCHE_END_CP   = 0xF1991;
+
+    // Long "pi { ... }" container glyphs
+    const LONG_PI_START_CP = 0xF1993;   // START OF LONG PI
+    const LONG_PI_EXT_CP   = 0xF1994;   // COMBINING LONG PI EXTENSION
+
+    function tokenHasOpenCurly(tok) {
+      return String(tok ?? "").includes("{");
+    }
+
+    function tokenHasCloseCurly(tok) {
+      return String(tok ?? "").includes("}");
+    }
+
+    function extractCurlyContentFromTokens(tokens, startIdx) {
+      // tokens[startIdx] must contain "{"
+      // Collect until we find a token containing "}"
+      let j = startIdx;
+      while (j < tokens.length && !tokenHasCloseCurly(tokens[j])) j++;
+      if (j >= tokens.length) return null; // no closing brace
+
+      const joined = tokens.slice(startIdx, j + 1).join(" ");
+      const open = joined.indexOf("{");
+      const close = joined.lastIndexOf("}");
+      if (open < 0 || close < 0 || close <= open) return null;
+
+      const inner = joined.slice(open + 1, close).trim();
+      return { inner, endIndex: j };
+    }
+
+    function parseKnownTpWords(innerText) {
+      // ignore spaces; accept only known TP words
+      const raw = String(innerText ?? "");
+      const parts = raw.split(/\s+/).map(normalizeTpWord).filter(Boolean);
+      const known = parts.filter(w => isKnownTpWord(w));
+      return known;
+    }
 
     async function ensureFontLoaded() {
       if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
@@ -824,13 +860,11 @@ toki pona li pona
             continue;
           }
 
-          // CHANGED: unary minus (and any other standalone NO) is rendered as the literal NO operator.
-          // This preserves traditional/uniform behavior (uniform can still map "ni" to "nena" later).
+          // unary minus or standalone NO
           out.push("ni","o");
           afterStartingNe = false;
           continue;
         }
-
 
         if (t === "NONO") { out.push("nena","o","nena","o"); afterStartingNe=false; continue; }
         if (t === "NONONO") { out.push("nasa","o","nasa","o","nasa","o"); afterStartingNe=false; continue; }
@@ -1176,12 +1210,10 @@ toki pona li pona
     }
 
     function findDecimalSequencesWithCaps(text, opts = {}) {
-        const original = String(text ?? "");
-        if (!original) return [];
+      const original = String(text ?? "");
+      if (!original) return [];
 
-        // IMPORTANT: normalize Unicode minus/dash characters to ASCII '-' BEFORE regex scanning.
-        // This replacement keeps string length identical (1 char -> 1 char), so indices remain valid.
-        const s = original.replace(/[−‒–—]/g, "-");
+      const s = original.replace(/[−‒–—]/g, "-");
 
       const vulgarChars = "¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞↉";
       const re = new RegExp(
@@ -1272,13 +1304,6 @@ toki pona li pona
       const s = String(text ?? "");
       if (!s) return [];
 
-      /*
-        Case-insensitive proper-name scan:
-          - begins with "ne" (any case)
-          - letters only, possibly multiple words separated by spaces
-          - ends with n/N
-        We capture a leading delimiter separately so index math is correct.
-      */
       const re = /(^|[^A-Za-z])((?:ne)[A-Za-z]*(?:\s+[A-Za-z]{2,}){0,20}[A-Za-z]*[nN])(?![A-Za-z])/gi;
 
       const hits = [];
@@ -1293,15 +1318,11 @@ toki pona li pona
         const end = start + rawMatch.length;
 
         const compact = rawMatch.replace(/\s+/g, "");
-
-        // CHANGED: allow 5-letter names like Newen / Nesen / Nenun
         if (compact.length < 5) continue;
-
-        // Must validate as a nanpa-linja-n proper name in your tokenizer rules
         if (!isValidNanpaLinjanProperName(compact)) continue;
 
-        const core = compact.slice(0, -1);       // drop final n/N
-        const caps = core.toUpperCase() + "N";   // re-add terminator
+        const core = compact.slice(0, -1);
+        const caps = core.toUpperCase() + "N";
 
         hits.push({ kind: "name", index: start, end, caps });
       }
@@ -1309,12 +1330,8 @@ toki pona li pona
       return hits;
     }
 
-
     /* ============================================================
        ADD: nanpa-linja-n TP number-phrase scanner in plain text
-         - matches: "nanpa (esun|en) ... nanpa"
-         - only words from NANPA_LINJA_N_WORD_TO_CP
-         - must contain at least one digit-word payload
        ============================================================ */
     function findNanpaLinjanTpPhraseSequences(text) {
       const s = String(text ?? "");
@@ -1344,7 +1361,6 @@ toki pona li pona
         const n1 = tokens[i + 1]?.norm;
         if (!(n1 === "esun" || n1 === "en")) continue;
 
-        // Greedy: choose the farthest valid closing "nanpa"
         let bestJ = -1;
         let bestWords = null;
 
@@ -1367,7 +1383,6 @@ toki pona li pona
 
           bestJ = j;
           bestWords = words;
-          // keep going to find a longer valid one
         }
 
         if (bestJ >= 0 && bestWords) {
@@ -1377,7 +1392,7 @@ toki pona li pona
             end: tokens[bestJ].end,
             words: bestWords
           });
-          i = bestJ; // skip past this phrase
+          i = bestJ;
         }
       }
 
@@ -1397,7 +1412,7 @@ toki pona li pona
         if (kind === "decimal") return 4;
         if (kind === "tpPhrase") return 3;
         if (kind === "code") return 2;
-        return 1; // "name"
+        return 1;
       }
 
       hits.sort((a, b) => {
@@ -1608,22 +1623,75 @@ toki pona li pona
       });
     }
 
+    /* ============================
+       NEW: "run" element (multi-codepoint string rendered in ONE fillText)
+       This is required for combining glyphs like LONG_PI_EXT_CP to behave correctly.
+       ============================ */
+    function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
+      if (!cps || cps.length === 0) return;
+      pushGapIfNeeded(elements, WORD_GAP_PX);
+
+      elements.push({
+        type: "run",
+        cps: Array.from(cps),
+        px: fontPx,
+        fontFamily: fontFamily || FONT_FAMILY_TEXT
+      });
+    }
+
     /* IMPORTANT: Outside brackets, we do NOT special-case "nanpa <word>" anymore.
        Everything outside [] is ordinary TP rendering except:
          - decimals
          - #~ codes
          - nanpa-linja-n proper names
          - nanpa-linja-n TP number phrases: "nanpa esun|en ... nanpa"
+         - long pi: "pi { ... }" => rendered as a single "run"
     */
     function renderTpWordsFromText(text, elements, { fontPx, mode }) {
       const rawTokens = String(text ?? "").trim().split(/\s+/).filter(Boolean);
 
-      for (const tok of rawTokens) {
-        // Trim common trailing/leading punctuation so "Newenin." still works
+      for (let i = 0; i < rawTokens.length; i++) {
+        const tok = rawTokens[i];
+
+        const normTok = normalizeTpWord(tok);
+
+        // --- Long pi: pi { ... } ---
+        if (normTok === "pi") {
+          const nextTok = rawTokens[i + 1];
+
+          if (nextTok != null && tokenHasOpenCurly(nextTok)) {
+            const extracted = extractCurlyContentFromTokens(rawTokens, i + 1);
+
+            if (extracted && extracted.inner != null) {
+              const innerWords = parseKnownTpWords(extracted.inner);
+
+              // As requested: must be multiple TP words
+              if (innerWords.length >= 2) {
+                const cps = [];
+                cps.push(LONG_PI_START_CP);
+                cps.push(WORD_TO_UCSUR_CP[innerWords[0]]);
+
+                for (let k = 1; k < innerWords.length; k++) {
+                  cps.push(LONG_PI_EXT_CP);
+                  cps.push(WORD_TO_UCSUR_CP[innerWords[k]]);
+                }
+
+                // CRITICAL: render as ONE run so the combining extension joins properly
+                makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_TEXT });
+
+                // Skip consumed tokens through the closing "}"
+                i = extracted.endIndex;
+                continue;
+              }
+            }
+          }
+          // fall through and render "pi" normally if not matched/valid
+        }
+
+        // Trim punctuation so things like "toki." still work
         const trimmed = String(tok).replace(/^[^#~A-Za-z0-9]+|[^#~A-Za-z0-9]+$/g, "");
 
-        // Fallback: if this token is a nanpa-linja-n identifier (proper name or #~ code), cartouche it
-        // This is intentionally narrow: it only triggers when your existing decoder accepts it.
+        // Existing: nanpa-linja-n identifier cartouche detection (proper name or #~)
         const idCps =
           tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ??
           tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
@@ -1633,7 +1701,7 @@ toki pona li pona
           continue;
         }
 
-        // Otherwise render ordinary TP words
+        // Ordinary TP words
         const norm = normalizeTpWord(tok);
         if (!norm) continue;
         if (!isKnownTpWord(norm)) continue;
@@ -1642,7 +1710,6 @@ toki pona li pona
         elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[norm], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
       }
     }
-
 
     function parseTextSegmentToElements(segmentText, elements, { fontPx }) {
       const mode = getNanpaLinjanMode();
@@ -1683,7 +1750,7 @@ toki pona li pona
           if (cps && cps.length) {
             makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
           } else {
-            renderTpWordsFromText(s.slice(a, b), elements, { fontPx });
+            renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
           }
         }
 
@@ -1701,7 +1768,7 @@ toki pona li pona
 
       const mode = getNanpaLinjanMode();
 
-      // 1) If bracket content is a number-like expression => numeric cartouche
+      // 1) number-like => numeric cartouche
       try {
         const caps = decimalStringToCaps(content, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
         const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
@@ -1709,9 +1776,7 @@ toki pona li pona
           makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
           return;
         }
-      } catch {
-        // not numeric per your rules
-      }
+      } catch {}
 
       // 2) TP number phrase inside brackets
       const wordsRaw = content.split(/\s+/).filter(Boolean);
@@ -1724,7 +1789,7 @@ toki pona li pona
         return;
       }
 
-      // 3) nanpa-linja-n identifier (proper name) or #~ code inside brackets
+      // 3) identifier or #~ code inside brackets
       const idCps =
         tryDecodeNanpaLinjanIdentifierToCodepoints(content, { mode }) ??
         tryDecodeNanpaLinjanIdentifierToCodepoints(content.replace(/\s+/g, ""), { mode });
@@ -1746,7 +1811,7 @@ toki pona li pona
 
     function lineToElements(line, { fontPx }) {
       let s = String(line ?? "");
-      s = s.replace(/\.\s*$/, ""); // end-of-line period stripped
+      s = s.replace(/\.\s*$/, "");
 
       const segs = splitLineIntoSegments(s);
       const elements = [];
@@ -1774,6 +1839,23 @@ toki pona li pona
       const tightW = Math.ceil(left + right);
 
       return { ch, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
+    }
+
+    // NEW: measure a multi-codepoint run as a single string
+    function measureRun(ctx, cps, px, fontFamily) {
+      const chars = (cps ?? []).map(cp => String.fromCodePoint(cp)).join("");
+      ctx.font = `${px}px "${fontFamily}"`;
+      setTextQuality(ctx);
+      const m = ctx.measureText(chars);
+
+      const ascent  = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      return { chars, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
     }
 
     function renderAllLinesToCanvas(outCanvas, linesElements, { fontPx }) {
@@ -1809,6 +1891,18 @@ toki pona li pona
 
             if (g.ascent > maxAscent) maxAscent = g.ascent;
             if (g.descent > maxDescent) maxDescent = g.descent;
+            continue;
+          }
+
+          // NEW: run
+          if (el.type === "run") {
+            const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const r = measureRun(ctx, el.cps, el.px ?? fontPx, fam);
+            measuredEls.push({ ...el, m: r });
+            w += r.w;
+
+            if (r.ascent > maxAscent) maxAscent = r.ascent;
+            if (r.descent > maxDescent) maxDescent = r.descent;
             continue;
           }
 
@@ -1863,6 +1957,17 @@ toki pona li pona
             outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
             const drawX = x + (m.left ?? 0);
             outCtx.fillText(m.ch, drawX, glyphBaseline);
+            x += m.w;
+            continue;
+          }
+
+          // NEW: run
+          if (el.type === "run") {
+            const m = el.m;
+            const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
+            const drawX = x + (m.left ?? 0);
+            outCtx.fillText(m.chars, drawX, glyphBaseline);
             x += m.w;
             continue;
           }
@@ -1945,7 +2050,9 @@ toki pona li pona
       const lines = raw.replace(/\r\n/g, "\n").split("\n");
       const linesElements = lines.map(line => lineToElements(line, { fontPx }));
 
-      const anyContent = linesElements.some(els => els.some(e => e.type === "glyph" || e.type === "cartouche"));
+      const anyContent = linesElements.some(els =>
+        els.some(e => e.type === "glyph" || e.type === "cartouche" || e.type === "run")
+      );
       if (!anyContent) {
         outCanvas.width = 1;
         outCanvas.height = 1;
@@ -1976,7 +2083,6 @@ toki pona li pona
     function setQueryParamOnLink(a, key, value) {
       if (!a) return;
       try {
-        // Build an absolute URL so URL() works for relative hrefs
         const u = new URL(a.getAttribute("href"), window.location.href);
         u.searchParams.set(key, value);
         a.setAttribute("href", u.pathname + "?" + u.searchParams.toString() + u.hash);
@@ -1986,7 +2092,7 @@ toki pona li pona
     }
 
     function updateExternalLinksWithCartoucheDisplay() {
-      const mode = getNanpaLinjanMode(); // "traditional" | "uniform"
+      const mode = getNanpaLinjanMode();
 
       const calc = document.getElementById("calculatorLink");
       const rend = document.getElementById("rendererLink");
@@ -1996,10 +2102,8 @@ toki pona li pona
     }
 
     function wireCartoucheDisplayLinks() {
-      // Update immediately on load
       updateExternalLinksWithCartoucheDisplay();
 
-      // Update whenever the mode changes
       const radios = document.querySelectorAll('input[name="nlMode"]');
       radios.forEach(r => {
         r.addEventListener("change", () => {
@@ -2007,7 +2111,6 @@ toki pona li pona
         });
       });
 
-      // Also update right before navigation (covers edge cases)
       const linkIds = ["calculatorLink", "rendererLink"];
       for (const id of linkIds) {
         const a = document.getElementById(id);
@@ -2027,7 +2130,7 @@ toki pona li pona
         wireNanpaLinjanModeRadios();
         wireFontSizeSelect();
 
-        wireCartoucheDisplayLinks(); // <-- ADD THIS
+        wireCartoucheDisplayLinks();
       } catch (e) {
         console.warn(e);
       }
