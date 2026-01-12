@@ -139,6 +139,24 @@
       max-width: 100%;
     }
 
+    /* NEW: RGB picker layout */
+    .rgbControl { min-width: 240px; }
+    .rgbRow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .rgbRow select { width: 72px; padding: 8px 10px; }
+    .swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #111;
+      flex: 0 0 auto;
+    }
+    .hexLabel {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
     @font-face {
       font-family: "TP-Cartouche-Font";
       src:
@@ -228,6 +246,26 @@ nanpa #~WI."></textarea>
           <span class="tpLine">o sitelen</span>
         </button>
 
+        <!-- NEW: Foreground color picker (to the left of font selector) -->
+        <div class="inlineControl rgbControl" role="group" aria-label="Text color">
+          <label for="fgR">
+            Text color
+            <span class="tpLine" style="display:inline; margin:0 0 0 6px;">kule pi sitelen</span>
+          </label>
+
+          <div class="rgbRow" aria-describedby="fgColorHelp">
+            <select id="fgR" aria-label="Red channel"></select>
+            <select id="fgG" aria-label="Green channel"></select>
+            <select id="fgB" aria-label="Blue channel"></select>
+            <div id="fgSwatch" class="swatch" aria-hidden="true"></div>
+            <div id="fgHex" class="hexLabel" aria-hidden="true">#111111</div>
+          </div>
+
+          <div id="fgColorHelp" class="sr-only">
+            Select foreground text color using red, green, and blue channels. The swatch previews the selected color.
+          </div>
+        </div>
+
         <div class="inlineControl" role="group" aria-label="Font size">
           <label for="fontSizeSel">
             Font size
@@ -255,6 +293,27 @@ nanpa #~WI."></textarea>
           <div id="fontSizeHelp" class="sr-only">Changes the glyph and cartouche rendering size in the output.</div>
         </div>
       </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label>
+        Output canvas
+        <span class="tpLine">ilo sitelen kama</span>
+      </label>
+      <canvas id="outCanvas" aria-hidden="true"></canvas>
+
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button id="btnDownloadPng" type="button" class="btnBi" aria-describedby="btnDownloadHelp">
+          <span>Download PNG</span>
+          <span class="tpLine">o kama jo e sitelen PNG</span>
+        </button>
+        <div id="btnDownloadHelp" class="sr-only">Downloads the output canvas as a transparent PNG.</div>
+
+        <span class="small">
+          (Transparent background)
+          <span class="tpLine">(poka sitelen li lon ala)</span>
+        </span>
+      </div>
 
       <div>
         <fieldset style="border:1px solid var(--border); border-radius:10px; padding:10px 12px; max-width: 560px;">
@@ -276,28 +335,6 @@ nanpa #~WI."></textarea>
             </label>
           </div>
         </fieldset>
-      </div>
-
-    </div>
-
-    <div style="margin-top:14px;">
-      <label>
-        Output canvas
-        <span class="tpLine">ilo sitelen kama</span>
-      </label>
-      <canvas id="outCanvas" aria-hidden="true"></canvas>
-
-      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-        <button id="btnDownloadPng" type="button" class="btnBi" aria-describedby="btnDownloadHelp">
-          <span>Download PNG</span>
-          <span class="tpLine">o kama jo e sitelen PNG</span>
-        </button>
-        <div id="btnDownloadHelp" class="sr-only">Downloads the output canvas as a transparent PNG.</div>
-
-        <span class="small">
-          (Transparent background)
-          <span class="tpLine">(poka sitelen li lon ala)</span>
-        </span>
       </div>
 
       <div class="help">&nbsp;</div>
@@ -367,6 +404,162 @@ nanpa #~WI."></textarea>
 
     const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
     const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
+
+    /* ============================
+       NEW: Foreground color selection (remember + optional query param)
+       ============================ */
+    const FG_COLOR_STORAGE_KEY = "tpFgRgb";
+    const FG_COLOR_QUERY_PARAM = "fg"; // optional: "R,G,B" (e.g. 17,34,51)
+
+    function clampByte(n) {
+      const x = Number(n);
+      if (!Number.isFinite(x)) return null;
+      const i = Math.round(x);
+      if (i < 0) return 0;
+      if (i > 255) return 255;
+      return i;
+    }
+
+    function byteToHex2(n) {
+      const s = (n | 0).toString(16).toUpperCase();
+      return (s.length === 1) ? ("0" + s) : s;
+    }
+
+    function rgbToHex(r, g, b) {
+      return "#" + byteToHex2(r) + byteToHex2(g) + byteToHex2(b);
+    }
+
+    function parseRgbCsv(s) {
+      const raw = String(s ?? "").trim();
+      if (!raw) return null;
+      const parts = raw.split(",").map(p => p.trim()).filter(Boolean);
+      if (parts.length !== 3) return null;
+      const r = clampByte(parts[0]);
+      const g = clampByte(parts[1]);
+      const b = clampByte(parts[2]);
+      if (r == null || g == null || b == null) return null;
+      return { r, g, b };
+    }
+
+    function readFgRgbFromQuery() {
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+        const raw = params.get(FG_COLOR_QUERY_PARAM);
+        return parseRgbCsv(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function loadFgRgbFromStorage() {
+      try {
+        const raw = localStorage.getItem(FG_COLOR_STORAGE_KEY);
+        return parseRgbCsv(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function saveFgRgbToStorage(r, g, b) {
+      try { localStorage.setItem(FG_COLOR_STORAGE_KEY, `${r},${g},${b}`); } catch {}
+    }
+
+    function getFgRgb() {
+      const rSel = document.getElementById("fgR");
+      const gSel = document.getElementById("fgG");
+      const bSel = document.getElementById("fgB");
+
+      const r = clampByte(rSel ? rSel.value : null) ?? 0;
+      const g = clampByte(gSel ? gSel.value : null) ?? 0;
+      const b = clampByte(bSel ? bSel.value : null) ?? 0;
+
+      return { r, g, b, css: `rgb(${r} ${g} ${b})`, hex: rgbToHex(r, g, b) };
+    }
+
+    function setFgRgb(r, g, b) {
+      const rr = clampByte(r) ?? 0;
+      const gg = clampByte(g) ?? 0;
+      const bb = clampByte(b) ?? 0;
+
+      const rSel = document.getElementById("fgR");
+      const gSel = document.getElementById("fgG");
+      const bSel = document.getElementById("fgB");
+
+      if (rSel) rSel.value = String(rr);
+      if (gSel) gSel.value = String(gg);
+      if (bSel) bSel.value = String(bb);
+
+      updateFgColorPreview();
+      saveFgRgbToStorage(rr, gg, bb);
+      return { r: rr, g: gg, b: bb };
+    }
+
+    function updateFgColorPreview() {
+      const { css, hex } = getFgRgb();
+      const sw = document.getElementById("fgSwatch");
+      const hx = document.getElementById("fgHex");
+      if (sw) sw.style.background = css;
+      if (hx) hx.textContent = hex;
+    }
+
+    function populateRgbSelect(sel, labelPrefix) {
+      if (!sel) return;
+      sel.innerHTML = "";
+      // Use 0..255 step 17 (0,17,...,255) to keep dropdowns compact.
+      for (let v = 0; v <= 255; v += 17) {
+        const opt = document.createElement("option");
+        opt.value = String(v);
+        opt.textContent = `${labelPrefix}${v}`;
+        sel.appendChild(opt);
+      }
+      // Ensure 255 is present (it is with step 17, but keep safe)
+      if (sel.options.length === 0 || sel.options[sel.options.length - 1].value !== "255") {
+        const opt = document.createElement("option");
+        opt.value = "255";
+        opt.textContent = `${labelPrefix}255`;
+        sel.appendChild(opt);
+      }
+    }
+
+    function initFgColorControls() {
+      const rSel = document.getElementById("fgR");
+      const gSel = document.getElementById("fgG");
+      const bSel = document.getElementById("fgB");
+
+      populateRgbSelect(rSel, "R ");
+      populateRgbSelect(gSel, "G ");
+      populateRgbSelect(bSel, "B ");
+
+      const q = readFgRgbFromQuery();
+      if (q) { setFgRgb(q.r, q.g, q.b); return; }
+
+      const s = loadFgRgbFromStorage();
+      if (s) { setFgRgb(s.r, s.g, s.b); return; }
+
+      // Default: near-black (matches your previous #111111 feel)
+      setFgRgb(17, 17, 17);
+    }
+
+    function wireFgColorControls() {
+      const rSel = document.getElementById("fgR");
+      const gSel = document.getElementById("fgG");
+      const bSel = document.getElementById("fgB");
+
+      const onChange = async () => {
+        try {
+          const { r, g, b } = getFgRgb();
+          saveFgRgbToStorage(r, g, b);
+          updateFgColorPreview();
+          await renderFromTextarea();
+        } catch (e) {
+          showAlertAndAnnounce(e?.message ?? String(e));
+        }
+      };
+
+      if (rSel) rSel.addEventListener("change", onChange);
+      if (gSel) gSel.addEventListener("change", onChange);
+      if (bSel) bSel.addEventListener("change", onChange);
+    }
 
     /* ============================
        Font size selection (remember + query param)
@@ -625,7 +818,8 @@ nanpa #~WI."></textarea>
       "kijetesantakalu": 0xF1980, "soko": 0xF1981, "meso": 0xF1982, "epiku": 0xF1983,
       "kokosila": 0xF1984, "lanpan": 0xF1985, "n": 0xF1986, "misikeke": 0xF1987, "ku": 0xF1988,
       "pake": 0xF19A0, "apeja": 0xF19A1, "majuna": 0xF19A2, "powe": 0xF19A3,
-      "·": 0xF199C, ":": 0xF199D
+      "·": 0xF199C, ":": 0xF199D,
+      "ota": 0xF199C, "kolon": 0xF199D
     };
 
     function isKnownTpWord(w) { return WORD_TO_UCSUR_CP[w] != null; }
@@ -634,26 +828,15 @@ nanpa #~WI."></textarea>
     function normalizeTpWord(raw) { return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, ""); }
 
     // NEW: glyph-token normalization that preserves ":" and "·" and also handles trailing punctuation
-    // Examples:
-    //   ":"   -> ":"
-    //   "·"   -> "·"
-    //   "toki:" -> "toki" (and ":" can be its own token if separated)
-    //   "·,"  -> "·"
     function normalizeTpGlyphToken(raw) {
       const s0 = String(raw ?? "").trim().toLowerCase();
       if (!s0) return "";
-
-      // direct hits
       if (s0 === ":" || s0 === "·") return s0;
 
-      // strip leading/trailing non-letters, but explicitly allow ":" and "·" to survive
       const stripped = s0.replace(/^[^a-z:·]+|[^a-z:·]+$/g, "");
       if (!stripped) return "";
-
-      // if the result is exactly ":" or "·", keep it
       if (stripped === ":" || stripped === "·") return stripped;
 
-      // otherwise letters-only for TP words
       return stripped.replace(/[^a-z]/g, "");
     }
 
@@ -883,15 +1066,13 @@ nanpa #~WI."></textarea>
         if (t === "NO") {
           const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
 
-          // Keep your decimal operator behavior: NO + NE
           if (nxt === "NE") {
             out.push("ni","o","nasa","e");
             afterStartingNe = false;
-            i += 1; // consume the NE
+            i += 1;
             continue;
           }
 
-          // unary minus or standalone NO
           out.push("ni","o");
           afterStartingNe = false;
           continue;
@@ -1504,7 +1685,6 @@ nanpa #~WI."></textarea>
       return cps;
     }
 
-    // Note: this accepts TP words AND punctuation tokens like ":" and "·"
     function tpWordsToCodepoints(wordsOrTokens) {
       const cps = [];
       for (const w of (wordsOrTokens ?? [])) {
@@ -1583,7 +1763,8 @@ nanpa #~WI."></textarea>
       elements.push({ type: "gap", px: px });
     }
 
-    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily }) {
+    /* CHANGED: allow configurable foreground color */
+    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss }) {
       if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
       if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
 
@@ -1619,7 +1800,8 @@ nanpa #~WI."></textarea>
       ctx2.textBaseline = "alphabetic";
       ctx2.font = `${px}px "${fam}"`;
       setTextQuality(ctx2);
-      ctx2.fillStyle = "#111";
+
+      ctx2.fillStyle = fgCss || "#111";
 
       const x = pad + left;
       const baselineY = pad + ascent;
@@ -1629,14 +1811,14 @@ nanpa #~WI."></textarea>
       return { w, h, baselineY };
     }
 
-    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss }) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, WORD_GAP_PX);
 
       const cart = document.createElement("canvas");
       const padPx = Math.max(4, Math.round(fontPx * 0.11));
 
-      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily });
+      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily, fgCss });
       if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
       const baselineY = r.baselineY | 0;
@@ -1655,10 +1837,6 @@ nanpa #~WI."></textarea>
       });
     }
 
-    /* ============================
-       NEW: "run" element (multi-codepoint string rendered in ONE fillText)
-       This is required for combining glyphs like LONG_PI_EXT_CP to behave correctly.
-       ============================ */
     function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, WORD_GAP_PX);
@@ -1671,18 +1849,9 @@ nanpa #~WI."></textarea>
       });
     }
 
-    /* IMPORTANT: Outside brackets, we do NOT special-case "nanpa <word>" anymore.
-       Everything outside [] is ordinary TP rendering except:
-         - decimals
-         - #~ codes
-         - nanpa-linja-n proper names
-         - nanpa-linja-n TP number phrases: "nanpa esun|en ... nanpa"
-         - long pi: "pi { ... }" => rendered as a single "run"
-    */
     function renderTpWordsFromText(text, elements, { fontPx, mode }) {
       const rawTokens = String(text ?? "").trim().split(/\s+/).filter(Boolean);
 
-      // Render punctuation glyphs from WORD_TO_UCSUR_CP if present
       function emitPunctGlyph(ch) {
         if (ch !== ":" && ch !== "·") return false;
         const cp = WORD_TO_UCSUR_CP[ch];
@@ -1692,8 +1861,6 @@ nanpa #~WI."></textarea>
         return true;
       }
 
-      // Split a token into: leading punct chars, core, trailing punct chars
-      // Only the *core* is used for word / number detection.
       function splitTokenPunct(tok) {
         const s = String(tok ?? "");
         if (!s) return { lead: "", core: "", trail: "" };
@@ -1701,24 +1868,16 @@ nanpa #~WI."></textarea>
         let a = 0;
         let b = s.length;
 
-        // Leading: anything that is not #~A-Za-z0-9 is punctuation
         while (a < b && !/[#~A-Za-z0-9]/.test(s[a])) a++;
-
-        // Trailing
         while (b > a && !/[#~A-Za-z0-9]/.test(s[b - 1])) b--;
 
-        return {
-          lead: s.slice(0, a),
-          core: s.slice(a, b),
-          trail: s.slice(b)
-        };
+        return { lead: s.slice(0, a), core: s.slice(a, b), trail: s.slice(b) };
       }
 
       for (let i = 0; i < rawTokens.length; i++) {
         const tok = rawTokens[i];
         const normTok = normalizeTpWord(tok);
 
-        // --- Long pi: pi { ... } ---
         if (normTok === "pi") {
           const nextTok = rawTokens[i + 1];
           if (nextTok != null && tokenHasOpenCurly(nextTok)) {
@@ -1743,45 +1902,35 @@ nanpa #~WI."></textarea>
               }
             }
           }
-          // fall through and render "pi" normally if not matched/valid
         }
 
-        // NEW: render lead/trail punctuation glyphs (":" and "·") before core handling
         const { lead, core, trail } = splitTokenPunct(tok);
-
-        // Lead punctuation (render in order)
         for (const ch of lead) emitPunctGlyph(ch);
 
-        // Core token is what we use for ID / word matching
-        const trimmed = core; // core already removed edge punctuation
+        const trimmed = core;
 
-        // Existing: nanpa-linja-n identifier cartouche detection (proper name or #~)
         if (trimmed) {
           const idCps =
             tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ??
             tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
 
           if (idCps && idCps.length) {
+            // cartouche color is handled where cartouches are created (parseTextSegmentToElements)
             makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
-
-            // Trail punctuation (render after the cartouche)
             for (const ch of trail) emitPunctGlyph(ch);
             continue;
           }
         }
 
-        // Ordinary TP words (based on ORIGINAL token, but normalized)
         const norm = normalizeTpWord(trimmed);
         if (norm && isKnownTpWord(norm)) {
           pushGapIfNeeded(elements, WORD_GAP_PX);
           elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[norm], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
         }
 
-        // Trail punctuation (render in order)
         for (const ch of trail) emitPunctGlyph(ch);
       }
     }
-
 
     function parseTextSegmentToElements(segmentText, elements, { fontPx }) {
       const mode = getNanpaLinjanMode();
@@ -1810,17 +1959,19 @@ nanpa #~WI."></textarea>
           renderTpWordsFromText(s.slice(pos, a), elements, { fontPx, mode });
         }
 
+        const fgCss = getFgRgb().css;
+
         if (h.kind === "tpPhrase") {
           const cps = nanpaLinjanWordsToCodepoints(h.words, { mode });
           if (cps && cps.length) {
-            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
           } else {
             renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
           }
         } else {
           const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode });
           if (cps && cps.length) {
-            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
           } else {
             renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
           }
@@ -1839,48 +1990,43 @@ nanpa #~WI."></textarea>
       if (!content) return;
 
       const mode = getNanpaLinjanMode();
+      const fgCss = getFgRgb().css;
 
-      // 1) number-like => numeric cartouche
       try {
         const caps = decimalStringToCaps(content, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
         const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
         if (cps && cps.length) {
-          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
           return;
         }
       } catch {}
 
-      // 2) TP number phrase inside brackets (letters-only)
       const wordsRaw = content.split(/\s+/).filter(Boolean);
       const words = wordsRaw.map(normalizeTpWord).filter(Boolean);
 
       const parsedNumber = tryParseNanpaLinjanTpPhraseWords(words);
       if (parsedNumber) {
         const cps = nanpaLinjanWordsToCodepoints(parsedNumber.words, { mode });
-        if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+        if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
         return;
       }
 
-      // 3) identifier or #~ code inside brackets
       const idCps =
         tryDecodeNanpaLinjanIdentifierToCodepoints(content, { mode }) ??
         tryDecodeNanpaLinjanIdentifierToCodepoints(content.replace(/\s+/g, ""), { mode });
 
       if (idCps && idCps.length) {
-        makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+        makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
         return;
       }
 
-      // 4) bracketed TP tokens => cartouche with text font
-      // NEW: uses glyph-token normalization so ":" and "·" can be used in [...]
       const glyphTokens = wordsRaw.map(normalizeTpGlyphToken).filter(Boolean);
       if (glyphTokens.length >= 1 && glyphTokens.every(isKnownTpGlyphToken)) {
-        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(glyphTokens), { fontPx, fontFamily: FONT_FAMILY_TEXT });
+        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(glyphTokens), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss });
         return;
       }
 
-      // 5) fallback => random glyphs from letters
-      makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx, fontFamily: FONT_FAMILY_TEXT });
+      makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss });
     }
 
     function lineToElements(line, { fontPx }) {
@@ -1915,7 +2061,6 @@ nanpa #~WI."></textarea>
       return { ch, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
     }
 
-    // NEW: measure a multi-codepoint run as a single string
     function measureRun(ctx, cps, px, fontFamily) {
       const chars = (cps ?? []).map(cp => String.fromCodePoint(cp)).join("");
       ctx.font = `${px}px "${fontFamily}"`;
@@ -1968,7 +2113,6 @@ nanpa #~WI."></textarea>
             continue;
           }
 
-          // NEW: run
           if (el.type === "run") {
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
             const r = measureRun(ctx, el.cps, el.px ?? fontPx, fam);
@@ -2011,7 +2155,7 @@ nanpa #~WI."></textarea>
       const outCtx = outCanvas.getContext("2d", { alpha: true });
       outCtx.clearRect(0, 0, outW, outH);
       outCtx.textBaseline = "alphabetic";
-      outCtx.fillStyle = "#111";
+      outCtx.fillStyle = getFgRgb().css;  // CHANGED: use selected foreground color
       setTextQuality(outCtx);
 
       let y = pad;
@@ -2035,7 +2179,6 @@ nanpa #~WI."></textarea>
             continue;
           }
 
-          // NEW: run
           if (el.type === "run") {
             const m = el.m;
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
@@ -2137,7 +2280,8 @@ nanpa #~WI."></textarea>
       }
 
       renderAllLinesToCanvas(outCanvas, linesElements, { fontPx });
-      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px.`);
+      const { hex } = getFgRgb();
+      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px. Color: ${hex}.`);
     }
 
     btnRender.addEventListener("click", async () => {
@@ -2198,13 +2342,21 @@ nanpa #~WI."></textarea>
     window.addEventListener("load", async () => {
       try {
         await ensureFontLoaded();
+
         applyNanpaLinjanModeFromQueryOrStorage();
         applyFontPxFromQueryOrStorage();
         applyDefaultInputFromQuery();
+
+        // NEW: init + wire foreground color controls
+        initFgColorControls();
+        wireFgColorControls();
+
         wireNanpaLinjanModeRadios();
         wireFontSizeSelect();
-
         wireCartoucheDisplayLinks();
+
+        // Ensure preview is correct even if no change event fires
+        updateFgColorPreview();
       } catch (e) {
         console.warn(e);
       }
