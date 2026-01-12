@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Multiline Text → Sitelen Pona Canvas</title>
+  <title>Multiline Text → Sitelen Pona PNG</title>
 
   <style>
     :root {
@@ -185,7 +185,7 @@
 
   <main class="card" id="main" role="main" aria-labelledby="pageTitle">
     <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
-      Toki Pona Multiline text → sitelen pona glyphs
+      Toki Pona Multiline text → sitelen pona glyphs → PNG file
       <span class="tpLine">toki pona sitelen mute-linja tawa sitelen pona lon ilo sitelen</span>
     </h1>
 
@@ -213,7 +213,7 @@
         <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as nanpa-linja-n cartouches.</li>
         <li>Decimal-form numbers like <span class="mono">-5,432.10</span>, <span class="mono">1.2K</span>, or <span class="mono">.06</span> render as nanpa-linja-n cartouches.</li>
         <li>End-of-line full stops are not treated as part of a number (e.g. <span class="mono">06.</span>).</li>
-        <li><strong>Cartouche:</strong> Inside of <span class="mono">[...]</span>, if all words are toki pona words, then they will all use thier own glyphs, otherwise each letter of every word is mapped randomly.</li>
+        <li><strong>Cartouche:</strong> Inside of <span class="mono">[...]</span>, if all words are toki pona words, then they will all use their own glyphs, otherwise each letter of every word is mapped randomly.</li>
         <li><strong>Cartouche:</strong> Outside of <span class="mono">[...]</span>, only decimals, <span class="mono">#~</span> codes, nanpa-linja-n proper names, and nanpa-linja-n number phrases can produce cartouches.</li>
         <li><strong>Long pi:</strong> A long “pi” container can be written as <span class="mono">pi { ... }</span>.  Must have at least two words inside { ... }.  Cartouche inside long pi isn't working properly.</li>
         <li><strong>Middle dot:</strong> The Unicode character U+00B7 &#x2014; '&#x00B7;' is used to display the middle dot glyph.</li>
@@ -231,14 +231,14 @@
           <span class="tpLine">o pana e sitelen toki pona lon linja mute</span>
         </label>
         <textarea id="textIn" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
-          placeholder="Example:
-toki pona li pona.
+          placeholder="mi kama sona e toki pona.
 nanpa -12,340.57.
 nanpa 64.5M.
 nanpa 9+3/4.
 nanpa 007.
 nanpa Newen.
-nanpa #~WI."></textarea>
+nanpa #~WI.
+[ ota kolon ]"></textarea>
       </div>
 
       <div class="btnRow" aria-label="Actions">
@@ -537,8 +537,8 @@ nanpa #~WI."></textarea>
       const s = loadFgRgbFromStorage();
       if (s) { setFgRgb(s.r, s.g, s.b); return; }
 
-      // Default: near-black (matches your previous #111111 feel)
-      setFgRgb(17, 17, 17);
+      // Default: black (matches your previous #000000 feel)
+      setFgRgb(0, 0, 0);
     }
 
     function wireFgColorControls() {
@@ -575,7 +575,7 @@ nanpa #~WI."></textarea>
       if (!Number.isFinite(n)) return null;
       const i = Math.round(n);
       if (FONT_SIZE_ALLOWED.includes(i)) return i;
-      if (i >= 18 && i <= 220) return i;
+      if (i >= 12 && i <= 220) return i;
       return null;
     }
 
