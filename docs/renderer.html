@@ -862,7 +862,7 @@
     }
 
     const TP_UCSUR_MIN = 0xF1900;
-    const TP_UCSUR_MAX = 0xF1988;
+    const TP_UCSUR_MAX = 0xF19A3;//0xF1988;  
 
     // cartouche start/end markers to show in HEX output
     const CARTOUCHE_START_CP = 0xF1990;
@@ -1869,6 +1869,12 @@
       "n": 0xF1986,
       "misikeke": 0xF1987,
       "ku": 0xF1988,
+
+      "epiku": 0xF1983,
+      "kokosila": 0xF1984, "lanpan": 0xF1985, "n": 0xF1986, "misikeke": 0xF1987, "ku": 0xF1988,
+      "pake": 0xF19A0, "apeja": 0xF19A1, "majuna": 0xF19A2, "powe": 0xF19A3,
+      "·": 0xF199C, ":": 0xF199D,
+      "ota": 0xF199C, "kolon": 0xF199D
     };
 
     const UCSUR_CP_TO_WORD = new Map(
@@ -1896,16 +1902,22 @@
       const raw = String(input ?? "").trim();
       if (!raw) return [];
 
-      const parts = raw.split(/\s+/).filter(Boolean);
+      //const parts = raw.split(/\s+/).filter(Boolean);
+      const parts = raw.split(/(\s+|[·:])/).filter(s => s && !/^\s+$/.test(s));
 
       const cps = [];
       for (const p of parts) {
-        const w = p.toLowerCase();
-        const cp = WORD_TO_UCSUR_CP[w];
-        if (cp == null) {
-          throw new Error(`Invalid Toki Pona word "${p}". Only mapped words are allowed.`);
+        const pp = WORD_TO_UCSUR_CP[p];
+        if(pp == null){
+          const w = p.toLowerCase();
+          const cp = WORD_TO_UCSUR_CP[w];
+          if (cp == null) {
+            throw new Error(`Invalid Toki Pona word "${p}". Only mapped words are allowed.`);
+          }
+          cps.push(cp);
+        }else{
+          cps.push(pp);
         }
-        cps.push(cp);
       }
 
       assertAllAllowedTpUcsur(cps);
