@@ -863,6 +863,7 @@ nanpa #~WI.
 
       "o":     0xF1944,
       "ona":   0xF1946,
+      "ota":   0xF199C,
 
       "kulupu":0xF191F,
 
@@ -1045,50 +1046,114 @@ nanpa #~WI.
       "LE":"luka","NU":"utala","ME":"mun","PE":"pipi","JE":"jo"
     };
 
-    function nanpaCapsTokensToTpWords(tokens) {
+    const WORD_FOR_NEGATIVE_SIGN = "ona" //"o" // could use ona
+
+    /**
+     * Convert nanpa-caps tokens into TP words.
+     * Traditional vs Uniform controlled by { mode }:
+     * - Uniform affects ALL occurrences of:
+     *   - esun -> en
+     *   - nasa -> nena
+     *   - e -> en
+     * - Only "nanpa" at start and end remains "nanpa".
+     */
+    function nanpaCapsTokensToTpWords(tokens, { mode = "traditional" } = {}) {
+      if (!tokens || tokens.length === 0) return [];
+
+      const uniform = (mode === "uniform");
       const out = [];
+
+      // Uniform: esun -> en everywhere
+      const E_WORD = uniform ? "en" : "esun";
+
+      // Uniform: standalone e -> en everywhere
+      const E_WORD_FOR_NE_AFTER_START = uniform ? "en" : "e";
+
+      // Uniform: nasa -> nena everywhere
+      const N_WORD = uniform ? "nena" : "nasa";
+
+      // In traditional, NO is context-sensitive: ni/nena; in uniform, NO uses nena anyway
+      const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
+      const N_WORD_FRACTION = "nena";
+
+      // Start/end are always nanpa
+      const N_END_WORD = "nanpa";
+
       let afterStartingNe = false;
 
       for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i];
 
         if (t === "NE") {
-          if (out.length === 0) { out.push("nanpa","esun"); afterStartingNe = true; }
-          else { out.push("nasa","e"); afterStartingNe = false; }
+          if (out.length === 0) {
+            // Start is always "nanpa", but the second word is affected (esun -> en)
+            out.push("nanpa", E_WORD);
+            afterStartingNe = true;
+          } else {
+            // Non-initial NE: (nasa|nena) (e|en)
+            out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
+            afterStartingNe = false;
+          }
           continue;
         }
 
         if (DIGIT_TOKENS.has(t)) {
-          const dw = TOKEN_TO_DIGIT_WORD[t];
-          if (t === "NI" || t === "NA" || t === "NU") out.push("nasa", dw);
-          else out.push(dw, "esun");
           afterStartingNe = false;
+          const digitWord = TOKEN_TO_DIGIT_WORD[t];
+          // These digit tokens historically use "nasa <digitWord>" for NI/NA/NU
+          // Uniform changes "nasa" -> "nena" via N_WORD.
+          if (t === "NI" || t === "NA" || t === "NU") out.push(N_WORD, digitWord);
+          else out.push(digitWord, E_WORD); // Uniform changes esun -> en via E_WORD.
           continue;
         }
 
         if (t === "NO") {
-          const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
-
-          if (nxt === "NE") {
-            out.push("ni","o","nasa","e");
+          // Case A: immediately after starting NE => leading negative sign
+          if (afterStartingNe) {
+            out.push(N_WORD, WORD_FOR_NEGATIVE_SIGN);
             afterStartingNe = false;
-            i += 1;
             continue;
           }
 
-          out.push("ni","o");
+          // Case B: decimal point operator is encoded as NO + NE (caps "NONE")
+          // To make the cartouche visibly show "NONE", render it as:
+          //   Traditional:  ni o nasa e
+          //   Uniform:      nena o nena en
+          const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
+          if (nxt === "NE") {
+            out.push(N_WORD_DECIMAL_POINT, "o", N_WORD, E_WORD_FOR_NE_AFTER_START);
+            afterStartingNe = false;
+            i += 1; // consume the following NE (already rendered)
+            continue;
+          }
+
+          // Fallback (should not normally occur mid-stream)
+          out.push(N_WORD_DECIMAL_POINT, "o");
           afterStartingNe = false;
           continue;
         }
 
-        if (t === "NONO") { out.push("nena","o","nena","o"); afterStartingNe=false; continue; }
-        if (t === "NONONO") { out.push("nasa","o","nasa","o","nasa","o"); afterStartingNe=false; continue; }
 
-        if (t === "KE") { out.push("kulupu","e"); afterStartingNe=false; continue; }
-        if (t === "KEKE") { out.push("kulupu","e","kulupu","e"); afterStartingNe=false; continue; }
-        if (t === "KEKEKE") { out.push("kulupu","e","kulupu","e","kulupu","e"); afterStartingNe=false; continue; }
 
-        if (t === "N") { out.push("nanpa"); afterStartingNe=false; continue; }
+        if (t === "NONO") {
+          out.push("nena","o","nena","o");
+          afterStartingNe = false;
+          continue;
+        }
+
+        if (t === "NONONO") {
+          // Uniform affects nasa -> nena via N_WORD
+          out.push(N_WORD,"o",N_WORD,"o",N_WORD,"o");
+          afterStartingNe = false;
+          continue;
+        }
+
+        // Uniform affects "e" -> "en" via E_WORD_FOR_NE_AFTER_START
+        if (t === "KE") { out.push("kulupu", E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
+        if (t === "KEKE") { out.push("kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
+        if (t === "KEKEKE") { out.push("kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
+
+        if (t === "N") { out.push(N_END_WORD); afterStartingNe=false; continue; }
 
         throw new Error(`Unknown token "${t}"`);
       }
@@ -1101,7 +1166,7 @@ nanpa #~WI.
 
       if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
-      const tpWords = nanpaCapsTokensToTpWords(tokens);
+      const tpWords = nanpaCapsTokensToTpWords(tokens, mode);
 
       const cps = [];
       for (const w of tpWords) {
@@ -1357,7 +1422,7 @@ nanpa #~WI.
         }
 
         if (hasDecimal) {
-          if (intHasThousandsComma) out.push("NO");
+          if (intHasThousandsComma) out.push("NO","NE");
           else out.push("NO","NE");
 
           if (!fracPart) throw new Error(`Missing fraction digits after '.' in "${s}"`);
