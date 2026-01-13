@@ -696,19 +696,66 @@ nanpa #~WI.
       return known;
     }
 
-    async function ensureFontLoaded() {
+    async function ensureFontLoaded(pxOverride) {
       if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
+
+      const px = pxOverride ?? getFontPx() ?? 56;
 
       const sampleTextChar = String.fromCodePoint(0xF196C);
       const sampleCartChar = String.fromCodePoint(0xF1990);
 
       try {
-        await document.fonts.load(`24px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
-        await document.fonts.load(`24px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
+        // If already loaded, avoid extra work
+        const okText = document.fonts.check(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
+        const okCart = document.fonts.check(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
+
+        if (!okText) await document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
+        if (!okCart) await document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
+
         await document.fonts.ready;
       } catch (e) {
         console.warn("[font] load threw error:", e);
       }
+    }
+
+
+    function warmUpCanvasFonts() {
+      const c = document.createElement("canvas");
+      c.width = 2; c.height = 2;
+      const ctx = c.getContext("2d");
+
+      const px = getFontPx(); // use the current selected size
+
+      ctx.textBaseline = "alphabetic";
+
+      ctx.font = `${px}px "${FONT_FAMILY_TEXT}"`;
+      ctx.fillText(String.fromCodePoint(0xF196C), 0, 1);
+
+      ctx.font = `${px}px "${FONT_FAMILY_CARTOUCHE}"`;
+      ctx.fillText(String.fromCodePoint(0xF1990), 0, 1);
+    }
+
+    let DID_WARMUP = false;
+
+    function warmUpCanvasFontsOnce() {
+      if (DID_WARMUP) return;
+      DID_WARMUP = true;
+      warmUpCanvasFonts();
+    }
+
+
+    // NEW: one shared promise so every render waits for the same font-load
+    let FONTS_READY_PROMISE = null;
+
+    function fontsReady() {
+      if (!FONTS_READY_PROMISE) {
+        FONTS_READY_PROMISE = (async () => {
+          await ensureFontLoaded();
+          // Give the browser one frame to apply the loaded font to the canvas engine.
+          await new Promise(requestAnimationFrame);
+        })();
+      }
+      return FONTS_READY_PROMISE;
     }
 
     /* ============================
@@ -2481,7 +2528,10 @@ nanpa #~WI.
     const btnDownload = document.getElementById("btnDownloadPng");
 
     async function renderFromTextarea() {
-      await ensureFontLoaded();
+      // await ensureFontLoaded();
+      await fontsReady();
+      warmUpCanvasFontsOnce();
+
 
       const fontPx = getFontPx();
 
@@ -2564,7 +2614,20 @@ nanpa #~WI.
 
     window.addEventListener("load", async () => {
       try {
+        // Disable render/download until fonts are ready
+        if (btnRender) btnRender.disabled = true;
+        if (btnDownload) btnDownload.disabled = true;
+        announceStatus("Loading fonts…");
+
+        // await ensureFontLoaded();
+
         await ensureFontLoaded();
+        warmUpCanvasFontsOnce();
+
+
+        if (btnRender) btnRender.disabled = false;
+        if (btnDownload) btnDownload.disabled = false;
+
 
         applyNanpaLinjanModeFromQueryOrStorage();
         applyFontPxFromQueryOrStorage();
