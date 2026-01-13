@@ -174,6 +174,13 @@
         url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf")   format("opentype");
       font-display: swap;
     }
+
+    @font-face {
+      font-family: "Patrick-Head-Font";
+      src:
+        url("./fonts/PatrickHand-Regular.ttf")   format("truetype");
+      font-display: swap;
+    }
   </style>
 </head>
 
@@ -218,6 +225,7 @@
         <li><strong>Long pi:</strong> A long “pi” container can be written as <span class="mono">pi { ... }</span>.  Must have at least two words inside { ... }.  Cartouche inside long pi isn't working properly.</li>
         <li><strong>Middle dot:</strong> The Unicode character U+00B7 &#x2014; '&#x00B7;' is used to display the middle dot glyph.</li>
         <li><strong>Punctuation:</strong> Word 'ota' maps to middle dot, and word 'kolon' maps to colon, these are non-standard words and are used for convenience only.</li>
+        <li><strong>Quotation:</strong> Text inside double quotes is rendered exactly as typed, e.g. "Hello World!".</li>
      </ul>
     </div>
 
@@ -407,6 +415,7 @@ nanpa #~WI.
 
     const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
     const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
+    const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
 
     /* ============================
        NEW: Foreground color selection (remember + optional query param)
@@ -1814,15 +1823,68 @@ nanpa #~WI.
 
     function splitLineIntoSegments(line) {
       const s = String(line ?? "");
-      const parts = s.split(/(\[[^\]]*\])/g);
       const out = [];
-      for (const p of parts) {
-        if (!p) continue;
-        if (p.startsWith("[") && p.endsWith("]")) out.push({ kind: "bracket", value: p.slice(1, -1) });
-        else out.push({ kind: "text", value: p });
+
+      // Scan left-to-right, extracting:
+      // - bracket segments: [ ... ]
+      // - quote segments: " ... "  (supports escaping via \")
+      // - text segments: everything else
+      let i = 0;
+
+      function pushTextSegment(txt) {
+        if (txt) out.push({ kind: "text", value: txt });
       }
+
+      while (i < s.length) {
+        const ch = s[i];
+
+        // Bracket segment
+        if (ch === "[") {
+          const j = s.indexOf("]", i + 1);
+          if (j < 0) {
+            // No close bracket => treat rest as normal text
+            pushTextSegment(s.slice(i));
+            break;
+          }
+          pushTextSegment(s.slice(i, i)); // no-op, kept for symmetry
+          out.push({ kind: "bracket", value: s.slice(i + 1, j) });
+          i = j + 1;
+          continue;
+        }
+
+        // Quote segment (supports escaping with backslash)
+        if (ch === '"') {
+          let j = i + 1;
+          let found = false;
+          while (j < s.length) {
+            if (s[j] === '"' && s[j - 1] !== "\\") { found = true; break; }
+            j++;
+          }
+          if (!found) {
+            // No closing quote => treat rest as normal text
+            pushTextSegment(s.slice(i));
+            break;
+          }
+
+          // Anything before the quote is normal text; emit it
+          // (We find it by looking backwards: we need to accumulate from last segment boundary.
+          // Easiest: handle by scanning to next special from current i; so do it below.)
+          // Here, since ch == '"', we just emit the quoted content as a quote segment.
+          out.push({ kind: "quote", value: s.slice(i + 1, j) });
+          i = j + 1;
+          continue;
+        }
+
+        // Normal text: consume until next [ or "
+        let j = i;
+        while (j < s.length && s[j] !== "[" && s[j] !== '"') j++;
+        pushTextSegment(s.slice(i, j));
+        i = j;
+      }
+
       return out;
     }
+
 
     function pushGapIfNeeded(elements, px) {
       if (elements.length === 0) return;
@@ -2053,6 +2115,26 @@ nanpa #~WI.
       }
     }
 
+    function parseQuoteSegmentToElements(quoteContent, elements, { fontPx }) {
+      // Preserve whitespace exactly as typed, but expand tabs to 4 spaces for consistent rendering.
+      // Also supports escaping: \" and \\.
+      const raw = String(quoteContent ?? "");
+
+      // Unescape delimiters without touching spaces/newlines
+      let literal = raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+
+      // Expand tabs to 4 spaces
+      literal = literal.replace(/\t/g, "    ");
+
+      // Do NOT trim or collapse whitespace.
+      if (literal.length === 0) return;
+
+      makeLiteralTextElement(elements, literal, { fontPx, fontFamily: FONT_FAMILY_LITERAL });
+    }
+
+
+
+
     function parseBracketSegmentToElements(bracketContent, elements, { fontPx }) {
       const content = String(bracketContent ?? "").trim();
       if (!content) return;
@@ -2099,18 +2181,63 @@ nanpa #~WI.
 
     function lineToElements(line, { fontPx }) {
       let s = String(line ?? "");
-      s = s.replace(/\.\s*$/, "");
 
       const segs = splitLineIntoSegments(s);
       const elements = [];
 
       for (const seg of segs) {
-        if (seg.kind === "text") parseTextSegmentToElements(seg.value, elements, { fontPx });
-        else parseBracketSegmentToElements(seg.value, elements, { fontPx });
+        if (seg.kind === "text") {
+          parseTextSegmentToElements(seg.value, elements, { fontPx });
+        } else if (seg.kind === "bracket") {
+          parseBracketSegmentToElements(seg.value, elements, { fontPx });
+        } else if (seg.kind === "quote") {
+          parseQuoteSegmentToElements(seg.value, elements, { fontPx });
+        }
       }
+
 
       while (elements.length > 0 && elements[elements.length - 1].type === "gap") elements.pop();
       return elements;
+    }
+
+    function measureTextRun(ctx, text, px, fontFamily) {
+      const chars = String(text ?? "");
+      ctx.font = `${px}px "${fontFamily}"`;
+      setTextQuality(ctx);
+      const m = ctx.measureText(chars);
+
+      // Keep bbox ascent/descent for baseline math, but DO NOT use bbox width for spacing,
+      // because bbox ignores leading/trailing whitespace.
+      const ascent  = (m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8));
+      const descent = (m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2));
+
+      // Use advance width so multiple spaces are preserved in layout.
+      const w = Math.ceil(m.width);
+
+      return {
+        chars,
+        ascent,
+        descent,
+        left: 0,     // do not offset by bbox-left for literal text runs
+        w,
+        h: Math.ceil(ascent + descent),
+        px,
+        fontFamily
+      };
+    }
+
+
+    function makeLiteralTextElement(elements, text, { fontPx, fontFamily }) {
+      const s = String(text ?? "");
+      if (!s) return;
+
+      pushGapIfNeeded(elements, WORD_GAP_PX);
+      elements.push({
+        type: "text",
+        text: s,
+        px: fontPx,
+        fontFamily: fontFamily || FONT_FAMILY_LITERAL
+      });
     }
 
     function measureGlyph(ctx, cp, px, fontFamily) {
@@ -2164,6 +2291,18 @@ nanpa #~WI.
         const measuredEls = [];
 
         for (const el of lineEls) {
+
+          if (el.type === "text") {
+            const fam = el.fontFamily || FONT_FAMILY_LITERAL;
+            const r = measureTextRun(ctx, el.text, el.px ?? fontPx, fam);
+            measuredEls.push({ ...el, m: r });
+            w += r.w;
+
+            if (r.ascent > maxAscent) maxAscent = r.ascent;
+            if (r.descent > maxDescent) maxDescent = r.descent;
+            continue;
+          }
+
           if (el.type === "gap") {
             measuredEls.push(el);
             w += Math.max(0, el.px | 0);
@@ -2235,6 +2374,21 @@ nanpa #~WI.
         const glyphBaseline = y + L.maxAscent;
 
         for (const el of L.measuredEls) {
+
+          if (el.type === "text") {
+            const m = el.m;
+            const fam = el.fontFamily || FONT_FAMILY_LITERAL;
+            outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
+
+            // Draw at the current x; spacing is handled by m.width now.
+            outCtx.fillText(m.chars, x, glyphBaseline);
+
+            x += m.w;
+            continue;
+          }
+
+
+
           if (el.type === "gap") { x += Math.max(0, el.px | 0); continue; }
 
           if (el.type === "glyph") {
@@ -2336,8 +2490,9 @@ nanpa #~WI.
       const linesElements = lines.map(line => lineToElements(line, { fontPx }));
 
       const anyContent = linesElements.some(els =>
-        els.some(e => e.type === "glyph" || e.type === "cartouche" || e.type === "run")
+        els.some(e => e.type === "glyph" || e.type === "cartouche" || e.type === "run" || e.type === "text")
       );
+
       if (!anyContent) {
         outCanvas.width = 1;
         outCanvas.height = 1;
