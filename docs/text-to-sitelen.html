@@ -1166,7 +1166,7 @@ nanpa #~WI.
 
       if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
-      const tpWords = nanpaCapsTokensToTpWords(tokens, mode);
+      const tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
 
       const cps = [];
       for (const w of tpWords) {
