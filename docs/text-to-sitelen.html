@@ -412,6 +412,10 @@ nanpa #~WI.
       announceStatus(s);
       alert(s);
     }
+    function nextFrame() {
+      return new Promise(resolve => requestAnimationFrame(() => resolve()));
+    }
+
 
     const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
     const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
@@ -648,12 +652,20 @@ nanpa #~WI.
       if (!sel) return;
       sel.addEventListener("change", async () => {
         try {
-          setFontPx(sel.value);
+          const px = setFontPx(sel.value);
+
+          // Reset warmup so the next render warms up at the new size
+          DID_WARMUP = false;
+
+          // Ensure font cache is rebuilt for the new size
+          await fontsReadyForPx(px);
+
           await renderFromTextarea();
         } catch (e) {
           showAlertAndAnnounce(e?.message ?? String(e));
         }
       });
+
     }
 
     const WORD_GAP_PX  = 12;
@@ -699,24 +711,47 @@ nanpa #~WI.
     async function ensureFontLoaded(pxOverride) {
       if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
 
-      const px = pxOverride ?? getFontPx() ?? 56;
+      const px = Math.max(8, Number(pxOverride ?? getFontPx() ?? 56));
 
-      const sampleTextChar = String.fromCodePoint(0xF196C);
-      const sampleCartChar = String.fromCodePoint(0xF1990);
+      // Use glyphs that you actually render
+      const sampleTextChar = String.fromCodePoint(0xF196C); // toki
+      const sampleCartChar = String.fromCodePoint(0xF1990); // cartouche start
+      const sampleLiteral  = "Hello";                       // literal font sample
 
       try {
-        // If already loaded, avoid extra work
+        // If already loaded at this size, skip extra work
         const okText = document.fonts.check(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
         const okCart = document.fonts.check(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
+        const okLit  = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral);
 
-        if (!okText) await document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
-        if (!okCart) await document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
+        const loads = [];
+        if (!okText) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar));
+        if (!okCart) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar));
+        if (!okLit)  loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral));
 
+        if (loads.length) await Promise.all(loads);
+
+        // Wait until the FontFaceSet is settled
         await document.fonts.ready;
+
+        // Re-check (Chromium sometimes flips “ready” slightly before canvas sees it)
+        const okText2 = document.fonts.check(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
+        const okCart2 = document.fonts.check(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
+        const okLit2  = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral);
+
+        if (!okText2 || !okCart2 || !okLit2) {
+          await Promise.all([
+            document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar),
+            document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar),
+            document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral),
+          ]);
+          await document.fonts.ready;
+        }
       } catch (e) {
         console.warn("[font] load threw error:", e);
       }
     }
+
 
 
     function warmUpCanvasFonts() {
@@ -746,17 +781,25 @@ nanpa #~WI.
 
     // NEW: one shared promise so every render waits for the same font-load
     let FONTS_READY_PROMISE = null;
+    let FONTS_READY_PX = null;
 
-    function fontsReady() {
-      if (!FONTS_READY_PROMISE) {
+    function fontsReadyForPx(px) {
+      const p = Math.max(8, Number(px ?? getFontPx() ?? 56));
+
+      // If size changes, we must refresh the promise (size matters for first paint).
+      if (!FONTS_READY_PROMISE || FONTS_READY_PX !== p) {
+        FONTS_READY_PX = p;
         FONTS_READY_PROMISE = (async () => {
-          await ensureFontLoaded();
-          // Give the browser one frame to apply the loaded font to the canvas engine.
-          await new Promise(requestAnimationFrame);
+          await ensureFontLoaded(p);
+
+          // Give the browser 1–2 frames to apply the loaded fonts to the canvas text engine
+          await nextFrame();
+          await nextFrame();
         })();
       }
       return FONTS_READY_PROMISE;
     }
+
 
     /* ============================
        Remember Traditional/Uniform + query param
@@ -2528,12 +2571,12 @@ nanpa #~WI.
     const btnDownload = document.getElementById("btnDownloadPng");
 
     async function renderFromTextarea() {
-      // await ensureFontLoaded();
-      await fontsReady();
-      warmUpCanvasFontsOnce();
-
-
       const fontPx = getFontPx();
+
+      await fontsReadyForPx(fontPx);
+
+      // Warm up after fonts are ready at this size
+      warmUpCanvasFontsOnce();
 
       const raw = String(elTextIn.value ?? "");
       const lines = raw.replace(/\r\n/g, "\n").split("\n");
@@ -2619,21 +2662,12 @@ nanpa #~WI.
         if (btnDownload) btnDownload.disabled = true;
         announceStatus("Loading fonts…");
 
-        // await ensureFontLoaded();
-
-        await ensureFontLoaded();
-        warmUpCanvasFontsOnce();
-
-
-        if (btnRender) btnRender.disabled = false;
-        if (btnDownload) btnDownload.disabled = false;
-
-
+        // 1) Apply settings FIRST (so getFontPx() is correct)
         applyNanpaLinjanModeFromQueryOrStorage();
         applyFontPxFromQueryOrStorage();
         applyDefaultInputFromQuery();
 
-        // NEW: init + wire foreground color controls
+        // 2) Init + wire UI controls (some of these also rely on saved/query state)
         initFgColorControls();
         wireFgColorControls();
 
@@ -2643,10 +2677,25 @@ nanpa #~WI.
 
         // Ensure preview is correct even if no change event fires
         updateFgColorPreview();
+
+        // 3) Load fonts for the *selected* size, then warm up canvas at that size
+        await fontsReadyForPx(getFontPx());
+        warmUpCanvasFontsOnce();
+
+        // 4) Enable UI
+        if (btnRender) btnRender.disabled = false;
+        if (btnDownload) btnDownload.disabled = false;
+
+        announceStatus("Fonts loaded. Ready to render.");
       } catch (e) {
         console.warn(e);
+        // If something goes wrong, re-enable so the page isn't stuck
+        if (btnRender) btnRender.disabled = false;
+        if (btnDownload) btnDownload.disabled = false;
+        announceStatus("Font loading failed; rendering may use fallback fonts.");
       }
     });
+
   </script>
 </body>
 </html>
