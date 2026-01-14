@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Multiline Text → Sitelen Pona → PNG download</title>
+  <title>Multiline Text → Sitelen Pona → PNG image file download</title>
 
   <style>
     :root {
@@ -192,7 +192,7 @@
 
   <main class="card" id="main" role="main" aria-labelledby="pageTitle">
     <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
-      Toki Pona Multiline text → sitelen pona glyphs → PNG download
+      Toki Pona Multiline text → sitelen pona glyphs → PNG image file download
       <span class="tpLine">toki pona sitelen mute-linja tawa sitelen pona lon ilo sitelen</span>
     </h1>
 
@@ -213,10 +213,10 @@
     </div>
     
     <div class="help" style="margin-top:10px;">
-      Rules:
+      Notes:
       <ul style="margin:6px 0 0 18px; padding:0;">
         <li>Converts Toki Pona words to sitelen pona glyphs.</li>
-        <li>Unknown words are ignored (except after “nanpa”, where unknown name-tokens are cartouched as letters).</li>
+        <li>The sitelen pona glyphs can downloaded as a png image file.</li>
         <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as nanpa-linja-n cartouches.</li>
         <li>Decimal-form numbers like <span class="mono">-5,432.10</span>, <span class="mono">1.2K</span>, or <span class="mono">.06</span> render as nanpa-linja-n cartouches.</li>
         <li>End-of-line full stops are not treated as part of a number (e.g. <span class="mono">06.</span>).</li>
@@ -226,7 +226,8 @@
         <li><strong>Middle dot:</strong> The Unicode character U+00B7 &#x2014; '&#x00B7;' is used to display the middle dot glyph.</li>
         <li><strong>Punctuation:</strong> Word 'ota' maps to middle dot, and word 'kolon' maps to colon, these are non-standard words and are used for convenience only.</li>
         <li><strong>Quotation:</strong> Text inside double quotes is rendered exactly as typed, e.g. "Hello World!".</li>
-     </ul>
+        <li>Unknown words are ignored.</li>
+      </ul>
     </div>
 
     <div id="srStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -246,7 +247,7 @@ nanpa 9+3/4.
 nanpa 007.
 nanpa Newen.
 nanpa #~WI.
-[ ota kolon ]"></textarea>
+[ ota kolon en ]"></textarea>
       </div>
 
       <div class="btnRow" aria-label="Actions">
@@ -1897,9 +1898,17 @@ nanpa #~WI.
       const l = String(letter ?? "").toLowerCase();
       const arr = LETTER_BUCKETS.get(l);
       if (!arr || arr.length === 0) return null;
-      const word = arr[randInt(arr.length)];
+
+      // Exclude convenience punctuation-words from random output
+      const banned = new Set(["ota", "kolon"]);
+      const filtered = arr.filter(w => !banned.has(w));
+
+      if (filtered.length === 0) return null;
+
+      const word = filtered[randInt(filtered.length)];
       return WORD_TO_UCSUR_CP[word] ?? null;
     }
+
 
     function lettersToRandomGlyphCps(letters) {
       const cps = [];
