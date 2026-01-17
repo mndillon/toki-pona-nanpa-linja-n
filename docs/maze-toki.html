@@ -268,15 +268,18 @@
       background: rgba(255,255,255,0.65);
     }
 
-
     @media (pointer: coarse), (max-width: 520px) {
       .topbar { gap: 6px; padding: 8px 8px; height: 52px; }
 
+      /* Keep your existing mobile button sizing; only shrink Start text below */
       .btn {
         font-size: 13px;
         padding: 6px 8px;
         border-radius: 10px;
       }
+
+      /* Requested: make Start button text smaller, WITHOUT changing button size */
+      #btnNew { font-size: 11px; }
 
       .select {
         font-size: 13px;
@@ -296,10 +299,8 @@
         max-width: 34vw;
       }
 
-      .timerCanvas {
-        width: 150px;
-        height: 32px;
-      }
+      /* Requested: do not show the small timer on mobile */
+      #timerCanvas { display: none !important; }
     }
 
   </style>
@@ -375,9 +376,6 @@
 
   /* ============================================================
      I18N (developer-only toggle)
-     ------------------------------------------------------------
-     Change DEV_LANG to "tp" to show Toki Pona UI labels.
-     This flag is not shown in the UI.
      ============================================================ */
   const DEV_LANG = "tp";// "en"; // "en" | "tp"
 
@@ -488,6 +486,11 @@
     return Math.min(window.innerWidth || 9999, window.innerHeight || 9999) <= 820;
   }
   function isMobileLike() { return isCoarsePointer() || isSmallViewport(); }
+
+  function isMobileTopbarMode() {
+    try { return window.matchMedia && window.matchMedia("(pointer: coarse), (max-width: 520px)").matches; }
+    catch { return false; }
+  }
 
   const MOBILE_TUNING = {
     forceMazeSize: "small",
@@ -1012,6 +1015,10 @@
   }
 
   function renderTopTimerCartouche(totalSeconds) {
+    // Mobile: top timer is hidden by CSS, so skip drawing it.
+    // Desktop/tablet: keep full timer, including "tenpo nanpa" prefix.
+    if (isMobileTopbarMode()) return;
+
     const targetCssW = 170;
     const targetCssH = 36;
     const dpr = window.devicePixelRatio || 1;
@@ -2246,7 +2253,7 @@
   }
 
   /* =========================
-     MAIN LOOP
+     MAIN LOOP (RESTORED)
      ========================= */
   function tick(ts) {
     const dt = Math.min(0.05, (ts - lastFrameTs) / 1000);
@@ -2413,7 +2420,6 @@
   }
 
   window.addEventListener("load", async () => {
-    // language-aware initial status
     setStatus(t("status_loading"));
 
     if (isMobileLike()) {
@@ -2435,19 +2441,16 @@
     visitedDotsChk.addEventListener("change", applyVisitedDotsFromUI);
     setVisitedControlsEnabled(true);
 
-    // Persist default ON the very first time (when no value exists yet)
     try {
       if (localStorage.getItem(LS_KEYS.visitedDots) == null) {
         saveVisitedDots(true);
       }
     } catch {}
 
-
     bindDpad();
 
     try { await ensureFontsLoaded(); } catch {}
 
-    // Apply all translated labels (buttons, modal, footer, option text)
     applyUiText();
 
     renderTopTimerCartouche(0);
