@@ -455,6 +455,8 @@
     "luka": 0xF192D, "utala": 0xF1971, "mun": 0xF193A, "pipi": 0xF1951, "jo": 0xF1913,
 
     "en": 0xF190A,
+    "tenpo": 0xF196B,
+
     "ona": 0xF1946,
     "kolon": 0xF199D
   };
@@ -743,7 +745,7 @@
 
     const inner = [];
     for (const ch of mm2) inner.push(...digitInner(ch));
-    inner.push(WORD_TO_UCSUR_CP["kolon"]);
+    inner.push( WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], WORD_TO_UCSUR_CP["kolon"], WORD_TO_UCSUR_CP["en"]);
     for (const ch of ss2) inner.push(...digitInner(ch));
 
     return [cpNanpa, cpEn, ...inner, cpNanpa];
@@ -816,6 +818,36 @@
     draw();
   });
 
+  function drawPrefixGlyphsLeftOfBox(ctx, boxX, centerY, fontPx, cps, gapPx = 8, interGlyphGapPx = 4) {
+    const chars = cps.map(cp => String.fromCodePoint(cp));
+
+    ctx.save();
+    ctx.font = `${fontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#111";
+
+    // Measure total width
+    let totalW = 0;
+    const widths = [];
+    for (const ch of chars) {
+      const w = ctx.measureText(ch).width;
+      widths.push(w);
+      totalW += w;
+    }
+    totalW += interGlyphGapPx * Math.max(0, chars.length - 1);
+
+    // Draw so that the prefix ends gapPx before the box
+    let x = boxX - gapPx - totalW;
+    for (let i = 0; i < chars.length; i++) {
+      ctx.fillText(chars[i], x, centerY);
+      x += widths[i] + interGlyphGapPx;
+    }
+
+    ctx.restore();
+  }
+
+
   function renderTopTimerCartouche(totalSeconds) {
     const targetCssW = 170;
     const targetCssH = 36;
@@ -840,15 +872,49 @@
       { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
     );
 
-    const scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
+    // --- NEW: reserve space for the left prefix (tenpo + nanpa) ---
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]];
+    const gapPx = 8;
+
+    // Pass 1 scale (no reserve) to estimate prefix width at final size
+    let scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
+    let prefixFontPx = Math.max(10, CFG.timerLargePx * scale);
+
+    timerCtx.save();
+    timerCtx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    const p1 = timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width;
+    const p2 = timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width;
+    let prefixW = p1 + 4 + p2;
+    timerCtx.restore();
+
+    // Recompute scale with reserved width for prefix
+    const availWForCartouche = Math.max(40, targetCssW - prefixW - gapPx);
+    scale = Math.min(availWForCartouche / timerOffscreen.width, targetCssH / timerOffscreen.height);
+
+    // Recompute prefix width at updated scale (one more pass is sufficient)
+    prefixFontPx = Math.max(10, CFG.timerLargePx * scale);
+
+    timerCtx.save();
+    timerCtx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    const q1 = timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width;
+    const q2 = timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width;
+    prefixW = q1 + 4 + q2;
+    timerCtx.restore();
+
     const drawW = Math.floor(timerOffscreen.width * scale);
     const drawH = Math.floor(timerOffscreen.height * scale);
 
+    // Right-align the cartouche while keeping prefix room
     const x = Math.floor(targetCssW - drawW);
     const y = Math.floor((targetCssH - drawH) / 2);
 
+    // Draw prefix to the left of the cartouche, vertically centered
+    drawPrefixGlyphsLeftOfBox(timerCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
+
+    // Draw cartouche
     timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
   }
+
 
   let timerSeconds = 0;
   let timerHandle = null;
@@ -1742,6 +1808,7 @@
       { padding: 18, border: 3, cornerRadius: 18, letterGap: 1 }
     );
 
+    // Cartouche scale constraints
     const maxW = mazeRect.w * 0.82;
     const maxH = mazeRect.h * 0.28;
     const scale = Math.min(maxW / finishOffscreen.width, maxH / finishOffscreen.height, 1);
@@ -1749,34 +1816,70 @@
     const drawW = Math.floor(finishOffscreen.width * scale);
     const drawH = Math.floor(finishOffscreen.height * scale);
 
-    const x = Math.floor(mazeRect.x + (mazeRect.w - drawW) / 2);
+    // Prefix glyphs: tenpo + nanpa (outside the cartouche)
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]];
+    const prefixFontPx = Math.max(14, largePx * scale);
+
+    // Measure prefix width at the actual draw size
+    ctx.save();
+    ctx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    const chTenpo = String.fromCodePoint(prefixCps[0]);
+    const chNanpa = String.fromCodePoint(prefixCps[1]);
+    const wTenpo = ctx.measureText(chTenpo).width;
+    const wNanpa = ctx.measureText(chNanpa).width;
+    ctx.restore();
+
+    const interGlyphGap = 6;   // between tenpo and nanpa
+    const prefixGapToCart = 14; // between prefix and cartouche
+
+    const prefixW = wTenpo + interGlyphGap + wNanpa;
+    const groupW = prefixW + prefixGapToCart + drawW; // prefix + gap + cartouche
+
+    // Center the entire group horizontally within the maze area
+    const groupX = Math.floor(mazeRect.x + (mazeRect.w - groupW) / 2);
+    const cartX  = groupX + prefixW + prefixGapToCart;
+
+    // Vertically center using the cartouche height
     const y = Math.floor(mazeRect.y + (mazeRect.h - drawH) / 2);
+    const centerY = Math.floor(y + drawH / 2);
 
-    // Optional: keep a subtle dim behind everything for readability
-    // ctx.fillStyle = "rgba(0,0,0,0.18)";
-    // ctx.fillRect(mazeRect.x, mazeRect.y, mazeRect.w, mazeRect.h);
-
-    // NEW: solid rounded panel behind the cartouche
+    // Background panel covers prefix + cartouche together
     const pad = isMobileLike() ? 8 : 14;
 
-    const panelX = x - pad;
+    const panelX = groupX - pad;
     const panelY = y - pad;
-    const panelW = drawW + pad * 2;
+    const panelW = groupW + pad * 2;
     const panelH = drawH + pad * 2;
 
-    // Fill
-    ctx.fillStyle = "#F3DFC0"; // matches page background; change if you want white
+    // Panel fill
+    ctx.fillStyle = "#F3DFC0";
     drawRoundedRect(ctx, panelX, panelY, panelW, panelH, 18);
     ctx.fill();
 
-    // Border
+    // Panel border
     ctx.lineWidth = 2;
     ctx.strokeStyle = "rgba(0,0,0,0.28)";
     ctx.stroke();
 
-    // Draw the cartouche on top
-    ctx.drawImage(finishOffscreen, x, y, drawW, drawH);
+    // Draw prefix glyphs inside the panel area (left side), centered vertically
+    ctx.save();
+    ctx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#111";
+
+    let px = groupX;
+    ctx.fillText(chTenpo, px, centerY);
+    px += wTenpo + interGlyphGap;
+    ctx.fillText(chNanpa, px, centerY);
+
+    ctx.restore();
+
+    // Draw the cartouche to the right of the prefix
+    ctx.drawImage(finishOffscreen, cartX, y, drawW, drawH);
   }
+
+
 
 
   function draw() {
