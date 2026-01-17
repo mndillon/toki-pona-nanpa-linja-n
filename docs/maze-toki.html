@@ -153,7 +153,6 @@
       white-space: nowrap;
     }
 
-    /* UPDATED: leave space for footer below the maze */
     .wrap {
       height: calc(100% - var(--topbar-h));
       position: relative;
@@ -163,18 +162,18 @@
     }
 
     .gameArea {
-        position: relative;   /* IMPORTANT: overlay will now cover only the game area */
-        flex: 1 1 auto;
-        min-height: 0;
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
     #c {
-        width: 100%;
-        height: 100%;
-        display: block;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
     }
 
-    /* keep existing defaults for other canvases */
     canvas {
       width: 100%;
       height: 100%;
@@ -219,8 +218,6 @@
 
     .mazeHidden #c { visibility: hidden; }
 
-
-    /* NEW: footer / disclaimer under the maze */
     .footer {
       flex: 0 0 auto;
       border-top: 1px solid var(--panel-border);
@@ -242,11 +239,64 @@
       align-items: baseline;
       justify-content: space-between;
     }
-    .footerLeft {
-      min-width: 240px;
+    .footerLeft { min-width: 240px; }
+    .footerRight { white-space: nowrap; }
+
+    /* ============================================================
+       MOBILE D-PAD (phones / coarse pointers only)
+       ============================================================ */
+    .dpad {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      z-index: 6; /* under modal overlay (10), above canvas */
+      display: none;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none; /* stop browser gestures on the pad itself */
     }
-    .footerRight {
-      white-space: nowrap;
+
+    /* Only show on coarse pointers (touch) */
+    @media (pointer: coarse) {
+      .dpad { display: grid; }
+    }
+
+    .dpad {
+      grid-template-columns: 56px 56px 56px;
+      grid-template-rows: 56px 56px 56px;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.30);
+      border: 1px solid rgba(0,0,0,0.12);
+      backdrop-filter: blur(6px);
+    }
+
+    .dpadBtn {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      border: 1px solid rgba(0,0,0,0.18);
+      background: rgba(255,255,255,0.55);
+      color: rgba(0,0,0,0.85);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-weight: 900;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .dpadBtn:active,
+    .dpadBtn.pressed {
+      background: rgba(255,255,255,0.80);
+      border-color: rgba(0,0,0,0.28);
+    }
+
+    .dpadBtn.empty {
+      visibility: hidden;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -277,32 +327,45 @@
   <div id="wrap" class="wrap">
 
     <div id="gameArea" class="gameArea">
-        <canvas id="c"></canvas>
+      <canvas id="c"></canvas>
 
-        <div id="overlay" class="overlay" role="dialog" aria-modal="true">
-            <div class="modal">
-            <h2>Quit current game?</h2>
-            <p>The timer will stop. If you quit, your current progress will be lost.</p>
-            <div class="row">
-                <button id="btnCancelQuit" class="btn">Cancel</button>
-                <button id="btnConfirmQuit" class="btn">Quit</button>
-            </div>
-            </div>
+      <!-- NEW: D-pad (mobile only via CSS @media pointer: coarse) -->
+      <div id="dpad" class="dpad" aria-label="D-pad">
+        <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
+        <button class="dpadBtn" data-dir="up" aria-label="Up">▲</button>
+        <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
+
+        <button class="dpadBtn" data-dir="left" aria-label="Left">◀</button>
+        <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
+        <button class="dpadBtn" data-dir="right" aria-label="Right">▶</button>
+
+        <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
+        <button class="dpadBtn" data-dir="down" aria-label="Down">▼</button>
+        <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
+      </div>
+
+      <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+        <div class="modal">
+          <h2>Quit current game?</h2>
+          <p>The timer will stop. If you quit, your current progress will be lost.</p>
+          <div class="row">
+            <button id="btnCancelQuit" class="btn">Cancel</button>
+            <button id="btnConfirmQuit" class="btn">Quit</button>
+          </div>
         </div>
+      </div>
     </div>
 
     <footer class="footer" aria-label="Disclaimer">
-        <div class="footerRow">
-            <div class="footerLeft">
-            <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
-            </div>
-            <div class="footerRight">
-            <a href="./index.html">Back to index</a>
-            </div>
+      <div class="footerRow">
+        <div class="footerLeft">
+          <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
         </div>
+        <div class="footerRight">
+          <a href="./index.html">Back to index</a>
+        </div>
+      </div>
     </footer>
-
-
   </div>
 
 <script>
@@ -313,9 +376,6 @@
      VISUAL TUNING (CHANGE HERE)
      ========================= */
   const VISITED_DOT_RGBA = "rgba(0,0,0,0.24)";
-
-  // Dead-end shading (dark gray but not overwhelming)
-  // Make darker if needed: try 0.22–0.28
   const DEAD_CELL_RGBA = "rgba(0,0,0,0.18)";
 
   /* ============================================================
@@ -368,7 +428,7 @@
     sideWidth: 200,
     collectWidth: 200,
 
-    glyphFontFamily: `"linja pona","sitelen pona","linja sike", system-ui, sans-serif`,
+    glyphFontFamily: `"TP-Cartouche-Font", system-ui, sans-serif`,
 
     finishLargePx: 140,
     finishSmallPx: 40,
@@ -388,14 +448,6 @@
     timerCssH: 36,
 
     keyMoveSpeed: 220,
-
-    tokiPonaWords: [
-      "jan","pona","toki","suno","mun","telo","soweli","kili","kala","waso",
-      "ma","tawa","lon","pali","lukin","kute","pilin","moku","ilo","sona",
-      "lape","suli","lili","ike","wile","awen","open","pini","seme","ni",
-      "ona","mi","sina","ijo","nasin","kama","tan","kepeken","poka","insa",
-      "sin","ante","mute","ali","namako","sama","weka","jo"
-    ]
   };
 
   /* =========================
@@ -413,8 +465,17 @@
     "en":   0xF190A,
     "ona":  0xF1946,
     "kolon": 0xF199D
-
   };
+
+  const TOKEN_GLYPH_WORDS = [
+    "ijo","wan","tu","seli","awen","luka","utala","mun","pipi","jo",
+    "ona","nasa","esun","kulupu","ni","nena","o","e","nanpa","en"
+  ];
+
+  function tokenWordToCodepoint(w) {
+    const cp = WORD_TO_UCSUR_CP[String(w).toLowerCase()];
+    return (typeof cp === "number") ? cp : null;
+  }
 
   function getSmallCodepointsSet() {
     return new Set([
@@ -702,7 +763,6 @@
     if (!document.fonts || !document.fonts.load || !document.fonts.ready) return;
 
     await document.fonts.load(`24px "PatrickHand"`, "Time");
-
     const sampleChar = String.fromCodePoint(0xF190B);
     await document.fonts.load(`24px "${CARTOUCHE_FONT_FAMILY}"`, sampleChar);
 
@@ -728,9 +788,10 @@
   const timerCtx = timerCanvas.getContext("2d");
 
   const mazeSizeSel = document.getElementById("mazeSize");
-
   const visitedWrap = document.getElementById("visitedWrap");
   const visitedDotsChk = document.getElementById("visitedDots");
+
+  const dpadEl = document.getElementById("dpad");
 
   const finishCanvas = document.createElement("canvas");
   let finishCartoucheReady = false;
@@ -773,8 +834,8 @@
   });
 
   function renderTopTimerCartouche(totalSeconds) {
-    const targetCssW = CFG.timerCssW;
-    const targetCssH = CFG.timerCssH;
+    const targetCssW = 170;
+    const targetCssH = 36;
     const dpr = window.devicePixelRatio || 1;
 
     timerCanvas.style.width = `${targetCssW}px`;
@@ -796,11 +857,7 @@
       { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
     );
 
-    const scale = Math.min(
-      targetCssW / timerOffscreen.width,
-      targetCssH / timerOffscreen.height
-    );
-
+    const scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
     const drawW = Math.floor(timerOffscreen.width * scale);
     const drawH = Math.floor(timerOffscreen.height * scale);
 
@@ -816,8 +873,8 @@
   const pointer = { x: 0, y: 0, down: false, id: null };
 
   let viewport = { w: 0, h: 0 };
-  let side = { x: 0, y: 0, w: CFG.sideWidth, h: 0 };
-  let collect = { x: 0, y: 0, w: CFG.collectWidth, h: 0 };
+  let side = { x: 0, y: 0, w: 200, h: 0 };
+  let collect = { x: 0, y: 0, w: 200, h: 0 };
   let mazeRect = { x: 0, y: 0, w: 0, h: 0 };
 
   let maze = null;
@@ -832,14 +889,11 @@
 
   const runtime = { cell: CFG.cellSize };
 
-  // Visited dots + dead-end shading state (per maze)
   let visitedDotsEnabled = false;
-  let visitedCells = new Set(); // dots: keys like "cx,cy"
-  let seenCells = new Set();    // cells entered at least once: keys like "cx,cy"
-  let deadCells = new Set();    // fully explored subtree cells (non-trunk): keys like "cx,cy"
-
-  // trunk (main path) cells from start to end — must never be shaded dark
-  let trunkCells = new Set();   // keys like "cx,cy"
+  let visitedCells = new Set();
+  let seenCells = new Set();
+  let deadCells = new Set();
+  let trunkCells = new Set();
 
   function setVisitedControlsEnabled(enabled) {
     visitedDotsChk.disabled = !enabled;
@@ -852,13 +906,8 @@
     deadCells.clear();
   }
 
-  function cellKey(cx, cy) {
-    return `${cx},${cy}`;
-  }
-
-  function clampInt(v, min, max) {
-    return Math.max(min, Math.min(max, v));
-  }
+  function cellKey(cx, cy) { return `${cx},${cy}`; }
+  function clampInt(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
   function tokenCellFromPosition(x, y) {
     const cell = runtime.cell;
@@ -867,24 +916,12 @@
     return { cx, cy };
   }
 
-  function markCellVisited(cx, cy) {
-    visitedCells.add(cellKey(cx, cy));
-  }
-
-  function markCellSeen(cx, cy) {
-    seenCells.add(cellKey(cx, cy));
-  }
+  function markCellVisited(cx, cy) { visitedCells.add(cellKey(cx, cy)); }
+  function markCellSeen(cx, cy) { seenCells.add(cellKey(cx, cy)); }
 
   function markComponentDead(componentKeys) {
-    // Never add trunk cells to deadCells
-    for (const k of componentKeys) {
-      if (!trunkCells.has(k)) deadCells.add(k);
-    }
+    for (const k of componentKeys) if (!trunkCells.has(k)) deadCells.add(k);
   }
-
-  /* ============================================================
-     TREE / SUBTREE + TRUNK (MAIN PATH) SUPPORT
-     ============================================================ */
 
   function neighborsOf(cx, cy) {
     if (!maze) return [];
@@ -901,13 +938,12 @@
     return neighborsOf(cx, cy).length;
   }
 
-  // Compute the unique trunk path between start and end in a perfect maze (tree).
   function computeTrunkPathSet(start, end) {
     const startK = cellKey(start.cx, start.cy);
     const endK = cellKey(end.cx, end.cy);
 
     const q = [start];
-    const parent = new Map(); // childKey -> parentKey
+    const parent = new Map();
     parent.set(startK, null);
 
     while (q.length) {
@@ -924,7 +960,6 @@
       }
     }
 
-    // Reconstruct path end->start
     const trunk = new Set();
     if (!parent.has(endK)) return trunk;
 
@@ -936,8 +971,6 @@
     return trunk;
   }
 
-  // Return the connected component on the "start side" of edge (start <-> blocked)
-  // by BFS from `start`, forbidding traversal from start into blocked.
   function componentBehindEdge(start, blocked) {
     const startK = cellKey(start.cx, start.cy);
     const blockedK = cellKey(blocked.cx, blocked.cy);
@@ -948,14 +981,9 @@
 
     while (q.length) {
       const cur = q.shift();
-      const ns = neighborsOf(cur.cx, cur.cy);
-
-      for (const nb of ns) {
+      for (const nb of neighborsOf(cur.cx, cur.cy)) {
         const nbK = cellKey(nb.cx, nb.cy);
-
-        // Block exactly the edge that connects start -> blocked.
         if (cellKey(cur.cx, cur.cy) === startK && nbK === blockedK) continue;
-
         if (!seenLocal.has(nbK)) {
           seenLocal.add(nbK);
           keys.push(nbK);
@@ -966,38 +994,27 @@
     return keys;
   }
 
-  // If we just moved prev -> cur and cur is a fork, evaluate the component behind us.
-  // Mark the whole section with NO gaps, but never mark trunk cells dark.
   function tryMarkDeadSubtreeOnForkReturn(prevCell, curCell) {
     if (!visitedDotsEnabled) return;
     if (!maze) return;
-
-    // Only trigger when arriving into a fork (degree >= 3)
     if (degreeOf(curCell.cx, curCell.cy) < 3) return;
 
     const compKeysAll = componentBehindEdge(prevCell, curCell);
-
-    // Section-to-mark = component minus trunk (main path)
     const compKeys = compKeysAll.filter(k => !trunkCells.has(k));
     if (compKeys.length === 0) return;
 
-    // If already fully dead, skip
     let alreadyDead = true;
     for (const k of compKeys) {
       if (!deadCells.has(k)) { alreadyDead = false; break; }
     }
     if (alreadyDead) return;
 
-    // Only mark when every cell in the (non-trunk) section has been entered at least once
-    for (const k of compKeys) {
-      if (!seenCells.has(k)) return;
-    }
-
+    for (const k of compKeys) if (!seenCells.has(k)) return;
     markComponentDead(compKeys);
   }
 
   /* =========================
-     KEYBOARD MOVE
+     INPUT SOURCES: keyboard + D-pad
      ========================= */
   const keysDown = new Set();
 
@@ -1027,18 +1044,93 @@
     if (e.key === "Shift") keysDown.delete("Shift");
   });
 
+  // NEW: D-pad state (mobile)
+  const dpadState = { up: false, down: false, left: false, right: false };
+
+  function isCoarsePointer() {
+    try {
+      return window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    } catch {
+      return false;
+    }
+  }
+
+  // NEW: D-pad wiring (pointer events, supports press-and-hold)
+  function setDpad(dir, isDown) {
+    if (!(dir in dpadState)) return;
+    dpadState[dir] = isDown;
+
+    // visual pressed state
+    const btn = dpadEl && dpadEl.querySelector(`.dpadBtn[data-dir="${dir}"]`);
+    if (btn) btn.classList.toggle("pressed", !!isDown);
+  }
+
+  function clearDpadAll() {
+    setDpad("up", false);
+    setDpad("down", false);
+    setDpad("left", false);
+    setDpad("right", false);
+  }
+
+  function bindDpad() {
+    if (!dpadEl) return;
+    if (!isCoarsePointer()) return; // mobile-only behavior
+
+    // Prevent pad interaction from triggering canvas drag/pull.
+    const stopAll = (e) => { e.preventDefault(); e.stopPropagation(); };
+
+    dpadEl.addEventListener("pointerdown", stopAll, { passive: false });
+    dpadEl.addEventListener("pointermove", stopAll, { passive: false });
+    dpadEl.addEventListener("pointerup", stopAll, { passive: false });
+    dpadEl.addEventListener("pointercancel", stopAll, { passive: false });
+
+    const buttons = dpadEl.querySelectorAll(".dpadBtn[data-dir]");
+    buttons.forEach((btn) => {
+      btn.addEventListener("pointerdown", (e) => {
+        if (state !== GameState.running) return;
+        stopAll(e);
+        btn.setPointerCapture(e.pointerId);
+        setDpad(btn.dataset.dir, true);
+      }, { passive: false });
+
+      btn.addEventListener("pointerup", (e) => {
+        stopAll(e);
+        setDpad(btn.dataset.dir, false);
+      }, { passive: false });
+
+      btn.addEventListener("pointercancel", (e) => {
+        stopAll(e);
+        setDpad(btn.dataset.dir, false);
+      }, { passive: false });
+
+      // If pointer leaves the button while still down, release.
+      btn.addEventListener("pointerleave", (e) => {
+        // Only release if the pointer is down on that button.
+        // Pointer Events do not expose "buttons" reliably on mobile; safe to just release.
+        setDpad(btn.dataset.dir, false);
+      });
+    });
+  }
+
   function keyboardVector() {
     let dx = 0, dy = 0;
 
+    // Keyboard
     const left  = keysDown.has("ArrowLeft")  || keysDown.has("a") || keysDown.has("A");
     const right = keysDown.has("ArrowRight") || keysDown.has("d") || keysDown.has("D");
     const up    = keysDown.has("ArrowUp")    || keysDown.has("w") || keysDown.has("W");
     const down  = keysDown.has("ArrowDown")  || keysDown.has("s") || keysDown.has("S");
 
-    if (left)  dx -= 1;
-    if (right) dx += 1;
-    if (up)    dy -= 1;
-    if (down)  dy += 1;
+    // D-pad
+    const dL = dpadState.left;
+    const dR = dpadState.right;
+    const dU = dpadState.up;
+    const dD = dpadState.down;
+
+    if (left || dL)  dx -= 1;
+    if (right || dR) dx += 1;
+    if (up || dU)    dy -= 1;
+    if (down || dD)  dy += 1;
 
     const len = Math.hypot(dx, dy) || 1;
     return { ux: dx / len, uy: dy / len, active: (dx !== 0 || dy !== 0) };
@@ -1083,9 +1175,7 @@
     while (stack.length) {
       const cur = stack[stack.length - 1];
       const ns = neighbors(cur.x, cur.y).filter(n => !cells[n.y][n.x].visited);
-
       if (ns.length === 0) { stack.pop(); continue; }
-
       const pick = ns[Math.floor(Math.random() * ns.length)];
       carveBetween(cur.x, cur.y, pick.x, pick.y, pick.dir);
       cells[pick.y][pick.x].visited = true;
@@ -1131,10 +1221,7 @@
         startCell = { cx: sx, cy: sy };
         endCell = { cx: ex, cy: ey };
         buildWallRects();
-
-        // compute trunk path for this maze
         trunkCells = computeTrunkPathSet(startCell, endCell);
-
         return;
       }
     }
@@ -1145,8 +1232,6 @@
     maze.cells[startCell.cy][startCell.cx].w = false;
     maze.cells[endCell.cy][endCell.cx].e = false;
     buildWallRects();
-
-    // compute trunk path for this maze
     trunkCells = computeTrunkPathSet(startCell, endCell);
   }
 
@@ -1158,26 +1243,20 @@
     viewport.w = rect.width;
     viewport.h = rect.height;
 
-    side.x = 0; side.y = 0; side.w = CFG.sideWidth; side.h = viewport.h;
-    collect.w = CFG.collectWidth; collect.h = viewport.h;
-    collect.x = Math.max(side.w, viewport.w - collect.w);
-    collect.y = 0;
+    side = { x: 0, y: 0, w: 200, h: viewport.h };
+    collect = { x: Math.max(200, viewport.w - 200), y: 0, w: 200, h: viewport.h };
 
     const pad = 14;
     const availW = Math.max(50, viewport.w - side.w - collect.w - pad * 2);
     const availH = Math.max(50, viewport.h - pad * 2);
 
     const fitCell = Math.floor(Math.min(availW / CFG.mazeCols, availH / CFG.mazeRows));
-    const cell = Math.max(16, Math.min(CFG.cellSize, fitCell));
-    runtime.cell = cell;
+    runtime.cell = Math.max(16, Math.min(CFG.cellSize, fitCell));
 
-    const mazeW = cell * CFG.mazeCols;
-    const mazeH = cell * CFG.mazeRows;
-
-    mazeRect.w = mazeW;
-    mazeRect.h = mazeH;
-    mazeRect.x = side.w + Math.floor((viewport.w - side.w - collect.w - mazeW) / 2);
-    mazeRect.y = Math.floor((viewport.h - mazeH) / 2);
+    mazeRect.w = runtime.cell * CFG.mazeCols;
+    mazeRect.h = runtime.cell * CFG.mazeRows;
+    mazeRect.x = side.w + Math.floor((viewport.w - side.w - collect.w - mazeRect.w) / 2);
+    mazeRect.y = Math.floor((viewport.h - mazeRect.h) / 2);
 
     positionTokensInSidebar();
     positionDoneTokensInCollector();
@@ -1212,25 +1291,32 @@
   /* =========================
      TOKENS
      ========================= */
-  function pickRandomWords(n) {
-    const src = CFG.tokiPonaWords.slice();
-    for (let i = src.length - 1; i > 0; i--) {
+  function pickRandomTokenGlyphs(n) {
+    const pool = TOKEN_GLYPH_WORDS
+      .map(w => ({ word: w, cp: tokenWordToCodepoint(w) }))
+      .filter(x => x.cp != null);
+
+    if (pool.length < n) throw new Error(`Token glyph pool too small. Need ${n}, have ${pool.length}.`);
+
+    for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [src[i], src[j]] = [src[j], src[i]];
+      [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    return src.slice(0, n);
+    return pool.slice(0, n);
   }
 
   function createTokens() {
-    const words = pickRandomWords(CFG.tokenCount);
-    tokens = words.map((w) => ({
-      word: w,
+    const picks = pickRandomTokenGlyphs(CFG.tokenCount);
+    tokens = picks.map((p) => ({
+      word: p.word,
+      cp: p.cp,
       x: 0, y: 0,
       size: CFG.glyphSize,
       done: false,
       inMaze: false,
       lastCell: null,
     }));
+
     activeTokenIndex = -1;
     positionTokensInSidebar();
     positionDoneTokensInCollector();
@@ -1291,6 +1377,7 @@
     renderTopTimerCartouche(timerSeconds);
     btnQuit.disabled = true;
     syncMazeSizeUiLock();
+    clearDpadAll();
   }
 
   function showQuitModal() {
@@ -1299,6 +1386,7 @@
     syncMazeSizeUiLock();
     overlay.classList.add("show");
     wrap.classList.add("mazeHidden");
+    clearDpadAll();
   }
 
   function hideQuitModal(resume) {
@@ -1323,10 +1411,8 @@
   function collidesWithWalls(x, y, size) {
     const left = x - size/2;
     const top = y - size/2;
-    const w = size;
-    const h = size;
     for (const wr of wallRects) {
-      if (rectsOverlap(left, top, w, h, wr.x, wr.y, wr.w, wr.h)) return true;
+      if (rectsOverlap(left, top, size, size, wr.x, wr.y, wr.w, wr.h)) return true;
     }
     return false;
   }
@@ -1471,43 +1557,28 @@
   function drawTokens() {
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-
-    ctx.font = `${Math.max(14, CFG.glyphSize)}px ${CFG.glyphFontFamily}`;
+    ctx.font = `${Math.max(14, CFG.glyphSize)}px "${CARTOUCHE_FONT_FAMILY}"`;
 
     for (const tok of tokens) {
-      const label = tok.word;
+      if (!tok || tok.cp == null) continue;
+
+      const ch = String.fromCodePoint(tok.cp);
 
       if (!tok.inMaze) {
         ctx.fillStyle = "rgba(0,0,0,0.06)";
         ctx.fillRect(tok.x - tok.size/2 - 8, tok.y - tok.size/2 - 8, tok.size + 16, tok.size + 16);
       }
 
-      const metrics = ctx.measureText(label);
+      const metrics = ctx.measureText(ch);
       const x = tok.x - metrics.width / 2;
 
       ctx.strokeStyle = "rgba(0,0,0,0.35)";
       ctx.lineWidth = 1;
-      ctx.strokeText(label, x, tok.y);
+      ctx.strokeText(ch, x, tok.y);
 
       ctx.fillStyle = "#000";
-      ctx.fillText(label, x, tok.y);
+      ctx.fillText(ch, x, tok.y);
     }
-  }
-
-  function drawFinishTimeCartouche() {
-    if (state !== GameState.finished) return;
-    if (!finishCartoucheReady) return;
-
-    const w = finishCanvas.width;
-    const h = finishCanvas.height;
-
-    const x = Math.floor(mazeRect.x + (mazeRect.w - w) / 2);
-    const y = Math.floor(mazeRect.y + (mazeRect.h - h) / 2);
-
-    ctx.fillStyle = "#F3DFC0";
-    ctx.fillRect(x - 14, y - 14, w + 28, h + 28);
-
-    ctx.drawImage(finishCanvas, x, y);
   }
 
   function draw() {
@@ -1518,7 +1589,6 @@
     drawPanelBackground();
     if (state !== GameState.idle) drawMaze();
     drawTokens();
-    drawFinishTimeCartouche();
   }
 
   /* =========================
@@ -1535,14 +1605,13 @@
     renderTopTimerCartouche(timerSeconds);
 
     finishCartoucheReady = false;
-
     clearVisitedCells();
 
     generateSolvableMaze();
     createTokens();
     layout();
 
-    setStatus("Drag a glyph from the left into the maze entrance. Use Arrow keys/WASD inside the maze.");
+    setStatus("Drag a glyph from the left into the maze entrance. Use Arrow keys/WASD or the D-pad on mobile.");
     startTimer();
   }
 
@@ -1551,24 +1620,13 @@
     stopTimer();
     syncMazeSizeUiLock();
     btnQuit.disabled = true;
-
     setVisitedControlsEnabled(true);
-
-    const glyphs = buildTimeCartoucheGlyphs(timerSeconds);
-    renderMixedCartoucheToCanvas(
-      finishCanvas,
-      glyphs,
-      CFG.finishLargePx,
-      CFG.finishSmallPx,
-      SMALL_SET,
-      { padding: CFG.finishPad, border: CFG.finishBorder, cornerRadius: CFG.finishCorner, letterGap: CFG.finishGap }
-    );
-    finishCartoucheReady = true;
 
     const mm = Math.floor(timerSeconds / 60);
     const ss = timerSeconds % 60;
     const timeStr = `${mm}:${String(ss).padStart(2, "0")}`;
     setStatus(`Finished. Final time: ${timeStr}. Click “Start New Game” to play again.`);
+    clearDpadAll();
   }
 
   function quitGameConfirmed() {
@@ -1577,7 +1635,6 @@
     stopTimer();
     syncMazeSizeUiLock();
     resetUIForIdle();
-
     setVisitedControlsEnabled(true);
 
     maze = null;
@@ -1603,11 +1660,11 @@
     activeTokenIndex = -1;
 
     clearVisitedCells();
-
     positionTokensInSidebar();
     positionDoneTokensInCollector();
 
     setStatus("Maze changed. Select the next glyph and drag it into the entrance.");
+    clearDpadAll();
   }
 
   /* =========================
@@ -1619,6 +1676,7 @@
   }
 
   function onPointerDown(e) {
+    e.preventDefault();
     if (state === GameState.quitting) return;
     if (state === GameState.idle) return;
 
@@ -1640,7 +1698,7 @@
           activeTokenIndex = i;
           dragOffset.dx = tok.x - pointer.x;
           dragOffset.dy = tok.y - pointer.y;
-          setStatus("Drag into the entrance. Once inside, use Arrow keys/WASD or pull with the mouse (hold down away from glyph).");
+          setStatus("Drag into the entrance. Once inside, use Arrow keys/WASD or the D-pad on mobile.");
           return;
         }
       }
@@ -1648,6 +1706,7 @@
   }
 
   function onPointerMove(e) {
+    e.preventDefault();
     if (state === GameState.quitting) return;
     if (state === GameState.idle) return;
     if (state !== GameState.running) return;
@@ -1680,7 +1739,7 @@
             markCellSeen(c.cx, c.cy);
           }
 
-          setStatus("Inside maze: use Arrow keys/WASD, or mouse pull (hold down away from glyph).");
+          setStatus("Inside maze: use Arrow keys/WASD, or the D-pad on mobile. Mouse pull still works too.");
         }
       }
 
@@ -1697,10 +1756,11 @@
     }
   }
 
-  canvas.addEventListener("pointerdown", onPointerDown);
-  canvas.addEventListener("pointermove", onPointerMove);
-  canvas.addEventListener("pointerup", onPointerUp);
-  canvas.addEventListener("pointercancel", onPointerUp);
+  const peOpts = { passive: false };
+  canvas.addEventListener("pointerdown", onPointerDown, peOpts);
+  canvas.addEventListener("pointermove", onPointerMove, peOpts);
+  canvas.addEventListener("pointerup", onPointerUp, peOpts);
+  canvas.addEventListener("pointercancel", onPointerUp, peOpts);
 
   /* =========================
      MAIN LOOP
@@ -1714,6 +1774,7 @@
         const tok = tokens[activeTokenIndex];
         if (tok && !tok.done && tok.inMaze) {
 
+          // mouse pull behavior (desktop)
           const pointerOnGlyph = pointer.down && hitToken(tok, pointer.x, pointer.y);
           if (pointer.down && !pointerOnGlyph) {
             const dx = pointer.x - tok.x;
@@ -1727,6 +1788,7 @@
             keepInMazeBounds(tok);
           }
 
+          // keyboard + dpad behavior (mobile + desktop)
           const kv = keyboardVector();
           if (kv.active) {
             const boost = (keysDown.has("Shift") ? 1.6 : 1.0);
@@ -1735,9 +1797,9 @@
             keepInMazeBounds(tok);
           }
 
+          // visited/dead-end logic preserved
           if (visitedDotsEnabled) {
             const cur = tokenCellFromPosition(tok.x, tok.y);
-
             if (!tok.lastCell) {
               tok.lastCell = cur;
               markCellSeen(cur.cx, cur.cy);
@@ -1799,11 +1861,8 @@
      Maze size selection wiring + localStorage
      ============================================================ */
   function getSavedMazeSize() {
-    try {
-      return safePresetName(localStorage.getItem(LS_KEYS.mazeSize) || "small");
-    } catch {
-      return "small";
-    }
+    try { return safePresetName(localStorage.getItem(LS_KEYS.mazeSize) || "small"); }
+    catch { return "small"; }
   }
 
   function saveMazeSize(v) {
@@ -1828,11 +1887,8 @@
      Visited dots option wiring + localStorage
      ============================================================ */
   function getSavedVisitedDots() {
-    try {
-      return (localStorage.getItem(LS_KEYS.visitedDots) === "1");
-    } catch {
-      return false;
-    }
+    try { return (localStorage.getItem(LS_KEYS.visitedDots) === "1"); }
+    catch { return false; }
   }
 
   function saveVisitedDots(enabled) {
@@ -1875,6 +1931,9 @@
     visitedDotsChk.addEventListener("change", applyVisitedDotsFromUI);
 
     setVisitedControlsEnabled(true);
+
+    // NEW: enable D-pad listeners (shows only on coarse pointers via CSS)
+    bindDpad();
 
     try { await ensureFontsLoaded(); } catch {}
 
