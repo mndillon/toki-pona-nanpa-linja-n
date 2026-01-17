@@ -1270,7 +1270,7 @@
     const availW = Math.max(50, viewport.w - side.w - collect.w - pad * 2);
     const availH = Math.max(50, viewport.h - pad * 2 - bottomReserve);
 
-        const fitCell = Math.floor(Math.min(availW / CFG.mazeCols, availH / CFG.mazeRows));
+    const fitCell = Math.floor(Math.min(availW / CFG.mazeCols, availH / CFG.mazeRows));
 
     // Allow smaller cells on phones; the token size will be derived to fit.
     runtime.cell = Math.max(10, Math.min(CFG.cellSize, fitCell));
@@ -1283,7 +1283,8 @@
     const maxTok = runtime.cell - 2*runtime.wall - 2*CFG.passageInset - 2;
 
     // Clamp token size so it stays usable but never larger than the corridor.
-    runtime.tokenSize = Math.max(6, Math.min(CFG.glyphSize, maxTok));
+    const minTok = isMobileLike() ? 5 : 6;
+    runtime.tokenSize = Math.max(minTok, Math.min(CFG.glyphSize, maxTok));
 
     // Apply runtime token size to all tokens so collision uses the correct size.
     for (const tok of tokens) tok.size = runtime.tokenSize;
@@ -1551,10 +1552,15 @@
   }
 
   function collidesWithWalls(x, y, size) {
-    const left = x - size/2;
-    const top = y - size/2;
+    // Shrink the token AABB slightly to avoid "exact-fit" sticking on tight corridors (mobile).
+    const eps = isMobileLike() ? 0.35 : 0.12; // CSS px
+    const s = Math.max(0.1, size - eps * 2);
+
+    const left = x - s/2;
+    const top  = y - s/2;
+
     for (const wr of wallRects) {
-      if (rectsOverlap(left, top, size, size, wr.x, wr.y, wr.w, wr.h)) return true;
+      if (rectsOverlap(left, top, s, s, wr.x, wr.y, wr.w, wr.h)) return true;
     }
     return false;
   }
@@ -1968,6 +1974,80 @@
   canvas.addEventListener("pointerup", onPointerUp, peOpts);
   canvas.addEventListener("pointercancel", onPointerUp, peOpts);
 
+
+  function passBoundsForCell(cx, cy, tok) {
+    const r = cellToRect(cx, cy);
+    const w = runtime.wall;
+    const inset = CFG.passageInset;
+    const half = tok.size / 2;
+
+    return {
+      xMin: r.x + w + inset + half,
+      xMax: r.x + r.w - w - inset - half,
+      yMin: r.y + w + inset + half,
+      yMax: r.y + r.h - w - inset - half,
+    };
+  }
+
+  function canMoveDir(cx, cy, dir) {
+    const c = maze.cells[cy][cx];
+    if (dir === "up")    return !c.n && cy > 0;
+    if (dir === "down")  return !c.s && cy < maze.rows - 1;
+    if (dir === "left")  return !c.w && cx > 0;
+    if (dir === "right") return !c.e && cx < maze.cols - 1;
+    return false;
+  }
+
+  function neighborCell(cx, cy, dir) {
+    if (dir === "up") return { cx, cy: cy - 1 };
+    if (dir === "down") return { cx, cy: cy + 1 };
+    if (dir === "left") return { cx: cx - 1, cy };
+    if (dir === "right") return { cx: cx + 1, cy };
+    return { cx, cy };
+  }
+
+  // If more than 50% of the token is aligned with the opening, snap it into alignment.
+  function mobileSnapIfMostlyAligned(tok, dir) {
+    if (!isMobileLike()) return;
+    if (!maze) return;
+
+    const cur = tokenCellFromPosition(tok.x, tok.y);
+    if (!canMoveDir(cur.cx, cur.cy, dir)) return;
+
+    const nb = neighborCell(cur.cx, cur.cy, dir);
+    const a = passBoundsForCell(cur.cx, cur.cy, tok);
+    const b = passBoundsForCell(nb.cx, nb.cy, tok);
+
+    // Corridor overlap at the boundary between the two cells.
+    const xMin = Math.max(a.xMin, b.xMin);
+    const xMax = Math.min(a.xMax, b.xMax);
+    const yMin = Math.max(a.yMin, b.yMin);
+    const yMax = Math.min(a.yMax, b.yMax);
+
+    const half = tok.size / 2;
+
+    if (dir === "up" || dir === "down") {
+      // We need x within [xMin, xMax]. If we're within half a token, snap.
+      if (tok.x < xMin) {
+        const off = xMin - tok.x;
+        if (off < half) tok.x = xMin;
+      } else if (tok.x > xMax) {
+        const off = tok.x - xMax;
+        if (off < half) tok.x = xMax;
+      }
+    } else {
+      // left/right: snap Y
+      if (tok.y < yMin) {
+        const off = yMin - tok.y;
+        if (off < half) tok.y = yMin;
+      } else if (tok.y > yMax) {
+        const off = tok.y - yMax;
+        if (off < half) tok.y = yMax;
+      }
+    }
+  }
+
+
   /* =========================
      MAIN LOOP
      ========================= */
@@ -1996,10 +2076,30 @@
           const kv = keyboardVector();
           if (kv.active) {
             const boost = (keysDown.has("Shift") ? 1.6 : 1.0);
-            const step = CFG.keyMoveSpeed * boost * dt;
+
+            // Determine intended cardinal direction for snapping (mobile).
+            // If diagonal, pick the dominant axis.
+            let dir = null;
+            if (Math.abs(kv.ux) >= Math.abs(kv.uy)) dir = (kv.ux < 0 ? "left" : "right");
+            else dir = (kv.uy < 0 ? "up" : "down");
+
+            // Mobile: snap into openings when "mostly aligned".
+            if (isMobileLike()) mobileSnapIfMostlyAligned(tok, dir);
+
+            let step;
+            if (isMobileLike()) {
+              // Very small per-tick motion. Never exceed wall thickness.
+              const targetPer60fps = Math.min(runtime.wall, 1.2) * boost; // <= wall width
+              const scaled = targetPer60fps * (dt / (1/60));
+              step = Math.min(runtime.wall, Math.max(0.35, scaled));
+            } else {
+              step = CFG.keyMoveSpeed * boost * dt;
+            }
+
             moveTokenWithCollision(tok, kv.ux * step, kv.uy * step);
             keepInMazeBounds(tok);
           }
+
 
           if (visitedDotsEnabled) {
             const cur = tokenCellFromPosition(tok.x, tok.y);
