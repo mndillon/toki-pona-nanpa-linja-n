@@ -860,7 +860,11 @@
   let dragOffset = { dx: 0, dy: 0 };
   let lastFrameTs = performance.now();
 
-  const runtime = { cell: CFG.cellSize };
+  const DPAD_BTN = 52, DPAD_GAP = 8, DPAD_PAD = 10;
+  const DPAD_W = DPAD_BTN*3 + DPAD_GAP*2 + DPAD_PAD*2;
+  const DPAD_H = DPAD_BTN*3 + DPAD_GAP*2 + DPAD_PAD*2;
+
+  const runtime = { cell: CFG.cellSize, wall: CFG.wallThickness, tokenSize: CFG.glyphSize };
 
   let visitedDotsEnabled = false;
   let visitedCells = new Set();
@@ -1193,8 +1197,24 @@
     const availW = Math.max(50, viewport.w - side.w - collect.w - pad * 2);
     const availH = Math.max(50, viewport.h - pad * 2 - bottomReserve);
 
-    const fitCell = Math.floor(Math.min(availW / CFG.mazeCols, availH / CFG.mazeRows));
-    runtime.cell = Math.max(14, Math.min(CFG.cellSize, fitCell));
+        const fitCell = Math.floor(Math.min(availW / CFG.mazeCols, availH / CFG.mazeRows));
+
+    // Allow smaller cells on phones; the token size will be derived to fit.
+    runtime.cell = Math.max(10, Math.min(CFG.cellSize, fitCell));
+
+    // Scale wall thickness down if the cell is small.
+    runtime.wall = Math.min(CFG.wallThickness, Math.max(1, Math.floor(runtime.cell * 0.22)));
+
+    // Compute a token size that MUST fit inside the corridor:
+    // corridor ~= cell - 2*wall, and we also keep passageInset + a small margin.
+    const maxTok = runtime.cell - 2*runtime.wall - 2*CFG.passageInset - 2;
+
+    // Clamp token size so it stays usable but never larger than the corridor.
+    runtime.tokenSize = Math.max(6, Math.min(CFG.glyphSize, maxTok));
+
+    // Apply runtime token size to all tokens so collision uses the correct size.
+    for (const tok of tokens) tok.size = runtime.tokenSize;
+
 
     mazeRect.w = runtime.cell * CFG.mazeCols;
     mazeRect.h = runtime.cell * CFG.mazeRows;
@@ -1220,11 +1240,16 @@
     const tokenRowsReserve = 2 * 56;
     const y0 = topPad + headerH + tokenRowsReserve + 16;
 
-    const padW = 52*3 + 8*2 + 10*2;
-    const padH = 52*3 + 8*2 + 10*2;
+    const padW = DPAD_W;
+    const padH = DPAD_H;
 
-    const x = Math.floor(collect.x + (collect.w - padW) / 2);
-    const y = Math.floor(Math.min(viewport.h - padH - 16, y0));
+    let x = Math.floor(collect.x + (collect.w - padW) / 2);
+    let y = Math.floor(Math.min(viewport.h - padH - 16, y0));
+
+    // Clamp fully on-screen
+    x = clampInt(x, 8, Math.max(8, viewport.w - padW - 8));
+    y = clampInt(y, 8, Math.max(8, viewport.h - padH - 8));
+
 
     dpadEl.style.left = `${x}px`;
     dpadEl.style.top = `${y}px`;
@@ -1239,7 +1264,8 @@
     wallRects = [];
     if (!maze) return;
 
-    const t = CFG.wallThickness;
+    const t = runtime.wall;
+
 
     for (let y = 0; y < maze.rows; y++) {
       for (let x = 0; x < maze.cols; x++) {
@@ -1342,7 +1368,7 @@
 
     const sr = cellToRect(startCell.cx, startCell.cy);
     tok.inMaze = true;
-    tok.x = mazeRect.x + CFG.wallThickness + CFG.passageInset + tok.size/2 + 1;
+    tok.x = mazeRect.x + runtime.wall + CFG.passageInset + tok.size/2 + 1;
     tok.y = sr.y + sr.h / 2;
     tok.lastCell = tokenCellFromPosition(tok.x, tok.y);
 
