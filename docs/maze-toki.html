@@ -258,6 +258,16 @@
       visibility: hidden;
       pointer-events: none;
     }
+
+    .dpadBtn[data-drag-handle="1"] {
+      background: rgba(255,255,255,0.35);
+      border-style: dashed;
+      color: rgba(0,0,0,0.55);
+    }
+    .dpadBtn[data-drag-handle="1"]:active {
+      background: rgba(255,255,255,0.65);
+    }
+
   </style>
 </head>
 
@@ -293,13 +303,14 @@
         <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
 
         <button class="dpadBtn" data-dir="left" aria-label="Left">◀</button>
-        <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
+        <button class="dpadBtn" data-drag-handle="1" aria-label="Move D-pad">⠿</button>
         <button class="dpadBtn" data-dir="right" aria-label="Right">▶</button>
 
         <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
         <button class="dpadBtn" data-dir="down" aria-label="Down">▼</button>
         <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
       </div>
+
 
       <div id="overlay" class="overlay" role="dialog" aria-modal="true">
         <div class="modal">
@@ -368,6 +379,7 @@
   const LS_KEYS = {
     mazeSize: "tp_maze_size_v1",
     visitedDots: "tp_maze_visiteddots_v1",
+    dpadPos: "tp_maze_dpad_pos_v1",
   };
 
   function safePresetName(v) {
@@ -1055,6 +1067,62 @@
       btn.addEventListener("pointercancel", (e) => { stopAll(e); setDpad(btn.dataset.dir, false); }, { passive: false });
       btn.addEventListener("pointerleave", () => { setDpad(btn.dataset.dir, false); });
     });
+
+        // Drag handle: the center button with data-drag-handle="1"
+    const dragHandle = dpadEl.querySelector('.dpadBtn[data-drag-handle="1"]');
+    if (dragHandle) {
+      const stopAll = (e) => { e.preventDefault(); e.stopPropagation(); };
+
+      dragHandle.addEventListener("pointerdown", (e) => {
+        stopAll(e);
+
+        // Start dragging the dpad container
+        dpadDrag.active = true;
+        dpadDrag.pointerId = e.pointerId;
+        dragHandle.setPointerCapture(e.pointerId);
+
+        dpadDrag.startX = e.clientX;
+        dpadDrag.startY = e.clientY;
+
+        // Current positioned left/top
+        const curLeft = Number(String(dpadEl.style.left || "0").replace("px","")) || 0;
+        const curTop  = Number(String(dpadEl.style.top  || "0").replace("px","")) || 0;
+
+        dpadDrag.baseX = curLeft;
+        dpadDrag.baseY = curTop;
+
+        // Do not keep any directional presses while moving the pad
+        clearDpadAll();
+      }, { passive: false });
+
+      dragHandle.addEventListener("pointermove", (e) => {
+        if (!dpadDrag.active || dpadDrag.pointerId !== e.pointerId) return;
+        stopAll(e);
+
+        const dx = e.clientX - dpadDrag.startX;
+        const dy = e.clientY - dpadDrag.startY;
+
+        setDpadPosition(dpadDrag.baseX + dx, dpadDrag.baseY + dy, false);
+      }, { passive: false });
+
+      function endDrag(e) {
+        if (!dpadDrag.active) return;
+        if (dpadDrag.pointerId !== e.pointerId) return;
+        stopAll(e);
+
+        dpadDrag.active = false;
+
+        const curLeft = Number(String(dpadEl.style.left || "0").replace("px","")) || 0;
+        const curTop  = Number(String(dpadEl.style.top  || "0").replace("px","")) || 0;
+
+        setDpadPosition(curLeft, curTop, true); // persist
+        dpadDrag.pointerId = null;
+      }
+
+      dragHandle.addEventListener("pointerup", endDrag, { passive: false });
+      dragHandle.addEventListener("pointercancel", endDrag, { passive: false });
+    }
+
   }
 
   function keyboardVector() {
@@ -1235,6 +1303,14 @@
     if (!dpadEl) return;
     if (!isCoarsePointer()) return;
 
+    // If user has a saved position, use it.
+    const saved = loadDpadPos();
+    if (saved) {
+      setDpadPosition(saved.x, saved.y, false);
+      return;
+    }
+
+    // Otherwise, use the default placement in the collector area.
     const topPad = 14;
     const headerH = 26;
     const tokenRowsReserve = 2 * 56;
@@ -1246,13 +1322,45 @@
     let x = Math.floor(collect.x + (collect.w - padW) / 2);
     let y = Math.floor(Math.min(viewport.h - padH - 16, y0));
 
-    // Clamp fully on-screen
-    x = clampInt(x, 8, Math.max(8, viewport.w - padW - 8));
-    y = clampInt(y, 8, Math.max(8, viewport.h - padH - 8));
+    setDpadPosition(x, y, false);
+  }
 
+
+  function loadDpadPos() {
+    try {
+      const raw = localStorage.getItem(LS_KEYS.dpadPos);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj.x !== "number" || typeof obj.y !== "number") return null;
+      return { x: obj.x, y: obj.y };
+    } catch {
+      return null;
+    }
+  }
+
+  function saveDpadPos(x, y) {
+    try { localStorage.setItem(LS_KEYS.dpadPos, JSON.stringify({ x, y })); } catch {}
+  }
+
+  const dpadDrag = {
+    active: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    baseX: 0,
+    baseY: 0,
+  };
+
+  function setDpadPosition(x, y, persist) {
+    // Clamp fully on-screen (same policy as your current placement)
+    const padW = DPAD_W, padH = DPAD_H;
+    x = clampInt(Math.floor(x), 8, Math.max(8, viewport.w - padW - 8));
+    y = clampInt(Math.floor(y), 8, Math.max(8, viewport.h - padH - 8));
 
     dpadEl.style.left = `${x}px`;
     dpadEl.style.top = `${y}px`;
+
+    if (persist) saveDpadPos(x, y);
   }
 
   function cellToRect(cx, cy) {
@@ -1763,11 +1871,14 @@
   }
 
   function onPointerDown(e) {
-    e.preventDefault();
-    if (state === GameState.quitting) return;
-    if (state === GameState.idle) return;
+    // Only suppress browser gestures when we actually need custom control
+    const mustCapture = (state === GameState.running || state === GameState.quitting);
+    if (mustCapture) e.preventDefault();
 
-    canvas.setPointerCapture(e.pointerId);
+    if (state === GameState.idle) return;
+    if (state === GameState.quitting) return;
+
+    if (mustCapture) canvas.setPointerCapture(e.pointerId);
 
     pointer.down = true;
     pointer.id = e.pointerId;
@@ -1775,8 +1886,6 @@
     pointer.x = p.x;
     pointer.y = p.y;
 
-    // With auto-placement, we generally do not need sidebar dragging,
-    // but keep it available only if NO token is currently in the maze.
     const locked = anyTokenInMaze();
     if (!locked && state === GameState.running) {
       for (let i = 0; i < tokens.length; i++) {
@@ -1794,11 +1903,13 @@
     }
   }
 
+
   function onPointerMove(e) {
-    e.preventDefault();
-    if (state === GameState.quitting) return;
-    if (state === GameState.idle) return;
+    // Only suppress browser behavior while the game is running (or quitting modal)
+    if (state === GameState.running || state === GameState.quitting) e.preventDefault();
+
     if (state !== GameState.running) return;
+    if (state === GameState.quitting) return;
 
     const p = canvasPointFromEvent(e);
     pointer.x = p.x;
@@ -1811,7 +1922,6 @@
         tok.x = pointer.x + dragOffset.dx;
         tok.y = pointer.y + dragOffset.dy;
 
-        // clamp to left area only
         const minX = tok.size/2 + 6;
         const maxXBeforeMaze = (mazeRect.x - tok.size/2 - 1);
         const minY = tok.size/2 + 6;
@@ -1829,6 +1939,7 @@
       if (!tok.done && tok.inMaze) keepInMazeBounds(tok);
     }
   }
+
 
   function onPointerUp(e) {
     if (pointer.id === e.pointerId) {
