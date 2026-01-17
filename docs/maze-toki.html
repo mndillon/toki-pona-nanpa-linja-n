@@ -268,6 +268,40 @@
       background: rgba(255,255,255,0.65);
     }
 
+
+    @media (pointer: coarse), (max-width: 520px) {
+      .topbar { gap: 6px; padding: 8px 8px; height: 52px; }
+
+      .btn {
+        font-size: 13px;
+        padding: 6px 8px;
+        border-radius: 10px;
+      }
+
+      .select {
+        font-size: 13px;
+        padding: 6px 30px 6px 8px;
+        border-radius: 10px;
+      }
+
+      .checkWrap {
+        padding: 5px 8px;
+        border-radius: 10px;
+        gap: 6px;
+      }
+      .checkWrap .checkLabel { font-size: 13px; }
+
+      .status {
+        font-size: 13px;
+        max-width: 34vw;
+      }
+
+      .timerCanvas {
+        width: 150px;
+        height: 32px;
+      }
+    }
+
   </style>
 </head>
 
@@ -311,7 +345,6 @@
         <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
       </div>
 
-
       <div id="overlay" class="overlay" role="dialog" aria-modal="true">
         <div class="modal">
           <h2>Quit current game?</h2>
@@ -340,6 +373,107 @@
 (() => {
   "use strict";
 
+  /* ============================================================
+     I18N (developer-only toggle)
+     ------------------------------------------------------------
+     Change DEV_LANG to "tp" to show Toki Pona UI labels.
+     This flag is not shown in the UI.
+     ============================================================ */
+  const DEV_LANG = "tp";// "en"; // "en" | "tp"
+
+  const STRINGS = {
+    en: {
+      title: "Toki Pona Maze",
+
+      btn_new: "Start New Game",
+      btn_quit: "Quit Game",
+
+      maze_size_title: "Maze size",
+      size_small: "Small",
+      size_medium: "Medium",
+      size_large: "Large",
+
+      visited_label: "Visited dots",
+      visited_title: "Leave a small dot behind on each cell you leave",
+
+      status_loading: "Loading fonts…",
+      status_click_new: "Click “Start New Game”.",
+      status_controls: "Use Arrow keys/WASD, or the D-pad on mobile. (Pointer-drag still works.)",
+      status_drag_in: "Drag into the entrance. Once inside, use Arrow keys/WASD or the D-pad.",
+      status_inside: "Inside maze: use Arrow keys/WASD or the D-pad.",
+      status_next_glyph: "Next glyph placed at the start. Use Arrow keys/WASD or the D-pad.",
+      status_finished: (timeStr) => `Finished. Final time: ${timeStr}. Click “Start New Game” to play again.`,
+      status_quit: "Game quit. Click “Start New Game” to play again.",
+
+      modal_title: "Quit current game?",
+      modal_body: "The timer will stop. If you quit, your current progress will be lost.",
+      modal_cancel: "Cancel",
+      modal_quit: "Quit",
+
+      sidebar_start: "START",
+      sidebar_done: "DONE",
+
+      footer_disclaimer_prefix: "Disclaimer:",
+      footer_disclaimer_body:
+        "This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.",
+      footer_back: "Back to index"
+    },
+
+    tp: {
+      title: "musi pi nasin pi sitelen pona",
+
+      btn_new: "o open e musi sin",
+
+      // Quit/leave (as requested)
+      btn_quit: "o weka tan musi",
+
+      maze_size_title: "suli pi nasin",
+      size_small: "lili",
+      size_medium: "meso",
+      size_large: "suli",
+
+      visited_label: "pini la sitelen lili",
+      visited_title: "sina weka tan ma la o awen e sitelen lili lon ona",
+
+      status_loading: "mi kama jo e sitelen…",
+      status_click_new: "o kepeken nena musi sin.",
+      status_controls: "o kepeken nena tawa (anu WASD). lon ilo lili la o kepeken leko tawa. sina ken tawa e ona kepeken luka.",
+      status_drag_in: "o tawa e sitelen tawa lupa open. sina lon insa la o kepeken nena tawa.",
+      status_inside: "sina lon insa: o kepeken nena tawa.",
+      status_next_glyph: "sitelen sin li lon open. o kepeken nena tawa.",
+      status_finished: (timeStr) => `pini. tenpo nanpa: ${timeStr}. o open e musi sin.`,
+      status_quit: "musi li pini. o open e musi sin.",
+
+      modal_title: "o weka tan musi ni?",
+      modal_body: "tenpo li awen ala. sina weka la pali sina lon musi ni li weka.",
+      modal_cancel: "o ala",
+      modal_quit: "o weka",
+
+      sidebar_start: "open",
+      sidebar_done: "pini",
+
+      footer_disclaimer_prefix: "sona:",
+      footer_disclaimer_body:
+        "ilo ni li lon sama ni. mi pana ala e lon, e pona, e wawa pi pali ona. sina o lukin e ijo ale, o pona e ijo la sina wile.",
+      footer_back: "o tawa lipu open"
+    }
+  };
+
+  function t(key, ...args) {
+    const pack = STRINGS[DEV_LANG] || STRINGS.en;
+    const v = pack[key] ?? STRINGS.en[key] ?? key;
+    return (typeof v === "function") ? v(...args) : v;
+  }
+
+  function formatMMSS(totalSeconds) {
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = totalSeconds % 60;
+    return `${mm}:${String(ss).padStart(2, "0")}`;
+  }
+
+  /* =========================
+     VISUAL TUNING
+     ========================= */
   const VISITED_DOT_RGBA = "rgba(0,0,0,0.24)";
   const DEAD_CELL_RGBA   = "rgba(0,0,0,0.18)";
 
@@ -362,11 +496,7 @@
     passageInset: 1,
     speed: 200,
     keyMoveSpeed: 140,
-
-    // Smaller collision microstep (prevents skipping narrow openings).
     maxMoveStepPx: 1.4,
-
-    // Reserve space so maze is never under the D-pad.
     reserveBottomPx: 190,
   };
 
@@ -410,7 +540,6 @@
 
     keyMoveSpeed: 220,
 
-    // Movement collision microstep (smaller = safer).
     maxMoveStepPx: 2.8,
   };
 
@@ -783,6 +912,43 @@
   const visitedDotsChk = document.getElementById("visitedDots");
   const dpadEl = document.getElementById("dpad");
 
+  function applyUiText() {
+    document.title = t("title");
+
+    btnNew.textContent = t("btn_new");
+    btnQuit.textContent = t("btn_quit");
+
+    const selectWrap = mazeSizeSel.closest(".selectWrap");
+    if (selectWrap) selectWrap.title = t("maze_size_title");
+    mazeSizeSel.setAttribute("aria-label", t("maze_size_title"));
+
+    const opts = Array.from(mazeSizeSel.options);
+    for (const opt of opts) {
+      if (opt.value === "small") opt.textContent = t("size_small");
+      if (opt.value === "medium") opt.textContent = t("size_medium");
+      if (opt.value === "large") opt.textContent = t("size_large");
+    }
+
+    visitedWrap.title = t("visited_title");
+    const lbl = visitedWrap.querySelector(".checkLabel");
+    if (lbl) lbl.textContent = t("visited_label");
+
+    const h2 = overlay.querySelector("h2");
+    const p = overlay.querySelector("p");
+    if (h2) h2.textContent = t("modal_title");
+    if (p) p.textContent = t("modal_body");
+    btnCancelQuit.textContent = t("modal_cancel");
+    btnConfirmQuit.textContent = t("modal_quit");
+
+    const footer = document.querySelector("footer.footer");
+    if (footer) {
+      const left = footer.querySelector(".footerLeft");
+      if (left) left.innerHTML = `<strong>${t("footer_disclaimer_prefix")}</strong> ${t("footer_disclaimer_body")}`;
+      const back = footer.querySelector(".footerRight a");
+      if (back) back.textContent = t("footer_back");
+    }
+  }
+
   /* =========================
      GAME STATE
      ========================= */
@@ -827,7 +993,6 @@
     ctx.textAlign = "left";
     ctx.fillStyle = "#111";
 
-    // Measure total width
     let totalW = 0;
     const widths = [];
     for (const ch of chars) {
@@ -837,7 +1002,6 @@
     }
     totalW += interGlyphGapPx * Math.max(0, chars.length - 1);
 
-    // Draw so that the prefix ends gapPx before the box
     let x = boxX - gapPx - totalW;
     for (let i = 0; i < chars.length; i++) {
       ctx.fillText(chars[i], x, centerY);
@@ -846,7 +1010,6 @@
 
     ctx.restore();
   }
-
 
   function renderTopTimerCartouche(totalSeconds) {
     const targetCssW = 170;
@@ -872,11 +1035,9 @@
       { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
     );
 
-    // --- NEW: reserve space for the left prefix (tenpo + nanpa) ---
     const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]];
     const gapPx = 8;
 
-    // Pass 1 scale (no reserve) to estimate prefix width at final size
     let scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
     let prefixFontPx = Math.max(10, CFG.timerLargePx * scale);
 
@@ -887,11 +1048,9 @@
     let prefixW = p1 + 4 + p2;
     timerCtx.restore();
 
-    // Recompute scale with reserved width for prefix
     const availWForCartouche = Math.max(40, targetCssW - prefixW - gapPx);
     scale = Math.min(availWForCartouche / timerOffscreen.width, targetCssH / timerOffscreen.height);
 
-    // Recompute prefix width at updated scale (one more pass is sufficient)
     prefixFontPx = Math.max(10, CFG.timerLargePx * scale);
 
     timerCtx.save();
@@ -904,17 +1063,12 @@
     const drawW = Math.floor(timerOffscreen.width * scale);
     const drawH = Math.floor(timerOffscreen.height * scale);
 
-    // Right-align the cartouche while keeping prefix room
     const x = Math.floor(targetCssW - drawW);
     const y = Math.floor((targetCssH - drawH) / 2);
 
-    // Draw prefix to the left of the cartouche, vertically centered
     drawPrefixGlyphsLeftOfBox(timerCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
-
-    // Draw cartouche
     timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
   }
-
 
   let timerSeconds = 0;
   let timerHandle = null;
@@ -923,7 +1077,6 @@
 
   let viewport = { w: 0, h: 0 };
 
-  // side panels + maze center region
   let side = { x: 0, y: 0, w: 200, h: 0 };
   let collect = { x: 0, y: 0, w: 200, h: 0 };
   let mazeRect = { x: 0, y: 0, w: 0, h: 0 };
@@ -1134,7 +1287,6 @@
       btn.addEventListener("pointerleave", () => { setDpad(btn.dataset.dir, false); });
     });
 
-        // Drag handle: the center button with data-drag-handle="1"
     const dragHandle = dpadEl.querySelector('.dpadBtn[data-drag-handle="1"]');
     if (dragHandle) {
       const stopAll = (e) => { e.preventDefault(); e.stopPropagation(); };
@@ -1142,7 +1294,6 @@
       dragHandle.addEventListener("pointerdown", (e) => {
         stopAll(e);
 
-        // Start dragging the dpad container
         dpadDrag.active = true;
         dpadDrag.pointerId = e.pointerId;
         dragHandle.setPointerCapture(e.pointerId);
@@ -1150,14 +1301,12 @@
         dpadDrag.startX = e.clientX;
         dpadDrag.startY = e.clientY;
 
-        // Current positioned left/top
         const curLeft = Number(String(dpadEl.style.left || "0").replace("px","")) || 0;
         const curTop  = Number(String(dpadEl.style.top  || "0").replace("px","")) || 0;
 
         dpadDrag.baseX = curLeft;
         dpadDrag.baseY = curTop;
 
-        // Do not keep any directional presses while moving the pad
         clearDpadAll();
       }, { passive: false });
 
@@ -1181,14 +1330,13 @@
         const curLeft = Number(String(dpadEl.style.left || "0").replace("px","")) || 0;
         const curTop  = Number(String(dpadEl.style.top  || "0").replace("px","")) || 0;
 
-        setDpadPosition(curLeft, curTop, true); // persist
+        setDpadPosition(curLeft, curTop, true);
         dpadDrag.pointerId = null;
       }
 
       dragHandle.addEventListener("pointerup", endDrag, { passive: false });
       dragHandle.addEventListener("pointercancel", endDrag, { passive: false });
     }
-
   }
 
   function keyboardVector() {
@@ -1320,12 +1468,10 @@
 
     const cssSide = getCssVarPx("--side-w", 200);
 
-    // On mobile, use narrower panels to give the maze more room.
     const maxPanel = Math.floor(viewport.w * (isMobileLike() ? 0.18 : 0.26));
     const minPanel = isMobileLike() ? 84 : 110;
 
     const panelW = Math.max(minPanel, Math.min(cssSide, maxPanel));
-
 
     side = { x: 0, y: 0, w: panelW, h: viewport.h };
     collect = { x: Math.max(panelW, viewport.w - panelW), y: 0, w: panelW, h: viewport.h };
@@ -1338,23 +1484,14 @@
 
     const fitCell = Math.floor(Math.min(availW / CFG.mazeCols, availH / CFG.mazeRows));
 
-    // Allow smaller cells on phones; the token size will be derived to fit.
     runtime.cell = Math.max(10, Math.min(CFG.cellSize, fitCell));
-
-    // Scale wall thickness down if the cell is small.
     runtime.wall = Math.min(CFG.wallThickness, Math.max(1, Math.floor(runtime.cell * 0.22)));
 
-    // Compute a token size that MUST fit inside the corridor:
-    // corridor ~= cell - 2*wall, and we also keep passageInset + a small margin.
     const maxTok = runtime.cell - 2*runtime.wall - 2*CFG.passageInset - 2;
-
-    // Clamp token size so it stays usable but never larger than the corridor.
     const minTok = isMobileLike() ? 5 : 6;
     runtime.tokenSize = Math.max(minTok, Math.min(CFG.glyphSize, maxTok));
 
-    // Apply runtime token size to all tokens so collision uses the correct size.
     for (const tok of tokens) tok.size = runtime.tokenSize;
-
 
     mazeRect.w = runtime.cell * CFG.mazeCols;
     mazeRect.h = runtime.cell * CFG.mazeRows;
@@ -1375,14 +1512,12 @@
     if (!dpadEl) return;
     if (!isCoarsePointer()) return;
 
-    // If user has a saved position, use it.
     const saved = loadDpadPos();
     if (saved) {
       setDpadPosition(saved.x, saved.y, false);
       return;
     }
 
-    // Otherwise, use the default placement in the collector area.
     const topPad = 14;
     const headerH = 26;
     const tokenRowsReserve = 2 * 56;
@@ -1396,7 +1531,6 @@
 
     setDpadPosition(x, y, false);
   }
-
 
   function loadDpadPos() {
     try {
@@ -1424,7 +1558,6 @@
   };
 
   function setDpadPosition(x, y, persist) {
-    // Clamp fully on-screen (same policy as your current placement)
     const padW = DPAD_W, padH = DPAD_H;
     x = clampInt(Math.floor(x), 8, Math.max(8, viewport.w - padW - 8));
     y = clampInt(Math.floor(y), 8, Math.max(8, viewport.h - padH - 8));
@@ -1445,7 +1578,6 @@
     if (!maze) return;
 
     const t = runtime.wall;
-
 
     for (let y = 0; y < maze.rows; y++) {
       for (let x = 0; x < maze.cols; x++) {
@@ -1537,7 +1669,6 @@
     const tok = tokens[idx];
     if (tok.done) return;
 
-    // Ensure all other non-done tokens are outside
     for (let i = 0; i < tokens.length; i++) {
       if (i === idx) continue;
       const t = tokens[i];
@@ -1559,7 +1690,6 @@
       markCellSeen(c.cx, c.cy);
     }
 
-    // Ensure position is valid
     keepInMazeBounds(tok);
   }
 
@@ -1618,8 +1748,7 @@
   }
 
   function collidesWithWalls(x, y, size) {
-    // Shrink the token AABB slightly to avoid "exact-fit" sticking on tight corridors (mobile).
-    const eps = isMobileLike() ? 0.35 : 0.12; // CSS px
+    const eps = isMobileLike() ? 0.35 : 0.12;
     const s = Math.max(0.1, size - eps * 2);
 
     const left = x - s/2;
@@ -1654,16 +1783,12 @@
   }
 
   function keepInMazeBounds(tok) {
-    // Keep the token inside the navigable area, not inside the outer border walls.
     const w = runtime.wall || CFG.wallThickness;
 
     const minX = mazeRect.x + w + tok.size / 2;
     const minY = mazeRect.y + w + tok.size / 2;
 
-    // Bottom must also stay above the south wall
     const maxY = mazeRect.y + mazeRect.h - w - tok.size / 2;
-
-    // Allow extra room to the right so the token can fully exit the maze.
     const maxX = mazeRect.x + mazeRect.w + tok.size / 2 + 10;
 
     if (tok.x < minX) tok.x = minX;
@@ -1671,7 +1796,6 @@
     if (tok.y > maxY) tok.y = maxY;
     if (tok.x > maxX) tok.x = maxX;
   }
-
 
   /* =========================
      DRAWING
@@ -1694,8 +1818,8 @@
     ctx.font = `14px "PatrickHand", system-ui, sans-serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText("START", 12, 10);
-    ctx.fillText("DONE", collect.x + 12, 10);
+    ctx.fillText(t("sidebar_start"), 12, 10);
+    ctx.fillText(t("sidebar_done"), collect.x + 12, 10);
   }
 
   function drawDeadCellsOverlay() {
@@ -1808,7 +1932,6 @@
       { padding: 18, border: 3, cornerRadius: 18, letterGap: 1 }
     );
 
-    // Cartouche scale constraints
     const maxW = mazeRect.w * 0.82;
     const maxH = mazeRect.h * 0.28;
     const scale = Math.min(maxW / finishOffscreen.width, maxH / finishOffscreen.height, 1);
@@ -1816,11 +1939,9 @@
     const drawW = Math.floor(finishOffscreen.width * scale);
     const drawH = Math.floor(finishOffscreen.height * scale);
 
-    // Prefix glyphs: tenpo + nanpa (outside the cartouche)
     const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]];
     const prefixFontPx = Math.max(14, largePx * scale);
 
-    // Measure prefix width at the actual draw size
     ctx.save();
     ctx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
     const chTenpo = String.fromCodePoint(prefixCps[0]);
@@ -1829,21 +1950,18 @@
     const wNanpa = ctx.measureText(chNanpa).width;
     ctx.restore();
 
-    const interGlyphGap = 6;   // between tenpo and nanpa
-    const prefixGapToCart = 14; // between prefix and cartouche
+    const interGlyphGap = 6;
+    const prefixGapToCart = 14;
 
     const prefixW = wTenpo + interGlyphGap + wNanpa;
-    const groupW = prefixW + prefixGapToCart + drawW; // prefix + gap + cartouche
+    const groupW = prefixW + prefixGapToCart + drawW;
 
-    // Center the entire group horizontally within the maze area
     const groupX = Math.floor(mazeRect.x + (mazeRect.w - groupW) / 2);
     const cartX  = groupX + prefixW + prefixGapToCart;
 
-    // Vertically center using the cartouche height
     const y = Math.floor(mazeRect.y + (mazeRect.h - drawH) / 2);
     const centerY = Math.floor(y + drawH / 2);
 
-    // Background panel covers prefix + cartouche together
     const pad = isMobileLike() ? 8 : 14;
 
     const panelX = groupX - pad;
@@ -1851,17 +1969,14 @@
     const panelW = groupW + pad * 2;
     const panelH = drawH + pad * 2;
 
-    // Panel fill
     ctx.fillStyle = "#F3DFC0";
     drawRoundedRect(ctx, panelX, panelY, panelW, panelH, 18);
     ctx.fill();
 
-    // Panel border
     ctx.lineWidth = 2;
     ctx.strokeStyle = "rgba(0,0,0,0.28)";
     ctx.stroke();
 
-    // Draw prefix glyphs inside the panel area (left side), centered vertically
     ctx.save();
     ctx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
     ctx.textBaseline = "middle";
@@ -1875,12 +1990,8 @@
 
     ctx.restore();
 
-    // Draw the cartouche to the right of the prefix
     ctx.drawImage(finishOffscreen, cartX, y, drawW, drawH);
   }
-
-
-
 
   function draw() {
     resizeCanvasToDisplaySize();
@@ -1890,8 +2001,6 @@
     drawPanelBackground();
     if (state !== GameState.idle) drawMaze();
     drawTokens();
-
-    // NEW: show a big final-time cartouche in the middle when finished
     drawFinishOverlay();
   }
 
@@ -1914,11 +2023,10 @@
     createTokens();
     layout();
 
-    // NEW: Automatically place the first glyph at the start, ready to move.
     const firstIdx = firstUndoneTokenIndex();
     if (firstIdx >= 0) placeActiveTokenAtMazeStart(firstIdx);
 
-    setStatus("Use Arrow keys/WASD, or the D-pad on mobile. (Pointer-drag still works.)");
+    setStatus(t("status_controls"));
     startTimer();
   }
 
@@ -1929,10 +2037,8 @@
     btnQuit.disabled = true;
     setVisitedControlsEnabled(true);
 
-    const mm = Math.floor(timerSeconds / 60);
-    const ss = timerSeconds % 60;
-    const timeStr = `${mm}:${String(ss).padStart(2, "0")}`;
-    setStatus(`Finished. Final time: ${timeStr}. Click “Start New Game” to play again.`);
+    const timeStr = formatMMSS(timerSeconds);
+    setStatus(t("status_finished", timeStr));
     clearDpadAll();
   }
 
@@ -1956,15 +2062,13 @@
     clearVisitedCells();
     trunkCells = new Set();
 
-    setStatus("Game quit. Click “Start New Game” to play again.");
+    setStatus(t("status_quit"));
     draw();
   }
 
-  // NEW: when one glyph exits, the maze changes and the next glyph is auto-placed inside the new maze.
   function nextMazeAndAutoPlaceNextToken() {
     generateSolvableMaze();
 
-    // reset non-done tokens to "not in maze"
     for (const tok of tokens) {
       if (!tok.done) tok.inMaze = false;
       tok.lastCell = null;
@@ -1980,7 +2084,7 @@
     const nextIdx = firstUndoneTokenIndex();
     if (nextIdx >= 0) {
       placeActiveTokenAtMazeStart(nextIdx);
-      setStatus("Next glyph placed at the start. Use Arrow keys/WASD or the D-pad.");
+      setStatus(t("status_next_glyph"));
     }
     clearDpadAll();
   }
@@ -1994,7 +2098,6 @@
   }
 
   function onPointerDown(e) {
-    // Only suppress browser gestures when we actually need custom control
     const mustCapture = (state === GameState.running || state === GameState.quitting);
     if (mustCapture) e.preventDefault();
 
@@ -2019,16 +2122,14 @@
           activeTokenIndex = i;
           dragOffset.dx = tok.x - pointer.x;
           dragOffset.dy = tok.y - pointer.y;
-          setStatus("Drag into the entrance. Once inside, use Arrow keys/WASD or the D-pad.");
+          setStatus(t("status_drag_in"));
           return;
         }
       }
     }
   }
 
-
   function onPointerMove(e) {
-    // Only suppress browser behavior while the game is running (or quitting modal)
     if (state === GameState.running || state === GameState.quitting) e.preventDefault();
 
     if (state !== GameState.running) return;
@@ -2055,14 +2156,13 @@
         const reachesEntranceLine = (tok.x + tok.size/2 >= mazeRect.x - 1);
         if (reachesEntranceLine) {
           placeActiveTokenAtMazeStart(activeTokenIndex);
-          setStatus("Inside maze: use Arrow keys/WASD or the D-pad.");
+          setStatus(t("status_inside"));
         }
       }
 
       if (!tok.done && tok.inMaze) keepInMazeBounds(tok);
     }
   }
-
 
   function onPointerUp(e) {
     if (pointer.id === e.pointerId) {
@@ -2076,7 +2176,6 @@
   canvas.addEventListener("pointermove", onPointerMove, peOpts);
   canvas.addEventListener("pointerup", onPointerUp, peOpts);
   canvas.addEventListener("pointercancel", onPointerUp, peOpts);
-
 
   function passBoundsForCell(cx, cy, tok) {
     const r = cellToRect(cx, cy);
@@ -2109,7 +2208,6 @@
     return { cx, cy };
   }
 
-  // If more than 50% of the token is aligned with the opening, snap it into alignment.
   function mobileSnapIfMostlyAligned(tok, dir) {
     if (!isMobileLike()) return;
     if (!maze) return;
@@ -2121,7 +2219,6 @@
     const a = passBoundsForCell(cur.cx, cur.cy, tok);
     const b = passBoundsForCell(nb.cx, nb.cy, tok);
 
-    // Corridor overlap at the boundary between the two cells.
     const xMin = Math.max(a.xMin, b.xMin);
     const xMax = Math.min(a.xMax, b.xMax);
     const yMin = Math.max(a.yMin, b.yMin);
@@ -2130,7 +2227,6 @@
     const half = tok.size / 2;
 
     if (dir === "up" || dir === "down") {
-      // We need x within [xMin, xMax]. If we're within half a token, snap.
       if (tok.x < xMin) {
         const off = xMin - tok.x;
         if (off < half) tok.x = xMin;
@@ -2139,7 +2235,6 @@
         if (off < half) tok.x = xMax;
       }
     } else {
-      // left/right: snap Y
       if (tok.y < yMin) {
         const off = yMin - tok.y;
         if (off < half) tok.y = yMin;
@@ -2149,7 +2244,6 @@
       }
     }
   }
-
 
   /* =========================
      MAIN LOOP
@@ -2180,19 +2274,15 @@
           if (kv.active) {
             const boost = (keysDown.has("Shift") ? 1.6 : 1.0);
 
-            // Determine intended cardinal direction for snapping (mobile).
-            // If diagonal, pick the dominant axis.
             let dir = null;
             if (Math.abs(kv.ux) >= Math.abs(kv.uy)) dir = (kv.ux < 0 ? "left" : "right");
             else dir = (kv.uy < 0 ? "up" : "down");
 
-            // Mobile: snap into openings when "mostly aligned".
             if (isMobileLike()) mobileSnapIfMostlyAligned(tok, dir);
 
             let step;
             if (isMobileLike()) {
-              // Very small per-tick motion. Never exceed wall thickness.
-              const targetPer60fps = Math.min(runtime.wall, 1.2) * boost; // <= wall width
+              const targetPer60fps = Math.min(runtime.wall, 1.2) * boost;
               const scaled = targetPer60fps * (dt / (1/60));
               step = Math.min(runtime.wall, Math.max(0.35, scaled));
             } else {
@@ -2202,7 +2292,6 @@
             moveTokenWithCollision(tok, kv.ux * step, kv.uy * step);
             keepInMazeBounds(tok);
           }
-
 
           if (visitedDotsEnabled) {
             const cur = tokenCellFromPosition(tok.x, tok.y);
@@ -2286,9 +2375,15 @@
      Visited dots option wiring + localStorage
      ============================================================ */
   function getSavedVisitedDots() {
-    try { return (localStorage.getItem(LS_KEYS.visitedDots) === "1"); }
-    catch { return false; }
+    try {
+      const v = localStorage.getItem(LS_KEYS.visitedDots);
+      if (v == null) return true;          // default ON
+      return (v === "1");
+    } catch {
+      return true;                          // default ON
+    }
   }
+
   function saveVisitedDots(enabled) {
     try { localStorage.setItem(LS_KEYS.visitedDots, enabled ? "1" : "0"); } catch {}
   }
@@ -2312,12 +2407,15 @@
     timerSeconds = 0;
     renderTopTimerCartouche(timerSeconds);
     btnQuit.disabled = true;
-    setStatus("Click “Start New Game”.");
+    setStatus(t("status_click_new"));
     draw();
     requestAnimationFrame(tick);
   }
 
   window.addEventListener("load", async () => {
+    // language-aware initial status
+    setStatus(t("status_loading"));
+
     if (isMobileLike()) {
       applyMazeSizePreset("small");
       applyMobileOverridesIfNeeded();
@@ -2337,9 +2435,20 @@
     visitedDotsChk.addEventListener("change", applyVisitedDotsFromUI);
     setVisitedControlsEnabled(true);
 
+    // Persist default ON the very first time (when no value exists yet)
+    try {
+      if (localStorage.getItem(LS_KEYS.visitedDots) == null) {
+        saveVisitedDots(true);
+      }
+    } catch {}
+
+
     bindDpad();
 
     try { await ensureFontsLoaded(); } catch {}
+
+    // Apply all translated labels (buttons, modal, footer, option text)
+    applyUiText();
 
     renderTopTimerCartouche(0);
     init();
