@@ -1253,13 +1253,18 @@
     viewport.h = rect.height;
 
     const cssSide = getCssVarPx("--side-w", 200);
-    const maxPanel = Math.floor(viewport.w * 0.26);
-    const panelW = Math.max(110, Math.min(cssSide, maxPanel));
+
+    // On mobile, use narrower panels to give the maze more room.
+    const maxPanel = Math.floor(viewport.w * (isMobileLike() ? 0.18 : 0.26));
+    const minPanel = isMobileLike() ? 84 : 110;
+
+    const panelW = Math.max(minPanel, Math.min(cssSide, maxPanel));
+
 
     side = { x: 0, y: 0, w: panelW, h: viewport.h };
     collect = { x: Math.max(panelW, viewport.w - panelW), y: 0, w: panelW, h: viewport.h };
 
-    const pad = 14;
+    const pad = isMobileLike() ? 8 : 14;
     const bottomReserve = isMobileLike() ? MOBILE_TUNING.reserveBottomPx : 0;
 
     const availW = Math.max(50, viewport.w - side.w - collect.w - pad * 2);
@@ -1577,16 +1582,24 @@
   }
 
   function keepInMazeBounds(tok) {
-    const minX = mazeRect.x + tok.size/2;
-    const maxX = mazeRect.x + mazeRect.w + tok.size/2 + 10;
-    const minY = mazeRect.y + tok.size/2;
-    const maxY = mazeRect.y + mazeRect.h - tok.size/2;
+    // Keep the token inside the navigable area, not inside the outer border walls.
+    const w = runtime.wall || CFG.wallThickness;
+
+    const minX = mazeRect.x + w + tok.size / 2;
+    const minY = mazeRect.y + w + tok.size / 2;
+
+    // Bottom must also stay above the south wall
+    const maxY = mazeRect.y + mazeRect.h - w - tok.size / 2;
+
+    // Allow extra room to the right so the token can fully exit the maze.
+    const maxX = mazeRect.x + mazeRect.w + tok.size / 2 + 10;
 
     if (tok.x < minX) tok.x = minX;
     if (tok.y < minY) tok.y = minY;
     if (tok.y > maxY) tok.y = maxY;
     if (tok.x > maxX) tok.x = maxX;
   }
+
 
   /* =========================
      DRAWING
@@ -1738,7 +1751,8 @@
     // ctx.fillRect(mazeRect.x, mazeRect.y, mazeRect.w, mazeRect.h);
 
     // NEW: solid rounded panel behind the cartouche
-    const pad = 14;
+    const pad = isMobileLike() ? 8 : 14;
+
     const panelX = x - pad;
     const panelY = y - pad;
     const panelW = drawW + pad * 2;
