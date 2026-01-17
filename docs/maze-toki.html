@@ -329,7 +329,6 @@
     <div id="gameArea" class="gameArea">
       <canvas id="c"></canvas>
 
-      <!-- NEW: D-pad (mobile only via CSS @media pointer: coarse) -->
       <div id="dpad" class="dpad" aria-label="D-pad">
         <button class="dpadBtn empty" tabindex="-1" aria-hidden="true"></button>
         <button class="dpadBtn" data-dir="up" aria-label="Up">▲</button>
@@ -379,6 +378,42 @@
   const DEAD_CELL_RGBA = "rgba(0,0,0,0.18)";
 
   /* ============================================================
+     DEVICE-AWARE SETTINGS (CHANGE HERE)
+     ============================================================ */
+  function isCoarsePointer() {
+    try { return window.matchMedia && window.matchMedia("(pointer: coarse)").matches; }
+    catch { return false; }
+  }
+  function isSmallViewport() {
+    // conservative: catches most phones
+    return Math.min(window.innerWidth || 9999, window.innerHeight || 9999) <= 820;
+  }
+  function isMobileLike() {
+    return isCoarsePointer() || isSmallViewport();
+  }
+
+  // Mobile tuning: smaller glyphs + thinner walls so tokens can move through passages.
+  const MOBILE_TUNING = {
+    // Force maze size to small on mobile (and lock UI)
+    forceMazeSize: "small",
+
+    // Shrink token square; must remain comfortably smaller than passages.
+    glyphSize: 12,
+
+    // Make walls narrower on mobile so corridors are not pinched
+    wallThickness: 3,
+
+    // Slightly reduce passage inset so we don't steal corridor space
+    passageInset: 1,
+
+    // Optional: reduce pull speed a bit for touch control; keep as-is if you prefer
+    speed: 220,
+
+    // Optional: reduce keyboard/dpad speed slightly
+    keyMoveSpeed: 200,
+  };
+
+  /* ============================================================
      MAZE SIZE PRESETS (CHANGE HERE)
      ============================================================ */
   const MAZE_SIZE_PRESETS = {
@@ -395,19 +430,6 @@
   function safePresetName(v) {
     if (v === "small" || v === "medium" || v === "large") return v;
     return "small";
-  }
-
-  function applyMazeSizePreset(presetName) {
-    const name = safePresetName(presetName);
-    const p = MAZE_SIZE_PRESETS[name];
-
-    CFG.mazeCols = p.cols;
-    CFG.mazeRows = p.rows;
-    CFG.cellSize = p.cellSize;
-    CFG.wallThickness = p.wallThickness;
-    CFG.glyphSize = p.glyphSize;
-
-    return name;
   }
 
   /* =========================
@@ -449,6 +471,44 @@
 
     keyMoveSpeed: 220,
   };
+
+  // Applies a named maze preset (desktop/tablet defaults)
+  function applyMazeSizePreset(presetName) {
+    const name = safePresetName(presetName);
+    const p = MAZE_SIZE_PRESETS[name];
+
+    CFG.mazeCols = p.cols;
+    CFG.mazeRows = p.rows;
+    CFG.cellSize = p.cellSize;
+    CFG.wallThickness = p.wallThickness;
+    CFG.glyphSize = p.glyphSize;
+
+    return name;
+  }
+
+  // NEW: apply mobile tuning *after* preset so it overrides safely
+  function applyMobileOverridesIfNeeded() {
+    if (!isMobileLike()) return;
+
+    CFG.wallThickness = MOBILE_TUNING.wallThickness;
+    CFG.glyphSize = MOBILE_TUNING.glyphSize;
+    CFG.passageInset = MOBILE_TUNING.passageInset;
+    CFG.speed = MOBILE_TUNING.speed;
+    CFG.keyMoveSpeed = MOBILE_TUNING.keyMoveSpeed;
+  }
+
+  // NEW: on mobile, lock maze size selector to small
+  function enforceMobileMazeSizeUI(mazeSizeSel) {
+    if (!isMobileLike()) return;
+
+    mazeSizeSel.value = "small";
+    mazeSizeSel.disabled = true;
+
+    // Keep only "Small" selectable (still visible list, but restricted)
+    Array.from(mazeSizeSel.options).forEach(opt => {
+      opt.disabled = (opt.value !== "small");
+    });
+  }
 
   /* =========================
      Cartouche / nanpa-linja-n essentials
@@ -793,24 +853,20 @@
 
   const dpadEl = document.getElementById("dpad");
 
-  const finishCanvas = document.createElement("canvas");
-  let finishCartoucheReady = false;
-
   const timerOffscreen = document.createElement("canvas");
 
   /* =========================
      GAME STATE
      ========================= */
-  const GameState = {
-    idle: "idle",
-    running: "running",
-    finished: "finished",
-    quitting: "quitting"
-  };
-
+  const GameState = { idle: "idle", running: "running", finished: "finished", quitting: "quitting" };
   let state = GameState.idle;
 
   function syncMazeSizeUiLock() {
+    // On mobile: always locked to small
+    if (isMobileLike()) {
+      enforceMobileMazeSizeUI(mazeSizeSel);
+      return;
+    }
     mazeSizeSel.disabled = (state === GameState.running || state === GameState.quitting);
   }
 
@@ -827,6 +883,12 @@
   }
 
   window.addEventListener("resize", () => {
+    // If mobile status can change on rotate, re-apply constraints and overrides
+    if (isMobileLike()) {
+      applyMazeSizePreset("small");
+      applyMobileOverridesIfNeeded();
+      enforceMobileMazeSizeUI(mazeSizeSel);
+    }
     resizeCanvasToDisplaySize();
     layout();
     renderTopTimerCartouche(timerSeconds);
@@ -934,9 +996,7 @@
     return out;
   }
 
-  function degreeOf(cx, cy) {
-    return neighborsOf(cx, cy).length;
-  }
+  function degreeOf(cx, cy) { return neighborsOf(cx, cy).length; }
 
   function computeTrunkPathSet(start, end) {
     const startK = cellKey(start.cx, start.cy);
@@ -1017,7 +1077,6 @@
      INPUT SOURCES: keyboard + D-pad
      ========================= */
   const keysDown = new Set();
-
   function isTypingContext(el) {
     if (!el) return false;
     const tag = String(el.tagName || "").toLowerCase();
@@ -1044,23 +1103,12 @@
     if (e.key === "Shift") keysDown.delete("Shift");
   });
 
-  // NEW: D-pad state (mobile)
   const dpadState = { up: false, down: false, left: false, right: false };
 
-  function isCoarsePointer() {
-    try {
-      return window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-    } catch {
-      return false;
-    }
-  }
-
-  // NEW: D-pad wiring (pointer events, supports press-and-hold)
   function setDpad(dir, isDown) {
     if (!(dir in dpadState)) return;
     dpadState[dir] = isDown;
 
-    // visual pressed state
     const btn = dpadEl && dpadEl.querySelector(`.dpadBtn[data-dir="${dir}"]`);
     if (btn) btn.classList.toggle("pressed", !!isDown);
   }
@@ -1074,9 +1122,8 @@
 
   function bindDpad() {
     if (!dpadEl) return;
-    if (!isCoarsePointer()) return; // mobile-only behavior
+    if (!isCoarsePointer()) return;
 
-    // Prevent pad interaction from triggering canvas drag/pull.
     const stopAll = (e) => { e.preventDefault(); e.stopPropagation(); };
 
     dpadEl.addEventListener("pointerdown", stopAll, { passive: false });
@@ -1103,10 +1150,7 @@
         setDpad(btn.dataset.dir, false);
       }, { passive: false });
 
-      // If pointer leaves the button while still down, release.
-      btn.addEventListener("pointerleave", (e) => {
-        // Only release if the pointer is down on that button.
-        // Pointer Events do not expose "buttons" reliably on mobile; safe to just release.
+      btn.addEventListener("pointerleave", () => {
         setDpad(btn.dataset.dir, false);
       });
     });
@@ -1115,22 +1159,15 @@
   function keyboardVector() {
     let dx = 0, dy = 0;
 
-    // Keyboard
     const left  = keysDown.has("ArrowLeft")  || keysDown.has("a") || keysDown.has("A");
     const right = keysDown.has("ArrowRight") || keysDown.has("d") || keysDown.has("D");
     const up    = keysDown.has("ArrowUp")    || keysDown.has("w") || keysDown.has("W");
     const down  = keysDown.has("ArrowDown")  || keysDown.has("s") || keysDown.has("S");
 
-    // D-pad
-    const dL = dpadState.left;
-    const dR = dpadState.right;
-    const dU = dpadState.up;
-    const dD = dpadState.down;
-
-    if (left || dL)  dx -= 1;
-    if (right || dR) dx += 1;
-    if (up || dU)    dy -= 1;
-    if (down || dD)  dy += 1;
+    if (left || dpadState.left)  dx -= 1;
+    if (right || dpadState.right) dx += 1;
+    if (up || dpadState.up)      dy -= 1;
+    if (down || dpadState.down)  dy += 1;
 
     const len = Math.hypot(dx, dy) || 1;
     return { ux: dx / len, uy: dy / len, active: (dx !== 0 || dy !== 0) };
@@ -1141,10 +1178,7 @@
      ========================= */
   function makeMaze(cols, rows) {
     const cells = Array.from({ length: rows }, () =>
-      Array.from({ length: cols }, () => ({
-        n: true, e: true, s: true, w: true,
-        visited: false
-      }))
+      Array.from({ length: cols }, () => ({ n: true, e: true, s: true, w: true, visited: false }))
     );
 
     function neighbors(cx, cy) {
@@ -1557,7 +1591,7 @@
   function drawTokens() {
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = `${Math.max(14, CFG.glyphSize)}px "${CARTOUCHE_FONT_FAMILY}"`;
+    ctx.font = `${Math.max(12, CFG.glyphSize)}px "${CARTOUCHE_FONT_FAMILY}"`;
 
     for (const tok of tokens) {
       if (!tok || tok.cp == null) continue;
@@ -1604,7 +1638,6 @@
     timerSeconds = 0;
     renderTopTimerCartouche(timerSeconds);
 
-    finishCartoucheReady = false;
     clearVisitedCells();
 
     generateSolvableMaze();
@@ -1644,7 +1677,6 @@
 
     clearVisitedCells();
     trunkCells = new Set();
-    finishCartoucheReady = false;
 
     setStatus("Game quit. Click “Start New Game” to play again.");
     draw();
@@ -1739,13 +1771,11 @@
             markCellSeen(c.cx, c.cy);
           }
 
-          setStatus("Inside maze: use Arrow keys/WASD, or the D-pad on mobile. Mouse pull still works too.");
+          setStatus("Inside maze: use Arrow keys/WASD, or the D-pad on mobile.");
         }
       }
 
-      if (!tok.done && tok.inMaze) {
-        keepInMazeBounds(tok);
-      }
+      if (!tok.done && tok.inMaze) keepInMazeBounds(tok);
     }
   }
 
@@ -1774,7 +1804,6 @@
         const tok = tokens[activeTokenIndex];
         if (tok && !tok.done && tok.inMaze) {
 
-          // mouse pull behavior (desktop)
           const pointerOnGlyph = pointer.down && hitToken(tok, pointer.x, pointer.y);
           if (pointer.down && !pointerOnGlyph) {
             const dx = pointer.x - tok.x;
@@ -1788,7 +1817,6 @@
             keepInMazeBounds(tok);
           }
 
-          // keyboard + dpad behavior (mobile + desktop)
           const kv = keyboardVector();
           if (kv.active) {
             const boost = (keysDown.has("Shift") ? 1.6 : 1.0);
@@ -1797,7 +1825,6 @@
             keepInMazeBounds(tok);
           }
 
-          // visited/dead-end logic preserved
           if (visitedDotsEnabled) {
             const cur = tokenCellFromPosition(tok.x, tok.y);
             if (!tok.lastCell) {
@@ -1840,15 +1867,8 @@
   /* =========================
      BUTTONS
      ========================= */
-  btnNew.addEventListener("click", () => {
-    hideQuitModal(false);
-    startNewGame();
-  });
-
-  btnQuit.addEventListener("click", () => {
-    if (state !== GameState.running) return;
-    showQuitModal();
-  });
+  btnNew.addEventListener("click", () => { hideQuitModal(false); startNewGame(); });
+  btnQuit.addEventListener("click", () => { if (state === GameState.running) showQuitModal(); });
 
   btnCancelQuit.addEventListener("click", () => hideQuitModal(true));
   btnConfirmQuit.addEventListener("click", () => quitGameConfirmed());
@@ -1870,6 +1890,12 @@
   }
 
   function applyMazeSizeFromUI() {
+    // On mobile, ignore changes (and keep UI forced)
+    if (isMobileLike()) {
+      enforceMobileMazeSizeUI(mazeSizeSel);
+      return;
+    }
+
     const chosen = safePresetName(mazeSizeSel.value);
     const applied = applyMazeSizePreset(chosen);
     saveMazeSize(applied);
@@ -1879,6 +1905,7 @@
       return;
     }
 
+    applyMobileOverridesIfNeeded();
     layout();
     draw();
   }
@@ -1919,11 +1946,19 @@
   }
 
   window.addEventListener("load", async () => {
-    const savedSize = getSavedMazeSize();
-    mazeSizeSel.value = savedSize;
-    applyMazeSizePreset(savedSize);
-    syncMazeSizeUiLock();
+    // NEW: Mobile enforcement happens before reading saved preference.
+    if (isMobileLike()) {
+      applyMazeSizePreset("small");
+      applyMobileOverridesIfNeeded();
+      enforceMobileMazeSizeUI(mazeSizeSel);
+      saveMazeSize("small"); // keep storage consistent
+    } else {
+      const savedSize = getSavedMazeSize();
+      mazeSizeSel.value = savedSize;
+      applyMazeSizePreset(savedSize);
+    }
 
+    syncMazeSizeUiLock();
     mazeSizeSel.addEventListener("change", applyMazeSizeFromUI);
 
     visitedDotsEnabled = getSavedVisitedDots();
@@ -1932,7 +1967,6 @@
 
     setVisitedControlsEnabled(true);
 
-    // NEW: enable D-pad listeners (shows only on coarse pointers via CSS)
     bindDpad();
 
     try { await ensureFontsLoaded(); } catch {}
@@ -1941,6 +1975,8 @@
     renderTopTimerCartouche(0);
     init();
   });
+
+  function showQuitModal() { /* placeholder to satisfy hoist; real function already defined above */ }
 })();
 </script>
 </body>
