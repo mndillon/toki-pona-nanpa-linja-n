@@ -1,0 +1,1888 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toki Pona Maze</title>
+
+  <style>
+    :root {
+      --topbar-h: 56px;
+      --side-w: 200px;
+
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --panel: rgba(255,255,255,0.35);
+      --panel-border: rgba(17,17,17,0.18);
+    }
+
+    /* PatrickHand for all UI text */
+    @font-face {
+      font-family: "PatrickHand";
+      src: url("./fonts/patrickhead-regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    /* nanpa-linja-n cartouche font (UCSUR) */
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src:
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff2") format("woff2"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff")  format("woff"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf")   format("opentype");
+      font-display: swap;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--ink);
+    }
+
+    .topbar {
+      height: var(--topbar-h);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      border-bottom: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(6px);
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 16px;
+    }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    /* dropdown styling to match buttons */
+    .select {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 8px 34px 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1;
+      position: relative;
+    }
+    .select:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .selectWrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .selectWrap::after {
+      content: "▾";
+      position: absolute;
+      right: 10px;
+      pointer-events: none;
+      color: rgba(0,0,0,0.6);
+      font-size: 14px;
+    }
+
+    /* checkbox styling to match buttons */
+    .checkWrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 6px 10px;
+      border-radius: 10px;
+      user-select: none;
+    }
+    .checkWrap input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: rgba(0,0,0,0.75);
+      cursor: pointer;
+    }
+    .checkWrap input[type="checkbox"]:disabled {
+      cursor: not-allowed;
+    }
+    .checkWrap .checkLabel {
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .checkWrap.disabled {
+      opacity: 0.55;
+    }
+
+    /* Timer rendered as nanpa-linja-n cartouche */
+    .timerCanvas {
+      margin-left: auto;
+      height: 36px;
+      width: 170px;
+      display: block;
+    }
+
+    .status {
+      margin-left: 12px;
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 46vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* UPDATED: leave space for footer below the maze */
+    .wrap {
+      height: calc(100% - var(--topbar-h));
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .gameArea {
+        position: relative;   /* IMPORTANT: overlay will now cover only the game area */
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    #c {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    /* keep existing defaults for other canvases */
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      z-index: 10;
+      font-family: "PatrickHand", system-ui, sans-serif;
+    }
+    .overlay.show { display: flex; }
+
+    .modal {
+      width: min(520px, 92vw);
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(0,0,0,0.18);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+    }
+    .modal h2 {
+      margin: 0 0 8px 0;
+      font-size: 22px;
+    }
+    .modal p {
+      margin: 0 0 14px 0;
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 16px;
+    }
+    .modal .row {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .mazeHidden #c { visibility: hidden; }
+
+
+    /* NEW: footer / disclaimer under the maze */
+    .footer {
+      flex: 0 0 auto;
+      border-top: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.25);
+      padding: 10px 12px;
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .footer a {
+      color: var(--ink);
+      text-decoration: underline;
+    }
+    .footerRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .footerLeft {
+      min-width: 240px;
+    }
+    .footerRight {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <button id="btnNew" class="btn">Start New Game</button>
+    <button id="btnQuit" class="btn" disabled>Quit Game</button>
+
+    <div class="selectWrap" title="Maze size">
+      <select id="mazeSize" class="select" aria-label="Maze size">
+        <option value="small">Small</option>
+        <option value="medium">Medium</option>
+        <option value="large">Large</option>
+      </select>
+    </div>
+
+    <label id="visitedWrap" class="checkWrap" title="Leave a small dot behind on each cell you leave">
+      <input id="visitedDots" type="checkbox" />
+      <span class="checkLabel">Visited dots</span>
+    </label>
+
+    <div id="status" class="status">Loading fonts…</div>
+
+    <canvas id="timerCanvas" class="timerCanvas" aria-label="Timer"></canvas>
+  </div>
+
+  <div id="wrap" class="wrap">
+
+    <div id="gameArea" class="gameArea">
+        <canvas id="c"></canvas>
+
+        <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+            <div class="modal">
+            <h2>Quit current game?</h2>
+            <p>The timer will stop. If you quit, your current progress will be lost.</p>
+            <div class="row">
+                <button id="btnCancelQuit" class="btn">Cancel</button>
+                <button id="btnConfirmQuit" class="btn">Quit</button>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer" aria-label="Disclaimer">
+        <div class="footerRow">
+            <div class="footerLeft">
+            Disclaimer: This is a small educational/game demo for Toki Pona practice. It is provided “as is” with no guarantees of correctness, availability, or fitness for any purpose.
+            </div>
+            <div class="footerRight">
+            <a href="./index.html">Back to index</a>
+            </div>
+        </div>
+    </footer>
+
+
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* =========================
+     VISUAL TUNING (CHANGE HERE)
+     ========================= */
+  const VISITED_DOT_RGBA = "rgba(0,0,0,0.24)";
+
+  // Dead-end shading (dark gray but not overwhelming)
+  // Make darker if needed: try 0.22–0.28
+  const DEAD_CELL_RGBA = "rgba(0,0,0,0.18)";
+
+  /* ============================================================
+     MAZE SIZE PRESETS (CHANGE HERE)
+     ============================================================ */
+  const MAZE_SIZE_PRESETS = {
+    small:  { cols: 19, rows: 13, cellSize: 34, wallThickness: 6, glyphSize: 18 },
+    medium: { cols: 27, rows: 19, cellSize: 28, wallThickness: 5, glyphSize: 16 },
+    large:  { cols: 35, rows: 25, cellSize: 32, wallThickness: 3, glyphSize: 18 },
+  };
+
+  const LS_KEYS = {
+    mazeSize: "tp_maze_size_v1",
+    visitedDots: "tp_maze_visiteddots_v1",
+  };
+
+  function safePresetName(v) {
+    if (v === "small" || v === "medium" || v === "large") return v;
+    return "small";
+  }
+
+  function applyMazeSizePreset(presetName) {
+    const name = safePresetName(presetName);
+    const p = MAZE_SIZE_PRESETS[name];
+
+    CFG.mazeCols = p.cols;
+    CFG.mazeRows = p.rows;
+    CFG.cellSize = p.cellSize;
+    CFG.wallThickness = p.wallThickness;
+    CFG.glyphSize = p.glyphSize;
+
+    return name;
+  }
+
+  /* =========================
+     CONFIGURATION (CHANGE HERE)
+     ========================= */
+  const CFG = {
+    mazeCols: 19,
+    mazeRows: 13,
+    cellSize: 34,
+
+    wallThickness: 6,
+    passageInset: 2,
+
+    glyphSize: 18,
+    tokenCount: 6,
+    speed: 220,
+
+    sideWidth: 200,
+    collectWidth: 200,
+
+    glyphFontFamily: `"linja pona","sitelen pona","linja sike", system-ui, sans-serif`,
+
+    finishLargePx: 140,
+    finishSmallPx: 40,
+    finishPad: 26,
+    finishBorder: 4,
+    finishCorner: 22,
+    finishGap: 4,
+
+    timerLargePx: 34,
+    timerSmallPx: 12,
+    timerPad: 8,
+    timerBorder: 2,
+    timerCorner: 12,
+    timerGap: 1,
+
+    timerCssW: 170,
+    timerCssH: 36,
+
+    keyMoveSpeed: 220,
+
+    tokiPonaWords: [
+      "jan","pona","toki","suno","mun","telo","soweli","kili","kala","waso",
+      "ma","tawa","lon","pali","lukin","kute","pilin","moku","ilo","sona",
+      "lape","suli","lili","ike","wile","awen","open","pini","seme","ni",
+      "ona","mi","sina","ijo","nasin","kama","tan","kepeken","poka","insa",
+      "sin","ante","mute","ali","namako","sama","weka","jo"
+    ]
+  };
+
+  /* =========================
+     Cartouche / nanpa-linja-n essentials
+     ========================= */
+  const CARTOUCHE_FONT_FAMILY = "TP-Cartouche-Font";
+
+  const WORD_TO_UCSUR_CP = {
+    "nanpa": 0xF193D, "esun": 0xF190B, "e": 0xF1909, "nasa": 0xF193E,
+    "ni": 0xF1941, "nena": 0xF1940, "o": 0xF1944, "kulupu": 0xF191F,
+
+    "ijo": 0xF190C, "wan": 0xF1973, "tu": 0xF196E, "seli": 0xF1957, "awen": 0xF1908,
+    "luka": 0xF192D, "utala": 0xF1971, "mun": 0xF193A, "pipi": 0xF1951, "jo": 0xF1913,
+
+    "en":   0xF190A,
+    "ona":  0xF1946,
+    "kolon": 0xF199D
+
+  };
+
+  function getSmallCodepointsSet() {
+    return new Set([
+      0xF193D, // nanpa
+      0xF1940, // nena
+      0xF1941, // ni
+      0xF193E, // nasa
+      0xF1909, // e
+      0xF190B, // esun
+      0xF190A, // en
+    ]);
+  }
+  const SMALL_SET = getSmallCodepointsSet();
+
+  const DIGIT_TO_TOKEN = {
+    "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
+    "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
+  };
+
+  const TOKEN_TO_DIGIT_WORD = {
+    "NI": "ijo", "WE": "wan", "TE": "tu", "SE": "seli", "NA": "awen",
+    "LE": "luka", "NU": "utala", "ME": "mun", "PE": "pipi", "JE": "jo",
+  };
+
+  const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
+  const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
+  const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
+
+  function normalizeLooseSeparators(raw) {
+    if (raw == null) return "";
+    let s = String(raw);
+    const isNeg = s.startsWith("-");
+    const head = isNeg ? "-" : "";
+    const rest = isNeg ? s.slice(1) : s;
+    let r = rest.replace(/\s+/g, " ");
+    r = r.replace(/-+/g, "-");
+    return (head + r).trim();
+  }
+
+  function numberStrToNanpaCaps(s, { thousandsChar = "," } = {}) {
+    if (s == null) throw new Error("s must be a string, not null");
+    let raw = normalizeLooseSeparators(String(s));
+    if (!raw) throw new Error("Empty value cannot be encoded");
+
+    function encodeSingleNumberSegment(segment, includeInitialNe) {
+      let seg = String(segment).trim();
+      if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
+
+      const out = [];
+      if (includeInitialNe) out.push("NE");
+
+      function pushNene() {
+        if (out.length > 0 && out[out.length - 1] === "NENE") return;
+        out.push("NENE");
+      }
+
+      if (seg.startsWith("-")) {
+        out.push("NO");
+        seg = seg.slice(1).trim();
+      }
+
+      if ((seg.match(/\./g) || []).length > 1) {
+        throw new Error(`Invalid numeric segment with multiple decimals: ${segment}`);
+      }
+
+      let intPart = seg;
+      let fracPart = "";
+      let hasDecimal = false;
+      if (seg.includes(".")) {
+        [intPart, fracPart] = seg.split(".", 2);
+        hasDecimal = true;
+      }
+
+      let ip = String(intPart ?? "").trim();
+      if (ip === "") ip = "0";
+
+      const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+      for (const g of groups) {
+        if (g === "" || !/^\d+$/.test(g)) {
+          throw new Error(`Invalid integer group "${g}" in "${s}"`);
+        }
+      }
+
+      for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
+
+      if (hasDecimal) {
+        out.push(OPCHAR_TO_TOKEN["."]);
+        for (const ch of fracPart) {
+          if (ch === "_" ) continue;
+          if (ch === " " || ch === "-") { pushNene(); continue; }
+          if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
+          if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
+          throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
+        }
+      }
+
+      out.push("N");
+      return out.join("");
+    }
+
+    return encodeSingleNumberSegment(raw, true);
+  }
+
+  function tokenizeNanpaCaps(caps) {
+    const s = String(caps).trim().toUpperCase();
+    if (!s.endsWith("N")) throw new Error("nanpa-caps must end with final terminator 'N'");
+    if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
+
+    const tokens = [];
+    let i = 0;
+    const n = s.length;
+
+    while (i < n - 1) {
+      let matched = null;
+      for (const pref of TOKEN_PREFIXES) {
+        if (s.startsWith(pref, i)) { matched = pref; break; }
+      }
+      if (matched != null) { tokens.push(matched); i += matched.length; continue; }
+
+      if (i + 2 <= n - 1) {
+        const two = s.slice(i, i + 2);
+        if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
+      }
+      throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
+    }
+
+    tokens.push("N");
+    return tokens;
+  }
+
+  function nanpaCapsTokensToTpWords(tokens) {
+    const out = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+
+      if (t === "NE") {
+        if (out.length === 0) out.push("nanpa", "en");
+        else out.push("nena", "en");
+        continue;
+      }
+
+      if (DIGIT_TOKENS.has(t)) {
+        const digitWord = TOKEN_TO_DIGIT_WORD[t];
+        if (t === "NI" || t === "NA" || t === "NU") out.push("nena", digitWord);
+        else out.push(digitWord, "en");
+        continue;
+      }
+
+      if (t === "NO") { out.push("nena", "o"); continue; }
+      if (t === "KE") { out.push("kulupu", "en"); continue; }
+      if (t === "N")  { out.push("nanpa"); continue; }
+
+      throw new Error(`Unsupported token "${t}" in time cartouche`);
+    }
+    return out;
+  }
+
+  function tpWordsToUcsurCodepoints(words) {
+    const cps = [];
+    for (const w of words) {
+      const key = String(w).toLowerCase();
+      const cp = WORD_TO_UCSUR_CP[key];
+      if (cp == null) throw new Error(`No UCSUR code point for word "${w}"`);
+      cps.push(cp);
+    }
+    return cps;
+  }
+
+  function decimalToUcsurCodepoints(decimalStr) {
+    const raw0 = String(decimalStr ?? "").trim();
+    if (!raw0) return [];
+    const caps = numberStrToNanpaCaps(raw0, { thousandsChar: "," });
+    const tokens = tokenizeNanpaCaps(caps);
+    const tpWords = nanpaCapsTokensToTpWords(tokens);
+    return tpWordsToUcsurCodepoints(tpWords);
+  }
+
+  function drawRoundedRect(ctx, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
+
+  function applyCartoucheStrokeStyle(ctx, borderPx) {
+    ctx.lineWidth = borderPx;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111";
+  }
+
+  function renderMixedCartoucheToCanvas(canvas, glyphs, largePx, smallPx, smallCodepoints, options = {}) {
+    const pad = options.padding ?? 18;
+    const border = options.border ?? 2;
+    const corner = options.cornerRadius ?? 16;
+    const letterGap = options.letterGap ?? 0;
+
+    const ctx = canvas.getContext("2d");
+    ctx.textBaseline = "alphabetic";
+
+    const runs = [];
+    let totalWidth = 0;
+    let maxAscent = 0;
+    let maxDescent = 0;
+
+    for (const g of glyphs) {
+      const ch = (typeof g === "number") ? String.fromCodePoint(g) : String(g);
+      const isSmall = (typeof g === "number") && smallCodepoints.has(g);
+      const px = isSmall ? smallPx : largePx;
+
+      ctx.font = `${px}px "${CARTOUCHE_FONT_FAMILY}"`;
+      const m = ctx.measureText(ch);
+
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      runs.push({ ch, px, tightW, left, ascent, descent });
+
+      totalWidth += tightW + letterGap;
+      if (ascent > maxAscent) maxAscent = ascent;
+      if (descent > maxDescent) maxDescent = descent;
+    }
+    if (runs.length > 0) totalWidth -= letterGap;
+
+    const textHeight = Math.ceil(maxAscent + maxDescent);
+    const cartW = Math.ceil(totalWidth + pad * 2);
+    const cartH = Math.ceil(textHeight + pad * 2);
+
+    canvas.width = cartW + border * 2;
+    canvas.height = cartH + border * 2;
+
+    const ctx2 = canvas.getContext("2d");
+    ctx2.textBaseline = "alphabetic";
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawRoundedRect(ctx2, border, border, cartW, cartH, corner);
+    applyCartoucheStrokeStyle(ctx2, border);
+    ctx2.stroke();
+
+    const baselineY = border + pad + maxAscent;
+    let x = border + pad;
+
+    ctx2.fillStyle = "#111";
+    for (const r of runs) {
+      ctx2.font = `${r.px}px "${CARTOUCHE_FONT_FAMILY}"`;
+      const drawX = x + (r.left ?? 0);
+      ctx2.fillText(r.ch, drawX, baselineY);
+      x += r.tightW + letterGap;
+    }
+  }
+
+  function buildTimeCartoucheGlyphs(totalSeconds) {
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = totalSeconds % 60;
+
+    const mm2 = String(mm).padStart(2, "0");
+    const ss2 = String(ss).padStart(2, "0");
+
+    const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
+    const cpEn    = WORD_TO_UCSUR_CP["en"];
+
+    function digitInner(dChar) {
+      const cps = decimalToUcsurCodepoints(String(dChar));
+      if (cps.length < 3) return [];
+      return cps.slice(2, cps.length - 1);
+    }
+
+    const inner = [];
+    for (const ch of mm2) inner.push(...digitInner(ch));
+    inner.push(WORD_TO_UCSUR_CP["kolon"]);
+    for (const ch of ss2) inner.push(...digitInner(ch));
+
+    return [cpNanpa, cpEn, ...inner, cpNanpa];
+  }
+
+  async function ensureFontsLoaded() {
+    if (!document.fonts || !document.fonts.load || !document.fonts.ready) return;
+
+    await document.fonts.load(`24px "PatrickHand"`, "Time");
+
+    const sampleChar = String.fromCodePoint(0xF190B);
+    await document.fonts.load(`24px "${CARTOUCHE_FONT_FAMILY}"`, sampleChar);
+
+    await document.fonts.ready;
+  }
+
+  /* =========================
+     DOM / CANVAS SETUP
+     ========================= */
+  const wrap = document.getElementById("wrap");
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d", { alpha: false });
+
+  const btnNew = document.getElementById("btnNew");
+  const btnQuit = document.getElementById("btnQuit");
+  const overlay = document.getElementById("overlay");
+  const btnCancelQuit = document.getElementById("btnCancelQuit");
+  const btnConfirmQuit = document.getElementById("btnConfirmQuit");
+
+  const statusEl = document.getElementById("status");
+
+  const timerCanvas = document.getElementById("timerCanvas");
+  const timerCtx = timerCanvas.getContext("2d");
+
+  const mazeSizeSel = document.getElementById("mazeSize");
+
+  const visitedWrap = document.getElementById("visitedWrap");
+  const visitedDotsChk = document.getElementById("visitedDots");
+
+  const finishCanvas = document.createElement("canvas");
+  let finishCartoucheReady = false;
+
+  const timerOffscreen = document.createElement("canvas");
+
+  /* =========================
+     GAME STATE
+     ========================= */
+  const GameState = {
+    idle: "idle",
+    running: "running",
+    finished: "finished",
+    quitting: "quitting"
+  };
+
+  let state = GameState.idle;
+
+  function syncMazeSizeUiLock() {
+    mazeSizeSel.disabled = (state === GameState.running || state === GameState.quitting);
+  }
+
+  function resizeCanvasToDisplaySize() {
+    const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.floor(rect.width * dpr));
+    const h = Math.max(1, Math.floor(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  window.addEventListener("resize", () => {
+    resizeCanvasToDisplaySize();
+    layout();
+    renderTopTimerCartouche(timerSeconds);
+    draw();
+  });
+
+  function renderTopTimerCartouche(totalSeconds) {
+    const targetCssW = CFG.timerCssW;
+    const targetCssH = CFG.timerCssH;
+    const dpr = window.devicePixelRatio || 1;
+
+    timerCanvas.style.width = `${targetCssW}px`;
+    timerCanvas.style.height = `${targetCssH}px`;
+    timerCanvas.width = Math.ceil(targetCssW * dpr);
+    timerCanvas.height = Math.ceil(targetCssH * dpr);
+
+    timerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    timerCtx.clearRect(0, 0, targetCssW, targetCssH);
+
+    const glyphs = buildTimeCartoucheGlyphs(totalSeconds);
+
+    renderMixedCartoucheToCanvas(
+      timerOffscreen,
+      glyphs,
+      CFG.timerLargePx,
+      CFG.timerSmallPx,
+      SMALL_SET,
+      { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
+    );
+
+    const scale = Math.min(
+      targetCssW / timerOffscreen.width,
+      targetCssH / timerOffscreen.height
+    );
+
+    const drawW = Math.floor(timerOffscreen.width * scale);
+    const drawH = Math.floor(timerOffscreen.height * scale);
+
+    const x = Math.floor(targetCssW - drawW);
+    const y = Math.floor((targetCssH - drawH) / 2);
+
+    timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
+  }
+
+  let timerSeconds = 0;
+  let timerHandle = null;
+
+  const pointer = { x: 0, y: 0, down: false, id: null };
+
+  let viewport = { w: 0, h: 0 };
+  let side = { x: 0, y: 0, w: CFG.sideWidth, h: 0 };
+  let collect = { x: 0, y: 0, w: CFG.collectWidth, h: 0 };
+  let mazeRect = { x: 0, y: 0, w: 0, h: 0 };
+
+  let maze = null;
+  let startCell = null;
+  let endCell = null;
+  let wallRects = [];
+
+  let tokens = [];
+  let activeTokenIndex = -1;
+  let dragOffset = { dx: 0, dy: 0 };
+  let lastFrameTs = performance.now();
+
+  const runtime = { cell: CFG.cellSize };
+
+  // Visited dots + dead-end shading state (per maze)
+  let visitedDotsEnabled = false;
+  let visitedCells = new Set(); // dots: keys like "cx,cy"
+  let seenCells = new Set();    // cells entered at least once: keys like "cx,cy"
+  let deadCells = new Set();    // fully explored subtree cells (non-trunk): keys like "cx,cy"
+
+  // trunk (main path) cells from start to end — must never be shaded dark
+  let trunkCells = new Set();   // keys like "cx,cy"
+
+  function setVisitedControlsEnabled(enabled) {
+    visitedDotsChk.disabled = !enabled;
+    visitedWrap.classList.toggle("disabled", !enabled);
+  }
+
+  function clearVisitedCells() {
+    visitedCells.clear();
+    seenCells.clear();
+    deadCells.clear();
+  }
+
+  function cellKey(cx, cy) {
+    return `${cx},${cy}`;
+  }
+
+  function clampInt(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function tokenCellFromPosition(x, y) {
+    const cell = runtime.cell;
+    const cx = clampInt(Math.floor((x - mazeRect.x) / cell), 0, CFG.mazeCols - 1);
+    const cy = clampInt(Math.floor((y - mazeRect.y) / cell), 0, CFG.mazeRows - 1);
+    return { cx, cy };
+  }
+
+  function markCellVisited(cx, cy) {
+    visitedCells.add(cellKey(cx, cy));
+  }
+
+  function markCellSeen(cx, cy) {
+    seenCells.add(cellKey(cx, cy));
+  }
+
+  function markComponentDead(componentKeys) {
+    // Never add trunk cells to deadCells
+    for (const k of componentKeys) {
+      if (!trunkCells.has(k)) deadCells.add(k);
+    }
+  }
+
+  /* ============================================================
+     TREE / SUBTREE + TRUNK (MAIN PATH) SUPPORT
+     ============================================================ */
+
+  function neighborsOf(cx, cy) {
+    if (!maze) return [];
+    const c = maze.cells[cy][cx];
+    const out = [];
+    if (!c.n && cy > 0) out.push({ cx, cy: cy - 1 });
+    if (!c.e && cx < maze.cols - 1) out.push({ cx: cx + 1, cy });
+    if (!c.s && cy < maze.rows - 1) out.push({ cx, cy: cy + 1 });
+    if (!c.w && cx > 0) out.push({ cx: cx - 1, cy });
+    return out;
+  }
+
+  function degreeOf(cx, cy) {
+    return neighborsOf(cx, cy).length;
+  }
+
+  // Compute the unique trunk path between start and end in a perfect maze (tree).
+  function computeTrunkPathSet(start, end) {
+    const startK = cellKey(start.cx, start.cy);
+    const endK = cellKey(end.cx, end.cy);
+
+    const q = [start];
+    const parent = new Map(); // childKey -> parentKey
+    parent.set(startK, null);
+
+    while (q.length) {
+      const cur = q.shift();
+      const curK = cellKey(cur.cx, cur.cy);
+      if (curK === endK) break;
+
+      for (const nb of neighborsOf(cur.cx, cur.cy)) {
+        const nbK = cellKey(nb.cx, nb.cy);
+        if (!parent.has(nbK)) {
+          parent.set(nbK, curK);
+          q.push(nb);
+        }
+      }
+    }
+
+    // Reconstruct path end->start
+    const trunk = new Set();
+    if (!parent.has(endK)) return trunk;
+
+    let k = endK;
+    while (k != null) {
+      trunk.add(k);
+      k = parent.get(k) ?? null;
+    }
+    return trunk;
+  }
+
+  // Return the connected component on the "start side" of edge (start <-> blocked)
+  // by BFS from `start`, forbidding traversal from start into blocked.
+  function componentBehindEdge(start, blocked) {
+    const startK = cellKey(start.cx, start.cy);
+    const blockedK = cellKey(blocked.cx, blocked.cy);
+
+    const q = [start];
+    const seenLocal = new Set([startK]);
+    const keys = [startK];
+
+    while (q.length) {
+      const cur = q.shift();
+      const ns = neighborsOf(cur.cx, cur.cy);
+
+      for (const nb of ns) {
+        const nbK = cellKey(nb.cx, nb.cy);
+
+        // Block exactly the edge that connects start -> blocked.
+        if (cellKey(cur.cx, cur.cy) === startK && nbK === blockedK) continue;
+
+        if (!seenLocal.has(nbK)) {
+          seenLocal.add(nbK);
+          keys.push(nbK);
+          q.push(nb);
+        }
+      }
+    }
+    return keys;
+  }
+
+  // If we just moved prev -> cur and cur is a fork, evaluate the component behind us.
+  // Mark the whole section with NO gaps, but never mark trunk cells dark.
+  function tryMarkDeadSubtreeOnForkReturn(prevCell, curCell) {
+    if (!visitedDotsEnabled) return;
+    if (!maze) return;
+
+    // Only trigger when arriving into a fork (degree >= 3)
+    if (degreeOf(curCell.cx, curCell.cy) < 3) return;
+
+    const compKeysAll = componentBehindEdge(prevCell, curCell);
+
+    // Section-to-mark = component minus trunk (main path)
+    const compKeys = compKeysAll.filter(k => !trunkCells.has(k));
+    if (compKeys.length === 0) return;
+
+    // If already fully dead, skip
+    let alreadyDead = true;
+    for (const k of compKeys) {
+      if (!deadCells.has(k)) { alreadyDead = false; break; }
+    }
+    if (alreadyDead) return;
+
+    // Only mark when every cell in the (non-trunk) section has been entered at least once
+    for (const k of compKeys) {
+      if (!seenCells.has(k)) return;
+    }
+
+    markComponentDead(compKeys);
+  }
+
+  /* =========================
+     KEYBOARD MOVE
+     ========================= */
+  const keysDown = new Set();
+
+  function isTypingContext(el) {
+    if (!el) return false;
+    const tag = String(el.tagName || "").toLowerCase();
+    return tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable;
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (isTypingContext(document.activeElement)) return;
+    if (state !== GameState.running) return;
+    if (state === GameState.quitting) return;
+
+    const k = e.key;
+    if (k === "ArrowUp" || k === "ArrowDown" || k === "ArrowLeft" || k === "ArrowRight" ||
+        k === "w" || k === "a" || k === "s" || k === "d" ||
+        k === "W" || k === "A" || k === "S" || k === "D") {
+      e.preventDefault();
+      keysDown.add(k);
+    }
+    if (k === "Shift") keysDown.add("Shift");
+  }, { passive: false });
+
+  window.addEventListener("keyup", (e) => {
+    keysDown.delete(e.key);
+    if (e.key === "Shift") keysDown.delete("Shift");
+  });
+
+  function keyboardVector() {
+    let dx = 0, dy = 0;
+
+    const left  = keysDown.has("ArrowLeft")  || keysDown.has("a") || keysDown.has("A");
+    const right = keysDown.has("ArrowRight") || keysDown.has("d") || keysDown.has("D");
+    const up    = keysDown.has("ArrowUp")    || keysDown.has("w") || keysDown.has("W");
+    const down  = keysDown.has("ArrowDown")  || keysDown.has("s") || keysDown.has("S");
+
+    if (left)  dx -= 1;
+    if (right) dx += 1;
+    if (up)    dy -= 1;
+    if (down)  dy += 1;
+
+    const len = Math.hypot(dx, dy) || 1;
+    return { ux: dx / len, uy: dy / len, active: (dx !== 0 || dy !== 0) };
+  }
+
+  /* =========================
+     MAZE GENERATION
+     ========================= */
+  function makeMaze(cols, rows) {
+    const cells = Array.from({ length: rows }, () =>
+      Array.from({ length: cols }, () => ({
+        n: true, e: true, s: true, w: true,
+        visited: false
+      }))
+    );
+
+    function neighbors(cx, cy) {
+      const out = [];
+      if (cy > 0) out.push({ dir: "n", x: cx, y: cy - 1 });
+      if (cx < cols - 1) out.push({ dir: "e", x: cx + 1, y: cy });
+      if (cy < rows - 1) out.push({ dir: "s", x: cx, y: cy + 1 });
+      if (cx > 0) out.push({ dir: "w", x: cx - 1, y: cy });
+      return out;
+    }
+
+    function carveBetween(ax, ay, bx, by, dir) {
+      const a = cells[ay][ax];
+      const b = cells[by][bx];
+      if (dir === "n") { a.n = false; b.s = false; }
+      if (dir === "e") { a.e = false; b.w = false; }
+      if (dir === "s") { a.s = false; b.n = false; }
+      if (dir === "w") { a.w = false; b.e = false; }
+    }
+
+    const stack = [];
+    let cx = Math.floor(Math.random() * cols);
+    let cy = Math.floor(Math.random() * rows);
+
+    cells[cy][cx].visited = true;
+    stack.push({ x: cx, y: cy });
+
+    while (stack.length) {
+      const cur = stack[stack.length - 1];
+      const ns = neighbors(cur.x, cur.y).filter(n => !cells[n.y][n.x].visited);
+
+      if (ns.length === 0) { stack.pop(); continue; }
+
+      const pick = ns[Math.floor(Math.random() * ns.length)];
+      carveBetween(cur.x, cur.y, pick.x, pick.y, pick.dir);
+      cells[pick.y][pick.x].visited = true;
+      stack.push({ x: pick.x, y: pick.y });
+    }
+
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) cells[y][x].visited = false;
+    return { cols, rows, cells };
+  }
+
+  function bfsHasPath(mz, sx, sy, ex, ey) {
+    const { cols, rows, cells } = mz;
+    const seen = Array.from({ length: rows }, () => Array(cols).fill(false));
+    const q = [{ x: sx, y: sy }];
+    seen[sy][sx] = true;
+
+    while (q.length) {
+      const cur = q.shift();
+      if (cur.x === ex && cur.y === ey) return true;
+
+      const c = cells[cur.y][cur.x];
+      if (!c.n && cur.y > 0 && !seen[cur.y - 1][cur.x]) { seen[cur.y - 1][cur.x] = true; q.push({ x: cur.x, y: cur.y - 1 }); }
+      if (!c.e && cur.x < cols - 1 && !seen[cur.y][cur.x + 1]) { seen[cur.y][cur.x + 1] = true; q.push({ x: cur.x + 1, y: cur.y }); }
+      if (!c.s && cur.y < rows - 1 && !seen[cur.y + 1][cur.x]) { seen[cur.y + 1][cur.x] = true; q.push({ x: cur.x, y: cur.y + 1 }); }
+      if (!c.w && cur.x > 0 && !seen[cur.y][cur.x - 1]) { seen[cur.y][cur.x - 1] = true; q.push({ x: cur.x - 1, y: cur.y }); }
+    }
+    return false;
+  }
+
+  function generateSolvableMaze() {
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const mz = makeMaze(CFG.mazeCols, CFG.mazeRows);
+      const sy = Math.floor(Math.random() * CFG.mazeRows);
+      const ey = Math.floor(Math.random() * CFG.mazeRows);
+      const sx = 0;
+      const ex = CFG.mazeCols - 1;
+
+      mz.cells[sy][sx].w = false;
+      mz.cells[ey][ex].e = false;
+
+      if (bfsHasPath(mz, sx, sy, ex, ey)) {
+        maze = mz;
+        startCell = { cx: sx, cy: sy };
+        endCell = { cx: ex, cy: ey };
+        buildWallRects();
+
+        // compute trunk path for this maze
+        trunkCells = computeTrunkPathSet(startCell, endCell);
+
+        return;
+      }
+    }
+
+    maze = makeMaze(CFG.mazeCols, CFG.mazeRows);
+    startCell = { cx: 0, cy: Math.floor(CFG.mazeRows / 2) };
+    endCell = { cx: CFG.mazeCols - 1, cy: Math.floor(CFG.mazeRows / 2) };
+    maze.cells[startCell.cy][startCell.cx].w = false;
+    maze.cells[endCell.cy][endCell.cx].e = false;
+    buildWallRects();
+
+    // compute trunk path for this maze
+    trunkCells = computeTrunkPathSet(startCell, endCell);
+  }
+
+  /* =========================
+     LAYOUT + WALL RECTS
+     ========================= */
+  function layout() {
+    const rect = canvas.getBoundingClientRect();
+    viewport.w = rect.width;
+    viewport.h = rect.height;
+
+    side.x = 0; side.y = 0; side.w = CFG.sideWidth; side.h = viewport.h;
+    collect.w = CFG.collectWidth; collect.h = viewport.h;
+    collect.x = Math.max(side.w, viewport.w - collect.w);
+    collect.y = 0;
+
+    const pad = 14;
+    const availW = Math.max(50, viewport.w - side.w - collect.w - pad * 2);
+    const availH = Math.max(50, viewport.h - pad * 2);
+
+    const fitCell = Math.floor(Math.min(availW / CFG.mazeCols, availH / CFG.mazeRows));
+    const cell = Math.max(16, Math.min(CFG.cellSize, fitCell));
+    runtime.cell = cell;
+
+    const mazeW = cell * CFG.mazeCols;
+    const mazeH = cell * CFG.mazeRows;
+
+    mazeRect.w = mazeW;
+    mazeRect.h = mazeH;
+    mazeRect.x = side.w + Math.floor((viewport.w - side.w - collect.w - mazeW) / 2);
+    mazeRect.y = Math.floor((viewport.h - mazeH) / 2);
+
+    positionTokensInSidebar();
+    positionDoneTokensInCollector();
+    buildWallRects();
+  }
+
+  function cellToRect(cx, cy) {
+    const cell = runtime.cell;
+    return { x: mazeRect.x + cx * cell, y: mazeRect.y + cy * cell, w: cell, h: cell };
+  }
+
+  function buildWallRects() {
+    wallRects = [];
+    if (!maze) return;
+
+    const t = CFG.wallThickness;
+
+    for (let y = 0; y < maze.rows; y++) {
+      for (let x = 0; x < maze.cols; x++) {
+        const c = maze.cells[y][x];
+        const r = cellToRect(x, y);
+
+        if (c.n) wallRects.push({ x: r.x, y: r.y, w: r.w, h: t });
+        if (c.w) wallRects.push({ x: r.x, y: r.y, w: t, h: r.h });
+
+        if (x === maze.cols - 1 && c.e) wallRects.push({ x: r.x + r.w - t, y: r.y, w: t, h: r.h });
+        if (y === maze.rows - 1 && c.s) wallRects.push({ x: r.x, y: r.y + r.h - t, w: r.w, h: t });
+      }
+    }
+  }
+
+  /* =========================
+     TOKENS
+     ========================= */
+  function pickRandomWords(n) {
+    const src = CFG.tokiPonaWords.slice();
+    for (let i = src.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [src[i], src[j]] = [src[j], src[i]];
+    }
+    return src.slice(0, n);
+  }
+
+  function createTokens() {
+    const words = pickRandomWords(CFG.tokenCount);
+    tokens = words.map((w) => ({
+      word: w,
+      x: 0, y: 0,
+      size: CFG.glyphSize,
+      done: false,
+      inMaze: false,
+      lastCell: null,
+    }));
+    activeTokenIndex = -1;
+    positionTokensInSidebar();
+    positionDoneTokensInCollector();
+  }
+
+  function positionTokensInSidebar() {
+    const slotH = 56, topPad = 18, leftPad = 18;
+    let slot = 0;
+    for (const tok of tokens) {
+      if (tok.done) continue;
+      if (tok.inMaze) continue;
+      tok.x = leftPad + tok.size / 2;
+      tok.y = topPad + slot * slotH + tok.size / 2;
+      slot++;
+    }
+  }
+
+  function positionDoneTokensInCollector() {
+    const slotH = 56, topPad = 18, leftPad = 18;
+    let slot = 0;
+    for (const tok of tokens) {
+      if (!tok.done) continue;
+      tok.x = collect.x + leftPad + tok.size / 2;
+      tok.y = topPad + slot * slotH + tok.size / 2;
+      slot++;
+    }
+  }
+
+  function hitToken(tok, px, py) {
+    const s = tok.size;
+    return (px >= tok.x - s/2 && px <= tok.x + s/2 && py >= tok.y - s/2 && py <= tok.y + s/2);
+  }
+
+  function anyTokenInMaze() {
+    return tokens.some(t => t.inMaze && !t.done);
+  }
+
+  /* =========================
+     TIMER + UI
+     ========================= */
+  function setStatus(msg) { statusEl.textContent = msg; }
+
+  function startTimer() {
+    stopTimer();
+    timerHandle = setInterval(() => {
+      timerSeconds++;
+      renderTopTimerCartouche(timerSeconds);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerHandle) clearInterval(timerHandle);
+    timerHandle = null;
+  }
+
+  function resetUIForIdle() {
+    timerSeconds = 0;
+    renderTopTimerCartouche(timerSeconds);
+    btnQuit.disabled = true;
+    syncMazeSizeUiLock();
+  }
+
+  function showQuitModal() {
+    state = GameState.quitting;
+    stopTimer();
+    syncMazeSizeUiLock();
+    overlay.classList.add("show");
+    wrap.classList.add("mazeHidden");
+  }
+
+  function hideQuitModal(resume) {
+    overlay.classList.remove("show");
+    wrap.classList.remove("mazeHidden");
+    if (resume && state === GameState.quitting) {
+      state = GameState.running;
+      syncMazeSizeUiLock();
+      startTimer();
+    } else {
+      syncMazeSizeUiLock();
+    }
+  }
+
+  /* =========================
+     COLLISION + MOVEMENT
+     ========================= */
+  function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+  }
+
+  function collidesWithWalls(x, y, size) {
+    const left = x - size/2;
+    const top = y - size/2;
+    const w = size;
+    const h = size;
+    for (const wr of wallRects) {
+      if (rectsOverlap(left, top, w, h, wr.x, wr.y, wr.w, wr.h)) return true;
+    }
+    return false;
+  }
+
+  function moveTokenWithCollision(tok, dx, dy) {
+    const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / 3));
+    const sx = dx / steps;
+    const sy = dy / steps;
+
+    for (let i = 0; i < steps; i++) {
+      if (sx !== 0) {
+        const nx = tok.x + sx;
+        if (!collidesWithWalls(nx, tok.y, tok.size)) tok.x = nx;
+      }
+      if (sy !== 0) {
+        const ny = tok.y + sy;
+        if (!collidesWithWalls(tok.x, ny, tok.size)) tok.y = ny;
+      }
+    }
+  }
+
+  function checkTokenExit(tok) {
+    return (tok.x - tok.size/2 > mazeRect.x + mazeRect.w + 2);
+  }
+
+  function clampOutsideDrag(tok) {
+    const minX = tok.size/2 + 6;
+    const maxXBeforeMaze = (mazeRect.x - tok.size/2 - 1);
+    const minY = tok.size/2 + 6;
+    const maxY = viewport.h - tok.size/2 - 6;
+
+    tok.x = Math.max(minX, Math.min(maxXBeforeMaze, tok.x));
+    tok.y = Math.max(minY, Math.min(maxY, tok.y));
+  }
+
+  function keepInMazeBounds(tok) {
+    const minX = mazeRect.x + tok.size/2;
+    const maxX = mazeRect.x + mazeRect.w + tok.size/2 + 10;
+    const minY = mazeRect.y + tok.size/2;
+    const maxY = mazeRect.y + mazeRect.h - tok.size/2;
+
+    if (tok.x < minX) tok.x = minX;
+    if (tok.y < minY) tok.y = minY;
+    if (tok.y > maxY) tok.y = maxY;
+
+    if (tok.x > (collect.x - tok.size/2 - 2)) tok.x = (collect.x - tok.size/2 - 2);
+    if (tok.x > maxX) tok.x = maxX;
+  }
+
+  /* =========================
+     DRAWING
+     ========================= */
+  function drawPanelBackground() {
+    ctx.fillStyle = "#F3DFC0";
+    ctx.fillRect(0, 0, viewport.w, viewport.h);
+
+    ctx.fillStyle = "rgba(255,255,255,0.28)";
+    ctx.fillRect(side.x, side.y, side.w, side.h);
+
+    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    ctx.fillRect(collect.x, collect.y, collect.w, collect.h);
+
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    ctx.fillRect(side.w, 0, 1, viewport.h);
+    ctx.fillRect(collect.x, 0, 1, viewport.h);
+
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.font = `14px "PatrickHand", system-ui, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText("START", 12, 10);
+    ctx.fillText("DONE", collect.x + 12, 10);
+  }
+
+  function drawDeadCellsOverlay() {
+    if (!visitedDotsEnabled) return;
+    if (deadCells.size === 0) return;
+
+    ctx.fillStyle = DEAD_CELL_RGBA;
+
+    for (const key of deadCells) {
+      if (trunkCells.has(key)) continue;
+
+      const parts = key.split(",");
+      const cx = Number(parts[0]);
+      const cy = Number(parts[1]);
+      if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
+
+      const rr = cellToRect(cx, cy);
+      const inset = Math.min(2, rr.w * 0.08);
+      ctx.fillRect(rr.x + inset, rr.y + inset, rr.w - inset * 2, rr.h - inset * 2);
+    }
+  }
+
+  function drawVisitedDots() {
+    if (!visitedDotsEnabled) return;
+    if (visitedCells.size === 0) return;
+
+    const cell = runtime.cell;
+    const r = Math.max(1.5, Math.min(4, cell * 0.09));
+
+    ctx.fillStyle = VISITED_DOT_RGBA;
+    for (const key of visitedCells) {
+      const parts = key.split(",");
+      const cx = Number(parts[0]);
+      const cy = Number(parts[1]);
+      if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
+
+      const rr = cellToRect(cx, cy);
+      const dotX = rr.x + rr.w / 2;
+      const dotY = rr.y + rr.h / 2;
+
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawMaze() {
+    if (!maze) return;
+
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.fillRect(mazeRect.x, mazeRect.y, mazeRect.w, mazeRect.h);
+
+    drawDeadCellsOverlay();
+
+    ctx.fillStyle = "#111";
+    for (const w of wallRects) ctx.fillRect(w.x, w.y, w.w, w.h);
+
+    drawVisitedDots();
+
+    const cell = runtime.cell;
+
+    const sr = cellToRect(startCell.cx, startCell.cy);
+    ctx.fillStyle = "rgba(17,17,17,0.10)";
+    ctx.fillRect(mazeRect.x - 6, sr.y + 2, 6, cell - 4);
+
+    const er = cellToRect(endCell.cx, endCell.cy);
+    ctx.fillRect(mazeRect.x + mazeRect.w, er.y + 2, 6, cell - 4);
+  }
+
+  function drawTokens() {
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+
+    ctx.font = `${Math.max(14, CFG.glyphSize)}px ${CFG.glyphFontFamily}`;
+
+    for (const tok of tokens) {
+      const label = tok.word;
+
+      if (!tok.inMaze) {
+        ctx.fillStyle = "rgba(0,0,0,0.06)";
+        ctx.fillRect(tok.x - tok.size/2 - 8, tok.y - tok.size/2 - 8, tok.size + 16, tok.size + 16);
+      }
+
+      const metrics = ctx.measureText(label);
+      const x = tok.x - metrics.width / 2;
+
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.lineWidth = 1;
+      ctx.strokeText(label, x, tok.y);
+
+      ctx.fillStyle = "#000";
+      ctx.fillText(label, x, tok.y);
+    }
+  }
+
+  function drawFinishTimeCartouche() {
+    if (state !== GameState.finished) return;
+    if (!finishCartoucheReady) return;
+
+    const w = finishCanvas.width;
+    const h = finishCanvas.height;
+
+    const x = Math.floor(mazeRect.x + (mazeRect.w - w) / 2);
+    const y = Math.floor(mazeRect.y + (mazeRect.h - h) / 2);
+
+    ctx.fillStyle = "#F3DFC0";
+    ctx.fillRect(x - 14, y - 14, w + 28, h + 28);
+
+    ctx.drawImage(finishCanvas, x, y);
+  }
+
+  function draw() {
+    resizeCanvasToDisplaySize();
+    viewport.w = canvas.getBoundingClientRect().width;
+    viewport.h = canvas.getBoundingClientRect().height;
+
+    drawPanelBackground();
+    if (state !== GameState.idle) drawMaze();
+    drawTokens();
+    drawFinishTimeCartouche();
+  }
+
+  /* =========================
+     GAME FLOW
+     ========================= */
+  function startNewGame() {
+    state = GameState.running;
+    syncMazeSizeUiLock();
+    btnQuit.disabled = false;
+
+    setVisitedControlsEnabled(false);
+
+    timerSeconds = 0;
+    renderTopTimerCartouche(timerSeconds);
+
+    finishCartoucheReady = false;
+
+    clearVisitedCells();
+
+    generateSolvableMaze();
+    createTokens();
+    layout();
+
+    setStatus("Drag a glyph from the left into the maze entrance. Use Arrow keys/WASD inside the maze.");
+    startTimer();
+  }
+
+  function finishGame() {
+    state = GameState.finished;
+    stopTimer();
+    syncMazeSizeUiLock();
+    btnQuit.disabled = true;
+
+    setVisitedControlsEnabled(true);
+
+    const glyphs = buildTimeCartoucheGlyphs(timerSeconds);
+    renderMixedCartoucheToCanvas(
+      finishCanvas,
+      glyphs,
+      CFG.finishLargePx,
+      CFG.finishSmallPx,
+      SMALL_SET,
+      { padding: CFG.finishPad, border: CFG.finishBorder, cornerRadius: CFG.finishCorner, letterGap: CFG.finishGap }
+    );
+    finishCartoucheReady = true;
+
+    const mm = Math.floor(timerSeconds / 60);
+    const ss = timerSeconds % 60;
+    const timeStr = `${mm}:${String(ss).padStart(2, "0")}`;
+    setStatus(`Finished. Final time: ${timeStr}. Click “Start New Game” to play again.`);
+  }
+
+  function quitGameConfirmed() {
+    hideQuitModal(false);
+    state = GameState.idle;
+    stopTimer();
+    syncMazeSizeUiLock();
+    resetUIForIdle();
+
+    setVisitedControlsEnabled(true);
+
+    maze = null;
+    wallRects = [];
+    tokens = [];
+    activeTokenIndex = -1;
+
+    clearVisitedCells();
+    trunkCells = new Set();
+    finishCartoucheReady = false;
+
+    setStatus("Game quit. Click “Start New Game” to play again.");
+    draw();
+  }
+
+  function nextMazeForNextToken() {
+    generateSolvableMaze();
+
+    for (const tok of tokens) {
+      if (!tok.done) tok.inMaze = false;
+      tok.lastCell = null;
+    }
+    activeTokenIndex = -1;
+
+    clearVisitedCells();
+
+    positionTokensInSidebar();
+    positionDoneTokensInCollector();
+
+    setStatus("Maze changed. Select the next glyph and drag it into the entrance.");
+  }
+
+  /* =========================
+     INPUT (Pointer Events)
+     ========================= */
+  function canvasPointFromEvent(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function onPointerDown(e) {
+    if (state === GameState.quitting) return;
+    if (state === GameState.idle) return;
+
+    canvas.setPointerCapture(e.pointerId);
+
+    pointer.down = true;
+    pointer.id = e.pointerId;
+    const p = canvasPointFromEvent(e);
+    pointer.x = p.x;
+    pointer.y = p.y;
+
+    const locked = anyTokenInMaze();
+    if (!locked && state === GameState.running) {
+      for (let i = 0; i < tokens.length; i++) {
+        const tok = tokens[i];
+        if (tok.done) continue;
+
+        if (!tok.inMaze && tok.x < side.w && hitToken(tok, pointer.x, pointer.y)) {
+          activeTokenIndex = i;
+          dragOffset.dx = tok.x - pointer.x;
+          dragOffset.dy = tok.y - pointer.y;
+          setStatus("Drag into the entrance. Once inside, use Arrow keys/WASD or pull with the mouse (hold down away from glyph).");
+          return;
+        }
+      }
+    }
+  }
+
+  function onPointerMove(e) {
+    if (state === GameState.quitting) return;
+    if (state === GameState.idle) return;
+    if (state !== GameState.running) return;
+
+    const p = canvasPointFromEvent(e);
+    pointer.x = p.x;
+    pointer.y = p.y;
+
+    if (activeTokenIndex >= 0) {
+      const tok = tokens[activeTokenIndex];
+
+      if (!tok.done && !tok.inMaze && pointer.down) {
+        tok.x = pointer.x + dragOffset.dx;
+        tok.y = pointer.y + dragOffset.dy;
+
+        clampOutsideDrag(tok);
+
+        const reachesEntranceLine = (tok.x + tok.size/2 >= mazeRect.x - 1);
+        if (reachesEntranceLine) {
+          tok.inMaze = true;
+
+          const sr = cellToRect(startCell.cx, startCell.cy);
+          tok.x = mazeRect.x + CFG.wallThickness + CFG.passageInset + tok.size/2 + 1;
+          tok.y = sr.y + sr.h / 2;
+
+          tok.lastCell = tokenCellFromPosition(tok.x, tok.y);
+
+          if (visitedDotsEnabled) {
+            const c = tok.lastCell;
+            markCellSeen(c.cx, c.cy);
+          }
+
+          setStatus("Inside maze: use Arrow keys/WASD, or mouse pull (hold down away from glyph).");
+        }
+      }
+
+      if (!tok.done && tok.inMaze) {
+        keepInMazeBounds(tok);
+      }
+    }
+  }
+
+  function onPointerUp(e) {
+    if (pointer.id === e.pointerId) {
+      pointer.down = false;
+      pointer.id = null;
+    }
+  }
+
+  canvas.addEventListener("pointerdown", onPointerDown);
+  canvas.addEventListener("pointermove", onPointerMove);
+  canvas.addEventListener("pointerup", onPointerUp);
+  canvas.addEventListener("pointercancel", onPointerUp);
+
+  /* =========================
+     MAIN LOOP
+     ========================= */
+  function tick(ts) {
+    const dt = Math.min(0.05, (ts - lastFrameTs) / 1000);
+    lastFrameTs = ts;
+
+    if (state === GameState.running) {
+      if (activeTokenIndex >= 0) {
+        const tok = tokens[activeTokenIndex];
+        if (tok && !tok.done && tok.inMaze) {
+
+          const pointerOnGlyph = pointer.down && hitToken(tok, pointer.x, pointer.y);
+          if (pointer.down && !pointerOnGlyph) {
+            const dx = pointer.x - tok.x;
+            const dy = pointer.y - tok.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const ux = dx / len;
+            const uy = dy / len;
+
+            const step = CFG.speed * dt;
+            moveTokenWithCollision(tok, ux * step, uy * step);
+            keepInMazeBounds(tok);
+          }
+
+          const kv = keyboardVector();
+          if (kv.active) {
+            const boost = (keysDown.has("Shift") ? 1.6 : 1.0);
+            const step = CFG.keyMoveSpeed * boost * dt;
+            moveTokenWithCollision(tok, kv.ux * step, kv.uy * step);
+            keepInMazeBounds(tok);
+          }
+
+          if (visitedDotsEnabled) {
+            const cur = tokenCellFromPosition(tok.x, tok.y);
+
+            if (!tok.lastCell) {
+              tok.lastCell = cur;
+              markCellSeen(cur.cx, cur.cy);
+            } else if (cur.cx !== tok.lastCell.cx || cur.cy !== tok.lastCell.cy) {
+              markCellVisited(tok.lastCell.cx, tok.lastCell.cy);
+              markCellSeen(cur.cx, cur.cy);
+              tryMarkDeadSubtreeOnForkReturn(tok.lastCell, cur);
+              tok.lastCell = cur;
+            }
+          }
+
+          if (checkTokenExit(tok)) {
+            if (visitedDotsEnabled) {
+              const last = tok.lastCell || tokenCellFromPosition(tok.x, tok.y);
+              markCellVisited(last.cx, last.cy);
+              markCellSeen(last.cx, last.cy);
+            }
+
+            tok.done = true;
+            tok.inMaze = false;
+            tok.lastCell = null;
+            activeTokenIndex = -1;
+
+            positionDoneTokensInCollector();
+
+            const remaining = tokens.filter(t => !t.done).length;
+            if (remaining === 0) finishGame();
+            else nextMazeForNextToken();
+          }
+        }
+      }
+    }
+
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  /* =========================
+     BUTTONS
+     ========================= */
+  btnNew.addEventListener("click", () => {
+    hideQuitModal(false);
+    startNewGame();
+  });
+
+  btnQuit.addEventListener("click", () => {
+    if (state !== GameState.running) return;
+    showQuitModal();
+  });
+
+  btnCancelQuit.addEventListener("click", () => hideQuitModal(true));
+  btnConfirmQuit.addEventListener("click", () => quitGameConfirmed());
+
+  overlay.addEventListener("pointerdown", (e) => e.stopPropagation());
+  overlay.addEventListener("pointermove", (e) => e.stopPropagation());
+  overlay.addEventListener("pointerup", (e) => e.stopPropagation());
+
+  /* ============================================================
+     Maze size selection wiring + localStorage
+     ============================================================ */
+  function getSavedMazeSize() {
+    try {
+      return safePresetName(localStorage.getItem(LS_KEYS.mazeSize) || "small");
+    } catch {
+      return "small";
+    }
+  }
+
+  function saveMazeSize(v) {
+    try { localStorage.setItem(LS_KEYS.mazeSize, safePresetName(v)); } catch {}
+  }
+
+  function applyMazeSizeFromUI() {
+    const chosen = safePresetName(mazeSizeSel.value);
+    const applied = applyMazeSizePreset(chosen);
+    saveMazeSize(applied);
+
+    if (state === GameState.running) {
+      mazeSizeSel.value = getSavedMazeSize();
+      return;
+    }
+
+    layout();
+    draw();
+  }
+
+  /* ============================================================
+     Visited dots option wiring + localStorage
+     ============================================================ */
+  function getSavedVisitedDots() {
+    try {
+      return (localStorage.getItem(LS_KEYS.visitedDots) === "1");
+    } catch {
+      return false;
+    }
+  }
+
+  function saveVisitedDots(enabled) {
+    try { localStorage.setItem(LS_KEYS.visitedDots, enabled ? "1" : "0"); } catch {}
+  }
+
+  function applyVisitedDotsFromUI() {
+    if (state === GameState.running) {
+      visitedDotsChk.checked = visitedDotsEnabled;
+      return;
+    }
+    visitedDotsEnabled = !!visitedDotsChk.checked;
+    saveVisitedDots(visitedDotsEnabled);
+    clearVisitedCells();
+    draw();
+  }
+
+  /* =========================
+     INIT
+     ========================= */
+  function init() {
+    resizeCanvasToDisplaySize();
+    layout();
+    resetUIForIdle();
+    setStatus("Click “Start New Game”. Drag a glyph from the left into the maze.");
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  window.addEventListener("load", async () => {
+    const savedSize = getSavedMazeSize();
+    mazeSizeSel.value = savedSize;
+    applyMazeSizePreset(savedSize);
+    syncMazeSizeUiLock();
+
+    mazeSizeSel.addEventListener("change", applyMazeSizeFromUI);
+
+    visitedDotsEnabled = getSavedVisitedDots();
+    visitedDotsChk.checked = visitedDotsEnabled;
+    visitedDotsChk.addEventListener("change", applyVisitedDotsFromUI);
+
+    setVisitedControlsEnabled(true);
+
+    try { await ensureFontsLoaded(); } catch {}
+
+    setStatus("Click “Start New Game”. Drag a glyph from the left into the maze.");
+    renderTopTimerCartouche(0);
+    init();
+  });
+})();
+</script>
+</body>
+</html>
