@@ -1,0 +1,1488 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toki Pona 15 Puzzle</title>
+
+  <style>
+    :root {
+      --topbar-h: 56px;
+
+      /* Background style (maze-like) */
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --panel: rgba(255,255,255,0.35);
+      --panel-strong: rgba(255,255,255,0.55);
+      --panel-border: rgba(17,17,17,0.18);
+
+      /* CHANGE HERE: board max size for larger/smaller tiles */
+      --board-max: 520px;
+
+      /* CHANGE HERE: spacing and rounding */
+      --board-gap: 10px;
+      --board-pad: 12px;
+      --tile-radius: 14px;
+      --board-radius: 18px;
+
+      /* CHANGE HERE: label appearance */
+      --label-color: rgba(17,17,17,0.42);
+      --label-size: 12px;
+      --label-letter-spacing: 0.3px;
+
+      /* Instruction panel styling */
+      --hint-bg: rgba(255,255,255,0.35);
+      --hint-border: rgba(17,17,17,0.18);
+      --hint-radius: 14px;
+    }
+
+    @font-face {
+      font-family: "PatrickHand";
+      src: url("./fonts/patrickhead-regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src:
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff2") format("woff2"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff")  format("woff"),
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf")   format("opentype");
+      font-display: swap;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--ink);
+    }
+
+    .topbar {
+      height: var(--topbar-h);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      border-bottom: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(6px);
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 16px;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .timerCanvas {
+      margin-left: auto;
+      height: 36px;
+      width: 170px;
+      display: block;
+    }
+
+    .status {
+      margin-left: 12px;
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 46vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .wrap {
+      height: calc(100% - var(--topbar-h));
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .gameArea {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .gameStack {
+      width: min(var(--board-max), 92vw);
+      display: grid;
+      gap: 10px;
+    }
+
+    .hint {
+      border: 1px solid var(--hint-border);
+      background: var(--hint-bg);
+      border-radius: var(--hint-radius);
+      padding: 10px 12px;
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.25;
+      text-align: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .board {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: var(--board-gap);
+      padding: var(--board-pad);
+      border-radius: var(--board-radius);
+      border: 2px solid rgba(17,17,17,0.22);
+      background: rgba(255,255,255,0.22);
+      box-sizing: border-box;
+      position: relative;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .tile {
+      border-radius: var(--tile-radius);
+      border: 2px solid rgba(17,17,17,0.28);
+      background: rgba(255,255,255,0.55);
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 8px 6px;
+      box-sizing: border-box;
+
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+
+      box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+      transition: transform 120ms ease;
+    }
+
+    .tile .glyph {
+      font-family: "TP-Cartouche-Font", system-ui, sans-serif;
+      font-size: clamp(22px, 7.2vw, 52px);
+      line-height: 1;
+      display: block;
+    }
+
+    .tile .label {
+      margin-top: auto;
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: var(--label-size);
+      line-height: 1;
+      color: var(--label-color);
+      letter-spacing: var(--label-letter-spacing);
+      opacity: 0.95;
+
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    .tile.movable {
+      cursor: pointer;
+      border-color: rgba(17,17,17,0.42);
+      background: rgba(255,255,255,0.72);
+    }
+    .tile.movable:active { transform: scale(0.98); }
+
+    .tile.blank {
+      background: rgba(255,255,255,0.12);
+      border: 2px dashed rgba(17,17,17,0.18);
+      box-shadow: none;
+      cursor: default;
+    }
+    .tile.blank .label { display: none; }
+    .tile.blank .glyph { display: none; }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      z-index: 10;
+      font-family: "PatrickHand", system-ui, sans-serif;
+    }
+    .overlay.show { display: flex; }
+
+    .modal {
+      width: min(520px, 92vw);
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(0,0,0,0.18);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+    }
+    .modal h2 { margin: 0 0 8px 0; font-size: 22px; }
+    .modal p { margin: 0 0 14px 0; color: var(--muted); line-height: 1.35; font-size: 16px; }
+    .modal .row { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .finishPanel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 6;
+      pointer-events: none;
+    }
+    .finishPanel.show { display: flex; }
+
+    .finishCard {
+      width: min(720px, 94vw);
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(8px);
+      padding: 14px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.25);
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+    }
+
+    .finishCanvas {
+      width: min(680px, 92vw);
+      height: 110px;
+      display: block;
+    }
+
+    .footer {
+      flex: 0 0 auto;
+      border-top: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.25);
+      padding: 10px 12px;
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .footer a { color: var(--ink); text-decoration: underline; }
+    .footerRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .footerLeft { min-width: 240px; }
+    .footerRight { white-space: nowrap; }
+
+    @media (pointer: coarse), (max-width: 520px) {
+      .topbar { gap: 6px; padding: 8px 8px; height: 52px; }
+
+      .btn {
+        font-size: 13px;
+        padding: 6px 8px;
+        border-radius: 10px;
+      }
+
+      #timerCanvas { display: none !important; }
+
+      .status { font-size: 13px; max-width: 54vw; }
+
+      :root { --board-max: 560px; --label-size: 11px; }
+
+      .hint { font-size: 14px; }
+      .finishCanvas { height: 96px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <button id="btnNew" class="btn">Start New Game</button>
+    <button id="btnQuit" class="btn" disabled>Quit Game</button>
+    <div id="status" class="status">Loading fonts…</div>
+    <canvas id="timerCanvas" class="timerCanvas" aria-label="Timer"></canvas>
+  </div>
+
+  <div id="wrap" class="wrap">
+    <div class="gameArea">
+      <div class="gameStack" aria-label="Game">
+        <div id="hint" class="hint" aria-label="Instruction">
+          Arrange tiles in alphabetical order.
+        </div>
+        <div id="board" class="board" aria-label="15 puzzle board"></div>
+      </div>
+
+      <div id="finishPanel" class="finishPanel" aria-hidden="true">
+        <div class="finishCard">
+          <canvas id="finishCanvas" class="finishCanvas" aria-label="Final time"></canvas>
+        </div>
+      </div>
+
+      <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+        <div class="modal">
+          <h2>Quit current game?</h2>
+          <p>The timer will stop. If you quit, your current progress will be lost.</p>
+          <div class="row">
+            <button id="btnCancelQuit" class="btn">Cancel</button>
+            <button id="btnConfirmQuit" class="btn">Quit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer" aria-label="Disclaimer">
+      <div class="footerRow">
+        <div class="footerLeft">
+          <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
+        </div>
+        <div class="footerRight">
+          <a href="./index.html">Back to index</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ============================================================
+     I18N (developer-only toggle)
+     ============================================================ */
+  const DEV_LANG = "en"; // CHANGE HERE: "en" | "tp"
+
+  const STRINGS = {
+    en: {
+      title: "Toki Pona 15 Puzzle",
+      btn_new: "Start New Game",
+      btn_quit: "Quit Game",
+      status_loading: "Loading fonts…",
+      status_idle: "Click “Start New Game”.",
+      status_running: "Click or drag a tile into the empty slot.",
+      status_solved: (timeStr) => `Finished. Final time: ${timeStr}. Click “Start New Game” to play again.`,
+      status_quit: "Game quit. Click “Start New Game” to play again.",
+      modal_title: "Quit current game?",
+      modal_body: "The timer will stop. If you quit, your current progress will be lost.",
+      modal_cancel: "Cancel",
+      modal_quit: "Quit",
+      hint: "Arrange tiles in alphabetical order."
+    },
+    tp: {
+      title: "musi pi leko tawa pi sitelen pona",
+      btn_new: "o open e musi sin",
+      btn_quit: "o weka tan musi",
+      status_loading: "mi kama jo e sitelen…",
+      status_idle: "o kepeken nena musi sin.",
+      status_running: "o pilin e leko pona (anu o tawa e ona) tawa lupa weka.",
+      status_solved: (timeStr) => `pini. tenpo nanpa: ${timeStr}. o open e musi sin.`,
+      status_quit: "musi li pini. o open e musi sin.",
+      modal_title: "o weka tan musi ni?",
+      modal_body: "tenpo li awen ala. sina weka la pali sina lon musi ni li weka.",
+      modal_cancel: "o ala",
+      modal_quit: "o weka",
+      hint: "o ante e leko tawa nasin nimi."
+    }
+  };
+
+  function t(key, ...args) {
+    const pack = STRINGS[DEV_LANG] || STRINGS.en;
+    const v = pack[key] ?? STRINGS.en[key] ?? key;
+    return (typeof v === "function") ? v(...args) : v;
+  }
+
+  function formatMMSS(totalSeconds) {
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = totalSeconds % 60;
+    return `${mm}:${String(ss).padStart(2, "0")}`;
+  }
+
+  function isMobileTopbarMode() {
+    try { return window.matchMedia && window.matchMedia("(pointer: coarse), (max-width: 520px)").matches; }
+    catch { return false; }
+  }
+
+  /* ============================================================
+     WORDS / UCSUR (your provided set)
+     ============================================================ */
+  const WORD_TO_UCSUR_CP = {
+    "nanpa": 0xF193D,
+    "esun":  0xF190B,
+    "en":    0xF190A,
+    "e":     0xF1909,
+    "nasa":  0xF193E,
+    "ni":    0xF1941,
+    "nena":  0xF1940,
+    "o":     0xF1944,
+    "kulupu":0xF191F,
+
+    "ijo":   0xF190C,
+    "wan":   0xF1973,
+    "tu":    0xF196E,
+    "sijelo":0xF195B,
+    "awen":  0xF1908,
+    "luka":  0xF192D,
+    "utala": 0xF1971,
+    "mun":   0xF193A,
+    "pipi":  0xF1951,
+    "jo":    0xF1913,
+
+    "a": 0xF1900,
+    "akesi": 0xF1901,
+    "ala": 0xF1902,
+    "alasa": 0xF1903,
+    "ale": 0xF1904,
+    "ali": 0xF1904,
+    "anpa": 0xF1905,
+    "ante": 0xF1906,
+    "anu": 0xF1907,
+    "ike": 0xF190D,
+    "ilo": 0xF190E,
+    "insa": 0xF190F,
+    "jaki": 0xF1910,
+    "jan": 0xF1911,
+    "jelo": 0xF1912,
+    "kala": 0xF1914,
+    "kalama": 0xF1915,
+    "kama": 0xF1916,
+    "kasi": 0xF1917,
+    "ken": 0xF1918,
+    "kepeken": 0xF1919,
+    "kili": 0xF191A,
+    "kiwen": 0xF191B,
+    "ko": 0xF191C,
+    "kon": 0xF191D,
+    "kule": 0xF191E,
+    "kute": 0xF1920,
+    "la": 0xF1921,
+    "lape": 0xF1922,
+    "laso": 0xF1923,
+    "lawa": 0xF1924,
+    "len": 0xF1925,
+    "lete": 0xF1926,
+    "li": 0xF1927,
+    "lili": 0xF1928,
+    "linja": 0xF1929,
+    "lipu": 0xF192A,
+    "loje": 0xF192B,
+    "lon": 0xF192C,
+    "lukin": 0xF192E,
+    "lupa": 0xF192F,
+    "ma": 0xF1930,
+    "mama": 0xF1931,
+    "mani": 0xF1932,
+    "meli": 0xF1933,
+    "mi": 0xF1934,
+    "mije": 0xF1935,
+    "moku": 0xF1936,
+    "moli": 0xF1937,
+    "monsi": 0xF1938,
+    "mu": 0xF1939,
+    "musi": 0xF193B,
+    "mute": 0xF193C,
+    "nasin": 0xF193F,
+    "nimi": 0xF1942,
+    "noka": 0xF1943,
+    "olin": 0xF1945,
+    "ona": 0xF1946,
+    "open": 0xF1947,
+    "pakala": 0xF1948,
+    "pali": 0xF1949,
+    "palisa": 0xF194A,
+    "pan":    0xF194B,
+    "pana":   0xF194C,
+    "pi":     0xF194D,
+    "pilin":  0xF194E,
+    "pimeja": 0xF194F,
+    "pini": 0xF1950,
+    "poka": 0xF1952,
+    "poki": 0xF1953,
+    "pona": 0xF1954,
+    "pu": 0xF1955,
+    "sama": 0xF1956,
+    "seli": 0xF1957,
+    "selo": 0xF1958,
+    "seme": 0xF1959,
+    "sewi": 0xF195A,
+    "sike": 0xF195C,
+    "sin": 0xF195D,
+    "sina": 0xF195E,
+    "sinpin": 0xF195F,
+    "sitelen": 0xF1960,
+    "sona": 0xF1961,
+    "soweli": 0xF1962,
+    "suli": 0xF1963,
+    "suno": 0xF1964,
+    "supa": 0xF1965,
+    "suwi": 0xF1966,
+    "tan": 0xF1967,
+    "taso": 0xF1968,
+    "tawa": 0xF1969,
+    "telo": 0xF196A,
+    "tenpo": 0xF196B,
+    "toki": 0xF196C,
+    "tomo": 0xF196D,
+    "unpa": 0xF196F,
+    "uta": 0xF1970,
+    "walo": 0xF1972,
+    "waso": 0xF1974,
+    "wawa": 0xF1975,
+    "weka": 0xF1976,
+    "wile": 0xF1977,
+    "namako": 0xF1978,
+    "kin": 0xF1979,
+    "oko": 0xF197A,
+    "kipisi": 0xF197B,
+    "leko": 0xF197C,
+    "monsuta": 0xF197D,
+    "tonsi": 0xF197E,
+    "jasima": 0xF197F,
+    "kijetesantakalu": 0xF1980,
+    "soko": 0xF1981,
+    "meso": 0xF1982,
+    "epiku": 0xF1983,
+    "kokosila": 0xF1984,
+    "lanpan": 0xF1985,
+    "n": 0xF1986,
+    "misikeke": 0xF1987,
+    "ku": 0xF1988,
+
+    "pake": 0xF19A0, "apeja": 0xF19A1, "majuna": 0xF19A2, "powe": 0xF19A3,
+  };
+
+  /* Punctuation-only glyphs: keep available for timer rendering, but exclude from random tile pool */
+  const EXTRA = { kolon: 0xF199D };
+  WORD_TO_UCSUR_CP["kolon"] = WORD_TO_UCSUR_CP["kolon"] ?? EXTRA.kolon;
+
+  /* ============================================================
+     TIMER CARTOUCHE (same style as maze)
+     ============================================================ */
+  const CARTOUCHE_FONT_FAMILY = "TP-Cartouche-Font";
+
+  const DIGIT_TO_TOKEN = { "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA", "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE" };
+  const TOKEN_TO_DIGIT_WORD = { "NI": "ijo", "WE": "wan", "TE": "tu", "SE": "seli", "NA": "awen", "LE": "luka", "NU": "utala", "ME": "mun", "PE": "pipi", "JE": "jo" };
+  const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
+  const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
+  const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
+
+  function normalizeLooseSeparators(raw) {
+    if (raw == null) return "";
+    let s = String(raw);
+    const isNeg = s.startsWith("-");
+    const head = isNeg ? "-" : "";
+    const rest = isNeg ? s.slice(1) : s;
+    let r = rest.replace(/\s+/g, " ");
+    r = r.replace(/-+/g, "-");
+    return (head + r).trim();
+  }
+
+  function numberStrToNanpaCaps(s, { thousandsChar = "," } = {}) {
+    if (s == null) throw new Error("s must be a string, not null");
+    let raw = normalizeLooseSeparators(String(s));
+    if (!raw) throw new Error("Empty value cannot be encoded");
+
+    function encodeSingleNumberSegment(segment, includeInitialNe) {
+      let seg = String(segment).trim();
+      if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
+
+      const out = [];
+      if (includeInitialNe) out.push("NE");
+
+      function pushNene() {
+        if (out.length > 0 && out[out.length - 1] === "NENE") return;
+        out.push("NENE");
+      }
+
+      if (seg.startsWith("-")) {
+        out.push("NO");
+        seg = seg.slice(1).trim();
+      }
+
+      if ((seg.match(/\./g) || []).length > 1) throw new Error(`Invalid numeric segment with multiple decimals: ${segment}`);
+
+      let intPart = seg;
+      let fracPart = "";
+      let hasDecimal = false;
+      if (seg.includes(".")) {
+        [intPart, fracPart] = seg.split(".", 2);
+        hasDecimal = true;
+      }
+
+      let ip = String(intPart ?? "").trim();
+      if (ip === "") ip = "0";
+
+      const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+      for (const g of groups) {
+        if (g === "" || !/^\d+$/.test(g)) throw new Error(`Invalid integer group "${g}" in "${s}"`);
+      }
+
+      for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
+
+      if (hasDecimal) {
+        out.push(OPCHAR_TO_TOKEN["."]);
+        for (const ch of fracPart) {
+          if (ch === "_" ) continue;
+          if (ch === " " || ch === "-") { pushNene(); continue; }
+          if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
+          if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
+          throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
+        }
+      }
+
+      out.push("N");
+      return out.join("");
+    }
+
+    return encodeSingleNumberSegment(raw, true);
+  }
+
+  function tokenizeNanpaCaps(caps) {
+    const s = String(caps).trim().toUpperCase();
+    if (!s.endsWith("N")) throw new Error("nanpa-caps must end with final terminator 'N'");
+    if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
+
+    const tokens = [];
+    let i = 0;
+    const n = s.length;
+
+    while (i < n - 1) {
+      let matched = null;
+      for (const pref of TOKEN_PREFIXES) {
+        if (s.startsWith(pref, i)) { matched = pref; break; }
+      }
+      if (matched != null) { tokens.push(matched); i += matched.length; continue; }
+
+      if (i + 2 <= n - 1) {
+        const two = s.slice(i, i + 2);
+        if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
+      }
+      throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
+    }
+
+    tokens.push("N");
+    return tokens;
+  }
+
+  function nanpaCapsTokensToTpWords(tokens) {
+    const out = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+
+      if (t === "NE") {
+        if (out.length === 0) out.push("nanpa", "en");
+        else out.push("nena", "en");
+        continue;
+      }
+
+      if (DIGIT_TOKENS.has(t)) {
+        const digitWord = TOKEN_TO_DIGIT_WORD[t];
+        if (t === "NI" || t === "NA" || t === "NU") out.push("nena", digitWord);
+        else out.push(digitWord, "en");
+        continue;
+      }
+
+      if (t === "NO") { out.push("nena", "o"); continue; }
+      if (t === "KE") { out.push("kulupu", "en"); continue; }
+      if (t === "N")  { out.push("nanpa"); continue; }
+
+      throw new Error(`Unsupported token "${t}" in time cartouche`);
+    }
+    return out;
+  }
+
+  function tpWordsToUcsurCodepoints(words) {
+    const cps = [];
+    for (const w of words) {
+      const key = String(w).toLowerCase();
+      const cp = WORD_TO_UCSUR_CP[key];
+      if (cp == null) throw new Error(`No UCSUR code point for word "${w}"`);
+      cps.push(cp);
+    }
+    return cps;
+  }
+
+  function decimalToUcsurCodepoints(decimalStr) {
+    const raw0 = String(decimalStr ?? "").trim();
+    if (!raw0) return [];
+    const caps = numberStrToNanpaCaps(raw0, { thousandsChar: "," });
+    const tokens = tokenizeNanpaCaps(caps);
+    const tpWords = nanpaCapsTokensToTpWords(tokens);
+    return tpWordsToUcsurCodepoints(tpWords);
+  }
+
+  function getSmallCodepointsSet() {
+    return new Set([
+      WORD_TO_UCSUR_CP["nanpa"],
+      WORD_TO_UCSUR_CP["nena"],
+      WORD_TO_UCSUR_CP["ni"],
+      WORD_TO_UCSUR_CP["nasa"],
+      WORD_TO_UCSUR_CP["e"],
+      WORD_TO_UCSUR_CP["esun"],
+      WORD_TO_UCSUR_CP["en"],
+    ].filter(Boolean));
+  }
+  const SMALL_SET = getSmallCodepointsSet();
+
+  function drawRoundedRect(ctx, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
+
+  function applyCartoucheStrokeStyle(ctx, borderPx) {
+    ctx.lineWidth = borderPx;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111";
+  }
+
+  function renderMixedCartoucheToCanvas(canvas, glyphs, largePx, smallPx, smallCodepoints, options = {}) {
+    const pad = options.padding ?? 18;
+    const border = options.border ?? 2;
+    const corner = options.cornerRadius ?? 16;
+    const letterGap = options.letterGap ?? 0;
+
+    const ctx = canvas.getContext("2d");
+    ctx.textBaseline = "alphabetic";
+
+    const runs = [];
+    let totalWidth = 0;
+    let maxAscent = 0;
+    let maxDescent = 0;
+
+    for (const g of glyphs) {
+      const ch = (typeof g === "number") ? String.fromCodePoint(g) : String(g);
+      const isSmall = (typeof g === "number") && smallCodepoints.has(g);
+      const px = isSmall ? smallPx : largePx;
+
+      ctx.font = `${px}px "${CARTOUCHE_FONT_FAMILY}"`;
+      const m = ctx.measureText(ch);
+
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      runs.push({ ch, px, tightW, left, ascent, descent });
+
+      totalWidth += tightW + letterGap;
+      if (ascent > maxAscent) maxAscent = ascent;
+      if (descent > maxDescent) maxDescent = descent;
+    }
+    if (runs.length > 0) totalWidth -= letterGap;
+
+    const textHeight = Math.ceil(maxAscent + maxDescent);
+    const cartW = Math.ceil(totalWidth + pad * 2);
+    const cartH = Math.ceil(textHeight + pad * 2);
+
+    canvas.width = cartW + border * 2;
+    canvas.height = cartH + border * 2;
+
+    const ctx2 = canvas.getContext("2d");
+    ctx2.textBaseline = "alphabetic";
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawRoundedRect(ctx2, border, border, cartW, cartH, corner);
+    applyCartoucheStrokeStyle(ctx2, border);
+    ctx2.stroke();
+
+    const baselineY = border + pad + maxAscent;
+    let x = border + pad;
+
+    ctx2.fillStyle = "#111";
+    for (const r of runs) {
+      ctx2.font = `${r.px}px "${CARTOUCHE_FONT_FAMILY}"`;
+      const drawX = x + (r.left ?? 0);
+      ctx2.fillText(r.ch, drawX, baselineY);
+      x += r.tightW + letterGap;
+    }
+  }
+
+  function buildTimeCartoucheGlyphs(totalSeconds) {
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = totalSeconds % 60;
+
+    const mm2 = String(mm).padStart(2, "0");
+    const ss2 = String(ss).padStart(2, "0");
+
+    const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
+    const cpEn    = WORD_TO_UCSUR_CP["en"];
+    const cpKolon = WORD_TO_UCSUR_CP["kolon"];
+
+    function digitInner(dChar) {
+      const cps = decimalToUcsurCodepoints(String(dChar));
+      if (cps.length < 3) return [];
+      return cps.slice(2, cps.length - 1);
+    }
+
+    const inner = [];
+    for (const ch of mm2) inner.push(...digitInner(ch));
+
+    if (typeof cpKolon === "number") inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKolon, WORD_TO_UCSUR_CP["en"]);
+    else inner.push(":");
+
+    for (const ch of ss2) inner.push(...digitInner(ch));
+
+    return [cpNanpa, cpEn, ...inner, cpNanpa];
+  }
+
+  async function ensureFontsLoaded() {
+    if (!document.fonts || !document.fonts.load || !document.fonts.ready) return;
+    await document.fonts.load(`24px "PatrickHand"`, "Time");
+    const sampleChar = String.fromCodePoint(WORD_TO_UCSUR_CP["esun"]);
+    await document.fonts.load(`24px "${CARTOUCHE_FONT_FAMILY}"`, sampleChar);
+    await document.fonts.ready;
+  }
+
+  /* ============================================================
+     DOM
+     ============================================================ */
+  const boardEl = document.getElementById("board");
+  const hintEl = document.getElementById("hint");
+
+  const btnNew = document.getElementById("btnNew");
+  const btnQuit = document.getElementById("btnQuit");
+  const overlay = document.getElementById("overlay");
+  const btnCancelQuit = document.getElementById("btnCancelQuit");
+  const btnConfirmQuit = document.getElementById("btnConfirmQuit");
+  const statusEl = document.getElementById("status");
+
+  const timerCanvas = document.getElementById("timerCanvas");
+  const timerCtx = timerCanvas.getContext("2d");
+  const timerOffscreen = document.createElement("canvas");
+
+  const finishPanel = document.getElementById("finishPanel");
+  const finishCanvas = document.getElementById("finishCanvas");
+  const finishCtx = finishCanvas.getContext("2d");
+  const finishOffscreen = document.createElement("canvas");
+
+  function applyUiText() {
+    document.title = t("title");
+    btnNew.textContent = t("btn_new");
+    btnQuit.textContent = t("btn_quit");
+    overlay.querySelector("h2").textContent = t("modal_title");
+    overlay.querySelector("p").textContent = t("modal_body");
+    btnCancelQuit.textContent = t("modal_cancel");
+    btnConfirmQuit.textContent = t("modal_quit");
+    if (hintEl) hintEl.textContent = t("hint");
+  }
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+
+  /* ============================================================
+     GAME STATE
+     ============================================================ */
+  const GameState = { idle: "idle", running: "running", finished: "finished", quitting: "quitting" };
+  let state = GameState.idle;
+
+  let tiles = [];
+  let wordsById = {};
+
+  let timerSeconds = 0;
+  let timerHandle = null;
+
+  /* ============================================================
+     TIMER RENDERING (top + finish)
+     ============================================================ */
+  const CFG = {
+    timerLargePx: 34,
+    timerSmallPx: 12,
+    timerPad: 8,
+    timerBorder: 2,
+    timerCorner: 12,
+    timerGap: 1,
+  };
+
+  function drawPrefixGlyphsLeftOfBox(ctx, boxX, centerY, fontPx, cps, gapPx = 8, interGlyphGapPx = 4) {
+    const chars = cps.map(cp => String.fromCodePoint(cp));
+
+    ctx.save();
+    ctx.font = `${fontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#111";
+
+    let totalW = 0;
+    const widths = [];
+    for (const ch of chars) {
+      const w = ctx.measureText(ch).width;
+      widths.push(w);
+      totalW += w;
+    }
+    totalW += interGlyphGapPx * Math.max(0, chars.length - 1);
+
+    let x = boxX - gapPx - totalW;
+    for (let i = 0; i < chars.length; i++) {
+      ctx.fillText(chars[i], x, centerY);
+      x += widths[i] + interGlyphGapPx;
+    }
+
+    ctx.restore();
+  }
+
+  function renderTopTimerCartouche(totalSeconds) {
+    if (isMobileTopbarMode()) return;
+
+    const targetCssW = 170;
+    const targetCssH = 36;
+    const dpr = window.devicePixelRatio || 1;
+
+    timerCanvas.style.width = `${targetCssW}px`;
+    timerCanvas.style.height = `${targetCssH}px`;
+    timerCanvas.width = Math.ceil(targetCssW * dpr);
+    timerCanvas.height = Math.ceil(targetCssH * dpr);
+
+    timerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    timerCtx.clearRect(0, 0, targetCssW, targetCssH);
+
+    const glyphs = buildTimeCartoucheGlyphs(totalSeconds);
+
+    renderMixedCartoucheToCanvas(
+      timerOffscreen,
+      glyphs,
+      CFG.timerLargePx,
+      CFG.timerSmallPx,
+      SMALL_SET,
+      { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
+    );
+
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(Boolean);
+    const gapPx = 8;
+
+    let scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
+    let prefixFontPx = Math.max(10, CFG.timerLargePx * scale);
+
+    timerCtx.save();
+    timerCtx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    const p1 = prefixCps[0] ? timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width : 0;
+    const p2 = prefixCps[1] ? timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width : 0;
+    const prefixW = p1 + (prefixCps.length > 1 ? (4 + p2) : 0);
+    timerCtx.restore();
+
+    const availWForCartouche = Math.max(40, targetCssW - prefixW - gapPx);
+    scale = Math.min(availWForCartouche / timerOffscreen.width, targetCssH / timerOffscreen.height);
+    prefixFontPx = Math.max(10, CFG.timerLargePx * scale);
+
+    const drawW = Math.floor(timerOffscreen.width * scale);
+    const drawH = Math.floor(timerOffscreen.height * scale);
+
+    const x = Math.floor(targetCssW - drawW);
+    const y = Math.floor((targetCssH - drawH) / 2);
+
+    if (prefixCps.length) drawPrefixGlyphsLeftOfBox(timerCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
+    timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
+  }
+
+  function renderFinishTimerMazeStyle(totalSeconds) {
+    const cssW = Math.min(680, Math.floor(window.innerWidth * 0.92));
+    const cssH = (window.matchMedia && window.matchMedia("(pointer: coarse), (max-width: 520px)").matches) ? 96 : 110;
+    const dpr = window.devicePixelRatio || 1;
+
+    finishCanvas.style.width = `${cssW}px`;
+    finishCanvas.style.height = `${cssH}px`;
+    finishCanvas.width = Math.ceil(cssW * dpr);
+    finishCanvas.height = Math.ceil(cssH * dpr);
+
+    finishCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    finishCtx.clearRect(0, 0, cssW, cssH);
+
+    const glyphs = buildTimeCartoucheGlyphs(totalSeconds);
+
+    const largePx = 72;
+    const smallPx = 24;
+
+    renderMixedCartoucheToCanvas(
+      finishOffscreen,
+      glyphs,
+      largePx,
+      smallPx,
+      SMALL_SET,
+      { padding: 18, border: 3, cornerRadius: 18, letterGap: 1 }
+    );
+
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(Boolean);
+    const gapPx = 10;
+
+    let scale = Math.min(cssW / finishOffscreen.width, cssH / finishOffscreen.height);
+    let prefixFontPx = Math.max(14, largePx * scale);
+
+    finishCtx.save();
+    finishCtx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    const p1 = prefixCps[0] ? finishCtx.measureText(String.fromCodePoint(prefixCps[0])).width : 0;
+    const p2 = prefixCps[1] ? finishCtx.measureText(String.fromCodePoint(prefixCps[1])).width : 0;
+    const prefixW = p1 + (prefixCps.length > 1 ? (6 + p2) : 0);
+    finishCtx.restore();
+
+    const availWForCartouche = Math.max(120, cssW - prefixW - gapPx);
+    scale = Math.min(availWForCartouche / finishOffscreen.width, cssH / finishOffscreen.height);
+    prefixFontPx = Math.max(14, largePx * scale);
+
+    const drawW = Math.floor(finishOffscreen.width * scale);
+    const drawH = Math.floor(finishOffscreen.height * scale);
+
+    const x = Math.floor(cssW - drawW);
+    const y = Math.floor((cssH - drawH) / 2);
+
+    if (prefixCps.length) drawPrefixGlyphsLeftOfBox(finishCtx, x, cssH / 2, prefixFontPx, prefixCps, gapPx, 6);
+    finishCtx.drawImage(finishOffscreen, x, y, drawW, drawH);
+  }
+
+  function startTimer() {
+    stopTimer();
+    timerHandle = setInterval(() => {
+      timerSeconds++;
+      renderTopTimerCartouche(timerSeconds);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerHandle) clearInterval(timerHandle);
+    timerHandle = null;
+  }
+
+  /* ============================================================
+     WORD SELECTION (exclude punctuation-only words)
+     ============================================================ */
+  const EXCLUDE_TILE_WORDS = new Set([
+    "kolon",
+    "ota",
+  ]);
+
+  function buildCandidateWordList() {
+    const entries = Object.entries(WORD_TO_UCSUR_CP);
+
+    const seenCp = new Set();
+    const out = [];
+    for (const [w, cp] of entries) {
+      if (typeof cp !== "number") continue;
+      if (!w || typeof w !== "string") continue;
+
+      const key = w.toLowerCase();
+
+      /* Keep your existing de-dupe rule */
+      if (key === "ali") continue;
+
+      /* NEW: exclude punctuation-only words from tile pool */
+      if (EXCLUDE_TILE_WORDS.has(key)) continue;
+
+      if (seenCp.has(cp)) continue;
+      seenCp.add(cp);
+      out.push(key);
+    }
+    return out;
+  }
+
+  const WORD_POOL = buildCandidateWordList();
+
+  function pick15Words() {
+    if (WORD_POOL.length < 15) throw new Error("Word pool must contain at least 15 unique glyphs.");
+
+    const pool = WORD_POOL.slice();
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    const chosen = pool.slice(0, 15);
+    chosen.sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
+    return chosen;
+  }
+
+  /* ============================================================
+     15 PUZZLE LOGIC (solvable scramble by random walk)
+     ============================================================ */
+  function idxToXY(i) { return { x: i % 4, y: Math.floor(i / 4) }; }
+
+  function isAdjacent(a, b) {
+    const A = idxToXY(a), B = idxToXY(b);
+    return (Math.abs(A.x - B.x) + Math.abs(A.y - B.y)) === 1;
+  }
+
+  function swapIdx(arr, a, b) {
+    const t = arr[a];
+    arr[a] = arr[b];
+    arr[b] = t;
+  }
+
+  function neighborsOfBlank(blankIdx) {
+    const x = blankIdx % 4;
+    const y = Math.floor(blankIdx / 4);
+    const out = [];
+    if (x > 0) out.push(blankIdx - 1);
+    if (x < 3) out.push(blankIdx + 1);
+    if (y > 0) out.push(blankIdx - 4);
+    if (y < 3) out.push(blankIdx + 4);
+    return out;
+  }
+
+  function isSolved(arr) {
+    for (let i = 0; i < 15; i++) if (arr[i] !== i + 1) return false;
+    return arr[15] === 0;
+  }
+
+  function scrambleByRandomWalk(arr, moves = 240) {
+    let blank = arr.indexOf(0);
+    let prevBlank = -1;
+
+    for (let i = 0; i < moves; i++) {
+      const nbs = neighborsOfBlank(blank).filter(idx => idx !== prevBlank);
+      const pick = nbs[Math.floor(Math.random() * nbs.length)];
+      prevBlank = blank;
+      swapIdx(arr, blank, pick);
+      blank = pick;
+    }
+
+    if (isSolved(arr)) return scrambleByRandomWalk(arr, Math.max(40, Math.floor(moves / 3)));
+    return arr;
+  }
+
+  function tryMoveAtIndex(tileIdx) {
+    const blankIdx = tiles.indexOf(0);
+    if (!isAdjacent(tileIdx, blankIdx)) return false;
+    swapIdx(tiles, tileIdx, blankIdx);
+    return true;
+  }
+
+  /* ============================================================
+     TILE LABEL HELPERS
+     ============================================================ */
+  function formatTileLabel(word) {
+    const w = String(word || "");
+    if (w.length > 6) return w.slice(0, 5) + "...";
+    return w;
+  }
+
+  /* ============================================================
+     RENDERING
+     ============================================================ */
+  function tileIdToGlyphChar(id) {
+    const w = wordsById[id];
+    const cp = WORD_TO_UCSUR_CP[w];
+    if (typeof cp !== "number") return "";
+    return String.fromCodePoint(cp);
+  }
+
+  function rebuildBoardDom() {
+    boardEl.innerHTML = "";
+
+    for (let i = 0; i < 16; i++) {
+      const id = tiles[i];
+
+      const cell = document.createElement("div");
+      cell.className = "tile";
+      cell.dataset.idx = String(i);
+
+      const glyphEl = document.createElement("div");
+      glyphEl.className = "glyph";
+
+      const labelEl = document.createElement("div");
+      labelEl.className = "label";
+
+      if (id === 0) {
+        cell.classList.add("blank");
+        glyphEl.textContent = "";
+        labelEl.textContent = "";
+      } else {
+        const w = wordsById[id];
+        glyphEl.textContent = tileIdToGlyphChar(id);
+        labelEl.textContent = formatTileLabel(w);
+        labelEl.title = w;
+
+        const blankIdx = tiles.indexOf(0);
+        if (isAdjacent(i, blankIdx)) cell.classList.add("movable");
+      }
+
+      cell.appendChild(glyphEl);
+      cell.appendChild(labelEl);
+      boardEl.appendChild(cell);
+    }
+  }
+
+  function updateBoardDomClassesOnly() {
+    const blankIdx = tiles.indexOf(0);
+    const kids = boardEl.children;
+
+    for (let i = 0; i < kids.length; i++) {
+      const el = kids[i];
+      const id = tiles[i];
+
+      el.classList.toggle("blank", id === 0);
+      el.classList.toggle("movable", id !== 0 && isAdjacent(i, blankIdx));
+
+      const glyphEl = el.querySelector(".glyph");
+      const labelEl = el.querySelector(".label");
+
+      if (id === 0) {
+        if (glyphEl) glyphEl.textContent = "";
+        if (labelEl) labelEl.textContent = "";
+        if (labelEl) labelEl.title = "";
+      } else {
+        const w = wordsById[id];
+        if (glyphEl) glyphEl.textContent = tileIdToGlyphChar(id);
+        if (labelEl) labelEl.textContent = formatTileLabel(w);
+        if (labelEl) labelEl.title = w;
+      }
+    }
+  }
+
+  /* ============================================================
+     INPUT: click + drag (mobile-friendly)
+     ============================================================ */
+  const drag = { active: false, idx: -1, pointerId: null, startX: 0, startY: 0, moved: false, committed: false };
+
+  function isTypingContext(el) {
+    if (!el) return false;
+    const tag = String(el.tagName || "").toLowerCase();
+    return tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable;
+  }
+
+  function canInteract() { return state === GameState.running; }
+
+  function directionTowardBlank(fromIdx, blankIdx) {
+    const A = idxToXY(fromIdx);
+    const B = idxToXY(blankIdx);
+    return { dx: B.x - A.x, dy: B.y - A.y };
+  }
+
+  function handleTileActivation(tileIdx) {
+    if (!canInteract()) return;
+    if (tryMoveAtIndex(tileIdx)) {
+      updateBoardDomClassesOnly();
+      if (isSolved(tiles)) finishGame();
+    }
+  }
+
+  boardEl.addEventListener("pointerdown", (e) => {
+    if (!canInteract()) return;
+    if (isTypingContext(document.activeElement)) return;
+
+    const target = e.target.closest(".tile");
+    if (!target) return;
+
+    const idx = Number(target.dataset.idx);
+    if (!Number.isFinite(idx)) return;
+
+    const id = tiles[idx];
+    if (id === 0) return;
+
+    const blankIdx = tiles.indexOf(0);
+    if (!isAdjacent(idx, blankIdx)) return;
+
+    e.preventDefault();
+    target.setPointerCapture(e.pointerId);
+
+    drag.active = true;
+    drag.idx = idx;
+    drag.pointerId = e.pointerId;
+    drag.startX = e.clientX;
+    drag.startY = e.clientY;
+    drag.moved = false;
+    drag.committed = false;
+  }, { passive: false });
+
+  boardEl.addEventListener("pointermove", (e) => {
+    if (!drag.active) return;
+    if (e.pointerId !== drag.pointerId) return;
+    if (!canInteract()) return;
+
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+
+    const dist = Math.hypot(dx, dy);
+    const THRESH = 12;
+
+    if (dist < THRESH) return;
+
+    drag.moved = true;
+    if (drag.committed) return;
+
+    const blankIdx = tiles.indexOf(0);
+    const dir = directionTowardBlank(drag.idx, blankIdx);
+
+    let ok = false;
+    if (dir.dx === 1 && dx > THRESH) ok = true;
+    if (dir.dx === -1 && dx < -THRESH) ok = true;
+    if (dir.dy === 1 && dy > THRESH) ok = true;
+    if (dir.dy === -1 && dy < -THRESH) ok = true;
+
+    if (ok) {
+      drag.committed = true;
+      handleTileActivation(drag.idx);
+    }
+  }, { passive: false });
+
+  function endDrag(e) {
+    if (!drag.active) return;
+    if (e.pointerId !== drag.pointerId) return;
+
+    if (!drag.moved && !drag.committed) handleTileActivation(drag.idx);
+
+    drag.active = false;
+    drag.idx = -1;
+    drag.pointerId = null;
+    drag.moved = false;
+    drag.committed = false;
+  }
+
+  boardEl.addEventListener("pointerup", endDrag, { passive: true });
+  boardEl.addEventListener("pointercancel", endDrag, { passive: true });
+
+  window.addEventListener("keydown", (e) => {
+    if (!canInteract()) return;
+    if (isTypingContext(document.activeElement)) return;
+
+    const blankIdx = tiles.indexOf(0);
+    const B = idxToXY(blankIdx);
+
+    let targetIdx = null;
+    if (e.key === "ArrowLeft")  targetIdx = (B.x < 3) ? (blankIdx + 1) : null;
+    if (e.key === "ArrowRight") targetIdx = (B.x > 0) ? (blankIdx - 1) : null;
+    if (e.key === "ArrowUp")    targetIdx = (B.y < 3) ? (blankIdx + 4) : null;
+    if (e.key === "ArrowDown")  targetIdx = (B.y > 0) ? (blankIdx - 4) : null;
+
+    if (targetIdx != null) {
+      e.preventDefault();
+      handleTileActivation(targetIdx);
+    }
+  }, { passive: false });
+
+  /* ============================================================
+     GAME FLOW (Start / Quit / Finish)
+     ============================================================ */
+  function resetUiForIdle() {
+    timerSeconds = 0;
+    renderTopTimerCartouche(timerSeconds);
+    btnQuit.disabled = true;
+    finishPanel.classList.remove("show");
+    finishPanel.setAttribute("aria-hidden", "true");
+  }
+
+  function showQuitModal() {
+    state = GameState.quitting;
+    stopTimer();
+    overlay.classList.add("show");
+  }
+
+  function hideQuitModal(resume) {
+    overlay.classList.remove("show");
+    if (resume && state === GameState.quitting) {
+      state = GameState.running;
+      startTimer();
+    }
+  }
+
+  function startNewGame() {
+    finishPanel.classList.remove("show");
+    finishPanel.setAttribute("aria-hidden", "true");
+
+    const chosenWords = pick15Words();
+
+    wordsById = {};
+    for (let id = 1; id <= 15; id++) wordsById[id] = chosenWords[id - 1];
+
+    tiles = [];
+    for (let id = 1; id <= 15; id++) tiles.push(id);
+    tiles.push(0);
+
+    scrambleByRandomWalk(tiles, 240);
+
+    rebuildBoardDom();
+
+    state = GameState.running;
+    btnQuit.disabled = false;
+
+    timerSeconds = 0;
+    renderTopTimerCartouche(timerSeconds);
+    setStatus(t("status_running"));
+    startTimer();
+  }
+
+  function finishGame() {
+    state = GameState.finished;
+    stopTimer();
+    btnQuit.disabled = true;
+
+    const timeStr = formatMMSS(timerSeconds);
+    setStatus(t("status_solved", timeStr));
+
+    renderFinishTimerMazeStyle(timerSeconds);
+
+    finishPanel.classList.add("show");
+    finishPanel.setAttribute("aria-hidden", "false");
+  }
+
+  function quitGameConfirmed() {
+    hideQuitModal(false);
+    state = GameState.idle;
+    stopTimer();
+    btnQuit.disabled = true;
+
+    tiles = [];
+    wordsById = {};
+    boardEl.innerHTML = "";
+
+    resetUiForIdle();
+    setStatus(t("status_quit"));
+  }
+
+  /* ============================================================
+     BUTTONS
+     ============================================================ */
+  btnNew.addEventListener("click", () => { hideQuitModal(false); startNewGame(); });
+  btnQuit.addEventListener("click", () => { if (state === GameState.running) showQuitModal(); });
+  btnCancelQuit.addEventListener("click", () => hideQuitModal(true));
+  btnConfirmQuit.addEventListener("click", () => quitGameConfirmed());
+
+  overlay.addEventListener("pointerdown", (e) => e.stopPropagation());
+  overlay.addEventListener("pointermove", (e) => e.stopPropagation());
+  overlay.addEventListener("pointerup", (e) => e.stopPropagation());
+
+  /* ============================================================
+     INIT
+     ============================================================ */
+  function init() {
+    applyUiText();
+    resetUiForIdle();
+    setStatus(t("status_idle"));
+  }
+
+  window.addEventListener("resize", () => {
+    renderTopTimerCartouche(timerSeconds);
+    if (state === GameState.finished) renderFinishTimerMazeStyle(timerSeconds);
+  });
+
+  window.addEventListener("load", async () => {
+    setStatus(t("status_loading"));
+    try { await ensureFontsLoaded(); } catch {}
+    init();
+  });
+})();
+</script>
+</body>
+</html>
