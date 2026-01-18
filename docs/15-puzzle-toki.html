@@ -217,6 +217,41 @@
     .tile.blank .label { display: none; }
     .tile.blank .glyph { display: none; }
 
+    /* ============================================================
+       NEW: Small toggle buttons under the board (mobile-friendly)
+       ============================================================ */
+    .labelToggleRow{
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .toggleBtn{
+      appearance: none;
+      border: 1px solid rgba(17,17,17,0.24);
+      background: rgba(255,255,255,0.38);
+      padding: 6px 8px;            /* small for mobile */
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;             /* small for mobile */
+      line-height: 1;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    .toggleBtn[aria-pressed="true"]{
+      background: rgba(255,255,255,0.72);
+      border-color: rgba(17,17,17,0.42);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+    }
+
+    .toggleBtn:active { transform: scale(0.98); }
+
     .overlay {
       position: absolute;
       inset: 0;
@@ -309,6 +344,11 @@
 
       .hint { font-size: 14px; }
       .finishCanvas { height: 96px; }
+
+      .toggleBtn{
+        font-size: 12px;
+        padding: 6px 7px;
+      }
     }
   </style>
 </head>
@@ -327,7 +367,14 @@
         <div id="hint" class="hint" aria-label="Instruction">
           Arrange tiles in alphabetical order.
         </div>
+
         <div id="board" class="board" aria-label="15 puzzle board"></div>
+
+        <!-- NEW: label toggle buttons (always one is pressed) -->
+        <div class="labelToggleRow" aria-label="Tile label display">
+          <button id="btnLabelsOn" class="toggleBtn" type="button" aria-pressed="true"></button>
+          <button id="btnLabelsOff" class="toggleBtn" type="button" aria-pressed="false"></button>
+        </div>
       </div>
 
       <div id="finishPanel" class="finishPanel" aria-hidden="true">
@@ -367,7 +414,7 @@
   /* ============================================================
      I18N (developer-only toggle)
      ============================================================ */
-  const DEV_LANG = "tp";// "en"; // CHANGE HERE: "en" | 
+  const DEV_LANG = "tp";// "en"; // CHANGE HERE: "en" |
 
   const STRINGS = {
     en: {
@@ -383,7 +430,9 @@
       modal_body: "The timer will stop. If you quit, your current progress will be lost.",
       modal_cancel: "Cancel",
       modal_quit: "Quit",
-      hint: "Arrange tiles in alphabetical order."
+      hint: "Arrange tiles in alphabetical order.",
+      labels_on: "Words: On",
+      labels_off: "Words: Off",
     },
     tp: {
       title: "musi pi leko tawa pi sitelen pona",
@@ -398,7 +447,9 @@
       modal_body: "tenpo li awen ala. sina weka la pali sina lon musi ni li weka.",
       modal_cancel: "o ala",
       modal_quit: "o weka",
-      hint: "o ante e nimi lon nasin pi sitelen Lasina."
+      hint: "o ante e nimi lon nasin pi sitelen Lasina.",
+      labels_on: "nimi: lon",
+      labels_off: "nimi: ala",
     }
   };
 
@@ -520,7 +571,7 @@
     "seli": 0xF1957,
     "selo": 0xF1958,
     "seme": 0xF1959,
-   
+
     "sike": 0xF195C,
     "sin": 0xF195D,
     "sina": 0xF195E,
@@ -564,13 +615,10 @@
     "misikeke": 0xF1987,
     "ku": 0xF1988,
 
-  "majuna": 0xF19A2, 
-
+    "majuna": 0xF19A2,
     "su": 0xF19A6,
-
     "linluwi":0xF19A4,
-
-     "sewi": 0xF195A,
+    "sewi": 0xF195A,
   };
   //  "pake": 0xF19A0,  "apeja": 0xF19A1, "powe": 0xF19A3,
 
@@ -584,11 +632,28 @@
     sewi: [0xF195A, 0xF198C],
   };
 
-
-
   /* Punctuation-only glyphs: keep available for timer rendering, but exclude from random tile pool */
   const EXTRA = { kolon: 0xF199D };
   WORD_TO_UCSUR_CP["kolon"] = WORD_TO_UCSUR_CP["kolon"] ?? EXTRA.kolon;
+
+  /* ============================================================
+     NEW: Tile label toggle persistence (localStorage)
+     ============================================================ */
+  const LS_KEY_SHOW_TILE_WORDS = "tp15_showTileWords"; // "true" | "false"
+  let showTileWords = true; // default behaviour = YES
+
+  function loadShowTileWords() {
+    try {
+      const v = localStorage.getItem(LS_KEY_SHOW_TILE_WORDS);
+      if (v === "true") return true;
+      if (v === "false") return false;
+    } catch {}
+    return true;
+  }
+
+  function saveShowTileWords(val) {
+    try { localStorage.setItem(LS_KEY_SHOW_TILE_WORDS, String(!!val)); } catch {}
+  }
 
   /* ============================================================
      TIMER CARTOUCHE (same style as maze)
@@ -899,6 +964,10 @@
   const finishCtx = finishCanvas.getContext("2d");
   const finishOffscreen = document.createElement("canvas");
 
+  /* NEW: toggle buttons */
+  const btnLabelsOn = document.getElementById("btnLabelsOn");
+  const btnLabelsOff = document.getElementById("btnLabelsOff");
+
   function applyUiText() {
     document.title = t("title");
     btnNew.textContent = t("btn_new");
@@ -908,6 +977,10 @@
     btnCancelQuit.textContent = t("modal_cancel");
     btnConfirmQuit.textContent = t("modal_quit");
     if (hintEl) hintEl.textContent = t("hint");
+
+    /* NEW: toggle labels */
+    if (btnLabelsOn) btnLabelsOn.textContent = t("labels_on");
+    if (btnLabelsOff) btnLabelsOff.textContent = t("labels_off");
   }
 
   function setStatus(msg) { statusEl.textContent = msg; }
@@ -939,6 +1012,25 @@
     return out;
   }
 
+  /* ============================================================
+     NEW: Label toggle UI state + persistence
+     ============================================================ */
+  function applyLabelToggleUi() {
+    if (!btnLabelsOn || !btnLabelsOff) return;
+    btnLabelsOn.setAttribute("aria-pressed", showTileWords ? "true" : "false");
+    btnLabelsOff.setAttribute("aria-pressed", showTileWords ? "false" : "true");
+  }
+
+  function setShowTileWords(val) {
+    const next = !!val;
+    if (showTileWords === next) return;
+    showTileWords = next;
+    saveShowTileWords(showTileWords);
+    applyLabelToggleUi();
+
+    /* Rerender current puzzle view (works during a game) */
+    updateBoardDomClassesOnly();
+  }
 
   /* ============================================================
      GAME STATE
@@ -1232,7 +1324,7 @@
     const w = wordsById[id];
     const key = String(w || "").toLowerCase();
 
-    // NEW: render-only override chosen for this game
+    // render-only override chosen for this game
     const cpChosen = displayCpByWord[key];
     if (typeof cpChosen === "number") return String.fromCodePoint(cpChosen);
 
@@ -1241,7 +1333,6 @@
     if (typeof cp !== "number") return "";
     return String.fromCodePoint(cp);
   }
-
 
   function rebuildBoardDom() {
     boardEl.innerHTML = "";
@@ -1263,11 +1354,19 @@
         cell.classList.add("blank");
         glyphEl.textContent = "";
         labelEl.textContent = "";
+        labelEl.title = "";
       } else {
         const w = wordsById[id];
         glyphEl.textContent = tileIdToGlyphChar(id);
-        labelEl.textContent = formatTileLabel(w);
-        labelEl.title = w;
+
+        /* NEW: show/hide tile word label based on toggle */
+        if (showTileWords) {
+          labelEl.textContent = formatTileLabel(w);
+          labelEl.title = w;
+        } else {
+          labelEl.textContent = "";
+          labelEl.title = "";
+        }
 
         const blankIdx = tiles.indexOf(0);
         if (isAdjacent(i, blankIdx)) cell.classList.add("movable");
@@ -1300,8 +1399,17 @@
       } else {
         const w = wordsById[id];
         if (glyphEl) glyphEl.textContent = tileIdToGlyphChar(id);
-        if (labelEl) labelEl.textContent = formatTileLabel(w);
-        if (labelEl) labelEl.title = w;
+
+        /* NEW: show/hide tile word label based on toggle */
+        if (labelEl) {
+          if (showTileWords) {
+            labelEl.textContent = formatTileLabel(w);
+            labelEl.title = w;
+          } else {
+            labelEl.textContent = "";
+            labelEl.title = "";
+          }
+        }
       }
     }
   }
@@ -1458,7 +1566,7 @@
 
     const chosenWords = pick15Words();
 
-    // NEW: choose per-game display glyphs (render-only)
+    // choose per-game display glyphs (render-only)
     displayCpByWord = buildDisplayCpByWordForGame(chosenWords);
 
     wordsById = {};
@@ -1517,6 +1625,10 @@
   btnCancelQuit.addEventListener("click", () => hideQuitModal(true));
   btnConfirmQuit.addEventListener("click", () => quitGameConfirmed());
 
+  /* NEW: toggle buttons (always one stays pressed) */
+  btnLabelsOn.addEventListener("click", () => setShowTileWords(true));
+  btnLabelsOff.addEventListener("click", () => setShowTileWords(false));
+
   overlay.addEventListener("pointerdown", (e) => e.stopPropagation());
   overlay.addEventListener("pointermove", (e) => e.stopPropagation());
   overlay.addEventListener("pointerup", (e) => e.stopPropagation());
@@ -1525,6 +1637,10 @@
      INIT
      ============================================================ */
   function init() {
+    /* NEW: load preference before first render */
+    showTileWords = loadShowTileWords();
+    applyLabelToggleUi();
+
     applyUiText();
     resetUiForIdle();
     setStatus(t("status_idle"));
