@@ -46,9 +46,7 @@
     @font-face {
       font-family: "TP-Cartouche-Font";
       src:
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff2") format("woff2"),
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.woff")  format("woff"),
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR.otf")   format("opentype");
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v4.otf")   format("opentype");
       font-display: swap;
     }
 
@@ -522,7 +520,7 @@
     "seli": 0xF1957,
     "selo": 0xF1958,
     "seme": 0xF1959,
-    "sewi": 0xF195A,
+   
     "sike": 0xF195C,
     "sin": 0xF195D,
     "sina": 0xF195E,
@@ -566,8 +564,27 @@
     "misikeke": 0xF1987,
     "ku": 0xF1988,
 
-    "pake": 0xF19A0, "apeja": 0xF19A1, "majuna": 0xF19A2, "powe": 0xF19A3,
+  "majuna": 0xF19A2, 
+
+    "su": 0xF19A6,
+
+    "linluwi":0xF19A4,
+
+     "sewi": 0xF195A,
   };
+  //  "pake": 0xF19A0,  "apeja": 0xF19A1, "powe": 0xF19A3,
+
+  /* ============================================================
+    OPTIONAL: Alternative glyph variants (render-only)
+    - Keys are canonical tile words (lowercase)
+    - Values are arrays of UCSUR codepoints that can be used to display that word
+    ============================================================ */
+  const ALT_GLYPHS_BY_WORD = {
+    ni:   [0xF1941, 0xF198B, 0xF198A, 0xF1989],
+    sewi: [0xF195A, 0xF198C],
+  };
+
+
 
   /* Punctuation-only glyphs: keep available for timer rendering, but exclude from random tile pool */
   const EXTRA = { kolon: 0xF199D };
@@ -895,6 +912,34 @@
 
   function setStatus(msg) { statusEl.textContent = msg; }
 
+  function randInt(n) {
+    return Math.floor(Math.random() * n);
+  }
+
+  function pickDisplayCpForWord(word) {
+    const w = String(word || "").toLowerCase();
+
+    const variants = ALT_GLYPHS_BY_WORD[w];
+    if (Array.isArray(variants) && variants.length > 0) {
+      return variants[randInt(variants.length)] | 0;
+    }
+
+    // Default: use the standard word → codepoint map
+    const base = WORD_TO_UCSUR_CP[w];
+    return (typeof base === "number") ? base : null;
+  }
+
+  function buildDisplayCpByWordForGame(chosenWords) {
+    const out = {};
+    for (const w of (chosenWords ?? [])) {
+      const key = String(w || "").toLowerCase();
+      const cp = pickDisplayCpForWord(key);
+      if (typeof cp === "number") out[key] = cp;
+    }
+    return out;
+  }
+
+
   /* ============================================================
      GAME STATE
      ============================================================ */
@@ -903,6 +948,8 @@
 
   let tiles = [];
   let wordsById = {};
+  // Per-game chosen display glyphs (stable during that game)
+  let displayCpByWord = {}; // { [word: string]: number }
 
   let timerSeconds = 0;
   let timerHandle = null;
@@ -1183,10 +1230,18 @@
      ============================================================ */
   function tileIdToGlyphChar(id) {
     const w = wordsById[id];
-    const cp = WORD_TO_UCSUR_CP[w];
+    const key = String(w || "").toLowerCase();
+
+    // NEW: render-only override chosen for this game
+    const cpChosen = displayCpByWord[key];
+    if (typeof cpChosen === "number") return String.fromCodePoint(cpChosen);
+
+    // Fallback: base map
+    const cp = WORD_TO_UCSUR_CP[key];
     if (typeof cp !== "number") return "";
     return String.fromCodePoint(cp);
   }
+
 
   function rebuildBoardDom() {
     boardEl.innerHTML = "";
@@ -1402,6 +1457,9 @@
     finishPanel.setAttribute("aria-hidden", "true");
 
     const chosenWords = pick15Words();
+
+    // NEW: choose per-game display glyphs (render-only)
+    displayCpByWord = buildDisplayCpByWordForGame(chosenWords);
 
     wordsById = {};
     for (let id = 1; id <= 15; id++) wordsById[id] = chosenWords[id - 1];

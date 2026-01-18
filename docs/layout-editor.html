@@ -1,0 +1,3378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sitelen Layout Editor (selection + autosave)</title>
+
+  <style>
+    :root{
+      --gap: 12px;
+      --border:#d0d7de;
+      --bg:#F3DFC0;
+      --muted:#3f4750;
+    }
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin:24px;
+      background:var(--bg);
+      color:#111;
+    }
+    .card{
+      max-width:1600px;
+      margin:0 auto;
+      padding:16px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:var(--bg);
+    }
+    .toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:var(--gap);
+      align-items:flex-end;
+      margin:10px 0 12px;
+    }
+    button{
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.15);
+      padding:8px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      color:#111;
+      font-size:13px;
+    }
+    button[aria-pressed="true"]{
+      outline:3px solid #111;
+      outline-offset:2px;
+    }
+    button:disabled{
+      opacity:0.45;
+      cursor:not-allowed;
+    }
+
+    /* small z-order buttons */
+    .btnMini{
+      padding:6px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      line-height:1;
+    }
+
+    label{ display:block; font-size:12px; color:var(--muted); margin:0 0 6px; }
+    input[type="text"], textarea, select, input[type="number"]{
+      width:100%;
+      box-sizing:border-box;
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:10px;
+      background:rgba(255,255,255,0.15);
+      color:#111;
+      font:inherit;
+    }
+    textarea{ min-height:72px; resize:vertical; }
+
+    /* Visual feedback in the text editor panel when editing a node */
+    #textValue[data-editing="true"]{
+      outline:3px solid #111;
+      outline-offset:2px;
+    }
+
+    /* Visual feedback for SITELEN editing */
+    #sitelenValue[data-editing="true"]{
+      outline:3px solid #111;
+      outline-offset:2px;
+    }
+
+    /* Visual feedback for rectangle editing */
+    #optRect[data-editing="true"]{
+      outline:3px solid #111;
+      outline-offset:2px;
+      border-radius:12px;
+    }
+
+    /* Visual feedback for glyph editing */
+    #optGlyph[data-editing="true"]{
+      outline:3px solid #111;
+      outline-offset:2px;
+      border-radius:12px;
+    }
+
+    /* Visual feedback for sitelen editing */
+    #optSitelen[data-editing="true"]{
+      outline:3px solid #111;
+      outline-offset:2px;
+      border-radius:12px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width:980px){ .grid{ grid-template-columns:1fr; } }
+
+    .panel{
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px;
+      background:rgba(255,255,255,0.10);
+    }
+    .panel h2{
+      margin:0 0 10px;
+      font-size:14px;
+    }
+    .help{ font-size:12px; color:var(--muted); line-height:1.35; margin-top:8px; }
+
+    .stageWrap{
+      border:1px dashed var(--border);
+      border-radius:10px;
+      overflow:hidden;
+      background:var(--bg);
+    }
+    #stageHost{
+      width:100%;
+      height:min(78vh, 860px);
+      touch-action:none;
+    }
+
+    .diagRow { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .pill { border:1px solid var(--border); border-radius:999px; padding:4px 8px; font-size:12px; background:rgba(255,255,255,0.18); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    /* Glyph picker buttons */
+    .btnRow{ display:flex; flex-wrap:wrap; gap:6px; }
+    .btnTiny{
+      padding:6px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      line-height:1;
+    }
+    .btnTiny[aria-pressed="true"]{
+      outline:3px solid #111;
+      outline-offset:2px;
+    }
+    .glyphGrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .glyphBtn{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      padding:10px 8px;
+      border-radius:12px;
+      text-align:center;
+      user-select:none;
+    }
+    .glyphBtn[aria-pressed="true"]{
+      outline:3px solid #111;
+      outline-offset:2px;
+    }
+    .glyphChar{
+      font-family:"TP-Cartouche-Font";
+      font-size:34px;
+      line-height:1;
+    }
+    .glyphWord{
+      font-size:12px;
+      color:#111;
+      line-height:1.1;
+      word-break:break-word;
+    }
+
+    /* Edit action buttons */
+    .editActions{
+      display:none;
+      justify-content:flex-end;
+      gap:8px;
+      margin:6px 0 8px;
+    }
+    .editActions button{
+      padding:6px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      line-height:1;
+    }
+
+    /* Import/export panel */
+    .ioActions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      align-items:center;
+    }
+    .ioActions button{
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      line-height:1;
+    }
+    .ioSmall{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+      margin-top:6px;
+    }
+
+    /* Small RGB dropdowns */
+    .rgbBlock{
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px;
+      background:rgba(255,255,255,0.10);
+    }
+    .rgbRow{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .rgbRow .rgbLabel{
+      font-size:12px;
+      color:var(--muted);
+      margin-right:6px;
+    }
+    .rgbRow select{
+      width:auto;
+      min-width:72px;
+      padding:7px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .rgbRow input[type="number"]{
+      width:auto;
+      min-width:92px;
+      padding:7px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .swatch{
+      width:18px;
+      height:18px;
+      border-radius:6px;
+      border:1px solid rgba(17,17,17,0.35);
+      display:inline-block;
+      background:#111;
+    }
+    .rgbHint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+      margin-top:6px;
+    }
+    .lockRow{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .lockRow input[type="checkbox"]{
+      width:auto;
+      height:auto;
+      accent-color:#111;
+    }
+    .lockRow .lockLabel{
+      font-size:12px;
+      font-weight:800;
+      color:#111;
+    }
+
+    /* Z-order bar placed above the canvas */
+    .zBar{
+      display:flex;
+      justify-content:flex-start;
+      gap:8px;
+      flex-wrap:wrap;
+      margin:6px 0 10px;
+    }
+
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v4.otf") format("opentype");
+      font-display: swap;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card" id="main">
+    <h1 id="pageTitle" style="margin:0 0 8px;font-size:18px;">Sitelen layout editor (selection + autosave)</h1>
+    <div class="help">
+      Select tool: click selects the topmost object under the pointer; drag moves; drag empty space marquee-selects.
+      Other tools: clicking places objects, but clicking an existing object selects/moves it instead (no accidental duplicates).
+      Double-click a TEXT object to edit it in the left panel (Update/Cancel).
+      Double-click a SITELEN object to edit multi-line sitelen in the left panel (Update/Cancel).
+      Double-click a GLYPH to switch to Glyph tool and edit it (Save/Undo).
+      Double-click a RECT to edit it in the rectangle panel (Keep/Undo).
+    </div>
+
+    <div class="toolbar" role="region" aria-label="Toolbar">
+      <button id="btnSelect" type="button" aria-pressed="true">Select</button>
+      <button id="btnText" type="button" aria-pressed="false">Text</button>
+      <button id="btnSitelen" type="button" aria-pressed="false">Sitelen</button>
+      <button id="btnGlyph" type="button" aria-pressed="false">Glyph</button>
+      <button id="btnRect" type="button" aria-pressed="false">Rect</button>
+
+      <button id="btnDelete" type="button">Delete selection</button>
+      <button id="btnSaveNow" type="button">Save now</button>
+      <button id="btnExport" type="button">Export template</button>
+      <button id="btnImport" type="button">Import template</button>
+      <button id="btnExportPng" type="button">Export PNG</button>
+      <button id="btnClear" type="button">Clear (and delete autosave)</button>
+      <div id="status" class="help" style="margin:0 0 0 6px;">Loading…</div>
+    </div>
+
+    <div class="grid">
+      <section class="panel" aria-label="Options panel">
+        <h2>Tool options</h2>
+
+        <div id="optText" style="display:none;">
+          <label for="textValue">Text</label>
+
+          <!-- RGB dropdowns for TEXT -->
+          <div class="rgbBlock" aria-label="Text colour (RGB)">
+            <div class="rgbRow">
+              <span class="rgbLabel">Text colour</span>
+              <select id="textR" aria-label="Text Red"></select>
+              <select id="textG" aria-label="Text Green"></select>
+              <select id="textB" aria-label="Text Blue"></select>
+              <span id="textSwatch" class="swatch" aria-label="Text colour swatch"></span>
+            </div>
+            <div class="rgbHint">
+              Sets the fill colour for newly placed text. If a plain text node is selected (or being edited), the colour change applies to it and is saved/exported with the template.
+              The remembered “last colour” in localStorage updates only on successful text/glyph save.
+            </div>
+          </div>
+
+          <div id="textEditActions" class="editActions" aria-label="Text edit actions">
+            <button id="btnTextUpdate" type="button">Update text</button>
+            <button id="btnTextCancel" type="button">Cancel</button>
+          </div>
+
+          <textarea id="textValue">toki pona</textarea>
+          <div id="textEditHint" class="help">Tip: double-click a text object on the canvas to load it here, then click Update text (or Cancel).</div>
+        </div>
+
+        <!-- Sitelen tool panel -->
+        <div id="optSitelen" style="display:none; margin-top:10px;">
+          <label for="sitelenValue">Sitelen (multi-line)</label>
+
+          <div class="rgbBlock" aria-label="Sitelen colour (RGB)" style="margin-top:8px;">
+            <div class="rgbRow">
+              <span class="rgbLabel">Sitelen colour</span>
+              <select id="sitelenR" aria-label="Sitelen Red"></select>
+              <select id="sitelenG" aria-label="Sitelen Green"></select>
+              <select id="sitelenB" aria-label="Sitelen Blue"></select>
+              <span id="sitelenSwatch" class="swatch" aria-label="Sitelen colour swatch"></span>
+            </div>
+            <div class="rgbHint">
+              Sets the fill colour for newly placed sitelen objects. If a sitelen node is selected, colour changes apply to it and are saved/exported.
+              If a sitelen node is in edit mode, colour changes are previewed and only committed when you click Update sitelen.
+            </div>
+          </div>
+
+          <div id="sitelenEditActions" class="editActions" aria-label="Sitelen edit actions">
+            <button id="btnSitelenUpdate" type="button">Update sitelen</button>
+            <button id="btnSitelenCancel" type="button">Cancel</button>
+          </div>
+
+          <textarea id="sitelenValue" style="min-height:220px;">toki pona</textarea>
+          <div id="sitelenEditHint" class="help">
+            Tip: this is the SOURCE text for sitelen rendering. Double-click a sitelen object to load its source here, edit, then Update/Cancel.
+          </div>
+        </div>
+
+        <div id="optGlyph" style="display:none; margin-top:10px;">
+          <label>Glyph picker</label>
+
+          <!-- RGB dropdowns for GLYPH -->
+          <div class="rgbBlock" aria-label="Glyph colour (RGB)" style="margin-top:8px;">
+            <div class="rgbRow">
+              <span class="rgbLabel">Glyph colour</span>
+              <select id="glyphR" aria-label="Glyph Red"></select>
+              <select id="glyphG" aria-label="Glyph Green"></select>
+              <select id="glyphB" aria-label="Glyph Blue"></select>
+              <span id="glyphSwatch" class="swatch" aria-label="Glyph colour swatch"></span>
+            </div>
+            <div class="rgbHint">
+              Sets the fill colour for newly placed glyphs. If a glyph node is selected (not in edit mode), changes apply immediately and are saved/exported.
+              If you double-click a glyph, you enter edit mode: changes are previewed, then you must Save or Undo.
+              While in glyph edit mode, selecting a different word changes the glyph itself (preview), then Save/Undo commits/reverts.
+            </div>
+          </div>
+
+          <div id="glyphEditActions" class="editActions" aria-label="Glyph edit actions">
+            <button id="btnGlyphUpdate" type="button">Save glyph changes</button>
+            <button id="btnGlyphCancel" type="button">Undo</button>
+          </div>
+
+          <div class="help" style="margin-top:10px;">
+            1) Choose a letter. 2) Choose a glyph word. 3) Click empty canvas to place it.
+            Click an existing object to select/move/transform it instead (no accidental duplicates).
+            Double-click an existing glyph to enter edit mode (Save/Undo).
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="help" style="margin:0 0 6px;">Letters</div>
+            <div id="glyphLetters" class="btnRow" aria-label="Glyph letters"></div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="help" style="margin:0 0 6px;">
+              Words starting with <span id="glyphLetterLabel" class="mono">?</span>
+              (selected: <span id="glyphSelectedWord" class="mono">none</span>)
+            </div>
+            <div id="glyphWords" class="glyphGrid" aria-label="Glyph words"></div>
+          </div>
+        </div>
+
+        <!-- Rectangle toolbar -->
+        <div id="optRect" style="display:none; margin-top:10px;">
+          <label>Rectangle</label>
+
+          <div id="rectEditActions" class="editActions" aria-label="Rectangle edit actions">
+            <button id="btnRectUpdate" type="button">Keep changes</button>
+            <button id="btnRectCancel" type="button">Undo changes</button>
+          </div>
+
+          <div class="rgbBlock" aria-label="Rectangle fill (colour + opacity)">
+            <div class="rgbRow">
+              <span class="rgbLabel">Fill</span>
+              <select id="rectFillR" aria-label="Rect Fill Red"></select>
+              <select id="rectFillG" aria-label="Rect Fill Green"></select>
+              <select id="rectFillB" aria-label="Rect Fill Blue"></select>
+              <select id="rectFillA" aria-label="Rect Fill Opacity (0-100)"></select>
+              <span id="rectFillSwatch" class="swatch" aria-label="Rect fill swatch"></span>
+            </div>
+            <div class="rgbHint">
+              Sets the fill colour/opacity for newly placed rectangles. If a rectangle is selected, changes apply immediately and are saved/exported.
+              Double-click a rectangle to enter “edit mode” with Keep/Undo.
+            </div>
+          </div>
+
+          <div class="rgbBlock" aria-label="Rectangle stroke (colour + width)" style="margin-top:10px;">
+            <div class="rgbRow">
+              <span class="rgbLabel">Stroke</span>
+              <select id="rectStrokeR" aria-label="Rect Stroke Red"></select>
+              <select id="rectStrokeG" aria-label="Rect Stroke Green"></select>
+              <select id="rectStrokeB" aria-label="Rect Stroke Blue"></select>
+              <select id="rectStrokeA" aria-label="Rect Stroke Opacity (0-100)"></select>
+              <span id="rectStrokeSwatch" class="swatch" aria-label="Rect stroke swatch"></span>
+              <input id="rectStrokeW" type="number" min="0" step="1" value="2" aria-label="Rect stroke width" />
+            </div>
+            <div class="rgbHint">
+              Stroke width 0 disables the visible border (stroke remains set but effectively hidden).
+            </div>
+          </div>
+
+          <div class="rgbBlock" aria-label="Rectangle corner radius" style="margin-top:10px;">
+            <div class="rgbRow">
+              <span class="rgbLabel">Corner radius</span>
+              <input id="rectCornerRadius" type="number" min="0" step="1" value="10" aria-label="Rect corner radius" />
+            </div>
+          </div>
+
+          <div class="lockRow" aria-label="Rectangle lock toggle">
+            <input id="rectLocked" type="checkbox" />
+            <span class="lockLabel">Lock rectangle</span>
+            <span class="help" style="margin:0;">Locked rectangles can be selected (to unlock), but cannot be moved or transformed.</span>
+          </div>
+
+          <div id="rectEditHint" class="help">
+            Tip: double-click a rectangle on the canvas to load its current style here, then click Keep changes or Undo changes.
+          </div>
+        </div>
+
+        <h2 style="margin-top:14px;">Templates (export/import)</h2>
+        <div class="help">
+          Export downloads a JSON file describing the current canvas objects (your “template”).
+          Import replaces the current canvas with the template’s objects and immediately writes autosave.
+        </div>
+
+        <div class="ioActions" aria-label="Template export/import actions">
+          <button id="btnExport2" type="button">Export template</button>
+          <button id="btnImport2" type="button">Import template</button>
+          <button id="btnExportPng2" type="button">Export PNG</button>
+          <input id="importFile" type="file" accept="application/json" style="display:none" />
+        </div>
+        <div class="ioSmall">
+          Note: Import will clear the current canvas contents (but you can export first).
+        </div>
+
+        <h2 style="margin-top:14px;">Diagnostics</h2>
+        <div class="help">
+          The pills below show storage status, how many selectable nodes exist, and last save time.
+          The JSON box shows what is stored in localStorage under <span class="mono">sitelen_layout_editor_v1</span>.
+        </div>
+
+        <div class="diagRow" aria-label="Diagnostics summary">
+          <div class="pill" id="pillStorage">Storage: …</div>
+          <div class="pill" id="pillNodes">Nodes: …</div>
+          <div class="pill" id="pillLastSave">Last save: …</div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label for="savedJson">Saved JSON (read-only)</label>
+          <textarea id="savedJson" class="mono" readonly placeholder="(will show the exact saved payload)"></textarea>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Drawing area">
+        <h2>Canvas</h2>
+
+        <div class="zBar" aria-label="Z-order controls">
+          <button id="btnToBack" type="button" class="btnMini" disabled title="Send selected object to back">To back</button>
+          <button id="btnDown" type="button" class="btnMini" disabled title="Move selected object one step down">Down</button>
+          <button id="btnUp" type="button" class="btnMini" disabled title="Move selected object one step up">Up</button>
+          <button id="btnToTop" type="button" class="btnMini" disabled title="Bring selected object to top">To top</button>
+        </div>
+
+        <div class="stageWrap">
+          <div id="stageHost" aria-label="Drawing canvas host"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+
+  <script>
+(() => {
+  "use strict";
+
+  const LS_KEY = "sitelen_layout_editor_v1";
+  const TEMPLATE_VERSION = 2; // bumped because we now include sitelenRgbDefaults
+
+  // Last chosen RGB (text/glyph)
+  const LS_LAST_RGB_KEY = "sitelen_layout_editor_last_rgb_v1";
+
+  // Last chosen RGB for SITELEN tool
+  const LS_LAST_SITELEN_RGB_KEY = "sitelen_layout_editor_last_sitelen_rgb_v1";
+
+  // Rectangle toolbar defaults
+  const LS_LAST_RECT_STYLE_KEY = "sitelen_layout_editor_last_rect_style_v1";
+
+  const WORD_TO_UCSUR_CP = {
+    "nanpa": 0xF193D, "esun":  0xF190B, "en":    0xF190A, "e":     0xF1909,
+    "nasa":  0xF193E, "ni":    0xF1941, "nena":  0xF1940, "o":     0xF1944, "kulupu":0xF191F,
+    "ijo":   0xF190C, "wan":   0xF1973, "tu":    0xF196E, "sijelo":0xF195B, "awen":  0xF1908,
+    "luka":  0xF192D, "utala": 0xF1971, "mun":   0xF193A, "pipi":  0xF1951, "jo":    0xF1913,
+
+    "a": 0xF1900, "akesi": 0xF1901, "ala": 0xF1902, "alasa": 0xF1903, "ale": 0xF1904, "ali": 0xF1904,
+    "anpa": 0xF1905, "ante": 0xF1906, "anu": 0xF1907, "ike": 0xF190D, "ilo": 0xF190E, "insa": 0xF190F,
+    "jaki": 0xF1910, "jan": 0xF1911, "jelo": 0xF1912, "kala": 0xF1914, "kalama": 0xF1915, "kama": 0xF1916,
+    "kasi": 0xF1917, "ken": 0xF1918, "kepeken": 0xF1919, "kili": 0xF191A, "kiwen": 0xF191B, "ko": 0xF191C,
+    "kon": 0xF191D, "kule": 0xF191E, "kute": 0xF1920, "la": 0xF1921, "lape": 0xF1922, "laso": 0xF1923,
+    "lawa": 0xF1924, "len": 0xF1925, "lete": 0xF1926, "li": 0xF1927, "lili": 0xF1928, "linja": 0xF1929,
+    "lipu": 0xF192A, "loje": 0xF192B, "lon": 0xF192C, "lukin": 0xF192E, "lupa": 0xF192F, "ma": 0xF1930,
+    "mama": 0xF1931, "mani": 0xF1932, "meli": 0xF1933, "mi": 0xF1934, "mije": 0xF1935, "moku": 0xF1936,
+    "moli": 0xF1937, "monsi": 0xF1938, "mu": 0xF1939, "musi": 0xF193B, "mute": 0xF193C, "nasin": 0xF193F,
+    "nimi": 0xF1942, "noka": 0xF1943, "olin": 0xF1945, "ona": 0xF1946, "open": 0xF1947, "pakala": 0xF1948,
+    "pali": 0xF1949, "palisa": 0xF194A, "pan": 0xF194B, "pana": 0xF194C, "pi": 0xF194D, "pilin": 0xF194E,
+    "pimeja": 0xF194F, "pini": 0xF1950, "poka": 0xF1952, "poki": 0xF1953, "pona": 0xF1954, "pu": 0xF1955,
+    "sama": 0xF1956, "seli": 0xF1957, "selo": 0xF1958, "seme": 0xF1959, "sewi": 0xF195A, "sike": 0xF195C,
+    "sin": 0xF195D, "sina": 0xF195E, "sinpin": 0xF195F, "sitelen": 0xF1960, "sona": 0xF1961, "soweli": 0xF1962,
+    "suli": 0xF1963, "suno": 0xF1964, "supa": 0xF1965, "suwi": 0xF1966, "tan": 0xF1967, "taso": 0xF1968,
+    "tawa": 0xF1969, "telo": 0xF196A, "tenpo": 0xF196B, "toki": 0xF196C, "tomo": 0xF196D, "unpa": 0xF196F,
+    "uta": 0xF1970, "walo": 0xF1972, "waso": 0xF1974, "wawa": 0xF1975, "weka": 0xF1976, "wile": 0xF1977,
+    "namako": 0xF1978, "kin": 0xF1979, "oko": 0xF197A, "kipisi": 0xF197B, "leko": 0xF197C, "monsuta": 0xF197D,
+    "tonsi": 0xF197E, "jasima": 0xF197F, "kijetesantakalu": 0xF1980, "soko": 0xF1981, "meso": 0xF1982,
+    "epiku": 0xF1983, "kokosila": 0xF1984, "lanpan": 0xF1985, "n": 0xF1986, "misikeke": 0xF1987, "ku": 0xF1988,
+    "pake": 0xF19A0, "apeja": 0xF19A1, "majuna": 0xF19A2, "powe": 0xF19A3
+  };
+
+  const TP_LETTERS = ["a","e","i","j","k","l","m","n","o","p","s","t","u","w"];
+
+  const CARTOUCHE_FONT = "TP-Cartouche-Font";
+  const DEFAULT_UI_FONT = "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+
+  const stageHost = document.getElementById("stageHost");
+  const statusEl = document.getElementById("status");
+  const pageTitleEl = document.getElementById("pageTitle");
+  const textEditHint = document.getElementById("textEditHint");
+
+  const btnSelect = document.getElementById("btnSelect");
+  const btnText   = document.getElementById("btnText");
+  const btnSitelen = document.getElementById("btnSitelen");
+  const btnGlyph  = document.getElementById("btnGlyph");
+  const btnRect   = document.getElementById("btnRect");
+  const btnDelete = document.getElementById("btnDelete");
+  const btnSaveNow = document.getElementById("btnSaveNow");
+  const btnClear  = document.getElementById("btnClear");
+
+  const btnExport = document.getElementById("btnExport");
+  const btnImport = document.getElementById("btnImport");
+  const btnExport2 = document.getElementById("btnExport2");
+  const btnImport2 = document.getElementById("btnImport2");
+  const importFile = document.getElementById("importFile");
+  const btnExportPng = document.getElementById("btnExportPng");
+  const btnExportPng2 = document.getElementById("btnExportPng2");
+
+  const btnToBack = document.getElementById("btnToBack");
+  const btnDown = document.getElementById("btnDown");
+  const btnUp = document.getElementById("btnUp");
+  const btnToTop = document.getElementById("btnToTop");
+
+  const optText  = document.getElementById("optText");
+  const optSitelen = document.getElementById("optSitelen");
+  const optGlyph = document.getElementById("optGlyph");
+  const optRect  = document.getElementById("optRect");
+
+  const textValue = document.getElementById("textValue");
+
+  const textEditActions = document.getElementById("textEditActions");
+  const btnTextUpdate = document.getElementById("btnTextUpdate");
+  const btnTextCancel = document.getElementById("btnTextCancel");
+
+  // sitelen panel controls
+  const sitelenValue = document.getElementById("sitelenValue");
+  const sitelenEditActions = document.getElementById("sitelenEditActions");
+  const btnSitelenUpdate = document.getElementById("btnSitelenUpdate");
+  const btnSitelenCancel = document.getElementById("btnSitelenCancel");
+  const sitelenEditHint = document.getElementById("sitelenEditHint");
+
+  const rectEditActions = document.getElementById("rectEditActions");
+  const btnRectUpdate = document.getElementById("btnRectUpdate");
+  const btnRectCancel = document.getElementById("btnRectCancel");
+
+  const glyphEditActions = document.getElementById("glyphEditActions");
+  const btnGlyphUpdate = document.getElementById("btnGlyphUpdate");
+  const btnGlyphCancel = document.getElementById("btnGlyphCancel");
+
+  const glyphLettersHost = document.getElementById("glyphLetters");
+  const glyphWordsHost = document.getElementById("glyphWords");
+  const glyphLetterLabel = document.getElementById("glyphLetterLabel");
+  const glyphSelectedWordEl = document.getElementById("glyphSelectedWord");
+
+  const pillStorage = document.getElementById("pillStorage");
+  const pillNodes = document.getElementById("pillNodes");
+  const pillLastSave = document.getElementById("pillLastSave");
+  const savedJson = document.getElementById("savedJson");
+
+  // RGB controls (text/glyph)
+  const textR = document.getElementById("textR");
+  const textG = document.getElementById("textG");
+  const textB = document.getElementById("textB");
+  const textSwatch = document.getElementById("textSwatch");
+
+  const glyphR = document.getElementById("glyphR");
+  const glyphG = document.getElementById("glyphG");
+  const glyphB = document.getElementById("glyphB");
+  const glyphSwatch = document.getElementById("glyphSwatch");
+
+  // RGB controls for sitelen tool
+  const sitelenR = document.getElementById("sitelenR");
+  const sitelenG = document.getElementById("sitelenG");
+  const sitelenB = document.getElementById("sitelenB");
+  const sitelenSwatch = document.getElementById("sitelenSwatch");
+
+  // Rectangle controls
+  const rectFillR = document.getElementById("rectFillR");
+  const rectFillG = document.getElementById("rectFillG");
+  const rectFillB = document.getElementById("rectFillB");
+  const rectFillA = document.getElementById("rectFillA");
+  const rectFillSwatch = document.getElementById("rectFillSwatch");
+
+  const rectStrokeR = document.getElementById("rectStrokeR");
+  const rectStrokeG = document.getElementById("rectStrokeG");
+  const rectStrokeB = document.getElementById("rectStrokeB");
+  const rectStrokeA = document.getElementById("rectStrokeA");
+  const rectStrokeSwatch = document.getElementById("rectStrokeSwatch");
+  const rectStrokeW = document.getElementById("rectStrokeW");
+
+  const rectCornerRadius = document.getElementById("rectCornerRadius");
+  const rectLocked = document.getElementById("rectLocked");
+
+  const logBox = document.createElement("textarea");
+  logBox.readOnly = true;
+  logBox.className = "mono";
+  logBox.style.minHeight = "180px";
+  logBox.style.marginTop = "10px";
+  logBox.placeholder = "Event log…";
+  savedJson.parentElement.parentElement.appendChild(logBox);
+
+  function log(msg){
+    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    logBox.value = (logBox.value ? (logBox.value + "\n") : "") + line;
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  function setStatus(s){ statusEl.textContent = s; }
+
+  // ===== Shared numeric helpers =====
+  function clampByte(n){
+    n = Number(n);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(255, Math.round(n)));
+  }
+  function clamp01(n){
+    n = Number(n);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(1, n));
+  }
+  function clampInt(n, min, max){
+    n = Number(n);
+    if (!Number.isFinite(n)) return min;
+    n = Math.round(n);
+    return Math.max(min, Math.min(max, n));
+  }
+  function clampNonNeg(n, fallback){
+    n = Number(n);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(0, n);
+  }
+
+  function byteToHex(b){
+    const s = clampByte(b).toString(16).toUpperCase();
+    return s.length === 1 ? ("0" + s) : s;
+  }
+  function rgbToHex(r,g,b){
+    return "#" + byteToHex(r) + byteToHex(g) + byteToHex(b);
+  }
+
+  function parseHexToRgb(hex){
+    const s = String(hex || "").trim();
+    const m = /^#?([0-9a-fA-F]{6})$/.exec(s);
+    if (!m) return null;
+    const h = m[1];
+    return {
+      r: parseInt(h.slice(0,2), 16),
+      g: parseInt(h.slice(2,4), 16),
+      b: parseInt(h.slice(4,6), 16),
+    };
+  }
+
+  function rgbaString(r,g,b,a01){
+    return `rgba(${clampByte(r)},${clampByte(g)},${clampByte(b)},${clamp01(a01)})`;
+  }
+
+  function parseColorToRgba(s, fallback){
+    const str = String(s || "").trim();
+    if (!str) return fallback;
+
+    const rgb = parseHexToRgb(str);
+    if (rgb) return { r: rgb.r, g: rgb.g, b: rgb.b, a: 1 };
+
+    let m = /^rgba\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9.]+)\s*\)$/i.exec(str);
+    if (m) return { r: clampByte(m[1]), g: clampByte(m[2]), b: clampByte(m[3]), a: clamp01(m[4]) };
+
+    m = /^rgb\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*\)$/i.exec(str);
+    if (m) return { r: clampByte(m[1]), g: clampByte(m[2]), b: clampByte(m[3]), a: 1 };
+
+    return fallback;
+  }
+
+  // ===== Basic stage sizing & storage =====
+  function hostSize(){
+    const r = stageHost.getBoundingClientRect();
+    return { w: Math.max(300, Math.floor(r.width)), h: Math.max(240, Math.floor(r.height)) };
+  }
+
+  function storageWorks(){
+    try {
+      const k = "__tp_storage_test__";
+      localStorage.setItem(k, "1");
+      const v = localStorage.getItem(k);
+      localStorage.removeItem(k);
+      return v === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function isTruthySelectable(v){
+    return v === true || v === "true" || v === 1 || v === "1";
+  }
+
+  function childrenToArray(node){
+    if (!node || typeof node.getChildren !== "function") return [];
+    const kids = node.getChildren();
+    if (!kids) return [];
+    if (Array.isArray(kids)) return kids;
+    if (typeof kids.toArray === "function") return kids.toArray();
+    try { return Array.from(kids); } catch { return []; }
+  }
+
+  function allDescendants(root){
+    const out = [];
+    const stack = childrenToArray(root).slice();
+    while (stack.length) {
+      const n = stack.shift();
+      out.push(n);
+      const more = childrenToArray(n);
+      for (const c of more) stack.push(c);
+    }
+    return out;
+  }
+
+  function isPointInRect(pos, r){
+    return !!(pos && r &&
+      pos.x >= r.x && pos.x <= r.x + r.width &&
+      pos.y >= r.y && pos.y <= r.y + r.height);
+  }
+
+  // ===== RGB dropdown model (small, stepped) =====
+  const RGB_STEPS = (() => {
+    const a = [];
+    for (let v = 0; v <= 240; v += 16) a.push(v);
+    a.push(255);
+    return a;
+  })();
+
+  function nearestStep(v){
+    v = clampByte(v);
+    let best = RGB_STEPS[0];
+    let bestD = Math.abs(v - best);
+    for (const s of RGB_STEPS) {
+      const d = Math.abs(v - s);
+      if (d < bestD) { best = s; bestD = d; }
+    }
+    return best;
+  }
+
+  function populateRgbSelect(sel){
+    sel.innerHTML = "";
+    for (const v of RGB_STEPS) {
+      const o = document.createElement("option");
+      o.value = String(v);
+      o.textContent = String(v);
+      sel.appendChild(o);
+    }
+  }
+
+  function populateOpacitySelect(sel){
+    sel.innerHTML = "";
+    for (let v = 0; v <= 100; v += 5) {
+      const o = document.createElement("option");
+      o.value = String(v);
+      o.textContent = String(v);
+      sel.appendChild(o);
+    }
+  }
+
+  // ===== Text/Glyph RGB state (local-only) =====
+  function readLastRgb(){
+    const def = { r: 17, g: 17, b: 17 };
+    try {
+      const raw = localStorage.getItem(LS_LAST_RGB_KEY);
+      if (!raw) return def;
+      const p = JSON.parse(raw);
+      if (!p || typeof p !== "object") return def;
+      return {
+        r: clampByte(("r" in p) ? p.r : def.r),
+        g: clampByte(("g" in p) ? p.g : def.g),
+        b: clampByte(("b" in p) ? p.b : def.b),
+      };
+    } catch {
+      return def;
+    }
+  }
+
+  function writeLastRgb(rgb){
+    try {
+      localStorage.setItem(LS_LAST_RGB_KEY, JSON.stringify({
+        r: clampByte(rgb.r),
+        g: clampByte(rgb.g),
+        b: clampByte(rgb.b),
+      }));
+    } catch {}
+  }
+
+  function setRgbPickers(rgb){
+    const r = nearestStep(rgb.r);
+    const g = nearestStep(rgb.g);
+    const b = nearestStep(rgb.b);
+
+    textR.value = String(r); textG.value = String(g); textB.value = String(b);
+    glyphR.value = String(r); glyphG.value = String(g); glyphB.value = String(b);
+
+    const hex = rgbToHex(r,g,b);
+    if (textSwatch) textSwatch.style.background = hex;
+    if (glyphSwatch) glyphSwatch.style.background = hex;
+
+    return hex;
+  }
+
+  function getCurrentRgbFromTextPickers(){
+    return { r: Number(textR.value), g: Number(textG.value), b: Number(textB.value) };
+  }
+  function getCurrentRgbFromGlyphPickers(){
+    return { r: Number(glyphR.value), g: Number(glyphG.value), b: Number(glyphB.value) };
+  }
+
+  function setPickersFromNodeFill(node){
+    try {
+      const fill = (node && typeof node.fill === "function") ? String(node.fill() || "") : "";
+      const rgba = parseColorToRgba(fill, { r: 0, g: 0, b: 0, a: 1 });
+      const hex = setRgbPickers({ r: rgba.r, g: rgba.g, b: rgba.b });
+      return { rgba, hex };
+    } catch {
+      const hex = setRgbPickers({ r: 0, g: 0, b: 0 });
+      return { rgba: { r: 0, g: 0, b: 0, a: 1 }, hex };
+    }
+  }
+
+  function commitLastRgbFromNodeFill(node, reason){
+    if (!node || typeof node.fill !== "function") return;
+    const fill = String(node.fill() || "");
+    const rgba = parseColorToRgba(fill, { r: 0, g: 0, b: 0, a: 1 });
+    writeLastRgb({ r: rgba.r, g: rgba.g, b: rgba.b });
+    log(`LAST-RGB COMMIT (${reason}): r=${rgba.r} g=${rgba.g} b=${rgba.b} -> key=${LS_LAST_RGB_KEY}`);
+  }
+
+  let currentToolColorHex = "#111";
+
+  // ===== Sitelen RGB state (separate) =====
+  function readLastSitelenRgb(){
+    const def = { r: 17, g: 17, b: 17 };
+    try {
+      const raw = localStorage.getItem(LS_LAST_SITELEN_RGB_KEY);
+      if (!raw) return def;
+      const p = JSON.parse(raw);
+      if (!p || typeof p !== "object") return def;
+      return {
+        r: clampByte(("r" in p) ? p.r : def.r),
+        g: clampByte(("g" in p) ? p.g : def.g),
+        b: clampByte(("b" in p) ? p.b : def.b),
+      };
+    } catch {
+      return def;
+    }
+  }
+
+  function writeLastSitelenRgb(rgb){
+    try {
+      localStorage.setItem(LS_LAST_SITELEN_RGB_KEY, JSON.stringify({
+        r: clampByte(rgb.r),
+        g: clampByte(rgb.g),
+        b: clampByte(rgb.b),
+      }));
+    } catch {}
+  }
+
+  function setSitelenPickers(rgb){
+    const r = nearestStep(rgb.r);
+    const g = nearestStep(rgb.g);
+    const b = nearestStep(rgb.b);
+
+    sitelenR.value = String(r);
+    sitelenG.value = String(g);
+    sitelenB.value = String(b);
+
+    const hex = rgbToHex(r,g,b);
+    if (sitelenSwatch) sitelenSwatch.style.background = hex;
+    return hex;
+  }
+
+  function getCurrentRgbFromSitelenPickers(){
+    return { r: Number(sitelenR.value), g: Number(sitelenG.value), b: Number(sitelenB.value) };
+  }
+
+  function setSitelenPickersFromNodeFill(node){
+    try {
+      const fill = (node && typeof node.fill === "function") ? String(node.fill() || "") : "";
+      const rgba = parseColorToRgba(fill, { r: 0, g: 0, b: 0, a: 1 });
+      const hex = setSitelenPickers({ r: rgba.r, g: rgba.g, b: rgba.b });
+      return { rgba, hex };
+    } catch {
+      const hex = setSitelenPickers({ r: 0, g: 0, b: 0 });
+      return { rgba: { r: 0, g: 0, b: 0, a: 1 }, hex };
+    }
+  }
+
+  function commitLastSitelenRgbFromNodeFill(node, reason){
+    if (!node || typeof node.fill !== "function") return;
+    const fill = String(node.fill() || "");
+    const rgba = parseColorToRgba(fill, { r: 0, g: 0, b: 0, a: 1 });
+    writeLastSitelenRgb({ r: rgba.r, g: rgba.g, b: rgba.b });
+    log(`SITELEN-RGB COMMIT (${reason}): r=${rgba.r} g=${rgba.g} b=${rgba.b} -> key=${LS_LAST_SITELEN_RGB_KEY}`);
+  }
+
+  let currentSitelenColorHex = "#111";
+
+  // ===== Rectangle defaults (local-only) =====
+  const RECT_DEFAULTS = {
+    fill:   { r: 255, g: 255, b: 255, a: 0.35 },
+    stroke: { r: 17,  g: 17,  b: 17,  a: 0.40 },
+    strokeWidth: 2,
+    cornerRadius: 10,
+    locked: false
+  };
+
+  function safeClone(obj){
+    try { return structuredClone(obj); } catch { return JSON.parse(JSON.stringify(obj)); }
+  }
+
+  function readLastRectStyle(){
+    try {
+      const raw = localStorage.getItem(LS_LAST_RECT_STYLE_KEY);
+      if (!raw) return safeClone(RECT_DEFAULTS);
+      const p = JSON.parse(raw);
+      if (!p || typeof p !== "object") return safeClone(RECT_DEFAULTS);
+
+      const fill = (p.fill && typeof p.fill === "object") ? p.fill : {};
+      const stroke = (p.stroke && typeof p.stroke === "object") ? p.stroke : {};
+
+      return {
+        fill: {
+          r: clampByte(("r" in fill) ? fill.r : RECT_DEFAULTS.fill.r),
+          g: clampByte(("g" in fill) ? fill.g : RECT_DEFAULTS.fill.g),
+          b: clampByte(("b" in fill) ? fill.b : RECT_DEFAULTS.fill.b),
+          a: clamp01(("a" in fill) ? (Number(fill.a)) : RECT_DEFAULTS.fill.a)
+        },
+        stroke: {
+          r: clampByte(("r" in stroke) ? stroke.r : RECT_DEFAULTS.stroke.r),
+          g: clampByte(("g" in stroke) ? stroke.g : RECT_DEFAULTS.stroke.g),
+          b: clampByte(("b" in stroke) ? stroke.b : RECT_DEFAULTS.stroke.b),
+          a: clamp01(("a" in stroke) ? (Number(stroke.a)) : RECT_DEFAULTS.stroke.a)
+        },
+        strokeWidth: clampNonNeg(p.strokeWidth, RECT_DEFAULTS.strokeWidth),
+        cornerRadius: clampNonNeg(p.cornerRadius, RECT_DEFAULTS.cornerRadius),
+        locked: !!p.locked
+      };
+    } catch {
+      return safeClone(RECT_DEFAULTS);
+    }
+  }
+
+  function writeLastRectStyle(s){
+    try {
+      localStorage.setItem(LS_LAST_RECT_STYLE_KEY, JSON.stringify({
+        fill: {
+          r: clampByte(s.fill.r), g: clampByte(s.fill.g), b: clampByte(s.fill.b), a: clamp01(s.fill.a)
+        },
+        stroke: {
+          r: clampByte(s.stroke.r), g: clampByte(s.stroke.g), b: clampByte(s.stroke.b), a: clamp01(s.stroke.a)
+        },
+        strokeWidth: clampNonNeg(s.strokeWidth, RECT_DEFAULTS.strokeWidth),
+        cornerRadius: clampNonNeg(s.cornerRadius, RECT_DEFAULTS.cornerRadius),
+        locked: !!s.locked
+      }));
+    } catch {}
+  }
+
+  function setRectControlsFromStyle(s){
+    rectFillR.value = String(nearestStep(s.fill.r));
+    rectFillG.value = String(nearestStep(s.fill.g));
+    rectFillB.value = String(nearestStep(s.fill.b));
+    rectFillA.value = String(clampInt((s.fill.a * 100), 0, 100));
+    rectFillSwatch.style.background = rgbaString(s.fill.r, s.fill.g, s.fill.b, s.fill.a);
+
+    rectStrokeR.value = String(nearestStep(s.stroke.r));
+    rectStrokeG.value = String(nearestStep(s.stroke.g));
+    rectStrokeB.value = String(nearestStep(s.stroke.b));
+    rectStrokeA.value = String(clampInt((s.stroke.a * 100), 0, 100));
+    rectStrokeSwatch.style.background = rgbaString(s.stroke.r, s.stroke.g, s.stroke.b, s.stroke.a);
+
+    rectStrokeW.value = String(clampNonNeg(s.strokeWidth, 2));
+    rectCornerRadius.value = String(clampNonNeg(s.cornerRadius, 10));
+    rectLocked.checked = !!s.locked;
+  }
+
+  function getRectStyleFromControls(){
+    const fill = {
+      r: Number(rectFillR.value),
+      g: Number(rectFillG.value),
+      b: Number(rectFillB.value),
+      a: clamp01(Number(rectFillA.value) / 100)
+    };
+    const stroke = {
+      r: Number(rectStrokeR.value),
+      g: Number(rectStrokeG.value),
+      b: Number(rectStrokeB.value),
+      a: clamp01(Number(rectStrokeA.value) / 100)
+    };
+    return {
+      fill,
+      stroke,
+      strokeWidth: clampNonNeg(Number(rectStrokeW.value), 2),
+      cornerRadius: clampNonNeg(Number(rectCornerRadius.value), 10),
+      locked: !!rectLocked.checked
+    };
+  }
+
+  function rectStyleFromNode(node, fallbackStyle){
+    const fb = fallbackStyle || RECT_DEFAULTS;
+    const fill = parseColorToRgba(node && node.fill ? node.fill() : "", fb.fill);
+    const stroke = parseColorToRgba(node && node.stroke ? node.stroke() : "", fb.stroke);
+    return {
+      fill,
+      stroke,
+      strokeWidth: (node && typeof node.strokeWidth === "function") ? clampNonNeg(node.strokeWidth(), fb.strokeWidth) : fb.strokeWidth,
+      cornerRadius: (node && typeof node.cornerRadius === "function") ? clampNonNeg(node.cornerRadius(), fb.cornerRadius) : fb.cornerRadius,
+      locked: !!(node && node.getAttr && node.getAttr("locked"))
+    };
+  }
+
+  // ===== Sitelen renderer (embedded)
+  function renderSitelenSourceToUcsur(source){
+    const s = String(source ?? "").replace(/\r\n?/g, "\n");
+    let out = "";
+    let buf = "";
+
+    function flushWord(){
+      if (!buf) return;
+      const w = buf.toLowerCase();
+      const cp = WORD_TO_UCSUR_CP[w];
+      if (cp) out += String.fromCodePoint(cp);
+      else out += buf;
+      buf = "";
+    }
+
+    for (let i = 0; i < s.length; i++){
+      const ch = s[i];
+      if (/[A-Za-z]/.test(ch)) {
+        buf += ch;
+      } else {
+        flushWord();
+        out += ch;
+      }
+    }
+    flushWord();
+    return out;
+  }
+
+  // ===== Konva state =====
+  let STORAGE_OK = false;
+  let lastSaveIso = "";
+  let saveCount = 0;
+
+  let stage = null;
+  let contentLayer = null;
+  let uiLayer = null;
+  let tr = null;
+  let selectionRect = null;
+  let editingOutline = null;
+
+  const Tool = { select:"select", text:"text", sitelen:"sitelen", glyph:"glyph", rect:"rect" };
+  let tool = Tool.select;
+  let selectedNodes = [];
+
+  let selectedGlyphWord = null;
+
+  // Text edit state
+  let editingTextNode = null;
+  let editingOriginalText = "";
+
+  // Sitelen edit state
+  let editingSitelenNode = null;
+  let editingOriginalSitelenSource = "";
+  let editingOriginalSitelenFill = "";
+  let editingOriginalSitelenRendered = "";
+
+  // Glyph edit state
+  let editingGlyphNode = null;
+  let editingOriginalGlyphFill = "";
+  let editingOriginalGlyphRgb = null;
+  let editingOriginalGlyphWord = "";
+  let editingOriginalGlyphChar = "";
+  let editingPendingGlyphWord = null;
+
+  // Rectangle edit state
+  let editingRectNode = null;
+  let editingOriginalRectStyle = null;
+  let rectDefaultsBeforeEdit = null;
+
+  let editReturnTool = null;
+
+  // Force-drag state
+  let dragCandidate = null;
+  let dragStartPos = null;
+  const DRAG_THRESHOLD_PX = 3;
+
+  let isTransforming = false;
+  let bridgeHandleActive = false;
+
+  let rectDefaults = readLastRectStyle();
+
+  const WORDS_BY_LETTER = (() => {
+    const map = new Map();
+    for (const l of TP_LETTERS) map.set(l, []);
+    const words = Object.keys(WORD_TO_UCSUR_CP);
+
+    for (const w of words) {
+      const first = (w && w.length) ? w[0].toLowerCase() : "";
+      if (!map.has(first)) map.set(first, []);
+      map.get(first).push(w);
+    }
+    for (const [k, arr] of map.entries()) {
+      arr.sort((a,b)=>a.localeCompare(b,"en",{sensitivity:"base"}));
+    }
+    return map;
+  })();
+
+  function nowIso(){
+    return new Date().toLocaleString();
+  }
+
+  function updateDiagnostics(){
+    pillStorage.textContent = "Storage: " + (STORAGE_OK ? "OK" : "BLOCKED");
+    pillNodes.textContent = "Nodes: " + countUserNodes();
+    const ls = lastSaveIso ? `${lastSaveIso} (count ${saveCount})` : "—";
+    pillLastSave.textContent = "Last save: " + ls;
+
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      savedJson.value = raw ? raw : "";
+    } catch {
+      savedJson.value = "";
+    }
+  }
+
+  function setPageBannerText(text){
+    pageTitleEl.textContent = text;
+  }
+
+  function setTextEditingBanner(on, previewText){
+    const base = "Sitelen layout editor (selection + autosave)";
+    if (on) {
+      const snippet = String(previewText || "").replace(/\s+/g, " ").trim();
+      const short = snippet.length > 40 ? (snippet.slice(0, 37) + "...") : snippet;
+      setPageBannerText("Editing text: " + (short || "(empty)"));
+      textValue.setAttribute("data-editing", "true");
+      if (textEditActions) textEditActions.style.display = "flex";
+      if (textEditHint) textEditHint.textContent = "Editing mode: change the text below, then click Update text or Cancel.";
+    } else {
+      setPageBannerText(base);
+      textValue.removeAttribute("data-editing");
+      if (textEditActions) textEditActions.style.display = "none";
+      if (textEditHint) textEditHint.textContent = "Tip: double-click a text object on the canvas to load it here, then click Update text (or Cancel).";
+    }
+  }
+
+  function setSitelenEditingBanner(on, previewSource){
+    const base = "Sitelen layout editor (selection + autosave)";
+    if (on) {
+      const snippet = String(previewSource || "").replace(/\s+/g, " ").trim();
+      const short = snippet.length > 40 ? (snippet.slice(0, 37) + "...") : snippet;
+      setPageBannerText("Editing sitelen: " + (short || "(empty)"));
+      optSitelen.setAttribute("data-editing", "true");
+      sitelenValue.setAttribute("data-editing", "true");
+      if (sitelenEditActions) sitelenEditActions.style.display = "flex";
+      if (sitelenEditHint) sitelenEditHint.textContent = "Editing mode: change the SOURCE text below, then click Update sitelen or Cancel.";
+    } else {
+      optSitelen.removeAttribute("data-editing");
+      sitelenValue.removeAttribute("data-editing");
+      if (sitelenEditActions) sitelenEditActions.style.display = "none";
+      if (!editingTextNode && !editingGlyphNode && !editingRectNode) setPageBannerText(base);
+      if (sitelenEditHint) sitelenEditHint.textContent = "Tip: this is the SOURCE text for sitelen rendering. Double-click a sitelen object to load its source here, edit, then Update/Cancel.";
+    }
+  }
+
+  function setRectEditingBanner(on, style){
+    if (on) {
+      optRect.setAttribute("data-editing", "true");
+      if (rectEditActions) rectEditActions.style.display = "flex";
+
+      const s = style || getRectStyleFromControls();
+      const fill = rgbaString(s.fill.r, s.fill.g, s.fill.b, s.fill.a);
+      const stroke = rgbaString(s.stroke.r, s.stroke.g, s.stroke.b, s.stroke.a);
+      setPageBannerText(`Editing rectangle: fill ${fill}, stroke ${stroke}`);
+      setStatus("Editing rectangle: adjust controls, then Keep changes or Undo changes.");
+    } else {
+      optRect.removeAttribute("data-editing");
+      if (rectEditActions) rectEditActions.style.display = "none";
+      if (!editingTextNode && !editingGlyphNode && !editingSitelenNode) setPageBannerText("Sitelen layout editor (selection + autosave)");
+    }
+  }
+
+  function setGlyphEditingBanner(on, word){
+    const base = "Sitelen layout editor (selection + autosave)";
+    if (on) {
+      const w = String(word || "").trim();
+      setPageBannerText("Editing glyph: " + (w || "(unknown)"));
+      setStatus("Glyph edit mode: change word and/or colour, then Save glyph changes or Undo. (Esc=Undo, Ctrl/Cmd+Enter=Save)");
+      optGlyph.setAttribute("data-editing", "true");
+      if (glyphEditActions) glyphEditActions.style.display = "flex";
+    } else {
+      optGlyph.removeAttribute("data-editing");
+      if (glyphEditActions) glyphEditActions.style.display = "none";
+      if (!editingTextNode && !editingRectNode && !editingSitelenNode) setPageBannerText(base);
+    }
+  }
+
+  function setTool(t){
+    if (editingGlyphNode && t !== Tool.glyph) {
+      cancelGlyphEditing("tool-change");
+    }
+
+    tool = t;
+
+    btnSelect.setAttribute("aria-pressed", t === Tool.select ? "true":"false");
+    btnText.setAttribute("aria-pressed",   t === Tool.text   ? "true":"false");
+    btnSitelen.setAttribute("aria-pressed", t === Tool.sitelen ? "true":"false");
+    btnGlyph.setAttribute("aria-pressed",  t === Tool.glyph  ? "true":"false");
+    btnRect.setAttribute("aria-pressed",   t === Tool.rect   ? "true":"false");
+
+    optText.style.display    = (t === Tool.text)    ? "block" : "none";
+    optSitelen.style.display = (t === Tool.sitelen) ? "block" : "none";
+    optGlyph.style.display   = (t === Tool.glyph)   ? "block" : "none";
+    optRect.style.display    = (t === Tool.rect)    ? "block" : "none";
+
+    if (t === Tool.rect && editingRectNode) {
+      if (rectEditActions) rectEditActions.style.display = "flex";
+      optRect.setAttribute("data-editing", "true");
+    }
+    if (t === Tool.glyph && editingGlyphNode) {
+      optGlyph.setAttribute("data-editing", "true");
+      if (glyphEditActions) glyphEditActions.style.display = "flex";
+    }
+    if (t === Tool.sitelen && editingSitelenNode) {
+      optSitelen.setAttribute("data-editing", "true");
+      if (sitelenEditActions) sitelenEditActions.style.display = "flex";
+    }
+
+    setStatus(
+      t === Tool.select  ? "Select: click selects; drag moves; drag empty space marquee-selects; handles should all work." :
+      t === Tool.text    ? "Text: click empty space to place; click existing to select/move/transform. Double-click text to edit." :
+      t === Tool.sitelen ? "Sitelen: click empty space to place rendered sitelen from the left panel. Double-click sitelen to edit (source text)." :
+      t === Tool.glyph   ? "Glyph: click empty space to place; click existing to select/move/transform. Double-click a glyph to edit (Save/Undo)." :
+      "Rect: click empty space to place; click existing to select/move/transform. Use the rectangle panel for style/lock."
+    );
+    log(`Tool set: ${t}`);
+  }
+
+  function isSelectableNode(n){
+    return !!(n && n.getAttr && isTruthySelectable(n.getAttr("selectable")));
+  }
+
+  function makeSelectable(node){
+    node.setAttr("selectable", true);
+
+    const locked = !!(node.getAttr && node.getAttr("locked"));
+    try { node.draggable(!locked); } catch {}
+
+    try { node.listening(true); } catch {}
+    try {
+      if (typeof node.addName === "function") node.addName("selectable");
+      else if (typeof node.name === "function") node.name((node.name() ? node.name() + " " : "") + "selectable");
+    } catch {}
+    return node;
+  }
+
+  function isLockedNode(node){
+    return !!(node && node.getAttr && node.getAttr("locked"));
+  }
+
+  function syncTransformerForLockedSelection(){
+    if (!tr) return;
+    const nodes = (selectedNodes || []);
+    if (nodes.length !== 1) {
+      tr.rotateEnabled(true);
+      tr.enabledAnchors([
+        "top-left","top-center","top-right",
+        "middle-left","middle-right",
+        "bottom-left","bottom-center","bottom-right"
+      ]);
+      return;
+    }
+    const n = nodes[0];
+    const locked = !!(n && n.getAttr && n.getAttr("locked"));
+    if (locked) {
+      tr.rotateEnabled(false);
+      tr.enabledAnchors([]);
+    } else {
+      tr.rotateEnabled(true);
+      tr.enabledAnchors([
+        "top-left","top-center","top-right",
+        "middle-left","middle-right",
+        "bottom-left","bottom-center","bottom-right"
+      ]);
+    }
+  }
+
+  function getEditingNode(){
+    return editingTextNode || editingSitelenNode || editingGlyphNode || editingRectNode || null;
+  }
+
+  function updateZButtons(){
+    const on = (selectedNodes && selectedNodes.length === 1);
+    if (btnToBack) btnToBack.disabled = !on;
+    if (btnDown) btnDown.disabled = !on;
+    if (btnUp) btnUp.disabled = !on;
+    if (btnToTop) btnToTop.disabled = !on;
+  }
+
+  function moveSelectedZ(action){
+    if (!selectedNodes || selectedNodes.length !== 1) return;
+    const n = selectedNodes[0];
+    if (!n) return;
+
+    try {
+      if (action === "back") n.moveToBottom();
+      else if (action === "down") n.moveDown();
+      else if (action === "up") n.moveUp();
+      else if (action === "top") n.moveToTop();
+
+      if (contentLayer) contentLayer.draw();
+      if (uiLayer) uiLayer.draw();
+
+      setSelection([n]);
+      saveNow("zorder");
+      log(`Z-ORDER: ${action} on ${n.getClassName ? n.getClassName() : "node"}`);
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      log("Z-ORDER FAIL: " + msg);
+      setStatus("Z-order change failed: " + msg);
+    }
+  }
+
+  function setSelection(nodes){
+    selectedNodes = Array.isArray(nodes) ? nodes : [];
+    if (!tr) { updateZButtons(); return; }
+
+    tr.nodes(selectedNodes);
+    tr.visible(selectedNodes.length > 0);
+    tr.listening(selectedNodes.length > 0);
+
+    syncTransformerForLockedSelection();
+
+    tr.moveToTop();
+    tr.forceUpdate();
+
+    if (selectionRect) selectionRect.moveToTop();
+    if (editingOutline) editingOutline.moveToTop();
+    if (uiLayer) uiLayer.draw();
+
+    if (!editingRectNode && selectedNodes.length === 1) {
+      const n = selectedNodes[0];
+      if (n && n.getClassName && n.getClassName() === "Rect") {
+        if (optRect.style.display !== "none") {
+          const s = rectStyleFromNode(n, rectDefaults || RECT_DEFAULTS);
+          setRectControlsFromStyle(s);
+        }
+      }
+    }
+
+    updateZButtons();
+  }
+
+  function clearSelection(){ setSelection([]); }
+
+  function getUserNodes(){
+    if (!contentLayer) return [];
+    const all = allDescendants(contentLayer);
+
+    const out = [];
+    for (const n of all) {
+      if (!n || !n.getAttr) continue;
+
+      const attrSel = isTruthySelectable(n.getAttr("selectable"));
+      let nameSel = false;
+      try {
+        if (typeof n.hasName === "function") nameSel = n.hasName("selectable");
+        else if (typeof n.name === "function") nameSel = String(n.name() || "").split(/\s+/).includes("selectable");
+      } catch {}
+
+      if (attrSel || nameSel) out.push(n);
+    }
+    return out;
+  }
+
+  function countUserNodes(){
+    return getUserNodes().length;
+  }
+
+  function pickTopSelectableAt(pos){
+    if (!pos || !contentLayer || !stage) return null;
+
+    const nodes = getUserNodes();
+    if (!nodes.length) return null;
+
+    const hits = [];
+    for (const n of nodes) {
+      try {
+        if (typeof n.visible === "function" && !n.visible()) continue;
+        if (typeof n.listening === "function" && !n.listening()) continue;
+
+        const r = n.getClientRect({ relativeTo: stage });
+        if (!r || r.width <= 0 || r.height <= 0) continue;
+
+        if (isPointInRect(pos, r)) hits.push(n);
+      } catch {}
+    }
+
+    if (!hits.length) return null;
+
+    hits.sort((a, b) => {
+      let za = 0, zb = 0;
+      try { za = (typeof a.getAbsoluteZIndex === "function") ? a.getAbsoluteZIndex() : 0; } catch {}
+      try { zb = (typeof b.getAbsoluteZIndex === "function") ? b.getAbsoluteZIndex() : 0; } catch {}
+      if (zb !== za) return zb - za;
+
+      let ia = 0, ib = 0;
+      try { ia = (typeof a.getZIndex === "function") ? a.getZIndex() : 0; } catch {}
+      try { ib = (typeof b.getZIndex === "function") ? b.getZIndex() : 0; } catch {}
+      return ib - ia;
+    });
+
+    return hits[0];
+  }
+
+  function getTransformerHandleAt(pos){
+    if (!pos || !stage || !tr || !tr.visible()) return null;
+
+    try {
+      const bounds = tr.getClientRect({ relativeTo: stage });
+      const pad = 24;
+      const expanded = { x: bounds.x - pad, y: bounds.y - pad, width: bounds.width + pad*2, height: bounds.height + pad*2 };
+      if (!isPointInRect(pos, expanded)) return null;
+    } catch {}
+
+    const candidates = [];
+    for (const n of allDescendants(tr)) {
+      if (!n || typeof n.getClientRect !== "function") continue;
+
+      let cls = "";
+      try { cls = n.getClassName ? n.getClassName() : ""; } catch {}
+      if (cls !== "Rect" && cls !== "Circle") continue;
+
+      try {
+        if (typeof n.visible === "function" && !n.visible()) continue;
+        if (typeof n.listening === "function" && !n.listening()) continue;
+
+        const r = n.getClientRect({ relativeTo: stage });
+        if (!r || r.width <= 0 || r.height <= 0) continue;
+
+        if (isPointInRect(pos, r)) {
+          const area = r.width * r.height;
+          candidates.push({ node: n, area });
+        }
+      } catch {}
+    }
+
+    if (!candidates.length) return null;
+    candidates.sort((a,b)=>a.area - b.area);
+    return candidates[0].node;
+  }
+
+  function buildSavePayload(){
+    return { v: 4, contentLayerJson: contentLayer ? contentLayer.toJSON() : null };
+  }
+
+  function saveNow(reason){
+    saveCount++;
+
+    if (!STORAGE_OK) {
+      setStatus("Autosave disabled: localStorage is blocked in this context.");
+      log(`SAVE SKIP (${reason}): storage blocked`);
+      updateDiagnostics();
+      return;
+    }
+
+    try {
+      const payload = buildSavePayload();
+      if (!payload.contentLayerJson) throw new Error("No contentLayer to save");
+
+      localStorage.setItem(LS_KEY, JSON.stringify(payload));
+      lastSaveIso = nowIso();
+
+      setStatus(`Saved (${reason}).`);
+      log(`SAVE OK (${reason}): nodes=${countUserNodes()}, bytes=${localStorage.getItem(LS_KEY).length}`);
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      setStatus("Save failed: " + msg);
+      log(`SAVE FAIL (${reason}): ${msg}`);
+    }
+
+    updateDiagnostics();
+  }
+
+  function clearSave(){
+    try { localStorage.removeItem(LS_KEY); } catch {}
+    lastSaveIso = "";
+    saveCount = 0;
+    updateDiagnostics();
+    log("Cleared localStorage key.");
+  }
+
+  // ===== Backward/forward compatibility helpers =====
+  function safeNumber(v, fallback){
+    return (typeof v === "number" && Number.isFinite(v)) ? v : fallback;
+  }
+  function safeString(v, fallback){
+    return (typeof v === "string") ? v : fallback;
+  }
+  function safeBool(v, fallback){
+    return (typeof v === "boolean") ? v : fallback;
+  }
+
+  // IMPORTANT FIX: treat isSitelen attr as truthy even if restored as "true"/1
+  function isSitelenNode(node){
+    if (!node || !node.getClassName || node.getClassName() !== "Text" || !node.getAttr) return false;
+    return isTruthySelectable(node.getAttr("isSitelen"));
+  }
+
+  function applyDefaultsToNode(n){
+    if (!n || typeof n.getClassName !== "function") return;
+
+    const cls = n.getClassName();
+
+    const selectable = n.getAttr ? n.getAttr("selectable") : undefined;
+    const hasSel = isTruthySelectable(selectable) || (typeof n.hasName === "function" && n.hasName("selectable"));
+    if (hasSel) makeSelectable(n);
+
+    if (n.getAttr && n.getAttr("locked") == null) {
+      try { n.setAttr("locked", false); } catch {}
+    }
+
+    if (cls === "Text") {
+      const isGlyph = n.getAttr ? !!n.getAttr("tpWord") : false;
+      const isSit = isSitelenNode(n);
+
+      if (isSit) {
+        // Sitelen node invariants
+        try { n.fontFamily(CARTOUCHE_FONT); } catch {}
+        try { n.fill(safeString(n.fill && n.fill(), "#111")); } catch {}
+        try { n.fontSize(safeNumber(n.fontSize && n.fontSize(), 48)); } catch {}
+
+        // If source exists, ensure rendered text matches it. If missing, seed source as empty and keep current rendered text.
+        try {
+          const srcRaw = (n.getAttr && n.getAttr("sitelenSource") != null) ? String(n.getAttr("sitelenSource") || "") : "";
+          if (srcRaw) {
+            const rendered = renderSitelenSourceToUcsur(srcRaw);
+            const cur = String(n.text ? n.text() : "");
+            if (cur !== rendered) n.text(rendered);
+          } else {
+            if (n.getAttr && n.getAttr("sitelenSource") == null) n.setAttr("sitelenSource", "");
+          }
+        } catch {}
+      } else if (isGlyph) {
+        try { n.fontFamily(CARTOUCHE_FONT); } catch {}
+        try { n.fill(safeString(n.fill && n.fill(), "#111")); } catch {}
+        try { n.fontSize(safeNumber(n.fontSize && n.fontSize(), 64)); } catch {}
+      } else {
+        // Plain text node invariants
+        try { n.fontFamily(safeString(n.fontFamily && n.fontFamily(), DEFAULT_UI_FONT)); } catch {}
+        try { n.fill(safeString(n.fill && n.fill(), "#111")); } catch {}
+        try { n.fontSize(safeNumber(n.fontSize && n.fontSize(), 28)); } catch {}
+        try { n.text(safeString(n.text && n.text(), "toki pona")); } catch {}
+      }
+    }
+
+    if (cls === "Rect") {
+      try { n.width(safeNumber(n.width && n.width(), 220)); } catch {}
+      try { n.height(safeNumber(n.height && n.height(), 140)); } catch {}
+      try { n.fill(safeString(n.fill && n.fill(), "rgba(255,255,255,0.35)")); } catch {}
+      try { n.stroke(safeString(n.stroke && n.stroke(), "rgba(17,17,17,0.40)")); } catch {}
+      try { n.strokeWidth(safeNumber(n.strokeWidth && n.strokeWidth(), 2)); } catch {}
+      try { n.cornerRadius(safeNumber(n.cornerRadius && n.cornerRadius(), 10)); } catch {}
+
+      const locked = !!(n.getAttr && n.getAttr("locked"));
+      try { n.draggable(!locked); } catch {}
+    }
+
+    try { n.x(safeNumber(n.x && n.x(), 0)); } catch {}
+    try { n.y(safeNumber(n.y && n.y(), 0)); } catch {}
+    try { n.rotation(safeNumber(n.rotation && n.rotation(), 0)); } catch {}
+    try { n.scaleX(safeNumber(n.scaleX && n.scaleX(), 1)); } catch {}
+    try { n.scaleY(safeNumber(n.scaleY && n.scaleY(), 1)); } catch {}
+    try { n.opacity(safeNumber(n.opacity && n.opacity(), 1)); } catch {}
+    try { n.visible(safeBool(n.visible && n.visible(), true)); } catch {}
+    try { n.listening(true); } catch {}
+  }
+
+  function enforceNodeInvariants(layer){
+    for (const n of allDescendants(layer)) {
+      if (!n || !n.getAttr) continue;
+      applyDefaultsToNode(n);
+    }
+  }
+
+  function restoreFromSave(){
+    if (!STORAGE_OK) return false;
+
+    let raw = null;
+    try { raw = localStorage.getItem(LS_KEY); } catch { raw = null; }
+    if (!raw) { log("Restore: no localStorage payload."); return false; }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed || parsed.v !== 4 || !parsed.contentLayerJson) {
+        log("Restore: payload not v4/contentLayerJson.");
+        return false;
+      }
+
+      const old = contentLayer;
+      const restoredLayer = Konva.Node.create(parsed.contentLayerJson);
+      if (!restoredLayer || restoredLayer.getClassName() !== "Layer") {
+        throw new Error("Restored JSON did not produce a Layer");
+      }
+
+      try { old.destroy(); } catch {}
+
+      contentLayer = restoredLayer;
+      try { contentLayer.listening(true); } catch {}
+      stage.add(contentLayer);
+      contentLayer.moveToBottom();
+
+      enforceNodeInvariants(contentLayer);
+
+      bindHandlers();
+      bindAutosaveHooks();
+
+      contentLayer.draw();
+      uiLayer.draw();
+      stage.draw();
+
+      lastSaveIso = nowIso();
+      setStatus("Restored autosave.");
+      log(`RESTORE OK: nodes=${countUserNodes()} (children=${childrenToArray(contentLayer).length}, allDesc=${allDescendants(contentLayer).length})`);
+      updateDiagnostics();
+      updateZButtons();
+      return true;
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      setStatus("Restore failed: " + msg);
+      log(`RESTORE FAIL: ${msg}`);
+      updateDiagnostics();
+      updateZButtons();
+      return false;
+    }
+  }
+
+  window.addEventListener("pagehide", () => saveNow("pagehide"));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveNow("hidden");
+  });
+
+  // ===== Template export/import =====
+  function buildTemplatePayload(){
+    const r = clampByte(Number(textR.value));
+    const g = clampByte(Number(textG.value));
+    const b = clampByte(Number(textB.value));
+
+    const sr = clampByte(Number(sitelenR.value));
+    const sg = clampByte(Number(sitelenG.value));
+    const sb = clampByte(Number(sitelenB.value));
+
+    return {
+      kind: "sitelen-layout-template",
+      version: TEMPLATE_VERSION,
+      exportedAt: new Date().toISOString(),
+
+      rgbDefaults: { r, g, b },
+      sitelenRgbDefaults: { r: sr, g: sg, b: sb },
+
+      contentLayerJson: contentLayer ? contentLayer.toJSON() : null
+    };
+  }
+
+  function downloadBlob(filename, blob){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+
+  function downloadJson(filename, obj){
+    const text = JSON.stringify(obj, null, 2);
+    const blob = new Blob([text], { type: "application/json" });
+    downloadBlob(filename, blob);
+  }
+
+  function exportTemplate(){
+    try {
+      if (!contentLayer) throw new Error("No contentLayer");
+      const payload = buildTemplatePayload();
+
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `sitelen-template-${stamp}.json`;
+
+      downloadJson(filename, payload);
+      setStatus("Exported template JSON.");
+      log(`EXPORT OK: bytes=${JSON.stringify(payload).length}`);
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      setStatus("Export failed: " + msg);
+      log("EXPORT FAIL: " + msg);
+    }
+  }
+
+  function validateTemplatePayloadLenient(p){
+    if (!p || typeof p !== "object") throw new Error("Template is not a JSON object");
+    if ("kind" in p && p.kind !== "sitelen-layout-template") throw new Error("Not a sitelen layout template (kind mismatch)");
+    if ("version" in p && typeof p.version !== "number") throw new Error("Template version is not a number");
+    if (!p.contentLayerJson || typeof p.contentLayerJson !== "string") throw new Error("Missing contentLayerJson");
+
+    if ("rgbDefaults" in p && p.rgbDefaults != null) {
+      if (typeof p.rgbDefaults !== "object") throw new Error("rgbDefaults must be an object");
+    }
+    if ("sitelenRgbDefaults" in p && p.sitelenRgbDefaults != null) {
+      if (typeof p.sitelenRgbDefaults !== "object") throw new Error("sitelenRgbDefaults must be an object");
+    }
+    return true;
+  }
+
+  function importTemplateObject(parsed){
+    validateTemplatePayloadLenient(parsed);
+
+    // rgbDefaults (text/glyph) - if missing (old templates), 0/0/0
+    let r = 0, g = 0, b = 0;
+    try {
+      const d = parsed && parsed.rgbDefaults ? parsed.rgbDefaults : null;
+      if (d && typeof d === "object") {
+        r = clampByte(("r" in d) ? d.r : 0);
+        g = clampByte(("g" in d) ? d.g : 0);
+        b = clampByte(("b" in d) ? d.b : 0);
+      }
+    } catch {}
+    currentToolColorHex = setRgbPickers({ r, g, b });
+    log(`IMPORT rgbDefaults -> UI only: r=${r} g=${g} b=${b}. NOTE: last-rgb storage not updated.`);
+
+    // sitelenRgbDefaults - if missing (old templates), 0/0/0
+    let sr = 0, sg = 0, sb = 0;
+    try {
+      const d = parsed && parsed.sitelenRgbDefaults ? parsed.sitelenRgbDefaults : null;
+      if (d && typeof d === "object") {
+        sr = clampByte(("r" in d) ? d.r : 0);
+        sg = clampByte(("g" in d) ? d.g : 0);
+        sb = clampByte(("b" in d) ? d.b : 0);
+      }
+    } catch {}
+    currentSitelenColorHex = setSitelenPickers({ r: sr, g: sg, b: sb });
+    log(`IMPORT sitelenRgbDefaults -> UI only: r=${sr} g=${sg} b=${sb}. NOTE: sitelen-rgb storage not updated.`);
+
+    if (!stage) throw new Error("Stage not initialized yet");
+
+    const restoredLayer = Konva.Node.create(parsed.contentLayerJson);
+    if (!restoredLayer || restoredLayer.getClassName() !== "Layer") {
+      throw new Error("Template did not produce a Layer");
+    }
+
+    try { tr && tr.nodes([]); } catch {}
+    try { tr && tr.visible(false); } catch {}
+    selectedNodes = [];
+    updateZButtons();
+
+    endTextEditingMode();
+    endSitelenEditingMode();
+    cancelGlyphEditing("import");
+    cancelRectEditing("import");
+    editReturnTool = null;
+
+    const old = contentLayer;
+    try { old && old.destroy(); } catch {}
+
+    contentLayer = restoredLayer;
+    try { contentLayer.listening(true); } catch {}
+    stage.add(contentLayer);
+    contentLayer.moveToBottom();
+
+    enforceNodeInvariants(contentLayer);
+
+    bindHandlers();
+    bindAutosaveHooks();
+
+    contentLayer.draw();
+    uiLayer.draw();
+    stage.draw();
+
+    setTool(Tool.select);
+    saveNow("import");
+    updateDiagnostics();
+
+    const ver = ("version" in parsed) ? parsed.version : "(missing)";
+    setStatus("Template imported (version " + ver + "). Autosave updated.");
+    log(`IMPORT OK: templateVersion=${ver}, nodes=${countUserNodes()}`);
+    updateZButtons();
+  }
+
+  function readFileAsText(file){
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onerror = () => reject(new Error("File read error"));
+      fr.onload = () => resolve(String(fr.result || ""));
+      fr.readAsText(file);
+    });
+  }
+
+  async function importTemplateFromFile(file){
+    try {
+      if (!file) return;
+      const text = await readFileAsText(file);
+
+      let parsed = null;
+      try { parsed = JSON.parse(text); }
+      catch { throw new Error("File is not valid JSON"); }
+
+      importTemplateObject(parsed);
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      setStatus("Import failed: " + msg);
+      log("IMPORT FAIL: " + msg);
+    } finally {
+      try { importFile.value = ""; } catch {}
+    }
+  }
+
+  function requestImport(){
+    if (countUserNodes() > 0) {
+      const ok = confirm("Import will replace the current canvas contents. Continue?");
+      if (!ok) return;
+    }
+    importFile.click();
+  }
+
+  function exportCanvasPng(){
+    try {
+      if (!stage) throw new Error("Stage not ready");
+      if (tr) { try { tr.visible(false); } catch {} }
+      if (selectionRect) { try { selectionRect.visible(false); } catch {} }
+      if (editingOutline) { try { editingOutline.visible(false); } catch {} }
+      if (uiLayer) uiLayer.draw();
+      if (stage) stage.draw();
+
+      const dataUrl = stage.toDataURL({ pixelRatio: 2 });
+
+      if (tr) {
+        try {
+          const hasSel = (tr.nodes && tr.nodes() && tr.nodes().length > 0);
+          tr.visible(!!hasSel);
+          tr.listening(!!hasSel);
+          syncTransformerForLockedSelection();
+        } catch {}
+      }
+      if (uiLayer) uiLayer.draw();
+      if (stage) stage.draw();
+
+      const blob = dataUrlToBlob(dataUrl);
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `sitelen-canvas-${stamp}.png`;
+      downloadBlob(filename, blob);
+
+      setStatus("Exported PNG.");
+      log(`PNG EXPORT OK: bytes=${blob.size}`);
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      setStatus("PNG export failed: " + msg);
+      log("PNG EXPORT FAIL: " + msg);
+    }
+  }
+
+  function dataUrlToBlob(dataUrl){
+    const parts = String(dataUrl).split(",");
+    if (parts.length < 2) throw new Error("Invalid data URL");
+    const meta = parts[0];
+    const b64 = parts[1];
+    const mimeMatch = /data:([^;]+);base64/.exec(meta);
+    const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  btnExport.addEventListener("click", exportTemplate);
+  btnExport2.addEventListener("click", exportTemplate);
+  btnImport.addEventListener("click", requestImport);
+  btnImport2.addEventListener("click", requestImport);
+
+  btnExportPng.addEventListener("click", exportCanvasPng);
+  btnExportPng2.addEventListener("click", exportCanvasPng);
+
+  importFile.addEventListener("change", () => {
+    const file = importFile.files && importFile.files[0] ? importFile.files[0] : null;
+    if (file) importTemplateFromFile(file);
+  });
+
+  btnToBack.addEventListener("click", () => moveSelectedZ("back"));
+  btnDown.addEventListener("click", () => moveSelectedZ("down"));
+  btnUp.addEventListener("click", () => moveSelectedZ("up"));
+  btnToTop.addEventListener("click", () => moveSelectedZ("top"));
+
+  // ===== Stage creation =====
+  function createStage(){
+    if (stage) stage.destroy();
+    stageHost.innerHTML = "";
+
+    const { w, h } = hostSize();
+    stage = new Konva.Stage({ container: stageHost, width: w, height: h });
+
+    contentLayer = new Konva.Layer({ listening: true });
+    uiLayer = new Konva.Layer({ listening: true });
+
+    stage.add(contentLayer);
+    stage.add(uiLayer);
+
+    selectionRect = new Konva.Rect({
+      fill: "rgba(17,17,17,0.10)",
+      stroke: "rgba(17,17,17,0.70)",
+      strokeWidth: 1,
+      visible: false,
+      listening: false
+    });
+    uiLayer.add(selectionRect);
+
+    editingOutline = new Konva.Rect({
+      stroke: "rgba(17,17,17,0.95)",
+      strokeWidth: 2,
+      dash: [6, 6],
+      visible: false,
+      listening: false
+    });
+    uiLayer.add(editingOutline);
+
+    tr = new Konva.Transformer({
+      rotateEnabled: true,
+      keepRatio: false,
+      anchorSize: 18,
+      anchorHitStrokeWidth: 36,
+      padding: 10,
+      borderStrokeWidth: 2,
+      borderStroke: "rgba(17,17,17,0.75)",
+      anchorStroke: "rgba(17,17,17,0.75)",
+      anchorFill: "rgba(255,255,255,0.95)"
+    });
+    uiLayer.add(tr);
+    tr.nodes([]);
+    tr.visible(false);
+    tr.listening(false);
+
+    uiLayer.on("mousedown touchstart", (e) => { if (e) e.cancelBubble = true; });
+
+    tr.on("transformstart", () => {
+      isTransforming = true;
+      for (const n of (tr.nodes() || [])) { try { n.draggable(false); } catch {} }
+      log("Transformer: transformstart (drag disabled on nodes).");
+    });
+    tr.on("transformend", () => {
+      for (const n of (tr.nodes() || [])) {
+        try {
+          const locked = !!(n.getAttr && n.getAttr("locked"));
+          n.draggable(!locked);
+        } catch {}
+      }
+      isTransforming = false;
+      log("Transformer: transformend (drag restored based on lock).");
+      saveNow("transformend");
+    });
+
+    tr.on("mousedown touchstart dragstart", (e) => { if (e) e.cancelBubble = true; });
+
+    contentLayer.draw();
+    uiLayer.draw();
+    stage.draw();
+
+    bindHandlers();
+    bindAutosaveHooks();
+    updateDiagnostics();
+
+    clearSelection();
+    updateZButtons();
+
+    log(`Stage created: ${w}x${h}`);
+  }
+
+  // ===== Object creation =====
+  function addTextAt(pos){
+    const txt = String(textValue.value || "").trim() || "toki pona";
+    const node = new Konva.Text({
+      x: pos.x, y: pos.y,
+      text: txt,
+      fontFamily: DEFAULT_UI_FONT,
+      fontSize: 28,
+      fill: currentToolColorHex || "#111"
+    });
+    makeSelectable(node);
+    contentLayer.add(node);
+
+    contentLayer.draw();
+    uiLayer.draw();
+
+    log(`Placed TEXT at (${Math.round(pos.x)}, ${Math.round(pos.y)}) fill=${node.fill ? node.fill() : "?"}`);
+    setSelection([node]);
+    saveNow("place");
+  }
+
+  function addSitelenAt(pos){
+    const src = String(sitelenValue.value || "").replace(/\r\n?/g, "\n");
+    const rendered = renderSitelenSourceToUcsur(src);
+
+    const node = new Konva.Text({
+      x: pos.x, y: pos.y,
+      text: rendered,
+      fontFamily: CARTOUCHE_FONT,
+      fontSize: 48,
+      fill: currentSitelenColorHex || "#111"
+    });
+    node.setAttr("isSitelen", true);
+    node.setAttr("sitelenSource", src);
+
+    makeSelectable(node);
+    contentLayer.add(node);
+
+    contentLayer.draw();
+    uiLayer.draw();
+
+    log(`Placed SITELEN at (${Math.round(pos.x)}, ${Math.round(pos.y)}) srcLen=${src.length} fill=${node.fill ? node.fill() : "?"}`);
+    setSelection([node]);
+    saveNow("place");
+  }
+
+  function addGlyphAt(pos){
+    const word = String(selectedGlyphWord || "").toLowerCase().trim();
+    if (!word) {
+      setStatus("Choose a glyph word first.");
+      log("Glyph place blocked: no selectedGlyphWord.");
+      return;
+    }
+
+    const cp = WORD_TO_UCSUR_CP[word];
+    if (!cp) {
+      setStatus("No glyph for: " + word);
+      log(`Glyph missing: ${word}`);
+      return;
+    }
+
+    const node = new Konva.Text({
+      x: pos.x, y: pos.y,
+      text: String.fromCodePoint(cp),
+      fontFamily: CARTOUCHE_FONT,
+      fontSize: 64,
+      fill: currentToolColorHex || "#111"
+    });
+    node.setAttr("tpWord", word);
+    makeSelectable(node);
+    contentLayer.add(node);
+
+    contentLayer.draw();
+    uiLayer.draw();
+
+    log(`Placed GLYPH "${word}" at (${Math.round(pos.x)}, ${Math.round(pos.y)}) fill=${node.fill ? node.fill() : "?"}`);
+    setSelection([node]);
+    saveNow("place");
+  }
+
+  function addRectAt(pos){
+    const s = rectDefaults || RECT_DEFAULTS;
+
+    const node = new Konva.Rect({
+      x: pos.x, y: pos.y,
+      width: 220,
+      height: 140,
+      fill: rgbaString(s.fill.r, s.fill.g, s.fill.b, s.fill.a),
+      stroke: rgbaString(s.stroke.r, s.stroke.g, s.stroke.b, s.stroke.a),
+      strokeWidth: clampNonNeg(s.strokeWidth, 2),
+      cornerRadius: clampNonNeg(s.cornerRadius, 10)
+    });
+    node.setAttr("locked", !!s.locked);
+    makeSelectable(node);
+
+    contentLayer.add(node);
+
+    contentLayer.draw();
+    uiLayer.draw();
+
+    log(`Placed RECT at (${Math.round(pos.x)}, ${Math.round(pos.y)}) locked=${!!s.locked}`);
+    setSelection([node]);
+    saveNow("place");
+  }
+
+  // ===== Editing outline =====
+  function updateEditingOutline(){
+    if (!editingOutline) return;
+
+    const n = getEditingNode();
+    if (!n || !n.getClientRect) {
+      editingOutline.visible(false);
+      uiLayer.draw();
+      return;
+    }
+
+    try {
+      const r = n.getClientRect({ relativeTo: stage });
+      const pad = 6;
+      editingOutline.position({ x: r.x - pad, y: r.y - pad });
+      editingOutline.size({ width: r.width + pad*2, height: r.height + pad*2 });
+      editingOutline.visible(true);
+      editingOutline.moveToTop();
+      tr && tr.moveToTop();
+      uiLayer.draw();
+    } catch {
+      editingOutline.visible(false);
+      uiLayer.draw();
+    }
+  }
+
+  // ===== Text/Glyph/Sitelen type helpers =====
+  function isGlyphTextNode(node){
+    return !!(node && node.getClassName && node.getClassName() === "Text" && node.getAttr && node.getAttr("tpWord"));
+  }
+  function isPlainTextNode(node){
+    return !!(node && node.getClassName && node.getClassName() === "Text" && !isGlyphTextNode(node) && !isSitelenNode(node));
+  }
+  function glyphWordOfNode(node){
+    if (!isGlyphTextNode(node)) return "";
+    try { return String(node.getAttr("tpWord") || ""); } catch { return ""; }
+  }
+
+  // ===== Text editing =====
+  function enterTextEditingMode(node){
+    if (!isPlainTextNode(node)) return;
+
+    if (editingRectNode) cancelRectEditing("switch-to-text");
+    if (editingGlyphNode) cancelGlyphEditing("switch-to-text");
+    if (editingSitelenNode) { cancelSitelenEditing("switch-to-text"); endSitelenEditingMode(); }
+
+    if (!editingTextNode && editReturnTool == null) {
+      editReturnTool = tool;
+      log(`Editing takeover: remembered return tool = ${editReturnTool}`);
+    }
+
+    editingTextNode = node;
+    editingOriginalText = String(node.text ? node.text() : "");
+
+    const { hex } = setPickersFromNodeFill(node);
+    currentToolColorHex = hex;
+    log(`Text edit: pickers loaded from node fill (no storage update): ${hex}`);
+
+    setTool(Tool.text);
+    textValue.value = editingOriginalText;
+
+    setSelection([node]);
+    setTextEditingBanner(true, editingOriginalText);
+    updateEditingOutline();
+
+    setStatus("Editing text: change the textarea (and/or colour), then click Update text or Cancel.");
+    log("Begin text edit: node loaded into textarea.");
+  }
+
+  function applyTextEditing(reason){
+    if (!editingTextNode) return;
+
+    try {
+      const newText = String(textValue.value || "");
+      const oldText = String(editingTextNode.text ? editingTextNode.text() : "");
+
+      if (newText !== oldText) {
+        editingTextNode.text(newText);
+        contentLayer.draw();
+        updateEditingOutline();
+        setTextEditingBanner(true, newText);
+        saveNow("textedit");
+        log(`Applied text edit (${reason}): length ${oldText.length} -> ${newText.length}`);
+        setStatus("Text updated.");
+      } else {
+        log(`Apply (${reason}): no change.`);
+        setStatus("No text changes to apply.");
+      }
+
+      editingOriginalText = String(editingTextNode.text ? editingTextNode.text() : "");
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      log("Apply text edit FAIL: " + msg);
+      setStatus("Apply text failed: " + msg);
+    }
+  }
+
+  function cancelTextEditing(reason){
+    if (!editingTextNode) return;
+    textValue.value = editingOriginalText;
+    setTextEditingBanner(true, editingOriginalText);
+    updateEditingOutline();
+    log(`Cancelled text edit (${reason}).`);
+    setStatus("Edit cancelled (no text changes applied).");
+  }
+
+  function endTextEditingMode(){
+    if (!editingTextNode) return;
+    editingTextNode = null;
+    editingOriginalText = "";
+    setTextEditingBanner(false, "");
+    if (editingOutline) {
+      try { editingOutline.visible(false); uiLayer.draw(); } catch {}
+    }
+  }
+
+  function finishTextEditingAndRestoreTool(kind){
+    const nodeRef = editingTextNode;
+
+    if (kind === "update") {
+      applyTextEditing("button");
+
+      if (nodeRef && typeof nodeRef.fill === "function") {
+        commitLastRgbFromNodeFill(nodeRef, "text-update");
+        const { hex } = setPickersFromNodeFill(nodeRef);
+        currentToolColorHex = hex;
+      }
+    } else {
+      cancelTextEditing("button");
+
+      const last = readLastRgb();
+      currentToolColorHex = setRgbPickers(last);
+      log(`Text cancel: pickers restored from last-rgb storage: ${currentToolColorHex}`);
+    }
+
+    endTextEditingMode();
+
+    const back = editReturnTool || Tool.select;
+    editReturnTool = null;
+    setTool(back);
+
+    setStatus(back === Tool.select
+      ? "Editing finished. Select tool restored."
+      : `Editing finished. Restored tool: ${back}.`);
+    log(`Text editing finished (${kind}). Restored tool=${back}`);
+  }
+
+  btnTextUpdate.addEventListener("click", () => finishTextEditingAndRestoreTool("update"));
+  btnTextCancel.addEventListener("click", () => finishTextEditingAndRestoreTool("cancel"));
+
+  textValue.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); finishTextEditingAndRestoreTool("cancel"); return; }
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); finishTextEditingAndRestoreTool("update"); return; }
+  });
+
+  // ===== Sitelen editing (FIXED: robust detection + preview/cancel/commit behavior) =====
+  function enterSitelenEditingMode(node){
+    if (!isSitelenNode(node)) return;
+
+    if (editingRectNode) cancelRectEditing("switch-to-sitelen");
+    if (editingGlyphNode) cancelGlyphEditing("switch-to-sitelen");
+    if (editingTextNode) { cancelTextEditing("switch-to-sitelen"); endTextEditingMode(); }
+
+    if (!editingSitelenNode && editReturnTool == null) {
+      editReturnTool = tool;
+      log(`Sitelen editing takeover: remembered return tool = ${editReturnTool}`);
+    }
+
+    editingSitelenNode = node;
+
+    editingOriginalSitelenSource = String(node.getAttr ? (node.getAttr("sitelenSource") || "") : "");
+    editingOriginalSitelenFill = (node.fill && typeof node.fill === "function") ? String(node.fill() || "") : "";
+    editingOriginalSitelenRendered = String(node.text && typeof node.text === "function" ? (node.text() || "") : "");
+
+    const { hex } = setSitelenPickersFromNodeFill(node);
+    currentSitelenColorHex = hex;
+    log(`Sitelen edit: pickers loaded from node fill (no storage update): ${hex}`);
+
+    setTool(Tool.sitelen);
+    sitelenValue.value = editingOriginalSitelenSource;
+
+    setSelection([node]);
+    setSitelenEditingBanner(true, editingOriginalSitelenSource);
+    updateEditingOutline();
+
+    setStatus("Editing sitelen: edit SOURCE text, then Update sitelen or Cancel.");
+    log("Begin sitelen edit: node source loaded into textarea.");
+  }
+
+  function applySitelenEditing(reason){
+    if (!editingSitelenNode) return;
+
+    try {
+      const newSrc = String(sitelenValue.value || "").replace(/\r\n?/g, "\n");
+      const oldSrc = String(editingSitelenNode.getAttr ? (editingSitelenNode.getAttr("sitelenSource") || "") : "");
+
+      // Always update attributes/text to match textarea (even if same), so Update is deterministic.
+      editingSitelenNode.setAttr("sitelenSource", newSrc);
+      editingSitelenNode.text(renderSitelenSourceToUcsur(newSrc));
+
+      contentLayer.draw();
+      updateEditingOutline();
+      setSitelenEditingBanner(true, newSrc);
+
+      // Save ALWAYS on Update, even if only colour changed.
+      saveNow("sitelen-update");
+      log(`Applied sitelen update (${reason}): srcLen ${oldSrc.length} -> ${newSrc.length}`);
+      setStatus("Sitelen updated.");
+
+      editingOriginalSitelenSource = newSrc;
+      editingOriginalSitelenRendered = String(editingSitelenNode.text ? editingSitelenNode.text() : "");
+      editingOriginalSitelenFill = (editingSitelenNode.fill && typeof editingSitelenNode.fill === "function") ? String(editingSitelenNode.fill() || "") : "";
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      log("Apply sitelen edit FAIL: " + msg);
+      setStatus("Apply sitelen failed: " + msg);
+    }
+  }
+
+  function cancelSitelenEditing(reason){
+    if (!editingSitelenNode) return;
+
+    // Revert node (source + rendered + fill) because sitelen colour is previewed during edit mode.
+    try {
+      editingSitelenNode.setAttr("sitelenSource", editingOriginalSitelenSource);
+      if (typeof editingSitelenNode.text === "function") {
+        // Prefer exact rendered snapshot to avoid any reconstruction issues.
+        editingSitelenNode.text(editingOriginalSitelenRendered || renderSitelenSourceToUcsur(editingOriginalSitelenSource));
+      }
+      if (typeof editingSitelenNode.fill === "function" && editingOriginalSitelenFill) {
+        editingSitelenNode.fill(editingOriginalSitelenFill);
+      }
+
+      contentLayer.draw();
+      uiLayer.draw();
+    } catch (e) {
+      log("Sitelen cancel revert FAIL: " + ((e && e.message) ? e.message : String(e)));
+    }
+
+    sitelenValue.value = editingOriginalSitelenSource;
+    setSitelenEditingBanner(true, editingOriginalSitelenSource);
+    updateEditingOutline();
+    log(`Cancelled sitelen edit (${reason}).`);
+    setStatus("Sitelen edit cancelled (reverted).");
+  }
+
+  function endSitelenEditingMode(){
+    if (!editingSitelenNode) return;
+    editingSitelenNode = null;
+    editingOriginalSitelenSource = "";
+    editingOriginalSitelenFill = "";
+    editingOriginalSitelenRendered = "";
+    setSitelenEditingBanner(false, "");
+    if (editingOutline) {
+      try { editingOutline.visible(false); uiLayer.draw(); } catch {}
+    }
+  }
+
+  function finishSitelenEditingAndRestoreTool(kind){
+    const nodeRef = editingSitelenNode;
+
+    if (kind === "update") {
+      applySitelenEditing("button");
+
+      if (nodeRef && typeof nodeRef.fill === "function") {
+        commitLastSitelenRgbFromNodeFill(nodeRef, "sitelen-update");
+        const { hex } = setSitelenPickersFromNodeFill(nodeRef);
+        currentSitelenColorHex = hex;
+      }
+    } else {
+      cancelSitelenEditing("button");
+
+      const last = readLastSitelenRgb();
+      currentSitelenColorHex = setSitelenPickers(last);
+      log(`Sitelen cancel: pickers restored from sitelen-rgb storage: ${currentSitelenColorHex}`);
+    }
+
+    endSitelenEditingMode();
+
+    const back = editReturnTool || Tool.select;
+    editReturnTool = null;
+    setTool(back);
+
+    setStatus(back === Tool.select
+      ? "Editing finished. Select tool restored."
+      : `Editing finished. Restored tool: ${back}.`);
+    log(`Sitelen editing finished (${kind}). Restored tool=${back}`);
+  }
+
+  btnSitelenUpdate.addEventListener("click", () => finishSitelenEditingAndRestoreTool("update"));
+  btnSitelenCancel.addEventListener("click", () => finishSitelenEditingAndRestoreTool("cancel"));
+
+  sitelenValue.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); finishSitelenEditingAndRestoreTool("cancel"); return; }
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); finishSitelenEditingAndRestoreTool("update"); return; }
+  });
+
+  // ===== Glyph picker selection sync =====
+  function syncGlyphPickerSelectionToWord(word){
+    const w = String(word || "").toLowerCase().trim();
+    if (!w) return;
+
+    const letter = w[0];
+    if (TP_LETTERS.includes(letter)) setGlyphLetter(letter);
+
+    selectedGlyphWord = w;
+    glyphSelectedWordEl.textContent = w;
+
+    for (const b2 of glyphWordsHost.querySelectorAll("button[data-word]")) {
+      b2.setAttribute("aria-pressed", b2.getAttribute("data-word") === w ? "true" : "false");
+    }
+  }
+
+  // ===== Glyph editing (Save/Undo) =====
+  function enterGlyphEditingMode(node){
+    if (!isGlyphTextNode(node)) return;
+
+    if (editingRectNode) cancelRectEditing("switch-to-glyph");
+    if (editingTextNode) { cancelTextEditing("switch-to-glyph"); endTextEditingMode(); }
+    if (editingSitelenNode) { cancelSitelenEditing("switch-to-glyph"); endSitelenEditingMode(); }
+
+    if (!editingGlyphNode && editReturnTool == null) {
+      editReturnTool = tool;
+      log(`Glyph editing takeover: remembered return tool = ${editReturnTool}`);
+    }
+
+    editingGlyphNode = node;
+
+    editingOriginalGlyphFill = (node.fill && typeof node.fill === "function") ? String(node.fill() || "") : "";
+    const orig = parseColorToRgba(editingOriginalGlyphFill, { r: 0, g: 0, b: 0, a: 1 });
+    editingOriginalGlyphRgb = { r: orig.r, g: orig.g, b: orig.b };
+
+    editingOriginalGlyphWord = glyphWordOfNode(node);
+    try { editingOriginalGlyphChar = String(node.text ? node.text() : ""); } catch { editingOriginalGlyphChar = ""; }
+    editingPendingGlyphWord = null;
+
+    const w = editingOriginalGlyphWord;
+    syncGlyphPickerSelectionToWord(w);
+
+    const hex = setRgbPickers({ r: orig.r, g: orig.g, b: orig.b });
+    currentToolColorHex = hex;
+    log(`Glyph edit: pickers loaded from node fill (no storage update): ${hex}`);
+
+    setTool(Tool.glyph);
+    setSelection([node]);
+    setGlyphEditingBanner(true, w);
+    updateEditingOutline();
+  }
+
+  function previewGlyphWordChange(word){
+    if (!editingGlyphNode) return;
+
+    const w = String(word || "").toLowerCase().trim();
+    if (!w) return;
+
+    const cp = WORD_TO_UCSUR_CP[w];
+    if (!cp) {
+      setStatus("No glyph for: " + w);
+      log(`Glyph preview word change blocked (missing cp): ${w}`);
+      return;
+    }
+
+    try {
+      editingGlyphNode.setAttr("tpWord", w);
+      editingGlyphNode.text(String.fromCodePoint(cp));
+      editingPendingGlyphWord = w;
+
+      contentLayer.draw();
+      updateEditingOutline();
+      uiLayer.draw();
+
+      syncGlyphPickerSelectionToWord(w);
+      setGlyphEditingBanner(true, w);
+
+      log(`Glyph preview word=${w} (pending)`);
+      setStatus("Glyph edit mode: glyph word updated (pending). Click Save glyph changes or Undo.");
+    } catch (e) {
+      log("Glyph preview word change FAIL: " + ((e && e.message) ? e.message : String(e)));
+    }
+  }
+
+  function applyGlyphPreview(hex){
+    if (!editingGlyphNode) return;
+    try {
+      if (typeof editingGlyphNode.fill === "function") editingGlyphNode.fill(hex);
+      contentLayer.draw();
+      updateEditingOutline();
+      uiLayer.draw();
+      log(`Glyph preview fill=${hex} (pending)`);
+      setStatus("Glyph edit mode: preview updated (pending). Click Save glyph changes to commit or Undo to revert.");
+    } catch (e) {
+      log("Glyph preview FAIL: " + ((e && e.message) ? e.message : String(e)));
+    }
+  }
+
+  function cancelGlyphEditing(reason){
+    if (!editingGlyphNode) return;
+
+    try {
+      const revertFill =
+        editingOriginalGlyphFill ||
+        (editingOriginalGlyphRgb
+          ? rgbToHex(editingOriginalGlyphRgb.r, editingOriginalGlyphRgb.g, editingOriginalGlyphRgb.b)
+          : "#000000");
+      if (typeof editingGlyphNode.fill === "function") editingGlyphNode.fill(revertFill);
+
+      if (editingOriginalGlyphWord) editingGlyphNode.setAttr("tpWord", editingOriginalGlyphWord);
+      if (editingOriginalGlyphChar) editingGlyphNode.text(editingOriginalGlyphChar);
+
+      contentLayer.draw();
+      uiLayer.draw();
+    } catch (e) {
+      log("Glyph undo FAIL: " + ((e && e.message) ? e.message : String(e)));
+    }
+
+    if (editingOriginalGlyphWord) syncGlyphPickerSelectionToWord(editingOriginalGlyphWord);
+
+    const last = readLastRgb();
+    currentToolColorHex = setRgbPickers(last);
+
+    const wFinal = editingOriginalGlyphWord || glyphWordOfNode(editingGlyphNode);
+
+    editingGlyphNode = null;
+    editingOriginalGlyphFill = "";
+    editingOriginalGlyphRgb = null;
+    editingOriginalGlyphWord = "";
+    editingOriginalGlyphChar = "";
+    editingPendingGlyphWord = null;
+
+    setGlyphEditingBanner(false, wFinal);
+    if (editingOutline) {
+      try { editingOutline.visible(false); uiLayer.draw(); } catch {}
+    }
+
+    const back = editReturnTool || Tool.select;
+    editReturnTool = null;
+    setTool(back);
+
+    setStatus("Glyph edit undone.");
+  }
+
+  function saveGlyphEditing(reason){
+    if (!editingGlyphNode) return;
+
+    saveNow("glyphedit");
+    commitLastRgbFromNodeFill(editingGlyphNode, "glyph-save");
+
+    setPickersFromNodeFill(editingGlyphNode);
+    currentToolColorHex = rgbToHex(Number(textR.value), Number(textG.value), Number(textB.value));
+
+    const wCommitted = glyphWordOfNode(editingGlyphNode);
+    if (wCommitted) syncGlyphPickerSelectionToWord(wCommitted);
+
+    editingGlyphNode = null;
+    editingOriginalGlyphFill = "";
+    editingOriginalGlyphRgb = null;
+    editingOriginalGlyphWord = "";
+    editingOriginalGlyphChar = "";
+    editingPendingGlyphWord = null;
+
+    setGlyphEditingBanner(false, wCommitted);
+    if (editingOutline) {
+      try { editingOutline.visible(false); uiLayer.draw(); } catch {}
+    }
+
+    const back = editReturnTool || Tool.select;
+    editReturnTool = null;
+    setTool(back);
+
+    setStatus("Glyph changes saved.");
+    log(`Glyph edit SAVE (${reason}).`);
+  }
+
+  btnGlyphUpdate.addEventListener("click", () => saveGlyphEditing("button"));
+  btnGlyphCancel.addEventListener("click", () => cancelGlyphEditing("button"));
+
+  // ===== Rectangle editing =====
+  function isRectNode(node){
+    return !!(node && node.getClassName && node.getClassName() === "Rect");
+  }
+
+  function applyRectStyleToNode(node, style){
+    if (!node || typeof node.getClassName !== "function" || node.getClassName() !== "Rect") return;
+
+    const fillStr = rgbaString(style.fill.r, style.fill.g, style.fill.b, style.fill.a);
+    const strokeStr = rgbaString(style.stroke.r, style.stroke.g, style.stroke.b, style.stroke.a);
+
+    try {
+      node.fill(fillStr);
+      node.stroke(strokeStr);
+      node.strokeWidth(style.strokeWidth);
+      node.cornerRadius(style.cornerRadius);
+
+      node.setAttr("locked", !!style.locked);
+      node.draggable(!style.locked);
+
+      contentLayer.draw();
+      uiLayer.draw();
+      saveNow("rectstyle");
+    } catch (e) {
+      log("Rect style apply FAIL: " + ((e && e.message) ? e.message : String(e)));
+    }
+  }
+
+  function enterRectEditingMode(node){
+    if (!isRectNode(node)) return;
+
+    if (editingGlyphNode) cancelGlyphEditing("switch-to-rect");
+    if (editingTextNode) { cancelTextEditing("switch-to-rect"); endTextEditingMode(); }
+    if (editingSitelenNode) { cancelSitelenEditing("switch-to-rect"); endSitelenEditingMode(); }
+
+    if (!editingRectNode && editReturnTool == null) {
+      editReturnTool = tool;
+    }
+
+    rectDefaultsBeforeEdit = safeClone(rectDefaults || RECT_DEFAULTS);
+
+    editingRectNode = node;
+    editingOriginalRectStyle = rectStyleFromNode(node, rectDefaults || RECT_DEFAULTS);
+
+    setTool(Tool.rect);
+    setSelection([node]);
+
+    setRectControlsFromStyle(editingOriginalRectStyle);
+
+    setRectEditingBanner(true, editingOriginalRectStyle);
+    updateEditingOutline();
+  }
+
+  function endRectEditingMode(){
+    if (!editingRectNode) return;
+    editingRectNode = null;
+    editingOriginalRectStyle = null;
+    rectDefaultsBeforeEdit = null;
+    setRectEditingBanner(false, null);
+    if (editingOutline) {
+      try { editingOutline.visible(false); uiLayer.draw(); } catch {}
+    }
+  }
+
+  function finishRectEditingAndRestoreTool(kind){
+    if (!editingRectNode) return;
+
+    if (kind === "update") {
+      const s = getRectStyleFromControls();
+      applyRectStyleToNode(editingRectNode, s);
+
+      rectDefaults = safeClone(s);
+      writeLastRectStyle(rectDefaults);
+      setRectControlsFromStyle(rectDefaults);
+    } else {
+      if (rectDefaultsBeforeEdit) {
+        rectDefaults = safeClone(rectDefaultsBeforeEdit);
+        setRectControlsFromStyle(rectDefaults);
+      }
+    }
+
+    endRectEditingMode();
+
+    const back = editReturnTool || Tool.select;
+    editReturnTool = null;
+    setTool(back);
+
+    updateEditingOutline();
+    syncTransformerForLockedSelection();
+    if (uiLayer) uiLayer.draw();
+  }
+
+  function cancelRectEditing(reason){
+    if (!editingRectNode) return;
+    if (rectDefaultsBeforeEdit) {
+      rectDefaults = safeClone(rectDefaultsBeforeEdit);
+      setRectControlsFromStyle(rectDefaults);
+    }
+    endRectEditingMode();
+    editReturnTool = null;
+  }
+
+  btnRectUpdate.addEventListener("click", () => finishRectEditingAndRestoreTool("update"));
+  btnRectCancel.addEventListener("click", () => finishRectEditingAndRestoreTool("cancel"));
+
+  // ===== Glyph picker =====
+  function setGlyphLetter(letter){
+    glyphLetterLabel.textContent = letter;
+
+    for (const b of glyphLettersHost.querySelectorAll("button[data-letter]")) {
+      const isOn = b.getAttribute("data-letter") === letter;
+      b.setAttribute("aria-pressed", isOn ? "true" : "false");
+    }
+
+    const words = (WORDS_BY_LETTER.get(letter) || []).slice();
+    glyphWordsHost.innerHTML = "";
+
+    if (!words.length) {
+      const div = document.createElement("div");
+      div.className = "help";
+      div.textContent = "No words for this letter in your list.";
+      glyphWordsHost.appendChild(div);
+      return;
+    }
+
+    for (const w of words) {
+      const cp = WORD_TO_UCSUR_CP[w];
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "glyphBtn";
+      btn.setAttribute("data-word", w);
+      btn.setAttribute("aria-pressed", (w === selectedGlyphWord) ? "true" : "false");
+
+      const glyph = document.createElement("div");
+      glyph.className = "glyphChar";
+      glyph.textContent = cp ? String.fromCodePoint(cp) : "?";
+
+      const label = document.createElement("div");
+      label.className = "glyphWord";
+      label.textContent = w;
+
+      btn.appendChild(glyph);
+      btn.appendChild(label);
+
+      btn.addEventListener("click", () => {
+        selectedGlyphWord = w;
+        glyphSelectedWordEl.textContent = w;
+
+        for (const b2 of glyphWordsHost.querySelectorAll("button[data-word]")) {
+          b2.setAttribute("aria-pressed", b2.getAttribute("data-word") === w ? "true" : "false");
+        }
+
+        if (editingGlyphNode) {
+          previewGlyphWordChange(w);
+          return;
+        }
+
+        if (tool === Tool.glyph) setStatus(`Glyph ready: ${w}. Click empty canvas to place.`);
+      });
+
+      glyphWordsHost.appendChild(btn);
+    }
+  }
+
+  function initGlyphPicker(){
+    glyphLettersHost.innerHTML = "";
+    for (const l of TP_LETTERS) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btnTiny";
+      b.textContent = l;
+      b.setAttribute("data-letter", l);
+      b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", () => setGlyphLetter(l));
+      glyphLettersHost.appendChild(b);
+    }
+
+    let first = "a";
+    for (const l of TP_LETTERS) {
+      if ((WORDS_BY_LETTER.get(l) || []).length) { first = l; break; }
+    }
+
+    selectedGlyphWord = null;
+    glyphSelectedWordEl.textContent = "none";
+    setGlyphLetter(first);
+  }
+
+  // ===== Color apply to selected nodes =====
+  function maybeApplyColorToSelection(hex){
+    if (!hex || !selectedNodes || selectedNodes.length !== 1) return;
+
+    const n = selectedNodes[0];
+    if (!n || typeof n.getClassName !== "function") return;
+    if (n.getClassName() !== "Text") return;
+
+    const isGlyph = isGlyphTextNode(n);
+    const isSit = isSitelenNode(n);
+
+    const eligible =
+      (!isGlyph && !isSit && (tool === Tool.text || editingTextNode === n)) ||
+      ( isGlyph &&        (tool === Tool.glyph || editingGlyphNode === n));
+
+    if (!eligible) return;
+
+    try {
+      if (typeof n.fill === "function") n.fill(hex);
+      contentLayer.draw();
+      updateEditingOutline();
+      uiLayer.draw();
+
+      if (isGlyph && editingGlyphNode === n) return;
+
+      saveNow("color");
+      commitLastRgbFromNodeFill(n, "color-apply");
+    } catch (e) {
+      log("Apply color FAIL: " + ((e && e.message) ? e.message : String(e)));
+    }
+  }
+
+  // FIX: during sitelen edit mode, colour changes are preview-only (no save/commit)
+  function maybeApplySitelenColorToSelection(hex){
+    if (!hex || !selectedNodes || selectedNodes.length !== 1) return;
+    const n = selectedNodes[0];
+    if (!isSitelenNode(n)) return;
+
+    const eligible = (tool === Tool.sitelen || editingSitelenNode === n);
+    if (!eligible) return;
+
+    try {
+      if (typeof n.fill === "function") n.fill(hex);
+      contentLayer.draw();
+      updateEditingOutline();
+      uiLayer.draw();
+
+      if (editingSitelenNode === n) {
+        log(`Sitelen color preview applied: ${hex} (pending)`);
+        setStatus("Sitelen edit mode: colour preview updated (pending). Click Update sitelen to commit or Cancel to revert.");
+        return;
+      }
+
+      saveNow("sitelen-color");
+      commitLastSitelenRgbFromNodeFill(n, "sitelen-color-apply");
+    } catch (e) {
+      log("Apply sitelen color FAIL: " + ((e && e.message) ? e.message : String(e)));
+    }
+  }
+
+  function onRgbChanged(source){
+    const rgb = (source === "glyph") ? getCurrentRgbFromGlyphPickers() : getCurrentRgbFromTextPickers();
+    const hex = setRgbPickers(rgb);
+    currentToolColorHex = hex;
+
+    if (editingGlyphNode && source === "glyph") {
+      applyGlyphPreview(hex);
+      return;
+    }
+
+    maybeApplyColorToSelection(hex);
+  }
+
+  function onSitelenRgbChanged(){
+    const rgb = getCurrentRgbFromSitelenPickers();
+    const hex = setSitelenPickers(rgb);
+    currentSitelenColorHex = hex;
+    maybeApplySitelenColorToSelection(hex);
+  }
+
+  // ===== Rectangle controls wiring =====
+  function maybeApplyRectStyleToSelection(style){
+    if (!style || !selectedNodes || selectedNodes.length !== 1) return;
+    const n = selectedNodes[0];
+    if (!n || typeof n.getClassName !== "function") return;
+    if (n.getClassName() !== "Rect") return;
+
+    if (editingRectNode) return;
+    if (tool !== Tool.rect && optRect.style.display === "none") return;
+
+    applyRectStyleToNode(n, style);
+  }
+
+  function onRectControlsChanged(){
+    const s = getRectStyleFromControls();
+
+    rectFillSwatch.style.background = rgbaString(s.fill.r, s.fill.g, s.fill.b, s.fill.a);
+    rectStrokeSwatch.style.background = rgbaString(s.stroke.r, s.stroke.g, s.stroke.b, s.stroke.a);
+
+    if (editingRectNode) {
+      setRectEditingBanner(true, s);
+      return;
+    }
+
+    rectDefaults = safeClone(s);
+    writeLastRectStyle(rectDefaults);
+
+    maybeApplyRectStyleToSelection(s);
+  }
+
+  function initRectControls(){
+    populateRgbSelect(rectFillR);
+    populateRgbSelect(rectFillG);
+    populateRgbSelect(rectFillB);
+    populateOpacitySelect(rectFillA);
+
+    populateRgbSelect(rectStrokeR);
+    populateRgbSelect(rectStrokeG);
+    populateRgbSelect(rectStrokeB);
+    populateOpacitySelect(rectStrokeA);
+
+    rectDefaults = readLastRectStyle();
+    setRectControlsFromStyle(rectDefaults);
+
+    rectFillR.addEventListener("change", onRectControlsChanged);
+    rectFillG.addEventListener("change", onRectControlsChanged);
+    rectFillB.addEventListener("change", onRectControlsChanged);
+    rectFillA.addEventListener("change", onRectControlsChanged);
+
+    rectStrokeR.addEventListener("change", onRectControlsChanged);
+    rectStrokeG.addEventListener("change", onRectControlsChanged);
+    rectStrokeB.addEventListener("change", onRectControlsChanged);
+    rectStrokeA.addEventListener("change", onRectControlsChanged);
+    rectStrokeW.addEventListener("change", onRectControlsChanged);
+
+    rectCornerRadius.addEventListener("change", onRectControlsChanged);
+
+    rectLocked.addEventListener("change", () => {
+      onRectControlsChanged();
+      syncTransformerForLockedSelection();
+      if (uiLayer) uiLayer.draw();
+    });
+  }
+
+  // ===== Pointer selection & marquee =====
+  let marqueeStart = null;
+  let marqueeActive = false;
+
+  function beginDragCandidate(node, pos){
+    if (!node) return;
+    if (isLockedNode(node)) return;
+    dragCandidate = node;
+    dragStartPos = pos ? { x: pos.x, y: pos.y } : null;
+  }
+
+  function clearDragCandidate(){
+    dragCandidate = null;
+    dragStartPos = null;
+  }
+
+  // FIX: leaving sitelen edit mode by selecting another object cancels (reverts) preview changes
+  function maybeEndEditingDueToSelection(picked){
+    if (editingTextNode && picked !== editingTextNode) {
+      endTextEditingMode();
+      editReturnTool = null;
+      const last = readLastRgb();
+      currentToolColorHex = setRgbPickers(last);
+    }
+
+    if (editingSitelenNode && picked !== editingSitelenNode) {
+      cancelSitelenEditing("selection-change");
+      endSitelenEditingMode();
+      editReturnTool = null;
+      const last = readLastSitelenRgb();
+      currentSitelenColorHex = setSitelenPickers(last);
+      log("Sitelen editing mode ended due to selecting a different object.");
+    }
+
+    if (editingGlyphNode && picked !== editingGlyphNode) {
+      cancelGlyphEditing("selection-change");
+    }
+
+    if (editingRectNode && picked !== editingRectNode) {
+      cancelRectEditing("selection-change");
+    }
+  }
+
+  function bindHandlers(){
+    if (!stage || !contentLayer) return;
+
+    stage.off();
+    contentLayer.off("dragstart");
+
+    stage.on("dblclick dbltap", (e) => {
+      const evt = e && e.evt ? e.evt : null;
+      if (evt) stage.setPointersPositions(evt);
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      if (tr && tr.visible()) {
+        const handle = getTransformerHandleAt(pos);
+        if (handle) return;
+      }
+
+      const picked = pickTopSelectableAt(pos);
+      if (!picked) {
+        log(`DBLCLICK: none at pos=${Math.round(pos.x)},${Math.round(pos.y)}`);
+        return;
+      }
+
+      const cls = picked.getClassName ? picked.getClassName() : "node";
+      let isSit = false, isGlyph = false;
+      try { isSit = isSitelenNode(picked); } catch {}
+      try { isGlyph = isGlyphTextNode(picked); } catch {}
+      log(`DBLCLICK: picked cls=${cls} isSitelen=${isSit} isGlyph=${isGlyph} pos=${Math.round(pos.x)},${Math.round(pos.y)}`);
+
+      if (cls === "Rect") { enterRectEditingMode(picked); return; }
+      if (cls === "Text" && isSitelenNode(picked)) { enterSitelenEditingMode(picked); return; }
+      if (cls === "Text" && isPlainTextNode(picked)) { enterTextEditingMode(picked); return; }
+      if (cls === "Text" && isGlyphTextNode(picked)) { enterGlyphEditingMode(picked); return; }
+    });
+
+    stage.on("mousedown touchstart", (e) => {
+      const evt = e.evt || {};
+      if (evt) stage.setPointersPositions(evt);
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      const targetCls = (e.target && e.target.getClassName) ? e.target.getClassName() : "?";
+
+      if (tr && tr.visible()) {
+        const handle = getTransformerHandleAt(pos);
+        if (handle) {
+          bridgeHandleActive = true;
+          clearDragCandidate();
+          marqueeActive = false;
+          try { selectionRect.visible(false); } catch {}
+          try { uiLayer.batchDraw(); } catch {}
+
+          const t = (evt && evt.type) ? evt.type : "mousedown";
+          try { handle.fire(t, { evt: evt }, false); } catch {}
+          if (e) e.cancelBubble = true;
+          return;
+        }
+      }
+
+      const isMulti = !!(evt.shiftKey || evt.metaKey || evt.ctrlKey);
+      const konvaTargetIsStage = (targetCls === "Stage");
+
+      if (tool === Tool.select) {
+        const picked = pickTopSelectableAt(pos);
+
+        if (picked) {
+          maybeEndEditingDueToSelection(picked);
+
+          if (!isMulti) setSelection([picked]);
+          else {
+            const next = new Set(selectedNodes);
+            if (next.has(picked)) next.delete(picked); else next.add(picked);
+            setSelection(Array.from(next));
+          }
+
+          if (!bridgeHandleActive && !isTransforming && konvaTargetIsStage) beginDragCandidate(picked, pos);
+          else clearDragCandidate();
+
+          updateEditingOutline();
+          return;
+        }
+
+        maybeEndEditingDueToSelection(null);
+
+        marqueeActive = true;
+        marqueeStart = { x: pos.x, y: pos.y };
+        selectionRect.visible(true);
+        selectionRect.position(marqueeStart);
+        selectionRect.size({ width: 0, height: 0 });
+        uiLayer.batchDraw();
+        clearSelection();
+        clearDragCandidate();
+        return;
+      }
+
+      const hit = pickTopSelectableAt(pos);
+      if (hit) {
+        maybeEndEditingDueToSelection(hit);
+        setSelection([hit]);
+
+        if (!bridgeHandleActive && !isTransforming && konvaTargetIsStage) beginDragCandidate(hit, pos);
+        else clearDragCandidate();
+
+        updateEditingOutline();
+        return;
+      }
+
+      maybeEndEditingDueToSelection(null);
+
+      clearDragCandidate();
+      if (tool === Tool.text) addTextAt(pos);
+      else if (tool === Tool.sitelen) addSitelenAt(pos);
+      else if (tool === Tool.glyph) addGlyphAt(pos);
+      else if (tool === Tool.rect) addRectAt(pos);
+    });
+
+    stage.on("mousemove touchmove", (e) => {
+      const evt = e && e.evt ? e.evt : null;
+      if (evt) stage.setPointersPositions(evt);
+      const pos = stage.getPointerPosition();
+
+      if (bridgeHandleActive) clearDragCandidate();
+
+      if (!bridgeHandleActive && !isTransforming && dragCandidate && dragStartPos && pos) {
+        if (isLockedNode(dragCandidate)) { clearDragCandidate(); return; }
+
+        const dx = pos.x - dragStartPos.x;
+        const dy = pos.y - dragStartPos.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+
+        if (dist >= DRAG_THRESHOLD_PX) {
+          try {
+            if (typeof dragCandidate.draggable === "function") dragCandidate.draggable(true);
+            dragCandidate.startDrag();
+          } catch {}
+          clearDragCandidate();
+        }
+      }
+
+      if (!marqueeActive || !marqueeStart || !pos) return;
+
+      const x = Math.min(marqueeStart.x, pos.x);
+      const y = Math.min(marqueeStart.y, pos.y);
+      const w = Math.abs(pos.x - marqueeStart.x);
+      const h = Math.abs(pos.y - marqueeStart.y);
+
+      selectionRect.position({ x, y });
+      selectionRect.size({ width: w, height: h });
+      uiLayer.batchDraw();
+    });
+
+    stage.on("mouseup touchend touchcancel", () => {
+      clearDragCandidate();
+      bridgeHandleActive = false;
+
+      if (!marqueeActive) return;
+      marqueeActive = false;
+
+      const box = selectionRect.getClientRect({ relativeTo: stage });
+      selectionRect.visible(false);
+
+      const hits = [];
+      for (const node of getUserNodes()) {
+        const r = node.getClientRect({ relativeTo: stage });
+        if (Konva.Util.haveIntersection(box, r)) hits.push(node);
+      }
+
+      setSelection(hits);
+      updateEditingOutline();
+      uiLayer.batchDraw();
+    });
+
+    contentLayer.on("dragstart", (e) => {
+      const n = nearestSelectable(e.target);
+      if (!n) return;
+      if (isLockedNode(n)) return;
+      if (!selectedNodes.includes(n)) setSelection([n]);
+    });
+  }
+
+  function nearestSelectable(node){
+    let n = node;
+    while (n && n !== stage) {
+      if (isSelectableNode(n)) return n;
+      n = n.getParent && n.getParent();
+    }
+    return null;
+  }
+
+  function bindAutosaveHooks(){
+    contentLayer.off("dragend.autosave transformend.autosave");
+    contentLayer.on("dragend.autosave", () => saveNow("dragend"));
+    contentLayer.on("transformend.autosave", () => saveNow("transformend"));
+
+    stage.off("contentMouseup.autosave contentTouchend.autosave");
+    stage.on("contentMouseup.autosave contentTouchend.autosave", () => {
+      if (tr && tr.visible()) saveNow("pointerup");
+    });
+  }
+
+  function deleteSelection(){
+    if (!selectedNodes.length) return;
+    for (const n of selectedNodes) {
+      try { n.destroy(); } catch {}
+    }
+
+    if (editingTextNode && !editingTextNode.getStage()) endTextEditingMode();
+    if (editingSitelenNode && !editingSitelenNode.getStage()) endSitelenEditingMode();
+    if (editingGlyphNode && !editingGlyphNode.getStage()) cancelGlyphEditing("delete");
+    if (editingRectNode && !editingRectNode.getStage()) cancelRectEditing("delete");
+
+    editReturnTool = null;
+
+    clearSelection();
+    contentLayer.draw(); uiLayer.draw();
+    saveNow("delete");
+  }
+
+  btnDelete.addEventListener("click", deleteSelection);
+  btnSaveNow.addEventListener("click", () => saveNow("manual"));
+
+  btnClear.addEventListener("click", () => {
+    if (!confirm("Clear canvas and delete autosave?")) return;
+    clearSave();
+    createStage();
+
+    endTextEditingMode();
+    endSitelenEditingMode();
+    cancelGlyphEditing("clear");
+    cancelRectEditing("clear");
+
+    editReturnTool = null;
+
+    setStatus("Cleared.");
+    clearSelection();
+    updateZButtons();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key !== "Delete" && e.key !== "Backspace") return;
+
+    const ae = document.activeElement;
+    const tag = ae && ae.tagName ? ae.tagName.toLowerCase() : "";
+    const typing = tag === "input" || tag === "textarea" || tag === "select" || (ae && ae.isContentEditable);
+    if (typing) return;
+
+    e.preventDefault();
+    deleteSelection();
+  }, { passive:false });
+
+  btnSelect.addEventListener("click", () => setTool(Tool.select));
+  btnText.addEventListener("click",   () => setTool(Tool.text));
+  btnSitelen.addEventListener("click", () => setTool(Tool.sitelen));
+  btnGlyph.addEventListener("click",  () => setTool(Tool.glyph));
+  btnRect.addEventListener("click",   () => setTool(Tool.rect));
+
+  window.addEventListener("resize", () => {
+    if (!stage) return;
+    const s = hostSize();
+    stage.size({ width: s.w, height: s.h });
+    contentLayer.draw();
+    updateEditingOutline();
+    uiLayer.draw();
+    saveNow("resize");
+  }, { passive:true });
+
+  // ===== RGB dropdown events (text/glyph/sitelen) =====
+  function initRgbControls(){
+    populateRgbSelect(textR);
+    populateRgbSelect(textG);
+    populateRgbSelect(textB);
+
+    populateRgbSelect(glyphR);
+    populateRgbSelect(glyphG);
+    populateRgbSelect(glyphB);
+
+    populateRgbSelect(sitelenR);
+    populateRgbSelect(sitelenG);
+    populateRgbSelect(sitelenB);
+
+    const last = readLastRgb();
+    currentToolColorHex = setRgbPickers(last);
+
+    const lastS = readLastSitelenRgb();
+    currentSitelenColorHex = setSitelenPickers(lastS);
+
+    textR.addEventListener("change", () => onRgbChanged("text"));
+    textG.addEventListener("change", () => onRgbChanged("text"));
+    textB.addEventListener("change", () => onRgbChanged("text"));
+
+    glyphR.addEventListener("change", () => onRgbChanged("glyph"));
+    glyphG.addEventListener("change", () => onRgbChanged("glyph"));
+    glyphB.addEventListener("change", () => onRgbChanged("glyph"));
+
+    sitelenR.addEventListener("change", onSitelenRgbChanged);
+    sitelenG.addEventListener("change", onSitelenRgbChanged);
+    sitelenB.addEventListener("change", onSitelenRgbChanged);
+
+    log(`RGB init from last-rgb storage: ${currentToolColorHex} (key: ${LS_LAST_RGB_KEY})`);
+    log(`SITELEN RGB init from storage: ${currentSitelenColorHex} (key: ${LS_LAST_SITELEN_RGB_KEY})`);
+  }
+
+  window.addEventListener("load", () => {
+    if (!window.Konva) {
+      setStatus("ERROR: Konva did not load (window.Konva missing).");
+      log("ERROR: window.Konva is missing. The CDN script did not load or was blocked.");
+      return;
+    }
+    log("Konva version: " + (Konva && Konva.version ? Konva.version : "(unknown)"));
+
+    STORAGE_OK = storageWorks();
+    log("Storage test: " + (STORAGE_OK ? "OK" : "BLOCKED"));
+
+    initRgbControls();
+    initRectControls();
+    initGlyphPicker();
+
+    createStage();
+    const restored = restoreFromSave();
+    if (!restored && STORAGE_OK) setStatus("Ready. No autosave found yet.");
+
+    setTextEditingBanner(false, "");
+    setSitelenEditingBanner(false, "");
+    setGlyphEditingBanner(false, "");
+    setRectEditingBanner(false, null);
+    setTool(Tool.select);
+    updateDiagnostics();
+
+    clearSelection();
+    updateZButtons();
+  });
+})();
+  </script>
+
+</body>
+</html>
