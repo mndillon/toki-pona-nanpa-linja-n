@@ -26,7 +26,7 @@
     @font-face {
       font-family: "TP-Cartouche-Font";
       src:
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v4.otf")   format("opentype");
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf")   format("opentype");
       font-display: swap;
     }
 
@@ -472,6 +472,58 @@
      ========================= */
   const VISITED_DOT_RGBA = "rgba(0,0,0,0.24)";
   const DEAD_CELL_RGBA   = "rgba(0,0,0,0.18)";
+
+    function normalizeScene(parsed){
+  const out = parsed && typeof parsed === "object" ? parsed : {};
+
+  out.meta = out.meta || { version: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  out.stage = Object.assign({
+    w: DEFAULTS.stageW,
+    h: DEFAULTS.stageH,
+    showGrid: DEFAULTS.showGrid,
+    gridSize: DEFAULTS.gridSize,
+    snapGrid: DEFAULTS.snapGrid,
+    snapObjects: DEFAULTS.snapObjects,
+    snapTol: DEFAULTS.snapTol,
+  }, out.stage || {});
+
+  out.view = Object.assign({
+    zoom: 1,
+    offsetX: 0,
+    offsetY: 0,
+  }, out.view || {});
+
+  // Back-compat if you ever used different names
+  if (out.view.panX != null && out.view.offsetX == null) out.view.offsetX = out.view.panX;
+  if (out.view.panY != null && out.view.offsetY == null) out.view.offsetY = out.view.panY;
+
+  out.elements = Array.isArray(out.elements) ? out.elements : [];
+  for (const el of out.elements){
+    // Strip transient drag fields if present
+    delete el._startX; delete el._startY; delete el._startW; delete el._startH;
+    delete el._startRot; delete el._startFontSize; delete el._startRadius;
+
+    // Ensure required defaults
+    el.opacity = (el.opacity == null) ? 1 : el.opacity;
+    el.rotationDeg = el.rotationDeg || 0;
+    el.fill = (el.fill == null) ? "rgba(255,255,255,0.0)" : el.fill;
+    el.stroke = (el.stroke == null) ? "rgba(17,17,17,0.35)" : el.stroke;
+    el.strokeW = (el.strokeW == null) ? 0 : el.strokeW;
+    el.groupId = el.groupId ?? null;
+
+    if (el.type === ElementType.Text || el.type === ElementType.Sitelen){
+      el.text = String(el.text ?? "");
+      el.fontFamily = el.fontFamily || (el.type === ElementType.Sitelen ? "TP-Cartouche-Font" : "PatrickHand");
+      el.fontSize = Number.isFinite(el.fontSize) ? el.fontSize : (el.type === ElementType.Sitelen ? 44 : 28);
+      el.align = el.align || "left";
+      el.color = el.color || "#111111";
+      el.lineHeight = Number.isFinite(el.lineHeight) ? el.lineHeight : 1.15;
+    }
+  }
+
+  out.groups = out.groups && typeof out.groups === "object" ? out.groups : {};
+  return out;
+}
 
   /* ============================================================
      DEVICE-AWARE SETTINGS
@@ -961,17 +1013,22 @@
     mazeSizeSel.disabled = (state === GameState.running || state === GameState.quitting);
   }
 
-  function resizeCanvasToDisplaySize() {
-    const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
-    const rect = canvas.getBoundingClientRect();
-    const w = Math.max(1, Math.floor(rect.width * dpr));
-    const h = Math.max(1, Math.floor(rect.height * dpr));
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w;
-      canvas.height = h;
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+// CHANGE HERE: resize only; do NOT set ctx transforms here
+function resizeCanvasToDisplaySize(){
+  const dpr = window.devicePixelRatio || 1;     // keep fractional DPR
+  const rect = canvas.getBoundingClientRect();
+
+  const w = Math.max(1, Math.round(rect.width * dpr));
+  const h = Math.max(1, Math.round(rect.height * dpr));
+
+  if (canvas.width !== w || canvas.height !== h){
+    canvas.width = w;
+    canvas.height = h;
+    return true; // resized
   }
+  return false;
+}
+
 
   window.addEventListener("resize", () => {
     if (isMobileLike()) {

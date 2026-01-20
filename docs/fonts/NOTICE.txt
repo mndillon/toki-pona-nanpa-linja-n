@@ -5,20 +5,22 @@ nasin-nanpa-5.0.0-beta.3-UCSUR.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR.woff
 nasin-nanpa-5.0.0-beta.3-UCSUR.woff2
 nasin-nanpa-5.0.0-beta.3-UCSUR-v4.otf
+nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.woff
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v2.woff2
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v4.otf
+nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v5.otf
 
 The original site for nasin-nanpa-5.0.0-beta.3-UCSUR.otf is loacated here: https://github.com/etbcor/nasin-nanpa
 
-NOTE: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v4.otf font file
+NOTE: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v5.otf font file
 is derived from the nasin-nanpa-5.0.0-beta.3-UCSUR.otf font file and is only used to render
 cartouches that have glyphs that define nanpa-linja-n decimal numbers,
 any Unicode code point that represents a Toki Pona word that begins with 'n' or 'e' will be displayed as
 one quarter original font size inside any cartouche that uses this font file.
 
-DISCLAIMER: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v4.otf font file is provided “as is”,
+DISCLAIMER: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v5.otf font file is provided “as is”,
 with no claim, guarantee, or warranty that the output is correct,
 complete, or suitable for any purpose. You are responsible for verifying results.
 
@@ -26,13 +28,13 @@ complete, or suitable for any purpose. You are responsible for verifying results
 --------------------------
 
 
-Using the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v4.otf font in Python:
+Using the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v5.otf font in Python:
 
 #import functionality from PIL
 from PIL import Image, ImageDraw, ImageFont
 
 #font file name
-SITELEN_NANPA_LINJA_N_FONT = "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v4.otf"
+SITELEN_NANPA_LINJA_N_FONT = "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v5.otf"
 
 #define font (with RAQM renderer)
 sitelen_nanpa_linja_n_font = ImageFont.truetype(
