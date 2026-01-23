@@ -115,6 +115,23 @@
   .btn.primary{ background: rgba(255,255,255,0.72); border-color: rgba(17,17,17,0.32); }
 
 
+  /* Toggle button pressed state (uses aria-pressed you already have) */
+.btn[aria-pressed="true"]{
+  background: rgba(17,17,17,0.14);
+  border-color: rgba(17,17,17,0.38);
+  box-shadow: inset 0 0 0 2px rgba(17,17,17,0.16);
+  opacity: 1;
+}
+
+.btn[aria-pressed="false"]{
+  opacity: 0.78;
+}
+
+.btn:focus-visible{
+  outline: 2px solid rgba(17,17,17,0.45);
+  outline-offset: 2px;
+}
+
   .toolBtnSmall{
   padding: 6px 10px;
   font-size: 12px;
@@ -266,6 +283,64 @@
     flex-wrap: wrap;
   }
   .row > * { flex: 1 1 auto; }
+
+  /* NEW: inline checkbox label used in Stage panel */
+.checkInline{
+  display:flex;
+  align-items:center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  user-select:none;
+  -webkit-user-select:none;
+  white-space: nowrap;
+}
+.checkInline input{
+  width: 16px;
+  height: 16px;
+}
+
+  /* Header button row: do NOT use .row here (because .row > * forces flex:1) */
+.hdrBtnRow{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.hdrBtnRow > .btn{
+  flex: 0 0 auto;     /* critical: buttons keep natural size */
+}
+
+/* Only this mini Stage panel should not clip its header contents */
+.stageMiniPanel{
+  overflow: hidden;  /* overrides .panel { overflow:hidden } */
+}
+
+.stageMiniPanel .panelHeader{
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* Stage mini panel: header fixed, body scrolls */
+.stageMiniPanel{
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;     /* clips within rounded corners */
+  min-height: 0;        /* critical for nested flex scrolling */
+}
+
+/* The content area inside Stage panel should scroll if too tall */
+.stageMiniBody{
+  padding: 12px;
+  overflow: auto;       /* enables scrolling */
+  min-height: 0;        /* critical */
+  -webkit-overflow-scrolling: touch;
+}
+
+.stageMiniBody{
+  max-height: 460px; /* adjust to taste */
+}
 
   .field{
     display:flex;
@@ -584,20 +659,20 @@ max-width: var(--stage-maxw); /* optional */
 
   <div class="wrap">
     <section class="panel sidebar" aria-label="Tools and properties">
-
-
       <div class="sidebarBody">
-        <div class="panel" style="box-shadow:none;">
+
+
+        <div class="panel stageMiniPanel" style="box-shadow:none;">
           <div class="panelHeader">
             <h2>Stage</h2>
-            <div class="row" style="justify-content:flex-end; gap:6px;">
+            <div class="hdrBtnRow">
               <button id="btnSnapGrid" class="btn" type="button" aria-pressed="true">Snap: Grid</button>
               <button id="btnSnapObjs" class="btn" type="button" aria-pressed="false">Snap: Objects</button>
               <button id="btnGrid" class="btn" type="button" aria-pressed="true">Grid</button>
             </div>
           </div>
 
-          <div class="sidebarBody" style="padding:10px 12px;">
+          <div class="stageMiniBody">
             <div class="row">
               <div class="field">
                 <label for="stageW">Width</label>
@@ -619,6 +694,51 @@ max-width: var(--stage-maxw); /* optional */
                 <input id="snapTol" type="number" min="1" step="1" value="6" />
               </div>
             </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="stageBg">Stage background</label>
+                <input id="stageBg" type="color" value="#F3DFC0" />
+              </div>
+              <div class="field">
+                <label for="defTextColor">Default text</label>
+                <input id="defTextColor" type="color" value="#111111" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="defFill">Default fill</label>
+                <!-- color input cannot store rgba; we will store as rgba in JS, but pick hex here -->
+                <input id="defFill" type="color" value="#FFFFFF" />
+              </div>
+              <div class="field">
+                <label for="defStroke">Default stroke</label>
+                <input id="defStroke" type="color" value="#111111" />
+              </div>
+            </div>
+
+
+
+
+ <div class="row">
+              <div class="field">
+                <!-- NEW -->
+    <label class="checkInline" style="margin:0;">
+      <input id="defFillEnabled" type="checkbox" />Default fill enabled</label>
+              </div>
+            </div>
+
+
+
+
+            <div class="row">
+              <div class="field">
+                <label for="defStrokeW">Default stroke width</label>
+                <input id="defStrokeW" type="number" min="0" step="1" value="2" />
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -726,6 +846,14 @@ max-width: var(--stage-maxw); /* optional */
     snapGrid: true,
     snapObjects: false,
     viewZoom: 1.0,
+
+    // NEW: stage + default styling
+    stageBg: "#F3DFC0",                 // stage background color
+    defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
+    defaultFill: "rgba(255,255,255,0.0)",// default fill for shapes/boxes
+    defaultFillEnabled: false,
+    defaultStroke: "rgba(17,17,17,0.35)",// default stroke
+    defaultStrokeW: 2,                  // default stroke width
   });
 
 
@@ -940,7 +1068,19 @@ function normalizeScene(parsed){
     snapGrid: DEFAULTS.snapGrid,
     snapObjects: DEFAULTS.snapObjects,
     snapTol: DEFAULTS.snapTol,
+
+    // NEW
+    bg: DEFAULTS.stageBg,
+    defaultTextColor: DEFAULTS.defaultTextColor,
+    defaultFill: DEFAULTS.defaultFill,
+    defaultFillEnabled: DEFAULTS.defaultFillEnabled,
+    defaultStroke: DEFAULTS.defaultStroke,
+    defaultStrokeW: DEFAULTS.defaultStrokeW,
   }, out.stage || {});
+
+  if (!("defaultFillEnabled" in out.stage)) out.stage.defaultFillEnabled = true;
+
+
 
   out.view = Object.assign({
     zoom: DEFAULTS.viewZoom,
@@ -964,7 +1104,17 @@ function normalizeScene(parsed){
     el.opacity = Number.isFinite(el.opacity) ? clamp(el.opacity, 0, 1) : 1;
 
     el.fill = (el.fill == null) ? "rgba(255,255,255,0.0)" : el.fill;
+
+    if (typeof el.fillEnabled !== "boolean") el.fillEnabled = false;
+
     el.stroke = (el.stroke == null) ? "rgba(17,17,17,0.35)" : el.stroke;
+    //el.strokeW = Number.isFinite(el.strokeW) ? Math.max(0, el.strokeW) : 0;
+  
+    const defSW = Number.isFinite(out.stage?.defaultStrokeW) ? out.stage.defaultStrokeW : 2;
+    if (!Number.isFinite(el.strokeW)) {
+      // Text-like elements default to no stroke; shapes default to the stage's stroke width.
+      el.strokeW = (el.type === ElementType.Text || el.type === ElementType.Sitelen || el.type === ElementType.Glyph) ? 0 : defSW;
+    }
     el.strokeW = Number.isFinite(el.strokeW) ? Math.max(0, el.strokeW) : 0;
 
     el.groupId = el.groupId ?? null;
@@ -1074,7 +1224,16 @@ return out;
     Pan: "pan",
   });
 
-  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+
+function clamp(n, lo, hi){
+  return Math.min(hi, Math.max(lo, n));
+}
+
+
+
+
+
   function roundTo(v, step){ return Math.round(v / step) * step; }
   function rad(deg){ return deg * Math.PI / 180; }
   function deg(r){ return r * 180 / Math.PI; }
@@ -1113,7 +1272,12 @@ function sitelenLiteralFontAlignmentForElement(el){
     return prefix + "_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
   }
 
-  function deepClone(x){ return JSON.parse(JSON.stringify(x)); }
+  function deepClone(obj){
+  try{
+    if (typeof structuredClone === "function") return structuredClone(obj);
+  }catch(_){}
+  return JSON.parse(JSON.stringify(obj));
+}
 
   function toBase64FromArrayBuffer(buf) {
     const bytes = new Uint8Array(buf);
@@ -1255,6 +1419,13 @@ function deserializeAssets(serialized){
       snapGrid: DEFAULTS.snapGrid,
       snapObjects: DEFAULTS.snapObjects,
       snapTol: DEFAULTS.snapTol,
+
+      // NEW
+      bg: DEFAULTS.stageBg,
+      defaultTextColor: DEFAULTS.defaultTextColor,
+      defaultFill: DEFAULTS.defaultFill,
+      defaultStroke: DEFAULTS.defaultStroke,
+      defaultStrokeW: DEFAULTS.defaultStrokeW,
     },
     view: {
       zoom: DEFAULTS.viewZoom,
@@ -1279,6 +1450,7 @@ function deserializeAssets(serialized){
   */
 
   function defaultElementBase(type, x, y){
+    console.log("Default base stage " + JSON.stringify( Scene.stage));
     return {
       id: uid("el"),
       type,
@@ -1287,9 +1459,14 @@ function deserializeAssets(serialized){
       h: 120,
       rotationDeg: 0,
       opacity: 1.0,
-      fill: "rgba(255,255,255,0.60)",
-      stroke: "rgba(17,17,17,0.35)",
-      strokeW: 2,
+
+        // NEW: pull defaults from stage
+      fill: Scene.stage.defaultFill ?? DEFAULTS.defaultFill,
+      fillEnabled : Scene.stage.defaultFillEnabled ?? DEFAULTS.defaultFillEnabled,
+      stroke: Scene.stage.defaultStroke ?? DEFAULTS.defaultStroke,
+      strokeW: Number.isFinite(Scene.stage.defaultStrokeW) ? Scene.stage.defaultStrokeW : DEFAULTS.defaultStrokeW,
+
+
       groupId: null,
       // CHANGE HERE: lock flag
       isLocked: false,
@@ -1305,9 +1482,9 @@ function deserializeAssets(serialized){
     el.fontFamily = "PatrickHand";
     el.fontSize = 28;
     el.align = "left";
-    el.color = "#111111";
+   el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
     el.lineHeight = 1.15;
-    el.fill = "rgba(255,255,255,0.0)"; // default: no background
+//    el.fill = "rgba(255,255,255,0.0)"; // default: no background
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
     return el;
@@ -1320,9 +1497,9 @@ function deserializeAssets(serialized){
     el.fontFamily = "PatrickHand";
     el.fontSize = 44;
     el.align = "left";
-    el.color = "#111111";
+  el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
     el.lineHeight = 1.05;
-    el.fill = "rgba(255,255,255,0.0)";
+//    el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
 
       // ADD THIS:
@@ -1341,8 +1518,8 @@ function deserializeAssets(serialized){
     el.fontFamily = "TP-Cartouche-Font";
     el.fontSize = 92;
     el.align = "center";
-    el.color = "#111111";
-    el.fill = "rgba(255,255,255,0.0)";
+   el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
+//    el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
     return el;
@@ -1352,7 +1529,7 @@ function deserializeAssets(serialized){
     const el = defaultElementBase(ElementType.Rect, x, y);
     el.w = 260; el.h = 160;
     el.radius = 18;
-    el.fill = "rgba(255,255,255,0.65)";
+   // el.fill = "rgba(255,255,255,0.65)";
     el.opacity = 1.0;
     return el;
   }
@@ -1363,8 +1540,8 @@ function newImageElement(x,y){
   el.fill = "rgba(255,255,255,0.25)";
   el.image = null; // assigned after file pick
   el.keepAspect = true; // CHANGE HERE: default true
-  el.stroke = "rgba(17,17,17,0.35)";
-  el.strokeW = 2;
+ // el.stroke = "rgba(17,17,17,0.35)";
+ // el.strokeW = 2;
   return el;
 }
 
@@ -1688,6 +1865,28 @@ function uniformizeNanpaLinjanCartoucheCps(cps) {
 /* ============================
    Common helpers
    ============================ */
+
+function hexToRgba(hex, a = 1){
+  const h = String(hex || "").trim().replace("#","");
+  if (h.length !== 6) return `rgba(255,255,255,${a})`;
+  const r = parseInt(h.slice(0,2), 16);
+  const g = parseInt(h.slice(2,4), 16);
+  const b = parseInt(h.slice(4,6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function rgbaOrHexToHex(value, fallback="#ffffff"){
+  const s = String(value || "").trim();
+  if (s.startsWith("#") && (s.length === 7)) return s;
+  // parse rgba(r,g,b,a) -> hex (drop alpha)
+  const m = s.match(/rgba?\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)(?:\s*,\s*([0-9.]+))?\s*\)/i);
+  if (!m) return fallback;
+  const r = clamp(parseInt(m[1],10),0,255).toString(16).padStart(2,"0");
+  const g = clamp(parseInt(m[2],10),0,255).toString(16).padStart(2,"0");
+  const b = clamp(parseInt(m[3],10),0,255).toString(16).padStart(2,"0");
+  return `#${r}${g}${b}`.toUpperCase();
+}
+
 function setTextQuality(ctx) {
   try { ctx.textRendering = "optimizeLegibility"; } catch (_) {}
   try { ctx.fontKerning = "normal"; } catch (_) {}
@@ -3320,12 +3519,7 @@ const History = {
   isRestoring: false
 };
 
-function deepClone(obj){
-  try{
-    if (typeof structuredClone === "function") return structuredClone(obj);
-  }catch(_){}
-  return JSON.parse(JSON.stringify(obj));
-}
+
 
 function snapshotForHistory(){
   return {
@@ -4326,10 +4520,17 @@ function resizeCanvasToDisplaySize(){
   const sx = stageTL.x, sy = stageTL.y, sw = stageBR.x - stageTL.x, sh = stageBR.y - stageTL.y;
 
   // subtle stage background
-  ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.08)";
-  ctx.fillRect(sx, sy, sw, sh);
-  ctx.restore();
+  //ctx.save();
+ // ctx.fillStyle = "rgba(255,255,255,0.08)";
+  //ctx.fillRect(sx, sy, sw, sh);
+//  ctx.restore();
+
+ctx.save();
+// NEW: stage background from scene
+ctx.fillStyle = Scene.stage.bg || DEFAULTS.stageBg;
+ctx.fillRect(sx, sy, sw, sh);
+ctx.restore();
+
 
   // grid
   if (Scene.stage.showGrid){
@@ -4446,7 +4647,7 @@ function resizeCanvasToDisplaySize(){
   function drawRectLocal(el, x,y,w,h){
     const r = el.radius ?? 0;
 
-    if (el.fill && el.fill !== "transparent"){
+    if (el.fillEnabled && el.fill && el.fill !== "transparent"){
       ctx.save();
       ctx.fillStyle = el.fill;
       drawRoundedRectPath(x,y,w,h, r * Scene.view.zoom);
@@ -4488,7 +4689,7 @@ function resizeCanvasToDisplaySize(){
 
   function drawTextLocal(el, x,y,w,h, isSitelen){
     // Optional background box if fill/stroke present
-    if (el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+    if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
       ctx.save();
       ctx.fillStyle = el.fill;
       ctx.fillRect(x,y,w,h);
@@ -4681,7 +4882,7 @@ function makeGlyphPicker(el){
 
 function drawSitelenRasterLocal(el, x, y, w, h){
   // Optional background box if fill/stroke present (same logic as your text)
-  if (el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+  if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
     ctx.save();
     ctx.fillStyle = el.fill;
     ctx.fillRect(x, y, w, h);
@@ -4715,6 +4916,14 @@ function drawSitelenRasterLocal(el, x, y, w, h){
 
 
   function drawGlyphLocal(el, x,y,w,h){
+    // Optional background box if fill/stroke present
+    if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+      ctx.save();
+      ctx.fillStyle = el.fill;
+      ctx.fillRect(x,y,w,h);
+      ctx.restore();
+    }
+
     const cp = parseCodepointInput(el.codepoint);
     const ch = (typeof cp === "number") ? String.fromCodePoint(cp) : "?";
     const fontSize = Math.max(6, (el.fontSize ?? 64) * Scene.view.zoom);
@@ -4746,7 +4955,7 @@ function drawSitelenRasterLocal(el, x, y, w, h){
     // CHANGE HERE: Image background is always transparent when an image is loaded
     const hasImage = !!(el.image && el.image.assetId && getImageAssetDataUrl(el.image.assetId));
 
-    if (!hasImage && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+    if (!hasImage && el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
       ctx.save();
       ctx.fillStyle = el.fill;
       ctx.fillRect(x,y,w,h);
@@ -5051,6 +5260,13 @@ if (sels.some(e => !!e.isLocked)){
   function addAppearanceBlock(){
     addSection("Appearance");
 
+    propsBody.appendChild(makeCheckbox("Fill enabled", !!el.fillEnabled, (v) => {
+      for (const e of sels) e.fillEnabled = !!v; // if multi-select supported
+      scheduleAutosave();
+      render();
+    }));
+
+
     propsBody.appendChild(makeColorField(
       "Fill",
       (commonFill ?? sels[0].fill) || "rgba(255,255,255,0.0)",
@@ -5062,7 +5278,9 @@ if (sels.some(e => !!e.isLocked)){
     propsBody.appendChild(makeColorField(
       "Stroke",
       (commonStroke ?? sels[0].stroke) || "rgba(0,0,0,0.0)",
-      (color) => { for (const e of sels) e.stroke = color; scheduleAutosave(); render(); },
+     (color) => {
+        for (const e of sels) e.stroke = color; scheduleAutosave(); render(); 
+      },
       (commonStroke === null && !single) ? "Mixed" : null,
       true
     ));
@@ -5128,7 +5346,7 @@ if (!single){
   const el = sels[0];
 
   if (el.type === ElementType.Text || el.type === ElementType.Sitelen){
-    addSection("Text");
+    addSection( el.type === ElementType.Sitelen ? "Sitelen" : "Text");
 
     //used for text placeholder
     let placeholder = "";
@@ -5701,19 +5919,6 @@ function makeColorPicker(label, value, onLive, onCommit){
 }
 
 
-  function rgbaOrHexToHex(s){
-    const v = String(s ?? "").trim();
-    if (/^#[0-9A-Fa-f]{6}$/.test(v)) return v;
-    // rgba(r,g,b,a)
-    const m = v.match(/^rgba?\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)(?:\s*,\s*([0-9.]+))?\s*\)$/i);
-    if (m){
-      const r = clamp(parseInt(m[1],10),0,255);
-      const g = clamp(parseInt(m[2],10),0,255);
-      const b = clamp(parseInt(m[3],10),0,255);
-      return "#" + [r,g,b].map(n => n.toString(16).padStart(2,"0")).join("");
-    }
-    return null;
-  }
 
   /* ============================================================
      Grouping
@@ -6392,6 +6597,53 @@ function updateClipboardButtons(){
   inp.click();
 }
 
+function syncSnapButtonsFromScene(){
+  const bGrid = document.getElementById("btnSnapGrid");
+  const bObjs = document.getElementById("btnSnapObjs");
+  if (!bGrid || !bObjs) return;
+
+  const st = Scene.stage || (Scene.stage = {});
+  const gridOn = !!st.snapGrid;
+  const objsOn = !!st.snapObjects;
+
+  bGrid.setAttribute("aria-pressed", gridOn ? "true" : "false");
+  bObjs.setAttribute("aria-pressed", objsOn ? "true" : "false");
+
+  // Optional: make state explicit in text too (helps on subtle themes)
+  //bGrid.textContent = gridOn ? "Snap: Grid (On)" : "Snap: Grid";
+  //bObjs.textContent = objsOn ? "Snap: Objects (On)" : "Snap: Objects";
+}
+
+function syncStageDefaultsUiFromScene(){
+  const bg = document.getElementById("stageBg");
+  const dt = document.getElementById("defTextColor");
+  const df = document.getElementById("defFill");
+  const dfe = document.getElementById("defFillEnabled");
+  const ds = document.getElementById("defStroke");
+  const dsw = document.getElementById("defStrokeW");
+
+  const st = Scene.stage || (Scene.stage = {});
+
+ 
+
+  if (bg)  bg.value  = rgbaOrHexToHex(st.bg, DEFAULTS.stageBg);
+  if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
+  if (df)  df.value  = rgbaOrHexToHex(st.defaultFill, DEFAULTS.defaultFill);
+  if (dfe){
+    dfe.checked = !!Scene.stage.defaultFillEnabled;
+
+    // Optional but helpful: disable the color picker when fill is disabled
+    //const df = $("defFill");
+    //if (df) df.disabled = !dfe.checked;
+  }
+  if (ds)  ds.value  = rgbaOrHexToHex(st.defaultStroke, DEFAULTS.defaultStroke);
+  if (dsw) dsw.value = Number.isFinite(st.defaultStrokeW) ? st.defaultStrokeW : DEFAULTS.defaultStrokeW;
+
+ console.log("Scene: " + JSON.stringify(st));
+
+  syncSnapButtonsFromScene();
+}
+
 
   /* ============================================================
      Import/Export JSON and Export PNG
@@ -6421,9 +6673,7 @@ function isPlainObject(x){
   return x !== null && typeof x === "object" && (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null);
 }
 
-function clamp(n, lo, hi){
-  return Math.min(hi, Math.max(lo, n));
-}
+
 
 function mustBeFiniteNumber(x, name){
   if (typeof x !== "number" || !Number.isFinite(x)) throw new Error(`Invalid number: ${name}`);
@@ -6588,6 +6838,8 @@ async function importJsonFromFile(file){
   Scene.view = sanitized.view;
   Scene.elements = sanitized.elements;
   Scene.groups = sanitized.groups;
+
+  syncStageDefaultsUiFromScene();
 
   // Clear runtime state
   selectedIds.clear();
@@ -6840,12 +7092,24 @@ $("btnNew").addEventListener("click", async () => {
     if (!ok) return;
   }
 
+  Scene.stage.bg = DEFAULTS.stageBg;
+Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
+Scene.stage.defaultFill = DEFAULTS.defaultFill;
+Scene.stage.defaultFillEnabled = DEFAULTS.defaultFillEnabled;
+Scene.stage.defaultStroke = DEFAULTS.defaultStroke;
+Scene.stage.defaultStrokeW = DEFAULTS.defaultStrokeW;
+
   Scene.elements = [];
   Scene.groups = {};
   selectedIds.clear();
   imageCache.clear();
+
+console.log("New Scene "+ JSON.stringify(Scene));
+
   scheduleAutosave();
+  syncStageDefaultsUiFromScene();
   updateUiForSelection();
+
   render();
   historyReset("New");
   setStatus("Cleared.");
@@ -6914,6 +7178,103 @@ $("btnNew").addEventListener("click", async () => {
     Scene.stage.snapTol = v;
     scheduleAutosave(); render();
   });
+
+
+
+
+
+
+function wireSnapButtons(){
+  const bGrid = document.getElementById("btnSnapGrid");
+  const bObjs = document.getElementById("btnSnapObjs");
+  if (!bGrid || !bObjs) return;
+
+  bGrid.addEventListener("click", () => {
+    Scene.stage = Scene.stage || {};
+    Scene.stage.snapGrid = !Scene.stage.snapGrid;
+    syncSnapButtonsFromScene();
+    render();
+    saveToLocal?.();
+  });
+
+  bObjs.addEventListener("click", () => {
+    Scene.stage = Scene.stage || {};
+    Scene.stage.snapObjects = !Scene.stage.snapObjects;
+    syncSnapButtonsFromScene();
+    render();
+    saveToLocal?.();
+  });
+}
+
+
+function wireStageDefaultsUi(){
+  const bg = document.getElementById("stageBg");
+  const dt = document.getElementById("defTextColor");
+  const df = document.getElementById("defFill");
+  const dfe = document.getElementById("defFillEnabled");
+  const ds = document.getElementById("defStroke");
+  const dsw = document.getElementById("defStrokeW");
+
+  if (bg){
+    bg.addEventListener("input", () => {
+      Scene.stage.bg = bg.value;
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dt){
+    dt.addEventListener("input", () => {
+      Scene.stage.defaultTextColor = dt.value;
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dfe){
+    dfe.addEventListener("change", () => {
+      Scene.stage.defaultFillEnabled = !!dfe.checked;
+
+      // Optional but helpful: disable the color picker when fill is disabled
+      //const df = $("defFill");
+      //if (df) df.disabled = !Scene.stage.defaultFillEnabled;
+
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (df){
+     console.log("Wire default fill");
+    df.addEventListener("input", () => {
+       console.log("input default fill");
+      // store as rgba with alpha=1 for consistency with your element fill strings
+      Scene.stage.defaultFill = hexToRgba(df.value, 1);
+       console.log("input default fill");
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (ds){
+    console.log("Wire default stroke");
+    ds.addEventListener("input", () => {
+      console.log("input default stroke");
+      Scene.stage.defaultStroke = hexToRgba(ds.value, 1);
+      console.log("input default stroke 2");
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dsw){
+    dsw.addEventListener("input", () => {
+      Scene.stage.defaultStrokeW = Math.max(0, Number(dsw.value || 0));
+      scheduleAutosave();
+      render();
+    });
+  }
+}
 
   // View controls
   $("btnFit").addEventListener("click", () => fitStageToView());
@@ -7065,6 +7426,9 @@ document.addEventListener("keydown", (e) => {
       console.warn(err);
       setStatus("IndexedDB unavailable. Running without autosave.");
     }
+
+    wireStageDefaultsUi();
+    syncStageDefaultsUiFromScene();
 
     updateUiForSelection();
     wireClipboardButtons();
