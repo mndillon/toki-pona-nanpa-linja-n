@@ -114,6 +114,20 @@
   .btn:disabled{ opacity:0.55; cursor:not-allowed; }
   .btn.primary{ background: rgba(255,255,255,0.72); border-color: rgba(17,17,17,0.32); }
 
+
+  .toolBtnSmall{
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 10px;
+  line-height: 1;
+}
+
+.toolBtn[disabled]{
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+
   /* CHANGE HERE: chip no longer forces itself to the far right of a single-line bar */
   .chip{
     color: var(--muted);
@@ -169,6 +183,28 @@
     margin:0;
     font-size: 18px;
   }
+
+  /* Font-size input + preset dropdown on one line */
+.propInlineRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.propInlineRow > input[type="number"]{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* CHANGE HERE: make the preset dropdown narrower */
+.propInlineRow > select{
+  flex: 0 0 88px;     /* was 120px */
+  width: 88px;        /* keep deterministic */
+  min-width: 88px;
+  max-width: 88px;
+  padding: 6px 8px;   /* optional: tighter */
+}
+
 
   .sidebar{
     display:flex;
@@ -475,6 +511,7 @@ max-width: var(--stage-maxw); /* optional */
 /* Optional: tighten property panel spacing slightly */
 #propsBody .field textarea{ min-height: 84px; }
 
+.nlModeControl{ display:none !important; }
 
   /* Mobile: collapse sidebar to top drawer-ish */
   @media (max-width: 860px){
@@ -533,6 +570,14 @@ max-width: var(--stage-maxw); /* optional */
         <button class="toolBtn" id="toolImage">Image</button>
         <button class="toolBtn" id="toolDelete">Delete</button>
         <button class="toolBtn" id="toolPan">Pan</button>
+
+        <button id="btnUndo" class="toolBtn toolBtnSmall" type="button" title="Undo (Ctrl/Cmd+Z)" disabled>Undo</button>
+        <button id="btnRedo" class="toolBtn toolBtnSmall" type="button" title="Redo (Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z)" disabled>Redo</button>
+
+        <button id="btnCopy" class="toolBtn toolBtnSmall" type="button" title="Copy (Ctrl/Cmd+C)">Copy</button>
+        <button id="btnCut"  class="toolBtn toolBtnSmall" type="button" title="Cut (Ctrl/Cmd+X)">Cut</button>
+        <button id="btnPaste"class="toolBtn toolBtnSmall" type="button" title="Paste (Ctrl/Cmd+V)">Paste</button>
+
     </div>
     </div>
 
@@ -592,8 +637,11 @@ max-width: var(--stage-maxw); /* optional */
         </div>
 
         <div class="footer">
-          <strong>Note:</strong> This is a pure static HTML canvas editor: no external JS libraries.
-          Images are embedded (IndexedDB + JSON base64). Export PNG has a transparent background.
+           <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
+      complete, or suitable for any purpose. You are responsible for verifying results.
+      <div class="footerRight">
+          <a href="./index.html">Back to index</a>
+        </div>
         </div>
       </div>
     </section>
@@ -679,6 +727,9 @@ max-width: var(--stage-maxw); /* optional */
     snapObjects: false,
     viewZoom: 1.0,
   });
+
+
+
 
   /* ============================================================
    WORDS / UCSUR (your provided set)
@@ -829,15 +880,45 @@ const WORD_TO_UCSUR_CP = {
   "linluwi":0xF19A4,
 
    "ni":    0xF1941,
- "ni02":    0xF198B,
-  "ni03":    0xF198A,
-   "ni04":    0xF1989,
 
   "sewi": 0xF195A,
-  "sewi02": 0xF198C,
+
+           "sewi^": 0xF198C,
+  "ni>": 0xF198B,
+      "ni^": 0xF198A,
+      "ni<": 0xF1989
 
 
 };// "kokosila": 0xF1984,
+
+
+function migrateLegacyImagePayloadToAssetId(el){
+  if (!el || el.type !== ElementType.Image) return;
+
+  if (!el.image || typeof el.image !== "object") return;
+  if (el.image.assetId) return; // already modern
+
+  // Accept either legacy formats:
+  //  1) { dataUrl: "data:image/png;base64,..." }
+  //  2) { mime: "image/png", b64: "..." }
+  let dataUrl = "";
+
+  if (el.image.dataUrl && String(el.image.dataUrl).startsWith("data:")){
+    dataUrl = String(el.image.dataUrl);
+  } else if (el.image.mime && el.image.b64){
+    dataUrl = `data:${String(el.image.mime)};base64,${String(el.image.b64)}`;
+  }
+
+  if (!dataUrl) return;
+
+  const assetId = addImageAssetFromDataUrl(dataUrl);
+  el.image.assetId = assetId;
+
+  // Remove legacy fields so history snapshots and future exports don't keep base64 in-scene
+  delete el.image.b64;
+  delete el.image.mime;
+  delete el.image.dataUrl;
+}
 
 
 
@@ -891,6 +972,11 @@ function normalizeScene(parsed){
     // CHANGE HERE: lock flag (default false on import if missing)
     el.isLocked = !!el.isLocked;
 
+    // NEW: default false on import if missing (Text + Glyph only)
+    if (el.type === ElementType.Text || el.type === ElementType.Glyph){
+      el.scaleFontWithBox = (el.scaleFontWithBox == null) ? false : !!el.scaleFontWithBox;
+    }
+
 
     // Remove transient drag fields if present in older exports
     delete el._startX; delete el._startY;
@@ -909,9 +995,16 @@ function normalizeScene(parsed){
       el.lineHeight = Number.isFinite(el.lineHeight) ? el.lineHeight : 1.15;
 
       if (el.type === ElementType.Sitelen){
+        // ADD: default keepAspect true for old JSON
+        el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+
+        // ADD: sitelen metadata container (mirrors image.origW/origH concept)
+        if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
+
         // Build raster + resize bbox on import
         updateSitelenLayout(el, { preserveCenter: true });
       }
+
 
     }
 
@@ -946,8 +1039,23 @@ function normalizeScene(parsed){
 
   }
 
-  out.groups = (out.groups && typeof out.groups === "object") ? out.groups : {};
-  return out;
+  for (const el of out.elements){
+  migrateLegacyImagePayloadToAssetId(el);
+}
+
+
+out.groups = (out.groups && typeof out.groups === "object") ? out.groups : {};
+
+// Ensure group records have defaults
+for (const [gid, g] of Object.entries(out.groups)){
+  if (!g || typeof g !== "object") out.groups[gid] = { id: gid };
+  if (!out.groups[gid].id) out.groups[gid].id = gid;
+  if (!out.groups[gid].createdAt) out.groups[gid].createdAt = new Date().toISOString();
+  if (!out.groups[gid].foreground) out.groups[gid].foreground = "#111111";
+}
+
+return out;
+
 }
 
   const HANDLE = Object.freeze({
@@ -993,6 +1101,13 @@ function sitelenLiteralFontFamilyForElement(el){
   return f ? f : "PatrickHand";
 }
 
+function sitelenLiteralFontAlignmentForElement(el){
+  // Use the element’s align to determine line alignment
+  // Fall back to left if empty.
+  const f = String(el.align ?? "").trim();
+  return f ? f : "left";
+}
+
 
   function uid(prefix="id"){
     return prefix + "_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
@@ -1017,6 +1132,91 @@ function sitelenLiteralFontFamilyForElement(el){
     return bytes.buffer;
   }
 
+
+// ---------------------------------------------------------------------------
+// Asset Management (dedupe + keep base64 out of history snapshots)
+// ---------------------------------------------------------------------------
+const Assets = {
+  byId: new Map(),   // id -> asset
+  byHash: new Map()  // hash -> id
+};
+
+function makeAssetId(prefix="img"){
+  return `${prefix}_${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`;
+}
+
+// Fast-ish hash for dataUrls (not cryptographic; good for dedupe)
+function hashStringFNV1a(str){
+  let h = 0x811c9dc5;
+  for (let i=0; i<str.length; i++){
+    h ^= str.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  return ("00000000" + h.toString(16)).slice(-8);
+}
+
+function addImageAssetFromDataUrl(dataUrl){
+  const hash = hashStringFNV1a(dataUrl);
+  const existingId = Assets.byHash.get(hash);
+  if (existingId) return existingId;
+
+  const mimeMatch = /^data:([^;]+);base64,/.exec(dataUrl);
+  const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+
+  const id = makeAssetId("img");
+  const asset = { id, kind: "image", dataUrl, mime, hash };
+  Assets.byId.set(id, asset);
+  Assets.byHash.set(hash, id);
+  return id;
+}
+
+function getImageAssetDataUrl(assetId){
+  const a = Assets.byId.get(assetId);
+  return (a && a.kind === "image") ? a.dataUrl : null;
+}
+
+// NEW: turn a picked file into a data URL using your existing base64 helper
+async function dataUrlFromBlob(blob){
+  const ab = await blob.arrayBuffer();
+  const b64 = toBase64FromArrayBuffer(ab);
+  const mime = blob.type || "application/octet-stream";
+  return `data:${mime};base64,${b64}`;
+}
+
+// NEW: persistence helpers
+function serializeAssets(){
+  return { byId: Array.from(Assets.byId.values()) };
+}
+
+function deserializeAssets(serialized){
+  Assets.byId.clear();
+  Assets.byHash.clear();
+  if (!serialized) return;
+
+  const list = Array.isArray(serialized.byId) ? serialized.byId
+            : Array.isArray(serialized) ? serialized
+            : [];
+
+  for (const a of list){
+    if (!a || typeof a !== "object") continue;
+    if (!a.id || a.kind !== "image" || !a.dataUrl) continue;
+
+    const id = String(a.id);
+    const dataUrl = String(a.dataUrl);
+    const hash = String(a.hash || hashStringFNV1a(dataUrl));
+    const mime = String(a.mime || "application/octet-stream");
+
+    const asset = { id, kind:"image", dataUrl, mime, hash };
+    Assets.byId.set(id, asset);
+    Assets.byHash.set(hash, id);
+  }
+}
+
+
+
+
+
+
   function downloadBlob(blob, filename){
     const a = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -1033,6 +1233,9 @@ function sitelenLiteralFontFamilyForElement(el){
     const pad = (n) => String(n).padStart(2,"0");
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
   }
+
+
+
 
 
   /* ============================================================
@@ -1089,7 +1292,9 @@ function sitelenLiteralFontFamilyForElement(el){
       strokeW: 2,
       groupId: null,
       // CHANGE HERE: lock flag
-    isLocked: false,
+      isLocked: false,
+      // NEW: when true, bbox resize scales fontSize; when false, fontSize stays fixed
+      scaleFontWithBox: false,
     };
   }
 
@@ -1104,6 +1309,7 @@ function sitelenLiteralFontFamilyForElement(el){
     el.lineHeight = 1.15;
     el.fill = "rgba(255,255,255,0.0)"; // default: no background
     el.strokeW = 0;
+    el.scaleFontWithBox = false; // NEW (explicit)
     return el;
   }
 
@@ -1118,6 +1324,9 @@ function sitelenLiteralFontFamilyForElement(el){
     el.lineHeight = 1.05;
     el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
+
+      // ADD THIS:
+    el.keepAspect = true;
 
     updateSitelenLayout(el, { preserveCenter: false });
 
@@ -1135,6 +1344,7 @@ function sitelenLiteralFontFamilyForElement(el){
     el.color = "#111111";
     el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
+    el.scaleFontWithBox = false; // NEW (explicit)
     return el;
   }
 
@@ -1204,8 +1414,13 @@ function newImageElement(x,y){
     saveTimer = setTimeout(async () => {
       try{
         Scene.meta.updatedAt = new Date().toISOString();
-        await dbPut(DB_KEY, deepClone(Scene));
-        setStatus("Autosaved (IndexedDB).");
+
+        await dbPut(DB_KEY, {
+          scene: deepClone(Scene),
+          assets: serializeAssets()
+        });
+
+        setStatus("Autosaved");
       }catch(err){
         console.warn(err);
         setStatus("Autosave failed (IndexedDB).");
@@ -1289,22 +1504,54 @@ function fitStageToView(){
     imageCache.delete(elId);
   }
 
-  function ensureImageLoadedForElement(el){
-    if (el.type !== ElementType.Image) return null;
-    if (!el.image || !el.image.b64 || !el.image.mime) return null;
+function ensureImageLoadedForElement(el){
+  if (el.type !== ElementType.Image) return null;
+  if (!el.image || typeof el.image !== "object") return null;
 
-    let entry = imageCache.get(el.id);
-    if (entry && entry.ready) return entry.img;
+  // Legacy migration: older scenes may still have {mime,b64} or {dataUrl}
+  if (!el.image.assetId){
+    const dataUrl = (el.image.dataUrl && String(el.image.dataUrl).startsWith("data:"))
+      ? String(el.image.dataUrl)
+      : (el.image.mime && el.image.b64)
+        ? `data:${String(el.image.mime)};base64,${String(el.image.b64)}`
+        : "";
 
-    if (!entry){
-      entry = { img: new Image(), ready: false };
-      imageCache.set(el.id, entry);
-      entry.img.onload = () => { entry.ready = true; render(); };
-      entry.img.onerror = () => { entry.ready = false; };
-      entry.img.src = `data:${el.image.mime};base64,${el.image.b64}`;
+    if (dataUrl){
+      try {
+        el.image.assetId = addImageAssetFromDataUrl(dataUrl);
+        delete el.image.b64;
+        delete el.image.dataUrl;
+        delete el.image.mime;
+        scheduleAutosave();
+      } catch {}
     }
-    return entry.ready ? entry.img : null;
   }
+
+  const assetId = el.image.assetId ? String(el.image.assetId) : "";
+  if (!assetId) return null;
+
+  const dataUrl = getImageAssetDataUrl(assetId);
+  if (!dataUrl) return null;
+
+  let entry = imageCache.get(el.id);
+  if (entry && entry.ready && entry.assetId === assetId) return entry.img;
+
+  if (!entry){
+    entry = { img: new Image(), ready: false, assetId: "" };
+    imageCache.set(el.id, entry);
+    entry.img.onload = () => { entry.ready = true; render(); };
+    entry.img.onerror = () => { entry.ready = false; };
+  }
+
+  if (entry.assetId !== assetId){
+    entry.ready = false;
+    entry.assetId = assetId;
+    entry.img.src = dataUrl;
+  }
+
+  return entry.ready ? entry.img : null;
+}
+
 
 
 
@@ -1363,7 +1610,7 @@ const MULTI_LINE_WORD_TO_UCSUR_CP = {
   ",": 0xF199E,
   ".": 0xF199C,
 
-    "kolon": 0xF199D,
+  "kolon": 0xF199D,
   "ota": 0xF199C,
   "koma": 0xF199E
 };
@@ -1676,7 +1923,7 @@ const TOKEN_TO_DIGIT_WORD = {
 };
 const WORD_FOR_NEGATIVE_SIGN = "ona";
 
-function nanpaCapsTokensToTpWords(tokens, { mode = "traditional" } = {}) {
+function nanpaCapsTokensToTpWords(tokens, { mode = "uniform" } = {}) {
   if (!tokens || tokens.length === 0) return [];
 
   const uniform = (mode === "uniform");
@@ -1748,7 +1995,7 @@ function nanpaCapsTokensToTpWords(tokens, { mode = "traditional" } = {}) {
   return out;
 }
 
-function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional" } = {}) {
+function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "uniform" } = {}) {
   const tokens = tokenizeNanpaCaps(caps);
   if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
@@ -1765,7 +2012,7 @@ function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional" } = {}) {
   return cps;
 }
 
-function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "traditional" } = {}) {
+function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "uniform" } = {}) {
   const s = String(rawText ?? "").trim();
   if (!s) return null;
 
@@ -2199,7 +2446,7 @@ function mergeAndGreedyFilterHits(allHits) {
   return out;
 }
 
-function nanpaLinjanWordsToCodepoints(words, { mode = "traditional" } = {}) {
+function nanpaLinjanWordsToCodepoints(words, { mode = "uniform" } = {}) {
   const cps = [];
   for (const w0 of (words ?? [])) {
     const w = normalizeTpWord(w0);
@@ -2569,7 +2816,7 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
 /* ============================================================
    Line parsing: line → elements
    ============================================================ */
-function lineToElements(line, { fontPx, mode = "traditional", fgCss = "#111", literalFontFamily } = {}) {
+function lineToElements(line, { fontPx, mode = "uniform", fgCss = "#111", literalFontFamily } = {}) {
   const segs = splitLineIntoSegments(line);
   const elements = [];
 
@@ -2587,7 +2834,7 @@ function lineToElements(line, { fontPx, mode = "traditional", fgCss = "#111", li
   return elements;
 }
 
-function parseMultilineToElements(multilineText, { fontPx, mode = "traditional", fgCss = "#111", literalFontFamily } = {}) {
+function parseMultilineToElements(multilineText, { fontPx, mode = "uniform", fgCss = "#111", literalFontFamily } = {}) {
   const raw = String(multilineText ?? "");
   const lines = raw.replace(/\r\n/g, "\n").split("\n");
   return lines.map(line => lineToElements(line, { fontPx, mode, fgCss, literalFontFamily }));
@@ -2726,10 +2973,11 @@ function measureMultiline(linesElements, { fontPx, padPx = DEFAULT_PAD_PX, lineG
   return { width, height, padPx, lineGapPx, lines: measuredLines };
 }
 
+
 /* ============================================================
    DRAW: render multi-line to a canvas (also computes bounding box)
    ============================================================ */
-function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#111", padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX } = {}) {
+function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#111", padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX, literalFontAlignment = "left" } = {}) {
   if (!outCanvas) throw new Error("renderMultilineToCanvas: outCanvas missing");
 
   const box = measureMultiline(linesElements, { fontPx, padPx, lineGapPx });
@@ -2747,6 +2995,16 @@ function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#1
   for (let li = 0; li < box.lines.length; li++) {
     const L = box.lines[li];
     let x = box.padPx;
+
+    //we can use alignment here to push x to the right  ??????????????
+    //we get the line width from L
+    const lineWidth = L.w;
+    //we calculate extra space on this line
+    const extraSpaceOnLine = Math.max( 0, box.width - lineWidth - box.padPx * 2 );
+    //we push the starting x over depending on alignment
+    if (literalFontAlignment === "center") x = x + extraSpaceOnLine / 2;
+    if (literalFontAlignment === "right")  x = x + extraSpaceOnLine;
+
 
     const glyphBaseline = y + L.maxAscent;
 
@@ -2801,10 +3059,36 @@ function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#1
 /* ============================================================
    Convenience: parse + measure + draw in one call
    ============================================================ */
-function renderTextToCanvas(outCanvas, multilineText, { fontPx, mode = "traditional", fgCss = "#111", padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX } = {}) {
-  const linesEls = parseMultilineToElements(multilineText, { fontPx, mode, fgCss });
-  return renderMultilineToCanvas(outCanvas, linesEls, { fontPx, fgCss, padPx, lineGapPx });
+function renderTextToCanvas(
+  outCanvas,
+  multilineText,
+  {
+    fontPx,
+    mode = "uniform",
+    fgCss = "#111",
+    padPx = DEFAULT_PAD_PX,
+    lineGapPx = LINE_GAP_PX,
+    literalFontFamily,            // NEW: accept it
+    literalFontAlignment,   //New accept alignment
+  } = {}
+) {
+  // NEW: forward literalFontFamily into the parser so "..." segments use the element’s font
+  const linesEls = parseMultilineToElements(multilineText, {
+    fontPx,
+    mode,
+    fgCss,
+    literalFontFamily,
+  });
+
+  return renderMultilineToCanvas(outCanvas, linesEls, {
+    fontPx,
+    fgCss,
+    padPx,
+    lineGapPx,
+    literalFontAlignment,
+  });
 }
+
 
 
 
@@ -2825,16 +3109,22 @@ function renderTextToCanvas(outCanvas, multilineText, { fontPx, mode = "traditio
 
 const sitelenCache = new Map(); // el.id -> { sig, canvas, naturalW, naturalH }
 
+
 /** Build a signature so we only rebuild when relevant props change */
 function sitelenSignature(el){
   return [
     String(el.text ?? ""),
+    String(el.align ?? "left"),
     Number(el.fontSize ?? 44),
     String(el.color ?? "#111111"),
-    sitelenLiteralFontFamilyForElement(el),   // NEW
+
+    // literal segments font depends on element fontFamily
+    sitelenLiteralFontFamilyForElement(el),
+
+    // include anything else that materially changes raster output
     "mode:uniform",
     `pad:${DEFAULT_PAD_PX}`,
-    `lineGap:${LINE_GAP_PX}`
+    `lineGap:${LINE_GAP_PX}`,
   ].join("|");
 }
 
@@ -2875,12 +3165,14 @@ function sitelenRenderToOffscreen(el,w,h){
 
     // NEW
     literalFontFamily: sitelenLiteralFontFamilyForElement(el),
+
+    //NEW
+    literalFontAlignment: sitelenLiteralFontAlignmentForElement(el),
   };
 
   renderTextToCanvas(off, String(el.text ?? ""), opts);
   return off;
 }
-
 
 
 /**
@@ -2894,10 +3186,8 @@ function ensureSitelenRaster(el){
   const existing = sitelenCache.get(el.id);
   if (existing && existing.sig === sig) return existing;
 
-  // Measure bbox (hook)
+  // Build fresh raster
   const bb = sitelenMeasureBBox(el);
-
-  // Render to offscreen (hook)
   const canvas = sitelenRenderToOffscreen(el, bb.w, bb.h);
 
   const entry = {
@@ -2907,46 +3197,99 @@ function ensureSitelenRaster(el){
     naturalH: canvas.height,
   };
 
+  // Ensure metadata container
+  if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
+
+  // Always update intrinsic size (natural size is content-dependent)
+  el.sitelen.naturalW = entry.naturalW;
+  el.sitelen.naturalH = entry.naturalH;
+
+  // IMPORTANT: also reset "orig" to the new natural size whenever the raster changes.
+  // This ensures "Keep aspect ratio" toggling reverts to the *current* natural size.
+  el.sitelen.origW = entry.naturalW;
+  el.sitelen.origH = entry.naturalH;
+
   sitelenCache.set(el.id, entry);
   return entry;
 }
 
+
+
 /**
- * Recompute sitelen bbox + raster, and (optionally) resize element box to match.
- * This is the function you should call whenever sitelen text/font settings change.
+ * Recompute sitelen bbox + raster, and resize element box to match.
+ * Call this whenever sitelen text/font settings change.
  */
 function updateSitelenLayout(el, opts){
   if (!el || el.type !== ElementType.Sitelen) return;
 
   const options = Object.assign({ preserveCenter: true }, opts || {});
+
   const cx = el.x + el.w / 2;
   const cy = el.y + el.h / 2;
 
-  // ensure raster built; it will call measurement hook
+  // Build (or rebuild) raster; this also refreshes el.sitelen.{naturalW,naturalH,origW,origH}
   const entry = ensureSitelenRaster(el);
   if (!entry) return;
 
-  // Resize element to measured bbox (your requirement)
+  // Resize element box to the CURRENT natural size (your requirement)
   const newW = Math.max(8, entry.naturalW);
   const newH = Math.max(8, entry.naturalH);
 
+  el.w = newW;
+  el.h = newH;
+
   if (options.preserveCenter){
-    el.w = newW;
-    el.h = newH;
     el.x = cx - el.w / 2;
     el.y = cy - el.h / 2;
-  } else {
-    el.w = newW;
-    el.h = newH;
   }
 }
+
 
 /** Clear sitelen cache for a single element (call when you replace your renderer) */
 function invalidateSitelenCache(elId){
   sitelenCache.delete(elId);
 }
 
+function refreshAllSitelenElementsPreserveCenter(){
+  for (const el of Scene.elements){
+    if (el.type === ElementType.Sitelen){
+      invalidateSitelenCache(el.id);
+      updateSitelenLayout(el, { preserveCenter: true });
+    }
+  }
+}
 
+//clipboard:
+/* ============================================================
+   Copy / Cut / Paste clipboard
+   ============================================================ */
+const CLIPBOARD = {
+  elements: null,          // deep-cloned element snapshots
+  groups: null,            // deep-cloned group records (optional)
+  hadSingleGroup: false,   // whether the selection was a single group
+  sourceGroupId: null,     // original group id if selection was a single group
+  pasteIndex: 0,           // increments each paste (for repeated offset)
+};
+
+function selectionIdsArray(){
+  return [...selectedIds];
+}
+
+function selectionIsEmpty(){
+  return selectedIds.size === 0;
+}
+
+function cleanupGroupsAfterElementRemoval(){
+  const used = new Set(Scene.elements.map(e => e.groupId).filter(Boolean));
+  for (const gid of Object.keys(Scene.groups)){
+    if (!used.has(gid)) delete Scene.groups[gid];
+  }
+}
+
+function removeElementsByIds(idsSet){
+  Scene.elements = Scene.elements.filter(e => !idsSet.has(e.id));
+  cleanupGroupsAfterElementRemoval();
+}
 
 
 
@@ -2958,6 +3301,145 @@ function invalidateSitelenCache(elId){
 
   /** @type {Set<string>} */
   let selectedIds = new Set(); // selected elements (or elements in selected group)
+
+
+//history undo/redo
+/* ============================================================
+   Undo / Redo (history)
+   ------------------------------------------------------------
+   - We snapshot the *model* (Scene + selection + active tool).
+   - Commits happen on discrete actions (add/delete/paste/group),
+     at end of drags, and on committed inspector edits.
+   ============================================================ */
+
+const History = {
+  max: 120,
+  undo: /** @type {Array<{snap:any, reason:string, ts:number}>} */([]),
+  redo: /** @type {Array<{snap:any, reason:string, ts:number}>} */([]),
+  lastSig: "",
+  isRestoring: false
+};
+
+function deepClone(obj){
+  try{
+    if (typeof structuredClone === "function") return structuredClone(obj);
+  }catch(_){}
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function snapshotForHistory(){
+  return {
+    scene: deepClone({ stage: Scene.stage, view: Scene.view, elements: Scene.elements }),
+    selectionIds: Array.from(selectedIds),
+    activeTool
+  };
+}
+
+function signatureForHistory(snap){
+  return JSON.stringify(snap);
+}
+
+function updateUndoRedoUi(){
+  const btnUndo = $("btnUndo");
+  const btnRedo = $("btnRedo");
+  if (!btnUndo || !btnRedo) return;
+
+  // Undo stack always contains the current state at the top.
+  btnUndo.disabled = (History.undo.length <= 1);
+  btnRedo.disabled = (History.redo.length === 0);
+
+  const undoTop = History.undo.length > 0 ? History.undo[History.undo.length-1] : null;
+  const redoTop = History.redo.length > 0 ? History.redo[History.redo.length-1] : null;
+
+  btnUndo.title = undoTop ? `Undo (Ctrl/Cmd+Z)\nLast: ${undoTop.reason}` : "Undo (Ctrl/Cmd+Z)";
+  btnRedo.title = redoTop ? `Redo (Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z)\nNext: ${redoTop.reason}` : "Redo (Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z)";
+}
+
+function historyReset(reason="Reset"){
+  History.undo.length = 0;
+  History.redo.length = 0;
+
+  const snap = snapshotForHistory();
+  const sig = signatureForHistory(snap);
+  History.lastSig = sig;
+
+  History.undo.push({ snap, reason, ts: Date.now() });
+  updateUndoRedoUi();
+}
+
+function historyCommit(reason){
+  if (History.isRestoring) return;
+
+  const snap = snapshotForHistory();
+  const sig = signatureForHistory(snap);
+  if (sig === History.lastSig) return;
+
+  History.lastSig = sig;
+  History.undo.push({ snap, reason, ts: Date.now() });
+
+  if (History.undo.length > History.max) History.undo.shift();
+  History.redo.length = 0;
+
+  updateUndoRedoUi();
+}
+
+let _historyCommitTimer = null;
+function historyCommitDebounced(reason, ms=250){
+  if (History.isRestoring) return;
+  clearTimeout(_historyCommitTimer);
+  _historyCommitTimer = setTimeout(() => historyCommit(reason), ms);
+}
+
+function applyHistorySnapshot(snap){
+  console.log("applyHistorySnapshot start");
+  History.isRestoring = true;
+  try{
+    History.lastSig = signatureForHistory(snap);
+
+    Scene.stage = deepClone(snap.scene.stage);
+    Scene.view  = deepClone(snap.scene.view);
+    Scene.elements = deepClone(snap.scene.elements);
+
+    selectedIds = new Set(Array.isArray(snap.selectionIds) ? snap.selectionIds : []);
+    setTool(snap.activeTool || Tool.Select);
+
+    // Defensive: caches depend on the model.
+    try{ clearAllSitelenCache && clearAllSitelenCache(); }catch(_){}
+    try{ clearAllImageCache && clearAllImageCache(); }catch(_){}
+
+    updateUiForSelection();
+    //updateInspector();
+    console.log("applyHistorySnapshot prerender");
+    render();
+    console.log("applyHistorySnapshot postrender");
+    scheduleAutosave();
+  }finally{
+    History.isRestoring = false;
+    updateUndoRedoUi();
+  }
+}
+
+function historyUndo(){
+  if (History.undo.length <= 1) return;
+  const current = History.undo.pop();
+  History.redo.push(current);
+  const prev = History.undo[History.undo.length-1];
+  applyHistorySnapshot(prev.snap);
+  setStatus("Undo.");
+}
+
+function historyRedo(){
+  if (History.redo.length === 0) return;
+  const next = History.redo.pop();
+  History.undo.push(next);
+  applyHistorySnapshot(next.snap);
+  setStatus("Redo.");
+}
+//history undo/redo end
+
+
+
+
 
   function isSelected(elId){ return selectedIds.has(elId); }
 
@@ -3001,6 +3483,22 @@ function invalidateSitelenCache(elId){
     render();
   }
 
+  function selectWholeGroupIfApplicable(clickedEl, originalEvent){
+  if (!clickedEl) return;
+
+  // Do not auto-expand when user is intentionally multi-selecting
+  const multi = !!(originalEvent && (originalEvent.shiftKey || originalEvent.ctrlKey || originalEvent.metaKey));
+  if (multi) return;
+
+  const gid = clickedEl.groupId;
+  if (!gid) return;
+
+  const members = getElementsInGroup(gid);
+  if (members.length > 0){
+    selectOnlyElements(members.map(e => e.id));
+  }
+}
+
   function anySelected(){
     return selectedIds.size > 0;
   }
@@ -3018,6 +3516,212 @@ function invalidateSitelenCache(elId){
   function getElementsInGroup(groupId){
     return Scene.elements.filter(e => e.groupId === groupId);
   }
+
+  function isTextLikeElement(el){
+  return el && (
+    el.type === ElementType.Text ||
+    el.type === ElementType.Sitelen ||
+    el.type === ElementType.Glyph
+  );
+}
+
+function moveSelectionZ(delta){
+  // delta: +1 = bring forward (towards end), -1 = send backward (towards start)
+  if (!selectedIds || selectedIds.size === 0) return;
+
+  // If anything locked is selected, do nothing (matches your UI disable intent)
+  if (selectionHasLocked()) return;
+
+console.log("moveSelectionZ");
+
+  const n = Scene.elements.length;
+  if (n <= 1) return;
+
+  // Indices of selected elements in Scene.elements order
+  const selectedIdx = [];
+  for (let i = 0; i < n; i++){
+    if (selectedIds.has(Scene.elements[i].id)) selectedIdx.push(i);
+  }
+  if (selectedIdx.length === 0) return;
+
+  // Treat selection as a single block:
+  // remove selected elements, then reinsert them shifted by delta.
+  const minIdx = selectedIdx[0];
+  const maxIdx = selectedIdx[selectedIdx.length - 1];
+
+  // Boundary checks: if block is already at the edge, nothing to do
+  if (delta < 0 && minIdx === 0) return;
+  if (delta > 0 && maxIdx === n - 1) return;
+
+  // Extract selected elements in draw order (preserve relative order)
+  const selectedEls = [];
+  const remaining = [];
+  for (const el of Scene.elements){
+    if (selectedIds.has(el.id)) selectedEls.push(el);
+    else remaining.push(el);
+  }
+
+  // Compute insertion index in the remaining array.
+  // Original block started at minIdx in the original array.
+  // After removing selectedEls, everything before minIdx is still before.
+  let insertAt = minIdx;
+
+  // Shift by one "slot" in the final array.
+  // For forward: insert after the next unselected element.
+  // For backward: insert before the previous unselected element.
+  if (delta > 0){
+    insertAt = minIdx + 1; // move block one step towards end
+  } else if (delta < 0){
+    insertAt = minIdx - 1; // move block one step towards start
+  }
+
+  // Clamp insertAt to remaining bounds
+  insertAt = Math.max(0, Math.min(insertAt, remaining.length));
+
+  // But: insertAt is expressed in terms of the final array positions.
+  // Since remaining is missing selectedEls, we must ensure the “step” is relative to unselected neighbors.
+  // Adjust by counting how many selected indices were before the target position.
+  // A simple robust way: simulate one-step swap with neighbor.
+  if (delta > 0){
+    // Swap block with the first unselected element immediately after it (if any)
+    // Find first unselected element after maxIdx in original:
+    const neighbor = Scene.elements[maxIdx + 1];
+    if (!neighbor || selectedIds.has(neighbor.id)) return;
+
+    // In remaining, neighbor sits at position: (maxIdx + 1) - (#selected before it)
+    let selectedBeforeNeighbor = 0;
+    for (const idx of selectedIdx) if (idx < (maxIdx + 1)) selectedBeforeNeighbor++;
+    const neighborPos = (maxIdx + 1) - selectedBeforeNeighbor;
+
+    // Put block after neighbor
+    insertAt = neighborPos + 1;
+  } else {
+    // Swap block with the unselected element immediately before it
+    const neighbor = Scene.elements[minIdx - 1];
+    if (!neighbor || selectedIds.has(neighbor.id)) return;
+
+    let selectedBeforeNeighbor = 0;
+    for (const idx of selectedIdx) if (idx < (minIdx - 1)) selectedBeforeNeighbor++;
+    const neighborPos = (minIdx - 1) - selectedBeforeNeighbor;
+
+    // Put block before neighbor
+    insertAt = neighborPos;
+  }
+
+  // Rebuild Scene.elements with the moved block
+  const next = remaining.slice(0, insertAt)
+    .concat(selectedEls)
+    .concat(remaining.slice(insertAt));
+
+  //Scene.elements = next;
+  // IMPORTANT: mutate in-place so any cached refs see it
+  Scene.elements.splice(0, Scene.elements.length, ...next);
+
+  //console.log("draw order:", Scene.elements.map(e => e.id).join(","));
+
+}
+
+function applyGroupForeground(groupId, cssColor){
+  if (!groupId) return;
+  if (!Scene.groups[groupId]) Scene.groups[groupId] = { id: groupId, createdAt: new Date().toISOString() };
+
+  Scene.groups[groupId].foreground = cssColor;
+
+  const els = getElementsInGroup(groupId);
+  for (const el of els){
+    if (!isTextLikeElement(el)) continue;
+
+    el.color = cssColor;
+
+    // Sitelen needs raster/layout refresh because color is baked into the offscreen canvas
+    if (el.type === ElementType.Sitelen){
+      invalidateSitelenCache(el.id);
+      updateSitelenLayout(el, { preserveCenter: true });
+    }
+  }
+}
+
+  // ===============================
+// Arrow-key nudge (fixes snap bounce)
+// ===============================
+function wireArrowKeyNudge(){
+  window.addEventListener("keydown", (e) => {
+    // Ignore typing inside inputs/textareas/selects/contenteditable
+    if (isTypingContext(e.target)) return;
+
+    // Only when something is selected
+    if (!selectedIds || selectedIds.size === 0) return;
+
+    // Block nudging locked selection
+    if (selectionHasLocked()){
+      // optional: silent ignore instead of alert
+      return;
+    }
+
+    const key = e.key;
+
+    // Only arrow keys
+    const isArrow =
+      key === "ArrowLeft" || key === "ArrowRight" ||
+      key === "ArrowUp"   || key === "ArrowDown";
+    if (!isArrow) return;
+
+    e.preventDefault();
+
+    // Base nudge in STAGE units (not screen px)
+    // Normal: 1, Shift: 10, Alt: gridSize (optional)
+    let step = 1;
+    if (e.shiftKey) step = 10;
+
+    // If grid snap is enabled, make arrow nudges actually move.
+    // Option A (recommended): nudge by grid size when snapGrid is ON.
+    if (Scene.stage.snapGrid){
+      const gs = Math.max(1, Number(Scene.stage.gridSize || 20));
+      step = gs;
+
+      // If you still want Shift to be "bigger", multiply:
+      if (e.shiftKey) step = gs * 5; // tweak as you like
+    }
+
+    // Optional: Alt forces grid size even if snapGrid is off
+    if (e.altKey){
+      const gs = Math.max(1, Number(Scene.stage.gridSize || 20));
+      step = gs;
+    }
+
+    let dx = 0, dy = 0;
+    if (key === "ArrowLeft")  dx = -step;
+    if (key === "ArrowRight") dx =  step;
+    if (key === "ArrowUp")    dy = -step;
+    if (key === "ArrowDown")  dy =  step;
+
+    // Apply move directly in stage space
+    const sels = getSelectedElements();
+
+    for (const el of sels){
+      el.x += dx;
+      el.y += dy;
+    }
+
+    // If you want object snapping even on arrow moves, you can apply it here.
+    // But DO NOT re-round to grid again because step already accounts for it.
+    // If you DO want object snap only:
+    if (!Scene.stage.snapGrid && Scene.stage.snapObjects){
+      const ids = sels.map(e => e.id);
+      // Use your existing snap logic without grid rounding:
+      const snapped = applySnapMove(dx, dy, ids);
+      // applySnapMove assumes _startX/_startY; easiest is:
+      // (skip, unless you refactor applySnapMove to be "pure" over current positions)
+    }
+
+    scheduleAutosave();
+    updateUiForSelection();
+    render();
+    historyCommitDebounced("Nudge");
+
+  });
+}
+
 
   function pickTopmostElementAtStagePoint(ptStage){
     // Iterate from topmost (end of array) to bottom.
@@ -3365,14 +4069,30 @@ let x1 = c1x - nw/2;
 let y1 = c1y - nh/2;
 
 // CHANGE HERE: aspect lock for images when keepAspect is true
-if (el.type === ElementType.Image && ((el.keepAspect == null) ? true : !!el.keepAspect)){
-  // Aspect ratio source: intrinsic size if available, else original box if available
+// CHANGE HERE: aspect lock for images + sitelen when keepAspect is true
+if (
+  (el.type === ElementType.Image || el.type === ElementType.Sitelen) &&
+  ((el.keepAspect == null) ? true : !!el.keepAspect)
+){
+
+    // Aspect ratio source:
+  // - Image: intrinsic (naturalW/H) or stored origW/H
+  // - Sitelen: raster intrinsic (sitelenCache) or stored sitelen.origW/H
   let aspect = null;
 
-  if (el.image && el.image.naturalW > 0 && el.image.naturalH > 0){
-    aspect = el.image.naturalW / el.image.naturalH;
-  } else if (el.image && Number.isFinite(el.image.origW) && Number.isFinite(el.image.origH) && el.image.origH > 0){
-    aspect = el.image.origW / el.image.origH;
+  if (el.type === ElementType.Image){
+    if (el.image && el.image.naturalW > 0 && el.image.naturalH > 0){
+      aspect = el.image.naturalW / el.image.naturalH;
+    } else if (el.image && Number.isFinite(el.image.origW) && Number.isFinite(el.image.origH) && el.image.origH > 0){
+      aspect = el.image.origW / el.image.origH;
+    }
+  } else if (el.type === ElementType.Sitelen){
+    const r = ensureSitelenRaster(el); // safe: cached unless text/font /align changed
+    if (r && r.naturalW > 0 && r.naturalH > 0){
+      aspect = r.naturalW / r.naturalH;
+    } else if (el.sitelen && Number.isFinite(el.sitelen.origW) && Number.isFinite(el.sitelen.origH) && el.sitelen.origH > 0){
+      aspect = el.sitelen.origW / el.sitelen.origH;
+    }
   }
 
   if (aspect && isFinite(aspect) && aspect > 0){
@@ -3448,10 +4168,16 @@ el.y = y1;
 
 
       // Scale font size for text-like elements
-      if ((el.type === ElementType.Text || el.type === ElementType.Sitelen || el.type === ElementType.Glyph) && typeof el._startFontSize === "number"){
-        const s = Math.max(0.2, (Math.abs(ssx)+Math.abs(ssy))/2);
+      // Scale font size ONLY when enabled (Text + Glyph)
+      const canScaleFont =
+        (el.type === ElementType.Text || el.type === ElementType.Glyph) &&
+        !!el.scaleFontWithBox;
+
+      if (canScaleFont && typeof el._startFontSize === "number"){
+        const s = Math.max(0.2, (Math.abs(ssx) + Math.abs(ssy)) / 2);
         el.fontSize = Math.max(6, el._startFontSize * s);
       }
+
 
       // Scale rect radius
       if (el.type === ElementType.Rect && typeof el._startRadius === "number"){
@@ -3489,6 +4215,23 @@ el.y = y1;
   }
 
   function finalizeDrag(){
+    let changed = false;
+
+    for (const el of Scene.elements){
+      if (el._startX !== undefined){
+        if (
+          el.x !== el._startX || el.y !== el._startY ||
+          el.w !== el._startW || el.h !== el._startH ||
+          el.rot !== el._startRot ||
+          el.fontSize !== el._startFontSize ||
+          el.radius !== el._startRadius
+        ){
+          changed = true;
+          break;
+        }
+      }
+    }
+
     // clean temp fields
     for (const el of Scene.elements){
       delete el._startX; delete el._startY;
@@ -3500,6 +4243,7 @@ el.y = y1;
     scheduleAutosave();
     updateUiForSelection();
     render();
+    if (changed) historyCommit("Transform");
   }
 
   /* ============================================================
@@ -3530,13 +4274,19 @@ el.y = y1;
     selectOnlyElements([el.id]);
     scheduleAutosave();
     render();
+    historyCommit("Add element");
+
   }
 
-  function resizeCanvasToDisplaySize(){
+function resizeCanvasToDisplaySize(){
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
+
+  // Use the container box (more stable than <canvas> rect in some browsers)
+  const rect = wrap.getBoundingClientRect();
+
   const w = Math.max(1, Math.round(rect.width * dpr));
   const h = Math.max(1, Math.round(rect.height * dpr));
+
   if (canvas.width !== w || canvas.height !== h){
     canvas.width = w;
     canvas.height = h;
@@ -3545,10 +4295,12 @@ el.y = y1;
   return false;
 }
 
+
   /* ============================================================
      Rendering
      ============================================================ */
   function render(){
+  //  console.log("render called");
   // CHANGE HERE: always sync canvas backing store to its CSS size
   resizeCanvasToDisplaySize(); // this should ONLY resize canvas.width/height; do not setTransform in it
 
@@ -3586,6 +4338,7 @@ el.y = y1;
 
   // draw elements in order
   for (const el of Scene.elements){
+   // console.log("drawing", el.id);
     drawElement(el);
   }
 
@@ -3991,7 +4744,8 @@ function drawSitelenRasterLocal(el, x, y, w, h){
 
   function drawImageLocal(el, x,y,w,h){
     // CHANGE HERE: Image background is always transparent when an image is loaded
-    const hasImage = !!(el.image && el.image.b64 && el.image.mime);
+    const hasImage = !!(el.image && el.image.assetId && getImageAssetDataUrl(el.image.assetId));
+
     if (!hasImage && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
       ctx.save();
       ctx.fillStyle = el.fill;
@@ -4142,6 +4896,8 @@ function drawSitelenRasterLocal(el, x, y, w, h){
 
 
     renderPropsPanel();
+    updateClipboardButtons();
+
   }
 
   function commonValue(els, getter){
@@ -4189,6 +4945,7 @@ function makeLockCheckbox(sels){
     scheduleAutosave();
     updateUiForSelection(); // re-render props + buttons
     render();
+    historyCommit("Edit properties");
   });
 
   f.appendChild(l);
@@ -4215,14 +4972,14 @@ function makeCheckbox(label, checked, onChange){
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.checked = !!checked;
-  cb.addEventListener("change", () => onChange(cb.checked));
+  cb.addEventListener("change", () => { onChange(cb.checked); historyCommit("Edit properties"); });
 
   const txt = document.createElement("div");
   txt.style.fontSize = "13px";
   txt.style.color = "var(--muted)";
   txt.textContent = cb.checked ? "On" : "Off";
 
-  cb.addEventListener("change", () => { txt.textContent = cb.checked ? "On" : "Off"; });
+  cb.addEventListener("change", () => { txt.textContent = cb.checked ? "On" : "Off"; historyCommit("Edit properties"); });
 
   wrap.appendChild(cb);
   wrap.appendChild(txt);
@@ -4243,8 +5000,13 @@ function makeCheckbox(label, checked, onChange){
     return;
   }
 
-  const single = sels.length === 1;
-  const groupId = getGroupIdFromSelection();
+const single = sels.length === 1;
+
+// “Active” group if either:
+// - multi-select where all selected share the same groupId, OR
+// - single-select where the element belongs to a group
+const groupId = getGroupIdFromSelection() || (single ? (sels[0].groupId || null) : null);
+
 
   // Small section divider
   function addSection(title){
@@ -4326,11 +5088,41 @@ if (sels.some(e => !!e.isLocked)){
     ));
   }
 
-  // If multi-select: show only the few controls that make sense
-  if (!single){
-    addAppearanceBlock();
-    return;
-  }
+// Group-level controls (show whenever we have a groupId)
+if (groupId){
+  addSection("Group");
+
+  const g = Scene.groups[groupId] || (Scene.groups[groupId] = {
+    id: groupId,
+    createdAt: new Date().toISOString(),
+    foreground: "#111111"
+  });
+
+  const fg = g.foreground || "#111111";
+
+  propsBody.appendChild(makeColorPicker(
+    "Foreground (group)",
+    fg,
+    (v) => {            // LIVE preview only
+      applyGroupForeground(groupId, v);
+      render();
+    },
+    (v) => {            // COMMIT
+      applyGroupForeground(groupId, v);
+      scheduleAutosave();
+      render();
+      renderPropsPanel();
+    }
+  ));
+}
+
+// If multi-select: show only common controls after group controls
+if (!single){
+  addAppearanceBlock();
+  return;
+}
+
+
 
   // Single selection: type-specific “useful first”
   const el = sels[0];
@@ -4338,7 +5130,72 @@ if (sels.some(e => !!e.isLocked)){
   if (el.type === ElementType.Text || el.type === ElementType.Sitelen){
     addSection("Text");
 
-    propsBody.appendChild(makeTextarea("Text", el.text ?? "", (v) => {
+    //used for text placeholder
+    let placeholder = "";
+
+        // ADD: Sitelen keepAspect (same behavior as Image)
+    if (el.type === ElementType.Sitelen){
+      //set the sitelen placeholder text
+      //placeholder = "toki pona";
+      placeholder = "mi kama sona e toki pona.\n" +
+  ": sewi^ ni ni^ ni> ni< .\n" +
+  "[ ota  kolon en ]\n" +
+    "nanpa -12,340.57.\n" +
+  "nanpa #~IIM.\n" +
+  "nanpa Newen.\n" ;
+
+      //add aspect ratio checkbox
+      propsBody.appendChild(makeCheckbox(
+        "Keep aspect ratio",
+        (el.keepAspect == null) ? true : !!el.keepAspect,
+        (checked) => {
+          const prev = (el.keepAspect == null) ? true : !!el.keepAspect;
+          el.keepAspect = !!checked;
+
+          // If turning OFF -> ON: revert to original "natural" size; keep center stable
+          if (!prev && el.keepAspect){
+            const cx = el.x + el.w/2;
+            const cy = el.y + el.h/2;
+
+            const r = ensureSitelenRaster(el);
+            const ow =
+              (el.sitelen && Number.isFinite(el.sitelen.origW)) ? el.sitelen.origW :
+              (r ? r.naturalW : el.w);
+            const oh =
+              (el.sitelen && Number.isFinite(el.sitelen.origH)) ? el.sitelen.origH :
+              (r ? r.naturalH : el.h);
+
+            el.w = Math.max(8, ow);
+            el.h = Math.max(8, oh);
+            el.x = cx - el.w/2;
+            el.y = cy - el.h/2;
+          }
+
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
+        }
+      ));
+
+      // ADD: read-only sizes (parallel to Image panel)
+      const r = ensureSitelenRaster(el);
+      const natW = (el.sitelen && Number.isFinite(el.sitelen.naturalW)) ? el.sitelen.naturalW : (r ? r.naturalW : null);
+      const natH = (el.sitelen && Number.isFinite(el.sitelen.naturalH)) ? el.sitelen.naturalH : (r ? r.naturalH : null);
+
+      if (natW && natH){
+        propsBody.appendChild(makeReadOnlyRow("Rendered (intrinsic) size", `${natW} × ${natH}`));
+      } else {
+        propsBody.appendChild(makeReadOnlyRow("Rendered (intrinsic) size", "—"));
+      }
+
+      const origW = (el.sitelen && Number.isFinite(el.sitelen.origW)) ? el.sitelen.origW : el.w;
+      const origH = (el.sitelen && Number.isFinite(el.sitelen.origH)) ? el.sitelen.origH : el.h;
+      propsBody.appendChild(makeReadOnlyRow("Original box size", `${Number(origW)} × ${Number(origH)}`));
+    }
+
+    
+
+    propsBody.appendChild(makeTextarea("Text", el.text ?? "", placeholder   ,(v) => {
       el.text = v;
 
       if (el.type === ElementType.Sitelen){
@@ -4350,6 +5207,19 @@ if (sels.some(e => !!e.isLocked)){
       render();
     }));
 
+
+    if (el.type === ElementType.Text){
+      propsBody.appendChild(makeCheckbox(
+        "Scale font with box",
+        !!el.scaleFontWithBox,
+        (checked) => {
+          el.scaleFontWithBox = !!checked;
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
+        }
+      ));
+    }
 
     // CHANGE HERE: Font family dropdown
     // CHANGE HERE: Sitelen defaults to PatrickHand
@@ -4370,35 +5240,73 @@ if (sels.some(e => !!e.isLocked)){
     }));
 
 
-    propsBody.appendChild(makeNumberRow("fontSize", "Font size", Number(el.fontSize ?? 24), 1, (v) => {
-      el.fontSize = Math.max(6, v); 
-      
-      if (el.type === ElementType.Sitelen){
-        invalidateSitelenCache(el.id);
-        updateSitelenLayout(el, { preserveCenter: true });
-      }
+    propsBody.appendChild(makeNumberRowWithPresets(
+  "fontSize",
+  "Font size",
+  Number(el.fontSize ?? 24),
+  1,
+  FONT_SIZE_PRESETS,
+  (v) => {
+    el.fontSize = Math.max(6, v);
 
-      scheduleAutosave(); 
-      render();
-    }));
+    if (el.type === ElementType.Sitelen){
+      invalidateSitelenCache(el.id);
+      updateSitelenLayout(el, { preserveCenter: true });
+    }
+
+    scheduleAutosave();
+    render();
+  },
+  null,
+  6,
+  9999
+));
+
 
     propsBody.appendChild(makeSelect("Align", el.align ?? "left", [
       ["left","Left"],["center","Center"],["right","Right"]
     ], (v) => {
-      el.align = v; scheduleAutosave(); render();
-    }));
+  el.align = v;
 
-   propsBody.appendChild(makeColorPicker("Text color", el.color ?? "#111111", (v) => {
-      el.color = v;
+  if (el.type === ElementType.Sitelen){
+    invalidateSitelenCache(el.id);
+    updateSitelenLayout(el, { preserveCenter: true });
+  }
 
-      if (el.type === ElementType.Sitelen){
-        invalidateSitelenCache(el.id);
-        updateSitelenLayout(el, { preserveCenter: true });
+  scheduleAutosave();
+  render();
+  updateUiForSelection();
+}));
+
+   propsBody.appendChild(makeColorPicker(
+      "Text color",
+      el.color ?? "#111111",
+      (v) => {
+        // LIVE preview only
+        el.color = v;
+
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+        }
+
+        render();
+      },
+      (v) => {
+        // COMMIT
+        el.color = v;
+
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+        }
+
+        scheduleAutosave();
+        render();
+        renderPropsPanel(); // safe now
       }
+    ));
 
-      scheduleAutosave(); 
-      render();
-    }));
 
 
     propsBody.appendChild(makeNumberRow("lineHeight", "Line height", Number(el.lineHeight ?? 1.15), 0.05, (v) => {
@@ -4411,6 +5319,8 @@ if (sels.some(e => !!e.isLocked)){
   } else if (el.type === ElementType.Glyph){
     addSection("Glyph");
 
+
+
     // Enforce fixed font family (do not allow editing)
   el.fontFamily = "TP-Cartouche-Font";
 
@@ -4421,9 +5331,29 @@ if (sels.some(e => !!e.isLocked)){
 propsBody.appendChild(makeGlyphPicker(el));
 
 
-    propsBody.appendChild(makeNumberRow("fontSize", "Font size", Number(el.fontSize ?? 64), 1, (v) => {
-      el.fontSize = Math.max(6, v); scheduleAutosave(); render();
-    }));
+    propsBody.appendChild(makeCheckbox(
+      "Scale font with box",
+      !!el.scaleFontWithBox,
+      (checked) => {
+        el.scaleFontWithBox = !!checked;
+        scheduleAutosave();
+        render();
+        updateUiForSelection();
+      }
+    ));
+
+ propsBody.appendChild(makeNumberRowWithPresets(
+  "fontSize",
+  "Font size",
+  Number(el.fontSize ?? 64),
+  1,
+  FONT_SIZE_PRESETS,
+  (v) => { el.fontSize = Math.max(6, v); scheduleAutosave(); render(); },
+  null,
+  6,
+  9999
+));
+
 
 propsBody.appendChild(makeColorPicker("Color", el.color ?? "#111111", (v) => {
   el.color = v;
@@ -4535,11 +5465,114 @@ const FONT_OPTIONS = [
   ["system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif", "system-ui"],
 ];
 
+// CHANGE HERE: preset sizes shown in the dropdown
+const FONT_SIZE_PRESETS = [8,10,12,14,16,18,20,22,24,28,32,36,40,44,48,56,64,72,80,92,104,120,144];
+
+
 function coerceFontValueToOption(v, fallback){
   const raw = String(v ?? "").trim();
   const vals = new Set(FONT_OPTIONS.map(([val]) => val));
   return vals.has(raw) ? raw : fallback;
 }
+
+// CHANGE HERE: number row with a preset dropdown to the right
+function makeNumberRowWithPresets(
+  id,
+  label,
+  value,
+  step,
+  presets,
+  onChange,
+  placeholder = null,
+  min = null,
+  max = null
+){
+  const row = document.createElement("div");
+  row.className = "row";
+
+  const f = document.createElement("div");
+  f.className = "field";
+
+  const l = document.createElement("label");
+  l.textContent = label;
+
+  // Inline container: number input + select
+  const inline = document.createElement("div");
+  inline.className = "propInlineRow";
+
+  const inp = document.createElement("input");
+  inp.type = "number";
+  inp.step = String(step ?? 1);
+  if (min != null) inp.min = String(min);
+  if (max != null) inp.max = String(max);
+  if (placeholder != null) inp.placeholder = String(placeholder);
+  inp.value = (value == null) ? "" : String(value);
+
+  const sel = document.createElement("select");
+
+  // First option = "Custom" (blank value)
+  const optCustom = document.createElement("option");
+  optCustom.value = "";
+  optCustom.textContent = "Custom";
+  sel.appendChild(optCustom);
+
+  // Preset options
+  const presetNums = Array.from(presets ?? []).map(n => Number(n)).filter(n => Number.isFinite(n)).sort((a,b)=>a-b);
+  for (const n of presetNums){
+    const o = document.createElement("option");
+    o.value = String(n);
+    o.textContent = String(n);
+    sel.appendChild(o);
+  }
+
+  function syncSelectFromInput(){
+    const n = Number(inp.value);
+    if (!Number.isFinite(n)) { sel.value = ""; return; }
+    const match = presetNums.includes(n) ? String(n) : "";
+    sel.value = match;
+  }
+
+  // Initialize select state
+  syncSelectFromInput();
+
+  // Typing in the number box
+  inp.addEventListener("input", () => {
+    syncSelectFromInput();
+    const n = Number(inp.value);
+    if (!Number.isFinite(n)) return;
+    onChange(n);
+  });
+  inp.addEventListener("change", () => {
+    syncSelectFromInput();
+    const n = Number(inp.value);
+    if (!Number.isFinite(n)) return;
+    onChange(n);
+    historyCommit("Edit properties");
+  });
+
+  // Choosing a preset
+  sel.addEventListener("change", () => {
+    if (!sel.value){
+      // "Custom" selected: do nothing, user types a value
+      return;
+    }
+    const n = Number(sel.value);
+    if (!Number.isFinite(n)) return;
+    inp.value = String(n);
+    onChange(n);
+    historyCommit("Edit properties");
+  });
+
+  inline.appendChild(inp);
+  inline.appendChild(sel);
+
+  f.appendChild(l);
+  f.appendChild(inline);
+
+  row.appendChild(f);
+  return row;
+}
+
 
 
   function makeNumberRow(id, label, value, step, onChange, placeholder=null, min=null, max=null){
@@ -4582,13 +5615,14 @@ function coerceFontValueToOption(v, fallback){
     return row;
   }
 
-  function makeTextarea(label, value, onChange){
+  function makeTextarea(label, value, placeholder, onChange){
     const f = document.createElement("div");
     f.className = "field";
     const l = document.createElement("label");
     l.textContent = label;
     const ta = document.createElement("textarea");
     ta.value = String(value ?? "");
+    ta.placeholder=placeholder;
     ta.addEventListener("input", () => onChange(ta.value));
     f.appendChild(l); f.appendChild(ta);
     return f;
@@ -4607,28 +5641,34 @@ function coerceFontValueToOption(v, fallback){
       if (val === value) opt.selected = true;
       sel.appendChild(opt);
     }
-    sel.addEventListener("change", () => onChange(sel.value));
+    sel.addEventListener("change", () =>  { onChange(sel.value); historyCommit("Edit properties"); });
     f.appendChild(l); f.appendChild(sel);
     return f;
   }
 
-  function makeColorField(label, value, onChange, placeholder=null, allowRgba=false){
-    // Canvas style wants rgba, but <input type=color> returns hex.
-    // We store hex by default for simplicity; you can put rgba strings manually in Stroke/Fill fields by editing JSON if desired.
-    const f = document.createElement("div");
-    f.className = "field";
-    const l = document.createElement("label");
-    l.textContent = label + (placeholder ? ` (${placeholder})` : "");
-    const inp = document.createElement("input");
-    inp.type = "color";
-    // best-effort convert rgba -> hex
-    inp.value = rgbaOrHexToHex(value) || "#ffffff";
-    inp.addEventListener("input", () => onChange(inp.value));
-    f.appendChild(l); f.appendChild(inp);
-    return f;
-  }
+function makeColorField(label, value, onChange, placeholder=null, allowRgba=false){
+  const f = document.createElement("div");
+  f.className = "field";
 
-  function makeColorPicker(label, value, onChange){
+  const l = document.createElement("label");
+  l.textContent = label + (placeholder ? ` (${placeholder})` : "");
+
+  const inp = document.createElement("input");
+  inp.type = "color";
+  inp.value = rgbaOrHexToHex(value) || "#ffffff";
+
+  const handler = () => { onChange(inp.value); historyCommit("Edit properties");  };
+  inp.addEventListener("input", handler);
+  inp.addEventListener("change", handler);
+
+  f.appendChild(l);
+  f.appendChild(inp);
+  return f;
+}
+
+
+
+function makeColorPicker(label, value, onLive, onCommit){
   const f = document.createElement("div");
   f.className = "field";
 
@@ -4638,12 +5678,28 @@ function coerceFontValueToOption(v, fallback){
   const inp = document.createElement("input");
   inp.type = "color";
   inp.value = rgbaOrHexToHex(value) || "#111111";
-  inp.addEventListener("input", () => onChange(inp.value));
+
+  // Live preview: do NOT rebuild props panel here.
+  inp.addEventListener("input", () => {
+    try { onLive && onLive(inp.value); } catch (e) { console.warn(e); }
+  });
+
+  // Commit: picker closed (most reliable across browsers).
+  inp.addEventListener("change", () => {
+    try {
+      // Ensure final value applied even if some browsers don't emit input as expected
+      if (onLive) onLive(inp.value);
+      if (onCommit) {onCommit(inp.value); historyCommit("Edit properties");}
+    } catch (e) {
+      console.warn(e);
+    }
+  });
 
   f.appendChild(l);
   f.appendChild(inp);
   return f;
 }
+
 
   function rgbaOrHexToHex(s){
     const v = String(s ?? "").trim();
@@ -4669,13 +5725,21 @@ function coerceFontValueToOption(v, fallback){
     if (getGroupIdFromSelection()) return;
 
     const gid = uid("grp");
-    Scene.groups[gid] = { id: gid, createdAt: new Date().toISOString() };
+
+    // Prefer the common color of text-like elements (if any), else default
+    const textLikes = sels.filter(isTextLikeElement);
+    const commonFg = commonValue(textLikes, e => e.color) || "#111111";
+
+    Scene.groups[gid] = { id: gid, createdAt: new Date().toISOString(), foreground: commonFg };
+
     for (const el of sels) el.groupId = gid;
+
 
     // Selection becomes all in group (already is)
     scheduleAutosave();
     updateUiForSelection();
     render();
+    historyCommit("Group");
     setStatus(`Grouped (${sels.length}).`);
   }
 
@@ -4691,6 +5755,7 @@ function coerceFontValueToOption(v, fallback){
     scheduleAutosave();
     updateUiForSelection();
     render();
+    historyCommit("Ungroup");
     setStatus("Ungrouped.");
   }
 
@@ -4712,6 +5777,14 @@ function coerceFontValueToOption(v, fallback){
     scheduleAutosave(); render();
   }
 
+ function bringForwardZ(){
+  moveSelectionZ(+1);
+  scheduleAutosave();
+  render();
+  historyCommit("Reorder");
+  updateUiForSelection();
+}
+
   function sendBackward(){
     const ids = [...selectedIds];
     if (!ids.length) return;
@@ -4725,6 +5798,215 @@ function coerceFontValueToOption(v, fallback){
     }
     scheduleAutosave(); render();
   }
+
+  function sendBackwardZ(){
+    moveSelectionZ(-1);
+    scheduleAutosave();
+    render();
+    historyCommit("Reorder");
+    updateUiForSelection();
+  }
+
+//copy/paste
+function copySelection(){
+  if (selectionIsEmpty()){
+    setStatus("Copy: nothing selected.");
+    return;
+  }
+
+  const ids = selectionIdsArray();
+  const els = ids.map(getElementById).filter(Boolean);
+
+  // If selection corresponds to exactly one group, preserve it on paste as a new group
+  const gid = getGroupIdFromSelection();
+  const hadSingleGroup = !!gid;
+
+  const copiedGroups = {};
+  if (hadSingleGroup && Scene.groups[gid]){
+    copiedGroups[gid] = deepClone(Scene.groups[gid]);
+  }
+
+  CLIPBOARD.elements = deepClone(els);
+  CLIPBOARD.groups = copiedGroups;
+  CLIPBOARD.hadSingleGroup = hadSingleGroup;
+  CLIPBOARD.sourceGroupId = gid || null;
+  CLIPBOARD.pasteIndex = 0;
+
+  if (CLIPBOARD.hadSingleGroup && CLIPBOARD.sourceGroupId) {
+    const grp = Scene.groups?.[CLIPBOARD.sourceGroupId] || null;
+    CLIPBOARD.sourceGroupRecord = grp ? deepClone(grp) : null;
+  } else {
+    CLIPBOARD.sourceGroupRecord = null;
+  }
+
+  setStatus(`Copied ${els.length} element${els.length === 1 ? "" : "s"}.`);
+  updateClipboardButtons();
+
+}
+
+function cutSelection(){
+  if (selectionIsEmpty()){
+    setStatus("Cut: nothing selected.");
+    return;
+  }
+
+  // Block cutting locked elements (consistent with your delete rules)
+  if (selectionHasLocked()){
+    window.alert("This selection contains locked element(s). Unlock before cutting.");
+    setStatus("Cut blocked: locked element(s).");
+    return;
+  }
+
+  copySelection();
+
+  const idsSet = new Set(selectionIdsArray());
+  removeElementsByIds(idsSet);
+  selectedIds.clear();
+
+  scheduleAutosave();
+  updateUiForSelection();
+  render();
+  historyCommit("Cut");
+  setStatus("Cut.");
+  updateClipboardButtons();
+
+}
+
+function pasteClipboard(){
+  if (!CLIPBOARD.elements || !Array.isArray(CLIPBOARD.elements) || CLIPBOARD.elements.length === 0){
+    setStatus("Paste: clipboard empty.");
+    return;
+  }
+
+  // Compute a sensible offset (stage units). Use grid size if available.
+  const base = Math.max(10, Number(Scene.stage.gridSize || 20));
+  CLIPBOARD.pasteIndex += 1;
+  const dx = base * 0.6 * CLIPBOARD.pasteIndex; // slightly smaller than one full grid step
+  const dy = base * 0.6 * CLIPBOARD.pasteIndex;
+
+  // Map old element ids -> new element ids
+  const idMap = new Map();
+
+  // If selection was a single group, create a new group for pasted items
+// If selection was a single group, create a new group for pasted items
+let newGroupId = null;
+if (CLIPBOARD.hadSingleGroup && CLIPBOARD.sourceGroupId) {
+  newGroupId = uid("grp");
+
+  const nowIso = new Date().toISOString();
+  const srcGrp = CLIPBOARD.sourceGroupRecord || Scene.groups?.[CLIPBOARD.sourceGroupId] || null;
+
+  // Clone source group metadata if available; otherwise fall back to minimal record
+  const newGrp = srcGrp ? deepClone(srcGrp) : {};
+
+  // Force identity + timestamps for the new group
+  newGrp.id = newGroupId;
+
+  // Preserve original createdAt if you want provenance; or overwrite (choose one):
+  // Option A: treat paste as "newly created"
+  newGrp.createdAt = nowIso;
+
+  // Optional: if you track modifiedAt / updatedAt
+  if ("modifiedAt" in newGrp) newGrp.modifiedAt = nowIso;
+  if ("updatedAt" in newGrp) newGrp.updatedAt = nowIso;
+
+  // Important: if group record contains transient UI fields, strip them
+  delete newGrp._drag;
+  delete newGrp._startX;
+  delete newGrp._startY;
+
+  Scene.groups[newGroupId] = newGrp;
+}
+
+
+  const newEls = [];
+
+  for (const src of CLIPBOARD.elements){
+    const el = deepClone(src);
+
+    // New identity
+    const oldId = el.id;
+    el.id = uid("el");
+    idMap.set(oldId, el.id);
+
+    // Position offset (down + right)
+    el.x = (Number(el.x) || 0) + dx;
+    el.y = (Number(el.y) || 0) + dy;
+
+    // Group handling
+    if (newGroupId){
+      el.groupId = newGroupId;
+    } else {
+      // If it was not a single-group copy, do not carry group ids across (avoid referencing old groups)
+      el.groupId = null;
+    }
+
+    // Remove transient drag fields if present
+    delete el._startX; delete el._startY;
+    delete el._startW; delete el._startH;
+    delete el._startRot; delete el._startFontSize;
+    delete el._startRadius;
+
+    newEls.push(el);
+  }
+
+  // Add pasted elements on top
+  for (const el of newEls){
+    Scene.elements.push(el);
+  }
+
+  // Select pasted elements
+  selectOnlyElements(newEls.map(e => e.id));
+
+  scheduleAutosave();
+  updateUiForSelection();
+  render();
+  historyCommit("Paste");
+
+  setStatus(`Pasted ${newEls.length} element${newEls.length === 1 ? "" : "s"}.`);
+  updateClipboardButtons();
+
+}
+
+
+
+
+function wireClipboardButtons(){
+  const copyBtn  = document.getElementById("btnCopy");
+  const cutBtn   = document.getElementById("btnCut");
+  const pasteBtn = document.getElementById("btnPaste");
+  if (!copyBtn || !cutBtn || !pasteBtn) return;
+
+  const undoBtn  = document.getElementById("btnUndo");
+  const redoBtn  = document.getElementById("btnRedo");
+
+  if (undoBtn) undoBtn.addEventListener("click", () => historyUndo());
+  if (redoBtn) redoBtn.addEventListener("click", () => historyRedo());
+
+  copyBtn.addEventListener("click", () => copySelection());
+  cutBtn.addEventListener("click",  () => cutSelection());
+  pasteBtn.addEventListener("click",() => pasteClipboard());
+
+  updateClipboardButtons(); // set initial enabled/disabled state
+  updateUndoRedoUi();//update undo/redo buttons
+}
+
+function updateClipboardButtons(){
+  const copyBtn  = document.getElementById("btnCopy");
+  const cutBtn   = document.getElementById("btnCut");
+  const pasteBtn = document.getElementById("btnPaste");
+  if (!copyBtn || !cutBtn || !pasteBtn) return;
+
+  const hasSel = selectedIds && selectedIds.size > 0;
+  const canPaste = !!(CLIPBOARD && CLIPBOARD.elements && CLIPBOARD.elements.length);
+
+  copyBtn.disabled  = !hasSel;
+  cutBtn.disabled   = !hasSel || selectionHasLocked();
+  pasteBtn.disabled = !canPaste;
+}
+
+
+
 
   /* ============================================================
      Deletion
@@ -4757,6 +6039,7 @@ function coerceFontValueToOption(v, fallback){
   scheduleAutosave();
   updateUiForSelection();
   render();
+  historyCommit("Delete");
   setStatus("Deleted.");
 }
 
@@ -4875,6 +6158,8 @@ function coerceFontValueToOption(v, fallback){
       } else {
         // normal click: replace selection with this (or group)
         selectOnlyElements(ids);
+        selectWholeGroupIfApplicable(hit, e);//????
+
       }
 
 
@@ -5061,75 +6346,265 @@ function coerceFontValueToOption(v, fallback){
   /* ============================================================
      Image picking
      ============================================================ */
-  async function pickImageForElement(el){
-    const inp = $("filePickImage");
-    inp.value = "";
-    inp.onchange = async () => {
-      const file = inp.files && inp.files[0];
-      if (!file) return;
+  function pickImageForElement(el){
+  const inp = $("filePickImage");
+  inp.value = "";
+  inp.onchange = async () => {
+    const file = inp.files && inp.files[0];
+    if (!file) return;
 
-      const buf = await file.arrayBuffer();
-      const b64 = toBase64FromArrayBuffer(buf);
-      const img = new Image();
-      img.onload = () => {
-        el.image = {
-          mime: file.type || "image/png",
-          b64,
-          naturalW: img.naturalWidth || 0,
-          naturalH: img.naturalHeight || 0,
+    // Store the image once in Assets; element references it by assetId.
+    const dataUrl = await dataUrlFromBlob(file);
+    const assetId = addImageAssetFromDataUrl(dataUrl);
 
-          // CHANGE HERE: remember original element box size at the time the image was loaded
-          origW: el.w,
-          origH: el.h,
-        };
+    const img = new Image();
+    img.onload = () => {
+      const natW = img.naturalWidth || img.width || 0;
+      const natH = img.naturalHeight || img.height || 0;
 
-        // CHANGE HERE: keepAspect default true (even if an older element somehow lacked it)
-        el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+      // Keep your existing behavior: default size if needed
+      if (!el.w || !el.h){
+        el.w = natW || el.w || 0;
+        el.h = natH || el.h || 0;
+      }
 
-        // CHANGE HERE: ensure image elements always have transparent background once loaded
-        el.fill = "rgba(255,255,255,0.0)";
-
-
-        invalidateImageCache(el.id);
-        scheduleAutosave();
-        updateUiForSelection();
-        render();
-        setStatus("Image embedded.");
+      // IMPORTANT: store only assetId (no base64 on the element)
+      el.image = {
+        assetId,
+        naturalW: natW,
+        naturalH: natH,
+        origW: natW,
+        origH: natH
       };
-      img.src = `data:${file.type || "image/png"};base64,${b64}`;
+
+      el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+      el.fill = "rgba(255,255,255,0.0)";
+
+      invalidateImageCache(el.id);
+      scheduleAutosave();
+      updateUiForSelection();
+      render();
+      setStatus("Image embedded.");
     };
-    inp.click();
-  }
+
+    img.src = dataUrl;
+  };
+  inp.click();
+}
+
 
   /* ============================================================
      Import/Export JSON and Export PNG
      ============================================================ */
-  function exportJson(){
-    const payload = deepClone(Scene);
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
-    downloadBlob(blob, `layout_${nowIso()}.json`);
-    setStatus("Exported JSON.");
+
+     // ---------- Hardening helpers (put near utilities) ----------
+
+const IMPORT_LIMIT_BYTES = 2_000_000;     // 2 MB cap (adjust as needed)
+const MAX_ELEMENTS = 5000;               // prevent DoS-by-huge-array
+const MAX_GROUPS = 5000;
+const MAX_TEXT_LEN = 50_000;             // cap long sitelen/source text fields
+
+function safeJsonParse(text){
+  // Size cap (approx bytes). This is not perfect for UTF-16, but prevents obvious abuse.
+  if (text.length > IMPORT_LIMIT_BYTES) {
+    throw new Error(`Import too large (> ${IMPORT_LIMIT_BYTES} chars).`);
   }
 
-  async function importJsonFromFile(file){
-  const txt = await file.text();
-  const parsed = normalizeScene(JSON.parse(txt));
+  // Reviver blocks common prototype-pollution keys anywhere in the document.
+  return JSON.parse(text, (k, v) => {
+    if (k === "__proto__" || k === "constructor" || k === "prototype") return undefined;
+    return v;
+  });
+}
 
-  if (!parsed.stage || !Array.isArray(parsed.elements)){
-    throw new Error("Invalid JSON scene format.");
+function isPlainObject(x){
+  return x !== null && typeof x === "object" && (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null);
+}
+
+function clamp(n, lo, hi){
+  return Math.min(hi, Math.max(lo, n));
+}
+
+function mustBeFiniteNumber(x, name){
+  if (typeof x !== "number" || !Number.isFinite(x)) throw new Error(`Invalid number: ${name}`);
+  return x;
+}
+
+function mustBeString(x, name, maxLen = 10_000){
+  if (typeof x !== "string") throw new Error(`Invalid string: ${name}`);
+  if (x.length > maxLen) throw new Error(`String too long: ${name}`);
+  return x;
+}
+
+function validateAndSanitizeScene(raw){
+  if (!isPlainObject(raw)) throw new Error("Top-level scene must be an object.");
+
+  // Allow either raw Scene or a wrapped payload (see export hardening below).
+  const scene = raw.scene && isPlainObject(raw.scene) ? raw.scene : raw;
+
+  if (!isPlainObject(scene.stage)) throw new Error("Missing/invalid stage.");
+  if (!Array.isArray(scene.elements)) throw new Error("Missing/invalid elements array.");
+
+  if (scene.elements.length > MAX_ELEMENTS) throw new Error(`Too many elements (> ${MAX_ELEMENTS}).`);
+  if (scene.groups && Array.isArray(scene.groups) && scene.groups.length > MAX_GROUPS) {
+    throw new Error(`Too many groups (> ${MAX_GROUPS}).`);
   }
 
-  Scene.meta = parsed.meta;
-  Scene.stage = parsed.stage;
-  Scene.view = parsed.view;
-  Scene.elements = parsed.elements;
-  Scene.groups = parsed.groups;
+  // Stage numeric hygiene + clamps
+  const w = clamp(mustBeFiniteNumber(scene.stage.w, "stage.w"), 64, 20000);
+  const h = clamp(mustBeFiniteNumber(scene.stage.h, "stage.h"), 64, 20000);
+  const gridSize = clamp(mustBeFiniteNumber(scene.stage.gridSize ?? 20, "stage.gridSize"), 1, 1000);
+  const snapTol = clamp(mustBeFiniteNumber(scene.stage.snapTol ?? 8, "stage.snapTol"), 0, 500);
 
+  // Optional view/meta/groups defaults
+  const meta = isPlainObject(scene.meta) ? scene.meta : {};
+  const view = isPlainObject(scene.view) ? scene.view : {};
+  const groups = Array.isArray(scene.groups) ? scene.groups : [];
+
+  // Validate elements in a minimally-invasive way.
+  // You can expand this per your exact element schema.
+  const ids = new Set();
+  const elements = scene.elements.map((el, idx) => {
+    if (!isPlainObject(el)) throw new Error(`Element[${idx}] must be an object.`);
+    const id = mustBeString(el.id ?? "", `elements[${idx}].id`, 200);
+    if (!id) throw new Error(`Element[${idx}] missing id.`);
+    if (ids.has(id)) throw new Error(`Duplicate element id: ${id}`);
+    ids.add(id);
+
+    // Defensive copies + numeric hygiene for common fields.
+    // (Adjust keys to your actual schema.)
+    const out = {...el};
+
+    if ("x" in out) out.x = mustBeFiniteNumber(out.x, `elements[${idx}].x`);
+    if ("y" in out) out.y = mustBeFiniteNumber(out.y, `elements[${idx}].y`);
+    if ("w" in out) out.w = clamp(mustBeFiniteNumber(out.w, `elements[${idx}].w`), 1, 50000);
+    if ("h" in out) out.h = clamp(mustBeFiniteNumber(out.h, `elements[${idx}].h`), 1, 50000);
+    if ("rot" in out) out.rot = clamp(mustBeFiniteNumber(out.rot, `elements[${idx}].rot`), -360000, 360000);
+
+    // Cap any large text payloads (sitelen source, labels, etc.)
+    for (const k of ["text", "source", "sitelen", "label", "name"]) {
+      if (k in out && typeof out[k] === "string") {
+        if (out[k].length > MAX_TEXT_LEN) throw new Error(`Element[${idx}].${k} too long.`);
+      }
+    }
+
+    return out;
+  });
+
+  // Return a sanitized, canonical scene object.
+  return {
+    meta,
+    stage: { ...scene.stage, w, h, gridSize, snapTol },
+    view,
+    elements,
+    groups
+  };
+}
+
+function exportJson(){
+  // Export only the stable, persisted parts.
+  const stableScene = {
+    meta: deepClone(Scene.meta),
+    stage: deepClone(Scene.stage),
+    view: deepClone(Scene.view),
+    elements: deepClone(Scene.elements),
+    groups: deepClone(Scene.groups),
+  };
+
+  const payload = { 
+    format: "StaticCanvasLayout", 
+    version: 2, 
+    exportedAt: new Date().toISOString(), 
+    scene: stableScene, 
+    assets: serializeAssets() 
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  downloadBlob(blob, `layout_${nowIso()}.json`);
+  setStatus("Exported JSON.");
+}
+
+async function importJsonFromFile(file){
+  // Basic file gating (not security, but good hygiene)
+  if (!file) throw new Error("No file provided.");
+  if (file.size > IMPORT_LIMIT_BYTES) throw new Error(`File too large (> ${IMPORT_LIMIT_BYTES} bytes).`);
+  // Optional: if you only want .json
+  // if (!/\.json$/i.test(file.name)) throw new Error("Please select a .json file.");
+
+  let txt;
+  try {
+    txt = await file.text();
+  } catch (e) {
+    throw new Error("Could not read file.");
+  }
+
+  let raw;
+  try {
+    raw = safeJsonParse(txt);
+  } catch (e) {
+    throw new Error("Invalid JSON (parse failed).");
+  }
+
+  // If you already have normalizeScene(), keep it—but validate afterwards.
+  // Support two formats:
+  //  (A) Wrapper: { scene: {...}, assets: {...} }
+  //  (B) Legacy:  {meta, stage, view, elements, groups, ...}  (scene directly)
+  const isWrapper = raw && typeof raw === "object" && raw.scene && typeof raw.scene === "object";
+
+  // If wrapper, load assets FIRST so normalizeScene can migrate/resolve legacy images if needed.
+  if (isWrapper){
+    try {
+      deserializeAssets(raw.assets);
+    } catch (e) {
+      // If assets are malformed, fail early. Otherwise the scene will reference missing assetIds.
+      throw new Error("Invalid assets data (deserialize failed).");
+    }
+  } else {
+    // Legacy import: start with empty assets; normalizeScene may migrate legacy inline images into Assets.
+    // (Do not clear Assets here if you want to allow merging imports; most editors expect replace.)
+    // If you want replace semantics, uncomment:
+    deserializeAssets(null);
+  }
+
+  // Normalize scene (wrapper uses raw.scene; legacy uses raw)
+  let normalized;
+  try {
+    normalized = normalizeScene(isWrapper ? raw.scene : raw);
+  } catch (e) {
+    throw new Error("Invalid scene data (normalize failed).");
+  }
+
+
+  let sanitized;
+  try {
+    sanitized = validateAndSanitizeScene(normalized);
+  } catch (e) {
+    throw new Error(`Invalid scene format: ${e.message}`);
+  }
+
+  // Commit changes in one place only AFTER validation.
+  Scene.meta = sanitized.meta;
+  Scene.stage = sanitized.stage;
+  Scene.view = sanitized.view;
+  Scene.elements = sanitized.elements;
+  Scene.groups = sanitized.groups;
+
+  // Clear runtime state
   selectedIds.clear();
   imageCache.clear();
 
-  await dbPut(DB_KEY, deepClone(Scene));
+  try {
+      await dbPut(DB_KEY, {
+        scene: deepClone(Scene),
+        assets: serializeAssets()
+      });
+  } catch (e) {
+    // If persistence fails, you may still keep the imported scene in memory,
+    // but make the failure explicit.
+    setStatus("Imported JSON, but failed to save to local DB.");
+  }
 
+  // Update UI controls with sanitized stage values
   $("stageW").value = String(Scene.stage.w);
   $("stageH").value = String(Scene.stage.h);
   $("gridSize").value = String(Scene.stage.gridSize);
@@ -5137,30 +6612,17 @@ function coerceFontValueToOption(v, fallback){
 
   setStatus("Imported JSON.");
   updateUiForSelection();
+
+  refreshAllSitelenElementsPreserveCenter();
   fitStageToView();
   render();
+  historyReset("Import");
+
 }
 
 
-  function exportPngTransparent(){
-    // Create offscreen canvas at exact stage size (no background fill => transparent)
-    const off = document.createElement("canvas");
-    off.width = Scene.stage.w;
-    off.height = Scene.stage.h;
-    const octx = off.getContext("2d");
 
-    // Render scene at 1:1 stage coords (no view transforms)
-    // Note: We do NOT draw grid or stage background for export.
-    for (const el of Scene.elements){
-      drawElementToOffscreen(octx, el);
-    }
 
-    off.toBlob((blob) => {
-      if (!blob) return;
-      downloadBlob(blob, `layout_${nowIso()}.png`);
-      setStatus("Exported PNG (transparent).");
-    }, "image/png");
-  }
 
   function drawElementToOffscreen(octx, el){
     octx.save();
@@ -5267,7 +6729,8 @@ function coerceFontValueToOption(v, fallback){
     } else if (el.type === ElementType.Image){
       // CHANGE HERE: Export matches on-canvas behavior:
       // background fill only when there is NO loaded image
-      const hasImage = !!(el.image && el.image.b64 && el.image.mime);
+      const hasImage = !!(el.image && el.image.assetId && getImageAssetDataUrl(el.image.assetId));
+
       if (!hasImage && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
         octx.fillStyle = el.fill;
         octx.fillRect(x,y,el.w,el.h);
@@ -5278,7 +6741,7 @@ function coerceFontValueToOption(v, fallback){
         // NOTE: synchronous draw not possible reliably; we draw a placeholder instead if not loaded.
         // For export, we’ll do a best-effort direct draw using data URL (browser usually resolves quickly),
         // but to keep this single-pass, we do a lightweight approach:
-        img.src = `data:${el.image.mime};base64,${el.image.b64}`;
+        img.src = getImageAssetDataUrl(el.image.assetId);// `data:${el.image.mime};base64,${el.image.b64}`;
         // If already cached by the browser, width/height will be non-zero.
         if (img.complete && img.naturalWidth > 0){
           octx.drawImage(img, x,y,el.w,el.h);
@@ -5307,6 +6770,26 @@ function coerceFontValueToOption(v, fallback){
     octx.restore();
   }
 
+  function exportPngTransparent(){
+    // Create offscreen canvas at exact stage size (no background fill => transparent)
+    const off = document.createElement("canvas");
+    off.width = Scene.stage.w;
+    off.height = Scene.stage.h;
+    const octx = off.getContext("2d");
+
+    // Render scene at 1:1 stage coords (no view transforms)
+    // Note: We do NOT draw grid or stage background for export.
+    for (const el of Scene.elements){
+      drawElementToOffscreen(octx, el);
+    }
+
+    off.toBlob((blob) => {
+      if (!blob) return;
+      downloadBlob(blob, `layout_${nowIso()}.png`);
+      setStatus("Exported PNG (transparent).");
+    }, "image/png");
+  }
+
   function roundedRectPathOff(octx, x,y,w,h,r){
     const rr = Math.max(0, Math.min(r, w/2, h/2));
     octx.beginPath();
@@ -5327,14 +6810,24 @@ function coerceFontValueToOption(v, fallback){
   $("toolGlyph").addEventListener("click", () => setTool(Tool.Glyph));
   $("toolRect").addEventListener("click", () => setTool(Tool.Rect));
   $("toolImage").addEventListener("click", () => setTool(Tool.Image));
-  $("toolDelete").addEventListener("click", () => setTool(Tool.Delete));
+
+  $("toolDelete").addEventListener("click", () => {
+  if (anySelected()){
+    deleteSelection();     // this is where confirm happens
+    setTool(Tool.Select);  // return to normal tool
+  } else {
+    setTool(Tool.Delete);  // no selection: use click-to-delete mode
+  }
+});
+
+
   $("toolPan").addEventListener("click", () => setTool(Tool.Pan));
 
   $("btnGroup").addEventListener("click", () => groupSelection());
   $("btnUngroup").addEventListener("click", () => ungroupSelection());
 
-  $("btnBringFwd").addEventListener("click", () => bringForward());
-  $("btnSendBack").addEventListener("click", () => sendBackward());
+  $("btnBringFwd").addEventListener("click", () => bringForwardZ());
+  $("btnSendBack").addEventListener("click", () => sendBackwardZ());
 
 $("btnNew").addEventListener("click", async () => {
   // CHANGE HERE: prevent accidental clearing
@@ -5354,6 +6847,7 @@ $("btnNew").addEventListener("click", async () => {
   scheduleAutosave();
   updateUiForSelection();
   render();
+  historyReset("New");
   setStatus("Cleared.");
 });
 
@@ -5469,15 +6963,80 @@ document.fonts?.ready?.then(() => {
   render();
 });
 
+function relayoutAllSitelenAfterFontsReady(){
+  return (document.fonts?.ready ?? Promise.resolve()).then(() => {
+    for (const el of Scene.elements){
+      if (el.type === ElementType.Sitelen || el.type === "Sitelen"){
+        invalidateSitelenCache(el.id);
+        updateSitelenLayout(el, { preserveCenter: true });
+      }
+    }
+    render();
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  // Do not hijack shortcuts while typing in inputs/textareas/selects/contenteditable
+  if (isTypingContext(document.activeElement)) return;
+
+  const isMac = navigator.platform.toLowerCase().includes("mac");
+  const mod = isMac ? e.metaKey : e.ctrlKey;
+
+  if (!mod) return;
+
+  const k = String(e.key || "").toLowerCase();
+
+
+  if ( k === "z"){
+    e.preventDefault();
+    if (e.shiftKey) historyRedo();
+    else historyUndo();
+    return;
+  }
+
+  if (k === "y"){
+    e.preventDefault();
+    historyRedo();
+    return;
+  }
+
+
+  if (k === "c"){
+    e.preventDefault();
+    copySelection();
+    return;
+  }
+
+  if (k === "x"){
+    e.preventDefault();
+    cutSelection();
+    return;
+  }
+
+  if (k === "v"){
+    e.preventDefault();
+    pasteClipboard();
+    return;
+  }
+}, { passive: false });
+
   /* ============================================================
      Load initial state
      ============================================================ */
   async function init(){
-    setStatus("Loading from IndexedDB…");
+    setStatus("Loading…");
     try{
       await awaitFontLoading(); // <-- add this FIRST
 
-      const saved = await dbGet(DB_KEY);
+      const record = await dbGet(DB_KEY);
+
+      //load assets if they exist in file, used in format 2
+      if(record && record.assets){
+        deserializeAssets(record.assets);
+      }
+      
+      //revert back to format 1 for loading scene
+      const saved = (record && record.scene) ? record.scene : record;
       if (saved && saved.stage && Array.isArray(saved.elements)){
         // restore
         Scene.meta = saved.meta || Scene.meta;
@@ -5485,6 +7044,9 @@ document.fonts?.ready?.then(() => {
         Scene.view = saved.view || Scene.view;
         Scene.elements = saved.elements || [];
         Scene.groups = saved.groups || {};
+
+        // critical: run after restore
+        await relayoutAllSitelenAfterFontsReady();
 
         $("stageW").value = String(Scene.stage.w);
         $("stageH").value = String(Scene.stage.h);
@@ -5495,7 +7057,7 @@ document.fonts?.ready?.then(() => {
         setPressed($("btnSnapGrid"), !!Scene.stage.snapGrid);
         setPressed($("btnSnapObjs"), !!Scene.stage.snapObjects);
 
-        setStatus("Loaded (IndexedDB).");
+        setStatus("Loaded.");
       } else {
         setStatus("No saved scene. Ready.");
       }
@@ -5505,9 +7067,14 @@ document.fonts?.ready?.then(() => {
     }
 
     updateUiForSelection();
+    wireClipboardButtons();
+    wireArrowKeyNudge();
+
     //resizeCanvasToDisplay();
     fitStageToView();
     render();
+    historyReset("Init");
+
   }
 
   init();

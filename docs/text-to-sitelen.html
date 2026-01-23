@@ -29,7 +29,82 @@
     }
 
     .controlsStack { display:flex; flex-direction:column; gap: 12px; margin-top:14px; }
-    .btnRow { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    
+ /* Toolbar row: keep everything aligned and compact */
+.btnRow{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+/* Compact "pill" control for toolbar */
+.inlinePill{
+  display:flex;
+  flex-direction: row;
+  align-items:center;
+  gap: 10px;
+
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-strong);
+
+  min-width: 0;
+}
+
+/* Compact label styling */
+.ctlLabel{
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.tpInline{
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+/* Ensure you don't carry old wide min-widths */
+.rgbControl{ min-width: auto; } /* remove/override any previous 240px */
+
+/* Make the select fit the pill */
+.inlinePill select{
+  height: 34px;
+  padding: 6px 10px;
+}
+
+/* Swatch stays small but looks intentional */
+.swatch{
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  overflow: hidden;
+}
+.swatch::-webkit-color-swatch-wrapper{ padding: 0; }
+.swatch::-webkit-color-swatch{ border: none; border-radius: 6px; }
+.swatch::-moz-color-swatch{ border: none; border-radius: 6px; }
+
+/* Optional: keep the Render button visually aligned in height */
+.btnBi{
+  height: 50px;
+  display:flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+
+/* If your selects are very wide, reduce them slightly */
+#fontSizeSel{ width: 108px; } /* adjust as needed */
+
 
     label { display:block; font-size:12px; color: var(--muted); margin-bottom:6px; }
 
@@ -143,14 +218,7 @@
     .rgbControl { min-width: 240px; }
     .rgbRow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .rgbRow select { width: 72px; padding: 8px 10px; }
-    .swatch {
-      width: 22px;
-      height: 22px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: #111;
-      flex: 0 0 auto;
-    }
+
     .hexLabel {
       font-size: 12px;
       color: var(--muted);
@@ -177,6 +245,82 @@
         url("./fonts/PatrickHand-Regular.ttf")   format("truetype");
       font-display: swap;
     }
+
+    /* ===== Toolbar overrides (paste at END of CSS) ===== */
+
+/* Define the variables you referenced */
+:root{
+  --panel-strong: rgba(255,255,255,0.35);
+  --panel-border: rgba(17,17,17,0.18);
+}
+
+/* Keep the toolbar on one line and vertically aligned */
+.btnRow{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+/* Turn inlineControl blocks into compact "pills" INSIDE the toolbar */
+.btnRow .inlineControl{
+  display:flex;
+  flex-direction: row;     /* override your column layout */
+  align-items:center;
+  gap: 10px;
+
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-strong);
+
+  min-width: 0;            /* override min-width:140px */
+}
+
+/* Labels inline, no extra bottom margins */
+.btnRow .inlineControl label{
+  display:inline-flex;
+  align-items:baseline;
+  gap: 6px;
+  margin: 0;               /* override label margin-bottom:6px */
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Make the tp line behave inline in the toolbar */
+.btnRow .inlineControl .tpLine{
+  display:inline;
+  margin: 0;
+  font-size: 12px;         /* keep it compact; adjust if desired */
+  line-height: 1;
+}
+
+/* Prevent selects from expanding to 100% width in the toolbar */
+.btnRow .inlineControl select{
+  width: auto !important;  /* overrides select{width:100%} */
+  min-width: 108px;        /* reasonable fixed control width */
+  padding: 6px 10px;
+  height: 34px;
+}
+
+/* Kill the old RGB layout constraints in the toolbar */
+.btnRow .rgbControl{ min-width: 0 !important; }
+.btnRow .rgbRow{ flex-wrap: nowrap; }
+
+/* Swatch alignment (in case it sits low/high) */
+.btnRow .swatch{
+  display:block;
+  margin: 0;
+}
+
+/* Optional: make the Render button height visually match pills */
+.btnRow .btnBi{
+  height: 50px;
+  padding: 8px 12px;
+}
+
+.nlModeControl{ display:none !important; }
+
   </style>
 </head>
 
@@ -243,7 +387,7 @@ nanpa 9+3/4.
 nanpa 007.
 nanpa Newen.
 nanpa #~WI.
-[ ota kolon koma ]"></textarea>
+[ ota sewi^ kolon  ni&lt; ]"></textarea>
       </div>
 
       <div class="btnRow" aria-label="Actions">
@@ -252,31 +396,19 @@ nanpa #~WI.
           <span class="tpLine">o sitelen</span>
         </button>
 
-        <!-- NEW: Foreground color picker (to the left of font selector) -->
-        <div class="inlineControl rgbControl" role="group" aria-label="Text color">
-          <label for="fgR">
-            Text color
-            <span class="tpLine" style="display:inline; margin:0 0 0 6px;">kule pi sitelen</span>
-          </label>
-
-          <div class="rgbRow" aria-describedby="fgColorHelp">
-            <select id="fgR" aria-label="Red channel"></select>
-            <select id="fgG" aria-label="Green channel"></select>
-            <select id="fgB" aria-label="Blue channel"></select>
-            <div id="fgSwatch" class="swatch" aria-hidden="true"></div>
-            <div id="fgHex" class="hexLabel" aria-hidden="true">#111111</div>
-          </div>
-
-          <div id="fgColorHelp" class="sr-only">
-            Select foreground text color using red, green, and blue channels. The swatch previews the selected color.
-          </div>
+        <!-- Foreground color picker -->
+        <div class="inlineControl inlinePill" role="group" aria-label="Text color">
+          <span class="ctlLabel">
+            Text color <span class="tpInline">kule pi sitelen</span>
+          </span>
+          <input id="fgPick" class="swatch" type="color" aria-label="Foreground color">
         </div>
 
-        <div class="inlineControl" role="group" aria-label="Font size">
-          <label for="fontSizeSel">
-            Font size
-            <span class="tpLine" style="display:inline; margin:0 0 0 6px;">suli pi sitelen</span>
-          </label>
+        <!-- Font size -->
+        <div class="inlineControl inlinePill" role="group" aria-label="Font size">
+          <span class="ctlLabel">
+            Font size <span class="tpInline">suli pi sitelen</span>
+          </span>
           <select id="fontSizeSel" aria-describedby="fontSizeHelp">
             <option value="12">12 px</option>
             <option value="16">16 px</option>
@@ -298,6 +430,7 @@ nanpa #~WI.
           </select>
           <div id="fontSizeHelp" class="sr-only">Changes the glyph and cartouche rendering size in the output.</div>
         </div>
+
       </div>
     </div>
 
@@ -323,7 +456,7 @@ nanpa #~WI.
 
       <div class="help">&nbsp;</div>
 
-      <div>
+      <div class="nlModeControl">
         <fieldset style="border:1px solid var(--border); border-radius:10px; padding:10px 12px; max-width: 560px;">
           <legend class="sr-only">Nanpa-linja-n render mode</legend>
 
@@ -349,48 +482,59 @@ nanpa #~WI.
       <div class="help"><img src="./images/From_Decimal_Number_To_Cartouche.png" width="569" /></div>
       <div class="help">&nbsp;</div>
 
-      <h1 style="margin:0 0 6px;font-size:18px;">
+      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
         <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
       </h1>
-      <div class="small" style="margin-bottom:10px;">
+      <div class="nlModeControl small" style="margin-bottom:10px;">
         <a id="rendererLink" class="repoLink" href="./renderer.html" target="_blank" rel="noopener noreferrer">
           nanpa-linja-n decimal number encoder + cartouche renderer
         </a>
         <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
       </div>
 
-      <h1 style="margin:0 0 6px;font-size:18px;">
+      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n cartouche calculator
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
       </h1>
-      <div class="small" style="margin-bottom:10px;">
+      <div class="nlModeControl small" style="margin-bottom:10px;">
         <a id="calculatorLink" class="repoLink" href="./calculator.html" target="_blank" rel="noopener noreferrer">
           nanpa-linja-n cartouche calculator
         </a>
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
       </div>
 
-      <h1 style="margin:0 0 6px;font-size:18px;">
+      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n maze game
         <span class="tpLine">o lukin e musi pi nasin pi nanpa-linja-n lon toki pona</span>
       </h1>
-      <div class="small" style="margin-bottom:10px;">
+      <div class="nlModeControl small" style="margin-bottom:10px;">
         <a class="repoLink" href="./maze-toki.html" target="_blank" rel="noopener noreferrer">
           maze game
         </a>
         <span class="tpLine">musi pi nasin pi nanpa-linja-n lon toki pona</span>
       </div>
 
-      <h1 style="margin:0 0 6px;font-size:18px;">
+      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona 15 puzzle game
         <span class="tpLine">o lukin e musi pi leko tawa nanpa Newelen pi toki pona</span>
       </h1>
-      <div class="small" style="margin-bottom:10px;">
+      <div class="nlModeControl small" style="margin-bottom:10px;">
         <a class="repoLink" href="./15-puzzle-toki.html" target="_blank" rel="noopener noreferrer">
           15 puzzle game
         </a>
         <span class="tpLine">musi pi leko tawa nanpa Newelen pi toki pona</span>
+      </div>
+
+      <h1 style="margin:0 0 6px;font-size:18px;">
+        Check out more Toki Pona tools
+        <span class="tpLine">o lukin e ilo ante lon toki pona</span>
+      </h1>
+      <div class="small" style="margin-bottom:10px;">
+        <a class="repoLink" href="./index.html" target="_blank" rel="noopener noreferrer">
+          More Toki Pona tools
+        </a>
+        <span class="tpLine">ilo ante lon toki pona</span>
       </div>
 
       <h1 style="margin:0 0 6px;font-size:18px;">
@@ -441,158 +585,121 @@ nanpa #~WI.
     const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
     const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
 
-    /* ============================
-       Foreground color selection (remember + optional query param)
-       ============================ */
-    const FG_COLOR_STORAGE_KEY = "tpFgRgb";
-    const FG_COLOR_QUERY_PARAM = "fg"; // optional: "R,G,B" (e.g. 17,34,51)
+    const FG_COLOR_STORAGE_KEY = "tpFgHex";
+const FG_COLOR_QUERY_PARAM = "fg"; // optional: "#RRGGBB" (e.g. %23112233)
 
-    function clampByte(n) {
-      const x = Number(n);
-      if (!Number.isFinite(x)) return null;
-      const i = Math.round(x);
-      if (i < 0) return 0;
-      if (i > 255) return 255;
-      return i;
+function clampByte(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return null;
+  const i = Math.round(x);
+  if (i < 0) return 0;
+  if (i > 255) return 255;
+  return i;
+}
+
+function byteToHex2(n) {
+  const s = (n | 0).toString(16).toUpperCase();
+  return (s.length === 1) ? ("0" + s) : s;
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + byteToHex2(r) + byteToHex2(g) + byteToHex2(b);
+}
+
+function parseRgbCsv(s) {
+  const raw = String(s ?? "").trim();
+  if (!raw) return null;
+  const parts = raw.split(",").map(p => p.trim()).filter(Boolean);
+  if (parts.length !== 3) return null;
+  const r = clampByte(parts[0]);
+  const g = clampByte(parts[1]);
+  const b = clampByte(parts[2]);
+  if (r == null || g == null || b == null) return null;
+  return { r, g, b };
+}
+
+/**
+ * Accepts:
+ *  - "#RRGGBB" (any case)
+ *  - "R,G,B"   (legacy, decimal 0..255)
+ * Returns "#RRGGBB" uppercase, or null.
+ */
+function normalizeHexColor(s) {
+  const raw = String(s ?? "").trim();
+  if (!raw) return null;
+
+  // Modern hex
+  const m = /^#([0-9a-f]{6})$/i.exec(raw);
+  if (m) return ("#" + m[1].toUpperCase());
+
+  // Legacy CSV "R,G,B"
+  const rgb = parseRgbCsv(raw);
+  if (rgb) return rgbToHex(rgb.r, rgb.g, rgb.b);
+
+  return null;
+}
+
+
+function readFgHexFromQuery() {
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    return normalizeHexColor(params.get(FG_COLOR_QUERY_PARAM));
+  } catch {
+    return null;
+  }
+}
+
+function loadFgHexFromStorage() {
+  try {
+    return normalizeHexColor(localStorage.getItem(FG_COLOR_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function saveFgHexToStorage(hex) {
+  try { localStorage.setItem(FG_COLOR_STORAGE_KEY, hex); } catch {}
+}
+
+function getFgHex() {
+  const pick = document.getElementById("fgPick");
+  return normalizeHexColor(pick?.value) ?? "#000000";
+}
+
+function setFgHex(hex) {
+  const pick = document.getElementById("fgPick");
+  const h = normalizeHexColor(hex) ?? "#000000";
+  if (pick) pick.value = h;
+  saveFgHexToStorage(h);
+  return h;
+}
+
+function initFgColorControls() {
+  const q = readFgHexFromQuery();
+  if (q) { setFgHex(q); return; }
+
+  const s = loadFgHexFromStorage();
+  if (s) { setFgHex(s); return; }
+
+  setFgHex("#000000");
+}
+
+function wireFgColorControls() {
+  const pick = document.getElementById("fgPick");
+  if (!pick) return;
+
+  // Use "input" for live updates while dragging; use "change" for updates on close.
+  pick.addEventListener("input", async () => {
+    try {
+      const hex = getFgHex();
+      saveFgHexToStorage(hex);
+      await renderFromTextarea();
+    } catch (e) {
+      showAlertAndAnnounce(e?.message ?? String(e));
     }
+  });
+}
 
-    function byteToHex2(n) {
-      const s = (n | 0).toString(16).toUpperCase();
-      return (s.length === 1) ? ("0" + s) : s;
-    }
-
-    function rgbToHex(r, g, b) {
-      return "#" + byteToHex2(r) + byteToHex2(g) + byteToHex2(b);
-    }
-
-    function parseRgbCsv(s) {
-      const raw = String(s ?? "").trim();
-      if (!raw) return null;
-      const parts = raw.split(",").map(p => p.trim()).filter(Boolean);
-      if (parts.length !== 3) return null;
-      const r = clampByte(parts[0]);
-      const g = clampByte(parts[1]);
-      const b = clampByte(parts[2]);
-      if (r == null || g == null || b == null) return null;
-      return { r, g, b };
-    }
-
-    function readFgRgbFromQuery() {
-      try {
-        const params = new URLSearchParams(window.location.search || "");
-        const raw = params.get(FG_COLOR_QUERY_PARAM);
-        return parseRgbCsv(raw);
-      } catch {
-        return null;
-      }
-    }
-
-    function loadFgRgbFromStorage() {
-      try {
-        const raw = localStorage.getItem(FG_COLOR_STORAGE_KEY);
-        return parseRgbCsv(raw);
-      } catch {
-        return null;
-      }
-    }
-
-    function saveFgRgbToStorage(r, g, b) {
-      try { localStorage.setItem(FG_COLOR_STORAGE_KEY, `${r},${g},${b}`); } catch {}
-    }
-
-    function getFgRgb() {
-      const rSel = document.getElementById("fgR");
-      const gSel = document.getElementById("fgG");
-      const bSel = document.getElementById("fgB");
-
-      const r = clampByte(rSel ? rSel.value : null) ?? 0;
-      const g = clampByte(gSel ? gSel.value : null) ?? 0;
-      const b = clampByte(bSel ? bSel.value : null) ?? 0;
-
-      return { r, g, b, css: `rgb(${r} ${g} ${b})`, hex: rgbToHex(r, g, b) };
-    }
-
-    function setFgRgb(r, g, b) {
-      const rr = clampByte(r) ?? 0;
-      const gg = clampByte(g) ?? 0;
-      const bb = clampByte(b) ?? 0;
-
-      const rSel = document.getElementById("fgR");
-      const gSel = document.getElementById("fgG");
-      const bSel = document.getElementById("fgB");
-
-      if (rSel) rSel.value = String(rr);
-      if (gSel) gSel.value = String(gg);
-      if (bSel) bSel.value = String(bb);
-
-      updateFgColorPreview();
-      saveFgRgbToStorage(rr, gg, bb);
-      return { r: rr, g: gg, b: bb };
-    }
-
-    function updateFgColorPreview() {
-      const { css, hex } = getFgRgb();
-      const sw = document.getElementById("fgSwatch");
-      const hx = document.getElementById("fgHex");
-      if (sw) sw.style.background = css;
-      if (hx) hx.textContent = hex;
-    }
-
-    function populateRgbSelect(sel, labelPrefix) {
-      if (!sel) return;
-      sel.innerHTML = "";
-      for (let v = 0; v <= 255; v += 17) {
-        const opt = document.createElement("option");
-        opt.value = String(v);
-        opt.textContent = `${labelPrefix}${v}`;
-        sel.appendChild(opt);
-      }
-      if (sel.options.length === 0 || sel.options[sel.options.length - 1].value !== "255") {
-        const opt = document.createElement("option");
-        opt.value = "255";
-        opt.textContent = `${labelPrefix}255`;
-        sel.appendChild(opt);
-      }
-    }
-
-    function initFgColorControls() {
-      const rSel = document.getElementById("fgR");
-      const gSel = document.getElementById("fgG");
-      const bSel = document.getElementById("fgB");
-
-      populateRgbSelect(rSel, "R ");
-      populateRgbSelect(gSel, "G ");
-      populateRgbSelect(bSel, "B ");
-
-      const q = readFgRgbFromQuery();
-      if (q) { setFgRgb(q.r, q.g, q.b); return; }
-
-      const s = loadFgRgbFromStorage();
-      if (s) { setFgRgb(s.r, s.g, s.b); return; }
-
-      setFgRgb(0, 0, 0);
-    }
-
-    function wireFgColorControls() {
-      const rSel = document.getElementById("fgR");
-      const gSel = document.getElementById("fgG");
-      const bSel = document.getElementById("fgB");
-
-      const onChange = async () => {
-        try {
-          const { r, g, b } = getFgRgb();
-          saveFgRgbToStorage(r, g, b);
-          updateFgColorPreview();
-          await renderFromTextarea();
-        } catch (e) {
-          showAlertAndAnnounce(e?.message ?? String(e));
-        }
-      };
-
-      if (rSel) rSel.addEventListener("change", onChange);
-      if (gSel) gSel.addEventListener("change", onChange);
-      if (bSel) bSel.addEventListener("change", onChange);
-    }
 
     /* ============================
        Font size selection (remember + query param)
@@ -819,8 +926,9 @@ nanpa #~WI.
     const NL_MODE_QUERY_PARAM_ALIAS = "cartoucheDisplay";
 
     function getNanpaLinjanMode() {
-      const el = document.querySelector('input[name="nlMode"]:checked');
-      return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
+      //const el = document.querySelector('input[name="nlMode"]:checked');
+      //return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
+      return "uniform";
     }
 
     function setNanpaLinjanMode(mode) {
@@ -916,9 +1024,7 @@ nanpa #~WI.
       "mun": 0xF193A, "musi": 0xF193B, "mute": 0xF193C, "nanpa": 0xF193D, "nasa": 0xF193E,
       "nasin": 0xF193F, "nena": 0xF1940,
       "ni": 0xF1941,
-      "ni>": 0xF198B,
-      "ni^": 0xF198A,
-      "ni<": 0xF1989,
+    
       "nimi": 0xF1942, "noka": 0xF1943,
       "o": 0xF1944, "olin": 0xF1945, "ona": 0xF1946, "open": 0xF1947, "pakala": 0xF1948,
       "pali": 0xF1949, "palisa": 0xF194A, "pan": 0xF194B, "pana": 0xF194C, "pi": 0xF194D,
@@ -926,7 +1032,7 @@ nanpa #~WI.
       "poki": 0xF1953, "pona": 0xF1954, "pu": 0xF1955, "sama": 0xF1956, "seli": 0xF1957,
       "selo": 0xF1958, "seme": 0xF1959,
       "sewi": 0xF195A,
-      "sewi^": 0xF198C,
+     
       "sijelo":0xF195B, "sike": 0xF195C, "sin": 0xF195D,
       "sina": 0xF195E, "sinpin": 0xF195F, "sitelen": 0xF1960, "sona": 0xF1961, "soweli": 0xF1962,
       "su": 0xF19A6,
@@ -940,7 +1046,12 @@ nanpa #~WI.
       "kokosila": 0xF1984, "lanpan": 0xF1985, "n": 0xF1986, "misikeke": 0xF1987, "ku": 0xF1988,
       "pake": 0xF19A0, "apeja": 0xF19A1, "majuna": 0xF19A2, "powe": 0xF19A3,
         "linluwi":0xF19A4,
-        
+      
+         "sewi^": 0xF198C,
+  "ni>": 0xF198B,
+      "ni^": 0xF198A,
+      "ni<": 0xF1989,
+      
       // punctuation / helpers
       "·": 0xF199C, ":": 0xF199D, ",": 0xF199E,
       "ota": 0xF199C, "kolon": 0xF199D, "koma": 0xF199E,
@@ -949,6 +1060,8 @@ nanpa #~WI.
       // NEW: full stop (requested)
       ".": 0xF199C
     };
+    //
+
 
     function isKnownTpWord(w) { return WORD_TO_UCSUR_CP[w] != null; }
 
@@ -2187,7 +2300,7 @@ nanpa #~WI.
           renderTpWordsFromText(s.slice(pos, a), elements, { fontPx, mode });
         }
 
-        const fgCss = getFgRgb().css;
+        const fgCss = getFgHex(); 
 
         if (h.kind === "tpPhrase") {
           const cps = nanpaLinjanWordsToCodepoints(h.words, { mode });
@@ -2226,8 +2339,7 @@ nanpa #~WI.
       if (!content) return;
 
       const mode = getNanpaLinjanMode();
-      const fgCss = getFgRgb().css;
-
+      const fgCss = getFgHex();
       try {
         const caps = decimalStringToCaps(content, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
         const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
@@ -2441,7 +2553,7 @@ nanpa #~WI.
       const outCtx = outCanvas.getContext("2d", { alpha: true });
       outCtx.clearRect(0, 0, outW, outH);
       outCtx.textBaseline = "alphabetic";
-      outCtx.fillStyle = getFgRgb().css;
+      outCtx.fillStyle = getFgHex();
       setTextQuality(outCtx);
 
       let y = pad;
@@ -2577,7 +2689,7 @@ nanpa #~WI.
       }
 
       renderAllLinesToCanvas(outCanvas, linesElements, { fontPx });
-      const { hex } = getFgRgb();
+      const  hex  = getFgHex();
       announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px. Color: ${hex}.`);
     }
 
@@ -2652,8 +2764,6 @@ nanpa #~WI.
         wireNanpaLinjanModeRadios();
         wireFontSizeSelect();
         wireCartoucheDisplayLinks();
-
-        updateFgColorPreview();
 
         await fontsReadyForPx(getFontPx());
         warmUpCanvasFontsOnce();

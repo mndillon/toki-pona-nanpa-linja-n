@@ -237,6 +237,8 @@
     .displayOpt input {
       transform: translateY(1px);
     }
+
+    .nlModeControl{ display:none !important; }
   </style>
 
 </head>
@@ -443,19 +445,21 @@
     </div>
 
     <!-- NEW: Cartouche display mode selector (subtle) -->
-    <fieldset class="displayChooser" aria-label="Cartouche display mode">
-      <legend>Cartouche display</legend>
+     <div class="nlModeControl">
+          <fieldset class="displayChooser" aria-label="Cartouche display mode">
+            <legend>Cartouche display</legend>
 
-      <label class="displayOpt">
-        <input type="radio" name="cartoucheDisplay" value="traditional" checked>
-        <span>Traditional</span>
-      </label>
+            <label class="displayOpt">
+              <input type="radio" name="cartoucheDisplay" value="traditional" checked>
+              <span>Traditional</span>
+            </label>
 
-      <label class="displayOpt">
-        <input type="radio" name="cartoucheDisplay" value="uniform">
-        <span>Uniform</span>
-      </label>
-    </fieldset>
+            <label class="displayOpt">
+              <input type="radio" name="cartoucheDisplay" value="uniform">
+              <span>Uniform</span>
+            </label>
+          </fieldset>
+      </div>
 
     <div class="out" role="region" aria-label="Outputs">
       <h3>
@@ -554,22 +558,22 @@
       <div class="help"><img src="./images/From_Decimal_Number_To_Cartouche.png" width="569" /></div>
       <div class="help">&nbsp;</div>
 
-      <h1 style="margin:0 0 6px;font-size:18px;">
+      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona Multiline text → sitelen pona glyphs → png image file download
         <span class="tpLine">o lukin e ilo ni: sitelen toki pona mute-linja tawa sitelen pona</span>
       </h1>
-      <div class="small" style="margin-bottom:10px;">
+      <div class="nlModeControl small" style="margin-bottom:10px;">
         <a id="textToSitelenLink" class="repoLink" href="./text-to-sitelen.html" target="_blank" rel="noopener noreferrer">
           Multiline text → sitelen pona glyphs → png image file download
         </a>
         <span class="tpLine">o lukin e ilo ni: sitelen toki pona mute-linja tawa sitelen pona</span>
       </div>
 
-      <h1 style="margin:0 0 6px;font-size:18px;">
+      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n cartouche calculator
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
       </h1>
-      <div class="small" style="margin-bottom:10px;">
+      <div class="nlModeControl small" style="margin-bottom:10px;">
         <!-- CHANGED: give this link an id so JS can append the query param -->
         <a id="calculatorLink" class="repoLink" href="./calculator.html" target="_blank" rel="noopener noreferrer">
           nanpa-linja-n cartouche calculator
@@ -577,28 +581,39 @@
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
       </div>
 
-      <h1 style="margin:0 0 6px;font-size:18px;">
+      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n maze game
         <span class="tpLine">o lukin e musi pi nasin pi nanpa-linja-n lon toki pona</span>
       </h1>
-      <div class="small" style="margin-bottom:10px;">
+      <div class="nlModeControl small" style="margin-bottom:10px;">
         <a class="repoLink" href="./maze-toki.html" target="_blank" rel="noopener noreferrer">
           maze game
         </a>
         <span class="tpLine">musi pi nasin pi nanpa-linja-n lon toki pona</span>
       </div>
 
-      <h1 style="margin:0 0 6px;font-size:18px;">
+      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona 15 puzzle game
         <span class="tpLine">o lukin e musi pi leko tawa nanpa Newelen pi toki pona</span>
       </h1>
-      <div class="small" style="margin-bottom:10px;">
+      <div class="nlModeControl small" style="margin-bottom:10px;">
         <a class="repoLink" href="./15-puzzle-toki.html" target="_blank" rel="noopener noreferrer">
           15 puzzle game
         </a>
         <span class="tpLine">musi pi leko tawa nanpa Newelen pi toki pona</span>
       </div>
       
+      <h1 style="margin:0 0 6px;font-size:18px;">
+        Check out more Toki Pona tools
+        <span class="tpLine">o lukin e ilo ante lon toki pona</span>
+      </h1>
+      <div class="small" style="margin-bottom:10px;">
+        <a class="repoLink" href="./index.html" target="_blank" rel="noopener noreferrer">
+          More Toki Pona tools
+        </a>
+        <span class="tpLine">ilo ante lon toki pona</span>
+      </div>
+
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona sitelen pona fonts
         <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
@@ -664,8 +679,9 @@
     let lastAction = "decimal"; // "decimal" | "codes" | "words"
 
     function getCartoucheDisplayMode() {
-      const el = document.querySelector('input[name="cartoucheDisplay"]:checked');
-      return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
+      //const el = document.querySelector('input[name="cartoucheDisplay"]:checked');
+      //return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
+      return "uniform";
     }
 
     function setCartoucheDisplayMode(mode) {
