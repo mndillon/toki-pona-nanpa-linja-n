@@ -725,7 +725,7 @@ max-width: var(--stage-maxw); /* optional */
               <div class="field">
                 <!-- NEW -->
     <label class="checkInline" style="margin:0;">
-      <input id="defFillEnabled" type="checkbox" />Default fill enabled</label>
+      <input id="defFillEnabled" type="checkbox" />Default allow fill</label>
               </div>
             </div>
 
@@ -4957,7 +4957,7 @@ function drawSitelenRasterLocal(el, x, y, w, h){
     // CHANGE HERE: Image background is always transparent when an image is loaded
     const hasImage = !!(el.image && el.image.assetId && getImageAssetDataUrl(el.image.assetId));
 
-    if (!hasImage && el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+    if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
       ctx.save();
       ctx.fillStyle = el.fill;
       ctx.fillRect(x,y,w,h);
@@ -5262,7 +5262,7 @@ if (sels.some(e => !!e.isLocked)){
   function addAppearanceBlock(){
     addSection("Appearance");
 
-    propsBody.appendChild(makeCheckbox("Fill enabled", !!el.fillEnabled, (v) => {
+    propsBody.appendChild(makeCheckbox("Allow fill", !!el.fillEnabled, (v) => {
       for (const e of sels) e.fillEnabled = !!v; // if multi-select supported
       scheduleAutosave();
       render();
@@ -5284,6 +5284,7 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // LIVE preview only
         for (const e of sels) {
+          //console.log("Live fill :" + v);
           e.fill = rgbaOrHexToHex(v, "#FFFFFF");
 
           if (e.type === ElementType.Sitelen){
@@ -5297,6 +5298,7 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // COMMIT
         for (const e of sels) {
+          //console.log("Commit fill :" + v);
           e.fill = rgbaOrHexToHex(v, "#FFFFFF");
 
           if (e.type === ElementType.Sitelen){
@@ -5331,6 +5333,7 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // LIVE preview only
         for (const e of sels) {
+          //console.log("Live stroke :" + v);
           e.stroke = rgbaOrHexToHex(v, "#111111");
 
           if (e.type === ElementType.Sitelen){
@@ -5344,7 +5347,8 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // COMMIT
         for (const e of sels) {
-           e.stroke = rgbaOrHexToHex(v, "#111111");
+          //console.log("Commit stroke :" + v);
+          e.stroke = rgbaOrHexToHex(v, "#111111");
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
@@ -5395,10 +5399,12 @@ if (groupId){
     "Foreground (group)",
     fg,
     (v) => {            // LIVE preview only
+      //console.log("Live group foreground :" + v);
       applyGroupForeground(groupId, v);
       render();
     },
     (v) => {            // COMMIT
+      //console.log("Commit group foreground :" + v);
       applyGroupForeground(groupId, v);
       scheduleAutosave();
       render();
@@ -5575,6 +5581,7 @@ if (!single){
       el.color ?? "#111111",
       (v) => {
         // LIVE preview only
+        //console.log("Live text colour :" + v);
         el.color =  rgbaOrHexToHex(v, "#111111");
 
         if (el.type === ElementType.Sitelen){
@@ -5586,6 +5593,7 @@ if (!single){
       },
       (v) => {
         // COMMIT
+        //console.log("Commit text colour :" + v);
         el.color =  rgbaOrHexToHex(v, "#111111");
 
         if (el.type === ElementType.Sitelen){
@@ -5648,13 +5656,26 @@ propsBody.appendChild(makeGlyphPicker(el));
 
 
 propsBody.appendChild(makeColorPicker(
-  "Color", 
-  el.color ?? "#111111", 
-  (v) => {
-  el.color =  rgbaOrHexToHex(v, "#111111");
-  scheduleAutosave(); render();
-}
-));
+      "Glyph color",
+      el.color ?? "#111111",
+      (v) => {
+        // LIVE preview only
+        //console.log("Live glyph colour :" + v);
+        el.color =  rgbaOrHexToHex(v, "#111111");
+        render();
+      },
+      (v) => {
+        // COMMIT
+        //console.log("Commit glyph colour :" + v);
+        el.color =  rgbaOrHexToHex(v, "#111111")
+
+        scheduleAutosave();
+        render();
+        renderPropsPanel(); // safe now
+      }
+    ));
+
+
 
 
     addAppearanceBlock();
@@ -5978,7 +5999,7 @@ function makeColorPicker(label, value, onLive, onCommit){
   // Live preview: do NOT rebuild props panel here.
   inp.addEventListener("input", (e) => {
     try { 
-      const newValue = rgbaOrHexToHex(e.currentTarget.value || "#111111", "#111111") ;
+      const newValue = rgbaOrHexToHex(e.target.value || "#111111", "#111111") ;
       if (onLive) onLive(newValue); 
     } catch (err) { 
       console.warn(err); 
@@ -5988,7 +6009,7 @@ function makeColorPicker(label, value, onLive, onCommit){
   // Commit: picker closed (most reliable across browsers).
   inp.addEventListener("change", (e) => {
     try {
-      const newValue = rgbaOrHexToHex(e.currentTarget.value || "#111111", "#111111") ;
+      const newValue = rgbaOrHexToHex(e.target.value || "#111111", "#111111") ;
       if (onLive) onLive(newValue);
       // Ensure final value applied even if some browsers don't emit input as expected
       if (onCommit) {onCommit(newValue); historyCommit("Edit properties");}
