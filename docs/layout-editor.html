@@ -7326,7 +7326,6 @@ function wireStageDefaultsUi(){
   }
 
   if (dt){
-
     dt.addEventListener("change", (e) => {
       Scene.stage.defaultTextColor = e.target.value;
       scheduleAutosave();
@@ -7336,7 +7335,6 @@ function wireStageDefaultsUi(){
   }
 
   if (dfe){
-
     dfe.addEventListener("change", (e) => {
       Scene.stage.defaultFillEnabled = !!e.target.checked;
       scheduleAutosave();
@@ -7346,7 +7344,6 @@ function wireStageDefaultsUi(){
   }
 
   if (df){
-
     df.addEventListener("change", (e) => {
       // store as rgba with alpha=1 for consistency with your element fill strings
       Scene.stage.defaultFill = e.target.value;
@@ -7357,7 +7354,6 @@ function wireStageDefaultsUi(){
   }
 
   if (ds){
-
     ds.addEventListener("change", (e) => {
       Scene.stage.defaultStroke = e.target.value;
       scheduleAutosave();
@@ -7367,7 +7363,6 @@ function wireStageDefaultsUi(){
   }
 
   if (dsw){
-
     dsw.addEventListener("change", (e) => {
       Scene.stage.defaultStrokeW = Math.max(0, Number(e.target.value || 0));
       scheduleAutosave();
@@ -7490,6 +7485,10 @@ document.addEventListener("keydown", (e) => {
     try{
       await awaitFontLoading(); // <-- add this FIRST
 
+      //wire default stage controls
+      wireStageDefaultsUi();
+
+      //load scene
       const record = await dbGet(DB_KEY);
 
       //load assets if they exist in file, used in format 2
@@ -7528,12 +7527,14 @@ document.addEventListener("keydown", (e) => {
       setStatus("IndexedDB unavailable. Running without autosave.");
     }
 
-    wireStageDefaultsUi();
-    syncStageDefaultsUiFromScene();
+   
+   
 
     updateUiForSelection();
     wireClipboardButtons();
     wireArrowKeyNudge();
+
+    syncStageDefaultsUiFromScene();
 
     //resizeCanvasToDisplay();
     fitStageToView();
