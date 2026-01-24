@@ -3360,14 +3360,11 @@ function sitelenRenderToOffscreen(el,w,h){
   const opts = {
     fontPx,
     mode: "uniform",
-    fgCss: el.color || "#111",
+    fgCss: el.color || "#111111",
     padPx: DEFAULT_PAD_PX,
     lineGapPx: LINE_GAP_PX,
 
-    // NEW
     literalFontFamily: sitelenLiteralFontFamilyForElement(el),
-
-    //NEW
     literalFontAlignment: sitelenLiteralFontAlignmentForElement(el),
   };
 
@@ -3383,9 +3380,13 @@ function sitelenRenderToOffscreen(el,w,h){
 function ensureSitelenRaster(el){
   if (el.type !== ElementType.Sitelen) return null;
 
+  //console.log("ensure sitelen raster");
+
   const sig = sitelenSignature(el);
   const existing = sitelenCache.get(el.id);
   if (existing && existing.sig === sig) return existing;
+
+  console.log("ensure sitelen new raster");
 
   // Build fresh raster
   const bb = sitelenMeasureBBox(el);
@@ -5254,6 +5255,7 @@ if (sels.some(e => !!e.isLocked)){
 
   // Common values for multi or single
   const commonFill = commonValue(sels, e => e.fill);
+  const commonFillEnabled = commonValue(sels, e => e.fillEnabled);
   const commonStroke = commonValue(sels, e => e.stroke);
   const commonOpacity = commonValue(sels, e => String(e.opacity ?? 1));
   const commonStrokeW = commonValue(sels, e => String(e.strokeW ?? 0));
@@ -5262,21 +5264,11 @@ if (sels.some(e => !!e.isLocked)){
   function addAppearanceBlock(){
     addSection("Appearance");
 
-    propsBody.appendChild(makeCheckbox("Allow fill", !!el.fillEnabled, (v) => {
+    propsBody.appendChild(makeCheckbox("Allow fill", (commonFillEnabled ?? sels[0].fillEnabled) || false, (v) => {
       for (const e of sels) e.fillEnabled = !!v; // if multi-select supported
       scheduleAutosave();
       render();
     }));
-
-
-    //propsBody.appendChild(makeColorField(
-    //  "Fill",
-    //  (commonFill ?? sels[0].fill) || "#ffffff",
-    //  (color) => { for (const e of sels) e.fill = color; scheduleAutosave(); render(); },
-    //  (commonFill === null && !single) ? "Mixed" : null,
-    //  true
-    //));
-
 
     propsBody.appendChild(makeColorPicker(
       "Fill",
@@ -5284,7 +5276,7 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // LIVE preview only
         for (const e of sels) {
-          //console.log("Live fill :" + v);
+          console.log("Live fill :" + v);
           e.fill = rgbaOrHexToHex(v, "#FFFFFF");
 
           if (e.type === ElementType.Sitelen){
@@ -5298,7 +5290,7 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // COMMIT
         for (const e of sels) {
-          //console.log("Commit fill :" + v);
+          console.log("Commit fill :" + v);
           e.fill = rgbaOrHexToHex(v, "#FFFFFF");
 
           if (e.type === ElementType.Sitelen){
@@ -5316,24 +5308,13 @@ if (sels.some(e => !!e.isLocked)){
 
 
 
-    //propsBody.appendChild(makeColorField(
-    //  "Stroke",
-    //  (commonStroke ?? sels[0].stroke) || "#111111",
-   //  (color) => {
-   //     for (const e of sels) e.stroke = color; scheduleAutosave(); render(); 
-   //   },
-   //   (commonStroke === null && !single) ? "Mixed" : null,
-   //   true
-   // ));
-
-
     propsBody.appendChild(makeColorPicker(
        "Stroke",
      (commonStroke ?? sels[0].stroke) || "#111111",
       (v) => {
         // LIVE preview only
         for (const e of sels) {
-          //console.log("Live stroke :" + v);
+          console.log("Live stroke :" + v);
           e.stroke = rgbaOrHexToHex(v, "#111111");
 
           if (e.type === ElementType.Sitelen){
@@ -5347,7 +5328,7 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // COMMIT
         for (const e of sels) {
-          //console.log("Commit stroke :" + v);
+          console.log("Commit stroke :" + v);
           e.stroke = rgbaOrHexToHex(v, "#111111");
 
           if (e.type === ElementType.Sitelen){
@@ -5399,12 +5380,12 @@ if (groupId){
     "Foreground (group)",
     fg,
     (v) => {            // LIVE preview only
-      //console.log("Live group foreground :" + v);
+      console.log("Live group foreground :" + v);
       applyGroupForeground(groupId, v);
       render();
     },
     (v) => {            // COMMIT
-      //console.log("Commit group foreground :" + v);
+      console.log("Commit group foreground :" + v);
       applyGroupForeground(groupId, v);
       scheduleAutosave();
       render();
@@ -5581,7 +5562,7 @@ if (!single){
       el.color ?? "#111111",
       (v) => {
         // LIVE preview only
-        //console.log("Live text colour :" + v);
+        console.log("Live text colour :" + v);
         el.color =  rgbaOrHexToHex(v, "#111111");
 
         if (el.type === ElementType.Sitelen){
@@ -5593,7 +5574,7 @@ if (!single){
       },
       (v) => {
         // COMMIT
-        //console.log("Commit text colour :" + v);
+        console.log("Commit text colour :" + v);
         el.color =  rgbaOrHexToHex(v, "#111111");
 
         if (el.type === ElementType.Sitelen){
@@ -5660,13 +5641,13 @@ propsBody.appendChild(makeColorPicker(
       el.color ?? "#111111",
       (v) => {
         // LIVE preview only
-        //console.log("Live glyph colour :" + v);
+        console.log("Live glyph colour :" + v);
         el.color =  rgbaOrHexToHex(v, "#111111");
         render();
       },
       (v) => {
         // COMMIT
-        //console.log("Commit glyph colour :" + v);
+        console.log("Commit glyph colour :" + v);
         el.color =  rgbaOrHexToHex(v, "#111111")
 
         scheduleAutosave();
@@ -5963,27 +5944,6 @@ function makeNumberRowWithPresets(
     return f;
   }
 
-function makeColorField(label, value, onChange, placeholder=null, allowRgba=false){
-  const f = document.createElement("div");
-  f.className = "field";
-
-  const l = document.createElement("label");
-  l.textContent = label + (placeholder ? ` (${placeholder})` : "");
-
-  const inp = document.createElement("input");
-  inp.type = "color";
-  inp.value = rgbaOrHexToHex(value || "#FFFFFF", "#FFFFFF") ;
-
-  const handler = () => { onChange(inp.value); historyCommit("Edit properties");  };
-  inp.addEventListener("input", handler);
-  inp.addEventListener("change", handler);
-
-  f.appendChild(l);
-  f.appendChild(inp);
-  return f;
-}
-
-
 
 function makeColorPicker(label, value, onLive, onCommit){
   const f = document.createElement("div");
@@ -5998,6 +5958,7 @@ function makeColorPicker(label, value, onLive, onCommit){
 
   // Live preview: do NOT rebuild props panel here.
   inp.addEventListener("input", (e) => {
+    console.log("Colou Input Event");
     try { 
       const newValue = rgbaOrHexToHex(e.target.value || "#111111", "#111111") ;
       if (onLive) onLive(newValue); 
@@ -6008,6 +5969,7 @@ function makeColorPicker(label, value, onLive, onCommit){
 
   // Commit: picker closed (most reliable across browsers).
   inp.addEventListener("change", (e) => {
+    console.log("Colou Change Event");
     try {
       const newValue = rgbaOrHexToHex(e.target.value || "#111111", "#111111") ;
       if (onLive) onLive(newValue);
@@ -6997,7 +6959,7 @@ async function importJsonFromFile(file){
     if (el.type === ElementType.Rect){
       // Rect
       const r = el.radius ?? 0;
-      if (el.fill && el.fill !== "transparent"){
+      if (el.fillEnabled && el.fill && el.fill !== "transparent"){
         octx.fillStyle = el.fill;
         roundedRectPathOff(octx, x,y,el.w,el.h,r);
         octx.fill();
@@ -7010,16 +6972,11 @@ async function importJsonFromFile(file){
       }
     } else if (el.type === ElementType.Text){
       // Text
-      if (el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+      if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
         octx.fillStyle = el.fill;
         octx.fillRect(x,y,el.w,el.h);
       }
-      if ((el.strokeW ?? 0) > 0){
-        octx.lineWidth = (el.strokeW ?? 1);
-        octx.strokeStyle = el.stroke || "rgba(17,17,17,0.35)";
-        octx.strokeRect(x,y,el.w,el.h);
-      }
-
+      
       const pad = 8;
       const innerX = x + pad;
       const innerY = y + pad;
@@ -7030,7 +6987,7 @@ async function importJsonFromFile(file){
       const fontFamily = el.fontFamily || "PatrickHand";
       const lineHeight = Math.max(0.8, el.lineHeight ?? 1.15);
 
-      octx.fillStyle = el.color || "#111";
+      octx.fillStyle = el.color || "#111111";
       octx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
       octx.textBaseline = "top";
 
@@ -7056,11 +7013,30 @@ async function importJsonFromFile(file){
         octx.fillText(ln, tx, ty);
         ty += lhPx;
       }
+
+      if ((el.strokeW ?? 0) > 0){
+        octx.lineWidth = (el.strokeW ?? 1);
+        octx.strokeStyle = el.stroke || "rgba(17,17,17,0.35)";
+        octx.strokeRect(x,y,el.w,el.h);
+      }
     } else if (el.type === ElementType.Sitelen){
       const entry = ensureSitelenRaster(el);
       if (entry && entry.canvas){
+        
+        if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+          octx.fillStyle = el.fill;
+          octx.fillRect(x,y,el.w,el.h);
+        }
+
         // draw like image into the offscreen export, scaled to el.w/el.h
         octx.drawImage(entry.canvas, x, y, el.w, el.h);
+
+
+        if ((el.strokeW ?? 0) > 0){
+          octx.lineWidth = (el.strokeW ?? 1);
+          octx.strokeStyle = el.stroke || "rgba(17,17,17,0.35)";
+          octx.strokeRect(x,y,el.w,el.h);
+        }
       } else {
         // placeholder if raster missing
         octx.setLineDash([6,4]);
@@ -7069,15 +7045,23 @@ async function importJsonFromFile(file){
       }
 
     } else if (el.type === ElementType.Glyph){
+      //glyph
+      if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+        octx.fillStyle = el.fill;
+        octx.fillRect(x,y,el.w,el.h);
+      }
+
       const cp = parseCodepointInput(el.codepoint);
       const ch = (typeof cp === "number") ? String.fromCodePoint(cp) : "?";
       const fontSize = Math.max(6, (el.fontSize ?? 64));
       const fontFamily = el.fontFamily || "TP-Cartouche-Font";
-      octx.fillStyle = el.color || "#111";
+     
       octx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
       octx.textBaseline = "middle";
       octx.textAlign = "center";
+      octx.fillStyle = el.color;
       octx.fillText(ch, x + el.w/2, y + el.h/2);
+
       if ((el.strokeW ?? 0) > 0){
         octx.lineWidth = (el.strokeW ?? 1);
         octx.strokeStyle = el.stroke || "rgba(17,17,17,0.35)";
@@ -7088,7 +7072,7 @@ async function importJsonFromFile(file){
       // background fill only when there is NO loaded image
       const hasImage = !!(el.image && el.image.assetId && getImageAssetDataUrl(el.image.assetId));
 
-      if (!hasImage && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
+      if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
         octx.fillStyle = el.fill;
         octx.fillRect(x,y,el.w,el.h);
       }
@@ -7128,6 +7112,7 @@ async function importJsonFromFile(file){
   }
 
   function exportPngTransparent(){
+    console.log("Export PNG image");
     // Create offscreen canvas at exact stage size (no background fill => transparent)
     const off = document.createElement("canvas");
     off.width = Scene.stage.w;
