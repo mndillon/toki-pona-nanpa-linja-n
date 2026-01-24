@@ -5284,7 +5284,7 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // LIVE preview only
         for (const e of sels) {
-          e.fill = rgbaOrHexToHex(v, "FFFFFF");
+          e.fill = rgbaOrHexToHex(v, "#FFFFFF");
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
@@ -5297,7 +5297,7 @@ if (sels.some(e => !!e.isLocked)){
       (v) => {
         // COMMIT
         for (const e of sels) {
-          e.fill = rgbaOrHexToHex(v, "FFFFFF");
+          e.fill = rgbaOrHexToHex(v, "#FFFFFF");
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
@@ -5389,7 +5389,7 @@ if (groupId){
     foreground: "#111111"
   });
 
-  const fg = g.foreground || "#111111";
+  const fg = rgbaOrHexToHex(g.foreground || "#111111", "#111111");
 
   propsBody.appendChild(makeColorPicker(
     "Foreground (group)",
