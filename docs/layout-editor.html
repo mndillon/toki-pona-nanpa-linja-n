@@ -850,9 +850,9 @@ max-width: var(--stage-maxw); /* optional */
     // NEW: stage + default styling
     stageBg: "#F3DFC0",                 // stage background color
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
-    defaultFill: "rgba(255,255,255,0.0)",// default fill for shapes/boxes
+    defaultFill: "#FFFFFF",// default fill for shapes/boxes
     defaultFillEnabled: false,
-    defaultStroke: "rgba(17,17,17,0.35)",// default stroke
+    defaultStroke: "#111111",// default stroke
     defaultStrokeW: 2,                  // default stroke width
   });
 
@@ -1103,12 +1103,11 @@ function normalizeScene(parsed){
     el.rotationDeg = Number.isFinite(el.rotationDeg) ? el.rotationDeg : 0;
     el.opacity = Number.isFinite(el.opacity) ? clamp(el.opacity, 0, 1) : 1;
 
-    el.fill = (el.fill == null) ? "rgba(255,255,255,0.0)" : el.fill;
+    el.fill = rgbaOrHexToHex(el.fill || "#FFFFFF", "#FFFFFF");
 
     if (typeof el.fillEnabled !== "boolean") el.fillEnabled = false;
 
-    el.stroke = (el.stroke == null) ? "rgba(17,17,17,0.35)" : el.stroke;
-    //el.strokeW = Number.isFinite(el.strokeW) ? Math.max(0, el.strokeW) : 0;
+    el.stroke = rgbaOrHexToHex(el.stroke || "#111111", "#111111");
   
     const defSW = Number.isFinite(out.stage?.defaultStrokeW) ? out.stage.defaultStrokeW : 2;
     if (!Number.isFinite(el.strokeW)) {
@@ -1141,7 +1140,9 @@ function normalizeScene(parsed){
       el.fontFamily = el.fontFamily || "PatrickHand";
       el.fontSize = Number.isFinite(el.fontSize) ? el.fontSize : (el.type === ElementType.Sitelen ? 44 : 28);
       el.align = el.align || "left";
-      el.color = el.color || "#111111";
+      const elColor = rgbaOrHexToHex(el.color ||  "#111111", "#111111");
+      console.log("Set element color " + elColor);
+      el.color = elColor;
       el.lineHeight = Number.isFinite(el.lineHeight) ? el.lineHeight : 1.15;
 
       if (el.type === ElementType.Sitelen){
@@ -1165,7 +1166,7 @@ function normalizeScene(parsed){
   el.fontFamily = "TP-Cartouche-Font";
 
   el.fontSize = Number.isFinite(el.fontSize) ? el.fontSize : 92;
-  el.color = el.color || "#111111";
+  el.color = rgbaOrHexToHex(el.color ||  "#111111", "#111111");
 }
 
 
@@ -1537,7 +1538,7 @@ function deserializeAssets(serialized){
 function newImageElement(x,y){
   const el = defaultElementBase(ElementType.Image, x, y);
   el.w = 320; el.h = 220;
-  el.fill = "rgba(255,255,255,0.25)";
+  el.fill = "#FFFFFF";
   el.image = null; // assigned after file pick
   el.keepAspect = true; // CHANGE HERE: default true
  // el.stroke = "rgba(17,17,17,0.35)";
@@ -1875,12 +1876,13 @@ function hexToRgba(hex, a = 1){
   return `rgba(${r},${g},${b},${a})`;
 }
 
-function rgbaOrHexToHex(value, fallback="#ffffff"){
+function rgbaOrHexToHex(value, fallback="#FFFFFF"){
+  if(value === null) return fallback.toUpperCase();
   const s = String(value || "").trim();
   if (s.startsWith("#") && (s.length === 7)) return s;
   // parse rgba(r,g,b,a) -> hex (drop alpha)
   const m = s.match(/rgba?\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)(?:\s*,\s*([0-9.]+))?\s*\)/i);
-  if (!m) return fallback;
+  if (!m) return fallback.toUpperCase();
   const r = clamp(parseInt(m[1],10),0,255).toString(16).padStart(2,"0");
   const g = clamp(parseInt(m[2],10),0,255).toString(16).padStart(2,"0");
   const b = clamp(parseInt(m[3],10),0,255).toString(16).padStart(2,"0");
@@ -3825,7 +3827,7 @@ function applyGroupForeground(groupId, cssColor){
   for (const el of els){
     if (!isTextLikeElement(el)) continue;
 
-    el.color = cssColor;
+    el.color =  rgbaOrHexToHex( cssColor , "~111111");
 
     // Sitelen needs raster/layout refresh because color is baked into the offscreen canvas
     if (el.type === ElementType.Sitelen){
@@ -5267,22 +5269,93 @@ if (sels.some(e => !!e.isLocked)){
     }));
 
 
-    propsBody.appendChild(makeColorField(
+    //propsBody.appendChild(makeColorField(
+    //  "Fill",
+    //  (commonFill ?? sels[0].fill) || "#ffffff",
+    //  (color) => { for (const e of sels) e.fill = color; scheduleAutosave(); render(); },
+    //  (commonFill === null && !single) ? "Mixed" : null,
+    //  true
+    //));
+
+
+    propsBody.appendChild(makeColorPicker(
       "Fill",
-      (commonFill ?? sels[0].fill) || "rgba(255,255,255,0.0)",
-      (color) => { for (const e of sels) e.fill = color; scheduleAutosave(); render(); },
-      (commonFill === null && !single) ? "Mixed" : null,
-      true
+      (commonFill ?? sels[0].fill) || "#FFFFFF",
+      (v) => {
+        // LIVE preview only
+        for (const e of sels) {
+          e.fill = rgbaOrHexToHex(v, "FFFFFF");
+
+          if (e.type === ElementType.Sitelen){
+            invalidateSitelenCache(e.id);
+            updateSitelenLayout(e, { preserveCenter: true });
+          }
+        }
+
+        render();
+      },
+      (v) => {
+        // COMMIT
+        for (const e of sels) {
+          e.fill = rgbaOrHexToHex(v, "FFFFFF");
+
+          if (e.type === ElementType.Sitelen){
+            invalidateSitelenCache(e.id);
+            updateSitelenLayout(e, { preserveCenter: true });
+          }
+        }
+
+        scheduleAutosave();
+        render();
+        renderPropsPanel(); // safe now
+      }
     ));
 
-    propsBody.appendChild(makeColorField(
-      "Stroke",
-      (commonStroke ?? sels[0].stroke) || "rgba(0,0,0,0.0)",
-     (color) => {
-        for (const e of sels) e.stroke = color; scheduleAutosave(); render(); 
+
+
+
+    //propsBody.appendChild(makeColorField(
+    //  "Stroke",
+    //  (commonStroke ?? sels[0].stroke) || "#111111",
+   //  (color) => {
+   //     for (const e of sels) e.stroke = color; scheduleAutosave(); render(); 
+   //   },
+   //   (commonStroke === null && !single) ? "Mixed" : null,
+   //   true
+   // ));
+
+
+    propsBody.appendChild(makeColorPicker(
+       "Stroke",
+     (commonStroke ?? sels[0].stroke) || "#111111",
+      (v) => {
+        // LIVE preview only
+        for (const e of sels) {
+          e.stroke = rgbaOrHexToHex(v, "#111111");
+
+          if (e.type === ElementType.Sitelen){
+            invalidateSitelenCache(e.id);
+            updateSitelenLayout(e, { preserveCenter: true });
+          }
+        }
+
+        render();
       },
-      (commonStroke === null && !single) ? "Mixed" : null,
-      true
+      (v) => {
+        // COMMIT
+        for (const e of sels) {
+           e.stroke = rgbaOrHexToHex(v, "#111111");
+
+          if (e.type === ElementType.Sitelen){
+            invalidateSitelenCache(e.id);
+            updateSitelenLayout(e, { preserveCenter: true });
+          }
+        }
+
+        scheduleAutosave();
+        render();
+        renderPropsPanel(); // safe now
+      }
     ));
 
     propsBody.appendChild(makeNumberRow(
@@ -5501,7 +5574,7 @@ if (!single){
       el.color ?? "#111111",
       (v) => {
         // LIVE preview only
-        el.color = v;
+        el.color =  rgbaOrHexToHex(v, "#111111");
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
@@ -5512,7 +5585,7 @@ if (!single){
       },
       (v) => {
         // COMMIT
-        el.color = v;
+        el.color =  rgbaOrHexToHex(v, "#111111");
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
@@ -5573,10 +5646,14 @@ propsBody.appendChild(makeGlyphPicker(el));
 ));
 
 
-propsBody.appendChild(makeColorPicker("Color", el.color ?? "#111111", (v) => {
-  el.color = v;
+propsBody.appendChild(makeColorPicker(
+  "Color", 
+  el.color ?? "#111111", 
+  (v) => {
+  el.color =  rgbaOrHexToHex(v, "#111111");
   scheduleAutosave(); render();
-}));
+}
+));
 
 
     addAppearanceBlock();
@@ -5873,7 +5950,7 @@ function makeColorField(label, value, onChange, placeholder=null, allowRgba=fals
 
   const inp = document.createElement("input");
   inp.type = "color";
-  inp.value = rgbaOrHexToHex(value) || "#ffffff";
+  inp.value = rgbaOrHexToHex(value || "#FFFFFF", "#FFFFFF") ;
 
   const handler = () => { onChange(inp.value); historyCommit("Edit properties");  };
   inp.addEventListener("input", handler);
@@ -5895,7 +5972,7 @@ function makeColorPicker(label, value, onLive, onCommit){
 
   const inp = document.createElement("input");
   inp.type = "color";
-  inp.value = rgbaOrHexToHex(value) || "#111111";
+  inp.value = rgbaOrHexToHex(value || "#111111", "#111111") ;
 
   // Live preview: do NOT rebuild props panel here.
   inp.addEventListener("input", () => {
@@ -6583,7 +6660,7 @@ function updateClipboardButtons(){
       };
 
       el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
-      el.fill = "rgba(255,255,255,0.0)";
+      el.fill = "#FFFFFF";
 
       invalidateImageCache(el.id);
       scheduleAutosave();
@@ -7249,7 +7326,7 @@ function wireStageDefaultsUi(){
     df.addEventListener("input", () => {
        console.log("input default fill");
       // store as rgba with alpha=1 for consistency with your element fill strings
-      Scene.stage.defaultFill = hexToRgba(df.value, 1);
+      Scene.stage.defaultFill = rgbaOrHexToHex(df.value, "#FFFFFF");
        console.log("input default fill");
       scheduleAutosave();
       render();
@@ -7260,7 +7337,7 @@ function wireStageDefaultsUi(){
     console.log("Wire default stroke");
     ds.addEventListener("input", () => {
       console.log("input default stroke");
-      Scene.stage.defaultStroke = hexToRgba(ds.value, 1);
+      Scene.stage.defaultStroke = rgbaOrHexToHex(ds.value, "#111111");
       console.log("input default stroke 2");
       scheduleAutosave();
       render();
