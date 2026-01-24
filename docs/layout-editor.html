@@ -5277,7 +5277,7 @@ if (sels.some(e => !!e.isLocked)){
         // LIVE preview only
         for (const e of sels) {
           console.log("Live fill :" + v);
-          e.fill = rgbaOrHexToHex(v, "#FFFFFF");
+          e.fill = v;
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
@@ -5291,7 +5291,7 @@ if (sels.some(e => !!e.isLocked)){
         // COMMIT
         for (const e of sels) {
           console.log("Commit fill :" + v);
-          e.fill = rgbaOrHexToHex(v, "#FFFFFF");
+          e.fill = v;
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
@@ -5301,7 +5301,7 @@ if (sels.some(e => !!e.isLocked)){
 
         scheduleAutosave();
         render();
-        renderPropsPanel(); // safe now
+        //renderPropsPanel(); // safe now
       }
     ));
 
@@ -5315,7 +5315,7 @@ if (sels.some(e => !!e.isLocked)){
         // LIVE preview only
         for (const e of sels) {
           console.log("Live stroke :" + v);
-          e.stroke = rgbaOrHexToHex(v, "#111111");
+          e.stroke = v;
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
@@ -5329,7 +5329,7 @@ if (sels.some(e => !!e.isLocked)){
         // COMMIT
         for (const e of sels) {
           console.log("Commit stroke :" + v);
-          e.stroke = rgbaOrHexToHex(v, "#111111");
+          e.stroke = v;
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
@@ -5339,7 +5339,7 @@ if (sels.some(e => !!e.isLocked)){
 
         scheduleAutosave();
         render();
-        renderPropsPanel(); // safe now
+        //renderPropsPanel(); // safe now
       }
     ));
 
@@ -5389,7 +5389,7 @@ if (groupId){
       applyGroupForeground(groupId, v);
       scheduleAutosave();
       render();
-      renderPropsPanel();
+      //renderPropsPanel();
     }
   ));
 }
@@ -5563,7 +5563,7 @@ if (!single){
       (v) => {
         // LIVE preview only
         console.log("Live text colour :" + v);
-        el.color =  rgbaOrHexToHex(v, "#111111");
+        el.color =  v;
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
@@ -5575,7 +5575,7 @@ if (!single){
       (v) => {
         // COMMIT
         console.log("Commit text colour :" + v);
-        el.color =  rgbaOrHexToHex(v, "#111111");
+        el.color =  v;
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
@@ -5584,7 +5584,7 @@ if (!single){
 
         scheduleAutosave();
         render();
-        renderPropsPanel(); // safe now
+        //renderPropsPanel(); // safe now
       }
     ));
 
@@ -5642,17 +5642,17 @@ propsBody.appendChild(makeColorPicker(
       (v) => {
         // LIVE preview only
         console.log("Live glyph colour :" + v);
-        el.color =  rgbaOrHexToHex(v, "#111111");
+        el.color =  v;
         render();
       },
       (v) => {
         // COMMIT
         console.log("Commit glyph colour :" + v);
-        el.color =  rgbaOrHexToHex(v, "#111111")
+        el.color = v;
 
         scheduleAutosave();
         render();
-        renderPropsPanel(); // safe now
+        //renderPropsPanel(); // safe now
       }
     ));
 
@@ -5954,14 +5954,22 @@ function makeColorPicker(label, value, onLive, onCommit){
 
   const inp = document.createElement("input");
   inp.type = "color";
-  inp.value = rgbaOrHexToHex(value || "#111111", "#111111") ;
+
+  // ✅ FIX: Validate hex before assigning to color input
+  const hexValue = String(value || "#111111").trim();
+  const validHex = /^#[0-9A-Fa-f]{6}$/i.test(hexValue) ? hexValue : "#111111";
+  inp.value = validHex;
+
+  let liveTimer = null;
 
   // Live preview: do NOT rebuild props panel here.
   inp.addEventListener("input", (e) => {
     console.log("Colou Input Event");
     try { 
-      const newValue = rgbaOrHexToHex(e.target.value || "#111111", "#111111") ;
-      if (onLive) onLive(newValue); 
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(() => {
+        if (onLive) onLive(e.target.value); 
+      }, 16); // ~60fps
     } catch (err) { 
       console.warn(err); 
     }
@@ -5971,10 +5979,10 @@ function makeColorPicker(label, value, onLive, onCommit){
   inp.addEventListener("change", (e) => {
     console.log("Colou Change Event");
     try {
-      const newValue = rgbaOrHexToHex(e.target.value || "#111111", "#111111") ;
-      if (onLive) onLive(newValue);
+      clearTimeout(liveTimer);
+      if (onLive) onLive(e.target.value);
       // Ensure final value applied even if some browsers don't emit input as expected
-      if (onCommit) {onCommit(newValue); historyCommit("Edit properties");}
+      if (onCommit) {onCommit(e.target.value); historyCommit("Edit properties");}
     } catch (err) {
       console.warn(err);
     }
@@ -7307,11 +7315,11 @@ function wireStageDefaultsUi(){
 
   if (bg){
     bg.addEventListener("input", (e) => {
-      Scene.stage.bg = rgbaOrHexToHex(e.currentTarget.value, "#111111");
+      Scene.stage.bg = e.target.value;
       render();
     });
     bg.addEventListener("change", (e) => {
-      Scene.stage.bg =rgbaOrHexToHex(e.currentTarget.value, "#111111");
+      Scene.stage.bg = e.target.value;
       scheduleAutosave();
       render();
     });
@@ -7320,18 +7328,20 @@ function wireStageDefaultsUi(){
   if (dt){
 
     dt.addEventListener("change", (e) => {
-      Scene.stage.defaultTextColor = rgbaOrHexToHex(e.currentTarget.value, "#111111");
+      Scene.stage.defaultTextColor = e.target.value;
       scheduleAutosave();
-      render();
+      //render();
+      setStatus("Default text color updated (affects new elements).");
     });
   }
 
   if (dfe){
 
     dfe.addEventListener("change", (e) => {
-      Scene.stage.defaultFillEnabled = !!e.currentTarget.checked;
+      Scene.stage.defaultFillEnabled = !!e.target.checked;
       scheduleAutosave();
-      render();
+      //render();
+      setStatus("Default background color fill enabled updated (affects new elements).");
     });
   }
 
@@ -7339,27 +7349,30 @@ function wireStageDefaultsUi(){
 
     df.addEventListener("change", (e) => {
       // store as rgba with alpha=1 for consistency with your element fill strings
-      Scene.stage.defaultFill = rgbaOrHexToHex(e.currentTarget.value, "#FFFFFF");
+      Scene.stage.defaultFill = e.target.value;
       scheduleAutosave();
-      render();
+      //render();
+      setStatus("Default background color fill updated (affects new elements).");
     });
   }
 
   if (ds){
 
     ds.addEventListener("change", (e) => {
-      Scene.stage.defaultStroke = rgbaOrHexToHex(e.currentTarget.value, "#111111");
+      Scene.stage.defaultStroke = e.target.value;
       scheduleAutosave();
-      render();
+      //render();
+      setStatus("Default stroke color updated (affects new elements).");
     });
   }
 
   if (dsw){
 
     dsw.addEventListener("change", (e) => {
-      Scene.stage.defaultStrokeW = Math.max(0, Number(e.currentTarget.value || 0));
+      Scene.stage.defaultStrokeW = Math.max(0, Number(e.target.value || 0));
       scheduleAutosave();
-      render();
+      //render();
+      setStatus("Default stroke width updated (affects new elements).");
     });
   }
 }
