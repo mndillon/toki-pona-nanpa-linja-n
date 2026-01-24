@@ -339,7 +339,7 @@
 }
 
 .stageMiniBody{
-  max-height: 460px; /* adjust to taste */
+  max-height: 580px; /* adjust to taste */
 }
 
   .field{
@@ -848,9 +848,9 @@ max-width: var(--stage-maxw); /* optional */
     viewZoom: 1.0,
 
     // NEW: stage + default styling
-    stageBg: "#F3DFC0",                 // stage background color
+    stageBg: "#FFFFFF", //"#F3DFC0",                 // stage background color
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
-    defaultFill: "#FFFFFF",// default fill for shapes/boxes
+    defaultFill: "#111111",// default fill for shapes/boxes
     defaultFillEnabled: false,
     defaultStroke: "#111111",// default stroke
     defaultStrokeW: 2,                  // default stroke width
@@ -5976,18 +5976,24 @@ function makeColorPicker(label, value, onLive, onCommit){
   inp.value = rgbaOrHexToHex(value || "#111111", "#111111") ;
 
   // Live preview: do NOT rebuild props panel here.
-  inp.addEventListener("input", () => {
-    try { onLive && onLive(inp.value); } catch (e) { console.warn(e); }
+  inp.addEventListener("input", (e) => {
+    try { 
+      const newValue = rgbaOrHexToHex(e.currentTarget.value || "#111111", "#111111") ;
+      if (onLive) onLive(newValue); 
+    } catch (err) { 
+      console.warn(err); 
+    }
   });
 
   // Commit: picker closed (most reliable across browsers).
-  inp.addEventListener("change", () => {
+  inp.addEventListener("change", (e) => {
     try {
+      const newValue = rgbaOrHexToHex(e.currentTarget.value || "#111111", "#111111") ;
+      if (onLive) onLive(newValue);
       // Ensure final value applied even if some browsers don't emit input as expected
-      if (onLive) onLive(inp.value);
-      if (onCommit) {onCommit(inp.value); historyCommit("Edit properties");}
-    } catch (e) {
-      console.warn(e);
+      if (onCommit) {onCommit(newValue); historyCommit("Edit properties");}
+    } catch (err) {
+      console.warn(err);
     }
   });
 
@@ -7294,60 +7300,58 @@ function wireStageDefaultsUi(){
   const dsw = document.getElementById("defStrokeW");
 
   if (bg){
-    bg.addEventListener("input", () => {
-      Scene.stage.bg = bg.value;
+    bg.addEventListener("input", (e) => {
+      Scene.stage.bg = rgbaOrHexToHex(e.currentTarget.value, "#111111");
+      render();
+    });
+    bg.addEventListener("change", (e) => {
+      Scene.stage.bg =rgbaOrHexToHex(e.currentTarget.value, "#111111");
       scheduleAutosave();
       render();
     });
   }
 
   if (dt){
-    dt.addEventListener("input", () => {
-      Scene.stage.defaultTextColor = dt.value;
+
+    dt.addEventListener("change", (e) => {
+      Scene.stage.defaultTextColor = rgbaOrHexToHex(e.currentTarget.value, "#111111");
       scheduleAutosave();
       render();
     });
   }
 
   if (dfe){
-    dfe.addEventListener("change", () => {
-      Scene.stage.defaultFillEnabled = !!dfe.checked;
 
-      // Optional but helpful: disable the color picker when fill is disabled
-      //const df = $("defFill");
-      //if (df) df.disabled = !Scene.stage.defaultFillEnabled;
-
+    dfe.addEventListener("change", (e) => {
+      Scene.stage.defaultFillEnabled = !!e.currentTarget.checked;
       scheduleAutosave();
       render();
     });
   }
 
   if (df){
-     console.log("Wire default fill");
-    df.addEventListener("input", () => {
-       console.log("input default fill");
+
+    df.addEventListener("change", (e) => {
       // store as rgba with alpha=1 for consistency with your element fill strings
-      Scene.stage.defaultFill = rgbaOrHexToHex(df.value, "#FFFFFF");
-       console.log("input default fill");
+      Scene.stage.defaultFill = rgbaOrHexToHex(e.currentTarget.value, "#FFFFFF");
       scheduleAutosave();
       render();
     });
   }
 
   if (ds){
-    console.log("Wire default stroke");
-    ds.addEventListener("input", () => {
-      console.log("input default stroke");
-      Scene.stage.defaultStroke = rgbaOrHexToHex(ds.value, "#111111");
-      console.log("input default stroke 2");
+
+    ds.addEventListener("change", (e) => {
+      Scene.stage.defaultStroke = rgbaOrHexToHex(e.currentTarget.value, "#111111");
       scheduleAutosave();
       render();
     });
   }
 
   if (dsw){
-    dsw.addEventListener("input", () => {
-      Scene.stage.defaultStrokeW = Math.max(0, Number(dsw.value || 0));
+
+    dsw.addEventListener("change", (e) => {
+      Scene.stage.defaultStrokeW = Math.max(0, Number(e.currentTarget.value || 0));
       scheduleAutosave();
       render();
     });
