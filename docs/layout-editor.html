@@ -11,7 +11,7 @@
 
     /* Style inspired by your example */
     --bg: #F3DFC0;
-    --ink: #111;
+    --ink: #000111;
     --muted: #3f4750;
     --panel: rgba(255,255,255,0.35);
     --panel-strong: rgba(255,255,255,0.55);
@@ -1745,7 +1745,7 @@ function ensureImageLoadedForElement(el){
 
      const linesEls = parseMultilineToElements(inputText, { fontPx, mode });
      const box = measureMultiline(linesEls, { fontPx, padPx: 18, lineGapPx: 18 });
-     renderMultilineToCanvas(canvas, linesEls, { fontPx, fgCss: "#111", padPx: 18, lineGapPx: 18 });
+     renderMultilineToCanvas(canvas, linesEls, { fontPx, fgCss: "000", padPx: 18, lineGapPx: 18 });
 
    CHANGE HERE blocks indicate where to paste your existing maps and font names.
    ============================================================ */
@@ -2759,7 +2759,7 @@ function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFami
   ctx2.font = `${px}px "${fam}"`;
   setTextQuality(ctx2);
 
-  ctx2.fillStyle = fgCss || "#111";
+  ctx2.fillStyle = fgCss || "#000111";
 
   const x = pad + left;
   const baselineY = pad + ascent;
@@ -2917,7 +2917,7 @@ function renderTpWordsFromText(text, elements, { fontPx, mode }) {
 /* ============================================================
    Segment parsers: text / bracket / quote
    ============================================================ */
-function parseTextSegmentToElements(segmentText, elements, { fontPx, mode, fgCss = "#111" ,literalFontFamily}) {
+function parseTextSegmentToElements(segmentText, elements, { fontPx, mode, fgCss = "#000111" ,literalFontFamily}) {
   const s = String(segmentText ?? "");
   if (!s.trim()) return;
 
@@ -2978,7 +2978,7 @@ function parseQuoteSegmentToElements(quoteContent, elements, { fontPx, literalFo
 }
 
 
-function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode, fgCss = "#111", literalFontFamily }) {
+function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode, fgCss = "#000111", literalFontFamily }) {
   const content = String(bracketContent ?? "").trim();
   if (!content) return;
 
@@ -3017,7 +3017,7 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
 /* ============================================================
    Line parsing: line → elements
    ============================================================ */
-function lineToElements(line, { fontPx, mode = "uniform", fgCss = "#111", literalFontFamily } = {}) {
+function lineToElements(line, { fontPx, mode = "uniform", fgCss = "#000111", literalFontFamily } = {}) {
   const segs = splitLineIntoSegments(line);
   const elements = [];
 
@@ -3035,7 +3035,7 @@ function lineToElements(line, { fontPx, mode = "uniform", fgCss = "#111", litera
   return elements;
 }
 
-function parseMultilineToElements(multilineText, { fontPx, mode = "uniform", fgCss = "#111", literalFontFamily } = {}) {
+function parseMultilineToElements(multilineText, { fontPx, mode = "uniform", fgCss = "#000111", literalFontFamily } = {}) {
   const raw = String(multilineText ?? "");
   const lines = raw.replace(/\r\n/g, "\n").split("\n");
   return lines.map(line => lineToElements(line, { fontPx, mode, fgCss, literalFontFamily }));
@@ -3178,7 +3178,7 @@ function measureMultiline(linesElements, { fontPx, padPx = DEFAULT_PAD_PX, lineG
 /* ============================================================
    DRAW: render multi-line to a canvas (also computes bounding box)
    ============================================================ */
-function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#111", padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX, literalFontAlignment = "left" } = {}) {
+function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#000111", padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX, literalFontAlignment = "left" } = {}) {
   if (!outCanvas) throw new Error("renderMultilineToCanvas: outCanvas missing");
 
   const box = measureMultiline(linesElements, { fontPx, padPx, lineGapPx });
@@ -3266,7 +3266,7 @@ function renderTextToCanvas(
   {
     fontPx,
     mode = "uniform",
-    fgCss = "#111",
+    fgCss = "#000111",
     padPx = DEFAULT_PAD_PX,
     lineGapPx = LINE_GAP_PX,
     literalFontFamily,            // NEW: accept it
@@ -3843,6 +3843,8 @@ function applyGroupForeground(groupId, cssColor){
 // ===============================
 function wireArrowKeyNudge(){
   window.addEventListener("keydown", (e) => {
+    console.log("window keydown"); 
+
     // Ignore typing inside inputs/textareas/selects/contenteditable
     if (isTypingContext(e.target)) return;
 
@@ -6577,6 +6579,8 @@ function updateClipboardButtons(){
      Keyboard controls
      ============================================================ */
   window.addEventListener("keydown", (e) => {
+    console.log("window keydown 2");
+
     if (isTypingContext(document.activeElement)) return;
 
     if (e.key === "Escape"){
@@ -7278,10 +7282,6 @@ console.log("New Scene "+ JSON.stringify(Scene));
   });
 
 
-
-
-
-
 function wireSnapButtons(){
   const bGrid = document.getElementById("btnSnapGrid");
   const bObjs = document.getElementById("btnSnapObjs");
@@ -7305,6 +7305,7 @@ function wireSnapButtons(){
 }
 
 
+
 function wireStageDefaultsUi(){
   const bg = document.getElementById("stageBg");
   const dt = document.getElementById("defTextColor");
@@ -7313,12 +7314,23 @@ function wireStageDefaultsUi(){
   const ds = document.getElementById("defStroke");
   const dsw = document.getElementById("defStrokeW");
 
+  let bgTimer = null;
   if (bg){
+    console.log("Define stage bg listeners");
     bg.addEventListener("input", (e) => {
-      Scene.stage.bg = e.target.value;
-      render();
+      if (bgTimer) clearTimeout(bgTimer);   // cancel pending render
+      bgTimer = setTimeout(() => {          // schedule a render shortly after last input
+        console.log("Define stage bg listener input");
+        Scene.stage.bg = e.target.value;
+        render();
+        bgTimer = null;
+      }, 60); // adjust debounce delay (e.g. 40–120)
+
+      
     });
     bg.addEventListener("change", (e) => {
+      if (bgTimer) clearTimeout(bgTimer);   // cancel pending render
+      console.log("Define stage bg listener change ")+ e.target.value;
       Scene.stage.bg = e.target.value;
       scheduleAutosave();
       render();
@@ -7326,48 +7338,58 @@ function wireStageDefaultsUi(){
   }
 
   if (dt){
+    console.log("Define stage dt listener");
     dt.addEventListener("change", (e) => {
+      console.log("Define stage bt listener change "+ e.target.value);
       Scene.stage.defaultTextColor = e.target.value;
       scheduleAutosave();
       //render();
-      setStatus("Default text color updated (affects new elements).");
+      //setStatus("Default text color updated (affects new elements).");
     });
   }
 
   if (dfe){
+    console.log("Define stage dfe listener");
     dfe.addEventListener("change", (e) => {
+      console.log("Define stage bfe listener change "+ !!e.target.checked);
       Scene.stage.defaultFillEnabled = !!e.target.checked;
       scheduleAutosave();
       //render();
-      setStatus("Default background color fill enabled updated (affects new elements).");
+      //setStatus("Default background color fill enabled updated (affects new elements).");
     });
   }
 
   if (df){
+    console.log("Define stage df listener");
     df.addEventListener("change", (e) => {
+      console.log("Define stage df listener change "+ e.target.value);
       // store as rgba with alpha=1 for consistency with your element fill strings
       Scene.stage.defaultFill = e.target.value;
       scheduleAutosave();
       //render();
-      setStatus("Default background color fill updated (affects new elements).");
+      //setStatus("Default background color fill updated (affects new elements).");
     });
   }
 
   if (ds){
+    console.log("Define stage ds listener");
     ds.addEventListener("change", (e) => {
+      console.log("Define stage ds listener change " + e.target.value);
       Scene.stage.defaultStroke = e.target.value;
       scheduleAutosave();
       //render();
-      setStatus("Default stroke color updated (affects new elements).");
+      //setStatus("Default stroke color updated (affects new elements).");
     });
   }
 
   if (dsw){
+    console.log("Define stage dsw listener");
     dsw.addEventListener("change", (e) => {
+      console.log("Define stage dsw listener change "+ e.target.value);
       Scene.stage.defaultStrokeW = Math.max(0, Number(e.target.value || 0));
       scheduleAutosave();
       //render();
-      setStatus("Default stroke width updated (affects new elements).");
+      //setStatus("Default stroke width updated (affects new elements).");
     });
   }
 }
@@ -7433,6 +7455,9 @@ function relayoutAllSitelenAfterFontsReady(){
 }
 
 document.addEventListener("keydown", (e) => {
+
+  console.log("document keydown");
+
   // Do not hijack shortcuts while typing in inputs/textareas/selects/contenteditable
   if (isTypingContext(document.activeElement)) return;
 
