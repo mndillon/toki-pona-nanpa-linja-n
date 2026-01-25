@@ -1186,6 +1186,9 @@ function normalizeScene(parsed){
         if (!Number.isFinite(el.image.origW)) el.image.origW = el.w;
         if (!Number.isFinite(el.image.origH)) el.image.origH = el.h;
       }
+
+       // ADD THIS: color-key flag defaults false if missing
+      el.colorKeyTransparent = (el.colorKeyTransparent == null) ? false : !!el.colorKeyTransparent;
     }
 
   }
@@ -1541,6 +1544,8 @@ function newImageElement(x,y){
   el.fill = "#FFFFFF";
   el.image = null; // assigned after file pick
   el.keepAspect = true; // CHANGE HERE: default true
+  // ADD THIS: default off
+  el.colorKeyTransparent = false;
  // el.stroke = "rgba(17,17,17,0.35)";
  // el.strokeW = 2;
   return el;
@@ -1729,6 +1734,85 @@ function ensureImageLoadedForElement(el){
 
   return entry.ready ? entry.img : null;
 }
+
+
+/* ============================================================
+   Color-key transparency cache (Image -> processed offscreen canvas)
+   ------------------------------------------------------------
+   If el.colorKeyTransparent is true:
+   - sample top-left pixel from the loaded image
+   - pixels within tolerance become transparent (alpha = 0)
+   ============================================================ */
+
+const colorKeyCache = new Map(); // el.id -> { sig, canvas, naturalW, naturalH }
+
+function invalidateColorKeyCache(elId){
+  colorKeyCache.delete(elId);
+}
+
+// CHANGE HERE if you want more/less "jitter"
+const DEFAULT_COLOR_KEY_TOL = 12;
+
+/**
+ * Build/return a processed canvas for an image element that has color-key enabled.
+ * Returns {canvas, naturalW, naturalH} or null.
+ */
+function ensureColorKeyRaster(el, alreadyLoadedImg){
+  if (!el || el.type !== ElementType.Image) return null;
+  if (!el.colorKeyTransparent) return null;
+
+  const img = alreadyLoadedImg || ensureImageLoadedForElement(el);
+  if (!img) return null;
+
+  const assetId = (el.image && el.image.assetId) ? String(el.image.assetId) : "";
+  if (!assetId) return null;
+
+  const tol = DEFAULT_COLOR_KEY_TOL;
+
+  // Signature: reprocess only if the underlying asset changes
+  const sig = `${assetId}|tol:${tol}|w:${img.naturalWidth}|h:${img.naturalHeight}`;
+
+  const existing = colorKeyCache.get(el.id);
+  if (existing && existing.sig === sig) return existing;
+
+  // Build fresh processed raster at intrinsic size
+  const off = document.createElement("canvas");
+  off.width = Math.max(1, img.naturalWidth || img.width || 1);
+  off.height = Math.max(1, img.naturalHeight || img.height || 1);
+
+  const c = off.getContext("2d", { willReadFrequently: true });
+  c.clearRect(0, 0, off.width, off.height);
+  c.drawImage(img, 0, 0);
+
+  let data;
+  try {
+    data = c.getImageData(0, 0, off.width, off.height);
+  } catch (e) {
+    // If the canvas is tainted (shouldn't happen with data URLs), fail safely.
+    return null;
+  }
+
+  const d = data.data;
+  const keyR = d[0], keyG = d[1], keyB = d[2];
+
+  for (let i = 0; i < d.length; i += 4){
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    if (
+      Math.abs(r - keyR) <= tol &&
+      Math.abs(g - keyG) <= tol &&
+      Math.abs(b - keyB) <= tol
+    ){
+      d[i + 3] = 0; // transparent
+    }
+  }
+
+  c.putImageData(data, 0, 0);
+
+  const entry = { sig, canvas: off, naturalW: off.width, naturalH: off.height };
+  colorKeyCache.set(el.id, entry);
+  return entry;
+}
+
 
 
 
@@ -4969,7 +5053,11 @@ function drawSitelenRasterLocal(el, x, y, w, h){
 
     const img = ensureImageLoadedForElement(el);
     if (img){
-      ctx.drawImage(img, x, y, w, h);
+      //ctx.drawImage(img, x, y, w, h);
+
+      const ck = ensureColorKeyRaster(el, img);
+      const drawable = (ck && ck.canvas) ? ck.canvas : img;
+      ctx.drawImage(drawable, x, y, w, h);
     } else {
       // placeholder
       ctx.save();
@@ -5684,6 +5772,7 @@ propsBody.appendChild(makeColorPicker(
     b2.addEventListener("click", () => {
       el.image = null;
       invalidateImageCache(el.id);
+      invalidateColorKeyCache(el.id);
       scheduleAutosave(); render(); updateUiForSelection();
     });
     row.appendChild(b2);
@@ -5720,6 +5809,18 @@ propsBody.appendChild(makeColorPicker(
     updateUiForSelection();
   }));
 
+      //make imported image backgrounf transparent
+propsBody.appendChild(makeCheckbox(
+  "Color-key transparency (use top-left pixel)",
+  !!el.colorKeyTransparent,
+  (checked) => {
+    el.colorKeyTransparent = !!checked;
+    invalidateColorKeyCache(el.id);
+    scheduleAutosave();
+    render();
+    updateUiForSelection();
+  }
+));
 
 // CHANGE HERE: read-only sizes
   if (el.image){
@@ -6665,6 +6766,7 @@ function updateClipboardButtons(){
       el.fill = "#FFFFFF";
 
       invalidateImageCache(el.id);
+      invalidateColorKeyCache(el.id);
       scheduleAutosave();
       updateUiForSelection();
       render();
@@ -6923,6 +7025,7 @@ async function importJsonFromFile(file){
   // Clear runtime state
   selectedIds.clear();
   imageCache.clear();
+  colorKeyCache.clear();
 
   try {
       await dbPut(DB_KEY, {
@@ -7097,7 +7200,11 @@ async function importJsonFromFile(file){
         img.src = getImageAssetDataUrl(el.image.assetId);// `data:${el.image.mime};base64,${el.image.b64}`;
         // If already cached by the browser, width/height will be non-zero.
         if (img.complete && img.naturalWidth > 0){
-          octx.drawImage(img, x,y,el.w,el.h);
+          //octx.drawImage(img, x,y,el.w,el.h);
+
+          const ck = ensureColorKeyRaster(el, img);
+          const drawable = (ck && ck.canvas) ? ck.canvas : img;
+          octx.drawImage(drawable, x, y, el.w, el.h);
         } else {
           // placeholder
           octx.strokeStyle = "rgba(17,17,17,0.28)";
@@ -7205,6 +7312,7 @@ Scene.stage.defaultStrokeW = DEFAULTS.defaultStrokeW;
   Scene.groups = {};
   selectedIds.clear();
   imageCache.clear();
+  colorKeyCache.clear();
 
 console.log("New Scene "+ JSON.stringify(Scene));
 
