@@ -7736,17 +7736,26 @@ console.log("New Scene "+ JSON.stringify(Scene));
 
 
   $("btnExportJson").addEventListener("click", () => exportJson());
-  $("btnImportJson").addEventListener("click", () => $("fileImportJson").click());
-  $("fileImportJson").addEventListener("change", async () => {
-    const f = $("fileImportJson").files && $("fileImportJson").files[0];
-    if (!f) return;
-    try{
-      await importJsonFromFile(f);
-    }catch(err){
-      console.error(err);
-      setStatus(`Import failed: ${err && err.message ? err.message : String(err)}`);
-    }
-  });
+$("btnImportJson").addEventListener("click", () => {
+  const inp = $("fileImportJson");
+  inp.value = "";          // IMPORTANT: allow re-selecting the same file
+  inp.click();
+});
+
+$("fileImportJson").addEventListener("change", async () => {
+  const inp = $("fileImportJson");
+  const f = inp.files && inp.files[0];
+  if (!f) return;
+
+  try{
+    await importJsonFromFile(f);
+  }catch(err){
+    console.error(err);
+    setStatus(`Import failed: ${err && err.message ? err.message : String(err)}`);
+  } finally {
+    inp.value = "";        // optional: makes repeated imports reliable
+  }
+});
 
   $("btnExportPng").addEventListener("click", () => exportPngTransparent());
 
