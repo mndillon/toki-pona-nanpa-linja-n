@@ -228,8 +228,8 @@
 .colorControlRow{
   display:flex;
   align-items:center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: wrap;            /* wrapping allowed */
 }
 
 /* Override any "full width" input styling inside the row */
@@ -245,20 +245,15 @@
 
 .colorSwatches{
   display:flex;
-  align-items:center;
-  gap: 6px;
   flex-wrap: wrap;
+  gap: 8px;
+  max-width: 420px;           /* prevents over-squeezing in narrow sidebars */
 }
 
 .swatchBtn{
-  appearance:none;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border-radius: 7px;
-  border: 1px solid rgba(17,17,17,0.22);
-  cursor:pointer;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+  width: 20px;
+  height: 20px;
+  border-radius: 8px;
 }
 
 .swatchBtn[aria-pressed="true"]{
@@ -6096,10 +6091,10 @@ function makeNumberRowWithPresets(
 
 // A compact “good defaults” palette. Edit to taste.
 const DEFAULT_COLOR_SWATCHES_LESS = [
-  "#FFFFFF", "#DFDFDF", "#BFBFBF", "#7F7F7F", "#5F5F5F", "#111111", "#000000",
-  "#FF3F00", "#FF7F00", "#FFBF00", "#FFFF00",
-  "#7FFF7F", "#00FF7F", "#00FFBF", "#00FFFF",
-  "#0000FF", "#7F00FF", "#FF00FF", "#FF0000"
+  "#FFFFFF", "#E0E0E0", "#C0C0C0", "#808080", "#606060", "#111111", "#000000",
+  "#FF4000", "#FF8000", "#FFC000", "#FFFF00",
+  "#80FF80", "#00FF80", "#00FFC0", "#00FFFF",
+  "#0000FF", "#8000FF", "#FF00FF", "#FF0000"
 ];
 
 const DEFAULT_COLOR_SWATCHES = [
@@ -6115,26 +6110,108 @@ const DEFAULT_COLOR_SWATCHES = [
   "#0E7490"  // deep teal
 ];
 
+// ------------------------------
+// Dynamic palette augmentation
+// ------------------------------
+const MAX_DYNAMIC_SWATCHES = 50;
+
+// Store dynamic swatches (chosen by user OR derived from imported Scene colours)
+let DYNAMIC_COLOR_SWATCHES = [];
+let _dynamicCursor = 0;
+
+// Fast lookup for base palette (case-insensitive)
+const _BASE_SWATCH_SET = new Set(DEFAULT_COLOR_SWATCHES.map(s => String(s).trim().toLowerCase()));
+
+function getActiveColorPalette(){
+  // Base + dynamic (dynamic may contain colours not in base)
+  return [...DEFAULT_COLOR_SWATCHES, ...DYNAMIC_COLOR_SWATCHES];
+}
+
+function resetDynamicSwatches(){
+  DYNAMIC_COLOR_SWATCHES = [];
+  _dynamicCursor = 0;
+  rebuildAllSwatches();
+}
+
+function addDynamicSwatch(hex){
+  const v = _normalizeHex6(hex, "#111111");
+  if (!v) return;
+
+  const key = v.toLowerCase();
+  if (_BASE_SWATCH_SET.has(key)) return;
+
+  // Avoid duplicates in dynamic list
+  if (DYNAMIC_COLOR_SWATCHES.some(c => String(c).toLowerCase() === key)) return;
+
+  if (DYNAMIC_COLOR_SWATCHES.length < MAX_DYNAMIC_SWATCHES){
+    DYNAMIC_COLOR_SWATCHES.push(v);
+  } else {
+    // Ring buffer overwrite
+    DYNAMIC_COLOR_SWATCHES[_dynamicCursor] = v;
+    _dynamicCursor = (_dynamicCursor + 1) % MAX_DYNAMIC_SWATCHES;
+  }
+
+  rebuildAllSwatches();
+}
+
+// Rebuild dynamic slots from colours *used in the Scene*
+function rebuildDynamicPaletteFromScene(){
+  const found = [];
+
+  function add(val){
+    const v = _normalizeHex6(val, "#111111");
+    if (!v) return;
+    const key = v.toLowerCase();
+    if (_BASE_SWATCH_SET.has(key)) return;
+    if (found.some(c => c.toLowerCase() === key)) return;
+    found.push(v);
+  }
+
+  // Stage colours (adjust if you add more)
+  add(Scene?.stage?.bg);
+  add(Scene?.stage?.defaultTextColor);
+  add(Scene?.stage?.defaultFill);
+  add(Scene?.stage?.defaultStroke);
+
+  // Element colours
+  for (const el of (Scene?.elements || [])){
+    add(el.color);
+    add(el.fill);
+    add(el.stroke);
+  }
+
+  DYNAMIC_COLOR_SWATCHES = found.slice(0, MAX_DYNAMIC_SWATCHES);
+  _dynamicCursor = DYNAMIC_COLOR_SWATCHES.length % MAX_DYNAMIC_SWATCHES;
+
+  rebuildAllSwatches();
+}
 
 
 
 const _swatchUpdaterByInput = new WeakMap();
+const _swatchRebuilderByInput = new WeakMap();
+const _allSwatchedInputs = new Set();
 
 function _isHex6(s){
   return /^#[0-9A-Fa-f]{6}$/.test(String(s || "").trim());
 }
 
 function _normalizeHex6(value, fallback="#111111"){
-  const s = String(value || "").trim();
-  if (_isHex6(s)) return s;
-  // Reuse your existing rgba/hex normalizer if present in this file
-  // (it returns #RRGGBB and drops alpha).
+  const fb = _isHex6(fallback) ? fallback : "#111111";
+
+  // If already #RRGGBB, normalize casing (optional)
+  const s = String(value ?? "").trim();
+  if (_isHex6(s)) return s.toUpperCase();
+
+  // If you have rgbaOrHexToHex, delegate to it
   if (typeof rgbaOrHexToHex === "function"){
-    const v = rgbaOrHexToHex(s, fallback);
-    return _isHex6(v) ? v : fallback;
+    const v = rgbaOrHexToHex(s, fb);   // fb is NEVER null
+    return _isHex6(v) ? v.toUpperCase() : fb;
   }
-  return fallback;
+
+  return fb;
 }
+
 
 /**
  * Attaches a swatch strip to an existing <input type="color">.
@@ -6152,8 +6229,18 @@ function attachSwatchesToColorInput(
   const inp = colorInput;
   if (!inp || inp.tagName !== "INPUT" || inp.type !== "color") return;
 
+  // palette can be array OR function returning array
+  const paletteProvider = (typeof palette === "function") ? palette : () => palette;
+
   // Prevent double-attachment
-  if (inp.dataset && inp.dataset.hasSwatches === "1") return;
+  if (inp.dataset && inp.dataset.hasSwatches === "1"){
+    // Already attached — but update its rebuilder to use latest provider if needed
+    if (_swatchRebuilderByInput.has(inp)){
+      _swatchRebuilderByInput.get(inp)(); // rebuild with current palette
+      refreshSwatchesForColorInput(inp);
+    }
+    return;
+  }
   if (inp.dataset) inp.dataset.hasSwatches = "1";
 
   const parent = inp.parentElement;
@@ -6183,7 +6270,6 @@ function attachSwatchesToColorInput(
     currentBtn.setAttribute("aria-label", "Current colour (click to open picker)");
     currentBtn.setAttribute("aria-pressed", "false");
 
-    // User gesture: open the native picker (works in most browsers)
     currentBtn.addEventListener("click", () => {
       try { inp.focus(); inp.click(); } catch (_) {}
     });
@@ -6191,73 +6277,106 @@ function attachSwatchesToColorInput(
     sw.appendChild(currentBtn);
   }
 
-  const buttons = [];
-  const paletteSet = new Set();
-
-  for (const hexRaw of palette){
-    const hex = _normalizeHex6(hexRaw, null);
-    if (!hex) continue;
-
-    const lower = hex.toLowerCase();
-    paletteSet.add(lower);
-
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "swatchBtn";
-    b.style.background = hex;
-    b.title = hex;
-    b.setAttribute("aria-label", `Set color ${hex}`);
-    b.setAttribute("aria-pressed", "false");
-
-    b.addEventListener("click", () => {
-      if (onPick){
-        onPick(hex);
-      } else {
-        inp.value = hex;
-        inp.dispatchEvent(new Event("input", { bubbles: true }));
-        inp.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    });
-
-    buttons.push({ b, hexLower: lower });
-    sw.appendChild(b);
-  }
+  // Strip that holds the preset swatches (rebuildable)
+  const strip = document.createElement("div");
+  strip.className = "colorSwatchesStrip";
+  sw.appendChild(strip);
 
   row.appendChild(sw);
 
-  // Keep selection state in sync with the current input value
-  function updatePressed(){
-    const cur = _normalizeHex6(inp.value, "#111111").toLowerCase();
-    const isPreset = paletteSet.has(cur);
+  let buttons = [];
+  let paletteSet = new Set();
 
-    // Update the “current” chip
-    if (currentBtn){
-      currentBtn.style.background = cur;
-      currentBtn.title = isPreset ? `Current: ${cur.toUpperCase()}` : `Custom: ${cur.toUpperCase()}`;
-      currentBtn.setAttribute("aria-label", isPreset ? `Current: ${cur.toUpperCase()}` : `Custom: ${cur.toUpperCase()}`);
+  function rebuild(){
+    strip.innerHTML = "";
+    buttons = [];
+    paletteSet = new Set();
 
-      // Only show “selected” outline when it’s NOT a preset match (i.e., custom)
-      currentBtn.setAttribute("aria-pressed", isPreset ? "false" : "true");
-    }
+    const pal = paletteProvider() || [];
+    for (const hexRaw of pal){
+      const hex = _normalizeHex6(hexRaw, "#111111");
+      if (!hex) continue;
+      const key = hex.toLowerCase();
+      if (paletteSet.has(key)) continue; // dedupe
+      paletteSet.add(key);
 
-    // Update preset swatches selection
-    for (const { b, hexLower } of buttons){
-      b.setAttribute("aria-pressed", (hexLower === cur) ? "true" : "false");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "swatchBtn";
+      b.style.background = hex;
+      b.title = hex;
+      b.setAttribute("aria-label", `Pick ${hex}`);
+      b.setAttribute("aria-pressed", "false");
+
+      b.addEventListener("click", () => {
+        const picked = _normalizeHex6(hex, "#111111");
+        if (onPick){
+          onPick(picked);
+        } else {
+          // Default behaviour: set input and emit events
+          inp.value = picked;
+          inp.dispatchEvent(new Event("input", { bubbles: true }));
+          inp.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        refreshSwatchesForColorInput(inp);
+      });
+
+      strip.appendChild(b);
+      buttons.push(b);
     }
   }
 
-  inp.addEventListener("input", updatePressed);
-  inp.addEventListener("change", updatePressed);
+  function updatePressed(){
+    const current = _normalizeHex6(inp.value, "#111111");
+    const currentLower = current.toLowerCase();
+
+    if (currentBtn){
+      currentBtn.style.background = current;
+      currentBtn.setAttribute("aria-pressed", "false");
+      if (!paletteSet.has(currentLower)){
+        currentBtn.title = `Custom: ${current}`;
+        currentBtn.setAttribute("aria-label", `Custom: ${current}`);
+      } else {
+        currentBtn.title = "Current colour (click to open picker)";
+        currentBtn.setAttribute("aria-label", "Current colour (click to open picker)");
+      }
+    }
+
+    for (const b of buttons){
+      const bg = String(b.style.background || "").trim();
+      const asHex = _normalizeHex6(bg, "#FFFFFF") || bg;
+      const pressed = (String(asHex).toLowerCase() === currentLower);
+      b.setAttribute("aria-pressed", pressed ? "true" : "false");
+      b.classList.toggle("isPressed", pressed);
+    }
+  }
+
+  // Initial build
+  rebuild();
+  updatePressed();
 
   _swatchUpdaterByInput.set(inp, updatePressed);
-
-  updatePressed();
+  _swatchRebuilderByInput.set(inp, () => { rebuild(); updatePressed(); });
+  _allSwatchedInputs.add(inp);
 }
+
 
 
 function refreshSwatchesForColorInput(colorInput){
   const fn = _swatchUpdaterByInput.get(colorInput);
   if (fn) fn();
+}
+
+function rebuildSwatchesForColorInput(colorInput){
+  const fn = _swatchRebuilderByInput.get(colorInput);
+  if (fn) fn();
+}
+
+function rebuildAllSwatches(){
+  for (const inp of _allSwatchedInputs){
+    rebuildSwatchesForColorInput(inp);
+    refreshSwatchesForColorInput(inp);
+  }
 }
 
 
@@ -6283,6 +6402,7 @@ function makeColorPickerWithSwatch(label, value, onLive, onCommit){
     if (onLive) onLive(v);
 
     if (commit){
+      addDynamicSwatch(v);       // <--- add this
       if (onCommit) onCommit(v);
       historyCommit("Edit properties");
     }
@@ -6316,7 +6436,7 @@ function makeColorPickerWithSwatch(label, value, onLive, onCommit){
 
   // Attach swatches next to the picker; swatch click should COMMIT.
   attachSwatchesToColorInput(inp, {
-    palette: DEFAULT_COLOR_SWATCHES,
+    palette: getActiveColorPalette,
     onPick: (hex) => applyValue(hex, { commit: true })
   });
 
@@ -7047,6 +7167,8 @@ function updateClipboardButtons(){
       updateUiForSelection();
       render();
       setStatus("Image embedded.");
+      rebuildDynamicPaletteFromScene();
+
     };
 
     img.src = dataUrl;
@@ -7330,6 +7452,7 @@ async function importJsonFromFile(file){
 
   setStatus("Imported JSON.");
   updateUiForSelection();
+  rebuildDynamicPaletteFromScene();
 
   refreshAllSitelenElementsPreserveCenter();
   fitStageToView();
@@ -7606,6 +7729,8 @@ console.log("New Scene "+ JSON.stringify(Scene));
 
   render();
   historyReset("New");
+  resetDynamicSwatches();
+
   setStatus("Cleared.");
 });
 
@@ -7728,6 +7853,7 @@ function wireStageDefaultsUi(){
       if (bgTimer) clearTimeout(bgTimer);   // cancel pending render
       console.log("Define stage bg listener change ")+ e.target.value;
       Scene.stage.bg = e.target.value;
+      addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
       render();
     });
@@ -7738,6 +7864,7 @@ function wireStageDefaultsUi(){
     dt.addEventListener("change", (e) => {
       console.log("Define stage bt listener change "+ e.target.value);
       Scene.stage.defaultTextColor = e.target.value;
+      addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
       //render();
       //setStatus("Default text color updated (affects new elements).");
@@ -7761,6 +7888,7 @@ function wireStageDefaultsUi(){
       console.log("Define stage df listener change "+ e.target.value);
       // store as rgba with alpha=1 for consistency with your element fill strings
       Scene.stage.defaultFill = e.target.value;
+      addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
       //render();
       //setStatus("Default background color fill updated (affects new elements).");
@@ -7772,6 +7900,7 @@ function wireStageDefaultsUi(){
     ds.addEventListener("change", (e) => {
       console.log("Define stage ds listener change " + e.target.value);
       Scene.stage.defaultStroke = e.target.value;
+      addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
       //render();
       //setStatus("Default stroke color updated (affects new elements).");
@@ -7792,10 +7921,11 @@ function wireStageDefaultsUi(){
 
 
     // Add swatches beside stage/default color inputs
-  if (bg) attachSwatchesToColorInput(bg);
-  if (dt) attachSwatchesToColorInput(dt);
-  if (df) attachSwatchesToColorInput(df);
-  if (ds) attachSwatchesToColorInput(ds);
+  if (bg) attachSwatchesToColorInput(bg, { palette: getActiveColorPalette });
+  if (dt) attachSwatchesToColorInput(dt, { palette: getActiveColorPalette });
+  if (df) attachSwatchesToColorInput(df, { palette: getActiveColorPalette });
+  if (ds) attachSwatchesToColorInput(ds, { palette: getActiveColorPalette });
+
 }
 
   // View controls
