@@ -222,6 +222,54 @@
   padding: 6px 8px;   /* optional: tighter */
 }
 
+/* ============================================================
+   Color picker + swatches (same line)
+   ============================================================ */
+.colorControlRow{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Override any "full width" input styling inside the row */
+.colorControlRow > input[type="color"]{
+  width: 48px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(17,17,17,0.22);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.55);
+  flex: 0 0 auto;
+}
+
+.colorSwatches{
+  display:flex;
+  align-items:center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.swatchBtn{
+  appearance:none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid rgba(17,17,17,0.22);
+  cursor:pointer;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+}
+
+.swatchBtn[aria-pressed="true"]{
+  outline: 2px solid rgba(17,17,17,0.55);
+  outline-offset: 1px;
+}
+
+
+
+
+
 
   .sidebar{
     display:flex;
@@ -706,6 +754,15 @@ max-width: var(--stage-maxw); /* optional */
               </div>
             </div>
 
+
+            <div class="row">
+              <div class="field">
+                <!-- NEW -->
+                <label class="checkInline" style="margin:0;">
+                <input id="defFillEnabled" type="checkbox" />Default allow fill</label>
+              </div>
+            </div>
+
             <div class="row">
               <div class="field">
                 <label for="defFill">Default fill</label>
@@ -717,20 +774,6 @@ max-width: var(--stage-maxw); /* optional */
                 <input id="defStroke" type="color" value="#111111" />
               </div>
             </div>
-
-
-
-
- <div class="row">
-              <div class="field">
-                <!-- NEW -->
-    <label class="checkInline" style="margin:0;">
-      <input id="defFillEnabled" type="checkbox" />Default allow fill</label>
-              </div>
-            </div>
-
-
-
 
             <div class="row">
               <div class="field">
@@ -5360,7 +5403,7 @@ if (sels.some(e => !!e.isLocked)){
       render();
     }));
 
-    propsBody.appendChild(makeColorPicker(
+    propsBody.appendChild(makeColorPickerWithSwatch(
       "Fill",
       (commonFill ?? sels[0].fill) || "#FFFFFF",
       (v) => {
@@ -5398,7 +5441,7 @@ if (sels.some(e => !!e.isLocked)){
 
 
 
-    propsBody.appendChild(makeColorPicker(
+    propsBody.appendChild(makeColorPickerWithSwatch(
        "Stroke",
      (commonStroke ?? sels[0].stroke) || "#111111",
       (v) => {
@@ -5466,7 +5509,7 @@ if (groupId){
 
   const fg = rgbaOrHexToHex(g.foreground || "#111111", "#111111");
 
-  propsBody.appendChild(makeColorPicker(
+  propsBody.appendChild(makeColorPickerWithSwatch(
     "Foreground (group)",
     fg,
     (v) => {            // LIVE preview only
@@ -5647,7 +5690,7 @@ if (!single){
   updateUiForSelection();
 }));
 
-   propsBody.appendChild(makeColorPicker(
+   propsBody.appendChild(makeColorPickerWithSwatch(
       "Text color",
       el.color ?? "#111111",
       (v) => {
@@ -5726,7 +5769,7 @@ propsBody.appendChild(makeGlyphPicker(el));
 ));
 
 
-propsBody.appendChild(makeColorPicker(
+propsBody.appendChild(makeColorPickerWithSwatch(
       "Glyph color",
       el.color ?? "#111111",
       (v) => {
@@ -6046,6 +6089,223 @@ function makeNumberRowWithPresets(
     f.appendChild(l); f.appendChild(sel);
     return f;
   }
+
+/* ============================================================
+   Color swatches helper (reusable for Stage + Properties)
+   ============================================================ */
+
+// A compact “good defaults” palette. Edit to taste.
+const DEFAULT_COLOR_SWATCHES = [
+   "#FFFFFF", "#DFDFDF",  "#BFBFBF",  "#7F7F7F",  "#5F5F5F",  "#111111", "#000000", 
+"#FF3F00", "#FF7F00","#FFBF00", "#FFFF00",
+"#7FFF7F", "#00FF7F", "#00FFBF","#00FFFF",
+"#0000FF", "#7F00FF", "#FF00FF", "#FF0000"
+];
+
+const _swatchUpdaterByInput = new WeakMap();
+
+function _isHex6(s){
+  return /^#[0-9A-Fa-f]{6}$/.test(String(s || "").trim());
+}
+
+function _normalizeHex6(value, fallback="#111111"){
+  const s = String(value || "").trim();
+  if (_isHex6(s)) return s;
+  // Reuse your existing rgba/hex normalizer if present in this file
+  // (it returns #RRGGBB and drops alpha).
+  if (typeof rgbaOrHexToHex === "function"){
+    const v = rgbaOrHexToHex(s, fallback);
+    return _isHex6(v) ? v : fallback;
+  }
+  return fallback;
+}
+
+/**
+ * Attaches a swatch strip to an existing <input type="color">.
+ * - Works for Stage mini panel inputs (already in DOM) :contentReference[oaicite:4]{index=4}
+ * - Works for inputs created by makeColorPickerWithSwatch() :contentReference[oaicite:5]{index=5}
+ *
+ * Options:
+ * - palette: array of "#RRGGBB"
+ * - onPick(hex): if supplied, called instead of default “set input + dispatch events”
+ */
+function attachSwatchesToColorInput(
+  colorInput,
+  { palette = DEFAULT_COLOR_SWATCHES, onPick = null, showCurrent = true } = {}
+){
+  const inp = colorInput;
+  if (!inp || inp.tagName !== "INPUT" || inp.type !== "color") return;
+
+  // Prevent double-attachment
+  if (inp.dataset && inp.dataset.hasSwatches === "1") return;
+  if (inp.dataset) inp.dataset.hasSwatches = "1";
+
+  const parent = inp.parentElement;
+  if (!parent) return;
+
+  // Build row container if not present
+  let row = inp.closest(".colorControlRow");
+  if (!row){
+    row = document.createElement("div");
+    row.className = "colorControlRow";
+    parent.insertBefore(row, inp);
+    row.appendChild(inp); // moves input into row
+  }
+
+  // Create swatch container
+  const sw = document.createElement("div");
+  sw.className = "colorSwatches";
+
+  // Optional “current colour” swatch
+  let currentBtn = null;
+  if (showCurrent){
+    currentBtn = document.createElement("button");
+    currentBtn.type = "button";
+    currentBtn.className = "swatchBtn";
+    currentBtn.style.background = _normalizeHex6(inp.value, "#111111");
+    currentBtn.title = "Current colour (click to open picker)";
+    currentBtn.setAttribute("aria-label", "Current colour (click to open picker)");
+    currentBtn.setAttribute("aria-pressed", "false");
+
+    // User gesture: open the native picker (works in most browsers)
+    currentBtn.addEventListener("click", () => {
+      try { inp.focus(); inp.click(); } catch (_) {}
+    });
+
+    sw.appendChild(currentBtn);
+  }
+
+  const buttons = [];
+  const paletteSet = new Set();
+
+  for (const hexRaw of palette){
+    const hex = _normalizeHex6(hexRaw, null);
+    if (!hex) continue;
+
+    const lower = hex.toLowerCase();
+    paletteSet.add(lower);
+
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "swatchBtn";
+    b.style.background = hex;
+    b.title = hex;
+    b.setAttribute("aria-label", `Set color ${hex}`);
+    b.setAttribute("aria-pressed", "false");
+
+    b.addEventListener("click", () => {
+      if (onPick){
+        onPick(hex);
+      } else {
+        inp.value = hex;
+        inp.dispatchEvent(new Event("input", { bubbles: true }));
+        inp.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+
+    buttons.push({ b, hexLower: lower });
+    sw.appendChild(b);
+  }
+
+  row.appendChild(sw);
+
+  // Keep selection state in sync with the current input value
+  function updatePressed(){
+    const cur = _normalizeHex6(inp.value, "#111111").toLowerCase();
+    const isPreset = paletteSet.has(cur);
+
+    // Update the “current” chip
+    if (currentBtn){
+      currentBtn.style.background = cur;
+      currentBtn.title = isPreset ? `Current: ${cur.toUpperCase()}` : `Custom: ${cur.toUpperCase()}`;
+      currentBtn.setAttribute("aria-label", isPreset ? `Current: ${cur.toUpperCase()}` : `Custom: ${cur.toUpperCase()}`);
+
+      // Only show “selected” outline when it’s NOT a preset match (i.e., custom)
+      currentBtn.setAttribute("aria-pressed", isPreset ? "false" : "true");
+    }
+
+    // Update preset swatches selection
+    for (const { b, hexLower } of buttons){
+      b.setAttribute("aria-pressed", (hexLower === cur) ? "true" : "false");
+    }
+  }
+
+  inp.addEventListener("input", updatePressed);
+  inp.addEventListener("change", updatePressed);
+
+  _swatchUpdaterByInput.set(inp, updatePressed);
+
+  updatePressed();
+}
+
+
+function refreshSwatchesForColorInput(colorInput){
+  const fn = _swatchUpdaterByInput.get(colorInput);
+  if (fn) fn();
+}
+
+
+function makeColorPickerWithSwatch(label, value, onLive, onCommit){
+  const f = document.createElement("div");
+  f.className = "field";
+
+  const l = document.createElement("label");
+  l.textContent = label;
+
+  const inp = document.createElement("input");
+  inp.type = "color";
+
+  // Validate/normalize for <input type="color">
+  inp.value = _normalizeHex6(value, "#111111");
+
+  let liveTimer = null;
+
+  function applyValue(hex, { commit }){
+    const v = _normalizeHex6(hex, "#111111");
+    inp.value = v;
+
+    if (onLive) onLive(v);
+
+    if (commit){
+      if (onCommit) onCommit(v);
+      historyCommit("Edit properties");
+    }
+
+    // Keep swatch highlight correct (especially for programmatic sets)
+    refreshSwatchesForColorInput(inp);
+  }
+
+  inp.addEventListener("input", (e) => {
+    try{
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(() => {
+        applyValue(e.target.value, { commit: false });
+      }, 16);
+    } catch (err){
+      console.warn(err);
+    }
+  });
+
+  inp.addEventListener("change", (e) => {
+    try{
+      clearTimeout(liveTimer);
+      applyValue(e.target.value, { commit: true });
+    } catch (err){
+      console.warn(err);
+    }
+  });
+
+  f.appendChild(l);
+  f.appendChild(inp);
+
+  // Attach swatches next to the picker; swatch click should COMMIT.
+  attachSwatchesToColorInput(inp, {
+    palette: DEFAULT_COLOR_SWATCHES,
+    onPick: (hex) => applyValue(hex, { commit: true })
+  });
+
+  return f;
+}
 
 
 function makeColorPicker(label, value, onLive, onCommit){
@@ -6823,6 +7083,14 @@ function syncStageDefaultsUiFromScene(){
  console.log("Scene: " + JSON.stringify(st));
 
   syncSnapButtonsFromScene();
+
+
+    // Keep swatch highlights in sync (programmatic .value does not emit events)
+  if (bg) refreshSwatchesForColorInput(bg);
+  if (dt) refreshSwatchesForColorInput(dt);
+  if (df) refreshSwatchesForColorInput(df);
+  if (ds) refreshSwatchesForColorInput(ds);
+
 }
 
 
@@ -7422,6 +7690,10 @@ function wireStageDefaultsUi(){
   const ds = document.getElementById("defStroke");
   const dsw = document.getElementById("defStrokeW");
 
+
+
+
+
   let bgTimer = null;
   if (bg){
     console.log("Define stage bg listeners");
@@ -7500,6 +7772,14 @@ function wireStageDefaultsUi(){
       //setStatus("Default stroke width updated (affects new elements).");
     });
   }
+
+
+
+    // Add swatches beside stage/default color inputs
+  if (bg) attachSwatchesToColorInput(bg);
+  if (dt) attachSwatchesToColorInput(dt);
+  if (df) attachSwatchesToColorInput(df);
+  if (ds) attachSwatchesToColorInput(ds);
 }
 
   // View controls
