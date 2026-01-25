@@ -6095,12 +6095,28 @@ function makeNumberRowWithPresets(
    ============================================================ */
 
 // A compact “good defaults” palette. Edit to taste.
-const DEFAULT_COLOR_SWATCHES = [
-   "#FFFFFF", "#DFDFDF",  "#BFBFBF",  "#7F7F7F",  "#5F5F5F",  "#111111", "#000000", 
-"#FF3F00", "#FF7F00","#FFBF00", "#FFFF00",
-"#7FFF7F", "#00FF7F", "#00FFBF","#00FFFF",
-"#0000FF", "#7F00FF", "#FF00FF", "#FF0000"
+const DEFAULT_COLOR_SWATCHES_LESS = [
+  "#FFFFFF", "#DFDFDF", "#BFBFBF", "#7F7F7F", "#5F5F5F", "#111111", "#000000",
+  "#FF3F00", "#FF7F00", "#FFBF00", "#FFFF00",
+  "#7FFF7F", "#00FF7F", "#00FFBF", "#00FFFF",
+  "#0000FF", "#7F00FF", "#FF00FF", "#FF0000"
 ];
+
+const DEFAULT_COLOR_SWATCHES = [
+  // Keep the original small palette exactly as-is
+  ...DEFAULT_COLOR_SWATCHES_LESS,
+
+  // Additions chosen to be high-contrast / non-redundant
+  "#F3DFC0", // paper background (warm)
+  "#7C5C2B", // brown ink
+  "#A16207", // deep amber
+  "#B91C1C", // deep red
+  "#166534", // deep green
+  "#0E7490"  // deep teal
+];
+
+
+
 
 const _swatchUpdaterByInput = new WeakMap();
 
