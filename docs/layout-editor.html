@@ -738,17 +738,26 @@ max-width: var(--stage-maxw); /* optional */
               </div>
             </div>
 
+             <div class="row">
+              <div class="field"> 
+                <label class="checkInline" style="margin:0;">
+                <input id="exportStageBackground" type="checkbox" />Export stage background</label>
+              </div>
+            </div>
+
             <div class="row">
               <div class="field">
                 <label for="stageBg">Stage background</label>
                 <input id="stageBg" type="color" value="#F3DFC0" />
               </div>
+            </div>
+
+            <div class="row">
               <div class="field">
                 <label for="defTextColor">Default text</label>
                 <input id="defTextColor" type="color" value="#111111" />
               </div>
             </div>
-
 
             <div class="row">
               <div class="field">
@@ -764,6 +773,9 @@ max-width: var(--stage-maxw); /* optional */
                 <!-- color input cannot store rgba; we will store as rgba in JS, but pick hex here -->
                 <input id="defFill" type="color" value="#FFFFFF" />
               </div>
+            </div>
+
+            <div class="row">
               <div class="field">
                 <label for="defStroke">Default stroke</label>
                 <input id="defStroke" type="color" value="#111111" />
@@ -887,6 +899,7 @@ max-width: var(--stage-maxw); /* optional */
 
     // NEW: stage + default styling
     stageBg: "#FFFFFF", //"#F3DFC0",                 // stage background color
+    exportStageBackground: false,
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
     defaultFill: "#111111",// default fill for shapes/boxes
     defaultFillEnabled: false,
@@ -1109,6 +1122,7 @@ function normalizeScene(parsed){
 
     // NEW
     bg: DEFAULTS.stageBg,
+    exportStageBackground: DEFAULTS.exportStageBackground,
     defaultTextColor: DEFAULTS.defaultTextColor,
     defaultFill: DEFAULTS.defaultFill,
     defaultFillEnabled: DEFAULTS.defaultFillEnabled,
@@ -1117,7 +1131,7 @@ function normalizeScene(parsed){
   }, out.stage || {});
 
   if (!("defaultFillEnabled" in out.stage)) out.stage.defaultFillEnabled = true;
-
+  if (!("exportStageBackground" in out.stage)) out.stage.exportStageBackground = false;
 
 
   out.view = Object.assign({
@@ -1464,6 +1478,7 @@ function deserializeAssets(serialized){
 
       // NEW
       bg: DEFAULTS.stageBg,
+      exportStageBackground: DEFAULTS.exportStageBackground,
       defaultTextColor: DEFAULTS.defaultTextColor,
       defaultFill: DEFAULTS.defaultFill,
       defaultStroke: DEFAULTS.defaultStroke,
@@ -4652,11 +4667,11 @@ function resizeCanvasToDisplaySize(){
   //ctx.fillRect(sx, sy, sw, sh);
 //  ctx.restore();
 
-ctx.save();
-// NEW: stage background from scene
-ctx.fillStyle = Scene.stage.bg || DEFAULTS.stageBg;
-ctx.fillRect(sx, sy, sw, sh);
-ctx.restore();
+  ctx.save();
+  // NEW: stage background from scene
+  ctx.fillStyle = Scene.stage.bg || DEFAULTS.stageBg;
+  ctx.fillRect(sx, sy, sw, sh);
+  ctx.restore();
 
 
   // grid
@@ -7195,6 +7210,7 @@ function syncSnapButtonsFromScene(){
 
 function syncStageDefaultsUiFromScene(){
   const bg = document.getElementById("stageBg");
+  const expbg = document.getElementById("exportStageBackground");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
@@ -7206,15 +7222,10 @@ function syncStageDefaultsUiFromScene(){
  
 
   if (bg)  bg.value  = rgbaOrHexToHex(st.bg, DEFAULTS.stageBg);
+  if (expbg) {expbg.checked = !!Scene.stage.exportStageBackground;}
   if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
   if (df)  df.value  = rgbaOrHexToHex(st.defaultFill, DEFAULTS.defaultFill);
-  if (dfe){
-    dfe.checked = !!Scene.stage.defaultFillEnabled;
-
-    // Optional but helpful: disable the color picker when fill is disabled
-    //const df = $("defFill");
-    //if (df) df.disabled = !dfe.checked;
-  }
+  if (dfe) {dfe.checked = !!Scene.stage.defaultFillEnabled;}
   if (ds)  ds.value  = rgbaOrHexToHex(st.defaultStroke, DEFAULTS.defaultStroke);
   if (dsw) dsw.value = Number.isFinite(st.defaultStrokeW) ? st.defaultStrokeW : DEFAULTS.defaultStrokeW;
 
@@ -7645,6 +7656,15 @@ async function importJsonFromFile(file){
     off.height = Scene.stage.h;
     const octx = off.getContext("2d");
 
+    //do we draw the Scene background on export
+    if(Scene.stage.exportStageBackground === true){
+      octx.save();
+      // NEW: stage background from scene
+      octx.fillStyle = Scene.stage.bg || DEFAULTS.stageBg;
+      octx.fillRect(0, 0, Scene.stage.w, Scene.stage.h);
+      octx.restore();
+    }
+
     // Render scene at 1:1 stage coords (no view transforms)
     // Note: We do NOT draw grid or stage background for export.
     for (const el of Scene.elements){
@@ -7709,11 +7729,12 @@ $("btnNew").addEventListener("click", async () => {
   }
 
   Scene.stage.bg = DEFAULTS.stageBg;
-Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
-Scene.stage.defaultFill = DEFAULTS.defaultFill;
-Scene.stage.defaultFillEnabled = DEFAULTS.defaultFillEnabled;
-Scene.stage.defaultStroke = DEFAULTS.defaultStroke;
-Scene.stage.defaultStrokeW = DEFAULTS.defaultStrokeW;
+  Scene.stage.exportStageBackground = DEFAULTS.exportStageBackground;
+  Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
+  Scene.stage.defaultFill = DEFAULTS.defaultFill;
+  Scene.stage.defaultFillEnabled = DEFAULTS.defaultFillEnabled;
+  Scene.stage.defaultStroke = DEFAULTS.defaultStroke;
+  Scene.stage.defaultStrokeW = DEFAULTS.defaultStrokeW;
 
   Scene.elements = [];
   Scene.groups = {};
@@ -7834,6 +7855,7 @@ function wireSnapButtons(){
 
 function wireStageDefaultsUi(){
   const bg = document.getElementById("stageBg");
+  const expbg = document.getElementById("exportStageBackground");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
@@ -7865,6 +7887,17 @@ function wireStageDefaultsUi(){
       addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
       render();
+    });
+  }
+
+   if (expbg){
+    console.log("Define stage export background expbg listener");
+    expbg.addEventListener("change", (e) => {
+      console.log("Define stageexport background expbg listener change "+ !!e.target.checked);
+      Scene.stage.exportStageBackground = !!e.target.checked;
+      scheduleAutosave();
+      //render();
+      //setStatus("Default background color fill enabled updated (affects new elements).");
     });
   }
 
