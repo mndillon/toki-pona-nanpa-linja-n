@@ -439,12 +439,14 @@
   }
 
   .stagePanel{
+    min-width: 0;
     position: relative;
     min-height:0;
     display:flex;
     flex-direction:column;
   }
 .stageBody{
+  min-width: 0;
   position: relative;
   flex: 1 1 auto;
   min-height:0;
@@ -462,11 +464,12 @@
     position: relative;
 
      /* CHANGE HERE: stage uses full available width */
-  width: 100%;
-max-width: var(--stage-maxw); /* optional */
+    width: 100%;
+    min-width: 0;
+    max-width: none; /* var(--stage-maxw);  optional */
 
-      /* CHANGE HERE: fill remaining height of stageBody */
-  height: 100%;
+        /* CHANGE HERE: fill remaining height of stageBody */
+    height: 100%;
 
     border-radius: 18px;
     border: 2px solid rgba(17,17,17,0.22);
