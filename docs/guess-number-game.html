@@ -501,7 +501,9 @@
     "pali":  0xF1949,
     "sona":  0xF1961,
     "wile":  0xF1977,
-    "kolon": 0xF199D
+    "kolon": 0xF199D,
+    "kijetesantakalu": 0xF1980,
+    "monsi": 0xF1938
   };
 
   function getSmallCodepointsSet() {
@@ -1732,7 +1734,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     renderMixedCartoucheToCanvas(canvas, cps, 28, 10, SMALL_SET, { padding: 10, border: 2, cornerRadius: 14, letterGap: 2 });
   }
 
-  function renderTextKeyCanvas(canvas, txt, px=32) {
+  function renderTextKeyCanvas(canvas, txt, px=32, fontFamily=null, fontWeight=700) {
     const dpr = window.devicePixelRatio || 1;
     const cssW = 64, cssH = 54;
     canvas.style.width = `${cssW}px`;
@@ -1745,8 +1747,21 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     ctx.fillStyle = "#111";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.font = `700 ${px}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`;
+
+    const fam = fontFamily || 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+    ctx.font = `${fontWeight} ${px}px ${fam}`;
     ctx.fillText(txt, cssW/2, cssH/2 + 1);
+  }
+
+  function renderTpWordKeyCanvas(canvas, word, px=34) {
+    const cp = WORD_TO_UCSUR_CP[String(word||"").toLowerCase()];
+    if (typeof cp !== "number") {
+      renderTextKeyCanvas(canvas, "?", px, null, 700);
+      return;
+    }
+    const ch = String.fromCodePoint(cp);
+    // Use the Sitelen Pona font for the glyph; keep weight normal so it matches the cartouche style.
+    renderTextKeyCanvas(canvas, ch, px, `"${FONT_FAMILY}"`, 400);
   }
 
   function pressDigit(d) {
@@ -1790,7 +1805,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
       labelText: uiText("clear"),
       ariaLabel: (DEV_LANG==="tp" ? "weka" : "Clear input"),
       onPress: pressClear,
-      renderFn: (c) => renderTextKeyCanvas(c, "C", 34)
+      renderFn: (c) => renderTpWordKeyCanvas(c, "kijetesantakalu", 34)
     });
 
     add({
@@ -1798,7 +1813,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
       labelText: uiText("back"),
       ariaLabel: (DEV_LANG==="tp" ? "weka pini" : "Backspace"),
       onPress: pressBackspace,
-      renderFn: (c) => renderTextKeyCanvas(c, "⌫", 32)
+      renderFn: (c) => renderTpWordKeyCanvas(c, "monsi", 34)
     });
 
     add({
