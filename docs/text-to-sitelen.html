@@ -321,6 +321,33 @@
 
 .nlModeControl{ display:none !important; }
 
+
+/* CHANGE HERE: stack the action controls on small mobile screens */
+
+/* ===== Mobile toolbar layout: Font size → Text color → Render ===== */
+@media (max-width: 520px){
+  .btnRow{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* Each item gets its own line */
+  .btnRow > *{
+    width: 100%;
+  }
+
+  /* Order only on mobile */
+  #ctlFontSize{ order: 1; }
+  #ctlTextColor{ order: 2; }
+  #btnRender{ order: 3; }
+
+  /* Keep controls left-sized (not stretched full width) */
+  #btnRender{ width: auto; }
+  .btnRow .inlinePill{ width: auto; }
+}
+
+
   </style>
 </head>
 
@@ -397,7 +424,7 @@ nanpa #~WI.
         </button>
 
         <!-- Foreground color picker -->
-        <div class="inlineControl inlinePill" role="group" aria-label="Text color">
+        <div id="ctlTextColor" class="inlineControl inlinePill" role="group" aria-label="Text color">
           <span class="ctlLabel">
             Text color <span class="tpInline">kule pi sitelen</span>
           </span>
@@ -405,7 +432,7 @@ nanpa #~WI.
         </div>
 
         <!-- Font size -->
-        <div class="inlineControl inlinePill" role="group" aria-label="Font size">
+        <div id="ctlFontSize" class="inlineControl inlinePill" role="group" aria-label="Font size">
           <span class="ctlLabel">
             Font size <span class="tpInline">suli pi sitelen</span>
           </span>

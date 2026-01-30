@@ -1,0 +1,1903 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toki Pona nanpa-linja-n — Guess the Number</title>
+  <link rel="icon" href="data:,">
+
+  <style>
+    :root{
+      --topbar-h: 56px;
+
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --panel: rgba(255,255,255,0.35);
+      --panel-strong: rgba(255,255,255,0.55);
+      --panel-border: rgba(17,17,17,0.18);
+
+      --radius: 14px;
+      --btn-radius: 10px;
+      --shadow: 0 12px 30px rgba(0,0,0,0.12);
+
+      --stage-maxw: 980px;
+      --stage-pad: 14px;
+    
+      --cartouche-small-h: clamp(34px, 5.0vh, 52px);
+      --cartouche-secret-h: clamp(46px, 6.4vh, 72px);
+      --key-row-h: 72px;
+    }
+
+    @font-face {
+      font-family: "PatrickHand";
+      src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--ink);
+    }
+
+    .topbar{
+      height: var(--topbar-h);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      border-bottom: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(6px);
+    }
+
+    .btnTop{
+      appearance:none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: clamp(13px, 1.8vh, 16px);
+    }
+    .btnTop:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .status{
+      margin-left: 12px;
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 46vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .timerCanvas{
+      margin-left: auto;
+      height: 36px;
+      width: 170px;
+      display: block;
+    }
+
+    .wrap{
+      height: calc(100% - var(--topbar-h));
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .gameArea{
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: clamp(8px, 1.5vh, 14px);
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      }
+
+    .card{
+      width: min(var(--stage-maxw), 92vw);
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: clamp(10px, 1.6vh, 14px);
+      box-sizing: border-box;
+      display: grid;
+      height: 100%;
+      min-height: 0;
+      grid-template-rows: auto auto 1fr;
+      gap: clamp(8px, 1.2vh, 12px);
+    }
+
+    .hint{
+      border: 1px solid rgba(17,17,17,0.18);
+      background: rgba(255,255,255,0.22);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.25;
+      text-align: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .cartoucheStack{
+      display: grid;
+      gap: clamp(6px, 1.0vh, 10px);
+      justify-items: stretch;
+    }
+
+    .cartoucheRow{
+      display: grid;
+      gap: 6px;
+      justify-items: stretch;
+    }
+
+    .rowInline{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+.rowInline.summaryMode{
+  justify-content: flex-start;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  justify-self: center;
+}
+.rowInline.summaryMode canvas.cartouche{
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+}
+
+    .sideLabel{
+      font-size: 14px;
+      color: var(--muted);
+      white-space: nowrap;
+      user-select: none;
+      -webkit-user-select: none;
+      display: none; /* shown only in finished summary */
+    }
+
+    /* End-of-game time label in sitelen pona (UCSUR) */
+    #endLblTime{
+      font-family: "TP-Cartouche-Font";
+      font-size: 20px;
+      color: var(--ink);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .rowInline canvas.cartouche{
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+    }
+
+
+    .rowLabel{
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.2px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    canvas.cartouche{
+
+      display: block;
+      width: 100%;
+      height: min(var(--cartouche-small-h), 70%);
+      border-radius: 12px;
+      background: transparent;
+    }
+
+    /* Fixed cartouche row heights so the keypad always fits without scrolling */
+    #bestHighCanvas, #bestLowCanvas, #guessCanvas{
+      height: min(var(--cartouche-small-h), 70%);
+    }
+    #secretCanvas{
+      height: var(--cartouche-secret-h);
+    }
+
+    /* Keypad (calculator-like) */
+    .keys{
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(6px, 1.0vh, 10px);
+          height: 100%;
+      min-height: 0;
+      grid-auto-rows: minmax(0, 1fr);
+      align-content: stretch;
+    }
+
+    .btnKey{
+      border: 1px solid rgba(17,17,17,0.22);
+      background: rgba(255,255,255,0.40);
+      border-radius: 12px;
+      padding: clamp(6px, 1.0vh, 10px);
+      cursor: pointer;
+      user-select: none;
+
+      height: 100%;
+
+      display: grid;
+      grid-template-rows: 1fr auto;
+      align-items: center;
+      justify-items: center;
+
+      box-sizing: border-box;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+    }
+
+    .btnKey:active{ transform: translateY(1px); }
+    .btnKey:disabled{ opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+
+    .btnWide{ grid-column: span 2; }
+
+    .btnLabel{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .btnCanvas{
+      width: auto;
+      height: min(var(--cartouche-small-h), 70%);
+      max-width: 100%;
+      display: block;
+    }
+
+    .footer{
+      flex: 0 0 auto;
+      border-top: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.18);
+      padding: clamp(6px, 1.0vh, 10px) clamp(8px, 1.2vw, 12px);
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: clamp(11px, 1.6vh, 14px);
+      line-height: 1.35;
+    }
+
+
+    .footer a { color: var(--ink); text-decoration: underline; }
+    .footerRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .footerLeft{ min-width: 240px; }
+    .footerRight{ white-space: nowrap; margin-left: auto; }
+
+
+    
+
+    @media (max-height: 820px){
+      .topbar{ height: 52px; padding: 8px 10px; }
+      .timerCanvas{ width: 150px; height: 34px; }
+      .rowLabel{ font-size: 12px; }
+      .btnKey{ padding: 8px; box-shadow: 0 8px 18px rgba(0,0,0,0.10); }
+      .btnLabel{ font-size: 11px; margin-top: 4px; }
+    }
+
+    @media (max-height: 720px){
+      .footer{ display:none; }
+    }
+
+    @media (pointer: coarse), (max-width: 520px){
+      .topbar{ gap: 6px; padding: 8px 8px; height: 52px; }
+      .btnTop{ font-size: 13px; padding: 6px 8px; border-radius: 10px; }
+      #timerCanvas{ display:none !important; }
+      .status{ font-size: 13px; max-width: 54vw; }
+      .btnKey{ min-height: 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <button id="btnStart" class="btnTop">Start Game</button>
+    <button id="btnStop" class="btnTop" disabled>Stop Game</button>
+    <div id="status" class="status">Loading fonts…</div>
+    <canvas id="timerCanvas" class="timerCanvas" aria-label="Timer"></canvas>
+  </div>
+
+  <div class="wrap">
+    <div class="gameArea">
+      <main class="card" aria-label="Guess the number game">
+        <div id="hint" class="hint">
+          Guess a number from 1 to 999. Your best “too high” guess appears above; your best “too low” guess appears below.
+        </div>
+
+        <div class="cartoucheStack" aria-label="Guess range display">
+          <div class="cartoucheRow">
+            <div id="lblBestHigh" class="rowLabel">Best too high</div>
+            <div class="rowInline" id="rowInlineTime">
+              <div id="endLblTime" class="sideLabel"></div>
+              <canvas id="bestHighCanvas" class="cartouche" aria-label="Best too high / finish time cartouche"></canvas>
+            </div>
+          </div>
+
+          <div class="cartoucheRow">
+            <div id="lblSecret" class="rowLabel">Secret number</div>
+            <canvas id="secretCanvas" class="cartouche" aria-label="Secret number cartouche"></canvas>
+          </div>
+
+          <div class="cartoucheRow">
+            <div id="lblBestLow" class="rowLabel">Best too low</div>
+            <div class="rowInline" id="rowInlineGuesses">
+              <div id="endLblGuesses" class="sideLabel"></div>
+              <canvas id="bestLowCanvas" class="cartouche" aria-label="Best too low / guesses cartouche"></canvas>
+            </div>
+          </div>
+
+          <div class="cartoucheRow">
+            <div id="lblCurrent" class="rowLabel">Your current guess</div>
+            <canvas id="guessCanvas" class="cartouche" aria-label="Current guess cartouche"></canvas>
+          </div>
+        </div>
+
+        <div id="keys" class="keys" role="group" aria-label="Keypad"></div>
+      </main>
+    </div>
+
+    <footer class="footer" aria-label="Disclaimer">
+      <div class="footerRow">
+        <div id="footerDisclaimer" class="footerLeft">
+          <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
+        </div>
+        <div class="footerRight">
+          <a id="linkIndex" href="./index.html">Back to index</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // CHANGE HERE: "en" | "tp"
+  const DEV_LANG = "tp";// "en";
+
+  // Minimal UI string table (English <-> Toki Pona)
+  const UI_STR = {
+    en: {
+      start: "Start Game",
+      stop: "Stop Game",
+      hint: "Guess a number from 1 to 999. Your best “too high” guess appears above; your best “too low” guess appears below.",
+      bestHigh: "Best too high",
+      bestLow: "Best too low",
+      secret: "Secret number",
+      current: "Your current guess",
+      clear: "Clear",
+      back: "Back",
+      ok: "↩",
+      status_loading: "Loading fonts…",
+      status_click_start: "Click Start Game.",
+      status_started: "Game started. Enter a guess.",
+      status_stopped: "Game stopped.",
+      status_enter_number: "Enter a whole number from 1 to 999.",
+      status_low_new: (g) => `Too low. New best low: ${g}.`,
+      status_low_same: (best) => `Too low. Best low remains ${best}.`,
+      status_high_new: (g) => `Too high. New best high: ${g}.`,
+      status_high_same: (best) => `Too high. Best high remains ${best}.`,
+      status_correct: (secret, guessCount, timeStr) => `Correct! ${secret}. Guesses: ${guessCount}. Time: ${timeStr}. Click Start Game to play again.`,
+      footer_disclaimer: "This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.",
+      back_index: "Back to index",
+      aria_game: "Guess the number game",
+      aria_keypad: "Keypad",
+      aria_timer: "Timer"
+    },
+    tp: {
+      start: "open musi",
+      stop: "pini musi",
+      hint: "o alasa sona e nanpa tan nanpa Newen tawa nanpa Nejejejen. nanpa sewi pona li lon sewi. nanpa anpa pona li lon anpa.",
+      bestHigh: "nanpa sewi pona",
+      bestLow: "nanpa anpa pona",
+      secret: "nanpa len",
+      current: "nanpa alasa sina",
+      clear: "weka",
+      back: "weka pini",
+      ok: "↩",
+      status_loading: "mi kama jo e sitelen…",
+      status_click_start: "o open e musi.",
+      status_started: "musi li open. o pana e nanpa.",
+      status_stopped: "musi li pini.",
+      status_enter_number: "o pana e nanpa pi 1 tawa 999.",
+      status_low_new: (g) => `nanpa li lili. nanpa anpa sin: ${g}.`,
+      status_low_same: (best) => `nanpa li lili. nanpa anpa awen: ${best}.`,
+      status_high_new: (g) => `nanpa li suli. nanpa sewi sin: ${g}.`,
+      status_high_same: (best) => `nanpa li suli. nanpa sewi awen: ${best}.`,
+      status_correct: (secret, guessCount, timeStr) => `pona! nanpa len li ${secret}. wile sona: ${guessCount}. tenpo: ${timeStr}. o open sin.`,
+      footer_disclaimer: "ilo ni li pana ala e sona pona lon tenpo ale. sina o lukin sin e ijo ale.",
+      back_index: "tawa lipu open",
+      aria_game: "musi alasa nanpa",
+      aria_keypad: "ilo nanpa",
+      aria_timer: "tenpo"
+    }
+  };
+
+  function uiText(key, ...args){
+    const lang = (DEV_LANG === "tp") ? "tp" : "en";
+    const base = (UI_STR[lang] && UI_STR[lang][key] !== undefined) ? UI_STR[lang][key] : UI_STR.en[key];
+    return (typeof base === "function") ? base(...args) : String(base ?? "");
+  }
+
+
+  /* ============================================================
+     Minimal cartouche encoder/renderer (ported from your calculator.html)
+     - number -> nanpa-caps -> tokens -> TP words -> UCSUR codepoints
+     - draw codepoints into a cartouche canvas (mixed large/small glyphs)
+     ============================================================ */
+
+  const FONT_FAMILY = "TP-Cartouche-Font";
+
+  // UCSUR codepoints required for number cartouches + timer
+  const WORD_TO_UCSUR_CP = {
+    "nanpa": 0xF193D,
+    "esun":  0xF190B,
+    "en":    0xF190A,
+    "e":     0xF1909,
+    "nasa":  0xF193E,
+    "ni":    0xF1941,
+    "nena":  0xF1940,
+    "o":     0xF1944,
+    "kulupu":0xF191F,
+
+    "ijo":   0xF190C,
+    "wan":   0xF1973,
+    "tu":    0xF196E,
+    "seli":  0xF1957,
+    "awen":  0xF1908,
+    "luka":  0xF192D,
+    "utala": 0xF1971,
+    "mun":   0xF193A,
+    "pipi":  0xF1951,
+    "jo":    0xF1913,
+
+    // Timer prefix + colon support
+    "tenpo": 0xF196B,
+    "sina":  0xF195E,
+    "pali":  0xF1949,
+    "sona":  0xF1961,
+    "wile":  0xF1977,
+    "kolon": 0xF199D
+  };
+
+  function getSmallCodepointsSet() {
+    // keep this aligned with your calculator: small glyphs for framing words
+    return new Set([
+      WORD_TO_UCSUR_CP["nanpa"],
+      WORD_TO_UCSUR_CP["nena"],
+      WORD_TO_UCSUR_CP["ni"],
+      WORD_TO_UCSUR_CP["nasa"],
+      WORD_TO_UCSUR_CP["e"],
+      WORD_TO_UCSUR_CP["esun"],
+      WORD_TO_UCSUR_CP["en"],
+    ].filter(v => typeof v === "number"));
+  }
+  const SMALL_SET = getSmallCodepointsSet();
+
+  // nanpa-caps digit tokens
+  const DIGIT_TO_TOKEN = {
+    "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
+    "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
+  };
+  const TOKEN_TO_DIGIT_WORD = {
+    "NI": "ijo", "WE": "wan", "TE": "tu", "SE": "seli", "NA": "awen",
+    "LE": "luka", "NU": "utala", "ME": "mun", "PE": "pipi", "JE": "jo",
+  };
+  const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
+  const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
+  const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
+
+  function normalizeLooseSeparators(raw) {
+    if (raw == null) return "";
+    let s = String(raw);
+
+    const isNeg = s.startsWith("-");
+    const head = isNeg ? "-" : "";
+    const rest = isNeg ? s.slice(1) : s;
+
+    let r = rest.replace(/\s+/g, " ");
+    r = r.replace(/-+/g, "-");
+
+    return (head + r).trim();
+  }
+
+  function numberStrToNanpaCaps(s, { thousandsChar = "," } = {}) {
+    if (s == null) throw new Error("s must be a string, not null");
+    let raw = normalizeLooseSeparators(String(s));
+    if (!raw) throw new Error("Empty value cannot be encoded");
+
+    function encodeSingleNumberSegment(segment, includeInitialNe) {
+      let seg = String(segment).trim();
+      if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
+
+      // For this game we only need integers 1..999, but the encoder is generic.
+      const out = [];
+      if (includeInitialNe) out.push("NE");
+
+      function pushNene() {
+        if (out.length > 0 && out[out.length - 1] === "NENE") return;
+        out.push("NENE");
+      }
+
+      if (seg.startsWith("-")) {
+        out.push("NO");
+        seg = seg.slice(1).trim();
+      }
+
+      if ((seg.match(/\./g) || []).length > 1) {
+        throw new Error(`Invalid numeric segment with multiple decimals: ${segment}`);
+      }
+
+      let intPart = seg;
+      let fracPart = "";
+      let hasDecimal = false;
+      if (seg.includes(".")) {
+        [intPart, fracPart] = seg.split(".", 2);
+        hasDecimal = true;
+      }
+
+      let ip = String(intPart ?? "").trim();
+      if (ip === "") ip = "0";
+
+      const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+      for (const g of groups) {
+        if (g === "" || !/^\d+$/.test(g)) {
+          throw new Error(`Invalid integer group "${g}" in "${s}"`);
+        }
+      }
+
+      for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
+
+      if (hasDecimal) {
+        out.push(OPCHAR_TO_TOKEN["."]);
+
+        for (const ch of fracPart) {
+          if (ch === "_" ) continue;
+          if (ch === " " || ch === "-") { pushNene(); continue; }
+          if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
+          if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
+          throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
+        }
+      }
+
+      out.push("N");
+      return out.join("");
+    }
+
+    return encodeSingleNumberSegment(raw, true);
+  }
+
+  function tokenizeNanpaCaps(caps) {
+    const s = String(caps).trim().toUpperCase();
+    if (!s.endsWith("N")) throw new Error("nanpa-caps must end with final terminator 'N'");
+    if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
+
+    const tokens = [];
+    let i = 0;
+    const n = s.length;
+
+    while (i < n - 1) {
+      let matched = null;
+      for (const pref of TOKEN_PREFIXES) {
+        if (s.startsWith(pref, i)) { matched = pref; break; }
+      }
+      if (matched != null) { tokens.push(matched); i += matched.length; continue; }
+
+      if (i + 2 <= n - 1) {
+        const two = s.slice(i, i + 2);
+        if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
+      }
+      throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
+    }
+
+    tokens.push("N");
+    return tokens;
+  }
+
+  // Use the "uniform" word mapping like your tools (en/nena based)
+  function nanpaCapsTokensToTpWords(tokens) {
+    const out = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+
+      if (t === "NE") {
+        if (out.length === 0) out.push("nanpa", "en");
+        else out.push("nena", "en");
+        continue;
+      }
+
+      if (DIGIT_TOKENS.has(t)) {
+        const digitWord = TOKEN_TO_DIGIT_WORD[t];
+        if (t === "NI" || t === "NA" || t === "NU") out.push("nena", digitWord);
+        else out.push(digitWord, "en");
+        continue;
+      }
+
+      if (t === "NO") { out.push("nena", "o"); continue; }
+      if (t === "KE") { out.push("kulupu", "en"); continue; }
+      if (t === "N")  { out.push("nanpa"); continue; }
+
+      throw new Error(`Unsupported token "${t}" in number cartouche`);
+    }
+    return out;
+  }
+
+  function tpWordsToUcsurCodepoints(words) {
+    const cps = [];
+    for (const w of words) {
+      const key = String(w).toLowerCase();
+      const cp = WORD_TO_UCSUR_CP[key];
+      if (cp == null) throw new Error(`No UCSUR code point for word "${w}"`);
+      cps.push(cp);
+    }
+    return cps;
+  }
+
+  function decimalToUcsurCodepoints(decimalStr) {
+    const raw0 = String(decimalStr ?? "").trim();
+    if (!raw0) return [];
+    const caps = numberStrToNanpaCaps(raw0, { thousandsChar: "," });
+    const tokens = tokenizeNanpaCaps(caps);
+    const tpWords = nanpaCapsTokensToTpWords(tokens);
+    return tpWordsToUcsurCodepoints(tpWords);
+  }
+
+  function drawRoundedRect(ctx, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
+
+  function applyCartoucheStrokeStyle(ctx, borderPx) {
+    ctx.lineWidth = borderPx;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111";
+  }
+
+  function renderMixedCartoucheToCanvas(canvas, glyphs, largePx, smallPx, smallCodepoints, options = {}) {
+    const pad = options.padding ?? 18;
+    const border = options.border ?? 2;
+    const corner = options.cornerRadius ?? 16;
+    const letterGap = options.letterGap ?? 0;
+    const dpr = window.devicePixelRatio || 1;
+
+    // Measure at natural size
+    const meas = document.createElement("canvas");
+    const mctx = meas.getContext("2d");
+    mctx.textBaseline = "alphabetic";
+
+    const runs = [];
+    let totalWidth = 0;
+    let maxAscent = 0;
+    let maxDescent = 0;
+
+    for (const g of glyphs) {
+      const ch = (typeof g === "number") ? String.fromCodePoint(g) : String(g);
+      const isSmall = (typeof g === "number") && smallCodepoints.has(g);
+      const px = isSmall ? smallPx : largePx;
+
+      mctx.font = `${px}px "${FONT_FAMILY}"`;
+      const m = mctx.measureText(ch);
+
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      runs.push({ ch, px, tightW, left, ascent, descent });
+      totalWidth += tightW + letterGap;
+      if (ascent > maxAscent) maxAscent = ascent;
+      if (descent > maxDescent) maxDescent = descent;
+    }
+    if (runs.length > 0) totalWidth -= letterGap;
+
+    const textHeight = Math.ceil(maxAscent + maxDescent);
+    const cartW = Math.ceil(totalWidth + pad * 2);
+    const cartH = Math.ceil(textHeight + pad * 2);
+    const naturalW = Math.ceil(cartW + border * 2);
+    const naturalH = Math.ceil(cartH + border * 2);
+
+    // Render to offscreen at natural size (crisp)
+    const off = document.createElement("canvas");
+    off.width = Math.ceil(naturalW * dpr);
+    off.height = Math.ceil(naturalH * dpr);
+    const octx = off.getContext("2d");
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.textBaseline = "alphabetic";
+    octx.clearRect(0, 0, naturalW, naturalH);
+
+    drawRoundedRect(octx, border, border, cartW, cartH, corner);
+    applyCartoucheStrokeStyle(octx, border);
+    octx.stroke();
+
+    const baselineY = border + pad + maxAscent;
+    let x = border + pad;
+    octx.fillStyle = "#111";
+    for (const r of runs) {
+      octx.font = `${r.px}px "${FONT_FAMILY}"`;
+      octx.fillText(r.ch, x + (r.left ?? 0), baselineY);
+      x += r.tightW + letterGap;
+    }
+
+    // Visible canvas: match current CSS box (no stretching)
+    const rect = canvas.getBoundingClientRect();
+    const shrink = !!options.shrinkToNatural;
+
+    // Height always follows the CSS height of the element (set by layout).
+    const cssH = Math.max(24, Math.floor((rect.height || 0) || naturalH));
+
+    let cssW;
+    if (shrink){
+      // In summary mode we want the cartouche to be as tight as possible.
+      // Cap to available inline space and natural width.
+      const parentW = canvas.parentElement ? canvas.parentElement.getBoundingClientRect().width : rect.width;
+      const availW = Math.max(1, Math.floor((parentW || rect.width || naturalW)));
+      cssW = Math.min(Math.floor(naturalW), availW);
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+    } else {
+      // During gameplay, let CSS control width (100% / flex).
+      canvas.style.width = '';
+      canvas.style.height = '';
+      cssW = Math.max(220, Math.floor((rect.width || 0) || naturalW));
+    }
+
+    canvas.width = Math.ceil(cssW * dpr);
+    canvas.height = Math.ceil(cssH * dpr);
+
+    const vctx = canvas.getContext("2d");
+    vctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    vctx.clearRect(0, 0, cssW, cssH);
+
+    const scale = Math.min(1, cssW / naturalW, cssH / naturalH);
+    const drawW = Math.floor(naturalW * scale);
+    const drawH = Math.floor(naturalH * scale);
+    const dx = Math.floor((cssW - drawW) / 2);
+    const dy = Math.floor((cssH - drawH) / 2);
+
+    vctx.imageSmoothingEnabled = true;
+    vctx.drawImage(off, 0, 0, off.width, off.height, dx, dy, drawW, drawH);
+  }
+
+
+  // Render a mixed-glyph cartouche with a UCSUR prefix drawn immediately before the cartouche box.
+  // Used for end-of-game summary so the label is visually glued to the cartouche.
+  function renderPrefixedMixedCartoucheToCanvas(canvas, prefixCps, cartoucheGlyphs, largePx, smallPx, smallCodepoints, options = {}) {
+    const pad = options.padding ?? 16;
+    const border = options.border ?? 3;
+    const corner = options.cornerRadius ?? 18;
+    const letterGap = options.letterGap ?? 2;
+    const gapPx = options.prefixGapPx ?? 8;         // gap between prefix and cartouche box
+    const interGlyphGapPx = options.interGlyphGapPx ?? 4;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    // --- Build the cartouche offscreen at natural size (same logic as renderMixedCartoucheToCanvas) ---
+    const meas = document.createElement("canvas");
+    const mctx = meas.getContext("2d");
+    mctx.textBaseline = "alphabetic";
+
+    const runs = [];
+    let totalWidth = 0;
+    let maxAscent = 0;
+    let maxDescent = 0;
+
+    for (const g of cartoucheGlyphs) {
+      const ch = (typeof g === "number") ? String.fromCodePoint(g) : String(g);
+      const isSmall = (typeof g === "number") && smallCodepoints.has(g);
+      const px = isSmall ? smallPx : largePx;
+
+      mctx.font = `${px}px "${FONT_FAMILY}"`;
+      const m = mctx.measureText(ch);
+
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      runs.push({ ch, px, tightW, left, ascent, descent });
+      totalWidth += tightW + letterGap;
+      if (ascent > maxAscent) maxAscent = ascent;
+      if (descent > maxDescent) maxDescent = descent;
+    }
+    if (runs.length > 0) totalWidth -= letterGap;
+
+    const textHeight = Math.ceil(maxAscent + maxDescent);
+    const cartW = Math.ceil(totalWidth + pad * 2);
+    const cartH = Math.ceil(textHeight + pad * 2);
+    const naturalW = Math.ceil(cartW + border * 2);
+    const naturalH = Math.ceil(cartH + border * 2);
+
+    const off = document.createElement("canvas");
+    off.width = Math.ceil(naturalW * dpr);
+    off.height = Math.ceil(naturalH * dpr);
+    const octx = off.getContext("2d");
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.textBaseline = "alphabetic";
+    octx.clearRect(0, 0, naturalW, naturalH);
+
+    drawRoundedRect(octx, border, border, cartW, cartH, corner);
+    applyCartoucheStrokeStyle(octx, border);
+    octx.stroke();
+
+    const baselineY = border + pad + maxAscent;
+    let x = border + pad;
+    octx.fillStyle = "#111";
+    for (const r of runs) {
+      octx.font = `${r.px}px "${FONT_FAMILY}"`;
+      octx.fillText(r.ch, x + (r.left ?? 0), baselineY);
+      x += r.tightW + letterGap;
+    }
+
+    // --- Now size the visible canvas tightly: prefix + gap + cartouche (scaled to fit height/width) ---
+    const rect = canvas.getBoundingClientRect();
+    const cssH = Math.max(24, Math.floor((rect.height || 0) || naturalH));
+    const parentW = canvas.parentElement ? canvas.parentElement.getBoundingClientRect().width : rect.width;
+    const availW = Math.max(1, Math.floor((parentW || rect.width || (naturalW + 200))));
+
+    // Base scale fits height (never upscale beyond 1)
+    let scale = Math.min(1, cssH / naturalH);
+
+    // Measure prefix at the corresponding font size
+    function measurePrefix(fontPx){
+      const ctx = mctx;
+      ctx.save();
+      ctx.font = `${fontPx}px "${FONT_FAMILY}"`;
+      let w = 0;
+      for (let i = 0; i < prefixCps.length; i++){
+        const cp = prefixCps[i];
+        const ch = String.fromCodePoint(cp);
+        const mw = ctx.measureText(ch).width;
+        w += mw;
+        if (i < prefixCps.length - 1) w += interGlyphGapPx;
+      }
+      ctx.restore();
+      return w;
+    }
+
+    let fontPx = Math.max(10, largePx * scale);
+    let prefixW = prefixCps && prefixCps.length ? measurePrefix(fontPx) : 0;
+    // IMPORTANT: use CEIL for draw sizes to avoid clipping stroke/rounding on the right/bottom
+    // when the scaled size lands on a fractional pixel.
+    let drawCartW = Math.ceil(naturalW * scale);
+    // Add a tiny safety margin to account for font side bearings at small scales.
+    let totalW = Math.ceil(prefixW + (prefixW ? gapPx : 0) + drawCartW + 2);
+
+    // If it doesn't fit, shrink uniformly (prefix and cartouche together)
+    if (totalW > availW){
+      const k = Math.max(0.1, availW / totalW);
+      scale *= k;
+      fontPx = Math.max(10, fontPx * k);
+      prefixW = prefixCps && prefixCps.length ? measurePrefix(fontPx) : 0;
+      drawCartW = Math.ceil(naturalW * scale);
+      totalW = Math.ceil(prefixW + (prefixW ? gapPx : 0) + drawCartW + 2);
+    }
+
+    // Tight CSS width to content so there is no internal "empty runway"
+    canvas.style.width = `${totalW}px`;
+    canvas.style.height = `${cssH}px`;
+
+    const cssW = totalW;
+    canvas.width = Math.ceil(cssW * dpr);
+    canvas.height = Math.ceil(cssH * dpr);
+
+    const vctx = canvas.getContext("2d");
+    vctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    vctx.clearRect(0, 0, cssW, cssH);
+
+    // Draw prefix glyphs flush-left, centered vertically.
+    const centerY = cssH / 2;
+    if (prefixCps && prefixCps.length){
+      vctx.save();
+      vctx.font = `${fontPx}px "${FONT_FAMILY}"`;
+      vctx.textBaseline = "middle";
+      vctx.fillStyle = "#111";
+      let px = 0;
+      for (let i = 0; i < prefixCps.length; i++){
+        const ch = String.fromCodePoint(prefixCps[i]);
+        vctx.fillText(ch, px, centerY);
+        px += vctx.measureText(ch).width;
+        if (i < prefixCps.length - 1) px += interGlyphGapPx;
+      }
+      vctx.restore();
+    }
+
+    // Draw cartouche immediately after prefix+gap, vertically centered.
+    const drawCartH = Math.ceil(naturalH * scale);
+    const cartX = Math.floor(prefixW + (prefixW ? gapPx : 0));
+    const cartY = Math.floor((cssH - drawCartH) / 2);
+
+    vctx.imageSmoothingEnabled = true;
+    vctx.drawImage(off, 0, 0, off.width, off.height, cartX, cartY, drawCartW, drawCartH);
+  }
+
+
+  function renderLabelPlusMixedGlyphsCartoucheToCanvas(
+    canvas,
+    labelText,
+    glyphs,
+    largePx,
+    smallPx,
+    smallCodepoints,
+    options = {}
+  ){
+    const pad = options.padding ?? 16;
+    const border = options.border ?? 3;
+    const corner = options.cornerRadius ?? 18;
+    const letterGap = options.letterGap ?? 1;
+
+    const labelFontFamily = options.labelFontFamily ??
+      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+    const labelPx = options.labelPx ?? Math.max(14, Math.round(smallPx * 1.7));
+    const labelGapPx = options.labelGapPx ?? Math.max(6, Math.round(labelPx * 0.35));
+
+    const dpr = window.devicePixelRatio || 1;
+
+    // Measure
+    const meas = document.createElement("canvas");
+    const mctx = meas.getContext("2d");
+    mctx.textBaseline = "alphabetic";
+
+    const runs = [];
+    let totalWidth = 0;
+    let maxAscent = 0;
+    let maxDescent = 0;
+
+    // Label runs
+    const labelChars = String(labelText ?? "").split("");
+    for (const ch of labelChars) {
+      mctx.font = `${labelPx}px ${labelFontFamily}`;
+      const m = mctx.measureText(ch);
+
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(labelPx * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(labelPx * 0.2);
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      runs.push({ ch, px: labelPx, family: labelFontFamily, tightW, left, ascent, descent });
+      totalWidth += tightW + letterGap;
+      if (ascent > maxAscent) maxAscent = ascent;
+      if (descent > maxDescent) maxDescent = descent;
+    }
+
+    // Label -> number gap (as extra width, not a glyph)
+    if (runs.length > 0) totalWidth += labelGapPx;
+
+    // Glyph runs
+    for (const g of glyphs) {
+      const ch = (typeof g === "number") ? String.fromCodePoint(g) : String(g);
+      const isSmall = (typeof g === "number") && smallCodepoints.has(g);
+      const px = isSmall ? smallPx : largePx;
+
+      mctx.font = `${px}px "${FONT_FAMILY}"`;
+      const m = mctx.measureText(ch);
+
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      runs.push({ ch, px, family: `"${FONT_FAMILY}"`, tightW, left, ascent, descent });
+      totalWidth += tightW + letterGap;
+      if (ascent > maxAscent) maxAscent = ascent;
+      if (descent > maxDescent) maxDescent = descent;
+    }
+
+    if (runs.length > 0) totalWidth -= letterGap;
+
+    const textHeight = Math.ceil(maxAscent + maxDescent);
+    const cartW = Math.ceil(totalWidth + pad * 2);
+    const cartH = Math.ceil(textHeight + pad * 2);
+    const naturalW = Math.ceil(cartW + border * 2);
+    const naturalH = Math.ceil(cartH + border * 2);
+
+    // Render to offscreen at natural size
+    const off = document.createElement("canvas");
+    off.width = Math.ceil(naturalW * dpr);
+    off.height = Math.ceil(naturalH * dpr);
+    const octx = off.getContext("2d");
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.textBaseline = "alphabetic";
+    octx.clearRect(0, 0, naturalW, naturalH);
+
+    drawRoundedRect(octx, border, border, cartW, cartH, corner);
+    applyCartoucheStrokeStyle(octx, border);
+    octx.stroke();
+
+    const baselineY = border + pad + maxAscent;
+    let x = border + pad;
+
+    // Draw label portion (first labelChars.length runs)
+    octx.fillStyle = "#111";
+    for (let i = 0; i < labelChars.length; i++) {
+      const r = runs[i];
+      octx.font = `${r.px}px ${r.family}`;
+      octx.fillText(r.ch, x + (r.left ?? 0), baselineY);
+      x += r.tightW + letterGap;
+    }
+    if (labelChars.length > 0) x += labelGapPx;
+
+    // Draw glyph portion
+    for (let i = labelChars.length; i < runs.length; i++) {
+      const r = runs[i];
+      octx.font = `${r.px}px ${r.family}`;
+      octx.fillText(r.ch, x + (r.left ?? 0), baselineY);
+      x += r.tightW + letterGap;
+    }
+
+    // Visible canvas: match current CSS box (no stretching)
+    const rect = canvas.getBoundingClientRect();
+    const cssW = Math.max(220, Math.floor((rect.width || 0) || naturalW));
+    const cssH = Math.max(24, Math.floor((rect.height || 0) || naturalH));
+
+    canvas.width = Math.ceil(cssW * dpr);
+    canvas.height = Math.ceil(cssH * dpr);
+
+    const vctx = canvas.getContext("2d");
+    vctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    vctx.clearRect(0, 0, cssW, cssH);
+
+    const scale = Math.min(1, cssW / naturalW, cssH / naturalH);
+    const drawW = Math.floor(naturalW * scale);
+    const drawH = Math.floor(naturalH * scale);
+    const dx = Math.floor((cssW - drawW) / 2);
+    const dy = Math.floor((cssH - drawH) / 2);
+
+    vctx.imageSmoothingEnabled = true;
+    vctx.drawImage(off, 0, 0, off.width, off.height, dx, dy, drawW, drawH);
+  }
+
+function renderTextCartoucheToCanvas(canvas, text, fontFamily, fontPx, options = {}) {
+    const pad = options.padding ?? 18;
+    const border = options.border ?? 3;
+    const corner = options.cornerRadius ?? 18;
+    const letterGap = options.letterGap ?? 0;
+    const dpr = window.devicePixelRatio || 1;
+
+    const chars = String(text ?? "").split("");
+
+    const meas = document.createElement("canvas");
+    const mctx = meas.getContext("2d");
+    mctx.textBaseline = "alphabetic";
+    mctx.font = `${fontPx}px ${fontFamily}`;
+
+    let totalW = 0;
+    let maxAscent = 0;
+    let maxDescent = 0;
+    const runs = [];
+
+    for (const ch of chars) {
+      const m = mctx.measureText(ch);
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(fontPx * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(fontPx * 0.2);
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      runs.push({ ch, tightW, left, ascent, descent });
+      totalW += tightW + letterGap;
+      if (ascent > maxAscent) maxAscent = ascent;
+      if (descent > maxDescent) maxDescent = descent;
+    }
+    if (runs.length > 0) totalW -= letterGap;
+
+    const textH = Math.ceil(maxAscent + maxDescent);
+    const cartW = Math.ceil(totalW + pad * 2);
+    const cartH = Math.ceil(textH + pad * 2);
+    const naturalW = Math.ceil(cartW + border * 2);
+    const naturalH = Math.ceil(cartH + border * 2);
+
+    const off = document.createElement("canvas");
+    off.width = Math.ceil(naturalW * dpr);
+    off.height = Math.ceil(naturalH * dpr);
+    const octx = off.getContext("2d");
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.textBaseline = "alphabetic";
+    octx.clearRect(0, 0, naturalW, naturalH);
+
+    drawRoundedRect(octx, border, border, cartW, cartH, corner);
+    applyCartoucheStrokeStyle(octx, border);
+    octx.stroke();
+
+    octx.font = `${fontPx}px ${fontFamily}`;
+    octx.fillStyle = "#111";
+
+    const baselineY = border + pad + maxAscent;
+    let x = border + pad;
+    for (const r of runs) {
+      octx.fillText(r.ch, x + (r.left ?? 0), baselineY);
+      x += r.tightW + letterGap;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const cssW = Math.max(220, Math.floor((rect.width || 0) || naturalW));
+    const cssH = Math.max(24, Math.floor((rect.height || 0) || naturalH));
+
+    canvas.width = Math.ceil(cssW * dpr);
+    canvas.height = Math.ceil(cssH * dpr);
+
+    const vctx = canvas.getContext("2d");
+    vctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    vctx.clearRect(0, 0, cssW, cssH);
+
+    const scale = Math.min(1, cssW / naturalW, cssH / naturalH);
+    const drawW = Math.floor(naturalW * scale);
+    const drawH = Math.floor(naturalH * scale);
+    const dx = Math.floor((cssW - drawW) / 2);
+    const dy = Math.floor((cssH - drawH) / 2);
+
+    vctx.imageSmoothingEnabled = true;
+    vctx.drawImage(off, 0, 0, off.width, off.height, dx, dy, drawW, drawH);
+  }
+
+function renderEmptyCartouche(canvas, cssHeight=92) {
+    const dpr = window.devicePixelRatio || 1;
+    const border = 2;
+    const corner = 18;
+    const rect = canvas.getBoundingClientRect();
+    const outerW = Math.max(220, Math.floor((rect.width || 0) || 520));
+    const outerH = Math.max(24, Math.floor((rect.height || 0) || cssHeight));
+
+    canvas.width = Math.ceil(outerW * dpr);
+    canvas.height = Math.ceil(outerH * dpr);
+
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, outerW, outerH);
+
+    const pad = 10;
+    drawRoundedRect(ctx, border, border, outerW - border*2, outerH - border*2, corner);
+    ctx.lineWidth = border;
+    ctx.setLineDash([6,4]);
+    ctx.strokeStyle = "rgba(17,17,17,0.35)";
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* ============================================================
+     Timer (ported from 15-puzzle)
+     ============================================================ */
+
+  function isMobileTopbarMode() {
+    try { return window.matchMedia && window.matchMedia("(pointer: coarse), (max-width: 520px)").matches; }
+    catch { return false; }
+  }
+
+  function buildTimeCartoucheGlyphs(totalSeconds) {
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = totalSeconds % 60;
+
+    const mm2 = String(mm).padStart(2, "0");
+    const ss2 = String(ss).padStart(2, "0");
+
+    const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
+    const cpEn    = WORD_TO_UCSUR_CP["en"];
+    const cpKolon = WORD_TO_UCSUR_CP["kolon"];
+
+    function digitInner(dChar) {
+      const cps = decimalToUcsurCodepoints(String(dChar));
+      if (cps.length < 3) return [];
+      // decimalToUcsurCodepoints returns: [nanpa,en, ...digitGlyphs..., nanpa]
+      return cps.slice(2, cps.length - 1);
+    }
+
+    const inner = [];
+    for (const ch of mm2) inner.push(...digitInner(ch));
+
+    // Use the dedicated "kolon" glyph if present (it is in your UCSUR map).
+    if (typeof cpKolon === "number") inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKolon, WORD_TO_UCSUR_CP["en"]);
+    else inner.push(":");
+
+    for (const ch of ss2) inner.push(...digitInner(ch));
+
+    return [cpNanpa, cpEn, ...inner, cpNanpa];
+  }
+
+
+  function drawPrefixGlyphsLeftOfBox(ctx, boxX, centerY, fontPx, cps, gapPx = 8, interGlyphGapPx = 4) {
+    const chars = cps.map(cp => String.fromCodePoint(cp));
+
+    ctx.save();
+    ctx.font = `${fontPx}px "${FONT_FAMILY}"`;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#111";
+
+    let totalW = 0;
+    const widths = [];
+    for (const ch of chars) {
+      const w = ctx.measureText(ch).width;
+      widths.push(w);
+      totalW += w;
+    }
+    totalW += interGlyphGapPx * Math.max(0, chars.length - 1);
+
+    let x = boxX - gapPx - totalW;
+    for (let i = 0; i < chars.length; i++) {
+      ctx.fillText(chars[i], x, centerY);
+      x += widths[i] + interGlyphGapPx;
+    }
+
+    ctx.restore();
+  }
+
+  const timerCanvas = document.getElementById("timerCanvas");
+  const timerCtx = timerCanvas.getContext("2d");
+  const timerOffscreen = document.createElement("canvas");
+
+  const TIMER_CFG = {
+    largePx: 34,
+    smallPx: 12,
+    pad: 8,
+    border: 2,
+    corner: 12,
+    gap: 1,
+    targetCssW: 170,
+    targetCssH: 36
+  };
+
+  function renderTopTimerCartouche(totalSeconds) {
+    if (isMobileTopbarMode()) return;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    timerCanvas.style.width = `${TIMER_CFG.targetCssW}px`;
+    timerCanvas.style.height = `${TIMER_CFG.targetCssH}px`;
+    timerCanvas.width = Math.ceil(TIMER_CFG.targetCssW * dpr);
+    timerCanvas.height = Math.ceil(TIMER_CFG.targetCssH * dpr);
+
+    timerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    timerCtx.clearRect(0, 0, TIMER_CFG.targetCssW, TIMER_CFG.targetCssH);
+
+    const glyphs = buildTimeCartoucheGlyphs(totalSeconds);
+
+    renderMixedCartoucheToCanvas(
+      timerOffscreen,
+      glyphs,
+      TIMER_CFG.largePx,
+      TIMER_CFG.smallPx,
+      SMALL_SET,
+      { padding: TIMER_CFG.pad, border: TIMER_CFG.border, cornerRadius: TIMER_CFG.corner, letterGap: TIMER_CFG.gap }
+    );
+
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(Boolean);
+    const gapPx = 8;
+
+    let scale = Math.min(TIMER_CFG.targetCssW / timerOffscreen.width, TIMER_CFG.targetCssH / timerOffscreen.height);
+    let prefixFontPx = Math.max(10, TIMER_CFG.largePx * scale);
+
+    timerCtx.save();
+    timerCtx.font = `${prefixFontPx}px "${FONT_FAMILY}"`;
+    const p1 = prefixCps[0] ? timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width : 0;
+    const p2 = prefixCps[1] ? timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width : 0;
+    const prefixW = p1 + (prefixCps.length > 1 ? (4 + p2) : 0);
+    timerCtx.restore();
+
+    const availWForCartouche = Math.max(40, TIMER_CFG.targetCssW - prefixW - gapPx);
+    scale = Math.min(availWForCartouche / timerOffscreen.width, TIMER_CFG.targetCssH / timerOffscreen.height);
+    prefixFontPx = Math.max(10, TIMER_CFG.largePx * scale);
+
+    const drawW = Math.floor(timerOffscreen.width * scale);
+    const drawH = Math.floor(timerOffscreen.height * scale);
+
+    const x = Math.floor(TIMER_CFG.targetCssW - drawW);
+    const y = Math.floor((TIMER_CFG.targetCssH - drawH) / 2);
+
+    if (prefixCps.length) drawPrefixGlyphsLeftOfBox(timerCtx, x, TIMER_CFG.targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
+    timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
+  }
+
+  let timerSeconds = 0;
+  let timerHandle = null;
+
+  function startTimer() {
+    stopTimer();
+    timerHandle = setInterval(() => {
+      timerSeconds++;
+      renderTopTimerCartouche(timerSeconds);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerHandle) clearInterval(timerHandle);
+    timerHandle = null;
+  }
+
+  /* ============================================================
+     Game state
+     ============================================================ */
+
+  const statusEl = document.getElementById("status");
+  const hintEl = document.getElementById("hint");
+  const btnStart = document.getElementById("btnStart");
+  const btnStop  = document.getElementById("btnStop");
+
+  const bestHighCanvas = document.getElementById("bestHighCanvas");
+  const bestLowCanvas  = document.getElementById("bestLowCanvas");
+  const secretCanvas   = document.getElementById("secretCanvas");
+  const guessCanvas    = document.getElementById("guessCanvas");
+
+  const lblBestHigh = document.getElementById("lblBestHigh");
+  const lblBestLow  = document.getElementById("lblBestLow");
+
+  const endLblTime   = document.getElementById("endLblTime");
+
+  // Set the finished-time label as UCSUR sitelen pona glyphs: "tenpo nanpa"
+  if (endLblTime){
+    const cps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(cp => typeof cp === "number");
+    endLblTime.textContent = cps.map(cp => String.fromCodePoint(cp)).join("");
+  }
+  const endLblGuesses= document.getElementById("endLblGuesses");
+
+  // Set the finished guess-count label as UCSUR sitelen pona glyphs: "sina pali e wile sona nanpa"
+  if (endLblGuesses){
+    const cps = [
+      WORD_TO_UCSUR_CP["sina"],
+      WORD_TO_UCSUR_CP["pali"],
+      WORD_TO_UCSUR_CP["e"],
+      WORD_TO_UCSUR_CP["wile"],
+      WORD_TO_UCSUR_CP["sona"],
+      WORD_TO_UCSUR_CP["nanpa"]
+    ].filter(cp => typeof cp === "number");
+    endLblGuesses.style.fontFamily = "TP-Cartouche-Font";
+    endLblGuesses.style.fontSize = "20px";
+    endLblGuesses.style.lineHeight = "1";
+    endLblGuesses.style.color = "var(--ink)";
+    endLblGuesses.textContent = cps.map(cp => String.fromCodePoint(cp)).join("");
+  }
+
+  const rowInlineTime = document.getElementById("rowInlineTime");
+  const rowInlineGuesses = document.getElementById("rowInlineGuesses");
+
+  const keysEl = document.getElementById("keys");
+  const lblSecret = document.getElementById("lblSecret");
+  const lblCurrent = document.getElementById("lblCurrent");
+  const footerDisclaimer = document.getElementById("footerDisclaimer");
+  const linkIndex = document.getElementById("linkIndex");
+  const mainCard = document.querySelector("main.card");
+  const timerCanvasEl = document.getElementById("timerCanvas");
+
+  function applyUiLanguageStatic(){
+    // Topbar
+    if (btnStart) btnStart.textContent = uiText("start");
+    if (btnStop)  btnStop.textContent  = uiText("stop");
+    if (timerCanvasEl) timerCanvasEl.setAttribute("aria-label", uiText("aria_timer"));
+
+    // Main hint + labels
+    if (hintEl) hintEl.textContent = uiText("hint");
+    if (lblBestHigh) lblBestHigh.textContent = uiText("bestHigh");
+    if (lblBestLow)  lblBestLow.textContent  = uiText("bestLow");
+    if (lblSecret)   lblSecret.textContent   = uiText("secret");
+    if (lblCurrent)  lblCurrent.textContent  = uiText("current");
+    if (mainCard)    mainCard.setAttribute("aria-label", uiText("aria_game"));
+    if (keysEl)      keysEl.setAttribute("aria-label", uiText("aria_keypad"));
+
+    // Footer
+    if (footerDisclaimer){
+      const strongLabel = (DEV_LANG === "tp") ? "sona:" : "Disclaimer:";
+      footerDisclaimer.innerHTML = `<strong>${strongLabel}</strong> ${uiText("footer_disclaimer")}`;
+    }
+    if (linkIndex) linkIndex.textContent = uiText("back_index");
+  }
+
+
+
+  const GameState = { idle: "idle", running: "running", finished: "finished" };
+  let state = GameState.idle;
+
+  let secret = null;       // integer 1..999
+  let bestLow = null;      // largest guess < secret
+  let bestHigh = null;     // smallest guess > secret
+  let guessCount = 0;
+  let inputStr = "";
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+
+  function setRangeLabelsVisible(visible){
+    const v = !!visible;
+    if (lblBestHigh) lblBestHigh.style.display = v ? "block" : "none";
+    if (lblBestLow)  lblBestLow.style.display  = v ? "block" : "none";
+
+    // During gameplay we hide the end-of-game side labels and normalise row layout.
+    if (v){
+      if (endLblTime) endLblTime.style.display = "none";
+      if (endLblGuesses) endLblGuesses.style.display = "none";
+      if (rowInlineTime) rowInlineTime.classList.remove("summaryMode");
+      if (rowInlineGuesses) rowInlineGuesses.classList.remove("summaryMode");
+    }
+  }
+
+  function setEndSummaryLabelsVisible(visible){
+    const v = !!visible;
+
+    // We draw the end-of-game labels (tenpo nanpa / sina pali e wile sona nanpa)
+    // directly onto the summary cartouche canvases, so the separate DOM labels stay hidden.
+    if (endLblTime) endLblTime.style.display = "none";
+    if (endLblGuesses) endLblGuesses.style.display = "none";
+
+    // IMPORTANT: summary rows must *not* stretch full width, otherwise the drawing sits
+    // at the left of a huge flex item and looks like a big "gap".
+    if (rowInlineTime){
+      rowInlineTime.classList.toggle("summaryMode", v);
+    }
+    if (rowInlineGuesses){
+      rowInlineGuesses.classList.toggle("summaryMode", v);
+    }
+  }
+
+
+
+  function randIntInclusive(a, b) {
+    const lo = Math.min(a, b), hi = Math.max(a, b);
+    return lo + Math.floor(Math.random() * (hi - lo + 1));
+  }
+
+  function padGuessStr(s) {
+    const t = String(s ?? "").trim();
+    if (!t) return "";
+    return t.replace(/^0+(?=\d)/, "") || "0";
+  }
+
+  function parseGuess(s) {
+    const t = padGuessStr(s);
+    if (!t) return null;
+    if (!/^\d{1,3}$/.test(t)) return null;
+    const n = Number(t);
+    if (!Number.isInteger(n)) return null;
+    if (n < 1 || n > 999) return null;
+    return n;
+  }
+
+  function renderNumberCartouche(canvas, n, { largePx=72, smallPx=24, pad=18, border=3, corner=18, gap=2 } = {}) {
+    const cps = decimalToUcsurCodepoints(String(n));
+    renderMixedCartoucheToCanvas(canvas, cps, largePx, smallPx, SMALL_SET, { padding: pad, border, cornerRadius: corner, letterGap: gap });
+  }
+
+  function renderAll() {
+    // Use empty dashed placeholders while idle/running with no bests
+    const emptyH = 94;
+
+    if (state === GameState.idle) {
+      renderEmptyCartouche(bestHighCanvas, emptyH);
+      renderTextCartoucheToCanvas(secretCanvas, "???????", 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', 52,
+        { padding: 18, border: 3, cornerRadius: 18, letterGap: 2 }
+      );
+      renderEmptyCartouche(bestLowCanvas, emptyH);
+      renderTextCartoucheToCanvas(guessCanvas, "—", 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', 48,
+        { padding: 18, border: 3, cornerRadius: 18, letterGap: 0 }
+      );
+      return;
+    }
+
+    // Running or finished
+    if (state === GameState.finished) {
+      // After a win, show the final time cartouche prefixed immediately by "tenpo nanpa" in UCSUR.
+      const timeGlyphs = buildTimeCartoucheGlyphs(timerSeconds);
+      const prefix = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(cp => typeof cp === "number");
+      renderPrefixedMixedCartoucheToCanvas(
+        bestHighCanvas,
+        prefix,
+        timeGlyphs,
+        64, 22,
+        SMALL_SET,
+        { padding: 16, border: 3, cornerRadius: 18, letterGap: 2, prefixGapPx: 4, interGlyphGapPx: 4 }
+      );
+    } else {
+      if (bestHigh == null) renderEmptyCartouche(bestHighCanvas, emptyH);
+      else renderNumberCartouche(bestHighCanvas, bestHigh, { largePx: 64, smallPx: 22, pad: 16, border: 3, corner: 18, gap: 2 });
+    }
+
+    if (state === GameState.finished && secret != null) {
+      renderNumberCartouche(secretCanvas, secret, { largePx: 76, smallPx: 26, pad: 18, border: 3, corner: 18, gap: 2 });
+    } else {
+      renderTextCartoucheToCanvas(secretCanvas, "???????", 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', 52,
+        { padding: 18, border: 3, cornerRadius: 18, letterGap: 2 }
+      );
+    }
+
+    if (state === GameState.finished) {
+      // After a win, show the guess count cartouche prefixed immediately by:
+      // "sina pali e wile sona nanpa" in UCSUR.
+      const guessGlyphs = decimalToUcsurCodepoints(String(guessCount));
+      const prefix = [
+        WORD_TO_UCSUR_CP["sina"],
+        WORD_TO_UCSUR_CP["pali"],
+        WORD_TO_UCSUR_CP["e"],
+        WORD_TO_UCSUR_CP["wile"],
+        WORD_TO_UCSUR_CP["sona"],
+        WORD_TO_UCSUR_CP["nanpa"]
+      ].filter(cp => typeof cp === "number");
+      renderPrefixedMixedCartoucheToCanvas(
+        bestLowCanvas,
+        prefix,
+        guessGlyphs,
+        64, 22,
+        SMALL_SET,
+        { padding: 16, border: 3, cornerRadius: 18, letterGap: 2, prefixGapPx: 4, interGlyphGapPx: 4 }
+      );
+    } else {
+      if (bestLow == null) renderEmptyCartouche(bestLowCanvas, emptyH);
+      else renderNumberCartouche(bestLowCanvas, bestLow, { largePx: 64, smallPx: 22, pad: 16, border: 3, corner: 18, gap: 2 });
+    }
+
+    const current = parseGuess(inputStr);
+    if (current == null) {
+      const shown = inputStr ? inputStr : "—";
+      renderTextCartoucheToCanvas(guessCanvas, shown, 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', 48,
+        { padding: 18, border: 3, cornerRadius: 18, letterGap: 0 }
+      );
+    } else {
+      renderNumberCartouche(guessCanvas, current, { largePx: 76, smallPx: 26, pad: 18, border: 3, corner: 18, gap: 2 });
+    }
+  }
+
+  function enableKeypad(enabled) {
+    keysEl.querySelectorAll("button").forEach(b => b.disabled = !enabled);
+  }
+
+  function resetToIdleUi() {
+    applyUiLanguageStatic();
+    state = GameState.idle;
+    secret = null;
+    bestLow = null;
+    bestHigh = null;
+    guessCount = 0;
+    inputStr = "";
+
+    stopTimer();
+    timerSeconds = 0;
+    renderTopTimerCartouche(timerSeconds);
+
+    btnStart.disabled = false;
+    btnStop.disabled = true;
+    enableKeypad(false);
+
+    setRangeLabelsVisible(false);
+    setEndSummaryLabelsVisible(false);
+
+    setStatus(uiText("status_click_start"));
+    hintEl.textContent = uiText("hint");
+
+    setRangeLabelsVisible(false);
+
+    renderAll();
+  }
+
+  function startGame() {
+    applyUiLanguageStatic();
+    state = GameState.running;
+    secret = randIntInclusive(1, 999);
+    bestLow = null;
+    bestHigh = null;
+    guessCount = 0;
+    inputStr = "";
+
+    btnStart.disabled = true;
+    btnStop.disabled = false;
+    enableKeypad(true);
+
+    timerSeconds = 0;
+    renderTopTimerCartouche(timerSeconds);
+    startTimer();
+
+    setStatus(uiText("status_started"));
+    setEndSummaryLabelsVisible(false);
+    setRangeLabelsVisible(true);
+    renderAll();
+  }
+
+  function stopGame() {
+    // Treat as "quit"
+    resetToIdleUi();
+    setStatus(uiText("status_stopped"));
+  }
+
+  function finishGame() {
+    state = GameState.finished;
+    stopTimer();
+
+
+    setRangeLabelsVisible(false);
+    setEndSummaryLabelsVisible(true);
+    // Allow immediate replay.
+    btnStart.disabled = false;
+    btnStop.disabled = true;
+    enableKeypad(false);
+
+    const mm = Math.floor(timerSeconds / 60);
+    const ss = timerSeconds % 60;
+    const timeStr = `${mm}:${String(ss).padStart(2,"0")}`;
+
+    setStatus(uiText("status_correct", secret, guessCount, timeStr));
+    renderAll();
+  }
+
+  function submitGuess() {
+    if (state !== GameState.running) return;
+
+    const g = parseGuess(inputStr);
+    if (g == null) {
+      setStatus(uiText("status_enter_number"));
+      renderAll();
+      return;
+    }
+
+    guessCount++;
+
+    if (g === secret) {
+      inputStr = String(g);
+      finishGame();
+      return;
+    }
+
+    if (g < secret) {
+      const improved = (bestLow == null) || (g > bestLow);
+      if (improved) bestLow = g;
+      setStatus(improved ? uiText("status_low_new", g) : uiText("status_low_same", bestLow));
+    } else {
+      const improved = (bestHigh == null) || (g < bestHigh);
+      if (improved) bestHigh = g;
+      setStatus(improved ? uiText("status_high_new", g) : uiText("status_high_same", bestHigh));
+    }
+
+    inputStr = "";
+    renderAll();
+  }
+
+  /* ============================================================
+     Keypad (calculator-like)
+     ============================================================ */
+
+  function makeKeyButton({ id, labelText, ariaLabel, onPress, renderFn, wide=false, disabled=false }) {
+    const btn = document.createElement("button");
+    btn.className = "btnKey" + (wide ? " btnWide" : "");
+    btn.type = "button";
+    btn.setAttribute("data-id", id);
+    btn.setAttribute("aria-label", ariaLabel || labelText || id);
+
+    const c = document.createElement("canvas");
+    c.className = "btnCanvas";
+    c.setAttribute("aria-hidden", "true");
+    btn.appendChild(c);
+
+    const lab = document.createElement("div");
+    lab.className = "btnLabel";
+    lab.textContent = labelText || "";
+    btn.appendChild(lab);
+
+    if (disabled) btn.disabled = true;
+
+    btn.addEventListener("click", onPress);
+    renderFn?.(c, btn);
+    return btn;
+  }
+
+  function renderDigitButtonCanvas(canvas, digitStr) {
+    const cps = decimalToUcsurCodepoints(digitStr);
+    // Smaller than calculator so the key looks balanced
+    renderMixedCartoucheToCanvas(canvas, cps, 28, 10, SMALL_SET, { padding: 10, border: 2, cornerRadius: 14, letterGap: 2 });
+  }
+
+  function renderTextKeyCanvas(canvas, txt, px=32) {
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = 64, cssH = 54;
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
+    canvas.width = Math.ceil(cssW * dpr);
+    canvas.height = Math.ceil(cssH * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0,0,cssW,cssH);
+    ctx.fillStyle = "#111";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.font = `700 ${px}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace`;
+    ctx.fillText(txt, cssW/2, cssH/2 + 1);
+  }
+
+  function pressDigit(d) {
+    if (state !== GameState.running) return;
+    if (inputStr.length >= 3) return; // max 3 digits
+    if (inputStr === "0") inputStr = d;
+    else inputStr += d;
+    renderAll();
+  }
+
+  function pressBackspace() {
+    if (state !== GameState.running) return;
+    if (!inputStr) { renderAll(); return; }
+    inputStr = inputStr.slice(0, -1);
+    renderAll();
+  }
+
+  function pressClear() {
+    if (state !== GameState.running) return;
+    inputStr = "";
+    renderAll();
+  }
+
+  function buildKeypad() {
+    keysEl.innerHTML = "";
+
+    const add = (spec) => keysEl.appendChild(makeKeyButton(spec));
+
+    const spacer = (id) => add({
+      id,
+      labelText: "",
+      ariaLabel: "Spacer",
+      onPress: () => {},
+      renderFn: (c) => renderTextKeyCanvas(c, " ", 24),
+      disabled: true
+    });
+
+    // Row 1: Clear, Back, OK
+    add({
+      id: "clr",
+      labelText: uiText("clear"),
+      ariaLabel: (DEV_LANG==="tp" ? "weka" : "Clear input"),
+      onPress: pressClear,
+      renderFn: (c) => renderTextKeyCanvas(c, "C", 34)
+    });
+
+    add({
+      id: "bk",
+      labelText: uiText("back"),
+      ariaLabel: (DEV_LANG==="tp" ? "weka pini" : "Backspace"),
+      onPress: pressBackspace,
+      renderFn: (c) => renderTextKeyCanvas(c, "⌫", 32)
+    });
+
+    add({
+      id: "ok_top",
+      labelText: "Enter",
+      ariaLabel: "Submit guess",
+      onPress: submitGuess,
+      renderFn: (c) => renderTextKeyCanvas(c, "↩", 26)
+    });
+
+    // Rows 2–4: digits
+    for (const d of ["7","8","9","4","5","6","1","2","3"]) {
+      add({
+        id: "d"+d,
+        labelText: d,
+        ariaLabel: `Digit ${d}`,
+        onPress: () => pressDigit(d),
+        renderFn: (c) => renderDigitButtonCanvas(c, d)
+      });
+    }
+
+    // Row 5: blank, 0, OK
+    spacer("sp_bottom_left");
+
+    add({
+      id: "d0",
+      labelText: "0",
+      ariaLabel: "Digit 0",
+      onPress: () => pressDigit("0"),
+      renderFn: (c) => renderDigitButtonCanvas(c, "0")
+    });
+
+    add({
+      id: "ok_bottom",
+      labelText: "Enter",
+      ariaLabel: "Submit guess",
+      onPress: submitGuess,
+      renderFn: (c) => renderTextKeyCanvas(c, "↩", 26)
+    });
+  }
+
+
+  function layoutFit(){
+    // Fit the card to the viewport. The keypad uses flexible (fr) grid rows,
+    // so it will always compress to keep the bottom row visible.
+    const topbar = document.querySelector(".topbar");
+    const footer = document.querySelector(".footer");
+    const gameArea = document.querySelector(".gameArea");
+    const card = document.querySelector(".card");
+    if (!topbar || !gameArea || !card) return;
+
+    const topH = topbar.getBoundingClientRect().height;
+    const footerH = (footer && footer.offsetParent) ? footer.getBoundingClientRect().height : 0;
+
+    const gaStyle = getComputedStyle(gameArea);
+    const gaPadT = parseFloat(gaStyle.paddingTop) || 0;
+    const gaPadB = parseFloat(gaStyle.paddingBottom) || 0;
+
+    // Exact available height inside wrap (viewport minus topbar/footer), minus gameArea padding.
+    let available = window.innerHeight - topH - footerH - gaPadT - gaPadB;
+    available = Math.max(320, available); // keep a sane minimum
+    card.style.height = `${Math.floor(available)}px`;
+  }
+
+
+
+  function handleKeydown(e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+    const k = e.key;
+
+    if (k >= "0" && k <= "9") { e.preventDefault(); pressDigit(k); return; }
+    if (k === "Backspace") { e.preventDefault(); pressBackspace(); return; }
+    if (k === "Escape") { e.preventDefault(); pressClear(); return; }
+    if (k === "Enter") { e.preventDefault(); submitGuess(); return; }
+  }
+
+  window.addEventListener("keydown", handleKeydown);
+
+  /* ============================================================
+     Fonts + init
+     ============================================================ */
+
+  async function ensureFontsLoaded() {
+    if (!document.fonts || !document.fonts.load || !document.fonts.ready) return;
+    await document.fonts.load(`24px "PatrickHand"`, "Time");
+    const sampleChar = String.fromCodePoint(WORD_TO_UCSUR_CP["nanpa"]);
+    await document.fonts.load(`24px "${FONT_FAMILY}"`, sampleChar);
+    await document.fonts.ready;
+  }
+
+  btnStart.addEventListener("click", startGame);
+  btnStop.addEventListener("click", stopGame);
+
+  window.addEventListener("resize", () => {
+    layoutFit();
+    renderTopTimerCartouche(timerSeconds);
+    renderAll();
+  });
+
+  window.addEventListener("load", async () => {
+    setStatus(uiText("status_loading"));
+    applyUiLanguageStatic();
+    try { await ensureFontsLoaded(); } catch {}
+    layoutFit();
+    buildKeypad();
+    resetToIdleUi();
+    layoutFit();
+  });
+})();
+</script>
+</body>
+</html>
