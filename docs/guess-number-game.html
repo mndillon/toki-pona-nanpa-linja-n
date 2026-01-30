@@ -44,11 +44,19 @@
     html, body {
       height: 100%;
       margin: 0;
-      overflow: hidden;
+      overflow: auto;
       background: var(--bg);
       font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       color: var(--ink);
     }
+
+    /* Allow pull-to-refresh / browser update gestures when the game is NOT running.
+       We lock scrolling only while a game is running (html.scrollLock). */
+    html.scrollLock, html.scrollLock body{
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
 
     .topbar{
       height: var(--topbar-h);
@@ -81,7 +89,7 @@
       color: var(--muted);
       font-size: 16px;
       max-width: 46vw;
-      overflow: hidden;
+      overflow: auto;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -110,7 +118,7 @@
       padding: clamp(8px, 1.5vh, 14px);
       box-sizing: border-box;
       position: relative;
-      overflow: hidden;
+      overflow: auto;
       }
 
     .card{
@@ -253,7 +261,7 @@
 
       box-sizing: border-box;
       box-shadow: 0 10px 22px rgba(0,0,0,0.10);
-          overflow: hidden;
+          overflow: auto;
       min-width: 0;
       min-height: 0;
 }
@@ -269,7 +277,7 @@
       margin-top: 6px;
       line-height: 1.1;
       max-width: 100%;
-      overflow: hidden;
+      overflow: auto;
       text-overflow: ellipsis;
       white-space: nowrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -334,9 +342,9 @@
     min-height: 0;
     grid-template-rows: 1fr;
     padding: 6px;
-    overflow: hidden;
+    overflow: auto;
   }
-  .btnCanvas{ height: 82%; width: 100%; }
+  .btnCanvas{ height: 82%; }
   .btnKey[data-id^="d"] .btnCanvas{ height: 92%; }
 }
 
@@ -1448,6 +1456,16 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
 
 
 
+  function setScrollLock(locked){
+    const html = document.documentElement;
+    if (!html) return;
+    if (locked){
+      html.classList.add("scrollLock");
+    } else {
+      html.classList.remove("scrollLock");
+    }
+  }
+
   const GameState = { idle: "idle", running: "running", finished: "finished" };
   let state = GameState.idle;
 
@@ -1603,6 +1621,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
 
   function resetToIdleUi() {
     applyUiLanguageStatic();
+    setScrollLock(false);
     state = GameState.idle;
     secret = null;
     bestLow = null;
@@ -1631,6 +1650,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
 
   function startGame() {
     applyUiLanguageStatic();
+    setScrollLock(true);
     state = GameState.running;
     secret = randIntInclusive(1, 999);
     bestLow = null;
@@ -1660,6 +1680,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
 
   function finishGame() {
     state = GameState.finished;
+    setScrollLock(false);
     stopTimer();
 
 
@@ -1714,8 +1735,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
      Keypad (calculator-like)
      ============================================================ */
 
-  
-function makeKeyButton({ id, labelText, ariaLabel, onPress, renderFn, wide=false, disabled=false }) {
+  function makeKeyButton({ id, labelText, ariaLabel, onPress, renderFn, wide=false, disabled=false }) {
     const btn = document.createElement("button");
     btn.className = "btnKey" + (wide ? " btnWide" : "");
     btn.type = "button";
@@ -1734,34 +1754,10 @@ function makeKeyButton({ id, labelText, ariaLabel, onPress, renderFn, wide=false
 
     if (disabled) btn.disabled = true;
 
-    // Defer rendering until the button is actually in the DOM (mobile layout depends on real sizes).
-    btn._renderFn = (typeof renderFn === "function") ? renderFn : null;
-    btn._renderCanvas = c;
-
     btn.addEventListener("click", onPress);
+    renderFn?.(c, btn);
     return btn;
   }
-
-  function renderKeypadCanvases() {
-    if (!keysEl) return;
-    keysEl.querySelectorAll("button.btnKey").forEach(btn => {
-      const c = btn._renderCanvas || btn.querySelector("canvas.btnCanvas");
-      const fn = btn._renderFn;
-      if (!c || typeof fn !== "function") return;
-      try { fn(c, btn); }
-      catch (err) { console.error("Key render failed:", btn.getAttribute("data-id"), err); }
-    });
-  }
-
-  let _keypadRenderRaf = 0;
-  function scheduleKeypadCanvasesRender() {
-    if (_keypadRenderRaf) cancelAnimationFrame(_keypadRenderRaf);
-    _keypadRenderRaf = requestAnimationFrame(() => {
-      _keypadRenderRaf = 0;
-      renderKeypadCanvases();
-    });
-  }
-
 
   function renderDigitButtonCanvas(canvas, digitStr) {
   const cps = decimalToUcsurCodepoints(digitStr);
@@ -1779,23 +1775,14 @@ function makeKeyButton({ id, labelText, ariaLabel, onPress, renderFn, wide=false
   });
 }
 
-  
-function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=700, padPx=6, btnEl=null) {
+  function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=700) {
     // Render a single glyph / short label centered in the key canvas.
     // IMPORTANT: do NOT set canvas.style.width/height here — let CSS control sizing.
-    // Also IMPORTANT: when called before layout, getBoundingClientRect() can be 0,
-    // so we prefer clientWidth/clientHeight and (optionally) the parent button size.
     const dpr = window.devicePixelRatio || 1;
 
-    const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
-    const cssW = Math.max(
-      1,
-      Math.floor(canvas.clientWidth || (rect && rect.width) || (btnEl && btnEl.clientWidth) || 64)
-    );
-    const cssH = Math.max(
-      1,
-      Math.floor(canvas.clientHeight || (rect && rect.height) || (btnEl && btnEl.clientHeight) || 54)
-    );
+    const rect = canvas.getBoundingClientRect();
+    const cssW = (rect && rect.width) ? rect.width : 64;
+    const cssH = (rect && rect.height) ? rect.height : 54;
 
     // Size bitmap to match CSS box (crisp on HiDPI).
     canvas.width  = Math.max(1, Math.ceil(cssW * dpr));
@@ -1805,58 +1792,37 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssW, cssH);
 
-    const fam = fontFamily || 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
-
-    // Pick a starting size, then shrink-to-fit using real metrics.
-    let size = (typeof px === "number" && isFinite(px)) ? px : Math.floor(Math.min(cssW, cssH) * 0.78);
-    size = Math.max(10, Math.min(size, Math.floor(Math.min(cssW, cssH) * 0.92)));
-
-    const maxW = Math.max(1, cssW - padPx * 2);
-    const maxH = Math.max(1, cssH - padPx * 2);
-
-    // Shrink-to-fit loop: measure tight ink box, not just advance width.
-    for (let guard = 0; guard < 48; guard++) {
-      ctx.font = `${fontWeight} ${size}px ${fam}`;
-      const m = ctx.measureText(txt);
-
-      const w = Math.ceil((m.actualBoundingBoxLeft ?? 0) + (m.actualBoundingBoxRight ?? m.width));
-      const h = Math.ceil((m.actualBoundingBoxAscent ?? size * 0.8) + (m.actualBoundingBoxDescent ?? size * 0.2));
-
-      if (w <= maxW && h <= maxH) break;
-      if (size <= 10) break;
-      size -= 1;
-    }
-
     ctx.fillStyle = "#111";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.font = `${fontWeight} ${size}px ${fam}`;
 
-    // Slight baseline nudge helps some glyphs (esp. on Android) feel centered.
-    ctx.fillText(txt, cssW / 2, (cssH / 2) + 0.5);
+    const fam = fontFamily || 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+
+    // If px not given, choose a size that fits the current box.
+    let size = (typeof px === "number" && isFinite(px)) ? px : Math.floor(Math.min(cssW, cssH) * 0.72);
+    // Hard clamp so we never overflow vertically on small mobile keys.
+    size = Math.max(10, Math.min(size, Math.floor(Math.min(cssW, cssH) * 0.86)));
+
+    ctx.font = `${fontWeight} ${size}px ${fam}`;
+    ctx.fillText(txt, cssW / 2, (cssH / 2) + 1);
   }
 
-  function renderTpWordKeyCanvas(canvas, word, px=null, btnEl=null) {
+  function renderTpWordKeyCanvas(canvas, word, px=null) {
     const cp = WORD_TO_UCSUR_CP[String(word || "").toLowerCase()];
     if (typeof cp !== "number") {
-      renderTextKeyCanvas(canvas, "?", px, null, 700, 6, btnEl);
+      renderTextKeyCanvas(canvas, "?", px, null, 700);
       return;
     }
     const ch = String.fromCodePoint(cp);
 
-    // Sitelen glyphs often have wider ink bounds; give them more padding.
-    const rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
-    const cssW = Math.max(
-      1,
-      Math.floor(canvas.clientWidth || (rect && rect.width) || (btnEl && btnEl.clientWidth) || 64)
-    );
-    const cssH = Math.max(
-      1,
-      Math.floor(canvas.clientHeight || (rect && rect.height) || (btnEl && btnEl.clientHeight) || 54)
-    );
+    // Fit Sitelen glyph into the key canvas. Use a slightly smaller default
+    // than ASCII, because some glyphs have wider ink bounds.
+    const rect = canvas.getBoundingClientRect();
+    const cssW = (rect && rect.width) ? rect.width : 64;
+    const cssH = (rect && rect.height) ? rect.height : 54;
+    const autoPx = Math.floor(Math.min(cssW, cssH) * 0.70); // smaller so it won't clip on mobile
 
-    const autoPx = Math.floor(Math.min(cssW, cssH) * 0.92);
-    renderTextKeyCanvas(canvas, ch, (px ?? autoPx), `"${FONT_FAMILY}"`, 400, 10, btnEl);
+    renderTextKeyCanvas(canvas, ch, (px ?? autoPx), `"${FONT_FAMILY}"`, 400);
   }
 
   function pressDigit(d) {
@@ -1883,14 +1849,14 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
   function buildKeypad() {
     keysEl.innerHTML = "";
 
-    const add = (spec) => { const b = makeKeyButton(spec); keysEl.appendChild(b); return b; };
+    const add = (spec) => keysEl.appendChild(makeKeyButton(spec));
 
     const spacer = (id) => add({
       id,
       labelText: "",
       ariaLabel: "Spacer",
       onPress: () => {},
-      renderFn: (c, btn) => renderTextKeyCanvas(c, " ", 24, null, 700, 6, btn),
+      renderFn: (c) => renderTextKeyCanvas(c, " ", 24),
       disabled: true
     });
 
@@ -1900,7 +1866,7 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
       labelText: uiText("clear"),
       ariaLabel: (DEV_LANG==="tp" ? "weka" : "Clear input"),
       onPress: pressClear,
-      renderFn: (c, btn) => renderTpWordKeyCanvas(c, "kijetesantakalu", null, btn)
+      renderFn: (c) => renderTpWordKeyCanvas(c, "kijetesantakalu")
     });
 
     add({
@@ -1908,7 +1874,7 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
       labelText: uiText("back"),
       ariaLabel: (DEV_LANG==="tp" ? "weka pini" : "Backspace"),
       onPress: pressBackspace,
-      renderFn: (c, btn) => renderTpWordKeyCanvas(c, "monsi", null, btn)
+      renderFn: (c) => renderTpWordKeyCanvas(c, "monsi")
     });
 
     add({
@@ -1916,7 +1882,7 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
       labelText: "Enter",
       ariaLabel: "Submit guess",
       onPress: submitGuess,
-      renderFn: (c, btn) => renderTextKeyCanvas(c, "↩", (isMobileTopbarMode() ? 22 : 26), null, 700, 8, btn)
+      renderFn: (c) => renderTextKeyCanvas(c, "↩", (isMobileTopbarMode() ? 18 : 26))
     });
 
     // Rows 2–4: digits
@@ -1926,7 +1892,7 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
         labelText: d,
         ariaLabel: `Digit ${d}`,
         onPress: () => pressDigit(d),
-        renderFn: (c, btn) => renderDigitButtonCanvas(c, d)
+        renderFn: (c) => renderDigitButtonCanvas(c, d)
       });
     }
 
@@ -1938,7 +1904,7 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
       labelText: "0",
       ariaLabel: "Digit 0",
       onPress: () => pressDigit("0"),
-      renderFn: (c, btn) => renderDigitButtonCanvas(c, "0")
+      renderFn: (c) => renderDigitButtonCanvas(c, "0")
     });
 
     add({
@@ -1946,11 +1912,8 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
       labelText: "Enter",
       ariaLabel: "Submit guess",
       onPress: submitGuess,
-      renderFn: (c, btn) => renderTextKeyCanvas(c, "↩", (isMobileTopbarMode() ? 22 : 26), null, 700, 8, btn)
+      renderFn: (c) => renderTextKeyCanvas(c, "↩", (isMobileTopbarMode() ? 18 : 26))
     });
-
-    // Render canvases once keys have real layout sizes.
-    scheduleKeypadCanvasesRender();
   }
 
 
@@ -2010,7 +1973,6 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
     layoutFit();
     renderTopTimerCartouche(timerSeconds);
     renderAll();
-    scheduleKeypadCanvasesRender();
   });
 
   window.addEventListener("load", async () => {
@@ -2021,7 +1983,6 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
     buildKeypad();
     resetToIdleUi();
     layoutFit();
-    scheduleKeypadCanvasesRender();
   });
 })();
 </script>
