@@ -1754,34 +1754,54 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
   });
 }
 
-  function renderTextKeyCanvas(canvas, txt, px=32, fontFamily=null, fontWeight=700) {
+  function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=700) {
+    // Render a single glyph / short label centered in the key canvas.
+    // IMPORTANT: do NOT set canvas.style.width/height here — let CSS control sizing.
     const dpr = window.devicePixelRatio || 1;
-    const cssW = 64, cssH = 54;
-    canvas.style.width = `${cssW}px`;
-    canvas.style.height = `${cssH}px`;
-    canvas.width = Math.ceil(cssW * dpr);
-    canvas.height = Math.ceil(cssH * dpr);
+
+    const rect = canvas.getBoundingClientRect();
+    const cssW = (rect && rect.width) ? rect.width : 64;
+    const cssH = (rect && rect.height) ? rect.height : 54;
+
+    // Size bitmap to match CSS box (crisp on HiDPI).
+    canvas.width  = Math.max(1, Math.ceil(cssW * dpr));
+    canvas.height = Math.max(1, Math.ceil(cssH * dpr));
+
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0,0,cssW,cssH);
+    ctx.clearRect(0, 0, cssW, cssH);
+
     ctx.fillStyle = "#111";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
 
     const fam = fontFamily || 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
-    ctx.font = `${fontWeight} ${px}px ${fam}`;
-    ctx.fillText(txt, cssW/2, cssH/2 + 1);
+
+    // If px not given, choose a size that fits the current box.
+    let size = (typeof px === "number" && isFinite(px)) ? px : Math.floor(Math.min(cssW, cssH) * 0.72);
+    // Hard clamp so we never overflow vertically on small mobile keys.
+    size = Math.max(10, Math.min(size, Math.floor(Math.min(cssW, cssH) * 0.86)));
+
+    ctx.font = `${fontWeight} ${size}px ${fam}`;
+    ctx.fillText(txt, cssW / 2, (cssH / 2) + 1);
   }
 
-  function renderTpWordKeyCanvas(canvas, word, px=34) {
-    const cp = WORD_TO_UCSUR_CP[String(word||"").toLowerCase()];
+  function renderTpWordKeyCanvas(canvas, word, px=null) {
+    const cp = WORD_TO_UCSUR_CP[String(word || "").toLowerCase()];
     if (typeof cp !== "number") {
       renderTextKeyCanvas(canvas, "?", px, null, 700);
       return;
     }
     const ch = String.fromCodePoint(cp);
-    // Use the Sitelen Pona font for the glyph; keep weight normal so it matches the cartouche style.
-    renderTextKeyCanvas(canvas, ch, px, `"${FONT_FAMILY}"`, 400);
+
+    // Fit Sitelen glyph into the key canvas. Use a slightly smaller default
+    // than ASCII, because some glyphs have wider ink bounds.
+    const rect = canvas.getBoundingClientRect();
+    const cssW = (rect && rect.width) ? rect.width : 64;
+    const cssH = (rect && rect.height) ? rect.height : 54;
+    const autoPx = Math.floor(Math.min(cssW, cssH) * 0.70); // smaller so it won't clip on mobile
+
+    renderTextKeyCanvas(canvas, ch, (px ?? autoPx), `"${FONT_FAMILY}"`, 400);
   }
 
   function pressDigit(d) {
@@ -1825,7 +1845,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
       labelText: uiText("clear"),
       ariaLabel: (DEV_LANG==="tp" ? "weka" : "Clear input"),
       onPress: pressClear,
-      renderFn: (c) => renderTpWordKeyCanvas(c, "kijetesantakalu", 34)
+      renderFn: (c) => renderTpWordKeyCanvas(c, "kijetesantakalu")
     });
 
     add({
@@ -1833,7 +1853,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
       labelText: uiText("back"),
       ariaLabel: (DEV_LANG==="tp" ? "weka pini" : "Backspace"),
       onPress: pressBackspace,
-      renderFn: (c) => renderTpWordKeyCanvas(c, "monsi", 34)
+      renderFn: (c) => renderTpWordKeyCanvas(c, "monsi")
     });
 
     add({
@@ -1841,7 +1861,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
       labelText: "Enter",
       ariaLabel: "Submit guess",
       onPress: submitGuess,
-      renderFn: (c) => renderTextKeyCanvas(c, "↩", 26)
+      renderFn: (c) => renderTextKeyCanvas(c, "↩", (isMobileTopbarMode() ? 18 : 26))
     });
 
     // Rows 2–4: digits
@@ -1871,7 +1891,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
       labelText: "Enter",
       ariaLabel: "Submit guess",
       onPress: submitGuess,
-      renderFn: (c) => renderTextKeyCanvas(c, "↩", 26)
+      renderFn: (c) => renderTextKeyCanvas(c, "↩", (isMobileTopbarMode() ? 18 : 26))
     });
   }
 
