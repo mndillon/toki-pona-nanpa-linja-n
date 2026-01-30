@@ -247,13 +247,16 @@
       height: 100%;
 
       display: grid;
-      grid-template-rows: 1fr auto;
+      grid-template-rows: minmax(0, 1fr) auto;
       align-items: center;
       justify-items: center;
 
       box-sizing: border-box;
       box-shadow: 0 10px 22px rgba(0,0,0,0.10);
-    }
+          overflow: hidden;
+      min-width: 0;
+      min-height: 0;
+}
 
     .btnKey:active{ transform: translateY(1px); }
     .btnKey:disabled{ opacity: 0.55; cursor: not-allowed; box-shadow: none; }
@@ -264,6 +267,11 @@
       font-size: 12px;
       color: var(--muted);
       margin-top: 6px;
+      line-height: 1.1;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
 
@@ -313,7 +321,10 @@
     }
 
     @media (pointer: coarse), (max-width: 520px){
-      .topbar{ gap: 6px; padding: 8px 8px; height: 52px; }
+      .topbar{ gap: 6px; padding: 8px 8px; height: 52px; 
+      .btnLabel{ font-size: 10px; margin-top: 2px; }
+      .btnCanvas{ height: 52%; }
+}
       .btnTop{ font-size: 13px; padding: 6px 8px; border-radius: 10px; }
       #timerCanvas{ display:none !important; }
       .status{ font-size: 13px; max-width: 54vw; }
@@ -420,7 +431,7 @@
     tp: {
       start: "open musi",
       stop: "pini musi",
-      hint: "o alasa sona e nanpa tan nanpa Newen tawa nanpa Nejejejen. nanpa sewi pona li lon sewi. nanpa anpa pona li lon anpa.",
+      hint: "o alasa sona e nanpa tan Newen tawa nanpa Nejejejen. nanpa sewi pona li lon sewi. nanpa anpa pona li lon anpa.",
       bestHigh: "nanpa sewi pona",
       bestLow: "nanpa anpa pona",
       secret: "nanpa len",
@@ -432,7 +443,7 @@
       status_click_start: "o open e musi.",
       status_started: "musi li open. o pana e nanpa.",
       status_stopped: "musi li pini.",
-      status_enter_number: "o pana e nanpa pi 1 tawa 999.",
+      status_enter_number: "o pana e nanpa pi nanpa Newen tawa nanpa Nejejejen.",
       status_low_new: (g) => `nanpa li lili. nanpa anpa sin: ${g}.`,
       status_low_same: (best) => `nanpa li lili. nanpa anpa awen: ${best}.`,
       status_high_new: (g) => `nanpa li suli. nanpa sewi sin: ${g}.`,
