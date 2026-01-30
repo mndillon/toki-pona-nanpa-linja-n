@@ -321,15 +321,25 @@
     }
 
     @media (pointer: coarse), (max-width: 520px){
-      .topbar{ gap: 6px; padding: 8px 8px; height: 52px; 
-      .btnLabel{ font-size: 10px; margin-top: 2px; }
-      .btnCanvas{ height: 52%; }
+  .topbar{ gap: 6px; padding: 8px 8px; height: 52px; }
+  .btnTop{ font-size: 13px; padding: 6px 8px; border-radius: 10px; }
+  #timerCanvas{ display:none !important; }
+  .status{ font-size: 13px; max-width: 54vw; }
+
+  /* Mobile: no text on any keypad buttons */
+  .btnLabel{ display:none !important; }
+
+  /* Let the canvas dominate the key face */
+  .btnKey{
+    min-height: 0;
+    grid-template-rows: 1fr;
+    padding: 6px;
+    overflow: hidden;
+  }
+  .btnCanvas{ height: 82%; }
+  .btnKey[data-id^="d"] .btnCanvas{ height: 92%; }
 }
-      .btnTop{ font-size: 13px; padding: 6px 8px; border-radius: 10px; }
-      #timerCanvas{ display:none !important; }
-      .status{ font-size: 13px; max-width: 54vw; }
-      .btnKey{ min-height: 0; }
-    }
+
   </style>
 </head>
 
@@ -1729,10 +1739,20 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
   }
 
   function renderDigitButtonCanvas(canvas, digitStr) {
-    const cps = decimalToUcsurCodepoints(digitStr);
-    // Smaller than calculator so the key looks balanced
-    renderMixedCartoucheToCanvas(canvas, cps, 28, 10, SMALL_SET, { padding: 10, border: 2, cornerRadius: 14, letterGap: 2 });
-  }
+  const cps = decimalToUcsurCodepoints(digitStr);
+
+  // Mobile: make the digit glyphs smaller, but keep the cartouche prominent via CSS (.btnCanvas height).
+  const mobile = isMobileTopbarMode();
+  const px = mobile ? 22 : 28;
+  const capPx = mobile ? 8 : 10;
+
+  renderMixedCartoucheToCanvas(canvas, cps, px, capPx, SMALL_SET, {
+    padding: mobile ? 10 : 10,
+    border: 2,
+    cornerRadius: 14,
+    letterGap: 2
+  });
+}
 
   function renderTextKeyCanvas(canvas, txt, px=32, fontFamily=null, fontWeight=700) {
     const dpr = window.devicePixelRatio || 1;
