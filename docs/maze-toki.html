@@ -1175,21 +1175,16 @@
   }
 
 // CHANGE HERE: resize only; do NOT set ctx transforms here
+
+
 function resizeCanvasToDisplaySize(){
-  const dpr = window.devicePixelRatio || 1;     // keep fractional DPR
   const rect = canvas.getBoundingClientRect();
-
-  const w = Math.max(1, Math.round(rect.width * dpr));
-  const h = Math.max(1, Math.round(rect.height * dpr));
-
-  if (canvas.width !== w || canvas.height !== h){
-    canvas.width = w;
-    canvas.height = h;
-    return true; // resized
-  }
-  return false;
+  const w = Math.max(1, Math.round(rect.width));
+  const h = Math.max(1, Math.round(rect.height));
+  const resized = (canvas.width !== w || canvas.height !== h);
+  if (resized){ canvas.width = w; canvas.height = h; }
+  return resized;
 }
-
 
   window.addEventListener("resize", () => {
     if (isMobileLike()) {
