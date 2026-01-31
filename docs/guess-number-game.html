@@ -481,6 +481,8 @@
     return (typeof base === "function") ? base(...args) : String(base ?? "");
   }
 
+const SECRET_IDLE_TEXT = "-------";   // first load / not running
+const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
 
   /* ============================================================
      Minimal cartouche encoder/renderer (ported from your calculator.html)
@@ -1544,7 +1546,7 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
 
     if (state === GameState.idle) {
       renderEmptyCartouche(bestHighCanvas, emptyH);
-      renderTextCartoucheToCanvas(secretCanvas, "???????", 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', 52,
+      renderTextCartoucheToCanvas(secretCanvas, SECRET_IDLE_TEXT, 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', 52,
         { padding: 18, border: 3, cornerRadius: 18, letterGap: 2 }
       );
       renderEmptyCartouche(bestLowCanvas, emptyH);
@@ -1575,7 +1577,8 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
     if (state === GameState.finished && secret != null) {
       renderNumberCartouche(secretCanvas, secret, { largePx: 76, smallPx: 26, pad: 18, border: 3, corner: 18, gap: 2 });
     } else {
-      renderTextCartoucheToCanvas(secretCanvas, "???????", 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', 52,
+      const placeholder = (state === GameState.running) ? SECRET_RUNNING_TEXT : SECRET_IDLE_TEXT;
+      renderTextCartoucheToCanvas(secretCanvas, placeholder, 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', 52,
         { padding: 18, border: 3, cornerRadius: 18, letterGap: 2 }
       );
     }
