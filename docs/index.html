@@ -204,6 +204,22 @@
     }
 
     .nlModeControl{ display:none !important; }
+
+    /* Portrait image: mobile-first */
+.portrait {
+  display: block;
+  width: 100%;        /* fill the container */
+  max-width: 100%;    /* never exceed screen/container width */
+  height: auto;       /* keep aspect ratio */
+}
+
+/* Laptop+ only: cap it */
+@media (min-width: 900px) {
+  .portrait {
+    max-width: 520px; /* set your laptop max width */
+  }
+}
+
   </style>
 
 </head>
@@ -231,7 +247,7 @@
     </div>
 
      <div class="help">&nbsp;</div>
-      <div class="help"><img src="./images/From_Decimal_Number_To_Cartouche.png" width="569" /></div>
+      <div class="portrait"><img src="./images/From_Decimal_Number_To_Cartouche.png" /></div>
       <div class="help">&nbsp;</div>
       
 
