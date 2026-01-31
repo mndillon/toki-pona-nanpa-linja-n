@@ -656,6 +656,26 @@
     .wrap{ padding: 8px; gap: 10px; }
     .panelHeader h2{ font-size: 16px; }
   }
+
+  /* I18N language selector */
+  .inlineLabel{
+    font-size: 12px;
+    color: var(--muted);
+    margin-right: 6px;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .langSel{
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255,255,255,0.55);
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+  }
+
 </style>
 
 </head>
@@ -677,6 +697,13 @@
         </div>
 
         <div class="spacer"></div>
+        <div class="topbarGroup" id="langGroup" aria-label="Language">
+          <label class="inlineLabel" for="langSel" id="lblLang">Language</label>
+          <select id="langSel" class="langSel">
+            <option value="en">English</option>
+            <option value="tp">toki pona</option>
+          </select>
+        </div>
 <div id="status" class="chip">Ready.</div>
 
     </div>
@@ -710,7 +737,7 @@
 
         <div class="panel stageMiniPanel" style="box-shadow:none;">
           <div class="panelHeader">
-            <h2>Stage</h2>
+            <h2 id="hdrStage">Stage</h2>
             <div class="hdrBtnRow">
               <button id="btnSnapGrid" class="btn" type="button" aria-pressed="true">Snap: Grid</button>
               <button id="btnSnapObjs" class="btn" type="button" aria-pressed="false">Snap: Objects</button>
@@ -797,7 +824,7 @@
 
         <div class="panel propsPanel" style="box-shadow:none;">
           <div class="panelHeader">
-            <h2>Properties</h2>
+            <h2 id="hdrProps">Properties</h2>
             <div class="row" style="justify-content:flex-end; gap:6px;">
               <button id="btnBringFwd" class="btn" type="button" disabled>Bring Forward</button>
               <button id="btnSendBack" class="btn" type="button" disabled>Send Backward</button>
@@ -805,15 +832,15 @@
           </div>
 
           <div id="propsBody" class="sidebarBody" style="padding:10px 12px;">
-            <div class="hint">Select an element to edit its properties.</div>
+            <div class="hint" id="propsHint">Select an element to edit its properties.</div>
           </div>
         </div>
 
         <div class="footer">
-           <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
-      complete, or suitable for any purpose. You are responsible for verifying results.
+           <strong id="lblDisclaimer">Disclaimer:</strong> <span id="txtDisclaimer">This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
+      complete, or suitable for any purpose. You are responsible for verifying results.</span>
       <div class="footerRight">
-          <a href="./index.html">Back to index</a>
+          <a href="./index.html" id="lnkBack">Back to index</a>
         </div>
         </div>
       </div>
@@ -821,7 +848,7 @@
 
     <section class="panel stagePanel" aria-label="Stage">
       <div class="panelHeader">
-        <h2>Stage</h2>
+        <h2 id="hdrStage">Stage</h2>
         <div class="row" style="justify-content:flex-end;">
           <button id="btnFit" class="btn" type="button">Fit</button>
           <button id="btnZoomIn" class="btn" type="button">Zoom +</button>
@@ -866,6 +893,535 @@
      Constants and utilities
      ============================================================ */
   const $ = (id) => document.getElementById(id);
+
+  /* ============================================================
+     I18N (English / Toki Pona)
+     ------------------------------------------------------------
+     UI strings only. No functional logic changes.
+     ============================================================ */
+  const LS_KEY_LANG = "layout_editor_lang"; // "en" | "tp"
+
+  function loadLang(){
+    try{
+      const v = localStorage.getItem(LS_KEY_LANG);
+      if (v === "en" || v === "tp") return v;
+    } catch {}
+    return "en";
+  }
+  function saveLang(lang){
+    try{ localStorage.setItem(LS_KEY_LANG, String(lang)); } catch {}
+  }
+
+  let DEV_LANG = loadLang();
+
+  const STRINGS = {
+    en: {
+      title: "Static Canvas Layout Editor (no dependencies)",
+      lbl_lang: "Language",
+      lang_en: "English",
+      lang_tp: "toki pona",
+
+      // Topbar
+      btn_new: "New / Clear",
+      btn_export_json: "Export JSON",
+      btn_import_json: "Import JSON",
+      btn_export_png: "Export PNG",
+      btn_group: "Group",
+      btn_ungroup: "Ungroup",
+
+      tool_select: "Select",
+      tool_text: "Text",
+      tool_sitelen: "Sitelen",
+      tool_glyph: "Glyph",
+      tool_rect: "Rectangle",
+      tool_image: "Image",
+      tool_delete: "Delete",
+      tool_pan: "Pan",
+
+      btn_undo: "Undo",
+      btn_redo: "Redo",
+      btn_copy: "Copy",
+      btn_cut: "Cut",
+      btn_paste: "Paste",
+
+      tip_undo: "Undo (Ctrl/Cmd+Z)",
+      tip_redo: "Redo (Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z)",
+      tip_copy: "Copy (Ctrl/Cmd+C)",
+      tip_cut: "Cut (Ctrl/Cmd+X)",
+      tip_paste: "Paste (Ctrl/Cmd+V)",
+
+      // Sidebar headings
+      hdr_stage: "Stage",
+      hdr_properties: "Properties",
+
+      // Stage buttons
+      btn_snap_grid: "Snap: Grid",
+      btn_snap_objs: "Snap: Objects",
+      btn_grid: "Grid",
+
+      // Stage fields
+      lbl_width: "Width",
+      lbl_height: "Height",
+      lbl_grid_size: "Grid size",
+      lbl_snap_tol: "Snap tolerance",
+      lbl_export_stage_bg: "Export stage background",
+      lbl_stage_bg: "Stage background",
+      lbl_default_text: "Default text",
+      lbl_default_fill_enabled: "Default allow fill",
+      lbl_default_fill: "Default fill",
+      lbl_default_stroke: "Default stroke",
+      lbl_default_stroke_w: "Default stroke width",
+
+      // Properties panel
+      btn_bring_forward: "Bring Forward",
+      btn_send_backward: "Send Backward",
+      props_hint: "Select an element to edit its properties.",
+
+      // Properties panel / element inspector
+      sec_appearance: "Appearance",
+      sec_geometry: "Geometry",
+      sec_glyph: "Glyph",
+      sec_group: "Group",
+      sec_image: "Image",
+      sec_shape: "Shape",
+      sec_sitelen: "Sitelen",
+      sec_text: "Text",
+
+      etype_text: "Text",
+      etype_sitelen: "Sitelen",
+      etype_glyph: "Glyph",
+      etype_rect: "Rectangle",
+      etype_image: "Image",
+
+      props_header_single: (typeLabel, id) => `Selected: ${typeLabel} (${id})`,
+      props_header_group: (n, gid) => `Selected: group (${n} items)  [${gid}]`,
+      props_header_multi: (n) => `Selected: ${n} items`,
+
+      props_allow_fill: "Allow fill",
+      props_fill: "Fill",
+      props_stroke: "Stroke",
+      props_foreground_group: "Foreground (group)",
+      props_stroke_width: "Stroke width",
+      props_opacity: "Opacity (0..1)",
+      props_mixed: "Mixed",
+      props_keep_aspect: "Keep aspect ratio",
+      props_scale_font_box: "Scale font with box",
+      props_font_family: "Font family",
+      props_font_size: "Font size",
+      props_align: "Align",
+      props_align_left: "Left",
+      props_align_center: "Center",
+      props_align_right: "Right",
+      props_text: "Text",
+      props_text_color: "Text color",
+      props_line_height: "Line height",
+      props_glyph_color: "Glyph color",
+      props_image_embedded: (mime, w, h) => `Embedded image: ${mime}, ${w}×${h}`,
+      props_image_none: "No image loaded. Images are embedded (no external links).",
+      props_color_key_transparency: "Color-key transparency (use top-left pixel)",
+      props_loaded_intrinsic_size: "Loaded (intrinsic) size",
+      props_rendered_intrinsic_size: "Rendered (intrinsic) size",
+      props_original_box_size: "Original box size",
+      props_corner_radius: "Corner radius",
+      props_x: "X",
+      props_y: "Y",
+      props_w: "W",
+      props_h: "H",
+      props_rotation_deg: "Rotation (deg)",
+
+      sitelen_placeholder:
+        "mi kama sona e toki pona.\n" +
+        ": sewi^ ni ni^ ni> ni< .\n" +
+        "[ ota  kolon en ]\n" +
+        "nanpa -12,340.57.\n" +
+        "nanpa #~IIM.\n" +
+        "nanpa Newen.\n" +
+        "\"Hello World!\".\n" +
+        "Unknown words ignored without double quotes.\n",
+
+      // Footer
+      lbl_disclaimer: "Disclaimer:",
+      txt_disclaimer: "This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.",
+      lnk_back: "Back to index",
+
+      // View controls
+      btn_fit: "Fit",
+      btn_zoom_in: "Zoom +",
+      btn_zoom_out: "Zoom -",
+      btn_reset_view: "Reset View",
+
+      // Common UI atoms
+      toggle_on: "On",
+      toggle_off: "Off",
+      locked: "Locked",
+      msg_locked_selection: "This selection contains locked element(s). Unlock to edit or transform.",
+      img_load: "Load image…",
+      img_replace: "Replace image…",
+      img_clear: "Clear image",
+      opt_custom: "Custom",
+      tip_current_colour: "Current colour (click to open picker)",
+
+      // Alerts / confirms
+      alert_cut_locked: "This selection contains locked element(s). Unlock before cutting.",
+      alert_delete_locked: "This element cannot be deleted because it is locked. Unlock it first.",
+      confirm_delete: (n) => `Delete ${n} element${n === 1 ? "" : "s"}?`,
+      confirm_clear: "This will clear the current canvas. Continue?",
+
+      // Default content for new elements
+      default_text_multiline: "Text\n(multiline)",
+
+      // Status messages
+      status_tool: (toolLabel) => `Tool: ${toolLabel}`,
+      status_grouped: (n) => `Grouped (${n}).`,
+      status_copied: (n) => `Copied ${n} element${n === 1 ? "" : "s"}.`,
+      status_pasted: (n) => `Pasted ${n} element${n === 1 ? "" : "s"}.`,
+      status_selected: (n) => `Selected: ${n}`,
+      status_import_failed: (msg) => `Import failed: ${msg}`,
+      status_autosaved: "Autosaved",
+      status_autosave_failed: "Autosave failed (IndexedDB).",
+      status_undo: "Undo.",
+      status_redo: "Redo.",
+      status_ungrouped: "Ungrouped.",
+      status_copy_none: "Copy: nothing selected.",
+      status_cut_none: "Cut: nothing selected.",
+      status_cut_blocked_locked: "Cut blocked: locked element(s).",
+      status_cut_done: "Cut.",
+      status_paste_empty: "Paste: clipboard empty.",
+      status_delete_blocked_locked: "Delete blocked: locked element(s).",
+      status_deleted: "Deleted.",
+      status_panning: "Panning…",
+      status_click_create: "Click inside the stage to create elements.",
+      status_locked_unlock_edit: "Locked element(s): unlock to move/resize/rotate.",
+      status_locked_unlock_move: "Locked element(s): unlock to move.",
+      status_move: "Move…",
+      status_marquee: "Marquee select…",
+      status_ready: "Ready.",
+      status_cancelled: "Cancelled.",
+      status_selection_cleared: "Selection cleared.",
+      status_nudged: "Nudged.",
+      status_image_embedded: "Image embedded.",
+      status_exported_json: "Exported JSON.",
+      status_imported_json_db_fail: "Imported JSON, but failed to save to local DB.",
+      status_imported_json: "Imported JSON.",
+      status_exported_png: "Exported PNG (transparent).",
+      status_cleared: "Cleared.",
+      status_default_fill_enabled_updated: "Default background color fill enabled updated (affects new elements).",
+      status_default_text_updated: "Default text color updated (affects new elements).",
+      status_default_fill_updated: "Default background color fill updated (affects new elements).",
+      status_default_stroke_updated: "Default stroke color updated (affects new elements).",
+      status_default_stroke_w_updated: "Default stroke width updated (affects new elements).",
+      status_loading: "Loading…",
+      status_loaded: "Loaded.",
+      status_no_saved_scene: "No saved scene. Ready.",
+      status_idb_unavailable: "IndexedDB unavailable. Running without autosave.",
+    },
+    tp: {
+      title: "ilo pi sitelen lon supa sitelen (kepeken ala e ijo ante)",
+      lbl_lang: "toki",
+      lang_en: "toki Inli",
+      lang_tp: "toki pona",
+
+      btn_new: "o sin / o weka",
+      btn_export_json: "o pana e JSON",
+      btn_import_json: "o kama jo e JSON",
+      btn_export_png: "o pana e PNG",
+      btn_group: "o kulupu",
+      btn_ungroup: "o tu e kulupu",
+
+      tool_select: "alasa",
+      tool_text: "sitelen Lasina",
+      tool_sitelen: "sitelen pona",
+      tool_glyph: "sitelen wan",
+      tool_rect: "leko",
+      tool_image: "sitelen",
+      tool_delete: "weka",
+      tool_pan: "tawa",
+
+      btn_undo: "pini ala",
+      btn_redo: "pali sin",
+      btn_copy: "kopi",
+      btn_cut: "kipisi",
+      btn_paste: "pana sin",
+
+      tip_undo: "pini ala (Ctrl/Cmd+Z)",
+      tip_redo: "pali sin (Ctrl/Cmd+Y anu Ctrl/Cmd+Shift+Z)",
+      tip_copy: "kopi (Ctrl/Cmd+C)",
+      tip_cut: "kipisi (Ctrl/Cmd+X)",
+      tip_paste: "pana sin (Ctrl/Cmd+V)",
+
+      hdr_stage: "supa",
+      hdr_properties: "sona ijo",
+
+      btn_snap_grid: "tawa leko",
+      btn_snap_objs: "tawa ijo",
+      btn_grid: "leko",
+
+      lbl_width: "suli",
+      lbl_height: "suli sewi",
+      lbl_grid_size: "suli pi leko",
+      lbl_snap_tol: "tawa leko: weka",
+      lbl_export_stage_bg: "pana la monsi lon",
+      lbl_stage_bg: "monsi pi supa",
+      lbl_default_text: "kule sitelen open",
+      lbl_default_fill_enabled: "pana kule: ken",
+      lbl_default_fill: "kule insa open",
+      lbl_default_stroke: "kule linja open",
+      lbl_default_stroke_w: "suli linja open",
+
+      btn_bring_forward: "o tawa sinpin",
+      btn_send_backward: "o tawa monsi",
+      props_hint: "o alasa e ijo la sina ken ante e ona.",
+
+      // Properties panel / element inspector
+      sec_appearance: "lukin",
+      sec_geometry: "nasin sijelo",
+      sec_glyph: "sitelen wan",
+      sec_group: "kulupu",
+      sec_image: "sitelen",
+      sec_shape: "sijelo",
+      sec_sitelen: "sitelen pona",
+      sec_text: "sitelen",
+
+      etype_text: "sitelen Lasina",
+      etype_sitelen: "sitelen pona",
+      etype_glyph: "sitelen wan",
+      etype_rect: "leko",
+      etype_image: "sitelen",
+
+      props_header_single: (typeLabel, id) => `mi alasa e ijo: ${typeLabel} (${id})`,
+      props_header_group: (n, gid) => `mi alasa e kulupu (${n} ijo)  [${gid}]`,
+      props_header_multi: (n) => `mi alasa e ijo ${n}`,
+
+      props_allow_fill: "pana kule insa",
+      props_fill: "kule insa",
+      props_stroke: "kule linja",
+      props_foreground_group: "kule sinpin (kulupu)",
+      props_stroke_width: "suli linja",
+      props_opacity: "ken lukin (0..1)",
+      props_mixed: "ante",
+      props_keep_aspect: "awen sama pi suli",
+      props_scale_font_box: "suli sitelen li sama poki",
+      props_font_family: "kulupu sitelen",
+      props_font_size: "suli sitelen",
+      props_align: "poka",
+      props_align_left: "poka open",
+      props_align_center: "insa",
+      props_align_right: "poka pini",
+      props_text: "sitelen",
+      props_text_color: "kule sitelen",
+      props_line_height: "suli pi linja",
+      props_glyph_color: "kule sitelen wan",
+      props_image_embedded: (mime, w, h) => `sitelen li lon insa: ${mime}, ${w}×${h}`,
+      props_image_none: "sitelen li lon ala. sitelen li lon insa (kepeken ala e link).",
+      props_color_key_transparency: "weka lukin kepeken kule (kepeken pixel pi poka sewi open)",
+      props_loaded_intrinsic_size: "suli pi sitelen kama jo",
+      props_rendered_intrinsic_size: "suli pi sitelen kama",
+      props_original_box_size: "suli pi poki open",
+      props_corner_radius: "sike pi poki",
+      props_x: "X",
+      props_y: "Y",
+      props_w: "W",
+      props_h: "H",
+      props_rotation_deg: "tawa sike (deg)",
+
+      sitelen_placeholder:
+        "mi kama sona e toki pona.\n" +
+        ": sewi^ ni ni^ ni> ni< .\n" +
+        "[ ota  kolon en ]\n" +
+        "nanpa -12,340.57.\n" +
+        "nanpa #~IIM.\n" +
+        "nanpa Newen.\n" +
+        "\"Hello World!\".\n" +
+        "nimi pi sona ala li weka; nimi lon poki \"...\" la ona li awen.\n",
+
+      lbl_disclaimer: "toki awen:",
+      txt_disclaimer: "ilo ni li lon taso. mi toki ala e ni: ona li pona, ona li lon ale, anu ona li ken tawa wile sina. sina o sona pona e ni: sina taso li jo e pilin pi lon/pona pi pali ni.",
+      lnk_back: "o tawa lipu open",
+
+      btn_fit: "pona tawa lukin",
+      btn_zoom_in: "lukin suli +",
+      btn_zoom_out: "lukin lili -",
+      btn_reset_view: "o sin e lukin",
+
+      toggle_on: "lon",
+      toggle_off: "ala",
+      locked: "awen",
+      msg_locked_selection: "ijo awen li lon. o weka e awen la sina ken ante e ijo.",
+      img_load: "o kama jo e sitelen…",
+      img_replace: "o ante e sitelen…",
+      img_clear: "o weka e sitelen",
+      opt_custom: "sina wile",
+      tip_current_colour: "kule lon tenpo ni (o pilin la ona li open)",
+
+      alert_cut_locked: "ijo awen li lon. o weka e awen la sina ken kipisi.",
+      alert_delete_locked: "sina ken ala weka e ijo ni tan ni: ona li awen. o weka e awen ona.",
+      confirm_delete: (n) => `sina wile weka e ijo ${n} anu seme?`,
+      confirm_clear: "ni li weka e supa sitelen ni. sina wile awen anu seme?",
+
+      default_text_multiline: "sitelen\n(mute linja)",
+
+      status_tool: (toolLabel) => `ilo: ${toolLabel}`,
+      status_grouped: (n) => `mi kulupu e ijo (${n}).`,
+      status_copied: (n) => `mi kopi e ijo ${n}.`,
+      status_pasted: (n) => `mi pana sin e ijo ${n}.`,
+      status_selected: (n) => `mi alasa e ijo: ${n}`,
+      status_import_failed: (msg) => `mi kama jo ala: ${msg}`,
+      status_autosaved: "mi awen e lipu",
+      status_autosave_failed: "mi ken ala awen e lipu (IndexedDB).",
+      status_undo: "mi pini ala.",
+      status_redo: "mi pali sin.",
+      status_ungrouped: "mi tu e kulupu.",
+      status_copy_none: "kopi la: ijo li lon ala.",
+      status_cut_none: "kipisi la: ijo li lon ala.",
+      status_cut_blocked_locked: "mi ken ala kipisi tan ijo awen.",
+      status_cut_done: "mi kipisi.",
+      status_paste_empty: "pana sin la: poki kopi li jo e ala.",
+      status_delete_blocked_locked: "mi ken ala weka tan ijo awen.",
+      status_deleted: "mi weka.",
+      status_panning: "mi tawa…",
+      status_click_create: "o pilin lon supa la sina kama pali e ijo sin.",
+      status_locked_unlock_edit: "ijo awen li lon: o weka e awen la sina ken tawa/ante.",
+      status_locked_unlock_move: "ijo awen li lon: o weka e awen la sina ken tawa.",
+      status_move: "mi tawa…",
+      status_marquee: "mi alasa lon ma suli…",
+      status_ready: "mi awen.",
+      status_cancelled: "mi pini e ni.",
+      status_selection_cleared: "mi weka e alasa.",
+      status_nudged: "mi tawa lili.",
+      status_image_embedded: "sitelen li lon insa.",
+      status_exported_json: "mi pana e JSON.",
+      status_imported_json_db_fail: "mi kama jo e JSON. taso mi ken ala awen e ona lon DB.",
+      status_imported_json: "mi kama jo e JSON.",
+      status_exported_png: "mi pana e PNG (monsi li ken lukin ala).",
+      status_cleared: "mi weka.",
+      status_default_fill_enabled_updated: "mi ante e ken pi pana kule monsi (tawa ijo sin).",
+      status_default_text_updated: "mi ante e kule sitelen (tawa ijo sin).",
+      status_default_fill_updated: "mi ante e kule insa (tawa ijo sin).",
+      status_default_stroke_updated: "mi ante e kule linja (tawa ijo sin).",
+      status_default_stroke_w_updated: "mi ante e suli linja (tawa ijo sin).",
+      status_loading: "mi kama jo…",
+      status_loaded: "mi kama jo.",
+      status_no_saved_scene: "mi jo ala e lipu awen. mi awen.",
+      status_idb_unavailable: "IndexedDB li lon ala. mi pali taso; mi awen ala e lipu.",
+    }
+  };
+
+  function tr(key, ...args){
+    const pack = STRINGS[DEV_LANG] || STRINGS.en;
+    const v = (pack && (key in pack)) ? pack[key] : (STRINGS.en[key] ?? key);
+    return (typeof v === "function") ? v(...args) : v;
+  }
+
+  function applyUiText(){
+    document.title = tr("title");
+
+    // Language selector
+    const lblLang = $("lblLang");
+    if (lblLang) lblLang.textContent = tr("lbl_lang");
+    const langSel = $("langSel");
+    if (langSel){
+      const optEn = langSel.querySelector('option[value="en"]');
+      const optTp = langSel.querySelector('option[value="tp"]');
+      if (optEn) optEn.textContent = tr("lang_en");
+      if (optTp) optTp.textContent = tr("lang_tp");
+      langSel.value = DEV_LANG;
+      langSel.setAttribute("aria-label", tr("lbl_lang"));
+    }
+
+    // Topbar action buttons
+    const mapButtons = [
+      ["btnNew", "btn_new"],
+      ["btnExportJson", "btn_export_json"],
+      ["btnImportJson", "btn_import_json"],
+      ["btnExportPng", "btn_export_png"],
+      ["btnGroup", "btn_group"],
+      ["btnUngroup", "btn_ungroup"],
+
+      ["toolSelect", "tool_select"],
+      ["toolText", "tool_text"],
+      ["toolSitelen", "tool_sitelen"],
+      ["toolGlyph", "tool_glyph"],
+      ["toolRect", "tool_rect"],
+      ["toolImage", "tool_image"],
+      ["toolDelete", "tool_delete"],
+      ["toolPan", "tool_pan"],
+
+      ["btnUndo", "btn_undo"],
+      ["btnRedo", "btn_redo"],
+      ["btnCopy", "btn_copy"],
+      ["btnCut", "btn_cut"],
+      ["btnPaste", "btn_paste"],
+
+      ["btnSnapGrid", "btn_snap_grid"],
+      ["btnSnapObjs", "btn_snap_objs"],
+      ["btnGrid", "btn_grid"],
+
+      ["btnBringFwd", "btn_bring_forward"],
+      ["btnSendBack", "btn_send_backward"],
+
+      ["btnFit", "btn_fit"],
+      ["btnZoomIn", "btn_zoom_in"],
+      ["btnZoomOut", "btn_zoom_out"],
+      ["btnResetView", "btn_reset_view"],
+    ];
+    for (const [id, key] of mapButtons){
+      const el = $(id);
+      if (el) el.textContent = tr(key);
+    }
+
+    // Tooltips
+    const undo = $("btnUndo"); if (undo) undo.title = tr("tip_undo");
+    const redo = $("btnRedo"); if (redo) redo.title = tr("tip_redo");
+    const copy = $("btnCopy"); if (copy) copy.title = tr("tip_copy");
+    const cut  = $("btnCut");  if (cut)  cut.title  = tr("tip_cut");
+    const paste= $("btnPaste");if (paste)paste.title= tr("tip_paste");
+
+    // Sidebar headings
+    const hs = $("hdrStage"); if (hs) hs.textContent = tr("hdr_stage");
+    const hp = $("hdrProps"); if (hp) hp.textContent = tr("hdr_properties");
+
+    // Stage labels
+    const setLabel = (forId, key) => {
+      const l = document.querySelector(`label[for="${forId}"]`);
+      if (l) l.textContent = tr(key);
+    };
+    setLabel("stageW", "lbl_width");
+    setLabel("stageH", "lbl_height");
+    setLabel("gridSize", "lbl_grid_size");
+    setLabel("snapTol", "lbl_snap_tol");
+    setLabel("exportStageBackground", "lbl_export_stage_bg");
+    setLabel("stageBg", "lbl_stage_bg");
+    setLabel("defaultTextColor", "lbl_default_text");
+    setLabel("defaultFillEnabled", "lbl_default_fill_enabled");
+    setLabel("defaultFill", "lbl_default_fill");
+    setLabel("defaultStroke", "lbl_default_stroke");
+    setLabel("defaultStrokeW", "lbl_default_stroke_w");
+
+    // Properties hint (static HTML)
+    const hint = $("propsHint");
+    if (hint) hint.textContent = tr("props_hint");
+
+    // Footer
+    const d1 = $("lblDisclaimer"); if (d1) d1.textContent = tr("lbl_disclaimer");
+    const d2 = $("txtDisclaimer"); if (d2) d2.textContent = tr("txt_disclaimer");
+    const back = $("lnkBack"); if (back) back.textContent = tr("lnk_back");
+  }
+
+  function wireLangSelector(){
+    const langSel = $("langSel");
+    if (!langSel) return;
+    langSel.addEventListener("change", () => {
+      const v = (langSel.value === "tp") ? "tp" : "en";
+      if (v === DEV_LANG) return;
+      DEV_LANG = v;
+      saveLang(DEV_LANG);
+      applyUiText();
+      try { renderPropsPanel(); } catch {}
+    });
+  }
+
+
+
 
   const DB_NAME = "canvas_layout_editor_db";
   const DB_STORE = "scenes";
@@ -1538,7 +2094,7 @@ function deserializeAssets(serialized){
   function newTextElement(x,y){
     const el = defaultElementBase(ElementType.Text, x, y);
     el.w = 320; el.h = 140;
-    el.text = "Text\n(multiline)";
+    el.text = tr("default_text_multiline");
     el.fontFamily = "PatrickHand";
     el.fontSize = 28;
     el.align = "left";
@@ -1659,10 +2215,10 @@ function newImageElement(x,y){
           assets: serializeAssets()
         });
 
-        setStatus("Autosaved");
+        setStatus(tr("status_autosaved"));
       }catch(err){
         console.warn(err);
-        setStatus("Autosave failed (IndexedDB).");
+        setStatus(tr("status_autosave_failed"));
       }
     }, 350);
   }
@@ -3762,7 +4318,7 @@ function historyUndo(){
   History.redo.push(current);
   const prev = History.undo[History.undo.length-1];
   applyHistorySnapshot(prev.snap);
-  setStatus("Undo.");
+  setStatus(tr("status_undo"));
 }
 
 function historyRedo(){
@@ -3770,7 +4326,7 @@ function historyRedo(){
   const next = History.redo.pop();
   History.undo.push(next);
   applyHistorySnapshot(next.snap);
-  setStatus("Redo.");
+  setStatus(tr("status_redo"));
 }
 //history undo/redo end
 
@@ -4605,7 +5161,7 @@ el.y = y1;
       const b = $(id);
       b.setAttribute("aria-pressed", (tool === activeTool) ? "true" : "false");
     }
-    setStatus(`Tool: ${activeTool}`);
+    setStatus(tr("status_tool", tr("tool_"+activeTool)));
   }
 
   function addElement(el){
@@ -5286,7 +5842,7 @@ function makeLockCheckbox(sels){
   f.className = "field";
 
   const l = document.createElement("label");
-  l.textContent = "Locked";
+  l.textContent = tr("locked");
 
   const cb = document.createElement("input");
   cb.type = "checkbox";
@@ -5335,9 +5891,9 @@ function makeCheckbox(label, checked, onChange){
   const txt = document.createElement("div");
   txt.style.fontSize = "13px";
   txt.style.color = "var(--muted)";
-  txt.textContent = cb.checked ? "On" : "Off";
+  txt.textContent = cb.checked ? tr("toggle_on") : tr("toggle_off");
 
-  cb.addEventListener("change", () => { txt.textContent = cb.checked ? "On" : "Off"; historyCommit("Edit properties"); });
+  cb.addEventListener("change", () => { txt.textContent = cb.checked ? tr("toggle_on") : tr("toggle_off"); historyCommit("Edit properties"); });
 
   wrap.appendChild(cb);
   wrap.appendChild(txt);
@@ -5354,7 +5910,7 @@ function makeCheckbox(label, checked, onChange){
 
   const sels = getSelectedElements();
   if (!sels.length){
-    propsBody.innerHTML = `<div class="hint">Select an element to edit its properties.</div>`;
+    propsBody.innerHTML = `<div class="hint">${tr("props_hint")}</div>`;
     return;
   }
 
@@ -5381,9 +5937,18 @@ const groupId = getGroupIdFromSelection() || (single ? (sels[0].groupId || null)
   // Header
   const header = document.createElement("div");
   header.className = "hint";
+  function labelForElementType(type){
+    const k = "etype_" + String(type || "").toLowerCase();
+    const v = tr(k);
+    return (v && v !== k) ? v : String(type || "");
+  }
+
   header.textContent = single
-    ? `Selected: ${sels[0].type} (${sels[0].id})`
-    : (groupId ? `Selected: group (${sels.length} items)  [${groupId}]` : `Selected: ${sels.length} items`);
+    ? tr("props_header_single", labelForElementType(sels[0].type), sels[0].id)
+    : (groupId
+        ? tr("props_header_group", sels.length, groupId)
+        : tr("props_header_multi", sels.length)
+      );
   propsBody.appendChild(header);
 
 
@@ -5394,7 +5959,7 @@ propsBody.appendChild(makeLockCheckbox(sels));
 if (sels.some(e => !!e.isLocked)){
   const msg = document.createElement("div");
   msg.className = "hint";
-  msg.textContent = "This selection contains locked element(s). Unlock to edit or transform.";
+  msg.textContent = tr("msg_locked_selection");
   propsBody.appendChild(msg);
   return;
 }
@@ -5408,16 +5973,16 @@ if (sels.some(e => !!e.isLocked)){
 
   // Helper: common appearance block (useful for both single and multi)
   function addAppearanceBlock(){
-    addSection("Appearance");
+    addSection(tr("sec_appearance"));
 
-    propsBody.appendChild(makeCheckbox("Allow fill", (commonFillEnabled ?? sels[0].fillEnabled) || false, (v) => {
+    propsBody.appendChild(makeCheckbox(tr("props_allow_fill"), (commonFillEnabled ?? sels[0].fillEnabled) || false, (v) => {
       for (const e of sels) e.fillEnabled = !!v; // if multi-select supported
       scheduleAutosave();
       render();
     }));
 
     propsBody.appendChild(makeColorPickerWithSwatch(
-      "Fill",
+      tr("props_fill"),
       (commonFill ?? sels[0].fill) || "#FFFFFF",
       (v) => {
         // LIVE preview only
@@ -5455,7 +6020,7 @@ if (sels.some(e => !!e.isLocked)){
 
 
     propsBody.appendChild(makeColorPickerWithSwatch(
-       "Stroke",
+       tr("props_stroke"),
      (commonStroke ?? sels[0].stroke) || "#111111",
       (v) => {
         // LIVE preview only
@@ -5491,20 +6056,20 @@ if (sels.some(e => !!e.isLocked)){
 
     propsBody.appendChild(makeNumberRow(
       "strokeW",
-      "Stroke width",
+      tr("props_stroke_width"),
       Number(commonStrokeW ?? sels[0].strokeW ?? 0),
       1,
       (v) => { for (const e of sels) e.strokeW = Math.max(0, v); scheduleAutosave(); render(); },
-      (commonStrokeW === null && !single) ? "Mixed" : null
+      (commonStrokeW === null && !single) ? tr("props_mixed") : null
     ));
 
     propsBody.appendChild(makeNumberRow(
       "opacity",
-      "Opacity (0..1)",
+      tr("props_opacity"),
       Number(commonOpacity ?? (sels[0].opacity ?? 1)),
       0.05,
       (v) => { for (const e of sels) e.opacity = clamp(v, 0, 1); scheduleAutosave(); render(); },
-      (commonOpacity === null && !single) ? "Mixed" : null,
+      (commonOpacity === null && !single) ? tr("props_mixed") : null,
       0,
       1
     ));
@@ -5512,7 +6077,7 @@ if (sels.some(e => !!e.isLocked)){
 
 // Group-level controls (show whenever we have a groupId)
 if (groupId){
-  addSection("Group");
+  addSection(tr("sec_group"));
 
   const g = Scene.groups[groupId] || (Scene.groups[groupId] = {
     id: groupId,
@@ -5523,7 +6088,7 @@ if (groupId){
   const fg = rgbaOrHexToHex(g.foreground || "#111111", "#111111");
 
   propsBody.appendChild(makeColorPickerWithSwatch(
-    "Foreground (group)",
+    tr("props_foreground_group"),
     fg,
     (v) => {            // LIVE preview only
       console.log("Live group foreground :" + v);
@@ -5552,7 +6117,7 @@ if (!single){
   const el = sels[0];
 
   if (el.type === ElementType.Text || el.type === ElementType.Sitelen){
-    addSection( el.type === ElementType.Sitelen ? "Sitelen" : "Text");
+    addSection( el.type === ElementType.Sitelen ? tr("sec_sitelen") : tr("sec_text"));
 
     //used for text placeholder
     let placeholder = "";
@@ -5561,18 +6126,11 @@ if (!single){
     if (el.type === ElementType.Sitelen){
       //set the sitelen placeholder text
       //placeholder = "toki pona";
-      placeholder = "mi kama sona e toki pona.\n" +
-  ": sewi^ ni ni^ ni> ni< .\n" +
-  "[ ota  kolon en ]\n" +
-    "nanpa -12,340.57.\n" +
-  "nanpa #~IIM.\n" +
-  "nanpa Newen.\n" +
-  '"Hello World!".\n' +
-  "Unknown words ignored without double quotes.\n";
+      placeholder = tr("sitelen_placeholder");
 
       //add aspect ratio checkbox
       propsBody.appendChild(makeCheckbox(
-        "Keep aspect ratio",
+        tr("props_keep_aspect"),
         (el.keepAspect == null) ? true : !!el.keepAspect,
         (checked) => {
           const prev = (el.keepAspect == null) ? true : !!el.keepAspect;
@@ -5609,19 +6167,19 @@ if (!single){
       const natH = (el.sitelen && Number.isFinite(el.sitelen.naturalH)) ? el.sitelen.naturalH : (r ? r.naturalH : null);
 
       if (natW && natH){
-        propsBody.appendChild(makeReadOnlyRow("Rendered (intrinsic) size", `${natW} × ${natH}`));
+        propsBody.appendChild(makeReadOnlyRow(tr("props_rendered_intrinsic_size"), `${natW} × ${natH}`));
       } else {
-        propsBody.appendChild(makeReadOnlyRow("Rendered (intrinsic) size", "—"));
+        propsBody.appendChild(makeReadOnlyRow(tr("props_rendered_intrinsic_size"), "—"));
       }
 
       const origW = (el.sitelen && Number.isFinite(el.sitelen.origW)) ? el.sitelen.origW : el.w;
       const origH = (el.sitelen && Number.isFinite(el.sitelen.origH)) ? el.sitelen.origH : el.h;
-      propsBody.appendChild(makeReadOnlyRow("Original box size", `${Number(origW)} × ${Number(origH)}`));
+      propsBody.appendChild(makeReadOnlyRow(tr("props_original_box_size"), `${Number(origW)} × ${Number(origH)}`));
     }
 
     
 
-    propsBody.appendChild(makeTextarea("Text", el.text ?? "", placeholder   ,(v) => {
+    propsBody.appendChild(makeTextarea(tr("props_text"), el.text ?? "", placeholder   ,(v) => {
       el.text = v;
 
       if (el.type === ElementType.Sitelen){
@@ -5636,7 +6194,7 @@ if (!single){
 
     if (el.type === ElementType.Text){
       propsBody.appendChild(makeCheckbox(
-        "Scale font with box",
+        tr("props_scale_font_box"),
         !!el.scaleFontWithBox,
         (checked) => {
           el.scaleFontWithBox = !!checked;
@@ -5653,7 +6211,7 @@ if (!single){
     const currentFont = coerceFontValueToOption(el.fontFamily, defaultFont);
 
 
-    propsBody.appendChild(makeSelect("Font family", currentFont, FONT_OPTIONS, (v) => {
+    propsBody.appendChild(makeSelect(tr("props_font_family"), currentFont, FONT_OPTIONS, (v) => {
         el.fontFamily = v;
 
         if (el.type === ElementType.Sitelen){
@@ -5668,7 +6226,7 @@ if (!single){
 
     propsBody.appendChild(makeNumberRowWithPresets(
   "fontSize",
-  "Font size",
+  tr("props_font_size"),
   Number(el.fontSize ?? 24),
   1,
   FONT_SIZE_PRESETS,
@@ -5689,8 +6247,8 @@ if (!single){
 ));
 
 
-    propsBody.appendChild(makeSelect("Align", el.align ?? "left", [
-      ["left","Left"],["center","Center"],["right","Right"]
+    propsBody.appendChild(makeSelect(tr("props_align"), el.align ?? "left", [
+      ["left", tr("props_align_left")],["center", tr("props_align_center")],["right", tr("props_align_right")]
     ], (v) => {
   el.align = v;
 
@@ -5705,7 +6263,7 @@ if (!single){
 }));
 
    propsBody.appendChild(makeColorPickerWithSwatch(
-      "Text color",
+      tr("props_text_color"),
       el.color ?? "#111111",
       (v) => {
         // LIVE preview only
@@ -5737,7 +6295,7 @@ if (!single){
 
 
 
-    propsBody.appendChild(makeNumberRow("lineHeight", "Line height", Number(el.lineHeight ?? 1.15), 0.05, (v) => {
+    propsBody.appendChild(makeNumberRow("lineHeight", tr("props_line_height"), Number(el.lineHeight ?? 1.15), 0.05, (v) => {
       el.lineHeight = clamp(v, 0.8, 3.0); scheduleAutosave(); render();
     }, null, 0.8, 3.0));
 
@@ -5745,7 +6303,7 @@ if (!single){
     addAppearanceBlock();
 
   } else if (el.type === ElementType.Glyph){
-    addSection("Glyph");
+    addSection(tr("sec_glyph"));
 
 
 
@@ -5760,7 +6318,7 @@ propsBody.appendChild(makeGlyphPicker(el));
 
 
     propsBody.appendChild(makeCheckbox(
-      "Scale font with box",
+      tr("props_scale_font_box"),
       !!el.scaleFontWithBox,
       (checked) => {
         el.scaleFontWithBox = !!checked;
@@ -5772,7 +6330,7 @@ propsBody.appendChild(makeGlyphPicker(el));
 
  propsBody.appendChild(makeNumberRowWithPresets(
   "fontSize",
-  "Font size",
+  tr("props_font_size"),
   Number(el.fontSize ?? 64),
   1,
   FONT_SIZE_PRESETS,
@@ -5784,7 +6342,7 @@ propsBody.appendChild(makeGlyphPicker(el));
 
 
 propsBody.appendChild(makeColorPickerWithSwatch(
-      "Glyph color",
+      tr("props_glyph_color"),
       el.color ?? "#111111",
       (v) => {
         // LIVE preview only
@@ -5809,7 +6367,7 @@ propsBody.appendChild(makeColorPickerWithSwatch(
     addAppearanceBlock();
 
   } else if (el.type === ElementType.Image){
-    addSection("Image");
+    addSection(tr("sec_image"));
 
     const row = document.createElement("div");
     row.className = "row";
@@ -5817,14 +6375,14 @@ propsBody.appendChild(makeColorPickerWithSwatch(
     const b = document.createElement("button");
     b.className = "btn";
     b.type = "button";
-    b.textContent = el.image ? "Replace image…" : "Load image…";
+    b.textContent = el.image ? tr("img_replace") : tr("img_load");
     b.addEventListener("click", () => pickImageForElement(el));
     row.appendChild(b);
 
     const b2 = document.createElement("button");
     b2.className = "btn";
     b2.type = "button";
-    b2.textContent = "Clear image";
+    b2.textContent = tr("img_clear");
     b2.disabled = !el.image;
     b2.addEventListener("click", () => {
       el.image = null;
@@ -5839,15 +6397,15 @@ propsBody.appendChild(makeColorPickerWithSwatch(
     const note = document.createElement("div");
     note.className = "hint";
     note.textContent = el.image
-      ? `Embedded image: ${el.image.mime}, ${el.image.naturalW}×${el.image.naturalH}`
-      : "No image loaded. Images are embedded (no external links).";
+      ? tr("props_image_embedded", el.image.mime, el.image.naturalW, el.image.naturalH)
+      : tr("props_image_none");
     propsBody.appendChild(note);
 
 
 
 
   // CHANGE HERE: keepAspect checkbox (default true)
-  propsBody.appendChild(makeCheckbox("Keep aspect ratio", (el.keepAspect == null) ? true : !!el.keepAspect, (checked) => {
+  propsBody.appendChild(makeCheckbox(tr("props_keep_aspect"), (el.keepAspect == null) ? true : !!el.keepAspect, (checked) => {
     const prev = (el.keepAspect == null) ? true : !!el.keepAspect;
     el.keepAspect = !!checked;
 
@@ -5868,7 +6426,7 @@ propsBody.appendChild(makeColorPickerWithSwatch(
 
       //make imported image backgrounf transparent
 propsBody.appendChild(makeCheckbox(
-  "Color-key transparency (use top-left pixel)",
+  tr("props_color_key_transparency"),
   !!el.colorKeyTransparent,
   (checked) => {
     el.colorKeyTransparent = !!checked;
@@ -5881,22 +6439,22 @@ propsBody.appendChild(makeCheckbox(
 
 // CHANGE HERE: read-only sizes
   if (el.image){
-    propsBody.appendChild(makeReadOnlyRow("Loaded (intrinsic) size", `${el.image.naturalW} × ${el.image.naturalH}`));
-    propsBody.appendChild(makeReadOnlyRow("Original box size", `${Number(el.image.origW ?? el.w)} × ${Number(el.image.origH ?? el.h)}`));
+    propsBody.appendChild(makeReadOnlyRow(tr("props_loaded_intrinsic_size"), `${el.image.naturalW} × ${el.image.naturalH}`));
+    propsBody.appendChild(makeReadOnlyRow(tr("props_original_box_size"), `${Number(el.image.origW ?? el.w)} × ${Number(el.image.origH ?? el.h)}`));
   } else {
-    propsBody.appendChild(makeReadOnlyRow("Loaded (intrinsic) size", "—"));
-    propsBody.appendChild(makeReadOnlyRow("Original box size", "—"));
+    propsBody.appendChild(makeReadOnlyRow(tr("props_loaded_intrinsic_size"), "—"));
+    propsBody.appendChild(makeReadOnlyRow(tr("props_original_box_size"), "—"));
   }
 
     addAppearanceBlock();
 
   } else if (el.type === ElementType.Rect){
-    addSection("Shape");
+    addSection(tr("sec_shape"));
 
     // For rectangles, appearance is often first
     addAppearanceBlock();
 
-    propsBody.appendChild(makeNumberRow("radius", "Corner radius", Number(el.radius ?? 0), 1, (v) => {
+    propsBody.appendChild(makeNumberRow("radius", tr("props_corner_radius"), Number(el.radius ?? 0), 1, (v) => {
       el.radius = Math.max(0, v); scheduleAutosave(); render();
     }));
   } else {
@@ -5905,13 +6463,13 @@ propsBody.appendChild(makeCheckbox(
   }
 
   // Geometry last (because user can drag on canvas)
-  addSection("Geometry");
+  addSection(tr("sec_geometry"));
 
-  propsBody.appendChild(makeNumberRow("x", "X", el.x, 1, (v) => { el.x = v; scheduleAutosave(); render(); }));
-  propsBody.appendChild(makeNumberRow("y", "Y", el.y, 1, (v) => { el.y = v; scheduleAutosave(); render(); }));
-  propsBody.appendChild(makeNumberRow("w", "W", el.w, 1, (v) => { el.w = Math.max(8, v); scheduleAutosave(); render(); }));
-  propsBody.appendChild(makeNumberRow("h", "H", el.h, 1, (v) => { el.h = Math.max(8, v); scheduleAutosave(); render(); }));
-  propsBody.appendChild(makeNumberRow("rot", "Rotation (deg)", el.rotationDeg || 0, 1, (v) => { el.rotationDeg = v; scheduleAutosave(); render(); }));
+  propsBody.appendChild(makeNumberRow("x", tr("props_x"), el.x, 1, (v) => { el.x = v; scheduleAutosave(); render(); }));
+  propsBody.appendChild(makeNumberRow("y", tr("props_y"), el.y, 1, (v) => { el.y = v; scheduleAutosave(); render(); }));
+  propsBody.appendChild(makeNumberRow("w", tr("props_w"), el.w, 1, (v) => { el.w = Math.max(8, v); scheduleAutosave(); render(); }));
+  propsBody.appendChild(makeNumberRow("h", tr("props_h"), el.h, 1, (v) => { el.h = Math.max(8, v); scheduleAutosave(); render(); }));
+  propsBody.appendChild(makeNumberRow("rot", tr("props_rotation_deg"), el.rotationDeg || 0, 1, (v) => { el.rotationDeg = v; scheduleAutosave(); render(); }));
 }
 
 // CHANGE HERE: static font options for dropdown
@@ -5971,7 +6529,7 @@ function makeNumberRowWithPresets(
   // First option = "Custom" (blank value)
   const optCustom = document.createElement("option");
   optCustom.value = "";
-  optCustom.textContent = "Custom";
+  optCustom.textContent = tr("opt_custom");
   sel.appendChild(optCustom);
 
   // Preset options
@@ -6538,7 +7096,7 @@ function makeColorPicker(label, value, onLive, onCommit){
     updateUiForSelection();
     render();
     historyCommit("Group");
-    setStatus(`Grouped (${sels.length}).`);
+    setStatus(tr("status_grouped", sels.length));
   }
 
   function ungroupSelection(){
@@ -6554,7 +7112,7 @@ function makeColorPicker(label, value, onLive, onCommit){
     updateUiForSelection();
     render();
     historyCommit("Ungroup");
-    setStatus("Ungrouped.");
+    setStatus(tr("status_ungrouped"));
   }
 
   /* ============================================================
@@ -6608,7 +7166,7 @@ function makeColorPicker(label, value, onLive, onCommit){
 //copy/paste
 function copySelection(){
   if (selectionIsEmpty()){
-    setStatus("Copy: nothing selected.");
+    setStatus(tr("status_copy_none"));
     return;
   }
 
@@ -6637,21 +7195,21 @@ function copySelection(){
     CLIPBOARD.sourceGroupRecord = null;
   }
 
-  setStatus(`Copied ${els.length} element${els.length === 1 ? "" : "s"}.`);
+  setStatus(tr("status_copied", els.length));
   updateClipboardButtons();
 
 }
 
 function cutSelection(){
   if (selectionIsEmpty()){
-    setStatus("Cut: nothing selected.");
+    setStatus(tr("status_cut_none"));
     return;
   }
 
   // Block cutting locked elements (consistent with your delete rules)
   if (selectionHasLocked()){
-    window.alert("This selection contains locked element(s). Unlock before cutting.");
-    setStatus("Cut blocked: locked element(s).");
+    window.alert(tr("alert_cut_locked"));
+    setStatus(tr("status_cut_blocked_locked"));
     return;
   }
 
@@ -6665,14 +7223,14 @@ function cutSelection(){
   updateUiForSelection();
   render();
   historyCommit("Cut");
-  setStatus("Cut.");
+  setStatus(tr("status_cut_done"));
   updateClipboardButtons();
 
 }
 
 function pasteClipboard(){
   if (!CLIPBOARD.elements || !Array.isArray(CLIPBOARD.elements) || CLIPBOARD.elements.length === 0){
-    setStatus("Paste: clipboard empty.");
+    setStatus(tr("status_paste_empty"));
     return;
   }
 
@@ -6761,7 +7319,7 @@ if (CLIPBOARD.hadSingleGroup && CLIPBOARD.sourceGroupId) {
   render();
   historyCommit("Paste");
 
-  setStatus(`Pasted ${newEls.length} element${newEls.length === 1 ? "" : "s"}.`);
+  setStatus(tr("status_pasted", newEls.length));
   updateClipboardButtons();
 
 }
@@ -6814,14 +7372,14 @@ function updateClipboardButtons(){
 
   // CHANGE HERE: locked elements cannot be deleted
   if (selectionHasLocked()){
-    window.alert("This element cannot be deleted because it is locked. Unlock it first.");
-    setStatus("Delete blocked: locked element(s).");
+    window.alert(tr("alert_delete_locked"));
+    setStatus(tr("status_delete_blocked_locked"));
     return;
   }
 
   // CHANGE HERE: always confirm delete to prevent accidental deletion
   const count = selectedIds.size;
-  const ok = window.confirm(`Delete ${count} element${count === 1 ? "" : "s"}?`);
+  const ok = window.confirm(tr("confirm_delete", count));
   if (!ok) return;
 
   const ids = new Set(selectedIds);
@@ -6838,7 +7396,7 @@ function updateClipboardButtons(){
   updateUiForSelection();
   render();
   historyCommit("Delete");
-  setStatus("Deleted.");
+  setStatus(tr("status_deleted"));
 }
 
 
@@ -6859,13 +7417,13 @@ function updateClipboardButtons(){
       drag.mode = HANDLE.Pan;
       drag.startScreen = ptScreen;
       drag.panStartView = { zoom: Scene.view.zoom, ox: Scene.view.offsetX, oy: Scene.view.offsetY };
-      setStatus("Panning…");
+      setStatus(tr("status_panning"));
       return;
     }
 
     if (activeTool !== Tool.Select){
       if (!insideStage){
-        setStatus("Click inside the stage to create elements.");
+        setStatus(tr("status_click_create"));
         return;
       }
 
@@ -6929,7 +7487,7 @@ function updateClipboardButtons(){
 
       // CHANGE HERE: block transforms if any selected is locked
       if (selectionHasLocked()){
-        setStatus("Locked element(s): unlock to move/resize/rotate.");
+        setStatus(tr("status_locked_unlock_edit"));
         return;
       }
       
@@ -6963,14 +7521,14 @@ function updateClipboardButtons(){
 
       // CHANGE HERE: block move if selection includes locked
       if (selectionHasLocked()){
-        setStatus("Locked element(s): unlock to move.");
+        setStatus(tr("status_locked_unlock_move"));
         return;
       }
 
       // Start move drag immediately (no duplicate creation bug)
       startPointerCapture(e);
       beginDragSelectionMode(HANDLE.Move, ptScreen, ptStage);
-      setStatus("Move…");
+      setStatus(tr("status_move"));
       return;
     }
 
@@ -6983,7 +7541,7 @@ function updateClipboardButtons(){
     drag.startScreen = ptScreen;
     drag.startStage = ptStage;
     drag.marquee = { x0: ptStage.x, y0: ptStage.y, x1: ptStage.x, y1: ptStage.y };
-    setStatus("Marquee select…");
+    setStatus(tr("status_marquee"));
     render();
   }, { passive: true });
 
@@ -7073,7 +7631,7 @@ function updateClipboardButtons(){
 
       updateUiForSelection();
       drag.marquee = null;
-      setStatus(`Selected: ${selectedIds.size}`);
+      setStatus(tr("status_selected", selectedIds.size));
       finalizeDrag();
       endPointerCapture();
       return;
@@ -7081,14 +7639,14 @@ function updateClipboardButtons(){
 
     finalizeDrag();
     endPointerCapture();
-    setStatus("Ready.");
+    setStatus(tr("status_ready"));
   }, { passive: true });
 
   wrap.addEventListener("pointercancel", (e) => {
     if (!drag.active || e.pointerId !== drag.pointerId) return;
     endPointerCapture();
     render();
-    setStatus("Cancelled.");
+    setStatus(tr("status_cancelled"));
   }, { passive: true });
 
   /* ============================================================
@@ -7101,7 +7659,7 @@ function updateClipboardButtons(){
 
     if (e.key === "Escape"){
       clearSelection();
-      setStatus("Selection cleared.");
+      setStatus(tr("status_selection_cleared"));
       return;
     }
 
@@ -7118,7 +7676,7 @@ function updateClipboardButtons(){
       if (!anySelected()) return;
 
       if (selectionHasLocked()){
-        setStatus("Locked element(s): unlock to move.");
+        setStatus(tr("status_locked_unlock_move"));
         return;
       }
 
@@ -7138,7 +7696,7 @@ function updateClipboardButtons(){
       }
       applyMoveToSelection(dx, dy);
       finalizeDrag();
-      setStatus("Nudged.");
+      setStatus(tr("status_nudged"));
       return;
     }
   }, { passive: false });
@@ -7185,7 +7743,7 @@ function updateClipboardButtons(){
       scheduleAutosave();
       updateUiForSelection();
       render();
-      setStatus("Image embedded.");
+      setStatus(tr("status_image_embedded"));
       rebuildDynamicPaletteFromScene();
 
     };
@@ -7373,7 +7931,7 @@ function exportJson(){
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
   downloadBlob(blob, `layout_${nowIso()}.json`);
-  setStatus("Exported JSON.");
+  setStatus(tr("status_exported_json"));
 }
 
 async function importJsonFromFile(file){
@@ -7456,7 +8014,7 @@ async function importJsonFromFile(file){
   } catch (e) {
     // If persistence fails, you may still keep the imported scene in memory,
     // but make the failure explicit.
-    setStatus("Imported JSON, but failed to save to local DB.");
+    setStatus(tr("status_imported_json_db_fail"));
   }
 
   // Update UI controls with sanitized stage values
@@ -7465,7 +8023,7 @@ async function importJsonFromFile(file){
   $("gridSize").value = String(Scene.stage.gridSize);
   $("snapTol").value = String(Scene.stage.snapTol);
 
-  setStatus("Imported JSON.");
+  setStatus(tr("status_imported_json"));
   updateUiForSelection();
   rebuildDynamicPaletteFromScene();
 
@@ -7678,7 +8236,7 @@ async function importJsonFromFile(file){
     off.toBlob((blob) => {
       if (!blob) return;
       downloadBlob(blob, `layout_${nowIso()}.png`);
-      setStatus("Exported PNG (transparent).");
+      setStatus(tr("status_exported_png"));
     }, "image/png");
   }
 
@@ -7728,7 +8286,7 @@ $("btnNew").addEventListener("click", async () => {
     (Scene.groups && typeof Scene.groups === "object" && Object.keys(Scene.groups).length > 0);
 
   if (hasAnything){
-    const ok = window.confirm("This will clear the current canvas. Continue?");
+    const ok = window.confirm(tr("confirm_clear"));
     if (!ok) return;
   }
 
@@ -7756,7 +8314,7 @@ console.log("New Scene "+ JSON.stringify(Scene));
   historyReset("New");
   resetDynamicSwatches();
 
-  setStatus("Cleared.");
+  setStatus(tr("status_cleared"));
 });
 
 
@@ -7776,7 +8334,7 @@ $("fileImportJson").addEventListener("change", async () => {
     await importJsonFromFile(f);
   }catch(err){
     console.error(err);
-    setStatus(`Import failed: ${err && err.message ? err.message : String(err)}`);
+    setStatus(tr("status_import_failed", (err && err.message ? err.message : String(err))));
   } finally {
     inp.value = "";        // optional: makes repeated imports reliable
   }
@@ -7901,7 +8459,7 @@ function wireStageDefaultsUi(){
       Scene.stage.exportStageBackground = !!e.target.checked;
       scheduleAutosave();
       //render();
-      //setStatus("Default background color fill enabled updated (affects new elements).");
+      //setStatus(tr("status_default_fill_enabled_updated"));
     });
   }
 
@@ -7913,7 +8471,7 @@ function wireStageDefaultsUi(){
       addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
       //render();
-      //setStatus("Default text color updated (affects new elements).");
+      //setStatus(tr("status_default_text_updated"));
     });
   }
 
@@ -7924,7 +8482,7 @@ function wireStageDefaultsUi(){
       Scene.stage.defaultFillEnabled = !!e.target.checked;
       scheduleAutosave();
       //render();
-      //setStatus("Default background color fill enabled updated (affects new elements).");
+      //setStatus(tr("status_default_fill_enabled_updated"));
     });
   }
 
@@ -7937,7 +8495,7 @@ function wireStageDefaultsUi(){
       addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
       //render();
-      //setStatus("Default background color fill updated (affects new elements).");
+      //setStatus(tr("status_default_fill_updated"));
     });
   }
 
@@ -7949,7 +8507,7 @@ function wireStageDefaultsUi(){
       addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
       //render();
-      //setStatus("Default stroke color updated (affects new elements).");
+      //setStatus(tr("status_default_stroke_updated"));
     });
   }
 
@@ -7960,7 +8518,7 @@ function wireStageDefaultsUi(){
       Scene.stage.defaultStrokeW = Math.max(0, Number(e.target.value || 0));
       scheduleAutosave();
       //render();
-      //setStatus("Default stroke width updated (affects new elements).");
+      //setStatus(tr("status_default_stroke_w_updated"));
     });
   }
 
@@ -8086,7 +8644,9 @@ document.addEventListener("keydown", (e) => {
      Load initial state
      ============================================================ */
   async function init(){
-    setStatus("Loading…");
+    applyUiText();
+    wireLangSelector();
+    setStatus(tr("status_loading"));
     try{
       await awaitFontLoading(); // <-- add this FIRST
 
@@ -8123,13 +8683,13 @@ document.addEventListener("keydown", (e) => {
         setPressed($("btnSnapGrid"), !!Scene.stage.snapGrid);
         setPressed($("btnSnapObjs"), !!Scene.stage.snapObjects);
 
-        setStatus("Loaded.");
+        setStatus(tr("status_loaded"));
       } else {
-        setStatus("No saved scene. Ready.");
+        setStatus(tr("status_no_saved_scene"));
       }
     }catch(err){
       console.warn(err);
-      setStatus("IndexedDB unavailable. Running without autosave.");
+      setStatus(tr("status_idb_unavailable"));
     }
 
    
