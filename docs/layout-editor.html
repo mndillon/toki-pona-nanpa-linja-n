@@ -2984,6 +2984,29 @@ function looksLikeNanpaCaps(s) {
   return t.slice(0, 2).toUpperCase() === "NE";
 }
 
+function groupFractionDigitsOnly(s, decimalChar=".", groupSize=3, sepChar="_") {
+  const str = String(s);
+  const idx = str.indexOf(decimalChar);
+  if (idx < 0) return str;
+
+  const left = str.slice(0, idx);
+  const right = str.slice(idx + 1);
+
+  let i = 0;
+  while (i < right.length && /[0-9]/.test(right[i])) i++;
+  const fracDigits = right.slice(0, i);
+  const suffix = right.slice(i);
+
+  if (fracDigits.length <= groupSize) return str;
+  if (sepChar && fracDigits.includes(sepChar)) return str;
+
+  const groups = [];
+  for (let j = 0; j < fracDigits.length; j += groupSize) {
+    groups.push(fracDigits.slice(j, j + groupSize));
+  }
+  return `${left}${decimalChar}${groups.join(sepChar)}${suffix}`;
+}
+
 function normalizeLooseSeparators(raw) {
   if (raw == null) return "";
   let s = String(raw);
@@ -3001,124 +3024,184 @@ const DEC_DIGIT_TO_TOKEN = {
   "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
 };
 
-function numberStrToNanpaCaps(s) {
-  let raw = normalizeLooseSeparators(String(s ?? ""));
-  if (!raw) throw new Error("Empty value cannot be encoded");
+function numberStrToNanpaCaps(
+      s,
+      { thousandsChar = ",", groupFractionTriplets = true, fractionGroupSize = 3 } = {}
+    ) {
+      if (s == null) throw new Error("s must be a string");
+      let raw = normalizeLooseSeparators(String(s));
+      if (!raw) throw new Error("Empty value cannot be encoded");
 
-  function stripFinalTerminator(segCaps) {
-    if (!segCaps) return segCaps;
-    if (!segCaps.endsWith("N")) throw new Error(`Segment caps did not end with 'N': ${segCaps}`);
-    return segCaps.slice(0, -1);
-  }
-
-  function encodeSingleNumberSegment(segment, includeInitialNe) {
-    let seg = String(segment).trim();
-    if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
-
-    const out = [];
-    if (includeInitialNe) out.push("NE");
-
-    function pushNene() {
-      const L = out.length;
-      if (L >= 2 && out[L-2] === "NE" && out[L-1] === "NE") return;
-      out.push("NE", "NE");
-    }
-
-    if (seg.startsWith("-")) {
-      if (seg.startsWith("-.")) seg = "-0." + seg.slice(2);
-      out.push("NO");
-      seg = seg.slice(1).trim();
-    }
-
-    // optional magnitude suffix K/T/M/B -> 1/1/2/3 KE counts
-    let magnitudeSuffixKeCount = 0;
-    if (seg.length > 0) {
-      const last = seg.slice(-1).toUpperCase();
-      if (last === "K" || last === "T" || last === "M" || last === "B") {
-        magnitudeSuffixKeCount =
-          (last === "K" || last === "T") ? 1 :
-          (last === "M") ? 2 : 3;
-        seg = seg.slice(0, -1).trim();
-        if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
+      if (groupFractionTriplets) {
+        raw = groupFractionDigitsOnly(raw, ".", fractionGroupSize, "_");
       }
-    }
 
-    if ((seg.match(/\./g) || []).length > 1) {
-      throw new Error(`Invalid numeric segment with multiple decimals: ${segment}`);
-    }
-
-    let intPart = seg;
-    let fracPart = "";
-    let hasDecimal = false;
-    if (seg.includes(".")) {
-      [intPart, fracPart] = seg.split(".", 2);
-      hasDecimal = true;
-    }
-
-    let ip = String(intPart ?? "").trim();
-    if (ip === "") ip = "0";
-
-    // integer: allow digits, separators , _ space -
-    for (const ch of ip) {
-      if (/\d/.test(ch)) { out.push(DEC_DIGIT_TO_TOKEN[ch]); continue; }
-      if (ch === "," ) { out.push("NE","KE"); continue; }
-      if (ch === "_" || ch === " " || ch === "-") { pushNene(); continue; }
-      throw new Error(`Unsupported character "${ch}" in integer part of "${s}"`);
-    }
-
-    if (hasDecimal) {
-      out.push("NO","NE");
-      if (!fracPart) throw new Error(`Missing fraction digits after '.' in "${s}"`);
-      for (const ch of fracPart) {
-        if (/\d/.test(ch)) { out.push(DEC_DIGIT_TO_TOKEN[ch]); continue; }
-        if (ch === "_" || ch === "," || ch === " " || ch === "-") { pushNene(); continue; }
-        throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
+      function stripFinalTerminator(segCaps) {
+        if (!segCaps) return segCaps;
+        if (!segCaps.endsWith("N")) throw new Error(`Segment caps did not end with 'N': ${segCaps}`);
+        return segCaps.slice(0, -1);
       }
-    }
 
-    if (magnitudeSuffixKeCount > 0) {
-      out.push("NE");
-      let remaining = magnitudeSuffixKeCount;
-      while (remaining > 0) {
-        const chunk = Math.min(3, remaining);
-        if (out[out.length - 1] !== "NE") out.push("NE");
-        out.push("KE".repeat(chunk));
-        remaining -= chunk;
-        if (remaining > 0) out.push("NE");
+      function encodeSingleNumberSegment(segment, includeInitialNe) {
+        let seg = String(segment).trim();
+        if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
+
+        if (seg.slice(0, 1).toUpperCase() === "N") {
+          seg = seg.slice(1).trim();
+          if (seg === "") throw new Error(`Missing numeric part after leading 'N' prefix in ${s}`);
+        }
+
+        const out = [];
+        if (includeInitialNe) out.push("NE");
+
+        function pushNene() {
+          const L = out.length;
+          if (L >= 2 && out[L-2] === "NE" && out[L-1] === "NE") return;
+          out.push("NE", "NE");
+        }
+
+        if (seg.startsWith("-")) {
+          if (seg.startsWith("-.")) seg = "-0." + seg.slice(2);
+          out.push("NO");
+          seg = seg.slice(1).trim();
+        }
+
+        let magnitudeSuffixKeCount = 0;
+        if (seg.length > 0) {
+          const last = seg.slice(-1).toUpperCase();
+          if (last === "K" || last === "T" || last === "M" || last === "B") {
+            magnitudeSuffixKeCount =
+              (last === "K" || last === "T") ? 1 :
+              (last === "M") ? 2 : 3;
+            seg = seg.slice(0, -1).trim();
+            if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
+          }
+        }
+
+        if ((seg.match(/\./g) || []).length > 1) {
+          throw new Error(`Invalid numeric segment with multiple decimals: ${segment}`);
+        }
+
+        let intPart = seg;
+        let fracPart = "";
+        let hasDecimal = false;
+        if (seg.includes(".")) {
+          [intPart, fracPart] = seg.split(".", 2);
+          hasDecimal = true;
+        }
+
+        let ip = String(intPart ?? "").trim();
+        if (ip === "") ip = "0";
+
+        const intHasThousandsComma = (thousandsChar && ip.includes(thousandsChar));
+        const hasLooseSep = /[ -]/.test(ip);
+
+        if (hasLooseSep) {
+          let ip2 = String(ip)
+            .replace(/\s+/g, " ")
+            .replace(/-+/g, "-")
+            .trim();
+
+          ip2 = ip2.replace(/^[ -]+/, "").replace(/[ -]+$/, "");
+          if (ip2 === "") ip2 = "0";
+
+          for (const ch of ip2) {
+            if (/\d/.test(ch)) { out.push(DEC_DIGIT_TO_TOKEN[ch]); continue; }
+            if (ch === " " || ch === "-") { pushNene(); continue; }
+            if (thousandsChar && ch === thousandsChar) { out.push("NE","KE"); continue; }
+            throw new Error(`Unsupported character "${ch}" in integer part of "${s}"`);
+          }
+        } else {
+          const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+          for (const g of groups) {
+            if (g === "" || !/^\d+$/.test(g)) throw new Error(`Invalid integer group "${g}" in "${s}"`);
+          }
+
+          let trailingZeroGroups = 0;
+          for (let k = groups.length - 1; k >= 1; k--) {
+            const g = groups[k];
+            if (g.length === 3 && g === "000") trailingZeroGroups += 1;
+            else break;
+          }
+
+          for (const d of groups[0]) out.push(DEC_DIGIT_TO_TOKEN[d]);
+
+          const nGroups = groups.length;
+          const lastNonTrailingIdx = nGroups - trailingZeroGroups;
+
+          for (let idx = 1; idx < lastNonTrailingIdx; idx++) {
+            out.push("NE","KE");
+            for (const d of groups[idx]) out.push(DEC_DIGIT_TO_TOKEN[d]);
+          }
+
+          if (trailingZeroGroups > 0) {
+            out.push("NE");
+            let remaining = trailingZeroGroups;
+            while (remaining > 0) {
+              const chunk = Math.min(3, remaining);
+              if (out[out.length - 1] !== "NE") out.push("NE");
+              out.push("KE".repeat(chunk));
+              remaining -= chunk;
+              if (remaining > 0) out.push("NE");
+            }
+          }
+        }
+
+        if (hasDecimal) {
+          out.push("NO","NE");
+
+          if (!fracPart) throw new Error(`Missing fraction digits after '.' in "${s}"`);
+
+          for (const ch of fracPart) {
+            if (/\d/.test(ch)) { out.push(DEC_DIGIT_TO_TOKEN[ch]); continue; }
+            if (ch === "_") { pushNene(); continue; }
+            if (ch === ",") { pushNene(); continue; }
+            if (ch === " " || ch === "-") { pushNene(); continue; }
+            throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
+          }
+        }
+
+        if (magnitudeSuffixKeCount > 0) {
+          out.push("NE");
+          let remaining = magnitudeSuffixKeCount;
+          while (remaining > 0) {
+            const chunk = Math.min(3, remaining);
+            if (out[out.length - 1] !== "NE") out.push("NE");
+            out.push("KE".repeat(chunk));
+            remaining -= chunk;
+            if (remaining > 0) out.push("NE");
+          }
+        }
+
+        out.push("N");
+        return out.join("");
       }
-    }
 
-    out.push("N");
-    return out.join("");
-  }
+      if (raw.includes("+")) {
+        const [left, right] = raw.split("+", 2);
+        let leftCaps = encodeSingleNumberSegment(left, true);
 
-  // mixed number a+b/c
-  if (raw.includes("+")) {
-    const [left, right] = raw.split("+", 2);
-    let leftCaps = encodeSingleNumberSegment(left, true);
+        if (!right.includes("/")) throw new Error(`Mixed number must contain '/' after '+': ${s}`);
+        const [num, den] = right.split("/", 2);
 
-    if (!right.includes("/")) throw new Error(`Mixed number must contain '/' after '+': ${s}`);
-    const [num, den] = right.split("/", 2);
+        let numCaps = encodeSingleNumberSegment(num, false);
+        let denCaps = encodeSingleNumberSegment(den, false);
 
-    let numCaps = encodeSingleNumberSegment(num, false);
-    let denCaps = encodeSingleNumberSegment(den, false);
+        leftCaps = stripFinalTerminator(leftCaps);
+        numCaps = stripFinalTerminator(numCaps);
 
-    leftCaps = stripFinalTerminator(leftCaps);
-    numCaps  = stripFinalTerminator(numCaps);
+        return leftCaps + "NONONO" + numCaps + "NONO" + denCaps;
+      }
 
-    return leftCaps + "NONONO" + numCaps + "NONO" + denCaps;
-  }
+      if (raw.includes("/")) {
+        const [num, den] = raw.split("/", 2);
+        let numCaps = encodeSingleNumberSegment(num, true);
+        let denCaps = encodeSingleNumberSegment(den, false);
+        numCaps = stripFinalTerminator(numCaps);
+        return numCaps + "NONO" + denCaps;
+      }
 
-  // fraction a/b
-  if (raw.includes("/")) {
-    const [num, den] = raw.split("/", 2);
-    let numCaps = encodeSingleNumberSegment(num, true);
-    let denCaps = encodeSingleNumberSegment(den, false);
-    numCaps = stripFinalTerminator(numCaps);
-    return numCaps + "NONO" + denCaps;
-  }
-
-  return encodeSingleNumberSegment(raw, true);
+      return encodeSingleNumberSegment(raw, true);
 }
 
 function decimalStringToCaps(rawDecimal) {
