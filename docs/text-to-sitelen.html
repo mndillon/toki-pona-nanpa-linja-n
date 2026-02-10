@@ -228,8 +228,7 @@
     @font-face {
       font-family: "TP-Cartouche-Font";
       src:
-        /* url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v5.otf")   format("opentype"); */
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v7.otf")   format("opentype");
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v9.otf")   format("opentype");
         
       font-display: swap;
     }
@@ -1141,8 +1140,10 @@ function wireFgColorControls() {
       "o":     0xF1944,
       "ona":   0xF1946,
       "ota":   0xF199C,
+      "open":  0xF1947,
 
       "kulupu":0xF191F,
+      "kipisi": 0xF197B,
 
       "ijo":   0xF190C,
       "wan":   0xF1973,
@@ -1193,7 +1194,7 @@ function wireFgColorControls() {
     }
 
     const DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
-    const TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","NE","NO"];
+    const TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","OK","NE","NO"];
 
     function nanpaCapsHasAtLeastOneDigitToken(tokens) {
       for (const t of (tokens ?? [])) {
@@ -1262,9 +1263,18 @@ function wireFgColorControls() {
       if (!s0) return null;
       if (!s0.toUpperCase().startsWith("#~")) return null;
 
-      const body = s0.slice(2).toUpperCase();
+      // CHANGED: body must be let, not const
+      let body = s0.slice(2).toUpperCase();
       if (!body) throw new Error("Number code '#~' must have letters after it.");
       if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may only contain letters A–Z after '#~'.");
+
+      // NEW: treat trailing "OK" as percent marker token (not O-then-K operators)
+      let hasPercent = false;
+      if (body.endsWith("OK")) {
+        hasPercent = true;
+        body = body.slice(0, -2);
+        if (!body) throw new Error("Number code '#~' cannot be only 'OK' (no numeric content).");
+      }
 
       const tokens = ["NE"];
       let i = 0;
@@ -1311,12 +1321,16 @@ function wireFgColorControls() {
         i += 1;
       }
 
+      // NEW: insert OK *before* final N terminator
+      if (hasPercent) tokens.push("OK");
+
       tokens.push("N");
 
       const caps = tokens.join("");
       tokenizeNanpaCaps(caps);
       return { caps };
     }
+
 
     const TOKEN_TO_DIGIT_WORD = {
       "NI":"ijo","WE":"wan","TE":"tu","SE":"seli","NA":"awen",
@@ -1411,7 +1425,15 @@ function wireFgColorControls() {
       const tokens = tokenizeNanpaCaps(caps);
       if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
-      const tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
+      // Consume OK as a flag (your earlier change)
+      let hasPercent = false;
+      const tokensNoOk = [];
+      for (const t of tokens) {
+        if (t === "OK") { hasPercent = true; continue; }
+        tokensNoOk.push(t);
+      }
+
+      const tpWords = nanpaCapsTokensToTpWords(tokensNoOk, { mode });
 
       const cps = [];
       for (const w of tpWords) {
@@ -1420,9 +1442,33 @@ function wireFgColorControls() {
         cps.push(cp);
       }
 
-      if (mode === "uniform") return uniformizeNanpaLinjanCartoucheCps(cps);
-      return cps;
+      // Keep existing uniformization behavior
+      const out = (mode === "uniform") ? uniformizeNanpaLinjanCartoucheCps(cps) : cps;
+
+      // NEW: mode-aware percent marker (insert before final "nanpa")
+      if (hasPercent) {
+        const suffixWords = (mode === "uniform")
+          ? ["nena", "open", "kipisi", "en"]
+          : ["noka", "open", "kipisi", "e"];   // FIX: noka (not nasa)
+
+        const suffixCps = [];
+        for (const w of suffixWords) {
+          const cp = NANPA_LINJA_N_WORD_TO_CP[w];
+          if (cp == null) return null;
+          suffixCps.push(cp);
+        }
+
+        // Insert before the closing nanpa, if present
+        const lastNanpaIdx = out.lastIndexOf(CP_NANPA);
+        if (lastNanpaIdx >= 0) out.splice(lastNanpaIdx, 0, ...suffixCps);
+        else out.push(...suffixCps);
+      }
+
+
+      return out;
     }
+
+
 
     function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "traditional" } = {}) {
       const s = String(rawText ?? "").trim();
@@ -1439,8 +1485,21 @@ function wireFgColorControls() {
 
       const compact = s.replace(/\s+/g, "");
       const core = compact.slice(0, -1);
-      const caps = core.toUpperCase() + "N";
+
+      const coreUpper = core.toUpperCase();
+      let caps;
+
+      // NEW: trailing NOKE => OKN
+      if (coreUpper.endsWith("NOKE")) {
+        const base = coreUpper.slice(0, -4);
+        if (!base) return null;
+        caps = base + "OKN";
+      } else {
+        caps = coreUpper + "N";
+      }
+
       return nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
+
     }
 
     /* ============================================================
@@ -1724,14 +1783,31 @@ function wireFgColorControls() {
     }
 
     function decimalStringToCaps(rawDecimal, opts = {}) {
-      const normalized = normalizeVulgarFractionInput(rawDecimal);
-      const caps = looksLikeNanpaCaps(normalized)
+      // NEW: support trailing percent sign and inject OK into caps
+      let raw = String(rawDecimal ?? "").trim();
+      let percent = false;
+
+      // Allow optional whitespace before %
+      if (/%$/.test(raw)) {
+        percent = true;
+        raw = raw.replace(/\s*%\s*$/g, "").trim();
+      }
+
+      const normalized = normalizeVulgarFractionInput(raw);
+
+      const baseCaps = looksLikeNanpaCaps(normalized)
         ? normalized.toUpperCase()
         : numberStrToNanpaCaps(normalized, opts);
+
+      // Inject OK before final N (so tokenizer remains valid)
+      const caps = percent
+        ? (baseCaps.slice(0, -1) + "OKN")
+        : baseCaps;
 
       tokenizeNanpaCaps(caps);
       return caps;
     }
+
 
     function findDecimalSequencesWithCaps(text, opts = {}) {
       const original = String(text ?? "");
@@ -1751,6 +1827,7 @@ function wireFgColorControls() {
           "|" +
           String.raw`-?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?` +
         String.raw`)` +
+        String.raw`(?:\s*%)?` +          // NEW
         String.raw`(?![A-Za-z])`,
         "g"
       );
@@ -1759,7 +1836,7 @@ function wireFgColorControls() {
       let m;
 
       while ((m = re.exec(s)) !== null) {
-        const rawMatch = m[1];
+        const rawMatch = m[0]; // includes optional trailing %
         if (!rawMatch) continue;
 
         let candidate = rawMatch.trim().replace(/[)\]}.,;:!?]+$/g, "").trim();
@@ -1777,8 +1854,9 @@ function wireFgColorControls() {
             fractionGroupSize: 3,
             ...opts,
           });
-
           results.push({ kind: "decimal", match: candidate, index: start, end, caps });
+
+
         } catch {
           // ignore
         }
@@ -1845,10 +1923,26 @@ function wireFgColorControls() {
         if (compact.length < 5) continue;
         if (!isValidNanpaLinjanProperName(compact)) continue;
 
-        const core = compact.slice(0, -1);
-        const caps = core.toUpperCase() + "N";
+       // compact ends with 'n' by regex + validation
+        let core = compact.slice(0, -1);
+
+        // NEW: if the identifier ends with "...noken" (i.e. core ends with "noke"),
+        // treat that as the percent marker and inject OK into caps.
+        // We also remove the trailing "noke" from the core so it doesn't get treated
+        // as part of the numeric name-encoding.
+        let hasPercent = false;
+        if (/noke$/i.test(core)) {
+          hasPercent = true;
+          core = core.slice(0, -4); // drop the trailing "noke"
+          if (core.length < 2) continue; // avoid degenerate cases
+        }
+
+        // Build caps. If percent, inject OK before final N.
+        const coreCaps = core.toUpperCase();
+        const caps = hasPercent ? (coreCaps + "OKN") : (coreCaps + "N");
 
         hits.push({ kind: "name", index: start, end, caps });
+
       }
 
       return hits;

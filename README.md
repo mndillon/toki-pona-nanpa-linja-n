@@ -137,7 +137,7 @@ Example:
   -5,432.10 →<br>
   <span style="display:inline-flex; align-items:center; gap:8px; line-height:1;">
     <span style="font-size:1.4em; line-height:1;">#</span>
-    <img src="images/number-minus-5-thousand-432-point-10_v2.png"
+    <img src="images/number-minus-5-thousand-432-point-10_v3.png"
         width="220" alt="-5,432.10" style="display:block;">
     <span style="line-height:1;">→</span>
   </span><br>
@@ -310,6 +310,26 @@ Examples:
 
 ---
 
+## Percentages — noke
+**noke** expresses percnetages.
+
+Rule:
+
+- Can split "noken" into "n oken", the percentage symbol is always at the end of a decimal number, so there always is the endng -n
+- Adds more context, makes the assumption that the strings of digits represent numeric values
+
+
+Examples:
+
+```
+5%          → nelen oken
+10.5%       → newenin one len oken
+1000%       → newenininin oken
+2,000%      → neten eken oken
+```
+
+---
+
 ## Design Rationale
 
 ### Digit Roots
@@ -397,6 +417,11 @@ Examples:
 - Never appears in decimal part of number, only in the integer part
 - Adds more context, makes the assumption that the string of digits represents a numeric value
 - can repeat ke letter group any number of times to express more ISO 000 block groupings at the end of numbers (e.g. "n Ekeken Ekekeken Ekekeken" )
+
+### noken
+- Contain **k**, which no digit word has
+- Can appear as "n Oken", naturally joining with the **-n** at the end of numbers to signal end of numeric description
+- Adds more context, makes the assumption that the string of digits represents a numeric value
 
 ### nene
 - Contains **nene**, which no digit word has

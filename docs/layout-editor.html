@@ -35,7 +35,7 @@
   }
   @font-face {
     font-family: "TP-Cartouche-Font";
-    src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v7.otf")   format("opentype");
+    src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v9.otf")   format("opentype");
     font-display: swap;
   }
   @font-face {
@@ -2520,7 +2520,9 @@ const NANPA_LINJA_N_WORD_TO_CP = {
   "utala": 0xF1971,
   "mun":   0xF193A,
   "pipi":  0xF1951,
-  "jo":    0xF1913
+  "jo":    0xF1913,
+  "open":   0xF1947,
+  "kipisi": 0xF197B
 };
 
 const CP_NANPA = NANPA_LINJA_N_WORD_TO_CP["nanpa"];
@@ -2697,7 +2699,7 @@ function lettersToRandomGlyphCps(letters) {
    (This is the minimal dependency set for the cartouche parser in your pipeline.)
    ============================================================ */
 const DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
-const TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","NE","NO"];
+const TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","OK","NE","NO"];
 
 function nanpaCapsHasAtLeastOneDigitToken(tokens) {
   for (const t of (tokens ?? [])) if (DIGIT_TOKENS.has(t)) return true;
@@ -2759,7 +2761,16 @@ function tryParseNanpaLinjanNumberCodeToCaps(raw) {
   if (!s0) return null;
   if (!s0.toUpperCase().startsWith("#~")) return null;
 
-  const body = s0.slice(2).toUpperCase();
+  let body = s0.slice(2).toUpperCase();
+
+  // NEW: treat trailing OK as a percent marker token, not operators
+  let hasPercent = false;
+  if (body.endsWith("OK")) {
+    hasPercent = true;
+    body = body.slice(0, -2);
+    if (!body) throw new Error("Number code '#~' must have letters before trailing OK.");
+  }
+
   if (!body) throw new Error("Number code '#~' must have letters after it.");
   if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may only contain letters A–Z after '#~'.");
 
@@ -2781,7 +2792,7 @@ function tryParseNanpaLinjanNumberCodeToCaps(raw) {
 
       if (count === 1) {
         if (i === 0) tokens.push("NO");
-        else tokens.push("NO","NE");
+        else tokens.push("NO", "NE");
       } else {
         tokens.push("NO".repeat(count)); // NONO / NONONO
       }
@@ -2808,11 +2819,15 @@ function tryParseNanpaLinjanNumberCodeToCaps(raw) {
     i += 1;
   }
 
+  // NEW: insert OK *before* final N terminator
+  if (hasPercent) tokens.push("OK");
+
   tokens.push("N");
   const caps = tokens.join("");
   tokenizeNanpaCaps(caps);
   return { caps };
 }
+
 
 const TOKEN_TO_DIGIT_WORD = {
   "NI":"ijo","WE":"wan","TE":"tu","SE":"seli","NA":"awen",
@@ -2837,6 +2852,13 @@ function nanpaCapsTokensToTpWords(tokens, { mode = "uniform" } = {}) {
 
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
+
+    if (t === "OK") {
+      out.push("open", "kipisi", E_WORD_FOR_NE_AFTER_START);
+      afterStartingNe = false;
+      continue;
+    }
+
 
     if (t === "NE") {
       if (out.length === 0) {
@@ -2896,7 +2918,15 @@ function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "uniform" } = {}) {
   const tokens = tokenizeNanpaCaps(caps);
   if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
-  const tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
+  // Consume OK as a flag
+  let hasPercent = false;
+  const tokensNoOk = [];
+  for (const t of tokens) {
+    if (t === "OK") { hasPercent = true; continue; }
+    tokensNoOk.push(t);
+  }
+
+  const tpWords = nanpaCapsTokensToTpWords(tokensNoOk, { mode });
 
   const cps = [];
   for (const w of tpWords) {
@@ -2905,9 +2935,30 @@ function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "uniform" } = {}) {
     cps.push(cp);
   }
 
-  if (mode === "uniform") return uniformizeNanpaLinjanCartoucheCps(cps);
-  return cps;
+  // Preserve existing uniformization behavior
+  const out = (mode === "uniform") ? uniformizeNanpaLinjanCartoucheCps(cps) : cps;
+
+  // Percent marker: insert BEFORE the closing nanpa glyph
+  if (hasPercent) {
+    const suffixWords = (mode === "uniform")
+      ? ["nena", "open", "kipisi", "en"]
+      : ["noka", "open", "kipisi", "e"];
+
+    const suffixCps = [];
+    for (const w of suffixWords) {
+      const cp = NANPA_LINJA_N_WORD_TO_CP[w];
+      if (cp == null) return null;
+      suffixCps.push(cp);
+    }
+
+    const lastNanpaIdx = out.lastIndexOf(CP_NANPA);
+    if (lastNanpaIdx >= 0) out.splice(lastNanpaIdx, 0, ...suffixCps);
+    else out.push(...suffixCps);
+  }
+
+  return out;
 }
+
 
 function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "uniform" } = {}) {
   const s = String(rawText ?? "").trim();
@@ -2924,8 +2975,21 @@ function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "uniform" 
 
   const compact = s.replace(/\s+/g, "");
   const core = compact.slice(0, -1);
-  const caps = core.toUpperCase() + "N";
+
+  const coreUpper = core.toUpperCase();
+  let caps;
+
+  // NEW: trailing NOKE => OKN
+  if (coreUpper.endsWith("NOKE")) {
+    const base = coreUpper.slice(0, -4);
+    if (!base) return null;
+    caps = base + "OKN";
+  } else {
+    caps = coreUpper + "N";
+  }
+
   return nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
+
 }
 
 /* ============================================================
@@ -3204,17 +3268,38 @@ function numberStrToNanpaCaps(
       return encodeSingleNumberSegment(raw, true);
 }
 
-function decimalStringToCaps(rawDecimal) {
-  const normalized = normalizeVulgarFractionInput(rawDecimal);
-  const caps = looksLikeNanpaCaps(normalized)
+function decimalStringToCaps(rawDecimal, opts = {}) {
+  let s = String(rawDecimal ?? "").trim();
+  if (!s) throw new Error("Empty decimal.");
+
+  // NEW: allow trailing percent sign
+  let hasPercent = false;
+  if (/%\s*$/.test(s)) {
+    hasPercent = true;
+    s = s.replace(/%\s*$/, "").trim();
+  }
+
+  const normalized = normalizeVulgarFractionInput(s);
+
+  const capsCore = looksLikeNanpaCaps(normalized)
     ? normalized.toUpperCase()
-    : numberStrToNanpaCaps(normalized);
+    : numberStrToNanpaCaps(normalized, opts);
+
+  // Ensure valid caps before we tack on OK
+  tokenizeNanpaCaps(capsCore);
+
+  if (!hasPercent) return capsCore;
+
+  // Insert OK before final N (terminator)
+  if (!capsCore.endsWith("N")) throw new Error("Nanpa caps must end in N.");
+  const caps = capsCore.slice(0, -1) + "OKN";
 
   tokenizeNanpaCaps(caps);
   return caps;
 }
 
-function findDecimalSequencesWithCaps(text) {
+
+function findDecimalSequencesWithCaps(text, opts = {}) {
   const original = String(text ?? "");
   if (!original) return [];
 
@@ -3232,6 +3317,7 @@ function findDecimalSequencesWithCaps(text) {
       "|" +
       String.raw`-?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?` +
     String.raw`)` +
+    String.raw`(?:\s*%)?` +          // NEW: allow trailing %
     String.raw`(?![A-Za-z])`,
     "g"
   );
@@ -3240,7 +3326,7 @@ function findDecimalSequencesWithCaps(text) {
   let m;
 
   while ((m = re.exec(s)) !== null) {
-    const rawMatch = m[1];
+    const rawMatch = m[0]; // includes optional trailing %
     if (!rawMatch) continue;
 
     let candidate = rawMatch.trim().replace(/[)\]}.,;:!?]+$/g, "").trim();
@@ -3252,8 +3338,24 @@ function findDecimalSequencesWithCaps(text) {
     const end = start + candidate.length;
 
     try {
-      const caps = decimalStringToCaps(candidate);
+      const hasPercent = /%\s*$/.test(candidate);
+      const candidateNoPct = hasPercent ? candidate.replace(/%\s*$/, "").trim() : candidate;
+
+      let caps = decimalStringToCaps(candidateNoPct, {
+        thousandsChar: ",",
+        groupFractionTriplets: true,
+        fractionGroupSize: 3,
+        ...opts,
+      });
+
+      // Append OK before the terminator N
+      if (hasPercent) {
+        if (!caps.endsWith("N")) throw new Error("decimalStringToCaps must end with N");
+        caps = caps.slice(0, -1) + "OKN";
+      }
+
       results.push({ kind: "decimal", match: candidate, index: start, end, caps });
+
     } catch {
       // ignore
     }
@@ -3269,6 +3371,7 @@ function findDecimalSequencesWithCaps(text) {
   }
   return filtered;
 }
+
 
 function findNumberCodeSequencesWithCaps(text) {
   const s = String(text ?? "");
@@ -3317,10 +3420,22 @@ function findNanpaLinjanProperNameSequencesWithCaps(text) {
     if (compact.length < 5) continue;
     if (!isValidNanpaLinjanProperName(compact)) continue;
 
-    const core = compact.slice(0, -1);
-    const caps = core.toUpperCase() + "N";
+    const core = compact.slice(0, -1); // drop final N
+
+    let caps;
+    const coreUpper = core.toUpperCase();
+
+    // NEW: treat trailing NOKE as percent marker -> OK before final N
+    if (coreUpper.endsWith("NOKE")) {
+      const base = coreUpper.slice(0, -4);
+      if (!base) continue;
+      caps = base + "OKN";
+    } else {
+      caps = coreUpper + "N";
+    }
 
     hits.push({ kind: "name", index: start, end, caps });
+
   }
 
   return hits;
@@ -3761,17 +3876,33 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
   const content = String(bracketContent ?? "").trim();
   if (!content) return;
 
-  // try decimal cartouche first
-  try {
-    const caps = decimalStringToCaps(content);
-    const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
-    if (cps && cps.length) {
-      makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
-      return;
-    }
-  } catch {}
+  // Use the same scanners as plain text, but require a FULL-CONTENT hit.
+  const decHits    = findDecimalSequencesWithCaps(content);
+  const codeHits   = findNumberCodeSequencesWithCaps(content);
+  const nameHits   = findNanpaLinjanProperNameSequencesWithCaps(content);
+  const phraseHits = findNanpaLinjanTpPhraseSequences(content);
 
-  // try identifier cartouche
+  const hits = mergeAndGreedyFilterHits([...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+  const full = (hits || []).find(h => (h.index|0) === 0 && (h.end|0) === content.length);
+
+  if (full) {
+    if (full.kind === "tpPhrase") {
+      const cps = nanpaLinjanWordsToCodepoints(full.words, { mode });
+      if (cps && cps.length) {
+        makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+        return;
+      }
+    } else {
+      const cps = nanpaCapsToNanpaLinjanCodepoints(full.caps, { mode });
+      if (cps && cps.length) {
+        makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+        return;
+      }
+    }
+    // If scanner matched but conversion failed, fall through to legacy behavior.
+  }
+
+  // Legacy behavior (unchanged):
   const idCps =
     tryDecodeNanpaLinjanIdentifierToCodepoints(content, { mode }) ??
     tryDecodeNanpaLinjanIdentifierToCodepoints(content.replace(/\s+/g, ""), { mode });
@@ -3781,7 +3912,6 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
     return;
   }
 
-  // if all tokens are known tp glyph-tokens -> cartouche using their glyphs
   const wordsRaw = content.split(/\s+/).filter(Boolean);
   const glyphTokens = wordsRaw.map(normalizeTpGlyphToken).filter(Boolean);
   if (glyphTokens.length >= 1 && glyphTokens.every(isKnownTpWordKey)) {
@@ -3789,9 +3919,9 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
     return;
   }
 
-  // fallback: random letters → glyph cartouche
   makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss });
 }
+
 
 /* ============================================================
    Line parsing: line → elements

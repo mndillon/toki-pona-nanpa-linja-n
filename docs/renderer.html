@@ -911,6 +911,34 @@
       ]);
     }
 
+    // ¼-size glyphs (already used for nanpa/en/etc). Add OPEN here too.
+    function getQuarterCodepointsSet() {
+      return new Set([
+        0xF193D, // nanpa
+        0xF1940, // nena
+        0xF1941, // ni
+        0xF193E, // nasa
+        0xF1909, // e
+        0xF190B, // esun
+        0xF190A, // en
+        0xF1947, // open   <-- NEW: quarter size
+      ]);
+    }
+
+    // ⅔-size glyphs
+    function getTwoThirdsCodepointsSet() {
+      return new Set([
+        0xF1946, // ona   <-- NEW: two-thirds size
+        0xF1944, // o     <-- NEW: two-thirds size
+        0xF191F, // kulupu <-- NEW: two-thirds size
+      ]);
+    }
+
+    // ½-size glyphs
+    function getHalfCodepointsSet() {
+      return new Set();
+    }
+
     const TP_UCSUR_MIN = 0xF1900;
     const TP_UCSUR_MAX = 0xF19A3;//0xF1988;  
 
@@ -971,7 +999,7 @@
     const MAGCHAR_TO_TOKEN = { "T": "KE", "M": "KEKE", "W": "KEKEKE" };
     const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
 
-    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
+    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "OK", "NE", "NO" ];
 
     // Reverse map: digit word -> token
     const DIGIT_WORD_TO_TOKEN = Object.fromEntries(
@@ -1107,6 +1135,22 @@
         }
 
 
+        // Percent marker:
+        // - "open kipisi (e|en)" => OK
+        // - "nena open kipisi (e|en)" => OK
+        if (i + 2 < end && words[i] === "open" && words[i + 1] === "kipisi" && (words[i + 2] === "e" || words[i + 2] === "en")) {
+          capsParts.push("OK");
+          i += 3;
+          continue;
+        }
+        if (i + 3 < end && words[i] === "nena" && words[i + 1] === "open" && words[i + 2] === "kipisi" && (words[i + 3] === "e" || words[i + 3] === "en")) {
+          capsParts.push("OK");
+          i += 4;
+          continue;
+        }
+
+
+
         return null;
       }
 
@@ -1146,7 +1190,14 @@
 
       if (!s0.toUpperCase().startsWith("#~")) return null;
 
-      const body = s0.slice(2).toUpperCase();
+      let body = s0.slice(2).toUpperCase();
+
+      let hasPercentOK = false;
+      if (body.length >= 2 && body.endsWith("OK")) {
+        hasPercentOK = true;
+        body = body.slice(0, -2);
+      }
+
       if (!body) throw new Error("Number code '#~' must have letters after it.");
 
       if (!/^[A-Z]+$/.test(body)) {
@@ -1209,7 +1260,12 @@
         i += 1;
       }
 
-      const caps = parts.join("") + "N";
+      let caps = parts.join("") + "N";
+      if (hasPercentOK) {
+        if (!caps.endsWith("N")) throw new Error("Internal error: caps must end with N");
+        caps = caps.slice(0, -1) + "OKN";
+      }
+
 
       tokenizeNanpaCaps(caps);
 
@@ -1277,6 +1333,15 @@
       if (s == null) throw new Error("s must be a string, not null");
       let raw = normalizeLooseSeparators(String(s));
       if (!raw) throw new Error("Empty value cannot be encoded");
+
+      // NEW: trailing percent sign => append OK token before final N
+      // Accept whitespace before/after %.
+      let hasPercent = false;
+      if (/%\s*$/.test(raw)) {
+        hasPercent = true;
+        raw = raw.replace(/%\s*$/, "").trim();
+        if (!raw) throw new Error("Percent sign must follow a number.");
+      }
 
       if (groupFractionTriplets) {
         raw = groupFractionDigitsOnly(raw, ".", fractionGroupSize, thousandsChar);
@@ -1428,7 +1493,12 @@
         return numCaps + "NONO" + denCaps;
       }
 
-      return encodeSingleNumberSegment(raw, true);
+      let capsOut = encodeSingleNumberSegment(raw, true);
+      if (hasPercent) {
+        if (!capsOut.endsWith("N")) throw new Error("Internal error: caps must end with N");
+        capsOut = capsOut.slice(0, -1) + "OKN";
+      }
+      return capsOut;
     }
 
     function tokenizeNanpaCaps(caps) {
@@ -1772,6 +1842,14 @@
 
         if (t === "N") { out.push(N_END_WORD); afterStartingNe=false; continue; }
 
+        if (t === "OK") {
+          // Percent marker:
+          // Traditional vs Uniform affects only the joiner (e vs en) via E_WORD_FOR_NE_AFTER_START
+          out.push("nena", "open", "kipisi", E_WORD_FOR_NE_AFTER_START);
+          afterStartingNe = false;
+          continue;
+        }
+
         throw new Error(`Unknown token "${t}"`);
       }
 
@@ -2047,7 +2125,17 @@
           continue;
         }
 
-        outStr += pair.toLowerCase();
+        if (pair === "OK") {
+          // IMPORTANT: OK is a suffix-like operator token; it must start a new segment with delimiter "n"
+          // so "...LE OK..." becomes "...le n oke..." => "nelenoken" after final 'n' append.
+          if (i > 0 && !/\s$/.test(outStr)) outStr += " ";
+          if (i > 0) outStr += "n ";
+          outStr += "oke";
+        } else {
+          outStr += pair.toLowerCase();
+        }
+
+
         i += 2;
       }
 
@@ -2075,7 +2163,11 @@
       const core = s.slice(0, -1);
       if (core.length < 2 || (core.length % 2) !== 0) return false;
 
-      const caps = core.toUpperCase() + "N";
+      let caps = core.toUpperCase() + "N";
+      if (caps.endsWith("NOKEN")) {
+        caps = caps.slice(0, -5) + "OKN";
+      }
+
       if (!caps.startsWith("NE")) return false;
 
       try { tokenizeNanpaCaps(caps); return true; }
@@ -2139,7 +2231,16 @@
           continue;
         }
 
-        current += pair.toLowerCase();
+        if (pair === "OK") {
+          // Start OK as its own segment with the delimiter 'n'
+          flushCurrent();
+          attachDelimiterN();
+          parts.push("oke");
+        } else {
+          current += pair.toLowerCase();
+        }
+
+
         i += 2;
       }
 
@@ -2156,7 +2257,15 @@
       if (!s || !s.endsWith("n")) throw new Error("Not a nanpa-linja-n proper name (missing final 'n').");
 
       const core = s.slice(0, -1);
-      const caps = core.toUpperCase() + "N";
+      let caps = core.toUpperCase() + "N";
+
+      // NEW: allow percent marker in proper names.
+      // If user ends the name with "...oken", that uppercases to "...NOKEN" (NO+KE+N).
+      // Collapse trailing NO+KE into OK.
+      if (caps.endsWith("NOKEN")) {
+        caps = caps.slice(0, -5) + "OKN";
+      }
+
 
       const tokens = tokenizeNanpaCaps(caps);
       const tpWords = nanpaCapsTokensToTpWords(tokens, { mode: getCartoucheDisplayMode() });
@@ -2204,7 +2313,11 @@
       ctx.closePath();
     }
 
-    function renderMixedCartoucheToCanvas(canvas, codepoints, largePx, smallPx, smallCodepoints, options = {}) {
+    function renderMixedCartoucheToCanvas(canvas, codepoints, largePx, smallPx, 
+      quarterSet,
+      halfSet,
+      twoThirdsSet, 
+      options = {}) {
       const pad = options.padding ?? 18;
       const border = options.border ?? 2;
       const corner = options.cornerRadius ?? 16;
@@ -2220,7 +2333,17 @@
 
       for (const cp of codepoints) {
         const ch = String.fromCodePoint(cp);
-        const px = smallCodepoints.has(cp) ? smallPx : largePx;
+        // Multi-size selection:
+        // - quarterSet => use smallPx (your existing quarter-size)
+        // - halfSet => 0.5 * largePx
+        // - twoThirdsSet => (2/3) * largePx
+        // - otherwise => largePx
+        const px =
+          (quarterSet && quarterSet.has(cp)) ? smallPx :
+          (halfSet && halfSet.has(cp)) ? Math.max(1, Math.round(largePx * 0.5)) :
+          (twoThirdsSet && twoThirdsSet.has(cp)) ? Math.max(1, Math.round(largePx * (2/3))) :
+          largePx;
+
 
         ctx.font = `${px}px "${FONT_FAMILY}"`;
         const m = ctx.measureText(ch);
@@ -2272,7 +2395,10 @@
       return { cartW, cartH, textW: totalWidth, textH: textHeight, maxAscent, maxDescent };
     }
 
-    function renderUniformCartoucheFromCodepoints(canvas, codepoints, fontPx, options = {}) {
+    function renderUniformCartoucheFromCodepoints(canvas, codepoints, fontPx, quarterSet,
+  halfSet,
+  twoThirdsSet,
+  options = {}) {
       const pad = options.padding ?? 18;
       const border = options.border ?? 2;
       const corner = options.cornerRadius ?? 16;
@@ -2289,21 +2415,30 @@
       for (const cp of codepoints) {
         const ch = String.fromCodePoint(cp);
 
-        ctx.font = `${fontPx}px "${FONT_FAMILY}"`;
+        const px =
+          (quarterSet && quarterSet.has(cp)) ? Math.max(1, Math.round(fontPx * 0.25)) :
+          (halfSet && halfSet.has(cp)) ? Math.max(1, Math.round(fontPx * 0.5)) :
+          (twoThirdsSet && twoThirdsSet.has(cp)) ? Math.max(1, Math.round(fontPx * (2/3))) :
+          fontPx;
+
+        ctx.font = `${px}px "${FONT_FAMILY}"`;
+
         const m = ctx.measureText(ch);
 
-        const ascent = m.actualBoundingBoxAscent ?? Math.ceil(fontPx * 0.8);
-        const descent = m.actualBoundingBoxDescent ?? Math.ceil(fontPx * 0.2);
+        const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+        const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
 
         const left = m.actualBoundingBoxLeft ?? 0;
         const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
         const tightW = Math.ceil(left + right);
 
-        glyphRuns.push({ ch, left, tightW });
+        glyphRuns.push({ ch, left, tightW, px });
 
         totalWidth += tightW + letterGap;
         if (ascent > maxAscent) maxAscent = ascent;
         if (descent > maxDescent) maxDescent = descent;
+
       }
 
       if (glyphRuns.length > 0) totalWidth -= letterGap;
@@ -2328,13 +2463,13 @@
       let x = border + pad;
 
       ctx2.fillStyle = "#111";
-      ctx2.font = `${fontPx}px "${FONT_FAMILY}"`;
-
       for (const g of glyphRuns) {
+        ctx2.font = `${g.px}px "${FONT_FAMILY}"`;   // <-- CRITICAL FIX
         const drawX = x + (g.left ?? 0);
         ctx2.fillText(g.ch, drawX, baselineY);
         x += g.tightW + letterGap;
       }
+
     }
 
     async function ensureFontLoaded() {
@@ -2594,6 +2729,10 @@
       elDigitTableBody.innerHTML = "";
 
       const smallSet = getSmallCodepointsSet();
+      const quarterSet = getQuarterCodepointsSet();
+      const halfSet = getHalfCodepointsSet();
+      const twoThirdsSet = getTwoThirdsCodepointsSet();
+
       const TINY_LARGE_PX = 22;
       const TINY_SMALL_PX = 8;
 
@@ -2637,7 +2776,9 @@
           cps,
           TINY_LARGE_PX,
           TINY_SMALL_PX,
-          smallSet,
+         quarterSet,
+  halfSet,
+  twoThirdsSet,
           { padding: 8, border: 1, cornerRadius: 10, letterGap: 2 }
         );
       }
@@ -2666,13 +2807,18 @@
       if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
       const smallSet = getSmallCodepointsSet();
+      const quarterSet = getQuarterCodepointsSet();
+      const halfSet = getHalfCodepointsSet();
+      const twoThirdsSet = getTwoThirdsCodepointsSet();
 
       renderMixedCartoucheToCanvas(
         canvasSmall,
         cps,
         LARGE_TINY_FONT_SIZE,
         SMALL_TINY_FONT_SIZE,
-        smallSet,
+        quarterSet,
+  halfSet,
+  twoThirdsSet,
         SMALL_CANVAS_RENDER_OPTS
       );
 
@@ -2681,7 +2827,9 @@
         cps,
         LARGE_FONT_SIZE,
         SMALL_FONT_SIZE,
-        smallSet,
+       quarterSet,
+  halfSet,
+  twoThirdsSet,
         { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
       );
 
@@ -2728,10 +2876,17 @@
           setDecimalValueLine(null, null);
         }
 
+        const quarterSet = getQuarterCodepointsSet();
+        const halfSet = getHalfCodepointsSet();
+        const twoThirdsSet = getTwoThirdsCodepointsSet();
+
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
           LARGE_TINY_FONT_SIZE,
+          quarterSet,
+  halfSet,
+  twoThirdsSet,
           SMALL_CANVAS_RENDER_OPTS
         );
 
@@ -2739,6 +2894,9 @@
           canvasLarge,
           cps,
           LARGE_FONT_SIZE,
+          quarterSet,
+  halfSet,
+  twoThirdsSet,
           { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
         );
 
@@ -2783,13 +2941,18 @@
           if (elTpWordsOut) elTpWordsOut.value = tpWords.join(" ");
 
           const smallSet = getSmallCodepointsSet();
+          const quarterSet = getQuarterCodepointsSet();
+          const halfSet = getHalfCodepointsSet();
+          const twoThirdsSet = getTwoThirdsCodepointsSet();
 
           renderMixedCartoucheToCanvas(
             canvasSmall,
             cps,
             LARGE_TINY_FONT_SIZE,
             SMALL_TINY_FONT_SIZE,
-            smallSet,
+            quarterSet,
+  halfSet,
+  twoThirdsSet,
             SMALL_CANVAS_RENDER_OPTS
           );
 
@@ -2798,7 +2961,9 @@
             cps,
             LARGE_FONT_SIZE,
             SMALL_FONT_SIZE,
-            smallSet,
+            quarterSet,
+  halfSet,
+  twoThirdsSet,
             { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
           );
 
@@ -2824,13 +2989,18 @@
           if (elTpWordsOut) elTpWordsOut.value = words.join(" ");
 
           const smallSet = getSmallCodepointsSet();
+          const quarterSet = getQuarterCodepointsSet();
+          const halfSet = getHalfCodepointsSet();
+          const twoThirdsSet = getTwoThirdsCodepointsSet();
 
           renderMixedCartoucheToCanvas(
             canvasSmall,
             cps,
             LARGE_TINY_FONT_SIZE,
             SMALL_TINY_FONT_SIZE,
-            smallSet,
+           quarterSet,
+  halfSet,
+  twoThirdsSet,
             SMALL_CANVAS_RENDER_OPTS
           );
 
@@ -2839,7 +3009,9 @@
             cps,
             LARGE_FONT_SIZE,
             SMALL_FONT_SIZE,
-            smallSet,
+            quarterSet,
+  halfSet,
+  twoThirdsSet,
             { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
           );
 
@@ -2866,13 +3038,18 @@
           if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
 
           const smallSet = getSmallCodepointsSet();
+          const quarterSet = getQuarterCodepointsSet();
+          const halfSet = getHalfCodepointsSet();
+          const twoThirdsSet = getTwoThirdsCodepointsSet();
 
           renderMixedCartoucheToCanvas(
             canvasSmall,
             cps,
             LARGE_TINY_FONT_SIZE,
             SMALL_TINY_FONT_SIZE,
-            smallSet,
+            quarterSet,
+  halfSet,
+  twoThirdsSet,
             SMALL_CANVAS_RENDER_OPTS
           );
 
@@ -2881,7 +3058,9 @@
             cps,
             LARGE_FONT_SIZE,
             SMALL_FONT_SIZE,
-            smallSet,
+            quarterSet,
+  halfSet,
+  twoThirdsSet,
             { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
           );
 
@@ -2897,10 +3076,17 @@
         elLatinOut.value = String.fromCodePoint(...cps);
         elNumberCodeOut.value = latinNameToNumberCode(elLatinOut.value);
 
+        const quarterSet = getQuarterCodepointsSet();
+        const halfSet = getHalfCodepointsSet();
+        const twoThirdsSet = getTwoThirdsCodepointsSet();
+
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
           LARGE_TINY_FONT_SIZE,
+          quarterSet,
+  halfSet,
+  twoThirdsSet,
           SMALL_CANVAS_RENDER_OPTS
         );
 
@@ -2908,6 +3094,9 @@
           canvasLarge,
           cps,
           LARGE_FONT_SIZE,
+          quarterSet,
+  halfSet,
+  twoThirdsSet,
           { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
         );
 
