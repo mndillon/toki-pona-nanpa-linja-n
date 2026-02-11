@@ -690,6 +690,15 @@
 
     let lastAction = "decimal"; // "decimal" | "codes" | "words"
 
+
+
+    function fixOkenSuffixSpacing(s) {
+      const x = String(s ?? "");
+      // Only touch the exact suffix "Oken" (or "oken") when it is missing a space.
+      if (/\sOken$/.test(x) || /\soken$/.test(x)) return x;
+      return x.replace(/Oken$/, " Oken").replace(/oken$/, " Oken");
+    }
+
     function getCartoucheDisplayMode() {
       //const el = document.querySelector('input[name="cartoucheDisplay"]:checked');
       //return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
@@ -1269,8 +1278,9 @@
 
       tokenizeNanpaCaps(caps);
 
-      const canonicalCode = "#~" + body;
+      const canonicalCode = "#~" + body + (hasPercentOK ? "OK" : "");
       return { caps, canonicalCode };
+
     }
 
     function looksLikeNanpaCaps(s) {
@@ -2232,10 +2242,12 @@
         }
 
         if (pair === "OK") {
-          // Start OK as its own segment with the delimiter 'n'
+          // OK suffix should be its own word: "... n oken"
           flushCurrent();
           attachDelimiterN();
-          parts.push("oke");
+          parts.push("oken");
+          i += 2;
+          continue;
         } else {
           current += pair.toLowerCase();
         }
@@ -2247,7 +2259,8 @@
       flushCurrent();
 
       if (parts.length === 0) return "n";
-      parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
+      const last = String(parts[parts.length - 1]);
+      parts[parts.length - 1] = last.endsWith("n") ? last : (last + "n");
 
       return parts.join(" ").replace(/\s+/g, " ").trim();
     }
@@ -2752,7 +2765,8 @@
 
         const tdName = document.createElement("td");
         tdName.className = "mono";
-        tdName.textContent = latinNameDisplay;
+
+        tdName.textContent = fixOkenSuffixSpacing(latinNameDisplay);
 
         const tdUniqueNumberCode = document.createElement("td");
         tdUniqueNumberCode.className = "mono";
@@ -2798,7 +2812,7 @@
       const latinRaw = encodeDecimalToLatin(raw);
       const latinDisplay = titleCaseNanpaProperNameForDisplay(latinRaw);
 
-      elLatinOut.value = latinDisplay;
+      elLatinOut.value = fixOkenSuffixSpacing(latinDisplay);
       elNumberCodeOut.value = latinNameToNumberCode(latinRaw);
 
       const cps = decimalToUcsurCodepoints(raw);
@@ -2934,7 +2948,8 @@
           const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
           const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
 
-          elLatinOut.value = prettyNameDisplay;
+          elLatinOut.value = fixOkenSuffixSpacing(prettyNameDisplay);
+
           elNumberCodeOut.value = canonicalCode;
 
           if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
@@ -2982,7 +2997,8 @@
           const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
           const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
 
-          elLatinOut.value = prettyNameDisplay;
+         elLatinOut.value = fixOkenSuffixSpacing(prettyNameDisplay);
+
           elNumberCodeOut.value = latinNameToNumberCode(prettyNameRaw);
 
           if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
@@ -3031,7 +3047,8 @@
           const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
           const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
 
-          elLatinOut.value = prettyNameDisplay;
+          elLatinOut.value = fixOkenSuffixSpacing(prettyNameDisplay);
+
           elNumberCodeOut.value = latinNameToNumberCode(prettyNameRaw);
 
           if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
