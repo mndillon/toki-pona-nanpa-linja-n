@@ -310,8 +310,8 @@ Examples:
 
 ---
 
-## Percentages — noke
-**noke** expresses percnetages.
+## Percentage — noke
+**noke** expresses percentage.
 
 Rule:
 
