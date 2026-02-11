@@ -94,8 +94,10 @@ Sitelen Cartouche Summary:
 | 8     | pipi   | p                | unique letter to digit mapping                                                                 |
 | 9     | jo     | j                | unique letter to digit mapping                                                                 |
 | -     | ona    | o                | negative sign, only at start                                                                   |
-| .     | o      | o                | decimal point, never at start                                                                  |
-| ,     | kulupu | k                | ISO block separator                                                                            |
+| .     | o      | o                | decimal point, never at start, never at end                                                    |
+| ,     | kulupu | k                | ISO block separator, never at end                                                              |
+| %     | kipisi | k                | percent, only at end                                                                           |
+|       | open   | o                | always just before percent glyph,  only at end                                                 |
 |       | nanpa  | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
 |       | nena   | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
 |       | nasa   | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
