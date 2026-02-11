@@ -310,12 +310,12 @@ Examples:
 
 ---
 
-## Percentage — noke
-**noke** expresses percentage.
+## Percentages — noke
+**noke** expresses percentages.
 
 Rule:
 
-- Can split "noken" into "n oken", the percentage symbol is always at the end of a decimal number, so there always is the endng -n
+- Can split "noken" into "n oken", the percentage symbol is always at the end of a decimal number, so it merges with the ending -n
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
 
