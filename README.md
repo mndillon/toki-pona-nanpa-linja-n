@@ -474,6 +474,7 @@ Examples:
 | <img src="images/horizontal Decimal Delimiter nasin nanpa v2.png" width="16"/>                 | O            | none                      | decimal point, but never appears at the start of a number    |
 | <img src="images/horizontal Fraction Delimiter nasin nanpa v4.png" width="32"/>                | OO           | nono                      | needed to split numerator and denominator of fraction        |
 | <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa v2.png" width="48"/>   | OOO          | nonono                    | needed to split integer from fraction part                   |
+| <img src="images/horizontal_percent.png" width="16"/>                                          | OK           | noke                      | kipisi is the shape of a percentage symbol                   |
 | <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands                          |
 | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | nekeke                    | millions                                                     |
 | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | nekekeke                  | billions                                                     |
