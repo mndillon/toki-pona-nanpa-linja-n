@@ -446,6 +446,8 @@ Examples:
       - <img src="images/number_42386_75_glyph_v8.png" width="340"/>
     - the proper name of **Nenunan One Len Ekeken**, can be decoded as **64.5M**
       - <img src="images/number_64_5_M_glyph_v9.png" width="260"/>
+    - the proper name of **Nelen Oken**, can be decoded as **5%**
+      - <img src="images/number_5_percent.png" width="110"/>
 - can be displayed horizontally or vertically
 
 | Glyph                                                             | Letter       | #~n Cartouche                                                               | #~n Proper Name | Design Rationale               |
