@@ -1,5 +1,9 @@
 Option Explicit
 
+' ============================================================
+' YOUR ORIGINAL MACRO (UNCHANGED)
+' ============================================================
+
 Sub InsertHexCodepoints()
     Dim doc As Object, cursor As Object
     Dim s As String, toks() As String
@@ -68,6 +72,381 @@ NextTok:
 End Sub
 
 
+' ============================================================
+' NEW MACRO: TOKI PONA WORDS -> UCSUR CODEPOINTS (+ [ ] CARTOUCHE)
+' ============================================================
+
+' ---- YOU MUST SET THESE TWO CODE POINTS ----
+Private Const CARTOUCHE_START_CP As Long = &HF1990
+Private Const CARTOUCHE_END_CP   As Long = &HF1991
+
+
+' Toki Pona -> UCSUR mapping arrays (filled by InitTpMap)
+Private tpWords() As String
+Private tpCps() As Long
+Private tpMapReady As Boolean
+
+Sub InsertTokiPonaUcsur()
+    Dim doc As Object, cursor As Object
+    Dim s As String
+    Dim bytes() As Byte, n As Long
+    Dim seqIn As Object, txtIn As Object
+    Dim out As String
+
+    doc = ThisComponent
+    If IsNull(doc) Or (Not doc.supportsService("com.sun.star.text.TextDocument")) Then
+        MsgBox "Open a Writer document and click into the document body first.", 16, "InsertTokiPonaUcsur"
+        Exit Sub
+    End If
+    cursor = doc.CurrentController.getViewCursor()
+    If IsNull(cursor) Then
+        MsgBox "No text cursor found. Click into the document body first.", 16, "InsertTokiPonaUcsur"
+        Exit Sub
+    End If
+
+    If Not tpMapReady Then InitTpMap
+
+    s = InputBox( _
+        "Type Toki Pona words. Use [ ... ] for cartouche." & Chr(10) & _
+        "Unknown words are ignored.", _
+        "Insert Toki Pona → UCSUR" _
+    )
+    s = Trim(s)
+    If Len(s) = 0 Then Exit Sub
+
+    ReDim bytes(0)
+    n = 0
+
+    AppendTpTextAsUcsurUtf8 bytes(), n, s
+
+    If n = 0 Then Exit Sub
+    ReDim Preserve bytes(n - 1)
+
+    seqIn = CreateUnoService("com.sun.star.io.SequenceInputStream")
+    seqIn.initialize(Array(bytes()))
+
+    txtIn = CreateUnoService("com.sun.star.io.TextInputStream")
+    txtIn.setInputStream(seqIn)
+    txtIn.setEncoding("utf-8")
+
+    out = txtIn.readString(Array(), False)
+    txtIn.closeInput()
+
+    doc.Text.insertString(cursor, out, False)
+End Sub
+
+
+Private Sub AppendTpTextAsUcsurUtf8(ByRef bytes() As Byte, ByRef n As Long, ByVal s As String)
+    Dim i As Long
+    Dim ch As String
+    Dim buf As String
+    Dim cp As Long
+
+    s = LCase(s)
+    buf = ""
+
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+
+        Select Case ch
+            Case "[", "]"
+                ' flush buffered word
+                If Len(buf) > 0 Then
+                    cp = LookupTpCp(buf)
+                    If cp <> 0 Then AppendUtf8 bytes(), n, cp
+                    buf = ""
+                End If
+
+                If ch = "[" Then
+                    AppendUtf8 bytes(), n, CARTOUCHE_START_CP
+                Else
+                    AppendUtf8 bytes(), n, CARTOUCHE_END_CP
+                End If
+
+            Case " ", Chr(9), Chr(10), Chr(13), ",", ".", ":", ";", "!", "?", """", "(", ")", "{", "}", "<", ">", "/"
+                ' delimiter -> flush buffered token
+                If Len(buf) > 0 Then
+                    cp = LookupTpCp(buf)
+                    If cp <> 0 Then AppendUtf8 bytes(), n, cp
+                    buf = ""
+                End If
+
+            Case Else
+                If IsTpWordChar(ch) Then
+                    buf = buf & ch
+                Else
+                    ' treat unknown char as delimiter
+                    If Len(buf) > 0 Then
+                        cp = LookupTpCp(buf)
+                        If cp <> 0 Then AppendUtf8 bytes(), n, cp
+                        buf = ""
+                    End If
+                End If
+        End Select
+    Next i
+
+    If Len(buf) > 0 Then
+        cp = LookupTpCp(buf)
+        If cp <> 0 Then AppendUtf8 bytes(), n, cp
+    End If
+End Sub
+
+
+Private Function IsTpWordChar(ByVal ch As String) As Boolean
+    If Len(ch) = 0 Then
+        IsTpWordChar = False
+        Exit Function
+    End If
+
+    ch = LCase(ch)
+
+    ' a-z
+    If ch >= "a" And ch <= "z" Then
+        IsTpWordChar = True
+        Exit Function
+    End If
+
+    ' hyphen + special token chars
+    If ch = "-" Or ch = "^" Or ch = "<" Or ch = ">" Then
+        IsTpWordChar = True
+        Exit Function
+    End If
+
+    IsTpWordChar = False
+End Function
+
+
+
+
+Private Sub InitTpMap()
+    ReDim tpWords(0 To 143)
+    ReDim tpCps(0 To 143)
+
+    tpWords(0) = "nanpa": tpCps(0) = &HF193D
+    tpWords(1) = "esun": tpCps(1) = &HF190B
+    tpWords(2) = "en": tpCps(2) = &HF190A
+    tpWords(3) = "e": tpCps(3) = &HF1909
+    tpWords(4) = "nasa": tpCps(4) = &HF193E
+    tpWords(5) = "nena": tpCps(5) = &HF1940
+    tpWords(6) = "o": tpCps(6) = &HF1944
+    tpWords(7) = "kulupu": tpCps(7) = &HF191F
+    tpWords(8) = "ijo": tpCps(8) = &HF190C
+    tpWords(9) = "wan": tpCps(9) = &HF1973
+    tpWords(10) = "tu": tpCps(10) = &HF196E
+    tpWords(11) = "sijelo": tpCps(11) = &HF195B
+    tpWords(12) = "awen": tpCps(12) = &HF1908
+    tpWords(13) = "luka": tpCps(13) = &HF192D
+    tpWords(14) = "utala": tpCps(14) = &HF1971
+    tpWords(15) = "mun": tpCps(15) = &HF193A
+    tpWords(16) = "pipi": tpCps(16) = &HF1951
+    tpWords(17) = "jo": tpCps(17) = &HF1913
+    tpWords(18) = "a": tpCps(18) = &HF1900
+    tpWords(19) = "akesi": tpCps(19) = &HF1901
+    tpWords(20) = "ala": tpCps(20) = &HF1902
+    tpWords(21) = "alasa": tpCps(21) = &HF1903
+    tpWords(22) = "ale": tpCps(22) = &HF1904
+    tpWords(23) = "ali": tpCps(23) = &HF1904
+    tpWords(24) = "anpa": tpCps(24) = &HF1905
+    tpWords(25) = "ante": tpCps(25) = &HF1906
+    tpWords(26) = "anu": tpCps(26) = &HF1907
+    tpWords(27) = "ike": tpCps(27) = &HF190D
+    tpWords(28) = "ilo": tpCps(28) = &HF190E
+    tpWords(29) = "insa": tpCps(29) = &HF190F
+    tpWords(30) = "jaki": tpCps(30) = &HF1910
+    tpWords(31) = "jan": tpCps(31) = &HF1911
+    tpWords(32) = "jelo": tpCps(32) = &HF1912
+    tpWords(33) = "kala": tpCps(33) = &HF1914
+    tpWords(34) = "kalama": tpCps(34) = &HF1915
+    tpWords(35) = "kama": tpCps(35) = &HF1916
+    tpWords(36) = "kasi": tpCps(36) = &HF1917
+    tpWords(37) = "ken": tpCps(37) = &HF1918
+    tpWords(38) = "kepeken": tpCps(38) = &HF1919
+    tpWords(39) = "kili": tpCps(39) = &HF191A
+    tpWords(40) = "kiwen": tpCps(40) = &HF191B
+    tpWords(41) = "ko": tpCps(41) = &HF191C
+    tpWords(42) = "kon": tpCps(42) = &HF191D
+    tpWords(43) = "kule": tpCps(43) = &HF191E
+    tpWords(44) = "kute": tpCps(44) = &HF1920
+    tpWords(45) = "la": tpCps(45) = &HF1921
+    tpWords(46) = "lape": tpCps(46) = &HF1922
+    tpWords(47) = "laso": tpCps(47) = &HF1923
+    tpWords(48) = "lawa": tpCps(48) = &HF1924
+    tpWords(49) = "len": tpCps(49) = &HF1925
+    tpWords(50) = "lete": tpCps(50) = &HF1926
+    tpWords(51) = "li": tpCps(51) = &HF1927
+    tpWords(52) = "lili": tpCps(52) = &HF1928
+    tpWords(53) = "linja": tpCps(53) = &HF1929
+    tpWords(54) = "lipu": tpCps(54) = &HF192A
+    tpWords(55) = "loje": tpCps(55) = &HF192B
+    tpWords(56) = "lon": tpCps(56) = &HF192C
+    tpWords(57) = "lukin": tpCps(57) = &HF192E
+    tpWords(58) = "lupa": tpCps(58) = &HF192F
+    tpWords(59) = "ma": tpCps(59) = &HF1930
+    tpWords(60) = "mama": tpCps(60) = &HF1931
+    tpWords(61) = "mani": tpCps(61) = &HF1932
+    tpWords(62) = "meli": tpCps(62) = &HF1933
+    tpWords(63) = "mi": tpCps(63) = &HF1934
+    tpWords(64) = "mije": tpCps(64) = &HF1935
+    tpWords(65) = "moku": tpCps(65) = &HF1936
+    tpWords(66) = "moli": tpCps(66) = &HF1937
+    tpWords(67) = "monsi": tpCps(67) = &HF1938
+    tpWords(68) = "mu": tpCps(68) = &HF1939
+    tpWords(69) = "musi": tpCps(69) = &HF193B
+    tpWords(70) = "mute": tpCps(70) = &HF193C
+    tpWords(71) = "nasin": tpCps(71) = &HF193F
+    tpWords(72) = "nimi": tpCps(72) = &HF1942
+    tpWords(73) = "noka": tpCps(73) = &HF1943
+    tpWords(74) = "olin": tpCps(74) = &HF1945
+    tpWords(75) = "ona": tpCps(75) = &HF1946
+    tpWords(76) = "open": tpCps(76) = &HF1947
+    tpWords(77) = "pakala": tpCps(77) = &HF1948
+    tpWords(78) = "pali": tpCps(78) = &HF1949
+    tpWords(79) = "palisa": tpCps(79) = &HF194A
+    tpWords(80) = "pan": tpCps(80) = &HF194B
+    tpWords(81) = "pana": tpCps(81) = &HF194C
+    tpWords(82) = "pi": tpCps(82) = &HF194D
+    tpWords(83) = "pilin": tpCps(83) = &HF194E
+    tpWords(84) = "pimeja": tpCps(84) = &HF194F
+    tpWords(85) = "pini": tpCps(85) = &HF1950
+    tpWords(86) = "poka": tpCps(86) = &HF1952
+    tpWords(87) = "poki": tpCps(87) = &HF1953
+    tpWords(88) = "pona": tpCps(88) = &HF1954
+    tpWords(89) = "pu": tpCps(89) = &HF1955
+    tpWords(90) = "sama": tpCps(90) = &HF1956
+    tpWords(91) = "seli": tpCps(91) = &HF1957
+    tpWords(92) = "selo": tpCps(92) = &HF1958
+    tpWords(93) = "seme": tpCps(93) = &HF1959
+    tpWords(94) = "sike": tpCps(94) = &HF195C
+    tpWords(95) = "sin": tpCps(95) = &HF195D
+    tpWords(96) = "sina": tpCps(96) = &HF195E
+    tpWords(97) = "sinpin": tpCps(97) = &HF195F
+    tpWords(98) = "sitelen": tpCps(98) = &HF1960
+    tpWords(99) = "sona": tpCps(99) = &HF1961
+    tpWords(100) = "soweli": tpCps(100) = &HF1962
+    tpWords(101) = "suli": tpCps(101) = &HF1963
+    tpWords(102) = "suno": tpCps(102) = &HF1964
+    tpWords(103) = "supa": tpCps(103) = &HF1965
+    tpWords(104) = "suwi": tpCps(104) = &HF1966
+    tpWords(105) = "tan": tpCps(105) = &HF1967
+    tpWords(106) = "taso": tpCps(106) = &HF1968
+    tpWords(107) = "tawa": tpCps(107) = &HF1969
+    tpWords(108) = "telo": tpCps(108) = &HF196A
+    tpWords(109) = "tenpo": tpCps(109) = &HF196B
+    tpWords(110) = "toki": tpCps(110) = &HF196C
+    tpWords(111) = "tomo": tpCps(111) = &HF196D
+    tpWords(112) = "unpa": tpCps(112) = &HF196F
+    tpWords(113) = "uta": tpCps(113) = &HF1970
+    tpWords(114) = "walo": tpCps(114) = &HF1972
+    tpWords(115) = "waso": tpCps(115) = &HF1974
+    tpWords(116) = "wawa": tpCps(116) = &HF1975
+    tpWords(117) = "weka": tpCps(117) = &HF1976
+    tpWords(118) = "wile": tpCps(118) = &HF1977
+    tpWords(119) = "namako": tpCps(119) = &HF1978
+    tpWords(120) = "kin": tpCps(120) = &HF1979
+    tpWords(121) = "oko": tpCps(121) = &HF197A
+    tpWords(122) = "kipisi": tpCps(122) = &HF197B
+    tpWords(123) = "leko": tpCps(123) = &HF197C
+    tpWords(124) = "monsuta": tpCps(124) = &HF197D
+    tpWords(125) = "tonsi": tpCps(125) = &HF197E
+    tpWords(126) = "jasima": tpCps(126) = &HF197F
+    tpWords(127) = "kijetesantakalu": tpCps(127) = &HF1980
+    tpWords(128) = "soko": tpCps(128) = &HF1981
+    tpWords(129) = "meso": tpCps(129) = &HF1982
+    tpWords(130) = "epiku": tpCps(130) = &HF1983
+    tpWords(131) = "lanpan": tpCps(131) = &HF1985
+    tpWords(132) = "n": tpCps(132) = &HF1986
+    tpWords(133) = "misikeke": tpCps(133) = &HF1987
+    tpWords(134) = "ku": tpCps(134) = &HF1988
+    tpWords(135) = "majuna": tpCps(135) = &HF19A2
+    tpWords(136) = "su": tpCps(136) = &HF19A6
+    tpWords(137) = "linluwi": tpCps(137) = &HF19A4
+    tpWords(138) = "ni": tpCps(138) = &HF1941
+    tpWords(139) = "sewi": tpCps(139) = &HF195A
+    tpWords(140) = "sewi^": tpCps(140) = &HF198C
+    tpWords(141) = "ni>": tpCps(141) = &HF198B
+    tpWords(142) = "ni^": tpCps(142) = &HF198A
+    tpWords(143) = "ni<": tpCps(143) = &HF1989
+
+    tpMapReady = True
+End Sub
+
+
+
+Private Function LookupTpCp(ByVal w As String) As Long
+    Dim i As Long
+    w = LCase(Trim(w))
+    If Len(w) = 0 Then
+        LookupTpCp = 0
+        Exit Function
+    End If
+
+    Do While InStr(w, "--") > 0
+        w = Replace(w, "--", "-")
+    Loop
+
+    For i = LBound(tpWords) To UBound(tpWords)
+        If tpWords(i) = w Then
+            LookupTpCp = tpCps(i)
+            Exit Function
+        End If
+    Next i
+
+    LookupTpCp = 0
+End Function
+
+Sub ReplaceSelectionWithTokiPonaUcsur()
+    Dim doc As Object, vc As Object
+    Dim s As String
+    Dim bytes() As Byte, n As Long
+    Dim seqIn As Object, txtIn As Object
+    Dim out As String
+
+    doc = ThisComponent
+    If IsNull(doc) Or (Not doc.supportsService("com.sun.star.text.TextDocument")) Then
+        MsgBox "Open a Writer document and click into the document body first.", 16, "ReplaceSelectionWithTokiPonaUcsur"
+        Exit Sub
+    End If
+
+    vc = doc.CurrentController.getViewCursor()
+    If IsNull(vc) Then
+        MsgBox "No text cursor found. Click into the document body first.", 16, "ReplaceSelectionWithTokiPonaUcsur"
+        Exit Sub
+    End If
+
+    If Not tpMapReady Then InitTpMap
+
+    s = InputBox( _
+        "Type replacement Toki Pona words. Use [ ... ] for cartouche." & Chr(10) & _
+        "This replaces the current selection (or inserts at cursor if nothing is selected).", _
+        "Replace Selection → UCSUR" _
+    )
+    s = Trim(s)
+    If Len(s) = 0 Then Exit Sub
+
+    ReDim bytes(0)
+    n = 0
+    AppendTpTextAsUcsurUtf8 bytes(), n, s
+    If n = 0 Then Exit Sub
+    ReDim Preserve bytes(n - 1)
+
+    seqIn = CreateUnoService("com.sun.star.io.SequenceInputStream")
+    seqIn.initialize(Array(bytes()))
+
+    txtIn = CreateUnoService("com.sun.star.io.TextInputStream")
+    txtIn.setInputStream(seqIn)
+    txtIn.setEncoding("utf-8")
+
+    out = txtIn.readString(Array(), False)
+    txtIn.closeInput()
+
+    ' Replace selection if there is one; otherwise inserts at cursor.
+    vc.setString(out)
+End Sub
+
+' ============================================================
+' SHARED UTF-8 HELPERS (YOUR ORIGINALS, UNCHANGED)
+' ============================================================
+
 Private Sub AppendUtf8(ByRef bytes() As Byte, ByRef n As Long, ByVal cp As Long)
     If cp < 0 Or cp > &H10FFFF Then Exit Sub
 
@@ -98,4 +477,3 @@ Private Sub AppendByte(ByRef bytes() As Byte, ByRef n As Long, ByVal b As Long)
     bytes(n) = CByte(b And &HFF)
     n = n + 1
 End Sub
-
