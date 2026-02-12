@@ -492,9 +492,9 @@
       </h3>
       <textarea id="numberCodeOut" class="mono" readonly aria-readonly="true"></textarea>
       <div class="help">
-        Derived from the nanpa-linja-n proper name: remove letters <span class="mono">n</span> and <span class="mono">e</span>, uppercase everything else.
+        Derived from the nanpa-linja-n proper name: remove letters <span class="mono">n</span> and <span class="mono">e</span>.
         <span class="tpLine">
-          ni li tan nimi pi nanpa-linja-n: o weka e sitelen <span class="mono">n</span> en <span class="mono">e</span>; o ante e sitelen ante tawa sitelen suli.
+          ni li tan nimi pi nanpa-linja-n: o weka e sitelen <span class="mono">n</span> en <span class="mono">e</span>.
         </span>
       </div>
 
@@ -844,17 +844,26 @@
       let s = String(raw).trim();
       if (!s) return s;
 
+      // NEW: allow '%' as the last non-blank symbol after a vulgar fraction.
+      // We strip it for normalization, then add it back.
+      let hasPercent = false;
+      if (/%\s*$/.test(s)) {
+        hasPercent = true;
+        s = s.replace(/%\s*$/, "").trim();
+        if (!s) throw new Error("Percent sign must follow a number.");
+      }
+
       s = s.replace(/\u2044/g, "/");
 
       let found = null;
       for (const ch of s) {
         if (VULGAR_FRACTIONS.has(ch)) { found = ch; break; }
       }
-      if (!found) return s;
+      if (!found) return hasPercent ? (s + "%") : s;
 
       const lastChar = s.slice(-1);
       if (!VULGAR_FRACTIONS.has(lastChar)) {
-        throw new Error("Vulgar fraction characters must appear at the end (e.g., 9¾ or ¾).");
+        throw new Error("Vulgar fraction characters must appear at the end (e.g., 9¾ or ¾), optionally followed by '%'.");
       }
       if (s.slice(1).includes("-")) {
         throw new Error("Only one negative sign is allowed, and it must be at the start.");
@@ -863,25 +872,24 @@
       const [num, den] = VULGAR_FRACTIONS.get(lastChar);
       const prefixRaw = s.slice(0, -1).trim();
 
-      if (!prefixRaw) return `${num}/${den}`;
+      let normalized;
+      if (!prefixRaw) {
+        normalized = `${num}/${den}`;
+      } else {
+        const isNeg = prefixRaw.startsWith("-");
+        const prefix = isNeg ? prefixRaw.slice(1).trim() : prefixRaw;
 
-      const isNeg = prefixRaw.startsWith("-");
-      const prefix = isNeg ? prefixRaw.slice(1).trim() : prefixRaw;
+        if (!prefix) normalized = `-${num}/${den}`;
+        else normalized = isNeg ? `-${prefix}+${num}/${den}` : `${prefix}+${num}/${den}`;
 
-      if (!prefix) {
-        return `-${num}/${den}`;
+        if (normalized.slice(1).includes("-")) {
+          throw new Error("Normalization produced an invalid negative sign placement.");
+        }
       }
 
-      const normalized = isNeg
-        ? `-${prefix}+${num}/${den}`
-        : `${prefix}+${num}/${den}`;
-
-      if (normalized.slice(1).includes("-")) {
-        throw new Error("Normalization produced an invalid negative sign placement.");
-      }
-
-      return normalized;
+      return hasPercent ? (normalized + "%") : normalized;
     }
+
 
     /* ============================================================
        MAPPING: Latin "glyph-string" chars -> font code points
@@ -1278,7 +1286,10 @@
 
       tokenizeNanpaCaps(caps);
 
-      const canonicalCode = "#~" + body + (hasPercentOK ? "OK" : "");
+      const canonicalBody = body + (hasPercentOK ? "OK" : "");
+      const canonicalStyled = canonicalBody.replace(/O/g, "o").replace(/K/g, "k");
+      const canonicalCode = "#~" + canonicalStyled;
+
       return { caps, canonicalCode };
 
     }
@@ -1319,8 +1330,15 @@
       const s = String(latinName ?? "");
       const noSpaces = s.replace(/\s+/g, "");
       const withoutNE = noSpaces.replace(/[nNeE]/g, "");
-      return "#~" + withoutNE.toUpperCase();
+
+      // Uppercase everything for stability, then force O/K to lower-case
+      // so percent/KE markers display as o/k (per your preference).
+      const up = withoutNE.toUpperCase();
+      const styled = up.replace(/O/g, "o").replace(/K/g, "k");
+
+      return "#~" + styled;
     }
+
 
     function normalizeLooseSeparators(raw) {
       if (raw == null) return "";
@@ -1344,7 +1362,7 @@
       let raw = normalizeLooseSeparators(String(s));
       if (!raw) throw new Error("Empty value cannot be encoded");
 
-      // NEW: trailing percent sign => append OK token before final N
+      // trailing percent sign => append OK token before final N
       // Accept whitespace before/after %.
       let hasPercent = false;
       if (/%\s*$/.test(raw)) {
@@ -1361,6 +1379,12 @@
         if (!segCaps) return segCaps;
         if (!segCaps.endsWith("N")) throw new Error(`Segment caps did not end with 'N': ${segCaps}`);
         return segCaps.slice(0, -1);
+      }
+
+      function applyPercentIfNeeded(capsOut) {
+        if (!hasPercent) return capsOut;
+        if (!capsOut.endsWith("N")) throw new Error("Internal error: caps must end with N");
+        return capsOut.slice(0, -1) + "OKN";
       }
 
       function encodeSingleNumberSegment(segment, includeInitialNe) {
@@ -1462,7 +1486,7 @@
         if (hasDecimal) {
           out.push(OPCHAR_TO_TOKEN["."]);
           for (const ch of fracPart) {
-            if (ch === "_" ) continue;
+            if (ch === "_") continue;
             if (ch === " " || ch === "-") { pushNene(); continue; }
             if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
             if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
@@ -1479,6 +1503,7 @@
         return out.join("");
       }
 
+      // Mixed number: left + (num/den)
       if (raw.includes("+")) {
         const [left, right] = raw.split("+", 2);
         let leftCaps = encodeSingleNumberSegment(left, true);
@@ -1492,24 +1517,29 @@
         leftCaps = stripFinalTerminator(leftCaps);
         numCaps = stripFinalTerminator(numCaps);
 
-        return leftCaps + "NONONO" + numCaps + "NONO" + denCaps;
+        let capsOut = leftCaps + "NONONO" + numCaps + "NONO" + denCaps;
+        capsOut = applyPercentIfNeeded(capsOut);
+        return capsOut;
       }
 
+      // Simple fraction: num/den
       if (raw.includes("/")) {
         const [num, den] = raw.split("/", 2);
         let numCaps = encodeSingleNumberSegment(num, true);
         let denCaps = encodeSingleNumberSegment(den, false);
         numCaps = stripFinalTerminator(numCaps);
-        return numCaps + "NONO" + denCaps;
+
+        let capsOut = numCaps + "NONO" + denCaps;
+        capsOut = applyPercentIfNeeded(capsOut);
+        return capsOut;
       }
 
+      // Plain integer/decimal (+ optional magnitude suffix)
       let capsOut = encodeSingleNumberSegment(raw, true);
-      if (hasPercent) {
-        if (!capsOut.endsWith("N")) throw new Error("Internal error: caps must end with N");
-        capsOut = capsOut.slice(0, -1) + "OKN";
-      }
+      capsOut = applyPercentIfNeeded(capsOut);
       return capsOut;
     }
+
 
     function tokenizeNanpaCaps(caps) {
       if (caps == null) throw new Error("caps must be a string, not None");
