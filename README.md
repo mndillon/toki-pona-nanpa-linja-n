@@ -62,18 +62,18 @@ If we ignore 'n' and ignore 'e' in the words, then each digit word maps to a dif
 
 ## sitelen pona digit cartouches
 
-| Glyph                                                             | Letter       | #~n Cartouche                                                               | #~n Proper Name | Design Rationale               |
-|-------------------------------------------------------------------|--------------|-----------------------------------------------------------------------------|-----------------|--------------------------------|
-| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       | I            | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | Nenin           | round like zero                |
-| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       | W            | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | Newen           | wan                            |
-| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    | T            | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | Neten           | tu                             |
-| <img src="images/horizontal 3 nasin nanpa v3.png" width="32"/>    | S            | <img src="images/horizontal 3 nasin nanpa cartouche v2.png" width="64"/>    | Nesen           | has three lines                |
-| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    | A            | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | Nenan           | has four lines                 |
-| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       | L            | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | Nelen           | luka                           |
-| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    | U            | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | Nenun           | has six short lines            |
-| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    | M            | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | Nemen           | seven days in week             |
-| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    | P            | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | Nepen           | spiders have eight legs        |
-| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    | J            | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | Nejen           | nine months to carry pregnancy |
+| Glyph                                                             | Distinct Letter       | #~n Cartouche                                                               | #~n Proper Name | Glyph Selection Rationale      |
+|-------------------------------------------------------------------|-----------------------|-----------------------------------------------------------------------------|-----------------|--------------------------------|
+| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       |           I           | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | Nenin           | round like zero                |
+| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       |           W           | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | Newen           | wan                            |
+| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    |           T           | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | Neten           | tu                             |
+| <img src="images/horizontal 3 nasin nanpa v3.png" width="32"/>    |           S           | <img src="images/horizontal 3 nasin nanpa cartouche v2.png" width="64"/>    | Nesen           | has three lines                |
+| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    |           A           | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | Nenan           | has four lines                 |
+| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       |           L           | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | Nelen           | luka                           |
+| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    |           U           | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | Nenun           | has six short lines            |
+| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    |           M           | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | Nemen           | seven days in week             |
+| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    |           P           | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | Nepen           | spiders have eight legs        |
+| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    |           J           | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | Nejen           | nine months to carry pregnancy |
 
 Sitelen Cartouche Summary:
 
@@ -122,7 +122,7 @@ This gives us four uniquely decodable representations of the same underlying num
 Rules:
 
 - Take decimal number and convert to proper name using the rules below.  In sitelen pona, display the proper name in a cartouche using specific glyphs from the table above.
-- Take numeric proper name, remove any letter 'n', remove any letter 'e', remove any spaces, capitalize remaining letters (optionally leave 'o' and 'k' as lower case, as these letters represent punctuation in numbers), add #~ at the start to produce numeric abbreviation
+- Take numeric proper name, remove any letter 'n', remove any letter 'e', remove any spaces, capitalize remaining letters (optionally leave 'o' and 'k' as lower case, as these letters represent delimiters in numbers), add #~ at the start to produce numeric abbreviation
 
 
 Example:
