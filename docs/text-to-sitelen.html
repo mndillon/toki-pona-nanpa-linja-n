@@ -469,6 +469,25 @@ nanpa #~WI.
           <div id="fontSizeHelp" class="sr-only">Changes the glyph and cartouche rendering size in the output.</div>
         </div>
 
+        <!-- Halo toggle -->
+        <div id="ctlHaloEnable" class="inlineControl inlinePill" role="group" aria-label="Halo">
+          <span class="ctlLabel">
+            Halo <span class="tpInline">poka walo</span>
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+            <input id="haloEnable" type="checkbox" aria-label="Enable halo outline">
+            <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+        </div>
+
+        <!-- Halo color picker -->
+        <div id="ctlHaloColor" class="inlineControl inlinePill" role="group" aria-label="Halo color">
+          <span class="ctlLabel">
+            Halo color <span class="tpInline">kule poka</span>
+          </span>
+          <input id="haloPick" class="swatch" type="color" aria-label="Halo color">
+        </div>
+
       </div>
     </div>
 
@@ -737,6 +756,102 @@ function wireFgColorControls() {
     }
   });
 }
+
+
+const HALO_ENABLED_STORAGE_KEY = "tpHaloEnabled";
+const HALO_COLOR_STORAGE_KEY   = "tpHaloHex";
+
+// default values
+const HALO_DEFAULT_ENABLED = false;
+const HALO_DEFAULT_HEX = "#FFFFFF";
+
+function loadHaloEnabledFromStorage() {
+  try {
+    const raw = localStorage.getItem(HALO_ENABLED_STORAGE_KEY);
+    if (raw == null) return null;
+    if (raw === "1" || raw === "true") return true;
+    if (raw === "0" || raw === "false") return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveHaloEnabledToStorage(v) {
+  try { localStorage.setItem(HALO_ENABLED_STORAGE_KEY, v ? "1" : "0"); } catch {}
+}
+
+function getHaloEnabled() {
+  const el = document.getElementById("haloEnable");
+  return !!el?.checked;
+}
+
+function setHaloEnabled(v) {
+  const el = document.getElementById("haloEnable");
+  const b = !!v;
+  if (el) el.checked = b;
+  saveHaloEnabledToStorage(b);
+  return b;
+}
+
+function loadHaloHexFromStorage() {
+  try { return normalizeHexColor(localStorage.getItem(HALO_COLOR_STORAGE_KEY)); }
+  catch { return null; }
+}
+
+function saveHaloHexToStorage(hex) {
+  try { localStorage.setItem(HALO_COLOR_STORAGE_KEY, hex); } catch {}
+}
+
+function getHaloHex() {
+  const pick = document.getElementById("haloPick");
+  return normalizeHexColor(pick?.value) ?? HALO_DEFAULT_HEX;
+}
+
+function setHaloHex(hex) {
+  const pick = document.getElementById("haloPick");
+  const h = normalizeHexColor(hex) ?? HALO_DEFAULT_HEX;
+  if (pick) pick.value = h;
+  saveHaloHexToStorage(h);
+  return h;
+}
+
+function initHaloControls() {
+  const en = loadHaloEnabledFromStorage();
+  setHaloEnabled(en ?? HALO_DEFAULT_ENABLED);
+
+  const hx = loadHaloHexFromStorage();
+  setHaloHex(hx ?? HALO_DEFAULT_HEX);
+}
+
+function wireHaloControls() {
+  const en = document.getElementById("haloEnable");
+  const pick = document.getElementById("haloPick");
+
+  if (en) {
+    en.addEventListener("change", async () => {
+      try {
+        setHaloEnabled(en.checked);
+        await renderFromTextarea();
+      } catch (e) {
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
+    });
+  }
+
+  if (pick) {
+    pick.addEventListener("input", async () => {
+      try {
+        const hex = getHaloHex();
+        saveHaloHexToStorage(hex);
+        await renderFromTextarea();
+      } catch (e) {
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
+    });
+  }
+}
+
 
 
     /* ============================
@@ -2105,6 +2220,34 @@ function wireFgColorControls() {
       try { ctx.fontKerning = "normal"; } catch (_) {}
     }
 
+    function haloWidthForPx(px) {
+      const p = Math.max(8, Number(px ?? 56));
+      // ~10% of font size feels good; clamp to sane minimum/maximum
+      return Math.max(2, Math.min(24, Math.round(p * 0.10)));
+    }
+
+
+    function drawTextWithOptionalHalo(ctx, text, x, yBaseline, { px, fontFamily, fillCss }) {
+      const haloEnabled = getHaloEnabled();
+      const haloCss = getHaloHex();
+
+      ctx.font = `${px}px "${fontFamily}"`;
+      setTextQuality(ctx);
+
+      if (haloEnabled) {
+        ctx.save();
+        ctx.strokeStyle = haloCss;
+        ctx.lineWidth = haloWidthForPx(px);
+        ctx.lineJoin = "round";
+        ctx.miterLimit = 2;
+        ctx.strokeText(text, x, yBaseline);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = fillCss;
+      ctx.fillText(text, x, yBaseline);
+    }
+
     /* ============================
        Random letters → glyphs
        ============================ */
@@ -2215,7 +2358,7 @@ function wireFgColorControls() {
       elements.push({ type: "gap", px: px });
     }
 
-    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss }) {
+    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss }) {
       if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
       if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
 
@@ -2240,8 +2383,12 @@ function wireFgColorControls() {
       const left  = (m.actualBoundingBoxLeft  != null) ? m.actualBoundingBoxLeft  : 0;
       const right = (m.actualBoundingBoxRight != null) ? m.actualBoundingBoxRight : Math.ceil(m.width);
 
-      const w = Math.max(1, Math.ceil(left + right + pad * 2));
-      const h = Math.max(1, Math.ceil(ascent + descent + pad * 2));
+      const haloW = haloEnabled ? haloWidthForPx(px) : 0;
+
+      //const w = Math.max(1, Math.ceil(left + right + pad * 2));
+      //const h = Math.max(1, Math.ceil(ascent + descent + pad * 2));
+      const w = Math.max(1, Math.ceil(left + right + pad * 2 + haloW * 2));
+      const h = Math.max(1, Math.ceil(ascent + descent + pad * 2 + haloW * 2));
 
       canvas.width = w;
       canvas.height = h;
@@ -2252,11 +2399,26 @@ function wireFgColorControls() {
       ctx2.font = `${px}px "${fam}"`;
       setTextQuality(ctx2);
 
+      //ctx2.fillStyle = fgCss || "#111";
+
+      //const x = pad + left;
+      //const baselineY = pad + ascent;
+      const x = pad + left + haloW;
+      const baselineY = pad + ascent + haloW;
+
+      //ctx2.fillText(run, x, baselineY);
+
+      if (haloEnabled) {
+        ctx2.save();
+        ctx2.strokeStyle = haloCss || "#FFFFFF";
+        ctx2.lineWidth = haloWidthForPx(px);
+        ctx2.lineJoin = "round";
+        ctx2.miterLimit = 2;
+        ctx2.strokeText(run, x, baselineY);
+        ctx2.restore();
+      }
+
       ctx2.fillStyle = fgCss || "#111";
-
-      const x = pad + left;
-      const baselineY = pad + ascent;
-
       ctx2.fillText(run, x, baselineY);
 
       return { w, h, baselineY };
@@ -2269,7 +2431,10 @@ function wireFgColorControls() {
       const cart = document.createElement("canvas");
       const padPx = Math.max(4, Math.round(fontPx * 0.11));
 
-      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily, fgCss });
+      const haloEnabled = getHaloEnabled();
+      const haloCss = getHaloHex();
+
+      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss });
       if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
       const baselineY = r.baselineY | 0;
@@ -2687,6 +2852,7 @@ function wireFgColorControls() {
       outCtx.clearRect(0, 0, outW, outH);
       outCtx.textBaseline = "alphabetic";
       outCtx.fillStyle = getFgHex();
+      const fgCss = getFgHex();
       setTextQuality(outCtx);
 
       let y = pad;
@@ -2701,8 +2867,13 @@ function wireFgColorControls() {
           if (el.type === "text") {
             const m = el.m;
             const fam = el.fontFamily || FONT_FAMILY_LITERAL;
-            outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
-            outCtx.fillText(m.chars, x, glyphBaseline);
+            //outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
+            //outCtx.fillText(m.chars, x, glyphBaseline);
+            drawTextWithOptionalHalo(outCtx, m.chars, x, glyphBaseline, {
+              px: (el.px ?? fontPx),
+              fontFamily: fam,
+              fillCss: fgCss
+            });
             x += m.w;
             continue;
           }
@@ -2712,9 +2883,15 @@ function wireFgColorControls() {
           if (el.type === "glyph") {
             const m = el.m;
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
-            outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
+            //outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
+            //const drawX = x + (m.left ?? 0);
+            //outCtx.fillText(m.ch, drawX, glyphBaseline);
             const drawX = x + (m.left ?? 0);
-            outCtx.fillText(m.ch, drawX, glyphBaseline);
+            drawTextWithOptionalHalo(outCtx, m.ch, drawX, glyphBaseline, {
+              px: (el.px ?? fontPx),
+              fontFamily: fam,
+              fillCss: fgCss
+            });
             x += m.w;
             continue;
           }
@@ -2722,9 +2899,15 @@ function wireFgColorControls() {
           if (el.type === "run") {
             const m = el.m;
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
-            outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
+            //outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
+            //const drawX = x + (m.left ?? 0);
+            //outCtx.fillText(m.chars, drawX, glyphBaseline);
             const drawX = x + (m.left ?? 0);
-            outCtx.fillText(m.chars, drawX, glyphBaseline);
+            drawTextWithOptionalHalo(outCtx, m.chars, drawX, glyphBaseline, {
+              px: (el.px ?? fontPx),
+              fontFamily: fam,
+              fillCss: fgCss
+            });
             x += m.w;
             continue;
           }
@@ -2823,7 +3006,10 @@ function wireFgColorControls() {
 
       renderAllLinesToCanvas(outCanvas, linesElements, { fontPx });
       const  hex  = getFgHex();
-      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px. Color: ${hex}.`);
+      const haloOn = getHaloEnabled();
+      const haloHex = getHaloHex();
+      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}.`);
+      //announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px. Color: ${hex}.`);
     }
 
     btnRender.addEventListener("click", async () => {
@@ -2893,6 +3079,9 @@ function wireFgColorControls() {
 
         initFgColorControls();
         wireFgColorControls();
+
+        initHaloControls();
+        wireHaloControls();
 
         wireNanpaLinjanModeRadios();
         wireFontSizeSelect();
