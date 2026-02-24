@@ -782,10 +782,73 @@
               </div>
             </div>
 
+
+            <!-- NEW: background image (scene property) -->
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
+                  <input id="bgImgEnabled" type="checkbox" />Use background image
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <button id="btnPickBgImage" class="btn" type="button">Load background image…</button>
+                <button id="btnClearBgImage" class="btn" type="button">Clear</button>
+                <div class="hint" style="margin-top:6px;">
+                  Background image is part of the scene (always behind all elements).
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
+                  <input id="bgImgKeepAspect" type="checkbox" />Keep aspect ratio
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
+                  <input id="bgImgStretch" type="checkbox" />Stretch to stage
+                </label>
+                <div class="hint" style="margin-top:6px;">
+                  Stretch+KeepAspect: fit inside stage (whole image visible). Stretch+no aspect: fill stage.
+                  If Stretch is off: natural size centered, clipped.
+                </div>
+              </div>
+            </div>
+
             <div class="row">
               <div class="field">
                 <label for="defTextColor">Default text</label>
                 <input id="defTextColor" type="color" value="#111111" />
+              </div>
+            </div>
+
+            <!-- NEW: scene-wide halo defaults for newly created elements -->
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
+                <input id="defHaloEnabled" type="checkbox" />Default halo</label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="defHaloColor">Default halo color</label>
+                <input id="defHaloColor" type="color" value="#FFFFFF" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="defHaloThickness">Default halo thickness (px)</label>
+                <input id="defHaloThickness" type="number" min="0" max="48" step="1" value="0" />
+                <div class="hint" style="margin-top:6px;">0 = auto (derived from each element’s font size)</div>
               </div>
             </div>
 
@@ -867,6 +930,7 @@
   </div>
 
   <!-- Hidden file inputs -->
+  <input id="filePickBgImage" type="file" accept="image/*" style="display:none;" />
   <input id="fileImportJson" type="file" accept="application/json" style="display:none;" />
   <input id="filePickImage" type="file" accept="image/*" style="display:none;" />
 
@@ -985,6 +1049,11 @@
       sec_image: "Image",
       sec_shape: "Shape",
       sec_sitelen: "Sitelen",
+      sec_halo: "Halo",
+
+      props_halo_enabled: "Halo enabled",
+      props_halo_color: "Halo color",
+      props_halo_thickness: "Halo thickness (px) — 0 = auto",
       sec_text: "Text",
 
       etype_text: "Text",
@@ -1180,6 +1249,11 @@
       sec_image: "sitelen",
       sec_shape: "sijelo",
       sec_sitelen: "sitelen pona",
+      sec_halo: "poka walo",
+
+      props_halo_enabled: "poka walo li lon",
+      props_halo_color: "kule poka walo",
+      props_halo_thickness: "suli poka walo (px) — 0 la ona li kama tan suli pi sitelen",
       sec_text: "sitelen",
 
       etype_text: "sitelen Lasina",
@@ -1464,6 +1538,19 @@
     defaultFillEnabled: false,
     defaultStroke: "#111111",// default stroke
     defaultStrokeW: 2,                  // default stroke width
+
+    // NEW: halo defaults
+    defaultHaloEnabled: false,
+    defaultHaloColor: "#FFFFFF",
+    // Stored value if you switch to manual; auto derives from element font size.
+    defaultHaloThicknessPx: 0,
+    defaultHaloThicknessMode: "auto",
+
+    // NEW: background image (scene property)
+    bgImgEnabled: false,
+    bgImgAssetId: null,
+    bgImgKeepAspect: true,
+    bgImgStretch: false,
   });
 
 
@@ -1658,7 +1745,36 @@ function migrateLegacyImagePayloadToAssetId(el){
   delete el.image.dataUrl;
 }
 
+function sceneJsonHasAnyHaloFields(rawScene){
+  if (!rawScene || typeof rawScene !== "object") return false;
 
+  const st = rawScene.stage;
+  const stageHasHalo =
+    st && typeof st === "object" && (
+      ("defaultHaloEnabled" in st) ||
+      ("defaultHaloColor" in st) ||
+      ("defaultHaloThicknessPx" in st) ||
+      ("defaultHaloThicknessMode" in st)
+    );
+
+  if (stageHasHalo) return true;
+
+  const els = rawScene.elements;
+  if (!Array.isArray(els)) return false;
+
+  for (const el of els){
+    if (!el || typeof el !== "object") continue;
+    if (
+      ("haloEnabled" in el) ||
+      ("haloColor" in el) ||
+      ("haloThickness" in el) ||
+      ("haloThicknessMode" in el)
+    ){
+      return true;
+    }
+  }
+  return false;
+}
 
   // CHANGE HERE: normalize imported scenes (defaults + backwards compat)
 function normalizeScene(parsed){
@@ -1687,11 +1803,39 @@ function normalizeScene(parsed){
     defaultFillEnabled: DEFAULTS.defaultFillEnabled,
     defaultStroke: DEFAULTS.defaultStroke,
     defaultStrokeW: DEFAULTS.defaultStrokeW,
+    // NEW: halo defaults
+    defaultHaloEnabled: DEFAULTS.defaultHaloEnabled,
+    defaultHaloColor: DEFAULTS.defaultHaloColor,
+    defaultHaloThicknessPx: DEFAULTS.defaultHaloThicknessPx,
+    defaultHaloThicknessMode: DEFAULTS.defaultHaloThicknessMode,
+
+    // NEW: background image (scene property)
+    bgImgEnabled: DEFAULTS.bgImgEnabled,
+    bgImgAssetId: DEFAULTS.bgImgAssetId,
+    bgImgKeepAspect: DEFAULTS.bgImgKeepAspect,
+    bgImgStretch: DEFAULTS.bgImgStretch,
   }, out.stage || {});
+
+  // Legacy import behavior: if the JSON contains no halo fields anywhere,
+  // force scene default halo OFF so old files don't unexpectedly inherit halo-on defaults.
+  if (!sceneJsonHasAnyHaloFields(parsed)) {
+    out.stage.defaultHaloEnabled = false;
+  }
 
   if (!("defaultFillEnabled" in out.stage)) out.stage.defaultFillEnabled = true;
   if (!("exportStageBackground" in out.stage)) out.stage.exportStageBackground = false;
 
+
+  // NEW: background image defaults on legacy import
+  if (typeof out.stage.bgImgEnabled !== "boolean") out.stage.bgImgEnabled = false;
+  if (typeof out.stage.bgImgKeepAspect !== "boolean") out.stage.bgImgKeepAspect = true;
+  if (typeof out.stage.bgImgStretch !== "boolean") out.stage.bgImgStretch = false;
+
+  if (out.stage.bgImgAssetId != null) out.stage.bgImgAssetId = String(out.stage.bgImgAssetId);
+  if (!out.stage.bgImgAssetId){
+    out.stage.bgImgAssetId = null;
+    out.stage.bgImgEnabled = false;
+  }
 
   out.view = Object.assign({
     zoom: DEFAULTS.viewZoom,
@@ -1726,6 +1870,9 @@ function normalizeScene(parsed){
       el.strokeW = (el.type === ElementType.Text || el.type === ElementType.Sitelen || el.type === ElementType.Glyph) ? 0 : defSW;
     }
     el.strokeW = Number.isFinite(el.strokeW) ? Math.max(0, el.strokeW) : 0;
+
+    // NEW: halo defaults + backward compatibility
+    ensureHaloFields(el, out.stage);
 
     el.groupId = el.groupId ?? null;
 
@@ -2042,6 +2189,11 @@ function deserializeAssets(serialized){
       defaultFill: DEFAULTS.defaultFill,
       defaultStroke: DEFAULTS.defaultStroke,
       defaultStrokeW: DEFAULTS.defaultStrokeW,
+      // NEW: halo defaults (apply to newly created elements)
+      defaultHaloEnabled: DEFAULTS.defaultHaloEnabled,
+      defaultHaloColor: DEFAULTS.defaultHaloColor,
+      defaultHaloThicknessPx: DEFAULTS.defaultHaloThicknessPx,
+      defaultHaloThicknessMode: DEFAULTS.defaultHaloThicknessMode,
     },
     view: {
       zoom: DEFAULTS.viewZoom,
@@ -2088,6 +2240,12 @@ function deserializeAssets(serialized){
       isLocked: false,
       // NEW: when true, bbox resize scales fontSize; when false, fontSize stays fixed
       scaleFontWithBox: false,
+
+      // NEW: halo defaults (per-element; may be auto-recomputed when font changes)
+      haloEnabled: !!(Scene.stage.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled),
+      haloColor: rgbaOrHexToHex(Scene.stage.defaultHaloColor ?? DEFAULTS.defaultHaloColor, "#FFFFFF"),
+      haloThicknessMode: (Scene.stage.defaultHaloThicknessMode === "manual") ? "manual" : "auto",
+      haloThickness: Number.isFinite(Scene.stage.defaultHaloThicknessPx) ? Scene.stage.defaultHaloThicknessPx : DEFAULTS.defaultHaloThicknessPx,
     };
   }
 
@@ -2103,6 +2261,7 @@ function deserializeAssets(serialized){
 //    el.fill = "rgba(255,255,255,0.0)"; // default: no background
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
+    ensureHaloFields(el);
     return el;
   }
 
@@ -2121,6 +2280,7 @@ function deserializeAssets(serialized){
       // ADD THIS:
     el.keepAspect = true;
 
+    ensureHaloFields(el);
     updateSitelenLayout(el, { preserveCenter: false });
 
 
@@ -2138,6 +2298,7 @@ function deserializeAssets(serialized){
 //    el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
+    ensureHaloFields(el);
     return el;
   }
 
@@ -2147,6 +2308,7 @@ function deserializeAssets(serialized){
     el.radius = 18;
    // el.fill = "rgba(255,255,255,0.65)";
     el.opacity = 1.0;
+    ensureHaloFields(el);
     return el;
   }
 
@@ -2346,6 +2508,64 @@ function ensureImageLoadedForElement(el){
 
   return entry.ready ? entry.img : null;
 }
+
+
+
+// NEW: background image cache (stage.bgImgAssetId)
+const bgImageCache = { img: null, ready: false, assetId: "" };
+
+function invalidateBackgroundImageCache(){
+  bgImageCache.img = null;
+  bgImageCache.ready = false;
+  bgImageCache.assetId = "";
+}
+
+function ensureBackgroundImageLoadedForStage(){
+  const st = Scene.stage || {};
+  if (!st.bgImgAssetId) return null;
+
+  const assetId = String(st.bgImgAssetId);
+  const dataUrl = getImageAssetDataUrl(assetId);
+  if (!dataUrl) return null;
+
+  if (bgImageCache.ready && bgImageCache.assetId === assetId && bgImageCache.img){
+    return bgImageCache.img;
+  }
+
+  if (!bgImageCache.img){
+    bgImageCache.img = new Image();
+    bgImageCache.ready = false;
+    bgImageCache.assetId = "";
+    bgImageCache.img.onload = () => { bgImageCache.ready = true; render(); };
+    bgImageCache.img.onerror = () => { bgImageCache.ready = false; };
+  }
+
+  if (bgImageCache.assetId !== assetId){
+    bgImageCache.ready = false;
+    bgImageCache.assetId = assetId;
+    bgImageCache.img.src = dataUrl;
+  }
+
+  return bgImageCache.ready ? bgImageCache.img : null;
+}
+
+function computeBackgroundImageDestRect({stageW, stageH, natW, natH, stretch, keepAspect}){
+  const sw = Math.max(1, Number(stageW) || 1);
+  const sh = Math.max(1, Number(stageH) || 1);
+  const iw = Math.max(1, Number(natW) || 1);
+  const ih = Math.max(1, Number(natH) || 1);
+
+  if (!stretch){
+    return { x: (sw - iw)/2, y: (sh - ih)/2, w: iw, h: ih };
+  }
+  if (keepAspect){
+    const s = Math.min(sw/iw, sh/ih);
+    const w = iw * s, h = ih * s;
+    return { x: (sw - w)/2, y: (sh - h)/2, w, h };
+  }
+  return { x: 0, y: 0, w: sw, h: sh };
+}
+
 
 
 /* ============================================================
@@ -2591,6 +2811,86 @@ function setTextQuality(ctx) {
   try { ctx.textRendering = "optimizeLegibility"; } catch (_) {}
   try { ctx.fontKerning = "normal"; } catch (_) {}
 }
+
+// ============================================================
+// Halo helpers (per-element + scene defaults)
+// ============================================================
+function elementSupportsHalo(el){
+  const t = el?.type;
+  return t === ElementType.Text || t === ElementType.Sitelen || t === ElementType.Glyph || t === ElementType.Rect;
+}
+
+function clampHaloThicknessPx(px){
+  // Keep halo sane; values are in "element font px" units (pre-zoom)
+  const v = Math.round(Number(px) || 0);
+  return clamp(v, 0, 48);
+}
+
+function defaultHaloThicknessForFontPx(fontPx){
+  const p = Math.max(6, Number(fontPx || 24));
+  // ~10% of font size; clamp to sane minimum/maximum
+  return clamp(Math.round(p * 0.10), 2, 24);
+}
+
+function ensureHaloFields(el, stageOverride){
+  if (!el || !elementSupportsHalo(el)) return;
+  const st = stageOverride || Scene.stage || {};
+
+  if (typeof el.haloEnabled !== "boolean") el.haloEnabled = !!(st.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled);
+  if (typeof el.haloColor !== "string") el.haloColor = rgbaOrHexToHex(st.defaultHaloColor ?? DEFAULTS.defaultHaloColor, "#FFFFFF");
+
+  if (el.haloThicknessMode !== "manual" && el.haloThicknessMode !== "auto"){
+    el.haloThicknessMode = (st.defaultHaloThicknessMode === "manual") ? "manual" : "auto";
+  }
+
+  const basisFontPx = (el.type === ElementType.Rect)
+    ? 28
+    : Math.max(6, Number(el.fontSize ?? 24));
+
+  if (!Number.isFinite(el.haloThickness) || el.haloThickness < 0){
+    if (el.haloThicknessMode === "manual"){
+      const defManual = Number.isFinite(st.defaultHaloThicknessPx) ? st.defaultHaloThicknessPx : DEFAULTS.defaultHaloThicknessPx;
+      el.haloThickness = clampHaloThicknessPx(defManual || defaultHaloThicknessForFontPx(basisFontPx));
+    } else {
+      el.haloThickness = defaultHaloThicknessForFontPx(basisFontPx);
+    }
+  } else {
+    el.haloThickness = clampHaloThicknessPx(el.haloThickness);
+  }
+}
+
+function effectiveHaloThicknessForElement(el){
+  if (!el || !elementSupportsHalo(el) || !el.haloEnabled) return 0;
+
+  const basisFontPx = (el.type === ElementType.Rect)
+    ? 28
+    : Math.max(6, Number(el.fontSize ?? 24));
+
+  const basePx = (el.haloThicknessMode === "manual")
+    ? clampHaloThicknessPx(el.haloThickness)
+    : defaultHaloThicknessForFontPx(basisFontPx);
+
+  // Scale with zoom so what you see is what you export
+  return basePx * (Scene.view?.zoom ?? 1);
+}
+
+function effectiveHaloThicknessForElementExport(el){
+  if (!el || !elementSupportsHalo(el) || !el.haloEnabled) return 0;
+
+  const basisFontPx = (el.type === ElementType.Rect)
+    ? 28
+    : Math.max(6, Number(el.fontSize ?? 24));
+
+  const basePx = (el.haloThicknessMode === "manual")
+    ? clampHaloThicknessPx(el.haloThickness)
+    : defaultHaloThicknessForFontPx(basisFontPx);
+
+  // IMPORTANT: export is in stage coords (zoom = 1)
+  return basePx;
+}
+
+// Active halo options for sitelen raster parsing/cartouches (set by renderTextToCanvas)
+let ACTIVE_SITELEN_HALO = { enabled: false, css: "#FFFFFF", mode: "auto", thickness: 0 };
 
 function normalizeTpWord(raw) {
   return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, "");
@@ -3616,7 +3916,7 @@ function pushGapIfNeeded(elements, px) {
   elements.push({ type: "gap", px: px });
 }
 
-function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss }) {
+function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled = false, haloCss = "#FFFFFF", haloThicknessMode = "auto", haloThickness = 0 } = {}) {
   if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
   if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
 
@@ -3641,8 +3941,12 @@ function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFami
   const left  = (m.actualBoundingBoxLeft  != null) ? m.actualBoundingBoxLeft  : 0;
   const right = (m.actualBoundingBoxRight != null) ? m.actualBoundingBoxRight : Math.ceil(m.width);
 
-  const w = Math.max(1, Math.ceil(left + right + pad * 2));
-  const h = Math.max(1, Math.ceil(ascent + descent + pad * 2));
+  const _haloBasePx = (!!haloEnabled) ? ((haloThicknessMode === "manual" && Number.isFinite(haloThickness) && haloThickness > 0)
+    ? clampHaloThicknessPx(haloThickness)
+    : defaultHaloThicknessForFontPx(px)) : 0;
+
+  const w = Math.max(1, Math.ceil(left + right + pad * 2 + _haloBasePx * 2));
+  const h = Math.max(1, Math.ceil(ascent + descent + pad * 2 + _haloBasePx * 2));
 
   canvas.width = w;
   canvas.height = h;
@@ -3655,22 +3959,36 @@ function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFami
 
   ctx2.fillStyle = fgCss || "#000111";
 
-  const x = pad + left;
-  const baselineY = pad + ascent;
+  const x = pad + left + _haloBasePx;
+  const baselineY = pad + ascent + _haloBasePx;
+
+  if (_haloBasePx > 0){
+    ctx2.strokeStyle = rgbaOrHexToHex(haloCss, "#FFFFFF");
+    ctx2.lineWidth = _haloBasePx;
+    ctx2.lineJoin = "round";
+    ctx2.miterLimit = 2;
+    ctx2.strokeText(run, x, baselineY);
+  }
 
   ctx2.fillText(run, x, baselineY);
 
   return { w, h, baselineY };
 }
 
-function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss }) {
+function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, haloEnabled = false, haloCss = "#FFFFFF", haloThicknessMode = "auto", haloThickness = 0 } = {}) {
   if (!cps || cps.length === 0) return;
   pushGapIfNeeded(elements, WORD_GAP_PX);
+
+  // If caller didn’t pass halo options, inherit from the current sitelen render
+  const _he = (haloEnabled != null) ? !!haloEnabled : !!ACTIVE_SITELEN_HALO.enabled;
+  const _hc = (haloCss != null) ? haloCss : ACTIVE_SITELEN_HALO.css;
+  const _hm = (haloThicknessMode != null) ? haloThicknessMode : ACTIVE_SITELEN_HALO.mode;
+  const _ht = (haloThickness != null) ? haloThickness : ACTIVE_SITELEN_HALO.thickness;
 
   const cart = document.createElement("canvas");
   const padPx = Math.max(4, Math.round(fontPx * 0.11));
 
-  const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily, fgCss });
+  const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily, fgCss, haloEnabled: _he, haloCss: _hc, haloThicknessMode: _hm, haloThickness: _ht });
   if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
   const baselineY = r.baselineY | 0;
@@ -4087,7 +4405,7 @@ function measureMultiline(linesElements, { fontPx, padPx = DEFAULT_PAD_PX, lineG
 /* ============================================================
    DRAW: render multi-line to a canvas (also computes bounding box)
    ============================================================ */
-function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#000111", padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX, literalFontAlignment = "left" } = {}) {
+function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#000111", padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX, literalFontAlignment = "left", haloEnabled = false, haloCss = "#FFFFFF", haloThicknessMode = "auto", haloThickness = 0 } = {}) {
   if (!outCanvas) throw new Error("renderMultilineToCanvas: outCanvas missing");
 
   const box = measureMultiline(linesElements, { fontPx, padPx, lineGapPx });
@@ -4099,6 +4417,17 @@ function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#0
   outCtx.textBaseline = "alphabetic";
   outCtx.fillStyle = fgCss;
   setTextQuality(outCtx);
+
+  const _haloOn = !!haloEnabled;
+  const _haloBasePx = _haloOn ? ((haloThicknessMode === "manual" && Number.isFinite(haloThickness) && haloThickness > 0)
+    ? clampHaloThicknessPx(haloThickness)
+    : defaultHaloThicknessForFontPx(fontPx)) : 0;
+  if (_haloBasePx > 0){
+    outCtx.strokeStyle = rgbaOrHexToHex(haloCss, "#FFFFFF");
+    outCtx.lineWidth = _haloBasePx;
+    outCtx.lineJoin = "round";
+    outCtx.miterLimit = 2;
+  }
 
   let y = box.padPx;
 
@@ -4123,6 +4452,7 @@ function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#0
         const m = el.m;
         const fam = el.fontFamily || FONT_FAMILY_LITERAL;
         outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
+        if (_haloBasePx > 0) outCtx.strokeText(m.chars, x, glyphBaseline);
         outCtx.fillText(m.chars, x, glyphBaseline);
         x += m.w;
         continue;
@@ -4135,6 +4465,7 @@ function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#0
         const fam = el.fontFamily || FONT_FAMILY_TEXT;
         outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
         const drawX = x + (m.left ?? 0);
+        if (_haloBasePx > 0) outCtx.strokeText(m.ch, drawX, glyphBaseline);
         outCtx.fillText(m.ch, drawX, glyphBaseline);
         x += m.w;
         continue;
@@ -4145,6 +4476,7 @@ function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#0
         const fam = el.fontFamily || FONT_FAMILY_TEXT;
         outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
         const drawX = x + (m.left ?? 0);
+        if (_haloBasePx > 0) outCtx.strokeText(m.chars, drawX, glyphBaseline);
         outCtx.fillText(m.chars, drawX, glyphBaseline);
         x += m.w;
         continue;
@@ -4180,9 +4512,17 @@ function renderTextToCanvas(
     lineGapPx = LINE_GAP_PX,
     literalFontFamily,            // NEW: accept it
     literalFontAlignment,   //New accept alignment
+
+    // NEW: halo
+    haloEnabled = false,
+    haloCss = "#FFFFFF",
+    haloThicknessMode = "auto",
+    haloThickness = 0,
   } = {}
 ) {
   // NEW: forward literalFontFamily into the parser so "..." segments use the element’s font
+  ACTIVE_SITELEN_HALO = { enabled: !!haloEnabled, css: haloCss, mode: haloThicknessMode, thickness: haloThickness };
+
   const linesEls = parseMultilineToElements(multilineText, {
     fontPx,
     mode,
@@ -4196,6 +4536,11 @@ function renderTextToCanvas(
     padPx,
     lineGapPx,
     literalFontAlignment,
+
+    haloEnabled,
+    haloCss,
+    haloThicknessMode,
+    haloThickness,
   });
 }
 
@@ -4235,6 +4580,12 @@ function sitelenSignature(el){
     "mode:uniform",
     `pad:${DEFAULT_PAD_PX}`,
     `lineGap:${LINE_GAP_PX}`,
+
+    // NEW: halo affects raster
+    `haloOn:${!!el.haloEnabled}`,
+    `haloColor:${String(el.haloColor ?? "")}`,
+    `haloMode:${String(el.haloThicknessMode ?? "auto")}`,
+    `haloT:${Number(el.haloThickness ?? 0)}`,
   ].join("|");
 }
 
@@ -4272,6 +4623,12 @@ function sitelenRenderToOffscreen(el,w,h){
     fgCss: el.color || "#111111",
     padPx: DEFAULT_PAD_PX,
     lineGapPx: LINE_GAP_PX,
+
+    // NEW: halo options
+    haloEnabled: !!el.haloEnabled,
+    haloCss: rgbaOrHexToHex(el.haloColor, "#FFFFFF"),
+    haloThicknessMode: el.haloThicknessMode,
+    haloThickness: el.haloThickness,
 
     literalFontFamily: sitelenLiteralFontFamilyForElement(el),
     literalFontAlignment: sitelenLiteralFontAlignmentForElement(el),
@@ -5407,7 +5764,7 @@ function resizeCanvasToDisplaySize(){
   /* ============================================================
      Rendering
      ============================================================ */
-  function render(){
+function render(){
   //  console.log("render called");
   // CHANGE HERE: always sync canvas backing store to its CSS size
   resizeCanvasToDisplaySize(); // this should ONLY resize canvas.width/height; do not setTransform in it
@@ -5437,7 +5794,7 @@ function resizeCanvasToDisplaySize(){
   //ctx.save();
  // ctx.fillStyle = "rgba(255,255,255,0.08)";
   //ctx.fillRect(sx, sy, sw, sh);
-//  ctx.restore();
+ //  ctx.restore();
 
   ctx.save();
   // NEW: stage background from scene
@@ -5445,6 +5802,34 @@ function resizeCanvasToDisplaySize(){
   ctx.fillRect(sx, sy, sw, sh);
   ctx.restore();
 
+
+  // NEW: background image (always behind grid + elements)
+  if (Scene.stage.bgImgEnabled && Scene.stage.bgImgAssetId){
+    const img = ensureBackgroundImageLoadedForStage();
+    if (img && img.naturalWidth > 0 && img.naturalHeight > 0){
+      const dest = computeBackgroundImageDestRect({
+        stageW: Scene.stage.w,
+        stageH: Scene.stage.h,
+        natW: img.naturalWidth,
+        natH: img.naturalHeight,
+        stretch: !!Scene.stage.bgImgStretch,
+        keepAspect: (Scene.stage.bgImgKeepAspect !== false),
+      });
+
+      // clip to stage rect in screen coords
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(sx, sy, sw, sh);
+      ctx.clip();
+
+      const tl2 = stageToScreen({x: dest.x, y: dest.y});
+      const dw = dest.w * Scene.view.zoom;
+      const dh = dest.h * Scene.view.zoom;
+      ctx.drawImage(img, tl2.x, tl2.y, dw, dh);
+
+      ctx.restore();
+    }
+  }
 
   // grid
   if (Scene.stage.showGrid){
@@ -5569,6 +5954,17 @@ function resizeCanvasToDisplaySize(){
       ctx.restore();
     }
 
+    // NEW: halo for rectangle outline
+    const _haloW = effectiveHaloThicknessForElement(el);
+    if (_haloW > 0){
+      ctx.save();
+      ctx.lineWidth = Math.max(1, (el.strokeW ?? 0) + (_haloW * 2));
+      ctx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
+      drawRoundedRectPath(x,y,w,h, r * Scene.view.zoom);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     if ((el.strokeW ?? 0) > 0){
       ctx.save();
       ctx.lineWidth = (el.strokeW ?? 1);
@@ -5630,6 +6026,16 @@ function resizeCanvasToDisplaySize(){
     ctx.save();
     ctx.fillStyle = el.color || "#111";
     ctx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
+
+    // NEW: halo (stroke behind fill) for text-like elements
+    const _haloW = effectiveHaloThicknessForElement(el);
+    if (_haloW > 0){
+      ctx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
+      ctx.lineWidth = _haloW;
+      ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
+    }
+
     ctx.textBaseline = "top";
 
     // alignment
@@ -5655,6 +6061,7 @@ function resizeCanvasToDisplaySize(){
       if (textAlign === "center") tx = innerX + innerW/2;
       if (textAlign === "right") tx = innerX + innerW;
 
+      if (_haloW > 0) ctx.strokeText(ln, tx, ty);
       ctx.fillText(ln, tx, ty);
       ty += lhPx;
     }
@@ -5846,12 +6253,23 @@ function drawSitelenRasterLocal(el, x, y, w, h){
     ctx.save();
     ctx.fillStyle = el.color || "#111";
     ctx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
+
+    // NEW: halo (stroke behind fill)
+    const _haloW = effectiveHaloThicknessForElement(el);
+    if (_haloW > 0){
+      ctx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
+      ctx.lineWidth = _haloW;
+      ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
+    }
+
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
 
     const cx = x + w/2;
     const cy = y + h/2;
 
+    if (_haloW > 0) ctx.strokeText(ch, cx, cy);
     ctx.fillText(ch, cx, cy);
 
     // optional border box for glyph (if strokeW)
@@ -6446,6 +6864,9 @@ if (!single){
   (v) => {
     el.fontSize = Math.max(6, v);
 
+    // NEW: if halo thickness is auto, recompute from new font size
+    if (el.haloThicknessMode !== "manual") el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize);
+
     if (el.type === ElementType.Sitelen){
       invalidateSitelenCache(el.id);
       updateSitelenLayout(el, { preserveCenter: true });
@@ -6508,6 +6929,72 @@ if (!single){
 
 
 
+    // NEW: halo controls (text/sitelen)
+    addSection(tr("sec_halo"));
+
+    propsBody.appendChild(makeCheckbox(
+      tr("props_halo_enabled"),
+      !!el.haloEnabled,
+      (checked) => {
+        el.haloEnabled = !!checked;
+        ensureHaloFields(el);
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+        }
+        scheduleAutosave();
+        render();
+      }
+    ));
+
+    propsBody.appendChild(makeColorPickerWithSwatch(
+      tr("props_halo_color"),
+      rgbaOrHexToHex(el.haloColor, "#FFFFFF"),
+      (v) => {
+        el.haloColor = v;
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+        }
+        render();
+      },
+      (v) => {
+        el.haloColor = v;
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+        }
+        scheduleAutosave();
+        render();
+      }
+    ));
+
+    propsBody.appendChild(makeNumberRow(
+      "haloThickness",
+      tr("props_halo_thickness"),
+      Number(el.haloThickness ?? defaultHaloThicknessForFontPx(el.fontSize ?? 24)),
+      1,
+      (v) => {
+        const vv = clampHaloThicknessPx(v);
+        if (vv <= 0){
+          el.haloThicknessMode = "auto";
+          el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize ?? 24);
+        } else {
+          el.haloThicknessMode = "manual";
+          el.haloThickness = vv;
+        }
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+        }
+        scheduleAutosave();
+        render();
+      },
+      null,
+      0,
+      48
+    ));
+
     propsBody.appendChild(makeNumberRow("lineHeight", tr("props_line_height"), Number(el.lineHeight ?? 1.15), 0.05, (v) => {
       el.lineHeight = clamp(v, 0.8, 3.0); scheduleAutosave(); render();
     }, null, 0.8, 3.0));
@@ -6547,7 +7034,7 @@ propsBody.appendChild(makeGlyphPicker(el));
   Number(el.fontSize ?? 64),
   1,
   FONT_SIZE_PRESETS,
-  (v) => { el.fontSize = Math.max(6, v); scheduleAutosave(); render(); },
+  (v) => { el.fontSize = Math.max(6, v); if (el.haloThicknessMode !== "manual") el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize); scheduleAutosave(); render(); },
   null,
   6,
   9999
@@ -6576,6 +7063,44 @@ propsBody.appendChild(makeColorPickerWithSwatch(
 
 
 
+
+    // NEW: halo controls (glyph)
+    addSection(tr("sec_halo"));
+
+    propsBody.appendChild(makeCheckbox(
+      tr("props_halo_enabled"),
+      !!el.haloEnabled,
+      (checked) => { el.haloEnabled = !!checked; ensureHaloFields(el); scheduleAutosave(); render(); }
+    ));
+
+    propsBody.appendChild(makeColorPickerWithSwatch(
+      tr("props_halo_color"),
+      rgbaOrHexToHex(el.haloColor, "#FFFFFF"),
+      (v) => { el.haloColor = v; render(); },
+      (v) => { el.haloColor = v; scheduleAutosave(); render(); }
+    ));
+
+    propsBody.appendChild(makeNumberRow(
+      "haloThickness",
+      tr("props_halo_thickness"),
+      Number(el.haloThickness ?? defaultHaloThicknessForFontPx(el.fontSize ?? 64)),
+      1,
+      (v) => {
+        const vv = clampHaloThicknessPx(v);
+        if (vv <= 0){
+          el.haloThicknessMode = "auto";
+          el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize ?? 64);
+        } else {
+          el.haloThicknessMode = "manual";
+          el.haloThickness = vv;
+        }
+        scheduleAutosave();
+        render();
+      },
+      null,
+      0,
+      48
+    ));
 
     addAppearanceBlock();
 
@@ -6666,6 +7191,44 @@ propsBody.appendChild(makeCheckbox(
 
     // For rectangles, appearance is often first
     addAppearanceBlock();
+
+    // NEW: halo controls (rectangle)
+    addSection(tr("sec_halo"));
+
+    propsBody.appendChild(makeCheckbox(
+      tr("props_halo_enabled"),
+      !!el.haloEnabled,
+      (checked) => { el.haloEnabled = !!checked; ensureHaloFields(el); scheduleAutosave(); render(); }
+    ));
+
+    propsBody.appendChild(makeColorPickerWithSwatch(
+      tr("props_halo_color"),
+      rgbaOrHexToHex(el.haloColor, "#FFFFFF"),
+      (v) => { el.haloColor = v; render(); },
+      (v) => { el.haloColor = v; scheduleAutosave(); render(); }
+    ));
+
+    propsBody.appendChild(makeNumberRow(
+      "haloThickness",
+      tr("props_halo_thickness"),
+      Number(el.haloThickness ?? defaultHaloThicknessForFontPx(28)),
+      1,
+      (v) => {
+        const vv = clampHaloThicknessPx(v);
+        if (vv <= 0){
+          el.haloThicknessMode = "auto";
+          el.haloThickness = defaultHaloThicknessForFontPx(28);
+        } else {
+          el.haloThicknessMode = "manual";
+          el.haloThickness = vv;
+        }
+        scheduleAutosave();
+        render();
+      },
+      null,
+      0,
+      48
+    ));
 
     propsBody.appendChild(makeNumberRow("radius", tr("props_corner_radius"), Number(el.radius ?? 0), 1, (v) => {
       el.radius = Math.max(0, v); scheduleAutosave(); render();
@@ -6962,12 +7525,14 @@ function rebuildDynamicPaletteFromScene(){
   add(Scene?.stage?.defaultTextColor);
   add(Scene?.stage?.defaultFill);
   add(Scene?.stage?.defaultStroke);
+  add(Scene?.stage?.defaultHaloColor);
 
   // Element colours
   for (const el of (Scene?.elements || [])){
     add(el.color);
     add(el.fill);
     add(el.stroke);
+    add(el.haloColor);
   }
 
   DYNAMIC_COLOR_SWATCHES = found.slice(0, MAX_DYNAMIC_SWATCHES);
@@ -7917,7 +8482,7 @@ function updateClipboardButtons(){
   /* ============================================================
      Image picking
      ============================================================ */
-  function pickImageForElement(el){
+function pickImageForElement(el){
   const inp = $("filePickImage");
   inp.value = "";
   inp.onchange = async () => {
@@ -7966,6 +8531,46 @@ function updateClipboardButtons(){
   inp.click();
 }
 
+async function pickBackgroundImageForScene(){
+  const inp = $("filePickBgImage");
+  inp.value = "";
+  inp.onchange = async () => {
+    const file = inp.files && inp.files[0];
+    if (!file) return;
+
+    const dataUrl = await dataUrlFromBlob(file);
+    const assetId = addImageAssetFromDataUrl(dataUrl);
+
+    // Decode now: prevents “missing in export” + pop-in
+    const img = new Image();
+    img.src = dataUrl;
+    try{
+      if (img.decode) await img.decode();
+      else await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+    }catch{}
+
+    Scene.stage.bgImgAssetId = assetId;
+    Scene.stage.bgImgEnabled = true;
+    if (typeof Scene.stage.bgImgKeepAspect !== "boolean") Scene.stage.bgImgKeepAspect = true;
+    if (typeof Scene.stage.bgImgStretch !== "boolean") Scene.stage.bgImgStretch = false;
+
+    invalidateBackgroundImageCache();
+    scheduleAutosave();
+    syncStageDefaultsUiFromScene();
+    render();
+  };
+  inp.click();
+}
+
+function clearBackgroundImageForScene(){
+  Scene.stage.bgImgEnabled = false;
+  Scene.stage.bgImgAssetId = null;
+  invalidateBackgroundImageCache();
+  scheduleAutosave();
+  syncStageDefaultsUiFromScene();
+  render();
+}
+
 function syncSnapButtonsFromScene(){
   const bGrid = document.getElementById("btnSnapGrid");
   const bObjs = document.getElementById("btnSnapObjs");
@@ -7991,6 +8596,9 @@ function syncStageDefaultsUiFromScene(){
   const dfe = document.getElementById("defFillEnabled");
   const ds = document.getElementById("defStroke");
   const dsw = document.getElementById("defStrokeW");
+  const dhe = document.getElementById("defHaloEnabled");
+  const dhc = document.getElementById("defHaloColor");
+  const dht = document.getElementById("defHaloThickness");
 
   const st = Scene.stage || (Scene.stage = {});
 
@@ -8003,14 +8611,27 @@ function syncStageDefaultsUiFromScene(){
   if (dfe) {dfe.checked = !!Scene.stage.defaultFillEnabled;}
   if (ds)  ds.value  = rgbaOrHexToHex(st.defaultStroke, DEFAULTS.defaultStroke);
   if (dsw) dsw.value = Number.isFinite(st.defaultStrokeW) ? st.defaultStrokeW : DEFAULTS.defaultStrokeW;
+  if (dhe) dhe.checked = !!(st.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled);
+  if (dhc) dhc.value = rgbaOrHexToHex(st.defaultHaloColor, DEFAULTS.defaultHaloColor);
+  if (dht) dht.value = Number.isFinite(st.defaultHaloThicknessPx) ? st.defaultHaloThicknessPx : DEFAULTS.defaultHaloThicknessPx;
 
- console.log("Scene: " + JSON.stringify(st));
+
+  const bge = document.getElementById("bgImgEnabled");
+  const bgka = document.getElementById("bgImgKeepAspect");
+  const bgs = document.getElementById("bgImgStretch");
+
+  if (bge)  bge.checked  = !!Scene.stage.bgImgEnabled;
+  if (bgka) bgka.checked = (Scene.stage.bgImgKeepAspect !== false);
+  if (bgs)  bgs.checked  = !!Scene.stage.bgImgStretch;
+
+  console.log("Scene: " + JSON.stringify(st));
 
   syncSnapButtonsFromScene();
 
 
     // Keep swatch highlights in sync (programmatic .value does not emit events)
   if (bg) refreshSwatchesForColorInput(bg);
+  if (dhc) refreshSwatchesForColorInput(dhc);
   if (dt) refreshSwatchesForColorInput(dt);
   if (df) refreshSwatchesForColorInput(df);
   if (ds) refreshSwatchesForColorInput(ds);
@@ -8267,6 +8888,19 @@ async function importJsonFromFile(file){
     if (el.type === ElementType.Rect){
       // Rect
       const r = el.radius ?? 0;
+
+      // NEW: halo behind stroke
+      const haloW = effectiveHaloThicknessForElementExport(el);
+      if (haloW > 0){
+        octx.lineWidth = haloW;
+        octx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
+        octx.lineJoin = "round";
+        octx.miterLimit = 2;
+        roundedRectPathOff(octx, x,y,el.w,el.h,r);
+        octx.stroke();
+      }
+
+      
       if (el.fillEnabled && el.fill && el.fill !== "transparent"){
         octx.fillStyle = el.fill;
         roundedRectPathOff(octx, x,y,el.w,el.h,r);
@@ -8303,6 +8937,15 @@ async function importJsonFromFile(file){
       if (textAlign !== "left" && textAlign !== "center" && textAlign !== "right") textAlign = "left";
       octx.textAlign = textAlign;
 
+      // NEW: halo config for Text export
+      const haloW = effectiveHaloThicknessForElementExport(el);
+      if (haloW > 0){
+        octx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
+        octx.lineWidth = haloW;
+        octx.lineJoin = "round";
+        octx.miterLimit = 2;
+      }
+
       const rawLines = splitLinesForBox(el.text);
       const allLines = [];
       for (const ln0 of rawLines){
@@ -8318,7 +8961,11 @@ async function importJsonFromFile(file){
         let tx = innerX;
         if (textAlign === "center") tx = innerX + innerW/2;
         if (textAlign === "right") tx = innerX + innerW;
+
+        if (haloW > 0) octx.strokeText(ln, tx, ty);
         octx.fillText(ln, tx, ty);
+
+        // octx.fillText(ln, tx, ty);
         ty += lhPx;
       }
 
@@ -8364,11 +9011,25 @@ async function importJsonFromFile(file){
       const fontSize = Math.max(6, (el.fontSize ?? 64));
       const fontFamily = el.fontFamily || "TP-Cartouche-Font";
      
+      const cx2 = x + el.w/2;
+      const cy2 = y + el.h/2;
+
       octx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
       octx.textBaseline = "middle";
       octx.textAlign = "center";
+
+      // NEW: halo behind fill
+      const haloW = effectiveHaloThicknessForElementExport(el);
+      if (haloW > 0){
+        octx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
+        octx.lineWidth = haloW;
+        octx.lineJoin = "round";
+        octx.miterLimit = 2;
+        octx.strokeText(ch, cx2, cy2);
+      }
+
       octx.fillStyle = el.color;
-      octx.fillText(ch, x + el.w/2, y + el.h/2);
+      octx.fillText(ch, cx2, cy2);
 
       if ((el.strokeW ?? 0) > 0){
         octx.lineWidth = (el.strokeW ?? 1);
@@ -8440,6 +9101,40 @@ async function importJsonFromFile(file){
       octx.restore();
     }
 
+
+    // NEW: background image export (independent of exportStageBackground)
+    if (Scene.stage.bgImgEnabled && Scene.stage.bgImgAssetId){
+      const assetId = String(Scene.stage.bgImgAssetId);
+      const dataUrl = getImageAssetDataUrl(assetId);
+      if (dataUrl){
+        // Prefer decoded cache if available
+        let img = (bgImageCache.ready && bgImageCache.assetId === assetId) ? bgImageCache.img : null;
+        if (!img){
+          img = new Image();
+          img.src = dataUrl;
+        }
+
+        if (img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0){
+          const dest = computeBackgroundImageDestRect({
+            stageW: Scene.stage.w,
+            stageH: Scene.stage.h,
+            natW: img.naturalWidth,
+            natH: img.naturalHeight,
+            stretch: !!Scene.stage.bgImgStretch,
+            keepAspect: (Scene.stage.bgImgKeepAspect !== false),
+          });
+
+          octx.save();
+          octx.beginPath();
+          octx.rect(0, 0, Scene.stage.w, Scene.stage.h);
+          octx.clip();
+          octx.drawImage(img, dest.x, dest.y, dest.w, dest.h);
+          octx.restore();
+        }
+      }
+    }
+
+
     // Render scene at 1:1 stage coords (no view transforms)
     // Note: We do NOT draw grid or stage background for export.
     for (const el of Scene.elements){
@@ -8510,6 +9205,12 @@ $("btnNew").addEventListener("click", async () => {
   Scene.stage.defaultFillEnabled = DEFAULTS.defaultFillEnabled;
   Scene.stage.defaultStroke = DEFAULTS.defaultStroke;
   Scene.stage.defaultStrokeW = DEFAULTS.defaultStrokeW;
+
+  Scene.stage.bgImgEnabled = DEFAULTS.bgImgEnabled;
+  Scene.stage.bgImgAssetId = DEFAULTS.bgImgAssetId;
+  Scene.stage.bgImgKeepAspect = DEFAULTS.bgImgKeepAspect;
+  Scene.stage.bgImgStretch = DEFAULTS.bgImgStretch;
+  invalidateBackgroundImageCache();
 
   Scene.elements = [];
   Scene.groups = {};
@@ -8636,8 +9337,14 @@ function wireStageDefaultsUi(){
   const dfe = document.getElementById("defFillEnabled");
   const ds = document.getElementById("defStroke");
   const dsw = document.getElementById("defStrokeW");
-
-
+  const dhe = document.getElementById("defHaloEnabled");
+  const dhc = document.getElementById("defHaloColor");
+  const dht = document.getElementById("defHaloThickness");
+  const bge = document.getElementById("bgImgEnabled");
+  const bgka = document.getElementById("bgImgKeepAspect");
+  const bgs = document.getElementById("bgImgStretch");
+  const btnPickBg = document.getElementById("btnPickBgImage");
+  const btnClearBg = document.getElementById("btnClearBgImage");
 
 
 
@@ -8688,6 +9395,38 @@ function wireStageDefaultsUi(){
     });
   }
 
+  // NEW: scene-wide halo defaults
+  if (dhe){
+    dhe.addEventListener("change", (e) => {
+      Scene.stage.defaultHaloEnabled = !!e.target.checked;
+      scheduleAutosave();
+      render();
+    });
+  }
+  if (dhc){
+    dhc.addEventListener("change", (e) => {
+      Scene.stage.defaultHaloColor = e.target.value;
+      addDynamicSwatch(e.target.value);
+      scheduleAutosave();
+      render();
+    });
+  }
+  if (dht){
+    dht.addEventListener("change", (e) => {
+      const v = clampHaloThicknessPx(e.target.value);
+      // 0 means auto defaults
+      if (v <= 0){
+        Scene.stage.defaultHaloThicknessMode = "auto";
+        Scene.stage.defaultHaloThicknessPx = 0;
+      } else {
+        Scene.stage.defaultHaloThicknessMode = "manual";
+        Scene.stage.defaultHaloThicknessPx = v;
+      }
+      scheduleAutosave();
+      render();
+    });
+  }
+
   if (dfe){
     console.log("Define stage dfe listener");
     dfe.addEventListener("change", (e) => {
@@ -8735,11 +9474,41 @@ function wireStageDefaultsUi(){
     });
   }
 
+  if (bge){
+  bge.addEventListener("change", (e) => {
+    Scene.stage.bgImgEnabled = !!e.target.checked;
+    if (Scene.stage.bgImgEnabled && !Scene.stage.bgImgAssetId){
+      Scene.stage.bgImgEnabled = false;
+      e.target.checked = false;
+    }
+    scheduleAutosave();
+    render();
+  });
+}
 
+if (bgka){
+  bgka.addEventListener("change", (e) => {
+    Scene.stage.bgImgKeepAspect = !!e.target.checked;
+    scheduleAutosave();
+    render();
+  });
+}
+
+if (bgs){
+  bgs.addEventListener("change", (e) => {
+    Scene.stage.bgImgStretch = !!e.target.checked;
+    scheduleAutosave();
+    render();
+  });
+}
+
+if (btnPickBg) btnPickBg.addEventListener("click", () => pickBackgroundImageForScene());
+if (btnClearBg) btnClearBg.addEventListener("click", () => clearBackgroundImageForScene());
 
     // Add swatches beside stage/default color inputs
   if (bg) attachSwatchesToColorInput(bg, { palette: getActiveColorPalette });
   if (dt) attachSwatchesToColorInput(dt, { palette: getActiveColorPalette });
+  if (dhc) attachSwatchesToColorInput(dhc, { palette: getActiveColorPalette });
   if (df) attachSwatchesToColorInput(df, { palette: getActiveColorPalette });
   if (ds) attachSwatchesToColorInput(ds, { palette: getActiveColorPalette });
 
