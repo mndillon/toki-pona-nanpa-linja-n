@@ -3916,7 +3916,22 @@ function pushGapIfNeeded(elements, px) {
   elements.push({ type: "gap", px: px });
 }
 
-function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled = false, haloCss = "#FFFFFF", haloThicknessMode = "auto", haloThickness = 0 } = {}) {
+function renderFontCartoucheToCanvas(
+  canvas,
+  innerCps,
+  {
+    fontPx,
+    padPx,
+    fontFamily,
+    fgCss,
+
+    // NEW: halo (optional)
+    haloEnabled = false,
+    haloCss = "#FFFFFF",
+    haloThicknessMode = "auto",
+    haloThickness = 0,
+  } = {}
+) {
   if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
   if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
 
@@ -3929,6 +3944,16 @@ function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFami
     innerCps.map(cp => String.fromCodePoint(cp)).join("") +
     String.fromCodePoint(CARTOUCHE_END_CP);
 
+  // Decide halo width in *cartouche canvas pixels*
+  let haloW = 0;
+  if (haloEnabled) {
+    haloW =
+      (haloThicknessMode === "manual" && Number.isFinite(haloThickness) && haloThickness > 0)
+        ? clampHaloThicknessPx(haloThickness)
+        : defaultHaloThicknessForFontPx(px);
+  }
+
+  // Measure
   const ctx = canvas.getContext("2d");
   ctx.textBaseline = "alphabetic";
   ctx.font = `${px}px "${fam}"`;
@@ -3941,12 +3966,9 @@ function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFami
   const left  = (m.actualBoundingBoxLeft  != null) ? m.actualBoundingBoxLeft  : 0;
   const right = (m.actualBoundingBoxRight != null) ? m.actualBoundingBoxRight : Math.ceil(m.width);
 
-  const _haloBasePx = (!!haloEnabled) ? ((haloThicknessMode === "manual" && Number.isFinite(haloThickness) && haloThickness > 0)
-    ? clampHaloThicknessPx(haloThickness)
-    : defaultHaloThicknessForFontPx(px)) : 0;
-
-  const w = Math.max(1, Math.ceil(left + right + pad * 2 + _haloBasePx * 2));
-  const h = Math.max(1, Math.ceil(ascent + descent + pad * 2 + _haloBasePx * 2));
+  // IMPORTANT: expand canvas for halo so it won't clip
+  const w = Math.max(1, Math.ceil(left + right + pad * 2 + haloW * 2));
+  const h = Math.max(1, Math.ceil(ascent + descent + pad * 2 + haloW * 2));
 
   canvas.width = w;
   canvas.height = h;
@@ -3957,33 +3979,51 @@ function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFami
   ctx2.font = `${px}px "${fam}"`;
   setTextQuality(ctx2);
 
-  ctx2.fillStyle = fgCss || "#000111";
+  const x = pad + left + haloW;
+  const baselineY = pad + ascent + haloW;
 
-  const x = pad + left + _haloBasePx;
-  const baselineY = pad + ascent + _haloBasePx;
-
-  if (_haloBasePx > 0){
-    ctx2.strokeStyle = rgbaOrHexToHex(haloCss, "#FFFFFF");
-    ctx2.lineWidth = _haloBasePx;
+  // NEW: halo behind fill
+  if (haloW > 0) {
+    ctx2.strokeStyle = haloCss || "#FFFFFF";
+    ctx2.lineWidth = haloW;
     ctx2.lineJoin = "round";
     ctx2.miterLimit = 2;
     ctx2.strokeText(run, x, baselineY);
   }
 
+  ctx2.fillStyle = fgCss || "#111";
   ctx2.fillText(run, x, baselineY);
 
   return { w, h, baselineY };
 }
 
-function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, haloEnabled = false, haloCss = "#FFFFFF", haloThicknessMode = "auto", haloThickness = 0 } = {}) {
+function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, 
+  // IMPORTANT: do NOT default these to "false"/"#fff"/"auto"/0
+    // Leave them undefined so we can inherit ACTIVE_SITELEN_HALO.
+    haloEnabled,
+    haloCss,
+    haloThicknessMode,
+    haloThickness, 
+  } = {}) {
   if (!cps || cps.length === 0) return;
   pushGapIfNeeded(elements, WORD_GAP_PX);
 
   // If caller didn’t pass halo options, inherit from the current sitelen render
-  const _he = (haloEnabled != null) ? !!haloEnabled : !!ACTIVE_SITELEN_HALO.enabled;
-  const _hc = (haloCss != null) ? haloCss : ACTIVE_SITELEN_HALO.css;
-  const _hm = (haloThicknessMode != null) ? haloThicknessMode : ACTIVE_SITELEN_HALO.mode;
-  const _ht = (haloThickness != null) ? haloThickness : ACTIVE_SITELEN_HALO.thickness;
+ const _he = (haloEnabled === undefined || haloEnabled === null)
+  ? !!ACTIVE_SITELEN_HALO.enabled
+  : !!haloEnabled;
+
+  const _hc = (haloCss === undefined || haloCss === null)
+    ? ACTIVE_SITELEN_HALO.css
+    : haloCss;
+
+  const _hm = (haloThicknessMode === undefined || haloThicknessMode === null)
+    ? ACTIVE_SITELEN_HALO.mode
+    : haloThicknessMode;
+
+  const _ht = (haloThickness === undefined || haloThickness === null)
+    ? ACTIVE_SITELEN_HALO.thickness
+    : haloThickness;
 
   const cart = document.createElement("canvas");
   const padPx = Math.max(4, Math.round(fontPx * 0.11));
@@ -4594,11 +4634,17 @@ function sitelenSignature(el){
 function sitelenMeasureBBox(el){
   const fontPx = Math.max(6, Number(el.fontSize ?? 44));
 
+  const haloPad = (!!el.haloEnabled)
+  ? ((el.haloThicknessMode === "manual" && Number.isFinite(el.haloThickness) && el.haloThickness > 0)
+      ? clampHaloThicknessPx(el.haloThickness)
+      : defaultHaloThicknessForFontPx(fontPx))
+  : 0;
+
   const opts = {
     fontPx,
     mode: "uniform",
     fgCss: el.color || "#111",
-    padPx: DEFAULT_PAD_PX,
+    padPx: DEFAULT_PAD_PX + haloPad,
     lineGapPx: LINE_GAP_PX,
 
     // NEW: literal font comes from the element, not a constant
@@ -4617,11 +4663,17 @@ function sitelenRenderToOffscreen(el,w,h){
   const off = document.createElement("canvas");
   const fontPx = Math.max(6, Number(el.fontSize ?? 44));
 
+  const haloPad = (!!el.haloEnabled)
+  ? ((el.haloThicknessMode === "manual" && Number.isFinite(el.haloThickness) && el.haloThickness > 0)
+      ? clampHaloThicknessPx(el.haloThickness)
+      : defaultHaloThicknessForFontPx(fontPx))
+  : 0;
+
   const opts = {
     fontPx,
     mode: "uniform",
     fgCss: el.color || "#111111",
-    padPx: DEFAULT_PAD_PX,
+    padPx: DEFAULT_PAD_PX + haloPad,
     lineGapPx: LINE_GAP_PX,
 
     // NEW: halo options
