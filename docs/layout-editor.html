@@ -6006,13 +6006,15 @@ function render(){
       ctx.restore();
     }
 
-    // NEW: halo for rectangle outline
+    // Halo stroke (screen): use halo thickness only (not strokeW + 2*haloW)
     const _haloW = effectiveHaloThicknessForElement(el);
     if (_haloW > 0){
       ctx.save();
-      ctx.lineWidth = Math.max(1, (el.strokeW ?? 0) + (_haloW * 2));
+      ctx.lineWidth = _haloW;
       ctx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
-      drawRoundedRectPath(x,y,w,h, r * Scene.view.zoom);
+      ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
+      drawRoundedRectPath(x, y, w, h, r * Scene.view.zoom);
       ctx.stroke();
       ctx.restore();
     }
@@ -8941,6 +8943,12 @@ async function importJsonFromFile(file){
       // Rect
       const r = el.radius ?? 0;
 
+      if (el.fillEnabled && el.fill && el.fill !== "transparent"){
+        octx.fillStyle = el.fill;
+        roundedRectPathOff(octx, x,y,el.w,el.h,r);
+        octx.fill();
+      }
+
       // NEW: halo behind stroke
       const haloW = effectiveHaloThicknessForElementExport(el);
       if (haloW > 0){
@@ -8953,11 +8961,7 @@ async function importJsonFromFile(file){
       }
 
       
-      if (el.fillEnabled && el.fill && el.fill !== "transparent"){
-        octx.fillStyle = el.fill;
-        roundedRectPathOff(octx, x,y,el.w,el.h,r);
-        octx.fill();
-      }
+      
       if ((el.strokeW ?? 0) > 0){
         octx.lineWidth = (el.strokeW ?? 1);
         octx.strokeStyle = el.stroke || "rgba(17,17,17,0.35)";
