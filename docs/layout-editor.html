@@ -6000,44 +6000,54 @@ function render(){
     return Math.round(v * dpr) / dpr;
   }
 
-  function drawRectLocal(el, x, y, w, h){
+  function strokePhaseOffsetCssPx(lineWidthCssPx){
+    const dpr = window.devicePixelRatio || 1;
+    const lwDev = Math.round(lineWidthCssPx * dpr);
+    return (lwDev % 2 === 1) ? (0.5 / dpr) : 0;
+  }
+
+  function drawRectLocal(el, x,y,w,h){
     const r = el.radius ?? 0;
+    const rs = r * Scene.view.zoom;
 
-    // NEW: snap screen-space geometry to device pixels to reduce uneven stroke AA
-    const xs = snapToDevicePx(x);
-    const ys = snapToDevicePx(y);
-    const ws = snapToDevicePx(w);
-    const hs = snapToDevicePx(h);
-
-    // Also snap the radius in screen pixels (optional but helps at large radii)
-    const rs = snapToDevicePx(r * Scene.view.zoom);
-
+    // fill (unchanged)
     if (el.fillEnabled && el.fill && el.fill !== "transparent"){
       ctx.save();
       ctx.fillStyle = el.fill;
-      drawRoundedRectPath(xs, ys, ws, hs, rs);   // CHANGED
+      drawRoundedRectPath(x,y,w,h, rs);
       ctx.fill();
       ctx.restore();
     }
 
-    // Halo stroke (screen): use halo thickness only
-    const _haloW = effectiveHaloThicknessForElement(el);
-    if (_haloW > 0){
+    // halo
+    const haloW = effectiveHaloThicknessForElement(el);
+    if (haloW > 0){
+      const off = strokePhaseOffsetCssPx(haloW);
+
       ctx.save();
-      ctx.lineWidth = _haloW;
+      if (off) ctx.translate(off, off);
+      ctx.lineWidth = haloW;
       ctx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
       ctx.lineJoin = "round";
       ctx.miterLimit = 2;
-      drawRoundedRectPath(xs, ys, ws, hs, rs);   // CHANGED
+      drawRoundedRectPath(x, y, w, h, rs);
       ctx.stroke();
       ctx.restore();
     }
 
-    if ((el.strokeW ?? 0) > 0){
+    // normal stroke
+    const strokeW = (el.strokeW ?? 0);
+    if (strokeW > 0){
+      const swCss = Math.max(1, strokeW) * Scene.view.zoom; // (match your existing scaling if different)
+      const off = strokePhaseOffsetCssPx(swCss);
+
       ctx.save();
-      ctx.lineWidth = (el.strokeW ?? 1);
+      if (off) ctx.translate(off, off);
+      ctx.lineWidth = swCss;
       ctx.strokeStyle = el.stroke || "rgba(17,17,17,0.35)";
-      drawRoundedRectPath(xs, ys, ws, hs, rs);   // CHANGED
+      ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
+      drawRoundedRectPath(x, y, w, h, rs);
       ctx.stroke();
       ctx.restore();
     }
