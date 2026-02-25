@@ -369,7 +369,9 @@
           aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge digitTable"
         />
         <div id="decimalHelp" class="help">
-          Example formats: <span class="mono">0.00</span>; <span class="mono">.75</span>; <span class="mono">-12,340</span>;  <span class="mono">2000</span>; <span class="mono">5,000</span>; <span class="mono">9¾</span>; <span class="mono">8+1/2</span>; <span class="mono">7/8</span>; <span class="mono">64.5M</span>; <span class="mono">007</span>; <span class="mono">432-555-0189</span>.
+          Examples: <span class="mono">0.00</span>; <span class="mono">.75</span>; <span class="mono">-12,340</span>;  <span class="mono">2000</span>; <span class="mono">5,000</span>; 
+          <span class="mono">9¾</span>; <span class="mono">8+1/2</span>; <span class="mono">7/8</span>; <span class="mono">64.5M</span>; 
+          <span class="mono">007</span>; <span class="mono">432-555-0189</span>; <span class="mono">10.5%</span>; <span class="mono">3:49</span>; <span class="mono">14:53:27</span>.
           nanpa-linja-n encoder decides how to represent these.
           <span class="tpLine">
             nasin pi pana nanpa li ken ante. ilo nanpa-linja-n li kama e nasin sitelen pi nanpa ni.
@@ -1354,6 +1356,65 @@
       return (head + r).trim();
     }
 
+
+    // ============================
+    // Time support (HH:MM[:SS])
+    // ============================
+    // Valid formats:
+    // - HH:MM or H:MM
+    // - HH:MM:SS or H:MM:SS
+    // Where:
+    // - HH is 00-23 (or 0-23 if single digit)
+    // - MM, SS are 00-59
+    function tryParseTimeParts(raw) {
+      const s = String(raw ?? "").trim();
+      const m = s.match(/^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/);
+      if (!m) return null;
+
+      const hhStr = m[1];
+      const mmStr = m[2];
+      const ssStr = (m[3] != null) ? m[3] : null;
+
+      const hh = parseInt(hhStr, 10);
+      if (!Number.isFinite(hh) || hh < 0 || hh > 23) return null;
+
+      // MM/SS already range-checked by regex.
+      return { hhStr, mmStr, ssStr };
+    }
+
+    function encodeDigitsOnly(digits) {
+      const s = String(digits ?? "");
+      if (!/^\d+$/.test(s)) throw new Error(`Expected only digits, got "${digits}"`);
+      let out = "";
+      for (const ch of s) {
+        const tok = DIGIT_TO_TOKEN[ch];
+        if (!tok) throw new Error(`Unsupported digit "${ch}"`);
+        out += tok;
+      }
+      return out;
+    }
+
+    // Returns a nanpa-caps string for a time, or null if input is not a valid time.
+    // Uses NEKE between groups so the Latin proper-name output contains "Eke".
+    function timeStrToNanpaCaps(raw) {
+      const parts = tryParseTimeParts(raw);
+      if (!parts) return null;
+
+      let caps = "NE";
+      caps += encodeDigitsOnly(parts.hhStr);
+      caps += "NEKE";
+      caps += encodeDigitsOnly(parts.mmStr);
+
+      if (parts.ssStr != null) {
+        caps += "NEKE";
+        caps += encodeDigitsOnly(parts.ssStr);
+      }
+
+      caps += "N";
+      return caps;
+    }
+
+
     function numberStrToNanpaCaps(
       s,
       { thousandsChar = ",", groupFractionTriplets = false, fractionGroupSize = 3 } = {}
@@ -2104,16 +2165,55 @@
       return cps;
     }
 
+
+    function replaceTimeSeparatorsTpWords(tpWords, mode) {
+      // In your current setup, getCartoucheDisplayMode() returns "uniform",
+      // so the NE+KE separator expands to: "nena en kulupu en".
+      // (Traditional would be: "nasa e kulupu e")
+      const join = (mode === "uniform") ? "en" : "e";
+      const nWord = (mode === "uniform") ? "nena" : "nasa";
+
+      const pattern = [nWord, join, "kulupu", join];
+
+      const out = [];
+      for (let i = 0; i < tpWords.length; ) {
+        const isMatch =
+          i + pattern.length <= tpWords.length &&
+          pattern.every((w, k) => tpWords[i + k] === w);
+
+        if (isMatch) {
+          // Keep the NE scaffolding: nena/en ... join, but swap kulupu -> kolon
+          out.push(nWord, join, "kolon", join);
+          i += pattern.length;
+        } else {
+          out.push(tpWords[i]);
+          i += 1;
+        }
+      }
+      return out;
+    }
+
     function decimalToUcsurCodepoints(decimalStr) {
       const s = normalizeVulgarFractionInput(String(decimalStr ?? "").trim());
       if (!s) return [];
 
+      const timeCaps = timeStrToNanpaCaps(s);
+
       const caps = looksLikeNanpaCaps(s)
         ? s.toUpperCase()
-        : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        : (timeCaps != null)
+          ? timeCaps
+          : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
 
       const tokens = tokenizeNanpaCaps(caps);
-      const tpWords = nanpaCapsTokensToTpWords(tokens, { mode: getCartoucheDisplayMode() });
+
+      const mode = getCartoucheDisplayMode();
+      let tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
+
+      if (timeCaps != null) {
+        tpWords = replaceTimeSeparatorsTpWords(tpWords, mode);
+      }
+
       const cps = tpWordsToUcsurCodepoints(tpWords);
 
       assertAllAllowedTpUcsur(cps);
@@ -2188,9 +2288,14 @@
     function encodeDecimalToLatin(decimalStr) {
       const s = normalizeVulgarFractionInput(String(decimalStr ?? "").trim());
       if (!s) return "";
+      const timeCaps = timeStrToNanpaCaps(s);
+
       const caps = looksLikeNanpaCaps(s)
         ? s.toUpperCase()
-        : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        : (timeCaps != null)
+          ? timeCaps
+          : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+
       return splitCartoucheCapsLetters(caps);
     }
 
@@ -2833,11 +2938,22 @@
       enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS);
 
       const raw = normalizeVulgarFractionInput(elDecimal.value);
+      const timeCaps = timeStrToNanpaCaps(raw);
+
       const caps = looksLikeNanpaCaps(raw)
         ? raw.toUpperCase()
-        : numberStrToNanpaCaps(raw, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        : (timeCaps != null)
+          ? timeCaps
+          : numberStrToNanpaCaps(raw, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
 
-      setDecimalValueFromCapsOrClear(caps);
+      // Display value line:
+      // - For decimals, we can decode the caps back to a “display value” string.
+      // - For times, decoding isn't defined, so we just show the original input.
+      if (timeCaps != null) {
+        setDecimalValueLine(String(raw ?? "").trim(), String(raw ?? "").trim());
+      } else {
+        setDecimalValueFromCapsOrClear(caps);
+      }
 
       const latinRaw = encodeDecimalToLatin(raw);
       const latinDisplay = titleCaseNanpaProperNameForDisplay(latinRaw);

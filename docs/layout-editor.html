@@ -630,7 +630,7 @@
 }
 
 /* Optional: tighten property panel spacing slightly */
-#propsBody .field textarea{ min-height: 84px; }
+#propsBody .field textarea{ min-height: 250px; }
 
 .nlModeControl{ display:none !important; }
 
@@ -1105,6 +1105,8 @@
         "nanpa -12,340.57.\n" +
         "nanpa #~IIM.\n" +
         "nanpa Newenin One Len Oken.\n" +
+        "nanpa 5%.\n" +
+        "tenpo 15:27:49.\n" +
         "\"Hello World!\".\n" +
         "Unknown words ignored without double quotes.\n",
 
@@ -1305,6 +1307,8 @@
         "nanpa -12,340.57.\n" +
         "nanpa #~IIM.\n" +
         "nanpa Newenin One Len Oken.\n" +
+        "nanpa 5%.\n" +
+        "tenpo 15:27:49.\n" +
         "\"Hello World!\".\n" +
         "nimi pi sona ala li weka; nimi lon poki \"...\" la ona li awen.\n",
 
@@ -2742,7 +2746,10 @@ const NANPA_LINJA_N_WORD_TO_CP = {
   "pipi":  0xF1951,
   "jo":    0xF1913,
   "open":   0xF1947,
-  "kipisi": 0xF197B
+  "kipisi": 0xF197B,
+  // time delimiter support (cartouche path)
+  "kolon": 0xF199D,
+  ":":     0xF199D
 };
 
 const CP_NANPA = NANPA_LINJA_N_WORD_TO_CP["nanpa"];
@@ -3214,7 +3221,30 @@ function nanpaCapsTokensToTpWords(tokens, { mode = "uniform" } = {}) {
   return out;
 }
 
-function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "uniform" } = {}) {
+// Time cartouche: rewrite the NE+KE delimiter expansion so the glyph shows kolon (:) not kulupu.
+function replaceTimeSeparatorsTpWords(tpWords, mode) {
+  const join = (mode === "uniform") ? "en" : "e";
+  const nWord = (mode === "uniform") ? "nena" : "nasa";
+  const pattern = [nWord, join, "kulupu", join];
+
+  const out = [];
+  for (let i = 0; i < tpWords.length; ) {
+    const isMatch =
+      i + pattern.length <= tpWords.length &&
+      pattern.every((w, k) => tpWords[i + k] === w);
+
+    if (isMatch) {
+      out.push(nWord, join, "kolon", join); // nena en kolon en
+      i += pattern.length;
+    } else {
+      out.push(tpWords[i]);
+      i += 1;
+    }
+  }
+  return out;
+}
+
+function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "uniform",  isTime = false } = {}) {
   const tokens = tokenizeNanpaCaps(caps);
   if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
@@ -3227,9 +3257,10 @@ function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "uniform" } = {}) {
   }
 
   const tpWords = nanpaCapsTokensToTpWords(tokensNoOk, { mode });
+  const tpWordsFinal = isTime ? replaceTimeSeparatorsTpWords(tpWords, mode) : tpWords;
 
   const cps = [];
-  for (const w of tpWords) {
+  for (const w of tpWordsFinal) {
     const cp = NANPA_LINJA_N_WORD_TO_CP[w];
     if (cp == null) return null;
     cps.push(cp);
@@ -3387,6 +3418,78 @@ const DEC_DIGIT_TO_TOKEN = {
   "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
   "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
 };
+
+/* ============================================================
+   Time recognizer (HH:MM[:SS]) + caps encoder
+   ============================================================ */
+function tryParseTimeParts(raw) {
+  const s = String(raw ?? "").trim();
+  const m = s.match(/^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/);
+  if (!m) return null;
+
+  const hhStr = m[1];
+  const mmStr = m[2];
+  const ssStr = (m[3] != null) ? m[3] : null;
+
+  const hh = parseInt(hhStr, 10);
+  if (!Number.isFinite(hh) || hh < 0 || hh > 23) return null;
+
+  return { hhStr, mmStr, ssStr };
+}
+
+function encodeDigitsOnly(digits) {
+  const s = String(digits ?? "");
+  if (!/^\d+$/.test(s)) throw new Error(`Expected only digits, got "${digits}"`);
+  let out = "";
+  for (const ch of s) {
+    const tok = DEC_DIGIT_TO_TOKEN[ch];
+    if (!tok) throw new Error(`Unsupported digit "${ch}"`);
+    out += tok;
+  }
+  return out;
+}
+
+function timeStrToNanpaCaps(raw) {
+  const parts = tryParseTimeParts(raw);
+  if (!parts) return null;
+
+  let caps = "NE";
+  caps += encodeDigitsOnly(parts.hhStr);
+  caps += "NEKE";
+  caps += encodeDigitsOnly(parts.mmStr);
+
+  if (parts.ssStr != null) {
+    caps += "NEKE";
+    caps += encodeDigitsOnly(parts.ssStr);
+  }
+
+  caps += "N";
+  tokenizeNanpaCaps(caps); // sanity-check
+  return caps;
+}
+
+function findTimeSequencesWithCaps(text) {
+  const s = String(text ?? "");
+  if (!s) return [];
+
+  // No lookbehind: boundary is group 1, time is group 2
+  const re = /(^|[^0-9])(\d{1,2}:[0-5]\d(?::[0-5]\d)?)(?!\d)/g;
+
+  const out = [];
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    const lead = m[1] ?? "";
+    const raw = m[2];
+    if (!raw) continue;
+
+    const start = (m.index | 0) + String(lead).length;
+    const end = start + raw.length;
+
+    const caps = timeStrToNanpaCaps(raw);
+    if (caps != null) out.push({ kind: "time", match: raw, index: start, end, caps });
+  }
+  return out;
+}
 
 function numberStrToNanpaCaps(
       s,
@@ -3816,6 +3919,7 @@ function mergeAndGreedyFilterHits(allHits) {
 
   function priority(kind) {
     if (kind === "decimal") return 4;
+    if (kind === "time") return 4;
     if (kind === "tpPhrase") return 3;
     if (kind === "code") return 2;
     return 1; // proper name
@@ -4155,6 +4259,41 @@ function renderTpWordsFromText(text, elements, { fontPx, mode }) {
       }
     }
 
+    // numeric/time cartouche fallback:
+    // If the token contains digits, try to render it as a nanpa-linja-n cartouche
+    // before falling back to glyph-key normalization (which strips digits).
+    if (trimmed && /[0-9]/.test(trimmed)) {
+      // 1) Time-like: allow optional quotes around ':' so 23":"45 => 23:45
+      const timeCandidate = trimmed.replace(/"\s*:\s*"/g, ":").replace(/"\s*:\s*/g, ":").replace(/\s*:\s*"/g, ":");
+      const timeCaps = (typeof timeStrToNanpaCaps === "function") ? timeStrToNanpaCaps(timeCandidate) : null;
+
+      if (timeCaps) {
+        const cps = nanpaCapsToNanpaLinjanCodepoints(timeCaps, { mode, isTime: true });
+        if (cps && cps.length) {
+          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+          for (const ch of trail) emitPunctGlyph(ch);
+          continue;
+        }
+      }
+
+      // 2) Decimal/integer-like: try the existing decimal parser (it already accepts integers)
+      try {
+        const caps = decimalStringToCaps(trimmed, {
+          thousandsChar: ",",
+          groupFractionTriplets: true,
+          fractionGroupSize: 3
+        });
+        const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
+        if (cps && cps.length) {
+          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
+          for (const ch of trail) emitPunctGlyph(ch);
+          continue;
+        }
+      } catch {
+        // not a valid numeric; fall through to normal glyph handling
+      }
+    }
+
     // normal word glyph
     const glyphKey = normalizeTpGlyphKey(trimmed);
     if (glyphKey && MULTI_LINE_WORD_TO_UCSUR_CP[glyphKey] != null) {
@@ -4173,12 +4312,13 @@ function parseTextSegmentToElements(segmentText, elements, { fontPx, mode, fgCss
   const s = String(segmentText ?? "");
   if (!s.trim()) return;
 
+  const timeHits   = findTimeSequencesWithCaps(s);
   const decHits    = findDecimalSequencesWithCaps(s);
   const codeHits   = findNumberCodeSequencesWithCaps(s);
   const nameHits   = findNanpaLinjanProperNameSequencesWithCaps(s);
   const phraseHits = findNanpaLinjanTpPhraseSequences(s);
 
-  const hits = mergeAndGreedyFilterHits([...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+  const hits = mergeAndGreedyFilterHits([...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
 
   if (!hits || hits.length === 0) {
     renderTpWordsFromText(s, elements, { fontPx, mode });
@@ -4203,7 +4343,7 @@ function parseTextSegmentToElements(segmentText, elements, { fontPx, mode, fgCss
         renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
       }
     } else {
-      const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode });
+      const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode, isTime: (h.kind === "time") });
       if (cps && cps.length) {
         makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
       } else {
@@ -4235,12 +4375,13 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
   if (!content) return;
 
   // Use the same scanners as plain text, but require a FULL-CONTENT hit.
+  const timeHits = findTimeSequencesWithCaps(content);
   const decHits    = findDecimalSequencesWithCaps(content);
   const codeHits   = findNumberCodeSequencesWithCaps(content);
   const nameHits   = findNanpaLinjanProperNameSequencesWithCaps(content);
   const phraseHits = findNanpaLinjanTpPhraseSequences(content);
 
-  const hits = mergeAndGreedyFilterHits([...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+  const hits = mergeAndGreedyFilterHits([...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
   const full = (hits || []).find(h => (h.index|0) === 0 && (h.end|0) === content.length);
 
   if (full) {
@@ -4251,7 +4392,7 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
         return;
       }
     } else {
-      const cps = nanpaCapsToNanpaLinjanCodepoints(full.caps, { mode });
+      const cps = nanpaCapsToNanpaLinjanCodepoints(full.caps, { mode, isTime: (full.kind === "time") });
       if (cps && cps.length) {
         makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
         return;
