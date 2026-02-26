@@ -1094,9 +1094,17 @@
         }
 
         // 4) KE... : one or more "kulupu (e|en)" pairs become "KE" repeated
-        if (i + 1 < end && words[i] === "kulupu" && (words[i + 1] === "e" || words[i + 1] === "en")) {
+        if (
+          i + 1 < end &&
+          (words[i] === "kulupu" || words[i] === "kolon" || words[i] === ":") &&
+          (words[i + 1] === "e" || words[i + 1] === "en")
+        ) {
           let count = 0;
-          while (i + 1 < end && words[i] === "kulupu" && (words[i + 1] === "e" || words[i + 1] === "en")) {
+          while (
+            i + 1 < end &&
+            (words[i] === "kulupu" || words[i] === "kolon" || words[i] === ":") &&
+            (words[i + 1] === "e" || words[i + 1] === "en")
+          ) {
             count += 1;
             i += 2;
           }
@@ -1177,6 +1185,9 @@
 
       // Validate tokenization
       tokenizeNanpaCaps(caps);
+
+      // If it has the time shape, require it to be a valid clock time.
+      if (nanpaCapsLooksLikeTime(caps) && !nanpaCapsIsValidTime(caps)) return null;
 
       return { caps, words };
     }
@@ -1412,6 +1423,112 @@
 
       caps += "N";
       return caps;
+    }
+
+
+    function nanpaCapsLooksLikeTime(caps){
+      let tokens;
+      try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
+      catch { return false; }
+
+      // Must start NE ... end N
+      if (tokens[0] !== "NE") return false;
+      if (tokens[tokens.length - 1] !== "N") return false;
+
+      // Pattern:
+      // NE (H digits: 1–2) NE KE (MM digits: 2) [NE KE (SS digits: 2)] N
+      let i = 1;
+
+      // hours: 1–2 digit tokens
+      let h = 0;
+      while (i < tokens.length && DIGIT_TOKENS.has(tokens[i]) && h < 2) { h++; i++; }
+      if (h < 1) return false;
+
+      // delimiter
+      if (tokens[i] !== "NE") return false; i++;
+      if (tokens[i] !== "KE") return false; i++;
+
+      // minutes: exactly 2 digits
+      if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
+      if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
+
+      // optional seconds
+      if (tokens[i] === "NE") {
+        i++;
+        if (tokens[i] !== "KE") return false; i++;
+        if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
+        if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
+      }
+
+      // must be exactly at final N
+      return i === tokens.length - 1;
+    }
+
+
+    function nanpaCapsDecodeTimeStrict(caps) {
+      let tokens;
+      try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
+      catch { return null; }
+
+      if (tokens[0] !== "NE") return null;
+      if (tokens[tokens.length - 1] !== "N") return null;
+
+      // Decode according to time encoding:
+      // NE (H digits 1–2) NE KE (MM digits 2) [NE KE (SS digits 2)] N
+      let i = 1;
+
+      function readDigit() {
+        const t = tokens[i];
+        const ch = TOKEN_TO_DIGIT_CHAR[t];
+        if (ch == null) return null;
+        i += 1;
+        return ch;
+      }
+
+      // hours: 1–2 digits
+      const h1 = readDigit();
+      if (h1 == null) return null;
+      let h2 = null;
+      if (i < tokens.length && TOKEN_TO_DIGIT_CHAR[tokens[i]] != null) {
+        h2 = readDigit();
+      }
+      const hhStr = (h2 == null) ? h1 : (h1 + h2);
+
+      if (tokens[i] !== "NE") return null; i++;
+      if (tokens[i] !== "KE") return null; i++;
+
+      // minutes: exactly 2 digits
+      const m1 = readDigit(); if (m1 == null) return null;
+      const m2 = readDigit(); if (m2 == null) return null;
+      const mmStr = m1 + m2;
+
+      // optional seconds
+      let ssStr = null;
+      if (tokens[i] === "NE") {
+        i++;
+        if (tokens[i] !== "KE") return null; i++;
+        const s1 = readDigit(); if (s1 == null) return null;
+        const s2 = readDigit(); if (s2 == null) return null;
+        ssStr = s1 + s2;
+      }
+
+      // must end exactly at final N
+      if (i !== tokens.length - 1) return null;
+
+      // Range check
+      const hh = parseInt(hhStr, 10);
+      const mm = parseInt(mmStr, 10);
+      const ss = (ssStr == null) ? null : parseInt(ssStr, 10);
+
+      if (!(hh >= 0 && hh <= 23)) return null;
+      if (!(mm >= 0 && mm <= 59)) return null;
+      if (ss != null && !(ss >= 0 && ss <= 59)) return null;
+
+      return { hh, mm, ss, hhStr, mmStr, ssStr };
+    }
+
+    function nanpaCapsIsValidTime(caps) {
+      return nanpaCapsDecodeTimeStrict(caps) != null;
     }
 
 
@@ -1826,12 +1943,29 @@
     // - Display value: default commas
     // - Cartouche value: "_" for NENE breaks, but "," for true thousands grouping
     function setDecimalValueFromCapsOrClear(caps) {
+      // If the caps stream is a time encoding, format group separators as ":" not ","
+      // so cartouche value shows HH:MM[:SS].
+      if (nanpaCapsIsValidTime(caps)) {
+        const vTime = tryDecodeCapsToDisplayValue(caps, {
+          // For times, the only separators we want are ":" between HH/MM/(SS)
+          intEneSep: ":",     // (not normally used for time, but safe)
+          intGroupSep: ":",   // critical: NE+KE delimiter prints as ":"
+          fracEneSep: "_",
+          fracGroupSep: "_"
+        });
+
+        // If decoding failed for any reason, fall back to empty rather than lying.
+        setDecimalValueLine(vTime, vTime);
+        return;
+      }
+
+      // Normal numeric formatting (existing behavior)
       const vDisplay = tryDecodeCapsToDisplayValue(caps); // default behavior (commas for int)
       const vCartouche = tryDecodeCapsToDisplayValue(caps, {
         intEneSep: "_",     // NENE breaks in integer part
         intGroupSep: ",",   // thousands grouping stays comma
-        fracEneSep: "_",    // keep underscores in fractional groupings
-        fracGroupSep: "_"   // keep underscores in fractional groupings
+        fracEneSep: "_",
+        fracGroupSep: "_"
       });
       setDecimalValueLine(vDisplay, vCartouche);
     }
@@ -2416,7 +2550,12 @@
 
 
       const tokens = tokenizeNanpaCaps(caps);
-      const tpWords = nanpaCapsTokensToTpWords(tokens, { mode: getCartoucheDisplayMode() });
+
+      const mode = getCartoucheDisplayMode();
+      let tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
+      if (nanpaCapsIsValidTime(caps)) {
+        tpWords = replaceTimeSeparatorsTpWords(tpWords, mode);
+      }
       const cps = tpWordsToUcsurCodepoints(tpWords);
 
       assertAllAllowedTpUcsur(cps);
@@ -3087,8 +3226,12 @@
 
           setDecimalValueFromCapsOrClear(caps);
 
+          const mode = getCartoucheDisplayMode();
           const tokens = tokenizeNanpaCaps(caps);
-          const tpWords = nanpaCapsTokensToTpWords(tokens, { mode: getCartoucheDisplayMode() });
+          let tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
+          if (nanpaCapsIsValidTime(caps)) {
+            tpWords = replaceTimeSeparatorsTpWords(tpWords, mode);
+          }
           const cps = tpWordsToUcsurCodepoints(tpWords);
 
           const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
@@ -3138,7 +3281,16 @@
 
           setDecimalValueFromCapsOrClear(caps);
 
-          const cps = parseTpWordsToCodepoints(words.join(" "));
+          //const cps = parseTpWordsToCodepoints(words.join(" "));
+
+          const mode = getCartoucheDisplayMode();
+          const tokens = tokenizeNanpaCaps(caps);
+          let tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
+          if (nanpaCapsIsValidTime(caps)) {
+            tpWords = replaceTimeSeparatorsTpWords(tpWords, mode);
+          }
+          const cps = tpWordsToUcsurCodepoints(tpWords);
+
 
           const prettyNameRaw = splitCartoucheCapsLettersSpaced(caps);
           const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);

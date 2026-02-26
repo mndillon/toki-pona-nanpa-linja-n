@@ -3297,7 +3297,10 @@ function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "uniform" 
 
   try {
     const parsed = tryParseNanpaLinjanNumberCodeToCaps(s);
-    if (parsed?.caps) return nanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode });
+    if (parsed?.caps) {
+      const isTime = nanpaCapsIsValidTime(parsed.caps);
+      return nanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode, isTime });
+    }
   } catch {
     return null;
   }
@@ -3319,7 +3322,8 @@ function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "uniform" 
     caps = coreUpper + "N";
   }
 
-  return nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
+  const isTime = nanpaCapsIsValidTime(caps);
+  return nanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime });
 
 }
 
@@ -3466,6 +3470,125 @@ function timeStrToNanpaCaps(raw) {
   caps += "N";
   tokenizeNanpaCaps(caps); // sanity-check
   return caps;
+}
+
+function nanpaCapsLooksLikeTime(caps){
+  let tokens;
+  try { tokens = tokenizeNanpaCaps(caps); } catch { return false; }
+  if (!tokens || tokens.length < 1) return false;
+
+  // Must start NE ... end N
+  if (tokens[0] !== "NE") return false;
+  if (tokens[tokens.length - 1] !== "N") return false;
+
+  // Disallow operators that cannot appear in time encoding
+  for (const t of tokens){
+    if (t === "NO" || t === "NONO" || t === "NONONO" || t === "OK") return false;
+    if (t === "KEKE" || t === "KEKEKE") return false;
+  }
+
+  // Parse pattern:
+  // NE  (H digits: 1–2 digit tokens)
+  // NE KE (delimiter)
+  // (MM digits: exactly 2 digit tokens)
+  // [ NE KE (delimiter) (SS digits: exactly 2 digit tokens) ]
+  // N
+  let i = 1;
+
+  // hours digits: 1 or 2 digit tokens
+  let hCount = 0;
+  while (i < tokens.length && DIGIT_TOKENS.has(tokens[i]) && hCount < 2){
+    hCount++; i++;
+  }
+  if (hCount < 1) return false;
+
+  // delimiter 1
+  if (tokens[i] !== "NE") return false; i++;
+  if (tokens[i] !== "KE") return false; i++;
+
+  // minutes: exactly 2 digit tokens
+  if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
+  if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
+
+  // optional seconds
+  if (tokens[i] === "NE"){
+    i++;
+    if (tokens[i] !== "KE") return false; i++;
+    if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
+    if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
+  }
+
+  // must now be at final N
+  return i === tokens.length - 1;
+}
+
+function nanpaCapsDecodeTimeStrict(caps) {
+  let tokens;
+  try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
+  catch { return null; }
+
+  if (tokens[0] !== "NE") return null;
+  if (tokens[tokens.length - 1] !== "N") return null;
+
+  let i = 1;
+
+  function readDigitChar() {
+    const t = tokens[i];
+    const w = TOKEN_TO_DIGIT_WORD[t];
+    if (!w) return null;
+
+    // Reverse map: token -> digit char
+    // NI 0, WE 1, TE 2, SE 3, NA 4, LE 5, NU 6, ME 7, PE 8, JE 9
+    const map = { NI:"0", WE:"1", TE:"2", SE:"3", NA:"4", LE:"5", NU:"6", ME:"7", PE:"8", JE:"9" };
+    const ch = map[t];
+    if (!ch) return null;
+
+    i += 1;
+    return ch;
+  }
+
+  // HH: 1–2 digits
+  const h1 = readDigitChar(); if (h1 == null) return null;
+  let h2 = null;
+  if (i < tokens.length && DIGIT_TOKENS.has(tokens[i])) h2 = readDigitChar();
+  const hhStr = (h2 == null) ? h1 : (h1 + h2);
+
+  // delimiter 1
+  if (tokens[i] !== "NE") return null; i++;
+  if (tokens[i] !== "KE") return null; i++;
+
+  // MM: exactly 2 digits
+  const m1 = readDigitChar(); if (m1 == null) return null;
+  const m2 = readDigitChar(); if (m2 == null) return null;
+  const mmStr = m1 + m2;
+
+  // optional seconds
+  let ssStr = null;
+  if (tokens[i] === "NE") {
+    i++;
+    if (tokens[i] !== "KE") return null; i++;
+    const s1 = readDigitChar(); if (s1 == null) return null;
+    const s2 = readDigitChar(); if (s2 == null) return null;
+    ssStr = s1 + s2;
+  }
+
+  // must end at final N
+  if (i !== tokens.length - 1) return null;
+
+  // Range check
+  const hh = parseInt(hhStr, 10);
+  const mm = parseInt(mmStr, 10);
+  const ss = (ssStr == null) ? null : parseInt(ssStr, 10);
+
+  if (!(hh >= 0 && hh <= 23)) return null;
+  if (!(mm >= 0 && mm <= 59)) return null;
+  if (ss != null && !(ss >= 0 && ss <= 59)) return null;
+
+  return { hh, mm, ss };
+}
+
+function nanpaCapsIsValidTime(caps) {
+  return nanpaCapsDecodeTimeStrict(caps) != null;
 }
 
 function findTimeSequencesWithCaps(text) {
@@ -4343,7 +4466,8 @@ function parseTextSegmentToElements(segmentText, elements, { fontPx, mode, fgCss
         renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
       }
     } else {
-      const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode, isTime: (h.kind === "time") });
+      const isTime = (h.kind === "time") || nanpaCapsIsValidTime(h.caps);
+      const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode, isTime });
       if (cps && cps.length) {
         makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
       } else {
@@ -4392,7 +4516,8 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
         return;
       }
     } else {
-      const cps = nanpaCapsToNanpaLinjanCodepoints(full.caps, { mode, isTime: (full.kind === "time") });
+      const isTime = (full.kind === "time") || nanpaCapsIsValidTime(full.caps);
+      const cps = nanpaCapsToNanpaLinjanCodepoints(full.caps, { mode, isTime });
       if (cps && cps.length) {
         makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
         return;
