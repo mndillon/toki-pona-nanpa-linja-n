@@ -1187,7 +1187,7 @@
       tokenizeNanpaCaps(caps);
 
       // If it has the time shape, require it to be a valid clock time.
-      if (nanpaCapsLooksLikeTime(caps) && !nanpaCapsIsValidTime(caps)) return null;
+      if (nanpaCapsLooksLikeTime(caps) && !nanpaCapsIsValidTimeOrDate(caps)) return null;
 
       return { caps, words };
     }
@@ -1368,6 +1368,24 @@
     }
 
 
+
+    function normalizeDateTimeInput(raw) {
+      let s = String(raw ?? "").trim();
+
+      // dates/times: remove internal whitespace
+      s = s.replace(/\s+/g, "");
+
+      // Normalize common unicode variants (copy/paste-safe)
+      // Hyphen/minus variants -> "-"
+      s = s.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]/g, "-");
+      // Slash variants -> "/"
+      s = s.replace(/[\u2044\u2215\uFF0F]/g, "/");
+      // Fullwidth colon -> ":"
+      s = s.replace(/[\uFF1A]/g, ":");
+
+      return s;
+    }
+
     // ============================
     // Time support (HH:MM[:SS])
     // ============================
@@ -1425,6 +1443,48 @@
       return caps;
     }
 
+    // ============================
+    // Date support (YYYY{sep}MM{sep}DD)
+    // ============================
+    // Valid formats:
+    // - YYYY-MM-DD, YYYY/MM/DD, YYYY:MM:DD
+    // Constraints:
+    // - YYYY exactly 4 digits (0000-9999 allowed per your rule)
+    // - MM 01-12
+    // - DD 01-31
+    function tryParseDateParts(raw) {
+      const s = normalizeDateTimeInput(raw);
+      const m = s.match(/^(\d{4})([:\/-])(\d{2})\2(\d{2})$/);
+      if (!m) return null;
+
+      const yyyyStr = m[1];
+      const mmStr = m[3];
+      const ddStr = m[4];
+
+      const mm = parseInt(mmStr, 10);
+      const dd = parseInt(ddStr, 10);
+
+      if (!(mm >= 1 && mm <= 12)) return null;
+      if (!(dd >= 1 && dd <= 31)) return null;
+
+      return { yyyyStr, mmStr, ddStr };
+    }
+
+    // Returns nanpa-caps for a valid date, else null.
+    // Uses NEKE between groups so we can render delimiters as kolon in cartouche.
+    function dateStrToNanpaCaps(raw) {
+      const parts = tryParseDateParts(raw);
+      if (!parts) return null;
+
+      let caps = "NE";
+      caps += encodeDigitsOnly(parts.yyyyStr);
+      caps += "NEKE";
+      caps += encodeDigitsOnly(parts.mmStr);
+      caps += "NEKE";
+      caps += encodeDigitsOnly(parts.ddStr);
+      caps += "N";
+      return caps;
+    }
 
     function nanpaCapsLooksLikeTime(caps){
       let tokens;
@@ -1529,6 +1589,72 @@
 
     function nanpaCapsIsValidTime(caps) {
       return nanpaCapsDecodeTimeStrict(caps) != null;
+    }
+
+    function nanpaCapsDecodeDateStrict(caps) {
+      let tokens;
+      try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
+      catch { return null; }
+
+      if (tokens[0] !== "NE") return null;
+      if (tokens[tokens.length - 1] !== "N") return null;
+
+      // Pattern:
+      // NE (YYYY digits: 4) NE KE (MM digits: 2) NE KE (DD digits: 2) N
+      let i = 1;
+
+      function readDigit() {
+        const t = tokens[i];
+        const ch = TOKEN_TO_DIGIT_CHAR[t];
+        if (ch == null) return null;
+        i += 1;
+        return ch;
+      }
+
+      // YYYY: exactly 4 digits
+      const y1 = readDigit(); if (y1 == null) return null;
+      const y2 = readDigit(); if (y2 == null) return null;
+      const y3 = readDigit(); if (y3 == null) return null;
+      const y4 = readDigit(); if (y4 == null) return null;
+      const yyyyStr = y1 + y2 + y3 + y4;
+
+      // delimiter 1
+      if (tokens[i] !== "NE") return null; i++;
+      if (tokens[i] !== "KE") return null; i++;
+
+      // MM: exactly 2 digits
+      const m1 = readDigit(); if (m1 == null) return null;
+      const m2 = readDigit(); if (m2 == null) return null;
+      const mmStr = m1 + m2;
+
+      // delimiter 2
+      if (tokens[i] !== "NE") return null; i++;
+      if (tokens[i] !== "KE") return null; i++;
+
+      // DD: exactly 2 digits
+      const d1 = readDigit(); if (d1 == null) return null;
+      const d2 = readDigit(); if (d2 == null) return null;
+      const ddStr = d1 + d2;
+
+      // must end at final N
+      if (i !== tokens.length - 1) return null;
+
+      const mm = parseInt(mmStr, 10);
+      const dd = parseInt(ddStr, 10);
+
+      // Year: any 4 digits allowed by your rule
+      if (!(mm >= 1 && mm <= 12)) return null;
+      if (!(dd >= 1 && dd <= 31)) return null;
+
+      return { yyyyStr, mmStr, ddStr };
+    }
+
+    function nanpaCapsIsValidDate(caps) {
+      return nanpaCapsDecodeDateStrict(caps) != null;
+    }
+
+    function nanpaCapsIsValidTimeOrDate(caps) {
+      return nanpaCapsIsValidTime(caps) || nanpaCapsIsValidDate(caps);
     }
 
 
@@ -1943,27 +2069,35 @@
     // - Display value: default commas
     // - Cartouche value: "_" for NENE breaks, but "," for true thousands grouping
     function setDecimalValueFromCapsOrClear(caps) {
-      // If the caps stream is a time encoding, format group separators as ":" not ","
-      // so cartouche value shows HH:MM[:SS].
+      // Time: show HH:MM[:SS]
       if (nanpaCapsIsValidTime(caps)) {
         const vTime = tryDecodeCapsToDisplayValue(caps, {
-          // For times, the only separators we want are ":" between HH/MM/(SS)
-          intEneSep: ":",     // (not normally used for time, but safe)
-          intGroupSep: ":",   // critical: NE+KE delimiter prints as ":"
+          intEneSep: ":",     // not usually used; harmless
+          intGroupSep: ":",   // NE+KE delimiter => ":"
           fracEneSep: "_",
           fracGroupSep: "_"
         });
-
-        // If decoding failed for any reason, fall back to empty rather than lying.
         setDecimalValueLine(vTime, vTime);
         return;
       }
 
+      // Date: show YYYY-MM-DD (always hyphen)
+      if (nanpaCapsIsValidDate(caps)) {
+        const vDate = tryDecodeCapsToDisplayValue(caps, {
+          intEneSep: "-",     // not used here; harmless
+          intGroupSep: "-",   // NE+KE delimiter => "-"
+          fracEneSep: "_",
+          fracGroupSep: "_"
+        });
+        setDecimalValueLine(vDate, vDate);
+        return;
+      }
+
       // Normal numeric formatting (existing behavior)
-      const vDisplay = tryDecodeCapsToDisplayValue(caps); // default behavior (commas for int)
+      const vDisplay = tryDecodeCapsToDisplayValue(caps);
       const vCartouche = tryDecodeCapsToDisplayValue(caps, {
-        intEneSep: "_",     // NENE breaks in integer part
-        intGroupSep: ",",   // thousands grouping stays comma
+        intEneSep: "_",
+        intGroupSep: ",",
         fracEneSep: "_",
         fracGroupSep: "_"
       });
@@ -2332,19 +2466,20 @@
       if (!s) return [];
 
       const timeCaps = timeStrToNanpaCaps(s);
+      const dateCaps = dateStrToNanpaCaps(s);
 
       const caps = looksLikeNanpaCaps(s)
         ? s.toUpperCase()
-        : (timeCaps != null)
-          ? timeCaps
-          : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        : (timeCaps != null) ? timeCaps
+        : (dateCaps != null) ? dateCaps
+        : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
 
       const tokens = tokenizeNanpaCaps(caps);
 
       const mode = getCartoucheDisplayMode();
       let tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
 
-      if (timeCaps != null) {
+      if (timeCaps != null || dateCaps != null) {
         tpWords = replaceTimeSeparatorsTpWords(tpWords, mode);
       }
 
@@ -2423,12 +2558,13 @@
       const s = normalizeVulgarFractionInput(String(decimalStr ?? "").trim());
       if (!s) return "";
       const timeCaps = timeStrToNanpaCaps(s);
+      const dateCaps = dateStrToNanpaCaps(s);
 
       const caps = looksLikeNanpaCaps(s)
         ? s.toUpperCase()
-        : (timeCaps != null)
-          ? timeCaps
-          : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        : (timeCaps != null) ? timeCaps
+        : (dateCaps != null) ? dateCaps
+        : numberStrToNanpaCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
 
       return splitCartoucheCapsLetters(caps);
     }
@@ -2553,7 +2689,7 @@
 
       const mode = getCartoucheDisplayMode();
       let tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
-      if (nanpaCapsIsValidTime(caps)) {
+      if (nanpaCapsIsValidTimeOrDate(caps)) {
         tpWords = replaceTimeSeparatorsTpWords(tpWords, mode);
       }
       const cps = tpWordsToUcsurCodepoints(tpWords);
@@ -3078,17 +3214,18 @@
 
       const raw = normalizeVulgarFractionInput(elDecimal.value);
       const timeCaps = timeStrToNanpaCaps(raw);
+      const dateCaps = dateStrToNanpaCaps(raw);
 
       const caps = looksLikeNanpaCaps(raw)
         ? raw.toUpperCase()
-        : (timeCaps != null)
-          ? timeCaps
-          : numberStrToNanpaCaps(raw, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        : (timeCaps != null) ? timeCaps
+        : (dateCaps != null) ? dateCaps
+        : numberStrToNanpaCaps(raw, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
 
       // Display value line:
       // - For decimals, we can decode the caps back to a “display value” string.
       // - For times, decoding isn't defined, so we just show the original input.
-      if (timeCaps != null) {
+      if (timeCaps != null || dateCaps != null) {
         setDecimalValueLine(String(raw ?? "").trim(), String(raw ?? "").trim());
       } else {
         setDecimalValueFromCapsOrClear(caps);
@@ -3229,7 +3366,7 @@
           const mode = getCartoucheDisplayMode();
           const tokens = tokenizeNanpaCaps(caps);
           let tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
-          if (nanpaCapsIsValidTime(caps)) {
+          if (nanpaCapsIsValidTimeOrDate(caps)) {
             tpWords = replaceTimeSeparatorsTpWords(tpWords, mode);
           }
           const cps = tpWordsToUcsurCodepoints(tpWords);
@@ -3286,7 +3423,7 @@
           const mode = getCartoucheDisplayMode();
           const tokens = tokenizeNanpaCaps(caps);
           let tpWords = nanpaCapsTokensToTpWords(tokens, { mode });
-          if (nanpaCapsIsValidTime(caps)) {
+          if (nanpaCapsIsValidTimeOrDate(caps)) {
             tpWords = replaceTimeSeparatorsTpWords(tpWords, mode);
           }
           const cps = tpWordsToUcsurCodepoints(tpWords);

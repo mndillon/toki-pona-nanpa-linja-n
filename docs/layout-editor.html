@@ -3135,6 +3135,10 @@ function tryParseNanpaLinjanNumberCodeToCaps(raw) {
   return { caps };
 }
 
+const TOKEN_TO_DIGIT_CHAR = {
+  "NI":"0","WE":"1","TE":"2","SE":"3","NA":"4",
+  "LE":"5","NU":"6","ME":"7","PE":"8","JE":"9"
+};
 
 const TOKEN_TO_DIGIT_WORD = {
   "NI":"ijo","WE":"wan","TE":"tu","SE":"seli","NA":"awen",
@@ -3298,7 +3302,7 @@ function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "uniform" 
   try {
     const parsed = tryParseNanpaLinjanNumberCodeToCaps(s);
     if (parsed?.caps) {
-      const isTime = nanpaCapsIsValidTime(parsed.caps);
+      const isTime = nanpaCapsIsValidTimeOrDate(parsed.caps);
       return nanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode, isTime });
     }
   } catch {
@@ -3322,7 +3326,7 @@ function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "uniform" 
     caps = coreUpper + "N";
   }
 
-  const isTime = nanpaCapsIsValidTime(caps);
+  const isTime = nanpaCapsIsValidTimeOrDate(caps);
   return nanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime });
 
 }
@@ -3423,6 +3427,23 @@ const DEC_DIGIT_TO_TOKEN = {
   "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
 };
 
+function normalizeDateTimeInput(raw) {
+  let s = String(raw ?? "").trim();
+
+  // dates/times: remove internal whitespace
+  s = s.replace(/\s+/g, "");
+
+  // Normalize common unicode variants (copy/paste-safe)
+  // Hyphen/minus variants -> "-"
+  s = s.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]/g, "-");
+  // Slash variants -> "/"
+  s = s.replace(/[\u2044\u2215\uFF0F]/g, "/");
+  // Fullwidth colon -> ":"
+  s = s.replace(/[\uFF1A]/g, ":");
+
+  return s;
+}
+
 /* ============================================================
    Time recognizer (HH:MM[:SS]) + caps encoder
    ============================================================ */
@@ -3451,6 +3472,49 @@ function encodeDigitsOnly(digits) {
     out += tok;
   }
   return out;
+}
+
+// ============================
+// Date support (YYYY{sep}MM{sep}DD)
+// ============================
+// Valid formats:
+// - YYYY-MM-DD, YYYY/MM/DD, YYYY:MM:DD
+// Constraints:
+// - YYYY exactly 4 digits (0000-9999 allowed)
+// - MM 01-12
+// - DD 01-31
+function tryParseDateParts(raw) {
+  const s = normalizeDateTimeInput(raw);
+  const m = s.match(/^(\d{4})([:\/-])(\d{2})\2(\d{2})$/);
+  if (!m) return null;
+
+  const yyyyStr = m[1];
+  const mmStr = m[3];
+  const ddStr = m[4];
+
+  const mm = parseInt(mmStr, 10);
+  const dd = parseInt(ddStr, 10);
+
+  if (!(mm >= 1 && mm <= 12)) return null;
+  if (!(dd >= 1 && dd <= 31)) return null;
+
+  return { yyyyStr, mmStr, ddStr };
+}
+
+function dateStrToNanpaCaps(raw) {
+  const parts = tryParseDateParts(raw);
+  if (!parts) return null;
+
+  let caps = "NE";
+  caps += encodeDigitsOnly(parts.yyyyStr);
+  caps += "NEKE";
+  caps += encodeDigitsOnly(parts.mmStr);
+  caps += "NEKE";
+  caps += encodeDigitsOnly(parts.ddStr);
+  caps += "N";
+
+  tokenizeNanpaCaps(caps); // sanity-check
+  return caps;
 }
 
 function timeStrToNanpaCaps(raw) {
@@ -3591,6 +3655,70 @@ function nanpaCapsIsValidTime(caps) {
   return nanpaCapsDecodeTimeStrict(caps) != null;
 }
 
+function nanpaCapsDecodeDateStrict(caps) {
+  let tokens;
+  try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
+  catch { return null; }
+
+  if (tokens[0] !== "NE") return null;
+  if (tokens[tokens.length - 1] !== "N") return null;
+
+  // Pattern:
+  // NE (YYYY digits: 4) NE KE (MM digits: 2) NE KE (DD digits: 2) N
+  let i = 1;
+
+  function readDigit() {
+    const t = tokens[i];
+    const ch = TOKEN_TO_DIGIT_CHAR[t];
+    if (ch == null) return null;
+    i += 1;
+    return ch;
+  }
+
+  // YYYY: exactly 4 digits
+  const y1 = readDigit(); if (y1 == null) return null;
+  const y2 = readDigit(); if (y2 == null) return null;
+  const y3 = readDigit(); if (y3 == null) return null;
+  const y4 = readDigit(); if (y4 == null) return null;
+
+  // delimiter 1
+  if (tokens[i] !== "NE") return null; i++;
+  if (tokens[i] !== "KE") return null; i++;
+
+  // MM: exactly 2 digits
+  const m1 = readDigit(); if (m1 == null) return null;
+  const m2 = readDigit(); if (m2 == null) return null;
+  const mmStr = m1 + m2;
+
+  // delimiter 2
+  if (tokens[i] !== "NE") return null; i++;
+  if (tokens[i] !== "KE") return null; i++;
+
+  // DD: exactly 2 digits
+  const d1 = readDigit(); if (d1 == null) return null;
+  const d2 = readDigit(); if (d2 == null) return null;
+  const ddStr = d1 + d2;
+
+  // must end at final N
+  if (i !== tokens.length - 1) return null;
+
+  const mm = parseInt(mmStr, 10);
+  const dd = parseInt(ddStr, 10);
+
+  if (!(mm >= 1 && mm <= 12)) return null;
+  if (!(dd >= 1 && dd <= 31)) return null;
+
+  return { mm, dd };
+}
+
+function nanpaCapsIsValidDate(caps) {
+  return nanpaCapsDecodeDateStrict(caps) != null;
+}
+
+function nanpaCapsIsValidTimeOrDate(caps) {
+  return nanpaCapsIsValidTime(caps) || nanpaCapsIsValidDate(caps);
+}
+
 function findTimeSequencesWithCaps(text) {
   const s = String(text ?? "");
   if (!s) return [];
@@ -3610,6 +3738,30 @@ function findTimeSequencesWithCaps(text) {
 
     const caps = timeStrToNanpaCaps(raw);
     if (caps != null) out.push({ kind: "time", match: raw, index: start, end, caps });
+  }
+  return out;
+}
+
+function findDateSequencesWithCaps(text) {
+  const s = String(text ?? "");
+  if (!s) return [];
+
+  // No lookbehind: boundary in group 1, date in group 2.
+  // Accept "-", "/", ":" (and unicode variants after normalization occurs inside dateStrToNanpaCaps).
+  const re = /(^|[^0-9])(\d{4}[:\/-]\d{2}[:\/-]\d{2})(?!\d)/g;
+
+  const out = [];
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    const lead = m[1] ?? "";
+    const raw = m[2];
+    if (!raw) continue;
+
+    const start = (m.index | 0) + String(lead).length;
+    const end = start + raw.length;
+
+    const caps = dateStrToNanpaCaps(raw);
+    if (caps != null) out.push({ kind: "date", match: raw, index: start, end, caps });
   }
   return out;
 }
@@ -4043,6 +4195,7 @@ function mergeAndGreedyFilterHits(allHits) {
   function priority(kind) {
     if (kind === "decimal") return 4;
     if (kind === "time") return 4;
+    if (kind === "date") return 4;
     if (kind === "tpPhrase") return 3;
     if (kind === "code") return 2;
     return 1; // proper name
@@ -4436,12 +4589,13 @@ function parseTextSegmentToElements(segmentText, elements, { fontPx, mode, fgCss
   if (!s.trim()) return;
 
   const timeHits   = findTimeSequencesWithCaps(s);
+  const dateHits = findDateSequencesWithCaps(s);
   const decHits    = findDecimalSequencesWithCaps(s);
   const codeHits   = findNumberCodeSequencesWithCaps(s);
   const nameHits   = findNanpaLinjanProperNameSequencesWithCaps(s);
   const phraseHits = findNanpaLinjanTpPhraseSequences(s);
 
-  const hits = mergeAndGreedyFilterHits([...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+  const hits = mergeAndGreedyFilterHits([...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
 
   if (!hits || hits.length === 0) {
     renderTpWordsFromText(s, elements, { fontPx, mode });
@@ -4466,8 +4620,8 @@ function parseTextSegmentToElements(segmentText, elements, { fontPx, mode, fgCss
         renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
       }
     } else {
-      const isTime = (h.kind === "time") || nanpaCapsIsValidTime(h.caps);
-      const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode, isTime });
+      const isTimeLike = (h.kind === "time") || (h.kind === "date") || nanpaCapsIsValidTimeOrDate(h.caps);
+      const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode, isTime: isTimeLike });
       if (cps && cps.length) {
         makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
       } else {
@@ -4500,12 +4654,13 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
 
   // Use the same scanners as plain text, but require a FULL-CONTENT hit.
   const timeHits = findTimeSequencesWithCaps(content);
+  const dateHits = findDateSequencesWithCaps(content);
   const decHits    = findDecimalSequencesWithCaps(content);
   const codeHits   = findNumberCodeSequencesWithCaps(content);
   const nameHits   = findNanpaLinjanProperNameSequencesWithCaps(content);
   const phraseHits = findNanpaLinjanTpPhraseSequences(content);
 
-  const hits = mergeAndGreedyFilterHits([...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+  const hits = mergeAndGreedyFilterHits([...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
   const full = (hits || []).find(h => (h.index|0) === 0 && (h.end|0) === content.length);
 
   if (full) {
@@ -4516,8 +4671,8 @@ function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode,
         return;
       }
     } else {
-      const isTime = (full.kind === "time") || nanpaCapsIsValidTime(full.caps);
-      const cps = nanpaCapsToNanpaLinjanCodepoints(full.caps, { mode, isTime });
+      const isTimeLike = (full.kind === "time") || (full.kind === "date") || nanpaCapsIsValidTimeOrDate(full.caps);
+      const cps = nanpaCapsToNanpaLinjanCodepoints(full.caps, { mode, isTime: isTimeLike });
       if (cps && cps.length) {
         makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
         return;
