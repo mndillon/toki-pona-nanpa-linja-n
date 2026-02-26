@@ -2025,8 +2025,18 @@
     function tryDecodeCapsToDisplayValue(caps, opts = {}) {
       if (!caps) return null;
 
-      const tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase());
+      let tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase());
       if (tokens.length < 2 || tokens[0] !== "NE" || tokens[tokens.length - 1] !== "N") return null;
+
+      // NEW: percent suffix support
+      // Your encoder appends OK right before the final N for inputs like "5%".
+      // Strip it for numeric decoding, then append "%" to the final display string.
+      let hasPercent = false;
+      const lastIdx = tokens.length - 1; // index of final "N"
+      if (lastIdx - 1 >= 0 && tokens[lastIdx - 1] === "OK") {
+        hasPercent = true;
+        tokens = tokens.slice(0, lastIdx - 1).concat(["N"]);
+      }
 
       const finalNIdx = tokens.length - 1;
 
@@ -2045,7 +2055,8 @@
 
         if (!intStr || !numStr || !denStr) return null;
 
-        return `${intStr}+${numStr}/${denStr}`;
+        const base = `${intStr}+${numStr}/${denStr}`;
+        return hasPercent ? (base + "%") : base;
       }
 
       const fracIdx = tokens.indexOf("NONO");
@@ -2058,11 +2069,15 @@
 
         if (!numStr || !denStr) return null;
 
-        return `${numStr}/${denStr}`;
+        const base = `${numStr}/${denStr}`;
+        return hasPercent ? (base + "%") : base;
       }
 
       const segTokens = tokens.slice(1, finalNIdx);
-      return decodeDecimalStyleTokensToString(segTokens, opts);
+      const base = decodeDecimalStyleTokensToString(segTokens, opts);
+      if (!base) return null;
+
+      return hasPercent ? (base + "%") : base;
     }
 
     // CHANGED: drive two different strings:
@@ -3475,7 +3490,14 @@
 
           const compact = rawInput.toLowerCase().replace(/\s+/g, "");
           const core = compact.slice(0, -1);
-          const caps = core.toUpperCase() + "N";
+          let caps = core.toUpperCase() + "N";
+
+          // IMPORTANT: allow percent marker in proper names.
+          // If user ends the name with "...oken", that uppercases to "...NOKEN" (NO+KE+N).
+          // Collapse trailing NO+KE into OK so the percent decoder works.
+          if (caps.endsWith("NOKEN")) {
+            caps = caps.slice(0, -5) + "OKN";
+          }
 
           setDecimalValueFromCapsOrClear(caps);
 
