@@ -1791,7 +1791,7 @@ function wireHaloControls() {
       const ssStr = (m[3] != null) ? m[3] : null;
 
       const hh = parseInt(hhStr, 10);
-      if (!Number.isFinite(hh) || hh < 0 || hh > 23) return null;
+      if (!Number.isFinite(hh) || hh < 0 || hh > 59) return null;
 
       return { hhStr, mmStr, ssStr };
     }
@@ -1983,7 +1983,7 @@ function wireHaloControls() {
       const mm = parseInt(mmStr, 10);
       const ss = (ssStr == null) ? null : parseInt(ssStr, 10);
 
-      if (!(hh >= 0 && hh <= 23)) return null;
+      if (!(hh >= 0 && hh <= 59)) return null;
       if (!(mm >= 0 && mm <= 59)) return null;
       if (ss != null && !(ss >= 0 && ss <= 59)) return null;
 
