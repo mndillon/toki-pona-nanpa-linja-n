@@ -2882,51 +2882,58 @@ function wireHaloControls() {
     function splitLineIntoSegments(line) {
       const s = String(line ?? "");
       const out = [];
-
       let i = 0;
+      let start = 0;
 
-      function pushTextSegment(txt) {
-        if (txt) out.push({ kind: "text", value: txt });
+      function pushText(a, b) {
+        if (b > a) out.push({ kind: "text", value: s.slice(a, b) });
       }
 
       while (i < s.length) {
         const ch = s[i];
 
+        // Bracket: [...]
         if (ch === "[") {
           const j = s.indexOf("]", i + 1);
-          if (j < 0) {
-            pushTextSegment(s.slice(i));
-            break;
-          }
-          pushTextSegment(s.slice(i, i));
+          if (j < 0) break; // treat rest as text below
+          pushText(start, i);
           out.push({ kind: "bracket", value: s.slice(i + 1, j) });
           i = j + 1;
+          start = i;
           continue;
         }
 
-        if (ch === '"') {
+        // Quote: "..." or “...”
+        if (ch === '"' || ch === "“") {
+          const openCh = ch;
+          const closeCh = (openCh === "“") ? "”" : '"';
+
           let j = i + 1;
           let found = false;
           while (j < s.length) {
-            if (s[j] === '"' && s[j - 1] !== "\\") { found = true; break; }
+            const cj = s[j];
+            const isClose =
+              (cj === closeCh) ||
+              (openCh === "“" && cj === '"') ||
+              (openCh === '"' && cj === "”");
+
+            if (isClose && s[j - 1] !== "\\") { found = true; break; }
             j++;
           }
-          if (!found) {
-            pushTextSegment(s.slice(i));
-            break;
-          }
+          if (!found) break;
 
+          pushText(start, i);
           out.push({ kind: "quote", value: s.slice(i + 1, j) });
           i = j + 1;
+          start = i;
           continue;
         }
 
-        let j = i;
-        while (j < s.length && s[j] !== "[" && s[j] !== '"') j++;
-        pushTextSegment(s.slice(i, j));
-        i = j;
+        i++;
       }
 
+      // trailing text
+      pushText(start, s.length);
       return out;
     }
 
@@ -3950,7 +3957,7 @@ function wireHaloControls() {
 
       const fontText = await pdfDoc.embedFont(textBytes, { subset: false }); // IMPORTANT for UCSUR / >BMP glyphs
       const fontCart = await pdfDoc.embedFont(cartBytes, { subset: false }); // IMPORTANT for cartouche glyphs too
-      const fontLit  = await pdfDoc.embedFont(literalBytes, { subset: true }); // OK to subset normal latin font
+      const fontLit  = await pdfDoc.embedFont(literalBytes, { subset: false }); // OK to subset normal latin font
 
       return { fontText, fontCart, fontLit };
     }
