@@ -12,6 +12,8 @@
       --border: #d0d7de;
       --bg: #F3DFC0;     /* unify background color */
       --muted: #3f4750;  /* CHANGED: darker for better contrast */
+      --rule: rgba(63, 71, 80, 0.14);   /* subtle warm-ish gray derived from --muted */
+      --ruleSoft: rgba(63, 71, 80, 0.08);
     }
 
     body {
@@ -216,6 +218,20 @@
       img.portrait{ max-width:520px; margin-inline:auto; }
     }
 
+    .miniDivider{
+      border: 0;
+      height: 6px;
+      margin: 12px 0;
+      background: linear-gradient(
+        to right,
+        var(--rule) 0%,
+        rgba(63, 71, 80, 0.20) 22%,
+        rgba(63, 71, 80, 0.10) 55%,
+        transparent 100%
+      );
+      border-radius: 999px;
+    }
+
   </style>
 
 </head>
@@ -247,6 +263,8 @@
       <div class="help">&nbsp;</div>
       
 
+      <hr class="miniDivider"/>
+
     <div class="out" role="region" aria-label="Outputs">
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the English proper names tokiponizer
@@ -260,7 +278,7 @@
         <span class="tpLine">ilo ni li ante e nimi jan pi toki Inli tawa toki pona</span>
       </div>
 
-
+ <hr class="miniDivider"/>
 
       <h1  style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona basic sitelen layout editor → PNG image file download
@@ -273,6 +291,8 @@
         <span class="tpLine">o lukin e lo pi ante lon ijo</span>
       </div>
 
+       <hr class="miniDivider"/>
+
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona Multiline text → sitelen pona glyphs → PNG image file download and PDF file download
         <span class="tpLine">o lukin e ilo ni: sitelen toki pona mute-linja tawa sitelen pona</span>
@@ -283,6 +303,8 @@
         </a>
         <span class="tpLine">o lukin e ilo ni: sitelen toki pona mute-linja tawa sitelen pona</span>
       </div>
+
+       <hr class="miniDivider"/>
 
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
@@ -295,6 +317,8 @@
         <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
       </div>
 
+       <hr class="miniDivider"/>
+
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n cartouche calculator
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
@@ -305,6 +329,9 @@
         </a>
         <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
       </div>
+
+ <hr class="miniDivider"/>
+
 
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n maze game
@@ -317,6 +344,8 @@
         <span class="tpLine">musi pi nasin pi nanpa-linja-n lon toki pona</span>
       </div>
 
+       <hr class="miniDivider"/>
+
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona 15 puzzle game
         <span class="tpLine">o lukin e musi pi leko tawa nanpa Newelen pi toki pona</span>
@@ -328,6 +357,7 @@
         <span class="tpLine">musi pi leko tawa nanpa Newelen pi toki pona</span>
       </div>
 
+ <hr class="miniDivider"/>
 
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n guess the number game
@@ -340,6 +370,8 @@
         <span class="tpLine">musi pi alasa nanpa nanpa-linja-n pi toki pona</span>
       </div>
 
+       <hr class="miniDivider"/>
+
       <h1 style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona sitelen pona fonts
         <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
@@ -350,6 +382,8 @@
         </a>
         <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
       </div>
+
+       <hr class="miniDivider"/>
 
       <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n main documentation
@@ -362,7 +396,8 @@
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
       </div>
 
-      
+       <hr class="miniDivider"/>
+
       <div class="help">#~n</div>
     </div>
   </main>
