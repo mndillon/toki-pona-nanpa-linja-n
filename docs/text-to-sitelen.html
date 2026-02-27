@@ -540,6 +540,18 @@
           </button>
         </div>
 
+<div style="display:flex; gap:10px; flex-wrap:wrap; margin: 6px 0 8px;">
+  <button id="btnImportTextMain" type="button" class="btnBi">
+    <span>Import .txt</span>
+    <span class="tpLine">o kama jo e lipu</span>
+  </button>
+
+  <button id="btnExportTextMain" type="button" class="btnBi">
+    <span>Export .txt</span>
+    <span class="tpLine">o pana e lipu</span>
+  </button>
+</div>
+
         <textarea id="textIn" rows="12" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
           placeholder="mi kama sona e toki pona.
 nanpa -12,340.57.
@@ -760,7 +772,20 @@ tenpo suno 2026-03-17"></textarea>
     <h3 id="floatingTextInEditorTitle">Input</h3>
     <button id="btnCloseFloatingTextInEditor" class="btnBi" type="button">Close</button>
   </div>
-  <div class="floatingEditorBody">
+  <div class="floatingEditorBody" style="flex-direction:column; gap:10px;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button id="btnImportTextPop" type="button" class="btnBi">
+        <span>Import .txt</span>
+        <span class="tpLine">o kama jo e lipu</span>
+      </button>
+
+      <button id="btnExportTextPop" type="button" class="btnBi">
+        <span>Export .txt</span>
+        <span class="tpLine">o pana e lipu</span>
+      </button>
+    </div>
+
+    <input id="filePickTextIn" type="file" accept=".txt,text/plain" class="sr-only" />
     <textarea id="floatingTextInEditorTextarea" class="mono" spellcheck="false"></textarea>
   </div>
 </div>
@@ -3578,6 +3603,34 @@ function wireHaloControls() {
       return t.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80) || "sitelen";
     }
 
+    function downloadTextAsFile(text, { filename = "input.txt" } = {}) {
+      const blob = new Blob([String(text ?? "")], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function readFileAsText(file) {
+      // Modern browsers: file.text()
+      if (file && typeof file.text === "function") return await file.text();
+
+      // Fallback
+      return await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result ?? ""));
+        fr.onerror = () => reject(fr.error || new Error("Failed to read file"));
+        fr.readAsText(file);
+      });
+    }
+
+
     function downloadCanvasAsTransparentPng(canvas, { filenameBase = "sitelen", scale = 1 } = {}) {
       if (!canvas) throw new Error("Canvas not found.");
 
@@ -4191,6 +4244,75 @@ function wireHaloControls() {
       window.addEventListener("resize", () => clampFloatingTextInEditorToViewport());
     }
 
+
+    function applyNewInputTextWithPipeline(newText) {
+      // Always write into the source textarea (#textIn), then trigger the existing pipeline:
+      // - pop-out sync
+      // - IndexedDB autosave (debounced)
+      // - auto-render (debounced)
+      elTextIn.value = String(newText ?? "");
+      elTextIn.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function getExportFilenameBase() {
+      // You can make this smarter if you want (e.g. include date/time)
+      return "sitelen-input";
+    }
+
+    function wireImportExportButtons() {
+      const btnImportMain = document.getElementById("btnImportTextMain");
+      const btnExportMain = document.getElementById("btnExportTextMain");
+      const btnImportPop  = document.getElementById("btnImportTextPop");
+      const btnExportPop  = document.getElementById("btnExportTextPop");
+
+      const filePick = document.getElementById("filePickTextIn");
+      if (!filePick) return;
+
+      // Shared import routine (uses hidden <input type="file">)
+      async function doImport() {
+        // If there is already content, confirm overwrite
+        const cur = String(elTextIn.value ?? "");
+        if (cur.trim().length > 0) {
+          const ok = confirm("Replace the current input text with the contents of a .txt file?");
+          if (!ok) return;
+        }
+
+        // Reset so selecting the same file twice still triggers change
+        filePick.value = "";
+        filePick.click();
+      }
+
+      filePick.addEventListener("change", async () => {
+        try {
+          const f = filePick.files && filePick.files[0];
+          if (!f) return;
+
+          const txt = await readFileAsText(f);
+          applyNewInputTextWithPipeline(txt);
+          announceStatus("Imported text file.");
+        } catch (e) {
+          showAlertAndAnnounce(e?.message ?? String(e));
+        } finally {
+          filePick.value = "";
+        }
+      });
+
+      // Export routine
+      function doExport() {
+        const txt = String(elTextIn.value ?? "");
+        const filename = `${getExportFilenameBase()}.txt`;
+        downloadTextAsFile(txt, { filename });
+        announceStatus("Exported text file.");
+      }
+
+      btnImportMain?.addEventListener("click", doImport);
+      btnImportPop?.addEventListener("click", doImport);
+
+      btnExportMain?.addEventListener("click", doExport);
+      btnExportPop?.addEventListener("click", doExport);
+    }
+
+
     btnRender.addEventListener("click", async () => {
       try { await renderFromTextarea(); }
       catch (e) { showAlertAndAnnounce(e?.message ?? String(e)); }
@@ -4317,8 +4439,7 @@ function wireHaloControls() {
 
     // Initialize pop-out editor
     initFloatingTextInEditor();
-
-
+    wireImportExportButtons();
   </script>
 </body>
 </html>
