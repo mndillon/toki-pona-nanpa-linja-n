@@ -359,6 +359,121 @@
       img.portrait{ max-width:520px; margin-inline:auto; }
     }
 
+
+/* ============================================================
+   Floating text pop-out editor (matches layout-editor style)
+   - draggable header
+   - resizable (CSS resize)
+   ============================================================ */
+
+.fieldLabelRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.fieldLabelRow > label{
+  margin: 0;
+}
+
+.popoutIconBtn{
+  appearance:none;
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.50);
+  color: #111;
+  border-radius: 8px;
+  padding: 4px 8px;
+  line-height: 1;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.popoutIconBtn:hover{
+  background: rgba(255,255,255,0.72);
+}
+.popoutIconBtn:focus-visible{
+  outline: 2px solid rgba(17,17,17,0.45);
+  outline-offset: 2px;
+}
+
+.floatingEditor{
+  position: fixed;
+  left: 24px;
+  top: 24px;
+  width: min(820px, calc(100vw - 32px));
+  height: min(520px, calc(100vh - 32px));
+  min-width: 320px;
+  min-height: 220px;
+  display: none;
+  flex-direction: column;
+  z-index: 9999;
+
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.20);
+
+  resize: both;
+  overflow: hidden;
+}
+
+.floatingEditor.show{
+  display: flex;
+}
+
+.floatingEditorHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.20);
+  cursor: move;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+.floatingEditorHeader h3{
+  margin: 0;
+  font-size: 14px;
+}
+
+.floatingEditorBody{
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px;
+  background: rgba(255,255,255,0.35);
+  display:flex;
+}
+
+.floatingEditorBody textarea{
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  resize: none;
+  box-sizing: border-box;
+  border: 1px solid rgba(17,17,17,0.20);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--bg);
+  color: #111;
+  font: inherit;
+}
+
+/* Small screens: make it feel like a top sheet */
+@media (max-width: 860px){
+  .floatingEditor{
+    left: 12px;
+    top: 12px;
+    width: calc(100vw - 24px);
+    height: min(55vh, calc(100vh - 24px));
+  }
+}
+
   </style>
 </head>
 
@@ -413,10 +528,18 @@
     <div class="controlsStack" role="group" aria-label="Input and render action">
 
       <div>
-        <label for="textIn">
-          Enter multi-line Toki Pona text
-          <span class="tpLine">o pana e sitelen toki pona lon linja mute</span>
-        </label>
+        <div class="fieldLabelRow">
+          <label for="textIn">
+            Enter multi-line Toki Pona text
+            <span class="tpLine">o pana e sitelen toki pona lon linja mute</span>
+          </label>
+
+          <!-- Pop-out button -->
+          <button id="btnPopoutTextIn" type="button" class="popoutIconBtn" title="Pop out editor" aria-label="Pop out editor">
+            ↗
+          </button>
+        </div>
+
         <textarea id="textIn" rows="12" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
           placeholder="mi kama sona e toki pona.
 nanpa -12,340.57.
@@ -622,6 +745,18 @@ tenpo suno 2026-03-17"></textarea>
 
       <div class="help">#~n</div>
     </div>
+
+
+    <!-- Floating text editor for the main input -->
+<div id="floatingTextInEditor" class="floatingEditor" aria-hidden="true">
+  <div id="floatingTextInEditorHeader" class="floatingEditorHeader">
+    <h3 id="floatingTextInEditorTitle">Input</h3>
+    <button id="btnCloseFloatingTextInEditor" class="btnBi" type="button">Close</button>
+  </div>
+  <div class="floatingEditorBody">
+    <textarea id="floatingTextInEditorTextarea" class="mono" spellcheck="false"></textarea>
+  </div>
+</div>
   </main>
 
   <script>
@@ -3469,6 +3604,259 @@ function wireHaloControls() {
       //announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px. Color: ${hex}.`);
     }
 
+
+
+    let _autoRenderTimer = null;
+    function scheduleAutoRender() {
+      if (_autoRenderTimer) clearTimeout(_autoRenderTimer);
+      _autoRenderTimer = setTimeout(async () => {
+        try { await renderFromTextarea(); }
+        catch (e) { console.warn("[auto-render] failed:", e); }
+      }, 90);
+    }
+
+
+    // ============================================================
+    // IndexedDB: persist last text input for #textIn
+    // - autosave (debounced)
+    // - restore on page load
+    // ============================================================
+
+    const TEXT_DRAFT_DB = "text-to-sitelen";
+    const TEXT_DRAFT_STORE = "kv";
+    const TEXT_DRAFT_KEY = "draft:textIn:v1";
+
+    function openTextDraftDb(){
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(TEXT_DRAFT_DB, 1);
+
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(TEXT_DRAFT_STORE)){
+            db.createObjectStore(TEXT_DRAFT_STORE);
+          }
+        };
+
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idbGetTextDraft(){
+      const db = await openTextDraftDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(TEXT_DRAFT_STORE, "readonly");
+        const store = tx.objectStore(TEXT_DRAFT_STORE);
+        const req = store.get(TEXT_DRAFT_KEY);
+
+        req.onsuccess = () => resolve(req.result ?? null);
+        req.onerror = () => reject(req.error);
+
+        tx.oncomplete = () => db.close();
+        tx.onerror = () => { try { db.close(); } catch {} };
+      });
+    }
+
+    async function idbSetTextDraft(value){
+      const db = await openTextDraftDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(TEXT_DRAFT_STORE, "readwrite");
+        const store = tx.objectStore(TEXT_DRAFT_STORE);
+        const req = store.put(String(value ?? ""), TEXT_DRAFT_KEY);
+
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+
+        tx.oncomplete = () => db.close();
+        tx.onerror = () => { try { db.close(); } catch {} };
+      });
+    }
+
+    // Debounced autosave
+    let _autoSaveTimer = null;
+    function scheduleAutoSaveTextDraft(value){
+      if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+      _autoSaveTimer = setTimeout(() => {
+        idbSetTextDraft(value).catch((e) => console.warn("[idb autosave] failed:", e));
+      }, 250);
+    }
+
+    const FloatingTextInEditor = {
+      root: null,
+      header: null,
+      title: null,
+      ta: null,
+      closeBtn: null,
+      popBtn: null,
+
+      isOpen: false,
+      sourceTextarea: null,
+
+      dragging: false,
+      dragPointerId: null,
+      startX: 0,
+      startY: 0,
+      startLeft: 0,
+      startTop: 0,
+
+      suppressSync: false,
+    };
+
+    function clampFloatingTextInEditorToViewport() {
+      const S = FloatingTextInEditor;
+      if (!S.root) return;
+
+      const rect = S.root.getBoundingClientRect();
+      const maxLeft = Math.max(0, window.innerWidth - rect.width);
+      const maxTop  = Math.max(0, window.innerHeight - rect.height);
+
+      const curLeft = parseFloat(S.root.style.left || "0");
+      const curTop  = parseFloat(S.root.style.top || "0");
+
+      S.root.style.left = `${Math.max(0, Math.min(curLeft, maxLeft))}px`;
+      S.root.style.top  = `${Math.max(0, Math.min(curTop, maxTop))}px`;
+    }
+
+    function syncFloatingTextInEditorFromSource(value) {
+      const S = FloatingTextInEditor;
+      if (!S.isOpen || !S.ta) return;
+      if (S.suppressSync) return;
+
+      const v = String(value ?? "");
+      if (S.ta.value === v) return;
+
+      S.suppressSync = true;
+      S.ta.value = v;
+      S.suppressSync = false;
+    }
+
+    function closeFloatingTextInEditor() {
+      const S = FloatingTextInEditor;
+      if (!S.root) return;
+
+      S.root.classList.remove("show");
+      S.root.setAttribute("aria-hidden", "true");
+      S.isOpen = false;
+    }
+
+    function openFloatingTextInEditor() {
+      const S = FloatingTextInEditor;
+      if (!S.root || !S.ta || !S.sourceTextarea) return;
+
+      S.isOpen = true;
+      if (S.title) S.title.textContent = "Input";
+      S.ta.value = String(S.sourceTextarea.value || "");
+
+      S.root.classList.add("show");
+      S.root.setAttribute("aria-hidden", "false");
+      clampFloatingTextInEditorToViewport();
+
+      S.ta.focus();
+    }
+
+    function initFloatingTextInEditor() {
+      const S = FloatingTextInEditor;
+
+      S.root = document.getElementById("floatingTextInEditor");
+      S.header = document.getElementById("floatingTextInEditorHeader");
+      S.title = document.getElementById("floatingTextInEditorTitle");
+      S.ta = document.getElementById("floatingTextInEditorTextarea");
+      S.closeBtn = document.getElementById("btnCloseFloatingTextInEditor");
+      S.popBtn = document.getElementById("btnPopoutTextIn");
+      S.sourceTextarea = elTextIn;
+
+      if (!S.root || !S.header || !S.ta || !S.sourceTextarea) return;
+
+      if (S.popBtn) {
+        S.popBtn.addEventListener("click", () => {
+          if (S.isOpen) closeFloatingTextInEditor();
+          else openFloatingTextInEditor();
+        });
+      }
+
+      if (S.closeBtn) {
+        S.closeBtn.addEventListener("click", () => closeFloatingTextInEditor());
+          // Optional: stop the header drag handler from grabbing this pointerdown
+        S.closeBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+      }
+
+      // Main -> popup sync
+      S.sourceTextarea.addEventListener("input", () => {
+        syncFloatingTextInEditorFromSource(S.sourceTextarea.value);
+
+        // NEW: autosave draft to IndexedDB (debounced)
+        scheduleAutoSaveTextDraft(S.sourceTextarea.value);
+
+        // Auto feedback on typing
+        scheduleAutoRender();
+      });
+
+      // Popup -> main sync
+      S.ta.addEventListener("input", () => {
+        if (!S.sourceTextarea) return;
+        if (S.suppressSync) return;
+
+        S.suppressSync = true;
+        S.sourceTextarea.value = S.ta.value;
+        S.suppressSync = false;
+
+        // Trigger the main textarea listeners (autosave + autorender + popup sync)
+        S.sourceTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+
+      // Dragging (pointer-based)
+      S.header.addEventListener("pointerdown", (e) => {
+        // If the user clicked an interactive control in the header (Close button),
+        // do NOT begin dragging and do NOT preventDefault (otherwise click is cancelled).
+        if (e.target && e.target.closest && e.target.closest("button, a, input, select, textarea")) {
+          return;
+        }
+
+        // Only left click / primary contact
+        if (e.button != null && e.button !== 0) return;
+
+        S.dragging = true;
+        S.dragPointerId = e.pointerId;
+
+        const rect = S.root.getBoundingClientRect();
+        S.startLeft = rect.left;
+        S.startTop = rect.top;
+        S.startX = e.clientX;
+        S.startY = e.clientY;
+
+        S.header.setPointerCapture?.(e.pointerId);
+        e.preventDefault();
+      });
+
+      S.header.addEventListener("pointermove", (e) => {
+        if (!S.dragging) return;
+        if (S.dragPointerId != null && e.pointerId !== S.dragPointerId) return;
+
+        const dx = e.clientX - S.startX;
+        const dy = e.clientY - S.startY;
+
+        S.root.style.left = `${S.startLeft + dx}px`;
+        S.root.style.top  = `${S.startTop + dy}px`;
+        clampFloatingTextInEditorToViewport();
+      });
+
+      function stopDrag(e) {
+        if (!S.dragging) return;
+        if (e && S.dragPointerId != null && e.pointerId !== S.dragPointerId) return;
+
+        S.dragging = false;
+        if (S.dragPointerId != null) {
+          S.header.releasePointerCapture?.(S.dragPointerId);
+        }
+        S.dragPointerId = null;
+      }
+
+      S.header.addEventListener("pointerup", stopDrag);
+      S.header.addEventListener("pointercancel", stopDrag);
+
+      window.addEventListener("resize", () => clampFloatingTextInEditorToViewport());
+    }
+
     btnRender.addEventListener("click", async () => {
       try { await renderFromTextarea(); }
       catch (e) { showAlertAndAnnounce(e?.message ?? String(e)); }
@@ -3534,6 +3922,24 @@ function wireHaloControls() {
         applyFontPxFromQueryOrStorage();
         applyDefaultInputFromQuery();
 
+        // Restore last draft from IndexedDB unless a ?text= / ?input= query param is supplying input.
+        try {
+          const hasQueryText = (readDefaultInputFromQuery() != null);
+          if (!hasQueryText) {
+            const saved = await idbGetTextDraft();
+            if (saved != null && String(saved).length > 0 && elTextIn) {
+              // Only overwrite if it actually differs (avoids needless churn).
+              if (String(elTextIn.value ?? "") !== String(saved)) {
+                elTextIn.value = String(saved);
+                // Keep pop-out (if open) in sync
+                syncFloatingTextInEditorFromSource(elTextIn.value);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("[idb restore] failed:", e);
+        }
+
         initFgColorControls();
         wireFgColorControls();
 
@@ -3550,7 +3956,10 @@ function wireHaloControls() {
         if (btnRender) btnRender.disabled = false;
         if (btnDownload) btnDownload.disabled = false;
 
-        announceStatus("Fonts loaded. Ready to render.");
+        // Auto-render on load (after restore)
+        scheduleAutoRender();
+
+                announceStatus("Fonts loaded. Ready to render.");
       } catch (e) {
         console.warn(e);
         if (btnRender) btnRender.disabled = false;
@@ -3558,6 +3967,11 @@ function wireHaloControls() {
         announceStatus("Font loading failed; rendering may use fallback fonts.");
       }
     });
+
+    // Initialize pop-out editor
+    initFloatingTextInEditor();
+
+
   </script>
 </body>
 </html>
