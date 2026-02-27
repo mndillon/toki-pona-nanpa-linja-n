@@ -1080,6 +1080,22 @@ function wireHaloControls() {
     const WORD_GAP_PX  = 12;
     const LINE_GAP_PX  = 18;
 
+    function wordGapForPx(px){
+      const p = Math.max(8, Number(px ?? 56));
+      return Math.max(2, Math.min(24, Math.round(p * 0.22)));  // ~22% of font size
+    }
+
+    function cartoucheLeadGapForPx(fontPx){
+      // smaller than normal word gap; tune these
+      const p = Math.max(8, Number(fontPx ?? 56));
+      return Math.max(0, Math.round(p * 0.08)); // e.g. ~8% of font size
+    }
+
+    function lineGapForPx(px){
+      const p = Math.max(8, Number(px ?? 56));
+      return Math.max(4, Math.min(40, Math.round(p * 0.32)));  // ~32% of font size
+    }
+
     const CARTOUCHE_START_CP = 0xF1990;
     const CARTOUCHE_END_CP   = 0xF1991;
 
@@ -2955,7 +2971,7 @@ function wireHaloControls() {
 
     function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss }) {
       if (!cps || cps.length === 0) return;
-      pushGapIfNeeded(elements, WORD_GAP_PX);
+      pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
 
       const cart = document.createElement("canvas");
       const padPx = Math.max(4, Math.round(fontPx * 0.11));
@@ -2984,7 +3000,7 @@ function wireHaloControls() {
 
     function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
       if (!cps || cps.length === 0) return;
-      pushGapIfNeeded(elements, WORD_GAP_PX);
+      pushGapIfNeeded(elements, wordGapForPx(fontPx));
 
       elements.push({
         type: "run",
@@ -3002,7 +3018,7 @@ function wireHaloControls() {
         if (ch !== ":" && ch !== "·" && ch !== "," && ch !== ".") return false;
         const cp = WORD_TO_UCSUR_CP[ch];
         if (cp == null) return false;
-        pushGapIfNeeded(elements, WORD_GAP_PX);
+        pushGapIfNeeded(elements, wordGapForPx(fontPx));
         elements.push({ type: "glyph", cp, px: fontPx, fontFamily: FONT_FAMILY_TEXT });
         return true;
       }
@@ -3133,7 +3149,7 @@ function wireHaloControls() {
         // UPDATED: use glyph-key normalization for WORD_TO_UCSUR_CP lookup
         const glyphKey = normalizeTpGlyphKey(trimmed);
         if (glyphKey && WORD_TO_UCSUR_CP[glyphKey] != null) {
-          pushGapIfNeeded(elements, WORD_GAP_PX);
+          pushGapIfNeeded(elements, wordGapForPx(fontPx));
           elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[glyphKey], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
         }
 
@@ -3313,7 +3329,7 @@ function wireHaloControls() {
       const s = String(text ?? "");
       if (!s) return;
 
-      pushGapIfNeeded(elements, WORD_GAP_PX);
+      pushGapIfNeeded(elements, wordGapForPx(fontPx));
       elements.push({
         type: "text",
         text: s,
@@ -3356,7 +3372,7 @@ function wireHaloControls() {
 
     function renderAllLinesToCanvas(outCanvas, linesElements, { fontPx }) {
       const pad = 18;
-
+      const lineGap = lineGapForPx(fontPx);
       const tmp = document.createElement("canvas");
       const ctx = tmp.getContext("2d");
       ctx.textBaseline = "alphabetic";
@@ -3432,7 +3448,7 @@ function wireHaloControls() {
         totalH += lineBoxH;
       }
 
-      totalH += Math.max(0, (measuredLines.length - 1) * LINE_GAP_PX);
+      totalH += Math.max(0, (measuredLines.length - 1) * lineGap);
 
       const outW = Math.max(1, Math.ceil(maxLineW + pad * 2));
       const outH = Math.max(1, Math.ceil(totalH + pad * 2));
@@ -3514,7 +3530,7 @@ function wireHaloControls() {
         }
 
         y += L.lineBoxH;
-        if (li < measuredLines.length - 1) y += LINE_GAP_PX;
+        if (li < measuredLines.length - 1) y += lineGap;
       }
     }
 

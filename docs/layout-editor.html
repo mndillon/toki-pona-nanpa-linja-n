@@ -2813,6 +2813,22 @@ const WORD_GAP_PX = 12;
 const LINE_GAP_PX = 18;   // can override via options
 const DEFAULT_PAD_PX = 18;
 
+function wordGapForPx(px){
+  const p = Math.max(8, Number(px ?? 56));
+  return Math.max(2, Math.min(24, Math.round(p * 0.22)));  // ~22% of font size
+}
+
+function cartoucheLeadGapForPx(fontPx){
+  // smaller than normal word gap; tune these
+  const p = Math.max(8, Number(fontPx ?? 56));
+  return Math.max(0, Math.round(p * 0.08)); // e.g. ~8% of font size
+}
+
+function lineGapForPx(px){
+  const p = Math.max(8, Number(px ?? 56));
+  return Math.max(4, Math.min(40, Math.round(p * 0.32)));  // ~32% of font size
+}
+
 /* ============================
    Cartouche and long-pi codepoints
    ============================ */
@@ -4515,7 +4531,7 @@ function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily,
     haloThickness, 
   } = {}) {
   if (!cps || cps.length === 0) return;
-  pushGapIfNeeded(elements, WORD_GAP_PX);
+  pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
 
   // If caller didn’t pass halo options, inherit from the current sitelen render
  const _he = (haloEnabled === undefined || haloEnabled === null)
@@ -4558,7 +4574,7 @@ function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily,
 
 function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
   if (!cps || cps.length === 0) return;
-  pushGapIfNeeded(elements, WORD_GAP_PX);
+  pushGapIfNeeded(elements, wordGapForPx(fontPx));
   elements.push({
     type: "run",
     cps: Array.from(cps),
@@ -4570,7 +4586,7 @@ function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
 function makeLiteralTextElement(elements, text, { fontPx, fontFamily }) {
   const s = String(text ?? "");
   if (!s) return;
-  pushGapIfNeeded(elements, WORD_GAP_PX);
+  pushGapIfNeeded(elements, wordGapForPx(fontPx));
   elements.push({
     type: "text",
     text: s,
@@ -4589,7 +4605,7 @@ function renderTpWordsFromText(text, elements, { fontPx, mode }) {
     if (ch !== ":" && ch !== "·" && ch !== "," && ch !== ".") return false;
     const cp = MULTI_LINE_WORD_TO_UCSUR_CP[ch];
     if (cp == null) return false;
-    pushGapIfNeeded(elements, WORD_GAP_PX);
+    pushGapIfNeeded(elements, wordGapForPx(fontPx));
     elements.push({ type: "glyph", cp, px: fontPx, fontFamily: FONT_FAMILY_TEXT });
     return true;
   }
@@ -4702,7 +4718,7 @@ function renderTpWordsFromText(text, elements, { fontPx, mode }) {
     // normal word glyph
     const glyphKey = normalizeTpGlyphKey(trimmed);
     if (glyphKey && MULTI_LINE_WORD_TO_UCSUR_CP[glyphKey] != null) {
-      pushGapIfNeeded(elements, WORD_GAP_PX);
+      pushGapIfNeeded(elements, wordGapForPx(fontPx));
       elements.push({ type: "glyph", cp: MULTI_LINE_WORD_TO_UCSUR_CP[glyphKey], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
     }
 
@@ -4910,7 +4926,7 @@ function measureRun(ctx, cps, px, fontFamily) {
    BOUNDING BOX: measure multi-line before drawing
    Returns: { width, height, padPx, lineGapPx, lines:[...lineMetrics...] }
    ============================================================ */
-function measureMultiline(linesElements, { fontPx, padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX } = {}) {
+function measureMultiline(linesElements, { fontPx, padPx = DEFAULT_PAD_PX, lineGapPx = lineGapForPx(fontPx) } = {}) {
   const tmp = document.createElement("canvas");
   const ctx = tmp.getContext("2d");
   ctx.textBaseline = "alphabetic";
@@ -4995,7 +5011,7 @@ function measureMultiline(linesElements, { fontPx, padPx = DEFAULT_PAD_PX, lineG
 /* ============================================================
    DRAW: render multi-line to a canvas (also computes bounding box)
    ============================================================ */
-function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#000111", padPx = DEFAULT_PAD_PX, lineGapPx = LINE_GAP_PX, literalFontAlignment = "left", haloEnabled = false, haloCss = "#FFFFFF", haloThicknessMode = "auto", haloThickness = 0 } = {}) {
+function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#000111", padPx = DEFAULT_PAD_PX, lineGapPx = lineGapForPx(fontPx), literalFontAlignment = "left", haloEnabled = false, haloCss = "#FFFFFF", haloThicknessMode = "auto", haloThickness = 0 } = {}) {
   if (!outCanvas) throw new Error("renderMultilineToCanvas: outCanvas missing");
 
   const box = measureMultiline(linesElements, { fontPx, padPx, lineGapPx });
@@ -5099,7 +5115,7 @@ function renderTextToCanvas(
     mode = "uniform",
     fgCss = "#000111",
     padPx = DEFAULT_PAD_PX,
-    lineGapPx = LINE_GAP_PX,
+    lineGapPx = lineGapForPx(fontPx),
     literalFontFamily,            // NEW: accept it
     literalFontAlignment,   //New accept alignment
 
@@ -5157,10 +5173,11 @@ const sitelenCache = new Map(); // el.id -> { sig, canvas, naturalW, naturalH }
 
 /** Build a signature so we only rebuild when relevant props change */
 function sitelenSignature(el){
+  const fontPx = Math.max(6, Number(el.fontSize ?? 44));
   return [
     String(el.text ?? ""),
     String(el.align ?? "left"),
-    Number(el.fontSize ?? 44),
+    fontPx,
     String(el.color ?? "#111111"),
 
     // literal segments font depends on element fontFamily
@@ -5169,7 +5186,7 @@ function sitelenSignature(el){
     // include anything else that materially changes raster output
     "mode:uniform",
     `pad:${DEFAULT_PAD_PX}`,
-    `lineGap:${LINE_GAP_PX}`,
+    `lineGap:${lineGapForPx(fontPx)}`,
 
     // NEW: halo affects raster
     `haloOn:${!!el.haloEnabled}`,
@@ -5195,7 +5212,7 @@ function sitelenMeasureBBox(el){
     mode: "uniform",
     fgCss: el.color || "#111",
     padPx: DEFAULT_PAD_PX + haloPad,
-    lineGapPx: LINE_GAP_PX,
+    lineGapPx: lineGapForPx(fontPx),
 
     // NEW: literal font comes from the element, not a constant
     literalFontFamily: sitelenLiteralFontFamilyForElement(el),
@@ -5224,7 +5241,7 @@ function sitelenRenderToOffscreen(el,w,h){
     mode: "uniform",
     fgCss: el.color || "#111111",
     padPx: DEFAULT_PAD_PX + haloPad,
-    lineGapPx: LINE_GAP_PX,
+    lineGapPx: lineGapForPx(fontPx),
 
     // NEW: halo options
     haloEnabled: !!el.haloEnabled,
