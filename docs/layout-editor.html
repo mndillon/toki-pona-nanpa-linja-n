@@ -676,6 +676,121 @@
     font-size: 14px;
   }
 
+
+  /* ============================================================
+   Sitelen text pop-out editor
+   - visually matches the modal style from tokiponize-names
+   - draggable
+   - resizable
+   ============================================================ */
+
+.fieldLabelRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.fieldLabelRow > label{
+  margin: 0;
+}
+
+.popoutIconBtn{
+  appearance:none;
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.50);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 4px 8px;
+  line-height: 1;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.popoutIconBtn:hover{
+  background: rgba(255,255,255,0.72);
+}
+.popoutIconBtn:focus-visible{
+  outline: 2px solid rgba(17,17,17,0.45);
+  outline-offset: 2px;
+}
+
+.floatingEditor{
+  position: fixed;
+  left: 360px;
+  top: 120px;
+  width: min(720px, calc(100vw - 32px));
+  height: min(420px, calc(100vh - 32px));
+  min-width: 320px;
+  min-height: 220px;
+  display: none;
+  flex-direction: column;
+  z-index: 9999;
+
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.20);
+
+  resize: both;
+  overflow: hidden;
+}
+
+.floatingEditor.show{
+  display: flex;
+}
+
+.floatingEditorHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.20);
+  cursor: move;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+.floatingEditorHeader h3{
+  margin: 0;
+  font-size: 14px;
+}
+
+.floatingEditorBody{
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px;
+  background: rgba(255,255,255,0.35);
+  display:flex;
+}
+
+.floatingEditorBody textarea{
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  resize: none;
+  box-sizing: border-box;
+  border: 1px solid rgba(17,17,17,0.20);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+
+@media (max-width: 860px){
+  .floatingEditor{
+    left: 12px;
+    top: 12px;
+    width: calc(100vw - 24px);
+    height: min(50vh, calc(100vh - 24px));
+  }
+}
+
 </style>
 
 </head>
@@ -929,7 +1044,19 @@
     </section>
   </div>
 
-  <!-- Hidden file inputs -->
+ 
+   <!-- Floating sitelen text editor -->
+  <div id="floatingSitelenEditor" class="floatingEditor" aria-hidden="true">
+    <div id="floatingSitelenEditorHeader" class="floatingEditorHeader">
+      <h3 id="floatingSitelenEditorTitle">Text</h3>
+      <button id="btnCloseFloatingSitelenEditor" class="btn" type="button">Close</button>
+    </div>
+    <div class="floatingEditorBody">
+      <textarea id="floatingSitelenEditorTextarea" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+   <!-- Hidden file inputs -->
   <input id="filePickBgImage" type="file" accept="image/*" style="display:none;" />
   <input id="fileImportJson" type="file" accept="application/json" style="display:none;" />
   <input id="filePickImage" type="file" accept="image/*" style="display:none;" />
@@ -7036,22 +7163,200 @@ function makeCheckbox(label, checked, onChange){
   return row;
 }
 
+const FloatingSitelenEditor = {
+  root: null,
+  header: null,
+  title: null,
+  ta: null,
+  closeBtn: null,
 
-  function renderPropsPanel(){
+  isOpen: false,
+  elementId: null,
+  sourceTextarea: null,
+  onChange: null,
+
+  dragging: false,
+  dragPointerId: null,
+  startX: 0,
+  startY: 0,
+  startLeft: 0,
+  startTop: 0,
+
+  suppressSync: false,
+};
+
+function clampFloatingEditorToViewport(){
+  const root = FloatingSitelenEditor.root;
+  if (!root) return;
+
+  const rect = root.getBoundingClientRect();
+  const maxLeft = Math.max(0, window.innerWidth - rect.width);
+  const maxTop  = Math.max(0, window.innerHeight - rect.height);
+
+  const curLeft = parseFloat(root.style.left || "0");
+  const curTop  = parseFloat(root.style.top || "0");
+
+  root.style.left = `${Math.max(0, Math.min(curLeft, maxLeft))}px`;
+  root.style.top  = `${Math.max(0, Math.min(curTop, maxTop))}px`;
+}
+
+function syncFloatingSitelenEditorFromSource(value){
+  const S = FloatingSitelenEditor;
+  if (!S.isOpen || !S.ta) return;
+  if (S.suppressSync) return;
+  if (S.ta.value === String(value ?? "")) return;
+
+  S.suppressSync = true;
+  S.ta.value = String(value ?? "");
+  S.suppressSync = false;
+}
+
+function closeFloatingSitelenEditor(){
+  const S = FloatingSitelenEditor;
+  if (!S.root) return;
+
+  S.root.classList.remove("show");
+  S.root.setAttribute("aria-hidden", "true");
+
+  S.isOpen = false;
+  S.elementId = null;
+  S.sourceTextarea = null;
+  S.onChange = null;
+}
+
+function openFloatingSitelenEditor({ title, elementId, sourceTextarea, onChange }){
+  const S = FloatingSitelenEditor;
+  if (!S.root || !S.ta || !sourceTextarea) return;
+
+  S.isOpen = true;
+  S.elementId = elementId || null;
+  S.sourceTextarea = sourceTextarea;
+  S.onChange = onChange;
+
+  if (S.title) S.title.textContent = String(title || "Text");
+  S.ta.value = String(sourceTextarea.value || "");
+
+  S.root.classList.add("show");
+  S.root.setAttribute("aria-hidden", "false");
+  clampFloatingEditorToViewport();
+
+  S.ta.focus();
+}
+
+function rebindFloatingSitelenEditorToTextarea(elementId, textareaEl, onChange){
+  const S = FloatingSitelenEditor;
+  if (!S.isOpen) return;
+  if (!S.elementId || S.elementId !== elementId) return;
+  if (!textareaEl) return;
+
+  S.sourceTextarea = textareaEl;
+  S.onChange = onChange;
+
+  // Keep the freshly re-rendered main textarea synced to popup content
+  if (textareaEl.value !== S.ta.value){
+    textareaEl.value = S.ta.value;
+  }
+}
+
+function initFloatingSitelenEditor(){
+  const S = FloatingSitelenEditor;
+
+  S.root = $("floatingSitelenEditor");
+  S.header = $("floatingSitelenEditorHeader");
+  S.title = $("floatingSitelenEditorTitle");
+  S.ta = $("floatingSitelenEditorTextarea");
+  S.closeBtn = $("btnCloseFloatingSitelenEditor");
+
+  if (!S.root || !S.header || !S.ta) return;
+
+  if (S.closeBtn){
+    S.closeBtn.addEventListener("click", () => closeFloatingSitelenEditor());
+  }
+
+  S.ta.addEventListener("input", () => {
+    if (S.suppressSync) return;
+    const v = S.ta.value;
+
+    // Mirror into the properties textarea
+    if (S.sourceTextarea && S.sourceTextarea.value !== v){
+      S.suppressSync = true;
+      S.sourceTextarea.value = v;
+      S.suppressSync = false;
+    }
+
+    // Run the same live update path the normal textarea uses
+    if (typeof S.onChange === "function"){
+      S.onChange(v);
+    }
+  });
+
+  // Dragging
+  S.header.addEventListener("pointerdown", (e) => {
+    if (e.target && e.target.closest("button")) return;
+
+    const rect = S.root.getBoundingClientRect();
+    S.dragging = true;
+    S.dragPointerId = e.pointerId;
+    S.startX = e.clientX;
+    S.startY = e.clientY;
+    S.startLeft = rect.left;
+    S.startTop = rect.top;
+
+    S.header.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  });
+
+  S.header.addEventListener("pointermove", (e) => {
+    if (!S.dragging || S.dragPointerId !== e.pointerId) return;
+
+    const dx = e.clientX - S.startX;
+    const dy = e.clientY - S.startY;
+
+    S.root.style.left = `${S.startLeft + dx}px`;
+    S.root.style.top = `${S.startTop + dy}px`;
+
+    clampFloatingEditorToViewport();
+  });
+
+  function stopDrag(e){
+    if (!S.dragging) return;
+    if (e && S.dragPointerId != null && e.pointerId !== S.dragPointerId) return;
+
+    S.dragging = false;
+    if (S.dragPointerId != null){
+      S.header.releasePointerCapture?.(S.dragPointerId);
+    }
+    S.dragPointerId = null;
+  }
+
+  S.header.addEventListener("pointerup", stopDrag);
+  S.header.addEventListener("pointercancel", stopDrag);
+
+  window.addEventListener("resize", () => clampFloatingEditorToViewport());
+}
+
+
+function renderPropsPanel(){
   propsBody.innerHTML = "";
 
   const sels = getSelectedElements();
+
+  const shouldKeepFloatingEditor = sels.length === 1 && sels[0].type === ElementType.Sitelen;
+  if (!shouldKeepFloatingEditor){
+    closeFloatingSitelenEditor();
+  }
+
   if (!sels.length){
     propsBody.innerHTML = `<div class="hint">${tr("props_hint")}</div>`;
     return;
   }
 
-const single = sels.length === 1;
+  const single = sels.length === 1;
 
-// “Active” group if either:
-// - multi-select where all selected share the same groupId, OR
-// - single-select where the element belongs to a group
-const groupId = getGroupIdFromSelection() || (single ? (sels[0].groupId || null) : null);
+  // “Active” group if either:
+  // - multi-select where all selected share the same groupId, OR
+  // - single-select where the element belongs to a group
+  const groupId = getGroupIdFromSelection() || (single ? (sels[0].groupId || null) : null);
 
 
   // Small section divider
@@ -7084,17 +7389,17 @@ const groupId = getGroupIdFromSelection() || (single ? (sels[0].groupId || null)
   propsBody.appendChild(header);
 
 
-  // CHANGE HERE: isLocked is always the first editable property
-propsBody.appendChild(makeLockCheckbox(sels));
+    // CHANGE HERE: isLocked is always the first editable property
+  propsBody.appendChild(makeLockCheckbox(sels));
 
-// CHANGE HERE: if ANY selected element is locked, block all other property editing
-if (sels.some(e => !!e.isLocked)){
-  const msg = document.createElement("div");
-  msg.className = "hint";
-  msg.textContent = tr("msg_locked_selection");
-  propsBody.appendChild(msg);
-  return;
-}
+  // CHANGE HERE: if ANY selected element is locked, block all other property editing
+  if (sels.some(e => !!e.isLocked)){
+    const msg = document.createElement("div");
+    msg.className = "hint";
+    msg.textContent = tr("msg_locked_selection");
+    propsBody.appendChild(msg);
+    return;
+  }
 
   // Common values for multi or single
   const commonFill = commonValue(sels, e => e.fill);
@@ -7207,41 +7512,41 @@ if (sels.some(e => !!e.isLocked)){
     ));
   }
 
-// Group-level controls (show whenever we have a groupId)
-if (groupId){
-  addSection(tr("sec_group"));
+  // Group-level controls (show whenever we have a groupId)
+  if (groupId){
+    addSection(tr("sec_group"));
 
-  const g = Scene.groups[groupId] || (Scene.groups[groupId] = {
-    id: groupId,
-    createdAt: new Date().toISOString(),
-    foreground: "#111111"
-  });
+    const g = Scene.groups[groupId] || (Scene.groups[groupId] = {
+      id: groupId,
+      createdAt: new Date().toISOString(),
+      foreground: "#111111"
+    });
 
-  const fg = rgbaOrHexToHex(g.foreground || "#111111", "#111111");
+    const fg = rgbaOrHexToHex(g.foreground || "#111111", "#111111");
 
-  propsBody.appendChild(makeColorPickerWithSwatch(
-    tr("props_foreground_group"),
-    fg,
-    (v) => {            // LIVE preview only
-      console.log("Live group foreground :" + v);
-      applyGroupForeground(groupId, v);
-      render();
-    },
-    (v) => {            // COMMIT
-      console.log("Commit group foreground :" + v);
-      applyGroupForeground(groupId, v);
-      scheduleAutosave();
-      render();
-      //renderPropsPanel();
-    }
-  ));
-}
+    propsBody.appendChild(makeColorPickerWithSwatch(
+      tr("props_foreground_group"),
+      fg,
+      (v) => {            // LIVE preview only
+        console.log("Live group foreground :" + v);
+        applyGroupForeground(groupId, v);
+        render();
+      },
+      (v) => {            // COMMIT
+        console.log("Commit group foreground :" + v);
+        applyGroupForeground(groupId, v);
+        scheduleAutosave();
+        render();
+        //renderPropsPanel();
+      }
+    ));
+  }
 
-// If multi-select: show only common controls after group controls
-if (!single){
-  addAppearanceBlock();
-  return;
-}
+  // If multi-select: show only common controls after group controls
+  if (!single){
+    addAppearanceBlock();
+    return;
+  }
 
 
 
@@ -7311,17 +7616,47 @@ if (!single){
 
     
 
-    propsBody.appendChild(makeTextarea(tr("props_text"), el.text ?? "", placeholder   ,(v) => {
-      el.text = v;
+   const textField = makeTextarea(
+      tr("props_text"),
+      el.text ?? "",
+      placeholder,
+      (v) => {
+        el.text = v;
 
-      if (el.type === ElementType.Sitelen){
-        invalidateSitelenCache(el.id);
-        updateSitelenLayout(el, { preserveCenter: true });
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+        }
+
+        scheduleAutosave();
+        render();
+      },
+      {
+        enablePopout: el.type === ElementType.Sitelen,
+        popoutTitle: tr("props_text"),
+        popoutElementId: el.id
       }
+    );
 
-      scheduleAutosave();
-      render();
-    }));
+    propsBody.appendChild(textField);
+
+    // If the floating editor is already open for this same sitelen element,
+    // rebind it to the freshly re-rendered textarea in the properties panel.
+    if (el.type === ElementType.Sitelen){
+      rebindFloatingSitelenEditorToTextarea(
+        el.id,
+        textField._textarea,
+        (v) => {
+          el.text = v;
+
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+
+          scheduleAutosave();
+          render();
+        }
+      );
+    }
 
 
     if (el.type === ElementType.Text){
@@ -7908,16 +8243,65 @@ function makeNumberRowWithPresets(
     return row;
   }
 
-  function makeTextarea(label, value, placeholder, onChange){
+  function makeTextarea(label, value, placeholder, onChange, opts = {}){
     const f = document.createElement("div");
     f.className = "field";
+
+    const labelRow = document.createElement("div");
+    labelRow.className = "fieldLabelRow";
+
     const l = document.createElement("label");
     l.textContent = label;
+    labelRow.appendChild(l);
+
     const ta = document.createElement("textarea");
     ta.value = String(value ?? "");
-    ta.placeholder=placeholder;
-    ta.addEventListener("input", () => onChange(ta.value));
-    f.appendChild(l); f.appendChild(ta);
+    ta.placeholder = placeholder || "";
+
+    const enablePopout = !!opts.enablePopout;
+    const popoutTitle = String(opts.popoutTitle || label);
+    const popoutElementId = opts.popoutElementId || null;
+
+    if (enablePopout){
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "popoutIconBtn";
+      btn.title = "Open pop-out editor";
+      btn.setAttribute("aria-label", "Open pop-out editor");
+      btn.textContent = "↗";
+      btn.addEventListener("click", () => {
+        openFloatingSitelenEditor({
+          title: popoutTitle,
+          elementId: popoutElementId,
+          sourceTextarea: ta,
+          onChange
+        });
+      });
+      labelRow.appendChild(btn);
+      f._popoutButton = btn;
+    }
+
+    ta.addEventListener("input", () => {
+      onChange(ta.value);
+
+      // Keep floating editor synced if it is open for this same element
+      if (
+        FloatingSitelenEditor.isOpen &&
+        FloatingSitelenEditor.elementId &&
+        FloatingSitelenEditor.elementId === popoutElementId &&
+        FloatingSitelenEditor.sourceTextarea === ta
+      ){
+        syncFloatingSitelenEditorFromSource(ta.value);
+      }
+    });
+
+    f.appendChild(labelRow);
+    f.appendChild(ta);
+
+    // Expose textarea so renderPropsPanel can re-bind after rerender
+    f._textarea = ta;
+    f._popoutElementId = popoutElementId;
+
     return f;
   }
 
@@ -10130,6 +10514,7 @@ document.addEventListener("keydown", (e) => {
      ============================================================ */
   async function init(){
     applyUiText();
+    initFloatingSitelenEditor();
     wireLangSelector();
     setStatus(tr("status_loading"));
     try{
