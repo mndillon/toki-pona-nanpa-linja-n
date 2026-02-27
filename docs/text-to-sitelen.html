@@ -557,18 +557,21 @@
           </button>
         </div>
 
-        <textarea id="textIn" rows="12" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
+        <textarea id="textIn" rows="15" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
           placeholder="mi kama sona e toki pona.
+pi {telo lete}
+[ ota sewi^ kolon  ni&lt; ]
+&quot;Hello World!&quot;.
+tenpo 15:34:29.
+tenpo suno 2026-03-17.
 nanpa -12,340.57.
 nanpa 64.5M.
 nanpa 9+3/4.
+nanpa 5%.
 nanpa 007.
 nanpa Newenin One Len Oken.
 nanpa #~WI.
-pi {telo lete}
-[ ota sewi^ kolon  ni&lt; ]
-tenpo 15:34:29
-tenpo suno 2026-03-17"></textarea>
+"></textarea>
       </div>
 
       <div class="btnRow" aria-label="Actions">
@@ -4401,6 +4404,8 @@ function wireHaloControls() {
       }
     }
 
+    const DEFAULT_TP_TEXT = `toki pona`;
+
     window.addEventListener("load", async () => {
       try {
         if (btnRender) btnRender.disabled = true;
@@ -4423,6 +4428,10 @@ function wireHaloControls() {
                 // Keep pop-out (if open) in sync
                 syncFloatingTextInEditorFromSource(elTextIn.value);
               }
+            }else{
+              // Nothing saved -> set default sample
+              elTextIn.value = DEFAULT_TP_TEXT;
+              elTextIn.dispatchEvent(new Event("input", { bubbles: true }));
             }
           }
         } catch (e) {
@@ -4448,7 +4457,7 @@ function wireHaloControls() {
         // Auto-render on load (after restore)
         scheduleAutoRender();
 
-                announceStatus("Fonts loaded. Ready to render.");
+        announceStatus("Fonts loaded. Ready to render.");
       } catch (e) {
         console.warn(e);
         if (btnRender) btnRender.disabled = false;
