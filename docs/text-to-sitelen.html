@@ -635,6 +635,13 @@ tenpo suno 2026-03-17"></textarea>
           (Transparent background)
           <span class="tpLine">(poka sitelen li lon ala)</span>
         </span>
+
+        <button id="btnDownloadPdf" type="button" class="btnBi" aria-describedby="btnDownloadPdfHelp">
+          <span>Download PDF</span>
+          <span class="tpLine">o kama jo e lipu PDF</span>
+        </button>
+        <div id="btnDownloadPdfHelp" class="sr-only">Exports the rendered output as a PDF with embedded fonts.</div>
+
       </div>
 
       <div class="help">&nbsp;</div>
@@ -759,6 +766,8 @@ tenpo suno 2026-03-17"></textarea>
 </div>
   </main>
 
+  <script src="./vendor/pdf-lib.min.js"></script>
+  <script src="./vendor/fontkit.umd.min.js"></script>
   <script>
     "use strict";
 
@@ -2988,6 +2997,7 @@ function wireHaloControls() {
 
       elements.push({
         type: "cartouche",
+        cps: Array.from(cps),   // <-- ADD THIS
         canvas: cart,
         w: r.w,
         h: r.h,
@@ -3370,6 +3380,34 @@ function wireHaloControls() {
       return { chars, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
     }
 
+    const PX_TO_PT = 72 / 96; // 0.75
+
+    function measureChars(ctx, chars, px, fontFamily){
+      ctx.font = `${px}px "${fontFamily}"`;
+      setTextQuality(ctx);
+      const m = ctx.measureText(chars);
+
+      const ascent  = (m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8));
+      const descent = (m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2));
+      const left    = (m.actualBoundingBoxLeft ?? 0);
+      const right   = (m.actualBoundingBoxRight ?? Math.ceil(m.width));
+      const w       = Math.ceil(left + right);
+
+      return { chars, ascent, descent, left, w, h: Math.ceil(ascent + descent), px, fontFamily };
+    }
+
+    // Build the cartouche text run directly (so PDF can draw it as text)
+    function cartoucheCpsToRunString(innerCps){
+      return (
+        String.fromCodePoint(CARTOUCHE_START_CP) +
+        (innerCps ?? []).map(cp => String.fromCodePoint(cp)).join("") +
+        String.fromCodePoint(CARTOUCHE_END_CP)
+      );
+    }
+
+
+
+
     function renderAllLinesToCanvas(outCanvas, linesElements, { fontPx }) {
       const pad = 18;
       const lineGap = lineGapForPx(fontPx);
@@ -3582,6 +3620,286 @@ function wireHaloControls() {
       document.body.appendChild(a);
       a.click();
       a.remove();
+    }
+
+
+    async function canvasToPngBytes(canvas){
+      return await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error("toBlob failed"));
+          blob.arrayBuffer().then(resolve).catch(reject);
+        }, "image/png");
+      });
+    }
+
+    const PDF_CARTOUCHE_SCALE = 6;//3; // 2 or 3 is usually enough
+
+    function buildCartoucheCanvasForPdf(cartEl, { fontPx }){
+      const scale = PDF_CARTOUCHE_SCALE;
+
+      // Create a fresh canvas so we can force halo off and supersample
+      const c = document.createElement("canvas");
+
+      const basePx = Math.max(8, Number(fontPx ?? cartEl?.px ?? getFontPx() ?? 56));
+      const px = Math.round(basePx * scale);
+
+      // Keep the same *relative* padding, but scaled
+      const basePadPx = Math.max(4, Math.round(basePx * 0.11));
+      const padPx = Math.round(basePadPx * scale);
+
+      const fam = cartEl?.fontFamily || FONT_FAMILY_CARTOUCHE;
+      const fgCss = getFgHex();
+
+      const r = renderFontCartoucheToCanvas(
+        c,
+        Array.from(cartEl?.cps ?? []),
+        {
+          fontPx: px,
+          padPx,
+          fontFamily: fam,
+          fgCss,
+          haloEnabled: false, // force NO halo in PDF cartouche images
+          haloCss: "#FFFFFF",
+        }
+      );
+
+      // IMPORTANT: return "logical" (unscaled) metrics for layout/placement,
+      // but keep the high-res canvas for embedding.
+      return {
+        canvas: c,
+        // physical size to place in PDF (same as on-screen cartouche size)
+        w: Math.round((r.w | 0) / scale),
+        h: Math.round((r.h | 0) / scale),
+        baselineY: Math.round((r.baselineY | 0) / scale),
+
+        // keep scale for draw branch if you want it
+        _scale: scale,
+        _wPx: r.w | 0,
+        _hPx: r.h | 0,
+        _baselineYPx: r.baselineY | 0,
+      };
+    }
+
+    async function exportRenderedToPdf(){
+      if (!window.PDFLib) throw new Error("pdf-lib not loaded.");
+      const { PDFDocument, rgb } = window.PDFLib;
+
+      const fontPx = getFontPx();
+      await fontsReadyForPx(fontPx);
+      warmUpCanvasFontsOnce();
+
+      // Rebuild layout exactly like renderFromTextarea()
+      const raw = String(elTextIn.value ?? "");
+      const lines = raw.replace(/\r\n/g, "\n").split("\n");
+      const linesElements = lines.map(line => lineToElements(line, { fontPx }));
+
+      const anyContent = linesElements.some(els =>
+        els.some(e => e.type === "glyph" || e.type === "cartouche" || e.type === "run" || e.type === "text")
+      );
+      if (!anyContent) throw new Error("Nothing to export (no recognized words).");
+
+      // Measure everything using your existing canvas measurement approach
+      const tmp = document.createElement("canvas");
+      const ctx = tmp.getContext("2d");
+      ctx.textBaseline = "alphabetic";
+
+      const lineGapPx = lineGapForPx(fontPx);
+      const padPx = 18;
+
+      // Convert color "#RRGGBB" -> pdf-lib rgb
+      const fgHex = getFgHex();
+      const r = parseInt(fgHex.slice(1,3), 16) / 255;
+      const g = parseInt(fgHex.slice(3,5), 16) / 255;
+      const b = parseInt(fgHex.slice(5,7), 16) / 255;
+
+      // Measure lines
+      const measuredLines = [];
+      let maxLineW = 0;
+      let totalH = 0;
+
+      for (const lineEls of linesElements) {
+        let w = 0;
+        let maxAscent = 0;
+        let maxDescent = 0;
+
+        const measuredEls = [];
+
+        for (const el of lineEls) {
+          if (el.type === "gap") {
+            measuredEls.push({ kind: "gap", px: (el.px | 0) });
+            w += Math.max(0, el.px | 0);
+            continue;
+          }
+
+          if (el.type === "text") {
+            const fam = el.fontFamily || FONT_FAMILY_LITERAL;
+            const m = measureChars(ctx, String(el.text ?? ""), el.px ?? fontPx, fam);
+            measuredEls.push({ kind:"text", fam, m, px: (el.px ?? fontPx) });
+            w += m.w;
+            maxAscent = Math.max(maxAscent, m.ascent);
+            maxDescent = Math.max(maxDescent, m.descent);
+            continue;
+          }
+
+          if (el.type === "glyph") {
+            const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const ch = String.fromCodePoint(el.cp);
+            const m = measureChars(ctx, ch, el.px ?? fontPx, fam);
+            measuredEls.push({ kind:"glyph", fam, m, px: (el.px ?? fontPx) });
+            w += m.w;
+            maxAscent = Math.max(maxAscent, m.ascent);
+            maxDescent = Math.max(maxDescent, m.descent);
+            continue;
+          }
+
+          if (el.type === "run") {
+            const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const chars = (el.cps ?? []).map(cp => String.fromCodePoint(cp)).join("");
+            const m = measureChars(ctx, chars, el.px ?? fontPx, fam);
+            measuredEls.push({ kind:"run", fam, m, px: (el.px ?? fontPx) });
+            w += m.w;
+            maxAscent = Math.max(maxAscent, m.ascent);
+            maxDescent = Math.max(maxDescent, m.descent);
+            continue;
+          }
+
+          if (el.type === "cartouche") {
+            // Use the already-rendered cartouche canvas dimensions
+            measuredEls.push({ kind: "cartoucheImg", el });
+            w += (el.w | 0);
+
+            const a = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
+            const d = el.descent ?? Math.ceil((el.h | 0) * 0.3);
+            maxAscent = Math.max(maxAscent, a);
+            maxDescent = Math.max(maxDescent, d);
+            continue;
+          }
+        }
+
+        const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
+        measuredLines.push({ measuredEls, w, lineBoxH, maxAscent, maxDescent });
+
+        maxLineW = Math.max(maxLineW, w);
+        totalH += lineBoxH;
+      }
+
+      totalH += Math.max(0, (measuredLines.length - 1) * lineGapPx);
+
+      // Create PDF
+      const pdfDoc = await PDFDocument.create();
+      const fonts = await embedPdfFonts(pdfDoc);
+
+      const pageWpt = (maxLineW + padPx * 2) * PX_TO_PT;
+      const pageHpt = (totalH + padPx * 2) * PX_TO_PT;
+
+      const page = pdfDoc.addPage([pageWpt, pageHpt]);
+
+      // Draw
+      let yPx = padPx;
+
+      for (let li = 0; li < measuredLines.length; li++) {
+        const L = measuredLines[li];
+        let xPx = padPx;
+        const baselinePx = yPx + L.maxAscent;
+
+        for (const el of L.measuredEls) {
+          // 1) GAP
+          if (el.kind === "gap") {
+            xPx += Math.max(0, el.px | 0);
+            continue;
+          }
+
+          // 2) CARTOUCHE AS IMAGE
+          if (el.kind === "cartoucheImg") {
+            const cartEl = el.el;
+
+            const pdfCart = buildCartoucheCanvasForPdf(cartEl, { fontPx });
+            const pngBytes = await canvasToPngBytes(pdfCart.canvas);
+            const png = await pdfDoc.embedPng(pngBytes);
+
+            const by = (pdfCart.baselineY != null) ? (pdfCart.baselineY | 0) : Math.floor((pdfCart.h | 0) * 0.75);
+            const topLeftPx = baselinePx - by;
+
+            const xPt = xPx * PX_TO_PT;
+            const yPt = pageHpt - (topLeftPx * PX_TO_PT) - ((pdfCart.h | 0) * PX_TO_PT);
+
+            page.drawImage(png, {
+              x: xPt,
+              y: yPt,
+              width: (pdfCart.w | 0) * PX_TO_PT,
+              height: (pdfCart.h | 0) * PX_TO_PT,
+            });
+
+            xPx += (pdfCart.w | 0);
+            continue;
+          }
+
+          // 3) NORMAL TEXT / RUN / GLYPH
+          const m = el.m;
+
+          const drawXpt = (xPx + (m.left ?? 0)) * PX_TO_PT;
+          const drawYpt = (pageHpt - (baselinePx * PX_TO_PT));
+
+          let pdfFont = fonts.fontText;
+          if (el.fam === FONT_FAMILY_CARTOUCHE) pdfFont = fonts.fontCart;
+          if (el.fam === FONT_FAMILY_LITERAL) pdfFont = fonts.fontLit;
+
+          const fontSizePt = (el.px ?? fontPx) * PX_TO_PT;
+
+          page.drawText(m.chars, {
+            x: drawXpt,
+            y: drawYpt,
+            size: fontSizePt,
+            font: pdfFont,
+            color: rgb(r, g, b),
+          });
+
+          xPx += m.w;
+        }
+
+        yPx += L.lineBoxH;
+        if (li < measuredLines.length - 1) yPx += lineGapPx;
+      }
+
+      const bytes = await pdfDoc.save();
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sitelen.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+
+    async function fetchFontBytes(url){
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch font: ${url} (${res.status})`);
+      return await res.arrayBuffer();
+    }
+
+    // Embed the exact fonts you already use in canvas
+    async function embedPdfFonts(pdfDoc){
+      if (!window.fontkit) throw new Error("fontkit is missing (needed to embed OTF/TTF).");
+      if (!window.PDFLib) throw new Error("pdf-lib is missing.");
+
+      pdfDoc.registerFontkit(window.fontkit);
+
+      // IMPORTANT: these URLs must be same-origin in your static site
+      const [textBytes, cartBytes, literalBytes] = await Promise.all([
+        fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf"),              // TP-Nasin-Nanpa-Font
+        fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf"),// TP-Cartouche-Font
+        fetchFontBytes("./fonts/PatrickHand-Regular.ttf"),                             // Patrick-Head-Font
+      ]);
+
+      const fontText = await pdfDoc.embedFont(textBytes, { subset: false }); // IMPORTANT for UCSUR / >BMP glyphs
+      const fontCart = await pdfDoc.embedFont(cartBytes, { subset: false }); // IMPORTANT for cartouche glyphs too
+      const fontLit  = await pdfDoc.embedFont(literalBytes, { subset: true }); // OK to subset normal latin font
+
+      return { fontText, fontCart, fontLit };
     }
 
     const elTextIn = document.getElementById("textIn");
@@ -3886,6 +4204,19 @@ function wireHaloControls() {
         showAlertAndAnnounce(e?.message ?? String(e));
       }
     });
+
+
+    const btnDownloadPdf = document.getElementById("btnDownloadPdf");
+
+    btnDownloadPdf?.addEventListener("click", async () => {
+      try{
+        await exportRenderedToPdf();
+        announceStatus("Downloaded PDF.");
+      } catch(e){
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
+    });
+
 
     function setQueryParamOnLink(a, key, value) {
       if (!a) return;
