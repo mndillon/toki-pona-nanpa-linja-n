@@ -540,17 +540,22 @@
           </button>
         </div>
 
-<div style="display:flex; gap:10px; flex-wrap:wrap; margin: 6px 0 8px;">
-  <button id="btnImportTextMain" type="button" class="btnBi">
-    <span>Import .txt</span>
-    <span class="tpLine">o kama jo e lipu</span>
-  </button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin: 6px 0 8px;">
+          <button id="btnImportTextMain" type="button" class="btnBi">
+            <span>Import .txt</span>
+            <span class="tpLine">o kama jo e lipu</span>
+          </button>
 
-  <button id="btnExportTextMain" type="button" class="btnBi">
-    <span>Export .txt</span>
-    <span class="tpLine">o pana e lipu</span>
-  </button>
-</div>
+          <button id="btnExportTextMain" type="button" class="btnBi">
+            <span>Export .txt</span>
+            <span class="tpLine">o pana e lipu</span>
+          </button>
+
+          <button id="btnTogglePopoutMain" type="button" class="btnBi">
+            <span>Pop-out editor</span>
+            <span class="tpLine">o open e ilo ante</span>
+          </button>
+        </div>
 
         <textarea id="textIn" rows="12" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
           placeholder="mi kama sona e toki pona.
@@ -4163,6 +4168,14 @@ function wireHaloControls() {
 
       if (S.popBtn) {
         S.popBtn.addEventListener("click", () => {
+          if (S.isOpen) closeFloatingTextInEditor();
+          else openFloatingTextInEditor();
+        });
+      }
+
+      const bigToggleBtn = document.getElementById("btnTogglePopoutMain");
+      if (bigToggleBtn) {
+        bigToggleBtn.addEventListener("click", () => {
           if (S.isOpen) closeFloatingTextInEditor();
           else openFloatingTextInEditor();
         });
