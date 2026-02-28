@@ -101,7 +101,15 @@
       display: block;
     }
 
-    .wrap{
+    
+
+    .bestCanvas{
+      height: 36px;
+      width: 220px;
+      display: block;
+      cursor: pointer;
+    }
+.wrap{
       height: calc(100% - var(--topbar-h));
       min-height: 0;
       display: flex;
@@ -332,6 +340,7 @@
   .topbar{ gap: 6px; padding: 8px 8px; height: 52px; }
   .btnTop{ font-size: 13px; padding: 6px 8px; border-radius: 10px; }
   #timerCanvas{ display:none !important; }
+  #bestCanvas{ display:none !important; }
   .status{ font-size: 13px; max-width: 54vw; }
 
   /* Mobile: no text on any keypad buttons */
@@ -356,6 +365,7 @@
     <button id="btnStart" class="btnTop">Start Game</button>
     <button id="btnStop" class="btnTop" disabled>Stop Game</button>
     <div id="status" class="status">Loading fonts…</div>
+    <canvas id="bestCanvas" class="bestCanvas" aria-label="Best time"></canvas>
     <canvas id="timerCanvas" class="timerCanvas" aria-label="Timer"></canvas>
   </div>
 
@@ -525,6 +535,7 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
     "kijetesantakalu": 0xF1980,
     "monsi": 0xF1938,
     "lili": 0xF1928,
+    "pona": 0xF1954,
   };
 
   function getSmallCodepointsSet() {
@@ -1302,6 +1313,10 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
   const timerCtx = timerCanvas.getContext("2d");
   const timerOffscreen = document.createElement("canvas");
 
+  const bestCanvas = document.getElementById("bestCanvas");
+  const bestCtx = bestCanvas.getContext("2d");
+  const bestOffscreen = document.createElement("canvas");
+
   const TIMER_CFG = {
     largePx: 34,
     smallPx: 12,
@@ -1364,6 +1379,75 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
   }
 
+  function setBestCanvasVisible(isVisible){
+    if (!bestCanvas) return;
+    bestCanvas.style.display = isVisible ? "block" : "none";
+  }
+
+  function renderTopBestCartouche(secOrNull) {
+    if (!bestCanvas) return;
+
+    // If no best time yet, hide entirely
+    if (secOrNull == null) {
+      setBestCanvasVisible(false);
+      return;
+    }
+    setBestCanvasVisible(true);
+
+    if (isMobileTopbarMode()) return;
+
+    const targetCssW = 220;
+    const targetCssH = TIMER_CFG.targetCssH; // 36
+    const dpr = window.devicePixelRatio || 1;
+
+    bestCanvas.style.width = `${targetCssW}px`;
+    bestCanvas.style.height = `${targetCssH}px`;
+    bestCanvas.width = Math.ceil(targetCssW * dpr);
+    bestCanvas.height = Math.ceil(targetCssH * dpr);
+
+    bestCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    bestCtx.clearRect(0, 0, targetCssW, targetCssH);
+
+    const glyphs = buildTimeCartoucheGlyphs(secOrNull);
+
+    renderMixedCartoucheToCanvas(
+      bestOffscreen,
+      glyphs,
+      TIMER_CFG.largePx,
+      TIMER_CFG.smallPx,
+      SMALL_SET,
+      { padding: TIMER_CFG.pad, border: TIMER_CFG.border, cornerRadius: TIMER_CFG.corner, letterGap: TIMER_CFG.gap }
+    );
+
+    // Prefix: "tenpo pona" (best time)
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["pona"]].filter(Boolean);
+    const gapPx = 8;
+
+    let scale = Math.min(targetCssW / bestOffscreen.width, targetCssH / bestOffscreen.height);
+    let prefixFontPx = Math.max(10, TIMER_CFG.largePx * scale);
+
+    bestCtx.save();
+    bestCtx.font = `${prefixFontPx}px "${FONT_FAMILY}"`;
+    const p1 = prefixCps[0] ? bestCtx.measureText(String.fromCodePoint(prefixCps[0])).width : 0;
+    const p2 = prefixCps[1] ? bestCtx.measureText(String.fromCodePoint(prefixCps[1])).width : 0;
+    const prefixW = p1 + (prefixCps.length > 1 ? (4 + p2) : 0);
+    bestCtx.restore();
+
+    const availWForCartouche = Math.max(80, targetCssW - prefixW - gapPx);
+    scale = Math.min(availWForCartouche / bestOffscreen.width, targetCssH / bestOffscreen.height);
+    prefixFontPx = Math.max(10, TIMER_CFG.largePx * scale);
+
+    const drawW = Math.floor(bestOffscreen.width * scale);
+    const drawH = Math.floor(bestOffscreen.height * scale);
+
+    const x = Math.floor(targetCssW - drawW);
+    const y = Math.floor((targetCssH - drawH) / 2);
+
+    if (prefixCps.length) drawPrefixGlyphsLeftOfBox(bestCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
+    bestCtx.drawImage(bestOffscreen, x, y, drawW, drawH);
+  }
+
+
   let timerSeconds = 0;
   let timerHandle = null;
 
@@ -1372,12 +1456,39 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     timerHandle = setInterval(() => {
       timerSeconds++;
       renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartouche(bestSeconds);
     }, 1000);
   }
 
   function stopTimer() {
     if (timerHandle) clearInterval(timerHandle);
     timerHandle = null;
+  }
+
+
+  /* ============================================================
+     NEW: Best time persistence (localStorage) — like 15-puzzle
+     ============================================================ */
+  const LS_KEY_GUESS_BEST_SECONDS = "tpGuess_bestSeconds"; // integer seconds as string
+  let bestSeconds = null;
+
+  function loadBestSeconds() {
+    try {
+      const v = localStorage.getItem(LS_KEY_GUESS_BEST_SECONDS);
+      if (v == null) return null;
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+    } catch {}
+    return null;
+  }
+
+  function saveBestSeconds(sec) {
+    try { localStorage.setItem(LS_KEY_GUESS_BEST_SECONDS, String(Math.floor(sec))); } catch {}
+  }
+
+  function clearBestSeconds() {
+    bestSeconds = null;
+    try { localStorage.removeItem(LS_KEY_GUESS_BEST_SECONDS); } catch {}
   }
 
   /* ============================================================
@@ -1637,6 +1748,7 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
     stopTimer();
     timerSeconds = 0;
     renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartouche(bestSeconds);
 
     btnStart.disabled = false;
     btnStop.disabled = true;
@@ -1669,6 +1781,7 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
 
     timerSeconds = 0;
     renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartouche(bestSeconds);
     startTimer();
 
     setStatus(uiText("status_started"));
@@ -1687,6 +1800,13 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
     state = GameState.finished;
     setScrollLock(false);
     stopTimer();
+
+    /* NEW: update best time */
+    if (bestSeconds == null || timerSeconds < bestSeconds) {
+      bestSeconds = timerSeconds;
+      saveBestSeconds(bestSeconds);
+    }
+    renderTopBestCartouche(bestSeconds);
 
 
     setRangeLabelsVisible(false);
@@ -2032,9 +2152,28 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
   btnStart.addEventListener("click", startGame);
   btnStop.addEventListener("click", stopGame);
 
+
+  /* NEW: best time canvas (click to clear after confirm) */
+  if (bestCanvas){
+    bestCanvas.addEventListener("click", () => {
+      if (isMobileTopbarMode()) return;
+      if (bestSeconds == null) return;
+
+      const msg = (DEV_LANG === "tp")
+        ? "sina wile ala wile weka e tenpo pona?"
+        : "Clear best time?";
+
+      if (!confirm(msg)) return;
+
+      clearBestSeconds();
+      renderTopBestCartouche(bestSeconds);
+    });
+  }
+
   window.addEventListener("resize", () => {
     layoutFit();
     renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartouche(bestSeconds);
     renderAll();
     scheduleKeypadCanvasesRender();
   });
@@ -2045,6 +2184,11 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
     try { await ensureFontsLoaded(); } catch {}
     layoutFit();
     buildKeypad();
+
+    /* NEW: load best time before first render */
+    bestSeconds = loadBestSeconds();
+    renderTopBestCartouche(bestSeconds);
+
     resetToIdleUi();
     layoutFit();
     scheduleKeypadCanvasesRender();

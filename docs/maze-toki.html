@@ -132,7 +132,15 @@
       display: block;
     }
 
-    .status {
+    
+
+    .bestCanvas {
+      height: 36px;
+      width: 220px;
+      display: block;
+      cursor: pointer;
+    }
+.status {
       margin-left: 12px;
       color: var(--muted);
       font-size: 16px;
@@ -311,6 +319,7 @@
 
       /* Requested: do not show the small timer on mobile */
       #timerCanvas { display: none !important; }
+      #bestCanvas { display: none !important; }
 
       .footer{
     padding: 6px 8px;
@@ -344,6 +353,7 @@
     </label>
 
     <div id="status" class="status">Loading fonts…</div>
+    <canvas id="bestCanvas" class="bestCanvas" aria-label="Best time"></canvas>
     <canvas id="timerCanvas" class="timerCanvas" aria-label="Timer"></canvas>
   </div>
 
@@ -584,11 +594,54 @@
     mazeSize: "tp_maze_size_v1",
     visitedDots: "tp_maze_visiteddots_v1",
     dpadPos: "tp_maze_dpad_pos_v1",
+    bestTimePrefix: "tp_maze_bestSeconds_v1_",
   };
 
   function safePresetName(v) {
     if (v === "small" || v === "medium" || v === "large") return v;
     return "small";
+  }
+
+
+  /* ============================================================
+     NEW: Best time (per maze size) — localStorage
+     - Separate best time for small / medium / large
+     - Hidden when absent (per size)
+     ============================================================ */
+  let bestSecondsBySize = { small: null, medium: null, large: null };
+
+  function bestKeyForSize(sizeName){
+    const s = safePresetName(sizeName);
+    return String(LS_KEYS.bestTimePrefix || "tp_maze_bestSeconds_v1_") + s;
+  }
+
+  function loadBestSecondsForSize(sizeName){
+    try {
+      const v = localStorage.getItem(bestKeyForSize(sizeName));
+      if (v == null) return null;
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+    } catch {}
+    return null;
+  }
+
+  function saveBestSecondsForSize(sizeName, sec){
+    try { localStorage.setItem(bestKeyForSize(sizeName), String(Math.floor(sec))); } catch {}
+  }
+
+  function clearBestSecondsForSize(sizeName){
+    const s = safePresetName(sizeName);
+    bestSecondsBySize[s] = null;
+    try { localStorage.removeItem(bestKeyForSize(s)); } catch {}
+  }
+
+  function getCurrentMazeSizeName(){
+    return safePresetName(mazeSizeSel && mazeSizeSel.value ? mazeSizeSel.value : "small");
+  }
+
+  function getBestSecondsCurrentSize(){
+    const s = getCurrentMazeSizeName();
+    return bestSecondsBySize[s];
   }
 
   const CFG = {
@@ -1121,6 +1174,11 @@
   const timerOffscreen = document.createElement("canvas");
   const finishOffscreen = document.createElement("canvas");
 
+
+  const bestCanvas = document.getElementById("bestCanvas");
+  const bestCtx = bestCanvas.getContext("2d");
+  const bestOffscreen = document.createElement("canvas");
+
   const mazeSizeSel = document.getElementById("mazeSize");
   const visitedWrap = document.getElementById("visitedWrap");
   const visitedDotsChk = document.getElementById("visitedDots");
@@ -1195,6 +1253,7 @@ function resizeCanvasToDisplaySize(){
     resizeCanvasToDisplaySize();
     layout();
     renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartoucheCurrentSize();
     draw();
   });
 
@@ -1287,6 +1346,81 @@ function resizeCanvasToDisplaySize(){
     drawPrefixGlyphsLeftOfBox(timerCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
     timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
   }
+
+  function setBestCanvasVisible(isVisible){
+    if (!bestCanvas) return;
+    bestCanvas.style.display = isVisible ? "block" : "none";
+  }
+
+  function renderTopBestCartoucheForSize(sizeName){
+    if (!bestCanvas) return;
+
+    const bestSec = bestSecondsBySize[safePresetName(sizeName)];
+
+    // No best for this size -> hide entirely
+    if (bestSec == null) {
+      setBestCanvasVisible(false);
+      return;
+    }
+    setBestCanvasVisible(true);
+
+    if (isMobileTopbarMode()) return;
+
+    const targetCssW = 220;
+    const targetCssH = 36;
+    const dpr = window.devicePixelRatio || 1;
+
+    bestCanvas.style.width = `${targetCssW}px`;
+    bestCanvas.style.height = `${targetCssH}px`;
+    bestCanvas.width = Math.ceil(targetCssW * dpr);
+    bestCanvas.height = Math.ceil(targetCssH * dpr);
+
+    bestCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    bestCtx.clearRect(0, 0, targetCssW, targetCssH);
+
+    const glyphs = buildTimeCartoucheGlyphs(bestSec);
+
+    renderMixedCartoucheToCanvas(
+      bestOffscreen,
+      glyphs,
+      CFG.timerLargePx,
+      CFG.timerSmallPx,
+      SMALL_SET,
+      { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
+    );
+
+    // Prefix: "tenpo pona" (best time)
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["pona"]].filter(Boolean);
+    const gapPx = 8;
+
+    let scale = Math.min(targetCssW / bestOffscreen.width, targetCssH / bestOffscreen.height);
+    let prefixFontPx = Math.max(10, CFG.timerLargePx * scale);
+
+    bestCtx.save();
+    bestCtx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    const p1 = prefixCps[0] ? bestCtx.measureText(String.fromCodePoint(prefixCps[0])).width : 0;
+    const p2 = prefixCps[1] ? bestCtx.measureText(String.fromCodePoint(prefixCps[1])).width : 0;
+    const prefixW = p1 + (prefixCps.length > 1 ? (4 + p2) : 0);
+    bestCtx.restore();
+
+    const availWForCartouche = Math.max(80, targetCssW - prefixW - gapPx);
+    scale = Math.min(availWForCartouche / bestOffscreen.width, targetCssH / bestOffscreen.height);
+    prefixFontPx = Math.max(10, CFG.timerLargePx * scale);
+
+    const drawW = Math.floor(bestOffscreen.width * scale);
+    const drawH = Math.floor(bestOffscreen.height * scale);
+
+    const x = Math.floor(targetCssW - drawW);
+    const y = Math.floor((targetCssH - drawH) / 2);
+
+    if (prefixCps.length) drawPrefixGlyphsLeftOfBox(bestCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
+    bestCtx.drawImage(bestOffscreen, x, y, drawW, drawH);
+  }
+
+  function renderTopBestCartoucheCurrentSize(){
+    renderTopBestCartoucheForSize(getCurrentMazeSizeName());
+  }
+
 
   let timerSeconds = 0;
   let timerHandle = null;
@@ -1921,6 +2055,7 @@ function resizeCanvasToDisplaySize(){
     timerHandle = setInterval(() => {
       timerSeconds++;
       renderTopTimerCartouche(timerSeconds);
+      renderTopBestCartoucheCurrentSize();
     }, 1000);
   }
 
@@ -1932,6 +2067,7 @@ function resizeCanvasToDisplaySize(){
   function resetUIForIdle() {
     timerSeconds = 0;
     renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartoucheCurrentSize();
     btnQuit.disabled = true;
     syncMazeSizeUiLock();
     clearDpadAll();
@@ -1940,6 +2076,8 @@ function resizeCanvasToDisplaySize(){
   function showQuitModal() {
     state = GameState.quitting;
     stopTimer();
+    renderTopBestCartoucheCurrentSize();
+
     syncMazeSizeUiLock();
     overlay.classList.add("show");
     wrap.classList.add("mazeHidden");
@@ -2234,6 +2372,7 @@ function resizeCanvasToDisplaySize(){
 
     timerSeconds = 0;
     renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartoucheCurrentSize();
 
     clearVisitedCells();
 
@@ -2251,6 +2390,18 @@ function resizeCanvasToDisplaySize(){
   function finishGame() {
     state = GameState.finished;
     stopTimer();
+
+    /* NEW: update best time (per size) */
+    {
+      const sz = getCurrentMazeSizeName();
+      const prev = bestSecondsBySize[sz];
+      if (prev == null || timerSeconds < prev) {
+        bestSecondsBySize[sz] = timerSeconds;
+        saveBestSecondsForSize(sz, timerSeconds);
+      }
+    }
+    renderTopBestCartoucheCurrentSize();
+
     syncMazeSizeUiLock();
     btnQuit.disabled = true;
     setVisitedControlsEnabled(true);
@@ -2264,9 +2415,11 @@ function resizeCanvasToDisplaySize(){
     hideQuitModal(false);
     state = GameState.idle;
     stopTimer();
+
     syncMazeSizeUiLock();
     timerSeconds = 0;
     renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartoucheCurrentSize();
     btnQuit.disabled = true;
     clearDpadAll();
 
@@ -2558,6 +2711,27 @@ function resizeCanvasToDisplaySize(){
   btnCancelQuit.addEventListener("click", () => hideQuitModal(true));
   btnConfirmQuit.addEventListener("click", () => quitGameConfirmed());
 
+
+  /* NEW: best time canvas (click to clear ONLY for current maze size) */
+  if (bestCanvas) {
+    bestCanvas.addEventListener("click", () => {
+      if (isMobileTopbarMode()) return;
+
+      const sz = getCurrentMazeSizeName();
+      const cur = bestSecondsBySize[sz];
+      if (cur == null) return;
+
+      const msg = (DEV_LANG === "tp")
+        ? "sina wile ala wile weka e tenpo pona pi suli ni?"
+        : "Clear best time for this maze size?";
+
+      if (!confirm(msg)) return;
+
+      clearBestSecondsForSize(sz);
+      renderTopBestCartoucheCurrentSize();
+    });
+  }
+
   overlay.addEventListener("pointerdown", (e) => e.stopPropagation());
   overlay.addEventListener("pointermove", (e) => e.stopPropagation());
   overlay.addEventListener("pointerup", (e) => e.stopPropagation());
@@ -2578,6 +2752,9 @@ function resizeCanvasToDisplaySize(){
     const chosen = safePresetName(mazeSizeSel.value);
     const applied = applyMazeSizePreset(chosen);
     saveMazeSize(applied);
+
+    // NEW: best time display is per-size
+    renderTopBestCartoucheCurrentSize();
 
     if (state === GameState.running) {
       mazeSizeSel.value = getSavedMazeSize();
@@ -2624,6 +2801,7 @@ function resizeCanvasToDisplaySize(){
     layout();
     timerSeconds = 0;
     renderTopTimerCartouche(timerSeconds);
+    renderTopBestCartoucheCurrentSize();
     btnQuit.disabled = true;
     setStatus(t("status_click_new"));
     draw();
@@ -2663,6 +2841,13 @@ function resizeCanvasToDisplaySize(){
     try { await ensureFontsLoaded(); } catch {}
 
     applyUiText();
+
+    /* NEW: load best times for each size */
+    bestSecondsBySize.small  = loadBestSecondsForSize("small");
+    bestSecondsBySize.medium = loadBestSecondsForSize("medium");
+    bestSecondsBySize.large  = loadBestSecondsForSize("large");
+
+    renderTopBestCartoucheCurrentSize();
 
     renderTopTimerCartouche(0);
     init();
