@@ -3263,12 +3263,44 @@ function wireHaloControls() {
       }
     }
 
+    function unescapeQuotedText(raw){
+      const s = String(raw ?? "");
+      let out = "";
+      for (let i = 0; i < s.length; i++){
+        const ch = s[i];
+        if (ch !== "\\") { out += ch; continue; }
+        if (i + 1 >= s.length) { out += "\\"; break; }
+
+        const n = s[i + 1];
+        if (n === '"') { out += '"'; i++; continue; }
+        if (n === "\\") { out += "\\"; i++; continue; }
+        if (n === "t") { out += "    "; i++; continue; }     // keep your current behavior
+        if (n === "n") { out += "\n"; i++; continue; }       // optional
+        // unknown escape: keep the char literally (don’t drop anything)
+        out += n;
+        i++;
+      }
+      return out;
+    }
+
     function parseQuoteSegmentToElements(quoteContent, elements, { fontPx }) {
-      const raw = String(quoteContent ?? "");
-      let literal = raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
-      literal = literal.replace(/\t/g, "    ");
+      const literal = unescapeQuotedText(quoteContent);
+
+      // IMPORTANT: preserve spaces exactly (do NOT trim)
       if (literal.length === 0) return;
-      makeLiteralTextElement(elements, literal, { fontPx, fontFamily: FONT_FAMILY_LITERAL });
+
+      // Add a boundary gap before the quoted literal ONLY if this is not line-start.
+      if (elements.length > 0) {
+        pushGapIfNeeded(elements, wordGapForPx(fontPx));
+      }
+
+      // IMPORTANT: quoted text should not auto-inject word gaps; it should render literally
+      makeLiteralTextElement(elements, literal, {
+        fontPx,
+        fontFamily: FONT_FAMILY_LITERAL,
+        addLeadingGap: false,
+        isQuoted: true, // <-- NEW
+      });
     }
 
     function parseBracketSegmentToElements(bracketContent, elements, { fontPx }) {
@@ -3375,16 +3407,20 @@ function wireHaloControls() {
       };
     }
 
-    function makeLiteralTextElement(elements, text, { fontPx, fontFamily }) {
+    function makeLiteralTextElement(elements, text, { fontPx, fontFamily, addLeadingGap = true, isQuoted = false }) {
       const s = String(text ?? "");
       if (!s) return;
 
-      pushGapIfNeeded(elements, wordGapForPx(fontPx));
+      if (addLeadingGap) {
+        pushGapIfNeeded(elements, wordGapForPx(fontPx));
+      }
+
       elements.push({
         type: "text",
         text: s,
         px: fontPx,
-        fontFamily: fontFamily || FONT_FAMILY_LITERAL
+        fontFamily: fontFamily || FONT_FAMILY_LITERAL,
+        isQuoted: !!isQuoted, // <-- NEW
       });
     }
 
@@ -3425,15 +3461,16 @@ function wireHaloControls() {
     function measureChars(ctx, chars, px, fontFamily){
       ctx.font = `${px}px "${fontFamily}"`;
       setTextQuality(ctx);
+
       const m = ctx.measureText(chars);
 
       const ascent  = (m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8));
       const descent = (m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2));
-      const left    = (m.actualBoundingBoxLeft ?? 0);
-      const right   = (m.actualBoundingBoxRight ?? Math.ceil(m.width));
-      const w       = Math.ceil(left + right);
 
-      return { chars, ascent, descent, left, w, h: Math.ceil(ascent + descent), px, fontFamily };
+      // PDF layout: use advance width only; bbox-left/right causes clipping bugs
+      const w = Math.ceil(m.width);
+
+      return { chars, ascent, descent, left: 0, w, h: Math.ceil(ascent + descent), px, fontFamily };
     }
 
     // Build the cartouche text run directly (so PDF can draw it as text)
@@ -3748,6 +3785,57 @@ function wireHaloControls() {
       };
     }
 
+    const PDF_QUOTED_TEXT_SCALE = 6; // 4–6. 6 is crisp but bigger PDFs.
+
+    function buildQuotedTextCanvasForPdf(txt, { px, fontFamily, fgCss }) {
+      const scale = PDF_QUOTED_TEXT_SCALE;
+
+      const basePx = Math.max(8, Number(px ?? 56));
+      const pxHi = Math.round(basePx * scale);
+
+      // Tiny padding so strokes don't clip
+      const basePad = Math.max(0, Math.round(basePx * 0.02));
+      const padHi = Math.round(basePad * scale);
+
+      const c = document.createElement("canvas");
+      const ctx = c.getContext("2d");
+      ctx.textBaseline = "alphabetic";
+      ctx.font = `${pxHi}px "${fontFamily}"`;
+      setTextQuality(ctx);
+
+      const s = String(txt ?? "");
+      const m = ctx.measureText(s);
+
+      const ascentHi = (m.actualBoundingBoxAscent ?? Math.ceil(pxHi * 0.8));
+      const descentHi = (m.actualBoundingBoxDescent ?? Math.ceil(pxHi * 0.2));
+      const wHi = Math.max(1, Math.ceil(m.width) + padHi * 2);
+      const hHi = Math.max(1, Math.ceil(ascentHi + descentHi) + padHi * 2);
+
+      c.width = wHi;
+      c.height = hHi;
+
+      const ctx2 = c.getContext("2d", { alpha: true });
+      ctx2.clearRect(0, 0, wHi, hHi);
+      ctx2.textBaseline = "alphabetic";
+      ctx2.font = `${pxHi}px "${fontFamily}"`;
+      setTextQuality(ctx2);
+
+      const xHi = padHi;                // left
+      const baselineYHi = padHi + ascentHi;
+
+      // IMPORTANT: no halo baked into PDF images (per your preference)
+      ctx2.fillStyle = fgCss || "#000";
+      ctx2.fillText(s, xHi, baselineYHi);
+
+      // Return "logical" (unscaled) metrics for PDF layout:
+      return {
+        canvas: c,
+        w: Math.round(wHi / scale),
+        h: Math.round(hHi / scale),
+        baselineY: Math.round(baselineYHi / scale),
+      };
+    }
+
     async function exportRenderedToPdf(){
       if (!window.PDFLib) throw new Error("pdf-lib not loaded.");
       const { PDFDocument, rgb } = window.PDFLib;
@@ -3780,84 +3868,141 @@ function wireHaloControls() {
       const g = parseInt(fgHex.slice(3,5), 16) / 255;
       const b = parseInt(fgHex.slice(5,7), 16) / 255;
 
+            // Create PDF
+      const pdfDoc = await PDFDocument.create();
+      const fonts = await embedPdfFonts(pdfDoc);
+
+      function pdfFontForFamily(fam){
+        if (fam === FONT_FAMILY_LITERAL) return fonts.fontLit;
+        if (fam === FONT_FAMILY_CARTOUCHE) return fonts.fontCart;
+        return fonts.fontText;
+      }
+
+      function widthPtForText(fam, text, px){
+        const sizePt = (px ?? fontPx) * PX_TO_PT;
+        return pdfFontForFamily(fam).widthOfTextAtSize(String(text ?? ""), sizePt);
+      }
+
       // Measure lines
       const measuredLines = [];
-      let maxLineW = 0;
+      let maxLineWpt = 0;
       let totalH = 0;
 
       for (const lineEls of linesElements) {
-        let w = 0;
+        let wPt = 0;
         let maxAscent = 0;
         let maxDescent = 0;
 
         const measuredEls = [];
 
         for (const el of lineEls) {
+          // GAP (px -> pt)
           if (el.type === "gap") {
-            measuredEls.push({ kind: "gap", px: (el.px | 0) });
-            w += Math.max(0, el.px | 0);
+            const gapPx = Math.max(0, el.px | 0);
+            measuredEls.push({ kind: "gap", px: gapPx });
+            wPt += gapPx * PX_TO_PT;
             continue;
           }
 
+          // TEXT (Patrick / literal)
           if (el.type === "text") {
             const fam = el.fontFamily || FONT_FAMILY_LITERAL;
-            const m = measureChars(ctx, String(el.text ?? ""), el.px ?? fontPx, fam);
-            measuredEls.push({ kind:"text", fam, m, px: (el.px ?? fontPx) });
-            w += m.w;
+            const px = (el.px ?? fontPx);
+            const txt = String(el.text ?? "");
+
+            // NEW: quoted literal text -> raster image in PDF
+            if (fam === FONT_FAMILY_LITERAL && el.isQuoted) {
+              const img = buildQuotedTextCanvasForPdf(txt, { px, fontFamily: fam, fgCss: getFgHex() });
+
+              measuredEls.push({ kind: "quotedImg", img });
+              wPt += (img.w | 0) * PX_TO_PT;
+
+              const a = img.baselineY | 0;
+              const d = (img.h | 0) - a;
+              maxAscent = Math.max(maxAscent, a);
+              maxDescent = Math.max(maxDescent, d);
+              continue;
+            }
+
+            // Normal (non-quoted) text stays as PDF text
+            const wThisPt = widthPtForText(fam, txt, px);
+
+            const m = measureChars(ctx, txt, px, fam);
             maxAscent = Math.max(maxAscent, m.ascent);
             maxDescent = Math.max(maxDescent, m.descent);
+
+            measuredEls.push({ kind: "text", fam, text: txt, px, wPt: wThisPt });
+            wPt += wThisPt;
             continue;
           }
 
+          // SINGLE GLYPH
           if (el.type === "glyph") {
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const px = (el.px ?? fontPx);
             const ch = String.fromCodePoint(el.cp);
-            const m = measureChars(ctx, ch, el.px ?? fontPx, fam);
-            measuredEls.push({ kind:"glyph", fam, m, px: (el.px ?? fontPx) });
-            w += m.w;
+
+            const wThisPt = widthPtForText(fam, ch, px);
+
+            const m = measureChars(ctx, ch, px, fam);
             maxAscent = Math.max(maxAscent, m.ascent);
             maxDescent = Math.max(maxDescent, m.descent);
+
+            measuredEls.push({ kind: "glyph", fam, text: ch, px, wPt: wThisPt });
+            wPt += wThisPt;
             continue;
           }
 
+          // RUN (multiple cps)
           if (el.type === "run") {
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const px = (el.px ?? fontPx);
             const chars = (el.cps ?? []).map(cp => String.fromCodePoint(cp)).join("");
-            const m = measureChars(ctx, chars, el.px ?? fontPx, fam);
-            measuredEls.push({ kind:"run", fam, m, px: (el.px ?? fontPx) });
-            w += m.w;
+
+            const wThisPt = widthPtForText(fam, chars, px);
+
+            const m = measureChars(ctx, chars, px, fam);
             maxAscent = Math.max(maxAscent, m.ascent);
             maxDescent = Math.max(maxDescent, m.descent);
+
+            measuredEls.push({ kind: "run", fam, text: chars, px, wPt: wThisPt });
+            wPt += wThisPt;
             continue;
           }
 
+          // CARTOUCHE (image in PDF)
           if (el.type === "cartouche") {
-            // Use the already-rendered cartouche canvas dimensions
             measuredEls.push({ kind: "cartoucheImg", el });
-            w += (el.w | 0);
 
+            // horizontal advance uses element width (px -> pt)
+            const wPx = (el.w | 0);
+            wPt += wPx * PX_TO_PT;
+
+            // vertical metrics: use element-provided ascent/descent if present
             const a = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
             const d = el.descent ?? Math.ceil((el.h | 0) * 0.3);
             maxAscent = Math.max(maxAscent, a);
             maxDescent = Math.max(maxDescent, d);
             continue;
           }
+
+          // Unknown element types: ignore safely (or log)
+          // console.warn("Unknown element type in PDF export:", el);
         }
 
         const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
-        measuredLines.push({ measuredEls, w, lineBoxH, maxAscent, maxDescent });
 
-        maxLineW = Math.max(maxLineW, w);
+        measuredLines.push({ measuredEls, wPt, lineBoxH, maxAscent, maxDescent });
+        maxLineWpt = Math.max(maxLineWpt, wPt);
+
         totalH += lineBoxH;
       }
 
       totalH += Math.max(0, (measuredLines.length - 1) * lineGapPx);
 
-      // Create PDF
-      const pdfDoc = await PDFDocument.create();
-      const fonts = await embedPdfFonts(pdfDoc);
 
-      const pageWpt = (maxLineW + padPx * 2) * PX_TO_PT;
+
+      const pageWpt = maxLineWpt + (padPx * 2) * PX_TO_PT;
       const pageHpt = (totalH + padPx * 2) * PX_TO_PT;
 
       const page = pdfDoc.addPage([pageWpt, pageHpt]);
@@ -3867,13 +4012,42 @@ function wireHaloControls() {
 
       for (let li = 0; li < measuredLines.length; li++) {
         const L = measuredLines[li];
-        let xPx = padPx;
+
+        // pen position in POINTS (not px)
+        let xPt = padPx * PX_TO_PT;
+
+        // baseline in px (vertical layout still based on your existing ascent/descent)
         const baselinePx = yPx + L.maxAscent;
 
         for (const el of L.measuredEls) {
           // 1) GAP
           if (el.kind === "gap") {
-            xPx += Math.max(0, el.px | 0);
+            xPt += Math.max(0, el.px | 0) * PX_TO_PT;
+            continue;
+          }
+
+          // 1.5) QUOTED TEXT AS IMAGE
+          if (el.kind === "quotedImg") {
+            const img = el.img;
+
+            const pngBytes = await canvasToPngBytes(img.canvas);
+            const png = await pdfDoc.embedPng(pngBytes);
+
+            const by = (img.baselineY | 0);
+            const topLeftPx = baselinePx - by;
+
+            const drawXpt = xPt;
+            const drawYpt =
+              pageHpt - (topLeftPx * PX_TO_PT) - ((img.h | 0) * PX_TO_PT);
+
+            page.drawImage(png, {
+              x: drawXpt,
+              y: drawYpt,
+              width: (img.w | 0) * PX_TO_PT,
+              height: (img.h | 0) * PX_TO_PT,
+            });
+
+            xPt += (img.w | 0) * PX_TO_PT;
             continue;
           }
 
@@ -3885,28 +4059,38 @@ function wireHaloControls() {
             const pngBytes = await canvasToPngBytes(pdfCart.canvas);
             const png = await pdfDoc.embedPng(pngBytes);
 
-            const by = (pdfCart.baselineY != null) ? (pdfCart.baselineY | 0) : Math.floor((pdfCart.h | 0) * 0.75);
+            const by = (pdfCart.baselineY != null)
+              ? (pdfCart.baselineY | 0)
+              : Math.floor((pdfCart.h | 0) * 0.75);
+
             const topLeftPx = baselinePx - by;
 
-            const xPt = xPx * PX_TO_PT;
-            const yPt = pageHpt - (topLeftPx * PX_TO_PT) - ((pdfCart.h | 0) * PX_TO_PT);
+            // x is already in points
+            const drawXpt = xPt;
+
+            // convert top-left px to PDF y coordinate (points from bottom)
+            const drawYpt =
+              pageHpt - (topLeftPx * PX_TO_PT) - ((pdfCart.h | 0) * PX_TO_PT);
 
             page.drawImage(png, {
-              x: xPt,
-              y: yPt,
+              x: drawXpt,
+              y: drawYpt,
               width: (pdfCart.w | 0) * PX_TO_PT,
               height: (pdfCart.h | 0) * PX_TO_PT,
             });
 
-            xPx += (pdfCart.w | 0);
+            // advance pen by the cartouche width (points)
+            xPt += (pdfCart.w | 0) * PX_TO_PT;
             continue;
           }
 
           // 3) NORMAL TEXT / RUN / GLYPH
-          const m = el.m;
+          // IMPORTANT: el must contain { text, fam, px, wPt } from the PDF measurement pass.
+          const txt = String(el.text ?? "");
+          if (!txt) continue;
 
-          const drawXpt = (xPx + (m.left ?? 0)) * PX_TO_PT;
-          const drawYpt = (pageHpt - (baselinePx * PX_TO_PT));
+          const drawXpt = xPt;
+          const drawYpt = pageHpt - (baselinePx * PX_TO_PT);
 
           let pdfFont = fonts.fontText;
           if (el.fam === FONT_FAMILY_CARTOUCHE) pdfFont = fonts.fontCart;
@@ -3914,7 +4098,7 @@ function wireHaloControls() {
 
           const fontSizePt = (el.px ?? fontPx) * PX_TO_PT;
 
-          page.drawText(m.chars, {
+          page.drawText(txt, {
             x: drawXpt,
             y: drawYpt,
             size: fontSizePt,
@@ -3922,9 +4106,11 @@ function wireHaloControls() {
             color: rgb(r, g, b),
           });
 
-          xPx += m.w;
+          // advance pen by the PDF font's own width measurement (points)
+          xPt += Number(el.wPt ?? 0);
         }
 
+        // advance to next line (vertical layout still in px)
         yPx += L.lineBoxH;
         if (li < measuredLines.length - 1) yPx += lineGapPx;
       }
@@ -3960,14 +4146,14 @@ function wireHaloControls() {
       const [textBytes, cartBytes, literalBytes] = await Promise.all([
         fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf"),              // TP-Nasin-Nanpa-Font
         fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf"),// TP-Cartouche-Font
-        fetchFontBytes("./fonts/PatrickHand-Regular.ttf"),                             // Patrick-Head-Font
+        //fetchFontBytes("./fonts/PatrickHand-Regular.ttf"),                             // Patrick-Head-Font
       ]);
 
       const fontText = await pdfDoc.embedFont(textBytes, { subset: false }); // IMPORTANT for UCSUR / >BMP glyphs
       const fontCart = await pdfDoc.embedFont(cartBytes, { subset: false }); // IMPORTANT for cartouche glyphs too
-      const fontLit  = await pdfDoc.embedFont(literalBytes, { subset: false }); // OK to subset normal latin font
+      //const fontLit  = await pdfDoc.embedFont(literalBytes, { subset: false }); // OK to subset normal latin font
 
-      return { fontText, fontCart, fontLit };
+      return { fontText, fontCart  };//, fontLit };
     }
 
     const elTextIn = document.getElementById("textIn");
