@@ -3015,7 +3015,8 @@ function wireHaloControls() {
       ctx2.fillStyle = fgCss || "#111";
       ctx2.fillText(run, x, baselineY);
 
-      return { w, h, baselineY };
+      //return { w, h, baselineY };
+      return { w, h, baselineY, inkAscent: Math.ceil(ascent), inkDescent: Math.ceil(descent), haloW, pad };
     }
 
     function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss }) {
@@ -3032,8 +3033,11 @@ function wireHaloControls() {
       if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
       const baselineY = r.baselineY | 0;
-      const ascent = baselineY;
-      const descent = (r.h | 0) - baselineY;
+
+      //const ascent = baselineY;
+      //const descent = (r.h | 0) - baselineY;
+      const ascent = r.inkAscent ?? baselineY;
+      const descent = r.inkDescent ?? ((r.h | 0) - baselineY);
 
       elements.push({
         type: "cartouche",
@@ -3544,14 +3548,20 @@ function wireHaloControls() {
           }
 
           if (el.type === "cartouche") {
+            // IMPORTANT: include cartouche in measured elements and line width
             measuredEls.push(el);
             w += (el.w | 0);
 
-            const a = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
-            const d = el.descent ?? Math.ceil((el.h | 0) * 0.3);
+            // Cap how much cartouche can inflate line height
+            const a0 = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
+            const d0 = el.descent ?? Math.ceil((el.h | 0) * 0.3);
 
-            if (a > maxAscent) maxAscent = a;
-            if (d > maxDescent) maxDescent = d;
+            const allowance = Math.max(2, Math.round(fontPx * 0.08)); // 8% extra
+            const capA = Math.ceil(fontPx * 0.80) + allowance;
+            const capD = Math.ceil(fontPx * 0.20) + allowance;
+
+            maxAscent = Math.max(maxAscent, Math.min(a0, capA));
+            maxDescent = Math.max(maxDescent, Math.min(d0, capD));
             continue;
           }
         }
