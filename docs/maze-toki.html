@@ -458,7 +458,7 @@
       status_drag_in: "o tawa e sitelen tawa lupa open. sina lon insa la o kepeken nena tawa.",
       status_inside: "sina lon insa: o kepeken nena tawa.",
       status_next_glyph: "sitelen sin li lon open. o kepeken nena tawa.",
-      status_finished: (timeStr) => `pini. tenpo nanpa: ${timeStr}. o open e musi sin.`,
+      status_finished: (timeStr) => `pini. tenpo lili: ${timeStr}. o open e musi sin.`,
       status_quit: "musi li pini. o open e musi sin.",
 
       modal_title: "o weka tan musi ni?",
@@ -1253,7 +1253,7 @@ function resizeCanvasToDisplaySize(){
       { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
     );
 
-    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]];
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]];
     const gapPx = 8;
 
     let scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
@@ -2157,7 +2157,7 @@ function resizeCanvasToDisplaySize(){
     const drawW = Math.floor(finishOffscreen.width * scale);
     const drawH = Math.floor(finishOffscreen.height * scale);
 
-    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]];
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]];
     const prefixFontPx = Math.max(14, largePx * scale);
 
     ctx.save();

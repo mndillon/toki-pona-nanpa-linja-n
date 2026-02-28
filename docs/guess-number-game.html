@@ -466,7 +466,7 @@
       status_low_same: (best) => `nanpa li lili. nanpa anpa awen: ${best}.`,
       status_high_new: (g) => `nanpa li suli. nanpa sewi sin: ${g}.`,
       status_high_same: (best) => `nanpa li suli. nanpa sewi awen: ${best}.`,
-      status_correct: (secret, guessCount, timeStr) => `pona! nanpa len li ${secret}. wile sona: ${guessCount}. tenpo: ${timeStr}. o open sin.`,
+      status_correct: (secret, guessCount, timeStr) => `pona! nanpa len li ${secret}. wile sona: ${guessCount}. tenpo lili: ${timeStr}. o open sin.`,
       footer_disclaimer: "ilo ni li pana ala e sona pona lon tenpo ale. sina o lukin sin e ijo ale.",
       back_index: "tawa lipu open",
       aria_game: "musi alasa nanpa",
@@ -523,7 +523,8 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
     "wile":  0xF1977,
     "kolon": 0xF199D,
     "kijetesantakalu": 0xF1980,
-    "monsi": 0xF1938
+    "monsi": 0xF1938,
+    "lili": 0xF1928,
   };
 
   function getSmallCodepointsSet() {
@@ -1336,7 +1337,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
       { padding: TIMER_CFG.pad, border: TIMER_CFG.border, cornerRadius: TIMER_CFG.corner, letterGap: TIMER_CFG.gap }
     );
 
-    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(Boolean);
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]].filter(Boolean);
     const gapPx = 8;
 
     let scale = Math.min(TIMER_CFG.targetCssW / timerOffscreen.width, TIMER_CFG.targetCssH / timerOffscreen.height);
@@ -1400,7 +1401,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
 
   // Set the finished-time label as UCSUR sitelen pona glyphs: "tenpo nanpa"
   if (endLblTime){
-    const cps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(cp => typeof cp === "number");
+    const cps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]].filter(cp => typeof cp === "number");
     endLblTime.textContent = cps.map(cp => String.fromCodePoint(cp)).join("");
   }
   const endLblGuesses= document.getElementById("endLblGuesses");
@@ -1560,7 +1561,7 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
     if (state === GameState.finished) {
       // After a win, show the final time cartouche prefixed immediately by "tenpo nanpa" in UCSUR.
       const timeGlyphs = buildTimeCartoucheGlyphs(timerSeconds);
-      const prefix = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(cp => typeof cp === "number");
+      const prefix = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]].filter(cp => typeof cp === "number");
       renderPrefixedMixedCartoucheToCanvas(
         bestHighCanvas,
         prefix,

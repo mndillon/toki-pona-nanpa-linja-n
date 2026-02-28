@@ -443,7 +443,7 @@
       status_loading: "mi kama jo e sitelen…",
       status_idle: "o kepeken nena musi sin.",
       status_running: "o pilin e leko pona (anu o tawa e ona) tawa lupa weka.",
-      status_solved: (timeStr) => `pini. tenpo nanpa: ${timeStr}. o open e musi sin.`,
+      status_solved: (timeStr) => `pini. tenpo lili: ${timeStr}. o open e musi sin.`,
       status_quit: "musi li pini. o open e musi sin.",
       modal_title: "o weka tan musi ni?",
       modal_body: "tenpo li awen ala. sina weka la pali sina lon musi ni li weka.",
@@ -1113,7 +1113,7 @@
       { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
     );
 
-    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(Boolean);
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]].filter(Boolean);
     const gapPx = 8;
 
     let scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
@@ -1167,7 +1167,7 @@
       { padding: 18, border: 3, cornerRadius: 18, letterGap: 1 }
     );
 
-    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["nanpa"]].filter(Boolean);
+    const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]].filter(Boolean);
     const gapPx = 10;
 
     let scale = Math.min(cssW / finishOffscreen.width, cssH / finishOffscreen.height);
