@@ -921,6 +921,7 @@
               <div class="field">
                 <button id="btnPickBgImage" class="btn" type="button">Load background image…</button>
                 <button id="btnClearBgImage" class="btn" type="button">Clear</button>
+                <button id="btnResizeStageToBg" class="btn" type="button" style="margin-top:6px; display:none;">Resize scene to image</button>
                 <div class="hint" style="margin-top:6px;">
                   Background image is part of the scene (always behind all elements).
                 </div>
@@ -2681,8 +2682,8 @@ function ensureBackgroundImageLoadedForStage(){
     bgImageCache.img = new Image();
     bgImageCache.ready = false;
     bgImageCache.assetId = "";
-    bgImageCache.img.onload = () => { bgImageCache.ready = true; render(); };
-    bgImageCache.img.onerror = () => { bgImageCache.ready = false; };
+    bgImageCache.img.onload = () => { bgImageCache.ready = true; try{ syncBackgroundResizeButtonState(); }catch(_){ } render(); };
+    bgImageCache.img.onerror = () => { bgImageCache.ready = false; try{ syncBackgroundResizeButtonState(); }catch(_){ } };
   }
 
   if (bgImageCache.assetId !== assetId){
@@ -2692,6 +2693,26 @@ function ensureBackgroundImageLoadedForStage(){
   }
 
   return bgImageCache.ready ? bgImageCache.img : null;
+}
+
+function syncBackgroundResizeButtonState(){
+  const btn = document.getElementById("btnResizeStageToBg");
+  if (!btn) return;
+
+  const st = Scene.stage || {};
+  const hasBg = !!st.bgImgAssetId;
+
+  if (!hasBg){
+    btn.style.display = "none";
+    btn.disabled = true;
+    return;
+  }
+
+  // Show once an image is selected; enable only once it has loaded and has dimensions.
+  btn.style.display = "";
+  const img = ensureBackgroundImageLoadedForStage();
+  const ready = !!(img && (img.naturalWidth || img.width) && (img.naturalHeight || img.height));
+  btn.disabled = !ready;
 }
 
 function computeBackgroundImageDestRect({stageW, stageH, natW, natH, stretch, keepAspect}){
@@ -10009,6 +10030,7 @@ async function pickBackgroundImageForScene(){
     invalidateBackgroundImageCache();
     scheduleAutosave();
     syncStageDefaultsUiFromScene();
+    syncBackgroundResizeButtonState();
     render();
   };
   inp.click();
@@ -10020,7 +10042,46 @@ function clearBackgroundImageForScene(){
   invalidateBackgroundImageCache();
   scheduleAutosave();
   syncStageDefaultsUiFromScene();
+  syncBackgroundResizeButtonState();
   render();
+}
+
+function resizeStageToBackgroundImage(){
+  // Resize stage to the natural dimensions of the currently loaded background image.
+  // Also forces Keep-aspect ON for the background image.
+  const img = ensureBackgroundImageLoadedForStage();
+  if (!img){
+    // Not ready yet; trigger load and let the user click again once loaded.
+    ensureBackgroundImageLoadedForStage();
+    syncBackgroundResizeButtonState();
+    return;
+  }
+
+  const natW = Number(img.naturalWidth || img.width || 0);
+  const natH = Number(img.naturalHeight || img.height || 0);
+  if (!Number.isFinite(natW) || !Number.isFinite(natH) || natW <= 0 || natH <= 0) return;
+
+  const w = Math.max(64, Math.round(natW));
+  const h = Math.max(64, Math.round(natH));
+
+  Scene.stage.w = w;
+  Scene.stage.h = h;
+  Scene.stage.bgImgKeepAspect = true;
+
+  // Sync UI inputs (so the user sees the new stage size)
+  const sw = document.getElementById("stageW");
+  const sh = document.getElementById("stageH");
+  if (sw) sw.value = String(w);
+  if (sh) sh.value = String(h);
+
+  // Sync bg aspect checkbox
+  const bgka = document.getElementById("bgImgKeepAspect");
+  if (bgka) bgka.checked = true;
+
+  fitStageToView();
+  scheduleAutosave();
+  render();
+  historyCommit("Resize scene to background image");
 }
 
 function syncSnapButtonsFromScene(){
@@ -10079,6 +10140,8 @@ function syncStageDefaultsUiFromScene(){
   console.log("Scene: " + JSON.stringify(st));
 
   syncSnapButtonsFromScene();
+
+  syncBackgroundResizeButtonState();
 
 
     // Keep swatch highlights in sync (programmatic .value does not emit events)
@@ -10799,6 +10862,7 @@ function wireStageDefaultsUi(){
   const bgs = document.getElementById("bgImgStretch");
   const btnPickBg = document.getElementById("btnPickBgImage");
   const btnClearBg = document.getElementById("btnClearBgImage");
+  const btnResizeStageToBg = document.getElementById("btnResizeStageToBg");
 
 
 
@@ -10958,6 +11022,7 @@ if (bgs){
 
 if (btnPickBg) btnPickBg.addEventListener("click", () => pickBackgroundImageForScene());
 if (btnClearBg) btnClearBg.addEventListener("click", () => clearBackgroundImageForScene());
+if (btnResizeStageToBg) btnResizeStageToBg.addEventListener("click", () => resizeStageToBackgroundImage());
 
     // Add swatches beside stage/default color inputs
   if (bg) attachSwatchesToColorInput(bg, { palette: getActiveColorPalette });
