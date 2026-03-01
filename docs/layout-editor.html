@@ -632,6 +632,16 @@
 /* Optional: tighten property panel spacing slightly */
 #propsBody .field textarea{ min-height: 250px; }
 
+/* Mixed-value indicator (subtle) */
+.mixedTag{
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  opacity: 0.70;
+}
+
 .nlModeControl{ display:none !important; }
 
   /* Mobile: collapse sidebar to top drawer-ish */
@@ -1200,6 +1210,7 @@
       props_stroke_width: "Stroke width",
       props_opacity: "Opacity (0..1)",
       props_mixed: "Mixed",
+      props_edit_mixed_text: "Edit mixed text",
       props_keep_aspect: "Keep aspect ratio",
       props_scale_font_box: "Scale font with box",
       props_font_family: "Font family",
@@ -1403,6 +1414,7 @@
       props_stroke_width: "suli linja",
       props_opacity: "ken lukin (0..1)",
       props_mixed: "ante",
+      props_edit_mixed_text: "ken ante e toki pi mute",
       props_keep_aspect: "awen sama pi suli",
       props_scale_font_box: "suli sitelen li sama poki",
       props_font_family: "kulupu sitelen",
@@ -5941,10 +5953,27 @@ function wireArrowKeyNudge(){
     panStartView: null,
   };
 
-  function isTypingContext(el){
+  function isTypingContext(node){
+    // Treat any focused form control / contenteditable region as "typing" so global
+    // shortcuts like Backspace/Delete don't act on the selection.
+    const el = (node && node.nodeType === 1) ? node
+      : (document.activeElement && document.activeElement.nodeType === 1 ? document.activeElement : null);
     if (!el) return false;
-    const tag = String(el.tagName || "").toLowerCase();
-    return tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable;
+
+    if (el.isContentEditable) return true;
+
+    const tag = (el.tagName || "").toUpperCase();
+    if (tag === "TEXTAREA" || tag === "SELECT") return true;
+
+    if (tag === "INPUT"){
+      const t = (el.type || "").toLowerCase();
+      // Non-typing inputs
+      if (["button","checkbox","radio","range","color","file","submit","reset"].includes(t)) return false;
+      return true;
+    }
+
+    // If the event target is inside an editor control, treat it as typing context.
+    return !!el.closest("textarea, input, select, [contenteditable='true']");
   }
 
   function getPointerScreen(e){
@@ -7148,7 +7177,7 @@ function makeLockCheckbox(sels){
 }
 
 
-function makeCheckbox(label, checked, onChange){
+function makeCheckbox(label, checked, onChange, opts = null){
   const row = document.createElement("div");
   row.className = "row";
 
@@ -7157,6 +7186,12 @@ function makeCheckbox(label, checked, onChange){
 
   const l = document.createElement("label");
   l.textContent = label;
+  if (opts && opts.mixedLabel){
+    const tag = document.createElement("span");
+    tag.className = "mixedTag";
+    tag.textContent = opts.mixedLabel;
+    l.appendChild(tag);
+  }
 
   const wrap = document.createElement("div");
   wrap.style.display = "flex";
@@ -7166,6 +7201,7 @@ function makeCheckbox(label, checked, onChange){
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.checked = !!checked;
+  if (opts && opts.indeterminate) cb.indeterminate = true;
   cb.addEventListener("change", () => { onChange(cb.checked); historyCommit("Edit properties"); });
 
   const txt = document.createElement("div");
@@ -7357,15 +7393,31 @@ function initFloatingSitelenEditor(){
 }
 
 
+let allowMixedTextEdit = false; // multi-select text editing gate
+
 function renderPropsPanel(){
   propsBody.innerHTML = "";
 
   const sels = getSelectedElements();
 
-  const shouldKeepFloatingEditor = sels.length === 1 && sels[0].type === ElementType.Sitelen;
-  if (!shouldKeepFloatingEditor){
-    closeFloatingSitelenEditor();
+  // Keep the floating editor open if:
+//  - single-select sitelen (classic behavior), OR
+//  - multi-select where the floating editor is currently bound to the same multi-sitelen key.
+let shouldKeepFloatingEditor = (sels.length === 1 && sels[0].type === ElementType.Sitelen);
+
+if (!shouldKeepFloatingEditor && FloatingSitelenEditor && FloatingSitelenEditor.isOpen && typeof FloatingSitelenEditor.elementId === "string"){
+  const eid = FloatingSitelenEditor.elementId;
+  if (eid.startsWith("multi:sitelen:")){
+    // Current multi key for selected sitelen elements (stable order)
+    const ids = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(e.id)).sort();
+    const curKey = "multi:sitelen:" + ids.join(",");
+    if (curKey === eid) shouldKeepFloatingEditor = true;
   }
+}
+
+if (!shouldKeepFloatingEditor){
+  closeFloatingSitelenEditor();
+}
 
   if (!sels.length){
     propsBody.innerHTML = `<div class="hint">${tr("props_hint")}</div>`;
@@ -7563,9 +7615,460 @@ function renderPropsPanel(){
     ));
   }
 
-  // If multi-select: show only common controls after group controls
+
+  // Multi-select: show union of supported controls.
+  // Values are taken from the *topmost* selected element that supports that property.
   if (!single){
+    // ---- Helpers (local) ----
+    const selIdSet = new Set(sels.map(e => e.id));
+
+    function topmostSelectedWhere(pred){
+      for (let i = (Scene.elements.length - 1); i >= 0; i--){
+        const e = Scene.elements[i];
+        if (!e || !selIdSet.has(e.id)) continue;
+        if (pred(e)) return e;
+      }
+      return null;
+    }
+
+    function distinctValues(arr){
+      const out = [];
+      for (const v of arr){
+        const s = (v == null) ? "__NULL__" : String(v);
+        if (!out.includes(s)) out.push(s);
+      }
+      return out;
+    }
+
+    function isTextLike(e){ return e && (e.type === ElementType.Text || e.type === ElementType.Sitelen || e.type === ElementType.Glyph); }
+    function supportsTextBlock(e){ return e && (e.type === ElementType.Text || e.type === ElementType.Sitelen); }
+    function supportsGlyphBlock(e){ return e && (e.type === ElementType.Glyph); }
+    function supportsRect(e){ return e && (e.type === ElementType.Rect); }
+    function supportsImage(e){ return e && (e.type === ElementType.Image); }
+    function supportsHalo(e){ return e && elementSupportsHalo(e); } // existing helper
+
+    function mixedLabelIfMixed(values){
+      const d = distinctValues(values);
+      return (d.length > 1) ? tr("props_mixed") : null;
+    }
+
+    function applyToAllWhere(pred, fn){
+      for (const e of sels){
+        if (!pred(e)) continue;
+        fn(e);
+      }
+    }
+
+    // ---- Blocks ----
+
+    // Text/Sitelen shared block
+    const anyTextLike = sels.some(supportsTextBlock);
+    if (anyTextLike){
+      addSection(tr("sec_text"));
+
+      // Text
+      const leaderText = topmostSelectedWhere(supportsTextBlock);
+const textEls = sels.filter(supportsTextBlock);
+const textVals = textEls.map(e => String(e.text ?? ""));
+const textMixed = mixedLabelIfMixed(textVals);
+
+// When multiple text-like elements are selected and their text differs, lock editing by default.
+// User can explicitly enable "Edit mixed text" to bulk-apply a new value.
+if (textEls.length > 1 && textMixed){
+  propsBody.appendChild(makeCheckbox(
+    tr("props_edit_mixed_text"),
+    !!allowMixedTextEdit,
+    (checked) => {
+      allowMixedTextEdit = !!checked;
+      // No side effects until text is actually edited.
+      renderPropsPanel();
+    }
+  ));
+} else {
+  // Reset gate when it is not applicable (keeps UX predictable).
+  allowMixedTextEdit = false;
+}
+
+const placeholder = tr("sitelen_placeholder");
+const textField = makeTextarea(
+  tr("props_text") + (textMixed ? " (" + textMixed + ")" : ""),
+  leaderText ? (leaderText.text ?? "") : "",
+  placeholder,
+  (v) => {
+    applyToAllWhere(supportsTextBlock, (e) => {
+      e.text = v;
+      if (e.type === ElementType.Sitelen){
+        invalidateSitelenCache(e.id);
+        updateSitelenLayout(e, { preserveCenter: true });
+      }
+    });
+    scheduleAutosave();
+    render();
+    // IMPORTANT: do not call updateUiForSelection() on every keystroke,
+    // because it re-renders the properties panel and steals focus.
+  },
+  (() => {
+    const disabled = (textEls.length > 1 && textMixed && !allowMixedTextEdit);
+
+    // Show pop-out button when multiple Sitelen elements are selected AND text editing is allowed.
+    const sitelenIds = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(e.id)).sort();
+    const enablePopout = (!disabled) && (sitelenIds.length >= 2);
+
+    return {
+      enablePopout,
+      popoutTitle: tr("props_text"),
+      popoutElementId: enablePopout ? ("multi:sitelen:" + sitelenIds.join(",")) : null,
+      disabled
+    };
+  })()
+);
+propsBody.appendChild(textField);
+
+// If the floating editor is open for this same multi-sitelen selection, rebind it to the new textarea node.
+if (textField && textField._popoutElementId){
+  rebindFloatingSitelenEditorToTextarea(
+    textField._popoutElementId,
+    textField._textarea,
+    (v) => {
+      applyToAllWhere(supportsTextBlock, (e) => {
+        e.text = v;
+        if (e.type === ElementType.Sitelen){
+          invalidateSitelenCache(e.id);
+          updateSitelenLayout(e, { preserveCenter: true });
+        }
+      });
+      scheduleAutosave();
+      render();
+    }
+  );
+}
+
+      // Font family
+      const leaderFont = topmostSelectedWhere(supportsTextBlock);
+      const defaultFont = "PatrickHand";
+      const fontVals = sels.filter(supportsTextBlock).map(e => coerceFontValueToOption(e.fontFamily, defaultFont));
+      const fontMixed = mixedLabelIfMixed(fontVals);
+      const currentFont = coerceFontValueToOption(leaderFont?.fontFamily, defaultFont);
+
+      propsBody.appendChild(makeSelect(
+        tr("props_font_family"),
+        currentFont,
+        FONT_OPTIONS,
+        (v) => {
+          applyToAllWhere(supportsTextBlock, (e) => {
+            e.fontFamily = v;
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          scheduleAutosave();
+          render();
+        },
+        fontMixed
+      ));
+
+      // Font size
+      const leaderFs = topmostSelectedWhere(supportsTextBlock);
+      const fsVals = sels.filter(supportsTextBlock).map(e => String(Number(e.fontSize ?? 24)));
+      const fsMixed = mixedLabelIfMixed(fsVals);
+      propsBody.appendChild(makeNumberRowWithPresets(
+        "fontSize",
+        tr("props_font_size"),
+        Number(leaderFs?.fontSize ?? 24),
+        1,
+        FONT_SIZE_PRESETS,
+        (v) => {
+          applyToAllWhere(supportsTextBlock, (e) => {
+            e.fontSize = Math.max(6, v);
+            if (e.haloThicknessMode !== "manual") e.haloThickness = defaultHaloThicknessForFontPx(e.fontSize);
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          scheduleAutosave();
+          render();
+        },
+        null,
+        null,
+        null,
+        fsMixed
+      ));
+
+      // Align
+      const leaderAlign = topmostSelectedWhere(supportsTextBlock);
+      const alignVals = sels.filter(supportsTextBlock).map(e => String(e.align ?? "left"));
+      const alignMixed = mixedLabelIfMixed(alignVals);
+      propsBody.appendChild(makeSelect(
+        tr("props_align"),
+        String(leaderAlign?.align ?? "left"),
+        [["left", tr("props_align_left")],["center", tr("props_align_center")],["right", tr("props_align_right")]],
+        (v) => {
+          applyToAllWhere(supportsTextBlock, (e) => {
+            e.align = v;
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
+        },
+        alignMixed
+      ));
+
+      // Text colour
+      const leaderColor = topmostSelectedWhere(supportsTextBlock);
+      const colorVals = sels.filter(supportsTextBlock).map(e => rgbaOrHexToHex(e.color ?? "#111111", "#111111"));
+      const colorMixed = mixedLabelIfMixed(colorVals);
+      propsBody.appendChild(makeColorPickerWithSwatch(
+        tr("props_text_color"),
+        rgbaOrHexToHex(leaderColor?.color ?? "#111111", "#111111"),
+        (v) => {
+          applyToAllWhere(supportsTextBlock, (e) => {
+            e.color = v;
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          render();
+        },
+        (v) => {
+          applyToAllWhere(supportsTextBlock, (e) => {
+            e.color = v;
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          scheduleAutosave();
+          render();
+        },
+        colorMixed
+      ));
+    }
+
+    // Glyph block (color + font size only; family fixed)
+    if (sels.some(supportsGlyphBlock)){
+      addSection(tr("sec_glyph"));
+
+      const leaderG = topmostSelectedWhere(supportsGlyphBlock);
+
+      // font size
+      const gfsVals = sels.filter(supportsGlyphBlock).map(e => String(Number(e.fontSize ?? 64)));
+      const gfsMixed = mixedLabelIfMixed(gfsVals);
+      propsBody.appendChild(makeNumberRowWithPresets(
+        "glyphFontSize",
+        tr("props_font_size"),
+        Number(leaderG?.fontSize ?? 64),
+        1,
+        FONT_SIZE_PRESETS,
+        (v) => {
+          applyToAllWhere(supportsGlyphBlock, (e) => {
+            e.fontSize = Math.max(6, v);
+            if (e.haloThicknessMode !== "manual") e.haloThickness = defaultHaloThicknessForFontPx(e.fontSize);
+          });
+          scheduleAutosave();
+          render();
+        },
+        null,
+        null,
+        null,
+        gfsMixed
+      ));
+
+      // color
+      const gcolVals = sels.filter(supportsGlyphBlock).map(e => rgbaOrHexToHex(e.color ?? "#111111", "#111111"));
+      const gcolMixed = mixedLabelIfMixed(gcolVals);
+      propsBody.appendChild(makeColorPickerWithSwatch(
+        tr("props_glyph_color"),
+        rgbaOrHexToHex(leaderG?.color ?? "#111111", "#111111"),
+        (v) => { applyToAllWhere(supportsGlyphBlock, (e) => { e.color = v; }); render(); },
+        (v) => { applyToAllWhere(supportsGlyphBlock, (e) => { e.color = v; }); scheduleAutosave(); render(); },
+        gcolMixed
+      ));
+    }
+
+    // Image block (keepAspect + color key)
+    if (sels.some(supportsImage)){
+      addSection(tr("sec_image"));
+
+      const leaderI = topmostSelectedWhere(supportsImage);
+
+      // keep aspect (tri-state)
+      const keepVals = sels.filter(supportsImage).map(e => String((e.keepAspect == null) ? true : !!e.keepAspect));
+      const keepMixed = (distinctValues(keepVals).length > 1);
+      const keepLeader = (leaderI?.keepAspect == null) ? true : !!leaderI.keepAspect;
+
+      propsBody.appendChild(makeCheckbox(
+        tr("props_keep_aspect"),
+        keepLeader,
+        (checked) => {
+          applyToAllWhere(supportsImage, (e) => {
+            const prev = (e.keepAspect == null) ? true : !!e.keepAspect;
+            e.keepAspect = !!checked;
+            if (!prev && e.keepAspect && e.image && Number.isFinite(e.image.origW) && Number.isFinite(e.image.origH)){
+              const cx = e.x + e.w/2;
+              const cy = e.y + e.h/2;
+              e.w = Math.max(8, e.image.origW);
+              e.h = Math.max(8, e.image.origH);
+              e.x = cx - e.w/2;
+              e.y = cy - e.h/2;
+            }
+          });
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
+        },
+        { mixedLabel: keepMixed ? tr("props_mixed") : null, indeterminate: keepMixed }
+      ));
+
+      // color key transparency (tri-state)
+      const ckVals = sels.filter(supportsImage).map(e => String(!!e.colorKeyTransparent));
+      const ckMixed = (distinctValues(ckVals).length > 1);
+      const ckLeader = !!leaderI?.colorKeyTransparent;
+
+      propsBody.appendChild(makeCheckbox(
+        tr("props_color_key_transparency"),
+        ckLeader,
+        (checked) => {
+          applyToAllWhere(supportsImage, (e) => {
+            e.colorKeyTransparent = !!checked;
+            invalidateColorKeyCache(e.id);
+          });
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
+        },
+        { mixedLabel: ckMixed ? tr("props_mixed") : null, indeterminate: ckMixed }
+      ));
+    }
+
+    // Shape (corner radius) for rects only
+    if (sels.some(supportsRect)){
+      addSection(tr("sec_shape"));
+      const leaderR = topmostSelectedWhere(supportsRect);
+      const radVals = sels.filter(supportsRect).map(e => String(Number(e.radius ?? 0)));
+      const radMixed = mixedLabelIfMixed(radVals);
+      propsBody.appendChild(makeNumberRow(
+        "radius",
+        tr("props_corner_radius"),
+        Number(leaderR?.radius ?? 0),
+        1,
+        (v) => { applyToAllWhere(supportsRect, (e) => { e.radius = Math.max(0, v); }); scheduleAutosave(); render(); },
+        null,
+        null,
+        null,
+        radMixed
+      ));
+    }
+
+    // Halo block (any element that supports it)
+    if (sels.some(supportsHalo)){
+      addSection(tr("sec_halo"));
+
+      const leaderH = topmostSelectedWhere(supportsHalo);
+
+      // enabled (tri-state)
+      const heVals = sels.filter(supportsHalo).map(e => String(!!e.haloEnabled));
+      const heMixed = (distinctValues(heVals).length > 1);
+      propsBody.appendChild(makeCheckbox(
+        tr("props_halo_enabled"),
+        !!leaderH?.haloEnabled,
+        (checked) => {
+          applyToAllWhere(supportsHalo, (e) => {
+            e.haloEnabled = !!checked;
+            ensureHaloFields(e);
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          scheduleAutosave();
+          render();
+        },
+        { mixedLabel: heMixed ? tr("props_mixed") : null, indeterminate: heMixed }
+      ));
+
+      // color
+      const hcVals = sels.filter(supportsHalo).map(e => rgbaOrHexToHex(e.haloColor, "#FFFFFF"));
+      const hcMixed = mixedLabelIfMixed(hcVals);
+      propsBody.appendChild(makeColorPickerWithSwatch(
+        tr("props_halo_color"),
+        rgbaOrHexToHex(leaderH?.haloColor, "#FFFFFF"),
+        (v) => {
+          applyToAllWhere(supportsHalo, (e) => {
+            e.haloColor = v;
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          render();
+        },
+        (v) => {
+          applyToAllWhere(supportsHalo, (e) => {
+            e.haloColor = v;
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          scheduleAutosave();
+          render();
+        },
+        hcMixed
+      ));
+
+      // thickness (use leader basis; apply raw to all, auto/manual behaviour preserved)
+      const htVals = sels.filter(supportsHalo).map(e => String(Number(e.haloThickness ?? 0)));
+      const htMixed = mixedLabelIfMixed(htVals);
+      propsBody.appendChild(makeNumberRow(
+        "haloThickness",
+        tr("props_halo_thickness"),
+        Number(leaderH?.haloThickness ?? 0),
+        1,
+        (v) => {
+          const vv = clampHaloThicknessPx(v);
+          applyToAllWhere(supportsHalo, (e) => {
+            if (vv <= 0){
+              e.haloThicknessMode = "auto";
+              const basis = (e.type === ElementType.Rect) ? 28 : Math.max(6, Number(e.fontSize ?? 24));
+              e.haloThickness = defaultHaloThicknessForFontPx(basis);
+            } else {
+              e.haloThicknessMode = "manual";
+              e.haloThickness = vv;
+            }
+            if (e.type === ElementType.Sitelen){
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            }
+          });
+          scheduleAutosave();
+          render();
+        },
+        null,
+        0,
+        48,
+        htMixed
+      ));
+    }
+
+    // Always include appearance block (common already handles mixed)
     addAppearanceBlock();
+
+    // Geometry block: editing X/Y/W/H/Rot across mixed types is still useful (applies to all)
+    addSection(tr("sec_geometry"));
+    const leaderG = topmostSelectedWhere(() => true) || sels[sels.length - 1];
+    propsBody.appendChild(makeNumberRow("x", tr("props_x"), leaderG.x, 1, (v) => { for (const e of sels) e.x = v; scheduleAutosave(); render(); }, mixedLabelIfMixed(sels.map(e=>String(e.x)))));
+    propsBody.appendChild(makeNumberRow("y", tr("props_y"), leaderG.y, 1, (v) => { for (const e of sels) e.y = v; scheduleAutosave(); render(); }, mixedLabelIfMixed(sels.map(e=>String(e.y)))));
+    propsBody.appendChild(makeNumberRow("w", tr("props_w"), leaderG.w, 1, (v) => { for (const e of sels) e.w = Math.max(8, v); scheduleAutosave(); render(); }, mixedLabelIfMixed(sels.map(e=>String(e.w)))));
+    propsBody.appendChild(makeNumberRow("h", tr("props_h"), leaderG.h, 1, (v) => { for (const e of sels) e.h = Math.max(8, v); scheduleAutosave(); render(); }, mixedLabelIfMixed(sels.map(e=>String(e.h)))));
+    propsBody.appendChild(makeNumberRow("rot", tr("props_rotation_deg"), leaderG.rotationDeg || 0, 1, (v) => { for (const e of sels) e.rotationDeg = v; scheduleAutosave(); render(); }, mixedLabelIfMixed(sels.map(e=>String(e.rotationDeg||0)))));
+
     return;
   }
 
@@ -8135,7 +8638,7 @@ function makeNumberRowWithPresets(
   placeholder = null,
   min = null,
   max = null
-){
+, mixedLabel=null){
   const row = document.createElement("div");
   row.className = "row";
 
@@ -8145,7 +8648,21 @@ function makeNumberRowWithPresets(
   const l = document.createElement("label");
   l.textContent = label;
 
-  // Inline container: number input + select
+  
+    
+  if (mixedLabel){
+    const tag = document.createElement("span");
+    tag.className = "mixedTag";
+    tag.textContent = mixedLabel;
+    l.appendChild(tag);
+  }
+if (mixedLabel){
+      const tag = document.createElement("span");
+      tag.className = "mixedTag";
+      tag.textContent = mixedLabel;
+      l.appendChild(tag);
+    }
+// Inline container: number input + select
   const inline = document.createElement("div");
   inline.className = "propInlineRow";
 
@@ -8224,7 +8741,7 @@ function makeNumberRowWithPresets(
 
 
 
-  function makeNumberRow(id, label, value, step, onChange, placeholder=null, min=null, max=null){
+  function makeNumberRow(id, label, value, step, onChange, placeholder=null, min=null, max=null, mixedLabel=null){
     const row = document.createElement("div");
     row.className = "row";
     const f = document.createElement("div");
@@ -8243,7 +8760,14 @@ function makeNumberRowWithPresets(
       if (!Number.isFinite(v)) return;
       onChange(v);
     });
-    f.appendChild(l); f.appendChild(inp);
+    
+    inp.addEventListener("change", () => {
+      const v = Number(inp.value);
+      if (!Number.isFinite(v)) return;
+      onChange(v);
+      historyCommit("Edit properties");
+    });
+f.appendChild(l); f.appendChild(inp);
     row.appendChild(f);
     return row;
   }
@@ -8278,6 +8802,9 @@ function makeNumberRowWithPresets(
     const ta = document.createElement("textarea");
     ta.value = String(value ?? "");
     ta.placeholder = placeholder || "";
+
+    if (opts && opts.readOnly) ta.readOnly = true;
+    if (opts && opts.disabled) ta.disabled = true;
 
     const enablePopout = !!opts.enablePopout;
     const popoutTitle = String(opts.popoutTitle || label);
@@ -8316,6 +8843,13 @@ function makeNumberRowWithPresets(
       }
     });
 
+    ta.addEventListener("change", () => {
+      historyCommit("Edit properties");
+    });
+    ta.addEventListener("blur", () => {
+      historyCommit("Edit properties");
+    });
+
     f.appendChild(labelRow);
     f.appendChild(ta);
 
@@ -8326,11 +8860,17 @@ function makeNumberRowWithPresets(
     return f;
   }
 
-  function makeSelect(label, value, options, onChange){
+  function makeSelect(label, value, options, onChange, mixedLabel=null){
     const f = document.createElement("div");
     f.className = "field";
     const l = document.createElement("label");
     l.textContent = label;
+    if (mixedLabel){
+      const tag = document.createElement("span");
+      tag.className = "mixedTag";
+      tag.textContent = mixedLabel;
+      l.appendChild(tag);
+    }
     const sel = document.createElement("select");
     for (const [val, txt] of options){
       const opt = document.createElement("option");
@@ -8641,12 +9181,18 @@ function rebuildAllSwatches(){
 }
 
 
-function makeColorPickerWithSwatch(label, value, onLive, onCommit){
+function makeColorPickerWithSwatch(label, value, onLive, onCommit, mixedLabel=null){
   const f = document.createElement("div");
   f.className = "field";
 
   const l = document.createElement("label");
   l.textContent = label;
+  if (mixedLabel){
+    const tag = document.createElement("span");
+    tag.className = "mixedTag";
+    tag.textContent = mixedLabel;
+    l.appendChild(tag);
+  }
 
   const inp = document.createElement("input");
   inp.type = "color";
