@@ -4519,7 +4519,7 @@ function renderFontCartoucheToCanvas(
   ctx2.fillStyle = fgCss || "#111";
   ctx2.fillText(run, x, baselineY);
 
-  return { w, h, baselineY };
+  return { w, h, baselineY, inkAscent: Math.ceil(ascent), inkDescent: Math.ceil(descent), haloW, pad};
 }
 
 function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, 
@@ -4557,11 +4557,15 @@ function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily,
   if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
   const baselineY = r.baselineY | 0;
-  const ascent = baselineY;
-  const descent = (r.h | 0) - baselineY;
+
+  //const ascent = baselineY;
+  //const descent = (r.h | 0) - baselineY;
+  const ascent = r.inkAscent ?? baselineY;
+  const descent = r.inkDescent ?? ((r.h | 0) - baselineY);
 
   elements.push({
     type: "cartouche",
+    cps: Array.from(cps),   // <-- ADD THIS
     canvas: cart,
     w: r.w,
     h: r.h,

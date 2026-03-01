@@ -594,7 +594,10 @@ nanpa #~WI.
             Font size <span class="tpInline">suli pi sitelen</span>
           </span>
           <select id="fontSizeSel" aria-describedby="fontSizeHelp">
+            <option value="8">8 px</option>
+            <option value="10">10 px</option>
             <option value="12">12 px</option>
+            <option value="14">14 px</option>
             <option value="16">16 px</option>
             <option value="20">20 px</option>
             <option value="24">24 px</option>
@@ -609,8 +612,10 @@ nanpa #~WI.
             <option value="72">72 px</option>
             <option value="80">80 px</option>
             <option value="88">88 px</option>
-            <option value="96">96 px</option>
+             <option value="96">96 px</option>
+             <option value="104">104 px</option>
             <option value="120">120 px</option>
+            <option value="144">144 px</option>
           </select>
           <div id="fontSizeHelp" class="sr-only">Changes the glyph and cartouche rendering size in the output.</div>
         </div>
@@ -1040,14 +1045,14 @@ function wireHaloControls() {
     const FONT_SIZE_STORAGE_KEY = "tpFontPx";
     const FONT_SIZE_QUERY_PARAM = "fontPx";
     const FONT_SIZE_QUERY_PARAM_ALIAS = "fontSize";
-    const FONT_SIZE_ALLOWED = [12,16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88, 96, 120];
+    const FONT_SIZE_ALLOWED = [8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88, 96, 104, 120, 144];
 
     function clampAllowedFontPx(px) {
       const n = Number(px);
       if (!Number.isFinite(n)) return null;
       const i = Math.round(n);
       if (FONT_SIZE_ALLOWED.includes(i)) return i;
-      if (i >= 12 && i <= 220) return i;
+      if (i >= 8 && i <= 220) return i;
       return null;
     }
 
