@@ -225,6 +225,23 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
 
+    /* Toolbar: allow controls to wrap instead of overlapping */
+.btnRow{
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Pills should size to content and not shrink into each other */
+.btnRow .inlinePill{
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Keep the Align pill compact */
+#ctlAlign select{
+  min-width: 96px; /* smaller than your global 108px if you want */
+}
+
     @font-face {
       font-family: "TP-Cartouche-Font";
       src:
@@ -474,7 +491,12 @@
   }
 }
 
-  </style>
+  
+/* Ensure toolbar pills never overlap when more controls are added */
+.btnRow{ flex-wrap: wrap !important; }
+.btnRow .inlineControl{ flex: 0 0 auto; }
+
+</style>
 </head>
 
 <body>
@@ -620,6 +642,20 @@ nanpa #~WI.
           <div id="fontSizeHelp" class="sr-only">Changes the glyph and cartouche rendering size in the output.</div>
         </div>
 
+        <!-- Alignment -->
+        <div id="ctlAlign" class="inlineControl inlinePill" role="group" aria-label="Alignment">
+          <span class="ctlLabel">
+            Align <span class="tpInline">nasin</span>
+          </span>
+          <select id="alignSel" aria-describedby="alignHelp">
+            <option value="left" selected>Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+          </select>
+          <div id="alignHelp" class="sr-only">Changes line alignment of the rendered output.</div>
+        </div>
+
+
         <!-- Halo toggle -->
         <div id="ctlHaloEnable" class="inlineControl inlinePill" role="group" aria-label="Halo">
           <span class="ctlLabel">
@@ -639,6 +675,15 @@ nanpa #~WI.
           <input id="haloPick" class="swatch" type="color" aria-label="Halo color">
         </div>
 
+
+        <!-- Halo width -->
+        <div id="ctlHaloWidth" class="inlineControl inlinePill" role="group" aria-label="Halo width">
+          <span class="ctlLabel">
+            Halo width <span class="tpInline">suli poka</span>
+          </span>
+          <input id="haloWidthSel" type="number" min="0" max="999" step="1" value="0" aria-describedby="haloWidthHelp" style="width:96px; height:34px; padding:6px 10px;">
+          <div id="haloWidthHelp" class="sr-only">0 means auto halo width. Any other value uses that width in pixels.</div>
+        </div>
       </div>
     </div>
 
@@ -946,6 +991,11 @@ function wireFgColorControls() {
 const HALO_ENABLED_STORAGE_KEY = "tpHaloEnabled";
 const HALO_COLOR_STORAGE_KEY   = "tpHaloHex";
 
+const HALO_WIDTH_STORAGE_KEY   = "tpHaloWidthPx"; // 0 => auto
+
+// default values
+const HALO_DEFAULT_WIDTH = 0;
+
 // default values
 const HALO_DEFAULT_ENABLED = false;
 const HALO_DEFAULT_HEX = "#FFFFFF";
@@ -988,6 +1038,45 @@ function saveHaloHexToStorage(hex) {
   try { localStorage.setItem(HALO_COLOR_STORAGE_KEY, hex); } catch {}
 }
 
+
+function loadHaloWidthFromStorage(){
+  try{
+    const raw = localStorage.getItem(HALO_WIDTH_STORAGE_KEY);
+    if (raw == null) return null;
+    const n = Math.round(Number(raw));
+    if (!Number.isFinite(n) || n < 0) return null;
+    return n;
+  } catch {
+    return null;
+  }
+}
+
+function saveHaloWidthToStorage(px){
+  try { localStorage.setItem(HALO_WIDTH_STORAGE_KEY, String(Math.max(0, Math.round(Number(px) || 0)))); } catch {}
+}
+
+function getHaloWidthOverridePx(){
+  const el = document.getElementById("haloWidthSel");
+  const n = Math.round(Number(el?.value ?? 0));
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return n;
+}
+
+function setHaloWidthOverridePx(px){
+  const el = document.getElementById("haloWidthSel");
+  const n = Math.max(0, Math.round(Number(px) || 0));
+  if (el) el.value = String(n);
+  saveHaloWidthToStorage(n);
+  return n;
+}
+
+
+function updateHaloWidthControlEnabled(){
+  const widthEl = document.getElementById("haloWidthSel");
+  if (!widthEl) return;
+  widthEl.disabled = !getHaloEnabled();
+}
+
 function getHaloHex() {
   const pick = document.getElementById("haloPick");
   return normalizeHexColor(pick?.value) ?? HALO_DEFAULT_HEX;
@@ -1007,16 +1096,22 @@ function initHaloControls() {
 
   const hx = loadHaloHexFromStorage();
   setHaloHex(hx ?? HALO_DEFAULT_HEX);
+
+  const hw = loadHaloWidthFromStorage();
+  setHaloWidthOverridePx(hw ?? HALO_DEFAULT_WIDTH);
+  updateHaloWidthControlEnabled();
 }
 
 function wireHaloControls() {
   const en = document.getElementById("haloEnable");
   const pick = document.getElementById("haloPick");
+  const widthEl = document.getElementById("haloWidthSel");
 
   if (en) {
     en.addEventListener("change", async () => {
       try {
         setHaloEnabled(en.checked);
+        updateHaloWidthControlEnabled();
         await renderFromTextarea();
       } catch (e) {
         showAlertAndAnnounce(e?.message ?? String(e));
@@ -1035,7 +1130,21 @@ function wireHaloControls() {
       }
     });
   }
+
+  if (widthEl) {
+    widthEl.addEventListener("change", async () => {
+      try {
+        // clamp + save
+        setHaloWidthOverridePx(widthEl.value);
+        // Only affects rendering when halo is enabled, but rerender regardless.
+        await renderFromTextarea();
+      } catch (e) {
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
+    });
+  }
 }
+
 
 
 
@@ -1117,6 +1226,62 @@ function wireHaloControls() {
           const px = setFontPx(sel.value);
           DID_WARMUP = false;
           await fontsReadyForPx(px);
+          await renderFromTextarea();
+        } catch (e) {
+          showAlertAndAnnounce(e?.message ?? String(e));
+        }
+      });
+    }
+
+    const ALIGN_STORAGE_KEY = "tpAlignMode";
+
+    function loadAlignFromStorage(){
+      try{
+        const v = String(localStorage.getItem(ALIGN_STORAGE_KEY) ?? "").toLowerCase();
+        return (v === "left" || v === "center" || v === "right") ? v : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveAlignToStorage(v){
+      try { localStorage.setItem(ALIGN_STORAGE_KEY, v); } catch {}
+    }
+
+    function setAlignMode(v){
+      const mode = (v === "center" || v === "right") ? v : "left";
+      const sel = document.getElementById("alignSel");
+      if (sel) sel.value = mode;
+      saveAlignToStorage(mode);
+      return mode;
+    }
+
+    function applyAlignFromStorage(){
+      const s = loadAlignFromStorage();
+      if (s) setAlignMode(s);
+      else setAlignMode("left");
+    }
+
+
+
+    function getAlignMode(){
+      const sel = document.getElementById("alignSel");
+      const v = String(sel?.value ?? "left");
+      return (v === "center" || v === "right") ? v : "left";
+    }
+
+    function alignFactor(mode){
+      if (mode === "center") return 0.5;
+      if (mode === "right") return 1.0;
+      return 0.0;
+    }
+
+    function wireAlignSelect(){
+      const sel = document.getElementById("alignSel");
+      if (!sel) return;
+      sel.addEventListener("change", async () => {
+        try {
+          setAlignMode(sel.value);
           await renderFromTextarea();
         } catch (e) {
           showAlertAndAnnounce(e?.message ?? String(e));
@@ -2814,7 +2979,12 @@ function wireHaloControls() {
 
     function haloWidthForPx(px) {
       const p = Math.max(8, Number(px ?? 56));
-      // ~10% of font size feels good; clamp to sane minimum/maximum
+
+      // User override: 0 => auto; otherwise exact px width.
+      const override = getHaloWidthOverridePx();
+      if (override > 0) return override;
+
+      // Auto: ~10% of font size; clamp to sane minimum/maximum
       return Math.max(2, Math.min(24, Math.round(p * 0.10)));
     }
 
@@ -3501,6 +3671,9 @@ function wireHaloControls() {
       const ctx = tmp.getContext("2d");
       ctx.textBaseline = "alphabetic";
 
+      const haloOn = getHaloEnabled();
+      const haloExtra = haloOn ? haloWidthForPx(fontPx) : 0;
+
       const measuredLines = [];
       let maxLineW = 0;
       let totalH = 0;
@@ -3519,8 +3692,8 @@ function wireHaloControls() {
             measuredEls.push({ ...el, m: r });
             w += r.w;
 
-            if (r.ascent > maxAscent) maxAscent = r.ascent;
-            if (r.descent > maxDescent) maxDescent = r.descent;
+            if (r.ascent + haloExtra > maxAscent) maxAscent = r.ascent + haloExtra;
+            if (r.descent + haloExtra > maxDescent) maxDescent = r.descent + haloExtra;
             continue;
           }
 
@@ -3536,8 +3709,8 @@ function wireHaloControls() {
             measuredEls.push({ ...el, m: g });
             w += g.w;
 
-            if (g.ascent > maxAscent) maxAscent = g.ascent;
-            if (g.descent > maxDescent) maxDescent = g.descent;
+            if (g.ascent + haloExtra > maxAscent) maxAscent = g.ascent + haloExtra;
+            if (g.descent + haloExtra > maxDescent) maxDescent = g.descent + haloExtra;
             continue;
           }
 
@@ -3547,8 +3720,8 @@ function wireHaloControls() {
             measuredEls.push({ ...el, m: r });
             w += r.w;
 
-            if (r.ascent > maxAscent) maxAscent = r.ascent;
-            if (r.descent > maxDescent) maxDescent = r.descent;
+            if (r.ascent + haloExtra > maxAscent) maxAscent = r.ascent + haloExtra;
+            if (r.descent + haloExtra > maxDescent) maxDescent = r.descent + haloExtra;
             continue;
           }
 
@@ -3565,8 +3738,10 @@ function wireHaloControls() {
             const capA = Math.ceil(fontPx * 0.80) + allowance;
             const capD = Math.ceil(fontPx * 0.20) + allowance;
 
-            maxAscent = Math.max(maxAscent, Math.min(a0, capA));
-            maxDescent = Math.max(maxDescent, Math.min(d0, capD));
+            const aCapped = Math.min(a0, capA) + haloExtra;
+            maxAscent = Math.max(maxAscent, aCapped);
+            const dCapped = Math.min(d0, capD) + haloExtra;
+            maxDescent = Math.max(maxDescent, dCapped);
             continue;
           }
         }
@@ -3597,7 +3772,11 @@ function wireHaloControls() {
 
       for (let li = 0; li < measuredLines.length; li++) {
         const L = measuredLines[li];
-        let x = pad;
+
+        const mode = getAlignMode();
+        const f = alignFactor(mode);
+        const lineOffset = Math.max(0, (maxLineW - L.w) * f);
+        let x = pad + lineOffset;
 
         const glyphBaseline = y + L.maxAscent;
 
@@ -4029,7 +4208,10 @@ function wireHaloControls() {
         const L = measuredLines[li];
 
         // pen position in POINTS (not px)
-        let xPt = padPx * PX_TO_PT;
+        const mode = getAlignMode();
+        const f = alignFactor(mode);
+        const lineOffsetPt = Math.max(0, (maxLineWpt - L.wPt) * f);
+        let xPt = (padPx * PX_TO_PT) + lineOffsetPt;
 
         // baseline in px (vertical layout still based on your existing ascent/descent)
         const baselinePx = yPx + L.maxAscent;
@@ -4615,6 +4797,7 @@ function wireHaloControls() {
 
         applyNanpaLinjanModeFromQueryOrStorage();
         applyFontPxFromQueryOrStorage();
+        applyAlignFromStorage();
         applyDefaultInputFromQuery();
 
         // Restore last draft from IndexedDB unless a ?text= / ?input= query param is supplying input.
@@ -4647,6 +4830,7 @@ function wireHaloControls() {
 
         wireNanpaLinjanModeRadios();
         wireFontSizeSelect();
+      wireAlignSelect();
         wireCartoucheDisplayLinks();
 
         await fontsReadyForPx(getFontPx());
