@@ -317,7 +317,30 @@ html, body{
       .status{ display:none; }
       .bestCanvas{ width: 170px; }
       .timerCanvas{ width: 140px; }
-      .mainCartouche{ height: 120px; }
+
+      /* Mobile gameplay: keep everything visible above the keyboard */
+      .wrap{
+        height: auto;
+        min-height: calc(100dvh - var(--topbar-h));
+      }
+      .gameArea{ padding: 10px; }
+      .gameStack{ gap: 10px; }
+
+      /* Hide hint on small screens to reclaim vertical space */
+      .hint{ display:none; }
+
+      .card{ padding: 10px; gap: 10px; }
+      .cartoucheBox{ padding: 6px; }
+      .mainCartouche{ height: 104px; }
+
+      /* Show only one recent entry in the feed on mobile */
+      .feed{
+        height: 66px;
+        max-height: 66px;
+        overflow: hidden;
+        padding: 8px;
+      }
+
       .rowText{ font-size: 16px; }
       .txt{ font-size: 18px; }
     }
@@ -5260,6 +5283,9 @@ function hideFinishPopup(){
 
     // keep newest visible
     feed.scrollTop = feed.scrollHeight;
+
+    // Mobile: keep the feed to a single visible row
+    enforceMobileFeedLimit();
   }
 
   function updateScoreUi(){
@@ -5282,6 +5308,28 @@ function hideFinishPopup(){
   function focusInput(){
     const inp = document.getElementById("answer");
     if (inp) inp.focus();
+  }
+
+  function isMobileCompact(){
+    return !!(window.matchMedia && window.matchMedia("(max-width: 520px)").matches);
+  }
+
+  function enforceMobileFeedLimit(){
+    if (!isMobileCompact()) return;
+    const feed = document.getElementById("feed");
+    if (!feed) return;
+    while (feed.children.length > 1){
+      feed.removeChild(feed.firstElementChild);
+    }
+  }
+
+  function scrollToMainCartoucheTop(){
+    const main = document.getElementById("mainCanvas");
+    if (!main) return;
+    // Ensure layout is settled, then scroll so the cartouche is at the top of the viewport
+    requestAnimationFrame(() => {
+      try{ main.scrollIntoView({ block: "start", inline: "nearest", behavior: "auto" }); }catch{}
+    });
   }
 
   function renderMainPhrase(phrase){
@@ -5370,6 +5418,7 @@ return renderMainPhrase(phrase);
 
     decks = buildDecks(lists);
     loadNextCartouche();
+    scrollToMainCartoucheTop();
 
     setInputEnabled(true);
     document.getElementById("btnQuit").disabled = false;
