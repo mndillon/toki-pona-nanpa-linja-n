@@ -1,0 +1,5666 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toki Pona Cartouche Spelling Game</title>
+
+  <style>
+    :root{
+      --topbar-h: 56px;
+
+      /* Match 15-puzzle look */
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --panel: rgba(255,255,255,0.35);
+      --panel-strong: rgba(255,255,255,0.55);
+      --panel-border: rgba(17,17,17,0.18);
+
+      --board-max: 720px;
+      --card-radius: 18px;
+      --tile-radius: 14px;
+
+      --good: #147a2a;
+      --bad: #b11a1a;
+    }
+
+    @font-face{
+      font-family: "PatrickHand";
+      src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    /* Nanpa-linja-n cartouche font (for numbers/time) */
+    @font-face{
+      font-family: "TP-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf") format("opentype");
+      font-display: swap;
+    }
+
+    /* Latin nasin nanpa (UCSUR v5) for normal glyph text */
+    @font-face{
+      font-family: "TP-Nasin-Nanpa-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+html, body{
+      height:100%;
+      margin:0;
+      background: var(--bg);
+      font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--ink);
+    }
+
+    .topbar{
+      height: var(--topbar-h);
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      box-sizing:border-box;
+      border-bottom: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(6px);
+    }
+
+    .btn{
+      appearance:none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor:pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 16px;
+    }
+    .btn:disabled{ opacity:0.55; cursor:not-allowed; }
+
+    .status{
+      margin-left: 12px;
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 38vw;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bestCanvas{
+      height: 36px;
+      width: 220px;
+      display:block;
+      cursor: pointer;
+    }
+
+    .timerCanvas{
+      height: 36px;
+      width: 170px;
+      display:block;
+    }
+
+    .statBox{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+    .prefixGlyph{
+      font-family: "TP-Nasin-Nanpa-Font";
+      font-size: 26px;
+      line-height: 1;
+      color: var(--ink);
+      user-select:none;
+      -webkit-user-select:none;
+      white-space: nowrap;
+      display:inline-flex;
+      align-items:center;
+    }
+
+    #timerBox{ margin-left: auto; }
+
+    .wrap{
+      height: calc(100% - var(--topbar-h));
+      min-height: 0;
+      display:flex;
+      flex-direction: column;
+    }
+
+    .gameArea{
+      flex: 1 1 auto;
+      min-height: 0;
+      display:grid;
+      place-items:center;
+      padding: 14px;
+      box-sizing:border-box;
+    }
+
+    .gameStack{
+      width: min(var(--board-max), 92vw);
+      display:grid;
+      gap: 12px;
+    }
+
+    .hint{
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-sizing:border-box;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.25;
+      text-align:center;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+
+    .card{
+      border: 1px solid var(--panel-border);
+      background: var(--panel-strong);
+      border-radius: var(--card-radius);
+      padding: 12px;
+      box-sizing:border-box;
+      display:grid;
+      gap: 10px;
+    }
+
+    .cartoucheBox{
+      display:grid;
+      place-items:center;
+      padding: 8px;
+    }
+
+    .mainCartouche{
+      width: min(660px, 86vw);
+      height: 140px;
+      display:block;
+    }
+
+    .feed{
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.30);
+      border-radius: 14px;
+      padding: 10px;
+      box-sizing:border-box;
+
+      height: min(360px, 42vh);
+      overflow:auto;
+
+      display:flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .ptsCanvas{
+      width: 84px;
+      height: 30px;
+      display:block;
+      flex: 0 0 auto;
+    }
+
+    
+    .ptsLabel{
+      width: 84px;
+      height: 30px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end; /* right align within the 84px slot */
+      flex: 0 0 auto;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--bad);
+      user-select:none;
+      -webkit-user-select:none;
+      white-space: nowrap;
+    }
+
+.rowText{
+      font-size: 18px;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+    .rowText.good{ color: var(--good); font-weight: 700; }
+    .rowText.bad{ color: var(--bad); font-weight: 700; }
+
+    .inputRow{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+    }
+
+    .txt{
+      flex: 1 1 auto;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.55);
+      padding: 10px 12px;
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 20px;
+      outline: none;
+    }
+
+    .subtleRow{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .overlay{
+      position: fixed;
+      inset: 0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background: rgba(0,0,0,0.20);
+      z-index: 50;
+      padding: 18px;
+      box-sizing:border-box;
+    }
+    .overlay.show{ display:flex; }
+
+    .modal{
+      width: min(520px, 92vw);
+      background: var(--bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.20);
+    }
+    .modal h2{
+      margin: 0 0 6px;
+      font-size: 20px;
+    }
+    .modal p{
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.25;
+    }
+    .modal .row{
+      justify-content:flex-end;
+      gap: 10px;
+    }
+
+    .footer{
+      border-top: 1px solid var(--panel-border);
+      background: var(--panel);
+      padding: 10px 12px;
+      box-sizing:border-box;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .footerRow{
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .footerRight a{ color: var(--muted); }
+
+    @media (max-width: 520px){
+      .status{ display:none; }
+      .bestCanvas{ width: 170px; }
+      .timerCanvas{ width: 140px; }
+      .mainCartouche{ height: 120px; }
+      .rowText{ font-size: 16px; }
+      .txt{ font-size: 18px; }
+    }
+
+    .finishPanel{
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  background: rgba(0,0,0,0.55);
+}
+.finishPanel.show{ display:flex; }
+
+.finishCard{
+  width: min(720px, 94vw);
+  border-radius: 18px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  padding: 14px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.finishCanvas{
+  width: min(680px, 92vw);
+  height: 110px;
+  display: block;
+}
+
+.finishRow{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <button id="btnStart" class="btn">Start</button>
+    <button id="btnQuit" class="btn" disabled>Quit</button>
+    <button id="btnManage" class="btn">Lists</button>
+    <div id="status" class="status">Loading…</div>
+    <div class="statBox" id="bestBox"><span id="bestPrefix" class="prefixGlyph" aria-hidden="true"></span><canvas id="bestCanvas" class="bestCanvas" aria-label="Best score"></canvas></div>
+    <div class="statBox" id="timerBox"><span id="timerPrefix" class="prefixGlyph" aria-hidden="true"></span><canvas id="timerCanvas" class="timerCanvas" aria-label="Time left"></canvas></div>
+  </div>
+
+  <div class="wrap">
+    <div class="gameArea">
+      <div class="gameStack" aria-label="Game">
+        <div id="hint" class="hint">
+          Loading...
+        </div>
+
+        <div class="card">
+          <div class="cartoucheBox">
+            <canvas id="mainCanvas" class="mainCartouche" aria-label="Cartouche"></canvas>
+          </div>
+
+          <div id="feed" class="feed" aria-label="Results feed"></div>
+
+          <div class="inputRow">
+            <input id="answer" class="txt" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="type answer and press Enter" disabled />
+            <button id="btnSubmit" class="btn" disabled>Enter</button>
+          </div>
+
+          <div class="subtleRow">
+            <span id="scoreLbl">Score: 0</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+        <div class="modal">
+          <h2 id="modalTitle">Manage lists</h2>
+          <p id="modalBody">
+            Export/import/reset the {places, boys, girls} JSON object. The lists are saved in IndexedDB.
+          </p>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin: 10px 0 12px;">
+            <button id="btnExport" class="btn" type="button">Export JSON</button>
+            <button id="btnImport" class="btn" type="button">Import JSON</button>
+            <button id="btnReset" class="btn" type="button">Reset</button>
+            <input id="fileImport" type="file" accept="application/json,.json" style="display:none" />
+          </div>
+
+          <div class="row">
+            <button id="btnCloseModal" class="btn" type="button">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="quitOverlay" class="overlay" role="dialog" aria-modal="true">
+        <div class="modal">
+          <h2>Quit current game?</h2>
+          <p>The timer will stop. Your current score will be lost.</p>
+          <div class="row">
+            <button id="btnCancelQuit" class="btn">Cancel</button>
+            <button id="btnConfirmQuit" class="btn">Quit</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="finishPanel" class="finishPanel" aria-hidden="true">
+  <div class="finishCard">
+    <canvas id="finishCanvas" class="finishCanvas" aria-label="Final score"></canvas>
+  </div>
+</div>
+    </div>
+
+    <footer class="footer" aria-label="Disclaimer">
+      <div class="footerRow">
+        <div class="footerLeft">
+          <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
+        </div>
+        <div class="footerRight">
+          <a href="./index.html">Back to index</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ============================================================
+     Storage keys
+     ============================================================ */
+  const LS_KEY_BEST_SCORE = "tpCartoucheSpeller_bestScore";
+  const IDB_NAME = "tp-cartouche-speller";
+  const IDB_STORE = "kv";
+  const IDB_KEY_LISTS = "lists:v1";
+  const IDB_KEY_GLYPH_STATS = "glyphStats:v1";
+  const GLYPH_WEIGHT_BOOST = 12; // higher = more practice on often-missed glyph-words
+
+  const DEFAULT_DURATION_SEC = 180;
+  const MAX_TRIES = 3;
+
+  /* ============================================================
+     Default lists (PLACEHOLDER)
+     - Replace these defaults with your generated data if you want.
+     - Structure: { places: { "English": "toki pona" }, boys: {...}, girls: {...} }
+     ============================================================ */
+  const DEFAULT_LISTS = {
+    places: {
+  "americas": "amelika",
+  "antarctica": "antasika",
+  "africa": "apika",
+  "asia": "asija",
+  "europe": "elopa",
+  "oceania": "osejanija",
+
+  "angola": "ankola",
+  "eritrea": "eliteja",
+  "ethiopia": "isijopija",
+  "cameroon": "kamelun",
+  "ghana": "kana",
+  "gambia": "kanpija",
+  "gabon": "kapon",
+  "kenya": "kenja",
+  "guinea": "kine",
+
+  "equatorial guinea": "kinejekatolija",
+  "guinea-bissau": "kinepisa",
+  "comoros": "komo",
+  "congo": "kongo",
+  "cote d'ivoire": "kosiwa",
+  "liberia": "lapewija",
+  "lesotho": "lesoto",
+  "libya": "lipija",
+  "rwanda": "luwanta",
+  "madagascar": "malakasi",
+  "malawi": "malawi",
+  "mali": "mali",
+  "morocco": "malipe",
+  "egypt": "masu",
+  "mozambique": "mosanpi",
+  "mauritius": "mowisi",
+  "mauritania": "mulitanija",
+  "namibia": "namipija",
+  "nigeria": "naselija",
+  "niger": "nise",
+  "benin": "penen",
+  "botswana": "posuwana",
+  "burkina faso": "pukinapaso",
+  "zambia": "sanpija",
+  "central african republic": "santapiken",
+  "algeria": "sasali",
+  "chad": "sate",
+  "swaziland": "sawasi",
+  "senegal": "seneka",
+  "south africa": "setapika",
+  "sierra leone": "sijelalijon",
+  "zimbabwe": "singapuwe",
+  "djibouti": "sipusi",
+  "somalia": "somalija",
+  "sudan": "sutan",
+  "tanzania": "tansanija",
+  "togo": "toko",
+  "tunisia": "tunisi",
+  "uganda": "ukanta",
+
+  "argentina": "alensina",
+  "haiti": "awisi",
+  "ecuador": "ekato",
+  "greenland": "kalalinuna",
+  "canada": "kanata",
+  "guatemala": "katemala",
+  "grenada": "kenata",
+  "costa rica": "kosalika",
+  "cuba": "kupa",
+  "mexico": "mesiko",
+  "united states": "mewika",
+  "united states of america": "mewika",
+  "usa": "mewika",
+  "honduras": "ontula",
+  "paraguay": "palakawi",
+  "panama": "panama",
+  "barbados": "papeto",
+  "brazil": "pasila",
+  "bahamas": "pawama",
+  "peru": "pelu",
+  "bermuda": "pemuta",
+  "venezuela": "penesuwela",
+  "jamaica": "sameka",
+  "chile": "sile",
+  "trinidad and tobago": "sinita",
+  "dominican republic": "tominika",
+  "uruguay": "ulukawi",
+
+  "armenia": "aja",
+  "afghanistan": "akanisan",
+  "south korea": "anku",
+  "republic of korea": "anku",
+  "iraq": "ilakija",
+  "iran": "ilan",
+  "indonesia": "intonesija",
+  "israel": "isale",
+  "yemen": "jamanija",
+  "cambodia": "kanpusi",
+  "georgia": "katelo",
+  "kurdistan": "kuli",
+  "gujarat": "kusala",
+  "kuwait": "kuwasi",
+  "sri lanka": "lanka",
+  "russia": "losi",
+  "lebanon": "lunpan",
+  "malaysia": "malasija",
+  "myanmar": "mijama",
+  "japan": "nijon",
+  "pakistan": "pakisan",
+  "bahrain": "palani",
+  "india": "palata",
+  "bangladesh": "panla",
+  "philippines": "pilipina",
+  "palestine": "pilisin",
+  "tibet": "po",
+  "saudi arabia": "sawusi",
+  "china": "sonko",
+  "people's republic of china": "sonko",
+  "syria": "sulija",
+  "thailand": "tawi",
+  "turkey": "tuki",
+  "oman": "uman",
+  "jordan": "utun",
+  "vietnam": "wije",
+
+  "ireland": "alan",
+  "andorra": "antola",
+  "greece": "elena",
+  "spain": "epanja",
+  "austria": "esalasi",
+  "estonia": "esi",
+  "basque country": "esuka",
+  "england": "inli",
+  "iceland": "isilan",
+  "italy": "italija",
+  "united kingdom": "juke",
+  "uk": "juke",
+  "france": "kanse",
+  "catalan countries": "katala",
+  "wales": "kinla",
+  "cyprus": "kiposi",
+  "latvia": "lawi",
+  "lithuania": "lijatuwa",
+  "liechtenstein": "lisensan",
+  "romania": "lomani",
+  "croatia": "lowasi",
+  "slovakia": "lowenki",
+  "slovenia": "lowensina",
+  "luxembourg": "lusepu",
+  "macedonia": "maketonija",
+  "hungary": "mosijo",
+  "moldova": "motowa",
+  "netherlands": "netelan",
+  "norway": "nosiki",
+  "belarus": "pelalusi",
+  "belgium": "pesije",
+  "brittany": "peson",
+  "bulgaria": "pokasi",
+  "bosnia": "posan",
+  "poland": "posuka",
+  "portugal": "potuke",
+  "san marino": "samalino",
+  "czech republic": "seki",
+  "czechia": "seki",
+  "albania": "sipe",
+  "serbia": "sopisi",
+  "scotland": "sukosi",
+  "finland": "sumi",
+  "switzerland": "suwasi",
+  "denmark": "tansi",
+  "germany": "tosi",
+  "ukraine": "ukawina",
+  "vatican": "wasikano",
+  "sweden": "wensa",
+
+  "kiribati": "kilipasi",
+  "new zealand": "nusilan",
+  "australia": "oselija",
+  "papua new guinea": "papuwanijukini",
+  "fiji": "pisi",
+  "samoa": "samowa",
+  "tonga": "tona",
+  "tuvalu": "tuwalu",
+  "vanuatu": "wanuwatu"
+},
+    boys:   {
+  "Aahan": "An",
+  "Aahil": "Ela",
+  "Aarav": "Awawa",
+  "Aariv": "Awiwa",
+  "Aariz": "Awisi",
+  "Aaron": "Ewan",
+  "Aarush": "Awasi",
+  "Aaryan": "Ajan",
+  "Aayan": "An",
+  "Abbas": "Apasi",
+  "Abdirahman": "Apawaman",
+  "Abdul": "Apula",
+  "Abdul Hadi": "Apula Ate",
+  "Abdullah": "Apala",
+  "Abdulrahman": "Apuwaman",
+  "Abdur Rahman": "Ape Waman",
+  "Abel": "Epala",
+  "Abid": "Epito",
+  "Abner": "Ape",
+  "Abraham": "Epan",
+  "Abram": "Apan",
+  "Achim": "Asin",
+  "Adam": "Atan",
+  "Adas": "Etasi",
+  "Adefolarin": "Etepolawin",
+  "Adem": "Aten",
+  "Aden": "Etan",
+  "Adhrit": "Ateto",
+  "Adil": "Atela",
+  "Adnan": "Atan",
+  "Adonis": "Atanasi",
+  "Adrian": "Etan",
+  "Adrians": "Etansi",
+  "Adriel": "Atela",
+  "Advay": "Ate",
+  "Advik": "Ateku",
+  "Aedan": "Atan",
+  "Affan": "Apan",
+  "Afonso": "Apanso",
+  "Agastya": "Akata",
+  "Ahaan": "An",
+  "Ahad": "Ato",
+  "Ahan": "An",
+  "Ahmad": "Amato",
+  "Ahmed": "Amato",
+  "Ahnaf": "Anapu",
+  "Aidan": "Etan",
+  "Aiden": "Eten",
+  "Ailbe": "Epu",
+  "Ajay": "Ese",
+  "Ajus": "Asasi",
+  "Akaay": "Aka",
+  "Akim": "Akin",
+  "Akram": "Akan",
+  "Aksel": "Akila",
+  "Alan": "Alan",
+  "Alasdair": "Alatewa",
+  "Alastair": "Alatewa",
+  "Albert": "Apeto",
+  "Albi": "Api",
+  "Albie": "Opi",
+  "Alby": "Apa",
+  "Alec": "Aliku",
+  "Alejandro": "Alento",
+  "Alek": "Aliku",
+  "Aleks": "Alika",
+  "Aleksandar": "Elekantawa",
+  "Aleksander": "Alakante",
+  "Aleksandr": "Alakante",
+  "Aleksandre": "Alakante",
+  "Alessandro": "Alesanto",
+  "Alessio": "Aleso",
+  "Alex": "Alaka",
+  "Alexander": "Alakante",
+  "Alexandre": "Alikante",
+  "Alexandru": "Esantu",
+  "Alexis": "Alekisi",
+  "Alfie": "Api",
+  "Alfred": "Apato",
+  "Alin": "Alin",
+  "Alistair": "Alitewa",
+  "Alvey": "Awi",
+  "Alvi": "Awi",
+  "Alvin": "Awin",
+  "Amar": "Amawa",
+  "Amari": "Amawi",
+  "Ameer": "Amiwa",
+  "Amiir": "Ame",
+  "Amin": "Amin",
+  "Amine": "Emin",
+  "Amir": "Amiwa",
+  "Ammar": "Amawa",
+  "Amos": "Emasi",
+  "Anas": "Anasi",
+  "Anaser": "Anase",
+  "Anay": "Ane",
+  "Andre": "Ante",
+  "Andreas": "Antesi",
+  "Andrei": "Ante",
+  "Andres": "Antesi",
+  "Andrew": "Antu",
+  "Andrey": "Ante",
+  "André": "Anta",
+  "Andy": "Ante",
+  "Anes": "Ansi",
+  "Angelo": "Ansalo",
+  "Angus": "Ankasi",
+  "Ansh": "Ansi",
+  "Anthony": "Ansani",
+  "Anton": "Anton",
+  "Antoni": "Antoni",
+  "Antonio": "Antono",
+  "Antony": "Antani",
+  "Aodh": "Ato",
+  "Aodhan": "Atan",
+  "Aodhán": "Aten",
+  "Aodán": "Aten",
+  "Aonghus": "Anasi",
+  "Apollo": "Apalo",
+  "Aran": "Ewan",
+  "Archer": "Ase",
+  "Archie": "Asi",
+  "Ardal": "Atala",
+  "Aren": "Awan",
+  "Ares": "Asi",
+  "Arhaan": "Awan",
+  "Arham": "Awan",
+  "Arian": "Awan",
+  "Ariel": "Ewala",
+  "Arijus": "Awisasi",
+  "Arin": "Awin",
+  "Aris": "Esi",
+  "Arjan": "Asan",
+  "Arjun": "Asan",
+  "Arlo": "Ala",
+  "Arman": "Aman",
+  "Armin": "Aman",
+  "Arminas": "Aminasi",
+  "Arnas": "Anasi",
+  "Aron": "Ewan",
+  "Aronas": "Awanasi",
+  "Arran": "Awan",
+  "Artem": "Aten",
+  "Arthur": "Ase",
+  "Artie": "Ate",
+  "Artiom": "Atan",
+  "Artur": "Atuwa",
+  "Artúr": "Atawa",
+  "Arvin": "Awin",
+  "Aryan": "Awan",
+  "Asher": "Ase",
+  "Ashley": "Ali",
+  "Ashton": "Atan",
+  "Aslan": "Alan",
+  "Atharv": "Asawa",
+  "Atharva": "Asawa",
+  "Atlas": "Atasi",
+  "August": "Akato",
+  "Augusto": "Okato",
+  "Austin": "Otan",
+  "Avery": "Ewe",
+  "Avraam": "Awan",
+  "Avram": "Ewan",
+  "Avyaan": "Ajan",
+  "Avyan": "Ajan",
+  "Axel": "Akala",
+  "Ayaan": "En",
+  "Ayan": "En",
+  "Ayansh": "Ensi",
+  "Ayaz": "Esi",
+  "Ayden": "Eten",
+  "Aydin": "Eten",
+  "Aylan": "Elan",
+  "Ayman": "Eman",
+  "Ayoub": "Epu",
+  "Azaan": "Asan",
+  "Azariah": "Asawa",
+  "Azhaan": "Asan",
+  "Aziel": "Asila",
+  "Aziz": "Asisi",
+  "Azlaan": "Alan",
+  "Azlan": "Alan",
+  "Azriel": "Awila",
+  "Bailey": "Peli",
+  "Barney": "Pani",
+  "Barra": "Pawa",
+  "Barry": "Pawi",
+  "Bartosz": "Patasi",
+  "Basil": "Pasala",
+  "Bastian": "Pasin",
+  "Bear": "Pewa",
+  "Beau": "Po",
+  "Beauden": "Paten",
+  "Beckett": "Pekito",
+  "Benas": "Penasi",
+  "Benedict": "Penateka",
+  "Beniamin": "Penamin",
+  "Benicio": "Penisa",
+  "Benjamim": "Pensamin",
+  "Benjamin": "Pensaman",
+  "Benji": "Pensi",
+  "Bennett": "Penato",
+  "Benni": "Penni",
+  "Benny": "Peni",
+  "Bentley": "Pente",
+  "Bento": "Pento",
+  "BenÍcio": "Pensa",
+  "Bernard": "Peneto",
+  "Bernardo": "Penato",
+  "Bernie": "Peni",
+  "Bertie": "Pete",
+  "Bilal": "Pilala",
+  "Bill": "Pila",
+  "Billy": "Pili",
+  "Bjorn": "Pon",
+  "Björn": "Pa",
+  "Blaine": "Pen",
+  "Blaise": "Pesi",
+  "Blake": "Peku",
+  "Bobbie": "Papi",
+  "Bobby": "Papi",
+  "Boden": "Potan",
+  "Bodhi": "Pate",
+  "Bodhí": "Pato",
+  "Bodie": "Pote",
+  "Bogdan": "Pakan",
+  "Borys": "Powisi",
+  "Boston": "Patan",
+  "Bowe": "Po",
+  "Bowen": "Pon",
+  "Bowie": "Po",
+  "Bradley": "Pate",
+  "Brady": "Pete",
+  "Bradán": "Paten",
+  "Bram": "Pan",
+  "Brandon": "Pantan",
+  "Braxton": "Pakan",
+  "Brayden": "Peten",
+  "Brendan": "Pentan",
+  "Brian": "Pan",
+  "Brodhí": "Pato",
+  "Brodie": "Pote",
+  "Brody": "Pote",
+  "Brogan": "Pokan",
+  "Brooklyn": "Pukan",
+  "Brooks": "Puka",
+  "Bruce": "Pusi",
+  "Bruno": "Puno",
+  "Bryan": "Pan",
+  "Bryson": "Pasan",
+  "Brían": "Pan",
+  "Bríon": "Pan",
+  "Brógan": "Pan",
+  "Burhan": "Pawan",
+  "Byron": "Pawan",
+  "Cade": "Keto",
+  "Caden": "Katen",
+  "Cadán": "Katen",
+  "Caedan": "Katan",
+  "Caeden": "Katen",
+  "Caelan": "Kalan",
+  "Caelin": "Kalin",
+  "Caelum": "Kalan",
+  "Caelán": "Kalen",
+  "Caetano": "Katano",
+  "Cahir": "Ka",
+  "Caiden": "Keten",
+  "Cailum": "Kelan",
+  "Cain": "Ken",
+  "Caio": "Ke",
+  "Cairo": "Kawe",
+  "Caleb": "Kelapu",
+  "Calem": "Kalin",
+  "Calin": "Kalin",
+  "Callan": "Kalan",
+  "Callen": "Kalan",
+  "Callum": "Kalan",
+  "Calum": "Kalan",
+  "Calvin": "Kawan",
+  "Cameron": "Kamen",
+  "Caodhán": "Katen",
+  "Caoilte": "Kato",
+  "Caoimhin": "Semesin",
+  "Caoimhín": "Kamen",
+  "Caolan": "Kalan",
+  "Caolin": "Kalin",
+  "Caolán": "Kalen",
+  "Carl": "Kala",
+  "Carlo": "Kalo",
+  "Carlos": "Kalosi",
+  "Carson": "Kasan",
+  "Carter": "Kate",
+  "Casey": "Kesi",
+  "Casper": "Kape",
+  "Cass": "Kasi",
+  "Cassian": "Kasan",
+  "Cathal": "Kasala",
+  "Cayden": "Keten",
+  "Cayson": "Kesan",
+  "Cealan": "Silan",
+  "Cezar": "Sesawa",
+  "Charles": "Sawasi",
+  "Charlie": "Sali",
+  "Chase": "Sesi",
+  "Chester": "Sete",
+  "Chris": "Kisi",
+  "Christian": "Kisan",
+  "Christopher": "Kitape",
+  "Christopher Junior": "Kitape Sunje",
+  "Christy": "Kite",
+  "Chulainn": "Sulen",
+  "Cian": "Sin",
+  "Cianán": "Sinen",
+  "Ciaran": "Sawan",
+  "Ciaràn": "Sawen",
+  "Ciarán": "Sawen",
+  "Ciarán Óg": "Sawen Si",
+  "Cillian": "Silan",
+  "Cillían": "Silan",
+  "Cillín": "Silen",
+  "Clark": "Kaku",
+  "Clay": "Ke",
+  "Clayton": "Ketan",
+  "Clive": "Kawa",
+  "Cobh": "Kapu",
+  "Cobie": "Kapi",
+  "Coby": "Kopi",
+  "Codi": "Kate",
+  "Cody": "Kote",
+  "Coen": "Kon",
+  "Cohen": "Kon",
+  "Colby": "Kopi",
+  "Cole": "Kola",
+  "Colin": "Kolin",
+  "Colm": "Kon",
+  "Colman": "Koman",
+  "Colt": "Koto",
+  "Colter": "Kote",
+  "Colton": "Kotan",
+  "Conaill": "Kanela",
+  "Conal": "Konala",
+  "Conall": "Kanala",
+  "Conan": "Konan",
+  "Conlan": "Kanlan",
+  "Conn": "Kan",
+  "Connal": "Kannala",
+  "Connell": "Kanala",
+  "Connie": "Koni",
+  "Connla": "Kanla",
+  "Connor": "Kane",
+  "Conor": "Kanowa",
+  "Conrad": "Kanwato",
+  "Conán": "Kanen",
+  "Cooper": "Kupe",
+  "Corey": "Kowi",
+  "Cormac": "Komaku",
+  "Cornelius": "Konijasi",
+  "Cory": "Kowi",
+  "Cosmo": "Komo",
+  "Cove": "Kowa",
+  "Craig": "Keku",
+  "Cree": "Ki",
+  "Creed": "Kito",
+  "Cristian": "Kitan",
+  "Cristiano": "Kitano",
+  "Croí": "Ko",
+  "Crue": "Ku",
+  "Cruz": "Kusi",
+  "Cruze": "Kusi",
+  "Cuan": "Kan",
+  "Culainn": "Kalen",
+  "Culann": "Kalan",
+  "Cullan": "Kalan",
+  "Cullen": "Kalan",
+  "Curtis": "Ketasi",
+  "Cuán": "Kan",
+  "Cyrus": "Sawasi",
+  "Cárthach": "Sisasi",
+  "Cáthal": "Sisala",
+  "Céadan": "Setan",
+  "Cían": "San",
+  "Cóil": "Sila",
+  "Cóilí": "Sila",
+  "Cónal": "Sinala",
+  "Cónan": "Sinan",
+  "Cúan": "San",
+  "Cúán": "Sen",
+  "Daibhí": "Tepu",
+  "Daimhín": "Temen",
+  "Daire": "Tewa",
+  "Daithi": "Tesi",
+  "Daithí": "Tesi",
+  "Daksh": "Taka",
+  "Dale": "Tela",
+  "Dalton": "Totan",
+  "Damian": "Teman",
+  "Damien": "Teman",
+  "Damir": "Tame",
+  "Damon": "Teman",
+  "Danann": "Tanan",
+  "Dane": "Ten",
+  "Daniel": "Tanjala",
+  "Daniels": "Tanjasi",
+  "Daniil": "Tanila",
+  "Daniyal": "Tanijala",
+  "Dannan": "Tannan",
+  "Danny": "Tani",
+  "Dante": "Tante",
+  "Danylo": "Tanala",
+  "Dara": "Tawa",
+  "Darach": "Tawasi",
+  "Daragh": "Tawa",
+  "Darby": "Tapi",
+  "Darcy": "Tasi",
+  "Darian": "Tawan",
+  "Dario": "Tewe",
+  "Darius": "Tesi",
+  "Darragh": "Tewa",
+  "Darren": "Tawan",
+  "Darwin": "Tawin",
+  "Daryl": "Tewala",
+  "Daróg": "Tasi",
+  "Dave": "Tewa",
+  "Davey": "Tewi",
+  "Davi": "Tawi",
+  "David": "Tewito",
+  "Davie": "Tewi",
+  "Davin": "Tawin",
+  "Davis": "Tewasi",
+  "Davy": "Tewi",
+  "Dawid": "Tawito",
+  "Dawson": "Tosan",
+  "Dayne": "Ten",
+  "Dean": "Ten",
+  "Declan": "Tekan",
+  "Denas": "Tenasi",
+  "Denis": "Tenisi",
+  "Deniz": "Tenisi",
+  "Dennis": "Tenisi",
+  "Denny": "Teni",
+  "Denzel": "Tensala",
+  "Deon": "Tan",
+  "Derek": "Tewiku",
+  "Derick": "Tewiku",
+  "Dermot": "Temato",
+  "Derrick": "Tewiku",
+  "Desmond": "Temanto",
+  "Dessie": "Tesi",
+  "Devansh": "Tewansi",
+  "Devin": "Tewin",
+  "Devon": "Tewan",
+  "Dexter": "Teke",
+  "Dhruv": "Tawa",
+  "Diarmaid": "Tameto",
+  "Diarmuid": "Tamate",
+  "Diego": "Teko",
+  "Dilanas": "Telanasi",
+  "Dillon": "Telan",
+  "Dion": "Tan",
+  "Divit": "Tewito",
+  "Domas": "Tomasi",
+  "Domhnall": "Tumenola",
+  "Dominic": "Tamaniku",
+  "Dominick": "Tamaniku",
+  "Dominik": "Taminiku",
+  "Dominykas": "Tamanikesi",
+  "Donagh": "Tana",
+  "Donal": "Tanala",
+  "Donie": "Tani",
+  "Donnacha": "Tanasa",
+  "Donncha": "Tansa",
+  "Donnchadh": "Tansatesi",
+  "Donnie": "Tani",
+  "Donny": "Tani",
+  "Donovan": "Tanawan",
+  "Dorian": "Towan",
+  "Douglas": "Takasi",
+  "Dovydas": "Tawatasi",
+  "Dragos": "Takosi",
+  "Drew": "Tu",
+  "Dylan": "Telan",
+  "Dáire": "Tawa",
+  "Dáithí": "Tesi",
+  "Dónal": "Tenala",
+  "Dónal Óg": "Tenala Si",
+  "Dónall": "Tenola",
+  "Eamon": "Iman",
+  "Eamonn": "Iman",
+  "Eanna": "Inna",
+  "Eben": "Epan",
+  "Eddie": "Ete",
+  "Eden": "Itan",
+  "Edgar": "Ete",
+  "Edison": "Etesan",
+  "Edmond": "Etanto",
+  "Edmund": "Etanto",
+  "Edoardo": "Etato",
+  "Eduard": "Eteto",
+  "Eduardo": "Etato",
+  "Edward": "Eteto",
+  "Edwin": "Etan",
+  "Eesa": "Isa",
+  "Eimhin": "Emin",
+  "Ekansh": "Ekansi",
+  "Ekin": "Ekin",
+  "Eleazar": "Elisawa",
+  "Elhan": "Elan",
+  "Elias": "Alasi",
+  "Elijah": "Elasa",
+  "Elio": "Elo",
+  "Eliot": "Elato",
+  "Elis": "Ilasi",
+  "Elisei": "Elise",
+  "Elliot": "Elato",
+  "Elliott": "Elato",
+  "Ellis": "Elisi",
+  "Elon": "Elan",
+  "Elvin": "Ewin",
+  "Elvis": "Ewisi",
+  "Elyas": "Ejasi",
+  "Emanuel": "Imanjala",
+  "Emil": "Emila",
+  "Emile": "Emila",
+  "Emiliano": "Emilano",
+  "Emilio": "Amilo",
+  "Emilis": "Emilisi",
+  "Emir": "Emiwa",
+  "Emmanuel": "Imanjala",
+  "Emmet": "Emito",
+  "Emmett": "Emito",
+  "Emre": "Ema",
+  "Enda": "Enta",
+  "Enoch": "Inaku",
+  "Enoh": "Ena",
+  "Enrico": "Enwiko",
+  "Enrique": "Enwike",
+  "Enzo": "Enso",
+  "Eoghan": "Ekan",
+  "Eoin": "En",
+  "Eolann": "Elan",
+  "Eoín": "En",
+  "Ephraim": "Ipan",
+  "Ephrem": "Epin",
+  "Eric": "Ewiku",
+  "Erick": "Ewiku",
+  "Erik": "Ewiku",
+  "Ernest": "Enato",
+  "Eros": "Iwasi",
+  "Eryk": "Eku",
+  "Ethan": "Isan",
+  "Euan": "An",
+  "Eugene": "Usin",
+  "Evaan": "Ewan",
+  "Evan": "Ewan",
+  "Evanas": "Ewanasi",
+  "Ewan": "An",
+  "Eyad": "Eto",
+  "Ezekiel": "Esikila",
+  "Ezra": "Ewa",
+  "Eóghan": "Ikan",
+  "Eóin": "In",
+  "Fabian": "Pepan",
+  "Faelan": "Palan",
+  "Faizan": "Pesan",
+  "Faolán": "Palen",
+  "Faris": "Pewisi",
+  "Farrell": "Pewila",
+  "Fateh": "Pate",
+  "Fearghal": "Pisala",
+  "Federico": "Peteko",
+  "Fedor": "Pete",
+  "Feidhlim": "Epatelin",
+  "Felim": "Pelan",
+  "Felipe": "Palipu",
+  "Felix": "Pilika",
+  "Ferdia": "Peta",
+  "Fergal": "Pekala",
+  "Fergus": "Pekasi",
+  "Fernando": "Penanto",
+  "Fiach": "Pasi",
+  "Fiachna": "Pana",
+  "Fiachra": "Pawa",
+  "Filip": "Pilipu",
+  "Finan": "Pinan",
+  "Finbar": "Pinpawa",
+  "Finbarr": "Pinpawa",
+  "Finian": "Pinan",
+  "Finlay": "Pinli",
+  "Finley": "Pinli",
+  "Finn": "Pin",
+  "Finnan": "Pinan",
+  "Finnian": "Pinnan",
+  "Finnley": "Pinle",
+  "Finnán": "Pinen",
+  "Fintan": "Pintan",
+  "Fionn": "Pan",
+  "Fionnán": "Panen",
+  "Fionán": "Panen",
+  "Fletcher": "Pese",
+  "Flinn": "Pin",
+  "Florian": "Powan",
+  "Flynn": "Pin",
+  "Francesco": "Panseko",
+  "Francie": "Panki",
+  "Francis": "Pansasi",
+  "Francisco": "Pansiko",
+  "Franciszek": "Pansiseku",
+  "Franco": "Panko",
+  "Franek": "Paniku",
+  "Frank": "Panku",
+  "Frankie": "Panki",
+  "Franklin": "Pankin",
+  "Franky": "Panka",
+  "Fraser": "Pese",
+  "Fred": "Peto",
+  "Freddie": "Pete",
+  "Freddy": "Pete",
+  "Frederick": "Peteku",
+  "Fáelán": "Epelen",
+  "Féidhlim": "Epiten",
+  "Féilim": "Epilin",
+  "Félix": "Epika",
+  "Fíachra": "Epawa",
+  "Fíonn": "Epan",
+  "Gabriel": "Kepala",
+  "Gabriele": "Kapela",
+  "Gael": "Kela",
+  "Gareth": "Kewisi",
+  "Garrett": "Kawito",
+  "Gary": "Kawi",
+  "Gavin": "Kawin",
+  "Gearoid": "Siweto",
+  "Gearóid": "Kiwate",
+  "Gene": "Sin",
+  "Geoff": "Sepu",
+  "Geoffrey": "Sepi",
+  "George": "Sosi",
+  "Georgie": "Sosi",
+  "Gerald": "Sewato",
+  "Gerard": "Seto",
+  "Gerry": "Sewi",
+  "Ghaith": "Kesi",
+  "Ghassan": "Kasan",
+  "Gideon": "Kitan",
+  "Giorgio": "Soso",
+  "Giovanni": "Sowani",
+  "Giuseppe": "Sisepi",
+  "Glen": "Ken",
+  "Glenn": "Ken",
+  "Graham": "Kan",
+  "Grayson": "Kesan",
+  "Gregory": "Keke",
+  "Greyson": "Kesan",
+  "Grian": "Kan",
+  "Griffin": "Kipin",
+  "Gustas": "Katasi",
+  "Hadi": "Ate",
+  "Haider": "Ete",
+  "Hamza": "Ama",
+  "Hanzala": "Ansala",
+  "Haris": "Awisi",
+  "Harlan": "Alan",
+  "Harley": "Ali",
+  "Harlow": "Alo",
+  "Haroon": "Awen",
+  "Harris": "Ewisi",
+  "Harrison": "Ewisan",
+  "Harry": "Ewi",
+  "Harvey": "Awi",
+  "Hasan": "Esan",
+  "Hashim": "Asin",
+  "Hashir": "Ase",
+  "Hassan": "Asan",
+  "Hayden": "Etan",
+  "Haziel": "Asila",
+  "Hector": "Eke",
+  "Heitor": "Itowa",
+  "Hendrix": "Enteka",
+  "Henri": "Enwi",
+  "Henrik": "Enwiku",
+  "Henrique": "Anwiku",
+  "Henry": "Enwi",
+  "Henryk": "Inwaku",
+  "Herkus": "Ikasi",
+  "Hezekiah": "Isika",
+  "Hubert": "Jupeto",
+  "Hudson": "Atan",
+  "Hugh": "Ju",
+  "Hughie": "Ju",
+  "Hugo": "Juko",
+  "Hunter": "Ante",
+  "Hussain": "Usen",
+  "Huzaifa": "Asepa",
+  "Iacob": "Akapu",
+  "Ianis": "Anisi",
+  "Iarfhlaith": "Awepelatesi",
+  "Iarla": "Ala",
+  "Iarlaith": "Alatesi",
+  "Ibraheem": "Apiwen",
+  "Ibrahim": "Ipen",
+  "Idris": "Itesi",
+  "Ignacy": "Ikasa",
+  "Igor": "Ikowa",
+  "Ilia": "Ila",
+  "Ilias": "Ilasi",
+  "Ilya": "Ija",
+  "Ilyas": "Ijasi",
+  "Iman": "Aman",
+  "Immanuel": "Imanula",
+  "Imran": "Iman",
+  "Ioan": "On",
+  "Ionatan": "Anatan",
+  "Ionut": "Anato",
+  "Iosif": "Asipu",
+  "Iremide": "Iwemito",
+  "Isaac": "Asaku",
+  "Isac": "Isaku",
+  "Isaia": "Ise",
+  "Isaiah": "Ase",
+  "Ishaan": "Isan",
+  "Ishan": "Isan",
+  "Ishaq": "Isaku",
+  "Ismael": "Imela",
+  "Ismail": "Imela",
+  "Israel": "Isale",
+  "Issa": "Isa",
+  "Issac": "Asiku",
+  "Iustin": "Aten",
+  "Ivaan": "Iwan",
+  "Ivan": "Awan",
+  "Ivar": "Iwe",
+  "Ivin": "Iwin",
+  "Izaiah": "Ise",
+  "Izhaan": "Isan",
+  "Izhan": "Isan",
+  "J.J.": "Sese",
+  "Jabir": "Sape",
+  "Jace": "Saku",
+  "Jack": "Saku",
+  "Jackson": "Sakan",
+  "Jacob": "Sekapu",
+  "Jacques": "Saku",
+  "Jaden": "Saten",
+  "Jadon": "Satan",
+  "Jador": "Satowa",
+  "Jaiden": "Seten",
+  "Jake": "Seku",
+  "Jakob": "Sakapu",
+  "Jakub": "Sakapu",
+  "Jamal": "Samala",
+  "James": "Sema",
+  "Jameson": "Seman",
+  "Jamie": "Semi",
+  "Jared": "Sewito",
+  "Jarlath": "Salasi",
+  "Jason": "Sesan",
+  "Jasper": "Sape",
+  "Jawad": "Sawato",
+  "Jaxon": "Sakan",
+  "Jaxson": "Sakan",
+  "Jaxx": "Saka",
+  "Jayce": "Seku",
+  "Jayden": "Setan",
+  "Jaylen": "Selin",
+  "Jayson": "Sesan",
+  "Jean": "Sin",
+  "Jeff": "Sepu",
+  "Jeffrey": "Sepi",
+  "Jensen": "Sensan",
+  "Jenson": "Sensan",
+  "Jeremiah": "Sewama",
+  "Jeremy": "Sewami",
+  "Jerome": "Sen",
+  "Jerry": "Sewi",
+  "Jesse": "Sesi",
+  "Jimmy": "Simi",
+  "Joachim": "Jokin",
+  "Joao": "So",
+  "Joaquim": "Wakin",
+  "Joaquin": "Wakin",
+  "Jody": "Sote",
+  "Joel": "Sola",
+  "Joey": "So",
+  "Johan": "Jon",
+  "Johann": "Jon",
+  "John": "San",
+  "John Paul": "San Pola",
+  "Johnathan": "Sanasan",
+  "Johnnie": "Sani",
+  "Johnny": "Sani",
+  "Jonah": "Sona",
+  "Jonas": "Sonasi",
+  "Jonathan": "Sanasan",
+  "Jonnie": "Sanni",
+  "Jordan": "Utun",
+  "Jordi": "Sote",
+  "Jordie": "Sote",
+  "Jorge": "Owe",
+  "Joris": "Sawisi",
+  "Jose": "Ose",
+  "Joseph": "Sosapu",
+  "Josh": "Sasi",
+  "Joshua": "Sasa",
+  "Josiah": "Sosa",
+  "Josip": "Sasipu",
+  "José": "Sosi",
+  "Joud": "Sato",
+  "Jozef": "Sosapu",
+  "João": "So",
+  "Juan": "Wan",
+  "Judah": "Suta",
+  "Jude": "Suto",
+  "Jules": "Susi",
+  "Julian": "Sulan",
+  "Julien": "Sulan",
+  "Julius": "Sujasi",
+  "Junior": "Sunje",
+  "Justin": "Satan",
+  "Kabir": "Kape",
+  "Kacper": "Kake",
+  "Kade": "Keto",
+  "Kaden": "Ketan",
+  "Kaelan": "Kalan",
+  "Kaelem": "Kalin",
+  "Kaiden": "Keten",
+  "Kailen": "Kelin",
+  "Kailum": "Kelan",
+  "Kaio": "Ke",
+  "Kairo": "Kewa",
+  "Kaison": "Kesan",
+  "Kaius": "Kesi",
+  "Kajetan": "Kasatan",
+  "Kajus": "Kasasi",
+  "Kaleb": "Kalipu",
+  "Kalem": "Kalin",
+  "Kalen": "Kelan",
+  "Kallum": "Kalan",
+  "Kalvin": "Kawin",
+  "Kamal": "Kemala",
+  "Kameron": "Kamawan",
+  "Kamil": "Kamila",
+  "Kanan": "Kenan",
+  "Kane": "Ken",
+  "Karam": "Kawan",
+  "Kareem": "Ken",
+  "Karim": "Ken",
+  "Karl": "Kala",
+  "Karol": "Kewela",
+  "Karson": "Kasan",
+  "Karsyn": "Kasan",
+  "Karter": "Kate",
+  "Kasen": "Kasin",
+  "Kasey": "Kasi",
+  "Kason": "Kasan",
+  "Kasper": "Kape",
+  "Kayce": "Keku",
+  "Kayde": "Keto",
+  "Kayden": "Keten",
+  "Kaylem": "Kelin",
+  "Kaylen": "Kelin",
+  "Kaylum": "Kelan",
+  "Kaysen": "Kesin",
+  "Kayson": "Kesan",
+  "Kealan": "Kilan",
+  "Keane": "Kin",
+  "Keanu": "Kenu",
+  "Keegan": "Kikan",
+  "Keelan": "Kilan",
+  "Keelin": "Kilin",
+  "Keenan": "Kinan",
+  "Keith": "Kisi",
+  "Kelvin": "Kewan",
+  "Kenan": "Kinan",
+  "Kenneth": "Kenisi",
+  "Kenny": "Keni",
+  "Kenzo": "Kenso",
+  "Kevin": "Kewin",
+  "Kevinas": "Kewinasi",
+  "Khai": "Ke",
+  "Khaled": "Alato",
+  "Khalid": "Alito",
+  "Khalil": "Kalala",
+  "Kiaan": "Kan",
+  "Kian": "Kan",
+  "Kiefer": "Kipe",
+  "Kieran": "Kiwan",
+  "Kieron": "Kiwan",
+  "Kilian": "Kilan",
+  "Killian": "Kijan",
+  "Kingsley": "Kinli",
+  "Kingston": "Kintan",
+  "Kiyan": "Kijan",
+  "Klay": "Ke",
+  "Knox": "Naka",
+  "Koah": "Ko",
+  "Kobe": "Kope",
+  "Kobey": "Kape",
+  "Kobi": "Kapi",
+  "Kobie": "Kapi",
+  "Koby": "Kopi",
+  "Kobyn": "Kapan",
+  "Koda": "Kata",
+  "Kodi": "Kate",
+  "Kodie": "Kate",
+  "Kody": "Kata",
+  "Kole": "Kola",
+  "Kolton": "Kotan",
+  "Konrad": "Kanwato",
+  "Konstantin": "Kantenten",
+  "Korey": "Kowi",
+  "Kornel": "Konila",
+  "Kovi": "Kawi",
+  "Kreed": "Kito",
+  "Krishiv": "Kisiwa",
+  "Kristian": "Kitan",
+  "Krue": "Ku",
+  "Kruz": "Kasi",
+  "Krystian": "Kewitan",
+  "Krzysztof": "Kitopu",
+  "Kuba": "Kupa",
+  "Kurt": "Keto",
+  "Kush": "Kusi",
+  "Kylan": "Kalan",
+  "Kyle": "Kala",
+  "Kyler": "Kale",
+  "Kylian": "Kalan",
+  "Kylo": "Kala",
+  "Kyran": "Kawan",
+  "Kyren": "Kawen",
+  "Kyrie": "Kawi",
+  "Kyro": "Kawa",
+  "Kyron": "Kawan",
+  "Kyson": "Kasan",
+  "Lachlan": "Lakan",
+  "Lael": "Lala",
+  "Laith": "Lesi",
+  "Laker": "Leke",
+  "Larry": "Lewi",
+  "Laurence": "Lowansi",
+  "Lawrence": "Lowansi",
+  "Lawson": "Losan",
+  "Layton": "Letan",
+  "Leandro": "Lanto",
+  "Leeroy": "Liwe",
+  "Leighton": "Letan",
+  "Lemuel": "Amula",
+  "Lenni": "Lenni",
+  "Lennie": "Leni",
+  "Lennon": "Lenan",
+  "Lennox": "Lenaka",
+  "Lenny": "Leni",
+  "Leon": "Lan",
+  "Leonard": "Leneto",
+  "Leonardo": "Lanato",
+  "Leonidas": "Lonitasi",
+  "Leroy": "Liwe",
+  "Levi": "Liwa",
+  "Lewis": "Lusi",
+  "León": "Lan",
+  "Liam": "Lan",
+  "Liam Óg": "Lan Si",
+  "Lian": "jan",
+  "Lincoln": "Linkan",
+  "Lionel": "Lanala",
+  "Liviu": "Liwa",
+  "Lochlainn": "Laken",
+  "Lochlan": "Lalan",
+  "Lochlann": "Lakan",
+  "Logan": "Lokan",
+  "Lorcan": "Lokan",
+  "Lorcán": "Loken",
+  "Lorenzo": "Lenso",
+  "Loughlin": "Lopin",
+  "Louie": "Lu",
+  "Louis": "Lu",
+  "Lowen": "Lon",
+  "Luan": "Lan",
+  "Luca": "Luka",
+  "Lucas": "Lukasi",
+  "Lucca": "Luka",
+  "Lucian": "Lusan",
+  "Luciano": "Lusano",
+  "Lugh": "La",
+  "Lughaidh": "Laketesi",
+  "Lughan": "Lakan",
+  "Lughán": "Lan",
+  "Luigi": "Lusi",
+  "Luis": "Lusi",
+  "Luka": "Luka",
+  "Lukas": "Lukasi",
+  "Lukass": "Lakasi",
+  "Luke": "Luku",
+  "Luán": "Lun",
+  "Léon": "Elan",
+  "Lúan": "Elan",
+  "Lúca": "Eka",
+  "Lúgh": "Eku",
+  "Maaz": "Masi",
+  "Macdara": "Makawa",
+  "Mack": "Maku",
+  "Maddox": "Mataka",
+  "Mahdi": "Mate",
+  "Maher": "Mawa",
+  "Mahir": "ma",
+  "Mahmoud": "Mamuto",
+  "Maidhc": "Meta",
+  "Maison": "Mesan",
+  "Maitiú": "Mete",
+  "Majd": "Mato",
+  "Majus": "Masasi",
+  "Makar": "Make",
+  "Maksim": "Makin",
+  "Maksym": "Makan",
+  "Maksymilian": "Makamilan",
+  "Malachi": "Malasi",
+  "Malachy": "Malasa",
+  "Malakai": "Malake",
+  "Malcolm": "Makan",
+  "Malek": "Maleku",
+  "Malik": "Maliku",
+  "Mani": "Mani",
+  "Mannix": "Manika",
+  "Manuel": "Manwela",
+  "Manus": "Menisi",
+  "Marc": "Maku",
+  "Marcel": "Masela",
+  "Marcin": "Masin",
+  "Marco": "Mako",
+  "Marcos": "Makosi",
+  "Marcus": "Makasi",
+  "Marek": "Maweku",
+  "Mario": "Mawe",
+  "Marius": "Mawasi",
+  "Mark": "Maku",
+  "Markas": "Makasi",
+  "Marko": "Mako",
+  "Markus": "Makasi",
+  "Marley": "Mali",
+  "Marlo": "Malo",
+  "Martim": "Maten",
+  "Martin": "Matan",
+  "Marty": "Mate",
+  "Marvin": "Mawin",
+  "Marwan": "Mawan",
+  "Mason": "Mesan",
+  "Massimo": "Masimo",
+  "Matas": "Matasi",
+  "Matei": "Mate",
+  "Matej": "Matesi",
+  "Mateo": "Mate",
+  "Mateus": "Matusi",
+  "Mateusz": "Matusi",
+  "Matheo": "Masa",
+  "Matheus": "Masosi",
+  "Mathew": "Maju",
+  "Mathias": "Matasi",
+  "Matias": "Masasi",
+  "Matt": "Mato",
+  "Matteo": "Mate",
+  "Matthew": "Maju",
+  "Matthias": "Masasi",
+  "Mattia": "Mata",
+  "Mattias": "Masasi",
+  "Mattie": "Mate",
+  "Matty": "Mate",
+  "Matvey": "Mate",
+  "Matvii": "Mate",
+  "Maurice": "Mawisi",
+  "Maverick": "Maweku",
+  "Maxim": "Makan",
+  "Maximilian": "Makimilan",
+  "Maximiliano": "Makamilano",
+  "Maximo": "Makima",
+  "Maximus": "Makamasi",
+  "Maxwell": "Makela",
+  "Mayar": "Mewa",
+  "Mayson": "Mesan",
+  "Mazim": "Masin",
+  "Melvin": "Mewin",
+  "Miah": "ma",
+  "Micah": "Maka",
+  "Michael": "Makala",
+  "Michael James": "Makala Sema",
+  "Michael Óg": "Makala Si",
+  "Michal": "Misala",
+  "Micheal": "Makala",
+  "Micheál": "Misela",
+  "Michéal": "Misala",
+  "Mick": "Miku",
+  "Mickey": "Miki",
+  "Miguel": "Mikela",
+  "Mihai": "ma",
+  "Mikael": "Makela",
+  "Mikail": "Mikela",
+  "Mike": "Maku",
+  "Mikey": "Maki",
+  "Mikhael": "Mikela",
+  "Mikhail": "Mikala",
+  "Mikolaj": "Mikalasi",
+  "Milan": "Malan",
+  "Miles": "Masi",
+  "Miley": "Mali",
+  "Milo": "Malo",
+  "Milosz": "Milasi",
+  "Miran": "Miwan",
+  "Miron": "Miwen",
+  "Mirza": "Mesa",
+  "Mivaan": "Miwan",
+  "Mohamad": "Mamato",
+  "Mohamed": "Mometo",
+  "Mohammad": "Mometo",
+  "Mohammed": "Momito",
+  "Moise": "Mosi",
+  "Moksh": "Maka",
+  "Monty": "Monte",
+  "Moosa": "Musa",
+  "Morgan": "Mokan",
+  "Muhammad": "Mamato",
+  "Muhammad Aahil": "Mamato Ela",
+  "Muhammad Ali": "Mamato Ali",
+  "Muhammad Ibrahim": "Mamato Ipen",
+  "Muhammad Zaviyar": "Mamato Sawijawa",
+  "Muhammed": "Mameto",
+  "Muiris": "Muwisi",
+  "Mujtaba": "Matapa",
+  "Munachimso": "Manesimo",
+  "Murray": "Mawi",
+  "Musa": "Musa",
+  "Musab": "Masapu",
+  "Mustafa": "Mutapa",
+  "Mykhailo": "Makelo",
+  "Myles": "Masi",
+  "Mylie": "Mali",
+  "Mylo": "Mala",
+  "Máirtín": "Emeten",
+  "Mícheál": "Emela",
+  "Nadir": "Nete",
+  "Nael": "Nala",
+  "Naithan": "Nesan",
+  "Naoise": "Nasi",
+  "Naomhán": "Namen",
+  "Natan": "Netan",
+  "Nataniel": "Natanila",
+  "Nate": "Neto",
+  "Nathan": "Nesan",
+  "Nathanael": "Nasanela",
+  "Nathaniel": "Nasanjala",
+  "Nazar": "Nasawa",
+  "Neel": "Nila",
+  "Nehemiah": "Nama",
+  "Neil": "Nila",
+  "Neitas": "Netasi",
+  "Nevin": "Newin",
+  "Niall": "Nala",
+  "Nicholas": "Nikalasi",
+  "Nick": "Niku",
+  "Nicky": "Niki",
+  "Nico": "Niko",
+  "Nicolae": "Nikola",
+  "Nicolas": "Nikalasi",
+  "Nicolás": "Nikalesi",
+  "Nigel": "Nasala",
+  "Nihan": "Nan",
+  "Nikita": "Nikita",
+  "Niko": "Niko",
+  "Nikodem": "Nikaten",
+  "Nikola": "Nikola",
+  "Nikolai": "Nikola",
+  "Nikolaj": "Nikalasi",
+  "Nikolas": "Nikolasi",
+  "Nikoloz": "Nikalasi",
+  "Nilan": "Nilan",
+  "Noah": "No",
+  "Noah-James": "No Sema",
+  "Noar": "Nowa",
+  "Noel": "Nola",
+  "Nojus": "Nasasi",
+  "Nolan": "Nolan",
+  "Oakley": "Oki",
+  "Ocean": "Osan",
+  "Odhran": "Atan",
+  "Odhrán": "Aten",
+  "Odin": "Otan",
+  "Oilibhéar": "Olipawa",
+  "Oisin": "Osin",
+  "Oisìn": "Osen",
+  "Oisín": "Osen",
+  "Ojas": "Ojasi",
+  "Olaf": "Olapu",
+  "Olan": "Alan",
+  "Oliver": "Alawe",
+  "Olivers": "Alawesi",
+  "Olivier": "Oliwe",
+  "Oliwier": "Aliwiwa",
+  "Ollie": "Ali",
+  "Olly": "Ali",
+  "Omar": "Omawa",
+  "Omer": "Ome",
+  "Oran": "Owan",
+  "Orest": "Awito",
+  "Orhan": "Awan",
+  "Orin": "Owin",
+  "Orion": "Owan",
+  "Orson": "Osan",
+  "Orán": "Owen",
+  "Oscar": "Oke",
+  "Oskar": "Oke",
+  "Oskaras": "Akawasi",
+  "Oskars": "Okesi",
+  "Osman": "Aman",
+  "Otis": "Otesi",
+  "Otto": "Ato",
+  "Owen": "On",
+  "Ozzie": "Asi",
+  "Ozzy": "Asi",
+  "Oísin": "Osin",
+  "Pablo": "Papo",
+  "Paddy": "Pate",
+  "Padraic": "Pateku",
+  "Padraig": "Pateku",
+  "Paidí": "Peto",
+  "Paolo": "Palo",
+  "Parker": "Pake",
+  "Patrick": "Pateku",
+  "Patrik": "Pateku",
+  "Patryk": "Pataku",
+  "Paudie": "Pote",
+  "Paul": "Pola",
+  "Pauric": "Powiku",
+  "Pavel": "Pawala",
+  "Peadar": "Pitawa",
+  "Pearse": "Pesi",
+  "Pedro": "Peto",
+  "Percy": "Pesi",
+  "Petar": "Petawa",
+  "Peter": "Pite",
+  "Petru": "Petu",
+  "Philip": "Pilapu",
+  "Phillip": "Pilipu",
+  "Phoenix": "Pinika",
+  "Pierce": "Pisi",
+  "Pierre": "Pewa",
+  "Pietro": "Peto",
+  "Piotr": "Pata",
+  "Presley": "Peli",
+  "Preston": "Petan",
+  "Prince": "Pinsi",
+  "Pàidì": "Pate",
+  "Pádraic": "Piteku",
+  "Pádraig": "Piteku",
+  "Páidi": "Pite",
+  "Páidí": "Pate",
+  "Páidí Óg": "Pate Si",
+  "Páidín": "Paten",
+  "Páraic": "Piweku",
+  "Quhey": "Ka",
+  "Quie": "Ki",
+  "Quin": "Kin",
+  "Quinn": "Kin",
+  "Radu": "Watu",
+  "Rafa": "Wapa",
+  "Rafael": "Wapala",
+  "Rafi": "Wapi",
+  "Raheem": "Wen",
+  "Rahim": "Wen",
+  "Ralph": "Wapu",
+  "Ralphie": "Wapi",
+  "Rami": "Wami",
+  "Rana": "Wana",
+  "Raphael": "Wepala",
+  "Rares": "Wesi",
+  "Raul": "Wala",
+  "Ravi": "Wawi",
+  "Rayaan": "Wen",
+  "Rayan": "Wen",
+  "Rayden": "Weten",
+  "Raymond": "Wemanto",
+  "Rayyan": "Wen",
+  "Razvan": "Wawan",
+  "Reagan": "Wekan",
+  "Reece": "Wisi",
+  "Reegan": "Wikan",
+  "Regan": "Wikan",
+  "Reggie": "Wesi",
+  "Reginald": "Wesanato",
+  "Reid": "Wito",
+  "Reign": "Wen",
+  "Reilly": "Wali",
+  "Remi": "Wemi",
+  "Remy": "Wemi",
+  "Renzo": "Wensa",
+  "Reuben": "Wepan",
+  "Reyan": "Wen",
+  "Reyansh": "Wensi",
+  "Rhys": "Wisi",
+  "Riaan": "Wan",
+  "Riagán": "Waken",
+  "Riain": "Wen",
+  "Rian": "Wan",
+  "Ricardo": "Wikato",
+  "Riccardo": "Wikato",
+  "Richard": "Wiseto",
+  "Richie": "Wisi",
+  "Ricky": "Wiki",
+  "Rico": "Wiko",
+  "Rihaan": "Wan",
+  "Rihan": "Wan",
+  "Riley": "Wali",
+  "Rion": "Wan",
+  "Rishaan": "Wisan",
+  "Rishi": "Wisi",
+  "River": "Wiwe",
+  "Riyan": "Wijan",
+  "Rián": "Wen",
+  "Roan": "Wen",
+  "Robbie": "Wapi",
+  "Robert": "Wapeto",
+  "Roberto": "Wapeto",
+  "Robin": "Wapan",
+  "Rocco": "Wako",
+  "Rocky": "Waki",
+  "Rodrigo": "Wateko",
+  "Roen": "Wen",
+  "Rogan": "Wekan",
+  "Roger": "Wase",
+  "Rohaan": "Wan",
+  "Rohan": "Wen",
+  "Rokas": "Wekasi",
+  "Roko": "Waka",
+  "Roland": "Welanto",
+  "Roman": "Weman",
+  "Rome": "Wen",
+  "Romeo": "Wemo",
+  "Ronan": "Wenan",
+  "Ronnie": "Wani",
+  "Ronán": "Wanen",
+  "Rory": "Wewi",
+  "Roscoe": "Wako",
+  "Ross": "Wasi",
+  "Rossa": "Wesa",
+  "Rowan": "Wen",
+  "Rowen": "Wen",
+  "Royce": "Wesi",
+  "Ruadh": "Wato",
+  "Ruadhan": "Watan",
+  "Ruadhán": "Waten",
+  "Ruaidhrí": "Wata",
+  "Ruairc": "Waku",
+  "Ruairi": "Wawi",
+  "Ruairí": "Wawa",
+  "Ruan": "Wan",
+  "Ruben": "Wepan",
+  "Rudi": "Wete",
+  "Rudra": "Wata",
+  "Rudy": "Wete",
+  "Rueben": "Wepin",
+  "Rupert": "Wepeto",
+  "Ruslan": "Walan",
+  "Russell": "Wasala",
+  "Ruán": "Ajun",
+  "Ryan": "Wan",
+  "Ryder": "Wate",
+  "Ryker": "Wake",
+  "Rylan": "Walan",
+  "Rylee": "Wili",
+  "Rémy": "Ama",
+  "Rìan": "Awan",
+  "Ríain": "Awen",
+  "Rían": "Awan",
+  "Rían Óg": "Awan Si",
+  "Ríoghán": "Awan",
+  "Ríon": "Awan",
+  "Rónan": "Anan",
+  "Rónán": "Awenen",
+  "Rúadh": "Awato",
+  "Saad": "Sato",
+  "Saba": "Sapa",
+  "Safwan": "Sapan",
+  "Saif": "Sapu",
+  "Salaar": "Salawa",
+  "Salah": "Sala",
+  "Salar": "Salawa",
+  "Salman": "Saman",
+  "Salvador": "Sawatowa",
+  "Samar": "Samawa",
+  "Sami": "Sami",
+  "Samir": "Samiwa",
+  "Sammy": "Sami",
+  "Samson": "Saman",
+  "Samuel": "Samula",
+  "Sanad": "Sanato",
+  "Sani": "Sani",
+  "Santiago": "Santako",
+  "Santino": "Santeno",
+  "Sarim": "Sawin",
+  "Sasha": "Sasa",
+  "Saul": "Sola",
+  "Sawyer": "So",
+  "Scott": "Kato",
+  "Scottie": "Kate",
+  "Seaghán": "Sen",
+  "Seamie": "Simi",
+  "Seamus": "Semasi",
+  "Sean": "Son",
+  "Seanie": "Sini",
+  "Seanán": "Sonen",
+  "Sebastian": "Sapasan",
+  "Sebastián": "Sepaten",
+  "Selim": "Selin",
+  "Senan": "Senan",
+  "Senán": "Senen",
+  "Seosamh": "Sesan",
+  "Setanta": "Setanta",
+  "Seth": "Sesi",
+  "Seàn": "Sen",
+  "Seán": "Sen",
+  "Seán Óg": "Sen Si",
+  "Seánie": "Sena",
+  "Shahveer": "Sawiwa",
+  "Shane": "Sen",
+  "Sharvil": "Sawila",
+  "Shaun": "Son",
+  "Shaurya": "Soja",
+  "Shay": "Se",
+  "Shayan": "Sen",
+  "Shea": "Se",
+  "Sheá": "Si",
+  "Shivansh": "Sawansi",
+  "Shlok": "Laku",
+  "Shreyas": "Wesi",
+  "Shéa": "Sa",
+  "Siddharth": "Sitasi",
+  "Sidney": "Site",
+  "Silas": "Salasi",
+  "Simon": "Saman",
+  "Sohail": "Sala",
+  "Solomon": "Salaman",
+  "Sonas": "Sanasi",
+  "Sonaí": "Sana",
+  "Sonnie": "Sanni",
+  "Sonny": "Sani",
+  "Soren": "Sawin",
+  "Spencer": "Pense",
+  "Stanislaw": "Tanilo",
+  "Stanley": "Tanli",
+  "Stefan": "Tepan",
+  "Stelian": "Telan",
+  "Stephen": "Tewan",
+  "Steve": "Tewa",
+  "Steven": "Tewan",
+  "Stevie": "Tewi",
+  "Stuart": "Tuto",
+  "Subhan": "Sapan",
+  "Sulaiman": "Salaman",
+  "Sulayman": "Suleman",
+  "Sultan": "Satan",
+  "Sunny": "Sani",
+  "Syed": "Sato",
+  "Szymon": "Saman",
+  "Séadh": "Esato",
+  "Séadhna": "Esata",
+  "Séadna": "Esata",
+  "Séamas": "Esemesi",
+  "Séamie": "Esami",
+  "Séamus": "Esamasi",
+  "Séamí": "Esan",
+  "Séan": "Esan",
+  "Séimí": "Esin",
+  "Tadeusz": "Tatesi",
+  "Tadg": "Tasi",
+  "Tadgh": "Tasi",
+  "Tadhg": "Tata",
+  "Taha": "Ta",
+  "Taidgh": "Tesi",
+  "Taigh": "Te",
+  "Taim": "Ten",
+  "Talha": "Tala",
+  "Tariq": "Tawiku",
+  "Tate": "Teto",
+  "Taylor": "Tele",
+  "Teagan": "Tekan",
+  "Teddie": "Tete",
+  "Teddy": "Tete",
+  "Teidí": "Teto",
+  "Teodor": "Tetowa",
+  "Terence": "Tewansi",
+  "Terry": "Tewi",
+  "Thaddeus": "Satasi",
+  "Thady": "Sata",
+  "Theo": "So",
+  "Theodor": "Sate",
+  "Theodore": "Satowa",
+  "Theodoro": "Sotowe",
+  "Thiago": "Saka",
+  "Thomas": "Tamasi",
+  "Thomas Joseph": "Tamasi Sosapu",
+  "Thomás": "Tamesi",
+  "Thorin": "Sawin",
+  "Théo": "Teso",
+  "Tiago": "Taka",
+  "Tiarnach": "Tanesesi",
+  "Tiarnan": "Tanan",
+  "Tiarnán": "Tanen",
+  "Tiernan": "Tenan",
+  "Tiernán": "Tenen",
+  "Timmy": "Temi",
+  "Timofei": "Temape",
+  "Timofey": "Temape",
+  "Timotei": "Temate",
+  "Timothy": "Temasi",
+  "Timur": "Teme",
+  "Tobias": "Tapasi",
+  "Tobiasz": "Tapasi",
+  "Toby": "Topi",
+  "Toma": "Toma",
+  "Tomas": "Tomasi",
+  "Tomasz": "Tamasi",
+  "Tommaso": "Tamasa",
+  "Tommie": "Tami",
+  "Tommy": "Tami",
+  "Tommy Lee": "Tami Li",
+  "Tommy-Lee": "Tami Li",
+  "Tomás": "Tamesi",
+  "Tomás Óg": "Tamesi Si",
+  "Tony": "Toni",
+  "Torin": "Tawin",
+  "Travis": "Tawisi",
+  "Trent": "Tento",
+  "Trevor": "Tewe",
+  "Tristan": "Tetan",
+  "Troy": "To",
+  "Tucker": "Take",
+  "Tudor": "Tute",
+  "Turlough": "Tela",
+  "Tyler": "Tale",
+  "Tymofii": "Tamapi",
+  "Tymon": "Taman",
+  "Tymoteusz": "Tamotasi",
+  "Tyrese": "Tawesi",
+  "Tyson": "Tasan",
+  "Tádhg": "Teta",
+  "Téidí": "Tate",
+  "Ultan": "Atan",
+  "Ultán": "Aten",
+  "Umar": "Amawa",
+  "Usman": "Aman",
+  "Uzair": "Asewa",
+  "Vache": "Wasi",
+  "Vakaris": "Wakawisi",
+  "Valentin": "Walenten",
+  "Valentine": "Walantan",
+  "Valentino": "Walanteno",
+  "Vedant": "Wetanto",
+  "Veer": "Wiwa",
+  "Vicente": "Wisente",
+  "Victor": "Wike",
+  "Viggo": "Wika",
+  "Vihaan": "Wan",
+  "Viktor": "Wike",
+  "Vincent": "Winsanto",
+  "Vincenzo": "Winsenso",
+  "Vinnie": "Wini",
+  "Vinny": "Wini",
+  "Viraj": "Wiwasi",
+  "Vito": "Wito",
+  "Vivaan": "Wiwan",
+  "Vlad": "Lato",
+  "Vladimir": "Latamiwa",
+  "Vladislav": "Latalawa",
+  "Vyom": "jan",
+  "Walid": "Walito",
+  "Walter": "Wete",
+  "Warren": "Wewan",
+  "Wayne": "Wen",
+  "Wesley": "Weli",
+  "Weston": "Wetan",
+  "Wiktor": "Wikowa",
+  "Wilder": "Wate",
+  "Will": "Wila",
+  "William": "Wijan",
+  "Willie": "Wili",
+  "Wojciech": "Weseku",
+  "Woody": "Wete",
+  "Wren": "Wen",
+  "Wyatt": "Wato",
+  "Xander": "Kante",
+  "Xavier": "Seje",
+  "Yahia": "Je",
+  "Yahya": "Jaja",
+  "Yaman": "Jaman",
+  "Yanis": "Janasi",
+  "Yannis": "Janisi",
+  "Yaroslav": "Wawelawa",
+  "Yaseen": "Jasin",
+  "Yash": "Jasi",
+  "Yasin": "Jasin",
+  "Yassin": "Jasin",
+  "Yazan": "Jasan",
+  "Yohan": "jan",
+  "Younes": "Jansi",
+  "Yousef": "Jusepu",
+  "Yousif": "Jasipu",
+  "Youssef": "Jusepu",
+  "Yousuf": "Jasapu",
+  "Yusuf": "Jasapu",
+  "Yuvaan": "Jawan",
+  "Yuvan": "Jawan",
+  "Zach": "Saku",
+  "Zachariah": "Sake",
+  "Zachary": "Sake",
+  "Zachery": "Sake",
+  "Zack": "Saku",
+  "Zackary": "Sakawa",
+  "Zaid": "Seto",
+  "Zain": "Sen",
+  "Zaire": "Sewa",
+  "Zakaria": "Sakawa",
+  "Zakariya": "Sakawija",
+  "Zander": "Sante",
+  "Zane": "Sen",
+  "Zaviyar": "Sawijawa",
+  "Zayan": "Sen",
+  "Zayd": "Seto",
+  "Zayn": "Sen",
+  "Zayne": "Sen",
+  "Zeke": "Siku",
+  "Zian": "San",
+  "Ziggy": "Sisa",
+  "Zion": "San",
+  "Ziyad": "Sato",
+  "Zohan": "San",
+  "Zoraiz": "Sawesi",
+  "Zyan": "jan",
+  "Árón": "Awen",
+  "Éamon": "Amon",
+  "Éamonn": "Aman",
+  "Éanna": "Ana",
+  "Éimhín": "Imen",
+  "Íarla": "Ala",
+  "Íarlaith": "Alesi",
+  "Ódhran": "Tan",
+  "Ógie": "Si",
+  "Óigí": "Iku",
+  "Óisin": "Isin",
+  "Óisín": "Isen",
+  "Ólan": "Lan",
+  "Óran": "Wan"
+},
+    girls:  {
+  "Aadhya": "Ata",
+  "Aadya": "Ata",
+  "Aaira": "Awa",
+  "Aaliyah": "Ala",
+  "Aanya": "Anja",
+  "Aaradhya": "Ewateja",
+  "Aarna": "Ana",
+  "Aarvi": "Awi",
+  "Aarya": "Aja",
+  "Aashvi": "Awi",
+  "Aavya": "Aja",
+  "Aayat": "Ato",
+  "Aayra": "Awa",
+  "Abbey": "Api",
+  "Abbi": "Api",
+  "Abbie": "Api",
+  "Abby": "Api",
+  "Abeeha": "Apa",
+  "Abigael": "Apikela",
+  "Abigail": "Apakela",
+  "Abigeál": "Apikela",
+  "Abrish": "Apisi",
+  "Adagh": "Ata",
+  "Adah": "Ata",
+  "Adaline": "Atalin",
+  "Adalyn": "Atalan",
+  "Adalynn": "Atalan",
+  "Adara": "Atawa",
+  "Addie": "Ate",
+  "Addison": "Atasan",
+  "Adela": "Atela",
+  "Adelaide": "Ataleto",
+  "Adele": "Atela",
+  "Adelina": "Atelina",
+  "Adeline": "Atalan",
+  "Adelyn": "Atelan",
+  "Aditi": "Atete",
+  "Adriana": "Etana",
+  "Adrianna": "Etanna",
+  "Adrielle": "Atela",
+  "Advika": "Ateka",
+  "Aedín": "Aten",
+  "Aela": "Ala",
+  "Afnan": "Apan",
+  "Afra": "Apa",
+  "Agata": "Akata",
+  "Agatha": "Akasa",
+  "Agnes": "Akisi",
+  "Ahana": "Ana",
+  "Aibhilín": "Epilen",
+  "Aibhlinn": "Epelin",
+  "Aida": "Eta",
+  "Aideen": "Eten",
+  "Aifric": "Epiku",
+  "Aila": "Ela",
+  "Ailbhe": "Epi",
+  "Aileen": "Alin",
+  "Ailish": "Elisi",
+  "Ailís": "Elesi",
+  "Ailíse": "Ese",
+  "Aimee": "Emi",
+  "Aimée": "Emi",
+  "Aine": "En",
+  "Aira": "Ewa",
+  "Airah": "Ewa",
+  "Aisha": "Asa",
+  "Aisling": "Elin",
+  "Aiveen": "Ewin",
+  "Aiya": "Eja",
+  "Aiza": "Esa",
+  "Aizal": "Esala",
+  "Alaa": "Ala",
+  "Alaia": "Ale",
+  "Alaina": "Alena",
+  "Alaiya": "Aleja",
+  "Alana": "Alana",
+  "Alanah": "Alana",
+  "Alanna": "Alana",
+  "Alannah": "Alanna",
+  "Alara": "Alawa",
+  "Alaya": "Ale",
+  "Alayah": "Ale",
+  "Alayna": "Alena",
+  "Alaïa": "Ala",
+  "Alba": "Apa",
+  "Aleena": "Alina",
+  "Aleia": "Ale",
+  "Aleigha": "Aleka",
+  "Aleksandra": "Alakante",
+  "Alena": "Alena",
+  "Alesha": "Asa",
+  "Alessandra": "Alesanta",
+  "Alessia": "Alesa",
+  "Alex": "Alaka",
+  "Alexandra": "Alekanta",
+  "Alexandria": "Alakanta",
+  "Alexia": "Aleka",
+  "Alexis": "Alekisi",
+  "Alia": "Ala",
+  "Aliana": "Alana",
+  "Alianna": "Alanna",
+  "Alice": "Alasi",
+  "Alicia": "Alisa",
+  "Alicja": "Alika",
+  "Alina": "Alina",
+  "Alisa": "Alisa",
+  "Alisha": "Alisa",
+  "Alison": "Alisan",
+  "Alissa": "Alisa",
+  "Aliya": "Alija",
+  "Aliyah": "Ala",
+  "Aliza": "Alisa",
+  "Allie": "Ali",
+  "Allison": "Alasan",
+  "Ally": "Ala",
+  "Alma": "Ama",
+  "Alora": "Alawa",
+  "Althea": "Asa",
+  "Alva": "Awa",
+  "Alya": "Aja",
+  "Alyana": "Ajana",
+  "Alyson": "Alasan",
+  "Alyssa": "Alisa",
+  "Alyssia": "Alasa",
+  "Amaia": "Ame",
+  "Amaira": "Amewa",
+  "Amal": "Amala",
+  "Amalia": "Amaja",
+  "Amanda": "Amanta",
+  "Amani": "Amani",
+  "Amara": "Amawa",
+  "Amari": "Amawi",
+  "Amaya": "Amaja",
+  "Amayah": "Ame",
+  "Amayra": "Amewa",
+  "Amber": "Ame",
+  "Ameera": "Amiwa",
+  "Ameerah": "Amiwa",
+  "Ameila": "Amela",
+  "Amelia": "Amija",
+  "Amelia Rose": "Amija Wesi",
+  "Amelia-Rose": "Amija Wesi",
+  "Amelie": "Ameli",
+  "Amelija": "Amelisa",
+  "Ameya": "Ame",
+  "Amina": "Amina",
+  "Aminah": "Amina",
+  "Amira": "Amiwa",
+  "Amirah": "Amiwa",
+  "Amiyah": "Amija",
+  "Amna": "Ama",
+  "Amora": "Amawa",
+  "Amyra": "Amawa",
+  "Amélia": "Ama",
+  "Amélie": "Ama",
+  "Anabelle": "Anapela",
+  "Anabia": "Anapa",
+  "Anaiah": "Ane",
+  "Anais": "Anesi",
+  "Anaisha": "Anesa",
+  "Anaiya": "Aneja",
+  "Anaiza": "Anesa",
+  "Ananya": "Ananja",
+  "Anastasia": "Anatesa",
+  "Anastazja": "Enatasija",
+  "Anaya": "Anaja",
+  "Anayah": "Ane",
+  "Anayra": "Anewa",
+  "Anaysa": "Anesa",
+  "Andie": "Ante",
+  "Andra": "Anta",
+  "Andrea": "Anta",
+  "Andreea": "Anta",
+  "Angel": "Ensala",
+  "Angela": "Ansala",
+  "Angelin": "Ansalin",
+  "Angelina": "Anselina",
+  "Angie": "Ansi",
+  "Ania": "Ana",
+  "Aniela": "Anila",
+  "Anika": "Anika",
+  "Anisa": "Anisa",
+  "Anisia": "Anisa",
+  "Anita": "Anita",
+  "Anjali": "Ansali",
+  "Anna": "Ana",
+  "Anna-mae": "Ana Me",
+  "Annabel": "Anapela",
+  "Annabella": "Anapela",
+  "Annabelle": "Anapala",
+  "Annalise": "Analasi",
+  "Annalivia": "Analiwa",
+  "AnnaRose": "Anesi",
+  "Anne": "An",
+  "Annie": "Ani",
+  "Annmarie": "Anme",
+  "Anouk": "Anaku",
+  "Antonella": "Antonela",
+  "Antonia": "Antona",
+  "Antonina": "Antonina",
+  "Anvi": "Anwi",
+  "Anvika": "Anwika",
+  "Anya": "Anja",
+  "Aodha": "Ata",
+  "Aodhla": "Ata",
+  "Aoibh": "Apu",
+  "Aoibhe": "Api",
+  "Aoibheann": "Epan",
+  "Aoibhin": "Apin",
+  "Aoibhinn": "Epin",
+  "Aoibhí": "Apu",
+  "Aoibhín": "Apen",
+  "Aoibhínn": "Apa",
+  "Aoife": "Apu",
+  "Aoileann": "Elan",
+  "Aoise": "Asi",
+  "April": "Epala",
+  "Aqsa": "Asa",
+  "Arabella": "Awapela",
+  "Arabelle": "Awapela",
+  "Arfa": "Apa",
+  "Aria": "Awa",
+  "Aria Rose": "Awa Wesi",
+  "Aria-Mae": "Awa Me",
+  "Ariadne": "Ewate",
+  "Ariah": "Awa",
+  "Ariana": "Awana",
+  "Arianna": "Awana",
+  "Ariel": "Ewala",
+  "Ariela": "Awela",
+  "Ariella": "Awela",
+  "Arielle": "Awilala",
+  "Arina": "Awina",
+  "Arisha": "Awisa",
+  "Ariya": "Awija",
+  "Ariyah": "Awija",
+  "Arla": "Ala",
+  "Arleigh": "Ale",
+  "Arlene": "Alin",
+  "Arushi": "Awasi",
+  "Arwa": "Awa",
+  "Arwen": "Awan",
+  "Arya": "Aja",
+  "Aryanna": "Ajanna",
+  "Aseel": "Asila",
+  "Asha": "Asa",
+  "Ashleigh": "Ali",
+  "Ashley": "Ali",
+  "Ashling": "Alin",
+  "Asiya": "Asija",
+  "Asiyah": "Asija",
+  "Asma": "Ama",
+  "Asra": "Awa",
+  "Assil": "Asila",
+  "Astrid": "Ateto",
+  "Atara": "Atawa",
+  "Athena": "Asina",
+  "Aubree": "Opi",
+  "Aubrey": "Opi",
+  "Audrey": "Ote",
+  "Aura": "Owa",
+  "Aurelia": "Owala",
+  "Aurora": "Ewa",
+  "Austeja": "Otasa",
+  "Autumn": "Otan",
+  "Ava Mae": "Ewa Me",
+  "Ava-Mae": "Ewa Me",
+  "Ava-rose": "Ewa Wesi",
+  "Averie": "Awawi",
+  "Avery": "Ewe",
+  "Avianna": "Awanna",
+  "Avie": "Awi",
+  "Avni": "Ani",
+  "Avril": "Awila",
+  "Ayaan": "En",
+  "Ayah": "E",
+  "Ayan": "En",
+  "Ayana": "Ena",
+  "Ayanna": "Enna",
+  "Ayat": "Eto",
+  "Ayda": "Eta",
+  "Aydah": "Eta",
+  "Ayesha": "Asa",
+  "Ayla": "Ela",
+  "Aylah": "Ela",
+  "Ayleen": "Elin",
+  "Aylin": "Elin",
+  "Ayra": "Ewa",
+  "Aysha": "Esa",
+  "Ayzal": "Esala",
+  "Ayzel": "Esila",
+  "Azalea": "Aseja",
+  "Aída": "Ata",
+  "Bailee": "Peli",
+  "Bailey": "Peli",
+  "Banbha": "Panpa",
+  "Barbara": "Pape",
+  "Beatrice": "Patasi",
+  "Beatris": "Pitesi",
+  "Beatrix": "Pateka",
+  "Beatriz": "Pitesi",
+  "Beau": "Po",
+  "Bebhinn": "Pepin",
+  "Beibhinn": "Papin",
+  "Bella": "Pela",
+  "Bella-Rose": "Pela Wesi",
+  "Belle": "Pela",
+  "Bernadette": "Penateto",
+  "Beth": "Pesi",
+  "Bethany": "Pesani",
+  "Betty": "Pete",
+  "Bianca": "Panka",
+  "Bianka": "Panka",
+  "Bibi": "Pipi",
+  "Billie": "Pili",
+  "Blair": "Pewa",
+  "Blaithín": "Pesen",
+  "Blake": "Peku",
+  "Blanca": "Panka",
+  "Blanka": "Panka",
+  "Blessing": "Pesin",
+  "Blossom": "Pasan",
+  "Bláithín": "Pisen",
+  "Bláthnaid": "Peto",
+  "Bobbi": "Papi",
+  "Bobbie": "Papi",
+  "Bodhi": "Pate",
+  "Bonnie": "Pani",
+  "Bonnie-Mae": "Pani Me",
+  "Bonnie-Rae": "Pani We",
+  "Bowie": "Po",
+  "Brea": "Pi",
+  "Breda": "Peta",
+  "Bree": "Pi",
+  "Bria": "Pa",
+  "Briana": "Pana",
+  "Brianna": "Pana",
+  "Bridget": "Pisato",
+  "Bridgie": "Pite",
+  "Bridie": "Pite",
+  "Briella": "Pila",
+  "Brielle": "Pilala",
+  "Brigid": "Pisito",
+  "Bronagh": "Pana",
+  "Bronwyn": "Panwin",
+  "Brooke": "Puku",
+  "Brooklyn": "Pukan",
+  "Bruna": "Puna",
+  "Bría": "Pa",
+  "Bríd": "Pi",
+  "Brídín": "Pen",
+  "Bríona": "Pana",
+  "Brónagh": "Pa",
+  "Bushra": "Pawa",
+  "Bébhinn": "Pipin",
+  "Béibhinn": "Pipin",
+  "Béibhín": "Pipen",
+  "Béibhínn": "Pipa",
+  "Bóinn": "Pin",
+  "Cadhla": "Kata",
+  "Caela": "Kala",
+  "Caia": "Ke",
+  "Cailín": "Kelen",
+  "Caitlin": "Keten",
+  "Caitlyn": "Ketan",
+  "Caitlín": "Keten",
+  "Caitríona": "Ketana",
+  "Cali": "Kali",
+  "Calia": "Kala",
+  "Calla": "Kala",
+  "Callie": "Koli",
+  "Callie-Mae": "Koli Me",
+  "Camelia": "Kamala",
+  "Camila": "Kamila",
+  "Camilla": "Kamila",
+  "Camille": "Kamila",
+  "Candice": "Kantesi",
+  "Caoileann": "Selan",
+  "Caoilfhionn": "Kalepesanen",
+  "Caoilinn": "Selin",
+  "Caoimhe": "Kami",
+  "Caoímhe": "Kami",
+  "Cara": "Kewa",
+  "Caragh": "Kawa",
+  "Carina": "Kawina",
+  "Carla": "Kala",
+  "Carley": "Kali",
+  "Carlotta": "Kalota",
+  "Carly": "Kali",
+  "Carmen": "Kaman",
+  "Carolina": "Kewalana",
+  "Caroline": "Kewalan",
+  "Carragh": "Kawa",
+  "Carrie": "Kewi",
+  "Casey": "Kesi",
+  "Cassandra": "Kasanta",
+  "Cassidy": "Kasite",
+  "Cassie": "Kasi",
+  "Cataleya": "Satale",
+  "Catalina": "Katalina",
+  "Catarina": "Satawina",
+  "Catherine": "Kasen",
+  "Catriona": "Katawana",
+  "Cayla": "Kela",
+  "Cayleigh": "Keli",
+  "Cecelia": "Sisija",
+  "Cecilia": "Sisija",
+  "Cecily": "Sesili",
+  "Cecília": "Seka",
+  "Celeste": "Saleto",
+  "Celia": "Sija",
+  "Celina": "Salina",
+  "Celine": "Salin",
+  "Ceola": "Sela",
+  "Ceoladh": "Selato",
+  "Cerys": "Sesi",
+  "Chantelle": "Santela",
+  "Charlee": "Sali",
+  "Charley": "Sali",
+  "Charli": "Sali",
+  "Charlie": "Sali",
+  "Charlotte": "Salato",
+  "Chelsea": "Sesi",
+  "Cheyanne": "Sen",
+  "Chiara": "Kawa",
+  "Chimamanda": "Simamanta",
+  "Chloe": "Ko",
+  "Chloé": "La",
+  "Chloë": "La",
+  "Christina": "Kitena",
+  "Christine": "Kiten",
+  "Cianna": "Sanna",
+  "Ciara": "Sawa",
+  "Cici": "Sisi",
+  "Cindy": "Sinte",
+  "Cindyanna": "Sintana",
+  "Claire": "Kewa",
+  "Clara": "Kawa",
+  "Claragh": "Kawa",
+  "Clare": "Kewa",
+  "Claudia": "Kota",
+  "Clementine": "Kemantan",
+  "Cleo": "Ko",
+  "Cliona": "Kana",
+  "Clodagh": "Kata",
+  "Clíodhna": "Kata",
+  "Clíona": "Kana",
+  "Clóda": "Ka",
+  "Clódagh": "Ka",
+  "Cobh": "Kapu",
+  "Coco": "Koko",
+  "Cody": "Kote",
+  "Colleen": "Kalin",
+  "Connie": "Koni",
+  "Constance": "Kantansi",
+  "Contesa": "Kantasa",
+  "Cora": "Kowa",
+  "Cornelia": "Konija",
+  "Courtney": "Kote",
+  "Cove": "Kowa",
+  "Cristina": "Kitena",
+  "Croia": "Ko",
+  "Croìa": "Ko",
+  "Croí": "Ko",
+  "Croía": "Ko",
+  "Croíadh": "Koto",
+  "Crystal": "Kitala",
+  "Cría": "Ka",
+  "Cushla": "Kala",
+  "Cyra": "Sawa",
+  "Cádhla": "Sita",
+  "Cáit": "Sito",
+  "Cára": "Siwa",
+  "Céala": "Sala",
+  "Céilí": "Sila",
+  "Córa": "Siwa",
+  "Dahlia": "Taja",
+  "Daire": "Tewa",
+  "Daisey": "Tesi",
+  "Daisie": "Tesi",
+  "Daisy": "Tesi",
+  "Daisymae": "Tesime",
+  "Dakota": "Takota",
+  "Dalia": "Taja",
+  "Dallas": "Talasi",
+  "Dana": "Tena",
+  "Dani": "Tani",
+  "Dania": "Tenja",
+  "Danica": "Tanika",
+  "Daniela": "Tanjela",
+  "Daniella": "Tanjela",
+  "Danielle": "Tanjela",
+  "Danni": "Tanni",
+  "Danu": "Tana",
+  "Danú": "Tan",
+  "Daphne": "Tapi",
+  "Dara": "Tawa",
+  "Darcey": "Tasi",
+  "Darci": "Tasi",
+  "Darcie": "Taki",
+  "Darcy": "Tasi",
+  "Daria": "Tawa",
+  "Darla": "Tala",
+  "Darya": "Taja",
+  "Davina": "Tawina",
+  "Dawn": "Ton",
+  "Dayna": "Tena",
+  "Dearbhla": "Tepela",
+  "Debbie": "Tepi",
+  "Debora": "Tepa",
+  "Deborah": "Tepe",
+  "Defne": "Tepa",
+  "Delia": "Teja",
+  "Delilah": "Talala",
+  "Della": "Tela",
+  "Demi": "Temi",
+  "Demi-Leigh": "Temi Li",
+  "Denise": "Tenisi",
+  "Destiny": "Tetani",
+  "Dhanvi": "Tanwi",
+  "Dhriti": "Tete",
+  "Diana": "Tana",
+  "Diane": "Tan",
+  "Dina": "Tena",
+  "Divine": "Tewan",
+  "Diya": "Teja",
+  "Doireann": "Tawan",
+  "Dolcie": "Tasi",
+  "Dollie": "Tali",
+  "Dolly": "Tali",
+  "Donna": "Tana",
+  "Dora": "Towa",
+  "Dorothea": "Towasa",
+  "Dorothy": "Towasi",
+  "Dottie": "Tate",
+  "Dream": "Ten",
+  "Drew": "Tu",
+  "Dubheasa": "Tapasa",
+  "Dáire": "Tawa",
+  "Eabha": "Ipa",
+  "Eadie": "Ete",
+  "Eala": "Ila",
+  "Ebony": "Epani",
+  "Eden": "Itan",
+  "Edie": "Ete",
+  "Edith": "Itesi",
+  "Effie": "Epi",
+  "Effy": "Epi",
+  "Eibhilín": "Epilen",
+  "Eibhlin": "Epin",
+  "Eibhlín": "Epen",
+  "Eila": "Ela",
+  "Eileen": "Alin",
+  "Eilidh": "Elito",
+  "Eilish": "Elisi",
+  "Eily": "Eli",
+  "Eilís": "Elesi",
+  "Eimear": "Emiwa",
+  "Eimíle": "Ema",
+  "Eira": "Ewa",
+  "Eireann": "Ewin",
+  "Eirin": "Ewin",
+  "Eirinn": "Ewin",
+  "Ekaterina": "Ekatewina",
+  "Elaina": "Ilena",
+  "Elaine": "Ilen",
+  "Elana": "Elana",
+  "Elara": "Elawa",
+  "Elayna": "Elena",
+  "Eleanor": "Elane",
+  "Elena": "Elana",
+  "Eleonora": "Ilanowa",
+  "Elia": "Ala",
+  "Eliana": "Elana",
+  "Elianna": "Elanna",
+  "Elif": "Elipu",
+  "Elija": "Elisa",
+  "Elin": "Elin",
+  "Elina": "Elina",
+  "Eliora": "Elawa",
+  "Elira": "Eliwa",
+  "Elisa": "Alisa",
+  "Elisabeth": "Ilisapisi",
+  "Elise": "Alisi",
+  "Elisha": "Elisa",
+  "Eliska": "Elika",
+  "Eliyanah": "Ilajana",
+  "Eliza": "Ilasa",
+  "Elizabeth": "Ilisapasi",
+  "Ella": "Ela",
+  "Ella Mae": "Ela Me",
+  "Ella Rose": "Ela Wesi",
+  "Ella-Mae": "Ela Me",
+  "Ella-Rose": "Ela Wesi",
+  "Elle": "Ela",
+  "Ellen": "Elan",
+  "Elliana": "Elana",
+  "Ellie": "Eli",
+  "Ellie mae": "Eli Me",
+  "Ellie May": "Eli Me",
+  "Ellie Rose": "Eli Wesi",
+  "Ellie-Mae": "Eli Me",
+  "Ellie-Mai": "Eli Ma",
+  "Ellie-May": "Eli Me",
+  "Ellie-Rose": "Eli Wesi",
+  "Ellieanna": "Elana",
+  "Elliott": "Elato",
+  "Ellis": "Elisi",
+  "Elly": "Eli",
+  "Eloah": "Elo",
+  "Elodie": "Elate",
+  "Eloise": "Elosi",
+  "Elora": "Elawa",
+  "Elouise": "Elawisi",
+  "Elsa": "Esa",
+  "Elsie": "Esi",
+  "Elyse": "Elasi",
+  "Elyza": "Elasa",
+  "Emaan": "Eman",
+  "Eman": "Eman",
+  "Emanuela": "Imanwela",
+  "Ember": "Eme",
+  "Emelia": "Emala",
+  "Emer": "Eme",
+  "Emerald": "Emewato",
+  "Emery": "Eme",
+  "Emie": "Emi",
+  "Emili": "Emili",
+  "Emilia": "Amila",
+  "Emilie": "Emali",
+  "Emilija": "Emilisa",
+  "Emilly": "Emili",
+  "Emily": "Emili",
+  "Emily Rose": "Emili Wesi",
+  "Emily-Rose": "Emili Wesi",
+  "Emma": "Ema",
+  "Emme": "En",
+  "Emmeline": "Emalan",
+  "Emmi": "Emi",
+  "Emmie": "Emi",
+  "Emmy": "Emi",
+  "Emryn": "Eman",
+  "Emília": "Ema",
+  "Enid": "Inito",
+  "Ensley": "Enli",
+  "Enya": "Enja",
+  "Erica": "Ewika",
+  "Erika": "Ewika",
+  "Erin": "Ewin",
+  "Eryn": "En",
+  "Erín": "En",
+  "Eshaal": "Esala",
+  "Eshal": "Esala",
+  "Esmae": "Eme",
+  "Esmay": "Eme",
+  "Esme": "En",
+  "Esmeralda": "Emewata",
+  "Esmé": "En",
+  "Esmée": "Emi",
+  "Esra": "Wa",
+  "Essie": "Esi",
+  "Estelle": "Etela",
+  "Estera": "Etawa",
+  "Esther": "Ete",
+  "Esthera": "Sawa",
+  "Etain": "Eten",
+  "Ethel": "Esala",
+  "Etta": "Eta",
+  "Eunice": "Unasi",
+  "Evana": "Ewana",
+  "Evangeline": "Iwansilan",
+  "Evanna": "Ewanna",
+  "Evara": "Ewawa",
+  "Evelin": "Ewalin",
+  "Evelina": "Ewelina",
+  "Evelyn": "Ewalan",
+  "Everleigh": "Eweli",
+  "Everli": "Eweli",
+  "Everly": "Eweli",
+  "Evie": "Ewi",
+  "Ezlin": "Elin",
+  "Ezlyn": "Elan",
+  "Ezmae": "Eme",
+  "Ezra": "Ewa",
+  "Eábha": "Ipa",
+  "Faela": "Pala",
+  "Faith": "Pesi",
+  "Faiza": "Pesa",
+  "Fallon": "Palan",
+  "Fallyn": "Palan",
+  "Farah": "Pewa",
+  "Farida": "Pawita",
+  "Farrah": "Pewa",
+  "Fatiha": "Pata",
+  "Fatima": "Patema",
+  "Fatimah": "Pasima",
+  "Favour": "Pewe",
+  "Faya": "Pe",
+  "Faye": "Pe",
+  "Fearne": "Pin",
+  "Feena": "Pina",
+  "Felicia": "Palisa",
+  "Felicity": "Pilisate",
+  "Fern": "Pen",
+  "Ferne": "Pen",
+  "Feya": "Pe",
+  "Fiadh": "Pato",
+  "Fiadhna": "Pata",
+  "Fianna": "Pana",
+  "Filippa": "Pilipa",
+  "Finn": "Pin",
+  "Fiona": "Pona",
+  "Fiorella": "Powela",
+  "Fiádh": "Pato",
+  "Flavia": "Pawa",
+  "Fleur": "Pe",
+  "Flora": "Powa",
+  "Florence": "Powansi",
+  "Florrie": "Powi",
+  "Frances": "Pansisi",
+  "Francesca": "Panseka",
+  "Frankie": "Panki",
+  "Fraya": "Pe",
+  "Freja": "Pesa",
+  "Freya": "Pe",
+  "Freyja": "Pesa",
+  "Frida": "Pita",
+  "Féile": "Epile",
+  "Fíadh": "Epato",
+  "Fíbí": "Epi",
+  "Fódhla": "Epa",
+  "Fódla": "Epa",
+  "Gabija": "Kapisa",
+  "Gabriela": "Kapela",
+  "Gabriele": "Kapela",
+  "Gabriella": "Kapela",
+  "Gabrielle": "Kapela",
+  "Gaia": "Ka",
+  "Gemma": "Sema",
+  "Genesa": "Senasa",
+  "Genevieve": "Senawiwa",
+  "Georgia": "Katelo",
+  "Georgie": "Sosi",
+  "Georgina": "Sosina",
+  "Geraldine": "Sewaten",
+  "Gianna": "Sanna",
+  "Gigi": "Sisi",
+  "Gillian": "Silan",
+  "Gina": "Sina",
+  "Ginevra": "Sinewa",
+  "Giorgia": "Sosa",
+  "Giovanna": "Sawana",
+  "Giulia": "Sala",
+  "Gloria": "Kowa",
+  "Goldie": "Kote",
+  "Grace": "Kesi",
+  "Gracelyn": "Kelin",
+  "Gracie": "Kesi",
+  "Gracie-Mae": "Kesi Me",
+  "Greta": "Kita",
+  "Gráinne": "Kinna",
+  "Gwen": "Ken",
+  "Hadassah": "Atasa",
+  "Hadia": "Ata",
+  "Hadley": "Ate",
+  "Haelyn": "Alan",
+  "Hafsa": "Apa",
+  "Hailee": "Eli",
+  "Hailey": "Eli",
+  "Hailie": "Eli",
+  "Haisley": "Eli",
+  "Hala": "Ala",
+  "Haley": "Eli",
+  "Halima": "Alima",
+  "Halle": "Ala",
+  "Hallie": "Oli",
+  "Halo": "Elo",
+  "Hana": "Ana",
+  "Haneen": "Anin",
+  "Hania": "Ana",
+  "Haniya": "Anija",
+  "Hanna": "Ana",
+  "Hannah": "Ana",
+  "Hannah Mai": "Ana Ma",
+  "Hanora": "Anawa",
+  "Hanorah": "Anawa",
+  "Harlee": "Ali",
+  "Harleigh": "Ali",
+  "Harley": "Ali",
+  "Harlow": "Alo",
+  "Harmony": "Amani",
+  "Harper": "Ape",
+  "Harper-Lily": "Ape Lili",
+  "Harriet": "Ewato",
+  "Haven": "Ewan",
+  "Haya": "E",
+  "Hayden": "Etan",
+  "Haylee": "Eli",
+  "Hayleigh": "Eli",
+  "Hayley": "Eli",
+  "Haylie": "Eli",
+  "Hazel": "Esala",
+  "Heather": "Ese",
+  "Heaven": "Ewan",
+  "Heba": "Ipa",
+  "Heidi": "Ate",
+  "Helen": "Elan",
+  "Helena": "Elana",
+  "Heloisa": "Ilosa",
+  "Hezlin": "Ilin",
+  "Hiba": "Ipa",
+  "Hibba": "Ipa",
+  "Hollie": "Ali",
+  "Holly": "Ali",
+  "Honey": "Ani",
+  "Honor": "Ane",
+  "Hoorain": "Uwen",
+  "Hope": "Opu",
+  "Huda": "Uta",
+  "Iasmina": "Amina",
+  "Ieva": "Iwa",
+  "Ilaria": "Ilawa",
+  "Ilinca": "Ilinka",
+  "Iman": "Aman",
+  "Imani": "Imani",
+  "Imogen": "Imakan",
+  "Inaaya": "Ina",
+  "Inara": "Inawa",
+  "Inaya": "Ine",
+  "Inayah": "Ine",
+  "Indi": "Inte",
+  "India": "Palata",
+  "Indiana": "Intana",
+  "Indianna": "Intana",
+  "Indie": "Inte",
+  "Indigo": "Intako",
+  "Indy": "Inte",
+  "Ines": "Inisi",
+  "Ingrid": "Inkito",
+  "Insiya": "Insija",
+  "Inés": "Inesi",
+  "Ioana": "Ona",
+  "Iona": "Ana",
+  "Iqra": "Iwa",
+  "Irene": "Awin",
+  "Ireoluwa": "Aweluwa",
+  "Irha": "Iwa",
+  "Irina": "Iwina",
+  "Iris": "Awasi",
+  "Isabel": "Isapela",
+  "Isabela": "Isapala",
+  "Isabell": "Isapela",
+  "Isabella": "Isapela",
+  "Isabelle": "Isapela",
+  "Isadora": "Isatawa",
+  "Iseult": "Ijuto",
+  "Isha": "Isa",
+  "Ishani": "Isani",
+  "Ishika": "Isika",
+  "Isibéal": "Isipala",
+  "Isla": "Ila",
+  "Isla Rose": "Ila Wesi",
+  "Isla-Mae": "Ila Me",
+  "Isla-Rose": "Ila Wesi",
+  "Isobel": "Asopela",
+  "Isobelle": "Asopela",
+  "Isra": "Iwa",
+  "Israa": "Iwa",
+  "Issa": "Isa",
+  "Iulia": "Ala",
+  "Ivana": "Iwana",
+  "Iveagh": "Iwi",
+  "Ivie": "Awi",
+  "Ivy Rose": "Awi Wesi",
+  "Ivy-Rose": "Awi Wesi",
+  "Iyla": "Ala",
+  "Izabel": "Isapila",
+  "Izabela": "Isapala",
+  "Izabele": "Isapala",
+  "Izabella": "Asapela",
+  "Izabelle": "Asepala",
+  "Izzah": "Isa",
+  "Izzi": "Isi",
+  "Izzie": "Isi",
+  "Izzy": "Isi",
+  "Jacinta": "Sasinta",
+  "Jacqueline": "Sakalin",
+  "Jada": "Sata",
+  "Jade": "Seto",
+  "Jagoda": "Sakota",
+  "Jaime": "Ami",
+  "Jamie": "Semi",
+  "Jana": "Sana",
+  "Janaki": "Sanaki",
+  "Jane": "Sen",
+  "Janelle": "Sanela",
+  "Jannah": "Sanna",
+  "Jannat": "Sannato",
+  "Janvi": "Sanwi",
+  "Jasmina": "Jamana",
+  "Jasmine": "Saman",
+  "Jayda": "Seta",
+  "Jayla": "Sela",
+  "Jayne": "Sen",
+  "Jazmine": "Samin",
+  "Jean": "Sin",
+  "Jenna": "Sena",
+  "Jennifer": "Senape",
+  "Jenny": "Seni",
+  "Jess": "Sesi",
+  "Jessa": "Sesa",
+  "Jessica": "Sesika",
+  "Jessie": "Sesi",
+  "Jewel": "Sala",
+  "Jianna": "Sanna",
+  "Jill": "Sila",
+  "Jiya": "Sija",
+  "Joan": "Son",
+  "Joanie": "Soni",
+  "Joanna": "Sona",
+  "Joanne": "Son",
+  "Jodie": "Sote",
+  "Johanna": "Sana",
+  "Jolene": "Solin",
+  "Joni": "Soni",
+  "Jorgie": "Sosi",
+  "Jorja": "Sosa",
+  "Josephine": "Sosapin",
+  "Josie": "Sosi",
+  "Jovie": "Sawi",
+  "Joyce": "Sosi",
+  "Jude": "Suto",
+  "Judith": "Sutasi",
+  "Judy": "Sute",
+  "Jules": "Susi",
+  "Julia": "Suja",
+  "Juliana": "Sulana",
+  "Julie": "Suli",
+  "Juliet": "Suleto",
+  "Juliette": "Suleto",
+  "June": "Sun",
+  "Juniper": "Sunape",
+  "Juno": "Suno",
+  "Júlia": "Sela",
+  "Kacey": "Kase",
+  "Kaci": "Kasi",
+  "Kacie": "Kasi",
+  "Kadie": "Kate",
+  "Kady": "Kete",
+  "Kaia": "Ke",
+  "Kaina": "Kena",
+  "Kaira": "Kewa",
+  "Kaitlin": "Keten",
+  "Kaitlyn": "Ketan",
+  "Kaiya": "Keja",
+  "Kaja": "Kasa",
+  "Kali": "Kali",
+  "Kalina": "Kalana",
+  "Kaliyah": "Kalija",
+  "Kallie": "Kali",
+  "Kamila": "Kamila",
+  "Kamile": "Kamala",
+  "Kamri": "Kami",
+  "Kara": "Kewa",
+  "Karina": "Kawina",
+  "Karla": "Kala",
+  "Karolina": "Kewalana",
+  "Kasey": "Kasi",
+  "Kassandra": "Kesanta",
+  "Kassie": "Kasi",
+  "Kataleya": "Ketale",
+  "Katarina": "Katena",
+  "Kate": "Keto",
+  "Katelyn": "Katelan",
+  "Katelynn": "Keten",
+  "Kateryna": "Ketewana",
+  "Katherine": "Kasen",
+  "Kathleen": "Kalin",
+  "Kathryn": "Kawin",
+  "Katie": "Kete",
+  "Katrina": "Katena",
+  "Katy": "Kete",
+  "Kaya": "Kaja",
+  "Kayla": "Kela",
+  "Kaylah": "Kela",
+  "Kaylee": "Keli",
+  "Kayleigh": "Keli",
+  "Kayley": "Kele",
+  "Keela": "Kila",
+  "Keeley": "Kili",
+  "Keelin": "Kilin",
+  "Keely": "Kili",
+  "Keeva": "Kiwa",
+  "Keilah": "Kela",
+  "Keira": "Kewa",
+  "Kellie": "Keli",
+  "Kelly": "Keli",
+  "Kelsey": "Kesi",
+  "Kelsie": "Kesi",
+  "Kemi": "Kemi",
+  "Kendall": "Kentala",
+  "Kendra": "Kenta",
+  "Kennedy": "Kenate",
+  "Kenza": "Kensa",
+  "Kenzie": "Kensi",
+  "Kerrie": "Kewi",
+  "Kerry": "Kewi",
+  "Keva": "Kewa",
+  "Keziah": "Kasa",
+  "Khadija": "Katesa",
+  "Khadijah": "Katase",
+  "Khaleesi": "Kelisi",
+  "Khloe": "Ka",
+  "Kiah": "Ka",
+  "Kiana": "Kana",
+  "Kianna": "Kanna",
+  "Kiara": "Kawa",
+  "Kiera": "Kiwa",
+  "Kimberley": "Kimeli",
+  "Kimberly": "Kimeli",
+  "Kinda": "Kinta",
+  "Kinga": "Kinka",
+  "Kinsley": "Kinli",
+  "Kira": "Kiwa",
+  "Kitty": "Kite",
+  "Kiva": "Kiwa",
+  "Kiya": "Kija",
+  "Kiyah": "Kija",
+  "Klara": "Kawa",
+  "Klaudia": "Kota",
+  "Kodie": "Kate",
+  "Kora": "Kowa",
+  "Kornelia": "Konala",
+  "Kowsar": "Kosawa",
+  "Kristina": "Kitena",
+  "Ksenia": "Kena",
+  "Kyah": "Ka",
+  "Kydi": "Kate",
+  "Kyla": "Kala",
+  "Kylah": "Kala",
+  "Kyleigh": "Kale",
+  "Kylie": "Kali",
+  "Kyra": "Kawa",
+  "Kyrah": "Kawa",
+  "Kíla": "Kela",
+  "Lacey": "Lesi",
+  "Lacie": "Lasi",
+  "Laiba": "Lepa",
+  "Laila": "Lela",
+  "Lainey": "Lene",
+  "Lana": "Lana",
+  "Laney": "Leni",
+  "Laoise": "Lasi",
+  "Lara": "Lawa",
+  "Laragh": "Lawa",
+  "Larisa": "Lawisa",
+  "Larissa": "Lawisa",
+  "Larosa": "Lawesa",
+  "Laura": "Lowa",
+  "Lauren": "Lowan",
+  "Laurie": "Lawi",
+  "Lauryn": "Lowan",
+  "Lavinia": "Lawinja",
+  "Laya": "Le",
+  "Layan": "Len",
+  "Layla": "Lela",
+  "Layla Mae": "Lela Me",
+  "Layla-Mae": "Lela Me",
+  "Layla-Rose": "Lela Wesi",
+  "Laylah": "Lela",
+  "Layna": "Lena",
+  "Leah": "La",
+  "Leanna": "Linna",
+  "Leanne": "Linna",
+  "Leen": "Lin",
+  "Leena": "Lina",
+  "Leia": "La",
+  "Leigha": "Leka",
+  "Leighla": "Lela",
+  "Leila": "Lila",
+  "Leja": "Leja",
+  "Lelia": "Lija",
+  "Lena": "Lina",
+  "Leni": "Ani",
+  "Lenka": "Lenka",
+  "Lennon": "Lenan",
+  "Leona": "Lona",
+  "Leonie": "Leni",
+  "Levi": "Liwa",
+  "Lexi": "Aki",
+  "Lexie": "Leki",
+  "Leya": "Le",
+  "Leyla": "Lela",
+  "Liadh": "Lato",
+  "Liah": "La",
+  "Liana": "Lana",
+  "Lianna": "Lana",
+  "Libby": "Lipi",
+  "Lidia": "Lita",
+  "Liepa": "Lipa",
+  "Lila": "Lila",
+  "Lilah": "Lila",
+  "Lile": "Lala",
+  "Lili": "Lili",
+  "Lilia": "Lila",
+  "Lilian": "Lilan",
+  "Liliana": "Lilana",
+  "Lilianna": "Lilana",
+  "Lilith": "Lilisi",
+  "Lillian": "Lilan",
+  "Lilliana": "Lilana",
+  "Lillie": "Lili",
+  "Lilly": "Lili",
+  "Lilly mae": "Lili Me",
+  "Lilly-mae": "Lili Me",
+  "Lilly-May": "Lili Me",
+  "Lillyanna": "Lilana",
+  "Lillyrose": "Liliwesi",
+  "Lily": "Lili",
+  "Lily Mae": "Lili Me",
+  "Lily Rose": "Lili Wesi",
+  "Lily-Ann": "Lili An",
+  "Lily-Anne": "Lili An",
+  "Lily-Mae": "Lili Me",
+  "Lily-May": "Lili Me",
+  "Lily-Rose": "Lili Wesi",
+  "Lilyana": "Lijana",
+  "Lilyanna": "Lilana",
+  "Lilymae": "Lilame",
+  "Lilí": "Lila",
+  "Lina": "Lina",
+  "Linda": "Linta",
+  "Lisa": "Lisa",
+  "Livia": "Liwa",
+  "Livie": "Liwi",
+  "Livvy": "Liwa",
+  "Liyana": "Lijana",
+  "Lizzie": "Lisi",
+  "Lizzy": "Lisi",
+  "Loah": "Lo",
+  "Lois": "Losi",
+  "Lola": "Lola",
+  "Lorelai": "Lawale",
+  "Lorena": "Lowena",
+  "Lorna": "Lona",
+  "Lottie": "Late",
+  "Louisa": "Lusa",
+  "Louise": "Lusi",
+  "Luana": "Lana",
+  "Luca": "Luka",
+  "Lucia": "Lusa",
+  "Luciana": "Lasana",
+  "Lucie": "Lusi",
+  "Lucinda": "Lusinta",
+  "Lucja": "Laka",
+  "Lucy": "Lusi",
+  "Lucía": "Luka",
+  "Luella": "Lula",
+  "Luisa": "Lusa",
+  "Luisne": "Lun",
+  "Luiza": "Lusa",
+  "Lujain": "Lasen",
+  "Luka": "Luka",
+  "Lukne": "Lan",
+  "Lumi": "Lami",
+  "Luna": "Luna",
+  "Luísa": "Lusa",
+  "Lyanna": "Janna",
+  "Lyanne": "Lan",
+  "Lydia": "Lita",
+  "Lyla": "Lala",
+  "Lylah": "Lala",
+  "Lynn": "Lin",
+  "Lyra": "Lawa",
+  "Léile": "Elile",
+  "Léna": "Ena",
+  "Líadain": "Elaten",
+  "Líadan": "Latan",
+  "Líadh": "Elato",
+  "Líle": "Ela",
+  "Líobhan": "Elapan",
+  "Lívia": "Ewa",
+  "Lúna": "Ena",
+  "Mabel": "Mepala",
+  "Macey": "Mesi",
+  "Maci": "Masi",
+  "Macie": "Masi",
+  "Mackenzie": "Makensi",
+  "Macy": "Mesi",
+  "Maddie": "Mate",
+  "Maddison": "Matesan",
+  "Madeleine": "Matalen",
+  "Madeline": "Matalin",
+  "Madelyn": "Matelin",
+  "Madison": "Matasan",
+  "Maebh": "Mapu",
+  "Maeva": "Mawa",
+  "Maeve": "Mawa",
+  "Magdalena": "Makalina",
+  "Maggie": "Maki",
+  "Maggie May": "Maki Me",
+  "Maha": "ma",
+  "Mahira": "Mewa",
+  "Mahnoor": "Manuwa",
+  "Maia": "ma",
+  "Maira": "Mewa",
+  "Mairéad": "Mewato",
+  "Maisey": "Mese",
+  "Maisha": "Mesa",
+  "Maisie": "Mesi",
+  "Maisy": "Mesa",
+  "Maitê": "Meto",
+  "Maiya": "Meja",
+  "Maizie": "Mesi",
+  "Maja": "Masa",
+  "Makayla": "Makela",
+  "Malak": "Malaku",
+  "Malia": "Mala",
+  "Maliha": "Mala",
+  "Malika": "Malika",
+  "Maliyah": "Malija",
+  "Mallaidh": "Maletesi",
+  "Malu": "Mala",
+  "Manha": "Mana",
+  "Manna": "Mana",
+  "Manuela": "Manwela",
+  "Mara": "Mawa",
+  "Marcelina": "Masalina",
+  "Marcella": "Masela",
+  "Marcie": "Maki",
+  "Margaret": "Maketo",
+  "Margarita": "Maketa",
+  "Margaux": "Mako",
+  "Margo": "Mako",
+  "Margot": "Mako",
+  "Maria": "Me",
+  "Mariah": "Me",
+  "Mariam": "Mewan",
+  "Mariana": "Mewana",
+  "Marianna": "Mawana",
+  "Marianne": "Mewan",
+  "Marie": "Me",
+  "Marija": "Mawisa",
+  "Marilyn": "Mewalan",
+  "Marina": "Mena",
+  "Mariyam": "Mawijan",
+  "Marla": "Mala",
+  "Marlee": "Mali",
+  "Marleigh": "Mali",
+  "Marley": "Mali",
+  "Marlie": "Mali",
+  "Marlowe": "Malo",
+  "Marnie": "Mani",
+  "Marta": "Mata",
+  "Martha": "Masa",
+  "Martina": "Matena",
+  "Martyna": "Matana",
+  "Marwa": "Mawa",
+  "Mary": "Mewi",
+  "Mary Bridget": "Mewi Pisato",
+  "Mary Kate": "Mewi Keto",
+  "Mary-Ann": "Mewi An",
+  "Mary-Jane": "Mewi Sen",
+  "Mary-Kate": "Mewi Keto",
+  "Maryam": "Majan",
+  "Maryann": "Mewan",
+  "Maryellen": "Majelan",
+  "Marykate": "Mewiketo",
+  "Masa": "Masa",
+  "Matilda": "Mateta",
+  "Matilde": "Mateto",
+  "Matylda": "Matata",
+  "Maud": "Moto",
+  "Maura": "Mowa",
+  "Mavie": "Mawi",
+  "Maya": "ma",
+  "Mayah": "Me",
+  "Maymunah": "Memuna",
+  "Maïa": "ma",
+  "McKenna": "Emi Kena",
+  "Mckenzie": "Emi Kensi",
+  "Meabh": "Mipu",
+  "Meadhbh": "Mita",
+  "Meadow": "Meto",
+  "Mealla": "Mila",
+  "Meara": "Miwa",
+  "Meave": "Miwa",
+  "Meda": "Meta",
+  "Medeea": "Meta",
+  "Meeval": "Miwala",
+  "Megan": "Mekan",
+  "Meghan": "Mekan",
+  "Melania": "Melana",
+  "Melanie": "Melani",
+  "Melek": "Meliku",
+  "Melina": "Melina",
+  "Melisa": "Melisa",
+  "Melissa": "Malisa",
+  "Mella": "Mela",
+  "Melody": "Melate",
+  "Mena": "Mina",
+  "Mercy": "Mesi",
+  "Meredith": "Mewitesi",
+  "Meryem": "Mejen",
+  "Meryl": "Mewala",
+  "Mia Rose": "ma Wesi",
+  "Mia-Rose": "ma Wesi",
+  "Miah": "ma",
+  "Michaela": "Makela",
+  "Michalina": "Misalina",
+  "Michelle": "Misela",
+  "Mihaela": "Mala",
+  "Mikaela": "Mikela",
+  "Mikayla": "Mikela",
+  "Mikha": "Mika",
+  "Mila": "Mala",
+  "Milah": "Mila",
+  "Milan": "Malan",
+  "Milana": "Milana",
+  "Milani": "Milani",
+  "Milena": "Mana",
+  "Miley": "Mali",
+  "Milita": "Milita",
+  "Milla": "Mila",
+  "Millicent": "Milisinto",
+  "Millie": "Mili",
+  "Millie Mae": "Mili Me",
+  "Millie Rose": "Mili Wesi",
+  "Millie-Mae": "Mili Me",
+  "Milly": "Mili",
+  "Mimi": "Mimi",
+  "Mina": "Mina",
+  "Minahil": "Minela",
+  "Minha": "Mina",
+  "Minnie": "Mini",
+  "Minsa": "Minsa",
+  "Mira": "Miwa",
+  "Miraal": "Miwala",
+  "Mirabel": "Miwapela",
+  "Miracle": "Miwakala",
+  "Miral": "Miwala",
+  "Miranda": "Menta",
+  "Miraya": "Miwe",
+  "Mirela": "Miwala",
+  "Mireya": "Miwe",
+  "Mirha": "Miwa",
+  "Miriam": "Miwan",
+  "Miroslava": "Miwelawa",
+  "Miruna": "Miwana",
+  "Miryam": "Mejan",
+  "Misha": "Misa",
+  "Misk": "Miku",
+  "Miya": "Mija",
+  "Moira": "Mowa",
+  "Mollaí": "Mala",
+  "Mollie": "Mali",
+  "Mollie-Mae": "Mali Me",
+  "Molly": "Mali",
+  "Molly Mae": "Mali Me",
+  "Molly-Mae": "Mali Me",
+  "Mollymae": "Malime",
+  "Momina": "Mamina",
+  "Mona": "Mona",
+  "Monica": "Manika",
+  "Monika": "Manika",
+  "Monroe": "Manwe",
+  "Montana": "Mantana",
+  "Morgan": "Mokan",
+  "Morrigan": "Mowakan",
+  "Moya": "Mo",
+  "Muireann": "Mawan",
+  "Muirne": "Mun",
+  "Munachimso": "Manesimo",
+  "Muntaha": "Manta",
+  "Musfirah": "Emapawa",
+  "Myah": "ma",
+  "Myla": "Mala",
+  "Mylah": "Mala",
+  "Mylie": "Mali",
+  "Myra": "Mawa",
+  "Myriam": "Miwan",
+  "Máire": "Emawa",
+  "Méabh": "Emapu",
+  "Méabha": "Emapa",
+  "Míla": "Ema",
+  "Nadia": "Nata",
+  "Nadine": "Naten",
+  "Nahla": "Nala",
+  "Naia": "Ne",
+  "Naila": "Nela",
+  "Naima": "Nema",
+  "Nainsí": "Nensi",
+  "Naira": "Newa",
+  "Nala": "Nala",
+  "Namasvi": "Namawi",
+  "Nancy": "Nansi",
+  "Naoise": "Nasi",
+  "Naomi": "Nemi",
+  "Natalia": "Nataja",
+  "Natalie": "Natali",
+  "Natasha": "Natasa",
+  "Nathalia": "Nasala",
+  "Nathania": "Nasana",
+  "Naya": "Ne",
+  "Neala": "Nila",
+  "Neansaí": "Ninsa",
+  "Neasa": "Nisa",
+  "Nela": "Nela",
+  "Nell": "Nela",
+  "Nella": "Nela",
+  "Nellie": "Neli",
+  "Nelly": "Neli",
+  "Neriah": "Newa",
+  "Nessa": "Nesa",
+  "Nevaeh": "Newe",
+  "Niadh": "Nato",
+  "Niamh": "Nan",
+  "Nicola": "Nikola",
+  "Nicole": "Nikola",
+  "Nihara": "Nawa",
+  "Nika": "Nika",
+  "Nikita": "Nikita",
+  "Nikola": "Nikola",
+  "Nikole": "Nikala",
+  "Nila": "Nila",
+  "Nina": "Nina",
+  "Nitara": "Nitawa",
+  "Nitsa": "Nita",
+  "Niya": "Nija",
+  "Noelle": "Nola",
+  "Noemi": "Nami",
+  "Nola": "Nola",
+  "Nollaig": "Naleku",
+  "Noor": "Nuwa",
+  "Nora": "Nowa",
+  "Norah": "Nowa",
+  "Noreen": "Nen",
+  "Nour": "Nawa",
+  "Noura": "Nawa",
+  "Nova": "Nowa",
+  "Nuala": "Nala",
+  "Nusaiba": "Nasepa",
+  "Nusaybah": "Nusepa",
+  "Nyah": "Naja",
+  "Nyla": "Nala",
+  "Nylah": "Nala",
+  "Nyra": "Nawa",
+  "Nyrah": "Nawa",
+  "Níadh": "Enato",
+  "Nóinín": "Eninen",
+  "Nóra": "Enwa",
+  "Oakley": "Oki",
+  "Ocean": "Osan",
+  "Odette": "Oteto",
+  "Olga": "Oka",
+  "Olive": "Alawa",
+  "Olivia": "Oliwa",
+  "Oliwia": "Aliwa",
+  "Olwyn": "Awan",
+  "Olívia": "Awa",
+  "Oonagh": "Una",
+  "Ophelia": "Apija",
+  "Oriana": "Owana",
+  "Orla": "Ola",
+  "Orlagh": "Ola",
+  "Orlaith": "Olesi",
+  "Orna": "Ona",
+  "Ottilie": "Atali",
+  "Paige": "Pesi",
+  "Paisley": "Peli",
+  "Paloma": "Paloma",
+  "Paris": "Pawisi",
+  "Patricia": "Patesa",
+  "Paula": "Pola",
+  "Paulina": "Polina",
+  "Peach": "Pisi",
+  "Pearl": "Pela",
+  "Peggy": "Peki",
+  "Peig": "Peku",
+  "Peigí": "Peku",
+  "Penelope": "Panelapi",
+  "Pennie": "Peni",
+  "Penny": "Peni",
+  "Perrie": "Pewi",
+  "Petra": "Peta",
+  "Peyton": "Petan",
+  "Philippa": "Pilipa",
+  "Philomena": "Pilamina",
+  "Phoebe": "Pipi",
+  "Phoenix": "Pinika",
+  "Piper": "Pape",
+  "Pippa": "Pipa",
+  "Pixie": "Piki",
+  "Pola": "Pala",
+  "Polina": "Palina",
+  "Polly": "Pali",
+  "Poppie": "Papi",
+  "Poppy": "Papi",
+  "Portia": "Posa",
+  "Posie": "Pasi",
+  "Precious": "Pesasi",
+  "Presley": "Peli",
+  "Primrose": "Pimosi",
+  "Princess": "Pinsesi",
+  "Priscilla": "Pisila",
+  "Prisha": "Pisa",
+  "Priya": "Pija",
+  "Priyah": "Pija",
+  "Prunelle": "Punela",
+  "Quin": "Kin",
+  "Quinn": "Kin",
+  "Quynn": "Kan",
+  "Rachael": "Wesala",
+  "Rachel": "Wesala",
+  "Radha": "Wata",
+  "Raelyn": "Walan",
+  "Raelynn": "Walan",
+  "Raeya": "Wa",
+  "Raha": "Wa",
+  "Rahela": "Wela",
+  "Raia": "Waja",
+  "Raina": "Wena",
+  "Raisa": "Wesa",
+  "Ramona": "Wamona",
+  "Rana": "Wana",
+  "Raven": "Wewan",
+  "Rawan": "Wawan",
+  "Raya": "We",
+  "Rayah": "We",
+  "Rayna": "Wena",
+  "Rayne": "Wen",
+  "Reagan": "Wekan",
+  "Rebeca": "Wepeka",
+  "Rebecca": "Wapeka",
+  "Rebeka": "Wipika",
+  "Reem": "Win",
+  "Reese": "Wisi",
+  "Reeva": "Wiwa",
+  "Regan": "Wikan",
+  "Reigha": "Weka",
+  "Reina": "Wena",
+  "Remi": "Wemi",
+  "Remy": "Wemi",
+  "Renae": "Wena",
+  "Rendall": "Wentala",
+  "Renesmee": "Wanemi",
+  "Renée": "Weni",
+  "Reya": "We",
+  "Reyna": "Wena",
+  "Rhea": "Wa",
+  "Rhia": "Wa",
+  "Rhona": "Wana",
+  "Rhéa": "Wa",
+  "Riadh": "Wato",
+  "Riah": "Wa",
+  "Rida": "Wita",
+  "Rihanna": "Wana",
+  "Riley": "Wali",
+  "Riona": "Wana",
+  "Rita": "Wita",
+  "Rithika": "Wisika",
+  "Riva": "Wiwa",
+  "River": "Wiwe",
+  "Rivi": "Wiwi",
+  "Riya": "Wija",
+  "Roberta": "Wapeta",
+  "Robin": "Wapan",
+  "Robyn": "Wapin",
+  "Rochelle": "Wasela",
+  "Roisin": "Wesin",
+  "Roisín": "Wesen",
+  "Romee": "Wami",
+  "Romi": "Wami",
+  "Romie": "Wami",
+  "Romy": "Wama",
+  "Rosa": "Wesa",
+  "Rosaleen": "Wesalin",
+  "Rosalie": "Wesali",
+  "Rosalind": "Wasalinto",
+  "Rosalyn": "Wasalin",
+  "Rosanna": "Wesana",
+  "Rose": "Wesi",
+  "Roseanna": "Wesana",
+  "Roseanne": "Wesan",
+  "Rosemarie": "Weme",
+  "Rosemary": "Wemewi",
+  "Rosha": "Wasa",
+  "Rosie": "Wesi",
+  "Roslyn": "Walin",
+  "Roux": "We",
+  "Rowan": "Wen",
+  "Rowyn": "Wen",
+  "Roxie": "Waki",
+  "Roza": "Wesa",
+  "Rozalia": "Wasala",
+  "Roísín": "Wesen",
+  "Rubie": "Wepi",
+  "Ruby": "Wepi",
+  "Ruby-Mae": "Wepi Me",
+  "Rumaysa": "Wamesa",
+  "Ruth": "Wesi",
+  "Rylee": "Wili",
+  "Ryleigh": "Wale",
+  "Rylie": "Wali",
+  "Réalta": "Awata",
+  "Réaltín": "Awaten",
+  "Réidín": "Awaten",
+  "Réiltín": "Awiten",
+  "Rémi": "Ami",
+  "Ríadh": "Awato",
+  "Ríoghnach": "Awanasi",
+  "Ríona": "Awana",
+  "Ríonach": "Awanasi",
+  "Róise": "Awasi",
+  "Róisin": "Awisin",
+  "Róisín": "Awisen",
+  "Saanvi": "Sanwi",
+  "Sabina": "Sapina",
+  "Sabrina": "Sapina",
+  "Sadbh": "Sata",
+  "Sadhbh": "Sata",
+  "Sadie": "Sate",
+  "Sadie-Mae": "Sate Me",
+  "Sadie-Rose": "Sate Wesi",
+  "Safa": "Sapa",
+  "Safaa": "Sapa",
+  "Saffi": "Sapi",
+  "Saffie": "Sapi",
+  "Saffron": "Sapan",
+  "Safia": "Sapa",
+  "Safiya": "Sapija",
+  "Sage": "Sesi",
+  "Saibh": "Sepu",
+  "Saige": "Seku",
+  "Saileog": "Selaku",
+  "Saira": "Sewa",
+  "Saisha": "Sesa",
+  "Sally": "Sali",
+  "Salma": "Sama",
+  "Salomeia": "Saloma",
+  "Salwa": "Sawa",
+  "Sama": "Sama",
+  "Samaira": "Samewa",
+  "Samanta": "Samanta",
+  "Samantha": "Samansa",
+  "Samara": "Same",
+  "Samira": "Samiwa",
+  "Sana": "Sana",
+  "Sandra": "Santa",
+  "Sanna": "Sana",
+  "Santana": "Santana",
+  "Santanna": "Santana",
+  "Saoibh": "Sapu",
+  "Saoirse": "Sasi",
+  "Saorla": "Sala",
+  "Saorlaith": "Salatesi",
+  "Saorlá": "Sala",
+  "Saoírse": "Sase",
+  "Sara": "Sewa",
+  "Sarah": "Sewa",
+  "Sasha": "Sasa",
+  "Saskia": "Saka",
+  "Savanna": "Sawana",
+  "Savannah": "Sawana",
+  "Saylor": "Sele",
+  "Scarlet": "Kalato",
+  "Scarlett": "Kalito",
+  "Scotia": "Kosa",
+  "Sehrish": "Sewisi",
+  "Selena": "Salina",
+  "Selin": "Selin",
+  "Selina": "Salina",
+  "Senna": "Sena",
+  "Seoda": "Seta",
+  "Seoidín": "Seten",
+  "Serah": "Sewa",
+  "Seren": "Sewin",
+  "Serena": "Sawina",
+  "Seána": "Sena",
+  "Shae": "Sa",
+  "Shakira": "Sakiwa",
+  "Shanaya": "Sane",
+  "Shania": "Sana",
+  "Shannan": "Sannan",
+  "Shannon": "Sanan",
+  "Sharon": "Sawan",
+  "Sharvi": "Sawi",
+  "Shauna": "Sona",
+  "Shay": "Se",
+  "Shayna": "Sena",
+  "Shea": "Se",
+  "Sheenagh": "Sinakesi",
+  "Sheila": "Sila",
+  "Shelby": "Sepi",
+  "Shiloh": "Salo",
+  "Shirley": "Seli",
+  "Shona": "Sona",
+  "Shonagh": "Sana",
+  "Sianna": "Sanna",
+  "Siara": "Sawa",
+  "Sibéal": "Sipala",
+  "Sidonia": "Sitona",
+  "Sidra": "Sita",
+  "Siena": "Sina",
+  "Sienna": "Sena",
+  "Sienna-Rose": "Sena Wesi",
+  "Sierra": "Sewa",
+  "Sila": "Sila",
+  "Simina": "Simina",
+  "Simone": "Simon",
+  "Sinead": "Sineto",
+  "Sinéad": "Sinato",
+  "Siobhan": "Sapan",
+  "Siobhán": "Sapen",
+  "Siofra": "Sapa",
+  "Sionainn": "Esanen",
+  "Sive": "Siwa",
+  "Siya": "Sija",
+  "Siún": "Sen",
+  "Skye": "Ka",
+  "Skyla": "Kala",
+  "Skylar": "Kalawa",
+  "Skyler": "Kale",
+  "Slaney": "Leni",
+  "Sloane": "Lon",
+  "Smilte": "Mito",
+  "Sofia": "Sopa",
+  "Sofie": "Sapi",
+  "Sofiia": "Sapa",
+  "Sofija": "Sapisa",
+  "Sofía": "Sapa",
+  "Soha": "Sa",
+  "Solomiia": "Soloma",
+  "Sonia": "Sonja",
+  "Sophia": "Sopa",
+  "Sophie": "Sopi",
+  "Soraya": "Sawe",
+  "Sorcha": "Soka",
+  "Stacey": "Tesi",
+  "Stefania": "Tepana",
+  "Stela": "Tela",
+  "Stella": "Tela",
+  "Stephanie": "Tepani",
+  "Stevie": "Tewi",
+  "Storie": "Towi",
+  "Stormi": "Tomi",
+  "Summer": "Same",
+  "Sunnie": "Sanni",
+  "Sunny": "Sani",
+  "Susan": "Susan",
+  "Susie": "Susi",
+  "Sutton": "Satan",
+  "Suzie": "Sasi",
+  "Sybil": "Sipila",
+  "Sydney": "Site",
+  "Syeda": "Jeta",
+  "Sylvia": "Siwa",
+  "Sylvie": "Siwi",
+  "Síle": "Ela",
+  "Síne": "Ene",
+  "Síofra": "Esapa",
+  "Síomha": "Esama",
+  "Tabitha": "Tapisa",
+  "Tahlia": "Tala",
+  "Taisia": "Tesa",
+  "Tala": "Tala",
+  "Talia": "Tala",
+  "Taliah": "Tala",
+  "Taliyah": "Talija",
+  "Tamara": "Tamawa",
+  "Tara": "Tawa",
+  "Tasneem": "Tanin",
+  "Tatiana": "Tatana",
+  "Taya": "Te",
+  "Tayah": "Te",
+  "Taylor": "Tele",
+  "Teagan": "Tekan",
+  "Teegan": "Tekan",
+  "Tegan": "Tekan",
+  "Teia": "Te",
+  "Teigan": "Tekan",
+  "Teja": "Tesa",
+  "Tena": "Tena",
+  "Teodora": "Tetawa",
+  "Teresa": "Tesa",
+  "Tereza": "Tesa",
+  "Tess": "Tesi",
+  "Tessa": "Tesa",
+  "Tessie": "Tesi",
+  "Thalia": "Seja",
+  "Thanvi": "Sanwi",
+  "Thea": "Sa",
+  "Theia": "Se",
+  "Theodora": "Satowa",
+  "Theresa": "Tesa",
+  "Théa": "Tesa",
+  "Tiana": "Tana",
+  "Tianna": "Tanna",
+  "Tiaraoluwa": "Tawaluwa",
+  "Tierna": "Tena",
+  "Tiffany": "Tepani",
+  "Tilda": "Teta",
+  "Tillie": "Teli",
+  "Tilly": "Teli",
+  "Timeea": "Tema",
+  "Tina": "Tena",
+  "Tola": "Tala",
+  "Toni": "Toni",
+  "Tori": "Towi",
+  "Treasa": "Tesa",
+  "Treasure": "Tese",
+  "Tuiren": "Tuwin",
+  "Umme": "Ama",
+  "Vada": "Wata",
+  "Vaeda": "Wata",
+  "Valencia": "Walensa",
+  "Valentina": "Walentena",
+  "Valeria": "Waliwa",
+  "Valerie": "Wale",
+  "Vamika": "Wamika",
+  "Vanesa": "Wanasa",
+  "Vanessa": "Wanesa",
+  "Vayda": "Weta",
+  "Veda": "Weta",
+  "Vedha": "Weta",
+  "Vedika": "Weteka",
+  "Vega": "Weka",
+  "Venice": "Wenasi",
+  "Vera": "Wewa",
+  "Verity": "Wewate",
+  "Veronica": "Wenika",
+  "Veronika": "Wiwenika",
+  "Victoria": "Wikowa",
+  "Vienna": "Wena",
+  "Viktoria": "Wikowa",
+  "Vilte": "Wito",
+  "Violet": "Walito",
+  "Vivian": "Wiwan",
+  "Viviana": "Wiwana",
+  "Vivien": "Wiwan",
+  "Vivienne": "Wiwan",
+  "Vogue": "Weku",
+  "Wateen": "Waten",
+  "Wendy": "Wente",
+  "Weronika": "Wiwenika",
+  "Wiktoria": "Wikowa",
+  "Willa": "Wila",
+  "Willow": "Wilo",
+  "Willow Rose": "Wilo Wesi",
+  "Winnie": "Wini",
+  "Winter": "Winte",
+  "Wren": "Wen",
+  "Wynter": "Winte",
+  "Yana": "Jana",
+  "Yaqeen": "Jen",
+  "Yara": "Jawa",
+  "Yasmeen": "Jamin",
+  "Yasmin": "Jamin",
+  "Yasmine": "Jamin",
+  "Yeva": "Jewa",
+  "Yusra": "Jawa",
+  "Zadie": "Sate",
+  "Zaha": "Sa",
+  "Zahra": "Sawa",
+  "Zaina": "Sena",
+  "Zainab": "Senapu",
+  "Zaira": "Sewa",
+  "Zara": "Sawa",
+  "Zarah": "Sawa",
+  "Zaria": "Sawa",
+  "Zariah": "Sawa",
+  "Zaya": "Se",
+  "Zayna": "Sena",
+  "Zaynab": "Senapu",
+  "Zelda": "Seta",
+  "Zeynep": "Senipu",
+  "Zimal": "Simala",
+  "Ziva": "Siwa",
+  "Zlata": "Lata",
+  "Zoey": "Sa",
+  "Zofia": "Sapa",
+  "Zoha": "Sa",
+  "Zoja": "Sasa",
+  "Zola": "Sola",
+  "Zoya": "So",
+  "Zunairah": "Sanewa",
+  "Zuri": "Suwi",
+  "Zuzanna": "Sasanna",
+  "Zélie": "Sila",
+  "Áine": "An",
+  "Èabha": "Apa",
+  "Èala": "Ala",
+  "Éabha": "Apa",
+  "Éada": "Eta",
+  "Éadaoin": "Atan",
+  "Éadha": "Ata",
+  "Éadhla": "Ata",
+  "Éala": "Ala",
+  "Éaladh": "Alato",
+  "Éila": "Ila",
+  "Éile": "Ile",
+  "Éilis": "Ilisi",
+  "Éimear": "Imiwa",
+  "Éinín": "Inen",
+  "Éire": "Awa",
+  "Éireann": "Iwin",
+  "Éirinn": "Iwin",
+  "Élise": "Lasi",
+  "Élodie": "Late",
+  "Éowyn": "On",
+  "Érin": "Win",
+  "Ériu": "Wa",
+  "Órla": "La",
+  "Órlaith": "Lesi"
+}
+  };
+
+
+  function setHintText(){
+    const h = document.getElementById("hint");
+    if (!h) return;
+    h.textContent = `Type the Latin spelling for the cartouche. You have ${MAX_TRIES} tries. ${DEFAULT_DURATION_SEC} seconds.`;
+  }
+
+  /* ============================================================
+     Fonts
+     ============================================================ */
+  const FONT_FAMILY_LATIN = "TP-Nasin-Nanpa-Font";
+  const FONT_FAMILY_NANPA_LINJA_N = "TP-Cartouche-Font";
+  const CARTOUCHE_START_CP = 0xF1990;
+  const CARTOUCHE_END_CP   = 0xF1991;
+
+  /* ============================================================
+     Minimal WORD->UCSUR map
+     - This MUST include all TP words you plan to render as sitelen.
+     - If you want full coverage, copy WORD_TO_UCSUR_CP from your text-to-sitelen.html
+       and replace this object.
+     ============================================================ */
+
+    const WORD_TO_UCSUR_CP = {
+      "nanpa": 0xF193D,
+      "esun":  0xF190B,
+      "en":    0xF190A,
+      "e":     0xF1909,
+      "nasa":  0xF193E,
+      "ni":    0xF1941,
+      "nena":  0xF1940,
+      "o":     0xF1944,
+      "kulupu":0xF191F,
+
+      "ijo":   0xF190C,
+      "wan":   0xF1973,
+      "tu":    0xF196E,
+      "sijelo":0xF195B,
+      "awen":  0xF1908,
+      "luka":  0xF192D,
+      "utala": 0xF1971,
+      "mun":   0xF193A,
+      "pipi":  0xF1951,
+      "jo":    0xF1913,
+
+      "a": 0xF1900,
+      "akesi": 0xF1901,
+      "ala": 0xF1902,
+      "alasa": 0xF1903,
+      "ale": 0xF1904,
+      "ali": 0xF1904,
+      "anpa": 0xF1905,
+      "ante": 0xF1906,
+      "anu": 0xF1907,
+      "ike": 0xF190D,
+      "ilo": 0xF190E,
+      "insa": 0xF190F,
+      "jaki": 0xF1910,
+      "jan": 0xF1911,
+      "jelo": 0xF1912,
+      "kala": 0xF1914,
+      "kalama": 0xF1915,
+      "kama": 0xF1916,
+      "kasi": 0xF1917,
+      "ken": 0xF1918,
+      "kepeken": 0xF1919,
+      "kili": 0xF191A,
+      "kiwen": 0xF191B,
+      "ko": 0xF191C,
+      "kon": 0xF191D,
+      "kule": 0xF191E,
+      "kute": 0xF1920,
+      "la": 0xF1921,
+      "lape": 0xF1922,
+      "laso": 0xF1923,
+      "lawa": 0xF1924,
+      "len": 0xF1925,
+      "lete": 0xF1926,
+      "li": 0xF1927,
+      "lili": 0xF1928,
+      "linja": 0xF1929,
+      "lipu": 0xF192A,
+      "loje": 0xF192B,
+      "lon": 0xF192C,
+      "lukin": 0xF192E,
+      "lupa": 0xF192F,
+      "ma": 0xF1930,
+      "mama": 0xF1931,
+      "mani": 0xF1932,
+      "meli": 0xF1933,
+      "mi": 0xF1934,
+      "mije": 0xF1935,
+      "moku": 0xF1936,
+      "moli": 0xF1937,
+      "monsi": 0xF1938,
+      "mu": 0xF1939,
+      "musi": 0xF193B,
+      "mute": 0xF193C,
+      "nasin": 0xF193F,
+      "nimi": 0xF1942,
+      "noka": 0xF1943,
+      "olin": 0xF1945,
+      "ona": 0xF1946,
+      "open": 0xF1947,
+      "pakala": 0xF1948,
+      "pali": 0xF1949,
+      "palisa": 0xF194A,
+      "pan":    0xF194B,
+      "pana":   0xF194C,
+      "pi":     0xF194D,
+      "pilin":  0xF194E,
+      "pimeja": 0xF194F,
+      "pini": 0xF1950,
+      "poka": 0xF1952,
+      "poki": 0xF1953,
+      "pona": 0xF1954,
+      "pu": 0xF1955,
+      "sama": 0xF1956,
+      "seli": 0xF1957,
+      "selo": 0xF1958,
+      "seme": 0xF1959,
+      "sewi": 0xF195A,
+      "sike": 0xF195C,
+      "sin": 0xF195D,
+      "sina": 0xF195E,
+      "sinpin": 0xF195F,
+      "sitelen": 0xF1960,
+      "sona": 0xF1961,
+      "soweli": 0xF1962,
+      "suli": 0xF1963,
+      "suno": 0xF1964,
+      "supa": 0xF1965,
+      "suwi": 0xF1966,
+      "tan": 0xF1967,
+      "taso": 0xF1968,
+      "tawa": 0xF1969,
+      "telo": 0xF196A,
+      "tenpo": 0xF196B,
+      "toki": 0xF196C,
+      "tomo": 0xF196D,
+      "unpa": 0xF196F,
+      "uta": 0xF1970,
+      "walo": 0xF1972,
+      "waso": 0xF1974,
+      "wawa": 0xF1975,
+      "weka": 0xF1976,
+      "wile": 0xF1977,
+      "namako": 0xF1978,
+      "kin": 0xF1979,
+      "oko": 0xF197A,
+      "kipisi": 0xF197B,
+      "leko": 0xF197C,
+      "monsuta": 0xF197D,
+      "tonsi": 0xF197E,
+      "jasima": 0xF197F,
+      "kijetesantakalu": 0xF1980,
+      "soko": 0xF1981,
+      "meso": 0xF1982,
+      "epiku": 0xF1983,
+      "kokosila": 0xF1984,
+      "lanpan": 0xF1985,
+      "n": 0xF1986,
+      "misikeke": 0xF1987,
+      "ku": 0xF1988,
+
+      "epiku": 0xF1983,
+      "kokosila": 0xF1984, "lanpan": 0xF1985, "n": 0xF1986, "misikeke": 0xF1987, "ku": 0xF1988,
+      "pake": 0xF19A0, "apeja": 0xF19A1, "majuna": 0xF19A2, "powe": 0xF19A3,
+      "·": 0xF199C, ":": 0xF199D, 
+      ",": 0xF199E,
+      "ota": 0xF199C, "kolon": 0xF199D, "koma": 0xF199E
+    };
+
+  /* Punctuation-only glyphs needed for time cartouches */
+  const EXTRA = { kolon: 0xF199D };
+  WORD_TO_UCSUR_CP["kolon"] = WORD_TO_UCSUR_CP["kolon"] ?? EXTRA.kolon;
+
+
+  
+  /* ============================================================
+     Cartouche phrase generation (random glyph-words per letter)
+     - Answer is a TP value like "pele" (letters-only TP alphabet).
+     - Display is a randomized TP phrase like "pipi en luka en" where
+       each token's initial matches the corresponding answer letter.
+     ============================================================ */
+  const TP_ALPHA_SET = new Set("aeijklmnostuw".split(""));
+
+  let WORDS_ONLY_MODE = false; // future user toggle
+
+  const BUCKET_DENYLIST = new Set([
+    // words you never want to appear as random glyph choices:
+    "kolon",",",  "·",  ":", "ota", "koma"
+    // add anything you consider “too weird”, rare, or visually confusing
+  ]);
+
+  function buildLetterBuckets(){
+    const buckets = new Map();
+    const words = Object.keys(WORD_TO_UCSUR_CP);
+
+    for (const w0 of words){
+      const w = String(w0).toLowerCase().trim();
+      if (!w) continue;
+
+      if (BUCKET_DENYLIST.has(w)) continue;   // <-- add this
+
+      // Words-only mode: exclude common particles/single-letter tokens, etc.
+      if (WORDS_ONLY_MODE){
+        if (w === "a" || w === "e" || w === "en" || w === "li" || w === "pi" || w === "la" || w === "o") continue;
+      }
+
+      const ch = w[0];
+      if (!TP_ALPHA_SET.has(ch)) continue;
+
+      if (!buckets.has(ch)) buckets.set(ch, []);
+      buckets.get(ch).push(w);
+    }
+
+    // Ensure 'e' has both e/en available in default mode
+    if (!WORDS_ONLY_MODE){
+      if (!buckets.has("e")) buckets.set("e", []);
+      const arr = buckets.get("e");
+      if (!arr.includes("e")) arr.push("e");
+      if (!arr.includes("en")) arr.push("en");
+    }
+
+    // Shuffle each bucket for better distribution
+    for (const arr of buckets.values()){
+      shuffleInPlace(arr);
+    }
+    return buckets;
+  }
+
+  let LETTER_BUCKETS = null;
+  let LAST_PHRASE_TOKENS = null;
+
+  function phraseForAnswerNorm(answerNorm){
+    const ans = String(answerNorm ?? "");
+    if (!ans) return null;
+
+    if (!LETTER_BUCKETS) LETTER_BUCKETS = buildLetterBuckets();
+
+    const tokens = [];
+    for (const ch of ans){
+      const choices = LETTER_BUCKETS.get(ch);
+      if (!choices || !choices.length) return null;
+      {
+        // Weighted selection: glyph-words the user often misses become more likely.
+        let totalW = 0;
+        const weights = new Array(choices.length);
+        for (let i=0;i<choices.length;i++){
+          const w = choices[i];
+          const st = glyphStats[w];
+          const seen = st ? (st.seen|0) : 0;
+          const wrong = st ? (st.wrong|0) : 0;
+          const rate = wrong / Math.max(1, seen);
+          const wt = 1 + (rate * GLYPH_WEIGHT_BOOST);
+          weights[i] = wt;
+          totalW += wt;
+        }
+        let r = Math.random() * totalW;
+        let pick = choices[0];
+        for (let i=0;i<choices.length;i++){
+          r -= weights[i];
+          if (r <= 0){ pick = choices[i]; break; }
+        }
+        tokens.push(pick);
+      }
+    }
+    LAST_PHRASE_TOKENS = tokens.slice();
+    return tokens.join(" ");
+  }
+/* ============================================================
+     Utilities
+     ============================================================ */
+  function randInt(n){
+    if (n <= 0) return 0;
+    if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function"){
+      const buf = new Uint32Array(1);
+      globalThis.crypto.getRandomValues(buf);
+      return buf[0] % n;
+    }
+    return Math.floor(Math.random() * n);
+  }
+
+  function shuffleInPlace(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = randInt(i + 1);
+      const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  
+
+  function normalizeGuess(raw){
+    // Case-insensitive + ignore punctuation/spaces (letters only)
+    return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, "");
+  }
+
+  function isEligibleTpValue(tpValue){
+    const norm = normalizeGuess(tpValue);
+    if (!norm) return false;
+    for (const ch of norm){
+      if (!TP_ALPHA_SET.has(ch)) return false;
+    }
+    return true;
+  }
+
+  function cpsToString(cps){
+    return cps.map(cp => String.fromCodePoint(cp)).join("");
+  }
+
+  function setTopPrefixes(){
+    const bestEl = document.getElementById("bestPrefix");
+    const timerEl = document.getElementById("timerPrefix");
+    // Prefix glyphs are OUTSIDE the cartouche canvases (like 15-puzzle).
+    // Use the TP-Nasin-Nanpa-Font glyphs for words.
+    const nanpaCp = WORD_TO_UCSUR_CP["nanpa"];
+    const ponaCp  = WORD_TO_UCSUR_CP["pona"];
+    const tenpoCp = WORD_TO_UCSUR_CP["tenpo"];
+    const liliCp  = WORD_TO_UCSUR_CP["lili"];
+
+    if (bestEl){
+      bestEl.textContent = (nanpaCp && ponaCp) ? cpsToString([nanpaCp, ponaCp]) : "nanpa pona";
+    }
+    if (timerEl){
+      timerEl.textContent = (tenpoCp && liliCp) ? cpsToString([tenpoCp, liliCp]) : "tenpo lili";
+    }
+  }
+
+
+  function computePointsFromNorm(answerNorm){
+    const L = String(answerNorm ?? "").length;
+    return L + Math.max(0, L - 6) + Math.max(0, L - 10);
+  }
+
+  function setStatus(msg){
+    const el = document.getElementById("status");
+    if (el) el.textContent = String(msg ?? "");
+  }
+
+  /* ============================================================
+     IndexedDB
+     ============================================================ */
+  function openDb(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbGet(key){
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const st = tx.objectStore(IDB_STORE);
+      const req = st.get(key);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => reject(req.error);
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => { try{ db.close(); }catch{} };
+    });
+  }
+
+  async function idbSet(key, value){
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      const st = tx.objectStore(IDB_STORE);
+      const req = st.put(value, key);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => { try{ db.close(); }catch{} };
+    });
+  }
+  async function loadGlyphStatsFromIdb(){
+    const raw = await idbGet(IDB_KEY_GLYPH_STATS);
+    if (!raw || typeof raw !== "object") { glyphStats = {}; return; }
+    // shallow sanitize
+    const out = {};
+    for (const [k,v] of Object.entries(raw)){
+      if (!k) continue;
+      const seen = Math.max(0, Number(v?.seen ?? 0) | 0);
+      const wrong = Math.max(0, Number(v?.wrong ?? 0) | 0);
+      out[String(k)] = { seen, wrong };
+    }
+    glyphStats = out;
+  }
+
+  function scheduleSaveGlyphStats(){
+    if (glyphStatsSaveHandle) return;
+    glyphStatsSaveHandle = setTimeout(async () => {
+      glyphStatsSaveHandle = null;
+      try{ await idbSet(IDB_KEY_GLYPH_STATS, glyphStats); }catch(e){}
+    }, 250);
+  }
+
+  function bumpSeenForTokens(tokens){
+    if (!tokens || !tokens.length) return;
+    for (const w of tokens){
+      const key = String(w);
+      const cur = glyphStats[key] || (glyphStats[key] = { seen: 0, wrong: 0 });
+      cur.seen = (cur.seen | 0) + 1;
+    }
+    scheduleSaveGlyphStats();
+  }
+
+  function bumpWrongForWord(word){
+    if (!word) return;
+    const key = String(word);
+    const cur = glyphStats[key] || (glyphStats[key] = { seen: 0, wrong: 0 });
+    cur.wrong = (cur.wrong | 0) + 1;
+    scheduleSaveGlyphStats();
+  }
+
+  function firstMismatchIndex(a, b){
+    // a,b are normalized (letters-only). Returns first index where they differ,
+    // or min length if one is a prefix of the other.
+    const A = String(a ?? "");
+    const B = String(b ?? "");
+    const n = Math.min(A.length, B.length);
+    for (let i=0;i<n;i++){
+      if (A[i] !== B[i]) return i;
+    }
+    return n;
+  }
+
+
+  /* ============================================================
+     Best score (localStorage)
+     ============================================================ */
+  function loadBestScore(){
+    try{
+      const v = localStorage.getItem(LS_KEY_BEST_SCORE);
+      if (v == null) return null;
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+    } catch { return null; }
+  }
+
+  function saveBestScore(n){
+    try{ localStorage.setItem(LS_KEY_BEST_SCORE, String(Math.floor(n))); } catch {}
+  }
+
+  function clearBestScore(){
+    try{ localStorage.removeItem(LS_KEY_BEST_SCORE); } catch {}
+  }
+
+  /* ============================================================
+     Canvas font warmup / ensure
+     ============================================================ */
+  async function ensureFontsLoaded(){
+    if (!document.fonts || !document.fonts.load) return;
+    const px = 64;
+    const sample = String.fromCodePoint(CARTOUCHE_START_CP);
+    try{
+      await document.fonts.load(`${px}px "${FONT_FAMILY_LATIN}"`, sample);
+      await document.fonts.load(`${px}px "${FONT_FAMILY_NANPA_LINJA_N}"`, sample);
+      await document.fonts.ready;
+    } catch {}
+  }
+
+  /* ============================================================
+     Cartouche rendering (adapted from text-to-sitelen.html)
+     ============================================================ */
+  function setTextQuality(ctx){
+    try{ ctx.textRendering = "optimizeLegibility"; } catch {}
+    try{ ctx.fontKerning = "normal"; } catch {}
+  }
+
+  function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss }){
+    if (!canvas) throw new Error("canvas missing");
+    if (!innerCps || innerCps.length === 0){
+      canvas.width = 1; canvas.height = 1;
+      return { w: 1, h: 1, baselineY: 0 };
+    }
+
+    const px = Math.max(8, Number(fontPx ?? 64));
+    const pad = Math.max(4, Number(padPx ?? Math.round(px * 0.11)));
+    const fam = fontFamily || FONT_FAMILY_LATIN;
+
+    const run =
+      String.fromCodePoint(CARTOUCHE_START_CP) +
+      innerCps.map(cp => String.fromCodePoint(cp)).join("") +
+      String.fromCodePoint(CARTOUCHE_END_CP);
+
+    const tmp = document.createElement("canvas");
+    const ctx = tmp.getContext("2d");
+    ctx.textBaseline = "alphabetic";
+    ctx.font = `${px}px "${fam}"`;
+    setTextQuality(ctx);
+
+    const m = ctx.measureText(run);
+    const ascent  = (m.actualBoundingBoxAscent  != null) ? m.actualBoundingBoxAscent  : Math.ceil(px * 0.95);
+    const descent = (m.actualBoundingBoxDescent != null) ? m.actualBoundingBoxDescent : Math.ceil(px * 0.35);
+    const left  = (m.actualBoundingBoxLeft  != null) ? m.actualBoundingBoxLeft  : 0;
+    const right = (m.actualBoundingBoxRight != null) ? m.actualBoundingBoxRight : Math.ceil(m.width);
+
+    const w = Math.max(1, Math.ceil(left + right + pad * 2));
+    const h = Math.max(1, Math.ceil(ascent + descent + pad * 2));
+
+    canvas.width = w;
+    canvas.height = h;
+
+    const ctx2 = canvas.getContext("2d", { alpha: true });
+    ctx2.clearRect(0, 0, w, h);
+    ctx2.textBaseline = "alphabetic";
+    ctx2.font = `${px}px "${fam}"`;
+    setTextQuality(ctx2);
+    ctx2.fillStyle = fgCss || "#111";
+
+    const x = pad + left;
+    const baselineY = pad + ascent;
+    ctx2.fillText(run, x, baselineY);
+
+    return { w, h, baselineY, ascent: Math.ceil(ascent), descent: Math.ceil(descent) };
+  }
+
+  function tpTextToInnerCps(tpText){
+    const words = String(tpText ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const cps = [];
+    for (const w of words){
+      const cp = WORD_TO_UCSUR_CP[w];
+      if (cp != null) cps.push(cp);
+    }
+    return cps;
+  }
+
+  
+  /* ============================================================
+     Nanpa-linja-n number/time cartouche helpers (from 15-puzzle)
+     - Used for timer, best score, and per-row points.
+     ============================================================ */
+  const DIGIT_TO_TOKEN = { "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA", "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE" };
+  const TOKEN_TO_DIGIT_WORD = { "NI": "ijo", "WE": "wan", "TE": "tu", "SE": "seli", "NA": "awen", "LE": "luka", "NU": "utala", "ME": "mun", "PE": "pipi", "JE": "jo" };
+  const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" }; // kept for future (date/time separators etc.)
+  const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
+  const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
+
+  function normalizeLooseSeparators(raw) {
+    if (raw == null) return "";
+    let s = String(raw);
+    const isNeg = s.startsWith("-");
+    const head = isNeg ? "-" : "";
+    const rest = isNeg ? s.slice(1) : s;
+    let r = rest.replace(/\s+/g, " ");
+    r = r.replace(/-+/g, "-");
+    return (head + r).trim();
+  }
+
+  function numberStrToNanpaCaps(s, { thousandsChar = "," } = {}) {
+    if (s == null) throw new Error("s must be a string, not null");
+    let raw = normalizeLooseSeparators(String(s));
+    if (!raw) throw new Error("Empty value cannot be encoded");
+
+    function encodeSingleNumberSegment(segment, includeInitialNe) {
+      let seg = String(segment).trim();
+      if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
+
+      // allow optional leading '-'
+      let isNeg = false;
+      if (seg.startsWith("-")) { isNeg = true; seg = seg.slice(1); }
+
+      // split integer/fraction
+      const parts = seg.split(".");
+      if (parts.length > 2) throw new Error(`Too many decimals in "${s}"`);
+
+      const intPart = parts[0] ?? "";
+      const fracPart = parts[1] ?? "";
+      const hasDecimal = parts.length === 2;
+
+      if (!intPart) throw new Error(`Missing integer part in "${s}"`);
+
+      // validate integer groups
+      const ip = intPart;
+      const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+      for (const g of groups) {
+        if (g === "" || !/^\d+$/.test(g)) throw new Error(`Invalid integer group "${g}" in "${s}"`);
+      }
+
+      const out = [];
+      if (includeInitialNe) out.push("NE");
+      else out.push("NENA", "EN"); // "nena en" separator between segments (future)
+
+      if (isNeg) out.push("NO");
+
+      for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
+
+      // thousands groups: treat each separator as "nena en" (matches your prior work)
+      if (groups.length > 1) {
+        for (let gi = 1; gi < groups.length; gi++) {
+          out.push("NE"); // group separator
+          for (const d of groups[gi]) out.push(DIGIT_TO_TOKEN[d]);
+        }
+      }
+
+      if (hasDecimal) {
+        out.push(OPCHAR_TO_TOKEN["."]);
+        for (const ch of fracPart) {
+          if (ch === "_" ) continue;
+          if (ch === " " || ch === "-") { out.push("NE"); continue; }
+          if (thousandsChar && ch === thousandsChar) { out.push("NE"); continue; }
+          if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
+          throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
+        }
+      }
+
+      out.push("N");
+      return out.join("");
+    }
+
+    return encodeSingleNumberSegment(raw, true);
+  }
+
+  function tokenizeNanpaCaps(caps) {
+    const s = String(caps).trim().toUpperCase();
+    if (!s.endsWith("N")) throw new Error("nanpa-caps must end with final terminator 'N'");
+    if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
+
+    const tokens = [];
+    let i = 0;
+    const n = s.length;
+
+    while (i < n - 1) {
+      let matched = null;
+      for (const pref of TOKEN_PREFIXES) {
+        if (s.startsWith(pref, i)) { matched = pref; break; }
+      }
+      if (matched != null) { tokens.push(matched); i += matched.length; continue; }
+
+      if (i + 2 <= n - 1) {
+        const two = s.slice(i, i + 2);
+        if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
+      }
+      throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
+    }
+
+    tokens.push("N");
+    return tokens;
+  }
+
+  function nanpaCapsTokensToTpWords(tokens) {
+    const out = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+
+      if (t === "NE") {
+        if (out.length === 0) out.push("nanpa", "en");
+        else out.push("nena", "en");
+        continue;
+      }
+
+      if (DIGIT_TOKENS.has(t)) {
+        const digitWord = TOKEN_TO_DIGIT_WORD[t];
+        if (t === "NI" || t === "NA" || t === "NU") out.push("nena", digitWord);
+        else out.push(digitWord, "en");
+        continue;
+      }
+
+      if (t === "NO") { out.push("nena", "o"); continue; }
+      if (t === "KE") { out.push("kulupu", "en"); continue; }
+      if (t === "N")  { out.push("nanpa"); continue; }
+      if (t === "NONE") { out.push("nena", "en"); continue; } // decimal marker placeholder (future refine)
+
+      throw new Error(`Unsupported token "${t}" in nanpa-caps`);
+    }
+    return out;
+  }
+
+  function tpWordsToUcsurCodepoints(words) {
+    const cps = [];
+    for (const w of words) {
+      const key = String(w).toLowerCase();
+      const cp = WORD_TO_UCSUR_CP[key];
+      if (cp == null) throw new Error(`No UCSUR code point for word "${w}"`);
+      cps.push(cp);
+    }
+    return cps;
+  }
+
+  function decimalToUcsurCodepoints(decimalStr) {
+    const raw0 = String(decimalStr ?? "").trim();
+    if (!raw0) return [];
+    const caps = numberStrToNanpaCaps(raw0, { thousandsChar: "," });
+    const tokens = tokenizeNanpaCaps(caps);
+    const tpWords = nanpaCapsTokensToTpWords(tokens);
+    return tpWordsToUcsurCodepoints(tpWords);
+  }
+
+  function pointsToInnerCps(n){
+    // full nanpa-linja-n encoding (includes nanpa/en ... nanpa)
+    const s = String(Math.max(0, Math.floor(Number(n) || 0)));
+    const cps = decimalToUcsurCodepoints(s);
+    return cps.length ? cps : [WORD_TO_UCSUR_CP["nanpa"]];
+  }
+
+  function timeSecondsToInnerCps(totalSeconds){
+    // mm:ss displayed using nanpa-linja-n digit rules + kolon separator
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = Math.floor(totalSeconds % 60);
+
+    const mm2 = String(mm).padStart(2, "0");
+    const ss2 = String(ss).padStart(2, "0");
+
+    const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
+    const cpEn    = WORD_TO_UCSUR_CP["en"];
+    const cpKolon = WORD_TO_UCSUR_CP["kolon"];
+
+    function digitInner(dChar){
+      const cps = decimalToUcsurCodepoints(String(dChar));
+      // cps is ["nanpa","en", ...digit..., "nanpa"]
+      return (cps.length >= 4) ? cps.slice(2, cps.length - 1) : [];
+    }
+
+    const inner = [];
+    for (const ch of mm2) inner.push(...digitInner(ch));
+
+    if (typeof cpKolon === "number"){
+      inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKolon, WORD_TO_UCSUR_CP["en"]);
+    }
+
+    for (const ch of ss2) inner.push(...digitInner(ch));
+
+    return [cpNanpa, cpEn, ...inner, cpNanpa].filter((x)=>typeof x === "number");
+  }
+
+  function fitDrawCartouche(targetCanvas, innerCps, { cssW, cssH, fontPx, fontFamily, align = "center" }){
+    const dpr = window.devicePixelRatio || 1;
+
+    targetCanvas.style.width = `${cssW}px`;
+    targetCanvas.style.height = `${cssH}px`;
+    targetCanvas.width = Math.ceil(cssW * dpr);
+    targetCanvas.height = Math.ceil(cssH * dpr);
+
+    const ctx = targetCanvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const off = document.createElement("canvas");
+    const pad = Math.max(4, Math.round(fontPx * 0.11));
+    renderFontCartoucheToCanvas(off, innerCps, { fontPx, padPx: pad, fontFamily: fontFamily || FONT_FAMILY_LATIN, fgCss: "#111" });
+
+    const scale = Math.min(cssW / off.width, cssH / off.height);
+    const drawW = Math.floor(off.width * scale);
+    const drawH = Math.floor(off.height * scale);
+
+    const y = Math.floor((cssH - drawH) / 2);
+
+    let x;
+    if (align === "right") x = Math.floor(cssW - drawW);
+    else if (align === "left") x = 0;
+    else x = Math.floor((cssW - drawW) / 2);
+
+    ctx.drawImage(off, x, y, drawW, drawH);
+  }
+
+  /* ============================================================
+     Topbar timer + best score cartouches (simple numeric)
+     ============================================================ */
+  function renderTopTimer(secondsLeft){
+    const c = document.getElementById("timerCanvas");
+    if (!c) return;
+    const cssW = c.classList.contains("timerCanvas") ? parseInt(getComputedStyle(c).width, 10) || 170 : 170;
+    const cssH = 36;
+    const inner = timeSecondsToInnerCps(secondsLeft);
+    fitDrawCartouche(c, inner, { cssW, cssH, fontPx: 44, fontFamily: FONT_FAMILY_NANPA_LINJA_N , align: "left" });
+  }
+
+  function setBestCanvasVisible(v){
+    const c = document.getElementById("bestCanvas");
+    if (!c) return;
+    c.style.display = v ? "block" : "none";
+  }
+
+  function renderTopBest(bestScore){
+    const c = document.getElementById("bestCanvas");
+    if (!c) return;
+    if (bestScore == null){ setBestCanvasVisible(false); return; }
+    setBestCanvasVisible(true);
+
+    // prefix "pona" is not embedded; keep it numeric-only for now (simple + robust)
+    const cssW = 220;
+    const cssH = 36;
+    fitDrawCartouche(c, pointsToInnerCps(bestScore), { cssW, cssH, fontPx: 44, fontFamily: FONT_FAMILY_NANPA_LINJA_N , align: "left"});
+  }
+
+
+// ===================== Finish popup (like 15-puzzle end panel) =====================
+function drawPrefixGlyphsLeftOfBox(ctx, boxX, centerY, fontPx, cps, gapPx = 10, interGlyphGapPx = 6) {
+  const chars = cps.map(cp => String.fromCodePoint(cp));
+
+  ctx.save();
+  ctx.font = `${fontPx}px "${FONT_FAMILY_LATIN}"`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#111";
+
+  let totalW = 0;
+  const widths = [];
+  for (const ch of chars) {
+    const w = ctx.measureText(ch).width;
+    widths.push(w);
+    totalW += w;
+  }
+  totalW += interGlyphGapPx * Math.max(0, chars.length - 1);
+
+  let x = boxX - gapPx - totalW;
+  for (let i = 0; i < chars.length; i++) {
+    ctx.fillText(chars[i], x, centerY);
+    x += widths[i] + interGlyphGapPx;
+  }
+
+  ctx.restore();
+}
+
+function renderFinishScorePopup(finalScore){
+  const finishCanvas = document.getElementById("finishCanvas");
+  if (!finishCanvas) return;
+
+  const cssW = Math.min(680, Math.floor(window.innerWidth * 0.92));
+  const coarse = (window.matchMedia && window.matchMedia("(pointer: coarse), (max-width: 520px)").matches);
+  const cssH = coarse ? 96 : 110;
+  const dpr = window.devicePixelRatio || 1;
+
+  finishCanvas.style.width = `${cssW}px`;
+  finishCanvas.style.height = `${cssH}px`;
+  finishCanvas.width = Math.ceil(cssW * dpr);
+  finishCanvas.height = Math.ceil(cssH * dpr);
+
+  const ctx = finishCanvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  // Build cartouche for score using nanpa-linja-n font rules
+  const innerCps = pointsToInnerCps(finalScore);
+
+  // Render cartouche to an offscreen canvas at a large nominal size
+  const off = document.createElement("canvas");
+  const largePx = 72;
+  const pad = Math.max(6, Math.round(largePx * 0.12));
+  renderFontCartoucheToCanvas(off, innerCps, {
+    fontPx: largePx,
+    padPx: pad,
+    fontFamily: FONT_FAMILY_NANPA_LINJA_N,
+    fgCss: "#111"
+  });
+
+  // Prefix glyphs OUTSIDE the cartouche: nanpa pona
+  const prefixCps = [WORD_TO_UCSUR_CP["nanpa"], WORD_TO_UCSUR_CP["musi"]].filter(Boolean);
+  const gapPx = 10;
+  const interGlyphGapPx = 6;
+
+  // Measure prefix width at an initial scaled font size
+  let scale = Math.min(cssW / off.width, cssH / off.height);
+  let prefixFontPx = Math.max(14, largePx * scale);
+
+  ctx.save();
+  ctx.font = `${prefixFontPx}px "${FONT_FAMILY_LATIN}"`;
+  const prefixChars = prefixCps.map(cp => String.fromCodePoint(cp));
+  let prefixW = 0;
+  for (let i = 0; i < prefixChars.length; i++){
+    prefixW += ctx.measureText(prefixChars[i]).width;
+    if (i < prefixChars.length - 1) prefixW += interGlyphGapPx;
+  }
+  ctx.restore();
+
+  const availWForCartouche = Math.max(120, cssW - (prefixCps.length ? (prefixW + gapPx) : 0));
+  scale = Math.min(availWForCartouche / off.width, cssH / off.height);
+  prefixFontPx = Math.max(14, largePx * scale);
+
+  const drawW = Math.floor(off.width * scale);
+  const drawH = Math.floor(off.height * scale);
+
+  // Right-align the cartouche box
+  const x = Math.floor(cssW - drawW);
+  const y = Math.floor((cssH - drawH) / 2);
+
+  if (prefixCps.length){
+    drawPrefixGlyphsLeftOfBox(ctx, x, cssH / 2, prefixFontPx, prefixCps, gapPx, interGlyphGapPx);
+  }
+  ctx.drawImage(off, x, y, drawW, drawH);
+}
+
+function showFinishPopup(finalScore){
+  const panel = document.getElementById("finishPanel");
+  if (!panel) return;
+  renderFinishScorePopup(finalScore);
+  panel.classList.add("show");
+  panel.setAttribute("aria-hidden", "false");
+}
+
+function hideFinishPopup(){
+  const panel = document.getElementById("finishPanel");
+  if (!panel) return;
+  panel.classList.remove("show");
+  panel.setAttribute("aria-hidden", "true");
+}
+
+
+  /* ============================================================
+     Lists -> unique decks per section
+     ============================================================ */
+  function sanitizeLists(obj){
+    const out = { places: {}, boys: {}, girls: {} };
+    if (!obj || typeof obj !== "object") return out;
+    for (const k of ["places","boys","girls"]){
+      const sec = obj[k];
+      if (!sec || typeof sec !== "object") continue;
+      for (const [ekey, val] of Object.entries(sec)){
+        const v = String(val ?? "").trim();
+        if (!v) continue;
+        out[k][String(ekey)] = v;
+      }
+    }
+    return out;
+  }
+
+  function uniqueValuesForSection(lists, section){
+    const sec = lists?.[section] || {};
+    const set = new Set();
+
+    for (const v of Object.values(sec)){
+      const raw = String(v ?? "").trim();
+      if (!raw) continue;
+
+      // Answer is the TP value (letters-only). Eliminate anything outside TP alphabet.
+      if (!isEligibleTpValue(raw)) continue;
+
+      const norm = normalizeGuess(raw);
+      set.add(norm);
+    }
+    return Array.from(set);
+  }
+
+  function buildDecks(lists){
+    const decks = {};
+    for (const sec of ["places","boys","girls"]){
+      const vals = uniqueValuesForSection(lists, sec);
+      shuffleInPlace(vals);
+      decks[sec] = { vals, idx: 0 };
+    }
+    return decks;
+  }
+
+  function availableSections(decks){
+    const secs = [];
+    for (const sec of ["places","boys","girls"]){
+      const d = decks[sec];
+      if (!d) continue;
+      if (d.idx < d.vals.length) secs.push(sec);
+    }
+    return secs;
+  }
+
+  function nextFromDeck(decks){
+    let secs = availableSections(decks);
+    if (!secs.length){
+      // pool exhausted: reshuffle all
+      for (const sec of ["places","boys","girls"]){
+        const d = decks[sec];
+        if (!d) continue;
+        shuffleInPlace(d.vals);
+        d.idx = 0;
+      }
+      secs = availableSections(decks);
+      if (!secs.length) return null;
+    }
+    const sec = secs[randInt(secs.length)];
+    const d = decks[sec];
+    const val = d.vals[d.idx++];
+    return { section: sec, tp: val };
+  }
+
+  /* ============================================================
+     Game state
+     ============================================================ */
+  const GameState = { idle: "idle", running: "running", quitting: "quitting", finished: "finished", managing: "managing" };
+  let state = GameState.idle;
+
+  let lists = sanitizeLists(DEFAULT_LISTS);
+  let decks = buildDecks(lists);
+
+  let glyphStats = {}; // { word: { seen:number, wrong:number } }
+  let glyphStatsSaveHandle = null;
+
+  let current = null;         // { section, tp, answerNorm, answerRaw }
+  let triesLeft = MAX_TRIES;
+  let score = 0;
+
+  let bestScore = null;
+
+  let timeLeft = DEFAULT_DURATION_SEC;
+  let timerHandle = null;
+
+  function canPlay(){
+    return state === GameState.running;
+  }
+
+  function resetFeed(){
+    const feed = document.getElementById("feed");
+    if (!feed) return;
+    feed.innerHTML = "";
+  }
+
+  function appendFeedRow({ good, text, points, leftLabelText = null }){
+    const feed = document.getElementById("feed");
+    if (!feed) return;
+
+    const row = document.createElement("div");
+    row.className = "row";
+
+    let leftEl = null;
+
+    if (leftLabelText){
+      const lbl = document.createElement("div");
+      lbl.className = "ptsLabel";
+      lbl.textContent = leftLabelText;
+      row.appendChild(lbl);
+      leftEl = lbl;
+    } else {
+      const pts = document.createElement("canvas");
+      pts.className = "ptsCanvas";
+      row.appendChild(pts);
+      leftEl = pts;
+
+      // render points cartouche (right-justified within the slot)
+      fitDrawCartouche(pts, pointsToInnerCps(points), { cssW: 84, cssH: 30, fontPx: 32, fontFamily: FONT_FAMILY_NANPA_LINJA_N, align: "right" });
+    }
+
+    const span = document.createElement("div");
+    span.className = "rowText " + (good ? "good" : "bad");
+    span.textContent = text;
+    row.appendChild(span);
+    feed.appendChild(row);
+
+    // keep newest visible
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function updateScoreUi(){
+    const el = document.getElementById("scoreLbl");
+    if (el) el.textContent = `Score: ${score}`;
+  }
+
+  function setInputEnabled(v){
+    const inp = document.getElementById("answer");
+    const btn = document.getElementById("btnSubmit");
+    if (inp) inp.disabled = !v;
+    if (btn) btn.disabled = !v;
+  }
+
+  function clearInput(){
+    const inp = document.getElementById("answer");
+    if (inp) inp.value = "";
+  }
+
+  function focusInput(){
+    const inp = document.getElementById("answer");
+    if (inp) inp.focus();
+  }
+
+  function renderMainPhrase(phrase){
+    const main = document.getElementById("mainCanvas");
+    if (!main) return null;
+
+    const inner = tpTextToInnerCps(phrase);
+    fitDrawCartouche(main, inner.length ? inner : pointsToInnerCps(0), { cssW: main.clientWidth || 660, cssH: main.clientHeight || 140, fontPx: 96, fontFamily: FONT_FAMILY_LATIN });
+    return phrase;
+  }
+
+  function showCartoucheForAnswerNorm(answerNorm){
+    const phrase = phraseForAnswerNorm(answerNorm);
+    if (!phrase){
+      // Fallback: render 0 if we can't form a phrase.
+      const main = document.getElementById("mainCanvas");
+      if (main) fitDrawCartouche(main, pointsToInnerCps(0), { cssW: main.clientWidth || 660, cssH: main.clientHeight || 140, fontPx: 96, fontFamily: FONT_FAMILY_NANPA_LINJA_N });
+      return null;
+    }
+        if (current) current.pendingTokens = Array.isArray(LAST_PHRASE_TOKENS) ? LAST_PHRASE_TOKENS.slice() : null;
+return renderMainPhrase(phrase);
+  }
+
+
+  function pickNext(){
+    const nxt = nextFromDeck(decks);
+    if (!nxt) return null;
+
+    const answerNorm = String(nxt.tp ?? "");
+    if (!answerNorm) return null;
+
+    return {
+      section: nxt.section,
+      answerNorm,      // letters-only TP answer (what the user must type)
+      displayPhrase: null,
+      pendingTokens: null
+    };
+  }
+
+  function loadNextCartouche(){
+    current = pickNext();
+    triesLeft = MAX_TRIES;
+    clearInput();
+
+    if (!current){
+      setStatus("No data.");
+      return;
+    }
+
+    // Generate and render randomized glyph-words phrase for this answer
+    current.displayPhrase = showCartoucheForAnswerNorm(current.answerNorm);
+  }
+
+  function tick(){
+    if (!canPlay()) return;
+    timeLeft -= 1;
+    if (timeLeft < 0) timeLeft = 0;
+    renderTopTimer(timeLeft);
+
+    if (timeLeft <= 0){
+      finishGame();
+    }
+  }
+
+  function startTimer(){
+    stopTimer();
+    timerHandle = setInterval(tick, 1000);
+  }
+
+  function stopTimer(){
+    if (timerHandle){
+      clearInterval(timerHandle);
+      timerHandle = null;
+    }
+  }
+
+  function startGame(){
+    state = GameState.running;
+
+    score = 0;
+    updateScoreUi();
+    resetFeed();
+
+    timeLeft = DEFAULT_DURATION_SEC;
+    renderTopTimer(timeLeft);
+
+    decks = buildDecks(lists);
+    loadNextCartouche();
+
+    setInputEnabled(true);
+    document.getElementById("btnQuit").disabled = false;
+    document.getElementById("btnStart").disabled = true;
+
+    setStatus("Go.");
+    focusInput();
+    startTimer();
+  }
+
+  function finishGame(){
+    if (state !== GameState.running) return;
+    state = GameState.finished;
+
+    stopTimer();
+    setInputEnabled(false);
+    document.getElementById("btnQuit").disabled = true;
+    document.getElementById("btnStart").disabled = false;
+
+    // update best
+    if (bestScore == null || score > bestScore){
+      bestScore = score;
+      saveBestScore(bestScore);
+      renderTopBest(bestScore);
+    }
+
+    showFinishPopup(score);
+
+    setStatus(`Time. Final score: ${score}.`);
+  }
+
+  function quitGame(){
+    state = GameState.idle;
+    stopTimer();
+    setInputEnabled(false);
+    document.getElementById("btnQuit").disabled = true;
+    document.getElementById("btnStart").disabled = false;
+    setStatus("Idle.");
+  }
+
+  function submitGuess(){
+    if (!canPlay()) return;
+    if (!current) return;
+
+    const inp = document.getElementById("answer");
+    const typedRaw = String(inp?.value ?? "");
+    const typedNorm = normalizeGuess(typedRaw);
+
+    if (!typedNorm){
+      return;
+    }
+
+    if (typedNorm === current.answerNorm){
+      const pts = computePointsFromNorm(current.answerNorm);
+      score += pts;
+      updateScoreUi();
+      appendFeedRow({ good: true, text: typedRaw, points: pts });
+      bumpSeenForTokens(current?.pendingTokens);
+      loadNextCartouche();
+      focusInput();
+      return;
+    }
+
+    triesLeft -= 1;
+    appendFeedRow({ good: false, text: typedRaw, points: 0 });
+    clearInput();
+    focusInput();
+
+    if (triesLeft <= 0){
+      // Commit adaptive glyph stats ONLY when this cartouche is resolved (3 strikes)
+      bumpSeenForTokens(current?.pendingTokens);
+      if (current?.pendingTokens && current.pendingTokens.length){
+        const mi = firstMismatchIndex(current.answerNorm, typedNorm);
+        let wi = mi;
+        if (wi >= current.pendingTokens.length) wi = current.pendingTokens.length - 1;
+        bumpWrongForWord(current.pendingTokens[wi]);
+      }
+
+      // Out of tries: reveal the correct value in red, with "ni li pona:" on the left
+      appendFeedRow({ good: false, text: current.answerNorm, points: 0, leftLabelText: "ni li pona:" });
+
+      // Move on
+      loadNextCartouche();
+      focusInput();
+    }
+  }
+
+  /* ============================================================
+     Modal (lists management)
+     ============================================================ */
+  function showManageModal(){
+    if (state === GameState.running) stopTimer();
+    state = GameState.managing;
+    document.getElementById("overlay").classList.add("show");
+  }
+
+  function hideManageModal(resume){
+    document.getElementById("overlay").classList.remove("show");
+    if (resume && timeLeft > 0 && document.getElementById("btnStart").disabled){
+      state = GameState.running;
+      startTimer();
+      focusInput();
+    } else if (!resume && state === GameState.managing){
+      state = GameState.idle;
+    }
+  }
+
+  function downloadJsonObject(obj, filename){
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "lists.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function persistLists(){
+    try{ await idbSet(IDB_KEY_LISTS, lists); } catch (e){ console.warn("[idb] save failed", e); }
+  }
+
+  async function loadListsFromIdb(){
+    try{
+      const got = await idbGet(IDB_KEY_LISTS);
+      if (got){
+        lists = sanitizeLists(got);
+      } else {
+        lists = sanitizeLists(DEFAULT_LISTS);
+      }
+    } catch {
+      lists = sanitizeLists(DEFAULT_LISTS);
+    }
+    decks = buildDecks(lists);
+  }
+
+  /* ============================================================
+     Quit overlay (confirm)
+     ============================================================ */
+  function showQuitConfirm(){
+    state = GameState.quitting;
+    stopTimer();
+    document.getElementById("quitOverlay").classList.add("show");
+  }
+  function hideQuitConfirm(resume){
+    document.getElementById("quitOverlay").classList.remove("show");
+    if (resume){
+      state = GameState.running;
+      startTimer();
+      focusInput();
+    }
+  }
+
+  /* ============================================================
+     Wire UI
+     ============================================================ */
+  function wire(){
+    const btnStart = document.getElementById("btnStart");
+    const btnQuit = document.getElementById("btnQuit");
+    const btnManage = document.getElementById("btnManage");
+    const btnSubmit = document.getElementById("btnSubmit");
+    const inp = document.getElementById("answer");
+
+    btnStart.addEventListener("click", () => {
+      if (state === GameState.running) return;
+      startGame();
+    });
+
+    btnQuit.addEventListener("click", () => {
+      if (state !== GameState.running) return;
+      showQuitConfirm();
+    });
+
+    document.getElementById("btnCancelQuit").addEventListener("click", () => hideQuitConfirm(true));
+    document.getElementById("btnConfirmQuit").addEventListener("click", () => {
+      document.getElementById("quitOverlay").classList.remove("show");
+      quitGame();
+    });
+
+    btnManage.addEventListener("click", () => showManageModal());
+    document.getElementById("btnCloseModal").addEventListener("click", () => hideManageModal(true));
+
+    btnSubmit.addEventListener("click", submitGuess);
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter"){
+        e.preventDefault();
+        submitGuess();
+      }
+    });
+
+    // Best score click to clear
+    const bestCanvas = document.getElementById("bestCanvas");
+    bestCanvas.addEventListener("click", () => {
+      if (bestScore == null) return;
+      if (!confirm("Clear best score?")) return;
+      bestScore = null;
+      clearBestScore();
+      renderTopBest(bestScore);
+    });
+
+    // Export/import/reset lists
+    document.getElementById("btnExport").addEventListener("click", () => {
+      downloadJsonObject(lists, "tp-cartouche-lists.json");
+    });
+
+    const fileImport = document.getElementById("fileImport");
+    document.getElementById("btnImport").addEventListener("click", () => {
+      fileImport.value = "";
+      fileImport.click();
+    });
+
+    fileImport.addEventListener("change", async () => {
+      const f = fileImport.files && fileImport.files[0];
+      if (!f) return;
+      try{
+        const txt = await f.text();
+        const obj = JSON.parse(txt);
+        lists = sanitizeLists(obj);
+        await persistLists();
+        decks = buildDecks(lists);
+        alert("Imported.");
+      } catch (e){
+        alert("Import failed: " + (e?.message ?? String(e)));
+      } finally {
+        fileImport.value = "";
+      }
+    });
+
+    document.getElementById("btnReset").addEventListener("click", async () => {
+      if (!confirm("Reset lists to defaults?")) return;
+      lists = sanitizeLists(DEFAULT_LISTS);
+      await persistLists();
+      decks = buildDecks(lists);
+      alert("Reset.");
+    });
+
+    // clicking outside modal closes (but not if you click the modal itself)
+    const overlay = document.getElementById("overlay");
+    overlay.addEventListener("pointerdown", (e) => { if (e.target === overlay) hideManageModal(true); });
+
+    const quitOverlay = document.getElementById("quitOverlay");
+    quitOverlay.addEventListener("pointerdown", (e) => { if (e.target === quitOverlay) hideQuitConfirm(true); });
+  }
+
+  function init(){
+    setHintText();
+    setTopPrefixes();
+    bestScore = loadBestScore();
+    renderTopBest(bestScore);
+
+    setInputEnabled(false);
+    renderTopTimer(DEFAULT_DURATION_SEC);
+
+    document.getElementById("btnQuit").disabled = true;
+    document.getElementById("btnStart").disabled = false;
+
+    setStatus("Click Start.");
+  }
+
+  function handleResize(){
+    // re-render current cartouche and topbar
+    renderTopTimer(timeLeft);
+    renderTopBest(bestScore);
+    if (current){
+      if (!current.displayPhrase) current.displayPhrase = phraseForAnswerNorm(current.answerNorm);
+      current.pendingTokens = Array.isArray(LAST_PHRASE_TOKENS) ? LAST_PHRASE_TOKENS.slice() : null;
+      if (current.displayPhrase) renderMainPhrase(current.displayPhrase);
+    }
+  }
+
+  const finishPanel = document.getElementById("finishPanel");
+  //const btnFinishOk = document.getElementById("btnFinishOk");
+  //if (btnFinishOk) btnFinishOk.addEventListener("click", () => hideFinishPopup());
+  if (finishPanel){
+    finishPanel.addEventListener("pointerdown", (e) => { if (e.target === finishPanel) hideFinishPopup(); });
+  }
+
+  window.addEventListener("resize", handleResize);
+
+  window.addEventListener("load", async () => {
+    setStatus("Loading fonts…");
+    await ensureFontsLoaded();
+    await loadListsFromIdb();
+    await loadGlyphStatsFromIdb();
+    wire();
+    init();
+    setStatus("Click Start.");
+  });
+
+})();
+</script>
+</body>
+</html>
