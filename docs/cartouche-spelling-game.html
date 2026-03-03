@@ -343,6 +343,7 @@ html, body{
 
       .rowText{ font-size: 16px; }
       .txt{ font-size: 18px; }
+      .finishCanvas{ height: 96px; }
     }
 
     .finishPanel{
@@ -367,10 +368,12 @@ html, body{
   display: grid;
   gap: 12px;
   justify-items: center;
+  box-sizing: border-box;
 }
 
 .finishCanvas{
-  width: min(680px, 92vw);
+  width: 100%;
+  max-width: 100%;
   height: 110px;
   display: block;
 }
@@ -5065,7 +5068,9 @@ function renderFinishScorePopup(finalScore){
   const finishCanvas = document.getElementById("finishCanvas");
   if (!finishCanvas) return;
 
-  const cssW = Math.min(680, Math.floor(window.innerWidth * 0.92));
+  const card = document.querySelector("#finishPanel .finishCard");
+  const cardW = card ? Math.floor(card.clientWidth) : Math.floor(window.innerWidth * 0.94);
+  const cssW = Math.min(680, Math.max(220, cardW));
   const coarse = (window.matchMedia && window.matchMedia("(pointer: coarse), (max-width: 520px)").matches);
   const cssH = coarse ? 96 : 110;
   const dpr = window.devicePixelRatio || 1;
