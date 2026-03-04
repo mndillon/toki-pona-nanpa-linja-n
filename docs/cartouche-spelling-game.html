@@ -423,7 +423,7 @@ html, body{
     <button id="btnQuit" class="btn" disabled>Quit</button>
     <button id="btnManage" class="btn">Lists</button>
     <div class="ddBox" title="Percent of numeric cartouches">
-      <span class="ddLabel">Numeric</span>
+      <span class="ddLabel" id="numericLbl">Numeric</span>
       <select id="numericPctSelect" class="ddSelect" aria-label="Numeric cartouche percentage">
         <option value="0">0%</option>
         <option value="10">10%</option>
@@ -432,6 +432,13 @@ html, body{
         <option value="70">70%</option>
         <option value="90">90%</option>
         <option value="100">100%</option>
+      </select>
+    </div>
+    <div class="ddBox" title="Language">
+      <span class="ddLabel" id="langLbl">Lang</span>
+      <select id="langSelect" class="ddSelect" aria-label="Language">
+        <option value="en">EN</option>
+        <option value="tp">TP</option>
       </select>
     </div>
     <div id="status" class="status">Loading…</div>
@@ -525,6 +532,82 @@ html, body{
   const NUMERIC_PCT_CHOICES = [0,10,30,50,70,90,100];
   const LS_NUMERIC_PCT_KEY = "cartoucheSpelling.numericPct";
   let numericPct = 0;
+
+
+  const LS_LANG_KEY = "cartoucheSpelling.lang";
+  let UI_LANG = "tp";
+
+  const I18N = {
+    en: {
+      btnStart: "Start",
+      btnQuit: "Quit",
+      btnManage: "Lists",
+      btnSubmit: "Enter",
+      langLbl: "Lang",
+      numericLbl: "Numeric",
+      statusLoading: "Loading…",
+      statusGo: "Go.",
+      statusIdle: "Idle.",
+      statusNoData: "No data.",
+      statusTimeFinal: (score)=>`Final game score: ${score}.`,
+      hint: (tries, sec)=>`Type the Latin spelling for the cartouche. You have ${tries} tries. ${sec} seconds.`,
+      answerPlaceholder: "type answer and press Enter",
+      revealLeft: "correct value:",
+      clickStart: "Click Start.",
+      loadingFonts: "Loading fonts…"
+    },
+    tp: {
+      btnStart: "open",
+      btnQuit: "pini",
+      btnManage: "lipu",
+      btnSubmit: "o pana",
+      langLbl: "toki",
+      numericLbl: "nanpa",
+      statusLoading: "o awen…",
+      statusGo: "o musi.",
+      statusIdle: "awen.",
+      statusNoData: "sona li lon ala.",
+      statusTimeFinal: (score)=>`nanpa musi li ${score}.`,
+      hint: (tries, sec)=>`o sitelen e nimi Lasin pi poki nimi. sina jo e pali ${tries}. tenpo li ${sec} s.`,
+      answerPlaceholder: "o sitelen, o pana kepeken nena",
+      revealLeft: "ni li pona:",
+      clickStart: "o open.",
+      loadingFonts: "mi kama jo e sitelen…"
+    }
+  };
+
+  function uiText(key, ...args){
+    const pack = I18N[UI_LANG] || I18N.en;
+    const v = pack[key];
+    return (typeof v === "function") ? v(...args) : String(v ?? "");
+  }
+
+  function applyUiLanguage(){
+    // topbar buttons/labels
+    const bStart = document.getElementById("btnStart");
+    const bQuit  = document.getElementById("btnQuit");
+    const bMng   = document.getElementById("btnManage");
+    const bSub   = document.getElementById("btnSubmit");
+    const langLbl= document.getElementById("langLbl");
+
+    if (bStart) bStart.textContent = uiText("btnStart");
+    if (bQuit)  bQuit.textContent  = uiText("btnQuit");
+    if (bMng)   bMng.textContent   = uiText("btnManage");
+    if (bSub)   bSub.textContent   = uiText("btnSubmit");
+    if (langLbl)langLbl.textContent= uiText("langLbl");
+
+    // numeric dropdown label (your HTML has a <span class="ddLabel">Numeric</span>)
+    // Give it an id="numericLbl" in HTML (1-line change), then:
+    const numLbl = document.getElementById("numericLbl");
+    if (numLbl) numLbl.textContent = uiText("numericLbl");
+
+    // hint + input placeholder
+    const inp = document.getElementById("answer");
+    if (inp) inp.placeholder = uiText("answerPlaceholder");
+    setHintText(); // will use uiText after we patch it below
+  }
+
+
 
   function nlnRandInt(minIncl, maxIncl){
     return Math.floor(Math.random() * (maxIncl - minIncl + 1)) + minIncl;
@@ -1545,7 +1628,6 @@ html, body{
   "Benjamin": "Pensaman",
   "Benji": "Pensi",
   "Bennett": "Penato",
-  "Benni": "Penni",
   "Benny": "Peni",
   "Bentley": "Pente",
   "Bento": "Pento",
@@ -1688,7 +1770,6 @@ html, body{
   "Conan": "Konan",
   "Conlan": "Kanlan",
   "Conn": "Kan",
-  "Connal": "Kannala",
   "Connell": "Kanala",
   "Connie": "Koni",
   "Connla": "Kanla",
@@ -1748,7 +1829,6 @@ html, body{
   "Daniels": "Tanjasi",
   "Daniil": "Tanila",
   "Daniyal": "Tanijala",
-  "Dannan": "Tannan",
   "Danny": "Tani",
   "Dante": "Tante",
   "Danylo": "Tanala",
@@ -1831,7 +1911,6 @@ html, body{
   "Dónall": "Tenola",
   "Eamon": "Iman",
   "Eamonn": "Iman",
-  "Eanna": "Inna",
   "Eben": "Epan",
   "Eddie": "Ete",
   "Eden": "Itan",
@@ -1934,7 +2013,6 @@ html, body{
   "Finley": "Pinli",
   "Finn": "Pin",
   "Finnan": "Pinan",
-  "Finnian": "Pinnan",
   "Finnley": "Pinle",
   "Finnán": "Pinen",
   "Fintan": "Pintan",
@@ -2135,7 +2213,6 @@ html, body{
   "Jonah": "Sona",
   "Jonas": "Sonasi",
   "Jonathan": "Sanasan",
-  "Jonnie": "Sanni",
   "Jordan": "Utun",
   "Jordi": "Sote",
   "Jordie": "Sote",
@@ -2286,7 +2363,6 @@ html, body{
   "Leeroy": "Liwe",
   "Leighton": "Letan",
   "Lemuel": "Amula",
-  "Lenni": "Lenni",
   "Lennie": "Leni",
   "Lennon": "Lenan",
   "Lennox": "Lenaka",
@@ -2779,7 +2855,6 @@ html, body{
   "Solomon": "Salaman",
   "Sonas": "Sanasi",
   "Sonaí": "Sana",
-  "Sonnie": "Sanni",
   "Sonny": "Sani",
   "Soren": "Sawin",
   "Spencer": "Pense",
@@ -3026,7 +3101,6 @@ html, body{
   "Adelyn": "Atelan",
   "Aditi": "Atete",
   "Adriana": "Etana",
-  "Adrianna": "Etanna",
   "Adrielle": "Atela",
   "Advika": "Ateka",
   "Aedín": "Aten",
@@ -3066,7 +3140,6 @@ html, body{
   "Alana": "Alana",
   "Alanah": "Alana",
   "Alanna": "Alana",
-  "Alannah": "Alanna",
   "Alara": "Alawa",
   "Alaya": "Ale",
   "Alayah": "Ale",
@@ -3088,7 +3161,6 @@ html, body{
   "Alexis": "Alekisi",
   "Alia": "Ala",
   "Aliana": "Alana",
-  "Alianna": "Alanna",
   "Alice": "Alasi",
   "Alicia": "Alisa",
   "Alicja": "Alika",
@@ -3231,7 +3303,6 @@ html, body{
   "Arwa": "Awa",
   "Arwen": "Awan",
   "Arya": "Aja",
-  "Aryanna": "Ajanna",
   "Aseel": "Asila",
   "Asha": "Asa",
   "Ashleigh": "Ali",
@@ -3258,7 +3329,6 @@ html, body{
   "Ava-rose": "Ewa Wesi",
   "Averie": "Awawi",
   "Avery": "Ewe",
-  "Avianna": "Awanna",
   "Avie": "Awi",
   "Avni": "Ani",
   "Avril": "Awila",
@@ -3266,7 +3336,6 @@ html, body{
   "Ayah": "E",
   "Ayan": "En",
   "Ayana": "Ena",
-  "Ayanna": "Enna",
   "Ayat": "Eto",
   "Ayda": "Eta",
   "Aydah": "Eta",
@@ -3419,7 +3488,6 @@ html, body{
   "Chloë": "La",
   "Christina": "Kitena",
   "Christine": "Kiten",
-  "Cianna": "Sanna",
   "Ciara": "Sawa",
   "Cici": "Sisi",
   "Cindy": "Sinte",
@@ -3480,7 +3548,6 @@ html, body{
   "Daniela": "Tanjela",
   "Daniella": "Tanjela",
   "Danielle": "Tanjela",
-  "Danni": "Tanni",
   "Danu": "Tana",
   "Danú": "Tan",
   "Daphne": "Tapi",
@@ -3562,7 +3629,6 @@ html, body{
   "Eleonora": "Ilanowa",
   "Elia": "Ala",
   "Eliana": "Elana",
-  "Elianna": "Elanna",
   "Elif": "Elipu",
   "Elija": "Elisa",
   "Elin": "Elin",
@@ -3659,7 +3725,6 @@ html, body{
   "Eunice": "Unasi",
   "Evana": "Ewana",
   "Evangeline": "Iwansilan",
-  "Evanna": "Ewanna",
   "Evara": "Ewawa",
   "Evelin": "Ewalin",
   "Evelina": "Ewelina",
@@ -3733,7 +3798,6 @@ html, body{
   "Georgie": "Sosi",
   "Georgina": "Sosina",
   "Geraldine": "Sewaten",
-  "Gianna": "Sanna",
   "Gigi": "Sisi",
   "Gillian": "Silan",
   "Gina": "Sina",
@@ -3748,7 +3812,6 @@ html, body{
   "Gracie": "Kesi",
   "Gracie-Mae": "Kesi Me",
   "Greta": "Kita",
-  "Gráinne": "Kinna",
   "Gwen": "Ken",
   "Hadassah": "Atasa",
   "Hadia": "Ata",
@@ -3884,8 +3947,6 @@ html, body{
   "Janaki": "Sanaki",
   "Jane": "Sen",
   "Janelle": "Sanela",
-  "Jannah": "Sanna",
-  "Jannat": "Sannato",
   "Janvi": "Sanwi",
   "Jasmina": "Jamana",
   "Jasmine": "Saman",
@@ -3902,7 +3963,6 @@ html, body{
   "Jessica": "Sesika",
   "Jessie": "Sesi",
   "Jewel": "Sala",
-  "Jianna": "Sanna",
   "Jill": "Sila",
   "Jiya": "Sija",
   "Joan": "Son",
@@ -4003,7 +4063,6 @@ html, body{
   "Khloe": "Ka",
   "Kiah": "Ka",
   "Kiana": "Kana",
-  "Kianna": "Kanna",
   "Kiara": "Kawa",
   "Kiera": "Kiwa",
   "Kimberley": "Kimeli",
@@ -4060,8 +4119,6 @@ html, body{
   "Laylah": "Lela",
   "Layna": "Lena",
   "Leah": "La",
-  "Leanna": "Linna",
-  "Leanne": "Linna",
   "Leen": "Lin",
   "Leena": "Lina",
   "Leia": "La",
@@ -4155,7 +4212,6 @@ html, body{
   "Lumi": "Lami",
   "Luna": "Luna",
   "Luísa": "Lusa",
-  "Lyanna": "Janna",
   "Lyanne": "Lan",
   "Lydia": "Lita",
   "Lyla": "Lala",
@@ -4671,7 +4727,6 @@ html, body{
   "Shakira": "Sakiwa",
   "Shanaya": "Sane",
   "Shania": "Sana",
-  "Shannan": "Sannan",
   "Shannon": "Sanan",
   "Sharon": "Sawan",
   "Sharvi": "Sawi",
@@ -4686,7 +4741,6 @@ html, body{
   "Shirley": "Seli",
   "Shona": "Sona",
   "Shonagh": "Sana",
-  "Sianna": "Sanna",
   "Siara": "Sawa",
   "Sibéal": "Sipala",
   "Sidonia": "Sitona",
@@ -4735,7 +4789,6 @@ html, body{
   "Storie": "Towi",
   "Stormi": "Tomi",
   "Summer": "Same",
-  "Sunnie": "Sanni",
   "Sunny": "Sani",
   "Susan": "Susan",
   "Susie": "Susi",
@@ -4784,7 +4837,6 @@ html, body{
   "Theresa": "Tesa",
   "Théa": "Tesa",
   "Tiana": "Tana",
-  "Tianna": "Tanna",
   "Tiaraoluwa": "Tawaluwa",
   "Tierna": "Tena",
   "Tiffany": "Tepani",
@@ -4874,7 +4926,6 @@ html, body{
   "Zoya": "So",
   "Zunairah": "Sanewa",
   "Zuri": "Suwi",
-  "Zuzanna": "Sasanna",
   "Zélie": "Sila",
   "Áine": "An",
   "Èabha": "Apa",
@@ -4905,10 +4956,32 @@ html, body{
   };
 
 
+  function NLN_prettyNumberName(n){
+    // n can be number or string, but this is intended for small integers like tries/sec
+    const raw = String(n);
+
+    // Build caps (with grouping enabled, harmless for <1000)
+    const caps = NLN_numberStrToNanpaCaps(raw, {
+      thousandsChar: ",",
+      groupFractionTriplets: true,
+      fractionGroupSize: 3
+    });
+    if (!caps) return raw;
+
+    // Renderer-style spaced name from caps, then Title Case
+    const prettyRaw = NLN_splitCartoucheCapsLettersSpaced(caps);
+    const pretty = titleCaseNanpaProperNameForDisplay(prettyRaw);
+    return fixOkenSuffixSpacing(pretty);
+  }
+
   function setHintText(){
     const h = document.getElementById("hint");
     if (!h) return;
-    h.textContent = `Type the Latin spelling for the cartouche. You have ${MAX_TRIES} tries. ${DEFAULT_DURATION_SEC} seconds.`;
+    //h.textContent = `Type the Latin spelling for the cartouche. You have ${MAX_TRIES} tries. ${DEFAULT_DURATION_SEC} seconds.`;
+    //h.textContent = uiText("hint", MAX_TRIES, DEFAULT_DURATION_SEC);
+    const triesName = "nanpa " + NLN_prettyNumberName(MAX_TRIES);
+    const secName   = "nanpa " + NLN_prettyNumberName(DEFAULT_DURATION_SEC);
+    h.textContent = uiText("hint", triesName, secName);
   }
 
   /* ============================================================
@@ -5680,8 +5753,11 @@ html, body{
 
   function setBestCanvasVisible(v){
     const c = document.getElementById("bestCanvas");
-    if (!c) return;
-    c.style.display = v ? "block" : "none";
+    if (c) c.style.display = v ? "block" : "none";
+
+    // ALSO hide/show the "nanpa pona" prefix glyph
+    const p = document.getElementById("bestPrefix");
+    if (p) p.style.display = v ? "" : "none";
   }
 
   function renderTopBest(bestScore){
@@ -6072,7 +6148,7 @@ return renderMainPhrase(phrase);
     clearInput();
 
     if (!current){
-      setStatus("No data.");
+      setStatus(uiText("statusNoData"));
       return;
     }
 
@@ -6139,7 +6215,7 @@ return renderMainPhrase(phrase);
     document.getElementById("btnQuit").disabled = false;
     document.getElementById("btnStart").disabled = true;
 
-    setStatus("Go.");
+    setStatus(uiText("statusGo"));
     focusInput();
     startTimer();
   }
@@ -6162,7 +6238,7 @@ return renderMainPhrase(phrase);
 
     showFinishPopup(score);
 
-    setStatus(`Time. Final score: ${score}.`);
+    setStatus(uiText("statusTimeFinal", score));
   }
 
   function quitGame(){
@@ -6171,7 +6247,7 @@ return renderMainPhrase(phrase);
     setInputEnabled(false);
     document.getElementById("btnQuit").disabled = true;
     document.getElementById("btnStart").disabled = false;
-    setStatus("Idle.");
+    setStatus(uiText("statusIdle"));
   }
 
   function titleCaseNanpaProperNameForDisplay(nameStr) {
@@ -6261,7 +6337,7 @@ return renderMainPhrase(phrase);
         good: false,
         text: (current.kind === "numeric") ? prettyNumericAnswer() : current.answerNorm,
         points: 0,
-        leftLabelText: "ni li pona:"
+        leftLabelText: uiText("revealLeft")
       });
 
       // Move on
@@ -6341,6 +6417,25 @@ return renderMainPhrase(phrase);
      Wire UI
      ============================================================ */
   function wire(){
+    // load lang
+    try{
+      const saved = localStorage.getItem(LS_LANG_KEY);
+      if (saved === "tp" || saved === "en") UI_LANG = saved;
+    }catch{}
+    
+    const langSel = document.getElementById("langSelect");
+    if (langSel){
+      langSel.value = UI_LANG;
+      langSel.addEventListener("change", () => {
+        UI_LANG = (langSel.value === "tp") ? "tp" : "en";
+        try{ localStorage.setItem(LS_LANG_KEY, UI_LANG); }catch{}
+        applyUiLanguage();
+      });
+    }
+
+    setStatus(uiText("statusLoading"));
+    applyUiLanguage();
+
     // numeric pct dropdown
     const selNumeric = document.getElementById("numericPctSelect");
     if (selNumeric){
@@ -6452,7 +6547,7 @@ return renderMainPhrase(phrase);
     document.getElementById("btnQuit").disabled = true;
     document.getElementById("btnStart").disabled = false;
 
-    setStatus("Click Start.");
+    setStatus(uiText("clickStart"));
   }
 
   function handleResize(){
@@ -6489,13 +6584,13 @@ return renderMainPhrase(phrase);
   window.addEventListener("resize", handleResize);
 
   window.addEventListener("load", async () => {
-    setStatus("Loading fonts…");
+    setStatus(uiText("loadingFonts"));
     await ensureFontsLoaded();
     await loadListsFromIdb();
     await loadGlyphStatsFromIdb();
     wire();
     init();
-    setStatus("Click Start.");
+    setStatus(uiText("clickStart"));
   });
 
 })();
