@@ -383,6 +383,37 @@ html, body{
   gap:10px;
   justify-content:center;
 }
+  
+    .ddBox{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 6px 8px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      border-radius: 12px;
+      height: 38px;
+      box-sizing:border-box;
+      flex: 0 0 auto;
+    }
+    .ddLabel{
+      font-size: 13px;
+      color: var(--muted);
+      user-select:none;
+      -webkit-user-select:none;
+      white-space: nowrap;
+    }
+    .ddSelect{
+      height: 28px;
+      border-radius: 10px;
+      border: 1px solid rgba(17,17,17,0.22);
+      background: rgba(255,255,255,0.65);
+      color: var(--ink);
+      padding: 0 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
   </style>
 </head>
 
@@ -391,6 +422,18 @@ html, body{
     <button id="btnStart" class="btn">Start</button>
     <button id="btnQuit" class="btn" disabled>Quit</button>
     <button id="btnManage" class="btn">Lists</button>
+    <div class="ddBox" title="Percent of numeric cartouches">
+      <span class="ddLabel">Numeric</span>
+      <select id="numericPctSelect" class="ddSelect" aria-label="Numeric cartouche percentage">
+        <option value="0">0%</option>
+        <option value="10">10%</option>
+        <option value="30">30%</option>
+        <option value="50">50%</option>
+        <option value="70">70%</option>
+        <option value="90">90%</option>
+        <option value="100">100%</option>
+      </select>
+    </div>
     <div id="status" class="status">Loading…</div>
     <div class="statBox" id="bestBox"><span id="bestPrefix" class="prefixGlyph" aria-hidden="true"></span><canvas id="bestCanvas" class="bestCanvas" aria-label="Best score"></canvas></div>
     <div class="statBox" id="timerBox"><span id="timerPrefix" class="prefixGlyph" aria-hidden="true"></span><canvas id="timerCanvas" class="timerCanvas" aria-label="Time left"></canvas></div>
@@ -474,6 +517,504 @@ html, body{
 <script>
 (() => {
   "use strict";
+  /* ============================================================
+     Numeric cartouche mix (numbers/dates/times/percent/fractions)
+     - Isolated under NLN_* names
+     - Uses renderer.html logic (ported)
+     ============================================================ */
+  const NUMERIC_PCT_CHOICES = [0,10,30,50,70,90,100];
+  const LS_NUMERIC_PCT_KEY = "cartoucheSpelling.numericPct";
+  let numericPct = 0;
+
+  function nlnRandInt(minIncl, maxIncl){
+    return Math.floor(Math.random() * (maxIncl - minIncl + 1)) + minIncl;
+  }
+  function nlnPad2(n){ return String(n).padStart(2,"0"); }
+  function nlnPad4(n){ return String(n).padStart(4,"0"); }
+
+  // ---------- renderer.html ports (minimal set) ----------
+  const NLN_VULGAR_FRACTIONS = new Map([
+    ["¼",[1,4]],["½",[1,2]],["¾",[3,4]],
+    ["⅐",[1,7]],["⅑",[1,9]],["⅒",[1,10]],
+    ["⅓",[1,3]],["⅔",[2,3]],
+    ["⅕",[1,5]],["⅖",[2,5]],["⅗",[3,5]],["⅘",[4,5]],
+    ["⅙",[1,6]],["⅚",[5,6]],
+    ["⅛",[1,8]],["⅜",[3,8]],["⅝",[5,8]],["⅞",[7,8]],
+    ["↉",[0,3]],
+  ]);
+
+  function nlnCommaInt(n){
+    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  function NLN_normalizeVulgarFractionInput(raw){
+    if (raw == null) return "";
+    let s = String(raw).trim();
+    if (!s) return s;
+
+    // allow percent suffix after vulgar fraction
+    let hasPercent = false;
+    if (/%\s*$/.test(s)){
+      hasPercent = true;
+      s = s.replace(/%\s*$/, "").trim();
+    }
+
+    // mixed fraction like "1 ½"
+    s = s.replace(/\s+/g, " ");
+    const parts = s.split(" ");
+    if (parts.length === 2 && /^[+-]?\d+$/.test(parts[0]) && NLN_VULGAR_FRACTIONS.has(parts[1])){
+      const [num, den] = NLN_VULGAR_FRACTIONS.get(parts[1]);
+      const whole = parseInt(parts[0], 10);
+      const sign = whole < 0 ? -1 : 1;
+      const absWhole = Math.abs(whole);
+      const newNum = absWhole * den + num;
+      s = (sign < 0 ? "-" : "") + String(newNum) + "/" + String(den);
+    } else if (parts.length === 1 && NLN_VULGAR_FRACTIONS.has(parts[0])){
+      const [num, den] = NLN_VULGAR_FRACTIONS.get(parts[0]);
+      s = String(num) + "/" + String(den);
+    }
+
+    if (hasPercent) s = s + "%";
+    return s;
+  }
+
+  function NLN_looksLikeNanpaCaps(s){
+    const t = String(s ?? "").trim().toUpperCase();
+    return /^NE[ENOKWTPJSMALU]*N$/.test(t);
+  }
+
+  const NLN_DIGIT_TO_TOKEN = {"0":"NI","1":"WE","2":"TE","3":"SE","4":"NA","5":"LE","6":"NU","7":"ME","8":"PE","9":"JE"};
+  const NLN_OPCHAR_TO_TOKEN = { ".":"NONE", "-":"NO", "/":"NONO", "+":"NONONO" };
+
+  function NLN_numberStrToNanpaCaps(raw, opts = {}){
+    let s = String(raw ?? "").trim();
+    if (!s) return null;
+
+    // percent
+    let hasPercent = false;
+    if (/%\s*$/.test(s)){
+      hasPercent = true;
+      s = s.replace(/%\s*$/, "").trim();
+    }
+
+    // allow leading +
+    if (s.startsWith("+")) s = s.slice(1);
+
+    // remove grouping commas/spaces/underscores (we will auto-group digits ourselves)
+    s = s.replace(/[, _]/g, "");
+
+    // fraction a/b
+    const fracMatch = s.match(/^([+-]?\d{1,9})\/(\d{1,9})$/);
+    if (fracMatch){
+      const a = fracMatch[1], b = fracMatch[2];
+      let caps = "NE";
+      if (a.startsWith("-")) { caps += "NO"; }
+
+      for (const ch of a.replace("-","")){
+        if (!(ch in NLN_DIGIT_TO_TOKEN)) return null;
+        caps += NLN_DIGIT_TO_TOKEN[ch];
+      }
+
+      caps += "NONO";
+
+      for (const ch of b){
+        if (!(ch in NLN_DIGIT_TO_TOKEN)) return null;
+        caps += NLN_DIGIT_TO_TOKEN[ch];
+      }
+
+      if (hasPercent) caps += "OK";
+      caps += "N";
+      return caps;
+    }
+
+    // decimal / integer
+    const decMatch = s.match(/^([+-]?\d+)(?:\.(\d+))?$/);
+    if (!decMatch) return null;
+
+    const intPart = decMatch[1];
+    const fracPart = decMatch[2] || "";
+
+    let caps = "NE";
+    if (intPart.startsWith("-")) caps += "NO";
+
+    const intDigits = intPart.replace("-","");
+
+    // NEW: thousands grouping (NEKE) for 4+ digits when opts.thousandsChar is set
+    if (opts.thousandsChar && /^\d+$/.test(intDigits) && intDigits.length > 3){
+      const groups = [];
+      let k = intDigits.length;
+      while (k > 3) { groups.unshift(intDigits.slice(k - 3, k)); k -= 3; }
+      groups.unshift(intDigits.slice(0, k));
+
+      for (let gi = 0; gi < groups.length; gi++){
+        if (gi > 0) caps += "NEKE";
+        for (const ch of groups[gi]){
+          if (!(ch in NLN_DIGIT_TO_TOKEN)) return null;
+          caps += NLN_DIGIT_TO_TOKEN[ch];
+        }
+      }
+    } else {
+      // original behavior
+      for (const ch of intDigits){
+        if (!(ch in NLN_DIGIT_TO_TOKEN)) return null;
+        caps += NLN_DIGIT_TO_TOKEN[ch];
+      }
+    }
+
+    if (fracPart.length){
+      caps += "NONE";
+      for (const ch of fracPart){
+        if (!(ch in NLN_DIGIT_TO_TOKEN)) return null;
+        caps += NLN_DIGIT_TO_TOKEN[ch];
+      }
+    }
+
+    if (hasPercent) caps += "OK";
+    caps += "N";
+    return caps;
+  }
+
+  function NLN_timeStrToNanpaCaps(raw){
+    const s = String(raw ?? "").trim();
+    const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!m) return null;
+    const hh = parseInt(m[1],10), mm=parseInt(m[2],10);
+    const ss = m[3] != null ? parseInt(m[3],10) : null;
+    if (!(hh>=0 && hh<=23 && mm>=0 && mm<=59)) return null;
+    if (ss != null && !(ss>=0 && ss<=59)) return null;
+
+    let caps = "NE";
+    for (const ch of nlnPad2(hh)) caps += NLN_DIGIT_TO_TOKEN[ch];
+    caps += "NEKE";
+    for (const ch of nlnPad2(mm)) caps += NLN_DIGIT_TO_TOKEN[ch];
+    if (ss != null){
+      caps += "NEKE";
+      for (const ch of nlnPad2(ss)) caps += NLN_DIGIT_TO_TOKEN[ch];
+    }
+    caps += "N";
+    return caps;
+  }
+
+  function NLN_isValidDate(y,m,d){
+    const dt = new Date(Date.UTC(y,m-1,d));
+    return dt.getUTCFullYear()===y && (dt.getUTCMonth()+1)===m && dt.getUTCDate()===d;
+  }
+
+  function NLN_dateStrToNanpaCaps(raw){
+    const s = String(raw ?? "").trim();
+    const m = s.match(/^(\d{4})[-\/:](\d{2})[-\/:](\d{2})$/);
+    if (!m) return null;
+    const y=parseInt(m[1],10), mo=parseInt(m[2],10), d=parseInt(m[3],10);
+    if (y<1900 || y>2100) return null;
+    if (!NLN_isValidDate(y,mo,d)) return null;
+
+    let caps="NE";
+    for (const ch of nlnPad4(y)) caps += NLN_DIGIT_TO_TOKEN[ch];
+    caps += "NEKE";
+    for (const ch of nlnPad2(mo)) caps += NLN_DIGIT_TO_TOKEN[ch];
+    caps += "NEKE";
+    for (const ch of nlnPad2(d)) caps += NLN_DIGIT_TO_TOKEN[ch];
+    caps += "N";
+    return caps;
+  }
+
+  function NLN_tokenizeNanpaCaps(caps) {
+    if (caps == null) throw new Error("caps must be a string, not None");
+    const s = String(caps).trim().toUpperCase();
+    if (!s) throw new Error("caps is empty");
+    if (!s.endsWith("N")) throw new Error("nanpa-caps must end with final terminator 'N'");
+    if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
+
+    // Prefix tokens are variable-length; digits are always 2 chars.
+    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "OK", "NE", "NO" ];
+    const DIGIT_TOKENS = new Set(Object.values(NLN_DIGIT_TO_TOKEN));
+
+    const tokens = [];
+    let i = 0;
+    const n = s.length;
+
+    while (i < n - 1) {
+      let matched = null;
+      for (const pref of TOKEN_PREFIXES) {
+        if (s.startsWith(pref, i)) { matched = pref; break; }
+      }
+      if (matched != null) { tokens.push(matched); i += matched.length; continue; }
+
+      if (i + 2 <= n - 1) {
+        const two = s.slice(i, i + 2);
+        if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
+      }
+
+      throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
+    }
+
+    tokens.push("N");
+    return tokens;
+  }
+
+
+  // caps -> "proper name" latin (no spaces) like renderer.html splitCartoucheCapsLetters
+  function NLN_splitCartoucheCapsLetters(caps){
+    const t = String(caps ?? "").trim().toUpperCase();
+    if (!t) return "";
+    // This is a simplified but compatible splitter: it inserts vowel boundaries like the renderer did:
+    // We represent tokens into syllable-ish chunks:
+    // NE => ne, NO => no, NI => ni, WE=>we, TE=>te, SE=>se, NA=>na, LE=>le, NU=>nu, ME=>me, PE=>pe, JE=>je
+    // KE => ke, KEKE=>keke, KEKEKE=>kekeke, NONO=>nono, NONONO=>nonono, OK=>oke, NONE=>none, N (final) => n
+    const tokens = NLN_tokenizeNanpaCaps(t);
+    const map = {
+      "NE":"ne","NO":"no","NI":"ni","WE":"we","TE":"te","SE":"se","NA":"na","LE":"le","NU":"nu","ME":"me","PE":"pe","JE":"je",
+      "KE":"ke","KEKE":"keke","KEKEKE":"kekeke","NONO":"nono","NONONO":"nonono","OK":"oke","NONE":"none","N":"n"
+    };
+    return tokens.map(x => map[x] ?? "").join("");
+  }
+
+  function NLN_encodeDecimalToLatin(raw){
+    const s = NLN_normalizeVulgarFractionInput(raw);
+    let caps = null;
+
+    if (NLN_looksLikeNanpaCaps(s)){
+      caps = s.trim().toUpperCase();
+    } else {
+      const timeCaps = NLN_timeStrToNanpaCaps(s);
+      const dateCaps = NLN_dateStrToNanpaCaps(s);
+
+      // IMPORTANT: enable thousands grouping here
+      caps = timeCaps || dateCaps || NLN_numberStrToNanpaCaps(s, {
+        thousandsChar: ",",
+        groupFractionTriplets: true,
+        fractionGroupSize: 3
+      });
+    }
+
+    if (!caps) return "";
+
+    const latin = NLN_splitCartoucheCapsLetters(caps);
+
+    // Percent convention: ensure proper name ends with "noken" (not "oken")
+    if (String(caps).toUpperCase().endsWith("OKN")){
+      const low = String(latin).toLowerCase();
+      if (low.endsWith("oken") && !low.endsWith("noken")){
+        const idx = low.lastIndexOf("oken");
+        const before = latin.slice(0, idx);
+        return before + (before.endsWith(" ") ? "Noken" : "noken");
+      }
+    }
+
+    return latin;
+  }
+
+  // token -> TP word stream (uniform)
+  const NLN_TOKEN_TO_TP = {
+    "NE":["nanpa","en"],
+    "NO":["nena","o"],
+    "NONE":["nena","en"], // decimal point (NO+NE)
+    "NONO":["nena","o","nena","o"],
+    "NONONO":["nena","o","nena","o","nena","o"],
+    "KE":["kulupu","en"],
+    "KEKE":["kulupu","en","kulupu","en"],
+    "KEKEKE":["kulupu","en","kulupu","en","kulupu","en"],
+    "OK":["nena","open","kipisi","en"],
+    "NI":["ijo","en"],"WE":["wan","en"],"TE":["tu","en"],"SE":["seli","en"],"NA":["awen","en"],
+    "LE":["luka","en"],"NU":["utala","en"],"ME":["mun","en"],"PE":["pipi","en"],"JE":["jo","en"],
+    "N":["nanpa"]
+  };
+
+  function NLN_nanpaCapsTokensToTpWords(tokens){
+    const out=[];
+    for (const tok of tokens){
+      const parts = NLN_TOKEN_TO_TP[tok];
+      if (!parts) throw new Error(`Unknown token ${tok}`);
+      out.push(...parts);
+    }
+    return out;
+  }
+
+  function NLN_replaceTimeSeparatorsTpWords(tpWords){
+    // convert "kulupu" used by NEKE separators into "kolon" like renderer.html
+    // We do a conservative replacement: any 'kulupu' token becomes 'kolon' for time/date generated caps (they only use KE).
+    return tpWords.map(w => w==="kulupu" ? "kolon" : w);
+  }
+
+  // Minimal UCSUR map needed for numeric cartouches
+  const NLN_WORD_TO_UCSUR_CP = {
+    "nanpa":0xF193D,"en":0xF190A,"e":0xF1909,"nena":0xF1940,"o":0xF1944,"kulupu":0xF191F,"kolon":0xF199D,
+    "open":0xF1947,"kipisi":0xF197B,
+    "ona":0xF1946,        
+    "ijo":0xF190C,"wan":0xF1973,"tu":0xF196E,"seli":0xF1957,"awen":0xF1908,"luka":0xF192D,"utala":0xF1971,"mun":0xF193A,"pipi":0xF1951,"jo":0xF1913
+  };
+
+  function NLN_tpWordsToUcsurCodepoints(tpWords){
+    const cps=[];
+    for (const w of tpWords){
+      const cp = NLN_WORD_TO_UCSUR_CP[w];
+      if (!cp) throw new Error(`No UCSUR code point for word "${w}"`);
+      cps.push(cp);
+    }
+    return cps;
+  }
+
+  // ===== Numeric cartouche rendering from proper-name letters (game rules) =====
+  // Convert numeric proper name (latin) -> TP words -> UCSUR codepoints for display.
+  function NLN_numericProperNameToTpWords(latinRaw, opts = {}){
+    const isDateTime = !!opts.isDateTime;
+
+    const s = String(latinRaw || "").toLowerCase().replace(/[^a-z]/g, "");
+    if (!s) return [];
+
+    // First significant letter (not n/e)
+    let firstSig = -1;
+    for (let i=0;i<s.length;i++){
+      const c = s[i];
+      if (c !== "n" && c !== "e"){ firstSig = i; break; }
+    }
+
+    // Last significant index (ignore trailing n/e)
+    let sigEnd = s.length - 1;
+    while (sigEnd >= 0 && (s[sigEnd] === "n" || s[sigEnd] === "e")) sigEnd--;
+
+    // OK suffix (percent): last two significant letters are "ok"
+    const okSuffixStart = (sigEnd >= 1 && s[sigEnd-1] === "o" && s[sigEnd] === "k") ? (sigEnd - 1) : -1;
+
+    const letterToWord = {
+      i:"ijo", w:"wan", t:"tu", s:"seli", a:"awen",
+      l:"luka", u:"utala", m:"mun", p:"pipi", j:"jo"
+    };
+
+    const words = [];
+    for (let i=0;i<s.length;i++){
+      // Percent suffix: "...ok" (ignoring trailing n/e) => "open kipisi"
+      if (i === okSuffixStart){
+        words.push("open", "kipisi");
+        i++; // skip the 'k'
+        continue;
+      }
+
+      const c = s[i];
+
+      if (c === "n"){
+        // n at very start or very end => nanpa; otherwise nena
+        if (i === 0 || i === s.length - 1) words.push("nanpa");
+        else words.push("nena");
+        continue;
+      }
+
+      if (c === "e"){
+        words.push("en");
+        continue;
+      }
+
+      if (c === "o"){
+        // leading o: first non-(n/e) letter is o => ona
+        if (i === firstSig) words.push("ona");
+        else words.push("o");
+        continue;
+      }
+
+      if (c === "k"){
+        words.push(isDateTime ? "kolon" : "kulupu");
+        continue;
+      }
+
+      const w = letterToWord[c];
+      if (!w){
+        throw new Error(`Unsupported letter '${c}' in numeric proper name "${latinRaw}"`);
+      }
+      words.push(w);
+    }
+
+    return words;
+  }
+
+  function NLN_numericProperNameToUcsurInnerCps(latinRaw, opts = {}){
+    const tpWords = NLN_numericProperNameToTpWords(latinRaw, opts);
+    return NLN_tpWordsToUcsurCodepoints(tpWords);
+  }
+
+  function NLN_decimalToUcsurCodepoints(raw){
+    const s = NLN_normalizeVulgarFractionInput(raw);
+    let caps = null;
+    if (NLN_looksLikeNanpaCaps(s)){
+      caps = s.trim().toUpperCase();
+    } else {
+      const timeCaps = NLN_timeStrToNanpaCaps(s);
+      const dateCaps = NLN_dateStrToNanpaCaps(s);
+      caps = timeCaps || dateCaps || NLN_numberStrToNanpaCaps(s, {
+        thousandsChar: ",",          // enable 1,000 grouping (adds KEKE => "neke")
+        groupFractionTriplets: true,
+        fractionGroupSize: 3
+      });
+      if (!caps) return null;
+      const tokens = NLN_tokenizeNanpaCaps(caps);
+      let tp = NLN_nanpaCapsTokensToTpWords(tokens);
+      if (timeCaps || dateCaps) tp = NLN_replaceTimeSeparatorsTpWords(tp);
+      return NLN_tpWordsToUcsurCodepoints(tp);
+    }
+    const tokens = NLN_tokenizeNanpaCaps(caps);
+    let tp = NLN_nanpaCapsTokensToTpWords(tokens);
+    return NLN_tpWordsToUcsurCodepoints(tp);
+  }
+
+  // ---------- numeric question generator ----------
+  const NLN_NUMERIC_CATEGORIES = [
+    "int_lt_1000",
+    "big_number",
+    "percent",
+    "fraction",
+    "date",
+    "time_hm",
+    "time_hms",
+  ];
+
+  function NLN_makeRandomNumericValue(){
+    const cat = NLN_NUMERIC_CATEGORIES[nlnRandInt(0, NLN_NUMERIC_CATEGORIES.length-1)];
+    if (cat==="int_lt_1000"){
+      const sign = Math.random()<0.50 ? "-" : "";
+      return { raw: sign + String(nlnRandInt(0,999)), isDateTime:false };
+    }
+    if (cat==="big_number"){
+      const sign = Math.random()<0.50 ? "-" : "";
+      const base = nlnRandInt(1000, 9999999);
+      const intStr = nlnCommaInt(base);        // <-- HERE
+      const dp = Math.random()<0.6 ? nlnRandInt(0,2) : 0;
+      if (!dp) return { raw: sign + intStr, isDateTime:false };
+
+      const frac = String(nlnRandInt(0, Math.pow(10,dp)-1)).padStart(dp,"0");
+      return { raw: sign + intStr + "." + frac, isDateTime:false };
+    }
+    if (cat==="percent"){
+      const v = (Math.random()*100);
+      const s = v.toFixed(2);
+      return { raw:(s + "%"), isDateTime:false };
+    }
+    if (cat==="fraction"){
+      const num = nlnRandInt(1,99);
+      const den = nlnRandInt(1,99);
+      return { raw:(String(num) + "/" + String(den)), isDateTime:false };
+    }
+    if (cat==="date"){
+      while (true){
+        const y = nlnRandInt(1900,2100);
+        const m = nlnRandInt(1,12);
+        const d = nlnRandInt(1,31);
+        if (NLN_isValidDate(y,m,d)){
+          return { raw:`${nlnPad4(y)}-${nlnPad2(m)}-${nlnPad2(d)}`, isDateTime:true };
+        }
+      }
+    }
+    if (cat==="time_hm"){
+      const hh=nlnRandInt(0,23), mm=nlnRandInt(0,59);
+      return { raw:`${nlnPad2(hh)}:${nlnPad2(mm)}`, isDateTime:true };
+    }
+    if (cat==="time_hms"){
+      const hh=nlnRandInt(0,23), mm=nlnRandInt(0,59), ss=nlnRandInt(0,59);
+      return { raw:`${nlnPad2(hh)}:${nlnPad2(mm)}:${nlnPad2(ss)}`, isDateTime:true };
+    }
+    return { raw:"0", isDateTime:false };
+  }
+
+  function NLN_isNumericQuestion(obj){ return obj && obj.kind === "numeric"; }
+
 
   /* ============================================================
      Storage keys
@@ -485,7 +1026,7 @@ html, body{
   const IDB_KEY_GLYPH_STATS = "glyphStats:v1";
   const GLYPH_WEIGHT_BOOST = 12; // higher = more practice on often-missed glyph-words
 
-  const DEFAULT_DURATION_SEC = 180;
+  const DEFAULT_DURATION_SEC = 300;
   const MAX_TRIES = 3;
 
   /* ============================================================
@@ -1421,7 +1962,6 @@ html, body{
   "Jacob": "Sekapu",
   "Jacques": "Saku",
   "Jaden": "Saten",
-  "Jadon": "Satan",
   "Jador": "Satowa",
   "Jaiden": "Seten",
   "Jake": "Seku",
@@ -1495,7 +2035,6 @@ html, body{
   "Julien": "Sulan",
   "Julius": "Sujasi",
   "Junior": "Sunje",
-  "Justin": "Satan",
   "Kabir": "Kape",
   "Kacper": "Kake",
   "Kade": "Keto",
@@ -1509,7 +2048,6 @@ html, body{
   "Kairo": "Kewa",
   "Kaison": "Kesan",
   "Kaius": "Kesi",
-  "Kajetan": "Kasatan",
   "Kajus": "Kasasi",
   "Kaleb": "Kalipu",
   "Kalem": "Kalin",
@@ -2133,7 +2671,6 @@ html, body{
   "Subhan": "Sapan",
   "Sulaiman": "Salaman",
   "Sulayman": "Suleman",
-  "Sultan": "Satan",
   "Sunny": "Sani",
   "Syed": "Sato",
   "Szymon": "Saman",
@@ -4078,7 +4615,6 @@ html, body{
   "Sunny": "Sani",
   "Susan": "Susan",
   "Susie": "Susi",
-  "Sutton": "Satan",
   "Suzie": "Sasi",
   "Sybil": "Sipila",
   "Sydney": "Site",
@@ -4415,6 +4951,7 @@ html, body{
       ",": 0xF199E,
       "ota": 0xF199C, "kolon": 0xF199D, "koma": 0xF199E
     };
+
 
   /* Punctuation-only glyphs needed for time cartouches */
   const EXTRA = { kolon: 0xF199D };
@@ -5374,8 +5911,24 @@ return renderMainPhrase(phrase);
     };
   }
 
+  function pickNextAny(){
+    const pct = Math.max(0, Math.min(100, numericPct|0));
+    if (pct > 0 && Math.random()*100 < pct){
+      const gen = NLN_makeRandomNumericValue();
+      const raw = gen.raw;
+      const latinRaw = NLN_encodeDecimalToLatin(raw);
+      const cpsInner = NLN_numericProperNameToUcsurInnerCps(latinRaw, { isDateTime: gen.isDateTime });
+
+      const answerNorm = normalizeGuess(latinRaw);
+      return { kind:"numeric", rawValue:raw, cpsInner, latinRaw, answerNorm, isDateTime: gen.isDateTime };
+    }
+    return pickNext();
+  }
+
+
+
   function loadNextCartouche(){
-    current = pickNext();
+    current = pickNextAny();
     triesLeft = MAX_TRIES;
     clearInput();
 
@@ -5384,7 +5937,25 @@ return renderMainPhrase(phrase);
       return;
     }
 
-    // Generate and render randomized glyph-words phrase for this answer
+    // Numeric cartouche path (does NOT touch the word-cartouche pipeline)
+    if (current.kind === "numeric"){
+      const main = document.getElementById("mainCanvas");
+      if (main){
+        const inner = Array.isArray(current.cpsInner) && current.cpsInner.length ? current.cpsInner : pointsToInnerCps(0);
+        fitDrawCartouche(main, inner, {
+          cssW: main.clientWidth || 660,
+          cssH: main.clientHeight || 140,
+          fontPx: 96,
+          fontFamily: FONT_FAMILY_NANPA_LINJA_N
+        });
+      }
+      current.displayPhrase = null;
+      current.pendingTokens = null;
+      setStatus("");
+      return;
+    }
+
+    // Existing word-cartouche path (unchanged)
     current.displayPhrase = showCartoucheForAnswerNorm(current.answerNorm);
   }
 
@@ -5582,6 +6153,18 @@ return renderMainPhrase(phrase);
      Wire UI
      ============================================================ */
   function wire(){
+    // numeric pct dropdown
+    const selNumeric = document.getElementById("numericPctSelect");
+    if (selNumeric){
+      const saved = parseInt(localStorage.getItem(LS_NUMERIC_PCT_KEY) || "0", 10);
+      numericPct = Number.isFinite(saved) ? saved : 0;
+      selNumeric.value = String(numericPct);
+      selNumeric.addEventListener("change", () => {
+        numericPct = parseInt(selNumeric.value || "0", 10) || 0;
+        localStorage.setItem(LS_NUMERIC_PCT_KEY, String(numericPct));
+      });
+    }
+
     const btnStart = document.getElementById("btnStart");
     const btnQuit = document.getElementById("btnQuit");
     const btnManage = document.getElementById("btnManage");
@@ -5689,9 +6272,22 @@ return renderMainPhrase(phrase);
     renderTopTimer(timeLeft);
     renderTopBest(bestScore);
     if (current){
-      if (!current.displayPhrase) current.displayPhrase = phraseForAnswerNorm(current.answerNorm);
-      current.pendingTokens = Array.isArray(LAST_PHRASE_TOKENS) ? LAST_PHRASE_TOKENS.slice() : null;
-      if (current.displayPhrase) renderMainPhrase(current.displayPhrase);
+      if (NLN_isNumericQuestion(current)){
+        const main = document.getElementById("mainCanvas");
+        if (main && Array.isArray(current.cpsInner)){
+          fitDrawCartouche(main, current.cpsInner, {
+            cssW: main.clientWidth || 660,
+            cssH: main.clientHeight || 140,
+            fontPx: 96,
+            fontFamily: FONT_FAMILY_NANPA_LINJA_N,
+            align: "left",
+          });
+        }
+      } else {
+        if (!current.displayPhrase) current.displayPhrase = phraseForAnswerNorm(current.answerNorm);
+        current.pendingTokens = Array.isArray(LAST_PHRASE_TOKENS) ? LAST_PHRASE_TOKENS.slice() : null;
+        if (current.displayPhrase) renderMainPhrase(current.displayPhrase);
+      }
     }
   }
 
