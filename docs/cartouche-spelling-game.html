@@ -752,6 +752,130 @@ html, body{
     return tokens;
   }
 
+  function NLN_splitCartoucheCapsLettersSpaced(caps) {
+    if (caps == null) throw new Error("caps must be a string, not None");
+    const s0 = String(caps).trim().toUpperCase();
+    if (!s0) return "";
+    if (s0.length < 3 || !s0.startsWith("NE") || !s0.endsWith("N")) {
+      throw new Error(`Not a valid nanpa-caps label: "${caps}"`);
+    }
+
+    const parts = [];
+    let current = "";
+    let i = 0;
+    const end = s0.length - 1; // exclude final terminator 'N'
+
+    function flushCurrent() {
+      if (current) { parts.push(current); current = ""; }
+    }
+
+    function attachDelimiterN() {
+      // delimiter 'n' should attach to the end of the previous segment
+      if (current) { current += "n"; flushCurrent(); return; }
+      if (parts.length === 0) { parts.push("n"); return; }
+      parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
+    }
+
+    while (i < end) {
+      const rest = s0.slice(i);
+
+      // --- Operators / separators (longest first) ---
+      if (rest.startsWith("NONONO")) {
+        flushCurrent();
+        attachDelimiterN();
+        parts.push("onono");
+        i += 6;
+        continue;
+      }
+
+      if (rest.startsWith("NONO")) {
+        flushCurrent();
+        attachDelimiterN();
+        parts.push("ono");
+        i += 4;
+        continue;
+      }
+
+      if (rest.startsWith("NONE")) {
+        flushCurrent();
+        attachDelimiterN();
+        parts.push("one");
+        i += 4;
+        continue;
+      }
+
+      if (rest.startsWith("OK")) {
+        flushCurrent();
+        attachDelimiterN();
+        parts.push("oke");
+        i += 2;
+        continue;
+      }
+
+      // --- Thousands grouping: NEKE, NEKEKE, NEKEKEKE => attach 'n' then eke/ekeke/ekekeke
+      if (rest.startsWith("NEKEKEKE")) {
+        flushCurrent();
+        attachDelimiterN();
+        parts.push("ekekeke");
+        i += 8;
+        continue;
+      }
+      if (rest.startsWith("NEKEKE")) {
+        flushCurrent();
+        attachDelimiterN();
+        parts.push("ekeke");
+        i += 6;
+        continue;
+      }
+      if (rest.startsWith("NEKE")) {
+        flushCurrent();
+        attachDelimiterN();
+        parts.push("eke");
+        i += 4;
+        continue;
+      }
+
+      // --- 2-letter pair handling ---
+      if (i + 2 > end) throw new Error(`Malformed caps at position ${i} in "${caps}"`);
+      const pair = s0.slice(i, i + 2);
+
+      // Segment syllables
+      if (pair === "NE") { current += "ne"; i += 2; continue; }
+
+      if (pair === "NO") {
+        // SPECIAL CASE: leading negative sign "NE"+"NO" should be its own word: "neno"
+        if (parts.length === 0 && current === "ne") {
+          current += "no";   // "neno"
+          flushCurrent();    // finalize the negative sign word
+          i += 2;
+          continue;
+        }
+
+        // Otherwise, NO is just another syllable inside the current word
+        current += "no";
+        i += 2;
+        continue;
+      }
+
+      // Digit token pairs: NI WE TE SE NA LE NU ME PE JE
+      const DIG = ["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"];
+      if (DIG.includes(pair)) {
+        current += pair.toLowerCase();
+        i += 2;
+        continue;
+      }
+
+      // KE on its own should never occur here (NEKE* consumed above). If it does, treat as error.
+      throw new Error(`Malformed caps at position ${i} in "${caps}"`);
+    }
+
+    flushCurrent();
+
+    // final terminator "N" -> append terminal 'n' to the last segment
+    if (parts.length === 0) return "n";
+    parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
+    return parts.join(" ");
+  }
 
   // caps -> "proper name" latin (no spaces) like renderer.html splitCartoucheCapsLetters
   function NLN_splitCartoucheCapsLetters(caps){
@@ -5916,11 +6040,26 @@ return renderMainPhrase(phrase);
     if (pct > 0 && Math.random()*100 < pct){
       const gen = NLN_makeRandomNumericValue();
       const raw = gen.raw;
+
+      // ADD THIS BLOCK HERE:
+      const s = NLN_normalizeVulgarFractionInput(raw);
+      const timeCaps = NLN_timeStrToNanpaCaps(s);
+      const dateCaps = NLN_dateStrToNanpaCaps(s);
+      const caps = NLN_looksLikeNanpaCaps(s)
+        ? s.trim().toUpperCase()
+        : (timeCaps || dateCaps || NLN_numberStrToNanpaCaps(s, {
+            thousandsChar: ",",
+            groupFractionTriplets: true,
+            fractionGroupSize: 3
+          }));
+
       const latinRaw = NLN_encodeDecimalToLatin(raw);
       const cpsInner = NLN_numericProperNameToUcsurInnerCps(latinRaw, { isDateTime: gen.isDateTime });
 
       const answerNorm = normalizeGuess(latinRaw);
-      return { kind:"numeric", rawValue:raw, cpsInner, latinRaw, answerNorm, isDateTime: gen.isDateTime };
+
+      // INCLUDE caps IN THE RETURNED OBJECT:
+      return { kind:"numeric", rawValue: raw, caps, cpsInner, latinRaw, answerNorm, isDateTime: gen.isDateTime };
     }
     return pickNext();
   }
@@ -6035,6 +6174,40 @@ return renderMainPhrase(phrase);
     setStatus("Idle.");
   }
 
+  function titleCaseNanpaProperNameForDisplay(nameStr) {
+    const s = String(nameStr ?? "").trim();
+    if (!s) return s;
+    return s
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(w => {
+        const lower = w.toLowerCase();
+        return lower[0].toUpperCase() + lower.slice(1);
+      })
+      .join(" ");
+  }
+
+  function fixOkenSuffixSpacing(s) {
+    const x = String(s ?? "");
+    // Ensure a space before the terminal "Oken"
+    if (/\sOken$/.test(x)) return x;
+    return x.replace(/Oken$/, " Oken");
+  }
+
+  // Numeric-only: renderer-style display of the proper name
+  function prettyNumericAnswer(){
+    try {
+      const caps = current?.caps;
+      if (!caps) return "";
+
+      const prettyNameRaw = NLN_splitCartoucheCapsLettersSpaced(caps);
+      const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
+      return fixOkenSuffixSpacing(prettyNameDisplay);
+    } catch { 
+      return titleCaseNanpaProperNameForDisplay(current.latinRaw || ""); 
+    }
+  }
+
   function submitGuess(){
     if (!canPlay()) return;
     if (!current) return;
@@ -6051,7 +6224,15 @@ return renderMainPhrase(phrase);
       const pts = computePointsFromNorm(current.answerNorm);
       score += pts;
       updateScoreUi();
-      appendFeedRow({ good: true, text: typedRaw, points: pts });
+
+      // Numeric cartouches: show renderer-style proper name (spaced + Title Case)
+      // Word cartouches: keep existing behavior (show what the user typed)
+      appendFeedRow({
+        good: true,
+        text: (current.kind === "numeric") ? prettyNumericAnswer() : typedRaw,
+        points: pts
+      });
+
       bumpSeenForTokens(current?.pendingTokens);
       loadNextCartouche();
       focusInput();
@@ -6074,7 +6255,14 @@ return renderMainPhrase(phrase);
       }
 
       // Out of tries: reveal the correct value in red, with "ni li pona:" on the left
-      appendFeedRow({ good: false, text: current.answerNorm, points: 0, leftLabelText: "ni li pona:" });
+      // Numeric cartouches: show renderer-style proper name (spaced + Title Case)
+      // Word cartouches: keep existing behavior (show answerNorm)
+      appendFeedRow({
+        good: false,
+        text: (current.kind === "numeric") ? prettyNumericAnswer() : current.answerNorm,
+        points: 0,
+        leftLabelText: "ni li pona:"
+      });
 
       // Move on
       loadNextCartouche();
