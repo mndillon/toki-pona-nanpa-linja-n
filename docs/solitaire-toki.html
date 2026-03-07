@@ -137,6 +137,26 @@
     .modal p { margin: 0 0 14px 0; color: var(--muted); line-height: 1.3; font-size: 17px; }
     .modal .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
 
+    .bestTimeButton {
+      display: none;
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.72);
+      cursor: pointer;
+      text-align: left;
+    }
+    .bestTimeButton:hover {
+      background: rgba(255,255,255,0.88);
+    }
+    .bestTimeButton canvas {
+      display: block;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
     .settingsGrid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -279,6 +299,10 @@
             </div>
           </div>
 
+          <button id="btnBestTime" type="button" class="bestTimeButton" style="display:none;">
+            <canvas id="bestTimeCanvas" aria-label="Best time"></canvas>
+          </button>
+
           <div class="row">
             <button id="btnResumeCurrent" class="btn" style="display:none;">Cancel and Resume Current Game</button>
             <button id="btnCancelCurrent" class="btn" style="display:none;">Cancel Current Game</button>
@@ -317,6 +341,7 @@
   const timerCtx = timerCanvas.getContext("2d");
   const timerOffscreen = document.createElement("canvas");
   const endGameTimeOffscreen = document.createElement("canvas");
+  const bestTimeOffscreen = document.createElement("canvas");
   const statusEl = document.getElementById("status");
 
   const optionsOverlay = document.getElementById("optionsOverlay");
@@ -333,6 +358,9 @@
   const btnResumeCurrent = document.getElementById("btnResumeCurrent");
   const btnCancelCurrent = document.getElementById("btnCancelCurrent");
   const btnStartFromOptions = document.getElementById("btnStartFromOptions");
+  const btnBestTime = document.getElementById("btnBestTime");
+  const bestTimeCanvas = document.getElementById("bestTimeCanvas");
+  const bestTimeCtx = bestTimeCanvas.getContext("2d");
   const drawCountSel = document.getElementById("drawCount");
   const redealLimitSel = document.getElementById("redealLimit");
   const timeLimitSel = document.getElementById("timeLimit");
@@ -461,7 +489,12 @@
   let dbPromise = null;
   let persistTimerId = null;
   const KEY_LANGUAGE = "uiLanguage";
+  const KEY_BEST_TIME = "bestTimeNoLimitSec";
   let uiLanguage = localStorage.getItem(KEY_LANGUAGE) === "tok" ? "tok" : "en";
+  let bestTimeNoLimitSec = (() => {
+    const raw = Number(localStorage.getItem(KEY_BEST_TIME));
+    return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : null;
+  })();
   let statusState = { kind: "raw", text: "Choose options, then start a game." };
   let showPlaceholderStock = true;
 
@@ -523,7 +556,8 @@
       endTimeUp: "Time up.",
       endGameOver: "Game over.",
       shownTime: "Shown time: {time}",
-      useRestartOrNew: "Use Restart Deal or Start New Game."
+      useRestartOrNew: "Use Restart Deal or Start New Game.",
+      confirmClearBestTime: "Clear saved best time?"
     },
     tok: {
       pageTitle: "musi Solite lon toki pona",
@@ -582,7 +616,8 @@
       endTimeUp: "tenpo li pini.",
       endGameOver: "musi li pini.",
       shownTime: "tenpo pana: {time}",
-      useRestartOrNew: "o kepeken open sin anu open e musi sin."
+      useRestartOrNew: "o kepeken open sin anu open e musi sin.",
+      confirmClearBestTime: "o weka ala weka e tenpo pona awen?"
     }
   });
 
@@ -612,6 +647,7 @@
     document.title = i18n("pageTitle");
     btnLang.textContent = i18n("langButton");
     timerCanvas.setAttribute("aria-label", i18n("timerAria"));
+    bestTimeCanvas.setAttribute("aria-label", i18n("confirmClearBestTime"));
     btnOptions.textContent = i18n("btnOptions");
     btnNew.textContent = i18n("btnNew");
     btnRedeal.textContent = i18n("btnRedeal");
@@ -642,6 +678,7 @@
     backToIndexLink.textContent = i18n("backToIndex");
     refreshStatusText();
     renderTopTimerCartouche();
+    refreshBestTimeUi();
     draw();
   }
 
@@ -814,6 +851,7 @@
   function syncOptionsFromUiAndPersist() {
     gameOptions = normalizeOptions(readOptionsFromUi());
     persistOptionsSoon();
+    refreshBestTimeUi();
   }
 
   function setStatus(msg) {
@@ -962,67 +1000,89 @@
   function renderTopTimerCartouche() {
     const targetCssW = window.innerWidth <= 760 ? 164 : 190;
     const targetCssH = window.innerWidth <= 760 ? 32 : 36;
-    const dpr = window.devicePixelRatio || 1;
-
-    timerCanvas.style.width = `${targetCssW}px`;
-    timerCanvas.style.height = `${targetCssH}px`;
-    timerCanvas.width = Math.ceil(targetCssW * dpr);
-    timerCanvas.height = Math.ceil(targetCssH * dpr);
-
-    timerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    timerCtx.clearRect(0, 0, targetCssW, targetCssH);
-
     const shown = !game ? 0 : (game.options.timeLimitSec > 0
       ? Math.max(0, game.options.timeLimitSec - (game.elapsedSec || 0))
       : (game.elapsedSec || 0));
+    drawPrefixedCartoucheOnCanvas(timerCanvas, timerCtx, timerOffscreen, shown, ["tenpo", "lili"], targetCssW, targetCssH, 34, 12);
+  }
 
-    const glyphs = buildTimeCartoucheGlyphs(shown);
-    renderMixedCartoucheToCanvas(timerOffscreen, glyphs, 34, 12, SMALL_SET, {
+  function drawPrefixedCartoucheOnCanvas(canvasEl, ctxArg, offscreenEl, totalSeconds, prefixWords, targetCssW, targetCssH, largePx, smallPx) {
+    const dpr = window.devicePixelRatio || 1;
+    canvasEl.style.width = `${targetCssW}px`;
+    canvasEl.style.height = `${targetCssH}px`;
+    canvasEl.width = Math.ceil(targetCssW * dpr);
+    canvasEl.height = Math.ceil(targetCssH * dpr);
+
+    ctxArg.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctxArg.clearRect(0, 0, targetCssW, targetCssH);
+
+    const glyphs = buildTimeCartoucheGlyphs(Math.max(0, Math.floor(totalSeconds || 0)));
+    renderMixedCartoucheToCanvas(offscreenEl, glyphs, largePx, smallPx, SMALL_SET, {
       padding: 8, border: 2, cornerRadius: 12, letterGap: 1
     });
 
-    const prefixCps = [TP_WORD_TO_CP.tenpo || null, TP_WORD_TO_CP.lili || null].filter(Number.isFinite);
+    const prefixCps = prefixWords.map(w => TP_WORD_TO_CP[w]).filter(Number.isFinite);
+    const gapPx = 8;
     let prefixW = 0;
-    let gapPx = 8;
-    let prefixFontPx = 14;
+    let scale = Math.min(targetCssW / offscreenEl.width, targetCssH / offscreenEl.height);
+    let prefixFontPx = Math.max(10, largePx * scale);
 
-    if (prefixCps.length === 2) {
-      let scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
-      prefixFontPx = Math.max(10, 34 * scale);
-      timerCtx.save();
-      timerCtx.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
-      prefixW = timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width + 4 + timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width;
-      timerCtx.restore();
+    if (prefixCps.length > 0) {
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      prefixW = prefixCps.reduce((acc, cp, idx) => acc + ctxArg.measureText(String.fromCodePoint(cp)).width + (idx ? 0 : 4), 0);
+      ctxArg.restore();
       const availWForCartouche = Math.max(40, targetCssW - prefixW - gapPx);
-      scale = Math.min(availWForCartouche / timerOffscreen.width, targetCssH / timerOffscreen.height);
-      prefixFontPx = Math.max(10, 34 * scale);
-      timerCtx.save();
-      timerCtx.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
-      prefixW = timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width + 4 + timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width;
-      timerCtx.restore();
+      scale = Math.min(availWForCartouche / offscreenEl.width, targetCssH / offscreenEl.height);
+      prefixFontPx = Math.max(10, largePx * scale);
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      prefixW = prefixCps.reduce((acc, cp, idx) => acc + ctxArg.measureText(String.fromCodePoint(cp)).width + (idx ? 0 : 4), 0);
+      ctxArg.restore();
     }
 
-    const drawW = Math.floor(timerOffscreen.width * Math.min((targetCssW - prefixW - gapPx) / timerOffscreen.width, targetCssH / timerOffscreen.height));
-    const drawH = Math.floor(timerOffscreen.height * Math.min((targetCssW - prefixW - gapPx) / timerOffscreen.width, targetCssH / timerOffscreen.height));
+    const drawScale = Math.min((targetCssW - (prefixW > 0 ? (prefixW + gapPx) : 0)) / offscreenEl.width, targetCssH / offscreenEl.height);
+    const drawW = Math.floor(offscreenEl.width * drawScale);
+    const drawH = Math.floor(offscreenEl.height * drawScale);
     const x = Math.floor(targetCssW - drawW);
     const y = Math.floor((targetCssH - drawH) / 2);
 
-    if (prefixCps.length === 2) {
-      timerCtx.save();
-      timerCtx.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
-      timerCtx.textBaseline = "middle";
-      timerCtx.textAlign = "left";
-      timerCtx.fillStyle = "#111";
-      const w1 = timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width;
-      const w2 = timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width;
-      let px = x - gapPx - (w1 + 4 + w2);
-      timerCtx.fillText(String.fromCodePoint(prefixCps[0]), px, targetCssH / 2);
-      px += w1 + 4;
-      timerCtx.fillText(String.fromCodePoint(prefixCps[1]), px, targetCssH / 2);
-      timerCtx.restore();
+    if (prefixCps.length > 0) {
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      ctxArg.textBaseline = "middle";
+      ctxArg.textAlign = "left";
+      ctxArg.fillStyle = "#111";
+      let px = x - gapPx - prefixW;
+      prefixCps.forEach((cp, idx) => {
+        const glyph = String.fromCodePoint(cp);
+        ctxArg.fillText(glyph, px, targetCssH / 2);
+        px += ctxArg.measureText(glyph).width + (idx === 0 ? 4 : 0);
+      });
+      ctxArg.restore();
     }
 
-    timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
+    ctxArg.drawImage(offscreenEl, x, y, drawW, drawH);
+  }
+
+  function refreshBestTimeUi() {
+    const shouldShow = Number(timeLimitSel.value || 0) === 0 && Number.isFinite(bestTimeNoLimitSec) && bestTimeNoLimitSec > 0;
+    btnBestTime.style.display = shouldShow ? "block" : "none";
+    if (!shouldShow) return;
+    const targetCssW = Math.min(320, Math.max(220, optionsOverlay.querySelector('.modal').clientWidth - 48));
+    const targetCssH = 42;
+    drawPrefixedCartoucheOnCanvas(bestTimeCanvas, bestTimeCtx, bestTimeOffscreen, bestTimeNoLimitSec, ["tenpo", "pona"], targetCssW, targetCssH, 34, 12);
+  }
+
+  function maybeRecordBestTimeOnWin() {
+    if (!game || !game.won || game.options.timeLimitSec > 0) return;
+    const sec = Math.max(0, Math.floor(game.elapsedSec || 0));
+    if (!(sec > 0)) return;
+    if (!Number.isFinite(bestTimeNoLimitSec) || bestTimeNoLimitSec === null || sec < bestTimeNoLimitSec) {
+      bestTimeNoLimitSec = sec;
+      localStorage.setItem(KEY_BEST_TIME, String(sec));
+      refreshBestTimeUi();
+    }
   }
 
   function readOptionsFromUi() {
@@ -1044,6 +1104,7 @@
     const target = document.querySelector(`input[name="shuffleRedeal"][value="${String(!!normalized.shuffleOnRedeal)}"]`);
     if (target) target.checked = true;
     timeLimitSel.value = String(Math.floor((normalized.timeLimitSec || 0) / 60));
+    refreshBestTimeUi();
   }
 
   function buildDeck() {
@@ -1487,6 +1548,7 @@
       game.won = true;
       stopTimer();
       stopAutoSolve();
+      maybeRecordBestTimeOnWin();
       updateButtons();
       setStatusI18n("statusWon");
       persistGameSoon();
@@ -1865,6 +1927,14 @@
     applyLanguage();
     recomputeLayout();
     draw();
+  });
+
+  btnBestTime.addEventListener("click", () => {
+    if (!(Number.isFinite(bestTimeNoLimitSec) && bestTimeNoLimitSec > 0)) return;
+    if (!confirm(i18n("confirmClearBestTime"))) return;
+    bestTimeNoLimitSec = null;
+    localStorage.removeItem(KEY_BEST_TIME);
+    refreshBestTimeUi();
   });
 
   drawCountSel.addEventListener("change", syncOptionsFromUiAndPersist);
