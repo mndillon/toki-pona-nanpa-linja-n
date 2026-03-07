@@ -341,6 +341,9 @@
   const CARD_H = 116;
   const CARD_RADIUS = 10;
   const FAN_Y = 34;
+  const MIN_TABLEAU_FAN_Y = 14;
+  const RESERVED_LOWER_TABLEAU_CARDS = 3;
+  const TABLEAU_BOTTOM_PADDING = 20;
   const WASTE_FAN_X = 18;
   const PILE_GAP_X = 24;
   const MARGIN_X = 22;
@@ -1363,6 +1366,75 @@
     }
   }
 
+  function getTableauAvailableBottomY() {
+    if (!layout) return SECOND_ROW_Y + CARD_H;
+    return Math.max(SECOND_ROW_Y + CARD_H, layout.height - TABLEAU_BOTTOM_PADDING - RESERVED_LOWER_TABLEAU_CARDS * FAN_Y);
+  }
+
+  function getTopmostFaceUpIndexForPile(pile) {
+    if (!Array.isArray(pile)) return -1;
+    for (let i = 0; i < pile.length; i++) {
+      if (pile[i] && pile[i].faceUp) return i;
+    }
+    return -1;
+  }
+
+  function getProtectedTableauStepIndexForPile(pile) {
+    const topFaceUpIndex = getTopmostFaceUpIndexForPile(pile);
+    if (topFaceUpIndex >= 0 && topFaceUpIndex < pile.length - 1) return topFaceUpIndex + 1;
+    return -1;
+  }
+
+  function getTableauCondensedFanYForPile(pile) {
+    const cardCount = Array.isArray(pile) ? pile.length : 0;
+    if (cardCount <= 1) return FAN_Y;
+    const protectedStepIndex = getProtectedTableauStepIndexForPile(pile);
+    const totalSteps = Math.max(0, cardCount - 1);
+    const condensedStepCount = totalSteps - (protectedStepIndex > 0 ? 1 : 0);
+    if (condensedStepCount <= 0) return FAN_Y;
+    const availableStepSpace = Math.max(0, getTableauAvailableBottomY() - SECOND_ROW_Y - CARD_H);
+    const reservedProtectedSpace = protectedStepIndex > 0 ? FAN_Y : 0;
+    const remainingStepSpace = Math.max(0, availableStepSpace - reservedProtectedSpace);
+    const fittedFan = Math.floor(remainingStepSpace / condensedStepCount);
+    return Math.max(MIN_TABLEAU_FAN_Y, Math.min(FAN_Y, fittedFan));
+  }
+
+  function getTableauFanYForPile(pile, index = 1) {
+    const cardCount = Array.isArray(pile) ? pile.length : 0;
+    if (cardCount <= 1 || index <= 0) return FAN_Y;
+    const protectedStepIndex = getProtectedTableauStepIndexForPile(pile);
+    if (protectedStepIndex === index) return FAN_Y;
+    return getTableauCondensedFanYForPile(pile);
+  }
+
+  function getTableauFanY(col, extraCount = 0, index = 1) {
+    const pile = Array.isArray(game?.tableau?.[col]) ? game.tableau[col] : [];
+    const pileWithExtra = extraCount > 0 ? pile.concat(Array.from({ length: extraCount }, () => ({ faceUp: true }))) : pile;
+    return getTableauFanYForPile(pileWithExtra, index);
+  }
+
+  function getTableauPileHeight(col, extraCount = 0) {
+    const pile = Array.isArray(game?.tableau?.[col]) ? game.tableau[col] : [];
+    const pileWithExtra = extraCount > 0 ? pile.concat(Array.from({ length: extraCount }, () => ({ faceUp: true }))) : pile;
+    const pileCount = pileWithExtra.length;
+    if (pileCount <= 0) return CARD_H;
+    if (pileCount === 1) return CARD_H;
+    let totalOffset = 0;
+    for (let i = 1; i < pileCount; i++) totalOffset += getTableauFanYForPile(pileWithExtra, i);
+    return CARD_H + totalOffset;
+  }
+
+  function getTableauCardY(col, index, extraCount = 0) {
+    const baseY = layout.tableau[col].y;
+    if (index <= 0) return baseY;
+    const pile = Array.isArray(game?.tableau?.[col]) ? game.tableau[col] : [];
+    const pileWithExtra = extraCount > 0 ? pile.concat(Array.from({ length: extraCount }, () => ({ faceUp: true }))) : pile;
+    const cappedIndex = Math.min(index, Math.max(0, pileWithExtra.length - 1));
+    let y = baseY;
+    for (let i = 1; i <= cappedIndex; i++) y += getTableauFanYForPile(pileWithExtra, i);
+    return y;
+  }
+
   function drawFromStock() {
     if (!game || game.finished) return;
     if (game.stock.length === 0) {
@@ -1434,7 +1506,8 @@
       cards: [card],
       sourceIndex: game.waste.length - 1,
       homeX: wasteCardPosition(game.waste.length - 1).x,
-      homeY: wasteCardPosition(game.waste.length - 1).y
+      homeY: wasteCardPosition(game.waste.length - 1).y,
+      fanY: FAN_Y
     };
   }
 
@@ -1447,7 +1520,8 @@
       foundationIndex: foundIndex,
       cards: [card],
       homeX: layout.foundations[foundIndex].x,
-      homeY: layout.foundations[foundIndex].y
+      homeY: layout.foundations[foundIndex].y,
+      fanY: FAN_Y
     };
   }
 
@@ -1466,7 +1540,8 @@
       startIndex,
       cards,
       homeX: layout.tableau[col].x,
-      homeY: layout.tableau[col].y + startIndex * FAN_Y
+      homeY: getTableauCardY(col, startIndex),
+      fanY: getTableauFanY(col)
     };
   }
 
@@ -1541,7 +1616,7 @@
     for (let i = 0; i < layout.tableau.length; i++) {
       const colRect = layout.tableau[i];
       const pile = game.tableau[i];
-      const pileHeight = Math.max(CARD_H, pile.length ? CARD_H + FAN_Y * (pile.length - 1) : CARD_H);
+      const pileHeight = getTableauPileHeight(i);
       const hitRect = { x: colRect.x - DROP_SLOP, y: colRect.y - DROP_SLOP, w: CARD_W + DROP_SLOP * 2, h: pileHeight + DROP_SLOP * 2 };
       const overlapArea = rectIntersectionArea(leadRect, hitRect);
       if (overlapArea <= 0) continue;
@@ -1576,7 +1651,7 @@
       for (let i = 0; i < layout.tableau.length; i++) {
         const colRect = layout.tableau[i];
         const pile = game.tableau[i];
-        const pileHeight = Math.max(CARD_H, pile.length ? CARD_H + FAN_Y * (pile.length - 1) : CARD_H);
+        const pileHeight = getTableauPileHeight(i);
         const hitRect = { x: colRect.x - DROP_SLOP, y: colRect.y - DROP_SLOP, w: CARD_W + DROP_SLOP * 2, h: pileHeight + DROP_SLOP * 2 };
         if (!pointInRect(dropX, dropY, hitRect)) continue;
         if (!canMoveToTableau(drag.cards[0], pile)) return false;
@@ -1665,7 +1740,7 @@
     for (let col = 0; col < game.tableau.length; col++) {
       const pile = game.tableau[col];
       for (let i = pile.length - 1; i >= 0; i--) {
-        const y0 = layout.tableau[col].y + i * FAN_Y;
+        const y0 = getTableauCardY(col, i);
         const rect = { x: layout.tableau[col].x, y: y0, w: CARD_W, h: CARD_H };
         if (pointInRect(x, y, rect)) return { zone: "tableau", col, index: i };
       }
@@ -2478,7 +2553,7 @@
   }
 
   function drawPiles() {
-    const stockLabel = (showPlaceholderStock || (game && game.stock.length)) ? "" : "↺";
+    const stockLabel = (game && game.stock.length === 0 && game.waste.length > 0) ? "↺" : "";
     drawSlot(layout.stock, stockLabel);
     drawSlot({ x: layout.waste.x, y: layout.waste.y, w: CARD_W, h: CARD_H }, "");
     for (let i = 0; i < 4; i++) drawFoundationSlot(layout.foundations[i], SUITS[i]);
@@ -2521,7 +2596,7 @@
       const pile = game.tableau[col];
       for (let i = 0; i < pile.length; i++) {
         if (drag && drag.type === "tableau" && drag.tableauIndex === col && i >= drag.startIndex) continue;
-        drawCard(pile[i], layout.tableau[col].x, layout.tableau[col].y + i * FAN_Y);
+        drawCard(pile[i], layout.tableau[col].x, getTableauCardY(col, i));
       }
     }
   }
@@ -2529,7 +2604,7 @@
   function drawDrag() {
     if (!drag) return;
     for (let i = 0; i < drag.cards.length; i++) {
-      drawCard(drag.cards[i], drag.x, drag.y + i * FAN_Y);
+      drawCard(drag.cards[i], drag.x, drag.y + i * (drag.fanY || FAN_Y));
     }
   }
 
