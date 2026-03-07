@@ -1,0 +1,2639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toki Pona Solitaire</title>
+  <style>
+    :root {
+      --topbar-h: 56px;
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --panel: rgba(255,255,255,0.35);
+      --panel-border: rgba(17,17,17,0.18);
+      --green-felt: #5f8a5f;
+      --green-felt-dark: #4c724c;
+      --slot: rgba(255,255,255,0.14);
+      --slot-border: rgba(255,255,255,0.28);
+      --red: #b32020;
+      --black: #111;
+      --gold: #e2b94f;
+    }
+
+    @font-face {
+      font-family: "PatrickHand";
+      src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Nasin-Nanpa-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      min-height: 100svh;
+      min-height: 100dvh;
+    }
+
+    .topbar {
+      height: var(--topbar-h);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      border-bottom: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(6px);
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 16px;
+    }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 46vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .timerCanvas {
+      width: 190px;
+      height: 36px;
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    .wrap {
+      height: calc(100dvh - var(--topbar-h));
+      height: calc(100svh - var(--topbar-h));
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .gameArea {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(255,255,255,0.06), transparent 35%),
+        linear-gradient(180deg, var(--green-felt) 0%, var(--green-felt-dark) 100%);
+    }
+
+    #c {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      z-index: 10;
+    }
+    .overlay.show { display: flex; }
+
+    .modal {
+      width: min(620px, 92vw);
+      background: rgba(255,255,255,0.94);
+      border: 1px solid rgba(0,0,0,0.18);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+    }
+    .modal h2 { margin: 0 0 8px 0; font-size: 28px; }
+    .modal p { margin: 0 0 14px 0; color: var(--muted); line-height: 1.3; font-size: 17px; }
+    .modal .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+
+    .settingsGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 16px;
+      margin-top: 12px;
+    }
+    .field {
+      border: 1px solid var(--panel-border);
+      background: rgba(243,223,192,0.35);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .field label,
+    .field legend {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+    .field select,
+    .field input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.65);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 16px;
+    }
+    .choiceRow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .choiceRow:first-of-type { margin-top: 0; }
+    .field fieldset {
+      border: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .footer {
+      flex: 0 0 auto;
+      border-top: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.25);
+      padding: 10px 12px;
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .footer a { color: var(--ink); text-decoration: underline; }
+    .footerRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .footerLeft { min-width: 240px; }
+    .footerRight { white-space: nowrap; }
+
+    @media (max-width: 760px) {
+      :root { --topbar-h: 52px; }
+      .topbar { gap: 6px; padding: 8px; }
+      .btn { font-size: 13px; padding: 6px 8px; }
+      .timerCanvas { width: 164px; height: 32px; }
+      .status { font-size: 13px; max-width: 36vw; }
+      .settingsGrid { grid-template-columns: 1fr; }
+      .modal h2 { font-size: 24px; }
+      .footer {
+        padding: 6px 8px;
+        font-size: 12px;
+        line-height: 1.25;
+        max-height: 56px;
+        overflow: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <button id="btnOptions" class="btn">Game Options</button>
+    <button id="btnNew" class="btn">Start New Game</button>
+    <button id="btnRedeal" class="btn">Redeal Waste</button>
+    <button id="btnRestart" class="btn">Restart Deal</button>
+    <button id="btnLang" class="btn">toki pona</button>
+    <canvas id="timerCanvas" class="timerCanvas" aria-label="Game time"></canvas>
+    <div id="status" class="status">Choose options, then start a game.</div>
+  </div>
+
+  <div class="wrap">
+    <div class="gameArea">
+      <canvas id="c"></canvas>
+
+      <div id="optionsOverlay" class="overlay show" role="dialog" aria-modal="true">
+        <div class="modal">
+          <h2 id="optionsTitle">Klondike Solitaire</h2>
+          <p id="optionsIntro">Choose the game rules before starting. The card drawing code is kept in clearly marked sections so card backs and fronts are easy to replace later.</p>
+
+          <div class="settingsGrid">
+            <div class="field">
+              <label for="drawCount" id="labelDrawCount">Draw from stock</label>
+              <select id="drawCount">
+                <option value="1">Draw 1</option>
+                <option value="3" selected>Draw 3</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="redealLimit" id="labelRedealLimit">Redeals allowed</label>
+              <select id="redealLimit">
+                <option value="Infinity" selected>Unlimited</option>
+                <option value="0">None</option>
+                <option value="1">1</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <fieldset>
+                <legend id="legendShuffleRedeal">Shuffle waste before redeal</legend>
+                <label class="choiceRow"><input type="radio" name="shuffleRedeal" value="false" checked> <span id="labelShuffleOff">Off</span></label>
+                <label class="choiceRow"><input type="radio" name="shuffleRedeal" value="true"> <span id="labelShuffleOn">On</span></label>
+              </fieldset>
+            </div>
+
+            <div class="field">
+              <label for="timeLimit" id="labelTimeLimit">Time limit (minutes)</label>
+              <select id="timeLimit">
+                <option value="0" selected>None</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <button id="btnResumeCurrent" class="btn" style="display:none;">Cancel and Resume Current Game</button>
+            <button id="btnCancelCurrent" class="btn" style="display:none;">Cancel Current Game</button>
+            <button id="btnDefaults" class="btn">Reset to Defaults</button>
+            <button id="btnStartFromOptions" class="btn">Start Game</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer" aria-label="Disclaimer">
+      <div class="footerRow">
+        <div class="footerLeft">
+          <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
+        </div>
+        <div class="footerRight">
+          <a id="backToIndexLink" href="./index.html">Back to index</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+
+  const btnOptions = document.getElementById("btnOptions");
+  const btnNew = document.getElementById("btnNew");
+  const btnRedeal = document.getElementById("btnRedeal");
+  const btnRestart = document.getElementById("btnRestart");
+  const btnLang = document.getElementById("btnLang");
+  const timerCanvas = document.getElementById("timerCanvas");
+  const timerCtx = timerCanvas.getContext("2d");
+  const timerOffscreen = document.createElement("canvas");
+  const endGameTimeOffscreen = document.createElement("canvas");
+  const statusEl = document.getElementById("status");
+
+  const optionsOverlay = document.getElementById("optionsOverlay");
+  const optionsTitleEl = document.getElementById("optionsTitle");
+  const optionsIntroEl = document.getElementById("optionsIntro");
+  const labelDrawCountEl = document.getElementById("labelDrawCount");
+  const labelRedealLimitEl = document.getElementById("labelRedealLimit");
+  const legendShuffleRedealEl = document.getElementById("legendShuffleRedeal");
+  const labelTimeLimitEl = document.getElementById("labelTimeLimit");
+  const labelShuffleOffEl = document.getElementById("labelShuffleOff");
+  const labelShuffleOnEl = document.getElementById("labelShuffleOn");
+  const backToIndexLink = document.getElementById("backToIndexLink");
+  const btnDefaults = document.getElementById("btnDefaults");
+  const btnResumeCurrent = document.getElementById("btnResumeCurrent");
+  const btnCancelCurrent = document.getElementById("btnCancelCurrent");
+  const btnStartFromOptions = document.getElementById("btnStartFromOptions");
+  const drawCountSel = document.getElementById("drawCount");
+  const redealLimitSel = document.getElementById("redealLimit");
+  const timeLimitSel = document.getElementById("timeLimit");
+
+  const CARD_W = 82;
+  const CARD_H = 116;
+  const CARD_RADIUS = 10;
+  const FAN_Y = 34;
+  const WASTE_FAN_X = 18;
+  const PILE_GAP_X = 24;
+  const MARGIN_X = 22;
+  const MARGIN_Y = 22;
+  const TOP_ROW_Y = 28;
+  const SECOND_ROW_Y = 176;
+  const DROP_SLOP = 14;
+
+  const SUITS = ["♠", "♥", "♦", "♣"];
+  const SUIT_COLORS = { "♠": "black", "♣": "black", "♥": "red", "♦": "red" };
+  const RANK_LABEL = { 1:"A", 11:"J", 12:"Q", 13:"K" };
+
+  const TP_CARD_GLYPH_FONT = '"TP-Nasin-Nanpa-Font", "PatrickHand", system-ui, sans-serif';
+  const TP_WORD_TO_CP = Object.freeze({
+    ilo: 0xF190E,
+    kasi: 0xF1917,
+    kiwen: 0xF191B,
+    lawa: 0xF1924,
+    luka: 0xF192D,
+    meli: 0xF1933,
+    mije: 0xF1935,
+    moli: 0xF1937,
+    monsi: 0xF1938,
+    sike: 0xF195C,
+    mun: 0xF193A,
+    tenpo: 0xF196B,
+    toki: 0xF196C,
+    lili: 0xF1928,
+    pilin: 0xF194E,
+    pipi: 0xF1951,
+    pona: 0xF1954,
+    seli: 0xF1957,
+    tu: 0xF196E,
+    utala: 0xF1971,
+    wan: 0xF1973,
+    jo: 0xF1913,
+    awen: 0xF1908,
+    ijo: 0xF190C,
+    lanpan: 0xF1985,
+    nanpa: 0xF193D,
+    en: 0xF190A,
+    nena: 0xF1940,
+    kolon: 0xF199D
+  });
+
+  const CARD_SUIT_GLYPHS = Object.freeze({
+    "♠": [TP_WORD_TO_CP.ilo],
+    "♥": [TP_WORD_TO_CP.pilin],
+    "♦": [TP_WORD_TO_CP.kiwen],
+    "♣": [TP_WORD_TO_CP.kasi]
+  });
+
+  const CARD_RANK_GLYPHS = Object.freeze({
+    1: [TP_WORD_TO_CP.lawa],
+    2: [TP_WORD_TO_CP.tu],
+    3: [TP_WORD_TO_CP.seli],
+    4: [TP_WORD_TO_CP.awen],
+    5: [TP_WORD_TO_CP.luka],
+    6: [TP_WORD_TO_CP.utala],
+    7: [TP_WORD_TO_CP.mun],
+    8: [TP_WORD_TO_CP.pipi],
+    9: [TP_WORD_TO_CP.jo],
+    10: [TP_WORD_TO_CP.sike],
+    11: [TP_WORD_TO_CP.lanpan],
+    12: [TP_WORD_TO_CP.meli],
+    13: [TP_WORD_TO_CP.mije]
+  });
+
+
+
+  const LEGEND_SUIT_ROWS = Object.freeze([
+    ["♠", TP_WORD_TO_CP.ilo],
+    ["♥", TP_WORD_TO_CP.pilin],
+    ["♦", TP_WORD_TO_CP.kiwen],
+    ["♣", TP_WORD_TO_CP.kasi]
+  ]);
+
+  const LEGEND_VALUE_ROWS = Object.freeze([
+    ["K", TP_WORD_TO_CP.mije],
+    ["Q", TP_WORD_TO_CP.meli],
+    ["J", TP_WORD_TO_CP.lanpan],
+    ["10", TP_WORD_TO_CP.sike],
+    ["9", TP_WORD_TO_CP.jo],
+    ["8", TP_WORD_TO_CP.pipi],
+    ["7", TP_WORD_TO_CP.mun],
+    ["6", TP_WORD_TO_CP.utala],
+    ["5", TP_WORD_TO_CP.luka],
+    ["4", TP_WORD_TO_CP.awen],
+    ["3", TP_WORD_TO_CP.seli],
+    ["2", TP_WORD_TO_CP.tu],
+    ["A", TP_WORD_TO_CP.lawa]
+  ]);
+
+  const DEFAULT_OPTIONS = Object.freeze({
+    drawCount: 3,
+    redealLimit: Infinity,
+    shuffleOnRedeal: false,
+    timeLimitSec: 0
+  });
+
+  let gameOptions = { ...DEFAULT_OPTIONS };
+  let game = null;
+  let layout = null;
+  let drag = null;
+  let timerId = null;
+  let autoSolveTimerId = null;
+
+  const DB_NAME = "toki-pona-solitaire-db";
+  const DB_VERSION = 1;
+  const STORE_NAME = "kv";
+  const KEY_OPTIONS = "gameOptions";
+  const KEY_GAME = "currentGame";
+  const MAX_SAVE_AGE_MS = 60 * 60 * 1000;
+
+  let dbPromise = null;
+  let persistTimerId = null;
+  const KEY_LANGUAGE = "uiLanguage";
+  let uiLanguage = localStorage.getItem(KEY_LANGUAGE) === "tok" ? "tok" : "en";
+  let statusState = { kind: "raw", text: "Choose options, then start a game." };
+  let showPlaceholderStock = true;
+
+  const I18N = Object.freeze({
+    en: {
+      pageTitle: "Toki Pona Solitaire",
+      langButton: "toki pona",
+      timerAria: "Game time",
+      btnOptions: "Game Options",
+      btnNew: "Start New Game",
+      btnRedeal: "Redeal Waste",
+      btnRestart: "Restart Deal",
+      optionsTitle: "Klondike Solitaire",
+      optionsIntro: "Choose the game rules before starting. The card drawing code is kept in clearly marked sections so card backs and fronts are easy to replace later.",
+      drawFromStock: "Draw from stock",
+      draw1: "Draw 1",
+      draw3: "Draw 3",
+      redealsAllowed: "Redeals allowed",
+      unlimited: "Unlimited",
+      none: "None",
+      redeal1: "1",
+      redeal3: "3",
+      shuffleWasteBeforeRedeal: "Shuffle waste before redeal",
+      off: "Off",
+      on: "On",
+      timeLimitMinutes: "Time limit (minutes)",
+      timeLimit3: "3",
+      timeLimit5: "5",
+      timeLimit10: "10",
+      timeLimit15: "15",
+      cancelResumeCurrentGame: "Cancel and Resume Current Game",
+      cancelCurrentGame: "Cancel Current Game",
+      resetToDefaults: "Reset to Defaults",
+      startGame: "Start Game",
+      backToIndex: "Back to index",
+      statusChooseOptions: "Choose options, then start a game.",
+      statusAutoFinishStopped: "Auto-finish stopped: no foundation move found.",
+      statusAutoFinishing: "Auto-finishing game…",
+      statusGameStarted: "Game started.",
+      statusDealRestarted: "Deal restarted.",
+      statusTimeLimitReached: "Time limit reached.",
+      statusStockEmptyUseRedeal: "Stock is empty. Use Redeal Waste if allowed.",
+      statusDrewCards: "Drew {count} card{plural}.",
+      statusStockStillHasCards: "Stock still has cards.",
+      statusWasteEmpty: "Waste is empty.",
+      statusNoRedealsRemaining: "No redeals remaining.",
+      statusRedealCount: "Redeal {used}{limitPart}.",
+      statusWon: "You won.",
+      statusMovedToFoundation: "Moved to foundation.",
+      statusMovedToTableau: "Moved to tableau.",
+      statusMoveNotAllowed: "Move not allowed.",
+      statusRestoredSavedGame: "Restored saved game.",
+      bgStock: "Stock",
+      bgWaste: "Waste",
+      bgFoundations: "Foundations",
+      bgTableau: "Tableau",
+      cardGlyphs: "Card Glyphs",
+      endYouWon: "You won.",
+      endTimeUp: "Time up.",
+      endGameOver: "Game over.",
+      shownTime: "Shown time: {time}",
+      useRestartOrNew: "Use Restart Deal or Start New Game."
+    },
+    tok: {
+      pageTitle: "musi Solite lon toki pona",
+      langButton: "English",
+      timerAria: "tenpo musi",
+      btnOptions: "nasin musi",
+      btnNew: "open e musi sin",
+      btnRedeal: "pana sin e poki weka",
+      btnRestart: "open sin e musi",
+      optionsTitle: "musi Klondike",
+      optionsIntro: "o pili e nasin musi lon tenpo open. sina ken ante e sitelen lipu lon tenpo kama.",
+      drawFromStock: "o kama jo tan poki open",
+      draw1: "nanpa Newen",
+      draw3: "nanpa Nesen",
+      redealsAllowed: "pana sin li ken seme",
+      unlimited: "ale",
+      none: "ala",
+      redeal1: "nanpa Newen",
+      redeal3: "nanpa Nesen",
+      shuffleWasteBeforeRedeal: "o ante nasa e poki weka lon tenpo pana sin",
+      off: "ala",
+      on: "lon",
+      timeLimitMinutes: "tenpo pini (min)",
+      timeLimit3: "nanpa Nesen",
+      timeLimit5: "nanpa Nelen",
+      timeLimit10: "nanpa Newenin",
+      timeLimit15: "nanpa Newelen",
+      cancelResumeCurrentGame: "ala, o awen e musi ni",
+      cancelCurrentGame: "o pini e musi ni",
+      resetToDefaults: "o sin e nasin",
+      startGame: "open e musi",
+      backToIndex: "o tawa lipu open",
+      statusChooseOptions: "o pili e nasin; ni la o open e musi.",
+      statusAutoFinishStopped: "nasin pini li pini: tawa poki pini li lon ala.",
+      statusAutoFinishing: "musi li pini lon nasin awen…",
+      statusGameStarted: "musi li open.",
+      statusDealRestarted: "musi li open sin.",
+      statusTimeLimitReached: "tenpo li pini.",
+      statusStockEmptyUseRedeal: "poki open li jo ala. ken la o pana sin e poki weka.",
+      statusDrewCards: "sina kama jo e lipu {count}.",
+      statusStockStillHasCards: "poki open li jo e lipu.",
+      statusWasteEmpty: "poki weka li jo ala.",
+      statusNoRedealsRemaining: "pana sin li pini.",
+      statusRedealCount: "pana sin nanpa {used}{limitPart}.",
+      statusWon: "sina pona!",
+      statusMovedToFoundation: "sina pana e ona tawa poki pini.",
+      statusMovedToTableau: "sina pana e ona tawa lipu musi.",
+      statusMoveNotAllowed: "pana ni li ken ala.",
+      statusRestoredSavedGame: "musi awen li kama sin.",
+      bgStock: "poki open",
+      bgWaste: "poki weka",
+      bgFoundations: "poki pini",
+      bgTableau: "lipu musi",
+      cardGlyphs: "sitelen pi lipu musi",
+      endYouWon: "sina pona!",
+      endTimeUp: "tenpo li pini.",
+      endGameOver: "musi li pini.",
+      shownTime: "tenpo pana: {time}",
+      useRestartOrNew: "o kepeken open sin anu open e musi sin."
+    }
+  });
+
+  function i18n(key, vars = null) {
+    const langTable = I18N[uiLanguage] || I18N.en;
+    const template = Object.prototype.hasOwnProperty.call(langTable, key) ? langTable[key] : (I18N.en[key] || key);
+    if (!vars) return template;
+    return String(template).replace(/\{(\w+)\}/g, (_, name) => Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : "");
+  }
+
+  function setStatusRaw(msg) {
+    statusState = { kind: "raw", text: String(msg) };
+    statusEl.textContent = statusState.text;
+  }
+
+  function setStatusI18n(key, vars = null) {
+    statusState = { kind: "i18n", key, vars: vars || null };
+    statusEl.textContent = i18n(key, vars);
+  }
+
+  function refreshStatusText() {
+    if (statusState.kind === "i18n") statusEl.textContent = i18n(statusState.key, statusState.vars);
+    else statusEl.textContent = statusState.text;
+  }
+
+  function applyLanguage() {
+    document.title = i18n("pageTitle");
+    btnLang.textContent = i18n("langButton");
+    timerCanvas.setAttribute("aria-label", i18n("timerAria"));
+    btnOptions.textContent = i18n("btnOptions");
+    btnNew.textContent = i18n("btnNew");
+    btnRedeal.textContent = i18n("btnRedeal");
+    btnRestart.textContent = i18n("btnRestart");
+    optionsTitleEl.textContent = i18n("optionsTitle");
+    optionsIntroEl.textContent = i18n("optionsIntro");
+    labelDrawCountEl.textContent = i18n("drawFromStock");
+    drawCountSel.options[0].textContent = i18n("draw1");
+    drawCountSel.options[1].textContent = i18n("draw3");
+    labelRedealLimitEl.textContent = i18n("redealsAllowed");
+    redealLimitSel.options[0].textContent = i18n("unlimited");
+    redealLimitSel.options[1].textContent = i18n("none");
+    redealLimitSel.options[2].textContent = i18n("redeal1");
+    redealLimitSel.options[3].textContent = i18n("redeal3");
+    legendShuffleRedealEl.textContent = i18n("shuffleWasteBeforeRedeal");
+    labelShuffleOffEl.textContent = i18n("off");
+    labelShuffleOnEl.textContent = i18n("on");
+    labelTimeLimitEl.textContent = i18n("timeLimitMinutes");
+    timeLimitSel.options[0].textContent = i18n("none");
+    timeLimitSel.options[1].textContent = i18n("timeLimit3");
+    timeLimitSel.options[2].textContent = i18n("timeLimit5");
+    timeLimitSel.options[3].textContent = i18n("timeLimit10");
+    timeLimitSel.options[4].textContent = i18n("timeLimit15");
+    btnResumeCurrent.textContent = i18n("cancelResumeCurrentGame");
+    btnCancelCurrent.textContent = i18n("cancelCurrentGame");
+    btnDefaults.textContent = i18n("resetToDefaults");
+    btnStartFromOptions.textContent = i18n("startGame");
+    backToIndexLink.textContent = i18n("backToIndex");
+    refreshStatusText();
+    renderTopTimerCartouche();
+    draw();
+  }
+
+  function openDb() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("IndexedDB open failed"));
+    });
+    return dbPromise;
+  }
+
+  async function idbGet(key) {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error(`IndexedDB get failed for ${key}`));
+    });
+  }
+
+  async function idbSet(key, value) {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error(`IndexedDB put failed for ${key}`));
+      tx.onabort = () => reject(tx.error || new Error(`IndexedDB put aborted for ${key}`));
+    });
+  }
+
+  async function idbDelete(key) {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error(`IndexedDB delete failed for ${key}`));
+      tx.onabort = () => reject(tx.error || new Error(`IndexedDB delete aborted for ${key}`));
+    });
+  }
+
+  function cardToPojo(card) {
+    return {
+      id: Number(card.id),
+      suit: card.suit,
+      rank: Number(card.rank),
+      color: card.color,
+      faceUp: !!card.faceUp
+    };
+  }
+
+  function cardFromPojo(card) {
+    return {
+      id: Number(card.id),
+      suit: card.suit,
+      rank: Number(card.rank),
+      color: card.color,
+      faceUp: !!card.faceUp
+    };
+  }
+
+  function normalizeOptions(raw) {
+    const src = raw && typeof raw === "object" ? raw : DEFAULT_OPTIONS;
+    const drawCount = src.drawCount === 1 ? 1 : 3;
+    const redealLimit = src.redealLimit === Infinity || src.redealLimit === "Infinity"
+      ? Infinity
+      : Math.max(0, Number(src.redealLimit) || 0);
+    const shuffleOnRedeal = !!src.shuffleOnRedeal;
+    const timeLimitSec = Math.max(0, Number(src.timeLimitSec) || 0);
+    return { drawCount, redealLimit, shuffleOnRedeal, timeLimitSec };
+  }
+
+  function serializeGameSnapshot(gs) {
+    if (!gs) return null;
+    return {
+      options: normalizeOptions(gs.options),
+      stock: Array.isArray(gs.stock) ? gs.stock.map(cardToPojo) : [],
+      waste: Array.isArray(gs.waste) ? gs.waste.map(cardToPojo) : [],
+      foundations: Array.isArray(gs.foundations) ? gs.foundations.map(p => (Array.isArray(p) ? p.map(cardToPojo) : [])) : Array.from({ length: 4 }, () => []),
+      tableau: Array.isArray(gs.tableau) ? gs.tableau.map(p => (Array.isArray(p) ? p.map(cardToPojo) : [])) : Array.from({ length: 7 }, () => []),
+      redealsUsed: Math.max(0, Number(gs.redealsUsed) || 0),
+      elapsedSec: Math.max(0, Number(gs.elapsedSec) || 0),
+      finished: !!gs.finished,
+      won: !!gs.won,
+      lostOnTime: !!gs.lostOnTime,
+      autoSolving: false,
+      initialSeed: null
+    };
+  }
+
+  function deserializeGameSnapshot(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const foundations = Array.isArray(raw.foundations) ? raw.foundations.map(p => (Array.isArray(p) ? p.map(cardFromPojo) : [])) : Array.from({ length: 4 }, () => []);
+    const tableau = Array.isArray(raw.tableau) ? raw.tableau.map(p => (Array.isArray(p) ? p.map(cardFromPojo) : [])) : Array.from({ length: 7 }, () => []);
+    while (foundations.length < 4) foundations.push([]);
+    while (tableau.length < 7) tableau.push([]);
+    return {
+      options: normalizeOptions(raw.options),
+      stock: Array.isArray(raw.stock) ? raw.stock.map(cardFromPojo) : [],
+      waste: Array.isArray(raw.waste) ? raw.waste.map(cardFromPojo) : [],
+      foundations: foundations.slice(0, 4),
+      tableau: tableau.slice(0, 7),
+      redealsUsed: Math.max(0, Number(raw.redealsUsed) || 0),
+      startedAt: performance.now(),
+      elapsedSec: Math.max(0, Number(raw.elapsedSec) || 0),
+      finished: !!raw.finished,
+      won: !!raw.won,
+      lostOnTime: !!raw.lostOnTime,
+      initialSeed: raw.initialSeed ? deserializeGameSnapshot(raw.initialSeed) : null,
+      autoSolving: false
+    };
+  }
+
+  function persistOptionsSoon() {
+    const opts = normalizeOptions(gameOptions);
+    clearTimeout(persistTimerId);
+    persistTimerId = setTimeout(() => {
+      idbSet(KEY_OPTIONS, { savedAt: Date.now(), options: opts }).catch(err => {
+        console.error("Options save failed", err);
+      });
+    }, 40);
+  }
+
+  function persistGameSoon() {
+    if (!game) return;
+    clearTimeout(persistTimerId);
+    persistTimerId = setTimeout(() => {
+      const opts = normalizeOptions(game.options || gameOptions);
+      idbSet(KEY_OPTIONS, { savedAt: Date.now(), options: opts }).catch(err => {
+        console.error("Options save failed", err);
+      });
+      if (game.finished) {
+        idbDelete(KEY_GAME).catch(err => {
+          console.error("Clear finished game failed", err);
+        });
+        return;
+      }
+      const payload = {
+        savedAt: Date.now(),
+        game: serializeGameSnapshot(game)
+      };
+      idbSet(KEY_GAME, payload).catch(err => {
+        console.error("Game save failed", err);
+      });
+    }, 40);
+  }
+
+  async function clearSavedGame() {
+    clearTimeout(persistTimerId);
+    try {
+      await idbDelete(KEY_GAME);
+    } catch (err) {
+      console.error("Clear saved game failed", err);
+    }
+  }
+
+  function syncOptionsFromUiAndPersist() {
+    gameOptions = normalizeOptions(readOptionsFromUi());
+    persistOptionsSoon();
+  }
+
+  function setStatus(msg) {
+    setStatusRaw(msg);
+  }
+
+  function resizeCanvasToDisplaySize() {
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.round(rect.width));
+    const h = Math.max(1, Math.round(rect.height));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+  }
+
+  function formatTime(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    const mm = Math.floor(sec / 60);
+    const ss = sec % 60;
+    return `${mm}:${String(ss).padStart(2, "0")}`;
+  }
+
+
+  function getSmallCodepointsSet() {
+    return new Set([
+      TP_WORD_TO_CP.nanpa,
+      TP_WORD_TO_CP.nena,
+      TP_WORD_TO_CP.en
+    ].filter(Number.isFinite));
+  }
+
+  const SMALL_SET = getSmallCodepointsSet();
+
+  function drawRoundedRectPath(ctxArg, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctxArg.beginPath();
+    ctxArg.moveTo(x + radius, y);
+    ctxArg.arcTo(x + w, y, x + w, y + h, radius);
+    ctxArg.arcTo(x + w, y + h, x, y + h, radius);
+    ctxArg.arcTo(x, y + h, x, y, radius);
+    ctxArg.arcTo(x, y, x + w, y, radius);
+    ctxArg.closePath();
+  }
+
+  function renderMixedCartoucheToCanvas(canvasEl, glyphs, largePx, smallPx, smallCodepoints, options = {}) {
+    const pad = options.padding ?? 18;
+    const border = options.border ?? 2;
+    const corner = options.cornerRadius ?? 16;
+    const letterGap = options.letterGap ?? 0;
+
+    const c = canvasEl.getContext("2d");
+    c.textBaseline = "alphabetic";
+
+    const runs = [];
+    let totalWidth = 0;
+    let maxAscent = 0;
+    let maxDescent = 0;
+
+    for (const g of glyphs) {
+      const ch = (typeof g === "number") ? String.fromCodePoint(g) : String(g);
+      const isSmall = (typeof g === "number") && smallCodepoints.has(g);
+      const px = isSmall ? smallPx : largePx;
+
+      c.font = `${px}px ${TP_CARD_GLYPH_FONT}`;
+      const m = c.measureText(ch);
+
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+
+      runs.push({ ch, px, tightW, left, ascent, descent });
+      totalWidth += tightW + letterGap;
+      if (ascent > maxAscent) maxAscent = ascent;
+      if (descent > maxDescent) maxDescent = descent;
+    }
+    if (runs.length > 0) totalWidth -= letterGap;
+
+    const textHeight = Math.ceil(maxAscent + maxDescent);
+    const cartW = Math.ceil(totalWidth + pad * 2);
+    const cartH = Math.ceil(textHeight + pad * 2);
+
+    canvasEl.width = cartW + border * 2;
+    canvasEl.height = cartH + border * 2;
+
+    const c2 = canvasEl.getContext("2d");
+    c2.textBaseline = "alphabetic";
+    c2.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+    drawRoundedRectPath(c2, border, border, cartW, cartH, corner);
+    c2.lineWidth = border;
+    c2.lineJoin = "round";
+    c2.lineCap = "round";
+    c2.strokeStyle = "#111";
+    c2.stroke();
+
+    const baselineY = border + pad + maxAscent;
+    let x = border + pad;
+
+    c2.fillStyle = "#111";
+    for (const r of runs) {
+      c2.font = `${r.px}px ${TP_CARD_GLYPH_FONT}`;
+      c2.fillText(r.ch, x + (r.left ?? 0), baselineY);
+      x += r.tightW + letterGap;
+    }
+  }
+
+  function buildTimeCartoucheGlyphs(totalSeconds) {
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = totalSeconds % 60;
+    const mm2 = String(mm).padStart(2, "0");
+    const ss2 = String(ss).padStart(2, "0");
+
+    const digitMap = {
+      "0": TP_WORD_TO_CP.ijo,
+      "1": TP_WORD_TO_CP.wan,
+      "2": TP_WORD_TO_CP.tu,
+      "3": TP_WORD_TO_CP.seli,
+      "4": TP_WORD_TO_CP.awen,
+      "5": TP_WORD_TO_CP.luka,
+      "6": TP_WORD_TO_CP.utala,
+      "7": TP_WORD_TO_CP.mun,
+      "8": TP_WORD_TO_CP.pipi,
+      "9": TP_WORD_TO_CP.jo
+    };
+
+    function digitInner(dChar) {
+      const cp = digitMap[dChar];
+      if (!Number.isFinite(cp)) return [];
+      if (dChar === "0" || dChar === "4" || dChar === "6") {
+        return [TP_WORD_TO_CP.nena, cp];
+      }
+      return [cp, TP_WORD_TO_CP.en];
+    }
+
+    const inner = [];
+    for (const ch of mm2) inner.push(...digitInner(ch));
+    inner.push(TP_WORD_TO_CP.nena, TP_WORD_TO_CP.en, TP_WORD_TO_CP.kolon, TP_WORD_TO_CP.en);
+    for (const ch of ss2) inner.push(...digitInner(ch));
+
+    return [TP_WORD_TO_CP.nanpa, TP_WORD_TO_CP.en, ...inner, TP_WORD_TO_CP.nanpa];
+  }
+
+  function renderTopTimerCartouche() {
+    const targetCssW = window.innerWidth <= 760 ? 164 : 190;
+    const targetCssH = window.innerWidth <= 760 ? 32 : 36;
+    const dpr = window.devicePixelRatio || 1;
+
+    timerCanvas.style.width = `${targetCssW}px`;
+    timerCanvas.style.height = `${targetCssH}px`;
+    timerCanvas.width = Math.ceil(targetCssW * dpr);
+    timerCanvas.height = Math.ceil(targetCssH * dpr);
+
+    timerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    timerCtx.clearRect(0, 0, targetCssW, targetCssH);
+
+    const shown = !game ? 0 : (game.options.timeLimitSec > 0
+      ? Math.max(0, game.options.timeLimitSec - (game.elapsedSec || 0))
+      : (game.elapsedSec || 0));
+
+    const glyphs = buildTimeCartoucheGlyphs(shown);
+    renderMixedCartoucheToCanvas(timerOffscreen, glyphs, 34, 12, SMALL_SET, {
+      padding: 8, border: 2, cornerRadius: 12, letterGap: 1
+    });
+
+    const prefixCps = [TP_WORD_TO_CP.tenpo || null, TP_WORD_TO_CP.lili || null].filter(Number.isFinite);
+    let prefixW = 0;
+    let gapPx = 8;
+    let prefixFontPx = 14;
+
+    if (prefixCps.length === 2) {
+      let scale = Math.min(targetCssW / timerOffscreen.width, targetCssH / timerOffscreen.height);
+      prefixFontPx = Math.max(10, 34 * scale);
+      timerCtx.save();
+      timerCtx.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      prefixW = timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width + 4 + timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width;
+      timerCtx.restore();
+      const availWForCartouche = Math.max(40, targetCssW - prefixW - gapPx);
+      scale = Math.min(availWForCartouche / timerOffscreen.width, targetCssH / timerOffscreen.height);
+      prefixFontPx = Math.max(10, 34 * scale);
+      timerCtx.save();
+      timerCtx.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      prefixW = timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width + 4 + timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width;
+      timerCtx.restore();
+    }
+
+    const drawW = Math.floor(timerOffscreen.width * Math.min((targetCssW - prefixW - gapPx) / timerOffscreen.width, targetCssH / timerOffscreen.height));
+    const drawH = Math.floor(timerOffscreen.height * Math.min((targetCssW - prefixW - gapPx) / timerOffscreen.width, targetCssH / timerOffscreen.height));
+    const x = Math.floor(targetCssW - drawW);
+    const y = Math.floor((targetCssH - drawH) / 2);
+
+    if (prefixCps.length === 2) {
+      timerCtx.save();
+      timerCtx.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      timerCtx.textBaseline = "middle";
+      timerCtx.textAlign = "left";
+      timerCtx.fillStyle = "#111";
+      const w1 = timerCtx.measureText(String.fromCodePoint(prefixCps[0])).width;
+      const w2 = timerCtx.measureText(String.fromCodePoint(prefixCps[1])).width;
+      let px = x - gapPx - (w1 + 4 + w2);
+      timerCtx.fillText(String.fromCodePoint(prefixCps[0]), px, targetCssH / 2);
+      px += w1 + 4;
+      timerCtx.fillText(String.fromCodePoint(prefixCps[1]), px, targetCssH / 2);
+      timerCtx.restore();
+    }
+
+    timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
+  }
+
+  function readOptionsFromUi() {
+    const shuffleVal = document.querySelector('input[name="shuffleRedeal"]:checked')?.value === "true";
+    const redealRaw = redealLimitSel.value === "Infinity" ? Infinity : Number(redealLimitSel.value);
+    const timeMin = Number(timeLimitSel.value) || 0;
+    return normalizeOptions({
+      drawCount: Number(drawCountSel.value) || 1,
+      redealLimit: Number.isFinite(redealRaw) ? redealRaw : Infinity,
+      shuffleOnRedeal: shuffleVal,
+      timeLimitSec: timeMin > 0 ? timeMin * 60 : 0
+    });
+  }
+
+  function writeOptionsToUi(opts) {
+    const normalized = normalizeOptions(opts);
+    drawCountSel.value = String(normalized.drawCount);
+    redealLimitSel.value = Number.isFinite(normalized.redealLimit) ? String(normalized.redealLimit) : "Infinity";
+    const target = document.querySelector(`input[name="shuffleRedeal"][value="${String(!!normalized.shuffleOnRedeal)}"]`);
+    if (target) target.checked = true;
+    timeLimitSel.value = String(Math.floor((normalized.timeLimitSec || 0) / 60));
+  }
+
+  function buildDeck() {
+    const deck = [];
+    let id = 1;
+    for (const suit of SUITS) {
+      for (let rank = 1; rank <= 13; rank++) {
+        deck.push({
+          id: id++,
+          suit,
+          rank,
+          color: SUIT_COLORS[suit],
+          faceUp: false
+        });
+      }
+    }
+    return deck;
+  }
+
+  function shuffleInPlace(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  function cloneCard(card) {
+    return { ...card };
+  }
+
+  function makeNewGame(options) {
+    const stockDeck = buildDeck();
+    shuffleInPlace(stockDeck);
+
+    const tableau = Array.from({ length: 7 }, () => []);
+    for (let col = 0; col < 7; col++) {
+      for (let row = 0; row <= col; row++) {
+        const card = stockDeck.pop();
+        card.faceUp = (row === col);
+        tableau[col].push(card);
+      }
+    }
+
+    return {
+      options: { ...options },
+      stock: stockDeck,
+      waste: [],
+      foundations: Array.from({ length: 4 }, () => []),
+      tableau,
+      redealsUsed: 0,
+      startedAt: performance.now(),
+      elapsedSec: 0,
+      finished: false,
+      won: false,
+      lostOnTime: false,
+      initialSeed: null,
+      autoSolving: false
+    };
+  }
+
+  function snapshotGame(gameState) {
+    return {
+      options: { ...gameState.options },
+      stock: gameState.stock.map(cloneCard),
+      waste: gameState.waste.map(cloneCard),
+      foundations: gameState.foundations.map(p => p.map(cloneCard)),
+      tableau: gameState.tableau.map(p => p.map(cloneCard)),
+      redealsUsed: gameState.redealsUsed,
+      startedAt: performance.now(),
+      elapsedSec: 0,
+      finished: false,
+      won: false,
+      lostOnTime: false,
+      initialSeed: null,
+      autoSolving: false
+    };
+  }
+
+  function stopAutoSolve() {
+    if (autoSolveTimerId != null) {
+      clearTimeout(autoSolveTimerId);
+      autoSolveTimerId = null;
+    }
+    if (game) game.autoSolving = false;
+  }
+
+  function isAutoSolveReady() {
+    if (!game || game.finished) return false;
+    if (game.stock.length !== 0) return false;
+    for (const pile of game.tableau) {
+      for (const card of pile) {
+        if (!card.faceUp) return false;
+      }
+    }
+    return true;
+  }
+
+  function findAutoSolveMove() {
+    if (!game) return null;
+    const wasteTop = game.waste.length ? game.waste[game.waste.length - 1] : null;
+    if (wasteTop) {
+      for (let foundationIndex = 0; foundationIndex < game.foundations.length; foundationIndex++) {
+        if (canMoveToFoundation(wasteTop, game.foundations[foundationIndex])) {
+          return { from: "waste", foundationIndex };
+        }
+      }
+    }
+    for (let col = 0; col < game.tableau.length; col++) {
+      const pile = game.tableau[col];
+      if (!pile.length) continue;
+      const card = pile[pile.length - 1];
+      for (let foundationIndex = 0; foundationIndex < game.foundations.length; foundationIndex++) {
+        if (canMoveToFoundation(card, game.foundations[foundationIndex])) {
+          return { from: "tableau", col, foundationIndex };
+        }
+      }
+    }
+    return null;
+  }
+
+  function stepAutoSolve() {
+    if (!isAutoSolveReady()) {
+      stopAutoSolve();
+      updateButtons();
+      draw();
+      return;
+    }
+
+    const move = findAutoSolveMove();
+    if (!move) {
+      stopAutoSolve();
+      updateButtons();
+      setStatusI18n("statusAutoFinishStopped");
+      draw();
+      return;
+    }
+
+    let moved = null;
+    if (move.from === "waste") {
+      moved = game.waste.pop();
+    } else {
+      moved = game.tableau[move.col].pop();
+      flipTopTableauCardIfNeeded(game.tableau[move.col]);
+    }
+    game.foundations[move.foundationIndex].push(moved);
+    maybeAutoWinCheck();
+    updateButtons();
+    draw();
+    persistGameSoon();
+
+    if (game.finished) {
+      stopAutoSolve();
+      updateButtons();
+      return;
+    }
+
+    autoSolveTimerId = setTimeout(stepAutoSolve, 90);
+  }
+
+  function maybeStartAutoSolve() {
+    if (!isAutoSolveReady()) return;
+    if (game.autoSolving) return;
+    game.autoSolving = true;
+    updateButtons();
+    setStatusI18n("statusAutoFinishing");
+    persistGameSoon();
+    autoSolveTimerId = setTimeout(stepAutoSolve, 120);
+  }
+
+  function startGameFromOptions() {
+    gameOptions = readOptionsFromUi();
+    stopAutoSolve();
+    showPlaceholderStock = false;
+    game = makeNewGame(gameOptions);
+    game.initialSeed = snapshotGame(game);
+    drag = null;
+    closeOptions();
+    startTimer({ preserveElapsed: false });
+    updateButtons();
+    setStatusI18n("statusGameStarted");
+    recomputeLayout();
+    draw();
+    persistGameSoon();
+  }
+
+  function restartCurrentDeal() {
+    if (!game || !game.initialSeed) return;
+    stopAutoSolve();
+    showPlaceholderStock = false;
+    game = snapshotGame(game.initialSeed);
+    drag = null;
+    startTimer({ preserveElapsed: false });
+    updateButtons();
+    setStatusI18n("statusDealRestarted");
+    draw();
+    persistGameSoon();
+  }
+
+  function updateTimerBadge() {
+    renderTopTimerCartouche();
+  }
+
+  function startTimer({ preserveElapsed = false } = {}) {
+    stopTimer();
+    if (!game) {
+      renderTopTimerCartouche();
+      return;
+    }
+    if (!preserveElapsed) {
+      game.elapsedSec = 0;
+    } else {
+      game.elapsedSec = Math.max(0, Number(game.elapsedSec) || 0);
+    }
+    game.startedAt = performance.now() - game.elapsedSec * 1000;
+    updateTimerBadge();
+    timerId = setInterval(() => {
+      if (!game || game.finished) return;
+      game.elapsedSec = Math.floor((performance.now() - game.startedAt) / 1000);
+      if (game.options.timeLimitSec > 0) {
+        const remain = Math.max(0, game.options.timeLimitSec - game.elapsedSec);
+        renderTopTimerCartouche();
+        if (remain <= 0) {
+          game.finished = true;
+          game.won = false;
+          game.lostOnTime = true;
+          stopTimer();
+          stopAutoSolve();
+          updateButtons();
+          setStatusI18n("statusTimeLimitReached");
+          draw();
+          persistGameSoon();
+        }
+      } else {
+        renderTopTimerCartouche();
+      }
+    }, 250);
+  }
+
+  function stopTimer() {
+    if (timerId) clearInterval(timerId);
+    timerId = null;
+  }
+
+  function updateOptionsOverlayButtons() {
+    const canResumeCurrent = !!(game && !game.finished);
+    btnResumeCurrent.style.display = canResumeCurrent ? "" : "none";
+    btnCancelCurrent.style.display = canResumeCurrent ? "" : "none";
+  }
+
+  function openOptions() {
+    updateOptionsOverlayButtons();
+    optionsOverlay.classList.add("show");
+  }
+  function closeOptions() {
+    optionsOverlay.classList.remove("show");
+  }
+
+  function updateButtons() {
+    const hasGame = !!game;
+    const locked = !hasGame || !!game.finished || !!game?.autoSolving;
+    btnRedeal.disabled = locked;
+    btnRestart.disabled = !hasGame || !!game?.autoSolving;
+    updateOptionsOverlayButtons();
+  }
+
+  function recomputeLayout() {
+    resizeCanvasToDisplaySize();
+    const w = canvas.width;
+    const h = canvas.height;
+
+    const stock = { x: MARGIN_X, y: TOP_ROW_Y, w: CARD_W, h: CARD_H };
+    const waste = { x: stock.x + CARD_W + PILE_GAP_X, y: TOP_ROW_Y, w: CARD_W + WASTE_FAN_X * 2, h: CARD_H };
+
+    const topTableauWidth = CARD_W * 7 + PILE_GAP_X * 6;
+    const tableauStartX = Math.max(MARGIN_X, Math.floor((w - topTableauWidth) / 2));
+    const tableau = Array.from({ length: 7 }, (_, i) => ({
+      x: tableauStartX + i * (CARD_W + PILE_GAP_X),
+      y: SECOND_ROW_Y,
+      w: CARD_W,
+      h: Math.max(CARD_H, h - SECOND_ROW_Y - 22)
+    }));
+
+    const foundationStartX = tableau[3].x;
+    const foundations = Array.from({ length: 4 }, (_, i) => ({
+      x: foundationStartX + i * (CARD_W + PILE_GAP_X),
+      y: TOP_ROW_Y,
+      w: CARD_W,
+      h: CARD_H
+    }));
+
+    layout = { stock, waste, foundations, tableau, width: w, height: h };
+  }
+
+  function rankLabel(rank) {
+    return RANK_LABEL[rank] || String(rank);
+  }
+
+  function foundationIndexForSuit(suit) {
+    return SUITS.indexOf(suit);
+  }
+
+  function canMoveToFoundation(card, pile) {
+    if (!card || !card.faceUp) return false;
+    if (pile.length === 0) return card.rank === 1;
+    const top = pile[pile.length - 1];
+    return top.suit === card.suit && card.rank === top.rank + 1;
+  }
+
+  function canMoveToTableau(card, pile) {
+    if (!card || !card.faceUp) return false;
+    if (pile.length === 0) return card.rank === 13;
+    const top = pile[pile.length - 1];
+    return top.faceUp && top.color !== card.color && card.rank === top.rank - 1;
+  }
+
+  function flipTopTableauCardIfNeeded(pile) {
+    if (pile.length > 0) {
+      const top = pile[pile.length - 1];
+      if (!top.faceUp) top.faceUp = true;
+    }
+  }
+
+  function drawFromStock() {
+    if (!game || game.finished) return;
+    if (game.stock.length === 0) {
+      setStatusI18n("statusStockEmptyUseRedeal");
+      return;
+    }
+    const take = Math.min(game.options.drawCount, game.stock.length);
+    for (let i = 0; i < take; i++) {
+      const card = game.stock.pop();
+      card.faceUp = true;
+      game.waste.push(card);
+    }
+    setStatusI18n("statusDrewCards", { count: take, plural: take === 1 ? "" : "s" });
+    updateButtons();
+    draw();
+    persistGameSoon();
+  }
+
+  function redealWasteToStock() {
+    if (!game || game.finished) return;
+    if (game.stock.length > 0) {
+      setStatusI18n("statusStockStillHasCards");
+      return;
+    }
+    if (game.waste.length === 0) {
+      setStatusI18n("statusWasteEmpty");
+      return;
+    }
+    if (Number.isFinite(game.options.redealLimit) && game.redealsUsed >= game.options.redealLimit) {
+      setStatusI18n("statusNoRedealsRemaining");
+      return;
+    }
+
+    const nextStock = game.waste.splice(0).map(c => ({ ...c, faceUp: false }));
+    if (game.options.shuffleOnRedeal) shuffleInPlace(nextStock);
+    else nextStock.reverse();
+    game.stock = nextStock;
+    game.redealsUsed += 1;
+    setStatusI18n("statusRedealCount", { used: game.redealsUsed, limitPart: Number.isFinite(game.options.redealLimit) ? (uiLanguage === "tok" ? ` pi ${game.options.redealLimit}` : ` of ${game.options.redealLimit}`) : "" });
+    updateButtons();
+    draw();
+    persistGameSoon();
+  }
+
+  function maybeAutoWinCheck() {
+    if (!game) return;
+    const won = game.foundations.every(p => p.length === 13);
+    if (won) {
+      game.finished = true;
+      game.won = true;
+      stopTimer();
+      stopAutoSolve();
+      updateButtons();
+      setStatusI18n("statusWon");
+      persistGameSoon();
+    }
+  }
+
+  function cardAtWasteTop() {
+    if (!game || game.waste.length === 0) return null;
+    return game.waste[game.waste.length - 1];
+  }
+
+  function makeDragFromWaste() {
+    if (!game || game.waste.length === 0) return null;
+    const card = game.waste[game.waste.length - 1];
+    return {
+      type: "waste",
+      cards: [card],
+      sourceIndex: game.waste.length - 1,
+      homeX: wasteCardPosition(game.waste.length - 1).x,
+      homeY: wasteCardPosition(game.waste.length - 1).y
+    };
+  }
+
+  function makeDragFromFoundation(foundIndex) {
+    const pile = game.foundations[foundIndex];
+    if (!pile || pile.length === 0) return null;
+    const card = pile[pile.length - 1];
+    return {
+      type: "foundation",
+      foundationIndex: foundIndex,
+      cards: [card],
+      homeX: layout.foundations[foundIndex].x,
+      homeY: layout.foundations[foundIndex].y
+    };
+  }
+
+  function makeDragFromTableau(col, startIndex) {
+    const pile = game.tableau[col];
+    if (!pile || startIndex < 0 || startIndex >= pile.length) return null;
+    const cards = pile.slice(startIndex);
+    if (!cards.every(c => c.faceUp)) return null;
+    for (let i = 0; i < cards.length - 1; i++) {
+      const a = cards[i], b = cards[i + 1];
+      if (!(a.color !== b.color && a.rank === b.rank + 1)) return null;
+    }
+    return {
+      type: "tableau",
+      tableauIndex: col,
+      startIndex,
+      cards,
+      homeX: layout.tableau[col].x,
+      homeY: layout.tableau[col].y + startIndex * FAN_Y
+    };
+  }
+
+  function removeCardsFromSource(d) {
+    if (d.type === "waste") {
+      return game.waste.splice(game.waste.length - 1, 1);
+    }
+    if (d.type === "foundation") {
+      return game.foundations[d.foundationIndex].splice(game.foundations[d.foundationIndex].length - 1, 1);
+    }
+    if (d.type === "tableau") {
+      return game.tableau[d.tableauIndex].splice(d.startIndex);
+    }
+    return [];
+  }
+
+  function returnCardsToSource(d, cards) {
+    if (d.type === "waste") {
+      game.waste.push(...cards);
+      return;
+    }
+    if (d.type === "foundation") {
+      game.foundations[d.foundationIndex].push(...cards);
+      return;
+    }
+    if (d.type === "tableau") {
+      game.tableau[d.tableauIndex].push(...cards);
+      return;
+    }
+  }
+
+  function rectIntersectionArea(a, b) {
+    const x1 = Math.max(a.x, b.x);
+    const y1 = Math.max(a.y, b.y);
+    const x2 = Math.min(a.x + a.w, b.x + b.w);
+    const y2 = Math.min(a.y + a.h, b.y + b.h);
+    const w = x2 - x1;
+    const h = y2 - y1;
+    return (w > 0 && h > 0) ? (w * h) : 0;
+  }
+
+  function rectCenterDistanceSq(x, y, r) {
+    const cx = r.x + r.w / 2;
+    const cy = r.y + r.h / 2;
+    const dx = x - cx;
+    const dy = y - cy;
+    return dx * dx + dy * dy;
+  }
+
+  function tryPlaceDrag(dropX, dropY) {
+    if (!drag || !game) return false;
+
+    const leadRect = { x: drag.x, y: drag.y, w: CARD_W, h: CARD_H };
+    const candidates = [];
+
+    for (let i = 0; i < layout.foundations.length; i++) {
+      const box = expandRect(layout.foundations[i], DROP_SLOP);
+      const overlapArea = rectIntersectionArea(leadRect, box);
+      if (overlapArea <= 0) continue;
+      if (drag.cards.length !== 1) continue;
+      const card = drag.cards[0];
+      if (!canMoveToFoundation(card, game.foundations[i])) continue;
+      candidates.push({
+        zone: "foundation",
+        index: i,
+        hitRect: box,
+        overlapArea,
+        pointerDistSq: rectCenterDistanceSq(dropX, dropY, box)
+      });
+    }
+
+    for (let i = 0; i < layout.tableau.length; i++) {
+      const colRect = layout.tableau[i];
+      const pile = game.tableau[i];
+      const pileHeight = Math.max(CARD_H, pile.length ? CARD_H + FAN_Y * (pile.length - 1) : CARD_H);
+      const hitRect = { x: colRect.x - DROP_SLOP, y: colRect.y - DROP_SLOP, w: CARD_W + DROP_SLOP * 2, h: pileHeight + DROP_SLOP * 2 };
+      const overlapArea = rectIntersectionArea(leadRect, hitRect);
+      if (overlapArea <= 0) continue;
+      if (!canMoveToTableau(drag.cards[0], pile)) continue;
+      candidates.push({
+        zone: "tableau",
+        index: i,
+        hitRect,
+        overlapArea,
+        pointerDistSq: rectCenterDistanceSq(dropX, dropY, hitRect)
+      });
+    }
+
+    if (candidates.length === 0) {
+      for (let i = 0; i < layout.foundations.length; i++) {
+        const box = expandRect(layout.foundations[i], DROP_SLOP);
+        if (!pointInRect(dropX, dropY, box)) continue;
+        if (drag.cards.length !== 1) return false;
+        const card = drag.cards[0];
+        if (!canMoveToFoundation(card, game.foundations[i])) return false;
+        const moved = removeCardsFromSource(drag);
+        game.foundations[i].push(...moved);
+        if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
+        maybeAutoWinCheck();
+        if (!game.finished) maybeStartAutoSolve();
+        updateButtons();
+        setStatusI18n(game && game.autoSolving ? "statusAutoFinishing" : "statusMovedToFoundation");
+        persistGameSoon();
+        return true;
+      }
+
+      for (let i = 0; i < layout.tableau.length; i++) {
+        const colRect = layout.tableau[i];
+        const pile = game.tableau[i];
+        const pileHeight = Math.max(CARD_H, pile.length ? CARD_H + FAN_Y * (pile.length - 1) : CARD_H);
+        const hitRect = { x: colRect.x - DROP_SLOP, y: colRect.y - DROP_SLOP, w: CARD_W + DROP_SLOP * 2, h: pileHeight + DROP_SLOP * 2 };
+        if (!pointInRect(dropX, dropY, hitRect)) continue;
+        if (!canMoveToTableau(drag.cards[0], pile)) return false;
+        const moved = removeCardsFromSource(drag);
+        pile.push(...moved);
+        if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
+        maybeStartAutoSolve();
+        updateButtons();
+        setStatusI18n(game && game.autoSolving ? "statusAutoFinishing" : "statusMovedToTableau");
+        persistGameSoon();
+        return true;
+      }
+
+      return false;
+    }
+
+    candidates.sort((a, b) => {
+      if (b.overlapArea !== a.overlapArea) return b.overlapArea - a.overlapArea;
+      if (a.pointerDistSq !== b.pointerDistSq) return a.pointerDistSq - b.pointerDistSq;
+      return a.index - b.index;
+    });
+
+    const best = candidates[0];
+    const moved = removeCardsFromSource(drag);
+    if (best.zone === "foundation") {
+      game.foundations[best.index].push(...moved);
+      if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
+      maybeAutoWinCheck();
+      if (!game.finished) maybeStartAutoSolve();
+      updateButtons();
+      setStatusI18n(game && game.autoSolving ? "statusAutoFinishing" : "statusMovedToFoundation");
+      persistGameSoon();
+      return true;
+    }
+
+    game.tableau[best.index].push(...moved);
+    if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
+    maybeStartAutoSolve();
+    updateButtons();
+    setStatusI18n(game && game.autoSolving ? "statusAutoFinishing" : "statusMovedToTableau");
+    persistGameSoon();
+    return true;
+  }
+
+  function pointInRect(x, y, r) {
+    return x >= r.x && y >= r.y && x <= r.x + r.w && y <= r.y + r.h;
+  }
+
+  function expandRect(r, d) {
+    return { x: r.x - d, y: r.y - d, w: r.w + d * 2, h: r.h + d * 2 };
+  }
+
+  function wasteCardPosition(index) {
+    const visibleCount = Math.min(game?.waste.length || 0, game?.options.drawCount || 1);
+    const start = (game?.waste.length || 0) - visibleCount;
+    const visIndex = Math.max(0, index - start);
+    return {
+      x: layout.waste.x + visIndex * WASTE_FAN_X,
+      y: layout.waste.y
+    };
+  }
+
+  function pointerPos(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function getHitInfo(x, y) {
+    if (!game || game.finished) return null;
+
+    if (pointInRect(x, y, layout.stock)) return { zone: "stock" };
+
+    const visibleCount = Math.min(game.waste.length, game.options.drawCount);
+    for (let i = game.waste.length - 1; i >= Math.max(0, game.waste.length - visibleCount); i--) {
+      const pos = wasteCardPosition(i);
+      if (pointInRect(x, y, { x: pos.x, y: pos.y, w: CARD_W, h: CARD_H })) {
+        return { zone: "waste", index: i };
+      }
+    }
+
+    for (let i = game.foundations.length - 1; i >= 0; i--) {
+      const r = layout.foundations[i];
+      if (pointInRect(x, y, r)) return { zone: "foundation", index: i };
+    }
+
+    for (let col = 0; col < game.tableau.length; col++) {
+      const pile = game.tableau[col];
+      for (let i = pile.length - 1; i >= 0; i--) {
+        const y0 = layout.tableau[col].y + i * FAN_Y;
+        const rect = { x: layout.tableau[col].x, y: y0, w: CARD_W, h: CARD_H };
+        if (pointInRect(x, y, rect)) return { zone: "tableau", col, index: i };
+      }
+      if (pile.length === 0 && pointInRect(x, y, { x: layout.tableau[col].x, y: layout.tableau[col].y, w: CARD_W, h: CARD_H })) {
+        return { zone: "tableauEmpty", col };
+      }
+    }
+
+    return null;
+  }
+
+  canvas.addEventListener("pointerdown", (e) => {
+    if (!game || game.finished || game.autoSolving || optionsOverlay.classList.contains("show")) return;
+    const p = pointerPos(e);
+    const hit = getHitInfo(p.x, p.y);
+    if (!hit) return;
+
+    if (hit.zone === "stock") {
+      if (game.stock.length > 0) drawFromStock();
+      else redealWasteToStock();
+      return;
+    }
+
+    let d = null;
+    if (hit.zone === "waste" && hit.index === game.waste.length - 1) {
+      d = makeDragFromWaste();
+    } else if (hit.zone === "foundation") {
+      d = makeDragFromFoundation(hit.index);
+    } else if (hit.zone === "tableau") {
+      d = makeDragFromTableau(hit.col, hit.index);
+    }
+
+    if (!d) return;
+
+    drag = {
+      ...d,
+      offsetX: p.x - d.homeX,
+      offsetY: p.y - d.homeY,
+      x: d.homeX,
+      y: d.homeY
+    };
+    canvas.setPointerCapture(e.pointerId);
+    draw();
+  });
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const p = pointerPos(e);
+    drag.x = p.x - drag.offsetX;
+    drag.y = p.y - drag.offsetY;
+    draw();
+  });
+
+  function finishDrag(e) {
+    if (!drag) return;
+    const p = pointerPos(e);
+    const ok = tryPlaceDrag(p.x, p.y);
+    if (!ok) setStatusI18n("statusMoveNotAllowed");
+    drag = null;
+    renderTopTimerCartouche();
+    draw();
+  }
+
+  canvas.addEventListener("pointerup", finishDrag);
+  canvas.addEventListener("pointercancel", finishDrag);
+  canvas.addEventListener("dblclick", (e) => {
+    if (!game || game.finished || game.autoSolving || optionsOverlay.classList.contains("show")) return;
+    const p = pointerPos(e);
+    const hit = getHitInfo(p.x, p.y);
+    if (!hit) return;
+
+    let tempDrag = null;
+    if (hit.zone === "waste" && hit.index === game.waste.length - 1) tempDrag = makeDragFromWaste();
+    if (hit.zone === "foundation") tempDrag = makeDragFromFoundation(hit.index);
+    if (hit.zone === "tableau") tempDrag = makeDragFromTableau(hit.col, hit.index);
+    if (!tempDrag || tempDrag.cards.length !== 1) return;
+
+    for (let i = 0; i < game.foundations.length; i++) {
+      if (canMoveToFoundation(tempDrag.cards[0], game.foundations[i])) {
+        drag = tempDrag;
+        tryPlaceDrag(layout.foundations[i].x + CARD_W / 2, layout.foundations[i].y + CARD_H / 2);
+        drag = null;
+        draw();
+        return;
+      }
+    }
+  });
+
+  btnOptions.addEventListener("click", () => openOptions());
+  btnNew.addEventListener("click", () => openOptions());
+  btnResumeCurrent.addEventListener("click", () => {
+    if (game && !game.finished) {
+      showPlaceholderStock = false;
+      closeOptions();
+      draw();
+    }
+  });
+  btnCancelCurrent.addEventListener("click", async () => {
+    if (!game || game.finished) return;
+    stopAutoSolve();
+    stopTimer();
+    drag = null;
+    game = null;
+    showPlaceholderStock = true;
+    closeOptions();
+    updateButtons();
+    updateTimerBadge();
+    setStatusI18n("statusChooseOptions");
+    draw();
+    await clearSavedGame();
+  });
+  btnStartFromOptions.addEventListener("click", () => startGameFromOptions());
+  btnDefaults.addEventListener("click", () => {
+    writeOptionsToUi(DEFAULT_OPTIONS);
+    syncOptionsFromUiAndPersist();
+  });
+  btnRedeal.addEventListener("click", () => redealWasteToStock());
+  btnRestart.addEventListener("click", () => restartCurrentDeal());
+  btnLang.addEventListener("click", () => {
+    uiLanguage = uiLanguage === "tok" ? "en" : "tok";
+    localStorage.setItem(KEY_LANGUAGE, uiLanguage);
+    applyLanguage();
+    recomputeLayout();
+    draw();
+  });
+
+  drawCountSel.addEventListener("change", syncOptionsFromUiAndPersist);
+  redealLimitSel.addEventListener("change", syncOptionsFromUiAndPersist);
+  timeLimitSel.addEventListener("change", syncOptionsFromUiAndPersist);
+  for (const radio of document.querySelectorAll('input[name="shuffleRedeal"]')) {
+    radio.addEventListener("change", syncOptionsFromUiAndPersist);
+  }
+
+  window.addEventListener("resize", () => {
+    recomputeLayout();
+    draw();
+  });
+
+  async function initFromStorage() {
+    applyLanguage();
+    writeOptionsToUi(DEFAULT_OPTIONS);
+    gameOptions = { ...DEFAULT_OPTIONS };
+
+    try {
+      const [savedOptions, savedGame] = await Promise.all([
+        idbGet(KEY_OPTIONS),
+        idbGet(KEY_GAME)
+      ]);
+
+      if (savedOptions && savedOptions.options) {
+        gameOptions = normalizeOptions(savedOptions.options);
+        writeOptionsToUi(gameOptions);
+      }
+
+      let restored = false;
+      if (savedGame && savedGame.game && Number.isFinite(savedGame.savedAt)) {
+        const ageMs = Date.now() - Number(savedGame.savedAt);
+        const looksFinished = !!(savedGame.game && savedGame.game.finished);
+        if (looksFinished) {
+          await idbDelete(KEY_GAME);
+        } else if (ageMs >= 0 && ageMs <= MAX_SAVE_AGE_MS) {
+          const restoredGame = deserializeGameSnapshot(savedGame.game);
+          if (restoredGame && !restoredGame.finished) {
+            game = restoredGame;
+            gameOptions = normalizeOptions(game.options || gameOptions);
+            game.options = { ...gameOptions };
+            writeOptionsToUi(gameOptions);
+            drag = null;
+            closeOptions();
+            updateOptionsOverlayButtons();
+            startTimer({ preserveElapsed: true });
+            updateButtons();
+            setStatusI18n("statusRestoredSavedGame");
+            restored = true;
+          } else {
+            await idbDelete(KEY_GAME);
+          }
+        } else {
+          await idbDelete(KEY_GAME);
+        }
+      }
+
+      if (!restored) {
+        game = null;
+        showPlaceholderStock = true;
+        drag = null;
+        stopAutoSolve();
+        stopTimer();
+        updateOptionsOverlayButtons();
+        optionsOverlay.classList.add("show");
+        updateButtons();
+        updateTimerBadge();
+        setStatusI18n("statusChooseOptions");
+      }
+    } catch (err) {
+      console.error("Restore failed", err);
+      game = null;
+      showPlaceholderStock = true;
+      drag = null;
+      stopAutoSolve();
+      stopTimer();
+      updateOptionsOverlayButtons();
+      optionsOverlay.classList.add("show");
+      updateButtons();
+      applyLanguage();
+      setStatusI18n("statusChooseOptions");
+    }
+
+    recomputeLayout();
+    draw();
+  }
+
+  function drawRoundedRect(ctx, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+  }
+
+  function drawSlot(rect, label) {
+    ctx.save();
+    drawRoundedRect(ctx, rect.x, rect.y, rect.w, rect.h, CARD_RADIUS);
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.32)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (label) {
+      ctx.fillStyle = "rgba(255,255,255,0.40)";
+      ctx.font = '700 26px "PatrickHand", system-ui, sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 2);
+    }
+    ctx.restore();
+  }
+
+  function drawFoundationSlot(rect, suit) {
+    drawSlot(rect, "");
+    const suitGlyphs = CARD_SUIT_GLYPHS[suit] || [];
+    const suitText = glyphStringFromCodepoints(suitGlyphs);
+    if (!suitText) return;
+    ctx.save();
+    ctx.fillStyle = suit === "♥" || suit === "♦" ? "rgba(255,255,255,0.42)" : "rgba(255,255,255,0.42)";
+    drawSitelenGlyphString(suitText, rect.x + rect.w / 2, rect.y + rect.h / 2 + 3, 30, "center", "middle");
+    ctx.restore();
+  }
+
+  /* ============================================================
+     CARD DRAWING SECTION START
+     These functions are the only place where card appearance is drawn.
+     Replace these later for custom backs and sitelen glyph fronts.
+     ============================================================ */
+
+  let CARD_BACK_CACHE_CANVAS = null;
+
+  function buildCardBackCacheCanvas() {
+    const backCanvas = document.createElement("canvas");
+    backCanvas.width = CARD_W;
+    backCanvas.height = CARD_H;
+    const backCtx = backCanvas.getContext("2d", { willReadFrequently: true });
+    if (!backCtx) return null;
+
+    backCtx.save();
+    drawRoundedRect(backCtx, 0, 0, CARD_W, CARD_H, CARD_RADIUS);
+    backCtx.fillStyle = "#f7f1e5";
+    backCtx.fill();
+    backCtx.lineWidth = 2;
+    backCtx.strokeStyle = "#1c334f";
+    backCtx.stroke();
+
+    drawRoundedRect(backCtx, 6, 6, CARD_W - 12, CARD_H - 12, CARD_RADIUS - 2);
+    backCtx.fillStyle = "#b8c3d1";
+    backCtx.fill();
+
+    backCtx.strokeStyle = "rgba(255,255,255,0.55)";
+    backCtx.lineWidth = 1;
+    for (let yy = 14; yy < CARD_H - 12; yy += 10) {
+      backCtx.beginPath();
+      backCtx.moveTo(12, yy);
+      backCtx.lineTo(CARD_W - 12, yy);
+      backCtx.stroke();
+    }
+    for (let xx = 14; xx < CARD_W - 12; xx += 10) {
+      backCtx.beginPath();
+      backCtx.moveTo(xx, 12);
+      backCtx.lineTo(xx, CARD_H - 12);
+      backCtx.stroke();
+    }
+
+    const backCenterX = CARD_W / 2;
+    const backCenterY = CARD_H / 2 + 2;
+    const tokiText = glyphStringFromCodepoints([TP_WORD_TO_CP.toki]);
+    const ponaText = glyphStringFromCodepoints([TP_WORD_TO_CP.pona]);
+    const backGlyphBlue = "#5450a8";
+    const backGlyphYellow = "#e6d347";
+
+    drawFilledGlyphRegionsToContext(backCtx, tokiText, backCenterX, backCenterY - 9, 36, "center", "middle", 1, backGlyphYellow);
+    backCtx.fillStyle = backGlyphBlue;
+    drawSitelenGlyphStringToContext(backCtx, tokiText, backCenterX, backCenterY - 9, 36, "center", "middle");
+    drawSitelenGlyphStringToContext(backCtx, ponaText, backCenterX, backCenterY - 2, 15, "center", "middle");
+    backCtx.restore();
+    return backCanvas;
+  }
+
+  function getCardBackCacheCanvas() {
+    if (!CARD_BACK_CACHE_CANVAS) CARD_BACK_CACHE_CANVAS = buildCardBackCacheCanvas();
+    return CARD_BACK_CACHE_CANVAS;
+  }
+
+  function drawCardBack(card, x, y) {
+    const cachedBack = getCardBackCacheCanvas();
+    if (cachedBack) {
+      ctx.drawImage(cachedBack, x, y);
+      return;
+    }
+
+    ctx.save();
+    drawRoundedRect(ctx, x, y, CARD_W, CARD_H, CARD_RADIUS);
+    ctx.fillStyle = "#f7f1e5";
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#1c334f";
+    ctx.stroke();
+
+    drawRoundedRect(ctx, x + 6, y + 6, CARD_W - 12, CARD_H - 12, CARD_RADIUS - 2);
+    ctx.fillStyle = "#b8c3d1";
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 1;
+    for (let yy = y + 14; yy < y + CARD_H - 12; yy += 10) {
+      ctx.beginPath();
+      ctx.moveTo(x + 12, yy);
+      ctx.lineTo(x + CARD_W - 12, yy);
+      ctx.stroke();
+    }
+    for (let xx = x + 14; xx < x + CARD_W - 12; xx += 10) {
+      ctx.beginPath();
+      ctx.moveTo(xx, y + 12);
+      ctx.lineTo(xx, y + CARD_H - 12);
+      ctx.stroke();
+    }
+
+    const backCenterX = x + CARD_W / 2;
+    const backCenterY = y + CARD_H / 2 + 2;
+    const tokiText = glyphStringFromCodepoints([TP_WORD_TO_CP.toki]);
+    const ponaText = glyphStringFromCodepoints([TP_WORD_TO_CP.pona]);
+    const backGlyphBlue = "#5450a8";
+    const backGlyphYellow = "#e6d347";
+
+    drawFilledGlyphRegions(tokiText, backCenterX, backCenterY - 9, 36, "center", "middle", 1, backGlyphYellow);
+    ctx.fillStyle = backGlyphBlue;
+    drawSitelenGlyphString(tokiText, backCenterX, backCenterY - 9, 36, "center", "middle");
+    drawSitelenGlyphString(ponaText, backCenterX, backCenterY - 2, 15, "center", "middle");
+    ctx.restore();
+  }
+
+  async function ensureCardGlyphFontLoaded() {
+    if (!document.fonts || !document.fonts.load) return;
+    try {
+      const sample = glyphStringFromCodepoints([TP_WORD_TO_CP.ilo, TP_WORD_TO_CP.lawa, TP_WORD_TO_CP.en, TP_WORD_TO_CP.nena, TP_WORD_TO_CP.kolon, TP_WORD_TO_CP.tenpo, TP_WORD_TO_CP.lili, TP_WORD_TO_CP.toki, TP_WORD_TO_CP.pona]);
+      await document.fonts.load(`42px ${TP_CARD_GLYPH_FONT}`, sample);
+      await document.fonts.ready;
+    } catch (err) {
+      console.warn("Card glyph font load failed", err);
+    }
+  }
+
+  function glyphStringFromCodepoints(cps) {
+    const arr = Array.isArray(cps) ? cps.filter(cp => Number.isFinite(cp)) : [];
+    return arr.length ? String.fromCodePoint(...arr) : "";
+  }
+
+  const FILLED_GLYPH_CPS = new Set([
+    TP_WORD_TO_CP.ilo,
+    TP_WORD_TO_CP.pilin,
+    TP_WORD_TO_CP.kiwen,
+    TP_WORD_TO_CP.kasi,
+    TP_WORD_TO_CP.lawa,
+    TP_WORD_TO_CP.meli,
+    TP_WORD_TO_CP.mije,
+    TP_WORD_TO_CP.lanpan,
+    TP_WORD_TO_CP.sike
+  ]);
+
+  const FILLED_GLYPH_MASK_CACHE = new Map();
+  const FILLED_GLYPH_TINT_CACHE = new Map();
+  const FILLED_GLYPH_CACHE_MAX = 256;
+  const FILLED_GLYPH_PROBE_CANVAS = document.createElement("canvas");
+  const FILLED_GLYPH_PROBE_CTX = FILLED_GLYPH_PROBE_CANVAS.getContext("2d", { willReadFrequently: true });
+
+  function shouldFillEnclosedGlyphRegions(text) {
+    if (!text) return false;
+    const cps = Array.from(text, ch => ch.codePointAt(0));
+    return cps.length === 1 && FILLED_GLYPH_CPS.has(cps[0]);
+  }
+
+  function touchGlyphCacheEntry(map, key, value) {
+    if (map.has(key)) map.delete(key);
+    map.set(key, value);
+    if (map.size > FILLED_GLYPH_CACHE_MAX) {
+      const oldestKey = map.keys().next().value;
+      map.delete(oldestKey);
+    }
+    return value;
+  }
+
+  function getFilledGlyphMaskCacheKey(text, fontPx, align, baseline, scaleX) {
+    return [text, fontPx, align, baseline, scaleX].join("|");
+  }
+
+  function getFilledGlyphTintCacheKey(text, fontPx, align, baseline, scaleX, fillStyle) {
+    return [text, fontPx, align, baseline, scaleX, fillStyle].join("|");
+  }
+
+  function makeFilledGlyphMask(text, fontPx, align = "left", baseline = "alphabetic", scaleX = 1) {
+    const codePoints = Array.from(text || "", ch => ch.codePointAt(0));
+    const isSikeOnly = codePoints.length === 1 && codePoints[0] === TP_WORD_TO_CP.sike;
+    const cacheKey = getFilledGlyphMaskCacheKey(text, fontPx, align, baseline, scaleX);
+    const cached = FILLED_GLYPH_MASK_CACHE.get(cacheKey);
+    if (cached) return touchGlyphCacheEntry(FILLED_GLYPH_MASK_CACHE, cacheKey, cached);
+
+    const SS = 4;
+    const absScaleX = Math.abs(scaleX || 1);
+    const pad = Math.max(6, Math.ceil(fontPx * 0.4));
+
+    const probe = FILLED_GLYPH_PROBE_CTX;
+    probe.font = `${fontPx}px ${TP_CARD_GLYPH_FONT}`;
+    probe.textAlign = align;
+    probe.textBaseline = baseline;
+
+    const m = probe.measureText(text);
+    const leftReach = Math.max(1, Math.ceil((m.actualBoundingBoxLeft || 0) * absScaleX));
+    const rightReach = Math.max(1, Math.ceil((m.actualBoundingBoxRight || m.width || fontPx) * absScaleX));
+    const topReach = Math.max(1, Math.ceil(m.actualBoundingBoxAscent || fontPx * 0.8));
+    const bottomReach = Math.max(1, Math.ceil(m.actualBoundingBoxDescent || fontPx * 0.25));
+
+    const logicalW = leftReach + rightReach + pad * 2;
+    const logicalH = topReach + bottomReach + pad * 2;
+    const anchorX = leftReach + pad;
+    const anchorY = topReach + pad;
+
+    const hiW = logicalW * SS;
+    const hiH = logicalH * SS;
+    const hiAnchorX = anchorX * SS;
+    const hiAnchorY = anchorY * SS;
+
+    const glyphCanvas = document.createElement("canvas");
+    glyphCanvas.width = hiW;
+    glyphCanvas.height = hiH;
+    const gctx = glyphCanvas.getContext("2d", { willReadFrequently: true });
+    gctx.clearRect(0, 0, hiW, hiH);
+    gctx.fillStyle = "#fff";
+    gctx.font = `${fontPx * SS}px ${TP_CARD_GLYPH_FONT}`;
+    gctx.textAlign = align;
+    gctx.textBaseline = baseline;
+    gctx.save();
+    gctx.translate(hiAnchorX, hiAnchorY);
+    if (scaleX !== 1) gctx.scale(scaleX, 1);
+    gctx.fillText(text, 0, 0);
+    gctx.restore();
+
+    const img = gctx.getImageData(0, 0, hiW, hiH);
+    const data = img.data;
+    const visited = new Uint8Array(hiW * hiH);
+    const stack = [];
+    const alphaAt = (idx) => data[idx * 4 + 3];
+
+    function pushIfTransparent(px, py) {
+      if (px < 0 || py < 0 || px >= hiW || py >= hiH) return;
+      const idx = py * hiW + px;
+      if (visited[idx]) return;
+      if (alphaAt(idx) > 24) return;
+      visited[idx] = 1;
+      stack.push(idx);
+    }
+
+    for (let xx = 0; xx < hiW; xx++) {
+      pushIfTransparent(xx, 0);
+      pushIfTransparent(xx, hiH - 1);
+    }
+    for (let yy = 1; yy < hiH - 1; yy++) {
+      pushIfTransparent(0, yy);
+      pushIfTransparent(hiW - 1, yy);
+    }
+
+    while (stack.length) {
+      const idx = stack.pop();
+      const px = idx % hiW;
+      const py = (idx / hiW) | 0;
+      pushIfTransparent(px - 1, py);
+      pushIfTransparent(px + 1, py);
+      pushIfTransparent(px, py - 1);
+      pushIfTransparent(px, py + 1);
+    }
+
+    const holeMask = new Uint8Array(hiW * hiH);
+    for (let idx = 0; idx < visited.length; idx++) {
+      if (visited[idx]) continue;
+      if (alphaAt(idx) > 24) continue;
+      holeMask[idx] = 1;
+    }
+
+    let selectedHoleMask = holeMask;
+    if (isSikeOnly) {
+      const componentVisited = new Uint8Array(hiW * hiH);
+      const components = [];
+      for (let startIdx = 0; startIdx < holeMask.length; startIdx++) {
+        if (!holeMask[startIdx] || componentVisited[startIdx]) continue;
+        const compStack = [startIdx];
+        componentVisited[startIdx] = 1;
+        const pixels = [];
+        let area = 0;
+        let sumX = 0;
+        let sumY = 0;
+        while (compStack.length) {
+          const idx = compStack.pop();
+          pixels.push(idx);
+          area++;
+          const px = idx % hiW;
+          const py = (idx / hiW) | 0;
+          sumX += px;
+          sumY += py;
+          if (px > 0) {
+            const nextIdx = idx - 1;
+            if (holeMask[nextIdx] && !componentVisited[nextIdx]) { componentVisited[nextIdx] = 1; compStack.push(nextIdx); }
+          }
+          if (px + 1 < hiW) {
+            const nextIdx = idx + 1;
+            if (holeMask[nextIdx] && !componentVisited[nextIdx]) { componentVisited[nextIdx] = 1; compStack.push(nextIdx); }
+          }
+          if (py > 0) {
+            const nextIdx = idx - hiW;
+            if (holeMask[nextIdx] && !componentVisited[nextIdx]) { componentVisited[nextIdx] = 1; compStack.push(nextIdx); }
+          }
+          if (py + 1 < hiH) {
+            const nextIdx = idx + hiW;
+            if (holeMask[nextIdx] && !componentVisited[nextIdx]) { componentVisited[nextIdx] = 1; compStack.push(nextIdx); }
+          }
+        }
+        const cx = sumX / Math.max(1, area);
+        const cy = sumY / Math.max(1, area);
+        const dx = cx - hiAnchorX;
+        const dy = cy - hiAnchorY;
+        components.push({ pixels, area, centroidDistance2: dx * dx + dy * dy });
+      }
+      if (components.length) {
+        const centralRadius2 = Math.max((fontPx * SS * 0.42) ** 2, 36);
+        const centralComponents = components.filter(c => c.centroidDistance2 <= centralRadius2);
+        const pool = centralComponents.length ? centralComponents : components;
+        pool.sort((a, b) => {
+          if (a.area !== b.area) return a.area - b.area;
+          return a.centroidDistance2 - b.centroidDistance2;
+        });
+        selectedHoleMask = new Uint8Array(hiW * hiH);
+        for (const idx of pool[0].pixels) selectedHoleMask[idx] = 1;
+      }
+    }
+
+    const dilatedMask = selectedHoleMask.slice();
+    for (let py = 1; py < hiH - 1; py++) {
+      for (let px = 1; px < hiW - 1; px++) {
+        const idx = py * hiW + px;
+        if (selectedHoleMask[idx]) continue;
+        if (
+          selectedHoleMask[idx - 1] || selectedHoleMask[idx + 1] ||
+          selectedHoleMask[idx - hiW] || selectedHoleMask[idx + hiW] ||
+          selectedHoleMask[idx - hiW - 1] || selectedHoleMask[idx - hiW + 1] ||
+          selectedHoleMask[idx + hiW - 1] || selectedHoleMask[idx + hiW + 1]
+        ) {
+          dilatedMask[idx] = 1;
+        }
+      }
+    }
+
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = hiW;
+    maskCanvas.height = hiH;
+    const mctx = maskCanvas.getContext("2d", { willReadFrequently: true });
+    const maskImg = mctx.createImageData(hiW, hiH);
+    const maskData = maskImg.data;
+
+    for (let idx = 0; idx < dilatedMask.length; idx++) {
+      if (!dilatedMask[idx]) continue;
+      const off = idx * 4;
+      maskData[off] = 255;
+      maskData[off + 1] = 255;
+      maskData[off + 2] = 255;
+      maskData[off + 3] = 255;
+    }
+    mctx.putImageData(maskImg, 0, 0);
+
+    const result = {
+      canvas: maskCanvas,
+      anchorX,
+      anchorY,
+      width: logicalW,
+      height: logicalH,
+      scale: SS,
+    };
+    return touchGlyphCacheEntry(FILLED_GLYPH_MASK_CACHE, cacheKey, result);
+  }
+
+  function getTintedFilledGlyph(text, fontPx, align = "left", baseline = "alphabetic", scaleX = 1, fillStyle = "#111") {
+    const cacheKey = getFilledGlyphTintCacheKey(text, fontPx, align, baseline, scaleX, fillStyle);
+    const cached = FILLED_GLYPH_TINT_CACHE.get(cacheKey);
+    if (cached) return touchGlyphCacheEntry(FILLED_GLYPH_TINT_CACHE, cacheKey, cached);
+
+    const mask = makeFilledGlyphMask(text, fontPx, align, baseline, scaleX);
+    const tintCanvas = document.createElement("canvas");
+    tintCanvas.width = mask.canvas.width;
+    tintCanvas.height = mask.canvas.height;
+    const tctx = tintCanvas.getContext("2d");
+    tctx.clearRect(0, 0, tintCanvas.width, tintCanvas.height);
+    tctx.fillStyle = fillStyle;
+    tctx.fillRect(0, 0, tintCanvas.width, tintCanvas.height);
+    tctx.globalCompositeOperation = "destination-in";
+    tctx.drawImage(mask.canvas, 0, 0);
+
+    const result = { canvas: tintCanvas, mask };
+    return touchGlyphCacheEntry(FILLED_GLYPH_TINT_CACHE, cacheKey, result);
+  }
+
+  function drawFilledGlyphRegionsToContext(targetCtx, text, x, y, fontPx, align = "left", baseline = "alphabetic", scaleX = 1, fillStyle = "#111") {
+    const tintedMask = getTintedFilledGlyph(text, fontPx, align, baseline, scaleX, fillStyle);
+    targetCtx.save();
+    targetCtx.translate(x, y);
+    if (scaleX !== 1) targetCtx.scale(scaleX, 1);
+    const { canvas: tintCanvas, mask } = tintedMask;
+    targetCtx.drawImage(
+      tintCanvas,
+      0,
+      0,
+      tintCanvas.width,
+      tintCanvas.height,
+      -mask.anchorX,
+      -mask.anchorY,
+      mask.width,
+      mask.height
+    );
+    targetCtx.restore();
+  }
+
+  function drawFilledGlyphRegions(text, x, y, fontPx, align = "left", baseline = "alphabetic", scaleX = 1, fillStyle = "#111") {
+    drawFilledGlyphRegionsToContext(ctx, text, x, y, fontPx, align, baseline, scaleX, fillStyle);
+  }
+
+  function drawSitelenGlyphStringToContext(targetCtx, text, x, y, fontPx, align = "left", baseline = "alphabetic", scaleX = 1) {
+    targetCtx.save();
+    targetCtx.translate(x, y);
+    targetCtx.font = `${fontPx}px ${TP_CARD_GLYPH_FONT}`;
+    targetCtx.textAlign = align;
+    targetCtx.textBaseline = baseline;
+
+    let tintedMask = null;
+    if (shouldFillEnclosedGlyphRegions(text)) {
+      tintedMask = getTintedFilledGlyph(text, fontPx, align, baseline, scaleX, String(targetCtx.fillStyle));
+    }
+
+    if (scaleX !== 1) targetCtx.scale(scaleX, 1);
+    targetCtx.fillText(text, 0, 0);
+
+    if (tintedMask) {
+      const { canvas: tintCanvas, mask } = tintedMask;
+      targetCtx.drawImage(
+        tintCanvas,
+        0,
+        0,
+        tintCanvas.width,
+        tintCanvas.height,
+        -mask.anchorX,
+        -mask.anchorY,
+        mask.width,
+        mask.height
+      );
+    }
+    targetCtx.restore();
+  }
+
+  function drawSitelenGlyphString(text, x, y, fontPx, align = "left", baseline = "alphabetic", scaleX = 1) {
+    drawSitelenGlyphStringToContext(ctx, text, x, y, fontPx, align, baseline, scaleX);
+  }
+
+  function drawCardFront(card, x, y) {
+    ctx.save();
+    drawRoundedRect(ctx, x, y, CARD_W, CARD_H, CARD_RADIUS);
+    ctx.fillStyle = "#fffdf8";
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+    ctx.stroke();
+
+    const ink = card.color === "red" ? "#b32020" : "#111";
+    const rankGlyphs = CARD_RANK_GLYPHS[card.rank] || [];
+    const suitGlyphs = CARD_SUIT_GLYPHS[card.suit] || [];
+    const rankText = glyphStringFromCodepoints(rankGlyphs);
+    const suitText = glyphStringFromCodepoints(suitGlyphs);
+    const isTen = card.rank === "10";
+    const rankFontPx = isTen ? 18 : 22;
+    const rankScaleX = isTen ? 0.84 : 1;
+
+    ctx.fillStyle = ink;
+
+    drawSitelenGlyphString(rankText, x + 9, y + 8, rankFontPx, "left", "top", rankScaleX);
+    drawSitelenGlyphString(suitText, x + 11, y + 30, 18, "left", "top");
+
+    ctx.save();
+    ctx.translate(x + CARD_W - 9, y + CARD_H - 7);
+    ctx.rotate(Math.PI);
+    drawSitelenGlyphString(rankText, 0, 0, rankFontPx, "left", "top", rankScaleX);
+    drawSitelenGlyphString(suitText, 2, 22, 18, "left", "top");
+    ctx.restore();
+
+    drawSitelenGlyphString(suitText, x + CARD_W / 2, y + CARD_H / 2 + 2, card.rank === 10 ? 38 : 42, "center", "middle");
+    ctx.restore();
+  }
+
+  function drawCard(card, x, y) {
+    if (card.faceUp) drawCardFront(card, x, y);
+    else drawCardBack(card, x, y);
+  }
+
+  /* ============================================================
+     CARD DRAWING SECTION END
+     ============================================================ */
+
+  function drawBackgroundText() {
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.16)";
+    ctx.font = '700 22px "PatrickHand", system-ui, sans-serif';
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(i18n("bgStock"), layout.stock.x, layout.stock.y - 8);
+    ctx.fillText(i18n("bgWaste"), layout.waste.x, layout.waste.y - 8);
+    ctx.fillText(i18n("bgFoundations"), layout.foundations[0].x, layout.foundations[0].y - 8);
+    ctx.fillText(i18n("bgTableau"), layout.tableau[0].x, layout.tableau[0].y - 10);
+    ctx.restore();
+  }
+
+
+
+  function drawLegendColumn(rows, colX, startY, lineH, leftLabelW, rightLabelW) {
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    for (let i = 0; i < rows.length; i++) {
+      const y = startY + i * lineH;
+      const [leftLabel, cp] = rows[i];
+
+      ctx.font = '700 22px "PatrickHand", system-ui, sans-serif';
+      ctx.fillStyle = "rgba(255,255,255,0.96)";
+      ctx.fillText(leftLabel, colX + leftLabelW / 2, y + lineH / 2);
+
+      ctx.fillStyle = "rgba(255,255,255,0.98)";
+      drawSitelenGlyphString(
+        String.fromCodePoint(cp),
+        colX + leftLabelW + rightLabelW / 2,
+        y + lineH / 2,
+        22,
+        "center",
+        "middle"
+      );
+    }
+  }
+
+  function drawLegend() {
+    if (!layout) return;
+
+    const boxX = layout.stock.x;
+    const boxY = TOP_ROW_Y + CARD_H + 8;
+    const padX = 12;
+    const padY = 10;
+    const titleH = 26;
+    const lineH = 24;
+    const colGap = 18;
+    const col1LeftW = 28;
+    const col1RightW = 36;
+    const col2LeftW = 34;
+    const col2RightW = 42;
+    const col1W = col1LeftW + col1RightW;
+    const col2W = col2LeftW + col2RightW;
+    const boxW = padX * 2 + col1W + colGap + col2W;
+    const rowCount = Math.max(LEGEND_SUIT_ROWS.length, LEGEND_VALUE_ROWS.length);
+    const boxH = padY * 2 + titleH + rowCount * lineH;
+
+    ctx.save();
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 12);
+    ctx.fillStyle = "rgba(255,255,255,0.16)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.font = '700 18px "PatrickHand", system-ui, sans-serif';
+    ctx.fillText(i18n("cardGlyphs"), boxX + padX, boxY + padY - 1);
+
+    const startY = boxY + padY + titleH;
+    drawLegendColumn(LEGEND_SUIT_ROWS, boxX + padX, startY, lineH, col1LeftW, col1RightW);
+    drawLegendColumn(LEGEND_VALUE_ROWS, boxX + padX + col1W + colGap, startY, lineH, col2LeftW, col2RightW);
+    ctx.restore();
+  }
+
+  function drawPiles() {
+    const stockLabel = (showPlaceholderStock || (game && game.stock.length)) ? "" : "↺";
+    drawSlot(layout.stock, stockLabel);
+    drawSlot({ x: layout.waste.x, y: layout.waste.y, w: CARD_W, h: CARD_H }, "");
+    for (let i = 0; i < 4; i++) drawFoundationSlot(layout.foundations[i], SUITS[i]);
+    for (let i = 0; i < 7; i++) drawSlot({ x: layout.tableau[i].x, y: layout.tableau[i].y, w: CARD_W, h: CARD_H }, "");
+  }
+
+  function drawStock() {
+    if (!game) {
+      if (showPlaceholderStock) drawCardBack(null, layout.stock.x, layout.stock.y);
+      return;
+    }
+    if (game.stock.length === 0) return;
+    drawCardBack(game.stock[game.stock.length - 1], layout.stock.x, layout.stock.y);
+  }
+
+  function drawWaste() {
+    if (!game) return;
+    const visibleCount = Math.min(game.waste.length, game.options.drawCount);
+    const start = game.waste.length - visibleCount;
+    for (let i = start; i < game.waste.length; i++) {
+      const pos = wasteCardPosition(i);
+      if (drag && drag.type === "waste" && i === game.waste.length - 1) continue;
+      drawCard(game.waste[i], pos.x, pos.y);
+    }
+  }
+
+  function drawFoundations() {
+    if (!game) return;
+    for (let i = 0; i < 4; i++) {
+      const pile = game.foundations[i];
+      if (!pile.length) continue;
+      if (drag && drag.type === "foundation" && drag.foundationIndex === i) continue;
+      drawCard(pile[pile.length - 1], layout.foundations[i].x, layout.foundations[i].y);
+    }
+  }
+
+  function drawTableau() {
+    if (!game) return;
+    for (let col = 0; col < 7; col++) {
+      const pile = game.tableau[col];
+      for (let i = 0; i < pile.length; i++) {
+        if (drag && drag.type === "tableau" && drag.tableauIndex === col && i >= drag.startIndex) continue;
+        drawCard(pile[i], layout.tableau[col].x, layout.tableau[col].y + i * FAN_Y);
+      }
+    }
+  }
+
+  function drawDrag() {
+    if (!drag) return;
+    for (let i = 0; i < drag.cards.length; i++) {
+      drawCard(drag.cards[i], drag.x, drag.y + i * FAN_Y);
+    }
+  }
+
+  function drawPrefixedTimeCartouche(ctxArg, totalSeconds, boxX, centerY, maxWidth, maxHeight, largePx, smallPx) {
+    const glyphs = buildTimeCartoucheGlyphs(Math.max(0, Math.floor(totalSeconds || 0)));
+    renderMixedCartoucheToCanvas(endGameTimeOffscreen, glyphs, largePx, smallPx, SMALL_SET, {
+      padding: 12, border: 3, cornerRadius: 16, letterGap: 1
+    });
+
+    const prefixCps = [TP_WORD_TO_CP.tenpo, TP_WORD_TO_CP.lili].filter(Number.isFinite);
+    const gapPx = 10;
+
+    let scale = Math.min(maxWidth / endGameTimeOffscreen.width, maxHeight / endGameTimeOffscreen.height, 1);
+    let prefixFontPx = Math.max(12, largePx * scale);
+    let prefixW = 0;
+
+    if (prefixCps.length === 2) {
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      prefixW = ctxArg.measureText(String.fromCodePoint(prefixCps[0])).width + 6 + ctxArg.measureText(String.fromCodePoint(prefixCps[1])).width;
+      ctxArg.restore();
+
+      const availWForCartouche = Math.max(40, maxWidth - prefixW - gapPx);
+      scale = Math.min(availWForCartouche / endGameTimeOffscreen.width, maxHeight / endGameTimeOffscreen.height, 1);
+      prefixFontPx = Math.max(12, largePx * scale);
+
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      prefixW = ctxArg.measureText(String.fromCodePoint(prefixCps[0])).width + 6 + ctxArg.measureText(String.fromCodePoint(prefixCps[1])).width;
+      ctxArg.restore();
+    }
+
+    const drawW = Math.floor(endGameTimeOffscreen.width * scale);
+    const drawH = Math.floor(endGameTimeOffscreen.height * scale);
+    const totalW = drawW + (prefixW > 0 ? (prefixW + gapPx) : 0);
+    const cartX = Math.floor(boxX + (maxWidth - totalW) / 2 + (prefixW > 0 ? (prefixW + gapPx) : 0));
+    const cartY = Math.floor(centerY - drawH / 2);
+
+    if (prefixW > 0) {
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px ${TP_CARD_GLYPH_FONT}`;
+      ctxArg.textBaseline = "middle";
+      ctxArg.textAlign = "left";
+      ctxArg.fillStyle = "#111";
+      let px = cartX - gapPx - prefixW;
+      const w1 = ctxArg.measureText(String.fromCodePoint(prefixCps[0])).width;
+      ctxArg.fillText(String.fromCodePoint(prefixCps[0]), px, centerY);
+      px += w1 + 6;
+      ctxArg.fillText(String.fromCodePoint(prefixCps[1]), px, centerY);
+      ctxArg.restore();
+    }
+
+    ctxArg.drawImage(endGameTimeOffscreen, cartX, cartY, drawW, drawH);
+  }
+
+  function drawGameMessage() {
+    if (!game || !game.finished) return;
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.48)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const boxW = Math.min(440, canvas.width - 32);
+    const boxH = 192;
+    const x = Math.floor((canvas.width - boxW) / 2);
+    const y = Math.floor((canvas.height - boxH) / 2);
+    drawRoundedRect(ctx, x, y, boxW, boxH, 16);
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.16)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "#111";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = '700 30px "PatrickHand", system-ui, sans-serif';
+    ctx.fillText(game.won ? i18n("endYouWon") : (game.lostOnTime ? i18n("endTimeUp") : i18n("endGameOver")), x + boxW / 2, y + 44);
+
+    const shown = game.lostOnTime ? 0 : (game.options.timeLimitSec > 0 ? Math.max(0, game.options.timeLimitSec - game.elapsedSec) : game.elapsedSec);
+    drawPrefixedTimeCartouche(ctx, shown, x + 20, y + 104, boxW - 40, 44, 40, 14);
+
+    ctx.font = '700 20px "PatrickHand", system-ui, sans-serif';
+    ctx.fillText(i18n("useRestartOrNew"), x + boxW / 2, y + 152);
+    ctx.restore();
+  }
+
+  function draw() {
+    recomputeLayout();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackgroundText();
+    drawLegend();
+    drawPiles();
+    drawStock();
+    drawWaste();
+    drawFoundations();
+    drawTableau();
+    drawDrag();
+    drawGameMessage();
+  }
+
+  ensureCardGlyphFontLoaded()
+    .catch(err => { console.warn("Card glyph font init failed", err); })
+    .finally(() => { applyLanguage(); initFromStorage(); });
+})();
+</script>
+</body>
+</html>
