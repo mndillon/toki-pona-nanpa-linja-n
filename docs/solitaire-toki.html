@@ -1763,6 +1763,7 @@
         const moved = removeCardsFromSource(drag);
         game.foundations[i].push(...moved);
         if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
+        if (drag.type === "waste") autoMoveTopWasteAcesToFoundations();
         maybeAutoWinCheck();
         if (!game.finished) maybeStartAutoSolve();
         updateButtons();
@@ -1781,7 +1782,9 @@
         const moved = removeCardsFromSource(drag);
         pile.push(...moved);
         if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
-        maybeStartAutoSolve();
+        if (drag.type === "waste") autoMoveTopWasteAcesToFoundations();
+        maybeAutoWinCheck();
+        if (!game.finished) maybeStartAutoSolve();
         updateButtons();
         setStatusI18n(game && game.autoSolving ? "statusAutoFinishing" : "statusMovedToTableau");
         persistGameSoon();
@@ -1802,6 +1805,7 @@
     if (best.zone === "foundation") {
       game.foundations[best.index].push(...moved);
       if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
+      if (drag.type === "waste") autoMoveTopWasteAcesToFoundations();
       maybeAutoWinCheck();
       if (!game.finished) maybeStartAutoSolve();
       updateButtons();
@@ -1812,7 +1816,9 @@
 
     game.tableau[best.index].push(...moved);
     if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
-    maybeStartAutoSolve();
+    if (drag.type === "waste") autoMoveTopWasteAcesToFoundations();
+    maybeAutoWinCheck();
+    if (!game.finished) maybeStartAutoSolve();
     updateButtons();
     setStatusI18n(game && game.autoSolving ? "statusAutoFinishing" : "statusMovedToTableau");
     persistGameSoon();
