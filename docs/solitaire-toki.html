@@ -1279,7 +1279,7 @@
     stopAutoSolve();
     showPlaceholderStock = false;
     game = makeNewGame(gameOptions);
-    normalizeAllTableauTopAces();
+    normalizeAllImmediateAces();
     game.initialSeed = snapshotGame(game);
     drag = null;
     closeOptions();
@@ -1296,7 +1296,7 @@
     stopAutoSolve();
     showPlaceholderStock = false;
     game = snapshotGame(game.initialSeed);
-    normalizeAllTableauTopAces();
+    normalizeAllImmediateAces();
     drag = null;
     startTimer({ preserveElapsed: false });
     updateButtons();
@@ -1448,6 +1448,21 @@
     if (!game || !Array.isArray(game.tableau)) return 0;
     let moved = 0;
     for (const pile of game.tableau) moved += flipTopTableauCardIfNeeded(pile);
+    return moved;
+  }
+
+  function normalizeWasteTopAces() {
+    return autoMoveTopWasteAcesToFoundations();
+  }
+
+  function normalizeAllImmediateAces() {
+    if (!game) return 0;
+    let moved = 0;
+    while (true) {
+      const passMoved = normalizeAllTableauTopAces() + normalizeWasteTopAces();
+      moved += passMoved;
+      if (passMoved === 0) break;
+    }
     return moved;
   }
 
@@ -2021,7 +2036,7 @@
           const restoredGame = deserializeGameSnapshot(savedGame.game);
           if (restoredGame && !restoredGame.finished) {
             game = restoredGame;
-            normalizeAllTableauTopAces();
+            normalizeAllImmediateAces();
             gameOptions = normalizeOptions(game.options || gameOptions);
             game.options = { ...gameOptions };
             writeOptionsToUi(gameOptions);
