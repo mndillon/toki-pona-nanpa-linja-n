@@ -1279,6 +1279,7 @@
     stopAutoSolve();
     showPlaceholderStock = false;
     game = makeNewGame(gameOptions);
+    normalizeAllTableauTopAces();
     game.initialSeed = snapshotGame(game);
     drag = null;
     closeOptions();
@@ -1295,6 +1296,7 @@
     stopAutoSolve();
     showPlaceholderStock = false;
     game = snapshotGame(game.initialSeed);
+    normalizeAllTableauTopAces();
     drag = null;
     startTimer({ preserveElapsed: false });
     updateButtons();
@@ -1421,10 +1423,32 @@
   }
 
   function flipTopTableauCardIfNeeded(pile) {
-    if (pile.length > 0) {
+    if (!Array.isArray(pile) || pile.length === 0) return 0;
+    let autoMoved = 0;
+    while (pile.length > 0) {
       const top = pile[pile.length - 1];
+      if (!top) break;
       if (!top.faceUp) top.faceUp = true;
+      if (top.rank !== 1) break;
+      let movedThisPass = false;
+      for (let foundationIndex = 0; foundationIndex < game.foundations.length; foundationIndex++) {
+        if (canMoveToFoundation(top, game.foundations[foundationIndex])) {
+          game.foundations[foundationIndex].push(pile.pop());
+          autoMoved++;
+          movedThisPass = true;
+          break;
+        }
+      }
+      if (!movedThisPass) break;
     }
+    return autoMoved;
+  }
+
+  function normalizeAllTableauTopAces() {
+    if (!game || !Array.isArray(game.tableau)) return 0;
+    let moved = 0;
+    for (const pile of game.tableau) moved += flipTopTableauCardIfNeeded(pile);
+    return moved;
   }
 
   function getTableauAvailableBottomY() {
@@ -1496,6 +1520,26 @@
     return y;
   }
 
+  function autoMoveTopWasteAcesToFoundations() {
+    if (!game || game.finished || game.waste.length === 0) return 0;
+    let moved = 0;
+    while (game.waste.length > 0) {
+      const wasteTop = game.waste[game.waste.length - 1];
+      if (!wasteTop || !wasteTop.faceUp || wasteTop.rank !== 1) break;
+      let movedThisPass = false;
+      for (let foundationIndex = 0; foundationIndex < game.foundations.length; foundationIndex++) {
+        if (canMoveToFoundation(wasteTop, game.foundations[foundationIndex])) {
+          game.foundations[foundationIndex].push(game.waste.pop());
+          moved++;
+          movedThisPass = true;
+          break;
+        }
+      }
+      if (!movedThisPass) break;
+    }
+    return moved;
+  }
+
   function drawFromStock() {
     if (!game || game.finished) return;
     if (game.stock.length === 0) {
@@ -1508,7 +1552,9 @@
       card.faceUp = true;
       game.waste.push(card);
     }
+    const autoMovedAceCount = autoMoveTopWasteAcesToFoundations();
     setStatusI18n("statusDrewCards", { count: take, plural: take === 1 ? "" : "s" });
+    if (autoMovedAceCount > 0) maybeAutoWinCheck();
     updateButtons();
     draw();
     persistGameSoon();
@@ -1975,6 +2021,7 @@
           const restoredGame = deserializeGameSnapshot(savedGame.game);
           if (restoredGame && !restoredGame.finished) {
             game = restoredGame;
+            normalizeAllTableauTopAces();
             gameOptions = normalizeOptions(game.options || gameOptions);
             game.options = { ...gameOptions };
             writeOptionsToUi(gameOptions);
