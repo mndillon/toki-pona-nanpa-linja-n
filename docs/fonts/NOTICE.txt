@@ -1,4 +1,11 @@
-The OFL.txt file covers the license for PatrickHead-Regular.ttf font file
+The OFL_PatrickHand.txt file covers the license for font file:
+PatrickHead-Regular.ttf
+
+
+The OFL_sitelenselikiwenjuniko.txt file covers the license for font files:
+sitelenselikiwenjuniko.ttf
+sitelenselikiwenjuniko-cartouche-scaled-v3.ttf
+
 
 The LICENCE.txt file covers the licence for the font files:
 nasin-nanpa-5.0.0-beta.3-UCSUR.otf
@@ -15,6 +22,7 @@ nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v7.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v8.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v9.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf
+
 
 The original site for nasin-nanpa-5.0.0-beta.3-UCSUR.otf is loacated here: https://github.com/etbcor/nasin-nanpa
 
