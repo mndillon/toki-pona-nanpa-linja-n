@@ -44,6 +44,21 @@
     font-display: swap;
   }
 
+        @font-face {
+      font-family: "SSK-Juniko";
+      src:
+       url("./fonts/sitelenselikiwenjuniko.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "SSK-Juniko-Cartouche";
+      src:
+       url("./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf") format("truetype");
+      font-display: swap;
+    }
+    
+
   html, body{
     height:100%;
     margin:0;
@@ -630,7 +645,7 @@
 }
 
 /* Optional: tighten property panel spacing slightly */
-#propsBody .field textarea{ min-height: 250px; }
+#propsBody .field textarea{ min-height: 380px; }
 
 /* Mixed-value indicator (subtle) */
 .mixedTag{
@@ -950,6 +965,16 @@
 
             <div class="row">
               <div class="field">
+                <label for="defRenderFontPreset">Default sitelen font family</label>
+                <select id="defRenderFontPreset">
+                  <option value="nasinNanpa">nasin nanpa</option>
+                  <option value="sitelenSeliKiwen">sitelen seli kiwen</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
                 <label for="defTextColor">Default text</label>
                 <input id="defTextColor" type="color" value="#111111" />
               </div>
@@ -1168,6 +1193,7 @@
       lbl_snap_tol: "Snap tolerance",
       lbl_export_stage_bg: "Export stage background",
       lbl_stage_bg: "Stage background",
+      lbl_default_render_font: "Default sitelen font family",
       lbl_default_text: "Default text",
       lbl_default_fill_enabled: "Default allow fill",
       lbl_default_fill: "Default fill",
@@ -1214,7 +1240,8 @@
       props_edit_mixed_text: "Edit mixed text",
       props_keep_aspect: "Keep aspect ratio",
       props_scale_font_box: "Scale font with box",
-      props_font_family: "Font family",
+      props_render_font_family: "Sitelen font family",
+      props_font_family: "Text font family",
       props_font_size: "Font size",
       props_align: "Align",
       props_align_left: "Left",
@@ -1238,16 +1265,18 @@
       props_rotation_deg: "Rotation (deg)",
 
       sitelen_placeholder:
-        "mi kama sona e toki pona.\n" +
+        "mi kama sona e toki&pona.\n" +
         ": sewi^ ni ni^ ni> ni< .\n" +
+        "pi(telo lete).\n" +
+        "{pona}ala(pona).\n" +
         "[ ota  kolon en ]\n" +
+        "\"Hello World!\".\n" +
         "nanpa -12,340.57.\n" +
+        "nanpa 5%.\n" +
         "nanpa #~IIM.\n" +
         "nanpa Newenin One Len Oken.\n" +
-        "pi {telo lete}.\n" +
         "tenpo 15:27:49.\n" +
         "tenpo suno 2026-03-17.\n" +
-        "\"Hello World!\".\n" +
         "Unknown words ignored without double quotes.\n",
 
       // Footer
@@ -1373,6 +1402,7 @@
       lbl_snap_tol: "tawa leko: weka",
       lbl_export_stage_bg: "pana la monsi lon",
       lbl_stage_bg: "monsi pi supa",
+      lbl_default_render_font: "kulupu sitelen pona open",
       lbl_default_text: "kule sitelen open",
       lbl_default_fill_enabled: "pana kule: ken",
       lbl_default_fill: "kule insa open",
@@ -1418,7 +1448,8 @@
       props_edit_mixed_text: "ken ante e toki pi mute",
       props_keep_aspect: "awen sama pi suli",
       props_scale_font_box: "suli sitelen li sama poki",
-      props_font_family: "kulupu sitelen",
+      props_render_font_family: "kulupu sitelen pi sitelen pona",
+      props_font_family: "kulupu sitelen pi sitelen Lasina",
       props_font_size: "suli sitelen",
       props_align: "poka",
       props_align_left: "poka open",
@@ -1611,7 +1642,8 @@
     setLabel("snapTol", "lbl_snap_tol");
     setLabel("exportStageBackground", "lbl_export_stage_bg");
     setLabel("stageBg", "lbl_stage_bg");
-    setLabel("defaultTextColor", "lbl_default_text");
+    setLabel("defRenderFontPreset", "lbl_default_render_font");
+    setLabel("defTextColor", "lbl_default_text");
     setLabel("defaultFillEnabled", "lbl_default_fill_enabled");
     setLabel("defaultFill", "lbl_default_fill");
     setLabel("defaultStroke", "lbl_default_stroke");
@@ -1679,6 +1711,7 @@
     // NEW: stage + default styling
     stageBg: "#FFFFFF", //"#F3DFC0",                 // stage background color
     exportStageBackground: false,
+    defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
     defaultFill: "#111111",// default fill for shapes/boxes
     defaultFillEnabled: false,
@@ -1702,7 +1735,234 @@
 
 
 
-  /* ============================================================
+const RENDER_FONT_PRESETS = {
+  nasinNanpa: {
+    key: "nasinNanpa",
+    label: "nasin nanpa",
+    parserMode: "sitelen-seli-kiwen",
+    textFamily: "TP-Nasin-Nanpa-Font",
+    cartoucheFamily: "TP-Cartouche-Font",
+    literalFamily: "Patrick-Head-Font"
+  },
+  sitelenSeliKiwen: {
+    key: "sitelenSeliKiwen",
+    label: "sitelen seli kiwen",
+    parserMode: "sitelen-seli-kiwen",
+    textFamily: "SSK-Juniko",
+    cartoucheFamily: "SSK-Juniko-Cartouche",
+    literalFamily: "Patrick-Head-Font"
+  }
+};
+
+
+
+
+function normalizeRenderFontPresetKey(key){
+  return Object.prototype.hasOwnProperty.call(RENDER_FONT_PRESETS, key) ? key : "nasinNanpa";
+}
+function getRenderFontPreset(key){
+  return RENDER_FONT_PRESETS[normalizeRenderFontPresetKey(key)] || RENDER_FONT_PRESETS.nasinNanpa;
+}
+function getElementRenderFontPresetKey(el){
+  return normalizeRenderFontPresetKey(el?.renderFontPreset || Scene?.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+}
+function buildRendererFontRolesForElement(el){
+  const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
+  return {
+    word: preset.textFamily,
+    text: preset.textFamily,
+    cartouche: preset.textFamily,
+    number: preset.cartoucheFamily,
+    date: preset.cartoucheFamily,
+    time: preset.cartoucheFamily,
+    literal: (el?.type === ElementType.Sitelen)
+      ? preset.literalFamily
+      : (sitelenLiteralFontFamilyForElement(el) || preset.literalFamily)
+  };
+}
+let sitelenRendererModulePromise = null;
+const sitelenRendererInstancePromises = new Map();
+const sitelenRasterJobs = new Map();
+const glyphRasterJobs = new Map();
+const glyphCache = new Map();
+
+function ensureSitelenRendererModule(){
+  if (!sitelenRendererModulePromise){
+    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped.js').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+  }
+  return sitelenRendererModulePromise;
+}
+async function waitForRenderPresetFonts(presetKey, fontPx = 56, literalFamily = null, extraFamilies = []){
+  if (!document.fonts || typeof document.fonts.load !== 'function') return;
+  const preset = getRenderFontPreset(presetKey);
+  const families = [preset.textFamily, preset.cartoucheFamily, literalFamily || preset.literalFamily, ...(Array.isArray(extraFamilies) ? extraFamilies : [extraFamilies])].filter(Boolean);
+  await document.fonts.ready;
+  await Promise.all(Array.from(new Set(families)).map((family) =>
+    document.fonts.load(`${fontPx}px "${family}"`, String.fromCodePoint(0xF196C, 0xF1954, 0xF1990) + ' Hello')
+  ));
+}
+function buildRendererInitConfigForElement(el){
+  const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
+  return {
+    parser: {
+      mode: preset.parserMode,
+      literalStyle: 'double-quote',
+      extensionStyle: 'ssk',
+      cartoucheStyle: 'ssk',
+      numericMode: 'compat'
+    },
+    fonts: { roles: buildRendererFontRolesForElement(el) }
+  };
+}
+function buildRendererCallConfigForElement(el){
+  const fontPx = Math.max(6, Number(el?.fontSize ?? 44));
+  const haloWidth = (!!el?.haloEnabled)
+    ? ((el?.haloThicknessMode === 'manual' && Number.isFinite(el?.haloThickness) && el.haloThickness > 0)
+      ? clampHaloThicknessPx(el.haloThickness)
+      : defaultHaloThicknessForFontPx(fontPx))
+    : 0;
+  const isGlyph = !!el && el.type === ElementType.Glyph;
+  return {
+    layout: {
+      fontPx,
+      align: String(el?.align ?? 'left'),
+      paddingPx: (isGlyph ? 0 : DEFAULT_PAD_PX) + haloWidth,
+      lineGapPx: lineGapForPx(fontPx)
+    },
+    paint: {
+      fillStyle: el?.color || '#111111',
+      halo: {
+        enabled: !!el?.haloEnabled,
+        color: rgbaOrHexToHex(el?.haloColor, '#FFFFFF'),
+        widthPx: haloWidth
+      }
+    },
+    parser: { mode: getRenderFontPreset(getElementRenderFontPresetKey(el)).parserMode, numericMode: 'compat' },
+    fonts: { roles: buildRendererFontRolesForElement(el) }
+  };
+}
+async function getSitelenRendererForElement(el){
+  const presetKey = getElementRenderFontPresetKey(el);
+  const literalFamily = (el?.type === ElementType.Sitelen)
+    ? getRenderFontPreset(presetKey).literalFamily
+    : (sitelenLiteralFontFamilyForElement(el) || getRenderFontPreset(presetKey).literalFamily);
+  const extraFamilies = [];
+  if (el?.type === ElementType.Glyph && el?.fontFamily) extraFamilies.push(String(el.fontFamily));
+  const cacheKey = `${presetKey}|literal:${literalFamily}|extra:${extraFamilies.join('|')}`;
+  if (!sitelenRendererInstancePromises.has(cacheKey)){
+    sitelenRendererInstancePromises.set(cacheKey, (async () => {
+      const SitelenRenderer = await ensureSitelenRendererModule();
+      await waitForRenderPresetFonts(presetKey, Math.max(16, Number(el?.fontSize ?? 44)), literalFamily, extraFamilies);
+      return SitelenRenderer.create(buildRendererInitConfigForElement(el));
+    })());
+  }
+  return sitelenRendererInstancePromises.get(cacheKey);
+}
+
+function tintRasterCanvasToColor(sourceCanvas, cssColor){
+  if (!sourceCanvas) return sourceCanvas;
+  const fill = rgbaOrHexToHex(cssColor || '#111111', '#111111');
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, sourceCanvas.width || 1);
+  out.height = Math.max(1, sourceCanvas.height || 1);
+  const octx = out.getContext('2d', { alpha: true });
+  octx.clearRect(0, 0, out.width, out.height);
+  octx.drawImage(sourceCanvas, 0, 0);
+  octx.globalCompositeOperation = 'source-in';
+  octx.fillStyle = fill;
+  octx.fillRect(0, 0, out.width, out.height);
+  octx.globalCompositeOperation = 'source-over';
+  return out;
+}
+
+function getElementRendererSignature(el){
+  return JSON.stringify({
+    text: String(el?.text ?? ''),
+    codepoint: String(el?.codepoint ?? ''),
+    align: String(el?.align ?? 'left'),
+    fontPx: Math.max(6, Number(el?.fontSize ?? 44)),
+    color: String(el?.color ?? '#111111'),
+    preset: getElementRenderFontPresetKey(el),
+    fontFamily: (el?.type === ElementType.Sitelen) ? '' : String(el?.fontFamily ?? ''),
+  literalFamily: (el?.type === ElementType.Sitelen) ? '' : sitelenLiteralFontFamilyForElement(el),
+    haloEnabled: !!el?.haloEnabled,
+    haloColor: rgbaOrHexToHex(el?.haloColor, '#FFFFFF'),
+    haloMode: String(el?.haloThicknessMode ?? 'auto'),
+    haloThickness: Number(el?.haloThickness ?? 0)
+  });
+}
+async function rebuildSitelenRasterWithRenderer(el, opts = {}){
+  if (!el || el.type !== ElementType.Sitelen) return null;
+  const options = Object.assign({ preserveCenter: true }, opts || {});
+  const sig = getElementRendererSignature(el);
+  const existing = sitelenCache.get(el.id);
+  if (existing && existing.sig === sig && existing.canvas) return existing;
+  const jobKey = `${el.id}|${sig}|${options.preserveCenter ? 1 : 0}`;
+  if (sitelenRasterJobs.has(jobKey)) return sitelenRasterJobs.get(jobKey);
+  const job = (async () => {
+    const cx = el.x + el.w/2;
+    const cy = el.y + el.h/2;
+    const renderer = await getSitelenRendererForElement(el);
+    const result = await renderer.renderTextToNewCanvas(Object.assign({ input: String(el.text ?? '') }, buildRendererCallConfigForElement(el)));
+    const canvas = result?.canvas || document.createElement('canvas');
+    const entry = { sig, canvas, naturalW: canvas.width || 8, naturalH: canvas.height || 8 };
+    if (!el.sitelen || typeof el.sitelen !== 'object') el.sitelen = {};
+    el.sitelen.naturalW = entry.naturalW;
+    el.sitelen.naturalH = entry.naturalH;
+    el.sitelen.origW = entry.naturalW;
+    el.sitelen.origH = entry.naturalH;
+    el.w = Math.max(8, entry.naturalW);
+    el.h = Math.max(8, entry.naturalH);
+    if (options.preserveCenter){
+      el.x = cx - el.w/2;
+      el.y = cy - el.h/2;
+    }
+    sitelenCache.set(el.id, entry);
+    scheduleAutosave();
+    render();
+    return entry;
+  })().finally(() => sitelenRasterJobs.delete(jobKey));
+  sitelenRasterJobs.set(jobKey, job);
+  return job;
+}
+function queueSitelenRasterRebuild(el, opts = {}){
+  rebuildSitelenRasterWithRenderer(el, opts).catch((err) => console.warn('Sitelen raster rebuild failed:', err));
+}
+async function rebuildGlyphRasterWithRenderer(el){
+  if (!el || el.type !== ElementType.Glyph) return null;
+  const sig = getElementRendererSignature(el);
+  const existing = glyphCache.get(el.id);
+  if (existing && existing.sig === sig && existing.canvas) return existing;
+  const jobKey = `${el.id}|${sig}`;
+  if (glyphRasterJobs.has(jobKey)) return glyphRasterJobs.get(jobKey);
+  const job = (async () => {
+    const renderer = await getSitelenRendererForElement(el);
+    const cp = parseCodepointInput(el.codepoint);
+    const glyphFontFamily = String(el?.fontFamily || getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || 'TP-Nasin-Nanpa-Font');
+    const lines = [[{ kind: 'rawUcsur', cps: (typeof cp === 'number') ? [cp] : [0x003F], fontFamily: glyphFontFamily }]];
+    const result = await renderer.renderUcsurToNewCanvas(Object.assign({ lines }, buildRendererCallConfigForElement(el)));
+    const rawCanvas = result?.canvas || document.createElement('canvas');
+    const canvas = tintRasterCanvasToColor(rawCanvas, el?.color || '#111111');
+    const entry = { sig, canvas, naturalW: canvas.width || 8, naturalH: canvas.height || 8 };
+    glyphCache.set(el.id, entry);
+    render();
+    return entry;
+  })().finally(() => glyphRasterJobs.delete(jobKey));
+  glyphRasterJobs.set(jobKey, job);
+  return job;
+}
+function queueGlyphRasterRebuild(el){
+  rebuildGlyphRasterWithRenderer(el).catch((err) => console.warn('Glyph raster rebuild failed:', err));
+}
+async function awaitAllRendererRastersReady(){
+  const jobs = [
+    ...Array.from(sitelenRasterJobs.values()), 
+    ...Array.from(glyphRasterJobs.values())
+  ];
+  if (jobs.length) await Promise.allSettled(jobs);
+}
+
+/* ============================================================
    WORDS / UCSUR (your provided set)
    ============================================================ */
 const WORD_TO_UCSUR_CP = {
@@ -1944,6 +2204,7 @@ function normalizeScene(parsed){
     // NEW
     bg: DEFAULTS.stageBg,
     exportStageBackground: DEFAULTS.exportStageBackground,
+    defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
     defaultTextColor: DEFAULTS.defaultTextColor,
     defaultFill: DEFAULTS.defaultFill,
     defaultFillEnabled: DEFAULTS.defaultFillEnabled,
@@ -1978,6 +2239,8 @@ function normalizeScene(parsed){
   if (typeof out.stage.bgImgStretch !== "boolean") out.stage.bgImgStretch = false;
 
   if (out.stage.bgImgAssetId != null) out.stage.bgImgAssetId = String(out.stage.bgImgAssetId);
+  out.stage.defaultRenderFontPreset = normalizeRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+
   if (!out.stage.bgImgAssetId){
     out.stage.bgImgAssetId = null;
     out.stage.bgImgEnabled = false;
@@ -2049,29 +2312,31 @@ function normalizeScene(parsed){
       el.color = elColor;
       el.lineHeight = Number.isFinite(el.lineHeight) ? el.lineHeight : 1.15;
 
+      
       if (el.type === ElementType.Sitelen){
-        // ADD: default keepAspect true for old JSON
+        el.renderFontPreset = normalizeRenderFontPresetKey(
+          el.renderFontPreset || out.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
+        );
         el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
-
-        // ADD: sitelen metadata container (mirrors image.origW/origH concept)
         if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
 
-        // Build raster + resize bbox on import
-        updateSitelenLayout(el, { preserveCenter: true });
       }
+      
 
 
     }
 
     if (el.type === ElementType.Glyph){
-  el.codepoint = String(el.codepoint ?? "U+F1934");
+      el.codepoint = String(el.codepoint ?? "U+F1934");
 
-  // CHANGE HERE: glyph font family is fixed
-  el.fontFamily = "TP-Cartouche-Font";
+      el.renderFontPreset = normalizeRenderFontPresetKey(el.renderFontPreset || "nasinNanpa");
 
-  el.fontSize = Number.isFinite(el.fontSize) ? el.fontSize : 92;
-  el.color = rgbaOrHexToHex(el.color ||  "#111111", "#111111");
-}
+      const preset = RENDER_FONT_PRESETS[el.renderFontPreset] || RENDER_FONT_PRESETS.nasinNanpa;
+      el.fontFamily = String(el.fontFamily || preset.textFamily || "TP-Nasin-Nanpa-Font");
+
+      el.fontSize = Number.isFinite(el.fontSize) ? el.fontSize : 92;
+      el.color = rgbaOrHexToHex(el.color || "#111111", "#111111");
+    }
 
 
     if (el.type === ElementType.Rect){
@@ -2331,6 +2596,7 @@ function deserializeAssets(serialized){
       // NEW
       bg: DEFAULTS.stageBg,
       exportStageBackground: DEFAULTS.exportStageBackground,
+      defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
       defaultTextColor: DEFAULTS.defaultTextColor,
       defaultFill: DEFAULTS.defaultFill,
       defaultStroke: DEFAULTS.defaultStroke,
@@ -2414,7 +2680,8 @@ function deserializeAssets(serialized){
   function newSitelenElement(x,y){
     const el = defaultElementBase(ElementType.Sitelen, x, y);
     el.w = 420; el.h = 160;
-    el.text = "toki pona";
+    el.text = "toki&pona";
+    el.renderFontPreset = normalizeRenderFontPresetKey(Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
     el.fontFamily = "PatrickHand";
     el.fontSize = 44;
     el.align = "left";
@@ -2437,7 +2704,8 @@ function deserializeAssets(serialized){
     const el = defaultElementBase(ElementType.Glyph, x, y);
     el.w = 120; el.h = 120;
     el.codepoint = "U+F1934"; // default example (mi) – user can change
-    el.fontFamily = "TP-Cartouche-Font";
+    el.renderFontPreset = normalizeRenderFontPresetKey(Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+    el.fontFamily = getRenderFontPreset(el.renderFontPreset).textFamily;
     el.fontSize = 92;
     el.align = "center";
    el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
@@ -2835,9 +3103,6 @@ function ensureColorKeyRaster(el, alreadyLoadedImg){
 /* ============================
    CHANGE HERE: font family names used by canvas ctx.font
    ============================ */
-const FONT_FAMILY_TEXT      = "TP-Nasin-Nanpa-Font";
-const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
-const FONT_FAMILY_LITERAL   = "PatrickHand";
 
 /* ============================
    Layout constants used by bbox + draw
@@ -5210,87 +5475,27 @@ const sitelenCache = new Map(); // el.id -> { sig, canvas, naturalW, naturalH }
 
 /** Build a signature so we only rebuild when relevant props change */
 function sitelenSignature(el){
-  const fontPx = Math.max(6, Number(el.fontSize ?? 44));
-  return [
-    String(el.text ?? ""),
-    String(el.align ?? "left"),
-    fontPx,
-    String(el.color ?? "#111111"),
-
-    // literal segments font depends on element fontFamily
-    sitelenLiteralFontFamilyForElement(el),
-
-    // include anything else that materially changes raster output
-    "mode:uniform",
-    `pad:${DEFAULT_PAD_PX}`,
-    `lineGap:${lineGapForPx(fontPx)}`,
-
-    // NEW: halo affects raster
-    `haloOn:${!!el.haloEnabled}`,
-    `haloColor:${String(el.haloColor ?? "")}`,
-    `haloMode:${String(el.haloThicknessMode ?? "auto")}`,
-    `haloT:${Number(el.haloThickness ?? 0)}`,
-  ].join("|");
+  return getElementRendererSignature(el);
 }
 
 
 
 function sitelenMeasureBBox(el){
-  const fontPx = Math.max(6, Number(el.fontSize ?? 44));
-
-  const haloPad = (!!el.haloEnabled)
-  ? ((el.haloThicknessMode === "manual" && Number.isFinite(el.haloThickness) && el.haloThickness > 0)
-      ? clampHaloThicknessPx(el.haloThickness)
-      : defaultHaloThicknessForFontPx(fontPx))
-  : 0;
-
-  const opts = {
-    fontPx,
-    mode: "uniform",
-    fgCss: el.color || "#111",
-    padPx: DEFAULT_PAD_PX + haloPad,
-    lineGapPx: lineGapForPx(fontPx),
-
-    // NEW: literal font comes from the element, not a constant
-    literalFontFamily: sitelenLiteralFontFamilyForElement(el),
-  };
-
-  const linesEls = parseMultilineToElements(String(el.text ?? ""), opts);
-  const box = measureMultiline(linesEls, opts);
-
-  return { w: Math.max(8, box.width), h: Math.max(8, box.height) };
+  const cached = sitelenCache.get(el.id);
+  if (cached && cached.canvas) return { w: Math.max(8, cached.naturalW), h: Math.max(8, cached.naturalH) };
+  queueSitelenRasterRebuild(el, { preserveCenter: true });
+  return { w: Math.max(8, Number(el.w ?? 8)), h: Math.max(8, Number(el.h ?? 8)) };
 }
 
 
 
 function sitelenRenderToOffscreen(el,w,h){
+  const cached = sitelenCache.get(el.id);
+  if (cached && cached.canvas) return cached.canvas;
+  queueSitelenRasterRebuild(el, { preserveCenter: true });
   const off = document.createElement("canvas");
-  const fontPx = Math.max(6, Number(el.fontSize ?? 44));
-
-  const haloPad = (!!el.haloEnabled)
-  ? ((el.haloThicknessMode === "manual" && Number.isFinite(el.haloThickness) && el.haloThickness > 0)
-      ? clampHaloThicknessPx(el.haloThickness)
-      : defaultHaloThicknessForFontPx(fontPx))
-  : 0;
-
-  const opts = {
-    fontPx,
-    mode: "uniform",
-    fgCss: el.color || "#111111",
-    padPx: DEFAULT_PAD_PX + haloPad,
-    lineGapPx: lineGapForPx(fontPx),
-
-    // NEW: halo options
-    haloEnabled: !!el.haloEnabled,
-    haloCss: rgbaOrHexToHex(el.haloColor, "#FFFFFF"),
-    haloThicknessMode: el.haloThicknessMode,
-    haloThickness: el.haloThickness,
-
-    literalFontFamily: sitelenLiteralFontFamilyForElement(el),
-    literalFontAlignment: sitelenLiteralFontAlignmentForElement(el),
-  };
-
-  renderTextToCanvas(off, String(el.text ?? ""), opts);
+  off.width = Math.max(1, Math.round(w || el.w || 8));
+  off.height = Math.max(1, Math.round(h || el.h || 8));
   return off;
 }
 
@@ -5301,40 +5506,11 @@ function sitelenRenderToOffscreen(el,w,h){
  */
 function ensureSitelenRaster(el){
   if (el.type !== ElementType.Sitelen) return null;
-
-  //console.log("ensure sitelen raster");
-
   const sig = sitelenSignature(el);
   const existing = sitelenCache.get(el.id);
-  if (existing && existing.sig === sig) return existing;
-
-  console.log("ensure sitelen new raster");
-
-  // Build fresh raster
-  const bb = sitelenMeasureBBox(el);
-  const canvas = sitelenRenderToOffscreen(el, bb.w, bb.h);
-
-  const entry = {
-    sig,
-    canvas,
-    naturalW: canvas.width,
-    naturalH: canvas.height,
-  };
-
-  // Ensure metadata container
-  if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
-
-  // Always update intrinsic size (natural size is content-dependent)
-  el.sitelen.naturalW = entry.naturalW;
-  el.sitelen.naturalH = entry.naturalH;
-
-  // IMPORTANT: also reset "orig" to the new natural size whenever the raster changes.
-  // This ensures "Keep aspect ratio" toggling reverts to the *current* natural size.
-  el.sitelen.origW = entry.naturalW;
-  el.sitelen.origH = entry.naturalH;
-
-  sitelenCache.set(el.id, entry);
-  return entry;
+  if (existing && existing.sig === sig && existing.canvas) return existing;
+  queueSitelenRasterRebuild(el, { preserveCenter: true });
+  return existing || null;
 }
 
 
@@ -5345,33 +5521,16 @@ function ensureSitelenRaster(el){
  */
 function updateSitelenLayout(el, opts){
   if (!el || el.type !== ElementType.Sitelen) return;
-
-  const options = Object.assign({ preserveCenter: true }, opts || {});
-
-  const cx = el.x + el.w / 2;
-  const cy = el.y + el.h / 2;
-
-  // Build (or rebuild) raster; this also refreshes el.sitelen.{naturalW,naturalH,origW,origH}
-  const entry = ensureSitelenRaster(el);
-  if (!entry) return;
-
-  // Resize element box to the CURRENT natural size (your requirement)
-  const newW = Math.max(8, entry.naturalW);
-  const newH = Math.max(8, entry.naturalH);
-
-  el.w = newW;
-  el.h = newH;
-
-  if (options.preserveCenter){
-    el.x = cx - el.w / 2;
-    el.y = cy - el.h / 2;
-  }
+  queueSitelenRasterRebuild(el, opts || { preserveCenter: true });
 }
 
 
 /** Clear sitelen cache for a single element (call when you replace your renderer) */
 function invalidateSitelenCache(elId){
   sitelenCache.delete(elId);
+}
+function invalidateGlyphCache(elId){
+  glyphCache.delete(elId);
 }
 
 function refreshAllSitelenElementsPreserveCenter(){
@@ -6936,7 +7095,8 @@ function drawSitelenRasterLocal(el, x, y, w, h){
 
 
   function drawGlyphLocal(el, x,y,w,h){
-    // Optional background box if fill/stroke present
+    // Keep glyph placement consistent with the original layout editor:
+    // draw directly from font metrics, centered in the element box.
     if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
       ctx.save();
       ctx.fillStyle = el.fill;
@@ -6947,13 +7107,12 @@ function drawSitelenRasterLocal(el, x, y, w, h){
     const cp = parseCodepointInput(el.codepoint);
     const ch = (typeof cp === "number") ? String.fromCodePoint(cp) : "?";
     const fontSize = Math.max(6, (el.fontSize ?? 64) * Scene.view.zoom);
-    const fontFamily = el.fontFamily || "TP-Cartouche-Font";
+    const fontFamily = el.fontFamily || getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || "TP-Cartouche-Font";
 
     ctx.save();
     ctx.fillStyle = el.color || "#111";
     ctx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
 
-    // NEW: halo (stroke behind fill)
     const _haloW = effectiveHaloThicknessForElement(el);
     if (_haloW > 0){
       ctx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
@@ -6971,7 +7130,6 @@ function drawSitelenRasterLocal(el, x, y, w, h){
     if (_haloW > 0) ctx.strokeText(ch, cx, cy);
     ctx.fillText(ch, cx, cy);
 
-    // optional border box for glyph (if strokeW)
     if ((el.strokeW ?? 0) > 0){
       ctx.save();
       ctx.lineWidth = (el.strokeW ?? 1);
@@ -7764,6 +7922,27 @@ if (textField && textField._popoutElementId){
   );
 }
 
+      if (sels.some(e => e.type === ElementType.Sitelen)){
+        const leaderRenderPreset = topmostSelectedWhere(e => e.type === ElementType.Sitelen);
+        const presetVals = sels.filter(e => e.type === ElementType.Sitelen).map(e => getElementRenderFontPresetKey(e));
+        const presetMixed = mixedLabelIfMixed(presetVals);
+        propsBody.appendChild(makeSelect(
+          tr("props_render_font_family"),
+          getElementRenderFontPresetKey(leaderRenderPreset),
+          Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
+          (v) => {
+            applyToAllWhere(e => e.type === ElementType.Sitelen, (e) => {
+              e.renderFontPreset = normalizeRenderFontPresetKey(v);
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e, { preserveCenter: true });
+            });
+            scheduleAutosave();
+            render();
+          },
+          presetMixed
+        ));
+      }
+
       // Font family
       const leaderFont = topmostSelectedWhere(supportsTextBlock);
       const defaultFont = "PatrickHand";
@@ -7878,6 +8057,25 @@ if (textField && textField._popoutElementId){
 
       const leaderG = topmostSelectedWhere(supportsGlyphBlock);
 
+      const glyphPresetVals = sels.filter(supportsGlyphBlock).map(e => getElementRenderFontPresetKey(e));
+      const glyphPresetMixed = mixedLabelIfMixed(glyphPresetVals);
+      propsBody.appendChild(makeSelect(
+        tr("props_render_font_family"),
+        getElementRenderFontPresetKey(leaderG),
+        Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
+        (v) => {
+          applyToAllWhere(supportsGlyphBlock, (e) => {
+            e.renderFontPreset = normalizeRenderFontPresetKey(v);
+            e.fontFamily = getRenderFontPreset(e.renderFontPreset).textFamily;
+            invalidateGlyphCache(e.id);
+            queueGlyphRasterRebuild(e);
+          });
+          scheduleAutosave();
+          render();
+        },
+        glyphPresetMixed
+      ));
+
       // font size
       const gfsVals = sels.filter(supportsGlyphBlock).map(e => String(Number(e.fontSize ?? 64)));
       const gfsMixed = mixedLabelIfMixed(gfsVals);
@@ -7891,6 +8089,8 @@ if (textField && textField._popoutElementId){
           applyToAllWhere(supportsGlyphBlock, (e) => {
             e.fontSize = Math.max(6, v);
             if (e.haloThicknessMode !== "manual") e.haloThickness = defaultHaloThicknessForFontPx(e.fontSize);
+            invalidateGlyphCache(e.id);
+            queueGlyphRasterRebuild(e);
           });
           scheduleAutosave();
           render();
@@ -7907,8 +8107,8 @@ if (textField && textField._popoutElementId){
       propsBody.appendChild(makeColorPickerWithSwatch(
         tr("props_glyph_color"),
         rgbaOrHexToHex(leaderG?.color ?? "#111111", "#111111"),
-        (v) => { applyToAllWhere(supportsGlyphBlock, (e) => { e.color = v; }); render(); },
-        (v) => { applyToAllWhere(supportsGlyphBlock, (e) => { e.color = v; }); scheduleAutosave(); render(); },
+        (v) => { applyToAllWhere(supportsGlyphBlock, (e) => { e.color = v; invalidateGlyphCache(e.id); queueGlyphRasterRebuild(e); }); render(); },
+        (v) => { applyToAllWhere(supportsGlyphBlock, (e) => { e.color = v; invalidateGlyphCache(e.id); queueGlyphRasterRebuild(e); }); scheduleAutosave(); render(); },
         gcolMixed
       ));
     }
@@ -8217,6 +8417,21 @@ if (textField && textField._popoutElementId){
       ));
     }
 
+    if (el.type === ElementType.Sitelen){
+      propsBody.appendChild(makeSelect(
+        tr("props_render_font_family"),
+        getElementRenderFontPresetKey(el),
+        Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
+        (v) => {
+          el.renderFontPreset = normalizeRenderFontPresetKey(v);
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+          scheduleAutosave();
+          render();
+        }
+      ));
+    }
+
     // CHANGE HERE: Font family dropdown
     // CHANGE HERE: Sitelen defaults to PatrickHand
     const defaultFont = "PatrickHand";
@@ -8388,14 +8603,26 @@ if (textField && textField._popoutElementId){
 
 
 
-    // Enforce fixed font family (do not allow editing)
-  el.fontFamily = "TP-Cartouche-Font";
+    propsBody.appendChild(makeSelect(
+      tr("props_render_font_family"),
+      getElementRenderFontPresetKey(el),
+      Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
+      (v) => {
+        el.renderFontPreset = normalizeRenderFontPresetKey(v);
+        el.fontFamily = getRenderFontPreset(el.renderFontPreset).textFamily;
+        invalidateGlyphCache(el.id);
+        queueGlyphRasterRebuild(el);
+        scheduleAutosave();
+        render();
+      }
+    ));
 
     //propsBody.appendChild(makeTextRow("Code point (U+.... or 0x.... or single char)", el.codepoint ?? "", (v) => {
     //  el.codepoint = v; scheduleAutosave(); render();
     //}));
     // CHANGE HERE: 2-step glyph picker (letter -> words)
 propsBody.appendChild(makeGlyphPicker(el));
+    queueGlyphRasterRebuild(el);
 
 
     propsBody.appendChild(makeCheckbox(
@@ -8415,7 +8642,7 @@ propsBody.appendChild(makeGlyphPicker(el));
   Number(el.fontSize ?? 64),
   1,
   FONT_SIZE_PRESETS,
-  (v) => { el.fontSize = Math.max(6, v); if (el.haloThicknessMode !== "manual") el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize); scheduleAutosave(); render(); },
+  (v) => { el.fontSize = Math.max(6, v); if (el.haloThicknessMode !== "manual") el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize); invalidateGlyphCache(el.id); queueGlyphRasterRebuild(el); scheduleAutosave(); render(); },
   null,
   6,
   9999
@@ -8429,12 +8656,16 @@ propsBody.appendChild(makeColorPickerWithSwatch(
         // LIVE preview only
         console.log("Live glyph colour :" + v);
         el.color =  v;
+        invalidateGlyphCache(el.id);
+        queueGlyphRasterRebuild(el);
         render();
       },
       (v) => {
         // COMMIT
         console.log("Commit glyph colour :" + v);
         el.color = v;
+        invalidateGlyphCache(el.id);
+        queueGlyphRasterRebuild(el);
 
         scheduleAutosave();
         render();
@@ -10104,6 +10335,7 @@ function syncSnapButtonsFromScene(){
 function syncStageDefaultsUiFromScene(){
   const bg = document.getElementById("stageBg");
   const expbg = document.getElementById("exportStageBackground");
+  const drfp = document.getElementById("defRenderFontPreset");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
@@ -10119,6 +10351,7 @@ function syncStageDefaultsUiFromScene(){
 
   if (bg)  bg.value  = rgbaOrHexToHex(st.bg, DEFAULTS.stageBg);
   if (expbg) {expbg.checked = !!Scene.stage.exportStageBackground;}
+  if (drfp) drfp.value = normalizeRenderFontPresetKey(st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
   if (df)  df.value  = rgbaOrHexToHex(st.defaultFill, DEFAULTS.defaultFill);
   if (dfe) {dfe.checked = !!Scene.stage.defaultFillEnabled;}
@@ -10354,6 +10587,11 @@ async function importJsonFromFile(file){
   selectedIds.clear();
   imageCache.clear();
   colorKeyCache.clear();
+sitelenCache.clear();
+glyphCache.clear();
+sitelenRasterJobs.clear();
+glyphRasterJobs.clear();
+sitelenRendererInstancePromises.clear();
 
   try {
       await dbPut(DB_KEY, {
@@ -10376,7 +10614,7 @@ async function importJsonFromFile(file){
   updateUiForSelection();
   rebuildDynamicPaletteFromScene();
 
-  refreshAllSitelenElementsPreserveCenter();
+  await relayoutAllSitelenAfterFontsReady();
   fitStageToView();
   render();
   historyReset("Import");
@@ -10517,7 +10755,6 @@ async function importJsonFromFile(file){
       }
 
     } else if (el.type === ElementType.Glyph){
-      //glyph
       if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
         octx.fillStyle = el.fill;
         octx.fillRect(x,y,el.w,el.h);
@@ -10526,8 +10763,7 @@ async function importJsonFromFile(file){
       const cp = parseCodepointInput(el.codepoint);
       const ch = (typeof cp === "number") ? String.fromCodePoint(cp) : "?";
       const fontSize = Math.max(6, (el.fontSize ?? 64));
-      const fontFamily = el.fontFamily || "TP-Cartouche-Font";
-     
+      const fontFamily = el.fontFamily || getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || "TP-Cartouche-Font";
       const cx2 = x + el.w/2;
       const cy2 = y + el.h/2;
 
@@ -10535,7 +10771,6 @@ async function importJsonFromFile(file){
       octx.textBaseline = "middle";
       octx.textAlign = "center";
 
-      // NEW: halo behind fill
       const haloW = effectiveHaloThicknessForElementExport(el);
       if (haloW > 0){
         octx.strokeStyle = rgbaOrHexToHex(el.haloColor, "#FFFFFF");
@@ -10601,7 +10836,8 @@ async function importJsonFromFile(file){
     octx.restore();
   }
 
-  function exportPngTransparent(){
+  async function exportPngTransparent(){
+    await awaitAllRendererRastersReady();
     console.log("Export PNG image");
     // Create offscreen canvas at exact stage size (no background fill => transparent)
     const off = document.createElement("canvas");
@@ -10717,6 +10953,7 @@ $("btnNew").addEventListener("click", async () => {
 
   Scene.stage.bg = DEFAULTS.stageBg;
   Scene.stage.exportStageBackground = DEFAULTS.exportStageBackground;
+  Scene.stage.defaultRenderFontPreset = DEFAULTS.defaultRenderFontPreset;
   Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
   Scene.stage.defaultFill = DEFAULTS.defaultFill;
   Scene.stage.defaultFillEnabled = DEFAULTS.defaultFillEnabled;
@@ -10734,6 +10971,11 @@ $("btnNew").addEventListener("click", async () => {
   selectedIds.clear();
   imageCache.clear();
   colorKeyCache.clear();
+sitelenCache.clear();
+glyphCache.clear();
+sitelenRasterJobs.clear();
+glyphRasterJobs.clear();
+sitelenRendererInstancePromises.clear();
 
 console.log("New Scene "+ JSON.stringify(Scene));
 
@@ -10863,6 +11105,7 @@ function wireStageDefaultsUi(){
   const btnPickBg = document.getElementById("btnPickBgImage");
   const btnClearBg = document.getElementById("btnClearBgImage");
   const btnResizeStageToBg = document.getElementById("btnResizeStageToBg");
+  const drfp = document.getElementById("defRenderFontPreset");
 
 
 
@@ -10898,6 +11141,14 @@ function wireStageDefaultsUi(){
       scheduleAutosave();
       //render();
       //setStatus(tr("status_default_fill_enabled_updated"));
+    });
+  }
+
+  if (drfp){
+    drfp.addEventListener("change", (e) => {
+      Scene.stage.defaultRenderFontPreset = normalizeRenderFontPresetKey(e.target.value);
+      scheduleAutosave();
+      render();
     });
   }
 
@@ -11059,7 +11310,10 @@ async function awaitFontLoading(){
   const loads = [
     document.fonts.load('16px "TP-Nasin-Nanpa-Font"'),
     document.fonts.load('16px "TP-Cartouche-Font"'),
+    document.fonts.load('16px "SSK-Juniko"'),
+    document.fonts.load('16px "SSK-Juniko-Cartouche"'),
     document.fonts.load('16px "PatrickHand"'),
+    document.fonts.load('16px "Patrick-Head-Font"'),
   ];
 
   try{
@@ -11076,19 +11330,27 @@ document.fonts?.ready?.then(() => {
     if (el.type === ElementType.Sitelen){
       invalidateSitelenCache(el.id);
       updateSitelenLayout(el, { preserveCenter: true });
+    } else if (el.type === ElementType.Glyph){
+      invalidateGlyphCache(el.id);
+      queueGlyphRasterRebuild(el);
     }
   }
   render();
 });
 
 function relayoutAllSitelenAfterFontsReady(){
-  return (document.fonts?.ready ?? Promise.resolve()).then(() => {
+  return (document.fonts?.ready ?? Promise.resolve()).then(async () => {
+    const jobs = [];
     for (const el of Scene.elements){
       if (el.type === ElementType.Sitelen || el.type === "Sitelen"){
         invalidateSitelenCache(el.id);
-        updateSitelenLayout(el, { preserveCenter: true });
+        jobs.push(rebuildSitelenRasterWithRenderer(el, { preserveCenter: true }));
+      } else if (el.type === ElementType.Glyph || el.type === "Glyph"){
+        invalidateGlyphCache(el.id);
+        jobs.push(rebuildGlyphRasterWithRenderer(el));
       }
     }
+    await Promise.allSettled(jobs);
     render();
   });
 }
@@ -11151,6 +11413,7 @@ document.addEventListener("keydown", (e) => {
     setStatus(tr("status_loading"));
     try{
       await awaitFontLoading(); // <-- add this FIRST
+      try { await ensureSitelenRendererModule(); } catch (e) { console.warn(e); }
 
       //wire default stage controls
       wireStageDefaultsUi();
