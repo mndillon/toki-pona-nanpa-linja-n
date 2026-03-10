@@ -639,6 +639,15 @@ nanpa #~WI.
           <div id="scriptPresetHelp" class="sr-only">Chooses the font family preset for preview, PNG export, and PDF export.</div>
         </div>
 
+        <!-- Text font -->
+        <div id="ctlTextFont" class="inlineControl inlinePill" role="group" aria-label="Text font">
+          <span class="ctlLabel">
+            Text font <span class="tpInline">nasin sitelen nimi</span>
+          </span>
+          <select id="appTextFontSel" aria-describedby="textFontHelp"></select>
+          <div id="textFontHelp" class="sr-only">Chooses the font used for literal quoted text only.</div>
+        </div>
+
         <!-- Font size -->
         <div id="ctlFontSize" class="inlineControl inlinePill" role="group" aria-label="Font size">
           <span class="ctlLabel">
@@ -940,6 +949,78 @@ nanpa #~WI.
     let latestRenderPlan = null;
     let latestRenderedCanvas = null;
 
+    const TEXT_FONT_STORAGE_KEY = "tpLiteralTextFont";
+    const TEXT_FONT_OPTION_SITELEN = "__active_text_family__";
+    const TEXT_FONT_OPTION_NANPA_LINJA_N = "__active_cartouche_family__";
+    const TEXT_FONT_OPTIONS = [
+      [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+      [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+      ["Patrick-Head-Font", "Patrick Hand"],
+      ["Arial", "Arial"],
+      ["Times New Roman", "Times New Roman"],
+      ["Courier New", "Courier New"],
+      ["system-ui", "system-ui"],
+    ];
+
+    function getTextFontSelect() {
+  return document.getElementById("appTextFontSel");
+}
+
+function normalizeTextFontOptionKey(key) {
+  const raw = String(key ?? "").trim();
+  return TEXT_FONT_OPTIONS.some(([value]) => value === raw) ? raw : "Patrick-Head-Font";
+}
+
+function saveTextFontOptionToStorage(key) {
+  try { localStorage.setItem(TEXT_FONT_STORAGE_KEY, normalizeTextFontOptionKey(key)); } catch {}
+}
+
+function loadTextFontOptionFromStorage() {
+  try { return normalizeTextFontOptionKey(localStorage.getItem(TEXT_FONT_STORAGE_KEY) || "Patrick-Head-Font"); }
+  catch { return "Patrick-Head-Font"; }
+}
+
+function populateTextFontSelectOptions() {
+  const sel = getTextFontSelect();
+  if (!sel) return;
+  const current = normalizeTextFontOptionKey(sel.value || loadTextFontOptionFromStorage());
+  sel.innerHTML = "";
+  for (const [value, label] of TEXT_FONT_OPTIONS) {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+  sel.value = current;
+}
+
+function getSelectedTextFontOptionKey() {
+  const sel = getTextFontSelect();
+  return normalizeTextFontOptionKey(sel?.value || loadTextFontOptionFromStorage());
+}
+
+function resolveLiteralFontFamily(optionKey = getSelectedTextFontOptionKey(), preset = getActiveFontPreset()) {
+  const normalized = normalizeTextFontOptionKey(optionKey);
+  if (normalized === TEXT_FONT_OPTION_SITELEN) return String(preset?.textFamily || FONT_FAMILY_TEXT);
+  if (normalized === TEXT_FONT_OPTION_NANPA_LINJA_N) return String(preset?.cartoucheFamily || FONT_FAMILY_CARTOUCHE);
+  return normalized;
+}
+
+function setSelectedTextFontOption(key, { persist = true } = {}) {
+  const normalized = normalizeTextFontOptionKey(key);
+  const sel = getTextFontSelect();
+  if (sel) sel.value = normalized;
+  sitelenRenderer = null;
+  sitelenRendererSignature = "";
+  if (persist) saveTextFontOptionToStorage(normalized);
+  return normalized;
+}
+
+function applyTextFontOptionFromStorage() {
+  populateTextFontSelectOptions();
+  setSelectedTextFontOption(loadTextFontOptionFromStorage(), { persist: false });
+}
+
     function getActiveFontPreset() {
       return RENDER_FONT_PRESETS[ACTIVE_RENDER_FONT_KEY] || RENDER_FONT_PRESETS.nasinNanpa;
     }
@@ -976,12 +1057,28 @@ nanpa #~WI.
       setActiveFontPreset(loadScriptPresetFromStorage(), { persist: false });
     }
 
+ 
     function wireScriptPresetSelect() {
       const sel = getScriptPresetSelect();
       if (!sel) return;
       sel.addEventListener("change", async () => {
         try {
           setActiveFontPreset(sel.value);
+          await waitForConfiguredFonts(getFontPx());
+          await renderFromTextarea();
+        } catch (e) {
+          showAlertAndAnnounce(e?.message ?? String(e));
+        }
+      });
+    }
+
+    function wireTextFontSelect() {
+      const sel = getTextFontSelect();
+      if (!sel) return;
+      populateTextFontSelectOptions();
+      sel.addEventListener("change", async () => {
+        try {
+          setSelectedTextFontOption(sel.value);
           await waitForConfiguredFonts(getFontPx());
           await renderFromTextarea();
         } catch (e) {
@@ -999,7 +1096,7 @@ nanpa #~WI.
         number: preset.cartoucheFamily,
         date: preset.cartoucheFamily,
         time: preset.cartoucheFamily,
-        literal: preset.literalFamily
+        literal: resolveLiteralFontFamily(getSelectedTextFontOptionKey(), preset) //literal: preset.literalFamily
       };
     }
 
@@ -4302,27 +4399,65 @@ function wireHaloControls() {
     }
 
 
+    function getLiteralFontExportFilename(preset = getActiveFontPreset()) {
+      const optionKey = getSelectedTextFontOptionKey();
+      if (optionKey === TEXT_FONT_OPTION_SITELEN) return String((preset?.pdfTextFontUrl || "").split("/").pop() || "");
+      if (optionKey === TEXT_FONT_OPTION_NANPA_LINJA_N) return String((preset?.pdfCartoucheFontUrl || "").split("/").pop() || "");
+      if (optionKey === "Patrick-Head-Font") return "PatrickHand-Regular.ttf";
+      if (optionKey === "Arial") return "Arial";
+      if (optionKey === "Times New Roman") return "Times New Roman";
+      if (optionKey === "Courier New") return "Courier New";
+      if (optionKey === "system-ui") return "system-ui";
+      return "PatrickHand-Regular.ttf";
+    }
+
     function getUnicodeJsonFontMap() {
       const preset = getActiveFontPreset();
+      const optionKey = getSelectedTextFontOptionKey();
+
       const basename = (url) => {
         const s = String(url ?? "");
         const i = s.lastIndexOf("/");
         return i >= 0 ? s.slice(i + 1) : s;
       };
-      return {
+
+      let literalFontFile = "PatrickHand-Regular.ttf";
+      if (optionKey === TEXT_FONT_OPTION_SITELEN) {
+        literalFontFile = basename(preset.pdfTextFontUrl);
+      } else if (optionKey === TEXT_FONT_OPTION_NANPA_LINJA_N) {
+        literalFontFile = basename(preset.pdfCartoucheFontUrl);
+      } else if (optionKey === "Patrick-Head-Font") {
+        literalFontFile = "PatrickHand-Regular.ttf";
+      } else {
+        literalFontFile = optionKey;
+      }
+
+      const result = {
         "1": basename(preset.pdfTextFontUrl),
-        "2": basename(preset.pdfCartoucheFontUrl),
-        "3": "PatrickHand-Regular.ttf"
+        "2": basename(preset.pdfCartoucheFontUrl)
       };
+
+      if (literalFontFile !== result["1"] && literalFontFile !== result["2"]) {
+        result["3"] = literalFontFile;
+      }
+
+      return result;
     }
 
     function buildUnicodeJsonFontFamilyToId() {
       const preset = getActiveFontPreset();
-      return new Map([
+      const literalFamily = resolveLiteralFontFamily(getSelectedTextFontOptionKey(), preset);
+
+      const map = new Map([
         [preset.textFamily, "1"],
-        [preset.cartoucheFamily, "2"],
-        [preset.literalFamily, "3"]
+        [preset.cartoucheFamily, "2"]
       ]);
+
+      if (literalFamily !== preset.textFamily && literalFamily !== preset.cartoucheFamily) {
+        map.set(literalFamily, "3");
+      }
+
+      return map;
     }
 
     function stringToCodepoints(text) {
@@ -4334,6 +4469,11 @@ function wireHaloControls() {
         .filter(cp => Number.isFinite(cp))
         .map(cp => `U+${cp.toString(16).toUpperCase()}`)
         .join(" ");
+    }
+
+    function codepointsToRawUnicodeString(cps) {
+      const arr = Array.isArray(cps) ? cps.filter(cp => Number.isFinite(cp)) : [];
+      return arr.length ? String.fromCodePoint(...arr) : "";
     }
 
     function getUnicodeJsonRunType(run) {
@@ -4393,6 +4533,8 @@ function wireHaloControls() {
       return Number.isFinite(run?.sourceEnd) ? Number(run.sourceEnd) : null;
     }
 
+
+
     function getUnicodeJsonWhitespaceGapText(segmentSource, from, to) {
       if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return "";
       if (typeof segmentSource === "string" && from >= 0 && to <= segmentSource.length) {
@@ -4428,7 +4570,7 @@ function wireHaloControls() {
       return "";
     }
 
-    function mergeConsecutiveUnicodeJsonTextRuns(runs) {
+    async function mergeConsecutiveUnicodeJsonTextRuns(runs) {
       const merged = [];
       for (const run of runs) {
         const prev = merged.length ? merged[merged.length - 1] : null;
@@ -4459,6 +4601,8 @@ function wireHaloControls() {
         prev.codepoints = prev.codepoints && run.codepoints
           ? `${prev.codepoints} ${run.codepoints}`
           : (prev.codepoints || run.codepoints || "");
+        prev.unicode = `${prev.unicode || ""}${gapText}${run.unicode || ""}`;//
+        prev.commonSitelenPonaCharacterNames = await decodeUnicodeStringToTpShortcuts(prev.unicode);
 
         if (prev.sourceStart == null && run.sourceStart != null) prev.sourceStart = run.sourceStart;
         if (run.sourceEnd != null) prev.sourceEnd = run.sourceEnd;
@@ -4473,55 +4617,288 @@ function wireHaloControls() {
       });
     }
 
-    function buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, preset) {
-      const lineRuns = Array.isArray(line?.runs) ? line.runs.filter(run => run && run.kind !== "gap") : [];
+ let __wordToUcsurCpCache = null;
+let __cpToTpNameCache = null;
 
-      const exportedRuns = lineRuns.map(run => {
-        const fontFamily = String(run?.fontFamily || "");
-        const cps = getUnicodeJsonRunCodepoints(run);
-        let fontId = familyToId.get(fontFamily);
-        if (!fontId) {
-          if (fontFamily === preset.textFamily) fontId = "1";
-          else if (fontFamily === preset.cartoucheFamily) fontId = "2";
-          else if (fontFamily === preset.literalFamily) fontId = "3";
-          else fontId = "1";
+async function loadWordToUcsurCpMapFromRendererSource() {
+  if (__wordToUcsurCpCache && typeof __wordToUcsurCpCache === "object") {
+    return __wordToUcsurCpCache;
+  }
+
+  const rendererUrl = new URL("./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=1", import.meta.url);
+  const res = await fetch(rendererUrl.href, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
+
+  const js = await res.text();
+
+  const marker = "const WORD_TO_UCSUR_CP =";
+  const start = js.indexOf(marker);
+  if (start < 0) throw new Error("WORD_TO_UCSUR_CP not found in renderer source.");
+
+  const braceStart = js.indexOf("{", start);
+  if (braceStart < 0) throw new Error("WORD_TO_UCSUR_CP object start not found.");
+
+  let depth = 0;
+  let braceEnd = -1;
+  let inString = false;
+  let stringQuote = "";
+  let escaped = false;
+
+  for (let i = braceStart; i < js.length; i++) {
+    const ch = js[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === stringQuote) {
+        inString = false;
+        stringQuote = "";
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'" || ch === "`") {
+      inString = true;
+      stringQuote = ch;
+      continue;
+    }
+
+    if (ch === "{") {
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        braceEnd = i;
+        break;
+      }
+    }
+  }
+
+  if (braceEnd < 0) throw new Error("WORD_TO_UCSUR_CP object end not found.");
+
+  const objectLiteral = js.slice(braceStart, braceEnd + 1);
+  const wordToCp = Function(`"use strict"; return (${objectLiteral});`)();
+
+  if (!wordToCp || typeof wordToCp !== "object") {
+    throw new Error("Failed to parse WORD_TO_UCSUR_CP.");
+  }
+
+  __wordToUcsurCpCache = wordToCp;
+  return __wordToUcsurCpCache;
+}
+
+async function getCpToTpNameMap() {
+  if (__cpToTpNameCache instanceof Map) return __cpToTpNameCache;
+
+  const src = await loadWordToUcsurCpMapFromRendererSource();
+  const out = new Map();
+
+  for (const [name, cp] of Object.entries(src)) {
+    if (!Number.isInteger(cp)) continue;
+
+    // Keep ordinary readable toki pona names as preferred decode labels.
+    if (!out.has(cp) && /^[a-z][a-z0-9_^<>-]*$/i.test(name)) {
+      out.set(cp, String(name));
+    }
+  }
+
+  __cpToTpNameCache = out;
+  return __cpToTpNameCache;
+}
+
+console.log("initial bridge object:", globalThis.__bridgeWordToUcsurCp);
+
+
+const CONTROL_CP_TO_SHORTCUT = new Map([
+  [0x200D, "&"],
+  [0xF1995, "+"],
+  [0xF1996, "&"],
+  [0xF1990, "["],
+  [0xF1991, "]"],
+  [0xF1993, "{"],
+  [0xF1994, "}"],
+  [0xF1997, "("],
+  [0xF1998, ")"],
+  [0xF199A, "{"],
+  [0xF199B, "}"]
+]);
+
+async function decodeUnicodeStringToTpShortcuts(unicode) {
+  const cpToName = await getCpToTpNameMap();
+  const chars = Array.from(String(unicode ?? ""));
+  let out = "";
+  let prevWasWord = false;
+
+  for (const ch of chars) {
+    const cp = ch.codePointAt(0);
+
+    let piece = null;
+    let isWord = false;
+
+    if (/\s/.test(ch)) {
+      piece = ch;
+      isWord = false;
+    } else if (cpToName.has(cp)) {
+      piece = cpToName.get(cp);
+      isWord = true;
+    } else if (CONTROL_CP_TO_SHORTCUT.has(cp)) {
+      piece = CONTROL_CP_TO_SHORTCUT.get(cp);
+      isWord = false;
+    } else {
+      piece = `U+${cp.toString(16).toUpperCase()}`;
+      isWord = false;
+    }
+
+    if (out && prevWasWord && isWord) out += " ";
+    out += piece;
+    prevWasWord = isWord;
+  }
+
+  return out;
+}
+
+async function buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, preset) {
+  const lineRuns = Array.isArray(line?.runs) ? line.runs.filter(run => run && run.kind !== "gap") : [];
+
+  const exportedRuns = await Promise.all(lineRuns.map(async run => {
+    const fontFamily = String(run?.fontFamily || "");
+    const cps = getUnicodeJsonRunCodepoints(run);
+    let fontId = familyToId.get(fontFamily);
+    if (!fontId) {
+      if (fontFamily === preset.textFamily) fontId = "1";
+      else if (fontFamily === preset.cartoucheFamily) fontId = "2";
+      else if (fontFamily === preset.literalFamily) fontId = "3";
+      else fontId = "1";
+    }
+
+    const sourceKind = String(run?.sourceKind || "");
+    const sourceSegmentIndex = Number.isFinite(run?.sourceSegmentIndex) ? Number(run.sourceSegmentIndex) : null;
+    const unicode = codepointsToRawUnicodeString(cps);
+
+    return {
+      font: fontId,
+      type: getUnicodeJsonRunType(run),
+      input: getUnicodeJsonRunInput(run),
+      sourceStart: getUnicodeJsonRunSourceStart(run),
+      sourceEnd: getUnicodeJsonRunSourceEnd(run),
+      codepoints: formatCodepointsUPlus(cps),
+      unicode,
+      commonSitelenPonaCharacterNames: await decodeUnicodeStringToTpShortcuts(unicode),
+      __sourceKind: sourceKind,
+      __sourceSegmentIndex: sourceSegmentIndex,
+      __segmentSourceText: getUnicodeJsonAstSegmentSourceText(plan, lineIndex, sourceKind, sourceSegmentIndex)
+    };
+  }));
+
+  return await mergeConsecutiveUnicodeJsonTextRuns(exportedRuns);
+}
+
+    function buildUnicodeCpToTpNameMap() {
+      const out = new Map();
+
+      // Existing renderer map: toki pona word -> UCSUR cp
+      const wordToCp = (globalThis.__bridgeWordToUcsurCp && typeof globalThis.__bridgeWordToUcsurCp === "object")
+        ? globalThis.__bridgeWordToUcsurCp
+        : {};
+
+      for (const [name, cp] of Object.entries(wordToCp)) {
+        if (!Number.isInteger(cp)) continue;
+
+        // Keep the first plain word mapping as the preferred readable decode.
+        // This avoids odd aliases replacing the basic word.
+        if (!out.has(cp) && /^[a-z][a-z0-9_^<>-]*$/i.test(name)) {
+          out.set(cp, String(name));
+        }
+      }
+
+      return out;
+    }
+
+    const UNICODE_CONTROL_CP_TO_NAME = new Map([
+      [0x200D, "&"],
+
+      [0xF1990, "["],
+      [0xF1991, "]"],
+
+      [0xF1992, "<combining cartouche extension>"],
+      [0xF1993, "<start long pi>"],
+      [0xF1994, "<combining long pi extension>"],
+
+      [0xF1995, "-"],
+      [0xF1996, "+"],
+      [0xF1997, "("],
+      [0xF1998, ")"],
+
+      [0xF1999, "<combining long glyph extension>"],
+      [0xF199A, "{"],
+      [0xF199B, "}"],
+    ]);
+
+    let __unicodeCpToTpNameMapCache = null;
+
+    function getUnicodeCpToTpNameMap() {
+      if (!__unicodeCpToTpNameMapCache) {
+        __unicodeCpToTpNameMapCache = buildUnicodeCpToTpNameMap();
+      }
+      return __unicodeCpToTpNameMapCache;
+    }
+
+    function decodeUnicodeStringToTpNames(unicode) {
+      const s = String(unicode ?? "");
+      const wordMap = getUnicodeCpToTpNameMap();
+
+      const parts = [];
+      let prevWasWord = false;
+
+      for (const ch of Array.from(s)) {
+        const cp = ch.codePointAt(0);
+
+        let name = null;
+        let isWord = false;
+
+        if (wordMap.has(cp)) {
+          name = wordMap.get(cp);
+          isWord = true;
+        } else if (UNICODE_CONTROL_CP_TO_NAME.has(cp)) {
+          name = UNICODE_CONTROL_CP_TO_NAME.get(cp);
+          isWord = false;
+        } else {
+          name = `U+${cp.toString(16).toUpperCase()}`;
+          isWord = false;
         }
 
-        const sourceKind = String(run?.sourceKind || "");
-        const sourceSegmentIndex = Number.isFinite(run?.sourceSegmentIndex) ? Number(run.sourceSegmentIndex) : null;
-        return {
-          font: fontId,
-          type: getUnicodeJsonRunType(run),
-          input: getUnicodeJsonRunInput(run),
-          sourceStart: getUnicodeJsonRunSourceStart(run),
-          sourceEnd: getUnicodeJsonRunSourceEnd(run),
-          codepoints: formatCodepointsUPlus(cps),
-          __sourceKind: sourceKind,
-          __sourceSegmentIndex: sourceSegmentIndex,
-          __segmentSourceText: getUnicodeJsonAstSegmentSourceText(plan, lineIndex, sourceKind, sourceSegmentIndex)
-        };
-      });
+        if (parts.length && prevWasWord && isWord) {
+          parts.push(" ");
+        }
 
-      return mergeConsecutiveUnicodeJsonTextRuns(exportedRuns);
+        parts.push(name);
+        prevWasWord = isWord;
+      }
+
+      return parts.join("");
     }
 
-    function serializeRenderPlanToUnicodeJson(plan) {
-      const fontMap = getUnicodeJsonFontMap();
-      const familyToId = buildUnicodeJsonFontFamilyToId();
-      const preset = getActiveFontPreset();
-      const sourceLines = typeof plan?.ast?.normalizedInput === "string"
-        ? String(plan.ast.normalizedInput).split(/\n/)
-        : [];
+async function serializeRenderPlanToUnicodeJson(plan) {
+  const fontMap = getUnicodeJsonFontMap();
+  const familyToId = buildUnicodeJsonFontFamilyToId();
+  const preset = getActiveFontPreset();
+  const sourceLines = typeof plan?.ast?.normalizedInput === "string"
+    ? String(plan.ast.normalizedInput).split(/\n/)
+    : [];
 
-      const lines = Array.isArray(plan?.lines) ? plan.lines.map((line, lineIndex) => ({
-        runs: buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, preset)
-      })) : [];
+  const lines = Array.isArray(plan?.lines)
+    ? await Promise.all(plan.lines.map(async (line, lineIndex) => ({
+        runs: await buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, preset)
+      })))
+    : [];
 
-      return {
-        fonts: fontMap,
-        lines
-      };
-    }
+  return {
+    fonts: fontMap,
+    lines
+  };
+}
 
     async function buildLatestUnicodeJsonExportObject() {
       const renderer = await ensureRendererReady();
@@ -4532,7 +4909,7 @@ function wireHaloControls() {
       const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(line => Array.isArray(line?.runs) && line.runs.length > 0);
       if (!hasRuns) throw new Error("Nothing to export (no recognized words).");
       latestRenderPlan = plan;
-      return serializeRenderPlanToUnicodeJson(plan);
+      return await serializeRenderPlanToUnicodeJson(plan);
     }
 
     async function exportRenderedToUnicodeJson() {
@@ -5015,6 +5392,9 @@ function wireHaloControls() {
         applyAlignFromStorage();
         applyScriptPresetFromStorage();
         applyDefaultInputFromQuery();
+        applyTextFontOptionFromStorage();
+
+        
 
         // Restore last draft from IndexedDB unless a ?text= / ?input= query param is supplying input.
         try {
@@ -5048,6 +5428,7 @@ function wireHaloControls() {
         wireFontSizeSelect();
         wireAlignSelect();
         wireScriptPresetSelect();
+        wireTextFontSelect();
         wireCartoucheDisplayLinks();
 
         await fontsReadyForPx(getFontPx());
