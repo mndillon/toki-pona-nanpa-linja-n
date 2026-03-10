@@ -1,897 +1,795 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Multiline Text → Sitelen Pona → PNG image file download</title>
 
-  <style>
-    :root {
-      --pad: 14px;
-      --gap: 12px;
-      --border: #d0d7de;
-      --bg: #F3DFC0;
-      --muted: #3f4750;
+const SitelenRenderer = (() => {
+  let __coreReady = null;
+  let __coreHost = null;
+
+  // Bridge references to helpers defined inside the preserved core scope
+  let __bridgeGetFontPx = null;
+  let __bridgeWordGapForPx = null;
+  let __bridgePushGapIfNeeded = null;
+  let __bridgeMakeRunElementFromCodepoints = null;
+  let __bridgeParseTextSegmentToElements = null;
+  let __bridgeParseQuoteSegmentToElements = null;
+  let __bridgeParseBracketSegmentToElements = null;
+  let __bridgeFontsReadyForPx = null;
+  let __bridgeWarmUpCanvasFontsOnce = null;
+  let __bridgeRenderAllLinesToCanvas = null;
+  let __bridgeDrawTextWithOptionalHalo = null;
+  let __bridgeNormalizeTpGlyphKey = null;
+  let __bridgeWordToUcsurCp = null;
+
+  function ensureDomReady() {
+    if (document.body) return Promise.resolve();
+    return new Promise((resolve) => {
+      window.addEventListener('DOMContentLoaded', () => resolve(), { once: true });
+    });
+  }
+
+  function buildHiddenScaffold() {
+    if (__coreHost) return __coreHost;
+    const host = document.createElement('div');
+    host.setAttribute('data-sitelen-renderer-core', 'true');
+    host.style.cssText = 'position:fixed;left:-100000px;top:-100000px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;';
+    host.innerHTML = `
+      <div id="srStatus" role="status"></div>
+      <input id="fgPick" type="color" value="#111111" />
+      <input id="haloPick" type="color" value="#FFFFFF" />
+      <input id="haloEnable" type="checkbox" />
+      <select id="haloWidthSel"><option value="0" selected>0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>
+      <select id="fontSizeSel">${[8,10,12,14,16,20,24,28,32,36,40,44,48,56,64,72,80,88,96,104,120,144].map(v => `<option value="${v}" ${v===56?'selected':''}>${v}</option>`).join('')}</select>
+      <select id="alignSel"><option value="left" selected>left</option><option value="center">center</option><option value="right">right</option></select>
+      <label><input type="radio" name="nlMode" value="traditional" checked />traditional</label>
+      <label><input type="radio" name="nlMode" value="uniform" />uniform</label>
+      <textarea id="textIn"></textarea>
+      <canvas id="outCanvas" width="1" height="1"></canvas>
+      <button id="btnRender" type="button">render</button>
+      <button id="btnDownloadPng" type="button">png</button>
+      <button id="btnDownloadPdf" type="button">pdf</button>
+      <button id="btnImportTextMain" type="button">import</button>
+      <button id="btnExportTextMain" type="button">export</button>
+      <button id="btnImportTextPop" type="button">import</button>
+      <button id="btnExportTextPop" type="button">export</button>
+      <button id="btnPopoutTextIn" type="button">pop</button>
+      <button id="btnCloseFloatingTextInEditor" type="button">close</button>
+      <button id="btnTogglePopoutMain" type="button">toggle</button>
+      <input id="filePickTextIn" type="file" />
+      <a id="calculatorLink" href="#"></a>
+      <a id="rendererLink" href="#"></a>
+      <div id="floatingTextInEditor"></div>
+      <div id="floatingTextInEditorHeader"></div>
+      <textarea id="floatingTextInEditorTextarea"></textarea>
+      <div id="floatingTextInEditorTitle"></div>
+    `;
+    document.body.appendChild(host);
+    __coreHost = host;
+    return host;
+  }
+
+  function parseCssSize(value, basePx) {
+    if (value == null || value === '') return null;
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    const s = String(value).trim();
+    if (!s) return null;
+    if (/^-?\d+(?:\.\d+)?$/.test(s)) return Number(s);
+    const em = s.match(/^(-?\d+(?:\.\d+)?)em$/i);
+    if (em) return Number(em[1]) * basePx;
+    const px = s.match(/^(-?\d+(?:\.\d+)?)px$/i);
+    if (px) return Number(px[1]);
+    return null;
+  }
+
+  function parseImgArgs(argText) {
+    const parts = [];
+    let cur = '';
+    let quote = null;
+    let esc = false;
+    let depth = 0;
+    for (let i = 0; i < argText.length; i++) {
+      const ch = argText[i];
+      if (esc) { cur += ch; esc = false; continue; }
+      if (ch === '\\') { cur += ch; esc = true; continue; }
+      if (quote) {
+        cur += ch;
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'") { quote = ch; cur += ch; continue; }
+      if (ch === '(') { depth++; cur += ch; continue; }
+      if (ch === ')') { if (depth > 0) depth--; cur += ch; continue; }
+      if (ch === ',' && depth === 0) { parts.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    if (cur.trim()) parts.push(cur.trim());
+
+    const stripQuotes = (v) => {
+      const s = String(v ?? '').trim();
+      if (s.length >= 2 && ((s[0] === '"' && s[s.length - 1] === '"') || (s[0] === "'" && s[s.length - 1] === "'"))) {
+        return s.slice(1, -1);
+      }
+      return s;
+    };
+
+    const out = { src: '', w: null, h: null, alt: null, valign: 'baseline', wriggle: 8, transparent: true };
+    if (parts.length === 0) return out;
+    const first = parts[0];
+    if (first.includes('=')) {
+      // handled below
+    } else {
+      out.src = stripQuotes(first);
     }
 
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      margin: 24px;
-      background: var(--bg);
+    for (const p of parts.slice(out.src ? 1 : 0)) {
+      const eq = p.indexOf('=');
+      if (eq < 0) continue;
+      const key = p.slice(0, eq).trim();
+      const val = stripQuotes(p.slice(eq + 1).trim());
+      if (key === 'src') out.src = val;
+      else if (key === 'w') out.w = val;
+      else if (key === 'h') out.h = val;
+      else if (key === 'alt') out.alt = val;
+      else if (key === 'valign') out.valign = val;
+      else if (key === 'wriggle') out.wriggle = Number(val);
+      else if (key === 'transparent') out.transparent = !/^(false|0|no|off)$/i.test(String(val));
+    }
+    return out;
+  }
+
+  function splitLineIntoAstSegments(line) {
+    const s = String(line ?? '');
+    const out = [];
+    let i = 0;
+    let start = 0;
+    const pushText = (a, b) => { if (b > a) out.push({ kind: 'text', value: s.slice(a, b) }); };
+    while (i < s.length) {
+      const ch = s[i];
+      if (ch === '[') {
+        const j = s.indexOf(']', i + 1);
+        if (j < 0) break;
+        pushText(start, i);
+        out.push({ kind: 'bracket', value: s.slice(i + 1, j) });
+        i = j + 1; start = i; continue;
+      }
+      if (ch === '"' || ch === '“') {
+        const openCh = ch;
+        const closeCh = (openCh === '“') ? '”' : '"';
+        let j = i + 1; let found = false;
+        while (j < s.length) {
+          const cj = s[j];
+          const isClose = (cj === closeCh) || (openCh === '“' && cj === '"') || (openCh === '"' && cj === '”');
+          if (isClose && s[j - 1] !== '\\') { found = true; break; }
+          j++;
+        }
+        if (!found) break;
+        pushText(start, i);
+        out.push({ kind: 'quote', value: s.slice(i + 1, j) });
+        i = j + 1; start = i; continue;
+      }
+      if (s.startsWith('img(', i)) {
+        let j = i + 4;
+        let depth = 1;
+        let quote = null;
+        let esc = false;
+        while (j < s.length) {
+          const cj = s[j];
+          if (esc) { esc = false; j++; continue; }
+          if (cj === '\\') { esc = true; j++; continue; }
+          if (quote) { if (cj === quote) quote = null; j++; continue; }
+          if (cj === '"' || cj === "'") { quote = cj; j++; continue; }
+          if (cj === '(') depth++;
+          else if (cj === ')') { depth--; if (depth === 0) break; }
+          j++;
+        }
+        if (j >= s.length) break;
+        pushText(start, i);
+        out.push({ kind: 'image', value: parseImgArgs(s.slice(i + 4, j)) });
+        i = j + 1; start = i; continue;
+      }
+      i++;
+    }
+    pushText(start, s.length);
+    return out;
+  }
+
+  function normalizeAstInput(input) {
+    return String(input ?? '').replace(/\r\n/g, '\n');
+  }
+
+  function astFromInput(input) {
+    const normalized = normalizeAstInput(input);
+    const lines = normalized.split('\n').map((line, index) => ({ type: 'line', index, children: splitLineIntoAstSegments(line) }));
+    return { type: 'document', normalizedInput: normalized, lines };
+  }
+
+  async function loadImageElementCanvas(desc, fontPx) {
+    const src = desc?.src ? String(desc.src) : '';
+    if (!src) return null;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = src;
+    if (!img.complete) await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    if (!iw || !ih) return null;
+    const targetH = parseCssSize(desc.h, fontPx) ?? (parseCssSize(desc.w, fontPx) ? null : fontPx);
+    const targetW = parseCssSize(desc.w, fontPx) ?? null;
+    let w = targetW;
+    let h = targetH;
+    if (w == null && h == null) h = fontPx;
+    if (w == null) w = Math.max(1, Math.round((h * iw) / ih));
+    if (h == null) h = Math.max(1, Math.round((w * ih) / iw));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w));
+    c.height = Math.max(1, Math.round(h));
+    const ctx = c.getContext('2d', { alpha: true });
+    ctx.imageSmoothingEnabled = true;
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    if (desc?.transparent !== false) {
+      const imageData = ctx.getImageData(0, 0, c.width, c.height);
+      const d = imageData.data;
+      const wriggle = Number.isFinite(desc?.wriggle) ? Math.max(0, Number(desc.wriggle)) : 8;
+      const kr = d[0], kg = d[1], kb = d[2], ka = d[3];
+      for (let i = 0; i < d.length; i += 4) {
+        if (Math.abs(d[i] - kr) <= wriggle && Math.abs(d[i+1] - kg) <= wriggle && Math.abs(d[i+2] - kb) <= wriggle && Math.abs(d[i+3] - ka) <= Math.max(8, wriggle)) {
+          d[i+3] = 0;
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
+    return {
+      type: 'cartouche',
+      canvas: c,
+      w: c.width,
+      h: c.height,
+      baselineY: desc?.valign === 'center' ? Math.round(c.height * 0.75) : c.height,
+      ascent: desc?.valign === 'center' ? Math.round(c.height * 0.75) : c.height,
+      descent: desc?.valign === 'center' ? Math.max(0, c.height - Math.round(c.height * 0.75)) : 0,
+      imageAlt: desc?.alt || null,
+      isImage: true
+    };
+  }
+
+
+  let FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
+  let FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
+  let FONT_FAMILY_NUMBER = "TP-Cartouche-Font";
+  let FONT_FAMILY_LITERAL = "Patrick-Head-Font";
+
+  function captureRenderFontState() {
+    return {
+      text: FONT_FAMILY_TEXT,
+      cartouche: FONT_FAMILY_CARTOUCHE,
+      number: FONT_FAMILY_NUMBER,
+      literal: FONT_FAMILY_LITERAL,
+    };
+  }
+
+  function restoreRenderFontState(state) {
+    if (!state) return;
+    FONT_FAMILY_TEXT = state.text || FONT_FAMILY_TEXT;
+    FONT_FAMILY_CARTOUCHE = state.cartouche || FONT_FAMILY_CARTOUCHE;
+    FONT_FAMILY_NUMBER = state.number || FONT_FAMILY_NUMBER;
+    FONT_FAMILY_LITERAL = state.literal || FONT_FAMILY_LITERAL;
+  }
+
+  let __renderConfigScopeQueue = Promise.resolve();
+
+  function withScopedRenderConfig(config, work) {
+    const run = async () => {
+      const prev = captureRenderFontState();
+      applyRenderConfig(config);
+      try {
+        return await work();
+      } finally {
+        restoreRenderFontState(prev);
+      }
+    };
+    const chained = __renderConfigScopeQueue.then(run, run);
+    __renderConfigScopeQueue = chained.then(() => undefined, () => undefined);
+    return chained;
+  }
+
+  function setRadioValue(name, value) {
+    const radios = Array.from(document.querySelectorAll(`input[name="${name}"]`));
+    for (const r of radios) r.checked = (r.value === value);
+  }
+
+  function applyRenderConfig(config = {}) {
+    const layout = config.layout || {};
+    const paint = config.paint || {};
+    const parser = config.parser || {};
+    const fonts = config.fonts || {};
+    const roles = fonts.roles || {};
+
+    if (layout.fontPx != null) {
+      const el = document.getElementById('fontSizeSel');
+      if (el) el.value = String(Math.round(Number(layout.fontPx) || 56));
+    }
+    if (layout.align) {
+      const el = document.getElementById('alignSel');
+      if (el) el.value = String(layout.align);
+    }
+    if (paint.fillStyle) {
+      const el = document.getElementById('fgPick');
+      if (el) el.value = String(paint.fillStyle);
+    }
+    const halo = paint.halo || {};
+    const haloEnable = !!halo.enabled;
+    const haloEl = document.getElementById('haloEnable');
+    if (haloEl) haloEl.checked = haloEnable;
+    const haloPick = document.getElementById('haloPick');
+    if (haloPick && halo.color) haloPick.value = String(halo.color);
+    const haloWidth = document.getElementById('haloWidthSel');
+    if (haloWidth) haloWidth.value = String(Math.max(0, Math.round(Number(halo.widthPx ?? 0) || 0)));
+
+    if (parser.numericMode === 'uniform') setRadioValue('nlMode', 'uniform');
+    else setRadioValue('nlMode', 'traditional');
+
+    FONT_FAMILY_TEXT = roles.word || roles.text || FONT_FAMILY_TEXT;
+    FONT_FAMILY_CARTOUCHE = roles.cartouche || FONT_FAMILY_CARTOUCHE;
+    FONT_FAMILY_NUMBER = roles.number || roles.date || roles.time || roles.cartouche || FONT_FAMILY_NUMBER;
+    FONT_FAMILY_LITERAL = roles.literal || FONT_FAMILY_LITERAL;
+  }
+
+  async function astToLineElements(ast, config = {}) {
+    const layout = config.layout || {};
+    const parser = config.parser || {};
+    const fontPx = Math.max(8, Number(layout.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56));
+    const lines = [];
+    for (const line of ast.lines || []) {
+      const elements = [];
+      for (let si = 0; si < (line.children || []).length; si++) {
+        const seg = line.children[si];
+        const sourceKind = seg.kind;
+        const sourceSegmentIndex = si;
+        if (seg.kind === 'text') {
+          if (parser.mode === 'sitelen-seli-kiwen') parseSskTextSegmentToElements(seg.value, elements, { fontPx, parser, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+          else __bridgeParseTextSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+        }
+        else if (seg.kind === 'bracket') {
+          if (parser.mode === 'sitelen-seli-kiwen') parseSskBracketSegmentToElements(seg.value, elements, { fontPx, parser, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+          else __bridgeParseBracketSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+        }
+        else if (seg.kind === 'quote') __bridgeParseQuoteSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+        else if (seg.kind === 'image') {
+          if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
+          const imgEl = await loadImageElementCanvas(seg.value, fontPx);
+          if (imgEl) elements.push({ ...imgEl, sourceKind, sourceSegmentIndex });
+        }
+        else if (seg.kind === 'rawUcsur') {
+          __bridgeMakeRunElementFromCodepoints(elements, seg.cps, { fontPx, fontFamily: seg.fontFamily || FONT_FAMILY_TEXT, sourceKind, sourceSegmentIndex });
+        }
+      }
+      while (elements.length > 0 && elements[elements.length - 1].type === 'gap') elements.pop();
+      lines.push(elements);
+    }
+    return lines;
+  }
+
+
+  function sskWordToCp(word) {
+    const key = __bridgeNormalizeTpGlyphKey ? __bridgeNormalizeTpGlyphKey(String(word ?? '')) : String(word ?? '').trim().toLowerCase();
+    if (!key) return null;
+    return (__bridgeWordToUcsurCp && __bridgeWordToUcsurCp[key] != null) ? __bridgeWordToUcsurCp[key] : null;
+  }
+
+  function sskWordsToCps(text) {
+    const words = String(text ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
+    const cps = [];
+    for (const w of words) {
+      const cp = sskWordToCp(w);
+      if (cp == null) return null;
+      cps.push(cp);
+    }
+    return cps;
+  }
+
+  function emitSskExtendedGlyph(matchText, leftText, headWord, rightText, elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
+    const headCp = sskWordToCp(headWord);
+    if (headCp == null) return false;
+
+    const outCps = [];
+
+    if (leftText != null && String(leftText).trim()) {
+      const leftCps = sskWordsToCps(leftText);
+      if (!leftCps || !leftCps.length) return false;
+      outCps.push(0xF199A, ...leftCps, 0xF199B);
     }
 
-    .card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      max-width: 980px;
+    outCps.push(headCp);
+
+    if (rightText != null && String(rightText).trim()) {
+      const rightCps = sskWordsToCps(rightText);
+      if (!rightCps || !rightCps.length) return false;
+      outCps.push(0xF1997, ...rightCps, 0xF1998);
     }
 
-    .controlsStack { display:flex; flex-direction:column; gap: 12px; margin-top:14px; }
+    if (outCps.length <= 1) return false;
+    if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
+    __bridgeMakeRunElementFromCodepoints(elements, outCps, { fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: String(matchText ?? ''), sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + String(matchText ?? '').length, sourceKind, sourceSegmentIndex });
+    return true;
+  }
+
+  function emitSskCompound(matchText, leftWord, operator, rightWord, elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
+    const leftCp = sskWordToCp(leftWord);
+    const rightCp = sskWordToCp(rightWord);
+    if (leftCp == null || rightCp == null) return false;
+    let joinCp = 0x200D; // generic compound
+    if (operator === '-') joinCp = 0xF1995; // stacked
+    else if (operator === '+') joinCp = 0xF1996; // scaled
+    if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
+    __bridgeMakeRunElementFromCodepoints(elements, [leftCp, joinCp, rightCp], { fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: String(matchText ?? ''), sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + String(matchText ?? '').length, sourceKind, sourceSegmentIndex });
+    return true;
+  }
+
+  function parseSskTextSegmentToElements(segmentText, elements, { fontPx, parser = {}, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null }) {
+    const s = String(segmentText ?? '');
+    if (!s.trim()) return;
+    const tokenRe = /(?:\{([^{}]+)\}\s*)?([A-Za-z][A-Za-z0-9_]*)(?:\s*\(([^()]+)\))|([A-Za-z][A-Za-z0-9_]*)\s*([&+-])\s*([A-Za-z][A-Za-z0-9_]*)|\{([^{}]+)\}\s*([A-Za-z][A-Za-z0-9_]*)/g;
+    let pos = 0;
+    let m;
+    while ((m = tokenRe.exec(s)) !== null) {
+      const start = m.index;
+      const end = tokenRe.lastIndex;
+      if (start > pos) __bridgeParseTextSegmentToElements(s.slice(pos, start), elements, { fontPx, sourceBaseStart: sourceBaseStart + pos, sourceKind, sourceSegmentIndex });
+      let ok = false;
+      if (m[2] && (m[1] != null || m[3] != null)) {
+        ok = emitSskExtendedGlyph(m[0], m[1], m[2], m[3], elements, fontPx, sourceBaseStart + start, sourceKind, sourceSegmentIndex);
+      } else if (m[4] && m[5] && m[6]) {
+        ok = emitSskCompound(m[0], m[4], m[5], m[6], elements, fontPx, sourceBaseStart + start, sourceKind, sourceSegmentIndex);
+      } else if (m[7] && m[8]) {
+        ok = emitSskExtendedGlyph(m[0], m[7], m[8], null, elements, fontPx, sourceBaseStart + start, sourceKind, sourceSegmentIndex);
+      }
+      if (!ok) __bridgeParseTextSegmentToElements(m[0], elements, { fontPx, sourceBaseStart: sourceBaseStart + start, sourceKind, sourceSegmentIndex });
+      pos = end;
+    }
+    if (pos < s.length) __bridgeParseTextSegmentToElements(s.slice(pos), elements, { fontPx, sourceBaseStart: sourceBaseStart + pos, sourceKind, sourceSegmentIndex });
+  }
+
+  function parseSskBracketSegmentToElements(bracketContent, elements, { fontPx, parser = {}, sourceBaseStart = 0, sourceKind = 'bracket', sourceSegmentIndex = null }) {
+    const content = String(bracketContent ?? '').trim();
+    if (!content) return;
+    const words = content.split(/\s+/).filter(Boolean);
+    const cps = [];
+    let ok = words.length > 0;
+    for (const w of words) {
+      const cp = sskWordToCp(w);
+      if (cp == null) { ok = false; break; }
+      cps.push(cp);
+    }
+    if (ok) {
+      if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
+      __bridgeMakeRunElementFromCodepoints(elements, [0xF1990, ...cps, 0xF1991], { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex });
+      return;
+    }
+    __bridgeParseBracketSegmentToElements(content, elements, { fontPx, sourceBaseStart });
+  }
+
+
+
+  function alignFactorFromMode(mode) {
+    const m = String(mode || '').toLowerCase();
+    if (m === 'center') return 0.5;
+    if (m === 'right') return 1;
+    return 0;
+  }
+
+  function clonePlanElement(el) {
+    if (!el || typeof el !== 'object') return el;
+    const base = { ...el };
+    if (el.type === 'cartouche' && el.canvas) {
+      base.canvas = el.canvas;
+    }
+    if (Array.isArray(el.cps)) base.cps = el.cps.slice();
+    return base;
+  }
+
+  function classifyRenderMode(el) {
+    if (!el) return 'text';
+    if (el.type === 'cartouche') return 'raster';
+    if (el.type === 'text') return 'raster';
+    return 'text';
+  }
+
+  function inferFontRole(el) {
+    if (!el) return 'word';
+    const fam = String(el.fontFamily || '');
+    if (el.type === 'text') return 'literal';
+    if (el.type === 'cartouche') {
+      if (fam && fam === FONT_FAMILY_NUMBER) return 'number';
+      return 'cartouche';
+    }
+    if (fam && fam === FONT_FAMILY_NUMBER) return 'number';
+    return 'word';
+  }
+
+  function buildMeasuredRenderPlan(linesElements, config = {}) {
+    const fontPx = Math.max(8, Number(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56));
+    const pad = Number.isFinite(Number(config?.layout?.paddingPx)) ? Math.max(0, Number(config.layout.paddingPx)) : 18;
+    const lineGap = Number.isFinite(Number(config?.layout?.lineGapPx)) ? Math.max(0, Number(config.layout.lineGapPx)) : lineGapForPx(fontPx);
+    const haloOn = !!config?.paint?.halo?.enabled;
+    const haloWidthPx = Math.max(0, Math.round(Number(config?.paint?.halo?.widthPx ?? 0) || 0));
+    const haloExtra = haloOn ? (haloWidthPx > 0 ? haloWidthPx : Math.max(1, Math.round(fontPx * 0.08))) : 0;
+    const tmp = document.createElement('canvas');
+    const ctx = tmp.getContext('2d');
+    ctx.textBaseline = 'alphabetic';
+
+    function measureTextLike(chars, px, fontFamily) {
+      ctx.font = `${px}px "${fontFamily}"`;
+      const m = ctx.measureText(chars);
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+      const left = m.actualBoundingBoxLeft ?? 0;
+      const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW = Math.ceil(left + right);
+      return { chars, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
+    }
+
+    const measuredLines = [];
+    let maxLineW = 0;
+    let totalH = 0;
+
+    for (let li = 0; li < linesElements.length; li++) {
+      const lineEls = linesElements[li] || [];
+      let w = 0;
+      let maxAscent = 0;
+      let maxDescent = 0;
+      const measuredEls = [];
+      for (let ei = 0; ei < lineEls.length; ei++) {
+        const el = lineEls[ei];
+        if (el.type === 'gap') {
+          const gapPx = Math.max(0, el.px | 0);
+          measuredEls.push({ ...el, _index: ei, m: { w: gapPx, h: 0, ascent: 0, descent: 0, left: 0 } });
+          w += gapPx;
+          continue;
+        }
+        if (el.type === 'text') {
+          const fam = el.fontFamily || FONT_FAMILY_LITERAL;
+          const m = measureTextLike(el.text, el.px ?? fontPx, fam);
+          measuredEls.push({ ...el, _index: ei, m });
+          w += m.w;
+          maxAscent = Math.max(maxAscent, m.ascent + haloExtra);
+          maxDescent = Math.max(maxDescent, m.descent + haloExtra);
+          continue;
+        }
+        if (el.type === 'glyph') {
+          const fam = el.fontFamily || FONT_FAMILY_TEXT;
+          const m = measureTextLike(String.fromCodePoint(el.cp), el.px ?? fontPx, fam);
+          measuredEls.push({ ...el, _index: ei, m });
+          w += m.w;
+          maxAscent = Math.max(maxAscent, m.ascent + haloExtra);
+          maxDescent = Math.max(maxDescent, m.descent + haloExtra);
+          continue;
+        }
+        if (el.type === 'run') {
+          const fam = el.fontFamily || FONT_FAMILY_TEXT;
+          const chars = (el.cps || []).map(cp => String.fromCodePoint(cp)).join('');
+          const m = measureTextLike(chars, el.px ?? fontPx, fam);
+          measuredEls.push({ ...el, _index: ei, m });
+          w += m.w;
+          maxAscent = Math.max(maxAscent, m.ascent + haloExtra);
+          maxDescent = Math.max(maxDescent, m.descent + haloExtra);
+          continue;
+        }
+        if (el.type === 'cartouche') {
+          measuredEls.push({ ...el, _index: ei, m: { w: el.w|0, h: el.h|0, ascent: el.ascent ?? Math.ceil((el.h|0)*0.7), descent: el.descent ?? Math.ceil((el.h|0)*0.3), left: 0 } });
+          w += (el.w | 0);
+          const a0 = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
+          const d0 = el.descent ?? Math.ceil((el.h | 0) * 0.3);
+          const allowance = Math.max(2, Math.round(fontPx * 0.08));
+          const capA = Math.ceil(fontPx * 0.80) + allowance;
+          const capD = Math.ceil(fontPx * 0.20) + allowance;
+          maxAscent = Math.max(maxAscent, Math.min(a0, capA) + haloExtra);
+          maxDescent = Math.max(maxDescent, Math.min(d0, capD) + haloExtra);
+          continue;
+        }
+      }
+      const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
+      measuredLines.push({ lineIndex: li, measuredEls, w, lineBoxH, maxAscent, maxDescent });
+      maxLineW = Math.max(maxLineW, w);
+      totalH += lineBoxH;
+    }
+    totalH += Math.max(0, (measuredLines.length - 1) * lineGap);
+
+    const plan = {
+      widthPx: Math.max(1, Math.ceil(maxLineW + pad * 2)),
+      heightPx: Math.max(1, Math.ceil(totalH + pad * 2)),
+      contentWidthPx: Math.max(0, Math.ceil(maxLineW)),
+      contentHeightPx: Math.max(0, Math.ceil(totalH)),
+      paddingPx: pad,
+      lineGapPx: lineGap,
+      fontPx,
+      align: config?.layout?.align || 'left',
+      fillStyle: config?.paint?.fillStyle || null,
+      halo: {
+        enabled: haloOn,
+        color: config?.paint?.halo?.color || null,
+        widthPx: haloWidthPx,
+        extraPx: haloExtra
+      },
+      lines: []
+    };
+
+    let y = pad;
+    for (const L of measuredLines) {
+      const f = alignFactorFromMode(config?.layout?.align || 'left');
+      const lineOffset = Math.max(0, (maxLineW - L.w) * f);
+      let x = pad + lineOffset;
+      const baselineYPx = y + L.maxAscent;
+      const outLine = {
+        lineIndex: L.lineIndex,
+        xPx: pad + lineOffset,
+        yPx: y,
+        widthPx: L.w,
+        heightPx: L.lineBoxH,
+        baselineYPx,
+        ascentPx: L.maxAscent,
+        descentPx: L.maxDescent,
+        runs: []
+      };
+      for (const el of L.measuredEls) {
+        if (el.type === 'gap') {
+          x += Math.max(0, el.px | 0);
+          continue;
+        }
+        const m = el.m || { w: 0, h: 0, ascent: 0, descent: 0, left: 0 };
+        const drawX = x + (m.left ?? 0);
+        const drawYPx = el.type === 'cartouche'
+          ? (baselineYPx - ((el.baselineY != null) ? (el.baselineY | 0) : Math.floor((el.h | 0) * 0.75)))
+          : (baselineYPx - (m.ascent ?? 0));
+        const fontFamily = el.fontFamily || (el.type === 'text' ? FONT_FAMILY_LITERAL : (el.type === 'cartouche' ? FONT_FAMILY_CARTOUCHE : FONT_FAMILY_TEXT));
+        const fontRole = inferFontRole(el);
+        const encodedText = el.type === 'text'
+          ? String(el.text || '')
+          : el.type === 'glyph'
+            ? String.fromCodePoint(el.cp)
+            : el.type === 'run'
+              ? (el.cps || []).map(cp => String.fromCodePoint(cp)).join('')
+              : null;
+        outLine.runs.push({
+          id: `L${L.lineIndex}R${el._index}`,
+          lineIndex: L.lineIndex,
+          runIndex: el._index,
+          kind: el.type,
+          renderMode: classifyRenderMode(el),
+          fontRole,
+          fontFamily,
+          fontPx: el.px ?? fontPx,
+          xPx: x,
+          drawXPx: drawX,
+          yPx: drawYPx,
+          baselineYPx,
+          widthPx: m.w ?? (el.w | 0) ?? 0,
+          heightPx: el.type === 'cartouche' ? (el.h | 0) : (m.h ?? 0),
+          ascentPx: m.ascent ?? 0,
+          descentPx: m.descent ?? 0,
+          sourceText: (typeof el.sourceText === 'string') ? el.sourceText : (el.type === 'text' ? String(el.text || '') : null),
+          sourceStart: Number.isFinite(Number(el.sourceStart)) ? Number(el.sourceStart) : null,
+          sourceEnd: Number.isFinite(Number(el.sourceEnd)) ? Number(el.sourceEnd) : null,
+          sourceKind: (typeof el.sourceKind === 'string') ? el.sourceKind : null,
+          sourceSegmentIndex: Number.isFinite(Number(el.sourceSegmentIndex)) ? Number(el.sourceSegmentIndex) : null,
+          encodedText,
+          cps: Array.isArray(el.cps) ? el.cps.slice() : (el.type === 'glyph' ? [el.cp] : null),
+          imageAlt: el.imageAlt || null,
+          fillStyle: config?.paint?.fillStyle || null,
+          halo: { ...(config?.paint?.halo || {}) },
+          _element: clonePlanElement(el)
+        });
+        x += (m.w ?? 0);
+      }
+      plan.lines.push(outLine);
+      y += L.lineBoxH;
+      if (L.lineIndex < measuredLines.length - 1) y += lineGap;
+    }
+    return plan;
+  }
+
+  function drawRenderRunToCanvas(run, { supersampleScale = 4, downsample = false } = {}) {
+    if (!run || !run._element) throw new Error('renderRunToNewCanvas requires a run object returned by buildRenderPlan().');
+    const scale = Math.max(1, Number(supersampleScale) || 1);
+    const el = run._element;
+    const baseW = Math.max(1, Math.ceil(Number(run.widthPx || el.w || 1)));
+    const baseH = Math.max(1, Math.ceil(Number(run.heightPx || el.h || run.fontPx || 1)));
+    const drawW = Math.max(1, Math.ceil(baseW * scale));
+    const drawH = Math.max(1, Math.ceil(baseH * scale));
+    const c = document.createElement('canvas');
+    c.width = drawW;
+    c.height = drawH;
+    const ctx = c.getContext('2d', { alpha: true });
+    ctx.clearRect(0, 0, drawW, drawH);
+    const fillCss = run.fillStyle || getFgHex?.() || '#000000';
+    if (el.type === 'cartouche' && el.canvas) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(el.canvas, 0, 0, drawW, drawH);
+    } else if (el.type === 'text') {
+      const fam = run.fontFamily || FONT_FAMILY_LITERAL;
+      const px = Math.max(1, Math.round((run.fontPx || 16) * scale));
+      const baseline = Math.round((run.ascentPx || Math.ceil((run.fontPx || 16) * 0.8)) * scale);
+      if (typeof __bridgeDrawTextWithOptionalHalo === 'function') {
+        __bridgeDrawTextWithOptionalHalo(ctx, String(el.text || ''), 0, baseline, { px, fontFamily: fam, fillCss });
+      } else {
+        ctx.font = `${px}px "${fam}"`;
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = fillCss;
+        ctx.fillText(String(el.text || ''), 0, baseline);
+      }
+    } else if (el.type === 'glyph' || el.type === 'run') {
+      const fam = run.fontFamily || FONT_FAMILY_TEXT;
+      const px = Math.max(1, Math.round((run.fontPx || 16) * scale));
+      const baseline = Math.round((run.ascentPx || Math.ceil((run.fontPx || 16) * 0.8)) * scale);
+      const chars = el.type === 'glyph' ? String.fromCodePoint(el.cp) : (el.cps || []).map(cp => String.fromCodePoint(cp)).join('');
+      if (typeof __bridgeDrawTextWithOptionalHalo === 'function') {
+        __bridgeDrawTextWithOptionalHalo(ctx, chars, 0, baseline, { px, fontFamily: fam, fillCss });
+      } else {
+        ctx.font = `${px}px "${fam}"`;
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = fillCss;
+        ctx.fillText(chars, 0, baseline);
+      }
+    } else {
+      throw new Error(`Unsupported run kind for rasterization: ${el.type}`);
+    }
+    if (!downsample || scale === 1) return c;
+    const out = document.createElement('canvas');
+    out.width = baseW;
+    out.height = baseH;
+    const outCtx = out.getContext('2d', { alpha: true });
+    outCtx.imageSmoothingEnabled = true;
+    outCtx.clearRect(0, 0, baseW, baseH);
+    outCtx.drawImage(c, 0, 0, baseW, baseH);
+    return out;
+  }
+
+
+  function ucsurAstFromLines(lines) {
+    const normalized = Array.isArray(lines) ? lines : [];
+    return {
+      type: 'document',
+      normalizedInput: '',
+      lines: normalized.map((line, index) => {
+        const children = [];
+        if (typeof line === 'string') {
+          children.push({ kind: 'rawUcsur', cps: Array.from(line).map(ch => ch.codePointAt(0)) });
+        } else if (Array.isArray(line)) {
+          if (line.every(v => typeof v === 'number')) children.push({ kind: 'rawUcsur', cps: line.slice() });
+          else for (const item of line) {
+            if (Array.isArray(item) && item.every(v => typeof v === 'number')) children.push({ kind: 'rawUcsur', cps: item.slice() });
+            else if (item && item.kind === 'image') children.push(item);
+            else if (item && item.kind === 'rawUcsur') children.push(item);
+          }
+        }
+        return { type: 'line', index, children };
+      })
+    };
+  }
+
+  async function renderAstToNewCanvas(ast, config = {}) {
+    return await withScopedRenderConfig(config, async () => {
+      if (typeof __bridgeFontsReadyForPx === 'function') await __bridgeFontsReadyForPx(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56));
+      if (typeof __bridgeWarmUpCanvasFontsOnce === 'function') __bridgeWarmUpCanvasFontsOnce();
+      const linesElements = await astToLineElements(ast, config);
+      const canvas = document.createElement('canvas');
+      __bridgeRenderAllLinesToCanvas(canvas, linesElements, { fontPx: Math.max(8, Number(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56)) });
+      return { canvas, ast, linesElements };
+    });
+  }
+
+  async function renderBlit(targetCanvas, x, y, rendered) {
+    const ctx = targetCanvas.getContext('2d', { alpha: true });
+    ctx.drawImage(rendered.canvas, Math.round(x || 0), Math.round(y || 0));
+    return rendered;
+  }
+
+  async function ensureCore() {
+    if (__coreReady) return __coreReady;
+    __coreReady = (async () => {
+      await ensureDomReady();
+      buildHiddenScaffold();
+      
     
- /* Toolbar row: keep everything aligned and compact */
-.btnRow{
-  display:flex;
-  align-items:center;
-  gap: 12px;
-  flex-wrap: nowrap;
-}
 
-/* Compact "pill" control for toolbar */
-.inlinePill{
-  display:flex;
-  flex-direction: row;
-  align-items:center;
-  gap: 10px;
-
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--panel-border);
-  background: var(--panel-strong);
-
-  min-width: 0;
-}
-
-/* Compact label styling */
-.ctlLabel{
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-  line-height: 1;
-}
-
-.tpInline{
-  font-size: 12px;
-  color: var(--muted);
-  margin-left: 6px;
-  white-space: nowrap;
-}
-
-/* Ensure you don't carry old wide min-widths */
-.rgbControl{ min-width: auto; } /* remove/override any previous 240px */
-
-/* Make the select fit the pill */
-.inlinePill select{
-  height: 34px;
-  padding: 6px 10px;
-}
-
-/* Swatch stays small but looks intentional */
-.swatch{
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  padding: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  overflow: hidden;
-}
-.swatch::-webkit-color-swatch-wrapper{ padding: 0; }
-.swatch::-webkit-color-swatch{ border: none; border-radius: 6px; }
-.swatch::-moz-color-swatch{ border: none; border-radius: 6px; }
-
-/* Optional: keep the Render button visually aligned in height */
-.btnBi{
-  height: 50px;
-  display:flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-
-/* If your selects are very wide, reduce them slightly */
-#appFontSizeSel{ width: 108px; } /* adjust as needed */
-
-
-    label { display:block; font-size:12px; color: var(--muted); margin-bottom:6px; }
-
-    textarea, input[type="text"], select {
-      width: 100%;
-      box-sizing: border-box;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
-      background: var(--bg);
-      font: inherit;
-    }
-
-    textarea { min-height: 180px; resize: vertical; }
-
-    button {
-      border: 1px solid var(--border);
-      background: var(--bg);
-      padding: 10px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    button:hover { background: var(--bg); }
-
-    .btnBi {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      line-height: 1.15;
-    }
-
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-    .help { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
-
-    .tpLine {
-      display: block;
-      margin-top: 2px;
-      font-size: 10pt;
-      color: var(--muted);
-      line-height: 1.25;
-    }
-
-    canvas {
-      display:block;
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      background: transparent;
-      max-width: 100%;
-    }
-
-    .small { font-size: 12px; color: var(--muted); }
-
-    button:focus-visible,
-    a:focus-visible,
-    textarea:focus-visible,
-    select:focus-visible,
-    .skipLink:focus-visible {
-      outline: 3px solid #111;
-      outline-offset: 3px;
-    }
-
-    .skipLink {
-      position: absolute;
-      left: -9999px;
-      top: 0;
-      background: #fff;
-      border: 2px solid #111;
-      padding: 8px 10px;
-      border-radius: 8px;
-      color: #111;
-      text-decoration: none;
-    }
-    .skipLink:focus {
-      left: 24px;
-      top: 24px;
-      z-index: 9999;
-    }
-
-    .sr-only {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important;
-      white-space: nowrap !important;
-      border: 0 !important;
-    }
-
-    .inlineControl {
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width: 140px;
-    }
-    .inlineControl label {
-      margin: 0;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .inlineControl select {
-      padding: 8px 10px;
-      width: 160px;
-      max-width: 100%;
-    }
-
-    /* NEW: RGB picker layout */
-    .rgbControl { min-width: 240px; }
-    .rgbRow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .rgbRow select { width: 72px; padding: 8px 10px; }
-
-    .hexLabel {
-      font-size: 12px;
-      color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    }
-
-    /* Toolbar: allow controls to wrap instead of overlapping */
-.btnRow{
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-/* Pills should size to content and not shrink into each other */
-.btnRow .inlinePill{
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-/* Keep the Align pill compact */
-#ctlAlign select{
-  min-width: 96px; /* smaller than your global 108px if you want */
-}
-
-
-    @font-face {
-      font-family: "TP-Cartouche-Font";
-      src:
-         url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf")   format("opentype"); 
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "TP-Nasin-Nanpa-Font";
-      src:
-       url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf")   format("opentype");
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "SSK-Juniko";
-      src:
-       url("./fonts/sitelenselikiwenjuniko.ttf") format("truetype");
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "SSK-Juniko-Cartouche";
-      src:
-       url("./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf") format("truetype");
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "Patrick-Head-Font";
-      src:
-        url("./fonts/PatrickHand-Regular.ttf")   format("truetype");
-      font-display: swap;
-    }
-
-    /* ===== Toolbar overrides (paste at END of CSS) ===== */
-
-/* Define the variables you referenced */
-:root{
-  --panel-strong: rgba(255,255,255,0.35);
-  --panel-border: rgba(17,17,17,0.18);
-}
-
-/* Keep the toolbar on one line and vertically aligned */
-.btnRow{
-  display:flex;
-  align-items:center;
-  gap: 12px;
-  flex-wrap: nowrap;
-}
-
-/* Turn inlineControl blocks into compact "pills" INSIDE the toolbar */
-.btnRow .inlineControl{
-  display:flex;
-  flex-direction: row;     /* override your column layout */
-  align-items:center;
-  gap: 10px;
-
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--panel-border);
-  background: var(--panel-strong);
-
-  min-width: 0;            /* override min-width:140px */
-}
-
-/* Labels inline, no extra bottom margins */
-.btnRow .inlineControl label{
-  display:inline-flex;
-  align-items:baseline;
-  gap: 6px;
-  margin: 0;               /* override label margin-bottom:6px */
-  white-space: nowrap;
-  line-height: 1;
-}
-
-/* Make the tp line behave inline in the toolbar */
-.btnRow .inlineControl .tpLine{
-  display:inline;
-  margin: 0;
-  font-size: 12px;         /* keep it compact; adjust if desired */
-  line-height: 1;
-}
-
-/* Prevent selects from expanding to 100% width in the toolbar */
-.btnRow .inlineControl select{
-  width: auto !important;  /* overrides select{width:100%} */
-  min-width: 108px;        /* reasonable fixed control width */
-  padding: 6px 10px;
-  height: 34px;
-}
-
-/* Kill the old RGB layout constraints in the toolbar */
-.btnRow .rgbControl{ min-width: 0 !important; }
-.btnRow .rgbRow{ flex-wrap: nowrap; }
-
-/* Swatch alignment (in case it sits low/high) */
-.btnRow .swatch{
-  display:block;
-  margin: 0;
-}
-
-/* Optional: make the Render button height visually match pills */
-.btnRow .btnBi{
-  height: 50px;
-  padding: 8px 12px;
-}
-
-.nlModeControl{ display:none !important; }
-
-
-/* CHANGE HERE: stack the action controls on small mobile screens */
-
-/* ===== Mobile toolbar layout: Font size → Text color → Render ===== */
-@media (max-width: 520px){
-  .btnRow{
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  /* Each item gets its own line */
-  .btnRow > *{
-    width: 100%;
-  }
-
-  /* Order only on mobile */
-  #ctlFontSize{ order: 1; }
-  #ctlTextColor{ order: 2; }
-  #appBtnRender{ order: 3; }
-
-  /* Keep controls left-sized (not stretched full width) */
-  #appBtnRender{ width: auto; }
-  .btnRow .inlinePill{ width: auto; }
-}
-
-/* Portrait image: mobile-first */
-    img.portrait{
-      display:block;
-      width:100%;
-      max-width:100vw;
-      height:auto;
-    }
-    @media (min-width:900px){
-      img.portrait{ max-width:520px; margin-inline:auto; }
-    }
-
-
-/* ============================================================
-   Floating text pop-out editor (matches layout-editor style)
-   - draggable header
-   - resizable (CSS resize)
-   ============================================================ */
-
-.fieldLabelRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.fieldLabelRow > label{
-  margin: 0;
-}
-
-.popoutIconBtn{
-  appearance:none;
-  border: 1px solid var(--panel-border);
-  background: rgba(255,255,255,0.50);
-  color: #111;
-  border-radius: 8px;
-  padding: 4px 8px;
-  line-height: 1;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  flex: 0 0 auto;
-}
-.popoutIconBtn:hover{
-  background: rgba(255,255,255,0.72);
-}
-.popoutIconBtn:focus-visible{
-  outline: 2px solid rgba(17,17,17,0.45);
-  outline-offset: 2px;
-}
-
-.floatingEditor{
-  position: fixed;
-  left: 24px;
-  top: 24px;
-  width: min(820px, calc(100vw - 32px));
-  height: min(520px, calc(100vh - 32px));
-  min-width: 320px;
-  min-height: 220px;
-  display: none;
-  flex-direction: column;
-  z-index: 9999;
-
-  background: var(--bg);
-  border: 1px solid var(--panel-border);
-  border-radius: 12px;
-  box-shadow: 0 18px 50px rgba(0,0,0,0.20);
-
-  resize: both;
-  overflow: hidden;
-}
-
-.floatingEditor.show{
-  display: flex;
-}
-
-.floatingEditorHeader{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--panel-border);
-  background: rgba(255,255,255,0.20);
-  cursor: move;
-  user-select:none;
-  -webkit-user-select:none;
-}
-
-.floatingEditorHeader h3{
-  margin: 0;
-  font-size: 14px;
-}
-
-.floatingEditorBody{
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 10px;
-  background: rgba(255,255,255,0.35);
-  display:flex;
-}
-
-.floatingEditorBody textarea{
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  resize: none;
-  box-sizing: border-box;
-  border: 1px solid rgba(17,17,17,0.20);
-  border-radius: 10px;
-  padding: 10px;
-  background: var(--bg);
-  color: #111;
-  font: inherit;
-}
-
-/* Small screens: make it feel like a top sheet */
-@media (max-width: 860px){
-  .floatingEditor{
-    left: 12px;
-    top: 12px;
-    width: calc(100vw - 24px);
-    height: min(55vh, calc(100vh - 24px));
-  }
-}
-
-  
-/* Ensure toolbar pills never overlap when more controls are added */
-.btnRow{ flex-wrap: wrap !important; }
-.btnRow .inlineControl{ flex: 0 0 auto; }
-
-</style>
-</head>
-
-<body>
-  <a href="#main" class="skipLink">
-    Skip to content
-    <span class="tpLine">o tawa lipu ni</span>
-  </a>
-
-  <main class="card" id="main" role="main" aria-labelledby="pageTitle">
-    <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
-      Toki Pona Multiline text → sitelen pona glyphs → PNG image file download &amp; PDF file download
-      <span class="tpLine">toki pona sitelen mute-linja tawa sitelen pona lon ilo sitelen</span>
-    </h1>
-
-    <div class="help" style="margin-top:10px;">
-      <strong>Note:</strong> Any “nanpa-linja-n proper name” used here are encoding labels for numbers only, and do not propose or add any new Toki Pona lexicon.
-      <span class="tpLine">
-        sona: nimi “nanpa-linja-n proper name” ale lon ni li nimi pi pana nanpa taso. ona li pana ala e nimi sin pi toki pona.
-      </span>
-    </div>
-
-    <div class="help">
-      <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
-      complete, or suitable for any purpose. You are responsible for verifying results.
-      <span class="tpLine">
-        sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pi pona.
-        sina o lukin e ni: sitelen li pona anu seme.
-      </span>
-    </div>
-
-    <div class="help" style="margin-top:10px;">
-      Notes:
-      <ul style="margin:6px 0 0 18px; padding:0;">
-        <li>Converts Toki Pona words to sitelen pona glyphs.</li>
-        <li>The sitelen pona glyphs can be downloaded as a png image file.</li>
-        <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as nanpa-linja-n cartouches.</li>
-        <li>Decimal-form numbers like <span class="mono">-5,432.10</span>, <span class="mono">1.2K</span>, or <span class="mono">.06</span> render as nanpa-linja-n cartouches.</li>
-        <li>End-of-line full stops are not treated as part of a number (e.g. <span class="mono">06.</span>).</li>
-        <li><strong>Cartouche:</strong> Inside of <span class="mono">[...]</span>, if all words are toki pona words, then they will all use their own glyphs, otherwise each letter of every word is mapped randomly.</li>
-        <li><strong>Cartouche:</strong> Outside of <span class="mono">[...]</span>, only decimals, <span class="mono">#~</span> codes, nanpa-linja-n proper names, and nanpa-linja-n number phrases can produce cartouches.</li>
-        <li><strong>Long pi:</strong> A long “pi” container can be written as <span class="mono">pi( ... )</span>.  Must have at least two words inside ( ... ).  Cartouche inside long pi isn't working properly.</li>
-        <li><strong>Middle dot:</strong> The Unicode character U+00B7 &#x2014; '&#x00B7;' is used to display the middle dot glyph.</li>
-        <li><strong>Punctuation:</strong> Word 'ota' maps to middle dot, and word 'kolon' maps to colon, these are non-standard words and are used for convenience only.</li>
-        <li><strong>Quotation:</strong> Text inside double quotes is rendered exactly as typed, e.g. "Hello World!".</li>
-        <li>Unknown words are ignored.</li>
-      </ul>
-    </div>
-
-    <div id="appSrStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-
-    <div class="controlsStack" role="group" aria-label="Input and render action">
-
-      <div>
-        <div class="fieldLabelRow">
-          <label for="appTextIn">
-            Enter multi-line Toki Pona text
-            <span class="tpLine">o pana e sitelen toki pona lon linja mute</span>
-          </label>
-
-          <!-- Pop-out button -->
-          <button id="appBtnPopoutTextIn" type="button" class="popoutIconBtn" title="Pop out editor" aria-label="Pop out editor">
-            ↗
-          </button>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin: 6px 0 8px;">
-          <button id="appBtnImportTextMain" type="button" class="btnBi">
-            <span>Import .txt</span>
-            <span class="tpLine">o kama jo e lipu</span>
-          </button>
-
-          <button id="appBtnExportTextMain" type="button" class="btnBi">
-            <span>Export .txt</span>
-            <span class="tpLine">o pana e lipu</span>
-          </button>
-
-          <button id="appBtnTogglePopoutMain" type="button" class="btnBi">
-            <span>Pop-out editor</span>
-            <span class="tpLine">o open e ilo ante</span>
-          </button>
-        </div>
-
-        <textarea id="appTextIn" rows="18" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
-          placeholder="mi kama sona e toki&amp;pona.
-pi(telo lete).
-luka+luka.
-luka-luka.
-{pona}ala(pona).
-&quot;Hello World!&quot;.
-[ ota sewi^ kolon  ni&lt; ].
-tenpo 15:34:29.
-tenpo suno 2026-03-17.
-nanpa -12,340.57.
-nanpa 64.5M.
-nanpa 9+3/4.
-nanpa 5%.
-nanpa 007.
-nanpa Newenin One Len Oken.
-nanpa #~WI.
-"></textarea>
-      </div>
-
-      <div class="btnRow" aria-label="Actions">
-        <button id="appBtnRender" type="button" class="btnBi">
-          <span>Render</span>
-          <span class="tpLine">o sitelen</span>
-        </button>
-
-        <!-- Foreground color picker -->
-        <div id="ctlTextColor" class="inlineControl inlinePill" role="group" aria-label="Text color">
-          <span class="ctlLabel">
-            Text color <span class="tpInline">kule pi sitelen</span>
-          </span>
-          <input id="appFgPick" class="swatch" type="color" aria-label="Foreground color">
-        </div>
-
-        <!-- Script/font preset -->
-        <div id="ctlScriptPreset" class="inlineControl inlinePill" role="group" aria-label="Script/font preset">
-          <span class="ctlLabel">
-            Script/font <span class="tpInline">nasin sitelen</span>
-          </span>
-          <select id="appScriptPresetSel" aria-describedby="scriptPresetHelp">
-            <option value="nasinNanpa" selected>nasin nanpa</option>
-            <option value="sitelenSeliKiwen">sitelen seli kiwen</option>
-          </select>
-          <div id="scriptPresetHelp" class="sr-only">Chooses the font family preset for preview, PNG export, and PDF export.</div>
-        </div>
-
-        <!-- Font size -->
-        <div id="ctlFontSize" class="inlineControl inlinePill" role="group" aria-label="Font size">
-          <span class="ctlLabel">
-            Font size <span class="tpInline">suli pi sitelen</span>
-          </span>
-          <select id="appFontSizeSel" aria-describedby="fontSizeHelp">
-            <option value="8">8 px</option>
-            <option value="10">10 px</option>
-            <option value="12">12 px</option>
-            <option value="14">14 px</option>
-            <option value="16">16 px</option>
-            <option value="20">20 px</option>
-            <option value="24">24 px</option>
-            <option value="28">28 px</option>
-            <option value="32">32 px</option>
-            <option value="36">36 px</option>
-            <option value="40">40 px</option>
-            <option value="44">44 px</option>
-            <option value="48">48 px</option>
-            <option value="56" selected>56 px</option>
-            <option value="64">64 px</option>
-            <option value="72">72 px</option>
-            <option value="80">80 px</option>
-            <option value="88">88 px</option>
-             <option value="96">96 px</option>
-             <option value="104">104 px</option>
-            <option value="120">120 px</option>
-            <option value="144">144 px</option>
-          </select>
-          <div id="fontSizeHelp" class="sr-only">Changes the glyph and cartouche rendering size in the output.</div>
-        </div>
-
-        <!-- Alignment -->
-        <div id="ctlAlign" class="inlineControl inlinePill" role="group" aria-label="Alignment">
-          <span class="ctlLabel">
-            Align <span class="tpInline">nasin</span>
-          </span>
-          <select id="appAlignSel" aria-describedby="alignHelp">
-            <option value="left" selected>Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </select>
-          <div id="alignHelp" class="sr-only">Changes line alignment of the rendered output.</div>
-        </div>
-
-
-        <!-- Halo toggle -->
-        <div id="ctlHaloEnable" class="inlineControl inlinePill" role="group" aria-label="Halo">
-          <span class="ctlLabel">
-            Halo <span class="tpInline">poka walo</span>
-          </span>
-          <label style="display:flex; align-items:center; gap:8px; margin:0;">
-            <input id="appHaloEnable" type="checkbox" aria-label="Enable halo outline">
-            <span class="ctlLabel" style="margin:0;">Enabled</span>
-          </label>
-        </div>
-
-        <!-- Halo color picker -->
-        <div id="ctlHaloColor" class="inlineControl inlinePill" role="group" aria-label="Halo color">
-          <span class="ctlLabel">
-            Halo color <span class="tpInline">kule poka</span>
-          </span>
-          <input id="appHaloPick" class="swatch" type="color" aria-label="Halo color">
-        </div>
-
-
-        <!-- Halo width -->
-        <div id="ctlHaloWidth" class="inlineControl inlinePill" role="group" aria-label="Halo width">
-          <span class="ctlLabel">
-            Halo width <span class="tpInline">suli poka</span>
-          </span>
-          <input id="appHaloWidthSel" type="number" min="0" max="999" step="1" value="0" aria-describedby="haloWidthHelp" style="width:96px; height:34px; padding:6px 10px;">
-          <div id="haloWidthHelp" class="sr-only">0 means auto halo width. Any other value uses that width in pixels.</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-top:14px;">
-      <label>
-        Output canvas
-        <span class="tpLine">ilo sitelen kama</span>
-      </label>
-      <canvas id="appOutCanvas" aria-hidden="true"></canvas>
-
-      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-        <button id="appBtnDownloadPng" type="button" class="btnBi" aria-describedby="btnDownloadHelp">
-          <span>Download PNG</span>
-          <span class="tpLine">o kama jo e sitelen PNG</span>
-        </button>
-        <div id="btnDownloadHelp" class="sr-only">Downloads the output canvas as a transparent PNG.</div>
-
-        <span class="small">
-          (Transparent background)
-          <span class="tpLine">(poka sitelen li lon ala)</span>
-        </span>
-
-        <button id="appBtnDownloadPdf" type="button" class="btnBi" aria-describedby="btnDownloadPdfHelp">
-          <span>Download PDF</span>
-          <span class="tpLine">o kama jo e lipu PDF</span>
-        </button>
-        <div id="btnDownloadPdfHelp" class="sr-only">Exports the rendered output as a PDF with embedded fonts.</div>
-
-        <button id="appBtnDownloadUnicodeJson" type="button" class="btnBi" aria-describedby="btnDownloadUnicodeJsonHelp">
-          <span>Download Unicode JSON</span>
-          <span class="tpLine">o kama jo e lipu JSON pi sitelen</span>
-        </button>
-        <div id="btnDownloadUnicodeJsonHelp" class="sr-only">Exports the rendered output as Unicode JSON with fonts, run types, input text, and reconstructible codepoint streams.</div>
-
-      </div>
-
-      <div class="help">&nbsp;</div>
-
-      <div class="nlModeControl">
-        <fieldset style="border:1px solid var(--border); border-radius:10px; padding:10px 12px; max-width: 560px;">
-          <legend class="sr-only">Nanpa-linja-n render mode</legend>
-
-          <div style="font-size:12px; color: var(--muted); margin-bottom:6px;">
-            Nanpa-linja-n number output
-          </div>
-
-          <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-            <label style="display:flex; align-items:center; gap:8px; margin:0;">
-              <input type="radio" name="appNlMode" value="traditional" checked>
-              <span>Traditional</span>
-            </label>
-
-            <label style="display:flex; align-items:center; gap:8px; margin:0;">
-              <input type="radio" name="appNlMode" value="uniform">
-              <span>Uniform</span>
-            </label>
-          </div>
-        </fieldset>
-      </div>
-
-      <div class="help">&nbsp;</div>
-      <img class="portrait" src="./images/From_Decimal_Number_To_Cartouche.png" />
-      <div class="help">&nbsp;</div>
-
-      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
-        Check out the Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
-        <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
-      </h1>
-      <div class="nlModeControl small" style="margin-bottom:10px;">
-        <a id="appRendererLink" class="repoLink" href="./renderer.html" target="_blank" rel="noopener noreferrer">
-          nanpa-linja-n decimal number encoder + cartouche renderer
-        </a>
-        <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
-      </div>
-
-      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
-        Check out the Toki Pona nanpa-linja-n cartouche calculator
-        <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
-      </h1>
-      <div class="nlModeControl small" style="margin-bottom:10px;">
-        <a id="appCalculatorLink" class="repoLink" href="./calculator.html" target="_blank" rel="noopener noreferrer">
-          nanpa-linja-n cartouche calculator
-        </a>
-        <span class="tpLine">ilo nanpa pi poki nimi pi nanpa-linja-n</span>
-      </div>
-
-      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
-        Check out the Toki Pona nanpa-linja-n maze game
-        <span class="tpLine">o lukin e musi pi nasin pi nanpa-linja-n lon toki pona</span>
-      </h1>
-      <div class="nlModeControl small" style="margin-bottom:10px;">
-        <a class="repoLink" href="./maze-toki.html" target="_blank" rel="noopener noreferrer">
-          maze game
-        </a>
-        <span class="tpLine">musi pi nasin pi nanpa-linja-n lon toki pona</span>
-      </div>
-
-      <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
-        Check out the Toki Pona 15 puzzle game
-        <span class="tpLine">o lukin e musi pi leko tawa nanpa Newelen pi toki pona</span>
-      </h1>
-      <div class="nlModeControl small" style="margin-bottom:10px;">
-        <a class="repoLink" href="./15-puzzle-toki.html" target="_blank" rel="noopener noreferrer">
-          15 puzzle game
-        </a>
-        <span class="tpLine">musi pi leko tawa nanpa Newelen pi toki pona</span>
-      </div>
-
-      <h1 style="margin:0 0 6px;font-size:18px;">
-        Check out more Toki Pona tools
-        <span class="tpLine">o lukin e ilo ante lon toki pona</span>
-      </h1>
-      <div class="small" style="margin-bottom:10px;">
-        <a class="repoLink" href="./index.html" target="_blank" rel="noopener noreferrer">
-          More Toki Pona tools
-        </a>
-        <span class="tpLine">ilo ante lon toki pona</span>
-      </div>
-
-      <h1 style="margin:0 0 6px;font-size:18px;">
-        Check out the Toki Pona sitelen pona fonts
-        <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
-      </h1>
-      <div class="small" style="margin-bottom:10px;">
-        <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n/tree/main/docs/fonts" target="_blank" rel="noopener noreferrer">
-          sitelen pona nanpa-linja-n fonts
-        </a>
-        <span class="tpLine">o lukin e sitelen ona pi toki pona! mi kepeken sitelen ona mute ni</span>
-      </div>
-
-      <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
-        Check out the Toki Pona nanpa-linja-n main documentation
-        <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
-      </h1>
-      <div class="help">The main documentation contains all the rules for converting decimal numbers into cartouches.</div>
-      <div class="small" style="margin-bottom:10px;">
-        <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
-          nanpa-linja-n main documentation
-        </a>
-        <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
-      </div>
-
-      <div class="help">#~n</div>
-    </div>
-
-
-    <!-- Floating text editor for the main input -->
-<div id="appFloatingTextInEditor" class="floatingEditor" aria-hidden="true">
-  <div id="appFloatingTextInEditorHeader" class="floatingEditorHeader">
-    <h3 id="appFloatingTextInEditorTitle">Input</h3>
-    <button id="appBtnCloseFloatingTextInEditor" class="btnBi" type="button">Close</button>
-  </div>
-  <div class="floatingEditorBody" style="flex-direction:column; gap:10px;">
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button id="appBtnImportTextPop" type="button" class="btnBi">
-        <span>Import .txt</span>
-        <span class="tpLine">o kama jo e lipu</span>
-      </button>
-
-      <button id="appBtnExportTextPop" type="button" class="btnBi">
-        <span>Export .txt</span>
-        <span class="tpLine">o pana e lipu</span>
-      </button>
-    </div>
-
-    <input id="appFilePickTextIn" type="file" accept=".txt,text/plain" class="sr-only" />
-    <textarea id="appFloatingTextInEditorTextarea" class="mono" spellcheck="false"></textarea>
-  </div>
-</div>
-  </main>
-
-  <script src="./vendor/pdf-lib.min.js"></script>
-  <script src="./vendor/fontkit.umd.min.js"></script>
-  <script type="module">
-    import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=1";
-
-    "use strict";
-
-    const elSrStatus = document.getElementById("appSrStatus");
+    const elSrStatus = document.getElementById("srStatus");
     function announceStatus(msg) {
       if (!elSrStatus) return;
       elSrStatus.textContent = String(msg ?? "");
@@ -903,175 +801,6 @@ nanpa #~WI.
     }
     function nextFrame() {
       return new Promise(resolve => requestAnimationFrame(() => resolve()));
-    }
-
-    const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
-    const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
-    const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
-
-    const RENDER_FONT_PRESETS = {
-      nasinNanpa: {
-        key: "nasinNanpa",
-        label: "nasin nanpa",
-        parserMode: "sitelen-seli-kiwen",
-        textFamily: "TP-Nasin-Nanpa-Font",
-        cartoucheFamily: "TP-Cartouche-Font",
-        literalFamily: FONT_FAMILY_LITERAL,
-        pdfTextFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
-        pdfCartoucheFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf"
-      },
-      sitelenSeliKiwen: {
-        key: "sitelenSeliKiwen",
-        label: "sitelen seli kiwen",
-        parserMode: "sitelen-seli-kiwen",
-        textFamily: "SSK-Juniko",
-        cartoucheFamily: "SSK-Juniko-Cartouche",
-        literalFamily: FONT_FAMILY_LITERAL,
-        pdfTextFontUrl: "./fonts/sitelenselikiwenjuniko.ttf",
-        pdfCartoucheFontUrl: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf"
-      }
-    };
-
-    const FONT_LOAD_SAMPLE = String.fromCodePoint(0xF196C, 0xF1954, 0xF1990) + ' Hello';
-    const SCRIPT_PRESET_STORAGE_KEY = "tpScriptPreset";
-    let ACTIVE_RENDER_FONT_KEY = "nasinNanpa";
-    let sitelenRenderer = null;
-    let sitelenRendererSignature = "";
-    let latestRenderPlan = null;
-    let latestRenderedCanvas = null;
-
-    function getActiveFontPreset() {
-      return RENDER_FONT_PRESETS[ACTIVE_RENDER_FONT_KEY] || RENDER_FONT_PRESETS.nasinNanpa;
-    }
-
-    function normalizeScriptPresetKey(key) {
-      return Object.prototype.hasOwnProperty.call(RENDER_FONT_PRESETS, key) ? key : "nasinNanpa";
-    }
-
-    function getScriptPresetSelect() {
-      return document.getElementById("appScriptPresetSel");
-    }
-
-    function saveScriptPresetToStorage(key) {
-      try { localStorage.setItem(SCRIPT_PRESET_STORAGE_KEY, normalizeScriptPresetKey(key)); } catch {}
-    }
-
-    function loadScriptPresetFromStorage() {
-      try { return normalizeScriptPresetKey(localStorage.getItem(SCRIPT_PRESET_STORAGE_KEY) || "nasinNanpa"); }
-      catch { return "nasinNanpa"; }
-    }
-
-    function setActiveFontPreset(key, { persist = true } = {}) {
-      const normalized = normalizeScriptPresetKey(key);
-      ACTIVE_RENDER_FONT_KEY = normalized;
-      const sel = getScriptPresetSelect();
-      if (sel) sel.value = normalized;
-      sitelenRenderer = null;
-      sitelenRendererSignature = "";
-      if (persist) saveScriptPresetToStorage(normalized);
-      return normalized;
-    }
-
-    function applyScriptPresetFromStorage() {
-      setActiveFontPreset(loadScriptPresetFromStorage(), { persist: false });
-    }
-
-    function wireScriptPresetSelect() {
-      const sel = getScriptPresetSelect();
-      if (!sel) return;
-      sel.addEventListener("change", async () => {
-        try {
-          setActiveFontPreset(sel.value);
-          await waitForConfiguredFonts(getFontPx());
-          await renderFromTextarea();
-        } catch (e) {
-          showAlertAndAnnounce(e?.message ?? String(e));
-        }
-      });
-    }
-
-    function buildFontRoles() {
-      const preset = getActiveFontPreset();
-      return {
-        word: preset.textFamily,
-        text: preset.textFamily,
-        cartouche: preset.textFamily,
-        number: preset.cartoucheFamily,
-        date: preset.cartoucheFamily,
-        time: preset.cartoucheFamily,
-        literal: preset.literalFamily
-      };
-    }
-
-    function uniqueConfiguredFontFamilies() {
-      return Array.from(new Set(Object.values(buildFontRoles()).filter(Boolean)));
-    }
-
-    async function waitForConfiguredFonts(fontPx = 56) {
-      if (!document.fonts || typeof document.fonts.load !== 'function') return;
-      const families = uniqueConfiguredFontFamilies();
-      await document.fonts.ready;
-      await Promise.all(families.map(family =>
-        document.fonts.load(`${fontPx}px "${family}"`, FONT_LOAD_SAMPLE)
-      ));
-    }
-
-    function buildRendererInitConfig() {
-      const preset = getActiveFontPreset();
-      return {
-        parser: {
-          mode: preset.parserMode,
-          literalStyle: "double-quote",
-          extensionStyle: "ssk",
-          cartoucheStyle: "ssk",
-          numericMode: "compat"
-        },
-        fonts: {
-          roles: buildFontRoles()
-        }
-      };
-    }
-
-    function buildRendererCallConfig({ includeHalo = true } = {}) {
-      const haloEnabled = includeHalo && getHaloEnabled();
-      return {
-        layout: {
-          fontPx: getFontPx(),
-          align: getAlignMode(),
-          paddingPx: 18,
-          lineGapPx: lineGapForPx(getFontPx())
-        },
-        paint: {
-          fillStyle: getFgHex(),
-          halo: {
-            enabled: haloEnabled,
-            color: getHaloHex(),
-            widthPx: haloEnabled ? getHaloWidthOverridePx() : 0
-          }
-        },
-        fonts: {
-          roles: buildFontRoles()
-        }
-      };
-    }
-
-    function getRendererSignature() {
-      const preset = getActiveFontPreset();
-      const roles = buildFontRoles();
-      return JSON.stringify({
-        preset: preset.key,
-        parserMode: preset.parserMode,
-        roles
-      });
-    }
-
-    async function ensureRendererReady() {
-      const signature = getRendererSignature();
-      if (sitelenRenderer && sitelenRendererSignature === signature) return sitelenRenderer;
-      await waitForConfiguredFonts(getFontPx());
-      sitelenRenderer = await SitelenRenderer.create(buildRendererInitConfig());
-      sitelenRendererSignature = signature;
-      return sitelenRenderer;
     }
 
     const FG_COLOR_STORAGE_KEY = "tpFgHex";
@@ -1151,12 +880,12 @@ function saveFgHexToStorage(hex) {
 }
 
 function getFgHex() {
-  const pick = document.getElementById("appFgPick");
+  const pick = document.getElementById("fgPick");
   return normalizeHexColor(pick?.value) ?? "#000000";
 }
 
 function setFgHex(hex) {
-  const pick = document.getElementById("appFgPick");
+  const pick = document.getElementById("fgPick");
   const h = normalizeHexColor(hex) ?? "#000000";
   if (pick) pick.value = h;
   saveFgHexToStorage(h);
@@ -1174,7 +903,7 @@ function initFgColorControls() {
 }
 
 function wireFgColorControls() {
-  const pick = document.getElementById("appFgPick");
+  const pick = document.getElementById("fgPick");
   if (!pick) return;
 
   // Use "input" for live updates while dragging; use "change" for updates on close.
@@ -1219,12 +948,12 @@ function saveHaloEnabledToStorage(v) {
 }
 
 function getHaloEnabled() {
-  const el = document.getElementById("appHaloEnable");
+  const el = document.getElementById("haloEnable");
   return !!el?.checked;
 }
 
 function setHaloEnabled(v) {
-  const el = document.getElementById("appHaloEnable");
+  const el = document.getElementById("haloEnable");
   const b = !!v;
   if (el) el.checked = b;
   saveHaloEnabledToStorage(b);
@@ -1258,14 +987,14 @@ function saveHaloWidthToStorage(px){
 }
 
 function getHaloWidthOverridePx(){
-  const el = document.getElementById("appHaloWidthSel");
+  const el = document.getElementById("haloWidthSel");
   const n = Math.round(Number(el?.value ?? 0));
   if (!Number.isFinite(n) || n < 0) return 0;
   return n;
 }
 
 function setHaloWidthOverridePx(px){
-  const el = document.getElementById("appHaloWidthSel");
+  const el = document.getElementById("haloWidthSel");
   const n = Math.max(0, Math.round(Number(px) || 0));
   if (el) el.value = String(n);
   saveHaloWidthToStorage(n);
@@ -1274,18 +1003,18 @@ function setHaloWidthOverridePx(px){
 
 
 function updateHaloWidthControlEnabled(){
-  const widthEl = document.getElementById("appHaloWidthSel");
+  const widthEl = document.getElementById("haloWidthSel");
   if (!widthEl) return;
   widthEl.disabled = !getHaloEnabled();
 }
 
 function getHaloHex() {
-  const pick = document.getElementById("appHaloPick");
+  const pick = document.getElementById("haloPick");
   return normalizeHexColor(pick?.value) ?? HALO_DEFAULT_HEX;
 }
 
 function setHaloHex(hex) {
-  const pick = document.getElementById("appHaloPick");
+  const pick = document.getElementById("haloPick");
   const h = normalizeHexColor(hex) ?? HALO_DEFAULT_HEX;
   if (pick) pick.value = h;
   saveHaloHexToStorage(h);
@@ -1305,9 +1034,9 @@ function initHaloControls() {
 }
 
 function wireHaloControls() {
-  const en = document.getElementById("appHaloEnable");
-  const pick = document.getElementById("appHaloPick");
-  const widthEl = document.getElementById("appHaloWidthSel");
+  const en = document.getElementById("haloEnable");
+  const pick = document.getElementById("haloPick");
+  const widthEl = document.getElementById("haloWidthSel");
 
   if (en) {
     en.addEventListener("change", async () => {
@@ -1368,7 +1097,7 @@ function wireHaloControls() {
     }
 
     function getFontPx() {
-      const sel = document.getElementById("appFontSizeSel");
+      const sel = document.getElementById("fontSizeSel");
       const v = sel ? sel.value : "";
       const px = clampAllowedFontPx(v);
       return px ?? 56;
@@ -1376,7 +1105,7 @@ function wireHaloControls() {
 
     function setFontPx(px) {
       const val = clampAllowedFontPx(px) ?? 56;
-      const sel = document.getElementById("appFontSizeSel");
+      const sel = document.getElementById("fontSizeSel");
       if (sel) {
         const exists = Array.from(sel.options).some(o => Number(o.value) === val);
         if (!exists) {
@@ -1421,7 +1150,7 @@ function wireHaloControls() {
     }
 
     function wireFontSizeSelect() {
-      const sel = document.getElementById("appFontSizeSel");
+      const sel = document.getElementById("fontSizeSel");
       if (!sel) return;
       sel.addEventListener("change", async () => {
         try {
@@ -1452,7 +1181,7 @@ function wireHaloControls() {
 
     function setAlignMode(v){
       const mode = (v === "center" || v === "right") ? v : "left";
-      const sel = document.getElementById("appAlignSel");
+      const sel = document.getElementById("alignSel");
       if (sel) sel.value = mode;
       saveAlignToStorage(mode);
       return mode;
@@ -1467,7 +1196,7 @@ function wireHaloControls() {
 
 
     function getAlignMode(){
-      const sel = document.getElementById("appAlignSel");
+      const sel = document.getElementById("alignSel");
       const v = String(sel?.value ?? "left");
       return (v === "center" || v === "right") ? v : "left";
     }
@@ -1479,7 +1208,7 @@ function wireHaloControls() {
     }
 
     function wireAlignSelect(){
-      const sel = document.getElementById("appAlignSel");
+      const sel = document.getElementById("alignSel");
       if (!sel) return;
       sel.addEventListener("change", async () => {
         try {
@@ -1571,11 +1300,13 @@ function wireHaloControls() {
       try {
         const okText = document.fonts.check(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
         const okCart = document.fonts.check(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
+        const okNum  = document.fonts.check(`${px}px "${FONT_FAMILY_NUMBER}"`, sampleCartChar);
         const okLit  = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral);
 
         const loads = [];
         if (!okText) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar));
         if (!okCart) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar));
+        if (!okNum)  loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_NUMBER}"`, sampleCartChar));
         if (!okLit)  loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral));
 
         if (loads.length) await Promise.all(loads);
@@ -1647,14 +1378,14 @@ function wireHaloControls() {
     const NL_MODE_QUERY_PARAM_ALIAS = "cartoucheDisplay";
 
     function getNanpaLinjanMode() {
-      //const el = document.querySelector('input[name="appNlMode"]:checked');
+      //const el = document.querySelector('input[name="nlMode"]:checked');
       //return (el && (el.value === "uniform" || el.value === "traditional")) ? el.value : "traditional";
       return "uniform";
     }
 
     function setNanpaLinjanMode(mode) {
       const v = (mode === "uniform") ? "uniform" : "traditional";
-      const target = document.querySelector(`input[name="appNlMode"][value="${v}"]`);
+      const target = document.querySelector(`input[name="nlMode"][value="${v}"]`);
       if (target) target.checked = true;
       try { localStorage.setItem(NL_MODE_STORAGE_KEY, v); } catch {}
     }
@@ -1686,7 +1417,7 @@ function wireHaloControls() {
     }
 
     function wireNanpaLinjanModeRadios() {
-      const radios = document.querySelectorAll('input[name="appNlMode"]');
+      const radios = document.querySelectorAll('input[name="nlMode"]');
       radios.forEach(r => {
         r.addEventListener("change", async () => {
           try {
@@ -3396,7 +3127,7 @@ function wireHaloControls() {
       return { w, h, baselineY, inkAscent: Math.ceil(ascent), inkDescent: Math.ceil(descent), haloW, pad };
     }
 
-    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss }) {
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
 
@@ -3425,11 +3156,16 @@ function wireHaloControls() {
         baselineY,
         ascent,
         descent,
-        fontFamily: fontFamily || FONT_FAMILY_TEXT
+        fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        sourceText: (typeof sourceText === 'string') ? sourceText : null,
+        sourceStart: Number.isFinite(Number(sourceStart)) ? Number(sourceStart) : null,
+        sourceEnd: Number.isFinite(Number(sourceEnd)) ? Number(sourceEnd) : null,
+        sourceKind: (typeof sourceKind === 'string') ? sourceKind : null,
+        sourceSegmentIndex: Number.isFinite(Number(sourceSegmentIndex)) ? Number(sourceSegmentIndex) : null
       });
     }
 
-    function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
+    function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, wordGapForPx(fontPx));
 
@@ -3437,81 +3173,68 @@ function wireHaloControls() {
         type: "run",
         cps: Array.from(cps),
         px: fontPx,
-        fontFamily: fontFamily || FONT_FAMILY_TEXT
+        fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        sourceText: (typeof sourceText === 'string') ? sourceText : null,
+        sourceStart: Number.isFinite(Number(sourceStart)) ? Number(sourceStart) : null,
+        sourceEnd: Number.isFinite(Number(sourceEnd)) ? Number(sourceEnd) : null,
+        sourceKind: (typeof sourceKind === 'string') ? sourceKind : null,
+        sourceSegmentIndex: Number.isFinite(Number(sourceSegmentIndex)) ? Number(sourceSegmentIndex) : null
       });
     }
 
-    function renderTpWordsFromText(text, elements, { fontPx, mode }) {
-      const rawTokens = String(text ?? "").trim().split(/\s+/).filter(Boolean);
+    function renderTpWordsFromText(text, elements, { fontPx, mode, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null }) {
+      const s = String(text ?? "");
+      const rawTokens = [];
+      const tokenRe = /\S+/g;
+      let tm;
+      while ((tm = tokenRe.exec(s)) !== null) {
+        rawTokens.push({ text: tm[0], start: tm.index, end: tm.index + tm[0].length });
+      }
 
-      function emitPunctGlyph(ch) {
-        // UPDATED: allow : · , .
+      function emitPunctGlyph(ch, start, end) {
         if (ch !== ":" && ch !== "·" && ch !== "," && ch !== ".") return false;
         const cp = WORD_TO_UCSUR_CP[ch];
         if (cp == null) return false;
         pushGapIfNeeded(elements, wordGapForPx(fontPx));
-        elements.push({ type: "glyph", cp, px: fontPx, fontFamily: FONT_FAMILY_TEXT });
+        elements.push({ type: "glyph", cp, px: fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: String(ch), sourceStart: sourceBaseStart + start, sourceEnd: sourceBaseStart + end, sourceKind, sourceSegmentIndex });
         return true;
       }
 
       function splitTokenPunct(tok) {
-        const s = String(tok ?? "");
-        if (!s) return { lead: "", core: "", trail: "" };
-
-        // Decide whether this token should keep '.' and ',' inside the core
-        // (e.g. 12,340.57 or .06 or -0.5)
-        const numericLike =
-          /[0-9]/.test(s) ||
-          /^-?\.\d/.test(s) ||
-          /^-?\d/.test(s);
-
-        // Core characters:
-        // - always: letters/digits, #~, ^<> (compound glyph keys like ni<)
-        // - numericLike: also allow decimal/thousands punctuation (., _) and '-' inside
-        const coreChar = numericLike
-          ? /[#~A-Za-z0-9^<>.,_-]/
-          : /[#~A-Za-z0-9^<>]/;
-
+        const sv = String(tok ?? "");
+        if (!sv) return { lead: "", core: "", trail: "" };
+        const numericLike = /[0-9]/.test(sv) || /^-?\.\d/.test(sv) || /^-?\d/.test(sv);
+        const coreChar = numericLike ? /[#~A-Za-z0-9^<>.,_-]/ : /[#~A-Za-z0-9^<>]/;
         let a = 0;
-        let b = s.length;
-
-        // Trim leading non-core chars into "lead"
-        while (a < b && !coreChar.test(s[a])) a++;
-
-        // Trim trailing non-core chars into "trail"
-        while (b > a && !coreChar.test(s[b - 1])) b--;
-
-        // EXTRA: even for numericLike tokens, strip common sentence punctuation at the end
-        // so "12,340.57." => core "12,340.57" + trail "."
-        while (b > a && /[)\]}.,;:!?]+$/.test(s.slice(b - 1, b))) b--;
-
-        return { lead: s.slice(0, a), core: s.slice(a, b), trail: s.slice(b) };
+        let b = sv.length;
+        while (a < b && !coreChar.test(sv[a])) a++;
+        while (b > a && !coreChar.test(sv[b - 1])) b--;
+        while (b > a && /[)\]}.,;:!?]+$/.test(sv.slice(b - 1, b))) b--;
+        return { lead: sv.slice(0, a), core: sv.slice(a, b), trail: sv.slice(b), leadLen: a, coreStart: a, coreEnd: b };
       }
 
-
       for (let i = 0; i < rawTokens.length; i++) {
-        const tok = rawTokens[i];
+        const tokMeta = rawTokens[i];
+        const tok = tokMeta.text;
         const normTok = normalizeTpWord(tok);
 
         if (normTok === "pi") {
-          const nextTok = rawTokens[i + 1];
+          const nextTok = rawTokens[i + 1]?.text;
           if (nextTok != null && tokenHasOpenCurly(nextTok)) {
-            const extracted = extractCurlyContentFromTokens(rawTokens, i + 1);
-
+            const extracted = extractCurlyContentFromTokens(rawTokens.map(t => t.text), i + 1);
             if (extracted && extracted.inner != null) {
               const innerWords = parseKnownTpWords(extracted.inner);
-
               if (innerWords.length >= 2) {
                 const cps = [];
                 cps.push(LONG_PI_START_CP);
                 cps.push(WORD_TO_UCSUR_CP[innerWords[0]]);
-
                 for (let k = 1; k < innerWords.length; k++) {
                   cps.push(LONG_PI_EXT_CP);
                   cps.push(WORD_TO_UCSUR_CP[innerWords[k]]);
                 }
-
-                makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_TEXT });
+                const sourceStart = tokMeta.start;
+                const sourceEnd = rawTokens[extracted.endIndex]?.end ?? tokMeta.end;
+                makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: s.slice(sourceStart, sourceEnd), sourceStart: sourceBaseStart + sourceStart, sourceEnd: sourceBaseStart + sourceEnd, sourceKind, sourceSegmentIndex });
                 i = extracted.endIndex;
                 continue;
               }
@@ -3519,76 +3242,55 @@ function wireHaloControls() {
           }
         }
 
-        const { lead, core, trail } = splitTokenPunct(tok);
-        for (const ch of lead) emitPunctGlyph(ch);
+        const { lead, core, trail, leadLen, coreStart, coreEnd } = splitTokenPunct(tok);
+        for (let j = 0; j < lead.length; j++) emitPunctGlyph(lead[j], tokMeta.start + j, tokMeta.start + j + 1);
 
         const trimmed = core;
+        const trimmedStart = tokMeta.start + coreStart;
+        const trimmedEnd = tokMeta.start + coreEnd;
 
         if (trimmed) {
-          const idCps =
-            tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ??
-            tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
-
+          const idCps = tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ?? tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
           if (idCps && idCps.length) {
-            makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
-            for (const ch of trail) emitPunctGlyph(ch);
+            makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
+            for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
             continue;
           }
         }
 
-        // numeric/time cartouche fallback:
-        // If the token contains digits, try to render it as a nanpa-linja-n cartouche
-        // before falling back to glyph-key normalization (which strips digits).
         if (trimmed && /[0-9]/.test(trimmed)) {
-          // 1) Time-like: allow optional quotes around ':' so 23":"45 => 23:45
-          const timeCandidate = trimmed
-            .replace(/"\s*:\s*"/g, ":")
-            .replace(/"\s*:\s*/g, ":")
-            .replace(/\s*:\s*"/g, ":");
-
-          const timeCaps = (typeof timeStrToNanpaCaps === "function")
-            ? timeStrToNanpaCaps(timeCandidate)
-            : null;
-
+          const timeCandidate = trimmed.replace(/"\s*:\s*"/g, ":").replace(/"\s*:\s*/g, ":").replace(/\s*:\s*"/g, ":");
+          const timeCaps = (typeof timeStrToNanpaCaps === "function") ? timeStrToNanpaCaps(timeCandidate) : null;
           if (timeCaps) {
             const cps = nanpaCapsToNanpaLinjanCodepoints(timeCaps, { mode, isTime: true });
             if (cps && cps.length) {
-              makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
-              for (const ch of trail) emitPunctGlyph(ch);
+              makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
+              for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
               continue;
             }
           }
-
-          // 2) Decimal/integer-like: try the existing decimal parser (it already accepts integers)
           try {
-            const caps = decimalStringToCaps(trimmed, {
-              thousandsChar: ",",
-              groupFractionTriplets: true,
-              fractionGroupSize: 3
-            });
+            const caps = decimalStringToCaps(trimmed, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
             const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
             if (cps && cps.length) {
-              makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
-              for (const ch of trail) emitPunctGlyph(ch);
+              makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
+              for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
               continue;
             }
-          } catch {
-            // not a valid numeric; fall through to normal glyph handling
-          }
+          } catch {}
         }
 
-        // UPDATED: use glyph-key normalization for WORD_TO_UCSUR_CP lookup
         const glyphKey = normalizeTpGlyphKey(trimmed);
         if (glyphKey && WORD_TO_UCSUR_CP[glyphKey] != null) {
           pushGapIfNeeded(elements, wordGapForPx(fontPx));
-          elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[glyphKey], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
+          elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[glyphKey], px: fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
         }
 
-        for (const ch of trail) emitPunctGlyph(ch);
+        for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
       }
     }
 
-    function parseTextSegmentToElements(segmentText, elements, { fontPx }) {
+    function parseTextSegmentToElements(segmentText, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null }) {
       const mode = getNanpaLinjanMode();
       const s = String(segmentText ?? "");
       if (!s.trim()) return;
@@ -3603,44 +3305,39 @@ function wireHaloControls() {
       const hits = mergeAndGreedyFilterHits([...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
 
       if (!hits || hits.length === 0) {
-        renderTpWordsFromText(s, elements, { fontPx, mode });
+        renderTpWordsFromText(s, elements, { fontPx, mode, sourceBaseStart, sourceKind, sourceSegmentIndex });
         return;
       }
 
       let pos = 0;
-
       for (const h of hits) {
         const a = Math.max(0, h.index | 0);
         const b = Math.max(a, h.end | 0);
-
         if (a > pos) {
-          renderTpWordsFromText(s.slice(pos, a), elements, { fontPx, mode });
+          renderTpWordsFromText(s.slice(pos, a), elements, { fontPx, mode, sourceBaseStart: sourceBaseStart + pos, sourceKind, sourceSegmentIndex });
         }
-
-        const fgCss = getFgHex(); 
-
+        const fgCss = getFgHex();
+        const matchText = s.slice(a, b);
         if (h.kind === "tpPhrase") {
           const cps = nanpaLinjanWordsToCodepoints(h.words, { mode });
           if (cps && cps.length) {
-            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: matchText, sourceStart: sourceBaseStart + a, sourceEnd: sourceBaseStart + b, sourceKind, sourceSegmentIndex });
           } else {
-            renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
+            renderTpWordsFromText(matchText, elements, { fontPx, mode, sourceBaseStart: sourceBaseStart + a, sourceKind, sourceSegmentIndex });
           }
         } else {
           const isTimeLike = (h.kind === "time") || (h.kind === "date") || nanpaCapsIsValidTimeOrDate(h.caps);
           const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode, isTime: isTimeLike });
           if (cps && cps.length) {
-            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: matchText, sourceStart: sourceBaseStart + a, sourceEnd: sourceBaseStart + b, sourceKind, sourceSegmentIndex });
           } else {
-            renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
+            renderTpWordsFromText(matchText, elements, { fontPx, mode, sourceBaseStart: sourceBaseStart + a, sourceKind, sourceSegmentIndex });
           }
         }
-
         pos = b;
       }
-
       if (pos < s.length) {
-        renderTpWordsFromText(s.slice(pos), elements, { fontPx, mode });
+        renderTpWordsFromText(s.slice(pos), elements, { fontPx, mode, sourceBaseStart: sourceBaseStart + pos, sourceKind, sourceSegmentIndex });
       }
     }
 
@@ -3664,7 +3361,7 @@ function wireHaloControls() {
       return out;
     }
 
-    function parseQuoteSegmentToElements(quoteContent, elements, { fontPx }) {
+    function parseQuoteSegmentToElements(quoteContent, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'quote', sourceSegmentIndex = null }) {
       const literal = unescapeQuotedText(quoteContent);
 
       // IMPORTANT: preserve spaces exactly (do NOT trim)
@@ -3680,11 +3377,16 @@ function wireHaloControls() {
         fontPx,
         fontFamily: FONT_FAMILY_LITERAL,
         addLeadingGap: false,
-        isQuoted: true, // <-- NEW
+        isQuoted: true,
+        sourceText: String(quoteContent ?? ''),
+        sourceStart: sourceBaseStart,
+        sourceEnd: sourceBaseStart + String(quoteContent ?? '').length,
+        sourceKind,
+        sourceSegmentIndex,
       });
     }
 
-    function parseBracketSegmentToElements(bracketContent, elements, { fontPx }) {
+    function parseBracketSegmentToElements(bracketContent, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'bracket', sourceSegmentIndex = null }) {
       const content = String(bracketContent ?? "").trim();
       if (!content) return;
 
@@ -3696,7 +3398,7 @@ function wireHaloControls() {
         if (dateCaps != null) {
           const cpsDate = nanpaCapsToNanpaLinjanCodepoints(dateCaps, { mode, isTime: true });
           if (cpsDate && cpsDate.length) {
-            makeCartoucheElementFromCodepoints(elements, cpsDate, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+            makeCartoucheElementFromCodepoints(elements, cpsDate, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
             return;
           }
         }
@@ -3705,7 +3407,7 @@ function wireHaloControls() {
         if (timeCaps != null) {
           const cpsTime = nanpaCapsToNanpaLinjanCodepoints(timeCaps, { mode, isTime: true });
           if (cpsTime && cpsTime.length) {
-            makeCartoucheElementFromCodepoints(elements, cpsTime, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+            makeCartoucheElementFromCodepoints(elements, cpsTime, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
             return;
           }
         }
@@ -3713,7 +3415,7 @@ function wireHaloControls() {
         const caps = decimalStringToCaps(content, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
         const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
         if (cps && cps.length) {
-          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
           return;
         }
       } catch {}
@@ -3724,7 +3426,7 @@ function wireHaloControls() {
       const parsedNumber = tryParseNanpaLinjanTpPhraseWords(words);
       if (parsedNumber) {
         const cps = nanpaLinjanWordsToCodepoints(parsedNumber.words, { mode });
-        if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+        if (cps) makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
         return;
       }
 
@@ -3733,17 +3435,17 @@ function wireHaloControls() {
         tryDecodeNanpaLinjanIdentifierToCodepoints(content.replace(/\s+/g, ""), { mode });
 
       if (idCps && idCps.length) {
-        makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
+        makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
         return;
       }
 
       const glyphTokens = wordsRaw.map(normalizeTpGlyphToken).filter(Boolean);
       if (glyphTokens.length >= 1 && glyphTokens.every(isKnownTpGlyphToken)) {
-        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(glyphTokens), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss });
+        makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(glyphTokens), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
         return;
       }
 
-      makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss });
+      makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
     }
 
     function lineToElements(line, { fontPx }) {
@@ -3752,13 +3454,16 @@ function wireHaloControls() {
       const segs = splitLineIntoSegments(s);
       const elements = [];
 
-      for (const seg of segs) {
+      for (let si = 0; si < segs.length; si++) {
+        const seg = segs[si];
+        const sourceKind = seg.kind;
+        const sourceSegmentIndex = si;
         if (seg.kind === "text") {
-          parseTextSegmentToElements(seg.value, elements, { fontPx });
+          parseTextSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
         } else if (seg.kind === "bracket") {
-          parseBracketSegmentToElements(seg.value, elements, { fontPx });
+          parseBracketSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
         } else if (seg.kind === "quote") {
-          parseQuoteSegmentToElements(seg.value, elements, { fontPx });
+          parseQuoteSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
         }
       }
 
@@ -3788,7 +3493,7 @@ function wireHaloControls() {
       };
     }
 
-    function makeLiteralTextElement(elements, text, { fontPx, fontFamily, addLeadingGap = true, isQuoted = false }) {
+    function makeLiteralTextElement(elements, text, { fontPx, fontFamily, addLeadingGap = true, isQuoted = false, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
       const s = String(text ?? "");
       if (!s) return;
 
@@ -3801,7 +3506,12 @@ function wireHaloControls() {
         text: s,
         px: fontPx,
         fontFamily: fontFamily || FONT_FAMILY_LITERAL,
-        isQuoted: !!isQuoted, // <-- NEW
+        isQuoted: !!isQuoted,
+        sourceText: (typeof sourceText === 'string') ? sourceText : null,
+        sourceStart: Number.isFinite(Number(sourceStart)) ? Number(sourceStart) : null,
+        sourceEnd: Number.isFinite(Number(sourceEnd)) ? Number(sourceEnd) : null,
+        sourceKind: (typeof sourceKind === 'string') ? sourceKind : null,
+        sourceSegmentIndex: Number.isFinite(Number(sourceSegmentIndex)) ? Number(sourceSegmentIndex) : null,
       });
     }
 
@@ -4234,59 +3944,285 @@ function wireHaloControls() {
 
     async function exportRenderedToPdf(){
       if (!window.PDFLib) throw new Error("pdf-lib not loaded.");
-      const { PDFDocument } = window.PDFLib;
+      const { PDFDocument, rgb } = window.PDFLib;
 
-      const renderer = await ensureRendererReady();
-      const baseFontPx = getFontPx();
-      await waitForConfiguredFonts(baseFontPx);
-      const input = String(elTextIn.value ?? "");
-      const baseConfig = buildRendererCallConfig({ includeHalo: false });
-      const plan = await renderer.buildRenderPlan({
-        input,
-        ...baseConfig
-      });
+      const fontPx = getFontPx();
+      await fontsReadyForPx(fontPx);
+      warmUpCanvasFontsOnce();
 
-      const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(line => Array.isArray(line?.runs) && line.runs.length > 0);
-      if (!hasRuns) throw new Error("Nothing to export (no recognized words).");
+      // Rebuild layout exactly like renderFromTextarea()
+      const raw = String(elTextIn.value ?? "");
+      const lines = raw.replace(/\r\n/g, "\n").split("\n");
+      const linesElements = lines.map(line => lineToElements(line, { fontPx }));
 
-      latestRenderPlan = plan;
+      const anyContent = linesElements.some(els =>
+        els.some(e => e.type === "glyph" || e.type === "cartouche" || e.type === "run" || e.type === "text")
+      );
+      if (!anyContent) throw new Error("Nothing to export (no recognized words).");
 
+      // Measure everything using your existing canvas measurement approach
+      const tmp = document.createElement("canvas");
+      const ctx = tmp.getContext("2d");
+      ctx.textBaseline = "alphabetic";
+
+      const lineGapPx = lineGapForPx(fontPx);
+      const padPx = 18;
+
+      // Convert color "#RRGGBB" -> pdf-lib rgb
+      const fgHex = getFgHex();
+      const r = parseInt(fgHex.slice(1,3), 16) / 255;
+      const g = parseInt(fgHex.slice(3,5), 16) / 255;
+      const b = parseInt(fgHex.slice(5,7), 16) / 255;
+
+            // Create PDF
       const pdfDoc = await PDFDocument.create();
-      const pageWpt = Math.max(1, Number(plan.widthPx || 1) * PX_TO_PT);
-      const pageHpt = Math.max(1, Number(plan.heightPx || 1) * PX_TO_PT);
+      const fonts = await embedPdfFonts(pdfDoc);
+
+      function pdfFontForFamily(fam){
+        if (fam === FONT_FAMILY_LITERAL) return fonts.fontLit;
+        if (fam === FONT_FAMILY_CARTOUCHE) return fonts.fontCart;
+        return fonts.fontText;
+      }
+
+      function widthPtForText(fam, text, px){
+        const sizePt = (px ?? fontPx) * PX_TO_PT;
+        return pdfFontForFamily(fam).widthOfTextAtSize(String(text ?? ""), sizePt);
+      }
+
+      // Measure lines
+      const measuredLines = [];
+      let maxLineWpt = 0;
+      let totalH = 0;
+
+      for (const lineEls of linesElements) {
+        let wPt = 0;
+        let maxAscent = 0;
+        let maxDescent = 0;
+
+        const measuredEls = [];
+
+        for (const el of lineEls) {
+          // GAP (px -> pt)
+          if (el.type === "gap") {
+            const gapPx = Math.max(0, el.px | 0);
+            measuredEls.push({ kind: "gap", px: gapPx });
+            wPt += gapPx * PX_TO_PT;
+            continue;
+          }
+
+          // TEXT (Patrick / literal)
+          if (el.type === "text") {
+            const fam = el.fontFamily || FONT_FAMILY_LITERAL;
+            const px = (el.px ?? fontPx);
+            const txt = String(el.text ?? "");
+
+            // NEW: quoted literal text -> raster image in PDF
+            if (fam === FONT_FAMILY_LITERAL && el.isQuoted) {
+              const img = buildQuotedTextCanvasForPdf(txt, { px, fontFamily: fam, fgCss: getFgHex() });
+
+              measuredEls.push({ kind: "quotedImg", img });
+              wPt += (img.w | 0) * PX_TO_PT;
+
+              const a = img.baselineY | 0;
+              const d = (img.h | 0) - a;
+              maxAscent = Math.max(maxAscent, a);
+              maxDescent = Math.max(maxDescent, d);
+              continue;
+            }
+
+            // Normal (non-quoted) text stays as PDF text
+            const wThisPt = widthPtForText(fam, txt, px);
+
+            const m = measureChars(ctx, txt, px, fam);
+            maxAscent = Math.max(maxAscent, m.ascent);
+            maxDescent = Math.max(maxDescent, m.descent);
+
+            measuredEls.push({ kind: "text", fam, text: txt, px, wPt: wThisPt });
+            wPt += wThisPt;
+            continue;
+          }
+
+          // SINGLE GLYPH
+          if (el.type === "glyph") {
+            const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const px = (el.px ?? fontPx);
+            const ch = String.fromCodePoint(el.cp);
+
+            const wThisPt = widthPtForText(fam, ch, px);
+
+            const m = measureChars(ctx, ch, px, fam);
+            maxAscent = Math.max(maxAscent, m.ascent);
+            maxDescent = Math.max(maxDescent, m.descent);
+
+            measuredEls.push({ kind: "glyph", fam, text: ch, px, wPt: wThisPt });
+            wPt += wThisPt;
+            continue;
+          }
+
+          // RUN (multiple cps)
+          if (el.type === "run") {
+            const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const px = (el.px ?? fontPx);
+            const chars = (el.cps ?? []).map(cp => String.fromCodePoint(cp)).join("");
+
+            const wThisPt = widthPtForText(fam, chars, px);
+
+            const m = measureChars(ctx, chars, px, fam);
+            maxAscent = Math.max(maxAscent, m.ascent);
+            maxDescent = Math.max(maxDescent, m.descent);
+
+            measuredEls.push({ kind: "run", fam, text: chars, px, wPt: wThisPt });
+            wPt += wThisPt;
+            continue;
+          }
+
+          // CARTOUCHE (image in PDF)
+          if (el.type === "cartouche") {
+            measuredEls.push({ kind: "cartoucheImg", el });
+
+            // horizontal advance uses element width (px -> pt)
+            const wPx = (el.w | 0);
+            wPt += wPx * PX_TO_PT;
+
+            // vertical metrics: use element-provided ascent/descent if present
+            const a = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
+            const d = el.descent ?? Math.ceil((el.h | 0) * 0.3);
+            maxAscent = Math.max(maxAscent, a);
+            maxDescent = Math.max(maxDescent, d);
+            continue;
+          }
+
+          // Unknown element types: ignore safely (or log)
+          // console.warn("Unknown element type in PDF export:", el);
+        }
+
+        const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
+
+        measuredLines.push({ measuredEls, wPt, lineBoxH, maxAscent, maxDescent });
+        maxLineWpt = Math.max(maxLineWpt, wPt);
+
+        totalH += lineBoxH;
+      }
+
+      totalH += Math.max(0, (measuredLines.length - 1) * lineGapPx);
+
+
+
+      const pageWpt = maxLineWpt + (padPx * 2) * PX_TO_PT;
+      const pageHpt = (totalH + padPx * 2) * PX_TO_PT;
+
       const page = pdfDoc.addPage([pageWpt, pageHpt]);
 
-      const pdfScale = 6;
-      const hiFontPx = Math.max(8, Math.round(baseFontPx * pdfScale));
-      await waitForConfiguredFonts(hiFontPx);
-      const hiRendered = await renderer.renderTextToNewCanvas({
-        input,
-        ...baseConfig,
-        layout: {
-          ...(baseConfig.layout || {}),
-          fontPx: hiFontPx,
-          paddingPx: Math.max(0, Math.round(Number(baseConfig.layout?.paddingPx || 0) * pdfScale)),
-          lineGapPx: Math.max(0, Math.round(Number(baseConfig.layout?.lineGapPx || 0) * pdfScale))
-        },
-        paint: {
-          ...(baseConfig.paint || {}),
-          halo: {
-            ...((baseConfig.paint || {}).halo || {}),
-            enabled: false,
-            widthPx: 0
+      // Draw
+      let yPx = padPx;
+
+      for (let li = 0; li < measuredLines.length; li++) {
+        const L = measuredLines[li];
+
+        // pen position in POINTS (not px)
+        const mode = getAlignMode();
+        const f = alignFactor(mode);
+        const lineOffsetPt = Math.max(0, (maxLineWpt - L.wPt) * f);
+        let xPt = (padPx * PX_TO_PT) + lineOffsetPt;
+
+        // baseline in px (vertical layout still based on your existing ascent/descent)
+        const baselinePx = yPx + L.maxAscent;
+
+        for (const el of L.measuredEls) {
+          // 1) GAP
+          if (el.kind === "gap") {
+            xPt += Math.max(0, el.px | 0) * PX_TO_PT;
+            continue;
           }
+
+          // 1.5) QUOTED TEXT AS IMAGE
+          if (el.kind === "quotedImg") {
+            const img = el.img;
+
+            const pngBytes = await canvasToPngBytes(img.canvas);
+            const png = await pdfDoc.embedPng(pngBytes);
+
+            const by = (img.baselineY | 0);
+            const topLeftPx = baselinePx - by;
+
+            const drawXpt = xPt;
+            const drawYpt =
+              pageHpt - (topLeftPx * PX_TO_PT) - ((img.h | 0) * PX_TO_PT);
+
+            page.drawImage(png, {
+              x: drawXpt,
+              y: drawYpt,
+              width: (img.w | 0) * PX_TO_PT,
+              height: (img.h | 0) * PX_TO_PT,
+            });
+
+            xPt += (img.w | 0) * PX_TO_PT;
+            continue;
+          }
+
+          // 2) CARTOUCHE AS IMAGE
+          if (el.kind === "cartoucheImg") {
+            const cartEl = el.el;
+
+            const pdfCart = buildCartoucheCanvasForPdf(cartEl, { fontPx });
+            const pngBytes = await canvasToPngBytes(pdfCart.canvas);
+            const png = await pdfDoc.embedPng(pngBytes);
+
+            const by = (pdfCart.baselineY != null)
+              ? (pdfCart.baselineY | 0)
+              : Math.floor((pdfCart.h | 0) * 0.75);
+
+            const topLeftPx = baselinePx - by;
+
+            // x is already in points
+            const drawXpt = xPt;
+
+            // convert top-left px to PDF y coordinate (points from bottom)
+            const drawYpt =
+              pageHpt - (topLeftPx * PX_TO_PT) - ((pdfCart.h | 0) * PX_TO_PT);
+
+            page.drawImage(png, {
+              x: drawXpt,
+              y: drawYpt,
+              width: (pdfCart.w | 0) * PX_TO_PT,
+              height: (pdfCart.h | 0) * PX_TO_PT,
+            });
+
+            // advance pen by the cartouche width (points)
+            xPt += (pdfCart.w | 0) * PX_TO_PT;
+            continue;
+          }
+
+          // 3) NORMAL TEXT / RUN / GLYPH
+          // IMPORTANT: el must contain { text, fam, px, wPt } from the PDF measurement pass.
+          const txt = String(el.text ?? "");
+          if (!txt) continue;
+
+          const drawXpt = xPt;
+          const drawYpt = pageHpt - (baselinePx * PX_TO_PT);
+
+          let pdfFont = fonts.fontText;
+          if (el.fam === FONT_FAMILY_CARTOUCHE) pdfFont = fonts.fontCart;
+          if (el.fam === FONT_FAMILY_LITERAL) pdfFont = fonts.fontLit;
+
+          const fontSizePt = (el.px ?? fontPx) * PX_TO_PT;
+
+          page.drawText(txt, {
+            x: drawXpt,
+            y: drawYpt,
+            size: fontSizePt,
+            font: pdfFont,
+            color: rgb(r, g, b),
+          });
+
+          // advance pen by the PDF font's own width measurement (points)
+          xPt += Number(el.wPt ?? 0);
         }
-      });
 
-      const pngBytes = await canvasToPngBytes(hiRendered.canvas);
-      const png = await pdfDoc.embedPng(pngBytes);
-
-      page.drawImage(png, {
-        x: 0,
-        y: 0,
-        width: pageWpt,
-        height: pageHpt,
-      });
+        // advance to next line (vertical layout still in px)
+        yPx += L.lineBoxH;
+        if (li < measuredLines.length - 1) yPx += lineGapPx;
+      }
 
       const bytes = await pdfDoc.save();
       const blob = new Blob([bytes], { type: "application/pdf" });
@@ -4302,298 +4238,69 @@ function wireHaloControls() {
     }
 
 
-    function getUnicodeJsonFontMap() {
-      const preset = getActiveFontPreset();
-      const basename = (url) => {
-        const s = String(url ?? "");
-        const i = s.lastIndexOf("/");
-        return i >= 0 ? s.slice(i + 1) : s;
-      };
-      return {
-        "1": basename(preset.pdfTextFontUrl),
-        "2": basename(preset.pdfCartoucheFontUrl),
-        "3": "PatrickHand-Regular.ttf"
-      };
-    }
-
-    function buildUnicodeJsonFontFamilyToId() {
-      const preset = getActiveFontPreset();
-      return new Map([
-        [preset.textFamily, "1"],
-        [preset.cartoucheFamily, "2"],
-        [preset.literalFamily, "3"]
-      ]);
-    }
-
-    function stringToCodepoints(text) {
-      return Array.from(String(text ?? "")).map(ch => ch.codePointAt(0)).filter(cp => Number.isFinite(cp));
-    }
-
-    function formatCodepointsUPlus(cps) {
-      return (Array.isArray(cps) ? cps : [])
-        .filter(cp => Number.isFinite(cp))
-        .map(cp => `U+${cp.toString(16).toUpperCase()}`)
-        .join(" ");
-    }
-
-    function getUnicodeJsonRunType(run) {
-      const role = String(run?.fontRole ?? "").toLowerCase();
-      const mode = String(run?.renderMode ?? "").toLowerCase();
-      const kind = String(run?.kind ?? "").toLowerCase();
-      const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
-
-      if (role === "literal" || kind === "text" || sourceKind === "quote") return "literal";
-      if (sourceKind === "bracket") return "cartouche";
-      if (role === "time" || mode === "time") return "time";
-      if (role === "date" || mode === "date") return "date";
-      if (role === "number" || mode === "number") return "number";
-      if (kind === "cartouche" || role === "cartouche" || mode === "cartouche") return "cartouche";
-      return "text";
-    }
-
-    function getUnicodeJsonRunCodepoints(run) {
-      if (run?.kind === "cartouche") {
-        const inner = Array.isArray(run?._element?.cps) ? run._element.cps.slice() : (Array.isArray(run?.cps) ? run.cps.slice() : []);
-        return [CARTOUCHE_START_CP, ...inner, CARTOUCHE_END_CP];
-      }
-      if (Array.isArray(run?.cps) && run.cps.length) return run.cps.slice();
-      const text = (run?.encodedText != null) ? String(run.encodedText) : String(run?.sourceText ?? "");
-      return stringToCodepoints(text);
-    }
-
-    function getUnicodeJsonRunInput(run) {
-      const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
-      if (run?.sourceText != null && String(run.sourceText).length) {
-        const text = String(run.sourceText);
-        if (sourceKind === "bracket") return `[${text}]`;
-        return text;
-      }
-      if (run?.encodedText != null && String(run.encodedText).length) return String(run.encodedText);
-      return "";
-    }
-
-    function serializeUnicodeJsonImageValue(value) {
-      const desc = value || {};
-      const parts = [];
-      if (desc.src != null) parts.push(JSON.stringify(String(desc.src)));
-      if (desc.w != null) parts.push(`w=${String(desc.w)}`);
-      if (desc.h != null) parts.push(`h=${String(desc.h)}`);
-      if (desc.valign != null && String(desc.valign) !== "baseline") parts.push(`valign=${JSON.stringify(String(desc.valign))}`);
-      if (desc.wriggle != null && Number(desc.wriggle) !== 8) parts.push(`wriggle=${String(desc.wriggle)}`);
-      if (desc.transparent != null) parts.push(`transparent=${String(!!desc.transparent)}`);
-      if (desc.alt != null) parts.push(`alt=${JSON.stringify(String(desc.alt))}`);
-      return `img(${parts.join(", ")})`;
-    }
-
-    function getUnicodeJsonRunSourceStart(run) {
-      return Number.isFinite(run?.sourceStart) ? Number(run.sourceStart) : null;
-    }
-
-    function getUnicodeJsonRunSourceEnd(run) {
-      return Number.isFinite(run?.sourceEnd) ? Number(run.sourceEnd) : null;
-    }
-
-    function getUnicodeJsonWhitespaceGapText(segmentSource, from, to) {
-      if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return "";
-      if (typeof segmentSource === "string" && from >= 0 && to <= segmentSource.length) {
-        const gap = segmentSource.slice(from, to);
-        if (/^\s+$/.test(gap)) return gap;
-        return null;
-      }
-      return to > from ? " ".repeat(to - from) : "";
-    }
-
-    function getUnicodeJsonAstSegmentSourceText(plan, lineIndex, sourceKind, sourceSegmentIndex) {
-      const children = Array.isArray(plan?.ast?.lines?.[lineIndex]?.children)
-        ? plan.ast.lines[lineIndex].children
-        : null;
-      if (!children || !Number.isFinite(sourceSegmentIndex) || sourceSegmentIndex < 0 || sourceSegmentIndex >= children.length) return "";
-      const seg = children[sourceSegmentIndex];
-      if (!seg || String(seg.kind || "") !== String(sourceKind || "")) return "";
-      if (seg.kind === "text") return String(seg.value || "");
-      if (seg.kind === "bracket") return `[${String(seg.value || "")}]`;
-      if (seg.kind === "quote") return `"${String(seg.value || "")}"`;
-      if (seg.kind === "rawUcsur") return String(seg.value || "");
-      if (seg.kind === "image") {
-        const v = seg.value || {};
-        const parts = [JSON.stringify(String(v.src || ""))];
-        if (v.w != null) parts.push(`w=${v.w}`);
-        if (v.h != null) parts.push(`h=${v.h}`);
-        if (v.alt != null) parts.push(`alt=${JSON.stringify(String(v.alt))}`);
-        if (v.valign != null && String(v.valign) !== "baseline") parts.push(`valign=${JSON.stringify(String(v.valign))}`);
-        if (v.wriggle != null && Number(v.wriggle) !== 8) parts.push(`wriggle=${Number(v.wriggle)}`);
-        if (v.transparent != null) parts.push(`transparent=${Boolean(v.transparent)}`);
-        return `img(${parts.join(", ")})`;
-      }
-      return "";
-    }
-
-    function mergeConsecutiveUnicodeJsonTextRuns(runs) {
-      const merged = [];
-      for (const run of runs) {
-        const prev = merged.length ? merged[merged.length - 1] : null;
-        const sameSegment = !!prev
-          && prev.__sourceKind === run.__sourceKind
-          && prev.__sourceSegmentIndex === run.__sourceSegmentIndex;
-        const segmentSource = sameSegment
-          ? String(prev.__segmentSourceText || run.__segmentSourceText || "")
-          : "";
-        const gapText = (prev && sameSegment)
-          ? getUnicodeJsonWhitespaceGapText(segmentSource, prev.sourceEnd, run.sourceStart)
-          : null;
-        const canMerge = !!prev
-          && prev.type === "text"
-          && run.type === "text"
-          && prev.font === run.font
-          && prev.__sourceKind === "text"
-          && run.__sourceKind === "text"
-          && sameSegment
-          && gapText !== null;
-
-        if (!canMerge) {
-          merged.push({ ...run });
-          continue;
-        }
-
-        prev.input = `${prev.input || ""}${gapText}${run.input || ""}`;
-        prev.codepoints = prev.codepoints && run.codepoints
-          ? `${prev.codepoints} ${run.codepoints}`
-          : (prev.codepoints || run.codepoints || "");
-
-        if (prev.sourceStart == null && run.sourceStart != null) prev.sourceStart = run.sourceStart;
-        if (run.sourceEnd != null) prev.sourceEnd = run.sourceEnd;
-        else if (prev.sourceEnd == null) prev.sourceEnd = null;
-      }
-      return merged.map(run => {
-        const out = { ...run };
-        delete out.__sourceKind;
-        delete out.__sourceSegmentIndex;
-        delete out.__segmentSourceText;
-        return out;
-      });
-    }
-
-    function buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, preset) {
-      const lineRuns = Array.isArray(line?.runs) ? line.runs.filter(run => run && run.kind !== "gap") : [];
-
-      const exportedRuns = lineRuns.map(run => {
-        const fontFamily = String(run?.fontFamily || "");
-        const cps = getUnicodeJsonRunCodepoints(run);
-        let fontId = familyToId.get(fontFamily);
-        if (!fontId) {
-          if (fontFamily === preset.textFamily) fontId = "1";
-          else if (fontFamily === preset.cartoucheFamily) fontId = "2";
-          else if (fontFamily === preset.literalFamily) fontId = "3";
-          else fontId = "1";
-        }
-
-        const sourceKind = String(run?.sourceKind || "");
-        const sourceSegmentIndex = Number.isFinite(run?.sourceSegmentIndex) ? Number(run.sourceSegmentIndex) : null;
-        return {
-          font: fontId,
-          type: getUnicodeJsonRunType(run),
-          input: getUnicodeJsonRunInput(run),
-          sourceStart: getUnicodeJsonRunSourceStart(run),
-          sourceEnd: getUnicodeJsonRunSourceEnd(run),
-          codepoints: formatCodepointsUPlus(cps),
-          __sourceKind: sourceKind,
-          __sourceSegmentIndex: sourceSegmentIndex,
-          __segmentSourceText: getUnicodeJsonAstSegmentSourceText(plan, lineIndex, sourceKind, sourceSegmentIndex)
-        };
-      });
-
-      return mergeConsecutiveUnicodeJsonTextRuns(exportedRuns);
-    }
-
-    function serializeRenderPlanToUnicodeJson(plan) {
-      const fontMap = getUnicodeJsonFontMap();
-      const familyToId = buildUnicodeJsonFontFamilyToId();
-      const preset = getActiveFontPreset();
-      const sourceLines = typeof plan?.ast?.normalizedInput === "string"
-        ? String(plan.ast.normalizedInput).split(/\n/)
-        : [];
-
-      const lines = Array.isArray(plan?.lines) ? plan.lines.map((line, lineIndex) => ({
-        runs: buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, preset)
-      })) : [];
-
-      return {
-        fonts: fontMap,
-        lines
-      };
-    }
-
-    async function buildLatestUnicodeJsonExportObject() {
-      const renderer = await ensureRendererReady();
-      await waitForConfiguredFonts(getFontPx());
-      const input = String(elTextIn.value ?? "");
-      const config = buildRendererCallConfig({ includeHalo: true });
-      const plan = await renderer.buildRenderPlan({ input, ...config });
-      const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(line => Array.isArray(line?.runs) && line.runs.length > 0);
-      if (!hasRuns) throw new Error("Nothing to export (no recognized words).");
-      latestRenderPlan = plan;
-      return serializeRenderPlanToUnicodeJson(plan);
-    }
-
-    async function exportRenderedToUnicodeJson() {
-      const payload = await buildLatestUnicodeJsonExportObject();
-      const json = JSON.stringify(payload, null, 2);
-      downloadTextAsFile(json, { filename: `${getExportFilenameBase()}-unicode.json` });
-    }
-
     async function fetchFontBytes(url){
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Failed to fetch font: ${url} (${res.status})`);
       return await res.arrayBuffer();
     }
 
-    async function embedPdfFonts(){
-      return null;
+    // Embed the exact fonts you already use in canvas
+    async function embedPdfFonts(pdfDoc){
+      if (!window.fontkit) throw new Error("fontkit is missing (needed to embed OTF/TTF).");
+      if (!window.PDFLib) throw new Error("pdf-lib is missing.");
+
+      pdfDoc.registerFontkit(window.fontkit);
+
+      // IMPORTANT: these URLs must be same-origin in your static site
+      const [textBytes, cartBytes, literalBytes] = await Promise.all([
+        fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf"),              // TP-Nasin-Nanpa-Font
+        fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf"),// TP-Cartouche-Font
+        //fetchFontBytes("./fonts/PatrickHand-Regular.ttf"),                             // Patrick-Head-Font
+      ]);
+
+      const fontText = await pdfDoc.embedFont(textBytes, { subset: false }); // IMPORTANT for UCSUR / >BMP glyphs
+      const fontCart = await pdfDoc.embedFont(cartBytes, { subset: false }); // IMPORTANT for cartouche glyphs too
+      //const fontLit  = await pdfDoc.embedFont(literalBytes, { subset: false }); // OK to subset normal latin font
+
+      return { fontText, fontCart  };//, fontLit };
     }
 
-    const elTextIn = document.getElementById("appTextIn");
-    const outCanvas = document.getElementById("appOutCanvas");
-    const btnRender = document.getElementById("appBtnRender");
-    const btnDownload = document.getElementById("appBtnDownloadPng");
+    const elTextIn = document.getElementById("textIn");
+    const outCanvas = document.getElementById("outCanvas");
+    const btnRender = document.getElementById("btnRender");
+    const btnDownload = document.getElementById("btnDownloadPng");
 
     async function renderFromTextarea() {
-      const renderer = await ensureRendererReady();
-      await waitForConfiguredFonts(getFontPx());
-      const input = String(elTextIn.value ?? "");
-      const config = buildRendererCallConfig({ includeHalo: true });
+      const fontPx = getFontPx();
 
-      const parsed = await renderer.parseInput({ input });
-      const hasLines = Array.isArray(parsed?.ast?.lines) && parsed.ast.lines.length > 0;
-      const hasAnyText = hasLines && parsed.ast.lines.some(line => Array.isArray(line?.children) && line.children.some(child => String(child?.value ?? "").trim().length > 0));
+      await fontsReadyForPx(fontPx);
+      warmUpCanvasFontsOnce();
 
-      if (!hasAnyText) {
+      const raw = String(elTextIn.value ?? "");
+      const lines = raw.replace(/\r\n/g, "\n").split("\n");
+      const linesElements = lines.map(line => lineToElements(line, { fontPx }));
+
+      const anyContent = linesElements.some(els =>
+        els.some(e => e.type === "glyph" || e.type === "cartouche" || e.type === "run" || e.type === "text")
+      );
+
+      if (!anyContent) {
         outCanvas.width = 1;
         outCanvas.height = 1;
-        outCanvas.getContext("2d").clearRect(0, 0, 1, 1);
-        latestRenderPlan = null;
-        latestRenderedCanvas = null;
+        const ctx = outCanvas.getContext("2d");
+        ctx.clearRect(0, 0, 1, 1);
         announceStatus("Nothing to render (no recognized words).");
         return;
       }
 
-      const rendered = await renderer.renderTextToNewCanvas({ input, ...config });
-      const plan = await renderer.buildRenderPlan({ input, ast: rendered.ast, ...config });
-
-      outCanvas.width = rendered.canvas.width;
-      outCanvas.height = rendered.canvas.height;
-      const ctx = outCanvas.getContext("2d", { alpha: true });
-      ctx.clearRect(0, 0, outCanvas.width, outCanvas.height);
-      ctx.drawImage(rendered.canvas, 0, 0);
-
-      latestRenderPlan = plan;
-      latestRenderedCanvas = rendered.canvas;
-
-      const hex = getFgHex();
+      renderAllLinesToCanvas(outCanvas, linesElements, { fontPx });
+      const  hex  = getFgHex();
       const haloOn = getHaloEnabled();
       const haloHex = getHaloHex();
-      const preset = getActiveFontPreset();
-      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${getFontPx()}px. Renderer font family: ${preset.label}. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}.`);
+      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}.`);
+      //announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${fontPx}px. Color: ${hex}.`);
     }
+
 
 
     let _autoRenderTimer = null;
@@ -4607,7 +4314,7 @@ function wireHaloControls() {
 
 
     // ============================================================
-    // IndexedDB: persist last text input for #appTextIn
+    // IndexedDB: persist last text input for #textIn
     // - autosave (debounced)
     // - restore on page load
     // ============================================================
@@ -4747,12 +4454,12 @@ function wireHaloControls() {
     function initFloatingTextInEditor() {
       const S = FloatingTextInEditor;
 
-      S.root = document.getElementById("appFloatingTextInEditor");
-      S.header = document.getElementById("appFloatingTextInEditorHeader");
-      S.title = document.getElementById("appFloatingTextInEditorTitle");
-      S.ta = document.getElementById("appFloatingTextInEditorTextarea");
-      S.closeBtn = document.getElementById("appBtnCloseFloatingTextInEditor");
-      S.popBtn = document.getElementById("appBtnPopoutTextIn");
+      S.root = document.getElementById("floatingTextInEditor");
+      S.header = document.getElementById("floatingTextInEditorHeader");
+      S.title = document.getElementById("floatingTextInEditorTitle");
+      S.ta = document.getElementById("floatingTextInEditorTextarea");
+      S.closeBtn = document.getElementById("btnCloseFloatingTextInEditor");
+      S.popBtn = document.getElementById("btnPopoutTextIn");
       S.sourceTextarea = elTextIn;
 
       if (!S.root || !S.header || !S.ta || !S.sourceTextarea) return;
@@ -4764,7 +4471,7 @@ function wireHaloControls() {
         });
       }
 
-      const bigToggleBtn = document.getElementById("appBtnTogglePopoutMain");
+      const bigToggleBtn = document.getElementById("btnTogglePopoutMain");
       if (bigToggleBtn) {
         bigToggleBtn.addEventListener("click", () => {
           if (S.isOpen) closeFloatingTextInEditor();
@@ -4857,7 +4564,7 @@ function wireHaloControls() {
 
 
     function applyNewInputTextWithPipeline(newText) {
-      // Always write into the source textarea (#appTextIn), then trigger the existing pipeline:
+      // Always write into the source textarea (#textIn), then trigger the existing pipeline:
       // - pop-out sync
       // - IndexedDB autosave (debounced)
       // - auto-render (debounced)
@@ -4871,12 +4578,12 @@ function wireHaloControls() {
     }
 
     function wireImportExportButtons() {
-      const btnImportMain = document.getElementById("appBtnImportTextMain");
-      const btnExportMain = document.getElementById("appBtnExportTextMain");
-      const btnImportPop  = document.getElementById("appBtnImportTextPop");
-      const btnExportPop  = document.getElementById("appBtnExportTextPop");
+      const btnImportMain = document.getElementById("btnImportTextMain");
+      const btnExportMain = document.getElementById("btnExportTextMain");
+      const btnImportPop  = document.getElementById("btnImportTextPop");
+      const btnExportPop  = document.getElementById("btnExportTextPop");
 
-      const filePick = document.getElementById("appFilePickTextIn");
+      const filePick = document.getElementById("filePickTextIn");
       if (!filePick) return;
 
       // Shared import routine (uses hidden <input type="file">)
@@ -4939,23 +4646,13 @@ function wireHaloControls() {
     });
 
 
-    const btnDownloadPdf = document.getElementById("appBtnDownloadPdf");
-    const btnDownloadUnicodeJson = document.getElementById("appBtnDownloadUnicodeJson");
+    const btnDownloadPdf = document.getElementById("btnDownloadPdf");
 
     btnDownloadPdf?.addEventListener("click", async () => {
       try{
         await exportRenderedToPdf();
         announceStatus("Downloaded PDF.");
       } catch(e){
-        showAlertAndAnnounce(e?.message ?? String(e));
-      }
-    });
-
-    btnDownloadUnicodeJson?.addEventListener("click", async () => {
-      try {
-        await exportRenderedToUnicodeJson();
-        announceStatus("Downloaded Unicode JSON.");
-      } catch (e) {
         showAlertAndAnnounce(e?.message ?? String(e));
       }
     });
@@ -4975,8 +4672,8 @@ function wireHaloControls() {
     function updateExternalLinksWithCartoucheDisplay() {
       const mode = getNanpaLinjanMode();
 
-      const calc = document.getElementById("appCalculatorLink");
-      const rend = document.getElementById("appRendererLink");
+      const calc = document.getElementById("calculatorLink");
+      const rend = document.getElementById("rendererLink");
 
       setQueryParamOnLink(calc, "cartoucheDisplay", mode);
       setQueryParamOnLink(rend, "cartoucheDisplay", mode);
@@ -4985,14 +4682,14 @@ function wireHaloControls() {
     function wireCartoucheDisplayLinks() {
       updateExternalLinksWithCartoucheDisplay();
 
-      const radios = document.querySelectorAll('input[name="appNlMode"]');
+      const radios = document.querySelectorAll('input[name="nlMode"]');
       radios.forEach(r => {
         r.addEventListener("change", () => {
           updateExternalLinksWithCartoucheDisplay();
         });
       });
 
-      const linkIds = ["appCalculatorLink", "appRendererLink"];
+      const linkIds = ["calculatorLink", "rendererLink"];
       for (const id of linkIds) {
         const a = document.getElementById(id);
         if (!a) continue;
@@ -5002,9 +4699,9 @@ function wireHaloControls() {
       }
     }
 
-    const DEFAULT_TP_TEXT = `toki&pona`;
+    const DEFAULT_TP_TEXT = `toki pona`;
 
-    window.addEventListener("load", async () => {
+    async function __sitelenInternalInit() {
       try {
         if (btnRender) btnRender.disabled = true;
         if (btnDownload) btnDownload.disabled = true;
@@ -5013,7 +4710,6 @@ function wireHaloControls() {
         applyNanpaLinjanModeFromQueryOrStorage();
         applyFontPxFromQueryOrStorage();
         applyAlignFromStorage();
-        applyScriptPresetFromStorage();
         applyDefaultInputFromQuery();
 
         // Restore last draft from IndexedDB unless a ?text= / ?input= query param is supplying input.
@@ -5046,8 +4742,7 @@ function wireHaloControls() {
 
         wireNanpaLinjanModeRadios();
         wireFontSizeSelect();
-        wireAlignSelect();
-        wireScriptPresetSelect();
+      wireAlignSelect();
         wireCartoucheDisplayLinks();
 
         await fontsReadyForPx(getFontPx());
@@ -5066,11 +4761,96 @@ function wireHaloControls() {
         if (btnDownload) btnDownload.disabled = false;
         announceStatus("Font loading failed; rendering may use fallback fonts.");
       }
-    });
+    }
+
+    __bridgeGetFontPx = getFontPx;
+    __bridgeWordGapForPx = wordGapForPx;
+    __bridgePushGapIfNeeded = pushGapIfNeeded;
+    __bridgeMakeRunElementFromCodepoints = makeRunElementFromCodepoints;
+    __bridgeParseTextSegmentToElements = parseTextSegmentToElements;
+    __bridgeParseQuoteSegmentToElements = parseQuoteSegmentToElements;
+    __bridgeParseBracketSegmentToElements = parseBracketSegmentToElements;
+    __bridgeFontsReadyForPx = fontsReadyForPx;
+    __bridgeWarmUpCanvasFontsOnce = warmUpCanvasFontsOnce;
+    __bridgeRenderAllLinesToCanvas = renderAllLinesToCanvas;
+    __bridgeDrawTextWithOptionalHalo = drawTextWithOptionalHalo;
+    __bridgeNormalizeTpGlyphKey = normalizeTpGlyphKey;
+    __bridgeWordToUcsurCp = WORD_TO_UCSUR_CP;
 
     // Initialize pop-out editor
     initFloatingTextInEditor();
     wireImportExportButtons();
-  </script>
-</body>
-</html>
+  
+      if (typeof __sitelenInternalInit === 'function') await __sitelenInternalInit();
+      return true;
+    })();
+    return __coreReady;
+  }
+
+  class RendererInstance {
+    constructor(config = {}) {
+      this.config = config || {};
+    }
+
+    async parseInput({ input }) {
+      await ensureCore();
+      return { ast: astFromInput(input), diagnostics: [] };
+    }
+
+    async buildRenderPlan({ input, ast, layout = {}, paint = {}, parser = {}, fonts = {} }) {
+      await ensureCore();
+      const effectiveAst = ast || astFromInput(input || '');
+      const config = { ...this.config, layout: { ...(this.config.layout || {}), ...layout }, paint: { ...(this.config.paint || {}), ...paint }, parser: { ...(this.config.parser || {}), ...parser }, fonts: { ...(this.config.fonts || {}), ...fonts, roles: { ...((this.config.fonts || {}).roles || {}), ...((fonts || {}).roles || {}) } } };
+      return await withScopedRenderConfig(config, async () => {
+        if (typeof __bridgeFontsReadyForPx === 'function') await __bridgeFontsReadyForPx(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56));
+        if (typeof __bridgeWarmUpCanvasFontsOnce === 'function') __bridgeWarmUpCanvasFontsOnce();
+        const linesElements = await astToLineElements(effectiveAst, config);
+        const plan = buildMeasuredRenderPlan(linesElements, config);
+        plan.ast = effectiveAst;
+        plan.linesElements = linesElements;
+        plan.diagnostics = [];
+        return plan;
+      });
+    }
+
+    async renderRunToNewCanvas({ run, supersampleScale = 4, downsample = false } = {}) {
+      await ensureCore();
+      return drawRenderRunToCanvas(run, { supersampleScale, downsample });
+    }
+
+    async renderTextToNewCanvas(opts = {}) {
+      await ensureCore();
+      const config = { ...this.config, ...opts, layout: { ...(this.config.layout || {}), ...(opts.layout || {}) }, paint: { ...(this.config.paint || {}), ...(opts.paint || {}) }, parser: { ...(this.config.parser || {}), ...(opts.parser || {}) }, fonts: { ...(this.config.fonts || {}), ...(opts.fonts || {}), roles: { ...((this.config.fonts || {}).roles || {}), ...(((opts.fonts || {}).roles) || {}) } } };
+      return await renderAstToNewCanvas(astFromInput(opts.input || ''), config);
+    }
+
+    async renderTextToCanvas(opts = {}) {
+      const rendered = await this.renderTextToNewCanvas(opts);
+      await renderBlit(opts.canvas, opts.x, opts.y, rendered);
+      return rendered;
+    }
+
+    async renderUcsurToNewCanvas(opts = {}) {
+      await ensureCore();
+      const config = { ...this.config, ...opts, layout: { ...(this.config.layout || {}), ...(opts.layout || {}) }, paint: { ...(this.config.paint || {}), ...(opts.paint || {}) }, parser: { ...(this.config.parser || {}), ...(opts.parser || {}) }, fonts: { ...(this.config.fonts || {}), ...(opts.fonts || {}), roles: { ...((this.config.fonts || {}).roles || {}), ...(((opts.fonts || {}).roles) || {}) } } };
+      return await renderAstToNewCanvas(ucsurAstFromLines(opts.lines || []), config);
+    }
+
+    async renderUcsurToCanvas(opts = {}) {
+      const rendered = await this.renderUcsurToNewCanvas(opts);
+      await renderBlit(opts.canvas, opts.x, opts.y, rendered);
+      return rendered;
+    }
+  }
+
+  return {
+    async create(config = {}) {
+      await ensureCore();
+      return new RendererInstance(config);
+    }
+  };
+})();
+
+if (typeof window !== 'undefined') window.SitelenRenderer = SitelenRenderer;
+export { SitelenRenderer };
+export default SitelenRenderer;
