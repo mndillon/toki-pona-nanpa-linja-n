@@ -531,7 +531,10 @@ html, body{
      ============================================================ */
   const NUMERIC_PCT_CHOICES = [0,10,30,50,70,90,100];
   const LS_NUMERIC_PCT_KEY = "cartoucheSpelling.numericPct";
+  const LS_SUCCESSFUL_GAMES_KEY = "cartoucheSpelling.successfulGames";
+  const SUCCESSFUL_GAMES_HIDE_ZERO_THRESHOLD = 20;
   let numericPct = 0;
+  let successfulGamesCount = 0;
 
 
   const LS_LANG_KEY = "cartoucheSpelling.lang";
@@ -5398,6 +5401,26 @@ html, body{
     scheduleSaveGlyphStats();
   }
 
+  function bumpWrongForCurrentGuessOncePerToken(){
+    if (!current?.pendingTokens || !current.pendingTokens.length) return;
+    const typedNorm = normalizeGuess(document.getElementById("answer")?.value ?? "");
+    if (!typedNorm) return;
+    const mi = firstMismatchIndex(current.answerNorm, typedNorm);
+    let wi = mi;
+    if (wi >= current.pendingTokens.length) wi = current.pendingTokens.length - 1;
+    if (wi < 0) return;
+
+    const word = current.pendingTokens[wi];
+    if (!word) return;
+
+    if (!(current.countedWrongTokenKeys instanceof Set)) current.countedWrongTokenKeys = new Set();
+    const key = String(word);
+    if (current.countedWrongTokenKeys.has(key)) return;
+
+    current.countedWrongTokenKeys.add(key);
+    bumpWrongForWord(key);
+  }
+
   function firstMismatchIndex(a, b){
     // a,b are normalized (letters-only). Returns first index where they differ,
     // or min length if one is a prefix of the other.
@@ -5429,6 +5452,43 @@ html, body{
 
   function clearBestScore(){
     try{ localStorage.removeItem(LS_KEY_BEST_SCORE); } catch {}
+  }
+
+  function loadSuccessfulGamesCount(){
+    try{
+      const v = localStorage.getItem(LS_SUCCESSFUL_GAMES_KEY);
+      if (v == null) return 0;
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+    } catch { return 0; }
+  }
+
+  function saveSuccessfulGamesCount(n){
+    try{ localStorage.setItem(LS_SUCCESSFUL_GAMES_KEY, String(Math.max(0, Math.floor(n)))); } catch {}
+  }
+
+  function incrementSuccessfulGamesCount(){
+    successfulGamesCount = Math.max(0, Math.floor(successfulGamesCount)) + 1;
+    saveSuccessfulGamesCount(successfulGamesCount);
+    return successfulGamesCount;
+  }
+
+  function shouldHideZeroPercentOption(){
+    return successfulGamesCount >= SUCCESSFUL_GAMES_HIDE_ZERO_THRESHOLD;
+  }
+
+  function enforceNumericPctAvailability(sel){
+    const select = sel || document.getElementById("numericPctSelect");
+    if (!select) return;
+
+    const zeroOpt = Array.from(select.options).find(opt => String(opt.value) === "0");
+    if (zeroOpt) zeroOpt.hidden = shouldHideZeroPercentOption();
+
+    if (shouldHideZeroPercentOption() && numericPct === 0){
+      numericPct = 10;
+      select.value = "10";
+      try{ localStorage.setItem(LS_NUMERIC_PCT_KEY, String(numericPct)); } catch {}
+    }
   }
 
   /* ============================================================
@@ -6107,7 +6167,8 @@ return renderMainPhrase(phrase);
       section: nxt.section,
       answerNorm,      // letters-only TP answer (what the user must type)
       displayPhrase: null,
-      pendingTokens: null
+      pendingTokens: null,
+      countedWrongTokenKeys: new Set()
     };
   }
 
@@ -6135,7 +6196,7 @@ return renderMainPhrase(phrase);
       const answerNorm = normalizeGuess(latinRaw);
 
       // INCLUDE caps IN THE RETURNED OBJECT:
-      return { kind:"numeric", rawValue: raw, caps, cpsInner, latinRaw, answerNorm, isDateTime: gen.isDateTime };
+      return { kind:"numeric", rawValue: raw, caps, cpsInner, latinRaw, answerNorm, isDateTime: gen.isDateTime, countedWrongTokenKeys: new Set() };
     }
     return pickNext();
   }
@@ -6223,6 +6284,9 @@ return renderMainPhrase(phrase);
   function finishGame(){
     if (state !== GameState.running) return;
     state = GameState.finished;
+
+    incrementSuccessfulGamesCount();
+    enforceNumericPctAvailability();
 
     stopTimer();
     setInputEnabled(false);
@@ -6315,20 +6379,16 @@ return renderMainPhrase(phrase);
       return;
     }
 
+    bumpWrongForCurrentGuessOncePerToken();
+
     triesLeft -= 1;
     appendFeedRow({ good: false, text: typedRaw, points: 0 });
     clearInput();
     focusInput();
 
     if (triesLeft <= 0){
-      // Commit adaptive glyph stats ONLY when this cartouche is resolved (3 strikes)
+      // Commit adaptive glyph stats when this cartouche is resolved.
       bumpSeenForTokens(current?.pendingTokens);
-      if (current?.pendingTokens && current.pendingTokens.length){
-        const mi = firstMismatchIndex(current.answerNorm, typedNorm);
-        let wi = mi;
-        if (wi >= current.pendingTokens.length) wi = current.pendingTokens.length - 1;
-        bumpWrongForWord(current.pendingTokens[wi]);
-      }
 
       // Out of tries: reveal the correct value in red, with "ni li pona:" on the left
       // Numeric cartouches: show renderer-style proper name (spaced + Title Case)
@@ -6437,13 +6497,19 @@ return renderMainPhrase(phrase);
     applyUiLanguage();
 
     // numeric pct dropdown
+    successfulGamesCount = loadSuccessfulGamesCount();
     const selNumeric = document.getElementById("numericPctSelect");
     if (selNumeric){
       const saved = parseInt(localStorage.getItem(LS_NUMERIC_PCT_KEY) || "0", 10);
       numericPct = Number.isFinite(saved) ? saved : 0;
       selNumeric.value = String(numericPct);
+      enforceNumericPctAvailability(selNumeric);
       selNumeric.addEventListener("change", () => {
         numericPct = parseInt(selNumeric.value || "0", 10) || 0;
+        if (shouldHideZeroPercentOption() && numericPct === 0){
+          numericPct = 10;
+          selNumeric.value = "10";
+        }
         localStorage.setItem(LS_NUMERIC_PCT_KEY, String(numericPct));
       });
     }
