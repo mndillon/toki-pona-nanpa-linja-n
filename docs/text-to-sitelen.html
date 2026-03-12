@@ -243,40 +243,7 @@
 }
 
 
-    @font-face {
-      font-family: "TP-Cartouche-Font";
-      src:
-         url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf")   format("opentype"); 
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "TP-Nasin-Nanpa-Font";
-      src:
-       url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf")   format("opentype");
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "SSK-Juniko";
-      src:
-       url("./fonts/sitelenselikiwenjuniko.ttf") format("truetype");
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "SSK-Juniko-Cartouche";
-      src:
-       url("./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf") format("truetype");
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "Patrick-Head-Font";
-      src:
-        url("./fonts/PatrickHand-Regular.ttf")   format("truetype");
-      font-display: swap;
-    }
+ 
 
     /* ===== Toolbar overrides (paste at END of CSS) ===== */
 
@@ -897,6 +864,11 @@ nanpa #~WI.
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
     import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=1";
+    import {
+      createSitelenFontPairController,
+      TEXT_FONT_OPTION_SITELEN,
+      TEXT_FONT_OPTION_NANPA_LINJA_N
+    } from "./js/sitelen-font-pair-controller.js";
 
     "use strict";
 
@@ -914,6 +886,9 @@ nanpa #~WI.
       return new Promise(resolve => requestAnimationFrame(() => resolve()));
     }
 
+    
+
+
     const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
     const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
     const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
@@ -923,11 +898,40 @@ nanpa #~WI.
         key: "nasinNanpa",
         label: "nasin nanpa",
         parserMode: "sitelen-seli-kiwen",
-        textFamily: "TP-Nasin-Nanpa-Font",
-        cartoucheFamily: "TP-Cartouche-Font",
+        textFamily: FONT_FAMILY_TEXT,
+        cartoucheFamily: FONT_FAMILY_CARTOUCHE,
         literalFamily: FONT_FAMILY_LITERAL,
+        literalOptions: [
+          [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+          [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+          [FONT_FAMILY_LITERAL, "Patrick Hand"],
+          ["Arial", "Arial"],
+          ["Times New Roman", "Times New Roman"],
+          ["Courier New", "Courier New"],
+          ["system-ui", "system-ui"],
+        ],
         pdfTextFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
-        pdfCartoucheFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf"
+        pdfCartoucheFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+        faces: [
+          {
+            family: FONT_FAMILY_TEXT,
+            url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
+            format: "opentype",
+            sample: String.fromCodePoint(0xF196C)
+          },
+          {
+            family: FONT_FAMILY_CARTOUCHE,
+            url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+            format: "opentype",
+            sample: String.fromCodePoint(0xF1990)
+          },
+          {
+            family: FONT_FAMILY_LITERAL,
+            url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          }
+        ]
       },
       sitelenSeliKiwen: {
         key: "sitelenSeliKiwen",
@@ -936,97 +940,143 @@ nanpa #~WI.
         textFamily: "SSK-Juniko",
         cartoucheFamily: "SSK-Juniko-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
+        literalOptions: [
+          [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+          [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+          [FONT_FAMILY_LITERAL, "Patrick Hand"],
+          ["Arial", "Arial"],
+          ["Times New Roman", "Times New Roman"],
+          ["Courier New", "Courier New"],
+          ["system-ui", "system-ui"],
+        ],
         pdfTextFontUrl: "./fonts/sitelenselikiwenjuniko.ttf",
-        pdfCartoucheFontUrl: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf"
+        pdfCartoucheFontUrl: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+        faces: [
+          {
+            family: "SSK-Juniko",
+            url: "./fonts/sitelenselikiwenjuniko.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF196C)
+          },
+          {
+            family: "SSK-Juniko-Cartouche",
+            url: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF1990)
+          },
+          {
+            family: FONT_FAMILY_LITERAL,
+            url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          }
+        ]
+      },
+      fairfaxHd: {
+        key: "fairfaxHd",
+        label: "FairfaxHD",
+        parserMode: "sitelen-seli-kiwen",
+        textFamily: "fairfaxHd",
+        cartoucheFamily: "fairfaxHd-Cartouche",
+        literalFamily: FONT_FAMILY_LITERAL,
+        literalOptions: [
+          [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+          [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+          [FONT_FAMILY_LITERAL, "Patrick Hand"],
+          ["Arial", "Arial"],
+          ["Times New Roman", "Times New Roman"],
+          ["Courier New", "Courier New"],
+          ["system-ui", "system-ui"],
+        ],
+        pdfTextFontUrl: "./fonts/FairfaxHD.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+        faces: [
+          {
+            family: "fairfaxHd",
+            url: "./fonts/FairfaxHD.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF196C)
+          },
+          {
+            family: "fairfaxHd-Cartouche",
+            url: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF1990)
+          },
+          {
+            family: FONT_FAMILY_LITERAL,
+            url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          }
+        ]
       }
     };
 
-    const FONT_LOAD_SAMPLE = String.fromCodePoint(0xF196C, 0xF1954, 0xF1990) + ' Hello';
-    const SCRIPT_PRESET_STORAGE_KEY = "tpScriptPreset";
-    let ACTIVE_RENDER_FONT_KEY = "nasinNanpa";
     let sitelenRenderer = null;
     let sitelenRendererSignature = "";
     let latestRenderPlan = null;
     let latestRenderedCanvas = null;
 
-    const TEXT_FONT_STORAGE_KEY = "tpLiteralTextFont";
-    const TEXT_FONT_OPTION_SITELEN = "__active_text_family__";
-    const TEXT_FONT_OPTION_NANPA_LINJA_N = "__active_cartouche_family__";
-    const TEXT_FONT_OPTIONS = [
-      [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
-      [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
-      ["Patrick-Head-Font", "Patrick Hand"],
-      ["Arial", "Arial"],
-      ["Times New Roman", "Times New Roman"],
-      ["Courier New", "Courier New"],
-      ["system-ui", "system-ui"],
-    ];
+    const sitelenFontController = createSitelenFontPairController({
+      registry: RENDER_FONT_PRESETS,
+      scriptSelect: "appScriptPresetSel",
+      textFontSelect: "appTextFontSel",
+      storageKeyPrefix: "tp",
+      defaultPresetKey: "nasinNanpa",
+      defaultTextFontOption: FONT_FAMILY_LITERAL,
+      onInvalidate: () => {
+        sitelenRenderer = null;
+        sitelenRendererSignature = "";
+      }
+    });
 
     function getTextFontSelect() {
-  return document.getElementById("appTextFontSel");
-}
+      return document.getElementById("appTextFontSel");
+    }
 
-function normalizeTextFontOptionKey(key) {
-  const raw = String(key ?? "").trim();
-  return TEXT_FONT_OPTIONS.some(([value]) => value === raw) ? raw : "Patrick-Head-Font";
-}
+    function normalizeTextFontOptionKey(key) {
+      return sitelenFontController.normalizeTextFontOptionKey(key);
+    }
 
-function saveTextFontOptionToStorage(key) {
-  try { localStorage.setItem(TEXT_FONT_STORAGE_KEY, normalizeTextFontOptionKey(key)); } catch {}
-}
+    function saveTextFontOptionToStorage(key) {
+      sitelenFontController.saveTextFontOptionToStorage(key);
+    }
 
-function loadTextFontOptionFromStorage() {
-  try { return normalizeTextFontOptionKey(localStorage.getItem(TEXT_FONT_STORAGE_KEY) || "Patrick-Head-Font"); }
-  catch { return "Patrick-Head-Font"; }
-}
+    function loadTextFontOptionFromStorage() {
+      return sitelenFontController.loadTextFontOptionFromStorage();
+    }
 
-function populateTextFontSelectOptions() {
-  const sel = getTextFontSelect();
-  if (!sel) return;
-  const current = normalizeTextFontOptionKey(sel.value || loadTextFontOptionFromStorage());
-  sel.innerHTML = "";
-  for (const [value, label] of TEXT_FONT_OPTIONS) {
-    const opt = document.createElement("option");
-    opt.value = value;
-    opt.textContent = label;
-    sel.appendChild(opt);
-  }
-  sel.value = current;
-}
+    function populateTextFontSelectOptions() {
+      sitelenFontController.populateTextSelectOptions();
+    }
 
-function getSelectedTextFontOptionKey() {
-  const sel = getTextFontSelect();
-  return normalizeTextFontOptionKey(sel?.value || loadTextFontOptionFromStorage());
-}
+    function getSelectedTextFontOptionKey() {
+      return sitelenFontController.getSelectedTextFontOptionKey();
+    }
 
-function resolveLiteralFontFamily(optionKey = getSelectedTextFontOptionKey(), preset = getActiveFontPreset()) {
-  const normalized = normalizeTextFontOptionKey(optionKey);
-  if (normalized === TEXT_FONT_OPTION_SITELEN) return String(preset?.textFamily || FONT_FAMILY_TEXT);
-  if (normalized === TEXT_FONT_OPTION_NANPA_LINJA_N) return String(preset?.cartoucheFamily || FONT_FAMILY_CARTOUCHE);
-  return normalized;
-}
+    function resolveLiteralFontFamily(optionKey = getSelectedTextFontOptionKey(), preset = getActiveFontPreset()) {
+      return sitelenFontController.resolveLiteralFontFamily(optionKey, preset);
+    }
 
-function setSelectedTextFontOption(key, { persist = true } = {}) {
-  const normalized = normalizeTextFontOptionKey(key);
-  const sel = getTextFontSelect();
-  if (sel) sel.value = normalized;
-  sitelenRenderer = null;
-  sitelenRendererSignature = "";
-  if (persist) saveTextFontOptionToStorage(normalized);
-  return normalized;
-}
+    function setSelectedTextFontOption(key, { persist = true } = {}) {
+      return sitelenFontController.setSelectedTextFontOption(key, { persist });
+    }
 
-function applyTextFontOptionFromStorage() {
-  populateTextFontSelectOptions();
-  setSelectedTextFontOption(loadTextFontOptionFromStorage(), { persist: false });
-}
+    function applyTextFontOptionFromStorage() {
+      sitelenFontController.populateTextSelectOptions();
+      sitelenFontController.setSelectedTextFontOption(
+        sitelenFontController.loadTextFontOptionFromStorage(),
+        { persist: false }
+      );
+    }
 
     function getActiveFontPreset() {
-      return RENDER_FONT_PRESETS[ACTIVE_RENDER_FONT_KEY] || RENDER_FONT_PRESETS.nasinNanpa;
+      return sitelenFontController.getActivePreset();
     }
 
     function normalizeScriptPresetKey(key) {
-      return Object.prototype.hasOwnProperty.call(RENDER_FONT_PRESETS, key) ? key : "nasinNanpa";
+      return sitelenFontController.normalizeScriptPresetKey(key);
     }
 
     function getScriptPresetSelect() {
@@ -1034,30 +1084,24 @@ function applyTextFontOptionFromStorage() {
     }
 
     function saveScriptPresetToStorage(key) {
-      try { localStorage.setItem(SCRIPT_PRESET_STORAGE_KEY, normalizeScriptPresetKey(key)); } catch {}
+      sitelenFontController.saveScriptPresetToStorage(key);
     }
 
     function loadScriptPresetFromStorage() {
-      try { return normalizeScriptPresetKey(localStorage.getItem(SCRIPT_PRESET_STORAGE_KEY) || "nasinNanpa"); }
-      catch { return "nasinNanpa"; }
+      return sitelenFontController.loadScriptPresetFromStorage();
     }
 
     function setActiveFontPreset(key, { persist = true } = {}) {
-      const normalized = normalizeScriptPresetKey(key);
-      ACTIVE_RENDER_FONT_KEY = normalized;
-      const sel = getScriptPresetSelect();
-      if (sel) sel.value = normalized;
-      sitelenRenderer = null;
-      sitelenRendererSignature = "";
-      if (persist) saveScriptPresetToStorage(normalized);
-      return normalized;
+      return sitelenFontController.setActivePreset(key, { persist });
     }
 
     function applyScriptPresetFromStorage() {
-      setActiveFontPreset(loadScriptPresetFromStorage(), { persist: false });
+      sitelenFontController.setActivePreset(
+        sitelenFontController.loadScriptPresetFromStorage(),
+        { persist: false }
+      );
     }
 
- 
     function wireScriptPresetSelect() {
       const sel = getScriptPresetSelect();
       if (!sel) return;
@@ -1088,31 +1132,27 @@ function applyTextFontOptionFromStorage() {
     }
 
     function buildFontRoles() {
-      const preset = getActiveFontPreset();
-      return {
-        word: preset.textFamily,
-        text: preset.textFamily,
-        cartouche: preset.textFamily,
-        number: preset.cartoucheFamily,
-        date: preset.cartoucheFamily,
-        time: preset.cartoucheFamily,
-        literal: resolveLiteralFontFamily(getSelectedTextFontOptionKey(), preset) //literal: preset.literalFamily
-      };
+      return sitelenFontController.buildFontRoles();
     }
 
     function uniqueConfiguredFontFamilies() {
-      return Array.from(new Set(Object.values(buildFontRoles()).filter(Boolean)));
+      return sitelenFontController.uniqueConfiguredFontFamilies();
     }
 
     async function waitForConfiguredFonts(fontPx = 56) {
-      if (!document.fonts || typeof document.fonts.load !== 'function') return;
-      const families = uniqueConfiguredFontFamilies();
-      await document.fonts.ready;
-      await Promise.all(families.map(family =>
-        document.fonts.load(`${fontPx}px "${family}"`, FONT_LOAD_SAMPLE)
-      ));
+      await sitelenFontController.waitForConfiguredFonts(fontPx);
     }
 
+
+
+
+
+
+
+
+
+
+    
     function buildRendererInitConfig() {
       const preset = getActiveFontPreset();
       return {
@@ -1523,7 +1563,7 @@ function wireHaloControls() {
       sel.addEventListener("change", async () => {
         try {
           const px = setFontPx(sel.value);
-          DID_WARMUP = false;
+          sitelenFontController.resetFontLoadState();
           await fontsReadyForPx(px);
           await renderFromTextarea();
         } catch (e) {
@@ -1656,85 +1696,31 @@ function wireHaloControls() {
       return known;
     }
 
+
+
+
     async function ensureFontLoaded(pxOverride) {
-      if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
-
-      const px = Math.max(8, Number(pxOverride ?? getFontPx() ?? 56));
-
-      const sampleTextChar = String.fromCodePoint(0xF196C); // toki
-      const sampleCartChar = String.fromCodePoint(0xF1990); // cartouche start
-      const sampleLiteral  = "Hello";                       // literal font sample
-
       try {
-        const okText = document.fonts.check(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
-        const okCart = document.fonts.check(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
-        const okLit  = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral);
-
-        const loads = [];
-        if (!okText) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar));
-        if (!okCart) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar));
-        if (!okLit)  loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral));
-
-        if (loads.length) await Promise.all(loads);
-
-        await document.fonts.ready;
-
-        const okText2 = document.fonts.check(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
-        const okCart2 = document.fonts.check(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
-        const okLit2  = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral);
-
-        if (!okText2 || !okCart2 || !okLit2) {
-          await Promise.all([
-            document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar),
-            document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar),
-            document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral),
-          ]);
-          await document.fonts.ready;
-        }
+        await sitelenFontController.ensureFamiliesLoaded(pxOverride ?? getFontPx());
       } catch (e) {
         console.warn("[font] load threw error:", e);
       }
     }
 
     function warmUpCanvasFonts() {
-      const c = document.createElement("canvas");
-      c.width = 2; c.height = 2;
-      const ctx = c.getContext("2d");
-
-      const px = getFontPx();
-
-      ctx.textBaseline = "alphabetic";
-
-      ctx.font = `${px}px "${FONT_FAMILY_TEXT}"`;
-      ctx.fillText(String.fromCodePoint(0xF196C), 0, 1);
-
-      ctx.font = `${px}px "${FONT_FAMILY_CARTOUCHE}"`;
-      ctx.fillText(String.fromCodePoint(0xF1990), 0, 1);
+      sitelenFontController.warmUpCanvasFonts(getFontPx());
     }
-
-    let DID_WARMUP = false;
 
     function warmUpCanvasFontsOnce() {
-      if (DID_WARMUP) return;
-      DID_WARMUP = true;
-      warmUpCanvasFonts();
+      sitelenFontController.warmUpCanvasFontsOnce(getFontPx());
     }
-
-    let FONTS_READY_PROMISE = null;
-    let FONTS_READY_PX = null;
 
     function fontsReadyForPx(px) {
-      const p = Math.max(8, Number(px ?? getFontPx() ?? 56));
-      if (!FONTS_READY_PROMISE || FONTS_READY_PX !== p) {
-        FONTS_READY_PX = p;
-        FONTS_READY_PROMISE = (async () => {
-          await ensureFontLoaded(p);
-          await nextFrame();
-          await nextFrame();
-        })();
-      }
-      return FONTS_READY_PROMISE;
+      return sitelenFontController.fontsReadyForPx(px ?? getFontPx());
     }
+
+
+   
 
     /* ============================
        Remember Traditional/Uniform + query param

@@ -1,10 +1,9 @@
-The OFL_PatrickHand.txt file covers the license for font file:
-PatrickHead-Regular.ttf
-
-
-The OFL_sitelenselikiwenjuniko.txt file covers the license for font files:
+The OFL.txt file covers the license for font files:
+PatrickHand-Regular.ttf
 sitelenselikiwenjuniko.ttf
 sitelenselikiwenjuniko-cartouche-scaled-v3.ttf
+FairfaxHD.ttf
+FairfaxHD-nanpa-linja-n.ttf
 
 
 The LICENCE.txt file covers the licence for the font files:

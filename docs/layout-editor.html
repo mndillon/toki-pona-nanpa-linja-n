@@ -27,37 +27,7 @@
     --grid-size: 20px;
   }
 
-  /* CHANGE HERE: provide your fonts (optional) */
-  @font-face {
-    font-family: "PatrickHand";
-    src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
-    font-display: swap;
-  }
-  @font-face {
-    font-family: "TP-Cartouche-Font";
-    src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf")   format("opentype");
-    font-display: swap;
-  }
-  @font-face {
-    font-family: "TP-Nasin-Nanpa-Font";
-    src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
-    font-display: swap;
-  }
-
-        @font-face {
-      font-family: "SSK-Juniko";
-      src:
-       url("./fonts/sitelenselikiwenjuniko.ttf") format("truetype");
-      font-display: swap;
-    }
-
-    @font-face {
-      font-family: "SSK-Juniko-Cartouche";
-      src:
-       url("./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf") format("truetype");
-      font-display: swap;
-    }
-    
+ 
 
   html, body{
     height:100%;
@@ -975,6 +945,13 @@
 
             <div class="row">
               <div class="field">
+                <label for="defTextFontOption">Default text font</label>
+                <select id="defTextFontOption"></select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
                 <label for="defTextColor">Default text</label>
                 <input id="defTextColor" type="color" value="#111111" />
               </div>
@@ -1193,7 +1170,8 @@
       lbl_snap_tol: "Snap tolerance",
       lbl_export_stage_bg: "Export stage background",
       lbl_stage_bg: "Stage background",
-      lbl_default_render_font: "Default sitelen font family",
+      lbl_default_render_font: "Default script family",
+      lbl_default_text_font: "Default text font",
       lbl_default_text: "Default text",
       lbl_default_fill_enabled: "Default allow fill",
       lbl_default_fill: "Default fill",
@@ -1643,6 +1621,7 @@
     setLabel("exportStageBackground", "lbl_export_stage_bg");
     setLabel("stageBg", "lbl_stage_bg");
     setLabel("defRenderFontPreset", "lbl_default_render_font");
+    setLabel("defTextFontOption", "lbl_default_text_font");
     setLabel("defTextColor", "lbl_default_text");
     setLabel("defaultFillEnabled", "lbl_default_fill_enabled");
     setLabel("defaultFill", "lbl_default_fill");
@@ -1698,6 +1677,200 @@
     Image: "image",
   });
 
+const DEFAULT_FONT_LOAD_SAMPLE = String.fromCodePoint(0xF196C, 0xF1954, 0xF1990) + " Hello";
+const TEXT_FONT_OPTION_SITELEN = "__active_text_family__";
+const TEXT_FONT_OPTION_NANPA_LINJA_N = "__active_cartouche_family__";
+const DEFAULT_TEXT_FONT_OPTIONS = [
+  [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+  [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+  ["PatrickHand", "Patrick Hand"],
+  ["Arial", "Arial"],
+  ["Times New Roman", "Times New Roman"],
+  ["Courier New", "Courier New"],
+  ["system-ui", "system-ui"],
+];
+function byIdOrElement(value) {
+  if (!value) return null;
+  if (typeof value === "string") return document.getElementById(value);
+  return value;
+}
+function uniq(items) {
+  return Array.from(new Set((items || []).filter(Boolean)));
+}
+function normalizeFormat(format) {
+  const raw = String(format || "").trim();
+  if (!raw) return "truetype";
+  return raw;
+}
+function quotedFontFamily(family) {
+  const s = String(family || "").trim();
+  return s.includes('\"') ? s : `"${s}"`;
+}
+function createSitelenFontPairController({
+  registry,
+  scriptSelect,
+  textFontSelect,
+  storageKeyPrefix = "tp",
+  defaultPresetKey = "nasinNanpa",
+  defaultTextFontOption = "PatrickHand",
+  fontLoadSample = DEFAULT_FONT_LOAD_SAMPLE,
+  onInvalidate = null,
+} = {}) {
+  if (!registry || typeof registry !== "object") throw new Error("createSitelenFontPairController requires a registry object.");
+  const registryMap = new Map(Object.entries(registry));
+  if (!registryMap.size) throw new Error("Font registry is empty.");
+  const scriptEl = byIdOrElement(scriptSelect);
+  const textEl = byIdOrElement(textFontSelect);
+  const scriptStorageKey = `${storageKeyPrefix}ScriptPreset`;
+  const textStorageKey = `${storageKeyPrefix}LiteralTextFont`;
+  let activePresetKey = normalizeScriptPresetKey(defaultPresetKey);
+  let fontsReadyPromise = null;
+  let fontsReadyPx = null;
+  let didWarmUp = false;
+  const registeredFaces = new Set();
+  const loadPromisesByFaceKey = new Map();
+  function invalidate() {
+    fontsReadyPromise = null;
+    fontsReadyPx = null;
+    didWarmUp = false;
+    if (typeof onInvalidate === "function") onInvalidate();
+  }
+  function presetEntries() { return Array.from(registryMap.entries()); }
+  function normalizeScriptPresetKey(key) {
+    const raw = String(key || "").trim();
+    return registryMap.has(raw) ? raw : (registryMap.has(defaultPresetKey) ? defaultPresetKey : presetEntries()[0][0]);
+  }
+  function getActivePreset() {
+    return registryMap.get(activePresetKey) || registryMap.get(normalizeScriptPresetKey(defaultPresetKey)) || presetEntries()[0][1];
+  }
+  function getTextFontOptionsForPreset(preset = getActivePreset()) {
+    const opts = Array.isArray(preset?.literalOptions) && preset.literalOptions.length ? preset.literalOptions : DEFAULT_TEXT_FONT_OPTIONS;
+    return opts.map(item => Array.isArray(item) ? item : [item?.value, item?.label]);
+  }
+  function normalizeTextFontOptionKey(key, preset = getActivePreset()) {
+    const raw = String(key ?? "").trim();
+    const options = getTextFontOptionsForPreset(preset);
+    return options.some(([value]) => value === raw) ? raw : defaultTextFontOption;
+  }
+  function saveScriptPresetToStorage(key) { try { localStorage.setItem(scriptStorageKey, normalizeScriptPresetKey(key)); } catch {} }
+  function loadScriptPresetFromStorage() { try { return normalizeScriptPresetKey(localStorage.getItem(scriptStorageKey) || defaultPresetKey); } catch { return normalizeScriptPresetKey(defaultPresetKey); } }
+  function saveTextFontOptionToStorage(key) { try { localStorage.setItem(textStorageKey, normalizeTextFontOptionKey(key)); } catch {} }
+  function loadTextFontOptionFromStorage(preset = getActivePreset()) { try { return normalizeTextFontOptionKey(localStorage.getItem(textStorageKey) || defaultTextFontOption, preset); } catch { return normalizeTextFontOptionKey(defaultTextFontOption, preset); } }
+  function populateScriptSelectOptions() {
+    if (!scriptEl) return;
+    const current = normalizeScriptPresetKey(scriptEl.value || activePresetKey);
+    scriptEl.innerHTML = "";
+    for (const [key, preset] of presetEntries()) {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = String(preset?.label || key);
+      scriptEl.appendChild(opt);
+    }
+    scriptEl.value = current;
+  }
+  function populateTextSelectOptions() {
+    if (!textEl) return;
+    const preset = getActivePreset();
+    const current = normalizeTextFontOptionKey(textEl.value || loadTextFontOptionFromStorage(preset), preset);
+    textEl.innerHTML = "";
+    for (const [value, label] of getTextFontOptionsForPreset(preset)) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = String(label || value);
+      textEl.appendChild(opt);
+    }
+    textEl.value = current;
+  }
+  function getSelectedTextFontOptionKey() { return normalizeTextFontOptionKey(textEl?.value || loadTextFontOptionFromStorage(), getActivePreset()); }
+  function resolveLiteralFontFamily(optionKey = getSelectedTextFontOptionKey(), preset = getActivePreset()) {
+    const normalized = normalizeTextFontOptionKey(optionKey, preset);
+    if (normalized === TEXT_FONT_OPTION_SITELEN) return String(preset?.textFamily || "");
+    if (normalized === TEXT_FONT_OPTION_NANPA_LINJA_N) return String(preset?.cartoucheFamily || "");
+    return normalized;
+  }
+  function buildFontRoles({ textFontOptionKey = getSelectedTextFontOptionKey(), preset = getActivePreset() } = {}) {
+    return { word: preset.textFamily, text: preset.textFamily, cartouche: preset.textFamily, number: preset.cartoucheFamily, date: preset.cartoucheFamily, time: preset.cartoucheFamily, literal: resolveLiteralFontFamily(textFontOptionKey, preset) };
+  }
+  function uniqueConfiguredFontFamilies(args = {}) { return uniq(Object.values(buildFontRoles(args))); }
+  function findFaceByFamily(family) {
+    const fam = String(family || "").trim();
+    if (!fam) return null;
+    for (const [, preset] of presetEntries()) {
+      for (const face of (preset?.faces || [])) {
+        if (String(face?.family || "").trim() === fam) return face;
+      }
+    }
+    return null;
+  }
+  async function ensureFaceLoaded(face) {
+    if (!face?.family || !face?.url || !document.fonts) return;
+    const family = String(face.family).trim();
+    const url = String(face.url).trim();
+    const faceKey = `${family}::${url}`;
+    if (registeredFaces.has(faceKey)) return;
+    if (loadPromisesByFaceKey.has(faceKey)) { await loadPromisesByFaceKey.get(faceKey); return; }
+    const loader = (async () => {
+      const source = `url("${url.replace(/"/g, '\\"')}") format("${normalizeFormat(face.format)}")`;
+      const fontFace = new FontFace(family, source, face.descriptors || {});
+      await fontFace.load();
+      document.fonts.add(fontFace);
+      registeredFaces.add(faceKey);
+    })();
+    loadPromisesByFaceKey.set(faceKey, loader);
+    try { await loader; } finally { loadPromisesByFaceKey.delete(faceKey); }
+  }
+  async function ensureFamiliesLoaded(fontPx = 56, families = uniqueConfiguredFontFamilies()) {
+    if (!document.fonts || typeof document.fonts.load !== "function") return;
+    const px = Math.max(8, Number(fontPx || 56));
+    const neededFaces = uniq(families.map(findFaceByFamily).filter(Boolean));
+    await Promise.all(neededFaces.map(ensureFaceLoaded));
+    await document.fonts.ready;
+    await Promise.all(families.map(family => document.fonts.load(`${px}px ${quotedFontFamily(family)}`, fontLoadSample)));
+    await document.fonts.ready;
+  }
+  function warmUpCanvasFonts(fontPx = 56, families = uniqueConfiguredFontFamilies()) {
+    const px = Math.max(8, Number(fontPx || 56));
+    const c = document.createElement("canvas"); c.width = 4; c.height = 4;
+    const ctx = c.getContext("2d"); if (!ctx) return; ctx.textBaseline = "alphabetic";
+    for (const family of families) {
+      const face = findFaceByFamily(family);
+      const sample = String(face?.sample || fontLoadSample || "A");
+      ctx.font = `${px}px ${quotedFontFamily(family)}`;
+      ctx.fillText(sample, 0, 3);
+    }
+  }
+  async function fontsReadyForPx(fontPx = 56) {
+    const px = Math.max(8, Number(fontPx || 56));
+    if (!fontsReadyPromise || fontsReadyPx !== px) {
+      fontsReadyPx = px;
+      fontsReadyPromise = (async () => {
+        await ensureFamiliesLoaded(px);
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      })();
+    }
+    return fontsReadyPromise;
+  }
+  async function waitForConfiguredFonts(fontPx = 56) { await fontsReadyForPx(fontPx); }
+  function warmUpCanvasFontsOnce(fontPx = 56) { if (didWarmUp) return; didWarmUp = true; warmUpCanvasFonts(fontPx); }
+  function setActivePreset(key, { persist = true } = {}) { activePresetKey = normalizeScriptPresetKey(key); if (scriptEl) scriptEl.value = activePresetKey; populateTextSelectOptions(); if (persist) saveScriptPresetToStorage(activePresetKey); invalidate(); return activePresetKey; }
+  function setSelectedTextFontOption(key, { persist = true } = {}) { const normalized = normalizeTextFontOptionKey(key, getActivePreset()); if (textEl) textEl.value = normalized; if (persist) saveTextFontOptionToStorage(normalized); invalidate(); return normalized; }
+  function applyStoredSelections() { populateScriptSelectOptions(); setActivePreset(loadScriptPresetFromStorage(), { persist: false }); populateTextSelectOptions(); setSelectedTextFontOption(loadTextFontOptionFromStorage(), { persist: false }); }
+  function wireControls({ onChange } = {}) {
+    if (scriptEl) scriptEl.addEventListener("change", async () => { setActivePreset(scriptEl.value); if (typeof onChange === "function") await onChange({ type: "scriptPreset", controller: api }); });
+    if (textEl) textEl.addEventListener("change", async () => { setSelectedTextFontOption(textEl.value); if (typeof onChange === "function") await onChange({ type: "textFont", controller: api }); });
+  }
+  function resetFontLoadState() { invalidate(); }
+  const api = { normalizeScriptPresetKey, normalizeTextFontOptionKey, getActivePreset, getSelectedTextFontOptionKey, getTextFontOptionsForPreset, resolveLiteralFontFamily, buildFontRoles, uniqueConfiguredFontFamilies, ensureFamiliesLoaded, waitForConfiguredFonts, fontsReadyForPx, warmUpCanvasFonts, warmUpCanvasFontsOnce, resetFontLoadState, populateScriptSelectOptions, populateTextSelectOptions, saveScriptPresetToStorage, loadScriptPresetFromStorage, saveTextFontOptionToStorage, loadTextFontOptionFromStorage, setActivePreset, setSelectedTextFontOption, applyStoredSelections, wireControls };
+  populateScriptSelectOptions();
+  populateTextSelectOptions();
+  return api;
+}
+
+const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
+const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
+const FONT_FAMILY_LITERAL = "PatrickHand";
+
   const DEFAULTS = Object.freeze({
     stageW: 1280,
     stageH: 800,
@@ -1712,6 +1885,7 @@
     stageBg: "#FFFFFF", //"#F3DFC0",                 // stage background color
     exportStageBackground: false,
     defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
+    defaultTextFontOption: FONT_FAMILY_LITERAL,
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
     defaultFill: "#111111",// default fill for shapes/boxes
     defaultFillEnabled: false,
@@ -1733,26 +1907,125 @@
   });
 
 
-
-
-const RENDER_FONT_PRESETS = {
-  nasinNanpa: {
-    key: "nasinNanpa",
-    label: "nasin nanpa",
-    parserMode: "sitelen-seli-kiwen",
-    textFamily: "TP-Nasin-Nanpa-Font",
-    cartoucheFamily: "TP-Cartouche-Font",
-    literalFamily: "Patrick-Head-Font"
-  },
-  sitelenSeliKiwen: {
-    key: "sitelenSeliKiwen",
-    label: "sitelen seli kiwen",
-    parserMode: "sitelen-seli-kiwen",
-    textFamily: "SSK-Juniko",
-    cartoucheFamily: "SSK-Juniko-Cartouche",
-    literalFamily: "Patrick-Head-Font"
-  }
-};
+    const RENDER_FONT_PRESETS = {
+      nasinNanpa: {
+        key: "nasinNanpa",
+        label: "nasin nanpa",
+        parserMode: "sitelen-seli-kiwen",
+        textFamily: FONT_FAMILY_TEXT,
+        cartoucheFamily: FONT_FAMILY_CARTOUCHE,
+        literalFamily: FONT_FAMILY_LITERAL,
+        literalOptions: [
+          [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+          [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+          [FONT_FAMILY_LITERAL, "Patrick Hand"],
+          ["Arial", "Arial"],
+          ["Times New Roman", "Times New Roman"],
+          ["Courier New", "Courier New"],
+          ["system-ui", "system-ui"],
+        ],
+        pdfTextFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
+        pdfCartoucheFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+        faces: [
+          {
+            family: FONT_FAMILY_TEXT,
+            url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
+            format: "opentype",
+            sample: String.fromCodePoint(0xF196C)
+          },
+          {
+            family: FONT_FAMILY_CARTOUCHE,
+            url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+            format: "opentype",
+            sample: String.fromCodePoint(0xF1990)
+          },
+          {
+            family: FONT_FAMILY_LITERAL,
+            url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          }
+        ]
+      },
+      sitelenSeliKiwen: {
+        key: "sitelenSeliKiwen",
+        label: "sitelen seli kiwen",
+        parserMode: "sitelen-seli-kiwen",
+        textFamily: "SSK-Juniko",
+        cartoucheFamily: "SSK-Juniko-Cartouche",
+        literalFamily: FONT_FAMILY_LITERAL,
+        literalOptions: [
+          [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+          [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+          [FONT_FAMILY_LITERAL, "Patrick Hand"],
+          ["Arial", "Arial"],
+          ["Times New Roman", "Times New Roman"],
+          ["Courier New", "Courier New"],
+          ["system-ui", "system-ui"],
+        ],
+        pdfTextFontUrl: "./fonts/sitelenselikiwenjuniko.ttf",
+        pdfCartoucheFontUrl: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+        faces: [
+          {
+            family: "SSK-Juniko",
+            url: "./fonts/sitelenselikiwenjuniko.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF196C)
+          },
+          {
+            family: "SSK-Juniko-Cartouche",
+            url: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF1990)
+          },
+          {
+            family: FONT_FAMILY_LITERAL,
+            url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          }
+        ]
+      },
+      fairfaxHd: {
+        key: "fairfaxHd",
+        label: "FairfaxHD",
+        parserMode: "sitelen-seli-kiwen",
+        textFamily: "fairfaxHd",
+        cartoucheFamily: "fairfaxHd-Cartouche",
+        literalFamily: FONT_FAMILY_LITERAL,
+        literalOptions: [
+          [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+          [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+          [FONT_FAMILY_LITERAL, "Patrick Hand"],
+          ["Arial", "Arial"],
+          ["Times New Roman", "Times New Roman"],
+          ["Courier New", "Courier New"],
+          ["system-ui", "system-ui"],
+        ],
+        pdfTextFontUrl: "./fonts/FairfaxHD.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+        faces: [
+          {
+            family: "fairfaxHd",
+            url: "./fonts/FairfaxHD.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF196C)
+          },
+          {
+            family: "fairfaxHd-Cartouche",
+            url: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF1990)
+          },
+          {
+            family: FONT_FAMILY_LITERAL,
+            url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          }
+        ]
+      }
+    };
 
 
 
@@ -1766,6 +2039,60 @@ function getRenderFontPreset(key){
 function getElementRenderFontPresetKey(el){
   return normalizeRenderFontPresetKey(el?.renderFontPreset || Scene?.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
 }
+function getTextFontOptionsForPresetKey(presetKey){
+  return Array.isArray(getRenderFontPreset(presetKey)?.literalOptions) ? getRenderFontPreset(presetKey).literalOptions : [];
+}
+function normalizeTextFontOptionKeyForPreset(key, presetKey){
+  const raw = String(key ?? "").trim();
+  const opts = new Set(getTextFontOptionsForPresetKey(presetKey).map(([value]) => String(value)));
+  const fallback = String(getRenderFontPreset(presetKey)?.literalFamily || FONT_FAMILY_LITERAL);
+  return opts.has(raw) ? raw : fallback;
+}
+function resolveTextFontFamilyForPreset(optionKey, presetKey){
+  const preset = getRenderFontPreset(presetKey);
+  const normalized = normalizeTextFontOptionKeyForPreset(optionKey, presetKey);
+  if (normalized === TEXT_FONT_OPTION_SITELEN) return String(preset?.textFamily || FONT_FAMILY_TEXT);
+  if (normalized === TEXT_FONT_OPTION_NANPA_LINJA_N) return String(preset?.cartoucheFamily || FONT_FAMILY_CARTOUCHE);
+  return normalized;
+}
+function normalizeLegacyRenderFontPresetKey(keyOrFamily){
+  const raw = String(keyOrFamily ?? "").trim();
+  if (!raw) return DEFAULTS.defaultRenderFontPreset;
+  if (Object.prototype.hasOwnProperty.call(RENDER_FONT_PRESETS, raw)) return raw;
+  const lower = raw.toLowerCase();
+  if (lower.includes("ssk") || lower.includes("sitelen seli kiwen")) return "sitelenSeliKiwen";
+  if (
+    lower.includes("nasinnanpa") || lower.includes("nasin nanpa") ||
+    lower.includes("tp-cartouche-font") || lower.includes("tp-nasin-nanpa-font")
+  ) return "nasinNanpa";
+  return DEFAULTS.defaultRenderFontPreset;
+}
+function normalizeLegacyTextFontOptionKey(rawValue, presetKey){
+  const raw = String(rawValue ?? "").trim();
+  if (!raw) return normalizeTextFontOptionKeyForPreset(Scene?.stage?.defaultTextFontOption || FONT_FAMILY_LITERAL, presetKey);
+  if (raw === TEXT_FONT_OPTION_SITELEN || raw === TEXT_FONT_OPTION_NANPA_LINJA_N) return normalizeTextFontOptionKeyForPreset(raw, presetKey);
+  const lower = raw.toLowerCase();
+  if (lower === "patrickhand" || lower === "patrick hand" || lower === "patrick-head-font") return FONT_FAMILY_LITERAL;
+  if (lower.includes("tp-cartouche-font") || lower.includes("nanpa-linja-n") || lower.includes("cartouche")) return TEXT_FONT_OPTION_NANPA_LINJA_N;
+  if (
+    lower.includes("tp-nasin-nanpa-font") || lower.includes("ssk-juniko") ||
+    lower.includes("sitelen") || lower.includes("nasinnanpa")
+  ) return TEXT_FONT_OPTION_SITELEN;
+  if (lower.startsWith("arial")) return "Arial";
+  if (lower.startsWith("times new roman")) return "Times New Roman";
+  if (lower.startsWith("courier new")) return "Courier New";
+  if (lower.startsWith("system-ui")) return "system-ui";
+  return normalizeTextFontOptionKeyForPreset(raw, presetKey);
+}
+function getElementTextFontOptionKey(el){
+  const presetKey = getElementRenderFontPresetKey(el);
+  if (el?.type === ElementType.Glyph) return TEXT_FONT_OPTION_SITELEN;
+  const fallback = Scene?.stage?.defaultTextFontOption || getRenderFontPreset(presetKey).literalFamily || FONT_FAMILY_LITERAL;
+  return normalizeTextFontOptionKeyForPreset(el?.fontFamily || fallback, presetKey);
+}
+function getElementResolvedTextFontFamily(el){
+  return resolveTextFontFamilyForPreset(getElementTextFontOptionKey(el), getElementRenderFontPresetKey(el));
+}
 function buildRendererFontRolesForElement(el){
   const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
   return {
@@ -1776,8 +2103,8 @@ function buildRendererFontRolesForElement(el){
     date: preset.cartoucheFamily,
     time: preset.cartoucheFamily,
     literal: (el?.type === ElementType.Sitelen)
-      ? preset.literalFamily
-      : (sitelenLiteralFontFamilyForElement(el) || preset.literalFamily)
+      ? getElementResolvedTextFontFamily(el)
+      : (getElementResolvedTextFontFamily(el) || preset.literalFamily)
   };
 }
 let sitelenRendererModulePromise = null;
@@ -1785,6 +2112,16 @@ const sitelenRendererInstancePromises = new Map();
 const sitelenRasterJobs = new Map();
 const glyphRasterJobs = new Map();
 const glyphCache = new Map();
+const stageFontPairController = createSitelenFontPairController({
+  registry: RENDER_FONT_PRESETS,
+  scriptSelect: "defRenderFontPreset",
+  textFontSelect: "defTextFontOption",
+  storageKeyPrefix: "layoutEditorSceneDefaults",
+  defaultPresetKey: DEFAULTS.defaultRenderFontPreset,
+  defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+  onInvalidate: () => {}
+});
+
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
@@ -1792,15 +2129,88 @@ function ensureSitelenRendererModule(){
   }
   return sitelenRendererModulePromise;
 }
+
+
+
+const runtimeRegisteredFontFaces = new Set();
+const runtimeFontFacePromises = new Map();
+
+function getAllRenderFontFaces() {
+  const out = [];
+  for (const preset of Object.values(RENDER_FONT_PRESETS || {})) {
+    for (const face of (preset?.faces || [])) out.push(face);
+  }
+  return out;
+}
+
+function findRenderFontFaceByFamily(family) {
+  const want = String(family || "").trim();
+  if (!want) return null;
+  for (const face of getAllRenderFontFaces()) {
+    if (String(face?.family || "").trim() === want) return face;
+  }
+  return null;
+}
+
+async function ensureRuntimeFontFaceLoaded(face) {
+  if (!face?.family || !face?.url || !document.fonts) return;
+
+  const family = String(face.family).trim();
+  const url = String(face.url).trim();
+  const format = String(face.format || "truetype").trim();
+  const key = `${family}::${url}`;
+
+  if (runtimeRegisteredFontFaces.has(key)) return;
+  if (runtimeFontFacePromises.has(key)) {
+    await runtimeFontFacePromises.get(key);
+    return;
+  }
+
+  const promise = (async () => {
+    const source = `url("${url.replace(/"/g, '\\"')}") format("${format}")`;
+    const fontFace = new FontFace(family, source, face.descriptors || {});
+    await fontFace.load();
+    document.fonts.add(fontFace);
+    runtimeRegisteredFontFaces.add(key);
+  })();
+
+  runtimeFontFacePromises.set(key, promise);
+  try {
+    await promise;
+  } finally {
+    runtimeFontFacePromises.delete(key);
+  }
+}
 async function waitForRenderPresetFonts(presetKey, fontPx = 56, literalFamily = null, extraFamilies = []){
   if (!document.fonts || typeof document.fonts.load !== 'function') return;
+
   const preset = getRenderFontPreset(presetKey);
-  const families = [preset.textFamily, preset.cartoucheFamily, literalFamily || preset.literalFamily, ...(Array.isArray(extraFamilies) ? extraFamilies : [extraFamilies])].filter(Boolean);
+  const px = Math.max(8, Number(fontPx || 56));
+
+  const families = Array.from(new Set([
+    preset.textFamily,
+    preset.cartoucheFamily,
+    literalFamily || preset.literalFamily,
+    ...(Array.isArray(extraFamilies) ? extraFamilies : [extraFamilies])
+  ].filter(Boolean)));
+
+  const faces = families
+    .map(findRenderFontFaceByFamily)
+    .filter(Boolean);
+
+  await Promise.all(faces.map(ensureRuntimeFontFaceLoaded));
   await document.fonts.ready;
-  await Promise.all(Array.from(new Set(families)).map((family) =>
-    document.fonts.load(`${fontPx}px "${family}"`, String.fromCodePoint(0xF196C, 0xF1954, 0xF1990) + ' Hello')
+
+  await Promise.all(families.map((family) =>
+    document.fonts.load(
+      `${px}px "${String(family).replace(/"/g, '\\"')}"`,
+      String.fromCodePoint(0xF196C, 0xF1954, 0xF1990) + " Hello"
+    )
   ));
+
+  await document.fonts.ready;
 }
+
 function buildRendererInitConfigForElement(el){
   const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
   return {
@@ -1843,9 +2253,7 @@ function buildRendererCallConfigForElement(el){
 }
 async function getSitelenRendererForElement(el){
   const presetKey = getElementRenderFontPresetKey(el);
-  const literalFamily = (el?.type === ElementType.Sitelen)
-    ? getRenderFontPreset(presetKey).literalFamily
-    : (sitelenLiteralFontFamilyForElement(el) || getRenderFontPreset(presetKey).literalFamily);
+  const literalFamily = getElementResolvedTextFontFamily(el) || getRenderFontPreset(presetKey).literalFamily;
   const extraFamilies = [];
   if (el?.type === ElementType.Glyph && el?.fontFamily) extraFamilies.push(String(el.fontFamily));
   const cacheKey = `${presetKey}|literal:${literalFamily}|extra:${extraFamilies.join('|')}`;
@@ -1919,7 +2327,7 @@ async function rebuildSitelenRasterWithRenderer(el, opts = {}){
     }
     sitelenCache.set(el.id, entry);
     scheduleAutosave();
-    render();
+    if (!sceneHydrating) render();
     return entry;
   })().finally(() => sitelenRasterJobs.delete(jobKey));
   sitelenRasterJobs.set(jobKey, job);
@@ -1938,14 +2346,14 @@ async function rebuildGlyphRasterWithRenderer(el){
   const job = (async () => {
     const renderer = await getSitelenRendererForElement(el);
     const cp = parseCodepointInput(el.codepoint);
-    const glyphFontFamily = String(el?.fontFamily || getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || 'TP-Nasin-Nanpa-Font');
+    const glyphFontFamily = String(getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || FONT_FAMILY_TEXT);
     const lines = [[{ kind: 'rawUcsur', cps: (typeof cp === 'number') ? [cp] : [0x003F], fontFamily: glyphFontFamily }]];
     const result = await renderer.renderUcsurToNewCanvas(Object.assign({ lines }, buildRendererCallConfigForElement(el)));
     const rawCanvas = result?.canvas || document.createElement('canvas');
     const canvas = tintRasterCanvasToColor(rawCanvas, el?.color || '#111111');
     const entry = { sig, canvas, naturalW: canvas.width || 8, naturalH: canvas.height || 8 };
     glyphCache.set(el.id, entry);
-    render();
+    if (!sceneHydrating) render();
     return entry;
   })().finally(() => glyphRasterJobs.delete(jobKey));
   glyphRasterJobs.set(jobKey, job);
@@ -2205,6 +2613,7 @@ function normalizeScene(parsed){
     bg: DEFAULTS.stageBg,
     exportStageBackground: DEFAULTS.exportStageBackground,
     defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
+    defaultTextFontOption: DEFAULTS.defaultTextFontOption,
     defaultTextColor: DEFAULTS.defaultTextColor,
     defaultFill: DEFAULTS.defaultFill,
     defaultFillEnabled: DEFAULTS.defaultFillEnabled,
@@ -2239,7 +2648,8 @@ function normalizeScene(parsed){
   if (typeof out.stage.bgImgStretch !== "boolean") out.stage.bgImgStretch = false;
 
   if (out.stage.bgImgAssetId != null) out.stage.bgImgAssetId = String(out.stage.bgImgAssetId);
-  out.stage.defaultRenderFontPreset = normalizeRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+  out.stage.defaultRenderFontPreset = normalizeLegacyRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+  out.stage.defaultTextFontOption = normalizeLegacyTextFontOptionKey(out.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, out.stage.defaultRenderFontPreset);
 
   if (!out.stage.bgImgAssetId){
     out.stage.bgImgAssetId = null;
@@ -2303,8 +2713,13 @@ function normalizeScene(parsed){
     // Type-specific defaults
     if (el.type === ElementType.Text || el.type === ElementType.Sitelen){
       el.text = String(el.text ?? "");
-      // CHANGE HERE: Sitelen defaults to PatrickHand too
-      el.fontFamily = el.fontFamily || "PatrickHand";
+      el.renderFontPreset = normalizeLegacyRenderFontPresetKey(
+        el.renderFontPreset || el.fontFamily || out.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
+      );
+      el.fontFamily = normalizeLegacyTextFontOptionKey(
+        el.fontFamily || out.stage?.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
+        el.renderFontPreset
+      );
       el.fontSize = Number.isFinite(el.fontSize) ? el.fontSize : (el.type === ElementType.Sitelen ? 44 : 28);
       el.align = el.align || "left";
       const elColor = rgbaOrHexToHex(el.color ||  "#111111", "#111111");
@@ -2312,32 +2727,22 @@ function normalizeScene(parsed){
       el.color = elColor;
       el.lineHeight = Number.isFinite(el.lineHeight) ? el.lineHeight : 1.15;
 
-      
       if (el.type === ElementType.Sitelen){
-        el.renderFontPreset = normalizeRenderFontPresetKey(
-          el.renderFontPreset || out.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
-        );
         el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
         if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
-
       }
-      
-
-
     }
 
     if (el.type === ElementType.Glyph){
       el.codepoint = String(el.codepoint ?? "U+F1934");
-
-      el.renderFontPreset = normalizeRenderFontPresetKey(el.renderFontPreset || "nasinNanpa");
-
-      const preset = RENDER_FONT_PRESETS[el.renderFontPreset] || RENDER_FONT_PRESETS.nasinNanpa;
-      el.fontFamily = String(el.fontFamily || preset.textFamily || "TP-Nasin-Nanpa-Font");
-
+      el.renderFontPreset = normalizeLegacyRenderFontPresetKey(
+        el.renderFontPreset || el.fontFamily || out.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
+      );
+      el.fontFamily = TEXT_FONT_OPTION_SITELEN;
       el.fontSize = Number.isFinite(el.fontSize) ? el.fontSize : 92;
+      el.align = el.align || "center";
       el.color = rgbaOrHexToHex(el.color || "#111111", "#111111");
     }
-
 
     if (el.type === ElementType.Rect){
       el.radius = Number.isFinite(el.radius) ? Math.max(0, el.radius) : 18;
@@ -2427,10 +2832,7 @@ function cssFontFamily(family){
 }
 
 function sitelenLiteralFontFamilyForElement(el){
-  // Use the element’s fontFamily for quoted/literal segments.
-  // Fall back to PatrickHand if empty.
-  const f = String(el.fontFamily ?? "").trim();
-  return f ? f : "PatrickHand";
+  return getElementResolvedTextFontFamily(el);
 }
 
 function sitelenLiteralFontAlignmentForElement(el){
@@ -2597,6 +2999,7 @@ function deserializeAssets(serialized){
       bg: DEFAULTS.stageBg,
       exportStageBackground: DEFAULTS.exportStageBackground,
       defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
+      defaultTextFontOption: DEFAULTS.defaultTextFontOption,
       defaultTextColor: DEFAULTS.defaultTextColor,
       defaultFill: DEFAULTS.defaultFill,
       defaultStroke: DEFAULTS.defaultStroke,
@@ -2665,7 +3068,8 @@ function deserializeAssets(serialized){
     const el = defaultElementBase(ElementType.Text, x, y);
     el.w = 320; el.h = 140;
     el.text = tr("default_text_multiline");
-    el.fontFamily = "PatrickHand";
+    el.renderFontPreset = normalizeRenderFontPresetKey(Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+    el.fontFamily = normalizeTextFontOptionKeyForPreset(Scene.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, el.renderFontPreset);
     el.fontSize = 28;
     el.align = "left";
    el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
@@ -2682,7 +3086,7 @@ function deserializeAssets(serialized){
     el.w = 420; el.h = 160;
     el.text = "toki&pona";
     el.renderFontPreset = normalizeRenderFontPresetKey(Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
-    el.fontFamily = "PatrickHand";
+    el.fontFamily = normalizeTextFontOptionKeyForPreset(Scene.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, el.renderFontPreset);
     el.fontSize = 44;
     el.align = "left";
   el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
@@ -2705,7 +3109,7 @@ function deserializeAssets(serialized){
     el.w = 120; el.h = 120;
     el.codepoint = "U+F1934"; // default example (mi) – user can change
     el.renderFontPreset = normalizeRenderFontPresetKey(Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
-    el.fontFamily = getRenderFontPreset(el.renderFontPreset).textFamily;
+    el.fontFamily = TEXT_FONT_OPTION_SITELEN;
     el.fontSize = 92;
     el.align = "center";
    el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
@@ -5471,6 +5875,7 @@ function renderTextToCanvas(
    ============================================================ */
 
 const sitelenCache = new Map(); // el.id -> { sig, canvas, naturalW, naturalH }
+let sceneHydrating = false;
 
 
 /** Build a signature so we only rebuild when relevant props change */
@@ -5483,7 +5888,7 @@ function sitelenSignature(el){
 function sitelenMeasureBBox(el){
   const cached = sitelenCache.get(el.id);
   if (cached && cached.canvas) return { w: Math.max(8, cached.naturalW), h: Math.max(8, cached.naturalH) };
-  queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
   return { w: Math.max(8, Number(el.w ?? 8)), h: Math.max(8, Number(el.h ?? 8)) };
 }
 
@@ -5492,7 +5897,7 @@ function sitelenMeasureBBox(el){
 function sitelenRenderToOffscreen(el,w,h){
   const cached = sitelenCache.get(el.id);
   if (cached && cached.canvas) return cached.canvas;
-  queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
   const off = document.createElement("canvas");
   off.width = Math.max(1, Math.round(w || el.w || 8));
   off.height = Math.max(1, Math.round(h || el.h || 8));
@@ -5509,7 +5914,7 @@ function ensureSitelenRaster(el){
   const sig = sitelenSignature(el);
   const existing = sitelenCache.get(el.id);
   if (existing && existing.sig === sig && existing.canvas) return existing;
-  queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
   return existing || null;
 }
 
@@ -6878,7 +7283,7 @@ function render(){
     const innerH = Math.max(0, h - pad*2);
 
     const fontSize = Math.max(6, (el.fontSize ?? 24) * Scene.view.zoom);
-    const fontFamily = el.fontFamily || "PatrickHand";
+    const fontFamily = getElementResolvedTextFontFamily(el) || FONT_FAMILY_LITERAL;
     const lineHeight = Math.max(0.8, el.lineHeight ?? 1.15);
 
     ctx.save();
@@ -7107,7 +7512,7 @@ function drawSitelenRasterLocal(el, x, y, w, h){
     const cp = parseCodepointInput(el.codepoint);
     const ch = (typeof cp === "number") ? String.fromCodePoint(cp) : "?";
     const fontSize = Math.max(6, (el.fontSize ?? 64) * Scene.view.zoom);
-    const fontFamily = el.fontFamily || getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || "TP-Cartouche-Font";
+    const fontFamily = getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || FONT_FAMILY_TEXT;
 
     ctx.save();
     ctx.fillStyle = el.color || "#111";
@@ -7922,51 +8327,72 @@ if (textField && textField._popoutElementId){
   );
 }
 
-      if (sels.some(e => e.type === ElementType.Sitelen)){
-        const leaderRenderPreset = topmostSelectedWhere(e => e.type === ElementType.Sitelen);
-        const presetVals = sels.filter(e => e.type === ElementType.Sitelen).map(e => getElementRenderFontPresetKey(e));
+      if (sels.some(supportsTextBlock)){
+        const leaderTextLike = topmostSelectedWhere(supportsTextBlock);
+        const presetVals = sels.filter(supportsTextBlock).map(e => getElementRenderFontPresetKey(e));
         const presetMixed = mixedLabelIfMixed(presetVals);
         propsBody.appendChild(makeSelect(
           tr("props_render_font_family"),
-          getElementRenderFontPresetKey(leaderRenderPreset),
+          getElementRenderFontPresetKey(leaderTextLike),
           Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
-          (v) => {
-            applyToAllWhere(e => e.type === ElementType.Sitelen, (e) => {
+          async (v) => {
+            const jobs = [];
+            applyToAllWhere(supportsTextBlock, (e) => {
               e.renderFontPreset = normalizeRenderFontPresetKey(v);
-              invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              e.fontFamily = normalizeTextFontOptionKeyForPreset(e.fontFamily, e.renderFontPreset);
+              jobs.push(waitForRenderPresetFonts(
+                e.renderFontPreset,
+                e.fontSize || 56,
+                resolveTextFontFamilyForPreset(e.fontFamily, e.renderFontPreset)
+              ));
+            });
+            await Promise.allSettled(jobs);
+            applyToAllWhere(supportsTextBlock, (e) => {
+              if (e.type === ElementType.Sitelen){
+                invalidateSitelenCache(e.id);
+                updateSitelenLayout(e, { preserveCenter: true });
+              }
+            });
+            scheduleAutosave();
+            render();
+            updateUiForSelection();
+          },
+          presetMixed
+        ));
+
+        const leaderFont = topmostSelectedWhere(supportsTextBlock);
+        const leaderPresetKey = getElementRenderFontPresetKey(leaderFont);
+        const fontVals = sels.filter(supportsTextBlock).map(e => getElementTextFontOptionKey(e));
+        const fontMixed = mixedLabelIfMixed(fontVals);
+        const currentFont = getElementTextFontOptionKey(leaderFont);
+
+        propsBody.appendChild(makeSelect(
+          tr("props_font_family"),
+          currentFont,
+          getTextFontOptionsForPresetKey(leaderPresetKey),
+          async (v) => {
+            const jobs = [];
+            applyToAllWhere(supportsTextBlock, (e) => {
+              e.fontFamily = normalizeTextFontOptionKeyForPreset(v, getElementRenderFontPresetKey(e));
+              jobs.push(waitForRenderPresetFonts(
+                getElementRenderFontPresetKey(e),
+                e.fontSize || 56,
+                resolveTextFontFamilyForPreset(e.fontFamily, getElementRenderFontPresetKey(e))
+              ));
+            });
+            await Promise.allSettled(jobs);
+            applyToAllWhere(supportsTextBlock, (e) => {
+              if (e.type === ElementType.Sitelen){
+                invalidateSitelenCache(e.id);
+                updateSitelenLayout(e, { preserveCenter: true });
+              }
             });
             scheduleAutosave();
             render();
           },
-          presetMixed
+          fontMixed
         ));
       }
-
-      // Font family
-      const leaderFont = topmostSelectedWhere(supportsTextBlock);
-      const defaultFont = "PatrickHand";
-      const fontVals = sels.filter(supportsTextBlock).map(e => coerceFontValueToOption(e.fontFamily, defaultFont));
-      const fontMixed = mixedLabelIfMixed(fontVals);
-      const currentFont = coerceFontValueToOption(leaderFont?.fontFamily, defaultFont);
-
-      propsBody.appendChild(makeSelect(
-        tr("props_font_family"),
-        currentFont,
-        FONT_OPTIONS,
-        (v) => {
-          applyToAllWhere(supportsTextBlock, (e) => {
-            e.fontFamily = v;
-            if (e.type === ElementType.Sitelen){
-              invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
-            }
-          });
-          scheduleAutosave();
-          render();
-        },
-        fontMixed
-      ));
 
       // Font size
       const leaderFs = topmostSelectedWhere(supportsTextBlock);
@@ -8063,10 +8489,15 @@ if (textField && textField._popoutElementId){
         tr("props_render_font_family"),
         getElementRenderFontPresetKey(leaderG),
         Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
-        (v) => {
+        async (v) => {
+          const jobs = [];
           applyToAllWhere(supportsGlyphBlock, (e) => {
             e.renderFontPreset = normalizeRenderFontPresetKey(v);
-            e.fontFamily = getRenderFontPreset(e.renderFontPreset).textFamily;
+            e.fontFamily = TEXT_FONT_OPTION_SITELEN;
+            jobs.push(waitForRenderPresetFonts(e.renderFontPreset, e.fontSize || 56));
+          });
+          await Promise.allSettled(jobs);
+          applyToAllWhere(supportsGlyphBlock, (e) => {
             invalidateGlyphCache(e.id);
             queueGlyphRasterRebuild(e);
           });
@@ -8417,36 +8848,45 @@ if (textField && textField._popoutElementId){
       ));
     }
 
-    if (el.type === ElementType.Sitelen){
-      propsBody.appendChild(makeSelect(
-        tr("props_render_font_family"),
-        getElementRenderFontPresetKey(el),
-        Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
-        (v) => {
-          el.renderFontPreset = normalizeRenderFontPresetKey(v);
+    propsBody.appendChild(makeSelect(
+      tr("props_render_font_family"),
+      getElementRenderFontPresetKey(el),
+      Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
+      async (v) => {
+        el.renderFontPreset = normalizeRenderFontPresetKey(v);
+        el.fontFamily = normalizeTextFontOptionKeyForPreset(el.fontFamily, el.renderFontPreset);
+        await waitForRenderPresetFonts(
+          el.renderFontPreset,
+          el.fontSize || 56,
+          resolveTextFontFamilyForPreset(el.fontFamily, el.renderFontPreset)
+        );
+        if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
           updateSitelenLayout(el, { preserveCenter: true });
-          scheduleAutosave();
-          render();
         }
-      ));
-    }
+        scheduleAutosave();
+        render();
+        updateUiForSelection();
+      }
+    ));
 
-    // CHANGE HERE: Font family dropdown
-    // CHANGE HERE: Sitelen defaults to PatrickHand
-    const defaultFont = "PatrickHand";
-    const currentFont = coerceFontValueToOption(el.fontFamily, defaultFont);
+    const currentFont = getElementTextFontOptionKey(el);
 
+    propsBody.appendChild(makeSelect(tr("props_font_family"), currentFont, getTextFontOptionsForPresetKey(getElementRenderFontPresetKey(el)), async (v) => {
+        el.fontFamily = normalizeTextFontOptionKeyForPreset(v, getElementRenderFontPresetKey(el));
 
-    propsBody.appendChild(makeSelect(tr("props_font_family"), currentFont, FONT_OPTIONS, (v) => {
-        el.fontFamily = v;
+        await waitForRenderPresetFonts(
+          getElementRenderFontPresetKey(el),
+          el.fontSize || 56,
+          resolveTextFontFamilyForPreset(el.fontFamily, getElementRenderFontPresetKey(el))
+        );
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
           updateSitelenLayout(el, { preserveCenter: true });
         }
 
-        scheduleAutosave(); 
+        scheduleAutosave();
         render();
     }));
 
@@ -8607,9 +9047,10 @@ if (textField && textField._popoutElementId){
       tr("props_render_font_family"),
       getElementRenderFontPresetKey(el),
       Object.values(RENDER_FONT_PRESETS).map(p => [p.key, p.label]),
-      (v) => {
+      async (v) => {
         el.renderFontPreset = normalizeRenderFontPresetKey(v);
-        el.fontFamily = getRenderFontPreset(el.renderFontPreset).textFamily;
+        el.fontFamily = TEXT_FONT_OPTION_SITELEN;
+        await waitForRenderPresetFonts(el.renderFontPreset, el.fontSize || 56);
         invalidateGlyphCache(el.id);
         queueGlyphRasterRebuild(el);
         scheduleAutosave();
@@ -8862,11 +9303,11 @@ propsBody.appendChild(makeCheckbox(
 
 // CHANGE HERE: static font options for dropdown
 const FONT_OPTIONS = [
-  ["PatrickHand", "Patrick Hand"], // NOTE: must match your @font-face family name
-  ["Arial, Helvetica, sans-serif", "Arial"],
-  ["'Times New Roman', Times, serif", "Times New Roman"],
-  ["'Courier New', Courier, monospace", "Courier New"],
-  ["system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif", "system-ui"],
+  [FONT_FAMILY_LITERAL, "Patrick Hand"],
+  ["Arial", "Arial"],
+  ["Times New Roman", "Times New Roman"],
+  ["Courier New", "Courier New"],
+  ["system-ui", "system-ui"],
 ];
 
 // CHANGE HERE: preset sizes shown in the dropdown
@@ -10336,6 +10777,7 @@ function syncStageDefaultsUiFromScene(){
   const bg = document.getElementById("stageBg");
   const expbg = document.getElementById("exportStageBackground");
   const drfp = document.getElementById("defRenderFontPreset");
+  const dtfo = document.getElementById("defTextFontOption");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
@@ -10351,7 +10793,10 @@ function syncStageDefaultsUiFromScene(){
 
   if (bg)  bg.value  = rgbaOrHexToHex(st.bg, DEFAULTS.stageBg);
   if (expbg) {expbg.checked = !!Scene.stage.exportStageBackground;}
+  stageFontPairController.setActivePreset(normalizeRenderFontPresetKey(st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset), { persist: false });
+  stageFontPairController.setSelectedTextFontOption(normalizeTextFontOptionKeyForPreset(st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset), { persist: false });
   if (drfp) drfp.value = normalizeRenderFontPresetKey(st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+  if (dtfo) dtfo.value = normalizeTextFontOptionKeyForPreset(st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
   if (df)  df.value  = rgbaOrHexToHex(st.defaultFill, DEFAULTS.defaultFill);
   if (dfe) {dfe.checked = !!Scene.stage.defaultFillEnabled;}
@@ -10611,10 +11056,13 @@ sitelenRendererInstancePromises.clear();
   $("snapTol").value = String(Scene.stage.snapTol);
 
   setStatus(tr("status_imported_json"));
+
+  // Preload every font needed by the imported scene before first visible draw,
+  // so text/sitelen/glyph content appears together instead of trickling in.
+  await hydrateSceneBeforeDisplay(Scene);
+
   updateUiForSelection();
   rebuildDynamicPaletteFromScene();
-
-  await relayoutAllSitelenAfterFontsReady();
   fitStageToView();
   render();
   historyReset("Import");
@@ -10681,7 +11129,7 @@ sitelenRendererInstancePromises.clear();
       const innerH = Math.max(0, el.h - pad*2);
 
       const fontSize = Math.max(6, (el.fontSize ?? 24));
-      const fontFamily = el.fontFamily || "PatrickHand";
+      const fontFamily = getElementResolvedTextFontFamily(el) || FONT_FAMILY_LITERAL;
       const lineHeight = Math.max(0.8, el.lineHeight ?? 1.15);
 
       octx.fillStyle = el.color || "#111111";
@@ -10763,7 +11211,7 @@ sitelenRendererInstancePromises.clear();
       const cp = parseCodepointInput(el.codepoint);
       const ch = (typeof cp === "number") ? String.fromCodePoint(cp) : "?";
       const fontSize = Math.max(6, (el.fontSize ?? 64));
-      const fontFamily = el.fontFamily || getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || "TP-Cartouche-Font";
+      const fontFamily = getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || FONT_FAMILY_TEXT;
       const cx2 = x + el.w/2;
       const cy2 = y + el.h/2;
 
@@ -10954,6 +11402,7 @@ $("btnNew").addEventListener("click", async () => {
   Scene.stage.bg = DEFAULTS.stageBg;
   Scene.stage.exportStageBackground = DEFAULTS.exportStageBackground;
   Scene.stage.defaultRenderFontPreset = DEFAULTS.defaultRenderFontPreset;
+  Scene.stage.defaultTextFontOption = DEFAULTS.defaultTextFontOption;
   Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
   Scene.stage.defaultFill = DEFAULTS.defaultFill;
   Scene.stage.defaultFillEnabled = DEFAULTS.defaultFillEnabled;
@@ -11091,6 +11540,7 @@ function wireSnapButtons(){
 function wireStageDefaultsUi(){
   const bg = document.getElementById("stageBg");
   const expbg = document.getElementById("exportStageBackground");
+  const dtfo = document.getElementById("defTextFontOption");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
@@ -11145,13 +11595,53 @@ function wireStageDefaultsUi(){
   }
 
   if (drfp){
-    drfp.addEventListener("change", (e) => {
+    drfp.addEventListener("change", async (e) => {
       Scene.stage.defaultRenderFontPreset = normalizeRenderFontPresetKey(e.target.value);
+      Scene.stage.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(
+        dtfo?.value || Scene.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
+        Scene.stage.defaultRenderFontPreset
+      );
+
+      stageFontPairController.setActivePreset(Scene.stage.defaultRenderFontPreset, { persist: false });
+      stageFontPairController.setSelectedTextFontOption(Scene.stage.defaultTextFontOption, { persist: false });
+
+      await waitForRenderPresetFonts(
+        Scene.stage.defaultRenderFontPreset,
+        56,
+        resolveTextFontFamilyForPreset(
+          Scene.stage.defaultTextFontOption,
+          Scene.stage.defaultRenderFontPreset
+        )
+      );
+
       scheduleAutosave();
       render();
     });
   }
 
+  if (dtfo){
+    dtfo.addEventListener("change", async (e) => {
+      Scene.stage.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(
+        e.target.value,
+        Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
+      );
+
+      stageFontPairController.setSelectedTextFontOption(Scene.stage.defaultTextFontOption, { persist: false });
+
+      await waitForRenderPresetFonts(
+        Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset,
+        56,
+        resolveTextFontFamilyForPreset(
+          Scene.stage.defaultTextFontOption,
+          Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
+        )
+      );
+
+      scheduleAutosave();
+      render();
+    });
+  }
+  
   if (dt){
     console.log("Define stage dt listener");
     dt.addEventListener("change", (e) => {
@@ -11301,23 +11791,49 @@ if (btnResizeStageToBg) btnResizeStageToBg.addEventListener("click", () => resiz
     scheduleAutosave(); render();
   });
 
+
+async function preloadFontsForScene(scene = Scene){
+  const jobs = [];
+  const seen = new Set();
+
+  const stagePreset = normalizeRenderFontPresetKey(scene?.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+  const stageTextFamily = resolveTextFontFamilyForPreset(
+    scene?.stage?.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
+    stagePreset
+  );
+  const stageKey = `${stagePreset}::${stageTextFamily}::56`;
+  if (!seen.has(stageKey)) {
+    seen.add(stageKey);
+    jobs.push(waitForRenderPresetFonts(stagePreset, 56, stageTextFamily));
+  }
+
+  for (const el of Array.isArray(scene?.elements) ? scene.elements : []) {
+    if (!el) continue;
+    if (el.type === ElementType.Text || el.type === ElementType.Sitelen) {
+      const presetKey = getElementRenderFontPresetKey(el);
+      const textFamily = getElementResolvedTextFontFamily(el);
+      const fontPx = Math.max(8, Number(el.fontSize || 56));
+      const key = `${presetKey}::${textFamily}::${fontPx}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      jobs.push(waitForRenderPresetFonts(presetKey, fontPx, textFamily));
+    } else if (el.type === ElementType.Glyph) {
+      const presetKey = getElementRenderFontPresetKey(el);
+      const fontPx = Math.max(8, Number(el.fontSize || 56));
+      const key = `${presetKey}::glyph::${fontPx}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      jobs.push(waitForRenderPresetFonts(presetKey, fontPx));
+    }
+  }
+
+  if (jobs.length) await Promise.allSettled(jobs);
+}
+
 async function awaitFontLoading(){
-  // Older browsers: nothing to await
   if (!document.fonts || !document.fonts.ready) return;
-
-  // Proactively request the specific faces you will measure/draw with.
-  // This avoids a race where document.fonts.ready resolves but a face is still not requested yet.
-  const loads = [
-    document.fonts.load('16px "TP-Nasin-Nanpa-Font"'),
-    document.fonts.load('16px "TP-Cartouche-Font"'),
-    document.fonts.load('16px "SSK-Juniko"'),
-    document.fonts.load('16px "SSK-Juniko-Cartouche"'),
-    document.fonts.load('16px "PatrickHand"'),
-    document.fonts.load('16px "Patrick-Head-Font"'),
-  ];
-
   try{
-    await Promise.all(loads);
+    await hydrateSceneBeforeDisplay(Scene);
     await document.fonts.ready;
   }catch{
     // If a font fails to load, continue with fallbacks.
@@ -11325,23 +11841,13 @@ async function awaitFontLoading(){
 }
 
 
-document.fonts?.ready?.then(() => {
-  for (const el of Scene.elements){
-    if (el.type === ElementType.Sitelen){
-      invalidateSitelenCache(el.id);
-      updateSitelenLayout(el, { preserveCenter: true });
-    } else if (el.type === ElementType.Glyph){
-      invalidateGlyphCache(el.id);
-      queueGlyphRasterRebuild(el);
-    }
-  }
-  render();
-});
-
-function relayoutAllSitelenAfterFontsReady(){
-  return (document.fonts?.ready ?? Promise.resolve()).then(async () => {
+async function hydrateSceneBeforeDisplay(scene = Scene){
+  sceneHydrating = true;
+  try{
+    await preloadFontsForScene(scene);
     const jobs = [];
-    for (const el of Scene.elements){
+    for (const el of Array.isArray(scene?.elements) ? scene.elements : []){
+      if (!el) continue;
       if (el.type === ElementType.Sitelen || el.type === "Sitelen"){
         invalidateSitelenCache(el.id);
         jobs.push(rebuildSitelenRasterWithRenderer(el, { preserveCenter: true }));
@@ -11350,7 +11856,15 @@ function relayoutAllSitelenAfterFontsReady(){
         jobs.push(rebuildGlyphRasterWithRenderer(el));
       }
     }
-    await Promise.allSettled(jobs);
+    if (jobs.length) await Promise.allSettled(jobs);
+  } finally {
+    sceneHydrating = false;
+  }
+}
+
+function relayoutAllSitelenAfterFontsReady(){
+  return (document.fonts?.ready ?? Promise.resolve()).then(async () => {
+    await hydrateSceneBeforeDisplay(Scene);
     render();
   });
 }
@@ -11429,15 +11943,15 @@ document.addEventListener("keydown", (e) => {
       //revert back to format 1 for loading scene
       const saved = (record && record.scene) ? record.scene : record;
       if (saved && saved.stage && Array.isArray(saved.elements)){
+        const normalizedSaved = normalizeScene(saved);
         // restore
-        Scene.meta = saved.meta || Scene.meta;
-        Scene.stage = saved.stage;
-        Scene.view = saved.view || Scene.view;
-        Scene.elements = saved.elements || [];
-        Scene.groups = saved.groups || {};
+        Scene.meta = normalizedSaved.meta || Scene.meta;
+        Scene.stage = normalizedSaved.stage;
+        Scene.view = normalizedSaved.view || Scene.view;
+        Scene.elements = normalizedSaved.elements || [];
+        Scene.groups = normalizedSaved.groups || {};
 
-        // critical: run after restore
-        await relayoutAllSitelenAfterFontsReady();
+        await hydrateSceneBeforeDisplay(Scene);
 
         $("stageW").value = String(Scene.stage.w);
         $("stageH").value = String(Scene.stage.h);
@@ -11465,6 +11979,7 @@ document.addEventListener("keydown", (e) => {
     wireArrowKeyNudge();
 
     syncStageDefaultsUiFromScene();
+    await hydrateSceneBeforeDisplay(Scene);
 
     //resizeCanvasToDisplay();
     fitStageToView();
