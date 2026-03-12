@@ -2305,31 +2305,73 @@ async function rebuildSitelenRasterWithRenderer(el, opts = {}){
   const sig = getElementRendererSignature(el);
   const existing = sitelenCache.get(el.id);
   if (existing && existing.sig === sig && existing.canvas) return existing;
-  const jobKey = `${el.id}|${sig}|${options.preserveCenter ? 1 : 0}`;
+
+  const hasInsertAnchor =
+    !!el.__lockInsertAnchor &&
+    Number.isFinite(el.__insertAnchorX) &&
+    Number.isFinite(el.__insertAnchorY);
+
+  const jobKey =
+    `${el.id}|${sig}|${options.preserveCenter ? 1 : 0}|${hasInsertAnchor ? 1 : 0}`;
+
   if (sitelenRasterJobs.has(jobKey)) return sitelenRasterJobs.get(jobKey);
+
   const job = (async () => {
-    const cx = el.x + el.w/2;
-    const cy = el.y + el.h/2;
+    const oldX = el.x;
+    const oldY = el.y;
+    const cx = el.x + el.w / 2;
+    const cy = el.y + el.h / 2;
+
+    const anchorX = Number(el.__insertAnchorX);
+    const anchorY = Number(el.__insertAnchorY);
+
     const renderer = await getSitelenRendererForElement(el);
-    const result = await renderer.renderTextToNewCanvas(Object.assign({ input: String(el.text ?? '') }, buildRendererCallConfigForElement(el)));
+    const result = await renderer.renderTextToNewCanvas(
+      Object.assign(
+        { input: String(el.text ?? '') },
+        buildRendererCallConfigForElement(el)
+      )
+    );
+
     const canvas = result?.canvas || document.createElement('canvas');
-    const entry = { sig, canvas, naturalW: canvas.width || 8, naturalH: canvas.height || 8 };
+    const entry = {
+      sig,
+      canvas,
+      naturalW: canvas.width || 8,
+      naturalH: canvas.height || 8
+    };
+
     if (!el.sitelen || typeof el.sitelen !== 'object') el.sitelen = {};
     el.sitelen.naturalW = entry.naturalW;
     el.sitelen.naturalH = entry.naturalH;
     el.sitelen.origW = entry.naturalW;
     el.sitelen.origH = entry.naturalH;
+
     el.w = Math.max(8, entry.naturalW);
     el.h = Math.max(8, entry.naturalH);
-    if (options.preserveCenter){
-      el.x = cx - el.w/2;
-      el.y = cy - el.h/2;
+
+    if (hasInsertAnchor) {
+      // New insert: keep the original click point fixed.
+      el.x = anchorX;
+      el.y = anchorY;
+      delete el.__insertAnchorX;
+      delete el.__insertAnchorY;
+      delete el.__lockInsertAnchor;
+    } else if (options.preserveCenter) {
+      el.x = cx - el.w / 2;
+      el.y = cy - el.h / 2;
+    } else {
+      // Preserve top-left for non-centered updates.
+      el.x = oldX;
+      el.y = oldY;
     }
+
     sitelenCache.set(el.id, entry);
     scheduleAutosave();
     if (!sceneHydrating) render();
     return entry;
   })().finally(() => sitelenRasterJobs.delete(jobKey));
+
   sitelenRasterJobs.set(jobKey, job);
   return job;
 }
@@ -3083,24 +3125,32 @@ function deserializeAssets(serialized){
 
   function newSitelenElement(x,y){
     const el = defaultElementBase(ElementType.Sitelen, x, y);
-    el.w = 420; el.h = 160;
+    el.w = 420;
+    el.h = 160;
     el.text = "toki&pona";
-    el.renderFontPreset = normalizeRenderFontPresetKey(Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
-    el.fontFamily = normalizeTextFontOptionKeyForPreset(Scene.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, el.renderFontPreset);
+    el.renderFontPreset = normalizeRenderFontPresetKey(
+      Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
+    );
+    el.fontFamily = normalizeTextFontOptionKeyForPreset(
+      Scene.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
+      el.renderFontPreset
+    );
     el.fontSize = 44;
     el.align = "left";
-  el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
+    el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
     el.lineHeight = 1.05;
-//    el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
-
-      // ADD THIS:
     el.keepAspect = true;
 
     ensureHaloFields(el);
+
+    // Keep the original click point as the permanent top-left anchor
+    // for the very first raster rebuild.
+    el.__insertAnchorX = x;
+    el.__insertAnchorY = y;
+    el.__lockInsertAnchor = true;
+
     updateSitelenLayout(el, { preserveCenter: false });
-
-
     return el;
   }
 
