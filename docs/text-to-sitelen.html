@@ -972,6 +972,45 @@ nanpa #~WI.
           }
         ]
       },
+      fairfaxHd: {
+        key: "fairfaxHd",
+        label: "FairfaxHD",
+        parserMode: "sitelen-seli-kiwen",
+        textFamily: "fairfaxHd",
+        cartoucheFamily: "fairfaxHd-Cartouche",
+        literalFamily: FONT_FAMILY_LITERAL,
+        literalOptions: [
+          [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+          [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+          [FONT_FAMILY_LITERAL, "Patrick Hand"],
+          ["Arial", "Arial"],
+          ["Times New Roman", "Times New Roman"],
+          ["Courier New", "Courier New"],
+          ["system-ui", "system-ui"],
+        ],
+        pdfTextFontUrl: "./fonts/FairfaxHD.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+        faces: [
+          {
+            family: "fairfaxHd",
+            url: "./fonts/FairfaxHD.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF196C)
+          },
+          {
+            family: "fairfaxHd-Cartouche",
+            url: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF1990)
+          },
+          {
+            family: FONT_FAMILY_LITERAL,
+            url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          }
+        ]
+      },
       fairfaxPonaHd: {
         key: "fairfaxPonaHd",
         label: "FairfaxPonaHD",
