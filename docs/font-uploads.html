@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>nanpa-linja-n Font Manipulation</title>
+  <style>
+    :root { --bg:#f6f1e5; --ink:#221f1a; --muted:#72675b; --line:#d0c3b0; --card:#fffaf1; --accent:#6c5ce7; --pill:#efe4cf; --ok:#1b7f4d; --warn:#8a5a00; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink); overflow-x:hidden; }
+header { padding:16px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:rgba(246,241,229,.92); backdrop-filter:blur(8px); z-index:10; }
+header h1 { margin:0; font-size:1.15rem; }
+header p { margin:6px 0 0; color:var(--muted); font-size:.92rem; }
+
+/* changed */
+main {
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:16px;
+  display:grid;
+  grid-template-columns:260px minmax(0,1fr) 320px;
+  gap:16px;
+  align-items:start;
+  min-width:0;
+}
+
+/* new */
+main > section {
+  min-width:0;
+}
+
+.card { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+.card h2 { margin:0; font-size:1rem; padding:14px 16px; border-bottom:1px solid var(--line); }
+.body { padding:14px 16px; min-width:0; }
+.stack { display:grid; gap:12px; min-width:0; }
+.row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; min-width:0; }
+.grow { flex:1 1 auto; min-width:0; }
+
+button, select, input[type="text"], input[type="number"], input[type="range"], textarea { font:inherit; }
+button { border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:white; cursor:pointer; }
+button.primary { background:var(--accent); color:white; border-color:var(--accent); }
+button[disabled] { opacity:.5; cursor:not-allowed; }
+select, input[type="text"], input[type="number"], textarea { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:white; }
+textarea { min-height:100px; resize:vertical; }
+label { display:grid; gap:6px; font-size:.92rem; min-width:0; }
+.tiny { font-size:.82rem; color:var(--muted); }
+.pill { display:inline-flex; padding:2px 8px; border-radius:999px; background:var(--pill); font-size:.78rem; gap:6px; align-items:center; }
+.fontList { display:grid; gap:10px; max-height:65vh; overflow:auto; padding-right:4px; }
+.fontItem { border:1px solid var(--line); border-radius:14px; padding:10px 12px; background:white; cursor:pointer; }
+.fontItem.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+
+.help { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+
+.tpLine {
+  display: block;
+  margin-top: 2px;
+  font-size: 10pt;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+/* changed */
+.previewPane {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+  padding:16px;
+  min-width:0;
+}
+
+.previewCard { border:1px solid var(--line); border-radius:16px; overflow:hidden; background:white; min-width:0; }
+.previewCard h3 { margin:0; padding:10px 12px; font-size:.95rem; border-bottom:1px solid var(--line); background:#fffdf8; }
+
+/* changed */
+.previewCanvasWrap {
+  min-height:0;
+  min-width:0;
+  max-width:100%;
+  padding:8px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  background:#efe4cf;
+  display:block;
+  white-space:nowrap;
+}
+
+/* changed */
+canvas {
+  display:block;
+  width:auto;
+  max-width:none;
+  height:auto;
+}
+
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; min-width:0; }
+.sr-only { position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.status { min-height:1.2rem; font-size:.9rem; color:var(--muted); }
+.mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+.ok { color:var(--ok); }
+.warn { color:var(--warn); }
+.readonly { opacity:.75; }
+
+/* changed */
+@media (max-width:1300px) {
+  main { grid-template-columns:240px minmax(0,1fr) 300px; }
+}
+
+@media (max-width:1100px) {
+  main { grid-template-columns:1fr; }
+}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Font Uploader and nanpa-linja-n cartouche companion font creator</h1>
+  <p>Upload a UCSUR-compatible font, create or replace its nanpa-linja-n cartouche companion font, preview cartouches, and save the font pair so it can be selected on other pages of this site after those pages are refreshed.  (Currently supports *.ttf and *.otf format fonts.)</p>
+  
+</header>
+<main>
+  <section class="card">
+    <h2>Font sources</h2>
+    <div class="body stack">
+      <div class="row">
+        <button id="btnUploadBase" class="primary">Upload base font</button>
+        <button id="btnUploadCompanion">Upload companion</button>
+        <input id="fileBase" class="sr-only" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" />
+        <input id="fileCompanion" class="sr-only" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" />
+      </div>
+      <label>Known fonts and nanpa-linja-n companions<div id="knownFonts" class="fontList"></div></label>
+      <div class="row"><button id="btnRefreshList">Refresh list</button><button id="btnDeletePair">Delete saved pair</button></div>
+      <div id="sourceStatus" class="status"></div>
+    </div>
+    <div class="help">
+      <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
+      complete, or suitable for any purpose. You are responsible for verifying results.
+    </div>
+    <div class="small" style="margin-bottom:10px;">
+        <a class="repoLink" href="./index.html" target="_blank" rel="noopener noreferrer">
+          Back to index
+        </a>
+      </div>
+  </section>
+
+  <section class="stack">
+    <section class="card">
+      <h2>Preview</h2>
+      <div class="body stack">
+        <label>Preview cartouche string<textarea id="previewString" class="mono">󱦐󱤽󱤊󱥀󱥆󱥳󱤊󱥮󱤊󱥀󱤊󱤟󱤊󱥗󱤊󱥀󱤈󱤭󱤊󱥀󱤊󱤟󱤊󱥀󱥱󱤺󱤊󱥑󱤊󱥀󱥄󱥀󱤊󱤓󱤊󱥀󱤌󱥀󱥇󱥻󱤊󱤽󱦑</textarea></label>
+        <label>Font label<input id="fontLabel" type="text" maxlength="120" /></label>
+        <div class="row">
+          <label>Fixed preview size
+            <select id="previewSizePreset">
+              <option value="8">8 px</option><option value="10">10 px</option><option value="12">12 px</option><option value="14">14 px</option><option value="16">16 px</option><option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option><option value="36">36 px</option><option value="40">40 px</option><option value="44">44 px</option><option value="48">48 px</option><option value="56" selected>56 px</option><option value="64">64 px</option><option value="72">72 px</option><option value="80">80 px</option><option value="88">88 px</option><option value="96">96 px</option><option value="104">104 px</option><option value="120">120 px</option><option value="144">144 px</option>
+            </select>
+          </label>
+          <label class="grow">Custom size<input id="previewSize" type="number" min="8" max="240" value="56" /></label>
+          <button id="btnRenderPreview">Render preview</button>
+        </div>
+      </div>
+      <div class="previewPane">
+        <div class="previewCard"><h3>original font preview</h3><div class="previewCanvasWrap"><canvas id="canvasOriginal" width="800" height="220"></canvas></div></div>
+        <div class="previewCard"><h3>nanpa-linja-n companion font preview</h3><div class="previewCanvasWrap"><canvas id="canvasCompanion" width="800" height="220"></canvas></div></div>
+      </div>
+    </section>
+  </section>
+
+  <section class="stack">
+    <section class="card">
+      <h2>Selected pair</h2>
+      <div class="body stack">
+        <div class="grid2"><div><div class="tiny">Original source</div><div id="selectedOriginalSource" class="mono">—</div></div><div><div class="tiny">Companion source</div><div id="selectedCompanionSource" class="mono">—</div></div></div>
+        <div class="grid2"><div><div class="tiny">Base font name</div><div id="selectedBaseName" class="mono">—</div></div><div><div class="tiny">Companion name</div><div id="selectedCompanionName" class="mono">—</div></div></div>
+        <div id="supportSummary" class="status"></div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>nanpa-linja-n companion font controls</h2>
+      <div class="body stack">
+        <div class="grid2"><label>Two-thirds vertical offset<input id="twoThirdsOffset" type="range" min="-500" max="200" value="0" /><div class="tiny mono" id="twoThirdsOffsetValue">0</div></label><label>Quarter vertical offset<input id="quarterOffset" type="range" min="-500" max="200" value="0" /><div class="tiny mono" id="quarterOffsetValue">0</div></label></div>
+        <div class="grid2"><label>Two-thirds width factor<input id="twoThirdsWidth" type="range" min="0.20" max="1.20" step="0.01" value="1" /><div class="tiny mono" id="twoThirdsWidthValue">1.00</div></label><label>Quarter width factor<input id="quarterWidth" type="range" min="0.05" max="1.20" step="0.01" value="1" /><div class="tiny mono" id="quarterWidthValue">1.00</div></label></div>
+        <label>Metadata suffix<input id="metadataSuffix" type="text" value="-nanpa-linja-n" /></label>
+        <div class="row"><button id="btnGenerate">Generate / fallback companion</button><button id="btnOverwrite">Overwrite saved companion</button><button id="btnDownloadCompanion">Download companion</button></div>
+        <div class="tiny">This browser-only build always guarantees a usable nanpa-linja-n companion font by creating a copied-and-renamed fallback nanpa-linja-n companion font when automatic binary cartouche rewriting is unavailable.</div>
+        <div id="editStatus" class="status"></div>
+      </div>
+    </section>
+  </section>
+</main>
+
+<script type="module">
+  import { createSitelenFontPairController } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=5";
+
+  const WASM_MODULE_URL = "./wasm/nanpa_font_wasm.js?v=2";
+  const DEFAULT_SETTINGS = {
+    twoThirdsVerticalOffset: 0,
+    quarterVerticalOffset: 0,
+    twoThirdsWidthFactor: 1,
+    quarterWidthFactor: 1,
+    metadataSuffix: "-nanpa-linja-n",
+  };
+  const KNOWN_TRANSFORM_FAMILIES = [
+    "fairfaxhd",
+    "fairfaxponahd",
+    "linjalipamanka-normal",
+  ];
+
+  const BUILTIN_REGISTRY = (window.RENDER_FONT_PRESETS && Object.keys(window.RENDER_FONT_PRESETS).length)
+    ? window.RENDER_FONT_PRESETS
+    : {
+        __placeholder__: {
+          key: "__placeholder__",
+          label: "__hidden_placeholder__",
+          textFamily: "system-ui",
+          cartoucheFamily: "system-ui",
+          faces: [],
+          source: "placeholder",
+          hiddenFromList: true,
+        },
+      };
+  const controller = createSitelenFontPairController({
+    registry: BUILTIN_REGISTRY,
+    defaultPresetKey: Object.keys(BUILTIN_REGISTRY)[0] || "__placeholder__",
+  });
+
+  const els = {
+    fileBase: document.getElementById("fileBase"),
+    fileCompanion: document.getElementById("fileCompanion"),
+    btnUploadBase: document.getElementById("btnUploadBase"),
+    btnUploadCompanion: document.getElementById("btnUploadCompanion"),
+    btnRefreshList: document.getElementById("btnRefreshList"),
+    btnDeletePair: document.getElementById("btnDeletePair"),
+    btnGenerate: document.getElementById("btnGenerate"),
+    btnOverwrite: document.getElementById("btnOverwrite"),
+    btnDownloadCompanion: document.getElementById("btnDownloadCompanion"),
+    btnRenderPreview: document.getElementById("btnRenderPreview"),
+    knownFonts: document.getElementById("knownFonts"),
+    sourceStatus: document.getElementById("sourceStatus"),
+    selectedOriginalSource: document.getElementById("selectedOriginalSource"),
+    selectedCompanionSource: document.getElementById("selectedCompanionSource"),
+    selectedBaseName: document.getElementById("selectedBaseName"),
+    selectedCompanionName: document.getElementById("selectedCompanionName"),
+    supportSummary: document.getElementById("supportSummary"),
+    editStatus: document.getElementById("editStatus"),
+    twoThirdsOffset: document.getElementById("twoThirdsOffset"),
+    quarterOffset: document.getElementById("quarterOffset"),
+    twoThirdsWidth: document.getElementById("twoThirdsWidth"),
+    quarterWidth: document.getElementById("quarterWidth"),
+    twoThirdsOffsetValue: document.getElementById("twoThirdsOffsetValue"),
+    quarterOffsetValue: document.getElementById("quarterOffsetValue"),
+    twoThirdsWidthValue: document.getElementById("twoThirdsWidthValue"),
+    quarterWidthValue: document.getElementById("quarterWidthValue"),
+    metadataSuffix: document.getElementById("metadataSuffix"),
+    previewString: document.getElementById("previewString"),
+    fontLabel: document.getElementById("fontLabel"),
+    previewSizePreset: document.getElementById("previewSizePreset"),
+    previewSize: document.getElementById("previewSize"),
+    canvasOriginal: document.getElementById("canvasOriginal"),
+    canvasCompanion: document.getElementById("canvasCompanion"),
+  };
+
+  let selectedKnown = null;
+  let selectedPairRecord = null;
+  let wasmApiPromise = null;
+
+  function setStatus(el, msg, kind = "") {
+    el.textContent = String(msg || "");
+    el.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function basenameWithoutExt(name = "") {
+    const s = String(name || "");
+    return s.replace(/\.[^.]+$/, "") || "UploadedFont";
+  }
+
+  function inferBlobCssFormat(blob, filename = "") {
+    const type = String(blob?.type || "").toLowerCase();
+    const lower = String(filename || "").toLowerCase();
+    if (type.includes("woff2") || lower.endsWith(".woff2")) return "woff2";
+    if (type.includes("woff") || lower.endsWith(".woff")) return "woff";
+    if (type.includes("opentype") || type.includes("otf") || lower.endsWith(".otf")) return "opentype";
+    return "truetype";
+  }
+
+  async function tryLoadBlobAsFont(blob, familyName, filename = "") {
+    const cssFormat = inferBlobCssFormat(blob, filename);
+    const blobUrl = URL.createObjectURL(blob);
+    try {
+      const face = new FontFace(
+        familyName,
+        `url(${blobUrl}) format("${cssFormat}")`
+      );
+      await face.load();
+      document.fonts.add(face);
+      await document.fonts.load(`16px "${familyName}"`, "A");
+      return true;
+    } finally {
+      URL.revokeObjectURL(blobUrl);
+    }
+  }
+
+  async function validatePairRecordFonts(pairRecord, { removeIfInvalid = false } = {}) {
+    if (!pairRecord?.baseBlob || !pairRecord?.companionBlob) return true;
+    const fontKey = pairRecord.fontKey || "";
+    const baseFamily = cleanFamilyName(pairRecord.baseFamily, "TempBase");
+    const companionFamily = cleanFamilyName(pairRecord.companionFamily, "TempCompanion");
+    try {
+      await tryLoadBlobAsFont(pairRecord.baseBlob, `${baseFamily}__validate__${fontKey}`, pairRecord.baseFilename || "");
+      await tryLoadBlobAsFont(pairRecord.companionBlob, `${companionFamily}__validate__${fontKey}`, pairRecord.companionFilename || "");
+      return true;
+    } catch (err) {
+      console.error("Invalid stored/generated font pair:", fontKey, err);
+      if (removeIfInvalid && fontKey && selectedPairRecord?.editable !== false) {
+        try {
+          await controller.removeStoredPair(fontKey);
+        } catch (removeErr) {
+          console.error("Failed to remove invalid stored pair", fontKey, removeErr);
+        }
+      }
+      throw err;
+    }
+  }
+
+  async function cleanupInvalidStoredPairs() {
+    const items = await controller.listKnownPairs();
+    for (const item of items) {
+      if (item.editable === false || !item.fontKey) continue;
+      const resolved = await controller.resolvePresetRecord(item.key);
+      const pairRecord = resolved?.pairRecord;
+      if (!pairRecord?.companionBlob) continue;
+      try {
+        await validatePairRecordFonts(pairRecord, { removeIfInvalid: false });
+      } catch (err) {
+        console.warn("Removing invalid stored pair during cleanup:", item.fontKey, err);
+        await controller.removeStoredPair(item.fontKey);
+      }
+    }
+  }
+
+  function normalizeCompanionFilename(filename, suffix) {
+    const source = String(filename || "uploaded-font.ttf");
+    const extMatch = source.match(/(\.woff2|\.woff|\.otf|\.ttf)$/i);
+    const ext = extMatch ? extMatch[1] : ".ttf";
+    const stem = source.slice(0, source.length - ext.length) || "uploaded-font";
+    return `${stem}${suffix}${ext}`;
+  }
+
+  function cleanFamilyName(value, fallback) {
+    const s = String(value || "").trim();
+    return s || fallback;
+  }
+
+  function getDefaultFontLabelFromRecord(record = null) {
+    if (!record) return "UploadedFont";
+    return cleanFamilyName(record.baseFamily || record.textFamily || record.familyName, "UploadedFont");
+  }
+
+  function normalizeFontLabelValue(value, fallback = "UploadedFont") {
+    const raw = String(value || "").trim();
+    const normalizedFallback = cleanFamilyName(fallback, "UploadedFont");
+    if (!raw || raw === "__hidden_placeholder__") return normalizedFallback;
+    return raw;
+  }
+
+  function currentFontLabelValue() {
+    const fallback = getDefaultFontLabelFromRecord(selectedPairRecord?.pairRecord || null);
+    return normalizeFontLabelValue(els.fontLabel?.value, fallback);
+  }
+
+  async function saveSelectedFontLabel({ silent = false } = {}) {
+    const rec = selectedPairRecord;
+    const pairRecord = rec?.pairRecord;
+    if (!rec || !pairRecord || rec.editable === false) return false;
+    const fallback = getDefaultFontLabelFromRecord(pairRecord);
+    const nextLabel = normalizeFontLabelValue(els.fontLabel?.value, fallback);
+    if (els.fontLabel) els.fontLabel.value = nextLabel;
+    if (String(pairRecord.label || "") === nextLabel && String(pairRecord.fontLabel || "") === nextLabel && String(rec.preset?.label || "") === nextLabel) {
+      return false;
+    }
+    try {
+      const saved = await controller.saveFontPairToIndexedDb({
+        ...pairRecord,
+        fontKey: pairRecord.fontKey || rec.fontKey || rec.key,
+        fontLabel: nextLabel,
+        label: nextLabel,
+        sourceType: "indexeddb",
+        editable: true,
+      });
+      const savedKey = saved?.fontKey || pairRecord.fontKey || rec.fontKey || rec.key;
+      if (pairRecord) {
+        pairRecord.fontLabel = nextLabel;
+        pairRecord.label = nextLabel;
+      }
+      if (rec?.preset) rec.preset.label = nextLabel;
+      selectedKnown = savedKey;
+      if (typeof controller.hydrateDynamicPresetsFromDb === "function") {
+        await controller.hydrateDynamicPresetsFromDb({ force: true });
+      }
+      selectedPairRecord = await controller.resolvePresetRecord(savedKey) || {
+        ...rec,
+        fontKey: savedKey,
+        key: savedKey,
+        displayName: nextLabel,
+        preset: { ...(rec.preset || {}), label: nextLabel, key: savedKey },
+        pairRecord: { ...(pairRecord || {}), fontKey: savedKey, fontLabel: nextLabel, label: nextLabel },
+      };
+      await refreshKnownList();
+      updateSelectedDetails();
+      if (!silent) setStatus(els.editStatus, "Font label saved.", "ok");
+      return true;
+    } catch (err) {
+      console.error("Could not save font label", err);
+      setStatus(els.editStatus, `Could not save font label: ${err?.message || err}`, "warn");
+      return false;
+    }
+  }
+
+  function currentSettings() {
+    return {
+      twoThirdsVerticalOffset: Number(els.twoThirdsOffset.value || DEFAULT_SETTINGS.twoThirdsVerticalOffset),
+      quarterVerticalOffset: Number(els.quarterOffset.value || DEFAULT_SETTINGS.quarterVerticalOffset),
+      twoThirdsWidthFactor: Number(els.twoThirdsWidth.value || DEFAULT_SETTINGS.twoThirdsWidthFactor),
+      quarterWidthFactor: Number(els.quarterWidth.value || DEFAULT_SETTINGS.quarterWidthFactor),
+      metadataSuffix: String(els.metadataSuffix.value || DEFAULT_SETTINGS.metadataSuffix),
+    };
+  }
+
+  function normalizeFamilyToken(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\.[^.]+$/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  function deriveKnownTransformFamilies(settings = currentSettings()) {
+    const names = new Set(KNOWN_TRANSFORM_FAMILIES);
+    const pair = selectedPairRecord?.pairRecord || {};
+    for (const raw of [
+      pair.baseFilename,
+      pair.companionFilename,
+      pair.baseFamily,
+      pair.companionFamily,
+      selectedPairRecord?.preset?.textFamily,
+      selectedPairRecord?.preset?.cartoucheFamily,
+    ]) {
+      const token = normalizeFamilyToken(raw);
+      if (token) names.add(token);
+    }
+    return Array.from(names);
+  }
+
+  function settingsToWasm(settings = currentSettings()) {
+    return {
+      metadata_suffix: String(settings.metadataSuffix || DEFAULT_SETTINGS.metadataSuffix),
+      two_thirds_vertical_offset: Number(settings.twoThirdsVerticalOffset || 0),
+      quarter_vertical_offset: Number(settings.quarterVerticalOffset || 0),
+      two_thirds_width_factor: Number(settings.twoThirdsWidthFactor || 1),
+      quarter_width_factor: Number(settings.quarterWidthFactor || 1),
+      known_transform_families: deriveKnownTransformFamilies(settings),
+    };
+  }
+
+  function syncControlLabels() {
+    const s = currentSettings();
+    els.twoThirdsOffsetValue.textContent = String(s.twoThirdsVerticalOffset);
+    els.quarterOffsetValue.textContent = String(s.quarterVerticalOffset);
+    els.twoThirdsWidthValue.textContent = s.twoThirdsWidthFactor.toFixed(2);
+    els.quarterWidthValue.textContent = s.quarterWidthFactor.toFixed(2);
+  }
+
+  function clearCanvas(canvas) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#efe4cf";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function resizeCanvas(canvas, width, height) {
+    canvas.width = Math.max(40, Math.ceil(width));
+    canvas.height = Math.max(40, Math.ceil(height));
+  }
+
+  async function renderFontPreview(canvas, family, text, size) {
+    clearCanvas(canvas);
+    if (!family) return;
+    await document.fonts.load(`${size}px "${family}"`, text);
+    await document.fonts.ready;
+    const measure = canvas.getContext("2d");
+    measure.textBaseline = "alphabetic";
+    measure.font = `${size}px "${family}"`;
+    const metrics = measure.measureText(text);
+    const width = Math.max(40, Math.ceil(metrics.width + 40));
+    const ascent = Math.ceil(metrics.actualBoundingBoxAscent || size * 0.8);
+    const descent = Math.ceil(metrics.actualBoundingBoxDescent || size * 0.3);
+    const height = Math.max(40, ascent + descent + 40);
+    resizeCanvas(canvas, width, height);
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#efe4cf";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#111";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = `${size}px "${family}"`;
+    ctx.fillText(text, 20, 20 + ascent);
+  }
+
+  async function renderSelectedPreview() {
+    const pair = selectedPairRecord;
+    const text = String(els.previewString.value || "");
+    const size = Math.max(8, Number(els.previewSize.value || 56));
+    if (!pair) {
+      clearCanvas(els.canvasOriginal);
+      clearCanvas(els.canvasCompanion);
+      return;
+    }
+    await controller.ensureFamiliesLoaded(size, [pair.preset.textFamily, pair.preset.cartoucheFamily]);
+    await renderFontPreview(els.canvasOriginal, pair.preset.textFamily, text, size);
+    await renderFontPreview(els.canvasCompanion, pair.preset.cartoucheFamily, text, size);
+  }
+
+  function applySettingsToControls(settings) {
+    const s = { ...DEFAULT_SETTINGS, ...(settings || {}) };
+    els.twoThirdsOffset.value = String(s.twoThirdsVerticalOffset ?? DEFAULT_SETTINGS.twoThirdsVerticalOffset);
+    els.quarterOffset.value = String(s.quarterVerticalOffset ?? DEFAULT_SETTINGS.quarterVerticalOffset);
+    els.twoThirdsWidth.value = String(s.twoThirdsWidthFactor ?? DEFAULT_SETTINGS.twoThirdsWidthFactor);
+    els.quarterWidth.value = String(s.quarterWidthFactor ?? DEFAULT_SETTINGS.quarterWidthFactor);
+    els.metadataSuffix.value = String(s.metadataSuffix || DEFAULT_SETTINGS.metadataSuffix);
+    syncControlLabels();
+  }
+
+  function updateEditabilityState() {
+    const editable = !!selectedPairRecord && selectedPairRecord.editable !== false;
+    els.btnDeletePair.disabled = !editable;
+    els.btnOverwrite.disabled = !editable;
+    els.btnGenerate.disabled = !editable;
+    els.btnUploadCompanion.disabled = !editable && !!selectedPairRecord;
+    if (els.fontLabel) els.fontLabel.disabled = !editable;
+  }
+
+  async function ensureWasmApi() {
+    if (!wasmApiPromise) {
+      wasmApiPromise = (async () => {
+        const mod = await import(WASM_MODULE_URL);
+        console.log("[WASM] importing module from", WASM_MODULE_URL);
+console.log("[WASM] module exports:", Object.keys(mod));
+        if (typeof mod.default === "function") {
+          await mod.default();
+        }
+        const analyzeFont = mod.analyze_font || mod.analyzeFont;
+        const generateCompanion = mod.generate_companion || mod.generateCompanion;
+        if (typeof analyzeFont !== "function" || typeof generateCompanion !== "function") {
+          throw new Error(`WASM module at ${WASM_MODULE_URL} does not expose analyze_font/generate_companion.`);
+        }
+        return {
+          analyzeFont,
+          generateCompanion,
+        };
+      })().catch((err) => {
+        wasmApiPromise = null;
+        throw err;
+      });
+    }
+    return wasmApiPromise;
+  }
+
+  async function analyzeFontBlob(blob) {
+  const api = await ensureWasmApi();
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const support = api.analyzeFont(bytes);
+  console.log("[WASM analyze_font] input bytes:", bytes.length);
+  console.log("[WASM analyze_font] result:", support);
+  return {
+    bytes,
+    support,
+  };
+}
+
+  function normalizeReturnedBytes(value) {
+    if (value instanceof Uint8Array) return value;
+    if (value?.bytes instanceof Uint8Array) return value.bytes;
+    if (Array.isArray(value)) return Uint8Array.from(value);
+    if (ArrayBuffer.isView(value)) return new Uint8Array(value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength));
+    if (value instanceof ArrayBuffer) return new Uint8Array(value);
+    if (Array.isArray(value?.bytes)) return Uint8Array.from(value.bytes);
+    return Uint8Array.from([]);
+  }
+
+  function getResultOriginalNames(result) {
+    return result?.originalNames || result?.original_names || {};
+  }
+
+  function getResultRewrittenNames(result) {
+    return result?.rewrittenNames || result?.rewritten_names || {};
+  }
+
+  function getResultFamilyName(names) {
+    return names?.familyName || names?.family_name || "";
+  }
+
+  function getResultTypographicFamily(names) {
+    return names?.typographicFamily || names?.typographic_family || "";
+  }
+
+  async function generateCompanionFromBaseBlob(blob, settings) {
+  const api = await ensureWasmApi();
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const wasmSettings = settingsToWasm(settings);
+
+  console.log("[WASM generate_companion] input bytes:", bytes.length);
+  console.log("[WASM generate_companion] settings:", wasmSettings);
+
+  const result = api.generateCompanion(bytes, wasmSettings);
+  console.log("[WASM generate_companion] raw result:", result);
+
+  const outBytes =
+    result?.bytes instanceof Uint8Array
+      ? result.bytes
+      : Uint8Array.from(result?.bytes || []);
+
+  console.log("[WASM generate_companion] output bytes:", outBytes.length);
+  console.log("[WASM generate_companion] same length as input:", outBytes.length === bytes.length);
+
+  let samePrefix = true;
+  const n = Math.min(bytes.length, outBytes.length, 256);
+  for (let i = 0; i < n; i++) {
+    if (bytes[i] !== outBytes[i]) {
+      samePrefix = false;
+      break;
+    }
+  }
+  console.log("[WASM generate_companion] first 256 bytes identical:", samePrefix);
+  console.log("[WASM generate_companion] mode:", result?.mode);
+  console.log("[WASM generate_companion] support:", result?.support);
+ console.log("[WASM generate_companion] originalNames:", result?.originalNames || result?.original_names);
+console.log("[WASM generate_companion] rewrittenNames:", result?.rewrittenNames || result?.rewritten_names);
+
+  return {
+    result,
+    companionBlob: new Blob([outBytes], { type: blob.type || "font/otf" }),
+  };
+}
+
+  function buildStoredSettings(settings) {
+    return {
+      twoThirdsVerticalOffset: Number(settings.twoThirdsVerticalOffset || 0),
+      quarterVerticalOffset: Number(settings.quarterVerticalOffset || 0),
+      twoThirdsWidthFactor: Number(settings.twoThirdsWidthFactor || 1),
+      quarterWidthFactor: Number(settings.quarterWidthFactor || 1),
+      metadataSuffix: String(settings.metadataSuffix || DEFAULT_SETTINGS.metadataSuffix),
+    };
+  }
+
+  async function refreshKnownList() {
+    const items = await controller.listKnownPairs();
+    els.knownFonts.innerHTML = "";
+
+    const visibleItems = items.filter((item) => {
+      const key = String(item?.preset?.key || item?.presetKey || item?.key || item?.fontKey || "");
+      const label = String(item?.displayName || item?.preset?.label || key || "");
+      const source = String(item?.sourceType || item?.preset?.source || item?.source || "");
+
+      return !(
+        key === "__placeholder__" ||
+        key === "_placeholder_" ||
+        /placeholder/i.test(key) ||
+        /placeholder/i.test(label) ||
+        /placeholder/i.test(source) ||
+        item?.preset?.hiddenFromList === true ||
+        item?.hiddenFromList === true
+      );
+    });
+
+    for (const item of visibleItems) {
+      const key = String(item.preset?.key || item.presetKey || item.key || item.fontKey || "");
+      const label = String(item.displayName || item.preset?.label || key);
+      const source = String(item.sourceType || item.preset?.source || item.source || "unknown");
+      const editable = item.editable !== false;
+      const div = document.createElement("div");
+      div.className = "fontItem" + (selectedKnown === key ? " active" : "") + (editable ? "" : " readonly");
+      div.innerHTML = `<div class="row" style="justify-content:space-between;"><strong>${escapeHtml(label)}</strong><span class="pill">${escapeHtml(source)}</span></div><div class="tiny mono">${escapeHtml(key)}</div><div class="tiny">${editable ? "editable" : "read-only"}</div>`;
+      div.addEventListener("click", async () => {
+        selectedKnown = key;
+        await selectKnownPair(key);
+        await refreshKnownList();
+      });
+      els.knownFonts.appendChild(div);
+    }
+    setStatus(els.sourceStatus, `${visibleItems.length} known font pair(s)`);
+  }
+
+  async function selectKnownPair(key) {
+    const rec = await controller.resolvePresetRecord(key);
+    if (!rec) {
+      setStatus(els.editStatus, `Could not resolve preset ${key}`, "warn");
+      return;
+    }
+    if (rec.editable !== false && rec.pairRecord?.companionBlob) {
+      try {
+        await validatePairRecordFonts(rec.pairRecord, { removeIfInvalid: false });
+      } catch (err) {
+        const badKey = rec.pairRecord?.fontKey || rec.fontKey || key;
+        await controller.removeStoredPair(badKey);
+        selectedPairRecord = null;
+        selectedKnown = null;
+        await refreshKnownList();
+        clearCanvas(els.canvasOriginal);
+        clearCanvas(els.canvasCompanion);
+        updateSelectedDetails();
+        setStatus(els.editStatus, `Removed invalid stored font pair: ${badKey}`, "warn");
+        return;
+      }
+    }
+    selectedPairRecord = rec;
+    updateSelectedDetails();
+    applySettingsToControls(rec.pairRecord?.settings || null);
+    updateEditabilityState();
+    await renderSelectedPreview();
+  }
+
+  function isTransformMode(mode) {
+    const s = String(mode || "").toLowerCase();
+    return !!s && !s.includes("fallback") && !s.includes("copy") && !s.includes("manual");
+  }
+
+  function updateSelectedDetails() {
+    const rec = selectedPairRecord;
+    if (!rec) {
+      els.selectedOriginalSource.textContent = "—";
+      els.selectedCompanionSource.textContent = "—";
+      els.selectedBaseName.textContent = "—";
+      els.selectedCompanionName.textContent = "—";
+      if (els.fontLabel) els.fontLabel.value = "";
+      setStatus(els.supportSummary, "");
+      updateEditabilityState();
+      return;
+    }
+    const preset = rec.preset;
+    const pairRecord = rec.pairRecord || {};
+    if (els.fontLabel) els.fontLabel.value = normalizeFontLabelValue(pairRecord.label || preset.label, getDefaultFontLabelFromRecord(pairRecord));
+    els.selectedOriginalSource.textContent = pairRecord.baseFilename || rec.sourceType || "runtime";
+    els.selectedCompanionSource.textContent = pairRecord.companionFilename || rec.sourceType || "runtime";
+    els.selectedBaseName.textContent = preset.textFamily || "—";
+    els.selectedCompanionName.textContent = preset.cartoucheFamily || "—";
+    const support = pairRecord.support || rec.support || null;
+    const mode = pairRecord.notes?.mode || "";
+    const modeText = mode ? ` Mode: ${mode}.` : "";
+    if (support) {
+      const ucsurOk = !!(support.ucsur_ok || support.ucsurOk);
+      const transformSupported = !!(support.transform_supported || support.transformSupported);
+      if (!ucsurOk) {
+        setStatus(els.supportSummary, `Not fully supported: ${support.reason || "missing required UCSUR glyphs."}${modeText}`, "warn");
+      } else if (mode) {
+        if (isTransformMode(mode)) {
+          setStatus(els.supportSummary, `UCSUR OK; transformed nanpa-linja-n companion saved.${modeText}`, "ok");
+        } else {
+          setStatus(els.supportSummary, `UCSUR OK; fallback or manual companion currently saved.${modeText}`, "warn");
+        }
+      } else if (transformSupported) {
+        setStatus(els.supportSummary, `UCSUR OK; automatic transform supported, but saved mode is unknown.`, "ok");
+      } else {
+        setStatus(els.supportSummary, `UCSUR OK; ${support.reason || "fallback companion in use."}`, "warn");
+      }
+    } else {
+      setStatus(els.supportSummary, "Built-in preset.");
+    }
+    updateEditabilityState();
+  }
+
+  async function createFromBaseFile(file) {
+    try {
+      //setStatus(els.editStatus, `Importing base font and loading ${WASM_MODULE_URL}…`);
+      setStatus(els.editStatus, "Importing base font…");
+      const settings = currentSettings();
+      const analyzed = await analyzeFontBlob(file);
+      const generated = await generateCompanionFromBaseBlob(file, settings);
+      const support = generated.result?.support || analyzed.support || null;
+
+      const originalNames = getResultOriginalNames(generated.result);
+const rewrittenNames = getResultRewrittenNames(generated.result);
+
+const baseFamily = cleanFamilyName(
+  support?.familyName || support?.family_name || getResultFamilyName(originalNames) || basenameWithoutExt(file.name),
+  basenameWithoutExt(file.name)
+);
+
+const companionFamily = cleanFamilyName(
+  getResultFamilyName(rewrittenNames) || getResultTypographicFamily(rewrittenNames) || `${baseFamily}${settings.metadataSuffix}`,
+  `${baseFamily}${settings.metadataSuffix}`
+);
+
+      const label = normalizeFontLabelValue(els.fontLabel?.value, baseFamily);
+      const companionFilename = normalizeCompanionFilename(file.name, settings.metadataSuffix);
+
+      await validatePairRecordFonts({
+        fontKey: "generated-preview",
+        baseBlob: file,
+        companionBlob: generated.companionBlob,
+        baseFamily,
+        companionFamily,
+        baseFilename: file.name,
+        companionFilename,
+      });
+
+      const registered = await controller.registerRuntimePair({
+        label,
+        baseFamily,
+        companionFamily,
+        baseBlob: file,
+        companionBlob: generated.companionBlob,
+        baseFilename: file.name,
+        companionFilename,
+        sourceType: "runtime",
+        editable: true,
+        support,
+        settings: buildStoredSettings(settings),
+        notes: { mode: generated.result?.mode || "fallback-copy" },
+        metadataSuffix: settings.metadataSuffix,
+        persist: true,
+      });
+      selectedKnown = registered.key;
+      selectedPairRecord = await controller.resolvePresetRecord(registered.key);
+      updateSelectedDetails();
+      await refreshKnownList();
+      await renderSelectedPreview();
+      const mode = generated.result?.mode ? ` (${generated.result.mode})` : "";
+      //setStatus(els.editStatus, `Base font imported, companion created${mode}, and pair saved to IndexedDB.`, "ok");
+      setStatus(els.editStatus, "Base font imported, nanpa-linja-n companion created, and pair saved.", "ok");
+    } catch (err) {
+      console.error(err);
+      setStatus(els.editStatus, err?.message || String(err), "warn");
+    }
+  }
+
+  async function uploadCompanionForSelected(file) {
+    if (!selectedPairRecord?.pairRecord?.baseBlob) {
+      setStatus(els.editStatus, "Select or upload a base font first.", "warn");
+      return;
+    }
+    if (selectedPairRecord.editable === false) {
+      setStatus(els.editStatus, "Built-in pairs are read-only.", "warn");
+      return;
+    }
+    const fontKey = selectedPairRecord.pairRecord.fontKey || selectedPairRecord.fontKey;
+    const baseRec = selectedPairRecord.pairRecord;
+    try {
+      setStatus(els.editStatus, `Uploading manual nanpa-linja-n companion and saving ${fontKey}…`);
+      let support = baseRec.support || null;
+      try {
+        const companionAnalysis = await analyzeFontBlob(file);
+        support = support || companionAnalysis.support || null;
+      } catch (err) {
+        console.warn("Companion analysis failed; keeping existing support summary.", err);
+      }
+      const companionFamily = cleanFamilyName(basenameWithoutExt(file.name), `${baseRec.baseFamily}${currentSettings().metadataSuffix}`);
+
+      await validatePairRecordFonts({
+        fontKey,
+        baseBlob: baseRec.baseBlob,
+        companionBlob: file,
+        baseFamily: baseRec.baseFamily,
+        companionFamily,
+        baseFilename: baseRec.baseFilename,
+        companionFilename: file.name,
+      });
+
+      await controller.saveFontPairToIndexedDb({
+        ...baseRec,
+        fontKey,
+        label: normalizeFontLabelValue(els.fontLabel?.value, baseRec.label || baseRec.baseFamily),
+        baseFamily: baseRec.baseFamily,
+        companionFamily,
+        baseBlob: baseRec.baseBlob,
+        companionBlob: file,
+        baseFilename: baseRec.baseFilename,
+        companionFilename: file.name,
+        support,
+        settings: buildStoredSettings(currentSettings()),
+        metadataSuffix: currentSettings().metadataSuffix,
+        notes: { mode: "manual-upload" },
+        sourceType: "indexeddb",
+        editable: true,
+      });
+      selectedKnown = fontKey;
+      selectedPairRecord = await controller.resolvePresetRecord(fontKey);
+      updateSelectedDetails();
+      await refreshKnownList();
+      await renderSelectedPreview();
+      setStatus(els.editStatus, "Manual nanpa-linja-n companion uploaded and saved.", "ok");
+    } catch (err) {
+      console.error(err);
+      setStatus(els.editStatus, err?.message || String(err), "warn");
+    }
+  }
+
+  async function overwriteSelectedCompanion() {
+    const pairRecord = selectedPairRecord?.pairRecord;
+    if (!pairRecord?.baseBlob) {
+      setStatus(els.editStatus, "Nothing selected to overwrite.", "warn");
+      return;
+    }
+    if (selectedPairRecord.editable === false) {
+      setStatus(els.editStatus, "Built-in pairs are read-only.", "warn");
+      return;
+    }
+    const fontKey = pairRecord.fontKey || selectedPairRecord.fontKey;
+    const settings = currentSettings();
+    try {
+      //setStatus(els.editStatus, `Generating companion from base font through ${WASM_MODULE_URL}…`);
+      setStatus(els.editStatus, "Generating nanpa-linja-n companion from base font…");
+      const generated = await generateCompanionFromBaseBlob(pairRecord.baseBlob, settings);
+
+const rewrittenNames = getResultRewrittenNames(generated.result);
+const companionFamily = cleanFamilyName(
+  getResultFamilyName(rewrittenNames) || getResultTypographicFamily(rewrittenNames) || `${pairRecord.baseFamily}${settings.metadataSuffix}`,
+  `${pairRecord.baseFamily}${settings.metadataSuffix}`
+);
+
+const nextCompanionFilename = normalizeCompanionFilename(
+  pairRecord.baseFilename || pairRecord.companionFilename || "companion.otf",
+  settings.metadataSuffix
+);
+
+      const overwriteConfirmed = window.confirm(
+        `Overwrite the saved companion for "${pairRecord.label || fontKey}" with the current settings?`
+      );
+      if (!overwriteConfirmed) {
+        setStatus(els.editStatus, "Overwrite cancelled.", "warn");
+        return;
+      }
+
+      await controller.saveFontPairToIndexedDb({
+        ...pairRecord,
+        fontKey,
+        label: normalizeFontLabelValue(els.fontLabel?.value, pairRecord.label || pairRecord.baseFamily),
+        companionFamily,
+        companionBlob: generated.companionBlob,
+        companionFilename: nextCompanionFilename,
+        support: generated.result?.support || pairRecord.support || null,
+        settings: buildStoredSettings(settings),
+        metadataSuffix: settings.metadataSuffix,
+        notes: { mode: generated.result?.mode || "fallback-copy" },
+        sourceType: "indexeddb",
+        editable: true,
+      });
+      selectedKnown = fontKey;
+      selectedPairRecord = await controller.resolvePresetRecord(fontKey);
+      updateSelectedDetails();
+      await refreshKnownList();
+      await renderSelectedPreview();
+      //setStatus(els.editStatus, `Companion regenerated via WASM and saved (${generated.result?.mode || "fallback-copy"}).`, "ok");
+      setStatus(els.editStatus, "nanpa-linja-n companion regenerated and saved.", "ok");
+    } catch (err) {
+      console.error(err);
+      setStatus(els.editStatus, err?.message || String(err), "warn");
+    }
+  }
+
+  async function deleteSelectedPair() {
+    if (!selectedPairRecord?.fontKey && !selectedPairRecord?.pairRecord?.fontKey) {
+      setStatus(els.editStatus, "No saved pair selected.", "warn");
+      return;
+    }
+    if (selectedPairRecord.editable === false) {
+      setStatus(els.editStatus, "Built-in pairs are read-only.", "warn");
+      return;
+    }
+    const fontKey = selectedPairRecord.pairRecord?.fontKey || selectedPairRecord.fontKey;
+    const label = selectedPairRecord.label || selectedPairRecord.pairRecord?.label || fontKey;
+    const confirmed = window.confirm(`Delete the saved font pair "${label}"? This cannot be undone.`);
+    if (!confirmed) {
+      setStatus(els.editStatus, "Delete cancelled.", "warn");
+      return;
+    }
+    await controller.removeStoredPair(fontKey);
+    selectedPairRecord = null;
+    selectedKnown = null;
+    updateSelectedDetails();
+    await refreshKnownList();
+    await renderSelectedPreview();
+    setStatus(els.editStatus, "Saved pair removed from IndexedDB.", "ok");
+  }
+
+  async function downloadSelectedCompanion() {
+    if (!selectedPairRecord?.pairRecord?.companionBlob) {
+      setStatus(els.editStatus, "Selected pair does not have a downloadable stored companion blob.", "warn");
+      return;
+    }
+    const blob = selectedPairRecord.pairRecord.companionBlob;
+    const fileName = selectedPairRecord.pairRecord.companionFilename || normalizeCompanionFilename(selectedPairRecord.displayName || "companion.ttf", currentSettings().metadataSuffix);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  els.btnUploadBase.addEventListener("click", () => els.fileBase.click());
+  els.btnUploadCompanion.addEventListener("click", () => els.fileCompanion.click());
+  els.fileBase.addEventListener("change", async () => {
+    const file = els.fileBase.files?.[0];
+    if (file) await createFromBaseFile(file);
+    els.fileBase.value = "";
+  });
+  els.fileCompanion.addEventListener("change", async () => {
+    const file = els.fileCompanion.files?.[0];
+    if (file) await uploadCompanionForSelected(file);
+    els.fileCompanion.value = "";
+  });
+  els.btnRefreshList.addEventListener("click", refreshKnownList);
+  els.btnDeletePair.addEventListener("click", deleteSelectedPair);
+  els.btnGenerate.addEventListener("click", overwriteSelectedCompanion);
+  els.btnOverwrite.addEventListener("click", overwriteSelectedCompanion);
+  els.btnDownloadCompanion.addEventListener("click", downloadSelectedCompanion);
+  els.btnRenderPreview.addEventListener("click", renderSelectedPreview);
+  els.previewSizePreset.addEventListener("change", () => {
+    els.previewSize.value = els.previewSizePreset.value;
+    renderSelectedPreview();
+  });
+  for (const el of [els.twoThirdsOffset, els.quarterOffset, els.twoThirdsWidth, els.quarterWidth]) {
+    el.addEventListener("input", syncControlLabels);
+  }
+  els.fontLabel.addEventListener("input", () => {
+    const fallback = getDefaultFontLabelFromRecord(selectedPairRecord?.pairRecord || null);
+    const trimmed = String(els.fontLabel.value || "").trim();
+    if (!trimmed) {
+      els.fontLabel.setCustomValidity("Font label cannot be empty.");
+    } else {
+      els.fontLabel.setCustomValidity("");
+    }
+  });
+  els.fontLabel.addEventListener("change", async () => {
+    const fallback = getDefaultFontLabelFromRecord(selectedPairRecord?.pairRecord || null);
+    els.fontLabel.value = normalizeFontLabelValue(els.fontLabel.value, fallback);
+    els.fontLabel.setCustomValidity("");
+    await saveSelectedFontLabel();
+  });
+  els.fontLabel.addEventListener("blur", async () => {
+    const fallback = getDefaultFontLabelFromRecord(selectedPairRecord?.pairRecord || null);
+    els.fontLabel.value = normalizeFontLabelValue(els.fontLabel.value, fallback);
+    els.fontLabel.setCustomValidity("");
+    await saveSelectedFontLabel({ silent: true });
+  });
+  window.addEventListener("nanpa-fonts-changed", async () => {
+    await refreshKnownList();
+  });
+
+  syncControlLabels();
+  //setStatus(els.sourceStatus, `Preparing dynamic font registry and WASM bridge ${WASM_MODULE_URL}…`);
+  setStatus(els.sourceStatus, `Preparing font registry`);
+  await controller.hydrateDynamicPresetsFromDb();
+  await cleanupInvalidStoredPairs();
+  await refreshKnownList();
+  if (BUILTIN_REGISTRY && Object.keys(BUILTIN_REGISTRY).length) {
+    const first = Object.keys(BUILTIN_REGISTRY)[0];
+    selectedKnown = first;
+    await selectKnownPair(first);
+    await refreshKnownList();
+  } else {
+    clearCanvas(els.canvasOriginal);
+    clearCanvas(els.canvasCompanion);
+    updateEditabilityState();
+  }
+  //setStatus(els.sourceStatus, `Ready. Stored font pairs will be loaded from IndexedDB, and companion generation will call ${WASM_MODULE_URL}.`);
+  setStatus(els.sourceStatus, "Ready.");
+</script>
+</body>
+</html>
