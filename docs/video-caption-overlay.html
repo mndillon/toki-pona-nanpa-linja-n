@@ -103,6 +103,11 @@
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
     font-weight:700;
   }
+  .panelHeadNote{
+  font-weight: 400;
+  font-size: 12px;
+  color: rgba(110, 98, 85, 0.8);
+}
   .panelBody{
     min-height:0;
     overflow:auto;
@@ -373,7 +378,9 @@
 
   <div class="workspace">
     <div class="videoPanel panel" style="border-right:1px solid var(--border)">
-      <div class="panelHead">Video (must be re-loaded on page refresh, as the browser is not allowed to autoload local files.)</div>
+      <div class="panelHead">
+  Video <span class="panelHeadNote">(must be re-loaded on page refresh, as the browser is not allowed to autoload local files.)</span>
+</div>
       <div class="videoWrap">
         <div class="videoStage" id="videoStage">
           <video id="video" preload="metadata"></video>
@@ -429,7 +436,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./js/sitelen-font-pair-controller.js";
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=2";//sitelen-font-pair-controller.js";
 window.SitelenRenderer = SitelenRenderer;
 
 (() => {
@@ -447,7 +454,7 @@ window.SitelenRenderer = SitelenRenderer;
   const SITELEN_FONT_PRESETS = {
     nasinNanpa: {
       key: "nasinNanpa",
-      label: "nasin nanpa",
+      label: "nasin nanpa predefined",
       parserMode: "sitelen-seli-kiwen",
       textFamily: DEFAULT_SITELEN_FONT,
       cartoucheFamily: DEFAULT_CARTOUCHE_FONT,
@@ -484,7 +491,7 @@ window.SitelenRenderer = SitelenRenderer;
     },
     sitelenSeliKiwen: {
       key: "sitelenSeliKiwen",
-      label: "sitelen seli kiwen",
+      label: "sitelen seli kiwen predefined",
       parserMode: "sitelen-seli-kiwen",
       textFamily: "SSK-Juniko",
       cartoucheFamily: "SSK-Juniko-Cartouche",
@@ -519,9 +526,48 @@ window.SitelenRenderer = SitelenRenderer;
         }
       ]
     },
+    fairfaxHd: {
+        key: "fairfaxHd",
+        label: "FairfaxHD predefined",
+        parserMode: "sitelen-seli-kiwen",
+        textFamily: "fairfaxHd",
+        cartoucheFamily: "fairfaxHd-Cartouche",
+        literalFamily: DEFAULT_LITERAL_FONT,
+        literalOptions: [
+          [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+          [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+          [DEFAULT_LITERAL_FONT, "Patrick Hand"],
+          ["Arial", "Arial"],
+          ["Times New Roman", "Times New Roman"],
+          ["Courier New", "Courier New"],
+          ["system-ui", "system-ui"],
+        ],
+        pdfTextFontUrl: "./fonts/FairfaxHD.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+        faces: [
+          {
+            family: "fairfaxHd",
+            url: "./fonts/FairfaxHD.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF196C)
+          },
+          {
+            family: "fairfaxHd-Cartouche",
+            url: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+            format: "truetype",
+            sample: String.fromCodePoint(0xF1990)
+          },
+          {
+            family: DEFAULT_LITERAL_FONT,
+            url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          }
+        ]
+      },
     fairfaxPonaHd: {
         key: "fairfaxPonaHd",
-        label: "FairfaxPonaHD",
+        label: "FairfaxPonaHD predefined",
         parserMode: "sitelen-seli-kiwen",
         textFamily: "fairfaxPonaHd",
         cartoucheFamily: "fairfaxPonaHd-Cartouche",
@@ -566,6 +612,10 @@ window.SitelenRenderer = SitelenRenderer;
     defaultPresetKey: DEFAULT_SITELEN_FAMILY_KEY,
     defaultTextFontOption: DEFAULT_TEXT_FONT_OPTION
   });
+
+  function getAllSitelenFontPresets(){
+    return Object.values(sitelenFontController.getCombinedRegistrySnapshot());
+  }
 
   const FONT_SIZE_PRESETS = [16, 20, 24, 28, 32, 36, 44, 56, 72, 96];
   const DEFAULT_COLOR_SWATCHES = [
@@ -3178,7 +3228,15 @@ window.SitelenRenderer = SitelenRenderer;
     }
   };
 
+  function getDefaultItemFontSettings(){
+    const activePreset = sitelenFontController.getActivePreset() || sitelenFontController.getPresetByKey(DEFAULT_SITELEN_FAMILY_KEY) || SITELEN_FONT_PRESETS[DEFAULT_SITELEN_FAMILY_KEY];
+    const sitelenFontFamily = normalizeSitelenFontFamilyKey(activePreset?.key || DEFAULT_SITELEN_FAMILY_KEY);
+    const fontFamily = normalizeLiteralFontFamily(sitelenFontController.getSelectedTextFontOptionKey(), sitelenFontFamily);
+    return { sitelenFontFamily, fontFamily };
+  }
+
   function createDefaultProject(){
+    const defaultItemFonts = getDefaultItemFontSettings();
     return {
       schemaVersion: SCHEMA_VERSION,
       projectId: uid("proj"),
@@ -3202,8 +3260,8 @@ window.SitelenRenderer = SitelenRenderer;
       },
       defaults: {
         item: {
-          sitelenFontFamily: DEFAULT_SITELEN_FAMILY_KEY,
-          fontFamily: DEFAULT_LITERAL_FONT,
+          sitelenFontFamily: defaultItemFonts.sitelenFontFamily,
+          fontFamily: defaultItemFonts.fontFamily,
           fontSize: 56,
           align: "center",
           color: "#111111",
@@ -4166,7 +4224,7 @@ window.SitelenRenderer = SitelenRenderer;
   }
 
   function getSitelenFontPreset(key){
-    return SITELEN_FONT_PRESETS[normalizeSitelenFontFamilyKey(key)] || SITELEN_FONT_PRESETS[DEFAULT_SITELEN_FAMILY_KEY];
+    return sitelenFontController.getPresetByKey(key) || sitelenFontController.getActivePreset();
   }
 
   function getLiteralFontOptionsForPresetKey(presetKey){
@@ -4187,7 +4245,7 @@ window.SitelenRenderer = SitelenRenderer;
   function makeSitelenFontFamilySelect(value, onChange){
     const sel = document.createElement("select");
     const current = normalizeSitelenFontFamilyKey(value);
-    for (const preset of Object.values(SITELEN_FONT_PRESETS)){
+    for (const preset of getAllSitelenFontPresets()){
       const o = document.createElement("option");
       o.value = preset.key;
       o.textContent = preset.label;
@@ -4730,7 +4788,7 @@ window.SitelenRenderer = SitelenRenderer;
   function sitelenFontAvailable(){
     try{
       if (!(document.fonts && document.fonts.check)) return false;
-      return Object.values(SITELEN_FONT_PRESETS).some(preset =>
+      return getAllSitelenFontPresets().some(preset =>
         document.fonts.check('24px "' + preset.textFamily + '"', 'toki pona') ||
         document.fonts.check('24px "' + preset.cartoucheFamily + '"', 'toki pona')
       );
@@ -4741,13 +4799,14 @@ window.SitelenRenderer = SitelenRenderer;
 
   function isSitelenLikeFont(fontFamily){
     const fam = String(fontFamily || '').trim();
-    return Object.values(SITELEN_FONT_PRESETS).some(preset => preset.textFamily === fam || preset.cartoucheFamily === fam);
+    return getAllSitelenFontPresets().some(preset => preset.textFamily === fam || preset.cartoucheFamily === fam);
   }
 
   async function ensureEditorFontsReady(){
+    await sitelenFontController.ready;
     if (!document.fonts || !document.fonts.load) return;
     const startupFamilies = [];
-    for (const preset of Object.values(SITELEN_FONT_PRESETS)){
+    for (const preset of getAllSitelenFontPresets()){
       startupFamilies.push(preset.textFamily, preset.cartoucheFamily);
     }
     startupFamilies.push(DEFAULT_LITERAL_FONT);

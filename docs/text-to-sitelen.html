@@ -521,7 +521,7 @@
         <li><strong>Long pi:</strong> A long “pi” container can be written as <span class="mono">pi( ... )</span>.  Must have at least two words inside ( ... ).  Cartouche inside long pi isn't working properly.</li>
         <li><strong>Middle dot:</strong> The Unicode character U+00B7 &#x2014; '&#x00B7;' is used to display the middle dot glyph.</li>
         <li><strong>Punctuation:</strong> Word 'ota' maps to middle dot, and word 'kolon' maps to colon, these are non-standard words and are used for convenience only.</li>
-        <li><strong>Quotation:</strong> Text inside double quotes is rendered exactly as typed, e.g. "Hello World!".</li>
+        <li><strong>Quotation:</strong> Text inside double quotes is rendered exactly as typed, e.g. "Hello World!".  The text font selector is used to pick the font for this text.</li>
         <li>Unknown words are ignored.</li>
       </ul>
     </div>
@@ -609,7 +609,7 @@ nanpa #~WI.
         <!-- Text font -->
         <div id="ctlTextFont" class="inlineControl inlinePill" role="group" aria-label="Text font">
           <span class="ctlLabel">
-            Text font <span class="tpInline">nasin sitelen nimi</span>
+            Quoted Text font <span class="tpInline">nasin sitelen nimi</span>
           </span>
           <select id="appTextFontSel" aria-describedby="textFontHelp"></select>
           <div id="textFontHelp" class="sr-only">Chooses the font used for literal quoted text only.</div>
@@ -868,7 +868,7 @@ nanpa #~WI.
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
-    } from "./js/sitelen-font-pair-controller.js";
+    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js";//sitelen-font-pair-controller.js";
 
     "use strict";
 
@@ -896,7 +896,7 @@ nanpa #~WI.
     const RENDER_FONT_PRESETS = {
       nasinNanpa: {
         key: "nasinNanpa",
-        label: "nasin nanpa",
+        label: "nasin nanpa predefined",
         parserMode: "sitelen-seli-kiwen",
         textFamily: FONT_FAMILY_TEXT,
         cartoucheFamily: FONT_FAMILY_CARTOUCHE,
@@ -935,7 +935,7 @@ nanpa #~WI.
       },
       sitelenSeliKiwen: {
         key: "sitelenSeliKiwen",
-        label: "sitelen seli kiwen",
+        label: "sitelen seli kiwen predefined",
         parserMode: "sitelen-seli-kiwen",
         textFamily: "SSK-Juniko",
         cartoucheFamily: "SSK-Juniko-Cartouche",
@@ -974,7 +974,7 @@ nanpa #~WI.
       },
       fairfaxHd: {
         key: "fairfaxHd",
-        label: "FairfaxHD",
+        label: "FairfaxHD predefined",
         parserMode: "sitelen-seli-kiwen",
         textFamily: "fairfaxHd",
         cartoucheFamily: "fairfaxHd-Cartouche",
@@ -1013,7 +1013,7 @@ nanpa #~WI.
       },
       fairfaxPonaHd: {
         key: "fairfaxPonaHd",
-        label: "FairfaxPonaHD",
+        label: "FairfaxPonaHD predefined",
         parserMode: "sitelen-seli-kiwen",
         textFamily: "fairfaxPonaHd",
         cartoucheFamily: "fairfaxPonaHd-Cartouche",
