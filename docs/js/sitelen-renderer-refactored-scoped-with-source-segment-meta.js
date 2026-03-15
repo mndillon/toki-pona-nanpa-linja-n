@@ -3364,15 +3364,30 @@ function wireHaloControls() {
     function parseQuoteSegmentToElements(quoteContent, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'quote', sourceSegmentIndex = null }) {
       const literal = unescapeQuotedText(quoteContent);
 
-      // IMPORTANT: preserve spaces exactly (do NOT trim)
       if (literal.length === 0) return;
 
-      // Add a boundary gap before the quoted literal ONLY if this is not line-start.
+      const fgCss = getFgHex();
+      const mode = getNanpaLinjanMode();
+      const cartoucheInnerCps = tryExtractFullUcsurCartoucheCodepoints(literal);
+
+      if (cartoucheInnerCps && isNumericNanpaLinjanCartoucheInnerCps(cartoucheInnerCps, { mode })) {
+        makeCartoucheElementFromCodepoints(elements, cartoucheInnerCps, {
+          fontPx,
+          fontFamily: FONT_FAMILY_NUMBER,
+          fgCss,
+          sourceText: String(quoteContent ?? ''),
+          sourceStart: sourceBaseStart,
+          sourceEnd: sourceBaseStart + String(quoteContent ?? '').length,
+          sourceKind,
+          sourceSegmentIndex,
+        });
+        return;
+      }
+
       if (elements.length > 0) {
         pushGapIfNeeded(elements, wordGapForPx(fontPx));
       }
 
-      // IMPORTANT: quoted text should not auto-inject word gaps; it should render literally
       makeLiteralTextElement(elements, literal, {
         fontPx,
         fontFamily: FONT_FAMILY_LITERAL,
@@ -3384,6 +3399,60 @@ function wireHaloControls() {
         sourceKind,
         sourceSegmentIndex,
       });
+    }
+
+    function tryExtractFullUcsurCartoucheCodepoints(text) {
+      const s = String(text ?? "");
+      if (!s) return null;
+
+      const cps = Array.from(s, ch => ch.codePointAt(0));
+      if (cps.length < 3) return null;
+
+      const CARTOUCHE_START = 0xF1990; // 󱦐
+      const CARTOUCHE_END   = 0xF1991; // 󱦑
+
+      if (cps[0] !== CARTOUCHE_START) return null;
+      if (cps[cps.length - 1] !== CARTOUCHE_END) return null;
+
+      const inner = cps.slice(1, -1);
+      if (inner.length === 0) return null;
+
+      return inner;
+    }
+
+    function isNumericNanpaLinjanCartoucheInnerCps(innerCps, { mode = "uniform" } = {}) {
+      const cps = Array.from(innerCps ?? []);
+      if (!cps.length) return false;
+
+      const allowed = new Set(Object.values(NANPA_LINJA_N_WORD_TO_CP));
+      for (const cp of cps) {
+        if (!allowed.has(cp)) return false;
+      }
+
+      // Canonical nanpa-linja-n cartouches produced by this file always start
+      // and end with nanpa in traditional mode.
+      if (mode !== "uniform") {
+        if (cps[0] !== CP_NANPA) return false;
+        if (cps[cps.length - 1] !== CP_NANPA) return false;
+        return true;
+      }
+
+      // In uniform mode, accept either already-uniform canonical output
+      // or traditional output that uniformizes exactly to the provided cps.
+      const uniform = uniformizeNanpaLinjanCartoucheCps(cps);
+      if (!uniform.length) return false;
+
+      const uniformAllowed = new Set(Object.values(NANPA_LINJA_N_WORD_TO_CP));
+      for (const cp of uniform) {
+        if (!uniformAllowed.has(cp)) return false;
+      }
+
+      const first = uniform[0];
+      const last = uniform[uniform.length - 1];
+      if (first !== CP_NANPA && first !== CP_NENA) return false;
+      if (last !== CP_NANPA && last !== CP_NENA) return false;
+
+      return true;
     }
 
     function parseBracketSegmentToElements(bracketContent, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'bracket', sourceSegmentIndex = null }) {
@@ -3696,9 +3765,8 @@ function wireHaloControls() {
           if (el.type === "text") {
             const m = el.m;
             const fam = el.fontFamily || FONT_FAMILY_LITERAL;
-            //outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
-            //outCtx.fillText(m.chars, x, glyphBaseline);
-            drawTextWithOptionalHalo(outCtx, m.chars, x, glyphBaseline, {
+            const drawX = x + (m.left ?? 0);
+            drawTextWithOptionalHalo(outCtx, m.chars, drawX, glyphBaseline, {
               px: (el.px ?? fontPx),
               fontFamily: fam,
               fillCss: fgCss
