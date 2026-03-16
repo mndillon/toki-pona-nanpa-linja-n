@@ -191,7 +191,7 @@ canvas {
 <script type="module">
   import { createSitelenFontPairController } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=5";
 
-  const WASM_MODULE_URL = "./wasm/nanpa_font_wasm.js?v=2";
+  const WASM_MODULE_URL = "./wasm/nanpa_font_wasm.js?v=5";
   const DEFAULT_SETTINGS = {
     twoThirdsVerticalOffset: 0,
     quarterVerticalOffset: 0,
@@ -799,7 +799,7 @@ const companionFamily = cleanFamilyName(
   `${baseFamily}${settings.metadataSuffix}`
 );
 
-      const label = normalizeFontLabelValue(els.fontLabel?.value, baseFamily);
+      const label = normalizeFontLabelValue(baseFamily, basenameWithoutExt(file.name));
       const companionFilename = normalizeCompanionFilename(file.name, settings.metadataSuffix);
 
       await validatePairRecordFonts({
@@ -830,6 +830,7 @@ const companionFamily = cleanFamilyName(
       });
       selectedKnown = registered.key;
       selectedPairRecord = await controller.resolvePresetRecord(registered.key);
+      if (els.fontLabel) els.fontLabel.value = label;
       updateSelectedDetails();
       await refreshKnownList();
       await renderSelectedPreview();
