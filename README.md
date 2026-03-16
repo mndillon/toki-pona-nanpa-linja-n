@@ -474,10 +474,10 @@ Examples:
 | <img src="images/horizontal Fraction Delimiter nasin nanpa v4.png" width="32"/>                | OO           | nono                      | needed to split numerator and denominator of fraction        |
 | <img src="images/horizontal Fraction From_Integer_Delimiter nasin nanpa v2.png" width="48"/>   | OOO          | nonono                    | needed to split integer from fraction part                   |
 | <img src="images/horizontal_percent.png" width="16"/>                                          | OK           | noke                      | kipisi is the shape of a percentage symbol                   |
-| <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands                          |
+| <img src="images/horizontal Tasan nasin nanpa.png" width="16"/>                                | K            | neke                      | kulupu has three circles, thousands, ISO grouping            |
 | <img src="images/horizontal Masan nasin nanpa.png" width="32"/>                                | KK           | nekeke                    | millions                                                     |
 | <img src="images/horizontal Wasan nasin nanpa.png" width="48"/>                                | KKK          | nekekeke                  | billions                                                     |
-| <img src="images/horizontal ISO Breeak nasin nanpa v3.png" width="16"/>                        | N            | ne                        | natural break                                                |
+| <img src="images/horizontal ISO Breeak nasin nanpa v3.png" width="16"/>                        | N            | nene                      | natural break                                                |
 | <img src="images/horizontal Number Symbol nasin nanpa.png" width="16"/>                        | N            | n                         | nanpa, always at start and end of numeric description        |
 
 
