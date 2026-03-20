@@ -3630,7 +3630,8 @@ window.SitelenRenderer = SitelenRenderer;
     if (!all.length){
       const div = document.createElement("div");
       div.className = "hint";
-      div.textContent = "No segments yet. Load a video, then mark segment starts while playing.";
+      div.textContent = "No segments created yet.  \nclick Load Video, \nthen click Play,  \nthen click New Segment at Time, to mark when each caption will start,  \nthen edit segments later.  \nYou can always add more segments.  \nWhen finished export zip.  \n-----  \nExpand zip file,  \nImport OTIO timeline into kdenlive.  \nAdd the video,  \nthen render from kdenlive.  \n";
+      div.style.whiteSpace = "pre-line";
       list.appendChild(div);
       return;
     }
