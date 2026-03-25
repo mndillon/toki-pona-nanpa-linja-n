@@ -944,6 +944,23 @@
       ]);
     }
 
+    //1/3 sized glyphs
+    function getOneThirdsCodepointsSet() {
+      return new Set([
+        0xF1917, // kasi
+      ]);
+    }
+
+    function getVerticalOffsetForCartoucheCodepoint(cp, px) {
+      // Negative values move the glyph upward.
+      // Tune this if needed. For one-third-size kasi, moving up by about
+      // 22% of the full-size cartouche font works well as a starting point.
+      if (cp === 0xF1917) { // kasi
+        return -Math.round(px * 0.22);
+      }
+      return 0;
+    }
+
     // ⅔-size glyphs
     function getTwoThirdsCodepointsSet() {
       return new Set([
@@ -1096,13 +1113,13 @@
         // 4) KE... : one or more "kulupu (e|en)" pairs become "KE" repeated
         if (
           i + 1 < end &&
-          (words[i] === "kulupu" || words[i] === "kolon" || words[i] === ":") &&
+          (words[i] === "kulupu" || words[i] === "kolon" || words[i] === ":" || words[i] === "kasi") &&
           (words[i + 1] === "e" || words[i + 1] === "en")
         ) {
           let count = 0;
           while (
             i + 1 < end &&
-            (words[i] === "kulupu" || words[i] === "kolon" || words[i] === ":") &&
+            (words[i] === "kulupu" || words[i] === "kolon" || words[i] === ":" || words[i] === "kasi") &&
             (words[i + 1] === "e" || words[i + 1] === "en")
           ) {
             count += 1;
@@ -2465,8 +2482,8 @@
           pattern.every((w, k) => tpWords[i + k] === w);
 
         if (isMatch) {
-          // Keep the NE scaffolding: nena/en ... join, but swap kulupu -> kolon
-          out.push(nWord, join, "kolon", join);
+          // Keep the NE scaffolding: nena/en ... join, but swap kulupu -> kasi
+          out.push(nWord, join, "kasi", join);
           i += pattern.length;
         } else {
           out.push(tpWords[i]);
@@ -2752,6 +2769,7 @@
     }
 
     function renderMixedCartoucheToCanvas(canvas, codepoints, largePx, smallPx, 
+      oneThirdSet,
       quarterSet,
       halfSet,
       twoThirdsSet, 
@@ -2777,6 +2795,7 @@
         // - twoThirdsSet => (2/3) * largePx
         // - otherwise => largePx
         const px =
+          (oneThirdSet && oneThirdSet.has(cp)) ? Math.max(1, Math.round(largePx / 3)) :
           (quarterSet && quarterSet.has(cp)) ? smallPx :
           (halfSet && halfSet.has(cp)) ? Math.max(1, Math.round(largePx * 0.5)) :
           (twoThirdsSet && twoThirdsSet.has(cp)) ? Math.max(1, Math.round(largePx * (2/3))) :
@@ -2793,11 +2812,19 @@
         const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
         const tightW = Math.ceil(left + right);
 
-        glyphRuns.push({ ch, px, tightW, left, ascent, descent });
+        const yOffset = getVerticalOffsetForCartoucheCodepoint(cp, largePx);
+
+        glyphRuns.push({ ch, px, tightW, left, ascent, descent, yOffset });
 
         totalWidth += tightW + letterGap;
-        if (ascent > maxAscent) maxAscent = ascent;
-        if (descent > maxDescent) maxDescent = descent;
+
+        // If a glyph is moved upward, it needs more room above the baseline.
+        // If moved downward, it needs more room below.
+        const effectiveAscent = ascent + Math.max(0, -yOffset);
+        const effectiveDescent = descent + Math.max(0, yOffset);
+
+        if (effectiveAscent > maxAscent) maxAscent = effectiveAscent;
+        if (effectiveDescent > maxDescent) maxDescent = effectiveDescent;
       }
 
       if (glyphRuns.length > 0) totalWidth -= letterGap;
@@ -2826,14 +2853,16 @@
       for (const g of glyphRuns) {
         ctx2.font = `${g.px}px "${FONT_FAMILY}"`;
         const drawX = x + (g.left ?? 0);
-        ctx2.fillText(g.ch, drawX, baselineY);
+        ctx2.fillText(g.ch, drawX, baselineY + (g.yOffset ?? 0));
         x += g.tightW + letterGap;
       }
 
       return { cartW, cartH, textW: totalWidth, textH: textHeight, maxAscent, maxDescent };
     }
 
-    function renderUniformCartoucheFromCodepoints(canvas, codepoints, fontPx, quarterSet,
+    function renderUniformCartoucheFromCodepoints(canvas, codepoints, fontPx, 
+    oneThirdSet,
+    quarterSet,
   halfSet,
   twoThirdsSet,
   options = {}) {
@@ -2854,6 +2883,7 @@
         const ch = String.fromCodePoint(cp);
 
         const px =
+          (oneThirdSet && oneThirdSet.has(cp)) ? Math.max(1, Math.round(fontPx / 3)) :
           (quarterSet && quarterSet.has(cp)) ? Math.max(1, Math.round(fontPx * 0.25)) :
           (halfSet && halfSet.has(cp)) ? Math.max(1, Math.round(fontPx * 0.5)) :
           (twoThirdsSet && twoThirdsSet.has(cp)) ? Math.max(1, Math.round(fontPx * (2/3))) :
@@ -2871,11 +2901,17 @@
         const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
         const tightW = Math.ceil(left + right);
 
-        glyphRuns.push({ ch, left, tightW, px });
+        const yOffset = getVerticalOffsetForCartoucheCodepoint(cp, fontPx);
+
+        glyphRuns.push({ ch, left, tightW, px, yOffset });
 
         totalWidth += tightW + letterGap;
-        if (ascent > maxAscent) maxAscent = ascent;
-        if (descent > maxDescent) maxDescent = descent;
+
+        const effectiveAscent = ascent + Math.max(0, -yOffset);
+        const effectiveDescent = descent + Math.max(0, yOffset);
+
+        if (effectiveAscent > maxAscent) maxAscent = effectiveAscent;
+        if (effectiveDescent > maxDescent) maxDescent = effectiveDescent;
 
       }
 
@@ -2904,7 +2940,7 @@
       for (const g of glyphRuns) {
         ctx2.font = `${g.px}px "${FONT_FAMILY}"`;   // <-- CRITICAL FIX
         const drawX = x + (g.left ?? 0);
-        ctx2.fillText(g.ch, drawX, baselineY);
+        ctx2.fillText(g.ch, drawX, baselineY + (g.yOffset ?? 0));
         x += g.tightW + letterGap;
       }
 
@@ -3170,6 +3206,7 @@
       const quarterSet = getQuarterCodepointsSet();
       const halfSet = getHalfCodepointsSet();
       const twoThirdsSet = getTwoThirdsCodepointsSet();
+      const oneThirdsSet = getOneThirdsCodepointsSet();
 
       const TINY_LARGE_PX = 22;
       const TINY_SMALL_PX = 8;
@@ -3215,6 +3252,7 @@
           cps,
           TINY_LARGE_PX,
           TINY_SMALL_PX,
+          oneThirdsSet,
          quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3261,12 +3299,14 @@
       const quarterSet = getQuarterCodepointsSet();
       const halfSet = getHalfCodepointsSet();
       const twoThirdsSet = getTwoThirdsCodepointsSet();
+      const oneThirdsSet = getOneThirdsCodepointsSet();
 
       renderMixedCartoucheToCanvas(
         canvasSmall,
         cps,
         LARGE_TINY_FONT_SIZE,
         SMALL_TINY_FONT_SIZE,
+        oneThirdsSet,
         quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3278,6 +3318,7 @@
         cps,
         LARGE_FONT_SIZE,
         SMALL_FONT_SIZE,
+        oneThirdsSet,
        quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3330,11 +3371,13 @@
         const quarterSet = getQuarterCodepointsSet();
         const halfSet = getHalfCodepointsSet();
         const twoThirdsSet = getTwoThirdsCodepointsSet();
+        const oneThirdsSet = getOneThirdsCodepointsSet();
 
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
           LARGE_TINY_FONT_SIZE,
+          oneThirdsSet,
           quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3345,6 +3388,7 @@
           canvasLarge,
           cps,
           LARGE_FONT_SIZE,
+          oneThirdsSet,
           quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3400,12 +3444,14 @@
           const quarterSet = getQuarterCodepointsSet();
           const halfSet = getHalfCodepointsSet();
           const twoThirdsSet = getTwoThirdsCodepointsSet();
+          const oneThirdsSet = getOneThirdsCodepointsSet();
 
           renderMixedCartoucheToCanvas(
             canvasSmall,
             cps,
             LARGE_TINY_FONT_SIZE,
             SMALL_TINY_FONT_SIZE,
+            oneThirdsSet,
             quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3417,6 +3463,7 @@
             cps,
             LARGE_FONT_SIZE,
             SMALL_FONT_SIZE,
+            oneThirdsSet,
             quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3458,12 +3505,14 @@
           const quarterSet = getQuarterCodepointsSet();
           const halfSet = getHalfCodepointsSet();
           const twoThirdsSet = getTwoThirdsCodepointsSet();
+          const oneThirdsSet = getOneThirdsCodepointsSet();
 
           renderMixedCartoucheToCanvas(
             canvasSmall,
             cps,
             LARGE_TINY_FONT_SIZE,
             SMALL_TINY_FONT_SIZE,
+            oneThirdsSet,
            quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3475,6 +3524,7 @@
             cps,
             LARGE_FONT_SIZE,
             SMALL_FONT_SIZE,
+            oneThirdsSet,
             quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3515,12 +3565,14 @@
           const quarterSet = getQuarterCodepointsSet();
           const halfSet = getHalfCodepointsSet();
           const twoThirdsSet = getTwoThirdsCodepointsSet();
+          const oneThirdsSet = getOneThirdsCodepointsSet();
 
           renderMixedCartoucheToCanvas(
             canvasSmall,
             cps,
             LARGE_TINY_FONT_SIZE,
             SMALL_TINY_FONT_SIZE,
+            oneThirdsSet,
             quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3532,6 +3584,7 @@
             cps,
             LARGE_FONT_SIZE,
             SMALL_FONT_SIZE,
+            oneThirdsSet,
             quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3553,11 +3606,13 @@
         const quarterSet = getQuarterCodepointsSet();
         const halfSet = getHalfCodepointsSet();
         const twoThirdsSet = getTwoThirdsCodepointsSet();
+        const oneThirdsSet = getOneThirdsCodepointsSet();
 
         renderUniformCartoucheFromCodepoints(
           canvasSmall,
           cps,
           LARGE_TINY_FONT_SIZE,
+          oneThirdsSet,
           quarterSet,
   halfSet,
   twoThirdsSet,
@@ -3568,6 +3623,7 @@
           canvasLarge,
           cps,
           LARGE_FONT_SIZE,
+          oneThirdsSet,
           quarterSet,
   halfSet,
   twoThirdsSet,

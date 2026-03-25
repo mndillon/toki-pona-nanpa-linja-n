@@ -101,6 +101,30 @@ canvas {
 .warn { color:var(--warn); }
 .readonly { opacity:.75; }
 
+label {
+  display: grid;
+  gap: 6px;
+  font-size: .92rem;
+  min-width: 0;
+  width: 100%;
+}
+
+input[type="range"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+
+.grid2 > * {
+  min-width: 0;
+}
+
 /* changed */
 @media (max-width:1300px) {
   main { grid-template-columns:240px minmax(0,1fr) 300px; }
@@ -146,7 +170,9 @@ canvas {
     <section class="card">
       <h2>Preview</h2>
       <div class="body stack">
-        <label>Preview cartouche string<textarea id="previewString" class="mono">󱦐󱤽󱤊󱥀󱥆󱥳󱤊󱥮󱤊󱥀󱤊󱤟󱤊󱥗󱤊󱥀󱤈󱤭󱤊󱥀󱤊󱤟󱤊󱥀󱥱󱤺󱤊󱥑󱤊󱥀󱥄󱥀󱤊󱤓󱤊󱥀󱤌󱥀󱥇󱥻󱤊󱤽󱦑</textarea></label>
+        <label>Preview cartouche string<textarea id="previewString" class="mono">󱦐󱤽󱤊󱥀󱥆󱥳󱤊󱥮󱤊󱥀󱤊󱤟󱤊󱥗󱤊󱥀󱤈󱤭󱤊󱥀󱤊󱤟󱤊󱥀󱥱󱤺󱤊󱥑󱤊󱥀󱥄󱥀󱤊󱤓󱤊󱥀󱤌󱥀󱥇󱥻󱤊󱤽󱦑
+󱦐󱤽󱤊󱥮󱤊󱥀󱤌󱥮󱤊󱥀󱥱󱥀󱤊󱤗󱤊󱥀󱤌󱥗󱤊󱥀󱤊󱤗󱤊󱥳󱤊󱤺󱤊󱤽󱦑
+        </textarea></label>
         <label>Font label<input id="fontLabel" type="text" maxlength="120" /></label>
         <div class="row">
           <label>Fixed preview size
@@ -191,7 +217,7 @@ canvas {
 <script type="module">
   import { createSitelenFontPairController } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=5";
 
-  const WASM_MODULE_URL = "./wasm/nanpa_font_wasm.js?v=5";
+  const WASM_MODULE_URL = "./wasm/nanpa_font_wasm.js?v=59";
   const DEFAULT_SETTINGS = {
     twoThirdsVerticalOffset: 0,
     quarterVerticalOffset: 0,

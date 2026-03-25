@@ -609,7 +609,7 @@ nanpa #~WI.
         <!-- Text font -->
         <div id="ctlTextFont" class="inlineControl inlinePill" role="group" aria-label="Text font">
           <span class="ctlLabel">
-            Quoted Text font <span class="tpInline">nasin sitelen nimi</span>
+            Quoted text font <span class="tpInline">nasin sitelen nimi</span>
           </span>
           <select id="appTextFontSel" aria-describedby="textFontHelp"></select>
           <div id="textFontHelp" class="sr-only">Chooses the font used for literal quoted text only.</div>
@@ -863,12 +863,12 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=4";
+    import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=7";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
-    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js";//sitelen-font-pair-controller.js";
+    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js";
 
     "use strict";
 
@@ -911,7 +911,7 @@ nanpa #~WI.
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
-        pdfCartoucheFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+        pdfCartoucheFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf",
         faces: [
           {
             family: FONT_FAMILY_TEXT,
@@ -921,7 +921,7 @@ nanpa #~WI.
           },
           {
             family: FONT_FAMILY_CARTOUCHE,
-            url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+            url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf",
             format: "opentype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -950,7 +950,7 @@ nanpa #~WI.
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/sitelenselikiwenjuniko.ttf",
-        pdfCartoucheFontUrl: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+        pdfCartoucheFontUrl: "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf",
         faces: [
           {
             family: "SSK-Juniko",
@@ -960,7 +960,7 @@ nanpa #~WI.
           },
           {
             family: "SSK-Juniko-Cartouche",
-            url: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+            url: "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf",
             format: "truetype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -989,7 +989,7 @@ nanpa #~WI.
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/FairfaxHD.ttf",
-        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n-good-kasi.ttf",
         faces: [
           {
             family: "fairfaxHd",
@@ -999,7 +999,7 @@ nanpa #~WI.
           },
           {
             family: "fairfaxHd-Cartouche",
-            url: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+            url: "./fonts/FairfaxHD-nanpa-linja-n-good-kasi.ttf",
             format: "truetype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -1028,7 +1028,7 @@ nanpa #~WI.
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/FairfaxPonaHD.ttf",
-        pdfCartoucheFontUrl: "./fonts/FairfaxPonaHD-nanpa-linja-n.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf",
         faces: [
           {
             family: "fairfaxPonaHd",
@@ -1038,7 +1038,7 @@ nanpa #~WI.
           },
           {
             family: "fairfaxPonaHd-Cartouche",
-            url: "./fonts/FairfaxPonaHD-nanpa-linja-n.ttf",
+            url: "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf",
             format: "truetype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -4247,6 +4247,10 @@ function wireHaloControls() {
 
 
     async function canvasToPngBytes(canvas){
+      if (!canvas || typeof canvas.toBlob !== "function") {
+        throw new Error("canvasToPngBytes expected an HTMLCanvasElement.");
+      }
+
       return await new Promise((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (!blob) return reject(new Error("toBlob failed"));
@@ -4258,50 +4262,65 @@ function wireHaloControls() {
     const PDF_CARTOUCHE_SCALE = 6;//3; // 2 or 3 is usually enough
 
     function buildCartoucheCanvasForPdf(cartEl, { fontPx }){
-      const scale = PDF_CARTOUCHE_SCALE;
+        const scale = PDF_CARTOUCHE_SCALE;
 
-      // Create a fresh canvas so we can force halo off and supersample
-      const c = document.createElement("canvas");
+        // Create a fresh canvas so we can force halo off and supersample
+        const c = document.createElement("canvas");
 
-      const basePx = Math.max(8, Number(fontPx ?? cartEl?.px ?? getFontPx() ?? 56));
-      const px = Math.round(basePx * scale);
+        const basePx = Math.max(8, Number(fontPx ?? cartEl?.px ?? getFontPx() ?? 56));
+        const px = Math.round(basePx * scale);
 
-      // Keep the same *relative* padding, but scaled
-      const basePadPx = Math.max(4, Math.round(basePx * 0.11));
-      const padPx = Math.round(basePadPx * scale);
+        // Keep the same *relative* padding, but scaled
+        const basePadPx = Math.max(4, Math.round(basePx * 0.11));
+        const padPx = Math.round(basePadPx * scale);
 
-      const fam = cartEl?.fontFamily || FONT_FAMILY_CARTOUCHE;
-      const fgCss = getFgHex();
+        const fam = cartEl?.fontFamily || FONT_FAMILY_CARTOUCHE;
+        const fgCss = getFgHex();
 
-      const r = renderFontCartoucheToCanvas(
-        c,
-        Array.from(cartEl?.cps ?? []),
-        {
-          fontPx: px,
-          padPx,
-          fontFamily: fam,
-          fgCss,
-          haloEnabled: false, // force NO halo in PDF cartouche images
-          haloCss: "#FFFFFF",
-        }
-      );
+        const r = renderFontCartoucheToCanvas(
+          c,
+          Array.from(cartEl?.cps ?? []),
+          {
+            fontPx: px,
+            padPx,
+            fontFamily: fam,
+            fgCss,
+            haloEnabled: false, // force NO halo in PDF cartouche images
+            haloCss: "#FFFFFF",
+          }
+        );
 
-      // IMPORTANT: return "logical" (unscaled) metrics for layout/placement,
-      // but keep the high-res canvas for embedding.
-      return {
-        canvas: c,
-        // physical size to place in PDF (same as on-screen cartouche size)
-        w: Math.round((r.w | 0) / scale),
-        h: Math.round((r.h | 0) / scale),
-        baselineY: Math.round((r.baselineY | 0) / scale),
+        // PDF-only top guard:
+        // some cartouche fonts under-report top ink bounds at high supersample sizes.
+        // We add extra transparent space ABOVE the rendered cartouche and shift the
+        // image down, without changing any non-PDF render path.
+        const extraTopPxLogical = Math.max(3, Math.round(basePx * 0.10));
+        const extraTopPxHi = extraTopPxLogical * scale;
 
-        // keep scale for draw branch if you want it
-        _scale: scale,
-        _wPx: r.w | 0,
-        _hPx: r.h | 0,
-        _baselineYPx: r.baselineY | 0,
-      };
-    }
+        const guarded = document.createElement("canvas");
+        guarded.width = Math.max(1, c.width);
+        guarded.height = Math.max(1, c.height + extraTopPxHi);
+
+        const gctx = guarded.getContext("2d", { alpha: true });
+        gctx.clearRect(0, 0, guarded.width, guarded.height);
+        gctx.drawImage(c, 0, extraTopPxHi);
+
+        // IMPORTANT: return "logical" (unscaled) metrics for layout/placement,
+        // but keep the high-res canvas for embedding.
+        return {
+          canvas: guarded,
+
+          // physical size to place in PDF
+          w: Math.round((r.w | 0) / scale),
+          h: Math.round(((r.h | 0) + extraTopPxHi) / scale),
+          baselineY: Math.round(((r.baselineY | 0) + extraTopPxHi) / scale),
+
+          _scale: scale,
+          _wPx: guarded.width | 0,
+          _hPx: guarded.height | 0,
+          _baselineYPx: ((r.baselineY | 0) + extraTopPxHi),
+        };
+      }
 
     const PDF_QUOTED_TEXT_SCALE = 6; // 4–6. 6 is crisp but bigger PDFs.
 
@@ -4354,6 +4373,31 @@ function wireHaloControls() {
       };
     }
 
+    function buildNonCartoucheRunCanvasForPdf(run) {
+      const el = run?._element;
+      if (!el) throw new Error("Missing run element for PDF export.");
+
+      const txt =
+        (typeof run?.encodedText === "string" && run.encodedText.length)
+          ? run.encodedText
+          : (Array.isArray(run?.cps) && run.cps.length)
+            ? String.fromCodePoint(...run.cps)
+            : (el.type === "glyph" && Number.isFinite(el.cp))
+              ? String.fromCodePoint(el.cp)
+              : (Array.isArray(el.cps) && el.cps.length)
+                ? String.fromCodePoint(...el.cps)
+                : (typeof el.text === "string" ? el.text : "");
+
+      const fam = run?.fontFamily || el.fontFamily || FONT_FAMILY_TEXT;
+      const px = Number(run?.fontPx ?? el.px ?? getFontPx() ?? 56);
+
+      return buildQuotedTextCanvasForPdf(txt, {
+        px,
+        fontFamily: fam,
+        fgCss: getFgHex()
+      });
+    }
+
     async function exportRenderedToPdf(){
       if (!window.PDFLib) throw new Error("pdf-lib not loaded.");
       const { PDFDocument } = window.PDFLib;
@@ -4361,54 +4405,120 @@ function wireHaloControls() {
       const renderer = await ensureRendererReady();
       const baseFontPx = getFontPx();
       await waitForConfiguredFonts(baseFontPx);
+
       const input = String(elTextIn.value ?? "");
       const baseConfig = buildRendererCallConfig({ includeHalo: false });
+
       const plan = await renderer.buildRenderPlan({
         input,
         ...baseConfig
       });
 
-      const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(line => Array.isArray(line?.runs) && line.runs.length > 0);
+      const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(
+        line => Array.isArray(line?.runs) && line.runs.length > 0
+      );
       if (!hasRuns) throw new Error("Nothing to export (no recognized words).");
 
       latestRenderPlan = plan;
 
-      const pdfDoc = await PDFDocument.create();
-      const pageWpt = Math.max(1, Number(plan.widthPx || 1) * PX_TO_PT);
-      const pageHpt = Math.max(1, Number(plan.heightPx || 1) * PX_TO_PT);
-      const page = pdfDoc.addPage([pageWpt, pageHpt]);
+      // Compute actual uncapped bounds from plan runs.
+      // This avoids relying on plan.heightPx when cartouche line metrics were capped.
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
 
-      const pdfScale = 6;
-      const hiFontPx = Math.max(8, Math.round(baseFontPx * pdfScale));
-      await waitForConfiguredFonts(hiFontPx);
-      const hiRendered = await renderer.renderTextToNewCanvas({
-        input,
-        ...baseConfig,
-        layout: {
-          ...(baseConfig.layout || {}),
-          fontPx: hiFontPx,
-          paddingPx: Math.max(0, Math.round(Number(baseConfig.layout?.paddingPx || 0) * pdfScale)),
-          lineGapPx: Math.max(0, Math.round(Number(baseConfig.layout?.lineGapPx || 0) * pdfScale))
-        },
-        paint: {
-          ...(baseConfig.paint || {}),
-          halo: {
-            ...((baseConfig.paint || {}).halo || {}),
-            enabled: false,
-            widthPx: 0
+      for (const line of (plan.lines || [])) {
+        for (const run of (line.runs || [])) {
+          const el = run?._element;
+          if (!el) continue;
+
+          if (el.type === "cartouche" && el.canvas) {
+            const x = Number(run?.xPx ?? 0);
+            const y = Number(run?.yPx ?? 0);
+            const w = Number(run?.widthPx ?? 0);
+            const h = Number(run?.heightPx ?? 0);
+            if (!(w > 0 && h > 0)) continue;
+
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x + w > maxX) maxX = x + w;
+            if (y + h > maxY) maxY = y + h;
+            continue;
           }
+
+          const pdfRun = buildNonCartoucheRunCanvasForPdf(run);
+
+          const x = Number(run?.drawXPx ?? run?.xPx ?? 0);
+          const baselineYPx = Number(run?.baselineYPx ?? 0);
+          const y = baselineYPx - Number(pdfRun.baselineY ?? 0);
+          const w = Math.max(1, Number(pdfRun.w || 0));
+          const h = Math.max(1, Number(pdfRun.h || 0));
+
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x + w > maxX) maxX = x + w;
+          if (y + h > maxY) maxY = y + h;
         }
-      });
+      }
 
-      const pngBytes = await canvasToPngBytes(hiRendered.canvas);
-      const png = await pdfDoc.embedPng(pngBytes);
+      if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+        throw new Error("Nothing to export (no drawable runs).");
+      }
 
-      page.drawImage(png, {
-        x: 0,
-        y: 0,
-        width: pageWpt,
-        height: pageHpt,
-      });
+      const pdfPadPx = 2;
+      const contentLeftPx = Math.floor(minX);
+      const contentTopPx = Math.floor(minY);
+      const contentRightPx = Math.ceil(maxX);
+      const contentBottomPx = Math.ceil(maxY);
+
+      const pageWidthPx = Math.max(1, (contentRightPx - contentLeftPx) + pdfPadPx * 2);
+      const pageHeightPx = Math.max(1, (contentBottomPx - contentTopPx) + pdfPadPx * 2);
+
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([pageWidthPx * PX_TO_PT, pageHeightPx * PX_TO_PT]);
+
+      for (const line of (plan.lines || [])) {
+        for (const run of (line.runs || [])) {
+          const el = run?._element;
+          if (!el) continue;
+
+          if (el.type === "cartouche" && el.canvas) {
+            const destXPx = (Number(run.xPx || 0) - contentLeftPx) + pdfPadPx;
+            const destTopPx = (Number(run.yPx || 0) - contentTopPx) + pdfPadPx;
+            const destWPx = Math.max(1, Number(run.widthPx || 0));
+            const destHPx = Math.max(1, Number(run.heightPx || 0));
+
+            const pngBytes = await canvasToPngBytes(el.canvas);
+            const png = await pdfDoc.embedPng(pngBytes);
+
+            page.drawImage(png, {
+              x: destXPx * PX_TO_PT,
+              y: (pageHeightPx - (destTopPx + destHPx)) * PX_TO_PT,
+              width: destWPx * PX_TO_PT,
+              height: destHPx * PX_TO_PT,
+            });
+            continue;
+          }
+
+          const pdfRun = buildNonCartoucheRunCanvasForPdf(run);
+
+          const destXPx = (Number(run.drawXPx ?? run.xPx ?? 0) - contentLeftPx) + pdfPadPx;
+          const destTopPx = ((Number(run.baselineYPx ?? 0) - Number(pdfRun.baselineY ?? 0)) - contentTopPx) + pdfPadPx;
+          const destWPx = Math.max(1, Number(pdfRun.w || 0));
+          const destHPx = Math.max(1, Number(pdfRun.h || 0));
+
+          const pngBytes = await canvasToPngBytes(pdfRun.canvas);
+          const png = await pdfDoc.embedPng(pngBytes);
+
+          page.drawImage(png, {
+            x: destXPx * PX_TO_PT,
+            y: (pageHeightPx - (destTopPx + destHPx)) * PX_TO_PT,
+            width: destWPx * PX_TO_PT,
+            height: destHPx * PX_TO_PT,
+          });
+        }
+      }
 
       const bytes = await pdfDoc.save();
       const blob = new Blob([bytes], { type: "application/pdf" });

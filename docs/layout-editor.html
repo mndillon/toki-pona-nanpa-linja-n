@@ -1225,7 +1225,7 @@ import {
       props_keep_aspect: "Keep aspect ratio",
       props_scale_font_box: "Scale font with box",
       props_render_font_family: "Sitelen font family",
-      props_font_family: "Text font family",
+      props_font_family: "Quoted text font",
       props_font_size: "Font size",
       props_align: "Align",
       props_align_left: "Left",
@@ -1741,7 +1741,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
-        pdfCartoucheFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+        pdfCartoucheFontUrl: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf",
         faces: [
           {
             family: FONT_FAMILY_TEXT,
@@ -1751,7 +1751,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
           },
           {
             family: FONT_FAMILY_CARTOUCHE,
-            url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+            url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf",
             format: "opentype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -1780,7 +1780,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/sitelenselikiwenjuniko.ttf",
-        pdfCartoucheFontUrl: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+        pdfCartoucheFontUrl: "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf",
         faces: [
           {
             family: "SSK-Juniko",
@@ -1790,7 +1790,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
           },
           {
             family: "SSK-Juniko-Cartouche",
-            url: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+            url: "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf",
             format: "truetype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -1819,7 +1819,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/FairfaxHD.ttf",
-        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n-good-kasi.ttf",
         faces: [
           {
             family: "fairfaxHd",
@@ -1829,7 +1829,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
           },
           {
             family: "fairfaxHd-Cartouche",
-            url: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+            url: "./fonts/FairfaxHD-nanpa-linja-n-good-kasi.ttf",
             format: "truetype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -1858,7 +1858,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/FairfaxPonaHD.ttf",
-        pdfCartoucheFontUrl: "./fonts/FairfaxPonaHD-nanpa-linja-n.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf",
         faces: [
           {
             family: "fairfaxPonaHd",
@@ -1868,7 +1868,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
           },
           {
             family: "fairfaxPonaHd-Cartouche",
-            url: "./fonts/FairfaxPonaHD-nanpa-linja-n.ttf",
+            url: "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf",
             format: "truetype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -1991,7 +1991,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=4').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=6').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }

@@ -2,12 +2,16 @@ The OFL.txt file covers the license for font files:
 PatrickHand-Regular.ttf
 sitelenselikiwenjuniko.ttf
 sitelenselikiwenjuniko-cartouche-scaled-v3.ttf
+sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf
 FairfaxHD.ttf
 FairfaxHD-nanpa-linja-n.ttf
+FairfaxHD-nanpa-linja-n-good-kasi.ttf
 FairfaxPonaHD.ttf
 FairfaxPonaHD-nanpa-linja-n.ttf
+FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf
 linjalipamanka-normal.otf
 linjalipamanka-normal-nanpa-linja-n.otf
+linjalipamanka-normal-nanpa-linja-n-good-kasi.otf
 
 
 The LICENCE.txt file covers the licence for the font files:
@@ -25,17 +29,18 @@ nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v7.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v8.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v9.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf
+nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf
 
 
 The original site for nasin-nanpa-5.0.0-beta.3-UCSUR.otf is loacated here: https://github.com/etbcor/nasin-nanpa
 
-NOTE: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf font file
+NOTE: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf font file
 is derived from the nasin-nanpa-5.0.0-beta.3-UCSUR.otf font file and is only used to render
 cartouches that have glyphs that define nanpa-linja-n decimal numbers,
 any Unicode code point that represents a Toki Pona word that begins with 'n' or 'e' will be displayed as
 one quarter original font size inside any cartouche that uses this font file.
 
-DISCLAIMER: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf font file is provided “as is”,
+DISCLAIMER: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf font file is provided “as is”,
 with no claim, guarantee, or warranty that the output is correct,
 complete, or suitable for any purpose. You are responsible for verifying results.
 
@@ -43,13 +48,13 @@ complete, or suitable for any purpose. You are responsible for verifying results
 --------------------------
 
 
-Using the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf font in Python:
+Using the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf font in Python:
 
 #import functionality from PIL
 from PIL import Image, ImageDraw, ImageFont
 
 #font file name
-SITELEN_NANPA_LINJA_N_FONT = "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf"
+SITELEN_NANPA_LINJA_N_FONT = "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf"
 
 #define font (with RAQM renderer)
 sitelen_nanpa_linja_n_font = ImageFont.truetype(

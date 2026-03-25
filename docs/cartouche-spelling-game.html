@@ -34,7 +34,7 @@
     /* Nanpa-linja-n cartouche font (for numbers/time) */
     @font-face{
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
       font-display: swap;
     }
 
@@ -1049,6 +1049,7 @@ html, body{
   // Minimal UCSUR map needed for numeric cartouches
   const NLN_WORD_TO_UCSUR_CP = {
     "nanpa":0xF193D,"en":0xF190A,"e":0xF1909,"nena":0xF1940,"o":0xF1944,"kulupu":0xF191F,"kolon":0xF199D,
+    "kasi":0xF1917,  
     "open":0xF1947,"kipisi":0xF197B,
     "ona":0xF1946,        
     "ijo":0xF190C,"wan":0xF1973,"tu":0xF196E,"seli":0xF1957,"awen":0xF1908,"luka":0xF192D,"utala":0xF1971,"mun":0xF193A,"pipi":0xF1951,"jo":0xF1913
@@ -1122,7 +1123,7 @@ html, body{
       }
 
       if (c === "k"){
-        words.push(isDateTime ? "kolon" : "kulupu");
+        words.push(isDateTime ? "kasi" : "kulupu");
         continue;
       }
 

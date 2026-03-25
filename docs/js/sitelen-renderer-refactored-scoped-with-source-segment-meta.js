@@ -1558,6 +1558,7 @@ function wireHaloControls() {
 
       "kulupu":0xF191F,
       "kipisi": 0xF197B,
+      "kasi": 0xF1917,
 
       "ijo":   0xF190C,
       "wan":   0xF1973,
@@ -1858,7 +1859,8 @@ function wireHaloControls() {
 
         if (isMatch) {
           // IMPORTANT: output "nena en kolon en" (or "nasa e kolon e"), not just "kolon"
-          out.push(nWord, join, "kolon", join);
+          // IMPORTANT: output "nena en kasi en" (or "nasa e kasi e"), not just "kasi"
+          out.push(nWord, join, "kasi", join);
           i += pattern.length;
         } else {
           out.push(tpWords[i]);
@@ -4146,15 +4148,20 @@ function wireHaloControls() {
 
           // CARTOUCHE (image in PDF)
           if (el.type === "cartouche") {
-            measuredEls.push({ kind: "cartoucheImg", el });
+            const pdfCart = buildCartoucheCanvasForPdf(el, { fontPx });
 
-            // horizontal advance uses element width (px -> pt)
-            const wPx = (el.w | 0);
+            measuredEls.push({ kind: "cartoucheImg", el, pdfCart });
+
+            // horizontal advance must match the actual PDF cartouche image
+            const wPx = (pdfCart.w | 0);
             wPt += wPx * PX_TO_PT;
 
-            // vertical metrics: use element-provided ascent/descent if present
-            const a = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
-            const d = el.descent ?? Math.ceil((el.h | 0) * 0.3);
+            // vertical metrics must also come from the actual PDF cartouche image
+            const a = (pdfCart.baselineY != null)
+              ? (pdfCart.baselineY | 0)
+              : Math.floor((pdfCart.h | 0) * 0.75);
+            const d = Math.max(0, (pdfCart.h | 0) - a);
+
             maxAscent = Math.max(maxAscent, a);
             maxDescent = Math.max(maxDescent, d);
             continue;
@@ -4230,9 +4237,8 @@ function wireHaloControls() {
 
           // 2) CARTOUCHE AS IMAGE
           if (el.kind === "cartoucheImg") {
-            const cartEl = el.el;
+            const pdfCart = el.pdfCart;
 
-            const pdfCart = buildCartoucheCanvasForPdf(cartEl, { fontPx });
             const pngBytes = await canvasToPngBytes(pdfCart.canvas);
             const png = await pdfDoc.embedPng(pngBytes);
 
@@ -4322,7 +4328,8 @@ function wireHaloControls() {
       // IMPORTANT: these URLs must be same-origin in your static site
       const [textBytes, cartBytes, literalBytes] = await Promise.all([
         fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf"),              // TP-Nasin-Nanpa-Font
-        fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf"),// TP-Cartouche-Font
+        //fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf"),// TP-Cartouche-Font
+        fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf"),// TP-Cartouche-Font new
         //fetchFontBytes("./fonts/PatrickHand-Regular.ttf"),                             // Patrick-Head-Font
       ]);
 

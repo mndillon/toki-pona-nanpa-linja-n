@@ -431,7 +431,7 @@
 </div>
 
 <script type="module">
-import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=4";
+import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=6";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -477,7 +477,7 @@ window.SitelenRenderer = SitelenRenderer;
         },
         {
           family: DEFAULT_CARTOUCHE_FONT,
-          url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf",
+          url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf",
           format: "opentype",
           sample: String.fromCodePoint(0xF1990)
         },
@@ -514,7 +514,7 @@ window.SitelenRenderer = SitelenRenderer;
         },
         {
           family: "SSK-Juniko-Cartouche",
-          url: "./fonts/sitelenselikiwenjuniko-cartouche-scaled-v3.ttf",
+          url: "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf",
           format: "truetype",
           sample: String.fromCodePoint(0xF1990)
         },
@@ -543,7 +543,7 @@ window.SitelenRenderer = SitelenRenderer;
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/FairfaxHD.ttf",
-        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxHD-nanpa-linja-n-good-kasi.ttf",
         faces: [
           {
             family: "fairfaxHd",
@@ -553,7 +553,7 @@ window.SitelenRenderer = SitelenRenderer;
           },
           {
             family: "fairfaxHd-Cartouche",
-            url: "./fonts/FairfaxHD-nanpa-linja-n.ttf",
+            url: "./fonts/FairfaxHD-nanpa-linja-n-good-kasi.ttf",
             format: "truetype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -582,7 +582,7 @@ window.SitelenRenderer = SitelenRenderer;
           ["system-ui", "system-ui"],
         ],
         pdfTextFontUrl: "./fonts/FairfaxPonaHD.ttf",
-        pdfCartoucheFontUrl: "./fonts/FairfaxPonaHD-nanpa-linja-n.ttf",
+        pdfCartoucheFontUrl: "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf",
         faces: [
           {
             family: "fairfaxPonaHd",
@@ -592,7 +592,7 @@ window.SitelenRenderer = SitelenRenderer;
           },
           {
             family: "fairfaxPonaHd-Cartouche",
-            url: "./fonts/FairfaxPonaHD-nanpa-linja-n.ttf",
+            url: "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf",
             format: "truetype",
             sample: String.fromCodePoint(0xF1990)
           },
@@ -3954,7 +3954,7 @@ window.SitelenRenderer = SitelenRenderer;
     const fs = makeFontSizeControl(d.fontSize, (v) => { d.fontSize = Math.max(6, v); defaultsChanged(); });
     sec.appendChild(makeField("Font size", fs));
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(d.sitelenFontFamily, (v) => { d.sitelenFontFamily = v; d.fontFamily = normalizeLiteralFontFamily(d.fontFamily, v); defaultsChanged(); })));
-    sec.appendChild(makeField("Font family", makeTextFontFamilySelect(d.fontFamily, d.sitelenFontFamily, (v) => { d.fontFamily = v; defaultsChanged(); })));
+    sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(d.fontFamily, d.sitelenFontFamily, (v) => { d.fontFamily = v; defaultsChanged(); })));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], d.align, (v) => { d.align = v; defaultsChanged(); })));
     sec.appendChild(makeField("Text color", makeColorControl(d.color, (v) => { d.color = v; defaultsChanged(false); }, (v) => { d.color = v; defaultsChanged(); })));
     sec.appendChild(makeField("Halo enabled", makeCheckbox(!!d.haloEnabled, (checked) => { d.haloEnabled = checked; defaultsChanged(); })));
@@ -4074,7 +4074,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Text", ta));
 
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(item.sitelenFontFamily, (v) => patchActiveItem({ sitelenFontFamily: v, fontFamily: normalizeLiteralFontFamily(item.fontFamily, v) }, true))));
-    sec.appendChild(makeField("Font family", makeTextFontFamilySelect(item.fontFamily, item.sitelenFontFamily, (v) => patchActiveItem({ fontFamily: v }, true))));
+    sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(item.fontFamily, item.sitelenFontFamily, (v) => patchActiveItem({ fontFamily: v }, true))));
     sec.appendChild(makeField("Font size", makeFontSizeControl(item.fontSize, (v) => patchActiveItem({ fontSize: Math.max(6, v) }, true))));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], item.align, (v) => patchActiveItem({ align: v }, true))));
     sec.appendChild(makeField("Text color", makeColorControl(item.color, (v) => patchActiveItem({ color: v }, false), (v) => patchActiveItem({ color: v }, true))));
