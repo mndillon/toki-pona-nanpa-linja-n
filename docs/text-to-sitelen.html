@@ -3800,7 +3800,7 @@ function wireHaloControls() {
       // IMPORTANT: quoted text should not auto-inject word gaps; it should render literally
       makeLiteralTextElement(elements, literal, {
         fontPx,
-        fontFamily: FONT_FAMILY_LITERAL,
+        fontFamily: resolveLiteralFontFamily(),
         addLeadingGap: false,
         isQuoted: true, // <-- NEW
       });
