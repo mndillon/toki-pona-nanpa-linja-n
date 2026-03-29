@@ -692,7 +692,7 @@ When you paste/vend these libraries into this file, keep their MIT notices.
   // Mapping policy: user-editable, persisted offline.
   // Users can override subsets; defaults fill the rest.
   const DEFAULT_MAPPING_POLICY_PRACTICAL = Object.freeze({
-    version: 1,
+    version: 2,
 
     // Characters to treat as separators in IPA input.
     stripChars: "ˈˌ'ː.!,?",
@@ -758,6 +758,16 @@ When you paste/vend these libraries into this file, keep their MIT notices.
       "x":"k s",
       "h":"",
     },
+
+    // Epenthetic vowel appended after a final consonant (when keepFinalCons is on).
+    // "" = drop the consonant entirely. Anything not listed falls back to "a".
+    // m/ŋ/ɲ are handled separately (replaced by n) and do not use this table.
+    finalEpenthesis: {
+      "s": "",   // drop trailing s: Kansas -> Kansa, Paris -> Pali
+      "t": "o",  // correct -> korekto
+      "k": "u",  // magic  -> masiku
+      "p": "u",  // help   -> hepu
+    },
   });
 
   // "Sonja-strict" base mapping preset:
@@ -765,7 +775,7 @@ When you paste/vend these libraries into this file, keep their MIT notices.
   // - v -> w         (more typical pu loanword direction)
   // Everything else stays as in the practical base policy.
   const DEFAULT_MAPPING_POLICY_SONJA = Object.freeze({
-    version: 1,
+    version: 2,
 
     stripChars: "ˈˌ'ː.!,?",
 
@@ -825,6 +835,16 @@ When you paste/vend these libraries into this file, keep their MIT notices.
       "x":"k s",
       "h":"",
     },
+
+    // Epenthetic vowel appended after a final consonant (when keepFinalCons is on).
+    // "" = drop the consonant entirely. Anything not listed falls back to "a".
+    // m/ŋ/ɲ are handled separately (replaced by n) and do not use this table.
+    finalEpenthesis: {
+      "s": "",   // drop trailing s: Kansas -> Kansa, Paris -> Pali
+      "t": "o",  // correct -> korekto
+      "k": "u",  // magic  -> masiku
+      "p": "u",  // help   -> hepu
+    },
   });
 
   // The currently selected base policy (switches with UI "Phonology mode").
@@ -873,6 +893,22 @@ let userMappingPolicy = null;        // custom user policy (partial)
       out.asciiLetterMap = {};
       for (const [k,v] of Object.entries(obj.asciiLetterMap)){
         out.asciiLetterMap[String(k)] = (v === null || v === undefined) ? "" : String(v);
+      }
+    }
+    if ("finalEpenthesis" in obj && obj.finalEpenthesis && typeof obj.finalEpenthesis === "object"){
+      out.finalEpenthesis = {};
+      for (const [k,v] of Object.entries(obj.finalEpenthesis)){
+        out.finalEpenthesis[String(k)] = (v === null || v === undefined) ? "" : String(v);
+      }
+    } else {
+      // Config file has no finalEpenthesis. Only backfill the old v1 hardcoded behaviour
+      // if the object has meaningful content (i.e. it is a real imported config, not an
+      // empty placeholder). An empty object means "no user policy" and should not override
+      // the base policy defaults.
+      const hasContent = Object.keys(obj).some(k => k !== "version");
+      const importedVersion = Number(obj.version) || 1;
+      if (hasContent && importedVersion < 2) {
+        out.finalEpenthesis = { "s": "i", "t": "o", "k": "u", "p": "u" };
       }
     }
     return out;
@@ -1048,14 +1084,11 @@ let userMappingPolicy = null;        // custom user policy (partial)
 // glideBetween removed: vowel-vowel glides caused severe over-tokiponization.
 
 function epentheticVowelAfterFinalConsonant(c){
-  // Common tokiponization/loanword tendencies:
-  // - s -> si (very common)
-  // - t -> to (common), k -> ku (common), p -> pu (common)
-  // Everything else falls back to 'a'.
-  if (c === "s") return "i";
-  if (c === "t") return "o";
-  if (c === "k") return "u";
-  if (c === "p") return "u";
+  // Look up in the active policy's finalEpenthesis table.
+  // Returns the vowel to append (e.g. "i"), "" to drop the consonant, or "a" as fallback.
+  // m/ŋ/ɲ are handled separately (replaced by n) and never reach this function.
+  const table = (effectiveMappingPolicy || BASE_MAPPING_POLICY).finalEpenthesis || {};
+  if (Object.prototype.hasOwnProperty.call(table, c)) return table[c];
   return "a";
 }
 
@@ -1129,7 +1162,8 @@ function repairClustersToStream(stream, opts){
       if (cur === "m" || cur === "ŋ" || cur === "ɲ"){
         out[out.length - 1] = "n";
       } else if (keepFinalCons){
-        out.push(epentheticVowelAfterFinalConsonant(cur));
+        const ep = epentheticVowelAfterFinalConsonant(cur);
+        if (ep) out.push(ep); // "" means drop the consonant entirely
       } else {
         out.pop();
       }
@@ -1947,7 +1981,7 @@ function lookupOverride(keyOrLine){
   const OVERRIDE_DB_STORE = "kv";
   const OVERRIDE_DB_VERSION = 1;
   const OVERRIDE_DB_KEY = "userOverrides.v1";
-  const POLICY_DB_KEY = "mappingPolicy.v1";
+  const POLICY_DB_KEY = "mappingPolicy.v2";
 
   function _openOverridesDb(){
     return new Promise((resolve, reject) => {
@@ -2117,7 +2151,10 @@ function lookupOverride(keyOrLine){
   async function loadUserMappingPolicyFromDb(){
     try{
       const saved = await _dbGet(POLICY_DB_KEY);
-      const norm = normalizeMappingPolicy(saved || {});
+      // Treat a missing or empty saved policy as null so the base policy
+      // defaults apply cleanly without triggering the v1 backfill.
+      const hasContent = saved && typeof saved === "object" && Object.keys(saved).some(k => k !== "version");
+      const norm = hasContent ? normalizeMappingPolicy(saved) : null;
       userMappingPolicy = norm;
       recomputeEffectiveMappingPolicy();
       updatePolicyPill();
