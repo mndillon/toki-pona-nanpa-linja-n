@@ -130,6 +130,66 @@
 
     .hidden { display: none !important; }
 
+    /* Accordion (details/summary) */
+    .accordion { margin-top: 10px; }
+    .accordion details {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      background: var(--bg);
+    }
+    .accordion details[open] { border-color: #b0b8c0; }
+    .accordion summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      list-style: none;
+      user-select: none;
+    }
+    .accordion summary::-webkit-details-marker { display: none; }
+    .accordion summary::after {
+      content: "▸";
+      margin-left: auto;
+      font-size: 10px;
+      transition: transform 0.15s;
+    }
+    .accordion details[open] summary::after { transform: rotate(90deg); }
+    .accordion .accordionBody {
+      padding: 10px 12px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* IPA cell editable spans */
+    .ipaCell { white-space: normal; word-break: break-word; }
+    .ipaEditable {
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      cursor: pointer;
+      border-radius: 3px;
+      padding: 0 1px;
+      transition: background 0.1s;
+    }
+    .ipaEditable:hover { background: rgba(0,0,0,0.08); }
+    .ipaEditable.hasOverride {
+      text-decoration-style: solid;
+      color: #1b5e20;
+    }
+    .ipaInert { color: var(--muted); }
+
+    /* Input counter */
+    .inputCounter {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 3px;
+      min-height: 16px;
+    }
+
     button:focus-visible,
     a:focus-visible,
     input:focus-visible,
@@ -175,6 +235,8 @@
       z-index: 9999;
     }
     .modalOverlay.show { display: flex; }
+    /* Policy modal stacks above IPA editor when opened from within it */
+    #policyOverlay { z-index: 19999; }
     .modal {
       width: min(980px, 100%);
       background: var(--bg);
@@ -229,6 +291,7 @@ D'Arcy
         <div class="help">
           Accepts spaces, hyphens, apostrophes, and common patterns like <span class="mono">McX</span>, <span class="mono">O’X</span>.
         </div>
+        <div class="inputCounter" id="inputCounter"></div>
       </div>
 
       <div class="col">
@@ -278,86 +341,123 @@ D'Arcy
             <span>Tokiponize</span>
             <span class="tpLine">o ante e nimi</span>
           </button>
+          <button id="btnLic" class="btnBi" type="button">
+            <span>Credits &amp; Licenses</span>
+            <span class="tpLine">sona pi ilo ante</span>
+          </button>
           <button id="btnClear" class="btnBi" type="button">
             <span>Clear</span>
             <span class="tpLine">o weka</span>
           </button>
-          <button id="btnLic" class="btnBi" type="button">
-            <span>Credits & Licenses</span>
-            <span class="tpLine">sona pi ilo ante</span>
-          </button>
         </div>
 
 
-        <div class="row" style="margin-top: 10px; align-items:flex-start;">
-          <div class="col" style="flex:1 1 100%;">
-            <label>Overrides (pu + custom)</label>
-            <div class="row" style="margin-top: 6px;">
-              <button id="btnExportOverrides" class="btnBi" type="button" title="Export the effective overrides (defaults + custom)">
-                <span>Export overrides</span>
-                <span class="tpLine">o pana e lipu</span>
-              </button>
-              <button id="btnImportOverrides" class="btnBi" type="button" title="Import overrides JSON (replaces your custom overrides)">
-                <span>Import overrides</span>
-                <span class="tpLine">o kama jo e lipu</span>
-              </button>
-              <button id="btnResetOverrides" class="btnBi" type="button" title="Clear your custom overrides (defaults remain)">
-                <span>Reset custom</span>
-                <span class="tpLine">o weka e ante</span>
-              </button>
-              <input id="fileOverrides" class="sr-only" type="file" accept="application/json,.json" />
-            </div>
-            <div class="help" style="margin-top: 6px;">
-              Overrides match case-insensitively against whole lines and individual tokens.
-              Values should be Tokiponized forms (no “jan ”), changes are remembered, unless reset.
-            </div>
-            <div class="help" style="margin-top: 6px;">
-              <span class="pill" id="pillOverrides">overrides: defaults 0, custom 0</span>
-            </div>
-          </div>
-        </div>
+        <!-- Accordion: three sections in pipeline order -->
+        <div class="accordion" style="margin-top: 12px;">
 
-        
-        <div class="row" style="margin-top: 10px; align-items:flex-start;">
-          <div class="col" style="flex:1 1 100%;">
-            <label>Mapping policy (phoneme → Toki Pona)</label>
-            <div class="row" style="margin-top: 6px;">
-              <button id="btnEditPolicy" class="btnBi" type="button" title="View or edit how IPA symbols map to Toki Pona phonemes">
-                <span>Edit policy</span>
-                <span class="tpLine">o ante e nasin</span>
-              </button>
-              <button id="btnExportPolicy" class="btnBi" type="button" title="Export the effective policy (defaults + your custom changes)">
-                <span>Export policy</span>
-                <span class="tpLine">o pana e lipu</span>
-              </button>
-              <button id="btnImportPolicy" class="btnBi" type="button" title="Import policy JSON (replaces your custom policy changes)">
-                <span>Import policy</span>
-                <span class="tpLine">o kama jo e lipu</span>
-              </button>
-              <button id="btnResetPolicy" class="btnBi" type="button" title="Reset your custom policy changes (defaults remain)">
-                <span>Reset policy</span>
-                <span class="tpLine">o weka e ante</span>
-              </button>
-              <input id="filePolicy" class="sr-only" type="file" accept="application/json,.json" />
+          <!-- 1. Overrides -->
+          <details id="detailsOverrides">
+            <summary>
+              1. Name Overrides
+              <span class="pill" id="pillOverrides" style="margin-left:6px;">overrides: defaults 0, custom 0</span>
+            </summary>
+            <div class="accordionBody">
+              <div class="help" style="margin-bottom: 8px;">
+                Overrides match case-insensitively against whole lines and individual tokens.
+                Values should be Tokiponized forms (no "jan "), changes are remembered across sessions.
+              </div>
+              <div class="row">
+                <button id="btnEditOverrides" class="btnBi" type="button" title="View or edit your custom name overrides">
+                  <span>Edit overrides</span>
+                  <span class="tpLine">o ante e nasin</span>
+                </button>
+                <button id="btnExportOverrides" class="btnBi" type="button" title="Export the effective overrides (defaults + custom)">
+                  <span>Export overrides</span>
+                  <span class="tpLine">o pana e lipu</span>
+                </button>
+                <button id="btnImportOverrides" class="btnBi" type="button" title="Import overrides JSON (replaces your custom overrides)">
+                  <span>Import overrides</span>
+                  <span class="tpLine">o kama jo e lipu</span>
+                </button>
+                <button id="btnResetOverrides" class="btnBi" type="button" title="Clear your custom overrides (defaults remain)">
+                  <span>Reset custom</span>
+                  <span class="tpLine">o weka e ante</span>
+                </button>
+                <input id="fileOverrides" class="sr-only" type="file" accept="application/json,.json" />
+              </div>
             </div>
-            <div class="help" style="margin-top: 6px;">
-              Controls how IPA-ish symbols map to Toki Pona phonemes <em>before</em> CV(N) syllabification, changes are remembered, unless reset.
-            </div>
-            <div class="help" style="margin-top: 6px;">
-              <span class="pill" id="pillPolicy">policy: default</span>
-            </div>
-          </div>
-        </div>
+          </details>
 
-<div class="help" style="margin-top:10px;">
+          <!-- 2. IPA Overrides -->
+          <details id="detailsIpa">
+            <summary>
+              2. IPA Token Overrides
+              <span class="pill" id="pillIpaOverrides" style="margin-left:6px;">IPA overrides: 0</span>
+            </summary>
+            <div class="accordionBody">
+              <div class="help" style="margin-bottom: 8px;">
+                Per-token IPA overrides. Click any underlined IPA segment in the results table to edit it.
+                Overrides are keyed by normalised token and remembered across sessions.
+              </div>
+              <div class="row">
+                <button id="btnEditIpaOverrides" class="btnBi" type="button" title="View or edit your IPA token overrides">
+                  <span>Edit IPA overrides</span>
+                  <span class="tpLine">o ante e nasin</span>
+                </button>
+                <button id="btnExportIpaOverrides" class="btnBi" type="button" title="Export IPA overrides as JSON">
+                  <span>Export IPA</span>
+                  <span class="tpLine">o pana e lipu</span>
+                </button>
+                <button id="btnImportIpaOverrides" class="btnBi" type="button" title="Import IPA overrides JSON">
+                  <span>Import IPA</span>
+                  <span class="tpLine">o kama jo e lipu</span>
+                </button>
+                <button id="btnResetIpaOverrides" class="btnBi" type="button" title="Clear all IPA overrides">
+                  <span>Reset IPA</span>
+                  <span class="tpLine">o weka e ante</span>
+                </button>
+                <input id="fileIpaOverrides" class="sr-only" type="file" accept="application/json,.json" />
+              </div>
+            </div>
+          </details>
+
+          <!-- 3. Policy -->
+          <details id="detailsPolicy">
+            <summary>
+              3. Symbol Mapping Policy
+              <span class="pill" id="pillPolicy" style="margin-left:6px;">policy: default</span>
+            </summary>
+            <div class="accordionBody">
+              <div class="help" style="margin-bottom: 8px;">
+                Controls how IPA-ish symbols map to Toki Pona phonemes <em>before</em> CV(N) syllabification. Changes are remembered across sessions.
+              </div>
+              <div class="row">
+                <button id="btnEditPolicy" class="btnBi" type="button" title="View or edit how IPA symbols map to Toki Pona phonemes">
+                  <span>Edit policy</span>
+                  <span class="tpLine">o ante e nasin</span>
+                </button>
+                <button id="btnExportPolicy" class="btnBi" type="button" title="Export the effective policy (defaults + your custom changes)">
+                  <span>Export policy</span>
+                  <span class="tpLine">o pana e lipu</span>
+                </button>
+                <button id="btnImportPolicy" class="btnBi" type="button" title="Import policy JSON (replaces your custom policy changes)">
+                  <span>Import policy</span>
+                  <span class="tpLine">o kama jo e lipu</span>
+                </button>
+                <button id="btnResetPolicy" class="btnBi" type="button" title="Reset your custom policy changes (defaults remain)">
+                  <span>Reset policy</span>
+                  <span class="tpLine">o weka e ante</span>
+                </button>
+                <input id="filePolicy" class="sr-only" type="file" accept="application/json,.json" />
+              </div>
+            </div>
+          </details>
+
+        </div><!-- /accordion -->
+
+        <div class="help" style="margin-top:10px;">
           <span class="pill" id="pillPhonemize">phonemize: not loaded</span>
           <span class="pill" id="pillDM">double-metaphone: not loaded</span>
-          <!--
-          <div style="margin-top:6px;">
-            This page <b>can</b> use <span class="mono">phonemize</span> + <span class="mono">double-metaphone</span> if you paste their source into the two vendor blocks at the bottom of this file.
-            If you don’t, it falls back to a simple rule-based approximation (lower accuracy).
-          </div>
-          -->
         </div>
       </div>
     </div>
@@ -376,9 +476,9 @@ D'Arcy
           <thead>
             <tr>
               <th style="min-width:220px;">Toki Pona Result</th>
+              <th style="min-width:280px;">Phonemes / IPA (best effort) <span style="font-weight:400;font-style:italic;">(Editable)</span></th>
               <th style="min-width:220px;">Original</th>
               <th style="min-width:220px;">Normalized Tokens</th>
-              <th style="min-width:260px;">Phonemes / IPA (best effort)</th>
               <th style="min-width:260px;">Notes</th>
             </tr>
           </thead>
@@ -404,6 +504,33 @@ D'Arcy
     </div>
   </div>
 
+
+  <!-- Name Overrides modal -->
+  <div id="overridesOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="overridesModalTitle" style="z-index:19999;">
+    <div class="modal">
+      <div class="modalHeader">
+        <h3 id="overridesModalTitle">Custom Name Overrides</h3>
+        <button id="btnCloseOverridesModal" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="help" style="margin: 0 0 10px;">
+          Edit your custom name overrides as JSON. Keys are English names or phrases (case-insensitive),
+          values are Tokiponized forms (without "jan " prefix).
+          Built-in defaults are not shown here — only your custom additions.
+        </div>
+        <label for="overridesText">Custom Overrides JSON</label>
+        <textarea id="overridesText" class="mono" spellcheck="false" style="min-height: 260px;"></textarea>
+        <div class="row" style="margin-top: 10px;">
+          <button id="btnApplyOverrides" type="button">Apply</button>
+          <button id="btnRevertOverrides" type="button">Revert to saved</button>
+        </div>
+        <div class="help" style="margin-top: 10px;">
+          Keys match case-insensitively against whole input lines and individual tokens.
+          Values should be valid Tokiponized forms. Built-in defaults remain active regardless of what you put here.
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Policy modal -->
   <div id="policyOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
@@ -432,6 +559,33 @@ D'Arcy
             <li>Only TP phonemes are kept: <span class="mono">p t k m n s w l j</span> and vowels <span class="mono">a e i o u</span>.</li>
             <li>Strict mode still enforces no <span class="mono">ji/ti/wu/wo</span>.</li>
           </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IPA Overrides modal -->
+  <div id="ipaOverridesOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="ipaOverridesTitle" style="z-index:19999;">
+    <div class="modal">
+      <div class="modalHeader">
+        <h3 id="ipaOverridesTitle">IPA Token Overrides</h3>
+        <button id="btnCloseIpaOverrides" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="help" style="margin: 0 0 10px;">
+          Edit your IPA token overrides directly as JSON. Keys are normalised tokens (e.g. <span class="mono">"jean"</span>),
+          values are IPA strings (e.g. <span class="mono">"ʒɑ̃"</span>).
+          Changes here are equivalent to editing via the table editor.
+        </div>
+        <label for="ipaOverridesText">IPA Overrides JSON</label>
+        <textarea id="ipaOverridesText" class="mono" spellcheck="false" style="min-height: 260px;"></textarea>
+        <div class="row" style="margin-top: 10px;">
+          <button id="btnApplyIpaOverrides" type="button">Apply</button>
+          <button id="btnRevertIpaOverrides" type="button">Revert to saved</button>
+        </div>
+        <div class="help" style="margin-top: 10px;">
+          Keys are normalised token strings. Values are IPA strings exactly as you would enter them in the IPA editor.
+          Removing a key clears that token's override and reverts to auto-generated IPA.
         </div>
       </div>
     </div>
@@ -538,44 +692,65 @@ When you paste/vend these libraries into this file, keep their MIT notices.
     const raw = normalizeDashesAndQuotes(line).trim();
     if (!raw) return { raw: "", tokens: [], notes: [] };
 
-    // Split on whitespace and hyphen.
-    // Keep apostrophes as separators inside a token.
-    const parts = raw.split(/[\s-]+/g).filter(Boolean);
-
     const tokens = [];
     const notes = [];
-    const strictMode = !!opts?.strictMode;
 
-    for (const p of parts){
-      // Split on apostrophes, but keep segments.
-      const aposSegs = p.split(/'+/g).filter(Boolean);
+    // Extract quoted segments first (preserving quotes in display token).
+    // Quoted text is treated as a single unsplittable token — no space/hyphen/
+    // apostrophe/Mc/O'/camelCase splitting applied. Quotes stripped for
+    // phonemization but preserved in the display token.
+    const runs = [];
+    let lastIdx = 0;
+    const quotedRe = /"([^"]*)"/g;
+    let m;
+    while ((m = quotedRe.exec(raw)) !== null){
+      if (m.index > lastIdx) runs.push({ kind: "plain", text: raw.slice(lastIdx, m.index) });
+      runs.push({ kind: "quoted", text: m[1], display: '"' + m[1] + '"' });
+      lastIdx = m.index + m[0].length;
+    }
+    if (lastIdx < raw.length) runs.push({ kind: "plain", text: raw.slice(lastIdx) });
 
-      for (let seg of aposSegs){
-        // McX handling: "McDonald" -> ["Mc", "Donald"]
-        const mMc = seg.match(/^mc([a-z].+)$/i);
-        if (mMc && mMc[1].length >= 2){
-          tokens.push("Mc");
-          tokens.push(mMc[1]);
-          notes.push(`split “${seg}” as Mc + ${mMc[1]}`);
-          continue;
+    for (const run of runs){
+      if (run.kind === "quoted"){
+        if (run.text.trim()){
+          // Store as object so downstream knows to skip all splitting.
+          tokens.push({ display: run.display, phon: run.text.trim(), quoted: true });
+          notes.push(`quoted: ${run.display} treated as single unsplittable token`);
         }
+        continue;
+      }
 
-        // O'X handling when already split, but also if token starts with O + capital...
-        const mO = seg.match(/^o([a-z].+)$/i);
-        if (mO && seg.length >= 3 && p.toLowerCase().startsWith("o'")){
-          tokens.push("O");
-          tokens.push(mO[1]);
-          notes.push(`split “${p}” as O + ${mO[1]}`);
-          continue;
+      // Plain run — existing splitting logic unchanged.
+      const parts = run.text.split(/[\s-]+/g).filter(Boolean);
+      for (const p of parts){
+        const aposSegs = p.split(/'+/g).filter(Boolean);
+        for (let seg of aposSegs){
+          const mMc = seg.match(/^mc([a-z].+)$/i);
+          if (mMc && mMc[1].length >= 2){
+            tokens.push("Mc");
+            tokens.push(mMc[1]);
+            notes.push(`split "${seg}" as Mc + ${mMc[1]}`);
+            continue;
+          }
+          const mO = seg.match(/^o([a-z].+)$/i);
+          if (mO && seg.length >= 3 && p.toLowerCase().startsWith("o'")){
+            tokens.push("O");
+            tokens.push(mO[1]);
+            notes.push(`split "${p}" as O + ${mO[1]}`);
+            continue;
+          }
+          tokens.push(seg);
         }
-
-        tokens.push(seg);
       }
     }
 
     return { raw, tokens, notes };
   }
 
+  // Helpers for tokens that may be plain strings or quoted-token objects.
+  function tokenDisplay(tok){ return typeof tok === "object" ? tok.display : String(tok); }
+  function tokenPhon(tok){    return typeof tok === "object" ? tok.phon    : String(tok); }
+  function tokenIsQuoted(tok){ return typeof tok === "object" && !!tok.quoted; }
   function dropSpuriousInitialGlideFromIpa(token, ipa){
     const t = String(token || "").trim();
     let s = String(ipa || "").trim();
@@ -692,57 +867,145 @@ When you paste/vend these libraries into this file, keep their MIT notices.
   // Mapping policy: user-editable, persisted offline.
   // Users can override subsets; defaults fill the rest.
   const DEFAULT_MAPPING_POLICY_PRACTICAL = Object.freeze({
-    version: 2,
+    version: 3,
 
     // Characters to treat as separators in IPA input.
     stripChars: "ˈˌ'ː.!,?",
 
     // Diphthong expansions (heuristic).
     diphthongs: [
-      ["oʊ", "o"],  // GOAT  -> o
-      ["aɪ", "a"],  // PRICE -> a
-      ["aʊ", "a"],  // MOUTH -> a (common/simple)
-      ["eɪ", "e"],  // FACE  -> e
-      ["ɔɪ", "o"],  // CHOICE -> o
+      ["oʊ", "o"],   // GOAT       -> o
+      ["aɪ", "a"],   // PRICE      -> a
+      ["aʊ", "a"],   // MOUTH      -> a
+      ["eɪ", "e"],   // FACE       -> e
+      ["ɔɪ", "o"],   // CHOICE     -> o
+      ["ɑ̃",  "a"],   // French nasal a (pre-combined)
+      ["ɛ̃",  "e"],   // French nasal e
+      ["œ̃",  "o"],   // French nasal oe
+      ["ɔ̃",  "o"],   // French nasal o
+      ["ã",  "a"],   // nasal a (combining)
+      ["ẽ",  "e"],   // nasal e
+      ["õ",  "o"],   // nasal o
     ],
 
-    // Map IPA-ish symbols to TP phonemes (space-separated).
-    // Unknown symbols are ignored unless they are ASCII letters (handled by asciiLetterMap + fallback rules).
     symbolMap: {
-      // Vowels
+      // ── Core vowels ──────────────────────────────────────────────────
       "a": "a", "e": "e", "i": "i", "o": "o", "u": "u",
-      "æ": "a", "ɑ": "a", "ɐ": "a", "ʌ": "a",
-      "ɛ": "e", "ə": "a", "ɜ": "e", "ɝ": "e", "ɚ": "e",
-      "ɪ": "i",
-      "ɔ": "o", "ɒ": "o", "ɵ": "o",
-      "ʊ": "u",
 
-      // Consonants / approximations
+      // ── Extended vowels: open/open-mid ───────────────────────────────
+      "æ": "a",   // TRAP (English)
+      "ɑ": "a",   // PALM/START (English, French /ɑ̃/ base)
+      "ɐ": "a",   // near-open central (German, Portuguese)
+      "ʌ": "a",   // STRUT (English)
+      "ã": "a", // nasal a with combining tilde (French ã)
+
+      // ── Extended vowels: mid ─────────────────────────────────────────
+      "ɛ": "e",   // DRESS (English, French)
+      "ə": "a",   // schwa
+      "ɜ": "e",   // NURSE (English)
+      "ɝ": "e",   // rhotic NURSE
+      "ɚ": "e",   // rhotic schwa
+      "ẽ": "e", // nasal e
+
+      // ── Extended vowels: close-mid front rounded (French/German) ─────
+      "ø": "o",   // French /ø/ (feu)
+      "œ": "o",   // French /œ/ (peur), German /œ/
+      "œ": "o",  // oe ligature (same as œ)
+      "œ̃": "o", // French nasal /œ̃/ (un)
+      "œ̃": "o",
+
+      // ── Extended vowels: close front rounded (French/German) ─────────
+      "y": "j",   // French /y/ (tu), German /y/ — glide approximation
+      "ʏ": "j",   // German short /ʏ/ (hübsch)
+
+      // ── Extended vowels: close back unrounded (Turkish/Japanese) ─────
+      "ɯ": "u",   // Turkish undotted ı, Japanese ɯ
+      "ɨ": "i",   // Romanian /ɨ/, Russian soft vowel
+      "ʉ": "u",   // Norwegian/Swedish /ʉ/
+
+      // ── Extended vowels: close-mid/close ────────────────────────────
+      "ɪ": "i",   // KIT (English)
+      "ɔ": "o",   // THOUGHT (English)
+      "ɒ": "o",   // LOT (British English)
+      "ɵ": "o",   // close-mid central rounded
+      "ʊ": "u",   // FOOT (English)
+      "õ": "o", // nasal o
+      "ũ": "u", // nasal u
+
+      // ── Plosives ─────────────────────────────────────────────────────
       "p": "p", "b": "p",
       "t": "t", "d": "t",
       "k": "k", "ɡ": "k", "g": "k", "q": "k",
+      // Retroflex plosives (Hindi, Tamil, many Indian languages)
+      "ʈ": "t",   // retroflex voiceless
+      "ɖ": "t",   // retroflex voiced
+      // Glottal stop — drop (common in Arabic, Hawaiian, many languages)
+      "ʔ": "",
+
+      // ── Nasals ───────────────────────────────────────────────────────
       "m": "m",
-      "n": "n", "ŋ": "n", "ɲ": "n",
+      "n": "n",
+      "ŋ": "n",   // velar nasal (English -ng, Mandarin)
+      "ɲ": "n",   // palatal nasal (Spanish ñ, French gn, Italian gn)
+      "ɳ": "n",   // retroflex nasal (Hindi, Swedish)
+      "ɱ": "m",   // labiodental nasal
 
-      // f/v -> p (common practical choice)
+      // ── Fricatives ───────────────────────────────────────────────────
       "f": "p", "v": "p",
-      "θ": "s", "ð": "s",
-      "s": "s", "z": "s", "ʃ": "s", "ʒ": "s",
+      "θ": "s",   // English th (thin)
+      "ð": "s",   // English th (this)
+      "s": "s", "z": "s",
+      "ʃ": "s",   // English sh, French ch
+      "ʒ": "s",   // French j, English measure — /ʒɑ̃/ Jean -> san
+      "ç": "s",   // German ich-Laut, Turkish
+      "ʝ": "j",   // Spanish y (voiced palatal fricative) -> j
+      "x": "k",   // German Bach, Scottish loch, Arabic خ -> k
+      "ɣ": "k",   // Greek γ, Arabic غ (voiced velar fricative) -> k
+      "χ": "k",   // uvular fricative (Arabic خ, German) -> k
+      "ʁ": "w",   // French/German uvular r -> w (practical)
+      "ħ": "",    // Arabic ح (pharyngeal) -> drop
+      "ʕ": "",    // Arabic ع (pharyngeal voiced) -> drop
+      "h": "",    // glottal fricative -> drop
+      "ɦ": "",    // breathy h -> drop
+      // Lateral fricatives (Welsh ll, Zulu, Tibetan)
+      "ɬ": "s",   // voiceless lateral fricative
+      "ɮ": "s",   // voiced lateral fricative
+      // Bilabial fricatives (Japanese, Spanish, Ewe)
+      "ɸ": "p",   // voiceless bilabial fricative
+      "β": "p",   // voiced bilabial fricative (Spanish b/v)
+      // Palatal fricative (Swedish, German j in some analyses)
+      "ç": "s",
 
-      // Often dropped (h-ish / fricatives)
-      "h": "", "x": "", "ɦ": "",
+      // ── Affricates ───────────────────────────────────────────────────
+      "tʃ": "s",  // English ch
+      "dʒ": "s",  // English j/dg
+      "ts": "s",  // German z, Japanese つ, Mandarin
+      "dz": "s",  // Italian z, Japanese づ
+      "tɕ": "s",  // Mandarin j/q, Korean ㅈ
+      "dʑ": "s",  // Korean ㅈ voiced
+      "ʈʂ": "s",  // Mandarin zh
+      "ɖʐ": "s",  // Mandarin r (affricate)
+      "pf": "p",  // German pf
+      "bv": "p",  // some languages
 
-      // r-family approximated as w (practical/recognizable for some speakers)
-      "r": "w", "ɹ": "w", "ɾ": "w",
+      // ── Approximants / liquids ────────────────────────────────────────
       "l": "l",
-      "ɫ": "l",   // <-- ADD THIS
-
+      "ɫ": "l",   // dark l (English, Polish)
+      "ɭ": "l",   // retroflex lateral (Tamil, Swedish)
+      "r": "w",   // trill/tap -> w (practical)
+      "ɹ": "w",   // English r
+      "ɾ": "w",   // tap (Spanish r single)
+      "ɻ": "w",   // retroflex approximant (Mandarin r)
+      "ʀ": "w",   // uvular trill (French, German) -> w
       "w": "w",
-      "j": "j", "y": "j",
-
-      // Affricates
-      "tʃ": "s",
-      "dʒ": "s",
+      "j": "j", "ỳ": "j",
+      "ɥ": "w",   // French /ɥ/ (nuit) — labio-palatal -> w
+      "ʋ": "w",   // labiodental approximant (Dutch, Hindi) -> w
+      // Retroflex sibilants (Mandarin, Polish sz/cz)
+      "ʂ": "s",   // retroflex voiceless sibilant
+      "ʐ": "s",   // retroflex voiced sibilant
+      // Palatal lateral (Italian gli, Spanish ll in some dialects)
+      "ʎ": "l",
     },
 
     // Fallback mapping for ASCII letters produced by spelling approximation.
@@ -759,9 +1022,6 @@ When you paste/vend these libraries into this file, keep their MIT notices.
       "h":"",
     },
 
-    // Epenthetic vowel appended after a final consonant (when keepFinalCons is on).
-    // "" = drop the consonant entirely. Anything not listed falls back to "a".
-    // m/ŋ/ɲ are handled separately (replaced by n) and do not use this table.
     finalEpenthesis: {
       "s": "",   // drop trailing s: Kansas -> Kansa, Paris -> Pali
       "t": "o",  // correct -> korekto
@@ -775,7 +1035,7 @@ When you paste/vend these libraries into this file, keep their MIT notices.
   // - v -> w         (more typical pu loanword direction)
   // Everything else stays as in the practical base policy.
   const DEFAULT_MAPPING_POLICY_SONJA = Object.freeze({
-    version: 2,
+    version: 3,
 
     stripChars: "ˈˌ'ː.!,?",
 
@@ -785,42 +1045,61 @@ When you paste/vend these libraries into this file, keep their MIT notices.
       ["aʊ", "a"],
       ["eɪ", "e"],
       ["ɔɪ", "o"],
+      ["ɑ̃", "a"], ["ɛ̃", "e"], ["œ̃", "o"], ["ɔ̃", "o"],
+      ["ã", "a"], ["ẽ", "e"], ["õ", "o"],
     ],
 
     symbolMap: {
-      // Vowels
+      // ── Core vowels ──────────────────────────────────────────────────
       "a": "a", "e": "e", "i": "i", "o": "o", "u": "u",
       "æ": "a", "ɑ": "a", "ɐ": "a", "ʌ": "a",
+      "ã": "a",
       "ɛ": "e", "ə": "a", "ɜ": "e", "ɝ": "e", "ɚ": "e",
+      "ẽ": "e",
+      "ø": "o", "œ": "o", "œ": "o",
+      "œ̃": "o", "œ̃": "o",
+      "y": "j", "ʏ": "j",
+      "ɯ": "u", "ɨ": "i", "ʉ": "u",
       "ɪ": "i",
       "ɔ": "o", "ɒ": "o", "ɵ": "o",
       "ʊ": "u",
+      "õ": "o", "ũ": "u",
 
-      // Consonants / approximations
+      // ── Plosives ─────────────────────────────────────────────────────
       "p": "p", "b": "p",
       "t": "t", "d": "t",
       "k": "k", "ɡ": "k", "g": "k", "q": "k",
-      "m": "m",
-      "n": "n", "ŋ": "n", "ɲ": "n",
+      "ʈ": "t", "ɖ": "t",
+      "ʔ": "",
 
-      // Sonja-strict: f -> p, v -> w
+      // ── Nasals ───────────────────────────────────────────────────────
+      "m": "m",
+      "n": "n", "ŋ": "n", "ɲ": "n", "ɳ": "n", "ɱ": "m",
+
+      // ── Fricatives — Sonja: f->p, v->w ───────────────────────────────
       "f": "p", "v": "w",
       "θ": "s", "ð": "s",
       "s": "s", "z": "s", "ʃ": "s", "ʒ": "s",
+      "ç": "s", "ʝ": "j",
+      "x": "k", "ɣ": "k", "χ": "k",
+      "ʁ": "l",   // Sonja: uvular r -> l
+      "ħ": "", "ʕ": "", "h": "", "ɦ": "",
+      "ɬ": "s", "ɮ": "s",
+      "ɸ": "p", "β": "w",  // Sonja: β -> w
 
-      // Often dropped (h-ish / fricatives)
-      "h": "", "x": "", "ɦ": "",
+      // ── Affricates ───────────────────────────────────────────────────
+      "tʃ": "s", "dʒ": "s", "ts": "s", "dz": "s",
+      "tɕ": "s", "dʑ": "s", "ʈʂ": "s", "ɖʐ": "s",
+      "pf": "p", "bv": "w",
 
-      // Sonja-strict: r-family -> l
-      "r": "w", "ɹ": "w", "ɾ": "w",
-      "l": "l",
-      "ɫ": "l",   // <-- ADD THIS
-
+      // ── Approximants — Sonja: r-family -> l ──────────────────────────
+      "l": "l", "ɫ": "l", "ɭ": "l",
+      "r": "l", "ɹ": "l", "ɾ": "l", "ɻ": "l", "ʀ": "l",
       "w": "w",
-      "j": "j", "y": "j",
-
-      "tʃ": "s",
-      "dʒ": "s",
+      "j": "j",
+      "ɥ": "w", "ʋ": "w",
+      "ʂ": "s", "ʐ": "s",
+      "ʎ": "l",
     },
 
     asciiLetterMap: {
@@ -830,20 +1109,17 @@ When you paste/vend these libraries into this file, keep their MIT notices.
       "m":"m","n":"n",
       "f":"p","v":"w",
       "s":"s","z":"s",
-      "r":"w","l":"l",
+      "r":"l","l":"l",
       "w":"w","y":"j","j":"j",
       "x":"k s",
       "h":"",
     },
 
-    // Epenthetic vowel appended after a final consonant (when keepFinalCons is on).
-    // "" = drop the consonant entirely. Anything not listed falls back to "a".
-    // m/ŋ/ɲ are handled separately (replaced by n) and do not use this table.
     finalEpenthesis: {
-      "s": "",   // drop trailing s: Kansas -> Kansa, Paris -> Pali
-      "t": "o",  // correct -> korekto
-      "k": "u",  // magic  -> masiku
-      "p": "u",  // help   -> hepu
+      "s": "",
+      "t": "o",
+      "k": "u",
+      "p": "u",
     },
   });
 
@@ -910,6 +1186,7 @@ let userMappingPolicy = null;        // custom user policy (partial)
       if (hasContent && importedVersion < 2) {
         out.finalEpenthesis = { "s": "i", "t": "o", "k": "u", "p": "u" };
       }
+      // v3+: no additional backfill needed; new symbols handled by expanded base policy.
     }
     return out;
   }
@@ -1746,21 +2023,26 @@ function lookupOverride(keyOrLine){
     const dmCodes = [];
 
     for (const token of tk.tokens){
-      const subTokens = splitCamelCaseForProcessing(token);
-      if (subTokens.length > 1) {
-        notes.push(`split “${token}” on camel case as ${subTokens.join(" + ")}`);
+      const disp   = tokenDisplay(token);
+      const phonIn = tokenPhon(token);
+      const quoted = tokenIsQuoted(token);
+
+      // Quoted tokens bypass camelCase splitting entirely.
+      const subTokens = quoted ? [phonIn] : splitCamelCaseForProcessing(phonIn);
+      if (!quoted && subTokens.length > 1){
+        notes.push(`split "${disp}" on camel case as ${subTokens.join(" + ")}`);
       }
 
       const perSubToken = subTokens.map(t => tokiponizeToken(t, opts));
       const joinedTp = perSubToken.map(x => x.tp).filter(Boolean).join("");
       if (joinedTp) tpWords.push(joinedTp);
 
-      perToken.push({ token, subTokens, perSubToken, tp: joinedTp });
-      normalizedParts.push(subTokens.join(" + "));
-      phonemeParts.push(perSubToken.map(x => `${x.token}→${x.phon}`).join(" + "));
+      perToken.push({ token: disp, subTokens, perSubToken, tp: joinedTp });
+      normalizedParts.push(quoted ? disp : subTokens.join(" + "));
+      phonemeParts.push(perSubToken.map(x => `${disp}→${x.phon}`).join(" + "));
 
       for (const x of perSubToken){
-        for (const n of x.notes) notes.push(`${x.token}: ${n}`);
+        for (const n of x.notes) notes.push(`${disp}: ${n}`);
       }
 
       for (const t of subTokens){
@@ -1981,7 +2263,7 @@ function lookupOverride(keyOrLine){
   const OVERRIDE_DB_STORE = "kv";
   const OVERRIDE_DB_VERSION = 1;
   const OVERRIDE_DB_KEY = "userOverrides.v1";
-  const POLICY_DB_KEY = "mappingPolicy.v2";
+  const POLICY_DB_KEY = "mappingPolicy.v3";
 
   function _openOverridesDb(){
     return new Promise((resolve, reject) => {
@@ -2086,11 +2368,74 @@ function lookupOverride(keyOrLine){
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  function openOverridesModal(){
+    const ov = $("overridesOverlay");
+    if (!ov) return;
+    ov.classList.add("show");
+    const ta = $("overridesText");
+    if (ta){
+      ta.value = JSON.stringify(userOverridesRaw || {}, null, 2);
+      ta.focus();
+      ta.setSelectionRange(0, 0);
+    }
+  }
+
+  function closeOverridesModal(){
+    const ov = $("overridesOverlay");
+    if (!ov) return;
+    ov.classList.remove("show");
+  }
+
   function wireOverridesUi(){
+    const bEdit = $("btnEditOverrides");
     const bExp = $("btnExportOverrides");
     const bImp = $("btnImportOverrides");
     const bRst = $("btnResetOverrides");
     const fIn  = $("fileOverrides");
+
+    // Edit modal
+    if (bEdit) bEdit.addEventListener("click", () => openOverridesModal());
+
+    const ov = $("overridesOverlay");
+    if (ov) ov.addEventListener("click", (e) => { if (e.target === ov) closeOverridesModal(); });
+
+    const bClose = $("btnCloseOverridesModal");
+    if (bClose) bClose.addEventListener("click", () => closeOverridesModal());
+
+    const bApply = $("btnApplyOverrides");
+    if (bApply){
+      bApply.addEventListener("click", async () => {
+        const ta = $("overridesText");
+        if (!ta) return;
+        let parsed = null;
+        try{
+          parsed = JSON.parse(String(ta.value || "").trim() || "{}");
+        } catch {
+          alert("Overrides JSON is not valid JSON.");
+          return;
+        }
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)){
+          alert('Overrides must be a JSON object like {"dorothy": "tolo"}.');
+          return;
+        }
+        userOverridesRaw = parsed;
+        userOverrides = normalizeOverrideMap(userOverridesRaw);
+        recomputeEffectiveOverrides();
+        updateOverridesPill();
+        await saveUserOverridesToDb();
+        const tb = $("tbody");
+        if (tb && tb.children.length) runTokiponize();
+        closeOverridesModal();
+      });
+    }
+
+    const bRevert = $("btnRevertOverrides");
+    if (bRevert){
+      bRevert.addEventListener("click", () => {
+        const ta = $("overridesText");
+        if (ta) ta.value = JSON.stringify(userOverridesRaw || {}, null, 2);
+      });
+    }
 
     if (bExp){
       bExp.addEventListener("click", () => {
@@ -2148,14 +2493,36 @@ function lookupOverride(keyOrLine){
   /*********************************************************************
    * Mapping policy persistence + UI (IndexedDB)
    *********************************************************************/
+  // Merge a parsed policy object (any version) over the v3 base policy.
+  // The user's explicit choices always win; new v3 symbols fill in as defaults.
+  // Returns a normalised policy object stamped as version 3.
+  function mergeIntoV3Base(parsed){
+    if (!parsed || typeof parsed !== "object") return null;
+    const norm = normalizeMappingPolicy(parsed);
+    if (!norm) return null;
+    // Stamp as v3 so future saves and loads treat it correctly.
+    norm.version = 3;
+    return norm;
+  }
+
   async function loadUserMappingPolicyFromDb(){
     try{
       const saved = await _dbGet(POLICY_DB_KEY);
-      // Treat a missing or empty saved policy as null so the base policy
-      // defaults apply cleanly without triggering the v1 backfill.
       const hasContent = saved && typeof saved === "object" && Object.keys(saved).some(k => k !== "version");
-      const norm = hasContent ? normalizeMappingPolicy(saved) : null;
-      userMappingPolicy = norm;
+      if (!hasContent){ userMappingPolicy = null; }
+      else {
+        const savedVersion = Number(saved.version) || 0;
+        if (savedVersion < 3){
+          // Older saved policy — merge user choices over v3 base and re-save as v3.
+          // deepMerge(base, userPolicy) means user's explicit entries win,
+          // new v3 symbols fall through to the base defaults automatically.
+          userMappingPolicy = mergeIntoV3Base(saved);
+          // Re-save as v3 so this migration only runs once.
+          try{ await _dbPut(POLICY_DB_KEY, userMappingPolicy || {}); } catch {}
+        } else {
+          userMappingPolicy = normalizeMappingPolicy(saved);
+        }
+      }
       recomputeEffectiveMappingPolicy();
       updatePolicyPill();
     } catch (e){
@@ -2279,7 +2646,17 @@ function lookupOverride(keyOrLine){
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)){
             throw new Error("not object");
           }
-          userMappingPolicy = normalizeMappingPolicy(parsed) || {};
+          const importedVersion = Number(parsed.version) || 0;
+          if (importedVersion < 3){
+            // Older policy file — merge user choices over v3 base.
+            // User's explicit entries win; new v3 symbols get base defaults.
+            userMappingPolicy = mergeIntoV3Base(parsed) || {};
+            const msg = `Imported policy (v${importedVersion || "?"}) was merged with the v3 symbol map. ` +
+              `Your choices are preserved; new symbols added in v3 have been set to their defaults.`;
+            alert(msg);
+          } else {
+            userMappingPolicy = normalizeMappingPolicy(parsed) || {};
+          }
           recomputeEffectiveMappingPolicy();
           updatePolicyPill();
           await saveUserMappingPolicyToDb();
@@ -2316,14 +2693,270 @@ function lookupOverride(keyOrLine){
       .replace(/'/g, "&#039;");
   }
 
-    // Remember the most recent rendered output for CSV export.
+  // ─── IPA override map (token key -> IPA string) ───────────────────────────
+  const IPA_DB_KEY = "ipaOverrides.v1";
+  let userIpaOverrides = {}; // { "jean": "ʒɑ̃", ... }
+
+  function normalizeIpaKey(token){
+    return String(token || "").trim()
+      .replace(/^"|"$/g, "")   // strip surrounding quotes (quoted tokens)
+      .toLowerCase()
+      .replace(/[‘’ʼ]/g, "'")
+      .replace(/[‐‑‒–—]/g, "-")
+      .replace(/[^a-z0-9'À-ɏ]/g, ""); // keep latin-extended chars
+  }
+
+  function updateIpaPill(){
+    const el = $("pillIpaOverrides");
+    if (!el) return;
+    const n = Object.keys(userIpaOverrides).length;
+    el.textContent = `IPA overrides: ${n}`;
+    el.style.color = n > 0 ? "#1b5e20" : "";
+    el.style.borderColor = n > 0 ? "rgba(27,94,32,0.35)" : "";
+  }
+
+  async function loadUserIpaOverridesFromDb(){
+    try{
+      const saved = await _dbGet(IPA_DB_KEY);
+      userIpaOverrides = (saved && typeof saved === "object") ? saved : {};
+      updateIpaPill();
+    } catch {
+      userIpaOverrides = {};
+      updateIpaPill();
+    }
+  }
+
+  async function saveUserIpaOverridesToDb(){
+    try{ await _dbPut(IPA_DB_KEY, userIpaOverrides || {}); } catch {}
+  }
+
+  function openIpaOverridesModal(){
+    const ov = $("ipaOverridesOverlay");
+    if (!ov) return;
+    ov.classList.add("show");
+    const ta = $("ipaOverridesText");
+    if (ta){
+      ta.value = JSON.stringify(userIpaOverrides || {}, null, 2);
+      ta.focus();
+      ta.setSelectionRange(0, 0);
+    }
+  }
+
+  function closeIpaOverridesModal(){
+    const ov = $("ipaOverridesOverlay");
+    if (!ov) return;
+    ov.classList.remove("show");
+  }
+
+  function wireIpaOverridesUi(){
+    const bEdit = $("btnEditIpaOverrides");
+    const bExp = $("btnExportIpaOverrides");
+    const bImp = $("btnImportIpaOverrides");
+    const bRst = $("btnResetIpaOverrides");
+    const fIn  = $("fileIpaOverrides");
+
+    // Edit modal
+    if (bEdit) bEdit.addEventListener("click", () => openIpaOverridesModal());
+
+    const ov = $("ipaOverridesOverlay");
+    if (ov) ov.addEventListener("click", (e) => { if (e.target === ov) closeIpaOverridesModal(); });
+
+    const bClose = $("btnCloseIpaOverrides");
+    if (bClose) bClose.addEventListener("click", () => closeIpaOverridesModal());
+
+    const bApply = $("btnApplyIpaOverrides");
+    if (bApply){
+      bApply.addEventListener("click", async () => {
+        const ta = $("ipaOverridesText");
+        if (!ta) return;
+        let parsed = null;
+        try{
+          parsed = JSON.parse(String(ta.value || "").trim() || "{}");
+        } catch {
+          alert("IPA overrides JSON is not valid JSON.");
+          return;
+        }
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)){
+          alert('IPA overrides must be a JSON object like {"jean": "ʒɑ̃"}.');
+          return;
+        }
+        // Normalise keys
+        const normalised = {};
+        for (const [k, v] of Object.entries(parsed)){
+          const key = normalizeIpaKey(k);
+          if (key && typeof v === "string") normalised[key] = v;
+        }
+        userIpaOverrides = normalised;
+        updateIpaPill();
+        await saveUserIpaOverridesToDb();
+        // Re-run if results already exist
+        const tb = $("tbody");
+        if (tb && tb.children.length) runTokiponize();
+        closeIpaOverridesModal();
+      });
+    }
+
+    const bRevert = $("btnRevertIpaOverrides");
+    if (bRevert){
+      bRevert.addEventListener("click", () => {
+        const ta = $("ipaOverridesText");
+        if (ta) ta.value = JSON.stringify(userIpaOverrides || {}, null, 2);
+      });
+    }
+
+    if (bExp){
+      bExp.addEventListener("click", () => {
+        const n = Object.keys(userIpaOverrides).length;
+        if (!n){ alert("No IPA overrides to export."); return; }
+        downloadTextFile("tokiponize-ipa-overrides.json", JSON.stringify(userIpaOverrides, null, 2));
+      });
+    }
+    if (bImp && fIn){
+      bImp.addEventListener("click", () => fIn.click());
+      fIn.addEventListener("change", async () => {
+        const file = fIn.files && fIn.files[0];
+        fIn.value = "";
+        if (!file) return;
+        try{
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not object");
+          userIpaOverrides = parsed;
+          updateIpaPill();
+          await saveUserIpaOverridesToDb();
+          const tb = $("tbody");
+          if (tb && tb.children.length) runTokiponize();
+        } catch {
+          alert("Could not import IPA overrides: expected a JSON object like {\"jean\": \"ʒɑ̃\"}.");
+        }
+      });
+    }
+    if (bRst){
+      bRst.addEventListener("click", async () => {
+        const n = Object.keys(userIpaOverrides).length;
+        if (!n){ alert("No IPA overrides to reset."); return; }
+        if (!confirm(`Clear all ${n} IPA override${n===1?"":"s"}? This cannot be undone.`)) return;
+        userIpaOverrides = {};
+        updateIpaPill();
+        try{ await _dbDel(IPA_DB_KEY); } catch {}
+        const tb = $("tbody");
+        if (tb && tb.children.length) runTokiponize();
+      });
+    }
+  }
+
+  // ─── Input text persistence ────────────────────────────────────────────────
+  const INPUT_DB_KEY = "inputText.v1";
+  let _inputSaveTimer = null;
+
+  function updateInputCounter(){
+    const el = $("inputCounter");
+    if (!el) return;
+    const val = $("names")?.value || "";
+    const names = val.split(/\r?\n/).filter(l => l.trim()).length;
+    const chars = val.length;
+    el.textContent = names > 0 ? `${names} name${names===1?"":"s"} · ${chars} char${chars===1?"":"s"}` : "";
+  }
+
+  async function loadInputTextFromDb(){
+    try{
+      const saved = await _dbGet(INPUT_DB_KEY);
+      if (typeof saved === "string" && saved){
+        const ta = $("names");
+        if (ta){ ta.value = saved; updateInputCounter(); }
+      }
+    } catch {}
+  }
+
+  async function saveInputTextToDb(text){
+    try{ await _dbPut(INPUT_DB_KEY, text); } catch {}
+  }
+
+  function wireInputPersistence(){
+    const ta = $("names");
+    if (!ta) return;
+    ta.addEventListener("input", () => {
+      updateInputCounter();
+      clearTimeout(_inputSaveTimer);
+      _inputSaveTimer = setTimeout(() => saveInputTextToDb(ta.value), 500);
+    });
+  }
+
+  // ─── IPA cell rendering ────────────────────────────────────────────────────
+  // phonemes string looks like: "Jean→dʒin | Luc→ɫuk | Picard→pɪkɑɹd"
+  // or with numbers: "42→(nanpa-linja-n proper name)"
+  // We render each token→ipa segment as an editable span (if not numeric),
+  // separators and numeric segments as inert text.
+
+  function buildIpaCellHtml(phonemesStr){
+    if (!phonemesStr || phonemesStr === "(override)") return escapeHtml(phonemesStr);
+    // Split on " | "
+    const parts = phonemesStr.split(" | ");
+    const spans = parts.map((part, idx) => {
+      const sep = idx < parts.length - 1 ? ' <span class="ipaInert"> | </span>' : "";
+      // Numeric segment: token→(nanpa-linja-n proper name) - inert
+      if (part.includes("(nanpa-linja-n proper name)") || /^\d+\u2192/.test(part)){
+        return `<span class="ipaInert">${escapeHtml(part)}</span>${sep}`;
+      }
+      // Normal segment: token→ipa
+      const arrowIdx = part.indexOf("\u2192"); // →
+      if (arrowIdx === -1){
+        return `<span class="ipaInert">${escapeHtml(part)}</span>${sep}`;
+      }
+      const token = part.slice(0, arrowIdx);
+      const ipa   = part.slice(arrowIdx + 1);
+      const key   = normalizeIpaKey(token);
+      const hasOv = key && Object.prototype.hasOwnProperty.call(userIpaOverrides, key);
+      const cls   = hasOv ? "ipaEditable hasOverride" : "ipaEditable";
+      const displayIpa = hasOv ? userIpaOverrides[key] : ipa;
+      return `<span class="ipaInert">${escapeHtml(token)}\u2192</span><span class="${cls}" data-token="${escapeHtml(token)}" data-orig-ipa="${escapeHtml(ipa)}" tabindex="0" role="button" aria-label="Edit IPA for ${escapeHtml(token)}">${escapeHtml(displayIpa)}</span>${sep}`;
+    });
+    return `<span class="ipaCell">${spans.join("")}</span>`;
+  }
+
+  function recomputeRowResult(r, opts){
+    // Re-run pipeline for a single row using IPA overrides where present.
+    // r.phonemes format: "Jean→dʒin | Luc→ɫuk"  (original auto IPA)
+    // We rebuild tpWords from per-token IPA (overridden or original).
+    if (!r.phonemes || r.phonemes === "(override)") return r.result; // can't re-drive
+    const strictMode = opts ? opts.strictMode : ($("strict").value === "on");
+    const keepFinalCons = opts ? opts.keepFinalCons : !!$("keepFinalCons")?.checked;
+    const parts = r.phonemes.split(" | ");
+    const tpWords = [];
+    for (const part of parts){
+      if (part.includes("(nanpa-linja-n proper name)")){
+        // extract the nanpa name from result - just keep it
+        const m = part.match(/^(\d+)/);
+        if (m) tpWords.push(digitSequenceToNanpaLinjanProperName(m[1]) || "");
+        continue;
+      }
+      const arrowIdx = part.indexOf("\u2192");
+      if (arrowIdx === -1) continue;
+      const token = part.slice(0, arrowIdx);
+      const origIpa = part.slice(arrowIdx + 1);
+      const key = normalizeIpaKey(token);
+      const ipa = (key && userIpaOverrides[key]) ? userIpaOverrides[key] : origIpa;
+      const stream = mapPhonemesToTp(ipa, { keepFinalCons });
+      let sylls = syllabifyCVN(stream);
+      sylls = enforceIllegalPairs(sylls, strictMode);
+      const tp = syllsToString(sylls);
+      if (tp) tpWords.push(tp);
+    }
+    const boundary = $("boundary")?.value || "preserve";
+    let tpName = boundary === "preserve" ? tpWords.join(" ") : tpWords.join("");
+    const outputStyle = $("outputStyle")?.value || "plain";
+    if (outputStyle === "jan")  tpName = "jan "  + tpName;
+    if (outputStyle === "ma")   tpName = "ma "   + tpName;
+    if (outputStyle === "toki") tpName = "toki " + tpName;
+    return formatTpOutputName(tpName);
+  }
+
+  // ─── CSV export (plain IPA, no HTML) ──────────────────────────────────────
   let LAST_ROWS = [];
 
   function _csvEscapeCell(value){
     const s = String(value ?? "");
-    // Escape double quotes by doubling them.
     const esc = s.replace(/"/g, '""');
-    // Quote if it contains comma, quote, or newline.
     return (/["\n\r,]/.test(esc)) ? (`"${esc}"`) : esc;
   }
 
@@ -2332,15 +2965,28 @@ function lookupOverride(keyOrLine){
       alert("No results to export yet. Run Tokiponize first.");
       return;
     }
-    const headers = ["toki_pona_result","original","normalized","phonemes","notes"];
-    const lines = [];
-    lines.push(headers.join(","));
+    const headers = ["toki_pona_result","phonemes_ipa","original","normalized","notes"];
+    const lines = [headers.join(",")];
     for (const r of LAST_ROWS){
+      // For CSV, resolve the effective IPA (plain text, with overrides applied)
+      let csvIpa = r.phonemes || "";
+      if (csvIpa && csvIpa !== "(override)"){
+        const parts = csvIpa.split(" | ").map(part => {
+          const arrowIdx = part.indexOf("\u2192");
+          if (arrowIdx === -1) return part;
+          const token = part.slice(0, arrowIdx);
+          const origIpa = part.slice(arrowIdx + 1);
+          const key = normalizeIpaKey(token);
+          const ipa = (key && userIpaOverrides[key]) ? userIpaOverrides[key] : origIpa;
+          return token + "\u2192" + ipa;
+        });
+        csvIpa = parts.join(" | ");
+      }
       const row = [
-         _csvEscapeCell(r.result),
+        _csvEscapeCell(r.result),
+        _csvEscapeCell(csvIpa),
         _csvEscapeCell(r.original),
         _csvEscapeCell(r.normalized),
-        _csvEscapeCell(r.phonemes),
         _csvEscapeCell(r.notes),
       ];
       lines.push(row.join(","));
@@ -2358,23 +3004,293 @@ function lookupOverride(keyOrLine){
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-function renderRows(rows){
+  // ─── Render rows ──────────────────────────────────────────────────────────
+  function buildRowHtml(r){
+    const ipaCellHtml = buildIpaCellHtml(r.phonemes);
+    // r.notes already has override notes appended by runTokiponize or wireRowSpans save.
+    // For rows saved mid-session via the editor, add any missing override notes here.
+    let notesText = r.notes || "";
+    if (r.phonemes && r.phonemes !== "(override)"){
+      const ovNotes = [];
+      for (const part of r.phonemes.split(" | ")){
+        const ai = part.indexOf("→");
+        if (ai === -1) continue;
+        const tok = part.slice(0, ai);
+        const key = normalizeIpaKey(tok);
+        if (key && userIpaOverrides[key]){
+          const note = `IPA override applied: ${tok} → ${userIpaOverrides[key]}`;
+          if (!notesText.includes(note))
+            ovNotes.push(note);
+        }
+      }
+      if (ovNotes.length) notesText = [notesText, ...ovNotes].filter(Boolean).join("; ");
+    }
+    return { ipaCellHtml, notesText };
+  }
+
+  function wireRowSpans(tr, r){
+    tr.querySelectorAll(".ipaEditable").forEach(span => {
+      const activate = () => {
+        const token   = span.dataset.token;
+        const origIpa = span.dataset.origIpa;
+        const key     = normalizeIpaKey(token);
+        const current = (key && userIpaOverrides[key]) ? userIpaOverrides[key] : origIpa;
+        openIpaEditor(token, origIpa, current, r.original, r.phonemes, async (newIpa) => {
+          if (newIpa === null) return; // cancelled — editor closed, do nothing
+          if (newIpa === ""){
+            delete userIpaOverrides[key];
+          } else {
+            userIpaOverrides[key] = newIpa;
+          }
+          await saveUserIpaOverridesToDb();
+          updateIpaPill();
+          // Recompute result and re-render the whole table (simplest, always correct)
+          const opts = {
+            strictMode: $("strict").value === "on",
+            keepFinalCons: !!$("keepFinalCons")?.checked,
+          };
+          r.result = recomputeRowResult(r, opts);
+          // Keep r.notes in sync with current overrides for CSV accuracy
+          if (r.phonemes && r.phonemes !== "(override)"){
+            const baseNotes = (r.notes || "").split("; ").filter(n => !n.startsWith("IPA override applied:")).join("; ");
+            const ovNotes = [];
+            for (const part of r.phonemes.split(" | ")){
+              const ai = part.indexOf("→");
+              if (ai === -1) continue;
+              const tok = part.slice(0, ai);
+              const k2 = normalizeIpaKey(tok);
+              if (k2 && userIpaOverrides[k2])
+                ovNotes.push(`IPA override applied: ${tok} → ${userIpaOverrides[k2]}`);
+            }
+            r.notes = [baseNotes, ...ovNotes].filter(Boolean).join("; ");
+          }
+          renderRows(LAST_ROWS);
+        });
+      };
+      span.addEventListener("click", activate);
+      span.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); activate(); }
+      });
+    });
+  }
+
+  function renderRows(rows){
     const tb = $("tbody");
     tb.innerHTML = "";
     LAST_ROWS = Array.isArray(rows) ? rows.slice() : [];
     for (const r of rows){
       const tr = document.createElement("tr");
+      const { ipaCellHtml, notesText } = buildRowHtml(r);
       tr.innerHTML = `
         <td class="mono"><b>${escapeHtml(r.result)}</b></td>
+        <td class="mono">${ipaCellHtml}</td>
         <td>${escapeHtml(r.original)}</td>
         <td class="mono">${escapeHtml(r.normalized)}</td>
-        <td class="mono">${escapeHtml(r.phonemes)}</td>
-        <td>${escapeHtml(r.notes)}</td>
+        <td>${escapeHtml(notesText)}</td>
       `;
+      wireRowSpans(tr, r);
       tb.appendChild(tr);
     }
   }
+  // ─── IPA Editor popout ────────────────────────────────────────────────────
+  // token: display string, origIpa: auto-generated, currentIpa: current (may be override)
+  // callback(newIpa|null)
+  function openIpaEditor(token, origIpa, currentIpa, fullInput, fullPhonemes, callback){
+    // Remove any existing editor
+    const existing = document.getElementById("ipaEditorOverlay");
+    if (existing) existing.remove();
 
+    const symGroups = [
+      { label: "Vowels", syms: ["a","e","i","o","u","æ","ɑ","ɐ","ʌ","ɛ","ə","ɜ","ɝ","ɚ","ɪ","ɔ","ɒ","ɵ","ʊ","ø","œ","y","ʏ","ɯ","ɨ","ʉ"] },
+      { label: "Nasal vowels", syms: ["\u00e3","\u025b\u0303","\u00f5","\u0153\u0303","\u0251\u0303"] },
+      { label: "Plosives", syms: ["p","b","t","d","k","ɡ","q","ʔ","ʈ","ɖ"] },
+      { label: "Nasals", syms: ["m","n","ŋ","ɲ","ɳ"] },
+      { label: "Fricatives", syms: ["f","v","θ","ð","s","z","ʃ","ʒ","ç","ʝ","x","ɣ","χ","ʁ","ħ","ʕ","h","ɦ","ɬ","ɮ","ɸ","β"] },
+      { label: "Affricates", syms: ["tʃ","dʒ","ts","dz"] },
+      { label: "Approximants", syms: ["l","r","ɹ","ɾ","ɫ","ɻ","ʂ","ʐ","w","j","ɥ","ʋ"] },
+      { label: "Diacritics", syms: ["ː","ˈ","ˌ","\u0303","ʼ"] },
+    ];
+
+    // Compute live TP from current IPA
+    function ipaToTpPreview(ipa){
+      try {
+        const strictMode = $("strict").value === "on";
+        const keepFinalCons = !!$("keepFinalCons")?.checked;
+        const stream = mapPhonemesToTp(ipa, { keepFinalCons });
+        let sylls = syllabifyCVN(stream);
+        sylls = enforceIllegalPairs(sylls, strictMode);
+        return syllsToString(sylls) || "(nothing)";
+      } catch { return "?"; }
+    }
+
+    // Check for unmapped symbols
+    function findUnmapped(ipa){
+      const pol = effectiveMappingPolicy || BASE_MAPPING_POLICY;
+      const sm = pol.symbolMap || {};
+      const strip = pol.stripChars || "";
+      const stripped = ipa.replace(new RegExp("[" + strip.replace(/[-\]\\[]/g,"\\$&") + "]","g")," ").trim();
+      const unknown = [];
+      let i = 0;
+      while (i < stripped.length){
+        if (stripped[i] === " "){ i++; continue; }
+        const multiKeys = Object.keys(sm).filter(k=>k.length>1).sort((a,b)=>b.length-a.length);
+        let matched = false;
+        for (const k of multiKeys){
+          if (stripped.startsWith(k,i)){ i+=k.length; matched=true; break; }
+        }
+        if (matched) continue;
+        const ch = stripped[i];
+        if (!Object.prototype.hasOwnProperty.call(sm, ch) && !/[a-z]/.test(ch)){
+          if (!unknown.includes(ch)) unknown.push(ch);
+        }
+        i++;
+      }
+      return unknown;
+    }
+
+    const overlay = document.createElement("div");
+    overlay.id = "ipaEditorOverlay";
+    overlay.className = "modalOverlay show";
+    overlay.setAttribute("role","dialog");
+    overlay.setAttribute("aria-modal","true");
+    overlay.setAttribute("aria-label","Edit IPA for " + token);
+
+    const initialPreview = ipaToTpPreview(currentIpa);
+
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:560px;">
+        <div class="modalHeader">
+          <h3 style="margin:0;font-size:14px;">Edit IPA &mdash; <span class="mono">${escapeHtml(token)}</span></h3>
+          <button id="ipaEditorClose" type="button" style="font-size:18px;background:none;border:none;cursor:pointer;">&times;</button>
+        </div>
+        <div class="modalBody" style="max-height:70vh;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;display:grid;grid-template-columns:max-content 1fr;gap:2px 10px;align-items:baseline;">
+            <span>Full input:</span><span class="mono" style="word-break:break-all;">${escapeHtml(fullInput)}</span>
+            <span>Full IPA:</span><span class="mono" style="word-break:break-all;">${escapeHtml(fullPhonemes)}</span>
+            <span>Editing:</span><span class="mono">${escapeHtml(token)}→<span style="color:#1b5e20;">${escapeHtml(currentIpa)}</span></span>
+            <span>Auto IPA:</span><span class="mono">${escapeHtml(origIpa)}</span>
+            <span>TP preview:</span><span class="mono" id="ipaTpPreview" style="color:#1b5e20;font-weight:600;">${escapeHtml(initialPreview)}</span>
+          </div>
+
+          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;" for="ipaEditorInput">IPA</label>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+            <input id="ipaEditorInput" type="text" class="mono" value="${escapeHtml(currentIpa)}"
+              style="flex:1;font-size:15px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);"
+              autocomplete="off" autocorrect="off" spellcheck="false" />
+            <button id="ipaEditorBackspace" type="button" title="Backspace" style="padding:6px 10px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;">&#9003;</button>
+          </div>
+
+          <div id="ipaUnmappedWarning" style="display:none;margin-bottom:8px;font-size:12px;color:#7a2e2e;padding:6px 10px;border:1px solid rgba(122,46,46,0.3);border-radius:6px;"></div>
+
+          ${symGroups.map(g => `
+            <div style="margin-bottom:8px;">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em;">${g.label}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:3px;">
+                ${g.syms.map(s => `<button type="button" class="ipaSymBtn" data-sym="${escapeHtml(s)}"
+                  style="font-family:inherit;font-size:14px;min-width:32px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);cursor:pointer;"
+                  title="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+
+        <div id="ipaEditorWarn" style="display:none;font-size:12px;color:#7a2e2e;margin:8px 0 4px;padding:6px 10px;border:1px solid rgba(122,46,46,0.3);border-radius:6px;"></div>
+
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button id="ipaEditorSave" type="button" style="font-weight:700;padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;">Save</button>
+          <button id="ipaEditorReset" type="button" style="padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;">Reset to auto</button>
+          <button id="ipaEditorOpenPolicy" type="button" style="padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;">Edit Policy &rarr;</button>
+          <button id="ipaEditorCancel" type="button" style="margin-left:auto;padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const inp = document.getElementById("ipaEditorInput");
+    const preview = document.getElementById("ipaTpPreview");
+    const warnEl = document.getElementById("ipaEditorWarn");
+
+    function updatePreview(){
+      const val = inp.value;
+      preview.textContent = ipaToTpPreview(val);
+      const unmapped = findUnmapped(val);
+      if (unmapped.length){
+        warnEl.style.display = "";
+        warnEl.textContent = "\u26a0 Unmapped symbols (will be dropped): " + unmapped.join(", ") + " \u2014 consider updating your Policy.";
+      } else {
+        warnEl.style.display = "none";
+        warnEl.textContent = "";
+      }
+    }
+
+    inp.addEventListener("input", updatePreview);
+    updatePreview();
+
+    // Symbol palette buttons — insert at cursor
+    overlay.querySelectorAll(".ipaSymBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const sym = btn.dataset.sym;
+        const start = inp.selectionStart ?? inp.value.length;
+        const end   = inp.selectionEnd   ?? inp.value.length;
+        inp.value = inp.value.slice(0, start) + sym + inp.value.slice(end);
+        inp.setSelectionRange(start + sym.length, start + sym.length);
+        inp.focus();
+        updatePreview();
+      });
+    });
+
+    // Backspace button
+    document.getElementById("ipaEditorBackspace").addEventListener("click", () => {
+      const start = inp.selectionStart ?? inp.value.length;
+      const end   = inp.selectionEnd   ?? inp.value.length;
+      if (start !== end){
+        inp.value = inp.value.slice(0, start) + inp.value.slice(end);
+        inp.setSelectionRange(start, start);
+      } else if (start > 0){
+        // Handle combining characters: check if char before cursor is combining
+        const before = inp.value.slice(0, start);
+        // Simple: remove last code point (handles combining diacritics as separate)
+        const newBefore = [...before].slice(0,-1).join("");
+        inp.value = newBefore + inp.value.slice(end);
+        inp.setSelectionRange(newBefore.length, newBefore.length);
+      }
+      inp.focus();
+      updatePreview();
+    });
+
+    function closeEditor(){ overlay.remove(); }
+
+    document.getElementById("ipaEditorClose").addEventListener("click", () => { closeEditor(); callback(null); });
+    document.getElementById("ipaEditorCancel").addEventListener("click", () => { closeEditor(); callback(null); });
+
+    document.getElementById("ipaEditorReset").addEventListener("click", () => {
+      const key = normalizeIpaKey(token);
+      if (key && userIpaOverrides[key]){
+        if (!confirm("Reset to auto-generated IPA? Your override will be removed.")) return;
+      }
+      closeEditor();
+      callback(""); // empty string = delete override
+    });
+
+    document.getElementById("ipaEditorSave").addEventListener("click", () => {
+      const val = inp.value.trim();
+      closeEditor();
+      callback(val);
+    });
+
+    document.getElementById("ipaEditorOpenPolicy").addEventListener("click", () => {
+      // Open policy modal on top of the IPA editor (z-index 19999 > 9999).
+      // IPA editor stays open underneath — do NOT close it.
+      openPolicyModal();
+    });
+
+    overlay.addEventListener("click", (e) => { if (e.target === overlay){ closeEditor(); callback(null); }});
+    inp.focus();
+    inp.setSelectionRange(inp.value.length, inp.value.length);
+  }
+
+  // ─── runTokiponize — uses IPA overrides ───────────────────────────────────
   function runTokiponize(){
     const lines = $("names").value.split(/\r?\n/);
     const opts = {
@@ -2387,7 +3303,26 @@ function renderRows(rows){
     const out = [];
     for (const line of lines){
       const r = tokiponizeLine(line, opts);
-      if (r) out.push(r);
+      if (!r) continue;
+      // Apply IPA overrides: recompute result and annotate notes for CSV accuracy
+      if (r.phonemes && r.phonemes !== "(override)"){
+        const parts = r.phonemes.split(" | ");
+        const ovTokens = [];
+        for (const part of parts){
+          const ai = part.indexOf("→");
+          if (ai === -1) continue;
+          const tok = part.slice(0, ai);
+          const key = normalizeIpaKey(tok);
+          if (key && userIpaOverrides[key]) ovTokens.push({ tok, key });
+        }
+        if (ovTokens.length){
+          r.result = recomputeRowResult(r, opts);
+          const ovNoteStr = ovTokens.map(({tok, key}) =>
+            `IPA override applied: ${tok} → ${userIpaOverrides[key]}`).join("; ");
+          r.notes = [r.notes, ovNoteStr].filter(Boolean).join("; ");
+        }
+      }
+      out.push(r);
     }
     renderRows(out);
   }
@@ -2402,42 +3337,92 @@ function renderRows(rows){
     $("btnLic").focus();
   }
 
+  // ─── Guarded clear button ─────────────────────────────────────────────────
+  function guardedClear(){
+    const ta = $("names");
+    if (!ta) return;
+    const val = ta.value;
+    if (!val.trim()){ ta.value = ""; renderRows([]); return; }
+    const n = val.split(/\r?\n/).filter(l=>l.trim()).length;
+    if (!confirm(`Clear input? (${n} name${n===1?"":"s"}) This will not affect your saved overrides.`)) return;
+    ta.value = "";
+    updateInputCounter();
+    saveInputTextToDb("");
+    renderRows([]);
+  }
+
+  // ─── Reset guards ─────────────────────────────────────────────────────────
+  function guardedResetOverrides(){
+    const n = Object.keys(userOverridesRaw || {}).length;
+    if (!n){ alert("No custom overrides to reset."); return; }
+    if (!confirm(`Clear ${n} custom override${n===1?"":"s"}? (Built-in defaults remain.)`)) return;
+    userOverridesRaw = {};
+    userOverrides = { soft: {}, strong: {} };
+    recomputeEffectiveOverrides();
+    updateOverridesPill();
+    try{ _dbDel(OVERRIDE_DB_KEY); } catch {}
+    const tb = $("tbody");
+    if (tb && tb.children.length) runTokiponize();
+  }
+
+  function guardedResetPolicy(){
+    const hasCustom = userMappingPolicy && Object.keys(userMappingPolicy).length > 0;
+    if (!hasCustom){ alert("No custom policy to reset."); return; }
+    userMappingPolicy = null;
+    recomputeEffectiveMappingPolicy();
+    updatePolicyPill();
+    try{ _dbDel(POLICY_DB_KEY); } catch {}
+    closePolicyModal();
+    const tb = $("tbody");
+    if (tb && tb.children.length) runTokiponize();
+  }
 
   (async function init(){
-    // Restore saved UI options (best-effort) and remember changes.
     loadUiOptionsFromStorage();
     updateBaseMappingPolicyFromUi();
     wireUiOptionPersistence();
 
-    // Load custom overrides (offline) and wire import/export UI.
     await loadUserOverridesFromDb();
-    wireOverridesUi();
-
-    // Load custom mapping policy (offline) and wire policy UI.
+    await loadUserIpaOverridesFromDb();
     await loadUserMappingPolicyFromDb();
+    await loadInputTextFromDb();
+
+    wireOverridesUi();
+    wireIpaOverridesUi();
     wirePolicyUi();
+    wireInputPersistence();
 
     $("btnGo").addEventListener("click", () => runTokiponize());
     $("btnExportCsv").addEventListener("click", () => exportResultsCsv());
-    $("btnClear").addEventListener("click", () => { $("names").value = ""; renderRows([]); });
+    $("btnClear").addEventListener("click", () => guardedClear());
     $("btnLic").addEventListener("click", () => openLic());
     $("btnCloseLic").addEventListener("click", () => closeLic());
     $("licOverlay").addEventListener("click", (e) => { if (e.target === $("licOverlay")) closeLic(); });
+
+    // Override reset buttons with guarded versions
+    const bRstOv = $("btnResetOverrides");
+    if (bRstOv){ bRstOv.replaceWith(bRstOv.cloneNode(true)); $("btnResetOverrides").addEventListener("click", guardedResetOverrides); }
+    const bRstPol = $("btnResetPolicy");
+    if (bRstPol){ bRstPol.replaceWith(bRstPol.cloneNode(true)); $("btnResetPolicy").addEventListener("click", guardedResetPolicy); }
+
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
+      // Close the topmost modal only — policy and IPA overrides modal share z-index 19999,
+      // above IPA editor (9999). Close whichever high-z modal is open first.
+      if ($("policyOverlay").classList.contains("show")){ closePolicyModal(); return; }
+      if ($("ipaOverridesOverlay").classList.contains("show")){ closeIpaOverridesModal(); return; }
+      if ($("overridesOverlay").classList.contains("show")){ closeOverridesModal(); return; }
+      const ipaOv = document.getElementById("ipaEditorOverlay");
+      if (ipaOv){ ipaOv.remove(); return; }
       if ($("licOverlay").classList.contains("show")) closeLic();
-      if ($("policyOverlay").classList.contains("show")) closePolicyModal();
     });
 
-    // Initial vendor detection
     syncVendorPills();
-
-    // Initial overrides/policy pill state
     updateOverridesPill();
+    updateIpaPill();
     updatePolicyPill();
+    updateInputCounter();
   })();
-
-
   </script>
 
   <!--
