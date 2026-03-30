@@ -310,17 +310,19 @@
       <div class="col leftCol">
         <label for="names">Input (one name per line)</label>
         <textarea id="names" spellcheck="false" placeholder="Dorothy
+Kansas
 Old McDonald
 Paul &quot;McCartney&quot;
-Sinead O’Connor
-/sɪneɪæd/
+Sinéad O’Connor
+/ʃɪˈneɪd/
 Jean-Luc Picard
-/dʒan/ /luk/ Picard
+/dʒan/ /ɫuk/ Picard
 D'Arcy
+James Bond 007
 "></textarea>
         <div class="help">
           Accepts spaces, hyphens, apostrophes, and common patterns like <span class="mono">McX</span>, <span class="mono">O’X</span>.
-          Prefix a token with <span class="mono">/</span> for direct IPA input (e.g. <span class="mono">/dʒin/</span>); wrap multiple words like <span class="mono">/dʒin luk/</span>.
+          Prefix a token with <span class="mono">/</span> for direct IPA input (e.g. <span class="mono">/dʒan/</span>); wrap multiple words like <span class="mono">/dʒan ɫuk/</span>.
         </div>
         <div class="inputCounter" id="inputCounter"></div>
       </div>
@@ -920,34 +922,59 @@ When you paste/vend these libraries into this file, keep their MIT notices.
   /*********************************************************************
    * Phonemize wrapper
    *********************************************************************/
+  // Strip combining diacritical marks from a spelling token before passing to
+  // the phonemizer. Uses Unicode NFD decomposition so that accented letters
+  // (é, ñ, ü, ō, etc.) are split into base letter + combining mark, then the
+  // combining marks (U+0300–U+036F) are removed, leaving plain ASCII-ish base
+  // letters. This prevents the English-trained phonemizer from choking on
+  // diacritics it doesn't recognise (e.g. Sinéad → sɪn é æd).
+  //
+  // IMPORTANT: this runs only on the spelling token fed to the phonemizer.
+  // It does NOT touch direct IPA input (which bypasses phonemizeToken entirely)
+  // and does NOT touch the IPA→TP symbol map (which runs later on IPA output).
+  function stripDiacriticsForPhonemizer(s){
+    try {
+      return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+    } catch {
+      return s; // normalize not available — return unchanged
+    }
+  }
+
   function phonemizeToken(token){
     const t = String(token || "").trim();
     if (!t) return { phon: "", source: "empty" };
 
+    // Normalize accented letters to plain base letters before phonemization.
+    // The original token display is unaffected — only the string sent to the
+    // library is stripped. e.g. Sinéad → Sinead for the phonemizer.
+    const tForPhon = stripDiacriticsForPhonemizer(t);
+
     // Prefer phonemize IPA.
     try {
       if (typeof window.toIPA === "function"){
-        const out = window.toIPA(t, { stripStress: true });
-        const cleaned = dropSpuriousInitialGlideFromIpa(t, out);
+        const out = window.toIPA(tForPhon, { stripStress: true });
+        const cleaned = dropSpuriousInitialGlideFromIpa(tForPhon, out);
         return { phon: String(cleaned || ""), source: "toIPA" };
       }
       if (typeof window.phonemize === "function"){
         // library supports options per its README; keep defensive.
-        const out = window.phonemize(t, { format: "ipa", stripStress: true, separator: " " });
-        const cleaned = dropSpuriousInitialGlideFromIpa(t, out);           // <-- NEW
-        return { phon: String(cleaned || ""), source: "phonemize" };       // <-- CHANGED
+        const out = window.phonemize(tForPhon, { format: "ipa", stripStress: true, separator: " " });
+        const cleaned = dropSpuriousInitialGlideFromIpa(tForPhon, out);
+        return { phon: String(cleaned || ""), source: "phonemize" };
       }
       if (window.phonemize && typeof window.phonemize.phonemize === "function"){
-        const out = window.phonemize.phonemize(t, { format: "ipa", stripStress: true, separator: " " });
-        const cleaned = dropSpuriousInitialGlideFromIpa(t, out);           // <-- NEW
-        return { phon: String(cleaned || ""), source: "phonemize.phonemize" }; // <-- CHANGED
+        const out = window.phonemize.phonemize(tForPhon, { format: "ipa", stripStress: true, separator: " " });
+        const cleaned = dropSpuriousInitialGlideFromIpa(tForPhon, out);
+        return { phon: String(cleaned || ""), source: "phonemize.phonemize" };
       }
     } catch (e) {
       // fall through to fallback.
     }
 
     // Fallback (lower accuracy): approximate from spelling.
-    return { phon: simpleSpellingApprox(t), source: "fallback" };
+    // Also use the diacritic-stripped form so the [^a-z'] strip in
+    // simpleSpellingApprox doesn't silently eat accented characters.
+    return { phon: simpleSpellingApprox(tForPhon), source: "fallback" };
   }
 
 
@@ -1033,6 +1060,13 @@ When you paste/vend these libraries into this file, keep their MIT notices.
       "ɝ": "e",   // rhotic NURSE
       "ɚ": "e",   // rhotic schwa
       "ẽ": "e", // nasal e
+
+      // Accute accent to normal vowels
+      "á": "a",
+      "é": "e",
+      "í": "i",
+      "ó": "o",
+      "ú": "u",
 
       // ── Extended vowels: close-mid front rounded (French/German) ─────
       "ø": "o",   // French /ø/ (feu)
@@ -1191,6 +1225,13 @@ When you paste/vend these libraries into this file, keep their MIT notices.
       "ʊ": "u",
       "õ": "o", "ũ": "u",
 
+      // Accute accent to normal vowels
+      "á": "a",
+      "é": "e",
+      "í": "i",
+      "ó": "o",
+      "ú": "u",
+      
       // ── Plosives ─────────────────────────────────────────────────────
       "p": "p", "b": "p",
       "t": "t", "d": "t",
@@ -2186,15 +2227,28 @@ function lookupOverride(keyOrLine){
         // Feed IPA directly into the mapping pipeline — skip text-to-IPA and
         // skip overrides (user supplied the IPA explicitly).
         // phonIn is the raw IPA content (slashes already stripped by tokenizeName).
+        //
+        // Space-separated words inside the IPA span are processed independently
+        // (each gets its own cluster repair, syllabification, illegal-pair enforcement)
+        // and then joined using the same boundary option as the rest of the pipeline.
+        // This means /dʒin luk/ with preserve boundary → two TP words, just as
+        // "Jean Luc" would produce two TP words.
         const strictMode = !!(opts && opts.strictMode);
-        const stream = mapPhonemesToTp(phonIn, opts);
-        let sylls = syllabifyCVN(stream);
-        sylls = enforceIllegalPairs(sylls, strictMode);
-        const tp = syllsToString(sylls);
+        const ipaWords = phonIn.split(/\s+/).filter(Boolean);
+        const tpParts = [];
+        for (const ipaWord of ipaWords){
+          const stream = mapPhonemesToTp(ipaWord, opts);
+          let sylls = syllabifyCVN(stream);
+          sylls = enforceIllegalPairs(sylls, strictMode);
+          const tp = syllsToString(sylls);
+          if (tp) tpParts.push(tp);
+        }
+        // Respect the boundary option: preserve = space-join, merge = concatenate.
+        const ipaBoundary = opts && opts.boundary;
+        const tp = ipaBoundary === "merge" ? tpParts.join("") : tpParts.join(" ");
         if (tp) tpWords.push(tp);
 
         // Phonemes column: mark with directIpa flag so buildIpaCellHtml renders inert.
-        // Format: display→phonIn with a sentinel prefix so renderer can detect it.
         // Mark segment as direct IPA so renderer and recompute can detect it.
         phonemeParts.push(`(directIpa)${disp}\u2192${phonIn}`);
         normalizedParts.push(disp);
@@ -3116,16 +3170,24 @@ function lookupOverride(keyOrLine){
     const parts = r.phonemes.split(" | ");
     const tpWords = [];
     for (const part of parts){
-      // Direct IPA segment — feed IPA content directly into mapper.
+      // Direct IPA segment — split on spaces and process each word independently,
+      // matching the same word-boundary behaviour as the main pipeline.
       if (part.startsWith("(directIpa)")){
         const inner = part.slice("(directIpa)".length);
         const arrowIdx = inner.indexOf("\u2192");
         if (arrowIdx === -1) continue;
         const ipa = inner.slice(arrowIdx + 1);
-        const stream = mapPhonemesToTp(ipa, { keepFinalCons });
-        let sylls = syllabifyCVN(stream);
-        sylls = enforceIllegalPairs(sylls, strictMode);
-        const tp = syllsToString(sylls);
+        const boundary = $("boundary")?.value || "preserve";
+        const ipaWords = ipa.split(/\s+/).filter(Boolean);
+        const tpParts = [];
+        for (const ipaWord of ipaWords){
+          const stream = mapPhonemesToTp(ipaWord, { keepFinalCons });
+          let sylls = syllabifyCVN(stream);
+          sylls = enforceIllegalPairs(sylls, strictMode);
+          const tp = syllsToString(sylls);
+          if (tp) tpParts.push(tp);
+        }
+        const tp = boundary === "merge" ? tpParts.join("") : tpParts.join(" ");
         if (tp) tpWords.push(tp);
         continue;
       }
