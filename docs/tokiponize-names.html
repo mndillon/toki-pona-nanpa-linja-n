@@ -241,14 +241,17 @@
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.35);
       display: none;
-      align-items: center;
+      align-items: flex-start;  /* don't center — allow scrolling from top on mobile */
       justify-content: center;
       padding: 18px;
+      padding-bottom: 40px;     /* breathing room above nav bar on iOS */
       z-index: 9999;
+      overflow-y: auto;         /* overlay itself scrolls when keyboard shrinks viewport */
+      -webkit-overflow-scrolling: touch;
     }
     .modalOverlay.show { display: flex; }
-    /* Policy modal stacks above IPA editor when opened from within it */
-    #policyOverlay { z-index: 19999; }
+    /* Policy/IPA modals stack above IPA editor */
+    #policyOverlay, #ipaOverridesOverlay, #overridesOverlay { z-index: 19999; }
     .modal {
       width: min(980px, 100%);
       background: var(--bg);
@@ -256,6 +259,7 @@
       border-radius: 12px;
       padding: 14px;
       box-shadow: 0 18px 50px rgba(0,0,0,0.2);
+      margin: auto;             /* centre vertically when content is short */
     }
     .modalHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .modalHeader h3 { margin: 0; font-size: 14px; }
@@ -265,8 +269,15 @@
       border-radius: 10px;
       padding: 10px;
       background: rgba(255,255,255,0.35);
-      max-height: 55vh;
-      overflow: auto;
+      /* No max-height — let content grow naturally; overlay scrolls instead */
+      overflow: visible;
+    }
+    /* On larger screens restore a sensible max-height on the body */
+    @media (min-height: 600px) and (min-width: 640px) {
+      .modalBody {
+        max-height: 55vh;
+        overflow: auto;
+      }
     }
     pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
   </style>
@@ -3170,12 +3181,12 @@ function lookupOverride(keyOrLine){
     const initialPreview = ipaToTpPreview(currentIpa);
 
     overlay.innerHTML = `
-      <div class="modal" style="max-width:560px;">
+      <div class="modal" style="max-width:560px;width:100%;">
         <div class="modalHeader">
           <h3 style="margin:0;font-size:14px;">Edit IPA &mdash; <span class="mono">${escapeHtml(token)}</span></h3>
           <button id="ipaEditorClose" type="button" style="font-size:18px;background:none;border:none;cursor:pointer;">&times;</button>
         </div>
-        <div class="modalBody" style="max-height:70vh;">
+        <div class="modalBody">
           <div style="font-size:12px;color:var(--muted);margin-bottom:10px;display:grid;grid-template-columns:max-content 1fr;gap:2px 10px;align-items:baseline;">
             <span>Full input:</span><span class="mono" style="word-break:break-all;">${escapeHtml(fullInput)}</span>
             <span>Full IPA:</span><span class="mono" style="word-break:break-all;">${escapeHtml(fullPhonemes)}</span>
