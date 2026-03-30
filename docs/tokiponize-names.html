@@ -34,20 +34,31 @@
 
     /* For the specific row that contains the input textarea + the options column */
     .row.twoCol {
-      align-items: stretch;   /* override the global flex-end */
-      flex-wrap: nowrap;      /* optional: keeps them truly side-by-side on desktop */
+      align-items: stretch;
+      flex-wrap: wrap;        /* allow stacking on narrow screens */
     }
 
     /* Make the left column stack label + textarea + help vertically */
     .col.leftCol {
       display: flex;
       flex-direction: column;
+      flex: 1 1 100%;         /* full width by default, shrinks on desktop */
     }
 
     /* Let the textarea fill the remaining height of the left column */
     .col.leftCol textarea {
       flex: 1;
-      min-height: 0;          /* important in flex layouts so it can shrink/grow properly */
+      min-height: 120px;
+    }
+
+    /* On wider screens, put textarea and options side by side */
+    @media (min-width: 640px) {
+      .col.leftCol {
+        flex: 1 1 320px;
+      }
+      .row.twoCol {
+        flex-wrap: nowrap;
+      }
     }
 
     #names { 
