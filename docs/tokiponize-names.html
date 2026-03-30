@@ -66,6 +66,10 @@
       min-height: 0; 
     }
 
+    @media (max-width: 639px) {
+      #names { min-height: 280px; }
+    }
+
     label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 
     input[type="text"], textarea, select {
@@ -309,11 +313,14 @@
 Old McDonald
 Paul &quot;McCartney&quot;
 Sinead O’Connor
+/sɪneɪæd/
 Jean-Luc Picard
+/dʒan/ /luk/ Picard
 D'Arcy
 "></textarea>
         <div class="help">
           Accepts spaces, hyphens, apostrophes, and common patterns like <span class="mono">McX</span>, <span class="mono">O’X</span>.
+          Prefix a token with <span class="mono">/</span> for direct IPA input (e.g. <span class="mono">/dʒin/</span>); wrap multiple words like <span class="mono">/dʒin luk/</span>.
         </div>
         <div class="inputCounter" id="inputCounter"></div>
       </div>
@@ -719,10 +726,19 @@ When you paste/vend these libraries into this file, keep their MIT notices.
     const tokens = [];
     const notes = [];
 
-    // Extract quoted segments first (preserving quotes in display token).
-    // Quoted text is treated as a single unsplittable token — no space/hyphen/
-    // apostrophe/Mc/O'/camelCase splitting applied. Quotes stripped for
-    // phonemization but preserved in the display token.
+    // ── Pre-pass 1: extract "quoted" segments (existing logic) ──────────────
+    // ── Pre-pass 2: extract /ipa/ and /ipa spans ────────────────────────────
+    // Order: quoted pre-pass first so /ipa/ inside "quotes" is treated as plain text.
+    // Then IPA pre-pass on the remaining plain runs.
+    //
+    // IPA span rules:
+    //   /word1 word2/  — opening / to closing / is one IPA token
+    //   /word          — opening / with no closing / before end-of-text: only the
+    //                    single space-delimited word after / is IPA (trailing slash optional)
+    //
+    // Detection regex: /([^/]+?)(?:\/|$)  — greedy to next / or end of string.
+    // We only enter IPA mode when we see a / that is at start of string or after whitespace.
+
     const runs = [];
     let lastIdx = 0;
     const quotedRe = /"([^"]*)"/g;
@@ -734,12 +750,98 @@ When you paste/vend these libraries into this file, keep their MIT notices.
     }
     if (lastIdx < raw.length) runs.push({ kind: "plain", text: raw.slice(lastIdx) });
 
+    // Helper: extract IPA spans from a plain-text run.
+    // Returns an array of sub-runs: { kind: "plain"|"ipa", text, display }
+    // Helper: extract IPA spans from a plain-text run.
+    // Returns an array of sub-runs: { kind: "plain"|"ipa", text, display }
+    //
+    // Rules:
+    //   /word1 word2/  — opening / to next closing / (not preceded by space) = one IPA token
+    //   /word          — opening / with no closing / before next opener or end = single word only
+    //   /word /next/   — "word" is IPA (no closer before next opener), "/next/" is separate IPA
+    function extractIpaRuns(text){
+      const out = [];
+      let i = 0;
+      while (i < text.length){
+        if (text[i] === "/" && (i === 0 || /\s/.test(text[i - 1]))){
+          const contentStart = i + 1;
+          // Scan for closing slash: stop at the FIRST "/" we encounter.
+          // If it is preceded by whitespace it is a new opener — no close for this span.
+          // If it is not preceded by whitespace it is our closing slash.
+          let closeIdx = -1;
+          for (let k = contentStart; k < text.length; k++){
+            if (text[k] === "/"){
+              if (/\s/.test(text[k - 1])){
+                // New opener encountered — no closing slash for current span
+                break;
+              } else {
+                closeIdx = k;
+                break;
+              }
+            }
+          }
+          if (closeIdx !== -1){
+            // Closing slash found — everything between is one IPA token
+            const ipaContent = text.slice(contentStart, closeIdx).trim();
+            if (ipaContent){
+              out.push({ kind: "ipa", text: ipaContent, display: "/" + ipaContent + "/" });
+            }
+            i = closeIdx + 1;
+          } else {
+            // No closing slash — only the single space-delimited word after / is IPA
+            const rest = text.slice(contentStart);
+            const spaceIdx = rest.search(/\s/);
+            const word = spaceIdx === -1 ? rest : rest.slice(0, spaceIdx);
+            const ipaContent = word.trim();
+            if (ipaContent){
+              out.push({ kind: "ipa", text: ipaContent, display: "/" + ipaContent + "/" });
+            }
+            // Recurse on remainder — may contain further /ipa/ spans or plain text
+            if (spaceIdx !== -1){
+              const afterWord = rest.slice(spaceIdx);
+              if (afterWord.trim()){
+                const sub = extractIpaRuns(afterWord);
+                for (const sr of sub) out.push(sr);
+              }
+            }
+            i = text.length;
+          }
+        } else {
+          // Collect plain text until next candidate opening /
+          let j = i + 1;
+          while (j < text.length){
+            if (text[j] === "/" && (j === 0 || /\s/.test(text[j - 1]))) break;
+            j++;
+          }
+          const plainChunk = text.slice(i, j);
+          if (plainChunk.trim()) out.push({ kind: "plain", text: plainChunk });
+          i = j;
+        }
+      }
+      return out;
+    }
+
+    // Expand plain runs through IPA extractor
+    const expandedRuns = [];
     for (const run of runs){
+      if (run.kind !== "plain"){ expandedRuns.push(run); continue; }
+      const subRuns = extractIpaRuns(run.text);
+      for (const sr of subRuns) expandedRuns.push(sr);
+    }
+
+    for (const run of expandedRuns){
       if (run.kind === "quoted"){
         if (run.text.trim()){
-          // Store as object so downstream knows to skip all splitting.
           tokens.push({ display: run.display, phon: run.text.trim(), quoted: true });
           notes.push(`quoted: ${run.display} treated as single unsplittable token`);
+        }
+        continue;
+      }
+
+      if (run.kind === "ipa"){
+        if (run.text.trim()){
+          tokens.push({ display: run.display, phon: run.text.trim(), directIpa: true });
+          notes.push(`direct IPA input: ${run.display}`);
         }
         continue;
       }
@@ -775,6 +877,7 @@ When you paste/vend these libraries into this file, keep their MIT notices.
   function tokenDisplay(tok){ return typeof tok === "object" ? tok.display : String(tok); }
   function tokenPhon(tok){    return typeof tok === "object" ? tok.phon    : String(tok); }
   function tokenIsQuoted(tok){ return typeof tok === "object" && !!tok.quoted; }
+  function tokenIsDirectIpa(tok){ return typeof tok === "object" && !!tok.directIpa; }
   function dropSpuriousInitialGlideFromIpa(token, ipa){
     const t = String(token || "").trim();
     let s = String(ipa || "").trim();
@@ -2024,6 +2127,33 @@ function lookupOverride(keyOrLine){
     return parts;
   }
 
+  // Find IPA symbols that have no policy mapping (used for direct IPA notes).
+  function findUnmappedIpaSymbols(ipa){
+    const pol = effectiveMappingPolicy || BASE_MAPPING_POLICY;
+    const sm = pol.symbolMap || {};
+    const strip = pol.stripChars || "";
+    const stripped = strip
+      ? ipa.replace(new RegExp("[" + strip.replace(/[-\]\\[]/g, "\\$&") + "]", "g"), " ").trim()
+      : ipa;
+    const unknown = [];
+    let i = 0;
+    const multiKeys = Object.keys(sm).filter(k => k.length > 1).sort((a, b) => b.length - a.length);
+    while (i < stripped.length){
+      if (stripped[i] === " "){ i++; continue; }
+      let matched = false;
+      for (const k of multiKeys){
+        if (stripped.startsWith(k, i)){ i += k.length; matched = true; break; }
+      }
+      if (matched) continue;
+      const ch = stripped[i];
+      if (!Object.prototype.hasOwnProperty.call(sm, ch) && !/[a-z\s]/.test(ch)){
+        if (!unknown.includes(ch)) unknown.push(ch);
+      }
+      i++;
+    }
+    return unknown;
+  }
+
   function tokiponizeNonNumericSegment(segmentText, opts){
     const tk = tokenizeName(segmentText, opts);
     if (!tk.raw) {
@@ -2046,9 +2176,41 @@ function lookupOverride(keyOrLine){
     const dmCodes = [];
 
     for (const token of tk.tokens){
-      const disp   = tokenDisplay(token);
-      const phonIn = tokenPhon(token);
-      const quoted = tokenIsQuoted(token);
+      const disp      = tokenDisplay(token);
+      const phonIn    = tokenPhon(token);
+      const quoted    = tokenIsQuoted(token);
+      const directIpa = tokenIsDirectIpa(token);
+
+      // ── Direct IPA passthrough ─────────────────────────────────────────
+      if (directIpa){
+        // Feed IPA directly into the mapping pipeline — skip text-to-IPA and
+        // skip overrides (user supplied the IPA explicitly).
+        // phonIn is the raw IPA content (slashes already stripped by tokenizeName).
+        const strictMode = !!(opts && opts.strictMode);
+        const stream = mapPhonemesToTp(phonIn, opts);
+        let sylls = syllabifyCVN(stream);
+        sylls = enforceIllegalPairs(sylls, strictMode);
+        const tp = syllsToString(sylls);
+        if (tp) tpWords.push(tp);
+
+        // Phonemes column: mark with directIpa flag so buildIpaCellHtml renders inert.
+        // Format: display→phonIn with a sentinel prefix so renderer can detect it.
+        // Mark segment as direct IPA so renderer and recompute can detect it.
+        phonemeParts.push(`(directIpa)${disp}\u2192${phonIn}`);
+        normalizedParts.push(disp);
+
+        // Notes: dropped symbols if any
+        const dropped = findUnmappedIpaSymbols(phonIn);
+        const baseNote = `direct IPA input: ${disp} \u2192 ${phonIn}`;
+        const dropNote = dropped.length
+          ? `; symbols dropped (no policy mapping): ${dropped.join(", ")}`
+          : "";
+        notes.push(baseNote + dropNote);
+
+        perToken.push({ token: disp, subTokens: [phonIn], perSubToken: [{ token: phonIn, phon: phonIn, tp, notes: [] }], tp });
+        // Do NOT add to dmCodes — double-metaphone on raw IPA is meaningless.
+        continue;
+      }
 
       // Quoted tokens bypass camelCase splitting entirely.
       const subTokens = quoted ? [phonIn] : splitCamelCaseForProcessing(phonIn);
@@ -2062,7 +2224,7 @@ function lookupOverride(keyOrLine){
 
       perToken.push({ token: disp, subTokens, perSubToken, tp: joinedTp });
       normalizedParts.push(quoted ? disp : subTokens.join(" + "));
-      phonemeParts.push(perSubToken.map(x => `${disp}→${x.phon}`).join(" + "));
+      phonemeParts.push(perSubToken.map(x => `${disp}\u2192${x.phon}`).join(" + "));
 
       for (const x of perSubToken){
         for (const n of x.notes) notes.push(`${disp}: ${n}`);
@@ -2070,7 +2232,7 @@ function lookupOverride(keyOrLine){
 
       for (const t of subTokens){
         const dm = doubleMetaphoneToken(t);
-        if (dm && Array.isArray(dm)) dmCodes.push(`${t}→${dm[0]}${dm[1] ? ","+dm[1] : ""}`);
+        if (dm && Array.isArray(dm)) dmCodes.push(`${t}\u2192${dm[0]}${dm[1] ? ","+dm[1] : ""}`);
       }
     }
 
@@ -2917,6 +3079,11 @@ function lookupOverride(keyOrLine){
     const parts = phonemesStr.split(" | ");
     const spans = parts.map((part, idx) => {
       const sep = idx < parts.length - 1 ? ' <span class="ipaInert"> | </span>' : "";
+      // Direct IPA segment — always inert (user supplied IPA, not editable).
+      if (part.startsWith("(directIpa)")){
+        const inner = part.slice("(directIpa)".length);
+        return `<span class="ipaInert" title="Direct IPA input">${escapeHtml(inner)}</span>${sep}`;
+      }
       // Numeric segment: token→(nanpa-linja-n proper name) - inert
       if (part.includes("(nanpa-linja-n proper name)") || /^\d+\u2192/.test(part)){
         return `<span class="ipaInert">${escapeHtml(part)}</span>${sep}`;
@@ -2940,6 +3107,8 @@ function lookupOverride(keyOrLine){
   function recomputeRowResult(r, opts){
     // Re-run pipeline for a single row using IPA overrides where present.
     // r.phonemes format: "Jean→dʒin | Luc→ɫuk"  (original auto IPA)
+    // Direct IPA segments are prefixed with "(directIpa)" and re-fed straight
+    // into mapPhonemesToTp — no override lookup, no re-phonemization.
     // We rebuild tpWords from per-token IPA (overridden or original).
     if (!r.phonemes || r.phonemes === "(override)") return r.result; // can't re-drive
     const strictMode = opts ? opts.strictMode : ($("strict").value === "on");
@@ -2947,6 +3116,19 @@ function lookupOverride(keyOrLine){
     const parts = r.phonemes.split(" | ");
     const tpWords = [];
     for (const part of parts){
+      // Direct IPA segment — feed IPA content directly into mapper.
+      if (part.startsWith("(directIpa)")){
+        const inner = part.slice("(directIpa)".length);
+        const arrowIdx = inner.indexOf("\u2192");
+        if (arrowIdx === -1) continue;
+        const ipa = inner.slice(arrowIdx + 1);
+        const stream = mapPhonemesToTp(ipa, { keepFinalCons });
+        let sylls = syllabifyCVN(stream);
+        sylls = enforceIllegalPairs(sylls, strictMode);
+        const tp = syllsToString(sylls);
+        if (tp) tpWords.push(tp);
+        continue;
+      }
       if (part.includes("(nanpa-linja-n proper name)")){
         // extract the nanpa name from result - just keep it
         const m = part.match(/^(\d+)/);
@@ -2995,6 +3177,10 @@ function lookupOverride(keyOrLine){
       let csvIpa = r.phonemes || "";
       if (csvIpa && csvIpa !== "(override)"){
         const parts = csvIpa.split(" | ").map(part => {
+          // Direct IPA segments: strip sentinel, output as-is (no override lookup).
+          if (part.startsWith("(directIpa)")){
+            return part.slice("(directIpa)".length);
+          }
           const arrowIdx = part.indexOf("\u2192");
           if (arrowIdx === -1) return part;
           const token = part.slice(0, arrowIdx);
@@ -3036,6 +3222,8 @@ function lookupOverride(keyOrLine){
     if (r.phonemes && r.phonemes !== "(override)"){
       const ovNotes = [];
       for (const part of r.phonemes.split(" | ")){
+        // Skip direct IPA segments — not candidates for IPA overrides.
+        if (part.startsWith("(directIpa)")) continue;
         const ai = part.indexOf("→");
         if (ai === -1) continue;
         const tok = part.slice(0, ai);
@@ -3078,6 +3266,8 @@ function lookupOverride(keyOrLine){
             const baseNotes = (r.notes || "").split("; ").filter(n => !n.startsWith("IPA override applied:")).join("; ");
             const ovNotes = [];
             for (const part of r.phonemes.split(" | ")){
+              // Skip direct IPA segments — not candidates for IPA overrides.
+              if (part.startsWith("(directIpa)")) continue;
               const ai = part.indexOf("→");
               if (ai === -1) continue;
               const tok = part.slice(0, ai);
@@ -3332,6 +3522,8 @@ function lookupOverride(keyOrLine){
         const parts = r.phonemes.split(" | ");
         const ovTokens = [];
         for (const part of parts){
+          // Skip direct IPA segments — they are not candidates for IPA overrides.
+          if (part.startsWith("(directIpa)")) continue;
           const ai = part.indexOf("→");
           if (ai === -1) continue;
           const tok = part.slice(0, ai);
