@@ -374,10 +374,6 @@ James Bond 007
             <span>Tokiponize</span>
             <span class="tpLine">o ante e nimi</span>
           </button>
-          <button id="btnLic" class="btnBi" type="button">
-            <span>Credits &amp; Licenses</span>
-            <span class="tpLine">sona pi ilo ante</span>
-          </button>
           <button id="btnClear" class="btnBi" type="button">
             <span>Clear</span>
             <span class="tpLine">o weka</span>
@@ -385,13 +381,42 @@ James Bond 007
         </div>
 
 
-        <!-- Accordion: three sections in pipeline order -->
+        <!-- Accordion: four sections -->
         <div class="accordion" style="margin-top: 12px;">
 
-          <!-- 1. Overrides -->
+          <!-- 1. Export / Import Page Config -->
+          <details id="detailsConfig">
+            <summary>
+              1. Export / Import Page Config
+            </summary>
+            <div class="accordionBody">
+              <div class="help" style="margin-bottom: 8px;">
+                Export all your settings and overrides to a single JSON file, or import a previously exported config.
+                To edit your config: export it, edit the JSON file, then import it back.
+                Includes: UI options, name overrides, IPA overrides, and mapping policy.
+              </div>
+              <div class="row">
+                <button id="btnExportConfig" class="btnBi" type="button" title="Export all settings and overrides to a JSON file">
+                  <span>Export config</span>
+                  <span class="tpLine">o pana e nasin</span>
+                </button>
+                <button id="btnImportConfig" class="btnBi" type="button" title="Import a previously exported config JSON file">
+                  <span>Import config</span>
+                  <span class="tpLine">o kama jo e nasin</span>
+                </button>
+                <button id="btnLic" class="btnBi" type="button">
+                  <span>Credits &amp; Licenses</span>
+                  <span class="tpLine">sona pi ilo ante</span>
+                </button>
+                <input id="fileConfig" class="sr-only" type="file" accept="application/json,.json" />
+              </div>
+            </div>
+          </details>
+
+          <!-- 2. Name Overrides -->
           <details id="detailsOverrides">
             <summary>
-              1. Name Overrides
+              2. Name Overrides
               <span class="pill" id="pillOverrides" style="margin-left:6px;">overrides: defaults 0, custom 0</span>
             </summary>
             <div class="accordionBody">
@@ -404,27 +429,27 @@ James Bond 007
                   <span>Edit overrides</span>
                   <span class="tpLine">o ante e nasin</span>
                 </button>
-                <button id="btnExportOverrides" class="btnBi" type="button" title="Export the effective overrides (defaults + custom)">
-                  <span>Export overrides</span>
-                  <span class="tpLine">o pana e lipu</span>
-                </button>
-                <button id="btnImportOverrides" class="btnBi" type="button" title="Import overrides JSON (replaces your custom overrides)">
-                  <span>Import overrides</span>
-                  <span class="tpLine">o kama jo e lipu</span>
-                </button>
                 <button id="btnResetOverrides" class="btnBi" type="button" title="Clear your custom overrides (defaults remain)">
                   <span>Reset custom</span>
                   <span class="tpLine">o weka e ante</span>
+                </button>
+                <button id="btnExportOverrides" class="btnBi hidden" type="button" title="Export the effective overrides (defaults + custom)">
+                  <span>Export overrides</span>
+                  <span class="tpLine">o pana e lipu</span>
+                </button>
+                <button id="btnImportOverrides" class="btnBi hidden" type="button" title="Import overrides JSON (replaces your custom overrides)">
+                  <span>Import overrides</span>
+                  <span class="tpLine">o kama jo e lipu</span>
                 </button>
                 <input id="fileOverrides" class="sr-only" type="file" accept="application/json,.json" />
               </div>
             </div>
           </details>
 
-          <!-- 2. IPA Overrides -->
+          <!-- 3. IPA Token Overrides -->
           <details id="detailsIpa">
             <summary>
-              2. IPA Token Overrides
+              3. IPA Token Overrides
               <span class="pill" id="pillIpaOverrides" style="margin-left:6px;">IPA overrides: 0</span>
             </summary>
             <div class="accordionBody">
@@ -437,27 +462,27 @@ James Bond 007
                   <span>Edit IPA overrides</span>
                   <span class="tpLine">o ante e nasin</span>
                 </button>
-                <button id="btnExportIpaOverrides" class="btnBi" type="button" title="Export IPA overrides as JSON">
-                  <span>Export IPA</span>
-                  <span class="tpLine">o pana e lipu</span>
-                </button>
-                <button id="btnImportIpaOverrides" class="btnBi" type="button" title="Import IPA overrides JSON">
-                  <span>Import IPA</span>
-                  <span class="tpLine">o kama jo e lipu</span>
-                </button>
                 <button id="btnResetIpaOverrides" class="btnBi" type="button" title="Clear all IPA overrides">
                   <span>Reset IPA</span>
                   <span class="tpLine">o weka e ante</span>
+                </button>
+                <button id="btnExportIpaOverrides" class="btnBi hidden" type="button" title="Export IPA overrides as JSON">
+                  <span>Export IPA</span>
+                  <span class="tpLine">o pana e lipu</span>
+                </button>
+                <button id="btnImportIpaOverrides" class="btnBi hidden" type="button" title="Import IPA overrides JSON">
+                  <span>Import IPA</span>
+                  <span class="tpLine">o kama jo e lipu</span>
                 </button>
                 <input id="fileIpaOverrides" class="sr-only" type="file" accept="application/json,.json" />
               </div>
             </div>
           </details>
 
-          <!-- 3. Policy -->
+          <!-- 4. Symbol Mapping Policy -->
           <details id="detailsPolicy">
             <summary>
-              3. Symbol Mapping Policy
+              4. Symbol Mapping Policy
               <span class="pill" id="pillPolicy" style="margin-left:6px;">policy: default</span>
             </summary>
             <div class="accordionBody">
@@ -469,17 +494,17 @@ James Bond 007
                   <span>Edit policy</span>
                   <span class="tpLine">o ante e nasin</span>
                 </button>
-                <button id="btnExportPolicy" class="btnBi" type="button" title="Export the effective policy (defaults + your custom changes)">
-                  <span>Export policy</span>
-                  <span class="tpLine">o pana e lipu</span>
-                </button>
-                <button id="btnImportPolicy" class="btnBi" type="button" title="Import policy JSON (replaces your custom policy changes)">
-                  <span>Import policy</span>
-                  <span class="tpLine">o kama jo e lipu</span>
-                </button>
                 <button id="btnResetPolicy" class="btnBi" type="button" title="Reset your custom policy changes (defaults remain)">
                   <span>Reset policy</span>
                   <span class="tpLine">o weka e ante</span>
+                </button>
+                <button id="btnExportPolicy" class="btnBi hidden" type="button" title="Export the effective policy (defaults + your custom changes)">
+                  <span>Export policy</span>
+                  <span class="tpLine">o pana e lipu</span>
+                </button>
+                <button id="btnImportPolicy" class="btnBi hidden" type="button" title="Import policy JSON (replaces your custom policy changes)">
+                  <span>Import policy</span>
+                  <span class="tpLine">o kama jo e lipu</span>
                 </button>
                 <input id="filePolicy" class="sr-only" type="file" accept="application/json,.json" />
               </div>
@@ -510,8 +535,8 @@ James Bond 007
             <tr>
               <th style="min-width:220px;">Toki Pona Result</th>
               <th style="min-width:280px;">Phonemes / IPA (best effort) <span style="font-weight:400;font-style:italic;">(Editable)</span></th>
-              <th style="min-width:220px;">Original</th>
               <th style="min-width:220px;">Normalized Tokens</th>
+              <th style="min-width:220px;">Original</th>
               <th style="min-width:260px;">Notes</th>
             </tr>
           </thead>
@@ -551,6 +576,16 @@ James Bond 007
           values are Tokiponized forms (without "jan " prefix).
           Built-in defaults are not shown here — only your custom additions.
         </div>
+        <div class="help" style="margin: 0 0 10px;">
+          <strong>Example:</strong>
+          <pre class="mono" style="margin: 6px 0 0; padding: 8px 10px; background: rgba(0,0,0,0.04); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; white-space: pre;">{
+  "sinead": "sineta",
+  "ciarán": "sijawan",
+  "old macdonald": "makitonapo"
+}</pre>
+          Keys match whole input lines or individual tokens, case-insensitively.
+          Values should be valid Tokiponized syllables (no "jan " prefix needed).
+        </div>
         <label for="overridesText">Custom Overrides JSON</label>
         <textarea id="overridesText" class="mono" spellcheck="false" style="min-height: 260px;"></textarea>
         <div class="row" style="margin-top: 10px;">
@@ -558,8 +593,8 @@ James Bond 007
           <button id="btnRevertOverrides" type="button">Revert to saved</button>
         </div>
         <div class="help" style="margin-top: 10px;">
-          Keys match case-insensitively against whole input lines and individual tokens.
-          Values should be valid Tokiponized forms. Built-in defaults remain active regardless of what you put here.
+          Built-in defaults remain active regardless of what you put here.
+          Removing a key reverts that name to automatic Tokiponization.
         </div>
       </div>
     </div>
@@ -606,9 +641,19 @@ James Bond 007
       </div>
       <div class="modalBody">
         <div class="help" style="margin: 0 0 10px;">
-          Edit your IPA token overrides directly as JSON. Keys are normalised tokens (e.g. <span class="mono">"jean"</span>),
-          values are IPA strings (e.g. <span class="mono">"ʒɑ̃"</span>).
+          Edit your IPA token overrides directly as JSON. Keys are the English token (normalised to lowercase),
+          values are IPA strings that replace the auto-generated pronunciation for that token.
           Changes here are equivalent to editing via the table editor.
+        </div>
+        <div class="help" style="margin: 0 0 10px;">
+          <strong>Example:</strong>
+          <pre class="mono" style="margin: 6px 0 0; padding: 8px 10px; background: rgba(0,0,0,0.04); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; white-space: pre;">{
+  "jean": "ʒdan",
+  "sinead": "ʃɪneɪd",
+  "niamh": "niːv"
+}</pre>
+          Keys are the plain English token in lowercase. Values are IPA symbols —
+          use the IPA editor (click any underlined segment in the results table) to look up the right symbols.
         </div>
         <label for="ipaOverridesText">IPA Overrides JSON</label>
         <textarea id="ipaOverridesText" class="mono" spellcheck="false" style="min-height: 260px;"></textarea>
@@ -617,7 +662,6 @@ James Bond 007
           <button id="btnRevertIpaOverrides" type="button">Revert to saved</button>
         </div>
         <div class="help" style="margin-top: 10px;">
-          Keys are normalised token strings. Values are IPA strings exactly as you would enter them in the IPA editor.
           Removing a key clears that token's override and reverts to auto-generated IPA.
         </div>
       </div>
@@ -934,7 +978,7 @@ When you paste/vend these libraries into this file, keep their MIT notices.
   // and does NOT touch the IPA→TP symbol map (which runs later on IPA output).
   function stripDiacriticsForPhonemizer(s){
     try {
-      return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+      return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     } catch {
       return s; // normalize not available — return unchanged
     }
@@ -3232,7 +3276,7 @@ function lookupOverride(keyOrLine){
       alert("No results to export yet. Run Tokiponize first.");
       return;
     }
-    const headers = ["toki_pona_result","phonemes_ipa","original","normalized","notes"];
+    const headers = ["toki_pona_result","phonemes_ipa","normalized","original","notes"];
     const lines = [headers.join(",")];
     for (const r of LAST_ROWS){
       // For CSV, resolve the effective IPA (plain text, with overrides applied)
@@ -3256,8 +3300,8 @@ function lookupOverride(keyOrLine){
       const row = [
         _csvEscapeCell(r.result),
         _csvEscapeCell(csvIpa),
-        _csvEscapeCell(r.original),
         _csvEscapeCell(r.normalized),
+        _csvEscapeCell(r.original),
         _csvEscapeCell(r.notes),
       ];
       lines.push(row.join(","));
@@ -3359,8 +3403,8 @@ function lookupOverride(keyOrLine){
       tr.innerHTML = `
         <td class="mono"><b>${escapeHtml(r.result)}</b></td>
         <td class="mono">${ipaCellHtml}</td>
-        <td>${escapeHtml(r.original)}</td>
         <td class="mono">${escapeHtml(r.normalized)}</td>
+        <td>${escapeHtml(r.original)}</td>
         <td>${escapeHtml(notesText)}</td>
       `;
       wireRowSpans(tr, r);
@@ -3654,6 +3698,167 @@ function lookupOverride(keyOrLine){
     if (tb && tb.children.length) runTokiponize();
   }
 
+  // ─── Config export / import ──────────────────────────────────────────────
+  // Export: bundles all user-customisable state into one JSON file with a
+  //   type field so the importer can unambiguously identify it.
+  // Import: strict — type must be "tokiponize-config" and all four keys
+  //   (ui, overrides, ipaOverrides, mappingPolicy) must be present.
+  //   If not, the user is told to export first, edit, then re-import.
+
+  function exportConfig(){
+    const ui = {
+      outputStyle:   $("outputStyle")?.value   ?? "plain",
+      boundary:      $("boundary")?.value      ?? "preserve",
+      strict:        $("strict")?.value        ?? "on",
+      keepFinalCons: !!$("keepFinalCons")?.checked,
+    };
+
+    // Full merged overrides (defaults + custom).
+    const overrides = Object.assign({}, effectiveOverrides?.soft || {});
+
+    // Full effective mapping policy — never null so the config is self-contained.
+    const mappingPolicy = Object.assign({}, effectiveMappingPolicy || BASE_MAPPING_POLICY);
+
+    const payload = {
+      type: "tokiponize-config",
+      version: 1,
+      ui,
+      overrides,
+      ipaOverrides:  Object.assign({}, userIpaOverrides || {}),
+      mappingPolicy,
+    };
+
+    downloadTextFile(
+      "tokiponize-config-" + new Date().toISOString().slice(0,10) + ".json",
+      JSON.stringify(payload, null, 2)
+    );
+  }
+
+  async function importConfig(file){
+    let parsed;
+    try {
+      const text = await file.text();
+      parsed = JSON.parse(text);
+    } catch {
+      alert("Could not read config file: invalid JSON.");
+      return;
+    }
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)){
+      alert("Config file must be a JSON object.");
+      return;
+    }
+
+    // ── Strict type check ───────────────────────────────────────────────────
+    if (parsed.type !== "tokiponize-config"){
+      alert(
+        "This file is not a Tokiponize config file.\n\n" +
+        "To create one: click Export config, edit the downloaded JSON file " +
+        "as needed, then click Import config to load it."
+      );
+      return;
+    }
+
+    // ── All four keys must be present ───────────────────────────────────────
+    const required = ["ui", "overrides", "ipaOverrides", "mappingPolicy"];
+    const missing = required.filter(k => !(k in parsed));
+    if (missing.length){
+      alert(
+        "Config file is missing required fields: " + missing.join(", ") + ".\n\n" +
+        "To create a valid config: click Export config, edit the downloaded " +
+        "JSON file as needed, then click Import config to load it."
+      );
+      return;
+    }
+
+    // ── UI options ──────────────────────────────────────────────────────────
+    if (parsed.ui && typeof parsed.ui === "object"){
+      const ui = parsed.ui;
+      if (ui.outputStyle !== undefined) _setSelectIfOption("outputStyle", ui.outputStyle);
+      if (ui.boundary    !== undefined) _setSelectIfOption("boundary",    ui.boundary);
+      if (ui.strict      !== undefined){
+        _setSelectIfOption("strict", ui.strict);
+        updateBaseMappingPolicyFromUi();
+      }
+      if (ui.keepFinalCons !== undefined){
+        const kfc = $("keepFinalCons");
+        if (kfc) kfc.checked = !!ui.keepFinalCons;
+      }
+      saveUiOptionsToStorage();
+    }
+
+    // ── Name overrides ──────────────────────────────────────────────────────
+    // Partition imported overrides back into default vs custom:
+    //   key in DEFAULT_OVERRIDES AND value matches default → skip (already baked in)
+    //   key in DEFAULT_OVERRIDES AND value differs         → store (user changed it)
+    //   key not in DEFAULT_OVERRIDES                       → store (pure custom)
+    if (typeof parsed.overrides === "object" && !Array.isArray(parsed.overrides)){
+      const newCustom = {};
+      for (const [k, v] of Object.entries(parsed.overrides)){
+        if (!k || typeof v !== "string") continue;
+        const defaultVal = DEFAULT_OVERRIDES[k];
+        if (defaultVal !== undefined && defaultVal === v) continue;
+        newCustom[k] = v;
+      }
+      userOverridesRaw = newCustom;
+      userOverrides = normalizeOverrideMap(userOverridesRaw);
+      recomputeEffectiveOverrides();
+      updateOverridesPill();
+      try { await _dbPut(OVERRIDE_DB_KEY, userOverridesRaw); } catch {}
+    }
+
+    // ── IPA overrides ───────────────────────────────────────────────────────
+    if (typeof parsed.ipaOverrides === "object" && !Array.isArray(parsed.ipaOverrides)){
+      const newIpa = {};
+      for (const [k, v] of Object.entries(parsed.ipaOverrides)){
+        if (typeof k === "string" && typeof v === "string") newIpa[k] = v;
+      }
+      userIpaOverrides = newIpa;
+      updateIpaPill();
+      try { await _dbPut(IPA_DB_KEY, userIpaOverrides); } catch {}
+    }
+
+    // ── Mapping policy ──────────────────────────────────────────────────────
+    // Exported policy is always the full effective policy so we store it
+    // directly as userMappingPolicy to exactly reproduce exported behaviour.
+    if (typeof parsed.mappingPolicy === "object" && !Array.isArray(parsed.mappingPolicy)){
+      const normalised = normalizeMappingPolicy(parsed.mappingPolicy);
+      userMappingPolicy = (normalised && Object.keys(normalised).length) ? normalised : null;
+      recomputeEffectiveMappingPolicy();
+      updatePolicyPill();
+      try {
+        if (userMappingPolicy) await _dbPut(POLICY_DB_KEY, userMappingPolicy);
+        else await _dbDel(POLICY_DB_KEY);
+      } catch {}
+    }
+
+    // Re-run if results already on screen.
+    const tb = $("tbody");
+    if (tb && tb.children && tb.children.length) runTokiponize();
+
+    // Brief non-blocking confirmation.
+    const sp = $("btnImportConfig")?.querySelector("span");
+    if (sp){ const orig = sp.textContent; sp.textContent = "Imported ✓"; setTimeout(() => { sp.textContent = orig; }, 2000); }
+  }
+
+  function wireConfigUi(){
+    const btnExp = $("btnExportConfig");
+    const btnImp = $("btnImportConfig");
+    const fileIn = $("fileConfig");
+
+    if (btnExp) btnExp.addEventListener("click", () => exportConfig());
+
+    if (btnImp && fileIn){
+      btnImp.addEventListener("click", () => fileIn.click());
+      fileIn.addEventListener("change", async () => {
+        const file = fileIn.files && fileIn.files[0];
+        fileIn.value = "";
+        if (!file) return;
+        await importConfig(file);
+      });
+    }
+  }
+
   (async function init(){
     loadUiOptionsFromStorage();
     updateBaseMappingPolicyFromUi();
@@ -3664,6 +3869,7 @@ function lookupOverride(keyOrLine){
     await loadUserMappingPolicyFromDb();
     await loadInputTextFromDb();
 
+    wireConfigUi();
     wireOverridesUi();
     wireIpaOverridesUi();
     wirePolicyUi();
