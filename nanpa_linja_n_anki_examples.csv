@@ -1,52 +1,51 @@
-concatinate rule,write out each number name then keep the first ne- and drop start ne- and end -n from every number except last then concatenate eg. 23 -> neten nesen -> netesen
-large block rule,every block of a large number ends with -n
-0,nenin
-nenin,0
-1,newen
-newen,1
-2,neten
-neten,2
-3,nesen
-nesen,3
-4,nenan
-nenan,4
-5,nelen
-nelen,5
-6,nenun
-nenun,6
-7,nemen
-nemen,7
-8,nepen
-nepen,8
-9,nejen
-nejen,9
-eke,thousand marker
-"2,345",neten ene senalen
-thousand marker,eke
-eke,million marker
-million marker,eke
-"1,234,567",newen eke tesenan eke lenumen
-eke,billion marker
-"30,567,209,481",senin eke lenumen eke tenijen eke napewen
-billion marker,eke
-eken,exact thousand
-"73,000",nemesen eken
-exact thousand,eken
-ekeken,exact million
-"492,000,000",nenajeten ekeken
-exact million,ekeken
-ekekeken,exact billion
-"33,000,000,000",nesesen ekekeken
-exact billion,ekekeken
-ene,breakup long sequences of digits more parts to follow
-breakup long sequences of digits more parts to follow,ene
-"243-555-0179",netenasen ene lelelen ene niwemejen
-netenasen ene lelelen ene niwemejen,"243-555-0179"
-one,decimal separator
-decimal separator,one
+concatinate rule,always start a nanpa-linja-n cartouche proper name with ne- and in the middle concatenate smaller pieces to make larger sequences and always end cartouche with -n
+nanpa-linja-n cartouche proper name rule,a nanpa-linja-n cartouche proper name can naturally split into separate words at numeric delimiters
+0,ni - Nenin
+ni,0
+1,we - Newen
+we,1
+2,te - Neten
+te,2
+3,se - Nesen
+se,3
+4,na - Nenan
+na,4
+5,le - Nelen
+le,5
+6,nu - Nenun
+nu,6
+7,me - Nemen
+me,7
+8,pe - Nepen
+pe,8
+9,je - Nejen
+je,9
+neke,thousand marker
+"2,345",Neten Ene Senalen
+thousand marker,neke
+neke,million marker
+million marker,neke
+"1,234,567",Newen Eke Tesenan Eke Lenumen
+neke,billion marker
+"30,567,209,481",Nesenin Eke Lenumen Eke Tenijen Eke Napewen
+billion marker,neke
+neken,exact thousand
+"73,000",Nemesen Eken
+exact thousand,neken
+nekeken,exact million
+"492,000,000",Nenajeten Ekeken
+exact million,nekeken
+nekekeken,exact billion
+"33,000,000,000",Nesesen Ekekeken
+exact billion,nekekeken
+nene,break up long digit sequences with no change in value
+breakup long sequences of digits more parts to follow,nene
+"243-555-0179",Netenasen Ene Lelelen Ene Niwemejen
+none,decimal separator
+decimal separator,none
 12.04,neweten one ninan
-ono,fraction separator
-fraction separator,ono
+nono,fraction separator
+fraction separator,nono
 5/8,nelen ono pen
 no,minus marker
 minus marker,no

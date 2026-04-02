@@ -2201,6 +2201,519 @@ function lookupOverride(keyOrLine){
     return out;
   }
 
+  // ─── Date / time detection helpers ──────────────────────────────────────────
+  //
+  // Strategy: before scanning for dates/times we blank out IPA spans (/…/) and
+  // quoted spans ("…") so that colons or slashes inside them are invisible to
+  // the date/time regexes.  The blanked string has the same length as the
+  // original so character offsets are preserved.
+  //
+  // IPA-span rule (mirrors extractIpaRuns):
+  //   A "/" at position 0 or preceded by whitespace opens a span.
+  //   Closing: next "/" NOT preceded by whitespace, else first space-delimited word only.
+  //
+  // We are intentionally conservative: when in doubt we blank more, because a
+  // missed date/time detection is far preferable to corrupting IPA input.
+
+  function blankIpaAndQuotedSpans(s){
+    const arr = s.split(""); // mutable char array, same length
+    let i = 0;
+
+    // Pre-pass: blank "quoted" spans first (same order as tokenizeName).
+    const quotedRe = /"([^"]*)"/g;
+    let qm;
+    while ((qm = quotedRe.exec(s)) !== null){
+      for (let k = qm.index; k < qm.index + qm[0].length; k++) arr[k] = " ";
+    }
+
+    // IPA pre-pass on original string positions (post-quote blanking we still
+    // scan the original `s` for "/" positions; arr is only the output).
+    //
+    // Closing-slash rule: scan forward from contentStart for all "/" chars that
+    // are NOT preceded by whitespace — take the LAST such one as the closing
+    // slash, stopping when we hit a "/" preceded by whitespace (new opener).
+    // This correctly handles /3/4/ and /dʒan/ as single complete spans.
+    i = 0;
+    while (i < s.length){
+      if (s[i] === "/" && (i === 0 || /\s/.test(s[i - 1]))){
+        const spanStart = i;
+        const contentStart = i + 1;
+        let closeIdx = -1;
+        for (let k = contentStart; k < s.length; k++){
+          if (s[k] === "/"){
+            if (/\s/.test(s[k - 1])){
+              break; // new opener — stop, use whatever closeIdx we have so far
+            } else {
+              closeIdx = k; // keep scanning — this might not be the last one
+            }
+          }
+        }
+        if (closeIdx !== -1){
+          // Blank from opening "/" to final closing "/" inclusive.
+          for (let k = spanStart; k <= closeIdx; k++) arr[k] = " ";
+          i = closeIdx + 1;
+        } else {
+          // No closing slash — blank only the single space-delimited word after "/".
+          const rest = s.slice(contentStart);
+          const spaceIdx = rest.search(/\s/);
+          const wordLen = spaceIdx === -1 ? rest.length : spaceIdx;
+          for (let k = spanStart; k < contentStart + wordLen; k++) arr[k] = " ";
+          i = contentStart + wordLen;
+        }
+      } else {
+        i++;
+      }
+    }
+
+    return arr.join("");
+  }
+
+  // ─── Number parsing pipeline (ported from renderer.html) ────────────────────
+  // Pure functions only — no DOM access. IPA-blanking is handled separately
+  // by blankIpaAndQuotedSpans above, which is specific to this page.
+
+  // Vulgar fraction unicode characters → [numerator, denominator].
+  const _VULGAR_FRACTIONS = new Map([
+    ["\u00BC",[1,4]], ["\u00BD",[1,2]], ["\u00BE",[3,4]],
+    ["\u2150",[1,7]], ["\u2151",[1,9]], ["\u2152",[1,10]],
+    ["\u2153",[1,3]], ["\u2154",[2,3]],
+    ["\u2155",[1,5]], ["\u2156",[2,5]], ["\u2157",[3,5]], ["\u2158",[4,5]],
+    ["\u2159",[1,6]], ["\u215A",[5,6]],
+    ["\u215B",[1,8]], ["\u215C",[3,8]], ["\u215D",[5,8]], ["\u215E",[7,8]],
+    ["\u2189",[0,3]],
+  ]);
+
+  const _DIGIT_TO_TOKEN = {
+    "0":"NI","1":"WE","2":"TE","3":"SE","4":"NA",
+    "5":"LE","6":"NU","7":"ME","8":"PE","9":"JE",
+  };
+
+  const _OPCHAR_TO_TOKEN = { ".":"NONE", "-":"NO", "/":"NONO", "+":"NONONO" };
+
+  const _TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","OK","NE","NO"];
+
+  const _DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
+
+  function _normalizeDateTimeInput(raw){
+    return String(raw || "")
+      .replace(/\s+/g, "")
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]/g, "-")
+      .replace(/[\u2044\u2215\uFF0F]/g, "/")
+      .replace(/[\uFF1A]/g, ":");
+  }
+
+  function _normalizeLooseSeparators(raw){
+    if (raw == null) return "";
+    let s = String(raw);
+    const isNeg = s.startsWith("-");
+    const head = isNeg ? "-" : "";
+    const rest = isNeg ? s.slice(1) : s;
+    let r = rest.replace(/\s+/g, " ").replace(/-+/g, "-");
+    return (head + r).trim();
+  }
+
+  function _groupFractionDigitsOnly(s, decimalChar, groupSize, sepChar){
+    const str = String(s);
+    const idx = str.indexOf(decimalChar);
+    if (idx < 0) return str;
+    const left = str.slice(0, idx);
+    const right = str.slice(idx + 1);
+    let i = 0;
+    while (i < right.length && /[0-9]/.test(right[i])) i++;
+    const fracDigits = right.slice(0, i);
+    const suffix = right.slice(i);
+    if (fracDigits.length <= groupSize) return str;
+    if (sepChar && fracDigits.includes(sepChar)) return str;
+    const groups = [];
+    for (let j = 0; j < fracDigits.length; j += groupSize) groups.push(fracDigits.slice(j, j + groupSize));
+    return `${left}${decimalChar}${groups.join(sepChar)}${suffix}`;
+  }
+
+  function _normalizeVulgarFractionInput(raw){
+    if (raw == null) return "";
+    let s = String(raw).trim();
+    if (!s) return s;
+    let hasPercent = false;
+    if (/%\s*$/.test(s)){ hasPercent = true; s = s.replace(/%\s*$/, "").trim(); if (!s) throw new Error("Percent sign must follow a number."); }
+    s = s.replace(/\u2044/g, "/");
+    let found = null;
+    for (const ch of s){ if (_VULGAR_FRACTIONS.has(ch)){ found = ch; break; } }
+    if (!found) return hasPercent ? (s + "%") : s;
+    const lastChar = s.slice(-1);
+    if (!_VULGAR_FRACTIONS.has(lastChar)) throw new Error("Vulgar fraction characters must appear at the end (e.g. 9¾).");
+    const [num, den] = _VULGAR_FRACTIONS.get(lastChar);
+    const prefixRaw = s.slice(0, -1).trim();
+    let normalized;
+    if (!prefixRaw){ normalized = `${num}/${den}`; }
+    else {
+      const isNeg = prefixRaw.startsWith("-");
+      const prefix = isNeg ? prefixRaw.slice(1).trim() : prefixRaw;
+      if (!prefix) normalized = `-${num}/${den}`;
+      else normalized = isNeg ? `-${prefix}+${num}/${den}` : `${prefix}+${num}/${den}`;
+    }
+    return hasPercent ? (normalized + "%") : normalized;
+  }
+
+  function _tokenizeNanpaCaps(caps){
+    if (caps == null) throw new Error("caps must be a string");
+    const s = String(caps).trim().toUpperCase();
+    if (!s) throw new Error("caps is empty");
+    if (!s.endsWith("N")) throw new Error("nanpa-caps must end with 'N'");
+    if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
+    const tokens = [];
+    let i = 0;
+    const n = s.length;
+    while (i < n - 1){
+      let matched = null;
+      for (const pref of _TOKEN_PREFIXES){ if (s.startsWith(pref, i)){ matched = pref; break; } }
+      if (matched != null){ tokens.push(matched); i += matched.length; continue; }
+      if (i + 2 <= n - 1){
+        const two = s.slice(i, i + 2);
+        if (_DIGIT_TOKENS.has(two)){ tokens.push(two); i += 2; continue; }
+      }
+      throw new Error(`Invalid tokenization at position ${i} in "${caps}"`);
+    }
+    tokens.push("N");
+    return tokens;
+  }
+
+  function _encodeDigitsOnly(digits){
+    const s = String(digits || "");
+    if (!/^\d+$/.test(s)) throw new Error(`Expected only digits, got "${digits}"`);
+    let out = "";
+    for (const ch of s){
+      const tok = _DIGIT_TO_TOKEN[ch];
+      if (!tok) throw new Error(`Unsupported digit "${ch}"`);
+      out += tok;
+    }
+    return out;
+  }
+
+  function _tryParseTimeParts(raw){
+    const s = String(raw || "").trim();
+    const m = s.match(/^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/);
+    if (!m) return null;
+    const hh = parseInt(m[1], 10);
+    if (!Number.isFinite(hh) || hh < 0 || hh > 23) return null;
+    return { hhStr: m[1], mmStr: m[2], ssStr: m[3] != null ? m[3] : null };
+  }
+
+  function _tryParseDateParts(raw){
+    const s = _normalizeDateTimeInput(raw);
+    const m = s.match(/^(\d{4})([:\/-])(\d{2})\2(\d{2})$/);
+    if (!m) return null;
+    const mm = parseInt(m[3], 10);
+    const dd = parseInt(m[4], 10);
+    if (!(mm >= 1 && mm <= 12)) return null;
+    if (!(dd >= 1 && dd <= 31)) return null;
+    return { yyyyStr: m[1], mmStr: m[3], ddStr: m[4] };
+  }
+
+  function _timeStrToNanpaCaps(raw){
+    const parts = _tryParseTimeParts(raw);
+    if (!parts) return null;
+    let caps = "NE" + _encodeDigitsOnly(parts.hhStr) + "NEKE" + _encodeDigitsOnly(parts.mmStr);
+    if (parts.ssStr != null) caps += "NEKE" + _encodeDigitsOnly(parts.ssStr);
+    return caps + "N";
+  }
+
+  function _dateStrToNanpaCaps(raw){
+    const parts = _tryParseDateParts(raw);
+    if (!parts) return null;
+    return "NE" + _encodeDigitsOnly(parts.yyyyStr) + "NEKE" + _encodeDigitsOnly(parts.mmStr) + "NEKE" + _encodeDigitsOnly(parts.ddStr) + "N";
+  }
+
+  // Full general-purpose number encoder — handles integers, decimals, negatives,
+  // thousands grouping, magnitude suffixes (K/M/B), fractions, mixed numbers,
+  // percentages, vulgar fraction unicode chars, and loose separators.
+  // Ported directly from renderer.html numberStrToNanpaCaps.
+  function _numberStrToNanpaCaps(s, { thousandsChar = ",", groupFractionTriplets = true, fractionGroupSize = 3 } = {}){
+    if (s == null) throw new Error("s must be a string");
+    let raw = _normalizeLooseSeparators(String(s));
+    if (!raw) throw new Error("Empty value cannot be encoded");
+
+    let hasPercent = false;
+    if (/%\s*$/.test(raw)){ hasPercent = true; raw = raw.replace(/%\s*$/, "").trim(); if (!raw) throw new Error("Percent sign must follow a number."); }
+
+    if (groupFractionTriplets) raw = _groupFractionDigitsOnly(raw, ".", fractionGroupSize, thousandsChar);
+
+    function stripFinalTerminator(segCaps){ if (!segCaps) return segCaps; if (!segCaps.endsWith("N")) throw new Error("Segment caps did not end with N"); return segCaps.slice(0,-1); }
+    function applyPercent(capsOut){ if (!hasPercent) return capsOut; return capsOut.slice(0,-1) + "OKN"; }
+
+    function encodeSingleSegment(segment, includeInitialNe){
+      let seg = String(segment).trim();
+      if (seg === "") throw new Error("Empty numeric segment");
+      if (seg.slice(0,1).toUpperCase() === "N") seg = seg.slice(1).trim();
+      const out = [];
+      if (includeInitialNe) out.push("NE");
+
+      function pushNene(){ if (out.length > 0 && out[out.length-1] === "NENE") return; out.push("NENE"); }
+
+      if (seg.startsWith("-")){ if (seg.startsWith("-.")) seg = "-0." + seg.slice(2); out.push("NO"); seg = seg.slice(1).trim(); }
+
+      let magnKeCount = 0;
+      if (seg.length > 0){
+        const last = seg.slice(-1).toUpperCase();
+        if (last === "K" || last === "T" || last === "M" || last === "B"){
+          magnKeCount = (last === "K" || last === "T") ? 1 : (last === "M") ? 2 : 3;
+          seg = seg.slice(0,-1).trim();
+          if (!seg) throw new Error("Missing numeric part before magnitude suffix");
+        }
+      }
+
+      if ((seg.match(/\./g)||[]).length > 1) throw new Error("Multiple decimals in segment");
+
+      let intPart = seg, fracPart = "", hasDecimal = false;
+      if (seg.includes(".")){ [intPart, fracPart] = seg.split(".", 2); hasDecimal = true; }
+
+      let ip = String(intPart||"").trim();
+      if (ip === "") ip = "0";
+
+      if (/[ -]/.test(ip)){
+        let ip2 = ip.replace(/\s+/g," ").replace(/-+/g,"-").trim();
+        ip2 = ip2.replace(/^[ -]+/,"").replace(/[ -]+$/,"");
+        if (ip2 === "") ip2 = "0";
+        for (const ch of ip2){
+          if (/\d/.test(ch)){ out.push(_DIGIT_TO_TOKEN[ch]); continue; }
+          if (ch === " " || ch === "-"){ pushNene(); continue; }
+          if (thousandsChar && ch === thousandsChar){ pushNene(); continue; }
+          throw new Error(`Unsupported character "${ch}" in integer part`);
+        }
+      } else {
+        const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
+        for (const g of groups){ if (g === "" || !/^\d+$/.test(g)) throw new Error(`Invalid integer group "${g}"`); }
+        let trailingZeroGroups = 0;
+        for (let k = groups.length - 1; k >= 1; k--){ if (groups[k].length === 3 && groups[k] === "000") trailingZeroGroups++; else break; }
+        for (const d of groups[0]) out.push(_DIGIT_TO_TOKEN[d]);
+        const lastNonTrailing = groups.length - trailingZeroGroups;
+        for (let idx = 1; idx < lastNonTrailing; idx++){ out.push("NEKE"); for (const d of groups[idx]) out.push(_DIGIT_TO_TOKEN[d]); }
+        if (trailingZeroGroups > 0){ out.push("NE"); for (let i = 0; i < trailingZeroGroups; i++) out.push("KE"); }
+      }
+
+      if (hasDecimal){
+        out.push(_OPCHAR_TO_TOKEN["."]);
+        for (const ch of fracPart){
+          if (ch === "_") continue;
+          if (ch === " " || ch === "-"){ pushNene(); continue; }
+          if (thousandsChar && ch === thousandsChar){ pushNene(); continue; }
+          if (/\d/.test(ch)){ out.push(_DIGIT_TO_TOKEN[ch]); continue; }
+          throw new Error(`Unsupported character "${ch}" in fraction part`);
+        }
+      }
+
+      if (magnKeCount > 0){ out.push("NE"); for (let i = 0; i < magnKeCount; i++) out.push("KE"); }
+      out.push("N");
+      return out.join("");
+    }
+
+    // Mixed number: integer + fraction  e.g. 9+3/4
+    if (raw.includes("+")){ const [left, right] = raw.split("+", 2); let lc = encodeSingleSegment(left, true); if (!right.includes("/")) throw new Error("Mixed number must contain '/' after '+'"); const [num, den] = right.split("/", 2); let nc = encodeSingleSegment(num, false); let dc = encodeSingleSegment(den, false); lc = stripFinalTerminator(lc); nc = stripFinalTerminator(nc); return applyPercent(lc + "NONONO" + nc + "NONO" + dc); }
+
+    // Simple fraction: num/den
+    if (raw.includes("/")){ const [num, den] = raw.split("/", 2); let nc = encodeSingleSegment(num, true); let dc = encodeSingleSegment(den, false); nc = stripFinalTerminator(nc); return applyPercent(nc + "NONO" + dc); }
+
+    // Plain integer / decimal / magnitude suffix
+    return applyPercent(encodeSingleSegment(raw, true));
+  }
+
+  // Convert nanpa-caps to a spaced Latin proper name — ported directly from
+  // renderer.html splitCartoucheCapsLetters.  Produces space-separated syllable
+  // groups that match what the renderer displays (e.g. "nese none wena wen elen").
+  function _splitCartoucheCapsLetters(caps){
+    if (caps == null) throw new Error("caps must be a string");
+    const s0 = String(caps).trim().toUpperCase();
+    if (!s0) return "";
+    if (s0.length < 3 || !s0.startsWith("NE") || !s0.endsWith("N"))
+      throw new Error(`Not a valid nanpa-caps label: "${caps}"`);
+
+    let outStr = "";
+    let i = 0;
+    const end = s0.length - 1;
+
+    while (i < end){
+      if (i + 2 > end) throw new Error(`Malformed caps at position ${i} in "${caps}"`);
+      const pair = s0.slice(i, i + 2);
+      const nextPair = (i + 4 <= end) ? s0.slice(i + 2, i + 4) : null;
+
+      if (pair === "NE" && nextPair === "NO" && i === 0){ outStr += "neno "; i += 4; continue; }
+      if (pair === "NE" && nextPair === "NE"){ outStr += "n "; outStr += "ene "; i += 4; continue; }
+      if (pair === "NO" && nextPair === "NE" && i > 0){ outStr += "n "; outStr += "one "; i += 4; continue; }
+
+      if (pair === "NO" && nextPair === "NO" && i > 0){
+        outStr += "n ";
+        outStr += "o";
+        let countNo = 1; let j = i;
+        while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "NO"){ countNo++; j += 2; }
+        outStr += "no".repeat(countNo);
+        if ((i + 2 * countNo) < end) outStr += " ";
+        i += 2 + 2 * countNo; continue;
+      }
+
+      if (pair === "NE" && nextPair === "KE"){
+        outStr += "n ";
+        outStr += "e";
+        let countKe = 1; let j = i;
+        while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE"){ countKe++; j += 2; }
+        outStr += "ke".repeat(countKe);
+        if ((i + 2 * countKe) < end) outStr += " ";
+        i += 2 + 2 * countKe; continue;
+      }
+
+      if (pair === "OK"){
+        if (i > 0 && !/\s$/.test(outStr)) outStr += " ";
+        if (i > 0) outStr += "n ";
+        outStr += "oke";
+      } else {
+        outStr += pair.toLowerCase();
+      }
+      i += 2;
+    }
+
+    outStr = outStr.replace(/\s+n(?=\s|$)/g, "n");
+    outStr = outStr.trim();
+    outStr += "n";
+    return outStr;
+  }
+
+  // Convert nanpa-caps string to spaced proper name.
+  function _nanpaCapsToProperName(caps){
+    try { return _splitCartoucheCapsLetters(caps); }
+    catch { return String(caps || "").toLowerCase(); }
+  }
+
+  // Scan `shadow` (blanked string) for date/time/decimal patterns; return sorted
+  // array of { kind:"date"|"time"|"decimal", match, index, end, caps } using offsets
+  // into the original string.
+  // Priority: date > time > decimal (decimal cannot overlap a date or time region).
+  // Ported from sitelen-renderer findDecimalSequencesWithCaps.
+  function _findDateTimeRegions(shadow){
+    const regions = [];
+
+    // ── Dates: YYYY/MM/DD, YYYY-MM-DD, YYYY:MM:DD ────────────────────────
+    const dateRe = /(^|[^0-9])(\d{4}[/:\-]\d{2}[/:\-]\d{2})(?!\d)/g;
+    let dm;
+    while ((dm = dateRe.exec(shadow)) !== null){
+      const lead = dm[1] ?? "";
+      const raw = dm[2];
+      if (!raw) continue;
+      const start = (dm.index | 0) + lead.length;
+      const end = start + raw.length;
+      const caps = _dateStrToNanpaCaps(raw);
+      if (caps) regions.push({ kind: "date", match: raw, index: start, end, caps });
+    }
+
+    // ── Times: HH:MM[:SS] — colon only ───────────────────────────────────
+    const timeRe = /(^|[^0-9])(\d{1,2}:[0-5]\d(?::[0-5]\d)?)(?!\d)/g;
+    let tm;
+    while ((tm = timeRe.exec(shadow)) !== null){
+      const lead = tm[1] ?? "";
+      const raw = tm[2];
+      if (!raw) continue;
+      const start = (tm.index | 0) + lead.length;
+      const end = start + raw.length;
+      if (regions.some(r => start < r.end && end > r.index)) continue;
+      const caps = _timeStrToNanpaCaps(raw);
+      if (caps) regions.push({ kind: "time", match: raw, index: start, end, caps });
+    }
+
+    // ── Decimals: integers, decimals, fractions, %, K/M/B, vulgar fractions
+    // Same regex as sitelen-renderer findDecimalSequencesWithCaps.
+    // Runs on the shadow string so IPA/quoted spans are invisible.
+    const vulgarChars = "\u00BC\u00BD\u00BE\u2150\u2151\u2152\u2153\u2154\u2155\u2156\u2157\u2158\u2159\u215A\u215B\u215C\u215D\u215E\u2189";
+    const decimalRe = new RegExp(
+      "(?<![A-Za-z])" +
+      "(" +
+        `-?\\s*\\d*\\s*[${vulgarChars}]` +
+        "|" +
+        "-?\\s*\\d[\\d, _-]*\\s*\\+\\s*\\d[\\d, _-]*\\s*\\/\\s*\\d[\\d, _-]*" +
+        "|" +
+        "-?\\s*\\d[\\d, _-]*\\s*\\/\\s*\\d[\\d, _-]*" +
+        "|" +
+        "-?\\s*(?:\\d[\\d, _-]*|\\.\\d+)(?:\\.\\d[\\d, _-]*)?(?:\\s*[kKtTmMbB])?" +
+      ")" +
+      "(?:\\s*%)?" +
+      "(?![A-Za-z])",
+      "g"
+    );
+
+    // Normalize unicode minus to ASCII before scanning (same as renderer).
+    const shadowNorm = shadow.replace(/[\u2212\u2010\u2011\u2012\u2013\u2014]/g, "-");
+
+    let dec;
+    const decCandidates = [];
+    while ((dec = decimalRe.exec(shadowNorm)) !== null){
+      let candidate = dec[0].trim().replace(/[)\]}.,:;!?]+$/, "").trim();
+      if (!candidate || candidate === "-" || candidate === "+") continue;
+      const rel = dec[0].indexOf(candidate);
+      const start = (rel >= 0) ? (dec.index + rel) : dec.index;
+      const end = start + candidate.length;
+      // Skip if overlaps a date or time region already found.
+      if (regions.some(r => start < r.end && end > r.index)) continue;
+      try {
+        const normalized = _normalizeVulgarFractionInput(candidate);
+        const caps = _numberStrToNanpaCaps(normalized, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        decCandidates.push({ kind: "decimal", match: candidate, index: start, end, caps });
+      } catch { /* not a valid number — skip */ }
+    }
+
+    // De-overlap decimal candidates (keep longest non-overlapping left-to-right).
+    decCandidates.sort((a, b) => a.index - b.index || b.end - a.end);
+    let lastEnd = -1;
+    for (const r of decCandidates){
+      if (r.index < lastEnd) continue;
+      regions.push(r);
+      lastEnd = r.end;
+    }
+
+    regions.sort((a, b) => a.index - b.index);
+    return regions;
+  }
+
+  // Replacement for splitLineIntoNumericRuns that also recognises date and
+  // time regions (detected on the IPA/quote-blanked shadow string).
+  // Returns runs of { kind: "date"|"time"|"number"|"text", value, caps? }.
+  function splitLineIntoTypedRuns(line){
+    const s = String(line || "");
+    if (!s) return [];
+
+    // Step 1: blank IPA and quoted spans so date/time regexes can't see inside them.
+    const shadow = blankIpaAndQuotedSpans(s);
+
+    // Step 2: find date/time regions in the safe shadow string.
+    const dtRegions = _findDateTimeRegions(shadow);
+
+    if (!dtRegions.length){
+      // No dates/times — fall back to original numeric splitting.
+      return splitLineIntoNumericRuns(s);
+    }
+
+    // Step 3: slice the original string around date/time regions, filling
+    // gaps with the existing numeric splitter.
+    const out = [];
+    let pos = 0;
+
+    for (const region of dtRegions){
+      if (region.index > pos){
+        // Gap before this region: run through numeric splitter.
+        for (const r of splitLineIntoNumericRuns(s.slice(pos, region.index))){
+          out.push(r);
+        }
+      }
+      out.push({ kind: region.kind, value: region.match, caps: region.caps });
+      pos = region.end;
+    }
+
+    // Tail after last region.
+    if (pos < s.length){
+      for (const r of splitLineIntoNumericRuns(s.slice(pos))){
+        out.push(r);
+      }
+    }
+
+    return out;
+  }
+  // ─── End date / time detection helpers ──────────────────────────────────────
+
   function splitCamelCaseForProcessing(token){
     const s = String(token || "");
     if (!s) return [];
@@ -2432,7 +2945,7 @@ function lookupOverride(keyOrLine){
     };
   }
 
-  const runs = splitLineIntoNumericRuns(rawLine);
+  const runs = splitLineIntoTypedRuns(rawLine);
   const resultWords = [];
   const normalizedParts = [];
   const phonemeParts = [];
@@ -2440,17 +2953,35 @@ function lookupOverride(keyOrLine){
   let sawContent = false;
 
   for (const run of runs){
-    if (run.kind === "number") {
-      const numberName = digitSequenceToNanpaLinjanProperName(run.value);
-      if (!numberName) continue;
-      resultWords.push(numberName);
-      normalizedParts.push(`[digits:${run.value}]`);
-      phonemeParts.push(`${run.value}→(nanpa-linja-n proper name)`);
-      notes.push(`number: ${run.value} → ${numberName}`);
+    // ── Date / time / decimal: use pre-computed nanpa-caps proper name ───
+    if (run.kind === "date" || run.kind === "time" || run.kind === "decimal"){
+      const properName = _nanpaCapsToProperName(run.caps);
+      resultWords.push(properName);
+      normalizedParts.push(`[${run.kind}:${run.value}]`);
+      phonemeParts.push(`${run.value}\u2192(nanpa-linja-n ${run.kind})`);
+      notes.push(`${run.kind}: ${run.value} \u2192 ${properName}`);
       sawContent = true;
       continue;
     }
 
+    // ── Bare digit sequence (fallback for anything the decimal scanner missed)
+    if (run.kind === "number") {
+      let caps = null;
+      try {
+        const normalized = _normalizeVulgarFractionInput(run.value);
+        caps = _numberStrToNanpaCaps(normalized, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+      } catch { caps = null; }
+      if (!caps) continue;
+      const numberName = _nanpaCapsToProperName(caps);
+      resultWords.push(numberName);
+      normalizedParts.push(`[number:${run.value}]`);
+      phonemeParts.push(`${run.value}\u2192(nanpa-linja-n number)`);
+      notes.push(`number: ${run.value} \u2192 ${numberName}`);
+      sawContent = true;
+      continue;
+    }
+
+    // ── Text segment (including IPA spans within it) ──────────────────────
     const seg = tokiponizeNonNumericSegment(run.value, opts);
     if (!seg.tokens.length) continue;
 
@@ -3167,9 +3698,9 @@ function lookupOverride(keyOrLine){
 
   // ─── IPA cell rendering ────────────────────────────────────────────────────
   // phonemes string looks like: "Jean→dʒin | Luc→ɫuk | Picard→pɪkɑɹd"
-  // or with numbers: "42→(nanpa-linja-n proper name)"
-  // We render each token→ipa segment as an editable span (if not numeric),
-  // separators and numeric segments as inert text.
+  // or with numbers: "42→(nanpa-linja-n number)", "2026/03/17→(nanpa-linja-n date)", etc.
+  // We render each token→ipa segment as an editable span (if not numeric/date/time),
+  // and all nanpa-linja-n and direct IPA segments as inert text.
 
   function buildIpaCellHtml(phonemesStr){
     if (!phonemesStr || phonemesStr === "(override)") return escapeHtml(phonemesStr);
@@ -3182,8 +3713,8 @@ function lookupOverride(keyOrLine){
         const inner = part.slice("(directIpa)".length);
         return `<span class="ipaInert" title="Direct IPA input">${escapeHtml(inner)}</span>${sep}`;
       }
-      // Numeric segment: token→(nanpa-linja-n proper name) - inert
-      if (part.includes("(nanpa-linja-n proper name)") || /^\d+\u2192/.test(part)){
+      // Numeric/date/time segment — always inert (no IPA to edit).
+      if (part.includes("(nanpa-linja-n")){
         return `<span class="ipaInert">${escapeHtml(part)}</span>${sep}`;
       }
       // Normal segment: token→ipa
@@ -3235,10 +3766,20 @@ function lookupOverride(keyOrLine){
         if (tp) tpWords.push(tp);
         continue;
       }
-      if (part.includes("(nanpa-linja-n proper name)")){
-        // extract the nanpa name from result - just keep it
-        const m = part.match(/^(\d+)/);
-        if (m) tpWords.push(digitSequenceToNanpaLinjanProperName(m[1]) || "");
+      // Nanpa-linja-n segment (date/time/decimal/number) — re-encode from the
+      // stored match value rather than trying to phonemize it.
+      if (part.includes("(nanpa-linja-n")){
+        const arrowIdx2 = part.indexOf("\u2192");
+        if (arrowIdx2 === -1) continue;
+        const matchVal = part.slice(0, arrowIdx2);
+        // Re-run through the same encoder used in tokiponizeLine.
+        let caps = null;
+        try {
+          caps = _dateStrToNanpaCaps(matchVal) ||
+                 _timeStrToNanpaCaps(matchVal) ||
+                 _numberStrToNanpaCaps(_normalizeVulgarFractionInput(matchVal), { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        } catch { caps = null; }
+        if (caps) tpWords.push(_nanpaCapsToProperName(caps));
         continue;
       }
       const arrowIdx = part.indexOf("\u2192");
@@ -3283,10 +3824,12 @@ function lookupOverride(keyOrLine){
       let csvIpa = r.phonemes || "";
       if (csvIpa && csvIpa !== "(override)"){
         const parts = csvIpa.split(" | ").map(part => {
-          // Direct IPA segments: strip sentinel, output as-is (no override lookup).
+          // Direct IPA segments: strip sentinel, output as-is.
           if (part.startsWith("(directIpa)")){
             return part.slice("(directIpa)".length);
           }
+          // Nanpa-linja-n segments: output as-is, no IPA override lookup.
+          if (part.includes("(nanpa-linja-n")) return part;
           const arrowIdx = part.indexOf("\u2192");
           if (arrowIdx === -1) return part;
           const token = part.slice(0, arrowIdx);
@@ -3328,8 +3871,9 @@ function lookupOverride(keyOrLine){
     if (r.phonemes && r.phonemes !== "(override)"){
       const ovNotes = [];
       for (const part of r.phonemes.split(" | ")){
-        // Skip direct IPA segments — not candidates for IPA overrides.
+        // Skip direct IPA and nanpa-linja-n segments — not candidates for IPA overrides.
         if (part.startsWith("(directIpa)")) continue;
+        if (part.includes("(nanpa-linja-n")) continue;
         const ai = part.indexOf("→");
         if (ai === -1) continue;
         const tok = part.slice(0, ai);
