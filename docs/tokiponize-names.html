@@ -2860,6 +2860,18 @@ function lookupOverride(keyOrLine){
     };
   }
 
+  function parseNanpaLinjaNValueWithLibrary(input){
+    try {
+      const NP = (typeof window !== "undefined") ? window.NanpaParser : null;
+      if (!NP || typeof NP.parseNumber !== "function") return null;
+      const parsed = NP.parseNumber(input, { mode: "uniform", numericMode: "uniform", mixedStyle: "short" });
+      if (!parsed || !parsed.properName) return null;
+      const kind = parsed.isDate ? "date" : (parsed.isTime ? "time" : "number");
+      return { ...parsed, kind };
+    } catch {
+      return null;
+    }
+  }
 
  function tokiponizeLine(line, opts){
   const strictMode = opts.strictMode;
@@ -2923,6 +2935,23 @@ function lookupOverride(keyOrLine){
     };
   }
 
+  const wholeLineNanpa = parseNanpaLinjaNValueWithLibrary(rawLine.trim());
+  if (wholeLineNanpa) {
+    let tpName = wholeLineNanpa.properName;
+    if (outputStyle === "jan")  tpName = "jan "  + tpName;
+    if (outputStyle === "ma")   tpName = "ma "   + tpName;
+    if (outputStyle === "toki") tpName = "toki " + tpName;
+    tpName = formatTpOutputName(tpName);
+
+    return {
+      original: rawLine.trim(),
+      normalized: `[${wholeLineNanpa.kind}:${rawLine.trim()}]`,
+      phonemes: `${rawLine.trim()}→(nanpa-linja-n ${wholeLineNanpa.kind})`,
+      result: tpName,
+      notes: `${wholeLineNanpa.kind}: ${rawLine.trim()} → ${wholeLineNanpa.properName}`
+    };
+  }
+
   const hasDigits = /\d/.test(rawLine);
   if (!hasDigits) {
     const seg = tokiponizeNonNumericSegment(rawLine, opts);
@@ -2953,30 +2982,34 @@ function lookupOverride(keyOrLine){
   let sawContent = false;
 
   for (const run of runs){
-    // ── Date / time / decimal: use pre-computed nanpa-caps proper name ───
-    if (run.kind === "date" || run.kind === "time" || run.kind === "decimal"){
-      const properName = _nanpaCapsToProperName(run.caps);
-      resultWords.push(properName);
-      normalizedParts.push(`[${run.kind}:${run.value}]`);
-      phonemeParts.push(`${run.value}\u2192(nanpa-linja-n ${run.kind})`);
-      notes.push(`${run.kind}: ${run.value} \u2192 ${properName}`);
-      sawContent = true;
-      continue;
-    }
+    // ── Date / time / decimal / number: prefer the uploaded library parser ───
+    if (run.kind === "date" || run.kind === "time" || run.kind === "decimal" || run.kind === "number"){
+      const parsed = parseNanpaLinjaNValueWithLibrary(run.value);
+      if (parsed && parsed.properName) {
+        const kindLabel = (run.kind === "decimal") ? "number" : (parsed.kind || run.kind || "number");
+        resultWords.push(parsed.properName);
+        normalizedParts.push(`[${kindLabel}:${run.value}]`);
+        phonemeParts.push(`${run.value}\u2192(nanpa-linja-n ${kindLabel})`);
+        notes.push(`${kindLabel}: ${run.value} \u2192 ${parsed.properName}`);
+        sawContent = true;
+        continue;
+      }
 
-    // ── Bare digit sequence (fallback for anything the decimal scanner missed)
-    if (run.kind === "number") {
-      let caps = null;
-      try {
-        const normalized = _normalizeVulgarFractionInput(run.value);
-        caps = _numberStrToNanpaCaps(normalized, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
-      } catch { caps = null; }
+      // Fallback to the page-local encoder only if the library is unavailable.
+      let caps = run.caps || null;
+      if (!caps && run.kind === "number") {
+        try {
+          const normalized = _normalizeVulgarFractionInput(run.value);
+          caps = _numberStrToNanpaCaps(normalized, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+        } catch { caps = null; }
+      }
       if (!caps) continue;
       const numberName = _nanpaCapsToProperName(caps);
+      const kindLabel = (run.kind === "decimal") ? "number" : run.kind;
       resultWords.push(numberName);
-      normalizedParts.push(`[number:${run.value}]`);
-      phonemeParts.push(`${run.value}\u2192(nanpa-linja-n number)`);
-      notes.push(`number: ${run.value} \u2192 ${numberName}`);
+      normalizedParts.push(`[${kindLabel}:${run.value}]`);
+      phonemeParts.push(`${run.value}\u2192(nanpa-linja-n ${kindLabel})`);
+      notes.push(`${kindLabel}: ${run.value} \u2192 ${numberName}`);
       sawContent = true;
       continue;
     }
@@ -3766,13 +3799,17 @@ function lookupOverride(keyOrLine){
         if (tp) tpWords.push(tp);
         continue;
       }
-      // Nanpa-linja-n segment (date/time/decimal/number) — re-encode from the
-      // stored match value rather than trying to phonemize it.
+      // Nanpa-linja-n segment (date/time/decimal/number) — reparse through the uploaded library.
       if (part.includes("(nanpa-linja-n")){
         const arrowIdx2 = part.indexOf("\u2192");
         if (arrowIdx2 === -1) continue;
         const matchVal = part.slice(0, arrowIdx2);
-        // Re-run through the same encoder used in tokiponizeLine.
+        const parsed = parseNanpaLinjaNValueWithLibrary(matchVal);
+        if (parsed && parsed.properName) {
+          tpWords.push(parsed.properName);
+          continue;
+        }
+        // Fallback only if the library is unavailable.
         let caps = null;
         try {
           caps = _dateStrToNanpaCaps(matchVal) ||
@@ -4470,6 +4507,10 @@ function lookupOverride(keyOrLine){
   the full sources can add several megabytes, and you may prefer to manage
   exact versions yourself.)
   -->
+
+  <script type="module">
+    import "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v6.js?v=17";
+  </script>
 
   <script src="./js/phonemize-lib.js"></script>
   <script src="./js/double-metaphone-lib.js"></script>

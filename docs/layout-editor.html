@@ -1991,7 +1991,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=6').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v6.js?v=17').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }

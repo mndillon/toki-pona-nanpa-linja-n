@@ -403,6 +403,13 @@ Examples:
 - Can be split as "n Onono ", to split up long sequences
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 
+### noko
+- Contains **o**, which no digit word has
+- Does not end in **-n** signalling more of the number to follow
+- Can be split as "n Oko ", to split up long sequences
+- Shorter alternative to nonono
+- Adds more context, makes the assumption that the strings of digits represent numeric values
+
 ### neke / nekeke / nekekeke / neke...ke
 - Contain **k**, which no digit word has
 - Do not end in **-n** signalling more of the number to follow

@@ -863,7 +863,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=7";
+    import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v6.js?v=17";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -1200,7 +1200,8 @@ nanpa #~WI.
           literalStyle: "double-quote",
           extensionStyle: "ssk",
           cartoucheStyle: "ssk",
-          numericMode: "compat"
+          numericMode: "compat",
+          mixedStyle: 'short'
         },
         fonts: {
           roles: buildFontRoles()
@@ -1227,6 +1228,9 @@ nanpa #~WI.
         },
         fonts: {
           roles: buildFontRoles()
+        },
+        parser: {
+          mixedStyle: 'short'
         }
       };
     }
@@ -4760,7 +4764,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/sitelen-renderer-refactored-scoped-with-source-segment-meta.js?v=4", import.meta.url);
+  const rendererUrl = new URL("./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v6.js?v=17", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
