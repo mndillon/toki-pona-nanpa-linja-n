@@ -3265,71 +3265,62 @@
     }
 
     async function runEncodeFromDecimal() {
-      await ensureFontLoaded();
-      enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS);
+  await ensureFontLoaded();
+  enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS);
 
-      const raw = normalizeVulgarFractionInput(elDecimal.value);
-      const timeCaps = timeStrToNanpaCaps(raw);
-      const dateCaps = dateStrToNanpaCaps(raw);
+  const raw = normalizeVulgarFractionInput(elDecimal.value);
 
-      const caps = looksLikeNanpaCaps(raw)
-        ? raw.toUpperCase()
-        : (timeCaps != null) ? timeCaps
-        : (dateCaps != null) ? dateCaps
-        : numberStrToNanpaCaps(raw, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3 });
+  let parsed = NanpaParser.parseNumber(raw, {
+    mode: getCartoucheDisplayMode(),
+    mixedStyle: "short"
+  });
 
-      // Display value line:
-      // - For decimals, we can decode the caps back to a “display value” string.
-      // - For times, decoding isn't defined, so we just show the original input.
-      if (timeCaps != null || dateCaps != null) {
-        setDecimalValueLine(String(raw ?? "").trim(), String(raw ?? "").trim());
-      } else {
-        setDecimalValueFromCapsOrClear(caps);
+  // Fallback for percent values such as 10%, 10.5%, 7/8%, 8+1/2%
+  if (!parsed && /%\s*$/.test(raw)) {
+    const rawNoPercent = raw.replace(/%\s*$/, "").trim();
+
+    const parsedBase = NanpaParser.parseNumber(rawNoPercent, {
+      mode: getCartoucheDisplayMode(),
+      mixedStyle: "short"
+    });
+
+    if (parsedBase && parsedBase.caps) {
+      const capsWithPercent = parsedBase.caps.endsWith("N")
+        ? parsedBase.caps.slice(0, -1) + "OKN"
+        : parsedBase.caps;
+
+      const tokens = tokenizeNanpaCaps(capsWithPercent);
+      let tpWords = nanpaCapsTokensToTpWords(tokens, {
+        mode: getCartoucheDisplayMode()
+      });
+
+      if (nanpaCapsIsValidTimeOrDate(capsWithPercent)) {
+        tpWords = replaceTimeSeparatorsTpWords(tpWords, getCartoucheDisplayMode());
       }
 
-      const latinRaw = encodeDecimalToLatin(raw);
-      const latinDisplay = titleCaseNanpaProperNameForDisplay(latinRaw);
+      const cps = tpWordsToUcsurCodepoints(tpWords);
+      const properNameRaw = splitCartoucheCapsLettersSpaced(capsWithPercent);
 
-      elLatinOut.value = fixOkenSuffixSpacing(latinDisplay);
-      elNumberCodeOut.value = latinNameToNumberCode(latinRaw);
-
-      const cps = decimalToUcsurCodepoints(raw);
-
-      if (elCodepointsOut) elCodepointsOut.value = codepointsToHexStringWithCartouche(cps);
-      if (elTpWordsOut) elTpWordsOut.value = tpWordsToText(ucsurCodepointsToTpWords(cps));
-
-      const smallSet = getSmallCodepointsSet();
-      const quarterSet = getQuarterCodepointsSet();
-      const halfSet = getHalfCodepointsSet();
-      const twoThirdsSet = getTwoThirdsCodepointsSet();
-      const oneThirdsSet = getOneThirdsCodepointsSet();
-
-      renderMixedCartoucheToCanvas(
-        canvasSmall,
-        cps,
-        LARGE_TINY_FONT_SIZE,
-        SMALL_TINY_FONT_SIZE,
-        oneThirdsSet,
-        quarterSet,
-  halfSet,
-  twoThirdsSet,
-        SMALL_CANVAS_RENDER_OPTS
-      );
-
-      renderMixedCartoucheToCanvas(
-        canvasLarge,
-        cps,
-        LARGE_FONT_SIZE,
-        SMALL_FONT_SIZE,
-        oneThirdsSet,
-       quarterSet,
-  halfSet,
-  twoThirdsSet,
-        { padding: 22, border: 3, cornerRadius: 18, letterGap: LETTER_SPACING_GAP }
-      );
-
-      announceStatus(`Rendered value ${raw}.`);
+      parsed = {
+        ...parsedBase,
+        caps: capsWithPercent,
+        displayValue: raw,
+        properName: fixOkenSuffixSpacing(
+          titleCaseNanpaProperNameForDisplay(properNameRaw)
+        ),
+        uniqueCode: latinNameToNumberCode(properNameRaw),
+        tpWords,
+        ucsurCodepoints: cps,
+        hexWithCartouche: codepointsToHexStringWithCartouche(cps)
+      };
     }
+  }
+
+  if (!parsed) throw new Error(`Failed to parse decimal value: ${raw}`);
+
+  __applyParsedNumberToUi(parsed, raw);
+  announceStatus(`Rendered value ${raw}.`);
+}
 
     async function handleEncodeClick({ clearOthers = true } = {}) {
       try {
@@ -3787,7 +3778,7 @@
         );
       }
     };
-    runEncodeFromDecimal = async function () { await ensureFontLoaded(); enforceMaxLen(elDecimal, MAX_DECIMAL_INPUT_CHARS); const raw = normalizeVulgarFractionInput(elDecimal.value); const parsed = NanpaParser.parseNumber(raw, { mode: getCartoucheDisplayMode(), mixedStyle: "short" }); if (!parsed) throw new Error(`Failed to parse decimal value: ${raw}`); __applyParsedNumberToUi(parsed, raw); announceStatus(`Rendered value ${raw}.`); };
+
     handleFromCodesClick = async function ({ clearOthers = true } = {}) { try { lastAction = "codes"; if (clearOthers) clearOtherInputs("codes"); await ensureFontLoaded(); enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS); const cps = NanpaParser.parseHexCodepoints(elCodesIn.value); const tpWords = NanpaParser.ucsurCodepointsToTpWords(cps); const asText = NanpaParser.tpWordsToText(tpWords); const parsed = NanpaParser.parseNumber(asText, { mode: getCartoucheDisplayMode(), mixedStyle: "short" }); elLatinOut.value = String.fromCodePoint(...cps); if (elCodepointsOut) elCodepointsOut.value = NanpaParser.codepointsToHexWithCartouche(cps); if (elTpWordsOut) elTpWordsOut.value = asText; elNumberCodeOut.value = parsed?.uniqueCode ?? ""; if (parsed) { if (parsed.isTime || parsed.isDate) setDecimalValueLine(parsed.displayValue, parsed.displayValue); else setDecimalValueFromCapsOrClear(parsed.caps); } else setDecimalValueLine(null, null); __renderUniformCartoucheFromCps(cps); announceStatus("Rendered from code points."); } catch (err) { setDecimalValueLine(null, null); showAlertAndAnnounce(err?.message ?? String(err)); } };
     handleFromWordsClick = async function ({ clearOthers = true } = {}) { try { lastAction = "words"; if (clearOthers) clearOtherInputs("words"); await ensureFontLoaded(); enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS); const rawInput = String(elTpWordsIn.value ?? "").trim(); const parsed = NanpaParser.parseNumber(rawInput, { mode: getCartoucheDisplayMode(), mixedStyle: "short" }); if (parsed) { __applyParsedNumberToUi(parsed, rawInput); announceStatus("Rendered numeric input from Toki Pona words / proper name / code."); return; } const phrase = tryParseNanpaLinjanTpPhraseToCaps(rawInput); if (phrase) { const parsedPhrase = NanpaParser.parseNumber(splitCartoucheCapsLettersSpaced(phrase.caps), { mode: getCartoucheDisplayMode(), mixedStyle: "short" }); if (!parsedPhrase) throw new Error("Failed to parse nanpa-linja-n TP phrase."); __applyParsedNumberToUi(parsedPhrase, rawInput); if (elTpWordsOut) elTpWordsOut.value = phrase.words.join(" "); announceStatus("Recognized and rendered nanpa-linja-n TP-phrase number."); return; } const cps = NanpaParser.parseTpWordsToCodepoints(rawInput); if (!Array.isArray(cps) || cps.length === 0) throw new Error("No valid Toki Pona words to render."); if (elCodepointsOut) elCodepointsOut.value = NanpaParser.codepointsToHexWithCartouche(cps); if (elTpWordsOut) elTpWordsOut.value = NanpaParser.tpWordsToText(NanpaParser.ucsurCodepointsToTpWords(cps)); elLatinOut.value = String.fromCodePoint(...cps); elNumberCodeOut.value = ""; setDecimalValueLine(null, null); __renderUniformCartoucheFromCps(cps); announceStatus("Rendered from Toki Pona words."); } catch (err) { setDecimalValueLine(null, null); showAlertAndAnnounce(err?.message ?? String(err)); } };
     validateTpWordsInputLive = function () { if (suppressInputHandlers) return; const raw = String(elTpWordsIn?.value ?? "").trim(); if (!raw) { elTpWordsIn.setCustomValidity(""); return; } const parsed = NanpaParser.parseNumber(raw, { mode: getCartoucheDisplayMode(), mixedStyle: "short" }); if (parsed) { elTpWordsIn.setCustomValidity(""); return; } try { const cps = NanpaParser.parseTpWordsToCodepoints(raw); if (Array.isArray(cps) && cps.length > 0) { elTpWordsIn.setCustomValidity(""); return; } } catch {} elTpWordsIn.setCustomValidity("Invalid Toki Pona words or nanpa-linja-n input."); };
