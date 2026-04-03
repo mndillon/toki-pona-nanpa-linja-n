@@ -497,6 +497,7 @@ Examples:
 ## Arithmetic Operations
 Here we are moving away from describing numbers to describing simple arithmetic expressions.
 This is not the main focus of this proposal.
+None of what follows, in this section, is part of the nanpa-linja-n proposal only suggestions.
 Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan jan Emalan.
 They never appear in a numeric cartouche.
 Words primarialy chosen for the shape of their sitelen pona glyphs.
