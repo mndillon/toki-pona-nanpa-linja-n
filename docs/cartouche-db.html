@@ -921,38 +921,41 @@
     // ── Render ────────────────────────────────────────────────────────────────
     async function renderEntry(entry, targetCanvas) {
       if (!renderer || entry.mode === 'ignore') return;
+
       try {
         const sizePx = parseInt($('fontSizeInput').value) || 40;
         const segs   = segmentWords(entry.words);
 
-        // For random: generate and SAVE cartouche so it stays stable across renders.
-        // Also handle forceNormal nanpa segments — generate once and save.
         const cm = entry.cartoucheMap || {};
         let changed = false;
+
+        function ensureDescForLetters(key, letters, opts = {}) {
+          const existing = (cm[key] || '').trim();
+          if (existing) return existing;
+          cm[key] = buildRandomDescForLetters(letters, opts);
+          changed = true;
+          return cm[key];
+        }
+
         segs.forEach((seg, si) => {
-          // forceNormal nanpa segment — generate random glyph cartouche if not set
+          if (seg.type === 'nanpa' && !entry.forceNormal) return;
+
           if (seg.type === 'nanpa' && entry.forceNormal) {
-            if (!cm[si] || cm[si] === seg.words.join('') || cm[si] === seg.words.join(' ')) {
-              // Not yet set or contains raw word — generate proper random glyph words
-              const letters = seg.words.join('').toLowerCase().split('');
-              cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
-              changed = true;
-            }
+            const letters = seg.words.join('').toLowerCase().split('');
+            ensureDescForLetters(String(si), letters, { excludeNanpaAtEnds: true });
             return;
           }
-          if (seg.type === 'nanpa') return; // normal nanpa — renderer handles
-          if (entry.mode === 'preferred') return; // preferred normal — use stored
+
           if (entry.merge) {
             const { letters } = segmentLetters(seg.words);
-            cm[si] = buildRandomDescForLetters(letters);
-            changed = true;
+            ensureDescForLetters(String(si), letters);
           } else {
             seg.words.forEach((w, wi) => {
-              cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split(''));
-              changed = true;
+              ensureDescForLetters(`${si}_${wi}`, w.toLowerCase().split(''));
             });
           }
         });
+
         if (changed) {
           entry.cartoucheMap = cm;
           await api.putEntry({ ...entry });
@@ -1105,17 +1108,38 @@
           inp.type = 'radio'; inp.name = 'mode-' + entry.key; inp.value = val; inp.checked = entry.mode === val;
           inp.addEventListener('change', async () => {
             entry.mode = val;
-            if (val === 'preferred' && hasEditableSegs) {
-              // Ensure cartoucheMap has entries for all normal segs
+            if (val === 'preferred' && (hasEditableSegs || (isAllNanpa && !!entry.forceNormal))) {
               const cm = entry.cartoucheMap || {};
               let needFill = false;
+
               segs.forEach((seg, si) => {
+                if (seg.type === 'nanpa' && entry.forceNormal) {
+                  if (!cm[si] || !cm[si].trim()) {
+                    const letters = seg.words.join('').toLowerCase().split('');
+                    cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+                    needFill = true;
+                  }
+                  return;
+                }
+
                 if (seg.type !== 'normal') return;
-                if (entry.merge && !cm[si]) { cm[si] = buildRandomDescForLetters(segmentLetters(seg.words).letters); needFill = true; }
-                else if (!entry.merge) {
-                  seg.words.forEach((w, wi) => { if (!cm[`${si}_${wi}`]) { cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split('')); needFill = true; } });
+
+                if (entry.merge) {
+                  if (!cm[si] || !cm[si].trim()) {
+                    cm[si] = buildRandomDescForLetters(segmentLetters(seg.words).letters);
+                    needFill = true;
+                  }
+                } else {
+                  seg.words.forEach((w, wi) => {
+                    const key = `${si}_${wi}`;
+                    if (!cm[key] || !cm[key].trim()) {
+                      cm[key] = buildRandomDescForLetters(w.toLowerCase().split(''));
+                      needFill = true;
+                    }
+                  });
                 }
               });
+
               if (needFill) entry.cartoucheMap = cm;
               openCartoucheModal(entry);
             }
@@ -1167,19 +1191,34 @@
         btnEdit.title = !canEdit ? 'Enable @db to edit nanpa segments' : 'Edit cartouche';
         btnEdit.addEventListener('click', async () => {
           // Clicking edit always switches to preferred mode and opens the modal.
-          // Ensure cartoucheMap has a starting value for all normal segments.
+          // Ensure cartoucheMap has a starting value for all editable segments.
           const cm = entry.cartoucheMap || {};
+
           segs.forEach((seg, si) => {
+            if (seg.type === 'nanpa' && entry.forceNormal) {
+              if (!cm[si] || !cm[si].trim()) {
+                const letters = seg.words.join('').toLowerCase().split('');
+                cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+              }
+              return;
+            }
+
             if (seg.type !== 'normal') return;
-            if (entry.merge && !cm[si]) {
-              cm[si] = buildRandomDescForLetters(segmentLetters(seg.words).letters);
-            } else if (!entry.merge) {
+
+            if (entry.merge) {
+              if (!cm[si] || !cm[si].trim()) {
+                cm[si] = buildRandomDescForLetters(segmentLetters(seg.words).letters);
+              }
+            } else {
               seg.words.forEach((w, wi) => {
-                if (!cm[`${si}_${wi}`])
-                  cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split(''));
+                const key = `${si}_${wi}`;
+                if (!cm[key] || !cm[key].trim()) {
+                  cm[key] = buildRandomDescForLetters(w.toLowerCase().split(''));
+                }
               });
             }
           });
+
           entry.cartoucheMap = cm;
           entry.mode = 'preferred';
           // Update the radio UI to reflect the mode change
@@ -1403,13 +1442,25 @@
 
       function validateAll() {
         let errors = [];
+
         allInputs.forEach((inp, i) => {
           const { letter } = slotMeta[i];
-          const result = validateSlotWord(inp.value, letter);
-          inp.classList.toggle('slotOk',  result.ok);
-          inp.classList.toggle('slotErr', !result.ok && !!inp.value.trim());
-          if (!result.ok && inp.value.trim()) errors.push(result.reason);
+          const raw = inp.value.trim();
+
+          if (!raw) {
+            inp.classList.remove('slotOk');
+            inp.classList.add('slotErr');
+            errors.push(`Please fill the "${letter}" slot.`);
+            return;
+          }
+
+          const result = validateSlotWord(raw, letter);
+          inp.classList.toggle('slotOk', result.ok);
+          inp.classList.toggle('slotErr', !result.ok);
+
+          if (!result.ok) errors.push(result.reason);
         });
+
         $('cartoucheError').textContent = errors.length ? errors[0] : '';
         return errors.length === 0;
       }
@@ -1621,7 +1672,14 @@
       });
 
       const cm = {};
-      for (const [k, words] of Object.entries(groups)) cm[k] = words.join(' ');
+      for (const [k, words] of Object.entries(groups)) {
+        const cleaned = words.map(w => w.trim()).filter(Boolean);
+        if (!cleaned.length) {
+          $('cartoucheError').textContent = 'All cartouche slots must be filled before saving.';
+          return;
+        }
+        cm[k] = cleaned.join(' ');
+      }
       entry.cartoucheMap = cm;
       entry.mode = 'preferred';
       await api.putEntry({ ...entry });
