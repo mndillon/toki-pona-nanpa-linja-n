@@ -1,0 +1,1745 @@
+<!doctype html>
+<!-- cartouche-db v1 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Proper Names rendered to Cartouches Database — nimi pi sitelen pona</title>
+
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <style>
+    :root {
+      --pad: 14px;
+      --gap: 12px;
+      --border: #d0d7de;
+      --bg: #F3DFC0;
+      --muted: #3f4750;
+      --accent: #5a3e1b;
+      --warn: #b45309;
+      --good: #1b5e20;
+      --bad:  #7f1d1d;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 24px;
+      background: var(--bg);
+    }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      max-width: 1200px;
+    }
+
+    .row { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: flex-end; }
+    .col { flex: 1 1 280px; }
+
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--bg);
+      font: inherit;
+    }
+
+    textarea { min-height: 80px; resize: vertical; }
+
+    button {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { background: rgba(0,0,0,0.06); }
+
+    .btnBi {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      line-height: 1.15;
+    }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .help { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+    .tpLine { display: block; margin-top: 2px; font-size: 10pt; color: var(--muted); line-height: 1.25; }
+
+    .pill {
+      display: inline-block;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: 4px;
+      white-space: nowrap;
+    }
+
+    .pill.good { color: var(--good); border-color: var(--good); }
+    .pill.warn { color: var(--warn); border-color: var(--warn); }
+    .pill.bad  { color: var(--bad);  border-color: var(--bad); }
+
+    .hidden { display: none !important; }
+
+    /* Search / add bar */
+    .addBar {
+      display: flex;
+      gap: var(--gap);
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-top: 14px;
+    }
+    .addBar input[type="text"] { flex: 1 1 200px; }
+
+    /* Table */
+    .tableWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 12px; }
+    table {
+      table-layout: fixed;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    /* On narrow screens let table scroll horizontally */
+    @media (max-width: 700px) {
+      table { table-layout: auto; width: max-content; min-width: 100%; }
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+    th {
+      text-align: left;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+    }
+    tbody tr:hover td { background: rgba(0,0,0,0.03); }
+
+    /* Word cell */
+    .wordCell {
+      font-weight: 600;
+      min-width: 120px;
+      white-space: nowrap;
+    }
+    .wordCell .nanpaFlag {
+      font-size: 10px;
+      color: var(--warn);
+      font-weight: 400;
+      margin-left: 6px;
+      border: 1px solid var(--warn);
+      border-radius: 4px;
+      padding: 1px 4px;
+    }
+
+    /* Mode radio group */
+    .modeGroup {
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+    .modeGroup label {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .modeGroup input[type="radio"] { margin: 0; }
+    .modeGroup label:has(input:checked) {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(90,62,27,0.08);
+    }
+
+    /* Cartouche description cell */
+    .cartoucheDesc {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      color: var(--muted);
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .cartoucheDesc .randomNote {
+      font-style: italic;
+      font-size: 11px;
+    }
+
+    /* Preview sub-row — full width below the entry row */
+    .previewRow { background: rgba(0,0,0,0.03); }
+    .previewRow.hidden { display: none; }
+    .previewCell {
+      padding: 6px 14px 8px;
+      border-top: 1px dashed var(--border);
+    }
+    .previewCell canvas {
+      display: block;
+      max-width: 100%;
+      /* height is set by the renderer output — no fixed height */
+    }
+    .previewCell .previewHeader {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 4px;
+    }
+
+    /* Cartouche editor inline */
+    .cartoucheEditor {
+      display: none;
+      margin-top: 6px;
+    }
+    .cartoucheEditor.open { display: block; }
+    .cartoucheEditor input[type="text"] {
+      font-size: 12px;
+      padding: 6px 8px;
+      width: 100%;
+    }
+
+    /* Actions cell */
+    .actCell {
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .actCell button {
+      font-size: 11px;
+      padding: 4px 7px;
+      margin-right: 3px;
+      margin-bottom: 2px;
+    }
+
+    /* Validation badges */
+    .vbadge {
+      font-size: 10px;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 4px;
+    }
+    .vbadge.ok  { background: rgba(27,94,32,0.15); color: var(--good); }
+    .vbadge.err { background: rgba(127,29,29,0.15); color: var(--bad); }
+
+    /* Empty state */
+    .emptyState {
+      text-align: center;
+      padding: 32px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Modal */
+    .modalOverlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 18px;
+      padding-bottom: 40px;
+      z-index: 9999;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .modalOverlay.show { display: flex; }
+    .modal {
+      width: min(640px, 100%);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.2);
+      margin: auto;
+    }
+    .modalHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .modalHeader h3 { margin: 0; font-size: 14px; }
+    .modalBody {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(255,255,255,0.35);
+    }
+
+    /* Accordion */
+    .accordion { margin-top: 10px; }
+    .accordion details {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      background: var(--bg);
+    }
+    .accordion details[open] { border-color: #b0b8c0; }
+    .accordion summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      list-style: none;
+      user-select: none;
+    }
+    .accordion summary::-webkit-details-marker { display: none; }
+    .accordion summary::after {
+      content: "▸";
+      margin-left: auto;
+      font-size: 10px;
+      transition: transform 0.15s;
+    }
+    .accordion details[open] summary::after { transform: rotate(90deg); }
+    .accordion .accordionBody {
+      padding: 10px 12px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Validation error strip */
+    .validationStrip {
+      font-size: 12px;
+      color: var(--bad);
+      margin-top: 4px;
+      min-height: 16px;
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible {
+      outline: 3px solid #111;
+      outline-offset: 3px;
+    }
+
+    .skipLink {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: #fff;
+      border: 2px solid #111;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: #111;
+      text-decoration: none;
+    }
+    .skipLink:focus { left: 24px; top: 24px; z-index: 9999; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important; height: 1px !important;
+      padding: 0 !important; margin: 0 !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    /* Nanpa warning strip */
+    .nanpaWarn {
+      font-size: 11px;
+      color: var(--warn);
+      border: 1px solid var(--warn);
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-top: 4px;
+      display: none;
+    }
+    .nanpaWarn.show { display: block; }
+
+    pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+
+    /* ── Cartouche modal layout: sticks near top so keyboard doesn't hide it ── */
+    /* Cartouche modal — draggable + resizable */
+    /* The overlay is just a dim backdrop, not a layout container */
+    #cartoucheModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.25);
+      z-index: 9999;
+      pointer-events: none; /* backdrop doesn't intercept — modal does */
+    }
+    #cartoucheModal.show { display: block; }
+    /* The modal box is independently positioned, not in flex flow */
+    #cartoucheModal .modal {
+      pointer-events: all;
+      position: fixed;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(82vw, 1100px);
+      min-width: 320px;
+      max-width: 98vw;
+      max-height: 90vh;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* needed for resize */
+      resize: both;     /* native browser resize handle */
+    }
+    #cartoucheModal .modal.is-dragging { user-select: none; cursor: grabbing; }
+    #cartoucheModal .modalHeader {
+      flex-shrink: 0;
+      cursor: grab;
+      position: relative;
+    }
+    #cartoucheModal .modalHeader::after {
+      content: '⠿ drag header to move';
+      position: absolute;
+      right: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      color: var(--muted);
+      opacity: 0.4;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    @media (max-width: 700px) {
+      #cartoucheModal .modal {
+        width: 96vw; left: 2vw; transform: none; top: 8px;
+        resize: vertical;
+      }
+      #cartoucheModal .modalHeader::after { display: none; }
+    }
+    #cartoucheModal .modalBody {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      min-height: 0;
+    }
+
+    /* Slots row — wraps for long words */
+    #cartoucheSlots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-bottom: 8px;
+    }
+
+    /* Cartouche editor letter slots */
+    .cartoucheSlot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .cartoucheSlot .slotLabel {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .cartoucheSlot input {
+      width: 80px;
+      font-size: 12px;
+      padding: 5px 5px;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      text-align: center;
+      min-width: 0;
+    }
+    .cartoucheSlot input.slotOk  { border-color: var(--good); }
+    .cartoucheSlot input.slotErr { border-color: var(--bad);  background: rgba(127,29,29,0.06); }
+    /* On narrow screens shrink slots further */
+    @media (max-width: 480px) {
+      .cartoucheSlot input { width: 62px; font-size: 11px; }
+    }
+
+    /* Glyph picker panel — fixed max height, scrolls internally */
+    .slotPicker {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px;
+      background: rgba(255,255,255,0.45);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      /* Limit height so picker doesn't push Apply button off screen */
+      max-height: 140px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;   /* don't compress — let modalBody scroll */
+    }
+    .slotPicker.open { display: flex; }
+    .slotPickerLabel {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+    .slotPickerWords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .slotWordBtn {
+      appearance: none;
+      border: 1px solid rgba(17,17,17,0.22);
+      background: rgba(255,255,255,0.38);
+      border-radius: 10px;
+      padding: 4px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      /* Larger tap target on mobile */
+      min-height: 36px;
+    }
+    .slotWordBtn:hover, .slotWordBtn:active { background: rgba(255,255,255,0.75); }
+    .slotWordBtn[aria-pressed="true"] {
+      background: rgba(255,255,255,0.85);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .slotWordGlyph {
+      font-family: "TP-Cartouche-Font", "TP-Nasin-Nanpa-Font";
+      font-size: 22px;
+      line-height: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skipLink" href="#main">Skip to content</a>
+
+  <main id="main" class="card">
+    <h2 style="margin:0 0 4px;">Control how Proper Names render to Cartouches Database — nimi pi sitelen pona</h2>
+    <div class="help">
+      Manage how tokiponized proper names are rendered in cartouches. Enter one name per line — multiple words per line are kept together.
+      Each line can merge all words into one cartouche or keep them separate. Numeric (nanpa-linja-n) sequences are always one cartouche.
+      <span class="tpLine">o awen e nasin pi sitelen kartuse. ilo ni li kepeken lon lipu ale pi ilo sitelen.</span>
+    </div>
+   
+    <div class="help" style="margin-top: 6px;">
+      <strong>Disclaimer:</strong> This tool is provided "as is", with no claim, guarantee, or warranty that the output is correct,
+      complete, or suitable for any purpose. You are responsible for verifying results.
+      <span class="tpLine">
+        sona: ilo ni li lon nasin "as is". mi pana ala e wawa pi pona.
+        sina o lukin e ni: sitelen li pona anu seme.
+      </span>
+    </div>
+
+    <div class="help" style="margin-top: 4px;"><a href="./index.html">← Back to index</a></div>
+
+    <div class="accordion" style="margin-top:10px;">
+      <details>
+        <summary>How to use this page</summary>
+        <div class="accordionBody">
+
+          <p style="margin:0 0 8px;font-size:12px;color:var(--muted);">
+            This database controls how tokiponized proper names are displayed as cartouches across all renderer pages.
+            Each entry is looked up automatically when the renderer encounters a capitalised word sequence, e.g. <strong>Towasi</strong>.
+          </p>
+
+          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Table columns</p>
+          <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
+            <li><strong>Name (words)</strong> — The tokiponized proper name. Amber words are nanpa-linja-n numeric sequences — they are detected automatically and are always rendered as one cartouche.</li>
+            <li><strong>@db</strong> — Only shown for entries containing a nanpa-linja-n numeric sequence. When checked, the entry supports the <code>@db</code> suffix (see below) to override automatic nanpa-linja-n numeric rendering with a hand-picked glyph cartouche.</li>
+            <li><strong>Merge</strong> — When checked, all non-numeric words in the entry are merged into a single cartouche. When unchecked, each word gets its own cartouche.</li>
+            <li><strong>Mode</strong> — <em>random</em>: each letter maps to a random toki pona word starting with that letter (chosen once per page load, consistent across the page). <em>preferred</em>: use the cartouche you set via the Edit button. <em>ignore</em>: suppress this entry entirely — the words pass through to the renderer as-is.</li>
+            <li><strong>Cartouche (latin desc)</strong> — Shows what will be sent to the renderer. <code>→ random</code> means it will be generated at page load. <code>(@db)</code> marks the part that is only used when the <code>@db</code> suffix is present in the input.</li>
+          </ul>
+
+          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Editing a cartouche</p>
+          <p style="margin:0 0 10px;font-size:12px;color:var(--muted);">
+            Click <strong>✏ edit</strong> to open the slot editor. Each letter of the name gets a slot — pick a toki pona word starting with that letter from the glyph picker, or type one in directly.
+            Click <strong>Apply</strong> to save. This sets the mode to <em>preferred</em> automatically.
+            For entries with <strong>@db</strong> checked, the numeric sequence becomes editable too — the glyphs you pick there are only used when the <code>@db</code> suffix is present in the input.
+          </p>
+
+          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Using <code>@db</code> in renderer input</p>
+          <p style="margin:0 0 6px;font-size:12px;color:var(--muted);">
+            On any renderer page (e.g. text-to-sitelen), you can suffix a name with <code>@db</code> to control how the numeric part is rendered.
+            The suffix goes on the <strong>last word</strong> of the name.
+          </p>
+          <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
+            <li><code>Sema Pan Neninimen</code> — DB is consulted for <em>Sema Pan</em> (glyph cartouche from database), <em>Neninimen</em> renders as a nanpa-linja-n numeric cartouche.</li>
+            <li><code>Sema Pan Neninimen@db</code> — Same as above, but <em>Neninimen</em> is also overridden with the glyph cartouche stored in the database (only works if the <strong>@db</strong> checkbox is checked for this entry).</li>
+            <li><code>Nemen@db</code> — A purely numeric name: without <code>@db</code> it renders as a number; with <code>@db</code> it renders as a glyph cartouche from the database.</li>
+            <li>If the name is not in the database, or the <strong>@db</strong> checkbox is not checked, the <code>@db</code> suffix is silently stripped and normal rendering applies.</li>
+          </ul>
+
+          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Tips</p>
+          <ul style="margin:0 0 0 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
+            <li>Random cartouches are computed once per page load — the same name always looks the same everywhere on that page, even across multiple renders.</li>
+            <li>Use <em>ignore</em> mode to suppress a name from the database without deleting it — useful for names where you want the renderer's default behaviour.</li>
+            <li>Use Export / Import to back up your database or share entries between sites.</li>
+          </ul>
+
+        </div>
+      </details>
+    </div>
+
+    <div class="addBar">
+      <div style="flex:1 1 200px;">
+        <label for="searchInput">Search entries</label>
+        <input type="text" id="searchInput" placeholder="filter…" autocomplete="off" spellcheck="false" />
+      </div>
+      <div style="flex:1 1 300px;">
+        <label for="addInput">Add name (one line, multiple words ok)</label>
+        <input type="text" id="addInput" placeholder="e.g. Sema Pan Neninimen" autocomplete="off" spellcheck="false" />
+      </div>
+      <div>
+        <button id="btnAdd" class="btnBi" type="button">
+          <span>Add entry</span>
+          <span class="tpLine">o pana e nimi</span>
+        </button>
+      </div>
+    </div>
+    <div class="validationStrip" id="addError"></div>
+    <div class="nanpaWarn" id="nanpaWarn"></div>
+
+    <div class="row" style="margin-top: 12px; align-items: flex-end;">
+      <div class="col" style="flex: 0 1 260px;">
+        <label for="fontSelect">Preview font family</label>
+        <select id="fontSelect"><option value="nasinNanpa" selected>nasin-nanpa</option></select>
+      </div>
+      <div class="col" style="flex: 0 1 100px;">
+        <label for="fontSizeInput">Size (px)</label>
+        <input type="text" id="fontSizeInput" value="40" style="width:80px;" />
+      </div>
+      <div>
+        <button id="btnRenderAll" class="btnBi" type="button">
+          <span>Render all</span><span class="tpLine">o sitelen ale</span>
+        </button>
+      </div>
+      <div style="margin-left:auto;">
+        <span class="pill" id="pillCount">0 entries</span>
+        <span class="pill" id="pillRenderer">renderer: loading…</span>
+      </div>
+    </div>
+
+    <div class="tableWrap" id="tableWrap">
+      <table aria-label="Cartouche database">
+        <thead>
+          <tr>
+            <th style="width:18%;min-width:130px;">Name (words)</th>
+            <th style="width:5%;min-width:50px;">@db</th>
+            <th style="width:7%;min-width:60px;">Merge</th>
+            <th style="width:28%;min-width:190px;">Mode</th>
+            <th style="width:33%;min-width:180px;">Cartouche (latin desc)</th>
+            <th style="width:14%;min-width:120px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="emptyState hidden" id="emptyState">No entries yet. Add some above.</div>
+
+    <div class="accordion" style="margin-top: 14px;">
+      <details id="detailsDbOps">
+        <summary>Database Import / Export</summary>
+        <div class="accordionBody">
+          <div class="help" style="margin-bottom:8px;">
+            Export the full cartouche database to JSON, or import a previously exported file.
+          </div>
+          <div class="row">
+            <button id="btnExport" class="btnBi" type="button"><span>Export JSON</span><span class="tpLine">o pana e lipu</span></button>
+            <button id="btnImport" class="btnBi" type="button"><span>Import JSON</span><span class="tpLine">o kama jo e lipu</span></button>
+            <button id="btnClearDb" class="btnBi" type="button"><span>Clear all</span><span class="tpLine">o weka ale</span></button>
+            <input id="fileImport" class="sr-only" type="file" accept="application/json,.json" />
+          </div>
+        </div>
+      </details>
+    </div>
+  </main>
+
+  <!-- Cartouche editor modal -->
+  <div id="cartoucheModal" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="cartoucheModalTitle">
+    <div class="modal">
+      <div class="modalHeader">
+        <h3 id="cartoucheModalTitle">Edit preferred cartouche</h3>
+        <button id="btnCloseCartoucheModal" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="help" style="margin-bottom:10px;">
+          Each letter maps to a toki pona word starting with that letter. Word boundaries are shown with <strong>|</strong>.
+          Nanpa-linja-n segments are locked (shown in amber). Words validated as you type.
+        </div>
+        <div id="cartoucheModalPreviewWrap" style="margin-bottom:10px;min-height:36px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap;">Current render:</span>
+          <canvas id="cartoucheModalCanvas" width="1" height="1" style="display:block;max-width:100%;background:transparent;"></canvas>
+        </div>
+        <div id="cartoucheSlots"></div>
+        <div id="cartouchePicker" class="slotPicker">
+          <div class="slotPickerLabel" id="cartouchePickerLabel"></div>
+          <div class="slotPickerWords" id="cartouchePickerWords"></div>
+        </div>
+        <div class="validationStrip" id="cartoucheError" style="margin-top:6px;min-height:18px;"></div>
+        <div class="help" style="margin-top:6px;">
+          Preview: <span id="cartouchePreview" class="mono" style="color:var(--accent);"></span>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <button id="btnApplyCartouche" type="button">Apply</button>
+          <button id="btnCancelCartouche" type="button">Cancel</button>
+        </div>
+      </div><!-- /modalBody -->
+    </div>
+  </div>
+
+  <script type="module">
+    import { SitelenRenderer, NanpaParser } from './js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v7.js';
+    import { createSitelenFontPairController } from './js/sitelen-font-pair-controller-merged-updated-font-label.js';
+    import {
+      CartoucheApi,
+      validateTpWord,
+      segmentWords,
+      validateBoundaries,
+      parseAndValidateLine,
+      makeKey,
+      segmentLetters,
+      buildRandomDescForLetters,
+      buildEntryRendererInput,
+    } from './js/cartouche-api.js?v=12';
+
+    // ── Page-level constants (font, UI) ───────────────────────────────────────
+    const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';
+    const FONT_FAMILY_CARTOUCHE = 'TP-Cartouche-Font';
+
+    // ── TP word/glyph data (picker only — not needed by API) ─────────────────
+    const TP_VALID_WORDS = new Set([
+      'a','akesi','ala','alasa','ale','ali','anpa','ante','anu','awen',
+      'e','en','epiku','esun','ijo','ike','ilo','insa',
+      'jaki','jan','jasima','jelo','jo',
+      'kala','kalama','kama','kasi','ken','kepeken','kijetesantakalu','kili','kin','kipisi',
+      'kiwen','ko','kokosila','kon','ku','kule','kulupu','kute',
+      'la','lanpan','lape','laso','lawa','leko','len','lete','li','lili',
+      'linja','linluwi','lipu','loje','lon','luka','lukin','lupa',
+      'ma','majuna','mama','mani','meli','meso','mi','mije','misikeke',
+      'moku','moli','monsi','monsuta','mu','mun','musi','mute',
+      'n','namako','nanpa','nasa','nasin','nena','ni','nimi','noka',
+      'o','oko','olin','ona','open',
+      'pakala','pake','pali','palisa','pan','pana','pi','pilin','pimeja',
+      'pini','pipi','poka','poki','pona','powe','pu',
+      'sama','seli','selo','seme','sewi','sijelo','sike','sin','sina',
+      'sinpin','sitelen','soko','sona','soweli','su','suli','suno','supa','suwi',
+      'tan','taso','tawa','telo','tenpo','toki','tomo','tonsi','tu',
+      'unpa','uta','utala','walo','wan','waso','wawa','weka','wile',
+    ]);
+
+    const TP_WORD_TO_CP = {
+      'a':0xF1900,'akesi':0xF1901,'ala':0xF1902,'alasa':0xF1903,'ale':0xF1904,'ali':0xF1904,
+      'anpa':0xF1905,'ante':0xF1906,'anu':0xF1907,'awen':0xF1908,
+      'e':0xF1909,'en':0xF190A,'epiku':0xF1983,'esun':0xF190B,'ijo':0xF190C,'ike':0xF190D,'ilo':0xF190E,'insa':0xF190F,
+      'jaki':0xF1910,'jan':0xF1911,'jelo':0xF1912,'jo':0xF1913,'jasima':0xF197F,
+      'kala':0xF1914,'kalama':0xF1915,'kama':0xF1916,'kasi':0xF1917,'ken':0xF1918,'kijetesantakalu':0xF1980,
+      'kepeken':0xF1919,'kili':0xF191A,'kiwen':0xF191B,'ko':0xF191C,'kon':0xF191D,
+      'kule':0xF191E,'kulupu':0xF191F,'kute':0xF1920,'kipisi':0xF197B,'kin':0xF1979,'ku':0xF1988,'kokosila':0xF1984,
+      'la':0xF1921,'lape':0xF1922,'laso':0xF1923,'lawa':0xF1924,'len':0xF1925,
+      'lete':0xF1926,'li':0xF1927,'lili':0xF1928,'linja':0xF1929,'lipu':0xF192A,
+      'loje':0xF192B,'lon':0xF192C,'luka':0xF192D,'lukin':0xF192E,'lupa':0xF192F,
+      'leko':0xF197C,'lanpan':0xF1985,'linluwi':0xF19A4,
+      'ma':0xF1930,'mama':0xF1931,'mani':0xF1932,'meli':0xF1933,'mi':0xF1934,
+      'mije':0xF1935,'moku':0xF1936,'moli':0xF1937,'monsi':0xF1938,'mu':0xF1939,
+      'mun':0xF193A,'musi':0xF193B,'mute':0xF193C,'monsuta':0xF197D,'meso':0xF1982,'misikeke':0xF1987,'majuna':0xF19A2,
+      'n':0xF1986,'nanpa':0xF193D,'nasa':0xF193E,'nasin':0xF193F,'nena':0xF1940,
+      'ni':0xF1941,'nimi':0xF1942,'noka':0xF1943,'namako':0xF1978,
+      'ni<':0xF1989,'ni^':0xF198A,'ni>':0xF198B,
+      'o':0xF1944,'olin':0xF1945,'ona':0xF1946,'open':0xF1947,'oko':0xF197A,
+      'pakala':0xF1948,'pali':0xF1949,'palisa':0xF194A,'pan':0xF194B,'pana':0xF194C,
+      'pi':0xF194D,'pilin':0xF194E,'pimeja':0xF194F,'pini':0xF1950,'pipi':0xF1951,
+      'poka':0xF1952,'poki':0xF1953,'pona':0xF1954,'pu':0xF1955,'pake':0xF19A0,'powe':0xF19A3,
+      'sama':0xF1956,'seli':0xF1957,'selo':0xF1958,'seme':0xF1959,'sewi':0xF195A,'sewi^':0xF198C,
+      'sijelo':0xF195B,'sike':0xF195C,'sin':0xF195D,'sina':0xF195E,'sinpin':0xF195F,
+      'sitelen':0xF1960,'sona':0xF1961,'soweli':0xF1962,'suli':0xF1963,'suno':0xF1964,
+      'supa':0xF1965,'suwi':0xF1966,'su':0xF19A6,'soko':0xF1981,
+      'tan':0xF1967,'taso':0xF1968,'tawa':0xF1969,'telo':0xF196A,'tenpo':0xF196B,
+      'toki':0xF196C,'tomo':0xF196D,'tu':0xF196E,'tonsi':0xF197E,
+      'unpa':0xF196F,'uta':0xF1970,'utala':0xF1971,
+      'walo':0xF1972,'wan':0xF1973,'waso':0xF1974,'wawa':0xF1975,'weka':0xF1976,'wile':0xF1977,
+    };
+
+    const TP_VARIANT_TOKENS = new Set(['ni<','ni^','ni>','sewi^']);
+    const TP_VARIANT_FIRST  = { 'ni<':'n','ni^':'n','ni>':'n','sewi^':'s' };
+
+    // ── descForEntry (display only — not in API) ──────────────────────────────
+    function descForEntry(entry) {
+      if (entry.mode === 'ignore') return '— (ignored)';
+      const segs = segmentWords(entry.words);
+      return segs.map((seg, si) => {
+        if (seg.type === 'nanpa' && !entry.forceNormal) return `[${seg.words.join(' ')}]`;
+        if (seg.type === 'nanpa' && entry.forceNormal) {
+          const cm2 = entry.cartoucheMap || {};
+          const stored = cm2[si];
+          if (entry.mode === 'preferred' && stored) return `[${stored}] (@db)`;
+          const letters = seg.words.join('').toLowerCase().split('').join('·');
+          return `[${letters} → random] (@db)`;
+        }
+        const cm = entry.cartoucheMap || {};
+        if (entry.merge) {
+          const stored = cm[si];
+          if (entry.mode === 'preferred' && stored) return `[${stored}]`;
+          const { letters } = segmentLetters(seg.words);
+          return `[${letters.join('·')} → random]`;
+        } else {
+          return seg.words.map((w, wi) => {
+            const stored = cm[`${si}_${wi}`];
+            if (entry.mode === 'preferred' && stored) return `[${stored}]`;
+            return `[${w.toLowerCase().split('').join('·')} → random]`;
+          }).join(' ');
+        }
+      }).join(' ');
+    }
+
+    // ── Font setup ────────────────────────────────────────────────────────────
+    const RENDER_FONT_PRESETS = {
+      nasinNanpa: {
+        key: 'nasinNanpa', label: 'nasin-nanpa', parserMode: 'sitelen-seli-kiwen',
+        textFamily: FONT_FAMILY_TEXT, cartoucheFamily: FONT_FAMILY_CARTOUCHE,
+        faces: [
+          { family: FONT_FAMILY_TEXT,      url: './fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf',                        format: 'opentype', sample: String.fromCodePoint(0xF196C) },
+          { family: FONT_FAMILY_CARTOUCHE, url: './fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf', format: 'opentype', sample: String.fromCodePoint(0xF1990) },
+        ],
+      },
+    };
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let entries = [], renderer = null, fontCtrl = null, editingKey = null;
+    let api = null;  // CartoucheApi instance (lookup:false — DB page)
+    const $ = id => document.getElementById(id);
+
+    // ── Font controller + renderer ────────────────────────────────────────────
+    async function initFontsAndRenderer() {
+      fontCtrl = createSitelenFontPairController({
+        registry: RENDER_FONT_PRESETS, storageKeyPrefix: 'cartouche-db', defaultPresetKey: 'nasinNanpa',
+      });
+      await fontCtrl.ready;
+      // Populate first so custom fonts get registered before we set active preset
+      await populateFontSelect();
+      const saved = loadFontPref();
+      try { fontCtrl.setActivePreset(saved || 'nasinNanpa', { persist: false }); } catch {}
+      // Sync select element to active preset
+      if (saved && $('fontSelect').querySelector(`option[value="${saved}"]`)) {
+        $('fontSelect').value = saved;
+      }
+
+      // Register fonts via FontFace API so CSS (glyph picker spans) can use them
+      try {
+        for (const face of RENDER_FONT_PRESETS.nasinNanpa.faces) {
+          const ff = new FontFace(face.family, `url('${face.url}')`, { style: 'normal', weight: 'normal' });
+          const loaded = await ff.load();
+          document.fonts.add(loaded);
+        }
+      } catch (e) { console.warn('FontFace CSS registration failed', e); }
+
+      try {
+        renderer = await SitelenRenderer.create({});
+        $('pillRenderer').textContent = 'renderer: ready';
+        $('pillRenderer').className   = 'pill good';
+      } catch (e) {
+        $('pillRenderer').textContent = 'renderer: error';
+        $('pillRenderer').className   = 'pill bad';
+        console.error(e);
+      }
+    }
+
+    async function populateFontSelect() {
+      const sel = $('fontSelect');
+      const prev = sel.value;
+      sel.innerHTML = '<option value="nasinNanpa">nasin-nanpa</option>';
+      try {
+        const db = await new Promise((res, rej) => {
+          const r = indexedDB.open('nanpaLinjaNFontPairs');
+          r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); r.onupgradeneeded = () => {};
+        });
+        const storeNames = Array.from(db.objectStoreNames);
+        if (storeNames.includes('pairs')) {
+          const pairs = await new Promise(res => {
+            try { const tx = db.transaction('pairs','readonly'); const req = tx.objectStore('pairs').getAll(); req.onsuccess = () => res(req.result||[]); req.onerror = () => res([]); } catch { res([]); }
+          });
+          db.close();
+          for (const p of pairs) {
+            const key = p.fontKey || p.baseFamily || 'font';
+            const textFamily = p.baseFamily || FONT_FAMILY_TEXT;
+            const cartoucheFamily = p.companionFamily || FONT_FAMILY_CARTOUCHE;
+            // Register the custom font as a preset so setActivePreset works
+            try {
+              fontCtrl.registerPresetObject(key, {
+                key,
+                label: p.fontLabel || p.label || key,
+                textFamily,
+                cartoucheFamily,
+                parserMode: 'sitelen-seli-kiwen',
+                faces: [
+                  { family: textFamily,      url: p.baseUrl      || '', format: 'opentype' },
+                  { family: cartoucheFamily, url: p.companionUrl || '', format: 'opentype' },
+                ],
+              });
+            } catch (e) { console.warn('registerPresetObject failed for', key, e); }
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = p.fontLabel || p.label || key;
+            sel.appendChild(opt);
+          }
+        } else db.close();
+      } catch {}
+      if (prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
+    }
+
+    const FONT_PREF_KEY = 'cartouche-db-font-pref';
+    function saveFontPref() { try { localStorage.setItem(FONT_PREF_KEY, $('fontSelect').value); } catch {} }
+    function loadFontPref() { try { return localStorage.getItem(FONT_PREF_KEY); } catch { return null; } }
+
+    function getFontRoles() {
+      if (fontCtrl) { try { return { roles: fontCtrl.buildFontRoles() }; } catch {} }
+      return { roles: { text: FONT_FAMILY_TEXT, word: FONT_FAMILY_TEXT, cartouche: FONT_FAMILY_CARTOUCHE, number: FONT_FAMILY_CARTOUCHE } };
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    async function renderEntry(entry, targetCanvas) {
+      if (!renderer || entry.mode === 'ignore') return;
+      try {
+        const sizePx = parseInt($('fontSizeInput').value) || 40;
+        const segs   = segmentWords(entry.words);
+
+        // For random: generate and SAVE cartouche so it stays stable across renders.
+        // Also handle forceNormal nanpa segments — generate once and save.
+        const cm = entry.cartoucheMap || {};
+        let changed = false;
+        segs.forEach((seg, si) => {
+          // forceNormal nanpa segment — generate random glyph cartouche if not set
+          if (seg.type === 'nanpa' && entry.forceNormal) {
+            if (!cm[si] || cm[si] === seg.words.join('') || cm[si] === seg.words.join(' ')) {
+              // Not yet set or contains raw word — generate proper random glyph words
+              const letters = seg.words.join('').toLowerCase().split('');
+              cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+              changed = true;
+            }
+            return;
+          }
+          if (seg.type === 'nanpa') return; // normal nanpa — renderer handles
+          if (entry.mode === 'preferred') return; // preferred normal — use stored
+          if (entry.merge) {
+            const { letters } = segmentLetters(seg.words);
+            cm[si] = buildRandomDescForLetters(letters);
+            changed = true;
+          } else {
+            seg.words.forEach((w, wi) => {
+              cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split(''));
+              changed = true;
+            });
+          }
+        });
+        if (changed) {
+          entry.cartoucheMap = cm;
+          await api.putEntry({ ...entry });
+          updateDescCell(entry);
+        }
+
+        if (fontCtrl) { try { await fontCtrl.waitForConfiguredFonts(sizePx); } catch {} }
+
+        const input = buildEntryRendererInput(entry);
+        const rendered = await renderer.renderTextToNewCanvas({
+          input, layout: { fontPx: sizePx }, paint: { fgColor: '#111111' }, fonts: getFontRoles(),
+        });
+        const src = rendered.canvas;
+        targetCanvas.width = src.width; targetCanvas.height = src.height;
+        const ctx = targetCanvas.getContext('2d');
+        ctx.clearRect(0, 0, src.width, src.height);
+        ctx.drawImage(src, 0, 0);
+      } catch (e) { console.warn('render error', entry.key, e); }
+    }
+
+    // ── Table ─────────────────────────────────────────────────────────────────
+    function renderTable(filter) {
+      filter = (filter || '').toLowerCase();
+      const tbody = $('tbody');
+      tbody.innerHTML = '';
+      const visible = entries.filter(e => !filter || e.key.toLowerCase().includes(filter));
+      $('emptyState').classList.toggle('hidden', visible.length > 0 || !!filter);
+      if (visible.length === 0 && filter) {
+        const tr = tbody.insertRow(); const td = tr.insertCell();
+        td.colSpan = 5; td.style.cssText = 'text-align:center;color:var(--muted);padding:16px;';
+        td.textContent = `No matches for "${filter}"`; return;
+      }
+
+      for (const entry of visible) {
+        const segs = segmentWords(entry.words);
+        const hasEditableSegs = segs.some(s => s.type === 'normal');
+        const tr = document.createElement('tr');
+        tr.dataset.key = entry.key;
+
+        // ── Name cell ──
+        const tdName = document.createElement('td');
+        tdName.className = 'wordCell mono';
+        // Show each word; nanpa words in amber
+        const nameSpan = document.createElement('span');
+        segs.forEach((seg, si) => {
+          if (si > 0) { const sp = document.createElement('span'); sp.textContent = ' '; nameSpan.appendChild(sp); }
+          seg.words.forEach((w, wi) => {
+            if (wi > 0) { const sp = document.createElement('span'); sp.textContent = ' '; nameSpan.appendChild(sp); }
+            const ws = document.createElement('span');
+            ws.textContent = w;
+            if (seg.type === 'nanpa') { ws.style.color = 'var(--warn)'; ws.title = 'nanpa: [' + seg.words.join(' ') + ']'; }
+            nameSpan.appendChild(ws);
+          });
+        });
+        tdName.appendChild(nameSpan);
+        tr.appendChild(tdName);
+
+        // ── Force Normal toggle (@db column — always present) ──
+        const isAllNanpa  = segs.length > 0 && segs.every(s => s.type === 'nanpa');
+        const hasAnyNanpa = segs.some(s => s.type === 'nanpa');
+        const tdForce = document.createElement('td');
+        tdForce.style.textAlign = 'center';
+        if (hasAnyNanpa) {
+          const forceChk = document.createElement('input');
+          forceChk.type = 'checkbox';
+          forceChk.checked = !!entry.forceNormal;
+          forceChk.title = 'Allow @db suffix in input to override numeric rendering';
+          forceChk.addEventListener('change', async () => {
+            entry.forceNormal = forceChk.checked;
+            await api.putEntry({ ...entry });
+            // Update edit button — nanpa-only entries become editable when forceNormal set
+            if (isAllNanpa) {
+              btnEdit.disabled = !entry.forceNormal;
+              btnEdit.title = entry.forceNormal ? 'Edit cartouche' : 'Enable @db to edit nanpa segments';
+            }
+          });
+          tdForce.appendChild(forceChk);
+          const lbl = document.createElement('label');
+          lbl.style.cssText = 'font-size:10px;color:var(--warn);display:block;';
+          lbl.textContent = '@db';
+          tdForce.appendChild(lbl);
+        }
+        tr.appendChild(tdForce);
+
+        // ── Merge toggle ──
+        const tdMerge = document.createElement('td');
+        tdMerge.style.textAlign = 'center';
+        if (hasEditableSegs) {
+          const chk = document.createElement('input');
+          chk.type = 'checkbox'; chk.checked = !!entry.merge;
+          chk.title = 'Merge all words into one cartouche per run';
+          chk.addEventListener('change', async () => {
+            const newMerge = chk.checked;
+            const cm = entry.cartoucheMap || {};
+            // Migrate cartoucheMap keys when merge flag changes
+            if (entry.mode === 'preferred') {
+              const newCm = {};
+              segs.forEach((seg, si) => {
+                if (seg.type !== 'normal') return;
+                if (newMerge) {
+                  // Was split (0_0, 0_1, ...) → merge into one per seg
+                  // Concatenate all per-word descs into one combined desc
+                  const combined = seg.words.map((w, wi) => cm[`${si}_${wi}`] || '').filter(Boolean).join(' ');
+                  if (combined) newCm[si] = combined;
+                  else {
+                    // Generate from letters
+                    const { letters } = segmentLetters(seg.words);
+                    newCm[si] = buildRandomDescForLetters(letters);
+                  }
+                } else {
+                  // Was merged (0) → split into per-word keys
+                  // Split the stored desc back by word count
+                  const mergedDesc = cm[si] || '';
+                  const descWords = mergedDesc.split(/\s+/).filter(Boolean);
+                  let offset = 0;
+                  seg.words.forEach((w, wi) => {
+                    const { letters } = segmentLetters([w]);
+                    const wordDescWords = descWords.slice(offset, offset + letters.length);
+                    newCm[`${si}_${wi}`] = wordDescWords.length === letters.length
+                      ? wordDescWords.join(' ')
+                      : buildRandomDescForLetters(w.toLowerCase().split(''));
+                    offset += letters.length;
+                  });
+                }
+              });
+              entry.cartoucheMap = newCm;
+            }
+            entry.merge = newMerge;
+            await api.putEntry({ ...entry });
+            updateDescCell(entry);
+          });
+          tdMerge.appendChild(chk);
+          const lbl = document.createElement('label');
+          lbl.style.cssText = 'font-size:11px;color:var(--muted);display:block;';
+          lbl.textContent = 'merge';
+          tdMerge.appendChild(lbl);
+        } else {
+          tdMerge.textContent = '—';
+          tdMerge.style.color = 'var(--muted)';
+        }
+        tr.appendChild(tdMerge);
+
+        // ── Mode cell ──
+        const tdMode = document.createElement('td');
+        const modeGroup = document.createElement('div');
+        modeGroup.className = 'modeGroup';
+        for (const [val, label] of [['random','🎲 random'],['preferred','★ preferred'],['ignore','✕ ignore']]) {
+          const lbl = document.createElement('label');
+          const inp = document.createElement('input');
+          inp.type = 'radio'; inp.name = 'mode-' + entry.key; inp.value = val; inp.checked = entry.mode === val;
+          inp.addEventListener('change', async () => {
+            entry.mode = val;
+            if (val === 'preferred' && hasEditableSegs) {
+              // Ensure cartoucheMap has entries for all normal segs
+              const cm = entry.cartoucheMap || {};
+              let needFill = false;
+              segs.forEach((seg, si) => {
+                if (seg.type !== 'normal') return;
+                if (entry.merge && !cm[si]) { cm[si] = buildRandomDescForLetters(segmentLetters(seg.words).letters); needFill = true; }
+                else if (!entry.merge) {
+                  seg.words.forEach((w, wi) => { if (!cm[`${si}_${wi}`]) { cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split('')); needFill = true; } });
+                }
+              });
+              if (needFill) entry.cartoucheMap = cm;
+              openCartoucheModal(entry);
+            }
+            if (val === 'ignore') {
+              const previewTr = tbody.querySelector(`tr[data-preview-for="${CSS.escape(entry.key)}"]`);
+              if (previewTr) previewTr.classList.add('hidden');
+            }
+            await api.putEntry({ ...entry });
+            updateDescCell(entry);
+            btnRender.disabled = val === 'ignore';
+            // edit button enabled whenever there are editable segs — no mode restriction
+          });
+          lbl.appendChild(inp); lbl.appendChild(document.createTextNode(label));
+          modeGroup.appendChild(lbl);
+        }
+        tdMode.appendChild(modeGroup);
+        tr.appendChild(tdMode);
+
+        // ── Desc cell ──
+        const tdDesc = document.createElement('td');
+        tdDesc.className = 'cartoucheDesc';
+        tdDesc.dataset.descFor = entry.key;
+        const descSpan = document.createElement('span');
+        descSpan.className = 'randomNote';
+        descSpan.textContent = descForEntry(entry);
+        tdDesc.appendChild(descSpan);
+        tr.appendChild(tdDesc);
+
+        // ── Actions cell ──
+        const tdAct = document.createElement('td');
+        tdAct.className = 'actCell';
+
+        const btnRender = document.createElement('button');
+        btnRender.textContent = '▶ render';
+        btnRender.disabled = entry.mode === 'ignore';
+        btnRender.addEventListener('click', async () => {
+          if (entry.mode === 'ignore') return;
+          let previewTr = tbody.querySelector(`tr[data-preview-for="${CSS.escape(entry.key)}"]`);
+          if (!previewTr) previewTr = createPreviewRow(tr, entry.key);
+          previewTr.classList.remove('hidden');
+          await renderEntry(entry, previewTr.querySelector('canvas'));
+        });
+        tdAct.appendChild(btnRender);
+
+        const btnEdit = document.createElement('button');
+        btnEdit.textContent = '✏ edit';
+        const canEdit = hasEditableSegs || (isAllNanpa && !!entry.forceNormal);
+        btnEdit.disabled = !canEdit;
+        btnEdit.title = !canEdit ? 'Enable @db to edit nanpa segments' : 'Edit cartouche';
+        btnEdit.addEventListener('click', async () => {
+          // Clicking edit always switches to preferred mode and opens the modal.
+          // Ensure cartoucheMap has a starting value for all normal segments.
+          const cm = entry.cartoucheMap || {};
+          segs.forEach((seg, si) => {
+            if (seg.type !== 'normal') return;
+            if (entry.merge && !cm[si]) {
+              cm[si] = buildRandomDescForLetters(segmentLetters(seg.words).letters);
+            } else if (!entry.merge) {
+              seg.words.forEach((w, wi) => {
+                if (!cm[`${si}_${wi}`])
+                  cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split(''));
+              });
+            }
+          });
+          entry.cartoucheMap = cm;
+          entry.mode = 'preferred';
+          // Update the radio UI to reflect the mode change
+          const radios = tdMode.querySelectorAll('input[type="radio"]');
+          radios.forEach(r => { r.checked = r.value === 'preferred'; });
+          await api.putEntry({ ...entry });
+          updateDescCell(entry);
+          openCartoucheModal(entry);
+        });
+        tdAct.appendChild(btnEdit);
+
+        const btnDel = document.createElement('button');
+        btnDel.textContent = '🗑'; btnDel.title = 'Remove';
+        btnDel.addEventListener('click', async () => {
+          if (!confirm(`Remove "${entry.key}"?`)) return;
+          entries = entries.filter(e => e.key !== entry.key);
+          await api.deleteEntry(entry.key);
+          renderTable($('searchInput').value); updatePill();
+        });
+        tdAct.appendChild(btnDel);
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      }
+      updatePill();
+    }
+
+    function createPreviewRow(anchorTr, key) {
+      const previewTr = document.createElement('tr');
+      previewTr.dataset.previewFor = key;
+      previewTr.className = 'previewRow hidden';
+      const tdPrev = document.createElement('td'); tdPrev.colSpan = 5; tdPrev.className = 'previewCell';
+      const hdr = document.createElement('div'); hdr.className = 'previewHeader';
+      const btnClose = document.createElement('button'); btnClose.textContent = '✕ close'; btnClose.style.cssText = 'font-size:11px;';
+      btnClose.addEventListener('click', () => previewTr.classList.add('hidden'));
+      hdr.appendChild(btnClose);
+      const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
+      tdPrev.appendChild(hdr); tdPrev.appendChild(canvas);
+      previewTr.appendChild(tdPrev);
+      anchorTr.after(previewTr);
+      return previewTr;
+    }
+
+    function updateDescCell(entry) {
+      const td = $('tbody').querySelector(`td[data-desc-for="${CSS.escape(entry.key)}"]`);
+      if (!td) return;
+      const sp = td.querySelector('span'); if (!sp) return;
+      sp.textContent = descForEntry(entry);
+    }
+
+    // ── Add entry ─────────────────────────────────────────────────────────────
+    async function addEntry() {
+      const raw = $('addInput').value.trim();
+      if (!raw) return;
+      const result = parseAndValidateLine(raw);
+      if (!result.ok) { $('addError').textContent = result.reason; return; }
+      $('addError').textContent = '';
+
+      const key = makeKey(result.words);
+      if (entries.find(e => e.key === key)) { $('addError').textContent = `"${key}" is already in the database.`; return; }
+
+      const segs = segmentWords(result.words);
+      const hasNanpa = segs.some(s => s.type === 'nanpa');
+      if (hasNanpa) {
+        $('nanpaWarn').textContent = `⚠ Contains nanpa-linja-n number(s): ${segs.filter(s=>s.type==='nanpa').map(s=>s.words.join('')).join(', ')} → will render as fixed numeric cartouche(s).`;
+        $('nanpaWarn').classList.add('show');
+      } else { $('nanpaWarn').classList.remove('show'); }
+
+      const entry = { key, words: result.words, merge: true, mode: 'random', cartoucheMap: {}, forceNormal: false };
+      entries.push(entry);
+      await api.putEntry(entry);
+      $('addInput').value = '';
+      renderTable($('searchInput').value); updatePill();
+    }
+
+    // ── Cartouche modal ───────────────────────────────────────────────────────
+    function validateSlotWord(word, requiredLetter) {
+      const w = word.trim().toLowerCase();
+      if (!w) return { ok: false, reason: 'empty' };
+      if (TP_VARIANT_TOKENS.has(w)) {
+        const vf = TP_VARIANT_FIRST[w];
+        if (vf !== requiredLetter) return { ok: false, reason: `"${w}" is a variant for "${vf}", not "${requiredLetter}"` };
+        return { ok: true, word: w };
+      }
+      if (!TP_VALID_WORDS.has(w)) return { ok: false, reason: `"${w}" is not a known toki pona word` };
+      if (w[0] !== requiredLetter) return { ok: false, reason: `"${w}" must start with "${requiredLetter}"` };
+      return { ok: true, word: w };
+    }
+
+    // ── Glyph picker ──────────────────────────────────────────────────────────
+    let _activeSlotIndex = -1;
+
+    function buildPickerForLetter(letter, inputs, onPick) {
+      const pickerEl = $('cartouchePicker');
+      const wordsEl  = $('cartouchePickerWords');
+      const labelEl  = $('cartouchePickerLabel');
+      wordsEl.innerHTML = '';
+      const standardWords = Object.keys(TP_WORD_TO_CP).filter(w => w[0] === letter && TP_VALID_WORDS.has(w)).sort();
+      const variantWords  = Object.keys(TP_VARIANT_FIRST).filter(v => TP_VARIANT_FIRST[v] === letter).sort();
+      const allWords = [...standardWords, ...variantWords];
+      if (!allWords.length) { pickerEl.classList.remove('open'); return; }
+      labelEl.textContent = `Words for "${letter}":`;
+      const currentVal = inputs[_activeSlotIndex] ? inputs[_activeSlotIndex].value.trim() : '';
+      for (const w of allWords) {
+        const cp = TP_WORD_TO_CP[w];
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'slotWordBtn';
+        btn.setAttribute('aria-pressed', currentVal === w ? 'true' : 'false');
+        const glyph = document.createElement('span'); glyph.className = 'slotWordGlyph';
+        if (cp != null) glyph.textContent = String.fromCodePoint(cp);
+        const lbl = document.createElement('span'); lbl.textContent = w;
+        btn.appendChild(glyph); btn.appendChild(lbl);
+        btn.addEventListener('mousedown', e => {
+          e.preventDefault();
+          if (_activeSlotIndex < 0 || !inputs[_activeSlotIndex]) return;
+          inputs[_activeSlotIndex].value = w;
+          onPick(w);
+          wordsEl.querySelectorAll('.slotWordBtn').forEach(b =>
+            b.setAttribute('aria-pressed', b.querySelector('span:last-child').textContent === w ? 'true' : 'false'));
+          inputs[_activeSlotIndex].focus();
+        });
+        wordsEl.appendChild(btn);
+      }
+      pickerEl.classList.add('open');
+      setTimeout(() => { if (inputs[_activeSlotIndex]) inputs[_activeSlotIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 50);
+    }
+
+    // ── Modal live canvas preview ─────────────────────────────────────────────
+    let _previewDebounce = null;
+
+    async function renderModalPreview(inputStr, { forceNormal = false } = {}) {
+      if (!renderer) return;
+      const canvas = $('cartoucheModalCanvas');
+      if (!canvas) return;
+      try {
+        const sizePx = parseInt($('fontSizeInput').value) || 40;
+        if (fontCtrl) { try { await fontCtrl.waitForConfiguredFonts(sizePx); } catch {} }
+        // forceNormal entries use text font for cartouche rendering (glyph words not numbers)
+        const fontRoles = getFontRoles();
+        if (forceNormal) {
+          fontRoles.roles = { ...fontRoles.roles, cartouche: FONT_FAMILY_TEXT, number: FONT_FAMILY_TEXT };
+        }
+        const rendered = await renderer.renderTextToNewCanvas({
+          input: inputStr,
+          layout: { fontPx: sizePx },
+          paint:  { fgColor: '#111111' },
+          fonts:  fontRoles,
+        });
+        const src = rendered.canvas;
+        canvas.width = src.width; canvas.height = src.height;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, src.width, src.height);
+        ctx.drawImage(src, 0, 0);
+      } catch (e) { console.warn('modal preview render error', e); }
+    }
+
+    // Build slot editor for the modal.
+    // editableSegments: array of { segIndex, wordIndex|null, letters, storedDesc }
+    // nanpa segments are shown as locked amber blocks between editable slots.
+    function buildCartoucheSlots(entry) {
+      const slotsEl = $('cartoucheSlots');
+      slotsEl.innerHTML = '';
+      $('cartouchePicker').classList.remove('open');
+      $('cartouchePickerWords').innerHTML = '';
+      _activeSlotIndex = -1;
+
+      const segs = segmentWords(entry.words);
+      const cm   = entry.cartoucheMap || {};
+      const allInputs = []; // flat list of all editable inputs across all segments
+      // slotMeta[i] = { letter, segIndex, subKey } — for apply
+      const slotMeta  = [];
+
+      function updatePreview() {
+        // Build preview from current input values + nanpa segments
+        const parts = [];
+        let inputIdx = 0;
+        segs.forEach((seg, si) => {
+          if (seg.type === 'nanpa' && !entry.forceNormal) {
+            parts.push('[' + seg.words.join(' ') + ']');
+            return;
+          }
+          if (seg.type === 'nanpa' && entry.forceNormal) {
+            // forceNormal nanpa — read from editable slots
+            const letters = seg.words.join('').toLowerCase().split('');
+            const words = letters.map((_, li) => {
+              const inp = allInputs[inputIdx + li];
+              return inp ? inp.value.trim() || '?' : '?';
+            });
+            parts.push(`[${words.join(' ')}]`);
+            inputIdx += letters.length;
+            return;
+          }
+          if (entry.merge) {
+            const { letters } = segmentLetters(seg.words);
+            const words = letters.map((_, li) => {
+              const inp = allInputs[inputIdx + li];
+              return inp ? inp.value.trim() || '?' : '?';
+            });
+            parts.push(`[${words.join(' ')}]`);
+            inputIdx += letters.length;
+          } else {
+            seg.words.forEach((w, wi) => {
+              const letters = w.toLowerCase().split('');
+              const words = letters.map((_, li) => {
+                const inp = allInputs[inputIdx + li];
+                return inp ? inp.value.trim() || '?' : '?';
+              });
+              parts.push(`[${words.join(' ')}]`);
+              inputIdx += letters.length;
+            });
+          }
+        });
+        const previewStr = parts.join(' ');
+        $('cartouchePreview').textContent = previewStr;
+        // Debounce the canvas render so it doesn't fire on every keystroke
+        clearTimeout(_previewDebounce);
+        _previewDebounce = setTimeout(() => {
+          // Only render if all slots have valid values (no '?')
+          if (!previewStr.includes('?')) renderModalPreview(previewStr, { forceNormal: !!entry.forceNormal });
+        }, 400);
+      }
+
+      function validateAll() {
+        let errors = [];
+        allInputs.forEach((inp, i) => {
+          const { letter } = slotMeta[i];
+          const result = validateSlotWord(inp.value, letter);
+          inp.classList.toggle('slotOk',  result.ok);
+          inp.classList.toggle('slotErr', !result.ok && !!inp.value.trim());
+          if (!result.ok && inp.value.trim()) errors.push(result.reason);
+        });
+        $('cartoucheError').textContent = errors.length ? errors[0] : '';
+        return errors.length === 0;
+      }
+
+      function addDivider(label) {
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex;align-items:center;color:var(--muted);font-size:13px;font-weight:700;padding:0 2px;align-self:flex-end;padding-bottom:6px;';
+        div.textContent = label;
+        slotsEl.appendChild(div);
+      }
+
+      function addSlot(letter, existingWord, inputListIndex) {
+        const slot = document.createElement('div');
+        slot.className = 'cartoucheSlot';
+        const lbl = document.createElement('div'); lbl.className = 'slotLabel'; lbl.textContent = letter;
+        const inp = document.createElement('input');
+        inp.type = 'text'; inp.spellcheck = false; inp.autocomplete = 'off';
+        inp.placeholder = letter + '…'; inp.value = existingWord || '';
+        slot.appendChild(lbl); slot.appendChild(inp);
+        slotsEl.appendChild(slot);
+        const myIndex = inputListIndex;
+        inp.addEventListener('focus', () => {
+          _activeSlotIndex = myIndex;
+          buildPickerForLetter(letter, allInputs, () => { validateAll(); updatePreview(); });
+        });
+        inp.addEventListener('input', () => {
+          inp.value = inp.value.toLowerCase();
+          validateAll(); updatePreview();
+          buildPickerForLetter(letter, allInputs, () => { validateAll(); updatePreview(); });
+        });
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            if (myIndex < allInputs.length - 1) allInputs[myIndex + 1].focus();
+            else applyCartouche();
+          } else if (e.key === 'Escape') {
+            $('cartouchePicker').classList.remove('open');
+          }
+        });
+        return inp;
+      }
+
+      function addNanpaBlock(seg) {
+        const block = document.createElement('div');
+        block.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:0.05em;';
+        lbl.textContent = 'nanpa';
+        const val = document.createElement('div');
+        val.style.cssText = 'font-family:monospace;font-size:11px;color:var(--warn);border:1px solid var(--warn);border-radius:6px;padding:4px 7px;background:rgba(180,83,9,0.07);white-space:nowrap;';
+        val.textContent = '[' + seg.words.join(' ') + ']';
+        block.appendChild(lbl); block.appendChild(val);
+        slotsEl.appendChild(block);
+      }
+
+      // Build the slot UI segment by segment
+      segs.forEach((seg, si) => {
+        if (si > 0) addDivider('·');
+        if (seg.type === 'nanpa' && !entry.forceNormal) {
+          addNanpaBlock(seg);
+          return;
+        }
+        if (seg.type === 'nanpa' && entry.forceNormal) {
+          // forceNormal: treat nanpa segment as editable normal segment
+          // Use the words as letters for the slot editor
+          if (si > 0) addDivider('·');
+          const letters = seg.words.join('').toLowerCase().split('');
+          const subKey = String(si);
+          const stored = (cm[subKey] || '').split(/\s+/).filter(Boolean);
+          letters.forEach((letter, li) => {
+            const myInputIndex = allInputs.length;
+            const inp = addSlot(letter, stored[li] || '', myInputIndex);
+            allInputs.push(inp);
+            slotMeta.push({ letter, segIndex: si, subKey });
+          });
+          return;
+        }
+        // Normal segment
+        if (entry.merge) {
+          const { letters, wordBoundaries } = segmentLetters(seg.words);
+          const stored = (cm[si] || '').split(/\s+/).filter(Boolean);
+          letters.forEach((letter, li) => {
+            if (li > 0 && wordBoundaries.includes(li)) addDivider('|');
+            const myInputIndex = allInputs.length;
+            const inp = addSlot(letter, stored[li] || '', myInputIndex);
+            allInputs.push(inp);
+            slotMeta.push({ letter, segIndex: si, subKey: String(si) });
+          });
+        } else {
+          seg.words.forEach((w, wi) => {
+            if (wi > 0) addDivider('|');
+            const letters = w.toLowerCase().split('');
+            const stored  = (cm[`${si}_${wi}`] || '').split(/\s+/).filter(Boolean);
+            letters.forEach((letter, li) => {
+              const myInputIndex = allInputs.length;
+              const inp = addSlot(letter, stored[li] || '', myInputIndex);
+              allInputs.push(inp);
+              slotMeta.push({ letter, segIndex: si, subKey: `${si}_${wi}` });
+            });
+          });
+        }
+      });
+
+      validateAll(); updatePreview();
+      return { allInputs, slotMeta, validateAll };
+    }
+
+    let _slotData = null;
+
+    // ── Drag to move ─────────────────────────────────────────────────────────
+    function makeModalDraggable(modal, handle) {
+      let startX, startY, startLeft, startTop;
+      handle.addEventListener('mousedown', e => {
+        if (e.target.tagName === 'BUTTON') return; // don't drag on close button
+        e.preventDefault();
+        const rect = modal.getBoundingClientRect();
+        // Switch from transform-based centering to explicit position
+        modal.style.left   = rect.left + 'px';
+        modal.style.top    = rect.top  + 'px';
+        modal.style.transform = 'none';
+        startX    = e.clientX;
+        startY    = e.clientY;
+        startLeft = rect.left;
+        startTop  = rect.top;
+        modal.classList.add('dragging');
+        const onMove = e => {
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          modal.style.left = Math.max(0, startLeft + dx) + 'px';
+          modal.style.top  = Math.max(0, startTop  + dy) + 'px';
+        };
+        const onUp = () => {
+          modal.classList.remove('dragging');
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup',   onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+      });
+      // Touch drag support
+      handle.addEventListener('touchstart', e => {
+        if (e.target.tagName === 'BUTTON') return;
+        const t = e.touches[0];
+        const rect = modal.getBoundingClientRect();
+        modal.style.left = rect.left + 'px';
+        modal.style.top  = rect.top  + 'px';
+        modal.style.transform = 'none';
+        startX = t.clientX; startY = t.clientY;
+        startLeft = rect.left; startTop = rect.top;
+        const onMove = e => {
+          const t = e.touches[0];
+          modal.style.left = Math.max(0, startLeft + t.clientX - startX) + 'px';
+          modal.style.top  = Math.max(0, startTop  + t.clientY - startY) + 'px';
+        };
+        const onEnd = () => {
+          handle.removeEventListener('touchmove', onMove);
+          handle.removeEventListener('touchend',  onEnd);
+        };
+        handle.addEventListener('touchmove', onMove, { passive: true });
+        handle.addEventListener('touchend',  onEnd);
+      }, { passive: true });
+    }
+
+    let _modalDragWired = false;
+
+    function openCartoucheModal(entry) {
+      editingKey = entry.key;
+      $('cartoucheModalTitle').textContent = `Edit cartouche for "${entry.key}"`;
+      $('cartoucheError').textContent = '';
+      $('cartouchePreview').textContent = '';
+      _slotData = buildCartoucheSlots(entry);
+
+      const modal = $('cartoucheModal').querySelector('.modal');
+      // Reset to centred position each open (unless user has dragged it)
+      if (!_modalDragWired) {
+        modal.style.left = '50%';
+        modal.style.top  = '40px';
+        modal.style.transform = 'translateX(-50%)';
+        makeModalDraggable(modal, modal.querySelector('.modalHeader'));
+        _modalDragWired = true;
+      }
+
+      $('cartoucheModal').classList.add('show');
+      setTimeout(() => {
+        if (_slotData.allInputs[0]) _slotData.allInputs[0].focus();
+        const initialInput = buildEntryRendererInput(entry);
+        if (initialInput) renderModalPreview(initialInput, { forceNormal: !!entry.forceNormal });
+      }, 100);
+    }
+
+    function closeCartoucheModal() {
+      $('cartoucheModal').classList.remove('show');
+      editingKey = null; _slotData = null;
+    }
+
+    async function applyCartouche() {
+      if (!_slotData) return;
+      const entry = entries.find(e => e.key === editingKey);
+      if (!entry) { closeCartoucheModal(); return; }
+
+      const { allInputs, slotMeta, validateAll } = _slotData;
+      if (!validateAll()) { $('cartoucheError').textContent = $('cartoucheError').textContent || 'Please fix errors before saving.'; return; }
+
+      // Group validated words by subKey
+      const groups = {};
+      allInputs.forEach((inp, i) => {
+        const { subKey } = slotMeta[i];
+        if (!groups[subKey]) groups[subKey] = [];
+        groups[subKey].push(inp.value.trim().toLowerCase());
+      });
+
+      const cm = {};
+      for (const [k, words] of Object.entries(groups)) cm[k] = words.join(' ');
+      entry.cartoucheMap = cm;
+      entry.mode = 'preferred';
+      await api.putEntry({ ...entry });
+      closeCartoucheModal();
+      renderTable($('searchInput').value);
+
+      // Auto-render
+      const tbody = $('tbody');
+      const tr = tbody.querySelector(`tr[data-key="${CSS.escape(entry.key)}"]`);
+      if (tr) {
+        let previewTr = tbody.querySelector(`tr[data-preview-for="${CSS.escape(entry.key)}"]`);
+        if (!previewTr) previewTr = createPreviewRow(tr, entry.key);
+        previewTr.classList.remove('hidden');
+        await renderEntry(entry, previewTr.querySelector('canvas'));
+      }
+    }
+
+    // ── Export / Import ───────────────────────────────────────────────────────
+    function exportDb() {
+      const payload = { type: 'cartouche-db', version: 2, exportedAt: new Date().toISOString(), entries: entries.map(e => ({ ...e })) };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = `cartouche-db-${new Date().toISOString().slice(0,10)}.json`;
+      a.click(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+
+    async function importDb(file) {
+      let parsed;
+      try { parsed = JSON.parse(await file.text()); } catch { alert('Invalid JSON.'); return; }
+      if (!parsed || parsed.type !== 'cartouche-db') { alert('Not a cartouche-db export.'); return; }
+      if (!Array.isArray(parsed.entries)) { alert('Missing entries array.'); return; }
+      if (!confirm(`Import ${parsed.entries.length} entries? Existing entries will be overwritten.`)) return;
+      let skipped = 0;
+      for (const e of parsed.entries) {
+        if (!e || !Array.isArray(e.words) || !e.words.length) { skipped++; continue; }
+        const result = parseAndValidateLine(e.words.join(' '));
+        if (!result.ok) { skipped++; console.warn('Import skip:', e.words.join(' '), result.reason); continue; }
+        const key   = makeKey(result.words);
+        const mode  = ['random','preferred','ignore'].includes(e.mode) ? e.mode : 'random';
+        const entry = { key, words: result.words, merge: e.merge !== false, mode, cartoucheMap: (typeof e.cartoucheMap === 'object' && e.cartoucheMap) ? e.cartoucheMap : {}, forceNormal: !!e.forceNormal };
+        const idx = entries.findIndex(x => x.key === key);
+        if (idx >= 0) entries[idx] = entry; else entries.push(entry);
+        await api.putEntry(entry);
+      }
+      if (skipped) alert(`Imported. ${skipped} entries skipped (failed validation).`);
+      else alert(`Imported ${parsed.entries.length} entries.`);
+      renderTable($('searchInput').value); updatePill();
+    }
+
+    async function clearDb() {
+      if (!confirm('Clear ALL entries?')) return;
+      await api.clearAll(); entries = [];
+      renderTable(''); updatePill();
+    }
+
+    // ── Render all ────────────────────────────────────────────────────────────
+    async function renderAll() {
+      const tbody = $('tbody');
+      for (const tr of tbody.querySelectorAll('tr[data-key]')) {
+        const entry = entries.find(e => e.key === tr.dataset.key);
+        if (!entry || entry.mode === 'ignore') continue;
+        let previewTr = tbody.querySelector(`tr[data-preview-for="${CSS.escape(entry.key)}"]`);
+        if (!previewTr) previewTr = createPreviewRow(tr, entry.key);
+        previewTr.classList.remove('hidden');
+        await renderEntry(entry, previewTr.querySelector('canvas'));
+      }
+    }
+
+    function updatePill() {
+      $('pillCount').textContent = `${entries.length} entr${entries.length !== 1 ? 'ies' : 'y'}`;
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    (async function init() {
+      try {
+        // Open DB via CartoucheApi (lookup:false — this is the DB management page)
+        api = await CartoucheApi.open({ lookup: false, nanpaParser: NanpaParser });
+        entries = await api.getAllEntries();
+      } catch (e) { console.warn('DB load error', e); entries = []; }
+      renderTable(''); updatePill();
+
+      await initFontsAndRenderer();
+
+      $('btnAdd').addEventListener('click', addEntry);
+      $('addInput').addEventListener('keydown', e => { if (e.key === 'Enter') addEntry(); });
+      $('searchInput').addEventListener('input', () => renderTable($('searchInput').value));
+      $('btnRenderAll').addEventListener('click', renderAll);
+      $('btnExport').addEventListener('click', exportDb);
+      $('btnClearDb').addEventListener('click', clearDb);
+      $('btnImport').addEventListener('click', () => $('fileImport').click());
+      $('fileImport').addEventListener('change', async () => {
+        const f = $('fileImport').files?.[0]; $('fileImport').value = '';
+        if (f) await importDb(f);
+      });
+      $('fontSelect').addEventListener('change', () => {
+        const v = $('fontSelect').value;
+        if (fontCtrl) {
+          try { fontCtrl.setActivePreset(v, { persist: false }); } catch (e) { console.warn('setActivePreset failed', e); }
+        }
+        saveFontPref();
+      });
+      $('btnApplyCartouche').addEventListener('click', applyCartouche);
+      $('btnCancelCartouche').addEventListener('click', closeCartoucheModal);
+      $('btnCloseCartoucheModal').addEventListener('click', closeCartoucheModal);
+      // Clicking outside the modal does NOT close it — it is strictly modal.
+      document.addEventListener('keydown', e => {
+        // Escape does not close the cartouche editor — use Cancel or Close button.
+      });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+          if (!$('cartoucheModal').classList.contains('show')) return;
+          // On mobile adjust the modal body height when keyboard appears
+          const modalBody = $('cartoucheModal').querySelector('.modalBody');
+          if (modalBody) modalBody.style.maxHeight = (window.visualViewport.height - 120) + 'px';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

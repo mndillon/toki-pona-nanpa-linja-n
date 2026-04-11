@@ -868,12 +868,15 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v7.js?v=24";
+    import SitelenRenderer, { NanpaParser } from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v7.js?v=24";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
     } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js";
+
+    import { CartoucheApi } from './js/cartouche-api.js?v=12';
+    let pageMap = new Map();
 
     "use strict";
 
@@ -4415,7 +4418,7 @@ function wireHaloControls() {
       const baseFontPx = getFontPx();
       await waitForConfiguredFonts(baseFontPx);
 
-      const input = String(elTextIn.value ?? "");
+      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
       const baseConfig = buildRendererCallConfig({ includeHalo: false });
 
       const plan = await renderer.buildRenderPlan({
@@ -5047,7 +5050,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     async function buildLatestUnicodeJsonExportObject() {
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
-      const input = String(elTextIn.value ?? "");
+      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
       const config = buildRendererCallConfig({ includeHalo: true });
       const plan = await renderer.buildRenderPlan({ input, ...config });
       const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(line => Array.isArray(line?.runs) && line.runs.length > 0);
@@ -5080,7 +5083,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     async function renderFromTextarea() {
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
-      const input = String(elTextIn.value ?? "");
+      //const input = String(elTextIn.value ?? "");
+      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
       const config = buildRendererCallConfig({ includeHalo: true });
 
       const parsed = await renderer.parseInput({ input });
@@ -5580,6 +5584,13 @@ async function serializeRenderPlanToUnicodeJson(plan) {
 
         if (btnRender) btnRender.disabled = false;
         if (btnDownload) btnDownload.disabled = false;
+
+        //warmup proper names cache
+        try {
+          //const cartoucheApi = await CartoucheApi.open({ lookup: true });
+          const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
+          pageMap = await cartoucheApi.resolvePageMap();
+        } catch (e) { console.warn('CartoucheApi load failed, continuing without:', e); }
 
         // Auto-render on load (after restore)
         scheduleAutoRender();

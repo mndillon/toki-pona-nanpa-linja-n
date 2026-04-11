@@ -97,13 +97,10 @@ Sitelen Cartouche Summary:
 | ,     | kulupu | k                | ISO block separator                                                                            |
 | %     | kipisi | k                | percent, only at end                                                                           |
 |       | open   | o                | always just before percent glyph,  only at end                                                 |
+| :     | kasi   | k                | used to split dates and times                                                                  |
 |       | nanpa  | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
 |       | nena   | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
-|       | nasa   | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
-|       | ni     | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
-|       | e      | e                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
 |       | en     | e                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
-|       | esun   | e                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
 
 
 ---

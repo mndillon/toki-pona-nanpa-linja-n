@@ -443,10 +443,12 @@ import {
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=2";//sitelen-font-pair-controller.js";
+import { CartoucheApi } from './js/cartouche-api.js';
 window.SitelenRenderer = SitelenRenderer;
 
 (() => {
   "use strict";
+  let pageMap = new Map();
 
   const DB_NAME = "tp_video_caption_editor_db";
   const DB_STORE = "projects";
@@ -4994,7 +4996,7 @@ window.SitelenRenderer = SitelenRenderer;
 
     const literalFontFamily = resolveLiteralFontFamily(item.fontFamily, item.sitelenFontFamily);
 
-    SitelenFull.renderTextToCanvas(off, String(item.text || ''), {
+    SitelenFull.renderTextToCanvas(off, CartoucheApi.prepareInput(String(item.text || ''), pageMap), {
       fontPx,
       mode: "uniform",
       fgCss: normalizeColor(item.color, '#111111'),
@@ -5020,7 +5022,7 @@ window.SitelenRenderer = SitelenRenderer;
 
     try{
       const rendered = await renderer.renderTextToNewCanvas({
-        input: String(item.text || ''),
+        input: CartoucheApi.prepareInput(String(item.text || ''), pageMap),
         layout: {
           fontPx,
           paddingPx: Math.max(8, Math.round(fontPx * 0.16) + Math.ceil(haloWidth)),
@@ -5705,6 +5707,14 @@ function wireEvents(){
 
   async function init(){
     await ensureEditorFontsReady();
+
+    // Load cartouche DB page map
+    try {
+      const NanpaParser = SitelenRenderer.NanpaParser;
+      const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
+      pageMap = await cartoucheApi.resolvePageMap();
+    } catch(e) { console.warn('CartoucheApi load failed, continuing without:', e); }
+
     App.project = createDefaultProject();
     try{
       const record = await dbGet(DB_KEY);
