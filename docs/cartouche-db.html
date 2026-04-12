@@ -784,6 +784,10 @@
 
     const TP_VARIANT_TOKENS = new Set(['ni<','ni^','ni>','sewi^']);
     const TP_VARIANT_FIRST  = { 'ni<':'n','ni^':'n','ni>':'n','sewi^':'s' };
+    const SPECIAL_DOUBLE_QUOTE_TOKEN = '""';
+    const SPECIAL_DOUBLE_QUOTE_GLYPH = '＿';
+    const AUTO_SEED_FLAG_KEY = 'cartouche-db-auto-seed-success-v1';
+    const AUTO_SEED_JSON_URL = './cartouche_db/cartouche-db-seed.json';
 
     // ── descForEntry (display only — not in API) ──────────────────────────────
     function descForEntry(entry) {
@@ -1295,7 +1299,14 @@
 
     // ── Cartouche modal ───────────────────────────────────────────────────────
     function validateSlotWord(word, requiredLetter) {
-      const w = word.trim().toLowerCase();
+      const raw = word.trim();
+
+      // Special allowed non-TP token: exactly two consecutive double quotes.
+      if (raw === SPECIAL_DOUBLE_QUOTE_TOKEN) {
+        return { ok: true, word: raw, special: 'double-quote-pair' };
+      }
+
+      const w = raw.toLowerCase();
       if (!w) return { ok: false, reason: 'empty' };
       if (TP_VARIANT_TOKENS.has(w)) {
         const vf = TP_VARIANT_FIRST[w];
@@ -1319,7 +1330,7 @@
       const variantWords  = Object.keys(TP_VARIANT_FIRST).filter(v => TP_VARIANT_FIRST[v] === letter).sort();
       const allWords = [...standardWords, ...variantWords];
       if (!allWords.length) { pickerEl.classList.remove('open'); return; }
-      labelEl.textContent = `Words for "${letter}":`;
+      labelEl.innerHTML = `Words for "${letter}": <span style="font-weight:400; text-transform:none; letter-spacing:normal; color:var(--muted); opacity:0.85;">(&#39;${SPECIAL_DOUBLE_QUOTE_GLYPH}&#39; button allows blank glyphs, useful for aliasing.)</span>`;
       const currentVal = inputs[_activeSlotIndex] ? inputs[_activeSlotIndex].value.trim() : '';
       for (const w of allWords) {
         const cp = TP_WORD_TO_CP[w];
@@ -1341,6 +1352,28 @@
         });
         wordsEl.appendChild(btn);
       }
+      // Special non-TP token: exactly two consecutive double quotes.
+      const specialBtn = document.createElement('button');
+      specialBtn.type = 'button';
+      specialBtn.className = 'slotWordBtn';
+      specialBtn.setAttribute('aria-pressed', currentVal === SPECIAL_DOUBLE_QUOTE_TOKEN ? 'true' : 'false');
+      const specialGlyph = document.createElement('span');
+      specialGlyph.className = 'slotWordGlyph';
+      specialGlyph.textContent = SPECIAL_DOUBLE_QUOTE_GLYPH;
+      specialBtn.appendChild(specialGlyph);
+      specialBtn.setAttribute('aria-label', `${SPECIAL_DOUBLE_QUOTE_TOKEN} blank glyph token`);
+      specialBtn.title = 'Blank glyph token';
+      specialBtn.addEventListener('mousedown', e => {
+        e.preventDefault();
+        if (_activeSlotIndex < 0 || !inputs[_activeSlotIndex]) return;
+        inputs[_activeSlotIndex].value = SPECIAL_DOUBLE_QUOTE_TOKEN;
+        onPick(SPECIAL_DOUBLE_QUOTE_TOKEN);
+        wordsEl.querySelectorAll('.slotWordBtn').forEach(b =>
+          b.setAttribute('aria-pressed', b.querySelector('span:last-child')?.textContent === SPECIAL_DOUBLE_QUOTE_TOKEN ? 'true' : 'false'));
+        inputs[_activeSlotIndex].focus();
+      });
+      wordsEl.appendChild(specialBtn);
+
       pickerEl.classList.add('open');
       setTimeout(() => { if (inputs[_activeSlotIndex]) inputs[_activeSlotIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 50);
     }
@@ -1487,7 +1520,10 @@
           buildPickerForLetter(letter, allInputs, () => { validateAll(); updatePreview(); });
         });
         inp.addEventListener('input', () => {
-          inp.value = inp.value.toLowerCase();
+          const raw = inp.value.trim();
+          if (raw !== SPECIAL_DOUBLE_QUOTE_TOKEN) {
+            inp.value = inp.value.toLowerCase();
+          }
           validateAll(); updatePreview();
           buildPickerForLetter(letter, allInputs, () => { validateAll(); updatePreview(); });
         });
@@ -1668,7 +1704,8 @@
       allInputs.forEach((inp, i) => {
         const { subKey } = slotMeta[i];
         if (!groups[subKey]) groups[subKey] = [];
-        groups[subKey].push(inp.value.trim().toLowerCase());
+        const raw = inp.value.trim();
+        groups[subKey].push(raw === SPECIAL_DOUBLE_QUOTE_TOKEN ? raw : raw.toLowerCase());
       });
 
       const cm = {};
@@ -1710,24 +1747,15 @@
     async function importDb(file) {
       let parsed;
       try { parsed = JSON.parse(await file.text()); } catch { alert('Invalid JSON.'); return; }
-      if (!parsed || parsed.type !== 'cartouche-db') { alert('Not a cartouche-db export.'); return; }
-      if (!Array.isArray(parsed.entries)) { alert('Missing entries array.'); return; }
-      if (!confirm(`Import ${parsed.entries.length} entries? Existing entries will be overwritten.`)) return;
-      let skipped = 0;
-      for (const e of parsed.entries) {
-        if (!e || !Array.isArray(e.words) || !e.words.length) { skipped++; continue; }
-        const result = parseAndValidateLine(e.words.join(' '));
-        if (!result.ok) { skipped++; console.warn('Import skip:', e.words.join(' '), result.reason); continue; }
-        const key   = makeKey(result.words);
-        const mode  = ['random','preferred','ignore'].includes(e.mode) ? e.mode : 'random';
-        const entry = { key, words: result.words, merge: e.merge !== false, mode, cartoucheMap: (typeof e.cartoucheMap === 'object' && e.cartoucheMap) ? e.cartoucheMap : {}, forceNormal: !!e.forceNormal };
-        const idx = entries.findIndex(x => x.key === key);
-        if (idx >= 0) entries[idx] = entry; else entries.push(entry);
-        await api.putEntry(entry);
+
+      try {
+        const result = await importDbPayload(parsed, { confirmImport: true });
+        if (result.cancelled) return;
+        if (result.skipped) alert(`Imported. ${result.skipped} entries skipped (failed validation).`);
+        else alert(`Imported ${result.imported} entries.`);
+      } catch (e) {
+        alert(e?.message || 'Import failed.');
       }
-      if (skipped) alert(`Imported. ${skipped} entries skipped (failed validation).`);
-      else alert(`Imported ${parsed.entries.length} entries.`);
-      renderTable($('searchInput').value); updatePill();
     }
 
     async function clearDb() {
@@ -1753,12 +1781,85 @@
       $('pillCount').textContent = `${entries.length} entr${entries.length !== 1 ? 'ies' : 'y'}`;
     }
 
+
+    function hasAutoSeedFlag() {
+      try { return localStorage.getItem(AUTO_SEED_FLAG_KEY) === '1'; } catch { return false; }
+    }
+
+    function setAutoSeedFlag() {
+      try { localStorage.setItem(AUTO_SEED_FLAG_KEY, '1'); } catch {}
+    }
+
+    async function importDbPayload(parsed, { confirmImport = true } = {}) {
+      if (!parsed || parsed.type !== 'cartouche-db') throw new Error('Not a cartouche-db export.');
+      if (!Array.isArray(parsed.entries)) throw new Error('Missing entries array.');
+      if (confirmImport && !confirm(`Import ${parsed.entries.length} entries? Existing entries will be overwritten.`)) {
+        return { cancelled: true, skipped: 0, imported: 0 };
+      }
+
+      let skipped = 0;
+      let imported = 0;
+      for (const e of parsed.entries) {
+        if (!e || !Array.isArray(e.words) || !e.words.length) { skipped++; continue; }
+        const result = parseAndValidateLine(e.words.join(' '));
+        if (!result.ok) {
+          skipped++;
+          console.warn('Import skip:', e.words.join(' '), result.reason);
+          continue;
+        }
+        const key   = makeKey(result.words);
+        const mode  = ['random','preferred','ignore'].includes(e.mode) ? e.mode : 'random';
+        const entry = {
+          key,
+          words: result.words,
+          merge: e.merge !== false,
+          mode,
+          cartoucheMap: (typeof e.cartoucheMap === 'object' && e.cartoucheMap) ? e.cartoucheMap : {},
+          forceNormal: !!e.forceNormal
+        };
+        const idx = entries.findIndex(x => x.key === key);
+        if (idx >= 0) entries[idx] = entry; else entries.push(entry);
+        await api.putEntry(entry);
+        imported++;
+      }
+      renderTable($('searchInput').value);
+      updatePill();
+      return { cancelled: false, skipped, imported };
+    }
+
+    async function tryAutoSeedDatabase() {
+      if (hasAutoSeedFlag()) return false;
+      if (!api) return false;
+
+      const currentEntries = await api.getAllEntries();
+      if (currentEntries.length !== 0) return false;
+
+      const resp = await fetch(AUTO_SEED_JSON_URL, { cache: 'no-store' });
+      if (!resp.ok) throw new Error(`Auto-seed download failed (${resp.status})`);
+      const parsed = await resp.json();
+
+      const result = await importDbPayload(parsed, { confirmImport: false });
+      if (result.cancelled) return false;
+
+      // Success means: download succeeded and full import completed.
+      setAutoSeedFlag();
+      return true;
+    }
+
     // ── Init ──────────────────────────────────────────────────────────────────
     (async function init() {
       try {
         // Open DB via CartoucheApi (lookup:false — this is the DB management page)
         api = await CartoucheApi.open({ lookup: false, nanpaParser: NanpaParser });
         entries = await api.getAllEntries();
+
+        try {
+          const seeded = await tryAutoSeedDatabase();
+          if (seeded) entries = await api.getAllEntries();
+        } catch (e) {
+          console.warn('Auto-seed failed', e);
+          entries = await api.getAllEntries();
+        }
       } catch (e) { console.warn('DB load error', e); entries = []; }
       renderTable(''); updatePill();
 

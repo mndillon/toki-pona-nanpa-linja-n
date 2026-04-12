@@ -1,0 +1,67 @@
+{
+  "type": "cartouche-db",
+  "version": 2,
+  "exportedAt": "2026-04-12T13:11:29.223Z",
+  "entries": [
+    {
+      "key": "Towasi",
+      "words": [
+        "Towasi"
+      ],
+      "merge": true,
+      "mode": "preferred",
+      "cartoucheMap": {
+        "0": "tomo olin wile alasa suwi ijo"
+      },
+      "forceNormal": false
+    },
+    {
+      "key": "Toto",
+      "words": [
+        "Toto"
+      ],
+      "merge": true,
+      "mode": "preferred",
+      "cartoucheMap": {
+        "0": "toki olin toki olin"
+      },
+      "forceNormal": false
+    },
+    {
+      "key": "Towasilili",
+      "words": [
+        "Towasilili"
+      ],
+      "merge": true,
+      "mode": "preferred",
+      "cartoucheMap": {
+        "0": "tomo \"\" \"\" \"\" \"\" \"\" \"\" \"\" \"\" \"\""
+      },
+      "forceNormal": false
+    },
+    {
+      "key": "Totolili",
+      "words": [
+        "Totolili"
+      ],
+      "merge": true,
+      "mode": "preferred",
+      "cartoucheMap": {
+        "0": "toki \"\" \"\" \"\" \"\" \"\" \"\" \"\""
+      },
+      "forceNormal": false
+    },
+    {
+      "key": "Nemen",
+      "words": [
+        "Nemen"
+      ],
+      "merge": true,
+      "mode": "preferred",
+      "cartoucheMap": {
+        "0": "nimi en musi e nena"
+      },
+      "forceNormal": true
+    }
+  ]
+}
