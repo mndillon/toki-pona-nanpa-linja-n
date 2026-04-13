@@ -527,6 +527,7 @@
         <li><strong>Middle dot:</strong> The Unicode character U+00B7 &#x2014; '&#x00B7;' is used to display the middle dot glyph.</li>
         <li><strong>Punctuation:</strong> Word 'ota' maps to middle dot, and word 'kolon' maps to colon, these are non-standard words and are used for convenience only.</li>
         <li><strong>Quotation:</strong> Text inside double quotes is rendered exactly as typed, e.g. "Hello World!".  The text font selector is used to pick the font for this text.</li>
+        <li><strong>Tokiponization:</strong> Text that starts with a capital letter e.g. <strong>Towasi</strong> or <strong>Nemen@db</strong> will be looked up in the  <a class="repoLink" href="./cartouche-db.html" target="_blank" rel="noopener noreferrer">Proper Name Cartouche Database</a> to decide how to display it.</li>
         <li>Unknown words are ignored.</li>
       </ul>
     </div>
@@ -868,14 +869,14 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v7.js?v=24";
+    import SitelenRenderer, { NanpaParser } from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=47";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
     } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js";
 
-    import { CartoucheApi } from './js/cartouche-api.js?v=12';
+    import { CartoucheApi } from './js/cartouche-api-v2.js?v=14';
     let pageMap = new Map();
 
     "use strict";
@@ -4772,7 +4773,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v7.js?v=24", import.meta.url);
+  const rendererUrl = new URL("./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=47", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 

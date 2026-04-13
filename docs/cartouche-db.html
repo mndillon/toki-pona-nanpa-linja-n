@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Proper Names rendered to Cartouches Database — nimi pi sitelen pona</title>
+  <title>Proper Names rendered to Cartouches — nimi pi sitelen pona</title>
 
   <link rel="icon" href="/icons/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
@@ -35,7 +35,7 @@
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 16px;
-      max-width: 1200px;
+      max-width: min(1800px, calc(100vw - 48px));
     }
 
     .row { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: flex-end; }
@@ -212,6 +212,18 @@
     }
     .cartoucheEditor.open { display: block; }
     .cartoucheEditor input[type="text"] {
+      font-size: 12px;
+      padding: 6px 8px;
+      width: 100%;
+    }
+
+    /* Literal editor inline */
+    .literalEditor {
+      display: none;
+      margin-top: 6px;
+    }
+    .literalEditor.open { display: block; }
+    .literalEditor input[type="text"] {
       font-size: 12px;
       padding: 6px 8px;
       width: 100%;
@@ -536,7 +548,7 @@
   <a class="skipLink" href="#main">Skip to content</a>
 
   <main id="main" class="card">
-    <h2 style="margin:0 0 4px;">Control how Proper Names render to Cartouches Database — nimi pi sitelen pona</h2>
+    <h2 style="margin:0 0 4px;">Control how Proper Names render to Cartouches — nimi pi sitelen pona</h2>
     <div class="help">
       Manage how tokiponized proper names are rendered in cartouches. Enter one name per line — multiple words per line are kept together.
       Each line can merge all words into one cartouche or keep them separate. Numeric (nanpa-linja-n) sequences are always one cartouche.
@@ -555,53 +567,47 @@
     <div class="help" style="margin-top: 4px;"><a href="./index.html">← Back to index</a></div>
 
     <div class="accordion" style="margin-top:10px;">
-      <details>
-        <summary>How to use this page</summary>
-        <div class="accordionBody">
+  <details>
+    <summary>How to use this page</summary>
+    <div class="accordionBody">
 
-          <p style="margin:0 0 8px;font-size:12px;color:var(--muted);">
-            This database controls how tokiponized proper names are displayed as cartouches across all renderer pages.
-            Each entry is looked up automatically when the renderer encounters a capitalised word sequence, e.g. <strong>Towasi</strong>.
-          </p>
+      <p style="margin:0 0 8px;font-size:12px;color:var(--muted);">
+        This database controls how tokiponized proper names are rendered as cartouches across renderer pages.
+        When the renderer finds a capitalised name sequence that matches an entry here, it uses the flags below to decide what to do.
+      </p>
 
-          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Table columns</p>
-          <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
-            <li><strong>Name (words)</strong> — The tokiponized proper name. Amber words are nanpa-linja-n numeric sequences — they are detected automatically and are always rendered as one cartouche.</li>
-            <li><strong>@db</strong> — Only shown for entries containing a nanpa-linja-n numeric sequence. When checked, the entry supports the <code>@db</code> suffix (see below) to override automatic nanpa-linja-n numeric rendering with a hand-picked glyph cartouche.</li>
-            <li><strong>Merge</strong> — When checked, all non-numeric words in the entry are merged into a single cartouche. When unchecked, each word gets its own cartouche.</li>
-            <li><strong>Mode</strong> — <em>random</em>: each letter maps to a random toki pona word starting with that letter (chosen once per page load, consistent across the page). <em>preferred</em>: use the cartouche you set via the Edit button. <em>ignore</em>: suppress this entry entirely — the words pass through to the renderer as-is.</li>
-            <li><strong>Cartouche (latin desc)</strong> — Shows what will be sent to the renderer. <code>→ random</code> means it will be generated at page load. <code>(@db)</code> marks the part that is only used when the <code>@db</code> suffix is present in the input.</li>
-          </ul>
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Flags</p>
+      <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
+        <li><strong>@db</strong> — Only appears for entries that contain a nanpa-linja-n numeric part. When off, the numeric part renders normally as a numeric cartouche. When on, you can use the <code>@db</code> suffix in renderer input to make that numeric part use the cartouche saved in this database instead.</li>
+        <li><strong>Merge</strong> — Controls how non-numeric words are grouped. When on, non-numeric words are combined into one cartouche. When off, each non-numeric word gets its own cartouche. Numeric nanpa-linja-n parts are always kept as one cartouche.</li>
+        <li><strong>Mode</strong> — Controls what kind of cartouche is used:
+          <em>random</em> = generated automatically from the letters;
+          <em>preferred</em> = use the cartouche saved with <strong>✏ edit</strong>;
+          <em>literal</em> = use your own Unicode text inside a literal cartouche;
+          <em>ignore</em> = skip this database entry and let the renderer handle the name normally.
+        </li>
+      </ul>
 
-          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Editing a cartouche</p>
-          <p style="margin:0 0 10px;font-size:12px;color:var(--muted);">
-            Click <strong>✏ edit</strong> to open the slot editor. Each letter of the name gets a slot — pick a toki pona word starting with that letter from the glyph picker, or type one in directly.
-            Click <strong>Apply</strong> to save. This sets the mode to <em>preferred</em> automatically.
-            For entries with <strong>@db</strong> checked, the numeric sequence becomes editable too — the glyphs you pick there are only used when the <code>@db</code> suffix is present in the input.
-          </p>
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Examples</p>
+      <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
+        <li><code>Sema Pan</code> with <strong>Merge on</strong> → one cartouche for <em>Sema Pan</em>.</li>
+        <li><code>Sema Pan</code> with <strong>Merge off</strong> → one cartouche for <em>Sema</em> and one for <em>Pan</em>.</li>
+        <li><code>Towasi</code> in <strong>random</strong> mode → an automatic glyph cartouche is generated and it may change on each rendering of the cartouche.</li>
+        <li><code>Towasi</code> in <strong>preferred</strong> mode → your saved glyph cartouche is used.</li>
+        <li><code>Towasi</code> in <strong>literal</strong> mode, any literal text can be entered (double quotes are removed).  With literal text <code>ABC</code> → the renderer will process input <code>["ABC"]</code>. How that appears depends on how the selected sitelen pona font renders Latin text inside a cartouche.</li>
+        <li><code>Towasi</code> in <strong>ignore</strong> mode → this database entry is skipped and the renderer handles the name as normal input.</li>
+    <li><code>Nenen@db</code> — for specific proper names that match nanpa-linja-n numeric cartouche proper names, <code>@db</code> lets you display a database override. The <strong>@db</strong> flag must be checked here, and the <code>@db</code> suffix must also be used when rendering, for this to work properly.</li>   
+      <li><code>Sema Pan Neninimen</code> → <em>Sema Pan</em> uses the database entry, while <em>Neninimen</em> renders as a numeric cartouche (since it is a nanpa-linja-n numeric cartouche proper name).</li>
+        <li><code>Sema Pan Neninimen@db</code> → same as above, but the numeric part also uses the saved database cartouche, if <strong>@db</strong> is checked for that entry.</li>
+         </ul>
 
-          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Using <code>@db</code> in renderer input</p>
-          <p style="margin:0 0 6px;font-size:12px;color:var(--muted);">
-            On any renderer page (e.g. text-to-sitelen), you can suffix a name with <code>@db</code> to control how the numeric part is rendered.
-            The suffix goes on the <strong>last word</strong> of the name.
-          </p>
-          <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
-            <li><code>Sema Pan Neninimen</code> — DB is consulted for <em>Sema Pan</em> (glyph cartouche from database), <em>Neninimen</em> renders as a nanpa-linja-n numeric cartouche.</li>
-            <li><code>Sema Pan Neninimen@db</code> — Same as above, but <em>Neninimen</em> is also overridden with the glyph cartouche stored in the database (only works if the <strong>@db</strong> checkbox is checked for this entry).</li>
-            <li><code>Nemen@db</code> — A purely numeric name: without <code>@db</code> it renders as a number; with <code>@db</code> it renders as a glyph cartouche from the database.</li>
-            <li>If the name is not in the database, or the <strong>@db</strong> checkbox is not checked, the <code>@db</code> suffix is silently stripped and normal rendering applies.</li>
-          </ul>
+      <p style="margin:0;font-size:12px;color:var(--muted);">
+        Click <strong>✏ edit</strong> to set a preferred cartouche. Use Export / Import to back up or share the database.
+      </p>
 
-          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Tips</p>
-          <ul style="margin:0 0 0 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
-            <li>Random cartouches are computed once per page load — the same name always looks the same everywhere on that page, even across multiple renders.</li>
-            <li>Use <em>ignore</em> mode to suppress a name from the database without deleting it — useful for names where you want the renderer's default behaviour.</li>
-            <li>Use Export / Import to back up your database or share entries between sites.</li>
-          </ul>
-
-        </div>
-      </details>
     </div>
+  </details>
+</div>
 
     <div class="addBar">
       <div style="flex:1 1 200px;">
@@ -711,7 +717,7 @@
   </div>
 
   <script type="module">
-    import { SitelenRenderer, NanpaParser } from './js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v7.js';
+    import { SitelenRenderer, NanpaParser } from './js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js';
     import { createSitelenFontPairController } from './js/sitelen-font-pair-controller-merged-updated-font-label.js';
     import {
       CartoucheApi,
@@ -723,7 +729,7 @@
       segmentLetters,
       buildRandomDescForLetters,
       buildEntryRendererInput,
-    } from './js/cartouche-api.js?v=12';
+    } from './js/cartouche-api-v2.js?v=14';
 
     // ── Page-level constants (font, UI) ───────────────────────────────────────
     const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';
@@ -790,8 +796,17 @@
     const AUTO_SEED_JSON_URL = './cartouche_db/cartouche-db-seed.json';
 
     // ── descForEntry (display only — not in API) ──────────────────────────────
+    function cleanLiteralText(value) {
+      return String(value ?? '').replace(/"/g, '').trim();
+    }
+
+    function getLiteralText(entry) {
+      return cleanLiteralText(entry.literalText) || entry.key;
+    }
+
     function descForEntry(entry) {
       if (entry.mode === 'ignore') return '— (ignored)';
+      if (entry.mode === 'literal') return `["${getLiteralText(entry)}"]`;
       const segs = segmentWords(entry.words);
       return segs.map((seg, si) => {
         if (seg.type === 'nanpa' && !entry.forceNormal) return `[${seg.words.join(' ')}]`;
@@ -933,6 +948,8 @@
         const cm = entry.cartoucheMap || {};
         let changed = false;
 
+        if (entry.mode !== 'literal') {
+
         function ensureDescForLetters(key, letters, opts = {}) {
           const existing = (cm[key] || '').trim();
           if (existing) return existing;
@@ -959,6 +976,8 @@
             });
           }
         });
+
+        }
 
         if (changed) {
           entry.cartoucheMap = cm;
@@ -989,7 +1008,7 @@
       $('emptyState').classList.toggle('hidden', visible.length > 0 || !!filter);
       if (visible.length === 0 && filter) {
         const tr = tbody.insertRow(); const td = tr.insertCell();
-        td.colSpan = 5; td.style.cssText = 'text-align:center;color:var(--muted);padding:16px;';
+        td.colSpan = 6; td.style.cssText = 'text-align:center;color:var(--muted);padding:16px;';
         td.textContent = `No matches for "${filter}"`; return;
       }
 
@@ -1106,7 +1125,7 @@
         const tdMode = document.createElement('td');
         const modeGroup = document.createElement('div');
         modeGroup.className = 'modeGroup';
-        for (const [val, label] of [['random','🎲 random'],['preferred','★ preferred'],['ignore','✕ ignore']]) {
+        for (const [val, label] of [['random','🎲 random'],['preferred','★ preferred'],['literal','⌨ literal'],['ignore','✕ ignore']]) {
           const lbl = document.createElement('label');
           const inp = document.createElement('input');
           inp.type = 'radio'; inp.name = 'mode-' + entry.key; inp.value = val; inp.checked = entry.mode === val;
@@ -1147,6 +1166,9 @@
               if (needFill) entry.cartoucheMap = cm;
               openCartoucheModal(entry);
             }
+            if (val === 'literal' && !cleanLiteralText(entry.literalText)) {
+              entry.literalText = entry.key;
+            }
             if (val === 'ignore') {
               const previewTr = tbody.querySelector(`tr[data-preview-for="${CSS.escape(entry.key)}"]`);
               if (previewTr) previewTr.classList.add('hidden');
@@ -1154,7 +1176,10 @@
             await api.putEntry({ ...entry });
             updateDescCell(entry);
             btnRender.disabled = val === 'ignore';
-            // edit button enabled whenever there are editable segs — no mode restriction
+            btnEdit.disabled = val === 'literal' || !canEdit;
+            literalEditor.classList.toggle('open', val === 'literal');
+            literalInput.disabled = val !== 'literal';
+            if (val === 'literal') literalInput.focus();
           });
           lbl.appendChild(inp); lbl.appendChild(document.createTextNode(label));
           modeGroup.appendChild(lbl);
@@ -1170,6 +1195,24 @@
         descSpan.className = 'randomNote';
         descSpan.textContent = descForEntry(entry);
         tdDesc.appendChild(descSpan);
+
+        const literalEditor = document.createElement('div');
+        literalEditor.className = 'literalEditor' + (entry.mode === 'literal' ? ' open' : '');
+        const literalInput = document.createElement('input');
+        literalInput.type = 'text';
+        literalInput.spellcheck = false;
+        literalInput.autocomplete = 'off';
+        literalInput.placeholder = 'literal cartouche text';
+        literalInput.value = getLiteralText(entry);
+        literalInput.disabled = entry.mode !== 'literal';
+        literalInput.addEventListener('input', async () => {
+          entry.literalText = cleanLiteralText(literalInput.value) || entry.key;
+          literalInput.value = entry.literalText;
+          await api.putEntry({ ...entry });
+          updateDescCell(entry);
+        });
+        literalEditor.appendChild(literalInput);
+        tdDesc.appendChild(literalEditor);
         tr.appendChild(tdDesc);
 
         // ── Actions cell ──
@@ -1191,7 +1234,7 @@
         const btnEdit = document.createElement('button');
         btnEdit.textContent = '✏ edit';
         const canEdit = hasEditableSegs || (isAllNanpa && !!entry.forceNormal);
-        btnEdit.disabled = !canEdit;
+        btnEdit.disabled = entry.mode === 'literal' || !canEdit;
         btnEdit.title = !canEdit ? 'Enable @db to edit nanpa segments' : 'Edit cartouche';
         btnEdit.addEventListener('click', async () => {
           // Clicking edit always switches to preferred mode and opens the modal.
@@ -1253,7 +1296,7 @@
       const previewTr = document.createElement('tr');
       previewTr.dataset.previewFor = key;
       previewTr.className = 'previewRow hidden';
-      const tdPrev = document.createElement('td'); tdPrev.colSpan = 5; tdPrev.className = 'previewCell';
+      const tdPrev = document.createElement('td'); tdPrev.colSpan = 6; tdPrev.className = 'previewCell';
       const hdr = document.createElement('div'); hdr.className = 'previewHeader';
       const btnClose = document.createElement('button'); btnClose.textContent = '✕ close'; btnClose.style.cssText = 'font-size:11px;';
       btnClose.addEventListener('click', () => previewTr.classList.add('hidden'));
@@ -1290,7 +1333,7 @@
         $('nanpaWarn').classList.add('show');
       } else { $('nanpaWarn').classList.remove('show'); }
 
-      const entry = { key, words: result.words, merge: true, mode: 'random', cartoucheMap: {}, forceNormal: false };
+      const entry = { key, words: result.words, merge: true, mode: 'random', cartoucheMap: {}, forceNormal: false, literalText: key };
       entries.push(entry);
       await api.putEntry(entry);
       $('addInput').value = '';
@@ -1808,14 +1851,15 @@
           continue;
         }
         const key   = makeKey(result.words);
-        const mode  = ['random','preferred','ignore'].includes(e.mode) ? e.mode : 'random';
+        const mode  = ['random','preferred','literal','ignore'].includes(e.mode) ? e.mode : 'random';
         const entry = {
           key,
           words: result.words,
           merge: e.merge !== false,
           mode,
           cartoucheMap: (typeof e.cartoucheMap === 'object' && e.cartoucheMap) ? e.cartoucheMap : {},
-          forceNormal: !!e.forceNormal
+          forceNormal: !!e.forceNormal,
+          literalText: cleanLiteralText(e.literalText) || key
         };
         const idx = entries.findIndex(x => x.key === key);
         if (idx >= 0) entries[idx] = entry; else entries.push(entry);

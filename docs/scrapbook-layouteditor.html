@@ -1385,7 +1385,7 @@ import {
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=4";
-import { CartoucheApi } from './js/cartouche-api.js';
+import { CartoucheApi } from './js/cartouche-api-v2.js';
 
 (() => {
   "use strict";
@@ -2432,7 +2432,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v7.js?v=24').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=24').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -14612,7 +14612,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v7.js?v=24');
+        const rendererMod = await import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=24');
         const NanpaParser = rendererMod?.NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
         pageMap = await cartoucheApi.resolvePageMap();
