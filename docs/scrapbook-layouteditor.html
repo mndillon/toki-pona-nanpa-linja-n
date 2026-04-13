@@ -875,6 +875,8 @@
   padding: 10px;
   background: rgba(255,255,255,0.35);
   display:flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .floatingEditorBody textarea{
@@ -889,6 +891,39 @@
   background: var(--bg);
   color: var(--ink);
   font: inherit;
+  flex: 1 1 auto;
+}
+
+.floatingMediaControls{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  border: 1px solid rgba(17,17,17,0.16);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,0.28);
+}
+.floatingMediaControls.hidden{ display:none !important; }
+.floatingMediaRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.floatingMediaRow input[type="range"]{
+  flex:1 1 auto;
+  min-width: 80px;
+}
+.floatingMediaTime{
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 56px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.floatingMediaHint{
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .scrapbookSearchWindow{
@@ -1310,22 +1345,48 @@
   </div>
 
  
-   <!-- Floating sitelen text editor -->
-  <div id="floatingSitelenEditor" class="floatingEditor" aria-hidden="false">
-    <div id="floatingSitelenEditorHeader" class="floatingEditorHeader">
-      <h3 id="floatingSitelenEditorTitle">Text Editor</h3>
+   <!-- Floating text editor -->
+  <div id="floatingTextEditor" class="floatingEditor" aria-hidden="false">
+    <div id="floatingTextEditorHeader" class="floatingEditorHeader">
+      <h3 id="floatingTextEditorTitle">Text Editor</h3>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <button id="btnFloatEditorExport" class="btn" type="button" title="Export element text to a .txt file">Export text</button>
-        <button id="btnFloatEditorImport" class="btn" type="button" title="Import a .txt file into this element">Import text</button>
-        <button id="btnCloseFloatingSitelenEditor" class="btn" type="button">Close</button>
+        <button id="btnTextEditorExport" class="btn" type="button" title="Export element text to a .txt file">Export text</button>
+        <button id="btnTextEditorImport" class="btn" type="button" title="Import a .txt file into this element">Import text</button>
+        <button id="btnCloseFloatingTextEditor" class="btn" type="button">Close</button>
       </div>
     </div>
     <div class="floatingEditorBody">
-      <textarea id="floatingSitelenEditorTextarea" spellcheck="false" placeholder="Select a text, sitelen, glyph, or URL element to edit…"></textarea>
+      <textarea id="floatingTextEditorTextarea" spellcheck="false" placeholder="Select a text, sitelen, or glyph element to edit…"></textarea>
     </div>
   </div>
-  <!-- Hidden file picker for floating editor text import -->
-  <input id="floatEditorFilePick" type="file" accept=".txt,text/plain" style="display:none;" />
+  <!-- Hidden file picker for floating text editor import -->
+  <input id="floatTextEditorFilePick" type="file" accept=".txt,text/plain" style="display:none;" />
+
+  <!-- Floating media editor -->
+  <div id="floatingMediaEditor" class="floatingEditor" aria-hidden="false">
+    <div id="floatingMediaEditorHeader" class="floatingEditorHeader">
+      <h3 id="floatingMediaEditorTitle">Media Editor</h3>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <button id="btnCloseFloatingMediaEditor" class="btn" type="button">Close</button>
+      </div>
+    </div>
+    <div class="floatingEditorBody">
+      <textarea id="floatingMediaEditorTextarea" spellcheck="false" placeholder="Select an audio, video, or URL element to edit or control…"></textarea>
+      <div id="floatingMediaEditorControls" class="floatingMediaControls hidden">
+        <div class="floatingMediaRow">
+          <button id="btnFloatingMediaEditorToggle" class="btn" type="button">Play</button>
+          <button id="btnFloatingMediaEditorMute" class="btn" type="button">Mute</button>
+          <button id="btnFloatingMediaEditorRewind" class="btn" type="button">Rewind 5s</button>
+          <span id="floatingMediaEditorTimeNow" class="floatingMediaTime">0:00</span>
+        </div>
+        <div class="floatingMediaRow">
+          <input id="floatingMediaEditorSlider" type="range" min="0" max="0" step="0.1" value="0">
+          <span id="floatingMediaEditorTimeDur" class="floatingMediaTime">0:00</span>
+        </div>
+        <div id="floatingMediaEditorHint" class="floatingMediaHint"></div>
+      </div>
+    </div>
+  </div>
 
    <div id="scrapbookSearchWindow" class="floatingEditor scrapbookSearchWindow hidden" aria-hidden="true">
     <div id="scrapbookSearchWindowHeader" class="floatingEditorHeader">
@@ -1417,7 +1478,10 @@ import { CartoucheApi } from './js/cartouche-api-v2.js';
      UI strings only. No functional logic changes.
      ============================================================ */
   const LS_KEY_LANG = "layout_editor_lang"; // "en" | "tp"
-  const LS_KEY_FLOAT_EDITOR_OPEN = "layout_editor_float_text_open"; // "1" | "0"
+  const LS_KEY_TEXT_EDITOR_OPEN = "layout_editor_text_open"; // "1" | "0"
+  const LS_KEY_TEXT_EDITOR_GEOMETRY = "layout_editor_text_geometry_v1"; // persisted floating editor rect
+  const LS_KEY_MEDIA_EDITOR_OPEN = "layout_editor_media_open"; // "1" | "0"
+  const LS_KEY_MEDIA_EDITOR_GEOMETRY = "layout_editor_media_geometry_v1"; // persisted floating editor rect
 
   function loadLang(){
     try{
@@ -3135,11 +3199,14 @@ function normalizeScene(parsed){
     }
 
     if (el.type === ElementType.Audio){
-      el.audio = (el.audio && typeof el.audio === "object") ? el.audio : null;
+      el.audio = (el.audio && typeof el.audio === "object") ? el.audio : {};
       el.posterAssetId = el.posterAssetId ? String(el.posterAssetId) : null;
       el.sourceUrl = String(el.sourceUrl || "");
       el.title = String(el.title || (el.audio && el.audio.origName) || "");
       el.searchTag = String(el.searchTag || "");
+      el.audio.playbackPositionSec = Math.max(0, Number(el.audio.playbackPositionSec || 0) || 0);
+      el.audio.muted = !!el.audio.muted;
+      el.audio.duration = Math.max(0, Number(el.audio.duration || 0) || 0);
       // exportVisible: false by default for audio (hidden in PNG export)
       el.exportVisible = (el.exportVisible == null) ? false : !!el.exportVisible;
     }
@@ -3151,6 +3218,8 @@ function normalizeScene(parsed){
       el.title = String(el.title || (el.video && el.video.origName) || "");
       el.searchTag = String(el.searchTag || "");
       el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+      el.video.playbackPositionSec = Math.max(0, Number(el.video.playbackPositionSec || 0) || 0);
+      el.video.muted = !!el.video.muted;
       // exportVisible: true by default for video (poster shown in PNG export)
       el.exportVisible = (el.exportVisible == null) ? true : !!el.exportVisible;
     }
@@ -3166,6 +3235,8 @@ function normalizeScene(parsed){
       el.url.mimeHint = String(el.url.mimeHint || detected.mimeHint || "");
       el.url.posterAttempted = !!el.url.posterAttempted;
       el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+      el.url.playbackPositionSec = Math.max(0, Number(el.url.playbackPositionSec || 0) || 0);
+      el.url.muted = !!el.url.muted;
       el.searchTag = String(el.searchTag || "");
       // exportVisible: true by default for url (poster/thumbnail shown in PNG export)
       el.exportVisible = (el.exportVisible == null) ? true : !!el.exportVisible;
@@ -6939,8 +7010,184 @@ async function historyRedo(){
     return out;
   }
 
-const MediaSession = { currentElementId: "", currentType: "", mediaEl: null, sourceUrl: "", pendingToken: 0, overlayHost: null, overlayNode: null, overlayInner: null, overlayKind: "", overlayYouTubeId: "", overlayRect: null };
+const MediaSession = {
+  currentElementId: "", currentType: "", mediaEl: null, sourceUrl: "", pendingToken: 0,
+  overlayHost: null, overlayNode: null, overlayInner: null, overlayKind: "", overlayYouTubeId: "", overlayRect: null,
+  youtubeCurrentTime: 0, youtubePaused: true, overlayMuted: false, youtubePollTimer: 0,
+  youtubePlayer: null, youtubeDuration: 0, youtubeResumeTimers: [], youtubePlayerReady: false
+};
 
+function getMediaRememberedPositionSec(el){
+  if (!el) return 0;
+  if (el.type === ElementType.Audio){
+    if (!el.audio || typeof el.audio !== 'object') el.audio = {};
+    return Math.max(0, Number(el.audio.playbackPositionSec || 0) || 0);
+  }
+  if (el.type === ElementType.Video){
+    if (!el.video || typeof el.video !== 'object') el.video = {};
+    return Math.max(0, Number(el.video.playbackPositionSec || 0) || 0);
+  }
+  if (el.type === ElementType.Url){
+    if (!el.url || typeof el.url !== 'object') el.url = {};
+    return Math.max(0, Number(el.url.playbackPositionSec || 0) || 0);
+  }
+  return 0;
+}
+function setMediaRememberedPositionSec(el, sec){
+  if (!el) return;
+  const safe = Math.max(0, Number(sec || 0) || 0);
+  if (el.type === ElementType.Audio){
+    if (!el.audio || typeof el.audio !== 'object') el.audio = {};
+    el.audio.playbackPositionSec = safe;
+  } else if (el.type === ElementType.Video){
+    if (!el.video || typeof el.video !== 'object') el.video = {};
+    el.video.playbackPositionSec = safe;
+  } else if (el.type === ElementType.Url){
+    if (!el.url || typeof el.url !== 'object') el.url = {};
+    el.url.playbackPositionSec = safe;
+  }
+}
+function getMediaRememberedMuted(el){
+  if (!el) return false;
+  if (el.type === ElementType.Audio){
+    if (!el.audio || typeof el.audio !== 'object') el.audio = {};
+    return !!el.audio.muted;
+  }
+  if (el.type === ElementType.Video){
+    if (!el.video || typeof el.video !== 'object') el.video = {};
+    return !!el.video.muted;
+  }
+  if (el.type === ElementType.Url){
+    if (!el.url || typeof el.url !== 'object') el.url = {};
+    return !!el.url.muted;
+  }
+  return false;
+}
+function setMediaRememberedMuted(el, muted){
+  if (!el) return;
+  const val = !!muted;
+  if (el.type === ElementType.Audio){
+    if (!el.audio || typeof el.audio !== 'object') el.audio = {};
+    el.audio.muted = val;
+  } else if (el.type === ElementType.Video){
+    if (!el.video || typeof el.video !== 'object') el.video = {};
+    el.video.muted = val;
+  } else if (el.type === ElementType.Url){
+    if (!el.url || typeof el.url !== 'object') el.url = {};
+    el.url.muted = val;
+  }
+}
+function persistActiveMediaState(){
+  try { refreshFloatingEditorMediaControls(); } catch {}
+  const el = getCurrentMediaElement();
+  if (!el) return;
+  if (MediaSession.overlayKind === 'youtube'){
+    setMediaRememberedPositionSec(el, MediaSession.youtubeCurrentTime || 0);
+    setMediaRememberedMuted(el, MediaSession.overlayMuted);
+    const dur = Math.max(0, Number(MediaSession.youtubeDuration || 0) || 0);
+    if (dur > 0){
+      if (el.type === ElementType.Video){
+        if (!el.video || typeof el.video !== 'object') el.video = {};
+        el.video.duration = dur;
+      } else if (el.type === ElementType.Url){
+        if (!el.url || typeof el.url !== 'object') el.url = {};
+        el.url.duration = dur;
+      }
+    }
+  } else if (MediaSession.overlayKind === 'video'){
+    const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
+    if (v){
+      setMediaRememberedPositionSec(el, Number(v.currentTime || 0) || 0);
+      setMediaRememberedMuted(el, !!v.muted);
+      if (el.type === ElementType.Video){
+        if (!el.video || typeof el.video !== 'object') el.video = {};
+        const dur = Math.max(0, Number(v.duration || 0) || 0);
+        if (dur > 0) el.video.duration = dur;
+      } else if (el.type === ElementType.Url){
+        if (!el.url || typeof el.url !== 'object') el.url = {};
+        const dur = Math.max(0, Number(v.duration || 0) || 0);
+        if (dur > 0) el.url.duration = dur;
+      }
+    }
+  } else if (MediaSession.mediaEl){
+    setMediaRememberedPositionSec(el, Number(MediaSession.mediaEl.currentTime || 0) || 0);
+    setMediaRememberedMuted(el, !!MediaSession.mediaEl.muted);
+    if (el.type === ElementType.Audio){
+      if (!el.audio || typeof el.audio !== 'object') el.audio = {};
+      const dur = Math.max(0, Number(MediaSession.mediaEl.duration || 0) || 0);
+      if (dur > 0) el.audio.duration = dur;
+    }
+  }
+}
+function isMediaCurrentlyPausedForElement(el){
+  if (!el || MediaSession.currentElementId !== el.id) return true;
+  if (MediaSession.overlayKind === 'youtube') return !!MediaSession.youtubePaused;
+  if (MediaSession.overlayKind === 'video'){
+    const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
+    return !v || !!v.paused;
+  }
+  return !MediaSession.mediaEl || !!MediaSession.mediaEl.paused;
+}
+function stopYouTubePolling(){
+  if (MediaSession.youtubePollTimer){
+    clearInterval(MediaSession.youtubePollTimer);
+    MediaSession.youtubePollTimer = 0;
+  }
+  if (Array.isArray(MediaSession.youtubeResumeTimers) && MediaSession.youtubeResumeTimers.length){
+    for (const timer of MediaSession.youtubeResumeTimers){
+      try { clearTimeout(timer); } catch {}
+    }
+    MediaSession.youtubeResumeTimers.length = 0;
+  }
+}
+let _youtubeIframeApiPromise = null;
+function ensureYouTubeIframeApi(){
+  if (_youtubeIframeApiPromise) return _youtubeIframeApiPromise;
+  _youtubeIframeApiPromise = new Promise((resolve, reject) => {
+    if (globalThis.YT && typeof globalThis.YT.Player === 'function') { resolve(globalThis.YT); return; }
+    const prev = globalThis.onYouTubeIframeAPIReady;
+    globalThis.onYouTubeIframeAPIReady = function(){
+      try { if (typeof prev === 'function') prev(); } catch {}
+      resolve(globalThis.YT);
+    };
+    const existing = document.querySelector('script[data-scrapbook-youtube-api="1"]');
+    if (existing) return;
+    const s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api';
+    s.async = true;
+    s.dataset.scrapbookYoutubeApi = '1';
+    s.onerror = () => reject(new Error('Failed to load YouTube iframe API.'));
+    document.head.appendChild(s);
+  });
+  return _youtubeIframeApiPromise;
+}
+function ensureYouTubePlayerDestroyed(){
+  const p = MediaSession.youtubePlayer;
+  MediaSession.youtubePlayer = null;
+  MediaSession.youtubePlayerReady = false;
+  MediaSession.youtubeDuration = 0;
+  if (p && typeof p.destroy === 'function') {
+    try { p.destroy(); } catch {}
+  }
+}
+function ensureYouTubeStateFromPlayer(){
+  const p = MediaSession.youtubePlayer;
+  if (!p) return;
+  try {
+    const t = Number(p.getCurrentTime?.() || 0) || 0;
+    if (Number.isFinite(t) && t >= 0) MediaSession.youtubeCurrentTime = t;
+  } catch {}
+  try {
+    const d = Number(p.getDuration?.() || 0) || 0;
+    if (Number.isFinite(d) && d >= 0) MediaSession.youtubeDuration = d;
+  } catch {}
+  try {
+    MediaSession.overlayMuted = !!p.isMuted?.();
+  } catch {}
+  try {
+    MediaSession.youtubePaused = !(Number(p.getPlayerState?.()) === 1);
+  } catch {}
+}
 function ensureMediaOverlayHost(){
   if (MediaSession.overlayHost && MediaSession.overlayHost.isConnected) return MediaSession.overlayHost;
   const host = document.createElement('div');
@@ -6956,18 +7203,15 @@ function ensureMediaOverlayHost(){
   return host;
 }
 function clearMediaOverlay(){
+  stopYouTubePolling();
+  ensureYouTubePlayerDestroyed();
   const node = MediaSession.overlayNode;
   if (node){
     try {
       const vids = node.querySelectorAll('video');
       vids.forEach((v) => { try { v.pause(); } catch {} v.removeAttribute('src'); try { v.load(); } catch {} v.remove(); });
       const iframes = node.querySelectorAll('iframe');
-      iframes.forEach((fr) => {
-        // Remove from DOM FIRST so the browsing context is destroyed,
-        // then blank src to prevent any pending navigation callbacks
-        try { fr.remove(); } catch {}
-        try { fr.src = 'about:blank'; } catch {}
-      });
+      iframes.forEach((fr) => { try { fr.remove(); } catch {} try { fr.src = 'about:blank'; } catch {} });
     } catch {}
     node.remove();
   }
@@ -6976,8 +7220,11 @@ function clearMediaOverlay(){
   MediaSession.overlayKind = '';
   MediaSession.overlayYouTubeId = '';
   MediaSession.overlayRect = null;
+  MediaSession.youtubeCurrentTime = 0;
+  MediaSession.youtubePaused = true;
+  MediaSession.overlayMuted = false;
 }
-function buildYouTubeEmbedUrl(videoId, autoplay = true){
+function buildYouTubeEmbedUrl(videoId, autoplay = true, startSec = 0){
   const p = new URLSearchParams();
   p.set('autoplay', autoplay ? '1' : '0');
   p.set('playsinline', '1');
@@ -6985,6 +7232,8 @@ function buildYouTubeEmbedUrl(videoId, autoplay = true){
   p.set('modestbranding', '1');
   p.set('enablejsapi', '1');
   p.set('controls', '1');
+  p.set('origin', window.location.origin);
+  if (startSec > 0) p.set('start', String(Math.max(0, Math.floor(startSec))));
   return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${p.toString()}`;
 }
 function createStageMediaOverlayNode(kind){
@@ -7050,23 +7299,87 @@ function updateMediaOverlayPosition(){
 }
 function sendYouTubeCommand(func, args = []){
   if (MediaSession.overlayKind !== 'youtube') return;
+  const p = MediaSession.youtubePlayer;
+  if (p){
+    try {
+      if (func === 'seekTo') { p.seekTo?.(Number(args[0] || 0) || 0, !!args[1]); ensureYouTubeStateFromPlayer(); return; }
+      if (func === 'playVideo') { p.playVideo?.(); ensureYouTubeStateFromPlayer(); return; }
+      if (func === 'pauseVideo') { p.pauseVideo?.(); ensureYouTubeStateFromPlayer(); return; }
+      if (func === 'mute') { p.mute?.(); MediaSession.overlayMuted = true; return; }
+      if (func === 'unMute') { p.unMute?.(); MediaSession.overlayMuted = false; return; }
+      if (func === 'getCurrentTime') { ensureYouTubeStateFromPlayer(); return; }
+      if (func === 'getDuration') { ensureYouTubeStateFromPlayer(); return; }
+      if (func === 'isMuted') { ensureYouTubeStateFromPlayer(); return; }
+      if (func === 'getPlayerState') { ensureYouTubeStateFromPlayer(); return; }
+    } catch {}
+  }
   const frame = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('iframe');
   if (!frame || !frame.contentWindow) return;
-  try {
-    frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args }), 'https://www.youtube.com');
-  } catch {}
+  try { frame.contentWindow.postMessage(JSON.stringify({ event: 'command', func, args }), 'https://www.youtube.com'); } catch {}
+}
+function syncYouTubeResumeState(el, opts = {}){
+  if (!el || MediaSession.overlayKind !== 'youtube' || MediaSession.currentElementId !== el.id) return;
+  const remembered = Math.max(0, Number(opts.positionSec != null ? opts.positionSec : getMediaRememberedPositionSec(el)) || 0);
+  const muted = !!(opts.muted != null ? opts.muted : getMediaRememberedMuted(el));
+  const wantsPlay = opts.play !== false;
+  const preserveIfClose = !!opts.preserveIfClose;
+  stopYouTubePolling();
+
+  let liveTime = Math.max(0, Number(MediaSession.youtubeCurrentTime || 0) || 0);
+  if (MediaSession.youtubePlayerReady) {
+    try { ensureYouTubeStateFromPlayer(); } catch {}
+    liveTime = Math.max(0, Number(MediaSession.youtubeCurrentTime || 0) || 0);
+  }
+
+  const drift = Math.abs(liveTime - remembered);
+  const shouldSeekNow = !preserveIfClose || drift > 1.25;
+
+  if (MediaSession.overlayKind === 'youtube' && MediaSession.currentElementId === el.id) {
+    sendYouTubeCommand(muted ? 'mute' : 'unMute', []);
+    if (shouldSeekNow) {
+      sendYouTubeCommand('seekTo', [remembered, true]);
+      MediaSession.youtubeCurrentTime = remembered;
+    }
+    sendYouTubeCommand(wantsPlay ? 'playVideo' : 'pauseVideo', []);
+    ensureYouTubeStateFromPlayer();
+    persistActiveMediaState();
+    try { refreshFloatingEditorMediaControls(); } catch {}
+  }
+
+  MediaSession.youtubeResumeTimers = [window.setTimeout(() => {
+    if (MediaSession.overlayKind !== 'youtube' || MediaSession.currentElementId !== el.id) return;
+    sendYouTubeCommand(muted ? 'mute' : 'unMute', []);
+    ensureYouTubeStateFromPlayer();
+    const current = Math.max(0, Number(MediaSession.youtubeCurrentTime || 0) || 0);
+    const currentDrift = Math.abs(current - remembered);
+    if (currentDrift > 2.0 && (!preserveIfClose || current < Math.max(0, remembered - 1.0))) {
+      sendYouTubeCommand('seekTo', [remembered, true]);
+      MediaSession.youtubeCurrentTime = remembered;
+      ensureYouTubeStateFromPlayer();
+    }
+    persistActiveMediaState();
+    try { refreshFloatingEditorMediaControls(); } catch {}
+  }, 650)];
+  MediaSession.youtubePollTimer = window.setInterval(() => {
+    if (MediaSession.overlayKind !== 'youtube' || MediaSession.currentElementId !== el.id) return;
+    ensureYouTubeStateFromPlayer();
+    persistActiveMediaState();
+    try { refreshFloatingEditorMediaControls(); } catch {}
+  }, 250);
 }
 function stopActiveMediaPlayback(){
+  persistActiveMediaState();
+  scheduleAutosave();
   MediaSession.pendingToken += 1;
   const m = MediaSession.mediaEl;
   if (m){
     try { m.pause(); } catch {}
     try { m.removeAttribute('src'); } catch {}
-    try { m.load(); } catch {}   // releases decoded buffers held by the media engine
-    try { m.remove(); } catch {} // detach from DOM so GC can collect it
+    try { m.load(); } catch {}
+    try { m.remove(); } catch {}
     MediaSession.mediaEl = null;
   }
-  if (MediaSession.overlayKind === 'youtube') sendYouTubeCommand('stopVideo', []);
+  if (MediaSession.overlayKind === 'youtube') sendYouTubeCommand('pauseVideo', []);
   clearMediaOverlay();
   MediaSession.currentElementId = ""; MediaSession.currentType = ""; MediaSession.sourceUrl = "";
 }
@@ -7096,10 +7409,10 @@ function playVideoOverlayFromSource(el, src, token){
   const { inner } = createStageMediaOverlayNode('video');
   const v = document.createElement('video');
   v.playsInline = true;
-  v.autoplay = true;
-  v.muted = false;
+  v.autoplay = false;
+  v.muted = getMediaRememberedMuted(el);
   v.loop = false;
-  v.controls = false;
+  v.controls = true;
   v.preload = 'metadata';
   v.style.position = 'absolute';
   v.style.left = '0';
@@ -7108,38 +7421,111 @@ function playVideoOverlayFromSource(el, src, token){
   v.style.height = '100%';
   v.style.objectFit = (el.keepAspect === false) ? 'fill' : 'contain';
   v.style.background = 'transparent';
+  const sync = () => { persistActiveMediaState(); scheduleAutosave(); };
+  let resumeApplied = false;
+  let playRequested = false;
+  const playAfterResume = () => {
+    if (playRequested) return;
+    playRequested = true;
+    if (token !== MediaSession.pendingToken || MediaSession.currentElementId !== el.id) return;
+    v.play().catch(() => {});
+  };
+  const applyRememberedTime = () => {
+    if (resumeApplied) return;
+    resumeApplied = true;
+    const remembered = getMediaRememberedPositionSec(el);
+    if (remembered > 0) {
+      const dur = Math.max(0, Number(v.duration || 0) || 0);
+      const target = dur > 0 ? Math.min(remembered, dur) : remembered;
+      try { v.currentTime = target; } catch {}
+    }
+    sync();
+  };
+  v.addEventListener('loadedmetadata', () => {
+    applyRememberedTime();
+    if (Number(getMediaRememberedPositionSec(el) || 0) > 0) return;
+    playAfterResume();
+  }, { once: true });
+  v.addEventListener('seeked', () => {
+    if (!playRequested) playAfterResume();
+  }, { once: true });
+  v.addEventListener('canplay', () => {
+    if (!playRequested) playAfterResume();
+  }, { once: true });
+  v.addEventListener('timeupdate', sync, { passive: true });
+  v.addEventListener('play', sync, { passive: true });
+  v.addEventListener('pause', sync, { passive: true });
+  v.addEventListener('volumechange', sync, { passive: true });
   inner.appendChild(v);
   if (token !== MediaSession.pendingToken) return;
   v.src = src;
   MediaSession.currentElementId = el.id;
   MediaSession.currentType = el.type;
   MediaSession.sourceUrl = src;
+  MediaSession.overlayMuted = !!v.muted;
   updateMediaOverlayPosition();
-  v.play().catch(() => {});
 }
-function playYouTubeOverlay(el, href, token){
+async function playYouTubeOverlay(el, href, token){
   const videoId = extractYouTubeVideoId(href);
   if (!videoId || token !== MediaSession.pendingToken) return;
+  const remembered = getMediaRememberedPositionSec(el);
+  const muted = getMediaRememberedMuted(el);
   const { inner } = createStageMediaOverlayNode('youtube');
-  const frame = document.createElement('iframe');
-  frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-  frame.allowFullscreen = true;
-  frame.referrerPolicy = 'strict-origin-when-cross-origin';
-  frame.src = buildYouTubeEmbedUrl(videoId, true);
-  frame.style.position = 'absolute';
-  frame.style.left = '0';
-  frame.style.top = '0';
-  frame.style.width = '100%';
-  frame.style.height = '100%';
-  frame.style.border = '0';
-  frame.style.background = 'transparent';
-  frame.style.display = 'block';
-  inner.appendChild(frame);
+  const mount = document.createElement('div');
+  mount.style.position = 'absolute';
+  mount.style.left = '0';
+  mount.style.top = '0';
+  mount.style.width = '100%';
+  mount.style.height = '100%';
+  mount.style.border = '0';
+  mount.style.background = 'transparent';
+  mount.style.display = 'block';
+  inner.appendChild(mount);
   MediaSession.currentElementId = el.id;
   MediaSession.currentType = el.type;
   MediaSession.sourceUrl = href;
   MediaSession.overlayYouTubeId = videoId;
+  MediaSession.youtubeCurrentTime = remembered;
+  MediaSession.overlayMuted = muted;
+  MediaSession.youtubePaused = false;
   updateMediaOverlayPosition();
+  try {
+    const YT = await ensureYouTubeIframeApi();
+    if (token !== MediaSession.pendingToken || MediaSession.currentElementId !== el.id || MediaSession.overlayKind !== 'youtube') return;
+    ensureYouTubePlayerDestroyed();
+    MediaSession.youtubePlayer = new YT.Player(mount, {
+      videoId,
+      playerVars: {
+        autoplay: 0,
+        playsinline: 1,
+        rel: 0,
+        modestbranding: 1,
+        controls: 1,
+        enablejsapi: 1,
+        origin: window.location.origin,
+        start: Math.max(0, Math.floor(remembered || 0))
+      },
+      events: {
+        onReady: () => {
+          if (token !== MediaSession.pendingToken || MediaSession.currentElementId !== el.id || MediaSession.overlayKind !== 'youtube') return;
+          MediaSession.youtubePlayerReady = true;
+          ensureYouTubeStateFromPlayer();
+          syncYouTubeResumeState(el, { positionSec: remembered, muted, play: true });
+        },
+        onStateChange: () => {
+          ensureYouTubeStateFromPlayer();
+          persistActiveMediaState();
+          try { refreshFloatingEditorMediaControls(); } catch {}
+        },
+        onError: () => {
+          MediaSession.youtubePaused = true;
+          try { refreshFloatingEditorMediaControls(); } catch {}
+        }
+      }
+    });
+  } catch (err) {
+    console.warn('YouTube overlay init failed', err);
+  }
 }
 function playMediaElementNow(el, token){
   if (!el || token !== MediaSession.pendingToken) return;
@@ -7148,10 +7534,25 @@ function playMediaElementNow(el, token){
     const href = (el.type === ElementType.Url) ? String(el.url && el.url.href || '') : getPlayableSourceForElement(el);
     const ytId = extractYouTubeVideoId(href);
     if (ytId){
-      playYouTubeOverlay(el, href, token);
+      if (MediaSession.currentElementId === el.id && MediaSession.overlayKind === 'youtube' && MediaSession.overlayYouTubeId === ytId) {
+        syncYouTubeResumeState(el, { play: true, preserveIfClose: true });
+        MediaSession.youtubePaused = false;
+        return;
+      }
+      void playYouTubeOverlay(el, href, token);
       return;
     }
     if (href){
+      if (MediaSession.currentElementId === el.id && MediaSession.overlayKind === 'video') {
+        const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
+        if (v) {
+          v.muted = getMediaRememberedMuted(el);
+          const remembered = getMediaRememberedPositionSec(el);
+          if (Math.abs((Number(v.currentTime || 0) || 0) - remembered) > 1.0) { try { v.currentTime = remembered; } catch {} }
+          v.play().catch(() => {});
+          return;
+        }
+      }
       playVideoOverlayFromSource(el, href, token);
       return;
     }
@@ -7160,39 +7561,125 @@ function playMediaElementNow(el, token){
   if (!src) return;
   const m = ensureMediaElementForType(el.type);
   if (token !== MediaSession.pendingToken) return;
-  if (MediaSession.currentElementId !== el.id || MediaSession.sourceUrl !== src){
-    try { m.pause(); } catch {}
-    m.src = src;
-    m.load();
-    MediaSession.currentElementId = el.id;
-    MediaSession.currentType = el.type;
-    MediaSession.sourceUrl = src;
+
+  const remembered = getMediaRememberedPositionSec(el);
+  const muted = getMediaRememberedMuted(el);
+  const isSameSource = (MediaSession.currentElementId === el.id && MediaSession.sourceUrl === src);
+
+  if (isSameSource){
+    m.muted = muted;
+    if (Math.abs((Number(m.currentTime || 0) || 0) - remembered) > 0.75) {
+      try { m.currentTime = remembered; } catch {}
+    }
+    m.play().catch(() => {});
+    return;
   }
-  m.play().catch(() => {});
+
+  try { m.pause(); } catch {}
+
+  let playRequested = false;
+  let resumeApplied = false;
+  const finishPlay = () => {
+    if (playRequested) return;
+    playRequested = true;
+    if (token !== MediaSession.pendingToken || MediaSession.currentElementId !== el.id || MediaSession.sourceUrl !== src) return;
+    m.play().catch(() => {});
+  };
+  const applyRememberedTime = () => {
+    if (resumeApplied) return;
+    resumeApplied = true;
+    if (token !== MediaSession.pendingToken || MediaSession.currentElementId !== el.id || MediaSession.sourceUrl !== src) return;
+    if (remembered > 0) {
+      const dur = Math.max(0, Number(m.duration || 0) || 0);
+      const target = dur > 0 ? Math.min(remembered, dur) : remembered;
+      try { m.currentTime = target; } catch {}
+    }
+    persistActiveMediaState();
+    try { refreshFloatingEditorMediaControls(); } catch {}
+  };
+
+  m.onloadedmetadata = () => {
+    applyRememberedTime();
+    if (remembered <= 0) finishPlay();
+  };
+  m.onseeked = () => {
+    applyRememberedTime();
+    finishPlay();
+  };
+  m.oncanplay = () => {
+    applyRememberedTime();
+    finishPlay();
+  };
+
+  m.muted = muted;
+  m.src = src;
+  m.load();
+  MediaSession.currentElementId = el.id;
+  MediaSession.currentType = el.type;
+  MediaSession.sourceUrl = src;
+  MediaSession.overlayMuted = !!muted;
 }
 function playMediaElement(el){
+  try { refreshFloatingEditorMediaControls(); } catch {}
   if (!el) return;
   const token = ++MediaSession.pendingToken;
   setStatus('Starting media…');
   window.setTimeout(() => playMediaElementNow(el, token), 0);
 }
 function pauseMediaElement(){
+  try { refreshFloatingEditorMediaControls(); } catch {}
+  persistActiveMediaState();
+  scheduleAutosave();
   MediaSession.pendingToken += 1;
-  if (MediaSession.overlayKind === 'youtube') { sendYouTubeCommand('pauseVideo', []); return; }
+  if (MediaSession.overlayKind === 'youtube') { MediaSession.youtubePaused = true; sendYouTubeCommand('pauseVideo', []); return; }
   if (MediaSession.overlayKind === 'video') {
     const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
     if (v) { try { v.pause(); } catch {} return; }
   }
   try { MediaSession.mediaEl && MediaSession.mediaEl.pause(); } catch {}
 }
+function toggleMediaPlayPause(el){
+  if (el && MediaSession.currentElementId === el.id && !isMediaCurrentlyPausedForElement(el)) pauseMediaElement();
+  else playMediaElement(el || getCurrentMediaElement());
+}
 function rewindMediaElement(seconds = 5){
-  if (MediaSession.overlayKind === 'youtube') { sendYouTubeCommand('seekTo', [0, true]); return; }
+  try { refreshFloatingEditorMediaControls(); } catch {}
+  if (MediaSession.overlayKind === 'youtube') {
+    const el = getCurrentMediaElement();
+    const next = Math.max(0, (Number(MediaSession.youtubeCurrentTime || 0) || 0) - Number(seconds || 5));
+    MediaSession.youtubeCurrentTime = next;
+    if (el) setMediaRememberedPositionSec(el, next);
+    scheduleAutosave();
+    sendYouTubeCommand('seekTo', [next, true]);
+    return;
+  }
   if (MediaSession.overlayKind === 'video') {
     const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
-    if (v) { try { v.currentTime = Math.max(0, (Number(v.currentTime)||0) - Number(seconds||5)); } catch {} return; }
+    if (v) { try { v.currentTime = Math.max(0, (Number(v.currentTime)||0) - Number(seconds||5)); } catch {} persistActiveMediaState(); scheduleAutosave(); return; }
   }
   const m = MediaSession.mediaEl; if (!m) return; try { m.currentTime = Math.max(0, (Number(m.currentTime)||0) - Number(seconds||5)); } catch {}
+  persistActiveMediaState();
+  scheduleAutosave();
 }
+window.addEventListener('message', (ev) => {
+  if (MediaSession.overlayKind !== 'youtube') return;
+  const origin = String(ev.origin || '');
+  if (!/youtube(?:-nocookie)?\.com$/i.test(origin) && !/youtube\.com$/i.test(origin)) return;
+  let data = ev.data;
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch { return; }
+  }
+  if (!data || typeof data !== 'object') return;
+  if (data.event === 'infoDelivery' && data.info && typeof data.info === 'object') {
+    if (data.info.currentTime != null) MediaSession.youtubeCurrentTime = Math.max(0, Number(data.info.currentTime || 0) || 0);
+    if (data.info.playerState != null) MediaSession.youtubePaused = !(Number(data.info.playerState) === 1);
+    if (data.info.muted != null) MediaSession.overlayMuted = !!data.info.muted;
+    ensureYouTubeStateFromPlayer();
+    persistActiveMediaState();
+    scheduleAutosave();
+    try { refreshFloatingEditorMediaControls(); } catch {}
+  }
+});
 function openUrlExternal(href){ const url = String(href || "").trim(); if (!url) return; window.open(url, "_blank", "noopener,noreferrer"); }
 function extractYouTubeVideoId(href){
   try {
@@ -8943,575 +9430,760 @@ function makeCheckbox(label, checked, onChange, opts = null){
   return row;
 }
 
-const FloatingSitelenEditor = {
+const FloatingTextEditor = {
   root: null,
   header: null,
   title: null,
   ta: null,
   closeBtn: null,
-
-  // isOpen now means "the panel is not manually hidden by the user"
   isOpen: true,
-  // elementId tracks which element the editor is currently bound to (for legacy rebind support)
   elementId: null,
   sourceTextarea: null,
   onChange: null,
-
-  // The element currently reflected in the floating editor
-  // null = no element / blank state
   _boundElId: null,
-  _boundElType: null,  // 'text' | 'sitelen' | 'glyph' | 'url' | null
-
+  _boundElType: null,
   dragging: false,
   dragPointerId: null,
   startX: 0,
   startY: 0,
   startLeft: 0,
   startTop: 0,
-
   suppressSync: false,
+  resizeObserver: null,
+  storageOpenKey: LS_KEY_TEXT_EDITOR_OPEN,
+  storageGeometryKey: LS_KEY_TEXT_EDITOR_GEOMETRY,
+  defaultTitle: "Text Editor",
+  defaultPlaceholder: "Select a text, sitelen, or glyph element to edit…",
 };
 
-function clampFloatingEditorToViewport(){
+const FloatingMediaEditor = {
+  root: null,
+  header: null,
+  title: null,
+  ta: null,
+  closeBtn: null,
+  isOpen: true,
+  elementId: null,
+  sourceTextarea: null,
+  onChange: null,
+  _boundElId: null,
+  _boundElType: null,
+  dragging: false,
+  dragPointerId: null,
+  startX: 0,
+  startY: 0,
+  startLeft: 0,
+  startTop: 0,
+  suppressSync: false,
+  mediaControls: null,
+  mediaToggleBtn: null,
+  mediaMuteBtn: null,
+  mediaRewindBtn: null,
+  mediaSlider: null,
+  mediaTimeNow: null,
+  mediaTimeDur: null,
+  mediaHint: null,
+  mediaUiTimer: 0,
+  resizeObserver: null,
+  storageOpenKey: LS_KEY_MEDIA_EDITOR_OPEN,
+  storageGeometryKey: LS_KEY_MEDIA_EDITOR_GEOMETRY,
+  defaultTitle: "Media Editor",
+  defaultPlaceholder: "Select an audio, video, or URL element to edit or control…",
+};
+
+const FloatingSitelenEditor = FloatingTextEditor;
+let floatingEditorZCounter = 10040;
+
+
+function _floatingEditorViewportLimits(){
   const root = FloatingSitelenEditor.root;
-  if (!root) return;
+  const minW = Math.max(320, Number(root?.style.minWidth?.replace('px','') || 320) || 320);
+  const minH = Math.max(220, Number(root?.style.minHeight?.replace('px','') || 220) || 220);
+  const margin = 12;
+  const hardMaxW = Math.max(minW, window.innerWidth - margin * 2);
+  const hardMaxH = Math.max(minH, window.innerHeight - margin * 2);
+  const softMaxW = Math.max(minW, Math.round(window.innerWidth * 0.78));
+  const softMaxH = Math.max(minH, Math.round(window.innerHeight * 0.72));
+  return {
+    margin,
+    minW,
+    minH,
+    maxW: Math.max(minW, Math.min(hardMaxW, softMaxW)),
+    maxH: Math.max(minH, Math.min(hardMaxH, softMaxH))
+  };
+}
+function _normalizeFloatingEditorRect(rect, fallbackRect = null){
+  const lim = _floatingEditorViewportLimits();
+  const base = (rect && Number.isFinite(rect.left) && Number.isFinite(rect.top) && Number.isFinite(rect.width) && Number.isFinite(rect.height))
+    ? rect
+    : (fallbackRect || { left: lim.margin, top: lim.margin, width: lim.minW, height: lim.minH });
 
+  let width = Math.max(lim.minW, Math.min(Number(base.width) || lim.minW, lim.maxW));
+  let height = Math.max(lim.minH, Math.min(Number(base.height) || lim.minH, lim.maxH));
+  let left = Number(base.left);
+  let top = Number(base.top);
+  if (!Number.isFinite(left)) left = lim.margin;
+  if (!Number.isFinite(top)) top = lim.margin;
+
+  const maxLeft = Math.max(0, window.innerWidth - width - lim.margin);
+  const maxTop = Math.max(0, window.innerHeight - height - lim.margin);
+  left = Math.max(0, Math.min(left, maxLeft));
+  top = Math.max(0, Math.min(top, maxTop));
+
+  return {
+    left: Math.round(left),
+    top: Math.round(top),
+    width: Math.round(width),
+    height: Math.round(height)
+  };
+}
+function _floatingEditorDefaultRectFor(editor){
+  const stagePanel = document.querySelector('.stagePanel');
+  const stageRect = stagePanel ? stagePanel.getBoundingClientRect() : null;
+  const lim = _floatingEditorViewportLimits();
+  const isMedia = editor === FloatingMediaEditor;
+  const fallback = {
+    left: isMedia ? 420 : 360,
+    top: isMedia ? 180 : 120,
+    width: Math.min(isMedia ? 680 : 720, lim.maxW),
+    height: Math.min(isMedia ? 320 : 420, lim.maxH)
+  };
+  if (!stageRect) return _normalizeFloatingEditorRect(fallback, fallback);
+  const rect = {
+    left: Math.round(stageRect.left + 18 + (isMedia ? 56 : 0)),
+    top: Math.round(stageRect.top + 18 + (isMedia ? 56 : 0)),
+    width: Math.round(Math.min(isMedia ? 680 : 720, Math.max(lim.minW, stageRect.width - 36))),
+    height: Math.round(Math.min(isMedia ? 320 : 420, Math.max(lim.minH, stageRect.height - 36)))
+  };
+  return _normalizeFloatingEditorRect(rect, fallback);
+}
+function _getFloatingEditorRect(editor){
+  const root = editor && editor.root;
+  if (!root) return null;
   const rect = root.getBoundingClientRect();
-  const maxLeft = Math.max(0, window.innerWidth - rect.width);
-  const maxTop  = Math.max(0, window.innerHeight - rect.height);
-
-  const curLeft = parseFloat(root.style.left || "0");
-  const curTop  = parseFloat(root.style.top || "0");
-
+  return {
+    left: Math.round(rect.left),
+    top: Math.round(rect.top),
+    width: Math.round(rect.width),
+    height: Math.round(rect.height)
+  };
+}
+function _isFloatingEditorRectUsable(rect){
+  if (!rect || !Number.isFinite(rect.left) || !Number.isFinite(rect.top) || !Number.isFinite(rect.width) || !Number.isFinite(rect.height)) return false;
+  const lim = _floatingEditorViewportLimits();
+  const margin = 24;
+  if (rect.width < lim.minW || rect.height < lim.minH) return false;
+  if (rect.width > lim.maxW + 4 || rect.height > lim.maxH + 4) return false;
+  if (rect.left > window.innerWidth - margin) return false;
+  if (rect.top > window.innerHeight - margin) return false;
+  if (rect.left + rect.width < margin) return false;
+  if (rect.top + rect.height < margin) return false;
+  return true;
+}
+function persistFloatingEditorGeometryFor(editor){
+  const rect = _getFloatingEditorRect(editor);
+  if (!rect || !editor?.storageGeometryKey) return;
+  const normalized = _normalizeFloatingEditorRect(rect, _floatingEditorDefaultRectFor(editor));
+  try { localStorage.setItem(editor.storageGeometryKey, JSON.stringify(normalized)); } catch {}
+}
+function restoreFloatingEditorGeometryFor(editor, forceStageDefault = false){
+  const root = editor && editor.root;
+  if (!root) return;
+  let rect = null;
+  if (!forceStageDefault){
+    try {
+      const raw = localStorage.getItem(editor.storageGeometryKey);
+      if (raw) rect = JSON.parse(raw);
+    } catch {}
+  }
+  if (!_isFloatingEditorRectUsable(rect)) rect = _floatingEditorDefaultRectFor(editor);
+  if (!rect) return;
+  rect = _normalizeFloatingEditorRect(rect, _floatingEditorDefaultRectFor(editor));
+  root.style.left = `${Math.round(rect.left)}px`;
+  root.style.top = `${Math.round(rect.top)}px`;
+  root.style.width = `${Math.round(rect.width)}px`;
+  root.style.height = `${Math.round(rect.height)}px`;
+  clampFloatingEditorToViewport(editor);
+}
+function clampFloatingEditorToViewport(editor){
+  const root = editor && editor.root;
+  if (!root) return;
+  const lim = _floatingEditorViewportLimits();
+  const rect = root.getBoundingClientRect();
+  let width = Number.isFinite(rect.width) ? rect.width : parseFloat(root.style.width || '0');
+  let height = Number.isFinite(rect.height) ? rect.height : parseFloat(root.style.height || '0');
+  if (!Number.isFinite(width) || width <= 0) width = lim.minW;
+  if (!Number.isFinite(height) || height <= 0) height = lim.minH;
+  if (width > lim.maxW) {
+    width = lim.maxW;
+    root.style.width = `${Math.round(width)}px`;
+  }
+  if (height > lim.maxH) {
+    height = lim.maxH;
+    root.style.height = `${Math.round(height)}px`;
+  }
+  const maxLeft = Math.max(0, window.innerWidth - width - lim.margin);
+  const maxTop  = Math.max(0, window.innerHeight - height - lim.margin);
+  const curLeft = parseFloat(root.style.left || String(rect.left || 0));
+  const curTop  = parseFloat(root.style.top || String(rect.top || 0));
   root.style.left = `${Math.max(0, Math.min(curLeft, maxLeft))}px`;
   root.style.top  = `${Math.max(0, Math.min(curTop, maxTop))}px`;
 }
-
+function bringFloatingEditorToFront(editor){
+  if (!editor?.root) return;
+  floatingEditorZCounter += 1;
+  editor.root.style.zIndex = String(floatingEditorZCounter);
+}
+function syncFloatingEditorFromSource(editor, value){
+  if (!editor?.ta) return;
+  if (editor.suppressSync) return;
+  if (editor.ta.value === String(value ?? "")) return;
+  editor.suppressSync = true;
+  editor.ta.value = String(value ?? "");
+  editor.suppressSync = false;
+}
 function syncFloatingSitelenEditorFromSource(value){
-  const S = FloatingSitelenEditor;
-  if (!S.ta) return;
-  if (S.suppressSync) return;
-  if (S.ta.value === String(value ?? "")) return;
-
-  S.suppressSync = true;
-  S.ta.value = String(value ?? "");
-  S.suppressSync = false;
+  syncFloatingEditorFromSource(FloatingTextEditor, value);
 }
 
-// Manually close (hide) the floating editor — called only by the Close button.
-function closeFloatingSitelenEditor(){
-  const S = FloatingSitelenEditor;
-  if (!S.root) return;
+function formatMediaClock(sec){
+  const total = Math.max(0, Number(sec || 0) || 0);
+  const s = Math.floor(total % 60);
+  const m = Math.floor((total / 60) % 60);
+  const h = Math.floor(total / 3600);
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function getMediaDurationSec(el){
+  if (!el) return 0;
 
-  // Move focus out of the panel BEFORE hiding it — prevents the aria-hidden
-  // violation where a focused element's ancestor becomes aria-hidden.
-  if (S.root.contains(document.activeElement)){
-    document.activeElement.blur();
+  if (MediaSession.currentElementId === el.id){
+    if (MediaSession.overlayKind === 'video'){
+      const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
+      return Math.max(0, Number(v && v.duration || 0) || 0);
+    }
+
+    if (MediaSession.overlayKind === 'youtube'){
+      const liveDur = Math.max(0, Number(MediaSession.youtubeDuration || 0) || 0);
+      if (liveDur > 0) return liveDur;
+
+      if (el.type === ElementType.Video){
+        return Math.max(0, Number(el.video && el.video.duration || 0) || 0);
+      }
+      if (el.type === ElementType.Url){
+        return Math.max(0, Number(el.url && el.url.duration || 0) || 0);
+      }
+    }
+
+    if (MediaSession.mediaEl){
+      return Math.max(0, Number(MediaSession.mediaEl.duration || 0) || 0);
+    }
   }
 
+  if (el.type === ElementType.Audio){
+    return Math.max(0, Number(el.audio && el.audio.duration || 0) || 0);
+  }
+  if (el.type === ElementType.Video){
+    return Math.max(0, Number(el.video && el.video.duration || 0) || 0);
+  }
+  if (el.type === ElementType.Url){
+    return Math.max(0, Number(el.url && el.url.duration || 0) || 0);
+  }
+
+  return 0;
+}
+function getMediaCurrentTimeSec(el){
+  if (!el) return 0;
+  if (MediaSession.currentElementId === el.id){
+    if (MediaSession.overlayKind === 'youtube') { ensureYouTubeStateFromPlayer(); return Math.max(0, Number(MediaSession.youtubeCurrentTime || 0) || 0); }
+    if (MediaSession.overlayKind === 'video'){
+      const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
+      return Math.max(0, Number(v && v.currentTime || 0) || 0);
+    }
+    if (MediaSession.mediaEl) return Math.max(0, Number(MediaSession.mediaEl.currentTime || 0) || 0);
+  }
+  return getMediaRememberedPositionSec(el);
+}
+function getMediaMutedForElement(el){
+  if (!el) return false;
+  if (MediaSession.currentElementId === el.id){
+    if (MediaSession.overlayKind === 'youtube') return !!MediaSession.overlayMuted;
+    if (MediaSession.overlayKind === 'video'){
+      const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
+      return !!(v && v.muted);
+    }
+    if (MediaSession.mediaEl) return !!MediaSession.mediaEl.muted;
+  }
+  return getMediaRememberedMuted(el);
+}
+function seekMediaElementTo(el, sec){
+  if (!el) return;
+  const next = Math.max(0, Number(sec || 0) || 0);
+  setMediaRememberedPositionSec(el, next);
+  if (MediaSession.currentElementId === el.id){
+    if (MediaSession.overlayKind === 'youtube'){
+      MediaSession.youtubeCurrentTime = next;
+      sendYouTubeCommand('seekTo', [next, true]);
+      persistActiveMediaState();
+      try { refreshFloatingEditorMediaControls(); } catch {}
+    } else if (MediaSession.overlayKind === 'video'){
+      const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
+      if (v) { try { v.currentTime = next; } catch {} }
+    } else if (MediaSession.mediaEl) {
+      try { MediaSession.mediaEl.currentTime = next; } catch {}
+    }
+  }
+  scheduleAutosave();
+}
+function setMediaMutedForElement(el, muted){
+  if (!el) return;
+  const val = !!muted;
+  setMediaRememberedMuted(el, val);
+  if (MediaSession.currentElementId === el.id){
+    if (MediaSession.overlayKind === 'youtube'){
+      MediaSession.overlayMuted = val;
+      sendYouTubeCommand(val ? 'mute' : 'unMute', []);
+    } else if (MediaSession.overlayKind === 'video'){
+      const v = MediaSession.overlayInner && MediaSession.overlayInner.querySelector('video');
+      if (v) v.muted = val;
+    } else if (MediaSession.mediaEl) {
+      MediaSession.mediaEl.muted = val;
+    }
+  }
+  scheduleAutosave();
+}
+function refreshFloatingMediaEditorControls(){
+  const S = FloatingMediaEditor;
+  if (!S || !S.mediaControls || !S.mediaSlider) return;
+  const el = S._boundElId ? getElementById(S._boundElId) : null;
+  const isAudioMedia = !!el && (
+    el.type === ElementType.Audio ||
+    (el.type === ElementType.Url && el.url && el.url.detectedKind === 'audio')
+  );
+  const isVideoMedia = !!el && (
+    el.type === ElementType.Video ||
+    (el.type === ElementType.Url && el.url && el.url.detectedKind === 'video')
+  );
+  const isPlayableMedia = isAudioMedia || isVideoMedia;
+  if (!isPlayableMedia){
+    S.mediaControls.classList.add('hidden');
+    return;
+  }
+  S.mediaControls.classList.remove('hidden');
+  const current = getMediaCurrentTimeSec(el);
+  const duration = Math.max(current, getMediaDurationSec(el), 0);
+  S.mediaSlider.max = String(Math.max(duration, 0));
+  S.mediaSlider.value = String(Math.min(current, Math.max(duration, current, 0)));
+  S.mediaTimeNow.textContent = formatMediaClock(current);
+  S.mediaTimeDur.textContent = formatMediaClock(duration);
+  S.mediaToggleBtn.textContent = isMediaCurrentlyPausedForElement(el) ? 'Play' : 'Pause';
+  S.mediaMuteBtn.textContent = getMediaMutedForElement(el) ? 'Unmute' : 'Mute';
+  if (el.type === ElementType.Url){
+    S.mediaHint.textContent = isAudioMedia
+      ? 'URL audio controls and URL text are both available here.'
+      : 'URL video controls and URL text are both available here.';
+  } else {
+    S.mediaHint.textContent = isAudioMedia
+      ? 'Embedded audio controls. Playback resumes from the remembered position.'
+      : 'Embedded video controls. Playback resumes from the remembered position.';
+  }
+}
+function refreshFloatingEditorMediaControls(){
+  refreshFloatingMediaEditorControls();
+}
+function closeFloatingTextEditor(){
+  const S = FloatingTextEditor;
+  if (!S.root) return;
+  if (S.root.contains(document.activeElement)) document.activeElement.blur();
+  persistFloatingEditorGeometryFor(S);
   S.root.classList.add("hidden");
   S.root.setAttribute("aria-hidden", "true");
-
   S.isOpen = false;
-  // Keep _boundElId etc intact so we know state if re-opened later
   S.elementId = null;
   S.sourceTextarea = null;
   S.onChange = null;
-
-  // Persist closed state
-  try { localStorage.setItem(LS_KEY_FLOAT_EDITOR_OPEN, "0"); } catch {}
+  try { localStorage.setItem(S.storageOpenKey, "0"); } catch {}
   syncTextEditorToggleBtn();
 }
-
-// Show/reveal the floating editor (called on init and if we want to re-open it).
-function showFloatingSitelenEditor(){
-  const S = FloatingSitelenEditor;
+function closeFloatingMediaEditor(){
+  const S = FloatingMediaEditor;
+  if (!S.root) return;
+  if (S.root.contains(document.activeElement)) document.activeElement.blur();
+  persistFloatingEditorGeometryFor(S);
+  S.root.classList.add("hidden");
+  S.root.setAttribute("aria-hidden", "true");
+  S.isOpen = false;
+  try { localStorage.setItem(S.storageOpenKey, "0"); } catch {}
+}
+function closeFloatingSitelenEditor(){ closeFloatingTextEditor(); }
+function showFloatingTextEditor(){
+  const S = FloatingTextEditor;
   if (!S.root) return;
   S.root.classList.remove("hidden");
-  S.root.classList.remove("show"); // normalise; we don't need the legacy show class for the main editor
+  S.root.classList.remove("show");
   S.root.setAttribute("aria-hidden", "false");
   S.isOpen = true;
-  clampFloatingEditorToViewport();
-
-  // Persist open state
-  try { localStorage.setItem(LS_KEY_FLOAT_EDITOR_OPEN, "1"); } catch {}
+  restoreFloatingEditorGeometryFor(S, false);
+  clampFloatingEditorToViewport(S);
+  bringFloatingEditorToFront(S);
+  try { localStorage.setItem(S.storageOpenKey, "1"); } catch {}
   syncTextEditorToggleBtn();
 }
-
+function showFloatingMediaEditor(){
+  const S = FloatingMediaEditor;
+  if (!S.root) return;
+  S.root.classList.remove("hidden");
+  S.root.classList.remove("show");
+  S.root.setAttribute("aria-hidden", "false");
+  S.isOpen = true;
+  restoreFloatingEditorGeometryFor(S, false);
+  clampFloatingEditorToViewport(S);
+  bringFloatingEditorToFront(S);
+  try { localStorage.setItem(S.storageOpenKey, "1"); } catch {}
+}
+function showFloatingSitelenEditor(){ showFloatingTextEditor(); }
 function syncTextEditorToggleBtn(){
   const btn = document.getElementById("btnToggleTextEditor");
   if (!btn) return;
-  const open = !!(FloatingSitelenEditor && FloatingSitelenEditor.isOpen);
+  const open = !!(FloatingTextEditor && FloatingTextEditor.isOpen);
   btn.setAttribute("aria-pressed", open ? "true" : "false");
 }
-
-// Legacy open function kept for compatibility with existing call sites (e.g. popout button).
-// Now it just shows and binds — it no longer hides on selection change.
-function openFloatingSitelenEditor({ title, elementId, sourceTextarea, onChange }){
-  const S = FloatingSitelenEditor;
+function openFloatingTextEditor({ title, elementId, sourceTextarea, onChange }){
+  const S = FloatingTextEditor;
   if (!S.root || !S.ta) return;
-
   S.elementId = elementId || null;
   S.sourceTextarea = sourceTextarea || null;
   S.onChange = onChange || null;
-
   if (S.title) S.title.textContent = String(title || "Text");
   if (sourceTextarea) S.ta.value = String(sourceTextarea.value || "");
-
-  showFloatingSitelenEditor();
-  S.ta.focus();
+  showFloatingTextEditor();
+  if (!S.ta.disabled) S.ta.focus();
 }
-
+function openFloatingSitelenEditor(args){ openFloatingTextEditor(args); }
 function rebindFloatingSitelenEditorToTextarea(elementId, textareaEl, onChange){
-  const S = FloatingSitelenEditor;
+  const S = FloatingTextEditor;
   if (!S.elementId || S.elementId !== elementId) return;
   if (!textareaEl) return;
-
   S.sourceTextarea = textareaEl;
   S.onChange = onChange;
-
-  // Keep the freshly re-rendered main textarea synced to popup content
-  if (textareaEl.value !== S.ta.value){
-    textareaEl.value = S.ta.value;
-  }
+  if (textareaEl.value !== S.ta.value) textareaEl.value = S.ta.value;
 }
-
-// Enable or disable the Export/Import action buttons in the floating editor header.
-function _setFloatEditorActionButtons(enabled){
-  const expBtn = document.getElementById("btnFloatEditorExport");
-  const impBtn = document.getElementById("btnFloatEditorImport");
+function _setTextEditorActionButtons(enabled){
+  const expBtn = document.getElementById("btnTextEditorExport");
+  const impBtn = document.getElementById("btnTextEditorImport");
   if (expBtn) expBtn.disabled = !enabled;
   if (impBtn) impBtn.disabled = !enabled;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Core new function: refreshes the floating editor to reflect the current
-// selection. Called from updateUiForSelection() and after undo/redo.
-// ─────────────────────────────────────────────────────────────────────────────
-function refreshFloatingEditorForSelection(forceLeaderId){
-  const S = FloatingSitelenEditor;
-  if (!S.root || !S.ta) return;
-
-  // If the user has manually closed the panel, do nothing.
-  if (!S.isOpen) return;
-
+function _setFloatEditorActionButtons(enabled){ _setTextEditorActionButtons(enabled); }
+function refreshFloatingTextEditorForSelection(forceLeaderId){
+  const S = FloatingTextEditor;
+  if (!S.root || !S.ta || !S.isOpen) return;
   const sels = getSelectedElements();
-
-  // Find the "leader" element for the floating editor:
-  // - single selection: that element
-  // - group / multi-selection: use _lastGroupClickPt for spatial selection
-  //   Walk from topmost z downward; prefer the first text-like element whose
-  //   rotated bounding box contains the click point. Fall back to the topmost
-  //   text-like element by z-order if no element spatially matches.
   let leader = null;
   if (sels.length === 1){
     leader = sels[0];
   } else if (sels.length > 1){
     const selIdSet = new Set(sels.map(e => e.id));
-
-    // If a specific element is forced (e.g. from a within-group click), use it directly
-    // rather than re-deriving spatially — avoids ambiguity when elements overlap.
-    if (forceLeaderId) {
-      leader = Scene.elements.find(e => e && e.id === forceLeaderId && selIdSet.has(e.id)) || null;
-    }
-
+    if (forceLeaderId) leader = Scene.elements.find(e => e && e.id === forceLeaderId && selIdSet.has(e.id)) || null;
     if (!leader) {
-      const clickPt = _lastGroupClickPt; // may be null (e.g. keyboard selection)
-
-      let spatialMatch = null;  // topmost text-like element that contains clickPt
-      let zorderMatch  = null;  // topmost text-like element regardless of click
-
+      const clickPt = _lastGroupClickPt;
+      let spatialMatch = null;
+      let zorderMatch = null;
       for (let i = Scene.elements.length - 1; i >= 0; i--){
         const e = Scene.elements[i];
         if (!e || !selIdSet.has(e.id)) continue;
-        const isTextLike =
-          e.type === ElementType.Text ||
-          e.type === ElementType.Sitelen ||
-          e.type === ElementType.Glyph ||
-          e.type === ElementType.Url;
+        const isTextLike = e.type === ElementType.Text || e.type === ElementType.Sitelen || e.type === ElementType.Glyph;
         if (!isTextLike) continue;
-
-        // Record the topmost text-like element by z-order (fallback)
         if (!zorderMatch) zorderMatch = e;
-
-        // If we have a click point, check whether it lands inside this element
-        if (clickPt && !spatialMatch && pointInElement(clickPt, e)){
-          spatialMatch = e;
-        }
-
-        // Once we have both candidates we can stop scanning
+        if (clickPt && !spatialMatch && pointInElement(clickPt, e)) spatialMatch = e;
         if (zorderMatch && (spatialMatch || !clickPt)) break;
       }
-
-      // Prefer the spatial match (clicked inside it); fall back to z-order topmost
       leader = spatialMatch || zorderMatch;
     }
   }
-
   const leaderType = leader ? leader.type : null;
-  const isTextable =
-    leaderType === ElementType.Text ||
-    leaderType === ElementType.Sitelen ||
-    leaderType === ElementType.Glyph ||
-    leaderType === ElementType.Url;
-
+  const isTextable = leaderType === ElementType.Text || leaderType === ElementType.Sitelen || leaderType === ElementType.Glyph;
   if (!leader || !isTextable){
-    // No editable element — blank and disable
-    S._boundElId   = null;
-    S._boundElType = null;
-    S.elementId    = null;
-    S.sourceTextarea = null;
-    S.onChange     = null;
-
-    S.suppressSync = true;
-    S.ta.value = "";
-    S.suppressSync = false;
-    S.ta.disabled = true;
-    S.ta.placeholder = "Select a text, sitelen, glyph, or URL element to edit…";
-    if (S.title) S.title.textContent = "Text Editor";
-    _setFloatEditorActionButtons(false);
+    // Keep the text popout bound to its last text-like element when the user
+    // selects a non-text element or interacts with the media popout. Only
+    // clear if the currently bound element no longer exists.
+    const boundEl = S._boundElId ? getElementById(S._boundElId) : null;
+    if (boundEl && (boundEl.type === ElementType.Text || boundEl.type === ElementType.Sitelen || boundEl.type === ElementType.Glyph)){
+      return;
+    }
+    S._boundElId = null; S._boundElType = null; S.elementId = null; S.sourceTextarea = null; S.onChange = null;
+    S.suppressSync = true; S.ta.value = ""; S.suppressSync = false;
+    S.ta.disabled = true; S.ta.placeholder = S.defaultPlaceholder;
+    if (S.title) S.title.textContent = S.defaultTitle;
+    _setTextEditorActionButtons(false);
     return;
   }
-
-  // Editable element found
-  S._boundElId   = leader.id;
-  S._boundElType = leaderType;
-  S.ta.disabled  = false;
-  _setFloatEditorActionButtons(true);
-
-  // Determine display text
-  let displayText = "";
-  let titleStr    = "";
-
-  if (leaderType === ElementType.Text){
-    displayText = String(leader.text ?? "");
-    titleStr    = "Text";
-  } else if (leaderType === ElementType.Sitelen){
-    displayText = String(leader.text ?? "");
-    titleStr    = "Sitelen";
-  } else if (leaderType === ElementType.Glyph){
-    // Show the latin word for the glyph's codepoint (or the raw codepoint string)
+  S._boundElId = leader.id; S._boundElType = leaderType; S.ta.disabled = false; _setTextEditorActionButtons(true);
+  let displayText = ""; let titleStr = "";
+  if (leaderType === ElementType.Text){ displayText = String(leader.text ?? ""); titleStr = "Text"; }
+  else if (leaderType === ElementType.Sitelen){ displayText = String(leader.text ?? ""); titleStr = "Sitelen"; }
+  else if (leaderType === ElementType.Glyph){
     const cp = parseCodepointInput(leader.codepoint);
     const word = (typeof cp === "number") ? codepointToWord(cp) : null;
     displayText = word || String(leader.codepoint ?? "");
-    titleStr    = "Glyph";
-  } else if (leaderType === ElementType.Url){
-    displayText = String(leader.url && leader.url.href || "");
-    titleStr    = "URL";
+    titleStr = "Glyph";
   }
-
   if (S.title) S.title.textContent = titleStr;
-
-  // Update textarea content without triggering onChange
   S.suppressSync = true;
   if (S.ta.value !== displayText) S.ta.value = displayText;
   S.suppressSync = false;
-
+  S.ta.disabled = false;
   S.ta.placeholder = "";
-
-  // Wire the onChange for this element
-  // We set elementId so legacy rebind still works for the multi-sitelen path
   S.elementId = leader.id;
-  S.sourceTextarea = null; // not using sidebar textarea bridge anymore for direct mode
-
-  // Build the onChange callback depending on element type
+  S.sourceTextarea = null;
   const elId = leader.id;
   S.onChange = (v) => {
     const el = getElementById(elId);
     if (!el) return;
-
     if (el.type === ElementType.Text){
-      el.text = v;
-      scheduleAutosave();
-      render();
+      el.text = v; scheduleAutosave(); render();
     } else if (el.type === ElementType.Sitelen){
-      el.text = v;
-      invalidateSitelenCache(el.id);
-      // isTextEdit=true: anchor resolved from el.sitelenResizeAnchor
-      updateSitelenLayout(el, { preserveCenter: true }, true);
-      scheduleAutosave();
-      render();
+      el.text = v; invalidateSitelenCache(el.id); updateSitelenLayout(el, { preserveCenter: true }, true); scheduleAutosave(); render();
     } else if (el.type === ElementType.Glyph){
-      // If the value is a single recognised TP word, update the codepoint
       const trimmed = String(v || "").trim().toLowerCase();
       const cp = WORD_TO_UCSUR_CP[trimmed];
       if (cp != null){
         el.codepoint = "U+" + cp.toString(16).toUpperCase();
-        invalidateGlyphCache(el.id);
-        scheduleAutosave();
-        render();
-        updateUiForSelection(); // refresh glyph picker in sidebar
+        invalidateGlyphCache(el.id); scheduleAutosave(); render(); updateUiForSelection();
       }
-      // If not a known word, we leave the glyph as-is until a valid word is entered
-    } else if (el.type === ElementType.Url){
-      const clean = String(v || '').trim();
-      const det = detectUrlKindFromHref(clean);
-      if (!el.url || typeof el.url !== 'object') el.url = {};
-      const prevHref = String(el.url.href || '');
-      const prevKind = String(el.url.detectedKind || 'link');
-      el.url.href = clean;
-      el.url.detectedKind = det.kind;
-      el.url.title = clean;
-      el.url.mimeHint = det.mimeHint;
-      if (!clean){
-        el.url.posterAssetId = null;
-        el.url.posterRemoteHref = '';
-        el.url.posterAttempted = false;
-      } else if (clean !== prevHref || det.kind !== prevKind){
-        el.url.posterAssetId = null;
-        el.url.posterRemoteHref = '';
-        el.url.posterAttempted = false;
-        ensureImmediateRemotePosterHint(el);
-        const defer = globalThis.requestIdleCallback
-          ? (fn) => globalThis.requestIdleCallback(fn, { timeout: 1500 })
-          : (fn) => window.setTimeout(fn, 0);
-        defer(async () => {
-          try {
-            const did = await maybePopulatePosterForUrlElement(el, { force: true });
-            scheduleAutosave();
-            if (did) { try { renderScrapbookSidebar(); } catch {} }
-            updateUiForSelection();
-            render();
-          } catch (err) {
-            console.warn('Deferred URL poster population failed', err);
-            scheduleAutosave();
-            updateUiForSelection();
-            render();
-          }
-        });
-      }
-      el.title = clean;
-      scheduleAutosave();
-      try { renderScrapbookSidebar(); } catch {}
-      updateUiForSelection();
-      render();
     }
   };
 }
-
-function initFloatingSitelenEditor(){
-  const S = FloatingSitelenEditor;
-
-  S.root = $("floatingSitelenEditor");
-  S.header = $("floatingSitelenEditorHeader");
-  S.title = $("floatingSitelenEditorTitle");
-  S.ta = $("floatingSitelenEditorTextarea");
-  S.closeBtn = $("btnCloseFloatingSitelenEditor");
-
+function refreshFloatingMediaEditorForSelection(forceLeaderId){
+  const S = FloatingMediaEditor;
+  if (!S.root || !S.ta) return;
+  const sels = getSelectedElements();
+  let leader = null;
+  if (sels.length === 1){
+    leader = sels[0];
+  } else if (sels.length > 1){
+    const selIdSet = new Set(sels.map(e => e.id));
+    if (forceLeaderId) leader = Scene.elements.find(e => e && e.id === forceLeaderId && selIdSet.has(e.id)) || null;
+    if (!leader) {
+      const clickPt = _lastGroupClickPt;
+      let spatialMatch = null;
+      let zorderMatch = null;
+      for (let i = Scene.elements.length - 1; i >= 0; i--){
+        const e = Scene.elements[i];
+        if (!e || !selIdSet.has(e.id)) continue;
+        const isMediaLike = e.type === ElementType.Audio || e.type === ElementType.Video || e.type === ElementType.Url;
+        if (!isMediaLike) continue;
+        if (!zorderMatch) zorderMatch = e;
+        if (clickPt && !spatialMatch && pointInElement(clickPt, e)) spatialMatch = e;
+        if (zorderMatch && (spatialMatch || !clickPt)) break;
+      }
+      leader = spatialMatch || zorderMatch;
+    }
+  }
+  const leaderType = leader ? leader.type : null;
+  const isMediaLike = leaderType === ElementType.Audio || leaderType === ElementType.Video || leaderType === ElementType.Url;
+  if (!leader || !isMediaLike){
+    // Keep the media popout bound to its last media element when the user
+    // selects a non-media element. Only clear if the currently bound element
+    // no longer exists.
+    const boundEl = S._boundElId ? getElementById(S._boundElId) : null;
+    if (boundEl && (boundEl.type === ElementType.Audio || boundEl.type === ElementType.Video || boundEl.type === ElementType.Url)){
+      refreshFloatingMediaEditorControls();
+      return;
+    }
+    S._boundElId = null; S._boundElType = null; S.elementId = null; S.sourceTextarea = null; S.onChange = null;
+    S.suppressSync = true; S.ta.value = ""; S.suppressSync = false;
+    S.ta.disabled = true; S.ta.placeholder = S.defaultPlaceholder;
+    if (S.title) S.title.textContent = S.defaultTitle;
+    S.mediaControls.classList.add('hidden');
+    return;
+  }
+  showFloatingMediaEditor();
+  S._boundElId = leader.id; S._boundElType = leaderType; S.elementId = leader.id;
+  let displayText = ""; let titleStr = "";
+  if (leaderType === ElementType.Url){ displayText = String(leader.url && leader.url.href || ""); titleStr = "URL"; }
+  else if (leaderType === ElementType.Audio){ displayText = ""; titleStr = "Audio"; }
+  else if (leaderType === ElementType.Video){ displayText = ""; titleStr = "Video"; }
+  if (S.title) S.title.textContent = titleStr;
+  S.suppressSync = true;
+  if (S.ta.value !== displayText) S.ta.value = displayText;
+  S.suppressSync = false;
+  if (leaderType === ElementType.Url){ S.ta.disabled = false; S.ta.placeholder = ''; }
+  else { S.ta.disabled = true; S.ta.placeholder = leaderType === ElementType.Audio ? 'Embedded audio has playback controls below.' : 'Embedded video has playback controls below.'; }
+  refreshFloatingMediaEditorControls();
+  const elId = leader.id;
+  S.onChange = (v) => {
+    const el = getElementById(elId);
+    if (!el || el.type !== ElementType.Url) return;
+    const clean = String(v || '').trim();
+    const det = detectUrlKindFromHref(clean);
+    if (!el.url || typeof el.url !== 'object') el.url = {};
+    const prevHref = String(el.url.href || '');
+    const prevKind = String(el.url.detectedKind || 'link');
+    el.url.href = clean;
+    el.url.detectedKind = det.kind;
+    el.url.title = clean;
+    el.url.mimeHint = det.mimeHint;
+    if (!clean){
+      el.url.posterAssetId = null; el.url.posterRemoteHref = ''; el.url.posterAttempted = false;
+    } else if (clean !== prevHref || det.kind !== prevKind){
+      el.url.posterAssetId = null; el.url.posterRemoteHref = ''; el.url.posterAttempted = false;
+      ensureImmediateRemotePosterHint(el);
+      const defer = globalThis.requestIdleCallback ? (fn) => globalThis.requestIdleCallback(fn, { timeout: 1500 }) : (fn) => window.setTimeout(fn, 0);
+      defer(async () => {
+        try {
+          const did = await maybePopulatePosterForUrlElement(el, { force: true });
+          scheduleAutosave();
+          if (did) { try { renderScrapbookSidebar(); } catch {} }
+          updateUiForSelection(); render();
+        } catch (err) {
+          console.warn('Deferred URL poster population failed', err);
+          scheduleAutosave(); updateUiForSelection(); render();
+        }
+      });
+    }
+    el.title = clean; scheduleAutosave();
+    try { renderScrapbookSidebar(); } catch {}
+    updateUiForSelection(); render();
+  };
+}
+function refreshFloatingEditorForSelection(forceLeaderId){
+  refreshFloatingTextEditorForSelection(forceLeaderId);
+  refreshFloatingMediaEditorForSelection(forceLeaderId);
+}
+function initSingleFloatingEditor(S, ids){
+  S.root = $(ids.root); S.header = $(ids.header); S.title = $(ids.title); S.ta = $(ids.ta); S.closeBtn = $(ids.closeBtn);
+  if (ids.mediaControls){
+    S.mediaControls = $(ids.mediaControls); S.mediaToggleBtn = $(ids.mediaToggleBtn); S.mediaMuteBtn = $(ids.mediaMuteBtn); S.mediaRewindBtn = $(ids.mediaRewindBtn); S.mediaSlider = $(ids.mediaSlider); S.mediaTimeNow = $(ids.mediaTimeNow); S.mediaTimeDur = $(ids.mediaTimeDur); S.mediaHint = $(ids.mediaHint);
+  }
   if (!S.root || !S.header || !S.ta) return;
-
-  // Restore open/closed state from last session (default: closed on first visit)
   let wasOpen = false;
-  try { wasOpen = localStorage.getItem(LS_KEY_FLOAT_EDITOR_OPEN) === "1"; } catch {}
-
+  try { wasOpen = localStorage.getItem(S.storageOpenKey) === '1'; } catch {}
+  restoreFloatingEditorGeometryFor(S, !wasOpen);
   if (wasOpen){
-    showFloatingSitelenEditor();
+    if (S === FloatingTextEditor) showFloatingTextEditor(); else showFloatingMediaEditor();
   } else {
-    // Start hidden — user must open it explicitly (or it was never opened before)
-    S.root.classList.add("hidden");
-    S.root.setAttribute("aria-hidden", "true");
-    S.isOpen = false;
+    S.root.classList.add('hidden'); S.root.setAttribute('aria-hidden', 'true'); S.isOpen = false;
   }
-  S.ta.disabled = true; // no element selected yet
-  _setFloatEditorActionButtons(false);
-  // Button state synced later once wireClipboardButtons runs, but do a best-effort sync now too
-  try { syncTextEditorToggleBtn(); } catch {}
-
+  S.ta.disabled = true;
+  if (S === FloatingTextEditor) _setTextEditorActionButtons(false);
+  const bring = () => bringFloatingEditorToFront(S);
+  ['pointerdown','mousedown','focusin'].forEach(evt => S.root.addEventListener(evt, bring, true));
   if (S.closeBtn){
-    S.closeBtn.addEventListener("click", () => closeFloatingSitelenEditor());
-  }
-
-  // ── Export text button ────────────────────────────────────────────────────
-  const exportBtn = $("btnFloatEditorExport");
-  if (exportBtn){
-    exportBtn.addEventListener("click", () => {
-      if (S.ta.disabled || !S._boundElId) return;
-      const txt = S.ta.value;
-      const typeLabel = (S._boundElType || "text").toLowerCase();
-      const elId = String(S._boundElId || "element").replace(/[^a-z0-9_-]/gi, "_").slice(0, 24);
-      const filename = `${typeLabel}-${elId}.txt`;
-      try {
-        const blob = new Blob([txt], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-      } catch (err) {
-        alert("Export failed: " + (err.message || String(err)));
-      }
+    S.closeBtn.addEventListener('click', () => {
+      if (S === FloatingTextEditor) closeFloatingTextEditor(); else closeFloatingMediaEditor();
     });
   }
-
-  // ── Import text button ────────────────────────────────────────────────────
-  const importBtn = $("btnFloatEditorImport");
-  const filePick  = $("floatEditorFilePick");
-  if (importBtn && filePick){
-    importBtn.addEventListener("click", () => {
-      // Guard: must have an active editable element
-      if (S.ta.disabled || !S._boundElId){
-        alert("Select a text, sitelen, or glyph element first.");
-        return;
-      }
-      // Confirm overwrite if there is existing content
-      const cur = String(S.ta.value ?? "");
-      if (cur.trim().length > 0){
-        const ok = confirm("Replace the current element text with the contents of a .txt file?");
-        if (!ok) return;
-      }
-      filePick.value = "";
-      filePick.click();
-    });
-
-    filePick.addEventListener("change", async () => {
-      try {
-        const f = filePick.files && filePick.files[0];
-        if (!f) return;
-
-        // Read file as text
-        const txt = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error("Could not read file."));
-          reader.readAsText(f, "utf-8");
-        });
-
-        // Guard: element must still be selected and editable
-        if (S.ta.disabled || !S._boundElId){
-          alert("No editable element is currently selected.");
-          return;
-        }
-
-        // For glyph elements: only accept a single recognised toki pona word
-        if (S._boundElType === ElementType.Glyph){
-          const trimmed = String(txt ?? "").trim().toLowerCase();
-          const cp = WORD_TO_UCSUR_CP[trimmed];
-          if (cp == null){
-            alert(`"${trimmed}" is not a recognised toki pona word. The glyph was not changed.`);
-            return;
-          }
-        }
-
-        // Apply via the textarea input path so onChange fires and autosaves
-        S.suppressSync = true;
-        S.ta.value = txt;
-        S.suppressSync = false;
-        S.ta.dispatchEvent(new Event("input", { bubbles: true }));
-        try { historyCommit("Import text"); } catch {}
-
-      } catch (err) {
-        alert("Import failed: " + (err.message || String(err)));
-      } finally {
-        filePick.value = "";
-      }
-    });
-  }
-
-  S.ta.addEventListener("input", () => {
+  S.ta.addEventListener('input', () => {
+    bring();
     if (S.suppressSync) return;
     const v = S.ta.value;
-
-    // Mirror into the properties textarea (legacy bridge) if it exists
-    if (S.sourceTextarea && S.sourceTextarea.value !== v){
-      S.suppressSync = true;
-      S.sourceTextarea.value = v;
-      S.suppressSync = false;
-    }
-
-    // Run the live update path
-    if (typeof S.onChange === "function"){
-      S.onChange(v);
-    }
+    if (S.sourceTextarea && S.sourceTextarea.value !== v){ S.suppressSync = true; S.sourceTextarea.value = v; S.suppressSync = false; }
+    if (typeof S.onChange === 'function') S.onChange(v);
   });
-
-  S.ta.addEventListener("blur", () => {
-    // Commit on blur
-    if (typeof S.onChange === "function" && !S.suppressSync){
-      S.onChange(S.ta.value);
-    }
-    try { historyCommit("Edit text"); } catch {}
+  S.ta.addEventListener('blur', () => {
+    if (typeof S.onChange === 'function' && !S.suppressSync) S.onChange(S.ta.value);
+    try { historyCommit(S === FloatingTextEditor ? 'Edit text' : 'Edit media'); } catch {}
   });
-
-  // Pre-blur intercept: when the textarea has focus and the user clicks the canvas,
-  // the browser eats the first click to dismiss textarea focus (blur fires, canvas
-  // pointerdown never fires). We listen for pointerdown on the document — which fires
-  // BEFORE blur — to immediately update the leader while we still can.
-  document.addEventListener("pointerdown", (e) => {
-    // Only act when our textarea currently has focus
-    if (document.activeElement !== S.ta) return;
-
-    // Only act when click lands inside the canvas wrap
-    const canvasWrap = document.getElementById("canvasWrap");
-    if (!canvasWrap || !canvasWrap.contains(e.target)) return;
-
-    // Only act when multiple elements are selected
-    if (!selectedIds || selectedIds.size <= 1) return;
-
-    // Convert screen point to stage coordinates
-    const r = canvasWrap.getBoundingClientRect();
-    const screenPt = { x: e.clientX - r.left, y: e.clientY - r.top };
-    const stagePt = screenToStage(screenPt);
-
-    // Find which element was clicked
-    const hitEl = pickTopmostElementAtStagePoint(stagePt);
-    if (!hitEl) return;
-
-    // Update leader immediately — before blur fires and eats the click
-    const Sf = FloatingSitelenEditor;
-    if (hitEl.id !== Sf._boundElId) {
-      _lastGroupClickPt = stagePt;
-      try { renderPropsPanel(); } catch(err) { console.warn(err); }
-      refreshFloatingEditorForSelection(hitEl.id);
-    }
-  }, true); // capture phase — fires before blur
-
-  // Dragging
-  S.header.addEventListener("pointerdown", (e) => {
-    if (e.target && e.target.closest("button")) return;
-
+  S.header.addEventListener('pointerdown', (e) => {
+    if (e.target && e.target.closest('button')) return;
+    bring();
     const rect = S.root.getBoundingClientRect();
-    S.dragging = true;
-    S.dragPointerId = e.pointerId;
-    S.startX = e.clientX;
-    S.startY = e.clientY;
-    S.startLeft = rect.left;
-    S.startTop = rect.top;
-
-    S.header.setPointerCapture?.(e.pointerId);
-    e.preventDefault();
+    S.dragging = true; S.dragPointerId = e.pointerId; S.startX = e.clientX; S.startY = e.clientY; S.startLeft = rect.left; S.startTop = rect.top;
+    S.header.setPointerCapture?.(e.pointerId); e.preventDefault();
   });
-
-  S.header.addEventListener("pointermove", (e) => {
+  S.header.addEventListener('pointermove', (e) => {
     if (!S.dragging || S.dragPointerId !== e.pointerId) return;
-
-    const dx = e.clientX - S.startX;
-    const dy = e.clientY - S.startY;
-
-    S.root.style.left = `${S.startLeft + dx}px`;
-    S.root.style.top = `${S.startTop + dy}px`;
-
-    clampFloatingEditorToViewport();
+    const dx = e.clientX - S.startX; const dy = e.clientY - S.startY;
+    S.root.style.left = `${S.startLeft + dx}px`; S.root.style.top = `${S.startTop + dy}px`;
+    clampFloatingEditorToViewport(S);
   });
-
   function stopDrag(e){
     if (!S.dragging) return;
     if (e && S.dragPointerId != null && e.pointerId !== S.dragPointerId) return;
-
-    S.dragging = false;
-    if (S.dragPointerId != null){
-      S.header.releasePointerCapture?.(S.dragPointerId);
-    }
-    S.dragPointerId = null;
+    S.dragging = false; if (S.dragPointerId != null) S.header.releasePointerCapture?.(S.dragPointerId); S.dragPointerId = null; persistFloatingEditorGeometryFor(S);
   }
-
-  S.header.addEventListener("pointerup", stopDrag);
-  S.header.addEventListener("pointercancel", stopDrag);
-
-  window.addEventListener("resize", () => clampFloatingEditorToViewport());
+  S.header.addEventListener('pointerup', stopDrag); S.header.addEventListener('pointercancel', stopDrag);
+  if (typeof ResizeObserver === 'function'){
+    if (S.resizeObserver) { try { S.resizeObserver.disconnect(); } catch {} }
+    S.resizeObserver = new ResizeObserver(() => { clampFloatingEditorToViewport(S); if (S.isOpen) persistFloatingEditorGeometryFor(S); });
+    S.resizeObserver.observe(S.root);
+  }
+  window.addEventListener('pointerup', () => { if (!S.root || !S.isOpen) return; clampFloatingEditorToViewport(S); persistFloatingEditorGeometryFor(S); }, true);
+  window.addEventListener('resize', () => { clampFloatingEditorToViewport(S); });
 }
+function initFloatingTextEditor(){
+  const S = FloatingTextEditor;
+  initSingleFloatingEditor(S, { root:'floatingTextEditor', header:'floatingTextEditorHeader', title:'floatingTextEditorTitle', ta:'floatingTextEditorTextarea', closeBtn:'btnCloseFloatingTextEditor' });
+  try { syncTextEditorToggleBtn(); } catch {}
+  const exportBtn = $('btnTextEditorExport');
+  if (exportBtn){
+    exportBtn.addEventListener('click', () => {
+      if (S.ta.disabled || !S._boundElId) return;
+      const txt = S.ta.value;
+      const typeLabel = (S._boundElType || 'text').toLowerCase();
+      const elId = String(S._boundElId || 'element').replace(/[^a-z0-9_-]/gi, '_').slice(0, 24);
+      const filename = `${typeLabel}-${elId}.txt`;
+      try {
+        const blob = new Blob([txt], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      } catch (err) { alert('Export failed: ' + (err.message || String(err))); }
+    });
+  }
+  const importBtn = $('btnTextEditorImport'); const filePick = $('floatTextEditorFilePick');
+  if (importBtn && filePick){
+    importBtn.addEventListener('click', () => {
+      if (S.ta.disabled || !S._boundElId){ alert('Select a text, sitelen, or glyph element first.'); return; }
+      const cur = String(S.ta.value ?? '');
+      if (cur.trim().length > 0 && !confirm('Replace the current element text with the contents of a .txt file?')) return;
+      filePick.value = ''; filePick.click();
+    });
+    filePick.addEventListener('change', async () => {
+      try {
+        const f = filePick.files && filePick.files[0]; if (!f) return;
+        const txt = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Could not read file.')); reader.readAsText(f, 'utf-8'); });
+        if (S.ta.disabled || !S._boundElId){ alert('No editable element is currently selected.'); return; }
+        if (S._boundElType === ElementType.Glyph){
+          const trimmed = String(txt ?? '').trim().toLowerCase();
+          const cp = WORD_TO_UCSUR_CP[trimmed];
+          if (cp == null){ alert(`"${trimmed}" is not a recognised toki pona word. The glyph was not changed.`); return; }
+        }
+        S.suppressSync = true; S.ta.value = txt; S.suppressSync = false; S.ta.dispatchEvent(new Event('input', { bubbles: true }));
+        try { historyCommit('Import text'); } catch {}
+      } catch (err) { alert('Import failed: ' + (err.message || String(err))); }
+      finally { filePick.value = ''; }
+    });
+  }
+  document.addEventListener('pointerdown', (e) => {
+    if (document.activeElement !== S.ta) return;
+    const canvasWrap = document.getElementById('canvasWrap');
+    if (!canvasWrap || !canvasWrap.contains(e.target)) return;
+    if (!selectedIds || selectedIds.size <= 1) return;
+    const r = canvasWrap.getBoundingClientRect();
+    const screenPt = { x: e.clientX - r.left, y: e.clientY - r.top };
+    const stagePt = screenToStage(screenPt);
+    const hitEl = pickTopmostElementAtStagePoint(stagePt);
+    if (!hitEl) return;
+    if (!(hitEl.type === ElementType.Text || hitEl.type === ElementType.Sitelen || hitEl.type === ElementType.Glyph)) return;
+    if (hitEl.id !== S._boundElId) { _lastGroupClickPt = stagePt; try { renderPropsPanel(); } catch(err) { console.warn(err); } refreshFloatingTextEditorForSelection(hitEl.id); }
+  }, true);
+}
+function initFloatingMediaEditor(){
+  const S = FloatingMediaEditor;
+  initSingleFloatingEditor(S, { root:'floatingMediaEditor', header:'floatingMediaEditorHeader', title:'floatingMediaEditorTitle', ta:'floatingMediaEditorTextarea', closeBtn:'btnCloseFloatingMediaEditor', mediaControls:'floatingMediaEditorControls', mediaToggleBtn:'btnFloatingMediaEditorToggle', mediaMuteBtn:'btnFloatingMediaEditorMute', mediaRewindBtn:'btnFloatingMediaEditorRewind', mediaSlider:'floatingMediaEditorSlider', mediaTimeNow:'floatingMediaEditorTimeNow', mediaTimeDur:'floatingMediaEditorTimeDur', mediaHint:'floatingMediaEditorHint' });
+  if (S.mediaToggleBtn){ S.mediaToggleBtn.addEventListener('click', () => { bringFloatingEditorToFront(S); const el = S._boundElId ? getElementById(S._boundElId) : null; if (!el) return; toggleMediaPlayPause(el); window.setTimeout(refreshFloatingMediaEditorControls, 60); }); }
+  if (S.mediaMuteBtn){ S.mediaMuteBtn.addEventListener('click', () => { bringFloatingEditorToFront(S); const el = S._boundElId ? getElementById(S._boundElId) : null; if (!el) return; setMediaMutedForElement(el, !getMediaMutedForElement(el)); refreshFloatingMediaEditorControls(); }); }
+  if (S.mediaRewindBtn){ S.mediaRewindBtn.addEventListener('click', () => { bringFloatingEditorToFront(S); const el = S._boundElId ? getElementById(S._boundElId) : null; if (!el) return; if (MediaSession.currentElementId === el.id) rewindMediaElement(5); else seekMediaElementTo(el, Math.max(0, getMediaCurrentTimeSec(el) - 5)); window.setTimeout(refreshFloatingMediaEditorControls, 60); }); }
+  if (S.mediaSlider){
+    const onSeek = () => { const el = S._boundElId ? getElementById(S._boundElId) : null; if (!el) return; seekMediaElementTo(el, Number(S.mediaSlider.value || 0) || 0); refreshFloatingMediaEditorControls(); };
+    S.mediaSlider.addEventListener('input', onSeek, { passive: true }); S.mediaSlider.addEventListener('change', onSeek, { passive: true });
+  }
+  if (S.mediaUiTimer) clearInterval(S.mediaUiTimer);
+  S.mediaUiTimer = window.setInterval(() => { if (S.isOpen && S._boundElId) refreshFloatingMediaEditorControls(); }, 350);
+}
+function initFloatingSitelenEditor(){ initFloatingTextEditor(); initFloatingMediaEditor(); }
 
 
 let allowMixedTextEdit = false; // multi-select text editing gate
@@ -9580,7 +10252,7 @@ function renderPropsPanel(){
       const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.textContent = label; b.onclick = fn; return b; };
       if (el.type === ElementType.Audio || el.type === ElementType.Video){
         row.appendChild(mkBtn('Play', () => playMediaElement(el)));
-        row.appendChild(mkBtn('Pause', () => pauseMediaElement()));
+        row.appendChild(mkBtn('Play/Pause', () => toggleMediaPlayPause(el)));
         row.appendChild(mkBtn('Rewind 5s', () => rewindMediaElement(5)));
       }
       if (el.type === ElementType.Url) row.appendChild(mkBtn('Open link', () => openUrlExternal(el.url && el.url.href || '')));
@@ -10770,7 +11442,7 @@ propsBody.appendChild(makeCheckbox(
     const row = document.createElement('div'); row.className = 'row';
     const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.textContent = label; b.onclick = fn; return b; };
     row.appendChild(mkBtn('Play', () => playMediaElement(el)));
-    row.appendChild(mkBtn('Pause', () => pauseMediaElement()));
+    row.appendChild(mkBtn('Play/Pause', () => toggleMediaPlayPause(el)));
     row.appendChild(mkBtn('Rewind 5s', () => rewindMediaElement(5)));
     if (el.sourceUrl) row.appendChild(mkBtn('Open source', () => openUrlExternal(el.sourceUrl)));
     propsBody.appendChild(row);
@@ -10786,7 +11458,7 @@ propsBody.appendChild(makeCheckbox(
     const row = document.createElement('div'); row.className = 'row';
     const mkBtn = (label, fn) => { const b = document.createElement('button'); b.className = 'btn'; b.type = 'button'; b.textContent = label; b.onclick = fn; return b; };
     row.appendChild(mkBtn('Play', () => playMediaElement(el)));
-    row.appendChild(mkBtn('Pause', () => pauseMediaElement()));
+    row.appendChild(mkBtn('Play/Pause', () => toggleMediaPlayPause(el)));
     row.appendChild(mkBtn('Rewind 5s', () => rewindMediaElement(5)));
     if (el.sourceUrl) row.appendChild(mkBtn('Open source', () => openUrlExternal(el.sourceUrl)));
     propsBody.appendChild(row);
@@ -10852,7 +11524,7 @@ propsBody.appendChild(makeCheckbox(
     row.appendChild(mkBtn('Open link', () => openUrlExternal(href), !href));
     if ((el.url && el.url.detectedKind) === 'audio' || (el.url && el.url.detectedKind) === 'video'){
       row.appendChild(mkBtn('Play', () => playMediaElement({ id: el.id, type: (el.url && el.url.detectedKind) === 'audio' ? ElementType.Audio : ElementType.Video, sourceUrl: href }), !href));
-      row.appendChild(mkBtn('Pause', () => pauseMediaElement()));
+      row.appendChild(mkBtn('Play/Pause', () => toggleMediaPlayPause(el)));
       row.appendChild(mkBtn('Rewind 5s', () => rewindMediaElement(5)));
     }
     propsBody.appendChild(row);
@@ -11932,11 +12604,11 @@ function wireClipboardButtons(){
   const teBtn = document.getElementById("btnToggleTextEditor");
   if (teBtn){
     teBtn.addEventListener("click", () => {
-      if (FloatingSitelenEditor.isOpen){
-        closeFloatingSitelenEditor();
+      if (FloatingTextEditor.isOpen){
+        closeFloatingTextEditor();
       } else {
-        showFloatingSitelenEditor();
-        refreshFloatingEditorForSelection();
+        showFloatingTextEditor();
+        refreshFloatingTextEditorForSelection();
       }
       syncTextEditorToggleBtn();
     });
