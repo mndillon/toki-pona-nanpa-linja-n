@@ -566,7 +566,7 @@
 
     <div class="help" style="margin-top: 4px;"><a href="./index.html">← Back to index</a></div>
 
-    <div class="accordion" style="margin-top:10px;">
+<div class="accordion" style="margin-top:10px;">
   <details>
     <summary>How to use this page</summary>
     <div class="accordionBody">
@@ -578,8 +578,8 @@
 
       <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Flags</p>
       <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
-        <li><strong>@db</strong> — Only appears for entries that contain a nanpa-linja-n numeric part. When off, the numeric part renders normally as a numeric cartouche. When on, you can use the <code>@db</code> suffix in renderer input to make that numeric part use the cartouche saved in this database instead.</li>
-        <li><strong>Merge</strong> — Controls how non-numeric words are grouped. When on, non-numeric words are combined into one cartouche. When off, each non-numeric word gets its own cartouche. Numeric nanpa-linja-n parts are always kept as one cartouche.</li>
+        <li><strong>@db</strong> — Appears for entries that need an explicit database override. This includes entries with a nanpa-linja-n numeric part, and entries whose separate words or merged form would otherwise be read as ordinary toki pona words. When the <strong>@db</strong> flag is enabled here, the renderer will only use the saved database cartouche when the matching input also uses the <code>@db</code> suffix.</li>
+        <li><strong>Merge</strong> — Controls how non-numeric words are grouped. When on, non-numeric words are combined into one cartouche. When off, each non-numeric word gets its own cartouche. Numeric nanpa-linja-n parts are always kept as one cartouche. When words are merged, final <code>n</code> is only dropped where needed to avoid <code>nn</code> or <code>nm</code>; other <code>n</code>+consonant joins are kept.</li>
         <li><strong>Mode</strong> — Controls what kind of cartouche is used:
           <em>random</em> = generated automatically from the letters;
           <em>preferred</em> = use the cartouche saved with <strong>✏ edit</strong>;
@@ -594,12 +594,14 @@
         <li><code>Sema Pan</code> with <strong>Merge off</strong> → one cartouche for <em>Sema</em> and one for <em>Pan</em>.</li>
         <li><code>Towasi</code> in <strong>random</strong> mode → an automatic glyph cartouche is generated and it may change on each rendering of the cartouche.</li>
         <li><code>Towasi</code> in <strong>preferred</strong> mode → your saved glyph cartouche is used.</li>
-        <li><code>Towasi</code> in <strong>literal</strong> mode, any literal text can be entered (double quotes are removed).  With literal text <code>ABC</code> → the renderer will process input <code>["ABC"]</code>. How that appears depends on how the selected sitelen pona font renders Latin text inside a cartouche.</li>
+        <li><code>Towasi</code> in <strong>literal</strong> mode, any literal text can be entered (double quotes are removed). With literal text <code>ABC</code> → the renderer will process input <code>["ABC"]</code>. How that appears depends on how the selected sitelen pona font renders Latin text inside a cartouche.</li>
         <li><code>Towasi</code> in <strong>ignore</strong> mode → this database entry is skipped and the renderer handles the name as normal input.</li>
-    <li><code>Nenen@db</code> — for specific proper names that match nanpa-linja-n numeric cartouche proper names, <code>@db</code> lets you display a database override. The <strong>@db</strong> flag must be checked here, and the <code>@db</code> suffix must also be used when rendering, for this to work properly.</li>   
-      <li><code>Sema Pan Neninimen</code> → <em>Sema Pan</em> uses the database entry, while <em>Neninimen</em> renders as a numeric cartouche (since it is a nanpa-linja-n numeric cartouche proper name).</li>
-        <li><code>Sema Pan Neninimen@db</code> → same as above, but the numeric part also uses the saved database cartouche, if <strong>@db</strong> is checked for that entry.</li>
-         </ul>
+        <li><code>Sin Pin</code> with <strong>Merge on</strong> → the merged form is <code>sinpin</code>, which is an ordinary toki pona word. In that case the database override only applies when the entry has <strong>@db</strong> enabled and the input uses <code>Sinpin@db</code>.</li>
+        <li><code>Sin Pin</code> with <strong>Merge off</strong> → the words stay separate, so <code>Sinpin@db</code> does not match that record.</li>
+        <li><code>Nenen@db</code> — for a proper name that matches a nanpa-linja-n numeric cartouche proper name, <code>@db</code> lets you use the saved database override instead of normal numeric rendering. The <strong>@db</strong> flag must be enabled here, and the <code>@db</code> suffix must also be used when rendering.</li>
+        <li><code>Sema Pan Neninimen</code> → <em>Sema Pan</em> uses the database entry, while <em>Neninimen</em> renders as a numeric cartouche (since it is a nanpa-linja-n numeric cartouche proper name).</li>
+        <li><code>Sema Pan Neninimen@db</code> → same as above, but the numeric part also uses the saved database cartouche, if <strong>@db</strong> is enabled for that entry.</li>
+      </ul>
 
       <p style="margin:0;font-size:12px;color:var(--muted);">
         Click <strong>✏ edit</strong> to set a preferred cartouche. Use Export / Import to back up or share the database.
@@ -729,7 +731,7 @@
       segmentLetters,
       buildRandomDescForLetters,
       buildEntryRendererInput,
-    } from './js/cartouche-api-v2.js?v=14';
+    } from './js/cartouche-api-v3.js?v=14';
 
     // ── Page-level constants (font, UI) ───────────────────────────────────────
     const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';
@@ -794,6 +796,39 @@
     const SPECIAL_DOUBLE_QUOTE_GLYPH = '＿';
     const AUTO_SEED_FLAG_KEY = 'cartouche-db-auto-seed-success-v1';
     const AUTO_SEED_JSON_URL = './cartouche_db/cartouche-db-seed.json';
+
+
+
+    function mergedLettersToWord(words) {
+      return segmentLetters(words).letters.join('');
+    }
+
+    function entryRequiresAtDb(entry) {
+      if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
+
+      const segs = segmentWords(entry.words);
+
+      // Existing nanpa override case
+      if (segs.some(s => s.type === 'nanpa')) return true;
+
+      // New TP-word collision case
+      for (const seg of segs) {
+        if (seg.type !== 'normal') continue;
+
+        if (entry.merge) {
+          const merged = mergedLettersToWord(seg.words);
+          if (TP_VALID_WORDS.has(merged)) return true;
+        } else {
+          for (const w of seg.words) {
+            if (TP_VALID_WORDS.has(w.toLowerCase())) return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+
 
     // ── descForEntry (display only — not in API) ──────────────────────────────
     function cleanLiteralText(value) {
@@ -1037,15 +1072,16 @@
         tr.appendChild(tdName);
 
         // ── Force Normal toggle (@db column — always present) ──
-        const isAllNanpa  = segs.length > 0 && segs.every(s => s.type === 'nanpa');
-        const hasAnyNanpa = segs.some(s => s.type === 'nanpa');
+        const isAllNanpa   = segs.length > 0 && segs.every(s => s.type === 'nanpa');
+        const hasAnyNanpa  = segs.some(s => s.type === 'nanpa');
+        const needsAtDb    = entryRequiresAtDb(entry);
         const tdForce = document.createElement('td');
         tdForce.style.textAlign = 'center';
-        if (hasAnyNanpa) {
+        if (needsAtDb) {
           const forceChk = document.createElement('input');
           forceChk.type = 'checkbox';
           forceChk.checked = !!entry.forceNormal;
-          forceChk.title = 'Allow @db suffix in input to override numeric rendering';
+          forceChk.title = 'Require @db suffix in input to use this database override';
           forceChk.addEventListener('change', async () => {
             entry.forceNormal = forceChk.checked;
             await api.putEntry({ ...entry });
