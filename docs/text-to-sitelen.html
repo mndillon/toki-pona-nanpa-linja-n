@@ -528,7 +528,7 @@
         <li><strong>Punctuation:</strong> Word 'ota' maps to middle dot, and word 'kolon' maps to colon, these are non-standard words and are used for convenience only.</li>
         <li><strong>Quotation:</strong> Text inside double quotes is rendered exactly as typed, e.g. "Hello World!".  The text font selector is used to pick the font for this text.</li>
         <li><strong>Tokiponization:</strong> Text that starts with a capital letter e.g. <strong>Towasi</strong> or <strong>Nemen@db</strong> will be looked up in the  <a class="repoLink" href="./cartouche-db.html" target="_blank" rel="noopener noreferrer">Proper Name Cartouche Database</a> to decide how to display it.</li>
-        <li>Unknown words are ignored.</li>
+        <li>Unknown words are highlighted by default, but can be ignored.</li>
       </ul>
     </div>
 
@@ -694,6 +694,17 @@ nanpa #~WI.
           </span>
           <input id="appHaloWidthSel" type="number" min="0" max="999" step="1" value="0" aria-describedby="haloWidthHelp" style="width:96px; height:34px; padding:6px 10px;">
           <div id="haloWidthHelp" class="sr-only">0 means auto halo width. Any other value uses that width in pixels.</div>
+        </div>
+
+        <!-- Unknown text highlight toggle -->
+        <div id="ctlUnknownHighlightEnable" class="inlineControl inlinePill" role="group" aria-label="Highlight unknown output">
+          <span class="ctlLabel">
+            Highlight unknown <span class="tpInline">o kule e nimi sona ala</span>
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+            <input id="appUnknownHighlightEnable" type="checkbox" aria-label="Highlight unknown output">
+            <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
         </div>
       </div>
     </div>
@@ -869,14 +880,14 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=47";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-unknown-text-outline.js?v=47";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
     } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js";
 
-    import { CartoucheApi } from './js/cartouche-api-v3.js?v=15';
+    import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=15';
     let pageMap = new Map();
 
     "use strict";
@@ -1220,6 +1231,8 @@ nanpa #~WI.
 
     function buildRendererCallConfig({ includeHalo = true } = {}) {
       const haloEnabled = includeHalo && getHaloEnabled();
+      const unknownHighlightEnabled = getUnknownHighlightEnabled();
+      const roles = buildFontRoles();
       return {
         layout: {
           fontPx: getFontPx(),
@@ -1233,13 +1246,25 @@ nanpa #~WI.
             enabled: haloEnabled,
             color: getHaloHex(),
             widthPx: haloEnabled ? getHaloWidthOverridePx() : 0
+          },
+          unknownText: {
+            style: "outline-box",
+            colorMode: "auto",
+            color: null,
+            lineWidthPx: 1.5,
+            paddingPx: 2,
+            dash: false
           }
         },
         fonts: {
-          roles: buildFontRoles()
+          roles: {
+            ...roles,
+            unknown: "Patrick-Head-Font"
+          }
         },
         parser: {
-          mixedStyle: 'short'
+          mixedStyle: 'short',
+          showUnknownText: unknownHighlightEnabled
         }
       };
     }
@@ -1391,6 +1416,39 @@ const HALO_DEFAULT_WIDTH = 0;
 const HALO_DEFAULT_ENABLED = false;
 const HALO_DEFAULT_HEX = "#FFFFFF";
 
+const UNKNOWN_HIGHLIGHT_ENABLED_STORAGE_KEY = "tpUnknownHighlightEnabled";
+const UNKNOWN_HIGHLIGHT_DEFAULT_ENABLED = true;
+
+function loadUnknownHighlightEnabledFromStorage() {
+  try {
+    const raw = localStorage.getItem(UNKNOWN_HIGHLIGHT_ENABLED_STORAGE_KEY);
+    if (raw == null) return null;
+    if (raw === "1" || raw === "true") return true;
+    if (raw === "0" || raw === "false") return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveUnknownHighlightEnabledToStorage(v) {
+  try { localStorage.setItem(UNKNOWN_HIGHLIGHT_ENABLED_STORAGE_KEY, v ? "1" : "0"); } catch {}
+}
+
+function getUnknownHighlightEnabled() {
+  const el = document.getElementById("appUnknownHighlightEnable");
+  return !!el?.checked;
+}
+
+function setUnknownHighlightEnabled(v) {
+  const el = document.getElementById("appUnknownHighlightEnable");
+  const b = !!v;
+  if (el) el.checked = b;
+  saveUnknownHighlightEnabledToStorage(b);
+  return b;
+}
+
+
 function loadHaloEnabledFromStorage() {
   try {
     const raw = localStorage.getItem(HALO_ENABLED_STORAGE_KEY);
@@ -1491,12 +1549,16 @@ function initHaloControls() {
   const hw = loadHaloWidthFromStorage();
   setHaloWidthOverridePx(hw ?? HALO_DEFAULT_WIDTH);
   updateHaloWidthControlEnabled();
+
+  const unknown = loadUnknownHighlightEnabledFromStorage();
+  setUnknownHighlightEnabled(unknown ?? UNKNOWN_HIGHLIGHT_DEFAULT_ENABLED);
 }
 
 function wireHaloControls() {
   const en = document.getElementById("appHaloEnable");
   const pick = document.getElementById("appHaloPick");
   const widthEl = document.getElementById("appHaloWidthSel");
+  const unknownEl = document.getElementById("appUnknownHighlightEnable");
 
   if (en) {
     en.addEventListener("change", async () => {
@@ -1528,6 +1590,17 @@ function wireHaloControls() {
         // clamp + save
         setHaloWidthOverridePx(widthEl.value);
         // Only affects rendering when halo is enabled, but rerender regardless.
+        await renderFromTextarea();
+      } catch (e) {
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
+    });
+  }
+
+  if (unknownEl) {
+    unknownEl.addEventListener("change", async () => {
+      try {
+        setUnknownHighlightEnabled(unknownEl.checked);
         await renderFromTextarea();
       } catch (e) {
         showAlertAndAnnounce(e?.message ?? String(e));
@@ -4773,7 +4846,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=47", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-unknown-text-outline.js?v=47", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 

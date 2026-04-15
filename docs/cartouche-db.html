@@ -719,7 +719,7 @@
   </div>
 
   <script type="module">
-    import { SitelenRenderer, NanpaParser } from './js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js';
+    import { SitelenRenderer, NanpaParser } from './js/renderer-unknown-text-outline.js';
     import { createSitelenFontPairController } from './js/sitelen-font-pair-controller-merged-updated-font-label.js';
     import {
       CartoucheApi,
@@ -731,7 +731,9 @@
       segmentLetters,
       buildRandomDescForLetters,
       buildEntryRendererInput,
-    } from './js/cartouche-api-v3.js?v=14';
+      buildEntryDisplayInput,
+      buildEntryPreviewInput,
+    } from './js/cartouche-api-v3-previewdesc.js?v=14';
 
     // ── Page-level constants (font, UI) ───────────────────────────────────────
     const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';
@@ -839,33 +841,17 @@
       return cleanLiteralText(entry.literalText) || entry.key;
     }
 
+
+    function splitStoredTokensPreservingBlanks(value) {
+      return String(value || '').trim().split(/\s+/).filter(Boolean);
+    }
+
+    function isNonBlankGlyphToken(token) {
+      return !!token && token !== SPECIAL_DOUBLE_QUOTE_TOKEN;
+    }
+
     function descForEntry(entry) {
-      if (entry.mode === 'ignore') return '— (ignored)';
-      if (entry.mode === 'literal') return `["${getLiteralText(entry)}"]`;
-      const segs = segmentWords(entry.words);
-      return segs.map((seg, si) => {
-        if (seg.type === 'nanpa' && !entry.forceNormal) return `[${seg.words.join(' ')}]`;
-        if (seg.type === 'nanpa' && entry.forceNormal) {
-          const cm2 = entry.cartoucheMap || {};
-          const stored = cm2[si];
-          if (entry.mode === 'preferred' && stored) return `[${stored}] (@db)`;
-          const letters = seg.words.join('').toLowerCase().split('').join('·');
-          return `[${letters} → random] (@db)`;
-        }
-        const cm = entry.cartoucheMap || {};
-        if (entry.merge) {
-          const stored = cm[si];
-          if (entry.mode === 'preferred' && stored) return `[${stored}]`;
-          const { letters } = segmentLetters(seg.words);
-          return `[${letters.join('·')} → random]`;
-        } else {
-          return seg.words.map((w, wi) => {
-            const stored = cm[`${si}_${wi}`];
-            if (entry.mode === 'preferred' && stored) return `[${stored}]`;
-            return `[${w.toLowerCase().split('').join('·')} → random]`;
-          }).join(' ');
-        }
-      }).join(' ');
+      return buildEntryDisplayInput(entry);
     }
 
     // ── Font setup ────────────────────────────────────────────────────────────
@@ -1128,15 +1114,21 @@
                   // Was merged (0) → split into per-word keys
                   // Split the stored desc back by word count
                   const mergedDesc = cm[si] || '';
-                  const descWords = mergedDesc.split(/\s+/).filter(Boolean);
+                  const descTokens = splitStoredTokensPreservingBlanks(mergedDesc);
                   let offset = 0;
                   seg.words.forEach((w, wi) => {
                     const { letters } = segmentLetters([w]);
-                    const wordDescWords = descWords.slice(offset, offset + letters.length);
-                    newCm[`${si}_${wi}`] = wordDescWords.length === letters.length
-                      ? wordDescWords.join(' ')
+                    const targetGlyphCount = letters.length;
+                    const wordTokens = [];
+                    let glyphCount = 0;
+                    while (offset < descTokens.length && glyphCount < targetGlyphCount) {
+                      const token = descTokens[offset++];
+                      wordTokens.push(token);
+                      if (isNonBlankGlyphToken(token)) glyphCount++;
+                    }
+                    newCm[`${si}_${wi}`] = glyphCount === targetGlyphCount
+                      ? wordTokens.join(' ')
                       : buildRandomDescForLetters(w.toLowerCase().split(''));
-                    offset += letters.length;
                   });
                 }
               });
@@ -1145,6 +1137,10 @@
             entry.merge = newMerge;
             await api.putEntry({ ...entry });
             updateDescCell(entry);
+            const previewTr = tbody.querySelector(`tr[data-preview-for="${CSS.escape(entry.key)}"]`);
+            if (previewTr && !previewTr.classList.contains('hidden')) {
+              await renderEntry(entry, previewTr.querySelector('canvas'));
+            }
           });
           tdMerge.appendChild(chk);
           const lbl = document.createElement('label');
@@ -1229,7 +1225,7 @@
         tdDesc.dataset.descFor = entry.key;
         const descSpan = document.createElement('span');
         descSpan.className = 'randomNote';
-        descSpan.textContent = descForEntry(entry);
+        descSpan.textContent = buildEntryDisplayInput(entry);
         tdDesc.appendChild(descSpan);
 
         const literalEditor = document.createElement('div');
@@ -1348,7 +1344,7 @@
       const td = $('tbody').querySelector(`td[data-desc-for="${CSS.escape(entry.key)}"]`);
       if (!td) return;
       const sp = td.querySelector('span'); if (!sp) return;
-      sp.textContent = descForEntry(entry);
+      sp.textContent = buildEntryDisplayInput(entry);
     }
 
     // ── Add entry ─────────────────────────────────────────────────────────────
@@ -1370,7 +1366,7 @@
       } else { $('nanpaWarn').classList.remove('show'); }
 
       const entry = { key, words: result.words, merge: true, mode: 'random', cartoucheMap: {}, forceNormal: false, literalText: key };
-      entries.push(entry);
+      entries.unshift(entry);
       await api.putEntry(entry);
       $('addInput').value = '';
       renderTable($('searchInput').value); updatePill();
@@ -1503,52 +1499,26 @@
       const slotMeta  = [];
 
       function updatePreview() {
-        // Build preview from current input values + nanpa segments
-        const parts = [];
-        let inputIdx = 0;
-        segs.forEach((seg, si) => {
-          if (seg.type === 'nanpa' && !entry.forceNormal) {
-            parts.push('[' + seg.words.join(' ') + ']');
-            return;
-          }
-          if (seg.type === 'nanpa' && entry.forceNormal) {
-            // forceNormal nanpa — read from editable slots
-            const letters = seg.words.join('').toLowerCase().split('');
-            const words = letters.map((_, li) => {
-              const inp = allInputs[inputIdx + li];
-              return inp ? inp.value.trim() || '?' : '?';
-            });
-            parts.push(`[${words.join(' ')}]`);
-            inputIdx += letters.length;
-            return;
-          }
-          if (entry.merge) {
-            const { letters } = segmentLetters(seg.words);
-            const words = letters.map((_, li) => {
-              const inp = allInputs[inputIdx + li];
-              return inp ? inp.value.trim() || '?' : '?';
-            });
-            parts.push(`[${words.join(' ')}]`);
-            inputIdx += letters.length;
-          } else {
-            seg.words.forEach((w, wi) => {
-              const letters = w.toLowerCase().split('');
-              const words = letters.map((_, li) => {
-                const inp = allInputs[inputIdx + li];
-                return inp ? inp.value.trim() || '?' : '?';
-              });
-              parts.push(`[${words.join(' ')}]`);
-              inputIdx += letters.length;
-            });
-          }
+        const previewMap = {};
+        const grouped = {};
+
+        allInputs.forEach((inp, i) => {
+          const { subKey } = slotMeta[i];
+          if (!grouped[subKey]) grouped[subKey] = [];
+          grouped[subKey].push(inp.value.trim());
         });
-        const previewStr = parts.join(' ');
+
+        for (const [k, words] of Object.entries(grouped)) {
+          previewMap[k] = words.filter(Boolean).join(' ');
+        }
+
+        const previewStr = buildEntryPreviewInput(entry, previewMap);
         $('cartouchePreview').textContent = previewStr;
-        // Debounce the canvas render so it doesn't fire on every keystroke
         clearTimeout(_previewDebounce);
         _previewDebounce = setTimeout(() => {
-          // Only render if all slots have valid values (no '?')
-          if (!previewStr.includes('?')) renderModalPreview(previewStr, { forceNormal: !!entry.forceNormal });
+          if (!previewStr.includes('?')) {
+            renderModalPreview(previewStr, { forceNormal: !!entry.forceNormal });
+          }
         }, 400);
       }
 

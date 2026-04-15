@@ -987,6 +987,13 @@
 
             <div class="row">
               <div class="field">
+                <label class="checkInline" style="margin:0;">
+                <input id="defIgnoreUnknownText" type="checkbox" />Default ignore unknown text</label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
                 <!-- NEW -->
                 <label class="checkInline" style="margin:0;">
                 <input id="defFillEnabled" type="checkbox" />Default allow fill</label>
@@ -1085,7 +1092,7 @@ import {
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=4";
-import { CartoucheApi } from './js/cartouche-api-v3.js';
+import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js';
 
 (() => {
   "use strict";
@@ -1186,6 +1193,7 @@ import { CartoucheApi } from './js/cartouche-api-v3.js';
       lbl_default_render_font: "Default script family",
       lbl_default_text_font: "Default text font",
       lbl_default_text: "Default text",
+      lbl_default_ignore_unknown_text: "Default ignore unknown text",
       lbl_default_fill_enabled: "Default allow fill",
       lbl_default_fill: "Default fill",
       lbl_default_stroke: "Default stroke",
@@ -1241,6 +1249,7 @@ import { CartoucheApi } from './js/cartouche-api-v3.js';
       props_text: "Text",
       props_text_color: "Text color",
       props_line_height: "Line height",
+      props_ignore_unknown_text: "Ignore unknown text",
       props_glyph_color: "Glyph color",
       props_image_embedded: (mime, w, h) => `Embedded image: ${mime}, ${w}×${h}`,
       props_image_none: "No image loaded. Images are embedded (no external links).",
@@ -1395,6 +1404,7 @@ import { CartoucheApi } from './js/cartouche-api-v3.js';
       lbl_stage_bg: "monsi pi supa",
       lbl_default_render_font: "kulupu sitelen pona open",
       lbl_default_text: "kule sitelen open",
+      lbl_default_ignore_unknown_text: "o awen ala e nimi sona ala lon sitelen",
       lbl_default_fill_enabled: "pana kule: ken",
       lbl_default_fill: "kule insa open",
       lbl_default_stroke: "kule linja open",
@@ -1449,6 +1459,7 @@ import { CartoucheApi } from './js/cartouche-api-v3.js';
       props_text: "sitelen",
       props_text_color: "kule sitelen",
       props_line_height: "suli pi linja",
+      props_ignore_unknown_text: "o awen ala e nimi sona ala",
       props_glyph_color: "kule sitelen wan",
       props_image_embedded: (mime, w, h) => `sitelen li lon insa: ${mime}, ${w}×${h}`,
       props_image_none: "sitelen li lon ala. sitelen li lon insa (kepeken ala e link).",
@@ -1636,6 +1647,7 @@ import { CartoucheApi } from './js/cartouche-api-v3.js';
     setLabel("defRenderFontPreset", "lbl_default_render_font");
     setLabel("defTextFontOption", "lbl_default_text_font");
     setLabel("defTextColor", "lbl_default_text");
+    setLabel("defIgnoreUnknownText", "lbl_default_ignore_unknown_text");
     setLabel("defaultFillEnabled", "lbl_default_fill_enabled");
     setLabel("defaultFill", "lbl_default_fill");
     setLabel("defaultStroke", "lbl_default_stroke");
@@ -1710,6 +1722,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
     defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
     defaultTextFontOption: FONT_FAMILY_LITERAL,
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
+    defaultIgnoreUnknownText: false,     // default sitelen unknown-text highlight ignore flag
     defaultFill: "#111111",// default fill for shapes/boxes
     defaultFillEnabled: false,
     defaultStroke: "#111111",// default stroke
@@ -1998,7 +2011,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=24').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/renderer-unknown-text-outline.js?v=24').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -2121,10 +2134,27 @@ function buildRendererCallConfigForElement(el){
         enabled: !!el?.haloEnabled,
         color: rgbaOrHexToHex(el?.haloColor, '#FFFFFF'),
         widthPx: haloWidth
+      },
+      unknownText: {
+        style: 'outline-box',
+        colorMode: 'auto',
+        color: null,
+        lineWidthPx: 1.5,
+        paddingPx: 2,
+        dash: false
       }
     },
-    parser: { mode: getRenderFontPreset(getElementRenderFontPresetKey(el)).parserMode, numericMode: 'compat' },
-    fonts: { roles: buildRendererFontRolesForElement(el) }
+    parser: {
+      mode: getRenderFontPreset(getElementRenderFontPresetKey(el)).parserMode,
+      numericMode: 'compat',
+      showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText)
+    },
+    fonts: {
+      roles: {
+        ...buildRendererFontRolesForElement(el),
+        unknown: 'Patrick-Head-Font'
+      }
+    }
   };
 }
 async function getSitelenRendererForElement(el){
@@ -2172,7 +2202,8 @@ function getElementRendererSignature(el){
     haloEnabled: !!el?.haloEnabled,
     haloColor: rgbaOrHexToHex(el?.haloColor, '#FFFFFF'),
     haloMode: String(el?.haloThicknessMode ?? 'auto'),
-    haloThickness: Number(el?.haloThickness ?? 0)
+    haloThickness: Number(el?.haloThickness ?? 0),
+    ignoreUnknownText: !!el?.ignoreUnknownText
   });
 }
 async function rebuildSitelenRasterWithRenderer(el, opts = {}){
@@ -2533,6 +2564,7 @@ function normalizeScene(parsed){
     defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
     defaultTextFontOption: DEFAULTS.defaultTextFontOption,
     defaultTextColor: DEFAULTS.defaultTextColor,
+    defaultIgnoreUnknownText: DEFAULTS.defaultIgnoreUnknownText,
     defaultFill: DEFAULTS.defaultFill,
     defaultFillEnabled: DEFAULTS.defaultFillEnabled,
     defaultStroke: DEFAULTS.defaultStroke,
@@ -2556,6 +2588,7 @@ function normalizeScene(parsed){
     out.stage.defaultHaloEnabled = false;
   }
 
+  if (typeof out.stage.defaultIgnoreUnknownText !== "boolean") out.stage.defaultIgnoreUnknownText = DEFAULTS.defaultIgnoreUnknownText;
   if (!("defaultFillEnabled" in out.stage)) out.stage.defaultFillEnabled = true;
   if (!("exportStageBackground" in out.stage)) out.stage.exportStageBackground = false;
 
@@ -2647,6 +2680,7 @@ function normalizeScene(parsed){
 
       if (el.type === ElementType.Sitelen){
         el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+        el.ignoreUnknownText = (el.ignoreUnknownText == null) ? !!(out.stage?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText) : !!el.ignoreUnknownText;
         if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
       }
     }
@@ -2919,6 +2953,7 @@ function deserializeAssets(serialized){
       defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
       defaultTextFontOption: DEFAULTS.defaultTextFontOption,
       defaultTextColor: DEFAULTS.defaultTextColor,
+      defaultIgnoreUnknownText: DEFAULTS.defaultIgnoreUnknownText,
       defaultFill: DEFAULTS.defaultFill,
       defaultStroke: DEFAULTS.defaultStroke,
       defaultStrokeW: DEFAULTS.defaultStrokeW,
@@ -3017,6 +3052,7 @@ function deserializeAssets(serialized){
     el.lineHeight = 1.05;
     el.strokeW = 0;
     el.keepAspect = true;
+    el.ignoreUnknownText = !!(Scene.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
 
     ensureHaloFields(el);
 
@@ -8890,6 +8926,19 @@ if (textField && textField._popoutElementId){
     ));
 
 
+    if (el.type === ElementType.Sitelen){
+      propsBody.appendChild(makeCheckbox(
+        tr("props_ignore_unknown_text"),
+        !!el.ignoreUnknownText,
+        (checked) => {
+          el.ignoreUnknownText = !!checked;
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+          scheduleAutosave();
+          render();
+        }
+      ));
+    }
 
     // NEW: halo controls (text/sitelen)
     addSection(tr("sec_halo"));
@@ -10705,6 +10754,7 @@ function syncStageDefaultsUiFromScene(){
   const drfp = document.getElementById("defRenderFontPreset");
   const dtfo = document.getElementById("defTextFontOption");
   const dt = document.getElementById("defTextColor");
+  const diut = document.getElementById("defIgnoreUnknownText");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
   const ds = document.getElementById("defStroke");
@@ -10724,6 +10774,7 @@ function syncStageDefaultsUiFromScene(){
   if (drfp) drfp.value = normalizeRenderFontPresetKey(st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   if (dtfo) dtfo.value = normalizeTextFontOptionKeyForPreset(st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
+  if (diut) diut.checked = !!(st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
   if (df)  df.value  = rgbaOrHexToHex(st.defaultFill, DEFAULTS.defaultFill);
   if (dfe) {dfe.checked = !!Scene.stage.defaultFillEnabled;}
   if (ds)  ds.value  = rgbaOrHexToHex(st.defaultStroke, DEFAULTS.defaultStroke);
@@ -11468,6 +11519,7 @@ function wireStageDefaultsUi(){
   const expbg = document.getElementById("exportStageBackground");
   const dtfo = document.getElementById("defTextFontOption");
   const dt = document.getElementById("defTextColor");
+  const diut = document.getElementById("defIgnoreUnknownText");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
   const ds = document.getElementById("defStroke");
@@ -11577,6 +11629,14 @@ function wireStageDefaultsUi(){
       scheduleAutosave();
       //render();
       //setStatus(tr("status_default_text_updated"));
+    });
+  }
+
+  if (diut){
+    diut.addEventListener("change", (e) => {
+      Scene.stage.defaultIgnoreUnknownText = !!e.target.checked;
+      scheduleAutosave();
+      render();
     });
   }
 
@@ -11863,7 +11923,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=24');
+        const rendererMod = await import('./js/renderer-unknown-text-outline.js?v=24');
         const NanpaParser = rendererMod?.NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
         pageMap = await cartoucheApi.resolvePageMap();

@@ -437,13 +437,13 @@
 </div>
 
 <script type="module">
-import SitelenRenderer from "./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=24";
+import SitelenRenderer from "./js/renderer-unknown-text-outline.js?v=1";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=2";//sitelen-font-pair-controller.js";
-import { CartoucheApi } from './js/cartouche-api-v3.js';
+import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js';
 window.SitelenRenderer = SitelenRenderer;
 
 (() => {
@@ -3277,6 +3277,7 @@ window.SitelenRenderer = SitelenRenderer;
           haloEnabled: true,
           haloColor: "#FFFFFF",
           haloThickness: 6,
+          ignoreUnknownText: false,
           x: 0.15,
           y: 0.72,
           w: 0.7,
@@ -3379,6 +3380,7 @@ window.SitelenRenderer = SitelenRenderer;
     project.defaults.item.haloThickness = clamp(Number(project.defaults.item.haloThickness ?? base.defaults.item.haloThickness), 0, 48);
     project.defaults.item.fontSize = Math.max(6, Number(project.defaults.item.fontSize || base.defaults.item.fontSize));
     project.defaults.item.fontFamily = normalizeLiteralFontFamily(project.defaults.item.fontFamily, project.defaults.item.sitelenFontFamily);
+    project.defaults.item.ignoreUnknownText = !!project.defaults.item.ignoreUnknownText;
 
     const palette = getProjectPaletteState(project);
     project.palette = { ...base.palette, ...palette, customColors: normalizeColorList(palette.customColors).slice(0, MAX_CUSTOM_SWATCHES) };
@@ -3394,6 +3396,7 @@ window.SitelenRenderer = SitelenRenderer;
         if (!item || typeof item !== "object") continue;
         item.sitelenFontFamily = normalizeSitelenFontFamilyKey(item.sitelenFontFamily);
         item.fontFamily = normalizeLiteralFontFamily(item.fontFamily, item.sitelenFontFamily);
+        item.ignoreUnknownText = !!item.ignoreUnknownText;
       }
     }
     absorbProjectColorsIntoPalette(project);
@@ -3452,6 +3455,7 @@ window.SitelenRenderer = SitelenRenderer;
         item0.fontFamily = normalizeLiteralFontFamily(item0.fontFamily, item0.sitelenFontFamily);
         item0.color = normalizeColor(item0.color, App.project.defaults.item.color);
         item0.haloColor = normalizeColor(item0.haloColor, App.project.defaults.item.haloColor);
+        item0.ignoreUnknownText = !!item0.ignoreUnknownText;
       }
     }
     const ids = new Set(App.project.segments.map(s => s.id));
@@ -3505,6 +3509,7 @@ window.SitelenRenderer = SitelenRenderer;
       haloEnabled: d.haloEnabled,
       haloColor: d.haloColor,
       haloThickness: d.haloThickness,
+      ignoreUnknownText: !!d.ignoreUnknownText,
       x: d.x, y: d.y, w: d.w, h: d.h,
       rotationDeg: d.rotationDeg,
       //previewBaseScale: getCurrentPreviewBaseScale(),
@@ -3968,6 +3973,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Halo enabled", makeCheckbox(!!d.haloEnabled, (checked) => { d.haloEnabled = checked; defaultsChanged(); })));
     sec.appendChild(makeField("Halo color", makeColorControl(d.haloColor, (v) => { d.haloColor = v; defaultsChanged(false); }, (v) => { d.haloColor = v; defaultsChanged(); })));
     sec.appendChild(makeField("Halo thickness", makeNumberInput(d.haloThickness, 1, 0, 48, (v) => { d.haloThickness = clamp(v, 0, 48); defaultsChanged(); })));
+    sec.appendChild(makeField("Ignore unknown text", makeCheckbox(!!d.ignoreUnknownText, (checked) => { d.ignoreUnknownText = checked; defaultsChanged(); })));
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = "Apply defaults to all items";
@@ -3996,6 +4002,7 @@ window.SitelenRenderer = SitelenRenderer;
         item.haloEnabled = d.haloEnabled;
         item.haloColor = d.haloColor;
         item.haloThickness = d.haloThickness;
+        item.ignoreUnknownText = !!d.ignoreUnknownText;
         item.x = d.x; item.y = d.y; item.w = d.w; item.h = d.h;
         item.rotationDeg = d.rotationDeg;
         item.updatedAt = nowIso();
@@ -4090,6 +4097,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Halo enabled", makeCheckbox(!!item.haloEnabled, (checked) => patchActiveItem({ haloEnabled: checked }, true))));
     sec.appendChild(makeField("Halo color", makeColorControl(item.haloColor, (v) => patchActiveItem({ haloColor: v }, false), (v) => patchActiveItem({ haloColor: v }, true))));
     sec.appendChild(makeField("Halo thickness", makeNumberInput(item.haloThickness, 1, 0, 48, (v) => patchActiveItem({ haloThickness: clamp(v,0,48) }, true))));
+    sec.appendChild(makeField("Ignore unknown text", makeCheckbox(!!item.ignoreUnknownText, (checked) => patchActiveItem({ ignoreUnknownText: checked }, true))));
     sec.appendChild(makeField("Rotation (deg)", makeNumberInput(item.rotationDeg, 1, -360, 360, (v) => patchActiveItem({ rotationDeg: v }, true))));
 
     const geo = document.createElement("div");
@@ -4945,7 +4953,8 @@ window.SitelenRenderer = SitelenRenderer;
       Number(item.opacity ?? 1),
       !!item.haloEnabled,
       String(item.haloColor || ''),
-      Number(item.haloThickness ?? 0)
+      Number(item.haloThickness ?? 0),
+      !!item.ignoreUnknownText
     ].join('|');
   }
 
@@ -4973,7 +4982,8 @@ window.SitelenRenderer = SitelenRenderer;
       text: preset.textFamily,
       cartouche: preset.cartoucheFamily,
       number: preset.cartoucheFamily,
-      literal: resolveLiteralFontFamily(item.fontFamily, item.sitelenFontFamily)
+      literal: resolveLiteralFontFamily(item.fontFamily, item.sitelenFontFamily),
+      unknown: DEFAULT_LITERAL_FONT
     };
   }
 
@@ -5035,10 +5045,21 @@ window.SitelenRenderer = SitelenRenderer;
             enabled: haloEnabled,
             color: normalizeColor(item.haloColor, '#FFFFFF'),
             widthPx: haloWidth
+          },
+          unknownText: {
+            style: 'outline-box',
+            colorMode: 'auto',
+            color: null,
+            lineWidthPx: 1.5,
+            paddingPx: 2,
+            dash: false
           }
         },
         fonts: {
           roles: buildItemFontRoles(item)
+        },
+        parser: {
+          showUnknownText: !item.ignoreUnknownText
         }
       });
       return rendered.canvas;

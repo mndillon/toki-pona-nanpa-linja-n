@@ -1244,6 +1244,13 @@
               </div>
             </div>
 
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
+                <input id="defIgnoreUnknownText" type="checkbox" />Default ignore unknown text</label>
+              </div>
+            </div>
+
             <!-- NEW: scene-wide halo defaults for newly created elements -->
             <div class="row">
               <div class="field">
@@ -1446,7 +1453,7 @@ import {
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=4";
-import { CartoucheApi } from './js/cartouche-api-v3.js';
+import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js';
 
 (() => {
   "use strict";
@@ -1610,6 +1617,7 @@ import { CartoucheApi } from './js/cartouche-api-v3.js';
       props_text_color: "Text color",
       props_line_height: "Line height",
       props_glyph_color: "Glyph color",
+      props_ignore_unknown_text: "Ignore unknown text",
       props_image_embedded: (mime, w, h) => `Embedded image: ${mime}, ${w}×${h}`,
       props_image_none: "No image loaded. Images are embedded (no external links).",
       props_color_key_transparency: "Color-key transparency (use top-left pixel)",
@@ -1867,6 +1875,7 @@ import { CartoucheApi } from './js/cartouche-api-v3.js';
       props_text_color: "kule sitelen",
       props_line_height: "suli pi linja",
       props_glyph_color: "kule sitelen wan",
+      props_ignore_unknown_text: "o lukin ala e nimi sona ala",
       props_image_embedded: (mime, w, h) => `sitelen li lon insa: ${mime}, ${w}×${h}`,
       props_image_none: "sitelen li lon ala. sitelen li lon insa (kepeken ala e link).",
       props_color_key_transparency: "weka lukin kepeken kule (kepeken pixel pi poka sewi open)",
@@ -2219,6 +2228,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
     // Stored value if you switch to manual; auto derives from element font size.
     defaultHaloThicknessPx: 0,
     defaultHaloThicknessMode: "auto",
+    defaultIgnoreUnknownText: false,
 
     // NEW: background image (scene property)
     bgImgEnabled: false,
@@ -2496,7 +2506,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=24').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/renderer-unknown-text-outline.js?v=24').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -2619,10 +2629,27 @@ function buildRendererCallConfigForElement(el){
         enabled: !!el?.haloEnabled,
         color: rgbaOrHexToHex(el?.haloColor, '#FFFFFF'),
         widthPx: haloWidth
+      },
+      unknownText: {
+        style: 'outline-box',
+        colorMode: 'auto',
+        color: null,
+        lineWidthPx: 1.5,
+        paddingPx: 2,
+        dash: false
       }
     },
-    parser: { mode: getRenderFontPreset(getElementRenderFontPresetKey(el)).parserMode, numericMode: 'compat' },
-    fonts: { roles: buildRendererFontRolesForElement(el) }
+    parser: {
+      mode: getRenderFontPreset(getElementRenderFontPresetKey(el)).parserMode,
+      numericMode: 'compat',
+      showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText)
+    },
+    fonts: {
+      roles: {
+        ...buildRendererFontRolesForElement(el),
+        unknown: getRenderFontPreset(getElementRenderFontPresetKey(el)).literalFamily || FONT_FAMILY_LITERAL
+      }
+    }
   };
 }
 async function getSitelenRendererForElement(el){
@@ -3047,6 +3074,7 @@ function normalizeScene(parsed){
     defaultHaloColor: DEFAULTS.defaultHaloColor,
     defaultHaloThicknessPx: DEFAULTS.defaultHaloThicknessPx,
     defaultHaloThicknessMode: DEFAULTS.defaultHaloThicknessMode,
+    defaultIgnoreUnknownText: DEFAULTS.defaultIgnoreUnknownText,
 
     // NEW: background image (scene property)
     bgImgEnabled: DEFAULTS.bgImgEnabled,
@@ -3073,6 +3101,7 @@ function normalizeScene(parsed){
   if (out.stage.bgImgAssetId != null) out.stage.bgImgAssetId = String(out.stage.bgImgAssetId);
   out.stage.defaultRenderFontPreset = normalizeLegacyRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   out.stage.defaultTextFontOption = normalizeLegacyTextFontOptionKey(out.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, out.stage.defaultRenderFontPreset);
+  out.stage.defaultIgnoreUnknownText = !!(out.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
 
   if (!out.stage.bgImgAssetId){
     out.stage.bgImgAssetId = null;
@@ -3152,6 +3181,9 @@ function normalizeScene(parsed){
 
       if (el.type === ElementType.Sitelen){
         el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+        el.ignoreUnknownText = (el.ignoreUnknownText == null)
+          ? !!(out.stage?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText)
+          : !!el.ignoreUnknownText;
         if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
 
         // Migrate sitelenResizeAnchor for existing elements that predate this property.
@@ -3505,6 +3537,7 @@ function deserializeAssets(serialized){
       defaultHaloColor: DEFAULTS.defaultHaloColor,
       defaultHaloThicknessPx: DEFAULTS.defaultHaloThicknessPx,
       defaultHaloThicknessMode: DEFAULTS.defaultHaloThicknessMode,
+      defaultIgnoreUnknownText: DEFAULTS.defaultIgnoreUnknownText,
     },
     view: {
       zoom: DEFAULTS.viewZoom,
@@ -3595,6 +3628,7 @@ function deserializeAssets(serialized){
     el.lineHeight = 1.05;
     el.strokeW = 0;
     el.keepAspect = true;
+    el.ignoreUnknownText = !!(Scene.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
     el.sitelenResizeAnchor = "topLeft"; // new elements default to top-left anchor
 
     ensureHaloFields(el);
@@ -10534,6 +10568,26 @@ const textField = makeTextarea(
 );
 propsBody.appendChild(textField);
 
+const sitelenOnlyEls = sels.filter(e => e && e.type === ElementType.Sitelen);
+if (sitelenOnlyEls.length){
+  const ignoreVals = sitelenOnlyEls.map(e => !!e.ignoreUnknownText);
+  const ignoreMixed = (new Set(ignoreVals.map(v => String(v))).size > 1);
+  propsBody.appendChild(makeCheckbox(
+    tr("props_ignore_unknown_text"),
+    !!sitelenOnlyEls[0].ignoreUnknownText,
+    (checked) => {
+      applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+        e.ignoreUnknownText = !!checked;
+        invalidateSitelenCache(e.id);
+        updateSitelenLayout(e, { preserveCenter: true });
+      });
+      scheduleAutosave();
+      render();
+    },
+    { mixedLabel: ignoreMixed ? tr("props_mixed") : null, indeterminate: ignoreMixed }
+  ));
+}
+
 // If the floating editor is open for this same multi-sitelen selection, rebind it to the new textarea node.
 if (textField && textField._popoutElementId){
   rebindFloatingSitelenEditorToTextarea(
@@ -11029,6 +11083,20 @@ if (textField && textField._popoutElementId){
     );
 
     propsBody.appendChild(textField);
+
+    if (el.type === ElementType.Sitelen){
+      propsBody.appendChild(makeCheckbox(
+        tr("props_ignore_unknown_text"),
+        !!el.ignoreUnknownText,
+        (checked) => {
+          el.ignoreUnknownText = !!checked;
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+          scheduleAutosave();
+          render();
+        }
+      ));
+    }
 
     // If the floating editor is already open for this same sitelen element,
     // rebind it to the freshly re-rendered textarea in the properties panel.
@@ -13567,6 +13635,7 @@ function syncStageDefaultsUiFromScene(){
   const dfe = document.getElementById("defFillEnabled");
   const ds = document.getElementById("defStroke");
   const dsw = document.getElementById("defStrokeW");
+  const diut = document.getElementById("defIgnoreUnknownText");
   const dhe = document.getElementById("defHaloEnabled");
   const dhc = document.getElementById("defHaloColor");
   const dht = document.getElementById("defHaloThickness");
@@ -13586,6 +13655,7 @@ function syncStageDefaultsUiFromScene(){
   if (dfe) {dfe.checked = !!Scene.stage.defaultFillEnabled;}
   if (ds)  ds.value  = rgbaOrHexToHex(st.defaultStroke, DEFAULTS.defaultStroke);
   if (dsw) dsw.value = Number.isFinite(st.defaultStrokeW) ? st.defaultStrokeW : DEFAULTS.defaultStrokeW;
+  if (diut) diut.checked = !!(st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
   if (dhe) dhe.checked = !!(st.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled);
   if (dhc) dhc.value = rgbaOrHexToHex(st.defaultHaloColor, DEFAULTS.defaultHaloColor);
   if (dht) dht.value = Number.isFinite(st.defaultHaloThicknessPx) ? st.defaultHaloThicknessPx : DEFAULTS.defaultHaloThicknessPx;
@@ -14637,6 +14707,7 @@ $("btnNew").addEventListener("click", async () => {
   Scene.stage.defaultRenderFontPreset = DEFAULTS.defaultRenderFontPreset;
   Scene.stage.defaultTextFontOption = DEFAULTS.defaultTextFontOption;
   Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
+  Scene.stage.defaultIgnoreUnknownText = DEFAULTS.defaultIgnoreUnknownText;
   Scene.stage.defaultFill = DEFAULTS.defaultFill;
   Scene.stage.defaultFillEnabled = DEFAULTS.defaultFillEnabled;
   Scene.stage.defaultStroke = DEFAULTS.defaultStroke;
@@ -14881,6 +14952,7 @@ function wireStageDefaultsUi(){
   const dfe = document.getElementById("defFillEnabled");
   const ds = document.getElementById("defStroke");
   const dsw = document.getElementById("defStrokeW");
+  const diut = document.getElementById("defIgnoreUnknownText");
   const dhe = document.getElementById("defHaloEnabled");
   const dhc = document.getElementById("defHaloColor");
   const dht = document.getElementById("defHaloThickness");
@@ -14986,6 +15058,14 @@ function wireStageDefaultsUi(){
       scheduleAutosave();
       //render();
       //setStatus(tr("status_default_text_updated"));
+    });
+  }
+
+  if (diut){
+    diut.addEventListener("change", (e) => {
+      Scene.stage.defaultIgnoreUnknownText = !!e.target.checked;
+      scheduleAutosave();
+      render();
     });
   }
 
@@ -15271,7 +15351,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('./js/sitelen-renderer-refactored-scoped-with-source-segment-meta-v8.js?v=24');
+        const rendererMod = await import('./js/renderer-unknown-text-outline.js?v=24');
         const NanpaParser = rendererMod?.NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
         pageMap = await cartoucheApi.resolvePageMap();
@@ -15591,6 +15671,7 @@ document.addEventListener("keydown", (e) => {
     doc.documentDefaults.defaultRenderFontPreset = normalizeRenderFontPresetKey(doc.documentDefaults.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
     doc.documentDefaults.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(doc.documentDefaults.defaultTextFontOption || DEFAULTS.defaultTextFontOption, doc.documentDefaults.defaultRenderFontPreset);
     doc.documentDefaults.defaultTextColor = String(doc.documentDefaults.defaultTextColor || DEFAULTS.defaultTextColor);
+    doc.documentDefaults.defaultIgnoreUnknownText = !!(doc.documentDefaults.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
     doc.documentDefaults.defaultFill = String(doc.documentDefaults.defaultFill ?? DEFAULTS.defaultFill);
     doc.documentDefaults.defaultFillEnabled = !!(doc.documentDefaults.defaultFillEnabled ?? DEFAULTS.defaultFillEnabled);
     doc.documentDefaults.defaultStroke = String(doc.documentDefaults.defaultStroke ?? DEFAULTS.defaultStroke);
@@ -15660,7 +15741,8 @@ document.addEventListener("keydown", (e) => {
         gridSize: Number.isFinite(Number(doc.documentDefaults?.gridSize)) ? clamp(Number(doc.documentDefaults.gridSize), 2, 1000) : 20,
         snapGrid: !!doc.documentDefaults?.snapGrid,
         snapObjects: !!doc.documentDefaults?.snapObjects,
-        snapTol: Number.isFinite(Number(doc.documentDefaults?.snapTol)) ? clamp(Number(doc.documentDefaults.snapTol), 0, 200) : 6
+        snapTol: Number.isFinite(Number(doc.documentDefaults?.snapTol)) ? clamp(Number(doc.documentDefaults.snapTol), 0, 200) : 6,
+        defaultIgnoreUnknownText: !!(doc.documentDefaults?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText)
       },
       settings: { mediaGuards: { image: !!(doc.settings?.mediaGuards?.image !== false), audio: !!(doc.settings?.mediaGuards?.audio !== false), video: !!(doc.settings?.mediaGuards?.video !== false) }, youtubeExportInfo: { pngSingle: !!(doc.settings?.youtubeExportInfo?.pngSingle !== false), png: !!(doc.settings?.youtubeExportInfo?.png !== false), html: !!(doc.settings?.youtubeExportInfo?.html !== false), pdf: !!(doc.settings?.youtubeExportInfo?.pdf !== false) } },
       assets: canonicalAssets,
@@ -16146,6 +16228,7 @@ document.addEventListener("keydown", (e) => {
         defaultRenderFontPreset: st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset,
         defaultTextFontOption: st.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
         defaultTextColor: st.defaultTextColor || DEFAULTS.defaultTextColor,
+        defaultIgnoreUnknownText: !!(st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText),
         defaultFill: st.defaultFill ?? DEFAULTS.defaultFill,
         defaultFillEnabled: !!(st.defaultFillEnabled ?? DEFAULTS.defaultFillEnabled),
         defaultStroke: st.defaultStroke ?? DEFAULTS.defaultStroke,
@@ -16181,6 +16264,7 @@ document.addEventListener("keydown", (e) => {
     st.defaultRenderFontPreset = normalizeRenderFontPresetKey(docDefaults.defaultRenderFontPreset || st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
     st.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(docDefaults.defaultTextFontOption || st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, st.defaultRenderFontPreset);
     st.defaultTextColor = docDefaults.defaultTextColor || st.defaultTextColor || DEFAULTS.defaultTextColor;
+    st.defaultIgnoreUnknownText = !!(docDefaults.defaultIgnoreUnknownText ?? st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
     st.defaultFill = docDefaults.defaultFill ?? st.defaultFill ?? DEFAULTS.defaultFill;
     st.defaultFillEnabled = !!(docDefaults.defaultFillEnabled ?? st.defaultFillEnabled ?? DEFAULTS.defaultFillEnabled);
     st.defaultStroke = docDefaults.defaultStroke ?? st.defaultStroke ?? DEFAULTS.defaultStroke;
