@@ -297,12 +297,21 @@ function sanitizeStoredCartoucheText(value, { keepLeadingBlank = false } = {}) {
   return sanitizeStoredCartoucheTokens(tokenizeStoredCartouche(value), { keepLeadingBlank }).join(' ');
 }
 
+function ensureLeadingBlankGlyphToken(value) {
+  const tokens = tokenizeStoredCartouche(value);
+  const cleaned = sanitizeStoredCartoucheTokens(tokens, { keepLeadingBlank: false });
+  if (!cleaned.length) return '""';
+  if (cleaned[0] !== '""') cleaned.unshift('""');
+  return cleaned.join(' ');
+}
+
 function getStoredSegmentCartoucheText(seg, entry, segIndex) {
   const cm = entry.cartoucheMap || {};
 
   if (seg.type === 'nanpa') {
     const stored = cm[segIndex];
-    return sanitizeStoredCartoucheText(stored, { keepLeadingBlank: !!entry.forceNormal });
+    if (entry.forceNormal) return ensureLeadingBlankGlyphToken(stored);
+    return sanitizeStoredCartoucheText(stored, { keepLeadingBlank: false });
   }
 
   if (entry.merge) {
@@ -327,7 +336,7 @@ export function buildSegmentRendererInput(seg, entry, segIndex) {
     if (!entry.forceNormal) return `[ ${seg.words.join(' ')} ]`;
     // forceNormal — use stored cartouche from map like a normal segment
     const stored = getStoredSegmentCartoucheText(seg, entry, segIndex);
-    if (entry.mode === 'preferred' && stored) return `[ ${stored} ]`;
+    if (entry.mode === 'preferred' && stored) return `["" ${stored} ]`;
     // Random — generate from the words' letters.
     // Leading "" forces renderer to treat as glyph cartouche, not numeric.
     const letters = seg.words.join('').toLowerCase().split('');
