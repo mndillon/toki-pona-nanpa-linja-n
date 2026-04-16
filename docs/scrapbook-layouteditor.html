@@ -245,6 +245,72 @@
   /* NEW: right-align helper if you want chip on far right of the actions row */
   .spacer{ flex: 1 1 auto; }
 
+  .toolbarModeBtn{
+    flex: 0 0 auto;
+  }
+  .compactOnly{
+    display:none;
+  }
+  .toolbarCompactMode .originalToolbarRow{
+    display:none;
+  }
+  .toolbarCompactMode .compactOnly{
+    display:flex;
+  }
+  .compactTopbarLeft{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    min-width:0;
+    overflow:visible;
+  }
+  .compactTopbarRight{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-left:auto;
+    flex:0 0 auto;
+  }
+  .compactToolsRow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .topbarMenu{
+    position: relative;
+    display:inline-block;
+  }
+  .topbarMenu > summary{ list-style:none; }
+  .topbarMenu > summary::-webkit-details-marker{ display:none; }
+  .topbarMenuBtn::after{ content:" ▾"; font-size:12px; }
+  .topbarMenu[open] > summary{
+    background: rgba(17,17,17,0.14);
+    border-color: rgba(17,17,17,0.38);
+    box-shadow: inset 0 0 0 2px rgba(17,17,17,0.16);
+  }
+  .topbarMenuPanel{
+    position:absolute;
+    top: calc(100% + 6px);
+    left:0;
+    z-index: 40;
+    min-width: 220px;
+    max-width: min(92vw, 340px);
+    padding: 8px;
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    background: var(--bg);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .topbarMenuPanel .btn, .topbarMenuPanel .toolBtn{
+    width:100%;
+    text-align:left;
+  }
+
   /* ============================================================
      Main layout (wrap) must account for a variable-height topbar
      ============================================================ */
@@ -1075,17 +1141,18 @@
   </div>
     <!-- CHANGE HERE: top toolbar -->
     <div class="topbar" id="topbar">
-    <div class="topbarRow">
+      <div class="topbarRow originalToolbarRow" id="topbarOriginalRow1">
+        <button class="btn toolbarModeBtn" id="btnToggleToolbarLayout" type="button" title="Toggle toolbar layout">☰</button>
         <div class="topbarGroup" aria-label="Edit actions">
-        <button class="btn" id="btnNew">New / Clear</button>
-        <button class="btn" id="btnExportJson">Export page JSON</button>
-        <button class="btn" id="btnImportJson">Import page JSON</button>
-        <button class="btn" id="btnExportPng">Export page PNG</button>
+          <button class="btn" id="btnNew">New / Clear</button>
+          <button class="btn" id="btnExportJson">Export page JSON</button>
+          <button class="btn" id="btnImportJson">Import page JSON</button>
+          <button class="btn" id="btnExportPng">Export page PNG</button>
         </div>
 
         <div class="topbarGroup" aria-label="Grouping">
-        <button class="btn" id="btnGroup">Group</button>
-        <button class="btn" id="btnUngroup">Ungroup</button>
+          <button class="btn" id="btnGroup">Group</button>
+          <button class="btn" id="btnUngroup">Ungroup</button>
         </div>
 
         <div class="spacer"></div>
@@ -1096,12 +1163,10 @@
             <option value="tp">toki pona</option>
           </select>
         </div>
-<div id="status" class="chip">Ready.</div>
+        <div id="status" class="chip">Ready.</div>
+      </div>
 
-    </div>
-
-    <div class="topbarRow" aria-label="Tools">
-        <!-- Keep the SAME IDs you already use -->
+      <div class="topbarRow originalToolbarRow" id="topbarOriginalRow2" aria-label="Tools">
         <button class="toolBtn" id="toolSelect">Select</button>
         <button class="toolBtn" id="toolText">Text</button>
         <button class="toolBtn" id="toolSitelen">Sitelen</button>
@@ -1119,16 +1184,54 @@
 
         <button id="btnCopy" class="toolBtn toolBtnSmall" type="button" title="Copy (Ctrl/Cmd+C)">Copy</button>
         <button id="btnCut"  class="toolBtn toolBtnSmall" type="button" title="Cut (Ctrl/Cmd+X)">Cut</button>
-        <button id="btnPaste"class="toolBtn toolBtnSmall" type="button" title="Paste (Ctrl/Cmd+V)">Paste</button>
+        <button id="btnPaste" class="toolBtn toolBtnSmall" type="button" title="Paste (Ctrl/Cmd+V)">Paste</button>
 
         <button id="btnToggleTextEditor" class="toolBtn toolBtnSmall" type="button" title="Toggle floating text editor" aria-pressed="false">Text Editor</button>
         <button id="btnToggleMediaEditor" class="toolBtn toolBtnSmall" type="button" title="Toggle floating media editor" aria-pressed="false">Media Editor</button>
         <button id="btnTopbarZoomIn" class="toolBtn toolBtnSmall" type="button" title="Zoom in">Zoom +</button>
         <button id="btnTopbarZoomOut" class="toolBtn toolBtnSmall" type="button" title="Zoom out">Zoom -</button>
+      </div>
 
-    </div>
-    </div>
+      <div class="topbarRow compactOnly" id="topbarCompactRow1">
+        <div class="compactTopbarLeft">
+          <button class="btn toolbarModeBtn" id="btnToggleToolbarLayoutCompact" type="button" title="Toggle toolbar layout">☰</button>
+          <details class="topbarMenu" id="compactMenuFile"><summary class="btn topbarMenuBtn">File</summary><div class="topbarMenuPanel" id="compactMenuFilePanel"></div></details>
+          <details class="topbarMenu" id="compactMenuPage"><summary class="btn topbarMenuBtn">Page</summary><div class="topbarMenuPanel" id="compactMenuPagePanel"></div></details>
+          <details class="topbarMenu" id="compactMenuInsert"><summary class="btn topbarMenuBtn">Insert</summary><div class="topbarMenuPanel" id="compactMenuInsertPanel"></div></details>
+          <details class="topbarMenu" id="compactMenuArrange"><summary class="btn topbarMenuBtn">Arrange</summary><div class="topbarMenuPanel" id="compactMenuArrangePanel"></div></details>
+          <details class="topbarMenu" id="compactMenuView"><summary class="btn topbarMenuBtn">View</summary><div class="topbarMenuPanel" id="compactMenuViewPanel"></div></details>
+          <details class="topbarMenu" id="compactMenuExport"><summary class="btn topbarMenuBtn">Export</summary><div class="topbarMenuPanel" id="compactMenuExportPanel"></div></details>
+          <button class="btn primary" id="compactBtnSearch" type="button">Search</button>
+        </div>
+        <div class="compactTopbarRight">
+          <div class="inlineLabel" id="compactLblLang">Language</div>
+          <select id="compactLangSel" class="langSel"></select>
+          <div id="compactStatus" class="chip">Ready.</div>
+        </div>
+      </div>
 
+      <div class="topbarRow compactOnly" id="topbarCompactRow2" aria-label="Compact tools">
+        <div class="compactToolsRow">
+          <button class="toolBtn" id="compactToolSelect">Select</button>
+          <button class="toolBtn" id="compactToolText">Text</button>
+          <button class="toolBtn" id="compactToolSitelen">Sitelen</button>
+          <button class="toolBtn" id="compactToolImage">Image</button>
+          <button class="toolBtn" id="compactToolDelete">Delete</button>
+          <button class="toolBtn" id="compactToolPan">Pan</button>
+          <button id="compactBtnUndo" class="toolBtn toolBtnSmall" type="button">Undo</button>
+          <button id="compactBtnRedo" class="toolBtn toolBtnSmall" type="button">Redo</button>
+          <button id="compactBtnCopy" class="toolBtn toolBtnSmall" type="button">Copy</button>
+          <button id="compactBtnCut" class="toolBtn toolBtnSmall" type="button">Cut</button>
+          <button id="compactBtnPaste" class="toolBtn toolBtnSmall" type="button">Paste</button>
+          <button id="compactBtnTextEditor" class="toolBtn toolBtnSmall" type="button">Text Editor</button>
+          <button id="compactBtnMediaEditor" class="toolBtn toolBtnSmall" type="button">Media Editor</button>
+          <button id="compactBtnZoomIn" class="toolBtn toolBtnSmall" type="button">Zoom +</button>
+          <button id="compactBtnZoomOut" class="toolBtn toolBtnSmall" type="button">Zoom -</button>
+          <input class="langSel" id="compactGotoPageInput" type="number" min="1" step="1" placeholder="Page #" title="Go to page" style="width:88px;" />
+          <button class="btn" id="compactBtnGotoPage" type="button">Go</button>
+        </div>
+      </div>
+    </div>
 
   <div class="wrap">
     <section class="panel sidebar" aria-label="Tools and properties">
@@ -1492,6 +1595,7 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
   const LS_KEY_TEXT_EDITOR_GEOMETRY = "layout_editor_text_geometry_v1"; // persisted floating editor rect
   const LS_KEY_MEDIA_EDITOR_OPEN = "layout_editor_media_open"; // "1" | "0"
   const LS_KEY_MEDIA_EDITOR_GEOMETRY = "layout_editor_media_geometry_v1"; // persisted floating editor rect
+  const LS_KEY_TOOLBAR_LAYOUT = "scrapbook_toolbar_layout_v1"; // original | compact
 
   function loadLang(){
     try{
@@ -2137,6 +2241,7 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
     const copy = $("btnCopy"); if (copy) copy.title = tr("tip_copy");
     const cut  = $("btnCut");  if (cut)  cut.title  = tr("tip_cut");
     const paste= $("btnPaste");if (paste)paste.title= tr("tip_paste");
+    installCompactToolbar();
 
     // Sidebar headings
     const hs = $("hdrStage"); if (hs) hs.textContent = tr("hdr_stage");
@@ -2169,6 +2274,181 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
     const d1 = $("lblDisclaimer"); if (d1) d1.textContent = tr("lbl_disclaimer");
     const d2 = $("txtDisclaimer"); if (d2) d2.textContent = tr("txt_disclaimer");
     const back = $("lnkBack"); if (back) back.textContent = tr("lnk_back");
+  }
+
+  function loadToolbarLayoutMode(){
+    try{ return localStorage.getItem(LS_KEY_TOOLBAR_LAYOUT) === 'original' ? 'original' : 'compact'; } catch {}
+    return 'compact';
+  }
+  function saveToolbarLayoutMode(mode){
+    try{ localStorage.setItem(LS_KEY_TOOLBAR_LAYOUT, mode === 'compact' ? 'compact' : 'original'); } catch {}
+  }
+  function setToolbarLayoutMode(mode){
+    const compact = mode === 'compact';
+    document.body.classList.toggle('toolbarCompactMode', compact);
+    saveToolbarLayoutMode(compact ? 'compact' : 'original');
+    const btn1 = $('btnToggleToolbarLayout');
+    const btn2 = $('btnToggleToolbarLayoutCompact');
+    if (btn1) btn1.setAttribute('aria-pressed', compact ? 'true' : 'false');
+    if (btn2) btn2.setAttribute('aria-pressed', compact ? 'true' : 'false');
+    syncCompactToolbarState();
+  }
+  function toggleToolbarLayoutMode(){
+    setToolbarLayoutMode(document.body.classList.contains('toolbarCompactMode') ? 'original' : 'compact');
+  }
+  function closeCompactMenus(except = null){
+    document.querySelectorAll('#topbar .topbarMenu[open]').forEach((menu) => {
+      if (except && menu === except) return;
+      menu.removeAttribute('open');
+    });
+  }
+  function makeProxyButton(targetId, label){
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.type = 'button';
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      const target = $(targetId);
+      if (target) target.click();
+      closeCompactMenus();
+      syncCompactToolbarState();
+    });
+    return btn;
+  }
+  function populateCompactMenu(panelId, items){
+    const panel = $(panelId);
+    if (!panel) return;
+    panel.innerHTML = '';
+    for (const item of items){
+      panel.appendChild(makeProxyButton(item.id, item.label));
+    }
+  }
+  function syncCompactToolbarState(){
+    const compactStatus = $('compactStatus');
+    if (compactStatus && $('status')) compactStatus.textContent = $('status').textContent || '';
+    const compactLangSel = $('compactLangSel');
+    const langSel = $('langSel');
+    if (compactLangSel && langSel && compactLangSel.value !== langSel.value) compactLangSel.value = langSel.value;
+
+    const mapDisabled = [
+      ['btnUndo','compactBtnUndo'],['btnRedo','compactBtnRedo'],['btnCopy','compactBtnCopy'],['btnCut','compactBtnCut'],['btnPaste','compactBtnPaste']
+    ];
+    for (const [srcId,dstId] of mapDisabled){
+      const src = $(srcId), dst = $(dstId);
+      if (src && dst) dst.disabled = !!src.disabled;
+    }
+  }
+  function installCompactToolbar(){
+    const compactLangSel = $('compactLangSel');
+    const langSel = $('langSel');
+    if (compactLangSel && langSel && !compactLangSel.__wired){
+      compactLangSel.__wired = true;
+      compactLangSel.innerHTML = langSel.innerHTML;
+      compactLangSel.value = langSel.value;
+      compactLangSel.addEventListener('change', () => { langSel.value = compactLangSel.value; langSel.dispatchEvent(new Event('change')); });
+    }
+    const bindClick = (compactId, targetId) => {
+      const btn = $(compactId);
+      if (btn && !btn.__wired){
+        btn.__wired = true;
+        btn.addEventListener('click', () => { const t = $(targetId); if (t) t.click(); syncCompactToolbarState(); });
+      }
+    };
+    bindClick('compactToolSelect','toolSelect');
+    bindClick('compactToolText','toolText');
+    bindClick('compactToolSitelen','toolSitelen');
+    bindClick('compactToolImage','toolImage');
+    bindClick('compactToolDelete','toolDelete');
+    bindClick('compactToolPan','toolPan');
+    bindClick('compactBtnUndo','btnUndo');
+    bindClick('compactBtnRedo','btnRedo');
+    bindClick('compactBtnCopy','btnCopy');
+    bindClick('compactBtnCut','btnCut');
+    bindClick('compactBtnPaste','btnPaste');
+    bindClick('compactBtnTextEditor','btnToggleTextEditor');
+    bindClick('compactBtnMediaEditor','btnToggleMediaEditor');
+    bindClick('compactBtnZoomIn','btnTopbarZoomIn');
+    bindClick('compactBtnZoomOut','btnTopbarZoomOut');
+    bindClick('compactBtnSearch','sbBtnSearch');
+
+    const compactGotoBtn = $('compactBtnGotoPage');
+    if (compactGotoBtn && !compactGotoBtn.__wired){
+      compactGotoBtn.__wired = true;
+      compactGotoBtn.addEventListener('click', () => {
+        const src = $('compactGotoPageInput');
+        const dst = $('sbGotoPageInput');
+        if (src && dst) dst.value = src.value;
+        const go = $('sbBtnGotoPage');
+        if (go) go.click();
+      });
+    }
+
+    populateCompactMenu('compactMenuFilePanel', [
+      { id:'sbBtnNewDoc', label: tr('sb_btn_new_doc') },
+      { id:'sbBtnImportDoc', label: tr('sb_btn_import_doc') }
+    ]);
+    populateCompactMenu('compactMenuPagePanel', [
+      { id:'sbBtnNewPage', label: tr('sb_btn_new_page') },
+      { id:'sbBtnDupPage', label: tr('sb_btn_dup_page') },
+      { id:'sbBtnDeletePage', label: tr('sb_btn_del_page') },
+      { id:'sbBtnMovePageUp', label: tr('sb_btn_move_up') },
+      { id:'sbBtnMovePageDown', label: tr('sb_btn_move_down') },
+      { id:'sbBtnPrevPage', label: tr('sb_btn_prev_page') },
+      { id:'sbBtnNextPage', label: tr('sb_btn_next_page') },
+      { id:'btnExportJson', label: tr('btn_export_json') },
+      { id:'btnImportJson', label: tr('btn_import_json') },
+      { id:'btnExportPng', label: tr('btn_export_png') }
+    ]);
+    populateCompactMenu('compactMenuInsertPanel', [
+      { id:'toolGlyph', label: tr('tool_glyph') },
+      { id:'toolRect', label: tr('tool_rect') },
+      { id:'toolAudio', label: tr('tool_audio') },
+      { id:'toolVideo', label: tr('tool_video') },
+      { id:'toolUrl', label: tr('tool_url') }
+    ]);
+    populateCompactMenu('compactMenuArrangePanel', [
+      { id:'btnGroup', label: tr('btn_group') },
+      { id:'btnUngroup', label: tr('btn_ungroup') }
+    ]);
+    populateCompactMenu('compactMenuViewPanel', [
+      { id:'btnFit', label: tr('btn_fit') },
+      { id:'btnResetView', label: tr('btn_reset_view') }
+    ]);
+    populateCompactMenu('compactMenuExportPanel', [
+      { id:'sbBtnExportDoc', label: tr('sb_btn_export_doc') },
+      { id:'sbBtnExportAllPng', label: tr('sb_btn_export_zip') },
+      { id:'sbBtnExportPrint', label: tr('sb_btn_export_print') },
+      { id:'sbBtnExportPdf', label: tr('sb_btn_export_pdf') },
+      { id:'sbBtnPresent', label: tr('sb_btn_present') }
+    ]);
+
+    const lbl = $('compactLblLang');
+    if (lbl) lbl.textContent = tr('lbl_lang');
+    const cGoto = $('compactGotoPageInput');
+    if (cGoto){
+      cGoto.placeholder = tr('sb_ph_page_number');
+      cGoto.title = tr('sb_btn_goto_page');
+    }
+    const cGo = $('compactBtnGotoPage'); if (cGo) cGo.textContent = tr('sb_btn_go');
+
+    const toggle1 = $('btnToggleToolbarLayout');
+    const toggle2 = $('btnToggleToolbarLayoutCompact');
+    if (toggle1 && !toggle1.__wired){ toggle1.__wired = true; toggle1.addEventListener('click', toggleToolbarLayoutMode); }
+    if (toggle2 && !toggle2.__wired){ toggle2.__wired = true; toggle2.addEventListener('click', toggleToolbarLayoutMode); }
+
+    document.querySelectorAll('#topbar .topbarMenu > summary').forEach((summary) => {
+      if (summary.__wired) return;
+      summary.__wired = true;
+      summary.addEventListener('click', () => {
+        const menu = summary.parentElement;
+        if (menu && !menu.open) closeCompactMenus(menu);
+      });
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#topbar .topbarMenu')) closeCompactMenus();
+    }, { capture:true });
+
+    syncCompactToolbarState();
   }
 
   function wireLangSelector(){
@@ -18059,6 +18339,8 @@ document.addEventListener("keydown", (e) => {
     pageGroup.innerHTML = `<button class="btn" id="sbBtnNewPage" type="button">${tr('sb_btn_new_page')}</button><button class="btn" id="sbBtnDupPage" type="button">${tr('sb_btn_dup_page')}</button><button class="btn" id="sbBtnDeletePage" type="button">${tr('sb_btn_del_page')}</button><button class="btn" id="sbBtnMovePageUp" type="button">${tr('sb_btn_move_up')}</button><button class="btn" id="sbBtnMovePageDown" type="button">${tr('sb_btn_move_down')}</button><button class="btn" id="sbBtnPrevPage" type="button">${tr('sb_btn_prev_page')}</button><button class="btn" id="sbBtnNextPage" type="button">${tr('sb_btn_next_page')}</button><input class="langSel" id="sbGotoPageInput" type="number" min="1" step="1" placeholder="${tr('sb_ph_page_number')}" title="${tr('sb_btn_goto_page')}" style="width:88px;" /><button class="btn" id="sbBtnGotoPage" type="button">${tr('sb_btn_go')}</button>`;
     row1.insertBefore(pageGroup, row1.children[1] || null);
     initScrapbookSearchWindow();
+    installCompactToolbar();
+    setToolbarLayoutMode(loadToolbarLayoutMode());
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'application/json'; input.style.display = 'none'; input.id = 'sbImportDocInput';
     document.body.appendChild(input);
