@@ -1122,6 +1122,9 @@
         <button id="btnPaste"class="toolBtn toolBtnSmall" type="button" title="Paste (Ctrl/Cmd+V)">Paste</button>
 
         <button id="btnToggleTextEditor" class="toolBtn toolBtnSmall" type="button" title="Toggle floating text editor" aria-pressed="false">Text Editor</button>
+        <button id="btnToggleMediaEditor" class="toolBtn toolBtnSmall" type="button" title="Toggle floating media editor" aria-pressed="false">Media Editor</button>
+        <button id="btnTopbarZoomIn" class="toolBtn toolBtnSmall" type="button" title="Zoom in">Zoom +</button>
+        <button id="btnTopbarZoomOut" class="toolBtn toolBtnSmall" type="button" title="Zoom out">Zoom -</button>
 
     </div>
     </div>
@@ -1535,6 +1538,10 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
       btn_copy: "Copy",
       btn_cut: "Cut",
       btn_paste: "Paste",
+      btn_media_editor: "Media Editor",
+      sb_btn_goto_page: "Go to page",
+      sb_btn_go: "Go",
+      sb_ph_page_number: "Page #",
 
       tip_undo: "Undo (Ctrl/Cmd+Z)",
       tip_redo: "Redo (Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z)",
@@ -1798,6 +1805,10 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
       btn_copy: "kopi",
       btn_cut: "kipisi",
       btn_paste: "pana sin",
+      btn_media_editor: "ilo media",
+      sb_btn_goto_page: "o tawa lipu nanpa",
+      sb_btn_go: "o tawa",
+      sb_ph_page_number: "nanpa lipu",
 
       tip_undo: "pini ala (Ctrl/Cmd+Z)",
       tip_redo: "pali sin (Ctrl/Cmd+Y anu Ctrl/Cmd+Shift+Z)",
@@ -2068,6 +2079,9 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
       ["btnCopy", "btn_copy"],
       ["btnCut", "btn_cut"],
       ["btnPaste", "btn_paste"],
+      ["btnToggleMediaEditor", "btn_media_editor"],
+      ["btnTopbarZoomIn", "btn_zoom_in"],
+      ["btnTopbarZoomOut", "btn_zoom_out"],
 
       ["btnSnapGrid", "btn_snap_grid"],
       ["btnSnapObjs", "btn_snap_objs"],
@@ -2107,6 +2121,12 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
     for (const [id, key] of sbBtnMap){
       const el = $(id);
       if (el) el.textContent = tr(key);
+    }
+    const sbGotoPageInput = $('sbGotoPageInput');
+    if (sbGotoPageInput){
+      sbGotoPageInput.placeholder = tr('sb_ph_page_number');
+      sbGotoPageInput.title = tr('sb_btn_goto_page');
+      sbGotoPageInput.setAttribute('aria-label', tr('sb_btn_goto_page'));
     }
     // Re-render the scrapbook sidebar so all labels update
     try { renderScrapbookSidebar(); } catch {}
@@ -9866,6 +9886,7 @@ function closeFloatingMediaEditor(){
   S.root.setAttribute("aria-hidden", "true");
   S.isOpen = false;
   try { localStorage.setItem(S.storageOpenKey, "0"); } catch {}
+  syncMediaEditorToggleBtn();
 }
 function closeFloatingSitelenEditor(){ closeFloatingTextEditor(); }
 function showFloatingTextEditor(){
@@ -9892,12 +9913,19 @@ function showFloatingMediaEditor(){
   clampFloatingEditorToViewport(S);
   bringFloatingEditorToFront(S);
   try { localStorage.setItem(S.storageOpenKey, "1"); } catch {}
+  syncMediaEditorToggleBtn();
 }
 function showFloatingSitelenEditor(){ showFloatingTextEditor(); }
 function syncTextEditorToggleBtn(){
   const btn = document.getElementById("btnToggleTextEditor");
   if (!btn) return;
   const open = !!(FloatingTextEditor && FloatingTextEditor.isOpen);
+  btn.setAttribute("aria-pressed", open ? "true" : "false");
+}
+function syncMediaEditorToggleBtn(){
+  const btn = document.getElementById("btnToggleMediaEditor");
+  if (!btn) return;
+  const open = !!(FloatingMediaEditor && FloatingMediaEditor.isOpen);
   btn.setAttribute("aria-pressed", open ? "true" : "false");
 }
 function openFloatingTextEditor({ title, elementId, sourceTextarea, onChange }){
@@ -10050,7 +10078,6 @@ function refreshFloatingMediaEditorForSelection(forceLeaderId){
     S.mediaControls.classList.add('hidden');
     return;
   }
-  showFloatingMediaEditor();
   S._boundElId = leader.id; S._boundElType = leaderType; S.elementId = leader.id;
   let displayText = ""; let titleStr = "";
   if (leaderType === ElementType.Url){ displayText = String(leader.url && leader.url.href || ""); titleStr = "URL"; }
@@ -12700,6 +12727,34 @@ function wireClipboardButtons(){
     });
     syncTextEditorToggleBtn(); // set initial pressed state
   }
+
+  updateClipboardButtons(); // set initial enabled/disabled state
+
+  const meBtn = document.getElementById("btnToggleMediaEditor");
+  if (meBtn){
+    meBtn.addEventListener("click", () => {
+      if (FloatingMediaEditor.isOpen){
+        closeFloatingMediaEditor();
+      } else {
+        showFloatingMediaEditor();
+        refreshFloatingMediaEditorForSelection();
+      }
+      syncMediaEditorToggleBtn();
+    });
+    syncMediaEditorToggleBtn();
+  }
+
+  const tbZoomInBtn = document.getElementById("btnTopbarZoomIn");
+  if (tbZoomInBtn) tbZoomInBtn.addEventListener("click", () => {
+    Scene.view.zoom = clamp(Scene.view.zoom * 1.15, 0.1, 10);
+    scheduleAutosave(); render();
+  });
+
+  const tbZoomOutBtn = document.getElementById("btnTopbarZoomOut");
+  if (tbZoomOutBtn) tbZoomOutBtn.addEventListener("click", () => {
+    Scene.view.zoom = clamp(Scene.view.zoom / 1.15, 0.1, 10);
+    scheduleAutosave(); render();
+  });
 
   updateClipboardButtons(); // set initial enabled/disabled state
   updateUndoRedoUi();//update undo/redo buttons
@@ -17925,6 +17980,18 @@ document.addEventListener("keydown", (e) => {
     const next = pages[idx + delta];
     if (next) await switchToPage(next.id);
   }
+  async function goToPageNumber(rawPageNumber){
+    if (!ScrapbookState || !ScrapbookState.doc || !Array.isArray(ScrapbookState.doc.pages)) return;
+    const pages = ScrapbookState.doc.pages;
+    if (!pages.length) return;
+    let pageNum = Math.floor(Number(rawPageNumber));
+    if (!Number.isFinite(pageNum)) pageNum = 1;
+    pageNum = Math.max(1, Math.min(pages.length, pageNum));
+    const input = $('sbGotoPageInput');
+    if (input) input.value = String(pageNum);
+    const target = pages[pageNum - 1];
+    if (target) await switchToPage(target.id);
+  }
   function exportDocumentJson(){
     if (!ScrapbookState) return;
     // Use the live document directly — buildDocumentSnapshotForHistory strips asset
@@ -17989,7 +18056,7 @@ document.addEventListener("keydown", (e) => {
     row1.insertBefore(docGroup, row1.firstElementChild);
     const pageGroup = document.createElement('div');
     pageGroup.className = 'topbarGroup scrapbookGroup';
-    pageGroup.innerHTML = `<button class="btn" id="sbBtnNewPage" type="button">${tr('sb_btn_new_page')}</button><button class="btn" id="sbBtnDupPage" type="button">${tr('sb_btn_dup_page')}</button><button class="btn" id="sbBtnDeletePage" type="button">${tr('sb_btn_del_page')}</button><button class="btn" id="sbBtnMovePageUp" type="button">${tr('sb_btn_move_up')}</button><button class="btn" id="sbBtnMovePageDown" type="button">${tr('sb_btn_move_down')}</button><button class="btn" id="sbBtnPrevPage" type="button">${tr('sb_btn_prev_page')}</button><button class="btn" id="sbBtnNextPage" type="button">${tr('sb_btn_next_page')}</button>`;
+    pageGroup.innerHTML = `<button class="btn" id="sbBtnNewPage" type="button">${tr('sb_btn_new_page')}</button><button class="btn" id="sbBtnDupPage" type="button">${tr('sb_btn_dup_page')}</button><button class="btn" id="sbBtnDeletePage" type="button">${tr('sb_btn_del_page')}</button><button class="btn" id="sbBtnMovePageUp" type="button">${tr('sb_btn_move_up')}</button><button class="btn" id="sbBtnMovePageDown" type="button">${tr('sb_btn_move_down')}</button><button class="btn" id="sbBtnPrevPage" type="button">${tr('sb_btn_prev_page')}</button><button class="btn" id="sbBtnNextPage" type="button">${tr('sb_btn_next_page')}</button><input class="langSel" id="sbGotoPageInput" type="number" min="1" step="1" placeholder="${tr('sb_ph_page_number')}" title="${tr('sb_btn_goto_page')}" style="width:88px;" /><button class="btn" id="sbBtnGotoPage" type="button">${tr('sb_btn_go')}</button>`;
     row1.insertBefore(pageGroup, row1.children[1] || null);
     initScrapbookSearchWindow();
     const input = document.createElement('input');
@@ -18115,6 +18182,10 @@ document.addEventListener("keydown", (e) => {
     $('sbBtnMovePageDown').onclick = async () => { const cur = getCurrentPage(); if (cur) await movePage(cur.id, 1); };
     $('sbBtnPrevPage').onclick = async () => { await stepPage(-1); };
     $('sbBtnNextPage').onclick = async () => { await stepPage(1); };
+    const gotoInput = $('sbGotoPageInput');
+    const gotoBtn = $('sbBtnGotoPage');
+    if (gotoBtn) gotoBtn.onclick = async () => { await goToPageNumber(gotoInput ? gotoInput.value : 1); };
+    if (gotoInput) gotoInput.addEventListener('keydown', async (e) => { if (e.key === 'Enter') { e.preventDefault(); await goToPageNumber(gotoInput.value); } });
     input.onchange = async () => {
       const file = input.files && input.files[0]; input.value = '';
       if (!file) return;
