@@ -4092,6 +4092,8 @@ function newUrlElement(x,y){
 function setStatus(msg){
   const s = $("status");
   if (s) s.textContent = msg;
+  const cs = $("compactStatus");
+  if (cs) cs.textContent = msg;
   hud.textContent = msg;
 }
 
@@ -4110,6 +4112,23 @@ function applyExportGuardUi(){
   for (const id of EXPORT_BUTTON_IDS){
     const btn = $(id);
     if (btn) btn.disabled = !!exportGuardActive;
+  }
+  // Also lock/unlock the compact Export dropdown so it can't be opened mid-export
+  const compactExportDetails = $('compactMenuExport');
+  const compactExportSummary = compactExportDetails
+    ? compactExportDetails.querySelector('summary')
+    : null;
+  if (compactExportDetails && compactExportSummary) {
+    if (exportGuardActive) {
+      compactExportDetails.removeAttribute('open'); // close if open
+      compactExportSummary.style.pointerEvents = 'none';
+      compactExportSummary.style.opacity = '0.55';
+      compactExportSummary.style.cursor = 'not-allowed';
+    } else {
+      compactExportSummary.style.pointerEvents = '';
+      compactExportSummary.style.opacity = '';
+      compactExportSummary.style.cursor = '';
+    }
   }
 }
 
@@ -18129,6 +18148,17 @@ document.addEventListener("keydown", (e) => {
     root.querySelector('#sbNextPage').onclick = async () => { await stepPage(1); };
     root.querySelector('#sbApplyTemplateCurrent').onclick = async () => { await applyTemplateToCurrentPage(); };
     ensureCurrentPageCardVisible();
+    syncPageNumberInputs();
+  }
+  function syncPageNumberInputs(){
+    if (!ScrapbookState?.doc?.pages) return;
+    const pages = ScrapbookState.doc.pages;
+    const idx = pages.findIndex(p => p.id === ScrapbookState.currentPageId);
+    const pageNum = idx >= 0 ? String(idx + 1) : '';
+    const inp1 = $('sbGotoPageInput');
+    const inp2 = $('compactGotoPageInput');
+    if (inp1) inp1.value = pageNum;
+    if (inp2) inp2.value = pageNum;
   }
   async function switchToPage(pageId, opts = {}){
     if (!ScrapbookState || pageId === ScrapbookState.currentPageId) return;
@@ -18330,14 +18360,19 @@ document.addEventListener("keydown", (e) => {
     wrap.insertBefore(docSidebar, wrap.firstElementChild);
 
     const row1 = document.querySelector('#topbar .topbarRow');
+    // Move the toggle button (☰) into docGroup as its first child so they
+    // share the same flex container and always appear on the same line.
+    const toggleBtn = row1.firstElementChild;
+    row1.removeChild(toggleBtn);
     const docGroup = document.createElement('div');
     docGroup.className = 'topbarGroup scrapbookGroup';
     docGroup.innerHTML = `<button class="btn" id="sbBtnNewDoc" type="button">${tr('sb_btn_new_doc')}</button><button class="btn" id="sbBtnImportDoc" type="button">${tr('sb_btn_import_doc')}</button><button class="btn" id="sbBtnExportDoc" type="button">${tr('sb_btn_export_doc')}</button><button class="btn" id="sbBtnExportAllPng" type="button">${tr('sb_btn_export_zip')}</button><button class="btn" id="sbBtnExportPrint" type="button">${tr('sb_btn_export_print')}</button><button class="btn" id="sbBtnExportPdf" type="button">${tr('sb_btn_export_pdf')}</button><button class="btn" id="sbBtnPresent" type="button">${tr('sb_btn_present')}</button><button class="btn" id="sbBtnSearch" type="button">${tr('sb_btn_search')}</button>`;
+    docGroup.insertBefore(toggleBtn, docGroup.firstElementChild);
     row1.insertBefore(docGroup, row1.firstElementChild);
     const pageGroup = document.createElement('div');
     pageGroup.className = 'topbarGroup scrapbookGroup';
     pageGroup.innerHTML = `<button class="btn" id="sbBtnNewPage" type="button">${tr('sb_btn_new_page')}</button><button class="btn" id="sbBtnDupPage" type="button">${tr('sb_btn_dup_page')}</button><button class="btn" id="sbBtnDeletePage" type="button">${tr('sb_btn_del_page')}</button><button class="btn" id="sbBtnMovePageUp" type="button">${tr('sb_btn_move_up')}</button><button class="btn" id="sbBtnMovePageDown" type="button">${tr('sb_btn_move_down')}</button><button class="btn" id="sbBtnPrevPage" type="button">${tr('sb_btn_prev_page')}</button><button class="btn" id="sbBtnNextPage" type="button">${tr('sb_btn_next_page')}</button><input class="langSel" id="sbGotoPageInput" type="number" min="1" step="1" placeholder="${tr('sb_ph_page_number')}" title="${tr('sb_btn_goto_page')}" style="width:88px;" /><button class="btn" id="sbBtnGotoPage" type="button">${tr('sb_btn_go')}</button>`;
-    row1.insertBefore(pageGroup, row1.children[1] || null);
+    row1.insertBefore(pageGroup, docGroup.nextSibling);
     initScrapbookSearchWindow();
     installCompactToolbar();
     setToolbarLayoutMode(loadToolbarLayoutMode());
