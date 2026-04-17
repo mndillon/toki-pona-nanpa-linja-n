@@ -2863,7 +2863,41 @@ function wireHaloControls() {
 
         const compact = rawMatch.replace(/\s+/g, "");
         if (compact.length < 5) continue;
-        if (!isValidNanpaLinjanProperName(compact)) continue;
+
+        if (!isValidNanpaLinjanProperName(compact)) {
+          // The greedy {0,20} repetition swallowed multiple identifiers (or TP
+          // words between them) into one invalid span — this happens when several
+          // proper names appear on the same line separated by plain TP words.
+          // Recovery: walk the space boundaries of rawMatch from shortest to
+          // longest prefix, emit the first valid sub-name found, then back the
+          // regex up to start+1 so the remaining names in the region are picked
+          // up on the next iterations.
+          const wsPositions = [];
+          for (let wi = 0; wi < rawMatch.length; wi++) {
+            if (rawMatch[wi] === ' ' || rawMatch[wi] === '\t') wsPositions.push(wi);
+          }
+          for (const wsIdx of wsPositions) {
+            const prefix = rawMatch.slice(0, wsIdx);
+            const prefixCompact = prefix.replace(/\s+/g, '');
+            if (prefixCompact.length < 5) continue;
+            if (!isValidNanpaLinjanProperName(prefixCompact)) continue;
+            // Valid sub-name found — emit it using the same logic as the main path.
+            let subCore = prefixCompact.slice(0, -1);
+            let subHasPercent = false;
+            if (/noke$/i.test(subCore)) {
+              subHasPercent = true;
+              subCore = subCore.slice(0, -4);
+              if (subCore.length < 2) break;
+            }
+            const subCoreCaps = subCore.toUpperCase();
+            const subCaps = subHasPercent ? (subCoreCaps + 'OKN') : (subCoreCaps + 'N');
+            hits.push({ kind: 'name', index: start, end: start + prefix.length, caps: subCaps });
+            break;
+          }
+          // Back up so subsequent proper names in this region are not skipped.
+          re.lastIndex = start + 1;
+          continue;
+        }
 
        // compact ends with 'n' by regex + validation
         let core = compact.slice(0, -1);
