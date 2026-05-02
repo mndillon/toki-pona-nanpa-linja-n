@@ -17,6 +17,9 @@ const DEFAULT_DB_NAME = 'nanpaLinjaNFontPairs';
 const DEFAULT_DB_VERSION = 1;
 const DEFAULT_STORE = 'pairs';
 const DEFAULT_CHANGED_EVENT = 'nanpa-fonts-changed';
+const DEFAULT_CARTOUCHE_COMMA_TALLY_MARKS = true;
+const DEFAULT_CARTOUCHE_TALLY_MODE = 'ucsur';
+const VALID_CARTOUCHE_TALLY_MODES = new Set(['ucsur', 'comma', 'manual']);
 
 function byIdOrElement(value) {
   if (!value) return null;
@@ -47,6 +50,21 @@ function cleanString(value, fallback = '') {
   const s = String(value ?? '').trim();
   return s || fallback;
 }
+
+function normalizeCartoucheTallyMode(value) {
+  const s = String(value ?? '').trim().toLowerCase();
+  return VALID_CARTOUCHE_TALLY_MODES.has(s) ? s : DEFAULT_CARTOUCHE_TALLY_MODE;
+}
+
+function normalizeStoredSettings(settings = null) {
+  const src = (settings && typeof settings === 'object') ? settings : {};
+  return {
+    ...src,
+    cartoucheCommaTallyMarks: src.cartoucheCommaTallyMarks !== false,
+    cartoucheTallyMode: normalizeCartoucheTallyMode(src.cartoucheTallyMode),
+  };
+}
+
 
 function nowIso() {
   return new Date().toISOString();
@@ -125,7 +143,7 @@ function recordToStoredShape(record, fallbackLiteralOptions = DEFAULT_TEXT_FONT_
     createdAt: cleanString(record.createdAt || nowIso()),
     updatedAt: cleanString(record.updatedAt || nowIso()),
     support: record.support || null,
-    settings: record.settings || null,
+    settings: normalizeStoredSettings(record.settings || null),
     notes: record.notes || null,
     metadataSuffix: cleanString(record.metadataSuffix || '-nanpa-linja-n'),
   };
@@ -427,6 +445,33 @@ export function createSitelenFontPairController({
     };
   }
 
+  function getPresetTallySettings(preset = getActivePreset()) {
+    return normalizeStoredSettings(preset?.settings || preset?.__pairRecord?.settings || null);
+  }
+
+  function buildRendererParserConfig({ preset = getActivePreset(), baseParser = {} } = {}) {
+    const tally = getPresetTallySettings(preset);
+    return {
+      ...(baseParser || {}),
+      cartoucheCommaTallyMarks: tally.cartoucheCommaTallyMarks !== false,
+      cartoucheTallyMode: normalizeCartoucheTallyMode(tally.cartoucheTallyMode),
+    };
+  }
+
+  function buildRendererConfig({ textFontOptionKey = getSelectedTextFontOptionKey(), preset = getActivePreset(), baseConfig = {} } = {}) {
+    return {
+      ...(baseConfig || {}),
+      fonts: {
+        ...((baseConfig || {}).fonts || {}),
+        roles: {
+          ...buildFontRoles({ textFontOptionKey, preset }),
+          ...(((baseConfig || {}).fonts || {}).roles || {}),
+        },
+      },
+      parser: buildRendererParserConfig({ preset, baseParser: (baseConfig || {}).parser || {} }),
+    };
+  }
+
   function uniqueConfiguredFontFamilies(args = {}) {
     return uniq(Object.values(buildFontRoles(args)));
   }
@@ -720,6 +765,198 @@ export function createSitelenFontPairController({
     return { fontKey: stored.fontKey, preset, record: stored };
   }
 
+  async function syncPreloadedFontPairsFromManifest({
+    manifestUrl = "./fonts/preloaded-font-pairs.manifest.json",
+    dbName = DEFAULT_DB_NAME,
+    dbVersion = DEFAULT_DB_VERSION,
+    storeName = DEFAULT_STORE,
+    force = false,
+    onlyIfExisting = true
+  } = {}) {
+    if (typeof indexedDB === "undefined" || !indexedDB) {
+      return { updated: 0, skipped: 0, reason: "indexeddb-unavailable" };
+    }
+
+    let manifest;
+    try {
+      const res = await fetch(manifestUrl, { cache: "no-store" });
+      if (!res.ok) {
+        console.warn("[preloaded-fonts] manifest not found:", manifestUrl, res.status);
+        return { updated: 0, skipped: 0, reason: "manifest-not-found" };
+      }
+      manifest = await res.json();
+    } catch (err) {
+      console.warn("[preloaded-fonts] manifest load failed:", err);
+      return { updated: 0, skipped: 0, reason: "manifest-load-failed" };
+    }
+
+    const pairs = Array.isArray(manifest?.pairs) ? manifest.pairs : [];
+    if (!pairs.length) return { updated: 0, skipped: 0, reason: "empty-manifest" };
+
+    const db = await openIndexedDb({
+      dbName,
+      dbVersion,
+      storeName
+    });
+
+    let updated = 0;
+    let skipped = 0;
+
+    try {
+      for (const pair of pairs) {
+        const fontKey = cleanString(pair.fontKey);
+        const rev = cleanString(pair.rev);
+        const baseUrl = cleanString(pair.baseUrl);
+        const companionUrl = cleanString(pair.companionUrl);
+
+        if (!fontKey || !rev || !baseUrl || !companionUrl) {
+          skipped++;
+          continue;
+        }
+
+        const existing = await withStore(db, storeName, "readonly", async (store) => {
+          return await requestToPromise(store.get(fontKey));
+        });
+
+        // This avoids installing every built-in into IndexedDB automatically.
+        // It only updates records that are already present.
+        if (onlyIfExisting && !existing) {
+          skipped++;
+          continue;
+        }
+
+        const settingsRev = cleanString(pair.settingsRev || rev);
+        const fontRev = cleanString(pair.fontRev || rev);
+
+        const existingManifestRev = String(existing?.manifestRev || existing?.preloadedRev || "");
+        const existingFontRev = String(existing?.fontRev || existing?.preloadedFontRev || existingManifestRev);
+        const existingSettingsRev = String(existing?.settingsRev || existing?.preloadedSettingsRev || existingManifestRev);
+
+        const needsFontUpdate = !existing || existingFontRev !== fontRev || !existing?.baseBlob || !existing?.companionBlob;
+        const needsSettingsUpdate = !existing || existingSettingsRev !== settingsRev;
+
+        if (!force && existing && !needsFontUpdate && !needsSettingsUpdate) {
+          skipped++;
+          continue;
+        }
+
+        const baseFilename = cleanString(pair.baseFilename || baseUrl.split("/").pop() || "preloaded-base.ttf");
+        const companionFilename = cleanString(pair.companionFilename || companionUrl.split("/").pop() || "preloaded-companion.ttf");
+
+        let baseBlob = existing?.baseBlob || null;
+        let companionBlob = existing?.companionBlob || null;
+
+        if (force || needsFontUpdate) {
+          let baseBuffer;
+          let companionBuffer;
+
+          try {
+            const [baseRes, companionRes] = await Promise.all([
+              fetch(baseUrl, { cache: "no-store" }),
+              fetch(companionUrl, { cache: "no-store" })
+            ]);
+
+            if (!baseRes.ok) throw new Error(`Failed to fetch base font ${baseUrl}: ${baseRes.status}`);
+            if (!companionRes.ok) throw new Error(`Failed to fetch companion font ${companionUrl}: ${companionRes.status}`);
+
+            [baseBuffer, companionBuffer] = await Promise.all([
+              baseRes.arrayBuffer(),
+              companionRes.arrayBuffer()
+            ]);
+          } catch (err) {
+            console.warn("[preloaded-fonts] font fetch failed:", fontKey, err);
+            skipped++;
+            continue;
+          }
+
+          baseBlob = new Blob([baseBuffer], {
+            type: normalizeFormat(pair.baseFormat || inferFormatFromFilename(baseFilename)) === "opentype"
+              ? "font/otf"
+              : "font/ttf"
+          });
+
+          companionBlob = new Blob([companionBuffer], {
+            type: normalizeFormat(pair.companionFormat || inferFormatFromFilename(companionFilename)) === "opentype"
+              ? "font/otf"
+              : "font/ttf"
+          });
+        }
+
+        const stored = recordToStoredShape({
+          ...(existing || {}),
+          fontKey,
+          fontLabel: cleanString(pair.label || existing?.fontLabel || existing?.label || fontKey, fontKey),
+          label: cleanString(pair.label || existing?.label || existing?.fontLabel || fontKey, fontKey),
+
+          baseFamily: cleanString(pair.baseFamily || existing?.baseFamily || pair.textFamily || fontKey, fontKey),
+          companionFamily: cleanString(
+            pair.companionFamily || existing?.companionFamily || pair.cartoucheFamily || `${fontKey}-nanpa-linja-n`,
+            `${fontKey}-nanpa-linja-n`
+          ),
+
+          baseFilename,
+          companionFilename,
+          baseFormat: normalizeFormat(pair.baseFormat || existing?.baseFormat || inferFormatFromFilename(baseFilename)),
+          companionFormat: normalizeFormat(pair.companionFormat || existing?.companionFormat || inferFormatFromFilename(companionFilename)),
+
+          baseBlob,
+          companionBlob,
+
+          parserMode: cleanString(pair.parserMode || existing?.parserMode || "sitelen-seli-kiwen"),
+          sourceType: cleanString(existing?.sourceType || "indexeddb"),
+          editable: existing?.editable !== false,
+
+          // Manifest-managed/preloaded font pairs should use manifest settings.
+          // This prevents stale IndexedDB cartouche/tally settings surviving after a bundled update.
+          settings: pair.settings || existing?.settings || null,
+          support: pair.support || existing?.support || null,
+
+          metadataSuffix: cleanString(pair.metadataSuffix || existing?.metadataSuffix || "-nanpa-linja-n"),
+          notes: existing?.notes || null,
+
+          manifestRev: rev,
+          preloadedRev: rev,
+          fontRev,
+          preloadedFontRev: fontRev,
+          settingsRev,
+          preloadedSettingsRev: settingsRev,
+          preloadedManifestUrl: manifestUrl,
+          updatedAt: nowIso(),
+          createdAt: cleanString(existing?.createdAt || nowIso())
+        });
+
+        // Preserve manifest metadata even though recordToStoredShape only normalizes
+        // the known fields.
+        stored.manifestRev = rev;
+        stored.preloadedRev = rev;
+        stored.fontRev = fontRev;
+        stored.preloadedFontRev = fontRev;
+        stored.settingsRev = settingsRev;
+        stored.preloadedSettingsRev = settingsRev;
+        stored.preloadedManifestUrl = manifestUrl;
+
+        await withStore(db, storeName, "readwrite", async (store) => {
+          await requestToPromise(store.put(stored));
+        });
+
+        updated++;
+      }
+    } finally {
+      try { db.close(); } catch {}
+    }
+
+    if (updated > 0) {
+      dispatchFontsChanged({
+        controller: "sitelen-font-pair-controller",
+        type: "preloaded-manifest-sync",
+        manifestUrl,
+        updated
+      });
+    }
+
+    return { updated, skipped };
+  }
+
   async function removeStoredPair(fontKey) {
     const key = cleanString(fontKey);
     if (!key) return false;
@@ -942,6 +1179,9 @@ export function createSitelenFontPairController({
     getTextFontOptionsForPreset,
     resolveLiteralFontFamily,
     buildFontRoles,
+    getPresetTallySettings,
+    buildRendererParserConfig,
+    buildRendererConfig,
     uniqueConfiguredFontFamilies,
     ensureFamiliesLoaded,
     waitForConfiguredFonts,
@@ -965,6 +1205,7 @@ export function createSitelenFontPairController({
     listStoredFontPairs,
     getStoredFontPair,
     saveFontPairToIndexedDb,
+    syncPreloadedFontPairsFromManifest,
     removeStoredPair,
     hydrateDynamicPresetsFromDb,
     listDynamicPresets,

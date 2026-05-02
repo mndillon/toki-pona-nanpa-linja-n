@@ -86,7 +86,7 @@ label { display:grid; gap:6px; font-size:.92rem; min-width:0; }
   max-width:100%;
   padding:8px;
   overflow-x:auto;
-  overflow-y:hidden;
+  overflow-y:auto;
   background:#efe4cf;
   display:block;
   white-space:nowrap;
@@ -180,6 +180,7 @@ input[type="range"] {
         <label>Preview cartouche string<textarea id="previewString" class="mono">󱦐󱤽󱤊󱥀󱥆󱥳󱤊󱥮󱤊󱥀󱤊󱤟󱤊󱥗󱤊󱥀󱤈󱤭󱤊󱥀󱤊󱤟󱤊󱥀󱥱󱤺󱤊󱥑󱤊󱥀󱥄󱥀󱤊󱤓󱤊󱥀󱤌󱥀󱥇󱥻󱤊󱤽󱦑
 󱦐󱤽󱤊󱤓󱤊󱥀󱥇󱤔󱥇󱥗󱤊󱥀󱥄󱥀󱥄󱥀󱤈󱤽󱦑
 󱦐󱤽󱤊󱥮󱤊󱥀󱤌󱥮󱤊󱥀󱥱󱥀󱤊󱤗󱤊󱥀󱤌󱥗󱤊󱥀󱤊󱤗󱤊󱥳󱤊󱤺󱤊󱤽󱦑
+󱤰󱦐󱤀󱤳󱦞󱦞󱦞󱦞󱤕󱦞󱦞󱦑󱥗
         </textarea></label>
         <label>Font label<input id="fontLabel" type="text" maxlength="120" /></label>
         <div class="row">
@@ -214,6 +215,18 @@ input[type="range"] {
         <div class="grid2"><label>Two-thirds vertical offset<input id="twoThirdsOffset" type="range" min="-500" max="200" value="0" /><div class="tiny mono" id="twoThirdsOffsetValue">0</div></label><label>Quarter vertical offset<input id="quarterOffset" type="range" min="-500" max="200" value="0" /><div class="tiny mono" id="quarterOffsetValue">0</div></label></div>
         <div class="grid2"><label>Two-thirds width factor<input id="twoThirdsWidth" type="range" min="0.20" max="1.20" step="0.01" value="1" /><div class="tiny mono" id="twoThirdsWidthValue">1.00</div></label><label>Quarter width factor<input id="quarterWidth" type="range" min="0.05" max="1.20" step="0.01" value="1" /><div class="tiny mono" id="quarterWidthValue">1.00</div></label></div>
         <label>Metadata suffix<input id="metadataSuffix" type="text" value="-nanpa-linja-n" /></label>
+        <label>Cartouche tally mode
+          <select id="cartoucheTallyMode">
+            <option value="ucsur">Normal UCSUR: comma/tally → U+F199E</option>
+            <option value="comma">Comma compatibility: keep U+002C</option>
+            <option value="manual">Manual drawing: renderer draws tallies</option>
+          </select>
+        </label>
+        <label class="row" style="justify-content:flex-start;align-items:center;gap:8px;">
+          <input id="cartoucheCommaTallyMarks" type="checkbox" checked style="width:auto;" />
+          <span>Enable comma/tally handling inside cartouches</span>
+        </label>
+        <div class="tiny">These tally settings are saved with the selected font pair and used by this preview through the renderer library.</div>
         <div class="row"><button id="btnGenerate">Generate / fallback companion</button><button id="btnOverwrite">Overwrite saved companion</button><button id="btnDownloadCompanion">Download companion</button></div>
         <div class="tiny">This browser-only build always guarantees a usable nanpa-linja-n companion font by creating a copied-and-renamed fallback nanpa-linja-n companion font when automatic binary cartouche rewriting is unavailable.</div>
         <div id="editStatus" class="status"></div>
@@ -223,7 +236,8 @@ input[type="range"] {
 </main>
 
 <script type="module">
-  import { createSitelenFontPairController } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=5";
+  import { createSitelenFontPairController } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=13";
+  import { SitelenRenderer } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31";
 
   const WASM_MODULE_URL = "./wasm/nanpa_font_wasm.js?v=59";
   const DEFAULT_SETTINGS = {
@@ -232,6 +246,8 @@ input[type="range"] {
     twoThirdsWidthFactor: 1,
     quarterWidthFactor: 1,
     metadataSuffix: "-nanpa-linja-n",
+    cartoucheCommaTallyMarks: true,
+    cartoucheTallyMode: "ucsur",
   };
   const KNOWN_TRANSFORM_FAMILIES = [
     "fairfaxhd",
@@ -285,6 +301,8 @@ input[type="range"] {
     twoThirdsWidthValue: document.getElementById("twoThirdsWidthValue"),
     quarterWidthValue: document.getElementById("quarterWidthValue"),
     metadataSuffix: document.getElementById("metadataSuffix"),
+    cartoucheTallyMode: document.getElementById("cartoucheTallyMode"),
+    cartoucheCommaTallyMarks: document.getElementById("cartoucheCommaTallyMarks"),
     previewString: document.getElementById("previewString"),
     fontLabel: document.getElementById("fontLabel"),
     previewSizePreset: document.getElementById("previewSizePreset"),
@@ -296,6 +314,7 @@ input[type="range"] {
   let selectedKnown = null;
   let selectedPairRecord = null;
   let wasmApiPromise = null;
+  let previewRendererPromise = null;
 
   function setStatus(el, msg, kind = "") {
     el.textContent = String(msg || "");
@@ -458,6 +477,46 @@ input[type="range"] {
     }
   }
 
+
+  async function saveSelectedSettings({ silent = false } = {}) {
+    const rec = selectedPairRecord;
+    const pairRecord = rec?.pairRecord;
+    if (!rec || !pairRecord || rec.editable === false) return false;
+    try {
+      const settings = buildStoredSettings(currentSettings());
+      await controller.saveFontPairToIndexedDb({
+        ...pairRecord,
+        fontKey: pairRecord.fontKey || rec.fontKey || rec.key,
+        label: normalizeFontLabelValue(els.fontLabel?.value, pairRecord.label || pairRecord.baseFamily),
+        fontLabel: normalizeFontLabelValue(els.fontLabel?.value, pairRecord.label || pairRecord.baseFamily),
+        settings,
+        metadataSuffix: settings.metadataSuffix,
+        sourceType: "indexeddb",
+        editable: true,
+      });
+      const savedKey = pairRecord.fontKey || rec.fontKey || rec.key;
+      selectedKnown = savedKey;
+      if (typeof controller.hydrateDynamicPresetsFromDb === "function") {
+        await controller.hydrateDynamicPresetsFromDb({ force: true });
+      }
+      selectedPairRecord = await controller.resolvePresetRecord(savedKey) || rec;
+      updateSelectedDetails();
+      await refreshKnownList();
+      await renderSelectedPreview();
+      if (!silent) setStatus(els.editStatus, "Font tally/settings saved.", "ok");
+      return true;
+    } catch (err) {
+      console.error("Could not save font settings", err);
+      setStatus(els.editStatus, `Could not save font settings: ${err?.message || err}`, "warn");
+      return false;
+    }
+  }
+
+  function normalizeCartoucheTallyMode(value) {
+    const s = String(value || "").trim().toLowerCase();
+    return (s === "comma" || s === "manual" || s === "ucsur") ? s : DEFAULT_SETTINGS.cartoucheTallyMode;
+  }
+
   function currentSettings() {
     return {
       twoThirdsVerticalOffset: Number(els.twoThirdsOffset.value || DEFAULT_SETTINGS.twoThirdsVerticalOffset),
@@ -465,6 +524,8 @@ input[type="range"] {
       twoThirdsWidthFactor: Number(els.twoThirdsWidth.value || DEFAULT_SETTINGS.twoThirdsWidthFactor),
       quarterWidthFactor: Number(els.quarterWidth.value || DEFAULT_SETTINGS.quarterWidthFactor),
       metadataSuffix: String(els.metadataSuffix.value || DEFAULT_SETTINGS.metadataSuffix),
+      cartoucheCommaTallyMarks: !!els.cartoucheCommaTallyMarks?.checked,
+      cartoucheTallyMode: normalizeCartoucheTallyMode(els.cartoucheTallyMode?.value),
     };
   }
 
@@ -526,27 +587,78 @@ input[type="range"] {
     canvas.height = Math.max(40, Math.ceil(height));
   }
 
-  async function renderFontPreview(canvas, family, text, size) {
+  function splitPreviewLines(text) {
+    return String(text ?? "").replace(/\r\n/g, "\n").split("\n");
+  }
+
+  function previewTextContainsUcsur(text) {
+    return /[\u{F1900}-\u{F19FF}]/u.test(String(text ?? ""));
+  }
+
+  async function getPreviewRenderer() {
+    if (!previewRendererPromise) {
+      previewRendererPromise = SitelenRenderer.create({});
+    }
+    return await previewRendererPromise;
+  }
+
+  function buildRendererPreviewConfig(family, size, settings = currentSettings()) {
+    return {
+      layout: {
+        fontPx: Math.max(8, Number(size || 56)),
+        paddingPx: 18,
+        lineGapPx: Math.max(4, Math.ceil(Number(size || 56) * 0.32)),
+        align: "left",
+      },
+      paint: {
+        fillStyle: "#111111",
+        halo: {
+          enabled: false,
+          color: "#FFFFFF",
+          widthPx: 0,
+        },
+      },
+      parser: {
+        cartoucheCommaTallyMarks: settings.cartoucheCommaTallyMarks !== false,
+        cartoucheTallyMode: normalizeCartoucheTallyMode(settings.cartoucheTallyMode),
+        mixedStyle: "short",
+      },
+      fonts: {
+        roles: {
+          word: family,
+          text: family,
+          cartouche: family,
+          number: family,
+          date: family,
+          time: family,
+          literal: "system-ui",
+          unknown: "system-ui",
+        },
+      },
+    };
+  }
+
+  async function renderFontPreview(canvas, family, text, size, settings = currentSettings()) {
     clearCanvas(canvas);
-    if (!family) return;
-    await document.fonts.load(`${size}px "${family}"`, text);
+    if (!canvas || !family) return;
+
+    const px = Math.max(8, Number(size || 56));
+    await controller.ensureFamiliesLoaded(px, [family]);
+    await document.fonts.load(`${px}px "${family}"`, text || "󱦐󱦑");
     await document.fonts.ready;
-    const measure = canvas.getContext("2d");
-    measure.textBaseline = "alphabetic";
-    measure.font = `${size}px "${family}"`;
-    const metrics = measure.measureText(text);
-    const width = Math.max(40, Math.ceil(metrics.width + 40));
-    const ascent = Math.ceil(metrics.actualBoundingBoxAscent || size * 0.8);
-    const descent = Math.ceil(metrics.actualBoundingBoxDescent || size * 0.3);
-    const height = Math.max(40, ascent + descent + 40);
-    resizeCanvas(canvas, width, height);
+
+    const renderer = await getPreviewRenderer();
+    const config = buildRendererPreviewConfig(family, px, settings);
+    const rawText = String(text ?? "");
+    const rendered = previewTextContainsUcsur(rawText)
+      ? await renderer.renderUcsurToNewCanvas({ lines: splitPreviewLines(rawText), ...config })
+      : await renderer.renderTextToNewCanvas({ input: rawText, ...config });
+
+    resizeCanvas(canvas, rendered.canvas.width, rendered.canvas.height);
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#efe4cf";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#111";
-    ctx.textBaseline = "alphabetic";
-    ctx.font = `${size}px "${family}"`;
-    ctx.fillText(text, 20, 20 + ascent);
+    ctx.drawImage(rendered.canvas, 0, 0);
   }
 
   async function renderSelectedPreview() {
@@ -559,8 +671,9 @@ input[type="range"] {
       return;
     }
     await controller.ensureFamiliesLoaded(size, [pair.preset.textFamily, pair.preset.cartoucheFamily]);
-    await renderFontPreview(els.canvasOriginal, pair.preset.textFamily, text, size);
-    await renderFontPreview(els.canvasCompanion, pair.preset.cartoucheFamily, text, size);
+    const settings = currentSettings();
+    await renderFontPreview(els.canvasOriginal, pair.preset.textFamily, text, size, settings);
+    await renderFontPreview(els.canvasCompanion, pair.preset.cartoucheFamily, text, size, settings);
   }
 
   function applySettingsToControls(settings) {
@@ -570,6 +683,8 @@ input[type="range"] {
     els.twoThirdsWidth.value = String(s.twoThirdsWidthFactor ?? DEFAULT_SETTINGS.twoThirdsWidthFactor);
     els.quarterWidth.value = String(s.quarterWidthFactor ?? DEFAULT_SETTINGS.quarterWidthFactor);
     els.metadataSuffix.value = String(s.metadataSuffix || DEFAULT_SETTINGS.metadataSuffix);
+    if (els.cartoucheCommaTallyMarks) els.cartoucheCommaTallyMarks.checked = s.cartoucheCommaTallyMarks !== false;
+    if (els.cartoucheTallyMode) els.cartoucheTallyMode.value = normalizeCartoucheTallyMode(s.cartoucheTallyMode);
     syncControlLabels();
   }
 
@@ -580,6 +695,8 @@ input[type="range"] {
     els.btnGenerate.disabled = !editable;
     els.btnUploadCompanion.disabled = !editable && !!selectedPairRecord;
     if (els.fontLabel) els.fontLabel.disabled = !editable;
+    if (els.cartoucheTallyMode) els.cartoucheTallyMode.disabled = !editable;
+    if (els.cartoucheCommaTallyMarks) els.cartoucheCommaTallyMarks.disabled = !editable;
   }
 
   async function ensureWasmApi() {
@@ -692,6 +809,8 @@ console.log("[WASM generate_companion] rewrittenNames:", result?.rewrittenNames 
       twoThirdsWidthFactor: Number(settings.twoThirdsWidthFactor || 1),
       quarterWidthFactor: Number(settings.quarterWidthFactor || 1),
       metadataSuffix: String(settings.metadataSuffix || DEFAULT_SETTINGS.metadataSuffix),
+      cartoucheCommaTallyMarks: settings.cartoucheCommaTallyMarks !== false,
+      cartoucheTallyMode: normalizeCartoucheTallyMode(settings.cartoucheTallyMode),
     };
   }
 
@@ -1064,6 +1183,12 @@ const nextCompanionFilename = normalizeCompanionFilename(
   });
   for (const el of [els.twoThirdsOffset, els.quarterOffset, els.twoThirdsWidth, els.quarterWidth]) {
     el.addEventListener("input", syncControlLabels);
+  }
+  for (const el of [els.cartoucheTallyMode, els.cartoucheCommaTallyMarks]) {
+    if (!el) continue;
+    el.addEventListener("change", async () => {
+      await saveSelectedSettings();
+    });
   }
   els.fontLabel.addEventListener("input", () => {
     const fallback = getDefaultFontLabelFromRecord(selectedPairRecord?.pairRecord || null);

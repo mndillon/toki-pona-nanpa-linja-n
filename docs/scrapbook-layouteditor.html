@@ -1558,7 +1558,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=4";
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=13";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
 
 (() => {
@@ -2728,6 +2728,12 @@ function normalizeTextFontOptionKeyForPreset(key, presetKey){
   const fallback = String(getRenderFontPreset(presetKey)?.literalFamily || FONT_FAMILY_LITERAL);
   return opts.has(raw) ? raw : fallback;
 }
+function getDefaultQuotedTextFontOptionForPreset(presetKey){
+  return normalizeTextFontOptionKeyForPreset(
+    FONT_FAMILY_LITERAL,
+    normalizeRenderFontPresetKey(presetKey || DEFAULTS.defaultRenderFontPreset)
+  );
+}
 function resolveTextFontFamilyForPreset(optionKey, presetKey){
   const preset = getRenderFontPreset(presetKey);
   const normalized = normalizeTextFontOptionKeyForPreset(optionKey, presetKey);
@@ -2750,7 +2756,10 @@ function normalizeLegacyRenderFontPresetKey(keyOrFamily){
 }
 function normalizeLegacyTextFontOptionKey(rawValue, presetKey){
   const raw = String(rawValue ?? "").trim();
-  if (!raw) return normalizeTextFontOptionKeyForPreset(Scene?.stage?.defaultTextFontOption || FONT_FAMILY_LITERAL, presetKey);
+
+  if (!raw) {
+    return getDefaultQuotedTextFontOptionForPreset(presetKey);
+  }
   if (raw === TEXT_FONT_OPTION_SITELEN || raw === TEXT_FONT_OPTION_NANPA_LINJA_N) return normalizeTextFontOptionKeyForPreset(raw, presetKey);
   const lower = raw.toLowerCase();
   if (lower === "patrickhand" || lower === "patrick hand" || lower === "patrick-head-font") return FONT_FAMILY_LITERAL;
@@ -2806,7 +2815,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/renderer-unknown-text-outline.js?v=48').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -14000,10 +14009,56 @@ function syncStageDefaultsUiFromScene(){
 
   if (bg)  bg.value  = rgbaOrHexToHex(st.bg, DEFAULTS.stageBg);
   if (expbg) {expbg.checked = !!Scene.stage.exportStageBackground;}
-  stageFontPairController.setActivePreset(normalizeRenderFontPresetKey(st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset), { persist: false });
-  stageFontPairController.setSelectedTextFontOption(normalizeTextFontOptionKeyForPreset(st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset), { persist: false });
-  if (drfp) drfp.value = normalizeRenderFontPresetKey(st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
-  if (dtfo) dtfo.value = normalizeTextFontOptionKeyForPreset(st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+
+  st.defaultRenderFontPreset = normalizeRenderFontPresetKey(
+    st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
+  );
+
+  // Rebuild the Default text font dropdown for the selected script preset first.
+  stageFontPairController.setActivePreset(st.defaultRenderFontPreset, { persist: false });
+
+  let desiredTextFontOption = normalizeTextFontOptionKeyForPreset(
+    st.defaultTextFontOption || FONT_FAMILY_LITERAL,
+    st.defaultRenderFontPreset
+  );
+
+  // Validate against the controller/preset option list.
+  const textOptions = getTextFontOptionsForPresetKey(st.defaultRenderFontPreset);
+  const allowedTextOptions = new Set(textOptions.map(([value]) => String(value)));
+
+  if (!allowedTextOptions.has(String(desiredTextFontOption))) {
+    desiredTextFontOption = getDefaultQuotedTextFontOptionForPreset(st.defaultRenderFontPreset);
+  }
+
+  // Validate against the actual DOM select too. This is what prevents the visible blank dropdown.
+  if (dtfo) {
+    const domAllowed = new Set(
+      Array.from(dtfo.options || []).map(opt => String(opt.value))
+    );
+
+    if (!domAllowed.has(String(desiredTextFontOption))) {
+      const patrickOption = Array.from(dtfo.options || []).find(opt =>
+        String(opt.value).toLowerCase() === String(FONT_FAMILY_LITERAL).toLowerCase() ||
+        String(opt.textContent || "").toLowerCase().includes("patrick")
+      );
+
+      if (patrickOption) {
+        desiredTextFontOption = patrickOption.value;
+      } else if (dtfo.options && dtfo.options.length > 0) {
+        desiredTextFontOption = dtfo.options[0].value;
+      } else {
+        desiredTextFontOption = FONT_FAMILY_LITERAL;
+      }
+    }
+  }
+
+  st.defaultTextFontOption = desiredTextFontOption;
+
+  stageFontPairController.setSelectedTextFontOption(st.defaultTextFontOption, { persist: false });
+
+  if (drfp) drfp.value = st.defaultRenderFontPreset;
+  if (dtfo) dtfo.value = st.defaultTextFontOption;
+
   if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
   if (df)  df.value  = rgbaOrHexToHex(st.defaultFill, DEFAULTS.defaultFill);
   if (dfe) {dfe.checked = !!Scene.stage.defaultFillEnabled;}
@@ -15695,6 +15750,37 @@ document.addEventListener("keydown", (e) => {
     setStatus(tr("status_loading"));
     try{
       await stageFontPairController.ready;
+
+      try {
+        const syncResult = await stageFontPairController.syncPreloadedFontPairsFromManifest({
+          manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
+          onlyIfExisting: false,
+          force: true
+        });
+
+        console.info("[scrapbook preloaded-fonts] sync result:", syncResult);
+
+        if (syncResult.updated > 0) {
+          await stageFontPairController.hydrateDynamicPresetsFromDb({ force: true });
+
+          stageFontPairController.resetFontLoadState?.();
+
+          sitelenRendererInstancePromises?.clear?.();
+          sitelenRasterJobs?.clear?.();
+          glyphRasterJobs?.clear?.();
+          glyphCache?.clear?.();
+          sitelenCache?.clear?.();
+
+          console.info(
+            "[scrapbook preloaded-fonts] active preset after hydrate:",
+            stageFontPairController.getActivePreset()
+          );
+        }
+      } catch (err) {
+        console.warn("[scrapbook preloaded-fonts] manifest sync failed:", err);
+      }
+
+
       Scene.stage.defaultRenderFontPreset = normalizeRenderFontPresetKey(Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
       Scene.stage.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(
         Scene.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
@@ -15705,7 +15791,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('./js/renderer-unknown-text-outline.js?v=48');
+        const rendererMod = await import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31');
         const NanpaParser = rendererMod?.NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
         pageMap = await cartoucheApi.resolvePageMap();
@@ -16616,7 +16702,12 @@ document.addEventListener("keydown", (e) => {
     st.bg = docDefaults.stageBg || st.bg || '#FFFFFF';
     st.exportStageBackground = !!docDefaults.exportStageBackground;
     st.defaultRenderFontPreset = normalizeRenderFontPresetKey(docDefaults.defaultRenderFontPreset || st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
-    st.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(docDefaults.defaultTextFontOption || st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, st.defaultRenderFontPreset);
+    
+    st.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(
+      docDefaults.defaultTextFontOption || FONT_FAMILY_LITERAL,
+      st.defaultRenderFontPreset
+    );
+
     st.defaultTextColor = docDefaults.defaultTextColor || st.defaultTextColor || DEFAULTS.defaultTextColor;
     st.defaultIgnoreUnknownText = !!(docDefaults.defaultIgnoreUnknownText ?? st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
     st.defaultFill = docDefaults.defaultFill ?? st.defaultFill ?? DEFAULTS.defaultFill;

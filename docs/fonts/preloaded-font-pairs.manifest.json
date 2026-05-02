@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "generated": "2026-05-02",
+  "pairs": [
+    {
+      "fontKey": "nasinNanpa",
+      "label": "nasin nanpa predefined",
+      "rev": "2026-05-02-004",
+      "parserMode": "sitelen-seli-kiwen",
+      "baseFamily": "TP-Nasin-Nanpa-Font",
+      "companionFamily": "TP-Cartouche-Font",
+      "baseFilename": "nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
+      "companionFilename": "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf",
+      "baseUrl": "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
+      "companionUrl": "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf",
+      "baseFormat": "opentype",
+      "companionFormat": "opentype",
+      "metadataSuffix": "-nanpa-linja-n",
+      "settings": {
+        "cartoucheCommaTallyMarks": true,
+        "cartoucheTallyMode": "manual"
+      }
+    },
+    {
+      "fontKey": "sitelenSeliKiwen",
+      "label": "sitelen seli kiwen predefined",
+      "rev": "2026-05-02-002",
+      "parserMode": "sitelen-seli-kiwen",
+      "baseFamily": "SSK-Juniko",
+      "companionFamily": "SSK-Juniko-Cartouche",
+      "baseFilename": "sitelenselikiwenjuniko.ttf",
+      "companionFilename": "sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf",
+      "baseUrl": "./fonts/sitelenselikiwenjuniko.ttf",
+      "companionUrl": "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf",
+      "baseFormat": "truetype",
+      "companionFormat": "truetype",
+      "metadataSuffix": "-nanpa-linja-n",
+      "settings": {
+        "cartoucheCommaTallyMarks": true,
+        "cartoucheTallyMode": "ucsur"
+      }
+    },
+    {
+      "fontKey": "fairfaxHd",
+      "label": "FairfaxHD predefined",
+      "rev": "2026-05-02-002",
+      "parserMode": "sitelen-seli-kiwen",
+      "baseFamily": "fairfaxHd",
+      "companionFamily": "fairfaxHd-Cartouche",
+      "baseFilename": "FairfaxHD.ttf",
+      "companionFilename": "FairfaxHD-nanpa-linja-n-good-kasi.ttf",
+      "baseUrl": "./fonts/FairfaxHD.ttf",
+      "companionUrl": "./fonts/FairfaxHD-nanpa-linja-n-good-kasi.ttf",
+      "baseFormat": "truetype",
+      "companionFormat": "truetype",
+      "metadataSuffix": "-nanpa-linja-n",
+      "settings": {
+        "cartoucheCommaTallyMarks": true,
+        "cartoucheTallyMode": "ucsur"
+      }
+    },
+    {
+      "fontKey": "fairfaxPonaHd",
+      "label": "FairfaxPonaHD predefined",
+      "rev": "2026-05-02-002",
+      "parserMode": "sitelen-seli-kiwen",
+      "baseFamily": "fairfaxPonaHd",
+      "companionFamily": "fairfaxPonaHd-Cartouche",
+      "baseFilename": "FairfaxPonaHD.ttf",
+      "companionFilename": "FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf",
+      "baseUrl": "./fonts/FairfaxPonaHD.ttf",
+      "companionUrl": "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf",
+      "baseFormat": "truetype",
+      "companionFormat": "truetype",
+      "metadataSuffix": "-nanpa-linja-n",
+      "settings": {
+        "cartoucheCommaTallyMarks": true,
+        "cartoucheTallyMode": "ucsur"
+      }
+    }
+  ]
+}

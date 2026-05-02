@@ -880,12 +880,12 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-unknown-text-outline.js?v=48";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
-    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js";
+    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=13";
 
     import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
     let pageMap = new Map();
@@ -1194,6 +1194,97 @@ nanpa #~WI.
       return sitelenFontController.buildFontRoles();
     }
 
+    const DEFAULT_CARTOUCHE_TALLY_SETTINGS = {
+      cartoucheCommaTallyMarks: true,
+      cartoucheTallyMode: "ucsur"
+    };
+
+    function normalizeCartoucheTallyMode(value) {
+      const s = String(value || "").trim().toLowerCase();
+      return (s === "comma" || s === "manual" || s === "ucsur")
+        ? s
+        : DEFAULT_CARTOUCHE_TALLY_SETTINGS.cartoucheTallyMode;
+    }
+
+    function collectOwnObjectsForFontExport(root, depth = 0, seen = new Set()) {
+      if (!root || typeof root !== "object" || seen.has(root) || depth > 3) return [];
+      seen.add(root);
+
+      const out = [root];
+      for (const key of [
+        "preset", "pairRecord", "record", "settings", "activePreset", "activeRecord",
+        "activePresetRecord", "selectedPairRecord", "selectedRecord", "currentPreset"
+      ]) {
+        const child = root[key];
+        if (child && typeof child === "object") {
+          out.push(...collectOwnObjectsForFontExport(child, depth + 1, seen));
+        }
+      }
+      return out;
+    }
+
+    function getControllerFontExportObjects() {
+      const out = [];
+      const methods = [
+        "getActivePresetRecord",
+        "getActiveRecord",
+        "getSelectedPairRecord",
+        "getSelectedRecord",
+        "getActivePairRecord",
+        "getCurrentRecord",
+        "getCurrentPreset"
+      ];
+
+      for (const name of methods) {
+        try {
+          if (typeof sitelenFontController?.[name] === "function") {
+            const value = sitelenFontController[name]();
+            if (value && typeof value === "object") out.push(value);
+          }
+        } catch (_) {}
+      }
+
+      for (const key of [
+        "activePresetRecord",
+        "activeRecord",
+        "selectedPairRecord",
+        "selectedRecord",
+        "activePairRecord",
+        "currentPreset",
+        "preset"
+      ]) {
+        try {
+          const value = sitelenFontController?.[key];
+          if (value && typeof value === "object") out.push(value);
+        } catch (_) {}
+      }
+
+      return out;
+    }
+
+    function getActiveFontPairSettings() {
+      const preset = getActiveFontPreset() || {};
+      const candidates = [preset, ...getControllerFontExportObjects()];
+      const merged = { ...DEFAULT_CARTOUCHE_TALLY_SETTINGS };
+
+      for (const obj of candidates.flatMap(o => collectOwnObjectsForFontExport(o))) {
+        if (!obj || typeof obj !== "object") continue;
+        if (obj.settings && typeof obj.settings === "object") Object.assign(merged, obj.settings);
+        if (Object.prototype.hasOwnProperty.call(obj, "cartoucheCommaTallyMarks")) merged.cartoucheCommaTallyMarks = obj.cartoucheCommaTallyMarks;
+        if (Object.prototype.hasOwnProperty.call(obj, "cartoucheTallyMode")) merged.cartoucheTallyMode = obj.cartoucheTallyMode;
+      }
+
+      return merged;
+    }
+
+    function buildCartoucheTallyParserConfig() {
+      const settings = getActiveFontPairSettings();
+      return {
+        cartoucheCommaTallyMarks: settings.cartoucheCommaTallyMarks !== false,
+        cartoucheTallyMode: normalizeCartoucheTallyMode(settings.cartoucheTallyMode)
+      };
+    }
+
     function uniqueConfiguredFontFamilies() {
       return sitelenFontController.uniqueConfiguredFontFamilies();
     }
@@ -1212,33 +1303,18 @@ nanpa #~WI.
 
 
     
-    function buildRendererInitConfig() {
+    function buildBaseRendererConfig({ includeHalo = true } = {}) {
       const preset = getActiveFontPreset();
-      return {
-        parser: {
-          mode: preset.parserMode,
-          literalStyle: "double-quote",
-          extensionStyle: "ssk",
-          cartoucheStyle: "ssk",
-          numericMode: "compat",
-          mixedStyle: 'short'
-        },
-        fonts: {
-          roles: buildFontRoles()
-        }
-      };
-    }
-
-    function buildRendererCallConfig({ includeHalo = true } = {}) {
       const haloEnabled = includeHalo && getHaloEnabled();
       const unknownHighlightEnabled = getUnknownHighlightEnabled();
-      const roles = buildFontRoles();
+      const fontPx = getFontPx();
+
       return {
         layout: {
-          fontPx: getFontPx(),
+          fontPx,
           align: getAlignMode(),
           paddingPx: 18,
-          lineGapPx: lineGapForPx(getFontPx())
+          lineGapPx: lineGapForPx(fontPx)
         },
         paint: {
           fillStyle: getFgHex(),
@@ -1256,17 +1332,38 @@ nanpa #~WI.
             dash: false
           }
         },
+        parser: {
+          mode: preset.parserMode,
+          literalStyle: "double-quote",
+          extensionStyle: "ssk",
+          cartoucheStyle: "ssk",
+          numericMode: "compat",
+          mixedStyle: "short",
+          showUnknownText: unknownHighlightEnabled,
+          ...buildCartoucheTallyParserConfig()
+        },
         fonts: {
           roles: {
-            ...roles,
+            ...buildFontRoles(),
             unknown: "Patrick-Head-Font"
           }
-        },
-        parser: {
-          mixedStyle: 'short',
-          showUnknownText: unknownHighlightEnabled
         }
       };
+    }
+
+    function mergeRendererConfigWithFontController(baseConfig) {
+      if (typeof sitelenFontController?.buildRendererConfig === "function") {
+        return sitelenFontController.buildRendererConfig({ baseConfig });
+      }
+      return baseConfig;
+    }
+
+    function buildRendererInitConfig() {
+      return mergeRendererConfigWithFontController(buildBaseRendererConfig({ includeHalo: false }));
+    }
+
+    function buildRendererCallConfig({ includeHalo = true } = {}) {
+      return mergeRendererConfigWithFontController(buildBaseRendererConfig({ includeHalo }));
     }
 
     function getRendererSignature() {
@@ -1275,7 +1372,8 @@ nanpa #~WI.
       return JSON.stringify({
         preset: preset.key,
         parserMode: preset.parserMode,
-        roles
+        roles,
+        cartoucheTally: buildCartoucheTallyParserConfig()
       });
     }
 
@@ -4347,66 +4445,77 @@ function wireHaloControls() {
 
     const PDF_CARTOUCHE_SCALE = 6;//3; // 2 or 3 is usually enough
 
-    function buildCartoucheCanvasForPdf(cartEl, { fontPx }){
-        const scale = PDF_CARTOUCHE_SCALE;
+    function buildCartoucheCanvasForPdf(cartEl, { fontPx } = {}){
+      const basePx = Math.max(8, Number(fontPx ?? cartEl?.px ?? getFontPx() ?? 56));
+      const guardPx = Math.max(8, Math.ceil(basePx * 0.14));
 
-        // Create a fresh canvas so we can force halo off and supersample
-        const c = document.createElement("canvas");
-
-        const basePx = Math.max(8, Number(fontPx ?? cartEl?.px ?? getFontPx() ?? 56));
-        const px = Math.round(basePx * scale);
-
-        // Keep the same *relative* padding, but scaled
-        const basePadPx = Math.max(4, Math.round(basePx * 0.11));
-        const padPx = Math.round(basePadPx * scale);
-
-        const fam = cartEl?.fontFamily || FONT_FAMILY_CARTOUCHE;
-        const fgCss = getFgHex();
-
-        const r = renderFontCartoucheToCanvas(
-          c,
-          Array.from(cartEl?.cps ?? []),
-          {
-            fontPx: px,
-            padPx,
-            fontFamily: fam,
-            fgCss,
-            haloEnabled: false, // force NO halo in PDF cartouche images
-            haloCss: "#FFFFFF",
-          }
-        );
-
-        // PDF-only top guard:
-        // some cartouche fonts under-report top ink bounds at high supersample sizes.
-        // We add extra transparent space ABOVE the rendered cartouche and shift the
-        // image down, without changing any non-PDF render path.
-        const extraTopPxLogical = Math.max(3, Math.round(basePx * 0.10));
-        const extraTopPxHi = extraTopPxLogical * scale;
-
+      // Use the renderer-produced cartouche canvas as the source of truth.
+      // This preserves renderer-library behavior such as manual tally drawing.
+      // The previous PDF path used run.widthPx/run.heightPx as the clipping box;
+      // those are layout metrics and can be tighter than the actual bitmap ink.
+      if (cartEl?.canvas && cartEl.canvas.width > 0 && cartEl.canvas.height > 0) {
+        const src = cartEl.canvas;
         const guarded = document.createElement("canvas");
-        guarded.width = Math.max(1, c.width);
-        guarded.height = Math.max(1, c.height + extraTopPxHi);
+        guarded.width = Math.max(1, (src.width | 0) + guardPx * 2);
+        guarded.height = Math.max(1, (src.height | 0) + guardPx * 2);
 
         const gctx = guarded.getContext("2d", { alpha: true });
         gctx.clearRect(0, 0, guarded.width, guarded.height);
-        gctx.drawImage(c, 0, extraTopPxHi);
+        gctx.drawImage(src, guardPx, guardPx);
 
-        // IMPORTANT: return "logical" (unscaled) metrics for layout/placement,
-        // but keep the high-res canvas for embedding.
         return {
           canvas: guarded,
-
-          // physical size to place in PDF
-          w: Math.round((r.w | 0) / scale),
-          h: Math.round(((r.h | 0) + extraTopPxHi) / scale),
-          baselineY: Math.round(((r.baselineY | 0) + extraTopPxHi) / scale),
-
-          _scale: scale,
-          _wPx: guarded.width | 0,
-          _hPx: guarded.height | 0,
-          _baselineYPx: ((r.baselineY | 0) + extraTopPxHi),
+          w: guarded.width,
+          h: guarded.height,
+          baselineY: Math.max(0, Number(cartEl.baselineY ?? Math.ceil(src.height * 0.75))) + guardPx,
+          leftPad: guardPx,
+          topPad: guardPx,
+          source: "renderer-cartouche-canvas-with-pdf-guard"
         };
       }
+
+      // Fallback only: if no renderer canvas exists, redraw from codepoints.
+      // This branch should be rare on the current renderer path.
+      const scale = PDF_CARTOUCHE_SCALE;
+      const c = document.createElement("canvas");
+      const px = Math.round(basePx * scale);
+      const basePadPx = Math.max(4, Math.round(basePx * 0.11));
+      const padPx = Math.round(basePadPx * scale);
+      const fam = cartEl?.fontFamily || FONT_FAMILY_CARTOUCHE;
+      const fgCss = getFgHex();
+
+      const r = renderFontCartoucheToCanvas(
+        c,
+        Array.from(cartEl?.cps ?? []),
+        {
+          fontPx: px,
+          padPx,
+          fontFamily: fam,
+          fgCss,
+          haloEnabled: false,
+          haloCss: "#FFFFFF",
+        }
+      );
+
+      const guardHi = guardPx * scale;
+      const guarded = document.createElement("canvas");
+      guarded.width = Math.max(1, c.width + guardHi * 2);
+      guarded.height = Math.max(1, c.height + guardHi * 2);
+
+      const gctx = guarded.getContext("2d", { alpha: true });
+      gctx.clearRect(0, 0, guarded.width, guarded.height);
+      gctx.drawImage(c, guardHi, guardHi);
+
+      return {
+        canvas: guarded,
+        w: Math.round(guarded.width / scale),
+        h: Math.round(guarded.height / scale),
+        baselineY: Math.round(((r.baselineY | 0) + guardHi) / scale),
+        leftPad: guardPx,
+        topPad: guardPx,
+        source: "fallback-redraw-with-pdf-guard"
+      };
+    }
 
     const PDF_QUOTED_TEXT_SCALE = 6; // 4–6. 6 is crisp but bigger PDFs.
 
@@ -4429,8 +4538,11 @@ function wireHaloControls() {
       const s = String(txt ?? "");
       const m = ctx.measureText(s);
 
-      const ascentHi = (m.actualBoundingBoxAscent ?? Math.ceil(pxHi * 0.8));
-      const descentHi = (m.actualBoundingBoxDescent ?? Math.ceil(pxHi * 0.2));
+      // Use advance width (m.width) rather than ink bounds so that
+      // whitespace-only runs (including the ideographic-space U+3000 glyph)
+      // keep their correct advance even when they carry no ink.
+      const ascentHi  = m.actualBoundingBoxAscent  ?? Math.ceil(pxHi * 0.8);
+      const descentHi = m.actualBoundingBoxDescent ?? Math.ceil(pxHi * 0.2);
       const wHi = Math.max(1, Math.ceil(m.width) + padHi * 2);
       const hHi = Math.max(1, Math.ceil(ascentHi + descentHi) + padHi * 2);
 
@@ -4443,14 +4555,12 @@ function wireHaloControls() {
       ctx2.font = `${pxHi}px "${fontFamily}"`;
       setTextQuality(ctx2);
 
-      const xHi = padHi;                // left
+      const xHi = padHi;
       const baselineYHi = padHi + ascentHi;
 
-      // IMPORTANT: no halo baked into PDF images (per your preference)
       ctx2.fillStyle = fgCss || "#000";
       ctx2.fillText(s, xHi, baselineYHi);
 
-      // Return "logical" (unscaled) metrics for PDF layout:
       return {
         canvas: c,
         w: Math.round(wHi / scale),
@@ -4514,31 +4624,38 @@ function wireHaloControls() {
       let maxX = -Infinity;
       let maxY = -Infinity;
 
+      // Build the actual PDF bitmap for each run before calculating bounds.
+      // The bitmap size, not the renderer's logical advance width, is what can clip.
+      const pdfRunCache = new WeakMap();
+
       for (const line of (plan.lines || [])) {
         for (const run of (line.runs || [])) {
           const el = run?._element;
           if (!el) continue;
 
-          if (el.type === "cartouche" && el.canvas) {
-            const x = Number(run?.xPx ?? 0);
-            const y = Number(run?.yPx ?? 0);
-            const w = Number(run?.widthPx ?? 0);
-            const h = Number(run?.heightPx ?? 0);
-            if (!(w > 0 && h > 0)) continue;
+          let pdfRun;
+          let x;
+          let y;
 
-            if (x < minX) minX = x;
-            if (y < minY) minY = y;
-            if (x + w > maxX) maxX = x + w;
-            if (y + h > maxY) maxY = y + h;
-            continue;
+          if (el.type === "cartouche") {
+            pdfRun = buildCartoucheCanvasForPdf(el, { fontPx: run?.fontPx ?? baseFontPx });
+            pdfRunCache.set(run, pdfRun);
+
+            x = Number(run?.xPx ?? 0) - Number(pdfRun.leftPad ?? 0);
+            const baselineYPx = Number.isFinite(Number(run?.baselineYPx))
+              ? Number(run.baselineYPx)
+              : Number(run?.yPx ?? 0) + Number(el?.baselineY ?? pdfRun.baselineY ?? 0);
+            y = baselineYPx - Number(pdfRun.baselineY ?? 0);
+          } else {
+            pdfRun = await buildNonCartoucheRunCanvasForPdf(run, renderer);
+            pdfRunCache.set(run, pdfRun);
+
+            x = Number(run?.drawXPx ?? run?.xPx ?? 0);
+            const baselineYPx = Number(run?.baselineYPx ?? 0);
+            y = baselineYPx - Number(pdfRun.baselineY ?? 0);
           }
 
-          const pdfRun = buildNonCartoucheRunCanvasForPdf(run);
-
-          const x = Number(run?.drawXPx ?? run?.xPx ?? 0);
-          const baselineYPx = Number(run?.baselineYPx ?? 0);
-          const y = baselineYPx - Number(pdfRun.baselineY ?? 0);
-          const w = Math.max(1, Number(pdfRun.w || 0));
+          const w = Math.max(1, Number(pdfRun.w || 0), Number(run.widthPx || 0));
           const h = Math.max(1, Number(pdfRun.h || 0));
 
           if (x < minX) minX = x;
@@ -4552,7 +4669,7 @@ function wireHaloControls() {
         throw new Error("Nothing to export (no drawable runs).");
       }
 
-      const pdfPadPx = 2;
+      const pdfPadPx = Math.max(8, Math.ceil(baseFontPx * 0.12));
       const contentLeftPx = Math.floor(minX);
       const contentTopPx = Math.floor(minY);
       const contentRightPx = Math.ceil(maxX);
@@ -4569,29 +4686,26 @@ function wireHaloControls() {
           const el = run?._element;
           if (!el) continue;
 
-          if (el.type === "cartouche" && el.canvas) {
-            const destXPx = (Number(run.xPx || 0) - contentLeftPx) + pdfPadPx;
-            const destTopPx = (Number(run.yPx || 0) - contentTopPx) + pdfPadPx;
-            const destWPx = Math.max(1, Number(run.widthPx || 0));
-            const destHPx = Math.max(1, Number(run.heightPx || 0));
+          let pdfRun = pdfRunCache.get(run);
+          let destXPx;
+          let destTopPx;
 
-            const pngBytes = await canvasToPngBytes(el.canvas);
-            const png = await pdfDoc.embedPng(pngBytes);
+          if (el.type === "cartouche") {
+            if (!pdfRun) pdfRun = buildCartoucheCanvasForPdf(el, { fontPx: run?.fontPx ?? baseFontPx });
 
-            page.drawImage(png, {
-              x: destXPx * PX_TO_PT,
-              y: (pageHeightPx - (destTopPx + destHPx)) * PX_TO_PT,
-              width: destWPx * PX_TO_PT,
-              height: destHPx * PX_TO_PT,
-            });
-            continue;
+            destXPx = ((Number(run.xPx || 0) - Number(pdfRun.leftPad ?? 0)) - contentLeftPx) + pdfPadPx;
+            const baselineYPx = Number.isFinite(Number(run?.baselineYPx))
+              ? Number(run.baselineYPx)
+              : Number(run?.yPx ?? 0) + Number(el?.baselineY ?? pdfRun.baselineY ?? 0);
+            destTopPx = ((baselineYPx - Number(pdfRun.baselineY ?? 0)) - contentTopPx) + pdfPadPx;
+          } else {
+            if (!pdfRun) pdfRun = await buildNonCartoucheRunCanvasForPdf(run, renderer);
+
+            destXPx = (Number(run.drawXPx ?? run.xPx ?? 0) - contentLeftPx) + pdfPadPx;
+            destTopPx = ((Number(run.baselineYPx ?? 0) - Number(pdfRun.baselineY ?? 0)) - contentTopPx) + pdfPadPx;
           }
 
-          const pdfRun = buildNonCartoucheRunCanvasForPdf(run);
-
-          const destXPx = (Number(run.drawXPx ?? run.xPx ?? 0) - contentLeftPx) + pdfPadPx;
-          const destTopPx = ((Number(run.baselineYPx ?? 0) - Number(pdfRun.baselineY ?? 0)) - contentTopPx) + pdfPadPx;
-          const destWPx = Math.max(1, Number(pdfRun.w || 0));
+          const destWPx = Math.max(1, Number(pdfRun.w || 0), Number(run.widthPx || 0));
           const destHPx = Math.max(1, Number(pdfRun.h || 0));
 
           const pngBytes = await canvasToPngBytes(pdfRun.canvas);
@@ -4633,32 +4747,51 @@ function wireHaloControls() {
     }
 
     function getUnicodeJsonFontMap() {
-      const preset = getActiveFontPreset();
       const optionKey = getSelectedTextFontOptionKey();
 
       const basename = (url) => {
-        const s = String(url ?? "");
+        const s = String(url ?? "").trim().replace(/[?#].*$/g, "");
+        if (!s || /^(blob|data):/i.test(s)) return "";
         const i = s.lastIndexOf("/");
         return i >= 0 ? s.slice(i + 1) : s;
       };
 
+      // Read the select value to distinguish built-in vs uploaded presets.
+      const presetKey = document.getElementById("appScriptPresetSel")?.value;
+      const staticPreset = RENDER_FONT_PRESETS[presetKey]; // defined only for built-ins
+      const livePreset  = getActiveFontPreset();
+
+      let textFontFile, cartoucheFontFile;
+
+      if (staticPreset) {
+        // Built-in preset: pdfTextFontUrl always has the full filename.
+        textFontFile      = basename(staticPreset.pdfTextFontUrl)      || String(staticPreset.textFamily      || "sitelen-font");
+        cartoucheFontFile = basename(staticPreset.pdfCartoucheFontUrl)  || String(staticPreset.cartoucheFamily || "cartouche-font");
+      } else {
+        // Dynamically-uploaded preset: filenames are in __pairRecord, not pdfTextFontUrl.
+        // textFamily / cartoucheFamily are CSS family names (e.g. "nasin-nanpa"), not filenames.
+        const pr = livePreset?.__pairRecord;
+        textFontFile      = String(pr?.baseFilename      || livePreset?.textFamily      || "uploaded-font.ttf");
+        cartoucheFontFile = String(pr?.companionFilename  || livePreset?.cartoucheFamily || "uploaded-font-nanpa-linja-n.ttf");
+      }
+
       let literalFontFile = "PatrickHand-Regular.ttf";
       if (optionKey === TEXT_FONT_OPTION_SITELEN) {
-        literalFontFile = basename(preset.pdfTextFontUrl);
+        literalFontFile = textFontFile;
       } else if (optionKey === TEXT_FONT_OPTION_NANPA_LINJA_N) {
-        literalFontFile = basename(preset.pdfCartoucheFontUrl);
+        literalFontFile = cartoucheFontFile;
       } else if (optionKey === "Patrick-Head-Font") {
         literalFontFile = "PatrickHand-Regular.ttf";
       } else {
-        literalFontFile = optionKey;
+        literalFontFile = optionKey || "PatrickHand-Regular.ttf";
       }
 
       const result = {
-        "1": basename(preset.pdfTextFontUrl),
-        "2": basename(preset.pdfCartoucheFontUrl)
+        "1": textFontFile,
+        "2": cartoucheFontFile
       };
 
-      if (literalFontFile !== result["1"] && literalFontFile !== result["2"]) {
+      if (literalFontFile && literalFontFile !== result["1"] && literalFontFile !== result["2"]) {
         result["3"] = literalFontFile;
       }
 
@@ -4712,8 +4845,58 @@ function wireHaloControls() {
       return "text";
     }
 
+    const CARTOUCHE_TALLY_CP = 0xF199E;
+
+    function tryBuildUnicodeJsonCartoucheCodepointsFromSource(run) {
+      const sourceKind = String(run?.sourceKind || "").toLowerCase();
+      if (sourceKind !== "bracket") return null;
+
+      let source = String(run?.sourceText ?? "");
+      if (!source) return null;
+      source = source.trim();
+      if (source.startsWith("[") && source.endsWith("]")) source = source.slice(1, -1);
+      if (!source.includes(",") && !source.includes(String.fromCodePoint(CARTOUCHE_TALLY_CP))) return null;
+
+      const cps = [];
+      let i = 0;
+      while (i < source.length) {
+        const ch = source[i];
+        const cp = ch.codePointAt(0);
+
+        if (/\s/.test(ch)) { i += ch.length; continue; }
+        if (ch === "," || cp === CARTOUCHE_TALLY_CP) {
+          cps.push(CARTOUCHE_TALLY_CP);
+          i += ch.length;
+          continue;
+        }
+        if (ch === ":" || ch === "." || ch === "·") {
+          const punctCp = WORD_TO_UCSUR_CP[ch];
+          if (punctCp == null) return null;
+          cps.push(punctCp);
+          i += ch.length;
+          continue;
+        }
+        if (/[A-Za-z^<>]/.test(ch)) {
+          let j = i + 1;
+          while (j < source.length && /[A-Za-z^<>]/.test(source[j])) j++;
+          const token = normalizeTpGlyphToken(source.slice(i, j));
+          const wordCp = WORD_TO_UCSUR_CP[token];
+          if (wordCp == null) return null;
+          cps.push(wordCp);
+          i = j;
+          continue;
+        }
+        return null;
+      }
+
+      return cps.length ? [CARTOUCHE_START_CP, ...cps, CARTOUCHE_END_CP] : null;
+    }
+
     function getUnicodeJsonRunCodepoints(run) {
       if (run?.kind === "cartouche") {
+        const sourceCps = tryBuildUnicodeJsonCartoucheCodepointsFromSource(run);
+        if (sourceCps) return sourceCps;
+
         const inner = Array.isArray(run?._element?.cps) ? run._element.cps.slice() : (Array.isArray(run?.cps) ? run.cps.slice() : []);
         return [CARTOUCHE_START_CP, ...inner, CARTOUCHE_END_CP];
       }
@@ -4846,7 +5029,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-unknown-text-outline.js?v=48", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=20", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -4938,6 +5121,7 @@ const CONTROL_CP_TO_SHORTCUT = new Map([
   [0xF1996, "&"],
   [0xF1990, "["],
   [0xF1991, "]"],
+  [0xF199E, ","],
   [0xF1993, "{"],
   [0xF1994, "}"],
   [0xF1997, "("],
@@ -5042,6 +5226,7 @@ async function buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, prese
 
       [0xF1990, "["],
       [0xF1991, "]"],
+      [0xF199E, ","],
 
       [0xF1992, "<combining cartouche extension>"],
       [0xF1993, "<start long pi>"],
@@ -5161,7 +5346,10 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
       const config = buildRendererCallConfig({ includeHalo: true });
 
-      const parsed = await renderer.parseInput({ input });
+      const parsed = await renderer.parseInput({
+        input,
+        parser: config.parser
+      });
       const hasLines = Array.isArray(parsed?.ast?.lines) && parsed.ast.lines.length > 0;
       const hasAnyText = hasLines && parsed.ast.lines.some(line => Array.isArray(line?.children) && line.children.some(child => String(child?.value ?? "").trim().length > 0));
 
@@ -5608,6 +5796,31 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         if (btnRender) btnRender.disabled = true;
         if (btnDownload) btnDownload.disabled = true;
         announceStatus("Loading fonts…");
+
+        try {
+          const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
+            manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
+            onlyIfExisting: false,
+            force: true
+          });
+
+          console.info("[preloaded-fonts] sync result:", syncResult);
+
+          if (syncResult.updated > 0) {
+            await sitelenFontController.hydrateDynamicPresetsFromDb({ force: true });
+
+            sitelenFontController.resetFontLoadState?.();
+            sitelenRenderer = null;
+            sitelenRendererSignature = "";
+
+            console.info(
+              "[preloaded-fonts] active preset after hydrate:",
+              sitelenFontController.getActivePreset()
+            );
+          }
+        } catch (err) {
+          console.warn("[preloaded-fonts] manifest sync failed:", err);
+        }
 
         applyNanpaLinjanModeFromQueryOrStorage();
         applyFontPxFromQueryOrStorage();

@@ -437,12 +437,12 @@
 </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-unknown-text-outline.js?v=48";
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=2";//sitelen-font-pair-controller.js";
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=13";//sitelen-font-pair-controller.js";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=16';
 window.SitelenRenderer = SitelenRenderer;
 
@@ -4821,12 +4821,45 @@ window.SitelenRenderer = SitelenRenderer;
 
   async function ensureEditorFontsReady(){
     await sitelenFontController.ready;
+
+    try {
+      const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
+        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
+        onlyIfExisting: false,
+        force: true
+      });
+
+      console.info("[video-caption preloaded-fonts] sync result:", syncResult);
+
+      if (syncResult.updated > 0) {
+        await sitelenFontController.hydrateDynamicPresetsFromDb({ force: true });
+
+        sitelenFontController.resetFontLoadState?.();
+
+        App.runtime.itemRasterCache?.clear?.();
+        App.runtime.itemRasterJobs?.clear?.();
+        App.runtime.itemLatestRasterById?.clear?.();
+        App.runtime.itemDesiredRasterKeyById?.clear?.();
+        App.runtime.sitelenRenderer = null;
+
+        console.info(
+          "[video-caption preloaded-fonts] active preset after hydrate:",
+          sitelenFontController.getActivePreset()
+        );
+      }
+    } catch (err) {
+      console.warn("[video-caption preloaded-fonts] manifest sync failed:", err);
+    }
+
     if (!document.fonts || !document.fonts.load) return;
+
     const startupFamilies = [];
     for (const preset of getAllSitelenFontPresets()){
       startupFamilies.push(preset.textFamily, preset.cartoucheFamily);
     }
+
     startupFamilies.push(DEFAULT_LITERAL_FONT);
+
     await sitelenFontController.ensureFamiliesLoaded(32, startupFamilies);
     sitelenFontController.warmUpCanvasFonts(32, startupFamilies);
   }
