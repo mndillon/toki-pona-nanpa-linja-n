@@ -2133,6 +2133,16 @@ async function waitForRenderPresetFonts(presetKey, fontPx = 56, literalFamily = 
   await document.fonts.ready;
 }
 
+function buildCartoucheTallyParserConfig(el){
+  const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
+  const settings = (preset && typeof preset === 'object') ? (preset.settings || preset) : {};
+  const rawMode = String(settings.cartoucheTallyMode || 'ucsur').trim().toLowerCase();
+  const tallyMode = (['comma','manual','ucsur'].includes(rawMode) ? rawMode : 'ucsur');
+  return {
+    cartoucheCommaTallyMarks: settings.cartoucheCommaTallyMarks !== false,
+    cartoucheTallyMode: tallyMode
+  };
+}
 function buildRendererInitConfigForElement(el){
   const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
   return {
@@ -2141,7 +2151,9 @@ function buildRendererInitConfigForElement(el){
       literalStyle: 'double-quote',
       extensionStyle: 'ssk',
       cartoucheStyle: 'ssk',
-      numericMode: 'compat'
+      numericMode: 'compat',
+      mixedStyle: 'short',
+      ...buildCartoucheTallyParserConfig(el)
     },
     fonts: { roles: buildRendererFontRolesForElement(el) }
   };
@@ -2179,8 +2191,13 @@ function buildRendererCallConfigForElement(el){
     },
     parser: {
       mode: getRenderFontPreset(getElementRenderFontPresetKey(el)).parserMode,
+      literalStyle: 'double-quote',
+      extensionStyle: 'ssk',
+      cartoucheStyle: 'ssk',
       numericMode: 'compat',
-      showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText)
+      mixedStyle: 'short',
+      showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText),
+      ...buildCartoucheTallyParserConfig(el)
     },
     fonts: {
       roles: {

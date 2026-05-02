@@ -4991,6 +4991,17 @@ window.SitelenRenderer = SitelenRenderer;
     ].join('|');
   }
 
+  function buildItemCartoucheTallyParserConfig(item){
+    const preset = getSitelenFontPreset(item.sitelenFontFamily);
+    const settings = (preset && typeof preset === 'object') ? (preset.settings || preset) : {};
+    const rawMode = String(settings.cartoucheTallyMode || 'ucsur').trim().toLowerCase();
+    const tallyMode = (['comma','manual','ucsur'].includes(rawMode) ? rawMode : 'ucsur');
+    return {
+      cartoucheCommaTallyMarks: settings.cartoucheCommaTallyMarks !== false,
+      cartoucheTallyMode: tallyMode
+    };
+  }
+
   async function ensureSitelenRendererInstance(){
     if (App.runtime.sitelenRenderer) return App.runtime.sitelenRenderer;
     if (!window.SitelenRenderer || typeof window.SitelenRenderer.create !== 'function'){
@@ -5002,7 +5013,10 @@ window.SitelenRenderer = SitelenRenderer;
         literalStyle: 'double-quote',
         extensionStyle: 'ssk',
         cartoucheStyle: 'ssk',
-        numericMode: 'compat'
+        numericMode: 'compat',
+        mixedStyle: 'short',
+        cartoucheCommaTallyMarks: true,
+        cartoucheTallyMode: 'ucsur'
       }
     });
     return App.runtime.sitelenRenderer;
@@ -5092,7 +5106,13 @@ window.SitelenRenderer = SitelenRenderer;
           roles: buildItemFontRoles(item)
         },
         parser: {
-          showUnknownText: !item.ignoreUnknownText
+          literalStyle: 'double-quote',
+          extensionStyle: 'ssk',
+          cartoucheStyle: 'ssk',
+          numericMode: 'compat',
+          mixedStyle: 'short',
+          showUnknownText: !item.ignoreUnknownText,
+          ...buildItemCartoucheTallyParserConfig(item)
         }
       });
       return rendered.canvas;
