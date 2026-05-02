@@ -297,6 +297,20 @@ function sanitizeStoredCartoucheText(value, { keepLeadingBlank = false } = {}) {
   return sanitizeStoredCartoucheTokens(tokenizeStoredCartouche(value), { keepLeadingBlank }).join(' ');
 }
 
+// Append tally commas to non-blank tokens in a raw cartouche word list.
+// Only called in preferred mode. Safe on old entries where tallyMap is absent.
+// subKey: the coordinate prefix matching the tallyMap key scheme, e.g. "0", "0_1"
+// Token at position li → tallyMap[`${subKey}_${li}`] commas appended.
+// Blank tokens ('""') are never modified.
+function applyTalliesToTokens(tokens, tallyMap, subKey) {
+  if (!tallyMap || !tokens.length) return tokens;
+  return tokens.map((tok, li) => {
+    if (tok === '""') return tok;
+    const n = tallyMap[`${subKey}_${li}`] || 0;
+    return n > 0 ? tok + ','.repeat(n) : tok;
+  });
+}
+
 function ensureLeadingBlankGlyphToken(value) {
   const tokens = tokenizeStoredCartouche(value);
   const cleaned = sanitizeStoredCartoucheTokens(tokens, { keepLeadingBlank: false });
@@ -330,13 +344,22 @@ export function buildSegmentRendererInput(seg, entry, segIndex) {
     return `["${getEntryLiteralText(entry)}"]`;
   }
 
+  // tallyMap is only used in preferred mode; absent on old entries → safe.
+  const tm = (entry.mode === 'preferred') ? (entry.tallyMap || null) : null;
+
   // Nanpa segments: normally pass original words — renderer handles natively.
   // But if forceNormal is set, treat as a normal segment using cartoucheMap.
   if (seg.type === 'nanpa') {
     if (!entry.forceNormal) return `[ ${seg.words.join(' ')} ]`;
-    // forceNormal — use stored cartouche from map like a normal segment
-    const stored = getStoredSegmentCartoucheText(seg, entry, segIndex);
-    if (entry.mode === 'preferred' && stored) return `["" ${stored} ]`;
+    // forceNormal preferred — inject tallies on raw tokens then restore leading blank
+    if (entry.mode === 'preferred') {
+      const rawTokens = tokenizeStoredCartouche((entry.cartoucheMap || {})[segIndex]);
+      const withTallies = applyTalliesToTokens(rawTokens, tm, String(segIndex));
+      const cleaned = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false });
+      if (!cleaned.length) cleaned.unshift('""'); else if (cleaned[0] !== '""') cleaned.unshift('""');
+      const stored = cleaned.join(' ');
+      if (stored) return `["" ${stored} ]`;
+    }
     // Random — generate from the words' letters.
     // Leading "" forces renderer to treat as glyph cartouche, not numeric.
     const letters = seg.words.join('').toLowerCase().split('');
@@ -345,15 +368,23 @@ export function buildSegmentRendererInput(seg, entry, segIndex) {
 
   // Normal segment
   if (entry.merge) {
-    const stored = getStoredSegmentCartoucheText(seg, entry, segIndex);
-    if (entry.mode === 'preferred' && stored) return `[ ${stored} ]`;
+    if (entry.mode === 'preferred') {
+      const rawTokens = tokenizeStoredCartouche((entry.cartoucheMap || {})[segIndex]);
+      const withTallies = applyTalliesToTokens(rawTokens, tm, String(segIndex));
+      const sanitized = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false }).join(' ');
+      if (sanitized) return `[ ${sanitized} ]`;
+    }
     const { letters } = segmentLetters(seg.words);
     return `[ ${buildRandomDescForLetters(letters)} ]`;
   } else {
     return seg.words.map((w, wi) => {
       const cm = entry.cartoucheMap || {};
-      const stored = sanitizeStoredCartoucheText(cm[`${segIndex}_${wi}`]);
-      if (entry.mode === 'preferred' && stored) return `[ ${stored} ]`;
+      if (entry.mode === 'preferred') {
+        const rawTokens = tokenizeStoredCartouche(cm[`${segIndex}_${wi}`]);
+        const withTallies = applyTalliesToTokens(rawTokens, tm, `${segIndex}_${wi}`);
+        const sanitized = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false }).join(' ');
+        if (sanitized) return `[ ${sanitized} ]`;
+      }
       return `[ ${buildRandomDescForLetters(w.toLowerCase().split(''))} ]`;
     }).join(' ');
   }
@@ -379,10 +410,12 @@ export function buildSegmentDisplayInput(seg, entry, segIndex, cartoucheMapOverr
   return buildSegmentRendererInput(seg, effectiveEntry, segIndex);
 }
 
-// Build a live preview string for a whole entry using an optional temporary cartoucheMap.
+// Build a live preview string for a whole entry using optional temporary overrides.
 // Useful for edit modals so the preview matches the exact renderer input without mutating storage.
-export function buildEntryPreviewInput(entry, cartoucheMapOverride = null) {
-  const effectiveEntry = cartoucheMapOverride ? { ...entry, cartoucheMap: cartoucheMapOverride } : entry;
+export function buildEntryPreviewInput(entry, cartoucheMapOverride = null, tallyMapOverride = null) {
+  const effectiveEntry = { ...entry };
+  if (cartoucheMapOverride) effectiveEntry.cartoucheMap = cartoucheMapOverride;
+  if (tallyMapOverride)     effectiveEntry.tallyMap     = tallyMapOverride;
   return buildEntryRendererInput(effectiveEntry);
 }
 
@@ -432,7 +465,7 @@ function migrateRecord(e) {
   const cartoucheMap = (typeof e.cartoucheMap === 'object' && e.cartoucheMap) ? e.cartoucheMap : {};
   if (e.cartouche && typeof e.cartouche === 'string' && !Object.keys(cartoucheMap).length)
     cartoucheMap['0'] = e.cartouche;
-  return { key, words: wordList, merge: e.merge !== false, mode, cartoucheMap, forceNormal: !!e.forceNormal, literalText: cleanLiteralText(e.literalText) || key };
+  return { key, words: wordList, merge: e.merge !== false, mode, cartoucheMap, tallyMap: (typeof e.tallyMap === 'object' && e.tallyMap) ? e.tallyMap : {}, forceNormal: !!e.forceNormal, literalText: cleanLiteralText(e.literalText) || key };
 }
 
 // ── CartoucheApi class ─────────────────────────────────────────────────────

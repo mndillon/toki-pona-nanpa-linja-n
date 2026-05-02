@@ -437,7 +437,7 @@
     #cartoucheModal .modalBody {
       flex: 1 1 auto;
       overflow-y: auto;
-      overflow-x: hidden;
+      overflow-x: clip;
       -webkit-overflow-scrolling: touch;
       display: flex;
       flex-direction: column;
@@ -445,13 +445,22 @@
       min-height: 0;
     }
 
-    /* Slots row — wraps for long words */
+    /* Slots row — single line, scrolls horizontally for long words */
     #cartoucheSlots {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      align-items: flex-end;
       gap: 6px;
+      padding-left: 6px;
       padding-bottom: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
     }
+    #cartoucheSlots::-webkit-scrollbar { height: 4px; }
+    #cartoucheSlots::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    #cartoucheSlots::-webkit-scrollbar-track { background: transparent; }
 
     /* Cartouche editor letter slots */
     .cartoucheSlot {
@@ -483,6 +492,53 @@
     /* On narrow screens shrink slots further */
     @media (max-width: 480px) {
       .cartoucheSlot input { width: 62px; font-size: 11px; }
+    }
+
+    /* Tally counter stepper — sits below each slot input */
+    .slotTally {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: rgba(0,0,0,0.04);
+      border: 0.5px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 3px;
+      width: 80px;
+      box-sizing: border-box;
+      justify-content: space-between;
+      height: 18px;
+    }
+    .tallyBtn {
+      width: 14px; height: 14px;
+      border: none; border-radius: 2px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px; line-height: 1;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; flex-shrink: 0;
+    }
+    .tallyBtn:hover:not(:disabled) { background: rgba(0,0,0,0.08); }
+    .tallyBtn:disabled { opacity: 0.3; cursor: default; }
+    .tallyCount {
+      font-size: 10px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      text-align: center;
+      flex: 1;
+    }
+    .tallyMax { opacity: 0.5; }
+    .talliesEndLabel {
+      font-size: 10px;
+      color: var(--muted);
+      opacity: 0.45;
+      white-space: nowrap;
+      font-style: italic;
+      padding-left: 4px;
+      padding-bottom: 3px;
+      flex-shrink: 0;
+      align-self: flex-end;
     }
 
     /* Glyph picker panel — fixed max height, scrolls internally */
@@ -617,8 +673,8 @@
         <input type="text" id="searchInput" placeholder="filter…" autocomplete="off" spellcheck="false" />
       </div>
       <div style="flex:1 1 300px;">
-        <label for="addInput">Add name (one line, multiple words ok)</label>
-        <input type="text" id="addInput" placeholder="e.g. Sema Pan Neninimen" autocomplete="off" spellcheck="false" />
+        <label for="addInput">Add name — words e.g. <code>Sema Pan</code>, or bracketed cartouche e.g. <code>[a meli,,,, kalama,,]</code></label>
+        <input type="text" id="addInput" placeholder="e.g. Sema Pan  or  [a meli,,,,kalama,,]" autocomplete="off" spellcheck="false" />
       </div>
       <div>
         <button id="btnAdd" class="btnBi" type="button">
@@ -710,7 +766,8 @@
         <div class="help" style="margin-top:6px;">
           Preview: <span id="cartouchePreview" class="mono" style="color:var(--accent);"></span>
         </div>
-        <div class="row" style="margin-top:12px;">
+        <div id="cartoucheSoundCheck" style="margin-top:8px;min-height:20px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;"></div>
+        <div class="row" style="margin-top:8px;">
           <button id="btnApplyCartouche" type="button">Apply</button>
           <button id="btnCancelCartouche" type="button">Cancel</button>
         </div>
@@ -733,7 +790,7 @@
       buildEntryRendererInput,
       buildEntryDisplayInput,
       buildEntryPreviewInput,
-    } from './js/cartouche-api-v3-previewdesc.js?v=16';
+    } from './js/cartouche-api-v3-previewdesc.js?v=20';
 
     // ── Page-level constants (font, UI) ───────────────────────────────────────
     const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';
@@ -859,6 +916,7 @@
       nasinNanpa: {
         key: 'nasinNanpa', label: 'nasin-nanpa', parserMode: 'sitelen-seli-kiwen',
         textFamily: FONT_FAMILY_TEXT, cartoucheFamily: FONT_FAMILY_CARTOUCHE,
+        settings: { cartoucheCommaTallyMarks: true, cartoucheTallyMode: 'manual' },
         faces: [
           { family: FONT_FAMILY_TEXT,      url: './fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf',                        format: 'opentype', sample: String.fromCodePoint(0xF196C) },
           { family: FONT_FAMILY_CARTOUCHE, url: './fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf', format: 'opentype', sample: String.fromCodePoint(0xF1990) },
@@ -958,6 +1016,12 @@
       return { roles: { text: FONT_FAMILY_TEXT, word: FONT_FAMILY_TEXT, cartouche: FONT_FAMILY_CARTOUCHE, number: FONT_FAMILY_CARTOUCHE } };
     }
 
+    // Returns parser config from the active font preset — picks up per-font tally settings.
+    function getParserConfig(baseParser = {}) {
+      if (fontCtrl) { try { return fontCtrl.buildRendererParserConfig({ baseParser }); } catch {} }
+      return { ...baseParser, cartoucheCommaTallyMarks: true, cartoucheTallyMode: 'ucsur' };
+    }
+
     // ── Render ────────────────────────────────────────────────────────────────
     async function renderEntry(entry, targetCanvas) {
       if (!renderer || entry.mode === 'ignore') return;
@@ -1010,7 +1074,7 @@
 
         const input = buildEntryRendererInput(entry);
         const rendered = await renderer.renderTextToNewCanvas({
-          input, layout: { fontPx: sizePx }, paint: { fgColor: '#111111' }, fonts: getFontRoles(),
+          input, layout: { fontPx: sizePx }, paint: { fgColor: '#111111' }, parser: getParserConfig(), fonts: getFontRoles(),
         });
         const src = rendered.canvas;
         targetCanvas.width = src.width; targetCanvas.height = src.height;
@@ -1347,10 +1411,115 @@
       sp.textContent = buildEntryDisplayInput(entry);
     }
 
+    // ── Bracketed cartouche input parser ─────────────────────────────────────
+    // Accepts: [toki,,,,pona,,]
+    // Each glyph name is a known TP word; trailing commas = tally (N commas → N letters contributed).
+    // No commas = tally 0 → 1 letter contributed (default).
+    // The derived sound must pass strict (C)V(N) validation.
+    // Cross-glyph nn/nm that would change the slot count → blocked (reformulate).
+    function parseBracketedCartouche(raw) {
+      const trimmed = raw.trim();
+      if (!trimmed.startsWith('[') || !trimmed.endsWith(']'))
+        return { ok: false, reason: 'Expected format: [glyph,,glyph,,…]' };
+
+      const inner = trimmed.slice(1, -1).trim();
+      if (!inner) return { ok: false, reason: 'Empty cartouche brackets' };
+
+      // Parse alternating glyph word and comma runs
+      const pairs = [];
+      let rest = inner;
+      while (rest.length > 0) {
+        const wm = rest.match(/^([a-z<>^]+)/);
+        if (!wm) return { ok: false, reason: `Unexpected character "${rest[0]}" — expected a toki pona glyph name` };
+        const word = wm[1]; rest = rest.slice(word.length);
+        const cm = rest.match(/^(,*)/);
+        const tally = cm ? cm[1].length : 0; rest = rest.slice(tally).trimStart();
+        if (!TP_VALID_WORDS.has(word) && !TP_VARIANT_TOKENS.has(word))
+          return { ok: false, reason: `"${word}" is not a known toki pona word` };
+        pairs.push({ word, tally });
+      }
+      if (!pairs.length) return { ok: false, reason: 'No glyphs found in brackets' };
+
+      // Build raw contribution string and slot structure
+      const contributions = [];
+      let rawSound = '';
+      for (const { word, tally } of pairs) {
+        const srcWord = TP_VARIANT_TOKENS.has(word) ? TP_VARIANT_FIRST[word] : word;
+        const n = tally === 0 ? 1 : tally;
+        const contrib = srcWord.slice(0, n);
+        contributions.push({ word, tally, contrib });
+        rawSound += contrib;
+      }
+
+      // Auto-correct nn→n, nm→m until stable — but only if length is unchanged
+      let corrected = rawSound;
+      let prev;
+      do { prev = corrected; corrected = corrected.replace(/nn/g, 'n').replace(/nm/g, 'm'); } while (corrected !== prev);
+      if (corrected.length !== rawSound.length)
+        return { ok: false, reason: `Cross-glyph sequence creates nn or nm (sound would be "${corrected}") — reformulate to avoid this` };
+
+      // Forbidden combinations
+      for (const fb of ['ti', 'ji', 'wu', 'wo']) {
+        if (corrected.includes(fb))
+          return { ok: false, reason: `Forbidden combination "${fb}" in derived sound "${corrected}"` };
+      }
+
+      // Strict (C)V(N) validation
+      if (!/^[ptksnmljw]?[aeiou](n(?=[ptksnmljw]|$))?([ptksnmljw][aeiou](n(?=[ptksnmljw]|$))?)*$/.test(corrected))
+        return { ok: false, reason: `"${corrected}" is not a valid toki pona syllable structure` };
+
+      // Build name and letter slots
+      const name = corrected.charAt(0).toUpperCase() + corrected.slice(1);
+      const letters = corrected.split('');
+      const numSlots = letters.length;
+      const glyphSlots = new Array(numSlots).fill(SPECIAL_DOUBLE_QUOTE_TOKEN);
+      const tallySlots = new Array(numSlots).fill(0);
+
+      // Assign each glyph to its starting slot, verifying letter match
+      let slotPos = 0;
+      for (const { word, tally, contrib } of contributions) {
+        if (slotPos >= numSlots)
+          return { ok: false, reason: `More glyphs than letter slots in "${name}"` };
+        const glyphLetter = TP_VARIANT_TOKENS.has(word) ? TP_VARIANT_FIRST[word] : word[0];
+        if (glyphLetter !== letters[slotPos])
+          return { ok: false, reason: `Glyph "${word}" (letter "${glyphLetter}") doesn't match required letter "${letters[slotPos]}" at position ${slotPos + 1}` };
+        glyphSlots[slotPos] = word;
+        tallySlots[slotPos] = tally;
+        slotPos += contrib.length;
+      }
+      if (slotPos !== numSlots)
+        return { ok: false, reason: `Glyph coverage ends at position ${slotPos} but "${name}" has ${numSlots} letters` };
+
+      // Build cartoucheMap and tallyMap (merged mode, single segment si=0)
+      const cm = { '0': glyphSlots.join(' ') };
+      const tm = {};
+      tallySlots.forEach((t, li) => { tm[`0_${li}`] = t; });
+
+      return { ok: true, name, words: [name], cartoucheMap: cm, tallyMap: tm, soundStr: corrected };
+    }
+
     // ── Add entry ─────────────────────────────────────────────────────────────
     async function addEntry() {
       const raw = $('addInput').value.trim();
       if (!raw) return;
+
+      // ── Bracketed cartouche format: [toki,,,,pona,,] ──
+      if (raw.startsWith('[') && raw.endsWith(']')) {
+        const result = parseBracketedCartouche(raw);
+        if (!result.ok) { $('addError').textContent = result.reason; $('nanpaWarn').classList.remove('show'); return; }
+        $('addError').textContent = '';
+        $('nanpaWarn').classList.remove('show');
+        const key = result.name;
+        if (entries.find(e => e.key === key)) { $('addError').textContent = `"${key}" is already in the database.`; return; }
+        const entry = { key, words: result.words, merge: true, mode: 'preferred', cartoucheMap: result.cartoucheMap, tallyMap: result.tallyMap, forceNormal: false, literalText: key };
+        entries.unshift(entry);
+        await api.putEntry(entry);
+        $('addInput').value = '';
+        renderTable($('searchInput').value); updatePill();
+        return;
+      }
+
+      // ── Regular tokiponized name input ──
       const result = parseAndValidateLine(raw);
       if (!result.ok) { $('addError').textContent = result.reason; return; }
       $('addError').textContent = '';
@@ -1365,7 +1534,7 @@
         $('nanpaWarn').classList.add('show');
       } else { $('nanpaWarn').classList.remove('show'); }
 
-      const entry = { key, words: result.words, merge: true, mode: 'random', cartoucheMap: {}, forceNormal: false, literalText: key };
+      const entry = { key, words: result.words, merge: true, mode: 'random', cartoucheMap: {}, tallyMap: {}, forceNormal: false, literalText: key };
       entries.unshift(entry);
       await api.putEntry(entry);
       $('addInput').value = '';
@@ -1420,6 +1589,7 @@
           e.preventDefault();
           if (_activeSlotIndex < 0 || !inputs[_activeSlotIndex]) return;
           inputs[_activeSlotIndex].value = w;
+          inputs[_activeSlotIndex].dispatchEvent(new Event('input'));
           onPick(w);
           wordsEl.querySelectorAll('.slotWordBtn').forEach(b =>
             b.setAttribute('aria-pressed', b.querySelector('span:last-child').textContent === w ? 'true' : 'false'));
@@ -1442,6 +1612,7 @@
         e.preventDefault();
         if (_activeSlotIndex < 0 || !inputs[_activeSlotIndex]) return;
         inputs[_activeSlotIndex].value = SPECIAL_DOUBLE_QUOTE_TOKEN;
+        inputs[_activeSlotIndex].dispatchEvent(new Event('input'));
         onPick(SPECIAL_DOUBLE_QUOTE_TOKEN);
         wordsEl.querySelectorAll('.slotWordBtn').forEach(b =>
           b.setAttribute('aria-pressed', b.querySelector('span:last-child')?.textContent === SPECIAL_DOUBLE_QUOTE_TOKEN ? 'true' : 'false'));
@@ -1472,6 +1643,7 @@
           input: inputStr,
           layout: { fontPx: sizePx },
           paint:  { fgColor: '#111111' },
+          parser: getParserConfig(),
           fonts:  fontRoles,
         });
         const src = rendered.canvas;
@@ -1497,6 +1669,8 @@
       const allInputs = []; // flat list of all editable inputs across all segments
       // slotMeta[i] = { letter, segIndex, subKey } — for apply
       const slotMeta  = [];
+      const allTallyData = []; // parallel to allInputs: { getTally, tallyKey }
+      let runSoundCheck = () => {}; // assigned after slot building is complete
 
       function updatePreview() {
         const previewMap = {};
@@ -1512,7 +1686,11 @@
           previewMap[k] = words.filter(Boolean).join(' ');
         }
 
-        const previewStr = buildEntryPreviewInput(entry, previewMap);
+        // Build live tally map from current stepper values
+        const tallyPreviewMap = {};
+        allTallyData.forEach(({ getTally, tallyKey }) => { if (tallyKey) tallyPreviewMap[tallyKey] = getTally(); });
+
+        const previewStr = buildEntryPreviewInput(entry, previewMap, tallyPreviewMap);
         $('cartouchePreview').textContent = previewStr;
         clearTimeout(_previewDebounce);
         _previewDebounce = setTimeout(() => {
@@ -1554,14 +1732,48 @@
         slotsEl.appendChild(div);
       }
 
-      function addSlot(letter, existingWord, inputListIndex) {
+      function addSlot(letter, existingWord, inputListIndex, tallyVal, tallyKey) {
         const slot = document.createElement('div');
         slot.className = 'cartoucheSlot';
         const lbl = document.createElement('div'); lbl.className = 'slotLabel'; lbl.textContent = letter;
         const inp = document.createElement('input');
         inp.type = 'text'; inp.spellcheck = false; inp.autocomplete = 'off';
         inp.placeholder = letter + '…'; inp.value = existingWord || '';
-        slot.appendChild(lbl); slot.appendChild(inp);
+
+        // ── Tally stepper ──────────────────────────────────────────────────
+        let _tv = 0; // tally value, managed below
+        const tallyRow  = document.createElement('div'); tallyRow.className = 'slotTally';
+        const btnMinus  = document.createElement('button'); btnMinus.type = 'button'; btnMinus.className = 'tallyBtn'; btnMinus.textContent = '−';
+        const countSpan = document.createElement('span');  countSpan.className = 'tallyCount';
+        const btnPlus   = document.createElement('button'); btnPlus.type  = 'button'; btnPlus.className  = 'tallyBtn'; btnPlus.textContent  = '+';
+        tallyRow.appendChild(btnMinus); tallyRow.appendChild(countSpan); tallyRow.appendChild(btnPlus);
+
+        function getWordMax() {
+          const raw = inp.value.trim();
+          return (!raw || raw === SPECIAL_DOUBLE_QUOTE_TOKEN) ? 0 : raw.length;
+        }
+        function refreshTally() {
+          const max = getWordMax();
+          _tv = Math.min(_tv, max);
+          if (max === 0) {
+            countSpan.innerHTML = '<span class="tallyMax">—</span>';
+            btnMinus.disabled = true; btnPlus.disabled = true;
+          } else {
+            countSpan.innerHTML = `${_tv}<span class="tallyMax"> / ${max}</span>`;
+            btnMinus.disabled = _tv <= 0; btnPlus.disabled = _tv >= max;
+          }
+        }
+        // Initialise from stored value, clamped to current word length
+        _tv = (existingWord && existingWord !== SPECIAL_DOUBLE_QUOTE_TOKEN)
+          ? Math.min(Math.max(0, tallyVal || 0), (existingWord || '').length)
+          : 0;
+        refreshTally();
+        btnMinus.addEventListener('click', () => { _tv = Math.max(0, _tv - 1); refreshTally(); runSoundCheck(); updatePreview(); });
+        btnPlus.addEventListener('click',  () => { _tv = Math.min(getWordMax(), _tv + 1); refreshTally(); runSoundCheck(); updatePreview(); });
+        allTallyData.push({ getTally: () => _tv, tallyKey: tallyKey || '' });
+        // ──────────────────────────────────────────────────────────────────
+
+        slot.appendChild(lbl); slot.appendChild(inp); slot.appendChild(tallyRow);
         slotsEl.appendChild(slot);
         const myIndex = inputListIndex;
         inp.addEventListener('focus', () => {
@@ -1573,6 +1785,8 @@
           if (raw !== SPECIAL_DOUBLE_QUOTE_TOKEN) {
             inp.value = inp.value.toLowerCase();
           }
+          refreshTally();
+          runSoundCheck();
           validateAll(); updatePreview();
           buildPickerForLetter(letter, allInputs, () => { validateAll(); updatePreview(); });
         });
@@ -1616,7 +1830,8 @@
           const stored = (cm[subKey] || '').split(/\s+/).filter(Boolean);
           letters.forEach((letter, li) => {
             const myInputIndex = allInputs.length;
-            const inp = addSlot(letter, stored[li] || '', myInputIndex);
+            const tk = `${subKey}_${li}`;
+            const inp = addSlot(letter, stored[li] || '', myInputIndex, (entry.tallyMap || {})[tk] || 0, tk);
             allInputs.push(inp);
             slotMeta.push({ letter, segIndex: si, subKey });
           });
@@ -1629,7 +1844,8 @@
           letters.forEach((letter, li) => {
             if (li > 0 && wordBoundaries.includes(li)) addDivider('|');
             const myInputIndex = allInputs.length;
-            const inp = addSlot(letter, stored[li] || '', myInputIndex);
+            const tk = `${String(si)}_${li}`;
+            const inp = addSlot(letter, stored[li] || '', myInputIndex, (entry.tallyMap || {})[tk] || 0, tk);
             allInputs.push(inp);
             slotMeta.push({ letter, segIndex: si, subKey: String(si) });
           });
@@ -1640,7 +1856,8 @@
             const stored  = (cm[`${si}_${wi}`] || '').split(/\s+/).filter(Boolean);
             letters.forEach((letter, li) => {
               const myInputIndex = allInputs.length;
-              const inp = addSlot(letter, stored[li] || '', myInputIndex);
+              const tk = `${si}_${wi}_${li}`;
+              const inp = addSlot(letter, stored[li] || '', myInputIndex, (entry.tallyMap || {})[tk] || 0, tk);
               allInputs.push(inp);
               slotMeta.push({ letter, segIndex: si, subKey: `${si}_${wi}` });
             });
@@ -1649,7 +1866,84 @@
       });
 
       validateAll(); updatePreview();
-      return { allInputs, slotMeta, validateAll };
+
+      // "tallies" label at the end of the stepper line
+      const talliesLabel = document.createElement('div');
+      talliesLabel.className = 'talliesEndLabel';
+      talliesLabel.textContent = 'tallies';
+      slotsEl.appendChild(talliesLabel);
+
+      // ── Intended sound checker ──────────────────────────────────────────────
+      function checkIntendedSound() {
+        // If no non-blank glyph has a tally > 0 the user is doing pure aliasing —
+        // no phonetic reconstruction is asserted so skip validation entirely.
+        const anyTallySet = allInputs.some((inp, idx) => {
+          const word = inp.value.trim();
+          if (!word || word === SPECIAL_DOUBLE_QUOTE_TOKEN) return false;
+          return (allTallyData[idx] ? allTallyData[idx].getTally() : 0) > 0;
+        });
+        const el = $('cartoucheSoundCheck');
+        if (!anyTallySet) {
+          if (el) el.innerHTML = '';
+          $('btnApplyCartouche').disabled = false;
+          return;
+        }
+
+        // 1. Build raw contribution string
+        let raw = '';
+        allInputs.forEach((inp, idx) => {
+          const word = inp.value.trim();
+          if (!word || word === SPECIAL_DOUBLE_QUOTE_TOKEN) return;
+          const tally = allTallyData[idx] ? allTallyData[idx].getTally() : 0;
+          raw += word.slice(0, tally === 0 ? 1 : tally);
+        });
+
+        // 2. Auto-correct nn→n and nm→m until stable
+        let prev;
+        do { prev = raw; raw = raw.replace(/nn/g, 'n').replace(/nm/g, 'm'); } while (raw !== prev);
+
+        // 3. Check forbidden combinations — block, no auto-fix
+        const FORBIDDEN = ['ti', 'ji', 'wu', 'wo'];
+        let blockReason = null;
+        for (const fb of FORBIDDEN) {
+          if (raw.includes(fb)) { blockReason = `forbidden: "${fb}"`; break; }
+        }
+
+        // 4. Validate strict (C)V(N) syllable structure
+        //    Consonants: p t k s n m l j w   Vowels: a e i o u
+        //    Trailing n only before another consonant or end of word
+        if (!blockReason && raw) {
+          const ok = /^[ptksnmljw]?[aeiou](n(?=[ptksnmljw]|$))?([ptksnmljw][aeiou](n(?=[ptksnmljw]|$))?)*$/.test(raw);
+          if (!ok) blockReason = 'invalid syllable structure';
+        } else if (!blockReason && !raw) {
+          blockReason = 'no sound';
+        }
+
+        // 5. Update display and Apply button
+        if (el) {
+          el.innerHTML = '';
+          const lbl = document.createElement('span');
+          lbl.style.cssText = 'font-size:11px;color:var(--muted);';
+          lbl.textContent = 'intended sound:';
+          const snd = document.createElement('span');
+          snd.style.cssText = `font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;margin:0 5px;color:${blockReason ? 'var(--bad)' : 'var(--good)'};`;
+          snd.textContent = raw || '…';
+          el.appendChild(lbl);
+          el.appendChild(snd);
+          if (blockReason) {
+            const err = document.createElement('span');
+            err.style.cssText = 'font-size:11px;color:var(--bad);';
+            err.textContent = `(${blockReason})`;
+            el.appendChild(err);
+          }
+        }
+        $('btnApplyCartouche').disabled = !!blockReason;
+      }
+
+      runSoundCheck = checkIntendedSound;
+      checkIntendedSound(); // initial check on modal open
+
+      return { allInputs, slotMeta, validateAll, allTallyData };
     }
 
     let _slotData = null;
@@ -1737,6 +2031,8 @@
 
     function closeCartoucheModal() {
       $('cartoucheModal').classList.remove('show');
+      $('btnApplyCartouche').disabled = false;
+      const sc = $('cartoucheSoundCheck'); if (sc) sc.innerHTML = '';
       editingKey = null; _slotData = null;
     }
 
@@ -1767,6 +2063,10 @@
         cm[k] = cleaned.join(' ');
       }
       entry.cartoucheMap = cm;
+      // Save tally counts alongside the cartouche map
+      const tm = {};
+      (_slotData.allTallyData || []).forEach(({ getTally, tallyKey }) => { if (tallyKey) tm[tallyKey] = getTally(); });
+      entry.tallyMap = tm;
       entry.mode = 'preferred';
       await api.putEntry({ ...entry });
       closeCartoucheModal();
@@ -1864,6 +2164,7 @@
           merge: e.merge !== false,
           mode,
           cartoucheMap: (typeof e.cartoucheMap === 'object' && e.cartoucheMap) ? e.cartoucheMap : {},
+          tallyMap:     (typeof e.tallyMap     === 'object' && e.tallyMap)     ? e.tallyMap     : {},
           forceNormal: !!e.forceNormal,
           literalText: cleanLiteralText(e.literalText) || key
         };
