@@ -1,0 +1,1022 @@
+  :root{
+    --topbar-h: 56px;
+
+    /* Style inspired by your example */
+    --bg: #F3DFC0;
+    --ink: #000111;
+    --muted: #3f4750;
+    --panel: rgba(255,255,255,0.35);
+    --panel-strong: rgba(255,255,255,0.55);
+    --panel-border: rgba(17,17,17,0.18);
+
+    --radius: 14px;
+    --btn-radius: 10px;
+    --shadow: 0 12px 30px rgba(0,0,0,0.12);
+
+    /* Stage defaults */
+    --stage-maxw: 1180px;
+    --stage-pad: 14px;
+    --grid-size: 20px;
+  }
+
+ 
+
+  html, body{
+    height:100%;
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+
+  /* ============================================================
+     CHANGE HERE: Top bar becomes multi-row and holds tool buttons
+     - tools spread across available width with wrapping
+     ============================================================ */
+  .topbar{
+    min-height: var(--topbar-h);
+    display:flex;
+    flex-direction: column;          /* NEW */
+    align-items: stretch;            /* NEW */
+    gap: 8px;                        /* NEW */
+    padding: 10px 12px;
+    box-sizing:border-box;
+    border-bottom: 1px solid var(--panel-border);
+    background: var(--panel);
+    backdrop-filter: blur(6px);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  /* NEW: topbar rows for actions + tools */
+  .topbarRow{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;                 /* KEY: spread out across width */
+  }
+
+  /* NEW: group within topbar (optional divider) */
+  .topbarGroup{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-right: 8px;
+    margin-right: 8px;
+    border-right: 1px solid rgba(17,17,17,0.12);
+  }
+  .topbarGroup:last-child{
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
+  }
+
+  .btn{
+    appearance:none;
+    border: 1px solid var(--panel-border);
+    background: rgba(255,255,255,0.5);
+    padding: 8px 10px;
+    border-radius: var(--btn-radius);
+    cursor:pointer;
+    font-weight: 700;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 16px;
+    user-select:none;
+    -webkit-user-select:none;
+    white-space: nowrap;            /* NEW: prevent awkward wrapping inside a button */
+  }
+  .btn:disabled{ opacity:0.55; cursor:not-allowed; }
+  .btn.primary{ background: rgba(255,255,255,0.72); border-color: rgba(17,17,17,0.32); }
+
+
+  /* Toggle button pressed state (uses aria-pressed you already have) */
+.btn[aria-pressed="true"]{
+  background: rgba(17,17,17,0.14);
+  border-color: rgba(17,17,17,0.38);
+  box-shadow: inset 0 0 0 2px rgba(17,17,17,0.16);
+  opacity: 1;
+}
+
+.btn[aria-pressed="false"]{
+  opacity: 0.78;
+}
+
+.btn:focus-visible{
+  outline: 2px solid rgba(17,17,17,0.45);
+  outline-offset: 2px;
+}
+
+  .toolBtnSmall{
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 10px;
+  line-height: 1;
+}
+
+.toolBtn[disabled]{
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+
+  /* CHANGE HERE: chip no longer forces itself to the far right of a single-line bar */
+  .chip{
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    max-width: 54vw;
+    margin-left: 0;                 /* NEW */
+  }
+  /* NEW: right-align helper if you want chip on far right of the actions row */
+  .spacer{ flex: 1 1 auto; }
+
+  .toolbarModeBtn{
+    flex: 0 0 auto;
+  }
+  .compactOnly{
+    display:none;
+  }
+  .toolbarCompactMode .originalToolbarRow{
+    display:none;
+  }
+  .toolbarCompactMode .compactOnly{
+    display:flex;
+  }
+  .compactTopbarLeft{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    min-width:0;
+    overflow:visible;
+  }
+  .compactTopbarRight{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-left:auto;
+    flex:0 0 auto;
+  }
+  .compactToolsRow{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .topbarMenu{
+    position: relative;
+    display:inline-block;
+  }
+  .topbarMenu > summary{ list-style:none; }
+  .topbarMenu > summary::-webkit-details-marker{ display:none; }
+  .topbarMenuBtn::after{ content:" ▾"; font-size:12px; }
+  .topbarMenu[open] > summary{
+    background: rgba(17,17,17,0.14);
+    border-color: rgba(17,17,17,0.38);
+    box-shadow: inset 0 0 0 2px rgba(17,17,17,0.16);
+  }
+  .topbarMenuPanel{
+    position:absolute;
+    top: calc(100% + 6px);
+    left:0;
+    z-index: 40;
+    min-width: 220px;
+    max-width: min(92vw, 340px);
+    padding: 8px;
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    background: var(--bg);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .topbarMenuPanel .btn, .topbarMenuPanel .toolBtn{
+    width:100%;
+    text-align:left;
+  }
+
+  /* ============================================================
+     Main layout (wrap) must account for a variable-height topbar
+     ============================================================ */
+  .wrap{
+    /* CHANGED: topbar height is no longer fixed, so do not subtract var(--topbar-h) */
+    height: calc(100% - 0px);
+    min-height: 0;
+    display:grid;
+    grid-template-columns: 320px 1fr;
+    gap: 12px;
+    padding: 12px;
+    box-sizing: border-box;
+     /* CHANGE HERE: remove centering/width cap */
+  max-width: none;
+    margin: 0; 
+  }
+
+  .panel{
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .panelHeader{
+   padding: 8px 10px; /* was 10px 12px */
+
+    border-bottom: 1px solid var(--panel-border);
+    background: rgba(255,255,255,0.20);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .panelHeader h2{
+    margin:0;
+    font-size: 18px;
+  }
+
+  /* Font-size input + preset dropdown on one line */
+.propInlineRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.propInlineRow > input[type="number"]{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* CHANGE HERE: make the preset dropdown narrower */
+.propInlineRow > select{
+  flex: 0 0 88px;     /* was 120px */
+  width: 88px;        /* keep deterministic */
+  min-width: 88px;
+  max-width: 88px;
+  padding: 6px 8px;   /* optional: tighter */
+}
+
+/* ============================================================
+   Color picker + swatches (same line)
+   ============================================================ */
+.colorControlRow{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;            /* wrapping allowed */
+}
+
+/* Override any "full width" input styling inside the row */
+.colorControlRow > input[type="color"]{
+  width: 48px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(17,17,17,0.22);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.55);
+  flex: 0 0 auto;
+}
+
+.colorSwatches{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 420px;           /* prevents over-squeezing in narrow sidebars */
+}
+
+.swatchBtn{
+  width: 20px;
+  height: 20px;
+  border-radius: 8px;
+}
+
+.swatchBtn[aria-pressed="true"]{
+  outline: 2px solid rgba(17,17,17,0.55);
+  outline-offset: 1px;
+}
+
+
+
+
+
+
+  .sidebar{
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+
+  .sidebarBody{
+    padding: 12px;
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+    overflow:auto;
+    min-height:0;
+  }
+
+  /* ============================================================
+     CHANGE HERE: tool buttons are now in the topbar, but we keep
+     their styling for reuse. Make them more compact for topbar.
+     ============================================================ */
+  .toolGrid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .toolBtn{
+    appearance:none;
+    border: 1px solid rgba(17,17,17,0.22);
+    background: rgba(255,255,255,0.38);
+    padding: 7px 10px;              /* CHANGED: slightly more topbar-friendly */
+    border-radius: 12px;
+    cursor:pointer;
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--ink);
+    user-select:none;
+    -webkit-user-select:none;
+    white-space: nowrap;            /* NEW: keep tool labels tidy */
+  }
+  .toolBtn[aria-pressed="true"]{
+    background: rgba(255,255,255,0.76);
+    border-color: rgba(17,17,17,0.42);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+  }
+
+  /* NEW: topbar-specific tool row layout */
+  .toolRow{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .row{
+    display:flex;
+    gap: 8px;
+    align-items:center;
+    flex-wrap: wrap;
+  }
+  .row > * { flex: 1 1 auto; }
+
+  /* NEW: inline checkbox label used in Stage panel */
+.checkInline{
+  display:flex;
+  align-items:center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  user-select:none;
+  -webkit-user-select:none;
+  white-space: nowrap;
+}
+.checkInline input{
+  width: 16px;
+  height: 16px;
+}
+
+  /* Header button row: do NOT use .row here (because .row > * forces flex:1) */
+.hdrBtnRow{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.hdrBtnRow > .btn{
+  flex: 0 0 auto;     /* critical: buttons keep natural size */
+}
+
+/* Only this mini Stage panel should not clip its header contents */
+.stageMiniPanel{
+  overflow: hidden;  /* overrides .panel { overflow:hidden } */
+}
+
+.stageMiniPanel .panelHeader{
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* Stage mini panel: header fixed, body scrolls */
+.stageMiniPanel{
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;     /* clips within rounded corners */
+  min-height: 0;        /* critical for nested flex scrolling */
+}
+
+/* The content area inside Stage panel should scroll if too tall */
+.stageMiniBody{
+  padding: 12px;
+  overflow: auto;       /* enables scrolling */
+  min-height: 0;        /* critical */
+  -webkit-overflow-scrolling: touch;
+}
+
+.stageMiniBody{
+  max-height: 580px; /* adjust to taste */
+}
+
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap: 4px;
+  }
+  .field label{
+    font-size: 13px;
+    color: var(--muted);
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .field input[type="number"],
+  .field input[type="text"],
+  .field select,
+  .field textarea{
+    border: 1px solid rgba(17,17,17,0.20);
+    background: rgba(255,255,255,0.65);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .field textarea{
+    min-height: 90px;
+    resize: vertical;
+  }
+  .field input[type="color"]{
+    width: 100%;
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid rgba(17,17,17,0.20);
+    background: rgba(255,255,255,0.65);
+    padding: 4px;
+    box-sizing: border-box;
+    cursor:pointer;
+  }
+
+  .hint{
+    border: 1px solid var(--panel-border);
+    background: rgba(255,255,255,0.35);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.25;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+
+  .stagePanel{
+    min-width: 0;
+    position: relative;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+  }
+.stageBody{
+  min-width: 0;
+  position: relative;
+  flex: 1 1 auto;
+  min-height:0;
+
+  /* CHANGE HERE: reduce padding and remove vertical centering */
+  padding: 8px;                 /* was var(--stage-pad) */
+  box-sizing: border-box;
+  display:flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+
+  .canvasWrap{
+    position: relative;
+
+     /* CHANGE HERE: stage uses full available width */
+    width: 100%;
+    min-width: 0;
+    max-width: none; /* var(--stage-maxw);  optional */
+
+        /* CHANGE HERE: fill remaining height of stageBody */
+    height: 100%;
+
+    border-radius: 18px;
+    border: 2px solid rgba(17,17,17,0.22);
+    background: rgba(255,255,255,0.18);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+    overflow:hidden;
+    touch-action: none; /* critical for pointer events */
+  }
+
+  canvas{
+    display:block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .overlayHud{
+    position:absolute;
+    left: 10px;
+    bottom: 10px;
+    background: rgba(255,255,255,0.60);
+    border: 1px solid rgba(17,17,17,0.18);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--muted);
+    user-select:none;
+    -webkit-user-select:none;
+    pointer-events:none;
+    max-width: 90%;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .footer{
+    padding: 10px 12px;
+    border-top: 1px solid var(--panel-border);
+    background: rgba(255,255,255,0.20);
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.3;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+
+
+
+/* CHANGE HERE: sidebar layout – keep Stage visible, let only Properties body scroll */
+.sidebar > .sidebarBody{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden; /* prevents the whole sidebar from scrolling */
+}
+
+
+
+/* CHANGE HERE: Glyph picker UI (small buttons) */
+.glyphPicker{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.glyphLetters{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 6px;
+}
+
+.glyphLetterBtn{
+  appearance:none;
+  border: 1px solid rgba(17,17,17,0.22);
+  background: rgba(255,255,255,0.38);
+  border-radius: 10px;
+  padding: 4px 6px;
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  cursor:pointer;
+  min-width: 26px;
+  text-align:center;
+}
+
+.glyphLetterBtn[aria-pressed="true"]{
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(17,17,17,0.42);
+}
+
+.glyphWords{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 6px;
+}
+
+.glyphWordBtn{
+  appearance:none;
+  border: 1px solid rgba(17,17,17,0.22);
+  background: rgba(255,255,255,0.38);
+  border-radius: 12px;
+  padding: 6px 8px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.glyphWordBtn[aria-pressed="true"]{
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(17,17,17,0.42);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+}
+
+.glyphPreview{
+  font-family: "TP-Cartouche-Font";
+  font-size: 18px;
+  line-height: 1;
+}
+
+
+/* CHANGE HERE: Properties panel becomes a flex column so header stays fixed */
+.propsPanel{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* CHANGE HERE: Properties body is the scroller */
+#propsBody{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  /* keep content from sitting under scrollbar */
+  padding-right: 6px;
+
+  /* Firefox thin scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(17,17,17,0.35) rgba(255,255,255,0.18);
+}
+
+/* Chrome/Edge/Safari thin scrollbar */
+#propsBody::-webkit-scrollbar{ width: 8px; }
+#propsBody::-webkit-scrollbar-track{
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px;
+}
+#propsBody::-webkit-scrollbar-thumb{
+  background: rgba(17,17,17,0.35);
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.18);
+}
+#propsBody::-webkit-scrollbar-thumb:hover{
+  background: rgba(17,17,17,0.50);
+}
+
+/* Optional: tighten property panel spacing slightly */
+#propsBody .field textarea{ min-height: 380px; }
+
+  textarea.notesScroll{
+    min-height: 120px;
+    max-height: 260px;
+    overflow-y: auto;
+    resize: vertical;
+  }
+
+/* Mixed-value indicator (subtle) */
+.mixedTag{
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  opacity: 0.70;
+}
+
+.nlModeControl{ display:none !important; }
+
+  /* Mobile: collapse sidebar to top drawer-ish */
+  @media (max-width: 860px){
+    .wrap{
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+    .sidebar{ order: 1; }
+    .stagePanel{ order: 2; }
+    .toolGrid{ grid-template-columns: repeat(3, 1fr); }
+  }
+
+  @media (pointer: coarse), (max-width: 520px){
+    /* CHANGE HERE: topbar height is now content-driven; remove fixed 52px */
+    .topbar{ padding: 8px 8px; gap: 6px; }
+
+    .btn{ font-size: 13px; padding: 6px 8px; border-radius: 10px; }
+    .toolBtn{ font-size: 13px; padding: 6px 8px; border-radius: 12px; }
+
+    .chip{ font-size: 12px; max-width: 48vw; }
+    .wrap{ padding: 8px; gap: 10px; }
+    .panelHeader h2{ font-size: 16px; }
+  }
+
+  /* I18N language selector */
+  .inlineLabel{
+    font-size: 12px;
+    color: var(--muted);
+    margin-right: 6px;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .langSel{
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--panel-border);
+    background: rgba(255,255,255,0.55);
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+  }
+
+
+  /* ============================================================
+   Sitelen text pop-out editor
+   - visually matches the modal style from tokiponize-names
+   - draggable
+   - resizable
+   ============================================================ */
+
+.fieldLabelRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.fieldLabelRow > label{
+  margin: 0;
+}
+
+.popoutIconBtn{
+  appearance:none;
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.50);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 4px 8px;
+  line-height: 1;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.popoutIconBtn:hover{
+  background: rgba(255,255,255,0.72);
+}
+.popoutIconBtn:focus-visible{
+  outline: 2px solid rgba(17,17,17,0.45);
+  outline-offset: 2px;
+}
+
+.floatingEditor{
+  position: fixed;
+  left: 360px;
+  top: 120px;
+  width: min(720px, calc(100vw - 32px));
+  height: min(420px, calc(100vh - 32px));
+  min-width: 320px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.20);
+
+  resize: both;
+  overflow: hidden;
+}
+
+.floatingEditor.hidden{
+  display: none;
+}
+
+/* keep legacy .show class working (search window uses it) */
+.floatingEditor.show{
+  display: flex;
+}
+
+.floatingEditorHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.20);
+  cursor: move;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+.floatingEditorHeader h3{
+  margin: 0;
+  font-size: 14px;
+}
+
+.floatingEditorBody{
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px;
+  background: rgba(255,255,255,0.35);
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.floatingEditorBody textarea{
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  resize: none;
+  box-sizing: border-box;
+  border: 1px solid rgba(17,17,17,0.20);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  flex: 1 1 auto;
+}
+
+.floatingMediaControls{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  border: 1px solid rgba(17,17,17,0.16);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,0.28);
+}
+.floatingMediaControls.hidden{ display:none !important; }
+.floatingMediaRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.floatingMediaRow input[type="range"]{
+  flex:1 1 auto;
+  min-width: 80px;
+}
+.floatingMediaTime{
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 56px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.floatingMediaHint{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.scrapbookSearchWindow{
+  width: min(760px, calc(100vw - 32px));
+  height: min(520px, calc(100vh - 32px));
+  min-width: 360px;
+  min-height: 240px;
+}
+.scrapbookSearchToolbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+}
+.scrapbookSearchToolbar input{
+  flex:1 1 auto;
+  min-width:0;
+  border: 1px solid rgba(17,17,17,0.20);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.scrapbookSearchResults{
+  flex:1 1 auto;
+  min-height:0;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding-right:4px;
+}
+.scrapbookSearchEmpty{
+  border:1px dashed rgba(17,17,17,0.18);
+  border-radius:12px;
+  padding:12px;
+  background:rgba(255,255,255,0.28);
+  color:var(--muted);
+  font-size:14px;
+}
+.scrapbookSearchItem{
+  appearance:none;
+  width:100%;
+  text-align:left;
+  border:1px solid rgba(17,17,17,0.16);
+  background:rgba(255,255,255,0.45);
+  border-radius:12px;
+  padding:10px 12px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.scrapbookSearchItem:hover{ background:rgba(255,255,255,0.68); }
+.scrapbookSearchItem.active{ outline:2px solid rgba(80,120,255,.7); background:rgba(255,255,255,0.76); }
+.scrapbookSearchMeta{ font-size:12px; color:var(--muted); font-weight:700; }
+.scrapbookSearchTitle{ font-size:14px; font-weight:800; color:var(--ink); }
+.scrapbookSearchSnippet{ font-size:13px; color:var(--muted); white-space:pre-wrap; word-break:break-word; }
+
+@media (max-width: 860px){
+  .floatingEditor{
+    left: 12px;
+    top: 12px;
+    width: calc(100vw - 24px);
+    height: min(50vh, calc(100vh - 24px));
+  }
+}
+
+
+/* scrapbook shell overrides */
+.wrap.scrapbookShell{
+  grid-template-columns: 300px minmax(0, 1fr) 320px !important;
+  grid-template-areas: "doc stage side";
+  align-items: stretch;
+}
+.wrap.scrapbookShell > .docSidebar{
+  grid-area: doc;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  align-self:stretch;
+}
+.wrap.scrapbookShell > .stagePanel{
+  grid-area: stage;
+  min-width:0;
+  min-height:0;
+  align-self:stretch;
+}
+.wrap.scrapbookShell > .sidebar{
+  grid-area: side;
+  min-height:0;
+  align-self:stretch;
+}
+.docSidebarBody{ padding:12px; display:flex; flex-direction:column; gap:12px; overflow:auto; min-height:0; }
+.docNotesPanel,
+.pageNotesPanel{ display:flex; flex-direction:column; min-height:0; }
+.docNotesPanel{ max-height:22vh; }
+.pageNotesPanel{ max-height:28vh; }
+.pagesPanel{ flex:1 1 auto; min-height:300px; }
+.docNotesPanel .stageMiniBody,
+.pageNotesPanel .stageMiniBody{ flex:1 1 auto; min-height:0; overflow:auto; max-height:none; }
+.pageNotesPanel .stageMiniBody{ display:flex; flex-direction:column; gap:10px; }
+.pageNotesPanel .row:last-of-type{ flex:1 1 auto; min-height:0; }
+.pageNotesPanel .field:has(#sbPageNotes){ display:flex; flex-direction:column; min-height:0; }
+.pageNotesPanel #sbPageNotes{ flex:1 1 auto; min-height:140px; max-height:none; }
+.pageList{ display:flex; flex-direction:column; gap:10px; }
+.pageCard{ display:grid; grid-template-columns:84px 1fr; gap:10px; align-items:start; padding:8px; border:1px solid rgba(17,17,17,.14); border-radius:12px; background:rgba(255,255,255,.35); cursor:pointer; }
+.pageCard.active{ outline:2px solid rgba(80,120,255,.7); background:rgba(255,255,255,.6); }
+.pageCard.dragging{ opacity:.65; }
+.pageCard.dropBefore{ box-shadow: inset 0 3px 0 rgba(80,120,255,.8); }
+.pageListDropEnd{ min-height:18px; border:1px dashed rgba(17,17,17,.18); border-radius:10px; background:rgba(255,255,255,.22); }
+.pageListDropEnd.active{ border-color:rgba(80,120,255,.8); background:rgba(80,120,255,.12); }
+.pageThumb{ width:84px; height:56px; object-fit:contain; background:white; border:1px solid rgba(17,17,17,.12); border-radius:8px; }
+.pageMeta{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.pageMeta input{ width:100%; }
+.pageMiniBtns{ display:flex; gap:6px; flex-wrap:wrap; }
+.docRowBtns{ display:flex; gap:8px; flex-wrap:wrap; }
+.topbar .scrapbookGroup{ display:flex; gap:8px; flex-wrap:wrap; }
+@media (max-width: 1100px){
+  .wrap.scrapbookShell{
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "doc"
+      "stage"
+      "side";
+  }
+  .wrap.scrapbookShell > .docSidebar,
+  .wrap.scrapbookShell > .stagePanel,
+  .wrap.scrapbookShell > .sidebar{ grid-area:auto; }
+}
+
+
+.urlDialogBackdrop{position:fixed;inset:0;background:rgba(0,0,0,0.18);display:none;align-items:center;justify-content:center;z-index:10020;}
+.urlDialogBackdrop.show{display:flex;}
+.urlDialogPanel{width:min(680px,calc(100vw - 32px));background:var(--bg);border:1px solid var(--panel-border);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.22);padding:14px;display:flex;flex-direction:column;gap:10px;}
+.urlDialogRow{display:flex;gap:8px;align-items:center;}
+.urlDialogRow input{flex:1 1 auto;min-width:0;border:1px solid rgba(17,17,17,0.20);border-radius:10px;padding:10px 12px;background:rgba(255,255,255,0.7);color:var(--ink);font:inherit;}
+.urlDialogHint{font-size:13px;color:var(--muted);}
+
