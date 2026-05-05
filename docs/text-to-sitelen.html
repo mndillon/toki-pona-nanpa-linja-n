@@ -666,6 +666,19 @@ nanpa #~WI.
           <div id="alignHelp" class="sr-only">Changes line alignment of the rendered output.</div>
         </div>
 
+        <!-- Spacing preset -->
+        <div id="ctlSpacingPreset" class="inlineControl inlinePill" role="group" aria-label="Spacing preset">
+          <span class="ctlLabel">
+            Spacing <span class="tpInline">insa pi sitelen</span>
+          </span>
+          <select id="appSpacingPresetSel" aria-describedby="spacingPresetHelp">
+            <option value="default" selected>Default</option>
+            <option value="compact">Compact</option>
+            <option value="comfortable">Comfortable</option>
+          </select>
+          <div id="spacingPresetHelp" class="sr-only">Changes glyph, cartouche, and line spacing for preview, PNG export, and PDF export.</div>
+        </div>
+
 
         <!-- Halo toggle -->
         <div id="ctlHaloEnable" class="inlineControl inlinePill" role="group" aria-label="Halo">
@@ -880,7 +893,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=40";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -1313,8 +1326,8 @@ nanpa #~WI.
         layout: {
           fontPx,
           align: getAlignMode(),
-          paddingPx: 18,
-          lineGapPx: lineGapForPx(fontPx)
+          spacingPreset: getSpacingPreset(),
+          paddingPx: 18
         },
         paint: {
           fillStyle: getFgHex(),
@@ -1844,6 +1857,58 @@ function wireHaloControls() {
       sel.addEventListener("change", async () => {
         try {
           setAlignMode(sel.value);
+          await renderFromTextarea();
+        } catch (e) {
+          showAlertAndAnnounce(e?.message ?? String(e));
+        }
+      });
+    }
+
+    const SPACING_PRESET_STORAGE_KEY = "tpSpacingPreset";
+    const SPACING_PRESET_DEFAULT = "default";
+    const SPACING_PRESET_ALLOWED = new Set(["default", "compact", "comfortable"]);
+
+    function normalizeSpacingPreset(value) {
+      const s = String(value ?? "").trim().toLowerCase();
+      return SPACING_PRESET_ALLOWED.has(s) ? s : SPACING_PRESET_DEFAULT;
+    }
+
+    function loadSpacingPresetFromStorage() {
+      try {
+        const raw = localStorage.getItem(SPACING_PRESET_STORAGE_KEY);
+        return raw == null ? null : normalizeSpacingPreset(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function saveSpacingPresetToStorage(value) {
+      try { localStorage.setItem(SPACING_PRESET_STORAGE_KEY, normalizeSpacingPreset(value)); } catch {}
+    }
+
+    function getSpacingPreset() {
+      const sel = document.getElementById("appSpacingPresetSel");
+      return normalizeSpacingPreset(sel?.value ?? SPACING_PRESET_DEFAULT);
+    }
+
+    function setSpacingPreset(value, { persist = true } = {}) {
+      const preset = normalizeSpacingPreset(value);
+      const sel = document.getElementById("appSpacingPresetSel");
+      if (sel) sel.value = preset;
+      if (persist) saveSpacingPresetToStorage(preset);
+      return preset;
+    }
+
+    function applySpacingPresetFromStorage() {
+      setSpacingPreset(loadSpacingPresetFromStorage() ?? SPACING_PRESET_DEFAULT, { persist: false });
+    }
+
+    function wireSpacingPresetSelect() {
+      const sel = document.getElementById("appSpacingPresetSel");
+      if (!sel) return;
+      sel.addEventListener("change", async () => {
+        try {
+          setSpacingPreset(sel.value);
           await renderFromTextarea();
         } catch (e) {
           showAlertAndAnnounce(e?.message ?? String(e));
@@ -5859,9 +5924,12 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         initHaloControls();
         wireHaloControls();
 
+        applySpacingPresetFromStorage();
+
         wireNanpaLinjanModeRadios();
         wireFontSizeSelect();
         wireAlignSelect();
+        wireSpacingPresetSelect();
         wireScriptPresetSelect();
         wireTextFontSelect();
         wireCartoucheDisplayLinks();

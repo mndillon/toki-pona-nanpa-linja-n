@@ -437,7 +437,7 @@
 </div>
 
 <script type="module">
-import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31";
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=36";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -638,6 +638,43 @@ window.SitelenRenderer = SitelenRenderer;
   const HANDLE = 12;
   const ROTATE_HANDLE_OFFSET = 28;
   const AUTOSAVE_MS = 400;
+
+  const SPACING_PRESETS = Object.freeze(["default", "compact", "comfortable"]);
+
+  function normalizeSpacingPreset(value){
+    const v = String(value ?? "").trim().toLowerCase();
+    return SPACING_PRESETS.includes(v) ? v : "default";
+  }
+
+  function getItemSpacingPreset(item){
+    return normalizeSpacingPreset(
+      item?.spacingPreset ??
+      App?.project?.defaults?.item?.spacingPreset ??
+      "default"
+    );
+  }
+
+  function makeSpacingPresetSelect(value, onChange){
+    const sel = document.createElement("select");
+    const current = normalizeSpacingPreset(value);
+    for (const opt of SPACING_PRESETS){
+      const o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt === "default" ? "Default" : (opt === "compact" ? "Compact" : "Comfortable");
+      if (opt === current) o.selected = true;
+      sel.appendChild(o);
+    }
+    sel.addEventListener("change", () => onChange(normalizeSpacingPreset(sel.value)));
+    return sel;
+  }
+
+  function lineGapForSpacingPreset(fontPx, spacingPreset){
+    const p = Math.max(8, Number(fontPx ?? 56));
+    const preset = normalizeSpacingPreset(spacingPreset);
+    if (preset === "compact") return Math.max(4, Math.min(32, Math.round(p * 0.24)));
+    if (preset === "comfortable") return Math.max(10, Math.min(72, Math.round(p * 0.55)));
+    return Math.max(4, Math.min(40, Math.round(p * 0.32)));
+  }
 
   const SitelenFull = (() => {
     const WORD_TO_UCSUR_CP = {
@@ -3272,6 +3309,7 @@ window.SitelenRenderer = SitelenRenderer;
           fontFamily: defaultItemFonts.fontFamily,
           fontSize: 56,
           align: "center",
+          spacingPreset: "default",
           color: "#111111",
           opacity: 1,
           haloEnabled: true,
@@ -3380,6 +3418,7 @@ window.SitelenRenderer = SitelenRenderer;
     project.defaults.item.haloThickness = clamp(Number(project.defaults.item.haloThickness ?? base.defaults.item.haloThickness), 0, 48);
     project.defaults.item.fontSize = Math.max(6, Number(project.defaults.item.fontSize || base.defaults.item.fontSize));
     project.defaults.item.fontFamily = normalizeLiteralFontFamily(project.defaults.item.fontFamily, project.defaults.item.sitelenFontFamily);
+    project.defaults.item.spacingPreset = normalizeSpacingPreset(project.defaults.item.spacingPreset);
     project.defaults.item.ignoreUnknownText = !!project.defaults.item.ignoreUnknownText;
 
     const palette = getProjectPaletteState(project);
@@ -3396,6 +3435,7 @@ window.SitelenRenderer = SitelenRenderer;
         if (!item || typeof item !== "object") continue;
         item.sitelenFontFamily = normalizeSitelenFontFamilyKey(item.sitelenFontFamily);
         item.fontFamily = normalizeLiteralFontFamily(item.fontFamily, item.sitelenFontFamily);
+        item.spacingPreset = normalizeSpacingPreset(item.spacingPreset ?? project.defaults.item.spacingPreset);
         item.ignoreUnknownText = !!item.ignoreUnknownText;
       }
     }
@@ -3453,6 +3493,7 @@ window.SitelenRenderer = SitelenRenderer;
       for (const item0 of seg0.items){
         item0.sitelenFontFamily = normalizeSitelenFontFamilyKey(item0.sitelenFontFamily);
         item0.fontFamily = normalizeLiteralFontFamily(item0.fontFamily, item0.sitelenFontFamily);
+        item0.spacingPreset = normalizeSpacingPreset(item0.spacingPreset ?? App.project.defaults.item.spacingPreset);
         item0.color = normalizeColor(item0.color, App.project.defaults.item.color);
         item0.haloColor = normalizeColor(item0.haloColor, App.project.defaults.item.haloColor);
         item0.ignoreUnknownText = !!item0.ignoreUnknownText;
@@ -3504,6 +3545,7 @@ window.SitelenRenderer = SitelenRenderer;
       fontFamily: normalizeLiteralFontFamily(d.fontFamily, d.sitelenFontFamily),
       fontSize: d.fontSize,
       align: d.align,
+      spacingPreset: normalizeSpacingPreset(d.spacingPreset),
       color: d.color,
       opacity: d.opacity,
       haloEnabled: d.haloEnabled,
@@ -3969,6 +4011,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(d.sitelenFontFamily, (v) => { d.sitelenFontFamily = v; d.fontFamily = normalizeLiteralFontFamily(d.fontFamily, v); defaultsChanged(); })));
     sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(d.fontFamily, d.sitelenFontFamily, (v) => { d.fontFamily = v; defaultsChanged(); })));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], d.align, (v) => { d.align = v; defaultsChanged(); })));
+    sec.appendChild(makeField("Spacing", makeSpacingPresetSelect(d.spacingPreset, (v) => { d.spacingPreset = v; defaultsChanged(); })));
     sec.appendChild(makeField("Text color", makeColorControl(d.color, (v) => { d.color = v; defaultsChanged(false); }, (v) => { d.color = v; defaultsChanged(); })));
     sec.appendChild(makeField("Halo enabled", makeCheckbox(!!d.haloEnabled, (checked) => { d.haloEnabled = checked; defaultsChanged(); })));
     sec.appendChild(makeField("Halo color", makeColorControl(d.haloColor, (v) => { d.haloColor = v; defaultsChanged(false); }, (v) => { d.haloColor = v; defaultsChanged(); })));
@@ -3997,6 +4040,7 @@ window.SitelenRenderer = SitelenRenderer;
         item.fontFamily = d.fontFamily;
         item.fontSize = d.fontSize;
         item.align = d.align;
+        item.spacingPreset = normalizeSpacingPreset(d.spacingPreset);
         item.color = d.color;
         item.opacity = d.opacity;
         item.haloEnabled = d.haloEnabled;
@@ -4092,6 +4136,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(item.fontFamily, item.sitelenFontFamily, (v) => patchActiveItem({ fontFamily: v }, true))));
     sec.appendChild(makeField("Font size", makeFontSizeControl(item.fontSize, (v) => patchActiveItem({ fontSize: Math.max(6, v) }, true))));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], item.align, (v) => patchActiveItem({ align: v }, true))));
+    sec.appendChild(makeField("Spacing", makeSpacingPresetSelect(getItemSpacingPreset(item), (v) => patchActiveItem({ spacingPreset: v }, true))));
     sec.appendChild(makeField("Text color", makeColorControl(item.color, (v) => patchActiveItem({ color: v }, false), (v) => patchActiveItem({ color: v }, true))));
     sec.appendChild(makeField("Opacity", makeNumberInput(item.opacity, 0.05, 0, 1, (v) => patchActiveItem({ opacity: clamp(v,0,1) }, true))));
     sec.appendChild(makeField("Halo enabled", makeCheckbox(!!item.haloEnabled, (checked) => patchActiveItem({ haloEnabled: checked }, true))));
@@ -4340,6 +4385,9 @@ window.SitelenRenderer = SitelenRenderer;
     }
     if (Object.prototype.hasOwnProperty.call(nextPatch, "fontFamily")){
       nextPatch.fontFamily = normalizeLiteralFontFamily(nextPatch.fontFamily, nextPatch.sitelenFontFamily || item.sitelenFontFamily);
+    }
+    if (Object.prototype.hasOwnProperty.call(nextPatch, "spacingPreset")){
+      nextPatch.spacingPreset = normalizeSpacingPreset(nextPatch.spacingPreset);
     }
     Object.assign(item, nextPatch);
     item.updatedAt = nowIso();
@@ -4982,6 +5030,7 @@ window.SitelenRenderer = SitelenRenderer;
       String(item.fontFamily || ''),
       Number(item.fontSize || 24),
       String(item.align || 'left'),
+      getItemSpacingPreset(item),
       String(item.color || ''),
       Number(item.opacity ?? 1),
       !!item.haloEnabled,
@@ -5052,13 +5101,14 @@ window.SitelenRenderer = SitelenRenderer;
     const pad = Math.max(8, Math.round(fontPx * 0.16) + Math.ceil(haloThickness));
 
     const literalFontFamily = resolveLiteralFontFamily(item.fontFamily, item.sitelenFontFamily);
+    const spacingPreset = getItemSpacingPreset(item);
 
     SitelenFull.renderTextToCanvas(off, CartoucheApi.prepareInput(String(item.text || ''), pageMap), {
       fontPx,
       mode: "uniform",
       fgCss: normalizeColor(item.color, '#111111'),
       padPx: pad,
-      lineGapPx: Math.max(4, Math.round(fontPx * 0.32)),
+      lineGapPx: lineGapForSpacingPreset(fontPx, spacingPreset),
       literalFontFamily,
       literalFontAlignment: (item.align || 'left'),
       haloEnabled: !!item.haloEnabled,
@@ -5077,15 +5127,21 @@ window.SitelenRenderer = SitelenRenderer;
     const haloEnabled = !!item.haloEnabled;
     const haloWidth = haloEnabled ? ((Number(item.haloThickness) > 0) ? Number(item.haloThickness) : defaultHaloThicknessForFontPx(fontPx)) : 0;
 
+    const spacingPreset = getItemSpacingPreset(item);
+    const layout = {
+      fontPx,
+      spacingPreset,
+      paddingPx: Math.max(8, Math.round(fontPx * 0.16) + Math.ceil(haloWidth)),
+      align: String(item.align || 'left')
+    };
+    if (spacingPreset === "default") {
+      layout.lineGapPx = Math.max(4, Math.round(fontPx * 0.32));
+    }
+
     try{
       const rendered = await renderer.renderTextToNewCanvas({
         input: CartoucheApi.prepareInput(String(item.text || ''), pageMap),
-        layout: {
-          fontPx,
-          paddingPx: Math.max(8, Math.round(fontPx * 0.16) + Math.ceil(haloWidth)),
-          lineGapPx: Math.max(4, Math.round(fontPx * 0.32)),
-          align: String(item.align || 'left')
-        },
+        layout,
         paint: {
           fillStyle: normalizeColor(item.color, '#111111'),
           halo: {

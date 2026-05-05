@@ -299,6 +299,7 @@ const SitelenRenderer = (() => {
       cartoucheCommaTallyMarks: __cartoucheCommaTallyMarks,
       cartoucheTallyMode: __cartoucheTallyMode,
       unknownTextDisplay: { ...__unknownTextDisplay },
+      renderSpacing: { ...__renderSpacing },
     };
   }
 
@@ -322,6 +323,7 @@ const SitelenRenderer = (() => {
       dash: false,
       ...(state.unknownTextDisplay || {})
     };
+    __renderSpacing = { ...DEFAULT_RENDER_SPACING, ...(state.renderSpacing || {}) };
   }
 
   let __renderConfigScopeQueue = Promise.resolve();
@@ -378,6 +380,133 @@ const SitelenRenderer = (() => {
     };
   }
 
+  const DEFAULT_RENDER_SPACING = Object.freeze({
+    glyphGapScale: 0.22,
+    glyphGapMinPx: 2,
+    glyphGapMaxPx: 24,
+    cartoucheLeadGapScale: 0.08,
+    cartouchePadScale: 0.11,
+    cartouchePadMinPx: 4,
+    lineGapScale: 0.32,
+    lineGapMinPx: 4,
+    lineGapMaxPx: 40,
+  });
+
+  const RENDER_SPACING_PRESETS = Object.freeze({
+    default: { ...DEFAULT_RENDER_SPACING },
+    compact: {
+      glyphGapScale: 0.06,
+      glyphGapMinPx: 0,
+      glyphGapMaxPx: 8,
+
+      cartoucheLeadGapScale: 0.00,
+      cartouchePadScale: 0.06,
+      cartouchePadMinPx: 2,
+
+      lineGapScale: 0.24,
+      lineGapMinPx: 4,
+      lineGapMaxPx: 32
+    },
+    comfortable: {
+      glyphGapScale: 0.38,
+      glyphGapMinPx: 6,
+      glyphGapMaxPx: 42,
+
+      cartoucheLeadGapScale: 0.18,
+      cartouchePadScale: 0.14,
+      cartouchePadMinPx: 5,
+
+      lineGapScale: 0.55,
+      lineGapMinPx: 10,
+      lineGapMaxPx: 72
+    },
+  });
+
+  let __renderSpacing = { ...DEFAULT_RENDER_SPACING };
+
+  function normalizeRenderSpacingPreset(value) {
+    const key = String(value ?? "default").trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(RENDER_SPACING_PRESETS, key) ? key : "default";
+  }
+
+  function nonNegativeFiniteOr(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(0, n) : fallback;
+  }
+
+  function applyRenderSpacingConfig(layout = {}) {
+    const presetKey = normalizeRenderSpacingPreset(layout.spacingPreset);
+    const next = { ...RENDER_SPACING_PRESETS[presetKey] };
+
+    if (layout.glyphGapScale != null) next.glyphGapScale = nonNegativeFiniteOr(layout.glyphGapScale, next.glyphGapScale);
+    if (layout.glyphGapMinPx != null) next.glyphGapMinPx = nonNegativeFiniteOr(layout.glyphGapMinPx, next.glyphGapMinPx);
+    if (layout.glyphGapMaxPx != null) next.glyphGapMaxPx = nonNegativeFiniteOr(layout.glyphGapMaxPx, next.glyphGapMaxPx);
+    if (layout.cartoucheLeadGapScale != null) next.cartoucheLeadGapScale = nonNegativeFiniteOr(layout.cartoucheLeadGapScale, next.cartoucheLeadGapScale);
+    if (layout.cartouchePadScale != null) next.cartouchePadScale = nonNegativeFiniteOr(layout.cartouchePadScale, next.cartouchePadScale);
+    if (layout.cartouchePadMinPx != null) next.cartouchePadMinPx = nonNegativeFiniteOr(layout.cartouchePadMinPx, next.cartouchePadMinPx);
+    if (layout.lineGapScale != null) next.lineGapScale = nonNegativeFiniteOr(layout.lineGapScale, next.lineGapScale);
+    if (layout.lineGapMinPx != null) next.lineGapMinPx = nonNegativeFiniteOr(layout.lineGapMinPx, next.lineGapMinPx);
+    if (layout.lineGapMaxPx != null) next.lineGapMaxPx = nonNegativeFiniteOr(layout.lineGapMaxPx, next.lineGapMaxPx);
+
+    if (next.glyphGapMaxPx < next.glyphGapMinPx) next.glyphGapMaxPx = next.glyphGapMinPx;
+    if (next.lineGapMaxPx < next.lineGapMinPx) next.lineGapMaxPx = next.lineGapMinPx;
+
+    __renderSpacing = next;
+  }
+
+  function wordGapForPx(px) {
+    const p = Math.max(8, Number(px ?? 56));
+    return Math.max(
+      __renderSpacing.glyphGapMinPx,
+      Math.min(__renderSpacing.glyphGapMaxPx, Math.round(p * __renderSpacing.glyphGapScale))
+    );
+  }
+
+  function cartoucheLeadGapForPx(fontPx) {
+    const p = Math.max(8, Number(fontPx ?? 56));
+    return Math.max(0, Math.round(p * __renderSpacing.cartoucheLeadGapScale));
+  }
+
+  function cartouchePadForPx(fontPx) {
+    const p = Math.max(8, Number(fontPx ?? 56));
+    return Math.max(
+      __renderSpacing.cartouchePadMinPx ?? 4,
+      Math.round(p * (__renderSpacing.cartouchePadScale ?? 0.11))
+    );
+  }
+
+  function lineGapForPx(px) {
+    const p = Math.max(8, Number(px ?? 56));
+    return Math.max(
+      __renderSpacing.lineGapMinPx,
+      Math.min(__renderSpacing.lineGapMaxPx, Math.round(p * __renderSpacing.lineGapScale))
+    );
+  }
+
+  function shouldUseExplicitLineGapPx(layout = {}) {
+    const n = Number(layout?.lineGapPx);
+    if (!Number.isFinite(n)) return false;
+
+    // Backward compatibility: older callers may always pass lineGapPx computed
+    // from the legacy/default formula. Keep that exact behavior for missing or
+    // default spacingPreset, but do not let that legacy value mask the compact
+    // or comfortable preset's own line spacing.
+    const rawPreset = String(layout?.spacingPreset ?? "").trim();
+    const preset = normalizeRenderSpacingPreset(rawPreset || "default");
+    if (rawPreset && preset !== "default") {
+      return layout?.forceLineGapPx === true || layout?.lineGapPxMode === "exact";
+    }
+
+    return true;
+  }
+
+  function resolveLineGapPxForLayout(layout = {}, fontPx) {
+    if (shouldUseExplicitLineGapPx(layout)) {
+      return Math.max(0, Number(layout.lineGapPx));
+    }
+    return lineGapForPx(fontPx);
+  }
+
   function withScopedRenderConfig(config, work) {
     const run = async () => {
       const prev = captureRenderFontState();
@@ -400,6 +529,7 @@ const SitelenRenderer = (() => {
 
   function applyRenderConfig(config = {}) {
     const layout = config.layout || {};
+    applyRenderSpacingConfig(layout);
     const paint = config.paint || {};
     const parser = config.parser || {};
     const fonts = config.fonts || {};
@@ -679,7 +809,7 @@ const SitelenRenderer = (() => {
   function buildMeasuredRenderPlan(linesElements, config = {}) {
     const fontPx = Math.max(8, Number(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56));
     const pad = Number.isFinite(Number(config?.layout?.paddingPx)) ? Math.max(0, Number(config.layout.paddingPx)) : 18;
-    const lineGap = Number.isFinite(Number(config?.layout?.lineGapPx)) ? Math.max(0, Number(config.layout.lineGapPx)) : lineGapForPx(fontPx);
+    const lineGap = resolveLineGapPxForLayout(config?.layout || {}, fontPx);
     const haloOn = !!config?.paint?.halo?.enabled;
     const haloWidthPx = Math.max(0, Math.round(Number(config?.paint?.halo?.widthPx ?? 0) || 0));
     const haloExtra = haloOn ? (haloWidthPx > 0 ? haloWidthPx : Math.max(1, Math.round(fontPx * 0.08))) : 0;
@@ -997,7 +1127,12 @@ const SitelenRenderer = (() => {
       if (typeof __bridgeWarmUpCanvasFontsOnce === 'function') __bridgeWarmUpCanvasFontsOnce();
       const linesElements = await astToLineElements(ast, config);
       const canvas = document.createElement('canvas');
-      __bridgeRenderAllLinesToCanvas(canvas, linesElements, { fontPx: Math.max(8, Number(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56)) });
+      const renderFontPx = Math.max(8, Number(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56));
+      __bridgeRenderAllLinesToCanvas(canvas, linesElements, {
+        fontPx: renderFontPx,
+        lineGapPx: resolveLineGapPxForLayout(config?.layout || {}, renderFontPx),
+        paddingPx: config?.layout?.paddingPx
+      });
       return { canvas, ast, linesElements };
     });
   }
@@ -1450,21 +1585,8 @@ function wireHaloControls() {
     const WORD_GAP_PX  = 12;
     const LINE_GAP_PX  = 18;
 
-    function wordGapForPx(px){
-      const p = Math.max(8, Number(px ?? 56));
-      return Math.max(2, Math.min(24, Math.round(p * 0.22)));  // ~22% of font size
-    }
-
-    function cartoucheLeadGapForPx(fontPx){
-      // smaller than normal word gap; tune these
-      const p = Math.max(8, Number(fontPx ?? 56));
-      return Math.max(0, Math.round(p * 0.08)); // e.g. ~8% of font size
-    }
-
-    function lineGapForPx(px){
-      const p = Math.max(8, Number(px ?? 56));
-      return Math.max(4, Math.min(40, Math.round(p * 0.32)));  // ~32% of font size
-    }
+    // Keep the legacy constants above for compatibility, but compute live gaps
+    // from the shared render-spacing state so API calls can opt into presets.
 
     const CARTOUCHE_START_CP = 0xF1990;
     const CARTOUCHE_END_CP   = 0xF1991;
@@ -3903,7 +4025,7 @@ function wireHaloControls() {
       const right = (m.actualBoundingBoxRight != null) ? m.actualBoundingBoxRight : Math.ceil(m.width);
 
       const haloW = haloEnabled ? haloWidthForPx(px) : 0;
-      const tallySideExtra = hasManualTallies ? Math.ceil(px * 0.18 + haloW) : 0;
+      const tallySideExtra = 0;
       const tallyBottomExtra = hasManualTallies ? Math.ceil(px * 0.34 + (haloEnabled ? haloW * 0.90 : 0)) : 0;
 
       const w = Math.max(1, Math.ceil(left + right + pad * 2 + haloW * 2 + tallySideExtra * 2));
@@ -4388,7 +4510,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
 
       const cart = document.createElement("canvas");
-      const padPx = Math.max(4, Math.round(fontPx * 0.11));
+      const padPx = cartouchePadForPx(fontPx);
 
       const haloEnabled = getHaloEnabled();
       const haloCss = getHaloHex();
@@ -5147,9 +5269,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
 
 
-    function renderAllLinesToCanvas(outCanvas, linesElements, { fontPx }) {
-      const pad = 18;
-      const lineGap = lineGapForPx(fontPx);
+    function renderAllLinesToCanvas(outCanvas, linesElements, { fontPx, lineGapPx = null, paddingPx = 18 } = {}) {
+      const pad = Number.isFinite(Number(paddingPx)) ? Math.max(0, Number(paddingPx)) : 18;
+      const lineGap = Number.isFinite(Number(lineGapPx)) ? Math.max(0, Number(lineGapPx)) : lineGapForPx(fontPx);
       const tmp = document.createElement("canvas");
       const ctx = tmp.getContext("2d");
       ctx.textBaseline = "alphabetic";

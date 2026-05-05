@@ -115,6 +115,7 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       lbl_stage_bg: "Stage background",
       lbl_default_render_font: "Default script family",
       lbl_default_text_font: "Default text font",
+      lbl_default_spacing: "Default sitelen spacing",
       lbl_default_text: "Default text",
       lbl_default_fill_enabled: "Default allow fill",
       lbl_default_fill: "Default fill",
@@ -168,6 +169,7 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       props_align_left: "Left",
       props_align_center: "Center",
       props_align_right: "Right",
+      props_spacing: "Spacing",
       props_text: "Text",
       props_text_color: "Text color",
       props_line_height: "Line height",
@@ -378,6 +380,8 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       lbl_export_stage_bg: "pana la monsi lon",
       lbl_stage_bg: "monsi pi supa",
       lbl_default_render_font: "kulupu sitelen pona open",
+      lbl_default_text_font: "kulupu sitelen Lasina open",
+      lbl_default_spacing: "weka pi sitelen pona open",
       lbl_default_text: "kule sitelen open",
       lbl_default_fill_enabled: "pana kule: ken",
       lbl_default_fill: "kule insa open",
@@ -430,6 +434,7 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       props_align_left: "poka open",
       props_align_center: "insa",
       props_align_right: "poka pini",
+      props_spacing: "weka",
       props_text: "sitelen",
       props_text_color: "kule sitelen",
       props_line_height: "suli pi linja",
@@ -704,6 +709,7 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
     setLabel("stageBg", "lbl_stage_bg");
     setLabel("defRenderFontPreset", "lbl_default_render_font");
     setLabel("defTextFontOption", "lbl_default_text_font");
+    setLabel("defSpacingPreset", "lbl_default_spacing");
     setLabel("defTextColor", "lbl_default_text");
     setLabel("defaultFillEnabled", "lbl_default_fill_enabled");
     setLabel("defaultFill", "lbl_default_fill");
@@ -960,6 +966,7 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
     exportStageBackground: false,
     defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
     defaultTextFontOption: FONT_FAMILY_LITERAL,
+    defaultSpacingPreset: "default",
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
     defaultFill: "#111111",// default fill for shapes/boxes
     defaultFillEnabled: false,
@@ -980,6 +987,33 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
     bgImgKeepAspect: true,
     bgImgStretch: false,
   });
+
+  const SPACING_PRESETS = Object.freeze(["default", "compact", "comfortable"]);
+
+  function normalizeSpacingPreset(value){
+    const v = String(value ?? "").trim().toLowerCase();
+    return SPACING_PRESETS.includes(v) ? v : "default";
+  }
+
+  function getSceneDefaultSpacingPreset(){
+    return normalizeSpacingPreset(Scene?.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
+  }
+
+  function getElementSpacingPreset(el){
+    return normalizeSpacingPreset(
+      el?.spacingPreset ??
+      Scene?.stage?.defaultSpacingPreset ??
+      DEFAULTS.defaultSpacingPreset
+    );
+  }
+
+  function spacingPresetSelectOptions(){
+    return [
+      ["default", "Default"],
+      ["compact", "Compact"],
+      ["comfortable", "Comfortable"],
+    ];
+  }
 
 
     const RENDER_FONT_PRESETS = {
@@ -1259,7 +1293,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=37').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -1381,13 +1415,16 @@ function buildRendererCallConfigForElement(el){
       : defaultHaloThicknessForFontPx(fontPx))
     : 0;
   const isGlyph = !!el && el.type === ElementType.Glyph;
+  const spacingPreset = getElementSpacingPreset(el);
+  const layout = {
+    fontPx,
+    align: String(el?.align ?? 'left'),
+    spacingPreset,
+    paddingPx: (isGlyph ? 0 : DEFAULT_PAD_PX) + haloWidth
+  };
+  if (spacingPreset === "default") layout.lineGapPx = lineGapForPx(fontPx);
   return {
-    layout: {
-      fontPx,
-      align: String(el?.align ?? 'left'),
-      paddingPx: (isGlyph ? 0 : DEFAULT_PAD_PX) + haloWidth,
-      lineGapPx: lineGapForPx(fontPx)
-    },
+    layout,
     paint: {
       fillStyle: el?.color || '#111111',
       halo: {
@@ -1459,6 +1496,7 @@ function getElementRendererSignature(el){
     text: String(el?.text ?? ''),
     codepoint: String(el?.codepoint ?? ''),
     align: String(el?.align ?? 'left'),
+    spacingPreset: getElementSpacingPreset(el),
     fontPx: Math.max(6, Number(el?.fontSize ?? 44)),
     color: String(el?.color ?? '#111111'),
     preset: getElementRenderFontPresetKey(el),
@@ -1834,6 +1872,7 @@ function normalizeScene(parsed){
     exportStageBackground: DEFAULTS.exportStageBackground,
     defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
     defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+    defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
     defaultTextColor: DEFAULTS.defaultTextColor,
     defaultFill: DEFAULTS.defaultFill,
     defaultFillEnabled: DEFAULTS.defaultFillEnabled,
@@ -1871,6 +1910,7 @@ function normalizeScene(parsed){
   if (out.stage.bgImgAssetId != null) out.stage.bgImgAssetId = String(out.stage.bgImgAssetId);
   out.stage.defaultRenderFontPreset = normalizeLegacyRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   out.stage.defaultTextFontOption = normalizeLegacyTextFontOptionKey(out.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, out.stage.defaultRenderFontPreset);
+  out.stage.defaultSpacingPreset = normalizeSpacingPreset(out.stage.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
   out.stage.defaultIgnoreUnknownText = !!(out.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
 
   if (!out.stage.bgImgAssetId){
@@ -1954,6 +1994,7 @@ function normalizeScene(parsed){
         el.ignoreUnknownText = (el.ignoreUnknownText == null)
           ? !!(out.stage?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText)
           : !!el.ignoreUnknownText;
+        el.spacingPreset = normalizeSpacingPreset(el.spacingPreset ?? out.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
         if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
 
         // Migrate sitelenResizeAnchor for existing elements that predate this property.
@@ -2298,6 +2339,7 @@ function deserializeAssets(serialized){
       exportStageBackground: DEFAULTS.exportStageBackground,
       defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
       defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+      defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
       defaultTextColor: DEFAULTS.defaultTextColor,
       defaultFill: DEFAULTS.defaultFill,
       defaultStroke: DEFAULTS.defaultStroke,
@@ -2399,6 +2441,7 @@ function deserializeAssets(serialized){
     el.strokeW = 0;
     el.keepAspect = true;
     el.ignoreUnknownText = !!(Scene.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
+    el.spacingPreset = getSceneDefaultSpacingPreset();
     el.sitelenResizeAnchor = "topLeft"; // new elements default to top-left anchor
 
     ensureHaloFields(el);
@@ -9382,6 +9425,24 @@ if (sitelenOnlyEls.length){
     },
     { mixedLabel: ignoreMixed ? tr("props_mixed") : null, indeterminate: ignoreMixed }
   ));
+
+  const spacingVals = sitelenOnlyEls.map(e => getElementSpacingPreset(e));
+  const spacingMixed = mixedLabelIfMixed(spacingVals);
+  propsBody.appendChild(makeSelect(
+    tr("props_spacing"),
+    getElementSpacingPreset(sitelenOnlyEls[0]),
+    spacingPresetSelectOptions(),
+    (v) => {
+      applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+        e.spacingPreset = normalizeSpacingPreset(v);
+        invalidateSitelenCache(e.id);
+        updateSitelenLayout(e, { preserveCenter: true });
+      });
+      scheduleAutosave();
+      render();
+    },
+    spacingMixed
+  ));
 }
 
 // If the floating editor is open for this same multi-sitelen selection, rebind it to the new textarea node.
@@ -9890,6 +9951,19 @@ if (textField && textField._popoutElementId){
           updateSitelenLayout(el, { preserveCenter: true });
           scheduleAutosave();
           render();
+        }
+      ));
+      propsBody.appendChild(makeSelect(
+        tr("props_spacing"),
+        getElementSpacingPreset(el),
+        spacingPresetSelectOptions(),
+        (v) => {
+          el.spacingPreset = normalizeSpacingPreset(v);
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, { preserveCenter: true });
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
         }
       ));
     }
@@ -12454,6 +12528,7 @@ function syncStageDefaultsUiFromScene(){
   const expbg = document.getElementById("exportStageBackground");
   const drfp = document.getElementById("defRenderFontPreset");
   const dtfo = document.getElementById("defTextFontOption");
+  const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
@@ -12514,11 +12589,13 @@ function syncStageDefaultsUiFromScene(){
   }
 
   st.defaultTextFontOption = desiredTextFontOption;
+  st.defaultSpacingPreset = normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
   stageFontPairController.setSelectedTextFontOption(st.defaultTextFontOption, { persist: false });
 
   if (drfp) drfp.value = st.defaultRenderFontPreset;
   if (dtfo) dtfo.value = st.defaultTextFontOption;
+  if (dsp) dsp.value = st.defaultSpacingPreset;
 
   if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
   if (df)  df.value  = rgbaOrHexToHex(st.defaultFill, DEFAULTS.defaultFill);
@@ -13576,6 +13653,7 @@ $("btnNew").addEventListener("click", async () => {
   Scene.stage.exportStageBackground = DEFAULTS.exportStageBackground;
   Scene.stage.defaultRenderFontPreset = DEFAULTS.defaultRenderFontPreset;
   Scene.stage.defaultTextFontOption = DEFAULTS.defaultTextFontOption;
+  Scene.stage.defaultSpacingPreset = DEFAULTS.defaultSpacingPreset;
   Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
   Scene.stage.defaultIgnoreUnknownText = DEFAULTS.defaultIgnoreUnknownText;
   Scene.stage.defaultFill = DEFAULTS.defaultFill;
@@ -13817,6 +13895,7 @@ function wireStageDefaultsUi(){
   const bg = document.getElementById("stageBg");
   const expbg = document.getElementById("exportStageBackground");
   const dtfo = document.getElementById("defTextFontOption");
+  const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
   const dfe = document.getElementById("defFillEnabled");
@@ -13914,6 +13993,14 @@ function wireStageDefaultsUi(){
         )
       );
 
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dsp){
+    dsp.addEventListener("change", () => {
+      Scene.stage.defaultSpacingPreset = normalizeSpacingPreset(dsp.value);
       scheduleAutosave();
       render();
     });
@@ -14247,12 +14334,13 @@ document.addEventListener("keydown", (e) => {
         Scene.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
         Scene.stage.defaultRenderFontPreset
       );
+      Scene.stage.defaultSpacingPreset = normalizeSpacingPreset(Scene.stage.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
       await awaitFontLoading(); // <-- add this FIRST
       try { await ensureSitelenRendererModule(); } catch (e) { console.warn(e); }
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=31');
+        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=37');
         const NanpaParser = rendererMod?.NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
         pageMap = await cartoucheApi.resolvePageMap();
@@ -14571,6 +14659,7 @@ document.addEventListener("keydown", (e) => {
     doc.documentDefaults.exportStageBackground = !!doc.documentDefaults.exportStageBackground;
     doc.documentDefaults.defaultRenderFontPreset = normalizeRenderFontPresetKey(doc.documentDefaults.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
     doc.documentDefaults.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(doc.documentDefaults.defaultTextFontOption || DEFAULTS.defaultTextFontOption, doc.documentDefaults.defaultRenderFontPreset);
+    doc.documentDefaults.defaultSpacingPreset = normalizeSpacingPreset(doc.documentDefaults.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
     doc.documentDefaults.defaultTextColor = String(doc.documentDefaults.defaultTextColor || DEFAULTS.defaultTextColor);
     doc.documentDefaults.defaultIgnoreUnknownText = !!(doc.documentDefaults.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
     doc.documentDefaults.defaultFill = String(doc.documentDefaults.defaultFill ?? DEFAULTS.defaultFill);
@@ -14643,6 +14732,7 @@ document.addEventListener("keydown", (e) => {
         snapGrid: !!doc.documentDefaults?.snapGrid,
         snapObjects: !!doc.documentDefaults?.snapObjects,
         snapTol: Number.isFinite(Number(doc.documentDefaults?.snapTol)) ? clamp(Number(doc.documentDefaults.snapTol), 0, 200) : 6,
+        defaultSpacingPreset: normalizeSpacingPreset(doc.documentDefaults?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset),
         defaultIgnoreUnknownText: !!(doc.documentDefaults?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText)
       },
       settings: { mediaGuards: { image: !!(doc.settings?.mediaGuards?.image !== false), audio: !!(doc.settings?.mediaGuards?.audio !== false), video: !!(doc.settings?.mediaGuards?.video !== false) }, youtubeExportInfo: { pngSingle: !!(doc.settings?.youtubeExportInfo?.pngSingle !== false), png: !!(doc.settings?.youtubeExportInfo?.png !== false), html: !!(doc.settings?.youtubeExportInfo?.html !== false), pdf: !!(doc.settings?.youtubeExportInfo?.pdf !== false) } },
@@ -15128,6 +15218,7 @@ document.addEventListener("keydown", (e) => {
         exportStageBackground: !!st.exportStageBackground,
         defaultRenderFontPreset: st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset,
         defaultTextFontOption: st.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
+        defaultSpacingPreset: normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset),
         defaultTextColor: st.defaultTextColor || DEFAULTS.defaultTextColor,
         defaultIgnoreUnknownText: !!(st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText),
         defaultFill: st.defaultFill ?? DEFAULTS.defaultFill,
@@ -15168,6 +15259,7 @@ document.addEventListener("keydown", (e) => {
       docDefaults.defaultTextFontOption || FONT_FAMILY_LITERAL,
       st.defaultRenderFontPreset
     );
+    st.defaultSpacingPreset = normalizeSpacingPreset(docDefaults.defaultSpacingPreset ?? st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
     st.defaultTextColor = docDefaults.defaultTextColor || st.defaultTextColor || DEFAULTS.defaultTextColor;
     st.defaultIgnoreUnknownText = !!(docDefaults.defaultIgnoreUnknownText ?? st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
