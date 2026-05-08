@@ -201,6 +201,23 @@
       transform: translateY(1px);
     }
 
+    .abbrevToggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.2;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .abbrevToggle input {
+      transform: translateY(1px);
+      margin: 0;
+    }
+
     .nlModeControl{ display:none !important; }
 
     /* Portrait image: mobile-first */
@@ -256,6 +273,11 @@
         <div class="displayRow">
           <!-- Decorative canvas -->
           <canvas id="displayCanvas" aria-hidden="true"></canvas>
+
+          <label class="abbrevToggle" for="numericCartoucheAbbrevEnable">
+            <input id="numericCartoucheAbbrevEnable" type="checkbox">
+            <span>Abbreviate numeric cartouche output</span>
+          </label>
 
           <!-- Visible: value + pending, now bilingual -->
           <div class="displayMeta" aria-hidden="true">
@@ -409,6 +431,54 @@
 
     const CARTOUCHE_DISPLAY_STORAGE_KEY = "cartoucheDisplayMode";
     const CARTOUCHE_DISPLAY_QUERY_KEY = "cartoucheDisplay";
+
+    const NUMERIC_CARTOUCHE_ABBREV_STORAGE_KEY = "tpAbbreviateNumericCartouches";
+    const NUMERIC_CARTOUCHE_ABBREV_DEFAULT_ENABLED = true;
+
+    function loadNumericCartoucheAbbrevFromStorage() {
+      try {
+        const raw = localStorage.getItem(NUMERIC_CARTOUCHE_ABBREV_STORAGE_KEY);
+        if (raw == null) return null;
+        if (raw === "1" || raw === "true") return true;
+        if (raw === "0" || raw === "false") return false;
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveNumericCartoucheAbbrevToStorage(v) {
+      try { localStorage.setItem(NUMERIC_CARTOUCHE_ABBREV_STORAGE_KEY, v ? "1" : "0"); } catch {}
+    }
+
+    function getNumericCartoucheAbbrevEnabled() {
+      const el = document.getElementById("numericCartoucheAbbrevEnable");
+      return !!el?.checked;
+    }
+
+    function setNumericCartoucheAbbrevEnabled(v) {
+      const el = document.getElementById("numericCartoucheAbbrevEnable");
+      const b = !!v;
+      if (el) el.checked = b;
+      saveNumericCartoucheAbbrevToStorage(b);
+      return b;
+    }
+
+    function applyNumericCartoucheAbbrevFromStorage() {
+      const saved = loadNumericCartoucheAbbrevFromStorage();
+      setNumericCartoucheAbbrevEnabled(saved ?? NUMERIC_CARTOUCHE_ABBREV_DEFAULT_ENABLED);
+    }
+
+    function wireNumericCartoucheAbbrevToggle() {
+      const el = document.getElementById("numericCartoucheAbbrevEnable");
+      if (!el) return;
+      el.addEventListener("change", () => {
+        setNumericCartoucheAbbrevEnabled(el.checked);
+        buildKeypad();
+        renderDisplay();
+        rerenderWideZeroKey();
+      });
+    }
 
     const WORD_FOR_NEGATIVE_SIGN = "ona" //"o" // could use ona
 
@@ -939,6 +1009,52 @@
 
       assertAllAllowedTpUcsur(cps);
       return cps;
+    }
+
+    const ABBREV_CP_NANPA = 0xF193D;
+    const ABBREV_CP_NENA  = 0xF1940;
+    const ABBREV_CP_EN    = 0xF190A;
+
+    const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
+      ABBREV_CP_NANPA,
+      ABBREV_CP_EN,
+      ABBREV_CP_NENA
+    ]);
+
+    function abbreviateNumericCartoucheCps(cps) {
+      const input = Array.from(cps ?? []).map(cp => Number(cp));
+      if (!input.length) return input;
+
+      const out = [];
+      let keptFirstNanpa = false;
+
+      for (let i = 0; i < input.length; i++) {
+        const cp = input[i];
+        const isFinalNanpa = (cp === ABBREV_CP_NANPA && i === input.length - 1);
+
+        if (!keptFirstNanpa) {
+          out.push(cp);
+          if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
+          continue;
+        }
+
+        if (isFinalNanpa) {
+          out.push(cp);
+          continue;
+        }
+
+        if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+        out.push(cp);
+      }
+
+      return out;
+    }
+
+    function getNumericCartoucheDisplayCps(cps) {
+      const input = Array.from(cps ?? []);
+      return getNumericCartoucheAbbrevEnabled()
+        ? abbreviateNumericCartoucheCps(input)
+        : input;
     }
 
     function drawRoundedRect(ctx, x, y, w, h, r) {
@@ -1585,7 +1701,7 @@
       }
 
       // Cartouche rendering (encoding behavior depends on display mode)
-      const cps = decimalToUcsurCodepoints(inputStr);
+      const cps = getNumericCartoucheDisplayCps(decimalToUcsurCodepoints(inputStr));
 
       const keysEl = document.getElementById("keys");
       const targetW = keysEl ? keysEl.getBoundingClientRect().width : displayCanvas.getBoundingClientRect().width;
@@ -1667,7 +1783,7 @@
     }
 
     function renderDigitButtonCanvas(canvas, digitStr, targetOuterWidthPx = null) {
-      const cps = decimalToUcsurCodepoints(digitStr);
+      const cps = getNumericCartoucheDisplayCps(decimalToUcsurCodepoints(digitStr));
 
       if (targetOuterWidthPx == null) {
         renderMixedCartoucheToCanvas(
@@ -1842,8 +1958,10 @@
       // Query param takes precedence; otherwise fall back to localStorage.
       const setByQuery = loadCartoucheDisplayModeFromQueryParam();
       if (!setByQuery) loadCartoucheDisplayModeFromStorage();
+      applyNumericCartoucheAbbrevFromStorage();
 
       wireCartoucheDisplayRadios();
+      wireNumericCartoucheAbbrevToggle();
       updateCrossLinksWithCartoucheDisplay();
 
       buildKeypad();
