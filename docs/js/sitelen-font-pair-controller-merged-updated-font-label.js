@@ -522,11 +522,35 @@ export function createSitelenFontPairController({
 
   async function ensureFamiliesLoaded(fontPx = 56, families = uniqueConfiguredFontFamilies()) {
     if (!document.fonts || typeof document.fonts.load !== 'function') return;
+
     const px = Math.max(8, Number(fontPx || 56));
-    const neededFaces = uniq(families.map(findFaceByFamily).filter(Boolean));
+    const uniqueFamilies = uniq(families);
+    const faces = uniqueFamilies.map(family => ({
+      family,
+      face: findFaceByFamily(family)
+    }));
+
+    const missingFaceFamilies = faces
+      .filter(item => !item.face)
+      .map(item => item.family)
+      .filter(family => {
+        // Browser/system fonts are expected to have no project FontFace record.
+        const s = String(family || '').toLowerCase();
+        return !["arial", "times new roman", "courier new", "system-ui"].includes(s);
+      });
+
+    if (missingFaceFamilies.length) {
+      console.warn("[fonts] No face record found for configured font families:", missingFaceFamilies);
+    }
+
+    const neededFaces = uniq(faces.map(item => item.face).filter(Boolean));
     await Promise.all(neededFaces.map(ensureFaceLoaded));
     await document.fonts.ready;
-    await Promise.all(families.map(family => document.fonts.load(`${px}px ${quotedFontFamily(family)}`, fontLoadSample)));
+
+    await Promise.all(uniqueFamilies.map(family =>
+      document.fonts.load(`${px}px ${quotedFontFamily(family)}`, fontLoadSample)
+    ));
+
     await document.fonts.ready;
   }
 

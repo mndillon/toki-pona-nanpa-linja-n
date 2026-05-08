@@ -929,6 +929,14 @@
             <div class="row">
               <div class="field">
                 <label class="checkInline" style="margin:0;">
+                  <input id="defPreserveCenterOnAutoResize" type="checkbox" />Default preserve center on auto resize
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
                   <input id="bgImgStretch" type="checkbox" />Stretch to stage
                 </label>
                 <div class="hint" style="margin-top:6px;">
@@ -952,6 +960,13 @@
               <div class="field">
                 <label for="defTextFontOption">Default text font</label>
                 <select id="defTextFontOption"></select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
+                <input id="defAbbreviateNumericCartouches" type="checkbox" />Default abbreviate numeric cartouche output</label>
               </div>
             </div>
 
@@ -1102,7 +1117,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=13";
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
 
 (() => {
@@ -1203,6 +1218,8 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
       lbl_stage_bg: "Stage background",
       lbl_default_render_font: "Default script family",
       lbl_default_text_font: "Default text font",
+      lbl_default_abbrev_numeric_cartouches: "Default abbreviate numeric cartouche output",
+      lbl_default_preserve_center_auto_resize: "Default preserve center on auto resize",
       lbl_default_spacing: "Default sitelen spacing",
       lbl_default_text: "Default text",
       lbl_default_ignore_unknown_text: "Default ignore unknown text",
@@ -1250,9 +1267,11 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
       props_mixed: "Mixed",
       props_edit_mixed_text: "Edit mixed text",
       props_keep_aspect: "Keep aspect ratio",
+      props_preserve_center_auto_resize: "Preserve center on auto resize",
       props_scale_font_box: "Scale font with box",
       props_render_font_family: "Sitelen font family",
       props_font_family: "Quoted text font",
+      props_abbrev_numeric_cartouches: "Abbreviate numeric cartouche output",
       props_font_size: "Font size",
       props_align: "Align",
       props_spacing: "Spacing",
@@ -1417,6 +1436,8 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
       lbl_stage_bg: "monsi pi supa",
       lbl_default_render_font: "kulupu sitelen pona open",
       lbl_default_text_font: "kulupu sitelen Lasina open",
+      lbl_default_abbrev_numeric_cartouches: "o lili e poki nimi nanpa open",
+      lbl_default_preserve_center_auto_resize: "o awen e insa lon ante suli poki open",
       lbl_default_spacing: "weka pi sitelen pona open",
       lbl_default_text: "kule sitelen open",
       lbl_default_ignore_unknown_text: "o awen ala e nimi sona ala lon sitelen",
@@ -1463,9 +1484,11 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
       props_mixed: "ante",
       props_edit_mixed_text: "ken ante e toki pi mute",
       props_keep_aspect: "awen sama pi suli",
+      props_preserve_center_auto_resize: "o awen e insa lon ante suli poki",
       props_scale_font_box: "suli sitelen li sama poki",
       props_render_font_family: "kulupu sitelen pi sitelen pona",
       props_font_family: "kulupu sitelen pi sitelen Lasina",
+      props_abbrev_numeric_cartouches: "o lili e poki nimi nanpa",
       props_font_size: "suli sitelen",
       props_align: "poka",
       props_spacing: "weka",
@@ -1662,6 +1685,20 @@ import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
     setLabel("stageBg", "lbl_stage_bg");
     setLabel("defRenderFontPreset", "lbl_default_render_font");
     setLabel("defTextFontOption", "lbl_default_text_font");
+    const defAbbrevLbl = document.querySelector('label.checkInline input#defAbbreviateNumericCartouches')?.closest('label');
+    if (defAbbrevLbl) {
+      const input = defAbbrevLbl.querySelector('input#defAbbreviateNumericCartouches');
+      defAbbrevLbl.textContent = '';
+      if (input) defAbbrevLbl.appendChild(input);
+      defAbbrevLbl.appendChild(document.createTextNode(tr("lbl_default_abbrev_numeric_cartouches")));
+    }
+    const defAutoResizeLbl = document.querySelector('label.checkInline input#defPreserveCenterOnAutoResize')?.closest('label');
+    if (defAutoResizeLbl) {
+      const input = defAutoResizeLbl.querySelector('input#defPreserveCenterOnAutoResize');
+      defAutoResizeLbl.textContent = '';
+      if (input) defAutoResizeLbl.appendChild(input);
+      defAutoResizeLbl.appendChild(document.createTextNode(tr("lbl_default_preserve_center_auto_resize")));
+    }
     setLabel("defSpacingPreset", "lbl_default_spacing");
     setLabel("defTextColor", "lbl_default_text");
     setLabel("defIgnoreUnknownText", "lbl_default_ignore_unknown_text");
@@ -1738,6 +1775,8 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
     exportStageBackground: false,
     defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
     defaultTextFontOption: FONT_FAMILY_LITERAL,
+    defaultAbbreviateNumericCartouches: false,
+    defaultPreserveCenterOnAutoResize: false,
     defaultSpacingPreset: "default",
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
     defaultIgnoreUnknownText: false,     // default sitelen unknown-text highlight ignore flag
@@ -1773,6 +1812,58 @@ function getSceneDefaultSpacingPreset(){
     DEFAULTS.defaultSpacingPreset ??
     "default"
   );
+}
+
+function getSceneDefaultAbbreviateNumericCartouches(){
+  return !!(
+    Scene?.stage?.defaultAbbreviateNumericCartouches ??
+    DEFAULTS.defaultAbbreviateNumericCartouches ??
+    false
+  );
+}
+
+function getElementAbbreviateNumericCartouches(el){
+  return !!(
+    el?.abbreviateNumericCartouches ??
+    Scene?.stage?.defaultAbbreviateNumericCartouches ??
+    DEFAULTS.defaultAbbreviateNumericCartouches ??
+    false
+  );
+}
+
+function getSceneDefaultPreserveCenterOnAutoResize(){
+  return !!(
+    Scene?.stage?.defaultPreserveCenterOnAutoResize ??
+    DEFAULTS.defaultPreserveCenterOnAutoResize ??
+    false
+  );
+}
+
+function getElementPreserveCenterOnAutoResize(el){
+  // Existing/imported elements without this flag default to false.
+  // New text/sitelen/glyph elements copy the scene default at creation time.
+  return !!(el?.preserveCenterOnAutoResize ?? false);
+}
+
+function autoResizeAnchorOptionsForElement(el){
+  return { preserveCenter: getElementPreserveCenterOnAutoResize(el) };
+}
+
+function resizeElementBoxWithAutoResizeAnchor(el, newW, newH){
+  if (!el) return;
+  const oldX = el.x;
+  const oldY = el.y;
+  const cx = el.x + el.w / 2;
+  const cy = el.y + el.h / 2;
+  el.w = Math.max(8, Number(newW) || 8);
+  el.h = Math.max(8, Number(newH) || 8);
+  if (getElementPreserveCenterOnAutoResize(el)) {
+    el.x = cx - el.w / 2;
+    el.y = cy - el.h / 2;
+  } else {
+    el.x = oldX;
+    el.y = oldY;
+  }
 }
 
 function getElementSpacingPreset(el){
@@ -2084,13 +2175,29 @@ const stageFontPairController = createSitelenFontPairController({
   storageKeyPrefix: "layoutEditorSceneDefaults",
   defaultPresetKey: DEFAULTS.defaultRenderFontPreset,
   defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+  dynamicLiteralOptions: [
+    [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+    [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+    [FONT_FAMILY_LITERAL, "Patrick Hand"],
+    ["Arial", "Arial"],
+    ["Times New Roman", "Times New Roman"],
+    ["Courier New", "Courier New"],
+    ["system-ui", "system-ui"],
+  ],
+  dynamicTextFontOption: FONT_FAMILY_LITERAL,
+  dynamicLiteralFace: {
+    family: FONT_FAMILY_LITERAL,
+    url: "./fonts/PatrickHand-Regular.ttf",
+    format: "truetype",
+    sample: "Hello"
+  },
   onInvalidate: () => {}
 });
 
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=35').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -2199,6 +2306,7 @@ function buildRendererInitConfigForElement(el){
       cartoucheStyle: 'ssk',
       numericMode: 'compat',
       mixedStyle: 'short',
+      abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
       ...buildCartoucheTallyParserConfig(el)
     },
     fonts: { roles: buildRendererFontRolesForElement(el) }
@@ -2248,6 +2356,7 @@ function buildRendererCallConfigForElement(el){
       cartoucheStyle: 'ssk',
       numericMode: 'compat',
       mixedStyle: 'short',
+      abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
       showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText),
       ...buildCartoucheTallyParserConfig(el)
     },
@@ -2306,12 +2415,13 @@ function getElementRendererSignature(el){
     haloColor: rgbaOrHexToHex(el?.haloColor, '#FFFFFF'),
     haloMode: String(el?.haloThicknessMode ?? 'auto'),
     haloThickness: Number(el?.haloThickness ?? 0),
-    ignoreUnknownText: !!el?.ignoreUnknownText
+    ignoreUnknownText: !!el?.ignoreUnknownText,
+    abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el))
   });
 }
 async function rebuildSitelenRasterWithRenderer(el, opts = {}){
   if (!el || el.type !== ElementType.Sitelen) return null;
-  const options = Object.assign({ preserveCenter: true }, opts || {});
+  const options = Object.assign(autoResizeAnchorOptionsForElement(el), opts || {});
   const sig = getElementRendererSignature(el);
   const existing = sitelenCache.get(el.id);
   if (existing && existing.sig === sig && existing.canvas) return existing;
@@ -2666,6 +2776,8 @@ function normalizeScene(parsed){
     exportStageBackground: DEFAULTS.exportStageBackground,
     defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
     defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+    defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
+    defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
     defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
     defaultTextColor: DEFAULTS.defaultTextColor,
     defaultIgnoreUnknownText: DEFAULTS.defaultIgnoreUnknownText,
@@ -2705,6 +2817,8 @@ function normalizeScene(parsed){
   if (out.stage.bgImgAssetId != null) out.stage.bgImgAssetId = String(out.stage.bgImgAssetId);
   out.stage.defaultRenderFontPreset = normalizeLegacyRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   out.stage.defaultTextFontOption = normalizeLegacyTextFontOptionKey(out.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, out.stage.defaultRenderFontPreset);
+  out.stage.defaultAbbreviateNumericCartouches = !!(out.stage.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  out.stage.defaultPreserveCenterOnAutoResize = !!(out.stage.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   out.stage.defaultSpacingPreset = normalizeSpacingPreset(out.stage.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
   if (!out.stage.bgImgAssetId){
@@ -2759,6 +2873,11 @@ function normalizeScene(parsed){
       el.scaleFontWithBox = (el.scaleFontWithBox == null) ? false : !!el.scaleFontWithBox;
     }
 
+    // Auto-resize anchoring defaults false on import when missing.
+    if (el.type === ElementType.Text || el.type === ElementType.Sitelen || el.type === ElementType.Glyph){
+      el.preserveCenterOnAutoResize = !!(el.preserveCenterOnAutoResize ?? false);
+    }
+
 
     // Remove transient drag fields if present in older exports
     delete el._startX; delete el._startY;
@@ -2785,6 +2904,8 @@ function normalizeScene(parsed){
 
       if (el.type === ElementType.Sitelen){
         el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+        // Imported sitelen elements missing this flag must stay false for backwards compatibility.
+        el.abbreviateNumericCartouches = !!(el.abbreviateNumericCartouches ?? false);
         el.spacingPreset = normalizeSpacingPreset(el.spacingPreset ?? out.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
         el.ignoreUnknownText = (el.ignoreUnknownText == null) ? !!(out.stage?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText) : !!el.ignoreUnknownText;
         if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
@@ -3058,6 +3179,9 @@ function deserializeAssets(serialized){
       exportStageBackground: DEFAULTS.exportStageBackground,
       defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
       defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+      // New blank layout documents default this flag ON. Imported JSON is normalized separately.
+      defaultAbbreviateNumericCartouches: true,
+      defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
       defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
       defaultTextColor: DEFAULTS.defaultTextColor,
       defaultIgnoreUnknownText: DEFAULTS.defaultIgnoreUnknownText,
@@ -3137,6 +3261,7 @@ function deserializeAssets(serialized){
 //    el.fill = "rgba(255,255,255,0.0)"; // default: no background
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
+    el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     ensureHaloFields(el);
     return el;
   }
@@ -3155,11 +3280,13 @@ function deserializeAssets(serialized){
     );
     el.fontSize = 44;
     el.align = "left";
+    el.abbreviateNumericCartouches = getSceneDefaultAbbreviateNumericCartouches();
     el.spacingPreset = getSceneDefaultSpacingPreset();
     el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
     el.lineHeight = 1.05;
     el.strokeW = 0;
     el.keepAspect = true;
+    el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     el.ignoreUnknownText = !!(Scene.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
 
     ensureHaloFields(el);
@@ -3186,6 +3313,7 @@ function deserializeAssets(serialized){
 //    el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
+    el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     ensureHaloFields(el);
     return el;
   }
@@ -5958,7 +6086,7 @@ function sitelenSignature(el){
 function sitelenMeasureBBox(el){
   const cached = sitelenCache.get(el.id);
   if (cached && cached.canvas) return { w: Math.max(8, cached.naturalW), h: Math.max(8, cached.naturalH) };
-  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el);
   return { w: Math.max(8, Number(el.w ?? 8)), h: Math.max(8, Number(el.h ?? 8)) };
 }
 
@@ -5967,7 +6095,7 @@ function sitelenMeasureBBox(el){
 function sitelenRenderToOffscreen(el,w,h){
   const cached = sitelenCache.get(el.id);
   if (cached && cached.canvas) return cached.canvas;
-  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el);
   const off = document.createElement("canvas");
   off.width = Math.max(1, Math.round(w || el.w || 8));
   off.height = Math.max(1, Math.round(h || el.h || 8));
@@ -5984,7 +6112,7 @@ function ensureSitelenRaster(el){
   const sig = sitelenSignature(el);
   const existing = sitelenCache.get(el.id);
   if (existing && existing.sig === sig && existing.canvas) return existing;
-  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el);
   return existing || null;
 }
 
@@ -5996,7 +6124,7 @@ function ensureSitelenRaster(el){
  */
 function updateSitelenLayout(el, opts){
   if (!el || el.type !== ElementType.Sitelen) return;
-  queueSitelenRasterRebuild(el, opts || { preserveCenter: true });
+  queueSitelenRasterRebuild(el, opts || autoResizeAnchorOptionsForElement(el));
 }
 
 
@@ -6012,7 +6140,7 @@ function refreshAllSitelenElementsPreserveCenter(){
   for (const el of Scene.elements){
     if (el.type === ElementType.Sitelen){
       invalidateSitelenCache(el.id);
-      updateSitelenLayout(el, { preserveCenter: true });
+      updateSitelenLayout(el);
     }
   }
 }
@@ -6389,7 +6517,7 @@ function applyGroupForeground(groupId, cssColor){
     // Sitelen needs raster/layout refresh because color is baked into the offscreen canvas
     if (el.type === ElementType.Sitelen){
       invalidateSitelenCache(el.id);
-      updateSitelenLayout(el, { preserveCenter: true });
+      updateSitelenLayout(el);
     }
   }
 }
@@ -8156,7 +8284,7 @@ if (!shouldKeepFloatingEditor){
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
-            updateSitelenLayout(e, { preserveCenter: true });
+            updateSitelenLayout(e);
           }
         }
 
@@ -8170,7 +8298,7 @@ if (!shouldKeepFloatingEditor){
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
-            updateSitelenLayout(e, { preserveCenter: true });
+            updateSitelenLayout(e);
           }
         }
 
@@ -8194,7 +8322,7 @@ if (!shouldKeepFloatingEditor){
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
-            updateSitelenLayout(e, { preserveCenter: true });
+            updateSitelenLayout(e);
           }
         }
 
@@ -8208,7 +8336,7 @@ if (!shouldKeepFloatingEditor){
 
           if (e.type === ElementType.Sitelen){
             invalidateSitelenCache(e.id);
-            updateSitelenLayout(e, { preserveCenter: true });
+            updateSitelenLayout(e);
           }
         }
 
@@ -8315,6 +8443,23 @@ if (!shouldKeepFloatingEditor){
 
     // ---- Blocks ----
 
+    // Auto-resize anchoring for Text/Sitelen/Glyph.
+    const autoResizeEls = sels.filter(isTextLike);
+    if (autoResizeEls.length > 0){
+      const leaderAutoResize = topmostSelectedWhere(isTextLike) || autoResizeEls[0];
+      const autoResizeVals = autoResizeEls.map(e => String(getElementPreserveCenterOnAutoResize(e)));
+      const autoResizeMixed = mixedLabelIfMixed(autoResizeVals);
+      propsBody.appendChild(makeCheckbox(
+        tr("props_preserve_center_auto_resize") + (autoResizeMixed ? " (" + autoResizeMixed + ")" : ""),
+        getElementPreserveCenterOnAutoResize(leaderAutoResize),
+        (checked) => {
+          applyToAllWhere(isTextLike, (e) => { e.preserveCenterOnAutoResize = !!checked; });
+          scheduleAutosave();
+          render();
+        }
+      ));
+    }
+
     // Text/Sitelen shared block
     const anyTextLike = sels.some(supportsTextBlock);
     if (anyTextLike){
@@ -8353,7 +8498,7 @@ const textField = makeTextarea(
       e.text = v;
       if (e.type === ElementType.Sitelen){
         invalidateSitelenCache(e.id);
-        updateSitelenLayout(e, { preserveCenter: true });
+        updateSitelenLayout(e);
       }
     });
     scheduleAutosave();
@@ -8378,6 +8523,7 @@ const textField = makeTextarea(
 );
 propsBody.appendChild(textField);
 
+
 // If the floating editor is open for this same multi-sitelen selection, rebind it to the new textarea node.
 if (textField && textField._popoutElementId){
   rebindFloatingSitelenEditorToTextarea(
@@ -8388,7 +8534,7 @@ if (textField && textField._popoutElementId){
         e.text = v;
         if (e.type === ElementType.Sitelen){
           invalidateSitelenCache(e.id);
-          updateSitelenLayout(e, { preserveCenter: true });
+          updateSitelenLayout(e);
         }
       });
       scheduleAutosave();
@@ -8420,7 +8566,7 @@ if (textField && textField._popoutElementId){
             applyToAllWhere(supportsTextBlock, (e) => {
               if (e.type === ElementType.Sitelen){
                 invalidateSitelenCache(e.id);
-                updateSitelenLayout(e, { preserveCenter: true });
+                updateSitelenLayout(e);
               }
             });
             scheduleAutosave();
@@ -8454,13 +8600,32 @@ if (textField && textField._popoutElementId){
             applyToAllWhere(supportsTextBlock, (e) => {
               if (e.type === ElementType.Sitelen){
                 invalidateSitelenCache(e.id);
-                updateSitelenLayout(e, { preserveCenter: true });
+                updateSitelenLayout(e);
               }
             });
             scheduleAutosave();
             render();
           },
           fontMixed
+        ));
+      }
+
+      if (sels.some(e => e && e.type === ElementType.Sitelen)){
+        const leaderAbbrev = topmostSelectedWhere(e => e && e.type === ElementType.Sitelen);
+        const abbrevVals = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(!!getElementAbbreviateNumericCartouches(e)));
+        const abbrevMixed = mixedLabelIfMixed(abbrevVals);
+        propsBody.appendChild(makeCheckbox(
+          tr("props_abbrev_numeric_cartouches") + (abbrevMixed ? " (" + abbrevMixed + ")" : ""),
+          !!getElementAbbreviateNumericCartouches(leaderAbbrev),
+          (checked) => {
+            applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+              e.abbreviateNumericCartouches = !!checked;
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e);
+            });
+            scheduleAutosave();
+            render();
+          }
         ));
       }
 
@@ -8480,7 +8645,7 @@ if (textField && textField._popoutElementId){
             if (e.haloThicknessMode !== "manual") e.haloThickness = defaultHaloThicknessForFontPx(e.fontSize);
             if (e.type === ElementType.Sitelen){
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             }
           });
           scheduleAutosave();
@@ -8505,7 +8670,7 @@ if (textField && textField._popoutElementId){
             e.align = v;
             if (e.type === ElementType.Sitelen){
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             }
           });
           scheduleAutosave();
@@ -8528,7 +8693,7 @@ if (textField && textField._popoutElementId){
             applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
               e.spacingPreset = normalizeSpacingPreset(v);
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             });
             scheduleAutosave();
             render();
@@ -8550,7 +8715,7 @@ if (textField && textField._popoutElementId){
             e.color = v;
             if (e.type === ElementType.Sitelen){
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             }
           });
           render();
@@ -8560,7 +8725,7 @@ if (textField && textField._popoutElementId){
             e.color = v;
             if (e.type === ElementType.Sitelen){
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             }
           });
           scheduleAutosave();
@@ -8729,7 +8894,7 @@ if (textField && textField._popoutElementId){
             ensureHaloFields(e);
             if (e.type === ElementType.Sitelen){
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             }
           });
           scheduleAutosave();
@@ -8749,7 +8914,7 @@ if (textField && textField._popoutElementId){
             e.haloColor = v;
             if (e.type === ElementType.Sitelen){
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             }
           });
           render();
@@ -8759,7 +8924,7 @@ if (textField && textField._popoutElementId){
             e.haloColor = v;
             if (e.type === ElementType.Sitelen){
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             }
           });
           scheduleAutosave();
@@ -8789,7 +8954,7 @@ if (textField && textField._popoutElementId){
             }
             if (e.type === ElementType.Sitelen){
               invalidateSitelenCache(e.id);
-              updateSitelenLayout(e, { preserveCenter: true });
+              updateSitelenLayout(e);
             }
           });
           scheduleAutosave();
@@ -8842,11 +9007,8 @@ if (textField && textField._popoutElementId){
           const prev = (el.keepAspect == null) ? true : !!el.keepAspect;
           el.keepAspect = !!checked;
 
-          // If turning OFF -> ON: revert to original "natural" size; keep center stable
+          // If turning OFF -> ON: revert to original "natural" size; use the auto-resize anchor flag.
           if (!prev && el.keepAspect){
-            const cx = el.x + el.w/2;
-            const cy = el.y + el.h/2;
-
             const r = ensureSitelenRaster(el);
             const ow =
               (el.sitelen && Number.isFinite(el.sitelen.origW)) ? el.sitelen.origW :
@@ -8855,15 +9017,22 @@ if (textField && textField._popoutElementId){
               (el.sitelen && Number.isFinite(el.sitelen.origH)) ? el.sitelen.origH :
               (r ? r.naturalH : el.h);
 
-            el.w = Math.max(8, ow);
-            el.h = Math.max(8, oh);
-            el.x = cx - el.w/2;
-            el.y = cy - el.h/2;
+            resizeElementBoxWithAutoResizeAnchor(el, ow, oh);
           }
 
           scheduleAutosave();
           render();
           updateUiForSelection();
+        }
+      ));
+
+      propsBody.appendChild(makeCheckbox(
+        tr("props_preserve_center_auto_resize"),
+        getElementPreserveCenterOnAutoResize(el),
+        (checked) => {
+          el.preserveCenterOnAutoResize = !!checked;
+          scheduleAutosave();
+          render();
         }
       ));
 
@@ -8894,7 +9063,7 @@ if (textField && textField._popoutElementId){
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
 
         scheduleAutosave();
@@ -8919,7 +9088,7 @@ if (textField && textField._popoutElementId){
           el.text = v;
 
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
 
           scheduleAutosave();
           render();
@@ -8941,6 +9110,18 @@ if (textField && textField._popoutElementId){
       ));
     }
 
+    if (el.type === ElementType.Text){
+      propsBody.appendChild(makeCheckbox(
+        tr("props_preserve_center_auto_resize"),
+        getElementPreserveCenterOnAutoResize(el),
+        (checked) => {
+          el.preserveCenterOnAutoResize = !!checked;
+          scheduleAutosave();
+          render();
+        }
+      ));
+    }
+
     propsBody.appendChild(makeSelect(
       tr("props_render_font_family"),
       getElementRenderFontPresetKey(el),
@@ -8955,7 +9136,7 @@ if (textField && textField._popoutElementId){
         );
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
         scheduleAutosave();
         render();
@@ -8976,12 +9157,26 @@ if (textField && textField._popoutElementId){
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
 
         scheduleAutosave();
         render();
     }));
+
+    if (el.type === ElementType.Sitelen){
+      propsBody.appendChild(makeCheckbox(
+        tr("props_abbrev_numeric_cartouches"),
+        !!getElementAbbreviateNumericCartouches(el),
+        (checked) => {
+          el.abbreviateNumericCartouches = !!checked;
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+          scheduleAutosave();
+          render();
+        }
+      ));
+    }
 
 
     propsBody.appendChild(makeNumberRowWithPresets(
@@ -8998,7 +9193,7 @@ if (textField && textField._popoutElementId){
 
     if (el.type === ElementType.Sitelen){
       invalidateSitelenCache(el.id);
-      updateSitelenLayout(el, { preserveCenter: true });
+      updateSitelenLayout(el);
     }
 
     scheduleAutosave();
@@ -9017,7 +9212,7 @@ if (textField && textField._popoutElementId){
 
   if (el.type === ElementType.Sitelen){
     invalidateSitelenCache(el.id);
-    updateSitelenLayout(el, { preserveCenter: true });
+    updateSitelenLayout(el);
   }
 
   scheduleAutosave();
@@ -9033,7 +9228,7 @@ if (textField && textField._popoutElementId){
         (v) => {
           el.spacingPreset = normalizeSpacingPreset(v);
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
           scheduleAutosave();
           render();
           updateUiForSelection();
@@ -9051,7 +9246,7 @@ if (textField && textField._popoutElementId){
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
 
         render();
@@ -9063,7 +9258,7 @@ if (textField && textField._popoutElementId){
 
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
 
         scheduleAutosave();
@@ -9080,7 +9275,7 @@ if (textField && textField._popoutElementId){
         (checked) => {
           el.ignoreUnknownText = !!checked;
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
           scheduleAutosave();
           render();
         }
@@ -9098,7 +9293,7 @@ if (textField && textField._popoutElementId){
         ensureHaloFields(el);
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
         scheduleAutosave();
         render();
@@ -9112,7 +9307,7 @@ if (textField && textField._popoutElementId){
         el.haloColor = v;
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
         render();
       },
@@ -9120,7 +9315,7 @@ if (textField && textField._popoutElementId){
         el.haloColor = v;
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
         scheduleAutosave();
         render();
@@ -9143,7 +9338,7 @@ if (textField && textField._popoutElementId){
         }
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
         }
         scheduleAutosave();
         render();
@@ -9193,6 +9388,17 @@ propsBody.appendChild(makeGlyphPicker(el));
       !!el.scaleFontWithBox,
       (checked) => {
         el.scaleFontWithBox = !!checked;
+        scheduleAutosave();
+        render();
+        updateUiForSelection();
+      }
+    ));
+
+    propsBody.appendChild(makeCheckbox(
+      tr("props_preserve_center_auto_resize"),
+      getElementPreserveCenterOnAutoResize(el),
+      (checked) => {
+        el.preserveCenterOnAutoResize = !!checked;
         scheduleAutosave();
         render();
         updateUiForSelection();
@@ -10900,6 +11106,8 @@ function syncStageDefaultsUiFromScene(){
   const expbg = document.getElementById("exportStageBackground");
   const drfp = document.getElementById("defRenderFontPreset");
   const dtfo = document.getElementById("defTextFontOption");
+  const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dpcoar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
   const diut = document.getElementById("defIgnoreUnknownText");
@@ -10970,6 +11178,8 @@ function syncStageDefaultsUiFromScene(){
 
   if (drfp) drfp.value = st.defaultRenderFontPreset;
   if (dtfo) dtfo.value = st.defaultTextFontOption;
+  if (danc) danc.checked = !!(st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  if (dpcoar) dpcoar.checked = !!(st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   if (dsp) dsp.value = normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
     
   if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
@@ -11585,6 +11795,9 @@ $("btnNew").addEventListener("click", async () => {
     FONT_FAMILY_LITERAL,
     Scene.stage.defaultRenderFontPreset
   );
+  // New blank layout documents default this flag ON. Imported JSON is normalized separately.
+  Scene.stage.defaultAbbreviateNumericCartouches = true;
+  Scene.stage.defaultSpacingPreset = DEFAULTS.defaultSpacingPreset;
   Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
   Scene.stage.defaultFill = DEFAULTS.defaultFill;
   Scene.stage.defaultFillEnabled = DEFAULTS.defaultFillEnabled;
@@ -11723,6 +11936,8 @@ function wireStageDefaultsUi(){
   const bg = document.getElementById("stageBg");
   const expbg = document.getElementById("exportStageBackground");
   const dtfo = document.getElementById("defTextFontOption");
+  const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dpcoar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
   const diut = document.getElementById("defIgnoreUnknownText");
@@ -11821,6 +12036,22 @@ function wireStageDefaultsUi(){
         )
       );
 
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (danc){
+    danc.addEventListener("change", (e) => {
+      Scene.stage.defaultAbbreviateNumericCartouches = !!e.target.checked;
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dpcoar){
+    dpcoar.addEventListener("change", (e) => {
+      Scene.stage.defaultPreserveCenterOnAutoResize = !!e.target.checked;
       scheduleAutosave();
       render();
     });
@@ -12050,7 +12281,7 @@ async function hydrateSceneBeforeDisplay(scene = Scene){
       if (!el) continue;
       if (el.type === ElementType.Sitelen || el.type === "Sitelen"){
         invalidateSitelenCache(el.id);
-        jobs.push(rebuildSitelenRasterWithRenderer(el, { preserveCenter: true }));
+        jobs.push(rebuildSitelenRasterWithRenderer(el, autoResizeAnchorOptionsForElement(el)));
       } else if (el.type === ElementType.Glyph || el.type === "Glyph"){
         invalidateGlyphCache(el.id);
         jobs.push(rebuildGlyphRasterWithRenderer(el));
@@ -12169,7 +12400,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=35');
+        const rendererMod = await import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44');
         const NanpaParser = rendererMod?.NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
         pageMap = await cartoucheApi.resolvePageMap();

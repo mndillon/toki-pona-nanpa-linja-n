@@ -300,6 +300,7 @@ const SitelenRenderer = (() => {
       cartoucheTallyMode: __cartoucheTallyMode,
       unknownTextDisplay: { ...__unknownTextDisplay },
       renderSpacing: { ...__renderSpacing },
+      abbreviateNumericCartouches: __abbreviateNumericCartouches,
     };
   }
 
@@ -324,6 +325,7 @@ const SitelenRenderer = (() => {
       ...(state.unknownTextDisplay || {})
     };
     __renderSpacing = { ...DEFAULT_RENDER_SPACING, ...(state.renderSpacing || {}) };
+    __abbreviateNumericCartouches = !!state.abbreviateNumericCartouches;
   }
 
   let __renderConfigScopeQueue = Promise.resolve();
@@ -332,6 +334,10 @@ const SitelenRenderer = (() => {
   // and astToLineElements / lineToElements can read it via getMixedStyle()
   let __mixedStyle = "short";
   let __showUnknownText = false;
+
+  // Numeric/date/time cartouche display abbreviation.
+  // Default false preserves the existing full nanpa-linja-n cartouche output.
+  let __abbreviateNumericCartouches = false;
 
   // Controls only ordinary, non-numeric, non-quoted cartouche parsing.
   // When true:  [meli,,] may produce cartouche tally marks.
@@ -357,6 +363,8 @@ const SitelenRenderer = (() => {
   function setMixedStyle(v) { __mixedStyle = (v === "long") ? "long" : "short"; }
   function getShowUnknownText() { return !!__showUnknownText; }
   function setShowUnknownText(v) { __showUnknownText = !!v; }
+  function getAbbreviateNumericCartouches() { return !!__abbreviateNumericCartouches; }
+  function setAbbreviateNumericCartouches(v) { __abbreviateNumericCartouches = !!v; }
   function getCartoucheCommaTallyMarks() { return !!__cartoucheCommaTallyMarks; }
   function setCartoucheCommaTallyMarks(v) { __cartoucheCommaTallyMarks = !!v; }
   function normalizeCartoucheTallyMode(v) {
@@ -560,6 +568,9 @@ const SitelenRenderer = (() => {
     else setRadioValue('nlMode', 'traditional');
 
     if (parser.mixedStyle === 'short' || parser.mixedStyle === 'long') setMixedStyle(parser.mixedStyle);
+    if (parser.abbreviateNumericCartouches != null) setAbbreviateNumericCartouches(!!parser.abbreviateNumericCartouches);
+    else if (parser.numericCartoucheAbbreviation != null) setAbbreviateNumericCartouches(!!parser.numericCartoucheAbbreviation);
+    else if (parser.abbreviatedNumericCartouches != null) setAbbreviateNumericCartouches(!!parser.abbreviatedNumericCartouches);
     if (parser.showUnknownText != null) setShowUnknownText(!!parser.showUnknownText);
     if (parser.cartoucheCommaTallyMarks != null) setCartoucheCommaTallyMarks(!!parser.cartoucheCommaTallyMarks);
     else if (parser.commaTallyInCartouche != null) setCartoucheCommaTallyMarks(!!parser.commaTallyInCartouche);
@@ -2070,6 +2081,68 @@ function wireHaloControls() {
     const CP_NANPA = NANPA_LINJA_N_WORD_TO_CP["nanpa"];
     const CP_NENA  = NANPA_LINJA_N_WORD_TO_CP["nena"];
     const CP_EN    = NANPA_LINJA_N_WORD_TO_CP["en"];
+    const CP_OPEN  = NANPA_LINJA_N_WORD_TO_CP["open"];
+
+    const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
+      CP_NANPA,
+      CP_EN,
+      CP_NENA,
+      CP_OPEN
+    ]);
+
+    function abbreviateNumericCartoucheCps(cps) {
+      const input = Array.from(cps ?? []).map(cp => Number(cp));
+      if (!input.length) return input;
+
+      const out = [];
+      let keptFirstNanpa = false;
+
+      for (let i = 0; i < input.length; i++) {
+        const cp = input[i];
+        const isFinalNanpa = (cp === CP_NANPA && i === input.length - 1);
+
+        if (!keptFirstNanpa) {
+          out.push(cp);
+          if (cp === CP_NANPA) keptFirstNanpa = true;
+          continue;
+        }
+
+        if (isFinalNanpa) {
+          out.push(cp);
+          continue;
+        }
+
+        if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+        out.push(cp);
+      }
+
+      return out;
+    }
+
+    function numericCartoucheDisplayCps(cps) {
+      const input = Array.from(cps ?? []).map(cp => Number(cp));
+      return getAbbreviateNumericCartouches() ? abbreviateNumericCartoucheCps(input) : input;
+    }
+
+    function makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+      const displayCps = numericCartoucheDisplayCps(cps);
+      if (!displayCps || displayCps.length === 0) return;
+      makeCartoucheElementFromCodepoints(elements, displayCps, {
+        fontPx,
+        // Numeric/date/time cartouches must use the numeric/cartouche companion
+        // font role for the whole run: cartouche-start + inner cps + cartouche-end.
+        // In host pages, roles.cartouche may intentionally be the ordinary
+        // text/sitelen font for non-numeric cartouches; roles.number is the
+        // companion cartouche font.
+        fontFamily: FONT_FAMILY_NUMBER,
+        fgCss,
+        sourceText,
+        sourceStart,
+        sourceEnd,
+        sourceKind,
+        sourceSegmentIndex
+      });
+    }
 
     const UNIFORM_TO_NENA = new Set([
       NANPA_LINJA_N_WORD_TO_CP["nasa"],
@@ -3316,9 +3389,7 @@ function wireHaloControls() {
       }
       if (tokens.length < 3) return [];
 
-      const digitWords = new Set(
-        Object.values(TOKEN_TO_DIGIT_WORD).filter(w => NANPA_LINJA_N_WORD_TO_CP[w] != null)
-      );
+      const digitWords = nanpaLinjanDigitWordSet();
 
       const hits = [];
       for (let i = 0; i < tokens.length - 2; i++) {
@@ -3405,6 +3476,20 @@ function wireHaloControls() {
     /* ============================
        TP phrase helpers
        ============================ */
+    function nanpaLinjanDigitWordSet() {
+      return new Set(
+        Object.values(TOKEN_TO_DIGIT_WORD).filter(w => NANPA_LINJA_N_WORD_TO_CP[w] != null)
+      );
+    }
+
+    function hasAdjacentNanpaLinjanDigitWords(words) {
+      const digitWords = nanpaLinjanDigitWordSet();
+      for (let i = 1; i < (words || []).length; i++) {
+        if (digitWords.has(words[i - 1]) && digitWords.has(words[i])) return true;
+      }
+      return false;
+    }
+
     function tryParseNanpaLinjanTpPhraseWords(inputWords) {
       const words = Array.from(inputWords ?? []).map(normalizeTpWord).filter(Boolean);
 
@@ -3417,9 +3502,12 @@ function wireHaloControls() {
         if (NANPA_LINJA_N_WORD_TO_CP[w] == null) return null;
       }
 
-      const digitWords = new Set(
-        Object.values(TOKEN_TO_DIGIT_WORD).filter(w => NANPA_LINJA_N_WORD_TO_CP[w] != null)
-      );
+      // Reject mixed/partially abbreviated forms such as
+      // [nanpa en wan tu en nanpa]. Fully abbreviated input is handled by
+      // tryParseFullyAbbreviatedNanpaLinjanCartoucheWords() and only inside [].
+      if (hasAdjacentNanpaLinjanDigitWords(words)) return null;
+
+      const digitWords = nanpaLinjanDigitWordSet();
 
       const payload = words.slice(2, -1);
       const hasDigit = payload.some(w => digitWords.has(w));
@@ -3438,6 +3526,38 @@ function wireHaloControls() {
       }
       if (mode === "uniform") return uniformizeNanpaLinjanCartoucheCps(cps);
       return cps;
+    }
+
+    function tryParseFullyAbbreviatedNanpaLinjanCartoucheWords(inputWords) {
+      const words = Array.from(inputWords ?? []).map(normalizeTpWord).filter(Boolean);
+      if (words.length < 3) return null;
+      if (words[0] !== "nanpa") return null;
+      if (words[words.length - 1] !== "nanpa") return null;
+
+      const cps = [];
+      let hasDigit = false;
+      const digitWords = new Set(
+        Object.values(TOKEN_TO_DIGIT_WORD).filter(w => NANPA_LINJA_N_WORD_TO_CP[w] != null)
+      );
+
+      for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        const cp = NANPA_LINJA_N_WORD_TO_CP[w];
+        if (cp == null) return null;
+
+        const isFinalNanpa = (cp === CP_NANPA && i === words.length - 1);
+        if (i > 0 && !isFinalNanpa && NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) {
+          // Mixed forms like [nanpa en wan tu nanpa] or [nanpa wan en tu nanpa]
+          // are deliberately not accepted as abbreviated numeric cartouches.
+          return null;
+        }
+
+        if (digitWords.has(w)) hasDigit = true;
+        cps.push(cp);
+      }
+
+      if (!hasDigit) return null;
+      return { words, cps };
     }
 
     function tpWordsToCodepoints(wordsOrTokens) {
@@ -4724,7 +4844,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (trimmed) {
           const idCps = tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ?? tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
           if (idCps && idCps.length) {
-            makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
+            makeNumericCartoucheElementFromCodepoints(elements, idCps, { fontPx, fgCss: getFgHex(), sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
             for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
             continue;
           }
@@ -4736,7 +4856,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (timeCaps) {
             const cps = nanpaCapsToNanpaLinjanCodepoints(timeCaps, { mode, isTime: true });
             if (cps && cps.length) {
-              makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
+              makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss: getFgHex(), sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
               for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
               continue;
             }
@@ -4745,7 +4865,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             const caps = decimalStringToCaps(trimmed, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
             const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
             if (cps && cps.length) {
-              makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
+              makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss: getFgHex(), sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
               for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
               continue;
             }
@@ -4821,7 +4941,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (h.kind === "tpPhrase") {
           const cps = nanpaLinjanWordsToCodepoints(h.words, { mode });
           if (cps && cps.length) {
-            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: matchText, sourceStart: sourceBaseStart + a, sourceEnd: sourceBaseStart + b, sourceKind, sourceSegmentIndex });
+            makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText: matchText, sourceStart: sourceBaseStart + a, sourceEnd: sourceBaseStart + b, sourceKind, sourceSegmentIndex });
           } else {
             renderTpWordsFromText(matchText, elements, { fontPx, mode, sourceBaseStart: sourceBaseStart + a, sourceKind, sourceSegmentIndex, mixedStyle });
           }
@@ -4829,7 +4949,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           const isTimeLike = (h.kind === "time") || (h.kind === "date") || nanpaCapsIsValidTimeOrDate(h.caps);
           const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode, isTime: isTimeLike });
           if (cps && cps.length) {
-            makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: matchText, sourceStart: sourceBaseStart + a, sourceEnd: sourceBaseStart + b, sourceKind, sourceSegmentIndex });
+            makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText: matchText, sourceStart: sourceBaseStart + a, sourceEnd: sourceBaseStart + b, sourceKind, sourceSegmentIndex });
           } else {
             renderTpWordsFromText(matchText, elements, { fontPx, mode, sourceBaseStart: sourceBaseStart + a, sourceKind, sourceSegmentIndex, mixedStyle });
           }
@@ -4871,9 +4991,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const cartoucheInnerCps = tryExtractFullUcsurCartoucheCodepoints(literal);
 
       if (cartoucheInnerCps && isNumericNanpaLinjanCartoucheInnerCps(cartoucheInnerCps, { mode })) {
-        makeCartoucheElementFromCodepoints(elements, cartoucheInnerCps, {
+        makeNumericCartoucheElementFromCodepoints(elements, cartoucheInnerCps, {
           fontPx,
-          fontFamily: FONT_FAMILY_NUMBER,
           fgCss,
           sourceText: String(quoteContent ?? ''),
           sourceStart: sourceBaseStart,
@@ -5009,7 +5128,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (dateCaps != null) {
           const cpsDate = nanpaCapsToNanpaLinjanCodepoints(dateCaps, { mode, isTime: true });
           if (cpsDate && cpsDate.length) {
-            makeCartoucheElementFromCodepoints(elements, cpsDate, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
+            makeNumericCartoucheElementFromCodepoints(elements, cpsDate, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
             return;
           }
         }
@@ -5018,7 +5137,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (timeCaps != null) {
           const cpsTime = nanpaCapsToNanpaLinjanCodepoints(timeCaps, { mode, isTime: true });
           if (cpsTime && cpsTime.length) {
-            makeCartoucheElementFromCodepoints(elements, cpsTime, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
+            makeNumericCartoucheElementFromCodepoints(elements, cpsTime, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
             return;
           }
         }
@@ -5026,7 +5145,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const caps = decimalStringToCaps(content, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
         const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
         if (cps && cps.length) {
-          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
+          makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
           return;
         }
       } catch {}
@@ -5058,9 +5177,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       if (parsedNumber) {
         const cps = nanpaLinjanWordsToCodepoints(parsedNumber.words, { mode });
-        if (cps) makeCartoucheElementFromCodepoints(elements, cps, {
+        if (cps) makeNumericCartoucheElementFromCodepoints(elements, cps, {
           fontPx,
-          fontFamily: FONT_FAMILY_NUMBER,
           fgCss,
           sourceText: content,
           sourceStart: sourceBaseStart,
@@ -5071,12 +5189,28 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         return;
       }
 
+      if (getAbbreviateNumericCartouches() && strictTpPhraseCandidate) {
+        const parsedAbbreviatedNumber = tryParseFullyAbbreviatedNanpaLinjanCartoucheWords(strictWords);
+        if (parsedAbbreviatedNumber && parsedAbbreviatedNumber.cps && parsedAbbreviatedNumber.cps.length) {
+          makeNumericCartoucheElementFromCodepoints(elements, parsedAbbreviatedNumber.cps, {
+            fontPx,
+            fgCss,
+            sourceText: content,
+            sourceStart: sourceBaseStart,
+            sourceEnd: sourceBaseStart + content.length,
+            sourceKind,
+            sourceSegmentIndex
+          });
+          return;
+        }
+      }
+
       const idCps =
         tryDecodeNanpaLinjanIdentifierToCodepoints(content, { mode }) ??
         tryDecodeNanpaLinjanIdentifierToCodepoints(content.replace(/\s+/g, ""), { mode });
 
       if (idCps && idCps.length) {
-        makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
+        makeNumericCartoucheElementFromCodepoints(elements, idCps, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
         return;
       }
 

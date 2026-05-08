@@ -437,12 +437,12 @@
 </div>
 
 <script type="module">
-import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=36";
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=13";//sitelen-font-pair-controller.js";
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";//sitelen-font-pair-controller.js";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
 window.SitelenRenderer = SitelenRenderer;
 
@@ -618,7 +618,23 @@ window.SitelenRenderer = SitelenRenderer;
     registry: SITELEN_FONT_PRESETS,
     storageKeyPrefix: "tpVideoCaptionOverlayFont",
     defaultPresetKey: DEFAULT_SITELEN_FAMILY_KEY,
-    defaultTextFontOption: DEFAULT_TEXT_FONT_OPTION
+    defaultTextFontOption: DEFAULT_TEXT_FONT_OPTION,
+    dynamicLiteralOptions: [
+      [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+      [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+      [DEFAULT_LITERAL_FONT, "Patrick Hand"],
+      ["Arial", "Arial"],
+      ["Times New Roman", "Times New Roman"],
+      ["Courier New", "Courier New"],
+      ["system-ui", "system-ui"],
+    ],
+    dynamicTextFontOption: DEFAULT_LITERAL_FONT,
+    dynamicLiteralFace: {
+      family: DEFAULT_LITERAL_FONT,
+      url: "./fonts/PatrickHand-Regular.ttf",
+      format: "truetype",
+      sample: "Hello"
+    }
   });
 
   function getAllSitelenFontPresets(){
@@ -934,6 +950,27 @@ window.SitelenRenderer = SitelenRenderer;
     const CP_NANPA = NANPA_LINJA_N_WORD_TO_CP["nanpa"];
     const CP_NENA  = NANPA_LINJA_N_WORD_TO_CP["nena"];
     const CP_EN    = NANPA_LINJA_N_WORD_TO_CP["en"];
+    const CP_OPEN  = NANPA_LINJA_N_WORD_TO_CP["open"];
+
+    let ACTIVE_SITELEN_ABBREVIATE_NUMERIC_CARTOUCHES = false;
+
+    function abbreviateNumericCartoucheCps(cps) {
+      const arr = Array.from(cps ?? []);
+      const out = [];
+      let keptFirstNanpa = false;
+      const dropAfterFirstNanpa = new Set([CP_NANPA, CP_EN, CP_NENA, CP_OPEN]);
+
+      for (const cp of arr) {
+        if (!keptFirstNanpa && cp === CP_NANPA) {
+          out.push(cp);
+          keptFirstNanpa = true;
+          continue;
+        }
+        if (keptFirstNanpa && dropAfterFirstNanpa.has(cp)) continue;
+        out.push(cp);
+      }
+      return out;
+    }
 
     const UNIFORM_TO_NENA = new Set([
       NANPA_LINJA_N_WORD_TO_CP["nasa"],
@@ -2586,8 +2623,11 @@ window.SitelenRenderer = SitelenRenderer;
 
       const cart = document.createElement("canvas");
       const padPx = Math.max(4, Math.round(fontPx * 0.11));
+      const renderCps = (ACTIVE_SITELEN_ABBREVIATE_NUMERIC_CARTOUCHES && String(fontFamily || "") === FONT_FAMILY_CARTOUCHE)
+        ? abbreviateNumericCartoucheCps(cps)
+        : Array.from(cps);
 
-      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily, fgCss, haloEnabled: _he, haloCss: _hc, haloThicknessMode: _hm, haloThickness: _ht });
+      const r = renderFontCartoucheToCanvas(cart, renderCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled: _he, haloCss: _hc, haloThicknessMode: _hm, haloThickness: _ht });
       if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
       const baselineY = r.baselineY | 0;
@@ -2599,7 +2639,7 @@ window.SitelenRenderer = SitelenRenderer;
 
       elements.push({
         type: "cartouche",
-        cps: Array.from(cps),   // <-- ADD THIS
+        cps: Array.from(renderCps),   // <-- ADD THIS
         canvas: cart,
         w: r.w,
         h: r.h,
@@ -3162,10 +3202,12 @@ window.SitelenRenderer = SitelenRenderer;
         haloCss = "#FFFFFF",
         haloThicknessMode = "auto",
         haloThickness = 0,
+        abbreviateNumericCartouches = false,
       } = {}
     ) {
       // NEW: forward literalFontFamily into the parser so "..." segments use the element’s font
       ACTIVE_SITELEN_HALO = { enabled: !!haloEnabled, css: haloCss, mode: haloThicknessMode, thickness: haloThickness };
+      ACTIVE_SITELEN_ABBREVIATE_NUMERIC_CARTOUCHES = !!abbreviateNumericCartouches;
 
       const linesEls = parseMultilineToElements(multilineText, {
         fontPx,
@@ -3310,6 +3352,8 @@ window.SitelenRenderer = SitelenRenderer;
           fontSize: 56,
           align: "center",
           spacingPreset: "default",
+          abbreviateNumericCartouches: true,
+          preserveCenterOnAutoResize: false,
           color: "#111111",
           opacity: 1,
           haloEnabled: true,
@@ -3405,6 +3449,10 @@ window.SitelenRenderer = SitelenRenderer;
   function ensureProjectSchema(project){
     if (!project || typeof project !== "object") return createDefaultProject();
     const base = createDefaultProject();
+    const importedDefaultsItem = (project.defaults && typeof project.defaults === "object" && project.defaults.item && typeof project.defaults.item === "object")
+      ? project.defaults.item
+      : {};
+    const importedDefaultsHadAbbreviateNumericCartouches = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "abbreviateNumericCartouches");
     project.schemaVersion = SCHEMA_VERSION;
 
     project.video = { ...base.video, ...(project.video && typeof project.video === "object" ? project.video : {}) };
@@ -3419,6 +3467,10 @@ window.SitelenRenderer = SitelenRenderer;
     project.defaults.item.fontSize = Math.max(6, Number(project.defaults.item.fontSize || base.defaults.item.fontSize));
     project.defaults.item.fontFamily = normalizeLiteralFontFamily(project.defaults.item.fontFamily, project.defaults.item.sitelenFontFamily);
     project.defaults.item.spacingPreset = normalizeSpacingPreset(project.defaults.item.spacingPreset);
+    project.defaults.item.abbreviateNumericCartouches = importedDefaultsHadAbbreviateNumericCartouches
+      ? !!project.defaults.item.abbreviateNumericCartouches
+      : false;
+    project.defaults.item.preserveCenterOnAutoResize = !!(project.defaults.item.preserveCenterOnAutoResize ?? false);
     project.defaults.item.ignoreUnknownText = !!project.defaults.item.ignoreUnknownText;
 
     const palette = getProjectPaletteState(project);
@@ -3433,9 +3485,14 @@ window.SitelenRenderer = SitelenRenderer;
       if (!Array.isArray(seg.items)) seg.items = [];
       for (const item of seg.items){
         if (!item || typeof item !== "object") continue;
+        const itemHadAbbreviateNumericCartouches = Object.prototype.hasOwnProperty.call(item, "abbreviateNumericCartouches");
         item.sitelenFontFamily = normalizeSitelenFontFamilyKey(item.sitelenFontFamily);
         item.fontFamily = normalizeLiteralFontFamily(item.fontFamily, item.sitelenFontFamily);
         item.spacingPreset = normalizeSpacingPreset(item.spacingPreset ?? project.defaults.item.spacingPreset);
+        item.abbreviateNumericCartouches = itemHadAbbreviateNumericCartouches
+          ? !!item.abbreviateNumericCartouches
+          : false;
+        item.preserveCenterOnAutoResize = !!(item.preserveCenterOnAutoResize ?? false);
         item.ignoreUnknownText = !!item.ignoreUnknownText;
       }
     }
@@ -3494,6 +3551,8 @@ window.SitelenRenderer = SitelenRenderer;
         item0.sitelenFontFamily = normalizeSitelenFontFamilyKey(item0.sitelenFontFamily);
         item0.fontFamily = normalizeLiteralFontFamily(item0.fontFamily, item0.sitelenFontFamily);
         item0.spacingPreset = normalizeSpacingPreset(item0.spacingPreset ?? App.project.defaults.item.spacingPreset);
+        item0.abbreviateNumericCartouches = !!(item0.abbreviateNumericCartouches ?? false);
+        item0.preserveCenterOnAutoResize = !!(item0.preserveCenterOnAutoResize ?? false);
         item0.color = normalizeColor(item0.color, App.project.defaults.item.color);
         item0.haloColor = normalizeColor(item0.haloColor, App.project.defaults.item.haloColor);
         item0.ignoreUnknownText = !!item0.ignoreUnknownText;
@@ -3546,6 +3605,8 @@ window.SitelenRenderer = SitelenRenderer;
       fontSize: d.fontSize,
       align: d.align,
       spacingPreset: normalizeSpacingPreset(d.spacingPreset),
+      abbreviateNumericCartouches: !!d.abbreviateNumericCartouches,
+      preserveCenterOnAutoResize: !!d.preserveCenterOnAutoResize,
       color: d.color,
       opacity: d.opacity,
       haloEnabled: d.haloEnabled,
@@ -4007,9 +4068,10 @@ window.SitelenRenderer = SitelenRenderer;
     const d = App.project.defaults.item;
 
     const fs = makeFontSizeControl(d.fontSize, (v) => { d.fontSize = Math.max(6, v); defaultsChanged(); });
-    sec.appendChild(makeField("Font size", fs));
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(d.sitelenFontFamily, (v) => { d.sitelenFontFamily = v; d.fontFamily = normalizeLiteralFontFamily(d.fontFamily, v); defaultsChanged(); })));
     sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(d.fontFamily, d.sitelenFontFamily, (v) => { d.fontFamily = v; defaultsChanged(); })));
+    sec.appendChild(makeField("Default abbreviate numeric cartouche output", makeCheckbox(!!d.abbreviateNumericCartouches, (checked) => { d.abbreviateNumericCartouches = checked; defaultsChanged(); })));
+    sec.appendChild(makeField("Font size", fs));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], d.align, (v) => { d.align = v; defaultsChanged(); })));
     sec.appendChild(makeField("Spacing", makeSpacingPresetSelect(d.spacingPreset, (v) => { d.spacingPreset = v; defaultsChanged(); })));
     sec.appendChild(makeField("Text color", makeColorControl(d.color, (v) => { d.color = v; defaultsChanged(false); }, (v) => { d.color = v; defaultsChanged(); })));
@@ -4017,6 +4079,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Halo color", makeColorControl(d.haloColor, (v) => { d.haloColor = v; defaultsChanged(false); }, (v) => { d.haloColor = v; defaultsChanged(); })));
     sec.appendChild(makeField("Halo thickness", makeNumberInput(d.haloThickness, 1, 0, 48, (v) => { d.haloThickness = clamp(v, 0, 48); defaultsChanged(); })));
     sec.appendChild(makeField("Ignore unknown text", makeCheckbox(!!d.ignoreUnknownText, (checked) => { d.ignoreUnknownText = checked; defaultsChanged(); })));
+    sec.appendChild(makeField("Default preserve center on auto resize", makeCheckbox(!!d.preserveCenterOnAutoResize, (checked) => { d.preserveCenterOnAutoResize = checked; defaultsChanged(); })));
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = "Apply defaults to all items";
@@ -4041,6 +4104,8 @@ window.SitelenRenderer = SitelenRenderer;
         item.fontSize = d.fontSize;
         item.align = d.align;
         item.spacingPreset = normalizeSpacingPreset(d.spacingPreset);
+        item.abbreviateNumericCartouches = !!d.abbreviateNumericCartouches;
+        item.preserveCenterOnAutoResize = !!d.preserveCenterOnAutoResize;
         item.color = d.color;
         item.opacity = d.opacity;
         item.haloEnabled = d.haloEnabled;
@@ -4134,6 +4199,7 @@ window.SitelenRenderer = SitelenRenderer;
 
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(item.sitelenFontFamily, (v) => patchActiveItem({ sitelenFontFamily: v, fontFamily: normalizeLiteralFontFamily(item.fontFamily, v) }, true))));
     sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(item.fontFamily, item.sitelenFontFamily, (v) => patchActiveItem({ fontFamily: v }, true))));
+    sec.appendChild(makeField("Abbreviate numeric cartouche output", makeCheckbox(!!item.abbreviateNumericCartouches, (checked) => patchActiveItem({ abbreviateNumericCartouches: checked }, true))));
     sec.appendChild(makeField("Font size", makeFontSizeControl(item.fontSize, (v) => patchActiveItem({ fontSize: Math.max(6, v) }, true))));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], item.align, (v) => patchActiveItem({ align: v }, true))));
     sec.appendChild(makeField("Spacing", makeSpacingPresetSelect(getItemSpacingPreset(item), (v) => patchActiveItem({ spacingPreset: v }, true))));
@@ -4159,6 +4225,7 @@ window.SitelenRenderer = SitelenRenderer;
       makeCompactNumber(item.h, 0.01, 0.01, 1, (v) => patchActiveItem({ h: clamp(v,0.01,1) }, true), "H")
     );
     sec.appendChild(makeField("Size", geo2));
+    sec.appendChild(makeField("Preserve center on auto resize", makeCheckbox(!!item.preserveCenterOnAutoResize, (checked) => patchActiveItem({ preserveCenterOnAutoResize: checked }, true))));
 
     const btns = document.createElement("div");
     btns.className = "miniBtns";
@@ -5031,6 +5098,8 @@ window.SitelenRenderer = SitelenRenderer;
       Number(item.fontSize || 24),
       String(item.align || 'left'),
       getItemSpacingPreset(item),
+      !!item.abbreviateNumericCartouches,
+      !!item.preserveCenterOnAutoResize,
       String(item.color || ''),
       Number(item.opacity ?? 1),
       !!item.haloEnabled,
@@ -5064,6 +5133,7 @@ window.SitelenRenderer = SitelenRenderer;
         cartoucheStyle: 'ssk',
         numericMode: 'compat',
         mixedStyle: 'short',
+        abbreviateNumericCartouches: false,
         cartoucheCommaTallyMarks: true,
         cartoucheTallyMode: 'ucsur'
       }
@@ -5114,7 +5184,8 @@ window.SitelenRenderer = SitelenRenderer;
       haloEnabled: !!item.haloEnabled,
       haloCss: normalizeColor(item.haloColor, '#FFFFFF'),
       haloThicknessMode: (Number(item.haloThickness) > 0 ? "manual" : "auto"),
-      haloThickness: Number(item.haloThickness ?? 0)
+      haloThickness: Number(item.haloThickness ?? 0),
+      abbreviateNumericCartouches: !!item.abbreviateNumericCartouches
     });
 
     return off;
@@ -5167,6 +5238,7 @@ window.SitelenRenderer = SitelenRenderer;
           cartoucheStyle: 'ssk',
           numericMode: 'compat',
           mixedStyle: 'short',
+          abbreviateNumericCartouches: !!item.abbreviateNumericCartouches,
           showUnknownText: !item.ignoreUnknownText,
           ...buildItemCartoucheTallyParserConfig(item)
         }

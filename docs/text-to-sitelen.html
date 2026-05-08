@@ -352,14 +352,21 @@
 }
 
 /* Portrait image: mobile-first */
-    img.portrait{
+    img.portrait1{
+      display:block;
+      width:100%;
+      max-width:100vw;
+      height:auto;
+    }
+    img.portrait2{
       display:block;
       width:100%;
       max-width:100vw;
       height:auto;
     }
     @media (min-width:900px){
-      img.portrait{ max-width:520px; margin-inline:auto; }
+      img.portrait1{ max-width:568px; margin-inline:auto; }
+      img.portrait2{ max-width:855px; margin-inline:auto; }
     }
 
 
@@ -574,6 +581,7 @@ luka-luka.
 {pona}ala(pona).
 &quot;Hello World!&quot;.
 [ ota sewi^ kolon  ni&lt; ].
+[&quot;ABC&quot;]
 tenpo 15:34:29.
 tenpo suno 2026-03-17.
 nanpa -12,340.57.
@@ -619,6 +627,17 @@ nanpa #~WI.
           </span>
           <select id="appTextFontSel" aria-describedby="textFontHelp"></select>
           <div id="textFontHelp" class="sr-only">Chooses the font used for literal quoted text only.</div>
+        </div>
+
+        <!-- Numeric cartouche abbreviation toggle -->
+        <div id="ctlNumericCartoucheAbbrev" class="inlineControl inlinePill" role="group" aria-label="Abbreviate numeric cartouche output">
+          <span class="ctlLabel">
+            Abbreviate numeric cartouche output <span class="tpInline">o lili e sitelen poki nanpa</span>
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+            <input id="appNumericCartoucheAbbrevEnable" type="checkbox" aria-label="Abbreviate numeric cartouche output">
+            <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
         </div>
 
         <!-- Font size -->
@@ -780,8 +799,15 @@ nanpa #~WI.
       </div>
 
       <div class="help">&nbsp;</div>
-      <img class="portrait" src="./images/From_Decimal_Number_To_Cartouche.png" />
+      <img class="portrait1" src="./images/From_Decimal_Number_To_Cartouche.png"  />
       <div class="help">&nbsp;</div>
+
+      <div class="help">&nbsp;</div>
+      <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=2" />
+      <div class="help">&nbsp;</div>
+
+
+
 
       <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
         Check out the Toki Pona nanpa-linja-n decimal number encoder + cartouche renderer
@@ -893,12 +919,12 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=40";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
-    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=13";
+    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 
     import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
     let pageMap = new Map();
@@ -1097,6 +1123,15 @@ nanpa #~WI.
       storageKeyPrefix: "tp",
       defaultPresetKey: "nasinNanpa",
       defaultTextFontOption: FONT_FAMILY_LITERAL,
+
+      // Ensure uploaded/dynamic font presets also have a real Patrick Hand face.
+      dynamicLiteralFace: {
+        family: FONT_FAMILY_LITERAL,
+        url: "./fonts/PatrickHand-Regular.ttf",
+        format: "truetype",
+        sample: "Hello"
+      },
+
       onInvalidate: () => {
         sitelenRenderer = null;
         sitelenRendererSignature = "";
@@ -1353,6 +1388,7 @@ nanpa #~WI.
           numericMode: "compat",
           mixedStyle: "short",
           showUnknownText: unknownHighlightEnabled,
+          abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
           ...buildCartoucheTallyParserConfig()
         },
         fonts: {
@@ -1386,7 +1422,8 @@ nanpa #~WI.
         preset: preset.key,
         parserMode: preset.parserMode,
         roles,
-        cartoucheTally: buildCartoucheTallyParserConfig()
+        cartoucheTally: buildCartoucheTallyParserConfig(),
+        abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled()
       });
     }
 
@@ -1557,6 +1594,56 @@ function setUnknownHighlightEnabled(v) {
   if (el) el.checked = b;
   saveUnknownHighlightEnabledToStorage(b);
   return b;
+}
+
+const NUMERIC_CARTOUCHE_ABBREV_STORAGE_KEY = "tpAbbreviateNumericCartouches";
+const NUMERIC_CARTOUCHE_ABBREV_DEFAULT_ENABLED = true;
+
+function loadNumericCartoucheAbbrevFromStorage() {
+  try {
+    const raw = localStorage.getItem(NUMERIC_CARTOUCHE_ABBREV_STORAGE_KEY);
+    if (raw == null) return null;
+    if (raw === "1" || raw === "true") return true;
+    if (raw === "0" || raw === "false") return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveNumericCartoucheAbbrevToStorage(v) {
+  try { localStorage.setItem(NUMERIC_CARTOUCHE_ABBREV_STORAGE_KEY, v ? "1" : "0"); } catch {}
+}
+
+function getNumericCartoucheAbbrevEnabled() {
+  const el = document.getElementById("appNumericCartoucheAbbrevEnable");
+  return !!el?.checked;
+}
+
+function setNumericCartoucheAbbrevEnabled(v) {
+  const el = document.getElementById("appNumericCartoucheAbbrevEnable");
+  const b = !!v;
+  if (el) el.checked = b;
+  saveNumericCartoucheAbbrevToStorage(b);
+  return b;
+}
+
+function applyNumericCartoucheAbbrevFromStorage() {
+  const saved = loadNumericCartoucheAbbrevFromStorage();
+  setNumericCartoucheAbbrevEnabled(saved ?? NUMERIC_CARTOUCHE_ABBREV_DEFAULT_ENABLED);
+}
+
+function wireNumericCartoucheAbbrevToggle() {
+  const el = document.getElementById("appNumericCartoucheAbbrevEnable");
+  if (!el) return;
+  el.addEventListener("change", async () => {
+    try {
+      setNumericCartoucheAbbrevEnabled(el.checked);
+      await renderFromTextarea();
+    } catch (e) {
+      showAlertAndAnnounce(e?.message ?? String(e));
+    }
+  });
 }
 
 
@@ -5094,7 +5181,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=20", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -5893,6 +5980,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         applyScriptPresetFromStorage();
         applyDefaultInputFromQuery();
         applyTextFontOptionFromStorage();
+        applyNumericCartoucheAbbrevFromStorage();
 
         
 
@@ -5932,6 +6020,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         wireSpacingPresetSelect();
         wireScriptPresetSelect();
         wireTextFontSelect();
+        wireNumericCartoucheAbbrevToggle();
         wireCartoucheDisplayLinks();
 
         await fontsReadyForPx(getFontPx());

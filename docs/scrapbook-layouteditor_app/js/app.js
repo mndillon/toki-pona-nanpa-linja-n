@@ -2,7 +2,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=13";
+} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
 
 (() => {
@@ -40,6 +40,8 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
   const LS_KEY_MEDIA_EDITOR_OPEN = "layout_editor_media_open"; // "1" | "0"
   const LS_KEY_MEDIA_EDITOR_GEOMETRY = "layout_editor_media_geometry_v1"; // persisted floating editor rect
   const LS_KEY_TOOLBAR_LAYOUT = "scrapbook_toolbar_layout_v1"; // original | compact
+  const LS_KEY_DOCUMENT_PROPS_GEOMETRY = "scrapbook_document_properties_geometry_v1";
+  const LS_KEY_CURRENT_PAGE_PROPS_GEOMETRY = "scrapbook_current_page_properties_geometry_v1";
 
   function loadLang(){
     try{
@@ -115,6 +117,8 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       lbl_stage_bg: "Stage background",
       lbl_default_render_font: "Default script family",
       lbl_default_text_font: "Default text font",
+      lbl_default_abbrev_numeric_cartouches: "Default abbreviate numeric cartouche output",
+      lbl_default_preserve_center_auto_resize: "Default preserve center on auto resize",
       lbl_default_spacing: "Default sitelen spacing",
       lbl_default_text: "Default text",
       lbl_default_fill_enabled: "Default allow fill",
@@ -161,6 +165,8 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       props_mixed: "Mixed",
       props_edit_mixed_text: "Edit mixed text",
       props_keep_aspect: "Keep aspect ratio",
+      props_preserve_center_auto_resize: "Preserve center on auto resize",
+      props_abbrev_numeric_cartouches: "Abbreviate numeric cartouche output",
       props_scale_font_box: "Scale font with box",
       props_render_font_family: "Sitelen font family",
       props_font_family: "Quoted text font",
@@ -310,6 +316,16 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       sb_lbl_page_count:     "Page count",
       sb_lbl_doc_notes:      "Document notes",
       sb_placeholder_doc_notes: "Document notes",
+      sb_btn_doc_properties: "Properties",
+      sb_btn_page_properties: "Page properties",
+      sb_hdr_page_properties: "Page properties",
+      sb_hdr_doc_properties: "Document properties",
+      sb_hdr_doc_specific_properties: "Document",
+      sb_hdr_doc_scene_defaults: "Defaults for new pages",
+      sb_lbl_include_cover_page: "Include cover page in document export",
+      sb_lbl_cover_date_abbrev: "Use abbreviated numeric cartouche date on cover page",
+      sb_btn_load_doc_bg: "Load default background image…",
+      sb_btn_clear_doc_bg: "Clear default background image",
       // Scrapbook sidebar — page buttons
       sb_btn_add_page:       "New page",
       sb_btn_dup_page_sm:    "Duplicate",
@@ -381,6 +397,8 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       lbl_stage_bg: "monsi pi supa",
       lbl_default_render_font: "kulupu sitelen pona open",
       lbl_default_text_font: "kulupu sitelen Lasina open",
+      lbl_default_abbrev_numeric_cartouches: "o lili e poki sitelen pi nanpa",
+      lbl_default_preserve_center_auto_resize: "ante suli la insa li awen",
       lbl_default_spacing: "weka pi sitelen pona open",
       lbl_default_text: "kule sitelen open",
       lbl_default_fill_enabled: "pana kule: ken",
@@ -426,6 +444,8 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       props_mixed: "ante",
       props_edit_mixed_text: "ken ante e toki pi mute",
       props_keep_aspect: "awen sama pi suli",
+      props_preserve_center_auto_resize: "ante suli la insa li awen",
+      props_abbrev_numeric_cartouches: "o lili e poki sitelen pi nanpa",
       props_scale_font_box: "suli sitelen li sama poki",
       props_render_font_family: "kulupu sitelen pi sitelen pona",
       props_font_family: "kulupu sitelen pi sitelen Lasina",
@@ -567,6 +587,16 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
       sb_lbl_page_count:     "nanpa lipu",
       sb_lbl_doc_notes:      "toki pi lipu",
       sb_placeholder_doc_notes: "toki pi lipu",
+      sb_btn_doc_properties: "sona",
+      sb_btn_page_properties: "sona lipu",
+      sb_hdr_page_properties: "sona lipu",
+      sb_hdr_doc_properties: "sona pi lipu",
+      sb_hdr_doc_specific_properties: "lipu",
+      sb_hdr_doc_scene_defaults: "open pi lipu sin",
+      sb_lbl_include_cover_page: "o pana e lipu open lon pana lipu",
+      sb_lbl_cover_date_abbrev: "o lili e poki sitelen pi tenpo lon lipu open",
+      sb_btn_load_doc_bg: "o kama jo e sitelen monsi open…",
+      sb_btn_clear_doc_bg: "o weka e sitelen monsi open",
       // Scrapbook sidebar — page buttons
       sb_btn_add_page:       "lipu sin",
       sb_btn_dup_page_sm:    "o ante",
@@ -709,6 +739,8 @@ import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
     setLabel("stageBg", "lbl_stage_bg");
     setLabel("defRenderFontPreset", "lbl_default_render_font");
     setLabel("defTextFontOption", "lbl_default_text_font");
+    setLabel("defAbbreviateNumericCartouches", "lbl_default_abbrev_numeric_cartouches");
+    setLabel("defPreserveCenterOnAutoResize", "lbl_default_preserve_center_auto_resize");
     setLabel("defSpacingPreset", "lbl_default_spacing");
     setLabel("defTextColor", "lbl_default_text");
     setLabel("defaultFillEnabled", "lbl_default_fill_enabled");
@@ -966,6 +998,8 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
     exportStageBackground: false,
     defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
     defaultTextFontOption: FONT_FAMILY_LITERAL,
+    defaultAbbreviateNumericCartouches: false,
+    defaultPreserveCenterOnAutoResize: false,
     defaultSpacingPreset: "default",
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
     defaultFill: "#111111",// default fill for shapes/boxes
@@ -997,6 +1031,22 @@ const FONT_FAMILY_LITERAL = "PatrickHand";
 
   function getSceneDefaultSpacingPreset(){
     return normalizeSpacingPreset(Scene?.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
+  }
+
+  function getSceneDefaultAbbreviateNumericCartouches(){
+    return !!(Scene?.stage?.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  }
+
+  function getElementAbbreviateNumericCartouches(el){
+    return !!(el?.abbreviateNumericCartouches ?? false);
+  }
+
+  function getSceneDefaultPreserveCenterOnAutoResize(){
+    return !!(Scene?.stage?.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
+  }
+
+  function getElementPreserveCenterOnAutoResize(el){
+    return !!(el?.preserveCenterOnAutoResize ?? false);
   }
 
   function getElementSpacingPreset(el){
@@ -1287,13 +1337,29 @@ const stageFontPairController = createSitelenFontPairController({
   storageKeyPrefix: "layoutEditorSceneDefaults",
   defaultPresetKey: DEFAULTS.defaultRenderFontPreset,
   defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+  dynamicLiteralOptions: [
+    [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+    [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+    [FONT_FAMILY_LITERAL, "Patrick Hand"],
+    ["Arial", "Arial"],
+    ["Times New Roman", "Times New Roman"],
+    ["Courier New", "Courier New"],
+    ["system-ui", "system-ui"],
+  ],
+  dynamicTextFontOption: FONT_FAMILY_LITERAL,
+  dynamicLiteralFace: {
+    family: FONT_FAMILY_LITERAL,
+    url: "../../fonts/PatrickHand-Regular.ttf",
+    format: "truetype",
+    sample: "Hello"
+  },
   onInvalidate: () => {}
 });
 
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=37').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -1448,6 +1514,7 @@ function buildRendererCallConfigForElement(el){
       cartoucheStyle: 'ssk',
       numericMode: 'compat',
       mixedStyle: 'short',
+      abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
       showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText),
       ...buildCartoucheTallyParserConfig(el)
     },
@@ -1505,12 +1572,15 @@ function getElementRendererSignature(el){
     haloEnabled: !!el?.haloEnabled,
     haloColor: rgbaOrHexToHex(el?.haloColor, '#FFFFFF'),
     haloMode: String(el?.haloThicknessMode ?? 'auto'),
-    haloThickness: Number(el?.haloThickness ?? 0)
+    haloThickness: Number(el?.haloThickness ?? 0),
+    ignoreUnknownText: !!el?.ignoreUnknownText,
+    abbreviateNumericCartouches: !!getElementAbbreviateNumericCartouches(el),
+    preserveCenterOnAutoResize: !!getElementPreserveCenterOnAutoResize(el)
   });
 }
 async function rebuildSitelenRasterWithRenderer(el, opts = {}){
   if (!el || el.type !== ElementType.Sitelen) return null;
-  const options = Object.assign({ preserveCenter: true }, opts || {});
+  const options = Object.assign({ preserveCenter: false }, opts || {});
   const sig = getElementRendererSignature(el);
   const existing = sitelenCache.get(el.id);
   if (existing && existing.sig === sig && existing.canvas) return existing;
@@ -1521,7 +1591,7 @@ async function rebuildSitelenRasterWithRenderer(el, opts = {}){
     Number.isFinite(el.__insertAnchorY);
 
   const jobKey =
-    `${el.id}|${sig}|${options.preserveCenter ? 1 : 0}|${hasInsertAnchor ? 1 : 0}`;
+    `${el.id}|${sig}|${options.preserveCenter ? 1 : 0}|${options.preserveTopLeft ? 1 : 0}|${options.fixedBox ? 1 : 0}|${hasInsertAnchor ? 1 : 0}`;
 
   if (sitelenRasterJobs.has(jobKey)) return sitelenRasterJobs.get(jobKey);
 
@@ -1872,6 +1942,8 @@ function normalizeScene(parsed){
     exportStageBackground: DEFAULTS.exportStageBackground,
     defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
     defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+    defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
+    defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
     defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
     defaultTextColor: DEFAULTS.defaultTextColor,
     defaultFill: DEFAULTS.defaultFill,
@@ -1911,6 +1983,8 @@ function normalizeScene(parsed){
   out.stage.defaultRenderFontPreset = normalizeLegacyRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   out.stage.defaultTextFontOption = normalizeLegacyTextFontOptionKey(out.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, out.stage.defaultRenderFontPreset);
   out.stage.defaultSpacingPreset = normalizeSpacingPreset(out.stage.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
+  out.stage.defaultAbbreviateNumericCartouches = !!(out.stage.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  out.stage.defaultPreserveCenterOnAutoResize = !!(out.stage.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   out.stage.defaultIgnoreUnknownText = !!(out.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
 
   if (!out.stage.bgImgAssetId){
@@ -1965,6 +2039,10 @@ function normalizeScene(parsed){
       el.scaleFontWithBox = (el.scaleFontWithBox == null) ? false : !!el.scaleFontWithBox;
     }
 
+    if (el.type === ElementType.Text || el.type === ElementType.Sitelen || el.type === ElementType.Glyph){
+      el.preserveCenterOnAutoResize = (el.preserveCenterOnAutoResize == null) ? false : !!el.preserveCenterOnAutoResize;
+    }
+
 
     // Remove transient drag fields if present in older exports
     delete el._startX; delete el._startY;
@@ -1994,6 +2072,7 @@ function normalizeScene(parsed){
         el.ignoreUnknownText = (el.ignoreUnknownText == null)
           ? !!(out.stage?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText)
           : !!el.ignoreUnknownText;
+        el.abbreviateNumericCartouches = (el.abbreviateNumericCartouches == null) ? false : !!el.abbreviateNumericCartouches;
         el.spacingPreset = normalizeSpacingPreset(el.spacingPreset ?? out.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
         if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
 
@@ -2339,6 +2418,8 @@ function deserializeAssets(serialized){
       exportStageBackground: DEFAULTS.exportStageBackground,
       defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
       defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+      defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
+      defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
       defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
       defaultTextColor: DEFAULTS.defaultTextColor,
       defaultFill: DEFAULTS.defaultFill,
@@ -2396,6 +2477,7 @@ function deserializeAssets(serialized){
       isLocked: false,
       // NEW: when true, bbox resize scales fontSize; when false, fontSize stays fixed
       scaleFontWithBox: false,
+      preserveCenterOnAutoResize: getSceneDefaultPreserveCenterOnAutoResize(),
 
       // NEW: halo defaults (per-element; may be auto-recomputed when font changes)
       haloEnabled: !!(Scene.stage.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled),
@@ -2418,6 +2500,7 @@ function deserializeAssets(serialized){
 //    el.fill = "rgba(255,255,255,0.0)"; // default: no background
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
+    el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     ensureHaloFields(el);
     return el;
   }
@@ -2441,8 +2524,10 @@ function deserializeAssets(serialized){
     el.strokeW = 0;
     el.keepAspect = true;
     el.ignoreUnknownText = !!(Scene.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
+    el.abbreviateNumericCartouches = getSceneDefaultAbbreviateNumericCartouches();
+    el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     el.spacingPreset = getSceneDefaultSpacingPreset();
-    el.sitelenResizeAnchor = "topLeft"; // new elements default to top-left anchor
+    el.sitelenResizeAnchor = el.preserveCenterOnAutoResize ? "centre" : "topLeft"; // new elements default to top-left anchor unless scene default preserves centre
 
     ensureHaloFields(el);
 
@@ -2468,6 +2553,7 @@ function deserializeAssets(serialized){
 //    el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
+    el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     ensureHaloFields(el);
     return el;
   }
@@ -5486,7 +5572,7 @@ function sitelenSignature(el){
 function sitelenMeasureBBox(el){
   const cached = sitelenCache.get(el.id);
   if (cached && cached.canvas) return { w: Math.max(8, cached.naturalW), h: Math.max(8, cached.naturalH) };
-  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el, sitelenLayoutOptsForElement(el));
   return { w: Math.max(8, Number(el.w ?? 8)), h: Math.max(8, Number(el.h ?? 8)) };
 }
 
@@ -5495,7 +5581,7 @@ function sitelenMeasureBBox(el){
 function sitelenRenderToOffscreen(el,w,h){
   const cached = sitelenCache.get(el.id);
   if (cached && cached.canvas) return cached.canvas;
-  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el, sitelenLayoutOptsForElement(el));
   const off = document.createElement("canvas");
   off.width = Math.max(1, Math.round(w || el.w || 8));
   off.height = Math.max(1, Math.round(h || el.h || 8));
@@ -5512,7 +5598,7 @@ function ensureSitelenRaster(el){
   const sig = sitelenSignature(el);
   const existing = sitelenCache.get(el.id);
   if (existing && existing.sig === sig && existing.canvas) return existing;
-  if (!sceneHydrating) queueSitelenRasterRebuild(el, { preserveCenter: true });
+  if (!sceneHydrating) queueSitelenRasterRebuild(el, sitelenLayoutOptsForElement(el));
   return existing || null;
 }
 
@@ -5532,11 +5618,12 @@ function sitelenLayoutOptsForElement(el, callerOpts, isTextEdit){
     // Fixed box: never resize w/h, never reposition.
     return { preserveTopLeft: true, fixedBox: true };
   }
-  if (anchor === "topLeft"){
-    return { preserveTopLeft: true };
+  // The explicit preserve-center flag is authoritative for auto-resize anchoring.
+  // When it is false, content/property-driven raster rebuilds keep x/y fixed.
+  if (getElementPreserveCenterOnAutoResize(el)){
+    return { preserveCenter: true };
   }
-  // "centre": honour caller opts or default to centre.
-  return callerOpts || { preserveCenter: true };
+  return { preserveTopLeft: true };
 }
 
 function updateSitelenLayout(el, opts, isTextEdit){
@@ -8376,7 +8463,9 @@ const FloatingMediaEditor = {
 };
 
 const FloatingSitelenEditor = FloatingTextEditor;
-let floatingEditorZCounter = 10040;
+const FLOATING_EDITOR_BASE_Z = 11000;
+const CONFIRM_DIALOG_TOP_Z = 2147482000;
+let floatingEditorZCounter = FLOATING_EDITOR_BASE_Z;
 
 
 function _floatingEditorViewportLimits(){
@@ -8515,7 +8604,7 @@ function clampFloatingEditorToViewport(editor){
 }
 function bringFloatingEditorToFront(editor){
   if (!editor?.root) return;
-  floatingEditorZCounter += 1;
+  floatingEditorZCounter = Math.max(floatingEditorZCounter + 1, FLOATING_EDITOR_BASE_Z + 1);
   editor.root.style.zIndex = String(floatingEditorZCounter);
 }
 function syncFloatingEditorFromSource(editor, value){
@@ -9407,8 +9496,54 @@ const textField = makeTextarea(
 );
 propsBody.appendChild(textField);
 
+const autoResizeTextLikeEls = sels.filter(isTextLike);
+if (autoResizeTextLikeEls.length){
+  const preserveVals = autoResizeTextLikeEls.map(e => String(!!getElementPreserveCenterOnAutoResize(e)));
+  const preserveMixed = mixedLabelIfMixed(preserveVals);
+  const preserveLeader = topmostSelectedWhere(isTextLike) || autoResizeTextLikeEls[0];
+  propsBody.appendChild(makeCheckbox(
+    tr("props_preserve_center_auto_resize"),
+    !!getElementPreserveCenterOnAutoResize(preserveLeader),
+    (checked) => {
+      applyToAllWhere(isTextLike, (e) => {
+        e.preserveCenterOnAutoResize = !!checked;
+        if (e.type === ElementType.Sitelen){
+          if (e.sitelenResizeAnchor !== "fixed") e.sitelenResizeAnchor = checked ? "centre" : "topLeft";
+          invalidateSitelenCache(e.id);
+          updateSitelenLayout(e);
+        }
+        if (e.type === ElementType.Glyph){
+          invalidateGlyphCache(e.id);
+          queueGlyphRasterRebuild(e);
+        }
+      });
+      scheduleAutosave();
+      render();
+      updateUiForSelection();
+    },
+    { mixedLabel: preserveMixed, indeterminate: !!preserveMixed }
+  ));
+}
+
 const sitelenOnlyEls = sels.filter(e => e && e.type === ElementType.Sitelen);
 if (sitelenOnlyEls.length){
+  const abbrevVals = sitelenOnlyEls.map(e => String(!!getElementAbbreviateNumericCartouches(e)));
+  const abbrevMixed = mixedLabelIfMixed(abbrevVals);
+  propsBody.appendChild(makeCheckbox(
+    tr("props_abbrev_numeric_cartouches"),
+    !!getElementAbbreviateNumericCartouches(sitelenOnlyEls[0]),
+    (checked) => {
+      applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+        e.abbreviateNumericCartouches = !!checked;
+        invalidateSitelenCache(e.id);
+        updateSitelenLayout(e);
+      });
+      scheduleAutosave();
+      render();
+    },
+    { mixedLabel: abbrevMixed, indeterminate: !!abbrevMixed }
+  ));
+
   const ignoreVals = sitelenOnlyEls.map(e => !!e.ignoreUnknownText);
   const ignoreMixed = (new Set(ignoreVals.map(v => String(v))).size > 1);
   propsBody.appendChild(makeCheckbox(
@@ -9889,10 +10024,25 @@ if (textField && textField._popoutElementId){
         ],
         (v) => {
           el.sitelenResizeAnchor = v;
+          if (v !== "fixed") el.preserveCenterOnAutoResize = (v === "centre");
           // keepAspect drives drag-resize handle locking; fixed = free drag
           el.keepAspect = (v !== "fixed");
           invalidateSitelenCache(el.id);
           updateSitelenLayout(el, { preserveCenter: true });
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
+        }
+      ));
+
+      propsBody.appendChild(makeCheckbox(
+        tr("props_preserve_center_auto_resize"),
+        !!getElementPreserveCenterOnAutoResize(el),
+        (checked) => {
+          el.preserveCenterOnAutoResize = !!checked;
+          if (el.sitelenResizeAnchor !== "fixed") el.sitelenResizeAnchor = checked ? "centre" : "topLeft";
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
           scheduleAutosave();
           render();
           updateUiForSelection();
@@ -10000,6 +10150,19 @@ if (textField && textField._popoutElementId){
       ));
     }
 
+    if (el.type === ElementType.Text){
+      propsBody.appendChild(makeCheckbox(
+        tr("props_preserve_center_auto_resize"),
+        !!getElementPreserveCenterOnAutoResize(el),
+        (checked) => {
+          el.preserveCenterOnAutoResize = !!checked;
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
+        }
+      ));
+    }
+
     propsBody.appendChild(makeSelect(
       tr("props_render_font_family"),
       getElementRenderFontPresetKey(el),
@@ -10041,6 +10204,20 @@ if (textField && textField._popoutElementId){
         scheduleAutosave();
         render();
     }));
+
+    if (el.type === ElementType.Sitelen){
+      propsBody.appendChild(makeCheckbox(
+        tr("props_abbrev_numeric_cartouches"),
+        !!getElementAbbreviateNumericCartouches(el),
+        (checked) => {
+          el.abbreviateNumericCartouches = !!checked;
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+          scheduleAutosave();
+          render();
+        }
+      ));
+    }
 
 
     propsBody.appendChild(makeNumberRowWithPresets(
@@ -10223,6 +10400,19 @@ propsBody.appendChild(makeGlyphPicker(el));
       !!el.scaleFontWithBox,
       (checked) => {
         el.scaleFontWithBox = !!checked;
+        scheduleAutosave();
+        render();
+        updateUiForSelection();
+      }
+    ));
+
+    propsBody.appendChild(makeCheckbox(
+      tr("props_preserve_center_auto_resize"),
+      !!getElementPreserveCenterOnAutoResize(el),
+      (checked) => {
+        el.preserveCenterOnAutoResize = !!checked;
+        invalidateGlyphCache(el.id);
+        queueGlyphRasterRebuild(el);
         scheduleAutosave();
         render();
         updateUiForSelection();
@@ -12332,6 +12522,7 @@ function confirmDialog(title, message, confirmLabel = 'Confirm'){
     titleEl.textContent = String(title || 'Are you sure?');
     msgEl.textContent   = String(message || '');
     btnOk.textContent   = String(confirmLabel || 'Confirm');
+    backdrop.style.zIndex = String(CONFIRM_DIALOG_TOP_Z);
     backdrop.classList.add('show');
     backdrop.setAttribute('aria-hidden', 'false');
     window.setTimeout(() => { try { btnCan.focus(); } catch {} }, 0);
@@ -12528,6 +12719,8 @@ function syncStageDefaultsUiFromScene(){
   const expbg = document.getElementById("exportStageBackground");
   const drfp = document.getElementById("defRenderFontPreset");
   const dtfo = document.getElementById("defTextFontOption");
+  const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dpcar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
@@ -12589,12 +12782,16 @@ function syncStageDefaultsUiFromScene(){
   }
 
   st.defaultTextFontOption = desiredTextFontOption;
+  st.defaultAbbreviateNumericCartouches = !!(st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  st.defaultPreserveCenterOnAutoResize = !!(st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   st.defaultSpacingPreset = normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
   stageFontPairController.setSelectedTextFontOption(st.defaultTextFontOption, { persist: false });
 
   if (drfp) drfp.value = st.defaultRenderFontPreset;
   if (dtfo) dtfo.value = st.defaultTextFontOption;
+  if (danc) danc.checked = !!st.defaultAbbreviateNumericCartouches;
+  if (dpcar) dpcar.checked = !!st.defaultPreserveCenterOnAutoResize;
   if (dsp) dsp.value = st.defaultSpacingPreset;
 
   if (dt)  dt.value  = rgbaOrHexToHex(st.defaultTextColor, DEFAULTS.defaultTextColor);
@@ -13895,6 +14092,8 @@ function wireStageDefaultsUi(){
   const bg = document.getElementById("stageBg");
   const expbg = document.getElementById("exportStageBackground");
   const dtfo = document.getElementById("defTextFontOption");
+  const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dpcar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
   const df = document.getElementById("defFill");
@@ -13993,6 +14192,22 @@ function wireStageDefaultsUi(){
         )
       );
 
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (danc){
+    danc.addEventListener("change", (e) => {
+      Scene.stage.defaultAbbreviateNumericCartouches = !!e.target.checked;
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dpcar){
+    dpcar.addEventListener("change", (e) => {
+      Scene.stage.defaultPreserveCenterOnAutoResize = !!e.target.checked;
       scheduleAutosave();
       render();
     });
@@ -14222,7 +14437,7 @@ async function hydrateSceneBeforeDisplay(scene = Scene){
       if (!el) continue;
       if (el.type === ElementType.Sitelen || el.type === "Sitelen"){
         invalidateSitelenCache(el.id);
-        jobs.push(rebuildSitelenRasterWithRenderer(el, { preserveCenter: true }));
+        jobs.push(rebuildSitelenRasterWithRenderer(el, sitelenLayoutOptsForElement(el)));
       } else if (el.type === ElementType.Glyph || el.type === "Glyph"){
         invalidateGlyphCache(el.id);
         jobs.push(rebuildGlyphRasterWithRenderer(el));
@@ -14340,7 +14555,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=37');
+        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44');
         const NanpaParser = rendererMod?.NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
         pageMap = await cartoucheApi.resolvePageMap();
@@ -14624,6 +14839,59 @@ document.addEventListener("keydown", (e) => {
     for (const page of (doc?.pages || [])) addSerialized(page?.payload?.assets);
     return { byId: Array.from(map.values()) };
   }
+
+  function normalizeScrapbookDocumentDefaults(rawDefaults = {}, sourceStage = null){
+    const d = isPlainObject(rawDefaults) ? rawDefaults : {};
+    const st = sourceStage || Scene.stage || {};
+    const presetKey = normalizeRenderFontPresetKey(d.defaultRenderFontPreset || st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+    const out = {
+      pageWidth: clamp(Math.round(Number(d.pageWidth) || st.w || DEFAULTS.stageW), 64, 12000),
+      pageHeight: clamp(Math.round(Number(d.pageHeight) || st.h || DEFAULTS.stageH), 64, 12000),
+      themeId: String(d.themeId || 'custom'),
+      pageTemplate: String(d.pageTemplate || 'blank'),
+      showGrid: !!(d.showGrid ?? st.showGrid ?? DEFAULTS.showGrid),
+      gridSize: Number.isFinite(Number(d.gridSize)) ? clamp(Number(d.gridSize), 2, 1000) : (Number.isFinite(Number(st.gridSize)) ? clamp(Number(st.gridSize), 2, 1000) : DEFAULTS.gridSize),
+      snapGrid: !!(d.snapGrid ?? st.snapGrid ?? DEFAULTS.snapGrid),
+      snapObjects: !!(d.snapObjects ?? st.snapObjects ?? DEFAULTS.snapObjects),
+      snapTol: Number.isFinite(Number(d.snapTol)) ? clamp(Number(d.snapTol), 0, 200) : (Number.isFinite(Number(st.snapTol)) ? clamp(Number(st.snapTol), 0, 200) : DEFAULTS.snapTol),
+      stageBg: rgbaOrHexToHex(d.stageBg ?? st.bg ?? DEFAULTS.stageBg, DEFAULTS.stageBg),
+      exportStageBackground: !!(d.exportStageBackground ?? st.exportStageBackground ?? DEFAULTS.exportStageBackground),
+      bgImgEnabled: !!(d.bgImgEnabled ?? st.bgImgEnabled ?? DEFAULTS.bgImgEnabled),
+      bgImgAssetId: d.bgImgAssetId != null && String(d.bgImgAssetId || '').trim() ? String(d.bgImgAssetId) : null,
+      bgImgKeepAspect: !!(d.bgImgKeepAspect ?? st.bgImgKeepAspect ?? DEFAULTS.bgImgKeepAspect),
+      bgImgStretch: !!(d.bgImgStretch ?? st.bgImgStretch ?? DEFAULTS.bgImgStretch),
+      defaultRenderFontPreset: presetKey,
+      defaultTextFontOption: normalizeTextFontOptionKeyForPreset(d.defaultTextFontOption || st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, presetKey),
+      defaultAbbreviateNumericCartouches: !!(d.defaultAbbreviateNumericCartouches ?? st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches),
+      defaultPreserveCenterOnAutoResize: !!(d.defaultPreserveCenterOnAutoResize ?? st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize),
+      defaultSpacingPreset: normalizeSpacingPreset(d.defaultSpacingPreset ?? st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset),
+      defaultTextColor: rgbaOrHexToHex(d.defaultTextColor ?? st.defaultTextColor ?? DEFAULTS.defaultTextColor, DEFAULTS.defaultTextColor),
+      defaultIgnoreUnknownText: !!(d.defaultIgnoreUnknownText ?? st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText),
+      defaultFill: rgbaOrHexToHex(d.defaultFill ?? st.defaultFill ?? DEFAULTS.defaultFill, DEFAULTS.defaultFill),
+      defaultFillEnabled: !!(d.defaultFillEnabled ?? st.defaultFillEnabled ?? DEFAULTS.defaultFillEnabled),
+      defaultStroke: rgbaOrHexToHex(d.defaultStroke ?? st.defaultStroke ?? DEFAULTS.defaultStroke, DEFAULTS.defaultStroke),
+      defaultStrokeW: Number.isFinite(Number(d.defaultStrokeW)) ? clamp(Number(d.defaultStrokeW), 0, 200) : (Number.isFinite(Number(st.defaultStrokeW)) ? clamp(Number(st.defaultStrokeW), 0, 200) : DEFAULTS.defaultStrokeW),
+      defaultHaloEnabled: !!(d.defaultHaloEnabled ?? st.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled),
+      defaultHaloColor: rgbaOrHexToHex(d.defaultHaloColor ?? st.defaultHaloColor ?? DEFAULTS.defaultHaloColor, DEFAULTS.defaultHaloColor),
+      defaultHaloThicknessPx: Number.isFinite(Number(d.defaultHaloThicknessPx)) ? clamp(Number(d.defaultHaloThicknessPx), 0, 200) : (Number.isFinite(Number(st.defaultHaloThicknessPx)) ? clamp(Number(st.defaultHaloThicknessPx), 0, 200) : DEFAULTS.defaultHaloThicknessPx),
+      defaultHaloThicknessMode: String(d.defaultHaloThicknessMode || st.defaultHaloThicknessMode || DEFAULTS.defaultHaloThicknessMode) === 'manual' ? 'manual' : 'auto',
+    };
+    if (!out.bgImgAssetId) out.bgImgEnabled = false;
+    if (!['blank','title','content','diary','photoCaption','quote','collage'].includes(out.pageTemplate)) out.pageTemplate = 'blank';
+    if (!['custom','scrapbook','diary','slideshow'].includes(out.themeId)) out.themeId = 'custom';
+    return out;
+  }
+
+  function documentIncludesCoverPage(doc = null){
+    const d = doc || ScrapbookState?.doc || {};
+    return d?.settings?.includeCoverPageInExport !== false;
+  }
+
+  function documentCoverDateUsesAbbreviatedCartouche(doc = null){
+    const d = doc || ScrapbookState?.doc || {};
+    return !!d?.settings?.coverDateAbbreviateNumericCartouche;
+  }
+
   function normalizeScrapbookPayload(rawPayload, fallbackAssets = null){
     const payload = rawPayload && rawPayload.scene ? deep(rawPayload) : { scene: deep(rawPayload || {}) };
     payload.assets = deep(payload.assets || fallbackAssets || { byId: [] });
@@ -14645,34 +14913,16 @@ document.addEventListener("keydown", (e) => {
     doc.meta.updatedAt = String(doc.meta.updatedAt || new Date().toISOString());
     doc.meta.language = (String(doc.meta.language || (langSel?.value || 'en')) === 'tp') ? 'tp' : 'en';
     doc.notes = String(doc.notes || '');
-    doc.documentDefaults = isPlainObject(doc.documentDefaults) ? doc.documentDefaults : {};
-    doc.documentDefaults.pageWidth = clamp(Math.round(Number(doc.documentDefaults.pageWidth) || Scene.stage.w || 1280), 64, 12000);
-    doc.documentDefaults.pageHeight = clamp(Math.round(Number(doc.documentDefaults.pageHeight) || Scene.stage.h || 800), 64, 12000);
-    doc.documentDefaults.themeId = String(doc.documentDefaults.themeId || 'custom');
-    doc.documentDefaults.pageTemplate = String(doc.documentDefaults.pageTemplate || 'blank');
-    doc.documentDefaults.showGrid = !!doc.documentDefaults.showGrid;
-    doc.documentDefaults.gridSize = Number.isFinite(Number(doc.documentDefaults.gridSize)) ? clamp(Number(doc.documentDefaults.gridSize), 2, 1000) : 20;
-    doc.documentDefaults.snapGrid = !!doc.documentDefaults.snapGrid;
-    doc.documentDefaults.snapObjects = !!doc.documentDefaults.snapObjects;
-    doc.documentDefaults.snapTol = Number.isFinite(Number(doc.documentDefaults.snapTol)) ? clamp(Number(doc.documentDefaults.snapTol), 0, 200) : 6;
-    doc.documentDefaults.stageBg = String(doc.documentDefaults.stageBg || '#FFFFFF');
-    doc.documentDefaults.exportStageBackground = !!doc.documentDefaults.exportStageBackground;
-    doc.documentDefaults.defaultRenderFontPreset = normalizeRenderFontPresetKey(doc.documentDefaults.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
-    doc.documentDefaults.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(doc.documentDefaults.defaultTextFontOption || DEFAULTS.defaultTextFontOption, doc.documentDefaults.defaultRenderFontPreset);
-    doc.documentDefaults.defaultSpacingPreset = normalizeSpacingPreset(doc.documentDefaults.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
-    doc.documentDefaults.defaultTextColor = String(doc.documentDefaults.defaultTextColor || DEFAULTS.defaultTextColor);
-    doc.documentDefaults.defaultIgnoreUnknownText = !!(doc.documentDefaults.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
-    doc.documentDefaults.defaultFill = String(doc.documentDefaults.defaultFill ?? DEFAULTS.defaultFill);
-    doc.documentDefaults.defaultFillEnabled = !!(doc.documentDefaults.defaultFillEnabled ?? DEFAULTS.defaultFillEnabled);
-    doc.documentDefaults.defaultStroke = String(doc.documentDefaults.defaultStroke ?? DEFAULTS.defaultStroke);
-    doc.documentDefaults.defaultStrokeW = Number.isFinite(Number(doc.documentDefaults.defaultStrokeW)) ? clamp(Number(doc.documentDefaults.defaultStrokeW), 0, 200) : DEFAULTS.defaultStrokeW;
-    doc.documentDefaults.defaultHaloEnabled = !!(doc.documentDefaults.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled);
-    doc.documentDefaults.defaultHaloColor = String(doc.documentDefaults.defaultHaloColor ?? DEFAULTS.defaultHaloColor);
-    doc.documentDefaults.defaultHaloThicknessPx = Number.isFinite(Number(doc.documentDefaults.defaultHaloThicknessPx)) ? clamp(Number(doc.documentDefaults.defaultHaloThicknessPx), 0, 200) : DEFAULTS.defaultHaloThicknessPx;
-    doc.documentDefaults.defaultHaloThicknessMode = String(doc.documentDefaults.defaultHaloThicknessMode || DEFAULTS.defaultHaloThicknessMode);
+    const rawDocumentDefaults = isPlainObject(doc.documentDefaults) ? doc.documentDefaults : {};
+    const rawDocumentDefaultsHasAbbrev = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultAbbreviateNumericCartouches');
+    doc.documentDefaults = normalizeScrapbookDocumentDefaults(rawDocumentDefaults, Scene.stage || {});
+    // Existing/imported documents that lack the abbreviation flag must stay visually unchanged.
+    if (!rawDocumentDefaultsHasAbbrev) doc.documentDefaults.defaultAbbreviateNumericCartouches = false;
     doc.assets = deep(doc.assets || { byId: [] });
     // Normalise media guard settings (default all ON for new/old docs that lack them)
     doc.settings = isPlainObject(doc.settings) ? doc.settings : {};
+    doc.settings.includeCoverPageInExport = doc.settings.includeCoverPageInExport !== false;
+    doc.settings.coverDateAbbreviateNumericCartouche = !!doc.settings.coverDateAbbreviateNumericCartouche;
     doc.settings.mediaGuards = isPlainObject(doc.settings.mediaGuards) ? doc.settings.mediaGuards : {};
     doc.settings.mediaGuards.image = doc.settings.mediaGuards.image !== false;
     doc.settings.mediaGuards.audio = doc.settings.mediaGuards.audio !== false;
@@ -14723,19 +14973,9 @@ document.addEventListener("keydown", (e) => {
         updatedAt: exportedAt,
         language: (String((langSel?.value || doc.meta?.language || 'en')) === 'tp') ? 'tp' : 'en'
       },
-      documentDefaults: {
-        pageWidth: clamp(Math.round(Number(doc.documentDefaults?.pageWidth) || 1280), 64, 12000),
-        pageHeight: clamp(Math.round(Number(doc.documentDefaults?.pageHeight) || 800), 64, 12000),
-        themeId: String(doc.documentDefaults?.themeId || 'custom'),
-        showGrid: !!doc.documentDefaults?.showGrid,
-        gridSize: Number.isFinite(Number(doc.documentDefaults?.gridSize)) ? clamp(Number(doc.documentDefaults.gridSize), 2, 1000) : 20,
-        snapGrid: !!doc.documentDefaults?.snapGrid,
-        snapObjects: !!doc.documentDefaults?.snapObjects,
-        snapTol: Number.isFinite(Number(doc.documentDefaults?.snapTol)) ? clamp(Number(doc.documentDefaults.snapTol), 0, 200) : 6,
-        defaultSpacingPreset: normalizeSpacingPreset(doc.documentDefaults?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset),
-        defaultIgnoreUnknownText: !!(doc.documentDefaults?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText)
-      },
-      settings: { mediaGuards: { image: !!(doc.settings?.mediaGuards?.image !== false), audio: !!(doc.settings?.mediaGuards?.audio !== false), video: !!(doc.settings?.mediaGuards?.video !== false) }, youtubeExportInfo: { pngSingle: !!(doc.settings?.youtubeExportInfo?.pngSingle !== false), png: !!(doc.settings?.youtubeExportInfo?.png !== false), html: !!(doc.settings?.youtubeExportInfo?.html !== false), pdf: !!(doc.settings?.youtubeExportInfo?.pdf !== false) } },
+      notes: String(doc.notes || ''),
+      documentDefaults: deep(normalizeScrapbookDocumentDefaults(doc.documentDefaults || {}, null)),
+      settings: { includeCoverPageInExport: doc.settings?.includeCoverPageInExport !== false, coverDateAbbreviateNumericCartouche: !!doc.settings?.coverDateAbbreviateNumericCartouche, mediaGuards: { image: !!(doc.settings?.mediaGuards?.image !== false), audio: !!(doc.settings?.mediaGuards?.audio !== false), video: !!(doc.settings?.mediaGuards?.video !== false) }, youtubeExportInfo: { pngSingle: !!(doc.settings?.youtubeExportInfo?.pngSingle !== false), png: !!(doc.settings?.youtubeExportInfo?.png !== false), html: !!(doc.settings?.youtubeExportInfo?.html !== false), pdf: !!(doc.settings?.youtubeExportInfo?.pdf !== false) } },
       assets: canonicalAssets,
       pages: (doc.pages || []).map((page, idx) => ({
         id: String(page?.id || uid('page')),
@@ -15133,6 +15373,7 @@ document.addEventListener("keydown", (e) => {
     ScrapbookState.doc.assets = collectDocumentAssets(ScrapbookState.doc);
     ScrapbookState.lastEditorHash = sceneFingerprint();
     renderScrapbookSidebar();
+    refreshCurrentPagePropertiesWindow();
     refreshScrapbookSearchResults(true);
     debounceScrapbookSave();
   }
@@ -15198,42 +15439,24 @@ document.addEventListener("keydown", (e) => {
   }
   function createDocumentFromPayload(payload){
     const firstPageId = uid('page');
-    const st = payload.scene?.stage || Scene.stage || {};
+    if (!payload || typeof payload !== 'object') payload = { scene: {} };
+    payload.scene = payload.scene || {};
+    payload.scene.stage = payload.scene.stage || {};
+    // New scrapbook documents should start with abbreviated numeric cartouches ON.
+    // Legacy/imported documents are still normalized separately with missing values OFF.
+    payload.scene.stage.defaultAbbreviateNumericCartouches = true;
+    const st = Object.assign({}, Scene.stage || {}, payload.scene.stage || {}, { defaultAbbreviateNumericCartouches: true });
+    const documentDefaults = normalizeScrapbookDocumentDefaults({ defaultAbbreviateNumericCartouches: true }, st);
     return {
       format: 'StaticScrapbookDocument',
       version: 1,
       exportedAt: new Date().toISOString(),
       meta: { title: 'Untitled document', subtitle: '', documentType: 'scrapbook', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), language: (langSel?.value || 'en') },
-      documentDefaults: {
-        pageWidth: st.w || Scene.stage.w,
-        pageHeight: st.h || Scene.stage.h,
-        themeId: 'custom',
-        pageTemplate: 'blank',
-        showGrid: !!st.showGrid,
-        gridSize: Number.isFinite(st.gridSize) ? st.gridSize : 20,
-        snapGrid: !!st.snapGrid,
-        snapObjects: !!st.snapObjects,
-        snapTol: Number.isFinite(st.snapTol) ? st.snapTol : 6,
-        stageBg: st.bg || '#FFFFFF',
-        exportStageBackground: !!st.exportStageBackground,
-        defaultRenderFontPreset: st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset,
-        defaultTextFontOption: st.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
-        defaultSpacingPreset: normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset),
-        defaultTextColor: st.defaultTextColor || DEFAULTS.defaultTextColor,
-        defaultIgnoreUnknownText: !!(st.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText),
-        defaultFill: st.defaultFill ?? DEFAULTS.defaultFill,
-        defaultFillEnabled: !!(st.defaultFillEnabled ?? DEFAULTS.defaultFillEnabled),
-        defaultStroke: st.defaultStroke ?? DEFAULTS.defaultStroke,
-        defaultStrokeW: Number.isFinite(st.defaultStrokeW) ? st.defaultStrokeW : DEFAULTS.defaultStrokeW,
-        defaultHaloEnabled: !!(st.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled),
-        defaultHaloColor: st.defaultHaloColor ?? DEFAULTS.defaultHaloColor,
-        defaultHaloThicknessPx: Number.isFinite(st.defaultHaloThicknessPx) ? st.defaultHaloThicknessPx : DEFAULTS.defaultHaloThicknessPx,
-        defaultHaloThicknessMode: st.defaultHaloThicknessMode || DEFAULTS.defaultHaloThicknessMode,
-      },
+      documentDefaults,
       assets: deep(payload?.assets || serializeAssets()),
       pages: [{ id: firstPageId, kind: 'page', name: 'Page 1', notes: '', tags: [], thumbnail: '', payload: deep(payload) }],
       currentPageId: firstPageId,
-      settings: { mediaGuards: { image: true, audio: true, video: true }, youtubeExportInfo: { pngSingle: true, png: true, html: true, pdf: true } },
+      settings: { includeCoverPageInExport: true, coverDateAbbreviateNumericCartouche: true, mediaGuards: { image: true, audio: true, video: true }, youtubeExportInfo: { pngSingle: true, png: true, html: true, pdf: true } },
     };
   }
 
@@ -15253,12 +15476,18 @@ document.addEventListener("keydown", (e) => {
     st.snapTol = Number.isFinite(Number(docDefaults.snapTol)) ? Number(docDefaults.snapTol) : (st.snapTol || 6);
     st.bg = docDefaults.stageBg || st.bg || '#FFFFFF';
     st.exportStageBackground = !!docDefaults.exportStageBackground;
+    st.bgImgEnabled = !!docDefaults.bgImgEnabled;
+    st.bgImgAssetId = docDefaults.bgImgAssetId || null;
+    st.bgImgKeepAspect = !!(docDefaults.bgImgKeepAspect ?? DEFAULTS.bgImgKeepAspect);
+    st.bgImgStretch = !!(docDefaults.bgImgStretch ?? DEFAULTS.bgImgStretch);
     st.defaultRenderFontPreset = normalizeRenderFontPresetKey(docDefaults.defaultRenderFontPreset || st.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
     
     st.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(
       docDefaults.defaultTextFontOption || FONT_FAMILY_LITERAL,
       st.defaultRenderFontPreset
     );
+    st.defaultAbbreviateNumericCartouches = !!(docDefaults.defaultAbbreviateNumericCartouches ?? st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+    st.defaultPreserveCenterOnAutoResize = !!(docDefaults.defaultPreserveCenterOnAutoResize ?? st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
     st.defaultSpacingPreset = normalizeSpacingPreset(docDefaults.defaultSpacingPreset ?? st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
     st.defaultTextColor = docDefaults.defaultTextColor || st.defaultTextColor || DEFAULTS.defaultTextColor;
@@ -15271,6 +15500,7 @@ document.addEventListener("keydown", (e) => {
     st.defaultHaloColor = docDefaults.defaultHaloColor ?? st.defaultHaloColor ?? DEFAULTS.defaultHaloColor;
     st.defaultHaloThicknessPx = Number.isFinite(Number(docDefaults.defaultHaloThicknessPx)) ? Number(docDefaults.defaultHaloThicknessPx) : (st.defaultHaloThicknessPx ?? DEFAULTS.defaultHaloThicknessPx);
     st.defaultHaloThicknessMode = docDefaults.defaultHaloThicknessMode || st.defaultHaloThicknessMode || DEFAULTS.defaultHaloThicknessMode;
+    if (ScrapbookState?.doc?.assets) payload.assets = deep(ScrapbookState.doc.assets);
     return payload;
   }
 
@@ -15371,9 +15601,14 @@ document.addEventListener("keydown", (e) => {
     const titleInput = docRoot.querySelector('#sbDocTitle');
     const subtitleInput = docRoot.querySelector('#sbDocSubtitle');
     const typeSel = docRoot.querySelector('#sbDocType');
-    titleInput.oninput = () => { ScrapbookState.doc.meta.title = titleInput.value; debounceScrapbookSave(); };
-    subtitleInput.oninput = () => { ScrapbookState.doc.meta.subtitle = subtitleInput.value; debounceScrapbookSave(); };
-    typeSel.onchange = () => { ScrapbookState.doc.meta.documentType = typeSel.value; debounceScrapbookSave(); };
+    if (titleInput) titleInput.oninput = () => {
+      ScrapbookState.doc.meta.title = titleInput.value;
+      const propTitle = document.getElementById('sbDocPropTitle');
+      if (propTitle && propTitle.value !== titleInput.value) propTitle.value = titleInput.value;
+      debounceScrapbookSave();
+    };
+    if (subtitleInput) subtitleInput.oninput = () => { ScrapbookState.doc.meta.subtitle = subtitleInput.value; debounceScrapbookSave(); };
+    if (typeSel) typeSel.onchange = () => { ScrapbookState.doc.meta.documentType = typeSel.value; debounceScrapbookSave(); };
   }
   function escapeHtml(value){
     return String(value ?? '')
@@ -16049,6 +16284,7 @@ document.addEventListener("keydown", (e) => {
         haloColor: '#FFFFFF',
         haloThicknessMode: 'auto',
         haloThickness: 0,
+        abbreviateNumericCartouches: documentCoverDateUsesAbbreviatedCartouche(doc),
       };
       try {
         const renderer = await getSitelenRendererForElement(fakeEl);
@@ -16282,17 +16518,18 @@ document.addEventListener("keydown", (e) => {
     const exportDate = new Date().toISOString().slice(0, 10);
     const totalPages = pages.length;
 
-    setStatus('Exporting PDF… building cover page');
-
-    // ── Cover page ────────────────────────────────────────────────────────────
-    try {
-      await waitForRenderPresetFonts('nasinNanpa', 64, null, []);
-    } catch {}
-    const cover = await buildPdfCoverCanvas(doc, stageW, stageH, exportDate);
-    const coverPng = await canvasToPdfPngBytes(cover.canvas);
-    const coverImg = await pdfDoc.embedPng(coverPng);
-    const coverPage = pdfDoc.addPage([pageWPt, pageHPt]);
-    coverPage.drawImage(coverImg, { x: 0, y: 0, width: pageWPt, height: pageHPt });
+    if (documentIncludesCoverPage(doc)) {
+      setStatus('Exporting PDF… building cover page');
+      // ── Cover page ────────────────────────────────────────────────────────────
+      try {
+        await waitForRenderPresetFonts('nasinNanpa', 64, null, []);
+      } catch {}
+      const cover = await buildPdfCoverCanvas(doc, stageW, stageH, exportDate);
+      const coverPng = await canvasToPdfPngBytes(cover.canvas);
+      const coverImg = await pdfDoc.embedPng(coverPng);
+      const coverPage = pdfDoc.addPage([pageWPt, pageHPt]);
+      coverPage.drawImage(coverImg, { x: 0, y: 0, width: pageWPt, height: pageHPt });
+    }
 
     // ── Content pages ─────────────────────────────────────────────────────────
     for (let i = 0; i < pages.length; i++){
@@ -16349,16 +16586,18 @@ document.addEventListener("keydown", (e) => {
     const files = [];
 
     // Cover page as 000-cover.png
-    setStatus('Exporting ZIP… building cover page');
-    try {
-      await waitForRenderPresetFonts('nasinNanpa', 64, null, []);
-      const cover = await buildPdfCoverCanvas(doc, stageW, stageH, exportDate);
-      const coverBlob = await new Promise((res, rej) =>
-        cover.canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/png')
-      );
-      files.push({ name: `000-cover.png`, data: await blobToUint8Array(coverBlob) });
-    } catch (err) {
-      console.warn('ZIP cover page failed:', err);
+    if (documentIncludesCoverPage(doc)) {
+      setStatus('Exporting ZIP… building cover page');
+      try {
+        await waitForRenderPresetFonts('nasinNanpa', 64, null, []);
+        const cover = await buildPdfCoverCanvas(doc, stageW, stageH, exportDate);
+        const coverBlob = await new Promise((res, rej) =>
+          cover.canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/png')
+        );
+        files.push({ name: `000-cover.png`, data: await blobToUint8Array(coverBlob) });
+      } catch (err) {
+        console.warn('ZIP cover page failed:', err);
+      }
     }
 
     // Content pages as 001-name.png, 002-name.png, …
@@ -16388,22 +16627,22 @@ document.addEventListener("keydown", (e) => {
     const stageH = Math.max(1, firstPayload?.scene?.stage?.h || 800);
     const exportDate = new Date().toISOString().slice(0, 10);
 
-    setStatus('Exporting HTML… building cover page');
-
-    // Build cover page using the same canvas as PDF export
-    let coverDataUrl = '';
-    try {
-      await waitForRenderPresetFonts('nasinNanpa', 64, null, []);
-      const cover = await buildPdfCoverCanvas(doc, stageW, stageH, exportDate);
-      coverDataUrl = cover.canvas.toDataURL('image/png');
-    } catch (err) {
-      console.warn('Cover page render failed:', err);
-    }
-
     const pagesForHtml = [];
-    // Cover page first
-    if (coverDataUrl){
-      pagesForHtml.push({ name: 'Cover', dataUrl: coverDataUrl, w: stageW, h: stageH, hotspots: [] });
+    if (documentIncludesCoverPage(doc)) {
+      setStatus('Exporting HTML… building cover page');
+      // Build cover page using the same canvas as PDF export
+      let coverDataUrl = '';
+      try {
+        await waitForRenderPresetFonts('nasinNanpa', 64, null, []);
+        const cover = await buildPdfCoverCanvas(doc, stageW, stageH, exportDate);
+        coverDataUrl = cover.canvas.toDataURL('image/png');
+      } catch (err) {
+        console.warn('Cover page render failed:', err);
+      }
+      // Cover page first
+      if (coverDataUrl){
+        pagesForHtml.push({ name: 'Cover', dataUrl: coverDataUrl, w: stageW, h: stageH, hotspots: [] });
+      }
     }
     // Content pages
     const total = pages.length;
@@ -16608,7 +16847,616 @@ document.addEventListener("keydown", (e) => {
     });
   }
 
+
+
+
+  function ensureScrapbookPagesPanelStyles(){
+    if (document.getElementById('sbPagesPanelStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'sbPagesPanelStyles';
+    style.textContent = `
+      #scrapbookDocSidebar .pagesPanel{min-height:0 !important;display:flex !important;flex-direction:column !important;overflow:hidden !important;}
+      #scrapbookDocSidebar .pagesPanel > .panelHeader{flex:0 0 auto !important;}
+      #scrapbookDocSidebar .pagesPanel .sbPagesActionBar{flex:0 0 auto !important;display:flex;flex-wrap:wrap;gap:5px;padding:7px 10px 6px;border-bottom:1px solid var(--panel-border,rgba(17,17,17,.14));background:var(--panel-bg,#fff7ec);position:sticky;top:0;z-index:2;}
+      #scrapbookDocSidebar .pagesPanel .sbPagesActionBar .btn{font-size:12px !important;line-height:1 !important;padding:5px 8px !important;border-radius:8px !important;min-height:26px !important;min-width:0 !important;white-space:nowrap !important;}
+      #scrapbookDocSidebar .pagesPanel .sbPagesListBody{flex:1 1 auto !important;min-height:0 !important;overflow:auto !important;padding:10px 12px !important;display:block !important;}
+      #scrapbookDocSidebar .pagesPanel #sbPageList{display:flex;flex-direction:column;gap:10px;min-height:0;}
+    `;
+    document.head.appendChild(style);
+  }
+
+  const DocumentPropertiesState = {
+    root: null,
+    header: null,
+    body: null,
+    isOpen: false,
+    dragging: false,
+    dragPointerId: null,
+    startX: 0,
+    startY: 0,
+    startLeft: 0,
+    startTop: 0,
+  };
+
+  function ensureDocumentPropertiesStyles(){
+    if (document.getElementById('sbDocumentPropertiesStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'sbDocumentPropertiesStyles';
+    style.textContent = `
+      #scrapbookDocSidebar .docNotesPanel{flex:0 0 auto !important;height:auto !important;min-height:142px !important;max-height:none !important;overflow:visible !important;}
+      #scrapbookDocSidebar .docNotesPanel .panelHeader{flex:0 0 auto !important;}
+      #scrapbookDocSidebar .docNotesPanel .stageMiniBody{flex:0 0 auto !important;height:auto !important;min-height:96px !important;max-height:none !important;overflow:visible !important;display:flex;flex-direction:column;gap:8px;}
+      #scrapbookDocSidebar .docNotesPanel .row{flex:0 0 auto !important;min-height:0 !important;overflow:visible !important;}
+      #scrapbookDocSidebar .docNotesPanel .field{overflow:visible !important;}
+      #sbDocumentPropertiesWindow{position:fixed;left:96px;top:96px;width:720px;height:560px;min-width:360px;min-height:260px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);z-index:10060;display:none;flex-direction:column;background:var(--panel-bg,#fff7ec);border:1px solid var(--panel-border,rgba(17,17,17,.18));border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.24);overflow:hidden;resize:both;box-sizing:border-box;}
+      #sbDocumentPropertiesHeader{flex:0 0 auto;cursor:move;user-select:none;}
+      #sbDocumentPropertiesHeader *{user-select:none;}
+      #sbDocumentPropertiesBody{flex:1 1 auto;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px;}
+      #sbDocumentPropertiesBody fieldset{border:1px solid rgba(17,17,17,.14);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;}
+      #sbDocumentPropertiesBody legend{font-weight:700;padding:0 6px;}
+      #sbDocumentPropertiesBody .row{display:flex;gap:10px;align-items:flex-start;}
+      #sbDocumentPropertiesBody .field{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:4px;}
+      #sbDocumentPropertiesBody .field input[type="text"],#sbDocumentPropertiesBody .field input[type="number"],#sbDocumentPropertiesBody .field select,#sbDocumentPropertiesBody .field textarea{width:100%;box-sizing:border-box;}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function loadDocumentPropertiesGeometry(){
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_KEY_DOCUMENT_PROPS_GEOMETRY) || 'null');
+      if (raw && typeof raw === 'object') return raw;
+    } catch {}
+    return null;
+  }
+
+  function saveDocumentPropertiesGeometry(){
+    const root = DocumentPropertiesState.root;
+    if (!root) return;
+    try {
+      const rect = root.getBoundingClientRect();
+      localStorage.setItem(LS_KEY_DOCUMENT_PROPS_GEOMETRY, JSON.stringify({ left: rect.left, top: rect.top, width: rect.width, height: rect.height }));
+    } catch {}
+  }
+
+  function clampDocumentPropertiesWindowToViewport(){
+    const root = DocumentPropertiesState.root;
+    if (!root) return;
+    const margin = 8;
+    const maxW = Math.max(360, window.innerWidth - margin * 2);
+    const maxH = Math.max(260, window.innerHeight - margin * 2);
+    const rect = root.getBoundingClientRect();
+    const w = Math.min(Math.max(360, rect.width || 720), maxW);
+    const h = Math.min(Math.max(260, rect.height || 560), maxH);
+    let left = Number.isFinite(rect.left) ? rect.left : 96;
+    let top = Number.isFinite(rect.top) ? rect.top : 96;
+    left = clamp(left, margin, Math.max(margin, window.innerWidth - w - margin));
+    top = clamp(top, margin, Math.max(margin, window.innerHeight - h - margin));
+    root.style.width = `${Math.round(w)}px`;
+    root.style.height = `${Math.round(h)}px`;
+    root.style.left = `${Math.round(left)}px`;
+    root.style.top = `${Math.round(top)}px`;
+    root.style.right = 'auto';
+    root.style.bottom = 'auto';
+  }
+
+  function clampDocumentPropertiesWindowPositionToViewport(){
+    const root = DocumentPropertiesState.root;
+    if (!root) return;
+    const margin = 8;
+    const rect = root.getBoundingClientRect();
+    const w = Math.max(1, rect.width || parseFloat(root.style.width || '720') || 720);
+    const h = Math.max(1, rect.height || parseFloat(root.style.height || '560') || 560);
+    let left = Number.isFinite(rect.left) ? rect.left : parseFloat(root.style.left || '96');
+    let top = Number.isFinite(rect.top) ? rect.top : parseFloat(root.style.top || '96');
+    left = clamp(left, margin, Math.max(margin, window.innerWidth - w - margin));
+    top = clamp(top, margin, Math.max(margin, window.innerHeight - h - margin));
+    root.style.left = `${Math.round(left)}px`;
+    root.style.top = `${Math.round(top)}px`;
+    root.style.right = 'auto';
+    root.style.bottom = 'auto';
+  }
+
+  function ensureDocumentPropertiesWindow(){
+    ensureDocumentPropertiesStyles();
+    let root = document.getElementById('sbDocumentPropertiesWindow');
+    if (!root){
+      root = document.createElement('div');
+      root.id = 'sbDocumentPropertiesWindow';
+      root.className = 'sbDocumentPropertiesWindow';
+      root.setAttribute('aria-hidden', 'true');
+      root.innerHTML = `
+        <div id="sbDocumentPropertiesHeader" class="panelHeader">
+          <h3>${escapeHtml(tr('sb_hdr_doc_properties'))}</h3>
+          <button id="sbCloseDocumentProperties" class="btn" type="button">Close</button>
+        </div>
+        <div id="sbDocumentPropertiesBody"></div>`;
+      document.body.appendChild(root);
+    }
+    DocumentPropertiesState.root = root;
+    DocumentPropertiesState.header = root.querySelector('#sbDocumentPropertiesHeader');
+    DocumentPropertiesState.body = root.querySelector('#sbDocumentPropertiesBody');
+    const closeBtn = root.querySelector('#sbCloseDocumentProperties');
+    if (closeBtn && !closeBtn.__wired){
+      closeBtn.__wired = true;
+      closeBtn.addEventListener('click', () => closeDocumentPropertiesWindow());
+    }
+    const header = DocumentPropertiesState.header;
+    if (header && !header.__wiredDrag){
+      header.__wiredDrag = true;
+      header.addEventListener('pointerdown', (e) => {
+        if (e.button != null && e.button !== 0) return;
+        if (e.target && e.target.closest('button,input,select,textarea')) return;
+        const rect = root.getBoundingClientRect();
+        DocumentPropertiesState.dragging = true;
+        DocumentPropertiesState.dragPointerId = e.pointerId;
+        DocumentPropertiesState.startX = e.clientX;
+        DocumentPropertiesState.startY = e.clientY;
+        DocumentPropertiesState.startLeft = rect.left;
+        DocumentPropertiesState.startTop = rect.top;
+        // Lock the current size while moving. Native CSS resize should only happen
+        // from the bottom-right resize handle, never as a side effect of dragging
+        // the header.
+        root.style.width = `${Math.round(rect.width)}px`;
+        root.style.height = `${Math.round(rect.height)}px`;
+        root.style.resize = 'none';
+        root.style.right = 'auto';
+        root.style.bottom = 'auto';
+        header.setPointerCapture?.(e.pointerId);
+        e.preventDefault();
+      });
+      header.addEventListener('pointermove', (e) => {
+        if (!DocumentPropertiesState.dragging || e.pointerId !== DocumentPropertiesState.dragPointerId) return;
+        root.style.left = `${DocumentPropertiesState.startLeft + e.clientX - DocumentPropertiesState.startX}px`;
+        root.style.top = `${DocumentPropertiesState.startTop + e.clientY - DocumentPropertiesState.startY}px`;
+        root.style.right = 'auto';
+        root.style.bottom = 'auto';
+        clampDocumentPropertiesWindowPositionToViewport();
+      });
+      const stopDrag = (e) => {
+        if (!DocumentPropertiesState.dragging) return;
+        if (e && DocumentPropertiesState.dragPointerId != null && e.pointerId !== DocumentPropertiesState.dragPointerId) return;
+        DocumentPropertiesState.dragging = false;
+        if (DocumentPropertiesState.dragPointerId != null) header.releasePointerCapture?.(DocumentPropertiesState.dragPointerId);
+        DocumentPropertiesState.dragPointerId = null;
+        root.style.resize = 'both';
+        clampDocumentPropertiesWindowPositionToViewport();
+        saveDocumentPropertiesGeometry();
+      };
+      header.addEventListener('pointerup', stopDrag);
+      header.addEventListener('pointercancel', stopDrag);
+      window.addEventListener('resize', () => {
+        if (DocumentPropertiesState.isOpen){ clampDocumentPropertiesWindowToViewport(); saveDocumentPropertiesGeometry(); }
+      });
+    }
+    return root;
+  }
+
+  function closeDocumentPropertiesWindow(){
+    const root = ensureDocumentPropertiesWindow();
+    saveDocumentPropertiesGeometry();
+    DocumentPropertiesState.isOpen = false;
+    root.style.display = 'none';
+    root.setAttribute('aria-hidden', 'true');
+  }
+
+  function openDocumentPropertiesWindow(){
+    if (!ScrapbookState?.doc) return;
+    const root = ensureDocumentPropertiesWindow();
+    renderDocumentPropertiesForm();
+    root.style.display = 'flex';
+    root.style.visibility = 'visible';
+    root.style.opacity = '1';
+    root.style.pointerEvents = 'auto';
+    root.setAttribute('aria-hidden', 'false');
+    const saved = loadDocumentPropertiesGeometry();
+    const w = Math.round(Number(saved?.width) || 720);
+    const h = Math.round(Number(saved?.height) || 560);
+    root.style.width = `${w}px`;
+    root.style.height = `${h}px`;
+    root.style.left = `${Math.round(Number(saved?.left) || 96)}px`;
+    root.style.top = `${Math.round(Number(saved?.top) || 96)}px`;
+    root.style.right = 'auto';
+    root.style.bottom = 'auto';
+    DocumentPropertiesState.isOpen = true;
+    clampDocumentPropertiesWindowToViewport();
+  }
+
+  function optionListHtml(options, selected){
+    return options.map(([value,label]) => `<option value="${escapeHtml(value)}"${String(value)===String(selected)?' selected':''}>${escapeHtml(label)}</option>`).join('');
+  }
+
+  function renderDocumentPropertiesForm(){
+    const body = DocumentPropertiesState.body || ensureDocumentPropertiesWindow().querySelector('#sbDocumentPropertiesBody');
+    if (!body || !ScrapbookState?.doc) return;
+    const doc = ScrapbookState.doc;
+    doc.documentDefaults = normalizeScrapbookDocumentDefaults(doc.documentDefaults, Scene.stage || {});
+    doc.settings = isPlainObject(doc.settings) ? doc.settings : {};
+    doc.settings.includeCoverPageInExport = doc.settings.includeCoverPageInExport !== false;
+    doc.settings.coverDateAbbreviateNumericCartouche = !!doc.settings.coverDateAbbreviateNumericCartouche;
+    const defs = doc.documentDefaults;
+    const textOpts = getTextFontOptionsForPresetKey(defs.defaultRenderFontPreset);
+    const renderPresetRegistry = (typeof stageFontPairController !== 'undefined' && stageFontPairController?.getCombinedRegistrySnapshot) ? stageFontPairController.getCombinedRegistrySnapshot() : RENDER_FONT_PRESETS;
+    const renderPresetOptions = Object.values(renderPresetRegistry || {}).map(p => [p.key, p.label || p.key]).filter(([key]) => key);
+    body.innerHTML = `
+      <fieldset>
+        <legend>${escapeHtml(tr('sb_hdr_doc_specific_properties'))}</legend>
+        <div class="row"><div class="field"><label for="sbDocPropTitle">${tr('sb_lbl_title')}</label><input id="sbDocPropTitle" type="text" value="${escapeHtml(doc.meta.title || '')}"></div></div>
+        <div class="row"><div class="field"><label for="sbDocSubtitle">${tr('sb_lbl_subtitle')}</label><input id="sbDocSubtitle" type="text" value="${escapeHtml(doc.meta.subtitle || '')}"></div></div>
+        <div class="row"><div class="field"><label for="sbDocType">${tr('sb_lbl_doc_type')}</label><select id="sbDocType">${optionListHtml([['scrapbook','scrapbook'],['diary','diary'],['slideshow','slideshow'],['custom','custom']], doc.meta.documentType || 'scrapbook')}</select></div><div class="field"><label for="sbThemeId">${tr('sb_lbl_theme')}</label><select id="sbThemeId">${optionListHtml([['custom','custom'],['scrapbook','scrapbook'],['diary','diary'],['slideshow','slideshow']], defs.themeId || 'custom')}</select></div></div>
+        <div class="row"><div class="field"><label for="sbPageTemplate">${tr('sb_lbl_page_template')}</label><select id="sbPageTemplate">${optionListHtml([['blank','blank'],['title','title slide'],['content','content slide'],['diary','diary entry'],['photoCaption','photo-left caption-right'],['quote','quote page'],['collage','collage']], defs.pageTemplate || 'blank')}</select></div><div class="field"><label>${tr('sb_lbl_page_count')}</label><div class="hint">${doc.pages.length}</div></div></div>
+        <div class="row"><div class="field"><label for="sbDocPageW">${tr('sb_lbl_page_w')}</label><input id="sbDocPageW" type="number" min="64" max="12000" step="1" value="${escapeHtml(String(defs.pageWidth || ''))}"></div><div class="field"><label for="sbDocPageH">${tr('sb_lbl_page_h')}</label><input id="sbDocPageH" type="number" min="64" max="12000" step="1" value="${escapeHtml(String(defs.pageHeight || ''))}"></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbIncludeCoverPage" type="checkbox"${doc.settings.includeCoverPageInExport !== false ? ' checked' : ''}>${tr('sb_lbl_include_cover_page')}</label></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbCoverDateAbbrev" type="checkbox"${doc.settings.coverDateAbbreviateNumericCartouche ? ' checked' : ''}>${tr('sb_lbl_cover_date_abbrev')}</label></div></div>
+        <div class="row"><div class="field"><label for="sbDocNotes">${tr('sb_lbl_doc_notes')}</label><textarea class="notesScroll" id="sbDocNotes" rows="5" placeholder="${tr('sb_placeholder_doc_notes')}">${escapeHtml(doc.notes || '')}</textarea></div></div>
+      </fieldset>
+      <fieldset>
+        <legend>${escapeHtml(tr('sb_hdr_doc_scene_defaults'))}</legend>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefShowGrid" type="checkbox"${defs.showGrid ? ' checked' : ''}>Grid</label></div><div class="field"><label class="checkInline"><input id="sbDefSnapGrid" type="checkbox"${defs.snapGrid ? ' checked' : ''}>Snap: Grid</label></div><div class="field"><label class="checkInline"><input id="sbDefSnapObjects" type="checkbox"${defs.snapObjects ? ' checked' : ''}>Snap: Objects</label></div></div>
+        <div class="row"><div class="field"><label for="sbDefGridSize">Grid size</label><input id="sbDefGridSize" type="number" min="2" max="1000" step="1" value="${defs.gridSize}"></div><div class="field"><label for="sbDefSnapTol">Snap tolerance</label><input id="sbDefSnapTol" type="number" min="0" max="200" step="1" value="${defs.snapTol}"></div></div>
+        <div class="row"><div class="field"><label for="sbDefStageBg">Stage background</label><input id="sbDefStageBg" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.stageBg, DEFAULTS.stageBg))}"></div><div class="field"><label class="checkInline"><input id="sbDefExportStageBg" type="checkbox"${defs.exportStageBackground ? ' checked' : ''}>Export stage background</label></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefBgImgEnabled" type="checkbox"${defs.bgImgEnabled ? ' checked' : ''}>Use background image</label></div><div class="field"><button id="sbLoadDocBg" class="btn" type="button">${tr('sb_btn_load_doc_bg')}</button><button id="sbClearDocBg" class="btn" type="button" style="margin-top:6px;">${tr('sb_btn_clear_doc_bg')}</button><div class="hint">${defs.bgImgAssetId ? escapeHtml(defs.bgImgAssetId) : 'No default background image'}</div></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefBgKeepAspect" type="checkbox"${defs.bgImgKeepAspect ? ' checked' : ''}>Keep aspect ratio</label></div><div class="field"><label class="checkInline"><input id="sbDefBgStretch" type="checkbox"${defs.bgImgStretch ? ' checked' : ''}>Stretch to stage</label></div></div>
+        <div class="row"><div class="field"><label for="sbDefRenderFontPreset">Default sitelen font family</label><select id="sbDefRenderFontPreset">${optionListHtml(renderPresetOptions, defs.defaultRenderFontPreset)}</select></div><div class="field"><label for="sbDefTextFontOption">Default text font</label><select id="sbDefTextFontOption">${optionListHtml(textOpts, defs.defaultTextFontOption)}</select></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefAbbrevNumeric" type="checkbox"${defs.defaultAbbreviateNumericCartouches ? ' checked' : ''}>Default abbreviate numeric cartouche output</label></div></div>
+        <div class="row"><div class="field"><label for="sbDefSpacingPreset">Default sitelen spacing</label><select id="sbDefSpacingPreset">${optionListHtml(spacingPresetSelectOptions(), defs.defaultSpacingPreset)}</select></div><div class="field"><label class="checkInline"><input id="sbDefPreserveCenter" type="checkbox"${defs.defaultPreserveCenterOnAutoResize ? ' checked' : ''}>Default preserve center on auto resize</label></div></div>
+        <div class="row"><div class="field"><label for="sbDefTextColor">Default text</label><input id="sbDefTextColor" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.defaultTextColor, DEFAULTS.defaultTextColor))}"></div><div class="field"><label class="checkInline"><input id="sbDefIgnoreUnknown" type="checkbox"${defs.defaultIgnoreUnknownText ? ' checked' : ''}>Default ignore unknown text</label></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefHaloEnabled" type="checkbox"${defs.defaultHaloEnabled ? ' checked' : ''}>Default halo</label></div><div class="field"><label for="sbDefHaloColor">Default halo color</label><input id="sbDefHaloColor" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.defaultHaloColor, DEFAULTS.defaultHaloColor))}"></div><div class="field"><label for="sbDefHaloThickness">Default halo thickness (px)</label><input id="sbDefHaloThickness" type="number" min="0" max="200" step="1" value="${defs.defaultHaloThicknessPx}"></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefFillEnabled" type="checkbox"${defs.defaultFillEnabled ? ' checked' : ''}>Default allow fill</label></div><div class="field"><label for="sbDefFill">Default fill</label><input id="sbDefFill" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.defaultFill, DEFAULTS.defaultFill))}"></div></div>
+        <div class="row"><div class="field"><label for="sbDefStroke">Default stroke</label><input id="sbDefStroke" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.defaultStroke, DEFAULTS.defaultStroke))}"></div><div class="field"><label for="sbDefStrokeW">Default stroke width</label><input id="sbDefStrokeW" type="number" min="0" max="200" step="1" value="${defs.defaultStrokeW}"></div></div>
+      </fieldset>`;
+    wireDocumentPropertiesForm(body);
+  }
+
+  function wireDocumentPropertiesForm(body){
+    const doc = ScrapbookState.doc;
+    const defs = doc.documentDefaults;
+    const bindInput = (id, fn) => { const el = body.querySelector('#' + id); if (el) el.addEventListener('input', () => { fn(el); debounceScrapbookSave(); }); };
+    const bindChange = (id, fn) => { const el = body.querySelector('#' + id); if (el) el.addEventListener('change', () => { fn(el); debounceScrapbookSave(); }); };
+    bindInput('sbDocPropTitle', el => { doc.meta.title = el.value; const side = document.getElementById('sbDocTitle'); if (side) side.value = el.value; });
+    bindInput('sbDocSubtitle', el => { doc.meta.subtitle = el.value; });
+    bindChange('sbDocType', el => { doc.meta.documentType = el.value; });
+    bindChange('sbThemeId', el => { defs.themeId = el.value; if (defs.themeId === 'diary') defs.pageTemplate = 'diary'; else if (defs.themeId === 'slideshow') defs.pageTemplate = 'title'; else if (defs.themeId === 'scrapbook') defs.pageTemplate = 'collage'; renderDocumentPropertiesForm(); });
+    bindChange('sbPageTemplate', el => { defs.pageTemplate = el.value; });
+    bindChange('sbDocPageW', el => { defs.pageWidth = clamp(Math.round(Number(el.value) || defs.pageWidth || 1280), 64, 12000); el.value = defs.pageWidth; });
+    bindChange('sbDocPageH', el => { defs.pageHeight = clamp(Math.round(Number(el.value) || defs.pageHeight || 800), 64, 12000); el.value = defs.pageHeight; });
+    bindChange('sbIncludeCoverPage', el => { doc.settings.includeCoverPageInExport = !!el.checked; });
+    bindChange('sbCoverDateAbbrev', el => { doc.settings.coverDateAbbreviateNumericCartouche = !!el.checked; });
+    bindInput('sbDocNotes', el => { doc.notes = el.value; });
+    bindChange('sbDefShowGrid', el => { defs.showGrid = !!el.checked; });
+    bindChange('sbDefSnapGrid', el => { defs.snapGrid = !!el.checked; });
+    bindChange('sbDefSnapObjects', el => { defs.snapObjects = !!el.checked; });
+    bindChange('sbDefGridSize', el => { defs.gridSize = clamp(Number(el.value) || 20, 2, 1000); el.value = defs.gridSize; });
+    bindChange('sbDefSnapTol', el => { defs.snapTol = clamp(Number(el.value) || 0, 0, 200); el.value = defs.snapTol; });
+    bindChange('sbDefStageBg', el => { defs.stageBg = el.value; addDynamicSwatch(el.value); });
+    bindChange('sbDefExportStageBg', el => { defs.exportStageBackground = !!el.checked; });
+    bindChange('sbDefBgImgEnabled', el => { defs.bgImgEnabled = !!el.checked && !!defs.bgImgAssetId; renderDocumentPropertiesForm(); });
+    bindChange('sbDefBgKeepAspect', el => { defs.bgImgKeepAspect = !!el.checked; });
+    bindChange('sbDefBgStretch', el => { defs.bgImgStretch = !!el.checked; });
+    bindChange('sbDefRenderFontPreset', el => { defs.defaultRenderFontPreset = normalizeRenderFontPresetKey(el.value); defs.defaultTextFontOption = getDefaultQuotedTextFontOptionForPreset(defs.defaultRenderFontPreset); renderDocumentPropertiesForm(); });
+    bindChange('sbDefTextFontOption', el => { defs.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(el.value, defs.defaultRenderFontPreset); });
+    bindChange('sbDefAbbrevNumeric', el => { defs.defaultAbbreviateNumericCartouches = !!el.checked; });
+    bindChange('sbDefSpacingPreset', el => { defs.defaultSpacingPreset = normalizeSpacingPreset(el.value); });
+    bindChange('sbDefPreserveCenter', el => { defs.defaultPreserveCenterOnAutoResize = !!el.checked; });
+    bindChange('sbDefTextColor', el => { defs.defaultTextColor = el.value; addDynamicSwatch(el.value); });
+    bindChange('sbDefIgnoreUnknown', el => { defs.defaultIgnoreUnknownText = !!el.checked; });
+    bindChange('sbDefHaloEnabled', el => { defs.defaultHaloEnabled = !!el.checked; });
+    bindChange('sbDefHaloColor', el => { defs.defaultHaloColor = el.value; addDynamicSwatch(el.value); });
+    bindChange('sbDefHaloThickness', el => { defs.defaultHaloThicknessPx = clamp(Number(el.value) || 0, 0, 200); el.value = defs.defaultHaloThicknessPx; });
+    bindChange('sbDefFillEnabled', el => { defs.defaultFillEnabled = !!el.checked; });
+    bindChange('sbDefFill', el => { defs.defaultFill = el.value; addDynamicSwatch(el.value); });
+    bindChange('sbDefStroke', el => { defs.defaultStroke = el.value; addDynamicSwatch(el.value); });
+    bindChange('sbDefStrokeW', el => { defs.defaultStrokeW = clamp(Number(el.value) || 0, 0, 200); el.value = defs.defaultStrokeW; });
+
+    // Use the same shared colour-palette swatches as the scene and element panels.
+    // Adding a dynamic swatch anywhere refreshes all attached colour controls.
+    ['sbDefStageBg','sbDefTextColor','sbDefHaloColor','sbDefFill','sbDefStroke'].forEach((id) => {
+      const colorInput = body.querySelector('#' + id);
+      if (colorInput) attachSwatchesToColorInput(colorInput, { palette: getActiveColorPalette });
+    });
+
+    const loadBg = body.querySelector('#sbLoadDocBg');
+    if (loadBg) loadBg.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*';
+      input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        try {
+          const dataUrl = await dataUrlFromBlob(file);
+          const assetId = addImageAssetFromDataUrl(dataUrl);
+          doc.assets = collectDocumentAssets(doc);
+          defs.bgImgAssetId = assetId;
+          defs.bgImgEnabled = true;
+          doc.assets = collectDocumentAssets(doc);
+          debounceScrapbookSave();
+          renderDocumentPropertiesForm();
+        } catch (err) { alert('Could not load default background image: ' + (err.message || String(err))); }
+      });
+      input.click();
+    });
+    const clearBg = body.querySelector('#sbClearDocBg');
+    if (clearBg) clearBg.addEventListener('click', () => { defs.bgImgAssetId = null; defs.bgImgEnabled = false; debounceScrapbookSave(); renderDocumentPropertiesForm(); });
+  }
+
+
+  const CurrentPagePropertiesState = {
+    root: null,
+    header: null,
+    body: null,
+    isOpen: false,
+    dragging: false,
+    dragPointerId: null,
+    startX: 0,
+    startY: 0,
+    startLeft: 0,
+    startTop: 0,
+  };
+
+  function ensureCurrentPagePropertiesStyles(){
+    if (document.getElementById('sbCurrentPagePropertiesStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'sbCurrentPagePropertiesStyles';
+    style.textContent = `
+      #scrapbookDocSidebar .pageNotesPanel{flex:0 0 auto !important;height:auto !important;min-height:142px !important;max-height:none !important;overflow:visible !important;}
+      #scrapbookDocSidebar .pageNotesPanel .panelHeader{flex:0 0 auto !important;}
+      #scrapbookDocSidebar .pageNotesPanel .stageMiniBody{flex:0 0 auto !important;height:auto !important;min-height:96px !important;max-height:none !important;overflow:visible !important;display:flex;flex-direction:column;gap:8px;}
+      #scrapbookDocSidebar .pageNotesPanel .row{flex:0 0 auto !important;min-height:0 !important;overflow:visible !important;}
+      #scrapbookDocSidebar .pageNotesPanel .field{overflow:visible !important;}
+      #sbCurrentPagePropertiesWindow{position:fixed;left:120px;top:120px;width:560px;height:420px;min-width:340px;min-height:260px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);z-index:11020;display:none;flex-direction:column;background:var(--panel-bg,#fff7ec);border:1px solid var(--panel-border,rgba(17,17,17,.18));border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.24);overflow:hidden;resize:both;box-sizing:border-box;}
+      #sbCurrentPagePropertiesHeader{flex:0 0 auto;cursor:move;user-select:none;}
+      #sbCurrentPagePropertiesHeader *{user-select:none;}
+      #sbCurrentPagePropertiesBody{flex:1 1 auto;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px;}
+      #sbCurrentPagePropertiesBody fieldset{border:1px solid rgba(17,17,17,.14);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;}
+      #sbCurrentPagePropertiesBody legend{font-weight:700;padding:0 6px;}
+      #sbCurrentPagePropertiesBody .row{display:flex;gap:10px;align-items:flex-start;}
+      #sbCurrentPagePropertiesBody .field{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:4px;}
+      #sbCurrentPagePropertiesBody .field input[type="text"],#sbCurrentPagePropertiesBody .field textarea{width:100%;box-sizing:border-box;}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function loadCurrentPagePropertiesGeometry(){
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_KEY_CURRENT_PAGE_PROPS_GEOMETRY) || 'null');
+      if (raw && typeof raw === 'object') return raw;
+    } catch {}
+    return null;
+  }
+
+  function saveCurrentPagePropertiesGeometry(){
+    const root = CurrentPagePropertiesState.root;
+    if (!root) return;
+    try {
+      const rect = root.getBoundingClientRect();
+      localStorage.setItem(LS_KEY_CURRENT_PAGE_PROPS_GEOMETRY, JSON.stringify({ left: rect.left, top: rect.top, width: rect.width, height: rect.height }));
+    } catch {}
+  }
+
+  function clampCurrentPagePropertiesWindowToViewport(){
+    const root = CurrentPagePropertiesState.root;
+    if (!root) return;
+    const margin = 8;
+    const maxW = Math.max(340, window.innerWidth - margin * 2);
+    const maxH = Math.max(260, window.innerHeight - margin * 2);
+    const rect = root.getBoundingClientRect();
+    const w = Math.min(Math.max(340, rect.width || 560), maxW);
+    const h = Math.min(Math.max(260, rect.height || 420), maxH);
+    let left = Number.isFinite(rect.left) ? rect.left : 120;
+    let top = Number.isFinite(rect.top) ? rect.top : 120;
+    left = clamp(left, margin, Math.max(margin, window.innerWidth - w - margin));
+    top = clamp(top, margin, Math.max(margin, window.innerHeight - h - margin));
+    root.style.width = `${Math.round(w)}px`;
+    root.style.height = `${Math.round(h)}px`;
+    root.style.left = `${Math.round(left)}px`;
+    root.style.top = `${Math.round(top)}px`;
+    root.style.right = 'auto';
+    root.style.bottom = 'auto';
+  }
+
+  function clampCurrentPagePropertiesWindowPositionToViewport(){
+    const root = CurrentPagePropertiesState.root;
+    if (!root) return;
+    const margin = 8;
+    const rect = root.getBoundingClientRect();
+    const w = Math.max(1, rect.width || parseFloat(root.style.width || '560') || 560);
+    const h = Math.max(1, rect.height || parseFloat(root.style.height || '420') || 420);
+    let left = Number.isFinite(rect.left) ? rect.left : parseFloat(root.style.left || '120');
+    let top = Number.isFinite(rect.top) ? rect.top : parseFloat(root.style.top || '120');
+    left = clamp(left, margin, Math.max(margin, window.innerWidth - w - margin));
+    top = clamp(top, margin, Math.max(margin, window.innerHeight - h - margin));
+    root.style.left = `${Math.round(left)}px`;
+    root.style.top = `${Math.round(top)}px`;
+    root.style.right = 'auto';
+    root.style.bottom = 'auto';
+  }
+
+  function bringCurrentPagePropertiesToFront(){
+    const root = CurrentPagePropertiesState.root;
+    if (!root) return;
+    floatingEditorZCounter = Math.max(floatingEditorZCounter + 1, FLOATING_EDITOR_BASE_Z + 20);
+    root.style.zIndex = String(floatingEditorZCounter);
+  }
+
+  function ensureCurrentPagePropertiesWindow(){
+    ensureCurrentPagePropertiesStyles();
+    let root = document.getElementById('sbCurrentPagePropertiesWindow');
+    if (!root){
+      root = document.createElement('div');
+      root.id = 'sbCurrentPagePropertiesWindow';
+      root.className = 'sbCurrentPagePropertiesWindow';
+      root.setAttribute('aria-hidden', 'true');
+      root.innerHTML = `
+        <div id="sbCurrentPagePropertiesHeader" class="panelHeader">
+          <h3 id="sbCurrentPagePropertiesTitle">${escapeHtml(tr('sb_hdr_page_properties'))}</h3>
+          <button id="sbCloseCurrentPageProperties" class="btn" type="button">Close</button>
+        </div>
+        <div id="sbCurrentPagePropertiesBody"></div>`;
+      document.body.appendChild(root);
+    }
+    CurrentPagePropertiesState.root = root;
+    CurrentPagePropertiesState.header = root.querySelector('#sbCurrentPagePropertiesHeader');
+    CurrentPagePropertiesState.body = root.querySelector('#sbCurrentPagePropertiesBody');
+    const title = root.querySelector('#sbCurrentPagePropertiesTitle');
+    if (title) title.textContent = tr('sb_hdr_page_properties');
+    const closeBtn = root.querySelector('#sbCloseCurrentPageProperties');
+    if (closeBtn && !closeBtn.__wired){
+      closeBtn.__wired = true;
+      closeBtn.addEventListener('click', () => closeCurrentPagePropertiesWindow());
+    }
+    ['pointerdown','mousedown','focusin'].forEach((evt) => {
+      if (!root[`__wiredBring_${evt}`]){
+        root[`__wiredBring_${evt}`] = true;
+        root.addEventListener(evt, bringCurrentPagePropertiesToFront, true);
+      }
+    });
+    const header = CurrentPagePropertiesState.header;
+    if (header && !header.__wiredDrag){
+      header.__wiredDrag = true;
+      header.addEventListener('pointerdown', (e) => {
+        if (e.button != null && e.button !== 0) return;
+        if (e.target && e.target.closest('button,input,select,textarea')) return;
+        bringCurrentPagePropertiesToFront();
+        const rect = root.getBoundingClientRect();
+        CurrentPagePropertiesState.dragging = true;
+        CurrentPagePropertiesState.dragPointerId = e.pointerId;
+        CurrentPagePropertiesState.startX = e.clientX;
+        CurrentPagePropertiesState.startY = e.clientY;
+        CurrentPagePropertiesState.startLeft = rect.left;
+        CurrentPagePropertiesState.startTop = rect.top;
+        root.style.width = `${Math.round(rect.width)}px`;
+        root.style.height = `${Math.round(rect.height)}px`;
+        root.style.resize = 'none';
+        root.style.right = 'auto';
+        root.style.bottom = 'auto';
+        header.setPointerCapture?.(e.pointerId);
+        e.preventDefault();
+      });
+      header.addEventListener('pointermove', (e) => {
+        if (!CurrentPagePropertiesState.dragging || e.pointerId !== CurrentPagePropertiesState.dragPointerId) return;
+        root.style.left = `${CurrentPagePropertiesState.startLeft + e.clientX - CurrentPagePropertiesState.startX}px`;
+        root.style.top = `${CurrentPagePropertiesState.startTop + e.clientY - CurrentPagePropertiesState.startY}px`;
+        root.style.right = 'auto';
+        root.style.bottom = 'auto';
+        clampCurrentPagePropertiesWindowPositionToViewport();
+      });
+      const stopDrag = (e) => {
+        if (!CurrentPagePropertiesState.dragging) return;
+        if (e && CurrentPagePropertiesState.dragPointerId != null && e.pointerId !== CurrentPagePropertiesState.dragPointerId) return;
+        CurrentPagePropertiesState.dragging = false;
+        if (CurrentPagePropertiesState.dragPointerId != null) header.releasePointerCapture?.(CurrentPagePropertiesState.dragPointerId);
+        CurrentPagePropertiesState.dragPointerId = null;
+        root.style.resize = 'both';
+        clampCurrentPagePropertiesWindowPositionToViewport();
+        saveCurrentPagePropertiesGeometry();
+      };
+      header.addEventListener('pointerup', stopDrag);
+      header.addEventListener('pointercancel', stopDrag);
+      window.addEventListener('resize', () => {
+        if (CurrentPagePropertiesState.isOpen){ clampCurrentPagePropertiesWindowToViewport(); saveCurrentPagePropertiesGeometry(); }
+      });
+    }
+    return root;
+  }
+
+  function closeCurrentPagePropertiesWindow(){
+    const root = ensureCurrentPagePropertiesWindow();
+    saveCurrentPagePropertiesGeometry();
+    CurrentPagePropertiesState.isOpen = false;
+    root.style.display = 'none';
+    root.setAttribute('aria-hidden', 'true');
+  }
+
+  function openCurrentPagePropertiesWindow(){
+    if (!ScrapbookState?.doc) return;
+    const root = ensureCurrentPagePropertiesWindow();
+    renderCurrentPagePropertiesForm();
+    root.style.display = 'flex';
+    root.style.visibility = 'visible';
+    root.style.opacity = '1';
+    root.style.pointerEvents = 'auto';
+    root.setAttribute('aria-hidden', 'false');
+    const saved = loadCurrentPagePropertiesGeometry();
+    root.style.width = `${Math.round(Number(saved?.width) || 560)}px`;
+    root.style.height = `${Math.round(Number(saved?.height) || 420)}px`;
+    root.style.left = `${Math.round(Number(saved?.left) || 120)}px`;
+    root.style.top = `${Math.round(Number(saved?.top) || 120)}px`;
+    root.style.right = 'auto';
+    root.style.bottom = 'auto';
+    CurrentPagePropertiesState.isOpen = true;
+    bringCurrentPagePropertiesToFront();
+    clampCurrentPagePropertiesWindowToViewport();
+  }
+
+  function syncCurrentPageNameControls(page){
+    const p = page || getCurrentPage();
+    if (!p) return;
+    const sidebarName = document.getElementById('sbPageName');
+    if (sidebarName && sidebarName.value !== String(p.name || '')) sidebarName.value = String(p.name || '');
+    const popName = document.getElementById('sbCurrentPagePropName');
+    if (popName && popName.value !== String(p.name || '')) popName.value = String(p.name || '');
+    const activeCardInput = document.querySelector(`#sbPageList .pageCard[data-page-id="${CSS.escape(String(p.id))}"] .pageMeta input`);
+    if (activeCardInput && activeCardInput.value !== String(p.name || '')) activeCardInput.value = String(p.name || '');
+  }
+
+  function renderCurrentPagePropertiesForm(){
+    const body = CurrentPagePropertiesState.body || ensureCurrentPagePropertiesWindow().querySelector('#sbCurrentPagePropertiesBody');
+    if (!body) return;
+    const p = getCurrentPage();
+    if (!p){
+      body.innerHTML = `<div class="hint">No current page.</div>`;
+      return;
+    }
+    const stage = p?.payload?.scene?.stage || Scene.stage || {};
+    body.innerHTML = `
+      <fieldset>
+        <legend>${escapeHtml(tr('sb_hdr_current_page'))}</legend>
+        <div class="row"><div class="field"><label for="sbCurrentPagePropName">${tr('sb_lbl_page_name')}</label><input id="sbCurrentPagePropName" type="text" value="${escapeHtml(p.name || '')}"></div></div>
+        <div class="row"><div class="field"><label for="sbCurrentPagePropTags">${tr('sb_lbl_page_tags')}</label><input id="sbCurrentPagePropTags" type="text" value="${escapeHtml((p.tags || []).join(', '))}" placeholder="tag1, tag2"></div></div>
+        <div class="row"><div class="field"><label>${tr('sb_lbl_page_size')}</label><div class="hint">${stage.w || ''} × ${stage.h || ''}</div></div></div>
+        <div class="row"><div class="field"><label for="sbCurrentPagePropNotes">${tr('sb_lbl_page_notes')}</label><textarea class="notesScroll" id="sbCurrentPagePropNotes" rows="8" placeholder="${tr('sb_placeholder_page_notes')}">${escapeHtml(p.notes || '')}</textarea></div></div>
+        <div class="docRowBtns"><button class="btn" id="sbCurrentPageApplyTemplate" type="button">${tr('sb_btn_apply_template')}</button></div>
+      </fieldset>`;
+    wireCurrentPagePropertiesForm(body);
+  }
+
+  function wireCurrentPagePropertiesForm(body){
+    const name = body.querySelector('#sbCurrentPagePropName');
+    const tags = body.querySelector('#sbCurrentPagePropTags');
+    const notes = body.querySelector('#sbCurrentPagePropNotes');
+    const apply = body.querySelector('#sbCurrentPageApplyTemplate');
+    if (name) name.addEventListener('input', (e) => {
+      const p = getCurrentPage();
+      if (!p) return;
+      p.name = e.target.value;
+      syncCurrentPageNameControls(p);
+      debounceScrapbookSave();
+      refreshScrapbookSearchResults(true);
+    });
+    if (tags) tags.addEventListener('input', (e) => {
+      const p = getCurrentPage();
+      if (!p) return;
+      p.tags = String(e.target.value || '').split(',').map(s => s.trim()).filter(Boolean);
+      debounceScrapbookSave();
+      refreshScrapbookSearchResults(true);
+    });
+    if (notes) notes.addEventListener('input', (e) => {
+      const p = getCurrentPage();
+      if (!p) return;
+      p.notes = e.target.value;
+      debounceScrapbookSave();
+      refreshScrapbookSearchResults(true);
+    });
+    if (apply) apply.addEventListener('click', async () => { await applyTemplateToCurrentPage(); renderCurrentPagePropertiesForm(); });
+  }
+
+  function refreshCurrentPagePropertiesWindow(){
+    if (CurrentPagePropertiesState.isOpen) renderCurrentPagePropertiesForm();
+  }
+
   function renderScrapbookSidebar(){
+    ensureDocumentPropertiesStyles();
+    ensureCurrentPagePropertiesStyles();
+    ensureScrapbookPagesPanelStyles();
     refreshScrapbookSearchResults();
     const root = document.getElementById('scrapbookDocSidebar');
     if (!root || !ScrapbookState) return;
@@ -16621,25 +17469,19 @@ document.addEventListener("keydown", (e) => {
           <div class="panelHeader"><h2>${tr('sb_hdr_document')}</h2></div>
           <div class="stageMiniBody">
             <div class="row"><div class="field"><label for="sbDocTitle">${tr('sb_lbl_title')}</label><input id="sbDocTitle" type="text" value="${escapeHtml(doc.meta.title || '')}"></div></div>
-            <div class="row"><div class="field"><label for="sbDocSubtitle">${tr('sb_lbl_subtitle')}</label><input id="sbDocSubtitle" type="text" value="${escapeHtml(doc.meta.subtitle || '')}"></div></div>
-            <div class="row"><div class="field"><label for="sbDocType">${tr('sb_lbl_doc_type')}</label><select id="sbDocType"><option value="scrapbook">scrapbook</option><option value="diary">diary</option><option value="slideshow">slideshow</option><option value="custom">custom</option></select></div></div>
-            <div class="row">
-              <div class="field"><label for="sbThemeId">${tr('sb_lbl_theme')}</label><select id="sbThemeId"><option value="custom">custom</option><option value="scrapbook">scrapbook</option><option value="diary">diary</option><option value="slideshow">slideshow</option></select></div>
-              <div class="field"><label for="sbPageTemplate">${tr('sb_lbl_page_template')}</label><select id="sbPageTemplate"><option value="blank">blank</option><option value="title">title slide</option><option value="content">content slide</option><option value="diary">diary entry</option><option value="photoCaption">photo-left caption-right</option><option value="quote">quote page</option><option value="collage">collage</option></select></div>
-            </div>
-            <div class="row">
-              <div class="field"><label for="sbDocPageW">${tr('sb_lbl_page_w')}</label><input id="sbDocPageW" type="number" min="64" max="12000" step="1" value="${escapeHtml(String(defs.pageWidth || ''))}"></div>
-              <div class="field"><label for="sbDocPageH">${tr('sb_lbl_page_h')}</label><input id="sbDocPageH" type="number" min="64" max="12000" step="1" value="${escapeHtml(String(defs.pageHeight || ''))}"></div>
-            </div>
-            <div class="row"><div class="field"><label>${tr('sb_lbl_page_count')}</label><div class="hint">${doc.pages.length}</div></div></div>
-            <div class="row"><div class="field"><label for="sbDocNotes">${tr('sb_lbl_doc_notes')}</label><textarea class="notesScroll" id="sbDocNotes" rows="6" placeholder="${tr('sb_placeholder_doc_notes')}">${escapeHtml(doc.notes || '')}</textarea></div></div>
+            <div class="row"><div class="field"><button class="btn" id="sbOpenDocProperties" type="button">${tr('sb_btn_doc_properties')}</button></div></div>
           </div>
         </section>
-        <section class="panel pagesPanel" style="min-height:0;display:flex;flex-direction:column;">
+        <section class="panel pagesPanel" style="min-height:0;display:flex;flex-direction:column;overflow:hidden;">
           <div class="panelHeader"><h2>${tr('sb_hdr_pages')}</h2></div>
-          <div class="stageMiniBody" style="overflow:auto;min-height:0;display:flex;flex-direction:column;gap:10px;">
-            <div class="docRowBtns"><button class="btn" id="sbAddPage" type="button">${tr('sb_btn_add_page')}</button><button class="btn" id="sbDupPage" type="button">${tr('sb_btn_dup_page_sm')}</button><button class="btn" id="sbDelPage" type="button">${tr('sb_btn_del_page_sm')}</button></div>
-            <div class="docRowBtns"><button class="btn" id="sbPrevPage" type="button">${tr('sb_btn_prev_sm')}</button><button class="btn" id="sbNextPage" type="button">${tr('sb_btn_next_sm')}</button></div>
+          <div class="sbPagesActionBar" aria-label="Page actions">
+            <button class="btn" id="sbAddPage" type="button">${tr('sb_btn_add_page')}</button>
+            <button class="btn" id="sbDupPage" type="button">${tr('sb_btn_dup_page_sm')}</button>
+            <button class="btn" id="sbDelPage" type="button">${tr('sb_btn_del_page_sm')}</button>
+            <button class="btn" id="sbPrevPage" type="button">${tr('sb_btn_prev_sm')}</button>
+            <button class="btn" id="sbNextPage" type="button">${tr('sb_btn_next_sm')}</button>
+          </div>
+          <div class="stageMiniBody sbPagesListBody">
             <div id="sbPageList" class="pageList"></div>
           </div>
         </section>
@@ -16647,55 +17489,25 @@ document.addEventListener("keydown", (e) => {
           <div class="panelHeader"><h2>${tr('sb_hdr_current_page')}</h2></div>
           <div class="stageMiniBody">
             <div class="row"><div class="field"><label for="sbPageName">${tr('sb_lbl_page_name')}</label><input id="sbPageName" type="text" value="${escapeHtml(curPage?.name || '')}"></div></div>
-            <div class="row"><div class="field"><label for="sbPageTags">${tr('sb_lbl_page_tags')}</label><input id="sbPageTags" type="text" value="${escapeHtml((curPage?.tags || []).join(', '))}" placeholder="tag1, tag2"></div></div>
-            <div class="row"><div class="field"><label>${tr('sb_lbl_page_size')}</label><div class="hint">${curPage?.payload?.scene?.stage?.w || ''} × ${curPage?.payload?.scene?.stage?.h || ''}</div></div></div>
-            <div class="row"><div class="field"><label for="sbPageNotes">${tr('sb_lbl_page_notes')}</label><textarea class="notesScroll" id="sbPageNotes" rows="5" placeholder="${tr('sb_placeholder_page_notes')}">${escapeHtml(curPage?.notes || '')}</textarea></div></div>
-            <div class="docRowBtns"><button class="btn" id="sbApplyTemplateCurrent" type="button">${tr('sb_btn_apply_template')}</button></div>
+            <div class="row"><div class="field"><button class="btn" id="sbOpenCurrentPageProperties" type="button">${tr('sb_btn_page_properties')}</button></div></div>
           </div>
         </section>
       </div>`;
-    root.querySelector('#sbDocType').value = doc.meta.documentType || 'scrapbook';
-    root.querySelector('#sbThemeId').value = defs.themeId || 'custom';
-    root.querySelector('#sbPageTemplate').value = defs.pageTemplate || 'blank';
     ensureDocMetaBindings(root);
-    root.querySelector('#sbDocNotes').oninput = (e) => { doc.notes = e.target.value; debounceScrapbookSave(); };
+    const openDocPropsBtn = root.querySelector('#sbOpenDocProperties');
+    if (openDocPropsBtn) openDocPropsBtn.addEventListener('click', (e) => { e.preventDefault(); openDocumentPropertiesWindow(); });
+    const openPagePropsBtn = root.querySelector('#sbOpenCurrentPageProperties');
+    if (openPagePropsBtn) openPagePropsBtn.addEventListener('click', (e) => { e.preventDefault(); openCurrentPagePropertiesWindow(); });
     root.querySelector('#sbPageName').oninput = (e) => {
       const p = getCurrentPage();
       if (p) {
         p.name = e.target.value;
-        const activeCardInput = root.querySelector(`#sbPageList .pageCard[data-page-id="${p.id}"] .pageMeta input`);
-        if (activeCardInput && activeCardInput !== e.target) activeCardInput.value = p.name;
+        syncCurrentPageNameControls(p);
         debounceScrapbookSave();
         refreshScrapbookSearchResults(true);
       }
     };
-    root.querySelector('#sbPageTags').oninput = (e) => {
-      const p = getCurrentPage();
-      if (p) {
-        p.tags = String(e.target.value || '').split(',').map(s => s.trim()).filter(Boolean);
-        debounceScrapbookSave();
-        refreshScrapbookSearchResults(true);
-      }
-    };
-    root.querySelector('#sbPageNotes').oninput = (e) => {
-      const p = getCurrentPage();
-      if (p) {
-        p.notes = e.target.value;
-        debounceScrapbookSave();
-        refreshScrapbookSearchResults(true);
-      }
-    };
-    root.querySelector('#sbThemeId').onchange = (e) => {
-      defs.themeId = e.target.value;
-      if (defs.themeId === 'diary'){ defs.pageTemplate = 'diary'; }
-      else if (defs.themeId === 'slideshow'){ defs.pageTemplate = 'title'; }
-      else if (defs.themeId === 'scrapbook'){ defs.pageTemplate = 'collage'; }
-      renderScrapbookSidebar();
-      debounceScrapbookSave();
-    };
-    root.querySelector('#sbPageTemplate').onchange = (e) => { defs.pageTemplate = e.target.value; debounceScrapbookSave(); };
-    root.querySelector('#sbDocPageW').onchange = (e) => { defs.pageWidth = clamp(Math.round(Number(e.target.value) || defs.pageWidth || 1280), 64, 12000); e.target.value = defs.pageWidth; debounceScrapbookSave(); };
-    root.querySelector('#sbDocPageH').onchange = (e) => { defs.pageHeight = clamp(Math.round(Number(e.target.value) || defs.pageHeight || 800), 64, 12000); e.target.value = defs.pageHeight; debounceScrapbookSave(); };
+
     const list = root.querySelector('#sbPageList');
     let dragPageId = '';
     const clearPageDropMarks = () => {
@@ -16747,7 +17559,12 @@ document.addEventListener("keydown", (e) => {
       });
       const inp = card.querySelector('input');
       inp.addEventListener('click', (e) => e.stopPropagation());
-      inp.addEventListener('input', (e) => { page.name = e.target.value; debounceScrapbookSave(); });
+      inp.addEventListener('input', (e) => {
+        page.name = e.target.value;
+        if (page.id === ScrapbookState.currentPageId) syncCurrentPageNameControls(page);
+        debounceScrapbookSave();
+        refreshScrapbookSearchResults(true);
+      });
       card.querySelector('[data-act="up"]').addEventListener('click', async (e) => { e.stopPropagation(); await movePage(page.id, -1); });
       card.querySelector('[data-act="down"]').addEventListener('click', async (e) => { e.stopPropagation(); await movePage(page.id, 1); });
       list.appendChild(card);
@@ -16790,9 +17607,9 @@ document.addEventListener("keydown", (e) => {
     root.querySelector('#sbDelPage').onclick = async () => { await deleteCurrentPage(); };
     root.querySelector('#sbPrevPage').onclick = async () => { await stepPage(-1); };
     root.querySelector('#sbNextPage').onclick = async () => { await stepPage(1); };
-    root.querySelector('#sbApplyTemplateCurrent').onclick = async () => { await applyTemplateToCurrentPage(); };
     ensureCurrentPageCardVisible();
     syncPageNumberInputs();
+    refreshCurrentPagePropertiesWindow();
   }
   function syncPageNumberInputs(){
     if (!ScrapbookState?.doc?.pages) return;

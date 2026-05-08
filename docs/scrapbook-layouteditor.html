@@ -97,6 +97,29 @@
   }
   #mediaGuardBtnCancel:hover  { background: rgba(255,255,255,0.65); }
   #mediaGuardBtnContinue:hover { background: rgba(255,255,255,1); }
+
+  /* ── Dialog / popout stacking order ──
+     Document/topbar popouts stay below the floating text/media editors.
+     Confirm dialogs stay above every editor/popout so destructive actions are visible. */
+  :root {
+    --sb-z-document-popout: 10020;
+    --sb-z-floating-editor-base: 11000;
+    --sb-z-confirm-dialog: 2147482000;
+  }
+  #topbar .topbarMenu,
+  #topbar .topbarMenuPanel,
+  #urlDialogBackdrop,
+  #mediaGuardOverlay {
+    z-index: var(--sb-z-document-popout) !important;
+  }
+  #floatingTextEditor,
+  #floatingMediaEditor {
+    z-index: var(--sb-z-floating-editor-base);
+  }
+  #confirmDialogBackdrop {
+    z-index: var(--sb-z-confirm-dialog) !important;
+  }
+
   </style>
 
   <!--
@@ -318,12 +341,28 @@
 
             <div class="row">
               <div class="field">
+                <label class="checkInline" style="margin:0;">
+                  <input id="defAbbreviateNumericCartouches" type="checkbox" />Default abbreviate numeric cartouche output
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
                 <label for="defSpacingPreset">Default sitelen spacing</label>
                 <select id="defSpacingPreset">
                   <option value="default">Default</option>
                   <option value="compact">Compact</option>
                   <option value="comfortable">Comfortable</option>
                 </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
+                  <input id="defPreserveCenterOnAutoResize" type="checkbox" />Default preserve center on auto resize
+                </label>
               </div>
             </div>
 
@@ -548,7 +587,7 @@
       • js/app.js is a separate cacheable resource
       • A future build step can code-split or minify js/app.js independently
   -->
-  <script type="module" src="scrapbook-layouteditor_app/js/app.js"></script>
+  <script type="module" src="scrapbook-layouteditor_app/js/app.js?v=14"></script>
 
 
 <!-- ── Media Size Guard Dialog ── -->
