@@ -145,7 +145,8 @@ Example:
 </div>
 
 
-<img src="images/From_Decimal_Number_To_Cartouche.png" width="569"/>
+<img src="images/From_Decimal_Number_To_Cartouche.png" width="569"/><br/>
+<img src="images/nanpa-linja-n_cartouche_abbreviation.png" width="823"/><br/>
 
 
 ---
