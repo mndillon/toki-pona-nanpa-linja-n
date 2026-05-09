@@ -1,0 +1,4333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toki Pona Cartouche Memory Match</title>
+
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <style>
+    :root {
+      --topbar-h: 72px;
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --panel: rgba(255,255,255,0.35);
+      --panel-strong: rgba(255,255,255,0.55);
+      --panel-border: rgba(17,17,17,0.18);
+      --board-max: 900px;
+      --card-radius: 14px;
+      --card-gap: 8px;
+      --preview-max: 900px;
+      --green-felt: #5f8a5f;
+      --green-felt-dark: #4c724c;
+      --match-green: rgba(60, 120, 72, 0.75);
+      --select-blue: rgba(28, 51, 79, 0.95);
+      --bad-red: rgba(150, 40, 34, 0.95);
+    }
+
+    @font-face {
+      font-family: "PatrickHand";
+      src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Nasin-Nanpa-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Patrick-Head-Font";
+      src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    html, body {
+      height: 100%;
+      min-height: 100svh;
+      min-height: 100dvh;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    .topbar {
+      height: var(--topbar-h);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      box-sizing: border-box;
+      border-bottom: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(6px);
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 16px;
+    }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn:active { transform: scale(0.98); }
+
+    .status {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 42vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .timerCanvas {
+      width: 190px;
+      height: 52px;
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    .wrap {
+      height: calc(100dvh - var(--topbar-h));
+      height: calc(100svh - var(--topbar-h));
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gameArea {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(255,255,255,0.06), transparent 35%),
+        linear-gradient(180deg, var(--green-felt) 0%, var(--green-felt-dark) 100%);
+      padding: 8px 10px;
+      box-sizing: border-box;
+    }
+
+    .gameStack {
+      width: min(var(--board-max), 96vw);
+      height: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, auto);
+      align-content: start;
+      gap: 8px;
+    }
+
+    .hint,
+    .scoreRow,
+    .previewPanel {
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.28);
+      border-radius: 14px;
+      padding: 7px 10px;
+      box-sizing: border-box;
+      color: rgba(255,255,255,0.92);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.16);
+    }
+
+    .hint {
+      font-size: 16px;
+      line-height: 1.18;
+      text-align: center;
+    }
+
+    .scoreRow {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+    }
+
+    /* Desktop card size is set by JS in applyResponsiveBoardSizing().
+       It calculates card width/height from available viewport height so the
+       hint, score, 4-row grid, and selected-card preview fit without scrolling. */
+    .memoryGrid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--card-gap);
+      padding: 8px;
+      box-sizing: border-box;
+      border-radius: 18px;
+      border: 2px solid rgba(255,255,255,0.24);
+      background: rgba(0,0,0,0.08);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .memoryTile {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      min-width: 0;
+      aspect-ratio: 116 / 82;
+      cursor: pointer;
+      font: inherit;
+      position: relative;
+      perspective: 800px;
+    }
+
+    .memoryTile:disabled { cursor: default; }
+    .memoryTile:focus-visible { outline: 3px solid #fff; outline-offset: 4px; border-radius: var(--card-radius); }
+
+    .tileInner {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--card-radius);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.18);
+      overflow: hidden;
+      background: #f7f1e5;
+      border: 2px solid rgba(17,17,17,0.32);
+      display: grid;
+      place-items: center;
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 180ms ease;
+      box-sizing: border-box;
+    }
+
+    .memoryTile:not(:disabled):active .tileInner { transform: scale(0.98); }
+    .memoryTile.selected .tileInner { box-shadow: 0 0 0 4px var(--select-blue), 0 12px 24px rgba(0,0,0,0.22); }
+    .memoryTile.noMatch .tileInner { box-shadow: 0 0 0 4px var(--bad-red), 0 12px 24px rgba(0,0,0,0.22); }
+    .memoryTile.matched .tileInner {
+      opacity: 0.70;
+      box-shadow: 0 0 0 4px var(--match-green), 0 8px 18px rgba(0,0,0,0.14);
+    }
+
+    .tileFace {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 8px;
+      box-sizing: border-box;
+      text-align: center;
+      color: var(--ink);
+      background: #f7f1e5;
+      overflow: hidden;
+    }
+
+    .tileBack canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .latinFace {
+      font-size: clamp(15px, 3.6vw, 32px);
+      line-height: 1.05;
+      overflow-wrap: normal;
+      white-space: nowrap;
+    }
+
+    .latinValue,
+    .latinPreviewValue {
+      display: inline-block;
+      max-width: none;
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: normal;
+      line-height: 1;
+      transform-origin: center center;
+      will-change: transform;
+    }
+
+    .latinPreviewValue {
+      font-size: clamp(34px, 4.8vw, 56px);
+    }
+
+    .sitelenFace canvas,
+    .previewContent canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+    }
+
+    .typeBadge {
+      position: absolute;
+      left: 6px;
+      bottom: 5px;
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.62);
+      color: rgba(17,17,17,0.58);
+      font-size: 11px;
+      line-height: 1.1;
+      pointer-events: none;
+    }
+
+    .memoryTile:not(.faceUp):not(.matched) .typeBadge {
+      display: none;
+    }
+
+    .matchedMark {
+      position: absolute;
+      right: 5px;
+      top: 4px;
+      color: #315f3a;
+      background: rgba(255,255,255,0.72);
+      border-radius: 999px;
+      width: 22px;
+      height: 22px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 16px;
+    }
+    .memoryTile.matched .matchedMark { display: flex; }
+    .memoryGrid.solutionMode .memoryTile.matched .tileInner {
+      opacity: 1;
+    }
+
+
+    .previewPanel {
+      width: min(var(--preview-max), 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 8px;
+    }
+
+    .previewTitle {
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .previewCards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .previewCard {
+      min-height: 104px;
+      border-radius: 14px;
+      border: 2px solid rgba(17,17,17,0.25);
+      background: #f7f1e5;
+      color: var(--ink);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow: hidden;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.14);
+    }
+
+    .previewMeta {
+      padding: 5px 8px 0;
+      color: rgba(17,17,17,0.58);
+      font-size: 13px;
+      line-height: 1.1;
+      text-align: left;
+    }
+
+    .previewContent {
+      min-height: 74px;
+      display: grid;
+      place-items: center;
+      padding: 8px;
+      box-sizing: border-box;
+      text-align: center;
+      overflow: hidden;
+      font-size: clamp(30px, 4.8vw, 56px);
+      line-height: 1.05;
+    }
+
+    .previewPlaceholder {
+      color: rgba(17,17,17,0.36);
+      font-size: 20px;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      z-index: 20;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+    .overlay.show { display: flex; }
+
+    .modal {
+      width: min(720px, 94vw);
+      max-height: min(760px, 92vh);
+      overflow: auto;
+      background: rgba(255,255,255,0.94);
+      border: 1px solid rgba(0,0,0,0.18);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+      box-sizing: border-box;
+    }
+    .modal h2 { margin: 0 0 8px 0; font-size: 28px; }
+    .modal p { margin: 0 0 14px 0; color: var(--muted); line-height: 1.3; font-size: 17px; }
+
+    .settingsGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 16px;
+      margin-top: 12px;
+    }
+    .field {
+      border: 1px solid var(--panel-border);
+      background: rgba(243,223,192,0.35);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .field label,
+    .field legend {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+    .field select,
+    .field input[type="checkbox"] {
+      font: inherit;
+    }
+    .field select {
+      width: 100%;
+      box-sizing: border-box;
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.65);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    .choiceRow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .choiceRow:first-of-type { margin-top: 0; }
+    .field fieldset { border: 0; margin: 0; padding: 0; }
+    .modal .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+
+    .bestTimeButton {
+      display: none;
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.72);
+      cursor: pointer;
+      text-align: left;
+    }
+    .bestTimeButton:hover {
+      background: rgba(255,255,255,0.88);
+    }
+    .bestTimeButton canvas {
+      display: block;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .finishPanel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 12;
+      background: rgba(0,0,0,0.22);
+      cursor: pointer;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+    .finishPanel.show { display: flex; }
+
+    .finishCard {
+      width: min(720px, 94vw);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.32);
+      background: rgba(255,255,255,0.34);
+      backdrop-filter: blur(8px);
+      padding: 14px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.25);
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      cursor: pointer;
+    }
+
+    .finishCanvas {
+      width: min(680px, 92vw);
+      height: 110px;
+      display: block;
+    }
+
+    .footer {
+      flex: 0 0 auto;
+      border-top: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.25);
+      padding: 7px 10px;
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .footer a { color: var(--ink); text-decoration: underline; }
+    .footerRow { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; justify-content: space-between; }
+    .footerLeft { min-width: 240px; }
+    .footerRight { white-space: nowrap; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    @media (max-width: 760px) {
+      :root { --topbar-h: 52px; --card-gap: 6px; }
+      .topbar { gap: 6px; padding: 8px; }
+      .btn { font-size: 13px; padding: 6px 8px; }
+      .timerCanvas { width: 164px; height: 32px; }
+      .status { font-size: 13px; max-width: 36vw; }
+      .gameArea { padding: 8px; overflow: auto; }
+      .gameStack { width: min(520px, 96vw); gap: 8px; }
+      .hint { font-size: 14px; padding: 8px; }
+      .scoreRow { font-size: 14px; gap: 9px; padding: 8px; }
+      .memoryGrid { padding: 8px; }
+      .memoryTile { aspect-ratio: 82 / 116; }
+
+      /* Mobile: the grid is mostly a selector. The readable content is shown below. */
+      .memoryTile:not(.matched):not(.selected) .tileFace { display: none; }
+      .memoryTile:not(.matched):not(.selected) .tileBack { display: grid; }
+      .memoryTile.selected .tileFace { display: none; }
+      .memoryTile.selected .tileBack { display: grid; }
+      .memoryTile.matched .tileFace { display: none; }
+      .memoryTile.matched .tileBack { display: grid; opacity: 0.55; }
+      .typeBadge { display: none; }
+      .previewCards { grid-template-columns: 1fr; }
+      .previewCard { min-height: 104px; }
+      .previewContent { min-height: 74px; font-size: clamp(28px, 10vw, 46px); }
+      .settingsGrid { grid-template-columns: 1fr; }
+      .finishCanvas { height: 96px; }
+      .modal h2 { font-size: 24px; }
+      .footer { padding: 6px 8px; font-size: 12px; line-height: 1.25; max-height: 58px; overflow: auto; }
+    }
+
+    @media (min-width: 761px) {
+      .memoryGrid {
+        width: auto;
+        max-width: 100%;
+        justify-content: center;
+        gap: var(--desktop-card-gap, 8px);
+        padding: var(--desktop-grid-pad, 8px);
+        justify-self: center;
+      }
+      .memoryTile {
+        width: var(--desktop-card-w, 180px);
+        height: var(--desktop-card-h, 127px);
+        aspect-ratio: auto;
+      }
+      .latinFace {
+        font-size: clamp(20px, 2.1vw, 34px);
+      }
+      .tileBack { display: none; }
+      .memoryTile:not(.faceUp):not(.matched) .tileFace { display: none; }
+      .memoryTile:not(.faceUp):not(.matched) .tileBack { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <button id="btnOptions" class="btn">Game Options</button>
+    <button id="btnNew" class="btn" disabled>Start New Game</button>
+    <button id="btnLang" class="btn">toki pona</button>
+    <canvas id="timerCanvas" class="timerCanvas" aria-label="Game time"></canvas>
+    <div id="status" class="status">Loading fonts…</div>
+  </div>
+
+  <div class="wrap">
+    <main class="gameArea" aria-label="Cartouche memory game">
+      <div class="gameStack">
+        <div id="hint" class="hint">Find each Latin label and matching sitelen cartouche.</div>
+        <div class="scoreRow" aria-label="Score">
+          <span id="movesText">Moves: 0</span>
+          <span id="matchesText">Matches: 0/8</span>
+          <span id="timeText" class="sr-only">Time: 0:00</span>
+        </div>
+        <div id="memoryGrid" class="memoryGrid" aria-label="Memory cards"></div>
+        <section class="previewPanel" aria-label="Selected cards">
+          <div id="previewTitle" class="previewTitle">Selected cards</div>
+          <div class="previewCards">
+            <div class="previewCard" id="previewA">
+              <div class="previewMeta">First selection</div>
+              <div class="previewContent"><span class="previewPlaceholder">—</span></div>
+            </div>
+            <div class="previewCard" id="previewB">
+              <div class="previewMeta">Second selection</div>
+              <div class="previewContent"><span class="previewPlaceholder">—</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div id="finishPanel" class="finishPanel" aria-hidden="true">
+        <div class="finishCard">
+          <canvas id="finishCanvas" class="finishCanvas" aria-label="Final time"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer" aria-label="Disclaimer">
+      <div class="footerRow">
+        <div class="footerLeft">
+          <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
+        </div>
+        <div class="footerRight"><a id="backToIndexLink" href="./index.html">Back to index</a></div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="optionsOverlay" class="overlay show" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2 id="optionsTitle">Cartouche Memory Match</h2>
+      <p id="optionsIntro">Match each Latin number or proper name with the rendered sitelen cartouche. On mobile, use the small grid to select cards and read them in the preview area.</p>
+      <div class="settingsGrid">
+        <div class="field">
+          <label for="gridSize" id="labelGridSize">Grid size</label>
+          <select id="gridSize">
+            <option value="12">4 × 3 — 6 pairs</option>
+            <option value="16" selected>4 × 4 — 8 pairs</option>
+            <option value="20">5 × 4 — 10 pairs</option>
+            <option value="24">6 × 4 — 12 pairs</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="deckMode" id="labelDeckMode">Deck</label>
+          <select id="deckMode">
+            <option value="numbers">Numbers only</option>
+            <option value="names">Proper names only</option>
+            <option value="mixed" selected>Mixed</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="scriptPresetSel" id="labelScriptPreset">Script/font</label>
+          <select id="scriptPresetSel">
+            <option value="nasinNanpa" selected>nasin nanpa predefined</option>
+            <option value="sitelenSeliKiwen">sitelen seli kiwen predefined</option>
+            <option value="fairfaxPonaHd">FairfaxPonaHD predefined</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="textFontSel" id="labelTextFont">Quoted text font</label>
+          <select id="textFontSel"></select>
+        </div>
+        <div class="field">
+          <fieldset>
+            <legend id="legendDisplay">Numeric display</legend>
+            <label class="choiceRow"><input id="abbrevOff" type="radio" name="numericDisplay" value="full"> <span id="labelFull">Full cartouche</span></label>
+            <label class="choiceRow"><input id="abbrevOn" type="radio" name="numericDisplay" value="abbrev" checked> <span id="labelAbbrev">Abbreviated cartouche</span></label>
+          </fieldset>
+        </div>
+        <div class="field">
+          <fieldset>
+            <legend id="legendHelpers">Helpers</legend>
+            <label class="choiceRow"><input id="showBadges" type="checkbox" checked> <span id="labelBadges">Show type badges</span></label>
+            <label class="choiceRow"><input id="autoPreview" type="checkbox" checked> <span id="labelAutoPreview">Show selections in preview</span></label>
+          </fieldset>
+        </div>
+      </div>
+      <button id="btnBestTime" type="button" class="bestTimeButton" style="display:none;">
+        <canvas id="bestTimeCanvas" aria-label="Best time"></canvas>
+      </button>
+      <div class="row">
+        <button id="btnCloseOptions" class="btn" style="display:none;">Cancel</button>
+        <button id="btnStartFromOptions" class="btn">Start Game</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="srStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script type="module">
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
+import {
+  createSitelenFontPairController,
+  TEXT_FONT_OPTION_SITELEN,
+  TEXT_FONT_OPTION_NANPA_LINJA_N
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
+import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
+
+(() => {
+  "use strict";
+
+  const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
+  const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
+  const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
+
+  const RENDER_FONT_PRESETS = {
+    nasinNanpa: {
+      key: "nasinNanpa",
+      label: "nasin nanpa predefined",
+      parserMode: "sitelen-seli-kiwen",
+      textFamily: FONT_FAMILY_TEXT,
+      cartoucheFamily: FONT_FAMILY_CARTOUCHE,
+      literalFamily: FONT_FAMILY_LITERAL,
+      literalOptions: [
+        [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+        [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+        [FONT_FAMILY_LITERAL, "Patrick Hand"],
+        ["Arial", "Arial"],
+        ["Times New Roman", "Times New Roman"],
+        ["Courier New", "Courier New"],
+        ["system-ui", "system-ui"],
+      ],
+      faces: [
+        { family: FONT_FAMILY_TEXT, url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf", format: "opentype", sample: String.fromCodePoint(0xF196C) },
+        { family: FONT_FAMILY_CARTOUCHE, url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf", format: "opentype", sample: String.fromCodePoint(0xF1990) },
+        { family: FONT_FAMILY_LITERAL, url: "./fonts/PatrickHand-Regular.ttf", format: "truetype", sample: "Hello" }
+      ]
+    },
+    sitelenSeliKiwen: {
+      key: "sitelenSeliKiwen",
+      label: "sitelen seli kiwen predefined",
+      parserMode: "sitelen-seli-kiwen",
+      textFamily: "SSK-Juniko",
+      cartoucheFamily: "SSK-Juniko-Cartouche",
+      literalFamily: FONT_FAMILY_LITERAL,
+      literalOptions: [
+        [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+        [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+        [FONT_FAMILY_LITERAL, "Patrick Hand"],
+        ["Arial", "Arial"],
+        ["Times New Roman", "Times New Roman"],
+        ["Courier New", "Courier New"],
+        ["system-ui", "system-ui"],
+      ],
+      faces: [
+        { family: "SSK-Juniko", url: "./fonts/sitelenselikiwenjuniko.ttf", format: "truetype", sample: String.fromCodePoint(0xF196C) },
+        { family: "SSK-Juniko-Cartouche", url: "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf", format: "truetype", sample: String.fromCodePoint(0xF1990) },
+        { family: FONT_FAMILY_LITERAL, url: "./fonts/PatrickHand-Regular.ttf", format: "truetype", sample: "Hello" }
+      ]
+    },
+    fairfaxPonaHd: {
+      key: "fairfaxPonaHd",
+      label: "FairfaxPonaHD predefined",
+      parserMode: "sitelen-seli-kiwen",
+      textFamily: "fairfaxPonaHd",
+      cartoucheFamily: "fairfaxPonaHd-Cartouche",
+      literalFamily: FONT_FAMILY_LITERAL,
+      literalOptions: [
+        [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
+        [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
+        [FONT_FAMILY_LITERAL, "Patrick Hand"],
+        ["Arial", "Arial"],
+        ["Times New Roman", "Times New Roman"],
+        ["Courier New", "Courier New"],
+        ["system-ui", "system-ui"],
+      ],
+      faces: [
+        { family: "fairfaxPonaHd", url: "./fonts/FairfaxPonaHD.ttf", format: "truetype", sample: String.fromCodePoint(0xF196C) },
+        { family: "fairfaxPonaHd-Cartouche", url: "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf", format: "truetype", sample: String.fromCodePoint(0xF1990) },
+        { family: FONT_FAMILY_LITERAL, url: "./fonts/PatrickHand-Regular.ttf", format: "truetype", sample: "Hello" }
+      ]
+    }
+  };
+
+  const I18N = {
+    en: {
+      pageTitle: "Toki Pona Cartouche Memory Match",
+      btnOptions: "Game Options",
+      btnNew: "Start New Game",
+      btnLang: "toki pona",
+      timerAria: "Game time",
+      bestTimeAria: "Best time",
+      finalTimeAria: "Final time",
+      confirmClearBestTime: "Clear saved best time for this grid and deck?",
+      statusLoading: "Loading fonts…",
+      statusReady: "Choose options, then start a game.",
+      statusStarted: "Game started.",
+      statusMatch: "Match found.",
+      statusNoMatch: "Not a match.",
+      statusWon: "Finished. You matched all cards.",
+      hint: "Find each Latin label and matching sitelen cartouche.",
+      selectedCards: "Selected cards",
+      firstSelection: "First selection",
+      secondSelection: "Second selection",
+      moves: "Moves: {n}",
+      matches: "Matches: {a}/{b}",
+      time: "Time: {t}",
+      optionsTitle: "Cartouche Memory Match",
+      optionsIntro: "Match each Latin number or proper name with the rendered sitelen cartouche. On mobile, use the small grid to select cards and read them in the preview area.",
+      gridSize: "Grid size",
+      deck: "Deck",
+      scriptFont: "Script/font",
+      quotedTextFont: "Quoted text font",
+      numericDisplay: "Numeric display",
+      fullCartouche: "Full cartouche",
+      abbrevCartouche: "Abbreviated cartouche",
+      helpers: "Helpers",
+      showBadges: "Show type badges",
+      autoPreview: "Show selections in preview",
+      startGame: "Start Game",
+      cancel: "Cancel",
+      backToIndex: "Back to index",
+      placeholder: "—",
+    },
+    tok: {
+      pageTitle: "musi pi kama sona poki nimi",
+      btnOptions: "nasin musi",
+      btnNew: "open e musi sin",
+      btnLang: "English",
+      timerAria: "tenpo musi",
+      bestTimeAria: "tenpo pona",
+      finalTimeAria: "tenpo pini",
+      confirmClearBestTime: "o weka ala weka e tenpo pona awen pi suli musi ni pi kulupu lipu ni?",
+      statusLoading: "mi kama jo e sitelen…",
+      statusReady: "o pili e nasin; ni la o open e musi.",
+      statusStarted: "musi li open.",
+      statusMatch: "ona li sama.",
+      statusNoMatch: "ona li sama ala.",
+      statusWon: "musi li pini. sina lukin e ale.",
+      hint: "o alasa e nimi Lasina e poki nimi sitelen pona ona.",
+      selectedCards: "lipu tu sina",
+      firstSelection: "lipu nanpa wan",
+      secondSelection: "lipu nanpa tu",
+      moves: "tawa: {n}",
+      matches: "sama: {a}/{b}",
+      time: "tenpo: {t}",
+      optionsTitle: "musi pi kama sona poki nimi",
+      optionsIntro: "o sama e nanpa anu nimi Lasina tawa poki nimi sitelen pona. lon ilo lili la, o pilin e lipu lili; o lukin e ona lon poki suli anpa.",
+      gridSize: "suli musi",
+      deck: "kulupu lipu",
+      scriptFont: "nasin sitelen",
+      quotedTextFont: "nasin pi nimi Lasina",
+      numericDisplay: "sitelen nanpa",
+      fullCartouche: "poki nimi suli",
+      abbrevCartouche: "poki nimi lili",
+      helpers: "pana sona",
+      showBadges: "o pana e nimi kule",
+      autoPreview: "o lukin e lipu pilin",
+      startGame: "open e musi",
+      cancel: "o ala",
+      backToIndex: "o tawa lipu open",
+      placeholder: "—",
+    }
+  };
+
+  const TP_WORD_TO_CP = Object.freeze({
+    ijo: 0xF190C,
+    jo: 0xF1913,
+    kasi: 0xF1917,
+    nanpa: 0xF193D,
+    nena: 0xF1940,
+    open: 0xF1947,
+    tenpo: 0xF196B,
+    toki: 0xF196C,
+    lili: 0xF1928,
+    pona: 0xF1954,
+    wan: 0xF1973,
+    tu: 0xF196E,
+    seli: 0xF1957,
+    awen: 0xF1908,
+    luka: 0xF192D,
+    utala: 0xF1971,
+    mun: 0xF193A,
+    pipi: 0xF1951,
+    en: 0xF190A
+  });
+
+  const UCSUR_CP_TO_WORD = new Map(
+    Object.entries(TP_WORD_TO_CP).map(([word, cp]) => [cp, word])
+  );
+
+  const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
+    TP_WORD_TO_CP.nanpa,
+    TP_WORD_TO_CP.en,
+    TP_WORD_TO_CP.nena,
+    TP_WORD_TO_CP.open
+  ]);
+
+  function abbreviateNumericCartoucheCps(cps) {
+    const input = Array.from(cps ?? []).map(cp => Number(cp));
+    if (!input.length) return input;
+
+    const out = [];
+    let keptFirstNanpa = false;
+
+    for (let i = 0; i < input.length; i++) {
+      const cp = input[i];
+      const isFinalNanpa = (cp === TP_WORD_TO_CP.nanpa && i === input.length - 1);
+
+      if (!keptFirstNanpa) {
+        out.push(cp);
+        if (cp === TP_WORD_TO_CP.nanpa) keptFirstNanpa = true;
+        continue;
+      }
+
+      if (isFinalNanpa) {
+        out.push(cp);
+        continue;
+      }
+
+      if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+      out.push(cp);
+    }
+
+    return out;
+  }
+
+  function canonicalDecimalKey(decimalText) {
+    return String(decimalText ?? "")
+      .trim()
+      .replace(/[,_\s]+/g, "")
+      .replace(/[−–—]/g, "-");
+  }
+
+  function makeNumberItem(id, label) {
+    const text = String(label);
+    return { id, type: "number", latinLabel: text, renderInput: `[${text}]`, numericKey: canonicalDecimalKey(text) };
+  }
+
+  function properNameRenderInputFromLatin(label) {
+    const letterWords = {
+      a: "ale", e: "esun", i: "ilo", j: "jo", k: "kasi", l: "luka", m: "moku",
+      n: "nasin", o: "open", p: "pona", s: "sona", t: "toki", u: "uta", w: "wawa"
+    };
+    const words = [];
+    for (const ch of String(label || "").toLowerCase()) {
+      if (ch === " " || ch === "-" || ch === "’" || ch === "'") continue;
+      const word = letterWords[ch];
+      if (word) words.push(word);
+    }
+    return words.length ? `[ ${words.join(" ")} ]` : "[ nimi ]";
+  }
+
+  const NUMERIC_MEMORY_VALUES = Object.freeze([
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "12",
+    "17",
+    "21",
+    "42",
+    "64",
+    "99",
+    "100",
+    "256",
+    "999",
+    "1,024",
+    "2,048",
+    "7,500",
+    "12,345",
+    "42,386",
+    "100,000",
+    "250,000",
+    "999,999",
+    "-1",
+    "-2",
+    "-7",
+    "-12",
+    "-42",
+    "-100",
+    "-1,024",
+    "-7,500",
+    "-42,386",
+    "0.5",
+    "0.25",
+    "1.25",
+    "2.5",
+    "3.14",
+    "7.25",
+    "10.75",
+    "42.5",
+    "99.99",
+    "123.45",
+    "1,024.5",
+    "9,876.54",
+    "-0.5",
+    "-7.25",
+    "-42.5",
+    "1/2",
+    "1/3",
+    "2/3",
+    "1/4",
+    "3/4",
+    "1/5",
+    "2/5",
+    "5/8",
+    "7/10",
+    "11/12",
+    "1+1/2",
+    "2+1/3",
+    "3+3/4",
+    "5+2/5",
+    "7+1/8",
+    "9+3/4",
+    "12+1/8",
+    "1%",
+    "5%",
+    "10%",
+    "12.5%",
+    "25%",
+    "33.3%",
+    "50%",
+    "66.7%",
+    "75%",
+    "99%",
+    "100%",
+    "0.5%",
+    "2.5%",
+    "1950-01-01",
+    "1969-07-20",
+    "1977-05-25",
+    "1984-01-24",
+    "1999-12-31",
+    "2000-01-01",
+    "2001-09-11",
+    "2012-12-21",
+    "2020-03-14",
+    "2024-02-29",
+    "2030-06-15",
+    "2049-12-31",
+    "2050-01-01",
+    "00:00",
+    "01:05",
+    "06:30",
+    "07:30",
+    "09:45",
+    "12:00",
+    "13:15",
+    "18:30",
+    "21:05",
+    "23:59",
+    "00:00:01",
+    "01:02:03",
+    "06:30:15",
+    "07:30:00",
+    "09:45:30",
+    "12:00:00",
+    "18:30:45",
+    "21:05:09",
+    "23:59:59",
+  ]);
+
+  const PROPER_NAME_MEMORY_VALUES = Object.freeze([
+    "Amelika",
+    "Antasika",
+    "Apika",
+    "Asija",
+    "Elopa",
+    "Osejanija",
+    "Ankola",
+    "Eliteja",
+    "Isijopija",
+    "Kamelun",
+    "Kana",
+    "Kanpija",
+    "Kapon",
+    "Kenja",
+    "Kine",
+    "Kinepisa",
+    "Komo",
+    "Kosiwa",
+    "Lapewija",
+    "Lesoto",
+    "Lipija",
+    "Luwanta",
+    "Malakasi",
+    "Malawi",
+    "Mali",
+    "Malipe",
+    "Masu",
+    "Mosanpi",
+    "Mowisi",
+    "Mulitanija",
+    "Namipija",
+    "Naselija",
+    "Nise",
+    "Penen",
+    "Posuwana",
+    "Pukinapaso",
+    "Sanpija",
+    "Santapiken",
+    "Sasali",
+    "Sate",
+    "Sawasi",
+    "Seneka",
+    "Setapika",
+    "Sipusi",
+    "Somalija",
+    "Sutan",
+    "Tansanija",
+    "Toko",
+    "Tunisi",
+    "Ukanta",
+    "Alensina",
+    "Awisi",
+    "Ekato",
+    "Kalalinuna",
+    "Kanata",
+    "Katemala",
+    "Kenata",
+    "Kosalika",
+    "Kupa",
+    "Mesiko",
+    "Mewika",
+    "Ontula",
+    "Palakawi",
+    "Panama",
+    "Papeto",
+    "Pasila",
+    "Pawama",
+    "Pelu",
+    "Pemuta",
+    "Penesuwela",
+    "Sameka",
+    "Sile",
+    "Sinita",
+    "Tominika",
+    "Ulukawi",
+    "Aja",
+    "Akanisan",
+    "Anku",
+    "Ilakija",
+    "Ilan",
+    "Intonesija",
+    "Isale",
+    "Jamanija",
+    "Kanpusi",
+    "Katelo",
+    "Kuli",
+    "Kusala",
+    "Kuwasi",
+    "Lanka",
+    "Losi",
+    "Lunpan",
+    "Malasija",
+    "Mijama",
+    "Nijon",
+    "Pakisan",
+    "Palani",
+    "Palata",
+    "Panla",
+    "Pilipina",
+    "Pilisin",
+    "Po",
+    "Sawusi",
+    "Sonko",
+    "Sulija",
+    "Tawi",
+    "Tuki",
+    "Uman",
+    "Utun",
+    "Wije",
+    "Alan",
+    "Antola",
+    "Elena",
+    "Epanja",
+    "Esalasi",
+    "Esi",
+    "Esuka",
+    "Inli",
+    "Isilan",
+    "Italija",
+    "Juke",
+    "Kanse",
+    "Katala",
+    "Kinla",
+    "Kiposi",
+    "Lawi",
+    "Lijatuwa",
+    "Lisensan",
+    "Lomani",
+    "Lowasi",
+    "Lowenki",
+    "Lowensina",
+    "Lusepu",
+    "Maketonija",
+    "Mosijo",
+    "Motowa",
+    "Netelan",
+    "Nosiki",
+    "Pelalusi",
+    "Pesije",
+    "Peson",
+    "Pokasi",
+    "Posan",
+    "Posuka",
+    "Potuke",
+    "Samalino",
+    "Seki",
+    "Sipe",
+    "Sopisi",
+    "Sukosi",
+    "Sumi",
+    "Suwasi",
+    "Tansi",
+    "Tosi",
+    "Ukawina",
+    "Wasikano",
+    "Wensa",
+    "Kilipasi",
+    "Nusilan",
+    "Oselija",
+    "Pisi",
+    "Samowa",
+    "Tona",
+    "Tuwalu",
+    "Wanuwatu",
+    "An",
+    "Ela",
+    "Awawa",
+    "Awiwa",
+    "Ewan",
+    "Awasi",
+    "Ajan",
+    "Apasi",
+    "Apawaman",
+    "Apula",
+    "Apula Ate",
+    "Apala",
+    "Apuwaman",
+    "Ape Waman",
+    "Epala",
+    "Epito",
+    "Ape",
+    "Epan",
+    "Apan",
+    "Asin",
+    "Atan",
+    "Etasi",
+    "Etepolawin",
+    "Aten",
+    "Etan",
+    "Ateto",
+    "Atela",
+    "Atanasi",
+    "Etansi",
+    "Ate",
+    "Ateku",
+    "Apanso",
+    "Akata",
+    "Ato",
+    "Amato",
+    "Anapu",
+    "Eten",
+    "Epu",
+    "Ese",
+    "Asasi",
+    "Aka",
+    "Akin",
+    "Akan",
+    "Akila",
+    "Alatewa",
+    "Apeto",
+    "Api",
+    "Opi",
+    "Apa",
+    "Aliku",
+    "Alento",
+    "Alika",
+    "Elekantawa",
+    "Alakante",
+    "Alesanto",
+    "Aleso",
+    "Alaka",
+    "Alikante",
+    "Esantu",
+    "Alekisi",
+    "Apato",
+    "Alin",
+    "Alitewa",
+    "Awi",
+    "Awin",
+    "Amawa",
+    "Amawi",
+    "Amiwa",
+    "Ame",
+    "Amin",
+    "Emin",
+    "Emasi",
+    "Anasi",
+    "Anase",
+    "Ane",
+    "Ante",
+    "Antesi",
+    "Antu",
+    "Anta",
+    "Ansi",
+    "Ansalo",
+    "Ankasi",
+    "Ansani",
+    "Anton",
+    "Antoni",
+    "Antono",
+    "Antani",
+    "Apalo",
+    "Ase",
+    "Asi",
+    "Atala",
+    "Awan",
+    "Ewala",
+    "Awisasi",
+    "Asan",
+    "Ala",
+    "Aman",
+    "Aminasi",
+    "Awanasi",
+    "Atuwa",
+    "Atawa",
+    "Ali",
+    "Asawa",
+    "Atasi",
+    "Akato",
+    "Okato",
+    "Otan",
+    "Ewe",
+    "Akala",
+    "En",
+    "Ensi",
+    "Elan",
+    "Eman",
+    "Asila",
+    "Asisi",
+    "Awila",
+    "Peli",
+    "Pani",
+    "Pawa",
+    "Pawi",
+    "Patasi",
+    "Pasala",
+    "Pasin",
+    "Pewa",
+    "Paten",
+    "Pekito",
+    "Penasi",
+    "Penateka",
+    "Penamin",
+    "Penisa",
+    "Pensamin",
+    "Pensaman",
+    "Pensi",
+    "Penato",
+    "Peni",
+    "Pente",
+    "Pento",
+    "Pensa",
+    "Peneto",
+    "Pete",
+    "Pilala",
+    "Pila",
+    "Pili",
+    "Pon",
+    "Pa",
+    "Pen",
+    "Pesi",
+    "Peku",
+    "Papi",
+    "Potan",
+    "Pate",
+    "Pato",
+    "Pote",
+    "Pakan",
+    "Powisi",
+    "Patan",
+    "Pan",
+    "Pantan",
+    "Peten",
+    "Pentan",
+    "Pokan",
+    "Pukan",
+    "Puka",
+    "Pusi",
+    "Puno",
+    "Pasan",
+    "Pawan",
+    "Keto",
+    "Katen",
+    "Katan",
+    "Kalan",
+    "Kalin",
+    "Kalen",
+    "Katano",
+    "Ka",
+    "Keten",
+    "Kelan",
+    "Ken",
+    "Ke",
+    "Kawe",
+    "Kelapu",
+    "Kawan",
+    "Kamen",
+    "Kato",
+    "Semesin",
+    "Kala",
+    "Kalo",
+    "Kalosi",
+    "Kasan",
+    "Kate",
+    "Kesi",
+    "Kape",
+    "Kasi",
+    "Kasala",
+    "Kesan",
+    "Silan",
+    "Sesawa",
+    "Sali",
+    "Sesi",
+    "Sete",
+    "Kisi",
+    "Kisan",
+    "Kitape",
+    "Kite",
+    "Sulen",
+    "Sin",
+    "Sinen",
+    "Sawan",
+    "Sawen",
+    "Sawen Si",
+    "Silen",
+    "Kaku",
+    "Ketan",
+    "Kawa",
+    "Kapu",
+    "Kapi",
+    "Kopi",
+    "Kote",
+    "Kon",
+    "Kola",
+    "Kolin",
+    "Koman",
+    "Koto",
+    "Kotan",
+    "Kanela",
+    "Konala",
+    "Kanala",
+    "Konan",
+    "Kanlan",
+    "Kan",
+    "Koni",
+    "Kanla",
+    "Kane",
+    "Kanowa",
+    "Kanwato",
+    "Kanen",
+    "Kupe",
+    "Kowi",
+    "Komaku",
+    "Konijasi",
+    "Kowa",
+    "Keku",
+    "Ki",
+    "Kito",
+    "Kitan",
+    "Kitano",
+    "Ko",
+    "Ku",
+    "Kusi",
+    "Ketasi",
+    "Sisasi",
+    "Sisala",
+    "Setan",
+    "San",
+    "Sila",
+    "Sinala",
+    "Sinan",
+    "Sen",
+    "Tepu",
+    "Temen",
+    "Tewa",
+    "Tesi",
+    "Taka",
+    "Tela",
+    "Totan",
+    "Teman",
+    "Tame",
+    "Tanan",
+    "Ten",
+    "Tanjala",
+    "Tanjasi",
+    "Tanila",
+    "Tanijala",
+    "Tani",
+    "Tante",
+    "Tanala",
+    "Tawa",
+    "Tawasi",
+    "Tapi",
+    "Tasi",
+    "Tawan",
+    "Tewe",
+    "Tawin",
+    "Tewala",
+    "Tewi",
+    "Tewito",
+    "Tewasi",
+    "Tawito",
+    "Tosan",
+    "Tekan",
+    "Tenasi",
+    "Tenisi",
+    "Teni",
+    "Tensala",
+    "Tan",
+    "Tewiku",
+    "Temato",
+    "Temanto",
+    "Tewansi",
+    "Tewin",
+    "Tewan",
+    "Teke",
+    "Tameto",
+    "Tamate",
+    "Teko",
+    "Telanasi",
+    "Telan",
+    "Tomasi",
+    "Tumenola",
+    "Tamaniku",
+    "Taminiku",
+    "Tamanikesi",
+    "Tana",
+    "Tanasa",
+    "Tansa",
+    "Tansatesi",
+    "Tanawan",
+    "Towan",
+    "Takasi",
+    "Tawatasi",
+    "Takosi",
+    "Tu",
+    "Tenala",
+    "Tenala Si",
+    "Tenola",
+    "Iman",
+    "Ete",
+    "Itan",
+    "Etesan",
+    "Etanto",
+    "Etato",
+    "Eteto",
+    "Isa",
+    "Ekansi",
+    "Ekin",
+    "Elisawa",
+    "Alasi",
+    "Elasa",
+    "Elo",
+    "Elato",
+    "Ilasi",
+    "Elise",
+    "Elisi",
+    "Ewin",
+    "Ewisi",
+    "Ejasi",
+    "Imanjala",
+    "Emila",
+    "Emilano",
+    "Amilo",
+    "Emilisi",
+    "Emiwa",
+    "Emito",
+    "Ema",
+    "Enta",
+    "Inaku",
+    "Ena",
+    "Enwiko",
+    "Enwike",
+    "Enso",
+    "Ekan",
+    "Ipan",
+    "Epin",
+    "Ewiku",
+    "Enato",
+    "Iwasi",
+    "Eku",
+    "Isan",
+    "Usin",
+    "Ewanasi",
+    "Eto",
+    "Esikila",
+    "Ewa",
+    "Ikan",
+    "In",
+    "Pepan",
+    "Palan",
+    "Pesan",
+    "Palen",
+    "Pewisi",
+    "Pewila",
+    "Pisala",
+    "Peteko",
+    "Epatelin",
+    "Pelan",
+    "Palipu",
+    "Pilika",
+    "Peta",
+    "Pekala",
+    "Pekasi",
+    "Penanto",
+    "Pasi",
+    "Pana",
+    "Pilipu",
+    "Pinan",
+    "Pinpawa",
+    "Pinli",
+    "Pin",
+    "Pinle",
+    "Pinen",
+    "Pintan",
+    "Panen",
+    "Pese",
+    "Powan",
+    "Panseko",
+    "Panki",
+    "Pansasi",
+    "Pansiko",
+    "Pansiseku",
+    "Panko",
+    "Paniku",
+    "Panku",
+    "Pankin",
+    "Panka",
+    "Peto",
+    "Peteku",
+    "Epelen",
+    "Epiten",
+    "Epilin",
+    "Epika",
+    "Epawa",
+    "Kepala",
+    "Kapela",
+    "Kela",
+    "Kewisi",
+    "Kawito",
+    "Kawi",
+    "Kawin",
+    "Siweto",
+    "Kiwate",
+    "Sepu",
+    "Sepi",
+    "Sosi",
+    "Sewato",
+    "Seto",
+    "Sewi",
+    "Soso",
+    "Sowani",
+    "Sisepi",
+    "Keke",
+    "Kipin",
+    "Katasi",
+    "Ama",
+    "Ansala",
+    "Alo",
+    "Awen",
+    "Ewisan",
+    "Ewi",
+    "Esan",
+    "Eke",
+    "Itowa",
+    "Enteka",
+    "Enwi",
+    "Enwiku",
+    "Anwiku",
+    "Inwaku",
+    "Ikasi",
+    "Isika",
+    "Jupeto",
+    "Ju",
+    "Juko",
+    "Usen",
+    "Asepa",
+    "Akapu",
+    "Anisi",
+    "Alatesi",
+    "Apiwen",
+    "Ipen",
+    "Itesi",
+    "Ikasa",
+    "Ikowa",
+    "Ila",
+    "Ija",
+    "Ijasi",
+    "Imanula",
+    "On",
+    "Anatan",
+    "Anato",
+    "Asipu",
+    "Iwemito",
+    "Asaku",
+    "Isaku",
+    "Ise",
+    "Imela",
+    "Asiku",
+    "Iwan",
+    "Iwe",
+    "Iwin",
+    "Sese",
+    "Sape",
+    "Saku",
+    "Sakan",
+    "Sekapu",
+    "Saten",
+    "Satowa",
+    "Seten",
+    "Seku",
+    "Sakapu",
+    "Samala",
+    "Sema",
+    "Seman",
+    "Semi",
+    "Sewito",
+    "Salasi",
+    "Sesan",
+    "Sawato",
+    "Saka",
+    "Selin",
+    "Sensan",
+    "Sewama",
+    "Sewami",
+    "Simi",
+    "Jokin",
+    "So",
+    "Wakin",
+    "Sote",
+    "Sola",
+    "Jon",
+    "San Pola",
+    "Sanasan",
+    "Sani",
+    "Sona",
+    "Sonasi",
+    "Owe",
+    "Sawisi",
+    "Ose",
+    "Sosapu",
+    "Sasi",
+    "Sasa",
+    "Sosa",
+    "Sasipu",
+    "Sato",
+    "Wan",
+    "Suta",
+    "Suto",
+    "Susi",
+    "Sulan",
+    "Sujasi",
+    "Sunje",
+    "Kake",
+    "Kelin",
+    "Kewa",
+    "Kasasi",
+    "Kalipu",
+    "Kemala",
+    "Kamawan",
+    "Kamila",
+    "Kenan",
+    "Kewela",
+    "Kasin",
+    "Kesin",
+    "Kilan",
+    "Kin",
+    "Kenu",
+    "Kikan",
+    "Kilin",
+    "Kinan",
+    "Kewan",
+    "Kenisi",
+    "Keni",
+    "Kenso",
+    "Kewin",
+    "Kewinasi",
+    "Alato",
+    "Alito",
+    "Kalala",
+    "Kipe",
+    "Kiwan",
+    "Kijan",
+    "Kinli",
+    "Kintan",
+    "Naka",
+    "Kope",
+    "Kapan",
+    "Kata",
+    "Kantenten",
+    "Konila",
+    "Kisiwa",
+    "Kewitan",
+    "Kitopu",
+    "Kale",
+    "Kawen",
+    "Lakan",
+    "Lala",
+    "Lesi",
+    "Leke",
+    "Lewi",
+    "Lowansi",
+    "Losan",
+    "Letan",
+    "Lanto",
+    "Liwe",
+    "Amula",
+    "Leni",
+    "Lenan",
+    "Lenaka",
+    "Lan",
+    "Leneto",
+    "Lanato",
+    "Lonitasi",
+    "Liwa",
+    "Lusi",
+    "Lan Si",
+    "Jan",
+    "Linkan",
+    "Lanala",
+    "Laken",
+    "Lalan",
+    "Lokan",
+    "Loken",
+    "Lenso",
+    "Lopin",
+    "Lu",
+    "Lon",
+    "Luka",
+    "Lukasi",
+    "Lusan",
+    "Lusano",
+    "La",
+    "Laketesi",
+    "Lakasi",
+    "Luku",
+    "Lun",
+    "Eka",
+    "Masi",
+    "Makawa",
+    "Maku",
+    "Mataka",
+    "Mate",
+    "Mawa",
+    "Ma",
+    "Mamuto",
+    "Meta",
+    "Mesan",
+    "Mete",
+    "Mato",
+    "Masasi",
+    "Make",
+    "Makin",
+    "Makan",
+    "Makamilan",
+    "Malasi",
+    "Malasa",
+    "Malake",
+    "Maleku",
+    "Maliku",
+    "Mani",
+    "Manika",
+    "Manwela",
+    "Menisi",
+    "Masela",
+    "Masin",
+    "Mako",
+    "Makosi",
+    "Makasi",
+    "Maweku",
+    "Mawe",
+    "Mawasi",
+    "Malo",
+    "Maten",
+    "Matan",
+    "Mawin",
+    "Mawan",
+    "Masimo",
+    "Matasi",
+    "Matesi",
+    "Matusi",
+    "Masa",
+    "Masosi",
+    "Maju",
+    "Mata",
+    "Mawisi",
+    "Makimilan",
+    "Makamilano",
+    "Makima",
+    "Makamasi",
+    "Makela",
+    "Mewa",
+    "Mewin",
+    "Maka",
+    "Makala",
+    "Makala Si",
+    "Misala",
+    "Misela",
+    "Miku",
+    "Miki",
+    "Mikela",
+    "Maki",
+    "Mikala",
+    "Mikalasi",
+    "Malan",
+    "Milasi",
+    "Miwan",
+    "Miwen",
+    "Mesa",
+    "Mamato",
+    "Mometo",
+    "Momito",
+    "Mosi",
+    "Monte",
+    "Musa",
+    "Mokan",
+    "Mamato Ela",
+    "Mamato Ali",
+    "Mameto",
+    "Muwisi",
+    "Matapa",
+    "Manesimo",
+    "Mawi",
+    "Masapu",
+    "Mutapa",
+    "Makelo",
+    "Mala",
+    "Emeten",
+    "Emela",
+    "Nete",
+    "Nala",
+    "Nesan",
+    "Nasi",
+    "Namen",
+    "Netan",
+    "Natanila",
+    "Neto",
+    "Nasanela",
+    "Nasanjala",
+    "Nasawa",
+    "Nila",
+    "Nama",
+    "Netasi",
+    "Newin",
+    "Nikalasi",
+    "Niku",
+    "Niki",
+    "Niko",
+    "Nikola",
+    "Nikalesi",
+    "Nasala",
+    "Nan",
+    "Nikita",
+    "Nikaten",
+    "Nikolasi",
+    "Nilan",
+    "No",
+    "No Sema",
+    "Nowa",
+    "Nola",
+    "Nasasi",
+    "Nolan",
+    "Oki",
+    "Osan",
+    "Olipawa",
+    "Osin",
+    "Osen",
+    "Ojasi",
+    "Olapu",
+    "Alawe",
+    "Alawesi",
+    "Oliwe",
+    "Aliwiwa",
+    "Omawa",
+    "Ome",
+    "Owan",
+    "Awito",
+    "Owin",
+    "Owen",
+    "Oke",
+    "Akawasi",
+    "Okesi",
+    "Otesi",
+    "Papo",
+    "Pateku",
+    "Palo",
+    "Pake",
+    "Pataku",
+    "Pola",
+    "Powiku",
+    "Pawala",
+    "Pitawa",
+    "Petawa",
+    "Pite",
+    "Petu",
+    "Pilapu",
+    "Pinika",
+    "Pata",
+    "Petan",
+    "Pinsi",
+    "Piteku",
+    "Pate Si",
+    "Piweku",
+    "Watu",
+    "Wapa",
+    "Wapala",
+    "Wapi",
+    "Wen",
+    "Wapu",
+    "Wami",
+    "Wana",
+    "Wepala",
+    "Wesi",
+    "Wala",
+    "Wawi",
+    "Weten",
+    "Wemanto",
+    "Wawan",
+    "Wekan",
+    "Wisi",
+    "Wikan",
+    "Wesanato",
+    "Wito",
+    "Wali",
+    "Wemi",
+    "Wepan",
+    "Wensi",
+    "Waken",
+    "Wikato",
+    "Wiseto",
+    "Wiki",
+    "Wiko",
+    "Wisan",
+    "Wiwe",
+    "Wijan",
+    "Wapeto",
+    "Wapan",
+    "Wako",
+    "Waki",
+    "Wateko",
+    "Wase",
+    "Wekasi",
+    "Waka",
+    "Welanto",
+    "Weman",
+    "Wemo",
+    "Wenan",
+    "Wani",
+    "Wanen",
+    "Wewi",
+    "Wasi",
+    "Wesa",
+    "Wato",
+    "Watan",
+    "Waten",
+    "Wata",
+    "Waku",
+    "Wawa",
+    "Wete",
+    "Wepin",
+    "Wepeto",
+    "Walan",
+    "Wasala",
+    "Ajun",
+    "Wate",
+    "Wake",
+    "Wili",
+    "Awan Si",
+    "Anan",
+    "Awenen",
+    "Awato",
+    "Sapa",
+    "Sapan",
+    "Sapu",
+    "Salawa",
+    "Sala",
+    "Saman",
+    "Sawatowa",
+    "Samawa",
+    "Sami",
+    "Samiwa",
+    "Samula",
+    "Sanato",
+    "Santako",
+    "Santeno",
+    "Sawin",
+    "Semasi",
+    "Son",
+    "Sini",
+    "Sonen",
+    "Sapasan",
+    "Sepaten",
+    "Senan",
+    "Senen",
+    "Setanta",
+    "Sen Si",
+    "Sena",
+    "Sawiwa",
+    "Sawila",
+    "Soja",
+    "Se",
+    "Si",
+    "Sawansi",
+    "Laku",
+    "Sa",
+    "Sitasi",
+    "Site",
+    "Salaman",
+    "Sanasi",
+    "Sana",
+    "Pense",
+    "Tanilo",
+    "Tanli",
+    "Tepan",
+    "Tuto",
+    "Suleman",
+    "Esato",
+    "Esata",
+    "Esemesi",
+    "Esami",
+    "Esamasi",
+    "Esin",
+    "Tatesi",
+    "Tata",
+    "Ta",
+    "Te",
+    "Tala",
+    "Tawiku",
+    "Teto",
+    "Tele",
+    "Tete",
+    "Tetowa",
+    "Satasi",
+    "Sata",
+    "Sotowe",
+    "Tamasi",
+    "Tamesi",
+    "Teso",
+    "Tanesesi",
+    "Tanen",
+    "Tenan",
+    "Tenen",
+    "Temi",
+    "Temape",
+    "Temate",
+    "Temasi",
+    "Teme",
+    "Tapasi",
+    "Topi",
+    "Toma",
+    "Tamasa",
+    "Tami",
+    "Tami Li",
+    "Tamesi Si",
+    "Toni",
+    "Tawisi",
+    "Tento",
+    "Tetan",
+    "To",
+    "Take",
+    "Tute",
+    "Tale",
+    "Tamapi",
+    "Taman",
+    "Tamotasi",
+    "Tawesi",
+    "Tasan",
+    "Teta",
+    "Tate",
+    "Asewa",
+    "Wakawisi",
+    "Walenten",
+    "Walantan",
+    "Walanteno",
+    "Wetanto",
+    "Wiwa",
+    "Wisente",
+    "Wike",
+    "Wika",
+    "Winsanto",
+    "Winsenso",
+    "Wini",
+    "Wiwasi",
+    "Wiwan",
+    "Lato",
+    "Latamiwa",
+    "Latalawa",
+    "Walito",
+    "Wewan",
+    "Weli",
+    "Wetan",
+    "Wikowa",
+    "Wila",
+    "Weseku",
+    "Kante",
+    "Seje",
+    "Je",
+    "Jaja",
+    "Jaman",
+    "Janasi",
+    "Janisi",
+    "Wawelawa",
+    "Jasin",
+    "Jasi",
+    "Jasan",
+    "Jansi",
+    "Jusepu",
+    "Jasipu",
+    "Jasapu",
+    "Jawan",
+    "Sake",
+    "Sakawa",
+    "Sewa",
+    "Sakawija",
+    "Sante",
+    "Sawijawa",
+    "Siku",
+    "Sisa",
+    "Sawesi",
+    "Amon",
+    "Ana",
+    "Imen",
+    "Alesi",
+    "Iku",
+    "Isin",
+    "Isen",
+    "Ata",
+    "Awa",
+    "Anja",
+    "Ewateja",
+    "Apikela",
+    "Apakela",
+    "Apisi",
+    "Atalin",
+    "Atalan",
+    "Atasan",
+    "Ataleto",
+    "Atelina",
+    "Atelan",
+    "Atete",
+    "Etana",
+    "Ateka",
+    "Akasa",
+    "Akisi",
+    "Epilen",
+    "Epelin",
+    "Eta",
+    "Epiku",
+    "Epi",
+    "Elesi",
+    "Emi",
+    "Asa",
+    "Elin",
+    "Eja",
+    "Esa",
+    "Esala",
+    "Ale",
+    "Alena",
+    "Aleja",
+    "Alana",
+    "Alawa",
+    "Alina",
+    "Aleka",
+    "Alesanta",
+    "Alesa",
+    "Alekanta",
+    "Alakanta",
+    "Alisa",
+    "Alisan",
+    "Alija",
+    "Alasan",
+    "Ajana",
+    "Alasa",
+    "Amewa",
+    "Amala",
+    "Amaja",
+    "Amanta",
+    "Amani",
+    "Amela",
+    "Amija",
+    "Amija Wesi",
+    "Ameli",
+    "Amelisa",
+    "Amina",
+    "Anapela",
+    "Anapa",
+    "Anesi",
+    "Anesa",
+    "Aneja",
+    "Ananja",
+    "Anatesa",
+    "Enatasija",
+    "Anaja",
+    "Anewa",
+    "Ensala",
+    "Ansalin",
+    "Anselina",
+    "Anila",
+    "Anika",
+    "Anisa",
+    "Anita",
+    "Ansali",
+    "Ana Me",
+    "Anapala",
+    "Analasi",
+    "Analiwa",
+    "Ani",
+    "Anme",
+    "Anaku",
+    "Antonela",
+    "Antona",
+    "Antonina",
+    "Anwi",
+    "Anwika",
+    "Apu",
+    "Apin",
+    "Apen",
+    "Awapela",
+    "Awa Wesi",
+    "Awa Me",
+    "Ewate",
+    "Awana",
+    "Awela",
+    "Awilala",
+    "Awina",
+    "Awisa",
+    "Awija",
+    "Asina",
+    "Ote",
+    "Owa",
+    "Owala",
+    "Otasa",
+    "Ewa Me",
+    "Ewa Wesi",
+    "Awawi",
+    "E",
+    "Esila",
+    "Aseja",
+    "Panpa",
+    "Pape",
+    "Pitesi",
+    "Pateka",
+    "Pepin",
+    "Papin",
+    "Pela",
+    "Pela Wesi",
+    "Penateto",
+    "Pesani",
+    "Pipi",
+    "Pesen",
+    "Pesin",
+    "Pisen",
+    "Pani Me",
+    "Pani We",
+    "Pi",
+    "Pisato",
+    "Pisito",
+    "Panwin",
+    "Puku",
+    "Puna",
+    "Pipin",
+    "Pipen",
+    "Pipa",
+    "Kelen",
+    "Ketana",
+    "Kali",
+    "Koli",
+    "Koli Me",
+    "Kamala",
+    "Kantesi",
+    "Selan",
+    "Kami",
+    "Kawina",
+    "Kalota",
+    "Kaman",
+    "Kewalana",
+    "Kewalan",
+    "Kewi",
+    "Kasanta",
+    "Kasite",
+    "Satale",
+    "Katalina",
+    "Satawina",
+    "Kasen",
+    "Katawana",
+    "Keli",
+    "Sisija",
+    "Sesili",
+    "Seka",
+    "Saleto",
+    "Sija",
+    "Salina",
+    "Salin",
+    "Sela",
+    "Selato",
+    "Santela",
+    "Salato",
+    "Simamanta",
+    "Kitena",
+    "Kiten",
+    "Sawa",
+    "Sisi",
+    "Sinte",
+    "Sintana",
+    "Kota",
+    "Kemantan",
+    "Koko",
+    "Kantansi",
+    "Kantasa",
+    "Konija",
+    "Kitala",
+    "Sita",
+    "Sito",
+    "Siwa",
+    "Taja",
+    "Tesime",
+    "Takota",
+    "Talasi",
+    "Tena",
+    "Tenja",
+    "Tanika",
+    "Tanjela",
+    "Taki",
+    "Tawina",
+    "Ton",
+    "Tepela",
+    "Tepi",
+    "Tepa",
+    "Tepe",
+    "Teja",
+    "Talala",
+    "Temi Li",
+    "Tetani",
+    "Tanwi",
+    "Tali",
+    "Towa",
+    "Towasa",
+    "Towasi",
+    "Tapasa",
+    "Ipa",
+    "Epani",
+    "Epen",
+    "Elito",
+    "Eli",
+    "Ekatewina",
+    "Ilena",
+    "Ilen",
+    "Elana",
+    "Elawa",
+    "Elane",
+    "Ilanowa",
+    "Elipu",
+    "Elisa",
+    "Elina",
+    "Eliwa",
+    "Ilisapisi",
+    "Alisi",
+    "Elika",
+    "Ilajana",
+    "Ilasa",
+    "Ilisapasi",
+    "Ela Me",
+    "Ela Wesi",
+    "Eli Me",
+    "Eli Wesi",
+    "Eli Ma",
+    "Elate",
+    "Elosi",
+    "Elawisi",
+    "Elasi",
+    "Imanwela",
+    "Eme",
+    "Emala",
+    "Emewato",
+    "Emili",
+    "Amila",
+    "Emali",
+    "Emilisa",
+    "Emili Wesi",
+    "Emalan",
+    "Inito",
+    "Enli",
+    "Enja",
+    "Ewika",
+    "Emewata",
+    "Wa",
+    "Etela",
+    "Etawa",
+    "Unasi",
+    "Ewana",
+    "Iwansilan",
+    "Ewawa",
+    "Ewalin",
+    "Ewelina",
+    "Ewalan",
+    "Eweli",
+    "Pala",
+    "Pesa",
+    "Pawita",
+    "Patema",
+    "Pasima",
+    "Pewe",
+    "Pe",
+    "Pina",
+    "Palisa",
+    "Pilisate",
+    "Pilipa",
+    "Pona",
+    "Powela",
+    "Powa",
+    "Powansi",
+    "Powi",
+    "Pansisi",
+    "Panseka",
+    "Pita",
+    "Epile",
+    "Epato",
+    "Epa",
+    "Kapisa",
+    "Senasa",
+    "Senawiwa",
+    "Sosina",
+    "Sewaten",
+    "Sina",
+    "Sinewa",
+    "Sawana",
+    "Kesi Me",
+    "Kita",
+    "Atasa",
+    "Alima",
+    "Oli",
+    "Anin",
+    "Anija",
+    "Ana Ma",
+    "Anawa",
+    "Ape Lili",
+    "Ewato",
+    "Ilosa",
+    "Ilin",
+    "Uwen",
+    "Opu",
+    "Uta",
+    "Iwa",
+    "Ilawa",
+    "Ilinka",
+    "Imani",
+    "Imakan",
+    "Ina",
+    "Inawa",
+    "Ine",
+    "Inte",
+    "Intana",
+    "Intako",
+    "Inisi",
+    "Inkito",
+    "Insija",
+    "Inesi",
+    "Ona",
+    "Aweluwa",
+    "Iwina",
+    "Isapela",
+    "Isapala",
+    "Isatawa",
+    "Ijuto",
+    "Isani",
+    "Isipala",
+    "Ila Wesi",
+    "Ila Me",
+    "Asopela",
+    "Iwana",
+    "Iwi",
+    "Awi Wesi",
+    "Isapila",
+    "Asapela",
+    "Asepala",
+    "Isi",
+    "Sasinta",
+    "Sakalin",
+    "Sakota",
+    "Ami",
+    "Sanaki",
+    "Sanela",
+    "Sanwi",
+    "Jamana",
+    "Seta",
+    "Samin",
+    "Senape",
+    "Seni",
+    "Sesa",
+    "Sesika",
+    "Soni",
+    "Solin",
+    "Sosapin",
+    "Sawi",
+    "Sutasi",
+    "Sute",
+    "Suja",
+    "Sulana",
+    "Suli",
+    "Suleto",
+    "Sun",
+    "Sunape",
+    "Suno",
+    "Kase",
+    "Kete",
+    "Kena",
+    "Keja",
+    "Kasa",
+    "Kalana",
+    "Kalija",
+    "Kesanta",
+    "Ketale",
+    "Katena",
+    "Katelan",
+    "Ketewana",
+    "Kaja",
+    "Kele",
+    "Kila",
+    "Kili",
+    "Kiwa",
+    "Kemi",
+    "Kentala",
+    "Kenta",
+    "Kenate",
+    "Kensa",
+    "Kensi",
+    "Katesa",
+    "Katase",
+    "Kelisi",
+    "Kimeli",
+    "Kinta",
+    "Kinka",
+    "Kija",
+    "Kosawa",
+    "Lasi",
+    "Lepa",
+    "Lela",
+    "Lene",
+    "Lana",
+    "Lawa",
+    "Lawisa",
+    "Lawesa",
+    "Lowa",
+    "Lowan",
+    "Lawinja",
+    "Le",
+    "Len",
+    "Lela Me",
+    "Lela Wesi",
+    "Lena",
+    "Lin",
+    "Lina",
+    "Leka",
+    "Lila",
+    "Leja",
+    "Lija",
+    "Lenka",
+    "Lona",
+    "Aki",
+    "Leki",
+    "Lipi",
+    "Lita",
+    "Lipa",
+    "Lili",
+    "Lilan",
+    "Lilana",
+    "Lilisi",
+    "Lili Me",
+    "Liliwesi",
+    "Lili Wesi",
+    "Lili An",
+    "Lijana",
+    "Lilame",
+    "Linta",
+    "Lisa",
+    "Liwi",
+    "Lisi",
+    "Lo",
+    "Lola",
+    "Lawale",
+    "Lowena",
+    "Late",
+    "Lusa",
+    "Lasana",
+    "Lusinta",
+    "Laka",
+    "Lula",
+    "Lasen",
+    "Lami",
+    "Luna",
+    "Elile",
+    "Elaten",
+    "Latan",
+    "Elapan",
+    "Mepala",
+    "Mesi",
+    "Makensi",
+    "Matesan",
+    "Matalen",
+    "Matalin",
+    "Matelin",
+    "Matasan",
+    "Mapu",
+    "Makalina",
+    "Maki Me",
+    "Manuwa",
+    "Mewato",
+    "Mese",
+    "Meto",
+    "Meja",
+    "Malaku",
+    "Malika",
+    "Malija",
+    "Maletesi",
+    "Mana",
+    "Masalina",
+    "Maketo",
+    "Maketa",
+    "Me",
+    "Mewan",
+    "Mewana",
+    "Mawana",
+    "Mawisa",
+    "Mewalan",
+    "Mena",
+    "Mawijan",
+    "Matena",
+    "Matana",
+    "Mewi",
+    "Mewi Keto",
+    "Mewi An",
+    "Mewi Sen",
+    "Majan",
+    "Majelan",
+    "Mewiketo",
+    "Mateta",
+    "Mateto",
+    "Matata",
+    "Moto",
+    "Mowa",
+    "Memuna",
+    "Emi Kena",
+    "Emi Kensi",
+    "Mipu",
+    "Mita",
+    "Mila",
+    "Miwa",
+    "Miwala",
+    "Mekan",
+    "Melana",
+    "Melani",
+    "Meliku",
+    "Melina",
+    "Melisa",
+    "Malisa",
+    "Mela",
+    "Melate",
+    "Mina",
+    "Mewitesi",
+    "Mejen",
+    "Mewala",
+    "Ma Wesi",
+    "Misalina",
+    "Mika",
+    "Milana",
+    "Milani",
+    "Milita",
+    "Milisinto",
+    "Mili",
+    "Mili Me",
+    "Mili Wesi",
+    "Mimi",
+    "Minela",
+    "Mini",
+    "Minsa",
+    "Miwapela",
+    "Miwakala",
+    "Menta",
+    "Miwe",
+    "Miwelawa",
+    "Miwana",
+    "Mejan",
+    "Misa",
+    "Mija",
+    "Mali Me",
+    "Malime",
+    "Mamina",
+    "Mona",
+    "Manwe",
+    "Mantana",
+    "Mowakan",
+    "Mo",
+    "Mun",
+    "Manta",
+    "Emapawa",
+    "Emawa",
+    "Emapu",
+    "Emapa",
+    "Nata",
+    "Naten",
+    "Ne",
+    "Nela",
+    "Nema",
+    "Nensi",
+    "Newa",
+    "Namawi",
+    "Nansi",
+    "Nemi",
+    "Nataja",
+    "Natali",
+    "Natasa",
+    "Nasana",
+    "Ninsa",
+    "Nisa",
+    "Neli",
+    "Nesa",
+    "Newe",
+    "Nato",
+    "Nawa",
+    "Nika",
+    "Nikala",
+    "Nina",
+    "Nitawa",
+    "Nita",
+    "Nija",
+    "Nami",
+    "Naleku",
+    "Nuwa",
+    "Nen",
+    "Nasepa",
+    "Nusepa",
+    "Naja",
+    "Eninen",
+    "Enwa",
+    "Oteto",
+    "Oka",
+    "Oliwa",
+    "Aliwa",
+    "Una",
+    "Apija",
+    "Owana",
+    "Ola",
+    "Olesi",
+    "Atali",
+    "Paloma",
+    "Pawisi",
+    "Patesa",
+    "Polina",
+    "Peki",
+    "Panelapi",
+    "Pewi",
+    "Pilamina",
+    "Piki",
+    "Palina",
+    "Pali",
+    "Posa",
+    "Pesasi",
+    "Pimosi",
+    "Pinsesi",
+    "Pisila",
+    "Pisa",
+    "Pija",
+    "Punela",
+    "Wesala",
+    "Wela",
+    "Waja",
+    "Wena",
+    "Wamona",
+    "We",
+    "Wepeka",
+    "Wapeka",
+    "Wipika",
+    "Win",
+    "Weka",
+    "Wentala",
+    "Wanemi",
+    "Weni",
+    "Wita",
+    "Wisika",
+    "Wiwi",
+    "Wija",
+    "Wapeta",
+    "Wapin",
+    "Wasela",
+    "Wesin",
+    "Wesen",
+    "Wama",
+    "Wesalin",
+    "Wesali",
+    "Wasalinto",
+    "Wasalin",
+    "Wesana",
+    "Wesan",
+    "Weme",
+    "Wemewi",
+    "Wasa",
+    "Walin",
+    "Wepi",
+    "Wepi Me",
+    "Wamesa",
+    "Wale",
+    "Awata",
+    "Awaten",
+    "Awiten",
+    "Awisin",
+    "Awisen",
+    "Sapina",
+    "Sate Me",
+    "Sate Wesi",
+    "Sapi",
+    "Sapija",
+    "Selaku",
+    "Sama",
+    "Saloma",
+    "Samewa",
+    "Samanta",
+    "Samansa",
+    "Same",
+    "Santa",
+    "Santana",
+    "Salatesi",
+    "Sase",
+    "Sele",
+    "Kalato",
+    "Kalito",
+    "Kosa",
+    "Sewisi",
+    "Sewin",
+    "Sawina",
+    "Sakiwa",
+    "Sane",
+    "Sanan",
+    "Sinakesi",
+    "Salo",
+    "Seli",
+    "Sipala",
+    "Sitona",
+    "Sena Wesi",
+    "Simina",
+    "Simon",
+    "Sineto",
+    "Sinato",
+    "Sapen",
+    "Esanen",
+    "Kalawa",
+    "Mito",
+    "Sopa",
+    "Sapisa",
+    "Soloma",
+    "Sonja",
+    "Sopi",
+    "Sawe",
+    "Soka",
+    "Tepana",
+    "Tepani",
+    "Towi",
+    "Tomi",
+    "Susan",
+    "Sipila",
+    "Jeta",
+    "Siwi",
+    "Ene",
+    "Esapa",
+    "Esama",
+    "Tapisa",
+    "Tesa",
+    "Talija",
+    "Tamawa",
+    "Tanin",
+    "Tatana",
+    "Tetawa",
+    "Seja",
+    "Tawaluwa",
+    "Teli",
+    "Tema",
+    "Tese",
+    "Tuwin",
+    "Walensa",
+    "Walentena",
+    "Waliwa",
+    "Wamika",
+    "Wanasa",
+    "Wanesa",
+    "Weta",
+    "Weteka",
+    "Wenasi",
+    "Wewa",
+    "Wewate",
+    "Wenika",
+    "Wiwenika",
+    "Wiwana",
+    "Weku",
+    "Wente",
+    "Wilo",
+    "Wilo Wesi",
+    "Winte",
+    "Jana",
+    "Jen",
+    "Jawa",
+    "Jamin",
+    "Jewa",
+    "Senapu",
+    "Senipu",
+    "Simala",
+    "Lata",
+    "Sanewa",
+    "Suwi",
+    "Ile",
+    "Ilisi",
+    "Imiwa",
+    "Inen",
+  ]);
+
+  const BUILT_IN_ITEMS = Object.freeze([
+    ...NUMERIC_MEMORY_VALUES.map((label, idx) => makeNumberItem(`num_${idx}_${canonicalDecimalKey(label).replace(/[^a-z0-9]+/gi, "_")}`, label)),
+    ...PROPER_NAME_MEMORY_VALUES.map((label, idx) => ({
+      id: `name_${idx}_${String(label).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")}`,
+      type: "properName",
+      latinLabel: label,
+      renderInput: properNameRenderInputFromLatin(label)
+    }))
+  ]);
+
+  const els = {
+    btnOptions: document.getElementById("btnOptions"),
+    btnNew: document.getElementById("btnNew"),
+    btnLang: document.getElementById("btnLang"),
+    timerCanvas: document.getElementById("timerCanvas"),
+    status: document.getElementById("status"),
+    hint: document.getElementById("hint"),
+    movesText: document.getElementById("movesText"),
+    matchesText: document.getElementById("matchesText"),
+    timeText: document.getElementById("timeText"),
+    grid: document.getElementById("memoryGrid"),
+    previewTitle: document.getElementById("previewTitle"),
+    previewA: document.getElementById("previewA"),
+    previewB: document.getElementById("previewB"),
+    overlay: document.getElementById("optionsOverlay"),
+    optionsTitle: document.getElementById("optionsTitle"),
+    optionsIntro: document.getElementById("optionsIntro"),
+    labelGridSize: document.getElementById("labelGridSize"),
+    labelDeckMode: document.getElementById("labelDeckMode"),
+    labelScriptPreset: document.getElementById("labelScriptPreset"),
+    labelTextFont: document.getElementById("labelTextFont"),
+    legendDisplay: document.getElementById("legendDisplay"),
+    labelFull: document.getElementById("labelFull"),
+    labelAbbrev: document.getElementById("labelAbbrev"),
+    legendHelpers: document.getElementById("legendHelpers"),
+    labelBadges: document.getElementById("labelBadges"),
+    labelAutoPreview: document.getElementById("labelAutoPreview"),
+    btnStartFromOptions: document.getElementById("btnStartFromOptions"),
+    btnCloseOptions: document.getElementById("btnCloseOptions"),
+    btnBestTime: document.getElementById("btnBestTime"),
+    bestTimeCanvas: document.getElementById("bestTimeCanvas"),
+    finishPanel: document.getElementById("finishPanel"),
+    finishCanvas: document.getElementById("finishCanvas"),
+    backToIndexLink: document.getElementById("backToIndexLink"),
+    gridSize: document.getElementById("gridSize"),
+    deckMode: document.getElementById("deckMode"),
+    scriptPresetSel: document.getElementById("scriptPresetSel"),
+    textFontSel: document.getElementById("textFontSel"),
+    showBadges: document.getElementById("showBadges"),
+    autoPreview: document.getElementById("autoPreview"),
+    srStatus: document.getElementById("srStatus"),
+  };
+
+  const sitelenFontController = createSitelenFontPairController({
+    registry: RENDER_FONT_PRESETS,
+    scriptSelect: els.scriptPresetSel,
+    textFontSelect: els.textFontSel,
+    storageKeyPrefix: "tpMemory",
+    defaultPresetKey: "nasinNanpa",
+    defaultTextFontOption: FONT_FAMILY_LITERAL,
+    dynamicLiteralFace: {
+      family: FONT_FAMILY_LITERAL,
+      url: "./fonts/PatrickHand-Regular.ttf",
+      format: "truetype",
+      sample: "Hello"
+    },
+    onInvalidate: () => {
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
+      renderedCardCache.clear();
+    }
+  });
+
+  let sitelenRenderer = null;
+  let sitelenRendererSignature = "";
+  let pageMap = new Map();
+  let uiLanguage = localStorage.getItem("tpMemoryUiLanguage") === "tok" ? "tok" : "en";
+  let game = null;
+  let timerId = null;
+  let busy = false;
+  let backCache = null;
+  let timeSitelenRenderer = null;
+  let timeSitelenRendererPromise = null;
+  const timerCtx = els.timerCanvas.getContext("2d");
+  const timerOffscreen = document.createElement("canvas");
+  const bestTimeCtx = els.bestTimeCanvas.getContext("2d");
+  const bestTimeOffscreen = document.createElement("canvas");
+  const finishCtx = els.finishCanvas.getContext("2d");
+  const finishOffscreen = document.createElement("canvas");
+  const prefixedCartoucheRenderSeq = new WeakMap();
+  const renderedCardCache = new Map();
+
+  const SETTINGS_STORAGE_KEY = "tpMemoryGameSettings";
+  const BEST_TIME_STORAGE_PREFIX = "tpMemoryBestTimeSec:";
+  const DEFAULT_GAME_SETTINGS = Object.freeze({
+    gridSize: "16",
+    deckMode: "mixed",
+    scriptPreset: "nasinNanpa",
+    textFont: FONT_FAMILY_LITERAL,
+    numericDisplay: "abbrev",
+    showBadges: true,
+    autoPreview: true
+  });
+
+  function optionExists(selectEl, value) {
+    if (!selectEl || value == null) return false;
+    return Array.from(selectEl.options || []).some(opt => opt.value === String(value));
+  }
+
+  function readSavedGameSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (!raw) return { ...DEFAULT_GAME_SETTINGS };
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return { ...DEFAULT_GAME_SETTINGS };
+      const merged = { ...DEFAULT_GAME_SETTINGS, ...parsed };
+      if (merged.deckMode === "codes") merged.deckMode = DEFAULT_GAME_SETTINGS.deckMode;
+      return merged;
+    } catch {
+      return { ...DEFAULT_GAME_SETTINGS };
+    }
+  }
+
+  function getSettingsFromControls() {
+    return {
+      gridSize: String(els.gridSize.value || DEFAULT_GAME_SETTINGS.gridSize),
+      deckMode: String(els.deckMode.value || DEFAULT_GAME_SETTINGS.deckMode),
+      scriptPreset: String(els.scriptPresetSel.value || DEFAULT_GAME_SETTINGS.scriptPreset),
+      textFont: String(els.textFontSel.value || DEFAULT_GAME_SETTINGS.textFont),
+      numericDisplay: document.querySelector('input[name="numericDisplay"]:checked')?.value === "full" ? "full" : "abbrev",
+      showBadges: !!els.showBadges.checked,
+      autoPreview: !!els.autoPreview.checked
+    };
+  }
+
+  function saveGameSettings() {
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(getSettingsFromControls()));
+    } catch (err) {
+      console.warn("[settings] save failed:", err);
+    }
+  }
+
+  function applyGameSettingsToControls(settings = readSavedGameSettings()) {
+    if (optionExists(els.gridSize, settings.gridSize)) els.gridSize.value = String(settings.gridSize);
+    if (optionExists(els.deckMode, settings.deckMode)) els.deckMode.value = String(settings.deckMode);
+
+    if (optionExists(els.scriptPresetSel, settings.scriptPreset)) {
+      els.scriptPresetSel.value = String(settings.scriptPreset);
+      sitelenFontController.setActivePreset(String(settings.scriptPreset));
+    }
+
+    if (optionExists(els.textFontSel, settings.textFont)) {
+      els.textFontSel.value = String(settings.textFont);
+      sitelenFontController.setSelectedTextFontOption(String(settings.textFont));
+    }
+
+    const numericDisplay = settings.numericDisplay === "full" ? "full" : "abbrev";
+    const numericRadio = document.querySelector(`input[name="numericDisplay"][value="${numericDisplay}"]`);
+    if (numericRadio) numericRadio.checked = true;
+
+    els.showBadges.checked = settings.showBadges !== false;
+    els.autoPreview.checked = settings.autoPreview !== false;
+  }
+
+  function i18n(key, vars = null) {
+    const template = (I18N[uiLanguage] && I18N[uiLanguage][key]) || I18N.en[key] || key;
+    if (!vars) return template;
+    return String(template).replace(/\{(\w+)\}/g, (_, name) => Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : "");
+  }
+
+  function setStatus(keyOrText, vars = null, isRaw = false) {
+    const text = isRaw ? String(keyOrText) : i18n(keyOrText, vars);
+    els.status.textContent = text;
+    if (els.srStatus) els.srStatus.textContent = text;
+  }
+
+  function formatMMSS(totalSeconds) {
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = totalSeconds % 60;
+    return `${mm}:${String(ss).padStart(2, "0")}`;
+  }
+
+  function elapsedSecondsForGame() {
+    if (!game || !game.startedAt) return 0;
+    const end = game.finishedAt || Date.now();
+    return Math.max(0, Math.floor((end - game.startedAt) / 1000));
+  }
+
+  function currentBestTimeKeyFromControls() {
+    return `${String(els.gridSize.value || DEFAULT_GAME_SETTINGS.gridSize)}|${String(els.deckMode.value || DEFAULT_GAME_SETTINGS.deckMode)}`;
+  }
+
+  function bestTimeKeyForGame(gameState) {
+    if (!gameState) return currentBestTimeKeyFromControls();
+    return `${String(gameState.totalCards || DEFAULT_GAME_SETTINGS.gridSize)}|${String(gameState.deckMode || DEFAULT_GAME_SETTINGS.deckMode)}`;
+  }
+
+  function readBestTimeSec(key = currentBestTimeKeyFromControls()) {
+    const raw = Number(localStorage.getItem(BEST_TIME_STORAGE_PREFIX + key));
+    return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : null;
+  }
+
+  function writeBestTimeSec(key, seconds) {
+    const safe = Math.max(1, Math.floor(Number(seconds) || 0));
+    localStorage.setItem(BEST_TIME_STORAGE_PREFIX + key, String(safe));
+  }
+
+  function clearBestTimeForCurrentOptions() {
+    localStorage.removeItem(BEST_TIME_STORAGE_PREFIX + currentBestTimeKeyFromControls());
+    refreshBestTimeUi();
+  }
+
+  function maybeRecordBestTimeOnWin() {
+    if (!game || !game.finishedAt) return;
+    const sec = elapsedSecondsForGame();
+    if (!(sec > 0)) return;
+    const key = bestTimeKeyForGame(game);
+    const best = readBestTimeSec(key);
+    if (!Number.isFinite(best) || best == null || sec < best) {
+      writeBestTimeSec(key, sec);
+      refreshBestTimeUi();
+    }
+  }
+
+  function buildTimeCartoucheGlyphs(totalSeconds) {
+    const safe = Math.max(0, Math.floor(totalSeconds || 0));
+    const mm = Math.floor(safe / 60);
+    const ss = safe % 60;
+    const mm2 = String(mm).padStart(2, "0");
+    const ss2 = String(ss).padStart(2, "0");
+
+    const digitMap = {
+      "0": TP_WORD_TO_CP.ijo,
+      "1": TP_WORD_TO_CP.wan,
+      "2": TP_WORD_TO_CP.tu,
+      "3": TP_WORD_TO_CP.seli,
+      "4": TP_WORD_TO_CP.awen,
+      "5": TP_WORD_TO_CP.luka,
+      "6": TP_WORD_TO_CP.utala,
+      "7": TP_WORD_TO_CP.mun,
+      "8": TP_WORD_TO_CP.pipi,
+      "9": TP_WORD_TO_CP.jo
+    };
+
+    function digitInner(dChar) {
+      const cp = digitMap[dChar];
+      if (!Number.isFinite(cp)) return [];
+      if (dChar === "0" || dChar === "4" || dChar === "6") return [TP_WORD_TO_CP.nena, cp];
+      return [cp, TP_WORD_TO_CP.en];
+    }
+
+    const inner = [];
+    for (const ch of mm2) inner.push(...digitInner(ch));
+    inner.push(TP_WORD_TO_CP.nena, TP_WORD_TO_CP.en, TP_WORD_TO_CP.kasi, TP_WORD_TO_CP.en);
+    for (const ch of ss2) inner.push(...digitInner(ch));
+
+    return abbreviateNumericCartoucheCps([TP_WORD_TO_CP.nanpa, TP_WORD_TO_CP.en, ...inner, TP_WORD_TO_CP.nanpa]);
+  }
+
+  function timeCartoucheInputFromGlyphs(glyphs) {
+    const words = [];
+    for (const cp of Array.from(glyphs ?? [])) {
+      const word = UCSUR_CP_TO_WORD.get(Number(cp));
+      if (!word) throw new Error(`No Toki Pona word for timer codepoint U+${Number(cp).toString(16).toUpperCase()}`);
+      words.push(word);
+    }
+    return `[${words.join(" ")}]`;
+  }
+
+  function buildTimeRendererConfig(fontPx) {
+    const px = Math.max(8, Number(fontPx) || 34);
+    return {
+      layout: {
+        fontPx: px,
+        align: "left",
+        spacingPreset: "compact",
+        paddingPx: Math.max(8, Math.round(px * 0.25))
+      },
+      paint: {
+        fillStyle: "#111111",
+        halo: { enabled: false, color: "#FFFFFF", widthPx: 0 }
+      },
+      parser: {
+        mode: "sitelen-seli-kiwen",
+        literalStyle: "double-quote",
+        extensionStyle: "ssk",
+        cartoucheStyle: "ssk",
+        numericMode: "compat",
+        mixedStyle: "short",
+        showUnknownText: false,
+        abbreviateNumericCartouches: true,
+        cartoucheCommaTallyMarks: false,
+        cartoucheTallyMode: "ucsur"
+      },
+      fonts: {
+        roles: {
+          word: FONT_FAMILY_TEXT,
+          text: FONT_FAMILY_TEXT,
+          cartouche: FONT_FAMILY_CARTOUCHE,
+          number: FONT_FAMILY_CARTOUCHE,
+          date: FONT_FAMILY_CARTOUCHE,
+          time: FONT_FAMILY_CARTOUCHE,
+          literal: FONT_FAMILY_LITERAL,
+          unknown: FONT_FAMILY_LITERAL
+        }
+      }
+    };
+  }
+
+  async function ensureTimeSitelenRenderer(fontPx = 34) {
+    if (timeSitelenRenderer) return timeSitelenRenderer;
+    if (!timeSitelenRendererPromise) {
+      timeSitelenRendererPromise = (async () => {
+        await document.fonts?.load?.(`${fontPx}px "${FONT_FAMILY_TEXT}"`, "tenpo");
+        await document.fonts?.load?.(`${fontPx}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(TP_WORD_TO_CP.nanpa));
+        await document.fonts?.ready;
+        timeSitelenRenderer = await SitelenRenderer.create(buildTimeRendererConfig(fontPx));
+        return timeSitelenRenderer;
+      })();
+    }
+    return timeSitelenRendererPromise;
+  }
+
+  function cropCanvasToVisibleBounds(sourceCanvas, paddingPx = 1) {
+    const src = sourceCanvas;
+    if (!src || !src.width || !src.height) return src;
+    const w = src.width | 0;
+    const h = src.height | 0;
+    const ctx = src.getContext("2d", { alpha: true, willReadFrequently: true });
+    if (!ctx) return src;
+    let data;
+    try { data = ctx.getImageData(0, 0, w, h).data; }
+    catch { return src; }
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) {
+      const row = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        if (data[row + x * 4 + 3] > 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < minX || maxY < minY) return src;
+    const pad = Math.max(0, Math.round(Number(paddingPx) || 0));
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+    const outW = Math.max(1, maxX - minX + 1);
+    const outH = Math.max(1, maxY - minY + 1);
+    if (outW === w && outH === h) return src;
+    const out = document.createElement("canvas");
+    out.width = outW;
+    out.height = outH;
+    out.getContext("2d", { alpha: true }).drawImage(src, minX, minY, outW, outH, 0, 0, outW, outH);
+    return out;
+  }
+
+  async function renderTimeCartoucheToCanvas(targetCanvas, totalSeconds, fontPx) {
+    const renderer = await ensureTimeSitelenRenderer(fontPx);
+    const input = timeCartoucheInputFromGlyphs(buildTimeCartoucheGlyphs(totalSeconds));
+    const px = Math.max(8, Number(fontPx) || 34);
+    const rendered = await renderer.renderTextToNewCanvas({
+      input,
+      layout: {
+        fontPx: px,
+        align: "left",
+        spacingPreset: "compact",
+        paddingPx: Math.max(8, Math.round(px * 0.25))
+      }
+    });
+    const src = cropCanvasToVisibleBounds(rendered.canvas, Math.max(4, Math.round(px * 0.12)));
+    targetCanvas.width = Math.max(1, src.width | 0);
+    targetCanvas.height = Math.max(1, src.height | 0);
+    const targetCtx = targetCanvas.getContext("2d", { alpha: true });
+    targetCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+    targetCtx.drawImage(src, 0, 0);
+    return targetCanvas;
+  }
+
+  function drawRenderedPrefixedCartouche(canvasEl, ctxArg, offscreenEl, prefixWords, targetCssW, targetCssH, largePx) {
+    const dpr = window.devicePixelRatio || 1;
+    canvasEl.style.width = `${targetCssW}px`;
+    canvasEl.style.height = `${targetCssH}px`;
+    canvasEl.width = Math.ceil(targetCssW * dpr);
+    canvasEl.height = Math.ceil(targetCssH * dpr);
+    ctxArg.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctxArg.clearRect(0, 0, targetCssW, targetCssH);
+
+    if (!offscreenEl.width || !offscreenEl.height) return;
+
+    const prefixCps = prefixWords.map(w => TP_WORD_TO_CP[w]).filter(Number.isFinite);
+    const gapPx = 8;
+    let prefixW = 0;
+    let scale = Math.min(targetCssW / offscreenEl.width, targetCssH / offscreenEl.height);
+    let prefixFontPx = Math.max(10, largePx * scale);
+
+    if (prefixCps.length > 0) {
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px "${FONT_FAMILY_TEXT}", "PatrickHand", system-ui, sans-serif`;
+      prefixW = prefixCps.reduce((acc, cp, idx) => acc + ctxArg.measureText(String.fromCodePoint(cp)).width + (idx ? 0 : 4), 0);
+      ctxArg.restore();
+      const availWForCartouche = Math.max(40, targetCssW - prefixW - gapPx);
+      scale = Math.min(availWForCartouche / offscreenEl.width, targetCssH / offscreenEl.height);
+      prefixFontPx = Math.max(10, largePx * scale);
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px "${FONT_FAMILY_TEXT}", "PatrickHand", system-ui, sans-serif`;
+      prefixW = prefixCps.reduce((acc, cp, idx) => acc + ctxArg.measureText(String.fromCodePoint(cp)).width + (idx ? 0 : 4), 0);
+      ctxArg.restore();
+    }
+
+    const drawScale = Math.min((targetCssW - (prefixW > 0 ? (prefixW + gapPx) : 0)) / offscreenEl.width, targetCssH / offscreenEl.height);
+    const drawW = Math.floor(offscreenEl.width * drawScale);
+    const drawH = Math.floor(offscreenEl.height * drawScale);
+    const x = Math.floor(targetCssW - drawW);
+    const y = Math.floor((targetCssH - drawH) / 2);
+
+    if (prefixCps.length > 0) {
+      ctxArg.save();
+      ctxArg.font = `${prefixFontPx}px "${FONT_FAMILY_TEXT}", "PatrickHand", system-ui, sans-serif`;
+      ctxArg.textBaseline = "middle";
+      ctxArg.textAlign = "left";
+      ctxArg.fillStyle = "#111";
+      let px = x - gapPx - prefixW;
+      prefixCps.forEach((cp, idx) => {
+        const glyph = String.fromCodePoint(cp);
+        ctxArg.fillText(glyph, px, targetCssH / 2);
+        px += ctxArg.measureText(glyph).width + (idx === 0 ? 4 : 0);
+      });
+      ctxArg.restore();
+    }
+
+    ctxArg.drawImage(offscreenEl, x, y, drawW, drawH);
+  }
+
+  function drawPrefixedTimeCartoucheOnCanvas(canvasEl, ctxArg, offscreenEl, totalSeconds, prefixWords, targetCssW, targetCssH, largePx) {
+    const seq = (prefixedCartoucheRenderSeq.get(canvasEl) || 0) + 1;
+    prefixedCartoucheRenderSeq.set(canvasEl, seq);
+
+    const dpr = window.devicePixelRatio || 1;
+    canvasEl.style.width = `${targetCssW}px`;
+    canvasEl.style.height = `${targetCssH}px`;
+    canvasEl.width = Math.ceil(targetCssW * dpr);
+    canvasEl.height = Math.ceil(targetCssH * dpr);
+    ctxArg.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctxArg.clearRect(0, 0, targetCssW, targetCssH);
+
+    renderTimeCartoucheToCanvas(offscreenEl, totalSeconds, largePx)
+      .then(() => {
+        if (prefixedCartoucheRenderSeq.get(canvasEl) !== seq) return;
+        drawRenderedPrefixedCartouche(canvasEl, ctxArg, offscreenEl, prefixWords, targetCssW, targetCssH, largePx);
+      })
+      .catch(err => console.warn("Timer cartouche renderer failed", err));
+  }
+
+  function renderTopTimerCartouche() {
+    const targetCssW = window.innerWidth <= 760 ? 164 : 190;
+    const targetCssH = window.innerWidth <= 760 ? 32 : 52;
+    drawPrefixedTimeCartoucheOnCanvas(els.timerCanvas, timerCtx, timerOffscreen, elapsedSecondsForGame(), ["tenpo", "lili"], targetCssW, targetCssH, 34);
+  }
+
+  function refreshBestTimeUi() {
+    const best = readBestTimeSec(currentBestTimeKeyFromControls());
+    const shouldShow = Number.isFinite(best) && best > 0;
+    els.btnBestTime.style.display = shouldShow ? "block" : "none";
+    if (!shouldShow) return;
+    const modal = els.overlay.querySelector(".modal");
+    const targetCssW = Math.min(320, Math.max(220, (modal?.clientWidth || 360) - 48));
+    drawPrefixedTimeCartoucheOnCanvas(els.bestTimeCanvas, bestTimeCtx, bestTimeOffscreen, best, ["tenpo", "pona"], targetCssW, 52, 34);
+  }
+
+  function hideFinishPopup() {
+    if (!els.finishPanel) return;
+    els.finishPanel.classList.remove("show");
+    els.finishPanel.setAttribute("aria-hidden", "true");
+  }
+
+  function showFinishPopup(totalSeconds) {
+    if (!els.finishPanel || !els.finishCanvas) return;
+    els.finishPanel.classList.add("show");
+    els.finishPanel.setAttribute("aria-hidden", "false");
+    const targetCssW = Math.min(680, Math.floor(window.innerWidth * 0.92));
+    const targetCssH = window.innerWidth <= 760 ? 96 : 110;
+    drawPrefixedTimeCartoucheOnCanvas(els.finishCanvas, finishCtx, finishOffscreen, totalSeconds, ["tenpo", "lili"], targetCssW, targetCssH, 72);
+  }
+
+  function glyphStringFromCodepoints(cps) {
+    return String.fromCodePoint(...cps.filter(cp => Number.isFinite(cp)));
+  }
+
+  function roundedRect(ctx, x, y, w, h, r) {
+    const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.lineTo(x + w - rr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+    ctx.lineTo(x + w, y + h - rr);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+    ctx.lineTo(x + rr, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+    ctx.lineTo(x, y + rr);
+    ctx.quadraticCurveTo(x, y, x + rr, y);
+  }
+
+  function buildCardBackCanvas() {
+    // Landscape card back for desktop/laptop use. Mobile tiles keep a portrait
+    // aspect ratio in CSS, but the canvas is fitted to the tile by the browser.
+    const w = 232;
+    const h = 164;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d", { alpha: true });
+    ctx.save();
+    roundedRect(ctx, 0, 0, w, h, 20);
+    ctx.fillStyle = "#f7f1e5";
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#1c334f";
+    ctx.stroke();
+
+    roundedRect(ctx, 12, 12, w - 24, h - 24, 16);
+    ctx.fillStyle = "#b8c3d1";
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 2;
+    for (let yy = 28; yy < h - 24; yy += 20) {
+      ctx.beginPath();
+      ctx.moveTo(24, yy);
+      ctx.lineTo(w - 24, yy);
+      ctx.stroke();
+    }
+    for (let xx = 28; xx < w - 24; xx += 20) {
+      ctx.beginPath();
+      ctx.moveTo(xx, 24);
+      ctx.lineTo(xx, h - 24);
+      ctx.stroke();
+    }
+
+    // Always draw the card-back logo with the normal nasin nanpa font,
+    // independent of the selected cartouche/game font. The input uses the
+    // normal renderer-style compound text so pona nests inside toki.
+    const logoText = "toki&pona";
+    ctx.font = `90px "TP-Nasin-Nanpa-Font", "PatrickHand", system-ui, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    const logoMetrics = ctx.measureText(logoText);
+    const logoLeft = logoMetrics.actualBoundingBoxLeft ?? 0;
+    const logoRight = logoMetrics.actualBoundingBoxRight ?? logoMetrics.width;
+    const logoAscent = logoMetrics.actualBoundingBoxAscent ?? 72;
+    const logoDescent = logoMetrics.actualBoundingBoxDescent ?? 18;
+    const logoX = (w / 2) - ((logoRight - logoLeft) / 2);
+    const logoY = (h / 2) - ((logoDescent - logoAscent) / 2);
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "#e6d347";
+    ctx.strokeText(logoText, logoX, logoY);
+    ctx.fillStyle = "#5450a8";
+    ctx.fillText(logoText, logoX, logoY);
+    ctx.restore();
+    return c;
+  }
+
+  function getBackCanvasClone() {
+    if (!backCache) backCache = buildCardBackCanvas();
+    const c = document.createElement("canvas");
+    c.width = backCache.width;
+    c.height = backCache.height;
+    c.getContext("2d").drawImage(backCache, 0, 0);
+    return c;
+  }
+
+  function getActivePreset() {
+    return sitelenFontController.getActivePreset();
+  }
+
+  function getNumericAbbrevEnabled() {
+    return document.querySelector('input[name="numericDisplay"]:checked')?.value === "abbrev";
+  }
+
+  function buildBaseRendererConfig({ fontPx = 64, paddingPx = 14 } = {}) {
+    const preset = getActivePreset();
+    return sitelenFontController.buildRendererConfig({
+      baseConfig: {
+        layout: {
+          fontPx,
+          align: "center",
+          spacingPreset: "compact",
+          paddingPx
+        },
+        paint: {
+          fillStyle: "#111111",
+          halo: { enabled: false, color: "#FFFFFF", widthPx: 0 },
+          unknownText: { style: "outline-box", colorMode: "auto", color: null, lineWidthPx: 1.5, paddingPx: 2, dash: false }
+        },
+        parser: {
+          mode: preset.parserMode,
+          literalStyle: "double-quote",
+          extensionStyle: "ssk",
+          cartoucheStyle: "ssk",
+          numericMode: "compat",
+          mixedStyle: "short",
+          showUnknownText: false,
+          abbreviateNumericCartouches: getNumericAbbrevEnabled()
+        },
+        fonts: {
+          roles: {
+            ...sitelenFontController.buildFontRoles(),
+            unknown: FONT_FAMILY_LITERAL
+          }
+        }
+      }
+    });
+  }
+
+  function getRendererSignature() {
+    const preset = getActivePreset();
+    return JSON.stringify({
+      preset: preset.key,
+      textFont: sitelenFontController.getSelectedTextFontOptionKey(),
+      abbrev: getNumericAbbrevEnabled(),
+      parserMode: preset.parserMode,
+      roles: sitelenFontController.buildFontRoles()
+    });
+  }
+
+  async function ensureRendererReady() {
+    const signature = getRendererSignature();
+    if (sitelenRenderer && sitelenRendererSignature === signature) return sitelenRenderer;
+    await sitelenFontController.waitForConfiguredFonts(64);
+    sitelenRenderer = await SitelenRenderer.create(buildBaseRendererConfig({ fontPx: 64 }));
+    sitelenRendererSignature = signature;
+    renderedCardCache.clear();
+    return sitelenRenderer;
+  }
+
+  function sanitizeRenderInput(input) {
+    try { return CartoucheApi.prepareInput(String(input ?? ""), pageMap); }
+    catch { return String(input ?? ""); }
+  }
+
+  function trimTransparentCanvas(source, pad = 2) {
+    const ctx = source.getContext("2d", { willReadFrequently: true });
+    const data = ctx.getImageData(0, 0, source.width, source.height).data;
+    let minX = source.width, minY = source.height, maxX = -1, maxY = -1;
+    for (let y = 0; y < source.height; y++) {
+      for (let x = 0; x < source.width; x++) {
+        if (data[(y * source.width + x) * 4 + 3] > 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < minX || maxY < minY) return source;
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(source.width - 1, maxX + pad);
+    maxY = Math.min(source.height - 1, maxY + pad);
+    const out = document.createElement("canvas");
+    out.width = Math.max(1, maxX - minX + 1);
+    out.height = Math.max(1, maxY - minY + 1);
+    out.getContext("2d").drawImage(source, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+    return out;
+  }
+
+  async function renderSitelenCanvas(renderInput, { preview = false } = {}) {
+    const fontPx = preview ? 96 : 64;
+    const paddingPx = preview ? 18 : 14;
+    await sitelenFontController.waitForConfiguredFonts(fontPx);
+    const renderer = await ensureRendererReady();
+    const input = sanitizeRenderInput(renderInput);
+    const cacheKey = JSON.stringify({ input, sig: getRendererSignature(), fontPx, paddingPx });
+    if (renderedCardCache.has(cacheKey)) return cloneCanvas(renderedCardCache.get(cacheKey));
+    const rendered = await renderer.renderTextToNewCanvas({ input, ...buildBaseRendererConfig({ fontPx, paddingPx }) });
+    const trimmed = trimTransparentCanvas(rendered.canvas, preview ? 5 : 3);
+    renderedCardCache.set(cacheKey, trimmed);
+    return cloneCanvas(trimmed);
+  }
+
+  function cloneCanvas(source) {
+    const c = document.createElement("canvas");
+    c.width = source.width;
+    c.height = source.height;
+    c.getContext("2d").drawImage(source, 0, 0);
+    return c;
+  }
+
+  function shuffle(items) {
+    const a = items.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function itemsForDeck(mode) {
+    let items = BUILT_IN_ITEMS.slice();
+    if (mode === "numbers") items = items.filter(item => item.type === "number");
+    else if (mode === "names") items = items.filter(item => item.type === "properName");
+    return items;
+  }
+
+  function itemDedupeKey(item) {
+    if (item && item.numericKey) return `number:${item.numericKey}`;
+    return item ? `${item.type}:${item.id}` : "";
+  }
+
+  function selectUniqueDeckItems(items, pairCount) {
+    const selected = [];
+    const seen = new Set();
+    for (const item of items) {
+      const key = itemDedupeKey(item);
+      if (key && seen.has(key)) continue;
+      if (key) seen.add(key);
+      selected.push(item);
+      if (selected.length >= pairCount) break;
+    }
+    return selected;
+  }
+
+  function buildMemoryDeck(pairCount, mode) {
+    const sourceItems = shuffle(itemsForDeck(mode));
+    const selected = selectUniqueDeckItems(sourceItems, Math.min(pairCount, sourceItems.length));
+    const cards = [];
+    selected.forEach((item, pairOrder) => {
+      cards.push({ cardId: `${item.id}_latin`, pairId: item.id, pairOrder, faceType: "latin", type: item.type, label: item.latinLabel, renderInput: item.renderInput });
+      cards.push({ cardId: `${item.id}_sitelen`, pairId: item.id, pairOrder, faceType: "sitelen", type: item.type, label: item.latinLabel, renderInput: item.renderInput });
+    });
+    return shuffle(cards);
+  }
+
+  function getBoardColumnCount() {
+    if (!game) return 4;
+    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+    const totalCards = game.cards?.length || game.totalCards || 16;
+    if (compact) return 4;
+    return totalCards === 12 ? 4 : (totalCards === 20 ? 5 : (totalCards === 24 ? 6 : 4));
+  }
+
+  function buildSolutionSlotPairs(totalCards, cols) {
+    const safeTotal = Math.max(0, Number(totalCards) || 0);
+    const safeCols = Math.max(1, Number(cols) || 1);
+    const rows = Math.ceil(safeTotal / safeCols);
+    const slots = [];
+    const used = new Set();
+
+    function addPair(a, b) {
+      if (a < 0 || b < 0 || a >= safeTotal || b >= safeTotal) return;
+      if (used.has(a) || used.has(b)) return;
+      used.add(a);
+      used.add(b);
+      slots.push([a, b]);
+    }
+
+    const horizontalLimit = safeCols % 2 === 1 ? safeCols - 1 : safeCols;
+    for (let r = 0; r < rows; r++) {
+      const rowStart = r * safeCols;
+      for (let c = 0; c + 1 < horizontalLimit; c += 2) {
+        addPair(rowStart + c, rowStart + c + 1);
+      }
+    }
+
+    if (safeCols % 2 === 1) {
+      const lastCol = safeCols - 1;
+      for (let r = 0; r + 1 < rows; r += 2) {
+        addPair(r * safeCols + lastCol, (r + 1) * safeCols + lastCol);
+      }
+    }
+
+    const remaining = [];
+    for (let i = 0; i < safeTotal; i++) {
+      if (!used.has(i)) remaining.push(i);
+    }
+    for (let i = 0; i + 1 < remaining.length; i += 2) {
+      addPair(remaining[i], remaining[i + 1]);
+    }
+
+    return slots;
+  }
+
+  function buildSolutionOrderedCards(cards, totalCards, cols) {
+    const byPair = new Map();
+    for (const card of cards || []) {
+      if (!card || !card.pairId) continue;
+      const entry = byPair.get(card.pairId) || { pairId: card.pairId, order: Number.MAX_SAFE_INTEGER, latin: null, sitelen: null };
+      entry.order = Math.min(entry.order, Number.isFinite(card.pairOrder) ? card.pairOrder : Number.MAX_SAFE_INTEGER);
+      if (card.faceType === "latin") entry.latin = card;
+      else if (card.faceType === "sitelen") entry.sitelen = card;
+      byPair.set(card.pairId, entry);
+    }
+
+    const pairs = Array.from(byPair.values())
+      .filter(pair => pair.latin && pair.sitelen)
+      .sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order;
+        return String(a.latin.label || "").localeCompare(String(b.latin.label || ""), "en", { numeric: true, sensitivity: "base" });
+      });
+
+    const slotPairs = buildSolutionSlotPairs(totalCards, cols);
+    const out = new Array(totalCards);
+    for (let i = 0; i < pairs.length && i < slotPairs.length; i++) {
+      const [latinSlot, sitelenSlot] = slotPairs[i];
+      out[latinSlot] = { ...pairs[i].latin, faceUp: true, matched: true, bad: false };
+      out[sitelenSlot] = { ...pairs[i].sitelen, faceUp: true, matched: true, bad: false };
+    }
+
+    return out.filter(Boolean);
+  }
+
+  async function rearrangeGridIntoSolutionPairs() {
+    if (!game || !Array.isArray(game.cards) || !game.cards.length) return;
+    const cols = getBoardColumnCount();
+    const totalCards = game.cards.length;
+    const ordered = buildSolutionOrderedCards(game.cards, totalCards, cols);
+    if (ordered.length !== game.cards.length) return;
+    game.cards = ordered;
+    game.flipped = [];
+    game.solutionMode = true;
+    await renderGrid();
+    refreshGridState();
+  }
+
+  async function showSolutionPairInPreview(idx) {
+    if (!game || !game.solutionMode || !els.autoPreview.checked) return;
+    const card = game.cards[idx];
+    if (!card || !card.pairId) return;
+    const pairCards = game.cards.filter(c => c && c.pairId === card.pairId);
+    const latin = pairCards.find(c => c.faceType === "latin") || null;
+    const sitelen = pairCards.find(c => c.faceType === "sitelen") || null;
+    if (!latin || !sitelen) return;
+    await renderPreviewSlot(els.previewA, latin, "firstSelection");
+    await renderPreviewSlot(els.previewB, sitelen, "secondSelection");
+    requestAnimationFrame(() => fitAllOneLineText(document.querySelector(".previewPanel")));
+  }
+
+  function typeLabel(type) {
+    if (type === "number") return "nanpa";
+    if (type === "properName") return "name";
+    return type;
+  }
+
+  async function fillFaceContent(container, card, { preview = false } = {}) {
+    container.innerHTML = "";
+    if (!card) {
+      const span = document.createElement("span");
+      span.className = "previewPlaceholder";
+      span.textContent = i18n("placeholder");
+      container.appendChild(span);
+      return;
+    }
+    if (card.faceType === "latin") {
+      const span = document.createElement("span");
+      span.className = preview ? "latinPreviewValue" : "latinValue";
+      span.textContent = card.label;
+      container.appendChild(span);
+      requestAnimationFrame(() => {
+        fitOneLineChild(container, span);
+        requestAnimationFrame(() => fitOneLineChild(container, span));
+      });
+      document.fonts?.ready?.then?.(() => fitOneLineChild(container, span)).catch?.(() => {});
+      return;
+    }
+    const canvas = await renderSitelenCanvas(card.renderInput, { preview });
+    container.appendChild(canvas);
+  }
+
+  function fitOneLineChild(container, child) {
+    if (!container || !child) return;
+
+    // Reset before measuring. The previous version allowed only a 6px total
+    // safety margin, which was too tight for Patrick Hand overhangs and the
+    // matched/check overlays on small landscape cards. That let long labels
+    // such as “Ate Nemen” reach the clipped edge of .tileFace.
+    child.style.transform = "";
+
+    const isPreview = child.classList.contains("latinPreviewValue");
+    const horizontalReserve = isPreview ? 18 : 28;
+    const verticalReserve = isPreview ? 12 : 14;
+    const availableW = Math.max(1, container.clientWidth - horizontalReserve);
+    const availableH = Math.max(1, container.clientHeight - verticalReserve);
+
+    // scrollWidth/clientWidth gives a stable untransformed layout width;
+    // getBoundingClientRect is kept as a fallback for fonts/browsers where
+    // scroll metrics do not include the rendered text accurately.
+    const rect = child.getBoundingClientRect();
+    const rawW = Math.max(child.scrollWidth || 0, rect.width || 0);
+    const rawH = Math.max(child.scrollHeight || 0, rect.height || 0);
+    if (!rawW || !rawH) return;
+
+    const scale = Math.min(1, availableW / rawW, availableH / rawH);
+    child.style.transform = scale < 1 ? `scale(${Math.max(0.22, scale)})` : "";
+  }
+
+  function fitAllOneLineText(root = document) {
+    root.querySelectorAll?.(".latinValue, .latinPreviewValue")?.forEach(el => {
+      const parent = el.parentElement;
+      if (parent) fitOneLineChild(parent, el);
+    });
+  }
+
+  function clearPreview() {
+    renderPreviewSlot(els.previewA, null, "firstSelection");
+    renderPreviewSlot(els.previewB, null, "secondSelection");
+  }
+
+  async function renderPreviewSlot(slot, card, metaKey) {
+    const meta = slot.querySelector(".previewMeta");
+    const content = slot.querySelector(".previewContent");
+    meta.textContent = card ? `${card.faceType === "latin" ? "Latin" : "sitelen"} · ${typeLabel(card.type)}` : i18n(metaKey);
+    await fillFaceContent(content, card, { preview: true });
+  }
+
+  async function updatePreview() {
+    if (!game || !els.autoPreview.checked) {
+      clearPreview();
+      return;
+    }
+    const flipped = game.flipped.map(idx => game.cards[idx]);
+    await renderPreviewSlot(els.previewA, flipped[0] || null, "firstSelection");
+    await renderPreviewSlot(els.previewB, flipped[1] || null, "secondSelection");
+    requestAnimationFrame(() => fitAllOneLineText(document.querySelector(".previewPanel")));
+  }
+
+  function applyResponsiveBoardSizing() {
+    if (!game || !els.grid) return;
+    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+    if (compact) {
+      els.grid.style.removeProperty("--desktop-card-w");
+      els.grid.style.removeProperty("--desktop-card-h");
+      els.grid.style.removeProperty("--desktop-card-gap");
+      els.grid.style.removeProperty("--desktop-grid-pad");
+      els.grid.style.removeProperty("grid-template-columns");
+      return;
+    }
+
+    const totalCards = game.cards?.length || game.totalCards || 16;
+    const cols = getBoardColumnCount();
+    const rows = Math.ceil(totalCards / cols);
+    const gap = 8;
+    const pad = 8;
+    const cardRatio = 116 / 82;
+    const area = document.querySelector(".gameArea");
+    const stack = document.querySelector(".gameStack");
+    const hint = els.hint;
+    const score = document.querySelector(".scoreRow");
+    const preview = document.querySelector(".previewPanel");
+    const footer = document.querySelector(".footer");
+    const areaRect = area?.getBoundingClientRect?.();
+    const areaH = areaRect?.height || (window.innerHeight - 72);
+    const usedH =
+      (hint?.offsetHeight || 0) +
+      (score?.offsetHeight || 0) +
+      (preview?.offsetHeight || 0) +
+      24; // gameStack gaps / safety
+    const availableGridH = Math.max(260, areaH - usedH);
+    const heightLimitedCardH = Math.floor((availableGridH - pad * 2 - gap * (rows - 1) - 4) / rows);
+    const widthAvailable = Math.min(900, Math.floor(window.innerWidth * 0.96));
+    const widthLimitedCardW = Math.floor((widthAvailable - pad * 2 - gap * (cols - 1) - 4) / cols);
+    const widthLimitedCardH = Math.floor(widthLimitedCardW / cardRatio);
+    const cardH = Math.max(72, Math.min(118, heightLimitedCardH, widthLimitedCardH));
+    const cardW = Math.round(cardH * cardRatio);
+
+    els.grid.style.setProperty("--desktop-card-w", `${cardW}px`);
+    els.grid.style.setProperty("--desktop-card-h", `${cardH}px`);
+    els.grid.style.setProperty("--desktop-card-gap", `${gap}px`);
+    els.grid.style.setProperty("--desktop-grid-pad", `${pad}px`);
+    els.grid.style.gridTemplateColumns = `repeat(${cols}, ${cardW}px)`;
+  }
+
+  function refreshGridState() {
+    if (!game || !els.grid) return;
+    els.grid.classList.toggle("solutionMode", !!game.solutionMode);
+    for (const btn of els.grid.querySelectorAll(".memoryTile")) {
+      const idx = Number(btn.dataset.index);
+      const card = game.cards[idx];
+      if (!card) continue;
+      btn.classList.toggle("faceUp", !!card.faceUp);
+      btn.classList.toggle("selected", game.flipped.includes(idx));
+      btn.classList.toggle("matched", !!card.matched);
+      btn.classList.toggle("noMatch", !!card.bad);
+      btn.disabled = (!game.solutionMode && !!card.matched) || busy;
+    }
+    requestAnimationFrame(() => fitAllOneLineText(els.grid));
+  }
+
+  async function renderGrid() {
+    els.grid.innerHTML = "";
+    if (!game) return;
+    applyResponsiveBoardSizing();
+    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+    if (compact) els.grid.style.gridTemplateColumns = "repeat(4, 1fr)";
+
+    const showBadges = !!els.showBadges.checked;
+    for (let idx = 0; idx < game.cards.length; idx++) {
+      const card = game.cards[idx];
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "memoryTile";
+      btn.dataset.index = String(idx);
+      btn.setAttribute("aria-label", `Card ${idx + 1}`);
+      if (card.faceUp) btn.classList.add("faceUp");
+      if (game.flipped.includes(idx)) btn.classList.add("selected");
+      if (card.matched) btn.classList.add("matched");
+      if (card.bad) btn.classList.add("noMatch");
+      btn.disabled = (!game.solutionMode && !!card.matched) || busy;
+
+      const inner = document.createElement("div");
+      inner.className = "tileInner";
+
+      const back = document.createElement("div");
+      back.className = "tileFace tileBack";
+      back.appendChild(getBackCanvasClone());
+      inner.appendChild(back);
+
+      const face = document.createElement("div");
+      face.className = `tileFace ${card.faceType === "latin" ? "latinFace" : "sitelenFace"}`;
+      // Pre-render every face while the grid is built. A click only toggles
+      // CSS classes, which avoids the full-board flash from rebuilding the DOM.
+      await fillFaceContent(face, card);
+      inner.appendChild(face);
+
+      const mark = document.createElement("div");
+      mark.className = "matchedMark";
+      mark.textContent = "✓";
+      inner.appendChild(mark);
+
+      if (showBadges) {
+        const badge = document.createElement("div");
+        badge.className = "typeBadge";
+        badge.textContent = typeLabel(card.type);
+        inner.appendChild(badge);
+      }
+
+      btn.appendChild(inner);
+      btn.addEventListener("click", () => onTileClick(idx));
+      els.grid.appendChild(btn);
+    }
+    refreshGridState();
+    requestAnimationFrame(() => fitAllOneLineText(els.grid));
+  }
+
+  function updateScore() {
+    if (!game) {
+      els.movesText.textContent = i18n("moves", { n: 0 });
+      els.matchesText.textContent = i18n("matches", { a: 0, b: 0 });
+      els.timeText.textContent = i18n("time", { t: "0:00" });
+      renderTopTimerCartouche();
+      return;
+    }
+    els.movesText.textContent = i18n("moves", { n: game.moves });
+    els.matchesText.textContent = i18n("matches", { a: game.matches, b: game.pairCount });
+    const elapsed = elapsedSecondsForGame();
+    els.timeText.textContent = i18n("time", { t: formatMMSS(elapsed) });
+    renderTopTimerCartouche();
+  }
+
+  function startTimer() {
+    stopTimer();
+    timerId = setInterval(updateScore, 500);
+  }
+
+  function stopTimer() {
+    if (timerId) clearInterval(timerId);
+    timerId = null;
+  }
+
+  async function startGameFromOptions() {
+    hideFinishPopup();
+    saveGameSettings();
+    busy = false;
+    const totalCards = Math.max(4, Number(els.gridSize.value) || 16);
+    const pairCount = Math.floor(totalCards / 2);
+    const deckMode = els.deckMode.value === "codes" ? "mixed" : (els.deckMode.value || "mixed");
+    game = {
+      totalCards,
+      pairCount,
+      deckMode,
+      cards: buildMemoryDeck(pairCount, deckMode).map(card => ({ ...card, faceUp: false, matched: false, bad: false })),
+      flipped: [],
+      moves: 0,
+      matches: 0,
+      startedAt: Date.now(),
+      finishedAt: null,
+      solutionMode: false,
+    };
+    els.overlay.classList.remove("show");
+    els.btnCloseOptions.style.display = "inline-block";
+    els.btnNew.disabled = false;
+    setStatus("statusStarted");
+    clearPreview();
+    updateScore();
+    startTimer();
+    await renderGrid();
+  }
+
+  async function onTileClick(idx) {
+    if (!game || busy) return;
+    if (game.finishedAt && game.solutionMode) {
+      await showSolutionPairInPreview(idx);
+      return;
+    }
+    const card = game.cards[idx];
+    if (!card || card.matched || card.faceUp) return;
+    if (game.flipped.length >= 2) return;
+
+    card.faceUp = true;
+    card.bad = false;
+    game.flipped.push(idx);
+    refreshGridState();
+    await updatePreview();
+
+    if (game.flipped.length !== 2) return;
+    busy = true;
+    game.moves++;
+    updateScore();
+    refreshGridState();
+
+    const [aIdx, bIdx] = game.flipped;
+    const a = game.cards[aIdx];
+    const b = game.cards[bIdx];
+    const matched = a.pairId === b.pairId && a.faceType !== b.faceType;
+
+    if (matched) {
+      a.matched = true;
+      b.matched = true;
+      game.matches++;
+      game.flipped = [];
+      setStatus("statusMatch");
+      busy = false;
+      refreshGridState();
+      await updatePreview();
+      if (game.matches >= game.pairCount) {
+        game.finishedAt = Date.now();
+        stopTimer();
+        maybeRecordBestTimeOnWin();
+        showFinishPopup(elapsedSecondsForGame());
+        setStatus("statusWon");
+        await rearrangeGridIntoSolutionPairs();
+      }
+      updateScore();
+      return;
+    }
+
+    a.bad = true;
+    b.bad = true;
+    setStatus("statusNoMatch");
+    refreshGridState();
+    await new Promise(resolve => setTimeout(resolve, 850));
+    a.faceUp = false;
+    b.faceUp = false;
+    a.bad = false;
+    b.bad = false;
+    game.flipped = [];
+    busy = false;
+    refreshGridState();
+    await updatePreview();
+    updateScore();
+  }
+
+  function applyLanguage() {
+    document.title = i18n("pageTitle");
+    els.btnOptions.textContent = i18n("btnOptions");
+    els.btnNew.textContent = i18n("btnNew");
+    els.btnLang.textContent = i18n("btnLang");
+    els.timerCanvas.setAttribute("aria-label", i18n("timerAria"));
+    els.bestTimeCanvas.setAttribute("aria-label", i18n("bestTimeAria"));
+    els.finishCanvas.setAttribute("aria-label", i18n("finalTimeAria"));
+    els.hint.textContent = i18n("hint");
+    els.previewTitle.textContent = i18n("selectedCards");
+    els.optionsTitle.textContent = i18n("optionsTitle");
+    els.optionsIntro.textContent = i18n("optionsIntro");
+    els.labelGridSize.textContent = i18n("gridSize");
+    els.labelDeckMode.textContent = i18n("deck");
+    els.labelScriptPreset.textContent = i18n("scriptFont");
+    els.labelTextFont.textContent = i18n("quotedTextFont");
+    els.legendDisplay.textContent = i18n("numericDisplay");
+    els.labelFull.textContent = i18n("fullCartouche");
+    els.labelAbbrev.textContent = i18n("abbrevCartouche");
+    els.legendHelpers.textContent = i18n("helpers");
+    els.labelBadges.textContent = i18n("showBadges");
+    els.labelAutoPreview.textContent = i18n("autoPreview");
+    els.btnStartFromOptions.textContent = i18n("startGame");
+    els.btnCloseOptions.textContent = i18n("cancel");
+    els.backToIndexLink.textContent = i18n("backToIndex");
+    if (!game) setStatus("statusReady");
+    updateScore();
+    refreshBestTimeUi();
+    clearPreview();
+  }
+
+  function wireEvents() {
+    els.btnOptions.addEventListener("click", () => els.overlay.classList.add("show"));
+    els.btnNew.addEventListener("click", () => els.overlay.classList.add("show"));
+    els.btnCloseOptions.addEventListener("click", () => els.overlay.classList.remove("show"));
+    els.btnBestTime.addEventListener("click", () => {
+      if (!readBestTimeSec(currentBestTimeKeyFromControls())) return;
+      if (!confirm(i18n("confirmClearBestTime"))) return;
+      clearBestTimeForCurrentOptions();
+    });
+    els.finishPanel.addEventListener("click", hideFinishPopup);
+    els.btnStartFromOptions.addEventListener("click", async () => {
+      try { await startGameFromOptions(); }
+      catch (e) { console.error(e); setStatus(e?.message || String(e), null, true); }
+    });
+    els.btnLang.addEventListener("click", async () => {
+      uiLanguage = uiLanguage === "tok" ? "en" : "tok";
+      localStorage.setItem("tpMemoryUiLanguage", uiLanguage);
+      applyLanguage();
+      await renderGrid();
+      await updatePreview();
+    });
+
+    const rerenderOnOptionChange = async () => {
+      renderedCardCache.clear();
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
+      if (!game) return;
+      await renderGrid();
+      await updatePreview();
+    };
+
+    els.scriptPresetSel.addEventListener("change", async () => {
+      saveGameSettings();
+      sitelenFontController.setActivePreset(els.scriptPresetSel.value);
+      await sitelenFontController.waitForConfiguredFonts(64);
+      await rerenderOnOptionChange();
+    });
+    els.textFontSel.addEventListener("change", async () => {
+      saveGameSettings();
+      sitelenFontController.setSelectedTextFontOption(els.textFontSel.value);
+      await sitelenFontController.waitForConfiguredFonts(64);
+      await rerenderOnOptionChange();
+    });
+    document.querySelectorAll('input[name="numericDisplay"]').forEach(r => r.addEventListener("change", async () => {
+      saveGameSettings();
+      await rerenderOnOptionChange();
+    }));
+    els.gridSize.addEventListener("change", () => {
+      saveGameSettings();
+      refreshBestTimeUi();
+    });
+    els.deckMode.addEventListener("change", () => {
+      saveGameSettings();
+      refreshBestTimeUi();
+    });
+    els.showBadges.addEventListener("change", () => {
+      saveGameSettings();
+      renderGrid();
+    });
+    els.autoPreview.addEventListener("change", () => {
+      saveGameSettings();
+      updatePreview();
+    });
+  }
+
+  async function init() {
+    setStatus("statusLoading");
+    els.btnNew.disabled = true;
+    try {
+      await sitelenFontController.ready;
+      try {
+        const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
+          manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
+          onlyIfExisting: false,
+          force: true
+        });
+        if (syncResult && syncResult.updated > 0) {
+          await sitelenFontController.hydrateDynamicPresetsFromDb({ force: true });
+          sitelenFontController.resetFontLoadState?.();
+        }
+      } catch (err) {
+        console.warn("[preloaded-fonts] manifest sync failed:", err);
+      }
+
+      applyGameSettingsToControls(readSavedGameSettings());
+
+      try {
+        const api = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
+        pageMap = await api.resolvePageMap();
+      } catch (err) {
+        console.warn("[cartouche-db] lookup unavailable:", err);
+        pageMap = new Map();
+      }
+
+      await sitelenFontController.waitForConfiguredFonts(64);
+      await document.fonts?.load?.('90px "TP-Nasin-Nanpa-Font"', 'toki&pona tenpo lili pona');
+      await document.fonts?.load?.('34px "TP-Cartouche-Font"', String.fromCodePoint(TP_WORD_TO_CP.nanpa));
+      applyLanguage();
+      wireEvents();
+      els.btnNew.disabled = false;
+      setStatus("statusReady");
+    } catch (e) {
+      console.error(e);
+      setStatus(e?.message || String(e), null, true);
+    }
+  }
+
+  let resizeTimerId = null;
+  window.addEventListener("resize", () => {
+    if (!game) return;
+    applyResponsiveBoardSizing();
+    clearTimeout(resizeTimerId);
+    renderTopTimerCartouche();
+    refreshBestTimeUi();
+    if (els.finishPanel?.classList.contains("show")) showFinishPopup(elapsedSecondsForGame());
+    resizeTimerId = setTimeout(() => fitAllOneLineText(document), 40);
+  });
+
+  window.addEventListener("load", init);
+})();
+</script>
+</body>
+</html>
