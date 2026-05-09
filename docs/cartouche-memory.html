@@ -541,9 +541,12 @@
       .memoryTile.matched .tileFace { display: none; }
       .memoryTile.matched .tileBack { display: grid; opacity: 0.55; }
       .typeBadge { display: none; }
-      .previewCards { grid-template-columns: 1fr; }
-      .previewCard { min-height: 104px; }
-      .previewContent { min-height: 74px; font-size: clamp(28px, 10vw, 46px); }
+      .previewPanel { gap: 5px; }
+      .previewTitle { font-size: 18px; line-height: 1.05; }
+      .previewCards { grid-template-columns: 1fr; gap: 6px; }
+      .previewCard { min-height: 64px; }
+      .previewMeta { padding: 3px 8px 0; font-size: 12px; }
+      .previewContent { min-height: 40px; padding: 4px 8px; font-size: clamp(24px, 8vw, 38px); }
       .settingsGrid { grid-template-columns: 1fr; }
       .finishCanvas { height: 96px; }
       .modal h2 { font-size: 24px; }
@@ -3541,11 +3544,11 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     ctx.quadraticCurveTo(x, y, x + rr, y);
   }
 
-  function buildCardBackCanvas({ logoFontPx = 90 } = {}) {
+  function buildCardBackCanvas({ logoFontPx = 90, width = 232, height = 164 } = {}) {
     // Landscape card back for desktop/laptop use. Mobile tiles use a much
-    // shorter selector aspect ratio in CSS, but the canvas is fitted to the tile by the browser.
-    const w = 232;
-    const h = 164;
+    // shorter selector aspect ratio in CSS, so mobile can request a matching back canvas.
+    const w = width;
+    const h = height;
     const c = document.createElement("canvas");
     c.width = w;
     c.height = h;
@@ -3603,7 +3606,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   function getBackCanvasClone() {
     const compact = isCompactLayout();
     const source = compact
-      ? (mobileBackCache || (mobileBackCache = buildCardBackCanvas({ logoFontPx: 54 })))
+      ? (mobileBackCache || (mobileBackCache = buildCardBackCanvas({ logoFontPx: 46, width: 246, height: 116 })))
       : (backCache || (backCache = buildCardBackCanvas()));
     const c = document.createElement("canvas");
     c.width = source.width;
