@@ -12,7 +12,7 @@
 
   <style>
     :root {
-      --topbar-h: 56px;
+      --topbar-h: 72px;
       --side-w: 200px;
 
       --bg: #F3DFC0;
@@ -32,6 +32,13 @@
       font-family: "TP-Cartouche-Font";
       src:
         url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf")   format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Numeric-Cartouche-Font";
+      src:
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
       font-display: swap;
     }
 
@@ -132,7 +139,7 @@
 
     .timerCanvas {
       margin-left: auto;
-      height: 36px;
+      height: 52px;
       width: 170px;
       display: block;
     }
@@ -140,7 +147,7 @@
     
 
     .bestCanvas {
-      height: 36px;
+      height: 52px;
       width: 220px;
       display: block;
       cursor: pointer;
@@ -404,7 +411,9 @@
     </footer>
   </div>
 
-<script>
+<script type="module">
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
+
 (() => {
   "use strict";
 
@@ -707,6 +716,7 @@
      Cartouche essentials
      ========================= */
   const CARTOUCHE_FONT_FAMILY = "TP-Cartouche-Font";
+  const NUMERIC_CARTOUCHE_FONT_FAMILY = "TP-Numeric-Cartouche-Font";
 
   const WORD_TO_UCSUR_CP = {
       "nanpa": 0xF193D,
@@ -884,6 +894,20 @@
     ]);
   }
   const SMALL_SET = getSmallCodepointsSet();
+  const TIMER_HALF_SET = new Set([WORD_TO_UCSUR_CP["kasi"]]);
+
+  const UCSUR_CP_TO_WORD = new Map(
+    Object.entries(WORD_TO_UCSUR_CP)
+      .filter(([word]) => word !== "kolon" && word !== "koma")
+      .map(([word, cp]) => [cp, word])
+  );
+
+  let timeSitelenRenderer = null;
+  let timeSitelenRendererPromise = null;
+  let topTimerRenderSeq = 0;
+  let topBestRenderSeq = 0;
+  let finishRenderKey = "";
+  let finishRenderPendingKey = "";
 
   const DIGIT_TO_TOKEN = {
     "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
@@ -1046,6 +1070,51 @@
     return tpWordsToUcsurCodepoints(tpWords);
   }
 
+  const ABBREV_CP_NANPA = WORD_TO_UCSUR_CP["nanpa"];
+  const ABBREV_CP_NENA  = WORD_TO_UCSUR_CP["nena"];
+  const ABBREV_CP_EN    = WORD_TO_UCSUR_CP["en"];
+  const ABBREV_CP_OPEN  = WORD_TO_UCSUR_CP["open"];
+
+  const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
+    ABBREV_CP_NANPA,
+    ABBREV_CP_EN,
+    ABBREV_CP_NENA,
+    ABBREV_CP_OPEN
+  ]);
+
+  function abbreviateNumericCartoucheCps(cps) {
+    const input = Array.from(cps ?? []).map(cp => Number(cp));
+    if (!input.length) return input;
+
+    const out = [];
+    let keptFirstNanpa = false;
+
+    for (let i = 0; i < input.length; i++) {
+      const cp = input[i];
+      const isFinalNanpa = (cp === ABBREV_CP_NANPA && i === input.length - 1);
+
+      if (!keptFirstNanpa) {
+        out.push(cp);
+        if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
+        continue;
+      }
+
+      if (isFinalNanpa) {
+        out.push(cp);
+        continue;
+      }
+
+      if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+      out.push(cp);
+    }
+
+    return out;
+  }
+
+  function numericCartoucheDisplayCps(cps) {
+    return abbreviateNumericCartoucheCps(cps);
+  }
+
   function drawRoundedRect(ctx, x, y, w, h, r) {
     const radius = Math.min(r, w / 2, h / 2);
     ctx.beginPath();
@@ -1069,6 +1138,7 @@
     const border = options.border ?? 2;
     const corner = options.cornerRadius ?? 16;
     const letterGap = options.letterGap ?? 0;
+    const halfCodepoints = options.halfCodepoints || null;
 
     const ctx = canvas.getContext("2d");
     ctx.textBaseline = "alphabetic";
@@ -1081,7 +1151,8 @@
     for (const g of glyphs) {
       const ch = (typeof g === "number") ? String.fromCodePoint(g) : String(g);
       const isSmall = (typeof g === "number") && smallCodepoints.has(g);
-      const px = isSmall ? smallPx : largePx;
+      const isHalf = (typeof g === "number") && halfCodepoints && halfCodepoints.has(g);
+      const px = isHalf ? Math.max(1, Math.round(largePx * 0.5)) : (isSmall ? smallPx : largePx);
 
       ctx.font = `${px}px "${CARTOUCHE_FONT_FAMILY}"`;
       const m = ctx.measureText(ch);
@@ -1146,10 +1217,172 @@
 
     const inner = [];
     for (const ch of mm2) inner.push(...digitInner(ch));
-    inner.push( WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], WORD_TO_UCSUR_CP["kolon"], WORD_TO_UCSUR_CP["en"]);
+    inner.push( WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], WORD_TO_UCSUR_CP["kasi"], WORD_TO_UCSUR_CP["en"]);
     for (const ch of ss2) inner.push(...digitInner(ch));
 
-    return [cpNanpa, cpEn, ...inner, cpNanpa];
+    return numericCartoucheDisplayCps([cpNanpa, cpEn, ...inner, cpNanpa]);
+  }
+
+  function timeCartoucheInputFromGlyphs(glyphs) {
+    const words = [];
+    for (const cp of Array.from(glyphs ?? [])) {
+      const word = UCSUR_CP_TO_WORD.get(Number(cp));
+      if (!word) throw new Error(`No Toki Pona word for timer codepoint U+${Number(cp).toString(16).toUpperCase()}`);
+      words.push(word);
+    }
+    return `[${words.join(" ")}]`;
+  }
+
+  function buildTimeRendererConfig(fontPx) {
+    const px = Math.max(8, Number(fontPx) || CFG.timerLargePx || 34);
+    return {
+      layout: {
+        fontPx: px,
+        align: "left",
+        spacingPreset: "compact",
+        paddingPx: Math.max(8, Math.round(px * 0.25))
+      },
+      paint: {
+        fillStyle: "#111111",
+        halo: { enabled: false, color: "#FFFFFF", widthPx: 0 }
+      },
+      parser: {
+        mode: "sitelen-seli-kiwen",
+        literalStyle: "double-quote",
+        extensionStyle: "ssk",
+        cartoucheStyle: "ssk",
+        numericMode: "compat",
+        mixedStyle: "short",
+        showUnknownText: false,
+        abbreviateNumericCartouches: true,
+        cartoucheCommaTallyMarks: false,
+        cartoucheTallyMode: "ucsur"
+      },
+      fonts: {
+        roles: {
+          word: CARTOUCHE_FONT_FAMILY,
+          text: CARTOUCHE_FONT_FAMILY,
+          cartouche: NUMERIC_CARTOUCHE_FONT_FAMILY,
+          number: NUMERIC_CARTOUCHE_FONT_FAMILY,
+          date: NUMERIC_CARTOUCHE_FONT_FAMILY,
+          time: NUMERIC_CARTOUCHE_FONT_FAMILY,
+          literal: "PatrickHand",
+          unknown: "PatrickHand"
+        }
+      }
+    };
+  }
+
+  async function ensureTimeSitelenRenderer(fontPx = CFG.timerLargePx) {
+    if (timeSitelenRenderer) return timeSitelenRenderer;
+    if (!timeSitelenRendererPromise) {
+      timeSitelenRendererPromise = (async () => {
+        await ensureFontsLoaded();
+        timeSitelenRenderer = await SitelenRenderer.create(buildTimeRendererConfig(fontPx));
+        return timeSitelenRenderer;
+      })();
+    }
+    return timeSitelenRendererPromise;
+  }
+
+  function getTimerCartoucheDrawYOffset(drawH) {
+    const h = Number(drawH) || 0;
+    return Math.max(2, Math.min(5, Math.round(h * 0.12)));
+  }
+
+  function cropCanvasToVisibleBounds(sourceCanvas, paddingPx = 1) {
+    const src = sourceCanvas;
+    if (!src || !src.width || !src.height) return src;
+
+    const w = src.width | 0;
+    const h = src.height | 0;
+    const ctx = src.getContext("2d", { alpha: true });
+    if (!ctx) return src;
+
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch {
+      return src;
+    }
+
+    let minX = w;
+    let minY = h;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < h; y++) {
+      const row = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        const a = data[row + x * 4 + 3];
+        if (a > 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < minX || maxY < minY) return src;
+
+    const pad = Math.max(0, Math.round(Number(paddingPx) || 0));
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+
+    const outW = Math.max(1, maxX - minX + 1);
+    const outH = Math.max(1, maxY - minY + 1);
+
+    if (outW === w && outH === h) return src;
+
+    const out = document.createElement("canvas");
+    out.width = outW;
+    out.height = outH;
+    const outCtx = out.getContext("2d", { alpha: true });
+    outCtx.clearRect(0, 0, outW, outH);
+    outCtx.drawImage(src, minX, minY, outW, outH, 0, 0, outW, outH);
+    return out;
+  }
+
+  async function renderTimeCartoucheToCanvas(targetCanvas, totalSeconds, fontPx) {
+    const renderer = await ensureTimeSitelenRenderer(fontPx);
+    const glyphs = buildTimeCartoucheGlyphs(totalSeconds);
+    const input = timeCartoucheInputFromGlyphs(glyphs);
+
+    const rendered = await renderer.renderTextToNewCanvas({
+      input,
+      ...buildTimeRendererConfig(fontPx)
+    });
+
+    const src = rendered && rendered.canvas;
+    if (!src) throw new Error("Time cartouche renderer did not return a canvas");
+
+    const cropped = cropCanvasToVisibleBounds(src, Math.max(4, Math.round((Number(fontPx) || CFG.timerLargePx || 34) * 0.12)));
+
+    targetCanvas.width = cropped.width;
+    targetCanvas.height = cropped.height;
+    const outCtx = targetCanvas.getContext("2d", { alpha: true });
+    outCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+    outCtx.drawImage(cropped, 0, 0);
+    return targetCanvas;
+  }
+
+  function scheduleFinishTimeCartoucheRender(totalSeconds, fontPx) {
+    const key = `${Math.floor(totalSeconds)}|${Math.round(fontPx)}`;
+    if (finishRenderKey === key || finishRenderPendingKey === key) return;
+    finishRenderPendingKey = key;
+    renderTimeCartoucheToCanvas(finishOffscreen, totalSeconds, fontPx)
+      .then(() => {
+        finishRenderKey = key;
+        finishRenderPendingKey = "";
+        draw();
+      })
+      .catch(err => {
+        finishRenderPendingKey = "";
+        console.error("[timer-cartouche] finish render failed", err);
+      });
   }
 
   async function ensureFontsLoaded() {
@@ -1157,6 +1390,7 @@
     await document.fonts.load(`24px "PatrickHand"`, "Time");
     const sampleChar = String.fromCodePoint(0xF190B);
     await document.fonts.load(`24px "${CARTOUCHE_FONT_FAMILY}"`, sampleChar);
+    await document.fonts.load(`24px "${NUMERIC_CARTOUCHE_FONT_FAMILY}"`, sampleChar);
     await document.fonts.ready;
   }
 
@@ -1262,12 +1496,36 @@ function resizeCanvasToDisplaySize(){
     draw();
   });
 
+  function measureGlyphGroupVerticalMetrics(ctx, fontPx, cps) {
+    const chars = Array.from(cps ?? []).map(cp => String.fromCodePoint(cp));
+
+    ctx.save();
+    ctx.font = `${fontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
+    ctx.textBaseline = "alphabetic";
+
+    let ascent = 0;
+    let descent = 0;
+    for (const ch of chars) {
+      const m = ctx.measureText(ch);
+      ascent = Math.max(ascent, m.actualBoundingBoxAscent ?? Math.ceil(fontPx * 0.8));
+      descent = Math.max(descent, m.actualBoundingBoxDescent ?? Math.ceil(fontPx * 0.2));
+    }
+
+    ctx.restore();
+    return { ascent, descent };
+  }
+
+  function baselineForVisualCenter(ctx, centerY, fontPx, cps) {
+    const m = measureGlyphGroupVerticalMetrics(ctx, fontPx, cps);
+    return centerY + ((m.ascent - m.descent) / 2);
+  }
+
   function drawPrefixGlyphsLeftOfBox(ctx, boxX, centerY, fontPx, cps, gapPx = 8, interGlyphGapPx = 4) {
     const chars = cps.map(cp => String.fromCodePoint(cp));
 
     ctx.save();
     ctx.font = `${fontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
-    ctx.textBaseline = "middle";
+    ctx.textBaseline = "alphabetic";
     ctx.textAlign = "left";
     ctx.fillStyle = "#111";
 
@@ -1280,22 +1538,23 @@ function resizeCanvasToDisplaySize(){
     }
     totalW += interGlyphGapPx * Math.max(0, chars.length - 1);
 
+    const baselineY = baselineForVisualCenter(ctx, centerY, fontPx, cps);
     let x = boxX - gapPx - totalW;
     for (let i = 0; i < chars.length; i++) {
-      ctx.fillText(chars[i], x, centerY);
+      ctx.fillText(chars[i], x, baselineY);
       x += widths[i] + interGlyphGapPx;
     }
 
     ctx.restore();
   }
 
-  function renderTopTimerCartouche(totalSeconds) {
+  async function renderTopTimerCartouche(totalSeconds) {
     // Mobile: top timer is hidden by CSS, so skip drawing it.
     // Desktop/tablet: keep full timer, including "tenpo nanpa" prefix.
     if (isMobileTopbarMode()) return;
 
     const targetCssW = 170;
-    const targetCssH = 36;
+    const targetCssH = 52;
     const dpr = window.devicePixelRatio || 1;
 
     timerCanvas.style.width = `${targetCssW}px`;
@@ -1306,16 +1565,9 @@ function resizeCanvasToDisplaySize(){
     timerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     timerCtx.clearRect(0, 0, targetCssW, targetCssH);
 
-    const glyphs = buildTimeCartoucheGlyphs(totalSeconds);
-
-    renderMixedCartoucheToCanvas(
-      timerOffscreen,
-      glyphs,
-      CFG.timerLargePx,
-      CFG.timerSmallPx,
-      SMALL_SET,
-      { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
-    );
+    const seq = ++topTimerRenderSeq;
+    await renderTimeCartoucheToCanvas(timerOffscreen, totalSeconds, CFG.timerLargePx);
+    if (seq !== topTimerRenderSeq) return;
 
     const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]];
     const gapPx = 8;
@@ -1346,7 +1598,7 @@ function resizeCanvasToDisplaySize(){
     const drawH = Math.floor(timerOffscreen.height * scale);
 
     const x = Math.floor(targetCssW - drawW);
-    const y = Math.floor((targetCssH - drawH) / 2);
+    const y = Math.floor((targetCssH - drawH) / 2) + getTimerCartoucheDrawYOffset(drawH);
 
     drawPrefixGlyphsLeftOfBox(timerCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
     timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
@@ -1357,7 +1609,7 @@ function resizeCanvasToDisplaySize(){
     bestCanvas.style.display = isVisible ? "block" : "none";
   }
 
-  function renderTopBestCartoucheForSize(sizeName){
+  async function renderTopBestCartoucheForSize(sizeName){
     if (!bestCanvas) return;
 
     const bestSec = bestSecondsBySize[safePresetName(sizeName)];
@@ -1372,7 +1624,7 @@ function resizeCanvasToDisplaySize(){
     if (isMobileTopbarMode()) return;
 
     const targetCssW = 220;
-    const targetCssH = 36;
+    const targetCssH = 52;
     const dpr = window.devicePixelRatio || 1;
 
     bestCanvas.style.width = `${targetCssW}px`;
@@ -1383,16 +1635,9 @@ function resizeCanvasToDisplaySize(){
     bestCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     bestCtx.clearRect(0, 0, targetCssW, targetCssH);
 
-    const glyphs = buildTimeCartoucheGlyphs(bestSec);
-
-    renderMixedCartoucheToCanvas(
-      bestOffscreen,
-      glyphs,
-      CFG.timerLargePx,
-      CFG.timerSmallPx,
-      SMALL_SET,
-      { padding: CFG.timerPad, border: CFG.timerBorder, cornerRadius: CFG.timerCorner, letterGap: CFG.timerGap }
-    );
+    const seq = ++topBestRenderSeq;
+    await renderTimeCartoucheToCanvas(bestOffscreen, bestSec, CFG.timerLargePx);
+    if (seq !== topBestRenderSeq) return;
 
     // Prefix: "tenpo pona" (best time)
     const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["pona"]].filter(Boolean);
@@ -1416,7 +1661,7 @@ function resizeCanvasToDisplaySize(){
     const drawH = Math.floor(bestOffscreen.height * scale);
 
     const x = Math.floor(targetCssW - drawW);
-    const y = Math.floor((targetCssH - drawH) / 2);
+    const y = Math.floor((targetCssH - drawH) / 2) + getTimerCartoucheDrawYOffset(drawH);
 
     if (prefixCps.length) drawPrefixGlyphsLeftOfBox(bestCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
     bestCtx.drawImage(bestOffscreen, x, y, drawW, drawH);
@@ -2071,6 +2316,8 @@ function resizeCanvasToDisplaySize(){
 
   function resetUIForIdle() {
     timerSeconds = 0;
+    finishRenderKey = "";
+    finishRenderPendingKey = "";
     renderTopTimerCartouche(timerSeconds);
     renderTopBestCartoucheCurrentSize();
     btnQuit.disabled = true;
@@ -2279,19 +2526,12 @@ function resizeCanvasToDisplaySize(){
     if (state !== GameState.finished) return;
     if (!mazeRect || mazeRect.w <= 0 || mazeRect.h <= 0) return;
 
-    const glyphs = buildTimeCartoucheGlyphs(timerSeconds);
-
     const largePx = 64;
-    const smallPx = 22;
-
-    renderMixedCartoucheToCanvas(
-      finishOffscreen,
-      glyphs,
-      largePx,
-      smallPx,
-      SMALL_SET,
-      { padding: 18, border: 3, cornerRadius: 18, letterGap: 1 }
-    );
+    const finishKey = `${Math.floor(timerSeconds)}|${Math.round(largePx)}`;
+    if (finishRenderKey !== finishKey) {
+      scheduleFinishTimeCartoucheRender(timerSeconds, largePx);
+      return;
+    }
 
     const maxW = mazeRect.w * 0.82;
     const maxH = mazeRect.h * 0.28;
@@ -2320,7 +2560,7 @@ function resizeCanvasToDisplaySize(){
     const groupX = Math.floor(mazeRect.x + (mazeRect.w - groupW) / 2);
     const cartX  = groupX + prefixW + prefixGapToCart;
 
-    const y = Math.floor(mazeRect.y + (mazeRect.h - drawH) / 2);
+    const y = Math.floor(mazeRect.y + (mazeRect.h - drawH) / 2) + getTimerCartoucheDrawYOffset(drawH);
     const centerY = Math.floor(y + drawH / 2);
 
     const pad = isMobileLike() ? 8 : 14;
@@ -2340,14 +2580,15 @@ function resizeCanvasToDisplaySize(){
 
     ctx.save();
     ctx.font = `${prefixFontPx}px "${CARTOUCHE_FONT_FAMILY}"`;
-    ctx.textBaseline = "middle";
+    ctx.textBaseline = "alphabetic";
     ctx.textAlign = "left";
     ctx.fillStyle = "#111";
 
+    const prefixBaselineY = baselineForVisualCenter(ctx, centerY, prefixFontPx, prefixCps);
     let px = groupX;
-    ctx.fillText(chTenpo, px, centerY);
+    ctx.fillText(chTenpo, px, prefixBaselineY);
     px += wTenpo + interGlyphGap;
-    ctx.fillText(chNanpa, px, centerY);
+    ctx.fillText(chNanpa, px, prefixBaselineY);
 
     ctx.restore();
 
@@ -2376,6 +2617,8 @@ function resizeCanvasToDisplaySize(){
     setVisitedControlsEnabled(false);
 
     timerSeconds = 0;
+    finishRenderKey = "";
+    finishRenderPendingKey = "";
     renderTopTimerCartouche(timerSeconds);
     renderTopBestCartoucheCurrentSize();
 
@@ -2423,6 +2666,8 @@ function resizeCanvasToDisplaySize(){
 
     syncMazeSizeUiLock();
     timerSeconds = 0;
+    finishRenderKey = "";
+    finishRenderPendingKey = "";
     renderTopTimerCartouche(timerSeconds);
     renderTopBestCartoucheCurrentSize();
     btnQuit.disabled = true;
@@ -2805,6 +3050,8 @@ function resizeCanvasToDisplaySize(){
     resizeCanvasToDisplaySize();
     layout();
     timerSeconds = 0;
+    finishRenderKey = "";
+    finishRenderPendingKey = "";
     renderTopTimerCartouche(timerSeconds);
     renderTopBestCartoucheCurrentSize();
     btnQuit.disabled = true;

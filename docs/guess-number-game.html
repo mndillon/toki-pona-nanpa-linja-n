@@ -12,7 +12,7 @@
 
   <style>
     :root{
-      --topbar-h: 56px;
+      --topbar-h: 72px;
 
       --bg: #F3DFC0;
       --ink: #111;
@@ -42,6 +42,12 @@
     @font-face {
       font-family: "TP-Cartouche-Font";
       src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Numeric-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
       font-display: swap;
     }
 
@@ -100,7 +106,7 @@
 
     .timerCanvas{
       margin-left: auto;
-      height: 36px;
+      height: 52px;
       width: 170px;
       display: block;
     }
@@ -108,7 +114,7 @@
     
 
     .bestCanvas{
-      height: 36px;
+      height: 52px;
       width: 220px;
       display: block;
       cursor: pointer;
@@ -329,8 +335,9 @@
     
 
     @media (max-height: 820px){
-      .topbar{ height: 52px; padding: 8px 10px; }
-      .timerCanvas{ width: 150px; height: 34px; }
+      .topbar{ height: var(--topbar-h); padding: 10px 12px; }
+      .timerCanvas{ width: 150px; height: 52px; }
+      .bestCanvas{ height: 52px; }
       .rowLabel{ font-size: 12px; }
       .btnKey{ padding: 8px; box-shadow: 0 8px 18px rgba(0,0,0,0.10); }
       .btnLabel{ font-size: 11px; margin-top: 4px; }
@@ -424,7 +431,9 @@
     </footer>
   </div>
 
-<script>
+<script type="module">
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
+
 (() => {
   "use strict";
 
@@ -505,6 +514,7 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
      ============================================================ */
 
   const FONT_FAMILY = "TP-Cartouche-Font";
+  const NUMERIC_CARTOUCHE_FONT_FAMILY = "TP-Numeric-Cartouche-Font";
 
   // UCSUR codepoints required for number cartouches + timer
   const WORD_TO_UCSUR_CP = {
@@ -540,7 +550,17 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
     "monsi": 0xF1938,
     "lili": 0xF1928,
     "pona": 0xF1954,
+    "kasi": 0xF1917,
   };
+
+  const UCSUR_CP_TO_WORD = new Map(
+    Object.entries(WORD_TO_UCSUR_CP)
+      .filter(([word]) => word !== ":" && word !== "koma")
+      .map(([word, cp]) => [cp, word])
+  );
+  if (typeof WORD_TO_UCSUR_CP["kolon"] === "number") {
+    UCSUR_CP_TO_WORD.set(WORD_TO_UCSUR_CP["kolon"], "kolon");
+  }
 
   function getSmallCodepointsSet() {
     // keep this aligned with your calculator: small glyphs for framing words
@@ -722,6 +742,222 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
     const tokens = tokenizeNanpaCaps(caps);
     const tpWords = nanpaCapsTokensToTpWords(tokens);
     return tpWordsToUcsurCodepoints(tpWords);
+  }
+
+  const ABBREV_CP_NANPA = WORD_TO_UCSUR_CP["nanpa"];
+  const ABBREV_CP_NENA  = WORD_TO_UCSUR_CP["nena"];
+  const ABBREV_CP_EN    = WORD_TO_UCSUR_CP["en"];
+  const ABBREV_CP_OPEN  = WORD_TO_UCSUR_CP["open"];
+
+  const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
+    ABBREV_CP_NANPA,
+    ABBREV_CP_EN,
+    ABBREV_CP_NENA,
+    ABBREV_CP_OPEN
+  ]);
+
+  function abbreviateNumericCartoucheCps(cps) {
+    const input = Array.from(cps ?? []).map(cp => Number(cp));
+    if (!input.length) return input;
+
+    const out = [];
+    let keptFirstNanpa = false;
+
+    for (let i = 0; i < input.length; i++) {
+      const cp = input[i];
+      const isFinalNanpa = (cp === ABBREV_CP_NANPA && i === input.length - 1);
+
+      if (!keptFirstNanpa) {
+        out.push(cp);
+        if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
+        continue;
+      }
+
+      if (isFinalNanpa) {
+        out.push(cp);
+        continue;
+      }
+
+      if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+      out.push(cp);
+    }
+
+    return out;
+  }
+
+  function numericCartoucheDisplayCps(cps) {
+    return abbreviateNumericCartoucheCps(cps);
+  }
+
+  function numericCartoucheInputFromCps(cps) {
+    const words = [];
+    for (const cp of Array.from(cps ?? [])) {
+      const word = UCSUR_CP_TO_WORD.get(Number(cp));
+      if (!word) throw new Error(`No Toki Pona word for numeric cartouche codepoint U+${Number(cp).toString(16).toUpperCase()}`);
+      words.push(word);
+    }
+    return `[${words.join(" ")}]`;
+  }
+
+  function buildNumericCartoucheRendererConfig(fontPx) {
+    const px = Math.max(8, Number(fontPx) || 34);
+    return {
+      layout: {
+        fontPx: px,
+        align: "left",
+        spacingPreset: "compact",
+        paddingPx: Math.max(8, Math.round(px * 0.25))
+      },
+      paint: {
+        fillStyle: "#111111",
+        halo: { enabled: false, color: "#FFFFFF", widthPx: 0 }
+      },
+      parser: {
+        mode: "sitelen-seli-kiwen",
+        literalStyle: "double-quote",
+        extensionStyle: "ssk",
+        cartoucheStyle: "ssk",
+        numericMode: "compat",
+        mixedStyle: "short",
+        showUnknownText: false,
+        abbreviateNumericCartouches: true,
+        cartoucheCommaTallyMarks: false,
+        cartoucheTallyMode: "ucsur"
+      },
+      fonts: {
+        roles: {
+          word: FONT_FAMILY,
+          text: FONT_FAMILY,
+          cartouche: NUMERIC_CARTOUCHE_FONT_FAMILY,
+          number: NUMERIC_CARTOUCHE_FONT_FAMILY,
+          date: NUMERIC_CARTOUCHE_FONT_FAMILY,
+          time: NUMERIC_CARTOUCHE_FONT_FAMILY,
+          literal: "PatrickHand",
+          unknown: "PatrickHand"
+        }
+      }
+    };
+  }
+
+  let numericSitelenRenderer = null;
+  let numericSitelenRendererPromise = null;
+
+  async function ensureNumericSitelenRenderer(fontPx = 34) {
+    if (numericSitelenRenderer) return numericSitelenRenderer;
+    if (!numericSitelenRendererPromise) {
+      numericSitelenRendererPromise = (async () => {
+        await ensureFontsLoaded();
+        numericSitelenRenderer = await SitelenRenderer.create(buildNumericCartoucheRendererConfig(fontPx));
+        return numericSitelenRenderer;
+      })();
+    }
+    return numericSitelenRendererPromise;
+  }
+
+  function cropCanvasToVisibleBounds(sourceCanvas, paddingPx = 1) {
+    const src = sourceCanvas;
+    if (!src || !src.width || !src.height) return src;
+
+    const w = src.width | 0;
+    const h = src.height | 0;
+    const ctx = src.getContext("2d", { alpha: true });
+    if (!ctx) return src;
+
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch {
+      return src;
+    }
+
+    let minX = w;
+    let minY = h;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < h; y++) {
+      const row = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        const a = data[row + x * 4 + 3];
+        if (a > 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < minX || maxY < minY) return src;
+
+    const pad = Math.max(0, Math.round(Number(paddingPx) || 0));
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+
+    const outW = Math.max(1, maxX - minX + 1);
+    const outH = Math.max(1, maxY - minY + 1);
+
+    if (outW === w && outH === h) return src;
+
+    const out = document.createElement("canvas");
+    out.width = outW;
+    out.height = outH;
+    const outCtx = out.getContext("2d", { alpha: true });
+    outCtx.clearRect(0, 0, outW, outH);
+    outCtx.drawImage(src, minX, minY, outW, outH, 0, 0, outW, outH);
+    return out;
+  }
+
+  async function renderNumericCartoucheToNewCanvas(cps, fontPx) {
+    const displayCps = numericCartoucheDisplayCps(cps);
+    const renderer = await ensureNumericSitelenRenderer(fontPx);
+    const input = numericCartoucheInputFromCps(displayCps);
+    const rendered = await renderer.renderTextToNewCanvas({
+      input,
+      ...buildNumericCartoucheRendererConfig(fontPx)
+    });
+
+    const src = rendered && rendered.canvas;
+    if (!src) throw new Error("Numeric cartouche renderer did not return a canvas");
+    return cropCanvasToVisibleBounds(src, Math.max(4, Math.round((Number(fontPx) || 34) * 0.12)));
+  }
+
+  function drawRenderedCartoucheIntoVisibleCanvas(canvas, src, { shrinkToNatural = false } = {}) {
+    if (!canvas || !src) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const cssH = Math.max(24, Math.floor((rect.height || 0) || src.height));
+
+    let cssW;
+    if (shrinkToNatural) {
+      const parentW = canvas.parentElement ? canvas.parentElement.getBoundingClientRect().width : rect.width;
+      const availW = Math.max(1, Math.floor(parentW || rect.width || src.width));
+      cssW = Math.min(Math.floor(src.width), availW);
+      canvas.style.width = `${cssW}px`;
+      canvas.style.height = `${cssH}px`;
+    } else {
+      canvas.style.width = "";
+      canvas.style.height = "";
+      cssW = Math.max(220, Math.floor((rect.width || 0) || src.width));
+    }
+
+    canvas.width = Math.ceil(cssW * dpr);
+    canvas.height = Math.ceil(cssH * dpr);
+
+    const ctx = canvas.getContext("2d", { alpha: true });
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const scale = Math.min(1, cssW / src.width, cssH / src.height);
+    const drawW = Math.floor(src.width * scale);
+    const drawH = Math.floor(src.height * scale);
+    const dx = Math.floor((cssW - drawW) / 2);
+    const dy = Math.floor((cssH - drawH) / 2);
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(src, dx, dy, drawW, drawH);
   }
 
   function drawRoundedRect(ctx, x, y, w, h, r) {
@@ -1140,6 +1376,7 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
   }
 
 function renderTextCartoucheToCanvas(canvas, text, fontFamily, fontPx, options = {}) {
+    nextCanvasRenderSeq(canvas);
     const pad = options.padding ?? 18;
     const border = options.border ?? 3;
     const corner = options.cornerRadius ?? 18;
@@ -1223,6 +1460,7 @@ function renderTextCartoucheToCanvas(canvas, text, fontFamily, fontPx, options =
   }
 
 function renderEmptyCartouche(canvas, cssHeight=92) {
+    nextCanvasRenderSeq(canvas);
     const dpr = window.devicePixelRatio || 1;
     const border = 2;
     const corner = 18;
@@ -1264,7 +1502,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
 
     const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
     const cpEn    = WORD_TO_UCSUR_CP["en"];
-    const cpKolon = WORD_TO_UCSUR_CP["kolon"];
+    const cpKasi = WORD_TO_UCSUR_CP["kasi"];
 
     function digitInner(dChar) {
       const cps = decimalToUcsurCodepoints(String(dChar));
@@ -1276,13 +1514,13 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     const inner = [];
     for (const ch of mm2) inner.push(...digitInner(ch));
 
-    // Use the dedicated "kolon" glyph if present (it is in your UCSUR map).
-    if (typeof cpKolon === "number") inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKolon, WORD_TO_UCSUR_CP["en"]);
+    // Use the dedicated "kasi" glyph as the time separator.
+    if (typeof cpKasi === "number") inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKasi, WORD_TO_UCSUR_CP["en"]);
     else inner.push(":");
 
     for (const ch of ss2) inner.push(...digitInner(ch));
 
-    return [cpNanpa, cpEn, ...inner, cpNanpa];
+    return numericCartoucheDisplayCps([cpNanpa, cpEn, ...inner, cpNanpa]);
   }
 
 
@@ -1321,6 +1559,25 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
   const bestCtx = bestCanvas.getContext("2d");
   const bestOffscreen = document.createElement("canvas");
 
+  let topTimerRenderSeq = 0;
+  let topBestRenderSeq = 0;
+  const canvasRenderSeq = new WeakMap();
+
+  function nextCanvasRenderSeq(canvas) {
+    const n = (canvasRenderSeq.get(canvas) || 0) + 1;
+    canvasRenderSeq.set(canvas, n);
+    return n;
+  }
+
+  function isCanvasRenderSeqCurrent(canvas, seq) {
+    return canvasRenderSeq.get(canvas) === seq;
+  }
+
+  function getTimerCartoucheDrawYOffset(drawH) {
+    const h = Number(drawH) || 0;
+    return Math.max(2, Math.min(5, Math.round(h * 0.12)));
+  }
+
   const TIMER_CFG = {
     largePx: 34,
     smallPx: 12,
@@ -1329,10 +1586,10 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     corner: 12,
     gap: 1,
     targetCssW: 170,
-    targetCssH: 36
+    targetCssH: 52
   };
 
-  function renderTopTimerCartouche(totalSeconds) {
+  async function renderTopTimerCartouche(totalSeconds) {
     if (isMobileTopbarMode()) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -1345,16 +1602,16 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     timerCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     timerCtx.clearRect(0, 0, TIMER_CFG.targetCssW, TIMER_CFG.targetCssH);
 
+    const seq = ++topTimerRenderSeq;
     const glyphs = buildTimeCartoucheGlyphs(totalSeconds);
+    const rendered = await renderNumericCartoucheToNewCanvas(glyphs, TIMER_CFG.largePx);
+    if (seq !== topTimerRenderSeq) return;
 
-    renderMixedCartoucheToCanvas(
-      timerOffscreen,
-      glyphs,
-      TIMER_CFG.largePx,
-      TIMER_CFG.smallPx,
-      SMALL_SET,
-      { padding: TIMER_CFG.pad, border: TIMER_CFG.border, cornerRadius: TIMER_CFG.corner, letterGap: TIMER_CFG.gap }
-    );
+    timerOffscreen.width = rendered.width;
+    timerOffscreen.height = rendered.height;
+    const offCtx = timerOffscreen.getContext("2d", { alpha: true });
+    offCtx.clearRect(0, 0, timerOffscreen.width, timerOffscreen.height);
+    offCtx.drawImage(rendered, 0, 0);
 
     const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]].filter(Boolean);
     const gapPx = 8;
@@ -1377,7 +1634,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     const drawH = Math.floor(timerOffscreen.height * scale);
 
     const x = Math.floor(TIMER_CFG.targetCssW - drawW);
-    const y = Math.floor((TIMER_CFG.targetCssH - drawH) / 2);
+    const y = Math.floor((TIMER_CFG.targetCssH - drawH) / 2) + getTimerCartoucheDrawYOffset(drawH);
 
     if (prefixCps.length) drawPrefixGlyphsLeftOfBox(timerCtx, x, TIMER_CFG.targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
     timerCtx.drawImage(timerOffscreen, x, y, drawW, drawH);
@@ -1388,7 +1645,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     bestCanvas.style.display = isVisible ? "block" : "none";
   }
 
-  function renderTopBestCartouche(secOrNull) {
+  async function renderTopBestCartouche(secOrNull) {
     if (!bestCanvas) return;
 
     // If no best time yet, hide entirely
@@ -1401,7 +1658,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     if (isMobileTopbarMode()) return;
 
     const targetCssW = 220;
-    const targetCssH = TIMER_CFG.targetCssH; // 36
+    const targetCssH = TIMER_CFG.targetCssH;
     const dpr = window.devicePixelRatio || 1;
 
     bestCanvas.style.width = `${targetCssW}px`;
@@ -1412,16 +1669,16 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     bestCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     bestCtx.clearRect(0, 0, targetCssW, targetCssH);
 
+    const seq = ++topBestRenderSeq;
     const glyphs = buildTimeCartoucheGlyphs(secOrNull);
+    const rendered = await renderNumericCartoucheToNewCanvas(glyphs, TIMER_CFG.largePx);
+    if (seq !== topBestRenderSeq) return;
 
-    renderMixedCartoucheToCanvas(
-      bestOffscreen,
-      glyphs,
-      TIMER_CFG.largePx,
-      TIMER_CFG.smallPx,
-      SMALL_SET,
-      { padding: TIMER_CFG.pad, border: TIMER_CFG.border, cornerRadius: TIMER_CFG.corner, letterGap: TIMER_CFG.gap }
-    );
+    bestOffscreen.width = rendered.width;
+    bestOffscreen.height = rendered.height;
+    const offCtx = bestOffscreen.getContext("2d", { alpha: true });
+    offCtx.clearRect(0, 0, bestOffscreen.width, bestOffscreen.height);
+    offCtx.drawImage(rendered, 0, 0);
 
     // Prefix: "tenpo pona" (best time)
     const prefixCps = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["pona"]].filter(Boolean);
@@ -1445,11 +1702,13 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     const drawH = Math.floor(bestOffscreen.height * scale);
 
     const x = Math.floor(targetCssW - drawW);
-    const y = Math.floor((targetCssH - drawH) / 2);
+    const y = Math.floor((targetCssH - drawH) / 2) + getTimerCartoucheDrawYOffset(drawH);
 
     if (prefixCps.length) drawPrefixGlyphsLeftOfBox(bestCtx, x, targetCssH / 2, prefixFontPx, prefixCps, gapPx, 4);
     bestCtx.drawImage(bestOffscreen, x, y, drawW, drawH);
   }
+
+
 
 
   let timerSeconds = 0;
@@ -1651,9 +1910,91 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
     return n;
   }
 
-  function renderNumberCartouche(canvas, n, { largePx=72, smallPx=24, pad=18, border=3, corner=18, gap=2 } = {}) {
+  async function renderNumberCartouche(canvas, n, { largePx=72, smallPx=24, pad=18, border=3, corner=18, gap=2, shrinkToNatural=false } = {}) {
+    const seq = nextCanvasRenderSeq(canvas);
     const cps = decimalToUcsurCodepoints(String(n));
-    renderMixedCartoucheToCanvas(canvas, cps, largePx, smallPx, SMALL_SET, { padding: pad, border, cornerRadius: corner, letterGap: gap });
+    const rendered = await renderNumericCartoucheToNewCanvas(cps, largePx);
+    if (!isCanvasRenderSeqCurrent(canvas, seq)) return;
+    drawRenderedCartoucheIntoVisibleCanvas(canvas, rendered, { shrinkToNatural });
+  }
+
+  async function renderPrefixedNumericCartoucheToCanvas(canvas, prefixCps, cartoucheGlyphs, largePx, smallPx, smallCodepoints, options = {}) {
+    const seq = nextCanvasRenderSeq(canvas);
+    const src = await renderNumericCartoucheToNewCanvas(cartoucheGlyphs, largePx);
+    if (!isCanvasRenderSeqCurrent(canvas, seq)) return;
+
+    const gapPx = options.prefixGapPx ?? 8;
+    const interGlyphGapPx = options.interGlyphGapPx ?? 4;
+    const dpr = window.devicePixelRatio || 1;
+
+    const rect = canvas.getBoundingClientRect();
+    const cssH = Math.max(24, Math.floor((rect.height || 0) || src.height));
+    const parentW = canvas.parentElement ? canvas.parentElement.getBoundingClientRect().width : rect.width;
+    const availW = Math.max(1, Math.floor(parentW || rect.width || (src.width + 200)));
+
+    const meas = document.createElement("canvas");
+    const mctx = meas.getContext("2d");
+
+    function measurePrefix(fontPx) {
+      mctx.save();
+      mctx.font = `${fontPx}px "${FONT_FAMILY}"`;
+      let w = 0;
+      for (let i = 0; i < prefixCps.length; i++) {
+        const cp = prefixCps[i];
+        const ch = String.fromCodePoint(cp);
+        w += mctx.measureText(ch).width;
+        if (i < prefixCps.length - 1) w += interGlyphGapPx;
+      }
+      mctx.restore();
+      return w;
+    }
+
+    let scale = Math.min(1, cssH / src.height);
+    let fontPx = Math.max(10, largePx * scale);
+    let prefixW = prefixCps && prefixCps.length ? measurePrefix(fontPx) : 0;
+    let drawCartW = Math.ceil(src.width * scale);
+    let totalW = Math.ceil(prefixW + (prefixW ? gapPx : 0) + drawCartW + 2);
+
+    if (totalW > availW) {
+      const k = Math.max(0.1, availW / totalW);
+      scale *= k;
+      fontPx = Math.max(10, fontPx * k);
+      prefixW = prefixCps && prefixCps.length ? measurePrefix(fontPx) : 0;
+      drawCartW = Math.ceil(src.width * scale);
+      totalW = Math.ceil(prefixW + (prefixW ? gapPx : 0) + drawCartW + 2);
+    }
+
+    canvas.style.width = `${totalW}px`;
+    canvas.style.height = `${cssH}px`;
+    canvas.width = Math.ceil(totalW * dpr);
+    canvas.height = Math.ceil(cssH * dpr);
+
+    const vctx = canvas.getContext("2d", { alpha: true });
+    vctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    vctx.clearRect(0, 0, totalW, cssH);
+
+    const centerY = cssH / 2;
+    if (prefixCps && prefixCps.length) {
+      vctx.save();
+      vctx.font = `${fontPx}px "${FONT_FAMILY}"`;
+      vctx.textBaseline = "middle";
+      vctx.fillStyle = "#111";
+      let px = 0;
+      for (let i = 0; i < prefixCps.length; i++) {
+        const ch = String.fromCodePoint(prefixCps[i]);
+        vctx.fillText(ch, px, centerY);
+        px += vctx.measureText(ch).width;
+        if (i < prefixCps.length - 1) px += interGlyphGapPx;
+      }
+      vctx.restore();
+    }
+
+    const drawCartH = Math.ceil(src.height * scale);
+    const cartX = Math.floor(prefixW + (prefixW ? gapPx : 0));
+    const cartY = Math.floor((cssH - drawCartH) / 2);
+
+    vctx.imageSmoothingEnabled = true;
+    vctx.drawImage(src, cartX, cartY, drawCartW, drawCartH);
   }
 
   function renderAll() {
@@ -1677,7 +2018,7 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
       // After a win, show the final time cartouche prefixed immediately by "tenpo nanpa" in UCSUR.
       const timeGlyphs = buildTimeCartoucheGlyphs(timerSeconds);
       const prefix = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]].filter(cp => typeof cp === "number");
-      renderPrefixedMixedCartoucheToCanvas(
+      renderPrefixedNumericCartoucheToCanvas(
         bestHighCanvas,
         prefix,
         timeGlyphs,
@@ -1702,7 +2043,7 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
     if (state === GameState.finished) {
       // After a win, show the guess count cartouche prefixed immediately by:
       // "sina pali e wile sona nanpa" in UCSUR.
-      const guessGlyphs = decimalToUcsurCodepoints(String(guessCount));
+      const guessGlyphs = numericCartoucheDisplayCps(decimalToUcsurCodepoints(String(guessCount)));
       const prefix = [
         WORD_TO_UCSUR_CP["sina"],
         WORD_TO_UCSUR_CP["pali"],
@@ -1711,7 +2052,7 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
         WORD_TO_UCSUR_CP["sona"],
         WORD_TO_UCSUR_CP["nanpa"]
       ].filter(cp => typeof cp === "number");
-      renderPrefixedMixedCartoucheToCanvas(
+      renderPrefixedNumericCartoucheToCanvas(
         bestLowCanvas,
         prefix,
         guessGlyphs,
@@ -1913,20 +2254,17 @@ function makeKeyButton({ id, labelText, ariaLabel, onPress, renderFn, wide=false
   }
 
 
-  function renderDigitButtonCanvas(canvas, digitStr) {
+  async function renderDigitButtonCanvas(canvas, digitStr) {
   const cps = decimalToUcsurCodepoints(digitStr);
 
-  // Mobile: make the digit glyphs smaller, but keep the cartouche prominent via CSS (.btnCanvas height).
+  // Mobile: make the digit cartouche use the smaller renderer size, but keep CSS-driven key sizing.
   const mobile = isMobileTopbarMode();
   const px = mobile ? 22 : 28;
-  const capPx = mobile ? 8 : 10;
 
-  renderMixedCartoucheToCanvas(canvas, cps, px, capPx, SMALL_SET, {
-    padding: mobile ? 6 : 6,
-    border: 2,
-    cornerRadius: 14,
-    letterGap: 2
-  });
+  const seq = nextCanvasRenderSeq(canvas);
+  const rendered = await renderNumericCartoucheToNewCanvas(cps, px);
+  if (!isCanvasRenderSeqCurrent(canvas, seq)) return;
+  drawRenderedCartoucheIntoVisibleCanvas(canvas, rendered, { shrinkToNatural: false });
 }
 
   
@@ -2150,6 +2488,7 @@ function renderTextKeyCanvas(canvas, txt, px=null, fontFamily=null, fontWeight=7
     await document.fonts.load(`24px "PatrickHand"`, "Time");
     const sampleChar = String.fromCodePoint(WORD_TO_UCSUR_CP["nanpa"]);
     await document.fonts.load(`24px "${FONT_FAMILY}"`, sampleChar);
+    await document.fonts.load(`24px "${NUMERIC_CARTOUCHE_FONT_FAMILY}"`, sampleChar);
     await document.fonts.ready;
   }
 

@@ -12,7 +12,7 @@
 
   <style>
     :root {
-      --topbar-h: 56px;
+      --topbar-h: 72px;
       --bg: #F3DFC0;
       --ink: #111;
       --muted: #3f4750;
@@ -36,6 +36,12 @@
     @font-face {
       font-family: "TP-Nasin-Nanpa-Font";
       src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Numeric-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
       font-display: swap;
     }
 
@@ -90,7 +96,7 @@
 
     .timerCanvas {
       width: 190px;
-      height: 36px;
+      height: 52px;
       display: block;
       flex: 0 0 auto;
     }
@@ -331,7 +337,9 @@
     </footer>
   </div>
 
-<script>
+<script type="module">
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
+
 (() => {
   "use strict";
 
@@ -391,6 +399,7 @@
   const RANK_LABEL = { 1:"A", 11:"J", 12:"Q", 13:"K" };
 
   const TP_CARD_GLYPH_FONT = '"TP-Nasin-Nanpa-Font", "PatrickHand", system-ui, sans-serif';
+  const TP_NUMERIC_CARTOUCHE_FONT_FAMILY = "TP-Numeric-Cartouche-Font";
   const TP_WORD_TO_CP = Object.freeze({
     ilo: 0xF190E,
     kasi: 0xF1917,
@@ -420,6 +429,7 @@
     nanpa: 0xF193D,
     en: 0xF190A,
     nena: 0xF1940,
+    open: 0xF1947,
     kolon: 0xF199D
   });
 
@@ -892,6 +902,57 @@
 
   const SMALL_SET = getSmallCodepointsSet();
 
+  const UCSUR_CP_TO_WORD = new Map(
+    Object.entries(TP_WORD_TO_CP)
+      .filter(([word]) => word !== "kolon")
+      .map(([word, cp]) => [cp, word])
+  );
+
+  const ABBREV_CP_NANPA = TP_WORD_TO_CP.nanpa;
+  const ABBREV_CP_NENA  = TP_WORD_TO_CP.nena;
+  const ABBREV_CP_EN    = TP_WORD_TO_CP.en;
+  const ABBREV_CP_OPEN  = TP_WORD_TO_CP.open;
+
+  const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
+    ABBREV_CP_NANPA,
+    ABBREV_CP_EN,
+    ABBREV_CP_NENA,
+    ABBREV_CP_OPEN
+  ]);
+
+  function abbreviateNumericCartoucheCps(cps) {
+    const input = Array.from(cps ?? []).map(cp => Number(cp));
+    if (!input.length) return input;
+
+    const out = [];
+    let keptFirstNanpa = false;
+
+    for (let i = 0; i < input.length; i++) {
+      const cp = input[i];
+      const isFinalNanpa = (cp === ABBREV_CP_NANPA && i === input.length - 1);
+
+      if (!keptFirstNanpa) {
+        out.push(cp);
+        if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
+        continue;
+      }
+
+      if (isFinalNanpa) {
+        out.push(cp);
+        continue;
+      }
+
+      if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+      out.push(cp);
+    }
+
+    return out;
+  }
+
+  function numericCartoucheDisplayCps(cps) {
+    return abbreviateNumericCartoucheCps(cps);
+  }
+
   function drawRoundedRectPath(ctxArg, x, y, w, h, r) {
     const radius = Math.min(r, w / 2, h / 2);
     ctxArg.beginPath();
@@ -967,6 +1028,12 @@
     }
   }
 
+  let timeSitelenRenderer = null;
+  let timeSitelenRendererPromise = null;
+  const prefixedCartoucheRenderSeq = new WeakMap();
+  let endGameTimeRenderKey = "";
+  let endGameTimePendingKey = "";
+
   function buildTimeCartoucheGlyphs(totalSeconds) {
     const mm = Math.floor(totalSeconds / 60);
     const ss = totalSeconds % 60;
@@ -997,22 +1064,165 @@
 
     const inner = [];
     for (const ch of mm2) inner.push(...digitInner(ch));
-    inner.push(TP_WORD_TO_CP.nena, TP_WORD_TO_CP.en, TP_WORD_TO_CP.kolon, TP_WORD_TO_CP.en);
+    inner.push(TP_WORD_TO_CP.nena, TP_WORD_TO_CP.en, TP_WORD_TO_CP.kasi, TP_WORD_TO_CP.en);
     for (const ch of ss2) inner.push(...digitInner(ch));
 
-    return [TP_WORD_TO_CP.nanpa, TP_WORD_TO_CP.en, ...inner, TP_WORD_TO_CP.nanpa];
+    return numericCartoucheDisplayCps([TP_WORD_TO_CP.nanpa, TP_WORD_TO_CP.en, ...inner, TP_WORD_TO_CP.nanpa]);
+  }
+
+  function timeCartoucheInputFromGlyphs(glyphs) {
+    const words = [];
+    for (const cp of Array.from(glyphs ?? [])) {
+      const word = UCSUR_CP_TO_WORD.get(Number(cp));
+      if (!word) throw new Error(`No Toki Pona word for timer codepoint U+${Number(cp).toString(16).toUpperCase()}`);
+      words.push(word);
+    }
+    return `[${words.join(" ")}]`;
+  }
+
+  function buildTimeRendererConfig(fontPx) {
+    const px = Math.max(8, Number(fontPx) || 34);
+    return {
+      layout: {
+        fontPx: px,
+        align: "left",
+        spacingPreset: "compact",
+        paddingPx: Math.max(8, Math.round(px * 0.25))
+      },
+      paint: {
+        fillStyle: "#111111",
+        halo: { enabled: false, color: "#FFFFFF", widthPx: 0 }
+      },
+      parser: {
+        mode: "sitelen-seli-kiwen",
+        literalStyle: "double-quote",
+        extensionStyle: "ssk",
+        cartoucheStyle: "ssk",
+        numericMode: "compat",
+        mixedStyle: "short",
+        showUnknownText: false,
+        abbreviateNumericCartouches: true,
+        cartoucheCommaTallyMarks: false,
+        cartoucheTallyMode: "ucsur"
+      },
+      fonts: {
+        roles: {
+          word: "TP-Nasin-Nanpa-Font",
+          text: "TP-Nasin-Nanpa-Font",
+          cartouche: TP_NUMERIC_CARTOUCHE_FONT_FAMILY,
+          number: TP_NUMERIC_CARTOUCHE_FONT_FAMILY,
+          date: TP_NUMERIC_CARTOUCHE_FONT_FAMILY,
+          time: TP_NUMERIC_CARTOUCHE_FONT_FAMILY,
+          literal: "PatrickHand",
+          unknown: "PatrickHand"
+        }
+      }
+    };
+  }
+
+  async function ensureTimeSitelenRenderer(fontPx = 34) {
+    if (timeSitelenRenderer) return timeSitelenRenderer;
+    if (!timeSitelenRendererPromise) {
+      timeSitelenRendererPromise = (async () => {
+        await ensureCardGlyphFontLoaded();
+        timeSitelenRenderer = await SitelenRenderer.create(buildTimeRendererConfig(fontPx));
+        return timeSitelenRenderer;
+      })();
+    }
+    return timeSitelenRendererPromise;
+  }
+
+  function cropCanvasToVisibleBounds(sourceCanvas, paddingPx = 1) {
+    const src = sourceCanvas;
+    if (!src || !src.width || !src.height) return src;
+
+    const w = src.width | 0;
+    const h = src.height | 0;
+    const ctx = src.getContext("2d", { alpha: true });
+    if (!ctx) return src;
+
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch {
+      return src;
+    }
+
+    let minX = w;
+    let minY = h;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < h; y++) {
+      const row = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        const a = data[row + x * 4 + 3];
+        if (a > 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < minX || maxY < minY) return src;
+
+    const pad = Math.max(0, Math.round(Number(paddingPx) || 0));
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+
+    const outW = Math.max(1, maxX - minX + 1);
+    const outH = Math.max(1, maxY - minY + 1);
+
+    if (outW === w && outH === h) return src;
+
+    const out = document.createElement("canvas");
+    out.width = outW;
+    out.height = outH;
+    const outCtx = out.getContext("2d", { alpha: true });
+    outCtx.clearRect(0, 0, outW, outH);
+    outCtx.drawImage(src, minX, minY, outW, outH, 0, 0, outW, outH);
+    return out;
+  }
+
+  async function renderTimeCartoucheToCanvas(targetCanvas, glyphs, fontPx) {
+    const renderer = await ensureTimeSitelenRenderer(fontPx);
+    const input = timeCartoucheInputFromGlyphs(glyphs);
+    const px = Math.max(8, Number(fontPx) || 34);
+    const rendered = await renderer.renderTextToNewCanvas({
+      input,
+      layout: {
+        fontPx: px,
+        align: "left",
+        spacingPreset: "compact",
+        paddingPx: Math.max(8, Math.round(px * 0.25))
+      }
+    });
+    const src = cropCanvasToVisibleBounds(
+      rendered.canvas,
+      Math.max(4, Math.round(px * 0.12))
+    );
+    targetCanvas.width = Math.max(1, src.width | 0);
+    targetCanvas.height = Math.max(1, src.height | 0);
+    const targetCtx = targetCanvas.getContext("2d", { alpha: true });
+    targetCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+    targetCtx.drawImage(src, 0, 0);
+    return targetCanvas;
   }
 
   function renderTopTimerCartouche() {
     const targetCssW = window.innerWidth <= 760 ? 164 : 190;
-    const targetCssH = window.innerWidth <= 760 ? 32 : 36;
+    const targetCssH = window.innerWidth <= 760 ? 32 : 52;
     const shown = !game ? 0 : (game.options.timeLimitSec > 0
       ? Math.max(0, game.options.timeLimitSec - (game.elapsedSec || 0))
       : (game.elapsedSec || 0));
     drawPrefixedCartoucheOnCanvas(timerCanvas, timerCtx, timerOffscreen, shown, ["tenpo", "lili"], targetCssW, targetCssH, 34, 12);
   }
 
-  function drawPrefixedCartoucheOnCanvas(canvasEl, ctxArg, offscreenEl, totalSeconds, prefixWords, targetCssW, targetCssH, largePx, smallPx) {
+  function drawRenderedPrefixedCartouche(canvasEl, ctxArg, offscreenEl, prefixWords, targetCssW, targetCssH, largePx) {
     const dpr = window.devicePixelRatio || 1;
     canvasEl.style.width = `${targetCssW}px`;
     canvasEl.style.height = `${targetCssH}px`;
@@ -1021,11 +1231,6 @@
 
     ctxArg.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctxArg.clearRect(0, 0, targetCssW, targetCssH);
-
-    const glyphs = buildTimeCartoucheGlyphs(Math.max(0, Math.floor(totalSeconds || 0)));
-    renderMixedCartoucheToCanvas(offscreenEl, glyphs, largePx, smallPx, SMALL_SET, {
-      padding: 8, border: 2, cornerRadius: 12, letterGap: 1
-    });
 
     const prefixCps = prefixWords.map(w => TP_WORD_TO_CP[w]).filter(Number.isFinite);
     const gapPx = 8;
@@ -1071,12 +1276,41 @@
     ctxArg.drawImage(offscreenEl, x, y, drawW, drawH);
   }
 
+  function drawPrefixedCartoucheOnCanvas(canvasEl, ctxArg, offscreenEl, totalSeconds, prefixWords, targetCssW, targetCssH, largePx, smallPx) {
+    const seq = (prefixedCartoucheRenderSeq.get(canvasEl) || 0) + 1;
+    prefixedCartoucheRenderSeq.set(canvasEl, seq);
+
+    const dpr = window.devicePixelRatio || 1;
+    canvasEl.style.width = `${targetCssW}px`;
+    canvasEl.style.height = `${targetCssH}px`;
+    canvasEl.width = Math.ceil(targetCssW * dpr);
+    canvasEl.height = Math.ceil(targetCssH * dpr);
+    ctxArg.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctxArg.clearRect(0, 0, targetCssW, targetCssH);
+
+    const glyphs = buildTimeCartoucheGlyphs(Math.max(0, Math.floor(totalSeconds || 0)));
+
+    renderTimeCartoucheToCanvas(offscreenEl, glyphs, largePx)
+      .then(() => {
+        if (prefixedCartoucheRenderSeq.get(canvasEl) !== seq) return;
+        drawRenderedPrefixedCartouche(canvasEl, ctxArg, offscreenEl, prefixWords, targetCssW, targetCssH, largePx);
+      })
+      .catch(err => {
+        console.warn("Timer cartouche renderer failed", err);
+        if (prefixedCartoucheRenderSeq.get(canvasEl) !== seq) return;
+        renderMixedCartoucheToCanvas(offscreenEl, glyphs, largePx, smallPx, SMALL_SET, {
+          padding: 8, border: 2, cornerRadius: 12, letterGap: 1
+        });
+        drawRenderedPrefixedCartouche(canvasEl, ctxArg, offscreenEl, prefixWords, targetCssW, targetCssH, largePx);
+      });
+  }
+
   function refreshBestTimeUi() {
     const shouldShow = Number(timeLimitSel.value || 0) === 0 && Number.isFinite(bestTimeNoLimitSec) && bestTimeNoLimitSec > 0;
     btnBestTime.style.display = shouldShow ? "block" : "none";
     if (!shouldShow) return;
     const targetCssW = Math.min(320, Math.max(220, optionsOverlay.querySelector('.modal').clientWidth - 48));
-    const targetCssH = 42;
+    const targetCssH = 52;
     drawPrefixedCartoucheOnCanvas(bestTimeCanvas, bestTimeCtx, bestTimeOffscreen, bestTimeNoLimitSec, ["tenpo", "pona"], targetCssW, targetCssH, 34, 12);
   }
 
@@ -1212,21 +1446,15 @@
     if (!game) return null;
     const wasteTop = game.waste.length ? game.waste[game.waste.length - 1] : null;
     if (wasteTop) {
-      for (let foundationIndex = 0; foundationIndex < game.foundations.length; foundationIndex++) {
-        if (canMoveToFoundation(wasteTop, game.foundations[foundationIndex])) {
-          return { from: "waste", foundationIndex };
-        }
-      }
+      const foundationIndex = foundationMoveTargetIndex(wasteTop);
+      if (foundationIndex >= 0) return { from: "waste", foundationIndex };
     }
     for (let col = 0; col < game.tableau.length; col++) {
       const pile = game.tableau[col];
       if (!pile.length) continue;
       const card = pile[pile.length - 1];
-      for (let foundationIndex = 0; foundationIndex < game.foundations.length; foundationIndex++) {
-        if (canMoveToFoundation(card, game.foundations[foundationIndex])) {
-          return { from: "tableau", col, foundationIndex };
-        }
-      }
+      const foundationIndex = foundationMoveTargetIndex(card);
+      if (foundationIndex >= 0) return { from: "tableau", col, foundationIndex };
     }
     return null;
   }
@@ -1414,6 +1642,13 @@
     return SUITS.indexOf(suit);
   }
 
+  function foundationMoveTargetIndex(card) {
+    if (!game || !card) return -1;
+    const foundationIndex = foundationIndexForSuit(card.suit);
+    if (foundationIndex < 0 || foundationIndex >= game.foundations.length) return -1;
+    return canMoveToFoundation(card, game.foundations[foundationIndex]) ? foundationIndex : -1;
+  }
+
   function canMoveToFoundation(card, pile) {
     if (!card || !card.faceUp) return false;
     if (pile.length === 0) return card.rank === 1;
@@ -1436,16 +1671,10 @@
       if (!top) break;
       if (!top.faceUp) top.faceUp = true;
       if (top.rank !== 1) break;
-      let movedThisPass = false;
-      for (let foundationIndex = 0; foundationIndex < game.foundations.length; foundationIndex++) {
-        if (canMoveToFoundation(top, game.foundations[foundationIndex])) {
-          game.foundations[foundationIndex].push(pile.pop());
-          autoMoved++;
-          movedThisPass = true;
-          break;
-        }
-      }
-      if (!movedThisPass) break;
+      const foundationIndex = foundationMoveTargetIndex(top);
+      if (foundationIndex < 0) break;
+      game.foundations[foundationIndex].push(pile.pop());
+      autoMoved++;
     }
     return autoMoved;
   }
@@ -1547,16 +1776,10 @@
     while (game.waste.length > 0) {
       const wasteTop = game.waste[game.waste.length - 1];
       if (!wasteTop || !wasteTop.faceUp || wasteTop.rank !== 1) break;
-      let movedThisPass = false;
-      for (let foundationIndex = 0; foundationIndex < game.foundations.length; foundationIndex++) {
-        if (canMoveToFoundation(wasteTop, game.foundations[foundationIndex])) {
-          game.foundations[foundationIndex].push(game.waste.pop());
-          moved++;
-          movedThisPass = true;
-          break;
-        }
-      }
-      if (!movedThisPass) break;
+      const foundationIndex = foundationMoveTargetIndex(wasteTop);
+      if (foundationIndex < 0) break;
+      game.foundations[foundationIndex].push(game.waste.pop());
+      moved++;
     }
     return moved;
   }
@@ -1732,10 +1955,11 @@
       if (overlapArea <= 0) continue;
       if (drag.cards.length !== 1) continue;
       const card = drag.cards[0];
-      if (!canMoveToFoundation(card, game.foundations[i])) continue;
+      const targetIndex = foundationMoveTargetIndex(card);
+      if (targetIndex < 0) continue;
       candidates.push({
         zone: "foundation",
-        index: i,
+        index: targetIndex,
         hitRect: box,
         overlapArea,
         pointerDistSq: rectCenterDistanceSq(dropX, dropY, box)
@@ -1765,9 +1989,10 @@
         if (!pointInRect(dropX, dropY, box)) continue;
         if (drag.cards.length !== 1) return false;
         const card = drag.cards[0];
-        if (!canMoveToFoundation(card, game.foundations[i])) return false;
+        const targetIndex = foundationMoveTargetIndex(card);
+        if (targetIndex < 0) return false;
         const moved = removeCardsFromSource(drag);
-        game.foundations[i].push(...moved);
+        game.foundations[targetIndex].push(...moved);
         if (drag.type === "tableau") flipTopTableauCardIfNeeded(game.tableau[drag.tableauIndex]);
         if (drag.type === "waste") autoMoveTopWasteAcesToFoundations();
         maybeAutoWinCheck();
@@ -1953,14 +2178,13 @@
     if (hit.zone === "tableau") tempDrag = makeDragFromTableau(hit.col, hit.index);
     if (!tempDrag || tempDrag.cards.length !== 1) return;
 
-    for (let i = 0; i < game.foundations.length; i++) {
-      if (canMoveToFoundation(tempDrag.cards[0], game.foundations[i])) {
-        drag = tempDrag;
-        tryPlaceDrag(layout.foundations[i].x + CARD_W / 2, layout.foundations[i].y + CARD_H / 2);
-        drag = null;
-        draw();
-        return;
-      }
+    const foundationIndex = foundationMoveTargetIndex(tempDrag.cards[0]);
+    if (foundationIndex >= 0) {
+      drag = tempDrag;
+      tryPlaceDrag(layout.foundations[foundationIndex].x + CARD_W / 2, layout.foundations[foundationIndex].y + CARD_H / 2);
+      drag = null;
+      draw();
+      return;
     }
   });
 
@@ -2252,8 +2476,12 @@
   async function ensureCardGlyphFontLoaded() {
     if (!document.fonts || !document.fonts.load) return;
     try {
-      const sample = glyphStringFromCodepoints([TP_WORD_TO_CP.ilo, TP_WORD_TO_CP.lawa, TP_WORD_TO_CP.en, TP_WORD_TO_CP.nena, TP_WORD_TO_CP.kolon, TP_WORD_TO_CP.tenpo, TP_WORD_TO_CP.lili, TP_WORD_TO_CP.toki, TP_WORD_TO_CP.pona]);
-      await document.fonts.load(`42px ${TP_CARD_GLYPH_FONT}`, sample);
+      const sample = glyphStringFromCodepoints([TP_WORD_TO_CP.ilo, TP_WORD_TO_CP.lawa, TP_WORD_TO_CP.en, TP_WORD_TO_CP.nena, TP_WORD_TO_CP.kasi, TP_WORD_TO_CP.tenpo, TP_WORD_TO_CP.lili, TP_WORD_TO_CP.toki, TP_WORD_TO_CP.pona]);
+      const numericSample = glyphStringFromCodepoints([TP_WORD_TO_CP.nanpa, TP_WORD_TO_CP.en, TP_WORD_TO_CP.kasi, TP_WORD_TO_CP.nena]);
+      await Promise.all([
+        document.fonts.load(`42px ${TP_CARD_GLYPH_FONT}`, sample),
+        document.fonts.load(`42px "${TP_NUMERIC_CARTOUCHE_FONT_FAMILY}"`, numericSample)
+      ]);
       await document.fonts.ready;
     } catch (err) {
       console.warn("Card glyph font load failed", err);
@@ -2752,16 +2980,10 @@
     }
   }
 
-  function drawPrefixedTimeCartouche(ctxArg, totalSeconds, boxX, centerY, maxWidth, maxHeight, largePx, smallPx) {
-    const glyphs = buildTimeCartoucheGlyphs(Math.max(0, Math.floor(totalSeconds || 0)));
-    renderMixedCartoucheToCanvas(endGameTimeOffscreen, glyphs, largePx, smallPx, SMALL_SET, {
-      padding: 12, border: 3, cornerRadius: 16, letterGap: 1
-    });
-
-    const prefixCps = [TP_WORD_TO_CP.tenpo, TP_WORD_TO_CP.lili].filter(Number.isFinite);
+  function drawRenderedTimeCartoucheInBox(ctxArg, offscreenEl, prefixCps, boxX, centerY, maxWidth, maxHeight, largePx) {
     const gapPx = 10;
 
-    let scale = Math.min(maxWidth / endGameTimeOffscreen.width, maxHeight / endGameTimeOffscreen.height, 1);
+    let scale = Math.min(maxWidth / offscreenEl.width, maxHeight / offscreenEl.height, 1);
     let prefixFontPx = Math.max(12, largePx * scale);
     let prefixW = 0;
 
@@ -2772,7 +2994,7 @@
       ctxArg.restore();
 
       const availWForCartouche = Math.max(40, maxWidth - prefixW - gapPx);
-      scale = Math.min(availWForCartouche / endGameTimeOffscreen.width, maxHeight / endGameTimeOffscreen.height, 1);
+      scale = Math.min(availWForCartouche / offscreenEl.width, maxHeight / offscreenEl.height, 1);
       prefixFontPx = Math.max(12, largePx * scale);
 
       ctxArg.save();
@@ -2781,8 +3003,8 @@
       ctxArg.restore();
     }
 
-    const drawW = Math.floor(endGameTimeOffscreen.width * scale);
-    const drawH = Math.floor(endGameTimeOffscreen.height * scale);
+    const drawW = Math.floor(offscreenEl.width * scale);
+    const drawH = Math.floor(offscreenEl.height * scale);
     const totalW = drawW + (prefixW > 0 ? (prefixW + gapPx) : 0);
     const cartX = Math.floor(boxX + (maxWidth - totalW) / 2 + (prefixW > 0 ? (prefixW + gapPx) : 0));
     const cartY = Math.floor(centerY - drawH / 2);
@@ -2801,7 +3023,38 @@
       ctxArg.restore();
     }
 
-    ctxArg.drawImage(endGameTimeOffscreen, cartX, cartY, drawW, drawH);
+    ctxArg.drawImage(offscreenEl, cartX, cartY, drawW, drawH);
+  }
+
+  function drawPrefixedTimeCartouche(ctxArg, totalSeconds, boxX, centerY, maxWidth, maxHeight, largePx, smallPx) {
+    const safeSeconds = Math.max(0, Math.floor(totalSeconds || 0));
+    const key = `${safeSeconds}|${largePx}|${maxWidth}|${maxHeight}`;
+    const prefixCps = [TP_WORD_TO_CP.tenpo, TP_WORD_TO_CP.lili].filter(Number.isFinite);
+
+    if (endGameTimeRenderKey === key && endGameTimeOffscreen.width && endGameTimeOffscreen.height) {
+      drawRenderedTimeCartoucheInBox(ctxArg, endGameTimeOffscreen, prefixCps, boxX, centerY, maxWidth, maxHeight, largePx);
+      return;
+    }
+
+    if (endGameTimePendingKey !== key) {
+      endGameTimePendingKey = key;
+      const glyphs = buildTimeCartoucheGlyphs(safeSeconds);
+      renderTimeCartoucheToCanvas(endGameTimeOffscreen, glyphs, largePx)
+        .then(() => {
+          endGameTimeRenderKey = key;
+          endGameTimePendingKey = "";
+          if (game && game.finished) draw();
+        })
+        .catch(err => {
+          console.warn("End-game timer cartouche renderer failed", err);
+          renderMixedCartoucheToCanvas(endGameTimeOffscreen, glyphs, largePx, smallPx, SMALL_SET, {
+            padding: 12, border: 3, cornerRadius: 16, letterGap: 1
+          });
+          endGameTimeRenderKey = key;
+          endGameTimePendingKey = "";
+          if (game && game.finished) draw();
+        });
+    }
   }
 
   function drawGameMessage() {

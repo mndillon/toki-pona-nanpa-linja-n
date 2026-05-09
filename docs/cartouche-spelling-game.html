@@ -12,7 +12,7 @@
 
   <style>
     :root{
-      --topbar-h: 56px;
+      --topbar-h: 72px;
 
       /* Match 15-puzzle look */
       --bg: #F3DFC0;
@@ -39,6 +39,12 @@
     /* Nanpa-linja-n cartouche font (for numbers/time) */
     @font-face{
       font-family: "TP-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face{
+      font-family: "TP-Numeric-Cartouche-Font";
       src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
       font-display: swap;
     }
@@ -95,14 +101,14 @@ html, body{
     }
 
     .bestCanvas{
-      height: 36px;
+      height: 52px;
       width: 220px;
       display:block;
       cursor: pointer;
     }
 
     .timerCanvas{
-      height: 36px;
+      height: 52px;
       width: 170px;
       display:block;
     }
@@ -526,7 +532,9 @@ html, body{
     </footer>
   </div>
 
-<script>
+<script type="module">
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
+
 (() => {
   "use strict";
   /* ============================================================
@@ -4998,6 +5006,7 @@ html, body{
      ============================================================ */
   const FONT_FAMILY_LATIN = "TP-Nasin-Nanpa-Font";
   const FONT_FAMILY_NANPA_LINJA_N = "TP-Cartouche-Font";
+  const FONT_FAMILY_NUMERIC_CARTOUCHE = "TP-Numeric-Cartouche-Font";
   const CARTOUCHE_START_CP = 0xF1990;
   const CARTOUCHE_END_CP   = 0xF1991;
 
@@ -5507,6 +5516,7 @@ html, body{
     try{
       await document.fonts.load(`${px}px "${FONT_FAMILY_LATIN}"`, sample);
       await document.fonts.load(`${px}px "${FONT_FAMILY_NANPA_LINJA_N}"`, sample);
+      await document.fonts.load(`${px}px "${FONT_FAMILY_NUMERIC_CARTOUCHE}"`, sample);
       await document.fonts.ready;
     } catch {}
   }
@@ -5746,7 +5756,7 @@ html, body{
   }
 
   function timeSecondsToInnerCps(totalSeconds){
-    // mm:ss displayed using nanpa-linja-n digit rules + kolon separator
+    // mm:ss displayed using nanpa-linja-n digit rules + kasi separator
     const mm = Math.floor(totalSeconds / 60);
     const ss = Math.floor(totalSeconds % 60);
 
@@ -5755,7 +5765,7 @@ html, body{
 
     const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
     const cpEn    = WORD_TO_UCSUR_CP["en"];
-    const cpKolon = WORD_TO_UCSUR_CP["kolon"];
+    const cpKasi = WORD_TO_UCSUR_CP["kasi"];
 
     function digitInner(dChar){
       const cps = decimalToUcsurCodepoints(String(dChar));
@@ -5766,8 +5776,8 @@ html, body{
     const inner = [];
     for (const ch of mm2) inner.push(...digitInner(ch));
 
-    if (typeof cpKolon === "number"){
-      inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKolon, WORD_TO_UCSUR_CP["en"]);
+    if (typeof cpKasi === "number"){
+      inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKasi, WORD_TO_UCSUR_CP["en"]);
     }
 
     for (const ch of ss2) inner.push(...digitInner(ch));
@@ -5805,16 +5815,298 @@ html, body{
     ctx.drawImage(off, x, y, drawW, drawH);
   }
 
+
+  const TIMER_ABBREV_CP_NANPA = WORD_TO_UCSUR_CP["nanpa"];
+  const TIMER_ABBREV_CP_NENA  = WORD_TO_UCSUR_CP["nena"];
+  const TIMER_ABBREV_CP_EN    = WORD_TO_UCSUR_CP["en"];
+  const TIMER_ABBREV_CP_OPEN  = WORD_TO_UCSUR_CP["open"];
+
+  const TIMER_NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
+    TIMER_ABBREV_CP_NANPA,
+    TIMER_ABBREV_CP_EN,
+    TIMER_ABBREV_CP_NENA,
+    TIMER_ABBREV_CP_OPEN
+  ]);
+
+  const TIMER_UCSUR_CP_TO_WORD = new Map(
+    Object.entries(WORD_TO_UCSUR_CP)
+      .filter(([word]) => word !== "kolon" && word !== "koma")
+      .map(([word, cp]) => [cp, word])
+  );
+
+  let timeSitelenRenderer = null;
+  let timeSitelenRendererPromise = null;
+  let topTimerRenderSeq = 0;
+  let topScoreRenderSeq = 0;
+
+  function abbreviateTimerNumericCartoucheCps(cps) {
+    const input = Array.from(cps ?? []).map(cp => Number(cp));
+    if (!input.length) return input;
+
+    const out = [];
+    let keptFirstNanpa = false;
+
+    for (let i = 0; i < input.length; i++) {
+      const cp = input[i];
+      const isFinalNanpa = (cp === TIMER_ABBREV_CP_NANPA && i === input.length - 1);
+
+      if (!keptFirstNanpa) {
+        out.push(cp);
+        if (cp === TIMER_ABBREV_CP_NANPA) keptFirstNanpa = true;
+        continue;
+      }
+
+      if (isFinalNanpa) {
+        out.push(cp);
+        continue;
+      }
+
+      if (TIMER_NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+      out.push(cp);
+    }
+
+    return out;
+  }
+
+  function timeCartoucheInputFromCps(cps) {
+    const words = [];
+    for (const cp of Array.from(cps ?? [])) {
+      const word = TIMER_UCSUR_CP_TO_WORD.get(Number(cp));
+      if (!word) throw new Error(`No Toki Pona word for timer codepoint U+${Number(cp).toString(16).toUpperCase()}`);
+      words.push(word);
+    }
+    return `[${words.join(" ")}]`;
+  }
+
+  function buildTimeRendererConfig(fontPx) {
+    const px = Math.max(8, Number(fontPx) || 44);
+    return {
+      layout: {
+        fontPx: px,
+        align: "left",
+        spacingPreset: "compact",
+        paddingPx: Math.max(8, Math.round(px * 0.25))
+      },
+      paint: {
+        fillStyle: "#111111",
+        halo: { enabled: false, color: "#FFFFFF", widthPx: 0 }
+      },
+      parser: {
+        mode: "sitelen-seli-kiwen",
+        literalStyle: "double-quote",
+        extensionStyle: "ssk",
+        cartoucheStyle: "ssk",
+        numericMode: "compat",
+        mixedStyle: "short",
+        showUnknownText: false,
+        abbreviateNumericCartouches: true,
+        cartoucheCommaTallyMarks: false,
+        cartoucheTallyMode: "ucsur"
+      },
+      fonts: {
+        roles: {
+          word: FONT_FAMILY_LATIN,
+          text: FONT_FAMILY_LATIN,
+          cartouche: FONT_FAMILY_NUMERIC_CARTOUCHE,
+          number: FONT_FAMILY_NUMERIC_CARTOUCHE,
+          date: FONT_FAMILY_NUMERIC_CARTOUCHE,
+          time: FONT_FAMILY_NUMERIC_CARTOUCHE,
+          literal: "PatrickHand",
+          unknown: "PatrickHand"
+        }
+      }
+    };
+  }
+
+  async function ensureTimeSitelenRenderer(fontPx = 44) {
+    if (timeSitelenRenderer) return timeSitelenRenderer;
+    if (!timeSitelenRendererPromise) {
+      timeSitelenRendererPromise = (async () => {
+        await ensureFontsLoaded();
+        timeSitelenRenderer = await SitelenRenderer.create(buildTimeRendererConfig(fontPx));
+        return timeSitelenRenderer;
+      })();
+    }
+    return timeSitelenRendererPromise;
+  }
+
+  function cropCanvasToVisibleBounds(sourceCanvas, paddingPx = 1) {
+    const src = sourceCanvas;
+    if (!src || !src.width || !src.height) return src;
+
+    const w = src.width | 0;
+    const h = src.height | 0;
+    const ctx = src.getContext("2d", { alpha: true });
+    if (!ctx) return src;
+
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch {
+      return src;
+    }
+
+    let minX = w;
+    let minY = h;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < h; y++) {
+      const row = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        const a = data[row + x * 4 + 3];
+        if (a > 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < minX || maxY < minY) return src;
+
+    const pad = Math.max(0, Math.round(Number(paddingPx) || 0));
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+
+    const outW = Math.max(1, maxX - minX + 1);
+    const outH = Math.max(1, maxY - minY + 1);
+
+    if (outW === w && outH === h) return src;
+
+    const out = document.createElement("canvas");
+    out.width = outW;
+    out.height = outH;
+    const outCtx = out.getContext("2d", { alpha: true });
+    outCtx.clearRect(0, 0, outW, outH);
+    outCtx.drawImage(src, minX, minY, outW, outH, 0, 0, outW, outH);
+    return out;
+  }
+
+  async function renderTimeCartoucheToNewCanvas(totalSeconds, fontPx) {
+    const renderer = await ensureTimeSitelenRenderer(fontPx);
+    const fullCps = timeSecondsToInnerCps(totalSeconds);
+    const displayCps = abbreviateTimerNumericCartoucheCps(fullCps);
+    const input = timeCartoucheInputFromCps(displayCps);
+
+    const rendered = await renderer.renderTextToNewCanvas({
+      input,
+      ...buildTimeRendererConfig(fontPx)
+    });
+
+    const src = rendered && rendered.canvas;
+    if (!src) throw new Error("Timer cartouche renderer did not return a canvas");
+
+    return cropCanvasToVisibleBounds(src, Math.max(4, Math.round((Number(fontPx) || 44) * 0.12)));
+  }
+
+  async function renderScoreCartoucheToNewCanvas(scoreValue, fontPx) {
+    const renderer = await ensureTimeSitelenRenderer(fontPx);
+    const n = Math.max(0, Math.floor(Number(scoreValue) || 0));
+
+    const rendered = await renderer.renderTextToNewCanvas({
+      input: String(n),
+      ...buildTimeRendererConfig(fontPx)
+    });
+
+    const src = rendered && rendered.canvas;
+    if (!src) throw new Error("Score cartouche renderer did not return a canvas");
+
+    return cropCanvasToVisibleBounds(src, Math.max(4, Math.round((Number(fontPx) || 44) * 0.12)));
+  }
+
+  function drawRenderedCartoucheCanvas(targetCanvas, off, { cssW, cssH, align = "center" } = {}) {
+    if (!targetCanvas || !off) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.floor(Number(cssW) || targetCanvas.clientWidth || 1));
+    const h = Math.max(1, Math.floor(Number(cssH) || targetCanvas.clientHeight || 1));
+
+    targetCanvas.style.width = `${w}px`;
+    targetCanvas.style.height = `${h}px`;
+    targetCanvas.width = Math.ceil(w * dpr);
+    targetCanvas.height = Math.ceil(h * dpr);
+
+    const ctx = targetCanvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const scale = Math.min(w / off.width, h / off.height);
+    const drawW = Math.max(1, Math.floor(off.width * scale));
+    const drawH = Math.max(1, Math.floor(off.height * scale));
+
+    let x;
+    if (align === "right") x = Math.floor(w - drawW);
+    else if (align === "left") x = 0;
+    else x = Math.floor((w - drawW) / 2);
+
+    const y = Math.floor((h - drawH) / 2);
+    ctx.drawImage(off, x, y, drawW, drawH);
+  }
+
+  function renderScoreCartoucheIntoCanvas(targetCanvas, scoreValue, { cssW, cssH, fontPx, align = "center" } = {}) {
+    if (!targetCanvas) return;
+    const w = Math.max(1, Math.floor(Number(cssW) || targetCanvas.clientWidth || 1));
+    const h = Math.max(1, Math.floor(Number(cssH) || targetCanvas.clientHeight || 1));
+    const dpr = window.devicePixelRatio || 1;
+
+    targetCanvas.style.width = `${w}px`;
+    targetCanvas.style.height = `${h}px`;
+    targetCanvas.width = Math.ceil(w * dpr);
+    targetCanvas.height = Math.ceil(h * dpr);
+
+    const ctx = targetCanvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    renderScoreCartoucheToNewCanvas(scoreValue, fontPx)
+      .then((off) => drawRenderedCartoucheCanvas(targetCanvas, off, { cssW: w, cssH: h, align }))
+      .catch((err) => {
+        console.error("[score-cartouche] render failed", err);
+      });
+  }
+
   /* ============================================================
      Topbar timer + best score cartouches (simple numeric)
      ============================================================ */
   function renderTopTimer(secondsLeft){
     const c = document.getElementById("timerCanvas");
     if (!c) return;
+
+    const seq = ++topTimerRenderSeq;
     const cssW = c.classList.contains("timerCanvas") ? parseInt(getComputedStyle(c).width, 10) || 170 : 170;
-    const cssH = 36;
-    const inner = timeSecondsToInnerCps(secondsLeft);
-    fitDrawCartouche(c, inner, { cssW, cssH, fontPx: 44, fontFamily: FONT_FAMILY_NANPA_LINJA_N , align: "left" });
+    const cssH = 52;
+    const dpr = window.devicePixelRatio || 1;
+
+    c.style.width = `${cssW}px`;
+    c.style.height = `${cssH}px`;
+    c.width = Math.ceil(cssW * dpr);
+    c.height = Math.ceil(cssH * dpr);
+
+    const ctx = c.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    renderTimeCartoucheToNewCanvas(secondsLeft, 44)
+      .then((off) => {
+        if (seq !== topTimerRenderSeq) return;
+        const drawScale = Math.min(cssW / off.width, cssH / off.height);
+        const drawW = Math.floor(off.width * drawScale);
+        const drawH = Math.floor(off.height * drawScale);
+        const x = 0;
+        const y = Math.floor((cssH - drawH) / 2);
+
+        const drawCtx = c.getContext("2d");
+        drawCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawCtx.clearRect(0, 0, cssW, cssH);
+        drawCtx.drawImage(off, x, y, drawW, drawH);
+      })
+      .catch((err) => {
+        console.error("[timer-cartouche] render failed", err);
+      });
   }
 
   function setBestCanvasVisible(v){
@@ -5832,10 +6124,28 @@ html, body{
     if (bestScore == null){ setBestCanvasVisible(false); return; }
     setBestCanvasVisible(true);
 
-    // prefix "pona" is not embedded; keep it numeric-only for now (simple + robust)
+    const seq = ++topScoreRenderSeq;
     const cssW = 220;
-    const cssH = 36;
-    fitDrawCartouche(c, pointsToInnerCps(bestScore), { cssW, cssH, fontPx: 44, fontFamily: FONT_FAMILY_NANPA_LINJA_N , align: "left"});
+    const cssH = 52;
+    const dpr = window.devicePixelRatio || 1;
+
+    c.style.width = `${cssW}px`;
+    c.style.height = `${cssH}px`;
+    c.width = Math.ceil(cssW * dpr);
+    c.height = Math.ceil(cssH * dpr);
+
+    const ctx = c.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    renderScoreCartoucheToNewCanvas(bestScore, 44)
+      .then((off) => {
+        if (seq !== topScoreRenderSeq) return;
+        drawRenderedCartoucheCanvas(c, off, { cssW, cssH, align: "left" });
+      })
+      .catch((err) => {
+        console.error("[best-score-cartouche] render failed", err);
+      });
   }
 
 
@@ -5887,54 +6197,49 @@ function renderFinishScorePopup(finalScore){
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, cssW, cssH);
 
-  // Build cartouche for score using nanpa-linja-n font rules
-  const innerCps = pointsToInnerCps(finalScore);
-
-  // Render cartouche to an offscreen canvas at a large nominal size
-  const off = document.createElement("canvas");
   const largePx = 72;
-  const pad = Math.max(6, Math.round(largePx * 0.12));
-  renderFontCartoucheToCanvas(off, innerCps, {
-    fontPx: largePx,
-    padPx: pad,
-    fontFamily: FONT_FAMILY_NANPA_LINJA_N,
-    fgCss: "#111"
-  });
+  renderScoreCartoucheToNewCanvas(finalScore, largePx)
+    .then((off) => {
+      const drawCtx = finishCanvas.getContext("2d");
+      drawCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawCtx.clearRect(0, 0, cssW, cssH);
 
-  // Prefix glyphs OUTSIDE the cartouche: nanpa pona
-  const prefixCps = [WORD_TO_UCSUR_CP["nanpa"], WORD_TO_UCSUR_CP["musi"]].filter(Boolean);
-  const gapPx = 10;
-  const interGlyphGapPx = 6;
+      // Prefix glyphs OUTSIDE the cartouche: nanpa musi
+      const prefixCps = [WORD_TO_UCSUR_CP["nanpa"], WORD_TO_UCSUR_CP["musi"]].filter(Boolean);
+      const gapPx = 10;
+      const interGlyphGapPx = 6;
 
-  // Measure prefix width at an initial scaled font size
-  let scale = Math.min(cssW / off.width, cssH / off.height);
-  let prefixFontPx = Math.max(14, largePx * scale);
+      let scale = Math.min(cssW / off.width, cssH / off.height);
+      let prefixFontPx = Math.max(14, largePx * scale);
 
-  ctx.save();
-  ctx.font = `${prefixFontPx}px "${FONT_FAMILY_LATIN}"`;
-  const prefixChars = prefixCps.map(cp => String.fromCodePoint(cp));
-  let prefixW = 0;
-  for (let i = 0; i < prefixChars.length; i++){
-    prefixW += ctx.measureText(prefixChars[i]).width;
-    if (i < prefixChars.length - 1) prefixW += interGlyphGapPx;
-  }
-  ctx.restore();
+      drawCtx.save();
+      drawCtx.font = `${prefixFontPx}px "${FONT_FAMILY_LATIN}"`;
+      const prefixChars = prefixCps.map(cp => String.fromCodePoint(cp));
+      let prefixW = 0;
+      for (let i = 0; i < prefixChars.length; i++){
+        prefixW += drawCtx.measureText(prefixChars[i]).width;
+        if (i < prefixChars.length - 1) prefixW += interGlyphGapPx;
+      }
+      drawCtx.restore();
 
-  const availWForCartouche = Math.max(120, cssW - (prefixCps.length ? (prefixW + gapPx) : 0));
-  scale = Math.min(availWForCartouche / off.width, cssH / off.height);
-  prefixFontPx = Math.max(14, largePx * scale);
+      const availWForCartouche = Math.max(120, cssW - (prefixCps.length ? (prefixW + gapPx) : 0));
+      scale = Math.min(availWForCartouche / off.width, cssH / off.height);
+      prefixFontPx = Math.max(14, largePx * scale);
 
-  const drawW = Math.floor(off.width * scale);
-  const drawH = Math.floor(off.height * scale);
+      const drawW = Math.max(1, Math.floor(off.width * scale));
+      const drawH = Math.max(1, Math.floor(off.height * scale));
 
-  // Right-align the cartouche box
-  const x = Math.floor(cssW - drawW);
-  const y = Math.floor((cssH - drawH) / 2);
+      const x = Math.floor(cssW - drawW);
+      const y = Math.floor((cssH - drawH) / 2);
 
-  if (prefixCps.length){
-    drawPrefixGlyphsLeftOfBox(ctx, x, cssH / 2, prefixFontPx, prefixCps, gapPx, interGlyphGapPx);
-  }
-  ctx.drawImage(off, x, y, drawW, drawH);
+      if (prefixCps.length){
+        drawPrefixGlyphsLeftOfBox(drawCtx, x, cssH / 2, prefixFontPx, prefixCps, gapPx, interGlyphGapPx);
+      }
+      drawCtx.drawImage(off, x, y, drawW, drawH);
+    })
+    .catch((err) => {
+      console.error("[finish-score-cartouche] render failed", err);
+    });
 }
 
 function showFinishPopup(finalScore){
@@ -6080,7 +6385,7 @@ function hideFinishPopup(){
       leftEl = pts;
 
       // render points cartouche (right-justified within the slot)
-      fitDrawCartouche(pts, pointsToInnerCps(points), { cssW: 84, cssH: 30, fontPx: 32, fontFamily: FONT_FAMILY_NANPA_LINJA_N, align: "right" });
+      renderScoreCartoucheIntoCanvas(pts, points, { cssW: 84, cssH: 30, fontPx: 32, align: "right" });
     }
 
     const span = document.createElement("div");
