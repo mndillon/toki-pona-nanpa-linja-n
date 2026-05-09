@@ -1821,6 +1821,7 @@ function resizeCanvasToDisplaySize(){
 
     const q = [];
     const distFromTrunk = new Map();
+    const branchRootByKey = new Map();
 
     for (const key of trunkCells) {
       const parts = key.split(",");
@@ -1829,6 +1830,7 @@ function resizeCanvasToDisplaySize(){
       if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
       q.push({ cx, cy });
       distFromTrunk.set(key, 0);
+      branchRootByKey.set(key, null);
     }
 
     const candidates = [];
@@ -1843,7 +1845,9 @@ function resizeCanvasToDisplaySize(){
         if (distFromTrunk.has(nbKey)) continue;
 
         const nbDist = curDist + 1;
+        const branchRootKey = trunkCells.has(curKey) ? curKey : branchRootByKey.get(curKey);
         distFromTrunk.set(nbKey, nbDist);
+        branchRootByKey.set(nbKey, branchRootKey);
         q.push(nb);
 
         const nbStartDist = startDist.get(nbKey);
@@ -1855,7 +1859,9 @@ function resizeCanvasToDisplaySize(){
             cy: nb.cy,
             key: nbKey,
             distance: nbDist,
-            startDistance: nbStartDist
+            startDistance: nbStartDist,
+            branchRootKey,
+            minSecondTrapStartDistance: Math.floor(endStartDist * 0.35)
           });
         }
       }
@@ -1884,10 +1890,10 @@ function resizeCanvasToDisplaySize(){
     const list = Array.isArray(candidates) ? candidates : [];
     if (list.length === 0) return [];
 
-    if (count <= 1 || list.length === 1) {
+    function chooseSingleTrapDoor(listForChoice) {
       let bestDist = -1;
       const best = [];
-      for (const c of list) {
+      for (const c of listForChoice) {
         if (c.distance > bestDist) {
           bestDist = c.distance;
           best.length = 0;
@@ -1896,45 +1902,26 @@ function resizeCanvasToDisplaySize(){
           best.push(c);
         }
       }
-      return [best[Math.floor(Math.random() * best.length)]];
+      return best.length ? best[Math.floor(Math.random() * best.length)] : null;
     }
 
-    const pairDistCache = new Map();
-    let bestMinTrunkDist = -1;
-    let bestSeparation = -1;
-    let bestTotalTrunkDist = -1;
-    const bestPairs = [];
+    const first = chooseSingleTrapDoor(list);
+    if (!first) return [];
+    if (count <= 1 || list.length === 1) return [first];
 
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i];
-        const b = list[j];
-        const minTrunkDist = Math.min(a.distance, b.distance);
-        const separation = mazeDistanceBetweenCells(a, b, pairDistCache);
-        const totalTrunkDist = a.distance + b.distance;
+    const minSecondTrapStartDistance = Number.isFinite(first.minSecondTrapStartDistance)
+      ? first.minSecondTrapStartDistance
+      : 0;
 
-        if (
-          minTrunkDist > bestMinTrunkDist ||
-          (minTrunkDist === bestMinTrunkDist && separation > bestSeparation) ||
-          (minTrunkDist === bestMinTrunkDist && separation === bestSeparation && totalTrunkDist > bestTotalTrunkDist)
-        ) {
-          bestMinTrunkDist = minTrunkDist;
-          bestSeparation = separation;
-          bestTotalTrunkDist = totalTrunkDist;
-          bestPairs.length = 0;
-          bestPairs.push([a, b]);
-        } else if (
-          minTrunkDist === bestMinTrunkDist &&
-          separation === bestSeparation &&
-          totalTrunkDist === bestTotalTrunkDist
-        ) {
-          bestPairs.push([a, b]);
-        }
-      }
-    }
+    const secondList = list.filter(c => (
+      c.key !== first.key &&
+      c.branchRootKey !== first.branchRootKey &&
+      Number.isFinite(c.startDistance) &&
+      c.startDistance >= minSecondTrapStartDistance
+    ));
 
-    if (bestPairs.length === 0) return chooseTrapDoorCells(list, 1);
-    return bestPairs[Math.floor(Math.random() * bestPairs.length)];
+    const second = chooseSingleTrapDoor(secondList);
+    return second ? [first, second] : [first];
   }
 
   function findTrapDoorCells() {
