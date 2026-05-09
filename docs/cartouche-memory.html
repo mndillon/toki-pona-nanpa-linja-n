@@ -522,7 +522,7 @@
       .hint { font-size: 14px; padding: 8px; }
       .scoreRow { font-size: 14px; gap: 9px; padding: 8px; }
       .memoryGrid { padding: 8px; }
-      .memoryTile { aspect-ratio: 82 / 116; }
+      .memoryTile { aspect-ratio: 246 / 116; }
 
       /* Mobile: the grid is mostly a selector. The readable content is shown below. */
       .memoryTile:not(.matched):not(.selected) .tileFace { display: none; }
@@ -3092,6 +3092,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   let timerId = null;
   let busy = false;
   let backCache = null;
+  let mobileBackCache = null;
   let timeSitelenRenderer = null;
   let timeSitelenRendererPromise = null;
   const timerCtx = els.timerCanvas.getContext("2d");
@@ -3519,9 +3520,9 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     ctx.quadraticCurveTo(x, y, x + rr, y);
   }
 
-  function buildCardBackCanvas() {
-    // Landscape card back for desktop/laptop use. Mobile tiles keep a portrait
-    // aspect ratio in CSS, but the canvas is fitted to the tile by the browser.
+  function buildCardBackCanvas({ logoFontPx = 90 } = {}) {
+    // Landscape card back for desktop/laptop use. Mobile tiles use a much
+    // shorter selector aspect ratio in CSS, but the canvas is fitted to the tile by the browser.
     const w = 232;
     const h = 164;
     const c = document.createElement("canvas");
@@ -3559,7 +3560,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     // independent of the selected cartouche/game font. The input uses the
     // normal renderer-style compound text so pona nests inside toki.
     const logoText = "toki&pona";
-    ctx.font = `90px "TP-Nasin-Nanpa-Font", "PatrickHand", system-ui, sans-serif`;
+    ctx.font = `${logoFontPx}px "TP-Nasin-Nanpa-Font", "PatrickHand", system-ui, sans-serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
     const logoMetrics = ctx.measureText(logoText);
@@ -3579,11 +3580,14 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   function getBackCanvasClone() {
-    if (!backCache) backCache = buildCardBackCanvas();
+    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+    const source = compact
+      ? (mobileBackCache || (mobileBackCache = buildCardBackCanvas({ logoFontPx: 54 })))
+      : (backCache || (backCache = buildCardBackCanvas()));
     const c = document.createElement("canvas");
-    c.width = backCache.width;
-    c.height = backCache.height;
-    c.getContext("2d").drawImage(backCache, 0, 0);
+    c.width = source.width;
+    c.height = source.height;
+    c.getContext("2d").drawImage(source, 0, 0);
     return c;
   }
 
@@ -3739,8 +3743,28 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   function buildMemoryDeck(pairCount, mode) {
-    const sourceItems = shuffle(itemsForDeck(mode));
-    const selected = selectUniqueDeckItems(sourceItems, Math.min(pairCount, sourceItems.length));
+    let selected;
+
+    if (mode === "mixed") {
+      const numericTarget = Math.ceil(pairCount / 2);
+      const numberItems = shuffle(itemsForDeck("numbers"));
+      const nameItems = shuffle(itemsForDeck("names"));
+      const selectedNumbers = selectUniqueDeckItems(numberItems, Math.min(numericTarget, numberItems.length));
+      const selectedNames = selectUniqueDeckItems(nameItems, Math.min(pairCount - selectedNumbers.length, nameItems.length));
+      selected = selectedNumbers.concat(selectedNames);
+
+      if (selected.length < pairCount) {
+        const alreadySelected = new Set(selected.map(item => itemDedupeKey(item)));
+        const fallbackItems = shuffle(BUILT_IN_ITEMS).filter(item => !alreadySelected.has(itemDedupeKey(item)));
+        selected = selected.concat(selectUniqueDeckItems(fallbackItems, pairCount - selected.length));
+      }
+
+      selected = shuffle(selected).slice(0, pairCount);
+    } else {
+      const sourceItems = shuffle(itemsForDeck(mode));
+      selected = selectUniqueDeckItems(sourceItems, Math.min(pairCount, sourceItems.length));
+    }
+
     const cards = [];
     selected.forEach((item, pairOrder) => {
       cards.push({ cardId: `${item.id}_latin`, pairId: item.id, pairOrder, faceType: "latin", type: item.type, label: item.latinLabel, renderInput: item.renderInput });
@@ -4304,6 +4328,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
 
       await sitelenFontController.waitForConfiguredFonts(64);
       await document.fonts?.load?.('90px "TP-Nasin-Nanpa-Font"', 'toki&pona tenpo lili pona');
+      await document.fonts?.load?.('54px "TP-Nasin-Nanpa-Font"', 'toki&pona');
       await document.fonts?.load?.('34px "TP-Cartouche-Font"', String.fromCodePoint(TP_WORD_TO_CP.nanpa));
       applyLanguage();
       wireEvents();
