@@ -436,6 +436,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
 
       visited_label: "Visited dots",
       visited_title: "Leave a small dot behind on each cell you leave",
+      trapdoor_hint: "Trap door: finish",
 
       status_loading: "Loading fonts…",
       status_click_new: "Click “Start New Game”.",
@@ -475,6 +476,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
 
       visited_label: "pini la sitelen lili",
       visited_title: "sina weka tan ma la o awen e sitelen lili lon ona",
+      trapdoor_hint: "lupa anpa: pini",
 
       status_loading: "mi kama jo e sitelen…",
       status_click_new: "o kepeken nena musi sin.",
@@ -580,7 +582,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   function isSmallViewport() {
     return Math.min(window.innerWidth || 9999, window.innerHeight || 9999) <= 820;
   }
-  function isMobileLike() { return isCoarsePointer() || isSmallViewport(); }
+  function isMobileLike() { return isCoarsePointer() && isSmallViewport(); }
 
   function isMobileTopbarMode() {
     try { return window.matchMedia && window.matchMedia("(pointer: coarse), (max-width: 520px)").matches; }
@@ -706,7 +708,10 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   }
 
   function enforceMobileMazeSizeUI(mazeSizeSel) {
-    if (!isMobileLike()) return;
+    if (!isMobileLike()) {
+      Array.from(mazeSizeSel.options).forEach(opt => { opt.disabled = false; });
+      return;
+    }
     mazeSizeSel.value = "small";
     mazeSizeSel.disabled = true;
     Array.from(mazeSizeSel.options).forEach(opt => { opt.disabled = (opt.value !== "small"); });
@@ -1467,7 +1472,8 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   let state = GameState.idle;
 
   function syncMazeSizeUiLock() {
-    if (isMobileLike()) { enforceMobileMazeSizeUI(mazeSizeSel); return; }
+    enforceMobileMazeSizeUI(mazeSizeSel);
+    if (isMobileLike()) return;
     mazeSizeSel.disabled = (state === GameState.running || state === GameState.quitting);
   }
 
@@ -1488,6 +1494,9 @@ function resizeCanvasToDisplaySize(){
       applyMazeSizePreset("small");
       applyMobileOverridesIfNeeded();
       enforceMobileMazeSizeUI(mazeSizeSel);
+    } else {
+      enforceMobileMazeSizeUI(mazeSizeSel);
+      syncMazeSizeUiLock();
     }
     resizeCanvasToDisplaySize();
     layout();
@@ -1704,6 +1713,7 @@ function resizeCanvasToDisplaySize(){
   let seenCells = new Set();
   let deadCells = new Set();
   let trunkCells = new Set();
+  let trapDoorCells = [];
 
   function setVisitedControlsEnabled(enabled) {
     visitedDotsChk.disabled = !enabled;
@@ -1772,6 +1782,164 @@ function resizeCanvasToDisplaySize(){
       k = parent.get(k) ?? null;
     }
     return trunk;
+  }
+  function bfsDistancesFromCell(source) {
+    const dist = new Map();
+    if (!maze || !source) return dist;
+
+    const startK = cellKey(source.cx, source.cy);
+    const q = [source];
+    dist.set(startK, 0);
+
+    for (let qi = 0; qi < q.length; qi++) {
+      const cur = q[qi];
+      const curKey = cellKey(cur.cx, cur.cy);
+      const curDist = dist.get(curKey) ?? 0;
+
+      for (const nb of neighborsOf(cur.cx, cur.cy)) {
+        const nbKey = cellKey(nb.cx, nb.cy);
+        if (dist.has(nbKey)) continue;
+        dist.set(nbKey, curDist + 1);
+        q.push(nb);
+      }
+    }
+
+    return dist;
+  }
+
+  function getTrapDoorCountForCurrentMazeSize() {
+    return getCurrentMazeSizeName() === "large" ? 2 : 1;
+  }
+
+  function collectTrapDoorCandidates() {
+    if (!maze || !startCell || !endCell || !trunkCells || trunkCells.size === 0) return [];
+
+    const startDist = bfsDistancesFromCell(startCell);
+    const endK = cellKey(endCell.cx, endCell.cy);
+    const endStartDist = startDist.get(endK);
+    if (!Number.isFinite(endStartDist)) return [];
+
+    const q = [];
+    const distFromTrunk = new Map();
+
+    for (const key of trunkCells) {
+      const parts = key.split(",");
+      const cx = Number(parts[0]);
+      const cy = Number(parts[1]);
+      if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
+      q.push({ cx, cy });
+      distFromTrunk.set(key, 0);
+    }
+
+    const candidates = [];
+
+    for (let qi = 0; qi < q.length; qi++) {
+      const cur = q[qi];
+      const curKey = cellKey(cur.cx, cur.cy);
+      const curDist = distFromTrunk.get(curKey) ?? 0;
+
+      for (const nb of neighborsOf(cur.cx, cur.cy)) {
+        const nbKey = cellKey(nb.cx, nb.cy);
+        if (distFromTrunk.has(nbKey)) continue;
+
+        const nbDist = curDist + 1;
+        distFromTrunk.set(nbKey, nbDist);
+        q.push(nb);
+
+        const nbStartDist = startDist.get(nbKey);
+        const isCloserToStartThanExit = Number.isFinite(nbStartDist) && nbStartDist < endStartDist;
+
+        if (!trunkCells.has(nbKey) && isCloserToStartThanExit && degreeOf(nb.cx, nb.cy) === 1) {
+          candidates.push({
+            cx: nb.cx,
+            cy: nb.cy,
+            key: nbKey,
+            distance: nbDist,
+            startDistance: nbStartDist
+          });
+        }
+      }
+    }
+
+    return candidates;
+  }
+
+  function mazeDistanceBetweenCells(a, b, cache = null) {
+    if (!a || !b) return -1;
+    const aKey = cellKey(a.cx, a.cy);
+    const bKey = cellKey(b.cx, b.cy);
+
+    let distMap = cache && cache.get(aKey);
+    if (!distMap) {
+      distMap = bfsDistancesFromCell(a);
+      if (cache) cache.set(aKey, distMap);
+    }
+
+    const d = distMap.get(bKey);
+    return Number.isFinite(d) ? d : -1;
+  }
+
+  function chooseTrapDoorCells(candidates, desiredCount) {
+    const count = Math.max(1, Math.floor(Number(desiredCount) || 1));
+    const list = Array.isArray(candidates) ? candidates : [];
+    if (list.length === 0) return [];
+
+    if (count <= 1 || list.length === 1) {
+      let bestDist = -1;
+      const best = [];
+      for (const c of list) {
+        if (c.distance > bestDist) {
+          bestDist = c.distance;
+          best.length = 0;
+          best.push(c);
+        } else if (c.distance === bestDist) {
+          best.push(c);
+        }
+      }
+      return [best[Math.floor(Math.random() * best.length)]];
+    }
+
+    const pairDistCache = new Map();
+    let bestMinTrunkDist = -1;
+    let bestSeparation = -1;
+    let bestTotalTrunkDist = -1;
+    const bestPairs = [];
+
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
+        const b = list[j];
+        const minTrunkDist = Math.min(a.distance, b.distance);
+        const separation = mazeDistanceBetweenCells(a, b, pairDistCache);
+        const totalTrunkDist = a.distance + b.distance;
+
+        if (
+          minTrunkDist > bestMinTrunkDist ||
+          (minTrunkDist === bestMinTrunkDist && separation > bestSeparation) ||
+          (minTrunkDist === bestMinTrunkDist && separation === bestSeparation && totalTrunkDist > bestTotalTrunkDist)
+        ) {
+          bestMinTrunkDist = minTrunkDist;
+          bestSeparation = separation;
+          bestTotalTrunkDist = totalTrunkDist;
+          bestPairs.length = 0;
+          bestPairs.push([a, b]);
+        } else if (
+          minTrunkDist === bestMinTrunkDist &&
+          separation === bestSeparation &&
+          totalTrunkDist === bestTotalTrunkDist
+        ) {
+          bestPairs.push([a, b]);
+        }
+      }
+    }
+
+    if (bestPairs.length === 0) return chooseTrapDoorCells(list, 1);
+    return bestPairs[Math.floor(Math.random() * bestPairs.length)];
+  }
+
+  function findTrapDoorCells() {
+    const candidates = collectTrapDoorCandidates();
+    return chooseTrapDoorCells(candidates, getTrapDoorCountForCurrentMazeSize());
   }
 
   function componentBehindEdge(start, blocked) {
@@ -2041,6 +2209,7 @@ function resizeCanvasToDisplaySize(){
         endCell = { cx: ex, cy: ey };
         buildWallRects();
         trunkCells = computeTrunkPathSet(startCell, endCell);
+        trapDoorCells = findTrapDoorCells();
         return;
       }
     }
@@ -2052,6 +2221,7 @@ function resizeCanvasToDisplaySize(){
     maze.cells[endCell.cy][endCell.cx].e = false;
     buildWallRects();
     trunkCells = computeTrunkPathSet(startCell, endCell);
+    trapDoorCells = findTrapDoorCells();
   }
 
   /* =========================
@@ -2390,6 +2560,12 @@ function resizeCanvasToDisplaySize(){
     return (tok.x - tok.size/2 > mazeRect.x + mazeRect.w + 2);
   }
 
+  function checkTokenTrapDoor(tok) {
+    if (!Array.isArray(trapDoorCells) || trapDoorCells.length === 0) return false;
+    const cur = tokenCellFromPosition(tok.x, tok.y);
+    return trapDoorCells.some(cell => cell && cur.cx === cell.cx && cur.cy === cell.cy);
+  }
+
   function keepInMazeBounds(tok) {
     const w = runtime.wall || CFG.wallThickness;
 
@@ -2473,18 +2649,84 @@ function resizeCanvasToDisplaySize(){
     }
   }
 
+  function drawTrapDoorIcon(x, y, size) {
+    const r = Math.max(2, size * 0.12);
+
+    ctx.save();
+    ctx.lineWidth = Math.max(1.25, size * 0.08);
+    ctx.strokeStyle = "rgba(17,17,17,0.82)";
+    ctx.fillStyle = "rgba(17,17,17,0.08)";
+
+    drawRoundedRect(ctx, x, y, size, size, r);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.18, y + size * 0.34);
+    ctx.lineTo(x + size * 0.82, y + size * 0.34);
+    ctx.moveTo(x + size * 0.18, y + size * 0.66);
+    ctx.lineTo(x + size * 0.82, y + size * 0.66);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(x + size * 0.5, y + size * 0.5, Math.max(1.4, size * 0.08), 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(17,17,17,0.72)";
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTrapDoorLegend() {
+    if (!Array.isArray(trapDoorCells) || trapDoorCells.length === 0) return;
+
+    const label = t("trapdoor_hint");
+    const fontPx = isMobileLike() ? 12 : 15;
+    const iconSize = Math.max(8, Math.min(14, runtime.cell * 0.36));
+    const gap = 6;
+    const lineH = Math.max(fontPx + 4, iconSize + 2);
+
+    ctx.save();
+    ctx.font = `${fontPx}px "PatrickHand", system-ui, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(17,17,17,0.72)";
+
+    const textW = ctx.measureText(label).width;
+    const totalW = iconSize + gap + textW;
+    const x = mazeRect.x + Math.max(0, (mazeRect.w - totalW) / 2);
+    const y = Math.max(4, mazeRect.y - lineH - 4);
+
+    drawTrapDoorIcon(x, y + (lineH - iconSize) / 2, iconSize);
+    ctx.fillText(label, x + iconSize + gap, y + lineH / 2);
+    ctx.restore();
+  }
+
+  function drawTrapDoor() {
+    if (!Array.isArray(trapDoorCells) || trapDoorCells.length === 0) return;
+
+    for (const cell of trapDoorCells) {
+      if (!cell) continue;
+      const rr = cellToRect(cell.cx, cell.cy);
+      const size = Math.max(8, Math.min(rr.w, rr.h) * 0.48);
+      const x = rr.x + (rr.w - size) / 2;
+      const y = rr.y + (rr.h - size) / 2;
+      drawTrapDoorIcon(x, y, size);
+    }
+  }
+
   function drawMaze() {
     if (!maze) return;
 
     ctx.fillStyle = "rgba(255,255,255,0.18)";
     ctx.fillRect(mazeRect.x, mazeRect.y, mazeRect.w, mazeRect.h);
 
+    drawTrapDoorLegend();
     drawDeadCellsOverlay();
 
     ctx.fillStyle = "#111";
     for (const w of wallRects) ctx.fillRect(w.x, w.y, w.w, w.h);
 
     drawVisitedDots();
+    drawTrapDoor();
 
     const cell = runtime.cell;
     const sr = cellToRect(startCell.cx, startCell.cy);
@@ -2682,6 +2924,7 @@ function resizeCanvasToDisplaySize(){
 
     clearVisitedCells();
     trunkCells = new Set();
+    trapDoorCells = [];
 
     setStatus(t("status_quit"));
     draw();
@@ -2927,7 +3170,7 @@ function resizeCanvasToDisplaySize(){
             }
           }
 
-          if (checkTokenExit(tok)) {
+          if (checkTokenExit(tok) || checkTokenTrapDoor(tok)) {
             if (visitedDotsEnabled) {
               const last = tok.lastCell || tokenCellFromPosition(tok.x, tok.y);
               markCellVisited(last.cx, last.cy);
