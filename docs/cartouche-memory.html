@@ -245,6 +245,11 @@
       line-height: 1.05;
       overflow-wrap: normal;
       white-space: nowrap;
+      position: relative;
+    }
+
+    .previewContent {
+      position: relative;
     }
 
     .latinValue,
@@ -255,6 +260,10 @@
       overflow-wrap: normal;
       word-break: normal;
       line-height: 1;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
       transform-origin: center center;
       will-change: transform;
     }
@@ -511,7 +520,7 @@
       border: 0 !important;
     }
 
-    @media (max-width: 760px) {
+    @media (max-width: 760px), (max-device-width: 760px), (pointer: coarse) and (max-width: 980px) {
       :root { --topbar-h: 52px; --card-gap: 6px; }
       .topbar { gap: 6px; padding: 8px; }
       .btn { font-size: 13px; padding: 6px 8px; }
@@ -634,7 +643,7 @@
           <select id="deckMode">
             <option value="numbers">Numbers only</option>
             <option value="names">Proper names only</option>
-            <option value="mixed" selected>Mixed</option>
+            <option value="mixed" selected>Mixed deck</option>
           </select>
         </div>
         <div class="field">
@@ -3471,9 +3480,20 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       .catch(err => console.warn("Timer cartouche renderer failed", err));
   }
 
+  function isCompactLayout() {
+    const m = window.matchMedia ? window.matchMedia.bind(window) : null;
+    const narrowViewport = !!m && m("(max-width: 760px)").matches;
+    const screenW = Number(window.screen?.width || 0);
+    const screenH = Number(window.screen?.height || 0);
+    const narrowDevice = Math.min(screenW || window.innerWidth || 9999, screenH || window.innerHeight || 9999) <= 760;
+    const coarsePhoneViewport = !!m && m("(pointer: coarse) and (max-width: 980px)").matches;
+    return narrowViewport || narrowDevice || coarsePhoneViewport;
+  }
+
   function renderTopTimerCartouche() {
-    const targetCssW = window.innerWidth <= 760 ? 164 : 190;
-    const targetCssH = window.innerWidth <= 760 ? 32 : 52;
+    const compact = isCompactLayout();
+    const targetCssW = compact ? 164 : 190;
+    const targetCssH = compact ? 32 : 52;
     drawPrefixedTimeCartoucheOnCanvas(els.timerCanvas, timerCtx, timerOffscreen, elapsedSecondsForGame(), ["tenpo", "lili"], targetCssW, targetCssH, 34);
   }
 
@@ -3497,8 +3517,9 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     if (!els.finishPanel || !els.finishCanvas) return;
     els.finishPanel.classList.add("show");
     els.finishPanel.setAttribute("aria-hidden", "false");
+    const compact = isCompactLayout();
     const targetCssW = Math.min(680, Math.floor(window.innerWidth * 0.92));
-    const targetCssH = window.innerWidth <= 760 ? 96 : 110;
+    const targetCssH = compact ? 96 : 110;
     drawPrefixedTimeCartoucheOnCanvas(els.finishCanvas, finishCtx, finishOffscreen, totalSeconds, ["tenpo", "lili"], targetCssW, targetCssH, 72);
   }
 
@@ -3580,7 +3601,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   function getBackCanvasClone() {
-    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+    const compact = isCompactLayout();
     const source = compact
       ? (mobileBackCache || (mobileBackCache = buildCardBackCanvas({ logoFontPx: 54 })))
       : (backCache || (backCache = buildCardBackCanvas()));
@@ -3775,7 +3796,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
 
   function getBoardColumnCount() {
     if (!game) return 4;
-    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+    const compact = isCompactLayout();
     const totalCards = game.cards?.length || game.totalCards || 16;
     if (compact) return 4;
     return totalCards === 12 ? 4 : (totalCards === 20 ? 5 : (totalCards === 24 ? 6 : 4));
@@ -3911,11 +3932,11 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   function fitOneLineChild(container, child) {
     if (!container || !child) return;
 
-    // Reset before measuring. The previous version allowed only a 6px total
-    // safety margin, which was too tight for Patrick Hand overhangs and the
-    // matched/check overlays on small landscape cards. That let long labels
-    // such as “Ate Nemen” reach the clipped edge of .tileFace.
-    child.style.transform = "";
+    // Reset before measuring. Latin text is absolutely centered so the
+    // fitted transform is centered by the visible card area, not by the
+    // inline layout box left behind after scaling.
+    const baseTransform = "translate(-50%, -50%)";
+    child.style.transform = baseTransform;
 
     const isPreview = child.classList.contains("latinPreviewValue");
     const horizontalReserve = isPreview ? 18 : 28;
@@ -3932,7 +3953,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     if (!rawW || !rawH) return;
 
     const scale = Math.min(1, availableW / rawW, availableH / rawH);
-    child.style.transform = scale < 1 ? `scale(${Math.max(0.22, scale)})` : "";
+    child.style.transform = scale < 1 ? `${baseTransform} scale(${Math.max(0.22, scale)})` : baseTransform;
   }
 
   function fitAllOneLineText(root = document) {
@@ -3967,7 +3988,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
 
   function applyResponsiveBoardSizing() {
     if (!game || !els.grid) return;
-    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+    const compact = isCompactLayout();
     if (compact) {
       els.grid.style.removeProperty("--desktop-card-w");
       els.grid.style.removeProperty("--desktop-card-h");
@@ -4031,7 +4052,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     els.grid.innerHTML = "";
     if (!game) return;
     applyResponsiveBoardSizing();
-    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+    const compact = isCompactLayout();
     if (compact) els.grid.style.gridTemplateColumns = "repeat(4, 1fr)";
 
     const showBadges = !!els.showBadges.checked;
