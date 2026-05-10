@@ -674,7 +674,6 @@
   <div id="optionsOverlay" class="overlay show" role="dialog" aria-modal="true">
     <div class="modal">
       <h2 id="optionsTitle">Cartouche Memory Match</h2>
-      <p id="optionsIntro">Match each Latin number or proper name with the rendered sitelen cartouche. On mobile, use the small grid to select cards and read them in the preview area.</p>
       <div class="settingsGrid">
         <div class="field">
           <label for="gridSize" id="labelGridSize">Grid size</label>
@@ -755,7 +754,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       matches: "Matches: {a}/{b}",
       time: "Time: {t}",
       optionsTitle: "Cartouche Memory Match",
-      optionsIntro: "Match each Latin number or proper name with the rendered sitelen cartouche. On mobile, use the small grid to select cards and read them in the preview area.",
       gridSize: "Grid size",
       deck: "Deck",
       scriptFont: "Script/font",
@@ -794,7 +792,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       matches: "sama: {a}/{b}",
       time: "tenpo: {t}",
       optionsTitle: "musi pi kama sona poki nimi",
-      optionsIntro: "o sama e nanpa anu nimi Lasina tawa poki nimi sitelen pona. lon ilo lili la, o pilin e lipu lili; o lukin e ona lon poki suli anpa.",
       gridSize: "suli musi",
       deck: "kulupu lipu",
       scriptFont: "nasin sitelen",
@@ -3008,7 +3005,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     previewB: document.getElementById("previewB"),
     overlay: document.getElementById("optionsOverlay"),
     optionsTitle: document.getElementById("optionsTitle"),
-    optionsIntro: document.getElementById("optionsIntro"),
     labelGridSize: document.getElementById("labelGridSize"),
     labelDeckMode: document.getElementById("labelDeckMode"),
     legendDisplay: document.getElementById("legendDisplay"),
@@ -4216,7 +4212,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     els.hint.textContent = i18n("hint");
     els.previewTitle.textContent = i18n("selectedCards");
     els.optionsTitle.textContent = i18n("optionsTitle");
-    els.optionsIntro.textContent = i18n("optionsIntro");
     els.labelGridSize.textContent = i18n("gridSize");
     els.labelDeckMode.textContent = i18n("deck");
     els.legendDisplay.textContent = i18n("numericDisplay");
