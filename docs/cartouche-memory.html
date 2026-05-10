@@ -725,7 +725,7 @@
       </button>
       <div class="row">
         <button id="btnCloseOptions" class="btn" style="display:none;">Cancel</button>
-        <button id="btnStartFromOptions" class="btn">Start Game</button>
+        <button id="btnStartFromOptions" class="btn" disabled>Start Game</button>
       </div>
     </div>
   </div>
@@ -3160,6 +3160,10 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   const finishOffscreen = document.createElement("canvas");
   const prefixedCartoucheRenderSeq = new WeakMap();
   const renderedCardCache = new Map();
+  let gameStartReady = false;
+  let gameStartReadyPromise = null;
+  let readinessRunId = 0;
+  let eventsWired = false;
 
   const SETTINGS_STORAGE_KEY = "tpMemoryGameSettings";
   const BEST_TIME_STORAGE_PREFIX = "tpMemoryBestTimeSec:";
@@ -3244,6 +3248,50 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     const text = isRaw ? String(keyOrText) : i18n(keyOrText, vars);
     els.status.textContent = text;
     if (els.srStatus) els.srStatus.textContent = text;
+  }
+
+  function setGameStartReady(ready) {
+    gameStartReady = !!ready;
+    if (els.btnStartFromOptions) els.btnStartFromOptions.disabled = !gameStartReady;
+    if (els.btnNew) els.btnNew.disabled = !gameStartReady;
+  }
+
+  function beginGameStartReadiness(work) {
+    const runId = ++readinessRunId;
+    setGameStartReady(false);
+    gameStartReadyPromise = (async () => {
+      try {
+        await work();
+        if (runId === readinessRunId) {
+          setGameStartReady(true);
+          setStatus("statusReady");
+        }
+      } catch (err) {
+        if (runId === readinessRunId) {
+          setGameStartReady(false);
+          setStatus(err?.message || String(err), null, true);
+        }
+        throw err;
+      }
+    })();
+    return gameStartReadyPromise;
+  }
+
+  async function waitForGameStartReady() {
+    if (gameStartReady) return true;
+    if (gameStartReadyPromise) {
+      try { await gameStartReadyPromise; }
+      catch { return false; }
+    }
+    return gameStartReady;
+  }
+
+  async function prepareCurrentGameResources() {
+    await sitelenFontController.waitForConfiguredFonts(64);
+    await ensureRendererReady();
+    await document.fonts?.load?.('90px "TP-Nasin-Nanpa-Font"', 'toki&pona tenpo lili pona');
+    await document.fonts?.load?.('54px "TP-Nasin-Nanpa-Font"', 'toki&pona');
+    await document.fonts?.load?.('34px "TP-Cartouche-Font"', String.fromCodePoint(TP_WORD_TO_CP.nanpa));
   }
 
   function formatMMSS(totalSeconds) {
@@ -4177,6 +4225,11 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   async function startGameFromOptions() {
+    if (!gameStartReady) {
+      setStatus("statusLoading");
+      const ready = await waitForGameStartReady();
+      if (!ready) return;
+    }
     hideFinishPopup();
     saveGameSettings();
     busy = false;
@@ -4269,7 +4322,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     updateScore();
   }
 
-  function applyLanguage() {
+  function applyLanguage({ preserveStatus = false } = {}) {
     document.title = i18n("pageTitle");
     els.btnOptions.textContent = i18n("btnOptions");
     els.btnNew.textContent = i18n("btnNew");
@@ -4294,13 +4347,15 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     els.btnStartFromOptions.textContent = i18n("startGame");
     els.btnCloseOptions.textContent = i18n("cancel");
     els.backToIndexLink.textContent = i18n("backToIndex");
-    if (!game) setStatus("statusReady");
+    if (!preserveStatus && !game) setStatus("statusReady");
     updateScore();
     refreshBestTimeUi();
     clearPreview();
   }
 
   function wireEvents() {
+    if (eventsWired) return;
+    eventsWired = true;
     els.btnOptions.addEventListener("click", () => els.overlay.classList.add("show"));
     els.btnNew.addEventListener("click", () => els.overlay.classList.add("show"));
     els.btnCloseOptions.addEventListener("click", () => els.overlay.classList.remove("show"));
@@ -4326,26 +4381,29 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       renderedCardCache.clear();
       sitelenRenderer = null;
       sitelenRendererSignature = "";
+      await prepareCurrentGameResources();
       if (!game) return;
       await renderGrid();
       await updatePreview();
     };
 
-    els.scriptPresetSel.addEventListener("change", async () => {
+    const runReadinessOptionChange = async (changeFn) => {
       saveGameSettings();
-      sitelenFontController.setActivePreset(els.scriptPresetSel.value);
-      await sitelenFontController.waitForConfiguredFonts(64);
-      await rerenderOnOptionChange();
+      setStatus("statusLoading");
+      beginGameStartReadiness(async () => {
+        if (typeof changeFn === "function") changeFn();
+        await rerenderOnOptionChange();
+      }).catch(err => console.error(err));
+    };
+
+    els.scriptPresetSel.addEventListener("change", async () => {
+      await runReadinessOptionChange(() => sitelenFontController.setActivePreset(els.scriptPresetSel.value));
     });
     els.textFontSel.addEventListener("change", async () => {
-      saveGameSettings();
-      sitelenFontController.setSelectedTextFontOption(els.textFontSel.value);
-      await sitelenFontController.waitForConfiguredFonts(64);
-      await rerenderOnOptionChange();
+      await runReadinessOptionChange(() => sitelenFontController.setSelectedTextFontOption(els.textFontSel.value));
     });
     document.querySelectorAll('input[name="numericDisplay"]').forEach(r => r.addEventListener("change", async () => {
-      saveGameSettings();
-      await rerenderOnOptionChange();
+      await runReadinessOptionChange(null);
     }));
     els.gridSize.addEventListener("change", () => {
       saveGameSettings();
@@ -4366,44 +4424,51 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   async function init() {
+    setGameStartReady(false);
     setStatus("statusLoading");
-    els.btnNew.disabled = true;
+    const savedSettings = readSavedGameSettings();
+    applyGameSettingsToControls(savedSettings);
+    applyLanguage({ preserveStatus: true });
+    setStatus("statusLoading");
+
     try {
       await sitelenFontController.ready;
-      try {
-        const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
-          manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
-          onlyIfExisting: false,
-          force: true
-        });
-        if (syncResult && syncResult.updated > 0) {
-          await sitelenFontController.hydrateDynamicPresetsFromDb({ force: true });
-          sitelenFontController.resetFontLoadState?.();
-        }
-      } catch (err) {
-        console.warn("[preloaded-fonts] manifest sync failed:", err);
-      }
-
-      applyGameSettingsToControls(readSavedGameSettings());
-
-      try {
-        const api = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
-        pageMap = await api.resolvePageMap();
-      } catch (err) {
-        console.warn("[cartouche-db] lookup unavailable:", err);
-        pageMap = new Map();
-      }
-
-      await sitelenFontController.waitForConfiguredFonts(64);
-      await document.fonts?.load?.('90px "TP-Nasin-Nanpa-Font"', 'toki&pona tenpo lili pona');
-      await document.fonts?.load?.('54px "TP-Nasin-Nanpa-Font"', 'toki&pona');
-      await document.fonts?.load?.('34px "TP-Cartouche-Font"', String.fromCodePoint(TP_WORD_TO_CP.nanpa));
-      applyLanguage();
+      applyGameSettingsToControls(savedSettings);
       wireEvents();
-      els.btnNew.disabled = false;
+
+      await beginGameStartReadiness(async () => {
+        try {
+          const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
+            manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
+            onlyIfExisting: false,
+            force: true
+          });
+          if (syncResult && syncResult.updated > 0) {
+            await sitelenFontController.hydrateDynamicPresetsFromDb({ force: true });
+            sitelenFontController.resetFontLoadState?.();
+            applyGameSettingsToControls(readSavedGameSettings());
+          }
+        } catch (err) {
+          console.warn("[preloaded-fonts] manifest sync failed:", err);
+        }
+
+        try {
+          const api = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
+          pageMap = await api.resolvePageMap();
+        } catch (err) {
+          console.warn("[cartouche-db] lookup unavailable:", err);
+          pageMap = new Map();
+        }
+
+        await prepareCurrentGameResources();
+      });
+
+      applyLanguage();
+      setGameStartReady(true);
       setStatus("statusReady");
     } catch (e) {
       console.error(e);
+      setGameStartReady(false);
       setStatus(e?.message || String(e), null, true);
     }
   }
