@@ -694,18 +694,6 @@
           </select>
         </div>
         <div class="field">
-          <label for="scriptPresetSel" id="labelScriptPreset">Script/font</label>
-          <select id="scriptPresetSel">
-            <option value="nasinNanpa" selected>nasin nanpa predefined</option>
-            <option value="sitelenSeliKiwen">sitelen seli kiwen predefined</option>
-            <option value="fairfaxPonaHd">FairfaxPonaHD predefined</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="textFontSel" id="labelTextFont">Quoted text font</label>
-          <select id="textFontSel"></select>
-        </div>
-        <div class="field">
           <fieldset>
             <legend id="legendDisplay">Numeric display</legend>
             <label class="choiceRow"><input id="abbrevOff" type="radio" name="numericDisplay" value="full"> <span id="labelFull">Full cartouche</span></label>
@@ -734,11 +722,6 @@
 
 <script type="module">
 import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
-import {
-  createSitelenFontPairController,
-  TEXT_FONT_OPTION_SITELEN,
-  TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
 
 (() => {
@@ -747,75 +730,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
   const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
   const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
-
-  const RENDER_FONT_PRESETS = {
-    nasinNanpa: {
-      key: "nasinNanpa",
-      label: "nasin nanpa predefined",
-      parserMode: "sitelen-seli-kiwen",
-      textFamily: FONT_FAMILY_TEXT,
-      cartoucheFamily: FONT_FAMILY_CARTOUCHE,
-      literalFamily: FONT_FAMILY_LITERAL,
-      literalOptions: [
-        [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
-        [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
-        [FONT_FAMILY_LITERAL, "Patrick Hand"],
-        ["Arial", "Arial"],
-        ["Times New Roman", "Times New Roman"],
-        ["Courier New", "Courier New"],
-        ["system-ui", "system-ui"],
-      ],
-      faces: [
-        { family: FONT_FAMILY_TEXT, url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf", format: "opentype", sample: String.fromCodePoint(0xF196C) },
-        { family: FONT_FAMILY_CARTOUCHE, url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf", format: "opentype", sample: String.fromCodePoint(0xF1990) },
-        { family: FONT_FAMILY_LITERAL, url: "./fonts/PatrickHand-Regular.ttf", format: "truetype", sample: "Hello" }
-      ]
-    },
-    sitelenSeliKiwen: {
-      key: "sitelenSeliKiwen",
-      label: "sitelen seli kiwen predefined",
-      parserMode: "sitelen-seli-kiwen",
-      textFamily: "SSK-Juniko",
-      cartoucheFamily: "SSK-Juniko-Cartouche",
-      literalFamily: FONT_FAMILY_LITERAL,
-      literalOptions: [
-        [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
-        [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
-        [FONT_FAMILY_LITERAL, "Patrick Hand"],
-        ["Arial", "Arial"],
-        ["Times New Roman", "Times New Roman"],
-        ["Courier New", "Courier New"],
-        ["system-ui", "system-ui"],
-      ],
-      faces: [
-        { family: "SSK-Juniko", url: "./fonts/sitelenselikiwenjuniko.ttf", format: "truetype", sample: String.fromCodePoint(0xF196C) },
-        { family: "SSK-Juniko-Cartouche", url: "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf", format: "truetype", sample: String.fromCodePoint(0xF1990) },
-        { family: FONT_FAMILY_LITERAL, url: "./fonts/PatrickHand-Regular.ttf", format: "truetype", sample: "Hello" }
-      ]
-    },
-    fairfaxPonaHd: {
-      key: "fairfaxPonaHd",
-      label: "FairfaxPonaHD predefined",
-      parserMode: "sitelen-seli-kiwen",
-      textFamily: "fairfaxPonaHd",
-      cartoucheFamily: "fairfaxPonaHd-Cartouche",
-      literalFamily: FONT_FAMILY_LITERAL,
-      literalOptions: [
-        [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
-        [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
-        [FONT_FAMILY_LITERAL, "Patrick Hand"],
-        ["Arial", "Arial"],
-        ["Times New Roman", "Times New Roman"],
-        ["Courier New", "Courier New"],
-        ["system-ui", "system-ui"],
-      ],
-      faces: [
-        { family: "fairfaxPonaHd", url: "./fonts/FairfaxPonaHD.ttf", format: "truetype", sample: String.fromCodePoint(0xF196C) },
-        { family: "fairfaxPonaHd-Cartouche", url: "./fonts/FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf", format: "truetype", sample: String.fromCodePoint(0xF1990) },
-        { family: FONT_FAMILY_LITERAL, url: "./fonts/PatrickHand-Regular.ttf", format: "truetype", sample: "Hello" }
-      ]
-    }
-  };
 
   const I18N = {
     en: {
@@ -3097,8 +3011,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     optionsIntro: document.getElementById("optionsIntro"),
     labelGridSize: document.getElementById("labelGridSize"),
     labelDeckMode: document.getElementById("labelDeckMode"),
-    labelScriptPreset: document.getElementById("labelScriptPreset"),
-    labelTextFont: document.getElementById("labelTextFont"),
     legendDisplay: document.getElementById("legendDisplay"),
     labelFull: document.getElementById("labelFull"),
     labelAbbrev: document.getElementById("labelAbbrev"),
@@ -3114,32 +3026,12 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     backToIndexLink: document.getElementById("backToIndexLink"),
     gridSize: document.getElementById("gridSize"),
     deckMode: document.getElementById("deckMode"),
-    scriptPresetSel: document.getElementById("scriptPresetSel"),
-    textFontSel: document.getElementById("textFontSel"),
     showBadges: document.getElementById("showBadges"),
     autoPreview: document.getElementById("autoPreview"),
     srStatus: document.getElementById("srStatus"),
   };
 
-  const sitelenFontController = createSitelenFontPairController({
-    registry: RENDER_FONT_PRESETS,
-    scriptSelect: els.scriptPresetSel,
-    textFontSelect: els.textFontSel,
-    storageKeyPrefix: "tpMemory",
-    defaultPresetKey: "nasinNanpa",
-    defaultTextFontOption: FONT_FAMILY_LITERAL,
-    dynamicLiteralFace: {
-      family: FONT_FAMILY_LITERAL,
-      url: "./fonts/PatrickHand-Regular.ttf",
-      format: "truetype",
-      sample: "Hello"
-    },
-    onInvalidate: () => {
-      sitelenRenderer = null;
-      sitelenRendererSignature = "";
-      renderedCardCache.clear();
-    }
-  });
+
 
   let sitelenRenderer = null;
   let sitelenRendererSignature = "";
@@ -3170,8 +3062,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   const DEFAULT_GAME_SETTINGS = Object.freeze({
     gridSize: "16",
     deckMode: "mixed",
-    scriptPreset: "nasinNanpa",
-    textFont: FONT_FAMILY_LITERAL,
     numericDisplay: "abbrev",
     showBadges: true,
     autoPreview: true
@@ -3200,8 +3090,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     return {
       gridSize: String(els.gridSize.value || DEFAULT_GAME_SETTINGS.gridSize),
       deckMode: String(els.deckMode.value || DEFAULT_GAME_SETTINGS.deckMode),
-      scriptPreset: String(els.scriptPresetSel.value || DEFAULT_GAME_SETTINGS.scriptPreset),
-      textFont: String(els.textFontSel.value || DEFAULT_GAME_SETTINGS.textFont),
       numericDisplay: document.querySelector('input[name="numericDisplay"]:checked')?.value === "full" ? "full" : "abbrev",
       showBadges: !!els.showBadges.checked,
       autoPreview: !!els.autoPreview.checked
@@ -3220,15 +3108,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     if (optionExists(els.gridSize, settings.gridSize)) els.gridSize.value = String(settings.gridSize);
     if (optionExists(els.deckMode, settings.deckMode)) els.deckMode.value = String(settings.deckMode);
 
-    if (optionExists(els.scriptPresetSel, settings.scriptPreset)) {
-      els.scriptPresetSel.value = String(settings.scriptPreset);
-      sitelenFontController.setActivePreset(String(settings.scriptPreset));
-    }
-
-    if (optionExists(els.textFontSel, settings.textFont)) {
-      els.textFontSel.value = String(settings.textFont);
-      sitelenFontController.setSelectedTextFontOption(String(settings.textFont));
-    }
 
     const numericDisplay = settings.numericDisplay === "full" ? "full" : "abbrev";
     const numericRadio = document.querySelector(`input[name="numericDisplay"][value="${numericDisplay}"]`);
@@ -3287,11 +3166,14 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   async function prepareCurrentGameResources() {
-    await sitelenFontController.waitForConfiguredFonts(64);
+    await Promise.all([
+      document.fonts?.load?.('96px "TP-Nasin-Nanpa-Font"', 'toki&pona tenpo lili pona'),
+      document.fonts?.load?.('96px "TP-Cartouche-Font"', String.fromCodePoint(TP_WORD_TO_CP.nanpa)),
+      document.fonts?.load?.('56px "Patrick-Head-Font"', 'Hello'),
+      document.fonts?.load?.('34px "TP-Cartouche-Font"', String.fromCodePoint(TP_WORD_TO_CP.nanpa)),
+    ]);
+    await document.fonts?.ready;
     await ensureRendererReady();
-    await document.fonts?.load?.('90px "TP-Nasin-Nanpa-Font"', 'toki&pona tenpo lili pona');
-    await document.fonts?.load?.('54px "TP-Nasin-Nanpa-Font"', 'toki&pona');
-    await document.fonts?.load?.('34px "TP-Cartouche-Font"', String.fromCodePoint(TP_WORD_TO_CP.nanpa));
   }
 
   function formatMMSS(totalSeconds) {
@@ -3416,7 +3298,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
         roles: {
           word: FONT_FAMILY_TEXT,
           text: FONT_FAMILY_TEXT,
-          cartouche: FONT_FAMILY_CARTOUCHE,
+          cartouche: FONT_FAMILY_TEXT,
           number: FONT_FAMILY_CARTOUCHE,
           date: FONT_FAMILY_CARTOUCHE,
           time: FONT_FAMILY_CARTOUCHE,
@@ -3431,8 +3313,11 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     if (timeSitelenRenderer) return timeSitelenRenderer;
     if (!timeSitelenRendererPromise) {
       timeSitelenRendererPromise = (async () => {
-        await document.fonts?.load?.(`${fontPx}px "${FONT_FAMILY_TEXT}"`, "tenpo");
-        await document.fonts?.load?.(`${fontPx}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(TP_WORD_TO_CP.nanpa));
+        await Promise.all([
+          document.fonts?.load?.(`${fontPx}px "${FONT_FAMILY_TEXT}"`, "tenpo"),
+          document.fonts?.load?.(`${fontPx}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(TP_WORD_TO_CP.nanpa)),
+          document.fonts?.load?.(`${fontPx}px "${FONT_FAMILY_LITERAL}"`, "Hello"),
+        ]);
         await document.fonts?.ready;
         timeSitelenRenderer = await SitelenRenderer.create(buildTimeRendererConfig(fontPx));
         return timeSitelenRenderer;
@@ -3696,64 +3581,63 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     return c;
   }
 
-  function getActivePreset() {
-    return sitelenFontController.getActivePreset();
-  }
-
   function getNumericAbbrevEnabled() {
     return document.querySelector('input[name="numericDisplay"]:checked')?.value === "abbrev";
   }
 
+  function buildFixedFontRoles() {
+    return {
+      word: FONT_FAMILY_TEXT,
+      text: FONT_FAMILY_TEXT,
+      cartouche: FONT_FAMILY_TEXT,
+      number: FONT_FAMILY_CARTOUCHE,
+      date: FONT_FAMILY_CARTOUCHE,
+      time: FONT_FAMILY_CARTOUCHE,
+      literal: FONT_FAMILY_LITERAL,
+      unknown: FONT_FAMILY_LITERAL
+    };
+  }
+
   function buildBaseRendererConfig({ fontPx = 64, paddingPx = 14 } = {}) {
-    const preset = getActivePreset();
-    return sitelenFontController.buildRendererConfig({
-      baseConfig: {
-        layout: {
-          fontPx,
-          align: "center",
-          spacingPreset: "compact",
-          paddingPx
-        },
-        paint: {
-          fillStyle: "#111111",
-          halo: { enabled: false, color: "#FFFFFF", widthPx: 0 },
-          unknownText: { style: "outline-box", colorMode: "auto", color: null, lineWidthPx: 1.5, paddingPx: 2, dash: false }
-        },
-        parser: {
-          mode: preset.parserMode,
-          literalStyle: "double-quote",
-          extensionStyle: "ssk",
-          cartoucheStyle: "ssk",
-          numericMode: "compat",
-          mixedStyle: "short",
-          showUnknownText: false,
-          abbreviateNumericCartouches: getNumericAbbrevEnabled()
-        },
-        fonts: {
-          roles: {
-            ...sitelenFontController.buildFontRoles(),
-            unknown: FONT_FAMILY_LITERAL
-          }
-        }
+    return {
+      layout: {
+        fontPx,
+        align: "center",
+        spacingPreset: "compact",
+        paddingPx
+      },
+      paint: {
+        fillStyle: "#111111",
+        halo: { enabled: false, color: "#FFFFFF", widthPx: 0 },
+        unknownText: { style: "outline-box", colorMode: "auto", color: null, lineWidthPx: 1.5, paddingPx: 2, dash: false }
+      },
+      parser: {
+        mode: "sitelen-seli-kiwen",
+        literalStyle: "double-quote",
+        extensionStyle: "ssk",
+        cartoucheStyle: "ssk",
+        numericMode: "compat",
+        mixedStyle: "short",
+        showUnknownText: false,
+        abbreviateNumericCartouches: getNumericAbbrevEnabled()
+      },
+      fonts: {
+        roles: buildFixedFontRoles()
       }
-    });
+    };
   }
 
   function getRendererSignature() {
-    const preset = getActivePreset();
     return JSON.stringify({
-      preset: preset.key,
-      textFont: sitelenFontController.getSelectedTextFontOptionKey(),
+      fixedFontRoles: buildFixedFontRoles(),
       abbrev: getNumericAbbrevEnabled(),
-      parserMode: preset.parserMode,
-      roles: sitelenFontController.buildFontRoles()
+      parserMode: "sitelen-seli-kiwen"
     });
   }
 
   async function ensureRendererReady() {
     const signature = getRendererSignature();
     if (sitelenRenderer && sitelenRendererSignature === signature) return sitelenRenderer;
-    await sitelenFontController.waitForConfiguredFonts(64);
     sitelenRenderer = await SitelenRenderer.create(buildBaseRendererConfig({ fontPx: 64 }));
     sitelenRendererSignature = signature;
     renderedCardCache.clear();
@@ -3794,7 +3678,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   async function renderSitelenCanvas(renderInput, { preview = false } = {}) {
     const fontPx = preview ? 96 : 64;
     const paddingPx = preview ? 18 : 14;
-    await sitelenFontController.waitForConfiguredFonts(fontPx);
     const renderer = await ensureRendererReady();
     const input = sanitizeRenderInput(renderInput);
     const cacheKey = JSON.stringify({ input, sig: getRendererSignature(), fontPx, paddingPx });
@@ -4336,8 +4219,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     els.optionsIntro.textContent = i18n("optionsIntro");
     els.labelGridSize.textContent = i18n("gridSize");
     els.labelDeckMode.textContent = i18n("deck");
-    els.labelScriptPreset.textContent = i18n("scriptFont");
-    els.labelTextFont.textContent = i18n("quotedTextFont");
     els.legendDisplay.textContent = i18n("numericDisplay");
     els.labelFull.textContent = i18n("fullCartouche");
     els.labelAbbrev.textContent = i18n("abbrevCartouche");
@@ -4396,12 +4277,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       }).catch(err => console.error(err));
     };
 
-    els.scriptPresetSel.addEventListener("change", async () => {
-      await runReadinessOptionChange(() => sitelenFontController.setActivePreset(els.scriptPresetSel.value));
-    });
-    els.textFontSel.addEventListener("change", async () => {
-      await runReadinessOptionChange(() => sitelenFontController.setSelectedTextFontOption(els.textFontSel.value));
-    });
     document.querySelectorAll('input[name="numericDisplay"]').forEach(r => r.addEventListener("change", async () => {
       await runReadinessOptionChange(null);
     }));
@@ -4432,32 +4307,13 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     setStatus("statusLoading");
 
     try {
-      await sitelenFontController.ready;
-      applyGameSettingsToControls(savedSettings);
       wireEvents();
 
       await beginGameStartReadiness(async () => {
-        try {
-          const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
-            manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
-            onlyIfExisting: false,
-            force: true
-          });
-          if (syncResult && syncResult.updated > 0) {
-            await sitelenFontController.hydrateDynamicPresetsFromDb({ force: true });
-            sitelenFontController.resetFontLoadState?.();
-            applyGameSettingsToControls(readSavedGameSettings());
-          }
-        } catch (err) {
-          console.warn("[preloaded-fonts] manifest sync failed:", err);
-        }
-
-        try {
-          const api = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
-          pageMap = await api.resolvePageMap();
-        } catch (err) {
-          console.warn("[cartouche-db] lookup unavailable:", err);
-          pageMap = new Map();
+        const api = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
+        pageMap = await api.resolvePageMap();
+        if (!(pageMap instanceof Map)) {
+          throw new Error("Cartouche database did not return a page map.");
         }
 
         await prepareCurrentGameResources();
