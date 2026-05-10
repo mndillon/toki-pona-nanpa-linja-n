@@ -248,10 +248,6 @@
       position: relative;
     }
 
-    .previewContent {
-      position: relative;
-    }
-
     .latinValue,
     .latinPreviewValue {
       display: inline-block;
@@ -260,25 +256,39 @@
       overflow-wrap: normal;
       word-break: normal;
       line-height: 1;
+      transform-origin: center center;
+      will-change: transform;
+    }
+
+    .latinValue {
       position: absolute;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      transform-origin: center center;
-      will-change: transform;
     }
 
     .latinPreviewValue {
       font-size: clamp(34px, 4.8vw, 56px);
     }
 
-    .sitelenFace canvas,
-    .previewContent canvas {
+    .sitelenFace canvas {
       display: block;
       max-width: 100%;
       max-height: 100%;
       width: auto;
       height: auto;
+    }
+
+    .previewContent canvas {
+      display: block;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: auto !important;
+      height: auto !important;
+      max-width: calc(100% - 16px) !important;
+      max-height: calc(100% - 16px) !important;
+      transform: translate(-50%, -50%);
     }
 
     .typeBadge {
@@ -335,18 +345,22 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
+      align-items: start;
     }
 
     .previewCard {
+      height: 104px;
       min-height: 104px;
+      max-height: 104px;
       border-radius: 14px;
       border: 2px solid rgba(17,17,17,0.25);
       background: #f7f1e5;
       color: var(--ink);
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto minmax(0, 1fr);
       overflow: hidden;
       box-shadow: 0 10px 22px rgba(0,0,0,0.14);
+      box-sizing: border-box;
     }
 
     .previewMeta {
@@ -358,15 +372,17 @@
     }
 
     .previewContent {
-      min-height: 74px;
-      display: grid;
-      place-items: center;
+      height: 74px;
+      min-height: 0;
+      max-height: 74px;
+      display: block;
       padding: 8px;
       box-sizing: border-box;
       text-align: center;
       overflow: hidden;
       font-size: clamp(30px, 4.8vw, 56px);
-      line-height: 1.05;
+      line-height: 1;
+      position: relative;
     }
 
     .previewPlaceholder {
@@ -543,10 +559,38 @@
       .typeBadge { display: none; }
       .previewPanel { gap: 5px; }
       .previewTitle { font-size: 18px; line-height: 1.05; }
-      .previewCards { grid-template-columns: 1fr; gap: 6px; }
-      .previewCard { min-height: 64px; }
-      .previewMeta { padding: 3px 8px 0; font-size: 12px; }
-      .previewContent { min-height: 40px; padding: 4px 8px; font-size: clamp(24px, 8vw, 38px); }
+      .previewCards { grid-template-columns: 1fr; gap: 6px; align-items: start; }
+      .previewCard {
+        height: 64px;
+        min-height: 64px;
+        max-height: 64px;
+        grid-template-rows: auto minmax(0, 1fr);
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+      .previewMeta { padding: 3px 8px 0; font-size: 12px; line-height: 1.1; }
+      .previewContent {
+        height: 40px;
+        min-height: 0;
+        max-height: 40px;
+        padding: 4px 8px;
+        font-size: clamp(24px, 8vw, 38px);
+        line-height: 1;
+        overflow: hidden;
+        position: relative;
+        display: block;
+        box-sizing: border-box;
+      }
+      .previewContent canvas {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: auto !important;
+        height: auto !important;
+        max-width: calc(100% - 8px) !important;
+        max-height: calc(100% - 4px) !important;
+        transform: translate(-50%, -50%);
+      }
       .settingsGrid { grid-template-columns: 1fr; }
       .finishCanvas { height: 96px; }
       .modal h2 { font-size: 24px; }
@@ -646,7 +690,7 @@
           <select id="deckMode">
             <option value="numbers">Numbers only</option>
             <option value="names">Proper names only</option>
-            <option value="mixed" selected>Mixed deck</option>
+            <option value="mixed" selected>Mixed</option>
           </select>
         </div>
         <div class="field">
@@ -3483,20 +3527,9 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       .catch(err => console.warn("Timer cartouche renderer failed", err));
   }
 
-  function isCompactLayout() {
-    const m = window.matchMedia ? window.matchMedia.bind(window) : null;
-    const narrowViewport = !!m && m("(max-width: 760px)").matches;
-    const screenW = Number(window.screen?.width || 0);
-    const screenH = Number(window.screen?.height || 0);
-    const narrowDevice = Math.min(screenW || window.innerWidth || 9999, screenH || window.innerHeight || 9999) <= 760;
-    const coarsePhoneViewport = !!m && m("(pointer: coarse) and (max-width: 980px)").matches;
-    return narrowViewport || narrowDevice || coarsePhoneViewport;
-  }
-
   function renderTopTimerCartouche() {
-    const compact = isCompactLayout();
-    const targetCssW = compact ? 164 : 190;
-    const targetCssH = compact ? 32 : 52;
+    const targetCssW = window.innerWidth <= 760 ? 164 : 190;
+    const targetCssH = window.innerWidth <= 760 ? 32 : 52;
     drawPrefixedTimeCartoucheOnCanvas(els.timerCanvas, timerCtx, timerOffscreen, elapsedSecondsForGame(), ["tenpo", "lili"], targetCssW, targetCssH, 34);
   }
 
@@ -3520,9 +3553,8 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     if (!els.finishPanel || !els.finishCanvas) return;
     els.finishPanel.classList.add("show");
     els.finishPanel.setAttribute("aria-hidden", "false");
-    const compact = isCompactLayout();
     const targetCssW = Math.min(680, Math.floor(window.innerWidth * 0.92));
-    const targetCssH = compact ? 96 : 110;
+    const targetCssH = window.innerWidth <= 760 ? 96 : 110;
     drawPrefixedTimeCartoucheOnCanvas(els.finishCanvas, finishCtx, finishOffscreen, totalSeconds, ["tenpo", "lili"], targetCssW, targetCssH, 72);
   }
 
@@ -3544,11 +3576,11 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     ctx.quadraticCurveTo(x, y, x + rr, y);
   }
 
-  function buildCardBackCanvas({ logoFontPx = 90, width = 232, height = 164 } = {}) {
+  function buildCardBackCanvas({ logoFontPx = 90 } = {}) {
     // Landscape card back for desktop/laptop use. Mobile tiles use a much
-    // shorter selector aspect ratio in CSS, so mobile can request a matching back canvas.
-    const w = width;
-    const h = height;
+    // shorter selector aspect ratio in CSS, but the canvas is fitted to the tile by the browser.
+    const w = 232;
+    const h = 164;
     const c = document.createElement("canvas");
     c.width = w;
     c.height = h;
@@ -3604,9 +3636,9 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   function getBackCanvasClone() {
-    const compact = isCompactLayout();
+    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
     const source = compact
-      ? (mobileBackCache || (mobileBackCache = buildCardBackCanvas({ logoFontPx: 46, width: 246, height: 116 })))
+      ? (mobileBackCache || (mobileBackCache = buildCardBackCanvas({ logoFontPx: 54 })))
       : (backCache || (backCache = buildCardBackCanvas()));
     const c = document.createElement("canvas");
     c.width = source.width;
@@ -3799,7 +3831,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
 
   function getBoardColumnCount() {
     if (!game) return 4;
-    const compact = isCompactLayout();
+    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
     const totalCards = game.cards?.length || game.totalCards || 16;
     if (compact) return 4;
     return totalCards === 12 ? 4 : (totalCards === 20 ? 5 : (totalCards === 24 ? 6 : 4));
@@ -3935,13 +3967,15 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   function fitOneLineChild(container, child) {
     if (!container || !child) return;
 
-    // Reset before measuring. Latin text is absolutely centered so the
-    // fitted transform is centered by the visible card area, not by the
-    // inline layout box left behind after scaling.
-    const baseTransform = "translate(-50%, -50%)";
-    child.style.transform = baseTransform;
-
+    // Reset before measuring. The previous version allowed only a 6px total
+    // safety margin, which was too tight for Patrick Hand overhangs and the
+    // matched/check overlays on small landscape cards. That let long labels
+    // such as “Ate Nemen” reach the clipped edge of .tileFace.
     const isPreview = child.classList.contains("latinPreviewValue");
+    const isCardFaceLatin = child.classList.contains("latinValue");
+
+    child.style.transform = isCardFaceLatin ? "translate(-50%, -50%)" : "";
+
     const horizontalReserve = isPreview ? 18 : 28;
     const verticalReserve = isPreview ? 12 : 14;
     const availableW = Math.max(1, container.clientWidth - horizontalReserve);
@@ -3956,7 +3990,14 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     if (!rawW || !rawH) return;
 
     const scale = Math.min(1, availableW / rawW, availableH / rawH);
-    child.style.transform = scale < 1 ? `${baseTransform} scale(${Math.max(0.22, scale)})` : baseTransform;
+    const safeScale = Math.max(0.22, scale);
+    if (isCardFaceLatin) {
+      child.style.transform = scale < 1
+        ? `translate(-50%, -50%) scale(${safeScale})`
+        : "translate(-50%, -50%)";
+    } else {
+      child.style.transform = scale < 1 ? `scale(${safeScale})` : "";
+    }
   }
 
   function fitAllOneLineText(root = document) {
@@ -3991,7 +4032,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
 
   function applyResponsiveBoardSizing() {
     if (!game || !els.grid) return;
-    const compact = isCompactLayout();
+    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
     if (compact) {
       els.grid.style.removeProperty("--desktop-card-w");
       els.grid.style.removeProperty("--desktop-card-h");
@@ -4055,7 +4096,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     els.grid.innerHTML = "";
     if (!game) return;
     applyResponsiveBoardSizing();
-    const compact = isCompactLayout();
+    const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
     if (compact) els.grid.style.gridTemplateColumns = "repeat(4, 1fr)";
 
     const showBadges = !!els.showBadges.checked;
