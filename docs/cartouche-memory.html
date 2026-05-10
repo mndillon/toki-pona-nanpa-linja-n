@@ -986,122 +986,124 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     return words.length ? `[ ${words.join(" ")} ]` : "[ nimi ]";
   }
 
-  const NUMERIC_MEMORY_VALUES = Object.freeze([
-    "0",
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "10",
-    "12",
-    "17",
-    "21",
-    "42",
-    "64",
-    "99",
-    "100",
-    "256",
-    "999",
-    "1,024",
-    "2,048",
-    "7,500",
-    "12,345",
-    "42,386",
-    "100,000",
-    "250,000",
-    "999,999",
-    "-1",
-    "-2",
-    "-7",
-    "-12",
-    "-42",
-    "-100",
-    "-1,024",
-    "-7,500",
-    "-42,386",
-    "0.5",
-    "0.25",
-    "1.25",
-    "2.5",
-    "3.14",
-    "7.25",
-    "10.75",
-    "42.5",
-    "99.99",
-    "123.45",
-    "1,024.5",
-    "9,876.54",
-    "-0.5",
-    "-7.25",
-    "-42.5",
-    "1/2",
-    "1/3",
-    "2/3",
-    "1/4",
-    "3/4",
-    "1/5",
-    "2/5",
-    "5/8",
-    "7/10",
-    "11/12",
-    "1+1/2",
-    "2+1/3",
-    "3+3/4",
-    "5+2/5",
-    "7+1/8",
-    "9+3/4",
-    "12+1/8",
-    "1%",
-    "5%",
-    "10%",
-    "12.5%",
-    "25%",
-    "33.3%",
-    "50%",
-    "66.7%",
-    "75%",
-    "99%",
-    "100%",
-    "0.5%",
-    "2.5%",
-    "1950-01-01",
-    "1969-07-20",
-    "1977-05-25",
-    "1984-01-24",
-    "1999-12-31",
-    "2000-01-01",
-    "2001-09-11",
-    "2012-12-21",
-    "2020-03-14",
-    "2024-02-29",
-    "2030-06-15",
-    "2049-12-31",
-    "2050-01-01",
-    "00:00",
-    "01:05",
-    "06:30",
-    "07:30",
-    "09:45",
-    "12:00",
-    "13:15",
-    "18:30",
-    "21:05",
-    "23:59",
-    "00:00:01",
-    "01:02:03",
-    "06:30:15",
-    "07:30:00",
-    "09:45:30",
-    "12:00:00",
-    "18:30:45",
-    "21:05:09",
-    "23:59:59",
+  function nlnRandInt(minIncl, maxIncl) {
+    return Math.floor(Math.random() * (maxIncl - minIncl + 1)) + minIncl;
+  }
+
+  function nlnPad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function nlnPad4(n) {
+    return String(n).padStart(4, "0");
+  }
+
+  function nlnCommaInt(n) {
+    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  function NLN_isValidDate(y, m, d) {
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return dt.getUTCFullYear() === y && (dt.getUTCMonth() + 1) === m && dt.getUTCDate() === d;
+  }
+
+  const NLN_NUMERIC_CATEGORIES = Object.freeze([
+    "int_lt_1000",
+    "big_number",
+    "percent",
+    "fraction",
+    "date",
+    "time_hm",
+    "time_hms",
   ]);
+
+  function NLN_makeRandomNumericValue() {
+    const cat = NLN_NUMERIC_CATEGORIES[nlnRandInt(0, NLN_NUMERIC_CATEGORIES.length - 1)];
+
+    if (cat === "int_lt_1000") {
+      const sign = Math.random() < 0.50 ? "-" : "";
+      return { raw: sign + String(nlnRandInt(0, 999)), isDateTime: false };
+    }
+
+    if (cat === "big_number") {
+      const sign = Math.random() < 0.50 ? "-" : "";
+      const base = nlnRandInt(1000, 9999);
+      const intStr = nlnCommaInt(base);
+      const dp = Math.random() < 0.6 ? nlnRandInt(0, 2) : 0;
+      if (!dp) return { raw: sign + intStr, isDateTime: false };
+
+      const frac = String(nlnRandInt(0, Math.pow(10, dp) - 1)).padStart(dp, "0");
+      return { raw: sign + intStr + "." + frac, isDateTime: false };
+    }
+
+    if (cat === "percent") {
+      const v = Math.random() * 100;
+      return { raw: v.toFixed(2) + "%", isDateTime: false };
+    }
+
+    if (cat === "fraction") {
+      const num = nlnRandInt(1, 99);
+      const den = nlnRandInt(1, 99);
+      return { raw: String(num) + "/" + String(den), isDateTime: false };
+    }
+
+    if (cat === "date") {
+      while (true) {
+        const y = nlnRandInt(1900, 2100);
+        const m = nlnRandInt(1, 12);
+        const d = nlnRandInt(1, 31);
+        if (NLN_isValidDate(y, m, d)) {
+          return { raw: `${nlnPad4(y)}-${nlnPad2(m)}-${nlnPad2(d)}`, isDateTime: true };
+        }
+      }
+    }
+
+    if (cat === "time_hm") {
+      const hh = nlnRandInt(0, 23);
+      const mm = nlnRandInt(0, 59);
+      return { raw: `${nlnPad2(hh)}:${nlnPad2(mm)}`, isDateTime: true };
+    }
+
+    if (cat === "time_hms") {
+      const hh = nlnRandInt(0, 23);
+      const mm = nlnRandInt(0, 59);
+      const ss = nlnRandInt(0, 59);
+      return { raw: `${nlnPad2(hh)}:${nlnPad2(mm)}:${nlnPad2(ss)}`, isDateTime: true };
+    }
+
+    return { raw: "0", isDateTime: false };
+  }
+
+  function makeRandomNumberItem(idx) {
+    const generated = NLN_makeRandomNumericValue();
+    const label = String(generated.raw ?? "0");
+    return makeNumberItem(`num_${idx}_${canonicalDecimalKey(label).replace(/[^a-z0-9]+/gi, "_")}`, label);
+  }
+
+  function makeUniqueRandomNumberItems(pairCount) {
+    const selected = [];
+    const seen = new Set();
+    const maxAttempts = Math.max(100, pairCount * 50);
+
+    for (let attempts = 0; selected.length < pairCount && attempts < maxAttempts; attempts++) {
+      const item = makeRandomNumberItem(selected.length);
+      const key = itemDedupeKey(item);
+      if (key && seen.has(key)) continue;
+      if (key) seen.add(key);
+      selected.push(item);
+    }
+
+    while (selected.length < pairCount) {
+      const fallbackLabel = String(selected.length);
+      const item = makeNumberItem(`num_fallback_${selected.length}_${fallbackLabel}`, fallbackLabel);
+      const key = itemDedupeKey(item);
+      if (key && seen.has(key)) continue;
+      if (key) seen.add(key);
+      selected.push(item);
+    }
+
+    return selected;
+  }
 
   const PROPER_NAME_MEMORY_VALUES = Object.freeze([
     "Amelika",
@@ -3068,7 +3070,6 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   ]);
 
   const BUILT_IN_ITEMS = Object.freeze([
-    ...NUMERIC_MEMORY_VALUES.map((label, idx) => makeNumberItem(`num_${idx}_${canonicalDecimalKey(label).replace(/[^a-z0-9]+/gi, "_")}`, label)),
     ...PROPER_NAME_MEMORY_VALUES.map((label, idx) => ({
       id: `name_${idx}_${String(label).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")}`,
       type: "properName",
@@ -3775,7 +3776,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
 
   function itemsForDeck(mode) {
     let items = BUILT_IN_ITEMS.slice();
-    if (mode === "numbers") items = items.filter(item => item.type === "number");
+    if (mode === "numbers") items = [];
     else if (mode === "names") items = items.filter(item => item.type === "properName");
     return items;
   }
@@ -3802,11 +3803,11 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     let selected;
 
     if (mode === "mixed") {
-      const numericTarget = Math.ceil(pairCount / 2);
-      const numberItems = shuffle(itemsForDeck("numbers"));
+      const numericTarget = Math.floor(pairCount / 2);
+      const nameTarget = pairCount - numericTarget;
+      const selectedNumbers = makeUniqueRandomNumberItems(numericTarget);
       const nameItems = shuffle(itemsForDeck("names"));
-      const selectedNumbers = selectUniqueDeckItems(numberItems, Math.min(numericTarget, numberItems.length));
-      const selectedNames = selectUniqueDeckItems(nameItems, Math.min(pairCount - selectedNumbers.length, nameItems.length));
+      const selectedNames = selectUniqueDeckItems(nameItems, Math.min(nameTarget, nameItems.length));
       selected = selectedNumbers.concat(selectedNames);
 
       if (selected.length < pairCount) {
@@ -3816,6 +3817,8 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       }
 
       selected = shuffle(selected).slice(0, pairCount);
+    } else if (mode === "numbers") {
+      selected = makeUniqueRandomNumberItems(pairCount);
     } else {
       const sourceItems = shuffle(itemsForDeck(mode));
       selected = selectUniqueDeckItems(sourceItems, Math.min(pairCount, sourceItems.length));
