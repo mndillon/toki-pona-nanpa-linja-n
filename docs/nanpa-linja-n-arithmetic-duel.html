@@ -1,0 +1,3153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>nanpa-linja-n Arithmetic Duel</title>
+
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <style>
+    :root{
+      --topbar-h: 58px;
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --panel: rgba(255,255,255,0.35);
+      --panel-strong: rgba(255,255,255,0.55);
+      --panel-border: rgba(17,17,17,0.18);
+      --good: #147a2a;
+      --bad: #b11a1a;
+      --warn: #8a5a00;
+      --board-max: 900px;
+      --card-radius: 18px;
+      --tile-radius: 14px;
+    }
+
+    @font-face{
+      font-family: "PatrickHand";
+      src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+    @font-face{
+      font-family: "TP-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      font-display: swap;
+    }
+    @font-face{
+      font-family: "TP-Numeric-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      font-display: swap;
+    }
+    @font-face{
+      font-family: "TP-Nasin-Nanpa-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    html, body{
+      height:100%;
+      margin:0;
+      background: var(--bg);
+      font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--ink);
+      overflow:hidden;
+    }
+
+    .topbar{
+      height: var(--topbar-h);
+      min-height: 0;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 10px;
+      box-sizing:border-box;
+      border-bottom: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(6px);
+      flex-wrap: nowrap;
+      overflow:hidden;
+    }
+    .brand{
+      font-size: 21px;
+      font-weight: 800;
+      white-space: nowrap;
+      line-height: 1;
+      margin-right: 6px;
+    }
+    .btn{
+      appearance:none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.5);
+      padding: 6px 9px;
+      border-radius: 10px;
+      cursor:pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 15px;
+      min-height: 32px;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.68); }
+    .btn:disabled{ opacity:0.55; cursor:not-allowed; }
+    .btn.good{ border-color: rgba(20,122,42,0.42); }
+    .btn.bad{ border-color: rgba(177,26,26,0.42); }
+    .btn.small{ font-size: 14px; padding: 6px 8px; min-height: 32px; }
+
+    .ddBox{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 4px 7px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      border-radius: 12px;
+      min-height: 32px;
+      box-sizing:border-box;
+      flex: 0 0 auto;
+    }
+    .ddLabel{ font-size: 13px; color: var(--muted); white-space: nowrap; }
+    .ddSelect,.numInput{
+      height: 26px;
+      border-radius: 10px;
+      border: 1px solid rgba(17,17,17,0.22);
+      background: rgba(255,255,255,0.65);
+      color: var(--ink);
+      padding: 0 8px;
+      font-size: 14px;
+      outline: none;
+      font-family: "PatrickHand", system-ui, sans-serif;
+    }
+    .numInput{ width: 76px; }
+    .status{
+      margin-left:auto;
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 340px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .wrap{
+      height: calc(100dvh - var(--topbar-h));
+      min-height: 0;
+      display:flex;
+      flex-direction: column;
+      overflow:hidden;
+    }
+    .tabs{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      padding: 6px 10px 0;
+      box-sizing:border-box;
+    }
+    .tabBtn[aria-selected="true"]{ background: rgba(255,255,255,0.78); box-shadow: inset 0 -2px 0 rgba(17,17,17,0.28); }
+
+    .main{
+      flex: 1 1 auto;
+      display:grid;
+      place-items:start center;
+      padding: 8px 10px;
+      box-sizing:border-box;
+      width: 100%;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    /* The game/practice view is kept compact, but generated worksheets can be
+       longer than the viewport. When the Worksheet tab is active, scroll only
+       the main content area so the top controls and bottom disclaimer stay put. */
+    body.worksheet-active .main{
+      overflow-y:auto;
+      overflow-x:hidden;
+      place-items:start center;
+    }
+    body.worksheet-active .stack{
+      min-height:auto;
+      padding-bottom:8px;
+    }
+    .stack{
+      width: min(var(--board-max), 94vw);
+      display:grid;
+      gap: 8px;
+      min-height:0;
+    }
+    .tabPanel{ width:100%; min-height:0; }
+    #tab-practice{ display:grid; gap:8px; grid-template-rows:auto auto minmax(0,1fr); }
+    #tab-practice.hidden{ display:none !important; }
+    .card{
+      border: 1px solid var(--panel-border);
+      background: var(--panel-strong);
+      border-radius: var(--card-radius);
+      padding: 8px;
+      box-sizing:border-box;
+      display:grid;
+      gap: 7px;
+    }
+    .panelRow{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .panelRow.between{ justify-content:space-between; }
+    .muted{ color: var(--muted); }
+    .goodText{ color: var(--good); font-weight: 800; }
+    .badText{ color: var(--bad); font-weight: 800; }
+    .warnText{ color: var(--warn); font-weight: 800; }
+    h1,h2,h3,p{ margin:0; }
+    h1{ font-size: 22px; }
+    h2{ font-size: 19px; }
+    h3{ font-size: 17px; }
+    p{ line-height:1.25; }
+
+    .progressGrid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(120px,1fr));
+      gap: 6px;
+    }
+    .statCard{
+      border:1px solid var(--panel-border);
+      background: rgba(255,255,255,0.34);
+      border-radius: 14px;
+      padding: 5px 8px;
+      display:grid;
+      gap:1px;
+    }
+    .statCard strong{ font-size:17px; }
+    .statCard span{ font-size:13px; }
+    .questionCard{
+      min-height: 0;
+      align-content:start;
+      overflow:hidden;
+    }
+    .prompt{
+      text-align:center;
+      font-size: 21px;
+      font-weight: 800;
+    }
+    .equation{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .symbol{
+      font-size: 32px;
+      font-weight: 800;
+      min-width: 24px;
+      text-align:center;
+    }
+    .cartoucheCanvas{
+      width: 250px;
+      height: 86px;
+      display:block;
+    }
+    .cartoucheCanvas.large{
+      width: min(720px, 88vw);
+      height: 96px;
+    }
+    .cartoucheWrap{
+      display:grid;
+      place-items:center;
+      gap: 4px;
+      border: 1px solid rgba(17,17,17,0.12);
+      border-radius: 14px;
+      padding: 4px;
+      background: rgba(255,255,255,0.22);
+      min-width: 190px;
+    }
+    /* In the main equation row, align arithmetic signs to the cartouche canvas itself.
+       Empty after-answer labels used to reserve blank rows under the canvas, which made
+       the cartouche look too high beside + / − / = / ?. */
+    .equation .cartoucheWrap{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+    }
+    .equation .latinValue:empty,
+    .equation .properValue:empty{
+      display:none;
+      min-height:0;
+    }
+    .latinValue{
+      min-height: 16px;
+      font-size: 14px;
+      color: var(--muted);
+      text-align:center;
+      user-select:text;
+    }
+    .properValue{
+      min-height: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align:center;
+      user-select:text;
+    }
+    .answers{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(180px,1fr));
+      gap:8px;
+    }
+    .compareAnswers .sameAnswerBtn{
+      grid-column: 1 / -1;
+      width: min(50%, 460px);
+      justify-self:center;
+    }
+    .answerBtn{
+      min-height: 82px;
+      border-radius: 16px;
+      display:grid;
+      place-items:center;
+      gap:2px;
+      padding:8px;
+    }
+    .answerBtn canvas{ display:block; max-width:100%; width:auto; height:auto; }
+    .sortGrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px,1fr));
+      gap:8px;
+    }
+    .sortGrid .answerBtn{ min-height: 86px; }
+    .selectedSort{
+      min-height: 70px;
+      border: 1px dashed rgba(17,17,17,0.35);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.18);
+      padding: 8px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+    }
+    .selectedSort[data-placeholder]:empty::before{
+      content: attr(data-placeholder);
+      color: var(--muted);
+      font-size: 15px;
+      text-align:center;
+    }
+    .sortGrid .answerBtn,
+    .selectedSort .answerBtn{
+      touch-action:none;
+      user-select:none;
+      -webkit-user-select:none;
+      cursor:grab;
+    }
+    .selectedSort .answerBtn{
+      flex: 0 1 190px;
+      min-height: 78px;
+      min-width: 150px;
+    }
+    .sortGrid .answerBtn.dragging,
+    .selectedSort .answerBtn.dragging{
+      opacity:0.45;
+      cursor:grabbing;
+    }
+    .sortDropMarker{
+      flex:0 0 6px;
+      align-self:stretch;
+      min-height:72px;
+      border-radius:999px;
+      background: rgba(17,17,17,0.40);
+      pointer-events:none;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.45);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 15px;
+      min-height: 28px;
+    }
+    .feedback{
+      min-height: 32px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.30);
+      border-radius: 14px;
+      padding: 6px 8px;
+      box-sizing:border-box;
+      font-size: 16px;
+      line-height:1.25;
+    }
+    .levelList{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px,1fr));
+      gap:10px;
+    }
+    .levelItem{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:10px;
+      background: rgba(255,255,255,0.28);
+      display:grid;
+      gap:4px;
+    }
+    .levelItem.active{ outline: 2px solid rgba(17,17,17,0.36); background: rgba(255,255,255,0.56); }
+
+    .reviewList{ display:grid; gap:8px; max-height: 420px; overflow:auto; }
+    .reviewItem{ border:1px solid var(--panel-border); border-radius:14px; padding:10px; background: rgba(255,255,255,0.28); display:grid; gap:6px; }
+    .reviewLine{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .reviewExplain{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .reviewCartoucheCanvas{ width: 230px; height: 56px; display:inline-block; vertical-align:middle; flex:0 0 auto; }
+    .historyDetail .reviewCartoucheCanvas,
+    .historyAnswerCartoucheCanvas{ width: 150px; height: 38px; display:inline-block; vertical-align:middle; flex:0 0 auto; }
+    .historyDetail .reviewCartoucheCanvas{ width: 150px; height: 38px; }
+    .historyAnswerGroup{ display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .historyAnswerCartoucheSet{ display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; }
+    .historyInlineNumber{ display:inline-flex; align-items:center; gap:4px; flex-wrap:nowrap; }
+    .reviewItem .historyInlineNumber{ flex-wrap:wrap; }
+    .historyInlineNumberText{ display:inline-block; }
+
+    .historyGrid{
+      display:grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.4fr);
+      gap:8px;
+      min-height:0;
+    }
+    .historyList,.historyDetail{ display:grid; gap:8px; max-height: 470px; overflow:auto; }
+    .historySessionBtn{
+      width:100%;
+      text-align:left;
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      background: rgba(255,255,255,0.34);
+      padding:8px;
+      display:grid;
+      gap:3px;
+      cursor:pointer;
+      font-family:"PatrickHand", system-ui, sans-serif;
+      color:var(--ink);
+    }
+    .historySessionBtn:hover,.historySessionBtn.active{ background: rgba(255,255,255,0.62); }
+    .historySessionTop{ display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .historySessionMeta{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; color:var(--muted); font-size:14px; }
+    .historyDetailHeader{ border:1px solid var(--panel-border); border-radius:14px; padding:8px; background:rgba(255,255,255,0.28); display:grid; gap:6px; }
+    .historyDetailTitleRow{ align-items:center; }
+    .checkLabel{ display:inline-flex; align-items:center; gap:6px; font-weight:700; white-space:nowrap; user-select:none; -webkit-user-select:none; }
+    .checkLabel input{ width:16px; height:16px; accent-color: var(--ink); }
+
+
+    .worksheetBox{ display:grid; gap:10px; }
+    .worksheetOptions{ display:flex; justify-content:flex-end; align-items:center; gap:10px; flex-wrap:wrap; }
+    .worksheetHeader{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:10px; width:100%; }
+    .worksheetHeaderText{ min-width:0; }
+    .worksheetActionPanel{ display:flex; justify-content:flex-end; align-items:center; gap:8px; flex-wrap:nowrap; justify-self:end; text-align:right; white-space:nowrap; }
+    .worksheetActionPanel .checkLabel{ font-size:15px; }
+    @media (max-width: 820px){
+      .worksheetHeader{ grid-template-columns:1fr; }
+      .worksheetActionPanel{ justify-self:end; flex-wrap:wrap; white-space:normal; max-width:100%; }
+    }
+    .topbar .langBox{ margin-left:0; }
+    .worksheetQuestions{ display:grid; gap:8px; }
+    .worksheetItem{ border:1px solid var(--panel-border); border-radius:14px; padding:10px; background: rgba(255,255,255,0.28); break-inside: avoid; }
+    .worksheetItem canvas{ display:inline-block; vertical-align:middle; margin:4px; max-width:100%; }
+    .worksheetCartoucheLine{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-top:8px; }
+    .wqBody.sortWorksheetLine .worksheetCartoucheLine{ flex-wrap:nowrap; overflow:hidden; width:100%; box-sizing:border-box; gap:10px; justify-content:space-between; }
+    .wqBody.equationWorksheetLine .worksheetCartoucheLine{ flex-wrap:nowrap; overflow:hidden; width:100%; box-sizing:border-box; gap:10px; justify-content:center; }
+    .worksheetOp{ display:inline-flex; align-items:center; justify-content:center; min-width:28px; font-size:24px; font-weight:800; line-height:1; color:var(--ink); }
+    .worksheetBlank{ display:inline-flex; align-items:center; justify-content:center; min-width:96px; height:10px; border-bottom:3px solid rgba(17,17,17,0.65); margin:0 4px; }
+    .sortAnswerBars{ display:flex; align-items:center; justify-content:center; gap:34px; margin:12px auto 0; width:100%; }
+    .sortAnswerBar{ width:64px; height:8px; border-radius:999px; background:rgba(17,17,17,0.45); display:inline-block; }
+    .sameAnswerChecks{ display:flex; align-items:center; justify-content:center; gap:16px; margin:6px auto 0; width:100%; flex-wrap:nowrap; white-space:nowrap; }
+    .sameAnswerCheck{ display:inline-flex; align-items:center; gap:5px; font-weight:700; font-size:13px; line-height:1; white-space:nowrap; }
+    .sameAnswerBox{ width:10px; height:10px; border:1.25px solid rgba(17,17,17,0.68); border-radius:2px; display:inline-block; background:rgba(255,255,255,0.35); box-sizing:border-box; }
+
+    .footer{
+      border-top: 1px solid var(--panel-border);
+      background: var(--panel);
+      padding: 5px 10px;
+      box-sizing:border-box;
+      color: var(--muted);
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
+    .footerRow{ display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:nowrap; }
+    .footerLeft{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .footerRight{ flex:0 0 auto; }
+    .footerRight a{ color: var(--muted); }
+
+    .hidden{ display:none !important; }
+
+    @media (min-width: 721px){
+      .tabs .btn{ min-height:30px; padding:5px 8px; }
+      #tab-practice .card:first-child p{ max-width:720px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      #tab-practice .card:first-child{ padding-top:6px; padding-bottom:6px; }
+      .progressGrid{ grid-template-columns: repeat(4, minmax(100px,1fr)); }
+      .questionCard{ grid-template-rows:auto auto auto minmax(0,1fr) auto; }
+    }
+
+    @media (max-width: 720px){
+      :root{ --topbar-h: 92px; }
+      .topbar{ flex-wrap:wrap; align-content:center; }
+      .brand{ width:100%; font-size:19px; }
+      .status{ display:none; }
+      .progressGrid{ grid-template-columns: repeat(2, minmax(120px,1fr)); }
+      .answers{ grid-template-columns: 1fr; }
+      .cartoucheCanvas{ width: min(310px, 82vw); height: 94px; }
+      .cartoucheCanvas.large{ height: 112px; }
+      .equation{ flex-direction:column; }
+      .symbol{ font-size:24px; }
+      .questionCard{ min-height: 220px; }
+      .historyGrid{ grid-template-columns:1fr; }
+      .historyList,.historyDetail{ max-height: 320px; }
+    }
+
+    @media print{
+      .topbar,.tabs,.footer,.noPrint{ display:none !important; }
+      body{ background:#fff; }
+      .main{ padding:0; display:block; }
+      .stack{ width:100%; }
+      .card{ background:#fff; border:0; }
+      .worksheetItem{ background:#fff; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">nanpa-linja-n arithmetic duel</div>
+    <button id="btnStart" class="btn">Start</button>
+    <button id="btnQuit" class="btn" disabled>Quit</button>
+
+    <div class="ddBox"><span class="ddLabel" id="levelLabel">Level</span><select id="levelSelect" class="ddSelect"></select></div>
+    <div class="ddBox"><span class="ddLabel" id="modeLabel">Mode</span><select id="modeSelect" class="ddSelect"></select></div>
+    <div class="ddBox"><span class="ddLabel" id="questionsLabel">Questions</span><input id="countInput" class="numInput" type="number" min="3" max="60" value="10"></div>
+    <div class="ddBox langBox"><span class="ddLabel" id="languageLabel">Language</span><select id="languageSelect" class="ddSelect"><option value="en">English</option><option value="tok">toki pona</option></select></div>
+    <div id="status" class="status">Loading renderer…</div>
+  </div>
+
+  <div class="wrap">
+    <div class="tabs noPrint" role="tablist" aria-label="Page sections">
+      <button class="btn tabBtn" data-tab="practice" aria-selected="true">Practice</button>
+      <button class="btn tabBtn hidden" data-tab="daily" aria-selected="false">Daily Duel</button>
+      <button class="btn tabBtn" data-tab="worksheet" aria-selected="false">Worksheet</button>
+      <button class="btn tabBtn" data-tab="review" aria-selected="false">Review</button>
+      <button class="btn tabBtn" data-tab="history" aria-selected="false">History</button>
+      <button class="btn tabBtn" data-tab="settings" aria-selected="false">Settings</button>
+    </div>
+
+    <main class="main">
+      <div class="stack">
+        <section id="tab-practice" class="tabPanel">
+          <div class="card">
+            <div class="panelRow between">
+              <div>
+                <h1 id="practiceTitle">Practice</h1>
+                <p id="levelHelp" class="muted">Choose a level and press Start.</p>
+              </div>
+              <div class="panelRow">
+                <button id="btnPrev" class="btn" disabled>Prev</button>
+                <button id="btnNext" class="btn" disabled>Next</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card progressGrid">
+            <div class="statCard"><span class="muted">Score</span><strong id="scoreLabel">0 / 0</strong></div>
+            <div class="statCard"><span class="muted">Streak</span><strong id="streakLabel">0</strong></div>
+            <div class="statCard"><span class="muted">Time</span><strong id="timeLabel">off</strong></div>
+            <div class="statCard"><span class="muted">Question</span><strong id="questionLabel">0 / 0</strong></div>
+          </div>
+
+          <div class="card questionCard">
+            <div id="prompt" class="prompt">Press Start to begin.</div>
+            <div id="questionDisplay" class="equation"></div>
+            <div id="sortSelected" class="selectedSort hidden"></div>
+            <div id="answers" class="answers"></div>
+            <div id="feedback" class="feedback muted">Levels 1–8 are included. Level 8 enables timed duel, daily/replay seeds, cartouche-only answers, and mixed full/abbreviated numeric cartouches.</div>
+          </div>
+        </section>
+
+        <section id="tab-daily" class="tabPanel hidden">
+          <div class="card">
+            <h1>Daily Duel</h1>
+            <p class="muted">Daily challenges are generated from today's date. Everyone gets the same challenge for each daily difficulty.</p>
+            <div class="panelRow">
+              <button class="btn dailyBtn" data-daily="easy">Daily easy</button>
+              <button class="btn dailyBtn" data-daily="medium">Daily medium</button>
+              <button class="btn dailyBtn" data-daily="hard">Daily hard</button>
+              <button class="btn dailyBtn" data-daily="mastery">Daily mastery</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Replay / share seed</h2>
+            <div class="panelRow">
+              <input id="seedInput" class="ddSelect" style="min-width:220px" placeholder="seed text or number">
+              <button id="btnUseSeed" class="btn">Use seed</button>
+              <button id="btnCopySeedUrl" class="btn">Copy seed URL</button>
+            </div>
+            <p class="muted">A seed repeats the same generated quiz, which is useful for teaching, replaying missed sessions, and debugging.</p>
+          </div>
+        </section>
+
+        <section id="tab-worksheet" class="tabPanel hidden">
+          <div class="card worksheetBox">
+            <div class="worksheetHeader">
+              <div class="worksheetHeaderText">
+                <h1 id="worksheetTitle">Printable worksheet</h1>
+                <p id="worksheetHelp" class="muted">Generate a static set of questions with an optional answer key. Export the whole worksheet to PDF.</p>
+              </div>
+              <div class="worksheetActionPanel noPrint">
+                <button id="btnGenerateWorksheet" class="btn">Generate worksheet</button>
+                <label class="checkLabel" title="Show or hide the answer key.">
+                  <input id="worksheetAnswerKeyToggle" type="checkbox" />
+                  <span id="worksheetAnswerKeyLabel">Show answer key</span>
+                </label>
+                <label class="checkLabel" title="Toggle worksheet numeric cartouches between full and abbreviated forms without regenerating the questions.">
+                  <input id="worksheetAbbrevToggle" type="checkbox" />
+                  <span id="worksheetAbbrevLabel">Abbreviated cartouches</span>
+                </label>
+                <button id="btnPrintWorksheet" class="btn">Export PDF</button>
+              </div>
+            </div>
+            <div id="worksheetQuestions" class="worksheetQuestions"></div>
+          </div>
+        </section>
+
+        <section id="tab-review" class="tabPanel hidden">
+          <div class="card">
+            <div class="panelRow between">
+              <div>
+                <h1>Review</h1>
+                <p id="reviewSummary" class="muted">No completed session yet.</p>
+              </div>
+              <div class="panelRow">
+                <button id="btnRetryMistakes" class="btn">Retry mistakes</button>
+                <button id="btnClearReview" class="btn">Clear review</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Weak areas</h2>
+            <div id="weakAreas" class="panelRow"><span class="muted">No mistakes recorded yet.</span></div>
+          </div>
+          <div id="reviewList" class="reviewList"></div>
+        </section>
+
+        <section id="tab-history" class="tabPanel hidden">
+          <div class="card">
+            <div class="panelRow between">
+              <div>
+                <h1>History</h1>
+                <p id="historySummary" class="muted">Loading saved sessions…</p>
+              </div>
+              <div class="panelRow">
+                <button id="btnRefreshHistory" class="btn">Refresh</button>
+                <button id="btnClearHistory" class="btn">Clear history</button>
+              </div>
+            </div>
+          </div>
+          <div class="historyGrid">
+            <div class="card historyListCard">
+              <h2>Saved sessions</h2>
+              <div id="historyList" class="historyList"></div>
+            </div>
+            <div class="card historyDetailCard">
+              <div class="panelRow between historyDetailTitleRow">
+                <h2>Session details</h2>
+                <label class="checkLabel" title="Only show missed answers in the selected saved session">
+                  <input id="historyMissedOnlyToggle" type="checkbox" />
+                  Missed only
+                </label>
+              </div>
+              <div id="historyDetail" class="historyDetail"><p class="muted">Select a saved session.</p></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-settings" class="tabPanel hidden">
+          <div class="card">
+            <h1>Settings</h1>
+            <div class="panelRow">
+              <div class="ddBox"><span class="ddLabel">Cartouches</span><select id="cartoucheModeSelect" class="ddSelect"><option value="full">full</option><option value="abbr">abbreviated</option><option value="random">random</option></select></div>
+              <div class="ddBox"><span class="ddLabel">Latin value</span><select id="latinDisplaySelect" class="ddSelect"><option value="after">after answer</option><option value="always">always</option><option value="review">review only</option><option value="never">never</option></select></div>
+              <div class="ddBox"><span class="ddLabel">Proper-name</span><select id="properDisplaySelect" class="ddSelect"><option value="after">after answer</option><option value="always">always</option><option value="review">review only</option><option value="never">never</option></select></div>
+              <div class="ddBox"><span class="ddLabel">Font px</span><select id="fontPxSelect" class="ddSelect"><option>40</option><option selected>56</option><option>72</option><option>88</option><option>104</option></select></div>
+              <div class="ddBox"><span class="ddLabel">Spacing</span><select id="spacingSelect" class="ddSelect"><option value="default">default</option><option value="compact">compact</option><option value="comfortable">comfortable</option></select></div>
+            </div>
+            <div class="panelRow">
+              <span class="pill">Seed <span id="seedLabel">random</span></span>
+              <button id="btnRandomSeed" class="btn small" type="button">Random seed</button>
+              <button id="btnNewSeed" class="btn small" type="button">New seed</button>
+            </div>
+            <div class="panelRow">
+              <label class="pill"><input id="timerToggle" type="checkbox"> timer</label>
+              <div class="ddBox"><span class="ddLabel">Seconds/question</span><select id="secondsPerQuestionSelect" class="ddSelect"><option value="5">5</option><option value="8">8</option><option value="10">10</option><option value="15">15</option><option value="20">20</option><option value="30" selected>30</option><option value="45">45</option><option value="60">60</option></select></div>
+              <span id="timerTotalLabel" class="pill muted">20 questions × 30s = 600s</span>
+              <label class="pill"><input id="cartoucheOnlyToggle" type="checkbox"> cartouche-only answers</label>
+              <label class="pill"><input id="soundToggle" type="checkbox"> sound</label>
+              <label class="pill"><input id="autoNextToggle" type="checkbox"> auto-next after correct</label>
+            </div>
+            <p class="muted">Defaults change by level: early levels reveal values after answers; level 8 hides values during play, turns on the timer, uses mixed modes, and can randomize full/abbreviated cartouches. Timed challenges use question count × seconds per question.</p>
+          </div>
+          <div class="card">
+            <h2>Difficulty map</h2>
+            <div id="levelList" class="levelList"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer" aria-label="Disclaimer">
+      <div class="footerRow">
+        <div class="footerLeft"><strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.</div>
+        <div class="footerRight"><a href="./index.html">Back to index</a></div>
+      </div>
+    </footer>
+  </div>
+
+<script src="./vendor/pdf-lib.min.js"></script>
+<script type="module">
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js";
+
+(() => {
+  "use strict";
+
+  const LEVELS = {
+    1: { name:"Level 1 — recognition", help:"0–20. Match values, compare, same/different. Full cartouches only.", range:[0,20], decimals:false, negatives:false, count:10, modes:["match","compare","same"], sortSize:3, timer:false, cartoucheModes:["full"] },
+    2: { name:"Level 2 — small arithmetic", help:"0–50. Addition and sort 3 values. No negative results.", range:[0,50], decimals:false, negatives:false, count:10, modes:["compare","sum","sort"], sortSize:3, timer:false, cartoucheModes:["full"] },
+    3: { name:"Level 3 — place value", help:"0–9,999. Larger integers, similar distractors, sort 4 values, missing addition.", range:[0,9999], decimals:false, negatives:false, count:10, modes:["compare","sum","difference","missingAdd","sort"], sortSize:4, timer:false, cartoucheModes:["full"] },
+    4: { name:"Level 4 — subtraction and missing", help:"0–9,999. Subtraction and missing values. Abbreviated cartouches become optional.", range:[0,9999], decimals:false, negatives:false, count:12, modes:["difference","missingAdd","missingSub","sort"], sortSize:4, timer:false, cartoucheModes:["full","abbr"] },
+    5: { name:"Level 5 — decimals", help:"0–999.99. Decimal comparison, arithmetic, sorting, and decimal traps.", range:[0,999], decimals:true, decimalPlaces:[1,2], negatives:false, count:12, modes:["compare","sum","difference","missingAdd","sort"], sortSize:4, timer:false, cartoucheModes:["full","abbr"] },
+    6: { name:"Level 6 — negatives", help:"-999 to 999. Signed comparison, signed arithmetic, and sorting.", range:[-999,999], decimals:true, decimalPlaces:[0,1], negatives:true, count:12, modes:["compare","sum","difference","missingAdd","missingSub","sort"], sortSize:4, timer:false, cartoucheModes:["full","abbr"] },
+    7: { name:"Level 7 — long mixed cartouches", help:"-999,999.99 to 999,999.99. Mixed long values and sort 5–6 values.", range:[-999999,999999], decimals:true, decimalPlaces:[0,1,2], negatives:true, count:15, modes:["compare","sum","difference","missingAdd","missingSub","sort","mixed"], sortSize:5, timer:false, cartoucheModes:["full","abbr","random"] },
+    8: { name:"Level 8 — mastery duel", help:"Timed mixed challenge, daily/replay seeds, cartouche-only answers, review, weak-area retry, and random full/abbreviated cartouches.", range:[-999999,999999], decimals:true, decimalPlaces:[0,1,2], negatives:true, count:20, modes:["mixed"], sortSize:6, timer:true, cartoucheModes:["random","full","abbr"], mastery:true }
+  };
+
+  const MODE_LABELS = {
+    match:"match value",
+    compare:"bigger / smaller",
+    same:"same / different",
+    sum:"sum",
+    difference:"difference",
+    missingAdd:"missing addition",
+    missingSub:"missing subtraction",
+    sort:"sort low to high",
+    mixed:"mixed"
+  };
+
+
+  const LANG_KEY = "nlnArithmeticDuel.language";
+  const I18N = {
+    en: {
+      start:"Start", quit:"Quit", prev:"Prev", next:"Next", level:"Level", mode:"Mode", questions:"Questions", language:"Language",
+      practice:"Practice", worksheet:"Worksheet", review:"Review", history:"History", settings:"Settings", loading:"Loading renderer…", ready:"Ready.", chooseLevel:"Choose a level and press Start.", pressStart:"Press Start to begin.", chooseAnswer:"Choose the answer.",
+      score:"Score", streak:"Streak", time:"Time", question:"Question", off:"off", correct:"correct", missed:"missed", Correct:"Correct", notQuite:"Not quite", correctAnswer:"Correct answer", youChose:"You chose", yourAnswer:"Your answer",
+      worksheetTitle:"Printable worksheet", worksheetCoverTitle:"nanpa-linja-n worksheet", worksheetHelp:"Generate a static set of questions with an optional answer key. Export the whole worksheet to PDF.", generateWorksheet:"Generate worksheet", showAnswerKey:"Show answer key", hideAnswerKey:"Hide answer key", abbreviatedCartouches:"Abbreviated cartouches", exportPdf:"Export PDF", answer:"Answer", options:"Options", nameLine:"Name", noWorksheet:"Press Generate worksheet.",
+      reviewTitle:"Review", historyTitle:"History", settingsTitle:"Settings", savedSessions:"Saved sessions", sessionDetails:"Session details", missedOnly:"Missed only", refresh:"Refresh", clearHistory:"Clear history", retryMistakes:"Retry mistakes", clearReview:"Clear review", weakAreas:"Weak areas", selectedSession:"Select a saved session.", noHistory:"No saved practice sessions yet.", finishToSave:"Finish a practice session to save it here.",
+      modes:"Modes", seed:"Seed", bestStreak:"Best streak", accuracy:"accuracy", answered:"answered", finished:"finished", timer:"Timer", random:"random",
+      cartouches:"Cartouches", latinValue:"Latin value", properName:"Proper-name", fontPx:"Font px", spacing:"Spacing", secondsPerQuestion:"Seconds/question", cartoucheOnlyAnswers:"cartouche-only answers", sound:"sound", autoNext:"auto-next after correct",
+      settingsHelp:"Defaults change by level: early levels reveal values after answers; level 8 hides values during play, turns on the timer, uses mixed modes, and can randomize full/abbreviated cartouches. Timed challenges use question count × seconds per question.",
+      promptMatch:"Which value matches this cartouche?", promptCompare:"Which number is bigger?", promptSame:"Are these the same number?", promptSum:"Choose the sum.", promptDifference:"Choose the difference.", promptMissing:"Choose the missing number.", promptSort:"Tap to add at the end, or drag to place the cartouches from low to high.", sortPlaceholder:"Drag cartouches here in order, or tap answers below to add at the end.",
+      wMatch:"Write the value.", wCompare:"Circle the bigger number.", wSame:"Same or different?", wSum:"Choose the sum.", wDifference:"Choose the difference.", wMissing:"Find the missing number.", wSort:"Sort from low to high.", wQuestion:"Question.",
+      left:"Left", right:"Right", same:"Same", different:"Different", or:"or", and:"and", shownValue:"Shown value", correctOrder:"Correct order", theValueIs:"The value is", sameCheck:"Same", differentCheck:"Different",
+      levels:{
+        1:["Level 1 — recognition","0–20. Match values, compare, same/different. Full cartouches only."],
+        2:["Level 2 — small arithmetic","0–50. Addition and sort 3 values. No negative results."],
+        3:["Level 3 — place value","0–9,999. Larger integers, similar distractors, sort 4 values, missing addition."],
+        4:["Level 4 — subtraction and missing","0–9,999. Subtraction and missing values. Abbreviated cartouches become optional."],
+        5:["Level 5 — decimals","0–999.99. Decimal comparison, arithmetic, sorting, and decimal traps."],
+        6:["Level 6 — negatives","-999 to 999. Signed comparison, signed arithmetic, and sorting."],
+        7:["Level 7 — long mixed cartouches","-999,999.99 to 999,999.99. Mixed long values and sort 5–6 values."],
+        8:["Level 8 — mastery duel","Timed mixed challenge, replay seeds, cartouche-only answers, review, weak-area retry, and random full/abbreviated cartouches."]
+      },
+      modeLabels:{ match:"match value", compare:"bigger / smaller", same:"same / different", sum:"sum", difference:"difference", missingAdd:"missing addition", missingSub:"missing subtraction", sort:"sort low to high", mixed:"mixed" }
+    },
+    tok: {
+      start:"o open", quit:"o pini", prev:"monsi", next:"sinpin", level:"suli musi", mode:"nasin", questions:"wile", language:"toki",
+      practice:"musi", worksheet:"lipu pali", review:"lukin sin", history:"tenpo pini", settings:"ante", loading:"ilo sitelen li kama…", ready:"ilo li pona.", chooseLevel:"o kama jo e suli musi. o pilin e o open.", pressStart:"o pilin e o open.", chooseAnswer:"o pana e sona.",
+      score:"nanpa pona", streak:"pona lon poka", time:"tenpo", question:"wile", off:"ala", correct:"pona", missed:"pona ala", Correct:"pona", notQuite:"pona ala lili", correctAnswer:"sona pona", youChose:"sina pana", yourAnswer:"sina pana",
+      worksheetTitle:"lipu pali", worksheetCoverTitle:"nanpa-linja-n lipu pali", worksheetHelp:"o pali e lipu wile. ken la ona li jo e sona pona. o pana e lipu PDF.", generateWorksheet:"o pali e lipu", showAnswerKey:"o lukin e sona pona", hideAnswerKey:"o len e sona pona", abbreviatedCartouches:"sitelen poki lili", exportPdf:"o pana e PDF", answer:"sona pona", options:"ken", nameLine:"nimi", noWorksheet:"o pilin e o pali e lipu.",
+      reviewTitle:"lukin sin", historyTitle:"tenpo pini", settingsTitle:"ante", savedSessions:"musi pini", sessionDetails:"sona pi musi pini", missedOnly:"pona ala taso", refresh:"o sin", clearHistory:"o weka e tenpo pini", retryMistakes:"o pali sin e pakala", clearReview:"o weka e lukin sin", weakAreas:"ma pona ala", selectedSession:"o lukin e musi pini.", noHistory:"musi pini li lon ala.", finishToSave:"o pini e musi la ona li lon ni.",
+      modes:"nasin", seed:"nimi nasin", bestStreak:"pona poka suli", accuracy:"nanpa pona", answered:"wile pini", finished:"pini", timer:"ilo tenpo", random:"ante ale",
+      cartouches:"sitelen poki", latinValue:"nanpa Lasina", properName:"nimi", fontPx:"suli sitelen", spacing:"insa", secondsPerQuestion:"tenpo pi wile wan", cartoucheOnlyAnswers:"sitelen poki taso", sound:"kalama", autoNext:"o tawa lon pona",
+      settingsHelp:"suli musi lili li pana e sona nanpa lon pini wile. suli musi 8 li len e sona lon musi, li kepeken ilo tenpo, li kepeken nasin mute, li ken ante e sitelen poki suli/lili. tenpo musi li sama: nanpa wile × tenpo pi wile wan.",
+      promptMatch:"nanpa seme li sama sitelen poki ni?", promptCompare:"nanpa seme li suli?", promptSame:"nanpa tu ni li sama anu seme?", promptSum:"o pana e nanpa kama.", promptDifference:"o pana e nanpa weka.", promptMissing:"o pana e nanpa weka lon lipu.", promptSort:"o pilin anu o tawa e sitelen poki tan lili tawa suli.", sortPlaceholder:"o tawa e sitelen poki lon ni tan lili tawa suli. anu la o pilin e ona.",
+      wMatch:"o sitelen e nanpa.", wCompare:"o sike e nanpa suli.", wSame:"sama anu ante?", wSum:"o pana e nanpa kama.", wDifference:"o pana e nanpa weka.", wMissing:"o alasa e nanpa weka.", wSort:"o lawa tan lili tawa suli.", wQuestion:"wile.",
+      left:"poka soto", right:"poka teje", same:"sama", different:"ante", or:"anu", and:"en", shownValue:"sitelen li", correctOrder:"nasin pona", theValueIs:"nanpa li", sameCheck:"sama", differentCheck:"ante",
+      levels:{
+        1:["suli musi 1 — lukin sona","0–20. o lukin e nanpa, o suli/lili, o sama/ante. sitelen poki suli taso."],
+        2:["suli musi 2 — nanpa lili","0–50. o wan e nanpa; o lawa e nanpa 3. nanpa kama li anpa ala."],
+        3:["suli musi 3 — ma nanpa","0–9,999. nanpa suli mute, nanpa poka, lawa nanpa 4, nanpa weka lon wan."],
+        4:["suli musi 4 — weka en alasa","0–9,999. o weka; o alasa e nanpa. sitelen poki lili li ken."],
+        5:["suli musi 5 — nanpa pi sitelen lili","0–999.99. o lukin e nanpa lili, o pali e nanpa, o lawa e nanpa."],
+        6:["suli musi 6 — nanpa anpa","-999 tawa 999. o lukin e nanpa anpa, o pali, o lawa."],
+        7:["suli musi 7 — sitelen poki suli mute","-999,999.99 tawa 999,999.99. nanpa mute; o lawa e nanpa 5–6."],
+        8:["suli musi 8 — utala sona","ilo tenpo, nimi nasin, sitelen poki taso, lukin sin, pakala, sitelen poki suli/lili."]
+      },
+      modeLabels:{ match:"o sama e nanpa", compare:"suli / lili", same:"sama / ante", sum:"wan nanpa", difference:"weka nanpa", missingAdd:"nanpa weka lon wan", missingSub:"nanpa weka lon weka", sort:"lili tawa suli", mixed:"nasin mute" }
+    }
+  };
+
+  function lang(){ return state?.settings?.language === "tok" ? "tok" : "en"; }
+  function tr(key){
+    const d = I18N[lang()] || I18N.en;
+    const parts = String(key).split('.');
+    let cur = d;
+    for (const part of parts) cur = cur && cur[part];
+    if (cur == null){ cur = I18N.en; for (const part of parts) cur = cur && cur[part]; }
+    return cur == null ? key : cur;
+  }
+  function tMode(m){ return tr('modeLabels.' + m) || MODE_LABELS[m] || m; }
+  function tLevelName(n){ return (tr('levels.' + n) || [LEVELS[n]?.name || `Level ${n}`])[0]; }
+  function tLevelHelp(n){ return (tr('levels.' + n) || [null, LEVELS[n]?.help || ''])[1]; }
+
+  const state = {
+    renderer:null,
+    rendererReady:false,
+    tab:"practice",
+    rng:Math.random,
+    seed:null,
+    seedText:"random",
+    active:false,
+    session:[],
+    index:0,
+    score:0,
+    streak:0,
+    bestStreak:0,
+    answered:false,
+    selectedSort:[],
+    review:[],
+    responses:[],
+    mistakePool:[],
+    weakAreas:{},
+    history:[],
+    selectedHistoryId:null,
+    historyMissedOnly:false,
+    timerId:null,
+    startedAt:0,
+    remainingSec:0,
+    worksheet:[],
+    worksheetShowAnswers:false,
+    settings:{
+      level:1,
+      mode:"match",
+      questionCount:10,
+      cartoucheMode:"full",
+      latinDisplay:"after",
+      properDisplay:"after",
+      fontPx:56,
+      spacingPreset:"default",
+      timer:false,
+      secondsPerQuestion:30,
+      cartoucheOnly:false,
+      sound:false,
+      autoNext:false,
+      language:"en",
+      worksheetShowAnswers:false,
+      worksheetAbbreviated:false
+    }
+  };
+
+  const el = {};
+  const $ = (id) => document.getElementById(id);
+  const clamp = (n,a,b) => Math.max(a, Math.min(b, n));
+  const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+  const arrayEq = (a,b) => a.length === b.length && a.every((v,i)=>Object.is(v,b[i]));
+
+  function hashSeed(str){
+    let h = 2166136261 >>> 0;
+    for (let i=0;i<String(str).length;i++){
+      h ^= String(str).charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function mulberry32(seed){
+    let t = seed >>> 0;
+    return function(){
+      t += 0x6D2B79F5;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function rand(){ return state.rng(); }
+  function randInt(min,max){ return Math.floor(rand() * (max - min + 1)) + min; }
+  function pick(arr){ return arr[randInt(0, arr.length - 1)]; }
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i=a.length-1;i>0;i--){ const j=randInt(0,i); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+
+  function cacheEls(){
+    for (const id of ["btnStart","btnPrev","btnNext","btnQuit","levelSelect","modeSelect","countInput","languageSelect","levelLabel","modeLabel","questionsLabel","languageLabel","status","seedLabel","btnRandomSeed","btnNewSeed","practiceTitle","levelHelp","scoreLabel","streakLabel","timeLabel","questionLabel","prompt","questionDisplay","sortSelected","answers","feedback","seedInput","btnUseSeed","btnCopySeedUrl","btnGenerateWorksheet","btnToggleAnswerKey","worksheetAnswerKeyToggle","worksheetAnswerKeyLabel","btnPrintWorksheet","worksheetAbbrevToggle","worksheetAbbrevLabel","worksheetTitle","worksheetHelp","worksheetQuestions","reviewSummary","btnRetryMistakes","btnClearReview","weakAreas","reviewList","cartoucheModeSelect","latinDisplaySelect","properDisplaySelect","fontPxSelect","spacingSelect","timerToggle","secondsPerQuestionSelect","timerTotalLabel","cartoucheOnlyToggle","soundToggle","autoNextToggle","levelList","historySummary","historyList","historyDetail","historyMissedOnlyToggle","btnRefreshHistory","btnClearHistory"]){ el[id] = $(id); }
+  }
+
+  function buildRendererConfig({ abbreviate = false, fontPx = state.settings.fontPx, spacingPreset = state.settings.spacingPreset, paddingPx = 12 } = {}){
+    return {
+      layout:{ fontPx, align:"center", paddingPx, spacingPreset },
+      paint:{ fillStyle:"#111111", halo:{ enabled:false, widthPx:0, color:"#FFFFFF" } },
+      parser:{ numericMode:"uniform", mixedStyle:"short", abbreviateNumericCartouches: !!abbreviate },
+      fonts:{ roles:{ word:"TP-Nasin-Nanpa-Font", text:"TP-Nasin-Nanpa-Font", cartouche:"TP-Nasin-Nanpa-Font", number:"TP-Cartouche-Font", date:"TP-Cartouche-Font", time:"TP-Cartouche-Font", literal:"PatrickHand", unknown:"PatrickHand" } }
+    };
+  }
+
+  async function ensureRenderer(){
+    if (state.renderer) return state.renderer;
+    state.renderer = await SitelenRenderer.create(buildRendererConfig());
+    state.rendererReady = true;
+    setStatus(tr("ready"));
+    return state.renderer;
+  }
+
+  async function renderNumberCanvas(value, opts = {}){
+    const renderer = await ensureRenderer();
+    const input = formatNumber(value, { plain:false });
+    const fontPx = Math.max(8, Math.round(Number(opts.fontPx || state.settings.fontPx) || 56));
+    const rendered = await renderer.renderTextToNewCanvas({ input, ...buildRendererConfig({ ...opts, fontPx }) });
+    return cropCanvasToVisibleBounds(rendered.canvas, Math.max(4, Math.round(fontPx * 0.10)));
+  }
+
+  async function renderNumberCanvasFittedByFontSize(value, opts = {}){
+    // Fit by changing renderer font size only. Do not scale the rendered cartouche bitmap.
+    const maxWidth = Math.max(1, Math.floor(Number(opts.maxWidth || 1)));
+    const maxHeight = Math.max(1, Math.floor(Number(opts.maxHeight || 1)));
+    const preferredPx = Math.max(8, Math.round(Number(opts.fontPx || state.settings.fontPx) || 56));
+    const minPx = Math.max(8, Math.round(Number(opts.minFontPx || 8) || 8));
+
+    let best = null;
+    let low = minPx;
+    let high = preferredPx;
+
+    while (low <= high){
+      const mid = Math.floor((low + high) / 2);
+      const off = await renderNumberCanvas(value, { ...opts, fontPx: mid });
+      if (off.width <= maxWidth && off.height <= maxHeight){
+        best = off;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    if (best) return best;
+    return await renderNumberCanvas(value, { ...opts, fontPx: minPx });
+  }
+
+  async function renderNumberCanvasesAtCommonFittedFontSize(values, opts = {}){
+    // For a group of numeric answer cartouches, choose one shared renderer
+    // font size: the largest font size at which the longest/tallest rendered
+    // cartouche in the set fits. Do not scale the rendered bitmaps.
+    const list = Array.from(values || []);
+    const maxWidth = Math.max(1, Math.floor(Number(opts.maxWidth || 1)));
+    const maxHeight = Math.max(1, Math.floor(Number(opts.maxHeight || 1)));
+    const preferredPx = Math.max(8, Math.round(Number(opts.fontPx || state.settings.fontPx) || 56));
+    const minPx = Math.max(8, Math.round(Number(opts.minFontPx || 8) || 8));
+
+    async function allFitAt(fontPx){
+      for (const value of list){
+        const off = await renderNumberCanvas(value, { ...opts, fontPx });
+        if (off.width > maxWidth || off.height > maxHeight) return false;
+      }
+      return true;
+    }
+
+    let bestPx = null;
+    let low = minPx;
+    let high = preferredPx;
+    while (low <= high){
+      const mid = Math.floor((low + high) / 2);
+      if (await allFitAt(mid)){
+        bestPx = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    const finalPx = bestPx || minPx;
+    const canvases = new Map();
+    for (const value of list){
+      const key = formatNumber(value, { plain:true });
+      if (!canvases.has(key)){
+        canvases.set(key, await renderNumberCanvas(value, { ...opts, fontPx: finalPx }));
+      }
+    }
+    return { fontPx: finalPx, canvases };
+  }
+
+  function cropCanvasToVisibleBounds(src, paddingPx = 4){
+    if (!src) return null;
+    const w = src.width|0, h = src.height|0;
+    const ctx = src.getContext("2d", { alpha:true });
+    if (!ctx || !w || !h) return src;
+    let data;
+    try{ data = ctx.getImageData(0,0,w,h).data; } catch { return src; }
+    let minX=w,minY=h,maxX=-1,maxY=-1;
+    for (let y=0;y<h;y++){
+      const row = y*w*4;
+      for (let x=0;x<w;x++){
+        if (data[row+x*4+3] > 0){ minX=Math.min(minX,x); minY=Math.min(minY,y); maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); }
+      }
+    }
+    if (maxX < minX || maxY < minY) return src;
+    const p = Math.max(0, Math.round(paddingPx));
+    minX=Math.max(0,minX-p); minY=Math.max(0,minY-p); maxX=Math.min(w-1,maxX+p); maxY=Math.min(h-1,maxY+p);
+    const out = document.createElement("canvas");
+    out.width = Math.max(1, maxX-minX+1);
+    out.height = Math.max(1, maxY-minY+1);
+    out.getContext("2d", { alpha:true }).drawImage(src, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+    return out;
+  }
+
+  function drawCanvasInto(target, off, box = {}){
+    if (!target || !off) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.floor(box.width || target.clientWidth || 220));
+    const h = Math.max(1, Math.floor(box.height || target.clientHeight || 92));
+    target.width = Math.ceil(w*dpr);
+    target.height = Math.ceil(h*dpr);
+    target.style.width = `${w}px`;
+    target.style.height = `${h}px`;
+    const ctx = target.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+
+    // No cartouche bitmap scaling here. The rendered canvas must already fit;
+    // renderNumberCanvasFittedByFontSize() adjusts fontPx until it does.
+    ctx.imageSmoothingEnabled = false;
+    const dw = Math.min(off.width, w);
+    const dh = Math.min(off.height, h);
+    ctx.drawImage(off, 0, 0, dw, dh, Math.floor((w-dw)/2), Math.floor((h-dh)/2), dw, dh);
+  }
+
+  function cartoucheBoxSize(kind){
+    const vw = Math.max(320, window.innerWidth || 980);
+    const mobile = vw <= 520;
+    if (kind === "large") return { width: Math.floor(Math.min(720, vw * 0.88)), height: mobile ? 112 : 128 };
+    if (kind === "answer") return { width: 220, height: 78 };
+    if (kind === "worksheet") return { width: 220, height: 70 };
+    if (kind === "history") return { width: mobile ? 124 : 150, height: mobile ? 34 : 38 };
+    if (kind === "review") return { width: mobile ? 180 : 230, height: mobile ? 50 : 56 };
+    return { width: mobile ? Math.floor(Math.min(310, vw * 0.82)) : 250, height: mobile ? 94 : 108 };
+  }
+
+  function formatNumber(value, { plain = false } = {}){
+    let n = round2(value);
+    if (Object.is(n, -0)) n = 0;
+    let s;
+    if (Number.isInteger(n)) s = String(n);
+    else s = n.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
+    if (plain) return s;
+    const neg = s.startsWith("-") ? "-" : "";
+    if (neg) s = s.slice(1);
+    const [i,f] = s.split(".");
+    const grouped = i.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return neg + grouped + (f ? "." + f : "");
+  }
+
+  function properNameForNumber(value){
+    const s = formatNumber(value, { plain:false });
+    const parser = SitelenRenderer.NanpaParser;
+    if (!parser || typeof parser.decimalToCaps !== "function") return "";
+    try{
+      const caps = parser.decimalToCaps(s);
+      if (!caps) return "";
+      if (typeof parser.capsToWords === "function") return parser.capsToWords(caps).join(" ");
+      return caps;
+    } catch { return ""; }
+  }
+
+  function normalizeQuestionCount(){
+    const lvl = LEVELS[state.settings.level];
+    const n = clamp(Math.round(Number(el.countInput.value || lvl.count)), 3, 60);
+    state.settings.questionCount = n;
+    el.countInput.value = String(n);
+    updateTimerTotalLabel();
+    saveSettings();
+  }
+
+  function setStatus(s){ el.status.textContent = s; }
+
+  function populateControls(){
+    el.levelSelect.innerHTML = Object.keys(LEVELS).map(k => `<option value="${k}">${LEVELS[k].name}</option>`).join("");
+    el.levelSelect.value = String(state.settings.level);
+    populateModeSelect();
+    renderLevelList();
+  }
+
+  function populateModeSelect(){
+    const lvl = LEVELS[state.settings.level];
+    el.modeSelect.innerHTML = lvl.modes.map(m => `<option value="${m}">${tMode(m)}</option>`).join("");
+    if (!lvl.modes.includes(state.settings.mode)) state.settings.mode = lvl.modes[0];
+    el.modeSelect.value = state.settings.mode;
+    el.countInput.value = String(state.settings.questionCount || lvl.count);
+    el.levelHelp.textContent = tLevelHelp(state.settings.level);
+    el.practiceTitle.textContent = tLevelName(state.settings.level);
+    const allowed = lvl.cartoucheModes;
+    if (!allowed.includes(state.settings.cartoucheMode)) state.settings.cartoucheMode = allowed[0];
+    el.cartoucheModeSelect.value = state.settings.cartoucheMode;
+    el.cartoucheModeSelect.querySelectorAll("option").forEach(o => { o.disabled = !allowed.includes(o.value); });
+    renderLevelList();
+  }
+
+  function applyLevelDefaults(level){
+    const lvl = LEVELS[level];
+    state.settings.level = level;
+    state.settings.mode = lvl.modes[0];
+    state.settings.questionCount = lvl.count;
+    state.settings.timer = !!lvl.timer;
+    if (lvl.mastery && !state.settings.secondsPerQuestion) state.settings.secondsPerQuestion = 30;
+    state.settings.secondsPerQuestion = normalizeSecondsPerQuestion(state.settings.secondsPerQuestion);
+    state.settings.cartoucheMode = lvl.mastery ? "random" : lvl.cartoucheModes[0];
+    state.settings.cartoucheOnly = !!lvl.mastery;
+    state.settings.latinDisplay = level <= 5 ? "after" : (lvl.mastery ? "review" : "after");
+    state.settings.properDisplay = level <= 3 ? "after" : (lvl.mastery ? "review" : "after");
+    syncSettingsUi();
+    populateModeSelect();
+    saveSettings();
+  }
+
+  function renderLevelList(){
+    el.levelList.innerHTML = Object.entries(LEVELS).map(([k,lvl]) => `<div class="levelItem ${Number(k)===state.settings.level?'active':''}"><h3>${tLevelName(k)}</h3><p class="muted">${tLevelHelp(k)}</p><p><strong>${tr("modes")}:</strong> ${lvl.modes.map(m=>tMode(m)).join(", ")}</p></div>`).join("");
+  }
+
+  const TIMER_SECONDS_CHOICES = [5,8,10,15,20,30,45,60];
+
+  function normalizeSecondsPerQuestion(value){
+    const n = Math.round(Number(value));
+    return TIMER_SECONDS_CHOICES.includes(n) ? n : 30;
+  }
+
+  function updateTimerTotalLabel(){
+    if (!el.timerTotalLabel) return;
+    const q = Math.max(1, Math.round(Number(state.settings.questionCount) || LEVELS[state.settings.level].count || 10));
+    const s = normalizeSecondsPerQuestion(state.settings.secondsPerQuestion);
+    el.timerTotalLabel.textContent = lang() === "tok" ? `${q} wile × ${s}s = ${q * s}s` : `${q} questions × ${s}s = ${q * s}s`;
+  }
+
+  function syncWorksheetControls(){
+    state.worksheetShowAnswers = !!state.settings.worksheetShowAnswers;
+    if (el.btnToggleAnswerKey) el.btnToggleAnswerKey.textContent = state.worksheetShowAnswers ? tr("hideAnswerKey") : tr("showAnswerKey");
+    if (el.worksheetAnswerKeyToggle) el.worksheetAnswerKeyToggle.checked = !!state.worksheetShowAnswers;
+    if (el.worksheetAnswerKeyLabel) el.worksheetAnswerKeyLabel.textContent = state.worksheetShowAnswers ? tr("hideAnswerKey") : tr("showAnswerKey");
+    if (el.worksheetAbbrevToggle) el.worksheetAbbrevToggle.checked = !!state.settings.worksheetAbbreviated;
+  }
+
+  function syncSettingsUi(){
+    el.levelSelect.value = String(state.settings.level);
+    el.modeSelect.value = state.settings.mode;
+    el.countInput.value = String(state.settings.questionCount);
+    el.cartoucheModeSelect.value = state.settings.cartoucheMode;
+    el.latinDisplaySelect.value = state.settings.latinDisplay;
+    el.properDisplaySelect.value = state.settings.properDisplay;
+    el.fontPxSelect.value = String(state.settings.fontPx);
+    el.spacingSelect.value = state.settings.spacingPreset;
+    el.timerToggle.checked = !!state.settings.timer;
+    if (el.secondsPerQuestionSelect) el.secondsPerQuestionSelect.value = String(normalizeSecondsPerQuestion(state.settings.secondsPerQuestion));
+    updateTimerTotalLabel();
+    el.cartoucheOnlyToggle.checked = !!state.settings.cartoucheOnly;
+    el.soundToggle.checked = !!state.settings.sound;
+    el.autoNextToggle.checked = !!state.settings.autoNext;
+    syncWorksheetControls();
+  }
+
+
+  function applyLanguage(){
+    const l = lang();
+    document.documentElement.lang = l === "tok" ? "tok" : "en";
+    if (el.languageSelect) el.languageSelect.value = l;
+    if (el.status && !state.rendererReady) el.status.textContent = tr("loading");
+    const set = (id, text) => { const n = document.getElementById(id); if (n) n.textContent = text; };
+    set("levelLabel", tr("level")); set("modeLabel", tr("mode")); set("questionsLabel", tr("questions")); set("languageLabel", tr("language"));
+    if (el.btnStart) el.btnStart.textContent = tr("start");
+    if (el.btnQuit) el.btnQuit.textContent = tr("quit");
+    if (el.btnPrev) el.btnPrev.textContent = tr("prev");
+    if (el.btnNext) el.btnNext.textContent = tr("next");
+    document.querySelector('[data-tab="practice"]')?.replaceChildren(document.createTextNode(tr("practice")));
+    document.querySelector('[data-tab="worksheet"]')?.replaceChildren(document.createTextNode(tr("worksheet")));
+    document.querySelector('[data-tab="review"]')?.replaceChildren(document.createTextNode(tr("review")));
+    document.querySelector('[data-tab="history"]')?.replaceChildren(document.createTextNode(tr("history")));
+    document.querySelector('[data-tab="settings"]')?.replaceChildren(document.createTextNode(tr("settings")));
+    set("worksheetTitle", tr("worksheetTitle")); set("worksheetHelp", tr("worksheetHelp"));
+    if (el.btnGenerateWorksheet) el.btnGenerateWorksheet.textContent = tr("generateWorksheet");
+    if (el.btnPrintWorksheet) el.btnPrintWorksheet.textContent = tr("exportPdf");
+    if (el.worksheetAbbrevLabel) el.worksheetAbbrevLabel.textContent = tr("abbreviatedCartouches");
+    if (el.worksheetAnswerKeyLabel) el.worksheetAnswerKeyLabel.textContent = tr("showAnswerKey");
+    if (el.reviewSummary && !state.review.length) el.reviewSummary.textContent = l === "tok" ? "musi pini li lon ala." : "No completed session yet.";
+    if (el.btnRetryMistakes) el.btnRetryMistakes.textContent = tr("retryMistakes");
+    if (el.btnClearReview) el.btnClearReview.textContent = tr("clearReview");
+    if (el.btnRefreshHistory) el.btnRefreshHistory.textContent = tr("refresh");
+    if (el.btnClearHistory) el.btnClearHistory.textContent = tr("clearHistory");
+    if (el.historyMissedOnlyToggle) {
+      const lbl = el.historyMissedOnlyToggle.closest("label");
+      if (lbl) { for (const node of Array.from(lbl.childNodes)) if (node.nodeType === Node.TEXT_NODE) node.nodeValue = " " + tr("missedOnly"); }
+    }
+    const reviewH = document.querySelector('#tab-review h1'); if (reviewH) reviewH.textContent = tr("reviewTitle");
+    const weakH = document.querySelector('#tab-review h2'); if (weakH) weakH.textContent = tr("weakAreas");
+    const histH = document.querySelector('#tab-history h1'); if (histH) histH.textContent = tr("historyTitle");
+    const savedH = document.querySelector('.historyListCard h2'); if (savedH) savedH.textContent = tr("savedSessions");
+    const detailH = document.querySelector('.historyDetailTitleRow h2'); if (detailH) detailH.textContent = tr("sessionDetails");
+    const settingsH = document.querySelector('#tab-settings h1'); if (settingsH) settingsH.textContent = tr("settingsTitle");
+    const settingsHelp = document.querySelector('#tab-settings .card > p.muted'); if (settingsHelp) settingsHelp.textContent = tr("settingsHelp");
+    populateModeSelect();
+    renderLevelList();
+    updateTimerTotalLabel();
+    const statLabels = document.querySelectorAll('.statCard span.muted');
+    const statKeys = ['score','streak','time','question'];
+    statLabels.forEach((n,i) => { if (statKeys[i]) n.textContent = tr(statKeys[i]); });
+    const settingsLabels = Array.from(document.querySelectorAll('#tab-settings .ddBox .ddLabel'));
+    ['cartouches','latinValue','properName','fontPx','spacing','secondsPerQuestion'].forEach((k,i)=>{ if (settingsLabels[i]) settingsLabels[i].textContent = tr(k); });
+    const settingLabelFor = (id, key) => { const input = document.getElementById(id); const lbl = input?.closest('label'); if (lbl) { for (const node of Array.from(lbl.childNodes)) if (node.nodeType === Node.TEXT_NODE) node.nodeValue = ' ' + tr(key); } };
+    settingLabelFor('timerToggle','timer');
+    settingLabelFor('cartoucheOnlyToggle','cartoucheOnlyAnswers');
+    settingLabelFor('soundToggle','sound');
+    settingLabelFor('autoNextToggle','autoNext');
+    const diffH = document.querySelector('#tab-settings .card:nth-of-type(2) h2'); if (diffH) diffH.textContent = lang()==='tok' ? 'suli musi ale' : 'Difficulty map';
+    if (!state.active && el.prompt) el.prompt.textContent = tr('pressStart');
+    if (!state.active && el.feedback) el.feedback.textContent = lang()==='tok' ? 'suli musi 1–8 li lon.' : 'Levels 1–8 are included. Level 8 enables timed duel, replay seeds, cartouche-only answers, and mixed full/abbreviated numeric cartouches.';
+    const footerLeft = document.querySelector('.footerLeft'); if (footerLeft) footerLeft.innerHTML = lang()==='tok' ? '<strong>sona:</strong> ilo ni li lon nasin “as is”. mi pana ala e wawa pi pona. sina o lukin e ni: sitelen li pona anu seme.' : '<strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.';
+    const back = document.querySelector('.footerRight a'); if (back) back.textContent = lang()==='tok' ? 'o tawa lipu open' : 'Back to index';
+    syncWorksheetControls();
+  }
+
+  function loadSettings(){
+    try{
+      const saved = JSON.parse(localStorage.getItem("nlnArithmeticDuel.settings") || "null");
+      if (saved && typeof saved === "object") Object.assign(state.settings, saved);
+    } catch {}
+    state.settings.language = (state.settings.language === "tok") ? "tok" : "en";
+    try { const l = localStorage.getItem(LANG_KEY); if (l === "tok" || l === "en") state.settings.language = l; } catch {}
+    state.settings.level = clamp(Math.round(Number(state.settings.level)||1),1,8);
+    const lvl = LEVELS[state.settings.level];
+    if (!lvl.modes.includes(state.settings.mode)) state.settings.mode = lvl.modes[0];
+    state.settings.questionCount = clamp(Math.round(Number(state.settings.questionCount)||lvl.count),3,60);
+    state.settings.secondsPerQuestion = normalizeSecondsPerQuestion(state.settings.secondsPerQuestion);
+    state.settings.worksheetShowAnswers = !!state.settings.worksheetShowAnswers;
+    state.settings.worksheetAbbreviated = !!state.settings.worksheetAbbreviated;
+    state.worksheetShowAnswers = !!state.settings.worksheetShowAnswers;
+    if (!lvl.cartoucheModes.includes(state.settings.cartoucheMode)) state.settings.cartoucheMode = lvl.cartoucheModes[0];
+  }
+  function saveSettings(){ try{ localStorage.setItem("nlnArithmeticDuel.settings", JSON.stringify(state.settings)); }catch{} }
+
+  const HISTORY_MISSED_ONLY_KEY = "nlnArithmeticDuel.historyMissedOnly";
+  function loadHistoryMissedOnlySetting(){
+    try { state.historyMissedOnly = localStorage.getItem(HISTORY_MISSED_ONLY_KEY) === "1"; }
+    catch { state.historyMissedOnly = false; }
+    if (el.historyMissedOnlyToggle) el.historyMissedOnlyToggle.checked = !!state.historyMissedOnly;
+  }
+  function saveHistoryMissedOnlySetting(){
+    try { localStorage.setItem(HISTORY_MISSED_ONLY_KEY, state.historyMissedOnly ? "1" : "0"); } catch {}
+  }
+
+  const HISTORY_DB_NAME = "nln-arithmetic-duel-history";
+  const HISTORY_DB_VERSION = 1;
+  const HISTORY_STORE = "sessions";
+  let historyDbPromise = null;
+
+  function openHistoryDb(){
+    if (historyDbPromise) return historyDbPromise;
+    historyDbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(HISTORY_DB_NAME, HISTORY_DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        let store;
+        if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+          store = db.createObjectStore(HISTORY_STORE, { keyPath:"id" });
+        } else {
+          store = req.transaction.objectStore(HISTORY_STORE);
+        }
+        if (!store.indexNames.contains("finishedAt")) store.createIndex("finishedAt", "finishedAt", { unique:false });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("Could not open history database."));
+    });
+    return historyDbPromise;
+  }
+
+  function idbRequest(req){
+    return new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("IndexedDB request failed."));
+    });
+  }
+
+  async function putHistorySession(record){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE, "readwrite");
+    tx.objectStore(HISTORY_STORE).put(record);
+    await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error); });
+  }
+
+  async function readHistorySessions(){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE, "readonly");
+    const store = tx.objectStore(HISTORY_STORE);
+    let rows;
+    if (typeof store.getAll === "function") rows = await idbRequest(store.getAll());
+    else {
+      rows = [];
+      await new Promise((resolve, reject) => {
+        const req = store.openCursor();
+        req.onsuccess = () => { const cur = req.result; if (!cur) { resolve(); return; } rows.push(cur.value); cur.continue(); };
+        req.onerror = () => reject(req.error);
+      });
+    }
+    return rows.sort((a,b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
+  }
+
+  async function clearHistorySessions(){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE, "readwrite");
+    tx.objectStore(HISTORY_STORE).clear();
+    await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error); });
+  }
+
+
+  function wireEvents(){
+    el.btnStart.addEventListener("click", () => { showTab("practice"); startSession(); });
+    el.btnPrev.addEventListener("click", () => prevQuestion());
+    el.btnNext.addEventListener("click", () => nextQuestion());
+    el.btnQuit.addEventListener("click", () => finishSession({ quit:true }));
+    el.btnRandomSeed.addEventListener("click", () => { setSeed("random"); setStatus("Random seed selected."); });
+    el.btnNewSeed.addEventListener("click", () => { setSeed("seed-" + Date.now()); setStatus("New seed ready."); });
+    el.levelSelect.addEventListener("change", () => applyLevelDefaults(Number(el.levelSelect.value)));
+    el.modeSelect.addEventListener("change", () => { state.settings.mode = el.modeSelect.value; saveSettings(); });
+    el.countInput.addEventListener("change", normalizeQuestionCount);
+    document.querySelectorAll(".tabBtn").forEach(btn => btn.addEventListener("click", () => showTab(btn.dataset.tab)));
+    document.querySelectorAll(".dailyBtn").forEach(btn => btn.addEventListener("click", () => startDaily(btn.dataset.daily)));
+    el.btnUseSeed.addEventListener("click", () => { const v = el.seedInput.value.trim(); if (v) { setSeed(v); showTab("practice"); startSession(); } });
+    el.btnCopySeedUrl.addEventListener("click", copySeedUrl);
+    el.btnGenerateWorksheet.addEventListener("click", generateWorksheet);
+    if (el.btnToggleAnswerKey) el.btnToggleAnswerKey.addEventListener("click", () => {
+      state.worksheetShowAnswers = !state.worksheetShowAnswers;
+      state.settings.worksheetShowAnswers = !!state.worksheetShowAnswers;
+      saveSettings();
+      syncWorksheetControls();
+      renderWorksheet();
+    });
+    if (el.worksheetAnswerKeyToggle) {
+      el.worksheetAnswerKeyToggle.addEventListener("change", () => {
+        state.worksheetShowAnswers = !!el.worksheetAnswerKeyToggle.checked;
+        state.settings.worksheetShowAnswers = !!state.worksheetShowAnswers;
+        saveSettings();
+        syncWorksheetControls();
+        renderWorksheet();
+      });
+    }
+    if (el.worksheetAbbrevToggle) {
+      el.worksheetAbbrevToggle.addEventListener("change", () => {
+        state.settings.worksheetAbbreviated = !!el.worksheetAbbrevToggle.checked;
+        saveSettings();
+        renderWorksheet();
+      });
+    }
+    if (el.languageSelect) {
+      el.languageSelect.addEventListener("change", async () => {
+        state.settings.language = el.languageSelect.value === "tok" ? "tok" : "en";
+        try { localStorage.setItem(LANG_KEY, state.settings.language); } catch {}
+        saveSettings();
+        applyLanguage();
+        if (state.active) await rerenderCurrentQuestion();
+        if (state.tab === "worksheet") await renderWorksheet();
+        if (state.tab === "review") await renderReview();
+        if (state.tab === "history") renderHistory();
+      });
+    }
+    el.btnPrintWorksheet.addEventListener("click", exportWorksheetPdf);
+    el.btnRetryMistakes.addEventListener("click", retryMistakes);
+    el.btnClearReview.addEventListener("click", clearReview);
+    el.btnRefreshHistory.addEventListener("click", loadHistory);
+    el.btnClearHistory.addEventListener("click", async () => {
+      if (!confirm(lang() === "tok" ? "weka e musi pini ale lon ilo ni?" : "Clear all saved practice session history on this machine?")) return;
+      await clearHistorySessions();
+      state.history = [];
+      state.selectedHistoryId = null;
+      renderHistory();
+    });
+    if (el.historyMissedOnlyToggle) {
+      el.historyMissedOnlyToggle.addEventListener("change", () => {
+        state.historyMissedOnly = !!el.historyMissedOnlyToggle.checked;
+        saveHistoryMissedOnlySetting();
+        const selected = (state.history || []).find(r => r.id === state.selectedHistoryId) || (state.history || [])[0];
+        renderHistoryDetail(selected);
+      });
+    }
+    for (const [dom, key] of [[el.cartoucheModeSelect,"cartoucheMode"],[el.latinDisplaySelect,"latinDisplay"],[el.properDisplaySelect,"properDisplay"],[el.spacingSelect,"spacingPreset"]]){
+      dom.addEventListener("change", () => { state.settings[key] = dom.value; saveSettings(); rerenderCurrentQuestion(); });
+    }
+    el.fontPxSelect.addEventListener("change", () => { state.settings.fontPx = Number(el.fontPxSelect.value)||56; saveSettings(); rerenderCurrentQuestion(); });
+    if (el.secondsPerQuestionSelect) {
+      el.secondsPerQuestionSelect.addEventListener("change", () => {
+        state.settings.secondsPerQuestion = normalizeSecondsPerQuestion(el.secondsPerQuestionSelect.value);
+        el.secondsPerQuestionSelect.value = String(state.settings.secondsPerQuestion);
+        updateTimerTotalLabel();
+        saveSettings();
+      });
+    }
+    for (const [dom, key] of [[el.timerToggle,"timer"],[el.cartoucheOnlyToggle,"cartoucheOnly"],[el.soundToggle,"sound"],[el.autoNextToggle,"autoNext"]]){
+      dom.addEventListener("change", () => { state.settings[key] = dom.checked; saveSettings(); });
+    }
+  }
+
+  function showTab(tab){
+    state.tab = tab;
+    document.body.classList.toggle("worksheet-active", tab === "worksheet");
+    document.querySelectorAll(".tabBtn").forEach(btn => btn.setAttribute("aria-selected", btn.dataset.tab === tab ? "true" : "false"));
+    document.querySelectorAll(".tabPanel").forEach(panel => panel.classList.add("hidden"));
+    $("tab-" + tab).classList.remove("hidden");
+    if (tab === "review") renderReview();
+    if (tab === "history") loadHistory();
+  }
+
+  function makeFreshRandomSessionSeedText(){
+    let extra = "";
+    try {
+      const a = new Uint32Array(2);
+      crypto.getRandomValues(a);
+      extra = `-${a[0].toString(36)}-${a[1].toString(36)}`;
+    } catch {
+      extra = `-${Math.floor(Math.random() * 0xFFFFFFFF).toString(36)}`;
+    }
+    return `random-${Date.now().toString(36)}${extra}`;
+  }
+
+  function setSeed(seedText){
+    state.seedText = String(seedText || "random");
+    state.seed = state.seedText === "random" ? null : hashSeed(state.seedText);
+    state.rng = state.seed == null ? Math.random : mulberry32(state.seed);
+    el.seedLabel.textContent = state.seedText;
+    el.seedInput.value = state.seedText === "random" ? "" : state.seedText;
+  }
+
+  function todaySeed(kind){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}:${kind}`;
+  }
+
+  function startDaily(kind){
+    const map = { easy:2, medium:5, hard:7, mastery:8 };
+    applyLevelDefaults(map[kind] || 8);
+    state.settings.mode = LEVELS[state.settings.level].mastery ? "mixed" : LEVELS[state.settings.level].modes[0];
+    syncSettingsUi();
+    setSeed(todaySeed(kind));
+    showTab("practice");
+    startSession();
+  }
+
+  async function copySeedUrl(){
+    const seed = el.seedInput.value.trim() || state.seedText || "random";
+    const url = new URL(window.location.href);
+    url.searchParams.set("seed", seed);
+    url.searchParams.set("level", String(state.settings.level));
+    url.searchParams.set("mode", state.settings.mode);
+    try{ await navigator.clipboard.writeText(url.toString()); setStatus("Seed URL copied."); }
+    catch{ setStatus("Could not copy seed URL."); }
+  }
+
+  function initFromUrl(){
+    try{
+      const p = new URLSearchParams(window.location.search);
+      const level = Number(p.get("level"));
+      if (level >= 1 && level <= 8) applyLevelDefaults(level);
+      const mode = p.get("mode");
+      if (mode && LEVELS[state.settings.level].modes.includes(mode)) state.settings.mode = mode;
+      const seed = p.get("seed");
+      setSeed(seed || "random");
+      syncSettingsUi();
+      populateModeSelect();
+    } catch { setSeed("random"); }
+  }
+
+  function makeValue(level, opts = {}){
+    const lvl = LEVELS[level];
+    const [min,max] = lvl.range;
+    let n = randInt(Math.ceil(min), Math.floor(max));
+    const decimals = opts.forceDecimal || (lvl.decimals && pick(lvl.decimalPlaces || [0,1,2]) > 0);
+    if (decimals){
+      const places = opts.places ?? pick((lvl.decimalPlaces || [1,2]).filter(x=>x>0));
+      const frac = randInt(0, Math.pow(10, places)-1) / Math.pow(10, places);
+      n = n < 0 ? n - frac : n + frac;
+      n = round2(n);
+    }
+    if (!lvl.negatives && n < 0) n = Math.abs(n);
+    if (Object.is(n, -0)) n = 0;
+    return n;
+  }
+
+  function questionTags(q){
+    const vals = [];
+    if ("a" in q) vals.push(q.a);
+    if ("b" in q) vals.push(q.b);
+    if ("result" in q) vals.push(q.result);
+    if (Array.isArray(q.values)) vals.push(...q.values);
+    if (typeof q.correct === "number") vals.push(q.correct);
+    const tags = [];
+    if (vals.some(v => Number(v) < 0)) tags.push("negatives");
+    if (vals.some(v => !Number.isInteger(Number(v)))) tags.push("decimals");
+    if (vals.some(v => Math.abs(Number(v)) >= 1000)) tags.push("thousands");
+    if (["missingAdd","missingSub"].includes(q.type)) tags.push("missing numbers");
+    if (q.type === "sort") tags.push("sorting");
+    if (q.displayMode === "abbr") tags.push("abbreviated cartouches");
+    return tags.length ? tags : ["basic integers"];
+  }
+
+  function resolveDisplayMode(){
+    const mode = state.settings.cartoucheMode;
+    if (mode === "random") return rand() < 0.5 ? "full" : "abbr";
+    return mode;
+  }
+
+  const MIXED_MODE_POOL = ["match","compare","same","sum","difference","missingAdd","missingSub","sort"];
+
+  function generateQuestion(level, forcedMode = null){
+    const lvl = LEVELS[level];
+    let mode = forcedMode || state.settings.mode;
+    if (mode === "mixed") {
+      // Level 8 only exposes the UI mode "mixed", so lvl.modes.filter(...)
+      // is empty there. Use a real question-mode pool instead of trying to
+      // generate a question whose type is literally undefined.
+      const pool = lvl.modes.filter(m => m !== "mixed");
+      mode = pick(pool.length ? pool : MIXED_MODE_POOL);
+    }
+    const q = { type:mode, level, displayMode:resolveDisplayMode() };
+
+    if (mode === "match"){
+      q.a = makeValue(level);
+      q.correct = q.a;
+      q.options = makeOptions(q.correct, level, { count:4, strictRange:true });
+      if (!q.options.some(v => sameNumberValue(v, q.correct))) {
+        q.options = shuffle([q.correct, ...q.options.filter(v => !sameNumberValue(v, q.correct))]).slice(0, 4);
+      }
+    } else if (mode === "compare"){
+      q.a = makeValue(level); q.b = makeValue(level);
+      if (rand() < 0.12) q.b = q.a;
+      q.correct = q.a > q.b ? "left" : q.a < q.b ? "right" : "same";
+      q.options = ["left","same","right"];
+    } else if (mode === "same"){
+      q.a = makeValue(level); q.b = rand() < 0.5 ? q.a : makeNearby(q.a, level);
+      q.correct = q.a === q.b ? "same" : "different";
+      q.options = ["same","different"];
+    } else if (mode === "sum"){
+      q.a = makeValue(level); q.b = makeValue(level);
+      if (!lvl.negatives){ q.a = Math.abs(q.a); q.b = Math.abs(q.b); }
+      q.correct = round2(q.a + q.b);
+      q.options = makeOptions(q.correct, level, { count:4, source:[q.a,q.b], op:"sum" });
+    } else if (mode === "difference"){
+      q.a = makeValue(level); q.b = makeValue(level);
+      if (!lvl.negatives && q.a < q.b) [q.a,q.b] = [q.b,q.a];
+      q.correct = round2(q.a - q.b);
+      q.options = makeOptions(q.correct, level, { count:4, source:[q.a,q.b], op:"difference" });
+    } else if (mode === "missingAdd"){
+      q.a = makeValue(level); q.correct = makeValue(level);
+      if (!lvl.negatives){ q.a = Math.abs(q.a); q.correct = Math.abs(q.correct); }
+      q.result = round2(q.a + q.correct);
+      q.options = makeOptions(q.correct, level, { count:4, source:[q.a,q.result], op:"missing" });
+    } else if (mode === "missingSub"){
+      q.a = makeValue(level); q.correct = makeValue(level);
+      if (!lvl.negatives){ q.a = Math.abs(q.a); q.correct = Math.abs(q.correct); if (q.a < q.correct) q.a += q.correct; }
+      q.result = round2(q.a - q.correct);
+      q.options = makeOptions(q.correct, level, { count:4, source:[q.a,q.result], op:"missing" });
+    } else if (mode === "sort"){
+      const size = lvl.sortSize || 4;
+      const vals = new Set();
+      let guard = 0;
+      while (vals.size < size && guard++ < 100) vals.add(makeValue(level));
+      q.values = Array.from(vals);
+      q.correct = q.values.slice().sort((a,b)=>a-b);
+      q.options = shuffle(q.values);
+    }
+    q.tags = questionTags(q);
+    return q;
+  }
+
+  function makeNearby(value, level){
+    const lvl = LEVELS[level];
+    let v;
+    const abs = Math.abs(Number(value));
+    const variants = [round2(value+1), round2(value-1), round2(value+10), round2(value-10), round2(-value)];
+    if (!Number.isInteger(value)) variants.push(round2(value+0.1), round2(value-0.1), round2(value*10));
+    if (abs >= 10){
+      const s = formatNumber(value, { plain:true }).replace("-","");
+      if (/^\d{2,}(\.\d+)?$/.test(s)){
+        const chars = s.split("");
+        const digits = chars.map((ch,i)=>/\d/.test(ch)?i:-1).filter(i=>i>=0);
+        if (digits.length >= 2){ const a=digits[digits.length-1], b=digits[digits.length-2]; [chars[a],chars[b]]=[chars[b],chars[a]]; variants.push(Number((value<0?"-":"") + chars.join(""))); }
+      }
+    }
+    const valid = variants.filter(x => Number.isFinite(x) && x !== value && (lvl.negatives || x >= 0));
+    v = valid.length ? pick(valid) : value + 1;
+    return round2(v);
+  }
+
+  function isAllowedOptionValue(v, level, { strictRange = false } = {}){
+    const lvl = LEVELS[level];
+    const n = Number(v);
+    if (!Number.isFinite(n)) return false;
+    if (!lvl.decimals && !Number.isInteger(n)) return false;
+    if (!lvl.negatives && n < 0) return false;
+    if (strictRange){
+      const [min,max] = lvl.range;
+      if (n < min || n > max) return false;
+    }
+    return true;
+  }
+
+  function sameNumberValue(a, b){
+    return Object.is(a, b) || Number(a) === Number(b);
+  }
+
+  function makeOptions(correct, level, { count = 4, source = [], op = "", strictRange = false } = {}){
+    // Correct answer must never be lost while building distractors. The earlier
+    // version put all candidates in one set and then sliced the generated list;
+    // that could drop the actual match value in large mixed Level 8 questions.
+    const correctValue = round2(correct);
+    const correctKey = formatNumber(correctValue, { plain:true });
+    const vals = new Map();
+
+    const add = v => {
+      v = round2(v);
+      if (isAllowedOptionValue(v, level, { strictRange })) {
+        const key = formatNumber(v, { plain:true });
+        if (!vals.has(key)) vals.set(key, v);
+      }
+    };
+
+    // Keep the correct answer separately and add it back explicitly at the end.
+    add(makeNearby(correctValue, level));
+    add(correctValue + 1); add(correctValue - 1); add(correctValue + 10); add(correctValue - 10); add(-correctValue);
+    if (source.length === 2){ add(source[0] + source[1]); add(source[0] - source[1]); add(source[1] - source[0]); }
+    if (Math.abs(correctValue) >= 10){
+      const s = formatNumber(correctValue,{plain:true});
+      const neg = s.startsWith("-") ? "-" : "";
+      const core = neg ? s.slice(1) : s;
+      const digits = core.replace(".","").split("");
+      if (digits.length >= 2){ const rev = digits.slice().reverse().join(""); add(Number(neg + rev)); }
+      add(Number(neg + core.replace(".","")));
+      if (!core.includes(".")) add(Number(neg + core.slice(0,-1) + "." + core.slice(-1)));
+    }
+
+    let guard = 0;
+    while (vals.size < Math.max(1, count - 1) && guard++ < 200){ add(makeValue(level)); }
+
+    const distractors = [];
+    for (const [key, v] of vals.entries()){
+      if (key !== correctKey && !sameNumberValue(v, correctValue)) distractors.push(v);
+    }
+
+    let fallbackGuard = 0;
+    while (distractors.length < count - 1 && fallbackGuard++ < 400){
+      const step = fallbackGuard;
+      const candidates = strictRange
+        ? [makeValue(level)]
+        : [round2(correctValue + step), round2(correctValue - step), round2(-correctValue + step)];
+      for (const v of candidates){
+        if (distractors.length >= count - 1) break;
+        const key = formatNumber(v, { plain:true });
+        if (key === correctKey || sameNumberValue(v, correctValue)) continue;
+        if (isAllowedOptionValue(v, level, { strictRange }) && !distractors.some(x => sameNumberValue(x, v))) distractors.push(v);
+      }
+    }
+
+    // Randomize position, but always include the correct value exactly once.
+    return shuffle([correctValue, ...shuffle(distractors).slice(0, Math.max(0, count - 1))]).slice(0, count);
+  }
+
+  function canonicalSessionNumberKey(value){
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return formatNumber(round2(n), { plain:true });
+  }
+
+  function visibleQuestionNumberKeys(q){
+    const vals = [];
+    if (!q) return vals;
+
+    // These are the numbers shown in the question body. Answer-option
+    // distractors are intentionally excluded; otherwise a short beginner
+    // session could exhaust the whole 0-20 pool after only a few questions.
+    if (q.type === "match") vals.push(q.a);
+    else if (q.type === "compare" || q.type === "same") vals.push(q.a, q.b);
+    else if (q.type === "sum" || q.type === "difference") vals.push(q.a, q.b);
+    else if (q.type === "missingAdd" || q.type === "missingSub") vals.push(q.a, q.result);
+    else if (q.type === "sort" && Array.isArray(q.values)) vals.push(...q.values);
+
+    const out = [];
+    for (const v of vals){
+      const key = canonicalSessionNumberKey(v);
+      if (key != null && !out.includes(key)) out.push(key);
+    }
+    return out;
+  }
+
+  function buildSessionQuestions(){
+    const count = state.settings.questionCount;
+    const qs = [];
+    const usedVisibleNumbers = new Set();
+
+    for (let i=0;i<count;i++) {
+      let chosen = null;
+      let chosenKeys = [];
+
+      // Try hard to avoid showing the same question-number twice in one
+      // practice session. If the configured range is genuinely exhausted,
+      // fall back rather than hanging.
+      for (let attempt=0; attempt<400; attempt++){
+        const candidate = generateQuestion(state.settings.level);
+        const keys = visibleQuestionNumberKeys(candidate);
+        const overlaps = keys.some(k => usedVisibleNumbers.has(k));
+        if (!overlaps){ chosen = candidate; chosenKeys = keys; break; }
+        if (!chosen){ chosen = candidate; chosenKeys = keys; }
+      }
+
+      qs.push(chosen);
+      for (const k of chosenKeys) usedVisibleNumbers.add(k);
+    }
+    return qs;
+  }
+
+  async function startSession({ questions = null, seedText = null } = {}){
+    showTab("practice");
+    await ensureRenderer();
+    normalizeQuestionCount();
+    let runSeedText = state.seedText;
+    if (seedText) {
+      setSeed(seedText);
+      runSeedText = state.seedText;
+    } else if (state.seedText !== "random") {
+      // Fixed/replay seed: intentionally reset to the same RNG sequence so the
+      // same level + mode + seed reproduces the same practice session.
+      state.rng = mulberry32(state.seed);
+      runSeedText = state.seedText;
+    } else {
+      // Random seed mode: make every normal Start produce a fresh session.
+      // Use a generated internal seed instead of leaving this to Math.random(),
+      // so the finished session can still be reproduced from History if needed.
+      runSeedText = makeFreshRandomSessionSeedText();
+      state.rng = mulberry32(hashSeed(runSeedText));
+    }
+    state.active = true;
+    state.sessionStartedAtIso = new Date().toISOString();
+    state.sessionSeedText = runSeedText;
+    state.session = questions || buildSessionQuestions();
+    state.index = 0;
+    state.score = 0;
+    state.streak = 0;
+    state.bestStreak = 0;
+    state.review = [];
+    state.responses = new Array(state.session.length).fill(null);
+    state.answered = false;
+    state.selectedSort = [];
+    el.btnStart.disabled = true;
+    el.btnQuit.disabled = false;
+    el.btnPrev.disabled = true;
+    el.btnNext.disabled = true;
+    if (state.settings.timer) startTimer(); else stopTimer(false);
+    setStatus("Duel started.");
+    try {
+      await renderCurrentQuestion();
+    } catch (err) {
+      console.error(err);
+      setStatus("Could not render the question. Check console for details.");
+      state.active = false;
+      el.btnStart.disabled = false;
+      el.btnQuit.disabled = true;
+      el.btnPrev.disabled = true;
+      el.btnNext.disabled = true;
+    }
+    updateStats();
+  }
+
+  function startTimer(){
+    stopTimer(false);
+    const perQuestion = normalizeSecondsPerQuestion(state.settings.secondsPerQuestion);
+    const questionCount = Math.max(1, state.session?.length || state.settings.questionCount || LEVELS[state.settings.level].count || 10);
+    state.remainingSec = questionCount * perQuestion;
+    state.startedAt = Date.now();
+    state.timerId = setInterval(() => {
+      state.remainingSec--;
+      updateStats();
+      if (state.remainingSec <= 0) finishSession({ timeout:true });
+    }, 1000);
+  }
+  function stopTimer(reset = true){
+    if (state.timerId) clearInterval(state.timerId);
+    state.timerId = null;
+    if (reset) state.remainingSec = 0;
+    updateStats();
+  }
+
+  function updateStats(){
+    el.scoreLabel.textContent = `${state.score} / ${state.session.length || 0}`;
+    el.streakLabel.textContent = `${state.streak} (best ${state.bestStreak})`;
+    el.questionLabel.textContent = state.session.length ? `${Math.min(state.index+1,state.session.length)} / ${state.session.length}` : "0 / 0";
+    if (state.settings.timer && state.active) el.timeLabel.textContent = `${Math.max(0,state.remainingSec)}s`;
+    else el.timeLabel.textContent = state.settings.timer ? "ready" : "off";
+  }
+
+  async function rerenderCurrentQuestion(){
+    if (state.active && state.session[state.index]) await renderCurrentQuestion();
+  }
+
+  function updateNavButtons(){
+    if (!state.active){
+      el.btnPrev.disabled = true;
+      el.btnNext.disabled = true;
+      return;
+    }
+    const stored = state.responses[state.index];
+    el.btnPrev.disabled = state.index <= 0;
+    el.btnNext.disabled = !stored;
+  }
+
+  async function renderCurrentQuestion(){
+    const q = state.session[state.index];
+    const stored = state.responses[state.index] || null;
+    state.answered = !!stored;
+    state.selectedSort = stored && q.type === "sort" && Array.isArray(stored.answer) ? stored.answer.slice() : [];
+
+    // Build the next visible question in detached nodes first. This keeps the
+    // current screen stable while the async cartouche renderer is working, so
+    // clicking Next does not briefly blank the question/answer area.
+    const scratch = makeQuestionScratchNodes();
+    await renderQuestionDisplay(q, !!stored, scratch);
+    if (!stored) await renderAnswers(q, scratch.answers);
+
+    el.prompt.textContent = scratch.prompt.textContent;
+    el.questionDisplay.replaceChildren(...Array.from(scratch.questionDisplay.childNodes));
+    el.sortSelected.className = scratch.sortSelected.className;
+    el.sortSelected.replaceChildren(...Array.from(scratch.sortSelected.childNodes));
+    el.answers.className = scratch.answers.className;
+    el.answers.replaceChildren(...Array.from(scratch.answers.childNodes));
+
+    if (stored) applyAnsweredFeedback(q, stored.answer, stored.ok);
+    else {
+      el.feedback.className = "feedback muted";
+      el.feedback.textContent = tr("chooseAnswer");
+    }
+    updateNavButtons();
+    updateStats();
+  }
+
+  function makeQuestionScratchNodes(){
+    const prompt = document.createElement("div");
+    const questionDisplay = document.createElement("div");
+    questionDisplay.className = el.questionDisplay.className;
+    const sortSelected = document.createElement("div");
+    sortSelected.className = el.sortSelected.className;
+    sortSelected.classList.add("hidden");
+    const answers = document.createElement("div");
+    answers.className = "answers";
+    return { prompt, questionDisplay, sortSelected, answers };
+  }
+
+  function shouldShowLatin(phase){
+    const v = state.settings.latinDisplay;
+    if (v === "always") return true;
+    if (v === "after" && phase === "after") return true;
+    return false;
+  }
+  function shouldShowProper(phase){
+    const v = state.settings.properDisplay;
+    if (v === "always") return true;
+    if (v === "after" && phase === "after") return true;
+    return false;
+  }
+
+  async function makeCartoucheWrap(value, { phase = "before", large = false, displayMode = null, renderedCanvas = null, boxOverride = null } = {}){
+    const wrap = document.createElement("div");
+    wrap.className = "cartoucheWrap";
+    wrap.dataset.value = formatNumber(value, { plain:true });
+    wrap.dataset.proper = properNameForNumber(value);
+    const canvas = document.createElement("canvas");
+    canvas.className = "cartoucheCanvas" + (large ? " large" : "");
+    const latin = document.createElement("div"); latin.className = "latinValue";
+    const proper = document.createElement("div"); proper.className = "properValue";
+    wrap.append(canvas, latin, proper);
+    const basePx = Math.max(8, Number(state.settings.fontPx) || 56);
+    const renderFontPx = large
+      ? Math.min(104, Math.max(72, Math.round(basePx * 1.6)))
+      : Math.min(84, Math.max(56, Math.round(basePx * 1.25)));
+    const box = boxOverride || cartoucheBoxSize(large ? "large" : "normal");
+    const off = renderedCanvas || await renderNumberCanvasFittedByFontSize(value, { abbreviate:(displayMode || "full") === "abbr", fontPx:renderFontPx, maxWidth:box.width, maxHeight:box.height });
+    drawCanvasInto(canvas, off, box);
+    latin.textContent = shouldShowLatin(phase) ? formatNumber(value) : "";
+    proper.textContent = shouldShowProper(phase) ? properNameForNumber(value) : "";
+    return wrap;
+  }
+
+  function questionCartoucheValues(q){
+    if (!q) return [];
+    if (q.type === "match") return [q.a];
+    if (q.type === "compare" || q.type === "same" || q.type === "sum" || q.type === "difference") return [q.a, q.b];
+    if (q.type === "missingAdd" || q.type === "missingSub") return [q.a, q.result];
+    return [];
+  }
+
+  async function prepareCommonMainQuestionCartouches(q, displayMode){
+    // Every numeric cartouche in the main question row must use the same
+    // renderer font size. Choose the largest shared font size that lets the
+    // longest/tallest main-question cartouche fit in its normal question box.
+    // Do not bitmap-scale; the renderer font size is reduced before rendering.
+    const values = questionCartoucheValues(q);
+    if (values.length <= 1) return null;
+    const box = cartoucheBoxSize("normal");
+    const basePx = Math.max(8, Number(state.settings.fontPx) || 56);
+    const renderFontPx = Math.min(84, Math.max(56, Math.round(basePx * 1.25)));
+    return await renderNumberCanvasesAtCommonFittedFontSize(values, {
+      abbreviate:(displayMode || "full") === "abbr",
+      fontPx:renderFontPx,
+      maxWidth:box.width,
+      maxHeight:box.height
+    });
+  }
+
+  function mainQuestionRenderedCanvas(common, value){
+    if (!common || !common.canvases) return null;
+    return common.canvases.get(formatNumber(value, { plain:true })) || null;
+  }
+
+  async function renderQuestionDisplay(q, after, targets = null){
+    const phase = after ? "after" : "before";
+    const dm = q.displayMode;
+    const commonMain = await prepareCommonMainQuestionCartouches(q, dm);
+    const normalBox = cartoucheBoxSize("normal");
+    const questionDisplay = targets?.questionDisplay || el.questionDisplay;
+    const promptEl = targets?.prompt || el.prompt;
+    const sortSelected = targets?.sortSelected || el.sortSelected;
+    const addSym = (s) => { const span=document.createElement("div"); span.className="symbol"; span.textContent=s; questionDisplay.appendChild(span); };
+    const addMainCartouche = async (value) => {
+      questionDisplay.appendChild(await makeCartoucheWrap(value, {
+        phase,
+        displayMode:dm,
+        renderedCanvas: mainQuestionRenderedCanvas(commonMain, value),
+        boxOverride: normalBox
+      }));
+    };
+    if (q.type === "match"){
+      promptEl.textContent = tr("promptMatch");
+      questionDisplay.appendChild(await makeCartoucheWrap(q.a, { phase, large:true, displayMode:dm }));
+    } else if (q.type === "compare"){
+      promptEl.textContent = tr("promptCompare");
+      await addMainCartouche(q.a);
+      addSym(tr("or"));
+      await addMainCartouche(q.b);
+    } else if (q.type === "same"){
+      promptEl.textContent = tr("promptSame");
+      await addMainCartouche(q.a);
+      addSym("=");
+      await addMainCartouche(q.b);
+    } else if (q.type === "sum"){
+      promptEl.textContent = tr("promptSum");
+      await addMainCartouche(q.a); addSym("+"); await addMainCartouche(q.b); addSym("="); addSym("?");
+    } else if (q.type === "difference"){
+      promptEl.textContent = tr("promptDifference");
+      await addMainCartouche(q.a); addSym("−"); await addMainCartouche(q.b); addSym("="); addSym("?");
+    } else if (q.type === "missingAdd"){
+      promptEl.textContent = tr("promptMissing");
+      await addMainCartouche(q.a); addSym("+"); addSym("?"); addSym("="); await addMainCartouche(q.result);
+    } else if (q.type === "missingSub"){
+      promptEl.textContent = tr("promptMissing");
+      await addMainCartouche(q.a); addSym("−"); addSym("?"); addSym("="); await addMainCartouche(q.result);
+    } else if (q.type === "sort"){
+      promptEl.textContent = tr("promptSort");
+      sortSelected.dataset.placeholder = tr("sortPlaceholder");
+      sortSelected.classList.remove("hidden");
+    }
+  }
+
+  async function renderAnswers(q, target = el.answers){
+    if (q.type === "match"){
+      target.className = "answers";
+      for (const v of q.options) makeTextAnswer(v, formatNumber(v), target);
+      return;
+    }
+    if (q.type === "compare"){
+      target.className = "answers compareAnswers";
+      makeTextAnswer("left", tr("left"), target);
+      makeTextAnswer("right", tr("right"), target);
+      makeTextAnswer("same", tr("same"), target, "sameAnswerBtn");
+      return;
+    }
+    if (q.type === "same"){
+      target.className = "answers";
+      for (const opt of q.options){ makeTextAnswer(opt, opt === "same" ? tr("same") : tr("different"), target); }
+      return;
+    }
+
+    const box = cartoucheBoxSize("answer");
+    const basePx = Math.max(8, Number(state.settings.fontPx) || 56);
+    const answerFontPx = Math.min(76, Math.max(52, Math.round(basePx * 1.15)));
+    const common = await renderNumberCanvasesAtCommonFittedFontSize(q.options || [], {
+      abbreviate:q.displayMode === "abbr",
+      fontPx:answerFontPx,
+      maxWidth:box.width,
+      maxHeight:box.height
+    });
+
+    if (q.type === "sort"){
+      target.className = "sortGrid";
+      for (const v of q.options) await makeNumericAnswer(v, { sort:true, q, target, box, renderedCanvas:common.canvases.get(formatNumber(v,{plain:true})) });
+      return;
+    }
+    target.className = "answers";
+    for (const v of q.options) await makeNumericAnswer(v, { q, target, box, renderedCanvas:common.canvases.get(formatNumber(v,{plain:true})) });
+  }
+
+  function makeTextAnswer(value, label, target = el.answers, extraClass = ""){
+    const btn = document.createElement("button");
+    btn.className = "btn answerBtn" + (extraClass ? " " + extraClass : "");
+    btn.textContent = label;
+    btn.addEventListener("click", () => checkAnswer(value));
+    target.appendChild(btn);
+  }
+
+  async function makeNumericAnswer(value, { sort = false, q, target = el.answers, box = null, renderedCanvas = null } = {}){
+    const btn = document.createElement("button");
+    btn.className = "btn answerBtn";
+    btn.dataset.value = formatNumber(value,{plain:true});
+    btn.dataset.displayValue = formatNumber(value);
+    const canvas = document.createElement("canvas");
+    const caption = document.createElement("div");
+    caption.className = "latinValue";
+    if (!state.settings.cartoucheOnly && shouldShowLatin("before")) caption.textContent = formatNumber(value);
+    btn.append(canvas, caption);
+    const targetBox = box || cartoucheBoxSize("answer");
+    let off = renderedCanvas;
+    if (!off){
+      const basePx = Math.max(8, Number(state.settings.fontPx) || 56);
+      const answerFontPx = Math.min(76, Math.max(52, Math.round(basePx * 1.15)));
+      off = await renderNumberCanvasFittedByFontSize(value, { abbreviate:q.displayMode === "abbr", fontPx:answerFontPx, maxWidth:targetBox.width, maxHeight:targetBox.height });
+    }
+    drawCanvasInto(canvas, off, targetBox);
+    if (sort) wireSortAnswerButton(btn, value);
+    else btn.addEventListener("click", () => checkAnswer(value));
+    target.appendChild(btn);
+  }
+
+  let sortDrag = null;
+
+  function wireSortAnswerButton(btn, value){
+    btn.dataset.sortValue = formatNumber(value, { plain:true });
+    btn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+    });
+    btn.addEventListener("pointerdown", (ev) => beginSortPointer(ev, btn, value));
+  }
+
+  function beginSortPointer(ev, btn, value){
+    if (state.answered || btn.disabled || ev.button > 0) return;
+    ev.preventDefault();
+    const marker = document.createElement("div");
+    marker.className = "sortDropMarker";
+    sortDrag = {
+      btn,
+      value,
+      pointerId: ev.pointerId,
+      startX: ev.clientX,
+      startY: ev.clientY,
+      moved:false,
+      marker,
+      originalParent: btn.parentNode,
+      originalNext: btn.nextSibling
+    };
+    try { btn.setPointerCapture(ev.pointerId); } catch {}
+    btn.classList.add("dragging");
+    window.addEventListener("pointermove", moveSortPointer, { passive:false });
+    window.addEventListener("pointerup", endSortPointer, { passive:false });
+    window.addEventListener("pointercancel", cancelSortPointer, { passive:false });
+  }
+
+  function moveSortPointer(ev){
+    if (!sortDrag || ev.pointerId !== sortDrag.pointerId) return;
+    ev.preventDefault();
+    const dx = ev.clientX - sortDrag.startX;
+    const dy = ev.clientY - sortDrag.startY;
+    if (!sortDrag.moved && Math.hypot(dx, dy) < 7) return;
+    sortDrag.moved = true;
+    placeSortMarkerAt(ev.clientX, ev.clientY);
+  }
+
+  function placeSortMarkerAt(clientX, clientY){
+    if (!sortDrag) return;
+    const selected = el.sortSelected;
+    const marker = sortDrag.marker;
+    const rect = selected.getBoundingClientRect();
+    const inside = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+    if (!inside){
+      if (marker.parentNode) marker.remove();
+      return;
+    }
+
+    const items = Array.from(selected.querySelectorAll(".answerBtn")).filter(x => x !== sortDrag.btn);
+    let before = null;
+    for (const item of items){
+      const r = item.getBoundingClientRect();
+      const sameRow = clientY >= r.top - 10 && clientY <= r.bottom + 10;
+      if (!sameRow) continue;
+      if (clientX < r.left + r.width / 2){ before = item; break; }
+    }
+    if (!before){
+      const rowsBelow = items.filter(item => { const r = item.getBoundingClientRect(); return clientY < r.top; });
+      if (rowsBelow.length){
+        rowsBelow.sort((a,b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top || a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+        before = rowsBelow[0];
+      }
+    }
+    selected.insertBefore(marker, before);
+  }
+
+  function endSortPointer(ev){
+    if (!sortDrag || ev.pointerId !== sortDrag.pointerId) return;
+    ev.preventDefault();
+    const d = sortDrag;
+    cleanupSortPointerListeners();
+    d.btn.classList.remove("dragging");
+    try { d.btn.releasePointerCapture(d.pointerId); } catch {}
+
+    if (d.moved && d.marker.parentNode === el.sortSelected){
+      el.sortSelected.insertBefore(d.btn, d.marker);
+      d.marker.remove();
+      afterSortAnswerMoved();
+      return;
+    }
+
+    if (d.marker.parentNode) d.marker.remove();
+    if (!d.moved){
+      if (d.btn.parentNode === el.answers) moveSortButtonToEnd(d.btn);
+      afterSortAnswerMoved();
+      return;
+    }
+
+    if (d.originalParent && d.btn.parentNode !== d.originalParent){
+      d.originalParent.insertBefore(d.btn, d.originalNext);
+    }
+  }
+
+  function cancelSortPointer(ev){
+    if (!sortDrag || ev.pointerId !== sortDrag.pointerId) return;
+    const d = sortDrag;
+    cleanupSortPointerListeners();
+    d.btn.classList.remove("dragging");
+    if (d.marker.parentNode) d.marker.remove();
+  }
+
+  function cleanupSortPointerListeners(){
+    window.removeEventListener("pointermove", moveSortPointer);
+    window.removeEventListener("pointerup", endSortPointer);
+    window.removeEventListener("pointercancel", cancelSortPointer);
+    sortDrag = null;
+  }
+
+  function moveSortButtonToEnd(btn){
+    if (state.answered || !btn || btn.parentNode === el.sortSelected) return;
+    el.sortSelected.appendChild(btn);
+  }
+
+  function selectedSortValuesFromDom(){
+    return Array.from(el.sortSelected.querySelectorAll(".answerBtn[data-sort-value]"))
+      .map(btn => Number(btn.dataset.sortValue))
+      .filter(n => Number.isFinite(n));
+  }
+
+  function afterSortAnswerMoved(){
+    if (state.answered) return;
+    const q = state.session[state.index];
+    if (!q || q.type !== "sort") return;
+    state.selectedSort = selectedSortValuesFromDom();
+    if (state.selectedSort.length === q.correct.length) checkAnswer(state.selectedSort.slice());
+  }
+
+  async function checkAnswer(answer){
+    if (state.answered) return;
+    const q = state.session[state.index];
+    let ok = false;
+    if (q.type === "sort") ok = arrayEq(answer, q.correct);
+    else ok = Object.is(answer, q.correct) || Number(answer) === Number(q.correct);
+    state.answered = true;
+    state.score += ok ? 1 : 0;
+    state.streak = ok ? state.streak + 1 : 0;
+    state.bestStreak = Math.max(state.bestStreak, state.streak);
+    el.btnNext.disabled = false;
+    if (state.settings.sound) beep(ok);
+    await showAnsweredFeedback(q, answer, ok);
+    state.responses[state.index] = { q, answer, ok };
+    state.review = state.responses.filter(Boolean);
+    if (!ok){
+      for (const tag of q.tags) state.weakAreas[tag] = (state.weakAreas[tag] || 0) + 1;
+      state.mistakePool.push(q);
+    }
+    updateStats();
+    if (ok && state.settings.autoNext) setTimeout(() => { if (state.active && state.answered) nextQuestion(); }, 650);
+  }
+
+  async function showAnsweredFeedback(q, answer, ok){
+    revealAfterAnswerLabels();
+    for (const b of document.querySelectorAll("#answers button, #sortSelected button")) b.disabled = true;
+    applyAnsweredFeedback(q, answer, ok);
+  }
+
+  function revealAfterAnswerLabels(root = document){
+    for (const wrap of root.querySelectorAll(".cartoucheWrap")){
+      const raw = wrap.dataset.value;
+      const n = Number(raw);
+      const latin = wrap.querySelector(".latinValue");
+      const proper = wrap.querySelector(".properValue");
+      if (latin && shouldShowLatin("after")) latin.textContent = Number.isFinite(n) ? formatNumber(n) : String(raw ?? "");
+      if (proper && shouldShowProper("after")) proper.textContent = wrap.dataset.proper || (Number.isFinite(n) ? properNameForNumber(n) : "");
+    }
+    if (!state.settings.cartoucheOnly && shouldShowLatin("after")){
+      for (const btn of root.querySelectorAll(".answerBtn[data-display-value]")){
+        const cap = btn.querySelector(".latinValue");
+        if (cap) cap.textContent = btn.dataset.displayValue || "";
+      }
+    }
+  }
+
+  function applyAnsweredFeedback(q, answer, ok){
+    const correct = answerText(q.correct, q);
+    const chosen = answerText(answer, q);
+    el.feedback.className = "feedback " + (ok ? "goodText" : "badText");
+    el.feedback.innerHTML = ok ? `${tr("Correct")}. ${explainQuestion(q)}` : `${tr("notQuite")}. ${tr("correctAnswer")}: <strong>${correct}</strong>. ${tr("youChose")}: <strong>${chosen}</strong>. ${explainQuestion(q)}`;
+  }
+
+  function answerText(v, q){
+    if (q.type === "sort" && Array.isArray(v)) return v.map(formatNumber).join(", ");
+    if (v === "left") return tr("left");
+    if (v === "right") return tr("right");
+    if (v === "same") return tr("same");
+    if (v === "different") return tr("different");
+    if (typeof v === "number") return formatNumber(v);
+    return String(v);
+  }
+
+  function explainQuestion(q){
+    if (q.type === "sum") return `${formatNumber(q.a)} + ${formatNumber(q.b)} = ${formatNumber(q.correct)}.`;
+    if (q.type === "difference") return `${formatNumber(q.a)} − ${formatNumber(q.b)} = ${formatNumber(q.correct)}.`;
+    if (q.type === "missingAdd") return `${formatNumber(q.a)} + ${formatNumber(q.correct)} = ${formatNumber(q.result)}.`;
+    if (q.type === "missingSub") return `${formatNumber(q.a)} − ${formatNumber(q.correct)} = ${formatNumber(q.result)}.`;
+    if (q.type === "compare") return `${formatNumber(q.a)} ${q.a > q.b ? ">" : q.a < q.b ? "<" : "="} ${formatNumber(q.b)}.`;
+    if (q.type === "same") return `${formatNumber(q.a)} ${q.a === q.b ? "=" : "≠"} ${formatNumber(q.b)}.`;
+    if (q.type === "sort") return `${tr("correctOrder")}: ${q.correct.map(formatNumber).join(", ")}.`;
+    if (q.type === "match") return `${tr("theValueIs")} ${formatNumber(q.correct)}.`;
+    return "";
+  }
+
+  function prevQuestion(){
+    if (!state.active || state.index <= 0) return;
+    state.index--;
+    renderCurrentQuestion();
+  }
+
+  function nextQuestion(){
+    if (!state.active) return;
+    if (!state.responses[state.index]) return;
+    state.index++;
+    if (state.index >= state.session.length) finishSession();
+    else renderCurrentQuestion();
+  }
+
+  function finishSession({ quit = false, timeout = false } = {}){
+    if (!state.active) return;
+    state.active = false;
+    stopTimer(false);
+    el.btnStart.disabled = false;
+    el.btnQuit.disabled = true;
+    el.btnPrev.disabled = true;
+    el.btnNext.disabled = true;
+    const accuracy = state.session.length ? Math.round((state.score / state.session.length) * 100) : 0;
+    setStatus(timeout ? `Time up. Score ${state.score}/${state.session.length}.` : quit ? `Quit. Score ${state.score}/${state.session.length}.` : `Finished. Score ${state.score}/${state.session.length}.`);
+    el.feedback.className = "feedback " + (accuracy >= 80 ? "goodText" : accuracy >= 50 ? "warnText" : "badText");
+    el.feedback.textContent = `${timeout ? "Time up" : quit ? "Quit" : "Finished"}. Score ${state.score}/${state.session.length}. Accuracy ${accuracy}%. Best streak ${state.bestStreak}.`;
+    if (!quit) saveFinishedSessionToHistory({ timeout }).catch(err => { console.error("Could not save session history", err); });
+    renderReview();
+    updateStats();
+  }
+
+  function beep(ok){
+    try{
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ac.createOscillator(); const gain = ac.createGain();
+      osc.frequency.value = ok ? 660 : 180; gain.gain.value = 0.05;
+      osc.connect(gain).connect(ac.destination); osc.start(); osc.stop(ac.currentTime + 0.08);
+    } catch {}
+  }
+
+
+  function buildFinishedSessionRecord({ timeout = false } = {}){
+    const finishedAt = new Date().toISOString();
+    const level = Number(state.settings.level) || 1;
+    const total = state.session.length || 0;
+    const answered = state.responses.filter(Boolean).length;
+    const missed = state.review.filter(r => !r.ok).length;
+    const accuracy = total ? Math.round((state.score / total) * 100) : 0;
+    return {
+      id: `${finishedAt}-${Math.random().toString(36).slice(2,9)}`,
+      finishedAt,
+      startedAt: state.sessionStartedAtIso || null,
+      level,
+      levelName: LEVELS[level]?.name || `Level ${level}`,
+      mode: state.settings.mode,
+      modeLabel: tMode(state.settings.mode) || state.settings.mode,
+      score: state.score,
+      total,
+      answered,
+      missed,
+      accuracy,
+      bestStreak: state.bestStreak,
+      timed: !!state.settings.timer,
+      secondsPerQuestion: normalizeSecondsPerQuestion(state.settings.secondsPerQuestion),
+      seedText: state.sessionSeedText || state.seedText || "random",
+      endedBy: timeout ? "time up" : "finished",
+      settings: { ...state.settings },
+      weakAreas: { ...state.weakAreas },
+      review: state.review.map(r => ({ q:r.q, answer:r.answer, ok:r.ok }))
+    };
+  }
+
+  async function saveFinishedSessionToHistory({ timeout = false } = {}){
+    const record = buildFinishedSessionRecord({ timeout });
+    await putHistorySession(record);
+    state.history = [record, ...state.history.filter(r => r.id !== record.id)]
+      .sort((a,b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
+    if (state.tab === "history") renderHistory();
+  }
+
+  function formatDateTime(iso){
+    if (!iso) return "unknown date";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    return d.toLocaleString(undefined, { year:"numeric", month:"short", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+  }
+
+  async function loadHistory(){
+    if (!el.historyList) return;
+    el.historySummary.textContent = "Loading saved sessions…";
+    try{
+      state.history = await readHistorySessions();
+      if (!state.selectedHistoryId && state.history.length) state.selectedHistoryId = state.history[0].id;
+      renderHistory();
+    } catch (err){
+      console.error(err);
+      el.historySummary.textContent = "Could not load history from IndexedDB.";
+      el.historyList.innerHTML = `<p class="muted">History is unavailable in this browser/session.</p>`;
+    }
+  }
+
+  function renderHistory(){
+    if (!el.historyList) return;
+    if (el.historyMissedOnlyToggle) el.historyMissedOnlyToggle.checked = !!state.historyMissedOnly;
+    const rows = state.history || [];
+    el.historySummary.textContent = rows.length ? `${rows.length} saved practice session${rows.length === 1 ? "" : "s"}. Latest sessions are shown first.` : "No saved practice sessions yet.";
+    el.historyList.innerHTML = "";
+    if (!rows.length){
+      el.historyList.innerHTML = `<p class="muted">Finish a practice session to save it here.</p>`;
+      el.historyDetail.innerHTML = `<p class="muted">Select a saved session.</p>`;
+      return;
+    }
+    if (!rows.some(r => r.id === state.selectedHistoryId)) state.selectedHistoryId = rows[0].id;
+    for (const rec of rows){
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "historySessionBtn" + (rec.id === state.selectedHistoryId ? " active" : "");
+      btn.innerHTML = `<div class="historySessionTop"><strong>${rec.levelName || `Level ${rec.level}`}</strong><span>${rec.score}/${rec.total}</span></div>
+        <div class="historySessionMeta"><span>${formatDateTime(rec.finishedAt)}</span><span>${rec.accuracy}%</span><span>${tMode(rec.mode) || rec.mode}</span></div>`;
+      btn.addEventListener("click", () => { state.selectedHistoryId = rec.id; renderHistory(); });
+      el.historyList.appendChild(btn);
+    }
+    const selected = rows.find(r => r.id === state.selectedHistoryId) || rows[0];
+    renderHistoryDetail(selected);
+  }
+
+  async function renderHistoryDetail(rec){
+    if (!rec){ el.historyDetail.innerHTML = `<p class="muted">Select a saved session.</p>`; return; }
+    el.historyDetail.innerHTML = "";
+    const header = document.createElement("div");
+    header.className = "historyDetailHeader";
+    header.innerHTML = `<div class="panelRow between"><h3>${rec.levelName || `Level ${rec.level}`}</h3><strong>${rec.score}/${rec.total}</strong></div>
+      <div class="historySessionMeta"><span>${formatDateTime(rec.finishedAt)}</span><span>${rec.accuracy}% accuracy</span><span>${rec.answered ?? rec.review?.length ?? 0} answered</span><span>${rec.endedBy || "finished"}</span></div>
+      <div class="historySessionMeta"><span>Mode: ${tMode(rec.mode) || rec.mode}</span><span>Seed: ${rec.seedText || "random"}</span><span>Best streak: ${rec.bestStreak || 0}</span>${rec.timed ? `<span>Timer: ${rec.secondsPerQuestion || 30}s/question</span>` : ""}</div>`;
+    el.historyDetail.appendChild(header);
+
+    const weak = Object.entries(rec.weakAreas || {}).sort((a,b)=>b[1]-a[1]);
+    if (weak.length){
+      const weakDiv = document.createElement("div");
+      weakDiv.className = "reviewLine";
+      weakDiv.innerHTML = `<strong>Weak areas:</strong>`;
+      weak.forEach(([tag,n]) => { const span=document.createElement("span"); span.className="pill"; span.textContent=`${tag}: ${n}`; weakDiv.appendChild(span); });
+      el.historyDetail.appendChild(weakDiv);
+    }
+
+    const list = document.createElement("div");
+    list.className = "reviewList";
+    el.historyDetail.appendChild(list);
+    const allReviewRows = rec.review || [];
+    const reviewRows = state.historyMissedOnly ? allReviewRows.filter(r => !r.ok) : allReviewRows;
+    if (!allReviewRows.length){ list.innerHTML = `<p class="muted">No answered questions were saved for this session.</p>`; return; }
+    if (!reviewRows.length){ list.innerHTML = `<p class="muted">No missed answers in this saved session.</p>`; return; }
+    await renderReviewRowsInto(list, reviewRows, { history: true });
+  }
+
+  function historyNumericValuesFromAnswer(value, q){
+    if (!q) return [];
+    if (q.type === "sort" && Array.isArray(value)) return value.filter(v => typeof v === "number" && Number.isFinite(v));
+    if (typeof value === "number" && Number.isFinite(value)) return [value];
+    return [];
+  }
+
+  async function appendHistoryAnswerGroup(parent, label, value, q, common = null, kind = "history"){
+    const group = document.createElement("span");
+    group.className = "historyAnswerGroup";
+
+    const text = document.createElement("span");
+    text.textContent = `${label}: ${answerText(value, q)}`;
+    group.appendChild(text);
+
+    const nums = historyNumericValuesFromAnswer(value, q);
+    if (nums.length){
+      const set = document.createElement("span");
+      set.className = "historyAnswerCartoucheSet";
+      const box = cartoucheBoxSize(kind);
+      const localCommon = common || await renderNumberCanvasesAtCommonFittedFontSize(nums, {
+        abbreviate: q.displayMode === "abbr",
+        fontPx: 22,
+        minFontPx: 8,
+        maxWidth: box.width,
+        maxHeight: box.height
+      });
+      for (const n of nums){
+        const canvas = document.createElement("canvas");
+        canvas.className = kind === "review" ? "reviewCartoucheCanvas" : "historyAnswerCartoucheCanvas";
+        canvas.setAttribute("aria-label", `Cartouche for ${formatNumber(n)}`);
+        const off = localCommon.canvases.get(formatNumber(n, { plain:true })) || await renderNumberCanvasFittedByFontSize(n, {
+          abbreviate: q.displayMode === "abbr",
+          fontPx: localCommon.fontPx || 22,
+          minFontPx: 8,
+          maxWidth: box.width,
+          maxHeight: box.height
+        });
+        drawCanvasInto(canvas, off, box);
+        set.appendChild(canvas);
+      }
+      group.appendChild(set);
+    }
+
+    parent.appendChild(group);
+  }
+
+  async function makeHistoryCommonCartoucheSet(values, q, { fontPx = 20, minFontPx = 8, kind = "history" } = {}) {
+    const nums = Array.from(values || []).filter(v => typeof v === "number" && Number.isFinite(v));
+    if (!nums.length) return null;
+    const box = cartoucheBoxSize(kind);
+    return await renderNumberCanvasesAtCommonFittedFontSize(nums, {
+      abbreviate: q?.displayMode === "abbr",
+      fontPx,
+      minFontPx,
+      maxWidth: box.width,
+      maxHeight: box.height
+    });
+  }
+
+  function appendHistoryInlineNumberWithCanvas(parent, value, q, common, suffix = "", kind = "history") {
+    const wrap = document.createElement("span");
+    wrap.className = "historyInlineNumber";
+
+    const text = document.createElement("span");
+    text.className = "historyInlineNumberText";
+    text.textContent = `${formatNumber(value)}${suffix}`;
+    wrap.appendChild(text);
+
+    const canvas = document.createElement("canvas");
+    canvas.className = kind === "review" ? "reviewCartoucheCanvas" : "historyAnswerCartoucheCanvas";
+    canvas.setAttribute("aria-label", `Cartouche for ${formatNumber(value)}`);
+    wrap.appendChild(canvas);
+    parent.appendChild(wrap);
+
+    const box = cartoucheBoxSize(kind);
+    const key = formatNumber(value, { plain:true });
+    const off = common?.canvases?.get(key);
+    if (off) drawCanvasInto(canvas, off, box);
+    else canvas.remove();
+  }
+
+  async function appendHistoryInlineNumber(parent, value, q, suffix = "", kind = "history") {
+    try {
+      const common = await makeHistoryCommonCartoucheSet([value], q, { fontPx: 20, minFontPx: 8, kind });
+      appendHistoryInlineNumberWithCanvas(parent, value, q, common, suffix, kind);
+    } catch (e) {
+      console.error("Failed to render history inline cartouche", e);
+      appendHistoryText(parent, `${formatNumber(value)}${suffix}`);
+    }
+  }
+
+  function appendHistoryText(parent, text) {
+    const span = document.createElement("span");
+    span.textContent = text;
+    parent.appendChild(span);
+  }
+
+
+  function historyQuestionPromptText(q) {
+    if (!q) return "";
+    if (q.type === "match") return tr("promptMatch");
+    if (q.type === "sum") return tr("promptSum");
+    if (q.type === "difference") return tr("promptDifference");
+    if (q.type === "missingAdd" || q.type === "missingSub") return tr("promptMissing");
+    if (q.type === "compare") return tr("promptCompare");
+    if (q.type === "same") return tr("wSame");
+    if (q.type === "sort") return tr("wSort");
+    return explainQuestion(q);
+  }
+
+  function appendHistoryExpressionNumber(parent, value, q, prefix = "", suffix = "", common = null, kind = "history") {
+    if (prefix) appendHistoryText(parent, prefix);
+    appendHistoryInlineNumberWithCanvas(parent, value, q, common, suffix, kind);
+  }
+
+  function historyQuestionNumericValues(q) {
+    if (!q) return [];
+    if (q.type === "match") return [q.correct];
+    if (q.type === "sum" || q.type === "difference" || q.type === "compare" || q.type === "same") return [q.a, q.b];
+    if (q.type === "missingAdd" || q.type === "missingSub") return [q.a, q.result];
+    if (q.type === "sort" && Array.isArray(q.values)) return q.values;
+    return [];
+  }
+
+  async function renderHistoryQuestionValues(parent, q, { kind = "history" } = {}) {
+    if (!q) return;
+    parent.innerHTML = "";
+    parent.className = "reviewExplain historyQuestionValues";
+
+    const questionNums = historyQuestionNumericValues(q).filter(v => typeof v === "number" && Number.isFinite(v));
+    const common = await makeHistoryCommonCartoucheSet(questionNums, q, { fontPx: kind === "review" ? 24 : 18, minFontPx: 8, kind });
+
+    if (q.type === "match") {
+      appendHistoryText(parent, tr("shownValue") + ": ");
+      appendHistoryExpressionNumber(parent, q.correct, q, "", ".", common, kind);
+      return;
+    }
+
+    if (q.type === "sum") {
+      appendHistoryExpressionNumber(parent, q.a, q, "", "", common, kind);
+      appendHistoryText(parent, " + ");
+      appendHistoryExpressionNumber(parent, q.b, q, "", "", common, kind);
+      appendHistoryText(parent, " = ?");
+      return;
+    }
+
+    if (q.type === "difference") {
+      appendHistoryExpressionNumber(parent, q.a, q, "", "", common, kind);
+      appendHistoryText(parent, " − ");
+      appendHistoryExpressionNumber(parent, q.b, q, "", "", common, kind);
+      appendHistoryText(parent, " = ?");
+      return;
+    }
+
+    if (q.type === "missingAdd") {
+      appendHistoryExpressionNumber(parent, q.a, q, "", "", common, kind);
+      appendHistoryText(parent, " + ? = ");
+      appendHistoryExpressionNumber(parent, q.result, q, "", "", common, kind);
+      return;
+    }
+
+    if (q.type === "missingSub") {
+      appendHistoryExpressionNumber(parent, q.a, q, "", "", common, kind);
+      appendHistoryText(parent, " − ? = ");
+      appendHistoryExpressionNumber(parent, q.result, q, "", "", common, kind);
+      return;
+    }
+
+    if (q.type === "compare") {
+      appendHistoryExpressionNumber(parent, q.a, q, "", "", common, kind);
+      appendHistoryText(parent, " " + tr("or") + " ");
+      appendHistoryExpressionNumber(parent, q.b, q, "", "", common, kind);
+      return;
+    }
+
+    if (q.type === "same") {
+      appendHistoryExpressionNumber(parent, q.a, q, "", "", common, kind);
+      appendHistoryText(parent, " " + tr("and") + " ");
+      appendHistoryExpressionNumber(parent, q.b, q, "", "", common, kind);
+      return;
+    }
+
+    if (q.type === "sort") {
+      const shown = Array.isArray(q.values) ? q.values : [];
+      for (let i = 0; i < shown.length; i++) {
+        if (i > 0) appendHistoryText(parent, ", ");
+        appendHistoryInlineNumberWithCanvas(parent, shown[i], q, common, "", kind);
+      }
+      return;
+    }
+  }
+
+  async function renderReviewRowsInto(target, rows, opts = {}){
+    target.innerHTML = "";
+    for (const [i,r] of rows.entries()) {
+      const div = document.createElement("div");
+      div.className = "reviewItem";
+
+      const head = document.createElement("div");
+      head.className = "reviewLine";
+      head.innerHTML = `<strong>${i+1}. ${tMode(r.q.type)}</strong><span class="${r.ok?'goodText':'badText'}">${r.ok?tr('correct'):tr('missed')}</span><span class="muted">${(r.q.tags || []).join(", ")}</span>`;
+
+      const explain = document.createElement("div");
+      explain.className = "reviewExplain";
+      explain.textContent = opts.history ? historyQuestionPromptText(r.q) : explainQuestion(r.q);
+
+      const questionValues = document.createElement("div");
+      try {
+        await renderHistoryQuestionValues(questionValues, r.q, { kind: opts.history ? "history" : "review" });
+      } catch (e) {
+        console.error("Failed to render review question cartouches", e);
+        questionValues.remove();
+      }
+
+      const answers = document.createElement("div");
+      answers.className = "reviewLine";
+      answers.style.display = "grid";
+      answers.style.gap = "4px";
+      try {
+        const answerNums = [
+          ...historyNumericValuesFromAnswer(r.answer, r.q),
+          ...historyNumericValuesFromAnswer(r.q.correct, r.q)
+        ];
+        const answerKind = opts.history ? "history" : "review";
+        const answerCommon = await makeHistoryCommonCartoucheSet(answerNums, r.q, { fontPx: answerKind === "review" ? 24 : 18, minFontPx: 8, kind: answerKind });
+        await appendHistoryAnswerGroup(answers, tr("yourAnswer"), r.answer, r.q, answerCommon, answerKind);
+        if (opts.history && r.ok) {
+          const okLine = document.createElement("span");
+          okLine.className = "goodText";
+          okLine.textContent = tr("correct");
+          answers.appendChild(okLine);
+        } else {
+          await appendHistoryAnswerGroup(answers, tr("Correct"), r.q.correct, r.q, answerCommon, answerKind);
+        }
+      } catch (e) {
+        console.error("Failed to render review answer cartouches", e);
+        answers.innerHTML = opts.history && r.ok
+          ? `${"<span>" + tr("yourAnswer") + ": "}${answerText(r.answer,r.q)}</span><span class="goodText">${tr("correct")}</span>`
+          : `${"<span>" + tr("yourAnswer") + ": "}${answerText(r.answer,r.q)}</span><span>${tr("Correct")}: ${answerText(r.q.correct,r.q)}</span>`;
+      }
+
+      div.append(head, explain, questionValues, answers);
+      target.appendChild(div);
+    }
+  }
+
+  async function renderReview(){
+    const total = state.review.length;
+    const missed = state.review.filter(r=>!r.ok).length;
+    el.reviewSummary.textContent = total ? `Last session: ${state.score}/${state.session.length}. ${missed} missed. Best streak ${state.bestStreak}.` : "No completed session yet.";
+    el.weakAreas.innerHTML = "";
+    const weak = Object.entries(state.weakAreas).sort((a,b)=>b[1]-a[1]);
+    if (!weak.length) el.weakAreas.innerHTML = `<span class="muted">No mistakes recorded yet.</span>`;
+    else weak.forEach(([tag,n]) => { const span=document.createElement("span"); span.className="pill"; span.textContent=`${tag}: ${n}`; el.weakAreas.appendChild(span); });
+    el.reviewList.innerHTML = "";
+    await renderReviewRowsInto(el.reviewList, state.review);
+  }
+
+  function retryMistakes(){
+    const missed = state.review.filter(r=>!r.ok).map(r=>({ ...r.q, options: r.q.type === "sort" ? shuffle(r.q.values) : (Array.isArray(r.q.options) ? shuffle(r.q.options) : r.q.options) }));
+    if (!missed.length){ setStatus("No mistakes to retry."); return; }
+    showTab("practice");
+    startSession({ questions: missed, seedText: "retry-" + Date.now() });
+  }
+  function clearReview(){ state.review=[]; state.weakAreas={}; state.mistakePool=[]; renderReview(); }
+
+  async function generateWorksheet(){
+    await ensureRenderer();
+    normalizeQuestionCount();
+    if (state.seedText !== "random") state.rng = mulberry32(state.seed);
+    state.worksheet = buildSessionQuestions();
+    await renderWorksheet();
+  }
+
+  async function renderWorksheet(){
+    el.worksheetQuestions.innerHTML = "";
+    if (!state.worksheet.length){ el.worksheetQuestions.innerHTML = `<p class="muted">${tr("noWorksheet")}</p>`; return; }
+    for (let i=0;i<state.worksheet.length;i++){
+      const q = state.worksheet[i];
+      const div = document.createElement("div");
+      div.className = "worksheetItem";
+      div.innerHTML = `<strong>${i+1}. ${worksheetPrompt(q)}</strong><div class="wqBody"></div><div class="answerKey ${state.worksheetShowAnswers?'':'hidden'}"><strong>${tr("answer")}:</strong> ${answerText(q.correct,q)}. ${explainQuestion(q)}</div>`;
+      const body = div.querySelector(".wqBody");
+      // Append first so worksheet fitting can measure the real available line width.
+      el.worksheetQuestions.appendChild(div);
+      await addWorksheetCanvases(body, q);
+    }
+  }
+  function worksheetPrompt(q){
+    if (q.type === "match") return tr("wMatch");
+    if (q.type === "compare") return tr("wCompare");
+    if (q.type === "same") return tr("wSame");
+    if (q.type === "sum") return tr("wSum");
+    if (q.type === "difference") return tr("wDifference");
+    if (q.type === "missingAdd" || q.type === "missingSub") return tr("wMissing");
+    if (q.type === "sort") return tr("wSort");
+    return tr("wQuestion");
+  }
+  function worksheetUsesAbbreviatedCartouches(){
+    return !!state.settings.worksheetAbbreviated;
+  }
+
+  function worksheetCartoucheValues(q){
+    if (!q) return [];
+    if (q.type === "match") return [q.a];
+    if (q.type === "compare" || q.type === "same" || q.type === "sum" || q.type === "difference") return [q.a, q.b];
+    if (q.type === "missingAdd" || q.type === "missingSub") return [q.a, q.result];
+    if (q.type === "sort" && Array.isArray(q.values)) return q.values.slice();
+
+    const vals = [];
+    if ("a" in q) vals.push(q.a);
+    if ("b" in q) vals.push(q.b);
+    if ("result" in q) vals.push(q.result);
+    if (Array.isArray(q.values)) vals.push(...q.values);
+    return vals;
+  }
+
+  function worksheetAvailableLineWidth(body){
+    const candidates = [
+      body?.clientWidth,
+      body?.parentElement?.clientWidth,
+      el.worksheetQuestions?.clientWidth,
+      el.worksheetQuestions?.parentElement?.clientWidth,
+      Math.min(940, Math.max(320, window.innerWidth || 940) - 48)
+    ];
+    for (const v of candidates){
+      const n = Math.floor(Number(v) || 0);
+      if (n > 80) return n;
+    }
+    return 900;
+  }
+
+  function worksheetCartoucheBoxForQuestion(body, q, count){
+    const base = cartoucheBoxSize("worksheet");
+    if (!count) return base;
+
+    const available = worksheetAvailableLineWidth(body);
+    const cssMarginPerCanvas = 8; // .worksheetItem canvas margin: 4px on both sides
+    const flexGapPx = 10;
+
+    if (q?.type === "sort") {
+      // Sort/order worksheets present best when all related cartouches stay on
+      // one horizontal line. Allocate a per-cartouche slot from the real body
+      // width, then choose a shared renderer fontPx to fit that slot.
+      const safety = 18;
+      const totalFixed = safety + (count * cssMarginPerCanvas) + Math.max(0, count - 1) * flexGapPx;
+      const slot = Math.floor((available - totalFixed) / count);
+      return {
+        // Keep every sort cartouche in one row without overshooting the worksheet
+        // panel. Font size is reduced to fit this slot; the bitmap is not scaled.
+        width: Math.max(36, Math.min(base.width, slot)),
+        height: base.height
+      };
+    }
+
+    if (["sum","difference","missingAdd","missingSub"].includes(q?.type)) {
+      // Equation worksheets need the visible cartouches, operators, equals sign,
+      // and ?/blank to stay readable on one row. Reserve space for operators
+      // and calculate a shared per-cartouche slot for the two visible cartouches.
+      const operatorReserve = q.type === "sum" || q.type === "difference" ? 120 : 150;
+      const safety = 26;
+      const totalFixed = safety + operatorReserve + (count * cssMarginPerCanvas) + Math.max(0, count - 1) * flexGapPx;
+      const slot = Math.floor((available - totalFixed) / count);
+      return {
+        width: Math.max(52, Math.min(base.width, slot)),
+        height: base.height
+      };
+    }
+
+    return base;
+  }
+
+  async function addWorksheetCanvases(body, q){
+    const vals = worksheetCartoucheValues(q).filter(v => typeof v === "number" && Number.isFinite(v));
+    const box = worksheetCartoucheBoxForQuestion(body, q, vals.length);
+    const isEquation = ["sum","difference","missingAdd","missingSub"].includes(q?.type);
+    body.classList.toggle("sortWorksheetLine", q?.type === "sort");
+    body.classList.toggle("equationWorksheetLine", isEquation);
+
+    const line = document.createElement("div");
+    line.className = "worksheetCartoucheLine";
+    body.appendChild(line);
+
+    // General page rule: related cartouches share one renderer font size.
+    // For worksheet sort/order and equation questions, the shared font size is
+    // constrained by the available row space. The bitmap is not scaled.
+    const common = vals.length
+      ? await renderNumberCanvasesAtCommonFittedFontSize(vals, {
+          abbreviate:worksheetUsesAbbreviatedCartouches(),
+          fontPx:48,
+          minFontPx:8,
+          maxWidth:box.width,
+          maxHeight:box.height
+        })
+      : null;
+
+    async function appendWorksheetNumber(value){
+      const c=document.createElement("canvas");
+      line.appendChild(c);
+      const key = formatNumber(value, { plain:true });
+      const off = common?.canvases?.get(key) || await renderNumberCanvasFittedByFontSize(value, {
+        abbreviate:worksheetUsesAbbreviatedCartouches(),
+        fontPx: common?.fontPx || 48,
+        maxWidth:box.width,
+        maxHeight:box.height
+      });
+      drawCanvasInto(c, off, box);
+    }
+
+    function appendWorksheetOp(text){
+      const span = document.createElement("span");
+      span.className = "worksheetOp";
+      span.textContent = text;
+      line.appendChild(span);
+    }
+
+    function appendWorksheetBlank(){
+      const span = document.createElement("span");
+      span.className = "worksheetBlank";
+      span.setAttribute("aria-label", "missing number blank");
+      line.appendChild(span);
+    }
+
+    if (q?.type === "sum") {
+      await appendWorksheetNumber(q.a);
+      appendWorksheetOp("+");
+      await appendWorksheetNumber(q.b);
+      appendWorksheetOp("= ?");
+    } else if (q?.type === "difference") {
+      await appendWorksheetNumber(q.a);
+      appendWorksheetOp("−");
+      await appendWorksheetNumber(q.b);
+      appendWorksheetOp("= ?");
+    } else if (q?.type === "missingAdd") {
+      await appendWorksheetNumber(q.a);
+      appendWorksheetOp("+");
+      appendWorksheetBlank();
+      appendWorksheetOp("=");
+      await appendWorksheetNumber(q.result);
+    } else if (q?.type === "missingSub") {
+      await appendWorksheetNumber(q.a);
+      appendWorksheetOp("−");
+      appendWorksheetBlank();
+      appendWorksheetOp("=");
+      await appendWorksheetNumber(q.result);
+    } else {
+      for (const v of vals){
+        await appendWorksheetNumber(v);
+      }
+    }
+
+    if (q?.type === "sort" && vals.length){
+      const bars = document.createElement("div");
+      bars.className = "sortAnswerBars";
+      bars.setAttribute("aria-label", tr("wSort"));
+      for (let i=0; i<vals.length; i++){
+        const bar = document.createElement("span");
+        bar.className = "sortAnswerBar";
+        bars.appendChild(bar);
+      }
+      body.appendChild(bars);
+    }
+
+    if (q?.type === "same"){
+      const checks = document.createElement("div");
+      checks.className = "sameAnswerChecks";
+      checks.setAttribute("aria-label", tr("wSame"));
+      for (const label of [tr("sameCheck"), tr("differentCheck")]){
+        const item = document.createElement("span");
+        item.className = "sameAnswerCheck";
+        const boxSpan = document.createElement("span");
+        boxSpan.className = "sameAnswerBox";
+        boxSpan.setAttribute("aria-hidden", "true");
+        const textSpan = document.createElement("span");
+        textSpan.textContent = label;
+        item.append(boxSpan, textSpan);
+        checks.appendChild(item);
+      }
+      body.appendChild(checks);
+    }
+
+    if (!["compare","same","sort"].includes(q.type) && q.options){
+      const p=document.createElement("p"); p.textContent = tr("options") + ": " + q.options.map(formatNumber).join(" / "); body.appendChild(p);
+    }
+  }
+
+
+  async function renderInputCanvas(input, opts = {}){
+    const renderer = await ensureRenderer();
+    const fontPx = Math.max(8, Math.round(Number(opts.fontPx || state.settings.fontPx) || 56));
+    const rendered = await renderer.renderTextToNewCanvas({ input:String(input ?? ""), ...buildRendererConfig({ ...opts, fontPx }) });
+    const cropPaddingPx = Number.isFinite(Number(opts.cropPaddingPx))
+      ? Math.max(0, Math.round(Number(opts.cropPaddingPx)))
+      : Math.max(4, Math.round(fontPx * 0.10));
+    return cropCanvasToVisibleBounds(rendered.canvas, cropPaddingPx);
+  }
+
+  async function renderInputCanvasFittedByFontSize(input, opts = {}){
+    const maxWidth = Math.max(1, Math.floor(Number(opts.maxWidth || 1)));
+    const maxHeight = Math.max(1, Math.floor(Number(opts.maxHeight || 1)));
+    const preferredPx = Math.max(8, Math.round(Number(opts.fontPx || state.settings.fontPx) || 56));
+    const minPx = Math.max(8, Math.round(Number(opts.minFontPx || 8) || 8));
+    let best = null;
+    let low = minPx, high = preferredPx;
+    while (low <= high){
+      const mid = Math.floor((low + high) / 2);
+      const off = await renderInputCanvas(input, { ...opts, fontPx: mid });
+      if (off.width <= maxWidth && off.height <= maxHeight){ best = off; low = mid + 1; }
+      else high = mid - 1;
+    }
+    return best || await renderInputCanvas(input, { ...opts, fontPx: minPx });
+  }
+
+  function localIsoDate(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+
+  function canvasToPngDataUrl(canvas){
+    return canvas.toDataURL("image/png");
+  }
+
+  function downloadBlob(blob, filename){
+    const a = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function embedCanvasPng(pdfDoc, canvas){
+    return await pdfDoc.embedPng(canvasToPngDataUrl(canvas));
+  }
+
+  function pdfSafeText(text){
+    return String(text ?? "")
+      .replace(/[−–—‒]/g, "-")
+      .replace(/[“”]/g, '\"')
+      .replace(/[‘’]/g, "'")
+      .replace(/×/g, "x")
+      .replace(/÷/g, "/")
+      .replace(/…/g, "...")
+      .replace(/•/g, "-")
+      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "");
+  }
+
+  function drawPdfText(page, text, options){
+    page.drawText(pdfSafeText(text), options);
+  }
+
+  function drawTextWrapped(page, text, x, y, maxWidth, font, size, color){
+    const safeText = pdfSafeText(text);
+    const words = String(safeText || "").split(/\s+/).filter(Boolean);
+    let line = "";
+    let curY = y;
+    const lines = [];
+    for (const word of words){
+      const test = line ? line + " " + word : word;
+      if (font.widthOfTextAtSize(test, size) <= maxWidth || !line) line = test;
+      else { lines.push(line); line = word; }
+    }
+    if (line) lines.push(line);
+    for (const ln of lines){ drawPdfText(page, ln, { x, y:curY, size, font, color }); curY -= size * 1.25; }
+    return curY;
+  }
+
+  async function exportWorksheetPdf(){
+    try{
+      if (!window.PDFLib) throw new Error("pdf-lib not loaded. Make sure ./vendor/pdf-lib.min.js exists.");
+      if (!state.worksheet || !state.worksheet.length) {
+        state.worksheet = buildSessionQuestions();
+        await renderWorksheet();
+      }
+      const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+      const pdfDoc = await PDFDocument.create();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const ink = rgb(0.07,0.07,0.07);
+      const muted = rgb(0.25,0.28,0.31);
+      const pageW = 595.28, pageH = 841.89;
+      const margin = 48;
+
+      // Cover page. No "Date:" label by request.
+      // PDF cartouches are rendered at 8x raster resolution, then placed at
+      // their intended visual size. This improves PDF crispness without making
+      // the cartouches visually larger.
+      const PDF_CARTOUCHE_RASTER_SCALE = 8;
+      let cover = pdfDoc.addPage([pageW,pageH]);
+      drawPdfText(cover, tr("worksheetCoverTitle"), { x: margin, y: pageH - 120, size: 28, font:bold, color:ink });
+      const dateCanvas = await renderInputCanvasFittedByFontSize(localIsoDate(), {
+        abbreviate:true,
+        fontPx:58 * PDF_CARTOUCHE_RASTER_SCALE,
+        minFontPx:8 * PDF_CARTOUCHE_RASTER_SCALE,
+        maxWidth:360 * PDF_CARTOUCHE_RASTER_SCALE,
+        maxHeight:90 * PDF_CARTOUCHE_RASTER_SCALE,
+        // The cover date is rendered at 8x for PDF crispness. The default
+        // 12px renderer padding becomes only 1.5 PDF points at that scale,
+        // which can clip the top cartouche rule. Use scaled padding here so
+        // the source raster contains the full cartouche before it is embedded.
+        paddingPx:32 * PDF_CARTOUCHE_RASTER_SCALE,
+        cropPaddingPx:10 * PDF_CARTOUCHE_RASTER_SCALE
+      });
+      const datePng = await embedCanvasPng(pdfDoc, dateCanvas);
+      const dateNaturalW = dateCanvas.width / PDF_CARTOUCHE_RASTER_SCALE;
+      const dateNaturalH = dateCanvas.height / PDF_CARTOUCHE_RASTER_SCALE;
+      const dateScale = Math.min(1, 360 / dateNaturalW, 90 / dateNaturalH);
+      const dateW = dateNaturalW * dateScale;
+      const dateH = dateNaturalH * dateScale;
+      cover.drawImage(datePng, { x: margin, y: pageH - 230, width: dateW, height: dateH });
+      const nameY = pageH - 350;
+      drawPdfText(cover, `${tr("nameLine")}:`, { x: margin, y:nameY, size:16, font:bold, color:ink });
+      cover.drawLine({ start:{x: margin + 70, y:nameY - 2}, end:{x: pageW - margin, y:nameY - 2}, thickness:1, color:ink });
+
+      let page = pdfDoc.addPage([pageW,pageH]);
+      let y = pageH - margin;
+      const lineGap = 16;
+      const qGap = 22;
+
+      async function ensureSpace(h){
+        if (y - h >= margin) return;
+        page = pdfDoc.addPage([pageW,pageH]);
+        y = pageH - margin;
+      }
+
+      async function drawCartoucheImage(value, x, topY, boxW, boxH, common = null){
+        const key = formatNumber(value, { plain:true });
+        const off = common?.canvases?.get(key) || await renderNumberCanvasFittedByFontSize(value, {
+          abbreviate:worksheetUsesAbbreviatedCartouches(),
+          fontPx:42 * PDF_CARTOUCHE_RASTER_SCALE,
+          minFontPx:8 * PDF_CARTOUCHE_RASTER_SCALE,
+          maxWidth:boxW * PDF_CARTOUCHE_RASTER_SCALE,
+          maxHeight:boxH * PDF_CARTOUCHE_RASTER_SCALE
+        });
+        const png = await embedCanvasPng(pdfDoc, off);
+        const naturalW = off.width / PDF_CARTOUCHE_RASTER_SCALE;
+        const naturalH = off.height / PDF_CARTOUCHE_RASTER_SCALE;
+        const scale = Math.min(1, boxW / naturalW, boxH / naturalH);
+        const w = naturalW * scale, h = naturalH * scale;
+        // Center the high-resolution rendered cartouche inside its PDF slot.
+        // The PNG is 8x resolution, but the displayed size is divided by 8, so
+        // this is raster-quality supersampling rather than visual stretching.
+        page.drawImage(png, { x: x + (boxW - w)/2, y: topY - (boxH + h) / 2, width:w, height:h });
+      }
+
+      async function drawQuestionCartouches(q){
+        const vals = worksheetCartoucheValues(q).filter(v => typeof v === "number" && Number.isFinite(v));
+        const isEquation = ["sum","difference","missingAdd","missingSub"].includes(q.type);
+        const boxH = 54;
+        const rowW = pageW - margin * 2;
+        let boxW = 130;
+        if (q.type === "sort" && vals.length) boxW = Math.max(54, Math.min(120, Math.floor((rowW - (vals.length - 1) * 10) / vals.length)));
+        if (isEquation) boxW = 120;
+        const common = vals.length ? await renderNumberCanvasesAtCommonFittedFontSize(vals, {
+          abbreviate:worksheetUsesAbbreviatedCartouches(),
+          fontPx:42 * PDF_CARTOUCHE_RASTER_SCALE,
+          minFontPx:8 * PDF_CARTOUCHE_RASTER_SCALE,
+          maxWidth:boxW * PDF_CARTOUCHE_RASTER_SCALE,
+          maxHeight:boxH * PDF_CARTOUCHE_RASTER_SCALE
+        }) : null;
+
+        if (q.type === "sum" || q.type === "difference"){
+          const op = q.type === "sum" ? "+" : "-";
+          const opY = y - Math.round(boxH * 0.5) - 7;
+          let x = margin + 20;
+          await drawCartoucheImage(q.a, x, y, boxW, boxH, common); x += boxW + 14;
+          drawPdfText(page, op, { x, y:opY, size:20, font:bold, color:ink }); x += 30;
+          await drawCartoucheImage(q.b, x, y, boxW, boxH, common); x += boxW + 14;
+          drawPdfText(page, "= ?", { x, y:opY, size:20, font:bold, color:ink });
+          y -= boxH + 6;
+          return;
+        }
+        if (q.type === "missingAdd" || q.type === "missingSub"){
+          const op = q.type === "missingAdd" ? "+" : "-";
+          const opY = y - Math.round(boxH * 0.5) - 7;
+          const blankY = y - Math.round(boxH * 0.5) - 9;
+          let x = margin + 20;
+          await drawCartoucheImage(q.a, x, y, boxW, boxH, common); x += boxW + 14;
+          drawPdfText(page, op, { x, y:opY, size:20, font:bold, color:ink }); x += 30;
+          page.drawLine({ start:{x, y:blankY}, end:{x:x+80, y:blankY}, thickness:1.5, color:ink }); x += 96;
+          drawPdfText(page, "=", { x, y:opY, size:20, font:bold, color:ink }); x += 30;
+          await drawCartoucheImage(q.result, x, y, boxW, boxH, common);
+          y -= boxH + 6;
+          return;
+        }
+        if (q.type === "sort"){
+          let x = margin;
+          for (const v of vals){ await drawCartoucheImage(v, x, y, boxW, boxH, common); x += boxW + 10; }
+          y -= boxH + 4;
+          const barCount = vals.length;
+          const gap = 22, barW = 42, barH = 6;
+          const total = barCount * barW + Math.max(0, barCount - 1) * gap;
+          x = margin + (rowW - total) / 2;
+          for (let i=0;i<barCount;i++){
+            page.drawRectangle({ x, y:y-8, width:barW, height:barH, borderRadius:3, color:muted });
+            x += barW + gap;
+          }
+          y -= 22;
+          return;
+        }
+        let x = margin + 20;
+        for (let i=0;i<vals.length;i++){
+          await drawCartoucheImage(vals[i], x, y, boxW, boxH, common);
+          x += boxW + 22;
+        }
+        y -= boxH + 6;
+        if (q.type === "same"){
+          const x0 = margin + 80;
+          page.drawRectangle({ x:x0, y:y-4, width:9, height:9, borderWidth:1, borderColor:ink });
+          drawPdfText(page, tr("sameCheck"), { x:x0+15, y:y-4, size:11, font, color:ink });
+          page.drawRectangle({ x:x0+100, y:y-4, width:9, height:9, borderWidth:1, borderColor:ink });
+          drawPdfText(page, tr("differentCheck"), { x:x0+115, y:y-4, size:11, font, color:ink });
+          y -= 18;
+        }
+      }
+
+      for (let i=0;i<state.worksheet.length;i++){
+        const q = state.worksheet[i];
+        await ensureSpace(q.type === "sort" ? 130 : 112);
+        drawPdfText(page, `${i+1}. ${worksheetPrompt(q)}`, { x:margin, y, size:13, font:bold, color:ink });
+        y -= 18;
+        await drawQuestionCartouches(q);
+        if (!["compare","same","sort"].includes(q.type) && q.options){
+          y = drawTextWrapped(page, `${tr("options")}: ${q.options.map(formatNumber).join(" / ")}`, margin, y, pageW-margin*2, font, 11, ink) - 2;
+        }
+        if (state.worksheetShowAnswers){
+          y = drawTextWrapped(page, `${tr("answer")}: ${answerText(q.correct,q)}. ${explainQuestion(q)}`, margin, y, pageW-margin*2, font, 10, muted) - 2;
+        }
+        y -= qGap;
+      }
+
+      const bytes = await pdfDoc.save();
+      downloadBlob(new Blob([bytes], { type:"application/pdf" }), `nanpa-linja-n-worksheet-${localIsoDate()}.pdf`);
+      setStatus(lang() === "tok" ? "lipu PDF li kama." : "Worksheet PDF exported.");
+    } catch (err){
+      console.error(err);
+      alert(err?.message || String(err));
+    }
+  }
+
+  function init(){
+    cacheEls();
+    loadSettings();
+    loadHistoryMissedOnlySetting();
+    populateControls();
+    syncSettingsUi();
+    applyLanguage();
+    wireEvents();
+    initFromUrl();
+    ensureRenderer().catch(err => { console.error(err); setStatus("Renderer failed to load. Check ./js/ and ./fonts/ paths."); });
+    loadHistory();
+    renderWorksheet();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

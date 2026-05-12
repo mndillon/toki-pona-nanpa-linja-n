@@ -1045,7 +1045,7 @@ const SitelenRenderer = (() => {
     return plan;
   }
 
-  function drawRenderRunToCanvas(run, { supersampleScale = 4, downsample = false } = {}) {
+  function drawRenderRunToCanvas(run, { supersampleScale = 8, downsample = false } = {}) {
     if (!run || !run._element) throw new Error('renderRunToNewCanvas requires a run object returned by buildRenderPlan().');
     const scale = Math.max(1, Number(supersampleScale) || 1);
     const el = run._element;
