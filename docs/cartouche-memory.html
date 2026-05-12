@@ -638,7 +638,6 @@
           <span id="matchesText">Matches: 0/8</span>
           <span id="timeText" class="sr-only">Time: 0:00</span>
         </div>
-        <div id="memoryGrid" class="memoryGrid" aria-label="Memory cards"></div>
         <section class="previewPanel" aria-label="Selected cards">
           <div id="previewTitle" class="previewTitle">Selected cards</div>
           <div class="previewCards">
@@ -652,6 +651,7 @@
             </div>
           </div>
         </section>
+        <div id="memoryGrid" class="memoryGrid" aria-label="Memory cards"></div>
       </div>
 
       <div id="finishPanel" class="finishPanel" aria-hidden="true">
@@ -700,11 +700,12 @@
           </fieldset>
         </div>
         <div class="field">
-          <fieldset>
-            <legend id="legendHelpers">Helpers</legend>
-            <label class="choiceRow"><input id="showBadges" type="checkbox" checked> <span id="labelBadges">Show type badges</span></label>
-            <label class="choiceRow"><input id="autoPreview" type="checkbox" checked> <span id="labelAutoPreview">Show selections in preview</span></label>
-          </fieldset>
+          <label for="difficultySel" id="labelDifficulty">Difficulty</label>
+          <select id="difficultySel">
+            <option value="easy" selected>Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
         </div>
       </div>
       <button id="btnBestTime" type="button" class="bestTimeButton" style="display:none;">
@@ -761,6 +762,10 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       numericDisplay: "Numeric display",
       fullCartouche: "Full cartouche",
       abbrevCartouche: "Abbreviated cartouche",
+      difficulty: "Difficulty",
+      difficultyEasy: "Easy",
+      difficultyMedium: "Medium",
+      difficultyHard: "Hard",
       helpers: "Helpers",
       showBadges: "Show type badges",
       autoPreview: "Show selections in preview",
@@ -799,6 +804,10 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       numericDisplay: "sitelen nanpa",
       fullCartouche: "poki nimi suli",
       abbrevCartouche: "poki nimi lili",
+      difficulty: "suli ike",
+      difficultyEasy: "pona",
+      difficultyMedium: "insa",
+      difficultyHard: "ike",
       helpers: "pana sona",
       showBadges: "o pana e nimi kule",
       autoPreview: "o lukin e lipu pilin",
@@ -883,6 +892,22 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     return { id, type: "number", latinLabel: text, renderInput: `[${text}]`, numericKey: canonicalDecimalKey(text) };
   }
 
+  function currentDifficulty() {
+    const value = String(els.difficultySel?.value || DEFAULT_GAME_SETTINGS.difficulty || "easy");
+    return ["easy", "medium", "hard"].includes(value) ? value : "easy";
+  }
+
+  function properNameDifficultyLength(label) {
+    return String(label || "").replace(/[^A-Za-z]/g, "").length;
+  }
+
+  function properNameAllowedForDifficulty(label, difficulty) {
+    const diff = ["easy", "medium", "hard"].includes(String(difficulty)) ? String(difficulty) : "easy";
+    if (diff === "hard") return true;
+    const maxLen = diff === "medium" ? 8 : 5;
+    return properNameDifficultyLength(label) <= maxLen;
+  }
+
   function properNameRenderInputFromLatin(label) {
     const letterWords = {
       a: "ale", e: "esun", i: "ilo", j: "jo", k: "kasi", l: "luka", m: "moku",
@@ -928,7 +953,17 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     "time_hms",
   ]);
 
-  function NLN_makeRandomNumericValue() {
+  function NLN_makeRandomNumericValue(difficulty = currentDifficulty()) {
+    const diff = ["easy", "medium", "hard"].includes(String(difficulty)) ? String(difficulty) : "easy";
+
+    if (diff === "easy") {
+      return { raw: String(nlnRandInt(0, 999)), isDateTime: false };
+    }
+
+    if (diff === "medium") {
+      return { raw: String(nlnRandInt(-9999, 9999)), isDateTime: false };
+    }
+
     const cat = NLN_NUMERIC_CATEGORIES[nlnRandInt(0, NLN_NUMERIC_CATEGORIES.length - 1)];
 
     if (cat === "int_lt_1000") {
@@ -985,19 +1020,19 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     return { raw: "0", isDateTime: false };
   }
 
-  function makeRandomNumberItem(idx) {
-    const generated = NLN_makeRandomNumericValue();
+  function makeRandomNumberItem(idx, difficulty = currentDifficulty()) {
+    const generated = NLN_makeRandomNumericValue(difficulty);
     const label = String(generated.raw ?? "0");
     return makeNumberItem(`num_${idx}_${canonicalDecimalKey(label).replace(/[^a-z0-9]+/gi, "_")}`, label);
   }
 
-  function makeUniqueRandomNumberItems(pairCount) {
+  function makeUniqueRandomNumberItems(pairCount, difficulty = currentDifficulty()) {
     const selected = [];
     const seen = new Set();
     const maxAttempts = Math.max(100, pairCount * 50);
 
     for (let attempts = 0; selected.length < pairCount && attempts < maxAttempts; attempts++) {
-      const item = makeRandomNumberItem(selected.length);
+      const item = makeRandomNumberItem(selected.length, difficulty);
       const key = itemDedupeKey(item);
       if (key && seen.has(key)) continue;
       if (key) seen.add(key);
@@ -3010,9 +3045,8 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     legendDisplay: document.getElementById("legendDisplay"),
     labelFull: document.getElementById("labelFull"),
     labelAbbrev: document.getElementById("labelAbbrev"),
-    legendHelpers: document.getElementById("legendHelpers"),
-    labelBadges: document.getElementById("labelBadges"),
-    labelAutoPreview: document.getElementById("labelAutoPreview"),
+    labelDifficulty: document.getElementById("labelDifficulty"),
+    difficultySel: document.getElementById("difficultySel"),
     btnStartFromOptions: document.getElementById("btnStartFromOptions"),
     btnCloseOptions: document.getElementById("btnCloseOptions"),
     btnBestTime: document.getElementById("btnBestTime"),
@@ -3036,6 +3070,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   let game = null;
   let timerId = null;
   let busy = false;
+  let pendingMismatchTimerId = null;
   let backCache = null;
   let mobileBackCache = null;
   let timeSitelenRenderer = null;
@@ -3059,6 +3094,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     gridSize: "16",
     deckMode: "mixed",
     numericDisplay: "abbrev",
+    difficulty: "easy",
     showBadges: true,
     autoPreview: true
   });
@@ -3076,6 +3112,8 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       if (!parsed || typeof parsed !== "object") return { ...DEFAULT_GAME_SETTINGS };
       const merged = { ...DEFAULT_GAME_SETTINGS, ...parsed };
       if (merged.deckMode === "codes") merged.deckMode = DEFAULT_GAME_SETTINGS.deckMode;
+      if (merged.numericDisplay !== "full" && merged.numericDisplay !== "abbrev") merged.numericDisplay = DEFAULT_GAME_SETTINGS.numericDisplay;
+      if (!["easy", "medium", "hard"].includes(String(merged.difficulty))) merged.difficulty = DEFAULT_GAME_SETTINGS.difficulty;
       return merged;
     } catch {
       return { ...DEFAULT_GAME_SETTINGS };
@@ -3087,8 +3125,9 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       gridSize: String(els.gridSize.value || DEFAULT_GAME_SETTINGS.gridSize),
       deckMode: String(els.deckMode.value || DEFAULT_GAME_SETTINGS.deckMode),
       numericDisplay: document.querySelector('input[name="numericDisplay"]:checked')?.value === "full" ? "full" : "abbrev",
-      showBadges: !!els.showBadges.checked,
-      autoPreview: !!els.autoPreview.checked
+      difficulty: ["easy", "medium", "hard"].includes(String(els.difficultySel?.value || "")) ? String(els.difficultySel.value) : DEFAULT_GAME_SETTINGS.difficulty,
+      showBadges: true,
+      autoPreview: true
     };
   }
 
@@ -3109,8 +3148,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     const numericRadio = document.querySelector(`input[name="numericDisplay"][value="${numericDisplay}"]`);
     if (numericRadio) numericRadio.checked = true;
 
-    els.showBadges.checked = settings.showBadges !== false;
-    els.autoPreview.checked = settings.autoPreview !== false;
+    if (optionExists(els.difficultySel, settings.difficulty)) els.difficultySel.value = String(settings.difficulty);
   }
 
   function i18n(key, vars = null) {
@@ -3185,12 +3223,12 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   function currentBestTimeKeyFromControls() {
-    return `${String(els.gridSize.value || DEFAULT_GAME_SETTINGS.gridSize)}|${String(els.deckMode.value || DEFAULT_GAME_SETTINGS.deckMode)}`;
+    return `${String(els.gridSize.value || DEFAULT_GAME_SETTINGS.gridSize)}|${String(els.deckMode.value || DEFAULT_GAME_SETTINGS.deckMode)}|${currentDifficulty()}`;
   }
 
   function bestTimeKeyForGame(gameState) {
     if (!gameState) return currentBestTimeKeyFromControls();
-    return `${String(gameState.totalCards || DEFAULT_GAME_SETTINGS.gridSize)}|${String(gameState.deckMode || DEFAULT_GAME_SETTINGS.deckMode)}`;
+    return `${String(gameState.totalCards || DEFAULT_GAME_SETTINGS.gridSize)}|${String(gameState.deckMode || DEFAULT_GAME_SETTINGS.deckMode)}|${String(gameState.difficulty || DEFAULT_GAME_SETTINGS.difficulty)}`;
   }
 
   function readBestTimeSec(key = currentBestTimeKeyFromControls()) {
@@ -3701,10 +3739,13 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     return a;
   }
 
-  function itemsForDeck(mode) {
+  function itemsForDeck(mode, difficulty = currentDifficulty()) {
     let items = BUILT_IN_ITEMS.slice();
     if (mode === "numbers") items = [];
     else if (mode === "names") items = items.filter(item => item.type === "properName");
+    if (mode === "names" || mode === "mixed") {
+      items = items.filter(item => item.type !== "properName" || properNameAllowedForDifficulty(item.latinLabel, difficulty));
+    }
     return items;
   }
 
@@ -3726,28 +3767,29 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     return selected;
   }
 
-  function buildMemoryDeck(pairCount, mode) {
+  function buildMemoryDeck(pairCount, mode, difficulty = currentDifficulty()) {
     let selected;
+    const diff = ["easy", "medium", "hard"].includes(String(difficulty)) ? String(difficulty) : "easy";
 
     if (mode === "mixed") {
       const numericTarget = Math.floor(pairCount / 2);
       const nameTarget = pairCount - numericTarget;
-      const selectedNumbers = makeUniqueRandomNumberItems(numericTarget);
-      const nameItems = shuffle(itemsForDeck("names"));
+      const selectedNumbers = makeUniqueRandomNumberItems(numericTarget, diff);
+      const nameItems = shuffle(itemsForDeck("names", diff));
       const selectedNames = selectUniqueDeckItems(nameItems, Math.min(nameTarget, nameItems.length));
       selected = selectedNumbers.concat(selectedNames);
 
       if (selected.length < pairCount) {
         const alreadySelected = new Set(selected.map(item => itemDedupeKey(item)));
-        const fallbackItems = shuffle(BUILT_IN_ITEMS).filter(item => !alreadySelected.has(itemDedupeKey(item)));
+        const fallbackItems = shuffle(itemsForDeck("names", diff)).filter(item => !alreadySelected.has(itemDedupeKey(item)));
         selected = selected.concat(selectUniqueDeckItems(fallbackItems, pairCount - selected.length));
       }
 
       selected = shuffle(selected).slice(0, pairCount);
     } else if (mode === "numbers") {
-      selected = makeUniqueRandomNumberItems(pairCount);
+      selected = makeUniqueRandomNumberItems(pairCount, diff);
     } else {
-      const sourceItems = shuffle(itemsForDeck(mode));
+      const sourceItems = shuffle(itemsForDeck(mode, diff));
       selected = selectUniqueDeckItems(sourceItems, Math.min(pairCount, sourceItems.length));
     }
 
@@ -3851,7 +3893,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   async function showSolutionPairInPreview(idx) {
-    if (!game || !game.solutionMode || !els.autoPreview.checked) return;
+    if (!game || !game.solutionMode) return;
     const card = game.cards[idx];
     if (!card || !card.pairId) return;
     const pairCards = game.cards.filter(c => c && c.pairId === card.pairId);
@@ -3950,7 +3992,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   }
 
   async function updatePreview() {
-    if (!game || !els.autoPreview.checked) {
+    if (!game) {
       clearPreview();
       return;
     }
@@ -4029,7 +4071,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
     if (compact) els.grid.style.gridTemplateColumns = "repeat(4, 1fr)";
 
-    const showBadges = !!els.showBadges.checked;
+    const showBadges = true;
     for (let idx = 0; idx < game.cards.length; idx++) {
       const card = game.cards[idx];
       const btn = document.createElement("button");
@@ -4103,6 +4145,38 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     timerId = null;
   }
 
+  function clearPendingMismatchTimer() {
+    if (pendingMismatchTimerId) clearTimeout(pendingMismatchTimerId);
+    pendingMismatchTimerId = null;
+  }
+
+  async function turnPendingMismatchFaceDown() {
+    if (!game || !Array.isArray(game.flipped) || game.flipped.length !== 2) return;
+    clearPendingMismatchTimer();
+    const [aIdx, bIdx] = game.flipped;
+    const a = game.cards[aIdx];
+    const b = game.cards[bIdx];
+    if (a && !a.matched) {
+      a.faceUp = false;
+      a.bad = false;
+    }
+    if (b && !b.matched) {
+      b.faceUp = false;
+      b.bad = false;
+    }
+    game.flipped = [];
+    refreshGridState();
+    await updatePreview();
+  }
+
+  function startPendingMismatchTimer() {
+    clearPendingMismatchTimer();
+    pendingMismatchTimerId = setTimeout(() => {
+      pendingMismatchTimerId = null;
+      turnPendingMismatchFaceDown().catch(err => console.error(err));
+    }, 20000);
+  }
+
   async function startGameFromOptions() {
     if (!gameStartReady) {
       setStatus("statusLoading");
@@ -4110,6 +4184,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       if (!ready) return;
     }
     hideFinishPopup();
+    clearPendingMismatchTimer();
     saveGameSettings();
     busy = false;
     const totalCards = Math.max(4, Number(els.gridSize.value) || 16);
@@ -4119,7 +4194,8 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       totalCards,
       pairCount,
       deckMode,
-      cards: buildMemoryDeck(pairCount, deckMode).map(card => ({ ...card, faceUp: false, matched: false, bad: false })),
+      difficulty: currentDifficulty(),
+      cards: buildMemoryDeck(pairCount, deckMode, currentDifficulty()).map(card => ({ ...card, faceUp: false, matched: false, bad: false })),
       flipped: [],
       moves: 0,
       matches: 0,
@@ -4143,9 +4219,29 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       await showSolutionPairInPreview(idx);
       return;
     }
+
     const card = game.cards[idx];
-    if (!card || card.matched || card.faceUp) return;
-    if (game.flipped.length >= 2) return;
+    if (!card || card.matched) return;
+
+    if (game.flipped.length === 2) {
+      const wasPendingSelection = game.flipped.includes(idx);
+      await turnPendingMismatchFaceDown();
+      if (wasPendingSelection) {
+        updateScore();
+        return;
+      }
+      const freshCard = game.cards[idx];
+      if (!freshCard || freshCard.matched || freshCard.faceUp) return;
+      freshCard.faceUp = true;
+      freshCard.bad = false;
+      game.flipped = [idx];
+      refreshGridState();
+      await updatePreview();
+      updateScore();
+      return;
+    }
+
+    if (card.faceUp) return;
 
     card.faceUp = true;
     card.bad = false;
@@ -4154,7 +4250,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     await updatePreview();
 
     if (game.flipped.length !== 2) return;
-    busy = true;
+
     game.moves++;
     updateScore();
     refreshGridState();
@@ -4165,12 +4261,12 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     const matched = a.pairId === b.pairId && a.faceType !== b.faceType;
 
     if (matched) {
+      clearPendingMismatchTimer();
       a.matched = true;
       b.matched = true;
       game.matches++;
       game.flipped = [];
       setStatus("statusMatch");
-      busy = false;
       refreshGridState();
       await updatePreview();
       if (game.matches >= game.pairCount) {
@@ -4189,15 +4285,8 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     b.bad = true;
     setStatus("statusNoMatch");
     refreshGridState();
-    await new Promise(resolve => setTimeout(resolve, 850));
-    a.faceUp = false;
-    b.faceUp = false;
-    a.bad = false;
-    b.bad = false;
-    game.flipped = [];
-    busy = false;
-    refreshGridState();
     await updatePreview();
+    startPendingMismatchTimer();
     updateScore();
   }
 
@@ -4217,9 +4306,13 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     els.legendDisplay.textContent = i18n("numericDisplay");
     els.labelFull.textContent = i18n("fullCartouche");
     els.labelAbbrev.textContent = i18n("abbrevCartouche");
-    els.legendHelpers.textContent = i18n("helpers");
-    els.labelBadges.textContent = i18n("showBadges");
-    els.labelAutoPreview.textContent = i18n("autoPreview");
+    els.labelDifficulty.textContent = i18n("difficulty");
+    if (els.difficultySel) {
+      const difficultyLabels = { easy: "difficultyEasy", medium: "difficultyMedium", hard: "difficultyHard" };
+      Array.from(els.difficultySel.options || []).forEach(opt => {
+        opt.textContent = i18n(difficultyLabels[opt.value] || opt.textContent);
+      });
+    }
     els.btnStartFromOptions.textContent = i18n("startGame");
     els.btnCloseOptions.textContent = i18n("cancel");
     els.backToIndexLink.textContent = i18n("backToIndex");
@@ -4283,13 +4376,9 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       saveGameSettings();
       refreshBestTimeUi();
     });
-    els.showBadges.addEventListener("change", () => {
+    els.difficultySel.addEventListener("change", () => {
       saveGameSettings();
-      renderGrid();
-    });
-    els.autoPreview.addEventListener("change", () => {
-      saveGameSettings();
-      updatePreview();
+      refreshBestTimeUi();
     });
   }
 
