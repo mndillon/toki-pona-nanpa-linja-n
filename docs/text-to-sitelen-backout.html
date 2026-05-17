@@ -753,35 +753,24 @@ nanpa #~WI.
           <span>Download PNG</span>
           <span class="tpLine">o kama jo e sitelen PNG</span>
         </button>
-        <div id="btnDownloadHelp" class="sr-only">Downloads the rendered output as a transparent PNG generated from SVG vector paths.</div>
-
-        <button id="appBtnDownloadSvg" type="button" class="btnBi" disabled aria-describedby="btnDownloadSvgHelp">
-          <span>Download SVG</span>
-          <span class="tpLine">o kama jo e SVG</span>
-        </button>
-        <div id="btnDownloadSvgHelp" class="sr-only">Exports the current renderer plan as SVG vector paths using Rust/WASM.</div>
+        <div id="btnDownloadHelp" class="sr-only">Downloads the output canvas as a transparent PNG.</div>
 
         <span class="small">
           (Transparent background)
           <span class="tpLine">(poka sitelen li lon ala)</span>
         </span>
 
-        <button id="appBtnDownloadPdf" type="button" class="btnBi" disabled aria-describedby="btnDownloadPdfHelp">
+        <button id="appBtnDownloadPdf" type="button" class="btnBi" aria-describedby="btnDownloadPdfHelp">
           <span>Download PDF</span>
           <span class="tpLine">o kama jo e lipu PDF</span>
         </button>
-        <div id="btnDownloadPdfHelp" class="sr-only">Exports the current renderer plan as PDF vector paths using Rust/WASM.</div>
+        <div id="btnDownloadPdfHelp" class="sr-only">Exports the rendered output as a PDF with embedded fonts.</div>
 
         <button id="appBtnDownloadUnicodeJson" type="button" class="btnBi" aria-describedby="btnDownloadUnicodeJsonHelp">
           <span>Download Unicode JSON</span>
           <span class="tpLine">o kama jo e lipu JSON pi sitelen</span>
         </button>
         <div id="btnDownloadUnicodeJsonHelp" class="sr-only">Exports the rendered output as Unicode JSON with fonts, run types, input text, and reconstructible codepoint streams.</div>
-
-        <label class="inlineControl inlinePill" style="flex-direction:row; align-items:center; gap:8px; margin:0; display:none;" title="When enabled, the exporter sends debug:true to Rust/WASM and prints detailed logs in the browser console.">
-          <input id="appVectorWasmDebugEnable" type="checkbox" checked aria-label="Enable vector WASM debug logging">
-          <span class="ctlLabel" style="margin:0;">Debug vector WASM</span>
-        </label>
 
       </div>
 
@@ -930,15 +919,14 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=49";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
-    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15";
+    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 
     import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
-    import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=150';
     let pageMap = new Map();
 
     "use strict";
@@ -963,7 +951,6 @@ nanpa #~WI.
     const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
     const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
     const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
-    const FONT_FAMILY_LITERAL_CARTOUCHE = "TP-Nasin-Nanpa-Literal-Cartouche-Font";
 
     const RENDER_FONT_PRESETS = {
       nasinNanpa: {
@@ -973,12 +960,6 @@ nanpa #~WI.
         textFamily: FONT_FAMILY_TEXT,
         cartoucheFamily: FONT_FAMILY_CARTOUCHE,
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: FONT_FAMILY_LITERAL_CARTOUCHE,
-        settings: {
-          literalCartoucheRuleClipScale: 0.24985,
-          literalCartoucheRuleClipStrategy: "leftCap",
-          literalCartoucheLeftCapClipRatio: 0.90
-        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -996,12 +977,6 @@ nanpa #~WI.
             url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
             format: "opentype",
             sample: String.fromCodePoint(0xF196C)
-          },
-          {
-            family: FONT_FAMILY_LITERAL_CARTOUCHE,
-            url: "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-            format: "opentype",
-            sample: "Hello"
           },
           {
             family: FONT_FAMILY_CARTOUCHE,
@@ -1024,11 +999,6 @@ nanpa #~WI.
         textFamily: "SSK-Juniko",
         cartoucheFamily: "SSK-Juniko-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "SSK-Juniko",
-        settings: {
-          literalCartoucheRuleClipScale: 0.0,
-          literalCartoucheRuleClipStrategy: "none"
-        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -1068,11 +1038,6 @@ nanpa #~WI.
         textFamily: "fairfaxHd",
         cartoucheFamily: "fairfaxHd-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "fairfaxHd",
-        settings: {
-          literalCartoucheRuleClipScale: 0.9,
-          literalCartoucheRuleClipStrategy: "compound"
-        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -1112,11 +1077,6 @@ nanpa #~WI.
         textFamily: "fairfaxPonaHd",
         cartoucheFamily: "fairfaxPonaHd-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "fairfaxPonaHd",
-        settings: {
-          literalCartoucheRuleClipScale: 0.90,
-          literalCartoucheRuleClipStrategy: "compound"
-        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -1155,168 +1115,6 @@ nanpa #~WI.
     let sitelenRendererSignature = "";
     let latestRenderPlan = null;
     let latestRenderedCanvas = null;
-
-    let sitelenVectorExporter = null;
-    let sitelenVectorExporterPromise = null;
-    let sitelenVectorReady = false;
-
-    const VECTOR_DIAGNOSTIC_DEBUG = true;
-    const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=47",
-      fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
-      cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=20",
-      vectorExporter: "./js/sitelen-vector-exporter.js?v=144",
-      vectorWasm: "./wasm/sitelen_vector_wasm.js?v=143"
-    });
-
-    function vectorDiag(...args) {
-      if (!VECTOR_DIAGNOSTIC_DEBUG) return;
-      try { console.info("[tts-vector-diagnostics]", ...args); } catch {}
-    }
-
-    function vectorDiagWarn(...args) {
-      try { console.warn("[tts-vector-diagnostics]", ...args); } catch {}
-    }
-
-    function safeCloneForLog(value) {
-      try { return JSON.parse(JSON.stringify(value)); }
-      catch { return value; }
-    }
-
-    function setVectorButtonsEnabled(enabled) {
-      const svgBtn = document.getElementById("appBtnDownloadSvg");
-      const pdfBtn = document.getElementById("appBtnDownloadPdf");
-      if (svgBtn) svgBtn.disabled = !enabled;
-      if (pdfBtn) pdfBtn.disabled = !enabled;
-    }
-
-    function announceVectorStatus(msg) {
-      vectorDiag("exporter status", msg);
-      try { console.info("[vector-export]", msg); } catch {}
-    }
-
-    function getVectorWasmDebugEnabled() {
-      return false;
-    }
-
-    const VECTOR_WASM_DEBUG_STORAGE_KEY = "tpVectorWasmDebugLogs";
-
-    function loadVectorWasmDebugEnabledFromStorage() {
-      try {
-        const raw = localStorage.getItem(VECTOR_WASM_DEBUG_STORAGE_KEY);
-        if (raw == null) return null;
-        if (raw === "1" || raw === "true") return true;
-        if (raw === "0" || raw === "false") return false;
-        return null;
-      } catch { return null; }
-    }
-
-    function saveVectorWasmDebugEnabledToStorage(v) {
-      try { localStorage.setItem(VECTOR_WASM_DEBUG_STORAGE_KEY, v ? "1" : "0"); } catch {}
-    }
-
-    function setVectorWasmDebugEnabled(v, { persist = true } = {}) {
-      const b = !!v;
-      const el = document.getElementById("appVectorWasmDebugEnable");
-      if (el) el.checked = b;
-      if (persist) saveVectorWasmDebugEnabledToStorage(b);
-      if (sitelenVectorExporter && typeof sitelenVectorExporter.setDebugWasm === "function") {
-        sitelenVectorExporter.setDebugWasm(b);
-      }
-      return b;
-    }
-
-    function setVectorExporterDebugFlag() {
-      setVectorWasmDebugEnabled(getVectorWasmDebugEnabled());
-    }
-
-    function initVectorWasmDebugControl() {
-      const saved = loadVectorWasmDebugEnabledFromStorage();
-      // Default ON so useful logs appear immediately.
-      setVectorWasmDebugEnabled(saved ?? true, { persist: false });
-      try { console.info("[vector-export] debug initial", getVectorWasmDebugEnabled()); } catch {}
-    }
-
-    function summarizeRunsForVectorDebug(plan) {
-      return (plan?.lines || []).flatMap((line, lineIndex) => (line?.runs || []).map((run, runIndex) => ({
-        lineIndex,
-        runIndex,
-        kind: run?.kind,
-        type: run?.type,
-        renderMode: run?.renderMode,
-        sourceKind: run?.sourceKind,
-        fontRole: run?.fontRole,
-        fontFamily: run?.fontFamily,
-        fontPx: run?.fontPx,
-        sourceText: run?.sourceText,
-        encodedText: run?.encodedText,
-        cpsHex: Array.isArray(run?.cps) ? run.cps.slice(0, 80).map(cp => "U+" + Number(cp).toString(16).toUpperCase()) : null,
-        xPx: run?.xPx,
-        drawXPx: run?.drawXPx,
-        baselineYPx: run?.baselineYPx,
-        yPx: run?.yPx,
-        widthPx: run?.widthPx,
-        heightPx: run?.heightPx,
-        ascentPx: run?.ascentPx,
-        descentPx: run?.descentPx,
-        haloEnabled: run?.halo?.enabled,
-        haloWidthPx: run?.halo?.widthPx,
-        haloColor: run?.halo?.color,
-        literalCartoucheRuleClipScale: run?.literalCartoucheRuleClipScale ?? run?._element?.literalCartoucheRuleClipScale ?? run?.element?.literalCartoucheRuleClipScale ?? null,
-        literalCartoucheRuleClipStrategy: run?.literalCartoucheRuleClipStrategy ?? run?._element?.literalCartoucheRuleClipStrategy ?? run?.element?.literalCartoucheRuleClipStrategy ?? null,
-      })));
-    }
-
-    function summarizeLiteralCartoucheRunsForVectorDebug(plan) {
-      return summarizeRunsForVectorDebug(plan).filter(r =>
-        r.kind === "cartouche" || /ABC|^"|"$/.test(String(r.sourceText || "")) || /cartouche/i.test(String(r.kind || ""))
-      );
-    }
-
-    async function ensureVectorExporterReady() {
-      if (sitelenVectorExporter && sitelenVectorReady) return sitelenVectorExporter;
-      if (!sitelenVectorExporterPromise) {
-        sitelenVectorExporterPromise = (async () => {
-          vectorDiag("ensureVectorExporterReady START", { imports: VECTOR_DIAG_IMPORTS, location: window.location.href });
-          const renderer = await ensureRendererReady();
-          const ex = await SitelenVectorExporter.create({
-            renderer,
-            fontController: sitelenFontController,
-            wasmModuleUrl: new URL(VECTOR_DIAG_IMPORTS.vectorWasm, window.location.href).href,
-            onStatus: announceVectorStatus,
-            debug: getVectorWasmDebugEnabled(),
-            debugWasm: getVectorWasmDebugEnabled()
-          });
-          sitelenVectorExporter = ex;
-          sitelenVectorReady = true;
-          setVectorButtonsEnabled(true);
-          vectorDiag("ensureVectorExporterReady END", {
-            exporterDebug: ex?.debug,
-            exporterDebugWasm: ex?.debugWasm,
-            exporterClipScale: ex?.literalCartoucheRuleClipScale,
-            exporterClipStrategy: ex?.literalCartoucheRuleClipStrategy,
-            activePreset: safeCloneForLog(getActiveFontPreset()),
-            fontRoles: safeCloneForLog(buildFontRoles()),
-            activeFontPairSettings: safeCloneForLog(getActiveFontPairSettings())
-          });
-          return ex;
-        })().catch((err) => {
-          sitelenVectorExporterPromise = null;
-          sitelenVectorReady = false;
-          setVectorButtonsEnabled(false);
-          vectorDiagWarn("ensureVectorExporterReady FAILED", err);
-          throw err;
-        });
-      }
-      return await sitelenVectorExporterPromise;
-    }
-
-    function startVectorExporterLoadInBackground() {
-      setVectorButtonsEnabled(false);
-      ensureVectorExporterReady()
-        .then(() => announceStatus("Vector export loaded. Ready to render/export. Diagnostics are enabled."))
-        .catch((err) => announceStatus(`Vector export unavailable: ${err?.message ?? String(err)}`));
-    }
 
     const sitelenFontController = createSitelenFontPairController({
       registry: RENDER_FONT_PRESETS,
@@ -1571,7 +1369,7 @@ nanpa #~WI.
           halo: {
             enabled: haloEnabled,
             color: getHaloHex(),
-            widthPx: haloEnabled ? haloWidthForPx(fontPx) : 0
+            widthPx: haloEnabled ? getHaloWidthOverridePx() : 0
           },
           unknownText: {
             style: "outline-box",
@@ -3841,13 +3639,13 @@ function wireHaloControls() {
 
     function haloWidthForPx(px) {
       const p = Math.max(8, Number(px ?? 56));
-      const autoWidth = Math.max(2, Math.min(24, Math.round(p * 0.10)));
+
+      // User override: 0 => auto; otherwise exact px width.
       const override = getHaloWidthOverridePx();
-      // 0 = auto.
-      if (override <= 0) return autoWidth;
-      // Manual value is capped so it cannot become absurdly large
-      // relative to the current font size.
-      return Math.min(override, Math.max(autoWidth, Math.round(p * 0.18)));
+      if (override > 0) return override;
+
+      // Auto: ~10% of font size; clamp to sane minimum/maximum
+      return Math.max(2, Math.min(24, Math.round(p * 0.10)));
     }
 
 
@@ -5140,24 +4938,6 @@ function wireHaloControls() {
         literalFontFile = optionKey || "PatrickHand-Regular.ttf";
       }
 
-      const literalCartoucheFamily = String(livePreset?.literalCartoucheFamily || livePreset?.textFamily || "");
-      let literalCartoucheFontFile = textFontFile;
-      if (literalCartoucheFamily && literalCartoucheFamily === String(livePreset?.cartoucheFamily || "")) {
-        literalCartoucheFontFile = cartoucheFontFile;
-      } else if (literalCartoucheFamily && literalCartoucheFamily === String(livePreset?.literalFamily || "") && literalCartoucheFamily === "Patrick-Head-Font") {
-        literalCartoucheFontFile = "PatrickHand-Regular.ttf";
-      } else if (staticPreset) {
-        const face = Array.isArray(staticPreset.faces) ? staticPreset.faces.find(f => String(f?.family || "") === literalCartoucheFamily) : null;
-        literalCartoucheFontFile = basename(face?.url) || textFontFile;
-      } else {
-        const pr = livePreset?.__pairRecord;
-        if (literalCartoucheFamily === String(pr?.literalCartoucheFamily || pr?.literalCartoucheFontFamily || "") && pr?.literalCartoucheFilename) {
-          literalCartoucheFontFile = String(pr.literalCartoucheFilename);
-        } else if (literalCartoucheFamily === String(pr?.companionFamily || "")) literalCartoucheFontFile = String(pr?.companionFilename || cartoucheFontFile);
-        else if (literalCartoucheFamily === String(pr?.baseFamily || "")) literalCartoucheFontFile = String(pr?.baseFilename || textFontFile);
-        else literalCartoucheFontFile = literalCartoucheFamily || textFontFile;
-      }
-
       const result = {
         "1": textFontFile,
         "2": cartoucheFontFile
@@ -5167,17 +4947,12 @@ function wireHaloControls() {
         result["3"] = literalFontFile;
       }
 
-      if (literalCartoucheFontFile && literalCartoucheFontFile !== result["1"] && literalCartoucheFontFile !== result["2"] && literalCartoucheFontFile !== result["3"]) {
-        result["4"] = literalCartoucheFontFile;
-      }
-
       return result;
     }
 
     function buildUnicodeJsonFontFamilyToId() {
       const preset = getActiveFontPreset();
       const literalFamily = resolveLiteralFontFamily(getSelectedTextFontOptionKey(), preset);
-      const literalCartoucheFamily = String(preset?.literalCartoucheFamily || preset?.textFamily || "");
 
       const map = new Map([
         [preset.textFamily, "1"],
@@ -5186,10 +4961,6 @@ function wireHaloControls() {
 
       if (literalFamily !== preset.textFamily && literalFamily !== preset.cartoucheFamily) {
         map.set(literalFamily, "3");
-      }
-
-      if (literalCartoucheFamily && !map.has(literalCartoucheFamily)) {
-        map.set(literalCartoucheFamily, "4");
       }
 
       return map;
@@ -5217,7 +4988,6 @@ function wireHaloControls() {
       const kind = String(run?.kind ?? "").toLowerCase();
       const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
 
-      if (role === "literalcartouche") return "literalCartouche";
       if (role === "literal" || kind === "text" || sourceKind === "quote") return "literal";
       if (sourceKind === "bracket") return "cartouche";
       if (role === "time" || mode === "time") return "time";
@@ -5411,7 +5181,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=47", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -5557,7 +5327,6 @@ async function buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, prese
       if (fontFamily === preset.textFamily) fontId = "1";
       else if (fontFamily === preset.cartoucheFamily) fontId = "2";
       else if (fontFamily === preset.literalFamily) fontId = "3";
-      else if (fontFamily === String(preset.literalCartoucheFamily || preset.textFamily || "")) fontId = "4";
       else fontId = "1";
     }
 
@@ -5765,205 +5534,6 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${getFontPx()}px. Renderer font family: ${preset.label}. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}.`);
     }
 
-
-
-    async function buildCurrentVectorExportPlan({ includeHalo = true, forceZeroHaloWidth = false } = {}) {
-      const debug = getVectorWasmDebugEnabled();
-      vectorDiag("buildCurrentVectorExportPlan START", { includeHalo, fontPx: getFontPx() });
-      const renderer = await ensureRendererReady();
-      await waitForConfiguredFonts(getFontPx());
-      const rawInput = String(elTextIn.value ?? "");
-      const input = CartoucheApi.prepareInput(rawInput, pageMap);
-      const config = buildRendererCallConfig({ includeHalo });
-      if (forceZeroHaloWidth && config?.paint?.halo) config.paint.halo.widthPx = 0;
-      const preset = getActiveFontPreset();
-      const exportArgsPreview = {
-        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
-        fallbackWidthPx: outCanvas?.width || null,
-        fallbackHeightPx: outCanvas?.height || null,
-        debugWasm: getVectorWasmDebugEnabled()
-      };
-      vectorDiag("pre-build state", {
-        rawInput,
-        preparedInput: input,
-        rawInputLength: rawInput.length,
-        preparedInputLength: String(input || "").length,
-        presetKey: preset?.key,
-        presetLabel: preset?.label,
-        presetSettings: safeCloneForLog(preset?.settings),
-        activeFontPairSettings: safeCloneForLog(getActiveFontPairSettings()),
-        fontRoles: safeCloneForLog(buildFontRoles()),
-        rendererSignature: getRendererSignature(),
-        config: safeCloneForLog(config),
-        exportArgsPreview,
-        outCanvas: { width: outCanvas?.width, height: outCanvas?.height }
-      });
-      const plan = await renderer.buildRenderPlan({ input, ...config });
-      const rawRuns = (plan?.lines || []).flatMap(line => line?.runs || []);
-      const runSummary = summarizeRunsForVectorDebug(plan);
-      const literalCartoucheRuns = summarizeLiteralCartoucheRunsForVectorDebug(plan);
-      vectorDiag("build plan result", {
-        lineCount: plan?.lines?.length || 0,
-        rawRunCount: rawRuns.length,
-        widthPx: plan?.widthPx,
-        heightPx: plan?.heightPx,
-        astNormalizedInput: plan?.ast?.normalizedInput,
-        exportArgsPreview
-      });
-      console.table(runSummary.slice(0, 250));
-      console.table(literalCartoucheRuns);
-      window.__TTS_VECTOR_DEBUG_LAST_PLAN__ = plan;
-      window.__TTS_VECTOR_DEBUG_LAST_SUMMARY__ = {
-        rawInput,
-        preparedInput: input,
-        preset: safeCloneForLog(preset),
-        config: safeCloneForLog(config),
-        exportArgsPreview,
-        runSummary,
-        literalCartoucheRuns
-      };
-      const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(
-        line => Array.isArray(line?.runs) && line.runs.some(run => run && run.kind !== "gap")
-      );
-      if (!hasRuns) throw new Error("Nothing to export (no drawable runs). ");
-      latestRenderPlan = plan;
-      return plan;
-    }
-
-    function downloadBlobAsFile(blob, filename) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-    }
-
-    async function svgBlobToPngBlob(svgBlob, { scale = 1 } = {}) {
-      const svgText = await svgBlob.text();
-      window.__TTS_VECTOR_DEBUG_LAST_SVG_TEXT__ = svgText;
-      vectorDiag("SVG blob before PNG rasterization", {
-        byteLength: svgBlob.size,
-        charLength: svgText.length,
-        svgHead: svgText.slice(0, 1000),
-        containsClipPath: svgText.includes("clipPath"),
-        containsDebugAttrs: svgText.includes("data-debug"),
-        overhangProbe: (svgText.match(/clipPath|data-debug|literal|cartouche|ABC/g) || []).slice(0, 100)
-      });
-      const url = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }));
-      try {
-        const img = new Image();
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = () => reject(new Error("SVG-to-PNG rasterization failed."));
-          img.src = url;
-        });
-        const w = Math.max(1, Math.ceil((img.naturalWidth || img.width || outCanvas?.width || 1) * scale));
-        const h = Math.max(1, Math.ceil((img.naturalHeight || img.height || outCanvas?.height || 1) * scale));
-        vectorDiag("SVG image decoded for PNG", { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight, drawWidth: w, drawHeight: h, scale });
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d", { alpha: true });
-        ctx.clearRect(0, 0, w, h);
-        ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(img, 0, 0, w, h);
-        return await new Promise((resolve, reject) => {
-          canvas.toBlob((blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error("PNG export failed (no blob)."));
-          }, "image/png");
-        });
-      } finally {
-        URL.revokeObjectURL(url);
-      }
-    }
-
-    async function buildCurrentVectorSvgBlob({ includeHalo = true } = {}) {
-      vectorDiag("buildCurrentVectorSvgBlob START", { includeHalo });
-      const exporter = await ensureVectorExporterReady();
-      const plan = await buildCurrentVectorExportPlan({ includeHalo });
-      const args = {
-        plan,
-        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
-        fallbackWidthPx: outCanvas?.width || null,
-        fallbackHeightPx: outCanvas?.height || null,
-        debugWasm: getVectorWasmDebugEnabled(),
-        filename: `${getExportFilenameBase()}-vector.svg`
-      };
-      vectorDiag("exportTextToSvgBlob args", {
-        paddingPx: args.paddingPx,
-        fallbackWidthPx: args.fallbackWidthPx,
-        fallbackHeightPx: args.fallbackHeightPx,
-        debugWasm: args.debugWasm,
-        filename: args.filename,
-        exporterClipScale: exporter?.literalCartoucheRuleClipScale,
-        exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
-      });
-      const blob = await exporter.exportTextToSvgBlob(args);
-      vectorDiag("buildCurrentVectorSvgBlob END", { blobSize: blob?.size, blobType: blob?.type });
-      return blob;
-    }
-
-    async function exportRenderedToVectorSvg() {
-      vectorDiag("Download SVG click START");
-      const exporter = await ensureVectorExporterReady();
-      const plan = await buildCurrentVectorExportPlan({ includeHalo: true });
-      const args = {
-        plan,
-        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
-        fallbackWidthPx: outCanvas?.width || null,
-        fallbackHeightPx: outCanvas?.height || null,
-        debugWasm: getVectorWasmDebugEnabled(),
-        filename: `${getExportFilenameBase()}-vector.svg`
-      };
-      vectorDiag("downloadSvg args", {
-        paddingPx: args.paddingPx,
-        fallbackWidthPx: args.fallbackWidthPx,
-        fallbackHeightPx: args.fallbackHeightPx,
-        debugWasm: args.debugWasm,
-        filename: args.filename,
-        exporterClipScale: exporter?.literalCartoucheRuleClipScale,
-        exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
-      });
-      await exporter.downloadSvg(args);
-      vectorDiag("Download SVG click END");
-    }
-
-    async function exportRenderedToVectorPng() {
-      vectorDiag("Download PNG via SVG START");
-      const svgBlob = await buildCurrentVectorSvgBlob({ includeHalo: true });
-      const pngBlob = await svgBlobToPngBlob(svgBlob, { scale: 1 });
-      vectorDiag("Download PNG via SVG END", { pngBlobSize: pngBlob?.size });
-      downloadBlobAsFile(pngBlob, `${getExportFilenameBase()}-vector.png`);
-    }
-
-    async function exportRenderedToVectorPdf() {
-      vectorDiag("Download PDF click START");
-      const exporter = await ensureVectorExporterReady();
-      const plan = await buildCurrentVectorExportPlan({ includeHalo: true, forceZeroHaloWidth: true });
-      const args = {
-        plan,
-        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
-        fallbackWidthPx: outCanvas?.width || null,
-        fallbackHeightPx: outCanvas?.height || null,
-        debugWasm: getVectorWasmDebugEnabled(),
-        filename: `${getExportFilenameBase()}-vector.pdf`
-      };
-      vectorDiag("downloadPdf args", {
-        paddingPx: args.paddingPx,
-        fallbackWidthPx: args.fallbackWidthPx,
-        fallbackHeightPx: args.fallbackHeightPx,
-        debugWasm: args.debugWasm,
-        filename: args.filename,
-        exporterClipScale: exporter?.literalCartoucheRuleClipScale,
-        exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
-      });
-      await exporter.downloadPdf(args);
-      vectorDiag("Download PDF click END");
-    }
 
     let _autoRenderTimer = null;
     function scheduleAutoRender() {
@@ -6298,33 +5868,23 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       catch (e) { showAlertAndAnnounce(e?.message ?? String(e)); }
     });
 
-    btnDownload.addEventListener("click", async () => {
+    btnDownload.addEventListener("click", () => {
       try {
-        await exportRenderedToVectorPng();
-        announceStatus("Downloaded PNG from SVG vector paths. Diagnostics were logged to the console.");
+        downloadCanvasAsTransparentPng(outCanvas, { filenameBase: "sitelen", scale: 1 });
+        announceStatus("Downloaded PNG.");
       } catch (e) {
         showAlertAndAnnounce(e?.message ?? String(e));
       }
     });
 
 
-    const btnDownloadSvg = document.getElementById("appBtnDownloadSvg");
     const btnDownloadPdf = document.getElementById("appBtnDownloadPdf");
     const btnDownloadUnicodeJson = document.getElementById("appBtnDownloadUnicodeJson");
 
-    btnDownloadSvg?.addEventListener("click", async () => {
-      try {
-        await exportRenderedToVectorSvg();
-        announceStatus("Downloaded SVG. Diagnostics were logged to the console.");
-      } catch(e) {
-        showAlertAndAnnounce(e?.message ?? String(e));
-      }
-    });
-
     btnDownloadPdf?.addEventListener("click", async () => {
       try{
-        await exportRenderedToVectorPdf();
-        announceStatus("Downloaded vector PDF. Diagnostics were logged to the console.");
+        await exportRenderedToPdf();
+        announceStatus("Downloaded PDF.");
       } catch(e){
         showAlertAndAnnounce(e?.message ?? String(e));
       }
@@ -6337,12 +5897,6 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       } catch (e) {
         showAlertAndAnnounce(e?.message ?? String(e));
       }
-    });
-
-    const vectorDebugToggle = document.getElementById("appVectorWasmDebugEnable");
-    vectorDebugToggle?.addEventListener("change", () => {
-      setVectorWasmDebugEnabled(vectorDebugToggle.checked, { persist: true });
-      try { console.info("[vector-export] debugWasm", getVectorWasmDebugEnabled()); } catch {}
     });
 
 
@@ -6481,25 +6035,6 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
           pageMap = await cartoucheApi.resolvePageMap();
         } catch (e) { console.warn('CartoucheApi load failed, continuing without:', e); }
-
-        startVectorExporterLoadInBackground();
-        initVectorWasmDebugControl();
-        vectorDiag("initial page state", {
-          imports: VECTOR_DIAG_IMPORTS,
-          activePreset: safeCloneForLog(getActiveFontPreset()),
-          activeFontPairSettings: safeCloneForLog(getActiveFontPairSettings()),
-          fontRoles: safeCloneForLog(buildFontRoles()),
-          rendererSignature: getRendererSignature(),
-          outCanvas: { width: outCanvas?.width, height: outCanvas?.height },
-          localStorage: {
-            tpScriptPreset: localStorage.getItem("tpScriptPreset"),
-            tpTextFontOption: localStorage.getItem("tpTextFontOption"),
-            tpFontPx: localStorage.getItem("tpFontPx"),
-            tpHaloEnabled: localStorage.getItem("tpHaloEnabled"),
-            tpHaloWidthPx: localStorage.getItem("tpHaloWidthPx"),
-            tpHaloHex: localStorage.getItem("tpHaloHex")
-          }
-        });
 
         // Auto-render on load (after restore)
         scheduleAutoRender();

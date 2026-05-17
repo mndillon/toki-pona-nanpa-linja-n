@@ -5,7 +5,7 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-05-02-005",
+      "rev": "2026-05-16-060",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
@@ -18,13 +18,20 @@
       "metadataSuffix": "-nanpa-linja-n",
       "settings": {
         "cartoucheCommaTallyMarks": true,
-        "cartoucheTallyMode": "manual"
-      }
+        "cartoucheTallyMode": "manual",
+        "literalCartoucheRuleClipScale": 0.24985,
+        "literalCartoucheRuleClipStrategy": "leftCap",
+        "literalCartoucheLeftCapClipRatio": 0.9
+      },
+      "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
+"literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
+"literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
+"literalCartoucheFormat": "opentype"
     },
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-05-02-002",
+      "rev": "2026-05-02-005",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
@@ -37,13 +44,15 @@
       "metadataSuffix": "-nanpa-linja-n",
       "settings": {
         "cartoucheCommaTallyMarks": true,
-        "cartoucheTallyMode": "ucsur"
-      }
+        "cartoucheTallyMode": "ucsur",
+        "literalCartoucheRuleClipStrategy": "none"
+      },
+      "literalCartoucheFamily": "SSK-Juniko"
     },
     {
       "fontKey": "fairfaxHd",
       "label": "FairfaxHD predefined",
-      "rev": "2026-05-02-002",
+      "rev": "2026-05-15-007",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "fairfaxHd",
       "companionFamily": "fairfaxHd-Cartouche",
@@ -56,13 +65,16 @@
       "metadataSuffix": "-nanpa-linja-n",
       "settings": {
         "cartoucheCommaTallyMarks": true,
-        "cartoucheTallyMode": "ucsur"
-      }
+        "cartoucheTallyMode": "ucsur",
+        "literalCartoucheRuleClipScale": 0.9,
+        "literalCartoucheRuleClipStrategy": "compound"
+      },
+      "literalCartoucheFamily": "fairfaxHd"
     },
     {
       "fontKey": "fairfaxPonaHd",
       "label": "FairfaxPonaHD predefined",
-      "rev": "2026-05-02-002",
+      "rev": "2026-05-15-007",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "fairfaxPonaHd",
       "companionFamily": "fairfaxPonaHd-Cartouche",
@@ -75,8 +87,11 @@
       "metadataSuffix": "-nanpa-linja-n",
       "settings": {
         "cartoucheCommaTallyMarks": true,
-        "cartoucheTallyMode": "ucsur"
-      }
+        "cartoucheTallyMode": "ucsur",
+        "literalCartoucheRuleClipScale": 0.9,
+        "literalCartoucheRuleClipStrategy": "compound"
+      },
+      "literalCartoucheFamily": "fairfaxPonaHd"
     }
   ]
 }

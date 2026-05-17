@@ -285,7 +285,6 @@ const SitelenRenderer = (() => {
   let FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
   let FONT_FAMILY_NUMBER = "TP-Cartouche-Font";
   let FONT_FAMILY_LITERAL = "Patrick-Head-Font";
-  let FONT_FAMILY_LITERAL_CARTOUCHE = "TP-Nasin-Nanpa-Font";
   let FONT_FAMILY_UNKNOWN = "Patrick-Head-Font";
 
   function captureRenderFontState() {
@@ -294,7 +293,6 @@ const SitelenRenderer = (() => {
       cartouche: FONT_FAMILY_CARTOUCHE,
       number: FONT_FAMILY_NUMBER,
       literal: FONT_FAMILY_LITERAL,
-      literalCartouche: FONT_FAMILY_LITERAL_CARTOUCHE,
       unknown: FONT_FAMILY_UNKNOWN,
       mixedStyle: __mixedStyle,
       showUnknownText: __showUnknownText,
@@ -312,7 +310,6 @@ const SitelenRenderer = (() => {
     FONT_FAMILY_CARTOUCHE = state.cartouche || FONT_FAMILY_CARTOUCHE;
     FONT_FAMILY_NUMBER = state.number || FONT_FAMILY_NUMBER;
     FONT_FAMILY_LITERAL = state.literal || FONT_FAMILY_LITERAL;
-    FONT_FAMILY_LITERAL_CARTOUCHE = state.literalCartouche || state.text || FONT_FAMILY_LITERAL_CARTOUCHE;
     FONT_FAMILY_UNKNOWN = state.unknown || FONT_FAMILY_UNKNOWN;
     if (state.mixedStyle === "short" || state.mixedStyle === "long") __mixedStyle = state.mixedStyle;
     __showUnknownText = !!state.showUnknownText;
@@ -597,7 +594,6 @@ const SitelenRenderer = (() => {
     FONT_FAMILY_CARTOUCHE = roles.cartouche || FONT_FAMILY_CARTOUCHE;
     FONT_FAMILY_NUMBER = roles.number || roles.date || roles.time || roles.cartouche || FONT_FAMILY_NUMBER;
     FONT_FAMILY_LITERAL = roles.literal || FONT_FAMILY_LITERAL;
-    FONT_FAMILY_LITERAL_CARTOUCHE = roles.literalCartouche || roles.literalCartoucheFamily || roles.text || roles.word || FONT_FAMILY_LITERAL_CARTOUCHE;
     FONT_FAMILY_UNKNOWN = roles.unknown || roles.literal || FONT_FAMILY_UNKNOWN;
   }
 
@@ -814,7 +810,6 @@ const SitelenRenderer = (() => {
     const fam = String(el.fontFamily || '');
     if (el.type === 'text') return 'literal';
     if (el.type === 'cartouche') {
-      if (el.isLiteralCartouche) return 'literalCartouche';
       if (fam && fam === FONT_FAMILY_NUMBER) return 'number';
       return 'cartouche';
     }
@@ -1667,21 +1662,18 @@ function wireHaloControls() {
       const sampleTextChar = String.fromCodePoint(0xF196C); // toki
       const sampleCartChar = String.fromCodePoint(0xF1990); // cartouche start
       const sampleLiteral  = "Hello";                       // literal font sample
-      const sampleLiteralCartouche = String.fromCodePoint(0xF1990) + "A" + String.fromCodePoint(0xF1991);
 
       try {
         const okText = document.fonts.check(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
         const okCart = document.fonts.check(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
         const okNum  = document.fonts.check(`${px}px "${FONT_FAMILY_NUMBER}"`, sampleCartChar);
         const okLit  = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral);
-        const okLitCart = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL_CARTOUCHE}"`, sampleLiteralCartouche);
 
         const loads = [];
         if (!okText) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar));
         if (!okCart) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar));
         if (!okNum)  loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_NUMBER}"`, sampleCartChar));
         if (!okLit)  loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral));
-        if (!okLitCart) loads.push(document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL_CARTOUCHE}"`, sampleLiteralCartouche));
 
         if (loads.length) await Promise.all(loads);
 
@@ -1690,14 +1682,12 @@ function wireHaloControls() {
         const okText2 = document.fonts.check(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar);
         const okCart2 = document.fonts.check(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar);
         const okLit2  = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral);
-        const okLitCart2 = document.fonts.check(`${px}px "${FONT_FAMILY_LITERAL_CARTOUCHE}"`, sampleLiteralCartouche);
 
-        if (!okText2 || !okCart2 || !okLit2 || !okLitCart2) {
+        if (!okText2 || !okCart2 || !okLit2) {
           await Promise.all([
             document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, sampleTextChar),
             document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, sampleCartChar),
             document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL}"`, sampleLiteral),
-            document.fonts.load(`${px}px "${FONT_FAMILY_LITERAL_CARTOUCHE}"`, sampleLiteralCartouche),
           ]);
           await document.fonts.ready;
         }
@@ -1720,9 +1710,6 @@ function wireHaloControls() {
 
       ctx.font = `${px}px "${FONT_FAMILY_CARTOUCHE}"`;
       ctx.fillText(String.fromCodePoint(0xF1990), 0, 1);
-
-      ctx.font = `${px}px "${FONT_FAMILY_LITERAL_CARTOUCHE}"`;
-      ctx.fillText(String.fromCodePoint(0xF1990) + "A" + String.fromCodePoint(0xF1991), 0, 1);
     }
 
     let DID_WARMUP = false;
@@ -4638,7 +4625,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   return finalCanvas;
 }
 
-    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false } = {}) {
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null } = {}) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
 
@@ -4675,7 +4662,6 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         descent,
         fontFamily: fontFamily || FONT_FAMILY_TEXT,
         repairQuotedLatinLeftEdge: !!repairQuotedLatinLeftEdge,
-        isLiteralCartouche: !!isLiteralCartouche,
         manualTallies: Array.isArray(manualTallies) ? manualTallies.slice() : null,
         sourceText: (typeof sourceText === 'string') ? sourceText : null,
         sourceStart: Number.isFinite(Number(sourceStart)) ? Number(sourceStart) : null,
@@ -5121,10 +5107,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
           makeCartoucheElementFromCodepoints(elements, cps, {
             fontPx,
-            fontFamily: FONT_FAMILY_LITERAL_CARTOUCHE || FONT_FAMILY_TEXT,
+            fontFamily: FONT_FAMILY_TEXT,
             fgCss: getFgHex(),
             repairQuotedLatinLeftEdge: true,
-            isLiteralCartouche: true,
             sourceText: content,
             sourceStart: sourceBaseStart,
             sourceEnd: sourceBaseStart + content.length,

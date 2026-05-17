@@ -117,7 +117,6 @@ function clonePreset(preset) {
     literalOptions: Array.isArray(preset.literalOptions)
       ? preset.literalOptions.map(item => Array.isArray(item) ? [...item] : item)
       : undefined,
-    literalCartoucheFamily: cleanString(preset.literalCartoucheFamily || preset.textFamily || preset.baseFamily || ''),
   };
 }
 
@@ -131,14 +130,6 @@ function recordToStoredShape(record, fallbackLiteralOptions = DEFAULT_TEXT_FONT_
     label: normalizedLabel,
     baseFamily,
     companionFamily: cleanString(record.companionFamily || record.cartoucheFamily || `${baseFamily}-nanpa-linja-n`),
-    literalCartoucheFamily: cleanString(
-      record.literalCartoucheFamily || record.literalCartoucheFontFamily || record.textFamily || record.baseFamily || baseFamily,
-      baseFamily
-    ),
-    literalCartoucheFilename: cleanString(record.literalCartoucheFilename || record.literalCartoucheFileName || ''),
-    literalCartoucheUrl: cleanString(record.literalCartoucheUrl || record.literalCartoucheFontUrl || ''),
-    literalCartoucheFormat: normalizeFormat(record.literalCartoucheFormat || inferFormatFromFilename(record.literalCartoucheFilename || record.literalCartoucheFileName || record.literalCartoucheUrl || record.literalCartoucheFontUrl || '')),
-    literalCartoucheBlob: record.literalCartoucheBlob || record.literalCartoucheFontBlob || null,
     baseFilename: cleanString(record.baseFilename || record.baseFileName || 'uploaded-font.ttf'),
     companionFilename: cleanString(record.companionFilename || record.companionFileName || 'uploaded-font-nanpa-linja-n.ttf'),
     baseFormat: normalizeFormat(record.baseFormat || record.textFormat || inferFormatFromFilename(record.baseFilename || '')),
@@ -442,10 +433,6 @@ export function createSitelenFontPairController({
     return normalized;
   }
 
-  function resolveLiteralCartoucheFontFamily(preset = getActivePreset()) {
-    return cleanString(preset?.literalCartoucheFamily || preset?.textFamily || preset?.baseFamily || '');
-  }
-
   function buildFontRoles({ textFontOptionKey = getSelectedTextFontOptionKey(), preset = getActivePreset() } = {}) {
     return {
       word: preset.textFamily,
@@ -455,7 +442,6 @@ export function createSitelenFontPairController({
       date: preset.cartoucheFamily,
       time: preset.cartoucheFamily,
       literal: resolveLiteralFontFamily(textFontOptionKey, preset),
-      literalCartouche: resolveLiteralCartoucheFontFamily(preset),
     };
   }
 
@@ -682,15 +668,10 @@ export function createSitelenFontPairController({
     revokeObjectUrlsForKey(presetKey);
     const baseExt = fileExtFromName(rec.baseFilename) || (rec.baseFormat === 'opentype' ? 'otf' : 'ttf');
     const companionExt = fileExtFromName(rec.companionFilename) || (rec.companionFormat === 'opentype' ? 'otf' : 'ttf');
-    const literalCartoucheExt = fileExtFromName(rec.literalCartoucheFilename) || (rec.literalCartoucheFormat === 'opentype' ? 'otf' : 'ttf');
     const baseUrl = makeBlobUrl(rec.baseBlob, baseExt);
     const companionUrl = makeBlobUrl(rec.companionBlob, companionExt);
-    const literalCartoucheObjectUrl = rec.literalCartoucheBlob
-      ? makeBlobUrl(rec.literalCartoucheBlob, literalCartoucheExt)
-      : '';
     rememberObjectUrl(presetKey, baseUrl);
     rememberObjectUrl(presetKey, companionUrl);
-    if (literalCartoucheObjectUrl) rememberObjectUrl(presetKey, literalCartoucheObjectUrl);
 
     const faces = [
       {
@@ -706,15 +687,6 @@ export function createSitelenFontPairController({
         sample: fontLoadSample,
       },
     ];
-
-    if (literalCartoucheObjectUrl && rec.literalCartoucheFamily) {
-      faces.push({
-        family: rec.literalCartoucheFamily,
-        url: literalCartoucheObjectUrl,
-        format: rec.literalCartoucheFormat,
-        sample: fontLoadSample,
-      });
-    }
 
     const literalFace = resolveDynamicLiteralFace(rec, null);
     if (literalFace?.family && literalFace?.url) {
@@ -732,7 +704,6 @@ export function createSitelenFontPairController({
       fontKey: rec.fontKey,
       textFamily: rec.baseFamily,
       cartoucheFamily: rec.companionFamily,
-      literalCartoucheFamily: rec.literalCartoucheFamily || rec.baseFamily,
       parserMode: rec.parserMode,
       metadataSuffix: rec.metadataSuffix,
       literalOptions: rec.literalOptions,
@@ -861,7 +832,6 @@ export function createSitelenFontPairController({
         const rev = cleanString(pair.rev);
         const baseUrl = cleanString(pair.baseUrl);
         const companionUrl = cleanString(pair.companionUrl);
-        const literalCartoucheUrl = cleanString(pair.literalCartoucheUrl || pair.literalCartoucheFontUrl);
 
         if (!fontKey || !rev || !baseUrl || !companionUrl) {
           skipped++;
@@ -886,11 +856,7 @@ export function createSitelenFontPairController({
         const existingFontRev = String(existing?.fontRev || existing?.preloadedFontRev || existingManifestRev);
         const existingSettingsRev = String(existing?.settingsRev || existing?.preloadedSettingsRev || existingManifestRev);
 
-        const needsLiteralCartoucheFontUpdate = !!literalCartoucheUrl && (
-          !existing?.literalCartoucheBlob ||
-          String(existing?.literalCartoucheUrl || existing?.literalCartoucheFontUrl || '') !== literalCartoucheUrl
-        );
-        const needsFontUpdate = !existing || existingFontRev !== fontRev || !existing?.baseBlob || !existing?.companionBlob || needsLiteralCartoucheFontUpdate;
+        const needsFontUpdate = !existing || existingFontRev !== fontRev || !existing?.baseBlob || !existing?.companionBlob;
         const needsSettingsUpdate = !existing || existingSettingsRev !== settingsRev;
 
         if (!force && existing && !needsFontUpdate && !needsSettingsUpdate) {
@@ -900,47 +866,27 @@ export function createSitelenFontPairController({
 
         const baseFilename = cleanString(pair.baseFilename || baseUrl.split("/").pop() || "preloaded-base.ttf");
         const companionFilename = cleanString(pair.companionFilename || companionUrl.split("/").pop() || "preloaded-companion.ttf");
-        const literalCartoucheFilename = cleanString(
-          pair.literalCartoucheFilename ||
-          pair.literalCartoucheFileName ||
-          (literalCartoucheUrl ? literalCartoucheUrl.split("/").pop() : '') ||
-          existing?.literalCartoucheFilename ||
-          existing?.literalCartoucheFileName ||
-          ''
-        );
 
         let baseBlob = existing?.baseBlob || null;
         let companionBlob = existing?.companionBlob || null;
-        let literalCartoucheBlob = literalCartoucheUrl ? (existing?.literalCartoucheBlob || existing?.literalCartoucheFontBlob || null) : null;
 
         if (force || needsFontUpdate) {
           let baseBuffer;
           let companionBuffer;
-          let literalCartoucheBuffer = null;
 
           try {
-            const fetches = [
+            const [baseRes, companionRes] = await Promise.all([
               fetch(baseUrl, { cache: "no-store" }),
               fetch(companionUrl, { cache: "no-store" })
-            ];
-            if (literalCartoucheUrl) fetches.push(fetch(literalCartoucheUrl, { cache: "no-store" }));
-
-            const responses = await Promise.all(fetches);
-            const [baseRes, companionRes, literalCartoucheRes] = responses;
+            ]);
 
             if (!baseRes.ok) throw new Error(`Failed to fetch base font ${baseUrl}: ${baseRes.status}`);
             if (!companionRes.ok) throw new Error(`Failed to fetch companion font ${companionUrl}: ${companionRes.status}`);
-            if (literalCartoucheUrl && !literalCartoucheRes?.ok) {
-              throw new Error(`Failed to fetch literal cartouche font ${literalCartoucheUrl}: ${literalCartoucheRes?.status}`);
-            }
 
             [baseBuffer, companionBuffer] = await Promise.all([
               baseRes.arrayBuffer(),
               companionRes.arrayBuffer()
             ]);
-            if (literalCartoucheUrl && literalCartoucheRes) {
-              literalCartoucheBuffer = await literalCartoucheRes.arrayBuffer();
-            }
           } catch (err) {
             console.warn("[preloaded-fonts] font fetch failed:", fontKey, err);
             skipped++;
@@ -958,14 +904,6 @@ export function createSitelenFontPairController({
               ? "font/otf"
               : "font/ttf"
           });
-
-          literalCartoucheBlob = literalCartoucheBuffer
-            ? new Blob([literalCartoucheBuffer], {
-                type: normalizeFormat(pair.literalCartoucheFormat || inferFormatFromFilename(literalCartoucheFilename)) === "opentype"
-                  ? "font/otf"
-                  : "font/ttf"
-              })
-            : null;
         }
 
         const stored = recordToStoredShape({
@@ -979,22 +917,14 @@ export function createSitelenFontPairController({
             pair.companionFamily || existing?.companionFamily || pair.cartoucheFamily || `${fontKey}-nanpa-linja-n`,
             `${fontKey}-nanpa-linja-n`
           ),
-          literalCartoucheFamily: cleanString(
-            pair.literalCartoucheFamily || pair.literalCartoucheFontFamily || existing?.literalCartoucheFamily || existing?.literalCartoucheFontFamily || pair.baseFamily || existing?.baseFamily || pair.textFamily || fontKey,
-            cleanString(pair.baseFamily || existing?.baseFamily || pair.textFamily || fontKey, fontKey)
-          ),
 
           baseFilename,
           companionFilename,
-          literalCartoucheFilename,
-          literalCartoucheUrl,
           baseFormat: normalizeFormat(pair.baseFormat || existing?.baseFormat || inferFormatFromFilename(baseFilename)),
           companionFormat: normalizeFormat(pair.companionFormat || existing?.companionFormat || inferFormatFromFilename(companionFilename)),
-          literalCartoucheFormat: normalizeFormat(pair.literalCartoucheFormat || existing?.literalCartoucheFormat || inferFormatFromFilename(literalCartoucheFilename || literalCartoucheUrl)),
 
           baseBlob,
           companionBlob,
-          literalCartoucheBlob,
 
           parserMode: cleanString(pair.parserMode || existing?.parserMode || "sitelen-seli-kiwen"),
           sourceType: cleanString(existing?.sourceType || "indexeddb"),
@@ -1162,11 +1092,6 @@ export function createSitelenFontPairController({
     companionFamily,
     baseBlob,
     companionBlob,
-    literalCartoucheFamily = '',
-    literalCartoucheBlob = null,
-    literalCartoucheFilename = '',
-    literalCartoucheFormat = '',
-    literalCartoucheUrl = '',
     baseFilename = 'uploaded-font.ttf',
     companionFilename = 'uploaded-font-nanpa-linja-n.ttf',
     literalOptions = DEFAULT_TEXT_FONT_OPTIONS,
@@ -1185,11 +1110,6 @@ export function createSitelenFontPairController({
       label: cleanString(label || baseFamily || key, key),
       baseFamily: cleanString(baseFamily || label || key, key),
       companionFamily: cleanString(companionFamily || `${baseFamily || label || key}${metadataSuffix}`),
-      literalCartoucheFamily: cleanString(literalCartoucheFamily || baseFamily || label || key, key),
-      literalCartoucheBlob,
-      literalCartoucheFilename,
-      literalCartoucheFormat: normalizeFormat(literalCartoucheFormat || inferFormatFromBlob(literalCartoucheBlob, literalCartoucheFilename || literalCartoucheUrl)),
-      literalCartoucheUrl,
       baseFilename,
       companionFilename,
       baseFormat: inferFormatFromBlob(baseBlob, baseFilename),
@@ -1217,11 +1137,6 @@ export function createSitelenFontPairController({
       settings,
       metadataSuffix,
       literalOptions,
-      literalCartoucheFamily,
-      literalCartoucheBlob,
-      literalCartoucheFilename,
-      literalCartoucheFormat,
-      literalCartoucheUrl,
     }, null));
     const preset = buildDynamicPresetFromStoredRecord(record, { sourceType });
     registerDynamicPreset(key, preset, { silent: true });
@@ -1287,7 +1202,6 @@ export function createSitelenFontPairController({
     getSelectedTextFontOptionKey,
     getTextFontOptionsForPreset,
     resolveLiteralFontFamily,
-    resolveLiteralCartoucheFontFamily,
     buildFontRoles,
     getPresetTallySettings,
     buildRendererParserConfig,
