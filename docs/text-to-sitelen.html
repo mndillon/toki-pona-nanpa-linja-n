@@ -930,7 +930,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=49";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=53";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -938,7 +938,7 @@ nanpa #~WI.
     } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15";
 
     import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
-    import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=150';
+    import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=153';
     let pageMap = new Map();
 
     "use strict";
@@ -957,6 +957,131 @@ nanpa #~WI.
       return new Promise(resolve => requestAnimationFrame(() => resolve()));
     }
 
+    const QUOTED_TEXT_FONT_DEBUG = true;
+    try {
+      window.__ttsQuotedFontDebugInstalled = true;
+      window.__ttsQuotedFontDebugVersion = "v6-hardcoded-liberation-face-fix";
+      console.warn("[tts-quoted-font-debug] installed", {
+        version: window.__ttsQuotedFontDebugVersion,
+        href: window.location.href
+      });
+    } catch {}
+
+    function quotedFontDebug(...args) {
+      if (!QUOTED_TEXT_FONT_DEBUG) return;
+      try { console.warn("[tts-quoted-font-debug]", ...args); } catch {}
+    }
+
+    function quotedFontWarn(...args) {
+      try { console.warn("[tts-quoted-font-debug]", ...args); } catch {}
+    }
+
+    function quotedFontCloneForLog(value) {
+      try { return JSON.parse(JSON.stringify(value)); }
+      catch { return value; }
+    }
+
+    function quotedFontFaceForFamily(family, preset = null) {
+      const fam = String(family ?? "").trim();
+      if (!fam) return null;
+
+      // HARD FIX: do not rely on preset.faces or controller state for the
+      // built-in Liberation quoted-text aliases.  These must always resolve
+      // to a concrete font file when the selected family is one of the
+      // vector-safe Liberation families.
+      const directFaceByFamily = {
+        "TP-Vector-Liberation-Sans-Font": {
+          family: "TP-Vector-Liberation-Sans-Font",
+          url: "./fonts/LiberationSans-Regular.ttf",
+          format: "truetype",
+          sample: "Hello"
+        },
+        "TP-Vector-Liberation-Serif-Font": {
+          family: "TP-Vector-Liberation-Serif-Font",
+          url: "./fonts/LiberationSerif-Regular.ttf",
+          format: "truetype",
+          sample: "Hello"
+        },
+        "TP-Vector-Liberation-Mono-Font": {
+          family: "TP-Vector-Liberation-Mono-Font",
+          url: "./fonts/LiberationMono-Regular.ttf",
+          format: "truetype",
+          sample: "Hello"
+        }
+      };
+
+      const directFace = directFaceByFamily[fam];
+      if (directFace) {
+        quotedFontDebug("quotedFontFaceForFamily DIRECT HARD-CODED VECTOR FACE", {
+          family: fam,
+          face: quotedFontCloneForLog(directFace)
+        });
+        return directFace;
+      }
+
+      const livePreset = preset || (() => { try { return getActiveFontPreset(); } catch { return null; } })();
+      const selectKey = (() => {
+        try { return document.getElementById("appScriptPresetSel")?.value || null; }
+        catch { return null; }
+      })();
+
+      // IMPORTANT: getActiveFontPreset() may return a controller-normalized/dynamic
+      // preset object that does not carry the static preset.faces array.  The
+      // Liberation fallback faces live in RENDER_FONT_PRESETS, so search both the
+      // live preset and the static registry entry.
+      const candidates = [
+        livePreset,
+        livePreset?.key ? RENDER_FONT_PRESETS?.[livePreset.key] : null,
+        selectKey ? RENDER_FONT_PRESETS?.[selectKey] : null
+      ].filter(Boolean);
+
+      const seen = new Set();
+      for (const p of candidates) {
+        if (seen.has(p)) continue;
+        seen.add(p);
+        const faces = Array.isArray(p?.faces) ? p.faces : [];
+        const face = faces.find(face => String(face?.family ?? "") === fam);
+        if (face) return face;
+      }
+
+      return null;
+    }
+
+    function quotedFontCssCheck(family, px = null, sample = "Hello") {
+      try {
+        if (!document.fonts || !family) return null;
+        const size = Math.max(8, Number(px ?? getFontPx?.() ?? 56));
+        return document.fonts.check(`${size}px "${family}"`, String(sample ?? "Hello"));
+      } catch {
+        return null;
+      }
+    }
+
+    function quotedFontDebugState(label, extra = {}) {
+      try {
+        const preset = getActiveFontPreset?.();
+        const optionKey = getSelectedTextFontOptionKey?.();
+        const normalizedOptionKey = normalizeTextFontOptionKey?.(optionKey);
+        const resolvedLiteralFamily = resolveLiteralFontFamily?.(optionKey, preset);
+        const controllerRoles = sitelenFontController?.buildFontRoles?.();
+        const face = quotedFontFaceForFamily(resolvedLiteralFamily, preset);
+        quotedFontDebug(label, {
+          selectedRaw: document.getElementById("appTextFontSel")?.value ?? null,
+          optionKey,
+          normalizedOptionKey,
+          resolvedLiteralFamily,
+          presetKey: preset?.key ?? null,
+          presetLabel: preset?.label ?? null,
+          face: face ? quotedFontCloneForLog(face) : null,
+          fontCssCheck: quotedFontCssCheck(resolvedLiteralFamily, getFontPx?.(), face?.sample || "Hello"),
+          controllerRoles: controllerRoles ? quotedFontCloneForLog(controllerRoles) : null,
+          ...extra
+        });
+      } catch (err) {
+        quotedFontWarn(label, "debug-state-failed", err);
+      }
+    }
+
     
 
 
@@ -964,6 +1089,33 @@ nanpa #~WI.
     const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
     const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
     const FONT_FAMILY_LITERAL_CARTOUCHE = "TP-Nasin-Nanpa-Literal-Cartouche-Font";
+    const FONT_FAMILY_LIBERATION_SANS = "TP-Vector-Liberation-Sans-Font";
+    const FONT_FAMILY_LIBERATION_SERIF = "TP-Vector-Liberation-Serif-Font";
+    const FONT_FAMILY_LIBERATION_MONO = "TP-Vector-Liberation-Mono-Font";
+
+    // Direct vector-safe face map for quoted-text browser-font aliases.
+    // This is deliberately independent of preset.faces/controller state so
+    // Arial/Times/Courier/system-ui can always resolve to real font files.
+    const VECTOR_SAFE_LITERAL_FONT_FACE_BY_FAMILY = Object.freeze({
+      [FONT_FAMILY_LIBERATION_SANS]: {
+        family: FONT_FAMILY_LIBERATION_SANS,
+        url: "./fonts/LiberationSans-Regular.ttf",
+        format: "truetype",
+        sample: "Hello"
+      },
+      [FONT_FAMILY_LIBERATION_SERIF]: {
+        family: FONT_FAMILY_LIBERATION_SERIF,
+        url: "./fonts/LiberationSerif-Regular.ttf",
+        format: "truetype",
+        sample: "Hello"
+      },
+      [FONT_FAMILY_LIBERATION_MONO]: {
+        family: FONT_FAMILY_LIBERATION_MONO,
+        url: "./fonts/LiberationMono-Regular.ttf",
+        format: "truetype",
+        sample: "Hello"
+      }
+    });
 
     const RENDER_FONT_PRESETS = {
       nasinNanpa: {
@@ -1014,6 +1166,24 @@ nanpa #~WI.
             url: "./fonts/PatrickHand-Regular.ttf",
             format: "truetype",
             sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_SANS,
+            url: "./fonts/LiberationSans-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_SERIF,
+            url: "./fonts/LiberationSerif-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_MONO,
+            url: "./fonts/LiberationMono-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
           }
         ]
       },
@@ -1056,6 +1226,24 @@ nanpa #~WI.
           {
             family: FONT_FAMILY_LITERAL,
             url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_SANS,
+            url: "./fonts/LiberationSans-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_SERIF,
+            url: "./fonts/LiberationSerif-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_MONO,
+            url: "./fonts/LiberationMono-Regular.ttf",
             format: "truetype",
             sample: "Hello"
           }
@@ -1102,6 +1290,24 @@ nanpa #~WI.
             url: "./fonts/PatrickHand-Regular.ttf",
             format: "truetype",
             sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_SANS,
+            url: "./fonts/LiberationSans-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_SERIF,
+            url: "./fonts/LiberationSerif-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_MONO,
+            url: "./fonts/LiberationMono-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
           }
         ]
       },
@@ -1144,6 +1350,24 @@ nanpa #~WI.
           {
             family: FONT_FAMILY_LITERAL,
             url: "./fonts/PatrickHand-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_SANS,
+            url: "./fonts/LiberationSans-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_SERIF,
+            url: "./fonts/LiberationSerif-Regular.ttf",
+            format: "truetype",
+            sample: "Hello"
+          },
+          {
+            family: FONT_FAMILY_LIBERATION_MONO,
+            url: "./fonts/LiberationMono-Regular.ttf",
             format: "truetype",
             sample: "Hello"
           }
@@ -1364,8 +1588,30 @@ nanpa #~WI.
       return sitelenFontController.getSelectedTextFontOptionKey();
     }
 
+    function resolveVectorSafeLiteralFontFamily(optionKey, preset = getActiveFontPreset()) {
+      const key = String(optionKey ?? "").trim();
+      let resolved;
+      if (key === "Arial") resolved = FONT_FAMILY_LIBERATION_SANS;
+      else if (key === "system-ui") resolved = FONT_FAMILY_LIBERATION_SANS;
+      else if (key === "Times New Roman") resolved = FONT_FAMILY_LIBERATION_SERIF;
+      else if (key === "Courier New") resolved = FONT_FAMILY_LIBERATION_MONO;
+      else resolved = sitelenFontController.resolveLiteralFontFamily(optionKey, preset);
+
+      const face = quotedFontFaceForFamily(resolved, preset);
+      quotedFontDebug("resolveVectorSafeLiteralFontFamily", {
+        optionKey,
+        normalizedOptionKey: normalizeTextFontOptionKey(optionKey),
+        resolved,
+        presetKey: preset?.key ?? null,
+        presetLabel: preset?.label ?? null,
+        face: quotedFontCloneForLog(face),
+        fontCssCheck: quotedFontCssCheck(resolved, getFontPx?.(), face?.sample || "Hello")
+      });
+      return resolved;
+    }
+
     function resolveLiteralFontFamily(optionKey = getSelectedTextFontOptionKey(), preset = getActiveFontPreset()) {
-      return sitelenFontController.resolveLiteralFontFamily(optionKey, preset);
+      return resolveVectorSafeLiteralFontFamily(optionKey, preset);
     }
 
     function setSelectedTextFontOption(key, { persist = true } = {}) {
@@ -1427,21 +1673,68 @@ nanpa #~WI.
 
     function wireTextFontSelect() {
       const sel = getTextFontSelect();
-      if (!sel) return;
+      if (!sel) {
+        quotedFontWarn("wireTextFontSelect missing #appTextFontSel");
+        return;
+      }
       populateTextFontSelectOptions();
+      quotedFontDebug("wireTextFontSelect populated", {
+        value: sel.value,
+        options: Array.from(sel.options || []).map(o => ({ value: o.value, text: o.textContent }))
+      });
+      quotedFontDebugState("initial quoted font state after populate");
+      const logSelectEvent = (eventName) => quotedFontDebug(`text font select ${eventName}`, {
+        rawSelectValue: sel.value,
+        selectedText: sel.options?.[sel.selectedIndex]?.textContent ?? null
+      });
+      sel.addEventListener("focus", () => logSelectEvent("focus"));
+      sel.addEventListener("click", () => logSelectEvent("click"));
+      sel.addEventListener("input", () => logSelectEvent("input"));
       sel.addEventListener("change", async () => {
         try {
+          quotedFontDebug("text font select change START", { rawSelectValue: sel.value });
           setSelectedTextFontOption(sel.value);
+          sitelenRenderer = null;
+          sitelenRendererSignature = "";
+          if (typeof sitelenFontController?.resetFontLoadState === "function") {
+            sitelenFontController.resetFontLoadState();
+          }
+          quotedFontDebugState("after setSelectedTextFontOption", { rawSelectValue: sel.value });
           await waitForConfiguredFonts(getFontPx());
+          quotedFontDebugState("after waitForConfiguredFonts", { rawSelectValue: sel.value });
           await renderFromTextarea();
+          quotedFontDebugState("after renderFromTextarea", { rawSelectValue: sel.value });
         } catch (e) {
+          quotedFontWarn("text font select change FAILED", e);
           showAlertAndAnnounce(e?.message ?? String(e));
         }
       });
     }
 
     function buildFontRoles() {
-      return sitelenFontController.buildFontRoles();
+      const preset = getActiveFontPreset();
+      const optionKey = getSelectedTextFontOptionKey();
+      const resolvedLiteralFamily = resolveLiteralFontFamily(optionKey, preset);
+      const controllerRoles = sitelenFontController.buildFontRoles();
+      const roles = {
+        ...controllerRoles,
+        literal: resolvedLiteralFamily,
+        unknown: resolvedLiteralFamily
+      };
+      try {
+        quotedFontDebug("buildFontRoles", {
+          optionKey,
+          resolvedLiteralFamily,
+          presetKey: preset?.key ?? null,
+          controllerRoles: quotedFontCloneForLog(controllerRoles),
+          finalRoles: quotedFontCloneForLog(roles),
+          face: quotedFontCloneForLog(quotedFontFaceForFamily(resolvedLiteralFamily, preset)),
+          fontCssCheck: quotedFontCssCheck(resolvedLiteralFamily, getFontPx?.(), quotedFontFaceForFamily(resolvedLiteralFamily, preset)?.sample || "Hello")
+        });
+      } catch (err) {
+        quotedFontWarn("buildFontRoles debug failed", err);
+      }
+      return roles;
     }
 
     const DEFAULT_CARTOUCHE_TALLY_SETTINGS = {
@@ -1539,8 +1832,80 @@ nanpa #~WI.
       return sitelenFontController.uniqueConfiguredFontFamilies();
     }
 
+    async function ensureSelectedVectorSafeLiteralFontLoaded(fontPx = 56) {
+      const preset = getActiveFontPreset();
+      const optionKey = getSelectedTextFontOptionKey();
+      const family = resolveLiteralFontFamily(optionKey, preset);
+      const face = quotedFontFaceForFamily(family, preset);
+      const sample = face?.sample || "Hello";
+      const before = quotedFontCssCheck(family, fontPx, sample);
+      quotedFontDebug("ensureSelectedVectorSafeLiteralFontLoaded START", {
+        optionKey,
+        family,
+        fontPx,
+        face: quotedFontCloneForLog(face),
+        before
+      });
+      if (!family || !document.fonts) {
+        quotedFontWarn("ensureSelectedVectorSafeLiteralFontLoaded SKIP no document.fonts/family", {
+          optionKey,
+          family,
+          hasDocumentFonts: !!document.fonts
+        });
+        return before;
+      }
+
+      if (!face?.url) {
+        quotedFontWarn("ensureSelectedVectorSafeLiteralFontLoaded NO FACE FOUND", {
+          optionKey,
+          family,
+          presetKey: preset?.key ?? null,
+          selectKey: document.getElementById("appScriptPresetSel")?.value ?? null,
+          livePresetFacesCount: Array.isArray(preset?.faces) ? preset.faces.length : null,
+          staticPresetFacesCount: Array.isArray(RENDER_FONT_PRESETS?.[preset?.key]?.faces) ? RENDER_FONT_PRESETS[preset.key].faces.length : null
+        });
+        return before;
+      }
+
+      try {
+        // Do not trust document.fonts.check() alone here: it can be true because
+        // the browser is willing to use a fallback font.  Always explicitly
+        // register the selected vector-safe face when we have a configured URL.
+        const source = `url(${JSON.stringify(face.url)})`;
+        const fontFace = new FontFace(family, source, {
+          style: face.style || "normal",
+          weight: face.weight || "400",
+          display: "block"
+        });
+        const loaded = await fontFace.load();
+        document.fonts.add(loaded);
+        await document.fonts.ready;
+        const after = quotedFontCssCheck(family, fontPx, sample);
+        quotedFontDebug("ensureSelectedVectorSafeLiteralFontLoaded LOADED", {
+          optionKey,
+          family,
+          url: face.url,
+          before,
+          after,
+          status: loaded?.status ?? null
+        });
+        return after;
+      } catch (err) {
+        quotedFontWarn("ensureSelectedVectorSafeLiteralFontLoaded FAILED", {
+          optionKey,
+          family,
+          url: face?.url,
+          error: err?.message ?? String(err)
+        });
+        return false;
+      }
+    }
+
     async function waitForConfiguredFonts(fontPx = 56) {
+      quotedFontDebugState("waitForConfiguredFonts START", { fontPx });
       await sitelenFontController.waitForConfiguredFonts(fontPx);
+      await ensureSelectedVectorSafeLiteralFontLoaded(fontPx);
+      quotedFontDebugState("waitForConfiguredFonts END", { fontPx });
     }
 
 
@@ -1558,6 +1923,18 @@ nanpa #~WI.
       const haloEnabled = includeHalo && getHaloEnabled();
       const unknownHighlightEnabled = getUnknownHighlightEnabled();
       const fontPx = getFontPx();
+      const rolesForRendererConfig = buildFontRoles();
+      const resolvedLiteralFamilyForConfig = resolveLiteralFontFamily(getSelectedTextFontOptionKey(), preset);
+      quotedFontDebug("buildBaseRendererConfig", {
+        includeHalo,
+        fontPx,
+        presetKey: preset?.key ?? null,
+        selectedTextFontOption: getSelectedTextFontOptionKey(),
+        resolvedLiteralFamily: resolvedLiteralFamilyForConfig,
+        rolesForRendererConfig: quotedFontCloneForLog(rolesForRendererConfig),
+        face: quotedFontCloneForLog(quotedFontFaceForFamily(resolvedLiteralFamilyForConfig, preset)),
+        fontCssCheck: quotedFontCssCheck(resolvedLiteralFamilyForConfig, fontPx)
+      });
 
       return {
         layout: {
@@ -1594,19 +1971,36 @@ nanpa #~WI.
           ...buildCartoucheTallyParserConfig()
         },
         fonts: {
-          roles: {
-            ...buildFontRoles(),
-            unknown: "Patrick-Head-Font"
-          }
+          roles: rolesForRendererConfig
         }
       };
     }
 
+    function forceQuotedFontRolesAfterControllerMerge(config, reason = "") {
+      const roles = buildFontRoles();
+      const out = config || {};
+      out.fonts = out.fonts || {};
+      out.fonts.roles = {
+        ...(out.fonts.roles || {}),
+        literal: roles.literal,
+        unknown: roles.unknown
+      };
+      quotedFontDebug("forceQuotedFontRolesAfterControllerMerge", {
+        reason,
+        selectedTextFontOption: getSelectedTextFontOptionKey(),
+        finalLiteral: out.fonts.roles.literal,
+        finalUnknown: out.fonts.roles.unknown,
+        finalRoles: quotedFontCloneForLog(out.fonts.roles)
+      });
+      return out;
+    }
+
     function mergeRendererConfigWithFontController(baseConfig) {
+      let merged = baseConfig;
       if (typeof sitelenFontController?.buildRendererConfig === "function") {
-        return sitelenFontController.buildRendererConfig({ baseConfig });
+        merged = sitelenFontController.buildRendererConfig({ baseConfig });
       }
-      return baseConfig;
+      return forceQuotedFontRolesAfterControllerMerge(merged, "mergeRendererConfigWithFontController");
     }
 
     function buildRendererInitConfig() {
@@ -2277,9 +2671,13 @@ function wireHaloControls() {
 
 
     async function ensureFontLoaded(pxOverride) {
+      const px = pxOverride ?? getFontPx();
+      quotedFontDebugState("ensureFontLoaded START", { px });
       try {
-        await sitelenFontController.ensureFamiliesLoaded(pxOverride ?? getFontPx());
+        await sitelenFontController.ensureFamiliesLoaded(px);
+        quotedFontDebugState("ensureFontLoaded END", { px });
       } catch (e) {
+        quotedFontWarn("ensureFontLoaded threw error", e);
         console.warn("[font] load threw error:", e);
       }
     }
@@ -2293,7 +2691,11 @@ function wireHaloControls() {
     }
 
     function fontsReadyForPx(px) {
-      return sitelenFontController.fontsReadyForPx(px ?? getFontPx());
+      const fontPx = px ?? getFontPx();
+      quotedFontDebugState("fontsReadyForPx check", { fontPx });
+      const ready = sitelenFontController.fontsReadyForPx(fontPx);
+      quotedFontDebug("fontsReadyForPx result", { fontPx, ready });
+      return ready;
     }
 
 
@@ -3857,6 +4259,16 @@ function wireHaloControls() {
 
       ctx.font = `${px}px "${fontFamily}"`;
       setTextQuality(ctx);
+      quotedFontDebug("drawTextWithOptionalHalo", {
+        text: String(text ?? ""),
+        x,
+        yBaseline,
+        px,
+        fontFamily,
+        canvasFont: ctx.font,
+        fontCssCheck: quotedFontCssCheck(fontFamily, px, text || "Hello"),
+        face: quotedFontCloneForLog(quotedFontFaceForFamily(fontFamily, getActiveFontPreset()))
+      });
 
       if (haloEnabled) {
         ctx.save();
@@ -4336,9 +4748,20 @@ function wireHaloControls() {
       }
 
       // IMPORTANT: quoted text should not auto-inject word gaps; it should render literally
+      const quotedFontOptionKey = getSelectedTextFontOptionKey();
+      const quotedFontFamily = resolveLiteralFontFamily(quotedFontOptionKey, getActiveFontPreset());
+      quotedFontDebug("parseQuoteSegmentToElements", {
+        quoteContent,
+        literal,
+        fontPx,
+        quotedFontOptionKey,
+        quotedFontFamily,
+        face: quotedFontCloneForLog(quotedFontFaceForFamily(quotedFontFamily, getActiveFontPreset())),
+        fontCssCheck: quotedFontCssCheck(quotedFontFamily, fontPx, literal || "Hello")
+      });
       makeLiteralTextElement(elements, literal, {
         fontPx,
-        fontFamily: resolveLiteralFontFamily(),
+        fontFamily: quotedFontFamily,
         addLeadingGap: false,
         isQuoted: true, // <-- NEW
       });
@@ -4431,6 +4854,17 @@ function wireHaloControls() {
       ctx.font = `${px}px "${fontFamily}"`;
       setTextQuality(ctx);
       const m = ctx.measureText(chars);
+      quotedFontDebug("measureTextRun", {
+        text: chars,
+        px,
+        fontFamily,
+        canvasFont: ctx.font,
+        measuredWidth: m.width,
+        actualBoundingBoxAscent: m.actualBoundingBoxAscent ?? null,
+        actualBoundingBoxDescent: m.actualBoundingBoxDescent ?? null,
+        fontCssCheck: quotedFontCssCheck(fontFamily, px, chars || "Hello"),
+        face: quotedFontCloneForLog(quotedFontFaceForFamily(fontFamily, getActiveFontPreset()))
+      });
 
       const ascent  = (m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8));
       const descent = (m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2));
@@ -4456,11 +4890,22 @@ function wireHaloControls() {
         pushGapIfNeeded(elements, wordGapForPx(fontPx));
       }
 
+      const finalFontFamily = fontFamily || FONT_FAMILY_LITERAL;
+      quotedFontDebug("makeLiteralTextElement", {
+        text: s,
+        fontPx,
+        requestedFontFamily: fontFamily ?? null,
+        finalFontFamily,
+        isQuoted: !!isQuoted,
+        face: quotedFontCloneForLog(quotedFontFaceForFamily(finalFontFamily, getActiveFontPreset())),
+        fontCssCheck: quotedFontCssCheck(finalFontFamily, fontPx, s || "Hello")
+      });
+
       elements.push({
         type: "text",
         text: s,
         px: fontPx,
-        fontFamily: fontFamily || FONT_FAMILY_LITERAL,
+        fontFamily: finalFontFamily,
         isQuoted: !!isQuoted, // <-- NEW
       });
     }
@@ -5093,10 +5538,10 @@ function wireHaloControls() {
       if (optionKey === TEXT_FONT_OPTION_SITELEN) return String((preset?.pdfTextFontUrl || "").split("/").pop() || "");
       if (optionKey === TEXT_FONT_OPTION_NANPA_LINJA_N) return String((preset?.pdfCartoucheFontUrl || "").split("/").pop() || "");
       if (optionKey === "Patrick-Head-Font") return "PatrickHand-Regular.ttf";
-      if (optionKey === "Arial") return "Arial";
-      if (optionKey === "Times New Roman") return "Times New Roman";
-      if (optionKey === "Courier New") return "Courier New";
-      if (optionKey === "system-ui") return "system-ui";
+      if (optionKey === "Arial") return "LiberationSans-Regular.ttf";
+      if (optionKey === "Times New Roman") return "LiberationSerif-Regular.ttf";
+      if (optionKey === "Courier New") return "LiberationMono-Regular.ttf";
+      if (optionKey === "system-ui") return "LiberationSans-Regular.ttf";
       return "PatrickHand-Regular.ttf";
     }
 
@@ -5136,6 +5581,14 @@ function wireHaloControls() {
         literalFontFile = cartoucheFontFile;
       } else if (optionKey === "Patrick-Head-Font") {
         literalFontFile = "PatrickHand-Regular.ttf";
+      } else if (optionKey === "Arial") {
+        literalFontFile = "LiberationSans-Regular.ttf";
+      } else if (optionKey === "Times New Roman") {
+        literalFontFile = "LiberationSerif-Regular.ttf";
+      } else if (optionKey === "Courier New") {
+        literalFontFile = "LiberationMono-Regular.ttf";
+      } else if (optionKey === "system-ui") {
+        literalFontFile = "LiberationSans-Regular.ttf";
       } else {
         literalFontFile = optionKey || "PatrickHand-Regular.ttf";
       }

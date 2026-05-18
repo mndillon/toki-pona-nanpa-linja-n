@@ -9,6 +9,12 @@ const KASI_CP = 0xF1917;
 const LEFT_CORNER_BRACKET_CP = 0x300C;
 const RIGHT_CORNER_BRACKET_CP = 0x300D;
 const PATRICK_HAND_FONT_URL = "./fonts/PatrickHand-Regular.ttf";
+const VECTOR_LIBERATION_SANS_FAMILY = "TP-Vector-Liberation-Sans-Font";
+const VECTOR_LIBERATION_SERIF_FAMILY = "TP-Vector-Liberation-Serif-Font";
+const VECTOR_LIBERATION_MONO_FAMILY = "TP-Vector-Liberation-Mono-Font";
+const VECTOR_LIBERATION_SANS_FONT_URL = "./fonts/LiberationSans-Regular.ttf";
+const VECTOR_LIBERATION_SERIF_FONT_URL = "./fonts/LiberationSerif-Regular.ttf";
+const VECTOR_LIBERATION_MONO_FONT_URL = "./fonts/LiberationMono-Regular.ttf";
 const DEFAULT_LITERAL_CARTOUCHE_RULE_CLIP_SCALE = 0.42;
 const LITERAL_CARTOUCHE_RULE_CLIP_SCALE_SETTING_KEYS = [
   "literalCartoucheRuleClipScale",
@@ -67,6 +73,45 @@ function debugLog(enabled, ...args) {
 function debugWarn(enabled, ...args) {
   if (!enabled) return;
   try { console.warn("[sitelen-vector-exporter]", ...args); } catch {}
+}
+
+
+const SITELEN_VECTOR_FONT_DEBUG = true;
+function vectorFontInfo(label, data = {}) {
+  if (!SITELEN_VECTOR_FONT_DEBUG) return;
+  try { console.info(`[sitelen-vector-font-debug] ${label}`, data); } catch {}
+}
+function vectorFontWarn(label, data = {}) {
+  if (!SITELEN_VECTOR_FONT_DEBUG) return;
+  try { console.warn(`[sitelen-vector-font-debug] ${label}`, data); } catch {}
+}
+function shouldDebugFontRun(run) {
+  const role = String(run?.fontRole || "").toLowerCase();
+  const kind = String(run?.kind || "").toLowerCase();
+  const sourceKind = String(run?.sourceKind || "").toLowerCase();
+  const el = run?._element || run?.element || null;
+  return role === "literal" || role === "unknown" || role === "literalcartouche" ||
+    kind === "text" || sourceKind === "quote" || !!run?.isQuoted || !!el?.isQuoted ||
+    !!run?.isUnrecognized || !!el?.isUnrecognized || !!el?.isLiteralCartouche;
+}
+function codepointLabel(cp) {
+  const n = Number(cp);
+  return Number.isFinite(n) ? `U+${n.toString(16).toUpperCase().padStart(4, "0")}` : String(cp);
+}
+function fontProbeForRun(fontBytes, run) {
+  if (!fontBytes) return [];
+  const payload = runTextOrCps(run);
+  const cps = [];
+  if (Array.isArray(payload.cps) && payload.cps.length) cps.push(...payload.cps.slice(0, 16));
+  if (typeof payload.text === "string" && payload.text) {
+    for (const ch of Array.from(payload.text).slice(0, 16)) cps.push(ch.codePointAt(0));
+  }
+  const seen = new Set();
+  return cps.filter(cp => Number.isFinite(Number(cp)) && !seen.has(Number(cp)) && seen.add(Number(cp))).map(cp => ({
+    cp: Number(cp),
+    label: codepointLabel(cp),
+    hasGlyph: fontHasGlyphForCodepoint(fontBytes, Number(cp))
+  }));
 }
 
 function downloadBlob(blob, filename) {
@@ -1772,9 +1817,26 @@ function fitCornerBracketPathsToReservedRunBox(run, resultPaths, { debug = false
 }
 
 
+function vectorFallbackFaceForFamily(family) {
+  const fam = String(family || "").trim();
+  const lower = fam.toLowerCase();
+  if (fam === VECTOR_LIBERATION_SANS_FAMILY || lower === "arial" || lower === "system-ui" || lower === "system ui") {
+    return { family: VECTOR_LIBERATION_SANS_FAMILY, url: VECTOR_LIBERATION_SANS_FONT_URL, format: "truetype", sample: "Hello" };
+  }
+  if (fam === VECTOR_LIBERATION_SERIF_FAMILY || lower === "times new roman") {
+    return { family: VECTOR_LIBERATION_SERIF_FAMILY, url: VECTOR_LIBERATION_SERIF_FONT_URL, format: "truetype", sample: "Hello" };
+  }
+  if (fam === VECTOR_LIBERATION_MONO_FAMILY || lower === "courier new") {
+    return { family: VECTOR_LIBERATION_MONO_FAMILY, url: VECTOR_LIBERATION_MONO_FONT_URL, format: "truetype", sample: "Hello" };
+  }
+  return null;
+}
+
 function findFaceInPreset(preset, family) {
   const fam = String(family || "").trim();
   if (!fam) return null;
+  const fallbackFace = vectorFallbackFaceForFamily(fam);
+  if (fallbackFace) return fallbackFace;
   for (const face of asArray(preset?.faces)) {
     if (String(face?.family || "").trim() === fam) return face;
   }
@@ -2592,45 +2654,147 @@ export class SitelenVectorExporter {
     const family = String(run?.fontFamily || "").trim();
     const role = String(run?.fontRole || "").trim();
     const cacheKey = `${family}::${role}`;
+    const debugThisRun = shouldDebugFontRun(run);
+
     if (this.fontByteCache.has(cacheKey)) {
       const cached = this.fontByteCache.get(cacheKey);
       this.log("font byte cache hit", { cacheKey, byteLength: cached?.byteLength ?? cached?.length ?? null });
+      if (debugThisRun) {
+        vectorFontInfo("resolveFontBytesForRun CACHE HIT", {
+          runIndex,
+          cacheKey,
+          family,
+          role,
+          byteLength: cached?.byteLength ?? cached?.length ?? null,
+          glyphProbe: fontProbeForRun(cached, run),
+          run: describeRunForDebug(run)
+        });
+      }
       return cached;
     }
 
     let bytes = null;
+    let bytesSource = null;
+    const decisionTrace = [];
     const preset = this.fontController?.getActivePreset?.() || null;
     const presetKey = preset?.key;
     let resolved = null;
     if (this.fontController?.resolvePresetRecord && presetKey) {
-      try { resolved = await this.fontController.resolvePresetRecord(presetKey); } catch {}
+      try { resolved = await this.fontController.resolvePresetRecord(presetKey); decisionTrace.push("resolvePresetRecord ok"); }
+      catch (err) { decisionTrace.push(`resolvePresetRecord failed: ${err?.message || String(err)}`); }
     }
     const pair = resolved?.pairRecord || preset?.__pairRecord || null;
 
     const preferCompanion = fontRunPrefersCompanion(run, preset);
 
+    if (debugThisRun) {
+      vectorFontInfo("resolveFontBytesForRun START", {
+        runIndex,
+        cacheKey,
+        family,
+        role,
+        preferCompanion,
+        activePresetKey: presetKey || null,
+        presetFamilies: preset ? {
+          textFamily: preset.textFamily || null,
+          cartoucheFamily: preset.cartoucheFamily || null,
+          literalFamily: preset.literalFamily || null,
+          literalCartoucheFamily: preset.literalCartoucheFamily || null
+        } : null,
+        pairFamilies: pair ? {
+          baseFamily: pair.baseFamily || null,
+          companionFamily: pair.companionFamily || null,
+          literalCartoucheFamily: pair.literalCartoucheFamily || pair.literalCartoucheFontFamily || null,
+          hasBaseBlob: !!pair.baseBlob,
+          hasCompanionBlob: !!pair.companionBlob,
+          hasLiteralCartoucheBlob: !!pair.literalCartoucheBlob
+        } : null,
+        run: describeRunForDebug(run)
+      });
+    }
+
     if (pair?.baseBlob || pair?.companionBlob || pair?.literalCartoucheBlob) {
       if (family && family === String(pair.literalCartoucheFamily || pair.literalCartoucheFontFamily || "") && pair.literalCartoucheBlob) {
         bytes = await blobToUint8Array(pair.literalCartoucheBlob);
+        bytesSource = "pair.literalCartoucheBlob";
+        decisionTrace.push(bytesSource);
       }
-      else if (preferCompanion && pair.companionBlob) bytes = await blobToUint8Array(pair.companionBlob);
-      else if (!preferCompanion && (role === "literal" || role === "unknown") && family === "Patrick-Head-Font") bytes = null; // fetch Patrick Hand below; do not use sitelen base as literal fallback
-      else if (family && family === String(pair.companionFamily || "") && pair.companionBlob) bytes = await blobToUint8Array(pair.companionBlob);
-      else if (family && family === String(pair.baseFamily || "") && pair.baseBlob) bytes = await blobToUint8Array(pair.baseBlob);
-      else bytes = await blobToUint8Array(preferCompanion ? pair.companionBlob : pair.baseBlob);
+      else if (preferCompanion && pair.companionBlob) {
+        bytes = await blobToUint8Array(pair.companionBlob);
+        bytesSource = "pair.companionBlob:preferCompanion";
+        decisionTrace.push(bytesSource);
+      }
+      // Literal/unknown Latin text must never silently fall back to the sitelen
+      // base font when an IndexedDB font-pair record is active.  Nasin Nanpa's
+      // base font has no ordinary Latin glyphs, so that fallback turns quoted
+      // and unknown text into .notdef/blank squares.  Leave bytes null here so
+      // the preset face lookup below can fetch the actual quoted-text font face
+      // selected by the element, e.g. PatrickHand / Patrick-Head-Font / Arial.
+      else if (!preferCompanion && (role === "literal" || role === "unknown")) {
+        bytes = null;
+        bytesSource = null;
+        decisionTrace.push("pair fallback deliberately skipped for literal/unknown");
+      }
+      else if (family && family === String(pair.companionFamily || "") && pair.companionBlob) {
+        bytes = await blobToUint8Array(pair.companionBlob);
+        bytesSource = "pair.companionBlob:family-match";
+        decisionTrace.push(bytesSource);
+      }
+      else if (family && family === String(pair.baseFamily || "") && pair.baseBlob) {
+        bytes = await blobToUint8Array(pair.baseBlob);
+        bytesSource = "pair.baseBlob:family-match";
+        decisionTrace.push(bytesSource);
+      }
+      else {
+        bytes = await blobToUint8Array(preferCompanion ? pair.companionBlob : pair.baseBlob);
+        bytesSource = preferCompanion ? "pair.companionBlob:fallback" : "pair.baseBlob:fallback";
+        decisionTrace.push(bytesSource);
+      }
     }
 
     if (!bytes && (role === "literal" || role === "unknown") && family === "Patrick-Head-Font") {
       bytes = await fetchFaceBytes({ family: "Patrick-Head-Font", url: PATRICK_HAND_FONT_URL, format: "truetype" });
+      bytesSource = "built-in Patrick-Head-Font fallback";
+      decisionTrace.push(bytesSource);
     }
 
     if (!bytes && preset) {
-      const face = findFaceInPreset(preset, family)
-        || (preferCompanion ? findFaceInPreset(preset, preset.cartoucheFamily) : findFaceInPreset(preset, preset.textFamily));
-      if (face) bytes = await fetchFaceBytes(face);
+      const directFace = findFaceInPreset(preset, family);
+      const fallbackFace = preferCompanion ? findFaceInPreset(preset, preset.cartoucheFamily) : findFaceInPreset(preset, preset.textFamily);
+      const face = directFace || fallbackFace;
+      decisionTrace.push(face ? `preset face selected: ${directFace ? "direct" : "fallback"} ${face.family || face.url || "unknown"}` : "no preset face found");
+      if (face) {
+        bytes = await fetchFaceBytes(face);
+        bytesSource = directFace ? "preset.face:direct-family" : "preset.face:fallback-family";
+      }
     }
 
-    this.log("font bytes resolved", { cacheKey, family, role, preferCompanion, forceLiteralCornerBracket, byteLength: bytes?.byteLength ?? bytes?.length ?? null, presetKey, hasPair: !!pair });
+    const byteLength = bytes?.byteLength ?? bytes?.length ?? null;
+    const glyphProbe = fontProbeForRun(bytes, run);
+    const missingProbeGlyphs = glyphProbe.filter(x => x && x.hasGlyph === false);
+
+    this.log("font bytes resolved", { cacheKey, family, role, preferCompanion, forceLiteralCornerBracket, byteLength, presetKey, hasPair: !!pair, bytesSource, decisionTrace, glyphProbe });
+
+    if (debugThisRun) {
+      const payload = {
+        runIndex,
+        cacheKey,
+        family,
+        role,
+        preferCompanion,
+        activePresetKey: preset?.key || null,
+        hasPair: !!pair,
+        bytesSource,
+        byteLength,
+        decisionTrace,
+        glyphProbe,
+        missingProbeGlyphs,
+        run: describeRunForDebug(run)
+      };
+      if (!bytes || missingProbeGlyphs.length) vectorFontWarn("resolveFontBytesForRun RESULT WARNING", payload);
+      else vectorFontInfo("resolveFontBytesForRun RESULT", payload);
+    }
+
     if (forceLiteralCornerBracket) {
       debugBracketExportStage(debugWasm, "font bytes resolved for bracket", {
         runIndex,
@@ -2639,7 +2803,7 @@ export class SitelenVectorExporter {
         role,
         preferCompanion,
         forceLiteralCornerBracket,
-        byteLength: bytes?.byteLength ?? bytes?.length ?? null,
+        byteLength,
         presetKey,
         hasPair: !!pair,
         originalRun: describeRunForDebug(run)
@@ -2654,7 +2818,9 @@ export class SitelenVectorExporter {
       forceLiteralCornerBracket,
       activePresetKey: preset?.key || null,
       hasPair: !!pair,
-      byteLength: bytes?.byteLength || bytes?.length || 0
+      bytesSource,
+      byteLength: byteLength || 0,
+      glyphProbe
     });
     this.fontByteCache.set(cacheKey, bytes);
     return bytes;
