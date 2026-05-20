@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Scrapbook Layout Editor Vector</title>
+  <title>Static Canvas Layout Editor (no dependencies)</title>
 
   <link rel="icon" href="/icons/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
@@ -129,30 +129,6 @@
   -->
   <link rel="stylesheet" href="scrapbook-layouteditor_app/css/styles.css">
 
-
-<style id="scrapbook-vector-live-stage-css">
-  /* v28: live stage uses the same canonical SVG compositor as export.
-     Canvas remains above it only for interaction and selection overlays. */
-  .canvasWrap{ position: relative; }
-  #svgStageHost{
-    position:absolute;
-    inset:0;
-    z-index:1;
-    pointer-events:none;
-    overflow:hidden;
-  }
-  #svgStageHost > svg{
-    position:absolute;
-    display:block;
-    overflow:visible;
-  }
-  #c{
-    position:absolute;
-    inset:0;
-    z-index:2;
-    background:transparent;
-  }
-</style>
 </head>
 <body>
   <div id="loadingVeil" aria-live="polite" aria-label="Loading">
@@ -497,7 +473,6 @@
 
       <div class="stageBody">
         <div class="canvasWrap" id="canvasWrap">
-          <div id="svgStageHost" aria-hidden="true"></div>
           <canvas id="c"></canvas>
           <div id="hud" class="overlayHud">Ready.</div>
         </div>
@@ -612,7 +587,7 @@
       • js/app.js is a separate cacheable resource
       • A future build step can code-split or minify js/app.js independently
   -->
-  <script type="module" src="scrapbook-layouteditor_app/js/app-vector.js?v=35"></script>
+  <script type="module" src="scrapbook-layouteditor_app/js/app.js?v=14"></script>
 
 
 <!-- ── Media Size Guard Dialog ── -->

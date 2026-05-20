@@ -817,7 +817,9 @@ nanpa #~WI.
       <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=2" />
       <div class="help">&nbsp;</div>
 
-
+      <div class="help">&nbsp;</div>
+      <img src="./images/nanpa-linja-n-cartouche-abbrev-examples.png?v=2" />
+      <div class="help">&nbsp;</div>
 
 
       <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
@@ -2786,6 +2788,33 @@ function wireHaloControls() {
       const s = readDefaultInputFromQuery();
       if (s == null) return;
       if (elTextIn) elTextIn.value = s;
+    }
+
+    function normalizeNonDrawableSourceTokensForRendererInput(rawText) {
+      const raw = String(rawText ?? "");
+
+      // Preserve line structure, but convert standalone source-control token "zz"
+      // into a quoted U+3000 ideographic space before the renderer sees it.
+      //
+      // Important: a raw U+3000 inserted into normal text is treated as whitespace
+      // and can be collapsed/ignored by the parser. Quoting the U+3000 preserves
+      // it as a literal spacing advance without drawing visible "zz" text and
+      // without letting the unknown-text highlighter classify zz as unknown text.
+      return raw
+        .split(/\n/)
+        .map(line => {
+          return String(line ?? "").replace(
+            /(^|[\t ])zz(?=$|[\t ])/gi,
+            (_match, lead) => `${lead}"\u3000"`
+          );
+        })
+        .join("\n");
+    }
+
+    function prepareRendererInputFromTextareaValue() {
+      const rawInput = String(elTextIn?.value ?? "");
+      const controlTokenNormalizedInput = normalizeNonDrawableSourceTokensForRendererInput(rawInput);
+      return CartoucheApi.prepareInput(controlTokenNormalizedInput, pageMap);
     }
 
     /* ============================
@@ -5401,7 +5430,7 @@ function wireHaloControls() {
       const baseFontPx = getFontPx();
       await waitForConfiguredFonts(baseFontPx);
 
-      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
+      const input = prepareRendererInputFromTextareaValue();
       const baseConfig = buildRendererCallConfig({ includeHalo: false });
 
       const plan = await renderer.buildRenderPlan({
@@ -6145,7 +6174,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     async function buildLatestUnicodeJsonExportObject() {
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
-      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
+      const input = prepareRendererInputFromTextareaValue();
       const config = buildRendererCallConfig({ includeHalo: true });
       const plan = await renderer.buildRenderPlan({ input, ...config });
       const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(line => Array.isArray(line?.runs) && line.runs.length > 0);
@@ -6179,7 +6208,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
       //const input = String(elTextIn.value ?? "");
-      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
+      const input = prepareRendererInputFromTextareaValue();
       const config = buildRendererCallConfig({ includeHalo: true });
 
       const parsed = await renderer.parseInput({
@@ -6226,7 +6255,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
       const rawInput = String(elTextIn.value ?? "");
-      const input = CartoucheApi.prepareInput(rawInput, pageMap);
+      const controlTokenNormalizedInput = normalizeNonDrawableSourceTokensForRendererInput(rawInput);
+      const input = CartoucheApi.prepareInput(controlTokenNormalizedInput, pageMap);
       const config = buildRendererCallConfig({ includeHalo });
       if (forceZeroHaloWidth && config?.paint?.halo) config.paint.halo.widthPx = 0;
       const preset = getActiveFontPreset();
@@ -6238,6 +6268,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       };
       vectorDiag("pre-build state", {
         rawInput,
+        controlTokenNormalizedInput,
         preparedInput: input,
         rawInputLength: rawInput.length,
         preparedInputLength: String(input || "").length,
@@ -6252,6 +6283,31 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         outCanvas: { width: outCanvas?.width, height: outCanvas?.height }
       });
       const plan = await renderer.buildRenderPlan({ input, ...config });
+
+      // Defensive cleanup: if any renderer/exporter path still creates visible unknown
+      // runs from standalone "zz", remove those runs before SVG/PDF/PNG export.
+      // "zz" is a source-control spacing token, not drawable text.
+      for (const line of (plan?.lines || [])) {
+        if (!Array.isArray(line?.runs)) continue;
+        line.runs = line.runs.filter(run => {
+          const source = String(run?.sourceText ?? "").trim().toLowerCase();
+          const encoded = String(run?.encodedText ?? "").trim().toLowerCase();
+          const role = String(run?.fontRole ?? "").trim().toLowerCase();
+          const kind = String(run?.kind ?? "").trim().toLowerCase();
+
+          const isUnknownLike =
+            role === "unknown" ||
+            kind === "unknown" ||
+            kind === "text";
+
+          const isStandaloneZz =
+            source === "zz" ||
+            encoded === "zz";
+
+          return !(isUnknownLike && isStandaloneZz);
+        });
+      }
+
       const rawRuns = (plan?.lines || []).flatMap(line => line?.runs || []);
       const runSummary = summarizeRunsForVectorDebug(plan);
       const literalCartoucheRuns = summarizeLiteralCartoucheRunsForVectorDebug(plan);
@@ -6268,6 +6324,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       window.__TTS_VECTOR_DEBUG_LAST_PLAN__ = plan;
       window.__TTS_VECTOR_DEBUG_LAST_SUMMARY__ = {
         rawInput,
+        controlTokenNormalizedInput,
         preparedInput: input,
         preset: safeCloneForLog(preset),
         config: safeCloneForLog(config),
@@ -6292,6 +6349,286 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+
+    // Unknown-highlight export overlay.
+    // Design constraints:
+    // - Do not redraw unknown text here; the vector exporter remains responsible for text.
+    // - Draw only the outline rectangle, using the renderer run geometry.
+    // - Do not affect known glyphs, quoted literal text, cartouches, or spacing/control tokens.
+    function isUnknownTextExportRun(run) {
+      if (!run || !getUnknownHighlightEnabled()) return false;
+
+      const el = run?._element || {};
+      const fontRole = String(run?.fontRole ?? el?.fontRole ?? "").trim().toLowerCase();
+      const sourceKind = String(run?.sourceKind ?? el?.sourceKind ?? "").trim().toLowerCase();
+      const renderMode = String(run?.renderMode ?? el?.renderMode ?? "").trim().toLowerCase();
+      const kind = String(run?.kind ?? el?.kind ?? "").trim().toLowerCase();
+      const type = String(run?.type ?? el?.type ?? "").trim().toLowerCase();
+      const source = String(run?.sourceText ?? el?.sourceText ?? "").trim();
+      const encoded = String(run?.encodedText ?? el?.text ?? "").trim();
+      const sourceLower = source.toLowerCase();
+      const encodedLower = encoded.toLowerCase();
+
+      // zz is a non-drawable spacing/control token. It is never unknown text.
+      if (sourceLower === "zz" || encodedLower === "zz") return false;
+
+      // These are deliberate non-unknown forms.
+      if (run?.kind === "cartouche" || el?.type === "cartouche") return false;
+      if (run?.kind === "glyph" || el?.type === "glyph") return false;
+      if (run?.kind === "gap" || el?.type === "gap") return false;
+      if (Array.isArray(run?.cps) && run.cps.length) return false;
+
+      // Quoted/literal text is intentional user text, not unknown text.
+      if (el?.isQuoted || sourceKind === "quote" || renderMode === "quote") return false;
+
+      // Strong metadata from the renderer, when present.
+      if (
+        fontRole === "unknown" ||
+        sourceKind === "unknown" ||
+        renderMode === "unknown" ||
+        kind === "unknown" ||
+        type === "unknown"
+      ) return true;
+
+      // Some renderer versions emit unknown plain-text as a normal text run using
+      // the unknown/literal font, without setting kind/fontRole to "unknown".
+      // In this page, unquoted text runs in a text source segment with no codepoints
+      // are the unknown-text output that needs the outline-box.  Known sitelen words,
+      // numbers, cartouches, and quoted text do not arrive here as this shape.
+      const isPlainTextRun =
+        (kind === "text" || type === "text" || el?.type === "text") &&
+        (sourceKind === "text" || sourceKind === "") &&
+        !Array.isArray(run?.cps);
+
+      return isPlainTextRun && (source.length > 0 || encoded.length > 0);
+    }
+
+    function unknownHighlightExportPaddingPx() {
+      const raw = Number(buildRendererCallConfig({ includeHalo: false })?.paint?.unknownText?.paddingPx ?? 2);
+      return Number.isFinite(raw) ? Math.max(0, raw) : 2;
+    }
+
+    function unknownHighlightExportLineWidthPx() {
+      const raw = Number(buildRendererCallConfig({ includeHalo: false })?.paint?.unknownText?.lineWidthPx ?? 1.5);
+      return Number.isFinite(raw) ? Math.max(0.1, raw) : 1.5;
+    }
+
+    function unknownHighlightExportStrokeHex() {
+      const configured = normalizeHexColor(buildRendererCallConfig({ includeHalo: false })?.paint?.unknownText?.color);
+      // Match the renderer's default unknown-text warning color. Do not fall back
+      // to the foreground text color, because that makes the highlight rectangle
+      // look like ordinary black text strokes in SVG/PDF exports.
+      return configured || "#FF0000";
+    }
+
+    function finiteNumberOrNull(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function unknownTextForGeometry(run) {
+      const el = run?._element || {};
+      const encoded = String(run?.encodedText ?? el?.text ?? "");
+      if (encoded.length > 0) return encoded;
+      return String(run?.sourceText ?? el?.sourceText ?? "");
+    }
+
+    function measureUnknownTextInkGeometry(run, { x, baselineY, fallbackWidth, fallbackAscent, fallbackDescent }) {
+      const text = unknownTextForGeometry(run);
+      if (!text) return null;
+
+      const el = run?._element || {};
+      const fontPx = Math.max(1, Number(run?.fontPx ?? el?.px ?? getFontPx() ?? 56));
+      const fontFamily = String(run?.fontFamily ?? el?.fontFamily ?? buildFontRoles()?.unknown ?? FONT_FAMILY_LITERAL);
+
+      try {
+        const canvas = measureUnknownTextInkGeometry._canvas || (measureUnknownTextInkGeometry._canvas = document.createElement("canvas"));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        ctx.textBaseline = "alphabetic";
+        ctx.font = `${fontPx}px "${fontFamily}"`;
+        setTextQuality(ctx);
+        const m = ctx.measureText(text);
+
+        const left = Number.isFinite(Number(m.actualBoundingBoxLeft)) ? Number(m.actualBoundingBoxLeft) : 0;
+        const right = Number.isFinite(Number(m.actualBoundingBoxRight)) ? Number(m.actualBoundingBoxRight) : Number(m.width ?? fallbackWidth ?? 0);
+        const ascent = Number.isFinite(Number(m.actualBoundingBoxAscent)) ? Number(m.actualBoundingBoxAscent) : Number(fallbackAscent ?? fontPx * 0.8);
+        const descent = Number.isFinite(Number(m.actualBoundingBoxDescent)) ? Number(m.actualBoundingBoxDescent) : Number(fallbackDescent ?? fontPx * 0.2);
+
+        const width = Math.max(0, left + right);
+        const height = Math.max(0, ascent + descent);
+        if (width > 0 && height > 0 && Number.isFinite(baselineY)) {
+          return {
+            x: x - left,
+            y: baselineY - ascent,
+            width,
+            height,
+            source: "canvas-actual-ink-bounds"
+          };
+        }
+      } catch (_) {}
+
+      return null;
+    }
+
+    function unknownTextRunGeometry(run) {
+      const el = run?._element || {};
+      const x = finiteNumberOrNull(run?.drawXPx ?? run?.xPx ?? el?.drawXPx ?? el?.xPx);
+      const width = finiteNumberOrNull(run?.widthPx ?? el?.widthPx ?? el?.w);
+      if (x == null || width == null || width <= 0) return null;
+
+      const baselineY = finiteNumberOrNull(run?.baselineYPx ?? el?.baselineYPx);
+      const ascent = finiteNumberOrNull(run?.ascentPx ?? el?.ascentPx);
+      const descent = finiteNumberOrNull(run?.descentPx ?? el?.descentPx) ?? 0;
+
+      // The highlight must surround the actual rendered unknown text ink, not the
+      // text advance origin or a line box. Canvas TextMetrics uses the same font
+      // and baseline model as the renderer, so it supplies the missing left-bearing
+      // and real ascent/descent that the exporter plan does not expose directly.
+      if (baselineY != null) {
+        const ink = measureUnknownTextInkGeometry(run, {
+          x,
+          baselineY,
+          fallbackWidth: width,
+          fallbackAscent: ascent,
+          fallbackDescent: descent
+        });
+        if (ink) return ink;
+      }
+
+      if (baselineY != null && ascent != null && ascent > 0) {
+        return { x, y: baselineY - ascent, width, height: ascent + Math.max(0, descent), source: "fallback-baseline-ascent-descent" };
+      }
+
+      const yPx = finiteNumberOrNull(run?.yPx ?? el?.yPx);
+      const heightPx = finiteNumberOrNull(run?.heightPx ?? el?.heightPx ?? el?.h);
+      if (yPx != null && heightPx != null && heightPx > 0) {
+        return { x, y: yPx, width, height: heightPx, source: "fallback-yPx-heightPx" };
+      }
+
+      return null;
+    }
+
+    function collectUnknownHighlightRectsFromPlan(plan, { exportPaddingPx = 0 } = {}) {
+      if (!getUnknownHighlightEnabled()) return [];
+      const pad = unknownHighlightExportPaddingPx();
+      // The exported unknown text lands between the raw plan coordinate space and
+      // the fully padded SVG/PDF document coordinate space.  Using the full
+      // exporter padding shifted the rectangle down/right; using zero shifted it
+      // up/left.  Apply the midpoint correction only to unknown highlight
+      // rectangles so the overlay tracks the rendered unknown run without
+      // changing any exporter, parser, cartouche, or text drawing behavior.
+      const exportPad = Math.max(0, Number(exportPaddingPx || 0)) * 0.5;
+      const rects = [];
+
+      for (const line of (plan?.lines || [])) {
+        for (const run of (line?.runs || [])) {
+          if (!isUnknownTextExportRun(run)) continue;
+          const g = unknownTextRunGeometry(run);
+          if (!g) continue;
+
+          rects.push({
+            x: exportPad + g.x - pad,
+            y: exportPad + g.y - pad,
+            width: g.width + pad * 2,
+            height: g.height + pad * 2,
+            geometrySource: g.source,
+            sourceText: String(run?.sourceText ?? run?._element?.sourceText ?? ""),
+            encodedText: String(run?.encodedText ?? run?._element?.text ?? "")
+          });
+        }
+      }
+
+      return rects;
+    }
+
+    function escapeSvgAttr(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function formatSvgNumber(n) {
+      const x = Number(n);
+      if (!Number.isFinite(x)) return "0";
+      return String(Math.round(x * 1000) / 1000);
+    }
+
+    async function injectUnknownHighlightRectsIntoSvgBlob(svgBlob, plan, { exportPaddingPx = 0 } = {}) {
+      const rects = collectUnknownHighlightRectsFromPlan(plan, { exportPaddingPx });
+      window.__TTS_VECTOR_DEBUG_LAST_UNKNOWN_RECTS__ = rects;
+      if (!rects.length) return svgBlob;
+
+      const svgText = await svgBlob.text();
+      const stroke = unknownHighlightExportStrokeHex();
+      const lineWidth = unknownHighlightExportLineWidthPx();
+      const overlay = [
+        `<g data-tts-unknown-highlight-rects="1" fill="none" stroke="${escapeSvgAttr(stroke)}" stroke-width="${formatSvgNumber(lineWidth)}" vector-effect="non-scaling-stroke">`,
+        ...rects.map(r => `<rect data-source="${escapeSvgAttr(r.sourceText || r.encodedText || "")}" x="${formatSvgNumber(r.x)}" y="${formatSvgNumber(r.y)}" width="${formatSvgNumber(r.width)}" height="${formatSvgNumber(r.height)}" />`),
+        `</g>`
+      ].join("");
+
+      // Draw after the exporter content so the outline is visible, but do not redraw text.
+      const closeSvg = svgText.lastIndexOf("</svg>");
+      if (closeSvg >= 0) {
+        const out = svgText.slice(0, closeSvg) + overlay + svgText.slice(closeSvg);
+        return new Blob([out], { type: "image/svg+xml;charset=utf-8" });
+      }
+
+      const svgOpenEnd = svgText.indexOf(">", svgText.indexOf("<svg"));
+      if (svgOpenEnd < 0) return svgBlob;
+      const out = svgText.slice(0, svgOpenEnd + 1) + overlay + svgText.slice(svgOpenEnd + 1);
+      return new Blob([out], { type: "image/svg+xml;charset=utf-8" });
+    }
+
+    function hexToPdfRgb(hex) {
+      const h = normalizeHexColor(hex) || "#000000";
+      const r = parseInt(h.slice(1, 3), 16) / 255;
+      const g = parseInt(h.slice(3, 5), 16) / 255;
+      const b = parseInt(h.slice(5, 7), 16) / 255;
+      return window.PDFLib.rgb(r, g, b);
+    }
+
+    async function exportVectorPdfBlobWithUnknownHighlightRects(exporter, args, plan) {
+      const rects = collectUnknownHighlightRectsFromPlan(plan, { exportPaddingPx: args.paddingPx });
+      window.__TTS_VECTOR_DEBUG_LAST_UNKNOWN_RECTS__ = rects;
+      if (!rects.length) {
+        await exporter.downloadPdf(args);
+        return;
+      }
+
+      if (!window.PDFLib) throw new Error("pdf-lib not loaded.");
+      if (typeof exporter.exportTextToPdfBlob !== "function") {
+        throw new Error("Vector PDF blob export is unavailable, so unknown highlight rectangles cannot be overlaid without changing the PDF export architecture.");
+      }
+
+      const basePdfBlob = await exporter.exportTextToPdfBlob(args);
+      const basePdfBytes = await basePdfBlob.arrayBuffer();
+      const pdfDoc = await window.PDFLib.PDFDocument.load(basePdfBytes);
+      const page = pdfDoc.getPage(0);
+      const pageHeightPt = page.getHeight();
+      const borderColor = hexToPdfRgb(unknownHighlightExportStrokeHex());
+      const borderWidth = unknownHighlightExportLineWidthPx() * PX_TO_PT;
+
+      for (const r of rects) {
+        page.drawRectangle({
+          x: r.x * PX_TO_PT,
+          y: pageHeightPt - ((r.y + r.height) * PX_TO_PT),
+          width: r.width * PX_TO_PT,
+          height: r.height * PX_TO_PT,
+          borderColor,
+          borderWidth,
+          opacity: 1,
+          borderOpacity: 1
+        });
+      }
+
+      const outBytes = await pdfDoc.save();
+      downloadBlobAsFile(new Blob([outBytes], { type: "application/pdf" }), args.filename || `${getExportFilenameBase()}-vector.pdf`);
     }
 
     async function svgBlobToPngBlob(svgBlob, { scale = 1 } = {}) {
@@ -6355,33 +6692,19 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         exporterClipScale: exporter?.literalCartoucheRuleClipScale,
         exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
       });
-      const blob = await exporter.exportTextToSvgBlob(args);
+      const rawBlob = await exporter.exportTextToSvgBlob(args);
+      // SVG coordinates from exportTextToSvgBlob already include the exporter padding.
+      // Do not apply the PDF half-padding correction here; PNG is rasterized
+      // from this same SVG, so SVG/PNG must use the unshifted rectangle boxes.
+      const blob = await injectUnknownHighlightRectsIntoSvgBlob(rawBlob, plan, { exportPaddingPx: 0 });
       vectorDiag("buildCurrentVectorSvgBlob END", { blobSize: blob?.size, blobType: blob?.type });
       return blob;
     }
 
     async function exportRenderedToVectorSvg() {
       vectorDiag("Download SVG click START");
-      const exporter = await ensureVectorExporterReady();
-      const plan = await buildCurrentVectorExportPlan({ includeHalo: true });
-      const args = {
-        plan,
-        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
-        fallbackWidthPx: outCanvas?.width || null,
-        fallbackHeightPx: outCanvas?.height || null,
-        debugWasm: getVectorWasmDebugEnabled(),
-        filename: `${getExportFilenameBase()}-vector.svg`
-      };
-      vectorDiag("downloadSvg args", {
-        paddingPx: args.paddingPx,
-        fallbackWidthPx: args.fallbackWidthPx,
-        fallbackHeightPx: args.fallbackHeightPx,
-        debugWasm: args.debugWasm,
-        filename: args.filename,
-        exporterClipScale: exporter?.literalCartoucheRuleClipScale,
-        exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
-      });
-      await exporter.downloadSvg(args);
+      const svgBlob = await buildCurrentVectorSvgBlob({ includeHalo: true });
+      downloadBlobAsFile(svgBlob, `${getExportFilenameBase()}-vector.svg`);
       vectorDiag("Download SVG click END");
     }
 
@@ -6414,7 +6737,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         exporterClipScale: exporter?.literalCartoucheRuleClipScale,
         exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
       });
-      await exporter.downloadPdf(args);
+      await exportVectorPdfBlobWithUnknownHighlightRects(exporter, args, plan);
       vectorDiag("Download PDF click END");
     }
 

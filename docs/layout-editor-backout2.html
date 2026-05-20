@@ -473,25 +473,6 @@
     display:block;
     width: 100%;
     height: 100%;
-    position:absolute;
-    inset:0;
-    z-index:2;
-    pointer-events:auto;
-  }
-
-  /* SVG vector live stage: this is the visible scene.
-     The canvas above it is now only the interaction/selection overlay. */
-  #svgStageHost{
-    position:absolute;
-    inset:0;
-    z-index:1;
-    pointer-events:none;
-    overflow:hidden;
-  }
-  #svgStageHost > svg{
-    position:absolute;
-    display:block;
-    overflow:visible;
   }
 
   .overlayHud{
@@ -823,9 +804,6 @@
         <button class="btn" id="btnExportJson">Export JSON</button>
         <button class="btn" id="btnImportJson">Import JSON</button>
         <button class="btn" id="btnExportPng">Export PNG</button>
-        <button class="btn" id="btnExportSvg">Export SVG</button>
-        <button class="btn" id="btnExportHtml">Export HTML</button>
-        <button class="btn" id="btnExportPdf">Export PDF</button>
         </div>
 
         <div class="topbarGroup" aria-label="Grouping">
@@ -1005,14 +983,6 @@
 
             <div class="row">
               <div class="field">
-                <label for="vectorDisplayOffsets">SVG vector display offsets (em JSON)</label>
-                <textarea id="vectorDisplayOffsets" spellcheck="false" style="min-height:110px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px;"></textarea>
-                <div class="hint" style="margin-top:6px;">Used by live SVG display and all SVG/PNG/PDF/HTML exports. Number = y offset em. Object supports {"y":0,"x":0,"scale":1}. Example: {"TP-Nasin-Nanpa-Font":{"glyph":{"scale":1,"y":0.02},"sitelen":0.02},"default":0}</div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="field">
                 <label for="defTextColor">Default text</label>
                 <input id="defTextColor" type="color" value="#111111" />
               </div>
@@ -1118,7 +1088,6 @@
 
       <div class="stageBody">
         <div class="canvasWrap" id="canvasWrap">
-          <div id="svgStageHost" aria-hidden="true"></div>
           <canvas id="c"></canvas>
           <div id="hud" class="overlayHud">Ready.</div>
         </div>
@@ -1143,7 +1112,6 @@
   <input id="fileImportJson" type="file" accept="application/json" style="display:none;" />
   <input id="filePickImage" type="file" accept="image/*" style="display:none;" />
 
-<script src="./vendor/pdf-lib.min.js"></script>
 <script type="module">
 import {
   createSitelenFontPairController,
@@ -1151,7 +1119,6 @@ import {
   TEXT_FONT_OPTION_NANPA_LINJA_N
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=20';
-import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=143';
 
 (() => {
   "use strict";
@@ -1209,9 +1176,6 @@ import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=143';
       btn_export_json: "Export JSON",
       btn_import_json: "Import JSON",
       btn_export_png: "Export PNG",
-      btn_export_svg: "Export SVG",
-      btn_export_html: "Export HTML",
-      btn_export_pdf: "Export PDF",
       btn_group: "Group",
       btn_ungroup: "Ungroup",
 
@@ -1433,9 +1397,6 @@ import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=143';
       btn_export_json: "o pana e JSON",
       btn_import_json: "o kama jo e JSON",
       btn_export_png: "o pana e PNG",
-      btn_export_svg: "o pana e SVG",
-      btn_export_html: "o pana e HTML",
-      btn_export_pdf: "o pana e PDF",
       btn_group: "o kulupu",
       btn_ungroup: "o tu e kulupu",
 
@@ -1665,9 +1626,6 @@ import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=143';
       ["btnExportJson", "btn_export_json"],
       ["btnImportJson", "btn_import_json"],
       ["btnExportPng", "btn_export_png"],
-      ["btnExportSvg", "btn_export_svg"],
-      ["btnExportHtml", "btn_export_html"],
-      ["btnExportPdf", "btn_export_pdf"],
       ["btnGroup", "btn_group"],
       ["btnUngroup", "btn_ungroup"],
 
@@ -1798,40 +1756,9 @@ import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=143';
     Image: "image",
   });
 
-  const VECTOR_SCENE_EDITOR_ID = "layout-editor-vector";
-  const VECTOR_BOX_MODEL_VERSION = "glyph-canvas-middle-font-roles-v6";
-
-  function markSceneAsVectorNative(scene = Scene){
-    if (!scene || typeof scene !== "object") return;
-    scene.meta = scene.meta || {};
-    scene.meta.editor = VECTOR_SCENE_EDITOR_ID;
-    scene.meta.vectorBoxModel = VECTOR_BOX_MODEL_VERSION;
-    scene.meta.vectorBoxMigration = scene.meta.vectorBoxMigration || {};
-    scene.meta.vectorBoxMigration.applied = true;
-    scene.meta.vectorBoxMigration.version = 12;
-    scene.meta.vectorPlacementModel = VECTOR_BOX_MODEL_VERSION;
-  }
-
-  function sceneNeedsLegacyVectorBoxMigration(scene){
-    if (!scene || typeof scene !== "object") return false;
-    const meta = scene.meta || {};
-    if (meta.editor === VECTOR_SCENE_EDITOR_ID && meta.vectorBoxModel === VECTOR_BOX_MODEL_VERSION) return false;
-    // Re-run migration for older vector packages too. v21/v3 introduced a bad
-    // sitelen alpha-tight migration, so those scenes must be repaired by v4.
-    if (meta.vectorBoxMigration && meta.vectorBoxMigration.applied === true && meta.vectorBoxMigration.version >= 12 && meta.vectorPlacementModel === VECTOR_BOX_MODEL_VERSION) return false;
-    return true;
-  }
-
 const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
 const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
-const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
-const FONT_FAMILY_LITERAL_CARTOUCHE = "TP-Nasin-Nanpa-Literal-Cartouche-Font";
-const FONT_FAMILY_LIBERATION_SANS = "TP-Vector-Liberation-Sans-Font";
-const FONT_FAMILY_LIBERATION_SERIF = "TP-Vector-Liberation-Serif-Font";
-const FONT_FAMILY_LIBERATION_MONO = "TP-Vector-Liberation-Mono-Font";
-const FONT_URL_LIBERATION_SANS = "./fonts/LiberationSans-Regular.ttf";
-const FONT_URL_LIBERATION_SERIF = "./fonts/LiberationSerif-Regular.ttf";
-const FONT_URL_LIBERATION_MONO = "./fonts/LiberationMono-Regular.ttf";
+const FONT_FAMILY_LITERAL = "PatrickHand";
 
   const DEFAULTS = Object.freeze({
     stageW: 1280,
@@ -1870,7 +1797,6 @@ const FONT_URL_LIBERATION_MONO = "./fonts/LiberationMono-Regular.ttf";
     bgImgAssetId: null,
     bgImgKeepAspect: true,
     bgImgStretch: false,
-    vectorDisplayOffsets: {},
   });
 
 const SPACING_PRESETS = Object.freeze(["default", "compact", "comfortable"]);
@@ -1962,12 +1888,6 @@ function spacingPresetOptions(){
         textFamily: FONT_FAMILY_TEXT,
         cartoucheFamily: FONT_FAMILY_CARTOUCHE,
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: FONT_FAMILY_LITERAL_CARTOUCHE,
-        settings: {
-          literalCartoucheRuleClipScale: 0.24985,
-          literalCartoucheRuleClipStrategy: "leftCap",
-          literalCartoucheLeftCapClipRatio: 0.90
-        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -1985,12 +1905,6 @@ function spacingPresetOptions(){
             url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
             format: "opentype",
             sample: String.fromCodePoint(0xF196C)
-          },
-          {
-            family: FONT_FAMILY_LITERAL_CARTOUCHE,
-            url: "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-            format: "opentype",
-            sample: "Hello"
           },
           {
             family: FONT_FAMILY_CARTOUCHE,
@@ -2013,11 +1927,6 @@ function spacingPresetOptions(){
         textFamily: "SSK-Juniko",
         cartoucheFamily: "SSK-Juniko-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "SSK-Juniko",
-        settings: {
-          literalCartoucheRuleClipScale: 0.0,
-          literalCartoucheRuleClipStrategy: "none"
-        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -2057,11 +1966,6 @@ function spacingPresetOptions(){
         textFamily: "fairfaxHd",
         cartoucheFamily: "fairfaxHd-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "fairfaxHd",
-        settings: {
-          literalCartoucheRuleClipScale: 0.9,
-          literalCartoucheRuleClipStrategy: "compound"
-        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -2101,11 +2005,6 @@ function spacingPresetOptions(){
         textFamily: "fairfaxPonaHd",
         cartoucheFamily: "fairfaxPonaHd-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "fairfaxPonaHd",
-        settings: {
-          literalCartoucheRuleClipScale: 0.90,
-          literalCartoucheRuleClipStrategy: "compound"
-        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -2158,30 +2057,17 @@ function getRenderFontPreset(key){
 function getElementRenderFontPresetKey(el){
   return normalizeRenderFontPresetKey(el?.renderFontPreset || Scene?.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
 }
-function normalizePatrickHandFontFamilyAlias(value){
-  const raw = String(value ?? "").trim();
-  const lower = raw.toLowerCase();
-  // Old vector builds used "PatrickHand" as an option/family value, but the
-  // renderer, font controller, @font-face registration, and vector exporter use
-  // the real family name "Patrick-Head-Font".  Normalize the old alias at every
-  // option-resolution boundary so literal/unknown runs never reach WASM as an
-  // unregistered family.
-  if (lower === "patrickhand" || lower === "patrick hand" || lower === "patrick-head-font") {
-    return FONT_FAMILY_LITERAL;
-  }
-  return raw;
-}
 function getTextFontOptionsForPresetKey(presetKey){
   const preset = getRenderFontPreset(presetKey);
-  const rawOptions = (typeof stageFontPairController !== "undefined" && stageFontPairController?.getTextFontOptionsForPreset)
-    ? stageFontPairController.getTextFontOptionsForPreset(preset)
-    : (Array.isArray(preset?.literalOptions) ? preset.literalOptions : []);
-  return rawOptions.map(([value, label]) => [normalizePatrickHandFontFamilyAlias(value), label]);
+  if (typeof stageFontPairController !== "undefined" && stageFontPairController?.getTextFontOptionsForPreset) {
+    return stageFontPairController.getTextFontOptionsForPreset(preset);
+  }
+  return Array.isArray(preset?.literalOptions) ? preset.literalOptions : [];
 }
 function normalizeTextFontOptionKeyForPreset(key, presetKey){
-  const raw = normalizePatrickHandFontFamilyAlias(key);
+  const raw = String(key ?? "").trim();
   const opts = new Set(getTextFontOptionsForPresetKey(presetKey).map(([value]) => String(value)));
-  const fallback = normalizePatrickHandFontFamilyAlias(getRenderFontPreset(presetKey)?.literalFamily || FONT_FAMILY_LITERAL);
+  const fallback = String(getRenderFontPreset(presetKey)?.literalFamily || FONT_FAMILY_LITERAL);
   return opts.has(raw) ? raw : fallback;
 }
 function getDefaultQuotedTextFontOptionForPreset(presetKey){
@@ -2215,38 +2101,11 @@ function forceSceneDefaultTextFontUiToPatrickHand(){
   if (drfp) drfp.value = Scene.stage.defaultRenderFontPreset;
   if (dtfo) dtfo.value = fixedTextFontOption;
 }
-function resolveVectorSafeSystemFontFamily(optionKey){
-  const lower = String(optionKey ?? "").trim().toLowerCase();
-  if (lower === "arial" || lower === "system-ui" || lower === "system ui") return FONT_FAMILY_LIBERATION_SANS;
-  if (lower === "times new roman") return FONT_FAMILY_LIBERATION_SERIF;
-  if (lower === "courier new") return FONT_FAMILY_LIBERATION_MONO;
-  return null;
-}
-
-function getVectorLiberationFallbackFace(family){
-  const fam = String(family || "").trim();
-  if (fam === FONT_FAMILY_LIBERATION_SERIF) {
-    return { family: FONT_FAMILY_LIBERATION_SERIF, url: FONT_URL_LIBERATION_SERIF, format: "truetype", sample: "Hello" };
-  }
-  if (fam === FONT_FAMILY_LIBERATION_MONO) {
-    return { family: FONT_FAMILY_LIBERATION_MONO, url: FONT_URL_LIBERATION_MONO, format: "truetype", sample: "Hello" };
-  }
-  if (fam === FONT_FAMILY_LIBERATION_SANS) {
-    return { family: FONT_FAMILY_LIBERATION_SANS, url: FONT_URL_LIBERATION_SANS, format: "truetype", sample: "Hello" };
-  }
-  return null;
-}
-
 function resolveTextFontFamilyForPreset(optionKey, presetKey){
   const preset = getRenderFontPreset(presetKey);
   const normalized = normalizeTextFontOptionKeyForPreset(optionKey, presetKey);
   if (normalized === TEXT_FONT_OPTION_SITELEN) return String(preset?.textFamily || FONT_FAMILY_TEXT);
   if (normalized === TEXT_FONT_OPTION_NANPA_LINJA_N) return String(preset?.cartoucheFamily || FONT_FAMILY_CARTOUCHE);
-  // Browser/system font names do not provide font bytes to the SVG/WASM vector
-  // path exporter.  Map the familiar UI labels to bundled/open-source
-  // Liberation substitutes so quoted text can still be converted to paths.
-  const vectorSafeSystemFamily = resolveVectorSafeSystemFontFamily(normalized);
-  if (vectorSafeSystemFamily) return vectorSafeSystemFamily;
   return normalized;
 }
 function normalizeLegacyRenderFontPresetKey(keyOrFamily){
@@ -2287,197 +2146,22 @@ function getElementTextFontOptionKey(el){
   const fallback = Scene?.stage?.defaultTextFontOption || getRenderFontPreset(presetKey).literalFamily || FONT_FAMILY_LITERAL;
   return normalizeTextFontOptionKeyForPreset(el?.fontFamily || fallback, presetKey);
 }
-
-function isInvalidSitelenQuotedTextFontOption(optionKey){
-  // Sitelen and nanpa-linja-n are valid explicit quoted-text choices.  They may
-  // not be good Latin fonts for ordinary quoted text, but the selector must not
-  // silently rewrite a user-selected option.
-  return false;
-}
-
-function normalizeValidQuotedTextFontOptionForSitelen(optionKey, presetKey){
-  return normalizeTextFontOptionKeyForPreset(optionKey || "", presetKey);
-}
-
-function getSceneDefaultQuotedTextFontOptionForPreset(presetKey){
-  return normalizeValidQuotedTextFontOptionForSitelen(Scene?.stage?.defaultTextFontOption || "", presetKey) ||
-    getDefaultQuotedTextFontOptionForPreset(presetKey);
-}
-
-function sanitizeSitelenQuotedTextFontOption(el){
-  const presetKey = getElementRenderFontPresetKey(el);
-  const explicit = normalizeValidQuotedTextFontOptionForSitelen(el?.quotedTextFontOption || "", presetKey);
-  const resolved = explicit || getSceneDefaultQuotedTextFontOptionForPreset(presetKey);
-  if (el && (el.type === ElementType.Sitelen || el.type === "sitelen")) {
-    el.quotedTextFontOption = resolved;
-    // Keep the legacy/JSON field synchronized, but do not use this field as the
-    // script font for sitelen rendering.  The script font is renderFontPreset.
-    el.fontFamily = resolved;
-  }
-  return resolved;
-}
-
-function getElementQuotedTextFontOptionKey(el){
-  const presetKey = getElementRenderFontPresetKey(el);
-  const preset = getRenderFontPreset(presetKey);
-  const sceneDefault = getSceneDefaultQuotedTextFontOptionForPreset(presetKey);
-
-  // Sitelen elements have two separate font concepts:
-  //   renderFontPreset -> sitelen words / ordinary cartouches / numeric cartouches
-  //   quotedTextFontOption -> normal quoted text / unknown text
-  // For sitelen, resolve quoted text only from the quoted-text font setting
-  // or the scene quoted-text default. Never use el.fontFamily as a fallback
-  // because older builds used that field for the sitelen script font and it
-  // can contaminate quoted Latin text with missing-glyph boxes.
-  if (el?.type === ElementType.Sitelen || el?.type === "sitelen") {
-    return normalizeValidQuotedTextFontOptionForSitelen(el?.quotedTextFontOption || "", presetKey) || sceneDefault;
-  }
-
-  return normalizeTextFontOptionKeyForPreset(
-    el?.quotedTextFontOption || el?.fontFamily || sceneDefault || preset?.literalFamily || FONT_FAMILY_LITERAL,
-    presetKey
-  );
-}
-
 function getElementResolvedTextFontFamily(el){
   return resolveTextFontFamilyForPreset(getElementTextFontOptionKey(el), getElementRenderFontPresetKey(el));
 }
-
-function getElementResolvedQuotedTextFontFamily(el){
-  if (el?.type === ElementType.Sitelen || el?.type === "sitelen") {
-    // Make the quoted-text setting authoritative before buildRenderPlan() runs.
-    sanitizeSitelenQuotedTextFontOption(el);
-  }
-  return resolveTextFontFamilyForPreset(getElementQuotedTextFontOptionKey(el), getElementRenderFontPresetKey(el));
-}
-function resolveLiteralCartoucheFontFamilyForPreset(preset){
-  return String(
-    preset?.literalCartoucheFamily ||
-    preset?.literalCartoucheFontFamily ||
-    preset?.textFamily ||
-    FONT_FAMILY_TEXT
-  );
-}
-
-function getElementLiteralCartoucheFontFamily(el){
-  return resolveLiteralCartoucheFontFamilyForPreset(getRenderFontPreset(getElementRenderFontPresetKey(el)));
-}
-
-function getElementLiteralCartoucheSettings(el){
-  const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
-  const settings = (preset && typeof preset === "object") ? (preset.settings || {}) : {};
-  return {
-    literalCartoucheRuleClipScale: settings.literalCartoucheRuleClipScale,
-    literalCartoucheRuleClipStrategy: settings.literalCartoucheRuleClipStrategy,
-    literalCartoucheLeftCapClipRatio: settings.literalCartoucheLeftCapClipRatio
-  };
-}
-
-
-const VECTOR_FONT_DEBUG = true;
-function vectorFontDebug(label, data = {}){
-  if (!VECTOR_FONT_DEBUG) return;
-  try {
-    console.info(`[layout-vector-font-debug] ${label}`, data);
-  } catch (_) {}
-}
-function summarizeVectorFontRun(run){
-  if (!run) return null;
-  const el = run._element || run.element || null;
-  return {
-    id: run.id || null,
-    kind: run.kind || null,
-    renderMode: run.renderMode || null,
-    sourceKind: run.sourceKind || null,
-    fontRole: run.fontRole || null,
-    fontFamily: run.fontFamily || null,
-    encodedText: typeof run.encodedText === "string" ? run.encodedText : null,
-    sourceText: typeof run.sourceText === "string" ? run.sourceText : null,
-    isQuoted: !!(run.isQuoted || el?.isQuoted),
-    isUnrecognized: !!(run.isUnrecognized || el?.isUnrecognized),
-    isLiteralCartouche: !!(run.fontRole === "literalCartouche" || el?.isLiteralCartouche),
-    elementType: el?.type || null,
-    elementFontFamily: el?.fontFamily || null
-  };
-}
-function summarizeVectorFontPlan(plan){
-  const rows = [];
-  for (const line of (plan?.lines || [])) {
-    for (const run of (line?.runs || [])) {
-      const row = summarizeVectorFontRun(run);
-      if (!row) continue;
-      if (
-        row.fontRole === "literal" ||
-        row.fontRole === "unknown" ||
-        row.fontRole === "literalCartouche" ||
-        row.kind === "text" ||
-        row.isQuoted ||
-        row.isUnrecognized ||
-        row.isLiteralCartouche ||
-        row.sourceKind === "quote"
-      ) rows.push(row);
-    }
-  }
-  return rows;
-}
-
 function buildRendererFontRolesForElement(el){
-  if (el?.type === ElementType.Sitelen || el?.type === "sitelen") {
-    sanitizeSitelenQuotedTextFontOption(el);
-  }
-  const presetKey = getElementRenderFontPresetKey(el);
-  const preset = getRenderFontPreset(presetKey);
-  const literalCartoucheFamily = resolveLiteralCartoucheFontFamilyForPreset(preset);
-  const quotedTextFontOption = getElementQuotedTextFontOptionKey(el);
-  const quotedLiteralFamily = getElementResolvedQuotedTextFontFamily(el) || preset.literalFamily || FONT_FAMILY_LITERAL;
-
-  const roles = {
-    // Normal sitelen words/runs use the selected script/text font.
+  const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
+  return {
     word: preset.textFamily,
     text: preset.textFamily,
-
-    // Ordinary non-numeric cartouches, for example [toki pona], use the
-    // ordinary sitelen/text font.  Numeric/date/time cartouches use the
-    // nanpa-linja-n companion cartouche font through the number/date/time roles.
     cartouche: preset.textFamily,
     number: preset.cartoucheFamily,
     date: preset.cartoucheFamily,
     time: preset.cartoucheFamily,
-
-    // Normal quoted text, for example "abc", uses the quoted/literal font.
-    // Do not derive this from the sitelen render font.
-    literal: quotedLiteralFamily,
-    unknown: quotedLiteralFamily,
-
-    // Literal cartouches, for example ["ABC"], use the separate
-    // literalCartouche role.  This must not affect normal quoted text.
-    literalCartouche: literalCartoucheFamily,
-    literalCartoucheFamily: literalCartoucheFamily
+    literal: (el?.type === ElementType.Sitelen)
+      ? getElementResolvedTextFontFamily(el)
+      : (getElementResolvedTextFontFamily(el) || preset.literalFamily)
   };
-
-  if (el?.type === ElementType.Sitelen || el?.type === "sitelen") {
-    vectorFontDebug("buildRendererFontRolesForElement", {
-      elementId: el?.id || null,
-      elementType: el?.type || null,
-      renderFontPreset: presetKey,
-      quotedTextFontOption,
-      resolvedQuotedLiteralFamily: quotedLiteralFamily,
-      literalCartoucheFamily,
-      elementFontFamily: el?.fontFamily || null,
-      elementQuotedTextFontOption: el?.quotedTextFontOption || null,
-      stageDefaultTextFontOption: Scene?.stage?.defaultTextFontOption || null,
-      presetSummary: {
-        key: preset?.key || presetKey,
-        textFamily: preset?.textFamily || null,
-        cartoucheFamily: preset?.cartoucheFamily || null,
-        literalFamily: preset?.literalFamily || null,
-        literalCartoucheFamily: preset?.literalCartoucheFamily || null
-      },
-      roles
-    });
-  }
-
-  return roles;
 }
 let sitelenRendererModulePromise = null;
 const sitelenRendererInstancePromises = new Map();
@@ -2537,8 +2221,6 @@ function getAllRenderFontFaces() {
 function findRenderFontFaceByFamily(family) {
   const want = String(family || "").trim();
   if (!want) return null;
-  const vectorFallbackFace = getVectorLiberationFallbackFace(want);
-  if (vectorFallbackFace) return vectorFallbackFace;
   for (const face of getAllRenderFontFaces()) {
     if (String(face?.family || "").trim() === want) return face;
   }
@@ -2583,7 +2265,6 @@ async function waitForRenderPresetFonts(presetKey, fontPx = 56, literalFamily = 
   const families = Array.from(new Set([
     preset.textFamily,
     preset.cartoucheFamily,
-    resolveLiteralCartoucheFontFamilyForPreset(preset),
     literalFamily || preset.literalFamily,
     ...(Array.isArray(extraFamilies) ? extraFamilies : [extraFamilies])
   ].filter(Boolean)));
@@ -2681,34 +2362,22 @@ function buildRendererCallConfigForElement(el){
     },
     fonts: {
       roles: {
-        ...buildRendererFontRolesForElement(el)
+        ...buildRendererFontRolesForElement(el),
+        unknown: 'Patrick-Head-Font'
       }
     }
   };
 }
 async function getSitelenRendererForElement(el){
   const presetKey = getElementRenderFontPresetKey(el);
-  const literalFamily = getElementResolvedQuotedTextFontFamily(el) || getRenderFontPreset(presetKey).literalFamily;
-  const literalCartoucheFamily = getElementLiteralCartoucheFontFamily(el);
+  const literalFamily = getElementResolvedTextFontFamily(el) || getRenderFontPreset(presetKey).literalFamily;
   const extraFamilies = [];
   if (el?.type === ElementType.Glyph && el?.fontFamily) extraFamilies.push(String(el.fontFamily));
-  const cacheKey = `${presetKey}|literal:${literalFamily}|literalCartouche:${literalCartoucheFamily}|extra:${extraFamilies.join('|')}`;
-  vectorFontDebug("getSitelenRendererForElement", {
-    elementId: el?.id || null,
-    elementType: el?.type || null,
-    presetKey,
-    literalFamily,
-    literalCartoucheFamily,
-    quotedTextFontOption: el?.quotedTextFontOption || null,
-    elementFontFamily: el?.fontFamily || null,
-    extraFamilies,
-    cacheKey,
-    cacheHit: sitelenRendererInstancePromises.has(cacheKey)
-  });
+  const cacheKey = `${presetKey}|literal:${literalFamily}|extra:${extraFamilies.join('|')}`;
   if (!sitelenRendererInstancePromises.has(cacheKey)){
     sitelenRendererInstancePromises.set(cacheKey, (async () => {
       const SitelenRenderer = await ensureSitelenRendererModule();
-      await waitForRenderPresetFonts(presetKey, Math.max(16, Number(el?.fontSize ?? 44)), literalFamily, [literalCartoucheFamily, ...extraFamilies]);
+      await waitForRenderPresetFonts(presetKey, Math.max(16, Number(el?.fontSize ?? 44)), literalFamily, extraFamilies);
       return SitelenRenderer.create(buildRendererInitConfigForElement(el));
     })());
   }
@@ -2731,76 +2400,6 @@ function tintRasterCanvasToColor(sourceCanvas, cssColor){
   return out;
 }
 
-
-const SITELEN_BOUNDS_GUARD_VERSION = 47;
-
-function sitelenBoundsGuardPx(el){
-  // The sitelen element box must contain the actual rendered sitelen output.
-  // Some fonts/cartouche glyphs have ink outside their logical advance box,
-  // and getBBox/advance metrics are not reliable enough across all presets.
-  // Use a deliberately visible symmetric containment padding around every
-  // sitelen element so top/left/right/bottom overhang cannot be clipped by
-  // the element box.  This is element-box padding, not text-layout spacing.
-  const fontPx = Math.max(6, Number(el?.fontSize ?? 44));
-  const haloPx = el?.haloEnabled
-    ? Math.max(0, Number(el?.haloThickness ?? 0))
-    : 0;
-  const unknownTextPadPx = el?.ignoreUnknownText ? 0 : Math.max(2, Math.ceil(fontPx * 0.04));
-  return Math.max(16, Math.ceil(fontPx * 0.30 + haloPx + unknownTextPadPx + 4));
-}
-
-function makeGuardedSitelenCanvas(sourceCanvas, guardPx){
-  const src = sourceCanvas || document.createElement('canvas');
-  const guard = Math.max(0, Math.ceil(Number(guardPx) || 0));
-  const out = document.createElement('canvas');
-  out.width = Math.max(1, Math.ceil(Number(src.width || 0) + guard * 2));
-  out.height = Math.max(1, Math.ceil(Number(src.height || 0) + guard * 2));
-  const octx = out.getContext('2d', { alpha: true });
-  octx.clearRect(0, 0, out.width, out.height);
-  if (src.width > 0 && src.height > 0) octx.drawImage(src, guard, guard);
-  return out;
-}
-
-function guardedSitelenViewBox(viewBox, el){
-  const fallbackW = Math.max(1, Number(el?.sitelen?.sourceNaturalW ?? el?.sitelen?.origW ?? el?.w ?? 1));
-  const fallbackH = Math.max(1, Number(el?.sitelen?.sourceNaturalH ?? el?.sitelen?.origH ?? el?.h ?? 1));
-  const vb = parseSvgViewBoxString(viewBox, fallbackW, fallbackH);
-  const guard = Math.max(0, Number(el?.sitelen?.boundsGuardPx ?? sitelenBoundsGuardPx(el)) || 0);
-  return {
-    x: vb.x - guard,
-    y: vb.y - guard,
-    w: vb.w + guard * 2,
-    h: vb.h + guard * 2,
-  };
-}
-
-function applySitelenAutoResizeAnchor(el, oldX, oldY, oldW, oldH, newW, newH, options = {}){
-  const cx = Number(oldX) + Number(oldW) / 2;
-  const cy = Number(oldY) + Number(oldH) / 2;
-  const oldRight = Number(oldX) + Number(oldW);
-  const align = String(el?.align || 'left').trim().toLowerCase();
-
-  el.w = Math.max(8, Number(newW) || 8);
-  el.h = Math.max(8, Number(newH) || 8);
-
-  if (options.preserveCenter || getElementPreserveCenterOnAutoResize(el)) {
-    el.x = cx - el.w / 2;
-    el.y = cy - el.h / 2;
-  } else if (align === 'right') {
-    // Right-aligned sitelen should keep its right edge fixed when the natural
-    // box grows to contain overhang.
-    el.x = oldRight - el.w;
-    el.y = oldY;
-  } else if (align === 'center') {
-    // Center-aligned sitelen should keep horizontal center stable.
-    el.x = cx - el.w / 2;
-    el.y = oldY;
-  } else {
-    el.x = oldX;
-    el.y = oldY;
-  }
-}
-
 function getElementRendererSignature(el){
   return JSON.stringify({
     text: String(el?.text ?? ''),
@@ -2811,15 +2410,13 @@ function getElementRendererSignature(el){
     color: String(el?.color ?? '#111111'),
     preset: getElementRenderFontPresetKey(el),
     fontFamily: (el?.type === ElementType.Sitelen) ? '' : String(el?.fontFamily ?? ''),
-    quotedTextFontOption: (el?.type === ElementType.Sitelen) ? getElementQuotedTextFontOptionKey(el) : '',
-    literalFamily: sitelenLiteralFontFamilyForElement(el),
+  literalFamily: (el?.type === ElementType.Sitelen) ? '' : sitelenLiteralFontFamilyForElement(el),
     haloEnabled: !!el?.haloEnabled,
     haloColor: rgbaOrHexToHex(el?.haloColor, '#FFFFFF'),
     haloMode: String(el?.haloThicknessMode ?? 'auto'),
     haloThickness: Number(el?.haloThickness ?? 0),
     ignoreUnknownText: !!el?.ignoreUnknownText,
-    abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
-    sitelenBoundsGuardVersion: (el?.type === ElementType.Sitelen) ? SITELEN_BOUNDS_GUARD_VERSION : 0
+    abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el))
   });
 }
 async function rebuildSitelenRasterWithRenderer(el, opts = {}){
@@ -2856,44 +2453,37 @@ async function rebuildSitelenRasterWithRenderer(el, opts = {}){
       )
     );
 
-    const rawCanvas = result?.canvas || document.createElement('canvas');
-    const guardPx = sitelenBoundsGuardPx(el);
-    const canvas = makeGuardedSitelenCanvas(rawCanvas, guardPx);
+    const canvas = result?.canvas || document.createElement('canvas');
     const entry = {
       sig,
       canvas,
-      rawCanvas,
-      guardPx,
-      sourceNaturalW: rawCanvas.width || 8,
-      sourceNaturalH: rawCanvas.height || 8,
       naturalW: canvas.width || 8,
       naturalH: canvas.height || 8
     };
 
     if (!el.sitelen || typeof el.sitelen !== 'object') el.sitelen = {};
-    el.sitelen.boundsGuardVersion = SITELEN_BOUNDS_GUARD_VERSION;
-    el.sitelen.boundsGuardPx = guardPx;
-    el.sitelen.sourceNaturalW = entry.sourceNaturalW;
-    el.sitelen.sourceNaturalH = entry.sourceNaturalH;
     el.sitelen.naturalW = entry.naturalW;
     el.sitelen.naturalH = entry.naturalH;
     el.sitelen.origW = entry.naturalW;
     el.sitelen.origH = entry.naturalH;
 
-    const newW = Math.max(8, entry.naturalW);
-    const newH = Math.max(8, entry.naturalH);
+    el.w = Math.max(8, entry.naturalW);
+    el.h = Math.max(8, entry.naturalH);
 
     if (hasInsertAnchor) {
       // New insert: keep the original click point fixed.
-      el.w = newW;
-      el.h = newH;
       el.x = anchorX;
       el.y = anchorY;
       delete el.__insertAnchorX;
       delete el.__insertAnchorY;
       delete el.__lockInsertAnchor;
+    } else if (options.preserveCenter) {
+      el.x = cx - el.w / 2;
+      el.y = cy - el.h / 2;
     } else {
-      applySitelenAutoResizeAnchor(el, oldX, oldY, Number(el.w || 8), Number(el.h || 8), newW, newH, options);
+      // Preserve top-left for non-centered updates.
+      el.x = oldX;
+      el.y = oldY;
     }
 
     sitelenCache.set(el.id, entry);
@@ -3206,12 +2796,7 @@ function normalizeScene(parsed){
     bgImgAssetId: DEFAULTS.bgImgAssetId,
     bgImgKeepAspect: DEFAULTS.bgImgKeepAspect,
     bgImgStretch: DEFAULTS.bgImgStretch,
-    vectorDisplayOffsets: DEFAULTS.vectorDisplayOffsets,
   }, out.stage || {});
-
-  if (!out.stage.vectorDisplayOffsets || typeof out.stage.vectorDisplayOffsets !== "object" || Array.isArray(out.stage.vectorDisplayOffsets)) {
-    out.stage.vectorDisplayOffsets = {};
-  }
 
   // Legacy import behavior: if the JSON contains no halo fields anywhere,
   // force scene default halo OFF so old files don't unexpectedly inherit halo-on defaults.
@@ -3382,7 +2967,6 @@ return out;
 
   const HANDLE = Object.freeze({
     None: "none",
-    MovePending: "move_pending",
     Move: "move",
     Marquee: "marquee",
     ResizeNW: "resize_nw",
@@ -3414,7 +2998,7 @@ function clamp(n, lo, hi){
   // CHANGE HERE: build a correct CSS font-family string for canvas
 function cssFontFamily(family){
   const f = String(family ?? "").trim();
-  if (!f) return `"Patrick-Head-Font", "PatrickHand", system-ui, sans-serif`;
+  if (!f) return `"PatrickHand", system-ui, sans-serif`;
 
   // If user already supplied a full family list (contains comma), use as-is.
   if (f.includes(",")) return f;
@@ -3427,7 +3011,7 @@ function cssFontFamily(family){
 }
 
 function sitelenLiteralFontFamilyForElement(el){
-  return getElementResolvedQuotedTextFontFamily(el);
+  return getElementResolvedTextFontFamily(el);
 }
 
 function sitelenLiteralFontAlignmentForElement(el){
@@ -3609,7 +3193,6 @@ function deserializeAssets(serialized){
       defaultHaloColor: DEFAULTS.defaultHaloColor,
       defaultHaloThicknessPx: DEFAULTS.defaultHaloThicknessPx,
       defaultHaloThicknessMode: DEFAULTS.defaultHaloThicknessMode,
-      vectorDisplayOffsets: {},
     },
     view: {
       zoom: DEFAULTS.viewZoom,
@@ -3691,11 +3274,10 @@ function deserializeAssets(serialized){
     el.renderFontPreset = normalizeRenderFontPresetKey(
       Scene.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset
     );
-    // Sitelen's main font is controlled by renderFontPreset.  Its normal
-    // quoted-text font is separate and must default to the literal font, not to
-    // the active sitelen/cartouche aliases.
-    el.quotedTextFontOption = getDefaultQuotedTextFontOptionForPreset(el.renderFontPreset);
-    el.fontFamily = el.quotedTextFontOption;
+    el.fontFamily = normalizeTextFontOptionKeyForPreset(
+      Scene.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
+      el.renderFontPreset
+    );
     el.fontSize = 44;
     el.align = "left";
     el.abbreviateNumericCartouches = getSceneDefaultAbbreviateNumericCartouches();
@@ -3731,10 +3313,6 @@ function deserializeAssets(serialized){
 //    el.fill = "rgba(255,255,255,0.0)";
     el.strokeW = 0;
     el.scaleFontWithBox = false; // NEW (explicit)
-    // Glyphs use one long-term placement model in the vector editor:
-    // draw at fontSize and center in the element box using canvas text
-    // metrics, matching production drawText(textBaseline="middle").
-    el.vectorPlacementMode = "glyph-canvas-middle";
     el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     ensureHaloFields(el);
     return el;
@@ -3809,7 +3387,6 @@ function newImageElement(x,y){
     saveTimer = setTimeout(async () => {
       try{
         Scene.meta.updatedAt = new Date().toISOString();
-        markSceneAsVectorNative(Scene);
 
         await dbPut(DB_KEY, {
           scene: deepClone(Scene),
@@ -7194,11 +6771,6 @@ function wireArrowKeyNudge(){
   }
 
   function endPointerCapture(){
-    try {
-      if (drag.pointerId != null && wrap.hasPointerCapture?.(drag.pointerId)) {
-        wrap.releasePointerCapture(drag.pointerId);
-      }
-    } catch (_) {}
     drag.active = false;
     drag.pointerId = null;
     drag.mode = HANDLE.None;
@@ -7545,7 +7117,6 @@ el.y = y1;
   function finalizeDrag(){
     let changed = false;
 
-
     for (const el of Scene.elements){
       if (el._startX !== undefined){
         if (
@@ -7628,53 +7199,92 @@ function resizeCanvasToDisplaySize(){
   /* ============================================================
      Rendering
      ============================================================ */
-  function positionLiveSvgElement(svgEl){
-    if (!svgEl) return;
-    const stageTL = stageToScreen({x:0,y:0});
-    const stageBR = stageToScreen({x:Scene.stage.w,y:Scene.stage.h});
-    svgEl.style.left = `${stageTL.x}px`;
-    svgEl.style.top = `${stageTL.y}px`;
-    svgEl.style.width = `${stageBR.x - stageTL.x}px`;
-    svgEl.style.height = `${stageBR.y - stageTL.y}px`;
-  }
-
-  function renderLiveSvgScene(){
-    const host = document.getElementById("svgStageHost");
-    if (!host) return;
-    // Keep the existing SVG aligned immediately while any async path rebuild is still running.
-    positionLiveSvgElement(host.querySelector("svg"));
-    const seq = ++liveSvgRenderSeq;
-    buildSceneSvgText({ includeEditorGrid: true, forceStageBackground: true, useRasterPreviewForUnselected: true })
-      .then((svgText) => {
-        if (seq !== liveSvgRenderSeq) return;
-        host.innerHTML = svgText.replace(/^<\?xml[^>]*>\s*/i, "");
-        positionLiveSvgElement(host.querySelector("svg"));
-      })
-      .catch((err) => {
-        console.error("Live SVG scene render failed", err);
-        setStatus("Live SVG render failed: " + (err?.message || err));
-      });
-  }
-
 function render(){
-  // Live display uses the canonical SVG compositor.
-  // The canvas is retained only as a transparent interaction/selection overlay.
-  resizeCanvasToDisplaySize();
+  //  console.log("render called");
+  // CHANGE HERE: always sync canvas backing store to its CSS size
+  resizeCanvasToDisplaySize(); // this should ONLY resize canvas.width/height; do not setTransform in it
 
-  const dpr = window.devicePixelRatio || 1;
+  // CHANGE HERE: use the canvas rect (the actual drawing viewport), not the page wrap
+  const crect = canvas.getBoundingClientRect();
+  const cssW = crect.width;
+  const cssH = crect.height;
+
+  // CHANGE HERE: reset + clear deterministically
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // CHANGE HERE: draw in CSS pixel coordinates (your stageToScreen should output CSS px)
+  const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  renderLiveSvgScene();
+  // If any code relies on clearRect in CSS px space, you can use:
+  // ctx.clearRect(0, 0, cssW, cssH);
 
+  // draw stage boundary (in screen coords / CSS px)
+  const stageTL = stageToScreen({x:0,y:0});
+  const stageBR = stageToScreen({x:Scene.stage.w,y:Scene.stage.h});
+  const sx = stageTL.x, sy = stageTL.y, sw = stageBR.x - stageTL.x, sh = stageBR.y - stageTL.y;
+
+  // subtle stage background
+  //ctx.save();
+ // ctx.fillStyle = "rgba(255,255,255,0.08)";
+  //ctx.fillRect(sx, sy, sw, sh);
+ //  ctx.restore();
+
+  ctx.save();
+  // NEW: stage background from scene
+  ctx.fillStyle = Scene.stage.bg || DEFAULTS.stageBg;
+  ctx.fillRect(sx, sy, sw, sh);
+  ctx.restore();
+
+
+  // NEW: background image (always behind grid + elements)
+  if (Scene.stage.bgImgEnabled && Scene.stage.bgImgAssetId){
+    const img = ensureBackgroundImageLoadedForStage();
+    if (img && img.naturalWidth > 0 && img.naturalHeight > 0){
+      const dest = computeBackgroundImageDestRect({
+        stageW: Scene.stage.w,
+        stageH: Scene.stage.h,
+        natW: img.naturalWidth,
+        natH: img.naturalHeight,
+        stretch: !!Scene.stage.bgImgStretch,
+        keepAspect: (Scene.stage.bgImgKeepAspect !== false),
+      });
+
+      // clip to stage rect in screen coords
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(sx, sy, sw, sh);
+      ctx.clip();
+
+      const tl2 = stageToScreen({x: dest.x, y: dest.y});
+      const dw = dest.w * Scene.view.zoom;
+      const dh = dest.h * Scene.view.zoom;
+      ctx.drawImage(img, tl2.x, tl2.y, dw, dh);
+
+      ctx.restore();
+    }
+  }
+
+  // grid
+  if (Scene.stage.showGrid){
+    drawGrid();
+  }
+
+  // draw elements in order
+  for (const el of Scene.elements){
+   // console.log("drawing", el.id);
+    drawElement(el);
+  }
+
+  // selection overlays
   drawSelectionOverlay();
 
+  // marquee overlay
   if (drag.marquee){
     drawMarquee(drag.marquee);
   }
 }
-
 
 
   function drawGrid(){
@@ -7866,7 +7476,7 @@ function render(){
 
     const pad = 8 * Scene.view.zoom;
     const innerX = x + pad;
-    const innerY = y + pad + vectorYOffsetPx(el);
+    const innerY = y + pad;
     const innerW = Math.max(0, w - pad*2);
     const innerH = Math.max(0, h - pad*2);
 
@@ -8014,10 +7624,9 @@ function makeGlyphPicker(el){
       btn.appendChild(preview);
       btn.appendChild(label);
 
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", () => {
         // set codepoint in the same format you already accept
         el.codepoint = "U+" + cp.toString(16).toUpperCase();
-        await resizeTextLikeElementToNaturalBox(el, autoResizeAnchorOptionsForElement(el));
         scheduleAutosave();
         updateUiForSelection(); // re-render properties so pressed states update
         render();
@@ -8161,7 +7770,7 @@ function drawSitelenRasterLocal(el, x, y, w, h){
       ctx.strokeRect(x+1,y+1,w-2,h-2);
       ctx.setLineDash([]);
       ctx.fillStyle = "rgba(17,17,17,0.55)";
-      ctx.font = `${Math.max(12, 16*Scene.view.zoom)}px "Patrick-Head-Font", "PatrickHand", system-ui, sans-serif`;
+      ctx.font = `${Math.max(12, 16*Scene.view.zoom)}px "PatrickHand", system-ui, sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("Image (embedded)", x+w/2, y+h/2);
@@ -8946,21 +8555,12 @@ if (textField && textField._popoutElementId){
             const jobs = [];
             applyToAllWhere(supportsTextBlock, (e) => {
               e.renderFontPreset = normalizeRenderFontPresetKey(v);
-              if (e.type === ElementType.Sitelen) {
-                sanitizeSitelenQuotedTextFontOption(e);
-                jobs.push(waitForRenderPresetFonts(
-                  e.renderFontPreset,
-                  e.fontSize || 56,
-                  getElementResolvedQuotedTextFontFamily(e)
-                ));
-              } else {
-                e.fontFamily = normalizeTextFontOptionKeyForPreset(e.fontFamily, e.renderFontPreset);
-                jobs.push(waitForRenderPresetFonts(
-                  e.renderFontPreset,
-                  e.fontSize || 56,
-                  resolveTextFontFamilyForPreset(e.fontFamily, e.renderFontPreset)
-                ));
-              }
+              e.fontFamily = normalizeTextFontOptionKeyForPreset(e.fontFamily, e.renderFontPreset);
+              jobs.push(waitForRenderPresetFonts(
+                e.renderFontPreset,
+                e.fontSize || 56,
+                resolveTextFontFamilyForPreset(e.fontFamily, e.renderFontPreset)
+              ));
             });
             await Promise.allSettled(jobs);
             applyToAllWhere(supportsTextBlock, (e) => {
@@ -8978,9 +8578,9 @@ if (textField && textField._popoutElementId){
 
         const leaderFont = topmostSelectedWhere(supportsTextBlock);
         const leaderPresetKey = getElementRenderFontPresetKey(leaderFont);
-        const fontVals = sels.filter(supportsTextBlock).map(e => e.type === ElementType.Sitelen ? getElementQuotedTextFontOptionKey(e) : getElementTextFontOptionKey(e));
+        const fontVals = sels.filter(supportsTextBlock).map(e => getElementTextFontOptionKey(e));
         const fontMixed = mixedLabelIfMixed(fontVals);
-        const currentFont = leaderFont?.type === ElementType.Sitelen ? getElementQuotedTextFontOptionKey(leaderFont) : getElementTextFontOptionKey(leaderFont);
+        const currentFont = getElementTextFontOptionKey(leaderFont);
 
         propsBody.appendChild(makeSelect(
           tr("props_font_family"),
@@ -8989,19 +8589,11 @@ if (textField && textField._popoutElementId){
           async (v) => {
             const jobs = [];
             applyToAllWhere(supportsTextBlock, (e) => {
-              const normalizedFontOption = normalizeTextFontOptionKeyForPreset(v, getElementRenderFontPresetKey(e));
-              if (e.type === ElementType.Sitelen) {
-                e.quotedTextFontOption = normalizedFontOption;
-                // Keep fontFamily in sync for old JSON/property-panel compatibility,
-                // but renderer role resolution reads quotedTextFontOption first.
-                e.fontFamily = normalizedFontOption;
-              } else {
-                e.fontFamily = normalizedFontOption;
-              }
+              e.fontFamily = normalizeTextFontOptionKeyForPreset(v, getElementRenderFontPresetKey(e));
               jobs.push(waitForRenderPresetFonts(
                 getElementRenderFontPresetKey(e),
                 e.fontSize || 56,
-                resolveTextFontFamilyForPreset(normalizedFontOption, getElementRenderFontPresetKey(e))
+                resolveTextFontFamilyForPreset(e.fontFamily, getElementRenderFontPresetKey(e))
               ));
             });
             await Promise.allSettled(jobs);
@@ -9472,9 +9064,6 @@ if (textField && textField._popoutElementId){
         if (el.type === ElementType.Sitelen){
           invalidateSitelenCache(el.id);
           updateSitelenLayout(el);
-          invalidateSvgElementCaches(el.id);
-        } else if (el.type === ElementType.Text){
-          resizeTextElementToNaturalBox(el);
         }
 
         scheduleAutosave();
@@ -9500,7 +9089,6 @@ if (textField && textField._popoutElementId){
 
           invalidateSitelenCache(el.id);
           updateSitelenLayout(el);
-          invalidateSvgElementCaches(el.id);
 
           scheduleAutosave();
           render();
@@ -9540,47 +9128,40 @@ if (textField && textField._popoutElementId){
       Object.values(stageFontPairController.getCombinedRegistrySnapshot()).map(p => [p.key, p.label]),
       async (v) => {
         el.renderFontPreset = normalizeRenderFontPresetKey(v);
-        if (el.type === ElementType.Sitelen) {
-          sanitizeSitelenQuotedTextFontOption(el);
-        } else {
-          el.fontFamily = normalizeTextFontOptionKeyForPreset(el.fontFamily, el.renderFontPreset);
-        }
+        el.fontFamily = normalizeTextFontOptionKeyForPreset(el.fontFamily, el.renderFontPreset);
         await waitForRenderPresetFonts(
           el.renderFontPreset,
           el.fontSize || 56,
-          el.type === ElementType.Sitelen ? getElementResolvedQuotedTextFontFamily(el) : getElementResolvedTextFontFamily(el)
+          resolveTextFontFamilyForPreset(el.fontFamily, el.renderFontPreset)
         );
-        await resizeTextLikeElementToNaturalBox(el, autoResizeAnchorOptionsForElement(el));
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+        }
         scheduleAutosave();
         render();
         updateUiForSelection();
       }
     ));
 
-    const currentFont = el.type === ElementType.Sitelen ? getElementQuotedTextFontOptionKey(el) : getElementTextFontOptionKey(el);
+    const currentFont = getElementTextFontOptionKey(el);
 
     propsBody.appendChild(makeSelect(tr("props_font_family"), currentFont, getTextFontOptionsForPresetKey(getElementRenderFontPresetKey(el)), async (v) => {
-        const normalizedFontOption = normalizeTextFontOptionKeyForPreset(v, getElementRenderFontPresetKey(el));
-        if (el.type === ElementType.Sitelen) {
-          el.quotedTextFontOption = normalizedFontOption;
-          // Keep fontFamily in sync for compatibility; quotedTextFontOption is
-          // the authoritative sitelen quoted-text font field.
-          el.fontFamily = normalizedFontOption;
-        } else {
-          el.fontFamily = normalizedFontOption;
-        }
+        el.fontFamily = normalizeTextFontOptionKeyForPreset(v, getElementRenderFontPresetKey(el));
 
         await waitForRenderPresetFonts(
           getElementRenderFontPresetKey(el),
           el.fontSize || 56,
-          resolveTextFontFamilyForPreset(normalizedFontOption, getElementRenderFontPresetKey(el))
+          resolveTextFontFamilyForPreset(el.fontFamily, getElementRenderFontPresetKey(el))
         );
 
-        await resizeTextLikeElementToNaturalBox(el, autoResizeAnchorOptionsForElement(el));
+        if (el.type === ElementType.Sitelen){
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+        }
 
         scheduleAutosave();
         render();
-        updateUiForSelection();
     }));
 
     if (el.type === ElementType.Sitelen){
@@ -9604,17 +9185,19 @@ if (textField && textField._popoutElementId){
   Number(el.fontSize ?? 24),
   1,
   FONT_SIZE_PRESETS,
-  async (v) => {
+  (v) => {
     el.fontSize = Math.max(6, v);
 
     // NEW: if halo thickness is auto, recompute from new font size
     if (el.haloThicknessMode !== "manual") el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize);
 
-    await resizeTextLikeElementToNaturalBox(el, autoResizeAnchorOptionsForElement(el));
+    if (el.type === ElementType.Sitelen){
+      invalidateSitelenCache(el.id);
+      updateSitelenLayout(el);
+    }
 
     scheduleAutosave();
     render();
-    updateUiForSelection();
   },
   null,
   6,
@@ -9785,10 +9368,10 @@ if (textField && textField._popoutElementId){
         el.renderFontPreset = normalizeRenderFontPresetKey(v);
         el.fontFamily = TEXT_FONT_OPTION_SITELEN;
         await waitForRenderPresetFonts(el.renderFontPreset, el.fontSize || 56);
-        await resizeTextLikeElementToNaturalBox(el, autoResizeAnchorOptionsForElement(el));
+        invalidateGlyphCache(el.id);
+        queueGlyphRasterRebuild(el);
         scheduleAutosave();
         render();
-        updateUiForSelection();
       }
     ));
 
@@ -9828,14 +9411,7 @@ propsBody.appendChild(makeGlyphPicker(el));
   Number(el.fontSize ?? 64),
   1,
   FONT_SIZE_PRESETS,
-  async (v) => {
-    el.fontSize = Math.max(6, v);
-    if (el.haloThicknessMode !== "manual") el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize);
-    await resizeTextLikeElementToNaturalBox(el, autoResizeAnchorOptionsForElement(el));
-    scheduleAutosave();
-    render();
-    updateUiForSelection();
-  },
+  (v) => { el.fontSize = Math.max(6, v); if (el.haloThicknessMode !== "manual") el.haloThickness = defaultHaloThicknessForFontPx(el.fontSize); invalidateGlyphCache(el.id); queueGlyphRasterRebuild(el); scheduleAutosave(); render(); },
   null,
   6,
   9999
@@ -11200,12 +10776,10 @@ function updateClipboardButtons(){
         return;
       }
 
-      // Do not start moving immediately on pointerdown.
-      // A plain click should select only; movement starts only after a small drag threshold.
-      // This preserves normal select/unselect behavior while still allowing drag-to-move.
+      // Start move drag immediately (no duplicate creation bug)
       startPointerCapture(e);
-      beginDragSelectionMode(HANDLE.MovePending, ptScreen, ptStage);
-      setStatus(tr("status_selected", selectedIds.size));
+      beginDragSelectionMode(HANDLE.Move, ptScreen, ptStage);
+      setStatus(tr("status_move"));
       return;
     }
 
@@ -11241,21 +10815,6 @@ function updateClipboardButtons(){
     if (drag.mode === HANDLE.Marquee){
       drag.marquee.x1 = ptStage.x;
       drag.marquee.y1 = ptStage.y;
-      render();
-      return;
-    }
-
-    if (drag.mode === HANDLE.MovePending){
-      const dxScreen = ptScreen.x - drag.startScreen.x;
-      const dyScreen = ptScreen.y - drag.startScreen.y;
-      const dist2 = dxScreen * dxScreen + dyScreen * dyScreen;
-      const thresholdPx = 4;
-      if (dist2 < thresholdPx * thresholdPx) return;
-      drag.mode = HANDLE.Move;
-      setStatus(tr("status_move"));
-      const dx = ptStage.x - drag.startStage.x;
-      const dy = ptStage.y - drag.startStage.y;
-      applyMoveToSelection(dx, dy);
       render();
       return;
     }
@@ -11559,7 +11118,6 @@ function syncStageDefaultsUiFromScene(){
   const dhe = document.getElementById("defHaloEnabled");
   const dhc = document.getElementById("defHaloColor");
   const dht = document.getElementById("defHaloThickness");
-  const vdo = document.getElementById("vectorDisplayOffsets");
 
   const st = Scene.stage || (Scene.stage = {});
 
@@ -11633,10 +11191,6 @@ function syncStageDefaultsUiFromScene(){
   if (dhe) dhe.checked = !!(st.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled);
   if (dhc) dhc.value = rgbaOrHexToHex(st.defaultHaloColor, DEFAULTS.defaultHaloColor);
   if (dht) dht.value = Number.isFinite(st.defaultHaloThicknessPx) ? st.defaultHaloThicknessPx : DEFAULTS.defaultHaloThicknessPx;
-  if (vdo) {
-    try { vdo.value = JSON.stringify(st.vectorDisplayOffsets || {}, null, 2); }
-    catch { vdo.value = "{}"; }
-  }
 
 
   const bge = document.getElementById("bgImgEnabled");
@@ -11772,7 +11326,6 @@ function validateAndSanitizeScene(raw){
 
 function exportJson(){
   // Export only the stable, persisted parts.
-  markSceneAsVectorNative(Scene);
   const stableScene = {
     meta: deepClone(Scene.meta),
     stage: deepClone(Scene.stage),
@@ -11893,16 +11446,6 @@ sitelenRendererInstancePromises.clear();
   // Preload every font needed by the imported scene before first visible draw,
   // so text/sitelen/glyph content appears together instead of trickling in.
   await hydrateSceneBeforeDisplay(Scene);
-
-  const migratedLegacyVectorBoxes = await migrateLegacyVectorBoxes(Scene);
-  if (migratedLegacyVectorBoxes) {
-    try {
-      await hydrateSceneBeforeDisplay(Scene);
-      await dbPut(DB_KEY, { scene: deepClone(Scene), assets: serializeAssets() });
-    } catch (e) {
-      console.warn("Failed to persist migrated vector boxes after import", e);
-    }
-  }
 
   updateUiForSelection();
   rebuildDynamicPaletteFromScene();
@@ -12127,1607 +11670,6 @@ sitelenRendererInstancePromises.clear();
     octx.restore();
   }
 
-
-  /* ============================================================
-     SVG vector scene compositor
-     ------------------------------------------------------------
-     This is the shared export compositor for the vector layout build.
-     It intentionally uses the existing production scene model, import,
-     properties, autosave, and editor controls. The live stage display, SVG export,
-     PNG-through-SVG export, HTML export, and PDF-source export now use this
-     same canonical SVG compositor. The canvas is retained only as a transparent
-     interaction/selection overlay.
-     ============================================================ */
-  function svgEsc(value){
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
-  function svgNum(value, fallback = 0){
-    const n = Number(value);
-    if (!Number.isFinite(n)) return String(fallback);
-    return String(Math.round(n * 1000) / 1000);
-  }
-
-  function svgColor(value, fallback = "#111111"){
-    const s = String(value ?? "").trim();
-    if (!s) return fallback;
-    if (s === "transparent" || s === "none") return s;
-    return s;
-  }
-
-  function svgCssFontFamily(family){
-    return cssFontFamily(family).replace(/"/g, "'");
-  }
-
-
-  function svgSitelenPreserveAspectRatio(el){
-    // Sitelen elements use nested SVG output from the renderer/vector exporter.
-    // When keepAspect is enabled, avoid the default xMidYMid centering because
-    // it moves short/wide rendered text downward inside taller boxes and prevents
-    // right-aligned content from sitting against the right edge of the element box.
-    // Anchor vertically to the top and horizontally according to the element's
-    // text alignment.
-    if (el && el.keepAspect === false) return "none";
-    const align = String(el?.align || "left").trim().toLowerCase();
-    if (align === "right") return "xMaxYMin meet";
-    if (align === "center") return "xMidYMin meet";
-    return "xMinYMin meet";
-  }
-
-  const svgVectorElementCache = new Map();
-  const svgRasterPreviewCache = new Map();
-  let liveSvgRenderSeq = 0;
-
-  function clearSvgVectorElementCache(){
-    svgVectorElementCache.clear();
-    svgRasterPreviewCache.clear();
-  }
-
-  function invalidateSvgElementCaches(elId){
-    const id = String(elId || "");
-    if (!id) return;
-    for (const k of Array.from(svgVectorElementCache.keys())) {
-      if (k.startsWith(`${id}|`)) svgVectorElementCache.delete(k);
-    }
-    for (const k of Array.from(svgRasterPreviewCache.keys())) {
-      if (k.startsWith(`${id}|`)) svgRasterPreviewCache.delete(k);
-    }
-  }
-
-  function measureTextElementNaturalBox(el){
-    if (!el || el.type !== ElementType.Text) return null;
-    const pad = 8;
-    const fontSize = Math.max(6, Number(el.fontSize ?? 24));
-    const fontFamily = getElementResolvedTextFontFamily(el) || FONT_FAMILY_LITERAL;
-    const lineHeight = Math.max(0.8, Number(el.lineHeight ?? 1.15));
-    const haloW = effectiveHaloThicknessForElementExport(el);
-
-    const measureCanvas = document.createElement("canvas");
-    const mctx = measureCanvas.getContext("2d");
-    mctx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
-    setTextQuality(mctx);
-
-    const rawLines = splitLinesForBox(el.text);
-    const lines = rawLines.length ? rawLines : [""];
-    let maxW = 0;
-    for (const line of lines){
-      const m = mctx.measureText(String(line ?? ""));
-      const advance = Number(m.width || 0);
-      const ink = Math.abs(Number(m.actualBoundingBoxLeft || 0)) + Math.abs(Number(m.actualBoundingBoxRight || 0));
-      maxW = Math.max(maxW, advance, ink);
-    }
-
-    const w = Math.max(8, Math.ceil(maxW + pad * 2 + haloW * 2));
-    const h = Math.max(8, Math.ceil(lines.length * fontSize * lineHeight + pad * 2 + haloW * 2));
-    return { w, h };
-  }
-
-  function resizeTextElementToNaturalBox(el){
-    const box = measureTextElementNaturalBox(el);
-    if (!box) return false;
-    resizeElementBoxWithAutoResizeAnchor(el, box.w, box.h);
-    invalidateSvgElementCaches(el.id);
-    return true;
-  }
-
-  async function resizeSitelenElementToNaturalBox(el, opts = {}){
-    if (!el || el.type !== ElementType.Sitelen) return false;
-    invalidateSitelenCache(el.id);
-    invalidateSvgElementCaches(el.id);
-    const entry = await rebuildSitelenRasterWithRenderer(el, opts || autoResizeAnchorOptionsForElement(el));
-    if (entry && Number.isFinite(entry.naturalW) && Number.isFinite(entry.naturalH)){
-      // rebuildSitelenRasterWithRenderer already applies the resize/anchor rule.
-      return true;
-    }
-    return false;
-  }
-
-  async function resizeGlyphElementToNaturalBox(el, opts = {}){
-    if (!el || el.type !== ElementType.Glyph) return false;
-
-    // Glyph long-term model: the box is a placement/control box, not a
-    // tight vector bounds box. Property edits such as codepoint/font/preset
-    // changes should update the glyph drawn at fontSize, but should not
-    // rewrite x/y/w/h to a tight box. This keeps legacy and new glyphs using
-    // the same canvas-middle-compatible behavior.
-    delete el.vectorGlyphTightMetrics;
-    if (!el.vectorPlacementMode || String(el.vectorPlacementMode) === "legacy-canvas-middle") {
-      el.vectorPlacementMode = "glyph-canvas-middle";
-    }
-    invalidateGlyphCache(el.id);
-    invalidateSvgElementCaches(el.id);
-    queueGlyphRasterRebuild(el);
-    return true;
-  }
-
-  async function resizeTextLikeElementToNaturalBox(el, opts = {}){
-    if (!el) return false;
-    if (el.type === ElementType.Text) return resizeTextElementToNaturalBox(el);
-    if (el.type === ElementType.Sitelen) return await resizeSitelenElementToNaturalBox(el, opts);
-    if (el.type === ElementType.Glyph) return await resizeGlyphElementToNaturalBox(el, opts);
-    return false;
-  }
-
-  function getVectorOffsetFontFamily(el){
-    if (!el) return "";
-    if (el.type === ElementType.Text) return getElementResolvedTextFontFamily(el) || FONT_FAMILY_LITERAL;
-    if (el.type === ElementType.Sitelen) return getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || FONT_FAMILY_TEXT;
-    if (el.type === ElementType.Glyph) return getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || FONT_FAMILY_TEXT;
-    return "";
-  }
-
-  function firstFiniteNumber(...values){
-    for (const value of values){
-      const n = Number(value);
-      if (Number.isFinite(n)) return n;
-    }
-    return null;
-  }
-
-  function vectorPlacementCandidates(el){
-    if (!el) return [];
-    const table = Scene?.stage?.vectorDisplayOffsets || {};
-    const family = getVectorOffsetFontFamily(el);
-    const type = String(el.type || "");
-    const byFont = family && table && typeof table === "object" ? table[family] : null;
-    return [
-      byFont && typeof byFont === "object" ? byFont[type] : undefined,
-      byFont && typeof byFont === "object" ? byFont.default : undefined,
-      table && typeof table === "object" ? table[type] : undefined,
-      table && typeof table === "object" ? table.default : undefined
-    ];
-  }
-
-  function vectorPlacementNumberFromEntry(entry, names){
-    if (entry == null) return null;
-    if (typeof entry === "number" || typeof entry === "string") {
-      const n = Number(entry);
-      return Number.isFinite(n) ? n : null;
-    }
-    if (typeof entry === "object") {
-      for (const name of names){
-        const n = Number(entry[name]);
-        if (Number.isFinite(n)) return n;
-      }
-    }
-    return null;
-  }
-
-  function lookupVectorPlacementNumber(el, names, fallback){
-    const directNames = Array.isArray(names) ? names : [names];
-    for (const name of directNames){
-      const direct = Number(el?.[`vector${String(name).slice(0,1).toUpperCase()}${String(name).slice(1)}Em`]);
-      if (Number.isFinite(direct)) return direct;
-      const directPlain = Number(el?.[`vector${String(name).slice(0,1).toUpperCase()}${String(name).slice(1)}`]);
-      if (Number.isFinite(directPlain)) return directPlain;
-    }
-    for (const entry of vectorPlacementCandidates(el)){
-      const n = vectorPlacementNumberFromEntry(entry, directNames);
-      if (n != null) return n;
-    }
-    return fallback;
-  }
-
-  function lookupVectorYOffsetEm(el){
-    if (!el) return 0;
-    const direct = firstFiniteNumber(el.vectorYOffsetEm);
-    if (direct != null) return direct;
-    return lookupVectorPlacementNumber(el, ["y", "yOffset", "yOffsetEm", "offset"], 0);
-  }
-
-  function lookupVectorXOffsetEm(el){
-    if (!el) return 0;
-    const direct = firstFiniteNumber(el.vectorXOffsetEm);
-    if (direct != null) return direct;
-    return lookupVectorPlacementNumber(el, ["x", "xOffset", "xOffsetEm"], 0);
-  }
-
-  function lookupVectorScale(el){
-    if (!el) return 1;
-    const direct = firstFiniteNumber(el.vectorScale);
-    if (direct != null) return Math.max(0.05, direct);
-    const n = lookupVectorPlacementNumber(el, ["scale", "scaleFactor"], 1);
-    return Math.max(0.05, Number.isFinite(n) ? n : 1);
-  }
-
-  function vectorYOffsetPx(el){
-    const fontPx = Math.max(6, Number(el?.fontSize ?? 24));
-    return fontPx * lookupVectorYOffsetEm(el);
-  }
-
-  function vectorXOffsetPx(el){
-    const fontPx = Math.max(6, Number(el?.fontSize ?? 24));
-    return fontPx * lookupVectorXOffsetEm(el);
-  }
-
-  function svgElementInnerCacheKey(el){
-    return JSON.stringify({
-      type: el?.type,
-      w: Number(el?.w || 0), h: Number(el?.h || 0),
-      text: String(el?.text ?? ""), codepoint: String(el?.codepoint ?? ""),
-      imageAssetId: String(el?.image?.assetId || ""),
-      fill: String(el?.fill ?? ""), fillEnabled: !!el?.fillEnabled,
-      stroke: String(el?.stroke ?? ""), strokeW: Number(el?.strokeW ?? 0),
-      color: String(el?.color ?? ""), opacity: Number(el?.opacity ?? 1),
-      radius: Number(el?.radius ?? 0),
-      fontSize: Number(el?.fontSize ?? 0), fontFamily: String(el?.fontFamily ?? ""),
-      quotedTextFontOption: String(el?.quotedTextFontOption ?? ""),
-      renderFontPreset: getElementRenderFontPresetKey(el),
-      textFontFamily: getElementResolvedTextFontFamily(el),
-      quotedTextFontFamily: getElementResolvedQuotedTextFontFamily(el),
-      literalCartoucheFamily: (el?.type === ElementType.Sitelen) ? getElementLiteralCartoucheFontFamily(el) : '',
-      literalCartoucheSettings: (el?.type === ElementType.Sitelen) ? getElementLiteralCartoucheSettings(el) : null,
-      align: String(el?.align ?? ""), lineHeight: Number(el?.lineHeight ?? 0),
-      spacingPreset: getElementSpacingPreset(el),
-      abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
-      ignoreUnknownText: !!el?.ignoreUnknownText,
-      haloEnabled: !!el?.haloEnabled, haloColor: String(el?.haloColor ?? ""),
-      haloMode: String(el?.haloThicknessMode ?? ""), haloThickness: Number(el?.haloThickness ?? 0),
-      vectorYOffsetEm: lookupVectorYOffsetEm(el),
-      vectorXOffsetEm: lookupVectorXOffsetEm(el),
-      vectorScale: lookupVectorScale(el),
-      vectorPlacementMode: String(el?.vectorPlacementMode || ""),
-      vectorGlyphTightMetrics: el?.vectorGlyphTightMetrics || null,
-      vectorSitelenTightMetrics: el?.vectorSitelenTightMetrics || null
-    });
-  }
-
-  function svgGroupTransformForElement(el){
-    const cx = Number(el.x || 0) + Number(el.w || 0) / 2;
-    const cy = Number(el.y || 0) + Number(el.h || 0) / 2;
-    const rot = Number(el.rotationDeg || 0);
-    return `translate(${svgNum(cx)} ${svgNum(cy)}) rotate(${svgNum(rot)})`;
-  }
-
-  function svgRectNode({x, y, w, h, r = 0, fill = "none", stroke = "none", strokeWidth = 0, opacity = null} = {}){
-    const attrs = [
-      `x="${svgNum(x)}"`, `y="${svgNum(y)}"`,
-      `width="${svgNum(Math.max(0, Number(w || 0)))}"`,
-      `height="${svgNum(Math.max(0, Number(h || 0)))}"`,
-      `rx="${svgNum(Math.max(0, Number(r || 0)))}"`,
-      `ry="${svgNum(Math.max(0, Number(r || 0)))}"`,
-      `fill="${svgEsc(fill)}"`,
-      `stroke="${svgEsc(stroke)}"`,
-      `stroke-width="${svgNum(strokeWidth)}"`
-    ];
-    if (opacity != null) attrs.push(`opacity="${svgNum(opacity)}"`);
-    return `<rect ${attrs.join(" ")} />`;
-  }
-
-  async function svgTextElementForExport(el){
-    const out = [];
-    const x = -el.w / 2, y = -el.h / 2;
-
-    if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
-      out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: svgColor(el.fill), stroke: "none"}));
-    }
-
-    const pad = 8;
-    const innerX = x + pad;
-    const innerY = y + pad + vectorYOffsetPx(el);
-    const innerW = Math.max(0, el.w - pad * 2);
-    const innerH = Math.max(0, el.h - pad * 2);
-    const fontSize = Math.max(6, Number(el.fontSize ?? 24));
-    const fontFamily = getElementResolvedTextFontFamily(el) || FONT_FAMILY_LITERAL;
-    const lineHeight = Math.max(0.8, Number(el.lineHeight ?? 1.15));
-
-    const measureCanvas = document.createElement("canvas");
-    const mctx = measureCanvas.getContext("2d");
-    mctx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
-
-    let textAlign = (el.align || "left");
-    if (textAlign !== "left" && textAlign !== "center" && textAlign !== "right") textAlign = "left";
-
-    const rawLines = splitLinesForBox(el.text);
-    const allLines = [];
-    for (const ln0 of rawLines){
-      const wrapped = wrapLine(mctx, String(ln0 ?? ""), innerW);
-      for (const wln of wrapped) allLines.push(wln);
-    }
-
-    let anchor = "start";
-    let tx = innerX;
-    if (textAlign === "center") { anchor = "middle"; tx = innerX + innerW / 2; }
-    if (textAlign === "right") { anchor = "end"; tx = innerX + innerW; }
-
-    const haloW = effectiveHaloThicknessForElementExport(el);
-    const fill = svgColor(el.color || "#111111");
-    const lhPx = fontSize * lineHeight;
-    let ty = innerY;
-    const commonAttrs = `font-family="${svgEsc(svgCssFontFamily(fontFamily))}" font-size="${svgNum(fontSize)}" text-anchor="${anchor}" dominant-baseline="text-before-edge"`;
-
-    for (const ln of allLines){
-      if (ty + lhPx > innerY + innerH + 0.5) break;
-      const safe = svgEsc(ln);
-      if (haloW > 0){
-        out.push(`<text x="${svgNum(tx)}" y="${svgNum(ty)}" ${commonAttrs} fill="none" stroke="${svgEsc(rgbaOrHexToHex(el.haloColor, "#FFFFFF"))}" stroke-width="${svgNum(haloW)}" stroke-linejoin="round">${safe}</text>`);
-      }
-      out.push(`<text x="${svgNum(tx)}" y="${svgNum(ty)}" ${commonAttrs} fill="${svgEsc(fill)}">${safe}</text>`);
-      ty += lhPx;
-    }
-
-    if ((el.strokeW ?? 0) > 0){
-      out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: "none", stroke: svgColor(el.stroke || "rgba(17,17,17,0.35)"), strokeWidth: el.strokeW ?? 1}));
-    }
-    return out.join("\n");
-  }
-
-  async function createVectorExporterForElement(el){
-    const presetKey = getElementRenderFontPresetKey(el);
-    try { stageFontPairController?.setActivePreset?.(presetKey, { persist: false }); } catch {}
-    const renderer = await getSitelenRendererForElement(el);
-    const literalCartoucheSettings = (el?.type === ElementType.Sitelen)
-      ? getElementLiteralCartoucheSettings(el)
-      : {};
-    return await SitelenVectorExporter.create({
-      renderer,
-      fontController: stageFontPairController,
-      literalCartoucheRuleClipScale: literalCartoucheSettings.literalCartoucheRuleClipScale,
-      literalCartoucheRuleClipStrategy: literalCartoucheSettings.literalCartoucheRuleClipStrategy,
-      literalCartoucheLeftCapClipRatio: literalCartoucheSettings.literalCartoucheLeftCapClipRatio,
-      debug: false,
-      debugWasm: false
-    });
-  }
-
-  async function nestedSvgFromVectorBlob(blob){
-    const svgText = await blob.text();
-    const open = svgText.match(/<svg\b([^>]*)>/i);
-    const closeIdx = svgText.toLowerCase().lastIndexOf("</svg>");
-    if (!open || closeIdx < 0) throw new Error("Vector SVG parse failed.");
-    const attrs = open[1] || "";
-    const viewBoxMatch = attrs.match(/viewBox="([^"]+)"/i);
-    const widthMatch = attrs.match(/width="([0-9.]+)"/i);
-    const heightMatch = attrs.match(/height="([0-9.]+)"/i);
-    const inner = svgText.slice(open.index + open[0].length, closeIdx);
-    const viewBox = viewBoxMatch ? viewBoxMatch[1] : `0 0 ${widthMatch?.[1] || 1} ${heightMatch?.[1] || 1}`;
-    return { inner, viewBox };
-  }
-
-  function parseSvgViewBoxString(viewBox, fallbackW = 1, fallbackH = 1){
-    const parts = String(viewBox || '').trim().split(/[\s,]+/).map(Number).filter(Number.isFinite);
-    if (parts.length >= 4 && parts[2] > 0 && parts[3] > 0) {
-      return { x: parts[0], y: parts[1], w: parts[2], h: parts[3] };
-    }
-    return { x: 0, y: 0, w: Math.max(1, Number(fallbackW || 1)), h: Math.max(1, Number(fallbackH || 1)) };
-  }
-
-  function formatSvgViewBoxBox(box){
-    const b = box || {};
-    return `${svgNum(Number(b.x || 0))} ${svgNum(Number(b.y || 0))} ${svgNum(Math.max(1, Number(b.w || 1)))} ${svgNum(Math.max(1, Number(b.h || 1)))}`;
-  }
-
-
-  function svgParseHexRgb(value){
-    const hex = rgbaOrHexToHex(value, "").trim();
-    const m = /^#([0-9a-f]{6})$/i.exec(hex);
-    if (!m) return null;
-    const s = m[1];
-    return {
-      r: parseInt(s.slice(0, 2), 16),
-      g: parseInt(s.slice(2, 4), 16),
-      b: parseInt(s.slice(4, 6), 16)
-    };
-  }
-
-  function svgIsReddishHex(value){
-    const rgb = svgParseHexRgb(value);
-    if (!rgb) return false;
-    return rgb.r >= 120 && rgb.r > rgb.g * 1.2 && rgb.r > rgb.b * 1.2;
-  }
-
-  function svgRelativeLuminance(value){
-    const rgb = svgParseHexRgb(value);
-    if (!rgb) return null;
-    const channel = (v) => {
-      const s = Math.max(0, Math.min(255, v)) / 255;
-      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-    };
-    return 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
-  }
-
-  function svgContrastRatio(a, b){
-    const la = svgRelativeLuminance(a);
-    const lb = svgRelativeLuminance(b);
-    if (la == null || lb == null) return 21;
-    const hi = Math.max(la, lb);
-    const lo = Math.min(la, lb);
-    return (hi + 0.05) / (lo + 0.05);
-  }
-
-  function svgResolveUnknownStrokeColor(display, fgHex, backgroundHex){
-    const mode = String(display?.colorMode || "auto").toLowerCase();
-    if (mode === "custom" && display?.color) return rgbaOrHexToHex(display.color, "#D00000");
-    if (mode === "yellow") return "#C9A500";
-    if (mode === "red") return "#D00000";
-
-    // Auto mode mirrors the production raster renderer: start with red,
-    // switch to yellow when the sitelen foreground is red/reddish. The extra
-    // contrast checks stop either outline colour from disappearing on matching
-    // element fills or stage backgrounds.
-    const red = "#D00000";
-    const yellow = "#C9A500";
-    const black = "#000000";
-    const white = "#FFFFFF";
-    const surfaces = [fgHex, backgroundHex].map(v => rgbaOrHexToHex(v, "")).filter(v => /^#[0-9a-f]{6}$/i.test(v));
-
-    const minContrast = 2.0;
-    const candidateOrder = svgIsReddishHex(fgHex) ? [yellow, red, black, white] : [red, yellow, black, white];
-    for (const c of candidateOrder) {
-      if (surfaces.every(surface => svgContrastRatio(c, surface) >= minContrast)) return c;
-    }
-    return svgIsReddishHex(fgHex) ? yellow : red;
-  }
-
-  function svgUnknownTextRectForRun(run){
-    const isUnknown = !!(run?.isUnrecognized || run?._element?.isUnrecognized);
-    if (!isUnknown) return "";
-
-    const display = run?.unknownDisplay || run?._element?.unknownDisplay || {};
-    const pad = Number.isFinite(Number(display.paddingPx)) ? Number(display.paddingPx) : 2;
-    const strokeW = Number.isFinite(Number(display.lineWidthPx)) ? Number(display.lineWidthPx) : 1.5;
-
-    const x = Number.isFinite(Number(run?.drawXPx)) ? Number(run.drawXPx) : Number(run?.xPx || 0);
-    const baselineY = Number(run?.baselineYPx || 0);
-    const fontPx = Math.max(6, Number(run?.fontPx || 16));
-    const ascent = Number.isFinite(Number(run?.ascentPx)) ? Number(run.ascentPx) : Math.ceil(fontPx * 0.8);
-    const descent = Number.isFinite(Number(run?.descentPx)) ? Number(run.descentPx) : Math.ceil(fontPx * 0.2);
-    const w = Math.max(1, Number(run?.widthPx || 1));
-    const h = Math.max(1, ascent + descent);
-    const fgHex = rgbaOrHexToHex(run?.fillStyle || run?._element?.color || "#111111", "#111111");
-    const backgroundHex = rgbaOrHexToHex(run?._element?.fill || Scene?.stage?.bg || "#FFFFFF", "#FFFFFF");
-    const strokeColor = svgResolveUnknownStrokeColor(display, fgHex, backgroundHex);
-    const dashAttr = display?.dash ? ` stroke-dasharray="4 2"` : "";
-
-    return `<rect data-unknown-text="true" x="${svgNum(x - pad)}" y="${svgNum(baselineY - ascent - pad)}" width="${svgNum(w + pad * 2)}" height="${svgNum(h + pad * 2)}" fill="none" stroke="${svgEsc(strokeColor)}" stroke-width="${svgNum(strokeW)}" vector-effect="non-scaling-stroke"${dashAttr} />`;
-  }
-
-  function svgUnknownTextRectsForPlan(plan){
-    const rects = [];
-    for (const line of (plan?.lines || [])) {
-      for (const run of (line?.runs || [])) {
-        const rect = svgUnknownTextRectForRun(run);
-        if (rect) rects.push(rect);
-      }
-    }
-    return rects.join("\n");
-  }
-
-  function normalizeSitelenVectorPlanFontRoles(plan, el){
-    if (!plan || !el) return plan;
-    const quotedLiteralFamily = getElementResolvedQuotedTextFontFamily(el) || getRenderFontPreset(getElementRenderFontPresetKey(el)).literalFamily || FONT_FAMILY_LITERAL;
-    const literalCartoucheFamily = getElementLiteralCartoucheFontFamily(el);
-
-    vectorFontDebug("normalizeSitelenVectorPlanFontRoles BEFORE", {
-      elementId: el?.id || null,
-      renderFontPreset: getElementRenderFontPresetKey(el),
-      quotedTextFontOption: el?.quotedTextFontOption || null,
-      quotedLiteralFamily,
-      literalCartoucheFamily,
-      runs: summarizeVectorFontPlan(plan)
-    });
-
-    for (const line of (plan.lines || [])) {
-      for (const run of (line.runs || [])) {
-        const element = run?._element || run?.element || null;
-        const isQuotedLiteral =
-          run?.fontRole === "literal" ||
-          run?.isQuoted === true ||
-          element?.isQuoted === true ||
-          (run?.kind === "text" && run?.sourceKind === "quote");
-        const isUnknownLiteral =
-          run?.fontRole === "unknown" ||
-          run?.isUnrecognized === true ||
-          element?.isUnrecognized === true;
-        const isLiteralCartouche =
-          run?.fontRole === "literalCartouche" ||
-          element?.isLiteralCartouche === true;
-
-        if (isLiteralCartouche) {
-          run.fontRole = "literalCartouche";
-          run.fontFamily = literalCartoucheFamily;
-          if (element) element.fontFamily = literalCartoucheFamily;
-          continue;
-        }
-
-        if (isQuotedLiteral || isUnknownLiteral) {
-          run.fontRole = isUnknownLiteral && !isQuotedLiteral ? "unknown" : "literal";
-          run.fontFamily = quotedLiteralFamily;
-          if (element) element.fontFamily = quotedLiteralFamily;
-        }
-      }
-    }
-    vectorFontDebug("normalizeSitelenVectorPlanFontRoles AFTER", {
-      elementId: el?.id || null,
-      quotedLiteralFamily,
-      literalCartoucheFamily,
-      runs: summarizeVectorFontPlan(plan)
-    });
-    return plan;
-  }
-
-  async function svgSitelenElementForExport(el){
-    const out = [];
-    const x = -el.w / 2, y = -el.h / 2;
-    const contentYOffset = vectorYOffsetPx(el);
-    if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
-      out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: svgColor(el.fill), stroke: "none"}));
-    }
-    const exporter = await createVectorExporterForElement(el);
-    const sitelenInput = CartoucheApi.prepareInput(String(el.text ?? ""), pageMap);
-    const sitelenConfig = buildRendererCallConfigForElement(el);
-    vectorFontDebug("svgSitelenElementForExport renderer config", {
-      elementId: el?.id || null,
-      text: String(el.text ?? ""),
-      renderFontPreset: getElementRenderFontPresetKey(el),
-      quotedTextFontOption: el?.quotedTextFontOption || null,
-      resolvedQuotedLiteralFamily: getElementResolvedQuotedTextFontFamily(el),
-      roles: sitelenConfig?.fonts?.roles || null,
-      parser: sitelenConfig?.parser || null,
-      layout: sitelenConfig?.layout || null
-    });
-    const rawPlan = await exporter.buildPlan({ input: sitelenInput, config: sitelenConfig });
-    vectorFontDebug("svgSitelenElementForExport raw plan", {
-      elementId: el?.id || null,
-      planSize: { widthPx: rawPlan?.widthPx, heightPx: rawPlan?.heightPx },
-      runs: summarizeVectorFontPlan(rawPlan)
-    });
-    const plan = normalizeSitelenVectorPlanFontRoles(rawPlan, el);
-    const blob = await exporter.exportTextToSvgBlob({
-      plan,
-      paddingPx: 0,
-      fallbackWidthPx: Math.max(1, el.w),
-      fallbackHeightPx: Math.max(1, el.h)
-    });
-    const nested = await nestedSvgFromVectorBlob(blob);
-    const unknownTextRects = (!el.ignoreUnknownText) ? svgUnknownTextRectsForPlan(plan) : "";
-    const nestedInnerWithUnknownRects = unknownTextRects ? `${nested.inner}
-${unknownTextRects}` : nested.inner;
-    const tightMetrics = (el.vectorSitelenTightMetrics && typeof el.vectorSitelenTightMetrics === "object")
-      ? el.vectorSitelenTightMetrics
-      : null;
-    if (tightMetrics){
-      // Legacy/import-migrated sitelen elements are converted from the old
-      // production raster box into a vector-native tight box.  The stored
-      // source viewBox describes the visible renderer output in the original
-      // vector coordinate space, and el.w/el.h describe the old displayed size
-      // after production's drawImage scaling.  Use that exact viewBox/box pair
-      // instead of doing a second center/meet scaling pass.
-      const vb = parseSvgViewBoxString(nested.viewBox, tightMetrics.sourceCanvasW || el.w, tightMetrics.sourceCanvasH || el.h);
-      const sourceX = Number(tightMetrics.sourceX ?? 0);
-      const sourceY = Number(tightMetrics.sourceY ?? 0);
-      const sourceW = Math.max(1, Number(tightMetrics.sourceW ?? vb.w));
-      const sourceH = Math.max(1, Number(tightMetrics.sourceH ?? vb.h));
-      const tightViewBox = { x: vb.x + sourceX, y: vb.y + sourceY, w: sourceW, h: sourceH };
-      out.push(`<svg x="${svgNum(x)}" y="${svgNum(y + contentYOffset)}" width="${svgNum(el.w)}" height="${svgNum(el.h)}" viewBox="${svgEsc(formatSvgViewBoxBox(tightViewBox))}" preserveAspectRatio="none" overflow="hidden">${nestedInnerWithUnknownRects}</svg>`);
-    } else {
-      // Sitelen vector output must not be vertically or horizontally distorted
-      // unless the element explicitly disables Keep aspect ratio.  When aspect
-      // ratio is preserved, anchor to the top of the element box and use the
-      // element's text alignment for horizontal anchoring.
-      const par = svgSitelenPreserveAspectRatio(el);
-      const guardedViewBox = guardedSitelenViewBox(nested.viewBox, el);
-      out.push(`<svg x="${svgNum(x)}" y="${svgNum(y + contentYOffset)}" width="${svgNum(el.w)}" height="${svgNum(el.h)}" viewBox="${svgEsc(formatSvgViewBoxBox(guardedViewBox))}" preserveAspectRatio="${svgEsc(par)}" overflow="visible">${nestedInnerWithUnknownRects}</svg>`);
-    }
-    if ((el.strokeW ?? 0) > 0){
-      out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: "none", stroke: svgColor(el.stroke || "rgba(17,17,17,0.35)"), strokeWidth: el.strokeW ?? 1}));
-    }
-    return out.join("\n");
-  }
-
-  function glyphUsesCanvasMiddlePlacement(el){
-    // Long-term glyph model: all glyph elements, legacy and new, emulate
-    // production Canvas drawText placement. The element box is a placement
-    // box; fontSize controls glyph size. The glyph is not stretched to fill
-    // the box unless a separate explicit font-scaling operation changes
-    // fontSize.
-    return !!el && (el.type === ElementType.Glyph || el.type === "glyph");
-  }
-
-  function canvasMiddleGlyphMetrics(el, cp, fontPx, fontFamily){
-    const ch = (typeof cp === "number") ? String.fromCodePoint(cp) : "?";
-    const c = document.createElement("canvas");
-    const mctx = c.getContext("2d");
-    mctx.font = `${fontPx}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
-    mctx.textBaseline = "alphabetic";
-    mctx.textAlign = "left";
-    try { setTextQuality(mctx); } catch {}
-    const m = mctx.measureText(ch);
-    const advance = Math.max(1, Number(m.width || fontPx));
-    const ascent = Math.max(1, Number(m.actualBoundingBoxAscent ?? fontPx * 0.8));
-    const descent = Math.max(0, Number(m.actualBoundingBoxDescent ?? fontPx * 0.2));
-
-    // Canvas production draws glyphs with textAlign="center" and
-    // textBaseline="middle" at the element-box center.  The vector exporter
-    // wants an alphabetic baseline, so convert the middle anchor to an
-    // alphabetic baseline using the same measured font metrics.
-    return {
-      advance,
-      ascent,
-      descent,
-      drawXPx: Math.max(0, Number(el.w || 0) / 2 - advance / 2),
-      baselineYPx: Number(el.h || 0) / 2 + (ascent - descent) / 2,
-    };
-  }
-
-  async function svgGlyphElementForExport(el){
-    const out = [];
-    const x = -el.w / 2, y = -el.h / 2;
-    const contentYOffset = vectorYOffsetPx(el);
-    if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
-      out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: svgColor(el.fill), stroke: "none"}));
-    }
-    const cp = parseCodepointInput(el.codepoint);
-    if (typeof cp === "number"){
-      const fontPx = Math.max(6, Number(el.fontSize ?? 64));
-      const fontFamily = getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || FONT_FAMILY_TEXT;
-      const exporter = await createVectorExporterForElement(el);
-      const haloW = effectiveHaloThicknessForElementExport(el);
-      const canvasMiddleGlyph = glyphUsesCanvasMiddlePlacement(el);
-      const tightMetrics = null;
-
-      let planW;
-      let planH;
-      let drawX;
-      let baselineY;
-
-      if (canvasMiddleGlyph){
-        // Legacy production glyphs were drawn directly by Canvas with:
-        //   textAlign = "center";
-        //   textBaseline = "middle";
-        //   fillText(ch, x + w/2, y + h/2)
-        // Keep the imported box unchanged and emulate that anchor using vector
-        // paths.  Do not tighten or scale imported glyph boxes.
-        const metrics = canvasMiddleGlyphMetrics(el, cp, fontPx, fontFamily);
-        planW = Math.max(1, Number(el.w || fontPx * 2));
-        planH = Math.max(1, Number(el.h || fontPx * 2));
-        drawX = metrics.drawXPx;
-        baselineY = metrics.baselineYPx;
-      } else {
-        planW = Math.max(1, Number(tightMetrics?.widthPx ?? fontPx * 2));
-        planH = Math.max(1, Number(tightMetrics?.heightPx ?? fontPx * 2));
-        drawX = Math.max(0, Number(tightMetrics?.drawXPx ?? fontPx * 0.5));
-        baselineY = Math.max(1, Number(tightMetrics?.baselineYPx ?? fontPx * 1.25));
-      }
-
-      const plan = {
-        widthPx: planW,
-        heightPx: planH,
-        fontPx,
-        fillStyle: rgbaOrHexToHex(el.color || "#111111", "#111111"),
-        lines: [{ runs: [{
-          kind: "glyph",
-          cps: [cp],
-          fontFamily,
-          fontRole: "word",
-          xPx: drawX,
-          drawXPx: drawX,
-          baselineYPx: baselineY,
-          fontPx,
-          fillStyle: rgbaOrHexToHex(el.color || "#111111", "#111111"),
-          halo: { enabled: haloW > 0, color: rgbaOrHexToHex(el.haloColor, "#FFFFFF"), widthPx: haloW }
-        }] }]
-      };
-      const blob = await exporter.exportTextToSvgBlob({ plan, paddingPx: 0, fallbackWidthPx: planW, fallbackHeightPx: planH });
-      const nested = await nestedSvgFromVectorBlob(blob);
-
-      if (canvasMiddleGlyph){
-        // Same coordinate system as the imported element box, so no scaling and
-        // no preserveAspectRatio fitting. overflow is visible to match Canvas:
-        // production drawText is not clipped to the element rectangle.
-        const glyphX = x + vectorXOffsetPx(el);
-        const glyphY = y + contentYOffset;
-        out.push(`<svg x="${svgNum(glyphX)}" y="${svgNum(glyphY)}" width="${svgNum(el.w)}" height="${svgNum(el.h)}" viewBox="0 0 ${svgNum(planW)} ${svgNum(planH)}" preserveAspectRatio="none" overflow="visible">${nested.inner}</svg>`);
-      } else if (tightMetrics){
-        const glyphX = x + vectorXOffsetPx(el);
-        const glyphY = y + contentYOffset;
-        out.push(`<svg x="${svgNum(glyphX)}" y="${svgNum(glyphY)}" width="${svgNum(el.w)}" height="${svgNum(el.h)}" viewBox="${svgEsc(nested.viewBox)}" preserveAspectRatio="none" overflow="hidden">${nested.inner}</svg>`);
-      } else {
-        const glyphScale = lookupVectorScale(el);
-        const glyphViewportW = Math.max(1, fontPx * 2 * glyphScale);
-        const glyphViewportH = Math.max(1, fontPx * 2 * glyphScale);
-        const glyphX = x + (Number(el.w || 0) - glyphViewportW) / 2 + vectorXOffsetPx(el);
-        const glyphY = y + (Number(el.h || 0) - glyphViewportH) / 2 + contentYOffset;
-        out.push(`<svg x="${svgNum(glyphX)}" y="${svgNum(glyphY)}" width="${svgNum(glyphViewportW)}" height="${svgNum(glyphViewportH)}" viewBox="${svgEsc(nested.viewBox)}" preserveAspectRatio="xMidYMid meet" overflow="visible">${nested.inner}</svg>`);
-      }
-    }
-    if ((el.strokeW ?? 0) > 0){
-      out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: "none", stroke: svgColor(el.stroke || "rgba(17,17,17,0.35)"), strokeWidth: el.strokeW ?? 1}));
-    }
-    return out.join("\n");
-  }
-
-  async function svgImageElementForExport(el){
-    const x = -el.w / 2, y = -el.h / 2;
-    const out = [];
-    if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
-      out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: svgColor(el.fill), stroke: "none"}));
-    }
-    const dataUrl = el.image?.assetId ? getImageAssetDataUrl(el.image.assetId) : null;
-    if (dataUrl){
-      out.push(`<image x="${svgNum(x)}" y="${svgNum(y)}" width="${svgNum(el.w)}" height="${svgNum(el.h)}" href="${svgEsc(dataUrl)}" preserveAspectRatio="none" />`);
-    } else {
-      out.push(svgRectNode({x:x+1, y:y+1, w:el.w-2, h:el.h-2, fill:"none", stroke:"rgba(17,17,17,0.28)", strokeWidth:2}));
-    }
-    if ((el.strokeW ?? 0) > 0){
-      out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: "none", stroke: svgColor(el.stroke || "rgba(17,17,17,0.35)"), strokeWidth: el.strokeW ?? 1}));
-    }
-    return out.join("\n");
-  }
-
-  async function svgElementInnerForExport(el){
-    const parts = [];
-    const x = -el.w / 2, y = -el.h / 2;
-    if (el.type === ElementType.Rect){
-      const r = Number(el.radius ?? 0);
-      const haloW = effectiveHaloThicknessForElementExport(el);
-      if (el.fillEnabled && el.fill && el.fill !== "transparent") parts.push(svgRectNode({x, y, w: el.w, h: el.h, r, fill: svgColor(el.fill), stroke:"none"}));
-      if (haloW > 0) parts.push(svgRectNode({x, y, w: el.w, h: el.h, r, fill:"none", stroke: rgbaOrHexToHex(el.haloColor, "#FFFFFF"), strokeWidth: haloW}));
-      if ((el.strokeW ?? 0) > 0) parts.push(svgRectNode({x, y, w: el.w, h: el.h, r, fill:"none", stroke: svgColor(el.stroke || "rgba(17,17,17,0.35)"), strokeWidth: el.strokeW ?? 1}));
-    } else if (el.type === ElementType.Text){
-      parts.push(await svgTextElementForExport(el));
-    } else if (el.type === ElementType.Sitelen){
-      parts.push(await svgSitelenElementForExport(el));
-    } else if (el.type === ElementType.Glyph){
-      parts.push(await svgGlyphElementForExport(el));
-    } else if (el.type === ElementType.Image){
-      parts.push(await svgImageElementForExport(el));
-    }
-    return parts.join("\n");
-  }
-
-  function svgRasterPreviewScale(){
-    const dpr = window.devicePixelRatio || 1;
-    const z = Number(Scene?.view?.zoom || 1);
-    const raw = Math.min(4, Math.max(1, dpr * z));
-    return Math.max(1, Math.round(raw * 2) / 2);
-  }
-
-  function svgLocalDocumentForElement(el, inner, bitmapScale = 1){
-    const w = Math.max(1, Number(el?.w || 1));
-    const h = Math.max(1, Number(el?.h || 1));
-    const x = -w / 2;
-    const y = -h / 2;
-    const pxW = Math.max(1, Math.ceil(w * Math.max(1, bitmapScale || 1)));
-    const pxH = Math.max(1, Math.ceil(h * Math.max(1, bitmapScale || 1)));
-    return `<?xml version="1.0" encoding="UTF-8"?>\n` +
-      `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
-      `width="${svgNum(pxW)}" height="${svgNum(pxH)}" viewBox="${svgNum(x)} ${svgNum(y)} ${svgNum(w)} ${svgNum(h)}">\n` +
-      `${inner}\n</svg>`;
-  }
-
-  async function svgTextToDataUrlPng(svgText, widthPx, heightPx){
-    return await new Promise((resolve, reject) => {
-      const img = new Image();
-      const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      img.onload = () => {
-        try {
-          const off = document.createElement("canvas");
-          off.width = Math.max(1, Math.ceil(widthPx || img.width || 1));
-          off.height = Math.max(1, Math.ceil(heightPx || img.height || 1));
-          const octx = off.getContext("2d", { alpha: true });
-          octx.clearRect(0, 0, off.width, off.height);
-          octx.drawImage(img, 0, 0, off.width, off.height);
-          URL.revokeObjectURL(url);
-          resolve(off.toDataURL("image/png"));
-        } catch (err) {
-          URL.revokeObjectURL(url);
-          reject(err);
-        }
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error("Element SVG raster preview failed."));
-      };
-      img.src = url;
-    });
-  }
-
-  async function svgRasterPreviewElementForDisplay(el, inner, innerKey){
-    const alpha = clamp(el.opacity ?? 1, 0, 1);
-    const scale = svgRasterPreviewScale();
-    const key = `${el.id}|scale:${scale}|${innerKey}`;
-    let entry = svgRasterPreviewCache.get(key);
-    if (!entry){
-      for (const k of Array.from(svgRasterPreviewCache.keys())) {
-        if (k.startsWith(`${el.id}|`)) svgRasterPreviewCache.delete(k);
-      }
-      const w = Math.max(1, Number(el?.w || 1));
-      const h = Math.max(1, Number(el?.h || 1));
-      const pxW = Math.max(1, Math.ceil(w * scale));
-      const pxH = Math.max(1, Math.ceil(h * scale));
-      const localSvg = svgLocalDocumentForElement(el, inner, scale);
-      const dataUrl = await svgTextToDataUrlPng(localSvg, pxW, pxH);
-      entry = { dataUrl, scale, w, h };
-      svgRasterPreviewCache.set(key, entry);
-    }
-    const x = -Number(el.w || 0) / 2;
-    const y = -Number(el.h || 0) / 2;
-    return `<g id="${svgEsc(el.id)}" data-preview="raster" opacity="${svgNum(alpha)}" transform="${svgEsc(svgGroupTransformForElement(el))}">\n` +
-      `<image x="${svgNum(x)}" y="${svgNum(y)}" width="${svgNum(el.w)}" height="${svgNum(el.h)}" href="${svgEsc(entry.dataUrl)}" preserveAspectRatio="none" />\n` +
-      `</g>`;
-  }
-
-  async function svgElementForExport(el, { useRasterPreviewForUnselected = false } = {}){
-    const alpha = clamp(el.opacity ?? 1, 0, 1);
-    const innerKeyPart = svgElementInnerCacheKey(el);
-    const key = `${el.id}|${innerKeyPart}`;
-    let inner = svgVectorElementCache.get(key);
-    if (inner == null){
-      // Remove older cached entries for this element. Movement/rotation/opacity do not affect this key.
-      for (const k of Array.from(svgVectorElementCache.keys())) {
-        if (k.startsWith(`${el.id}|`)) svgVectorElementCache.delete(k);
-      }
-      inner = await svgElementInnerForExport(el);
-      svgVectorElementCache.set(key, inner);
-    }
-
-    // Live editing acceleration only: deselected elements are shown as raster
-    // previews generated from the exact same SVG fragment. Selected elements
-    // remain live vector so editing stays crisp and direct. Exports never use
-    // this branch because they call buildSceneSvgText with the default false.
-    if (useRasterPreviewForUnselected && !isSelected(el.id)) {
-      try {
-        return await svgRasterPreviewElementForDisplay(el, inner, innerKeyPart);
-      } catch (err) {
-        console.warn("Raster preview failed; falling back to live vector", el?.id, err);
-      }
-    }
-
-    return `<g id="${svgEsc(el.id)}" data-preview="vector" opacity="${svgNum(alpha)}" transform="${svgEsc(svgGroupTransformForElement(el))}">\n${inner}\n</g>`;
-  }
-
-  async function buildSceneSvgText({ includeEditorGrid = false, forceStageBackground = false, useRasterPreviewForUnselected = false } = {}){
-    await awaitAllRendererRastersReady();
-    const defs = [];
-    const body = [];
-    const w = Math.max(1, Number(Scene.stage.w || DEFAULTS.stageW));
-    const h = Math.max(1, Number(Scene.stage.h || DEFAULTS.stageH));
-
-    if (forceStageBackground || Scene.stage.exportStageBackground === true){
-      body.push(svgRectNode({x:0, y:0, w, h, fill: svgColor(Scene.stage.bg || DEFAULTS.stageBg), stroke:"none"}));
-    }
-
-    if (Scene.stage.bgImgEnabled && Scene.stage.bgImgAssetId){
-      const dataUrl = getImageAssetDataUrl(String(Scene.stage.bgImgAssetId));
-      if (dataUrl){
-        const img = ensureBackgroundImageLoadedForStage();
-        const natW = img?.naturalWidth || 1;
-        const natH = img?.naturalHeight || 1;
-        const dest = computeBackgroundImageDestRect({
-          stageW: w, stageH: h, natW, natH,
-          stretch: !!Scene.stage.bgImgStretch,
-          keepAspect: (Scene.stage.bgImgKeepAspect !== false)
-        });
-        defs.push(`<clipPath id="stageClip"><rect x="0" y="0" width="${svgNum(w)}" height="${svgNum(h)}" /></clipPath>`);
-        body.push(`<g clip-path="url(#stageClip)"><image x="${svgNum(dest.x)}" y="${svgNum(dest.y)}" width="${svgNum(dest.w)}" height="${svgNum(dest.h)}" href="${svgEsc(dataUrl)}" preserveAspectRatio="none" /></g>`);
-      }
-    }
-
-    if (includeEditorGrid && Scene.stage.showGrid){
-      const gs = Math.max(2, Scene.stage.gridSize|0);
-      const gridParts = [];
-      for (let gx = 0; gx <= w + 0.5; gx += gs) gridParts.push(`<line x1="${svgNum(gx)}" y1="0" x2="${svgNum(gx)}" y2="${svgNum(h)}" />`);
-      for (let gy = 0; gy <= h + 0.5; gy += gs) gridParts.push(`<line x1="0" y1="${svgNum(gy)}" x2="${svgNum(w)}" y2="${svgNum(gy)}" />`);
-      body.push(`<g stroke="rgba(17,17,17,0.10)" stroke-width="1" fill="none">${gridParts.join("\n")}</g>`);
-    }
-
-    for (const el of Scene.elements){
-      try { body.push(await svgElementForExport(el, { useRasterPreviewForUnselected })); }
-      catch (err) {
-        console.warn("SVG vector element export failed; element omitted", el?.id, err);
-        body.push(`<!-- vector export failed for ${svgEsc(el?.id || "element")}: ${svgEsc(err?.message || String(err))} -->`);
-      }
-    }
-
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${svgNum(w)}" height="${svgNum(h)}" viewBox="0 0 ${svgNum(w)} ${svgNum(h)}">\n${defs.length ? `<defs>${defs.join("\n")}</defs>` : ""}\n${body.join("\n")}\n</svg>`;
-  }
-
-  async function exportSvgScene(){
-    const svgText = await buildSceneSvgText({ includeEditorGrid: false });
-    downloadBlob(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }), `layout_${nowIso()}.svg`);
-    setStatus("Exported SVG (vector scene).");
-  }
-
-  async function svgTextToPngBlob(svgText){
-    return await new Promise((resolve, reject) => {
-      const img = new Image();
-      const url = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }));
-      img.onload = () => {
-        try {
-          const off = document.createElement("canvas");
-          off.width = Math.max(1, Scene.stage.w | 0);
-          off.height = Math.max(1, Scene.stage.h | 0);
-          const octx = off.getContext("2d");
-          octx.clearRect(0, 0, off.width, off.height);
-          octx.drawImage(img, 0, 0);
-          URL.revokeObjectURL(url);
-          off.toBlob((blob) => blob ? resolve(blob) : reject(new Error("PNG encode failed.")), "image/png");
-        } catch (err) { URL.revokeObjectURL(url); reject(err); }
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("SVG rasterization failed.")); };
-      img.src = url;
-    });
-  }
-
-  async function exportPngFromSvgScene(){
-    const svgText = await buildSceneSvgText({ includeEditorGrid: false });
-    const blob = await svgTextToPngBlob(svgText);
-    downloadBlob(blob, `layout_${nowIso()}.png`);
-    setStatus("Exported PNG from SVG vector scene.");
-  }
-
-  async function exportHtmlScene(){
-    const svgText = await buildSceneSvgText({ includeEditorGrid: false });
-    const html = `<!doctype html>\n<meta charset="utf-8">\n<title>Layout vector export</title>\n<style>html,body{margin:0;background:#fff;}svg{display:block;max-width:100%;height:auto;}</style>\n${svgText}`;
-    downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `layout_${nowIso()}.html`);
-    setStatus("Exported HTML (embedded SVG vector scene).");
-  }
-
-  const SVG_PDF_PT_PER_PX = 72 / 96;
-
-  function svgPdfCssMap(styleText){
-    const out = {};
-    String(styleText || "").split(";").forEach(part => {
-      const idx = part.indexOf(":");
-      if (idx <= 0) return;
-      out[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
-    });
-    return out;
-  }
-
-  function svgPdfAttr(node, name, inheritedValue = undefined){
-    if (!node || !node.getAttribute) return inheritedValue;
-    const direct = node.getAttribute(name);
-    if (direct != null && direct !== "") return direct;
-    const style = svgPdfCssMap(node.getAttribute("style") || "");
-    return style[name] ?? inheritedValue;
-  }
-
-  function svgPdfNumber(value, fallback = 0){
-    const m = String(value ?? "").trim().match(/[-+]?\d*\.?\d+(?:e[-+]?\d+)?/i);
-    if (!m) return fallback;
-    const n = Number(m[0]);
-    return Number.isFinite(n) ? n : fallback;
-  }
-
-  function svgPdfNumberList(value){
-    return String(value ?? "").match(/[-+]?\d*\.?\d+(?:e[-+]?\d+)?/ig)?.map(Number).filter(Number.isFinite) || [];
-  }
-
-  function svgPdfMatrixMultiply(a, b){
-    return [
-      a[0] * b[0] + a[2] * b[1],
-      a[1] * b[0] + a[3] * b[1],
-      a[0] * b[2] + a[2] * b[3],
-      a[1] * b[2] + a[3] * b[3],
-      a[0] * b[4] + a[2] * b[5] + a[4],
-      a[1] * b[4] + a[3] * b[5] + a[5],
-    ];
-  }
-
-  function svgPdfTranslate(tx, ty){ return [1, 0, 0, 1, Number(tx) || 0, Number(ty) || 0]; }
-  function svgPdfScale(sx, sy = sx){ return [Number(sx) || 0, 0, 0, Number(sy) || 0, 0, 0]; }
-  function svgPdfRotate(degValue){
-    const a = (Number(degValue) || 0) * Math.PI / 180;
-    const c = Math.cos(a), s = Math.sin(a);
-    return [c, s, -s, c, 0, 0];
-  }
-
-  function svgPdfParseTransform(transformText){
-    let m = [1, 0, 0, 1, 0, 0];
-    const re = /(matrix|translate|scale|rotate)\s*\(([^)]*)\)/ig;
-    let hit;
-    while ((hit = re.exec(String(transformText || ""))) !== null){
-      const kind = hit[1].toLowerCase();
-      const nums = svgPdfNumberList(hit[2]);
-      let t = [1, 0, 0, 1, 0, 0];
-      if (kind === "matrix" && nums.length >= 6) {
-        t = nums.slice(0, 6);
-      } else if (kind === "translate") {
-        t = svgPdfTranslate(nums[0] || 0, nums.length > 1 ? nums[1] : 0);
-      } else if (kind === "scale") {
-        t = svgPdfScale(nums[0] ?? 1, nums.length > 1 ? nums[1] : (nums[0] ?? 1));
-      } else if (kind === "rotate") {
-        if (nums.length >= 3) {
-          t = svgPdfMatrixMultiply(svgPdfMatrixMultiply(svgPdfTranslate(nums[1], nums[2]), svgPdfRotate(nums[0])), svgPdfTranslate(-nums[1], -nums[2]));
-        } else {
-          t = svgPdfRotate(nums[0] || 0);
-        }
-      }
-      m = svgPdfMatrixMultiply(m, t);
-    }
-    return m;
-  }
-
-  function svgPdfMatrixPoint(m, x, y){
-    return { x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5] };
-  }
-
-
-  function svgPdfTransformedPointToPdfPath(m, x, y, stageH){
-    const p = svgPdfMatrixPoint(m, x, y);
-    // pdf-lib's page.drawSvgPath() treats the supplied path as SVG-style
-    // coordinates and internally applies a Y-axis inversion. Therefore this
-    // function must flatten into final SVG page coordinates scaled to points,
-    // but must NOT pre-flip Y. The required page-height translation is supplied
-    // in drawSvgDomNodeToPdf() via opts.y. Pre-flipping here double-flips the
-    // path and moves it off the PDF page.
-    return { x: p.x * SVG_PDF_PT_PER_PX, y: p.y * SVG_PDF_PT_PER_PX };
-  }
-
-  function svgPdfMatrixApproxScale(m){
-    const sx = Math.hypot(Number(m?.[0] || 0), Number(m?.[1] || 0));
-    const sy = Math.hypot(Number(m?.[2] || 0), Number(m?.[3] || 0));
-    const vals = [sx, sy].filter(v => Number.isFinite(v) && v > 0);
-    if (!vals.length) return 1;
-    return vals.reduce((a, b) => a + b, 0) / vals.length;
-  }
-
-  function svgPdfTokenizePathData(d){
-    const tokens = [];
-    const re = /([AaCcHhLlMmQqSsTtVvZz])|([-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?)/g;
-    let m;
-    while ((m = re.exec(String(d || ""))) !== null) {
-      if (m[1]) tokens.push({ type: "cmd", value: m[1] });
-      else tokens.push({ type: "num", value: Number(m[2]) });
-    }
-    return tokens;
-  }
-
-  function svgPdfTransformPathDataToPdfPath(d, matrix, stageH){
-    const tokens = svgPdfTokenizePathData(d);
-    let i = 0;
-    let cmd = "";
-    let cx = 0, cy = 0;
-    let sx = 0, sy = 0;
-    const out = [];
-
-    function hasNum(){ return i < tokens.length && tokens[i].type === "num"; }
-    function readNum(){
-      if (!hasNum()) return null;
-      return tokens[i++].value;
-    }
-    function peekCmd(){ return i < tokens.length && tokens[i].type === "cmd" ? tokens[i].value : null; }
-    function emitPoint(prefix, x, y){
-      const p = svgPdfTransformedPointToPdfPath(matrix, x, y, stageH);
-      out.push(`${prefix} ${svgNum(p.x)} ${svgNum(p.y)}`);
-    }
-
-    while (i < tokens.length) {
-      const nextCmd = peekCmd();
-      if (nextCmd) { cmd = tokens[i++].value; }
-      if (!cmd) break;
-
-      const lower = cmd.toLowerCase();
-      const rel = cmd === lower;
-
-      if (lower === "z") {
-        out.push("Z");
-        cx = sx; cy = sy;
-        cmd = "";
-        continue;
-      }
-
-      if (lower === "m") {
-        let first = true;
-        while (hasNum()) {
-          const x0 = readNum(); const y0 = readNum();
-          if (x0 == null || y0 == null) break;
-          const x = rel ? cx + x0 : x0;
-          const y = rel ? cy + y0 : y0;
-          emitPoint(first ? "M" : "L", x, y);
-          cx = x; cy = y;
-          if (first) { sx = x; sy = y; first = false; }
-          if (peekCmd()) break;
-        }
-        continue;
-      }
-
-      if (lower === "l") {
-        while (hasNum()) {
-          const x0 = readNum(); const y0 = readNum();
-          if (x0 == null || y0 == null) break;
-          const x = rel ? cx + x0 : x0;
-          const y = rel ? cy + y0 : y0;
-          emitPoint("L", x, y);
-          cx = x; cy = y;
-          if (peekCmd()) break;
-        }
-        continue;
-      }
-
-      if (lower === "h") {
-        while (hasNum()) {
-          const x0 = readNum(); if (x0 == null) break;
-          const x = rel ? cx + x0 : x0;
-          emitPoint("L", x, cy);
-          cx = x;
-          if (peekCmd()) break;
-        }
-        continue;
-      }
-
-      if (lower === "v") {
-        while (hasNum()) {
-          const y0 = readNum(); if (y0 == null) break;
-          const y = rel ? cy + y0 : y0;
-          emitPoint("L", cx, y);
-          cy = y;
-          if (peekCmd()) break;
-        }
-        continue;
-      }
-
-      if (lower === "c") {
-        while (hasNum()) {
-          const x1 = readNum(), y1 = readNum(), x2 = readNum(), y2 = readNum(), x = readNum(), y = readNum();
-          if ([x1, y1, x2, y2, x, y].some(v => v == null)) break;
-          const ax1 = rel ? cx + x1 : x1;
-          const ay1 = rel ? cy + y1 : y1;
-          const ax2 = rel ? cx + x2 : x2;
-          const ay2 = rel ? cy + y2 : y2;
-          const ax = rel ? cx + x : x;
-          const ay = rel ? cy + y : y;
-          const p1 = svgPdfTransformedPointToPdfPath(matrix, ax1, ay1, stageH);
-          const p2 = svgPdfTransformedPointToPdfPath(matrix, ax2, ay2, stageH);
-          const p = svgPdfTransformedPointToPdfPath(matrix, ax, ay, stageH);
-          out.push(`C ${svgNum(p1.x)} ${svgNum(p1.y)} ${svgNum(p2.x)} ${svgNum(p2.y)} ${svgNum(p.x)} ${svgNum(p.y)}`);
-          cx = ax; cy = ay;
-          if (peekCmd()) break;
-        }
-        continue;
-      }
-
-      if (lower === "q") {
-        while (hasNum()) {
-          const x1 = readNum(), y1 = readNum(), x = readNum(), y = readNum();
-          if ([x1, y1, x, y].some(v => v == null)) break;
-          const ax1 = rel ? cx + x1 : x1;
-          const ay1 = rel ? cy + y1 : y1;
-          const ax = rel ? cx + x : x;
-          const ay = rel ? cy + y : y;
-          const p1 = svgPdfTransformedPointToPdfPath(matrix, ax1, ay1, stageH);
-          const p = svgPdfTransformedPointToPdfPath(matrix, ax, ay, stageH);
-          out.push(`Q ${svgNum(p1.x)} ${svgNum(p1.y)} ${svgNum(p.x)} ${svgNum(p.y)}`);
-          cx = ax; cy = ay;
-          if (peekCmd()) break;
-        }
-        continue;
-      }
-
-      // Unsupported commands are intentionally not guessed. They are uncommon in
-      // the generated sitelen/vector scene; skipping is safer than producing a
-      // wrongly transformed PDF path.
-      console.warn("[layout-pdf-vector] unsupported SVG path command omitted", { cmd, d: String(d || "").slice(0, 160) });
-      break;
-    }
-
-    return out.join(" ");
-  }
-
-  function svgPdfNodeMatrix(node, isRootSvg = false){
-    let m = [1, 0, 0, 1, 0, 0];
-    const tag = String(node?.localName || "").toLowerCase();
-    if (tag === "svg" && !isRootSvg) {
-      const x = svgPdfNumber(node.getAttribute("x"), 0);
-      const y = svgPdfNumber(node.getAttribute("y"), 0);
-      const w = svgPdfNumber(node.getAttribute("width"), 0);
-      const h = svgPdfNumber(node.getAttribute("height"), 0);
-      const vb = svgPdfNumberList(node.getAttribute("viewBox"));
-      m = svgPdfMatrixMultiply(m, svgPdfTranslate(x, y));
-      if (vb.length >= 4 && w > 0 && h > 0 && vb[2] > 0 && vb[3] > 0) {
-        const par = String(node.getAttribute("preserveAspectRatio") || "xMidYMid meet").trim();
-        if (/none/i.test(par)) {
-          m = svgPdfMatrixMultiply(m, svgPdfScale(w / vb[2], h / vb[3]));
-          m = svgPdfMatrixMultiply(m, svgPdfTranslate(-vb[0], -vb[1]));
-        } else {
-          const scale = Math.min(w / vb[2], h / vb[3]);
-          let ox = 0, oy = 0;
-          if (/xMid/i.test(par)) ox = (w - vb[2] * scale) / 2;
-          else if (/xMax/i.test(par)) ox = (w - vb[2] * scale);
-          if (/YMid/i.test(par)) oy = (h - vb[3] * scale) / 2;
-          else if (/YMax/i.test(par)) oy = (h - vb[3] * scale);
-          m = svgPdfMatrixMultiply(m, svgPdfTranslate(ox, oy));
-          m = svgPdfMatrixMultiply(m, svgPdfScale(scale, scale));
-          m = svgPdfMatrixMultiply(m, svgPdfTranslate(-vb[0], -vb[1]));
-        }
-      }
-    }
-    const tr = node?.getAttribute?.("transform");
-    if (tr) m = svgPdfMatrixMultiply(m, svgPdfParseTransform(tr));
-    return m;
-  }
-
-  function svgPdfColor(css, inheritedOpacity = 1){
-    const PDFLib = window.PDFLib;
-    if (!PDFLib) return null;
-    let s = String(css ?? "").trim();
-    if (!s || s === "none" || s === "transparent") return null;
-    let opacity = inheritedOpacity;
-    const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (hex){
-      let h = hex[1];
-      if (h.length === 3) h = h.split("").map(ch => ch + ch).join("");
-      return {
-        color: PDFLib.rgb(parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255),
-        opacity
-      };
-    }
-    const rgb = s.match(/^rgba?\(([^)]+)\)$/i);
-    if (rgb){
-      const nums = rgb[1].split(",").map(x => Number(String(x).trim())).filter(Number.isFinite);
-      if (nums.length >= 3){
-        if (nums.length >= 4) opacity *= clamp(nums[3], 0, 1);
-        return { color: PDFLib.rgb(clamp(nums[0], 0, 255) / 255, clamp(nums[1], 0, 255) / 255, clamp(nums[2], 0, 255) / 255), opacity };
-      }
-    }
-    if (s.toLowerCase() === "black") return { color: PDFLib.rgb(0, 0, 0), opacity };
-    if (s.toLowerCase() === "white") return { color: PDFLib.rgb(1, 1, 1), opacity };
-    return null;
-  }
-
-  function svgPdfRectPath(node){
-    const x = svgPdfNumber(node.getAttribute("x"), 0);
-    const y = svgPdfNumber(node.getAttribute("y"), 0);
-    const w = svgPdfNumber(node.getAttribute("width"), 0);
-    const h = svgPdfNumber(node.getAttribute("height"), 0);
-    if (!(w > 0 && h > 0)) return "";
-    return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} Z`;
-  }
-
-  function svgPdfLinePath(node){
-    const x1 = svgPdfNumber(node.getAttribute("x1"), 0);
-    const y1 = svgPdfNumber(node.getAttribute("y1"), 0);
-    const x2 = svgPdfNumber(node.getAttribute("x2"), 0);
-    const y2 = svgPdfNumber(node.getAttribute("y2"), 0);
-    return `M ${x1} ${y1} L ${x2} ${y2}`;
-  }
-
-  async function svgPdfEmbedDataUrl(pdfDoc, href){
-    const s = String(href || "");
-    const m = s.match(/^data:([^;,]+)?(;base64)?,(.*)$/i);
-    if (!m) return null;
-    const mime = String(m[1] || "").toLowerCase();
-    const isBase64 = !!m[2];
-    const payload = m[3] || "";
-    let bytes;
-    if (isBase64) {
-      const bin = atob(payload);
-      bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    } else {
-      bytes = new TextEncoder().encode(decodeURIComponent(payload));
-    }
-    if (mime.includes("png")) return await pdfDoc.embedPng(bytes);
-    if (mime.includes("jpeg") || mime.includes("jpg")) return await pdfDoc.embedJpg(bytes);
-    return null;
-  }
-
-  function svgPdfPageYFlipMatrix(stageH){
-    return [SVG_PDF_PT_PER_PX, 0, 0, -SVG_PDF_PT_PER_PX, 0, Number(stageH || 0) * SVG_PDF_PT_PER_PX];
-  }
-
-  function svgPdfResolveUrlId(value){
-    const s = String(value || "").trim();
-    const m = s.match(/^url\(\s*['"]?#([^'")]+)['"]?\s*\)$/i);
-    return m ? m[1] : "";
-  }
-
-  function svgPdfBuildClipPathMap(svgDoc){
-    const out = new Map();
-    for (const cp of Array.from(svgDoc.querySelectorAll("clipPath[id]"))) {
-      const id = cp.getAttribute("id") || "";
-      if (!id) continue;
-      const rect = cp.querySelector("rect");
-      if (rect) {
-        out.set(id, {
-          kind: "rect",
-          x: svgPdfNumber(rect.getAttribute("x"), 0),
-          y: svgPdfNumber(rect.getAttribute("y"), 0),
-          w: Math.max(0, svgPdfNumber(rect.getAttribute("width"), 0)),
-          h: Math.max(0, svgPdfNumber(rect.getAttribute("height"), 0))
-        });
-        continue;
-      }
-      const path = cp.querySelector("path[d]");
-      if (path) out.set(id, { kind: "path", d: String(path.getAttribute("d") || "") });
-    }
-    return out;
-  }
-
-  function svgPdfPointToPdfOperatorCoords(p, stageH){
-    return {
-      x: Number(p.x || 0) * SVG_PDF_PT_PER_PX,
-      y: (Number(stageH || 0) - Number(p.y || 0)) * SVG_PDF_PT_PER_PX
-    };
-  }
-
-  function svgPdfPushClipForCurrentNode(node, page, matrix, clipPathMap, stageH){
-    const P = window.PDFLib || {};
-    const clipRef = svgPdfAttr(node, "clip-path", "");
-    const clipId = svgPdfResolveUrlId(clipRef);
-    if (!clipId) return false;
-    const clipDef = clipPathMap?.get?.(clipId);
-    if (!clipDef) {
-      try { console.warn("[layout-pdf-vector] missing clipPath definition", { clipRef, clipId }); } catch {}
-      return false;
-    }
-
-    if (!(page && typeof page.pushOperators === "function" &&
-          P.pushGraphicsState && P.popGraphicsState && P.clip && P.endPath &&
-          P.moveTo && P.lineTo && P.closePath)) {
-      try { console.warn("[layout-pdf-vector] pdf-lib clipping operators unavailable; SVG clip-path omitted", { clipId }); } catch {}
-      return false;
-    }
-
-    const ops = [P.pushGraphicsState()];
-
-    if (clipDef.kind === "rect") {
-      const x = clipDef.x;
-      const y = clipDef.y;
-      const w = clipDef.w;
-      const h = clipDef.h;
-      if (!(w > 0 && h > 0)) return false;
-      const pts = [
-        svgPdfPointToPdfOperatorCoords(svgPdfMatrixPoint(matrix, x, y), stageH),
-        svgPdfPointToPdfOperatorCoords(svgPdfMatrixPoint(matrix, x + w, y), stageH),
-        svgPdfPointToPdfOperatorCoords(svgPdfMatrixPoint(matrix, x + w, y + h), stageH),
-        svgPdfPointToPdfOperatorCoords(svgPdfMatrixPoint(matrix, x, y + h), stageH)
-      ];
-      ops.push(P.moveTo(pts[0].x, pts[0].y));
-      ops.push(P.lineTo(pts[1].x, pts[1].y));
-      ops.push(P.lineTo(pts[2].x, pts[2].y));
-      ops.push(P.lineTo(pts[3].x, pts[3].y));
-      ops.push(P.closePath());
-    } else if (clipDef.kind === "path" && clipDef.d) {
-      // Rare fallback: clip paths generated by this editor are normally rects.
-      // A path clip is preserved only when pdf-lib path operators are available
-      // through drawSvgPath-style coordinates would require creating a clipping
-      // path, not drawing a visible path, so we intentionally warn rather than
-      // rasterize or silently guess.
-      try { console.warn("[layout-pdf-vector] non-rect clipPath is not yet converted; SVG clip-path omitted", { clipId }); } catch {}
-      return false;
-    } else {
-      return false;
-    }
-
-    ops.push(P.clip());
-    ops.push(P.endPath());
-    page.pushOperators(...ops);
-    return true;
-  }
-
-  async function svgPdfDrawImageNode(node, pdfDoc, page, matrix, stageH){
-    const href = node.getAttribute("href") || node.getAttribute("xlink:href") || node.getAttributeNS?.("http://www.w3.org/1999/xlink", "href") || "";
-    const img = await svgPdfEmbedDataUrl(pdfDoc, href);
-    if (!img) return;
-    const x = svgPdfNumber(node.getAttribute("x"), 0);
-    const y = svgPdfNumber(node.getAttribute("y"), 0);
-    const w = Math.max(1e-6, svgPdfNumber(node.getAttribute("width"), img.width || 1));
-    const h = Math.max(1e-6, svgPdfNumber(node.getAttribute("height"), img.height || 1));
-
-    // Images are already raster sources, but their placement must still follow
-    // the same SVG transform stack as vector paths.  The previous PDF image
-    // path transformed the four corners, then drew the bitmap into the axis-
-    // aligned bounding box. That throws away rotation, which is why rotated
-    // image elements appeared unrotated/skewed in the vector PDF.
-    //
-    // Compose the full PDF CTM instead:
-    //   SVG image unit square (PDF image coords, y-up)
-    //   -> SVG image rect (x, y, width, height, y-down)
-    //   -> inherited SVG matrix, including group rotation
-    //   -> PDF page coordinates, including the single SVG-to-PDF Y flip.
-    const imageRectMatrix = svgPdfMatrixMultiply(svgPdfTranslate(x, y + h), svgPdfScale(w, -h));
-    const svgToPdfMatrix = svgPdfMatrixMultiply(svgPdfPageYFlipMatrix(stageH), svgPdfMatrixMultiply(matrix, imageRectMatrix));
-    const P = window.PDFLib || {};
-
-    if (page && typeof page.pushOperators === "function" && P.pushGraphicsState && P.popGraphicsState && P.concatTransformationMatrix) {
-      page.pushOperators(
-        P.pushGraphicsState(),
-        P.concatTransformationMatrix(
-          svgToPdfMatrix[0], svgToPdfMatrix[1], svgToPdfMatrix[2],
-          svgToPdfMatrix[3], svgToPdfMatrix[4], svgToPdfMatrix[5]
-        )
-      );
-      page.drawImage(img, { x: 0, y: 0, width: 1, height: 1 });
-      page.pushOperators(P.popGraphicsState());
-      return;
-    }
-
-    // Fallback for older pdf-lib builds: preserve size/position but not rotation.
-    // This should not normally run because svgSceneTextToPdfBlob() already checks
-    // for operator support.
-    const pts = [svgPdfMatrixPoint(matrix, x, y), svgPdfMatrixPoint(matrix, x + w, y), svgPdfMatrixPoint(matrix, x + w, y + h), svgPdfMatrixPoint(matrix, x, y + h)];
-    const minX = Math.min(...pts.map(p => p.x));
-    const maxX = Math.max(...pts.map(p => p.x));
-    const minY = Math.min(...pts.map(p => p.y));
-    const maxY = Math.max(...pts.map(p => p.y));
-    page.drawImage(img, {
-      x: minX * SVG_PDF_PT_PER_PX,
-      y: (stageH - maxY) * SVG_PDF_PT_PER_PX,
-      width: Math.max(1, maxX - minX) * SVG_PDF_PT_PER_PX,
-      height: Math.max(1, maxY - minY) * SVG_PDF_PT_PER_PX,
-    });
-  }
-
-  function svgPdfCanUseOperators(){
-    const P = window.PDFLib || {};
-    return !!(
-      P.pushGraphicsState && P.popGraphicsState && P.concatTransformationMatrix &&
-      P.clip && P.endPath && P.moveTo && P.lineTo && P.closePath
-    );
-  }
-
-  async function drawSvgDomNodeToPdf(node, pdfDoc, page, matrix, inherited, stageH, clipPathMap, isRootSvg = false){
-    if (!node || node.nodeType !== 1) return;
-    const tag = String(node.localName || "").toLowerCase();
-    if (tag === "defs" || tag === "clippath" || tag === "title" || tag === "desc") return;
-
-    const ownMatrix = svgPdfNodeMatrix(node, isRootSvg);
-    const nextMatrix = svgPdfMatrixMultiply(matrix, ownMatrix);
-    const opacityAttr = svgPdfAttr(node, "opacity", null);
-    const nextOpacity = inherited.opacity * (opacityAttr == null ? 1 : clamp(Number(opacityAttr), 0, 1));
-    const nextStyle = {
-      fill: svgPdfAttr(node, "fill", inherited.fill),
-      stroke: svgPdfAttr(node, "stroke", inherited.stroke),
-      strokeWidth: svgPdfAttr(node, "stroke-width", inherited.strokeWidth),
-      opacity: nextOpacity,
-    };
-
-    // Preserve SVG clip-path semantics for vector PDF output.  This is required
-    // for literal-cartouche left-overhang repair: the SVG exporter emits clipped
-    // paths, and the PDF exporter must honor the same clip instead of drawing
-    // the untrimmed overhanging rule/path.
-    const didPushClip = svgPdfPushClipForCurrentNode(node, page, nextMatrix, clipPathMap, stageH);
-    try {
-
-    if (tag === "path" || tag === "rect" || tag === "line"){
-      const d = tag === "path" ? String(node.getAttribute("d") || "") : (tag === "rect" ? svgPdfRectPath(node) : svgPdfLinePath(node));
-      if (d.trim()){
-        const transformedD = svgPdfTransformPathDataToPdfPath(d, nextMatrix, stageH);
-        const fill = svgPdfColor(nextStyle.fill, nextStyle.opacity);
-        const stroke = svgPdfColor(nextStyle.stroke, nextStyle.opacity);
-        const scaleForStroke = svgPdfMatrixApproxScale(nextMatrix);
-        const borderWidth = Math.max(0, svgPdfNumber(nextStyle.strokeWidth, 1) * scaleForStroke * SVG_PDF_PT_PER_PX);
-        const opts = { x: 0, y: stageH * SVG_PDF_PT_PER_PX };
-        if (fill) { opts.color = fill.color; opts.opacity = fill.opacity; }
-        if (stroke && borderWidth > 0) { opts.borderColor = stroke.color; opts.borderOpacity = stroke.opacity; opts.borderWidth = borderWidth; }
-        if (transformedD.trim() && (fill || (stroke && borderWidth > 0))){
-          page.drawSvgPath(transformedD, opts);
-        }
-      }
-      return;
-    }
-
-    if (tag === "image"){
-      await svgPdfDrawImageNode(node, pdfDoc, page, nextMatrix, stageH);
-      return;
-    }
-
-    if (tag === "text"){
-      // Text elements are retained as selectable PDF text. Sitelen/glyph output is already <path>.
-      const P = window.PDFLib;
-      const txt = String(node.textContent || "");
-      if (txt.trim()){
-        const p = svgPdfMatrixPoint(nextMatrix, svgPdfNumber(node.getAttribute("x"), 0), svgPdfNumber(node.getAttribute("y"), 0));
-        const size = svgPdfNumber(node.getAttribute("font-size"), 12) * SVG_PDF_PT_PER_PX;
-        const fill = svgPdfColor(nextStyle.fill, nextStyle.opacity) || { color: P.rgb(0, 0, 0), opacity: nextStyle.opacity };
-        const font = await pdfDoc.embedFont(P.StandardFonts.Helvetica);
-        page.drawText(txt, { x: p.x * SVG_PDF_PT_PER_PX, y: (stageH - p.y - svgPdfNumber(node.getAttribute("font-size"), 12)) * SVG_PDF_PT_PER_PX, size, font, color: fill.color, opacity: fill.opacity });
-      }
-      return;
-    }
-
-    for (const child of Array.from(node.childNodes || [])){
-      await drawSvgDomNodeToPdf(child, pdfDoc, page, nextMatrix, nextStyle, stageH, clipPathMap, false);
-    }
-
-    } finally {
-      if (didPushClip) {
-        try { page.pushOperators(window.PDFLib.popGraphicsState()); } catch (_) {}
-      }
-    }
-  }
-
-  async function svgSceneTextToPdfBlob(svgText){
-    if (!window.PDFLib) throw new Error("pdf-lib is not loaded. Check ./vendor/pdf-lib.min.js is available.");
-    if (typeof window.PDFLib.PDFDocument?.create !== "function") throw new Error("pdf-lib PDFDocument is unavailable.");
-    if (typeof window.PDFLib.PDFPage?.prototype?.drawSvgPath !== "function" && typeof window.PDFLib.PDFDocument !== "undefined") {
-      // Older pdf-lib builds do not expose PDFPage on the global; drawSvgPath is checked at runtime below.
-    }
-    if (!svgPdfCanUseOperators()) throw new Error("pdf-lib operator helpers are unavailable; cannot preserve SVG transforms in PDF.");
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgText, "image/svg+xml");
-    const parseErr = doc.querySelector("parsererror");
-    if (parseErr) throw new Error("Composed SVG could not be parsed for PDF export.");
-    const rootSvg = doc.documentElement;
-    const stageW = Math.max(1, svgPdfNumber(rootSvg.getAttribute("width"), Scene.stage.w || 1));
-    const stageH = Math.max(1, svgPdfNumber(rootSvg.getAttribute("height"), Scene.stage.h || 1));
-    const pdfDoc = await window.PDFLib.PDFDocument.create();
-    const page = pdfDoc.addPage([stageW * SVG_PDF_PT_PER_PX, stageH * SVG_PDF_PT_PER_PX]);
-    const clipPathMap = svgPdfBuildClipPathMap(doc);
-    await drawSvgDomNodeToPdf(rootSvg, pdfDoc, page, [1, 0, 0, 1, 0, 0], { fill: "black", stroke: "none", strokeWidth: 1, opacity: 1 }, stageH, clipPathMap, true);
-    const bytes = await pdfDoc.save();
-    return new Blob([bytes], { type: "application/pdf" });
-  }
-
-  async function blobToArrayBuffer(blob){
-    if (!blob) throw new Error("Missing blob.");
-    if (typeof blob.arrayBuffer === "function") return await blob.arrayBuffer();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error || new Error("Failed to read blob."));
-      reader.readAsArrayBuffer(blob);
-    });
-  }
-
-  async function svgSceneTextToPdfBlobMatched(svgText){
-    if (!window.PDFLib) throw new Error("pdf-lib is not loaded. Check ./vendor/pdf-lib.min.js is available.");
-    const PDFLib = window.PDFLib;
-    if (typeof PDFLib.PDFDocument?.create !== "function") throw new Error("pdf-lib PDFDocument is unavailable.");
-
-    const stageW = Math.max(1, Number(Scene.stage.w) || 1);
-    const stageH = Math.max(1, Number(Scene.stage.h) || 1);
-
-    // RASTER FALLBACK ONLY. Do not use this for the normal Export PDF button.
-    // This rasterizes the composed SVG scene to PNG and embeds that full-page
-    // bitmap into the PDF. It is useful only as an emergency visual-matching
-    // fallback; it is not a true vector PDF export.
-    const pngBlob = await svgTextToPngBlob(svgText);
-    const pngBytes = await blobToArrayBuffer(pngBlob);
-
-    const pdfDoc = await PDFLib.PDFDocument.create();
-    const page = pdfDoc.addPage([stageW * SVG_PDF_PT_PER_PX, stageH * SVG_PDF_PT_PER_PX]);
-    const png = await pdfDoc.embedPng(pngBytes);
-    page.drawImage(png, {
-      x: 0,
-      y: 0,
-      width: stageW * SVG_PDF_PT_PER_PX,
-      height: stageH * SVG_PDF_PT_PER_PX,
-    });
-    const bytes = await pdfDoc.save();
-    return new Blob([bytes], { type: "application/pdf" });
-  }
-
-  async function exportPdfFromSvgScene(){
-    const svgText = await buildSceneSvgText({ includeEditorGrid: false, forceStageBackground: !!Scene.stage.exportStageBackground });
-    // IMPORTANT: normal PDF export must remain a true vector export.
-    // Do not route this through svgSceneTextToPdfBlobMatched(), because that
-    // function rasterizes the composed SVG to PNG and embeds a page bitmap.
-    // The intended pipeline is: composed SVG vector scene -> PDF vector paths.
-    const blob = await svgSceneTextToPdfBlob(svgText);
-    downloadBlob(blob, `layout_${nowIso()}.pdf`);
-    setStatus("Exported vector PDF from SVG paths.");
-  }
-
-
   async function exportPngTransparent(){
     await awaitAllRendererRastersReady();
     console.log("Export PNG image");
@@ -13915,10 +11857,7 @@ $("fileImportJson").addEventListener("change", async () => {
   }
 });
 
-  $("btnExportPng").addEventListener("click", () => exportPngFromSvgScene().catch(err => { console.error(err); setStatus("SVG PNG export failed: " + (err?.message || String(err))); }));
-  $("btnExportSvg").addEventListener("click", () => exportSvgScene().catch(err => { console.error(err); setStatus("SVG export failed: " + (err?.message || String(err))); }));
-  $("btnExportHtml").addEventListener("click", () => exportHtmlScene().catch(err => { console.error(err); setStatus("HTML export failed: " + (err?.message || String(err))); }));
-  $("btnExportPdf").addEventListener("click", () => exportPdfFromSvgScene().catch(err => { console.error(err); setStatus("PDF source export failed: " + (err?.message || String(err))); }));
+  $("btnExportPng").addEventListener("click", () => exportPngTransparent());
 
   // Stage toggles
   function setPressed(btn, pressed){
@@ -14009,7 +11948,6 @@ function wireStageDefaultsUi(){
   const dhe = document.getElementById("defHaloEnabled");
   const dhc = document.getElementById("defHaloColor");
   const dht = document.getElementById("defHaloThickness");
-  const vdo = document.getElementById("vectorDisplayOffsets");
   const bge = document.getElementById("bgImgEnabled");
   const bgka = document.getElementById("bgImgKeepAspect");
   const bgs = document.getElementById("bgImgStretch");
@@ -14125,24 +12063,6 @@ function wireStageDefaultsUi(){
       scheduleAutosave();
       render();
     });
-  }
-
-  if (vdo){
-    const applyVectorOffsets = () => {
-      try {
-        const parsed = JSON.parse(vdo.value || "{}");
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Offsets must be a JSON object.");
-        Scene.stage.vectorDisplayOffsets = parsed;
-        clearSvgVectorElementCache();
-        scheduleAutosave();
-        render();
-        setStatus("SVG vector display offsets updated.");
-      } catch (err) {
-        setStatus("Invalid SVG vector display offsets JSON: " + (err?.message || err));
-      }
-    };
-    vdo.addEventListener("change", applyVectorOffsets);
-    vdo.addEventListener("blur", applyVectorOffsets);
   }
   
   if (dt){
@@ -14341,346 +12261,6 @@ async function preloadFontsForScene(scene = Scene){
   if (jobs.length) await Promise.allSettled(jobs);
 }
 
-function legacyVectorElementTypesNeedTightBox(el){
-  return !!el && (el.type === ElementType.Text || el.type === ElementType.Sitelen || el.type === ElementType.Glyph || el.type === "text" || el.type === "sitelen" || el.type === "glyph");
-}
-
-function rememberLegacyBox(el){
-  if (!el || el.legacyBox) return;
-  el.legacyBox = {
-    x: Number(el.x || 0),
-    y: Number(el.y || 0),
-    w: Number(el.w || 0),
-    h: Number(el.h || 0),
-    rotationDeg: Number(el.rotationDeg || 0)
-  };
-}
-
-function alphaTightBoundsFromCanvas(canvas, alphaThreshold = 1){
-  if (!canvas || !canvas.width || !canvas.height) return null;
-  const w = canvas.width | 0;
-  const h = canvas.height | 0;
-  if (w <= 0 || h <= 0) return null;
-  let data;
-  try {
-    const c = canvas.getContext("2d", { willReadFrequently: true });
-    data = c.getImageData(0, 0, w, h).data;
-  } catch (_) {
-    return null;
-  }
-  let minX = w, minY = h, maxX = -1, maxY = -1;
-  for (let y = 0; y < h; y++){
-    let row = y * w * 4;
-    for (let x = 0; x < w; x++){
-      const a = data[row + x * 4 + 3];
-      if (a > alphaThreshold){
-        if (x < minX) minX = x;
-        if (y < minY) minY = y;
-        if (x > maxX) maxX = x;
-        if (y > maxY) maxY = y;
-      }
-    }
-  }
-  if (maxX < minX || maxY < minY) return null;
-  return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1, canvasW: w, canvasH: h };
-}
-
-function measureLegacyTextInkBox(el){
-  if (!el || el.type !== ElementType.Text) return null;
-  const fontSize = Math.max(6, Number(el.fontSize ?? 24));
-  const fontFamily = getElementResolvedTextFontFamily(el) || FONT_FAMILY_LITERAL;
-  const lineHeight = Math.max(0.8, Number(el.lineHeight ?? 1.15));
-  const haloW = effectiveHaloThicknessForElementExport(el);
-  const pad = Math.max(2, Math.ceil(fontSize * 0.03)) + haloW;
-
-  const measureCanvas = document.createElement("canvas");
-  const mctx = measureCanvas.getContext("2d");
-  mctx.font = `${fontSize}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
-  mctx.textBaseline = "alphabetic";
-  setTextQuality(mctx);
-
-  const lines = splitLinesForBox(el.text);
-  const rawLines = lines.length ? lines : [""];
-  const lineAdvance = fontSize * lineHeight;
-
-  let minLeft = Infinity;
-  let maxRight = -Infinity;
-  let minTop = Infinity;
-  let maxBottom = -Infinity;
-
-  for (let i = 0; i < rawLines.length; i++){
-    const text = String(rawLines[i] ?? "");
-    const m = mctx.measureText(text);
-    const left = Number.isFinite(m.actualBoundingBoxLeft) ? -m.actualBoundingBoxLeft : 0;
-    const right = Number.isFinite(m.actualBoundingBoxRight) ? m.actualBoundingBoxRight : Number(m.width || 0);
-    const ascent = Number.isFinite(m.actualBoundingBoxAscent) ? m.actualBoundingBoxAscent : fontSize * 0.8;
-    const descent = Number.isFinite(m.actualBoundingBoxDescent) ? m.actualBoundingBoxDescent : fontSize * 0.2;
-    const baseline = i * lineAdvance + ascent;
-    minLeft = Math.min(minLeft, left);
-    maxRight = Math.max(maxRight, right);
-    minTop = Math.min(minTop, baseline - ascent);
-    maxBottom = Math.max(maxBottom, baseline + descent);
-  }
-
-  if (!Number.isFinite(minLeft) || !Number.isFinite(maxRight) || maxRight <= minLeft) {
-    const fallback = measureTextElementNaturalBox(el);
-    return fallback ? { w: fallback.w, h: fallback.h } : null;
-  }
-  const w = Math.max(8, Math.ceil((maxRight - minLeft) + pad * 2));
-  const h = Math.max(8, Math.ceil((maxBottom - minTop) + pad * 2));
-  return { w, h };
-}
-
-
-function measureGlyphVectorNativeBox(el){
-  if (!el || el.type !== ElementType.Glyph) return null;
-  const cp = parseCodepointInput(el.codepoint);
-  if (typeof cp !== "number") return null;
-
-  const fontPx = Math.max(6, Number(el.fontSize ?? 64));
-  const fontFamily = getRenderFontPreset(getElementRenderFontPresetKey(el)).textFamily || FONT_FAMILY_TEXT;
-  const haloW = effectiveHaloThicknessForElementExport(el);
-  const pad = Math.max(1, Math.ceil(fontPx * 0.02)) + haloW;
-  const ch = String.fromCodePoint(cp);
-
-  const measureCanvas = document.createElement("canvas");
-  const mctx = measureCanvas.getContext("2d");
-  mctx.font = `${fontPx}px ${cssFontFamily(fontFamily)}, system-ui, sans-serif`;
-  mctx.textBaseline = "alphabetic";
-  setTextQuality(mctx);
-  const m = mctx.measureText(ch);
-
-  const left = Math.max(0, Number(m.actualBoundingBoxLeft ?? 0));
-  const right = Math.max(1, Number(m.actualBoundingBoxRight ?? m.width ?? fontPx));
-  const ascent = Math.max(1, Number(m.actualBoundingBoxAscent ?? fontPx * 0.8));
-  const descent = Math.max(1, Number(m.actualBoundingBoxDescent ?? fontPx * 0.2));
-
-  const w = Math.max(8, Math.ceil(left + right + pad * 2));
-  const h = Math.max(8, Math.ceil(ascent + descent + pad * 2));
-  const drawXPx = left + pad;
-  const baselineYPx = ascent + pad;
-
-  return {
-    w,
-    h,
-    x: 0,
-    y: 0,
-    glyphPlan: {
-      version: 1,
-      source: "canvas-metric-tight-glyph-box",
-      widthPx: w,
-      heightPx: h,
-      xPx: drawXPx,
-      drawXPx,
-      baselineYPx,
-      fontPx,
-      fontFamily,
-      padPx: pad,
-      leftPx: left,
-      rightPx: right,
-      ascentPx: ascent,
-      descentPx: descent,
-      haloWidthPx: haloW
-    }
-  };
-}
-
-function measureLegacySitelenDisplayedTightBox(el, entry, oldBox){
-  const canvas = entry?.canvas;
-  const tight = alphaTightBoundsFromCanvas(canvas);
-  if (!tight || !canvas || !canvas.width || !canvas.height || !oldBox) return null;
-  const oldW = Math.max(1, Number(oldBox.w || 1));
-  const oldH = Math.max(1, Number(oldBox.h || 1));
-  const scaleX = oldW / Math.max(1, Number(canvas.width || tight.canvasW || 1));
-  const scaleY = oldH / Math.max(1, Number(canvas.height || tight.canvasH || 1));
-  const padLocal = Math.max(1, Math.ceil(Number(el?.fontSize || 44) * 0.01));
-  const sx = Math.max(0, Number(tight.x || 0) - padLocal);
-  const sy = Math.max(0, Number(tight.y || 0) - padLocal);
-  const sw = Math.min(Number(canvas.width || tight.canvasW || 1) - sx, Number(tight.w || 0) + padLocal * 2);
-  const sh = Math.min(Number(canvas.height || tight.canvasH || 1) - sy, Number(tight.h || 0) + padLocal * 2);
-  return {
-    x: sx * scaleX,
-    y: sy * scaleY,
-    w: Math.max(8, sw * scaleX),
-    h: Math.max(8, sh * scaleY),
-    sitelenPlan: {
-      version: 1,
-      source: "legacy-production-scaled-alpha-tight-box",
-      sourceX: sx,
-      sourceY: sy,
-      sourceW: Math.max(1, sw),
-      sourceH: Math.max(1, sh),
-      sourceCanvasW: Number(canvas.width || tight.canvasW || 1),
-      sourceCanvasH: Number(canvas.height || tight.canvasH || 1),
-      displayScaleX: scaleX,
-      displayScaleY: scaleY
-    }
-  };
-}
-
-function applySitelenVectorTightMetrics(el, bounds){
-  if (!el || el.type !== ElementType.Sitelen || !bounds?.sitelenPlan) return;
-  el.vectorSitelenTightMetrics = Object.assign({}, bounds.sitelenPlan);
-}
-
-function applyGlyphVectorTightMetrics(el, bounds){
-  if (!el || el.type !== ElementType.Glyph || !bounds?.glyphPlan) return;
-  el.vectorGlyphTightMetrics = Object.assign({}, bounds.glyphPlan);
-}
-
-function tightenElementBoxAroundMeasuredBounds(el, bounds){
-  if (!el || !bounds) return false;
-  const newW = Math.max(8, Math.ceil(Number(bounds.w || 0)));
-  const newH = Math.max(8, Math.ceil(Number(bounds.h || 0)));
-  if (!Number.isFinite(newW) || !Number.isFinite(newH)) return false;
-  const oldCx = Number(el.x || 0) + Number(el.w || 0) / 2;
-  const oldCy = Number(el.y || 0) + Number(el.h || 0) / 2;
-  rememberLegacyBox(el);
-  el.w = newW;
-  el.h = newH;
-  el.x = oldCx - newW / 2;
-  el.y = oldCy - newH / 2;
-  invalidateSvgElementCaches(el.id);
-  return true;
-}
-
-function tightenElementBoxAroundLocalBounds(el, localBounds){
-  if (!el || !localBounds) return false;
-  const oldX = Number(el.x || 0);
-  const oldY = Number(el.y || 0);
-  const oldW = Math.max(1, Number(el.w || 1));
-  const oldH = Math.max(1, Number(el.h || 1));
-  const localX = Number(localBounds.x || 0);
-  const localY = Number(localBounds.y || 0);
-  const newW = Math.max(8, Math.ceil(Number(localBounds.w || 0)));
-  const newH = Math.max(8, Math.ceil(Number(localBounds.h || 0)));
-  if (!Number.isFinite(newW) || !Number.isFinite(newH)) return false;
-
-  // The old production editor transforms each element around the old box center.
-  // When we trim a legacy local rectangle, preserve the scene-space position of
-  // that trimmed rectangle even for rotated elements.  A simple center-preserve
-  // resize moves off-center content and caused imported sitelen/glyph groups to
-  // drift vertically.
-  const oldCx = oldX + oldW / 2;
-  const oldCy = oldY + oldH / 2;
-  const trimCxLocal = localX + Number(localBounds.w || 0) / 2;
-  const trimCyLocal = localY + Number(localBounds.h || 0) / 2;
-  const dx = trimCxLocal - oldW / 2;
-  const dy = trimCyLocal - oldH / 2;
-  const rot = rad(Number(el.rotationDeg || 0));
-  const cos = Math.cos(rot);
-  const sin = Math.sin(rot);
-  const newCx = oldCx + dx * cos - dy * sin;
-  const newCy = oldCy + dx * sin + dy * cos;
-
-  rememberLegacyBox(el);
-  el.w = newW;
-  el.h = newH;
-  el.x = newCx - newW / 2;
-  el.y = newCy - newH / 2;
-  invalidateSvgElementCaches(el.id);
-  return true;
-}
-
-function restoreLegacyBoxIfPresent(el){
-  if (!el || !el.legacyBox || typeof el.legacyBox !== "object") return false;
-  const lb = el.legacyBox;
-  if (!Number.isFinite(Number(lb.w)) || !Number.isFinite(Number(lb.h))) return false;
-  const oldSig = `${Number(el.x || 0)}|${Number(el.y || 0)}|${Number(el.w || 0)}|${Number(el.h || 0)}|${Number(el.rotationDeg || 0)}`;
-  el.x = Number(lb.x || 0);
-  el.y = Number(lb.y || 0);
-  el.w = Math.max(8, Number(lb.w || 8));
-  el.h = Math.max(8, Number(lb.h || 8));
-  el.rotationDeg = Number(lb.rotationDeg || 0);
-  const newSig = `${Number(el.x || 0)}|${Number(el.y || 0)}|${Number(el.w || 0)}|${Number(el.h || 0)}|${Number(el.rotationDeg || 0)}`;
-  return oldSig !== newSig;
-}
-
-async function migrateLegacyVectorBoxes(scene = Scene){
-  if (!sceneNeedsLegacyVectorBoxMigration(scene)) return false;
-  const elements = Array.isArray(scene?.elements) ? scene.elements : [];
-  let changed = false;
-  let legacyPlacementCount = 0;
-
-  for (const el of elements){
-    if (!legacyVectorElementTypesNeedTightBox(el)) continue;
-    try {
-      // Undo/repair earlier vector packages that rewrote imported geometry or
-      // stored tight SVG metrics.  The production-compatible migration must not
-      // shrink/scale legacy boxes; it preserves the imported model and changes
-      // only the SVG placement semantics.
-      if (el.legacyBox) changed = restoreLegacyBoxIfPresent(el) || changed;
-      if (el.vectorGlyphTightMetrics) { delete el.vectorGlyphTightMetrics; changed = true; }
-      if (el.vectorSitelenTightMetrics) { delete el.vectorSitelenTightMetrics; changed = true; }
-
-      if (el.type === ElementType.Glyph || el.type === "glyph"){
-        if (el.vectorPlacementMode !== "glyph-canvas-middle") {
-          el.vectorPlacementMode = "glyph-canvas-middle";
-          changed = true;
-        }
-        legacyPlacementCount++;
-        invalidateSvgElementCaches(el.id);
-        continue;
-      }
-
-      if (el.type === ElementType.Sitelen || el.type === "sitelen"){
-        if (el.vectorPlacementMode !== "legacy-sitelen-image-box") {
-          el.vectorPlacementMode = "legacy-sitelen-image-box";
-          changed = true;
-        }
-
-        // Preserve explicit quoted-text font selections, including "sitelen font"
-        // and "nanpa-linja-n".  Earlier vector builds rewrote those options to
-        // Patrick Hand to avoid a bad implicit fallback, but that made the quoted
-        // text selector unable to use those fonts.  Only normalize aliases here;
-        // do not substitute a different family.
-        const presetKey = getElementRenderFontPresetKey(el);
-        const quotedSource = el.quotedTextFontOption || el.fontFamily || Scene?.stage?.defaultTextFontOption || getDefaultQuotedTextFontOptionForPreset(presetKey);
-        const normalizedQuoted = normalizeTextFontOptionKeyForPreset(quotedSource, presetKey);
-        if (el.quotedTextFontOption !== normalizedQuoted) {
-          el.quotedTextFontOption = normalizedQuoted;
-          changed = true;
-        }
-        if (el.fontFamily !== normalizedQuoted) {
-          el.fontFamily = normalizedQuoted;
-          changed = true;
-        }
-
-        legacyPlacementCount++;
-        invalidateSvgElementCaches(el.id);
-        continue;
-      }
-
-      if (el.type === ElementType.Text || el.type === "text"){
-        if (el.vectorPlacementMode !== "legacy-text-box") {
-          el.vectorPlacementMode = "legacy-text-box";
-          changed = true;
-        }
-        legacyPlacementCount++;
-        invalidateSvgElementCaches(el.id);
-        continue;
-      }
-    } catch (err) {
-      console.warn("Legacy vector placement migration skipped element", el?.id, err);
-    }
-  }
-
-  scene.meta = scene.meta || {};
-  scene.meta.editor = VECTOR_SCENE_EDITOR_ID;
-  scene.meta.vectorBoxModel = VECTOR_BOX_MODEL_VERSION;
-  scene.meta.vectorPlacementModel = VECTOR_BOX_MODEL_VERSION;
-  scene.meta.vectorBoxMigration = {
-    applied: true,
-    version: 11,
-    appliedAt: new Date().toISOString(),
-    strategy: "font-role-split-v5-allow-sitelen-nanpa-quoted-options-helvetica-vector-fallback",
-    elementCount: legacyPlacementCount,
-    changed
-  };
-  if (changed) clearSvgVectorElementCache();
-  return changed;
-}
-
 async function awaitFontLoading(){
   if (!document.fonts || !document.fonts.ready) return;
   try{
@@ -14859,16 +12439,6 @@ document.addEventListener("keydown", (e) => {
         Scene.groups = normalizedSaved.groups || {};
 
         await hydrateSceneBeforeDisplay(Scene);
-
-        const migratedLegacyVectorBoxes = await migrateLegacyVectorBoxes(Scene);
-        if (migratedLegacyVectorBoxes) {
-          try {
-            await hydrateSceneBeforeDisplay(Scene);
-            await dbPut(DB_KEY, { scene: deepClone(Scene), assets: serializeAssets() });
-          } catch (e) {
-            console.warn("Failed to persist migrated vector boxes after IndexedDB load", e);
-          }
-        }
 
         $("stageW").value = String(Scene.stage.w);
         $("stageH").value = String(Scene.stage.h);
