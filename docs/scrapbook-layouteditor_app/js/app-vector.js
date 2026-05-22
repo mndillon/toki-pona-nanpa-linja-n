@@ -9612,6 +9612,12 @@ function refreshFloatingTextEditorForSelection(forceLeaderId){
     _setTextEditorActionButtons(false);
     return;
   }
+  const wasEditingThisElement = (
+    document.activeElement === S.ta &&
+    S._boundElId === leader.id &&
+    !S.ta.disabled
+  );
+
   S._boundElId = leader.id; S._boundElType = leaderType; S.ta.disabled = false; _setTextEditorActionButtons(true);
   let displayText = ""; let titleStr = "";
   if (leaderType === ElementType.Text){ displayText = String(leader.text ?? ""); titleStr = "Text"; }
@@ -9623,9 +9629,17 @@ function refreshFloatingTextEditorForSelection(forceLeaderId){
     titleStr = "Glyph";
   }
   if (S.title) S.title.textContent = titleStr;
-  S.suppressSync = true;
-  if (S.ta.value !== displayText) S.ta.value = displayText;
-  S.suppressSync = false;
+
+  // Do not overwrite the floating text editor while the user is actively typing
+  // into the same selected element. Scene redraws and async sitelen raster
+  // rebuilds can refresh selection state; this guard keeps raw sitelen source
+  // editable instead of resetting the textarea on every render/update.
+  if (!wasEditingThisElement) {
+    S.suppressSync = true;
+    if (S.ta.value !== displayText) S.ta.value = displayText;
+    S.suppressSync = false;
+  }
+
   S.ta.disabled = false;
   S.ta.placeholder = "";
   S.elementId = leader.id;
