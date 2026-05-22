@@ -3,12 +3,245 @@ import {
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
 } from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
-import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=20';
+import {
+  CartoucheApi,
+  buildEntryRendererInput,
+  buildRandomDescForLetters,
+  segmentLetters,
+  segmentWords
+} from '../../js/cartouche-api-v3-previewdesc.js?v=21';
 import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
 
 (() => {
   "use strict";
+
+  // The global cartouche DB and scrapbook-local proper names are deliberately
+  // kept as separate maps, then merged into pageMap for every sitelen render.
+  // pageMap is therefore the active render-time lookup map. Scrapbook-local
+  // entries override global entries with the same key/alias.
+  let globalCartouchePageMap = new Map();
   let pageMap = new Map();
+  const SCRAPBOOK_CARTOUCHE_DB_DEBUG = !!globalThis.SCRAPBOOK_CARTOUCHE_DB_DEBUG;
+  const APP_VECTOR_DEBUG = !!globalThis.SCRAPBOOK_LAYOUT_EDITOR_DEBUG;
+  function scrapbookCartoucheDebugWarn(...args){
+    if (SCRAPBOOK_CARTOUCHE_DB_DEBUG) console.warn(...args);
+  }
+  let cartouchePageMapRevision = 0;
+
+  const SCRAPBOOK_CARTOUCHE_DB_DEFAULT = Object.freeze({
+    type: 'scrapbook-cartouche-db',
+    version: 1,
+    entries: []
+  });
+
+  const SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS = new Set([
+    'a','akesi','ala','alasa','ale','ali','anpa','ante','anu','awen',
+    'e','en','epiku','esun','ijo','ike','ilo','insa',
+    'jaki','jan','jasima','jelo','jo',
+    'kala','kalama','kama','kasi','ken','kepeken','kijetesantakalu','kili','kin','kipisi',
+    'kiwen','ko','kokosila','kon','ku','kule','kulupu','kute',
+    'la','lanpan','lape','laso','lawa','leko','len','lete','li','lili',
+    'linja','linluwi','lipu','loje','lon','luka','lukin','lupa',
+    'ma','majuna','mama','mani','meli','meso','mi','mije','misikeke',
+    'moku','moli','monsi','monsuta','mu','mun','musi','mute',
+    'n','namako','nanpa','nasa','nasin','nena','ni','nimi','noka',
+    'o','oko','olin','ona','open',
+    'pakala','pake','pali','palisa','pan','pana','pi','pilin','pimeja',
+    'pini','pipi','poka','poki','pona','powe','pu',
+    'sama','seli','selo','seme','sewi','sijelo','sike','sin','sina',
+    'sinpin','sitelen','soko','sona','soweli','su','suli','suno','supa','suwi',
+    'tan','taso','tawa','telo','tenpo','toki','tomo','tonsi','tu',
+    'unpa','uta','utala','walo','wan','waso','wawa','weka','wile',
+  ]);
+
+  function cloneCartoucheJson(value){
+    try { return JSON.parse(JSON.stringify(value)); }
+    catch { return null; }
+  }
+
+  function normalizeScrapbookCartoucheDb(rawDb){
+    const db = (rawDb && typeof rawDb === 'object' && !Array.isArray(rawDb))
+      ? cloneCartoucheJson(rawDb) || {}
+      : {};
+    db.type = SCRAPBOOK_CARTOUCHE_DB_DEFAULT.type;
+    db.version = Math.max(1, Math.round(Number(db.version) || SCRAPBOOK_CARTOUCHE_DB_DEFAULT.version));
+    db.entries = Array.isArray(db.entries)
+      ? db.entries
+          .filter(e => e && typeof e === 'object' && typeof e.key === 'string' && Array.isArray(e.words) && e.words.length)
+          .map(e => ({
+            ...e,
+            key: String(e.key),
+            words: e.words.map(w => String(w)),
+            merge: e.merge !== false,
+            mode: ['random','preferred','literal','ignore'].includes(String(e.mode || '')) ? String(e.mode) : 'random',
+            cartoucheMap: (e.cartoucheMap && typeof e.cartoucheMap === 'object' && !Array.isArray(e.cartoucheMap)) ? e.cartoucheMap : {},
+            tallyMap: (e.tallyMap && typeof e.tallyMap === 'object' && !Array.isArray(e.tallyMap)) ? e.tallyMap : {},
+            forceNormal: !!e.forceNormal,
+            literalText: String(e.literalText || e.key || '')
+          }))
+      : [];
+    return db;
+  }
+
+  function scrapbookCartoucheMergedLettersToWord(words){
+    return segmentLetters(words).letters.join('');
+  }
+
+  function scrapbookCartoucheEntryRequiresAtDb(entry){
+    if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
+    const segs = segmentWords(entry.words);
+    for (const seg of segs) {
+      if (seg.type !== 'normal') continue;
+      if (entry.merge) {
+        const merged = scrapbookCartoucheMergedLettersToWord(seg.words);
+        if (SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS.has(merged)) return true;
+      } else {
+        for (const w of seg.words) {
+          if (SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS.has(String(w).toLowerCase())) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function scrapbookCartoucheEntryLookupAliases(entry){
+    const aliases = new Set();
+    if (!entry || !Array.isArray(entry.words) || !entry.words.length) return aliases;
+    aliases.add(entry.key);
+    if (entry.merge) {
+      const segs = segmentWords(entry.words);
+      for (const seg of segs) {
+        if (seg.type !== 'normal') continue;
+        const merged = segmentLetters(seg.words).letters.join('');
+        if (merged) aliases.add(merged.charAt(0).toUpperCase() + merged.slice(1));
+      }
+    }
+    return aliases;
+  }
+
+  function buildScrapbookCartouchePageMapFromEntries(entries){
+    const map = new Map();
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      if (!entry || !entry.key || !Array.isArray(entry.words) || !entry.words.length) continue;
+
+      if (entry.mode === 'ignore') {
+        for (const alias of scrapbookCartoucheEntryLookupAliases(entry)) map.set(alias, null);
+        continue;
+      }
+
+      let rendererInput;
+      if (entry.mode === 'random') {
+        const segs = segmentWords(entry.words);
+        const cm = {};
+        segs.forEach((seg, si) => {
+          if (seg.type === 'nanpa' && !entry.forceNormal) return;
+          if (seg.type === 'nanpa' && entry.forceNormal) {
+            const letters = seg.words.join('').toLowerCase().split('');
+            cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+            return;
+          }
+          if (entry.merge) {
+            const { letters } = segmentLetters(seg.words);
+            cm[si] = buildRandomDescForLetters(letters);
+          } else {
+            seg.words.forEach((w, wi) => {
+              cm[`${si}_${wi}`] = buildRandomDescForLetters(String(w).toLowerCase().split(''));
+            });
+          }
+        });
+        rendererInput = buildEntryRendererInput({ ...entry, cartoucheMap: cm });
+      } else {
+        rendererInput = buildEntryRendererInput(entry);
+      }
+
+      let inputForceNormal = rendererInput;
+      if (entry.forceNormal) {
+        const entryNormal = { ...entry, forceNormal: false };
+        inputForceNormal = rendererInput;
+        rendererInput = buildEntryRendererInput(entryNormal);
+      }
+
+      const mapValue = {
+        input: rendererInput,
+        inputForceNormal,
+        forceNormal: !!entry.forceNormal,
+        requiresAtDb: scrapbookCartoucheEntryRequiresAtDb(entry),
+      };
+
+      for (const alias of scrapbookCartoucheEntryLookupAliases(entry)) map.set(alias, mapValue);
+    }
+    return map;
+  }
+
+  function getCurrentScrapbookCartoucheDb(){
+    const doc = (typeof ScrapbookState !== 'undefined') ? ScrapbookState?.doc : null;
+    if (!doc || typeof doc !== 'object') return normalizeScrapbookCartoucheDb(null);
+    doc.cartoucheDb = normalizeScrapbookCartoucheDb(doc.cartoucheDb);
+    return doc.cartoucheDb;
+  }
+
+  function rebuildActiveCartouchePageMap(){
+    const merged = new Map(globalCartouchePageMap instanceof Map ? globalCartouchePageMap : new Map());
+    try {
+      const localMap = buildScrapbookCartouchePageMapFromEntries(getCurrentScrapbookCartoucheDb().entries);
+      for (const [key, value] of localMap.entries()) merged.set(key, value);
+      window.scrapbookLocalCartouchePageMap = localMap;
+    } catch (err) {
+      scrapbookCartoucheDebugWarn('[scrapbook-cartouche-db] failed to build local page map', err);
+    }
+    pageMap = merged;
+    cartouchePageMapRevision += 1;
+    window.globalCartouchePageMap = globalCartouchePageMap;
+    window.cartouchePageMap = pageMap;
+    window.scrapbookCartouchePageMap = pageMap;
+    return pageMap;
+  }
+
+  function prepareSitelenInputWithActiveCartoucheDb(rawText){
+    return CartoucheApi.prepareInput(String(rawText ?? ''), pageMap);
+  }
+
+  function refreshAllSitelenAfterCartoucheDbChange(){
+    try { rebuildActiveCartouchePageMap(); } catch {}
+    try { sitelenCache?.clear?.(); } catch {}
+    try { sitelenRasterJobs?.clear?.(); } catch {}
+    try { clearSvgVectorElementCache?.(); } catch {}
+    try {
+      for (const el of (Scene?.elements || [])) {
+        if (el?.type === ElementType.Sitelen || el?.type === 'sitelen') {
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el, sitelenLayoutOptsForElement(el), true);
+        }
+      }
+    } catch (err) {
+      scrapbookCartoucheDebugWarn('[scrapbook-cartouche-db] failed to queue sitelen refresh', err);
+    }
+    try { render(); } catch {}
+  }
+
+  function bindScrapbookCartoucheDbDocumentToApp(){
+    const doc = (typeof ScrapbookState !== 'undefined') ? ScrapbookState?.doc : null;
+    if (!doc || typeof doc !== 'object') return;
+    doc.cartoucheDb = normalizeScrapbookCartoucheDb(doc.cartoucheDb);
+    rebuildActiveCartouchePageMap();
+    window.currentScrapbookDocument = doc;
+    window.getCurrentScrapbookDocument = () => ScrapbookState?.doc || null;
+    window.prepareScrapbookCartoucheInput = prepareSitelenInputWithActiveCartoucheDb;
+    window.invalidateSitelenElementCaches = refreshAllSitelenAfterCartoucheDbChange;
+    window.scheduleRenderAll = refreshAllSitelenAfterCartoucheDbChange;
+    if (typeof window.registerScrapbookCartoucheDbDocument === 'function') {
+      window.registerScrapbookCartoucheDbDocument(doc, {
+        setDocumentDirty: () => {
+          if (ScrapbookState?.doc) ScrapbookState.doc.cartoucheDb = normalizeScrapbookCartoucheDb(ScrapbookState.doc.cartoucheDb);
+          refreshAllSitelenAfterCartoucheDbChange();
+          try { debounceScrapbookSave(); } catch {}
+        },
+        requestRenderAll: refreshAllSitelenAfterCartoucheDbChange,
+        getGlobalPageMap: () => globalCartouchePageMap,
+      });
+    }
+  }
+
 
   /* ============================================================
      CHANGE HERE: Sitelen rendering hook
@@ -1895,6 +2128,7 @@ function applySitelenAutoResizeAnchor(el, oldX, oldY, oldW, oldH, newW, newH, op
 function getElementRendererSignature(el){
   return JSON.stringify({
     text: String(el?.text ?? ''),
+    cartouchePageMapRevision,
     codepoint: String(el?.codepoint ?? ''),
     align: String(el?.align ?? 'left'),
     spacingPreset: getElementSpacingPreset(el),
@@ -1944,7 +2178,7 @@ async function rebuildSitelenRasterWithRenderer(el, opts = {}){
     const renderer = await getSitelenRendererForElement(el);
     const result = await renderer.renderTextToNewCanvas(
       Object.assign(
-        { input: CartoucheApi.prepareInput(String(el.text ?? ''), pageMap) },
+        { input: prepareSitelenInputWithActiveCartoucheDb(String(el.text ?? '')) },
         buildRendererCallConfigForElement(el)
       )
     );
@@ -3676,7 +3910,8 @@ const NANPA_LINJA_N_WORD_TO_CP = {
   "jo":    0xF1913,
   "open":   0xF1947,
   "kipisi": 0xF197B,
-  // time delimiter support (cartouche path)
+  "kasi":   0xF1917,
+  // time/date delimiter support (cartouche path): default to kasi for numeric cartouches.
   "kolon": 0xF199D,
   ":":     0xF199D
 };
@@ -4154,7 +4389,11 @@ function nanpaCapsTokensToTpWords(tokens, { mode = "uniform" } = {}) {
   return out;
 }
 
-// Time cartouche: rewrite the NE+KE delimiter expansion so the glyph shows kolon (:) not kulupu.
+const NANPA_DATE_TIME_SEPARATOR_WORD = "kasi";
+
+// Date/time cartouches: rewrite the NE+KE delimiter expansion so the glyph uses
+// kasi, not kolon. This keeps the whole static page aligned with the
+// good-kasi nanpa-linja-n companion fonts.
 function replaceTimeSeparatorsTpWords(tpWords, mode) {
   const join = (mode === "uniform") ? "en" : "e";
   const nWord = (mode === "uniform") ? "nena" : "nasa";
@@ -4167,7 +4406,7 @@ function replaceTimeSeparatorsTpWords(tpWords, mode) {
       pattern.every((w, k) => tpWords[i + k] === w);
 
     if (isMatch) {
-      out.push(nWord, join, "kolon", join); // nena en kolon en
+      out.push(nWord, join, NANPA_DATE_TIME_SEPARATOR_WORD, join); // nena en kasi en
       i += pattern.length;
     } else {
       out.push(tpWords[i]);
@@ -4176,6 +4415,7 @@ function replaceTimeSeparatorsTpWords(tpWords, mode) {
   }
   return out;
 }
+
 
 function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "uniform",  isTime = false } = {}) {
   const tokens = tokenizeNanpaCaps(caps);
@@ -4694,6 +4934,7 @@ function findDateSequencesWithCaps(text) {
   }
   return out;
 }
+
 
 function numberStrToNanpaCaps(
       s,
@@ -7173,7 +7414,7 @@ function moveSelectionZ(delta){
   // If anything locked is selected, do nothing (matches your UI disable intent)
   if (selectionHasLocked()) return;
 
-console.log("moveSelectionZ");
+if (APP_VECTOR_DEBUG) console.log("moveSelectionZ");
 
   const n = Scene.elements.length;
   if (n <= 1) return;
@@ -8349,7 +8590,7 @@ function render(){
     if (textAlign !== "left" && textAlign !== "center" && textAlign !== "right") textAlign = "left";
     ctx.textAlign = textAlign;
 
-    const rawLines = splitLinesForBox(isSitelen ? CartoucheApi.prepareInput(el.text, pageMap) : el.text);
+    const rawLines = splitLinesForBox(isSitelen ? prepareSitelenInputWithActiveCartoucheDb(el.text) : el.text);
     const allLines = [];
 
     for (const ln0 of rawLines){
@@ -9737,7 +9978,7 @@ function renderPropsPanel(){
       (v) => {
         // LIVE preview only
         for (const e of sels) {
-          console.log("Live fill :" + v);
+          if (APP_VECTOR_DEBUG) console.log("Live fill :" + v);
           e.fill = v;
 
           if (e.type === ElementType.Sitelen){
@@ -9751,7 +9992,7 @@ function renderPropsPanel(){
       (v) => {
         // COMMIT
         for (const e of sels) {
-          console.log("Commit fill :" + v);
+          if (APP_VECTOR_DEBUG) console.log("Commit fill :" + v);
           e.fill = v;
 
           if (e.type === ElementType.Sitelen){
@@ -9775,7 +10016,7 @@ function renderPropsPanel(){
       (v) => {
         // LIVE preview only
         for (const e of sels) {
-          console.log("Live stroke :" + v);
+          if (APP_VECTOR_DEBUG) console.log("Live stroke :" + v);
           e.stroke = v;
 
           if (e.type === ElementType.Sitelen){
@@ -9789,7 +10030,7 @@ function renderPropsPanel(){
       (v) => {
         // COMMIT
         for (const e of sels) {
-          console.log("Commit stroke :" + v);
+          if (APP_VECTOR_DEBUG) console.log("Commit stroke :" + v);
           e.stroke = v;
 
           if (e.type === ElementType.Sitelen){
@@ -9841,12 +10082,12 @@ function renderPropsPanel(){
       tr("props_foreground_group"),
       fg,
       (v) => {            // LIVE preview only
-        console.log("Live group foreground :" + v);
+        if (APP_VECTOR_DEBUG) console.log("Live group foreground :" + v);
         applyGroupForeground(groupId, v);
         render();
       },
       (v) => {            // COMMIT
-        console.log("Commit group foreground :" + v);
+        if (APP_VECTOR_DEBUG) console.log("Commit group foreground :" + v);
         applyGroupForeground(groupId, v);
         scheduleAutosave();
         render();
@@ -10752,7 +10993,7 @@ if (textField && textField._popoutElementId){
       el.color ?? "#111111",
       (v) => {
         // LIVE preview only
-        console.log("Live text colour :" + v);
+        if (APP_VECTOR_DEBUG) console.log("Live text colour :" + v);
         el.color =  v;
 
         if (el.type === ElementType.Sitelen){
@@ -10764,7 +11005,7 @@ if (textField && textField._popoutElementId){
       },
       (v) => {
         // COMMIT
-        console.log("Commit text colour :" + v);
+        if (APP_VECTOR_DEBUG) console.log("Commit text colour :" + v);
         el.color =  v;
 
         if (el.type === ElementType.Sitelen){
@@ -10931,7 +11172,7 @@ propsBody.appendChild(makeColorPickerWithSwatch(
       el.color ?? "#111111",
       (v) => {
         // LIVE preview only
-        console.log("Live glyph colour :" + v);
+        if (APP_VECTOR_DEBUG) console.log("Live glyph colour :" + v);
         el.color =  v;
         invalidateGlyphCache(el.id);
         queueGlyphRasterRebuild(el);
@@ -10939,7 +11180,7 @@ propsBody.appendChild(makeColorPickerWithSwatch(
       },
       (v) => {
         // COMMIT
-        console.log("Commit glyph colour :" + v);
+        if (APP_VECTOR_DEBUG) console.log("Commit glyph colour :" + v);
         el.color = v;
         invalidateGlyphCache(el.id);
         queueGlyphRasterRebuild(el);
@@ -11917,7 +12158,7 @@ function makeColorPicker(label, value, onLive, onCommit){
 
   // Live preview: do NOT rebuild props panel here.
   inp.addEventListener("input", (e) => {
-    console.log("Colou Input Event");
+    if (APP_VECTOR_DEBUG) console.log("Colour Input Event");
     try { 
       clearTimeout(liveTimer);
       liveTimer = setTimeout(() => {
@@ -11930,7 +12171,7 @@ function makeColorPicker(label, value, onLive, onCommit){
 
   // Commit: picker closed (most reliable across browsers).
   inp.addEventListener("change", (e) => {
-    console.log("Colou Change Event");
+    if (APP_VECTOR_DEBUG) console.log("Colour Change Event");
     try {
       clearTimeout(liveTimer);
       if (onLive) onLive(e.target.value);
@@ -13307,7 +13548,7 @@ function syncStageDefaultsUiFromScene(){
   if (bgka) bgka.checked = (Scene.stage.bgImgKeepAspect !== false);
   if (bgs)  bgs.checked  = !!Scene.stage.bgImgStretch;
 
-  console.log("Scene: " + JSON.stringify(st));
+  if (APP_VECTOR_DEBUG) console.log("Scene: " + JSON.stringify(st));
 
   syncSnapButtonsFromScene();
 
@@ -13873,7 +14114,7 @@ function drawUrlLocal(el, x,y,w,h){
         octx.miterLimit = 2;
       }
 
-      const rawLines = splitLinesForBox((el.type === ElementType.Sitelen) ? CartoucheApi.prepareInput(el.text, pageMap) : el.text);
+      const rawLines = splitLinesForBox((el.type === ElementType.Sitelen) ? prepareSitelenInputWithActiveCartoucheDb(el.text) : el.text);
       const allLines = [];
       for (const ln0 of rawLines){
         const ln = (el.type === ElementType.Sitelen) ? renderSitelenLineToCanvasText(ln0) : String(ln0 ?? "");
@@ -14381,7 +14622,7 @@ sitelenRasterJobs.clear();
 glyphRasterJobs.clear();
 sitelenRendererInstancePromises.clear();
 
-console.log("New Scene "+ JSON.stringify(Scene));
+if (APP_VECTOR_DEBUG) console.log("New Scene "+ JSON.stringify(Scene));
 
   scheduleAutosave();
   syncStageDefaultsUiFromScene();
@@ -14622,11 +14863,11 @@ function wireStageDefaultsUi(){
 
   let bgTimer = null;
   if (bg){
-    console.log("Define stage bg listeners");
+    if (APP_VECTOR_DEBUG) console.log("Define stage bg listeners");
     bg.addEventListener("input", (e) => {
       if (bgTimer) clearTimeout(bgTimer);   // cancel pending render
       bgTimer = setTimeout(() => {          // schedule a render shortly after last input
-        console.log("Define stage bg listener input");
+        if (APP_VECTOR_DEBUG) console.log("Define stage bg listener input");
         Scene.stage.bg = e.target.value;
         render();
         bgTimer = null;
@@ -14636,7 +14877,7 @@ function wireStageDefaultsUi(){
     });
     bg.addEventListener("change", (e) => {
       if (bgTimer) clearTimeout(bgTimer);   // cancel pending render
-      console.log("Define stage bg listener change ")+ e.target.value;
+      if (APP_VECTOR_DEBUG) console.log("Define stage bg listener change " + e.target.value);
       Scene.stage.bg = e.target.value;
       addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
@@ -14645,9 +14886,9 @@ function wireStageDefaultsUi(){
   }
 
    if (expbg){
-    console.log("Define stage export background expbg listener");
+    if (APP_VECTOR_DEBUG) console.log("Define stage export background expbg listener");
     expbg.addEventListener("change", (e) => {
-      console.log("Define stageexport background expbg listener change "+ !!e.target.checked);
+      if (APP_VECTOR_DEBUG) console.log("Define stage export background expbg listener change "+ !!e.target.checked);
       Scene.stage.exportStageBackground = !!e.target.checked;
       scheduleAutosave();
       //render();
@@ -14728,9 +14969,9 @@ function wireStageDefaultsUi(){
   }
   
   if (dt){
-    console.log("Define stage dt listener");
+    if (APP_VECTOR_DEBUG) console.log("Define stage dt listener");
     dt.addEventListener("change", (e) => {
-      console.log("Define stage bt listener change "+ e.target.value);
+      if (APP_VECTOR_DEBUG) console.log("Define stage dt listener change "+ e.target.value);
       Scene.stage.defaultTextColor = e.target.value;
       addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
@@ -14780,9 +15021,9 @@ function wireStageDefaultsUi(){
   }
 
   if (dfe){
-    console.log("Define stage dfe listener");
+    if (APP_VECTOR_DEBUG) console.log("Define stage dfe listener");
     dfe.addEventListener("change", (e) => {
-      console.log("Define stage bfe listener change "+ !!e.target.checked);
+      if (APP_VECTOR_DEBUG) console.log("Define stage dfe listener change "+ !!e.target.checked);
       Scene.stage.defaultFillEnabled = !!e.target.checked;
       scheduleAutosave();
       //render();
@@ -14791,9 +15032,9 @@ function wireStageDefaultsUi(){
   }
 
   if (df){
-    console.log("Define stage df listener");
+    if (APP_VECTOR_DEBUG) console.log("Define stage df listener");
     df.addEventListener("change", (e) => {
-      console.log("Define stage df listener change "+ e.target.value);
+      if (APP_VECTOR_DEBUG) console.log("Define stage df listener change "+ e.target.value);
       // store as rgba with alpha=1 for consistency with your element fill strings
       Scene.stage.defaultFill = e.target.value;
       addDynamicSwatch(e.target.value);   // <--- add this
@@ -14804,9 +15045,9 @@ function wireStageDefaultsUi(){
   }
 
   if (ds){
-    console.log("Define stage ds listener");
+    if (APP_VECTOR_DEBUG) console.log("Define stage ds listener");
     ds.addEventListener("change", (e) => {
-      console.log("Define stage ds listener change " + e.target.value);
+      if (APP_VECTOR_DEBUG) console.log("Define stage ds listener change " + e.target.value);
       Scene.stage.defaultStroke = e.target.value;
       addDynamicSwatch(e.target.value);   // <--- add this
       scheduleAutosave();
@@ -14816,9 +15057,9 @@ function wireStageDefaultsUi(){
   }
 
   if (dsw){
-    console.log("Define stage dsw listener");
+    if (APP_VECTOR_DEBUG) console.log("Define stage dsw listener");
     dsw.addEventListener("change", (e) => {
-      console.log("Define stage dsw listener change "+ e.target.value);
+      if (APP_VECTOR_DEBUG) console.log("Define stage dsw listener change "+ e.target.value);
       Scene.stage.defaultStrokeW = Math.max(0, Number(e.target.value || 0));
       scheduleAutosave();
       //render();
@@ -15027,7 +15268,7 @@ document.addEventListener("keydown", (e) => {
           force: true
         });
 
-        console.info("[scrapbook preloaded-fonts] sync result:", syncResult);
+        if (APP_VECTOR_DEBUG) console.info("[scrapbook preloaded-fonts] sync result:", syncResult);
 
         if (syncResult.updated > 0) {
           await stageFontPairController.hydrateDynamicPresetsFromDb({ force: true });
@@ -15040,7 +15281,7 @@ document.addEventListener("keydown", (e) => {
           glyphCache?.clear?.();
           sitelenCache?.clear?.();
 
-          console.info(
+          if (APP_VECTOR_DEBUG) console.info(
             "[scrapbook preloaded-fonts] active preset after hydrate:",
             stageFontPairController.getActivePreset()
           );
@@ -15064,7 +15305,8 @@ document.addEventListener("keydown", (e) => {
         const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44');
         const NanpaParser = rendererMod?.NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
-        pageMap = await cartoucheApi.resolvePageMap();
+        globalCartouchePageMap = await cartoucheApi.resolvePageMap();
+        rebuildActiveCartouchePageMap();
       } catch(e) { console.warn('CartoucheApi load failed, continuing without:', e); }
 
       //wire default stage controls
@@ -15466,6 +15708,7 @@ document.addEventListener("keydown", (e) => {
     // Existing/imported documents that lack the abbreviation flag must stay visually unchanged.
     if (!rawDocumentDefaultsHasAbbrev) doc.documentDefaults.defaultAbbreviateNumericCartouches = false;
     doc.assets = deep(doc.assets || { byId: [] });
+    doc.cartoucheDb = normalizeScrapbookCartoucheDb(doc.cartoucheDb);
     // Normalise media guard settings (default all ON for new/old docs that lack them)
     doc.settings = isPlainObject(doc.settings) ? doc.settings : {};
     doc.settings.includeCoverPageInExport = doc.settings.includeCoverPageInExport !== false;
@@ -15527,6 +15770,7 @@ document.addEventListener("keydown", (e) => {
       },
       notes: String(doc.notes || ''),
       documentDefaults: deep(normalizeScrapbookDocumentDefaults(doc.documentDefaults || {}, null)),
+      cartoucheDb: deep(normalizeScrapbookCartoucheDb(doc.cartoucheDb)),
       settings: { includeCoverPageInExport: doc.settings?.includeCoverPageInExport !== false, coverDateAbbreviateNumericCartouche: !!doc.settings?.coverDateAbbreviateNumericCartouche, mediaGuards: { image: !!(doc.settings?.mediaGuards?.image !== false), audio: !!(doc.settings?.mediaGuards?.audio !== false), video: !!(doc.settings?.mediaGuards?.video !== false) }, youtubeExportInfo: { pngSingle: !!(doc.settings?.youtubeExportInfo?.pngSingle !== false), png: !!(doc.settings?.youtubeExportInfo?.png !== false), html: !!(doc.settings?.youtubeExportInfo?.html !== false), pdf: !!(doc.settings?.youtubeExportInfo?.pdf !== false) } },
       assets: canonicalAssets,
       pages: (doc.pages || []).map((page, idx) => ({
@@ -15997,6 +16241,7 @@ document.addEventListener("keydown", (e) => {
     closePresentation();
     ScrapbookState.doc = normalizedDoc;
     ScrapbookState.currentPageId = normalizedDoc.currentPageId;
+    bindScrapbookCartoucheDbDocumentToApp();
     const page = getCurrentPage() || normalizedDoc.pages[0];
     closeTransientEditorsForPageSwitch();
     await loadPagePayloadIntoEditor(page.payload, reason, { preserveHistory: true });
@@ -16091,6 +16336,7 @@ document.addEventListener("keydown", (e) => {
       assets: deep(payload?.assets || serializeAssets()),
       pages: [{ id: firstPageId, kind: 'page', name: 'Page 1', notes: '', tags: [], thumbnail: '', payload: deep(payload) }],
       currentPageId: firstPageId,
+      cartoucheDb: normalizeScrapbookCartoucheDb(null),
       settings: { includeCoverPageInExport: true, coverDateAbbreviateNumericCartouche: true, mediaGuards: { image: true, audio: true, video: true }, youtubeExportInfo: { pngSingle: true, png: true, html: true, pdf: true } },
     };
   }
@@ -16191,6 +16437,11 @@ document.addEventListener("keydown", (e) => {
       scene.elements.push(title);
       const date = makeTemplateText(fullW - margin - 360, margin + 12, diaryDateLabel(), 24, 320, 48);
       date.align = 'right';
+      // The diary date is a sitelen element containing a numeric date string.
+      // Match the document/page default so new diary pages respect the user's
+      // abbreviated numeric cartouche preference instead of always using the
+      // global Scene default from the currently displayed page.
+      date.abbreviateNumericCartouches = !!(scene?.stage?.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
       date.isLocked = true;
       scene.elements.push(date);
       const body = makeTemplateText(margin, 170, 'o sitelen lon ni', 28, fullW - margin*2, fullH - 220);
@@ -17008,7 +17259,7 @@ document.addEventListener("keydown", (e) => {
       cfg.layout.paddingPx = 0;
       cfg.paint.halo = { enabled: false, color: '#FFFFFF', widthPx: 0 };
       const result = await renderer.renderTextToNewCanvas(
-        Object.assign({ input: CartoucheApi.prepareInput(String(el.text ?? ''), pageMap) }, cfg)
+        Object.assign({ input: prepareSitelenInputWithActiveCartoucheDb(String(el.text ?? '')) }, cfg)
       );
       if (!result || !result.canvas) throw new Error('no canvas');
 
@@ -18017,7 +18268,7 @@ document.addEventListener("keydown", (e) => {
   }
 
   function normalizeSitelenVectorExportInput(rawText){
-    return CartoucheApi.prepareInput(String(rawText ?? ""), pageMap);
+    return prepareSitelenInputWithActiveCartoucheDb(rawText);
   }
 
   function planHasDrawableRuns(plan){
@@ -19566,7 +19817,7 @@ ${unknownTextRects}` : nested.inner;
 
   async function exportPngTransparent(){
     await awaitAllRendererRastersReady();
-    console.log("Export PNG image");
+    if (APP_VECTOR_DEBUG) console.log("Export PNG image");
     // Create offscreen canvas at exact stage size (no background fill => transparent)
     const off = document.createElement("canvas");
     off.width = Scene.stage.w;
@@ -20965,6 +21216,7 @@ ${unknownTextRects}` : nested.inner;
     closePresentation();
     ScrapbookState.doc = createDocumentFromPayload(payload);
     ScrapbookState.currentPageId = ScrapbookState.doc.currentPageId;
+    bindScrapbookCartoucheDbDocumentToApp();
     const cur = getCurrentPage();
     closeTransientEditorsForPageSwitch();
     await loadPagePayloadIntoEditor(cur.payload, 'New document', { preserveHistory: true });
@@ -21187,6 +21439,7 @@ ${unknownTextRects}` : nested.inner;
     if (savedDoc && savedDoc.pages && savedDoc.pages.length){
       const normalizedDoc = normalizeScrapbookDocument(savedDoc);
       ScrapbookState = { doc: normalizedDoc, currentPageId: normalizedDoc.currentPageId || normalizedDoc.pages[0].id, lastEditorHash: '' };
+      bindScrapbookCartoucheDbDocumentToApp();
       const cur = getCurrentPage() || normalizedDoc.pages[0];
       closeTransientEditorsForPageSwitch();
       await loadPagePayloadIntoEditor(cur.payload, 'Load document');
@@ -21197,6 +21450,7 @@ ${unknownTextRects}` : nested.inner;
     } else {
       const payload = snapshotCurrentPagePayload();
       ScrapbookState = { doc: createDocumentFromPayload(payload), currentPageId: null, lastEditorHash: '' };
+      bindScrapbookCartoucheDbDocumentToApp();
       ScrapbookState.currentPageId = ScrapbookState.doc.currentPageId;
       const cur = getCurrentPage();
       clearScrapbookSearchState();

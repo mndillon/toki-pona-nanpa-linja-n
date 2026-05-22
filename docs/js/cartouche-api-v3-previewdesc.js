@@ -468,6 +468,86 @@ function migrateRecord(e) {
   return { key, words: wordList, merge: e.merge !== false, mode, cartoucheMap, tallyMap: (typeof e.tallyMap === 'object' && e.tallyMap) ? e.tallyMap : {}, forceNormal: !!e.forceNormal, literalText: cleanLiteralText(e.literalText) || key };
 }
 
+// ── Pure page-map construction ────────────────────────────────────────────
+// Converts a supplied entry array into the same lookup map used by the
+// IndexedDB-backed CartoucheApi.resolvePageMap(). This lets document-local
+// stores, such as a scrapbook-local cartouche DB, reuse the same greedy-scan
+// behaviour without writing anything to the machine-wide cartouche-db-site DB.
+export function buildPageMapFromCartoucheEntries(entries) {
+  const map = new Map();
+
+  if (!Array.isArray(entries)) return map;
+
+  for (const entry of entries) {
+    if (!entry || typeof entry.key !== 'string' || !Array.isArray(entry.words) || !entry.words.length) {
+      continue;
+    }
+
+    if (entry.mode === 'ignore') {
+      for (const alias of getEntryLookupAliases(entry)) {
+        map.set(alias, null); // null = ignore
+      }
+      continue;
+    }
+
+    // Pre-compute random cartouches now (once per map build), matching the
+    // existing global DB behaviour.
+    let rendererInput;
+    if (entry.mode === 'random') {
+      const segs = segmentWords(entry.words);
+      const cm = {};
+
+      segs.forEach((seg, si) => {
+        // Skip nanpa segments UNLESS forceNormal — then generate random glyph cartouche.
+        if (seg.type === 'nanpa' && !entry.forceNormal) return;
+
+        if (seg.type === 'nanpa' && entry.forceNormal) {
+          const letters = seg.words.join('').toLowerCase().split('');
+          cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+          return;
+        }
+
+        if (entry.merge) {
+          const { letters } = segmentLetters(seg.words);
+          cm[si] = buildRandomDescForLetters(letters);
+        } else {
+          seg.words.forEach((w, wi) => {
+            cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split(''));
+          });
+        }
+      });
+
+      rendererInput = buildEntryRendererInput({ ...entry, cartoucheMap: cm });
+    } else {
+      rendererInput = buildEntryRendererInput(entry);
+    }
+
+    // Store as object so greedyScan can read forceNormal flag.
+    // forceNormal entries carry two inputs:
+    //   input — nanpa segments rendered natively (used without @db)
+    //   inputForceNormal — nanpa segments overridden with glyph cartouche (used with @db)
+    let inputForceNormal = rendererInput;
+    if (entry.forceNormal) {
+      const entryNormal = { ...entry, forceNormal: false };
+      inputForceNormal = rendererInput;
+      rendererInput = buildEntryRendererInput(entryNormal);
+    }
+
+    const mapValue = {
+      input:            rendererInput,
+      inputForceNormal: inputForceNormal,
+      forceNormal:      !!entry.forceNormal,
+      requiresAtDb:     entryRequiresAtDbForTpWordCollision(entry),
+    };
+
+    for (const alias of getEntryLookupAliases(entry)) {
+      map.set(alias, mapValue);
+    }
+  }
+
+  return map;
+}
+
 // ── CartoucheApi class ─────────────────────────────────────────────────────
 // Uses a plain object for state instead of private fields for broad compatibility
 export class CartoucheApi {
@@ -564,70 +644,7 @@ export class CartoucheApi {
   // Call once at page init; cache the result for the session.
   async resolvePageMap() {
     const entries = await this.getAllEntries();
-    const map = new Map();
-    for (const entry of entries) {
-      if (entry.mode === 'ignore') {
-        map.set(entry.key, null); // null = ignore
-        continue;
-      }
-      // Pre-compute random cartouches now (once per session)
-      let rendererInput;
-      if (entry.mode === 'random') {
-        const segs = segmentWords(entry.words);
-        const cm   = {};
-        segs.forEach((seg, si) => {
-          // Skip nanpa segments UNLESS forceNormal — then generate random glyph cartouche
-          if (seg.type === 'nanpa' && !entry.forceNormal) return;
-          if (seg.type === 'nanpa' && entry.forceNormal) {
-            // Use stored preferred value if set and valid (not just the raw word).
-            // Otherwise generate random glyph words.
-            const stored = (entry.cartoucheMap || {})[si];
-            const rawWord = seg.words.join('').toLowerCase();
-            const storedIsRaw = !stored || stored === rawWord || stored === seg.words.join(' ');
-            if (entry.mode === 'preferred' && stored && !storedIsRaw) {
-              cm[si] = stored; // use preferred
-            } else {
-              const letters = seg.words.join('').toLowerCase().split('');
-              cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
-            }
-            return;
-          }
-          if (entry.merge) {
-            const { letters } = segmentLetters(seg.words);
-            cm[si] = buildRandomDescForLetters(letters);
-          } else {
-            seg.words.forEach((w, wi) => {
-              cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split(''));
-            });
-          }
-        });
-        rendererInput = buildEntryRendererInput({ ...entry, cartoucheMap: cm });
-      } else {
-        rendererInput = buildEntryRendererInput(entry);
-      }
-      // Store as object so greedyScan can read forceNormal flag.
-      // forceNormal entries carry two inputs:
-      //   input — nanpa segments rendered natively (always used)
-      //   inputForceNormal — nanpa segments overridden with glyph cartouche (only with @db)
-      let inputForceNormal = rendererInput;
-      if (entry.forceNormal) {
-        // Build a version with nanpa segments rendered natively (no forceNormal)
-        const entryNormal = { ...entry, forceNormal: false };
-        inputForceNormal = rendererInput; // @db version already computed above
-        rendererInput = buildEntryRendererInput(entryNormal);
-      }
-      const mapValue = {
-        input:            rendererInput,
-        inputForceNormal: inputForceNormal,
-        forceNormal:      !!entry.forceNormal,
-        requiresAtDb:     entryRequiresAtDbForTpWordCollision(entry),
-      };
-
-      for (const alias of getEntryLookupAliases(entry)) {
-        map.set(alias, mapValue);
-      }
-    }
-    return map;
+    return buildPageMapFromCartoucheEntries(entries);
   }
 
   // ── greedyScan (static — no DB needed, pure computation) ─────────────────

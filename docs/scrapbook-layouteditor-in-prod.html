@@ -167,7 +167,6 @@
           <button class="btn" id="btnNew">New / Clear</button>
           <button class="btn" id="btnExportJson">Export page JSON</button>
           <button class="btn" id="btnImportJson">Import page JSON</button>
-          <button class="btn" id="btnScrapbookNames" type="button">Scrapbook Names</button>
           <button class="btn" id="btnExportPng">Export page PNG</button>
         </div>
 
@@ -223,7 +222,6 @@
           <details class="topbarMenu" id="compactMenuView"><summary class="btn topbarMenuBtn">View</summary><div class="topbarMenuPanel" id="compactMenuViewPanel"></div></details>
           <details class="topbarMenu" id="compactMenuExport"><summary class="btn topbarMenuBtn">Export</summary><div class="topbarMenuPanel" id="compactMenuExportPanel"></div></details>
           <button class="btn primary" id="compactBtnSearch" type="button">Search</button>
-          <button class="btn" id="compactBtnScrapbookNames" type="button">Names</button>
         </div>
         <div class="compactTopbarRight">
           <div class="inlineLabel" id="compactLblLang">Language</div>
@@ -614,42 +612,7 @@
       • js/app.js is a separate cacheable resource
       • A future build step can code-split or minify js/app.js independently
   -->
-
-  <script>
-  // Keep noisy development diagnostics out of normal use.
-  // Set window.SCRAPBOOK_LAYOUT_EDITOR_DEBUG = true before this script to see them.
-  (function(){
-    if (window.SCRAPBOOK_LAYOUT_EDITOR_DEBUG) return;
-    const noisyPrefixes = [
-      '[sitelen-vector-js]',
-      '[sitelen-vector-font-debug]',
-      '[sitelen-vector-cartouche-line-clip]',
-      '[scrapbook preloaded-fonts]'
-    ];
-    const noisyContains = [
-      'CARTOUCHE-LINE-CLIP EXPORTER',
-      'resolveFontBytesForRun START',
-      'resolveFontBytesForRun RESULT',
-      'resolveFontBytesForRun CACHE HIT'
-    ];
-    function isNoisyConsoleMessage(args){
-      const first = String(args && args.length ? args[0] : '');
-      if (!first) return false;
-      return noisyPrefixes.some(prefix => first.startsWith(prefix)) ||
-             noisyContains.some(part => first.includes(part));
-    }
-    for (const method of ['log','info']) {
-      const original = console[method];
-      if (typeof original !== 'function') continue;
-      console[method] = function(...args){
-        if (isNoisyConsoleMessage(args)) return;
-        return original.apply(this, args);
-      };
-    }
-  })();
-  </script>
-  <script type="module" src="scrapbook-layouteditor_app/js/scrapbook-cartouche-db-bootstrap.js?v=19"></script>
-  <script type="module" src="scrapbook-layouteditor_app/js/app-vector.js?v=22"></script>
+  <script type="module" src="scrapbook-layouteditor_app/js/app-vector.js?v=35"></script>
 
 
 <!-- ── Media Size Guard Dialog ── -->
