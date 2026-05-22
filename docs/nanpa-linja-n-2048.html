@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>nanpa-linja-n 2048</title>
+
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <style>
+    :root {
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --panel: rgba(255,255,255,0.35);
+      --panel-strong: rgba(255,255,255,0.58);
+      --panel-border: rgba(17,17,17,0.18);
+      --board-max: 560px;
+      --board-gap: 10px;
+      --board-pad: 12px;
+      --board-radius: 18px;
+      --cell-radius: 14px;
+      --tile-radius: 14px;
+      --topbar-h: 96px;
+    }
+
+    @font-face {
+      font-family: "PatrickHand";
+      src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Patrick-Head-Font";
+      src: url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Nasin-Nanpa-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Numeric-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      font-display: swap;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      overflow: hidden;
+    }
+
+    body { min-height: 100dvh; }
+
+    .topbar {
+      min-height: var(--topbar-h);
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      grid-template-areas:
+        "new quit stats"
+        "status status stats";
+      gap: 8px 10px;
+      align-items: center;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      border-bottom: 1px solid var(--panel-border);
+      background: var(--panel);
+      backdrop-filter: blur(6px);
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.50);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: "PatrickHand", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    #btnNew { grid-area: new; }
+    #btnQuit { grid-area: quit; }
+
+    .status {
+      grid-area: status;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.15;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stats {
+      grid-area: stats;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(92px, 1fr));
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .statBox {
+      min-width: 0;
+      height: 70px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.38);
+      border-radius: 14px;
+      padding: 4px 6px 6px;
+      box-sizing: border-box;
+      display: grid;
+      grid-template-rows: 18px 1fr;
+      align-items: center;
+      justify-items: center;
+      overflow: hidden;
+    }
+
+    .statBox.clickable { cursor: pointer; }
+    .statBox.disabledClick { cursor: not-allowed; opacity: 0.72; }
+
+    .statLabel {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+      white-space: nowrap;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .statCanvas {
+      width: 100%;
+      height: 44px;
+      display: block;
+    }
+
+    .wrap {
+      height: calc(100dvh - var(--topbar-h));
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gameArea {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .gameStack {
+      width: min(var(--board-max), 92vw, calc(100dvh - var(--topbar-h) - 96px));
+      display: grid;
+      gap: 10px;
+    }
+
+    .hint {
+      border: 1px solid rgba(17,17,17,0.18);
+      background: rgba(255,255,255,0.35);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.25;
+      text-align: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .board {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: var(--board-gap);
+      padding: var(--board-pad);
+      border-radius: var(--board-radius);
+      border: 2px solid rgba(17,17,17,0.22);
+      background: rgba(255,255,255,0.22);
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .cell {
+      border-radius: var(--cell-radius);
+      background: rgba(255,255,255,0.16);
+      border: 2px dashed rgba(17,17,17,0.12);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+      box-sizing: border-box;
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tile {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--tile-radius);
+      border: 2px solid rgba(17,17,17,0.30);
+      box-sizing: border-box;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px;
+      transition: transform 85ms ease, filter 85ms ease;
+    }
+
+    .tile.newTile { animation: popIn 120ms ease-out; }
+    .tile.mergedTile { animation: mergePop 150ms ease-out; }
+    .tile canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.82); opacity: 0.6; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes mergePop {
+      0% { transform: scale(1); }
+      55% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      z-index: 10;
+      font-family: "PatrickHand", system-ui, sans-serif;
+    }
+    .overlay.show { display: flex; }
+
+    .modal {
+      width: min(520px, 92vw);
+      background: rgba(255,255,255,0.93);
+      border: 1px solid rgba(0,0,0,0.18);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+    }
+    .modal h2 { margin: 0 0 8px 0; font-size: 24px; }
+    .modal p { margin: 0 0 14px 0; color: var(--muted); line-height: 1.35; font-size: 16px; }
+    .modal .row { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+    .finishModal {
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .finishValueRow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 10px 0 12px;
+      min-width: 0;
+    }
+
+    .finishValueCanvas {
+      width: min(340px, 58vw);
+      height: 86px;
+      display: block;
+      flex: 0 1 auto;
+    }
+
+    .finishDecimalValue {
+      font-size: 30px;
+      line-height: 1;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .finishDismissHint {
+      opacity: 0.86;
+      margin-bottom: 0 !important;
+    }
+
+    .footer {
+      flex: 0 0 auto;
+      border-top: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.25);
+      padding: 10px 12px;
+      box-sizing: border-box;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .footer a { color: var(--ink); text-decoration: underline; }
+    .footerRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .footerLeft { min-width: 240px; }
+    .footerRight { white-space: nowrap; }
+
+    @media (max-width: 680px), (pointer: coarse) {
+      :root {
+        --topbar-h: 132px;
+        --board-gap: 8px;
+        --board-pad: 10px;
+      }
+      .topbar {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "new quit"
+          "stats stats"
+          "status status";
+        padding: 8px;
+        gap: 7px;
+      }
+      .btn { font-size: 14px; padding: 7px 8px; }
+      .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+      .statBox { height: 58px; border-radius: 12px; padding: 3px 4px 5px; grid-template-rows: 15px 1fr; }
+      .statLabel { font-size: 12px; }
+      .statCanvas { height: 36px; }
+      .status { font-size: 13px; text-align: center; }
+      .gameArea { padding: 10px; }
+      .gameStack { width: min(94vw, calc(100dvh - var(--topbar-h) - 92px)); gap: 8px; }
+      .hint { font-size: 14px; padding: 8px 10px; }
+      .tile { padding: 5px; }
+      .finishValueRow { gap: 8px; }
+      .finishValueCanvas { width: min(260px, 56vw); height: 68px; }
+      .finishDecimalValue { font-size: 24px; }
+      .footer { font-size: 12px; padding: 8px 10px; }
+    }
+
+    @media (max-height: 700px) {
+      .footer { display: none; }
+      .gameStack { width: min(var(--board-max), 92vw, calc(100dvh - var(--topbar-h) - 42px)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <button id="btnNew" class="btn" type="button">Start New Game</button>
+    <button id="btnQuit" class="btn" type="button" disabled>Quit Game</button>
+
+    <div class="stats" aria-label="Game statistics">
+      <div class="statBox" id="scoreBox" aria-label="Score">
+        <div class="statLabel">score</div>
+        <canvas id="scoreCanvas" class="statCanvas"></canvas>
+      </div>
+      <div class="statBox clickable" id="bestBox" aria-label="Best score" title="Click to clear best score">
+        <div class="statLabel">best</div>
+        <canvas id="bestCanvas" class="statCanvas"></canvas>
+      </div>
+      <div class="statBox" id="timeBox" aria-label="Time">
+        <div class="statLabel">time</div>
+        <canvas id="timeCanvas" class="statCanvas"></canvas>
+      </div>
+    </div>
+
+    <div id="status" class="status">Loading fonts…</div>
+  </div>
+
+  <div class="wrap">
+    <div class="gameArea">
+      <div class="gameStack" aria-label="2048 game">
+        <div class="hint" id="hint">Use arrow keys or swipe. Merge equal cartouches to make 2048.</div>
+        <div id="board" class="board" aria-label="2048 board"></div>
+      </div>
+
+      <div id="quitOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="quitTitle">
+        <div class="modal">
+          <h2 id="quitTitle">Quit current game?</h2>
+          <p>The current board, timer, and score will be lost.</p>
+          <div class="row">
+            <button id="btnCancelQuit" class="btn" type="button">Cancel</button>
+            <button id="btnConfirmQuit" class="btn" type="button">Quit</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="finishOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="finishTitle">
+        <div id="finishModal" class="modal finishModal" tabindex="0" title="Click to dismiss">
+          <h2 id="finishTitle">largest tile value achieved</h2>
+          <p id="finishMessage">The largest tile value achieved was:</p>
+          <div class="finishValueRow" aria-label="Largest tile value achieved">
+            <canvas id="finishValueCanvas" class="finishValueCanvas"></canvas>
+            <span id="finishDecimalValue" class="finishDecimalValue">0</span>
+          </div>
+          <p class="finishDismissHint">Click to dismiss.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer" aria-label="Disclaimer">
+      <div class="footerRow">
+        <div class="footerLeft">
+          <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
+        </div>
+        <div class="footerRight"><a href="./index.html">Back to index</a></div>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="./js/nanpa-linja-n-2048-game.js?v=3"></script>
+</body>
+</html>
