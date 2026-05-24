@@ -78,6 +78,40 @@ function getEntryLookupAliasesForLocalDb(entry) {
   return aliases;
 }
 
+function buildEffectiveEntryForRender(entry) {
+  if (!entry || entry.mode !== 'random') return entry;
+
+  const segs = segmentWords(entry.words);
+  const cm = {};
+
+  segs.forEach((seg, si) => {
+    if (seg.type === 'nanpa' && !entry.forceNormal) return;
+
+    if (seg.type === 'nanpa' && entry.forceNormal) {
+      const letters = seg.words.join('').toLowerCase().split('');
+      cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+      return;
+    }
+
+    if (entry.merge) {
+      const { letters } = segmentLetters(seg.words);
+      cm[si] = buildRandomDescForLetters(letters);
+    } else {
+      seg.words.forEach((w, wi) => {
+        cm[`${si}_${wi}`] = buildRandomDescForLetters(String(w).toLowerCase().split(''));
+      });
+    }
+  });
+
+  return { ...entry, cartoucheMap: cm };
+}
+
+function buildEntryRenderedPreviewInput(entry) {
+  if (!entry) return '';
+  if (entry.mode === 'ignore') return buildEntryDisplayInput(entry);
+  return buildEntryRendererInput(buildEffectiveEntryForRender(entry));
+}
+
 function buildLocalPageMapFromEntries(entries) {
   const map = new Map();
   for (const entry of Array.isArray(entries) ? entries : []) {
@@ -610,7 +644,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
     if (render) scheduleSelectedPreviewRender();
   }
 
-  function updateSelectedPreviewMetadata(entry) {
+  function updateSelectedPreviewMetadata(entry, previewInput = null) {
     if (!state.previewRoot) return;
     if (!entry) {
       if (state.previewTitle) state.previewTitle.textContent = 'No selected entry';
@@ -624,8 +658,13 @@ export function createScrapbookCartoucheDbController(options = {}) {
       }
       return;
     }
+
+    const input = previewInput == null
+      ? buildEntryRenderedPreviewInput(entry)
+      : String(previewInput);
+
     if (state.previewTitle) state.previewTitle.textContent = `Preview: ${entry.key}`;
-    if (state.previewDesc) state.previewDesc.textContent = buildEntryDisplayInput(entry);
+    if (state.previewDesc) state.previewDesc.textContent = input;
   }
 
   function scheduleSelectedPreviewRender() {
@@ -640,7 +679,8 @@ export function createScrapbookCartoucheDbController(options = {}) {
 
   async function renderSelectedPreview() {
     const entry = getSelectedEntry();
-    updateSelectedPreviewMetadata(entry);
+    const previewInput = entry ? buildEntryRenderedPreviewInput(entry) : '';
+    updateSelectedPreviewMetadata(entry, previewInput);
     if (!entry || !state.previewCanvas) return;
     if (entry.mode === 'ignore') {
       if (state.previewStatus) state.previewStatus.textContent = 'Ignored entries do not render a cartouche.';
@@ -656,7 +696,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
     const fontPx = 44;
     const renderer = await getNasinNanpaPreviewRenderer(fontPx);
     if (seq !== state.previewSeq) return;
-    const input = buildEntryRendererInput(entry);
+    const input = previewInput;
     const result = await renderer.renderTextToNewCanvas({
       input,
       layout: { fontPx, paddingPx: 12, spacingPreset: 'default' },
@@ -950,7 +990,22 @@ export function createScrapbookCartoucheDbController(options = {}) {
 
     const hint = document.createElement('div');
     hint.className = 'scrapbookCartoucheDbHint';
-    hint.textContent = 'These proper-name entries are saved inside this scrapbook only. Local entries override matching global cartouche DB entries while this scrapbook is rendered.';
+
+    hint.append(
+      document.createTextNode('These proper-name entries are saved inside this scrapbook only. Local entries override matching ')
+    );
+
+    const globalDbLink = document.createElement('a');
+    globalDbLink.href = './cartouche-db.html';
+    globalDbLink.textContent = 'global cartouche DB';
+    globalDbLink.target = '_blank';
+    globalDbLink.rel = 'noopener noreferrer';
+
+    hint.append(
+      globalDbLink,
+      document.createTextNode(' entries while this scrapbook is rendered.')
+    );
+
     body.appendChild(hint);
 
     const toolbar = document.createElement('div');
