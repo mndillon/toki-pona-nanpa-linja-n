@@ -1,11 +1,13 @@
 import {
   CartoucheApi,
   buildEntryDisplayInput,
-  buildPageMapFromCartoucheEntries,
+  buildEntryRendererInput,
+  buildRandomDescForLetters,
+  segmentLetters,
   segmentWords,
   makeKey,
   parseAndValidateLine,
-} from '../../js/cartouche-api-v3-previewdesc.js?v=22';
+} from '../../js/cartouche-api-v3-previewdesc.js?v=21';
 
 const SCRAPBOOK_CARTOUCHE_DB_DEBUG = !!globalThis.SCRAPBOOK_CARTOUCHE_DB_DEBUG;
 function scrapbookCartoucheDebugWarn(...args) {
@@ -25,29 +27,224 @@ const PREVIEW_FONT_URL_LITERAL = '../../fonts/PatrickHand-Regular.ttf';
 const PREVIEW_FONT_URL_LITERAL_CARTOUCHE = '../../fonts/nasin-nanpa-4.0.2-Helvetica.otf';
 const PREVIEW_RENDERER_URL = '../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44';
 
-function entryHasNanpaSegment(entry) {
+function mergedLettersToWordForLocalDb(words) {
+  return segmentLetters(words).letters.join('');
+}
+
+const LOCAL_TP_KNOWN_WORDS = new Set([
+  'a','akesi','ala','alasa','ale','ali','anpa','ante','anu','awen',
+  'e','en','epiku','esun','ijo','ike','ilo','insa',
+  'jaki','jan','jasima','jelo','jo',
+  'kala','kalama','kama','kasi','ken','kepeken','kijetesantakalu','kili','kin','kipisi',
+  'kiwen','ko','kokosila','kon','ku','kule','kulupu','kute',
+  'la','lanpan','lape','laso','lawa','leko','len','lete','li','lili',
+  'linja','linluwi','lipu','loje','lon','luka','lukin','lupa',
+  'ma','majuna','mama','mani','meli','meso','mi','mije','misikeke',
+  'moku','moli','monsi','monsuta','mu','mun','musi','mute',
+  'n','namako','nanpa','nasa','nasin','nena','ni','nimi','noka',
+  'o','oko','olin','ona','open',
+  'pakala','pake','pali','palisa','pan','pana','pi','pilin','pimeja',
+  'pini','pipi','poka','poki','pona','powe','pu',
+  'sama','seli','selo','seme','sewi','sijelo','sike','sin','sina',
+  'sinpin','sitelen','soko','sona','soweli','su','suli','suno','supa','suwi',
+  'tan','taso','tawa','telo','tenpo','toki','tomo','tonsi','tu',
+  'unpa','uta','utala','walo','wan','waso','wawa','weka','wile',
+]);
+
+function localWordsLookLikeNanpaRun(words) {
+  if (!Array.isArray(words) || !words.length) return false;
+  try {
+    const parser = globalThis.NanpaParser || null;
+    return !!(parser && typeof parser.isValidCaps === 'function' && parser.isValidCaps(words.map(w => String(w).toUpperCase()).join('')));
+  } catch {
+    return false;
+  }
+}
+
+function entryRequiresAtDbForLocalTpWordCollision(entry) {
   if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
-  return segmentWords(entry.words).some(seg => seg.type === 'nanpa');
+  const segs = segmentWords(entry.words);
+
+  // Match standalone cartouche-db.html: any nanpa-linja-n segment requires
+  // explicit @db to use the saved proper-name override.  The extra direct
+  // parser check covers startup order where the local controller was created
+  // before CartoucheApi was given NanpaParser.
+  if (segs.some(seg => seg && seg.type === 'nanpa') || localWordsLookLikeNanpaRun(entry.words)) return true;
+
+  for (const seg of segs) {
+    if (seg.type !== 'normal') continue;
+    if (entry.merge) {
+      const merged = mergedLettersToWordForLocalDb(seg.words);
+      if (LOCAL_TP_KNOWN_WORDS.has(merged)) return true;
+    } else {
+      for (const w of seg.words) {
+        if (LOCAL_TP_KNOWN_WORDS.has(String(w).toLowerCase())) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function getEntryLookupAliasesForLocalDb(entry) {
+  const aliases = new Set();
+  if (!entry || !Array.isArray(entry.words) || !entry.words.length) return aliases;
+  aliases.add(entry.key);
+  if (entry.merge) {
+    const segs = segmentWords(entry.words);
+    for (const seg of segs) {
+      if (seg.type !== 'normal') continue;
+      const merged = segmentLetters(seg.words).letters.join('');
+      if (merged) aliases.add(merged.charAt(0).toUpperCase() + merged.slice(1));
+    }
+  }
+  return aliases;
+}
+
+
+function entryHasAnyCartoucheDescription(entry) {
+  const cm = entry && entry.cartoucheMap && typeof entry.cartoucheMap === 'object'
+    ? entry.cartoucheMap
+    : {};
+  return Object.values(cm).some(value => String(value || '').trim());
+}
+
+function shouldGenerateCartoucheDescriptions(entry) {
+  if (!entry) return false;
+  if (entry.mode === 'random') return true;
+  if (entry.mode === 'preferred' && !entryHasAnyCartoucheDescription(entry)) return true;
+  return false;
+}
+
+function entryHasNanpaSegmentForLocalProperName(entry) {
+  if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
+  try {
+    return segmentWords(entry.words).some(seg => seg && seg.type === 'nanpa');
+  } catch {
+    return false;
+  }
+}
+
+function shouldForceNormalForLocalProperNameRender(entry) {
+  if (!entry || entry.mode === 'literal' || entry.mode === 'ignore') return false;
+  // Match the standalone cartouche DB page: nanpa-linja-n proper names render
+  // as numeric cartouches by default.  Only an explicit @db/forceNormal override
+  // should make a numeric-looking proper name use the saved glyph description.
+  return !!entry.forceNormal;
+}
+
+function entryForLocalProperNameRender(entry) {
+  return shouldForceNormalForLocalProperNameRender(entry)
+    ? { ...entry, forceNormal: true }
+    : entry;
+}
+
+function buildEffectiveEntryForRender(entry) {
+  if (!shouldGenerateCartoucheDescriptions(entry)) return entry;
+
+  const segs = segmentWords(entry.words);
+  const cm = {};
+
+  segs.forEach((seg, si) => {
+    if (seg.type === 'nanpa' && !entry.forceNormal) return;
+
+    if (seg.type === 'nanpa' && entry.forceNormal) {
+      const letters = seg.words.join('').toLowerCase().split('');
+      cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+      return;
+    }
+
+    if (entry.merge) {
+      const { letters } = segmentLetters(seg.words);
+      cm[si] = buildRandomDescForLetters(letters);
+    } else {
+      seg.words.forEach((w, wi) => {
+        cm[`${si}_${wi}`] = buildRandomDescForLetters(String(w).toLowerCase().split(''));
+      });
+    }
+  });
+
+  return { ...entry, cartoucheMap: cm };
+}
+
+function escapeLiteralCartoucheText(text) {
+  return String(text ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .trim();
+}
+function buildLiteralCartoucheRendererInput(entry) {
+  const literal = escapeLiteralCartoucheText(entry?.literalText || entry?.key || '');
+  return `["${literal}"]`;
 }
 
 function buildEntryRenderedPreviewInput(entry) {
   if (!entry) return '';
   if (entry.mode === 'ignore') return buildEntryDisplayInput(entry);
+  if (entry.mode === 'literal') return buildLiteralCartoucheRendererInput(entry);
+  return buildEntryRendererInput(buildEffectiveEntryForRender(entryForLocalProperNameRender(entry)));
+}
 
-  // The popup preview is showing the database override output. For names that
-  // parse as nanpa-linja-n, force the ordinary glyph-cartouche branch for the
-  // preview output so the renderer receives the leading "" guard and does not
-  // reinterpret the preview as a native numeric cartouche.
-  const previewEntry = entryHasNanpaSegment(entry)
-    ? { ...entry, forceNormal: true }
-    : entry;
+function buildLocalPageMapFromEntries(entries) {
+  const map = new Map();
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    if (!entry || !entry.key || !Array.isArray(entry.words) || !entry.words.length) continue;
 
-  const previewMap = buildPageMapFromCartoucheEntries([previewEntry]);
-  const mapValue = previewMap.get(previewEntry.key);
-  if (mapValue && typeof mapValue === 'object') {
-    return String(mapValue.inputForceNormal || mapValue.input || '').trim();
+    if (entry.mode === 'ignore') {
+      for (const alias of getEntryLookupAliasesForLocalDb(entry)) map.set(alias, null);
+      continue;
+    }
+
+    let rendererInput;
+    if (entry.mode === 'literal') {
+      rendererInput = buildLiteralCartoucheRendererInput(entry);
+    } else {
+      rendererInput = buildEntryRendererInput(buildEffectiveEntryForRender(entryForLocalProperNameRender(entry)));
+    }
+
+    let inputForceNormal = rendererInput;
+    if (entry.forceNormal && entry.mode !== 'literal') {
+      const entryNormal = { ...entry, forceNormal: false };
+      inputForceNormal = rendererInput;
+      rendererInput = buildEntryRendererInput(buildEffectiveEntryForRender(entryNormal));
+    }
+
+    const mapValue = {
+      input: rendererInput,
+      inputForceNormal,
+      forceNormal: !!entry.forceNormal,
+      requiresAtDb: entryRequiresAtDbForLocalTpWordCollision(entry),
+    };
+
+    for (const alias of getEntryLookupAliasesForLocalDb(entry)) map.set(alias, mapValue);
   }
-  return buildEntryDisplayInput(previewEntry);
+  return map;
+}
+
+
+function fallbackParseLocalProperNameLine(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return { ok: false, reason: 'Enter a proper name.' };
+  const words = text.split(/\s+/).filter(Boolean);
+  if (!words.length) return { ok: false, reason: 'Enter a proper name.' };
+
+  // Scrapbook-local entries are proper names.  The shared cartouche DB
+  // validator can reject names that look like nanpa-linja-n numeric input
+  // (for example "N").  Keep the fallback deliberately narrow: plain Latin
+  // proper-name tokens only, with at least one uppercase letter somewhere in
+  // the entered name.
+  const hasUpper = /[A-Z]/.test(text);
+  if (!hasUpper) return { ok: false, reason: 'Proper names must include an uppercase letter.' };
+  const bad = words.find(w => !/^[A-Za-z][A-Za-z'’.-]*$/.test(w));
+  if (bad) return { ok: false, reason: `Invalid proper-name token: ${bad}` };
+  return { ok: true, words };
+}
+
+function parseAndValidateLocalProperNameLine(raw) {
+  const parsed = parseAndValidateLine(raw);
+  if (parsed && parsed.ok) return parsed;
+  const fallback = fallbackParseLocalProperNameLine(raw);
+  if (fallback.ok) return fallback;
+  return parsed || fallback;
 }
 
 
@@ -65,11 +262,10 @@ function cloneJson(value) {
 
 function normaliseEntry(raw) {
   if (!raw || !Array.isArray(raw.words) || !raw.words.length) return null;
-  const parsed = parseAndValidateLine(raw.words.join(' '));
+  const parsed = parseAndValidateLocalProperNameLine(raw.words.join(' '));
   if (!parsed.ok) return null;
   const key = makeKey(parsed.words);
   const mode = VALID_MODES.has(raw.mode) ? raw.mode : 'random';
-  const hasNanpaSegment = segmentWords(parsed.words).some(seg => seg.type === 'nanpa');
   return {
     key,
     words: parsed.words,
@@ -77,7 +273,7 @@ function normaliseEntry(raw) {
     mode,
     cartoucheMap: raw.cartoucheMap && typeof raw.cartoucheMap === 'object' ? { ...raw.cartoucheMap } : {},
     tallyMap: raw.tallyMap && typeof raw.tallyMap === 'object' ? { ...raw.tallyMap } : {},
-    forceNormal: !!raw.forceNormal || hasNanpaSegment,
+    forceNormal: true,
     literalText: String(raw.literalText || key).replace(/"/g, '').trim() || key,
   };
 }
@@ -156,7 +352,6 @@ function ensureStyle() {
       gap: 8px;
       overflow: auto;
       min-height: 0;
-      flex: 1 1 auto;
       padding-right: 3px;
     }
     .scrapbookCartoucheDbEntry {
@@ -172,21 +367,15 @@ function ensureStyle() {
       box-shadow: 0 0 0 2px rgba(90,62,27,.10) inset;
       background: rgba(255,255,255,.34);
     }
-.scrapbookCartoucheDbPreview {
-  border: 1px solid rgba(17,17,17,.18);
-  border-radius: 12px;
-  padding: 8px;
-  background: rgba(255,255,255,.26);
-  display: grid;
-  grid-template-rows: auto auto 112px;
-  gap: 4px;
-  min-height: 156px;
-  height: 156px;
-  max-height: 156px;
-  box-sizing: border-box;
-  overflow: hidden;
-  flex: 0 0 156px;
-}
+    .scrapbookCartoucheDbPreview {
+      border: 1px solid rgba(17,17,17,.18);
+      border-radius: 12px;
+      padding: 8px;
+      background: rgba(255,255,255,.26);
+      display: grid;
+      gap: 4px;
+      min-height: 0;
+    }
     .scrapbookCartoucheDbPreviewHeader {
       display: flex;
       align-items: baseline;
@@ -200,56 +389,45 @@ function ensureStyle() {
       color: var(--ink, #000111);
     }
     .scrapbookCartoucheDbPreviewDesc {
-      font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      color: var(--ink, #000111);
-      white-space: pre;
+      font: 11px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--muted, #3f4750);
+      overflow-wrap: anywhere;
+      max-height: 28px;
+      overflow: hidden;
+    }
+    .scrapbookCartoucheDbPreviewCanvasWrap {
       overflow-x: auto;
-      overflow-y: hidden;
-      min-height: 24px;
-      max-height: 32px;
-      background: rgba(255,255,255,.28);
-      border-radius: 7px;
-      padding: 4px 7px;
+      overflow-y: visible;
+      min-height: 168px;
+      max-height: none;
+      background: rgba(255,255,255,.18);
+      border-radius: 8px;
+      padding: 10px 6px 10px 18px;
+      white-space: nowrap;
       box-sizing: border-box;
     }
-.scrapbookCartoucheDbPreviewCanvasWrap {
-  overflow-x: auto;
-  overflow-y: hidden;
-  height: 112px;
-  max-height: 112px;
-  min-height: 112px;
-  background: rgba(255,255,255,.18);
-  border-radius: 8px;
-  padding: 6px 8px;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-}
     .scrapbookCartoucheDbPreviewCanvasWrap canvas {
       display: block;
       width: auto !important;
       max-width: none !important;
-      height: auto;
-      max-height: 128px;
+      height: auto !important;
+      max-height: none !important;
     }
     .scrapbookCartoucheDbPreviewSvgHost {
-      display: flex;
-      align-items: center;
+      display: block;
       width: max-content;
       min-width: 1px;
-      min-height: 1px;
-      padding: 0;
-      flex: 0 0 auto;
-      overflow: hidden;
+      min-height: 132px;
+      height: auto;
+      overflow: visible;
     }
-.scrapbookCartoucheDbPreviewSvgHost svg {
-  display: block;
-  width: auto;
-  height: auto;
-  max-height: 96px;
-  overflow: visible;
-}
+    .scrapbookCartoucheDbPreviewSvgHost svg {
+      display: block;
+      width: auto;
+      height: auto;
+      max-height: none !important;
+      overflow: visible;
+    }
     .scrapbookCartoucheDbPreviewSvgHost.hidden,
     .scrapbookCartoucheDbPreviewCanvasWrap canvas.hidden {
       display: none !important;
@@ -503,6 +681,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
     previewRoot: null,
     previewTitle: null,
     previewDesc: null,
+    previewCanvas: null,
     previewSvgHost: null,
     previewStatus: null,
     selectedKey: '',
@@ -582,27 +761,30 @@ export function createScrapbookCartoucheDbController(options = {}) {
       return;
     }
     const input = previewInput == null
-      ? getEntryPageMapPreviewSource(entry)
+      ? buildEntryRenderedPreviewInput(entry)
       : String(previewInput);
     if (state.previewTitle) state.previewTitle.textContent = `Preview: ${entry.key}`;
-    if (state.previewDesc) state.previewDesc.textContent = input ? `Output: ${input}` : 'Output: ';
+    if (state.previewDesc) state.previewDesc.textContent = input;
   }
 
   function clearSelectedPreviewGraphic() {
+    if (state.previewCanvas) {
+      const ctx = state.previewCanvas.getContext('2d');
+      state.previewCanvas.width = 1;
+      state.previewCanvas.height = 1;
+      ctx.clearRect(0, 0, 1, 1);
+    }
     if (state.previewSvgHost) state.previewSvgHost.innerHTML = '';
   }
 
-  function showPreviewSvg() {
-    state.previewSvgHost?.classList?.remove('hidden');
+  function showPreviewCanvas() {
+    state.previewCanvas?.classList?.remove('hidden');
+    state.previewSvgHost?.classList?.add('hidden');
   }
 
-  function getEntryPageMapPreviewSource(entry) {
-    // The selected entry preview should display and render the cartouche output
-    // text for that entry, not the lookup source name.  This matches the
-    // standalone cartouche DB page and keeps entries such as ["" ...] as normal
-    // proper-name cartouches instead of letting the page-map lookup source or a
-    // numeric shortcut reinterpret them.
-    return String(buildEntryRenderedPreviewInput(entry) || '').trim();
+  function showPreviewSvg() {
+    state.previewCanvas?.classList?.add('hidden');
+    state.previewSvgHost?.classList?.remove('hidden');
   }
 
   async function waitForScrapbookCartouchePreviewBridge(timeoutMs = 3000) {
@@ -628,18 +810,19 @@ export function createScrapbookCartoucheDbController(options = {}) {
 
   async function renderSelectedPreview() {
     const entry = getSelectedEntry();
-    const previewSource = entry ? getEntryPageMapPreviewSource(entry) : '';
-    updateSelectedPreviewMetadata(entry, previewSource);
-    if (!entry || !state.previewSvgHost) return;
+    const previewInput = entry ? buildEntryRenderedPreviewInput(entry) : '';
+    updateSelectedPreviewMetadata(entry, previewInput);
+    if (!entry || (!state.previewCanvas && !state.previewSvgHost)) return;
     if (entry.mode === 'ignore') {
       if (state.previewStatus) state.previewStatus.textContent = 'Ignored entries do not render a cartouche.';
       clearSelectedPreviewGraphic();
-      showPreviewSvg();
+      showPreviewCanvas();
       return;
     }
 
     const seq = ++state.previewSeq;
     if (state.previewStatus) state.previewStatus.textContent = 'Rendering preview…';
+    const fontPx = 44;
 
     let vectorPreview = window.renderScrapbookCartouchePreviewSvg;
     if (typeof vectorPreview !== 'function') {
@@ -657,25 +840,19 @@ export function createScrapbookCartoucheDbController(options = {}) {
     }
 
     try {
-      rebuildCombinedPageMap();
-      const previewResult = await vectorPreview({
-        sourceText: previewSource,
-        resolvedInput: previewSource,
-        entryKey: entry.key,
+      const svgText = await vectorPreview({
+        input: previewInput,
+        fontPx,
+        renderFontPreset: 'nasinNanpa',
+        color: '#111111',
+        spacingPreset: 'default',
+        ignoreUnknownText: true,
+        abbreviateNumericCartouches: false,
+        paddingPx: 0,
       });
-      const svgText = (previewResult && typeof previewResult === 'object')
-        ? String(previewResult.svgText || previewResult.svg || '')
-        : String(previewResult || '');
       if (seq !== state.previewSeq) return;
       clearSelectedPreviewGraphic();
-      if (state.previewSvgHost) {
-        state.previewSvgHost.innerHTML = svgText;
-        const svgNode = state.previewSvgHost.querySelector('svg');
-        const preparedInput = (previewResult && typeof previewResult === 'object')
-          ? String(previewResult.preparedInput || '')
-          : String(svgNode?.getAttribute?.('data-preview-prepared-input') || '');
-        if (preparedInput && state.previewDesc) state.previewDesc.textContent = `Output: ${preparedInput}`;
-      }
+      if (state.previewSvgHost) state.previewSvgHost.innerHTML = svgText;
       showPreviewSvg();
       if (state.previewStatus) state.previewStatus.textContent = 'Preview uses scrapbook page vector renderer.';
       return;
@@ -711,7 +888,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
   // sitelen source text at render time using the combined page map.
 
   function rebuildCombinedPageMap() {
-    state.localMap = buildPageMapFromCartoucheEntries(getLocalEntries());
+    state.localMap = buildLocalPageMapFromEntries(getLocalEntries());
     const globalMap = getGlobalPageMap();
     state.combinedMap = mergePageMaps(globalMap, state.localMap);
     onCombinedPageMapChanged(state.combinedMap, { localMap: state.localMap, globalMap });
@@ -734,7 +911,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
   function addEntryFromInput() {
     const raw = (state.addInput?.value || '').trim();
     if (!raw) return;
-    const parsed = parseAndValidateLine(raw);
+    const parsed = parseAndValidateLocalProperNameLine(raw);
     if (!parsed.ok) {
       setStatus(parsed.reason, true);
       return;
@@ -745,7 +922,6 @@ export function createScrapbookCartoucheDbController(options = {}) {
       setStatus(`"${key}" is already in this scrapbook.`, true);
       return;
     }
-    const hasNanpaSegment = segmentWords(parsed.words).some(seg => seg.type === 'nanpa');
     entries.unshift({
       key,
       words: parsed.words,
@@ -753,7 +929,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
       mode: 'random',
       cartoucheMap: {},
       tallyMap: {},
-      forceNormal: hasNanpaSegment,
+      forceNormal: true,
       literalText: key,
     });
     if (state.addInput) state.addInput.value = '';
@@ -1017,8 +1193,12 @@ export function createScrapbookCartoucheDbController(options = {}) {
     previewDesc.textContent = 'Select a local name entry to preview its cartouche rendering.';
     const previewCanvasWrap = document.createElement('div');
     previewCanvasWrap.className = 'scrapbookCartoucheDbPreviewCanvasWrap';
+    const previewCanvas = document.createElement('canvas');
+    previewCanvas.width = 1;
+    previewCanvas.height = 1;
     const previewSvgHost = document.createElement('div');
     previewSvgHost.className = 'scrapbookCartoucheDbPreviewSvgHost hidden';
+    previewCanvasWrap.appendChild(previewCanvas);
     previewCanvasWrap.appendChild(previewSvgHost);
     preview.appendChild(previewHeader);
     preview.appendChild(previewDesc);
@@ -1073,6 +1253,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
     state.previewRoot = preview;
     state.previewTitle = previewTitle;
     state.previewDesc = previewDesc;
+    state.previewCanvas = previewCanvas;
     state.previewSvgHost = previewSvgHost;
     state.previewStatus = previewStatus;
     state.importInput = importInput;

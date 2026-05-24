@@ -73,11 +73,6 @@ function entryRequiresAtDbForTpWordCollision(entry) {
 
   const segs = segmentWords(entry.words);
 
-  // Match cartouche-db.html input behaviour: a name that parses as a
-  // nanpa-linja-n segment is a database-override collision and must only
-  // activate through an explicit @db lookup.
-  if (segs.some(seg => seg.type === 'nanpa')) return true;
-
   for (const seg of segs) {
     if (seg.type !== 'normal') continue;
 

@@ -5,9 +5,11 @@ import {
 } from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 import {
   CartoucheApi,
-  buildPageMapFromCartoucheEntries,
+  buildEntryRendererInput,
+  buildRandomDescForLetters,
+  segmentLetters,
   segmentWords
-} from '../../js/cartouche-api-v3-previewdesc.js?v=22';
+} from '../../js/cartouche-api-v3-previewdesc.js?v=21';
 import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
 
 (() => {
@@ -32,6 +34,26 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
     entries: []
   });
 
+  const SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS = new Set([
+    'a','akesi','ala','alasa','ale','ali','anpa','ante','anu','awen',
+    'e','en','epiku','esun','ijo','ike','ilo','insa',
+    'jaki','jan','jasima','jelo','jo',
+    'kala','kalama','kama','kasi','ken','kepeken','kijetesantakalu','kili','kin','kipisi',
+    'kiwen','ko','kokosila','kon','ku','kule','kulupu','kute',
+    'la','lanpan','lape','laso','lawa','leko','len','lete','li','lili',
+    'linja','linluwi','lipu','loje','lon','luka','lukin','lupa',
+    'ma','majuna','mama','mani','meli','meso','mi','mije','misikeke',
+    'moku','moli','monsi','monsuta','mu','mun','musi','mute',
+    'n','namako','nanpa','nasa','nasin','nena','ni','nimi','noka',
+    'o','oko','olin','ona','open',
+    'pakala','pake','pali','palisa','pan','pana','pi','pilin','pimeja',
+    'pini','pipi','poka','poki','pona','powe','pu',
+    'sama','seli','selo','seme','sewi','sijelo','sike','sin','sina',
+    'sinpin','sitelen','soko','sona','soweli','su','suli','suno','supa','suwi',
+    'tan','taso','tawa','telo','tenpo','toki','tomo','tonsi','tu',
+    'unpa','uta','utala','walo','wan','waso','wawa','weka','wile',
+  ]);
+
   function cloneCartoucheJson(value){
     try { return JSON.parse(JSON.stringify(value)); }
     catch { return null; }
@@ -46,25 +68,178 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
     db.entries = Array.isArray(db.entries)
       ? db.entries
           .filter(e => e && typeof e === 'object' && typeof e.key === 'string' && Array.isArray(e.words) && e.words.length)
-          .map(e => {
-            const words = e.words.map(w => String(w));
-            const hasNanpaSegment = segmentWords(words).some(seg => seg.type === 'nanpa');
-            return {
-              ...e,
-              key: String(e.key),
-              words,
-              merge: e.merge !== false,
-              mode: ['random','preferred','literal','ignore'].includes(String(e.mode || '')) ? String(e.mode) : 'random',
-              cartoucheMap: (e.cartoucheMap && typeof e.cartoucheMap === 'object' && !Array.isArray(e.cartoucheMap)) ? e.cartoucheMap : {},
-              tallyMap: (e.tallyMap && typeof e.tallyMap === 'object' && !Array.isArray(e.tallyMap)) ? e.tallyMap : {},
-              forceNormal: !!e.forceNormal || hasNanpaSegment,
-              literalText: String(e.literalText || e.key || '')
-            };
-          })
+          .map(e => ({
+            ...e,
+            key: String(e.key),
+            words: e.words.map(w => String(w)),
+            merge: e.merge !== false,
+            mode: ['random','preferred','literal','ignore'].includes(String(e.mode || '')) ? String(e.mode) : 'random',
+            cartoucheMap: (e.cartoucheMap && typeof e.cartoucheMap === 'object' && !Array.isArray(e.cartoucheMap)) ? e.cartoucheMap : {},
+            tallyMap: (e.tallyMap && typeof e.tallyMap === 'object' && !Array.isArray(e.tallyMap)) ? e.tallyMap : {},
+            forceNormal: true,
+            literalText: String(e.literalText || e.key || '')
+          }))
       : [];
     return db;
   }
 
+  function scrapbookCartoucheMergedLettersToWord(words){
+    return segmentLetters(words).letters.join('');
+  }
+
+  function scrapbookCartoucheWordsLookLikeNanpaRun(words){
+    if (!Array.isArray(words) || !words.length) return false;
+    try {
+      const parser = globalThis.NanpaParser || null;
+      return !!(parser && typeof parser.isValidCaps === 'function' && parser.isValidCaps(words.map(w => String(w).toUpperCase()).join('')));
+    } catch {
+      return false;
+    }
+  }
+
+  function scrapbookCartoucheEntryRequiresAtDb(entry){
+    if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
+    const segs = segmentWords(entry.words);
+
+    // Match standalone cartouche-db.html: any nanpa-linja-n segment requires
+    // explicit @db to use the saved proper-name override.  The extra direct
+    // parser check covers startup order where scrapbook-cartouche-db-bootstrap
+    // may run before app-vector has opened CartoucheApi with NanpaParser.
+    if (segs.some(seg => seg && seg.type === 'nanpa') || scrapbookCartoucheWordsLookLikeNanpaRun(entry.words)) return true;
+
+    for (const seg of segs) {
+      if (seg.type !== 'normal') continue;
+      if (entry.merge) {
+        const merged = scrapbookCartoucheMergedLettersToWord(seg.words);
+        if (SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS.has(merged)) return true;
+      } else {
+        for (const w of seg.words) {
+          if (SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS.has(String(w).toLowerCase())) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function scrapbookCartoucheEntryLookupAliases(entry){
+    const aliases = new Set();
+    if (!entry || !Array.isArray(entry.words) || !entry.words.length) return aliases;
+    aliases.add(entry.key);
+    if (entry.merge) {
+      const segs = segmentWords(entry.words);
+      for (const seg of segs) {
+        if (seg.type !== 'normal') continue;
+        const merged = segmentLetters(seg.words).letters.join('');
+        if (merged) aliases.add(merged.charAt(0).toUpperCase() + merged.slice(1));
+      }
+    }
+    return aliases;
+  }
+
+  function scrapbookCartoucheEntryHasAnyDescription(entry){
+    const cm = entry && entry.cartoucheMap && typeof entry.cartoucheMap === 'object'
+      ? entry.cartoucheMap
+      : {};
+    return Object.values(cm).some(value => String(value || '').trim());
+  }
+
+  function shouldGenerateScrapbookCartoucheDescriptions(entry){
+    if (!entry) return false;
+    if (entry.mode === 'random') return true;
+    if (entry.mode === 'preferred' && !scrapbookCartoucheEntryHasAnyDescription(entry)) return true;
+    return false;
+  }
+
+function scrapbookCartoucheEntryHasNanpaSegment(entry){
+    if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
+    try {
+      return segmentWords(entry.words).some(seg => seg && seg.type === 'nanpa');
+    } catch {
+      return false;
+    }
+  }
+
+  function shouldForceNormalForScrapbookCartoucheRender(entry){
+    if (!entry || entry.mode === 'literal' || entry.mode === 'ignore') return false;
+    // Match the standalone cartouche DB page: nanpa-linja-n proper names render
+    // as numeric cartouches by default.  Only an explicit @db/forceNormal override
+    // should make a numeric-looking proper name use the saved glyph description.
+    return !!entry.forceNormal;
+  }
+
+  function scrapbookCartoucheEntryForRender(entry){
+    return shouldForceNormalForScrapbookCartoucheRender(entry)
+      ? { ...entry, forceNormal: true }
+      : entry;
+  }
+
+    function buildEffectiveScrapbookCartoucheEntryForRender(entry){
+    if (!shouldGenerateScrapbookCartoucheDescriptions(entry)) return entry;
+
+    const segs = segmentWords(entry.words);
+    const cm = {};
+
+    segs.forEach((seg, si) => {
+      if (seg.type === 'nanpa' && !entry.forceNormal) return;
+
+      if (seg.type === 'nanpa' && entry.forceNormal) {
+        const letters = seg.words.join('').toLowerCase().split('');
+        cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+        return;
+      }
+
+      if (entry.merge) {
+        const { letters } = segmentLetters(seg.words);
+        cm[si] = buildRandomDescForLetters(letters);
+      } else {
+        seg.words.forEach((w, wi) => {
+          cm[`${si}_${wi}`] = buildRandomDescForLetters(String(w).toLowerCase().split(''));
+        });
+      }
+    });
+
+    return { ...entry, cartoucheMap: cm };
+  }
+
+  function buildScrapbookCartouchePageMapFromEntries(entries){
+    const map = new Map();
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      if (!entry || !entry.key || !Array.isArray(entry.words) || !entry.words.length) continue;
+
+      if (entry.mode === 'ignore') {
+        for (const alias of scrapbookCartoucheEntryLookupAliases(entry)) map.set(alias, null);
+        continue;
+      }
+
+      let rendererInput;
+      if (entry.mode === 'literal') {
+        const literal = String(entry.literalText || entry.key || '')
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\"')
+          .trim();
+        rendererInput = `["${literal}"]`;
+      } else {
+        rendererInput = buildEntryRendererInput(buildEffectiveScrapbookCartoucheEntryForRender(scrapbookCartoucheEntryForRender(entry)));
+      }
+
+      let inputForceNormal = rendererInput;
+      if (entry.forceNormal && entry.mode !== 'literal') {
+        const entryNormal = { ...entry, forceNormal: false };
+        inputForceNormal = rendererInput;
+        rendererInput = buildEntryRendererInput(buildEffectiveScrapbookCartoucheEntryForRender(entryNormal));
+      }
+
+      const mapValue = {
+        input: rendererInput,
+        inputForceNormal,
+        forceNormal: !!entry.forceNormal,
+        requiresAtDb: scrapbookCartoucheEntryRequiresAtDb(entry),
+      };
+
+      for (const alias of scrapbookCartoucheEntryLookupAliases(entry)) map.set(alias, mapValue);
+    }
+    return map;
+  }
 
   function getCurrentScrapbookCartoucheDb(){
     const doc = (typeof ScrapbookState !== 'undefined') ? ScrapbookState?.doc : null;
@@ -76,7 +251,7 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
   function rebuildActiveCartouchePageMap(){
     const merged = new Map(globalCartouchePageMap instanceof Map ? globalCartouchePageMap : new Map());
     try {
-      const localMap = buildPageMapFromCartoucheEntries(getCurrentScrapbookCartoucheDb().entries);
+      const localMap = buildScrapbookCartouchePageMapFromEntries(getCurrentScrapbookCartoucheDb().entries);
       for (const [key, value] of localMap.entries()) merged.set(key, value);
       window.scrapbookLocalCartouchePageMap = localMap;
     } catch (err) {
@@ -1593,6 +1768,15 @@ function getElementLiteralCartoucheFontFamily(el){
 }
 
 function getElementLiteralCartoucheSettings(el){
+  if (el && el.literalCartoucheSettingsOverride && typeof el.literalCartoucheSettingsOverride === "object") {
+    const settings = el.literalCartoucheSettingsOverride;
+    return {
+      literalCartoucheRuleClipScale: settings.literalCartoucheRuleClipScale,
+      literalCartoucheRuleClipStrategy: settings.literalCartoucheRuleClipStrategy,
+      literalCartoucheLeftCapClipRatio: settings.literalCartoucheLeftCapClipRatio
+    };
+  }
+
   const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
   const settings = (preset && typeof preset === "object") ? (preset.settings || {}) : {};
   return {
@@ -15211,6 +15395,7 @@ document.addEventListener("keydown", (e) => {
       try {
         const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44');
         const NanpaParser = rendererMod?.NanpaParser;
+        if (NanpaParser && !globalThis.NanpaParser) globalThis.NanpaParser = NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
         globalCartouchePageMap = await cartoucheApi.resolvePageMap();
         rebuildActiveCartouchePageMap();
@@ -17602,96 +17787,91 @@ document.addEventListener("keydown", (e) => {
 
 
   async function renderScrapbookCartouchePreviewSvgFromApp(options = {}){
-    const sourceText = String(options?.sourceText ?? options?.input ?? "");
-    const suppliedResolvedInput = String(options?.resolvedInput ?? options?.preparedInput ?? "");
-    if (!sourceText.trim() && !suppliedResolvedInput.trim()) throw new Error('No scrapbook proper-name preview source was supplied.');
-
-    // Proper-name popup preview contract:
-    //   1. resolve the source through the active scrapbook page map,
-    //   2. render with the app-vector renderer/vector exporter only,
-    //   3. force the canonical nasinNanpa preview preset for consistency with
-    //      the standalone cartouche DB page,
-    //   4. do not use the production whole-numeric-cartouche shortcut here.
-    // The direct vector plan path is intentional: entries such as ["" ...]
-    // must stay ordinary proper-name cartouches and must not be reclassified by
-    // the page export numeric fast path.
-    const renderFontPreset = normalizeRenderFontPresetKey('nasinNanpa');
-    const quotedTextFontOption = getDefaultQuotedTextFontOptionForPreset(renderFontPreset);
-    const fontPx = Math.max(8, Number(options?.fontPx ?? 40) || 40);
+    const input = String(options?.input ?? "");
+    const fontPx = Math.max(8, Number(options?.fontPx ?? 44) || 44);
+    const renderFontPreset = normalizeRenderFontPresetKey(options?.renderFontPreset || Scene?.stage?.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
+    const quotedTextFontOption = normalizeValidQuotedTextFontOptionForSitelen(
+      options?.quotedTextFontOption || Scene?.stage?.defaultTextFontOption || getRenderFontPreset(renderFontPreset)?.literalFamily || FONT_FAMILY_LITERAL,
+      renderFontPreset
+    );
     const fakeEl = {
       id: String(options?.id || '_scrapbook_cartouche_preview'),
       type: ElementType.Sitelen,
       x: 0,
       y: 0,
-      w: 1,
-      h: 1,
+      w: Math.max(1, Number(options?.w || 1)),
+      h: Math.max(1, Number(options?.h || 1)),
       rotationDeg: 0,
       opacity: 1,
       fillEnabled: false,
       fill: '#FFFFFF',
       strokeW: 0,
       stroke: '#111111',
-      text: sourceText,
+      text: input,
       fontSize: fontPx,
       renderFontPreset,
       fontFamily: quotedTextFontOption,
       quotedTextFontOption,
-      align: 'left',
-      color: '#111111',
+      align: String(options?.align || 'left'),
+      color: rgbaOrHexToHex(options?.color || '#111111', '#111111'),
       lineHeight: 1.05,
       keepAspect: true,
-      sitelenResizeAnchor: 'topLeft',
-      ignoreUnknownText: true,
-      abbreviateNumericCartouches: false,
-      spacingPreset: 'default',
-      haloEnabled: false,
-      haloColor: '#FFFFFF',
-      haloThicknessMode: 'auto',
-      haloThickness: 0,
+      ignoreUnknownText: options?.ignoreUnknownText !== false,
+      abbreviateNumericCartouches: !!options?.abbreviateNumericCartouches,
+      spacingPreset: normalizeSpacingPreset(options?.spacingPreset || 'default'),
+      haloEnabled: !!options?.haloEnabled,
+      haloColor: rgbaOrHexToHex(options?.haloColor || '#FFFFFF', '#FFFFFF'),
+      haloThicknessMode: options?.haloThicknessMode === 'manual' ? 'manual' : 'auto',
+      haloThickness: Number.isFinite(options?.haloThickness) ? Number(options.haloThickness) : 0,
       preserveCenterOnAutoResize: false,
-      sitelen: {}
     };
 
-    rebuildActiveCartouchePageMap();
-    const preparedInput = suppliedResolvedInput.trim()
-      ? suppliedResolvedInput
-      : prepareSitelenInputWithActiveCartoucheDb(sourceText);
-    fakeEl.text = preparedInput;
-
     const exporter = await createVectorExporterForElement(fakeEl);
-    const config = buildRendererCallConfigForElement(fakeEl);
-    config.layout.align = 'left';
-    config.layout.spacingPreset = 'default';
-    config.parser.abbreviateNumericCartouches = false;
-    config.parser.showUnknownText = false;
+    const cfg = buildRendererCallConfigForElement(fakeEl);
+    cfg.layout.paddingPx = Math.max(0, Number(options?.paddingPx ?? 0) || 0);
+    cfg.layout.align = fakeEl.align;
 
-    const rawPlan = await exporter.buildPlan({ input: preparedInput, config });
+    // The proper-names popup passes already-resolved renderer input such as
+    // [suwi mute] or ["Literal"].  Do not pass it back through the active DB
+    // preparer here; the whole point of this bridge is to reuse the same
+    // app-vector renderer/font/export contract while preserving the popup's
+    // selected entry input exactly.
+    const rawPlan = await exporter.buildPlan({ input, config: cfg });
     const plan = normalizeSitelenVectorPlanFontRoles(rawPlan, fakeEl);
     if (!planHasDrawableRuns(plan)) throw new Error('No drawable runs in scrapbook cartouche preview vector plan.');
 
-    // Keep exactly one small safety margin around the vector output.  The
-    // previous preview code added exporter padding and then another large
-    // viewBox padding layer, which made the popup show a lot of blank space
-    // above and below short cartouches.  Use a single compact margin instead:
-    // enough to avoid clipping literal-cartouche rules, but not enough to make
-    // the preview area look padded out.
-    const visualPadPx = Math.max(5, Math.min(8, Math.ceil(fontPx * 0.14)));
     const blob = await exporter.exportTextToSvgBlob({
       plan,
       paddingPx: 0,
-      fallbackWidthPx: Math.max(1, Number(plan.widthPx || 1)),
-      fallbackHeightPx: Math.max(1, Number(plan.heightPx || 1))
+      fallbackWidthPx: Math.max(1, Number(plan.widthPx || fakeEl.w || 1)),
+      fallbackHeightPx: Math.max(1, Number(plan.heightPx || fakeEl.h || 1))
     });
     const nested = await nestedSvgFromVectorBlob(blob);
-    const rawVb = parseSvgViewBoxString(nested.viewBox, Math.max(1, Number(plan.widthPx || 1)), Math.max(1, Number(plan.heightPx || 1)));
+    const vb = parseSvgViewBoxString(nested.viewBox, plan.widthPx || 1, plan.heightPx || 1);
 
-    const width = Math.max(1, rawVb.w + visualPadPx * 2);
-    const height = Math.max(1, rawVb.h + visualPadPx * 2);
-    const tx = visualPadPx - rawVb.x;
-    const ty = visualPadPx - rawVb.y;
-    return `<?xml version="1.0" encoding="UTF-8"?>
-` +
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgNum(width)}" height="${svgNum(height)}" viewBox="0 0 ${svgNum(width)} ${svgNum(height)}" preserveAspectRatio="xMinYMid meet" overflow="hidden" data-preview-renderer="app-vector" data-preview-source="${svgEsc(sourceText)}" data-preview-prepared-input="${svgEsc(preparedInput)}" data-preview-font-preset="nasinNanpa"><g transform="translate(${svgNum(tx)} ${svgNum(ty)})">${nested.inner}</g></svg>`;
+    // Preview-only safety crop for standalone literal cartouches.  The normal
+    // page/export left-cap repair can miss this tiny bridge because the popup
+    // passes pre-resolved input directly.  Crop only the outer SVG viewBox, only
+    // for literal-cartouche preview input such as ["LITERAL"], so normal page
+    // rendering, exports, numeric cartouches, and proper-name glyph cartouches are
+    // not changed.
+    if (/^\s*\[\s*"/.test(input)) {
+      const clipSettings = getElementLiteralCartoucheSettings(fakeEl) || {};
+      const clipScale = Number(clipSettings.literalCartoucheRuleClipScale);
+      const clipRatio = Number(clipSettings.literalCartoucheLeftCapClipRatio);
+      const cropPx = Math.max(0, fontPx * (Number.isFinite(clipScale) ? clipScale : 0) * (Number.isFinite(clipRatio) ? clipRatio : 1));
+      if (cropPx > 0 && vb.w > cropPx + 1) {
+        vb.x += cropPx;
+        vb.w -= cropPx;
+      }
+    }
+
+    const width = Math.max(1, Math.ceil(vb.w));
+    const height = Math.max(1, Math.ceil(vb.h));
+    const unknownTextRects = (!fakeEl.ignoreUnknownText) ? svgUnknownTextRectsForPlan(plan) : '';
+    const inner = unknownTextRects ? `${nested.inner}\n${unknownTextRects}` : nested.inner;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgNum(width)}" height="${svgNum(height)}" viewBox="${formatSvgViewBoxBox(vb)}" data-preview-renderer="app-vector" data-preview-input="${svgEsc(input)}">${inner}</svg>`;
   }
 
   window.renderScrapbookCartouchePreviewSvg = renderScrapbookCartouchePreviewSvgFromApp;
