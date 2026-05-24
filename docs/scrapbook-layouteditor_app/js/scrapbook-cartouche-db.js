@@ -1,13 +1,11 @@
 import {
   CartoucheApi,
   buildEntryDisplayInput,
-  buildEntryRendererInput,
-  buildRandomDescForLetters,
-  segmentLetters,
+  buildPageMapFromCartoucheEntries,
   segmentWords,
   makeKey,
   parseAndValidateLine,
-} from '../../js/cartouche-api-v3-previewdesc.js?v=21';
+} from '../../js/cartouche-api-v3-previewdesc.js?v=22';
 
 const SCRAPBOOK_CARTOUCHE_DB_DEBUG = !!globalThis.SCRAPBOOK_CARTOUCHE_DB_DEBUG;
 function scrapbookCartoucheDebugWarn(...args) {
@@ -27,163 +25,29 @@ const PREVIEW_FONT_URL_LITERAL = '../../fonts/PatrickHand-Regular.ttf';
 const PREVIEW_FONT_URL_LITERAL_CARTOUCHE = '../../fonts/nasin-nanpa-4.0.2-Helvetica.otf';
 const PREVIEW_RENDERER_URL = '../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44';
 
-function mergedLettersToWordForLocalDb(words) {
-  return segmentLetters(words).letters.join('');
-}
-
-const LOCAL_TP_KNOWN_WORDS = new Set([
-  'a','akesi','ala','alasa','ale','ali','anpa','ante','anu','awen',
-  'e','en','epiku','esun','ijo','ike','ilo','insa',
-  'jaki','jan','jasima','jelo','jo',
-  'kala','kalama','kama','kasi','ken','kepeken','kijetesantakalu','kili','kin','kipisi',
-  'kiwen','ko','kokosila','kon','ku','kule','kulupu','kute',
-  'la','lanpan','lape','laso','lawa','leko','len','lete','li','lili',
-  'linja','linluwi','lipu','loje','lon','luka','lukin','lupa',
-  'ma','majuna','mama','mani','meli','meso','mi','mije','misikeke',
-  'moku','moli','monsi','monsuta','mu','mun','musi','mute',
-  'n','namako','nanpa','nasa','nasin','nena','ni','nimi','noka',
-  'o','oko','olin','ona','open',
-  'pakala','pake','pali','palisa','pan','pana','pi','pilin','pimeja',
-  'pini','pipi','poka','poki','pona','powe','pu',
-  'sama','seli','selo','seme','sewi','sijelo','sike','sin','sina',
-  'sinpin','sitelen','soko','sona','soweli','su','suli','suno','supa','suwi',
-  'tan','taso','tawa','telo','tenpo','toki','tomo','tonsi','tu',
-  'unpa','uta','utala','walo','wan','waso','wawa','weka','wile',
-]);
-
-function entryRequiresAtDbForLocalTpWordCollision(entry) {
+function entryHasNanpaSegment(entry) {
   if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
-  const segs = segmentWords(entry.words);
-  for (const seg of segs) {
-    if (seg.type !== 'normal') continue;
-    if (entry.merge) {
-      const merged = mergedLettersToWordForLocalDb(seg.words);
-      if (LOCAL_TP_KNOWN_WORDS.has(merged)) return true;
-    } else {
-      for (const w of seg.words) {
-        if (LOCAL_TP_KNOWN_WORDS.has(String(w).toLowerCase())) return true;
-      }
-    }
-  }
-  return false;
-}
-
-function getEntryLookupAliasesForLocalDb(entry) {
-  const aliases = new Set();
-  if (!entry || !Array.isArray(entry.words) || !entry.words.length) return aliases;
-  aliases.add(entry.key);
-  if (entry.merge) {
-    const segs = segmentWords(entry.words);
-    for (const seg of segs) {
-      if (seg.type !== 'normal') continue;
-      const merged = segmentLetters(seg.words).letters.join('');
-      if (merged) aliases.add(merged.charAt(0).toUpperCase() + merged.slice(1));
-    }
-  }
-  return aliases;
-}
-
-
-function buildEffectiveEntryForRender(entry) {
-  if (!entry || entry.mode !== 'random') return entry;
-
-  const segs = segmentWords(entry.words);
-  const cm = {};
-
-  segs.forEach((seg, si) => {
-    if (seg.type === 'nanpa' && !entry.forceNormal) return;
-
-    if (seg.type === 'nanpa' && entry.forceNormal) {
-      const letters = seg.words.join('').toLowerCase().split('');
-      cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
-      return;
-    }
-
-    if (entry.merge) {
-      const { letters } = segmentLetters(seg.words);
-      cm[si] = buildRandomDescForLetters(letters);
-    } else {
-      seg.words.forEach((w, wi) => {
-        cm[`${si}_${wi}`] = buildRandomDescForLetters(String(w).toLowerCase().split(''));
-      });
-    }
-  });
-
-  return { ...entry, cartoucheMap: cm };
-}
-
-function escapeLiteralCartoucheText(text) {
-  return String(text ?? '')
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .trim();
-}
-function buildLiteralCartoucheRendererInput(entry) {
-  const literal = escapeLiteralCartoucheText(entry?.literalText || entry?.key || '');
-  return `["${literal}"]`;
+  return segmentWords(entry.words).some(seg => seg.type === 'nanpa');
 }
 
 function buildEntryRenderedPreviewInput(entry) {
   if (!entry) return '';
   if (entry.mode === 'ignore') return buildEntryDisplayInput(entry);
-  if (entry.mode === 'literal') return buildLiteralCartoucheRendererInput(entry);
-  return buildEntryRendererInput(buildEffectiveEntryForRender(entry));
-}
 
-function buildLocalPageMapFromEntries(entries) {
-  const map = new Map();
-  for (const entry of Array.isArray(entries) ? entries : []) {
-    if (!entry || !entry.key || !Array.isArray(entry.words) || !entry.words.length) continue;
+  // The popup preview is showing the database override output. For names that
+  // parse as nanpa-linja-n, force the ordinary glyph-cartouche branch for the
+  // preview output so the renderer receives the leading "" guard and does not
+  // reinterpret the preview as a native numeric cartouche.
+  const previewEntry = entryHasNanpaSegment(entry)
+    ? { ...entry, forceNormal: true }
+    : entry;
 
-    if (entry.mode === 'ignore') {
-      for (const alias of getEntryLookupAliasesForLocalDb(entry)) map.set(alias, null);
-      continue;
-    }
-
-    let rendererInput;
-    if (entry.mode === 'literal') {
-      rendererInput = buildLiteralCartoucheRendererInput(entry);
-    } else if (entry.mode === 'random') {
-      const segs = segmentWords(entry.words);
-      const cm = {};
-      segs.forEach((seg, si) => {
-        if (seg.type === 'nanpa' && !entry.forceNormal) return;
-        if (seg.type === 'nanpa' && entry.forceNormal) {
-          const letters = seg.words.join('').toLowerCase().split('');
-          cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
-          return;
-        }
-        if (entry.merge) {
-          const { letters } = segmentLetters(seg.words);
-          cm[si] = buildRandomDescForLetters(letters);
-        } else {
-          seg.words.forEach((w, wi) => {
-            cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split(''));
-          });
-        }
-      });
-      rendererInput = buildEntryRendererInput({ ...entry, cartoucheMap: cm });
-    } else {
-      rendererInput = buildEntryRendererInput(entry);
-    }
-
-    let inputForceNormal = rendererInput;
-    if (entry.forceNormal && entry.mode !== 'literal') {
-      const entryNormal = { ...entry, forceNormal: false };
-      inputForceNormal = rendererInput;
-      rendererInput = buildEntryRendererInput(entryNormal);
-    }
-
-    const mapValue = {
-      input: rendererInput,
-      inputForceNormal,
-      forceNormal: !!entry.forceNormal,
-      requiresAtDb: entryRequiresAtDbForLocalTpWordCollision(entry),
-    };
-
-    for (const alias of getEntryLookupAliasesForLocalDb(entry)) map.set(alias, mapValue);
+  const previewMap = buildPageMapFromCartoucheEntries([previewEntry]);
+  const mapValue = previewMap.get(previewEntry.key);
+  if (mapValue && typeof mapValue === 'object') {
+    return String(mapValue.inputForceNormal || mapValue.input || '').trim();
   }
-  return map;
+  return buildEntryDisplayInput(previewEntry);
 }
 
 
@@ -205,6 +69,7 @@ function normaliseEntry(raw) {
   if (!parsed.ok) return null;
   const key = makeKey(parsed.words);
   const mode = VALID_MODES.has(raw.mode) ? raw.mode : 'random';
+  const hasNanpaSegment = segmentWords(parsed.words).some(seg => seg.type === 'nanpa');
   return {
     key,
     words: parsed.words,
@@ -212,7 +77,7 @@ function normaliseEntry(raw) {
     mode,
     cartoucheMap: raw.cartoucheMap && typeof raw.cartoucheMap === 'object' ? { ...raw.cartoucheMap } : {},
     tallyMap: raw.tallyMap && typeof raw.tallyMap === 'object' ? { ...raw.tallyMap } : {},
-    forceNormal: !!raw.forceNormal,
+    forceNormal: !!raw.forceNormal || hasNanpaSegment,
     literalText: String(raw.literalText || key).replace(/"/g, '').trim() || key,
   };
 }
@@ -846,7 +711,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
   // sitelen source text at render time using the combined page map.
 
   function rebuildCombinedPageMap() {
-    state.localMap = buildLocalPageMapFromEntries(getLocalEntries());
+    state.localMap = buildPageMapFromCartoucheEntries(getLocalEntries());
     const globalMap = getGlobalPageMap();
     state.combinedMap = mergePageMaps(globalMap, state.localMap);
     onCombinedPageMapChanged(state.combinedMap, { localMap: state.localMap, globalMap });
@@ -880,6 +745,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
       setStatus(`"${key}" is already in this scrapbook.`, true);
       return;
     }
+    const hasNanpaSegment = segmentWords(parsed.words).some(seg => seg.type === 'nanpa');
     entries.unshift({
       key,
       words: parsed.words,
@@ -887,7 +753,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
       mode: 'random',
       cartoucheMap: {},
       tallyMap: {},
-      forceNormal: false,
+      forceNormal: hasNanpaSegment,
       literalText: key,
     });
     if (state.addInput) state.addInput.value = '';

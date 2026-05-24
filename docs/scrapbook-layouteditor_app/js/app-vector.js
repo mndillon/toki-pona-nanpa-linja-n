@@ -5,11 +5,9 @@ import {
 } from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 import {
   CartoucheApi,
-  buildEntryRendererInput,
-  buildRandomDescForLetters,
-  segmentLetters,
+  buildPageMapFromCartoucheEntries,
   segmentWords
-} from '../../js/cartouche-api-v3-previewdesc.js?v=21';
+} from '../../js/cartouche-api-v3-previewdesc.js?v=22';
 import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
 
 (() => {
@@ -34,26 +32,6 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
     entries: []
   });
 
-  const SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS = new Set([
-    'a','akesi','ala','alasa','ale','ali','anpa','ante','anu','awen',
-    'e','en','epiku','esun','ijo','ike','ilo','insa',
-    'jaki','jan','jasima','jelo','jo',
-    'kala','kalama','kama','kasi','ken','kepeken','kijetesantakalu','kili','kin','kipisi',
-    'kiwen','ko','kokosila','kon','ku','kule','kulupu','kute',
-    'la','lanpan','lape','laso','lawa','leko','len','lete','li','lili',
-    'linja','linluwi','lipu','loje','lon','luka','lukin','lupa',
-    'ma','majuna','mama','mani','meli','meso','mi','mije','misikeke',
-    'moku','moli','monsi','monsuta','mu','mun','musi','mute',
-    'n','namako','nanpa','nasa','nasin','nena','ni','nimi','noka',
-    'o','oko','olin','ona','open',
-    'pakala','pake','pali','palisa','pan','pana','pi','pilin','pimeja',
-    'pini','pipi','poka','poki','pona','powe','pu',
-    'sama','seli','selo','seme','sewi','sijelo','sike','sin','sina',
-    'sinpin','sitelen','soko','sona','soweli','su','suli','suno','supa','suwi',
-    'tan','taso','tawa','telo','tenpo','toki','tomo','tonsi','tu',
-    'unpa','uta','utala','walo','wan','waso','wawa','weka','wile',
-  ]);
-
   function cloneCartoucheJson(value){
     try { return JSON.parse(JSON.stringify(value)); }
     catch { return null; }
@@ -68,110 +46,25 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
     db.entries = Array.isArray(db.entries)
       ? db.entries
           .filter(e => e && typeof e === 'object' && typeof e.key === 'string' && Array.isArray(e.words) && e.words.length)
-          .map(e => ({
-            ...e,
-            key: String(e.key),
-            words: e.words.map(w => String(w)),
-            merge: e.merge !== false,
-            mode: ['random','preferred','literal','ignore'].includes(String(e.mode || '')) ? String(e.mode) : 'random',
-            cartoucheMap: (e.cartoucheMap && typeof e.cartoucheMap === 'object' && !Array.isArray(e.cartoucheMap)) ? e.cartoucheMap : {},
-            tallyMap: (e.tallyMap && typeof e.tallyMap === 'object' && !Array.isArray(e.tallyMap)) ? e.tallyMap : {},
-            forceNormal: !!e.forceNormal,
-            literalText: String(e.literalText || e.key || '')
-          }))
+          .map(e => {
+            const words = e.words.map(w => String(w));
+            const hasNanpaSegment = segmentWords(words).some(seg => seg.type === 'nanpa');
+            return {
+              ...e,
+              key: String(e.key),
+              words,
+              merge: e.merge !== false,
+              mode: ['random','preferred','literal','ignore'].includes(String(e.mode || '')) ? String(e.mode) : 'random',
+              cartoucheMap: (e.cartoucheMap && typeof e.cartoucheMap === 'object' && !Array.isArray(e.cartoucheMap)) ? e.cartoucheMap : {},
+              tallyMap: (e.tallyMap && typeof e.tallyMap === 'object' && !Array.isArray(e.tallyMap)) ? e.tallyMap : {},
+              forceNormal: !!e.forceNormal || hasNanpaSegment,
+              literalText: String(e.literalText || e.key || '')
+            };
+          })
       : [];
     return db;
   }
 
-  function scrapbookCartoucheMergedLettersToWord(words){
-    return segmentLetters(words).letters.join('');
-  }
-
-  function scrapbookCartoucheEntryRequiresAtDb(entry){
-    if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
-    const segs = segmentWords(entry.words);
-    for (const seg of segs) {
-      if (seg.type !== 'normal') continue;
-      if (entry.merge) {
-        const merged = scrapbookCartoucheMergedLettersToWord(seg.words);
-        if (SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS.has(merged)) return true;
-      } else {
-        for (const w of seg.words) {
-          if (SCRAPBOOK_CARTOUCHE_TP_KNOWN_WORDS.has(String(w).toLowerCase())) return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  function scrapbookCartoucheEntryLookupAliases(entry){
-    const aliases = new Set();
-    if (!entry || !Array.isArray(entry.words) || !entry.words.length) return aliases;
-    aliases.add(entry.key);
-    if (entry.merge) {
-      const segs = segmentWords(entry.words);
-      for (const seg of segs) {
-        if (seg.type !== 'normal') continue;
-        const merged = segmentLetters(seg.words).letters.join('');
-        if (merged) aliases.add(merged.charAt(0).toUpperCase() + merged.slice(1));
-      }
-    }
-    return aliases;
-  }
-
-  function buildScrapbookCartouchePageMapFromEntries(entries){
-    const map = new Map();
-    for (const entry of Array.isArray(entries) ? entries : []) {
-      if (!entry || !entry.key || !Array.isArray(entry.words) || !entry.words.length) continue;
-
-      if (entry.mode === 'ignore') {
-        for (const alias of scrapbookCartoucheEntryLookupAliases(entry)) map.set(alias, null);
-        continue;
-      }
-
-      let rendererInput;
-      if (entry.mode === 'random') {
-        const segs = segmentWords(entry.words);
-        const cm = {};
-        segs.forEach((seg, si) => {
-          if (seg.type === 'nanpa' && !entry.forceNormal) return;
-          if (seg.type === 'nanpa' && entry.forceNormal) {
-            const letters = seg.words.join('').toLowerCase().split('');
-            cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
-            return;
-          }
-          if (entry.merge) {
-            const { letters } = segmentLetters(seg.words);
-            cm[si] = buildRandomDescForLetters(letters);
-          } else {
-            seg.words.forEach((w, wi) => {
-              cm[`${si}_${wi}`] = buildRandomDescForLetters(String(w).toLowerCase().split(''));
-            });
-          }
-        });
-        rendererInput = buildEntryRendererInput({ ...entry, cartoucheMap: cm });
-      } else {
-        rendererInput = buildEntryRendererInput(entry);
-      }
-
-      let inputForceNormal = rendererInput;
-      if (entry.forceNormal) {
-        const entryNormal = { ...entry, forceNormal: false };
-        inputForceNormal = rendererInput;
-        rendererInput = buildEntryRendererInput(entryNormal);
-      }
-
-      const mapValue = {
-        input: rendererInput,
-        inputForceNormal,
-        forceNormal: !!entry.forceNormal,
-        requiresAtDb: scrapbookCartoucheEntryRequiresAtDb(entry),
-      };
-
-      for (const alias of scrapbookCartoucheEntryLookupAliases(entry)) map.set(alias, mapValue);
-    }
-    return map;
-  }
 
   function getCurrentScrapbookCartoucheDb(){
     const doc = (typeof ScrapbookState !== 'undefined') ? ScrapbookState?.doc : null;
@@ -183,7 +76,7 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
   function rebuildActiveCartouchePageMap(){
     const merged = new Map(globalCartouchePageMap instanceof Map ? globalCartouchePageMap : new Map());
     try {
-      const localMap = buildScrapbookCartouchePageMapFromEntries(getCurrentScrapbookCartoucheDb().entries);
+      const localMap = buildPageMapFromCartoucheEntries(getCurrentScrapbookCartoucheDb().entries);
       for (const [key, value] of localMap.entries()) merged.set(key, value);
       window.scrapbookLocalCartouchePageMap = localMap;
     } catch (err) {
