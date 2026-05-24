@@ -17707,6 +17707,103 @@ document.addEventListener("keydown", (e) => {
     return `<g data-cover-date="renderer-numeric-cartouche" data-cover-date-abbreviated="${abbreviateCoverDate ? 'true' : 'false'}" transform="translate(${svgNum(dx)} ${svgNum(dy)}) scale(${svgNum(scale)}) translate(${svgNum(-vb.x)} ${svgNum(-vb.y)})">${nested.inner}</g>`;
   }
 
+
+  async function renderScrapbookCartouchePreviewSvgFromApp(options = {}){
+    const sourceText = String(options?.sourceText ?? options?.input ?? "");
+    const suppliedResolvedInput = String(options?.resolvedInput ?? options?.preparedInput ?? "");
+    if (!sourceText.trim() && !suppliedResolvedInput.trim()) throw new Error('No scrapbook proper-name preview source was supplied.');
+
+    // Proper-name popup preview contract:
+    //   1. resolve the source through the active scrapbook page map,
+    //   2. render with the app-vector renderer/vector exporter only,
+    //   3. force the canonical nasinNanpa preview preset for consistency with
+    //      the standalone cartouche DB page,
+    //   4. do not use the production whole-numeric-cartouche shortcut here.
+    // The direct vector plan path is intentional: entries such as ["" ...]
+    // must stay ordinary proper-name cartouches and must not be reclassified by
+    // the page export numeric fast path.
+    const renderFontPreset = normalizeRenderFontPresetKey('nasinNanpa');
+    const quotedTextFontOption = getDefaultQuotedTextFontOptionForPreset(renderFontPreset);
+    const fontPx = Math.max(8, Number(options?.fontPx ?? 40) || 40);
+    const fakeEl = {
+      id: String(options?.id || '_scrapbook_cartouche_preview'),
+      type: ElementType.Sitelen,
+      x: 0,
+      y: 0,
+      w: 1,
+      h: 1,
+      rotationDeg: 0,
+      opacity: 1,
+      fillEnabled: false,
+      fill: '#FFFFFF',
+      strokeW: 0,
+      stroke: '#111111',
+      text: sourceText,
+      fontSize: fontPx,
+      renderFontPreset,
+      fontFamily: quotedTextFontOption,
+      quotedTextFontOption,
+      align: 'left',
+      color: '#111111',
+      lineHeight: 1.05,
+      keepAspect: true,
+      sitelenResizeAnchor: 'topLeft',
+      ignoreUnknownText: true,
+      abbreviateNumericCartouches: false,
+      spacingPreset: 'default',
+      haloEnabled: false,
+      haloColor: '#FFFFFF',
+      haloThicknessMode: 'auto',
+      haloThickness: 0,
+      preserveCenterOnAutoResize: false,
+      sitelen: {}
+    };
+
+    rebuildActiveCartouchePageMap();
+    const preparedInput = suppliedResolvedInput.trim()
+      ? suppliedResolvedInput
+      : prepareSitelenInputWithActiveCartoucheDb(sourceText);
+    fakeEl.text = preparedInput;
+
+    const exporter = await createVectorExporterForElement(fakeEl);
+    const config = buildRendererCallConfigForElement(fakeEl);
+    config.layout.align = 'left';
+    config.layout.spacingPreset = 'default';
+    config.parser.abbreviateNumericCartouches = false;
+    config.parser.showUnknownText = false;
+
+    const rawPlan = await exporter.buildPlan({ input: preparedInput, config });
+    const plan = normalizeSitelenVectorPlanFontRoles(rawPlan, fakeEl);
+    if (!planHasDrawableRuns(plan)) throw new Error('No drawable runs in scrapbook cartouche preview vector plan.');
+
+    // Keep exactly one small safety margin around the vector output.  The
+    // previous preview code added exporter padding and then another large
+    // viewBox padding layer, which made the popup show a lot of blank space
+    // above and below short cartouches.  Use a single compact margin instead:
+    // enough to avoid clipping literal-cartouche rules, but not enough to make
+    // the preview area look padded out.
+    const visualPadPx = Math.max(5, Math.min(8, Math.ceil(fontPx * 0.14)));
+    const blob = await exporter.exportTextToSvgBlob({
+      plan,
+      paddingPx: 0,
+      fallbackWidthPx: Math.max(1, Number(plan.widthPx || 1)),
+      fallbackHeightPx: Math.max(1, Number(plan.heightPx || 1))
+    });
+    const nested = await nestedSvgFromVectorBlob(blob);
+    const rawVb = parseSvgViewBoxString(nested.viewBox, Math.max(1, Number(plan.widthPx || 1)), Math.max(1, Number(plan.heightPx || 1)));
+
+    const width = Math.max(1, rawVb.w + visualPadPx * 2);
+    const height = Math.max(1, rawVb.h + visualPadPx * 2);
+    const tx = visualPadPx - rawVb.x;
+    const ty = visualPadPx - rawVb.y;
+    return `<?xml version="1.0" encoding="UTF-8"?>
+` +
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgNum(width)}" height="${svgNum(height)}" viewBox="0 0 ${svgNum(width)} ${svgNum(height)}" preserveAspectRatio="xMinYMid meet" overflow="hidden" data-preview-renderer="app-vector" data-preview-source="${svgEsc(sourceText)}" data-preview-prepared-input="${svgEsc(preparedInput)}" data-preview-font-preset="nasinNanpa"><g transform="translate(${svgNum(tx)} ${svgNum(ty)})">${nested.inner}</g></svg>`;
+  }
+
+  window.renderScrapbookCartouchePreviewSvg = renderScrapbookCartouchePreviewSvgFromApp;
+  try { window.dispatchEvent(new CustomEvent('scrapbook-cartouche-preview-renderer-ready')); } catch {}
+
   async function appendPdfCoverPageFallback(pdfDoc, PDFLib, doc, stageW, stageH, exportDate){
     const { StandardFonts, rgb } = PDFLib;
     const pageW = Math.max(1, stageW) * SVG_PDF_PT_PER_PX;

@@ -18,8 +18,13 @@ function scrapbookCartoucheDebugWarn(...args) {
 
 const PREVIEW_FONT_FAMILY_TEXT = 'TP-Nasin-Nanpa-Font';
 const PREVIEW_FONT_FAMILY_CARTOUCHE = 'TP-Cartouche-Font';
+const PREVIEW_FONT_FAMILY_LITERAL = 'Patrick-Head-Font';
+const PREVIEW_FONT_FAMILY_LITERAL_CARTOUCHE = 'TP-Nasin-Nanpa-Literal-Cartouche-Font';
+
 const PREVIEW_FONT_URL_TEXT = '../../fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf';
 const PREVIEW_FONT_URL_CARTOUCHE = '../../fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf';
+const PREVIEW_FONT_URL_LITERAL = '../../fonts/PatrickHand-Regular.ttf';
+const PREVIEW_FONT_URL_LITERAL_CARTOUCHE = '../../fonts/nasin-nanpa-4.0.2-Helvetica.otf';
 const PREVIEW_RENDERER_URL = '../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=44';
 
 function mergedLettersToWordForLocalDb(words) {
@@ -78,6 +83,7 @@ function getEntryLookupAliasesForLocalDb(entry) {
   return aliases;
 }
 
+
 function buildEffectiveEntryForRender(entry) {
   if (!entry || entry.mode !== 'random') return entry;
 
@@ -106,9 +112,21 @@ function buildEffectiveEntryForRender(entry) {
   return { ...entry, cartoucheMap: cm };
 }
 
+function escapeLiteralCartoucheText(text) {
+  return String(text ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .trim();
+}
+function buildLiteralCartoucheRendererInput(entry) {
+  const literal = escapeLiteralCartoucheText(entry?.literalText || entry?.key || '');
+  return `["${literal}"]`;
+}
+
 function buildEntryRenderedPreviewInput(entry) {
   if (!entry) return '';
   if (entry.mode === 'ignore') return buildEntryDisplayInput(entry);
+  if (entry.mode === 'literal') return buildLiteralCartoucheRendererInput(entry);
   return buildEntryRendererInput(buildEffectiveEntryForRender(entry));
 }
 
@@ -123,7 +141,9 @@ function buildLocalPageMapFromEntries(entries) {
     }
 
     let rendererInput;
-    if (entry.mode === 'random') {
+    if (entry.mode === 'literal') {
+      rendererInput = buildLiteralCartoucheRendererInput(entry);
+    } else if (entry.mode === 'random') {
       const segs = segmentWords(entry.words);
       const cm = {};
       segs.forEach((seg, si) => {
@@ -148,7 +168,7 @@ function buildLocalPageMapFromEntries(entries) {
     }
 
     let inputForceNormal = rendererInput;
-    if (entry.forceNormal) {
+    if (entry.forceNormal && entry.mode !== 'literal') {
       const entryNormal = { ...entry, forceNormal: false };
       inputForceNormal = rendererInput;
       rendererInput = buildEntryRendererInput(entryNormal);
@@ -271,6 +291,7 @@ function ensureStyle() {
       gap: 8px;
       overflow: auto;
       min-height: 0;
+      flex: 1 1 auto;
       padding-right: 3px;
     }
     .scrapbookCartoucheDbEntry {
@@ -286,15 +307,21 @@ function ensureStyle() {
       box-shadow: 0 0 0 2px rgba(90,62,27,.10) inset;
       background: rgba(255,255,255,.34);
     }
-    .scrapbookCartoucheDbPreview {
-      border: 1px solid rgba(17,17,17,.18);
-      border-radius: 12px;
-      padding: 8px;
-      background: rgba(255,255,255,.26);
-      display: grid;
-      gap: 4px;
-      min-height: 0;
-    }
+.scrapbookCartoucheDbPreview {
+  border: 1px solid rgba(17,17,17,.18);
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(255,255,255,.26);
+  display: grid;
+  grid-template-rows: auto auto 112px;
+  gap: 4px;
+  min-height: 156px;
+  height: 156px;
+  max-height: 156px;
+  box-sizing: border-box;
+  overflow: hidden;
+  flex: 0 0 156px;
+}
     .scrapbookCartoucheDbPreviewHeader {
       display: flex;
       align-items: baseline;
@@ -308,27 +335,59 @@ function ensureStyle() {
       color: var(--ink, #000111);
     }
     .scrapbookCartoucheDbPreviewDesc {
-      font: 11px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      color: var(--muted, #3f4750);
-      overflow-wrap: anywhere;
-      max-height: 28px;
-      overflow: hidden;
-    }
-    .scrapbookCartoucheDbPreviewCanvasWrap {
+      font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--ink, #000111);
+      white-space: pre;
       overflow-x: auto;
       overflow-y: hidden;
-      max-height: 64px;
-      background: rgba(255,255,255,.18);
-      border-radius: 8px;
-      padding: 4px 6px;
-      white-space: nowrap;
+      min-height: 24px;
+      max-height: 32px;
+      background: rgba(255,255,255,.28);
+      border-radius: 7px;
+      padding: 4px 7px;
+      box-sizing: border-box;
     }
+.scrapbookCartoucheDbPreviewCanvasWrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 112px;
+  max-height: 112px;
+  min-height: 112px;
+  background: rgba(255,255,255,.18);
+  border-radius: 8px;
+  padding: 6px 8px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
     .scrapbookCartoucheDbPreviewCanvasWrap canvas {
       display: block;
       width: auto !important;
       max-width: none !important;
       height: auto;
-      max-height: 56px;
+      max-height: 128px;
+    }
+    .scrapbookCartoucheDbPreviewSvgHost {
+      display: flex;
+      align-items: center;
+      width: max-content;
+      min-width: 1px;
+      min-height: 1px;
+      padding: 0;
+      flex: 0 0 auto;
+      overflow: hidden;
+    }
+.scrapbookCartoucheDbPreviewSvgHost svg {
+  display: block;
+  width: auto;
+  height: auto;
+  max-height: 96px;
+  overflow: visible;
+}
+    .scrapbookCartoucheDbPreviewSvgHost.hidden,
+    .scrapbookCartoucheDbPreviewCanvasWrap canvas.hidden {
+      display: none !important;
     }
     .scrapbookCartoucheDbEntryHeader {
       display: flex;
@@ -431,6 +490,8 @@ async function ensureNasinNanpaPreviewFonts(fontPx = 40) {
       const faces = [
         { family: PREVIEW_FONT_FAMILY_TEXT, url: PREVIEW_FONT_URL_TEXT, format: 'opentype', sample: String.fromCodePoint(0xF196C) },
         { family: PREVIEW_FONT_FAMILY_CARTOUCHE, url: PREVIEW_FONT_URL_CARTOUCHE, format: 'opentype', sample: String.fromCodePoint(0xF1990) },
+        { family: PREVIEW_FONT_FAMILY_LITERAL, url: PREVIEW_FONT_URL_LITERAL, format: 'truetype', sample: 'Hello' },
+        { family: PREVIEW_FONT_FAMILY_LITERAL_CARTOUCHE, url: PREVIEW_FONT_URL_LITERAL_CARTOUCHE, format: 'opentype', sample: 'Hello' },
       ];
       for (const face of faces) {
         try {
@@ -451,6 +512,8 @@ async function ensureNasinNanpaPreviewFonts(fontPx = 40) {
     await Promise.all([
       document.fonts.load(`${px}px "${PREVIEW_FONT_FAMILY_TEXT}"`, String.fromCodePoint(0xF196C)),
       document.fonts.load(`${px}px "${PREVIEW_FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF1990)),
+      document.fonts.load(`${px}px "${PREVIEW_FONT_FAMILY_LITERAL}"`, 'Hello'),
+      document.fonts.load(`${px}px "${PREVIEW_FONT_FAMILY_LITERAL_CARTOUCHE}"`, 'Hello'),
     ]);
     await document.fonts.ready;
   }
@@ -481,10 +544,10 @@ async function getNasinNanpaPreviewRenderer(fontPx = 40) {
             number: PREVIEW_FONT_FAMILY_CARTOUCHE,
             date: PREVIEW_FONT_FAMILY_CARTOUCHE,
             time: PREVIEW_FONT_FAMILY_CARTOUCHE,
-            literal: PREVIEW_FONT_FAMILY_TEXT,
-            unknown: PREVIEW_FONT_FAMILY_TEXT,
-            literalCartouche: PREVIEW_FONT_FAMILY_TEXT,
-            literalCartoucheFamily: PREVIEW_FONT_FAMILY_TEXT,
+            literal: PREVIEW_FONT_FAMILY_LITERAL,
+            unknown: PREVIEW_FONT_FAMILY_LITERAL,
+            literalCartouche: PREVIEW_FONT_FAMILY_LITERAL_CARTOUCHE,
+            literalCartoucheFamily: PREVIEW_FONT_FAMILY_LITERAL_CARTOUCHE,
           },
         },
       });
@@ -575,7 +638,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
     previewRoot: null,
     previewTitle: null,
     previewDesc: null,
-    previewCanvas: null,
+    previewSvgHost: null,
     previewStatus: null,
     selectedKey: '',
     previewTimer: null,
@@ -650,21 +713,42 @@ export function createScrapbookCartoucheDbController(options = {}) {
       if (state.previewTitle) state.previewTitle.textContent = 'No selected entry';
       if (state.previewDesc) state.previewDesc.textContent = 'Select a local name entry to preview its cartouche rendering.';
       if (state.previewStatus) state.previewStatus.textContent = '';
-      if (state.previewCanvas) {
-        const ctx = state.previewCanvas.getContext('2d');
-        state.previewCanvas.width = 1;
-        state.previewCanvas.height = 1;
-        ctx.clearRect(0, 0, 1, 1);
-      }
+      clearSelectedPreviewGraphic();
       return;
     }
-
     const input = previewInput == null
-      ? buildEntryRenderedPreviewInput(entry)
+      ? getEntryPageMapPreviewSource(entry)
       : String(previewInput);
-
     if (state.previewTitle) state.previewTitle.textContent = `Preview: ${entry.key}`;
-    if (state.previewDesc) state.previewDesc.textContent = input;
+    if (state.previewDesc) state.previewDesc.textContent = input ? `Output: ${input}` : 'Output: ';
+  }
+
+  function clearSelectedPreviewGraphic() {
+    if (state.previewSvgHost) state.previewSvgHost.innerHTML = '';
+  }
+
+  function showPreviewSvg() {
+    state.previewSvgHost?.classList?.remove('hidden');
+  }
+
+  function getEntryPageMapPreviewSource(entry) {
+    // The selected entry preview should display and render the cartouche output
+    // text for that entry, not the lookup source name.  This matches the
+    // standalone cartouche DB page and keeps entries such as ["" ...] as normal
+    // proper-name cartouches instead of letting the page-map lookup source or a
+    // numeric shortcut reinterpret them.
+    return String(buildEntryRenderedPreviewInput(entry) || '').trim();
+  }
+
+  async function waitForScrapbookCartouchePreviewBridge(timeoutMs = 3000) {
+    const started = Date.now();
+    while ((Date.now() - started) < timeoutMs) {
+      if (typeof window.renderScrapbookCartouchePreviewSvg === 'function') {
+        return window.renderScrapbookCartouchePreviewSvg;
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    return null;
   }
 
   function scheduleSelectedPreviewRender() {
@@ -679,62 +763,66 @@ export function createScrapbookCartoucheDbController(options = {}) {
 
   async function renderSelectedPreview() {
     const entry = getSelectedEntry();
-    const previewInput = entry ? buildEntryRenderedPreviewInput(entry) : '';
-    updateSelectedPreviewMetadata(entry, previewInput);
-    if (!entry || !state.previewCanvas) return;
+    const previewSource = entry ? getEntryPageMapPreviewSource(entry) : '';
+    updateSelectedPreviewMetadata(entry, previewSource);
+    if (!entry || !state.previewSvgHost) return;
     if (entry.mode === 'ignore') {
       if (state.previewStatus) state.previewStatus.textContent = 'Ignored entries do not render a cartouche.';
-      const ctx = state.previewCanvas.getContext('2d');
-      state.previewCanvas.width = 1;
-      state.previewCanvas.height = 1;
-      ctx.clearRect(0, 0, 1, 1);
+      clearSelectedPreviewGraphic();
+      showPreviewSvg();
       return;
     }
 
     const seq = ++state.previewSeq;
     if (state.previewStatus) state.previewStatus.textContent = 'Rendering preview…';
-    const fontPx = 44;
-    const renderer = await getNasinNanpaPreviewRenderer(fontPx);
-    if (seq !== state.previewSeq) return;
-    const input = previewInput;
-    const result = await renderer.renderTextToNewCanvas({
-      input,
-      layout: { fontPx, paddingPx: 12, spacingPreset: 'default' },
-      paint: { fgColor: '#111111', fillStyle: '#111111' },
-      parser: {
-        mode: 'sitelen-seli-kiwen',
-        literalStyle: 'double-quote',
-        extensionStyle: 'ssk',
-        cartoucheStyle: 'ssk',
-        numericMode: 'compat',
-        mixedStyle: 'short',
-        cartoucheCommaTallyMarks: true,
-        cartoucheTallyMode: 'manual',
-      },
-      fonts: {
-        roles: {
-          word: PREVIEW_FONT_FAMILY_TEXT,
-          text: PREVIEW_FONT_FAMILY_TEXT,
-          cartouche: PREVIEW_FONT_FAMILY_TEXT,
-          number: PREVIEW_FONT_FAMILY_CARTOUCHE,
-          date: PREVIEW_FONT_FAMILY_CARTOUCHE,
-          time: PREVIEW_FONT_FAMILY_CARTOUCHE,
-          literal: PREVIEW_FONT_FAMILY_TEXT,
-          unknown: PREVIEW_FONT_FAMILY_TEXT,
-          literalCartouche: PREVIEW_FONT_FAMILY_TEXT,
-          literalCartoucheFamily: PREVIEW_FONT_FAMILY_TEXT,
-        },
-      },
-    });
-    if (seq !== state.previewSeq) return;
-    const src = result?.canvas || document.createElement('canvas');
-    const canvas = state.previewCanvas;
-    canvas.width = Math.max(1, src.width || 1);
-    canvas.height = Math.max(1, src.height || 1);
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (src.width && src.height) ctx.drawImage(src, 0, 0);
-    if (state.previewStatus) state.previewStatus.textContent = 'Preview uses nasin nanpa fonts.';
+
+    let vectorPreview = window.renderScrapbookCartouchePreviewSvg;
+    if (typeof vectorPreview !== 'function') {
+      vectorPreview = await waitForScrapbookCartouchePreviewBridge();
+    }
+
+    if (typeof vectorPreview !== 'function') {
+      clearSelectedPreviewGraphic();
+      showPreviewSvg();
+      if (state.previewStatus) state.previewStatus.textContent = 'Preview renderer is not ready.';
+      if (state.previewSvgHost) {
+        state.previewSvgHost.textContent = 'Preview renderer is not ready. Close and reopen this popup after the page finishes loading.';
+      }
+      return;
+    }
+
+    try {
+      rebuildCombinedPageMap();
+      const previewResult = await vectorPreview({
+        sourceText: previewSource,
+        resolvedInput: previewSource,
+        entryKey: entry.key,
+      });
+      const svgText = (previewResult && typeof previewResult === 'object')
+        ? String(previewResult.svgText || previewResult.svg || '')
+        : String(previewResult || '');
+      if (seq !== state.previewSeq) return;
+      clearSelectedPreviewGraphic();
+      if (state.previewSvgHost) {
+        state.previewSvgHost.innerHTML = svgText;
+        const svgNode = state.previewSvgHost.querySelector('svg');
+        const preparedInput = (previewResult && typeof previewResult === 'object')
+          ? String(previewResult.preparedInput || '')
+          : String(svgNode?.getAttribute?.('data-preview-prepared-input') || '');
+        if (preparedInput && state.previewDesc) state.previewDesc.textContent = `Output: ${preparedInput}`;
+      }
+      showPreviewSvg();
+      if (state.previewStatus) state.previewStatus.textContent = 'Preview uses scrapbook page vector renderer.';
+      return;
+    } catch (err) {
+      scrapbookCartoucheDebugWarn('[scrapbook-cartouche-db] app-vector preview failed', err);
+      clearSelectedPreviewGraphic();
+      showPreviewSvg();
+      if (state.previewStatus) state.previewStatus.textContent = 'Preview render failed.';
+      if (state.previewSvgHost) state.previewSvgHost.textContent = err?.message || String(err || 'Preview render failed.');
+      return;
+    }
+
   }
 
   function mutateEntryForLiveEdit(key, mutator) {
@@ -1063,10 +1151,9 @@ export function createScrapbookCartoucheDbController(options = {}) {
     previewDesc.textContent = 'Select a local name entry to preview its cartouche rendering.';
     const previewCanvasWrap = document.createElement('div');
     previewCanvasWrap.className = 'scrapbookCartoucheDbPreviewCanvasWrap';
-    const previewCanvas = document.createElement('canvas');
-    previewCanvas.width = 1;
-    previewCanvas.height = 1;
-    previewCanvasWrap.appendChild(previewCanvas);
+    const previewSvgHost = document.createElement('div');
+    previewSvgHost.className = 'scrapbookCartoucheDbPreviewSvgHost hidden';
+    previewCanvasWrap.appendChild(previewSvgHost);
     preview.appendChild(previewHeader);
     preview.appendChild(previewDesc);
     preview.appendChild(previewCanvasWrap);
@@ -1120,7 +1207,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
     state.previewRoot = preview;
     state.previewTitle = previewTitle;
     state.previewDesc = previewDesc;
-    state.previewCanvas = previewCanvas;
+    state.previewSvgHost = previewSvgHost;
     state.previewStatus = previewStatus;
     state.importInput = importInput;
 
