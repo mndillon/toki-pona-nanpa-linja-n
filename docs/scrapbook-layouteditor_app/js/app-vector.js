@@ -17849,22 +17849,6 @@ document.addEventListener("keydown", (e) => {
     const nested = await nestedSvgFromVectorBlob(blob);
     const vb = parseSvgViewBoxString(nested.viewBox, plan.widthPx || 1, plan.heightPx || 1);
 
-    // Preview-only safety crop for standalone literal cartouches.  The normal
-    // page/export left-cap repair can miss this tiny bridge because the popup
-    // passes pre-resolved input directly.  Crop only the outer SVG viewBox, only
-    // for literal-cartouche preview input such as ["LITERAL"], so normal page
-    // rendering, exports, numeric cartouches, and proper-name glyph cartouches are
-    // not changed.
-    if (/^\s*\[\s*"/.test(input)) {
-      const clipSettings = getElementLiteralCartoucheSettings(fakeEl) || {};
-      const clipScale = Number(clipSettings.literalCartoucheRuleClipScale);
-      const clipRatio = Number(clipSettings.literalCartoucheLeftCapClipRatio);
-      const cropPx = Math.max(0, fontPx * (Number.isFinite(clipScale) ? clipScale : 0) * (Number.isFinite(clipRatio) ? clipRatio : 1));
-      if (cropPx > 0 && vb.w > cropPx + 1) {
-        vb.x += cropPx;
-        vb.w -= cropPx;
-      }
-    }
 
     const width = Math.max(1, Math.ceil(vb.w));
     const height = Math.max(1, Math.ceil(vb.h));
