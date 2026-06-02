@@ -3073,6 +3073,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
   let pendingMismatchTimerId = null;
   let backCache = null;
   let mobileBackCache = null;
+  let cardBackLogoCanvasCache = null;
   let timeSitelenRenderer = null;
   let timeSitelenRendererPromise = null;
   const timerCtx = els.timerCanvas.getContext("2d");
@@ -3544,7 +3545,23 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
     ctx.quadraticCurveTo(x, y, x + rr, y);
   }
 
-  function buildCardBackCanvas({ logoFontPx = 90 } = {}) {
+  async function getCardBackLogoCanvas() {
+    if (cardBackLogoCanvasCache) return cardBackLogoCanvasCache;
+
+    const renderer = await ensureRendererReady();
+    const rendered = await renderer.renderTextToNewCanvas({
+      input: "toki&pona",
+      ...buildBaseRendererConfig({
+        fontPx: 96,
+        paddingPx: 18
+      })
+    });
+
+    cardBackLogoCanvasCache = trimTransparentCanvas(rendered.canvas, 4);
+    return cardBackLogoCanvasCache;
+  }
+
+  async function buildCardBackCanvas({ logoFontPx = 90 } = {}) {
     // Landscape card back for desktop/laptop use. Mobile tiles use a much
     // shorter selector aspect ratio in CSS, but the canvas is fitted to the tile by the browser.
     const w = 232;
@@ -3580,34 +3597,35 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       ctx.stroke();
     }
 
-    // Always draw the card-back logo with the normal nasin nanpa font,
-    // independent of the selected cartouche/game font. The input uses the
-    // normal renderer-style compound text so pona nests inside toki.
-    const logoText = "toki&pona";
-    ctx.font = `${logoFontPx}px "TP-Nasin-Nanpa-Font", "PatrickHand", system-ui, sans-serif`;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    const logoMetrics = ctx.measureText(logoText);
-    const logoLeft = logoMetrics.actualBoundingBoxLeft ?? 0;
-    const logoRight = logoMetrics.actualBoundingBoxRight ?? logoMetrics.width;
-    const logoAscent = logoMetrics.actualBoundingBoxAscent ?? 72;
-    const logoDescent = logoMetrics.actualBoundingBoxDescent ?? 18;
-    const logoX = (w / 2) - ((logoRight - logoLeft) / 2);
-    const logoY = (h / 2) - ((logoDescent - logoAscent) / 2);
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = "#e6d347";
-    ctx.strokeText(logoText, logoX, logoY);
-    ctx.fillStyle = "#5450a8";
-    ctx.fillText(logoText, logoX, logoY);
+    // Draw the card-back logo through SitelenRenderer so renderer syntax
+    // such as toki&pona is parsed as a compound glyph.
+    const logoCanvas = await getCardBackLogoCanvas();
+    const maxLogoW = w - 52;
+    const maxLogoH = h - 54;
+    const logoScale = Math.min(
+      maxLogoW / logoCanvas.width,
+      maxLogoH / logoCanvas.height,
+      logoFontPx / 96
+    );
+    const drawW = Math.max(1, Math.round(logoCanvas.width * logoScale));
+    const drawH = Math.max(1, Math.round(logoCanvas.height * logoScale));
+    const logoX = Math.round((w - drawW) / 2);
+    const logoY = Math.round((h - drawH) / 2);
+
+    ctx.save();
+    ctx.shadowColor = "#e6d347";
+    ctx.shadowBlur = Math.max(3, Math.round(logoFontPx * 0.08));
+    ctx.drawImage(logoCanvas, logoX, logoY, drawW, drawH);
+    ctx.restore();
     ctx.restore();
     return c;
   }
 
-  function getBackCanvasClone() {
+  async function getBackCanvasClone() {
     const compact = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
     const source = compact
-      ? (mobileBackCache || (mobileBackCache = buildCardBackCanvas({ logoFontPx: 54 })))
-      : (backCache || (backCache = buildCardBackCanvas()));
+      ? (mobileBackCache || (mobileBackCache = await buildCardBackCanvas({ logoFontPx: 54 })))
+      : (backCache || (backCache = await buildCardBackCanvas()));
     const c = document.createElement("canvas");
     c.width = source.width;
     c.height = source.height;
@@ -4090,7 +4108,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
 
       const back = document.createElement("div");
       back.className = "tileFace tileBack";
-      back.appendChild(getBackCanvasClone());
+      back.appendChild(await getBackCanvasClone());
       inner.appendChild(back);
 
       const face = document.createElement("div");
@@ -4350,6 +4368,9 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=20";
       renderedCardCache.clear();
       sitelenRenderer = null;
       sitelenRendererSignature = "";
+      backCache = null;
+      mobileBackCache = null;
+      cardBackLogoCanvasCache = null;
       await prepareCurrentGameResources();
       if (!game) return;
       await renderGrid();
