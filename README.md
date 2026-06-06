@@ -157,11 +157,12 @@ Rules:
 - Numeric Cartouche [nanpa en ... nanpa]
 - Abbreviated Cartouche: [nanpa ... nanpa]
 - Abbreviation #~: None (There is no 'n' or no 'e' in the nanpa-linja-n abbreviation)
-- Notes: the final -n is always appended to the final nanpa-linja-n proper name word.
+- Notes: A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation, each separate word will start with a capital letter
+- the final -n is always appended to the final nanpa-linja-n proper name word.
 
 Example:
 
-- 153 → Newelesen
+- 1,530 → Newen Eke Lesenin
 
 ---
 
@@ -365,7 +366,7 @@ Example:
 
 ---
 
-## Multi-Digit Block Rule
+## Multi-Digit Rule
 
 Rules:
 
@@ -374,6 +375,7 @@ Rules:
 - Numeric Cartouche [... jo en seli en ...]
 - Abbreviated Cartouche: [... jo seli ...]
 - Abbreviation #~: ...JS...
+- A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation
 
 ### Examples
 
@@ -411,6 +413,11 @@ Rules:
 20-25       → Netenin Ene Telen
 2-0-2-5     → Neten Ene Nin Ene Ten Ene Len
 3.141592    → Nesen One Wenawelejeten
+−5          → Neno Len
+1/2         → Newen Ono Ten
+9¾          → Nejen Oko Sen Ono Nan
+10.5%       → Newenin One Len Oken
+4.5*10^-3   → Nenan One Len Eko Wenin Eko Nosen
 ```
 
 ---
@@ -465,7 +472,7 @@ Examples:
 
 ---
 
-## ISO Block Marker — neke
+## ISO Thousands Blocks — neke
 **neke** indicates ISO thousands blocks.
 
 Rules:
@@ -476,7 +483,7 @@ Rules:
 - Abbreviation #~: ...k...
 - Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
 - the ISO thousands separator ...neke... can be split into words ...n Eke ... in a proper name
-- if the numeric value ends in blocks of thousands, then the proper name can end with ... Eken or ... Ekeken or ... Ekekeken depending on the number of full IOS thousands blocks the numeric value ends with
+- if the numeric value ends in blocks of thousands, then the proper name can end with ... Eken or ... Ekeken or ... Ekekeken depending on the number of full ISO thousands blocks the numeric value ends with
 
 Examples:
 
@@ -510,13 +517,13 @@ Rules:
 Examples:
 
 ```
-1/2                 → Newen Ono ten
-3/4                 → Nesen Ono nan
-5/8                 → Nelen Ono pen
+1/2                 → Newen Ono Ten
+3/4                 → Nesen Ono Nan
+5/8                 → Nelen Ono Pen
 567/890             → Nelenumen Ono Pejenin
 1,234 / 56          → Newen Eke Tesenan Ono Lenun
 3 / 1,000,000,000   → Nesen Ono Wen Ekekeken
--7/9                → Neno Men Ono jen
+-7/9                → Neno Men Ono Jen
 ```
 
 ---
