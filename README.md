@@ -96,8 +96,9 @@ Sitelen Cartouche Summary:
 | .     | o      | o                | decimal point, never at start, never at end                                                    |
 | ,     | kulupu | k                | ISO block separator                                                                            |
 | %     | kipisi | k                | percent, only at end                                                                           |
-|       | open   | o                | always just before percent glyph,  only at end                                                 |
+|       | open   | o                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
 | :     | kasi   | k                | used to split dates and times                                                                  |
+|       | kala   | k                | used to separate integers from fraction parts and also used in scientific notation             |
 |       | nanpa  | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
 |       | nena   | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
 |       | en     | e                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
@@ -113,12 +114,6 @@ The unique abbreviation for the number can be used to reconstruct the original n
 
 
 This gives us four uniquely decodable representations of the same underlying number: standard decimal notation, sitelen pona in a cartouche, Latin pona proper name, and a unique numeric abbreviation.
-
-
-Rules:
-
-- Take decimal number and convert to proper name using the rules below.  In sitelen pona, display the proper name in a cartouche using specific glyphs from the table above.
-- Take numeric proper name, remove any letter 'n', remove any letter 'e', remove any spaces, capitalize remaining letters (optionally leave 'o' and 'k' as lower case, as these letters represent delimiters in numbers), add #~ at the start to produce numeric abbreviation
 
 
 Example:
@@ -153,94 +148,293 @@ Example:
 ---
 
 ## General Number Rule
-Applies to all numbers no matter what form they take:
+Applies to all numbers no matter what form they take.
 
-**All number proper names start with ne- and end with -n**
+Rules:
 
----
+- All nanpa-linja-n numeric proper names and cartouches will start with Ne- and end with -n
+- Latin nanpa-linja-n numeric proper name: Ne...n
+- Numeric Cartouche [nanpa en ... nanpa]
+- Abbreviated Cartouche: [nanpa ... nanpa]
+- Abbreviation #~: None (There is no 'n' or no 'e' in the nanpa-linja-n abbreviation)
+- Notes: the final -n is always appended to the final nanpa-linja-n proper name word.
 
-## Internal Digit-Block Rule
-Inside a digit block (no separator present):
+Example:
 
-**Concatenate digit names by dropping starting ne- and dropping ending -n from every digit name, and start final number word with ne- and end with -n.**
-
-
-### Examples
-
-- 10 → newen nenin → **newenin**
-- 46 → nenan nenun → **nenanun**
-- 78 → nemen nepen → **nemepen**
-- 100 → newen nenin nenin → **neweninin**
-- 567 → nelen nenun nemen → **nelenumen**
-- 234 → neten nesen nenan → **netesenan**
-- 801 → nepen nenin newen → **nepeniwen**
-- 950 → nejen nelen nenin → **nejelenin**
-
+- 153 → Newelesen
 
 ---
 
-## Large Number Units
+## Digit 0 Rule
 
-### Standard Units
-Used when non-zero digits follow the block.
+Rules:
 
-```
-neke     = more parts after ISO block marker to follow
-```
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 0 → ijo → i
+- Latin nanpa-linja-n numeric proper name: ...ni...
+- Numeric Cartouche [... nena ijo ...]
+- Abbreviated Cartouche: [... ijo ...]
+- Abbreviation #~: ...I...
 
-- 2,534 → **neten eke lesenan**
+Example:
 
-### Zero-Block Units  
-Used only when *everything after* the ISO block is zero, used at the end of a number.
+- 0
+- Nenin
+- [nanpa en nena ijo nanpa]
+- [nanpa ijo nanpa]
+- Abbreviation: #~I
 
-Adds more context, makes the assumption that the string of digits represents a numeric value:
+---
 
-Join naturally to the -n at the end of numbers, since they are only allowed to appear at the end of numbers.
+## Digit 1 Rule
 
-```
-neken     = exactly X thousand
-nekeken   = exactly X million
-nekekeken = exactly X billion
-```
+Rules:
 
-- 2,000,000 → **neten ekeken**
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 1 → wan → w
+- Latin nanpa-linja-n numeric proper name: ...we...
+- Numeric Cartouche [... wan en ...]
+- Abbreviated Cartouche: [... wan ...]
+- Abbreviation #~: ...W...
 
-### Any number of blocks
-Used for any number of blocks, this separator has no specific value.  It can be used to split up long digit sequences.
+Example:
 
-Does not add more context, makes no assumption that the string of digits represents a numeric value:
+- 1
+- Newen
+- [nanpa en wan en nanpa]
+- [nanpa wan nanpa]
+- Abbreviation: #~W
 
-```
-nene  = more parts of digit sequence to follow
-```
+---
 
-- 123-4567 → **newetesen ene nalenumen**
+## Digit 2 Rule
 
+Rules:
+
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 2 → tu → t
+- Latin nanpa-linja-n numeric proper name: ...te...
+- Numeric Cartouche [... tu en ...]
+- Abbreviated Cartouche: [... tu ...]
+- Abbreviation #~: ...T...
+
+Example:
+
+- 2
+- Neten
+- [nanpa en tu en nanpa]
+- [nanpa tu nanpa]
+- Abbreviation: #~T
+
+---
+
+## Digit 3 Rule
+
+Rules:
+
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 3 → seli → s
+- Latin nanpa-linja-n numeric proper name: ...se...
+- Numeric Cartouche [... seli en ...]
+- Abbreviated Cartouche: [... seli ...]
+- Abbreviation #~: ...S...
+
+Example:
+
+- 3
+- Nesen
+- [nanpa en seli en nanpa]
+- [nanpa seli nanpa]
+- Abbreviation: #~S
+
+---
+
+## Digit 4 Rule
+
+Rules:
+
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 4 → awen → a
+- Latin nanpa-linja-n numeric proper name: ...na...
+- Numeric Cartouche [... nena awen ...]
+- Abbreviated Cartouche: [... awen ...]
+- Abbreviation #~: ...A...
+
+Example:
+
+- 4
+- Nenan
+- [nanpa en nena awen nanpa]
+- [nanpa awen nanpa]
+- Abbreviation: #~A
+
+---
+
+## Digit 5 Rule
+
+Rules:
+
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 5 → luka → l
+- Latin nanpa-linja-n numeric proper name: ...le...
+- Numeric Cartouche [... luka en ...]
+- Abbreviated Cartouche: [... luka ...]
+- Abbreviation #~: ...L...
+
+Example:
+
+- 5
+- Nelen
+- [nanpa en luka en nanpa]
+- [nanpa luka nanpa]
+- Abbreviation: #~L
+
+---
+
+## Digit 6 Rule
+
+Rules:
+
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 6 → utala → u
+- Latin nanpa-linja-n numeric proper name: ...nu...
+- Numeric Cartouche [... nena utala ...]
+- Abbreviated Cartouche: [... utala ...]
+- Abbreviation #~: ...U...
+
+Example:
+
+- 6
+- Nenun
+- [nanpa en nena utala nanpa]
+- [nanpa utala nanpa]
+- Abbreviation: #~U
+
+---
+
+## Digit 7 Rule
+
+Rules:
+
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 7 → mun → m
+- Latin nanpa-linja-n numeric proper name: ...me...
+- Numeric Cartouche [... mun en ...]
+- Abbreviated Cartouche: [... mun ...]
+- Abbreviation #~: ...M...
+
+Example:
+
+- 7
+- Nemen
+- [nanpa en mun en nanpa]
+- [nanpa mun nanpa]
+- Abbreviation: #~M
+
+---
+
+## Digit 8 Rule
+
+Rules:
+
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 8 → pipi → p
+- Latin nanpa-linja-n numeric proper name: ...pe...
+- Numeric Cartouche [... pipi en ...]
+- Abbreviated Cartouche: [... pipi ...]
+- Abbreviation #~: ...P...
+
+Example:
+
+- 8
+- Nepen
+- [nanpa en pipi en nanpa]
+- [nanpa pipi nanpa]
+- Abbreviation: #~P
+
+---
+
+## Digit 9 Rule
+
+Rules:
+
+- Each digit has a unique sitelen pona glyph and a unique latin letter: 9 → jo → j
+- Latin nanpa-linja-n numeric proper name: ...je...
+- Numeric Cartouche [... jo en ...]
+- Abbreviated Cartouche: [... jo ...]
+- Abbreviation #~: ...J...
+
+Example:
+
+- 9
+- Nejen
+- [nanpa en jo en nanpa]
+- [nanpa jo nanpa]
+- Abbreviation: #~J
+
+---
+
+## Multi-Digit Block Rule
+
+Rules:
+
+- To represent a multi-digit number in a cartouche just concatenate the single digit representations.
+- Latin nanpa-linja-n numeric proper name: ...jese...
+- Numeric Cartouche [... jo en seli en ...]
+- Abbreviated Cartouche: [... jo seli ...]
+- Abbreviation #~: ...JS...
 
 ### Examples
+
+- 10 → we ni → **Newenin**
+- 46 → na nu → **Nenanun**
+- 78 → me pe → **Nemepen**
+- 100 → we ni ni → **Neweninin**
+- 567 → le nu me → **Nelenumen**
+- 234 → te se na → **Netesenan**
+- 801 → pe ni we → **Nepeniwen**
+- 950 → je le ni → **Nejelenin**
+
+
+### More Examples
 ```
-1           → newen
-08          → nenipen
-23          → netesen
-679         → nenumejen
-1,234       → newen eke tesenan
-12,000      → neweten eken
-12000       → newetenininin
-3,000,000   → nesen ekeken
-30,000,000  → nesenin ekeken
-300,000,000 → neseninin ekeken
-3,000,000,000 → nesen ekekeken
-7,321,900   → nemen eke setewen eke jeninin
-64.5M       → nenunan one len ekeken
-64.5B       → nenunan one len ekekeken
-0123456789  → neniwetesenalenumepejen (using block words is optional, but often very helpful for understanding)
-012-3456789 → neniweten ene senalenumepejen (nene can be used anywhere to break up large numbers)
-012-3456-789 → neniweten ene senalenun ene mepejen
-2025        → netenitelen
-2,025       → neten eke nitelen
-20-25       → netenin ene telen
-2-0-2-5     → neten ene nin ene ten ene len
-3.141592    → nesen one wenawelejeten
+1           → Newen
+08          → Nenipen
+23          → Netesen
+679         → Nenumejen
+1,234       → Newen Eke Tesenan
+12,000      → Neweten Eken
+12000       → Newetenininin
+3,000,000   → Nesen Ekeken
+30,000,000  → Nesenin Ekeken
+300,000,000 → Neseninin Ekeken
+3,000,000,000 → Nesen Ekekeken
+7,321,900   → Nemen Eke Setewen Eke Jeninin
+64.5M       → Nenunan One Len Ekeken
+64.5B       → Nenunan One Len Ekekeken
+0123456789  → Neniwetesenalenumepejen (using block words is optional, but often very helpful for understanding)
+012-3456789 → Neniweten Ene Senalenumepejen (nene can be used anywhere to break up large numbers)
+012-3456-789 → Neniweten Ene Senalenun Ene Mepejen
+2025        → Netenitelen
+2,025       → Neten Eke Nitelen
+20-25       → Netenin Ene Telen
+2-0-2-5     → Neten Ene Nin Ene Ten Ene Len
+3.141592    → Nesen One Wenawelejeten
+```
+
+---
+
+## Negative Numbers — no
+Prefix **no** indicates a negative number
+
+Rules:
+
+- Latin nanpa-linja-n numeric proper name: ...no...
+- Numeric Cartouche [... nena ona ...]
+- Abbreviated Cartouche: [... ona ...]
+- Abbreviation #~: o...
+- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
+- the negative indicator ...no... can be split into words ...no  ... in a proper name
+- the negative indicator ...no... must only appear at the start of a number, so usually appears as Neno ...
+
+Examples:
+
+```
+−5         → Neno Len
+−12        → Neno Weten
+−0.4       → Neno Nin One Nan
+−30,000    → Neno Senin Eken
 ```
 
 ---
@@ -250,19 +444,49 @@ nene  = more parts of digit sequence to follow
 
 Rules:
 
-- Can split "none" into "n one " to split up long sequences
-- Adds more context, makes the assumption that the strings of digits represent numeric values
-
+- Latin nanpa-linja-n numeric proper name: ...none...
+- Numeric Cartouche [... nena o nena en ...]
+- Abbreviated Cartouche: [... o ...]
+- Abbreviation #~: ...o...
+- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
+- the decimal separator ...none... can be split into words ...n One ... in a proper name
+- there must always be at least one digit before the decimal point
 
 Examples:
 
 ```
-0.5       → nenin one len
-3.75      → nesen one melen
-12.04     → neweten one ninan
-37.9      → nesemen one jen
-0.125     → nenin one wetelen
-3.141592  → nesen one wenawen ene lejeten
+0.5       → Nenin One Len
+3.75      → Nesen One Melen
+12.04     → Neweten One Ninan
+37.9      → Nesemen One Jen
+0.125     → Nenin One Wetelen
+3.141592  → Nesen One Wenawen Ene Lejeten
+```
+
+---
+
+## ISO Block Marker — neke
+**neke** indicates ISO thousands blocks.
+
+Rules:
+
+- Latin nanpa-linja-n numeric proper name: ...neke...
+- Numeric Cartouche [... nena en kulupu en ...]
+- Abbreviated Cartouche: [... kulupu ...]
+- Abbreviation #~: ...k...
+- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
+- the ISO thousands separator ...neke... can be split into words ...n Eke ... in a proper name
+
+Examples:
+
+```
+1,234       → Newen Eke Tesenan
+12,000      → Neweten Eken
+3,000,000   → Nesen Ekeken
+30,000,000  → Nesenin Ekeken
+300,000,000 → Neseninin Ekeken
+3,000,000,000 → Nesen Ekekeken
+7,321,900   → Nemen Eke Setewen Eke Jeninin
 ```
 
 ---
@@ -271,62 +495,132 @@ Examples:
 **nono** expresses fractions “over / divided by”.
 
 Rule:
+Rules:
 
-- Can split "nono" into "n ono " to split up long sequences
-- Adds more context, makes the assumption that the strings of digits represent numeric values
+- Latin nanpa-linja-n numeric proper name: ...nono...
+- Numeric Cartouche [... nena o nena o ...]
+- Abbreviated Cartouche: [... oo ...]
+- Abbreviation #~: ...oo...
+- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
+- the fraction separator ...nono... can be split into words ...n Ono ... in a proper name
+- if a fraction is negative, the negative sign will appear at the very start of the whole fraction expression
 
 
 Examples:
 
 ```
-1/2                 → newen ono ten
-3/4                 → nesen ono nan
-5/8                 → nelen ono pen
-9¾                  → nejen onono sen ono nan
-567/890             → nelenumen ono pejenin
-1,234 / 56          → newen eke tesenan ono lenun
-3 / 1,000,000,000   → nesen ono wen ekekeken
+1/2                 → Newen Ono ten
+3/4                 → Nesen Ono nan
+5/8                 → Nelen Ono pen
+567/890             → Nelenumen Ono Pejenin
+1,234 / 56          → Newen Eke Tesenan Ono Lenun
+3 / 1,000,000,000   → Nesen Ono Wen Ekekeken
+-7/9                → Neno Men Ono jen
 ```
 
 ---
 
-## Negative Numbers — no
-Prefix **no** before any digits, must only appear at the start of a digit sequence:
+## Fractions — noko
+**noko** splite the integer from the fraction part of a numeric fraction
 
-Rule:
+Rules:
 
-- Can add a space to "no" to get "no " to split up long sequences
-- Adds more context, makes the assumption that the string of digits represents a numeric value
+- Latin nanpa-linja-n numeric proper name: ...noko...
+- Numeric Cartouche [... nena open kala open ...]
+- Abbreviated Cartouche: [... kala ...]
+- Abbreviation #~: ...oko...
+- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
+- the integer/fraction separator ...noko... can be split into words ...n Oko ... in a proper name
+- if a fraction is negative, the negative sign will appear at the very start of the whole fraction expression
 
 
 Examples:
 
 ```
-−5         → neno len
-−12        → neno weten
-−0.4       → neno nin one nan
-−30,000    → neno senin eken
+9¾                  → Nejen Oko Sen Ono Nan
+-8+1/2              → Neno Pen Oko Wen Ono Ten
 ```
+
 
 ---
 
 ## Percentages — noke
 **noke** expresses percentages.
 
-Rule:
+Rules:
 
-- Can split "noken" into "n oken", the percentage symbol is always at the end of a decimal number, so it merges with the ending -n
-- Adds more context, makes the assumption that the strings of digits represent numeric values
+- Latin nanpa-linja-n numeric proper name: ...noke...
+- Numeric Cartouche [... nena open kipisi en ...]
+- Abbreviated Cartouche: [... kipisi ...]
+- Abbreviation #~: ...ok
+- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
+- the percentage indicator ...noke... can be split into words ...n Oken in a proper name
+- the percentage indicator always occurs at the end of the numeric expression, so always gets the final -n appended
 
 
 Examples:
 
 ```
-5%          → nelen oken
-10.5%       → newenin one len oken
-1000%       → newenininin oken
-2,000%      → neten eken oken
+5%          → Nelen Oken
+10.5%       → Newenin One Len Oken
+1000%       → Newenininin Oken
+2,000%      → Neten Eken Oken
 ```
+
+---
+
+## Scientific Notation — neko
+**neko** expresses scientific notation.
+
+Rules:
+
+- Latin nanpa-linja-n numeric proper name: ...neko...
+- Numeric Cartouche [... nena en kala open ...]
+- Abbreviated Cartouche: [... kala ...]
+- Abbreviation #~: ...ko...
+- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
+- the scientific notation indicator ...neko... can be split into words ...n Eko ... in a proper name
+- the scientific notation indicator is used for both the 'by' before the 10 and the 'power' after the 10
+- the exponent must be an integer
+
+
+Examples:
+
+```
+4.5*10^3    → Nenan One Len Eko Wenin Eko Sen
+4.5*10+3    → Nenan One Len Eko Wenin Eko Sen
+4.5e3       → Nenan One Len Eko Wenin Eko Sen
+4.5e+3      → Nenan One Len Eko Wenin Eko Sen
+4.5*10^-3   → Nenan One Len Eko Wenin Eko Nosen
+4.5*10-3    → Nenan One Len Eko Wenin Eko Nosen
+4.5e-3      → Nenan One Len Eko Wenin Eko Nosen
+-4.5e-3     → Neno Nan One Len Eko Wenin Eko Nosen
+```
+
+
+---
+
+## No value break — nene
+**nene** has no numeric value and may be used to break up long sequences of decimal digits without affecting the value.
+
+Rules:
+
+- Latin nanpa-linja-n numeric proper name: ...nene...
+- Numeric Cartouche [... nena en nena en ...]
+- Abbreviated Cartouche: Nothing (will no appear in the abbrevaited cartouche)
+- Abbreviation #~: None (There is no 'n' or no 'e' in the nanpa-linja-n abbreviation)
+- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
+- the no value indicator ...nene... can be split into words ...n Ene ... in a proper name
+- useful in communicating long digit sequences like phone numbers, we can express the natural breaks on the long digit sequence without affecting the value
+
+
+Examples:
+
+```
+321-555-6789  → Nesetewen Ene Lelelen Ene Numepejen
+3.141592      → Nesen One Wenawen Ene Lejeten
+```
+
 
 ---
 
@@ -375,69 +669,6 @@ Examples:
 - (Can be easily parsed with lex/yacc)
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
 
-
-### none
-- Contain **o**, which no digit word has
-- Do not end in **-n** signalling more of the number to follow
-- Never occurs at the start of a numeric expression
-- Can be split as "n One ", to split up long sequences
-- Adds more context, makes the assumption that the strings of digits represent numeric values
-
-### no
-- Contains **o**, which no digit word has
-- Does not end in **-n** signalling more of the number to follow
-- Only ever occurs at the start of a numeric expression (after ne-)
-- Can be written as "no ", to split up long sequences
-- Adds more context, makes the assumption that the string of digits represents a numeric value
-
-### nono
-- Contains **o**, which no digit word has
-- Does not end in **-n** signalling more of the number to follow
-- Can be split as "n Ono ", to split up long sequences
-- Adds more context, makes the assumption that the strings of digits represent numeric values
-
-### nonono
-- Contains **o**, which no digit word has
-- Does not end in **-n** signalling more of the number to follow
-- Can be split as "n Onono ", to split up long sequences
-- Adds more context, makes the assumption that the strings of digits represent numeric values
-
-### noko
-- Contains **o**, which no digit word has
-- Does not end in **-n** signalling more of the number to follow
-- Can be split as "n Oko ", to split up long sequences
-- Shorter alternative to nonono
-- Adds more context, makes the assumption that the strings of digits represent numeric values
-
-### neke / nekeke / nekekeke / neke...ke
-- Contain **k**, which no digit word has
-- Do not end in **-n** signalling more of the number to follow
-- Can be used as ISO-block marker in large numbers
-- Never appears in decimal part of number, only in the integer part
-- Can be split as "n Eke ", to split up long sequences
-- Adds more context, makes the assumption that the string of digits represents a numeric value
-
-### neken / nekeken / nekekeken /neke...ken
-- Contain **k**, which no digit word has
-- Zero-block shortcuts for clear large numbers, can only appear at the end of large numbers
-- Can appear as "n Eken", naturally joining with the **-n** at the end of numbers to signal end of numeric description
-- Never appears in decimal part of number, only in the integer part
-- Adds more context, makes the assumption that the string of digits represents a numeric value
-- can repeat ke letter group any number of times to express more ISO 000 block groupings at the end of numbers (e.g. "n Ekeken Ekekeken Ekekeken" )
-
-### noken
-- Contain **k**, which no digit word has
-- Can appear as "n Oken", naturally joining with the **-n** at the end of numbers to signal end of numeric description
-- Adds more context, makes the assumption that the string of digits represents a numeric value
-
-### nene
-- Contains **nene**, which no digit word has
-- A bridge joining different parts of the whole string of digits
-- Have no value, only used to break up long sequences of digits
-- Can appear in decimal part and in the integer part of large numbers
-- Can be split as "n Ene ", to split up long sequences
-- Never occurs at the start of a numeric expression or after a decimal point
-- Does not add more context, makes no assumption that the string of digits represents a numeric value
 
 ### sitelen pona
 - **nanpa-linja-n** numeric glyphs are always presented inside a cartouche and always starting with the nanpa glyph
