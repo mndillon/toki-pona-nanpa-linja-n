@@ -615,7 +615,7 @@ Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...nene...
 - Numeric Cartouche [... nena en nena en ...]
-- Abbreviated Cartouche: Nothing (will no appear in the abbrevaited cartouche)
+- Abbreviated Cartouche: Nothing (will not appear in the abbrevaited cartouche)
 - Abbreviation #~: None (There is no 'n' or no 'e' in the nanpa-linja-n abbreviation)
 - Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
 - the no value indicator ...nene... can be split into words ...n Ene ... in a proper name
