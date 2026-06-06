@@ -500,7 +500,7 @@ Examples:
 ---
 
 ## Fractions — nono
-**nono** split the numerator and demonitor of a numeric fraction.
+**nono** split the numerator and denominator of a numeric fraction.
 
 Rule:
 Rules:
