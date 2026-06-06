@@ -2190,7 +2190,7 @@ function wireHaloControls() {
     }
 
     const DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
-    const TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","NOKO","OK","NE","NO"];
+    const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
 
     function nanpaCapsHasAtLeastOneDigitToken(tokens) {
       for (const t of (tokens ?? [])) {
@@ -2292,6 +2292,13 @@ function wireHaloControls() {
           continue;
         }
 
+        if (body.startsWith("KO", i)) {
+          ensureNEBeforeOperatorRun();
+          tokens.push("KO");
+          i += 2;
+          continue;
+        }
+
         if (ch === "O") {
           let j = i;
           while (j < body.length && body[j] === "O") j++;
@@ -2299,7 +2306,7 @@ function wireHaloControls() {
           if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
 
           if (count === 1) {
-            if (i === 0) tokens.push("NO");
+            if (i === 0 || tokens[tokens.length - 1] === "KO") tokens.push("NO");
             else tokens.push("NO","NE");
           } else {
             tokens.push("NO".repeat(count)); // NONO / NONONO
@@ -2364,11 +2371,23 @@ function wireHaloControls() {
       const N_END_WORD = "nanpa";
 
       let afterStartingNe = false;
+      let afterScientificMarker = false;
 
       for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i];
 
         if (t === "NE") {
+          const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
+          if (nxt === "KO") {
+            if (out.length === 0) out.push("nanpa", E_WORD, "kala", "open");
+          else out.push(N_WORD, E_WORD_FOR_NE_AFTER_START, "kala", "open");
+            afterStartingNe = false;
+            afterScientificMarker = true;
+            i += 1;
+            continue;
+          }
+
+          afterScientificMarker = false;
           if (out.length === 0) {
             out.push("nanpa", E_WORD);
             afterStartingNe = true;
@@ -2381,6 +2400,7 @@ function wireHaloControls() {
 
         if (DIGIT_TOKENS.has(t)) {
           afterStartingNe = false;
+          afterScientificMarker = false;
           const digitWord = TOKEN_TO_DIGIT_WORD[t];
           if (t === "NI" || t === "NA" || t === "NU") out.push(N_WORD, digitWord);
           else out.push(digitWord, E_WORD);
@@ -2388,9 +2408,10 @@ function wireHaloControls() {
         }
 
         if (t === "NO") {
-          if (afterStartingNe) {
+          if (afterStartingNe || afterScientificMarker) {
             out.push(N_WORD, WORD_FOR_NEGATIVE_SIGN);
             afterStartingNe = false;
+            afterScientificMarker = false;
             continue;
           }
 
@@ -3181,6 +3202,39 @@ function wireHaloControls() {
       return encodeSingleNumberSegment(raw, true);
     }
 
+    function tryParseScientificDecimalToCaps(rawValue, opts = {}) {
+      let raw = String(rawValue ?? "").trim();
+      if (!raw) return null;
+      raw = raw.replace(/[−‒–—]/g, "-");
+
+      const mantissaPattern = String.raw`([+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*)))`;
+      const eRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*[eE]\s*([+-]?\d+)\s*$`);
+      const powWithCaretRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*\*\s*10\s*\^\s*([+-]?\d+)\s*$`);
+      const powSignedNoCaretRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*\*\s*10\s*([+-]\d+)\s*$`);
+
+      const m = raw.match(eRe) || raw.match(powWithCaretRe) || raw.match(powSignedNoCaretRe);
+      if (!m) return null;
+
+      let mantissa = String(m[1] ?? "").trim();
+      let exponent = String(m[2] ?? "").trim();
+      if (!mantissa || !exponent) return null;
+      if (mantissa.startsWith("+")) mantissa = mantissa.slice(1).trim();
+      if (exponent.startsWith("+")) exponent = exponent.slice(1).trim();
+      if (!/^[-]?\d+$/.test(exponent)) return null;
+
+      const mantissaCaps = numberStrToNanpaCaps(mantissa, opts);
+      const exponentCaps = numberStrToNanpaCaps(exponent, { ...opts, groupFractionTriplets: false });
+      if (!mantissaCaps.endsWith("N") || !exponentCaps.startsWith("NE") || !exponentCaps.endsWith("N")) return null;
+
+      const mantissaCore = mantissaCaps.slice(0, -1);
+      const exponentCore = exponentCaps.slice(2, -1);
+      if (!mantissaCore || !exponentCore) return null;
+
+      const caps = mantissaCore + "NEKO" + "WENI" + "NEKO" + exponentCore + "N";
+      tokenizeNanpaCaps(caps);
+      return caps;
+    }
+
     function decimalStringToCaps(rawDecimal, opts = {}) {
       // NEW: support trailing percent sign and inject OK into caps
       let raw = String(rawDecimal ?? "").trim();
@@ -3193,10 +3247,13 @@ function wireHaloControls() {
       }
 
       const normalized = normalizeVulgarFractionInput(raw);
+      const scientificCaps = tryParseScientificDecimalToCaps(normalized, opts);
 
-      const baseCaps = looksLikeNanpaCaps(normalized)
-        ? normalized.toUpperCase()
-        : numberStrToNanpaCaps(normalized, opts);
+      const baseCaps = scientificCaps
+        ? scientificCaps
+        : looksLikeNanpaCaps(normalized)
+          ? normalized.toUpperCase()
+          : numberStrToNanpaCaps(normalized, opts);
 
       // Inject OK before final N (so tokenizer remains valid)
       const caps = percent
@@ -3213,6 +3270,28 @@ function wireHaloControls() {
       if (!original) return [];
 
       const s = original.replace(/[−‒–—]/g, "-");
+
+      const scientificHits = [];
+      const scientificRe = /(^|[^A-Za-z0-9_.])([+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*))(?:\s*[eE]\s*[+-]?\d+|\s*\*\s*10\s*\^\s*[+-]?\d+|\s*\*\s*10\s*[+-]\d+))(?![A-Za-z0-9_.])/g;
+      let sm;
+      while ((sm = scientificRe.exec(s)) !== null) {
+        const lead = sm[1] ?? "";
+        const candidate = String(sm[2] ?? "").trim();
+        if (!candidate) continue;
+        const start = (sm.index | 0) + String(lead).length;
+        const end = start + candidate.length;
+        try {
+          const caps = decimalStringToCaps(candidate, {
+            thousandsChar: ",",
+            groupFractionTriplets: true,
+            fractionGroupSize: 3,
+            ...opts,
+          });
+          scientificHits.push({ kind: "decimal", match: candidate, index: start, end, caps });
+        } catch {
+          // ignore
+        }
+      }
 
       const vulgarChars = "¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞↉";
       const re = new RegExp(
@@ -3261,6 +3340,7 @@ function wireHaloControls() {
         }
       }
 
+      results.push(...scientificHits);
       results.sort((a, b) => a.index - b.index || b.end - a.end);
       const filtered = [];
       let lastEnd = -1;
@@ -4810,7 +4890,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const sv = String(tok ?? "");
         if (!sv) return { lead: "", core: "", trail: "" };
         const numericLike = /[0-9]/.test(sv) || /^-?\.\d/.test(sv) || /^-?\d/.test(sv);
-        const coreChar = numericLike ? /[#~A-Za-z0-9^<>.,_-]/ : /[#~A-Za-z0-9^<>]/;
+        const coreChar = numericLike ? /[#~A-Za-z0-9^<>.,_\-*]/ : /[#~A-Za-z0-9^<>]/;
         let a = 0;
         let b = sv.length;
         while (a < b && !coreChar.test(sv[a])) a++;
@@ -6830,7 +6910,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   ]);
 
   const _NP_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
-  const _NP_TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","NOKO","OK","NE","NO"];
+  const _NP_TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
 
   const _NP_NUMBER_CODE_LETTER_TO_PAIR = {
     "I":"NI","W":"WE","T":"TE","S":"SE","A":"NA",
@@ -6968,6 +7048,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         continue;
       }
 
+      if (body.startsWith("KO", i)) {
+        ensureNEBeforeOperatorRun();
+        tokens.push("KO");
+        i += 2;
+        continue;
+      }
+
       if (ch === "O") {
         let j = i;
         while (j < body.length && body[j] === "O") j++;
@@ -6975,7 +7062,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
 
         if (count === 1) {
-          if (i === 0) tokens.push("NO");
+          if (i === 0 || tokens[tokens.length - 1] === "KO") tokens.push("NO");
           else tokens.push("NO","NE");
         } else {
           tokens.push("NO".repeat(count));
@@ -7025,11 +7112,23 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const N_END_WORD = "nanpa";
 
     let afterStartingNe = false;
+    let afterScientificMarker = false;
 
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i];
 
       if (t === "NE") {
+        const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
+        if (nxt === "KO") {
+          if (out.length === 0) out.push("nanpa", E_WORD, "kala", "open");
+          else out.push(N_WORD, E_WORD_FOR_NE_AFTER_START, "kala", "open");
+          afterStartingNe = false;
+          afterScientificMarker = true;
+          i += 1;
+          continue;
+        }
+
+        afterScientificMarker = false;
         if (out.length === 0) {
           out.push("nanpa", E_WORD);
           afterStartingNe = true;
@@ -7042,6 +7141,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       if (_NP_DIGIT_TOKENS.has(t)) {
         afterStartingNe = false;
+        afterScientificMarker = false;
         const digitWord = _NP_TOKEN_TO_DIGIT_WORD[t];
         if (t === "NI" || t === "NA" || t === "NU") out.push(N_WORD, digitWord);
         else out.push(digitWord, E_WORD);
@@ -7049,9 +7149,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
 
       if (t === "NO") {
-        if (afterStartingNe) {
+        if (afterStartingNe || afterScientificMarker) {
           out.push(N_WORD, _NP_WORD_FOR_NEGATIVE_SIGN);
           afterStartingNe = false;
+          afterScientificMarker = false;
           continue;
         }
 
@@ -7695,6 +7796,39 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return encodeSingleNumberSegment(raw, true);
   }
 
+  function _npTryParseScientificDecimalToCaps(rawValue, opts = {}) {
+    let raw = String(rawValue ?? "").trim();
+    if (!raw) return null;
+    raw = raw.replace(/[−‒–—]/g, "-");
+
+    const mantissaPattern = String.raw`([+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*)))`;
+    const eRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*[eE]\s*([+-]?\d+)\s*$`);
+    const powWithCaretRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*\*\s*10\s*\^\s*([+-]?\d+)\s*$`);
+    const powSignedNoCaretRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*\*\s*10\s*([+-]\d+)\s*$`);
+
+    const m = raw.match(eRe) || raw.match(powWithCaretRe) || raw.match(powSignedNoCaretRe);
+    if (!m) return null;
+
+    let mantissa = String(m[1] ?? "").trim();
+    let exponent = String(m[2] ?? "").trim();
+    if (!mantissa || !exponent) return null;
+    if (mantissa.startsWith("+")) mantissa = mantissa.slice(1).trim();
+    if (exponent.startsWith("+")) exponent = exponent.slice(1).trim();
+    if (!/^[-]?\d+$/.test(exponent)) return null;
+
+    const mantissaCaps = _npNumberStrToNanpaCaps(mantissa, opts);
+    const exponentCaps = _npNumberStrToNanpaCaps(exponent, { ...opts, groupFractionTriplets: false });
+    if (!mantissaCaps.endsWith("N") || !exponentCaps.startsWith("NE") || !exponentCaps.endsWith("N")) return null;
+
+    const mantissaCore = mantissaCaps.slice(0, -1);
+    const exponentCore = exponentCaps.slice(2, -1);
+    if (!mantissaCore || !exponentCore) return null;
+
+    const caps = mantissaCore + "NEKO" + "WENI" + "NEKO" + exponentCore + "N";
+    _npTokenizeNanpaCaps(caps);
+    return caps;
+  }
+
   function _npDecimalStringToCaps(rawDecimal, opts = {}) {
     let raw = String(rawDecimal ?? "").trim();
     let percent = false;
@@ -7705,10 +7839,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     const normalized = _npNormalizeVulgarFractionInput(raw);
+    const scientificCaps = _npTryParseScientificDecimalToCaps(normalized, opts);
 
-    const baseCaps = _npLooksLikeNanpaCaps(normalized)
-      ? normalized.toUpperCase()
-      : _npNumberStrToNanpaCaps(normalized, opts);
+    const baseCaps = scientificCaps
+      ? scientificCaps
+      : _npLooksLikeNanpaCaps(normalized)
+        ? normalized.toUpperCase()
+        : _npNumberStrToNanpaCaps(normalized, opts);
 
     const caps = percent
       ? (baseCaps.slice(0, -1) + "OKN")
@@ -7842,6 +7979,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           outStr += "no".repeat(countNo);
           if ((i + 2 * countNo) < end) outStr += " ";
           i += 2 + 2 * countNo; continue;
+        }
+
+        if (pair === "NE" && nextPair === "KO") {
+          outStr += "n ";
+          outStr += "eko";
+          if ((i + 4) < end) outStr += " ";
+          i += 4; continue;
         }
 
         if (pair === "NE" && nextPair === "KE") {
@@ -8015,6 +8159,24 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       const finalNIdx = tokens.length - 1;
 
+      const sciMarkers = [];
+      for (let si = 1; si < finalNIdx - 1; si++) {
+        if (tokens[si] === "NE" && tokens[si + 1] === "KO") sciMarkers.push(si);
+      }
+      if (sciMarkers.length === 2) {
+        const firstSci = sciMarkers[0];
+        const secondSci = sciMarkers[1];
+        const baseTokens = tokens.slice(firstSci + 2, secondSci);
+        if (baseTokens.length === 2 && baseTokens[0] === "WE" && baseTokens[1] === "NI") {
+          const mantissaStr = decodeSegmentTokensToString(tokens.slice(1, firstSci), decodeOpts);
+          const exponentStr = decodeSegmentTokensToString(tokens.slice(secondSci + 2, finalNIdx), decodeOpts);
+          if (mantissaStr && exponentStr) {
+            const base = `${mantissaStr}e${/^-/.test(exponentStr) ? exponentStr : "+" + exponentStr}`;
+            return hasPercent ? (base + "%") : base;
+          }
+        }
+      }
+
       const mixedIdx = (() => {
         const ni = tokens.indexOf("NONONO");
         const nk = tokens.indexOf("NOKO");
@@ -8066,7 +8228,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       } else {
         const parsed = _npTryParseNanpaLinjanNumberCodeToCaps(s);
         if (parsed?.caps) caps = parsed.caps;
-        else caps = _npNumberStrToNanpaCaps(normalized, {
+        else caps = _npDecimalStringToCaps(normalized, {
           thousandsChar: ",",
           groupFractionTriplets: true,
           fractionGroupSize: 3,
