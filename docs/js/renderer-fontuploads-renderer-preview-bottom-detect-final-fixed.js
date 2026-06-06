@@ -2275,6 +2275,12 @@ function wireHaloControls() {
       const tokens = ["NE"];
       let i = 0;
 
+      const scientificMarkerIndex = body.indexOf("KOWIKO");
+      const hasScientificNumberCodeMarker =
+        scientificMarkerIndex > 0 &&
+        body[scientificMarkerIndex - 1] !== "O" &&
+        (scientificMarkerIndex + "KOWIKO".length) < body.length;
+
       function ensureNEBeforeOperatorRun() {
         if (tokens[tokens.length - 1] !== "NE") tokens.push("NE");
       }
@@ -2292,7 +2298,16 @@ function wireHaloControls() {
           continue;
         }
 
-        if (body.startsWith("KO", i)) {
+        // Scientific #~ notation uses the full interior signature KOWIKO:
+        //   <mantissa-code> KO WI KO <exponent-code>
+        // A bare KO elsewhere must keep its older meaning as K + O. For example,
+        // #~WIkooS must continue to decode as 10,000/3, not 10^3.
+        // #~JokoWIkooS must also stay integer+fraction because KOWIKO is part of OKO.
+        if (
+          hasScientificNumberCodeMarker &&
+          body.startsWith("KO", i) &&
+          (i === scientificMarkerIndex || i === scientificMarkerIndex + 4)
+        ) {
           ensureNEBeforeOperatorRun();
           tokens.push("KO");
           i += 2;
@@ -2380,7 +2395,7 @@ function wireHaloControls() {
           const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
           if (nxt === "KO") {
             if (out.length === 0) out.push("nanpa", E_WORD, "kala", "open");
-          else out.push(N_WORD, E_WORD_FOR_NE_AFTER_START, "kala", "open");
+            else out.push(N_WORD, E_WORD_FOR_NE_AFTER_START, "kala", "open");
             afterStartingNe = false;
             afterScientificMarker = true;
             i += 1;
@@ -3220,7 +3235,7 @@ function wireHaloControls() {
       if (!mantissa || !exponent) return null;
       if (mantissa.startsWith("+")) mantissa = mantissa.slice(1).trim();
       if (exponent.startsWith("+")) exponent = exponent.slice(1).trim();
-      if (!/^[-]?\d+$/.test(exponent)) return null;
+      if (!/^-?\d+$/.test(exponent)) return null;
 
       const mantissaCaps = numberStrToNanpaCaps(mantissa, opts);
       const exponentCaps = numberStrToNanpaCaps(exponent, { ...opts, groupFractionTriplets: false });
@@ -4890,7 +4905,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const sv = String(tok ?? "");
         if (!sv) return { lead: "", core: "", trail: "" };
         const numericLike = /[0-9]/.test(sv) || /^-?\.\d/.test(sv) || /^-?\d/.test(sv);
-        const coreChar = numericLike ? /[#~A-Za-z0-9^<>.,_\-*]/ : /[#~A-Za-z0-9^<>]/;
+        const coreChar = numericLike ? /[#~A-Za-z0-9^<>.,_-]/ : /[#~A-Za-z0-9^<>]/;
         let a = 0;
         let b = sv.length;
         while (a < b && !coreChar.test(sv[a])) a++;
@@ -7035,6 +7050,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const tokens = ["NE"];
     let i = 0;
 
+    const scientificMarkerIndex = body.indexOf("KOWIKO");
+    const hasScientificNumberCodeMarker =
+      scientificMarkerIndex > 0 &&
+      body[scientificMarkerIndex - 1] !== "O" &&
+      (scientificMarkerIndex + "KOWIKO".length) < body.length;
+
     function ensureNEBeforeOperatorRun() {
       if (tokens[tokens.length - 1] !== "NE") tokens.push("NE");
     }
@@ -7048,7 +7069,16 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         continue;
       }
 
-      if (body.startsWith("KO", i)) {
+      // Scientific #~ notation uses the full interior signature KOWIKO:
+      //   <mantissa-code> KO WI KO <exponent-code>
+      // A bare KO elsewhere must keep its older meaning as K + O. For example,
+      // #~WIkooS must continue to decode as 10,000/3, not 10^3.
+      // #~JokoWIkooS must also stay integer+fraction because KOWIKO is part of OKO.
+      if (
+        hasScientificNumberCodeMarker &&
+        body.startsWith("KO", i) &&
+        (i === scientificMarkerIndex || i === scientificMarkerIndex + 4)
+      ) {
         ensureNEBeforeOperatorRun();
         tokens.push("KO");
         i += 2;
@@ -7814,7 +7844,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (!mantissa || !exponent) return null;
     if (mantissa.startsWith("+")) mantissa = mantissa.slice(1).trim();
     if (exponent.startsWith("+")) exponent = exponent.slice(1).trim();
-    if (!/^[-]?\d+$/.test(exponent)) return null;
+    if (!/^-?\d+$/.test(exponent)) return null;
 
     const mantissaCaps = _npNumberStrToNanpaCaps(mantissa, opts);
     const exponentCaps = _npNumberStrToNanpaCaps(exponent, { ...opts, groupFractionTriplets: false });
@@ -7979,13 +8009,6 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           outStr += "no".repeat(countNo);
           if ((i + 2 * countNo) < end) outStr += " ";
           i += 2 + 2 * countNo; continue;
-        }
-
-        if (pair === "NE" && nextPair === "KO") {
-          outStr += "n ";
-          outStr += "eko";
-          if ((i + 4) < end) outStr += " ";
-          i += 4; continue;
         }
 
         if (pair === "NE" && nextPair === "KE") {
@@ -8158,24 +8181,6 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
 
       const finalNIdx = tokens.length - 1;
-
-      const sciMarkers = [];
-      for (let si = 1; si < finalNIdx - 1; si++) {
-        if (tokens[si] === "NE" && tokens[si + 1] === "KO") sciMarkers.push(si);
-      }
-      if (sciMarkers.length === 2) {
-        const firstSci = sciMarkers[0];
-        const secondSci = sciMarkers[1];
-        const baseTokens = tokens.slice(firstSci + 2, secondSci);
-        if (baseTokens.length === 2 && baseTokens[0] === "WE" && baseTokens[1] === "NI") {
-          const mantissaStr = decodeSegmentTokensToString(tokens.slice(1, firstSci), decodeOpts);
-          const exponentStr = decodeSegmentTokensToString(tokens.slice(secondSci + 2, finalNIdx), decodeOpts);
-          if (mantissaStr && exponentStr) {
-            const base = `${mantissaStr}e${/^-/.test(exponentStr) ? exponentStr : "+" + exponentStr}`;
-            return hasPercent ? (base + "%") : base;
-          }
-        }
-      }
 
       const mixedIdx = (() => {
         const ni = tokens.indexOf("NONONO");
