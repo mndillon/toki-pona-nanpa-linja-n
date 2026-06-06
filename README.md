@@ -500,7 +500,7 @@ Examples:
 ---
 
 ## Fractions — nono
-**nono** expresses fractions “over / divided by”.
+**nono** split the numerator and demonitor of a numeric fraction.
 
 Rule:
 Rules:
@@ -529,7 +529,7 @@ Examples:
 ---
 
 ## Fractions — noko
-**noko** splite the integer from the fraction part of a numeric fraction
+**noko** split the integer from the fraction part of a numeric fraction.
 
 Rules:
 
