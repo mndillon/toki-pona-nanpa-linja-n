@@ -476,6 +476,7 @@ Rules:
 - Abbreviation #~: ...k...
 - Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
 - the ISO thousands separator ...neke... can be split into words ...n Eke ... in a proper name
+- if the numeric value ends in blocks of thousands, then the proper name can end with ... Eken or ... Ekeken or ... Ekekeken depending on the number of full IOS thousands blocks the numeric value ends with
 
 Examples:
 
