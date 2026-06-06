@@ -590,7 +590,7 @@ Rules:
 - the scientific notation indicator ...neko... can be split into words ...n Eko ... in a proper name
 - the scientific notation indicator is used for both the 'by' before the 10 and the 'power' after the 10
 - the exponent must be an integer
-- the abbreviation ...okoWIkoo... will be considered to encode an integer and fraction, as it can never occur in scientific notation
+- the abbreviation ...okoWIkoo... will be considered an integer and fraction encoding, as it can never occur in scientific notation
 
 
 Examples:
