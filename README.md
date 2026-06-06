@@ -582,9 +582,9 @@ Examples:
 
 Rules:
 
-- Latin nanpa-linja-n numeric proper name: ...neko...
-- Numeric Cartouche [... nena en kala open ...]
-- Abbreviated Cartouche: [... kala ...]
+- Latin nanpa-linja-n numeric proper name: ...nekowenineko...
+- Numeric Cartouche [... nena en kala open wan en nena ijo nena en kala open ...]
+- Abbreviated Cartouche: [... kala wan ijo kala ...]
 - Abbreviation #~: ...koWIko...
 - Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
 - the scientific notation indicator ...neko... can be split into words ...n Eko ... in a proper name
