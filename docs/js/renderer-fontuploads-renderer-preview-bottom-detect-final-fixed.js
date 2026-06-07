@@ -8001,6 +8001,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           i += 4; continue;
         }
 
+        if (pair === "NE" && nextPair === "KO" && i > 0) {
+          outStr += "n ";
+          outStr += "eko";
+          if ((i + 4) < end) outStr += " ";
+          i += 4; continue;
+        }
+
         if (pair === "NO" && nextPair === "NO" && i > 0) {
           outStr += "n ";
           outStr += "o";
@@ -8210,6 +8217,28 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         return hasPercent ? (base + "%") : base;
       }
 
+      const scientificMarkerIdx = (() => {
+        for (let i = 1; i + 5 < finalNIdx; i++) {
+          if (
+            tokens[i] === "NE" &&
+            tokens[i + 1] === "KO" &&
+            tokens[i + 2] === "WE" &&
+            tokens[i + 3] === "NI" &&
+            tokens[i + 4] === "NE" &&
+            tokens[i + 5] === "KO"
+          ) return i;
+        }
+        return -1;
+      })();
+
+      if (scientificMarkerIdx > 1) {
+        const mantissaStr = decodeSegmentTokensToString(tokens.slice(1, scientificMarkerIdx), decodeOpts);
+        const exponentStr = decodeSegmentTokensToString(tokens.slice(scientificMarkerIdx + 6, finalNIdx), decodeOpts);
+        if (!mantissaStr || !exponentStr) return null;
+        const base = `${mantissaStr}e${exponentStr}`;
+        return hasPercent ? (base + "%") : base;
+      }
+
       const base = decodeSegmentTokensToString(tokens.slice(1, finalNIdx), decodeOpts);
       if (!base) return null;
       return hasPercent ? (base + "%") : base;
@@ -8346,6 +8375,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (pair === "NE" && nextPair === "NE") { outStr += "n "; outStr += "ene "; i += 4; continue; }
         if (pair === "NO" && nextPair === "NE" && i > 0) { outStr += "n "; outStr += "one "; i += 4; continue; }
         if (pair === "NO" && nextPair === "KO" && i > 0) { outStr += "n "; outStr += "oko"; if ((i + 4) < end) outStr += " "; i += 4; continue; }
+        if (pair === "NE" && nextPair === "KO" && i > 0) { outStr += "n "; outStr += "eko"; if ((i + 4) < end) outStr += " "; i += 4; continue; }
         if (pair === "NO" && nextPair === "NO" && i > 0) {
           outStr += "n ";
           outStr += "o";
@@ -8539,6 +8569,28 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const denStr = decodeSegmentTokensToString(tokens.slice(fracIdx + 1, finalNIdx), opts);
       if (!numStr || !denStr) return null;
       const base = `${numStr}/${denStr}`;
+      return hasPercent ? (base + "%") : base;
+    }
+
+    const scientificMarkerIdx = (() => {
+      for (let i = 1; i + 5 < finalNIdx; i++) {
+        if (
+          tokens[i] === "NE" &&
+          tokens[i + 1] === "KO" &&
+          tokens[i + 2] === "WE" &&
+          tokens[i + 3] === "NI" &&
+          tokens[i + 4] === "NE" &&
+          tokens[i + 5] === "KO"
+        ) return i;
+      }
+      return -1;
+    })();
+
+    if (scientificMarkerIdx > 1) {
+      const mantissaStr = decodeSegmentTokensToString(tokens.slice(1, scientificMarkerIdx), opts);
+      const exponentStr = decodeSegmentTokensToString(tokens.slice(scientificMarkerIdx + 6, finalNIdx), opts);
+      if (!mantissaStr || !exponentStr) return null;
+      const base = `${mantissaStr}e${exponentStr}`;
       return hasPercent ? (base + "%") : base;
     }
 
