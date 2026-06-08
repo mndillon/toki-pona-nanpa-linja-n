@@ -157,6 +157,8 @@ Rules:
 - Numeric Cartouche [nanpa en ... nanpa]
 - Abbreviated Cartouche: [nanpa ... nanpa]
 - Abbreviation #~: None (There is no 'n' or no 'e' in the nanpa-linja-n abbreviation)
+- Abbreviated cartouches are numeric cartouches with the interior words 'nena', 'en' and 'open' removed for clarity of rendering.
+- Abbreviated cartouches are pronounced in exactly the same way as the corresponding full numeric cartouche, they only facilitate clearer rendering.
 - Notes: A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation, each separate word will start with a capital letter
 - the final -n is always appended to the final nanpa-linja-n proper name word.
 
@@ -433,7 +435,7 @@ Rules:
 - Abbreviation #~: o...
 - Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
 - the negative indicator ...no... can be split into words ...no  ... in a proper name
-- the negative indicator ...no... must only appear at the start of a number, so usually appears as Neno ...
+- the negative indicator ...no... must only appear at the start of a number (or exponent), so usually appears as Neno ...
 
 Examples:
 
@@ -457,7 +459,7 @@ Rules:
 - Abbreviation #~: ...o...
 - Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
 - the decimal separator ...none... can be split into words ...n One ... in a proper name
-- there must always be at least one digit before the decimal point
+- there must always be at least one digit before and after the decimal point
 
 Examples:
 
