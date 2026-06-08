@@ -536,7 +536,7 @@ Rules:
 - Abbreviation #~: ...koWIko...
 - Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
 - the scientific notation indicator ...neko... can be split into words ...n Eko ... in a proper name
-- the scientific notation indicator is used for both the 'by' before the 10 and the 'power' after the 10
+- the scientific notation indicator is used for both the 'by' before the 10 and the 'exponent' after the 10
 - the exponent must be an integer
 - the abbreviation ...okoWIkoo... will be considered an integer and fraction encoding, as it can never occur in scientific notation
 
