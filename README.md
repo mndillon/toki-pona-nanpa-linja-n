@@ -39,24 +39,6 @@ This system aims to follow that same idea: staying as simple as possible while s
 It’s not meant to replace anything—just to offer a tool that fits naturally into the language’s minimal design.
 
 
-## Digit Symbol Words (0–9)
-Each digit symbol uses a distinct, CVN form word and does not conflict with any Toki Pona words.
-The digit words all start with 'Ne' and have been carefully picked, so that they align with the corresponding glyphs (see below).
-If we ignore 'n' and ignore 'e' in the words, then each digit word maps to a different, unique letter:
-
-```
-"0"  Nenin  I
-"1"  Newen  W
-"2"  Neten  T
-"3"  Nesen  S
-"4"  Nenan  A
-"5"  Nelen  L
-"6"  Nenun  U
-"7"  Nemen  M
-"8"  Nepen  P
-"9"  Nejen  J
-```
-
 ---
 
 ## sitelen pona nanpa-linja-n cartouches
@@ -65,42 +47,17 @@ Sitelen Cartouche Summary:
 
 <img src="images/nanpa_linja_n_examples_with_rationale_fact_sheet.png" width="1024"/>
 
-**nanpa-lnja-n** unique letter to digit mapping (number → cartouche → proper name → unique number code → same number):
-
-| digit | glyph  | cartouche letter | comments                                                                                       |
-|-------|--------|------------------|------------------------------------------------------------------------------------------------|
-| 0     | ijo    | i                | unique letter to digit mapping                                                                 |
-| 1     | wan    | w                | unique letter to digit mapping                                                                 |
-| 2     | tu     | t                | unique letter to digit mapping                                                                 |
-| 3     | seli   | s                | unique letter to digit mapping                                                                 |
-| 4     | awen   | a                | unique letter to digit mapping                                                                 |
-| 5     | luka   | l                | unique letter to digit mapping                                                                 |
-| 6     | utala  | u                | unique letter to digit mapping                                                                 |
-| 7     | mun    | m                | unique letter to digit mapping                                                                 |
-| 8     | pipi   | p                | unique letter to digit mapping                                                                 |
-| 9     | jo     | j                | unique letter to digit mapping                                                                 |
-| -     | ona    | o                | negative sign, only at start                                                                   |
-| .     | o      | o                | decimal point, never at start, never at end                                                    |
-| ,     | kulupu | k                | ISO block separator                                                                            |
-| %     | kipisi | k                | percent, only at end                                                                           |
-|       | open   | o                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
-| :     | kasi   | k                | used to split dates and times                                                                  |
-|       | kala   | k                | used to separate integers from fraction parts and also used in scientific notation             |
-|       | nanpa  | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
-|       | nena   | n                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
-|       | en     | e                | ignored when determining decimal value, only used to create syllables in cartouche proper name |
-
 
 ---
 
 ## Unique Numeric Codes:
-Every decimal number can be encoded into a unique cartouche.
-The numeric cartouche can be spelled in Latin script as a unique proper name for the number.
-The proper name for the number gives a unique abbreviation for the number.
-The unique abbreviation for the number can be used to reconstruct the original number.
+Every decimal number can be encoded into a unique cartouche (and corresponding abbrevaited cartouche).
+The numeric cartouche can be spelled in Latin script as a unique nanpa-linja-n proper name for the number.
+The proper name for the number can be used to communicate and reconstruct the original number.
+The proper name for the number also gives a unique abbreviation for the number.
 
 
-This gives us four uniquely decodable representations of the same underlying number: standard decimal notation, sitelen pona in a cartouche, Latin pona proper name, and a unique numeric abbreviation.
+This gives us four (or five) uniquely decodable representations of the same underlying number: standard decimal notation, sitelen pona in a cartouche (or abbreviated cartouche), Latin pona proper name, and a unique numeric abbreviation.
 
 
 Example:
