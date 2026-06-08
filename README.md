@@ -41,38 +41,25 @@ It’s not meant to replace anything—just to offer a tool that fits naturally 
 
 ## Digit Symbol Words (0–9)
 Each digit symbol uses a distinct, CVN form word and does not conflict with any Toki Pona words.
-The digit words all start with 'ne' and have been carefully picked, so that they align with the corresponding glyphs (see below).
+The digit words all start with 'Ne' and have been carefully picked, so that they align with the corresponding glyphs (see below).
 If we ignore 'n' and ignore 'e' in the words, then each digit word maps to a different, unique letter:
 
 ```
-"0"  nenin  I
-"1"  newen  W
-"2"  neten  T
-"3"  nesen  S
-"4"  nenan  A
-"5"  nelen  L
-"6"  nenun  U
-"7"  nemen  M
-"8"  nepen  P
-"9"  nejen  J
+"0"  Nenin  I
+"1"  Newen  W
+"2"  Neten  T
+"3"  Nesen  S
+"4"  Nenan  A
+"5"  Nelen  L
+"6"  Nenun  U
+"7"  Nemen  M
+"8"  Nepen  P
+"9"  Nejen  J
 ```
 
 ---
 
-## sitelen pona digit cartouches
-
-| Glyph                                                             | Distinct Letter       | #~n Cartouche                                                               | #~n Proper Name | Glyph Selection Rationale      |
-|-------------------------------------------------------------------|-----------------------|-----------------------------------------------------------------------------|-----------------|--------------------------------|
-| <img src="images/horizontal 0 nasin nanpa.png" width="32"/>       |           I           | <img src="images/horizontal 0 nasin nanpa cartouche.png" width="64"/>       | Nenin           | round like zero                |
-| <img src="images/horizontal 1 nasin nanpa.png" width="32"/>       |           W           | <img src="images/horizontal 1 nasin nanpa cartouche.png" width="64"/>       | Newen           | wan                            |
-| <img src="images/horizontal 2 nasin nanpa v2.png" width="32"/>    |           T           | <img src="images/horizontal 2 nasin nanpa cartouche.png" width="64"/>       | Neten           | tu                             |
-| <img src="images/horizontal 3 nasin nanpa v3.png" width="32"/>    |           S           | <img src="images/horizontal 3 nasin nanpa cartouche v2.png" width="64"/>    | Nesen           | has three lines                |
-| <img src="images/horizontal 4 nasin nanpa v3.png" width="32"/>    |           A           | <img src="images/horizontal 4 nasin nanpa cartouche v2.png" width="64"/>    | Nenan           | has four lines                 |
-| <img src="images/horizontal 5 nasin nanpa.png" width="32"/>       |           L           | <img src="images/horizontal 5 nasin nanpa cartouche.png" width="64"/>       | Nelen           | luka                           |
-| <img src="images/horizontal 6 nasin nanpa v2.png" width="32"/>    |           U           | <img src="images/horizontal 6 nasin nanpa cartouche.png" width="64"/>       | Nenun           | has six short lines            |
-| <img src="images/horizontal 7 nasin nanpa v3.png" width="32"/>    |           M           | <img src="images/horizontal 7 nasin nanpa cartouche.png" width="64"/>       | Nemen           | seven days in week             |
-| <img src="images/horizontal 8 nasin nanpa v3.png" width="32"/>    |           P           | <img src="images/horizontal 8 nasin nanpa cartouche.png" width="64"/>       | Nepen           | spiders have eight legs        |
-| <img src="images/horizontal 9 nasin nanpa v2.png" width="32"/>    |           J           | <img src="images/horizontal 9 nasin nanpa cartouche.png" width="64"/>       | Nejen           | nine months to carry pregnancy |
+## sitelen pona nanpa-linja-n cartouches
 
 Sitelen Cartouche Summary:
 
@@ -444,6 +431,7 @@ Examples:
 −12        → Neno Weten
 −0.4       → Neno Nin One Nan
 −30,000    → Neno Senin Eken
+-4.5e-3    → Neno Nan One Len Oke Wenin Oke Nosen
 ```
 
 ---
@@ -572,6 +560,7 @@ Examples:
 
 ```
 5%          → Nelen Oken
+-8%         → Neno Pen Oken
 10.5%       → Newenin One Len Oken
 1000%       → Newenininin Oken
 2,000%      → Neten Eken Oken
@@ -644,15 +633,15 @@ Examples:
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
-      - might say: **"newen neten nesen nenan nelen"**
+      - might say: **"Newen Neten Nesen Nenan Nelen"**
     - for value 12,345,
-      - might say: **"neweten eke senalen"**
+      - might say: **"Neweten Eke Senalen"**
     - for sequence of digits, like an id,
-      - might say: **"newetesenalen"**
+      - might say: **"Newetesenalen"**
     - for 1-2-3-4-5 digit emphasis,
-      - might say: **"newen ene ten ene sen ene nan ene len"**
+      - might say: **"Newen Ene Ten Ene Sen Ene Nan Ene Len"**
     - for breaking up long sequences with no change in value, (nene can be used anywhere)
-      - might say: **"neweten ene senalen"**
+      - might say: **"Neweten Ene Senalen"**
     - In all cases the listener has understood the speaker as communicating **"12345"**
   - Screen readers can communicate longer digit sequences with less cognitive load
   - Automated text-to-speech systems can communicate longer digit sequences with less cognitive load
@@ -668,7 +657,7 @@ Examples:
     - The listener recognises **pu** semantics
     - The listener understands: 78
   - Positional decimal (**nanpa-linja-n** style) strings:
-    - The speaker uses **nanpa-linja-n** digit names with concatenation and **ne-** signalling the start and **-n** signalling the end of the string of digits
+    - The speaker uses **nanpa-linja-n** digit names with concatenation and **Ne-** signalling the start and **-n** signalling the end of the string of digits
     - The speaker thinks: 78 = 7 followed by 8
     - The speaker says (the way they think): nemepen
     - The listener recognises **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
@@ -699,44 +688,44 @@ Words primarialy chosen for the shape of their sitelen pona glyphs.
 - Shape of sitelen pona glyph (looks like equals)
 - Good candidate
 - Never appears in a numeric cartouche
-- nenin one len li sama newen ono ten
+- nanpa Nenin One Len li sama nanpa Newen Ono Ten
 
 ### Addition: en
 - Shape of sitelen pona glyph (looks like plus)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- newen en neten en nesen li sama nenun
-- o pana e nejen tawa nesen
+- nanpa Newen en Neten en Nesen li sama nanpa Nenun
+- o pana e nanpa Nejen tawa nanpa Nesen
 
 ### Subtract: lape
 - Shape of sitelen pona glyph (looks like subtract)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but negative symbol can appear in a numeric cartouche)
-- nesen lape nenoten li sama nelen
+- nanpa Nesen lape nanpa Nenoten li sama nanpa Nelen
 
 ### Multiply: lete
 - Shape of sitelen pona glyph (looks like multiply in ascii)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nesen lete neten li sama nenun
+- nanpa Nesen lete nanpa Neten li sama nanpa Nenun
 
 ### Division: kipisi
 - Shape of sitelen pona glyph (looks like divide)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but fraction symbol can appear in a numeric cartouche)
-- nepen kipisi nenoten li sama nenonan
+- nanpa Nepen kipisi nanpa Nenoten li sama nanpa Nenonan
 
 ### Power: sewi
 - Shape of sitelen pona glyph (looks like rising up)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- neten sewi nesen li sama nepen
-- nemen eken li sama nemen lete newenin sewi nesen
+- nanpa Neten sewi nanpa Nesen li sama nanpa Nepen
+- nanpa Nemen Eken li sama nanpa Nemen lete nanpa Newenin sewi nanpa Nesen
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers) are better left in mathematical notation:
 
