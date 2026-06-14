@@ -1608,6 +1608,12 @@ function repairClustersToStream(stream, opts){
       if (prev === "n" && cur === "n"){
         continue; // skip pushing the second 'n'
       }
+
+      // Assimilate n before m when a merge boundary creates "nm".
+      if (prev === "n" && cur === "m"){
+        out[out.length - 1] = "m";
+        continue;
+      }
       // === END FIX ===
 
       if (prev === "n"){
@@ -2807,7 +2813,7 @@ function lookupOverride(keyOrLine){
         }
         // Respect the boundary option: preserve = space-join, merge = concatenate.
         const ipaBoundary = opts && opts.boundary;
-        const tp = ipaBoundary === "merge" ? tpParts.join("") : tpParts.join(" ");
+        const tp = joinTpNameParts(tpParts, ipaBoundary, opts);
         if (tp) tpWords.push(tp);
 
         // Phonemes column: mark with directIpa flag so buildIpaCellHtml renders inert.
@@ -2878,6 +2884,29 @@ function lookupOverride(keyOrLine){
     }
   }
 
+function repairMergedTpName(tpName, opts){
+  const repairOpts = {
+    keepFinalCons: (opts && ("keepFinalCons" in opts)) ? !!opts.keepFinalCons : true
+  };
+  const chars = String(tpName || "").toLowerCase().replace(/\s+/g, "").split("");
+  const repaired = repairClustersToStream(chars, repairOpts);
+  let sylls = syllabifyCVN(repaired);
+  sylls = enforceIllegalPairs(sylls, !!(opts && opts.strictMode));
+  return syllsToString(sylls);
+}
+
+function joinTpNameParts(parts, boundary, opts){
+  const cleanParts = (Array.isArray(parts) ? parts : [])
+    .map(x => String(x || "").trim())
+    .filter(Boolean);
+
+  if (boundary === "merge"){
+    return repairMergedTpName(cleanParts.join(""), opts || {});
+  }
+
+  return cleanParts.join(" ");
+}
+
  function tokiponizeLine(line, opts){
   const strictMode = opts.strictMode;
   const boundary = opts.boundary; // preserve|merge
@@ -2942,7 +2971,7 @@ function lookupOverride(keyOrLine){
 
   const wholeLineNanpa = parseNanpaLinjaNValueWithLibrary(rawLine.trim());
   if (wholeLineNanpa) {
-    let tpName = wholeLineNanpa.properName;
+    let tpName = joinTpNameParts([wholeLineNanpa.properName], boundary, opts);
     if (outputStyle === "jan")  tpName = "jan "  + tpName;
     if (outputStyle === "ma")   tpName = "ma "   + tpName;
     if (outputStyle === "toki") tpName = "toki " + tpName;
@@ -2962,9 +2991,7 @@ function lookupOverride(keyOrLine){
     const seg = tokiponizeNonNumericSegment(rawLine, opts);
     if (!seg.raw) return null;
 
-    let tpName = (boundary === "preserve")
-      ? seg.tpWords.join(" ")
-      : seg.tpWords.join("");
+    let tpName = joinTpNameParts(seg.tpWords, boundary, opts);
     if (outputStyle === "jan")  tpName = "jan "  + tpName;
     if (outputStyle === "ma")   tpName = "ma "   + tpName;
     if (outputStyle === "toki") tpName = "toki " + tpName;
@@ -3024,7 +3051,7 @@ function lookupOverride(keyOrLine){
     if (!seg.tokens.length) continue;
 
     if (boundary === "preserve") resultWords.push(...seg.tpWords);
-    else resultWords.push(seg.tpWords.join(""));
+    else resultWords.push(joinTpNameParts(seg.tpWords, boundary, opts));
 
     if (seg.normalized) normalizedParts.push(seg.normalized);
     if (seg.phonemes) phonemeParts.push(seg.phonemes);
@@ -3034,7 +3061,7 @@ function lookupOverride(keyOrLine){
 
   if (!sawContent) return null;
 
-  let tpName = resultWords.join(" ");
+  let tpName = joinTpNameParts(resultWords, boundary, opts);
   if (outputStyle === "jan")  tpName = "jan "  + tpName;
   if (outputStyle === "ma")   tpName = "ma "   + tpName;
   if (outputStyle === "toki") tpName = "toki " + tpName;
@@ -3800,7 +3827,7 @@ function lookupOverride(keyOrLine){
           const tp = syllsToString(sylls);
           if (tp) tpParts.push(tp);
         }
-        const tp = boundary === "merge" ? tpParts.join("") : tpParts.join(" ");
+        const tp = joinTpNameParts(tpParts, boundary, { strictMode, keepFinalCons });
         if (tp) tpWords.push(tp);
         continue;
       }
@@ -3837,7 +3864,7 @@ function lookupOverride(keyOrLine){
       if (tp) tpWords.push(tp);
     }
     const boundary = $("boundary")?.value || "preserve";
-    let tpName = boundary === "preserve" ? tpWords.join(" ") : tpWords.join("");
+    let tpName = joinTpNameParts(tpWords, boundary, { strictMode, keepFinalCons });
     const outputStyle = $("outputStyle")?.value || "plain";
     if (outputStyle === "jan")  tpName = "jan "  + tpName;
     if (outputStyle === "ma")   tpName = "ma "   + tpName;
