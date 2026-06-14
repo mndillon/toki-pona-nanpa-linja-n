@@ -3711,6 +3711,27 @@
       handleFromWordsClick({ clearOthers: true });
     });
 
+    function applyDecimalInputFromQuery() {
+      const names = ["decimal", "value", "number", "n"];
+
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+
+        for (const name of names) {
+          if (!params.has(name)) continue;
+
+          const raw = String(params.get(name) ?? "").trim();
+          if (!raw) return null;
+
+          const value = raw.slice(0, MAX_DECIMAL_INPUT_CHARS);
+          setValueSilently(elDecimal, value);
+          return value;
+        }
+      } catch {}
+
+      return null;
+    }
+
     function validateTpWordsInputLive() {
       if (suppressInputHandlers) return; // NEW: ignore programmatic clears
       const raw = String(elTpWordsIn?.value ?? "").trim();
@@ -3926,6 +3947,8 @@
         wireNumericCartoucheAbbrevToggle();
 
         wireDownloadButton(); // <-- ADD THIS
+
+        applyDecimalInputFromQuery();
 
         buildDigitReferenceTable();
         await runEncodeFromDecimal();
