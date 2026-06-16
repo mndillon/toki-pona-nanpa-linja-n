@@ -33,6 +33,12 @@ o weka e nimi ike.
 This does **NOT** introduce any new Toki Pona words or lexicon; it is notation-only. Any “words” discussed below refer only to identifier strings / proper-name labels derived from the cartouche encoding.  When writing down a **nanpa-linja-n** proper name (in Latin script), all words will be capitalized.
 
 
+The Toki Pona Latin letters i, w, t, s, a, l, u, m, p, j are used to represent the numbers 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 in numeric cartouches.
+The letters 'n' and 'e' are used in a nanpa-linja-n cartouche to make the proper name derived from the cartouche more pronouncable.
+The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters).
+So all the Toki Pona Latin letters have a unique job to do in nanpa-linja-n.
+
+
 Toki Pona’s vocabulary is small, but not too small.
 It’s big enough to be functional while still keeping the language simple.
 This system aims to follow that same idea: staying as simple as possible while still being practical for everyday use.
