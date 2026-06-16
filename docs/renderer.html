@@ -313,11 +313,6 @@
       <!-- Canvases are decorative; authoritative text is the words/outputs below -->
       <div class="grid2" style="margin-top:14px;" role="group" aria-label="Cartouche renderings">
         <div>
-          <h3>
-            sitelen pona cartouche
-            <span class="tpLine">poki nimi sitelen pona</span>
-          </h3>
-          <canvas id="canvasSmall" aria-hidden="true"></canvas>
           <fieldset class="displayChooser" aria-label="Abbreviate numeric cartouche output">
             <legend>Abbreviate numeric cartouche output</legend>
             <label class="displayOpt">
@@ -325,11 +320,17 @@
               <span>Enabled</span>
             </label>
           </fieldset>
+
+          <h3>
+            sitelen pona cartouche
+            <span class="tpLine">poki nimi sitelen pona</span>
+          </h3>
+          <canvas id="canvasSmall" aria-hidden="true"></canvas>
           <div id="cartoucheValueBox" class="help hidden" aria-label="Cartouche value">
             <strong>Cartouche value:</strong>
             <span id="cartoucheValueText" class="mono"></span>
             <span class="tpLine">
-              nanpa: <span id="cartoucheValueTextTp" class="mono"></span>
+              <span id="cartoucheValueTextTp" class="mono"></span>
             </span>
           </div>
           <div style="margin-top:8px; display:none; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -3217,11 +3218,12 @@
     // - displayValueOrNull: used for the (hidden) large "Value:" line
     // - cartoucheValueOrNull: used for the small-cartouche value under cartouche
     //   (falls back to displayValueOrNull if omitted)
-    function setDecimalValueLine(displayValueOrNull, cartoucheValueOrNull = displayValueOrNull) {
+    function setDecimalValueLine(displayValueOrNull, cartoucheValueOrNull = displayValueOrNull, properNameOrNull = null) {
       const sDisplay = (displayValueOrNull == null) ? "" : String(displayValueOrNull).trim();
       const sCart = (cartoucheValueOrNull == null) ? "" : String(cartoucheValueOrNull).trim();
+      const sProperName = (properNameOrNull == null) ? "" : String(properNameOrNull).trim();
 
-      // Existing (large section) line
+      // Existing hidden/large “Value:” line
       if (elDecimalValueLine && elDecimalValueText) {
         if (!sDisplay) {
           elDecimalValueText.textContent = "";
@@ -3240,7 +3242,7 @@
           elCartoucheValueBox.classList.add("hidden");
         } else {
           elCartoucheValueText.textContent = sCart;
-          elCartoucheValueTextTp.textContent = sCart;
+          elCartoucheValueTextTp.textContent = sProperName;
           elCartoucheValueBox.classList.remove("hidden");
         }
       }
@@ -3873,9 +3875,25 @@
 
     function __applyParsedNumberToUi(parsed, originalInput = null) {
       if (!parsed) throw new Error("Failed to parse numeric input.");
-      if (parsed.isTime || parsed.isDate) setDecimalValueLine(String(originalInput ?? parsed.displayValue ?? "").trim(), String(originalInput ?? parsed.displayValue ?? "").trim());
-      else setDecimalValueFromCapsOrClear(parsed.caps);
-      elLatinOut.value = fixOkenSuffixSpacing(String(parsed.properName ?? ""));
+
+      const properName = fixOkenSuffixSpacing(String(parsed.properName ?? ""));
+
+      if (parsed.isTime || parsed.isDate) {
+        const valueText = String(originalInput ?? parsed.displayValue ?? "").trim();
+        setDecimalValueLine(valueText, valueText, properName);
+      } else {
+        const vDisplay = tryDecodeCapsToDisplayValue(parsed.caps);
+        const vCartouche = tryDecodeCapsToDisplayValue(parsed.caps, {
+          intEneSep: "_",
+          intGroupSep: ",",
+          fracEneSep: "_",
+          fracGroupSep: "_"
+        });
+
+        setDecimalValueLine(vDisplay, vCartouche, properName);
+      }
+
+      elLatinOut.value = properName;
       elNumberCodeOut.value = String(parsed.uniqueCode ?? "");
       setDisplayCodepointOutputsFromCps(Array.from(parsed.ucsurCodepoints ?? []));
       __renderNumericCartoucheFromCps(Array.from(parsed.ucsurCodepoints ?? []));
