@@ -437,7 +437,7 @@
 </div>
 
 <script type="module">
-import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=55";
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=56";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -467,6 +467,12 @@ window.SitelenRenderer = SitelenRenderer;
       textFamily: DEFAULT_SITELEN_FONT,
       cartoucheFamily: DEFAULT_CARTOUCHE_FONT,
       literalFamily: DEFAULT_LITERAL_FONT,
+      literalCartoucheFamily: DEFAULT_SITELEN_FONT,
+      settings: {
+        literalCartoucheRuleClipScale: 0.24985,
+        literalCartoucheRuleClipStrategy: "leftCap",
+        literalCartoucheLeftCapClipRatio: 0.90
+      },
       literalOptions: [
         [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
         [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -504,6 +510,25 @@ window.SitelenRenderer = SitelenRenderer;
       textFamily: "SSK-Juniko",
       cartoucheFamily: "SSK-Juniko-Cartouche",
       literalFamily: DEFAULT_LITERAL_FONT,
+      literalCartoucheFamily: "SSK-Juniko",
+      settings: {
+        literalCartoucheRuleClipScale: 0.0,
+        literalCartoucheRuleClipStrategy: "none",
+        conditionalLiteralCartoucheClips: [
+          {
+            id: "ssk-juniko-lowercase-i-j-l-left-overhang",
+            enabled: true,
+            fontRole: "literalCartouche",
+            fontFamily: "SSK-Juniko",
+            sourceTextStartsWithRegex: "^[ijl]",
+            patch: {
+              literalCartoucheRuleClipStrategy: "leftCap",
+              literalCartoucheRuleClipScale: 0.24985,
+              literalCartoucheLeftCapClipRatio: 0.8
+            }
+          }
+        ]
+      },
       literalOptions: [
         [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
         [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -541,6 +566,11 @@ window.SitelenRenderer = SitelenRenderer;
         textFamily: "fairfaxHd",
         cartoucheFamily: "fairfaxHd-Cartouche",
         literalFamily: DEFAULT_LITERAL_FONT,
+        literalCartoucheFamily: "fairfaxHd",
+        settings: {
+          literalCartoucheRuleClipScale: 0.9,
+          literalCartoucheRuleClipStrategy: "compound"
+        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -580,6 +610,11 @@ window.SitelenRenderer = SitelenRenderer;
         textFamily: "fairfaxPonaHd",
         cartoucheFamily: "fairfaxPonaHd-Cartouche",
         literalFamily: DEFAULT_LITERAL_FONT,
+        literalCartoucheFamily: "fairfaxPonaHd",
+        settings: {
+          literalCartoucheRuleClipScale: 0.90,
+          literalCartoucheRuleClipStrategy: "compound"
+        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -5089,11 +5124,26 @@ window.SitelenRenderer = SitelenRenderer;
     return { lines: out, fontPx };
   }
 
+  function getItemFontPairSettings(item) {
+    const presetKey = normalizeSitelenFontFamilyKey(item?.sitelenFontFamily);
+    const preset =
+      sitelenFontController.getPresetByKey?.(presetKey) ||
+      sitelenFontController.getCombinedRegistrySnapshot?.()?.[presetKey] ||
+      SITELEN_FONT_PRESETS[presetKey] ||
+      null;
+
+    return (preset && typeof preset === "object" && preset.settings && typeof preset.settings === "object")
+      ? preset.settings
+      : {};
+  }
+
   function itemRasterKey(item){
     return [
       item.id,
       String(item.text || ''),
       normalizeSitelenFontFamilyKey(item.sitelenFontFamily),
+      // Add this so changed preset/database/manifest settings invalidate the raster cache.
+      JSON.stringify(getItemFontPairSettings(item) || {}),
       String(item.fontFamily || ''),
       Number(item.fontSize || 24),
       String(item.align || 'left'),
@@ -5141,15 +5191,35 @@ window.SitelenRenderer = SitelenRenderer;
     return App.runtime.sitelenRenderer;
   }
 
+
   function buildItemFontRoles(item){
     const preset = getSitelenFontPreset(item.sitelenFontFamily);
+    const literalCartoucheFamily = String(
+      preset?.literalCartoucheFamily ||
+      preset?.literalCartoucheFontFamily ||
+      preset?.textFamily ||
+      DEFAULT_SITELEN_FONT
+    );
+
     return {
       word: preset.textFamily,
       text: preset.textFamily,
-      cartouche: preset.cartoucheFamily,
+
+      // Normal non-numeric cartouches should use the selected sitelen text font.
+      cartouche: preset.textFamily,
+
+      // Numeric/date/time cartouches use the companion nanpa-linja-n cartouche font.
       number: preset.cartoucheFamily,
+      date: preset.cartoucheFamily,
+      time: preset.cartoucheFamily,
+
+      // Quoted text / unknown text.
       literal: resolveLiteralFontFamily(item.fontFamily, item.sitelenFontFamily),
-      unknown: DEFAULT_LITERAL_FONT
+      unknown: DEFAULT_LITERAL_FONT,
+
+      // Literal cartouches, for example ["abc"], use the preset literal-cartouche font.
+      literalCartouche: literalCartoucheFamily,
+      literalCartoucheFamily: literalCartoucheFamily
     };
   }
 
@@ -5230,7 +5300,8 @@ window.SitelenRenderer = SitelenRenderer;
           }
         },
         fonts: {
-          roles: buildItemFontRoles(item)
+          roles: buildItemFontRoles(item),
+          settings: getItemFontPairSettings(item)
         },
         parser: {
           literalStyle: 'double-quote',

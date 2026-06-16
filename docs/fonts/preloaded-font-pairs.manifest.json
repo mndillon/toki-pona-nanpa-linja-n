@@ -31,7 +31,7 @@
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-05-02-005",
+      "rev": "2026-06-16-007",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
@@ -45,7 +45,22 @@
       "settings": {
         "cartoucheCommaTallyMarks": true,
         "cartoucheTallyMode": "ucsur",
-        "literalCartoucheRuleClipStrategy": "none"
+        "literalCartoucheRuleClipScale": 0.0,
+        "literalCartoucheRuleClipStrategy": "none",
+        "conditionalLiteralCartoucheClips": [
+          {
+            "id": "ssk-juniko-lowercase-i-j-l-left-overhang",
+            "enabled": true,
+            "fontRole": "literalCartouche",
+            "fontFamily": "SSK-Juniko",
+            "sourceTextStartsWithRegex": "^[ijl]",
+            "patch": {
+              "literalCartoucheRuleClipStrategy": "leftCap",
+              "literalCartoucheRuleClipScale": 0.24985,
+              "literalCartoucheLeftCapClipRatio": 0.8
+            }
+          }
+        ]
       },
       "literalCartoucheFamily": "SSK-Juniko"
     },

@@ -1443,7 +1443,24 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
         cartoucheFamily: "SSK-Juniko-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
         literalCartoucheFamily: "SSK-Juniko",
-        settings: { literalCartoucheRuleClipScale: 0.0, literalCartoucheRuleClipStrategy: "none" },
+        settings: {
+          literalCartoucheRuleClipScale: 0.0,
+          literalCartoucheRuleClipStrategy: "none",
+          conditionalLiteralCartoucheClips: [
+            {
+              id: "ssk-juniko-lowercase-i-j-l-left-overhang",
+              enabled: true,
+              fontRole: "literalCartouche",
+              fontFamily: "SSK-Juniko",
+              sourceTextStartsWithRegex: "^[ijl]",
+              patch: {
+                literalCartoucheRuleClipStrategy: "leftCap",
+                literalCartoucheRuleClipScale: 0.24985,
+                literalCartoucheLeftCapClipRatio: 0.8
+              }
+            }
+          ]
+        },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
           [TEXT_FONT_OPTION_NANPA_LINJA_N, "nanpa-linja-n"],
@@ -1767,23 +1784,27 @@ function getElementLiteralCartoucheFontFamily(el){
   return resolveLiteralCartoucheFontFamilyForPreset(getRenderFontPreset(getElementRenderFontPresetKey(el)));
 }
 
-function getElementLiteralCartoucheSettings(el){
+function getElementFontPairSettings(el){
   if (el && el.literalCartoucheSettingsOverride && typeof el.literalCartoucheSettingsOverride === "object") {
-    const settings = el.literalCartoucheSettingsOverride;
+    const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
+    const baseSettings = (preset && typeof preset === "object" && preset.settings && typeof preset.settings === "object")
+      ? preset.settings
+      : {};
+
     return {
-      literalCartoucheRuleClipScale: settings.literalCartoucheRuleClipScale,
-      literalCartoucheRuleClipStrategy: settings.literalCartoucheRuleClipStrategy,
-      literalCartoucheLeftCapClipRatio: settings.literalCartoucheLeftCapClipRatio
+      ...baseSettings,
+      ...el.literalCartoucheSettingsOverride
     };
   }
 
   const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
-  const settings = (preset && typeof preset === "object") ? (preset.settings || {}) : {};
-  return {
-    literalCartoucheRuleClipScale: settings.literalCartoucheRuleClipScale,
-    literalCartoucheRuleClipStrategy: settings.literalCartoucheRuleClipStrategy,
-    literalCartoucheLeftCapClipRatio: settings.literalCartoucheLeftCapClipRatio
-  };
+  return (preset && typeof preset === "object" && preset.settings && typeof preset.settings === "object")
+    ? preset.settings
+    : {};
+}
+
+function getElementLiteralCartoucheSettings(el){
+  return getElementFontPairSettings(el);
 }
 
 
@@ -1926,7 +1947,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=55').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=56').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -2038,7 +2059,10 @@ function buildRendererInitConfigForElement(el){
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
       ...buildCartoucheTallyParserConfig(el)
     },
-    fonts: { roles: buildRendererFontRolesForElement(el) }
+    fonts: {
+      roles: buildRendererFontRolesForElement(el),
+      settings: getElementFontPairSettings(el)
+    }
   };
 }
 function buildRendererCallConfigForElement(el){
@@ -2089,7 +2113,8 @@ function buildRendererCallConfigForElement(el){
     fonts: {
       roles: {
         ...buildRendererFontRolesForElement(el)
-      }
+      },
+      settings: getElementFontPairSettings(el)
     }
   };
 }
@@ -2099,7 +2124,8 @@ async function getSitelenRendererForElement(el){
   const literalCartoucheFamily = getElementLiteralCartoucheFontFamily(el);
   const extraFamilies = [];
   if (el?.type === ElementType.Glyph && el?.fontFamily) extraFamilies.push(String(el.fontFamily));
-  const cacheKey = `${presetKey}|literal:${literalFamily}|literalCartouche:${literalCartoucheFamily}|extra:${extraFamilies.join('|')}`;
+  const fontPairSettingsSig = JSON.stringify(getElementFontPairSettings(el) || {});
+  const cacheKey = `${presetKey}|literal:${literalFamily}|literalCartouche:${literalCartoucheFamily}|settings:${fontPairSettingsSig}|extra:${extraFamilies.join('|')}`;
   vectorFontDebug("getSitelenRendererForElement", {
     elementId: el?.id || null,
     elementType: el?.type || null,
@@ -2212,6 +2238,7 @@ function getElementRendererSignature(el){
     fontPx: Math.max(6, Number(el?.fontSize ?? 44)),
     color: String(el?.color ?? '#111111'),
     preset: getElementRenderFontPresetKey(el),
+    fontPairSettings: getElementFontPairSettings(el),
     fontFamily: (el?.type === ElementType.Sitelen) ? '' : String(el?.fontFamily ?? ''),
     quotedTextFontOption: (el?.type === ElementType.Sitelen) ? getElementQuotedTextFontOptionKey(el) : '',
     literalFamily: sitelenLiteralFontFamilyForElement(el),

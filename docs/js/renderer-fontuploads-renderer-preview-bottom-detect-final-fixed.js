@@ -822,6 +822,112 @@ const SitelenRenderer = (() => {
     return 'word';
   }
 
+  function unquoteLiteralCartoucheSourceText(value) {
+    const s = String(value ?? "").trim();
+
+    if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
+      return s.slice(1, -1);
+    }
+
+    return s;
+  }
+
+  function getRunLiteralCartoucheSourceText(run) {
+    const direct =
+      run?.sourceText ??
+      run?._element?.sourceText ??
+      "";
+
+    const unquoted = unquoteLiteralCartoucheSourceText(direct);
+    if (unquoted) return unquoted;
+
+    const cps = Array.isArray(run?.cps)
+      ? run.cps
+      : Array.isArray(run?._element?.cps)
+        ? run._element.cps
+        : [];
+
+    let out = "";
+    for (const cp of cps) {
+      const n = Number(cp);
+      if (n >= 0x20 && n <= 0x7E) {
+        out += String.fromCodePoint(n);
+      }
+    }
+
+    return out;
+  }
+
+  function getConditionalLiteralCartoucheClipRules(config) {
+    const direct = config?.fonts?.settings?.conditionalLiteralCartoucheClips;
+    if (Array.isArray(direct)) return direct;
+
+    // Optional fallback names, useful if older pages pass settings under a
+    // different nested object later.
+    const alt1 = config?.fonts?.fontPairSettings?.conditionalLiteralCartoucheClips;
+    if (Array.isArray(alt1)) return alt1;
+
+    const alt2 = config?.fontPairSettings?.conditionalLiteralCartoucheClips;
+    if (Array.isArray(alt2)) return alt2;
+
+    return [];
+  }
+
+  function runMatchesConditionalLiteralCartoucheClip(run, rule) {
+    if (!run || !rule || rule.enabled === false) return false;
+
+    const runFontRole = String(run.fontRole ?? run?._element?.fontRole ?? "");
+    const runFontFamily = String(run.fontFamily ?? run?._element?.fontFamily ?? "");
+
+    const isLiteralCartouche =
+      runFontRole === "literalCartouche" ||
+      run?._element?.isLiteralCartouche === true;
+
+    if (!isLiteralCartouche) return false;
+
+    if (rule.fontRole && runFontRole !== String(rule.fontRole)) return false;
+    if (rule.fontFamily && runFontFamily !== String(rule.fontFamily)) return false;
+
+    const literalText = getRunLiteralCartoucheSourceText(run);
+
+    if (rule.sourceTextStartsWithRegex) {
+      let re;
+      try {
+        re = new RegExp(String(rule.sourceTextStartsWithRegex));
+      } catch {
+        return false;
+      }
+
+      if (!re.test(literalText)) return false;
+    }
+
+    return true;
+  }
+
+  function applyConditionalLiteralCartoucheClipsToPlan(plan, config) {
+    const rules = getConditionalLiteralCartoucheClipRules(config);
+    if (!rules.length || !plan) return plan;
+
+    for (const line of plan.lines || []) {
+      for (const run of line.runs || []) {
+        for (const rule of rules) {
+          if (!runMatchesConditionalLiteralCartoucheClip(run, rule)) continue;
+
+          const patch = rule.patch || {};
+          Object.assign(run, patch);
+
+          if (run._element && typeof run._element === "object") {
+            Object.assign(run._element, patch);
+          }
+
+          break;
+        }
+      }
+    }
+
+    return plan;
+  }
+
   function buildMeasuredRenderPlan(linesElements, config = {}) {
     const fontPx = Math.max(8, Number(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56));
     const pad = Number.isFinite(Number(config?.layout?.paddingPx)) ? Math.max(0, Number(config.layout.paddingPx)) : 18;
@@ -6748,6 +6854,38 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return __coreReady;
   }
 
+
+  function mergeRendererInstanceConfig(baseConfig = {}, opts = {}) {
+    return {
+      ...baseConfig,
+      ...opts,
+      layout: {
+        ...(baseConfig.layout || {}),
+        ...(opts.layout || {})
+      },
+      paint: {
+        ...(baseConfig.paint || {}),
+        ...(opts.paint || {})
+      },
+      parser: {
+        ...(baseConfig.parser || {}),
+        ...(opts.parser || {})
+      },
+      fonts: {
+        ...(baseConfig.fonts || {}),
+        ...(opts.fonts || {}),
+        roles: {
+          ...((baseConfig.fonts || {}).roles || {}),
+          ...(((opts.fonts || {}).roles) || {})
+        },
+        settings: {
+          ...((baseConfig.fonts || {}).settings || {}),
+          ...(((opts.fonts || {}).settings) || {})
+        }
+      }
+    };
+  }
+
   class RendererInstance {
     constructor(config = {}) {
       this.config = config || {};
@@ -6761,12 +6899,19 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     async buildRenderPlan({ input, ast, layout = {}, paint = {}, parser = {}, fonts = {} }) {
       await ensureCore();
       const effectiveAst = ast || astFromInput(input || '');
-      const config = { ...this.config, layout: { ...(this.config.layout || {}), ...layout }, paint: { ...(this.config.paint || {}), ...paint }, parser: { ...(this.config.parser || {}), ...parser }, fonts: { ...(this.config.fonts || {}), ...fonts, roles: { ...((this.config.fonts || {}).roles || {}), ...((fonts || {}).roles || {}) } } };
+      const config = mergeRendererInstanceConfig(this.config, {
+        layout,
+        paint,
+        parser,
+        fonts
+      });
+            
       return await withScopedRenderConfig(config, async () => {
         if (typeof __bridgeFontsReadyForPx === 'function') await __bridgeFontsReadyForPx(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56));
         if (typeof __bridgeWarmUpCanvasFontsOnce === 'function') __bridgeWarmUpCanvasFontsOnce();
         const linesElements = await astToLineElements(effectiveAst, config);
         const plan = buildMeasuredRenderPlan(linesElements, config);
+        applyConditionalLiteralCartoucheClipsToPlan(plan, config);
         plan.ast = effectiveAst;
         plan.linesElements = linesElements;
         plan.diagnostics = [];
@@ -6781,7 +6926,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     async renderTextToNewCanvas(opts = {}) {
       await ensureCore();
-      const config = { ...this.config, ...opts, layout: { ...(this.config.layout || {}), ...(opts.layout || {}) }, paint: { ...(this.config.paint || {}), ...(opts.paint || {}) }, parser: { ...(this.config.parser || {}), ...(opts.parser || {}) }, fonts: { ...(this.config.fonts || {}), ...(opts.fonts || {}), roles: { ...((this.config.fonts || {}).roles || {}), ...(((opts.fonts || {}).roles) || {}) } } };
+      const config = mergeRendererInstanceConfig(this.config, opts);
+      
       return await renderAstToNewCanvas(astFromInput(opts.input || ''), config);
     }
 
@@ -6793,7 +6939,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     async renderUcsurToNewCanvas(opts = {}) {
       await ensureCore();
-      const config = { ...this.config, ...opts, layout: { ...(this.config.layout || {}), ...(opts.layout || {}) }, paint: { ...(this.config.paint || {}), ...(opts.paint || {}) }, parser: { ...(this.config.parser || {}), ...(opts.parser || {}) }, fonts: { ...(this.config.fonts || {}), ...(opts.fonts || {}), roles: { ...((this.config.fonts || {}).roles || {}), ...(((opts.fonts || {}).roles) || {}) } } };
+      const config = mergeRendererInstanceConfig(this.config, opts);
+      
       return await renderAstToNewCanvas(ucsurAstFromLines(opts.lines || []), config);
     }
 
