@@ -36,7 +36,7 @@ This does **NOT** introduce any new Toki Pona words or lexicon; it is notation-o
 The Toki Pona Latin letters i, w, t, s, a, l, u, m, p, j are used to represent the numbers 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 in numeric cartouches.
 The letters 'n' and 'e' are used in a nanpa-linja-n cartouche to make the proper name derived from the cartouche more pronouncable.
 The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters).
-So all the Toki Pona Latin letters have a unique job to do in nanpa-linja-n.
+So all the Toki Pona Latin letters have a distinct job to do in nanpa-linja-n.
 
 
 Toki Pona’s vocabulary is small, but not too small.
@@ -102,7 +102,8 @@ Applies to all numbers no matter what form they take.
 
 Rules:
 
-- All nanpa-linja-n numeric proper names and cartouches will start with Ne- and end with -n
+- All nanpa-linja-n numeric cartouches will start with nanpa and end with nanpa
+- All nanpa-linja-n numeric proper names derived from a cartouche will start with Ne- and end with -n
 - Latin nanpa-linja-n numeric proper name: Ne...n
 - Numeric Cartouche [nanpa en ... nanpa]
 - Abbreviated Cartouche: [nanpa ... nanpa]
@@ -110,7 +111,12 @@ Rules:
 - Abbreviated cartouches are numeric cartouches with the interior words 'nena', 'en' and 'open' removed for clarity of rendering.
 - Abbreviated cartouches are pronounced in exactly the same way as the corresponding full numeric cartouche, they only facilitate clearer rendering.
 - Notes: A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation, each separate word will start with a capital letter
-- the final -n is always appended to the final nanpa-linja-n proper name word.
+- The final -n is always appended to the final nanpa-linja-n proper name word.
+- The letters i, w, t, s, a, l, u, m, p, j are used to represent the numbers 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 in nanpa-linja-n numeric cartouches and are represented in sitelen pona by specific fixed glyphs.
+- The letters 'n' and 'e' are used in a nanpa-linja-n numeric cartouche to make the proper name derived from the cartouche more pronouncable and are representes in sitelen pona by various glyphs.
+- The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters) and are represented in sitelen pona by various glyphs.
+- When rendering the sitelen pona form of a nanpa-linja-n numeric cartouche, glyphs are displayed at different font sizes to reflect their relative significance within the overall numeric representation.
+
 
 Example:
 
