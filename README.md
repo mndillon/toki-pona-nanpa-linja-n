@@ -97,7 +97,7 @@ Example:
 
 ---
 
-## General Number Rule
+## General Number Rules
 Applies to all numbers no matter what form they take.
 
 Rules:
@@ -116,11 +116,11 @@ Rules:
 - The letters 'n' and 'e' are used in a nanpa-linja-n numeric cartouche to make the proper name derived from the cartouche more pronouncable and are represented in sitelen pona by various glyphs.
 - The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters) and are represented in sitelen pona by various glyphs.
 - When rendering the sitelen pona form of a nanpa-linja-n numeric cartouche, glyphs are displayed at different font sizes to reflect their relative significance within the overall numeric representation.
-
+- In nanpa-linja-n numeric cartouche proper names, word boundaries can occur at numeric punctuation markers. Since every numeric punctuation word begins with “n”, the initial “n” is split off and normally attached to the end of the preceding word. For example, “none” is usually split as “-n One ”. Therefore, for example, the value 2.5 has the proper name “Netenonelen”, which may be word-split as “Neten One Len”. The only exception is “no”, which represents the negative sign and does not split. Therefore, for example, -1 has the proper name “Nenowen”, which splits as “Neno Wen”.
 
 Example:
 
-- 1,530 → Newen Eke Lesenin
+- -1,530.9 → Neno Wen Eke Lesenin One Jen
 
 ---
 
