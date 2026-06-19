@@ -93,7 +93,7 @@ Example:
 <img src="images/From_Decimal_Number_To_Cartouche.png" width="569"/><br/>
 <img src="images/nanpa-linja-n_cartouche_abbreviation.png" width="823"/><br/>
 <img src="images/nanpa-linja-n-cartouche-abbrev-examples-2.png" width="1502" /><br/>
-
+<img src="images/numeric_cartouche_to_decimal_number.png" width="1502"/><br/>
 
 ---
 
