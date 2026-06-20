@@ -129,17 +129,16 @@ Example:
 
 ## Word-Splitting Rules for Numeric Proper Names
 
-- Long nanpa-linja-n numeric proper names may be split into separate words at numeric punctuation markers to make them easier to read, each separate word will start with a capital letter.
+- Long nanpa-linja-n numeric proper names may be split into separate words at numeric punctuation markers to make them easier to read and communicate, each separate word will start with a capital letter.
 - All numeric punctuation markers begin with **n**. When a punctuation marker is split into a separate word, its initial **n** is normally attached to the end of the preceding word.
 - For example, the decimal separator **none** is split as **-n One**:
   - 2.5 → Netenonelen
   -  Split form: Neten One Len
-- The final **-n** is always attached to the final word of the full nanpa-linja-n proper name.
 - The only exception is **no**, the negative marker. Since **no** represents the negative sign and can only appear at the start of a number or exponent, it is not split as **-n O**. It may attach to the **Ne-** at the start of a proper name to give **Neno**
 - For example:
   - -1 → Nenowen
   -  Split form: Neno Wen
-
+- The final **-n** is always attached to the final word of the full nanpa-linja-n proper name.
 
 ---
 
