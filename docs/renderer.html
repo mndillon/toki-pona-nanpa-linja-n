@@ -3879,7 +3879,25 @@
       const properName = fixOkenSuffixSpacing(String(parsed.properName ?? ""));
 
       if (parsed.isTime || parsed.isDate) {
-        const valueText = String(originalInput ?? parsed.displayValue ?? "").trim();
+        let valueText = "";
+
+        if (parsed.isDate) {
+          valueText = tryDecodeCapsToDisplayValue(parsed.caps, {
+            intEneSep: "-",
+            intGroupSep: "-",
+            fracEneSep: "_",
+            fracGroupSep: "_"
+          });
+        } else {
+          valueText = tryDecodeCapsToDisplayValue(parsed.caps, {
+            intEneSep: ":",
+            intGroupSep: ":",
+            fracEneSep: "_",
+            fracGroupSep: "_"
+          });
+        }
+
+        valueText = String(valueText ?? parsed.displayValue ?? originalInput ?? "").trim();
         setDecimalValueLine(valueText, valueText, properName);
       } else {
         const vDisplay = tryDecodeCapsToDisplayValue(parsed.caps);
