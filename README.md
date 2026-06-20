@@ -57,7 +57,7 @@ Sitelen Cartouche Summary:
 ---
 
 ## Unique Numeric Codes:
-Every decimal number can be encoded into a unique cartouche (and corresponding abbrevaited cartouche).
+Every decimal number can be encoded into a unique cartouche (and corresponding abbreviated cartouche).
 The numeric cartouche can be spelled in Latin script as a unique nanpa-linja-n proper name for the number.
 The proper name for the number can be used to communicate and reconstruct the original number.
 The proper name for the number also gives a unique abbreviation for the number.
@@ -103,26 +103,49 @@ Applies to all numbers no matter what form they take.
 
 Rules:
 
-- All nanpa-linja-n numeric cartouches are read as nanpa-linja-n proper names for the encoded number
+- All nanpa-linja-n numeric cartouches are read as nanpa-linja-n proper names corresponding to the encoded number, date, or time
 - All nanpa-linja-n numeric cartouches will start with nanpa and end with nanpa
 - All nanpa-linja-n numeric proper names derived from a cartouche will start with Ne- and end with -n
-- Latin nanpa-linja-n numeric proper name: Ne...n
-- Numeric Cartouche [nanpa en ... nanpa]
-- Abbreviated Cartouche: [nanpa ... nanpa]
-- Abbreviation #~: None (There is no 'n' or no 'e' in the nanpa-linja-n abbreviation)
+- General Latin nanpa-linja-n numeric proper name form: Ne...n
+- General Numeric Cartouche form: [nanpa en ... nanpa]
+- General Abbreviated Cartouche form: [nanpa ... nanpa]
+- General Abbreviation #~ form: There is no general form used for all abbreviations, the letters 'n' and 'e' will never appear in any abbreviation form.
 - Abbreviated cartouches are numeric cartouches with the interior words 'nena', 'en' and 'open' removed for clarity of rendering.
 - Abbreviated cartouches are pronounced in exactly the same way as the corresponding full numeric cartouche, they only facilitate clearer rendering.
 - Notes: A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation, each separate word will start with a capital letter
 - The final -n is always appended to the final nanpa-linja-n proper name word.
-- The letters i, w, t, s, a, l, u, m, p, j are used to represent the numbers 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 in nanpa-linja-n numeric cartouches and are represented in sitelen pona by specific fixed glyphs.
+- The letters i, w, t, s, a, l, u, m, p, and j are used to represent the digits 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9, respectively, in nanpa-linja-n numeric cartouches, and each letter is represented in sitelen pona by a specific fixed glyph.
 - The letters 'n' and 'e' are used in a nanpa-linja-n numeric cartouche to make the proper name derived from the cartouche more pronouncable and are represented in sitelen pona by various glyphs.
 - The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters) and are represented in sitelen pona by various glyphs.
 - When rendering the sitelen pona form of a nanpa-linja-n numeric cartouche, glyphs are displayed at different font sizes to reflect their relative significance within the overall numeric representation.
-- In nanpa-linja-n numeric cartouche proper names, word boundaries can occur at numeric punctuation markers. Since every numeric punctuation word begins with “n”, the initial “n” is split off and normally attached to the end of the preceding word. For example, “none” is usually split as “-n One ”. Therefore, for example, the value 2.5 has the proper name “Netenonelen”, which may be word-split as “Neten One Len”. The only exception is “no”, which represents the negative sign and does not split. Therefore, for example, -1 has the proper name “Nenowen”, which splits as “Neno Wen”.
+
 
 Example:
 
 - -1,530.9 → Neno Wen Eke Lesenin One Jen
+
+---
+
+## Word-Splitting Rule for Numeric Proper Names
+
+Long nanpa-linja-n numeric proper names may be split into separate words at numeric punctuation markers to make them easier to read.
+
+Most numeric punctuation markers begin with **n**. When a punctuation marker is split into a separate word, its initial **n** is normally attached to the end of the preceding word.
+
+For example, the decimal separator **none** is split as **-n One**:
+
+* 2.5 → Netenonelen
+* Split form: Neten One Len
+
+The final **-n** is always attached to the final word of the full nanpa-linja-n proper name.
+
+The only exception is **no**, the negative marker. Since **no** represents the negative sign and can only appear at the start of a number or exponent, it is not split as **-n O**. It may attach to the **Ne-** at the start of a proper name to give **Neno**
+
+For example:
+
+* -1 → Nenowen
+* Split form: Neno Wen
+
 
 ---
 
@@ -392,8 +415,14 @@ Rules:
 - Abbreviated Cartouche: [... ona ...]
 - Abbreviation #~: o...
 - Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
-- the negative indicator ...no... can be split into words ...no  ... in a proper name
-- the negative indicator ...no... must only appear at the start of a number (or exponent), so usually appears as Neno ...
+- the negative indicator ...no... must only appear at the start of a number or exponent
+
+Word-splitting:
+
+- **no** does not split as **-n O**.
+- Since **no** marks the negative sign, it may attach to the **Ne-** at the start of a proper name to give **Neno**
+- Example: -1 → Nenowen → Neno Wen
+- Example: 1e-3 → Newenekoweninekonosen → Newen Eko Wenin Eko Nosen
 
 Examples:
 
@@ -402,7 +431,7 @@ Examples:
 −12        → Neno Weten
 −0.4       → Neno Nin One Nan
 −30,000    → Neno Senin Eken
--4.5e-3    → Neno Nan One Len Oke Wenin Oke Nosen
+-4.5e-3    → Neno Nan One Len Eke Wenin Eke Nosen
 ```
 
 ---
@@ -413,12 +442,15 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...none...
-- Numeric Cartouche [... nena o nena en ...]
+- Numeric Cartouche: [... nena o nena en ...]
 - Abbreviated Cartouche: [... o ...]
 - Abbreviation #~: ...o...
-- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
-- the decimal separator ...none... can be split into words ...n One ... in a proper name
-- there must always be at least one digit before and after the decimal point
+- There must always be at least one digit before and after the decimal separator.
+
+Word-splitting:
+
+- **none** may split as **-n One**.
+- Example: 2.5 → Netenonelen → Neten One Len
 
 Examples:
 
@@ -439,12 +471,15 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...neke...
-- Numeric Cartouche [... nena en kulupu en ...]
+- Numeric Cartouche: [... nena en kulupu en ...]
 - Abbreviated Cartouche: [... kulupu ...]
 - Abbreviation #~: ...k...
-- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
-- the ISO thousands separator ...neke... can be split into words ...n Eke ... in a proper name
-- if the numeric value ends in blocks of thousands, then the proper name can end with ... Eken or ... Ekeken or ... Ekekeken depending on the number of full ISO thousands blocks the numeric value ends with
+- If the numeric value ends in full blocks of thousands, the proper name can end with **... Eken**, **... Ekeken**, or **... Ekekeken**, depending on the number of full ISO thousands blocks at the end of the value.
+
+Word-splitting:
+
+- **neke** may split as **-n Eke**.
+- Example: 1,234 → Neweneketesenan → Newen Eke Tesenan
 
 Examples:
 
@@ -461,19 +496,20 @@ Examples:
 ---
 
 ## Fractions — nono
-**nono** split the numerator and denominator of a numeric fraction.
+**nono** separates the numerator and denominator of a numeric fraction.
 
-Rule:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...nono...
-- Numeric Cartouche [... nena o nena o ...]
+- Numeric Cartouche: [... nena o nena o ...]
 - Abbreviated Cartouche: [... oo ...]
 - Abbreviation #~: ...oo...
-- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
-- the fraction separator ...nono... can be split into words ...n Ono ... in a proper name
-- if a fraction is negative, the negative sign will appear at the very start of the whole fraction expression
+- If a fraction is negative, the negative sign appears at the very start of the whole fraction expression.
 
+Word-splitting:
+
+- **nono** may split as **-n Ono**.
+- Example: 1/2 → Newenonoten → Newen Ono Ten
 
 Examples:
 
@@ -490,18 +526,20 @@ Examples:
 ---
 
 ## Fractions — noko
-**noko** split the integer from the fraction part of a numeric fraction.
+**noko** separates the integer part from the fraction part of a mixed numeric fraction.
 
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...noko...
-- Numeric Cartouche [... nena open kala open ...]
+- Numeric Cartouche: [... nena open kala open ...]
 - Abbreviated Cartouche: [... kala ...]
 - Abbreviation #~: ...oko...
-- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
-- the integer/fraction separator ...noko... can be split into words ...n Oko ... in a proper name
-- if a fraction is negative, the negative sign will appear at the very start of the whole fraction expression
+- If a mixed fraction is negative, the negative sign appears at the very start of the whole mixed fraction expression.
 
+Word-splitting:
+
+- **noko** may split as **-n Oko**.
+- Example: 9¾ → Nejenokosenononan → Nejen Oko Sen Ono Nan
 
 Examples:
 
@@ -519,13 +557,16 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...noke...
-- Numeric Cartouche [... nena open kipisi en ...]
+- Numeric Cartouche: [... nena open kipisi en ...]
 - Abbreviated Cartouche: [... kipisi ...]
 - Abbreviation #~: ...ok
-- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
-- the percentage indicator ...noke... can be split into words ...n Oken in a proper name
-- the percentage indicator always occurs at the end of the numeric expression, so always gets the final -n appended
+- The percentage indicator always occurs at the end of the numeric expression, so it always receives the final **-n**.
 
+Word-splitting:
+
+- **noke** may split as **-n Oke**.
+- Since **noke** occurs at the end of the numeric expression, the split form usually appears as **Oken**.
+- Example: 5% → Nelenoken → Nelen Oken
 
 Examples:
 
@@ -545,15 +586,17 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...nekowenineko...
-- Numeric Cartouche [... nena en kala open wan en nena ijo nena en kala open ...]
+- Numeric Cartouche: [... nena en kala open wan en nena ijo nena en kala open ...]
 - Abbreviated Cartouche: [... kala wan ijo kala ...]
 - Abbreviation #~: ...koWIko...
-- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
-- the scientific notation indicator ...neko... can be split into words ...n Eko ... in a proper name
-- the scientific notation indicator is used for both the 'by' before the 10 and the 'exponent' after the 10
-- the exponent must be an integer
-- the abbreviation ...okoWIkoo... will be considered an integer and fraction encoding, as it can never occur in scientific notation
+- The scientific notation indicator is used for both the “by 10” marker and the exponent marker.
+- The exponent must be an integer.
+- The abbreviation ...okoWIkoo... is treated as an integer-and-fraction encoding, not as scientific notation, because it cannot occur in valid scientific notation.
 
+Word-splitting:
+
+- **neko** may split as **-n Eko**.
+- Example: 4.5e3 → Nenanonelenekoweninekosen → Nenan One Len Eko Wenin Eko Sen
 
 Examples:
 
@@ -577,13 +620,15 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...nene...
-- Numeric Cartouche [... nena en nena en ...]
-- Abbreviated Cartouche: Nothing (will not appear in the abbrevaited cartouche)
-- Abbreviation #~: None (There is no 'n' or no 'e' in the nanpa-linja-n abbreviation)
-- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
-- the no value indicator ...nene... can be split into words ...n Ene ... in a proper name
-- useful in communicating long digit sequences like phone numbers, we can express the natural breaks on the long digit sequence without affecting the value
+- Numeric Cartouche: [... nena en nena en ...]
+- Abbreviated Cartouche: omitted; **nene** has no visible abbreviated-cartouche form.
+- Abbreviation #~: omitted; **nene** has no #~ abbreviation form, because the letters **n** and **e** never appear in abbreviated forms.
+- **nene** is useful for communicating long digit sequences such as phone numbers, where natural breaks can be represented without changing the numeric value.
 
+Word-splitting:
+
+- **nene** may split as **-n Ene**.
+- Example: 321-555-6789 → Nesetewenenelelelenenenumepejen → Nesetewen Ene Lelelen Ene Numepejen
 
 Examples:
 
