@@ -103,6 +103,7 @@ Applies to all numbers no matter what form they take.
 
 Rules:
 
+- All nanpa-linja-n numeric cartouches are read as nanpa-linja-n proper names for the encoded number
 - All nanpa-linja-n numeric cartouches will start with nanpa and end with nanpa
 - All nanpa-linja-n numeric proper names derived from a cartouche will start with Ne- and end with -n
 - Latin nanpa-linja-n numeric proper name: Ne...n
