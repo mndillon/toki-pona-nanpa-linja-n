@@ -112,10 +112,10 @@ Rules:
 - General Abbreviation #~ form: There is no general form used for all abbreviations, the letters 'n' and 'e' will never appear in any abbreviation form.
 - Abbreviated cartouches are numeric cartouches with the interior words 'nena', 'en' and 'open' removed for clarity of rendering.
 - Abbreviated cartouches are pronounced in exactly the same way as the corresponding full numeric cartouche, they only facilitate clearer rendering.
-- Notes: A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation, each separate word will start with a capital letter
+- A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation, each separate word will start with a capital letter
 - The final -n is always appended to the final nanpa-linja-n proper name word.
 - The letters i, w, t, s, a, l, u, m, p, and j are used to represent the digits 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9, respectively, in nanpa-linja-n numeric cartouches, and each letter is represented in sitelen pona by a specific fixed glyph.
-- The letters 'n' and 'e' are used in a nanpa-linja-n numeric cartouche to make the proper name derived from the cartouche more pronouncable and are represented in sitelen pona by various glyphs.
+- The letters 'n' and 'e' are used in a nanpa-linja-n numeric cartouche to make the proper name derived from the cartouche more pronounceable and are represented in sitelen pona by various glyphs.
 - The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters) and are represented in sitelen pona by various glyphs.
 - When rendering the sitelen pona form of a nanpa-linja-n numeric cartouche, glyphs are displayed at different font sizes to reflect their relative significance within the overall numeric representation.
 
@@ -126,25 +126,18 @@ Example:
 
 ---
 
-## Word-Splitting Rule for Numeric Proper Names
+## Word-Splitting Rules for Numeric Proper Names
 
-Long nanpa-linja-n numeric proper names may be split into separate words at numeric punctuation markers to make them easier to read.
-
-Most numeric punctuation markers begin with **n**. When a punctuation marker is split into a separate word, its initial **n** is normally attached to the end of the preceding word.
-
-For example, the decimal separator **none** is split as **-n One**:
-
-* 2.5 → Netenonelen
-* Split form: Neten One Len
-
-The final **-n** is always attached to the final word of the full nanpa-linja-n proper name.
-
-The only exception is **no**, the negative marker. Since **no** represents the negative sign and can only appear at the start of a number or exponent, it is not split as **-n O**. It may attach to the **Ne-** at the start of a proper name to give **Neno**
-
-For example:
-
-* -1 → Nenowen
-* Split form: Neno Wen
+- Long nanpa-linja-n numeric proper names may be split into separate words at numeric punctuation markers to make them easier to read, each separate word will start with a capital letter.
+- All numeric punctuation markers begin with **n**. When a punctuation marker is split into a separate word, its initial **n** is normally attached to the end of the preceding word.
+- For example, the decimal separator **none** is split as **-n One**:
+  - 2.5 → Netenonelen
+  -  Split form: Neten One Len
+- The final **-n** is always attached to the final word of the full nanpa-linja-n proper name.
+- The only exception is **no**, the negative marker. Since **no** represents the negative sign and can only appear at the start of a number or exponent, it is not split as **-n O**. It may attach to the **Ne-** at the start of a proper name to give **Neno**
+- For example:
+  - -1 → Nenowen
+  -  Split form: Neno Wen
 
 
 ---
@@ -414,7 +407,6 @@ Rules:
 - Numeric Cartouche [... nena ona ...]
 - Abbreviated Cartouche: [... ona ...]
 - Abbreviation #~: o...
-- Notes: numeric punctuation can be used to naturally break up long nanpa-linja-n proper names into separate words.
 - the negative indicator ...no... must only appear at the start of a number or exponent
 
 Word-splitting:
@@ -431,7 +423,7 @@ Examples:
 −12        → Neno Weten
 −0.4       → Neno Nin One Nan
 −30,000    → Neno Senin Eken
--4.5e-3    → Neno Nan One Len Eke Wenin Eke Nosen
+-4.5e-3    → Neno Nan One Len Eko Wenin Eko Nosen
 ```
 
 ---
