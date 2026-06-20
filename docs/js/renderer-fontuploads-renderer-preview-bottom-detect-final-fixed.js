@@ -20,6 +20,114 @@ const SitelenRenderer = (() => {
   let __bridgeEmitRawUcsurCodepointsWithOptionalManualTallies = null;
 
 
+  let __nanpaDebugSeq = 0;
+
+  function nanpaDebugIsEnabled() {
+    // Always-on instrumentation for diagnosing nanpa-linja-n numeric cartouche
+    // parsing/render-run issues. No console setup calls are required.
+    return true;
+  }
+
+  function nanpaDebugSafe(value, depth = 0) {
+    if (value == null) return value;
+    if (depth > 4) return "[max-depth]";
+    if (typeof value === "number" || typeof value === "string" || typeof value === "boolean") return value;
+    if (Array.isArray(value)) return value.slice(0, 80).map(v => nanpaDebugSafe(v, depth + 1));
+    if (typeof value === "object") {
+      const out = {};
+      for (const [k, v] of Object.entries(value)) {
+        if (k === "canvas") { out[k] = "[canvas]"; continue; }
+        if (k === "_element") { out[k] = nanpaDebugSafe(v, depth + 1); continue; }
+        out[k] = nanpaDebugSafe(v, depth + 1);
+      }
+      return out;
+    }
+    return String(value);
+  }
+
+  function nanpaDebugEmit(label, payload = {}) {
+    if (!nanpaDebugIsEnabled()) return;
+    const entry = {
+      seq: ++__nanpaDebugSeq,
+      label: String(label || "nanpa-debug"),
+      ts: new Date().toISOString(),
+      payload: nanpaDebugSafe(payload)
+    };
+    try {
+      globalThis.__NANPA_DEBUG_LOGS__ = globalThis.__NANPA_DEBUG_LOGS__ || [];
+      globalThis.__NANPA_DEBUG_LOGS__.push(entry);
+      if (globalThis.__NANPA_DEBUG_LOGS__.length > 2000) globalThis.__NANPA_DEBUG_LOGS__.shift();
+    } catch (_) {}
+    try { console.log(`[nanpa-debug:${entry.seq}] ${entry.label}`, entry.payload); } catch (_) {}
+  }
+
+  function nanpaDebugTable(label, rows) {
+    if (!nanpaDebugIsEnabled()) return;
+    nanpaDebugEmit(label, { rows });
+    try { console.table(rows); } catch (_) {}
+  }
+
+  function nanpaDebugCps(cps) {
+    return Array.from(cps || []).map(cp => {
+      const n = Number(cp);
+      return Number.isFinite(n) ? ("U+" + n.toString(16).toUpperCase().padStart(4, "0")) : String(cp);
+    });
+  }
+
+  function nanpaDebugElementSummary(el) {
+    if (!el || typeof el !== "object") return el;
+    return {
+      type: el.type || null,
+      sourceText: el.sourceText ?? null,
+      sourceStart: el.sourceStart ?? null,
+      sourceEnd: el.sourceEnd ?? null,
+      sourceKind: el.sourceKind ?? null,
+      sourceSegmentIndex: el.sourceSegmentIndex ?? null,
+      fontFamily: el.fontFamily || null,
+      fontRole: el.fontRole || null,
+      w: el.w ?? null,
+      h: el.h ?? null,
+      cp: el.cp != null ? nanpaDebugCps([el.cp])[0] : null,
+      cps: Array.isArray(el.cps) ? nanpaDebugCps(el.cps) : null,
+      manualTallies: Array.isArray(el.manualTallies) ? el.manualTallies.slice() : null,
+      isLiteralCartouche: !!el.isLiteralCartouche,
+      isQuoted: !!el.isQuoted,
+      isUnrecognized: !!el.isUnrecognized
+    };
+  }
+
+  try {
+    globalThis.enableNanpaDebug = function enableNanpaDebug() {
+      globalThis.__NANPA_DEBUG__ = true;
+      try { globalThis.localStorage && globalThis.localStorage.setItem("nanpaDebug", "1"); } catch (_) {}
+      console.log("[nanpa-debug] enabled");
+    };
+    globalThis.disableNanpaDebug = function disableNanpaDebug() {
+      globalThis.__NANPA_DEBUG__ = false;
+      try { globalThis.localStorage && globalThis.localStorage.removeItem("nanpaDebug"); } catch (_) {}
+      console.log("[nanpa-debug] disabled");
+    };
+    globalThis.clearNanpaDebugLogs = function clearNanpaDebugLogs() {
+      globalThis.__NANPA_DEBUG_LOGS__ = [];
+      __nanpaDebugSeq = 0;
+      console.log("[nanpa-debug] logs cleared");
+    };
+    globalThis.copyNanpaDebugLogs = function copyNanpaDebugLogs() {
+      const text = JSON.stringify(globalThis.__NANPA_DEBUG_LOGS__ || [], null, 2);
+      if (globalThis.navigator?.clipboard?.writeText) {
+        globalThis.navigator.clipboard.writeText(text).then(() => console.log("[nanpa-debug] logs copied to clipboard"));
+      } else {
+        console.log(text);
+      }
+      return text;
+    };
+  } catch (_) {}
+
+  nanpaDebugEmit("debug:init", {
+    alwaysOn: true,
+    note: "Nanpa parser/renderer debug logs are enabled automatically. Reproduce the render and copy console output."
+  });
+
 
   function ensureDomReady() {
     if (document.body) return Promise.resolve();
@@ -639,8 +747,10 @@ const SitelenRenderer = (() => {
         }
       }
       while (elements.length > 0 && elements[elements.length - 1].type === 'gap') elements.pop();
+      nanpaDebugTable("ast-to-line-elements:line-elements", elements.map(nanpaDebugElementSummary));
       lines.push(elements);
     }
+    nanpaDebugEmit("ast-to-line-elements:done", { lineCount: lines.length });
     return lines;
   }
 
@@ -1153,6 +1263,24 @@ const SitelenRenderer = (() => {
       y += L.lineBoxH;
       if (L.lineIndex < measuredLines.length - 1) y += lineGap;
     }
+    nanpaDebugEmit("render-plan:built", {
+      widthPx: plan.widthPx,
+      heightPx: plan.heightPx,
+      lineCount: plan.lines.length,
+      runs: (plan.lines || []).flatMap(line => (line.runs || []).map(run => ({
+        id: run.id,
+        lineIndex: run.lineIndex,
+        kind: run.kind,
+        fontRole: run.fontRole,
+        fontFamily: run.fontFamily,
+        sourceText: run.sourceText,
+        sourceStart: run.sourceStart,
+        sourceEnd: run.sourceEnd,
+        encodedText: run.encodedText,
+        cps: Array.isArray(run.cps) ? nanpaDebugCps(run.cps) : null,
+        element: nanpaDebugElementSummary(run._element)
+      })))
+    });
     return plan;
   }
 
@@ -1248,6 +1376,10 @@ const SitelenRenderer = (() => {
       if (typeof __bridgeFontsReadyForPx === 'function') await __bridgeFontsReadyForPx(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56));
       if (typeof __bridgeWarmUpCanvasFontsOnce === 'function') __bridgeWarmUpCanvasFontsOnce();
       const linesElements = await astToLineElements(ast, config);
+      nanpaDebugEmit("render-ast:lines-elements", {
+        normalizedInput: ast?.normalizedInput || null,
+        lines: linesElements.map(line => line.map(nanpaDebugElementSummary))
+      });
       const canvas = document.createElement('canvas');
       const renderFontPx = Math.max(8, Number(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56));
       __bridgeRenderAllLinesToCanvas(canvas, linesElements, {
@@ -2246,6 +2378,17 @@ function wireHaloControls() {
     function makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
       const displayCps = numericCartoucheDisplayCps(cps);
       if (!displayCps || displayCps.length === 0) return;
+      nanpaDebugEmit("numeric-cartouche:emit", {
+        sourceText,
+        sourceStart,
+        sourceEnd,
+        sourceKind,
+        sourceSegmentIndex,
+        fontPx,
+        abbreviateNumericCartouches: getAbbreviateNumericCartouches(),
+        inputCps: nanpaDebugCps(cps),
+        displayCps: nanpaDebugCps(displayCps)
+      });
       makeCartoucheElementFromCodepoints(elements, displayCps, {
         fontPx,
         // Numeric/date/time cartouches must use the numeric/cartouche companion
@@ -3502,90 +3645,119 @@ function wireHaloControls() {
       return out;
     }
 
+        function makeNanpaLinjanProperNameHitFromSpan(rawSpan, start) {
+      const compact = String(rawSpan ?? "").replace(/[ \t]+/g, "");
+      if (compact.length < 5) return null;
+      if (!isValidNanpaLinjanProperName(compact)) return null;
+
+      let core = compact.slice(0, -1); // drop final N
+      let hasPercent = false;
+
+      if (/noke$/i.test(core)) {
+        hasPercent = true;
+        core = core.slice(0, -4);
+        if (core.length < 2) return null;
+      }
+
+      const coreCaps = core.toUpperCase();
+      const caps = hasPercent ? (coreCaps + "OKN") : (coreCaps + "N");
+
+      return {
+        kind: "name",
+        index: start,
+        end: start + String(rawSpan).length,
+        caps
+      };
+    }
+
     function findNanpaLinjanProperNameSequencesWithCaps(text) {
       const s = String(text ?? "");
       if (!s) return [];
 
-      const re = /(^|[^A-Za-z])((?:ne)[A-Za-z]*(?:\s+[A-Za-z]{2,}){0,20}[A-Za-z]*[nN])(?![A-Za-z])/gi;
-
+      nanpaDebugEmit("proper-name-scanner:start", { text: s });
       const hits = [];
-      let m;
 
-      while ((m = re.exec(s)) !== null) {
-        const lead = m[1] ?? "";
-        const rawMatch = m[2] ?? "";
-        if (!rawMatch) continue;
+      // Scan physical lines independently. A nanpa-linja-n proper-name numeric
+      // cartouche must never be matched across a newline.
+      const lineRe = /[^\r\n]+/g;
+      let lineMatch;
 
-        const start = (m.index | 0) + lead.length;
-        const end = start + rawMatch.length;
+      while ((lineMatch = lineRe.exec(s)) !== null) {
+        const line = lineMatch[0];
+        const lineStart = lineMatch.index | 0;
 
-        const compact = rawMatch.replace(/\s+/g, "");
-        if (compact.length < 5) continue;
+        const words = [];
+        const wordRe = /[A-Za-z]+/g;
+        let wm;
 
-        if (!isValidNanpaLinjanProperName(compact)) {
-          // The greedy {0,20} repetition swallowed multiple identifiers (or TP
-          // words between them) into one invalid span — this happens when several
-          // proper names appear on the same line separated by plain TP words.
-          // Recovery: walk the space boundaries of rawMatch from shortest to
-          // longest prefix, emit the first valid sub-name found, then back the
-          // regex up to start+1 so the remaining names in the region are picked
-          // up on the next iterations.
-          const wsPositions = [];
-          for (let wi = 0; wi < rawMatch.length; wi++) {
-            if (rawMatch[wi] === ' ' || rawMatch[wi] === '\t') wsPositions.push(wi);
-          }
-          for (const wsIdx of wsPositions) {
-            const prefix = rawMatch.slice(0, wsIdx);
-            const prefixCompact = prefix.replace(/\s+/g, '');
-            if (prefixCompact.length < 5) continue;
-            if (!isValidNanpaLinjanProperName(prefixCompact)) continue;
-            // Valid sub-name found — emit it using the same logic as the main path.
-            let subCore = prefixCompact.slice(0, -1);
-            let subHasPercent = false;
-            if (/noke$/i.test(subCore)) {
-              subHasPercent = true;
-              subCore = subCore.slice(0, -4);
-              if (subCore.length < 2) break;
+        while ((wm = wordRe.exec(line)) !== null) {
+          words.push({
+            raw: wm[0],
+            start: lineStart + wm.index,
+            end: lineStart + wm.index + wm[0].length
+          });
+        }
+
+        for (let i = 0; i < words.length; i++) {
+          const first = words[i];
+
+          // Numeric cartouche proper names start with Ne...
+          if (!/^ne/i.test(first.raw)) continue;
+
+          let best = null;
+          let bestJ = -1;
+          const maxJ = Math.min(words.length - 1, i + 20);
+
+          for (let j = i; j <= maxJ; j++) {
+            const spanStart = first.start;
+            const spanEnd = words[j].end;
+            const rawSpan = s.slice(spanStart, spanEnd);
+
+            // Only horizontal whitespace is allowed inside a spaced proper name.
+            // Punctuation and newlines terminate the candidate span.
+            if (!/^[A-Za-z]+(?:[ \t]+[A-Za-z]+)*$/.test(rawSpan)) continue;
+
+            const hit = makeNanpaLinjanProperNameHitFromSpan(rawSpan, spanStart);
+            if (hit) {
+              nanpaDebugEmit("proper-name-scanner:valid-candidate", {
+                rawSpan,
+                spanStart,
+                spanEnd,
+                caps: hit.caps,
+                wordStartIndex: i,
+                wordEndIndex: j
+              });
+              best = hit;
+              bestJ = j;
             }
-            const subCoreCaps = subCore.toUpperCase();
-            const subCaps = subHasPercent ? (subCoreCaps + 'OKN') : (subCoreCaps + 'N');
-            hits.push({ kind: 'name', index: start, end: start + prefix.length, caps: subCaps });
-            break;
           }
-          // Back up so subsequent proper names in this region are not skipped.
-          re.lastIndex = start + 1;
-          continue;
+
+          if (best) {
+            nanpaDebugEmit("proper-name-scanner:selected", {
+              sourceText: s.slice(best.index, best.end),
+              index: best.index,
+              end: best.end,
+              caps: best.caps,
+              startWord: first.raw,
+              bestJ
+            });
+            hits.push(best);
+            i = bestJ;
+          }
         }
-
-       // compact ends with 'n' by regex + validation
-        let core = compact.slice(0, -1);
-
-        // NEW: if the identifier ends with "...noken" (i.e. core ends with "noke"),
-        // treat that as the percent marker and inject OK into caps.
-        // We also remove the trailing "noke" from the core so it doesn't get treated
-        // as part of the numeric name-encoding.
-        let hasPercent = false;
-        if (/noke$/i.test(core)) {
-          hasPercent = true;
-          core = core.slice(0, -4); // drop the trailing "noke"
-          if (core.length < 2) continue; // avoid degenerate cases
-        }
-
-        // Build caps. If percent, inject OK before final N.
-        const coreCaps = core.toUpperCase();
-        const caps = hasPercent ? (coreCaps + "OKN") : (coreCaps + "N");
-
-        hits.push({ kind: "name", index: start, end, caps });
-
       }
 
+      nanpaDebugTable("proper-name-scanner:final-hits", hits.map(h => ({
+        kind: h.kind,
+        sourceText: s.slice(h.index, h.end),
+        index: h.index,
+        end: h.end,
+        caps: h.caps
+      })));
       return hits;
     }
 
-    /* ============================================================
-       Nanpa-linja-n TP number-phrase scanner in plain text
-       ============================================================ */
-    function findNanpaLinjanTpPhraseSequences(text) {
+function findNanpaLinjanTpPhraseSequences(text) {
       const s = String(text ?? "");
       if (!s) return [];
 
@@ -3684,6 +3856,13 @@ function wireHaloControls() {
         lastEnd = h.end;
       }
 
+      nanpaDebugTable("hit-merge:selected", out.map(h => ({
+        kind: h.kind,
+        index: h.index,
+        end: h.end,
+        caps: h.caps || null,
+        words: Array.isArray(h.words) ? h.words.join(" ") : null
+      })));
       return out;
     }
 
@@ -4865,6 +5044,21 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const ascent = Math.min(finalH, r.inkAscent ?? baselineY);
       const descent = Math.max(0, Math.min(finalH - ascent, r.inkDescent ?? (finalH - baselineY)));
 
+      nanpaDebugEmit("cartouche-element:push", {
+        sourceText,
+        sourceStart,
+        sourceEnd,
+        sourceKind,
+        sourceSegmentIndex,
+        fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        fontPx,
+        finalW,
+        finalH,
+        cps: nanpaDebugCps(cps),
+        manualTallies: Array.isArray(manualTallies) ? manualTallies.slice() : null,
+        isLiteralCartouche: !!isLiteralCartouche
+      });
+
       elements.push({
         type: "cartouche",
         cps: Array.from(cps),
@@ -4988,6 +5182,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     function renderTpWordsFromText(text, elements, { fontPx, mode, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null, mixedStyle = "short" }) {
       const s = String(text ?? "");
+      nanpaDebugEmit("render-tp-words:start", { text: s, fontPx, mode, sourceBaseStart, sourceKind, sourceSegmentIndex, mixedStyle });
       const rawTokens = [];
       const tokenRe = /\S+/g;
       let tm;
@@ -5059,6 +5254,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (trimmed) {
           const idCps = tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ?? tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
           if (idCps && idCps.length) {
+            nanpaDebugEmit("render-tp-words:token-decoded-as-numeric-identifier", {
+              token: tok,
+              trimmed,
+              sourceStart: sourceBaseStart + trimmedStart,
+              sourceEnd: sourceBaseStart + trimmedEnd,
+              cps: nanpaDebugCps(idCps)
+            });
             makeNumericCartoucheElementFromCodepoints(elements, idCps, { fontPx, fgCss: getFgHex(), sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
             for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
             continue;
@@ -5129,6 +5331,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const mode = getNanpaLinjanMode();
       const s = String(segmentText ?? "");
       if (!s.trim()) return;
+      nanpaDebugEmit("parse-text:start", { segmentText: s, fontPx, mode, sourceBaseStart, sourceKind, sourceSegmentIndex, mixedStyle });
 
       const timeHits = findTimeSequencesWithCaps(s);
       const dateHits = findDateSequencesWithCaps(s);
@@ -5137,7 +5340,34 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const nameHits = findNanpaLinjanProperNameSequencesWithCaps(s);
       const phraseHits = findNanpaLinjanTpPhraseSequences(s);
 
+      nanpaDebugEmit("parse-text:raw-hit-counts", {
+        segmentText: s,
+        timeHits: timeHits.length,
+        dateHits: dateHits.length,
+        decHits: decHits.length,
+        codeHits: codeHits.length,
+        nameHits: nameHits.length,
+        phraseHits: phraseHits.length,
+        rawHits: [...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
+          kind: h.kind,
+          sourceText: s.slice(h.index, h.end),
+          index: h.index,
+          end: h.end,
+          caps: h.caps || null,
+          words: Array.isArray(h.words) ? h.words.join(" ") : null
+        }))
+      });
+
       const hits = mergeAndGreedyFilterHits([...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+
+      nanpaDebugTable("parse-text:selected-hits", hits.map(h => ({
+        kind: h.kind,
+        sourceText: s.slice(h.index, h.end),
+        index: h.index,
+        end: h.end,
+        caps: h.caps || null,
+        words: Array.isArray(h.words) ? h.words.join(" ") : null
+      })));
 
       if (!hits || hits.length === 0) {
         renderTpWordsFromText(s, elements, { fontPx, mode, sourceBaseStart, sourceKind, sourceSegmentIndex, mixedStyle });
@@ -5454,6 +5684,14 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       const segs = splitLineIntoSegments(s);
       const elements = [];
+      nanpaDebugEmit("line-to-elements:start", {
+        line: String(line ?? ""),
+        preprocessed: s,
+        fontPx,
+        mixedStyle,
+        parserMode: parser?.mode || null,
+        segments: segs.map(seg => ({ kind: seg.kind, value: seg.value }))
+      });
 
       for (let si = 0; si < segs.length; si++) {
         const seg = segs[si];
@@ -5509,6 +5747,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
 
       while (elements.length > 0 && elements[elements.length - 1].type === "gap") elements.pop();
+      nanpaDebugTable("line-to-elements:final-elements", elements.map(nanpaDebugElementSummary));
       return elements;
     }
 

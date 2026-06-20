@@ -669,93 +669,130 @@ export class CartoucheApi {
     return { word, hasAtDb: false };
   }
 
+  // Return the longest native nanpa-linja-n proper-name prefix in a
+  // capitalised run. This protects spans such as "Nenin One Len" from
+  // being partially replaced by DB entries such as "One" before the
+  // renderer's nanpa parser sees the full span. @db remains the explicit
+  // escape hatch and is handled by the caller via atDbRequested.
+  static _nativeNanpaPrefixLength(words) {
+    const runWords = Array.isArray(words) ? words : [];
+    for (let len = runWords.length; len >= 1; len--) {
+      const candidateWords = runWords.slice(0, len);
+      const candidateSegs = segmentWords(candidateWords);
+      if (
+        candidateSegs.length === 1 &&
+        candidateSegs[0].type === 'nanpa' &&
+        candidateSegs[0].words.length === len
+      ) {
+        return len;
+      }
+    }
+    return 0;
+  }
+
+  static _lookupSingleDbWord(cleanWord, pageMap, atDbRequested) {
+    if (!pageMap || !pageMap.has(cleanWord)) return null;
+
+    const mapVal = pageMap.get(cleanWord);
+    if (mapVal === null) {
+      return { type: 'ignore', words: [cleanWord] };
+    }
+
+    const { input, inputForceNormal, forceNormal, requiresAtDb } = mapVal;
+
+    // Entries that collide with ordinary toki pona words only activate when
+    // @db is explicitly attached to this exact single word.
+    if (requiresAtDb && !atDbRequested) return null;
+
+    const chosenInput = (forceNormal && atDbRequested) ? inputForceNormal : input;
+    return { type: 'cartouche', input: chosenInput };
+  }
+
   static greedyScan(words, pageMap) {
-    // Note: even with empty map we must process words to strip @db suffixes
+    // Note: even with empty map we must process words to strip @db suffixes.
+    // @db applies only to the single word it is attached to. It never forces
+    // lookup for a preceding multi-word capitalised run.
     const hasEntries = pageMap && pageMap.size > 0;
 
     const result = [];
     let i = 0;
 
     while (i < words.length) {
-      const word = words[i];
+      const rawWord = words[i];
+      const { word: cleanWord, hasAtDb } = CartoucheApi._stripAtDb(rawWord);
 
-      // Not capitalised (after stripping @db) — pass through
-      // @db on a lowercase word is meaningless, strip and pass through
-      const { word: cleanWord, hasAtDb } = CartoucheApi._stripAtDb(word);
+      // @db is a single-word lookup override only.
+      if (hasAtDb) {
+        if (/^[A-Z]/.test(cleanWord) && hasEntries) {
+          const hit = CartoucheApi._lookupSingleDbWord(cleanWord, pageMap, true);
+          if (hit) {
+            result.push(hit);
+            i++;
+            continue;
+          }
+        }
+
+        // No DB match: strip @db and pass the word through. This also lets a
+        // native single-word nanpa-linja-n name such as Nemen still render via
+        // the renderer if no database entry exists.
+        result.push({ type: 'text', words: [cleanWord] });
+        i++;
+        continue;
+      }
+
+      // Lowercase/non-capitalised words are never DB-looked-up.
       if (!/^[A-Z]/.test(cleanWord)) {
         result.push({ type: 'text', words: [cleanWord] });
         i++;
         continue;
       }
 
-      // Collect consecutive capitalised words as candidate run.
-      // @db is only meaningful on the LAST word of the run.
-      // Strip @db from last word to get clean run words.
+      // Collect a capitalised run, but stop before any @db token because @db
+      // belongs only to that token and must not affect the preceding run.
       let j = i;
       while (j < words.length) {
-        const { word: w } = CartoucheApi._stripAtDb(words[j]);
-        if (!/^[A-Z]/.test(w)) break;
+        const stripped = CartoucheApi._stripAtDb(words[j]);
+        if (stripped.hasAtDb) break;
+        if (!/^[A-Z]/.test(stripped.word)) break;
         j++;
       }
-      const rawRunWords = words.slice(i, j);
-      // Strip @db from last word, record if it was present
-      const lastStripped = CartoucheApi._stripAtDb(rawRunWords[rawRunWords.length - 1]);
-      const atDbRequested = lastStripped.hasAtDb;
-      const runWords = [
-        ...rawRunWords.slice(0, -1),
-        lastStripped.word,
-      ];
+      const runWords = words.slice(i, j).map(w => CartoucheApi._stripAtDb(w).word);
 
-      // Try greedy lookup against pageMap keys, longest prefix first.
-      // A purely nanpa candidate is never looked up standalone.
-      let matched = false;
-      if (!hasEntries) {
-        // No DB entries — pass cleaned words through (strips @db)
+      // Protect native nanpa-linja-n proper-name spans before DB lookup.
+      // Without this, a valid span like "Nenin One Len" can be split by a
+      // shorter DB match such as "One", producing "Nenin [ ... ] Len".
+      const nativeNanpaPrefixLen = CartoucheApi._nativeNanpaPrefixLength(runWords);
+      if (nativeNanpaPrefixLen > 0) {
+        result.push({ type: 'text', words: runWords.slice(0, nativeNanpaPrefixLen) });
+        i += nativeNanpaPrefixLen;
+        continue;
+      }
+
+      // Multi-word DB lookup is intentionally not allowed. If the current
+      // capitalised run has more than one word and is not a native nanpa span,
+      // pass the whole run through unchanged. This prevents an interior word
+      // such as "One" in "Nenin One Len@db" from being looked up unless
+      // @db is attached to that exact word.
+      if (runWords.length > 1) {
         result.push({ type: 'text', words: runWords });
         i += runWords.length;
         continue;
       }
-      for (let wlen = runWords.length; wlen >= 1; wlen--) {
-        const candidateWords = runWords.slice(0, wlen);
-        const key = candidateWords.join(' ');
 
-        // Skip purely nanpa candidates UNLESS @db was requested
-        // (forceNormal entries need @db to activate even though they look like nanpa)
-        const candidateSegs = segmentWords(candidateWords);
-        if (candidateSegs.length === 1 && candidateSegs[0].type === 'nanpa' && !atDbRequested) continue;
-
-        if (pageMap.has(key)) {
-          const mapVal = pageMap.get(key);
-
-          if (mapVal === null) {
-            // ignore entry
-            result.push({ type: 'ignore', words: candidateWords });
-          } else {
-            // mapVal is { input, inputForceNormal, forceNormal, requiresAtDb }
-            const { input, inputForceNormal, forceNormal, requiresAtDb } = mapVal;
-
-            // Some entries collide with ordinary toki pona words.
-            // Those must only activate when @db is explicitly requested.
-            if (requiresAtDb && !atDbRequested) {
-              continue;
-            }
-
-            // Use forceNormal input only when @db was explicitly requested.
-            // Otherwise always use normal input (nanpa renders natively).
-            const chosenInput = (forceNormal && atDbRequested) ? inputForceNormal : input;
-            result.push({ type: 'cartouche', input: chosenInput });
-          }
-          i += wlen;
-          matched = true;
-          break;
+      // Single capitalised word lookup is still allowed. Entries that collide
+      // with ordinary toki pona words are filtered inside _lookupSingleDbWord
+      // unless @db was explicitly attached to this same single word.
+      if (hasEntries) {
+        const hit = CartoucheApi._lookupSingleDbWord(cleanWord, pageMap, false);
+        if (hit) {
+          result.push(hit);
+          i++;
+          continue;
         }
       }
 
-      if (!matched) {
-        // No match — pass first word through (cleaned), retry from next
-        result.push({ type: 'text', words: [runWords[0]] });
-        i += 1;
-      }
+      result.push({ type: 'text', words: [cleanWord] });
+      i++;
     }
 
     return result;
