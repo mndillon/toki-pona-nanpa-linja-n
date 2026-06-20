@@ -691,57 +691,62 @@ None of what follows, in this section, is part of the nanpa-linja-n proposal onl
 Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan jan Emalan.
 They never appear in a numeric cartouche.
 Words primarialy chosen for the shape of their sitelen pona glyphs.
+In numeric expressions the word 'nanpa' can appear once at the start as 'nanpa la'.
 The Toki Pona expression 'li sama' has an unfortunate sitelen pona appearance identical to '>=', so 'li' should be left out of sentences about numeric expressions.
 
 ### Equals: sama
 - Shape of sitelen pona glyph (looks like equals)
 - Good candidate
 - Never appears in a numeric cartouche
-- nanpa Nenin One Len sama nanpa Newen Ono Ten
+- Example: nanpa la zz Nenin One Len sama Newen Ono Ten
 
 ### Addition: en
 - Shape of sitelen pona glyph (looks like plus)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nanpa Newen en Neten en Nesen sama nanpa Nenun
-- o pana e nanpa Nejen tawa nanpa Nesen
+- Example: nanpa la zz Newen en Neten en Nesen sama Nenun
+- Example: nanpa la zz o pana e Nejen tawa Nesen
 
 ### Subtract: lape
 - Shape of sitelen pona glyph (looks like subtract)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but negative symbol can appear in a numeric cartouche)
-- nanpa Nesen lape nanpa Nenoten sama nanpa Nelen
+- Example: nanpa la zz Nesen lape Nenoten sama Nelen
 
 ### Multiply: lete
 - Shape of sitelen pona glyph (looks like multiply in ascii)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nanpa Nesen lete nanpa Neten sama nanpa Nenun
+- Example: nanpa la zz Nesen lete Neten sama Nenun
 
 ### Division: kipisi
 - Shape of sitelen pona glyph (looks like divide)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but fraction symbol can appear in a numeric cartouche)
-- nanpa Nepen kipisi nanpa Nenoten sama nanpa Nenonan
+- Example: nanpa la zz Nepen kipisi Nenoten sama Nenonan
 
 ### Power: sewi
 - Shape of sitelen pona glyph (looks like rising up)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nanpa Neten sewi nanpa Nesen sama nanpa Nepen
-- nanpa Nemen Eken sama nanpa Nemen lete nanpa Newenin sewi nanpa Nesen
+- Example: nanpa la zz Neten sewi Nesen sama Nepen
+- Example: nanpa la zz Nemen Eken sama Nemen lete Newenin sewi Nesen
 
 ### Root: lili
 - Shape of sitelen pona glyph (looks like small part of)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nanpa Nesen lili nanpa Nepen sama nanpa Neten
+- Example: nanpa la zz Nesen lili Nepen sama Neten
+
+
+<img src="images/arithmetic_operations_examples.png" width="569"/><br/>
+
 
 Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers and roots) are better left in mathematical notation:
 

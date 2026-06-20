@@ -1947,7 +1947,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=56').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=63').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -15420,7 +15420,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=55');
+        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=63');
         const NanpaParser = rendererMod?.NanpaParser;
         if (NanpaParser && !globalThis.NanpaParser) globalThis.NanpaParser = NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });

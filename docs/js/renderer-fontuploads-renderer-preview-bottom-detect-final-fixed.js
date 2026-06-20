@@ -1,4 +1,3 @@
-
 const SitelenRenderer = (() => {
   let __coreReady = null;
   let __coreHost = null;
@@ -3709,6 +3708,18 @@ function wireHaloControls() {
           const maxJ = Math.min(words.length - 1, i + 20);
 
           for (let j = i; j <= maxJ; j++) {
+            // A spaced nanpa-linja-n proper-name continuation word must be capitalized.
+            // This prevents ordinary lowercase toki pona words such as "en" from being
+            // swallowed into the preceding numeric proper-name run:
+            //
+            //   Newen en  ->  [Newen] en
+            //
+            // while still allowing:
+            //
+            //   Nenin One Len -> [Nenin One Len]
+            //
+            if (j > i && !/^[A-Z]/.test(words[j].raw)) break;
+
             const spanStart = first.start;
             const spanEnd = words[j].end;
             const rawSpan = s.slice(spanStart, spanEnd);
@@ -3719,14 +3730,6 @@ function wireHaloControls() {
 
             const hit = makeNanpaLinjanProperNameHitFromSpan(rawSpan, spanStart);
             if (hit) {
-              nanpaDebugEmit("proper-name-scanner:valid-candidate", {
-                rawSpan,
-                spanStart,
-                spanEnd,
-                caps: hit.caps,
-                wordStartIndex: i,
-                wordEndIndex: j
-              });
               best = hit;
               bestJ = j;
             }
