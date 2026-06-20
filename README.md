@@ -103,6 +103,7 @@ Applies to all numbers no matter what form they take.
 
 Rules:
 
+- All decimal numbers and digit sequences are encoded as nanpa-linja-n proper names and may be presented in sitelen pona as nanpa-linja-n numeric cartouches.
 - All nanpa-linja-n numeric cartouches are read as nanpa-linja-n proper names corresponding to the encoded number, date, or time
 - All nanpa-linja-n numeric cartouches will start with nanpa and end with nanpa
 - All nanpa-linja-n numeric proper names derived from a cartouche will start with Ne- and end with -n
