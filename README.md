@@ -637,7 +637,7 @@ Examples:
 ### Digit Roots
 - Unique syllables
 - Easy to remember and use
-- Very useful when speaking and hearing long sequences of digits ( 5201 → neleteniwen → 5201 )
+- Very useful when speaking and hearing long sequences of digits ( 5201 → Neleteniwen → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
@@ -667,7 +667,7 @@ Examples:
   - Positional decimal (**nanpa-linja-n** style) strings:
     - The speaker uses **nanpa-linja-n** digit names with concatenation and **Ne-** signalling the start and **-n** signalling the end of the string of digits
     - The speaker thinks: 78 = 7 followed by 8
-    - The speaker says (the way they think): nemepen
+    - The speaker says (the way they think): Nemepen
     - The listener recognises **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
     - The listener understands: "78"
     - The listener may understand that "78" represents a numeric value, but that understanding is determined by context
@@ -691,19 +691,20 @@ None of what follows, in this section, is part of the nanpa-linja-n proposal onl
 Some of the suggestions below are inspired by [seximal] nasin nanpa suli, tan jan Emalan.
 They never appear in a numeric cartouche.
 Words primarialy chosen for the shape of their sitelen pona glyphs.
+The Toki Pona expression 'li sama' has an unfortunate sitelen pona appearance identical to '>=', so 'li' should be left out of sentences about numeric expressions.
 
 ### Equals: sama
 - Shape of sitelen pona glyph (looks like equals)
 - Good candidate
 - Never appears in a numeric cartouche
-- nanpa Nenin One Len li sama nanpa Newen Ono Ten
+- nanpa Nenin One Len sama nanpa Newen Ono Ten
 
 ### Addition: en
 - Shape of sitelen pona glyph (looks like plus)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nanpa Newen en Neten en Nesen li sama nanpa Nenun
+- nanpa Newen en Neten en Nesen sama nanpa Nenun
 - o pana e nanpa Nejen tawa nanpa Nesen
 
 ### Subtract: lape
@@ -711,31 +712,38 @@ Words primarialy chosen for the shape of their sitelen pona glyphs.
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but negative symbol can appear in a numeric cartouche)
-- nanpa Nesen lape nanpa Nenoten li sama nanpa Nelen
+- nanpa Nesen lape nanpa Nenoten sama nanpa Nelen
 
 ### Multiply: lete
 - Shape of sitelen pona glyph (looks like multiply in ascii)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nanpa Nesen lete nanpa Neten li sama nanpa Nenun
+- nanpa Nesen lete nanpa Neten sama nanpa Nenun
 
 ### Division: kipisi
 - Shape of sitelen pona glyph (looks like divide)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but fraction symbol can appear in a numeric cartouche)
-- nanpa Nepen kipisi nanpa Nenoten li sama nanpa Nenonan
+- nanpa Nepen kipisi nanpa Nenoten sama nanpa Nenonan
 
 ### Power: sewi
 - Shape of sitelen pona glyph (looks like rising up)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- nanpa Neten sewi nanpa Nesen li sama nanpa Nepen
-- nanpa Nemen Eken li sama nanpa Nemen lete nanpa Newenin sewi nanpa Nesen
+- nanpa Neten sewi nanpa Nesen sama nanpa Nepen
+- nanpa Nemen Eken sama nanpa Nemen lete nanpa Newenin sewi nanpa Nesen
 
-Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers) are better left in mathematical notation:
+### Root: lili
+- Shape of sitelen pona glyph (looks like small part of)
+- Good candidate
+- Adds more context, makes the assumption that the strings of digits represent numeric values
+- Never appears in a numeric cartouche
+- nanpa Nesen lili nanpa Nepen sama nanpa Neten
+
+Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers and roots) are better left in mathematical notation:
 
 cos(2π) = 1
 
