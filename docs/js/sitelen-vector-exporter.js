@@ -1,4 +1,4 @@
-console.log("[sitelen-vector-js] CARTOUCHE-LINE-CLIP EXPORTER v136 clip-strategy loaded");
+console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v138 PDF-USES-REFLOWED-D loaded");
 const DEFAULT_WASM_MODULE_URL = new URL("../wasm/sitelen_vector_wasm.js?v=143", import.meta.url).href;
 const PX_TO_PT = 72 / 96;
 const CARTOUCHE_START_CP = 0xF1990;
@@ -676,7 +676,7 @@ function buildSvgRectPath(x, y, w, h, r = 0) {
 
 function makeSyntheticPathFromD(d, { fill = "#111111", halo = null, source = "synthetic" } = {}) {
   const s = String(d || "");
-  const nums = Array.from(s.matchAll(/-?\d+(?:\.\d+)?/g)).map(m => Number(m[0])).filter(Number.isFinite);
+  const nums = Array.from(s.matchAll(/-?\d*\.?\d+(?:[eE][+-]?\d+)?/g)).map(m => Number(m[0])).filter(Number.isFinite);
   const xs = [];
   const ys = [];
   for (let i = 0; i + 1 < nums.length; i += 2) {
@@ -879,7 +879,7 @@ function vectorPathBounds(path) {
     const commands = asArray(path?.commands || path?.cmds || path?.pathCommands);
     if (commands.length) d = commandsToSvgD(commands);
   }
-  const nums = Array.from(d.matchAll(/-?\d+(?:\.\d+)?/g)).map(m => Number(m[0])).filter(Number.isFinite);
+  const nums = Array.from(d.matchAll(/-?\d*\.?\d+(?:[eE][+-]?\d+)?/g)).map(m => Number(m[0])).filter(Number.isFinite);
   const xs = [];
   const ys = [];
   for (let i = 0; i + 1 < nums.length; i += 2) {
@@ -1396,7 +1396,7 @@ function pathBoundsCenterX(path) {
   }
 
   const d = String(path?.d || path?.pathData || path?.svgPath || "");
-  const nums = Array.from(d.matchAll(/-?\d+(?:\.\d+)?/g)).map(m => Number(m[0])).filter(Number.isFinite);
+  const nums = Array.from(d.matchAll(/-?\d*\.?\d+(?:[eE][+-]?\d+)?/g)).map(m => Number(m[0])).filter(Number.isFinite);
   const xs = [];
   for (let i = 0; i + 1 < nums.length; i += 2) xs.push(nums[i]);
   return xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : NaN;
@@ -1409,7 +1409,7 @@ function pathBoundsWidth(path) {
   }
 
   const d = String(path?.d || path?.pathData || path?.svgPath || "");
-  const nums = Array.from(d.matchAll(/-?\d+(?:\.\d+)?/g)).map(m => Number(m[0])).filter(Number.isFinite);
+  const nums = Array.from(d.matchAll(/-?\d*\.?\d+(?:[eE][+-]?\d+)?/g)).map(m => Number(m[0])).filter(Number.isFinite);
   const xs = [];
   for (let i = 0; i + 1 < nums.length; i += 2) xs.push(nums[i]);
   return xs.length ? Math.max(0, Math.max(...xs) - Math.min(...xs)) : 0;
@@ -1578,7 +1578,7 @@ function prepareCartouchePayloadForVector(run, payload, exporter = null) {
 function svgDToPdfCommands(d) {
   const s = String(d || "").trim();
   if (!s) return [];
-  const tokens = Array.from(s.matchAll(/[MLQCZ]|-?\d+(?:\.\d+)?/g)).map(m => m[0]);
+  const tokens = Array.from(s.matchAll(/[MLQCZ]|-?\d*\.?\d+(?:[eE][+-]?\d+)?/g)).map(m => m[0]);
   const out = [];
   let i = 0, cmd = null;
   function take() {
@@ -1873,6 +1873,226 @@ function finiteBounds(bounds) {
   return Number.isFinite(bounds.minX) && Number.isFinite(bounds.minY) && Number.isFinite(bounds.maxX) && Number.isFinite(bounds.maxY);
 }
 
+
+function vectorRunLogicalLeft(run) {
+  const n = Number(run?.xPx ?? getRunX(run) ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function vectorRunLogicalWidth(run) {
+  const n = Number(run?.widthPx ?? 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function unionPathBounds(paths) {
+  const out = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  for (const p of asArray(paths)) includeBounds(out, p?.bounds || vectorPathBounds(p));
+  return finiteBounds(out) ? out : null;
+}
+
+function translateBoundsLike(bounds, dx, dy) {
+  if (!bounds) return bounds;
+  const minX = Number(bounds.minX);
+  const minY = Number(bounds.minY);
+  const maxX = Number(bounds.maxX);
+  const maxY = Number(bounds.maxY);
+  if (![minX, minY, maxX, maxY].every(Number.isFinite)) return bounds;
+  return { minX: minX + dx, minY: minY + dy, maxX: maxX + dx, maxY: maxY + dy };
+}
+
+function translateClipRectLike(clipRect, dx, dy) {
+  if (!clipRect || typeof clipRect !== "object") return clipRect;
+  const out = { ...clipRect };
+  if (Number.isFinite(Number(out.x))) out.x = Number(out.x) + dx;
+  if (Number.isFinite(Number(out.y))) out.y = Number(out.y) + dy;
+  return out;
+}
+
+function translateSvgPathD(d, dx, dy) {
+  const src = String(d || "");
+  if (!src) return src;
+
+  const tokens = src.match(/[AaCcHhLlMmQqSsTtVvZz]|-?\d*\.?\d+(?:[eE][+-]?\d+)?/g);
+  if (!tokens || !tokens.length) return src;
+
+  const out = [];
+  let cmd = "";
+  let numericIndex = 0;
+
+  function isCommand(token) {
+    return /^[AaCcHhLlMmQqSsTtVvZz]$/.test(token);
+  }
+
+  function shiftedNumber(token, axis) {
+    const n = Number(token);
+    if (!Number.isFinite(n)) return token;
+    const v = axis === "x" ? n + dx : axis === "y" ? n + dy : n;
+    return num(v);
+  }
+
+  for (const token of tokens) {
+    if (isCommand(token)) {
+      cmd = token;
+      numericIndex = 0;
+      out.push(token);
+      continue;
+    }
+
+    const upper = cmd.toUpperCase();
+    const relative = cmd && cmd === cmd.toLowerCase();
+    let axis = null;
+
+    if (!relative) {
+      if (upper === "M" || upper === "L" || upper === "T") axis = (numericIndex % 2 === 0) ? "x" : "y";
+      else if (upper === "C") axis = (numericIndex % 2 === 0) ? "x" : "y";
+      else if (upper === "S" || upper === "Q") axis = (numericIndex % 2 === 0) ? "x" : "y";
+      else if (upper === "H") axis = "x";
+      else if (upper === "V") axis = "y";
+      else if (upper === "A") {
+        const pos = numericIndex % 7;
+        axis = pos === 5 ? "x" : pos === 6 ? "y" : null;
+      }
+    }
+
+    out.push(axis ? shiftedNumber(token, axis) : token);
+    numericIndex += 1;
+  }
+
+  return out.join(" ");
+}
+
+function translateVectorPathForReflow(path, dx, dy = 0) {
+  if (!path || (!dx && !dy)) return path;
+
+  const d0 = String(path?.d || path?.pathData || path?.svgPath || "");
+  const commands = asArray(path?.commands || path?.cmds || path?.pathCommands);
+  const originalBounds = path?.bounds || (d0 ? vectorPathBounds({ d: d0 }) : null) || (commands.length ? vectorPathBounds({ commands }) : null);
+  const translatedBounds = originalBounds ? translateBoundsLike(originalBounds, dx, dy) : null;
+  const translatedClip = translateClipRectLike(path?.clipRect, dx, dy);
+
+  // Prefer translating the SVG path string when it exists.  Some WASM builds
+  // return command arrays whose objects are not in this exporter's simple
+  // {cmd:"M"|"L"|"Q"|"C"|"Z"} shape.  Serialising those arrays back to `d`
+  // can produce an empty path, which made every translated run after the first
+  // disappear.  The `d` string is the canonical drawable form for SVG export.
+  if (d0) {
+    const d = translateSvgPathD(d0, dx, dy);
+    const next = {
+      ...path,
+      d: path?.d ? d : path?.d,
+      pathData: path?.pathData ? d : path?.pathData,
+      svgPath: path?.svgPath ? d : path?.svgPath,
+      bounds: translatedBounds || vectorPathBounds({ d }),
+      clipRect: translatedClip,
+      reflowTranslated: true,
+      preferSvgDForPdf: true,
+      reflowDx: dx,
+      reflowDy: dy
+    };
+
+    if (commands.length) {
+      const nextCommands = commands.map(c => translateCommand(c, dx, dy));
+      next.commands = nextCommands;
+      if (Array.isArray(path?.cmds)) next.cmds = nextCommands;
+      if (Array.isArray(path?.pathCommands)) next.pathCommands = nextCommands;
+    }
+
+    return next;
+  }
+
+  if (commands.length) {
+    const nextCommands = commands.map(c => translateCommand(c, dx, dy));
+    const d = commandsToSvgD(nextCommands);
+    const next = {
+      ...path,
+      commands: nextCommands,
+      cmds: Array.isArray(path?.cmds) ? nextCommands : path?.cmds,
+      pathCommands: Array.isArray(path?.pathCommands) ? nextCommands : path?.pathCommands,
+      bounds: translatedBounds || (d ? vectorPathBounds({ d, commands: nextCommands }) : null),
+      clipRect: translatedClip,
+      reflowTranslated: true,
+      preferSvgDForPdf: true,
+      reflowDx: dx,
+      reflowDy: dy
+    };
+
+    // Only set d/pathData/svgPath when we can actually serialise the commands.
+    // Otherwise keep the object drawable state no worse than it was before.
+    if (d) {
+      next.d = d;
+      if (path?.pathData) next.pathData = d;
+      if (path?.svgPath) next.svgPath = d;
+    }
+
+    return next;
+  }
+
+  return {
+    ...path,
+    bounds: translatedBounds,
+    clipRect: translatedClip,
+    reflowTranslated: true,
+    reflowDx: dx,
+    reflowDy: dy
+  };
+}
+
+function reflowVectorRunPaths(run, runPaths, state, { debug = false, runIndex = null } = {}) {
+  const inputPaths = asArray(runPaths).filter(Boolean);
+  if (!inputPaths.length) return inputPaths;
+
+  const currentBounds = unionPathBounds(inputPaths);
+  if (!currentBounds) return inputPaths;
+
+  const logicalLeft = vectorRunLogicalLeft(run);
+  const logicalRight = logicalLeft + vectorRunLogicalWidth(run);
+
+  let desiredGap = 0;
+  let dx = 0;
+
+  if (state && state.hasPrevious && Number.isFinite(Number(state.previousActualRight))) {
+    const previousLogicalRight = Number.isFinite(Number(state.previousLogicalRight))
+      ? Number(state.previousLogicalRight)
+      : logicalLeft;
+    desiredGap = Math.max(0, logicalLeft - previousLogicalRight);
+    const targetLeft = Number(state.previousActualRight) + desiredGap;
+    dx = targetLeft - currentBounds.minX;
+  }
+
+  const translatedPaths = Math.abs(dx) > 0.0001
+    ? inputPaths.map(p => translateVectorPathForReflow(p, dx, 0))
+    : inputPaths;
+
+  const translatedBounds = Math.abs(dx) > 0.0001
+    ? { minX: currentBounds.minX + dx, minY: currentBounds.minY, maxX: currentBounds.maxX + dx, maxY: currentBounds.maxY }
+    : currentBounds;
+
+  if (state) {
+    state.hasPrevious = true;
+    state.previousActualRight = translatedBounds.maxX;
+    state.previousLogicalRight = logicalRight;
+  }
+
+  if (debug) {
+    safeConsole("log", "[sitelen-vector-exporter] vector run reflow", {
+      runIndex,
+      runId: run?.id || null,
+      lineIndex: run?.lineIndex ?? null,
+      logicalLeft,
+      logicalRight,
+      desiredGap,
+      dx,
+      before: currentBounds,
+      after: translatedBounds,
+      kind: run?.kind || null,
+      fontRole: run?.fontRole || null,
+      fontFamily: run?.fontFamily || null
+    });
+  }
+
+  return translatedPaths;
+}
+
 function getPathD(path) {
   if (!path) return "";
 
@@ -2074,7 +2294,16 @@ function pdfFromVectorDocument(doc) {
 
     const pathCommands = asArray(path?.commands || path?.cmds || path?.pathCommands);
     const dCommands = svgDToPdfCommands(path?.d || path?.pathData || path?.svgPath || "");
-    const pdfCommands = pathCommands.length ? pathCommands : dCommands;
+    // Reflowed runs are translated by rewriting the SVG `d` path.  Some WASM
+    // command arrays are not in this exporter's simple command-object shape, so
+    // using `commands` first can resurrect the old, un-reflowed coordinates in
+    // PDF while SVG/PNG are correct.  For reflowed paths, the SVG `d` string is
+    // the authoritative geometry.  Non-reflowed paths keep the older command-first
+    // behaviour to reduce regression risk elsewhere.
+    const preferSvgDForPdf = path?.preferSvgDForPdf === true || path?.reflowTranslated === true;
+    const pdfCommands = preferSvgDForPdf
+      ? (dCommands.length ? dCommands : pathCommands)
+      : (pathCommands.length ? pathCommands : dCommands);
     if (!pdfCommands.length) continue;
     const pdfPath = pdfPathCommands(pdfCommands, doc.heightPx, viewBoxX, viewBoxY) ||
       (dCommands.length ? pdfPathCommands(dCommands, doc.heightPx, viewBoxX, viewBoxY) : "");
@@ -2363,6 +2592,19 @@ export class SitelenVectorExporter {
     const allBounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     const paths = [];
     const warnings = [];
+    const vectorReflowStates = new Map();
+    const getVectorReflowStateForRun = (run) => {
+      const key = Number.isFinite(Number(run?.lineIndex)) ? Number(run.lineIndex) : 0;
+      if (!vectorReflowStates.has(key)) {
+        vectorReflowStates.set(key, {
+          lineIndex: key,
+          hasPrevious: false,
+          previousActualRight: null,
+          previousLogicalRight: null
+        });
+      }
+      return vectorReflowStates.get(key);
+    };
 
     for (let runIndex = 0; runIndex < runs.length; runIndex++) {
       const run = runs[runIndex];
@@ -2447,7 +2689,13 @@ export class SitelenVectorExporter {
             pathCount: syntheticBracketPaths.length,
             paths: debugPathSummary(syntheticBracketPaths)
           });
-          for (const p of syntheticBracketPaths) {
+          const reflowedSyntheticBracketPaths = reflowVectorRunPaths(
+            run,
+            syntheticBracketPaths,
+            getVectorReflowStateForRun(run),
+            { debug: effectiveDebug, runIndex }
+          );
+          for (const p of reflowedSyntheticBracketPaths) {
             paths.push(p);
             includeBounds(allBounds, p.bounds || vectorPathBounds(p));
           }
@@ -2523,7 +2771,13 @@ export class SitelenVectorExporter {
           pathCount: syntheticBracketPaths.length,
           paths: debugPathSummary(syntheticBracketPaths)
         });
-        for (const p of syntheticBracketPaths) {
+        const reflowedSyntheticBracketPaths = reflowVectorRunPaths(
+          run,
+          syntheticBracketPaths,
+          getVectorReflowStateForRun(run),
+          { debug: effectiveDebug, runIndex }
+        );
+        for (const p of reflowedSyntheticBracketPaths) {
           paths.push(p);
           includeBounds(allBounds, p.bounds || vectorPathBounds(p));
         }
@@ -2571,6 +2825,8 @@ export class SitelenVectorExporter {
         { debug: effectiveDebug, runIndex, clipScale: getLiteralCartoucheRuleClipScaleForRun(run, this), clipStrategy: getLiteralCartoucheRuleClipStrategyForRun(run, this), leftCapClipRatio: getLiteralCartoucheLeftCapClipRatioForRun(run, this), detectionPaths: detectionPathsForRepair }
       );
 
+      const runPathsForExport = [];
+
       // Draw manual tally geometry before the font/cartouche paths. This keeps the
       // cartouche outline continuous when halo is enabled, because the cartouche
       // stroke/fill is serialized above the synthetic tally marks/backgrounds.
@@ -2593,14 +2849,20 @@ export class SitelenVectorExporter {
           });
         }
 
-        for (const p of syntheticTallyPaths) {
-          paths.push(p);
-          includeBounds(allBounds, p.bounds);
-        }
+        runPathsForExport.push(...syntheticTallyPaths);
       }
 
       // v120: no synthetic frame/rule drawing. Only clip selected existing top/bottom overdraw paths.
-      for (const p of resultPathsForExport) {
+      runPathsForExport.push(...resultPathsForExport);
+
+      const reflowedRunPathsForExport = reflowVectorRunPaths(
+        run,
+        runPathsForExport,
+        getVectorReflowStateForRun(run),
+        { debug: effectiveDebug, runIndex }
+      );
+
+      for (const p of reflowedRunPathsForExport) {
         paths.push(p);
         includeBounds(allBounds, p.bounds || vectorPathBounds(p));
       }

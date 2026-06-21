@@ -770,7 +770,7 @@ nanpa #~WI.
           <span>Download PDF</span>
           <span class="tpLine">o kama jo e lipu PDF</span>
         </button>
-        <div id="btnDownloadPdfHelp" class="sr-only">Exports the current renderer plan as PDF vector paths using Rust/WASM.</div>
+        <div id="btnDownloadPdfHelp" class="sr-only">Exports a PDF from the same SVG-rasterized PNG geometry used by PNG export.</div>
 
         <button id="appBtnDownloadUnicodeJson" type="button" class="btnBi" aria-describedby="btnDownloadUnicodeJsonHelp">
           <span>Download Unicode JSON</span>
@@ -932,7 +932,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=63";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=160";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -940,7 +940,7 @@ nanpa #~WI.
     } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15";
 
     import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=22';
-    import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=153';
+    import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=165';
     let pageMap = new Map();
 
     "use strict";
@@ -1388,10 +1388,10 @@ nanpa #~WI.
 
     const VECTOR_DIAGNOSTIC_DEBUG = true;
     const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=63",
+      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=161",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
       cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=22",
-      vectorExporter: "./js/sitelen-vector-exporter.js?v=144",
+      vectorExporter: "./js/sitelen-vector-exporter.js?v=165",
       vectorWasm: "./wasm/sitelen_vector_wasm.js?v=143"
     });
 
@@ -6672,6 +6672,489 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       }
     }
 
+
+    // ============================================================
+    // SVG -> PDF vector conversion for text-to-sitelen
+    // ------------------------------------------------------------
+    // PDF export deliberately uses the exact SVG text produced by
+    // buildCurrentVectorSvgBlob(), which is also the source for PNG.
+    // This keeps SVG, PNG, and PDF in the same geometry pipeline and avoids
+    // the older exporter-internal PDF path that could use stale command data.
+    // ============================================================
+    const TTS_SVG_PDF_PT_PER_PX = 72 / 96;
+
+    function ttsSvgPdfClamp(n, lo, hi) {
+      return Math.min(hi, Math.max(lo, Number(n) || 0));
+    }
+
+    function ttsSvgPdfCssMap(styleText){
+      const out = {};
+      String(styleText || "").split(";").forEach(part => {
+        const idx = part.indexOf(":");
+        if (idx <= 0) return;
+        out[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
+      });
+      return out;
+    }
+
+    function ttsSvgPdfAttr(node, name, inheritedValue = undefined){
+      if (!node || !node.getAttribute) return inheritedValue;
+      const direct = node.getAttribute(name);
+      if (direct != null && direct !== "") return direct;
+      const style = ttsSvgPdfCssMap(node.getAttribute("style") || "");
+      return style[name] ?? inheritedValue;
+    }
+
+    function ttsSvgPdfNumber(value, fallback = 0){
+      const m = String(value ?? "").trim().match(/[-+]?\d*\.?\d+(?:e[-+]?\d+)?/i);
+      if (!m) return fallback;
+      const n = Number(m[0]);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function ttsSvgPdfNumberList(value){
+      return String(value ?? "").match(/[-+]?\d*\.?\d+(?:e[-+]?\d+)?/ig)?.map(Number).filter(Number.isFinite) || [];
+    }
+
+    function ttsSvgPdfMatrixMultiply(a, b){
+      return [
+        a[0] * b[0] + a[2] * b[1],
+        a[1] * b[0] + a[3] * b[1],
+        a[0] * b[2] + a[2] * b[3],
+        a[1] * b[2] + a[3] * b[3],
+        a[0] * b[4] + a[2] * b[5] + a[4],
+        a[1] * b[4] + a[3] * b[5] + a[5],
+      ];
+    }
+
+    function ttsSvgPdfTranslate(tx, ty){ return [1, 0, 0, 1, Number(tx) || 0, Number(ty) || 0]; }
+    function ttsSvgPdfScale(sx, sy = sx){ return [Number(sx) || 0, 0, 0, Number(sy) || 0, 0, 0]; }
+    function ttsSvgPdfRotate(degValue){
+      const a = (Number(degValue) || 0) * Math.PI / 180;
+      const c = Math.cos(a), s = Math.sin(a);
+      return [c, s, -s, c, 0, 0];
+    }
+
+    function ttsSvgPdfParseTransform(transformText){
+      let m = [1, 0, 0, 1, 0, 0];
+      const re = /(matrix|translate|scale|rotate)\s*\(([^)]*)\)/ig;
+      let hit;
+      while ((hit = re.exec(String(transformText || ""))) !== null){
+        const kind = hit[1].toLowerCase();
+        const nums = ttsSvgPdfNumberList(hit[2]);
+        let t = [1, 0, 0, 1, 0, 0];
+        if (kind === "matrix" && nums.length >= 6) {
+          t = nums.slice(0, 6);
+        } else if (kind === "translate") {
+          t = ttsSvgPdfTranslate(nums[0] || 0, nums.length > 1 ? nums[1] : 0);
+        } else if (kind === "scale") {
+          t = ttsSvgPdfScale(nums[0] ?? 1, nums.length > 1 ? nums[1] : (nums[0] ?? 1));
+        } else if (kind === "rotate") {
+          if (nums.length >= 3) {
+            t = ttsSvgPdfMatrixMultiply(ttsSvgPdfMatrixMultiply(ttsSvgPdfTranslate(nums[1], nums[2]), ttsSvgPdfRotate(nums[0])), ttsSvgPdfTranslate(-nums[1], -nums[2]));
+          } else {
+            t = ttsSvgPdfRotate(nums[0] || 0);
+          }
+        }
+        m = ttsSvgPdfMatrixMultiply(m, t);
+      }
+      return m;
+    }
+
+    function ttsSvgPdfMatrixPoint(m, x, y){
+      return { x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5] };
+    }
+
+    function ttsSvgPdfTransformedPointToPdfPath(m, x, y){
+      const p = ttsSvgPdfMatrixPoint(m, x, y);
+      // pdf-lib drawSvgPath applies the SVG-style Y inversion when opts.y is
+      // set to page height, so do not pre-flip Y here.
+      return { x: p.x * TTS_SVG_PDF_PT_PER_PX, y: p.y * TTS_SVG_PDF_PT_PER_PX };
+    }
+
+    function ttsSvgPdfMatrixApproxScale(m){
+      const sx = Math.hypot(Number(m?.[0] || 0), Number(m?.[1] || 0));
+      const sy = Math.hypot(Number(m?.[2] || 0), Number(m?.[3] || 0));
+      const vals = [sx, sy].filter(v => Number.isFinite(v) && v > 0);
+      if (!vals.length) return 1;
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
+    }
+
+    function ttsSvgPdfTokenizePathData(d){
+      const tokens = [];
+      const re = /([AaCcHhLlMmQqSsTtVvZz])|([-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?)/g;
+      let m;
+      while ((m = re.exec(String(d || ""))) !== null) {
+        if (m[1]) tokens.push({ type: "cmd", value: m[1] });
+        else tokens.push({ type: "num", value: Number(m[2]) });
+      }
+      return tokens;
+    }
+
+    function ttsSvgPdfTransformPathDataToPdfPath(d, matrix){
+      const tokens = ttsSvgPdfTokenizePathData(d);
+      let i = 0;
+      let cmd = "";
+      let cx = 0, cy = 0;
+      let sx = 0, sy = 0;
+      const out = [];
+
+      function hasNum(){ return i < tokens.length && tokens[i].type === "num"; }
+      function readNum(){
+        if (!hasNum()) return null;
+        return tokens[i++].value;
+      }
+      function peekCmd(){ return i < tokens.length && tokens[i].type === "cmd" ? tokens[i].value : null; }
+      function emitPoint(prefix, x, y){
+        const p = ttsSvgPdfTransformedPointToPdfPath(matrix, x, y);
+        out.push(`${prefix} ${formatSvgNumber(p.x)} ${formatSvgNumber(p.y)}`);
+      }
+
+      while (i < tokens.length) {
+        const nextCmd = peekCmd();
+        if (nextCmd) { cmd = tokens[i++].value; }
+        if (!cmd) break;
+
+        const lower = cmd.toLowerCase();
+        const rel = cmd === lower;
+
+        if (lower === "z") {
+          out.push("Z");
+          cx = sx; cy = sy;
+          cmd = "";
+          continue;
+        }
+
+        if (lower === "m") {
+          let first = true;
+          while (hasNum()) {
+            const x0 = readNum(); const y0 = readNum();
+            if (x0 == null || y0 == null) break;
+            const x = rel ? cx + x0 : x0;
+            const y = rel ? cy + y0 : y0;
+            emitPoint(first ? "M" : "L", x, y);
+            cx = x; cy = y;
+            if (first) { sx = x; sy = y; first = false; }
+            if (peekCmd()) break;
+          }
+          continue;
+        }
+
+        if (lower === "l") {
+          while (hasNum()) {
+            const x0 = readNum(); const y0 = readNum();
+            if (x0 == null || y0 == null) break;
+            const x = rel ? cx + x0 : x0;
+            const y = rel ? cy + y0 : y0;
+            emitPoint("L", x, y);
+            cx = x; cy = y;
+            if (peekCmd()) break;
+          }
+          continue;
+        }
+
+        if (lower === "h") {
+          while (hasNum()) {
+            const x0 = readNum(); if (x0 == null) break;
+            const x = rel ? cx + x0 : x0;
+            emitPoint("L", x, cy);
+            cx = x;
+            if (peekCmd()) break;
+          }
+          continue;
+        }
+
+        if (lower === "v") {
+          while (hasNum()) {
+            const y0 = readNum(); if (y0 == null) break;
+            const y = rel ? cy + y0 : y0;
+            emitPoint("L", cx, y);
+            cy = y;
+            if (peekCmd()) break;
+          }
+          continue;
+        }
+
+        if (lower === "c") {
+          while (hasNum()) {
+            const x1 = readNum(), y1 = readNum(), x2 = readNum(), y2 = readNum(), x = readNum(), y = readNum();
+            if ([x1, y1, x2, y2, x, y].some(v => v == null)) break;
+            const ax1 = rel ? cx + x1 : x1;
+            const ay1 = rel ? cy + y1 : y1;
+            const ax2 = rel ? cx + x2 : x2;
+            const ay2 = rel ? cy + y2 : y2;
+            const ax = rel ? cx + x : x;
+            const ay = rel ? cy + y : y;
+            const p1 = ttsSvgPdfTransformedPointToPdfPath(matrix, ax1, ay1);
+            const p2 = ttsSvgPdfTransformedPointToPdfPath(matrix, ax2, ay2);
+            const p = ttsSvgPdfTransformedPointToPdfPath(matrix, ax, ay);
+            out.push(`C ${formatSvgNumber(p1.x)} ${formatSvgNumber(p1.y)} ${formatSvgNumber(p2.x)} ${formatSvgNumber(p2.y)} ${formatSvgNumber(p.x)} ${formatSvgNumber(p.y)}`);
+            cx = ax; cy = ay;
+            if (peekCmd()) break;
+          }
+          continue;
+        }
+
+        if (lower === "q") {
+          while (hasNum()) {
+            const x1 = readNum(), y1 = readNum(), x = readNum(), y = readNum();
+            if ([x1, y1, x, y].some(v => v == null)) break;
+            const ax1 = rel ? cx + x1 : x1;
+            const ay1 = rel ? cy + y1 : y1;
+            const ax = rel ? cx + x : x;
+            const ay = rel ? cy + y : y;
+            const p1 = ttsSvgPdfTransformedPointToPdfPath(matrix, ax1, ay1);
+            const p = ttsSvgPdfTransformedPointToPdfPath(matrix, ax, ay);
+            out.push(`Q ${formatSvgNumber(p1.x)} ${formatSvgNumber(p1.y)} ${formatSvgNumber(p.x)} ${formatSvgNumber(p.y)}`);
+            cx = ax; cy = ay;
+            if (peekCmd()) break;
+          }
+          continue;
+        }
+
+        console.warn("[tts-svg-pdf] unsupported SVG path command omitted", { cmd, d: String(d || "").slice(0, 160) });
+        break;
+      }
+
+      return out.join(" ");
+    }
+
+    function ttsSvgPdfNodeMatrix(node, isRootSvg = false){
+      let m = [1, 0, 0, 1, 0, 0];
+      const tag = String(node?.localName || "").toLowerCase();
+      if (tag === "svg") {
+        const x = isRootSvg ? 0 : ttsSvgPdfNumber(node.getAttribute("x"), 0);
+        const y = isRootSvg ? 0 : ttsSvgPdfNumber(node.getAttribute("y"), 0);
+        const w = ttsSvgPdfNumber(node.getAttribute("width"), 0);
+        const h = ttsSvgPdfNumber(node.getAttribute("height"), 0);
+        const vb = ttsSvgPdfNumberList(node.getAttribute("viewBox"));
+        m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfTranslate(x, y));
+        if (vb.length >= 4 && w > 0 && h > 0 && vb[2] > 0 && vb[3] > 0) {
+          const par = String(node.getAttribute("preserveAspectRatio") || "xMidYMid meet").trim();
+          if (/none/i.test(par)) {
+            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfScale(w / vb[2], h / vb[3]));
+            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfTranslate(-vb[0], -vb[1]));
+          } else {
+            const scale = Math.min(w / vb[2], h / vb[3]);
+            let ox = 0, oy = 0;
+            if (/xMid/i.test(par)) ox = (w - vb[2] * scale) / 2;
+            else if (/xMax/i.test(par)) ox = (w - vb[2] * scale);
+            if (/YMid/i.test(par)) oy = (h - vb[3] * scale) / 2;
+            else if (/YMax/i.test(par)) oy = (h - vb[3] * scale);
+            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfTranslate(ox, oy));
+            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfScale(scale, scale));
+            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfTranslate(-vb[0], -vb[1]));
+          }
+        }
+      }
+      const tr = node?.getAttribute?.("transform");
+      if (tr) m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfParseTransform(tr));
+      return m;
+    }
+
+    function ttsSvgPdfColor(css, inheritedOpacity = 1){
+      const PDFLib = window.PDFLib;
+      if (!PDFLib) return null;
+      let s = String(css ?? "").trim();
+      if (!s || s === "none" || s === "transparent") return null;
+      let opacity = inheritedOpacity;
+      const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+      if (hex){
+        let h = hex[1];
+        if (h.length === 3) h = h.split("").map(ch => ch + ch).join("");
+        return {
+          color: PDFLib.rgb(parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255),
+          opacity
+        };
+      }
+      const rgb = s.match(/^rgba?\(([^)]+)\)$/i);
+      if (rgb){
+        const nums = rgb[1].split(",").map(x => Number(String(x).trim())).filter(Number.isFinite);
+        if (nums.length >= 3){
+          if (nums.length >= 4) opacity *= ttsSvgPdfClamp(nums[3], 0, 1);
+          return { color: PDFLib.rgb(ttsSvgPdfClamp(nums[0], 0, 255) / 255, ttsSvgPdfClamp(nums[1], 0, 255) / 255, ttsSvgPdfClamp(nums[2], 0, 255) / 255), opacity };
+        }
+      }
+      if (s.toLowerCase() === "black") return { color: PDFLib.rgb(0, 0, 0), opacity };
+      if (s.toLowerCase() === "white") return { color: PDFLib.rgb(1, 1, 1), opacity };
+      return null;
+    }
+
+    function ttsSvgPdfRectPath(node){
+      const x = ttsSvgPdfNumber(node.getAttribute("x"), 0);
+      const y = ttsSvgPdfNumber(node.getAttribute("y"), 0);
+      const w = ttsSvgPdfNumber(node.getAttribute("width"), 0);
+      const h = ttsSvgPdfNumber(node.getAttribute("height"), 0);
+      if (!(w > 0 && h > 0)) return "";
+      return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} Z`;
+    }
+
+    function ttsSvgPdfLinePath(node){
+      const x1 = ttsSvgPdfNumber(node.getAttribute("x1"), 0);
+      const y1 = ttsSvgPdfNumber(node.getAttribute("y1"), 0);
+      const x2 = ttsSvgPdfNumber(node.getAttribute("x2"), 0);
+      const y2 = ttsSvgPdfNumber(node.getAttribute("y2"), 0);
+      return `M ${x1} ${y1} L ${x2} ${y2}`;
+    }
+
+    function ttsSvgPdfResolveUrlId(value){
+      const s = String(value || "").trim();
+      const m = s.match(/^url\(\s*['"]?#([^'")]+)['"]?\s*\)$/i);
+      return m ? m[1] : "";
+    }
+
+    function ttsSvgPdfBuildClipPathMap(svgDoc){
+      const out = new Map();
+      for (const cp of Array.from(svgDoc.querySelectorAll("clipPath[id]"))) {
+        const id = cp.getAttribute("id") || "";
+        if (!id) continue;
+        const rect = cp.querySelector("rect");
+        if (rect) {
+          out.set(id, {
+            kind: "rect",
+            x: ttsSvgPdfNumber(rect.getAttribute("x"), 0),
+            y: ttsSvgPdfNumber(rect.getAttribute("y"), 0),
+            w: Math.max(0, ttsSvgPdfNumber(rect.getAttribute("width"), 0)),
+            h: Math.max(0, ttsSvgPdfNumber(rect.getAttribute("height"), 0))
+          });
+          continue;
+        }
+        const path = cp.querySelector("path[d]");
+        if (path) out.set(id, { kind: "path", d: String(path.getAttribute("d") || "") });
+      }
+      return out;
+    }
+
+    function ttsSvgPdfPointToPdfOperatorCoords(p, stageH){
+      return {
+        x: Number(p.x || 0) * TTS_SVG_PDF_PT_PER_PX,
+        y: (Number(stageH || 0) - Number(p.y || 0)) * TTS_SVG_PDF_PT_PER_PX
+      };
+    }
+
+    function ttsSvgPdfPushClipForCurrentNode(node, page, matrix, clipPathMap, stageH){
+      const P = window.PDFLib || {};
+      const clipRef = ttsSvgPdfAttr(node, "clip-path", "");
+      const clipId = ttsSvgPdfResolveUrlId(clipRef);
+      if (!clipId) return false;
+      const clipDef = clipPathMap?.get?.(clipId);
+      if (!clipDef) {
+        try { console.warn("[tts-svg-pdf] missing clipPath definition", { clipRef, clipId }); } catch {}
+        return false;
+      }
+
+      if (!(page && typeof page.pushOperators === "function" &&
+            P.pushGraphicsState && P.popGraphicsState && P.clip && P.endPath &&
+            P.moveTo && P.lineTo && P.closePath)) {
+        try { console.warn("[tts-svg-pdf] pdf-lib clipping operators unavailable; SVG clip-path omitted", { clipId }); } catch {}
+        return false;
+      }
+
+      const ops = [P.pushGraphicsState()];
+
+      if (clipDef.kind === "rect") {
+        const x = clipDef.x;
+        const y = clipDef.y;
+        const w = clipDef.w;
+        const h = clipDef.h;
+        if (!(w > 0 && h > 0)) return false;
+        const pts = [
+          ttsSvgPdfPointToPdfOperatorCoords(ttsSvgPdfMatrixPoint(matrix, x, y), stageH),
+          ttsSvgPdfPointToPdfOperatorCoords(ttsSvgPdfMatrixPoint(matrix, x + w, y), stageH),
+          ttsSvgPdfPointToPdfOperatorCoords(ttsSvgPdfMatrixPoint(matrix, x + w, y + h), stageH),
+          ttsSvgPdfPointToPdfOperatorCoords(ttsSvgPdfMatrixPoint(matrix, x, y + h), stageH)
+        ];
+        ops.push(P.moveTo(pts[0].x, pts[0].y));
+        ops.push(P.lineTo(pts[1].x, pts[1].y));
+        ops.push(P.lineTo(pts[2].x, pts[2].y));
+        ops.push(P.lineTo(pts[3].x, pts[3].y));
+        ops.push(P.closePath());
+      } else {
+        try { console.warn("[tts-svg-pdf] non-rect clipPath omitted", { clipId }); } catch {}
+        return false;
+      }
+
+      ops.push(P.clip());
+      ops.push(P.endPath());
+      page.pushOperators(...ops);
+      return true;
+    }
+
+    function ttsSvgPdfCanUseOperators(){
+      const P = window.PDFLib || {};
+      return !!(
+        P.pushGraphicsState && P.popGraphicsState && P.concatTransformationMatrix &&
+        P.clip && P.endPath && P.moveTo && P.lineTo && P.closePath
+      );
+    }
+
+    async function ttsDrawSvgDomNodeToPdf(node, pdfDoc, page, matrix, inherited, stageH, clipPathMap, isRootSvg = false){
+      if (!node || node.nodeType !== 1) return;
+      const tag = String(node.localName || "").toLowerCase();
+      if (tag === "defs" || tag === "clippath" || tag === "title" || tag === "desc") return;
+
+      const ownMatrix = ttsSvgPdfNodeMatrix(node, isRootSvg);
+      const nextMatrix = ttsSvgPdfMatrixMultiply(matrix, ownMatrix);
+      const opacityAttr = ttsSvgPdfAttr(node, "opacity", null);
+      const nextOpacity = inherited.opacity * (opacityAttr == null ? 1 : ttsSvgPdfClamp(Number(opacityAttr), 0, 1));
+      const nextStyle = {
+        fill: ttsSvgPdfAttr(node, "fill", inherited.fill),
+        stroke: ttsSvgPdfAttr(node, "stroke", inherited.stroke),
+        strokeWidth: ttsSvgPdfAttr(node, "stroke-width", inherited.strokeWidth),
+        opacity: nextOpacity,
+      };
+
+      const didPushClip = ttsSvgPdfPushClipForCurrentNode(node, page, nextMatrix, clipPathMap, stageH);
+      try {
+        if (tag === "path" || tag === "rect" || tag === "line"){
+          const d = tag === "path" ? String(node.getAttribute("d") || "") : (tag === "rect" ? ttsSvgPdfRectPath(node) : ttsSvgPdfLinePath(node));
+          if (d.trim()){
+            const transformedD = ttsSvgPdfTransformPathDataToPdfPath(d, nextMatrix);
+            const fill = ttsSvgPdfColor(nextStyle.fill, nextStyle.opacity);
+            const stroke = ttsSvgPdfColor(nextStyle.stroke, nextStyle.opacity);
+            const scaleForStroke = ttsSvgPdfMatrixApproxScale(nextMatrix);
+            const borderWidth = Math.max(0, ttsSvgPdfNumber(nextStyle.strokeWidth, 1) * scaleForStroke * TTS_SVG_PDF_PT_PER_PX);
+            const opts = { x: 0, y: stageH * TTS_SVG_PDF_PT_PER_PX };
+            if (fill) { opts.color = fill.color; opts.opacity = fill.opacity; }
+            if (stroke && borderWidth > 0) { opts.borderColor = stroke.color; opts.borderOpacity = stroke.opacity; opts.borderWidth = borderWidth; }
+            if (transformedD.trim() && (fill || (stroke && borderWidth > 0))){
+              page.drawSvgPath(transformedD, opts);
+            }
+          }
+          return;
+        }
+
+        for (const child of Array.from(node.childNodes || [])){
+          await ttsDrawSvgDomNodeToPdf(child, pdfDoc, page, nextMatrix, nextStyle, stageH, clipPathMap, false);
+        }
+      } finally {
+        if (didPushClip) {
+          try { page.pushOperators(window.PDFLib.popGraphicsState()); } catch (_) {}
+        }
+      }
+    }
+
+    async function ttsSvgTextToPdfBlob(svgText){
+      if (!window.PDFLib) throw new Error("pdf-lib is not loaded. Check ./vendor/pdf-lib.min.js is available.");
+      if (typeof window.PDFLib.PDFDocument?.create !== "function") throw new Error("pdf-lib PDFDocument is unavailable.");
+      if (!ttsSvgPdfCanUseOperators()) throw new Error("pdf-lib operator helpers are unavailable; cannot preserve SVG clip paths in PDF.");
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgText, "image/svg+xml");
+      const parseErr = doc.querySelector("parsererror");
+      if (parseErr) throw new Error("SVG could not be parsed for PDF export.");
+      const rootSvg = doc.documentElement;
+      const vb = ttsSvgPdfNumberList(rootSvg.getAttribute("viewBox"));
+      const stageW = Math.max(1, ttsSvgPdfNumber(rootSvg.getAttribute("width"), vb.length >= 4 ? vb[2] : 1));
+      const stageH = Math.max(1, ttsSvgPdfNumber(rootSvg.getAttribute("height"), vb.length >= 4 ? vb[3] : 1));
+      const pdfDoc = await window.PDFLib.PDFDocument.create();
+      const page = pdfDoc.addPage([stageW * TTS_SVG_PDF_PT_PER_PX, stageH * TTS_SVG_PDF_PT_PER_PX]);
+      const clipPathMap = ttsSvgPdfBuildClipPathMap(doc);
+      await ttsDrawSvgDomNodeToPdf(rootSvg, pdfDoc, page, [1, 0, 0, 1, 0, 0], { fill: "black", stroke: "none", strokeWidth: 1, opacity: 1 }, stageH, clipPathMap, true);
+      const bytes = await pdfDoc.save();
+      return new Blob([bytes], { type: "application/pdf" });
+    }
+
     async function buildCurrentVectorSvgBlob({ includeHalo = true } = {}) {
       vectorDiag("buildCurrentVectorSvgBlob START", { includeHalo });
       const exporter = await ensureVectorExporterReady();
@@ -6718,28 +7201,52 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     }
 
     async function exportRenderedToVectorPdf() {
-      vectorDiag("Download PDF click START");
-      const exporter = await ensureVectorExporterReady();
-      const plan = await buildCurrentVectorExportPlan({ includeHalo: true, forceZeroHaloWidth: true });
-      const args = {
-        plan,
-        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
-        fallbackWidthPx: outCanvas?.width || null,
-        fallbackHeightPx: outCanvas?.height || null,
-        debugWasm: getVectorWasmDebugEnabled(),
-        filename: `${getExportFilenameBase()}-vector.pdf`
-      };
-      vectorDiag("downloadPdf args", {
-        paddingPx: args.paddingPx,
-        fallbackWidthPx: args.fallbackWidthPx,
-        fallbackHeightPx: args.fallbackHeightPx,
-        debugWasm: args.debugWasm,
-        filename: args.filename,
-        exporterClipScale: exporter?.literalCartoucheRuleClipScale,
-        exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
+      vectorDiag("Download PDF via same SVG/PNG pipeline START");
+      if (!window.PDFLib) throw new Error("pdf-lib is not loaded. Check ./vendor/pdf-lib.min.js is available.");
+      if (typeof window.PDFLib.PDFDocument?.create !== "function") throw new Error("pdf-lib PDFDocument is unavailable.");
+
+      const svgBlob = await buildCurrentVectorSvgBlob({ includeHalo: true });
+      const svgText = await svgBlob.text();
+      window.__TTS_VECTOR_DEBUG_LAST_PDF_SVG_TEXT__ = svgText;
+
+      vectorDiag("PDF source SVG shared with SVG/PNG export", {
+        byteLength: svgBlob.size,
+        charLength: svgText.length,
+        containsPath: svgText.includes("<path"),
+        pathElementCount: (svgText.match(/<path\b/g) || []).length,
+        containsClipPath: svgText.includes("clipPath")
       });
-      await exportVectorPdfBlobWithUnknownHighlightRects(exporter, args, plan);
-      vectorDiag("Download PDF click END");
+
+      // IMPORTANT: make PDF use the same rendered geometry as PNG.
+      // The previous version parsed the SVG DOM and redrew paths with pdf-lib.
+      // That still allowed a PDF-only geometry mismatch.  This route rasterizes
+      // the exact same SVG used by Download PNG and embeds that PNG in the PDF,
+      // so PDF cannot have different run positions from the SVG/PNG output.
+      const pngBlob = await svgBlobToPngBlob(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }), { scale: 1 });
+      const pngBytes = await pngBlob.arrayBuffer();
+
+      const pdfDoc = await window.PDFLib.PDFDocument.create();
+      const png = await pdfDoc.embedPng(pngBytes);
+      const pageWidthPt = Math.max(1, png.width) * TTS_SVG_PDF_PT_PER_PX;
+      const pageHeightPt = Math.max(1, png.height) * TTS_SVG_PDF_PT_PER_PX;
+      const page = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
+      page.drawImage(png, {
+        x: 0,
+        y: 0,
+        width: pageWidthPt,
+        height: pageHeightPt
+      });
+
+      const bytes = await pdfDoc.save();
+      const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+      downloadBlobAsFile(pdfBlob, `${getExportFilenameBase()}-vector.pdf`);
+      vectorDiag("Download PDF via same SVG/PNG pipeline END", {
+        svgBlobSize: svgBlob?.size,
+        pngBlobSize: pngBlob?.size,
+        pdfBlobSize: pdfBlob?.size,
+        pngWidth: png.width,
+        pngHeight: png.height
+      });
     }
 
     let _autoRenderTimer = null;
@@ -7101,7 +7608,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     btnDownloadPdf?.addEventListener("click", async () => {
       try{
         await exportRenderedToVectorPdf();
-        announceStatus("Downloaded vector PDF. Diagnostics were logged to the console.");
+        announceStatus("Downloaded PDF from the same SVG/PNG geometry. Diagnostics were logged to the console.");
       } catch(e){
         showAlertAndAnnounce(e?.message ?? String(e));
       }

@@ -10,7 +10,7 @@ import {
   segmentLetters,
   segmentWords
 } from '../../js/cartouche-api-v3-previewdesc.js?v=22';
-import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=143';
+import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=165';
 
 (() => {
   "use strict";

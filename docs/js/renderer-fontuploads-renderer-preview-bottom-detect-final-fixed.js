@@ -1845,6 +1845,12 @@ function wireHaloControls() {
     const CARTOUCHE_END_CP   = 0xF1991;
     const CARTOUCHE_EXT_CP   = 0xF1992;
 
+    // Right-side cartouche padding compensation.
+    // The renderer keeps full left padding to avoid clipping the opening cartouche,
+    // but reduces right padding because the cartouche font already leaves visible
+    // trailing side-bearing after the closing cartouche.
+    const RIGHT_CARTOUCHE_PAD_SCALE = 1.00;
+
     // Only for special quoted latin cartouches: ["..."]
     let QUOTED_CARTOUCHE_START_EXT_CP  = null; //CARTOUCHE_EXT_CP;
     let QUOTED_CARTOUCHE_MIDDLE_EXT_CP = CARTOUCHE_EXT_CP;
@@ -4520,6 +4526,13 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
       const px = fontPx;
       const pad = padPx;
+
+      // Keep the left padding unchanged, but reduce right padding.
+      // This avoids visible trailing transparent canvas space after numeric cartouches
+      // without moving the opening cartouche edge or risking left-edge clipping.
+      const padLeft = pad;
+      const padRight = Math.max(0, Math.round(pad * RIGHT_CARTOUCHE_PAD_SCALE));
+
       const fam = fontFamily || FONT_FAMILY_TEXT;
       const hasManualTallies = !!(renderManualTallies && Array.isArray(renderManualTallies) && renderManualTallies.some(n => Number(n) > 0));
 
@@ -4544,7 +4557,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       const tallySideExtra = 0;
       const tallyBottomExtra = hasManualTallies ? Math.ceil(px * 0.34 + (haloEnabled ? haloW * 0.90 : 0)) : 0;
 
-      const w = Math.max(1, Math.ceil(left + right + pad * 2 + haloW * 2 + tallySideExtra * 2));
+      const w = Math.max(1, Math.ceil(left + right + padLeft + padRight + haloW * 2 + tallySideExtra * 2));
       const h = Math.max(1, Math.ceil(ascent + descent + pad * 2 + haloW * 2 + tallyBottomExtra));
 
       canvas.width = w;
@@ -4556,7 +4569,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       ctx2.font = `${px}px "${fam}"`;
       setTextQuality(ctx2);
 
-      const x = pad + left + haloW + tallySideExtra;
+      const x = padLeft + left + haloW + tallySideExtra;
       const baselineY = pad + ascent + haloW;
 
       // Detect the cartouche bottom rule on a clean foreground-only mask.
@@ -4634,6 +4647,9 @@ function findNanpaLinjanTpPhraseSequences(text) {
         inkDescent: Math.ceil(descent + tallyBottomExtra),
         haloW,
         pad,
+        padLeft,
+        padRight,
+        rightCartouchePadScale: RIGHT_CARTOUCHE_PAD_SCALE,
         drawX: x,
         hasManualTallies,
         renderInnerCps: Array.from(renderInnerCps),
