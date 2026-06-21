@@ -706,7 +706,6 @@ The Toki Pona expression 'li sama' has an unfortunate sitelen pona appearance id
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
 - Example: nanpa la zz Newen en Neten en Nesen sama Nenun
-- Example: nanpa la zz o pana e Nejen tawa Nesen
 
 ### Subtract: lape
 - Shape of sitelen pona glyph (looks like subtract)
@@ -735,7 +734,6 @@ The Toki Pona expression 'li sama' has an unfortunate sitelen pona appearance id
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
 - Example: nanpa la zz Neten sewi Nesen sama Nepen
-- Example: nanpa la zz Nemen Eken sama Nemen lete Newenin sewi Nesen
 
 ### Root: lili
 - Shape of sitelen pona glyph (looks like small part of)
@@ -744,11 +742,18 @@ The Toki Pona expression 'li sama' has an unfortunate sitelen pona appearance id
 - Never appears in a numeric cartouche
 - Example: nanpa la zz Nesen lili Nepen sama Neten
 
+### Log: anpa
+- Shape of sitelen pona glyph (looks like below)
+- Good candidate
+- Adds more context, makes the assumption that the strings of digits represent numeric values
+- Never appears in a numeric cartouche
+- Example: nanpa la zz Nepen anpa Neten sama Nesen
+
 
 <img src="images/arithmetic_operations_examples.png" width="569"/><br/>
 
 
-Other mathematical expressions like log, ln, exp, cos, pi (and maybe even powers and roots) are better left in mathematical notation:
+Other mathematical expressions (and maybe even powers, roots and logs) are better left in mathematical notation:
 
 cos(2π) = 1
 
