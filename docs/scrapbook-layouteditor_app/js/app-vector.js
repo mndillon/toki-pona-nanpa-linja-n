@@ -10,7 +10,7 @@ import {
   segmentLetters,
   segmentWords
 } from '../../js/cartouche-api-v3-previewdesc.js?v=22';
-import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=165';
+import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=166';
 
 (() => {
   "use strict";
@@ -18309,6 +18309,28 @@ document.addEventListener("keydown", (e) => {
     return svgIsReddishHex(fgHex) ? yellow : red;
   }
 
+  function svgFiniteNumberOrNull(value){
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function svgRunFinalVectorBounds(run){
+    const b =
+      run?.__sitelenVectorFinalBoundsPx ||
+      run?.vectorFinalBoundsPx ||
+      run?.finalVectorBoundsPx ||
+      null;
+    if (!b || typeof b !== "object") return null;
+
+    const minX = svgFiniteNumberOrNull(b.minX);
+    const minY = svgFiniteNumberOrNull(b.minY);
+    const maxX = svgFiniteNumberOrNull(b.maxX);
+    const maxY = svgFiniteNumberOrNull(b.maxY);
+    if (minX == null || minY == null || maxX == null || maxY == null) return null;
+    if (maxX <= minX || maxY <= minY) return null;
+    return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+  }
+
   function svgUnknownTextRectForRun(run){
     const isUnknown = !!(run?.isUnrecognized || run?._element?.isUnrecognized);
     if (!isUnknown) return "";
@@ -18317,6 +18339,20 @@ document.addEventListener("keydown", (e) => {
     const pad = Number.isFinite(Number(display.paddingPx)) ? Number(display.paddingPx) : 2;
     const strokeW = Number.isFinite(Number(display.lineWidthPx)) ? Number(display.lineWidthPx) : 1.5;
 
+    const fgHex = rgbaOrHexToHex(run?.fillStyle || run?._element?.color || "#111111", "#111111");
+    const backgroundHex = rgbaOrHexToHex(run?._element?.fill || Scene?.stage?.bg || "#FFFFFF", "#FFFFFF");
+    const strokeColor = svgResolveUnknownStrokeColor(display, fgHex, backgroundHex);
+    const dashAttr = display?.dash ? ` stroke-dasharray="4 2"` : "";
+
+    // Prefer the final vector ink bounds published by sitelen-vector-exporter.js
+    // after cartouche/run reflow.  Raw plan fields such as run.drawXPx/run.xPx
+    // are pre-reflow in older plans, so rectangles based on them drift right
+    // after every cartouche on the same line.
+    const finalBounds = svgRunFinalVectorBounds(run);
+    if (finalBounds) {
+      return `<rect data-unknown-text="true" data-unknown-geometry="final-vector-bounds" x="${svgNum(finalBounds.minX - pad)}" y="${svgNum(finalBounds.minY - pad)}" width="${svgNum(finalBounds.width + pad * 2)}" height="${svgNum(finalBounds.height + pad * 2)}" fill="none" stroke="${svgEsc(strokeColor)}" stroke-width="${svgNum(strokeW)}" vector-effect="non-scaling-stroke"${dashAttr} />`;
+    }
+
     const x = Number.isFinite(Number(run?.drawXPx)) ? Number(run.drawXPx) : Number(run?.xPx || 0);
     const baselineY = Number(run?.baselineYPx || 0);
     const fontPx = Math.max(6, Number(run?.fontPx || 16));
@@ -18324,12 +18360,8 @@ document.addEventListener("keydown", (e) => {
     const descent = Number.isFinite(Number(run?.descentPx)) ? Number(run.descentPx) : Math.ceil(fontPx * 0.2);
     const w = Math.max(1, Number(run?.widthPx || 1));
     const h = Math.max(1, ascent + descent);
-    const fgHex = rgbaOrHexToHex(run?.fillStyle || run?._element?.color || "#111111", "#111111");
-    const backgroundHex = rgbaOrHexToHex(run?._element?.fill || Scene?.stage?.bg || "#FFFFFF", "#FFFFFF");
-    const strokeColor = svgResolveUnknownStrokeColor(display, fgHex, backgroundHex);
-    const dashAttr = display?.dash ? ` stroke-dasharray="4 2"` : "";
 
-    return `<rect data-unknown-text="true" x="${svgNum(x - pad)}" y="${svgNum(baselineY - ascent - pad)}" width="${svgNum(w + pad * 2)}" height="${svgNum(h + pad * 2)}" fill="none" stroke="${svgEsc(strokeColor)}" stroke-width="${svgNum(strokeW)}" vector-effect="non-scaling-stroke"${dashAttr} />`;
+    return `<rect data-unknown-text="true" data-unknown-geometry="plan-fallback" x="${svgNum(x - pad)}" y="${svgNum(baselineY - ascent - pad)}" width="${svgNum(w + pad * 2)}" height="${svgNum(h + pad * 2)}" fill="none" stroke="${svgEsc(strokeColor)}" stroke-width="${svgNum(strokeW)}" vector-effect="non-scaling-stroke"${dashAttr} />`;
   }
 
   function svgUnknownTextRectsForPlan(plan){

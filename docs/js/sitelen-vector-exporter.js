@@ -1,4 +1,4 @@
-console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v138 PDF-USES-REFLOWED-D loaded");
+console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v139 UNKNOWN-RECT-REFLOW loaded");
 const DEFAULT_WASM_MODULE_URL = new URL("../wasm/sitelen_vector_wasm.js?v=143", import.meta.url).href;
 const PX_TO_PT = 72 / 96;
 const CARTOUCHE_START_CP = 0xF1990;
@@ -157,6 +157,9 @@ function getRunBaseline(run) {
 }
 
 function getRunX(run) {
+  const original = run?.__sitelenVectorOriginalGeometryPx;
+  const originalDrawX = vectorFiniteNumberOrNull(original?.drawXPx ?? original?.xPx);
+  if (originalDrawX != null) return originalDrawX;
   return Number(run?.drawXPx ?? run?.xPx ?? 0);
 }
 
@@ -1873,14 +1876,94 @@ function finiteBounds(bounds) {
   return Number.isFinite(bounds.minX) && Number.isFinite(bounds.minY) && Number.isFinite(bounds.maxX) && Number.isFinite(bounds.maxY);
 }
 
+function vectorFiniteNumberOrNull(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function ensureRunOriginalVectorGeometry(run) {
+  if (!run || typeof run !== "object") return null;
+  const existing = run.__sitelenVectorOriginalGeometryPx;
+  if (existing && typeof existing === "object") return existing;
+
+  const el = (run._element && typeof run._element === "object")
+    ? run._element
+    : ((run.element && typeof run.element === "object") ? run.element : {});
+
+  const original = {
+    xPx: vectorFiniteNumberOrNull(run.xPx ?? run.drawXPx ?? el.xPx ?? el.drawXPx),
+    drawXPx: vectorFiniteNumberOrNull(run.drawXPx ?? run.xPx ?? el.drawXPx ?? el.xPx),
+    widthPx: vectorFiniteNumberOrNull(run.widthPx ?? el.widthPx ?? el.w),
+    yPx: vectorFiniteNumberOrNull(run.yPx ?? el.yPx),
+    baselineYPx: vectorFiniteNumberOrNull(run.baselineYPx ?? el.baselineYPx),
+    heightPx: vectorFiniteNumberOrNull(run.heightPx ?? el.heightPx ?? el.h),
+    ascentPx: vectorFiniteNumberOrNull(run.ascentPx ?? el.ascentPx),
+    descentPx: vectorFiniteNumberOrNull(run.descentPx ?? el.descentPx)
+  };
+
+  run.__sitelenVectorOriginalGeometryPx = original;
+  return original;
+}
+
+function originalRunVectorNumber(run, key, fallback = null) {
+  const original = ensureRunOriginalVectorGeometry(run);
+  const n = vectorFiniteNumberOrNull(original?.[key]);
+  if (n != null) return n;
+  return vectorFiniteNumberOrNull(fallback);
+}
+
+function publishRunFinalVectorGeometry(run, { bounds, dx = 0, dy = 0 } = {}) {
+  if (!run || typeof run !== "object" || !bounds) return;
+  const minX = vectorFiniteNumberOrNull(bounds.minX);
+  const minY = vectorFiniteNumberOrNull(bounds.minY);
+  const maxX = vectorFiniteNumberOrNull(bounds.maxX);
+  const maxY = vectorFiniteNumberOrNull(bounds.maxY);
+  if (minX == null || minY == null || maxX == null || maxY == null) return;
+
+  const original = ensureRunOriginalVectorGeometry(run) || {};
+  const originalX = originalRunVectorNumber(run, "xPx", getRunX(run)) ?? 0;
+  const originalDrawX = originalRunVectorNumber(run, "drawXPx", originalX) ?? originalX;
+  const originalY = originalRunVectorNumber(run, "yPx", run?.yPx) ?? null;
+  const originalBaselineY = originalRunVectorNumber(run, "baselineYPx", run?.baselineYPx) ?? null;
+
+  const finalBounds = { minX, minY, maxX, maxY };
+  const finalDrawX = originalDrawX + Number(dx || 0);
+  const finalX = originalX + Number(dx || 0);
+
+  // Public/transient metadata used by consumers that draw auxiliary run geometry
+  // such as unknown-text rectangles after SVG vector export has reflowed runs.
+  run.__sitelenVectorFinalBoundsPx = finalBounds;
+  run.__sitelenVectorFinalDrawXPx = finalDrawX;
+  run.__sitelenVectorFinalXPx = finalX;
+  run.__sitelenVectorReflowDx = Number(dx || 0);
+  run.__sitelenVectorReflowDy = Number(dy || 0);
+
+  run.vectorFinalBoundsPx = finalBounds;
+  run.finalVectorBoundsPx = finalBounds;
+  run.vectorDrawXPx = finalDrawX;
+  run.vectorXPx = finalX;
+  run.vectorReflowDx = Number(dx || 0);
+  run.vectorReflowDy = Number(dy || 0);
+
+  // Compatibility: existing pages already read run.drawXPx/run.xPx for unknown
+  // overlays after calling exportTextToSvgBlob({ plan }).  Move those transient
+  // run coordinates to the same post-reflow coordinate space as the emitted
+  // SVG paths.  The original values above keep repeated exports from compounding.
+  run.drawXPx = finalDrawX;
+  run.xPx = finalX;
+  if (originalY != null) run.yPx = originalY + Number(dy || 0);
+  if (originalBaselineY != null) run.baselineYPx = originalBaselineY + Number(dy || 0);
+}
 
 function vectorRunLogicalLeft(run) {
-  const n = Number(run?.xPx ?? getRunX(run) ?? 0);
+  const original = ensureRunOriginalVectorGeometry(run);
+  const n = Number(original?.xPx ?? original?.drawXPx ?? run?.xPx ?? getRunX(run) ?? 0);
   return Number.isFinite(n) ? n : 0;
 }
 
 function vectorRunLogicalWidth(run) {
-  const n = Number(run?.widthPx ?? 0);
+  const original = ensureRunOriginalVectorGeometry(run);
+  const n = Number(original?.widthPx ?? run?.widthPx ?? 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
@@ -2066,6 +2149,8 @@ function reflowVectorRunPaths(run, runPaths, state, { debug = false, runIndex = 
   const translatedBounds = Math.abs(dx) > 0.0001
     ? { minX: currentBounds.minX + dx, minY: currentBounds.minY, maxX: currentBounds.maxX + dx, maxY: currentBounds.maxY }
     : currentBounds;
+
+  publishRunFinalVectorGeometry(run, { bounds: translatedBounds, dx, dy: 0 });
 
   if (state) {
     state.hasPrevious = true;
