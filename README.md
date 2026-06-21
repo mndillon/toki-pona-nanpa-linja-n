@@ -748,7 +748,7 @@ The Toki Pona expression 'li sama' has an unfortunate sitelen pona appearance id
 <img src="images/arithmetic_operations_examples.png" width="569"/><br/>
 
 
-Other mathematical expressions like log, ln, exp, roots, cos, pi (and maybe even powers and roots) are better left in mathematical notation:
+Other mathematical expressions like log, ln, exp, cos, pi (and maybe even powers and roots) are better left in mathematical notation:
 
 cos(2π) = 1
 
