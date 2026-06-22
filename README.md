@@ -752,7 +752,7 @@ The Toki Pona expression 'li sama' has an unfortunate sitelen pona appearance id
 - Example: nanpa la zz Nepen anpa Neten sama Nesen
 
 
-<img src="images/arithmetic_operations_examples.png" width="569"/><br/>
+<img src="images/arithmetic_operations_examples.png" width="550"/><br/>
 
 
 Other mathematical expressions (and maybe even powers, roots and logs) are better left in mathematical notation:
