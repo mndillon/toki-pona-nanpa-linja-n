@@ -6632,6 +6632,11 @@ function removeElementsByIds(idsSet){
   /** @type {Set<string>} */
   let selectedIds = new Set(); // selected elements (or elements in selected group)
 
+  // Last Text/Sitelen element explicitly targeted by a stage click.
+  // This lets a grouped selection keep group behavior while the pop-out editor
+  // binds to the topmost text-bearing element under the current mouse click.
+  let lastPointerTextEditorTargetId = null;
+
 
 //history undo/redo
 /* ============================================================
@@ -6791,6 +6796,7 @@ function historyRedo(){
 
   function clearSelection(){
     selectedIds.clear();
+    lastPointerTextEditorTargetId = null;
     updateUiForSelection();
     render();
   }
@@ -7071,6 +7077,33 @@ function wireArrowKeyNudge(){
     const ry = dx * Math.sin(a) + dy * Math.cos(a);
 
     return (Math.abs(rx) <= el.w/2) && (Math.abs(ry) <= el.h/2);
+  }
+
+  function elementSupportsFloatingTextEditor(el){
+    return !!el && (el.type === ElementType.Text || el.type === ElementType.Sitelen);
+  }
+
+  function pickTopmostFloatingTextEditorElementAtStagePoint(ptStage, allowedIds = null){
+    const allowed = allowedIds ? new Set(allowedIds.map(String)) : null;
+
+    for (let i = Scene.elements.length - 1; i >= 0; i--){
+      const el = Scene.elements[i];
+      if (!elementSupportsFloatingTextEditor(el)) continue;
+      if (allowed && !allowed.has(String(el.id))) continue;
+      if (pointInElement(ptStage, el)) return el;
+    }
+
+    return null;
+  }
+
+  function getPreferredFloatingTextEditorElement(sels){
+    if (!lastPointerTextEditorTargetId) return null;
+    const want = String(lastPointerTextEditorTargetId);
+    for (const el of (sels || [])){
+      if (!el) continue;
+      if (String(el.id) === want && elementSupportsFloatingTextEditor(el)) return el;
+    }
+    return null;
   }
 
   function elementCorners(el){
@@ -8497,15 +8530,23 @@ function openFloatingSitelenEditor({ title, elementId, sourceTextarea, onChange 
 function rebindFloatingSitelenEditorToTextarea(elementId, textareaEl, onChange){
   const S = FloatingSitelenEditor;
   if (!S.isOpen) return;
-  if (!S.elementId || S.elementId !== elementId) return;
   if (!textareaEl) return;
 
+  const nextElementId = elementId || null;
+  const sameBinding = (S.elementId === nextElementId);
+
+  S.elementId = nextElementId;
   S.sourceTextarea = textareaEl;
   S.onChange = onChange;
 
-  // Keep the freshly re-rendered main textarea synced to popup content
-  if (textareaEl.value !== S.ta.value){
-    textareaEl.value = S.ta.value;
+  if (sameBinding){
+    // Same element: preserve in-progress popup edits during properties-panel re-render.
+    if (textareaEl.value !== S.ta.value){
+      textareaEl.value = S.ta.value;
+    }
+  } else {
+    // New selected element: the newly rendered source textarea is authoritative.
+    syncFloatingSitelenEditorFromSource(textareaEl.value);
   }
 }
 
@@ -8597,15 +8638,24 @@ function renderPropsPanel(){
   // Keep the floating editor open if:
 //  - single-select sitelen (classic behavior), OR
 //  - multi-select where the floating editor is currently bound to the same multi-sitelen key.
-let shouldKeepFloatingEditor = (sels.length === 1 && sels[0].type === ElementType.Sitelen);
+let shouldKeepFloatingEditor = (sels.length === 1 && elementSupportsFloatingTextEditor(sels[0]));
 
-if (!shouldKeepFloatingEditor && FloatingSitelenEditor && FloatingSitelenEditor.isOpen && typeof FloatingSitelenEditor.elementId === "string"){
-  const eid = FloatingSitelenEditor.elementId;
-  if (eid.startsWith("multi:sitelen:")){
-    // Current multi key for selected sitelen elements (stable order)
-    const ids = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(e.id)).sort();
-    const curKey = "multi:sitelen:" + ids.join(",");
-    if (curKey === eid) shouldKeepFloatingEditor = true;
+if (!shouldKeepFloatingEditor && FloatingSitelenEditor && FloatingSitelenEditor.isOpen){
+  const preferredTextTarget = getPreferredFloatingTextEditorElement(sels);
+  if (preferredTextTarget) {
+    // Keep an already-open popup alive while clicking between grouped Text/Sitelen targets.
+    shouldKeepFloatingEditor = true;
+  } else if (typeof FloatingSitelenEditor.elementId === "string"){
+    const eid = FloatingSitelenEditor.elementId;
+    if (eid.startsWith("multi:sitelen:")){
+      // Current multi key for selected sitelen elements (stable order)
+      const ids = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(e.id)).sort();
+      const curKey = "multi:sitelen:" + ids.join(",");
+      if (curKey === eid) shouldKeepFloatingEditor = true;
+    } else {
+      // Single Text/Sitelen target within a grouped/multi selection.
+      shouldKeepFloatingEditor = sels.some(e => elementSupportsFloatingTextEditor(e) && String(e.id) === eid);
+    }
   }
 }
 
@@ -8878,82 +8928,95 @@ if (!shouldKeepFloatingEditor){
       addSection(tr("sec_text"));
 
       // Text
-      const leaderText = topmostSelectedWhere(supportsTextBlock);
-const textEls = sels.filter(supportsTextBlock);
-const textVals = textEls.map(e => String(e.text ?? ""));
-const textMixed = mixedLabelIfMixed(textVals);
+      const preferredTextTarget = getPreferredFloatingTextEditorElement(sels);
+      const leaderText = preferredTextTarget || topmostSelectedWhere(supportsTextBlock);
+      const textEls = sels.filter(supportsTextBlock);
+      const editSingleTextTarget = !!preferredTextTarget;
+      const editTextEls = editSingleTextTarget ? [preferredTextTarget] : textEls;
+      const textVals = editTextEls.map(e => String(e.text ?? ""));
+      const textMixed = editSingleTextTarget ? null : mixedLabelIfMixed(textVals);
 
-// When multiple text-like elements are selected and their text differs, lock editing by default.
-// User can explicitly enable "Edit mixed text" to bulk-apply a new value.
-if (textEls.length > 1 && textMixed){
-  propsBody.appendChild(makeCheckbox(
-    tr("props_edit_mixed_text"),
-    !!allowMixedTextEdit,
-    (checked) => {
-      allowMixedTextEdit = !!checked;
-      // No side effects until text is actually edited.
-      renderPropsPanel();
-    }
-  ));
-} else {
-  // Reset gate when it is not applicable (keeps UX predictable).
-  allowMixedTextEdit = false;
-}
-
-const placeholder = tr("sitelen_placeholder");
-const textField = makeTextarea(
-  tr("props_text") + (textMixed ? " (" + textMixed + ")" : ""),
-  leaderText ? (leaderText.text ?? "") : "",
-  placeholder,
-  (v) => {
-    applyToAllWhere(supportsTextBlock, (e) => {
-      e.text = v;
-      if (e.type === ElementType.Sitelen){
-        invalidateSitelenCache(e.id);
-        updateSitelenLayout(e);
-      }
-    });
-    scheduleAutosave();
-    render();
-    // IMPORTANT: do not call updateUiForSelection() on every keystroke,
-    // because it re-renders the properties panel and steals focus.
-  },
-  (() => {
-    const disabled = (textEls.length > 1 && textMixed && !allowMixedTextEdit);
-
-    // Show pop-out button when multiple Sitelen elements are selected AND text editing is allowed.
-    const sitelenIds = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(e.id)).sort();
-    const enablePopout = (!disabled) && (sitelenIds.length >= 2);
-
-    return {
-      enablePopout,
-      popoutTitle: tr("props_text"),
-      popoutElementId: enablePopout ? ("multi:sitelen:" + sitelenIds.join(",")) : null,
-      disabled
-    };
-  })()
-);
-propsBody.appendChild(textField);
-
-
-// If the floating editor is open for this same multi-sitelen selection, rebind it to the new textarea node.
-if (textField && textField._popoutElementId){
-  rebindFloatingSitelenEditorToTextarea(
-    textField._popoutElementId,
-    textField._textarea,
-    (v) => {
-      applyToAllWhere(supportsTextBlock, (e) => {
+      function applyTextEditToElement(e, v){
         e.text = v;
         if (e.type === ElementType.Sitelen){
           invalidateSitelenCache(e.id);
           updateSitelenLayout(e);
+          invalidateSvgElementCaches(e.id);
+        } else if (e.type === ElementType.Text){
+          resizeTextElementToNaturalBox(e);
         }
-      });
-      scheduleAutosave();
-      render();
-    }
-  );
-}
+      }
+
+      // When multiple text-like elements are selected and their text differs, lock bulk editing by default.
+      // A click-targeted Text/Sitelen inside a group edits only that one element, so it does not need this gate.
+      if (!editSingleTextTarget && textEls.length > 1 && textMixed){
+        propsBody.appendChild(makeCheckbox(
+          tr("props_edit_mixed_text"),
+          !!allowMixedTextEdit,
+          (checked) => {
+            allowMixedTextEdit = !!checked;
+            // No side effects until text is actually edited.
+            renderPropsPanel();
+          }
+        ));
+      } else {
+        // Reset gate when it is not applicable (keeps UX predictable).
+        allowMixedTextEdit = false;
+      }
+
+      const placeholder = tr("sitelen_placeholder");
+      const textField = makeTextarea(
+        tr("props_text") + (textMixed ? " (" + textMixed + ")" : ""),
+        leaderText ? (leaderText.text ?? "") : "",
+        placeholder,
+        (v) => {
+          for (const e of editTextEls){
+            if (!e) continue;
+            applyTextEditToElement(e, v);
+          }
+          scheduleAutosave();
+          render();
+          // IMPORTANT: do not call updateUiForSelection() on every keystroke,
+          // because it re-renders the properties panel and steals focus.
+        },
+        (() => {
+          const disabled = (!editSingleTextTarget && textEls.length > 1 && textMixed && !allowMixedTextEdit);
+
+          // For a grouped selection, the pop-out binds to the topmost Text/Sitelen
+          // under the click point.  Without a click target, preserve the old
+          // bulk multi-sitelen popout behavior.
+          const sitelenIds = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(e.id)).sort();
+          const enablePopout = (!disabled) && (editSingleTextTarget || sitelenIds.length >= 2);
+          const popoutElementId = editSingleTextTarget
+            ? String(preferredTextTarget.id)
+            : (enablePopout ? ("multi:sitelen:" + sitelenIds.join(",")) : null);
+
+          return {
+            enablePopout,
+            popoutTitle: tr("props_text"),
+            popoutElementId,
+            disabled
+          };
+        })()
+      );
+      propsBody.appendChild(textField);
+
+
+      // If the floating editor is open for this same target, rebind it to the new textarea node.
+      if (textField && textField._popoutElementId){
+        rebindFloatingSitelenEditorToTextarea(
+          textField._popoutElementId,
+          textField._textarea,
+          (v) => {
+            for (const e of editTextEls){
+              if (!e) continue;
+              applyTextEditToElement(e, v);
+            }
+            scheduleAutosave();
+            render();
+          }
+        );
+      }
 
       if (sels.some(supportsTextBlock)){
         const leaderTextLike = topmostSelectedWhere(supportsTextBlock);
@@ -9502,7 +9565,7 @@ if (textField && textField._popoutElementId){
         render();
       },
       {
-        enablePopout: el.type === ElementType.Sitelen,
+        enablePopout: (el.type === ElementType.Text || el.type === ElementType.Sitelen),
         popoutTitle: tr("props_text"),
         popoutElementId: el.id
       }
@@ -9510,18 +9573,22 @@ if (textField && textField._popoutElementId){
 
     propsBody.appendChild(textField);
 
-    // If the floating editor is already open for this same sitelen element,
+    // If the floating editor is already open for this same Text/Sitelen element,
     // rebind it to the freshly re-rendered textarea in the properties panel.
-    if (el.type === ElementType.Sitelen){
+    if (el.type === ElementType.Text || el.type === ElementType.Sitelen){
       rebindFloatingSitelenEditorToTextarea(
         el.id,
         textField._textarea,
         (v) => {
           el.text = v;
 
-          invalidateSitelenCache(el.id);
-          updateSitelenLayout(el);
-          invalidateSvgElementCaches(el.id);
+          if (el.type === ElementType.Sitelen){
+            invalidateSitelenCache(el.id);
+            updateSitelenLayout(el);
+            invalidateSvgElementCaches(el.id);
+          } else if (el.type === ElementType.Text){
+            resizeTextElementToNaturalBox(el);
+          }
 
           scheduleAutosave();
           render();
@@ -11177,9 +11244,11 @@ function updateClipboardButtons(){
       return;
     }
 
-    // First: handle selection handles if any selected
+    // First: handle resize/rotate handles if any selected.
+    // Do not consume ordinary in-selection clicks here; those should still hit-test
+    // the clicked element so grouped Text/Sitelen popup targeting can update.
     const handle = hitTestSelectionHandles(ptStage);
-    if (handle !== HANDLE.None && anySelected()){
+    if (handle !== HANDLE.None && handle !== HANDLE.Move && anySelected()){
 
       // CHANGE HERE: block transforms if any selected is locked
       if (selectionHasLocked()){
@@ -11199,16 +11268,19 @@ function updateClipboardButtons(){
     if (hit){
       // Group selection rule: click inside any element of the group selects the group set.
       const ids = hit.groupId ? getElementsInGroup(hit.groupId).map(e => e.id) : [hit.id];
+      const editorTarget = pickTopmostFloatingTextEditorElementAtStagePoint(ptStage, ids);
 
       if (e.shiftKey){
         // toggle the *whole group* if grouped, or element if not
         const allSelected = ids.every(id => selectedIds.has(id));
         if (allSelected) ids.forEach(id => selectedIds.delete(id));
         else ids.forEach(id => selectedIds.add(id));
+        lastPointerTextEditorTargetId = (editorTarget && selectedIds.has(editorTarget.id)) ? editorTarget.id : null;
         updateUiForSelection();
         render();
       } else {
         // normal click: replace selection with this (or group)
+        lastPointerTextEditorTargetId = editorTarget ? editorTarget.id : null;
         selectOnlyElements(ids);
         selectWholeGroupIfApplicable(hit, e);//????
 
@@ -11230,8 +11302,24 @@ function updateClipboardButtons(){
       return;
     }
 
+    if (handle === HANDLE.Move && anySelected()){
+      // Empty area inside the current selection AABB still starts move-pending,
+      // preserving the old drag behavior without changing the editor target.
+      if (selectionHasLocked()){
+        setStatus(tr("status_locked_unlock_move"));
+        return;
+      }
+      startPointerCapture(e);
+      beginDragSelectionMode(HANDLE.MovePending, ptScreen, ptStage);
+      setStatus(tr("status_selected", selectedIds.size));
+      return;
+    }
+
     // Empty space: marquee selection
-    if (!e.shiftKey) selectedIds.clear();
+    if (!e.shiftKey){
+      selectedIds.clear();
+      lastPointerTextEditorTargetId = null;
+    }
     updateUiForSelection();
 
     startPointerCapture(e);
