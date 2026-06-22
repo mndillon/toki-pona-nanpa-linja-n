@@ -630,6 +630,8 @@ Examples:
 ```
 
 
+<img src="images/numeric_decimal_cartouche_examples.png" width="1300"/><br/>
+
 ---
 
 ## Design Rationale
