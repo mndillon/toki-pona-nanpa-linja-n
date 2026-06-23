@@ -1156,7 +1156,7 @@ const SitelenRenderer = (() => {
           const allowance = Math.max(2, Math.round(fontPx * 0.08));
           const capA = Math.ceil(fontPx * 0.80) + allowance;
           const hasManualTallies = Array.isArray(el.manualTallies) && el.manualTallies.some(n => Number(n) > 0);
-          const capD = Math.ceil(fontPx * (hasManualTallies ? 0.58 : 0.20)) + allowance;
+          const capD = Math.ceil(fontPx * (hasManualTallies ? 0.22 : 0.20)) + allowance;
           maxAscent = Math.max(maxAscent, Math.min(a0, capA) + haloExtra);
           maxDescent = Math.max(maxDescent, Math.min(d0, capD) + haloExtra);
           continue;
@@ -5950,7 +5950,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             const allowance = Math.max(2, Math.round(fontPx * 0.08)); // 8% extra
             const capA = Math.ceil(fontPx * 0.80) + allowance;
             const hasManualTallies = Array.isArray(el.manualTallies) && el.manualTallies.some(n => Number(n) > 0);
-            const capD = Math.ceil(fontPx * (hasManualTallies ? 0.58 : 0.20)) + allowance;
+            const capD = Math.ceil(fontPx * (hasManualTallies ? 0.22 : 0.20)) + allowance;
 
             const aCapped = Math.min(a0, capA) + haloExtra;
             maxAscent = Math.max(maxAscent, aCapped);

@@ -6,7 +6,7 @@ function scrapbookCartoucheBootstrapError(...args) {
   if (SCRAPBOOK_CARTOUCHE_DB_BOOTSTRAP_DEBUG) console.error(...args);
 }
 
-import { createScrapbookCartoucheDbController } from './scrapbook-cartouche-db.js?v=75';
+import { createScrapbookCartoucheDbController } from './scrapbook-cartouche-db.js?v=77';
 
 const DEFAULT_DB = {
   type: 'scrapbook-cartouche-db',
