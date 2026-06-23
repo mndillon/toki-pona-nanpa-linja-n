@@ -990,7 +990,7 @@ nanpa #~WI.
       TEXT_FONT_OPTION_NANPA_LINJA_N
     } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15";
 
-    import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=23';
+    import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=30';
     import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=166';
     let pageMap = new Map();
 
@@ -1460,7 +1460,7 @@ function hideStartupLoading() {
     const VECTOR_DIAG_IMPORTS = Object.freeze({
       renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=161",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
-      cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=23",
+      cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=30",
       vectorExporter: "./js/sitelen-vector-exporter.js?v=166",
       vectorWasm: "./wasm/sitelen_vector_wasm.js?v=143"
     });
@@ -2882,10 +2882,144 @@ function wireHaloControls() {
         .join("\n");
     }
 
-    function prepareRendererInputFromTextareaValue() {
-      const rawInput = String(elTextIn?.value ?? "");
+    const TTS_PREPARE_INPUT_DEBUG_PREFIX = "[tts-prepareInput]";
+    let ttsPrepareInputCallSeq = 0;
+
+    function ttsPrepareShortString(value, limit = 2000) {
+      const s = String(value ?? "");
+      if (s.length <= limit) return s;
+      return s.slice(0, limit) + `…<+${s.length - limit} chars>`;
+    }
+
+    function ttsPrepareSummarizeMapValue(value) {
+      if (value == null) return value;
+      if (typeof value !== "object") return value;
+      return {
+        input: ttsPrepareShortString(value.input, 800),
+        inputForceNormal: ttsPrepareShortString(value.inputForceNormal, 800),
+        forceNormal: !!value.forceNormal,
+        requiresAtDb: !!value.requiresAtDb
+      };
+    }
+
+    function ttsPrepareFlatValue(value) {
+      if (value == null) return String(value);
+      if (typeof value === "string") return JSON.stringify(value);
+      if (typeof value === "number" || typeof value === "boolean") return String(value);
+      try { return JSON.stringify(value); }
+      catch { return JSON.stringify(String(value)); }
+    }
+
+    function ttsPrepareFlatPayload(payload) {
+      if (!payload || typeof payload !== "object") return payload == null ? "" : `value=${ttsPrepareFlatValue(payload)}`;
+      return Object.entries(payload)
+        .map(([key, value]) => `${key}=${ttsPrepareFlatValue(value)}`)
+        .join(" ");
+    }
+
+    function ttsPrepareExtractAtDbLookups(rawText) {
+      const out = [];
+      const text = String(rawText ?? "");
+      const re = /\S+@db\b/g;
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        const rawToken = m[0];
+        const cleanKey = rawToken.slice(0, -3).replace(/_/g, " ");
+        let mapHasKey = false;
+        let mapValueSummary = undefined;
+        try {
+          mapHasKey = !!pageMap?.has?.(cleanKey);
+          if (mapHasKey) mapValueSummary = ttsPrepareSummarizeMapValue(pageMap.get(cleanKey));
+        } catch (err) {
+          mapValueSummary = { error: err?.message ?? String(err) };
+        }
+        out.push({
+          rawToken,
+          cleanKey,
+          index: m.index,
+          end: m.index + rawToken.length,
+          mapHasKey,
+          mapValueSummary
+        });
+      }
+      return out;
+    }
+
+    function ttsPrepareFirstAtDbFlatFields(lookups) {
+      const first = Array.isArray(lookups) && lookups.length ? lookups[0] : null;
+      return {
+        atDbLookupCount: Array.isArray(lookups) ? lookups.length : 0,
+        atDb0RawToken: first?.rawToken ?? null,
+        atDb0CleanKey: first?.cleanKey ?? null,
+        atDb0MapHasKey: first?.mapHasKey ?? null,
+        atDb0MapValue: first?.mapValueSummary ?? null
+      };
+    }
+
+    function ttsPrepareLog(label, payload) {
+      try {
+        console.warn(`${TTS_PREPARE_INPUT_DEBUG_PREFIX} label=${JSON.stringify(label)} ${ttsPrepareFlatPayload(payload)}`);
+      } catch {}
+    }
+
+    function prepareRendererInputFromRawText(rawText, { context = "unknown" } = {}) {
+      const callId = ++ttsPrepareInputCallSeq;
+      const rawInput = String(rawText ?? "");
       const controlTokenNormalizedInput = normalizeNonDrawableSourceTokensForRendererInput(rawInput);
-      return CartoucheApi.prepareInput(controlTokenNormalizedInput, pageMap);
+      const atDbLookupsBeforePrepare = ttsPrepareExtractAtDbLookups(controlTokenNormalizedInput);
+
+      ttsPrepareLog("START", {
+        callId,
+        context,
+        rawInput: ttsPrepareShortString(rawInput),
+        controlTokenNormalizedInput: ttsPrepareShortString(controlTokenNormalizedInput),
+        rawInputLength: rawInput.length,
+        controlTokenNormalizedInputLength: controlTokenNormalizedInput.length,
+        pageMapSize: pageMap?.size ?? null,
+        pageMapHasNemen: pageMap?.has?.("Nemen") ?? null,
+        pageMapValueNemen: pageMap?.has?.("Nemen") ? ttsPrepareSummarizeMapValue(pageMap.get("Nemen")) : null,
+        ...ttsPrepareFirstAtDbFlatFields(atDbLookupsBeforePrepare),
+        atDbLookupsBeforePrepare
+      });
+
+      let preparedInput;
+      try {
+        preparedInput = CartoucheApi.prepareInput(controlTokenNormalizedInput, pageMap);
+      } catch (err) {
+        ttsPrepareLog("ERROR", {
+          callId,
+          context,
+          error: err?.message ?? String(err),
+          stack: err?.stack ?? null
+        });
+        throw err;
+      }
+
+      const resultPayload = {
+        callId,
+        context,
+        preparedInput: ttsPrepareShortString(preparedInput),
+        preparedInputLength: String(preparedInput ?? "").length,
+        changedByControlTokenNormalization: controlTokenNormalizedInput !== rawInput,
+        changedByCartouchePrepareInput: preparedInput !== controlTokenNormalizedInput,
+        stillContainsAtDb: /@db\b/.test(String(preparedInput ?? ""))
+      };
+
+      ttsPrepareLog("END", resultPayload);
+      try {
+        window.__TTS_LAST_PREPARE_INPUT__ = {
+          ...resultPayload,
+          rawInput,
+          controlTokenNormalizedInput,
+          atDbLookupsBeforePrepare
+        };
+      } catch {}
+
+      return preparedInput;
+    }
+
+    function prepareRendererInputFromTextareaValue() {
+      return prepareRendererInputFromRawText(String(elTextIn?.value ?? ""), { context: "prepareRendererInputFromTextareaValue" });
     }
 
     /* ============================
@@ -6327,7 +6461,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       await waitForConfiguredFonts(getFontPx());
       const rawInput = String(elTextIn.value ?? "");
       const controlTokenNormalizedInput = normalizeNonDrawableSourceTokensForRendererInput(rawInput);
-      const input = CartoucheApi.prepareInput(controlTokenNormalizedInput, pageMap);
+      const input = prepareRendererInputFromRawText(rawInput, { context: "buildCurrentVectorExportPlan" });
       const config = buildRendererCallConfig({ includeHalo });
       if (forceZeroHaloWidth && config?.paint?.halo) config.paint.halo.widthPx = 0;
       const preset = getActiveFontPreset();
@@ -7836,6 +7970,14 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           //const cartoucheApi = await CartoucheApi.open({ lookup: true });
           const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
           pageMap = await cartoucheApi.resolvePageMap();
+          try {
+            ttsPrepareLog("PAGEMAP_LOADED", {
+              pageMapSize: pageMap?.size ?? null,
+              pageMapHasNemen: pageMap?.has?.("Nemen") ?? null,
+              pageMapValueNemen: pageMap?.has?.("Nemen") ? ttsPrepareSummarizeMapValue(pageMap.get("Nemen")) : null,
+              sampleKeys: Array.from(pageMap?.keys?.() || []).slice(0, 50)
+            });
+          } catch {}
         } catch (e) { console.warn('CartoucheApi load failed, continuing without:', e); }
 
         startVectorExporterLoadInBackground();

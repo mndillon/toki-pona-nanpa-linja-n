@@ -3,7 +3,7 @@ import {
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
 } from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
-import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=23';
+import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=30';
 
 (() => {
   "use strict";
