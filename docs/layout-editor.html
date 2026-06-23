@@ -32,7 +32,51 @@
     --grid-size: 20px;
   }
 
- 
+  /* ── Startup loading veil ── */
+body {
+  opacity: 1;
+}
+
+#loadingVeil {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: var(--bg, #F3DFC0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  transition: opacity 0.25s ease;
+}
+
+#loadingVeil.ready {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#loadingVeilSpinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(17,17,17,0.12);
+  border-top-color: rgba(17,17,17,0.55);
+  border-radius: 50%;
+  animation: veilSpin 0.7s linear infinite;
+}
+
+#loadingVeilLabel {
+  font: 500 14px/1 system-ui, sans-serif;
+  color: rgba(17,17,17,0.55);
+  letter-spacing: 0.02em;
+}
+
+body.shellReady {
+  opacity: 1;
+}
+
+@keyframes veilSpin {
+  to { transform: rotate(360deg); }
+}
 
   html, body{
     height:100%;
@@ -815,6 +859,10 @@
 </head>
 
 <body>
+  <div id="loadingVeil" aria-live="polite" aria-label="Loading">
+  <div id="loadingVeilSpinner"></div>
+  <div id="loadingVeilLabel">Loading…</div>
+</div>
     <!-- CHANGE HERE: top toolbar -->
     <div class="topbar" id="topbar">
     <div class="topbarRow">
@@ -1155,6 +1203,25 @@ import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=166';
 
 (() => {
   "use strict";
+
+  function setStartupLoadingMessage(message) {
+  const label = document.getElementById("loadingVeilLabel");
+  if (label && message != null) label.textContent = String(message);
+}
+
+function hideStartupLoading() {
+  document.body.classList.add("shellReady");
+
+  const veil = document.getElementById("loadingVeil");
+  if (!veil) return;
+
+  veil.classList.add("ready");
+
+  window.setTimeout(() => {
+    try { veil.remove(); } catch {}
+  }, 300);
+}
+
   let pageMap = new Map();
 
   /* ============================================================
@@ -14885,6 +14952,7 @@ document.addEventListener("keydown", (e) => {
     initFloatingSitelenEditor();
     wireLangSelector();
     setStatus(tr("status_loading"));
+    setStartupLoadingMessage(tr("status_loading"));
     try{
       await stageFontPairController.ready;
 
@@ -15014,7 +15082,14 @@ document.addEventListener("keydown", (e) => {
 
   }
 
-  init();
+  init()
+    .catch(err => {
+      console.warn("[layout-editor startup] init failed:", err);
+      try { setStatus(tr("status_idb_unavailable")); } catch {}
+    })
+    .finally(() => {
+      hideStartupLoading();
+    });
 
   /* ============================================================
      How to extend
