@@ -656,7 +656,8 @@
         <li><code>Sin Pin</code> with <strong>Merge off</strong> → the words stay separate, so <code>Sinpin@db</code> does not match that record.</li>
         <li><code>Nenen@db</code> — for a proper name that matches a nanpa-linja-n numeric cartouche proper name, <code>@db</code> lets you use the saved database override instead of normal numeric rendering. The <strong>@db</strong> flag must be enabled here, and the <code>@db</code> suffix must also be used when rendering.</li>
         <li><code>Sema Pan Neninimen</code> → <em>Sema Pan</em> uses the database entry, while <em>Neninimen</em> renders as a numeric cartouche (since it is a nanpa-linja-n numeric cartouche proper name).</li>
-        <li><code>Sema Pan Neninimen@db</code> → same as above, but the numeric part also uses the saved database cartouche, if <strong>@db</strong> is enabled for that entry.</li>
+        <li><code>Sema_Pan_Neninimen@db</code> → same as above, but the numeric part also uses the saved database cartouche, if <strong>@db</strong> is enabled for that entry.</li>
+        <li><code>Multi Words</code> → multi-word entries in the cartouche db, must be referenced in text as Multi_Words@db.</li>
       </ul>
 
       <p style="margin:0;font-size:12px;color:var(--muted);">
@@ -790,7 +791,7 @@
       buildEntryRendererInput,
       buildEntryDisplayInput,
       buildEntryPreviewInput,
-    } from './js/cartouche-api-v3-previewdesc.js?v=22';
+    } from './js/cartouche-api-v3-previewdesc.js?v=23';
 
     // ── Page-level constants (font, UI) ───────────────────────────────────────
     const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';

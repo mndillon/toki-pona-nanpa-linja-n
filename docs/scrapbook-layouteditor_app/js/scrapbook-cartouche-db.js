@@ -7,7 +7,7 @@ import {
   segmentWords,
   makeKey,
   parseAndValidateLine,
-} from '../../js/cartouche-api-v3-previewdesc.js?v=22';
+} from '../../js/cartouche-api-v3-previewdesc.js?v=23';
 
 const SCRAPBOOK_CARTOUCHE_DB_DEBUG = !!globalThis.SCRAPBOOK_CARTOUCHE_DB_DEBUG;
 function scrapbookCartoucheDebugWarn(...args) {

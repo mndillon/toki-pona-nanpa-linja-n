@@ -9,7 +9,7 @@ import {
   buildRandomDescForLetters,
   segmentLetters,
   segmentWords
-} from '../../js/cartouche-api-v3-previewdesc.js?v=22';
+} from '../../js/cartouche-api-v3-previewdesc.js?v=23';
 import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=166';
 
 (() => {

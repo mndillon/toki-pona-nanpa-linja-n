@@ -662,9 +662,12 @@ export class CartoucheApi {
   // - Lowercase words are passed through as-is
   // ── stripAtDb ─────────────────────────────────────────────────────────────
   // Strips @db suffix from a word if present. Returns { word, hasAtDb }.
+  // When @db is present, underscores encode spaces in the DB lookup key.
+  // Example: San_Pan@db looks up the stored DB key "San Pan".
   static _stripAtDb(word) {
     if (word.endsWith('@db')) {
-      return { word: word.slice(0, -3), hasAtDb: true };
+      const raw = word.slice(0, -3);
+      return { word: raw.replace(/_/g, ' '), hasAtDb: true };
     }
     return { word, hasAtDb: false };
   }
@@ -710,8 +713,10 @@ export class CartoucheApi {
 
   static greedyScan(words, pageMap) {
     // Note: even with empty map we must process words to strip @db suffixes.
-    // @db applies only to the single word it is attached to. It never forces
-    // lookup for a preceding multi-word capitalised run.
+    // @db applies only to the single input token it is attached to.
+    // That token may use underscores to encode spaces in a DB key.
+    // Example: San_Pan@db looks up the stored DB key "San Pan".
+    // It never forces lookup for a preceding multi-word capitalised run.
     const hasEntries = pageMap && pageMap.size > 0;
 
     const result = [];
@@ -721,7 +726,9 @@ export class CartoucheApi {
       const rawWord = words[i];
       const { word: cleanWord, hasAtDb } = CartoucheApi._stripAtDb(rawWord);
 
-      // @db is a single-word lookup override only.
+      // @db is an explicit DB lookup override for this one input token.
+      // If the token contains underscores, they encode spaces in the DB key.
+      // Example: San_Pan@db -> lookup "San Pan".
       if (hasAtDb) {
         if (/^[A-Z]/.test(cleanWord) && hasEntries) {
           const hit = CartoucheApi._lookupSingleDbWord(cleanWord, pageMap, true);
@@ -732,10 +739,12 @@ export class CartoucheApi {
           }
         }
 
-        // No DB match: strip @db and pass the word through. This also lets a
-        // native single-word nanpa-linja-n name such as Nemen still render via
-        // the renderer if no database entry exists.
-        result.push({ type: 'text', words: [cleanWord] });
+        // No DB match: strip @db and pass through the expanded words.
+        // This means San_Pan@db falls back as "San Pan", not "San_Pan".
+        result.push({
+          type: 'text',
+          words: cleanWord.split(/\s+/).filter(Boolean),
+        });
         i++;
         continue;
       }
