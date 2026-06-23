@@ -821,7 +821,7 @@ nanpa #~WI.
           <span>Download PDF</span>
           <span class="tpLine">o kama jo e lipu PDF</span>
         </button>
-        <div id="btnDownloadPdfHelp" class="sr-only">Exports a PDF from the same SVG-rasterized PNG geometry used by PNG export.</div>
+        <div id="btnDownloadPdfHelp" class="sr-only">Exports a PDF by converting the same SVG vector paths used by SVG export into PDF vector paths.</div>
 
         <button id="appBtnDownloadUnicodeJson" type="button" class="btnBi" aria-describedby="btnDownloadUnicodeJsonHelp">
           <span>Download Unicode JSON</span>
@@ -7405,7 +7405,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     }
 
     async function exportRenderedToVectorPdf() {
-      vectorDiag("Download PDF via same SVG/PNG pipeline START");
+      vectorDiag("Download PDF via SVG path conversion START");
       if (!window.PDFLib) throw new Error("pdf-lib is not loaded. Check ./vendor/pdf-lib.min.js is available.");
       if (typeof window.PDFLib.PDFDocument?.create !== "function") throw new Error("pdf-lib PDFDocument is unavailable.");
 
@@ -7413,43 +7413,29 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const svgText = await svgBlob.text();
       window.__TTS_VECTOR_DEBUG_LAST_PDF_SVG_TEXT__ = svgText;
 
-      vectorDiag("PDF source SVG shared with SVG/PNG export", {
+      const pathElementCount = (svgText.match(/<path\b/g) || []).length;
+      vectorDiag("PDF source SVG shared with SVG export", {
         byteLength: svgBlob.size,
         charLength: svgText.length,
         containsPath: svgText.includes("<path"),
-        pathElementCount: (svgText.match(/<path\b/g) || []).length,
+        pathElementCount,
         containsClipPath: svgText.includes("clipPath")
       });
 
-      // IMPORTANT: make PDF use the same rendered geometry as PNG.
-      // The previous version parsed the SVG DOM and redrew paths with pdf-lib.
-      // That still allowed a PDF-only geometry mismatch.  This route rasterizes
-      // the exact same SVG used by Download PNG and embeds that PNG in the PDF,
-      // so PDF cannot have different run positions from the SVG/PNG output.
-      const pngBlob = await svgBlobToPngBlob(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }), { scale: 1 });
-      const pngBytes = await pngBlob.arrayBuffer();
+      if (!pathElementCount) {
+        throw new Error("PDF vector export aborted: source SVG contains no <path> elements.");
+      }
 
-      const pdfDoc = await window.PDFLib.PDFDocument.create();
-      const png = await pdfDoc.embedPng(pngBytes);
-      const pageWidthPt = Math.max(1, png.width) * TTS_SVG_PDF_PT_PER_PX;
-      const pageHeightPt = Math.max(1, png.height) * TTS_SVG_PDF_PT_PER_PX;
-      const page = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
-      page.drawImage(png, {
-        x: 0,
-        y: 0,
-        width: pageWidthPt,
-        height: pageHeightPt
-      });
-
-      const bytes = await pdfDoc.save();
-      const pdfBlob = new Blob([bytes], { type: "application/pdf" });
+      // Keep PDF vector. Do not rasterize SVG to PNG here.
+      // SVG export writes the SVG path data directly.
+      // PNG export rasterizes that SVG because PNG is a bitmap format.
+      // PDF export converts that same SVG DOM into PDF path operators.
+      const pdfBlob = await ttsSvgTextToPdfBlob(svgText);
       downloadBlobAsFile(pdfBlob, `${getExportFilenameBase()}-vector.pdf`);
-      vectorDiag("Download PDF via same SVG/PNG pipeline END", {
+      vectorDiag("Download PDF via SVG path conversion END", {
         svgBlobSize: svgBlob?.size,
-        pngBlobSize: pngBlob?.size,
         pdfBlobSize: pdfBlob?.size,
-        pngWidth: png.width,
-        pngHeight: png.height
+        pathElementCount
       });
     }
 
@@ -7812,7 +7798,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     btnDownloadPdf?.addEventListener("click", async () => {
       try{
         await exportRenderedToVectorPdf();
-        announceStatus("Downloaded PDF from the same SVG/PNG geometry. Diagnostics were logged to the console.");
+        announceStatus("Downloaded PDF from SVG vector paths. Diagnostics were logged to the console.");
       } catch(e){
         showAlertAndAnnounce(e?.message ?? String(e));
       }
