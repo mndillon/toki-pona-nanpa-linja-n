@@ -823,17 +823,51 @@ body.shellReady {
   font-size: 14px;
 }
 
+.cartoucheDbLinkRow{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  min-height: 14px;
+}
+
+.cartoucheDbLinkRow[hidden]{
+  display:none !important;
+}
+
+.cartoucheDbLink{
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.1;
+  text-decoration: none;
+  opacity: 0.62;
+  white-space: nowrap;
+}
+
+.cartoucheDbLink:hover{
+  opacity: 0.95;
+  text-decoration: underline;
+}
+
+.cartoucheDbLink:focus-visible{
+  outline: 2px solid rgba(17,17,17,0.35);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .floatingEditorBody{
   flex: 1 1 auto;
   min-height: 0;
   padding: 10px;
   background: rgba(255,255,255,0.35);
   display:flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .floatingEditorBody textarea{
   width: 100%;
   height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   resize: none;
   box-sizing: border-box;
@@ -1182,6 +1216,9 @@ body.shellReady {
       <button id="btnCloseFloatingSitelenEditor" class="btn" type="button">Close</button>
     </div>
     <div class="floatingEditorBody">
+      <div id="floatingSitelenEditorDbLinkRow" class="cartoucheDbLinkRow" hidden>
+        <a class="cartoucheDbLink" href="./cartouche-db.html" target="_blank" rel="noopener">Proper Name Cartouche Database</a>
+      </div>
       <textarea id="floatingSitelenEditorTextarea" spellcheck="false"></textarea>
     </div>
   </div>
@@ -8519,6 +8556,7 @@ const FloatingSitelenEditor = {
   header: null,
   title: null,
   ta: null,
+  dbLinkRow: null,
   closeBtn: null,
 
   isOpen: false,
@@ -8562,6 +8600,12 @@ function syncFloatingSitelenEditorFromSource(value){
   S.suppressSync = false;
 }
 
+function setFloatingSitelenEditorDbLinkVisible(show){
+  const row = FloatingSitelenEditor.dbLinkRow;
+  if (!row) return;
+  row.hidden = !show;
+}
+
 function closeFloatingSitelenEditor(){
   const S = FloatingSitelenEditor;
   if (!S.root) return;
@@ -8573,9 +8617,10 @@ function closeFloatingSitelenEditor(){
   S.elementId = null;
   S.sourceTextarea = null;
   S.onChange = null;
+  setFloatingSitelenEditorDbLinkVisible(false);
 }
 
-function openFloatingSitelenEditor({ title, elementId, sourceTextarea, onChange }){
+function openFloatingSitelenEditor({ title, elementId, sourceTextarea, onChange, showProperNameDbLink = false }){
   const S = FloatingSitelenEditor;
   if (!S.root || !S.ta || !sourceTextarea) return;
 
@@ -8586,6 +8631,7 @@ function openFloatingSitelenEditor({ title, elementId, sourceTextarea, onChange 
 
   if (S.title) S.title.textContent = String(title || "Text");
   S.ta.value = String(sourceTextarea.value || "");
+  setFloatingSitelenEditorDbLinkVisible(!!showProperNameDbLink);
 
   S.root.classList.add("show");
   S.root.setAttribute("aria-hidden", "false");
@@ -8594,7 +8640,7 @@ function openFloatingSitelenEditor({ title, elementId, sourceTextarea, onChange 
   S.ta.focus();
 }
 
-function rebindFloatingSitelenEditorToTextarea(elementId, textareaEl, onChange){
+function rebindFloatingSitelenEditorToTextarea(elementId, textareaEl, onChange, opts = {}){
   const S = FloatingSitelenEditor;
   if (!S.isOpen) return;
   if (!textareaEl) return;
@@ -8605,6 +8651,7 @@ function rebindFloatingSitelenEditorToTextarea(elementId, textareaEl, onChange){
   S.elementId = nextElementId;
   S.sourceTextarea = textareaEl;
   S.onChange = onChange;
+  setFloatingSitelenEditorDbLinkVisible(!!opts.showProperNameDbLink);
 
   if (sameBinding){
     // Same element: preserve in-progress popup edits during properties-panel re-render.
@@ -8624,6 +8671,7 @@ function initFloatingSitelenEditor(){
   S.header = $("floatingSitelenEditorHeader");
   S.title = $("floatingSitelenEditorTitle");
   S.ta = $("floatingSitelenEditorTextarea");
+  S.dbLinkRow = $("floatingSitelenEditorDbLinkRow");
   S.closeBtn = $("btnCloseFloatingSitelenEditor");
 
   if (!S.root || !S.header || !S.ta) return;
@@ -9062,7 +9110,8 @@ if (!shouldKeepFloatingEditor){
             enablePopout,
             popoutTitle: tr("props_text"),
             popoutElementId,
-            disabled
+            disabled,
+            showProperNameDbLink: editTextEls.length > 0 && editTextEls.every(e => e && e.type === ElementType.Sitelen)
           };
         })()
       );
@@ -9081,7 +9130,8 @@ if (!shouldKeepFloatingEditor){
             }
             scheduleAutosave();
             render();
-          }
+          },
+          { showProperNameDbLink: editTextEls.length > 0 && editTextEls.every(e => e && e.type === ElementType.Sitelen) }
         );
       }
 
@@ -9634,7 +9684,8 @@ if (!shouldKeepFloatingEditor){
       {
         enablePopout: (el.type === ElementType.Text || el.type === ElementType.Sitelen),
         popoutTitle: tr("props_text"),
-        popoutElementId: el.id
+        popoutElementId: el.id,
+        showProperNameDbLink: el.type === ElementType.Sitelen
       }
     );
 
@@ -9659,7 +9710,8 @@ if (!shouldKeepFloatingEditor){
 
           scheduleAutosave();
           render();
-        }
+        },
+        { showProperNameDbLink: el.type === ElementType.Sitelen }
       );
     }
 
@@ -10388,6 +10440,21 @@ f.appendChild(l); f.appendChild(inp);
     return row;
   }
 
+  function makeProperNameCartoucheDbLinkRow(){
+    const row = document.createElement("div");
+    row.className = "cartoucheDbLinkRow";
+
+    const link = document.createElement("a");
+    link.className = "cartoucheDbLink";
+    link.href = "./cartouche-db.html";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "Proper Name Cartouche Database";
+
+    row.appendChild(link);
+    return row;
+  }
+
   function makeTextarea(label, value, placeholder, onChange, opts = {}){
     const f = document.createElement("div");
     f.className = "field";
@@ -10406,9 +10473,14 @@ f.appendChild(l); f.appendChild(inp);
     if (opts && opts.readOnly) ta.readOnly = true;
     if (opts && opts.disabled) ta.disabled = true;
 
+    const showProperNameDbLink = !!opts.showProperNameDbLink;
     const enablePopout = !!opts.enablePopout;
     const popoutTitle = String(opts.popoutTitle || label);
     const popoutElementId = opts.popoutElementId || null;
+
+    if (showProperNameDbLink){
+      f.appendChild(makeProperNameCartoucheDbLinkRow());
+    }
 
     if (enablePopout){
       const btn = document.createElement("button");
@@ -10422,7 +10494,8 @@ f.appendChild(l); f.appendChild(inp);
           title: popoutTitle,
           elementId: popoutElementId,
           sourceTextarea: ta,
-          onChange
+          onChange,
+          showProperNameDbLink
         });
       });
       labelRow.appendChild(btn);

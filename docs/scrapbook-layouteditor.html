@@ -120,6 +120,43 @@
     z-index: var(--sb-z-confirm-dialog) !important;
   }
 
+
+  /* ── Proper Name Cartouche Database link ── */
+  .cartoucheDbLinkRow{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    min-height: 14px;
+  }
+  .cartoucheDbLinkRow[hidden]{
+    display:none !important;
+  }
+  .cartoucheDbLink{
+    color: var(--muted, #3f4750);
+    font-size: 11px;
+    line-height: 1.1;
+    text-decoration: none;
+    opacity: 0.62;
+    white-space: nowrap;
+  }
+  .cartoucheDbLink:hover{
+    opacity: 0.95;
+    text-decoration: underline;
+  }
+  .cartoucheDbLink:focus-visible{
+    outline: 2px solid rgba(17,17,17,0.35);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  #floatingTextEditor .floatingEditorBody{
+    flex-direction: column;
+    gap: 6px;
+  }
+  #floatingTextEditorTextarea{
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   </style>
 
   <!--
@@ -519,6 +556,9 @@
       </div>
     </div>
     <div class="floatingEditorBody">
+      <div id="floatingTextEditorDbLinkRow" class="cartoucheDbLinkRow" hidden>
+        <a class="cartoucheDbLink" href="./cartouche-db.html" target="_blank" rel="noopener">Proper Name Cartouche Database</a>
+      </div>
       <textarea id="floatingTextEditorTextarea" spellcheck="false" placeholder="Select a text, sitelen, or glyph element to edit…"></textarea>
     </div>
   </div>
@@ -650,6 +690,142 @@
   </script>
   <script type="module" src="scrapbook-layouteditor_app/js/scrapbook-cartouche-db-bootstrap.js?v=75"></script>
   <script type="module" src="scrapbook-layouteditor_app/js/app-vector.js?v=168"></script>
+
+  <script type="module">
+  // Adds the same discreet Proper Name Cartouche Database link used by
+  // layout-editor.html, without changing scrapbook-layouteditor_app/js/app-vector.js.
+  (() => {
+    const DB_URL = "./cartouche-db.html";
+    const DB_LABEL = "Proper Name Cartouche Database";
+    const PROPS_LINK_ID = "scrapbookPropsProperNameCartoucheDbLinkRow";
+
+    function makeDbLinkRow(id){
+      const row = document.createElement("div");
+      row.id = id;
+      row.className = "cartoucheDbLinkRow";
+
+      const link = document.createElement("a");
+      link.className = "cartoucheDbLink";
+      link.href = DB_URL;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = DB_LABEL;
+
+      row.appendChild(link);
+      return row;
+    }
+
+    function textLower(el){
+      return String(el?.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    function propsBodyLooksLikeSitelenElement(){
+      const body = document.getElementById("propsBody");
+      if (!body || !body.querySelector("textarea")) return false;
+
+      const text = textLower(body);
+      const markers = [
+        "sitelen font family",
+        "abbreviate numeric cartouche output",
+        "sitelen spacing",
+        "ignore unknown text",
+        "kulupu sitelen pi sitelen pona",
+        "o lili e poki nimi nanpa",
+        "weka pi sitelen pona",
+        "o awen ala e nimi sona ala"
+      ];
+      return markers.some((marker) => text.includes(marker));
+    }
+
+    function findPropsTextField(){
+      const body = document.getElementById("propsBody");
+      if (!body) return null;
+
+      const textareas = Array.from(body.querySelectorAll("textarea"));
+      for (const ta of textareas){
+        const field = ta.closest(".field") || ta.parentElement;
+        if (!field) continue;
+        return field;
+      }
+      return null;
+    }
+
+    let scheduled = false;
+    function scheduleSync(){
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        syncProperNameDbLinks();
+      });
+    }
+
+    function syncPropertiesPanelLink(){
+      const existing = document.getElementById(PROPS_LINK_ID);
+      const shouldShow = propsBodyLooksLikeSitelenElement();
+      const field = shouldShow ? findPropsTextField() : null;
+
+      if (!shouldShow || !field){
+        if (existing) existing.remove();
+        return;
+      }
+
+      const row = existing || makeDbLinkRow(PROPS_LINK_ID);
+      if (row.parentElement !== field || field.firstElementChild !== row){
+        field.insertBefore(row, field.firstChild);
+      }
+    }
+
+    function syncFloatingTextEditorLink(){
+      const row = document.getElementById("floatingTextEditorDbLinkRow");
+      if (!row) return;
+      row.hidden = !propsBodyLooksLikeSitelenElement();
+    }
+
+    function syncProperNameDbLinks(){
+      syncPropertiesPanelLink();
+      syncFloatingTextEditorLink();
+    }
+
+    function initProperNameDbLinkShim(){
+      const propsBody = document.getElementById("propsBody");
+      const floatingEditor = document.getElementById("floatingTextEditor");
+      const floatingTextArea = document.getElementById("floatingTextEditorTextarea");
+
+      if (propsBody){
+        new MutationObserver(scheduleSync).observe(propsBody, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+      }
+      if (floatingEditor){
+        new MutationObserver(scheduleSync).observe(floatingEditor, {
+          attributes: true,
+          attributeFilter: ["class", "aria-hidden", "style"]
+        });
+      }
+      if (floatingTextArea){
+        floatingTextArea.addEventListener("focus", scheduleSync);
+        floatingTextArea.addEventListener("input", scheduleSync);
+      }
+
+      document.addEventListener("click", (e) => {
+        if (e.target?.closest?.("#btnToggleTextEditor,#compactBtnTextEditor,#floatingTextEditor")) {
+          setTimeout(scheduleSync, 0);
+        }
+      }, true);
+
+      scheduleSync();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initProperNameDbLinkShim, { once: true });
+    } else {
+      initProperNameDbLinkShim();
+    }
+  })();
+  </script>
 
 
 <!-- ── Media Size Guard Dialog ── -->
