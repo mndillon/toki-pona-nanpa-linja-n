@@ -370,6 +370,12 @@ Rules:
 ### More Examples
 ```
 1           → Newen
+10          → Newenin
+100         → Newen Inin
+1,000       → Newen Eken
+10,000      → Newenin Eken
+100,000     → Newen Inin Eken
+1,000,000   → Newen Ekeken
 08          → Nenipen
 23          → Netesen
 679         → Nenumejen
