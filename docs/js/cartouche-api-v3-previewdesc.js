@@ -342,6 +342,21 @@ export function segmentLetters(words) {
   return { letters: result, wordBoundaries };
 }
 
+
+// When an entry explicitly requires the database override and Merge is on,
+// the override cartouche is built from the whole entry instead of from the
+// normal/nanpa segmentation. Without @db, native nanpa-linja-n segments still
+// stay separate and render normally.
+export function entryUsesForceMergedWholeEntry(entry) {
+  return !!(
+    entry &&
+    entry.forceNormal &&
+    entry.merge &&
+    Array.isArray(entry.words) &&
+    entry.words.length > 1
+  );
+}
+
 // ── Random cartouche generation ────────────────────────────────────────────
 export function buildRandomDescForLetters(letters, { excludeNanpaAtEnds = false } = {}) {
   return letters.map((ch, idx) => {
@@ -482,8 +497,33 @@ export function buildSegmentRendererInput(seg, entry, segIndex) {
   }
 }
 
+function buildForceMergedWholeEntryRendererInput(entry) {
+  if (entry.mode === 'literal') {
+    return `["${getEntryLiteralText(entry)}"]`;
+  }
+
+  const tm = (entry.mode === 'preferred') ? (entry.tallyMap || null) : null;
+
+  if (entry.mode === 'preferred') {
+    const rawTokens = tokenizeStoredCartouche((entry.cartoucheMap || {})['0']);
+    const withTallies = applyTalliesToTokens(rawTokens, tm, '0');
+    const cleaned = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false });
+    if (!cleaned.length) cleaned.unshift('""');
+    else if (cleaned[0] !== '""') cleaned.unshift('""');
+    const stored = cleaned.join(' ');
+    if (stored) return `[ ${stored} ]`;
+  }
+
+  const { letters } = segmentLetters(entry.words);
+  return `[ "" ${buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true })} ]`;
+}
+
 // Build full renderer input string for an entry (all segments)
 export function buildEntryRendererInput(entry) {
+  if (entryUsesForceMergedWholeEntry(entry)) {
+    return buildForceMergedWholeEntryRendererInput(entry);
+  }
+
   const segs = segmentWords(entry.words);
   return segs.map((seg, si) => buildSegmentRendererInput(seg, entry, si)).join(' ');
 }

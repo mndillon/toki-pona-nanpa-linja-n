@@ -7,7 +7,8 @@ import {
   segmentWords,
   makeKey,
   parseAndValidateLine,
-} from '../../js/cartouche-api-v3-previewdesc.js?v=30';
+  entryUsesForceMergedWholeEntry,
+} from '../../js/cartouche-api-v3-previewdesc.js?v=33';
 
 const SCRAPBOOK_CARTOUCHE_DB_DEBUG = !!globalThis.SCRAPBOOK_CARTOUCHE_DB_DEBUG;
 function scrapbookCartoucheDebugWarn(...args) {
@@ -88,12 +89,19 @@ function entryRequiresAtDbForLocalTpWordCollision(entry) {
 function getEntryLookupAliasesForLocalDb(entry) {
   const aliases = new Set();
   if (!entry || !Array.isArray(entry.words) || !entry.words.length) return aliases;
+
+  // Always include the exact stored key.  Multi-word @db lookup uses
+  // underscores in renderer text, but _stripAtDb() converts those back to
+  // spaces before the map lookup.
   aliases.add(entry.key);
+
+  // Match the global cartouche DB behaviour: add a merged single-word alias
+  // only when the whole entry is one normal mergeable run.  Do not register a
+  // leftover normal fragment from an entry that also contains a nanpa segment.
   if (entry.merge) {
     const segs = segmentWords(entry.words);
-    for (const seg of segs) {
-      if (seg.type !== 'normal') continue;
-      const merged = segmentLetters(seg.words).letters.join('');
+    if (segs.length === 1 && segs[0].type === 'normal') {
+      const merged = segmentLetters(segs[0].words).letters.join('');
       if (merged) aliases.add(merged.charAt(0).toUpperCase() + merged.slice(1));
     }
   }
@@ -108,10 +116,22 @@ function entryHasAnyCartoucheDescription(entry) {
   return Object.values(cm).some(value => String(value || '').trim());
 }
 
+function entryHasCartoucheDescriptionForCurrentGrouping(entry) {
+  const cm = entry && entry.cartoucheMap && typeof entry.cartoucheMap === 'object'
+    ? entry.cartoucheMap
+    : {};
+
+  if (entryUsesForceMergedWholeEntry(entry)) {
+    return !!String(cm['0'] || '').trim();
+  }
+
+  return entryHasAnyCartoucheDescription(entry);
+}
+
 function shouldGenerateCartoucheDescriptions(entry) {
   if (!entry) return false;
   if (entry.mode === 'random') return true;
-  if (entry.mode === 'preferred' && !entryHasAnyCartoucheDescription(entry)) return true;
+  if (entry.mode === 'preferred' && !entryHasCartoucheDescriptionForCurrentGrouping(entry)) return true;
   return false;
 }
 
@@ -138,11 +158,38 @@ function entryForLocalProperNameRender(entry) {
     : entry;
 }
 
+function countNonBlankCartoucheTokens(value) {
+  return String(value || '')
+    .trim()
+    .split(/\s+/)
+    .filter(token => token && token !== '""')
+    .length;
+}
+
 function buildEffectiveEntryForRender(entry) {
   if (!shouldGenerateCartoucheDescriptions(entry)) return entry;
 
-  const segs = segmentWords(entry.words);
   const cm = {};
+
+  if (entryUsesForceMergedWholeEntry(entry)) {
+    const { letters } = segmentLetters(entry.words);
+    const existingWhole = String((entry.cartoucheMap || {})['0'] || '').trim();
+    const combinedExisting = Object.values(entry.cartoucheMap || {})
+      .map(value => String(value || '').trim())
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    cm['0'] = existingWhole || (
+      combinedExisting && countNonBlankCartoucheTokens(combinedExisting) >= letters.length
+        ? combinedExisting
+        : buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true })
+    );
+
+    return { ...entry, cartoucheMap: cm };
+  }
+
+  const segs = segmentWords(entry.words);
 
   segs.forEach((seg, si) => {
     if (seg.type === 'nanpa' && !entry.forceNormal) return;
@@ -177,11 +224,76 @@ function buildLiteralCartoucheRendererInput(entry) {
   return `["${literal}"]`;
 }
 
+
+function storedCartoucheContentTokens(value) {
+  return String(value || '')
+    .trim()
+    .split(/\s+/)
+    .filter(token => token && token !== '""');
+}
+
+function buildStoredCartoucheInput(value, { forceNormal = false } = {}) {
+  const tokens = storedCartoucheContentTokens(value);
+  if (!tokens.length) return '';
+  const body = forceNormal ? `"" ${tokens.join(' ')}` : tokens.join(' ');
+  return `[ ${body} ]`;
+}
+
+function buildPreferredSplitForceNormalPartialInput(entry) {
+  if (!entry || entry.mode !== 'preferred' || entry.merge || !entry.forceNormal) return '';
+  if (!Array.isArray(entry.words) || !entry.words.length) return '';
+
+  const cm = entry.cartoucheMap && typeof entry.cartoucheMap === 'object'
+    ? entry.cartoucheMap
+    : {};
+
+  const hasAnyStoredContent = Object.values(cm).some(value => storedCartoucheContentTokens(value).length > 0);
+  if (!hasAnyStoredContent) return '';
+
+  const parts = [];
+  const segs = segmentWords(entry.words);
+
+  segs.forEach((seg, si) => {
+    if (!seg || !Array.isArray(seg.words) || !seg.words.length) return;
+
+    if (seg.type === 'nanpa') {
+      const forced = buildStoredCartoucheInput(cm[String(si)], { forceNormal: true });
+      if (forced) parts.push(forced);
+      return;
+    }
+
+    const wholeSegment = buildStoredCartoucheInput(cm[String(si)]);
+    if (wholeSegment) {
+      parts.push(wholeSegment);
+      return;
+    }
+
+    if (seg.type === 'normal') {
+      seg.words.forEach((w, wi) => {
+        const wordPart = buildStoredCartoucheInput(cm[`${si}_${wi}`]);
+        if (wordPart) parts.push(wordPart);
+      });
+    }
+  });
+
+  return parts.join(' ');
+}
+
+function buildLocalRendererInputForEntry(entry) {
+  if (!entry) return '';
+  if (entry.mode === 'literal') return buildLiteralCartoucheRendererInput(entry);
+
+  const effectiveEntry = entryForLocalProperNameRender(entry);
+  const partialPreferred = buildPreferredSplitForceNormalPartialInput(effectiveEntry);
+  if (partialPreferred) return partialPreferred;
+
+  return buildEntryRendererInput(buildEffectiveEntryForRender(effectiveEntry));
+}
+
 function buildEntryRenderedPreviewInput(entry) {
   if (!entry) return '';
   if (entry.mode === 'ignore') return buildEntryDisplayInput(entry);
-  if (entry.mode === 'literal') return buildLiteralCartoucheRendererInput(entry);
-  return buildEntryRendererInput(buildEffectiveEntryForRender(entryForLocalProperNameRender(entry)));
+  return buildLocalRendererInputForEntry(entry);
 }
 
 function buildLocalPageMapFromEntries(entries) {
@@ -194,18 +306,13 @@ function buildLocalPageMapFromEntries(entries) {
       continue;
     }
 
-    let rendererInput;
-    if (entry.mode === 'literal') {
-      rendererInput = buildLiteralCartoucheRendererInput(entry);
-    } else {
-      rendererInput = buildEntryRendererInput(buildEffectiveEntryForRender(entryForLocalProperNameRender(entry)));
-    }
+    let rendererInput = buildLocalRendererInputForEntry(entry);
 
     let inputForceNormal = rendererInput;
     if (entry.forceNormal && entry.mode !== 'literal') {
       const entryNormal = { ...entry, forceNormal: false };
       inputForceNormal = rendererInput;
-      rendererInput = buildEntryRendererInput(buildEffectiveEntryForRender(entryNormal));
+      rendererInput = buildLocalRendererInputForEntry(entryNormal);
     }
 
     const mapValue = {
@@ -273,7 +380,7 @@ function normaliseEntry(raw) {
     mode,
     cartoucheMap: raw.cartoucheMap && typeof raw.cartoucheMap === 'object' ? { ...raw.cartoucheMap } : {},
     tallyMap: raw.tallyMap && typeof raw.tallyMap === 'object' ? { ...raw.tallyMap } : {},
-    forceNormal: true,
+    forceNormal: !!raw.forceNormal,
     literalText: String(raw.literalText || key).replace(/"/g, '').trim() || key,
   };
 }
@@ -687,6 +794,10 @@ export function createScrapbookCartoucheDbController(options = {}) {
     selectedKey: '',
     previewTimer: null,
     previewSeq: 0,
+    editFlushTimer: null,
+    editFlushNeedsDirty: false,
+    editFlushNeedsRebuild: false,
+    editFlushNeedsPreview: false,
     globalApi: null,
     globalMap: new Map(),
     localMap: new Map(),
@@ -703,7 +814,13 @@ export function createScrapbookCartoucheDbController(options = {}) {
   function ensureDocumentDb() {
     const doc = getDocument() || window.ScrapbookCartoucheDbBridge?.getDocument?.();
     if (!doc) return cloneJson(DEFAULT_DB);
-    window.ScrapbookCartoucheDbBridge?.bindDocument?.(doc);
+
+    // Do not call ScrapbookCartoucheDbBridge.bindDocument() from the local DB
+    // editor.  Older bridge implementations normalised local cartouche entries
+    // and could restore forceNormal/@db to true immediately after the user
+    // unchecked it.  The controller already receives the current document from
+    // the bootstrap getDocument callback, so this module should mutate that
+    // document directly and keep it authoritative.
     if (!doc.cartoucheDb || typeof doc.cartoucheDb !== 'object') {
       doc.cartoucheDb = cloneJson(DEFAULT_DB);
     }
@@ -717,17 +834,70 @@ export function createScrapbookCartoucheDbController(options = {}) {
     return ensureDocumentDb().entries;
   }
 
-  function setLocalEntries(entries, { dirty = true, rebuild = true } = {}) {
-    const db = ensureDocumentDb();
-    db.entries = normaliseEntries(entries);
-    window.ScrapbookCartoucheDbBridge?.setEntries?.(db.entries);
-    if (dirty) setDocumentDirty();
-    if (rebuild) rebuildCombinedPageMap();
+  function syncDocumentEntries(entries) {
+    const normalised = normaliseEntries(entries);
+    const doc = getDocument() || window.ScrapbookCartoucheDbBridge?.getDocument?.();
+
+    if (doc && typeof doc === 'object') {
+      if (!doc.cartoucheDb || typeof doc.cartoucheDb !== 'object') {
+        doc.cartoucheDb = cloneJson(DEFAULT_DB);
+      }
+      if (doc.cartoucheDb.type !== DEFAULT_DB.type) doc.cartoucheDb.type = DEFAULT_DB.type;
+      if (!Number.isFinite(doc.cartoucheDb.version)) doc.cartoucheDb.version = DEFAULT_DB.version;
+      doc.cartoucheDb.entries = normalised;
+    }
+
+    // Intentionally do not call ScrapbookCartoucheDbBridge.setEntries().
+    // That bridge is outside this module and may still contain older
+    // normalisation rules that force local @db/forceNormal back to true.
+    // The real source of truth is the scrapbook document object above; the
+    // rendered page is updated through rebuildCombinedPageMap() and the
+    // scrapbook-cartouche-db:changed event.
+    return normalised;
+  }
+
+  function flushPendingEntryEditSideEffects() {
+    if (state.editFlushTimer) {
+      clearTimeout(state.editFlushTimer);
+      state.editFlushTimer = null;
+    }
+
+    const needsDirty = !!state.editFlushNeedsDirty;
+    const needsRebuild = !!state.editFlushNeedsRebuild;
+    const needsPreview = !!state.editFlushNeedsPreview;
+
+    state.editFlushNeedsDirty = false;
+    state.editFlushNeedsRebuild = false;
+    state.editFlushNeedsPreview = false;
+
+    if (needsDirty) setDocumentDirty();
+    if (needsRebuild) rebuildCombinedPageMap();
+    if (needsPreview) scheduleSelectedPreviewRender();
+  }
+
+  function scheduleEntryEditSideEffects({ dirty = true, rebuild = true, preview = true, delayMs = 250 } = {}) {
+    state.editFlushNeedsDirty = state.editFlushNeedsDirty || !!dirty;
+    state.editFlushNeedsRebuild = state.editFlushNeedsRebuild || !!rebuild;
+    state.editFlushNeedsPreview = state.editFlushNeedsPreview || !!preview;
+
+    if (state.editFlushTimer) clearTimeout(state.editFlushTimer);
+    state.editFlushTimer = setTimeout(flushPendingEntryEditSideEffects, Math.max(0, Number(delayMs) || 0));
+  }
+
+  function setLocalEntries(entries, { dirty = true, rebuild = true, debounce = false } = {}) {
+    ensureDocumentDb();
+    const normalised = syncDocumentEntries(entries);
+    if (debounce) {
+      scheduleEntryEditSideEffects({ dirty, rebuild, preview: true });
+    } else {
+      if (dirty) setDocumentDirty();
+      if (rebuild) rebuildCombinedPageMap();
+    }
     renderList();
     const selected = getSelectedEntry();
     if (selected) selectEntry(selected.key, { render: true });
     else updateSelectedPreviewMetadata(null);
-    return db.entries;
+    return normalised;
   }
 
   function setStatus(message, isError = false) {
@@ -875,11 +1045,9 @@ export function createScrapbookCartoucheDbController(options = {}) {
     const normalised = normaliseEntry(entry);
     if (!normalised) return null;
     Object.assign(entry, normalised);
-    window.ScrapbookCartoucheDbBridge?.setEntries?.(entries);
-    setDocumentDirty();
-    rebuildCombinedPageMap();
+    syncDocumentEntries(entries);
     updateSelectedPreviewMetadata(entry);
-    scheduleSelectedPreviewRender();
+    scheduleEntryEditSideEffects({ dirty: true, rebuild: true, preview: true });
     return entry;
   }
 
@@ -929,7 +1097,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
       mode: 'random',
       cartoucheMap: {},
       tallyMap: {},
-      forceNormal: true,
+      forceNormal: false,
       literalText: key,
     });
     if (state.addInput) state.addInput.value = '';
@@ -942,7 +1110,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
       if (entry.key !== key) return entry;
       return normaliseEntry({ ...entry, ...patch }) || entry;
     });
-    setLocalEntries(entries);
+    setLocalEntries(entries, { debounce: true });
   }
 
   function deleteEntry(key) {
@@ -973,6 +1141,10 @@ export function createScrapbookCartoucheDbController(options = {}) {
       card.className = 'scrapbookCartoucheDbEntry';
       card.dataset.key = entry.key;
       card.classList.toggle('selected', entry.key === state.selectedKey);
+      const wordCount = Array.isArray(entry.words) ? entry.words.length : 0;
+      const canMerge = wordCount > 1;
+      const needsAtDb = entryRequiresAtDbForLocalTpWordCollision(entry);
+      const showForceNormal = needsAtDb || !!entry.forceNormal;
       card.addEventListener('click', event => {
         if (!event.target.closest('input,select,textarea,button,a,label')) selectEntry(entry.key);
       });
@@ -987,7 +1159,10 @@ export function createScrapbookCartoucheDbController(options = {}) {
 
       const badges = document.createElement('div');
       badges.className = 'scrapbookCartoucheDbBadges';
-      for (const txt of [entry.mode, entry.merge ? 'merge' : 'split', entry.forceNormal ? '@db' : 'normal']) {
+      const badgeTexts = [entry.mode];
+      if (canMerge) badgeTexts.push(entry.merge ? 'merge' : 'split');
+      if (showForceNormal) badgeTexts.push(entry.forceNormal ? '@db' : 'normal');
+      for (const txt of badgeTexts) {
         const badge = document.createElement('span');
         badge.className = 'scrapbookCartoucheDbBadge';
         badge.textContent = txt;
@@ -1014,7 +1189,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
 
       const desc = document.createElement('div');
       desc.className = 'scrapbookCartoucheDbDesc';
-      desc.textContent = buildEntryDisplayInput(entry);
+      desc.textContent = buildEntryRenderedPreviewInput(entry);
       card.appendChild(desc);
 
       const grid = document.createElement('div');
@@ -1039,23 +1214,43 @@ export function createScrapbookCartoucheDbController(options = {}) {
       const mergeWrap = document.createElement('div');
       const mergeLabel = document.createElement('label');
       mergeLabel.textContent = 'Merge';
-      const mergeInput = document.createElement('input');
-      mergeInput.type = 'checkbox';
-      mergeInput.checked = !!entry.merge;
-      mergeInput.addEventListener('change', () => { selectEntry(entry.key, { render: false }); updateEntry(entry.key, { merge: mergeInput.checked }); });
       mergeWrap.appendChild(mergeLabel);
-      mergeWrap.appendChild(mergeInput);
+      if (canMerge) {
+        const mergeInput = document.createElement('input');
+        mergeInput.type = 'checkbox';
+        mergeInput.checked = !!entry.merge;
+        mergeInput.addEventListener('change', () => {
+          selectEntry(entry.key, { render: false });
+          updateEntry(entry.key, { merge: mergeInput.checked });
+        });
+        mergeWrap.appendChild(mergeInput);
+      } else {
+        const dash = document.createElement('div');
+        dash.className = 'scrapbookCartoucheDbHint';
+        dash.textContent = '—';
+        mergeWrap.appendChild(dash);
+      }
       grid.appendChild(mergeWrap);
 
       const forceWrap = document.createElement('div');
       const forceLabel = document.createElement('label');
       forceLabel.textContent = '@db';
-      const forceInput = document.createElement('input');
-      forceInput.type = 'checkbox';
-      forceInput.checked = !!entry.forceNormal;
-      forceInput.addEventListener('change', () => { selectEntry(entry.key, { render: false }); updateEntry(entry.key, { forceNormal: forceInput.checked }); });
       forceWrap.appendChild(forceLabel);
-      forceWrap.appendChild(forceInput);
+      if (showForceNormal) {
+        const forceInput = document.createElement('input');
+        forceInput.type = 'checkbox';
+        forceInput.checked = !!entry.forceNormal;
+        forceInput.addEventListener('change', () => {
+          selectEntry(entry.key, { render: false });
+          updateEntry(entry.key, { forceNormal: forceInput.checked });
+        });
+        forceWrap.appendChild(forceInput);
+      } else {
+        const dash = document.createElement('div');
+        dash.className = 'scrapbookCartoucheDbHint';
+        dash.textContent = '—';
+        forceWrap.appendChild(dash);
+      }
       grid.appendChild(forceWrap);
 
       const valueWrap = document.createElement('div');
@@ -1081,7 +1276,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
         });
         const currentDesc = card.querySelector('.scrapbookCartoucheDbDesc');
         const latest = getLocalEntries().find(e => e.key === entry.key);
-        if (currentDesc && latest) currentDesc.textContent = buildEntryDisplayInput(latest);
+        if (currentDesc && latest) currentDesc.textContent = buildEntryRenderedPreviewInput(latest);
       });
       valueWrap.appendChild(valueLabel);
       valueWrap.appendChild(valueInput);

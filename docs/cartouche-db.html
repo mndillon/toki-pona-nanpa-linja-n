@@ -627,6 +627,13 @@
     <summary>How to use this page</summary>
     <div class="accordionBody">
 
+      <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">How to enter lookup text in renderer pages</p>
+      <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
+        <li><code>Towasi</code> — single-word lookup for an ordinary proper name that is not recognized as a nanpa-linja-n numeric cartouche proper name.</li>
+        <li><code>Nemen@db</code> — single-word explicit database lookup. Use this when the word would otherwise be recognized by nanpa-linja-n and you want the saved database entry instead.</li>
+        <li><code>Multi_Words@db</code> — Use underscores between words in renderer text for explicit multi-word database lookup.</li>
+      </ul>
+
       <p style="margin:0 0 8px;font-size:12px;color:var(--muted);">
         This database controls how tokiponized proper names are rendered as cartouches across renderer pages.
         When the renderer finds a capitalised name sequence that matches an entry here, it uses the flags below to decide what to do.
@@ -635,7 +642,7 @@
       <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:var(--muted);">Flags</p>
       <ul style="margin:0 0 10px 16px;padding:0;font-size:12px;color:var(--muted);line-height:1.6;">
         <li><strong>@db</strong> — Appears for entries that need an explicit database override. This includes entries with a nanpa-linja-n numeric part, and entries whose separate words or merged form would otherwise be read as ordinary toki pona words. When the <strong>@db</strong> flag is enabled here, the renderer will only use the saved database cartouche when the matching input also uses the <code>@db</code> suffix.</li>
-        <li><strong>Merge</strong> — Controls how non-numeric words are grouped. When on, non-numeric words are combined into one cartouche. When off, each non-numeric word gets its own cartouche. Numeric nanpa-linja-n parts are always kept as one cartouche. When words are merged, final <code>n</code> is only dropped where needed to avoid <code>nn</code> or <code>nm</code>; other <code>n</code>+consonant joins are kept.</li>
+        <li><strong>Merge</strong> — Controls how words are grouped. When on, non-numeric words are combined into one cartouche. When off, each non-numeric word gets its own cartouche. Numeric nanpa-linja-n parts are normally kept as separate numeric cartouches; when <strong>@db</strong> is enabled for the entry and Merge is on, all words in the entry are merged into one explicit database cartouche. When words are merged, final <code>n</code> is only dropped where needed to avoid <code>nn</code> or <code>nm</code>; other <code>n</code>+consonant joins are kept.</li>
         <li><strong>Mode</strong> — Controls what kind of cartouche is used:
           <em>random</em> = generated automatically from the letters;
           <em>preferred</em> = use the cartouche saved with <strong>✏ edit</strong>;
@@ -791,7 +798,8 @@
       buildEntryRendererInput,
       buildEntryDisplayInput,
       buildEntryPreviewInput,
-    } from './js/cartouche-api-v3-previewdesc.js?v=30';
+      entryUsesForceMergedWholeEntry,
+    } from './js/cartouche-api-v3-previewdesc.js?v=33';
 
     // ── Page-level constants (font, UI) ───────────────────────────────────────
     const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';
@@ -906,6 +914,169 @@
 
     function isNonBlankGlyphToken(token) {
       return !!token && token !== SPECIAL_DOUBLE_QUOTE_TOKEN;
+    }
+
+    function getEditableCartoucheGroups(entry) {
+      const groups = [];
+      if (!entry || !Array.isArray(entry.words) || !entry.words.length) return groups;
+
+      if (entryUsesForceMergedWholeEntry(entry)) {
+        const { letters, wordBoundaries } = segmentLetters(entry.words);
+        groups.push({
+          key: '0',
+          letters,
+          wordBoundaries,
+          excludeNanpaAtEnds: true,
+        });
+        return groups;
+      }
+
+      const segs = segmentWords(entry.words);
+      segs.forEach((seg, si) => {
+        if (seg.type === 'nanpa') {
+          if (!entry.forceNormal) return;
+          groups.push({
+            key: String(si),
+            letters: seg.words.join('').toLowerCase().split(''),
+            wordBoundaries: [],
+            excludeNanpaAtEnds: true,
+          });
+          return;
+        }
+
+        if (entry.merge) {
+          const { letters, wordBoundaries } = segmentLetters(seg.words);
+          groups.push({
+            key: String(si),
+            letters,
+            wordBoundaries,
+            excludeNanpaAtEnds: false,
+          });
+          return;
+        }
+
+        seg.words.forEach((w, wi) => {
+          groups.push({
+            key: `${si}_${wi}`,
+            letters: w.toLowerCase().split(''),
+            wordBoundaries: [],
+            excludeNanpaAtEnds: false,
+          });
+        });
+      });
+
+      return groups;
+    }
+
+    function fillMissingCartoucheMapForEntry(entry, cm) {
+      let changed = false;
+      for (const group of getEditableCartoucheGroups(entry)) {
+        const existing = (cm[group.key] || '').trim();
+        if (existing) continue;
+        cm[group.key] = buildRandomDescForLetters(group.letters, {
+          excludeNanpaAtEnds: !!group.excludeNanpaAtEnds,
+        });
+        changed = true;
+      }
+      return changed;
+    }
+
+    function migratePreferredCartoucheMapForGroupingChange(entry, nextEntry) {
+      const currentEntry = { ...entry };
+      const currentGroups = getEditableCartoucheGroups(currentEntry);
+      const nextGroups = getEditableCartoucheGroups(nextEntry);
+      const currentMap = entry.cartoucheMap || {};
+      const nextMap = {};
+
+      if (entryUsesForceMergedWholeEntry(nextEntry)) {
+        const combined = currentGroups
+          .map(group => currentMap[group.key] || '')
+          .filter(Boolean)
+          .join(' ');
+        const whole = nextGroups[0];
+        const combinedTokenCount = splitStoredTokensPreservingBlanks(combined)
+          .filter(isNonBlankGlyphToken)
+          .length;
+        nextMap[whole.key] = (combined && combinedTokenCount >= whole.letters.length)
+          ? combined
+          : buildRandomDescForLetters(whole.letters, {
+              excludeNanpaAtEnds: !!whole.excludeNanpaAtEnds,
+            });
+        return nextMap;
+      }
+
+      if (entryUsesForceMergedWholeEntry(currentEntry)) {
+        const descTokens = splitStoredTokensPreservingBlanks(currentMap['0'] || '');
+        let offset = 0;
+        for (const group of nextGroups) {
+          const wordTokens = [];
+          let glyphCount = 0;
+          while (offset < descTokens.length && glyphCount < group.letters.length) {
+            const token = descTokens[offset++];
+            wordTokens.push(token);
+            if (isNonBlankGlyphToken(token)) glyphCount++;
+          }
+          nextMap[group.key] = glyphCount === group.letters.length
+            ? wordTokens.join(' ')
+            : buildRandomDescForLetters(group.letters, {
+                excludeNanpaAtEnds: !!group.excludeNanpaAtEnds,
+              });
+        }
+        return nextMap;
+      }
+
+      for (const group of nextGroups) {
+        const exact = (currentMap[group.key] || '').trim();
+        if (exact) {
+          nextMap[group.key] = exact;
+          continue;
+        }
+
+        if (!nextEntry.merge) {
+          const segKey = String(group.key).split('_')[0];
+          const mergedDesc = currentMap[segKey] || '';
+          const descTokens = splitStoredTokensPreservingBlanks(mergedDesc);
+          const siblingGroups = nextGroups.filter(g => String(g.key).split('_')[0] === segKey);
+          let offset = 0;
+          for (const sibling of siblingGroups) {
+            const wordTokens = [];
+            let glyphCount = 0;
+            while (offset < descTokens.length && glyphCount < sibling.letters.length) {
+              const token = descTokens[offset++];
+              wordTokens.push(token);
+              if (isNonBlankGlyphToken(token)) glyphCount++;
+            }
+            if (sibling.key === group.key) {
+              nextMap[group.key] = glyphCount === sibling.letters.length
+                ? wordTokens.join(' ')
+                : buildRandomDescForLetters(group.letters, {
+                    excludeNanpaAtEnds: !!group.excludeNanpaAtEnds,
+                  });
+              break;
+            }
+          }
+          if (nextMap[group.key]) continue;
+        }
+
+        const combined = currentGroups
+          .filter(g => String(g.key).split('_')[0] === String(group.key))
+          .map(g => currentMap[g.key] || '')
+          .filter(Boolean)
+          .join(' ');
+        nextMap[group.key] = combined || buildRandomDescForLetters(group.letters, {
+          excludeNanpaAtEnds: !!group.excludeNanpaAtEnds,
+        });
+      }
+
+      return nextMap;
+    }
+
+    function migratePreferredCartoucheMapForMergeChange(entry, newMerge) {
+      return migratePreferredCartoucheMapForGroupingChange(entry, { ...entry, merge: newMerge });
+    }
+
+    function migratePreferredCartoucheMapForForceNormalChange(entry, newForceNormal) {
+      return migratePreferredCartoucheMapForGroupingChange(entry, { ...entry, forceNormal: newForceNormal });
     }
 
     function descForEntry(entry) {
@@ -1035,34 +1206,7 @@
         let changed = false;
 
         if (entry.mode !== 'literal') {
-
-        function ensureDescForLetters(key, letters, opts = {}) {
-          const existing = (cm[key] || '').trim();
-          if (existing) return existing;
-          cm[key] = buildRandomDescForLetters(letters, opts);
-          changed = true;
-          return cm[key];
-        }
-
-        segs.forEach((seg, si) => {
-          if (seg.type === 'nanpa' && !entry.forceNormal) return;
-
-          if (seg.type === 'nanpa' && entry.forceNormal) {
-            const letters = seg.words.join('').toLowerCase().split('');
-            ensureDescForLetters(String(si), letters, { excludeNanpaAtEnds: true });
-            return;
-          }
-
-          if (entry.merge) {
-            const { letters } = segmentLetters(seg.words);
-            ensureDescForLetters(String(si), letters);
-          } else {
-            seg.words.forEach((w, wi) => {
-              ensureDescForLetters(`${si}_${wi}`, w.toLowerCase().split(''));
-            });
-          }
-        });
-
+          changed = fillMissingCartoucheMapForEntry(entry, cm);
         }
 
         if (changed) {
@@ -1086,21 +1230,37 @@
     }
 
     // ── Table ─────────────────────────────────────────────────────────────────
+    function displayLookupKey(entry) {
+      if (!entry || !Array.isArray(entry.words) || !entry.words.length) return entry?.key || '';
+      return entry.words.join('_');
+    }
+
     function renderTable(filter) {
-      filter = (filter || '').toLowerCase();
+      const rawFilter = (filter || '').toLowerCase();
+      const lookupFilter = rawFilter.replace(/@db$/, '');
       const tbody = $('tbody');
       tbody.innerHTML = '';
-      const visible = entries.filter(e => !filter || e.key.toLowerCase().includes(filter));
-      $('emptyState').classList.toggle('hidden', visible.length > 0 || !!filter);
-      if (visible.length === 0 && filter) {
+      const visible = entries.filter(e => {
+        if (!rawFilter) return true;
+        const storedKey = (e.key || '').toLowerCase();
+        const lookupKey = displayLookupKey(e).toLowerCase();
+        return storedKey.includes(rawFilter) || lookupKey.includes(rawFilter) || lookupKey.includes(lookupFilter);
+      });
+      $('emptyState').classList.toggle('hidden', visible.length > 0 || !!rawFilter);
+      if (visible.length === 0 && rawFilter) {
         const tr = tbody.insertRow(); const td = tr.insertCell();
         td.colSpan = 6; td.style.cssText = 'text-align:center;color:var(--muted);padding:16px;';
-        td.textContent = `No matches for "${filter}"`; return;
+        td.textContent = `No matches for "${rawFilter}"`; return;
       }
 
       for (const entry of visible) {
         const segs = segmentWords(entry.words);
         const hasEditableSegs = segs.some(s => s.type === 'normal');
+        const isAllNanpa   = segs.length > 0 && segs.every(s => s.type === 'nanpa');
+        const hasAnyNanpa  = segs.some(s => s.type === 'nanpa');
+        const wordCount    = Array.isArray(entry.words) ? entry.words.length : 0;
+        const canEdit      = hasEditableSegs || (isAllNanpa && !!entry.forceNormal);
+        const canMerge     = wordCount > 1 && (hasEditableSegs || (isAllNanpa && !!entry.forceNormal));
         const tr = document.createElement('tr');
         tr.dataset.key = entry.key;
 
@@ -1110,9 +1270,9 @@
         // Show each word; nanpa words in amber
         const nameSpan = document.createElement('span');
         segs.forEach((seg, si) => {
-          if (si > 0) { const sp = document.createElement('span'); sp.textContent = ' '; nameSpan.appendChild(sp); }
+          if (si > 0) { const sp = document.createElement('span'); sp.textContent = '_'; nameSpan.appendChild(sp); }
           seg.words.forEach((w, wi) => {
-            if (wi > 0) { const sp = document.createElement('span'); sp.textContent = ' '; nameSpan.appendChild(sp); }
+            if (wi > 0) { const sp = document.createElement('span'); sp.textContent = '_'; nameSpan.appendChild(sp); }
             const ws = document.createElement('span');
             ws.textContent = w;
             if (seg.type === 'nanpa') { ws.style.color = 'var(--warn)'; ws.title = 'nanpa: [' + seg.words.join(' ') + ']'; }
@@ -1123,8 +1283,6 @@
         tr.appendChild(tdName);
 
         // ── Force Normal toggle (@db column — always present) ──
-        const isAllNanpa   = segs.length > 0 && segs.every(s => s.type === 'nanpa');
-        const hasAnyNanpa  = segs.some(s => s.type === 'nanpa');
         const needsAtDb    = entryRequiresAtDb(entry);
         const tdForce = document.createElement('td');
         tdForce.style.textAlign = 'center';
@@ -1134,12 +1292,22 @@
           forceChk.checked = !!entry.forceNormal;
           forceChk.title = 'Require @db suffix in input to use this database override';
           forceChk.addEventListener('change', async () => {
-            entry.forceNormal = forceChk.checked;
+            const newForceNormal = forceChk.checked;
+            const previewWasOpen = isPreviewOpenForEntry(entry);
+            if (entry.mode === 'preferred') {
+              entry.cartoucheMap = migratePreferredCartoucheMapForForceNormalChange(entry, newForceNormal);
+            }
+            entry.forceNormal = newForceNormal;
             await api.putEntry({ ...entry });
-            // Update edit button — nanpa-only entries become editable when forceNormal set
+
+            // For all-nanpa entries, @db changes whether edit/merge controls are available,
+            // so the row needs to be rebuilt. Preserve any open render preview across that rebuild.
             if (isAllNanpa) {
-              btnEdit.disabled = !entry.forceNormal;
-              btnEdit.title = entry.forceNormal ? 'Edit cartouche' : 'Enable @db to edit nanpa segments';
+              renderTable($('searchInput').value);
+              await reopenPreviewForEntry(entry, previewWasOpen);
+            } else {
+              updateDescCell(entry);
+              await renderOpenPreviewForEntry(entry);
             }
           });
           tdForce.appendChild(forceChk);
@@ -1153,51 +1321,16 @@
         // ── Merge toggle ──
         const tdMerge = document.createElement('td');
         tdMerge.style.textAlign = 'center';
-        if (hasEditableSegs) {
+        if (canMerge) {
           const chk = document.createElement('input');
           chk.type = 'checkbox'; chk.checked = !!entry.merge;
           chk.title = 'Merge all words into one cartouche per run';
           chk.addEventListener('change', async () => {
             const newMerge = chk.checked;
-            const cm = entry.cartoucheMap || {};
-            // Migrate cartoucheMap keys when merge flag changes
+            // Migrate cartoucheMap keys when merge flag changes.
+            // If @db is enabled, Merge now treats the whole entry as one editable cartouche.
             if (entry.mode === 'preferred') {
-              const newCm = {};
-              segs.forEach((seg, si) => {
-                if (seg.type !== 'normal') return;
-                if (newMerge) {
-                  // Was split (0_0, 0_1, ...) → merge into one per seg
-                  // Concatenate all per-word descs into one combined desc
-                  const combined = seg.words.map((w, wi) => cm[`${si}_${wi}`] || '').filter(Boolean).join(' ');
-                  if (combined) newCm[si] = combined;
-                  else {
-                    // Generate from letters
-                    const { letters } = segmentLetters(seg.words);
-                    newCm[si] = buildRandomDescForLetters(letters);
-                  }
-                } else {
-                  // Was merged (0) → split into per-word keys
-                  // Split the stored desc back by word count
-                  const mergedDesc = cm[si] || '';
-                  const descTokens = splitStoredTokensPreservingBlanks(mergedDesc);
-                  let offset = 0;
-                  seg.words.forEach((w, wi) => {
-                    const { letters } = segmentLetters([w]);
-                    const targetGlyphCount = letters.length;
-                    const wordTokens = [];
-                    let glyphCount = 0;
-                    while (offset < descTokens.length && glyphCount < targetGlyphCount) {
-                      const token = descTokens[offset++];
-                      wordTokens.push(token);
-                      if (isNonBlankGlyphToken(token)) glyphCount++;
-                    }
-                    newCm[`${si}_${wi}`] = glyphCount === targetGlyphCount
-                      ? wordTokens.join(' ')
-                      : buildRandomDescForLetters(w.toLowerCase().split(''));
-                  });
-                }
-              });
-              entry.cartoucheMap = newCm;
+              entry.cartoucheMap = migratePreferredCartoucheMapForMergeChange(entry, newMerge);
             }
             entry.merge = newMerge;
             await api.putEntry({ ...entry });
@@ -1228,38 +1361,9 @@
           inp.type = 'radio'; inp.name = 'mode-' + entry.key; inp.value = val; inp.checked = entry.mode === val;
           inp.addEventListener('change', async () => {
             entry.mode = val;
-            if (val === 'preferred' && (hasEditableSegs || (isAllNanpa && !!entry.forceNormal))) {
+            if (val === 'preferred' && canEdit) {
               const cm = entry.cartoucheMap || {};
-              let needFill = false;
-
-              segs.forEach((seg, si) => {
-                if (seg.type === 'nanpa' && entry.forceNormal) {
-                  if (!cm[si] || !cm[si].trim()) {
-                    const letters = seg.words.join('').toLowerCase().split('');
-                    cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
-                    needFill = true;
-                  }
-                  return;
-                }
-
-                if (seg.type !== 'normal') return;
-
-                if (entry.merge) {
-                  if (!cm[si] || !cm[si].trim()) {
-                    cm[si] = buildRandomDescForLetters(segmentLetters(seg.words).letters);
-                    needFill = true;
-                  }
-                } else {
-                  seg.words.forEach((w, wi) => {
-                    const key = `${si}_${wi}`;
-                    if (!cm[key] || !cm[key].trim()) {
-                      cm[key] = buildRandomDescForLetters(w.toLowerCase().split(''));
-                      needFill = true;
-                    }
-                  });
-                }
-              });
-
+              const needFill = fillMissingCartoucheMapForEntry(entry, cm);
               if (needFill) entry.cartoucheMap = cm;
               openCartoucheModal(entry);
             }
@@ -1330,39 +1434,13 @@
 
         const btnEdit = document.createElement('button');
         btnEdit.textContent = '✏ edit';
-        const canEdit = hasEditableSegs || (isAllNanpa && !!entry.forceNormal);
         btnEdit.disabled = entry.mode === 'literal' || !canEdit;
         btnEdit.title = !canEdit ? 'Enable @db to edit nanpa segments' : 'Edit cartouche';
         btnEdit.addEventListener('click', async () => {
           // Clicking edit always switches to preferred mode and opens the modal.
-          // Ensure cartoucheMap has a starting value for all editable segments.
+          // Ensure cartoucheMap has a starting value for all editable groups.
           const cm = entry.cartoucheMap || {};
-
-          segs.forEach((seg, si) => {
-            if (seg.type === 'nanpa' && entry.forceNormal) {
-              if (!cm[si] || !cm[si].trim()) {
-                const letters = seg.words.join('').toLowerCase().split('');
-                cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
-              }
-              return;
-            }
-
-            if (seg.type !== 'normal') return;
-
-            if (entry.merge) {
-              if (!cm[si] || !cm[si].trim()) {
-                cm[si] = buildRandomDescForLetters(segmentLetters(seg.words).letters);
-              }
-            } else {
-              seg.words.forEach((w, wi) => {
-                const key = `${si}_${wi}`;
-                if (!cm[key] || !cm[key].trim()) {
-                  cm[key] = buildRandomDescForLetters(w.toLowerCase().split(''));
-                }
-              });
-            }
-          });
-
+          fillMissingCartoucheMapForEntry(entry, cm);
           entry.cartoucheMap = cm;
           entry.mode = 'preferred';
           // Update the radio UI to reflect the mode change
@@ -1410,6 +1488,35 @@
       if (!td) return;
       const sp = td.querySelector('span'); if (!sp) return;
       sp.textContent = buildEntryDisplayInput(entry);
+    }
+
+    function getPreviewRowForEntry(entry) {
+      if (!entry) return null;
+      return $('tbody').querySelector(`tr[data-preview-for="${CSS.escape(entry.key)}"]`);
+    }
+
+    function isPreviewOpenForEntry(entry) {
+      const previewTr = getPreviewRowForEntry(entry);
+      return !!(previewTr && !previewTr.classList.contains('hidden'));
+    }
+
+    async function renderOpenPreviewForEntry(entry) {
+      const previewTr = getPreviewRowForEntry(entry);
+      if (!previewTr || previewTr.classList.contains('hidden')) return;
+      const canvas = previewTr.querySelector('canvas');
+      if (canvas) await renderEntry(entry, canvas);
+    }
+
+    async function reopenPreviewForEntry(entry, shouldOpen) {
+      if (!shouldOpen || !entry) return;
+      const tbody = $('tbody');
+      const tr = tbody.querySelector(`tr[data-key="${CSS.escape(entry.key)}"]`);
+      if (!tr) return;
+      let previewTr = getPreviewRowForEntry(entry);
+      if (!previewTr) previewTr = createPreviewRow(tr, entry.key);
+      previewTr.classList.remove('hidden');
+      const canvas = previewTr.querySelector('canvas');
+      if (canvas) await renderEntry(entry, canvas);
     }
 
     // ── Bracketed cartouche input parser ─────────────────────────────────────
@@ -1813,6 +1920,31 @@
         val.textContent = '[' + seg.words.join(' ') + ']';
         block.appendChild(lbl); block.appendChild(val);
         slotsEl.appendChild(block);
+      }
+
+      if (entryUsesForceMergedWholeEntry(entry)) {
+        const { letters, wordBoundaries } = segmentLetters(entry.words);
+        const stored = (cm['0'] || '').split(/\s+/).filter(Boolean);
+        letters.forEach((letter, li) => {
+          if (li > 0 && wordBoundaries.includes(li)) addDivider('|');
+          const myInputIndex = allInputs.length;
+          const tk = `0_${li}`;
+          const inp = addSlot(letter, stored[li] || '', myInputIndex, (entry.tallyMap || {})[tk] || 0, tk);
+          allInputs.push(inp);
+          slotMeta.push({ letter, segIndex: 0, subKey: '0' });
+        });
+
+        validateAll(); updatePreview();
+
+        const talliesLabel = document.createElement('div');
+        talliesLabel.className = 'talliesEndLabel';
+        talliesLabel.textContent = 'tallies';
+        slotsEl.appendChild(talliesLabel);
+
+        runSoundCheck = checkIntendedSound;
+        checkIntendedSound();
+
+        return { allInputs, slotMeta, validateAll, allTallyData };
       }
 
       // Build the slot UI segment by segment

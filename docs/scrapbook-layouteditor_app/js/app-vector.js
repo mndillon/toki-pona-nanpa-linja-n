@@ -8,8 +8,9 @@ import {
   buildEntryRendererInput,
   buildRandomDescForLetters,
   segmentLetters,
-  segmentWords
-} from '../../js/cartouche-api-v3-previewdesc.js?v=30';
+  segmentWords,
+  entryUsesForceMergedWholeEntry
+} from '../../js/cartouche-api-v3-previewdesc.js?v=33';
 import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=166';
 
 (() => {
@@ -76,7 +77,7 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=166';
             mode: ['random','preferred','literal','ignore'].includes(String(e.mode || '')) ? String(e.mode) : 'random',
             cartoucheMap: (e.cartoucheMap && typeof e.cartoucheMap === 'object' && !Array.isArray(e.cartoucheMap)) ? e.cartoucheMap : {},
             tallyMap: (e.tallyMap && typeof e.tallyMap === 'object' && !Array.isArray(e.tallyMap)) ? e.tallyMap : {},
-            forceNormal: true,
+            forceNormal: Object.prototype.hasOwnProperty.call(e, 'forceNormal') ? !!e.forceNormal : true,
             literalText: String(e.literalText || e.key || '')
           }))
       : [];
@@ -124,12 +125,20 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=166';
   function scrapbookCartoucheEntryLookupAliases(entry){
     const aliases = new Set();
     if (!entry || !Array.isArray(entry.words) || !entry.words.length) return aliases;
+
+    // Always include the exact stored key. Multi-word @db lookup uses
+    // underscores in renderer text, but _stripAtDb() converts those back to
+    // spaces before the map lookup.
     aliases.add(entry.key);
+
+    // Match the global/local popout DB behaviour: add a merged single-word
+    // alias only when the whole entry is one normal mergeable run. Do not
+    // register a leftover normal fragment from an entry that also contains a
+    // nanpa segment.
     if (entry.merge) {
       const segs = segmentWords(entry.words);
-      for (const seg of segs) {
-        if (seg.type !== 'normal') continue;
-        const merged = segmentLetters(seg.words).letters.join('');
+      if (segs.length === 1 && segs[0].type === 'normal') {
+        const merged = segmentLetters(segs[0].words).letters.join('');
         if (merged) aliases.add(merged.charAt(0).toUpperCase() + merged.slice(1));
       }
     }
@@ -143,10 +152,22 @@ import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=166';
     return Object.values(cm).some(value => String(value || '').trim());
   }
 
+  function scrapbookCartoucheEntryHasDescriptionForCurrentGrouping(entry){
+    const cm = entry && entry.cartoucheMap && typeof entry.cartoucheMap === 'object'
+      ? entry.cartoucheMap
+      : {};
+
+    if (entryUsesForceMergedWholeEntry(entry)) {
+      return !!String(cm['0'] || '').trim();
+    }
+
+    return scrapbookCartoucheEntryHasAnyDescription(entry);
+  }
+
   function shouldGenerateScrapbookCartoucheDescriptions(entry){
     if (!entry) return false;
     if (entry.mode === 'random') return true;
-    if (entry.mode === 'preferred' && !scrapbookCartoucheEntryHasAnyDescription(entry)) return true;
+    if (entry.mode === 'preferred' && !scrapbookCartoucheEntryHasDescriptionForCurrentGrouping(entry)) return true;
     return false;
   }
 
@@ -173,11 +194,38 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       : entry;
   }
 
+  function countNonBlankScrapbookCartoucheTokens(value){
+    return String(value || '')
+      .trim()
+      .split(/\s+/)
+      .filter(token => token && token !== '""')
+      .length;
+  }
+
     function buildEffectiveScrapbookCartoucheEntryForRender(entry){
     if (!shouldGenerateScrapbookCartoucheDescriptions(entry)) return entry;
 
-    const segs = segmentWords(entry.words);
     const cm = {};
+
+    if (entryUsesForceMergedWholeEntry(entry)) {
+      const { letters } = segmentLetters(entry.words);
+      const existingWhole = String((entry.cartoucheMap || {})['0'] || '').trim();
+      const combinedExisting = Object.values(entry.cartoucheMap || {})
+        .map(value => String(value || '').trim())
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+
+      cm['0'] = existingWhole || (
+        combinedExisting && countNonBlankScrapbookCartoucheTokens(combinedExisting) >= letters.length
+          ? combinedExisting
+          : buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true })
+      );
+
+      return { ...entry, cartoucheMap: cm };
+    }
+
+    const segs = segmentWords(entry.words);
 
     segs.forEach((seg, si) => {
       if (seg.type === 'nanpa' && !entry.forceNormal) return;
@@ -201,6 +249,78 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
     return { ...entry, cartoucheMap: cm };
   }
 
+  function scrapbookStoredCartoucheContentTokens(value){
+    return String(value || '')
+      .trim()
+      .split(/\s+/)
+      .filter(token => token && token !== '""');
+  }
+
+  function buildStoredScrapbookCartoucheInput(value, { forceNormal = false } = {}){
+    const tokens = scrapbookStoredCartoucheContentTokens(value);
+    if (!tokens.length) return '';
+    const body = forceNormal ? `"" ${tokens.join(' ')}` : tokens.join(' ');
+    return `[ ${body} ]`;
+  }
+
+  function buildPreferredSplitForceNormalScrapbookPartialInput(entry){
+    if (!entry || entry.mode !== 'preferred' || entry.merge || !entry.forceNormal) return '';
+    if (!Array.isArray(entry.words) || !entry.words.length) return '';
+
+    const cm = entry.cartoucheMap && typeof entry.cartoucheMap === 'object'
+      ? entry.cartoucheMap
+      : {};
+
+    const hasAnyStoredContent = Object.values(cm).some(value => scrapbookStoredCartoucheContentTokens(value).length > 0);
+    if (!hasAnyStoredContent) return '';
+
+    const parts = [];
+    const segs = segmentWords(entry.words);
+
+    segs.forEach((seg, si) => {
+      if (!seg || !Array.isArray(seg.words) || !seg.words.length) return;
+
+      if (seg.type === 'nanpa') {
+        const forced = buildStoredScrapbookCartoucheInput(cm[String(si)], { forceNormal: true });
+        if (forced) parts.push(forced);
+        return;
+      }
+
+      const wholeSegment = buildStoredScrapbookCartoucheInput(cm[String(si)]);
+      if (wholeSegment) {
+        parts.push(wholeSegment);
+        return;
+      }
+
+      if (seg.type === 'normal') {
+        seg.words.forEach((w, wi) => {
+          const wordPart = buildStoredScrapbookCartoucheInput(cm[`${si}_${wi}`]);
+          if (wordPart) parts.push(wordPart);
+        });
+      }
+    });
+
+    return parts.join(' ');
+  }
+
+  function buildScrapbookCartoucheRendererInputForEntry(entry){
+    if (!entry) return '';
+
+    if (entry.mode === 'literal') {
+      const literal = String(entry.literalText || entry.key || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .trim();
+      return `["${literal}"]`;
+    }
+
+    const effectiveEntry = scrapbookCartoucheEntryForRender(entry);
+    const partialPreferred = buildPreferredSplitForceNormalScrapbookPartialInput(effectiveEntry);
+    if (partialPreferred) return partialPreferred;
+
+    return buildEntryRendererInput(buildEffectiveScrapbookCartoucheEntryForRender(effectiveEntry));
+  }
+
   function buildScrapbookCartouchePageMapFromEntries(entries){
     const map = new Map();
     for (const entry of Array.isArray(entries) ? entries : []) {
@@ -211,22 +331,13 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
         continue;
       }
 
-      let rendererInput;
-      if (entry.mode === 'literal') {
-        const literal = String(entry.literalText || entry.key || '')
-          .replace(/\\/g, '\\\\')
-          .replace(/"/g, '\"')
-          .trim();
-        rendererInput = `["${literal}"]`;
-      } else {
-        rendererInput = buildEntryRendererInput(buildEffectiveScrapbookCartoucheEntryForRender(scrapbookCartoucheEntryForRender(entry)));
-      }
+      let rendererInput = buildScrapbookCartoucheRendererInputForEntry(entry);
 
       let inputForceNormal = rendererInput;
       if (entry.forceNormal && entry.mode !== 'literal') {
         const entryNormal = { ...entry, forceNormal: false };
         inputForceNormal = rendererInput;
-        rendererInput = buildEntryRendererInput(buildEffectiveScrapbookCartoucheEntryForRender(entryNormal));
+        rendererInput = buildScrapbookCartoucheRendererInputForEntry(entryNormal);
       }
 
       const mapValue = {
