@@ -352,7 +352,7 @@ Rules:
 - Abbreviated Cartouche: [... jo seli ...]
 - Abbreviation #~: ...JS...
 - A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation
-- A useful convenience is that exact hundreds can be split into separate words, for example: 200 → Neten Inin
+- A useful convenience is that exact hundreds can be split into separate words: 200 → Neten Inin
 
 ### Examples
 
