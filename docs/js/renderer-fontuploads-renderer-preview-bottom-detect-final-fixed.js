@@ -410,6 +410,7 @@ const SitelenRenderer = (() => {
       unknownTextDisplay: { ...__unknownTextDisplay },
       renderSpacing: { ...__renderSpacing },
       abbreviateNumericCartouches: __abbreviateNumericCartouches,
+      autoCartoucheStandaloneProperNames: __autoCartoucheStandaloneProperNames,
     };
   }
 
@@ -436,6 +437,7 @@ const SitelenRenderer = (() => {
     };
     __renderSpacing = { ...DEFAULT_RENDER_SPACING, ...(state.renderSpacing || {}) };
     __abbreviateNumericCartouches = !!state.abbreviateNumericCartouches;
+    __autoCartoucheStandaloneProperNames = !!state.autoCartoucheStandaloneProperNames;
   }
 
   let __renderConfigScopeQueue = Promise.resolve();
@@ -448,6 +450,10 @@ const SitelenRenderer = (() => {
   // Numeric/date/time cartouche display abbreviation.
   // Default false preserves the existing full nanpa-linja-n cartouche output.
   let __abbreviateNumericCartouches = false;
+
+  // Optional fallback for standalone capitalized proper-name words outside [].
+  // Default to true preserves the existing unknown-text behavior.
+  let __autoCartoucheStandaloneProperNames = true;
 
   // Controls only ordinary, non-numeric, non-quoted cartouche parsing.
   // When true:  [meli,,] may produce cartouche tally marks.
@@ -475,6 +481,8 @@ const SitelenRenderer = (() => {
   function setShowUnknownText(v) { __showUnknownText = !!v; }
   function getAbbreviateNumericCartouches() { return !!__abbreviateNumericCartouches; }
   function setAbbreviateNumericCartouches(v) { __abbreviateNumericCartouches = !!v; }
+  function getAutoCartoucheStandaloneProperNames() { return !!__autoCartoucheStandaloneProperNames; }
+  function setAutoCartoucheStandaloneProperNames(v) { __autoCartoucheStandaloneProperNames = !!v; }
   function getCartoucheCommaTallyMarks() { return !!__cartoucheCommaTallyMarks; }
   function setCartoucheCommaTallyMarks(v) { __cartoucheCommaTallyMarks = !!v; }
   function normalizeCartoucheTallyMode(v) {
@@ -682,6 +690,7 @@ const SitelenRenderer = (() => {
     else if (parser.numericCartoucheAbbreviation != null) setAbbreviateNumericCartouches(!!parser.numericCartoucheAbbreviation);
     else if (parser.abbreviatedNumericCartouches != null) setAbbreviateNumericCartouches(!!parser.abbreviatedNumericCartouches);
     if (parser.showUnknownText != null) setShowUnknownText(!!parser.showUnknownText);
+    if (parser.autoCartoucheStandaloneProperNames != null) setAutoCartoucheStandaloneProperNames(!!parser.autoCartoucheStandaloneProperNames);
     if (parser.cartoucheCommaTallyMarks != null) setCartoucheCommaTallyMarks(!!parser.cartoucheCommaTallyMarks);
     else if (parser.commaTallyInCartouche != null) setCartoucheCommaTallyMarks(!!parser.commaTallyInCartouche);
     else if (parser.enableCartoucheCommaTally != null) setCartoucheCommaTallyMarks(!!parser.enableCartoucheCommaTally);
@@ -4097,6 +4106,42 @@ function findNanpaLinjanTpPhraseSequences(text) {
       return cps;
     }
 
+    const TP_PROPER_NAME_LATIN_LETTERS_RE = /^[aeijklmnostpuw]+$/i;
+
+    function isStandaloneCapitalizedProperNameCandidate(token) {
+      return /^[A-Z]/.test(String(token ?? ""));
+    }
+
+    function lettersToStrictRandomProperNameGlyphCps(word) {
+      const s = String(word ?? "");
+      if (!/^[A-Za-z]+$/.test(s)) return null;
+      if (!TP_PROPER_NAME_LATIN_LETTERS_RE.test(s)) return null;
+
+      const cps = [];
+      for (const ch of s.toLowerCase()) {
+        const cp = randomGlyphCpForLetter(ch);
+        if (cp == null) return null;
+        cps.push(cp);
+      }
+      return cps;
+    }
+
+    function emitUnknownTextElement(elements, text, { fontPx, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+      if (!getShowUnknownText()) return;
+      makeLiteralTextElement(elements, text, {
+        fontPx,
+        fontFamily: FONT_FAMILY_UNKNOWN || FONT_FAMILY_LITERAL,
+        addLeadingGap: true,
+        isUnrecognized: true,
+        unknownDisplay: getUnknownTextDisplay(),
+        sourceText: String(text ?? ""),
+        sourceStart,
+        sourceEnd,
+        sourceKind,
+        sourceSegmentIndex,
+      });
+    }
+
     function splitLineIntoSegments(line) {
       const s = String(line ?? "");
       const out = [];
@@ -5308,6 +5353,33 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           } catch {}
         }
 
+        if (trimmed && getAutoCartoucheStandaloneProperNames() && isStandaloneCapitalizedProperNameCandidate(trimmed)) {
+          const properNameCps = lettersToStrictRandomProperNameGlyphCps(trimmed);
+          if (properNameCps && properNameCps.length) {
+            makeCartoucheElementFromCodepoints(elements, properNameCps, {
+              fontPx,
+              fontFamily: FONT_FAMILY_TEXT,
+              fgCss: getFgHex(),
+              sourceText: trimmed,
+              sourceStart: sourceBaseStart + trimmedStart,
+              sourceEnd: sourceBaseStart + trimmedEnd,
+              sourceKind,
+              sourceSegmentIndex
+            });
+          } else {
+            emitUnknownTextElement(elements, trimmed, {
+              fontPx,
+              sourceStart: sourceBaseStart + trimmedStart,
+              sourceEnd: sourceBaseStart + trimmedEnd,
+              sourceKind,
+              sourceSegmentIndex
+            });
+          }
+
+          for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
+          continue;
+        }
+
         const glyphKey = normalizeTpGlyphKey(trimmed);
 
         // Outside cartouches, zz is an ideographic space/indent cell.
@@ -5327,18 +5399,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         } else if (glyphKey && WORD_TO_UCSUR_CP[glyphKey] != null) {
           pushGapIfNeeded(elements, wordGapForPx(fontPx));
           elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[glyphKey], px: fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
-        } else if (trimmed && getShowUnknownText()) {
-          makeLiteralTextElement(elements, trimmed, {
+        } else if (trimmed) {
+          emitUnknownTextElement(elements, trimmed, {
             fontPx,
-            fontFamily: FONT_FAMILY_UNKNOWN || FONT_FAMILY_LITERAL,
-            addLeadingGap: true,
-            isUnrecognized: true,
-            unknownDisplay: getUnknownTextDisplay(),
-            sourceText: trimmed,
             sourceStart: sourceBaseStart + trimmedStart,
             sourceEnd: sourceBaseStart + trimmedEnd,
             sourceKind,
-            sourceSegmentIndex,
+            sourceSegmentIndex
           });
         }
 
