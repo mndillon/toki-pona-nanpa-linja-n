@@ -115,7 +115,7 @@ Rules:
 - Abbreviated cartouches are pronounced in exactly the same way as the corresponding full numeric cartouche, they only facilitate clearer rendering.
 - A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation, each separate word will start with a capital letter
 - The final -n is always appended to the final nanpa-linja-n proper name word.
-- The letters i, w, t, s, a, l, u, m, p, and j are used to represent the digits 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9, respectively, in nanpa-linja-n numeric cartouches, and each letter is represented in sitelen pona by a specific fixed glyph.
+- The letters i, w, t, s, a, l, u, m, p, and j are used to represent the digits 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9, respectively, in nanpa-linja-n numeric cartouches, and the digits are represented in sitelen pona by the specific fixed glyphs ijo, wan, tu, seli, awen, luka, utala, mun, pipi and jo.
 - The letters 'n' and 'e' are used in a nanpa-linja-n numeric cartouche to make the proper name derived from the cartouche more pronounceable and are represented in sitelen pona by various glyphs.
 - The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters) and are represented in sitelen pona by various glyphs.
 - When rendering the sitelen pona form of a nanpa-linja-n numeric cartouche, glyphs are displayed at different font sizes to reflect their relative significance within the overall numeric representation.
