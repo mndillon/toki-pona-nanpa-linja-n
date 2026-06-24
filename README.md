@@ -346,12 +346,13 @@ Example:
 
 Rules:
 
-- To represent a multi-digit number in a cartouche just concatenate the single digit representations.
+- To represent a multi-digit number in a cartouche just concatenate the single digit representations
 - Latin nanpa-linja-n numeric proper name: ...jese...
 - Numeric Cartouche [... jo en seli en ...]
 - Abbreviated Cartouche: [... jo seli ...]
 - Abbreviation #~: ...JS...
 - A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation
+- A useful convenience is that exact hundreds can be split into separate words, for example: 200 → Neten Inin
 
 ### Examples
 
@@ -359,6 +360,7 @@ Rules:
 - 46 → na nu → **Nenanun**
 - 78 → me pe → **Nemepen**
 - 100 → we ni ni → **Neweninin**
+- 100 → we ni ni → **Newen Inin**
 - 567 → le nu me → **Nelenumen**
 - 234 → te se na → **Netesenan**
 - 801 → pe ni we → **Nepeniwen**
@@ -602,6 +604,34 @@ Examples:
 4.5e-3      → Nenan One Len Eko Wenin Eko Nosen
 -4.5e-3     → Neno Nan One Len Eko Wenin Eko Nosen
 ```
+
+
+---
+
+## Date and Time Separator — neke
+**neke** can also be used as a date/time separator.
+The context will determine that we have a date or time cartouche.
+
+Rules:
+
+- Latin nanpa-linja-n numeric proper name: ...neke...
+- Numeric Cartouche: [... nena en kasi en ...]
+- Abbreviated Cartouche: [... kasi ...]
+- Abbreviation #~: ...k...
+
+
+Word-splitting:
+
+- **neke** may split as **-n Eke**.
+- Example: 12:00 → Newetenekeninin → Neweten Eke Ninin
+
+Examples:
+
+```
+14:30       → Newenan Eke Senin
+2026-03-17  → Netenitenun Eke Nisen Eke Wemen
+```
+
 
 
 ---
