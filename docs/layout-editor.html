@@ -908,6 +908,7 @@ body.shellReady {
         <button class="btn" id="btnExportSvg">Export SVG</button>
         <button class="btn" id="btnExportHtml">Export HTML</button>
         <button class="btn" id="btnExportPdf">Export PDF</button>
+        <button class="btn" id="btnLayoutNames" type="button">Names</button>
         </div>
 
         <div class="topbarGroup" aria-label="Grouping">
@@ -1237,6 +1238,7 @@ import {
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=33';
 import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=166';
+import { createScrapbookCartoucheDbController } from './scrapbook-layouteditor_app/js/scrapbook-cartouche-db.js?v=88';
 
 (() => {
   "use strict";
@@ -1259,7 +1261,16 @@ function hideStartupLoading() {
   }, 300);
 }
 
+  let globalCartouchePageMap = new Map();
   let pageMap = new Map();
+  let layoutCartoucheDbController = null;
+  let layoutCartoucheNanpaParser = null;
+
+  const LAYOUT_CARTOUCHE_DB_DEFAULT = Object.freeze({
+    type: 'layout-cartouche-db',
+    version: 1,
+    entries: [],
+  });
 
   /* ============================================================
      CHANGE HERE: Sitelen rendering hook
@@ -1316,6 +1327,7 @@ function hideStartupLoading() {
       btn_export_svg: "Export SVG",
       btn_export_html: "Export HTML",
       btn_export_pdf: "Export PDF",
+      btn_names: "Names",
       btn_group: "Group",
       btn_ungroup: "Ungroup",
 
@@ -1540,6 +1552,7 @@ function hideStartupLoading() {
       btn_export_svg: "o pana e SVG",
       btn_export_html: "o pana e HTML",
       btn_export_pdf: "o pana e PDF",
+      btn_names: "nimi",
       btn_group: "o kulupu",
       btn_ungroup: "o tu e kulupu",
 
@@ -1772,6 +1785,7 @@ function hideStartupLoading() {
       ["btnExportSvg", "btn_export_svg"],
       ["btnExportHtml", "btn_export_html"],
       ["btnExportPdf", "btn_export_pdf"],
+      ["btnLayoutNames", "btn_names"],
       ["btnGroup", "btn_group"],
       ["btnUngroup", "btn_ungroup"],
 
@@ -3287,6 +3301,83 @@ function sceneJsonHasAnyHaloFields(rawScene){
   return false;
 }
 
+  function cloneCartoucheDbJson(value){
+    try { return JSON.parse(JSON.stringify(value)); }
+    catch { return null; }
+  }
+
+  function normalizeLayoutCartoucheDb(rawDb){
+    const db = (rawDb && typeof rawDb === 'object' && !Array.isArray(rawDb))
+      ? (cloneCartoucheDbJson(rawDb) || {})
+      : {};
+    db.type = LAYOUT_CARTOUCHE_DB_DEFAULT.type;
+    db.version = Math.max(1, Math.round(Number(db.version) || LAYOUT_CARTOUCHE_DB_DEFAULT.version));
+    db.entries = Array.isArray(db.entries) ? db.entries : [];
+    return db;
+  }
+
+  function ensureSceneCartoucheDb(){
+    Scene.cartoucheDb = normalizeLayoutCartoucheDb(Scene.cartoucheDb);
+    return Scene.cartoucheDb;
+  }
+
+  function refreshAllSitelenAfterLayoutCartoucheDbChange(){
+    try { sitelenCache?.clear?.(); } catch {}
+    try { sitelenRasterJobs?.clear?.(); } catch {}
+    try { clearSvgVectorElementCache?.(); } catch {}
+    try {
+      for (const el of (Scene?.elements || [])) {
+        if (el?.type === ElementType.Sitelen || el?.type === 'sitelen') {
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+        }
+      }
+    } catch (err) {
+      console.warn('[layout-cartouche-db] failed to refresh sitelen elements', err);
+    }
+    try { render(); } catch {}
+  }
+
+  async function initLayoutCartoucheDbController(){
+    ensureSceneCartoucheDb();
+    if (layoutCartoucheDbController) {
+      try { layoutCartoucheDbController.ensureDocumentDb(); } catch {}
+      try { layoutCartoucheDbController.rebuildCombinedPageMap(); } catch {}
+      return layoutCartoucheDbController;
+    }
+
+    layoutCartoucheDbController = createScrapbookCartoucheDbController({
+      getDocument: () => Scene,
+      setDocumentDirty: () => {
+        ensureSceneCartoucheDb();
+        scheduleAutosave();
+      },
+      requestRenderAll: refreshAllSitelenAfterLayoutCartoucheDbChange,
+      getGlobalPageMap: () => globalCartouchePageMap,
+      onCombinedPageMapChanged: (combinedMap, detail) => {
+        pageMap = combinedMap instanceof Map ? combinedMap : new Map();
+        window.layoutCartouchePageMap = pageMap;
+        window.layoutLocalCartouchePageMap = detail?.localMap || new Map();
+        window.globalCartouchePageMap = globalCartouchePageMap;
+      },
+      nanpaParser: layoutCartoucheNanpaParser,
+      dbType: LAYOUT_CARTOUCHE_DB_DEFAULT.type,
+      scopeName: 'layout',
+      scopeLabel: 'layout',
+      title: 'Layout Proper Names',
+      localEntryLabel: 'layout-local',
+      scopePillText: 'scope: this layout only',
+      exportFilenamePrefix: 'layout-cartouche-db',
+      buttonIds: ['btnLayoutNames'],
+      introHtml: `These proper-name entries are saved inside this layout only. They override matching
+              <a href="./cartouche-db.html" target="_blank" rel="noopener noreferrer">global cartouche DB</a>
+              entries while this layout is rendered.`,
+    });
+
+    await layoutCartoucheDbController.init();
+    return layoutCartoucheDbController;
+  }
+
   // CHANGE HERE: normalize imported scenes (defaults + backwards compat)
 function normalizeScene(parsed){
   const out = (parsed && typeof parsed === "object") ? parsed : {};
@@ -3296,6 +3387,8 @@ function normalizeScene(parsed){
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
+
+  out.cartoucheDb = normalizeLayoutCartoucheDb(out.cartoucheDb);
 
   out.stage = Object.assign({
     w: DEFAULTS.stageW,
@@ -3705,6 +3798,11 @@ function deserializeAssets(serialized){
       version: 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+    },
+    cartoucheDb: {
+      type: LAYOUT_CARTOUCHE_DB_DEFAULT.type,
+      version: LAYOUT_CARTOUCHE_DB_DEFAULT.version,
+      entries: [],
     },
     stage: {
       w: DEFAULTS.stageW,
@@ -12012,6 +12110,7 @@ function validateAndSanitizeScene(raw){
   // Return a sanitized, canonical scene object.
   return {
     meta,
+    cartoucheDb: normalizeLayoutCartoucheDb(scene.cartoucheDb),
     stage: { ...scene.stage, w, h, gridSize, snapTol },
     view,
     elements,
@@ -12024,6 +12123,7 @@ function exportJson(){
   markSceneAsVectorNative(Scene);
   const stableScene = {
     meta: deepClone(Scene.meta),
+    cartoucheDb: deepClone(ensureSceneCartoucheDb()),
     stage: deepClone(Scene.stage),
     view: deepClone(Scene.view),
     elements: deepClone(Scene.elements),
@@ -12103,6 +12203,7 @@ async function importJsonFromFile(file){
 
   // Commit changes in one place only AFTER validation.
   Scene.meta = sanitized.meta;
+  Scene.cartoucheDb = normalizeLayoutCartoucheDb(sanitized.cartoucheDb);
   Scene.stage = sanitized.stage;
   Scene.view = sanitized.view;
   Scene.elements = sanitized.elements;
@@ -12119,6 +12220,13 @@ glyphCache.clear();
 sitelenRasterJobs.clear();
 glyphRasterJobs.clear();
 sitelenRendererInstancePromises.clear();
+
+  try {
+    await initLayoutCartoucheDbController();
+    layoutCartoucheDbController?.rebuildCombinedPageMap?.();
+  } catch (e) {
+    console.warn('[layout-cartouche-db] failed to rebuild page map after import', e);
+  }
 
   try {
       await dbPut(DB_KEY, {
@@ -14085,7 +14193,8 @@ $("btnNew").addEventListener("click", async () => {
   // CHANGE HERE: prevent accidental clearing
   const hasAnything =
     (Array.isArray(Scene.elements) && Scene.elements.length > 0) ||
-    (Scene.groups && typeof Scene.groups === "object" && Object.keys(Scene.groups).length > 0);
+    (Scene.groups && typeof Scene.groups === "object" && Object.keys(Scene.groups).length > 0) ||
+    (Array.isArray(Scene.cartoucheDb?.entries) && Scene.cartoucheDb.entries.length > 0);
 
   if (hasAnything){
     const ok = window.confirm(tr("confirm_clear"));
@@ -14117,6 +14226,7 @@ $("btnNew").addEventListener("click", async () => {
   Scene.stage.bgImgStretch = DEFAULTS.bgImgStretch;
   invalidateBackgroundImageCache();
 
+  Scene.cartoucheDb = normalizeLayoutCartoucheDb(null);
   Scene.elements = [];
   Scene.groups = {};
   selectedIds.clear();
@@ -14130,6 +14240,7 @@ sitelenRendererInstancePromises.clear();
 
 console.log("New Scene "+ JSON.stringify(Scene));
 
+  try { layoutCartoucheDbController?.rebuildCombinedPageMap?.(); } catch {}
   scheduleAutosave();
   syncStageDefaultsUiFromScene();
   updateUiForSelection();
@@ -15072,8 +15183,11 @@ document.addEventListener("keydown", (e) => {
       try {
         const rendererMod = await import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=168');
         const NanpaParser = rendererMod?.NanpaParser;
+        layoutCartoucheNanpaParser = NanpaParser || null;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
-        pageMap = await cartoucheApi.resolvePageMap();
+        globalCartouchePageMap = await cartoucheApi.resolvePageMap();
+        pageMap = globalCartouchePageMap;
+        window.globalCartouchePageMap = globalCartouchePageMap;
       } catch(e) { console.warn('CartoucheApi load failed, continuing without:', e); }
 
       //wire default stage controls
@@ -15103,6 +15217,7 @@ document.addEventListener("keydown", (e) => {
         const normalizedSaved = normalizeScene(saved);
         // restore
         Scene.meta = normalizedSaved.meta || Scene.meta;
+        Scene.cartoucheDb = normalizeLayoutCartoucheDb(normalizedSaved.cartoucheDb);
         Scene.stage = normalizedSaved.stage;
         Scene.view = normalizedSaved.view || Scene.view;
         Scene.elements = normalizedSaved.elements || [];
@@ -15138,8 +15253,14 @@ document.addEventListener("keydown", (e) => {
       setStatus(tr("status_idb_unavailable"));
     }
 
-   
-   
+
+
+    try {
+      await initLayoutCartoucheDbController();
+      layoutCartoucheDbController?.rebuildCombinedPageMap?.();
+    } catch (e) {
+      console.warn('[layout-cartouche-db] init failed', e);
+    }
 
     updateUiForSelection();
     wireClipboardButtons();
