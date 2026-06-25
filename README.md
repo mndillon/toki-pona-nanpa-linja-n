@@ -119,11 +119,12 @@ Rules:
 - The letters 'n' and 'e' are used in a nanpa-linja-n numeric cartouche to make the proper name derived from the cartouche more pronounceable and are represented in sitelen pona by various glyphs.
 - The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters) and are represented in sitelen pona by various glyphs.
 - When rendering the sitelen pona form of a nanpa-linja-n numeric cartouche, glyphs are displayed at different font sizes to reflect their relative significance within the overall numeric representation.
+- A note on the pronunciation of nanpa-linja-n proper names: we assume that any “n” inside a word is pronounced with the vowel that follows it. For example, the proper name “Newenaten” for 142 is pronounced “Ne-we-na-ten”. This makes the syllable boundaries for each digit clear.
 
 
 Example:
 
-- -1,530.9 → Neno Wen Eke Lesenin One Jen
+- -1,530.9 → Neno Wen Eke Lesenin One Jen (pronounced Ne-no-Wen-Eke-Le-se-nin-One-Jen)
 
 ---
 
