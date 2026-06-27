@@ -578,6 +578,12 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       props_mixed: "Mixed",
       props_edit_mixed_text: "Edit mixed text",
       props_keep_aspect: "Keep aspect ratio",
+      props_bounding_box_resize: "Bounding Box Resize",
+      props_bbox_auto_top_left: "Auto-size, anchor top-left",
+      props_bbox_auto_centre: "Auto-size, anchor centre",
+      props_bbox_fit_box: "Fit content to box",
+      props_bbox_natural_overflow: "Natural size, show overflow",
+      props_bbox_natural_clip: "Natural size, clip to box",
       props_preserve_center_auto_resize: "Preserve center on auto resize",
       props_abbrev_numeric_cartouches: "Abbreviate numeric cartouche output",
       props_scale_font_box: "Scale font with box",
@@ -858,6 +864,12 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       props_mixed: "ante",
       props_edit_mixed_text: "ken ante e toki pi mute",
       props_keep_aspect: "awen sama pi suli",
+      props_bounding_box_resize: "ante suli pi poki sitelen",
+      props_bbox_auto_top_left: "o suli sama sitelen; poka open li awen",
+      props_bbox_auto_centre: "o suli sama sitelen; insa li awen",
+      props_bbox_fit_box: "o suli e sitelen tawa poki",
+      props_bbox_natural_overflow: "suli sitelen lon; sitelen li ken tawa poka",
+      props_bbox_natural_clip: "suli sitelen lon; poki li kipisi e sitelen",
       props_preserve_center_auto_resize: "ante suli la insa li awen",
       props_abbrev_numeric_cartouches: "o lili e poki sitelen pi nanpa",
       props_scale_font_box: "suli sitelen li sama poki",
@@ -1479,6 +1491,55 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
 
   function getElementPreserveCenterOnAutoResize(el){
     return !!(el?.preserveCenterOnAutoResize ?? false);
+  }
+
+  const SITELEN_RESIZE_MODE_TOP_LEFT = "topLeft";
+  const SITELEN_RESIZE_MODE_CENTRE = "centre";
+  const SITELEN_RESIZE_MODE_FIXED = "fixed";
+  const SITELEN_RESIZE_MODE_FIXED_VISIBLE = "fixed-visible";
+  const SITELEN_RESIZE_MODE_FIXED_CLIP = "fixed-clip";
+
+  function normalizeSitelenResizeAnchor(value){
+    const v = String(value || "").trim();
+    if (
+      v === SITELEN_RESIZE_MODE_CENTRE ||
+      v === SITELEN_RESIZE_MODE_FIXED ||
+      v === SITELEN_RESIZE_MODE_FIXED_VISIBLE ||
+      v === SITELEN_RESIZE_MODE_FIXED_CLIP
+    ) return v;
+    return SITELEN_RESIZE_MODE_TOP_LEFT;
+  }
+
+  function isFixedSitelenResizeMode(value){
+    const v = normalizeSitelenResizeAnchor(value);
+    return (
+      v === SITELEN_RESIZE_MODE_FIXED ||
+      v === SITELEN_RESIZE_MODE_FIXED_VISIBLE ||
+      v === SITELEN_RESIZE_MODE_FIXED_CLIP
+    );
+  }
+
+  function isNaturalOverflowSitelenResizeMode(value){
+    const v = normalizeSitelenResizeAnchor(value);
+    return v === SITELEN_RESIZE_MODE_FIXED_VISIBLE || v === SITELEN_RESIZE_MODE_FIXED_CLIP;
+  }
+
+  function isClippedSitelenResizeMode(value){
+    return normalizeSitelenResizeAnchor(value) === SITELEN_RESIZE_MODE_FIXED_CLIP;
+  }
+
+  function sitelenResizeAnchorSelectOptions(){
+    return [
+      [SITELEN_RESIZE_MODE_TOP_LEFT, tr("props_bbox_auto_top_left")],
+      [SITELEN_RESIZE_MODE_CENTRE, tr("props_bbox_auto_centre")],
+      [SITELEN_RESIZE_MODE_FIXED, tr("props_bbox_fit_box")],
+      [SITELEN_RESIZE_MODE_FIXED_VISIBLE, tr("props_bbox_natural_overflow")],
+      [SITELEN_RESIZE_MODE_FIXED_CLIP, tr("props_bbox_natural_clip")],
+    ];
+  }
+
+  function getElementSitelenResizeAnchor(el){
+    return normalizeSitelenResizeAnchor(el?.sitelenResizeAnchor);
   }
 
   function getElementSpacingPreset(el){
@@ -2361,6 +2422,7 @@ function getElementRendererSignature(el){
     ignoreUnknownText: !!el?.ignoreUnknownText,
     abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
     preserveCenterOnAutoResize: !!getElementPreserveCenterOnAutoResize(el),
+    sitelenResizeAnchor: (el?.type === ElementType.Sitelen) ? getElementSitelenResizeAnchor(el) : "",
     sitelenBoundsGuardVersion: (el?.type === ElementType.Sitelen) ? SITELEN_BOUNDS_GUARD_VERSION : 0
   });
 }
@@ -2907,12 +2969,13 @@ function normalizeScene(parsed){
           // keepAspect on  → was auto-resize mode → default to "topLeft"
           el.sitelenResizeAnchor = el.keepAspect ? "topLeft" : "fixed";
         }
+        el.sitelenResizeAnchor = normalizeSitelenResizeAnchor(el.sitelenResizeAnchor);
         // For normal scrapbook-created sitelen elements, the resize anchor controls
         // whether the element keeps aspect. For imported layout-editor-vector
         // scenes, keepAspect is part of the saved vector placement contract and
         // must not be rewritten just because we use fixedBox hydration.
         if (!isLayoutVectorNativeScene) {
-          el.keepAspect = (el.sitelenResizeAnchor !== "fixed");
+          el.keepAspect = !isFixedSitelenResizeMode(el.sitelenResizeAnchor);
         }
       }
     }
@@ -6467,9 +6530,11 @@ function ensureSitelenRaster(el){
 // isTextEdit=false means a style/property change — anchor behaviour still applies
 // but "fixed" mode skips the w/h resize.
 function sitelenLayoutOptsForElement(el, callerOpts, isTextEdit){
-  const anchor = el.sitelenResizeAnchor || "topLeft"; // default for new elements
-  if (anchor === "fixed"){
-    // Fixed box: never resize w/h, never reposition.
+  const anchor = getElementSitelenResizeAnchor(el); // default for new elements
+  if (isFixedSitelenResizeMode(anchor)){
+    // Fixed-family modes: never resize w/h, never reposition.
+    // "fixed" scales content to the box at draw/export time.
+    // "fixed-visible" and "fixed-clip" draw natural-size content at draw/export time.
     return { preserveTopLeft: true, fixedBox: true };
   }
   // The explicit preserve-center flag is authoritative for auto-resize anchoring.
@@ -8456,7 +8521,7 @@ function resizeCanvasToDisplaySize(){
     return {
       includeEditorGrid: true,
       forceStageBackground: true,
-      useRasterPreviewForUnselected: true
+      useRasterPreviewForUnselected: false
     };
   }
 
@@ -8963,6 +9028,38 @@ function makeGlyphPicker(el){
 }
 
 
+function sitelenNaturalCanvasX(el, x, boxW, contentW){
+  const align = String(el?.align || "left").trim().toLowerCase();
+  const drawW = Math.max(1, Number(contentW || 1));
+  const w = Math.max(1, Number(boxW || 1));
+  if (align === "center") return x + (w - drawW) / 2;
+  if (align === "right") return x + (w - drawW);
+  return x;
+}
+
+function drawSitelenCanvasByResizeMode(drawCtx, el, canvas, x, y, w, h){
+  const mode = getElementSitelenResizeAnchor(el);
+  if (!isNaturalOverflowSitelenResizeMode(mode)){
+    drawCtx.drawImage(canvas, x, y, w, h);
+    return;
+  }
+
+  const drawW = Math.max(1, Number(canvas?.width || 0) || Number(el?.sitelen?.naturalW || 0) || w);
+  const drawH = Math.max(1, Number(canvas?.height || 0) || Number(el?.sitelen?.naturalH || 0) || h);
+  const dx = sitelenNaturalCanvasX(el, x, w, drawW);
+
+  if (isClippedSitelenResizeMode(mode)){
+    drawCtx.save();
+    drawCtx.beginPath();
+    drawCtx.rect(x, y, w, h);
+    drawCtx.clip();
+    drawCtx.drawImage(canvas, dx, y, drawW, drawH);
+    drawCtx.restore();
+  } else {
+    drawCtx.drawImage(canvas, dx, y, drawW, drawH);
+  }
+}
+
 function drawSitelenRasterLocal(el, x, y, w, h){
   // Optional background box if fill/stroke present (same logic as your text)
   if (el.fillEnabled && el.fill && el.fill !== "transparent" && el.fill !== "rgba(255,255,255,0.0)"){
@@ -8982,8 +9079,8 @@ function drawSitelenRasterLocal(el, x, y, w, h){
   // Ensure raster exists
   const entry = ensureSitelenRaster(el);
   if (entry && entry.canvas){
-    // Draw like image: rotate/stretch handled by caller transform and drawImage scaling
-    ctx.drawImage(entry.canvas, x, y, w, h);
+    // Fixed/auto modes fit to the box. Natural overflow modes draw at renderer size.
+    drawSitelenCanvasByResizeMode(ctx, el, entry.canvas, x, y, w, h);
   } else {
     // placeholder
     ctx.save();
@@ -10440,6 +10537,32 @@ const textField = makeTextarea(
 );
 propsBody.appendChild(textField);
 
+const multiSitelenResizeEls = sels.filter(e => e && e.type === ElementType.Sitelen);
+if (multiSitelenResizeEls.length){
+  const resizeVals = multiSitelenResizeEls.map(e => getElementSitelenResizeAnchor(e));
+  const resizeMixed = mixedLabelIfMixed(resizeVals);
+  const resizeLeader = topmostSelectedWhere(e => e && e.type === ElementType.Sitelen) || multiSitelenResizeEls[0];
+  propsBody.appendChild(makeSelect(
+    tr("props_bounding_box_resize"),
+    getElementSitelenResizeAnchor(resizeLeader),
+    sitelenResizeAnchorSelectOptions(),
+    (v) => {
+      applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+        e.sitelenResizeAnchor = normalizeSitelenResizeAnchor(v);
+        if (!isFixedSitelenResizeMode(e.sitelenResizeAnchor)) e.preserveCenterOnAutoResize = (e.sitelenResizeAnchor === "centre");
+        e.keepAspect = !isFixedSitelenResizeMode(e.sitelenResizeAnchor);
+        invalidateSitelenCache(e.id);
+        updateSitelenLayout(e);
+        invalidateSvgElementCaches(e.id);
+      });
+      scheduleAutosave();
+      render();
+      updateUiForSelection();
+    },
+    resizeMixed
+  ));
+}
+
 const autoResizeTextLikeEls = sels.filter(isTextLike);
 if (autoResizeTextLikeEls.length){
   const preserveVals = autoResizeTextLikeEls.map(e => String(!!getElementPreserveCenterOnAutoResize(e)));
@@ -10452,7 +10575,9 @@ if (autoResizeTextLikeEls.length){
       applyToAllWhere(isTextLike, (e) => {
         e.preserveCenterOnAutoResize = !!checked;
         if (e.type === ElementType.Sitelen){
-          if (e.sitelenResizeAnchor !== "fixed") e.sitelenResizeAnchor = checked ? "centre" : "topLeft";
+          e.sitelenResizeAnchor = normalizeSitelenResizeAnchor(e.sitelenResizeAnchor);
+          if (!isFixedSitelenResizeMode(e.sitelenResizeAnchor)) e.sitelenResizeAnchor = checked ? "centre" : "topLeft";
+          e.keepAspect = !isFixedSitelenResizeMode(e.sitelenResizeAnchor);
           invalidateSitelenCache(e.id);
           updateSitelenLayout(e);
         }
@@ -10963,22 +11088,19 @@ if (textField && textField._popoutElementId){
       //placeholder = "toki pona";
       placeholder = tr("sitelen_placeholder");
 
-      // Resize anchor dropdown — replaces the old keepAspect checkbox
+      // Bounding Box Resize — extends the old sitelenResizeAnchor property.
       propsBody.appendChild(makeSelect(
-        "Resize anchor",
-        el.sitelenResizeAnchor || "topLeft",
-        [
-          ["topLeft", "Resize from top-left"],
-          ["centre",  "Resize from centre"],
-          ["fixed",   "Fixed box (scale to fit)"],
-        ],
+        tr("props_bounding_box_resize"),
+        getElementSitelenResizeAnchor(el),
+        sitelenResizeAnchorSelectOptions(),
         (v) => {
-          el.sitelenResizeAnchor = v;
-          if (v !== "fixed") el.preserveCenterOnAutoResize = (v === "centre");
-          // keepAspect drives drag-resize handle locking; fixed = free drag
-          el.keepAspect = (v !== "fixed");
+          el.sitelenResizeAnchor = normalizeSitelenResizeAnchor(v);
+          if (!isFixedSitelenResizeMode(el.sitelenResizeAnchor)) el.preserveCenterOnAutoResize = (el.sitelenResizeAnchor === "centre");
+          // keepAspect drives drag-resize handle locking; fixed-family modes are free-drag boxes.
+          el.keepAspect = !isFixedSitelenResizeMode(el.sitelenResizeAnchor);
           invalidateSitelenCache(el.id);
-          updateSitelenLayout(el, { preserveCenter: true });
+          updateSitelenLayout(el);
+          invalidateSvgElementCaches(el.id);
           scheduleAutosave();
           render();
           updateUiForSelection();
@@ -10990,9 +11112,12 @@ if (textField && textField._popoutElementId){
         !!getElementPreserveCenterOnAutoResize(el),
         (checked) => {
           el.preserveCenterOnAutoResize = !!checked;
-          if (el.sitelenResizeAnchor !== "fixed") el.sitelenResizeAnchor = checked ? "centre" : "topLeft";
+          el.sitelenResizeAnchor = normalizeSitelenResizeAnchor(el.sitelenResizeAnchor);
+          if (!isFixedSitelenResizeMode(el.sitelenResizeAnchor)) el.sitelenResizeAnchor = checked ? "centre" : "topLeft";
+          el.keepAspect = !isFixedSitelenResizeMode(el.sitelenResizeAnchor);
           invalidateSitelenCache(el.id);
           updateSitelenLayout(el);
+          invalidateSvgElementCaches(el.id);
           scheduleAutosave();
           render();
           updateUiForSelection();
@@ -14380,8 +14505,8 @@ function drawUrlLocal(el, x,y,w,h){
           octx.fillRect(x,y,el.w,el.h);
         }
 
-        // draw like image into the offscreen export, scaled to el.w/el.h
-        octx.drawImage(entry.canvas, x, y, el.w, el.h);
+        // Fixed/auto modes fit to the box. Natural overflow modes draw at renderer size.
+        drawSitelenCanvasByResizeMode(octx, el, entry.canvas, x, y, el.w, el.h);
 
 
         if ((el.strokeW ?? 0) > 0){
@@ -15676,7 +15801,7 @@ document.addEventListener("keydown", (e) => {
 
     try {
       const rawScene = payload && payload.scene ? payload.scene : payload;
-      deserializeAssets((payload && payload.assets) ? payload.assets : null);
+      deserializeAssets(resolvePagePayloadAssets(payload));
       const normalized = normalizeScene(rawScene);
       const sanitized = validateAndSanitizeScene(normalized);
       Scene.meta = sanitized.meta;
@@ -15854,6 +15979,27 @@ document.addEventListener("keydown", (e) => {
     return { byId: Array.from(map.values()) };
   }
 
+  function emptySerializedAssets(){
+    return { byId: [] };
+  }
+
+  function serializedAssetsContainDataUrls(serialized){
+    const list = Array.isArray(serialized?.byId) ? serialized.byId : (Array.isArray(serialized) ? serialized : []);
+    return list.some(a => a && typeof a === 'object' && a.dataUrl);
+  }
+
+  function resolvePagePayloadAssets(payload){
+    const localAssets = payload && (payload.assets || payload.assetStore || payload.serializedAssets);
+    if (serializedAssetsContainDataUrls(localAssets)) return localAssets;
+    if (ScrapbookState?.doc?.assets && serializedAssetsContainDataUrls(ScrapbookState.doc.assets)) return ScrapbookState.doc.assets;
+    return localAssets || null;
+  }
+
+  function stripPayloadAssetData(payload){
+    if (payload && typeof payload === 'object') payload.assets = emptySerializedAssets();
+    return payload;
+  }
+
   function normalizeScrapbookDocumentDefaults(rawDefaults = {}, sourceStage = null){
     const d = isPlainObject(rawDefaults) ? rawDefaults : {};
     const st = sourceStage || Scene.stage || {};
@@ -15908,7 +16054,10 @@ document.addEventListener("keydown", (e) => {
 
   function normalizeScrapbookPayload(rawPayload, fallbackAssets = null){
     const payload = rawPayload && rawPayload.scene ? deep(rawPayload) : { scene: deep(rawPayload || {}) };
-    payload.assets = deep(payload.assets || fallbackAssets || { byId: [] });
+    // Keep document assets at document scope. Copying the full asset store into
+    // every page payload multiplies embedded image data by page count during
+    // import/autosave and can trigger browser `Invalid string length` failures.
+    payload.assets = serializedAssetsContainDataUrls(payload.assets) ? deep(payload.assets) : emptySerializedAssets();
     payload.scene = validateAndSanitizeScene(normalizeScene(payload.scene || {}));
     payload.scene.meta = isPlainObject(payload.scene.meta) ? payload.scene.meta : {};
     payload.scene.stage = isPlainObject(payload.scene.stage) ? payload.scene.stage : {};
@@ -15977,7 +16126,7 @@ document.addEventListener("keydown", (e) => {
     });
     doc.assets = collectDocumentAssets(doc);
     const canonicalAssets = deep(doc.assets);
-    for (const page of doc.pages) page.payload.assets = deep(canonicalAssets);
+    for (const page of doc.pages) stripPayloadAssetData(page.payload);
     if (!doc.pages.some(p => p.id === doc.currentPageId)) doc.currentPageId = doc.pages[0].id;
     return doc;
   }
@@ -16529,6 +16678,7 @@ document.addEventListener("keydown", (e) => {
     page.payload = snapshotCurrentPagePayload();
     if (updateThumb) page.thumbnail = await renderCurrentPageDataUrl(160, 110, false, true);
     if (ScrapbookState?.doc) ScrapbookState.doc.assets = collectDocumentAssets(ScrapbookState.doc);
+    stripPayloadAssetData(page.payload);
     debounceScrapbookSave();
     renderScrapbookSidebar();
   }
@@ -16564,7 +16714,7 @@ document.addEventListener("keydown", (e) => {
       meta: { title: 'Untitled document', subtitle: '', documentType: 'scrapbook', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), language: (langSel?.value || 'en') },
       documentDefaults,
       assets: deep(payload?.assets || serializeAssets()),
-      pages: [{ id: firstPageId, kind: 'page', name: 'Page 1', notes: '', tags: [], thumbnail: '', payload: deep(payload) }],
+      pages: [{ id: firstPageId, kind: 'page', name: 'Page 1', notes: '', tags: [], thumbnail: '', payload: stripPayloadAssetData(deep(payload)) }],
       currentPageId: firstPageId,
       cartoucheDb: normalizeScrapbookCartoucheDb(null),
       settings: { includeCoverPageInExport: true, coverDateAbbreviateNumericCartouche: true, mediaGuards: { image: true, audio: true, video: true }, youtubeExportInfo: { pngSingle: true, png: true, html: true, pdf: true } },
@@ -16611,7 +16761,7 @@ document.addEventListener("keydown", (e) => {
     st.defaultHaloColor = docDefaults.defaultHaloColor ?? st.defaultHaloColor ?? DEFAULTS.defaultHaloColor;
     st.defaultHaloThicknessPx = Number.isFinite(Number(docDefaults.defaultHaloThicknessPx)) ? Number(docDefaults.defaultHaloThicknessPx) : (st.defaultHaloThicknessPx ?? DEFAULTS.defaultHaloThicknessPx);
     st.defaultHaloThicknessMode = docDefaults.defaultHaloThicknessMode || st.defaultHaloThicknessMode || DEFAULTS.defaultHaloThicknessMode;
-    if (ScrapbookState?.doc?.assets) payload.assets = deep(ScrapbookState.doc.assets);
+    stripPayloadAssetData(payload);
     return payload;
   }
 
@@ -16926,7 +17076,7 @@ document.addEventListener("keydown", (e) => {
 
   function svgElementInnerCacheKey(el){
     return JSON.stringify({
-      vectorExportBridgeVersion: 17,
+      vectorExportBridgeVersion: 18,
       type: el?.type,
       w: Number(el?.w || 0), h: Number(el?.h || 0),
       text: String(el?.text ?? ""), codepoint: String(el?.codepoint ?? ""),
@@ -16952,6 +17102,7 @@ document.addEventListener("keydown", (e) => {
       vectorXOffsetEm: lookupVectorXOffsetEm(el),
       vectorScale: lookupVectorScale(el),
       vectorPlacementMode: String(el?.vectorPlacementMode || ""),
+      sitelenResizeAnchor: (el?.type === ElementType.Sitelen) ? getElementSitelenResizeAnchor(el) : "",
       vectorGlyphTightMetrics: el?.vectorGlyphTightMetrics || null,
       vectorSitelenTightMetrics: el?.vectorSitelenTightMetrics || null
     });
@@ -17048,6 +17199,7 @@ document.addEventListener("keydown", (e) => {
     ScrapbookState.doc.currentPageId = ScrapbookState.currentPageId;
     ScrapbookState.lastEditorHash = sceneFingerprint();
     if (ScrapbookState.doc) ScrapbookState.doc.assets = collectDocumentAssets(ScrapbookState.doc);
+    stripPayloadAssetData(page.payload);
     debounceScrapbookSave();
     if (updateThumb) {
       // Fire-and-forget; exports must not wait on thumbnail generation, and the
@@ -18188,7 +18340,7 @@ document.addEventListener("keydown", (e) => {
     const savedPageMap = pageMap;
     try {
       const cleanPayload = payload || {};
-      deserializeAssets(cleanPayload.assets || cleanPayload.assetStore || cleanPayload.serializedAssets || null);
+      deserializeAssets(resolvePagePayloadAssets(cleanPayload));
       const normalized = normalizeScene(deepClone(cleanPayload.scene || cleanPayload));
       Object.keys(Scene).forEach(k => { delete Scene[k]; });
       Object.assign(Scene, normalized);
@@ -18356,6 +18508,31 @@ document.addEventListener("keydown", (e) => {
 
     const dataAttr = extraData ? ` ${extraData}` : '';
     return `<g${dataAttr} transform="translate(${svgNum(dx)} ${svgNum(dy)}) scale(${svgNum(sx)} ${svgNum(sy)}) translate(${svgNum(-Number(vb.x || 0))} ${svgNum(-Number(vb.y || 0))})">${inner || ''}</g>`;
+  }
+
+  function svgSafeIdPart(value){
+    const s = String(value || "el").trim().replace(/[^A-Za-z0-9_-]/g, "_");
+    return s || "el";
+  }
+
+  function svgClipToElementBox(el, inner, suffix = "clip"){
+    const w = Math.max(1, Number(el?.w || 1));
+    const h = Math.max(1, Number(el?.h || 1));
+    const x = -w / 2;
+    const y = -h / 2;
+    const clipId = `clip_${svgSafeIdPart(suffix)}_${svgSafeIdPart(el?.id)}`;
+    return `<defs><clipPath id="${clipId}" clipPathUnits="userSpaceOnUse"><rect x="${svgNum(x)}" y="${svgNum(y)}" width="${svgNum(w)}" height="${svgNum(h)}" /></clipPath></defs>\n` +
+      `<g clip-path="url(#${clipId})">\n${inner || ''}\n</g>`;
+  }
+
+  function svgSitelenNaturalX(el, contentW, boxX = null){
+    const x = Number.isFinite(Number(boxX)) ? Number(boxX) : -Number(el?.w || 0) / 2;
+    const boxW = Math.max(1, Number(el?.w || 1));
+    const drawW = Math.max(1, Number(contentW || 1));
+    const align = String(el?.align || "left").trim().toLowerCase();
+    if (align === "center") return x + (boxW - drawW) / 2;
+    if (align === "right") return x + (boxW - drawW);
+    return x;
   }
 
 
@@ -18788,6 +18965,11 @@ ${unknownTextRects}` : nested.inner;
     const tightMetrics = (el.vectorSitelenTightMetrics && typeof el.vectorSitelenTightMetrics === "object")
       ? el.vectorSitelenTightMetrics
       : null;
+    const resizeMode = getElementSitelenResizeAnchor(el);
+    const drawNatural = isNaturalOverflowSitelenResizeMode(resizeMode);
+    const clipNatural = isClippedSitelenResizeMode(resizeMode);
+    let sitelenVectorNode = "";
+
     if (tightMetrics){
       // Legacy/import-migrated sitelen elements are converted from the old
       // production raster box into a vector-native tight box.  The stored
@@ -18801,16 +18983,19 @@ ${unknownTextRects}` : nested.inner;
       const sourceW = Math.max(1, Number(tightMetrics.sourceW ?? vb.w));
       const sourceH = Math.max(1, Number(tightMetrics.sourceH ?? vb.h));
       const tightViewBox = { x: vb.x + sourceX, y: vb.y + sourceY, w: sourceW, h: sourceH };
-      out.push(svgPlacedVectorInnerGroup({
+      const drawW = drawNatural ? tightViewBox.w : el.w;
+      const drawH = drawNatural ? tightViewBox.h : el.h;
+      const drawX = drawNatural ? svgSitelenNaturalX(el, drawW, x) : x;
+      sitelenVectorNode = svgPlacedVectorInnerGroup({
         inner: nestedInnerWithUnknownRects,
         viewBox: tightViewBox,
-        x,
+        x: drawX,
         y: y + contentYOffset,
-        w: el.w,
-        h: el.h,
-        preserveAspectRatio: 'none',
-        extraData: 'data-sitelen-vector="flattened-tight" data-sitelen-overflow="visible"'
-      }));
+        w: drawW,
+        h: drawH,
+        preserveAspectRatio: drawNatural ? 'none' : 'none',
+        extraData: `data-sitelen-vector="flattened-tight" data-sitelen-resize-mode="${svgEsc(resizeMode)}" data-sitelen-overflow="${drawNatural ? (clipNatural ? 'clip' : 'visible') : 'fit'}"`
+      });
     } else {
       // Keep sitelen fragments as nested SVG viewBoxes, matching the layout-editor
       // vector exporter. The direct PDF DOM walker understands nested SVG
@@ -18819,17 +19004,22 @@ ${unknownTextRects}` : nested.inner;
       // vector PDF now use the same placement semantics.
       const par = svgSitelenPreserveAspectRatio(el);
       const guardedViewBox = guardedSitelenViewBox(nested.viewBox, el);
-      out.push(svgPlacedVectorInnerGroup({
+      const drawW = drawNatural ? guardedViewBox.w : el.w;
+      const drawH = drawNatural ? guardedViewBox.h : el.h;
+      const drawX = drawNatural ? svgSitelenNaturalX(el, drawW, x) : x;
+      sitelenVectorNode = svgPlacedVectorInnerGroup({
         inner: nestedInnerWithUnknownRects,
         viewBox: guardedViewBox,
-        x,
+        x: drawX,
         y: y + contentYOffset,
-        w: el.w,
-        h: el.h,
-        preserveAspectRatio: par,
-        extraData: 'data-sitelen-vector="flattened-guarded" data-sitelen-overflow="visible"'
-      }));
+        w: drawW,
+        h: drawH,
+        preserveAspectRatio: drawNatural ? 'none' : par,
+        extraData: `data-sitelen-vector="flattened-guarded" data-sitelen-resize-mode="${svgEsc(resizeMode)}" data-sitelen-overflow="${drawNatural ? (clipNatural ? 'clip' : 'visible') : 'fit'}"`
+      });
     }
+
+    out.push(clipNatural ? svgClipToElementBox(el, sitelenVectorNode, "sitelen") : sitelenVectorNode);
     if ((el.strokeW ?? 0) > 0){
       out.push(svgRectNode({x, y, w: el.w, h: el.h, fill: "none", stroke: svgColor(el.stroke || "rgba(17,17,17,0.35)"), strokeWidth: el.strokeW ?? 1}));
     }
