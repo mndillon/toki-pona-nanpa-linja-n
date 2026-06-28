@@ -1,0 +1,13 @@
+Word audio assets derived from uploaded MP3 files.
+
+Toki_Pona_audio_by_jan_Lakuse.zip licence text:
+You can redistribute these files or use them in your project, but please mention "audio provided by jan Lakuse".
+
+
+Attribution requested: audio provided by jan Lakuse.
+
+ku.zip: no licence file was present in the uploaded archive. Treat ku.mp3 and kokosila.mp3 derivatives as local-project assets unless separately licensed.
+
+
+Nanpa-linja-n unit bank:
+web/audio/nanpa/*.wav was generated from the user-uploaded spoken nanpa.wav for this project.

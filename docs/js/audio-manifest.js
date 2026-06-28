@@ -1,0 +1,2187 @@
+export const REFERENCE_AUDIO_MANIFEST = {
+  "version": "0.6",
+  "sample_rate": 48000,
+  "license_note": "Toki_Pona_audio_by_jan_Lakuse.zip contains _licence.txt: \"You can redistribute these files or use them in your project, but please mention audio provided by jan Lakuse.\" ku.zip did not include a licence file in the uploaded archive; treat those two files as local-project assets unless separately licensed.",
+  "words": {
+    "a": {
+      "word": "a",
+      "file": "words/a.wav",
+      "syllables": [
+        "a"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 510.2
+    },
+    "akesi": {
+      "word": "akesi",
+      "file": "words/akesi.wav",
+      "syllables": [
+        "a",
+        "ke",
+        "si"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 853.8
+    },
+    "ala": {
+      "word": "ala",
+      "file": "words/ala.wav",
+      "syllables": [
+        "a",
+        "la"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 410.3
+    },
+    "alasa": {
+      "word": "alasa",
+      "file": "words/alasa.wav",
+      "syllables": [
+        "a",
+        "la",
+        "sa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 597.0
+    },
+    "ale": {
+      "word": "ale",
+      "file": "words/ale.wav",
+      "syllables": [
+        "a",
+        "le"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 461.9
+    },
+    "ali": {
+      "word": "ali",
+      "file": "words/ali.wav",
+      "syllables": [
+        "a",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 674.8
+    },
+    "anpa": {
+      "word": "anpa",
+      "file": "words/anpa.wav",
+      "syllables": [
+        "an",
+        "pa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 554.1
+    },
+    "ante": {
+      "word": "ante",
+      "file": "words/ante.wav",
+      "syllables": [
+        "an",
+        "te"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 582.7
+    },
+    "anu": {
+      "word": "anu",
+      "file": "words/anu.wav",
+      "syllables": [
+        "a",
+        "nu"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 420.7
+    },
+    "awen": {
+      "word": "awen",
+      "file": "words/awen.wav",
+      "syllables": [
+        "a",
+        "wen"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 548.8
+    },
+    "e": {
+      "word": "e",
+      "file": "words/e.wav",
+      "syllables": [
+        "e"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 390.0
+    },
+    "en": {
+      "word": "en",
+      "file": "words/en.wav",
+      "syllables": [
+        "en"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 416.2
+    },
+    "epiku": {
+      "word": "epiku",
+      "file": "words/epiku.wav",
+      "syllables": [
+        "e",
+        "pi",
+        "ku"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 549.3
+    },
+    "esun": {
+      "word": "esun",
+      "file": "words/esun.wav",
+      "syllables": [
+        "e",
+        "sun"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 577.2
+    },
+    "ijo": {
+      "word": "ijo",
+      "file": "words/ijo.wav",
+      "syllables": [
+        "i",
+        "jo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 377.5
+    },
+    "ike": {
+      "word": "ike",
+      "file": "words/ike.wav",
+      "syllables": [
+        "i",
+        "ke"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 515.4
+    },
+    "ilo": {
+      "word": "ilo",
+      "file": "words/ilo.wav",
+      "syllables": [
+        "i",
+        "lo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 621.7
+    },
+    "insa": {
+      "word": "insa",
+      "file": "words/insa.wav",
+      "syllables": [
+        "in",
+        "sa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 520.1
+    },
+    "jaki": {
+      "word": "jaki",
+      "file": "words/jaki.wav",
+      "syllables": [
+        "ja",
+        "ki"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 398.6
+    },
+    "jan": {
+      "word": "jan",
+      "file": "words/jan.wav",
+      "syllables": [
+        "jan"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 415.3
+    },
+    "jasima": {
+      "word": "jasima",
+      "file": "words/jasima.wav",
+      "syllables": [
+        "ja",
+        "si",
+        "ma"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 657.6
+    },
+    "jelo": {
+      "word": "jelo",
+      "file": "words/jelo.wav",
+      "syllables": [
+        "je",
+        "lo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 440.5
+    },
+    "jo": {
+      "word": "jo",
+      "file": "words/jo.wav",
+      "syllables": [
+        "jo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 327.7
+    },
+    "kala": {
+      "word": "kala",
+      "file": "words/kala.wav",
+      "syllables": [
+        "ka",
+        "la"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 409.5
+    },
+    "kalama": {
+      "word": "kalama",
+      "file": "words/kalama.wav",
+      "syllables": [
+        "ka",
+        "la",
+        "ma"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 511.2
+    },
+    "kama": {
+      "word": "kama",
+      "file": "words/kama.wav",
+      "syllables": [
+        "ka",
+        "ma"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 462.0
+    },
+    "kasi": {
+      "word": "kasi",
+      "file": "words/kasi.wav",
+      "syllables": [
+        "ka",
+        "si"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 501.6
+    },
+    "ken": {
+      "word": "ken",
+      "file": "words/ken.wav",
+      "syllables": [
+        "ken"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 522.7
+    },
+    "kepeken": {
+      "word": "kepeken",
+      "file": "words/kepeken.wav",
+      "syllables": [
+        "ke",
+        "pe",
+        "ken"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 634.8
+    },
+    "kijetesantakalu": {
+      "word": "kijetesantakalu",
+      "file": "words/kijetesantakalu.wav",
+      "syllables": [
+        "ki",
+        "je",
+        "te",
+        "san",
+        "ta",
+        "ka",
+        "lu"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 1128.0
+    },
+    "kili": {
+      "word": "kili",
+      "file": "words/kili.wav",
+      "syllables": [
+        "ki",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 571.6
+    },
+    "kin": {
+      "word": "kin",
+      "file": "words/kin.wav",
+      "syllables": [
+        "kin"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 516.1
+    },
+    "kipisi": {
+      "word": "kipisi",
+      "file": "words/kipisi.wav",
+      "syllables": [
+        "ki",
+        "pi",
+        "si"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 718.6
+    },
+    "kiwen": {
+      "word": "kiwen",
+      "file": "words/kiwen.wav",
+      "syllables": [
+        "ki",
+        "wen"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 573.0
+    },
+    "ko": {
+      "word": "ko",
+      "file": "words/ko.wav",
+      "syllables": [
+        "ko"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 304.6
+    },
+    "kokosila": {
+      "word": "kokosila",
+      "file": "words/kokosila.wav",
+      "syllables": [
+        "ko",
+        "ko",
+        "si",
+        "la"
+      ],
+      "source_zip": "ku.zip",
+      "duration_ms": 770.4
+    },
+    "kon": {
+      "word": "kon",
+      "file": "words/kon.wav",
+      "syllables": [
+        "kon"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 437.2
+    },
+    "ku": {
+      "word": "ku",
+      "file": "words/ku.wav",
+      "syllables": [
+        "ku"
+      ],
+      "source_zip": "ku.zip",
+      "duration_ms": 348.7
+    },
+    "kule": {
+      "word": "kule",
+      "file": "words/kule.wav",
+      "syllables": [
+        "ku",
+        "le"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 551.5
+    },
+    "kulupu": {
+      "word": "kulupu",
+      "file": "words/kulupu.wav",
+      "syllables": [
+        "ku",
+        "lu",
+        "pu"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 568.2
+    },
+    "kute": {
+      "word": "kute",
+      "file": "words/kute.wav",
+      "syllables": [
+        "ku",
+        "te"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 510.8
+    },
+    "la": {
+      "word": "la",
+      "file": "words/la.wav",
+      "syllables": [
+        "la"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 349.1
+    },
+    "lanpan": {
+      "word": "lanpan",
+      "file": "words/lanpan.wav",
+      "syllables": [
+        "lan",
+        "pan"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 794.7
+    },
+    "lape": {
+      "word": "lape",
+      "file": "words/lape.wav",
+      "syllables": [
+        "la",
+        "pe"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 637.0
+    },
+    "laso": {
+      "word": "laso",
+      "file": "words/laso.wav",
+      "syllables": [
+        "la",
+        "so"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 567.4
+    },
+    "lawa": {
+      "word": "lawa",
+      "file": "words/lawa.wav",
+      "syllables": [
+        "la",
+        "wa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 523.4
+    },
+    "leko": {
+      "word": "leko",
+      "file": "words/leko.wav",
+      "syllables": [
+        "le",
+        "ko"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 539.2
+    },
+    "len": {
+      "word": "len",
+      "file": "words/len.wav",
+      "syllables": [
+        "len"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 501.9
+    },
+    "lete": {
+      "word": "lete",
+      "file": "words/lete.wav",
+      "syllables": [
+        "le",
+        "te"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 546.4
+    },
+    "li": {
+      "word": "li",
+      "file": "words/li.wav",
+      "syllables": [
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 381.9
+    },
+    "lili": {
+      "word": "lili",
+      "file": "words/lili.wav",
+      "syllables": [
+        "li",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 500.8
+    },
+    "linja": {
+      "word": "linja",
+      "file": "words/linja.wav",
+      "syllables": [
+        "lin",
+        "ja"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 572.0
+    },
+    "lipu": {
+      "word": "lipu",
+      "file": "words/lipu.wav",
+      "syllables": [
+        "li",
+        "pu"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 560.9
+    },
+    "loje": {
+      "word": "loje",
+      "file": "words/loje.wav",
+      "syllables": [
+        "lo",
+        "je"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 753.2
+    },
+    "lon": {
+      "word": "lon",
+      "file": "words/lon.wav",
+      "syllables": [
+        "lon"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 479.6
+    },
+    "luka": {
+      "word": "luka",
+      "file": "words/luka.wav",
+      "syllables": [
+        "lu",
+        "ka"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 604.5
+    },
+    "lukin": {
+      "word": "lukin",
+      "file": "words/lukin.wav",
+      "syllables": [
+        "lu",
+        "kin"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 566.3
+    },
+    "lupa": {
+      "word": "lupa",
+      "file": "words/lupa.wav",
+      "syllables": [
+        "lu",
+        "pa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 525.7
+    },
+    "ma": {
+      "word": "ma",
+      "file": "words/ma.wav",
+      "syllables": [
+        "ma"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 351.1
+    },
+    "majuna": {
+      "word": "majuna",
+      "file": "words/majuna.wav",
+      "syllables": [
+        "ma",
+        "ju",
+        "na"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 606.3
+    },
+    "mama": {
+      "word": "mama",
+      "file": "words/mama.wav",
+      "syllables": [
+        "ma",
+        "ma"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 408.8
+    },
+    "mani": {
+      "word": "mani",
+      "file": "words/mani.wav",
+      "syllables": [
+        "ma",
+        "ni"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 458.0
+    },
+    "meli": {
+      "word": "meli",
+      "file": "words/meli.wav",
+      "syllables": [
+        "me",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 523.1
+    },
+    "meso": {
+      "word": "meso",
+      "file": "words/meso.wav",
+      "syllables": [
+        "me",
+        "so"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 558.0
+    },
+    "mi": {
+      "word": "mi",
+      "file": "words/mi.wav",
+      "syllables": [
+        "mi"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 384.8
+    },
+    "mije": {
+      "word": "mije",
+      "file": "words/mije.wav",
+      "syllables": [
+        "mi",
+        "je"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 666.7
+    },
+    "misikeke": {
+      "word": "misikeke",
+      "file": "words/misikeke.wav",
+      "syllables": [
+        "mi",
+        "si",
+        "ke",
+        "ke"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 859.6
+    },
+    "moku": {
+      "word": "moku",
+      "file": "words/moku.wav",
+      "syllables": [
+        "mo",
+        "ku"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 665.1
+    },
+    "moli": {
+      "word": "moli",
+      "file": "words/moli.wav",
+      "syllables": [
+        "mo",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 497.9
+    },
+    "monsi": {
+      "word": "monsi",
+      "file": "words/monsi.wav",
+      "syllables": [
+        "mon",
+        "si"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 633.4
+    },
+    "monsuta": {
+      "word": "monsuta",
+      "file": "words/monsuta.wav",
+      "syllables": [
+        "mon",
+        "su",
+        "ta"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 950.2
+    },
+    "mu": {
+      "word": "mu",
+      "file": "words/mu.wav",
+      "syllables": [
+        "mu"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 456.9
+    },
+    "mulapisu": {
+      "word": "mulapisu",
+      "file": "words/mulapisu.wav",
+      "syllables": [
+        "mu",
+        "la",
+        "pi",
+        "su"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 953.3
+    },
+    "mun": {
+      "word": "mun",
+      "file": "words/mun.wav",
+      "syllables": [
+        "mun"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 458.0
+    },
+    "musi": {
+      "word": "musi",
+      "file": "words/musi.wav",
+      "syllables": [
+        "mu",
+        "si"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 493.4
+    },
+    "mute": {
+      "word": "mute",
+      "file": "words/mute.wav",
+      "syllables": [
+        "mu",
+        "te"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 470.4
+    },
+    "n": {
+      "word": "n",
+      "file": "words/n.wav",
+      "syllables": [
+        "n"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 381.5
+    },
+    "namako": {
+      "word": "namako",
+      "file": "words/namako.wav",
+      "syllables": [
+        "na",
+        "ma",
+        "ko"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 670.2
+    },
+    "nanpa": {
+      "word": "nanpa",
+      "file": "words/nanpa.wav",
+      "syllables": [
+        "nan",
+        "pa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 592.6
+    },
+    "nasa": {
+      "word": "nasa",
+      "file": "words/nasa.wav",
+      "syllables": [
+        "na",
+        "sa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 586.6
+    },
+    "nasin": {
+      "word": "nasin",
+      "file": "words/nasin.wav",
+      "syllables": [
+        "na",
+        "sin"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 782.3
+    },
+    "nena": {
+      "word": "nena",
+      "file": "words/nena.wav",
+      "syllables": [
+        "ne",
+        "na"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 585.3
+    },
+    "ni": {
+      "word": "ni",
+      "file": "words/ni.wav",
+      "syllables": [
+        "ni"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 348.0
+    },
+    "nimi": {
+      "word": "nimi",
+      "file": "words/nimi.wav",
+      "syllables": [
+        "ni",
+        "mi"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 546.4
+    },
+    "noka": {
+      "word": "noka",
+      "file": "words/noka.wav",
+      "syllables": [
+        "no",
+        "ka"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 545.0
+    },
+    "o": {
+      "word": "o",
+      "file": "words/o.wav",
+      "syllables": [
+        "o"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 397.6
+    },
+    "oko": {
+      "word": "oko",
+      "file": "words/oko.wav",
+      "syllables": [
+        "o",
+        "ko"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 428.9
+    },
+    "olin": {
+      "word": "olin",
+      "file": "words/olin.wav",
+      "syllables": [
+        "o",
+        "lin"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 582.5
+    },
+    "ona": {
+      "word": "ona",
+      "file": "words/ona.wav",
+      "syllables": [
+        "o",
+        "na"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 415.1
+    },
+    "open": {
+      "word": "open",
+      "file": "words/open.wav",
+      "syllables": [
+        "o",
+        "pen"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 424.7
+    },
+    "pakala": {
+      "word": "pakala",
+      "file": "words/pakala.wav",
+      "syllables": [
+        "pa",
+        "ka",
+        "la"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 567.2
+    },
+    "pake": {
+      "word": "pake",
+      "file": "words/pake.wav",
+      "syllables": [
+        "pa",
+        "ke"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 441.6
+    },
+    "pali": {
+      "word": "pali",
+      "file": "words/pali.wav",
+      "syllables": [
+        "pa",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 472.5
+    },
+    "palisa": {
+      "word": "palisa",
+      "file": "words/palisa.wav",
+      "syllables": [
+        "pa",
+        "li",
+        "sa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 642.1
+    },
+    "pan": {
+      "word": "pan",
+      "file": "words/pan.wav",
+      "syllables": [
+        "pan"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 360.0
+    },
+    "pana": {
+      "word": "pana",
+      "file": "words/pana.wav",
+      "syllables": [
+        "pa",
+        "na"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 428.1
+    },
+    "pi": {
+      "word": "pi",
+      "file": "words/pi.wav",
+      "syllables": [
+        "pi"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 261.5
+    },
+    "pilin": {
+      "word": "pilin",
+      "file": "words/pilin.wav",
+      "syllables": [
+        "pi",
+        "lin"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 570.7
+    },
+    "pimeja": {
+      "word": "pimeja",
+      "file": "words/pimeja.wav",
+      "syllables": [
+        "pi",
+        "me",
+        "ja"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 582.8
+    },
+    "pini": {
+      "word": "pini",
+      "file": "words/pini.wav",
+      "syllables": [
+        "pi",
+        "ni"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 455.4
+    },
+    "pipi": {
+      "word": "pipi",
+      "file": "words/pipi.wav",
+      "syllables": [
+        "pi",
+        "pi"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 432.0
+    },
+    "poka": {
+      "word": "poka",
+      "file": "words/poka.wav",
+      "syllables": [
+        "po",
+        "ka"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 322.9
+    },
+    "poki": {
+      "word": "poki",
+      "file": "words/poki.wav",
+      "syllables": [
+        "po",
+        "ki"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 370.4
+    },
+    "pona": {
+      "word": "pona",
+      "file": "words/pona.wav",
+      "syllables": [
+        "po",
+        "na"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 456.0
+    },
+    "powe": {
+      "word": "powe",
+      "file": "words/powe.wav",
+      "syllables": [
+        "po",
+        "we"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 373.7
+    },
+    "pu": {
+      "word": "pu",
+      "file": "words/pu.wav",
+      "syllables": [
+        "pu"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 334.9
+    },
+    "sama": {
+      "word": "sama",
+      "file": "words/sama.wav",
+      "syllables": [
+        "sa",
+        "ma"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 526.5
+    },
+    "samu": {
+      "word": "samu",
+      "file": "words/samu.wav",
+      "syllables": [
+        "sa",
+        "mu"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 547.9
+    },
+    "seli": {
+      "word": "seli",
+      "file": "words/seli.wav",
+      "syllables": [
+        "se",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 603.5
+    },
+    "selo": {
+      "word": "selo",
+      "file": "words/selo.wav",
+      "syllables": [
+        "se",
+        "lo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 500.4
+    },
+    "seme": {
+      "word": "seme",
+      "file": "words/seme.wav",
+      "syllables": [
+        "se",
+        "me"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 491.5
+    },
+    "sewi": {
+      "word": "sewi",
+      "file": "words/sewi.wav",
+      "syllables": [
+        "se",
+        "wi"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 619.0
+    },
+    "sijelo": {
+      "word": "sijelo",
+      "file": "words/sijelo.wav",
+      "syllables": [
+        "si",
+        "je",
+        "lo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 672.9
+    },
+    "sike": {
+      "word": "sike",
+      "file": "words/sike.wav",
+      "syllables": [
+        "si",
+        "ke"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 632.7
+    },
+    "sin": {
+      "word": "sin",
+      "file": "words/sin.wav",
+      "syllables": [
+        "sin"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 585.5
+    },
+    "sina": {
+      "word": "sina",
+      "file": "words/sina.wav",
+      "syllables": [
+        "si",
+        "na"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 470.1
+    },
+    "sinpin": {
+      "word": "sinpin",
+      "file": "words/sinpin.wav",
+      "syllables": [
+        "sin",
+        "pin"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 779.3
+    },
+    "sitelen": {
+      "word": "sitelen",
+      "file": "words/sitelen.wav",
+      "syllables": [
+        "si",
+        "te",
+        "len"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 839.4
+    },
+    "soko": {
+      "word": "soko",
+      "file": "words/soko.wav",
+      "syllables": [
+        "so",
+        "ko"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 738.2
+    },
+    "sona": {
+      "word": "sona",
+      "file": "words/sona.wav",
+      "syllables": [
+        "so",
+        "na"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 561.6
+    },
+    "soweli": {
+      "word": "soweli",
+      "file": "words/soweli.wav",
+      "syllables": [
+        "so",
+        "we",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 967.9
+    },
+    "suli": {
+      "word": "suli",
+      "file": "words/suli.wav",
+      "syllables": [
+        "su",
+        "li"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 648.1
+    },
+    "suno": {
+      "word": "suno",
+      "file": "words/suno.wav",
+      "syllables": [
+        "su",
+        "no"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 683.2
+    },
+    "supa": {
+      "word": "supa",
+      "file": "words/supa.wav",
+      "syllables": [
+        "su",
+        "pa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 595.2
+    },
+    "suwi": {
+      "word": "suwi",
+      "file": "words/suwi.wav",
+      "syllables": [
+        "su",
+        "wi"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 613.9
+    },
+    "tan": {
+      "word": "tan",
+      "file": "words/tan.wav",
+      "syllables": [
+        "tan"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 483.2
+    },
+    "taso": {
+      "word": "taso",
+      "file": "words/taso.wav",
+      "syllables": [
+        "ta",
+        "so"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 593.4
+    },
+    "tawa": {
+      "word": "tawa",
+      "file": "words/tawa.wav",
+      "syllables": [
+        "ta",
+        "wa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 428.0
+    },
+    "telo": {
+      "word": "telo",
+      "file": "words/telo.wav",
+      "syllables": [
+        "te",
+        "lo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 533.3
+    },
+    "tenpo": {
+      "word": "tenpo",
+      "file": "words/tenpo.wav",
+      "syllables": [
+        "ten",
+        "po"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 585.8
+    },
+    "toki": {
+      "word": "toki",
+      "file": "words/toki.wav",
+      "syllables": [
+        "to",
+        "ki"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 438.7
+    },
+    "tomo": {
+      "word": "tomo",
+      "file": "words/tomo.wav",
+      "syllables": [
+        "to",
+        "mo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 448.0
+    },
+    "tonsi": {
+      "word": "tonsi",
+      "file": "words/tonsi.wav",
+      "syllables": [
+        "ton",
+        "si"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 601.4
+    },
+    "tu": {
+      "word": "tu",
+      "file": "words/tu.wav",
+      "syllables": [
+        "tu"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 405.0
+    },
+    "unpa": {
+      "word": "unpa",
+      "file": "words/unpa.wav",
+      "syllables": [
+        "un",
+        "pa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 536.6
+    },
+    "uta": {
+      "word": "uta",
+      "file": "words/uta.wav",
+      "syllables": [
+        "u",
+        "ta"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 432.0
+    },
+    "utala": {
+      "word": "utala",
+      "file": "words/utala.wav",
+      "syllables": [
+        "u",
+        "ta",
+        "la"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 645.7
+    },
+    "walo": {
+      "word": "walo",
+      "file": "words/walo.wav",
+      "syllables": [
+        "wa",
+        "lo"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 502.0
+    },
+    "wan": {
+      "word": "wan",
+      "file": "words/wan.wav",
+      "syllables": [
+        "wan"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 608.2
+    },
+    "waso": {
+      "word": "waso",
+      "file": "words/waso.wav",
+      "syllables": [
+        "wa",
+        "so"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 540.6
+    },
+    "wawa": {
+      "word": "wawa",
+      "file": "words/wawa.wav",
+      "syllables": [
+        "wa",
+        "wa"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 491.9
+    },
+    "weka": {
+      "word": "weka",
+      "file": "words/weka.wav",
+      "syllables": [
+        "we",
+        "ka"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 440.6
+    },
+    "wile": {
+      "word": "wile",
+      "file": "words/wile.wav",
+      "syllables": [
+        "wi",
+        "le"
+      ],
+      "source_zip": "Toki_Pona_audio_by_jan_Lakuse.zip",
+      "duration_ms": 546.9
+    }
+  },
+  "syllables": {
+    "a": {
+      "syllable": "a",
+      "file": "syllables/a.wav",
+      "source_word": "a",
+      "duration_ms": 105.9
+    },
+    "an": {
+      "syllable": "an",
+      "file": "syllables/an.wav",
+      "source_word": "anpa",
+      "duration_ms": 260.0
+    },
+    "e": {
+      "syllable": "e",
+      "file": "syllables/e.wav",
+      "source_word": "e",
+      "duration_ms": 260.0
+    },
+    "en": {
+      "syllable": "en",
+      "file": "syllables/en.wav",
+      "source_word": "en",
+      "duration_ms": 260.0
+    },
+    "i": {
+      "syllable": "i",
+      "file": "syllables/i.wav",
+      "source_word": "ijo",
+      "duration_ms": 209.4
+    },
+    "in": {
+      "syllable": "in",
+      "file": "syllables/in.wav",
+      "source_word": "insa",
+      "duration_ms": 260.0
+    },
+    "ja": {
+      "syllable": "ja",
+      "file": "syllables/ja.wav",
+      "source_word": "jaki",
+      "duration_ms": 218.3
+    },
+    "jan": {
+      "syllable": "jan",
+      "file": "syllables/jan.wav",
+      "source_word": "jan",
+      "duration_ms": 260.0
+    },
+    "je": {
+      "syllable": "je",
+      "file": "syllables/je.wav",
+      "source_word": "jelo",
+      "duration_ms": 242.7
+    },
+    "jo": {
+      "syllable": "jo",
+      "file": "syllables/jo.wav",
+      "source_word": "jo",
+      "duration_ms": 260.0
+    },
+    "ju": {
+      "syllable": "ju",
+      "file": "syllables/ju.wav",
+      "source_word": "majuna",
+      "duration_ms": 214.3
+    },
+    "ka": {
+      "syllable": "ka",
+      "file": "syllables/ka.wav",
+      "source_word": "kala",
+      "duration_ms": 226.3
+    },
+    "ke": {
+      "syllable": "ke",
+      "file": "syllables/ke.wav",
+      "source_word": "ike",
+      "duration_ms": 253.1
+    },
+    "ken": {
+      "syllable": "ken",
+      "file": "syllables/ken.wav",
+      "source_word": "ken",
+      "duration_ms": 260.0
+    },
+    "ki": {
+      "syllable": "ki",
+      "file": "syllables/ki.wav",
+      "source_word": "kili",
+      "duration_ms": 260.0
+    },
+    "kin": {
+      "syllable": "kin",
+      "file": "syllables/kin.wav",
+      "source_word": "kin",
+      "duration_ms": 260.0
+    },
+    "ko": {
+      "syllable": "ko",
+      "file": "syllables/ko.wav",
+      "source_word": "ko",
+      "duration_ms": 260.0
+    },
+    "kon": {
+      "syllable": "kon",
+      "file": "syllables/kon.wav",
+      "source_word": "kon",
+      "duration_ms": 260.0
+    },
+    "ku": {
+      "syllable": "ku",
+      "file": "syllables/ku.wav",
+      "source_word": "ku",
+      "duration_ms": 260.0
+    },
+    "la": {
+      "syllable": "la",
+      "file": "syllables/la.wav",
+      "source_word": "la",
+      "duration_ms": 260.0
+    },
+    "lan": {
+      "syllable": "lan",
+      "file": "syllables/lan.wav",
+      "source_word": "lanpan",
+      "duration_ms": 260.0
+    },
+    "le": {
+      "syllable": "le",
+      "file": "syllables/le.wav",
+      "source_word": "leko",
+      "duration_ms": 260.0
+    },
+    "len": {
+      "syllable": "len",
+      "file": "syllables/len.wav",
+      "source_word": "len",
+      "duration_ms": 260.0
+    },
+    "li": {
+      "syllable": "li",
+      "file": "syllables/li.wav",
+      "source_word": "li",
+      "duration_ms": 260.0
+    },
+    "lin": {
+      "syllable": "lin",
+      "file": "syllables/lin.wav",
+      "source_word": "linja",
+      "duration_ms": 260.0
+    },
+    "lo": {
+      "syllable": "lo",
+      "file": "syllables/lo.wav",
+      "source_word": "loje",
+      "duration_ms": 260.0
+    },
+    "lon": {
+      "syllable": "lon",
+      "file": "syllables/lon.wav",
+      "source_word": "lon",
+      "duration_ms": 260.0
+    },
+    "lu": {
+      "syllable": "lu",
+      "file": "syllables/lu.wav",
+      "source_word": "luka",
+      "duration_ms": 260.0
+    },
+    "ma": {
+      "syllable": "ma",
+      "file": "syllables/ma.wav",
+      "source_word": "ma",
+      "duration_ms": 260.0
+    },
+    "me": {
+      "syllable": "me",
+      "file": "syllables/me.wav",
+      "source_word": "meli",
+      "duration_ms": 260.0
+    },
+    "mi": {
+      "syllable": "mi",
+      "file": "syllables/mi.wav",
+      "source_word": "mi",
+      "duration_ms": 260.0
+    },
+    "mo": {
+      "syllable": "mo",
+      "file": "syllables/mo.wav",
+      "source_word": "moku",
+      "duration_ms": 260.0
+    },
+    "mon": {
+      "syllable": "mon",
+      "file": "syllables/mon.wav",
+      "source_word": "monsi",
+      "duration_ms": 259.9
+    },
+    "mu": {
+      "syllable": "mu",
+      "file": "syllables/mu.wav",
+      "source_word": "mu",
+      "duration_ms": 260.0
+    },
+    "mun": {
+      "syllable": "mun",
+      "file": "syllables/mun.wav",
+      "source_word": "mun",
+      "duration_ms": 260.0
+    },
+    "n": {
+      "syllable": "n",
+      "file": "syllables/n.wav",
+      "source_word": "n",
+      "duration_ms": 260.0
+    },
+    "na": {
+      "syllable": "na",
+      "file": "syllables/na.wav",
+      "source_word": "nasa",
+      "duration_ms": 260.0
+    },
+    "nan": {
+      "syllable": "nan",
+      "file": "syllables/nan.wav",
+      "source_word": "nanpa",
+      "duration_ms": 260.0
+    },
+    "ne": {
+      "syllable": "ne",
+      "file": "syllables/ne.wav",
+      "source_word": "nena",
+      "duration_ms": 260.0
+    },
+    "ni": {
+      "syllable": "ni",
+      "file": "syllables/ni.wav",
+      "source_word": "ni",
+      "duration_ms": 260.0
+    },
+    "no": {
+      "syllable": "no",
+      "file": "syllables/no.wav",
+      "source_word": "noka",
+      "duration_ms": 260.0
+    },
+    "nu": {
+      "syllable": "nu",
+      "file": "syllables/nu.wav",
+      "source_word": "anu",
+      "duration_ms": 208.5
+    },
+    "o": {
+      "syllable": "o",
+      "file": "syllables/o.wav",
+      "source_word": "o",
+      "duration_ms": 260.0
+    },
+    "pa": {
+      "syllable": "pa",
+      "file": "syllables/pa.wav",
+      "source_word": "pake",
+      "duration_ms": 207.8
+    },
+    "pan": {
+      "syllable": "pan",
+      "file": "syllables/pan.wav",
+      "source_word": "pan",
+      "duration_ms": 260.0
+    },
+    "pe": {
+      "syllable": "pe",
+      "file": "syllables/pe.wav",
+      "source_word": "lape",
+      "duration_ms": 260.0
+    },
+    "pen": {
+      "syllable": "pen",
+      "file": "syllables/pen.wav",
+      "source_word": "open",
+      "duration_ms": 198.1
+    },
+    "pi": {
+      "syllable": "pi",
+      "file": "syllables/pi.wav",
+      "source_word": "pi",
+      "duration_ms": 260.0
+    },
+    "pin": {
+      "syllable": "pin",
+      "file": "syllables/pin.wav",
+      "source_word": "sinpin",
+      "duration_ms": 260.0
+    },
+    "po": {
+      "syllable": "po",
+      "file": "syllables/po.wav",
+      "source_word": "poka",
+      "duration_ms": 180.6
+    },
+    "pu": {
+      "syllable": "pu",
+      "file": "syllables/pu.wav",
+      "source_word": "pu",
+      "duration_ms": 260.0
+    },
+    "sa": {
+      "syllable": "sa",
+      "file": "syllables/sa.wav",
+      "source_word": "sama",
+      "duration_ms": 260.0
+    },
+    "san": {
+      "syllable": "san",
+      "file": "syllables/san.wav",
+      "source_word": "kijetesantakalu",
+      "duration_ms": 189.2
+    },
+    "se": {
+      "syllable": "se",
+      "file": "syllables/se.wav",
+      "source_word": "seli",
+      "duration_ms": 260.0
+    },
+    "si": {
+      "syllable": "si",
+      "file": "syllables/si.wav",
+      "source_word": "sike",
+      "duration_ms": 260.0
+    },
+    "sin": {
+      "syllable": "sin",
+      "file": "syllables/sin.wav",
+      "source_word": "sin",
+      "duration_ms": 260.0
+    },
+    "so": {
+      "syllable": "so",
+      "file": "syllables/so.wav",
+      "source_word": "soko",
+      "duration_ms": 260.0
+    },
+    "su": {
+      "syllable": "su",
+      "file": "syllables/su.wav",
+      "source_word": "suli",
+      "duration_ms": 260.0
+    },
+    "sun": {
+      "syllable": "sun",
+      "file": "syllables/sun.wav",
+      "source_word": "esun",
+      "duration_ms": 260.0
+    },
+    "ta": {
+      "syllable": "ta",
+      "file": "syllables/ta.wav",
+      "source_word": "taso",
+      "duration_ms": 260.0
+    },
+    "tan": {
+      "syllable": "tan",
+      "file": "syllables/tan.wav",
+      "source_word": "tan",
+      "duration_ms": 260.0
+    },
+    "te": {
+      "syllable": "te",
+      "file": "syllables/te.wav",
+      "source_word": "telo",
+      "duration_ms": 260.0
+    },
+    "ten": {
+      "syllable": "ten",
+      "file": "syllables/ten.wav",
+      "source_word": "tenpo",
+      "duration_ms": 260.0
+    },
+    "to": {
+      "syllable": "to",
+      "file": "syllables/to.wav",
+      "source_word": "toki",
+      "duration_ms": 211.4
+    },
+    "ton": {
+      "syllable": "ton",
+      "file": "syllables/ton.wav",
+      "source_word": "tonsi",
+      "duration_ms": 260.0
+    },
+    "tu": {
+      "syllable": "tu",
+      "file": "syllables/tu.wav",
+      "source_word": "tu",
+      "duration_ms": 260.0
+    },
+    "u": {
+      "syllable": "u",
+      "file": "syllables/u.wav",
+      "source_word": "uta",
+      "duration_ms": 215.2
+    },
+    "un": {
+      "syllable": "un",
+      "file": "syllables/un.wav",
+      "source_word": "unpa",
+      "duration_ms": 260.0
+    },
+    "wa": {
+      "syllable": "wa",
+      "file": "syllables/wa.wav",
+      "source_word": "walo",
+      "duration_ms": 260.0
+    },
+    "wan": {
+      "syllable": "wan",
+      "file": "syllables/wan.wav",
+      "source_word": "wan",
+      "duration_ms": 260.0
+    },
+    "we": {
+      "syllable": "we",
+      "file": "syllables/we.wav",
+      "source_word": "weka",
+      "duration_ms": 242.8
+    },
+    "wen": {
+      "syllable": "wen",
+      "file": "syllables/wen.wav",
+      "source_word": "awen",
+      "duration_ms": 260.0
+    },
+    "wi": {
+      "syllable": "wi",
+      "file": "syllables/wi.wav",
+      "source_word": "wile",
+      "duration_ms": 260.0
+    }
+  },
+  "strict_disallowed_syllables": [
+    "ji",
+    "jin",
+    "ti",
+    "tin",
+    "wu",
+    "wun",
+    "wo",
+    "won"
+  ],
+  "fallback_strategy": [
+    "Use exact recorded word audio first for normal lowercase Toki Pona words.",
+    "For capitalized nanpa-linja-n proper-name words, prefer purpose-recorded nanpa unit assets.",
+    "If a capitalized word has no exact nanpa unit, decompose it by Toki Pona syllables and use nanpa units when all syllables are covered.",
+    "Use extracted general syllable units only after the nanpa unit bank fails.",
+    "For missing CVn in the general syllable bank, combine CV + recorded n.",
+    "If audio units are missing, fall back to Rust/WASM synthetic engine when available."
+  ],
+  "nanpa_units": {
+    "ne": {
+      "unit": "Ne",
+      "file": "nanpa/ne.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 1,
+      "duration_ms": 374.2
+    },
+    "no": {
+      "unit": "no",
+      "file": "nanpa/no.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 2,
+      "duration_ms": 454.1
+    },
+    "na": {
+      "unit": "na",
+      "file": "nanpa/na.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 3,
+      "duration_ms": 409.2
+    },
+    "nan": {
+      "unit": "nan",
+      "file": "nanpa/nan.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 4,
+      "duration_ms": 528.9
+    },
+    "nu": {
+      "unit": "nu",
+      "file": "nanpa/nu.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 5,
+      "duration_ms": 474.0
+    },
+    "nun": {
+      "unit": "nun",
+      "file": "nanpa/nun.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 6,
+      "duration_ms": 588.8
+    },
+    "ni": {
+      "unit": "ni",
+      "file": "nanpa/ni.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 7,
+      "duration_ms": 424.1
+    },
+    "nin": {
+      "unit": "nin",
+      "file": "nanpa/nin.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 8,
+      "duration_ms": 528.9
+    },
+    "we": {
+      "unit": "we",
+      "file": "nanpa/we.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 9,
+      "duration_ms": 359.3
+    },
+    "wen": {
+      "unit": "wen",
+      "file": "nanpa/wen.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 10,
+      "duration_ms": 484.0
+    },
+    "te": {
+      "unit": "te",
+      "file": "nanpa/te.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 11,
+      "duration_ms": 309.4
+    },
+    "ten": {
+      "unit": "ten",
+      "file": "nanpa/ten.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 12,
+      "duration_ms": 429.1
+    },
+    "se": {
+      "unit": "se",
+      "file": "nanpa/se.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 13,
+      "duration_ms": 409.2
+    },
+    "sen": {
+      "unit": "sen",
+      "file": "nanpa/sen.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 14,
+      "duration_ms": 528.9
+    },
+    "le": {
+      "unit": "le",
+      "file": "nanpa/le.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 15,
+      "duration_ms": 349.3
+    },
+    "len": {
+      "unit": "len",
+      "file": "nanpa/len.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 16,
+      "duration_ms": 474.0
+    },
+    "me": {
+      "unit": "me",
+      "file": "nanpa/me.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 17,
+      "duration_ms": 374.2
+    },
+    "men": {
+      "unit": "men",
+      "file": "nanpa/men.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 18,
+      "duration_ms": 494.0
+    },
+    "pe": {
+      "unit": "pe",
+      "file": "nanpa/pe.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 19,
+      "duration_ms": 299.4
+    },
+    "pen": {
+      "unit": "pen",
+      "file": "nanpa/pen.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 20,
+      "duration_ms": 424.1
+    },
+    "je": {
+      "unit": "je",
+      "file": "nanpa/je.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 21,
+      "duration_ms": 399.2
+    },
+    "jen": {
+      "unit": "jen",
+      "file": "nanpa/jen.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 22,
+      "duration_ms": 523.9
+    },
+    "inin": {
+      "unit": "Inin",
+      "file": "nanpa/inin.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 23,
+      "duration_ms": 653.6
+    },
+    "one": {
+      "unit": "One",
+      "file": "nanpa/one.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 24,
+      "duration_ms": 578.8
+    },
+    "eke": {
+      "unit": "Eke",
+      "file": "nanpa/eke.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 25,
+      "duration_ms": 528.9
+    },
+    "eken": {
+      "unit": "Eken",
+      "file": "nanpa/eken.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 26,
+      "duration_ms": 638.6
+    },
+    "ekeke": {
+      "unit": "Ekeke",
+      "file": "nanpa/ekeke.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 27,
+      "duration_ms": 798.3
+    },
+    "ekeken": {
+      "unit": "Ekeken",
+      "file": "nanpa/ekeken.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 28,
+      "duration_ms": 913.0
+    },
+    "ekekeke": {
+      "unit": "Ekekeke",
+      "file": "nanpa/ekekeke.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 29,
+      "duration_ms": 1067.7
+    },
+    "ekekeken": {
+      "unit": "Ekekeken",
+      "file": "nanpa/ekekeken.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 30,
+      "duration_ms": 1172.4
+    },
+    "oko": {
+      "unit": "Oko",
+      "file": "nanpa/oko.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 31,
+      "duration_ms": 723.4
+    },
+    "ono": {
+      "unit": "Ono",
+      "file": "nanpa/ono.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 32,
+      "duration_ms": 638.6
+    },
+    "eko": {
+      "unit": "Eko",
+      "file": "nanpa/eko.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 33,
+      "duration_ms": 623.7
+    },
+    "oken": {
+      "unit": "Oken",
+      "file": "nanpa/oken.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 34,
+      "duration_ms": 743.4
+    },
+    "ene": {
+      "unit": "Ene",
+      "file": "nanpa/ene.wav",
+      "source": "spoken nanpa.wav",
+      "source_order": 35,
+      "duration_ms": 698.5
+    }
+  },
+  "nanpa_unit_source": {
+    "source_file": "spoken nanpa.wav",
+    "detected_units": 35,
+    "source_sample_rate": 22050,
+    "asset_sample_rate": 48000,
+    "labels_in_order": [
+      "Ne",
+      "no",
+      "na",
+      "nan",
+      "nu",
+      "nun",
+      "ni",
+      "nin",
+      "we",
+      "wen",
+      "te",
+      "ten",
+      "se",
+      "sen",
+      "le",
+      "len",
+      "me",
+      "men",
+      "pe",
+      "pen",
+      "je",
+      "jen",
+      "Inin",
+      "One",
+      "Eke",
+      "Eken",
+      "Ekeke",
+      "Ekeken",
+      "Ekekeke",
+      "Ekekeken",
+      "Oko",
+      "Ono",
+      "Eko",
+      "Oken",
+      "Ene"
+    ],
+    "notes": "Purpose-recorded nanpa-linja-n unit bank. v0.5 refreshes the 35 nanpa WAV assets from the newer uploaded spoken nanpa.wav."
+  }
+};
