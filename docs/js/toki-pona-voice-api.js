@@ -15,7 +15,8 @@ export const DEFAULT_VOICE_OPTIONS = Object.freeze({
   pitch: 1.0,
   mode: 'debug',
   synthesis_mode: 'reference_audio',
-  sample_rate: 48000
+  sample_rate: 48000,
+  pauseScale: 1.0
 });
 
 const TP_CONS = new Set(['p','t','k','m','n','s','w','l','j']);
@@ -32,8 +33,22 @@ function normalizeOptions(options = {}, sampleRate = 48000) {
     ...options,
     sample_rate: Number(options.sample_rate || sampleRate || DEFAULT_VOICE_OPTIONS.sample_rate),
     speed: Number(options.speed ?? DEFAULT_VOICE_OPTIONS.speed),
-    pitch: Number(options.pitch ?? DEFAULT_VOICE_OPTIONS.pitch)
+    pitch: Number(options.pitch ?? DEFAULT_VOICE_OPTIONS.pitch),
+    pauseScale: normalizePauseScale(options.pauseScale ?? DEFAULT_VOICE_OPTIONS.pauseScale)
   };
+}
+
+
+function normalizePauseScale(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return DEFAULT_VOICE_OPTIONS.pauseScale;
+  return Math.min(6.0, Math.max(0.5, n));
+}
+
+function scaledPauseSeconds(seconds, opts = {}) {
+  const speed = Math.max(0.3, Number(opts.speed || 1));
+  const pauseScale = normalizePauseScale(opts.pauseScale ?? DEFAULT_VOICE_OPTIONS.pauseScale);
+  return Math.max(0, Number(seconds || 0)) * pauseScale / speed;
 }
 
 function parseCartoucheDbValue(value) {
@@ -118,6 +133,24 @@ function punctuationPauseSeconds(p) {
   if (p === '.' || p === '!') return 0.32;
   if (p === ',' || p === ';' || p === ':') return 0.18;
   return 0.12;
+}
+
+const NANPA_PROPER_NAME_BOUNDARY_WORDS = new Set([
+  'one', 'ono', 'oko', 'eke', 'eko', 'ene', 'oken'
+]);
+
+function properNameWordPauseSeconds(currentWord, nextWord) {
+  const current = normalizedTpWord(currentWord);
+  const next = normalizedTpWord(nextWord);
+
+  // Make the quiz speed control audible by giving numeric punctuation
+  // boundaries a real pause. The recorded units are still played at
+  // normal speed; only silence between units changes.
+  if (NANPA_PROPER_NAME_BOUNDARY_WORDS.has(current) || NANPA_PROPER_NAME_BOUNDARY_WORDS.has(next)) {
+    return 0.14;
+  }
+
+  return 0.075;
 }
 
 function gapSamples(seconds, sampleRate) {
@@ -300,9 +333,9 @@ export function analyzeReferenceText(text, options = {}, manifest = REFERENCE_AU
         warnings.push({ kind: 'analysis', source: item.text, message: 'not valid Toki Pona phonotactics' });
       }
     } else if (item.kind === 'punctuation') {
-      items.push({ kind: 'punctuation', text: item.text, pause_ms: punctuationPauseSeconds(item.text) * 1000 });
+      items.push({ kind: 'punctuation', text: item.text, pause_ms: scaledPauseSeconds(punctuationPauseSeconds(item.text), opts) * 1000 });
     } else if (item.kind === 'line_break') {
-      items.push({ kind: 'line_break', pause_ms: 220 });
+      items.push({ kind: 'line_break', pause_ms: scaledPauseSeconds(0.22, opts) * 1000 });
     }
     i += 1;
   }
@@ -528,13 +561,15 @@ export class TokiPonaVoice {
         for (let wi = 0; wi < words.length; wi++) {
           const wchunks = await this.chunksForWord(words[wi], opts, warnings, { preferNanpaUnits: isProperStart });
           for (const c of wchunks) chunks.push(c);
-          const gap = isProperStart && wi + 1 < words.length ? 0.035 : 0.055;
-          chunks.push(gapSamples(gap / Math.max(0.3, opts.speed || 1), sampleRate));
+          const gap = isProperStart && wi + 1 < words.length
+            ? properNameWordPauseSeconds(words[wi], words[wi + 1])
+            : 0.055;
+          chunks.push(gapSamples(scaledPauseSeconds(gap, opts), sampleRate));
         }
         continue;
       }
-      if (item.kind === 'punctuation') chunks.push(gapSamples(punctuationPauseSeconds(item.text), sampleRate));
-      if (item.kind === 'line_break') chunks.push(gapSamples(0.22, sampleRate));
+      if (item.kind === 'punctuation') chunks.push(gapSamples(scaledPauseSeconds(punctuationPauseSeconds(item.text), opts), sampleRate));
+      if (item.kind === 'line_break') chunks.push(gapSamples(scaledPauseSeconds(0.22, opts), sampleRate));
       i += 1;
     }
 

@@ -251,6 +251,133 @@
       border-radius: 999px;
     }
 
+
+    /* =========================
+       nanpa-linja-n listening quiz
+       Fast landing-page widget: heavy audio/parser code lazy-loads on interaction.
+       ========================= */
+    .nanpaListenQuizAudioSettings {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--ruleSoft);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+
+    .nanpaListenQuizAudioSettings label {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .nanpaListenQuizAudioSettings select {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: var(--bg);
+      font: inherit;
+    }
+
+    .nanpaListenQuizAudioSettings .help {
+      margin-top: 0;
+    }
+
+    .nanpaListenQuizRows {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .nanpaListenQuizItem {
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--bg);
+    }
+
+    .nanpaListenQuizControls {
+      display: grid;
+      grid-template-columns: auto minmax(150px, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .nanpaListenQuizAudio {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0 6px 0 0;
+      vertical-align: baseline;
+    }
+
+    .nanpaListenQuizAudio:hover {
+      background: transparent;
+    }
+
+    .nanpaListenQuizAudio:disabled {
+      cursor: default;
+      opacity: 0.45;
+    }
+
+    .nanpaListenQuizGuess {
+      min-width: 0;
+    }
+
+    .nanpaListenQuizFeedback {
+      min-height: 1.35em;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    .nanpaListenQuizFeedback--good {
+      font-weight: 700;
+    }
+
+    .nanpaListenQuizFeedback--bad {
+      color: #5a1f1f;
+    }
+
+    .nanpaListenQuizReveal {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .nanpaListenQuizReveal[hidden],
+    .nanpaListenQuizRevealButton[hidden],
+    [data-quiz-try-more][hidden] {
+      display: none !important;
+    }
+
+    .nanpaListenQuizLine canvas {
+      margin-top: 4px;
+      background: transparent;
+    }
+
+    .nanpaListenQuizTryMoreWrap {
+      margin-top: 12px;
+    }
+
+    @media (max-width: 620px) {
+      .nanpaListenQuizControls {
+        grid-template-columns: auto 1fr;
+      }
+      .nanpaListenQuizCheck,
+      .nanpaListenQuizRevealButton {
+        grid-column: 2;
+        justify-self: start;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -636,11 +763,15 @@
       <img width="1100" src="./images/numeric_decimal_cartouche_examples.png?v=4" />
       <div class="help">&nbsp;</div>
       
-       <hr class="miniDivider"/>
+      
+      <section id="nanpaListeningQuiz" aria-label="nanpa-linja-n listening quiz"></section>
+
 
 
       <div class="help">#~n</div>
     </div>
   </main>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=11"></script>
+
 </body>
 </html>
