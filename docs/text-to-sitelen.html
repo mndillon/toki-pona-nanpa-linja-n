@@ -691,6 +691,17 @@ nanpa #~WI.
           </label>
         </div>
 
+        <!-- Nanpa-linja-n relaxed mode -->
+        <div id="ctlNanpaRelaxedMode" class="inlineControl inlinePill" role="group" aria-label="Nanpa-linja-n strict or relaxed mode">
+          <span class="ctlLabel">
+            Nanpa-linja-n mode <span class="tpInline">nasin nanpa</span>
+          </span>
+          <select id="appNanpaRelaxedModeSel" aria-label="Nanpa-linja-n strict or relaxed mode">
+            <option value="strict" selected>Strict</option>
+            <option value="relaxed">Relaxed</option>
+          </select>
+        </div>
+
         <!-- Font size -->
         <div id="ctlFontSize" class="inlineControl inlinePill" role="group" aria-label="Font size">
           <span class="ctlLabel">
@@ -983,7 +994,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=168";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=172";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -1458,7 +1469,7 @@ function hideStartupLoading() {
 
     const VECTOR_DIAGNOSTIC_DEBUG = true;
     const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=168",
+      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=172",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
       cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=30",
       vectorExporter: "./js/sitelen-vector-exporter.js?v=166",
@@ -1994,6 +2005,7 @@ function hideStartupLoading() {
       const preset = getActiveFontPreset();
       const haloEnabled = includeHalo && getHaloEnabled();
       const unknownHighlightEnabled = getUnknownHighlightEnabled();
+      const relaxedNanpaLinjan = getRelaxedNanpaLinjanEnabled();
       const fontPx = getFontPx();
       const rolesForRendererConfig = buildFontRoles();
       const resolvedLiteralFamilyForConfig = resolveLiteralFontFamily(getSelectedTextFontOptionKey(), preset);
@@ -2001,6 +2013,7 @@ function hideStartupLoading() {
         includeHalo,
         fontPx,
         presetKey: preset?.key ?? null,
+        relaxedNanpaLinjan,
         selectedTextFontOption: getSelectedTextFontOptionKey(),
         resolvedLiteralFamily: resolvedLiteralFamilyForConfig,
         rolesForRendererConfig: quotedFontCloneForLog(rolesForRendererConfig),
@@ -2040,6 +2053,8 @@ function hideStartupLoading() {
           mixedStyle: "short",
           showUnknownText: unknownHighlightEnabled,
           abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
+          relaxedNanpaLinjanParsing: relaxedNanpaLinjan,
+          relaxedNanpaLinjanRendering: relaxedNanpaLinjan,
           ...buildCartoucheTallyParserConfig()
         },
         fonts: {
@@ -2092,7 +2107,8 @@ function hideStartupLoading() {
         parserMode: preset.parserMode,
         roles,
         cartoucheTally: buildCartoucheTallyParserConfig(),
-        abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled()
+        abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
+        relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled()
       });
     }
 
@@ -2308,6 +2324,63 @@ function wireNumericCartoucheAbbrevToggle() {
   el.addEventListener("change", async () => {
     try {
       setNumericCartoucheAbbrevEnabled(el.checked);
+      await renderFromTextarea();
+    } catch (e) {
+      showAlertAndAnnounce(e?.message ?? String(e));
+    }
+  });
+}
+
+const NANPA_RELAXED_MODE_STORAGE_KEY = "tpNanpaRelaxedMode";
+const NANPA_RELAXED_MODE_DEFAULT = "strict";
+
+function normalizeNanpaRelaxedMode(value) {
+  const s = String(value ?? "").trim().toLowerCase();
+  return s === "relaxed" ? "relaxed" : "strict";
+}
+
+function loadNanpaRelaxedModeFromStorage() {
+  try {
+    const raw = localStorage.getItem(NANPA_RELAXED_MODE_STORAGE_KEY);
+    return raw == null ? null : normalizeNanpaRelaxedMode(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveNanpaRelaxedModeToStorage(value) {
+  try { localStorage.setItem(NANPA_RELAXED_MODE_STORAGE_KEY, normalizeNanpaRelaxedMode(value)); } catch {}
+}
+
+function getNanpaRelaxedMode() {
+  const sel = document.getElementById("appNanpaRelaxedModeSel");
+  return normalizeNanpaRelaxedMode(sel?.value ?? NANPA_RELAXED_MODE_DEFAULT);
+}
+
+function getRelaxedNanpaLinjanEnabled() {
+  return getNanpaRelaxedMode() === "relaxed";
+}
+
+function setNanpaRelaxedMode(value, { persist = true } = {}) {
+  const mode = normalizeNanpaRelaxedMode(value);
+  const sel = document.getElementById("appNanpaRelaxedModeSel");
+  if (sel) sel.value = mode;
+  if (persist) saveNanpaRelaxedModeToStorage(mode);
+  return mode;
+}
+
+function applyNanpaRelaxedModeFromStorage() {
+  setNanpaRelaxedMode(loadNanpaRelaxedModeFromStorage() ?? NANPA_RELAXED_MODE_DEFAULT, { persist: false });
+}
+
+function wireNanpaRelaxedModeSelect() {
+  const sel = document.getElementById("appNanpaRelaxedModeSel");
+  if (!sel) return;
+  sel.addEventListener("change", async () => {
+    try {
+      setNanpaRelaxedMode(sel.value);
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
       await renderFromTextarea();
     } catch (e) {
       showAlertAndAnnounce(e?.message ?? String(e));
@@ -6042,7 +6115,7 @@ function wireHaloControls() {
       }
       return "";
     }
-
+ 
     async function mergeConsecutiveUnicodeJsonTextRuns(runs) {
       const merged = [];
       for (const run of runs) {
@@ -6098,7 +6171,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=166", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=172", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -6449,7 +6522,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const haloOn = getHaloEnabled();
       const haloHex = getHaloHex();
       const preset = getActiveFontPreset();
-      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${getFontPx()}px. Renderer font family: ${preset.label}. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}.`);
+      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Nanpa relaxed: ${getNanpaRelaxedMode()}. Font: ${getFontPx()}px. Renderer font family: ${preset.label}. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}.`);
     }
 
 
@@ -7903,6 +7976,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         applyDefaultInputFromQuery();
         applyTextFontOptionFromStorage();
         applyNumericCartoucheAbbrevFromStorage();
+        applyNanpaRelaxedModeFromStorage();
 
         
 
@@ -7943,6 +8017,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         wireScriptPresetSelect();
         wireTextFontSelect();
         wireNumericCartoucheAbbrevToggle();
+        wireNanpaRelaxedModeSelect();
         wireCartoucheDisplayLinks();
 
         await fontsReadyForPx(getFontPx());

@@ -1,5 +1,5 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=171';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=16';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 
@@ -16,7 +16,8 @@ export const DEFAULT_VOICE_OPTIONS = Object.freeze({
   mode: 'debug',
   synthesis_mode: 'reference_audio',
   sample_rate: 48000,
-  pauseScale: 1.0
+  pauseScale: 1.0,
+  syllableGapSeconds: 0.0
 });
 
 const TP_CONS = new Set(['p','t','k','m','n','s','w','l','j']);
@@ -34,7 +35,8 @@ function normalizeOptions(options = {}, sampleRate = 48000) {
     sample_rate: Number(options.sample_rate || sampleRate || DEFAULT_VOICE_OPTIONS.sample_rate),
     speed: Number(options.speed ?? DEFAULT_VOICE_OPTIONS.speed),
     pitch: Number(options.pitch ?? DEFAULT_VOICE_OPTIONS.pitch),
-    pauseScale: normalizePauseScale(options.pauseScale ?? DEFAULT_VOICE_OPTIONS.pauseScale)
+    pauseScale: normalizePauseScale(options.pauseScale ?? DEFAULT_VOICE_OPTIONS.pauseScale),
+    syllableGapSeconds: normalizeSyllableGapSeconds(options.syllableGapSeconds ?? DEFAULT_VOICE_OPTIONS.syllableGapSeconds)
   };
 }
 
@@ -45,10 +47,21 @@ function normalizePauseScale(value) {
   return Math.min(6.0, Math.max(0.5, n));
 }
 
+function normalizeSyllableGapSeconds(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return DEFAULT_VOICE_OPTIONS.syllableGapSeconds;
+  return Math.min(0.6, Math.max(0.0, n));
+}
+
 function scaledPauseSeconds(seconds, opts = {}) {
   const speed = Math.max(0.3, Number(opts.speed || 1));
   const pauseScale = normalizePauseScale(opts.pauseScale ?? DEFAULT_VOICE_OPTIONS.pauseScale);
   return Math.max(0, Number(seconds || 0)) * pauseScale / speed;
+}
+
+function speedScaledSeconds(seconds, opts = {}) {
+  const speed = Math.max(0.3, Number(opts.speed || 1));
+  return Math.max(0, Number(seconds || 0)) / speed;
 }
 
 function parseCartoucheDbValue(value) {
@@ -560,7 +573,19 @@ export class TokiPonaVoice {
         }
         for (let wi = 0; wi < words.length; wi++) {
           const wchunks = await this.chunksForWord(words[wi], opts, warnings, { preferNanpaUnits: isProperStart });
-          for (const c of wchunks) chunks.push(c);
+          const syllableGap = normalizeSyllableGapSeconds(opts.syllableGapSeconds);
+
+          for (let ci = 0; ci < wchunks.length; ci++) {
+            chunks.push(wchunks[ci]);
+
+            // Optional quiz pacing: add silence only between chunks inside a word.
+            // This is useful after trimming outer silence from nanpa unit WAVs.
+            // Normal quiz speed passes 0, so trimmed WAVs stay tight by default.
+            if (syllableGap > 0 && ci + 1 < wchunks.length) {
+              chunks.push(gapSamples(speedScaledSeconds(syllableGap, opts), sampleRate));
+            }
+          }
+
           const gap = isProperStart && wi + 1 < words.length
             ? properNameWordPauseSeconds(words[wi], words[wi + 1])
             : 0.055;

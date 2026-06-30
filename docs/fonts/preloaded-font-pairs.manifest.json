@@ -5,7 +5,7 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-05-16-060",
+      "rev": "2026-06-30-061",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
@@ -31,7 +31,7 @@
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-06-16-007",
+      "rev": "2026-06-30-008",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
@@ -67,7 +67,7 @@
     {
       "fontKey": "fairfaxHd",
       "label": "FairfaxHD predefined",
-      "rev": "2026-05-15-007",
+      "rev": "2026-06-30-008",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "fairfaxHd",
       "companionFamily": "fairfaxHd-Cartouche",
@@ -89,7 +89,7 @@
     {
       "fontKey": "fairfaxPonaHd",
       "label": "FairfaxPonaHD predefined",
-      "rev": "2026-05-15-007",
+      "rev": "2026-06-30-008",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "fairfaxPonaHd",
       "companionFamily": "fairfaxPonaHd-Cartouche",

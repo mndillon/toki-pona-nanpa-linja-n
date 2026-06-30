@@ -143,6 +143,60 @@ Example:
 
 ---
 
+## nanpa-linja-n parsing and rendering of numeric proper names
+
+
+
+## nanpa-linja-n mode
+
+*nasin pi nanpa-linja-n*
+
+This table shows which syllables are allowed for each decimal digit when reading and writing a nanpa-linja-n proper name.
+
+In **strict mode**, each digit has only one accepted syllable. For example, digit 1 uses **we**, digit 2 uses **te**, and digit 3 uses **se**.
+
+In **relaxed mode**, some digits can also use extra syllables that mean the same digit. For example, digit 1 can use **we** or **wa**, digit 3 can use **se** or **si**, and digit 9 can use **je** or **ja**.
+
+The **e**, **a**, **i**, and **u** columns show the accepted syllables for each digit. The **large glyph** column shows the main sitelen pona glyph used for that digit. The **small glyph** row shows the small glyph associated with each vowel column.
+
+In relaxed mode, for example, we will accept **Nemun**, as well as **Nemen**, to represent the number 7.
+
+### strict
+
+|       digit |  e  |  a  |  i  |  u  | large glyph |
+| ----------: | :-: | :-: | :-: | :-: | :---------- |
+|           0 |  -  |  -  |  ni |  -  | ijo         |
+|           1 |  we |  -  |  -  |  -  | wan         |
+|           2 |  te |  -  |  -  |  -  | tu          |
+|           3 |  se |  -  |  -  |  -  | seli        |
+|           4 |  -  |  na |  -  |  -  | awen        |
+|           5 |  le |  -  |  -  |  -  | luka        |
+|           6 |  -  |  -  |  -  |  nu | utala       |
+|           7 |  me |  -  |  -  |  -  | mun         |
+|           8 |  pe |  -  |  -  |  -  | pipi        |
+|           9 |  je |  -  |  -  |  -  | jo          |
+| small glyph |  en |     |     |     |             |
+
+### relaxed
+
+|       digit |  e  |  a  |  i  |  u  | large glyph |
+| ----------: | :-: | :-: | :-: | :-: | :---------- |
+|           0 |  -  |  -  |  ni |  -  | ijo         |
+|           1 |  we |  wa |  -  |  -  | wan         |
+|           2 |  te |  -  |  -  |  tu | tu          |
+|           3 |  se |  -  |  si |  -  | seli        |
+|           4 |  -  |  na |  -  |  -  | awen        |
+|           5 |  le |  -  |  -  |  lu | luka        |
+|           6 |  -  |  -  |  -  |  nu | utala       |
+|           7 |  me |  -  |  -  |  mu | mun         |
+|           8 |  pe |  -  |  pi |  -  | pipi        |
+|           9 |  je |  ja |  -  |  -  | jo          |
+| small glyph |  en | ala | ike | uta |             |
+
+
+
+---
+
 ## Digit 0 Rule
 
 Rules:

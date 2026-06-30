@@ -160,6 +160,41 @@
       max-width: 100%;
     }
 
+    /* nanpa-linja-n mode comparison table */
+    .nanpaModeTable th,
+    .nanpaModeTable td {
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .nanpaModeTable .modeSubhead {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .nanpaModeTable .modeGap {
+      border-top: 0;
+      border-bottom: 0;
+      background: transparent;
+      width: 16px;
+      min-width: 16px;
+      padding-inline: 6px;
+    }
+
+    @media (max-width: 620px) {
+      .nanpaModeTable th,
+      .nanpaModeTable td {
+        padding: 6px;
+      }
+
+      .nanpaModeTable .modeGap {
+        width: 10px;
+        min-width: 10px;
+        padding-inline: 4px;
+      }
+    }
+
     /* =========================
        WCAG-oriented affordances
        ========================= */
@@ -643,6 +678,8 @@
         <span class="tpLine">musi nanpa Neteninapen</span>
       </div>
 
+     
+
        <hr class="miniDivider"/>
 
       <h1 style="margin:0 0 6px;font-size:18px;">
@@ -765,6 +802,105 @@
       <div class="help">&nbsp;</div>
       
       
+        <hr class="miniDivider"/>
+
+      <section id="nanpaLinjaNMode" aria-labelledby="nanpaLinjaNModeTitle">
+        <h1 id="nanpaLinjaNModeTitle" style="margin:0 0 6px;font-size:18px;">
+          nanpa-linja-n mode
+          <span class="tpLine">nasin pi nanpa-linja-n</span>
+        </h1>
+
+<div class="small" style="margin-bottom:10px;">
+  This table shows which syllables are allowed for each decimal digit when reading and writing a nanpa-linja-n proper name. In strict mode, each digit has only one accepted syllable. For example, digit 1 uses <strong>we</strong>, digit 2 uses <strong>te</strong>, and digit 3 uses <strong>se</strong>. In relaxed mode, some digits can also use extra syllables that mean the same digit. For example, digit 1 can use <strong>we</strong> or <strong>wa</strong>, digit 3 can use <strong>se</strong> or <strong>si</strong>, and digit 9 can use <strong>je</strong> or <strong>ja</strong>. The <strong>e</strong>, <strong>a</strong>, <strong>i</strong>, and <strong>u</strong> columns show the accepted syllables for each digit. The <strong>large glyph</strong> column shows the main sitelen pona glyph used for that digit. The <strong>small glyph</strong> row shows the small glyph associated with each vowel column.<br/>
+  In relaxed mode, for example, we will accept <strong>Nemun</strong>, as well as <strong>Nemen</strong>, to represent the number 7.
+</div>
+
+
+        <div class="tableWrap" role="region" aria-label="strict and relaxed nanpa-linja-n mode table">
+          <table class="digitTable nanpaModeTable">
+            <thead>
+              <tr>
+                <th class="modeSubhead" colspan="6">strict</th>
+                <th class="modeGap" aria-hidden="true">&nbsp;</th>
+                <th class="modeSubhead" colspan="6">relaxed</th>
+              </tr>
+              <tr>
+                <th>digit</th>
+                <th>e</th>
+                <th>a</th>
+                <th>i</th>
+                <th>u</th>
+                <th>large glyph</th>
+                <th class="modeGap" aria-hidden="true">&nbsp;</th>
+                <th>digit</th>
+                <th>e</th>
+                <th>a</th>
+                <th>i</th>
+                <th>u</th>
+                <th>large glyph</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>0</td><td>-</td><td>-</td><td>ni</td><td>-</td><td>ijo</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>0</td><td>-</td><td>-</td><td>ni</td><td>-</td><td>ijo</td>
+              </tr>
+              <tr>
+                <td>1</td><td>we</td><td>-</td><td>-</td><td>-</td><td>wan</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>1</td><td>we</td><td>wa</td><td>-</td><td>-</td><td>wan</td>
+              </tr>
+              <tr>
+                <td>2</td><td>te</td><td>-</td><td>-</td><td>-</td><td>tu</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>2</td><td>te</td><td>-</td><td>-</td><td>tu</td><td>tu</td>
+              </tr>
+              <tr>
+                <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>seli</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>3</td><td>se</td><td>-</td><td>si</td><td>-</td><td>seli</td>
+              </tr>
+              <tr>
+                <td>4</td><td>-</td><td>na</td><td>-</td><td>-</td><td>awen</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>4</td><td>-</td><td>na</td><td>-</td><td>-</td><td>awen</td>
+              </tr>
+              <tr>
+                <td>5</td><td>le</td><td>-</td><td>-</td><td>-</td><td>luka</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>5</td><td>le</td><td>-</td><td>-</td><td>lu</td><td>luka</td>
+              </tr>
+              <tr>
+                <td>6</td><td>-</td><td>-</td><td>-</td><td>nu</td><td>utala</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>6</td><td>-</td><td>-</td><td>-</td><td>nu</td><td>utala</td>
+              </tr>
+              <tr>
+                <td>7</td><td>me</td><td>-</td><td>-</td><td>-</td><td>mun</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>7</td><td>me</td><td>-</td><td>-</td><td>mu</td><td>mun</td>
+              </tr>
+              <tr>
+                <td>8</td><td>pe</td><td>-</td><td>-</td><td>-</td><td>pipi</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>8</td><td>pe</td><td>-</td><td>pi</td><td>-</td><td>pipi</td>
+              </tr>
+              <tr>
+                <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>9</td><td>je</td><td>ja</td><td>-</td><td>-</td><td>jo</td>
+              </tr>
+              <tr>
+                <td>small glyph</td><td>en</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>small glyph</td><td>en</td><td>ala</td><td>ike</td><td>uta</td><td>&nbsp;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section id="nanpaListeningQuiz" aria-label="nanpa-linja-n listening quiz"></section>
 
 
@@ -772,7 +908,7 @@
       <div class="help">#~n</div>
     </div>
   </main>
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=11"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=21"></script>
 
 </body>
 </html>

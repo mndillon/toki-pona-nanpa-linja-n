@@ -10,21 +10,39 @@ const SMALL_TINY_FONT_SIZE = 8;
 const CARTOUCHE_RENDER_OPTS = { padding: 8, border: 1, cornerRadius: 10, letterGap: 2 };
 const AUDIO_PAUSE_SCALE_STORAGE_KEY = 'nanpaListeningQuizAudioPauseScale';
 const AUDIO_PAUSE_SCALE_DEFAULT = 4.00;//very slow
+const AVERAGE_TRIMMED_OUTER_SILENCE_SECONDS = 0.467;
 const AUDIO_PAUSE_SCALE_OPTIONS = [
-  { value: 1.00, label: 'Normal' },
-  { value: 2.25, label: 'Slow' },
-  { value: 4.00, label: 'Very slow' }
+  // Normal keeps the fully trimmed WAVs tight: no extra syllable silence.
+  { value: 1.00, label: 'Normal', syllableGapSeconds: 0.000 },
+  // Slow restores roughly one quarter of the average removed outer silence.
+  { value: 2.25, label: 'Slow', syllableGapSeconds: Number((AVERAGE_TRIMMED_OUTER_SILENCE_SECONDS * 0.25).toFixed(3)) },
+  // Very slow restores roughly one half of the average removed outer silence.
+  { value: 4.00, label: 'Very slow', syllableGapSeconds: Number((AVERAGE_TRIMMED_OUTER_SILENCE_SECONDS * 0.50).toFixed(3)) }
+];
+
+const PROPER_NAME_MODE_STORAGE_KEY = 'nanpaListeningQuizProperNameMode';
+const PROPER_NAME_MODE_DEFAULT = 'strict';
+const PROPER_NAME_MODE_OPTIONS = [
+  { value: 'strict', label: 'Strict' },
+  { value: 'relaxed-alternative', label: 'Relaxed (alternative)' },
+  { value: 'relaxed-mixed', label: 'Relaxed (mixed)' }
 ];
 
 const ABBREV_CP_NANPA = 0xF193D;
 const ABBREV_CP_NENA  = 0xF1940;
 const ABBREV_CP_EN    = 0xF190A;
 const ABBREV_CP_OPEN  = 0xF1947;
+const ABBREV_CP_ALA   = 0xF1902;
+const ABBREV_CP_IKE   = 0xF190D;
+const ABBREV_CP_UTA   = 0xF1970;
 const ABBREV_DROP_AFTER_FIRST_NANPA = new Set([
   ABBREV_CP_NANPA,
   ABBREV_CP_NENA,
   ABBREV_CP_EN,
-  ABBREV_CP_OPEN
+  ABBREV_CP_OPEN,
+  ABBREV_CP_ALA,
+  ABBREV_CP_IKE,
+  ABBREV_CP_UTA
 ]);
 
 let nanpaModulePromise = null;
@@ -88,6 +106,12 @@ function getCurrentAudioPauseScale() {
   return normalizePauseScale(el?.value ?? storedAudioPauseScale());
 }
 
+function getCurrentAudioSyllableGapSeconds() {
+  const scale = getCurrentAudioPauseScale();
+  const option = AUDIO_PAUSE_SCALE_OPTIONS.find(opt => Math.abs(opt.value - scale) < 0.001);
+  return Number(option?.syllableGapSeconds ?? 0);
+}
+
 function audioPauseScaleOptionsHtml(selectedValue) {
   const selected = normalizePauseScale(selectedValue);
   return AUDIO_PAUSE_SCALE_OPTIONS
@@ -99,6 +123,109 @@ function audioPauseScaleOptionsHtml(selectedValue) {
     .join('');
 }
 
+function normalizeProperNameMode(value) {
+  const s = String(value ?? '').trim().toLowerCase();
+  return PROPER_NAME_MODE_OPTIONS.some(opt => opt.value === s) ? s : PROPER_NAME_MODE_DEFAULT;
+}
+
+function storedProperNameMode() {
+  try {
+    const raw = localStorage.getItem(PROPER_NAME_MODE_STORAGE_KEY);
+    return raw == null ? PROPER_NAME_MODE_DEFAULT : normalizeProperNameMode(raw);
+  } catch {
+    return PROPER_NAME_MODE_DEFAULT;
+  }
+}
+
+function saveProperNameMode(value) {
+  const v = normalizeProperNameMode(value);
+  try { localStorage.setItem(PROPER_NAME_MODE_STORAGE_KEY, v); } catch {}
+  return v;
+}
+
+function getCurrentProperNameMode() {
+  const el = document.querySelector('[data-quiz-proper-name-mode]');
+  return normalizeProperNameMode(el?.value ?? storedProperNameMode());
+}
+
+function properNameModeOptionsHtml(selectedValue) {
+  const selected = normalizeProperNameMode(selectedValue);
+  return PROPER_NAME_MODE_OPTIONS
+    .map(opt => {
+      const isSelected = opt.value === selected ? ' selected' : '';
+      return `<option value="${opt.value}"${isSelected}>${opt.label}</option>`;
+    })
+    .join('');
+}
+
+function isRelaxedProperNameMode(mode) {
+  return normalizeProperNameMode(mode) !== 'strict';
+}
+
+
+const STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
+  WE: 'WA',
+  TE: 'TU',
+  SE: 'SI',
+  LE: 'LU',
+  ME: 'MU',
+  PE: 'PI',
+  JE: 'JA'
+});
+
+const QUIZ_NANPA_STRICT_DIGIT_TOKENS = new Set(['NI','WE','TE','SE','NA','LE','NU','ME','PE','JE']);
+const QUIZ_NANPA_RELAXED_DIGIT_TOKENS = new Set(['WA','TU','SI','LU','MU','PI','JA']);
+const QUIZ_NANPA_DIGIT_TOKENS = new Set([...QUIZ_NANPA_STRICT_DIGIT_TOKENS, ...QUIZ_NANPA_RELAXED_DIGIT_TOKENS]);
+const QUIZ_NANPA_TOKEN_PREFIXES = ['KEKEKE','KEKE','KO','KE','NONONO','NONO','NOKO','OK','NE','NO'];
+
+function tokenizeNanpaCapsForQuiz(caps) {
+  const s = String(caps ?? '').trim().toUpperCase();
+  if (!s || !s.startsWith('NE') || !s.endsWith('N')) throw new Error(`Invalid nanpa caps: ${caps}`);
+
+  const tokens = [];
+  let i = 0;
+  const end = s.length;
+
+  while (i < end - 1) {
+    let matched = null;
+    for (const pref of QUIZ_NANPA_TOKEN_PREFIXES) {
+      if (s.startsWith(pref, i)) { matched = pref; break; }
+    }
+    if (matched != null) {
+      tokens.push(matched);
+      i += matched.length;
+      continue;
+    }
+
+    if (i + 2 <= end - 1) {
+      const two = s.slice(i, i + 2);
+      if (QUIZ_NANPA_DIGIT_TOKENS.has(two)) {
+        tokens.push(two);
+        i += 2;
+        continue;
+      }
+    }
+
+    throw new Error(`Invalid nanpa caps token at position ${i}: ${caps}`);
+  }
+
+  tokens.push('N');
+  return tokens;
+}
+
+function capsForProperNameMode(caps, mode) {
+  const normalizedMode = normalizeProperNameMode(mode);
+  if (normalizedMode === 'strict') return String(caps ?? '').trim().toUpperCase();
+
+  const tokens = tokenizeNanpaCapsForQuiz(caps);
+  const out = tokens.map(t => {
+    const relaxed = STRICT_TO_RELAXED_DIGIT_TOKEN[t];
+    if (!relaxed) return t;
+    if (normalizedMode === 'relaxed-alternative') return relaxed;
+    return Math.random() < 0.5 ? relaxed : t;
+  });
+  return out.join('');
+}
 
 function formatCommas(n) {
   return Number(n).toLocaleString('en-US');
@@ -163,7 +290,7 @@ function dayCountForMonth(year, month) {
   return new Date(year, month, 0).getDate();
 }
 
-function makeQuizItems() {
+function makeQuizItems(properNameMode = getCurrentProperNameMode()) {
   const fractionChoices = [
     ['1/2', 1, 2], ['1/3', 1, 3], ['2/3', 2, 3],
     ['1/4', 1, 4], ['3/4', 3, 4], ['1/5', 1, 5],
@@ -202,21 +329,21 @@ function makeQuizItems() {
   const isoDate = `${year}-${pad2(month)}-${pad2(day)}`;
 
   return shuffle([
-    item('single-digit-integer', singleDigit, singleDigit, 'exact'),
-    item('decimal', decimal, decimal, 'exact'),
-    item('negative', negative, negative, 'exact'),
-    item('thousands', thousands, thousands, 'commasOptional'),
-    item('millions', millions, millions, 'commasOptional'),
-    item('percent', percent, percent, 'exact'),
-    item('fraction', fraction, fraction, 'exact'),
-    item('integer-and-fraction', mixedFraction, mixedFraction, 'exact'),
-    item('scientific-notation', scientific, scientific, 'scientific'),
-    item('hh-mm-time', time, time, 'exact'),
-    item('iso-date', isoDate, isoDate, 'exact')
+    item('single-digit-integer', singleDigit, singleDigit, 'exact', properNameMode),
+    item('decimal', decimal, decimal, 'exact', properNameMode),
+    item('negative', negative, negative, 'exact', properNameMode),
+    item('thousands', thousands, thousands, 'commasOptional', properNameMode),
+    item('millions', millions, millions, 'commasOptional', properNameMode),
+    item('percent', percent, percent, 'exact', properNameMode),
+    item('fraction', fraction, fraction, 'exact', properNameMode),
+    item('integer-and-fraction', mixedFraction, mixedFraction, 'exact', properNameMode),
+    item('scientific-notation', scientific, scientific, 'scientific', properNameMode),
+    item('hh-mm-time', time, time, 'exact', properNameMode),
+    item('iso-date', isoDate, isoDate, 'exact', properNameMode)
   ]);
 }
 
-function item(kind, parserInput, displayValue, answerMode) {
+function item(kind, parserInput, displayValue, answerMode, properNameMode = getCurrentProperNameMode()) {
   return {
     id: `${kind}-${Math.random().toString(36).slice(2)}`,
     kind,
@@ -224,6 +351,7 @@ function item(kind, parserInput, displayValue, answerMode) {
     displayValue,
     answer: displayValue,
     answerMode,
+    properNameMode: normalizeProperNameMode(properNameMode),
     checkedOnce: false,
     parsedPromise: null
   };
@@ -231,7 +359,7 @@ function item(kind, parserInput, displayValue, answerMode) {
 
 async function getNanpaParser() {
   if (!nanpaModulePromise) {
-    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js');
+    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=172');
   }
   const mod = await nanpaModulePromise;
   return mod.NanpaParser;
@@ -239,7 +367,7 @@ async function getNanpaParser() {
 
 async function getVoice() {
   if (!voicePromise) {
-    voicePromise = import('./toki-pona-voice-api.js?v=10').then(m => m.createTokiPonaVoice());
+    voicePromise = import('./toki-pona-voice-api.js?v=21').then(m => m.createTokiPonaVoice());
   }
   return voicePromise;
 }
@@ -248,14 +376,61 @@ async function ensureParsed(item) {
   if (!item.parsedPromise) {
     item.parsedPromise = (async () => {
       const NanpaParser = await getNanpaParser();
-      const parsed = NanpaParser.parseNumber(item.parserInput, {
+      const properNameMode = normalizeProperNameMode(item.properNameMode ?? getCurrentProperNameMode());
+      const strictParsed = NanpaParser.parseNumber(item.parserInput, {
         mode: 'uniform',
         mixedStyle: 'short'
       });
-      if (!parsed || !parsed.properName) {
+      if (!strictParsed || !strictParsed.properName || !strictParsed.caps) {
         throw new Error(`Could not encode quiz value: ${item.parserInput}`);
       }
-      return parsed;
+
+      let quizCaps = strictParsed.caps;
+      let quizProperName = strictParsed.properName;
+      let quizParsed = strictParsed;
+
+      if (isRelaxedProperNameMode(properNameMode)) {
+        quizCaps = capsForProperNameMode(strictParsed.caps, properNameMode);
+        quizProperName = NanpaParser.splitCapsToProperName(quizCaps, {
+          titleCase: true,
+          relaxedNanpaLinjanParsing: true
+        });
+        // Build the cartouche directly from the stored quiz caps. Do not
+        // re-parse the spaced proper-name string here: separators such as Ono
+        // for fractions, Eke for time/date, and Eko for scientific notation are
+        // valid inside nanpa-linja-n caps but are not all accepted by the simple
+        // parseNumber(properName) path.
+        const parsedRelaxedCaps = NanpaParser.capsToCodepoints(quizCaps, {
+          mode: 'uniform',
+          mixedStyle: 'short',
+          relaxedNanpaLinjanParsing: true,
+          relaxedNanpaLinjanRendering: true
+        });
+
+        if (!parsedRelaxedCaps || !(parsedRelaxedCaps.innerCodepoints?.length || parsedRelaxedCaps.codepoints?.length)) {
+          throw new Error(`Could not encode relaxed quiz value: ${item.parserInput}`);
+        }
+
+        quizParsed = {
+          ...parsedRelaxedCaps,
+          caps: quizCaps,
+          properName: quizProperName,
+          uniqueCode: strictParsed.uniqueCode,
+          ucsurCodepoints: Array.from(parsedRelaxedCaps.innerCodepoints ?? []),
+          tpWords: Array.from(parsedRelaxedCaps.words ?? []),
+          words: Array.from(parsedRelaxedCaps.words ?? [])
+        };
+      }
+
+      return {
+        ...strictParsed,
+        strictParsed,
+        quizParsed,
+        properName: strictParsed.properName,
+        quizProperName,
+        quizCaps,
+        properNameMode
+      };
     })();
   }
   return item.parsedPromise;
@@ -280,7 +455,11 @@ async function answerMatches(item, rawAnswer) {
   if (valueAnswerMatches(item, rawAnswer)) return true;
 
   const parsed = await ensureParsed(item);
-  return properNameMatches(rawAnswer, parsed.properName);
+  if (properNameMatches(rawAnswer, parsed.strictParsed?.properName ?? parsed.properName)) return true;
+  if (isRelaxedProperNameMode(parsed.properNameMode)) {
+    return properNameMatches(rawAnswer, parsed.quizProperName);
+  }
+  return false;
 }
 
 function allItemsChecked() {
@@ -309,7 +488,10 @@ function getQuarterCodepointsSet() {
     0xF1909, // e
     0xF190B, // esun
     0xF190A, // en
-    0xF1947  // open
+    0xF1947, // open
+    0xF1902, // ala (relaxed small glyph)
+    0xF190D, // ike (relaxed small glyph)
+    0xF1970  // uta (relaxed small glyph)
   ]);
 }
 
@@ -463,6 +645,7 @@ function rowForItem(item) {
     <div class="nanpaListenQuizReveal" hidden>
       <div class="nanpaListenQuizLine"><strong>Value:</strong> <span class="mono" data-quiz-value></span></div>
       <div class="nanpaListenQuizLine"><strong>nanpa-linja-n proper name:</strong> <span class="mono" data-quiz-proper-name></span></div>
+      <div class="nanpaListenQuizLine" data-quiz-relaxed-proper-name-line hidden><strong>relaxed nanpa-linja-n proper name:</strong> <span class="mono" data-quiz-relaxed-proper-name></span></div>
       <div class="nanpaListenQuizLine"><strong>nanpa-linja-n cartouche:</strong><canvas data-quiz-cartouche-normal aria-hidden="true"></canvas></div>
       <div class="nanpaListenQuizLine"><strong>nanpa-linja-n abbreviated cartouche:</strong><canvas data-quiz-cartouche-abbrev aria-hidden="true"></canvas></div>
       <div class="nanpaListenQuizLine"><strong>#~ abbreviation:</strong> <span class="mono" data-quiz-code></span></div>
@@ -497,9 +680,10 @@ async function playItemAudio(item, row) {
     if (button) button.disabled = true;
     const parsed = await ensureParsed(item);
     const voice = await getVoice();
-    await voice.play(parsed.properName, {
+    await voice.play(parsed.quizProperName || parsed.properName, {
       synthesis_mode: 'reference_audio',
-      pauseScale: getCurrentAudioPauseScale()
+      pauseScale: getCurrentAudioPauseScale(),
+      syllableGapSeconds: getCurrentAudioSyllableGapSeconds()
     });
   } catch (err) {
     setFeedback(row, `Audio error: ${err?.message ?? String(err)}`, 'bad');
@@ -543,17 +727,23 @@ async function revealItem(item, row) {
     const reveal = row.querySelector('.nanpaListenQuizReveal');
     const valueEl = row.querySelector('[data-quiz-value]');
     const properNameEl = row.querySelector('[data-quiz-proper-name]');
+    const relaxedProperNameLine = row.querySelector('[data-quiz-relaxed-proper-name-line]');
+    const relaxedProperNameEl = row.querySelector('[data-quiz-relaxed-proper-name]');
     const codeEl = row.querySelector('[data-quiz-code]');
     const normalCanvas = row.querySelector('[data-quiz-cartouche-normal]');
     const abbrevCanvas = row.querySelector('[data-quiz-cartouche-abbrev]');
+    const strictParsed = parsed.strictParsed ?? parsed;
+    const quizParsed = parsed.quizParsed ?? parsed;
 
     if (valueEl) valueEl.textContent = item.displayValue;
-    if (properNameEl) properNameEl.textContent = formatProperNameForDisplay(parsed.properName);
-    if (codeEl) codeEl.textContent = String(parsed.uniqueCode ?? '');
+    if (properNameEl) properNameEl.textContent = formatProperNameForDisplay(strictParsed.properName);
+    if (relaxedProperNameLine) relaxedProperNameLine.hidden = !isRelaxedProperNameMode(parsed.properNameMode);
+    if (relaxedProperNameEl) relaxedProperNameEl.textContent = formatProperNameForDisplay(parsed.quizProperName);
+    if (codeEl) codeEl.textContent = String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? '');
 
     await ensureCartoucheFontLoaded();
-    if (normalCanvas) renderCartoucheToCanvas(normalCanvas, parsed.ucsurCodepoints);
-    if (abbrevCanvas) renderCartoucheToCanvas(abbrevCanvas, abbreviateNumericCartoucheCps(parsed.ucsurCodepoints));
+    if (normalCanvas) renderCartoucheToCanvas(normalCanvas, quizParsed.ucsurCodepoints);
+    if (abbrevCanvas) renderCartoucheToCanvas(abbrevCanvas, abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints));
 
     if (reveal) reveal.hidden = false;
   } catch (err) {
@@ -562,7 +752,8 @@ async function revealItem(item, row) {
 }
 
 function renderQuiz(root) {
-  quizItems = makeQuizItems();
+  const properNameMode = storedProperNameMode();
+  quizItems = makeQuizItems(properNameMode);
 
   const rows = document.createElement('div');
   rows.className = 'nanpaListenQuizRows';
@@ -579,14 +770,23 @@ function renderQuiz(root) {
       Press an audio button as many times as you like, enter the decimal value or nanpa-linja-n proper name you hear, then check your answer.
       <span class="tpLine">o kute mute la sina ken. o pana e nanpa anu nimi pi nanpa-linja-n la o lukin e pona.</span>
     </div>
-    <div class="nanpaListenQuizAudioSettings" role="group" aria-label="Audio speed">
+    <div class="nanpaListenQuizAudioSettings" role="group" aria-label="Nanpa-linja-n proper names and audio settings">
+      <label for="nanpaListenQuizProperNameMode">nanpa-linja-n proper names mode</label>
+      <select id="nanpaListenQuizProperNameMode" data-quiz-proper-name-mode>
+        ${properNameModeOptionsHtml(properNameMode)}
+      </select>
       <label for="nanpaListenQuizAudioPauseScale">Audio speed</label>
       <select id="nanpaListenQuizAudioPauseScale" data-quiz-audio-pause-scale>
         ${audioPauseScaleOptionsHtml(audioPauseScale)}
       </select>
-      <span class="help">Slow settings add longer pauses between sound units; they do not stretch or slur the audio.</span>
+      <span class="help">Normal adds no extra syllable silence. Slow and Very slow add calculated silence between assembled syllable units; they do not stretch or slur the audio.</span>
     </div>
   `;
+
+  root.querySelector('[data-quiz-proper-name-mode]')?.addEventListener('change', event => {
+    saveProperNameMode(event.currentTarget.value);
+    renderQuiz(root);
+  });
 
   root.querySelector('[data-quiz-audio-pause-scale]')?.addEventListener('change', event => {
     saveAudioPauseScale(event.currentTarget.value);
