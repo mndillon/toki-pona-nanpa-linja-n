@@ -218,42 +218,6 @@
       margin: 0;
     }
 
-    .calcInlineControls {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      margin: 0;
-    }
-
-    .nanpaModeToggle select {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 3px 6px;
-      background: var(--bg);
-      font: inherit;
-      color: #111;
-    }
-
-    .audio-button {
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 0 6px;
-      vertical-align: baseline;
-    }
-
-    .audio-button:hover {
-      background: transparent;
-    }
-
-    .audio-button:disabled {
-      cursor: default;
-      opacity: 0.45;
-    }
-
     .nlModeControl{ display:none !important; }
 
     /* Portrait image: mobile-first */
@@ -310,20 +274,10 @@
           <!-- Decorative canvas -->
           <canvas id="displayCanvas" aria-hidden="true"></canvas>
 
-          <div class="calcInlineControls" aria-label="Cartouche display controls">
-            <label class="abbrevToggle" for="numericCartoucheAbbrevEnable">
-              <input id="numericCartoucheAbbrevEnable" type="checkbox">
-              <span>Abbreviate numeric cartouche output</span>
-            </label>
-
-            <label class="abbrevToggle nanpaModeToggle" for="nanpaLinjanProperNameMode">
-              <span>nanpa-linja-n mode</span>
-              <select id="nanpaLinjanProperNameMode" aria-label="nanpa-linja-n mode">
-                <option value="strict">strict</option>
-                <option value="relaxed">relaxed</option>
-              </select>
-            </label>
-          </div>
+          <label class="abbrevToggle" for="numericCartoucheAbbrevEnable">
+            <input id="numericCartoucheAbbrevEnable" type="checkbox">
+            <span>Abbreviate numeric cartouche output</span>
+          </label>
 
           <!-- Visible: value + pending, now bilingual -->
           <div class="displayMeta" aria-hidden="true">
@@ -352,13 +306,7 @@
 
           <div class="help" aria-label="nanpa-linja-n proper name">
             <strong>nanpa-linja-n proper name:</strong>
-            <button
-              id="btnPlayProperNameAudio"
-              class="audio-button"
-              type="button"
-              title="Play audio"
-              aria-label="Play audio"
-            >🤖🔊</button><span id="properNameText"></span>
+            <span id="properNameText"></span>
           </div>
 
         </div>
@@ -486,61 +434,6 @@
 
     const NUMERIC_CARTOUCHE_ABBREV_STORAGE_KEY = "tpAbbreviateNumericCartouches";
     const NUMERIC_CARTOUCHE_ABBREV_DEFAULT_ENABLED = true;
-
-    const NANPA_LINJAN_PROPER_NAME_MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
-    const NANPA_LINJAN_PROPER_NAME_MODE_DEFAULT = "strict";
-
-    function normalizeNanpaLinjanProperNameMode(value) {
-      const v = String(value ?? "").trim().toLowerCase();
-      if (v === "relaxed" || v === "relaxed-alternative" || v === "relaxed-mixed") return "relaxed";
-      return "strict";
-    }
-
-    function loadNanpaLinjanProperNameModeFromStorage() {
-      try {
-        const raw = localStorage.getItem(NANPA_LINJAN_PROPER_NAME_MODE_STORAGE_KEY);
-        return raw == null ? NANPA_LINJAN_PROPER_NAME_MODE_DEFAULT : normalizeNanpaLinjanProperNameMode(raw);
-      } catch {
-        return NANPA_LINJAN_PROPER_NAME_MODE_DEFAULT;
-      }
-    }
-
-    function saveNanpaLinjanProperNameModeToStorage(value) {
-      const v = normalizeNanpaLinjanProperNameMode(value);
-      try { localStorage.setItem(NANPA_LINJAN_PROPER_NAME_MODE_STORAGE_KEY, v); } catch {}
-      return v;
-    }
-
-    function setNanpaLinjanProperNameMode(value) {
-      const v = saveNanpaLinjanProperNameModeToStorage(value);
-      const el = document.getElementById("nanpaLinjanProperNameMode");
-      if (el) el.value = v;
-      return v;
-    }
-
-    function getNanpaLinjanProperNameMode() {
-      const el = document.getElementById("nanpaLinjanProperNameMode");
-      return normalizeNanpaLinjanProperNameMode(el?.value ?? loadNanpaLinjanProperNameModeFromStorage());
-    }
-
-    function getRelaxedNanpaLinjanProperNamesEnabled() {
-      return getNanpaLinjanProperNameMode() === "relaxed";
-    }
-
-    function applyNanpaLinjanProperNameModeFromStorage() {
-      setNanpaLinjanProperNameMode(loadNanpaLinjanProperNameModeFromStorage());
-    }
-
-    function wireNanpaLinjanProperNameModeSelect() {
-      const el = document.getElementById("nanpaLinjanProperNameMode");
-      if (!el) return;
-      el.addEventListener("change", () => {
-        setNanpaLinjanProperNameMode(el.value);
-        buildKeypad();
-        renderDisplay();
-        rerenderWideZeroKey();
-      });
-    }
 
     function loadNumericCartoucheAbbrevFromStorage() {
       try {
@@ -677,7 +570,7 @@
       "ni": 0xF1941, "nena": 0xF1940, "o": 0xF1944, "kulupu": 0xF191F,
 
       "ijo": 0xF190C, "wan": 0xF1973, "tu": 0xF196E, "sijelo": 0xF195B, "ante": 0xF1906,
-      "luka": 0xF192D, "utala": 0xF1971, "uta": 0xF1970, "mun": 0xF193A, "pipi": 0xF1951, "jo": 0xF1913,
+      "luka": 0xF192D, "utala": 0xF1971, "mun": 0xF193A, "pipi": 0xF1951, "jo": 0xF1913,
 
       "pana": 0xF194C, "weka": 0xF1976, "mute": 0xF193C, "kipisi": 0xF197B,
       "pona": 0xF1954, "ala": 0xF1902, "monsi": 0xF1938, "ike": 0xF190D,
@@ -703,9 +596,6 @@
         0xF1909, // e
         0xF190B, // esun
         0xF190A, // en  (added for uniform mode)
-        0xF1902, // ala (relaxed nanpa-linja-n small glyph)
-        0xF190D, // ike (relaxed nanpa-linja-n small glyph)
-        0xF1970, // uta (relaxed nanpa-linja-n small glyph)
       ]);
     }
 
@@ -727,50 +617,18 @@
       }
     }
 
-    const STRICT_DIGIT_TO_TOKEN = {
+    const DIGIT_TO_TOKEN = {
       "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
       "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
     };
 
-    const RELAXED_DIGIT_TO_TOKEN = {
-      "0": "NI", "1": "WA", "2": "TU", "3": "SE", "4": "NA",
-      "5": "LU", "6": "NU", "7": "MU", "8": "PI", "9": "JE",
-    };
-
-    function decimalDigitToNanpaToken(ch) {
-      const map = getRelaxedNanpaLinjanProperNamesEnabled()
-        ? RELAXED_DIGIT_TO_TOKEN
-        : STRICT_DIGIT_TO_TOKEN;
-      return map[String(ch)];
-    }
-
-    const STRICT_DIGIT_TOKENS = new Set(["NI", "WE", "TE", "SE", "NA", "LE", "NU", "ME", "PE", "JE"]);
-    const RELAXED_DIGIT_TOKENS = new Set(["WA", "TU", "LU", "MU", "PI"]);
-    const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
-
-    const RELAXED_TOKEN_TO_STRICT_TOKEN = Object.freeze({
-      "WA": "WE",
-      "TU": "TE",
-      "LU": "LE",
-      "MU": "ME",
-      "PI": "PE"
-    });
-
-    const RELAXED_TOKEN_TO_RENDER_WORDS = Object.freeze({
-      "WA": ["wan", "ala"],
-      "TU": ["tu", "uta"],
-      "LU": ["luka", "uta"],
-      "MU": ["mun", "uta"],
-      "PI": ["pipi", "ike"]
-    });
-
     const TOKEN_TO_DIGIT_WORD = {
       "NI": "ijo", "WE": "wan", "TE": "tu", "SE": "seli", "NA": "awen",
       "LE": "luka", "NU": "utala", "ME": "mun", "PE": "pipi", "JE": "jo",
-      "WA": "wan", "TU": "tu", "LU": "luka", "MU": "mun", "PI": "pipi",
     };
 
     const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
+    const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
     const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NE", "NO" ];
 
     function looksLikeNanpaCaps(s) {
@@ -883,14 +741,14 @@
           else break;
         }
 
-        for (const d of groups[0]) out.push(decimalDigitToNanpaToken(d));
+        for (const d of groups[0]) out.push(DIGIT_TO_TOKEN[d]);
 
         const nGroups = groups.length;
         const lastNonTrailingIdx = nGroups - trailingZeroGroups;
 
         for (let idx = 1; idx < lastNonTrailingIdx; idx++) {
           out.push("NEKE");
-          for (const d of groups[idx]) out.push(decimalDigitToNanpaToken(d));
+          for (const d of groups[idx]) out.push(DIGIT_TO_TOKEN[d]);
         }
 
         if (trailingZeroGroups > 0) {
@@ -905,7 +763,7 @@
             if (ch === "_" ) continue;
             if (ch === " " || ch === "-") { pushNene(); continue; }
             if (thousandsChar && ch === thousandsChar) { pushNene(); continue; }
-            if (/\d/.test(ch)) { out.push(decimalDigitToNanpaToken(ch)); continue; }
+            if (/\d/.test(ch)) { out.push(DIGIT_TO_TOKEN[ch]); continue; }
             throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
           }
         }
@@ -1090,15 +948,8 @@
 
         if (DIGIT_TOKENS.has(t)) {
           afterStartingNe = false;
-
-          if (getRelaxedNanpaLinjanProperNamesEnabled() && RELAXED_TOKEN_TO_RENDER_WORDS[t]) {
-            out.push(...RELAXED_TOKEN_TO_RENDER_WORDS[t]);
-            continue;
-          }
-
-          const strictToken = RELAXED_TOKEN_TO_STRICT_TOKEN[t] || t;
-          const digitWord = TOKEN_TO_DIGIT_WORD[strictToken];
-          if (strictToken === "NI" || strictToken === "NA" || strictToken === "NU") out.push(N_WORD, digitWord);
+          const digitWord = TOKEN_TO_DIGIT_WORD[t];
+          if (t === "NI" || t === "NA" || t === "NU") out.push(N_WORD, digitWord);
           else out.push(digitWord, E_WORD);
           continue;
         }
@@ -1163,17 +1014,11 @@
     const ABBREV_CP_NANPA = 0xF193D;
     const ABBREV_CP_NENA  = 0xF1940;
     const ABBREV_CP_EN    = 0xF190A;
-    const ABBREV_CP_ALA   = 0xF1902;
-    const ABBREV_CP_IKE   = 0xF190D;
-    const ABBREV_CP_UTA   = 0xF1970;
 
     const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
       ABBREV_CP_NANPA,
       ABBREV_CP_EN,
-      ABBREV_CP_NENA,
-      ABBREV_CP_ALA,
-      ABBREV_CP_IKE,
-      ABBREV_CP_UTA
+      ABBREV_CP_NENA
     ]);
 
     function abbreviateNumericCartoucheCps(cps) {
@@ -1528,46 +1373,6 @@
     //display proper name
     const elProperNameText = document.getElementById("properNameText");
 
-    let tokiPonaVoicePromise = null;
-
-    async function getTokiPonaVoice() {
-      if (!tokiPonaVoicePromise) {
-        tokiPonaVoicePromise = import("./js/toki-pona-voice-api.js?v=21")
-          .then(mod => mod.createTokiPonaVoice());
-      }
-      return tokiPonaVoicePromise;
-    }
-
-    function getCurrentNanpaLinjanProperNameForAudio() {
-      return String(elProperNameText?.textContent ?? "").trim();
-    }
-
-    function wireProperNameAudioButton() {
-      const btn = document.getElementById("btnPlayProperNameAudio");
-      if (!btn) return;
-
-      btn.addEventListener("click", async () => {
-        const properName = getCurrentNanpaLinjanProperNameForAudio();
-
-        if (!properName) {
-          if (elDisplayLive) elDisplayLive.textContent = "No nanpa-linja-n proper name to play.";
-          return;
-        }
-
-        try {
-          btn.disabled = true;
-          const voice = await getTokiPonaVoice();
-          await voice.play(properName);
-          if (elDisplayLive) elDisplayLive.textContent = `Played audio for ${properName}.`;
-        } catch (err) {
-          if (elDisplayLive) elDisplayLive.textContent = `Audio error: ${err?.message ?? String(err)}`;
-          alert(`Audio error: ${err?.message ?? String(err)}`);
-        } finally {
-          btn.disabled = false;
-        }
-      });
-    }
-
     const smallSet = getSmallCodepointsSet();
 
     const DISPLAY_LARGE_PX = 92;
@@ -1809,15 +1614,6 @@
 
     function handleKeydown(e) {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
-
-      const targetId = String(e.target?.id ?? "");
-      if (
-        targetId === "nanpaLinjanProperNameMode" ||
-        targetId === "numericCartoucheAbbrevEnable" ||
-        targetId === "btnPlayProperNameAudio"
-      ) {
-        return;
-      }
 
       const k = e.key;
 
@@ -2163,12 +1959,9 @@
       const setByQuery = loadCartoucheDisplayModeFromQueryParam();
       if (!setByQuery) loadCartoucheDisplayModeFromStorage();
       applyNumericCartoucheAbbrevFromStorage();
-      applyNanpaLinjanProperNameModeFromStorage();
 
       wireCartoucheDisplayRadios();
       wireNumericCartoucheAbbrevToggle();
-      wireNanpaLinjanProperNameModeSelect();
-      wireProperNameAudioButton();
       updateCrossLinksWithCartoucheDisplay();
 
       buildKeypad();
