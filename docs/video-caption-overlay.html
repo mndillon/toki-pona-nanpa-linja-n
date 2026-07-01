@@ -691,6 +691,37 @@ window.SitelenRenderer = SitelenRenderer;
   const AUTOSAVE_MS = 400;
 
   const SPACING_PRESETS = Object.freeze(["default", "compact", "comfortable"]);
+  const NANPA_LINJAN_MODES = Object.freeze(["strict", "relaxed"]);
+
+  function normalizeNanpaLinjanMode(value){
+    const v = String(value ?? "").trim().toLowerCase();
+    return NANPA_LINJAN_MODES.includes(v) ? v : "strict";
+  }
+
+  function getItemNanpaLinjanMode(item){
+    return normalizeNanpaLinjanMode(
+      item?.nanpaLinjanMode ??
+      "strict"
+    );
+  }
+
+  function isItemRelaxedNanpaLinjanMode(item){
+    return getItemNanpaLinjanMode(item) === "relaxed";
+  }
+
+  function makeNanpaLinjanModeSelect(value, onChange){
+    const sel = document.createElement("select");
+    const current = normalizeNanpaLinjanMode(value);
+    for (const [val, label] of [["strict", "Strict"], ["relaxed", "Relaxed"]]){
+      const o = document.createElement("option");
+      o.value = val;
+      o.textContent = label;
+      if (val === current) o.selected = true;
+      sel.appendChild(o);
+    }
+    sel.addEventListener("change", () => onChange(normalizeNanpaLinjanMode(sel.value)));
+    return sel;
+  }
 
   function normalizeSpacingPreset(value){
     const v = String(value ?? "").trim().toLowerCase();
@@ -3388,6 +3419,7 @@ window.SitelenRenderer = SitelenRenderer;
           align: "center",
           spacingPreset: "default",
           abbreviateNumericCartouches: true,
+          nanpaLinjanMode: "relaxed",
           preserveCenterOnAutoResize: false,
           color: "#111111",
           opacity: 1,
@@ -3488,6 +3520,7 @@ window.SitelenRenderer = SitelenRenderer;
       ? project.defaults.item
       : {};
     const importedDefaultsHadAbbreviateNumericCartouches = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "abbreviateNumericCartouches");
+    const importedDefaultsHadNanpaLinjanMode = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "nanpaLinjanMode");
     project.schemaVersion = SCHEMA_VERSION;
 
     project.video = { ...base.video, ...(project.video && typeof project.video === "object" ? project.video : {}) };
@@ -3505,6 +3538,9 @@ window.SitelenRenderer = SitelenRenderer;
     project.defaults.item.abbreviateNumericCartouches = importedDefaultsHadAbbreviateNumericCartouches
       ? !!project.defaults.item.abbreviateNumericCartouches
       : false;
+    project.defaults.item.nanpaLinjanMode = importedDefaultsHadNanpaLinjanMode
+      ? normalizeNanpaLinjanMode(project.defaults.item.nanpaLinjanMode)
+      : "strict";
     project.defaults.item.preserveCenterOnAutoResize = !!(project.defaults.item.preserveCenterOnAutoResize ?? false);
     project.defaults.item.ignoreUnknownText = !!project.defaults.item.ignoreUnknownText;
 
@@ -3521,12 +3557,16 @@ window.SitelenRenderer = SitelenRenderer;
       for (const item of seg.items){
         if (!item || typeof item !== "object") continue;
         const itemHadAbbreviateNumericCartouches = Object.prototype.hasOwnProperty.call(item, "abbreviateNumericCartouches");
+        const itemHadNanpaLinjanMode = Object.prototype.hasOwnProperty.call(item, "nanpaLinjanMode");
         item.sitelenFontFamily = normalizeSitelenFontFamilyKey(item.sitelenFontFamily);
         item.fontFamily = normalizeLiteralFontFamily(item.fontFamily, item.sitelenFontFamily);
         item.spacingPreset = normalizeSpacingPreset(item.spacingPreset ?? project.defaults.item.spacingPreset);
         item.abbreviateNumericCartouches = itemHadAbbreviateNumericCartouches
           ? !!item.abbreviateNumericCartouches
           : false;
+        item.nanpaLinjanMode = itemHadNanpaLinjanMode
+          ? normalizeNanpaLinjanMode(item.nanpaLinjanMode)
+          : "strict";
         item.preserveCenterOnAutoResize = !!(item.preserveCenterOnAutoResize ?? false);
         item.ignoreUnknownText = !!item.ignoreUnknownText;
       }
@@ -3587,6 +3627,7 @@ window.SitelenRenderer = SitelenRenderer;
         item0.fontFamily = normalizeLiteralFontFamily(item0.fontFamily, item0.sitelenFontFamily);
         item0.spacingPreset = normalizeSpacingPreset(item0.spacingPreset ?? App.project.defaults.item.spacingPreset);
         item0.abbreviateNumericCartouches = !!(item0.abbreviateNumericCartouches ?? false);
+        item0.nanpaLinjanMode = normalizeNanpaLinjanMode(item0.nanpaLinjanMode ?? "strict");
         item0.preserveCenterOnAutoResize = !!(item0.preserveCenterOnAutoResize ?? false);
         item0.color = normalizeColor(item0.color, App.project.defaults.item.color);
         item0.haloColor = normalizeColor(item0.haloColor, App.project.defaults.item.haloColor);
@@ -3641,6 +3682,7 @@ window.SitelenRenderer = SitelenRenderer;
       align: d.align,
       spacingPreset: normalizeSpacingPreset(d.spacingPreset),
       abbreviateNumericCartouches: !!d.abbreviateNumericCartouches,
+      nanpaLinjanMode: normalizeNanpaLinjanMode(d.nanpaLinjanMode),
       preserveCenterOnAutoResize: !!d.preserveCenterOnAutoResize,
       color: d.color,
       opacity: d.opacity,
@@ -4106,6 +4148,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(d.sitelenFontFamily, (v) => { d.sitelenFontFamily = v; d.fontFamily = normalizeLiteralFontFamily(d.fontFamily, v); defaultsChanged(); })));
     sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(d.fontFamily, d.sitelenFontFamily, (v) => { d.fontFamily = v; defaultsChanged(); })));
     sec.appendChild(makeField("Default abbreviate numeric cartouche output", makeCheckbox(!!d.abbreviateNumericCartouches, (checked) => { d.abbreviateNumericCartouches = checked; defaultsChanged(); })));
+    sec.appendChild(makeField("Default nanpa-linja-n mode", makeNanpaLinjanModeSelect(d.nanpaLinjanMode, (v) => { d.nanpaLinjanMode = v; defaultsChanged(); })));
     sec.appendChild(makeField("Font size", fs));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], d.align, (v) => { d.align = v; defaultsChanged(); })));
     sec.appendChild(makeField("Spacing", makeSpacingPresetSelect(d.spacingPreset, (v) => { d.spacingPreset = v; defaultsChanged(); })));
@@ -4140,6 +4183,7 @@ window.SitelenRenderer = SitelenRenderer;
         item.align = d.align;
         item.spacingPreset = normalizeSpacingPreset(d.spacingPreset);
         item.abbreviateNumericCartouches = !!d.abbreviateNumericCartouches;
+        item.nanpaLinjanMode = normalizeNanpaLinjanMode(d.nanpaLinjanMode);
         item.preserveCenterOnAutoResize = !!d.preserveCenterOnAutoResize;
         item.color = d.color;
         item.opacity = d.opacity;
@@ -4235,6 +4279,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(item.sitelenFontFamily, (v) => patchActiveItem({ sitelenFontFamily: v, fontFamily: normalizeLiteralFontFamily(item.fontFamily, v) }, true))));
     sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(item.fontFamily, item.sitelenFontFamily, (v) => patchActiveItem({ fontFamily: v }, true))));
     sec.appendChild(makeField("Abbreviate numeric cartouche output", makeCheckbox(!!item.abbreviateNumericCartouches, (checked) => patchActiveItem({ abbreviateNumericCartouches: checked }, true))));
+    sec.appendChild(makeField("nanpa-linja-n mode", makeNanpaLinjanModeSelect(getItemNanpaLinjanMode(item), (v) => patchActiveItem({ nanpaLinjanMode: v }, true))));
     sec.appendChild(makeField("Font size", makeFontSizeControl(item.fontSize, (v) => patchActiveItem({ fontSize: Math.max(6, v) }, true))));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], item.align, (v) => patchActiveItem({ align: v }, true))));
     sec.appendChild(makeField("Spacing", makeSpacingPresetSelect(getItemSpacingPreset(item), (v) => patchActiveItem({ spacingPreset: v }, true))));
@@ -4490,6 +4535,9 @@ window.SitelenRenderer = SitelenRenderer;
     }
     if (Object.prototype.hasOwnProperty.call(nextPatch, "spacingPreset")){
       nextPatch.spacingPreset = normalizeSpacingPreset(nextPatch.spacingPreset);
+    }
+    if (Object.prototype.hasOwnProperty.call(nextPatch, "nanpaLinjanMode")){
+      nextPatch.nanpaLinjanMode = normalizeNanpaLinjanMode(nextPatch.nanpaLinjanMode);
     }
     Object.assign(item, nextPatch);
     item.updatedAt = nowIso();
@@ -5149,6 +5197,7 @@ window.SitelenRenderer = SitelenRenderer;
       String(item.align || 'left'),
       getItemSpacingPreset(item),
       !!item.abbreviateNumericCartouches,
+      getItemNanpaLinjanMode(item),
       !!item.preserveCenterOnAutoResize,
       String(item.color || ''),
       Number(item.opacity ?? 1),
@@ -5184,6 +5233,8 @@ window.SitelenRenderer = SitelenRenderer;
         numericMode: 'compat',
         mixedStyle: 'short',
         abbreviateNumericCartouches: false,
+        relaxedNanpaLinjanParsing: false,
+        relaxedNanpaLinjanRendering: false,
         cartoucheCommaTallyMarks: true,
         cartoucheTallyMode: 'ucsur'
       }
@@ -5310,6 +5361,8 @@ window.SitelenRenderer = SitelenRenderer;
           numericMode: 'compat',
           mixedStyle: 'short',
           abbreviateNumericCartouches: !!item.abbreviateNumericCartouches,
+          relaxedNanpaLinjanParsing: isItemRelaxedNanpaLinjanMode(item),
+          relaxedNanpaLinjanRendering: isItemRelaxedNanpaLinjanMode(item),
           showUnknownText: !item.ignoreUnknownText,
           ...buildItemCartoucheTallyParserConfig(item)
         }
