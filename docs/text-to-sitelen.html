@@ -660,6 +660,14 @@ body.shellReady {
             aria-label="Read input audio, ignore quoted text and unknowns"
           >🤖🔊</button>
 
+          <button
+            id="appBtnStopTextAudioMain"
+            class="audio-button"
+            type="button"
+            title="Stop input audio"
+            aria-label="Stop input audio"
+          >⏹️</button>
+
           <label class="textAudioInlineControl" for="appTextAudioSpeedSelMain">
             <span>Audio speed</span>
             <select id="appTextAudioSpeedSelMain" class="textAudioSpeedSelect" aria-label="Audio speed"></select>
@@ -1038,6 +1046,14 @@ nanpa #~WI.
         title="Read input audio, ignore quoted text and unknowns"
         aria-label="Read input audio, ignore quoted text and unknowns"
       >🤖🔊</button>
+
+      <button
+        id="appBtnStopTextAudioPop"
+        class="audio-button"
+        type="button"
+        title="Stop input audio"
+        aria-label="Stop input audio"
+      >⏹️</button>
 
       <label class="textAudioInlineControl" for="appTextAudioSpeedSelPop">
         <span>Audio speed</span>
@@ -6553,6 +6569,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
 
     let textToSitelenVoicePromise = null;
     let textAudioBusy = false;
+    let textAudioPlaySeq = 0;
 
     function normalizeTextAudioSpeed(value) {
       const n = Number(value);
@@ -6975,12 +6992,25 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       return sample.join("; ");
     }
 
+    function stopTextToSitelenAudio() {
+      textAudioPlaySeq += 1;
+      const voicePromise = textToSitelenVoicePromise;
+      if (voicePromise) {
+        voicePromise
+          .then(voice => { try { voice?.stop?.(); } catch (_) {} })
+          .catch(() => {});
+      }
+      announceStatus("Audio stopped.");
+    }
+
     async function playTextToSitelenAudio() {
       if (textAudioBusy) return;
+      const playSeq = ++textAudioPlaySeq;
       textAudioBusy = true;
       setTextAudioButtonsDisabled(true);
       try {
         const prepared = await ensureTextAudioRenderPlan();
+        if (playSeq !== textAudioPlaySeq) return;
         const plan = prepared?.plan;
         if (!plan) {
           announceStatus("Nothing to read.");
@@ -6997,6 +7027,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
 
         const option = selectedTextAudioOption();
         const voice = await getTextToSitelenVoice();
+        if (playSeq !== textAudioPlaySeq) return;
         const chunks = [];
         let sampleRate = null;
         let sawSpeech = false;
@@ -7020,6 +7051,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
             pauseScale: option.value,
             syllableGapSeconds: option.syllableGapSeconds
           });
+          if (playSeq !== textAudioPlaySeq) return;
 
           if (sampleRate != null && rendered.sampleRate !== sampleRate) {
             throw new Error("Audio sample-rate changed between rendered lines.");
@@ -7036,6 +7068,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           return;
         }
 
+        if (playSeq !== textAudioPlaySeq) return;
         voice.playSamples(concatTextAudioChunks(chunks), sampleRate);
         const skippedSummary = summarizeSkippedAudio(skipped);
         announceStatus(`Playing input audio. Lines read: ${spokenLineCount}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
@@ -7050,6 +7083,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     function wireTextAudioControls() {
       document.getElementById("appBtnPlayTextAudioMain")?.addEventListener("click", playTextToSitelenAudio);
       document.getElementById("appBtnPlayTextAudioPop")?.addEventListener("click", playTextToSitelenAudio);
+      document.getElementById("appBtnStopTextAudioMain")?.addEventListener("click", stopTextToSitelenAudio);
+      document.getElementById("appBtnStopTextAudioPop")?.addEventListener("click", stopTextToSitelenAudio);
     }
 
     async function renderFromTextarea() {
