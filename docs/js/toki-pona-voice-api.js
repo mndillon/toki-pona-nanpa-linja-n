@@ -50,7 +50,7 @@ function normalizePauseScale(value) {
 function normalizeSyllableGapSeconds(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return DEFAULT_VOICE_OPTIONS.syllableGapSeconds;
-  return Math.min(0.6, Math.max(0.0, n));
+  return Math.min(1.5, Math.max(0.0, n));
 }
 
 function scaledPauseSeconds(seconds, opts = {}) {

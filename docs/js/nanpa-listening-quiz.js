@@ -14,10 +14,10 @@ const AVERAGE_TRIMMED_OUTER_SILENCE_SECONDS = 0.467;
 const AUDIO_PAUSE_SCALE_OPTIONS = [
   // Normal keeps the fully trimmed WAVs tight: no extra syllable silence.
   { value: 1.00, label: 'Normal', syllableGapSeconds: 0.000 },
-  // Slow restores roughly one quarter of the average removed outer silence.
-  { value: 2.25, label: 'Slow', syllableGapSeconds: Number((AVERAGE_TRIMMED_OUTER_SILENCE_SECONDS * 0.25).toFixed(3)) },
-  // Very slow restores roughly one half of the average removed outer silence.
-  { value: 4.00, label: 'Very slow', syllableGapSeconds: Number((AVERAGE_TRIMMED_OUTER_SILENCE_SECONDS * 0.50).toFixed(3)) }
+  // Slow is double the previous 0.350 s gap.
+  { value: 2.25, label: 'Slow', syllableGapSeconds: 0.700 },
+  // Very slow is double the previous 0.701 s gap.
+  { value: 4.00, label: 'Very slow', syllableGapSeconds: 1.402 }
 ];
 
 const PROPER_NAME_MODE_STORAGE_KEY = 'nanpaListeningQuizProperNameMode';
@@ -367,7 +367,7 @@ async function getNanpaParser() {
 
 async function getVoice() {
   if (!voicePromise) {
-    voicePromise = import('./toki-pona-voice-api.js?v=21').then(m => m.createTokiPonaVoice());
+    voicePromise = import('./toki-pona-voice-api.js?v=23').then(m => m.createTokiPonaVoice());
   }
   return voicePromise;
 }
