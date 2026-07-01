@@ -9,7 +9,7 @@ const LARGE_TINY_FONT_SIZE = 22;
 const SMALL_TINY_FONT_SIZE = 8;
 const CARTOUCHE_RENDER_OPTS = { padding: 8, border: 1, cornerRadius: 10, letterGap: 2 };
 const AUDIO_PAUSE_SCALE_STORAGE_KEY = 'nanpaListeningQuizAudioPauseScale';
-const AUDIO_PAUSE_SCALE_DEFAULT = 4.00;//very slow
+const AUDIO_PAUSE_SCALE_DEFAULT = 2.25;//slow
 const AVERAGE_TRIMMED_OUTER_SILENCE_SECONDS = 0.467;
 const AUDIO_PAUSE_SCALE_OPTIONS = [
   // Normal adds a small gap between assembled syllable units.
@@ -21,7 +21,7 @@ const AUDIO_PAUSE_SCALE_OPTIONS = [
 ];
 
 const PROPER_NAME_MODE_STORAGE_KEY = 'nanpaListeningQuizProperNameMode';
-const PROPER_NAME_MODE_DEFAULT = 'strict';
+const PROPER_NAME_MODE_DEFAULT = 'relaxed';
 const PROPER_NAME_MODE_OPTIONS = [
   { value: 'strict', label: 'strict' },
   { value: 'relaxed', label: 'relaxed' }
