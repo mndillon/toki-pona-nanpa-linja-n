@@ -631,7 +631,7 @@ function rowForItem(item) {
   row.innerHTML = `
     <div class="nanpaListenQuizControls">
       <button class="audio-button nanpaListenQuizAudio" type="button" title="Play audio" aria-label="Play audio">🤖🔊</button>
-      <input class="mono nanpaListenQuizGuess" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="Your decimal value or nanpa-linja-n proper-name guess" placeholder="enter the decimal value" />
+      <input class="mono nanpaListenQuizGuess" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="Your decimal value or nanpa-linja-n proper-name guess" placeholder="press enter to start audio, then enter the decimal value or the proper name" />
       <button class="nanpaListenQuizCheck" type="button">Check</button>
       <button class="nanpaListenQuizRevealButton" type="button" hidden>Reveal</button>
     </div>
