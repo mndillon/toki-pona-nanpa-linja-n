@@ -1437,442 +1437,469 @@ export const REFERENCE_AUDIO_MANIFEST = {
   },
   "syllables": {
     "a": {
-      "syllable": "a",
+      "duration_ms": null,
       "file": "syllables/a.wav",
-      "source_word": "a",
-      "duration_ms": 105.9
+      "syllable": "a"
     },
     "an": {
-      "syllable": "an",
+      "duration_ms": null,
       "file": "syllables/an.wav",
-      "source_word": "anpa",
-      "duration_ms": 260.0
+      "syllable": "an"
     },
     "e": {
-      "syllable": "e",
+      "duration_ms": null,
       "file": "syllables/e.wav",
-      "source_word": "e",
-      "duration_ms": 260.0
+      "syllable": "e"
     },
     "en": {
-      "syllable": "en",
+      "duration_ms": null,
       "file": "syllables/en.wav",
-      "source_word": "en",
-      "duration_ms": 260.0
+      "syllable": "en"
     },
     "i": {
-      "syllable": "i",
+      "duration_ms": null,
       "file": "syllables/i.wav",
-      "source_word": "ijo",
-      "duration_ms": 209.4
+      "syllable": "i"
     },
     "in": {
-      "syllable": "in",
+      "duration_ms": null,
       "file": "syllables/in.wav",
-      "source_word": "insa",
-      "duration_ms": 260.0
+      "syllable": "in"
     },
     "ja": {
-      "syllable": "ja",
+      "duration_ms": null,
       "file": "syllables/ja.wav",
-      "source_word": "jaki",
-      "duration_ms": 218.3
+      "syllable": "ja"
     },
     "jan": {
-      "syllable": "jan",
+      "duration_ms": null,
       "file": "syllables/jan.wav",
-      "source_word": "jan",
-      "duration_ms": 260.0
+      "syllable": "jan"
     },
     "je": {
-      "syllable": "je",
+      "duration_ms": null,
       "file": "syllables/je.wav",
-      "source_word": "jelo",
-      "duration_ms": 242.7
+      "syllable": "je"
+    },
+    "jen": {
+      "duration_ms": null,
+      "file": "syllables/jen.wav",
+      "syllable": "jen"
     },
     "jo": {
-      "syllable": "jo",
+      "duration_ms": null,
       "file": "syllables/jo.wav",
-      "source_word": "jo",
-      "duration_ms": 260.0
+      "syllable": "jo"
+    },
+    "jon": {
+      "duration_ms": null,
+      "file": "syllables/jon.wav",
+      "syllable": "jon"
     },
     "ju": {
-      "syllable": "ju",
+      "duration_ms": null,
       "file": "syllables/ju.wav",
-      "source_word": "majuna",
-      "duration_ms": 214.3
+      "syllable": "ju"
+    },
+    "jun": {
+      "duration_ms": null,
+      "file": "syllables/jun.wav",
+      "syllable": "jun"
     },
     "ka": {
-      "syllable": "ka",
+      "duration_ms": null,
       "file": "syllables/ka.wav",
-      "source_word": "kala",
-      "duration_ms": 226.3
+      "syllable": "ka"
+    },
+    "kan": {
+      "duration_ms": null,
+      "file": "syllables/kan.wav",
+      "syllable": "kan"
     },
     "ke": {
-      "syllable": "ke",
+      "duration_ms": null,
       "file": "syllables/ke.wav",
-      "source_word": "ike",
-      "duration_ms": 253.1
+      "syllable": "ke"
     },
     "ken": {
-      "syllable": "ken",
+      "duration_ms": null,
       "file": "syllables/ken.wav",
-      "source_word": "ken",
-      "duration_ms": 260.0
+      "syllable": "ken"
     },
     "ki": {
-      "syllable": "ki",
+      "duration_ms": null,
       "file": "syllables/ki.wav",
-      "source_word": "kili",
-      "duration_ms": 260.0
+      "syllable": "ki"
     },
     "kin": {
-      "syllable": "kin",
+      "duration_ms": null,
       "file": "syllables/kin.wav",
-      "source_word": "kin",
-      "duration_ms": 260.0
+      "syllable": "kin"
     },
     "ko": {
-      "syllable": "ko",
+      "duration_ms": null,
       "file": "syllables/ko.wav",
-      "source_word": "ko",
-      "duration_ms": 260.0
+      "syllable": "ko"
     },
     "kon": {
-      "syllable": "kon",
+      "duration_ms": null,
       "file": "syllables/kon.wav",
-      "source_word": "kon",
-      "duration_ms": 260.0
+      "syllable": "kon"
     },
     "ku": {
-      "syllable": "ku",
+      "duration_ms": null,
       "file": "syllables/ku.wav",
-      "source_word": "ku",
-      "duration_ms": 260.0
+      "syllable": "ku"
+    },
+    "kun": {
+      "duration_ms": null,
+      "file": "syllables/kun.wav",
+      "syllable": "kun"
     },
     "la": {
-      "syllable": "la",
+      "duration_ms": null,
       "file": "syllables/la.wav",
-      "source_word": "la",
-      "duration_ms": 260.0
+      "syllable": "la"
     },
     "lan": {
-      "syllable": "lan",
+      "duration_ms": null,
       "file": "syllables/lan.wav",
-      "source_word": "lanpan",
-      "duration_ms": 260.0
+      "syllable": "lan"
     },
     "le": {
-      "syllable": "le",
+      "duration_ms": null,
       "file": "syllables/le.wav",
-      "source_word": "leko",
-      "duration_ms": 260.0
+      "syllable": "le"
     },
     "len": {
-      "syllable": "len",
+      "duration_ms": null,
       "file": "syllables/len.wav",
-      "source_word": "len",
-      "duration_ms": 260.0
+      "syllable": "len"
     },
     "li": {
-      "syllable": "li",
+      "duration_ms": null,
       "file": "syllables/li.wav",
-      "source_word": "li",
-      "duration_ms": 260.0
+      "syllable": "li"
     },
     "lin": {
-      "syllable": "lin",
+      "duration_ms": null,
       "file": "syllables/lin.wav",
-      "source_word": "linja",
-      "duration_ms": 260.0
+      "syllable": "lin"
     },
     "lo": {
-      "syllable": "lo",
+      "duration_ms": null,
       "file": "syllables/lo.wav",
-      "source_word": "loje",
-      "duration_ms": 260.0
+      "syllable": "lo"
     },
     "lon": {
-      "syllable": "lon",
+      "duration_ms": null,
       "file": "syllables/lon.wav",
-      "source_word": "lon",
-      "duration_ms": 260.0
+      "syllable": "lon"
     },
     "lu": {
-      "syllable": "lu",
+      "duration_ms": null,
       "file": "syllables/lu.wav",
-      "source_word": "luka",
-      "duration_ms": 260.0
+      "syllable": "lu"
+    },
+    "lun": {
+      "duration_ms": null,
+      "file": "syllables/lun.wav",
+      "syllable": "lun"
     },
     "ma": {
-      "syllable": "ma",
+      "duration_ms": null,
       "file": "syllables/ma.wav",
-      "source_word": "ma",
-      "duration_ms": 260.0
+      "syllable": "ma"
+    },
+    "man": {
+      "duration_ms": null,
+      "file": "syllables/man.wav",
+      "syllable": "man"
     },
     "me": {
-      "syllable": "me",
+      "duration_ms": null,
       "file": "syllables/me.wav",
-      "source_word": "meli",
-      "duration_ms": 260.0
+      "syllable": "me"
+    },
+    "men": {
+      "duration_ms": null,
+      "file": "syllables/men.wav",
+      "syllable": "men"
     },
     "mi": {
-      "syllable": "mi",
+      "duration_ms": null,
       "file": "syllables/mi.wav",
-      "source_word": "mi",
-      "duration_ms": 260.0
+      "syllable": "mi"
+    },
+    "min": {
+      "duration_ms": null,
+      "file": "syllables/min.wav",
+      "syllable": "min"
     },
     "mo": {
-      "syllable": "mo",
+      "duration_ms": null,
       "file": "syllables/mo.wav",
-      "source_word": "moku",
-      "duration_ms": 260.0
+      "syllable": "mo"
     },
     "mon": {
-      "syllable": "mon",
+      "duration_ms": null,
       "file": "syllables/mon.wav",
-      "source_word": "monsi",
-      "duration_ms": 259.9
+      "syllable": "mon"
     },
     "mu": {
-      "syllable": "mu",
+      "duration_ms": null,
       "file": "syllables/mu.wav",
-      "source_word": "mu",
-      "duration_ms": 260.0
+      "syllable": "mu"
     },
     "mun": {
-      "syllable": "mun",
+      "duration_ms": null,
       "file": "syllables/mun.wav",
-      "source_word": "mun",
-      "duration_ms": 260.0
+      "syllable": "mun"
     },
     "n": {
-      "syllable": "n",
+      "duration_ms": null,
       "file": "syllables/n.wav",
-      "source_word": "n",
-      "duration_ms": 260.0
+      "syllable": "n"
     },
     "na": {
-      "syllable": "na",
+      "duration_ms": null,
       "file": "syllables/na.wav",
-      "source_word": "nasa",
-      "duration_ms": 260.0
+      "syllable": "na"
     },
     "nan": {
-      "syllable": "nan",
+      "duration_ms": null,
       "file": "syllables/nan.wav",
-      "source_word": "nanpa",
-      "duration_ms": 260.0
+      "syllable": "nan"
     },
     "ne": {
-      "syllable": "ne",
+      "duration_ms": null,
       "file": "syllables/ne.wav",
-      "source_word": "nena",
-      "duration_ms": 260.0
+      "syllable": "ne"
+    },
+    "nen": {
+      "duration_ms": null,
+      "file": "syllables/nen.wav",
+      "syllable": "nen"
     },
     "ni": {
-      "syllable": "ni",
+      "duration_ms": null,
       "file": "syllables/ni.wav",
-      "source_word": "ni",
-      "duration_ms": 260.0
+      "syllable": "ni"
+    },
+    "nin": {
+      "duration_ms": null,
+      "file": "syllables/nin.wav",
+      "syllable": "nin"
     },
     "no": {
-      "syllable": "no",
+      "duration_ms": null,
       "file": "syllables/no.wav",
-      "source_word": "noka",
-      "duration_ms": 260.0
+      "syllable": "no"
+    },
+    "non": {
+      "duration_ms": null,
+      "file": "syllables/non.wav",
+      "syllable": "non"
     },
     "nu": {
-      "syllable": "nu",
+      "duration_ms": null,
       "file": "syllables/nu.wav",
-      "source_word": "anu",
-      "duration_ms": 208.5
+      "syllable": "nu"
+    },
+    "nun": {
+      "duration_ms": null,
+      "file": "syllables/nun.wav",
+      "syllable": "nun"
     },
     "o": {
-      "syllable": "o",
+      "duration_ms": null,
       "file": "syllables/o.wav",
-      "source_word": "o",
-      "duration_ms": 260.0
+      "syllable": "o"
+    },
+    "on": {
+      "duration_ms": null,
+      "file": "syllables/on.wav",
+      "syllable": "on"
     },
     "pa": {
-      "syllable": "pa",
+      "duration_ms": null,
       "file": "syllables/pa.wav",
-      "source_word": "pake",
-      "duration_ms": 207.8
+      "syllable": "pa"
     },
     "pan": {
-      "syllable": "pan",
+      "duration_ms": null,
       "file": "syllables/pan.wav",
-      "source_word": "pan",
-      "duration_ms": 260.0
+      "syllable": "pan"
     },
     "pe": {
-      "syllable": "pe",
+      "duration_ms": null,
       "file": "syllables/pe.wav",
-      "source_word": "lape",
-      "duration_ms": 260.0
+      "syllable": "pe"
     },
     "pen": {
-      "syllable": "pen",
+      "duration_ms": null,
       "file": "syllables/pen.wav",
-      "source_word": "open",
-      "duration_ms": 198.1
+      "syllable": "pen"
     },
     "pi": {
-      "syllable": "pi",
+      "duration_ms": null,
       "file": "syllables/pi.wav",
-      "source_word": "pi",
-      "duration_ms": 260.0
+      "syllable": "pi"
     },
     "pin": {
-      "syllable": "pin",
+      "duration_ms": null,
       "file": "syllables/pin.wav",
-      "source_word": "sinpin",
-      "duration_ms": 260.0
+      "syllable": "pin"
     },
     "po": {
-      "syllable": "po",
+      "duration_ms": null,
       "file": "syllables/po.wav",
-      "source_word": "poka",
-      "duration_ms": 180.6
+      "syllable": "po"
+    },
+    "pon": {
+      "duration_ms": null,
+      "file": "syllables/pon.wav",
+      "syllable": "pon"
     },
     "pu": {
-      "syllable": "pu",
+      "duration_ms": null,
       "file": "syllables/pu.wav",
-      "source_word": "pu",
-      "duration_ms": 260.0
+      "syllable": "pu"
+    },
+    "pun": {
+      "duration_ms": null,
+      "file": "syllables/pun.wav",
+      "syllable": "pun"
     },
     "sa": {
-      "syllable": "sa",
+      "duration_ms": null,
       "file": "syllables/sa.wav",
-      "source_word": "sama",
-      "duration_ms": 260.0
+      "syllable": "sa"
     },
     "san": {
-      "syllable": "san",
+      "duration_ms": null,
       "file": "syllables/san.wav",
-      "source_word": "kijetesantakalu",
-      "duration_ms": 189.2
+      "syllable": "san"
     },
     "se": {
-      "syllable": "se",
+      "duration_ms": null,
       "file": "syllables/se.wav",
-      "source_word": "seli",
-      "duration_ms": 260.0
+      "syllable": "se"
+    },
+    "sen": {
+      "duration_ms": null,
+      "file": "syllables/sen.wav",
+      "syllable": "sen"
     },
     "si": {
-      "syllable": "si",
+      "duration_ms": null,
       "file": "syllables/si.wav",
-      "source_word": "sike",
-      "duration_ms": 260.0
+      "syllable": "si"
     },
     "sin": {
-      "syllable": "sin",
+      "duration_ms": null,
       "file": "syllables/sin.wav",
-      "source_word": "sin",
-      "duration_ms": 260.0
+      "syllable": "sin"
     },
     "so": {
-      "syllable": "so",
+      "duration_ms": null,
       "file": "syllables/so.wav",
-      "source_word": "soko",
-      "duration_ms": 260.0
+      "syllable": "so"
+    },
+    "son": {
+      "duration_ms": null,
+      "file": "syllables/son.wav",
+      "syllable": "son"
     },
     "su": {
-      "syllable": "su",
+      "duration_ms": null,
       "file": "syllables/su.wav",
-      "source_word": "suli",
-      "duration_ms": 260.0
+      "syllable": "su"
     },
     "sun": {
-      "syllable": "sun",
+      "duration_ms": null,
       "file": "syllables/sun.wav",
-      "source_word": "esun",
-      "duration_ms": 260.0
+      "syllable": "sun"
     },
     "ta": {
-      "syllable": "ta",
+      "duration_ms": null,
       "file": "syllables/ta.wav",
-      "source_word": "taso",
-      "duration_ms": 260.0
+      "syllable": "ta"
     },
     "tan": {
-      "syllable": "tan",
+      "duration_ms": null,
       "file": "syllables/tan.wav",
-      "source_word": "tan",
-      "duration_ms": 260.0
+      "syllable": "tan"
     },
     "te": {
-      "syllable": "te",
+      "duration_ms": null,
       "file": "syllables/te.wav",
-      "source_word": "telo",
-      "duration_ms": 260.0
+      "syllable": "te"
     },
     "ten": {
-      "syllable": "ten",
+      "duration_ms": null,
       "file": "syllables/ten.wav",
-      "source_word": "tenpo",
-      "duration_ms": 260.0
+      "syllable": "ten"
     },
     "to": {
-      "syllable": "to",
+      "duration_ms": null,
       "file": "syllables/to.wav",
-      "source_word": "toki",
-      "duration_ms": 211.4
+      "syllable": "to"
     },
     "ton": {
-      "syllable": "ton",
+      "duration_ms": null,
       "file": "syllables/ton.wav",
-      "source_word": "tonsi",
-      "duration_ms": 260.0
+      "syllable": "ton"
     },
     "tu": {
-      "syllable": "tu",
+      "duration_ms": null,
       "file": "syllables/tu.wav",
-      "source_word": "tu",
-      "duration_ms": 260.0
+      "syllable": "tu"
+    },
+    "tun": {
+      "duration_ms": null,
+      "file": "syllables/tun.wav",
+      "syllable": "tun"
     },
     "u": {
-      "syllable": "u",
+      "duration_ms": null,
       "file": "syllables/u.wav",
-      "source_word": "uta",
-      "duration_ms": 215.2
+      "syllable": "u"
     },
     "un": {
-      "syllable": "un",
+      "duration_ms": null,
       "file": "syllables/un.wav",
-      "source_word": "unpa",
-      "duration_ms": 260.0
+      "syllable": "un"
     },
     "wa": {
-      "syllable": "wa",
+      "duration_ms": null,
       "file": "syllables/wa.wav",
-      "source_word": "walo",
-      "duration_ms": 260.0
+      "syllable": "wa"
     },
     "wan": {
-      "syllable": "wan",
+      "duration_ms": null,
       "file": "syllables/wan.wav",
-      "source_word": "wan",
-      "duration_ms": 260.0
+      "syllable": "wan"
     },
     "we": {
-      "syllable": "we",
+      "duration_ms": null,
       "file": "syllables/we.wav",
-      "source_word": "weka",
-      "duration_ms": 242.8
+      "syllable": "we"
     },
     "wen": {
-      "syllable": "wen",
+      "duration_ms": null,
       "file": "syllables/wen.wav",
-      "source_word": "awen",
-      "duration_ms": 260.0
+      "syllable": "wen"
     },
     "wi": {
-      "syllable": "wi",
+      "duration_ms": null,
       "file": "syllables/wi.wav",
-      "source_word": "wile",
-      "duration_ms": 260.0
+      "syllable": "wi"
+    },
+    "win": {
+      "duration_ms": null,
+      "file": "syllables/win.wav",
+      "syllable": "win"
     }
   },
   "strict_disallowed_syllables": [

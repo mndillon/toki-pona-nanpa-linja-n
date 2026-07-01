@@ -181,6 +181,40 @@ body.shellReady {
     }
     button:hover { background: var(--bg); }
 
+    .audio-button {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0 6px 0 0;
+      vertical-align: baseline;
+    }
+
+    .audio-button:hover {
+      background: transparent;
+    }
+
+    .audio-button:disabled {
+      cursor: default;
+      opacity: 0.45;
+    }
+
+    .textAudioInlineControl {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .textAudioSpeedSelect {
+      width: auto !important;
+      min-width: 96px;
+      padding: 6px 8px;
+      height: 34px;
+    }
+
     .btnBi {
       display: flex;
       flex-direction: column;
@@ -618,6 +652,19 @@ body.shellReady {
             <span class="tpLine">o pana e lipu</span>
           </button>
 
+          <button
+            id="appBtnPlayTextAudioMain"
+            class="audio-button"
+            type="button"
+            title="Read input audio, ignore quoted text and unknowns"
+            aria-label="Read input audio, ignore quoted text and unknowns"
+          >🤖🔊</button>
+
+          <label class="textAudioInlineControl" for="appTextAudioSpeedSelMain">
+            <span>Audio speed</span>
+            <select id="appTextAudioSpeedSelMain" class="textAudioSpeedSelect" aria-label="Audio speed"></select>
+          </label>
+
           <button id="appBtnTogglePopoutMain" type="button" class="btnBi">
             <span>Pop-out editor</span>
             <span class="tpLine">o open e ilo ante</span>
@@ -983,6 +1030,19 @@ nanpa #~WI.
         <span>Export .txt</span>
         <span class="tpLine">o pana e lipu</span>
       </button>
+
+      <button
+        id="appBtnPlayTextAudioPop"
+        class="audio-button"
+        type="button"
+        title="Read input audio, ignore quoted text and unknowns"
+        aria-label="Read input audio, ignore quoted text and unknowns"
+      >🤖🔊</button>
+
+      <label class="textAudioInlineControl" for="appTextAudioSpeedSelPop">
+        <span>Audio speed</span>
+        <select id="appTextAudioSpeedSelPop" class="textAudioSpeedSelect" aria-label="Audio speed"></select>
+      </label>
     </div>
 
     <input id="appFilePickTextIn" type="file" accept=".txt,text/plain" class="sr-only" />
@@ -1003,6 +1063,7 @@ nanpa #~WI.
 
     import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=33';
     import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=166';
+    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=27';
     let pageMap = new Map();
 
     "use strict";
@@ -6482,6 +6543,515 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     const btnRender = document.getElementById("appBtnRender");
     const btnDownload = document.getElementById("appBtnDownloadPng");
 
+    const TEXT_AUDIO_SPEED_STORAGE_KEY = "tpTextToSitelenAudioSpeed";
+    const TEXT_AUDIO_SPEED_DEFAULT = 2.25;
+    const TEXT_AUDIO_OPTIONS = Object.freeze([
+      { value: 1.00, label: "Normal", syllableGapSeconds: 0.200, linePauseSeconds: 0.350 },
+      { value: 2.25, label: "Slow", syllableGapSeconds: 0.700, linePauseSeconds: 0.800 },
+      { value: 4.00, label: "Very slow", syllableGapSeconds: 1.402, linePauseSeconds: 1.250 }
+    ]);
+
+    let textToSitelenVoicePromise = null;
+    let textAudioBusy = false;
+
+    function normalizeTextAudioSpeed(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return TEXT_AUDIO_SPEED_DEFAULT;
+      const opt = TEXT_AUDIO_OPTIONS.find(item => Math.abs(item.value - n) < 0.001);
+      return opt ? opt.value : TEXT_AUDIO_SPEED_DEFAULT;
+    }
+
+    function loadTextAudioSpeedFromStorage() {
+      try {
+        const raw = localStorage.getItem(TEXT_AUDIO_SPEED_STORAGE_KEY);
+        return raw == null ? TEXT_AUDIO_SPEED_DEFAULT : normalizeTextAudioSpeed(raw);
+      } catch {
+        return TEXT_AUDIO_SPEED_DEFAULT;
+      }
+    }
+
+    function saveTextAudioSpeedToStorage(value) {
+      const v = normalizeTextAudioSpeed(value);
+      try { localStorage.setItem(TEXT_AUDIO_SPEED_STORAGE_KEY, String(v)); } catch {}
+      return v;
+    }
+
+    function getTextAudioSpeedSelects() {
+      return [
+        document.getElementById("appTextAudioSpeedSelMain"),
+        document.getElementById("appTextAudioSpeedSelPop")
+      ].filter(Boolean);
+    }
+
+    function selectedTextAudioOption() {
+      const selectValue = getTextAudioSpeedSelects()[0]?.value;
+      const speed = normalizeTextAudioSpeed(selectValue ?? loadTextAudioSpeedFromStorage());
+      return TEXT_AUDIO_OPTIONS.find(item => Math.abs(item.value - speed) < 0.001) || TEXT_AUDIO_OPTIONS[0];
+    }
+
+    function populateTextAudioSpeedSelect(select, selectedValue) {
+      if (!select) return;
+      const selected = normalizeTextAudioSpeed(selectedValue);
+      select.innerHTML = TEXT_AUDIO_OPTIONS.map(opt => {
+        const value = opt.value.toFixed(2);
+        const isSelected = Math.abs(opt.value - selected) < 0.001 ? " selected" : "";
+        return `<option value="${value}"${isSelected}>${opt.label}</option>`;
+      }).join("");
+    }
+
+    function setTextAudioSpeed(value, { persist = true } = {}) {
+      const v = normalizeTextAudioSpeed(value);
+      for (const sel of getTextAudioSpeedSelects()) sel.value = v.toFixed(2);
+      if (persist) saveTextAudioSpeedToStorage(v);
+      return v;
+    }
+
+    function initTextAudioControls() {
+      const selected = loadTextAudioSpeedFromStorage();
+      for (const sel of getTextAudioSpeedSelects()) {
+        populateTextAudioSpeedSelect(sel, selected);
+        sel.addEventListener("change", () => setTextAudioSpeed(sel.value));
+      }
+      setTextAudioSpeed(selected, { persist: false });
+    }
+
+    function setTextAudioButtonsDisabled(disabled) {
+      for (const id of ["appBtnPlayTextAudioMain", "appBtnPlayTextAudioPop"]) {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = !!disabled;
+      }
+    }
+
+    async function getTextToSitelenVoice() {
+      if (!textToSitelenVoicePromise) textToSitelenVoicePromise = createTokiPonaVoice();
+      return textToSitelenVoicePromise;
+    }
+
+    function textAudioSilenceSamples(seconds, sampleRate) {
+      return new Float32Array(Math.max(0, Math.round(Number(seconds || 0) * Number(sampleRate || 48000))));
+    }
+
+    function concatTextAudioChunks(chunks) {
+      const total = chunks.reduce((sum, chunk) => sum + (chunk?.length || 0), 0);
+      const out = new Float32Array(total);
+      let offset = 0;
+      for (const chunk of chunks) {
+        if (!chunk?.length) continue;
+        out.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return out;
+    }
+
+    function normalizeAudioWord(raw) {
+      return String(raw ?? "").replace(/'/g, "").toLowerCase();
+    }
+
+    function isAudioTpPhonotacticWord(raw) {
+      const w = normalizeAudioWord(raw);
+      if (w === "n") return true;
+      if (!w || !/^[aeiouptkmnswlj]+$/.test(w)) return false;
+
+      let i = 0;
+      while (i < w.length) {
+        if ("ptkmnswlj".includes(w[i])) {
+          if (i + 1 < w.length && "aeiou".includes(w[i + 1])) i += 1;
+          else return false;
+        }
+        if (i >= w.length || !"aeiou".includes(w[i])) return false;
+        i += 1;
+        if (i < w.length && w[i] === "n") {
+          const next = i + 1 < w.length ? w[i + 1] : "";
+          if (!next || "ptkmnswlj".includes(next)) i += 1;
+        }
+      }
+      return true;
+    }
+
+    function isReadableAudioTokiPonaText(text) {
+      const tokens = String(text ?? "").match(/[A-Za-z']+|[.,!?;:]/g) || [];
+      if (!tokens.length) return false;
+      return tokens.every(token => /^[.,!?;:]$/.test(token) || isAudioTpPhonotacticWord(token));
+    }
+
+    function compactSpeechWhitespace(text) {
+      return String(text ?? "").replace(/\s+/g, " ").trim();
+    }
+
+    function sanitizeTextToSitelenAudioText(text) {
+      // Remove visual-only text-to-sitelen control syntax before speech.
+      // Numeric cartouche runs are converted before this fallback is used.
+      return compactSpeechWhitespace(
+        String(text ?? "")
+          .replace(/[&+\-{}()\[\]\^<>|]/g, " ")
+          .replace(/[“”"]/g, " ")
+      );
+    }
+
+    function stripOuterBracketSyntaxForAudio(text) {
+      let s = String(text ?? "").trim();
+      if (s.startsWith("[") && s.endsWith("]")) s = s.slice(1, -1).trim();
+      return s;
+    }
+
+    function audioGlyphTokensFromCartoucheSource(text) {
+      return stripOuterBracketSyntaxForAudio(text)
+        .split(/\s+/)
+        .map(normalizeTpGlyphToken)
+        .filter(Boolean);
+    }
+
+    function audioInitialForGlyphToken(token) {
+      const t = normalizeTpGlyphToken(token);
+      if (!t) return "";
+      if (t === ":") return "k";      // kolon
+      if (t === "·" || t === ".") return "o"; // ota
+      if (t === ",") return "k";      // koma, if used literally
+      const m = /^[a-z]/.exec(t);
+      return m ? m[0] : "";
+    }
+
+    function audioInitialTextFromGlyphTokens(tokens) {
+      const letters = [];
+      for (const token of (tokens ?? [])) {
+        const initial = audioInitialForGlyphToken(token);
+        if (!initial) return "";
+        letters.push(initial);
+      }
+      return letters.join("");
+    }
+
+    function isAudioNanpaLinjanTpPhraseTokens(tokens) {
+      const words = Array.from(tokens ?? []).map(normalizeTpGlyphToken).filter(Boolean);
+      if (words.length < 3) return false;
+      if (words[0] !== "nanpa") return false;
+      if (!(words[1] === "e" || words[1] === "en" || words[1] === "esun")) return false;
+      if (words[words.length - 1] !== "nanpa") return false;
+
+      const digitGlyphWords = new Set(Object.values(TOKEN_TO_DIGIT_WORD).map(normalizeTpGlyphToken));
+      const relaxedSmallGlyphWords = new Set(["ala", "ike", "uta"]);
+      const allowedNumericGlyphWords = new Set([
+        ...Object.keys(NANPA_LINJA_N_WORD_TO_CP),
+        ...relaxedSmallGlyphWords,
+        "ala",
+        "ike",
+        "uta",
+        "kolon",
+        ":"
+      ]);
+
+      const payload = words.slice(2, -1);
+      if (!payload.some(w => digitGlyphWords.has(w))) return false;
+      return words.every(w => allowedNumericGlyphWords.has(w) || isKnownTpGlyphToken(w));
+    }
+
+    function tryNanpaLinjanTpPhraseSourceToCaps(text) {
+      const words = audioGlyphTokensFromCartoucheSource(text);
+      if (!isAudioNanpaLinjanTpPhraseTokens(words)) return "";
+
+      // Match the renderer's visual cartouche interpretation: the spoken
+      // nanpa-linja-n label is the cartouche spelling, i.e. the initial sound
+      // of each glyph token. This also covers relaxed numeric forms such as
+      // nanpa en mun uta nanpa -> NEMUN -> Nemun.
+      const caps = audioInitialTextFromGlyphTokens(words).toUpperCase();
+      if (!caps || !caps.startsWith("NE") || !caps.endsWith("N")) return "";
+      return caps;
+    }
+
+    function titleCaseAudioProperNameText(text) {
+      const s = String(text ?? "").trim().toLowerCase();
+      if (!s) return "";
+      return s[0].toUpperCase() + s.slice(1);
+    }
+
+    function isCapitalizedAudioProperNameText(text) {
+      const s = String(text ?? "").trim();
+      if (!/^[A-Z][A-Za-z']*$/.test(s)) return false;
+      return isAudioTpPhonotacticWord(s);
+    }
+
+    function isCapitalizedAudioProperNamePhraseText(text) {
+      const words = String(text ?? "").trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return false;
+      return words.every(isCapitalizedAudioProperNameText);
+    }
+
+    function normalizeAudioProperNameCompareText(text) {
+      return String(text ?? "").replace(/@db\b/gi, "").replace(/_/g, "").replace(/[^A-Za-z']/g, "").toLowerCase();
+    }
+
+    function audioCartoucheSourceJoinedLetters(text) {
+      const words = audioGlyphTokensFromCartoucheSource(text);
+      if (!words.length) return "";
+      if (!words.every(token => isKnownTpGlyphToken(token) || isAudioTpPhonotacticWord(token))) return "";
+      return words.join("").replace(/[^a-z']/gi, "").toLowerCase();
+    }
+
+    function extractRawCapitalizedProperNameQueuesByLine(rawText) {
+      return String(rawText ?? "")
+        .split(/\n/)
+        .map(line => {
+          const out = [];
+          let inQuote = false;
+          let bracketDepth = 0;
+          const text = String(line ?? "");
+
+          for (let i = 0; i < text.length;) {
+            const ch = text[i];
+            if (ch === '"') { inQuote = !inQuote; i += 1; continue; }
+            if (!inQuote && ch === "[") { bracketDepth += 1; i += 1; continue; }
+            if (!inQuote && ch === "]") { bracketDepth = Math.max(0, bracketDepth - 1); i += 1; continue; }
+
+            if (!inQuote && bracketDepth === 0 && /[A-Z]/.test(ch)) {
+              const m = /^[A-Z][A-Za-z']*(?:@db\b)?/.exec(text.slice(i));
+              if (m) {
+                const token = m[0];
+                const clean = token.replace(/@db\b/i, "");
+                if (isCapitalizedAudioProperNameText(clean)) out.push({ raw: clean, used: false });
+                i += token.length;
+                continue;
+              }
+            }
+
+            i += 1;
+          }
+
+          return out;
+        });
+    }
+
+    function takeMatchingRawProperNameForCartoucheSource(sourceText, rawProperNameQueue) {
+      const joined = audioCartoucheSourceJoinedLetters(sourceText);
+      if (!joined || !Array.isArray(rawProperNameQueue)) return "";
+
+      for (const item of rawProperNameQueue) {
+        if (!item || item.used) continue;
+        const raw = String(item.raw ?? "").trim();
+        if (!raw || !isCapitalizedAudioProperNameText(raw)) continue;
+        if (normalizeAudioProperNameCompareText(raw) !== joined) continue;
+        item.used = true;
+        return raw;
+      }
+
+      return "";
+    }
+
+    function tryCartoucheSourceToSpokenSyllableText(text) {
+      const words = audioGlyphTokensFromCartoucheSource(text);
+      if (!words.length) return "";
+      if (!words.every(isKnownTpGlyphToken)) return "";
+
+      // First try the ordinary cartouche reading: glyph initials spell the name.
+      // Example: [mun uta] -> Mu.
+      const spelled = audioInitialTextFromGlyphTokens(words).toLowerCase();
+      if (spelled && isAudioTpPhonotacticWord(spelled)) {
+        return titleCaseAudioProperNameText(spelled);
+      }
+
+      return "";
+    }
+
+    function trySourceTextToNanpaProperName(text) {
+      const source = String(text ?? "").trim();
+      if (!source) return "";
+
+      try {
+        const caps = tryNanpaLinjanTpPhraseSourceToCaps(source);
+        if (caps) return NanpaParser.splitCapsToProperName(caps, { titleCase: true });
+      } catch {}
+
+      try {
+        const parsed = NanpaParser.parseNumber(source, {
+          mode: getNanpaLinjanMode(),
+          mixedStyle: "short",
+          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
+          relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled()
+        });
+        if (parsed?.properName) return parsed.properName;
+      } catch {}
+
+      return "";
+    }
+
+    function speechTextForRenderRun(run, skipped, rawProperNameQueue = []) {
+      if (!run) return "";
+      const kind = String(run.kind ?? "").toLowerCase();
+      const sourceKind = String(run.sourceKind ?? "").toLowerCase();
+      const sourceText = String(run.sourceText ?? run.encodedText ?? "").trim();
+      if (!sourceText) return "";
+
+      if (sourceKind === "image" || kind === "image") {
+        skipped.push({ kind: "image", text: sourceText });
+        return "";
+      }
+
+      if (run.isUnrecognized) {
+        skipped.push({ kind: "unknown", text: sourceText });
+        return "";
+      }
+
+      if (run.isQuoted || sourceKind === "quote") {
+        if (isReadableAudioTokiPonaText(sourceText)) return compactSpeechWhitespace(sourceText);
+        skipped.push({ kind: "quoted", text: sourceText });
+        return "";
+      }
+
+      if (kind === "cartouche") {
+        // A plain capitalized proper name such as Manlun may render visually as
+        // a cartouche, but its audio source must remain the original proper-name
+        // word. Do this before ordinary cartouche-initial spelling logic so
+        // Manlun is sent to the voice engine as Manlun, not as ma n lu n.
+        if (sourceKind !== "bracket" && isCapitalizedAudioProperNamePhraseText(sourceText)) {
+          return compactSpeechWhitespace(sourceText);
+        }
+
+        const properName = trySourceTextToNanpaProperName(sourceText);
+        if (properName) return compactSpeechWhitespace(properName);
+
+        const cartoucheSyllables = tryCartoucheSourceToSpokenSyllableText(sourceText);
+        if (cartoucheSyllables) return cartoucheSyllables;
+
+        if (sourceKind !== "bracket") {
+          const originalProperName = takeMatchingRawProperNameForCartoucheSource(sourceText, rawProperNameQueue);
+          if (originalProperName) return compactSpeechWhitespace(originalProperName);
+        }
+
+        // For non-bracket cartouches, allow already-capitalized DB/proper-name
+        // source text through if it is readable. Do not allow lowercase glyph
+        // words such as ma n lu n to fall through as ordinary speech.
+        const readableCartoucheText = sanitizeTextToSitelenAudioText(sourceText);
+        if (sourceKind !== "bracket" && /[A-Z]/.test(sourceText) && isReadableAudioTokiPonaText(readableCartoucheText)) {
+          return readableCartoucheText;
+        }
+
+        skipped.push({ kind: sourceKind === "bracket" ? "cartouche" : "numeric-cartouche", text: sourceText });
+        return "";
+      }
+
+      if (/^[.,!?;:]$/.test(sourceText)) return sourceText;
+      const readableText = sanitizeTextToSitelenAudioText(sourceText);
+      if (isReadableAudioTokiPonaText(readableText)) return readableText;
+
+      skipped.push({ kind: "unknown", text: sourceText });
+      return "";
+    }
+
+    function buildTextAudioLinesFromRenderPlan(plan, rawInput = "") {
+      const skipped = [];
+      const lines = [];
+      const rawProperNameQueues = extractRawCapitalizedProperNameQueuesByLine(rawInput);
+      const renderLines = Array.isArray(plan?.lines) ? plan.lines : [];
+
+      for (let lineIndex = 0; lineIndex < renderLines.length; lineIndex++) {
+        const line = renderLines[lineIndex];
+        const parts = [];
+        const rawProperNameQueue = rawProperNameQueues[lineIndex] || [];
+        for (const run of (line?.runs || [])) {
+          const speech = speechTextForRenderRun(run, skipped, rawProperNameQueue);
+          if (speech) parts.push(speech);
+        }
+        lines.push(compactSpeechWhitespace(parts.join(" ")));
+      }
+      return { lines, skipped };
+    }
+
+    async function ensureTextAudioRenderPlan() {
+      const raw = String(elTextIn?.value ?? "");
+      if (!raw.trim()) return null;
+      await renderFromTextarea();
+      return { plan: latestRenderPlan, rawInput: raw };
+    }
+
+    function summarizeSkippedAudio(skipped) {
+      const seen = new Set();
+      const sample = [];
+      for (const item of skipped || []) {
+        const label = `${item.kind}: ${String(item.text || "").slice(0, 40)}`;
+        if (seen.has(label)) continue;
+        seen.add(label);
+        sample.push(label);
+        if (sample.length >= 4) break;
+      }
+      return sample.join("; ");
+    }
+
+    async function playTextToSitelenAudio() {
+      if (textAudioBusy) return;
+      textAudioBusy = true;
+      setTextAudioButtonsDisabled(true);
+      try {
+        const prepared = await ensureTextAudioRenderPlan();
+        const plan = prepared?.plan;
+        if (!plan) {
+          announceStatus("Nothing to read.");
+          return;
+        }
+
+        const { lines, skipped } = buildTextAudioLinesFromRenderPlan(plan, prepared.rawInput);
+        try { window.__TTS_LAST_TEXT_AUDIO_LINES__ = { lines: [...lines], skipped: [...skipped] }; } catch {}
+        const hasSpeech = lines.some(line => String(line || "").trim().length > 0);
+        if (!hasSpeech) {
+          announceStatus("No readable Toki Pona text found for audio.");
+          return;
+        }
+
+        const option = selectedTextAudioOption();
+        const voice = await getTextToSitelenVoice();
+        const chunks = [];
+        let sampleRate = null;
+        let sawSpeech = false;
+        let pendingLinePauses = 0;
+        let spokenLineCount = 0;
+
+        for (const rawLine of lines) {
+          const lineText = String(rawLine ?? "").trim();
+          if (!lineText) {
+            if (sawSpeech) pendingLinePauses = Math.min(2, pendingLinePauses + 1);
+            continue;
+          }
+
+          if (sawSpeech && sampleRate) {
+            const pauses = Math.max(1, Math.min(2, pendingLinePauses || 1));
+            chunks.push(textAudioSilenceSamples(option.linePauseSeconds * pauses, sampleRate));
+          }
+
+          const rendered = await voice.render(lineText, {
+            synthesis_mode: "reference_audio",
+            pauseScale: option.value,
+            syllableGapSeconds: option.syllableGapSeconds
+          });
+
+          if (sampleRate != null && rendered.sampleRate !== sampleRate) {
+            throw new Error("Audio sample-rate changed between rendered lines.");
+          }
+          sampleRate = rendered.sampleRate;
+          chunks.push(rendered.samples);
+          sawSpeech = true;
+          pendingLinePauses = 1;
+          spokenLineCount += 1;
+        }
+
+        if (!sampleRate || !chunks.length) {
+          announceStatus("No audio samples were produced.");
+          return;
+        }
+
+        voice.playSamples(concatTextAudioChunks(chunks), sampleRate);
+        const skippedSummary = summarizeSkippedAudio(skipped);
+        announceStatus(`Playing input audio. Lines read: ${spokenLineCount}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
+      } catch (e) {
+        showAlertAndAnnounce(e?.message ?? String(e));
+      } finally {
+        textAudioBusy = false;
+        setTextAudioButtonsDisabled(false);
+      }
+    }
+
+    function wireTextAudioControls() {
+      document.getElementById("appBtnPlayTextAudioMain")?.addEventListener("click", playTextToSitelenAudio);
+      document.getElementById("appBtnPlayTextAudioPop")?.addEventListener("click", playTextToSitelenAudio);
+    }
+
     async function renderFromTextarea() {
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
@@ -8019,6 +8589,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         wireNumericCartoucheAbbrevToggle();
         wireNanpaRelaxedModeSelect();
         wireCartoucheDisplayLinks();
+        initTextAudioControls();
+        wireTextAudioControls();
 
         await fontsReadyForPx(getFontPx());
         warmUpCanvasFontsOnce();
