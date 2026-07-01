@@ -964,6 +964,39 @@
         .join(" ");
     }
 
+
+    const STRICT_FINAL_HUNDRED_ININ_SUFFIXES = [
+      "weninin", "teninin", "seninin", "naninin", "leninin",
+      "nuninin", "meninin", "peninin", "jeninin"
+    ];
+
+    const RELAXED_FINAL_HUNDRED_ININ_SUFFIXES = [
+      "waninin", "tuninin", "luninin", "muninin", "pininin"
+    ];
+
+    function splitFinalHundredIninWordsForDisplay(rawName) {
+      const s = String(rawName ?? "").trim();
+      if (!s) return s;
+
+      const relaxed = getRelaxedNanpaLinjanProperNamesEnabled();
+      const suffixes = relaxed
+        ? STRICT_FINAL_HUNDRED_ININ_SUFFIXES.concat(RELAXED_FINAL_HUNDRED_ININ_SUFFIXES)
+        : STRICT_FINAL_HUNDRED_ININ_SUFFIXES;
+
+      return s
+        .split(/\s+/)
+        .filter(Boolean)
+        .flatMap(word => {
+          const lower = word.toLowerCase();
+          const shouldSplit = suffixes.some(suffix => lower.endsWith(suffix));
+          if (shouldSplit && lower.endsWith("inin") && word.length > 4) {
+            return [word.slice(0, -4), word.slice(-4)];
+          }
+          return [word];
+        })
+        .join(" ");
+    }
+
     function splitCartoucheCapsLettersSpaced(caps) {
       if (caps == null) throw new Error("caps must be a string, not None");
       const s0 = String(caps).trim().toUpperCase();
@@ -1026,7 +1059,7 @@
       flushCurrent();
       if (parts.length === 0) return "n";
       parts[parts.length - 1] = String(parts[parts.length - 1]) + "n";
-      return parts.join(" ").replace(/\s+/g, " ").trim();
+      return splitFinalHundredIninWordsForDisplay(parts.join(" ").replace(/\s+/g, " ").trim());
     }
 
     function encodeDecimalToProperNameDisplay(rawValueStr) {
@@ -1532,7 +1565,7 @@
 
     async function getTokiPonaVoice() {
       if (!tokiPonaVoicePromise) {
-        tokiPonaVoicePromise = import("./js/toki-pona-voice-api.js?v=21")
+        tokiPonaVoicePromise = import("./js/toki-pona-voice-api.js?v=22")
           .then(mod => mod.createTokiPonaVoice());
       }
       return tokiPonaVoicePromise;

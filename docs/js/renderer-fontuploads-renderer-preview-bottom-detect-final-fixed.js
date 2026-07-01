@@ -7633,6 +7633,43 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     catch { return false; }
   }
 
+  const _NP_STRICT_HUNDRED_ININ_SUFFIXES = Object.freeze([
+    "weninin", "teninin", "seninin", "naninin", "leninin",
+    "nuninin", "meninin", "peninin", "jeninin"
+  ]);
+
+  const _NP_RELAXED_HUNDRED_ININ_SUFFIXES = Object.freeze([
+    "waninin", "tuninin", "luninin", "muninin", "pininin"
+  ]);
+
+  function _npSplitFinalHundredIninWords(rawName, opts = {}) {
+    const words = String(rawName ?? "").trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return "";
+
+    const suffixes = _npRelaxedParsingFromOpts(opts)
+      ? _NP_STRICT_HUNDRED_ININ_SUFFIXES.concat(_NP_RELAXED_HUNDRED_ININ_SUFFIXES)
+      : _NP_STRICT_HUNDRED_ININ_SUFFIXES;
+
+    const out = [];
+    for (const word of words) {
+      const lower = word.toLowerCase();
+      const shouldSplit = suffixes.some(suffix => lower.endsWith(suffix));
+
+      if (shouldSplit && lower.endsWith("inin") && word.length > 4) {
+        const head = word.slice(0, -4);
+        const tail = word.slice(-4);
+        if (head) {
+          out.push(head, tail);
+          continue;
+        }
+      }
+
+      out.push(word);
+    }
+
+    return out.join(" ");
+  }
+
   function _npNormalizeNumberCodeInput(raw) {
     return String(raw ?? "").trim().replace(/\s+/g, "");
   }
@@ -8682,7 +8719,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     function capsToCanonicalUniqueCode(caps, opts = {}) {
       let tokens;
       try { tokens = _npTokenizeNanpaCaps(caps, opts); }
-      catch { return latinNameToUniqueCode(titleCaseCapsLabel(splitCapsLetters(caps))); }
+      catch { return latinNameToUniqueCode(titleCaseCapsLabel(_npSplitFinalHundredIninWords(splitCapsLetters(caps), opts))); }
 
       const parts = [];
       for (const t of tokens) {
@@ -8899,7 +8936,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         caps = timeCaps;
       } else if (dateCaps != null) {
         caps = dateCaps;
-      } else if (_npIsValidNanpaLinjanProperName(s)) {
+      } else if (_npIsValidNanpaLinjanProperName(s, { relaxedNanpaLinjanParsing: relaxedParsing })) {
         const core = s.replace(/\s+/g, "").slice(0, -1).toUpperCase();
         caps = (core.endsWith("NOKE") ? (core.slice(0, -4) + "OKN") : (core + "N"));
       } else {
@@ -8945,7 +8982,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         return cp;
       });
 
-      const properName = titleCaseCapsLabel(splitCapsLetters(caps));
+      const properName = titleCaseCapsLabel(_npSplitFinalHundredIninWords(splitCapsLetters(caps), { relaxedNanpaLinjanParsing: relaxedParsing }));
       const uniqueCode = capsToCanonicalUniqueCode(caps, opts);
       const hexCodepoints = codepointsToHexString(ucsurCodepoints);
       const hexWithCartouche = codepointsToHexString(withCartoucheMarkers(ucsurCodepoints));
@@ -9055,7 +9092,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       return outStr;
     }
 
-    const raw = splitCapsLetters(caps);
+    const raw = _npSplitFinalHundredIninWords(splitCapsLetters(caps), { relaxedNanpaLinjanParsing });
     if (!titleCase) return raw;
     return String(raw).trim().split(/\s+/).filter(Boolean)
       .map(w => w.length === 1 ? w.toUpperCase() : (w[0].toUpperCase() + w.slice(1)))

@@ -721,8 +721,8 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=174";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=21";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=175";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=22";
 
     const voice = await createTokiPonaVoice();
 
@@ -1013,6 +1013,39 @@
           const lower = w.toLowerCase();
           if (lower.length === 1) return lower.toUpperCase();
           return lower[0].toUpperCase() + lower.slice(1);
+        })
+        .join(" ");
+    }
+
+
+    const STRICT_FINAL_HUNDRED_ININ_SUFFIXES = [
+      "weninin", "teninin", "seninin", "naninin", "leninin",
+      "nuninin", "meninin", "peninin", "jeninin"
+    ];
+
+    const RELAXED_FINAL_HUNDRED_ININ_SUFFIXES = [
+      "waninin", "tuninin", "luninin", "muninin", "pininin"
+    ];
+
+    function splitFinalHundredIninWordsForDisplay(rawName) {
+      const s = String(rawName ?? "").trim();
+      if (!s) return s;
+
+      const relaxed = getRelaxedNanpaLinjanProperNamesEnabled();
+      const suffixes = relaxed
+        ? STRICT_FINAL_HUNDRED_ININ_SUFFIXES.concat(RELAXED_FINAL_HUNDRED_ININ_SUFFIXES)
+        : STRICT_FINAL_HUNDRED_ININ_SUFFIXES;
+
+      return s
+        .split(/\s+/)
+        .filter(Boolean)
+        .flatMap(word => {
+          const lower = word.toLowerCase();
+          const shouldSplit = suffixes.some(suffix => lower.endsWith(suffix));
+          if (shouldSplit && lower.endsWith("inin") && word.length > 4) {
+            return [word.slice(0, -4), word.slice(-4)];
+          }
+          return [word];
         })
         .join(" ");
     }
@@ -2894,7 +2927,7 @@
       const last = String(parts[parts.length - 1]);
       parts[parts.length - 1] = last.endsWith("n") ? last : (last + "n");
 
-      return parts.join(" ").replace(/\s+/g, " ").trim();
+      return splitFinalHundredIninWordsForDisplay(parts.join(" ").replace(/\s+/g, " ").trim());
     }
 
     function nanpaLinjanProperNameToUcsurCodepoints(nameStr) {
