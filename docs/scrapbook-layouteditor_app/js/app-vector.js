@@ -531,6 +531,7 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       lbl_default_render_font: "Default script family",
       lbl_default_text_font: "Default text font",
       lbl_default_abbrev_numeric_cartouches: "Default abbreviate numeric cartouche output",
+      lbl_default_nanpa_linjan_mode: "Default nanpa-linja-n mode",
       lbl_default_preserve_center_auto_resize: "Default preserve center on auto resize",
       lbl_default_spacing: "Default sitelen spacing",
       lbl_default_text: "Default text",
@@ -586,6 +587,9 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       props_bbox_natural_clip: "Natural size, clip to box",
       props_preserve_center_auto_resize: "Preserve center on auto resize",
       props_abbrev_numeric_cartouches: "Abbreviate numeric cartouche output",
+      props_nanpa_linjan_mode: "nanpa-linja-n mode",
+      opt_nanpa_linjan_strict: "Strict",
+      opt_nanpa_linjan_relaxed: "Relaxed",
       props_scale_font_box: "Scale font with box",
       props_render_font_family: "Sitelen font family",
       props_font_family: "Quoted text font",
@@ -818,6 +822,7 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       lbl_default_render_font: "kulupu sitelen pona open",
       lbl_default_text_font: "kulupu sitelen Lasina open",
       lbl_default_abbrev_numeric_cartouches: "o lili e poki sitelen pi nanpa",
+      lbl_default_nanpa_linjan_mode: "nasin pi nanpa-linja-n open",
       lbl_default_preserve_center_auto_resize: "ante suli la insa li awen",
       lbl_default_spacing: "weka pi sitelen pona open",
       lbl_default_text: "kule sitelen open",
@@ -872,6 +877,9 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       props_bbox_natural_clip: "suli sitelen lon; poki li kipisi e sitelen",
       props_preserve_center_auto_resize: "ante suli la insa li awen",
       props_abbrev_numeric_cartouches: "o lili e poki sitelen pi nanpa",
+      props_nanpa_linjan_mode: "nasin pi nanpa-linja-n",
+      opt_nanpa_linjan_strict: "Strict",
+      opt_nanpa_linjan_relaxed: "Relaxed",
       props_scale_font_box: "suli sitelen li sama poki",
       props_render_font_family: "kulupu sitelen pi sitelen pona",
       props_font_family: "kulupu sitelen pi sitelen Lasina",
@@ -1168,6 +1176,7 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
     setLabel("defRenderFontPreset", "lbl_default_render_font");
     setLabel("defTextFontOption", "lbl_default_text_font");
     setLabel("defAbbreviateNumericCartouches", "lbl_default_abbrev_numeric_cartouches");
+    setLabel("defNanpaLinjanMode", "lbl_default_nanpa_linjan_mode");
     setLabel("defPreserveCenterOnAutoResize", "lbl_default_preserve_center_auto_resize");
     setLabel("defSpacingPreset", "lbl_default_spacing");
     setLabel("defTextColor", "lbl_default_text");
@@ -1443,6 +1452,7 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
     defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
     defaultTextFontOption: FONT_FAMILY_LITERAL,
     defaultAbbreviateNumericCartouches: false,
+    defaultNanpaLinjanMode: "strict",
     defaultPreserveCenterOnAutoResize: false,
     defaultSpacingPreset: "default",
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
@@ -1467,6 +1477,20 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
   });
 
   const SPACING_PRESETS = Object.freeze(["default", "compact", "comfortable"]);
+  const NANPA_LINJAN_MODES = Object.freeze(["strict", "relaxed"]);
+
+  function normalizeNanpaLinjanMode(value){
+    const v = String(value ?? "").trim().toLowerCase();
+    return NANPA_LINJAN_MODES.includes(v) ? v : "strict";
+  }
+
+  function nanpaLinjanModeSelectOptions(){
+    return [["strict", tr("opt_nanpa_linjan_strict")], ["relaxed", tr("opt_nanpa_linjan_relaxed")]];
+  }
+
+  function isRelaxedNanpaLinjanMode(value){
+    return normalizeNanpaLinjanMode(value) === "relaxed";
+  }
 
   function normalizeSpacingPreset(value){
     const v = String(value ?? "").trim().toLowerCase();
@@ -1483,6 +1507,26 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
 
   function getElementAbbreviateNumericCartouches(el){
     return !!(el?.abbreviateNumericCartouches ?? false);
+  }
+
+  function getSceneDefaultNanpaLinjanMode(){
+    return normalizeNanpaLinjanMode(
+      Scene?.stage?.defaultNanpaLinjanMode ??
+      DEFAULTS.defaultNanpaLinjanMode ??
+      "strict"
+    );
+  }
+
+  function getElementNanpaLinjanMode(el){
+    return normalizeNanpaLinjanMode(
+      el?.nanpaLinjanMode ??
+      DEFAULTS.defaultNanpaLinjanMode ??
+      "strict"
+    );
+  }
+
+  function isElementRelaxedNanpaLinjanMode(el){
+    return isRelaxedNanpaLinjanMode(getElementNanpaLinjanMode(el));
   }
 
   function getSceneDefaultPreserveCenterOnAutoResize(){
@@ -2229,6 +2273,8 @@ function buildRendererInitConfigForElement(el){
       numericMode: 'compat',
       mixedStyle: 'short',
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      relaxedNanpaLinjanParsing: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
+      relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       ...buildCartoucheTallyParserConfig(el)
     },
     fonts: {
@@ -2279,6 +2325,8 @@ function buildRendererCallConfigForElement(el){
       numericMode: 'compat',
       mixedStyle: 'short',
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      relaxedNanpaLinjanParsing: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
+      relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText),
       ...buildCartoucheTallyParserConfig(el)
     },
@@ -2421,6 +2469,7 @@ function getElementRendererSignature(el){
     haloThickness: Number(el?.haloThickness ?? 0),
     ignoreUnknownText: !!el?.ignoreUnknownText,
     abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+    nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
     preserveCenterOnAutoResize: !!getElementPreserveCenterOnAutoResize(el),
     sitelenResizeAnchor: (el?.type === ElementType.Sitelen) ? getElementSitelenResizeAnchor(el) : "",
     sitelenBoundsGuardVersion: (el?.type === ElementType.Sitelen) ? SITELEN_BOUNDS_GUARD_VERSION : 0
@@ -2808,6 +2857,7 @@ function normalizeScene(parsed){
     defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
     defaultTextFontOption: DEFAULTS.defaultTextFontOption,
     defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
+    defaultNanpaLinjanMode: DEFAULTS.defaultNanpaLinjanMode,
     defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
     defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
     defaultTextColor: DEFAULTS.defaultTextColor,
@@ -2854,6 +2904,7 @@ function normalizeScene(parsed){
   out.stage.defaultTextFontOption = normalizeLegacyTextFontOptionKey(out.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, out.stage.defaultRenderFontPreset);
   out.stage.defaultSpacingPreset = normalizeSpacingPreset(out.stage.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
   out.stage.defaultAbbreviateNumericCartouches = !!(out.stage.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  out.stage.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(out.stage.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
   out.stage.defaultPreserveCenterOnAutoResize = !!(out.stage.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   out.stage.defaultIgnoreUnknownText = !!(out.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
 
@@ -2943,6 +2994,7 @@ function normalizeScene(parsed){
           ? !!(out.stage?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText)
           : !!el.ignoreUnknownText;
         el.abbreviateNumericCartouches = (el.abbreviateNumericCartouches == null) ? false : !!el.abbreviateNumericCartouches;
+        el.nanpaLinjanMode = normalizeNanpaLinjanMode(el.nanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
         el.spacingPreset = normalizeSpacingPreset(el.spacingPreset ?? out.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
         el.quotedTextFontOption = normalizeValidQuotedTextFontOptionForSitelen(
           el.quotedTextFontOption || el.fontFamily || out.stage?.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
@@ -3311,6 +3363,7 @@ function deserializeAssets(serialized){
       defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
       defaultTextFontOption: DEFAULTS.defaultTextFontOption,
       defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
+      defaultNanpaLinjanMode: "relaxed",
       defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
       defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
       defaultTextColor: DEFAULTS.defaultTextColor,
@@ -3418,6 +3471,7 @@ function deserializeAssets(serialized){
     el.keepAspect = true;
     el.ignoreUnknownText = !!(Scene.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
     el.abbreviateNumericCartouches = getSceneDefaultAbbreviateNumericCartouches();
+    el.nanpaLinjanMode = getSceneDefaultNanpaLinjanMode();
     el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     el.spacingPreset = getSceneDefaultSpacingPreset();
     el.sitelenResizeAnchor = el.preserveCenterOnAutoResize ? "centre" : "topLeft"; // new elements default to top-left anchor unless scene default preserves centre
@@ -10613,6 +10667,24 @@ if (sitelenOnlyEls.length){
     { mixedLabel: abbrevMixed, indeterminate: !!abbrevMixed }
   ));
 
+  const nanpaModeVals = sitelenOnlyEls.map(e => getElementNanpaLinjanMode(e));
+  const nanpaModeMixed = mixedLabelIfMixed(nanpaModeVals);
+  propsBody.appendChild(makeSelect(
+    tr("props_nanpa_linjan_mode"),
+    getElementNanpaLinjanMode(sitelenOnlyEls[0]),
+    nanpaLinjanModeSelectOptions(),
+    (v) => {
+      applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+        e.nanpaLinjanMode = normalizeNanpaLinjanMode(v);
+        invalidateSitelenCache(e.id);
+        updateSitelenLayout(e);
+      });
+      scheduleAutosave();
+      render();
+    },
+    nanpaModeMixed
+  ));
+
   const ignoreVals = sitelenOnlyEls.map(e => !!e.ignoreUnknownText);
   const ignoreMixed = (new Set(ignoreVals.map(v => String(v))).size > 1);
   propsBody.appendChild(makeCheckbox(
@@ -11290,6 +11362,19 @@ if (textField && textField._popoutElementId){
         !!getElementAbbreviateNumericCartouches(el),
         (checked) => {
           el.abbreviateNumericCartouches = !!checked;
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+          scheduleAutosave();
+          render();
+        }
+      ));
+
+      propsBody.appendChild(makeSelect(
+        tr("props_nanpa_linjan_mode"),
+        getElementNanpaLinjanMode(el),
+        nanpaLinjanModeSelectOptions(),
+        (v) => {
+          el.nanpaLinjanMode = normalizeNanpaLinjanMode(v);
           invalidateSitelenCache(el.id);
           updateSitelenLayout(el);
           scheduleAutosave();
@@ -13809,6 +13894,7 @@ function syncStageDefaultsUiFromScene(){
   const drfp = document.getElementById("defRenderFontPreset");
   const dtfo = document.getElementById("defTextFontOption");
   const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dnlm = document.getElementById("defNanpaLinjanMode");
   const dpcar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
@@ -13872,6 +13958,7 @@ function syncStageDefaultsUiFromScene(){
 
   st.defaultTextFontOption = desiredTextFontOption;
   st.defaultAbbreviateNumericCartouches = !!(st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  st.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
   st.defaultPreserveCenterOnAutoResize = !!(st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   st.defaultSpacingPreset = normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
@@ -13880,6 +13967,7 @@ function syncStageDefaultsUiFromScene(){
   if (drfp) drfp.value = st.defaultRenderFontPreset;
   if (dtfo) dtfo.value = st.defaultTextFontOption;
   if (danc) danc.checked = !!st.defaultAbbreviateNumericCartouches;
+  if (dnlm) dnlm.value = st.defaultNanpaLinjanMode;
   if (dpcar) dpcar.checked = !!st.defaultPreserveCenterOnAutoResize;
   if (dsp) dsp.value = st.defaultSpacingPreset;
 
@@ -14951,6 +15039,7 @@ $("btnNew").addEventListener("click", async () => {
   Scene.stage.exportStageBackground = DEFAULTS.exportStageBackground;
   Scene.stage.defaultRenderFontPreset = DEFAULTS.defaultRenderFontPreset;
   Scene.stage.defaultTextFontOption = DEFAULTS.defaultTextFontOption;
+  Scene.stage.defaultNanpaLinjanMode = "relaxed";
   Scene.stage.defaultSpacingPreset = DEFAULTS.defaultSpacingPreset;
   Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
   Scene.stage.defaultIgnoreUnknownText = DEFAULTS.defaultIgnoreUnknownText;
@@ -15194,6 +15283,7 @@ function wireStageDefaultsUi(){
   const expbg = document.getElementById("exportStageBackground");
   const dtfo = document.getElementById("defTextFontOption");
   const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dnlm = document.getElementById("defNanpaLinjanMode");
   const dpcar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
@@ -15301,6 +15391,14 @@ function wireStageDefaultsUi(){
   if (danc){
     danc.addEventListener("change", (e) => {
       Scene.stage.defaultAbbreviateNumericCartouches = !!e.target.checked;
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dnlm){
+    dnlm.addEventListener("change", (e) => {
+      Scene.stage.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(e.target.value);
       scheduleAutosave();
       render();
     });
@@ -16023,6 +16121,7 @@ document.addEventListener("keydown", (e) => {
       defaultRenderFontPreset: presetKey,
       defaultTextFontOption: normalizeTextFontOptionKeyForPreset(d.defaultTextFontOption || st.defaultTextFontOption || DEFAULTS.defaultTextFontOption, presetKey),
       defaultAbbreviateNumericCartouches: !!(d.defaultAbbreviateNumericCartouches ?? st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches),
+      defaultNanpaLinjanMode: normalizeNanpaLinjanMode(d.defaultNanpaLinjanMode ?? st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode),
       defaultPreserveCenterOnAutoResize: !!(d.defaultPreserveCenterOnAutoResize ?? st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize),
       defaultSpacingPreset: normalizeSpacingPreset(d.defaultSpacingPreset ?? st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset),
       defaultTextColor: rgbaOrHexToHex(d.defaultTextColor ?? st.defaultTextColor ?? DEFAULTS.defaultTextColor, DEFAULTS.defaultTextColor),
@@ -16083,9 +16182,11 @@ document.addEventListener("keydown", (e) => {
     doc.notes = String(doc.notes || '');
     const rawDocumentDefaults = isPlainObject(doc.documentDefaults) ? doc.documentDefaults : {};
     const rawDocumentDefaultsHasAbbrev = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultAbbreviateNumericCartouches');
+    const rawDocumentDefaultsHasNanpaMode = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultNanpaLinjanMode');
     doc.documentDefaults = normalizeScrapbookDocumentDefaults(rawDocumentDefaults, Scene.stage || {});
-    // Existing/imported documents that lack the abbreviation flag must stay visually unchanged.
+    // Existing/imported documents that lack these flags must stay visually unchanged.
     if (!rawDocumentDefaultsHasAbbrev) doc.documentDefaults.defaultAbbreviateNumericCartouches = false;
+    if (!rawDocumentDefaultsHasNanpaMode) doc.documentDefaults.defaultNanpaLinjanMode = "strict";
     doc.assets = deep(doc.assets || { byId: [] });
     doc.cartoucheDb = normalizeScrapbookCartoucheDb(doc.cartoucheDb);
     // Normalise media guard settings (default all ON for new/old docs that lack them)
@@ -16702,11 +16803,18 @@ document.addEventListener("keydown", (e) => {
     if (!payload || typeof payload !== 'object') payload = { scene: {} };
     payload.scene = payload.scene || {};
     payload.scene.stage = payload.scene.stage || {};
-    // New scrapbook documents should start with abbreviated numeric cartouches ON.
-    // Legacy/imported documents are still normalized separately with missing values OFF.
+    // New scrapbook documents should start with abbreviated numeric cartouches ON and relaxed nanpa-linja-n mode.
+    // Legacy/imported documents are still normalized separately with missing values OFF/strict.
     payload.scene.stage.defaultAbbreviateNumericCartouches = true;
-    const st = Object.assign({}, Scene.stage || {}, payload.scene.stage || {}, { defaultAbbreviateNumericCartouches: true });
-    const documentDefaults = normalizeScrapbookDocumentDefaults({ defaultAbbreviateNumericCartouches: true }, st);
+    payload.scene.stage.defaultNanpaLinjanMode = "relaxed";
+    const st = Object.assign({}, Scene.stage || {}, payload.scene.stage || {}, {
+      defaultAbbreviateNumericCartouches: true,
+      defaultNanpaLinjanMode: "relaxed"
+    });
+    const documentDefaults = normalizeScrapbookDocumentDefaults({
+      defaultAbbreviateNumericCartouches: true,
+      defaultNanpaLinjanMode: "relaxed"
+    }, st);
     return {
       format: 'StaticScrapbookDocument',
       version: 1,
@@ -16748,6 +16856,7 @@ document.addEventListener("keydown", (e) => {
       st.defaultRenderFontPreset
     );
     st.defaultAbbreviateNumericCartouches = !!(docDefaults.defaultAbbreviateNumericCartouches ?? st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+    st.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(docDefaults.defaultNanpaLinjanMode ?? st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
     st.defaultPreserveCenterOnAutoResize = !!(docDefaults.defaultPreserveCenterOnAutoResize ?? st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
     st.defaultSpacingPreset = normalizeSpacingPreset(docDefaults.defaultSpacingPreset ?? st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
@@ -17095,6 +17204,7 @@ document.addEventListener("keydown", (e) => {
       align: String(el?.align ?? ""), lineHeight: Number(el?.lineHeight ?? 0),
       spacingPreset: getElementSpacingPreset(el),
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
       ignoreUnknownText: !!el?.ignoreUnknownText,
       haloEnabled: !!el?.haloEnabled, haloColor: String(el?.haloColor ?? ""),
       haloMode: String(el?.haloThicknessMode ?? ""), haloThickness: Number(el?.haloThickness ?? 0),
@@ -21043,6 +21153,7 @@ ${unknownTextRects}` : nested.inner;
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefBgKeepAspect" type="checkbox"${defs.bgImgKeepAspect ? ' checked' : ''}>Keep aspect ratio</label></div><div class="field"><label class="checkInline"><input id="sbDefBgStretch" type="checkbox"${defs.bgImgStretch ? ' checked' : ''}>Stretch to stage</label></div></div>
         <div class="row"><div class="field"><label for="sbDefRenderFontPreset">Default sitelen font family</label><select id="sbDefRenderFontPreset">${optionListHtml(renderPresetOptions, defs.defaultRenderFontPreset)}</select></div><div class="field"><label for="sbDefTextFontOption">Default text font</label><select id="sbDefTextFontOption">${optionListHtml(textOpts, defs.defaultTextFontOption)}</select></div></div>
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefAbbrevNumeric" type="checkbox"${defs.defaultAbbreviateNumericCartouches ? ' checked' : ''}>Default abbreviate numeric cartouche output</label></div></div>
+        <div class="row"><div class="field"><label for="sbDefNanpaLinjanMode">Default nanpa-linja-n mode</label><select id="sbDefNanpaLinjanMode">${optionListHtml(nanpaLinjanModeSelectOptions(), defs.defaultNanpaLinjanMode)}</select></div></div>
         <div class="row"><div class="field"><label for="sbDefSpacingPreset">Default sitelen spacing</label><select id="sbDefSpacingPreset">${optionListHtml(spacingPresetSelectOptions(), defs.defaultSpacingPreset)}</select></div><div class="field"><label class="checkInline"><input id="sbDefPreserveCenter" type="checkbox"${defs.defaultPreserveCenterOnAutoResize ? ' checked' : ''}>Default preserve center on auto resize</label></div></div>
         <div class="row"><div class="field"><label for="sbDefTextColor">Default text</label><input id="sbDefTextColor" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.defaultTextColor, DEFAULTS.defaultTextColor))}"></div><div class="field"><label class="checkInline"><input id="sbDefIgnoreUnknown" type="checkbox"${defs.defaultIgnoreUnknownText ? ' checked' : ''}>Default ignore unknown text</label></div></div>
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefHaloEnabled" type="checkbox"${defs.defaultHaloEnabled ? ' checked' : ''}>Default halo</label></div><div class="field"><label for="sbDefHaloColor">Default halo color</label><input id="sbDefHaloColor" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.defaultHaloColor, DEFAULTS.defaultHaloColor))}"></div><div class="field"><label for="sbDefHaloThickness">Default halo thickness (px)</label><input id="sbDefHaloThickness" type="number" min="0" max="200" step="1" value="${defs.defaultHaloThicknessPx}"></div></div>
@@ -21080,6 +21191,7 @@ ${unknownTextRects}` : nested.inner;
     bindChange('sbDefRenderFontPreset', el => { defs.defaultRenderFontPreset = normalizeRenderFontPresetKey(el.value); defs.defaultTextFontOption = getDefaultQuotedTextFontOptionForPreset(defs.defaultRenderFontPreset); renderDocumentPropertiesForm(); });
     bindChange('sbDefTextFontOption', el => { defs.defaultTextFontOption = normalizeTextFontOptionKeyForPreset(el.value, defs.defaultRenderFontPreset); });
     bindChange('sbDefAbbrevNumeric', el => { defs.defaultAbbreviateNumericCartouches = !!el.checked; });
+    bindChange('sbDefNanpaLinjanMode', el => { defs.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(el.value); });
     bindChange('sbDefSpacingPreset', el => { defs.defaultSpacingPreset = normalizeSpacingPreset(el.value); });
     bindChange('sbDefPreserveCenter', el => { defs.defaultPreserveCenterOnAutoResize = !!el.checked; });
     bindChange('sbDefTextColor', el => { defs.defaultTextColor = el.value; addDynamicSwatch(el.value); });

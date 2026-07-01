@@ -1077,6 +1077,16 @@ body.shellReady {
 
             <div class="row">
               <div class="field">
+                <label for="defNanpaLinjanMode">Default nanpa-linja-n mode</label>
+                <select id="defNanpaLinjanMode">
+                  <option value="strict">Strict</option>
+                  <option value="relaxed">Relaxed</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
                 <label for="defSpacingPreset">Default sitelen spacing</label>
                 <select id="defSpacingPreset">
                   <option value="default">Default</option>
@@ -1371,6 +1381,7 @@ function hideStartupLoading() {
       lbl_default_render_font: "Default script family",
       lbl_default_text_font: "Default text font",
       lbl_default_abbrev_numeric_cartouches: "Default abbreviate numeric cartouche output",
+      lbl_default_nanpa_linjan_mode: "Default nanpa-linja-n mode",
       lbl_default_preserve_center_auto_resize: "Default preserve center on auto resize",
       lbl_default_spacing: "Default sitelen spacing",
       lbl_default_text: "Default text",
@@ -1424,6 +1435,9 @@ function hideStartupLoading() {
       props_render_font_family: "Sitelen font family",
       props_font_family: "Quoted text font",
       props_abbrev_numeric_cartouches: "Abbreviate numeric cartouche output",
+      props_nanpa_linjan_mode: "nanpa-linja-n mode",
+      opt_nanpa_linjan_strict: "Strict",
+      opt_nanpa_linjan_relaxed: "Relaxed",
       props_font_size: "Font size",
       props_align: "Align",
       props_spacing: "Spacing",
@@ -1593,6 +1607,7 @@ function hideStartupLoading() {
       lbl_default_render_font: "kulupu sitelen pona open",
       lbl_default_text_font: "kulupu sitelen Lasina open",
       lbl_default_abbrev_numeric_cartouches: "o lili e poki nimi nanpa open",
+      lbl_default_nanpa_linjan_mode: "nasin pi nanpa-linja-n open",
       lbl_default_preserve_center_auto_resize: "o awen e insa lon ante suli poki open",
       lbl_default_spacing: "weka pi sitelen pona open",
       lbl_default_text: "kule sitelen open",
@@ -1645,6 +1660,9 @@ function hideStartupLoading() {
       props_render_font_family: "kulupu sitelen pi sitelen pona",
       props_font_family: "kulupu sitelen pi sitelen Lasina",
       props_abbrev_numeric_cartouches: "o lili e poki nimi nanpa",
+      props_nanpa_linjan_mode: "nasin pi nanpa-linja-n",
+      opt_nanpa_linjan_strict: "Strict",
+      opt_nanpa_linjan_relaxed: "Relaxed",
       props_font_size: "suli sitelen",
       props_align: "poka",
       props_spacing: "weka",
@@ -1845,6 +1863,7 @@ function hideStartupLoading() {
     setLabel("stageBg", "lbl_stage_bg");
     setLabel("defRenderFontPreset", "lbl_default_render_font");
     setLabel("defTextFontOption", "lbl_default_text_font");
+    setLabel("defNanpaLinjanMode", "lbl_default_nanpa_linjan_mode");
     const defAbbrevLbl = document.querySelector('label.checkInline input#defAbbreviateNumericCartouches')?.closest('label');
     if (defAbbrevLbl) {
       const input = defAbbrevLbl.querySelector('input#defAbbreviateNumericCartouches');
@@ -1967,6 +1986,7 @@ const FONT_URL_LIBERATION_MONO = "./fonts/LiberationMono-Regular.ttf";
     defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
     defaultTextFontOption: FONT_FAMILY_LITERAL,
     defaultAbbreviateNumericCartouches: false,
+    defaultNanpaLinjanMode: "strict",
     defaultPreserveCenterOnAutoResize: false,
     defaultSpacingPreset: "default",
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
@@ -1992,6 +2012,20 @@ const FONT_URL_LIBERATION_MONO = "./fonts/LiberationMono-Regular.ttf";
   });
 
 const SPACING_PRESETS = Object.freeze(["default", "compact", "comfortable"]);
+const NANPA_LINJAN_MODES = Object.freeze(["strict", "relaxed"]);
+
+function normalizeNanpaLinjanMode(value){
+  const v = String(value ?? "").trim().toLowerCase();
+  return NANPA_LINJAN_MODES.includes(v) ? v : "strict";
+}
+
+function nanpaLinjanModeOptions(){
+  return [["strict", tr("opt_nanpa_linjan_strict")], ["relaxed", tr("opt_nanpa_linjan_relaxed")]];
+}
+
+function isRelaxedNanpaLinjanMode(value){
+  return normalizeNanpaLinjanMode(value) === "relaxed";
+}
 
 function normalizeSpacingPreset(value){
   const v = String(value ?? "").trim().toLowerCase();
@@ -2021,6 +2055,27 @@ function getElementAbbreviateNumericCartouches(el){
     DEFAULTS.defaultAbbreviateNumericCartouches ??
     false
   );
+}
+
+function getSceneDefaultNanpaLinjanMode(){
+  return normalizeNanpaLinjanMode(
+    Scene?.stage?.defaultNanpaLinjanMode ??
+    DEFAULTS.defaultNanpaLinjanMode ??
+    "strict"
+  );
+}
+
+function getElementNanpaLinjanMode(el){
+  return normalizeNanpaLinjanMode(
+    el?.nanpaLinjanMode ??
+    Scene?.stage?.defaultNanpaLinjanMode ??
+    DEFAULTS.defaultNanpaLinjanMode ??
+    "strict"
+  );
+}
+
+function isElementRelaxedNanpaLinjanMode(el){
+  return isRelaxedNanpaLinjanMode(getElementNanpaLinjanMode(el));
 }
 
 function getSceneDefaultPreserveCenterOnAutoResize(){
@@ -2759,6 +2814,8 @@ function buildRendererInitConfigForElement(el){
       numericMode: 'compat',
       mixedStyle: 'short',
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      relaxedNanpaLinjanParsing: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
+      relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       ...buildCartoucheTallyParserConfig(el)
     },
     fonts: {
@@ -2812,6 +2869,8 @@ function buildRendererCallConfigForElement(el){
       numericMode: 'compat',
       mixedStyle: 'short',
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      relaxedNanpaLinjanParsing: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
+      relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText),
       ...buildCartoucheTallyParserConfig(el)
     },
@@ -2958,6 +3017,7 @@ function getElementRendererSignature(el){
     haloThickness: Number(el?.haloThickness ?? 0),
     ignoreUnknownText: !!el?.ignoreUnknownText,
     abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+    nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
     sitelenBoundsGuardVersion: (el?.type === ElementType.Sitelen) ? SITELEN_BOUNDS_GUARD_VERSION : 0
   });
 }
@@ -3405,6 +3465,7 @@ function normalizeScene(parsed){
     defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
     defaultTextFontOption: DEFAULTS.defaultTextFontOption,
     defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
+    defaultNanpaLinjanMode: DEFAULTS.defaultNanpaLinjanMode,
     defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
     defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
     defaultTextColor: DEFAULTS.defaultTextColor,
@@ -3451,6 +3512,7 @@ function normalizeScene(parsed){
   out.stage.defaultRenderFontPreset = normalizeLegacyRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   out.stage.defaultTextFontOption = normalizeLegacyTextFontOptionKey(out.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, out.stage.defaultRenderFontPreset);
   out.stage.defaultAbbreviateNumericCartouches = !!(out.stage.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  out.stage.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(out.stage.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
   out.stage.defaultPreserveCenterOnAutoResize = !!(out.stage.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   out.stage.defaultSpacingPreset = normalizeSpacingPreset(out.stage.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
@@ -3539,6 +3601,7 @@ function normalizeScene(parsed){
         el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
         // Imported sitelen elements missing this flag must stay false for backwards compatibility.
         el.abbreviateNumericCartouches = !!(el.abbreviateNumericCartouches ?? false);
+        el.nanpaLinjanMode = normalizeNanpaLinjanMode(el.nanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
         el.spacingPreset = normalizeSpacingPreset(el.spacingPreset ?? out.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
         el.ignoreUnknownText = (el.ignoreUnknownText == null) ? !!(out.stage?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText) : !!el.ignoreUnknownText;
         if (!el.sitelen || typeof el.sitelen !== "object") el.sitelen = {};
@@ -3820,6 +3883,8 @@ function deserializeAssets(serialized){
       defaultTextFontOption: DEFAULTS.defaultTextFontOption,
       // New blank layout documents default this flag ON. Imported JSON is normalized separately.
       defaultAbbreviateNumericCartouches: true,
+      // New blank layout documents default relaxed; imported/loaded legacy scenes normalize missing values to strict.
+      defaultNanpaLinjanMode: "relaxed",
       defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
       defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
       defaultTextColor: DEFAULTS.defaultTextColor,
@@ -3922,6 +3987,7 @@ function deserializeAssets(serialized){
     el.fontSize = 44;
     el.align = "left";
     el.abbreviateNumericCartouches = getSceneDefaultAbbreviateNumericCartouches();
+    el.nanpaLinjanMode = getSceneDefaultNanpaLinjanMode();
     el.spacingPreset = getSceneDefaultSpacingPreset();
     el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
     el.lineHeight = 1.05;
@@ -9334,6 +9400,26 @@ if (!shouldKeepFloatingEditor){
             render();
           }
         ));
+
+        const leaderNanpaMode = topmostSelectedWhere(e => e && e.type === ElementType.Sitelen);
+        const nanpaModeVals = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => getElementNanpaLinjanMode(e));
+        const nanpaModeMixed = mixedLabelIfMixed(nanpaModeVals);
+        propsBody.appendChild(makeSelect(
+          tr("props_nanpa_linjan_mode"),
+          getElementNanpaLinjanMode(leaderNanpaMode),
+          nanpaLinjanModeOptions(),
+          (v) => {
+            applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+              e.nanpaLinjanMode = normalizeNanpaLinjanMode(v);
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e);
+            });
+            scheduleAutosave();
+            render();
+            updateUiForSelection();
+          },
+          nanpaModeMixed
+        ));
       }
 
       // Font size
@@ -9898,6 +9984,20 @@ if (!shouldKeepFloatingEditor){
           updateSitelenLayout(el);
           scheduleAutosave();
           render();
+        }
+      ));
+
+      propsBody.appendChild(makeSelect(
+        tr("props_nanpa_linjan_mode"),
+        getElementNanpaLinjanMode(el),
+        nanpaLinjanModeOptions(),
+        (v) => {
+          el.nanpaLinjanMode = normalizeNanpaLinjanMode(v);
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+          scheduleAutosave();
+          render();
+          updateUiForSelection();
         }
       ));
     }
@@ -11895,6 +11995,7 @@ function syncStageDefaultsUiFromScene(){
   const drfp = document.getElementById("defRenderFontPreset");
   const dtfo = document.getElementById("defTextFontOption");
   const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dnlm = document.getElementById("defNanpaLinjanMode");
   const dpcoar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
@@ -11967,7 +12068,9 @@ function syncStageDefaultsUiFromScene(){
 
   if (drfp) drfp.value = st.defaultRenderFontPreset;
   if (dtfo) dtfo.value = st.defaultTextFontOption;
+  st.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
   if (danc) danc.checked = !!(st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  if (dnlm) dnlm.value = st.defaultNanpaLinjanMode;
   if (dpcoar) dpcoar.checked = !!(st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   if (dsp) dsp.value = normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
     
@@ -12741,6 +12844,7 @@ sitelenRendererInstancePromises.clear();
       align: String(el?.align ?? ""), lineHeight: Number(el?.lineHeight ?? 0),
       spacingPreset: getElementSpacingPreset(el),
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
       ignoreUnknownText: !!el?.ignoreUnknownText,
       haloEnabled: !!el?.haloEnabled, haloColor: String(el?.haloColor ?? ""),
       haloMode: String(el?.haloThicknessMode ?? ""), haloThickness: Number(el?.haloThickness ?? 0),
@@ -14213,6 +14317,8 @@ $("btnNew").addEventListener("click", async () => {
   );
   // New blank layout documents default this flag ON. Imported JSON is normalized separately.
   Scene.stage.defaultAbbreviateNumericCartouches = true;
+  // New blank layout documents default relaxed; imported/loaded legacy scenes normalize missing values to strict.
+  Scene.stage.defaultNanpaLinjanMode = "relaxed";
   Scene.stage.defaultSpacingPreset = DEFAULTS.defaultSpacingPreset;
   Scene.stage.defaultTextColor = DEFAULTS.defaultTextColor;
   Scene.stage.defaultFill = DEFAULTS.defaultFill;
@@ -14358,6 +14464,7 @@ function wireStageDefaultsUi(){
   const expbg = document.getElementById("exportStageBackground");
   const dtfo = document.getElementById("defTextFontOption");
   const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dnlm = document.getElementById("defNanpaLinjanMode");
   const dpcoar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
@@ -14466,6 +14573,14 @@ function wireStageDefaultsUi(){
   if (danc){
     danc.addEventListener("change", (e) => {
       Scene.stage.defaultAbbreviateNumericCartouches = !!e.target.checked;
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dnlm){
+    dnlm.addEventListener("change", (e) => {
+      Scene.stage.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(e.target.value);
       scheduleAutosave();
       render();
     });
