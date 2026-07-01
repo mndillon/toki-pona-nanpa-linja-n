@@ -2477,28 +2477,24 @@ function wireHaloControls() {
     }
 
     const STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
-    const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","SI","LU","MU","PI","JA"]);
+    const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
     const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
     const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
 
     const RELAXED_TOKEN_TO_STRICT_TOKEN = Object.freeze({
       "WA": "WE",
       "TU": "TE",
-      "SI": "SE",
       "LU": "LE",
       "MU": "ME",
-      "PI": "PE",
-      "JA": "JE"
+      "PI": "PE"
     });
 
     const RELAXED_TOKEN_TO_RENDER_WORDS = Object.freeze({
       "WA": ["wan", "ala"],
       "TU": ["tu", "uta"],
-      "SI": ["seli", "ike"],
       "LU": ["luka", "uta"],
       "MU": ["mun", "uta"],
-      "PI": ["pipi", "ike"],
-      "JA": ["jo", "ala"]
+      "PI": ["pipi", "ike"]
     });
 
     function nanpaDigitTokensAcceptedByParser() {
@@ -2673,13 +2669,13 @@ function wireHaloControls() {
     }
 
     const TOKEN_TO_DIGIT_CHAR = {
-      "NI":"0","WE":"1","WA":"1","TE":"2","TU":"2","SE":"3","SI":"3","NA":"4",
-      "LE":"5","LU":"5","NU":"6","ME":"7","MU":"7","PE":"8","PI":"8","JE":"9","JA":"9"
+      "NI":"0","WE":"1","WA":"1","TE":"2","TU":"2","SE":"3","NA":"4",
+      "LE":"5","LU":"5","NU":"6","ME":"7","MU":"7","PE":"8","PI":"8","JE":"9"
     };
 
     const TOKEN_TO_DIGIT_WORD = {
-      "NI":"ijo","WE":"wan","WA":"wan","TE":"tu","TU":"tu","SE":"seli","SI":"seli","NA":"awen",
-      "LE":"luka","LU":"luka","NU":"utala","ME":"mun","MU":"mun","PE":"pipi","PI":"pipi","JE":"jo","JA":"jo"
+      "NI":"ijo","WE":"wan","WA":"wan","TE":"tu","TU":"tu","SE":"seli","NA":"awen",
+      "LE":"luka","LU":"luka","NU":"utala","ME":"mun","MU":"mun","PE":"pipi","PI":"pipi","JE":"jo"
     };
 
     const WORD_FOR_NEGATIVE_SIGN = "ona";
@@ -3008,8 +3004,8 @@ function wireHaloControls() {
     };
 
     const RELAXED_DEC_DIGIT_TO_TOKEN = {
-      "0": "NI", "1": "WA", "2": "TU", "3": "SI", "4": "NA",
-      "5": "LU", "6": "NU", "7": "MU", "8": "PI", "9": "JA",
+      "0": "NI", "1": "WA", "2": "TU", "3": "SE", "4": "NA",
+      "5": "LU", "6": "NU", "7": "MU", "8": "PI", "9": "JE",
     };
 
     function decimalDigitToNanpaToken(ch) {
@@ -3955,8 +3951,6 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
     const RELAXED_NANPA_PHRASE_FOLLOWERS = Object.freeze({
       wan: "ala",
-      jo: "ala",
-      seli: "ike",
       pipi: "ike",
       tu: "uta",
       luka: "uta",
@@ -7379,8 +7373,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
   // Token -> digit character (for decode path)
   const _NP_TOKEN_TO_DIGIT_CHAR = {
-    "NI": "0", "WE": "1", "WA": "1", "TE": "2", "TU": "2", "SE": "3", "SI": "3", "NA": "4",
-    "LE": "5", "LU": "5", "NU": "6", "ME": "7", "MU": "7", "PE": "8", "PI": "8", "JE": "9", "JA": "9",
+    "NI": "0", "WE": "1", "WA": "1", "TE": "2", "TU": "2", "SE": "3", "NA": "4",
+    "LE": "5", "LU": "5", "NU": "6", "ME": "7", "MU": "7", "PE": "8", "PI": "8", "JE": "9",
   };
 
   const _NP_TP_UCSUR_MIN = 0xF1900;
@@ -7482,41 +7476,37 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   ]);
 
   const _NP_STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
-  const _NP_RELAXED_DIGIT_TOKENS = new Set(["WA","TU","SI","LU","MU","PI","JA"]);
+  const _NP_RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
   const _NP_DIGIT_TOKENS = new Set([..._NP_STRICT_DIGIT_TOKENS, ..._NP_RELAXED_DIGIT_TOKENS]);
   const _NP_TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
 
   const _NP_RELAXED_TOKEN_TO_STRICT_TOKEN = Object.freeze({
     "WA": "WE",
     "TU": "TE",
-    "SI": "SE",
     "LU": "LE",
     "MU": "ME",
-    "PI": "PE",
-    "JA": "JE"
+    "PI": "PE"
   });
 
   const _NP_RELAXED_TOKEN_TO_RENDER_WORDS = Object.freeze({
     "WA": ["wan", "ala"],
     "TU": ["tu", "uta"],
-    "SI": ["seli", "ike"],
     "LU": ["luka", "uta"],
     "MU": ["mun", "uta"],
-    "PI": ["pipi", "ike"],
-    "JA": ["jo", "ala"]
+    "PI": ["pipi", "ike"]
   });
 
   const _NP_TOKEN_TO_NUMBER_CODE_LETTER = Object.freeze({
     "NI": "I",
     "WE": "W", "WA": "W",
     "TE": "T", "TU": "T",
-    "SE": "S", "SI": "S",
+    "SE": "S",
     "NA": "A",
     "LE": "L", "LU": "L",
     "NU": "U",
     "ME": "M", "MU": "M",
     "PE": "P", "PI": "P",
-    "JE": "J", "JA": "J"
+    "JE": "J"
   });
 
   function _npRelaxedParsingFromOpts(opts = {}) {
@@ -7537,8 +7527,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   };
 
   const _NP_TOKEN_TO_DIGIT_WORD = {
-    "NI":"ijo","WE":"wan","WA":"wan","TE":"tu","TU":"tu","SE":"seli","SI":"seli","NA":"awen",
-    "LE":"luka","LU":"luka","NU":"utala","ME":"mun","MU":"mun","PE":"pipi","PI":"pipi","JE":"jo","JA":"jo"
+    "NI":"ijo","WE":"wan","WA":"wan","TE":"tu","TU":"tu","SE":"seli","NA":"awen",
+    "LE":"luka","LU":"luka","NU":"utala","ME":"mun","MU":"mun","PE":"pipi","PI":"pipi","JE":"jo"
   };
 
   const _NP_WORD_FOR_NEGATIVE_SIGN = "ona";
@@ -7559,8 +7549,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   };
 
   const _NP_RELAXED_DEC_DIGIT_TO_TOKEN = {
-    "0": "NI", "1": "WA", "2": "TU", "3": "SI", "4": "NA",
-    "5": "LU", "6": "NU", "7": "MU", "8": "PI", "9": "JA",
+    "0": "NI", "1": "WA", "2": "TU", "3": "SE", "4": "NA",
+    "5": "LU", "6": "NU", "7": "MU", "8": "PI", "9": "JE",
   };
 
   function _npDecimalDigitToNanpaToken(ch, opts = {}) {

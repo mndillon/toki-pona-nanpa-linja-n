@@ -12,8 +12,8 @@ const AUDIO_PAUSE_SCALE_STORAGE_KEY = 'nanpaListeningQuizAudioPauseScale';
 const AUDIO_PAUSE_SCALE_DEFAULT = 4.00;//very slow
 const AVERAGE_TRIMMED_OUTER_SILENCE_SECONDS = 0.467;
 const AUDIO_PAUSE_SCALE_OPTIONS = [
-  // Normal keeps the fully trimmed WAVs tight: no extra syllable silence.
-  { value: 1.00, label: 'Normal', syllableGapSeconds: 0.000 },
+  // Normal adds a small gap between assembled syllable units.
+  { value: 1.00, label: 'Normal', syllableGapSeconds: 0.200 },
   // Slow is double the previous 0.350 s gap.
   { value: 2.25, label: 'Slow', syllableGapSeconds: 0.700 },
   // Very slow is double the previous 0.701 s gap.
@@ -23,9 +23,8 @@ const AUDIO_PAUSE_SCALE_OPTIONS = [
 const PROPER_NAME_MODE_STORAGE_KEY = 'nanpaListeningQuizProperNameMode';
 const PROPER_NAME_MODE_DEFAULT = 'strict';
 const PROPER_NAME_MODE_OPTIONS = [
-  { value: 'strict', label: 'Strict' },
-  { value: 'relaxed-alternative', label: 'Relaxed (alternative)' },
-  { value: 'relaxed-mixed', label: 'Relaxed (mixed)' }
+  { value: 'strict', label: 'strict' },
+  { value: 'relaxed', label: 'relaxed' }
 ];
 
 const ABBREV_CP_NANPA = 0xF193D;
@@ -125,7 +124,9 @@ function audioPauseScaleOptionsHtml(selectedValue) {
 
 function normalizeProperNameMode(value) {
   const s = String(value ?? '').trim().toLowerCase();
-  return PROPER_NAME_MODE_OPTIONS.some(opt => opt.value === s) ? s : PROPER_NAME_MODE_DEFAULT;
+  if (s === 'relaxed' || s === 'relaxed-alternative' || s === 'relaxed-mixed') return 'relaxed';
+  if (s === 'strict') return 'strict';
+  return PROPER_NAME_MODE_DEFAULT;
 }
 
 function storedProperNameMode() {
@@ -166,15 +167,13 @@ function isRelaxedProperNameMode(mode) {
 const STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
   WE: 'WA',
   TE: 'TU',
-  SE: 'SI',
   LE: 'LU',
   ME: 'MU',
-  PE: 'PI',
-  JE: 'JA'
+  PE: 'PI'
 });
 
 const QUIZ_NANPA_STRICT_DIGIT_TOKENS = new Set(['NI','WE','TE','SE','NA','LE','NU','ME','PE','JE']);
-const QUIZ_NANPA_RELAXED_DIGIT_TOKENS = new Set(['WA','TU','SI','LU','MU','PI','JA']);
+const QUIZ_NANPA_RELAXED_DIGIT_TOKENS = new Set(['WA','TU','LU','MU','PI']);
 const QUIZ_NANPA_DIGIT_TOKENS = new Set([...QUIZ_NANPA_STRICT_DIGIT_TOKENS, ...QUIZ_NANPA_RELAXED_DIGIT_TOKENS]);
 const QUIZ_NANPA_TOKEN_PREFIXES = ['KEKEKE','KEKE','KO','KE','NONONO','NONO','NOKO','OK','NE','NO'];
 
@@ -218,12 +217,7 @@ function capsForProperNameMode(caps, mode) {
   if (normalizedMode === 'strict') return String(caps ?? '').trim().toUpperCase();
 
   const tokens = tokenizeNanpaCapsForQuiz(caps);
-  const out = tokens.map(t => {
-    const relaxed = STRICT_TO_RELAXED_DIGIT_TOKEN[t];
-    if (!relaxed) return t;
-    if (normalizedMode === 'relaxed-alternative') return relaxed;
-    return Math.random() < 0.5 ? relaxed : t;
-  });
+  const out = tokens.map(t => STRICT_TO_RELAXED_DIGIT_TOKEN[t] || t);
   return out.join('');
 }
 
@@ -359,7 +353,7 @@ function item(kind, parserInput, displayValue, answerMode, properNameMode = getC
 
 async function getNanpaParser() {
   if (!nanpaModulePromise) {
-    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=172');
+    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=173');
   }
   const mod = await nanpaModulePromise;
   return mod.NanpaParser;
@@ -367,7 +361,7 @@ async function getNanpaParser() {
 
 async function getVoice() {
   if (!voicePromise) {
-    voicePromise = import('./toki-pona-voice-api.js?v=23').then(m => m.createTokiPonaVoice());
+    voicePromise = import('./toki-pona-voice-api.js?v=24').then(m => m.createTokiPonaVoice());
   }
   return voicePromise;
 }
@@ -770,8 +764,8 @@ function renderQuiz(root) {
       Press an audio button as many times as you like, enter the decimal value or nanpa-linja-n proper name you hear, then check your answer.
       <span class="tpLine">o kute mute la sina ken. o pana e nanpa anu nimi pi nanpa-linja-n la o lukin e pona.</span>
     </div>
-    <div class="nanpaListenQuizAudioSettings" role="group" aria-label="Nanpa-linja-n proper names and audio settings">
-      <label for="nanpaListenQuizProperNameMode">nanpa-linja-n proper names mode</label>
+    <div class="nanpaListenQuizAudioSettings" role="group" aria-label="Nanpa-linja-n mode and audio settings">
+      <label for="nanpaListenQuizProperNameMode">nanpa-linja-n mode</label>
       <select id="nanpaListenQuizProperNameMode" data-quiz-proper-name-mode>
         ${properNameModeOptionsHtml(properNameMode)}
       </select>
@@ -779,7 +773,7 @@ function renderQuiz(root) {
       <select id="nanpaListenQuizAudioPauseScale" data-quiz-audio-pause-scale>
         ${audioPauseScaleOptionsHtml(audioPauseScale)}
       </select>
-      <span class="help">Normal adds no extra syllable silence. Slow and Very slow add calculated silence between assembled syllable units; they do not stretch or slur the audio.</span>
+      <span class="help">Normal adds a small 0.2 s gap between assembled syllable units. Slow and Very slow add longer calculated silence; they do not stretch or slur the audio.</span>
     </div>
   `;
 

@@ -155,7 +155,7 @@ This table shows which syllables are allowed for each decimal digit when reading
 
 In **strict mode**, each digit has only one accepted syllable. For example, digit 1 uses **we**, digit 2 uses **te**, and digit 3 uses **se**.
 
-In **relaxed mode**, some digits can also use extra syllables that mean the same digit. For example, digit 1 can use **we** or **wa**, digit 3 can use **se** or **si**, and digit 9 can use **je** or **ja**.
+In **relaxed mode**, some digits can also use extra syllables that mean the same digit. For example, digit 1 can use **we** or **wa**, digit 5 can use **le** or **lu**, and digit 8 can use **pe** or **pi**.
 
 The **e**, **a**, **i**, and **u** columns show the accepted syllables for each digit. The **large glyph** column shows the main sitelen pona glyph used for that digit. The **small glyph** row shows the small glyph associated with each vowel column.
 
@@ -184,13 +184,13 @@ In relaxed mode, for example, we will accept **Nemun**, as well as **Nemen**, to
 |           0 |  -  |  -  |  ni |  -  | ijo         |
 |           1 |  we |  wa |  -  |  -  | wan         |
 |           2 |  te |  -  |  -  |  tu | tu          |
-|           3 |  se |  -  |  si |  -  | seli        |
+|           3 |  se |  -  |  -  |  -  | seli        |
 |           4 |  -  |  na |  -  |  -  | awen        |
 |           5 |  le |  -  |  -  |  lu | luka        |
 |           6 |  -  |  -  |  -  |  nu | utala       |
 |           7 |  me |  -  |  -  |  mu | mun         |
 |           8 |  pe |  -  |  pi |  -  | pipi        |
-|           9 |  je |  ja |  -  |  -  | jo          |
+|           9 |  je |  -  |  -  |  -  | jo          |
 | small glyph |  en | ala | ike | uta |             |
 
 
