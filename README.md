@@ -143,23 +143,17 @@ Example:
 
 ---
 
-## nanpa-linja-n parsing and rendering of numeric proper names
-
-
-
-## nanpa-linja-n mode
-
-*nasin pi nanpa-linja-n*
+## nanpa-linja-n mode used for parsing and rendering of numeric proper names
 
 This table shows which syllables are allowed for each decimal digit when reading and writing a nanpa-linja-n proper name.
 
 In **strict mode**, each digit has only one accepted syllable. For example, digit 1 uses **we**, digit 2 uses **te**, and digit 3 uses **se**.
 
-In **relaxed mode**, some digits can also use extra syllables that mean the same digit. For example, digit 1 can use **we** or **wa**, digit 5 can use **le** or **lu**, and digit 8 can use **pe** or **pi**.
+In **relaxed mode**, some digits can also use extra syllables that mean the same digit. For example, digit 1 can use **we** or **wa**, digit 2 can use **te** or **tu**, and digit 5 can use **le** or **lu**.  This makes communicating the nanpa-linja-n proper names for numbers a little more natural sounding.
 
 The **e**, **a**, **i**, and **u** columns show the accepted syllables for each digit. The **large glyph** column shows the main sitelen pona glyph used for that digit. The **small glyph** row shows the small glyph associated with each vowel column.
 
-In relaxed mode, for example, we will accept **Nemun**, as well as **Nemen**, to represent the number 7.
+In relaxed mode, for example, we will accept **Nemun**, as well as **Nemen**, to represent the number 7.  The additional permitted syllables are derived naturally from the corresponding digit glyph.
 
 ### strict
 
