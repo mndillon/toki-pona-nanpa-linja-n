@@ -58,13 +58,14 @@ function cartoucheApiSummarizeMapValue(mapVal) {
     requiresAtDb: !!mapVal.requiresAtDb,
     input: cartoucheApiShortString(mapVal.input),
     inputForceNormal: cartoucheApiShortString(mapVal.inputForceNormal),
+    audio: cartoucheApiShortString(mapVal.audio),
   };
 }
 
 function cartoucheApiSummarizeToken(token) {
   if (!token || typeof token !== 'object') return token;
   if (token.type === 'cartouche') {
-    return { type: token.type, input: cartoucheApiShortString(token.input) };
+    return { type: token.type, input: cartoucheApiShortString(token.input), audio: cartoucheApiShortString(token.audio) };
   }
   if (Array.isArray(token.words)) return { ...token, words: token.words.slice() };
   return { ...token };
@@ -379,6 +380,72 @@ function getEntryLiteralText(entry) {
   return cleanLiteralText(entry?.literalText) || entry?.key || '';
 }
 
+function entryDefaultAudioText(entry) {
+  const key = String(entry?.key ?? '').trim();
+  if (key) return key;
+
+  if (Array.isArray(entry?.words) && entry.words.length) {
+    return entry.words.join(' ');
+  }
+
+  return '';
+}
+
+export function validateEntryAudioText(rawText, { merge = false, defaultText = '' } = {}) {
+  const candidate = String(rawText ?? '').trim() || String(defaultText ?? '').trim();
+  const rawWords = candidate.split(/\s+/).filter(Boolean);
+
+  if (!rawWords.length) {
+    return { ok: false, reason: 'Audio text must contain at least one toki pona CVN word.', words: [], storedText: '', effectiveText: '' };
+  }
+
+  const words = [];
+  for (const rawWord of rawWords) {
+    const result = validateTpWord(rawWord);
+    if (!result.ok) {
+      return { ok: false, reason: result.reason, words: [], storedText: '', effectiveText: '' };
+    }
+    words.push(result.normalised);
+  }
+
+  const storedText = words.join(' ');
+
+  if (merge) {
+    const merged = segmentLetters(words).letters.join('');
+    const mergedResult = validateTpWord(merged);
+    if (!mergedResult.ok) {
+      return {
+        ok: false,
+        reason: `Merged audio output "${merged}" is not valid CVN toki pona: ${mergedResult.reason}`,
+        words,
+        storedText,
+        effectiveText: ''
+      };
+    }
+    return { ok: true, words, storedText, audio: storedText, effectiveText: mergedResult.normalised, effectiveAudio: mergedResult.normalised };
+  }
+
+  return { ok: true, words, storedText, audio: storedText, effectiveText: storedText, effectiveAudio: storedText };
+}
+
+export function normalizeEntryAudio(entry) {
+  const defaultText = entryDefaultAudioText(entry);
+  const result = validateEntryAudioText(entry?.audio, { merge: false, defaultText });
+  if (result.ok) return result.storedText;
+
+  const fallback = validateEntryAudioText(defaultText, { merge: false });
+  return fallback.ok ? fallback.storedText : '';
+}
+
+export function buildEntryAudioInput(entry) {
+  const defaultText = entryDefaultAudioText(entry);
+  const result = validateEntryAudioText(entry?.audio, { merge: !!entry?.merge, defaultText });
+  if (result.ok) return result.effectiveText;
+
+  const fallback = validateEntryAudioText(defaultText, { merge: !!entry?.merge });
+  return fallback.ok ? fallback.effectiveText : '';
+}
+
 function tokenizeStoredCartouche(value) {
   return String(value || '').trim().split(/\s+/).filter(Boolean);
 }
@@ -597,7 +664,9 @@ function migrateRecord(e) {
   const cartoucheMap = (typeof e.cartoucheMap === 'object' && e.cartoucheMap) ? e.cartoucheMap : {};
   if (e.cartouche && typeof e.cartouche === 'string' && !Object.keys(cartoucheMap).length)
     cartoucheMap['0'] = e.cartouche;
-  return { key, words: wordList, merge: e.merge !== false, mode, cartoucheMap, tallyMap: (typeof e.tallyMap === 'object' && e.tallyMap) ? e.tallyMap : {}, forceNormal: !!e.forceNormal, literalText: cleanLiteralText(e.literalText) || key };
+  const entry = { key, words: wordList, merge: e.merge !== false, mode, cartoucheMap, tallyMap: (typeof e.tallyMap === 'object' && e.tallyMap) ? e.tallyMap : {}, forceNormal: !!e.forceNormal, literalText: cleanLiteralText(e.literalText) || key, audio: String(e.audio ?? '').trim() || key };
+  entry.audio = normalizeEntryAudio(entry);
+  return entry;
 }
 
 // ── Pure page-map construction ────────────────────────────────────────────
@@ -687,6 +756,7 @@ export function buildPageMapFromCartoucheEntries(entries) {
       const mapValue = {
         input:            rendererInput,
         inputForceNormal: inputForceNormal,
+        audio:            buildEntryAudioInput(entry),
         forceNormal:      !!entry.forceNormal,
         requiresAtDb:     entryRequiresAtDbForTpWordCollision(entry),
       };
@@ -879,7 +949,7 @@ export class CartoucheApi {
       return out;
     }
 
-    const { input, inputForceNormal, forceNormal, requiresAtDb } = mapVal;
+    const { input, inputForceNormal, audio, forceNormal, requiresAtDb } = mapVal;
 
     // Entries that collide with ordinary toki pona words only activate when
     // @db is explicitly attached to this exact single word.
@@ -889,7 +959,7 @@ export class CartoucheApi {
     }
 
     const chosenInput = (forceNormal && atDbRequested) ? inputForceNormal : input;
-    const out = { type: 'cartouche', input: chosenInput };
+    const out = { type: 'cartouche', input: chosenInput, audio: String(audio || cleanWord || '').trim() };
     cartoucheApiDebug('_lookupSingleDbWord: cartouche hit', {
       cleanWord,
       atDbRequested: !!atDbRequested,
@@ -1041,6 +1111,28 @@ export class CartoucheApi {
     return output;
   }
 
+  // ── buildAudioInput ───────────────────────────────────────────────────────
+  // Takes a greedyScan result and builds the final input string for audio parsing.
+  // type:'text'      → words joined with spaces
+  // type:'cartouche' → explicit DB audio text, falling back to cartouche input
+  // type:'ignore'    → omitted entirely
+  static buildAudioInput(scanResult) {
+    const output = scanResult
+      .filter(t => t.type !== 'ignore')
+      .map(t => {
+        if (t.type === 'cartouche') return String(t.audio || t.input || '').trim();
+        return t.words.join(' ');
+      })
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    cartoucheApiDebug('buildAudioInput()', {
+      scanResult: cartoucheApiSummarizeTokens(scanResult),
+      output: cartoucheApiShortString(output, 500),
+    });
+    return output;
+  }
+
   // ── prepareInput ──────────────────────────────────────────────────────────
   // Convenience method: takes raw multi-line text and a resolved pageMap,
   // processes each line independently (preserving newlines for the renderer),
@@ -1097,6 +1189,59 @@ export class CartoucheApi {
         return lineOutput;
       }).join('\n');
       cartoucheApiDebug('prepareInput: final output', { output: cartoucheApiShortString(output, 2000) });
+      return output;
+    });
+  }
+
+  // ── prepareAudioInput ─────────────────────────────────────────────────────
+  // Convenience method: takes raw multi-line text and a resolved pageMap,
+  // processes each line with the same scan rules as prepareInput(),
+  // but substitutes DB audio text instead of DB renderer/cartouche input.
+  static prepareAudioInput(rawText, pageMap) {
+    return cartoucheApiDebugGroup('prepareAudioInput()', {
+      rawText: cartoucheApiShortString(rawText, 1000),
+      pageMapSize: pageMap ? pageMap.size : null,
+      pageMapKeys: pageMap ? Array.from(pageMap.keys()) : [],
+    }, () => {
+      const output = String(rawText ?? '').split('\n').map((line, lineIndex) => {
+        cartoucheApiDebug('prepareAudioInput: line start', { lineIndex, line: cartoucheApiShortString(line, 500) });
+        if (!line.trim()) {
+          cartoucheApiDebug('prepareAudioInput: blank line', { lineIndex });
+          return '';
+        }
+        // Split on double-quoted sections exactly like prepareInput().
+        // Quoted sections pass through untouched; only unquoted sections are scanned.
+        const parts = line.split('"');
+        cartoucheApiDebug('prepareAudioInput: split quoted parts', { lineIndex, parts: parts.map(p => cartoucheApiShortString(p, 300)) });
+        const processed = parts.map((part, idx) => {
+          if (idx % 2 === 1) {
+            const quoted = '"' + part + '"';
+            cartoucheApiDebug('prepareAudioInput: quoted part passthrough', { lineIndex, partIndex: idx, quoted: cartoucheApiShortString(quoted, 300) });
+            return quoted;
+          }
+          const leading  = part.match(/^\s*/)[0];
+          const trailing = part.match(/\s*$/)[0];
+          const words = part.trim().split(/\s+/).filter(Boolean);
+          cartoucheApiDebug('prepareAudioInput: unquoted part words', { lineIndex, partIndex: idx, part: cartoucheApiShortString(part, 300), leading, trailing, words });
+          if (!words.length) return leading + trailing;
+          const tokens = CartoucheApi.greedyScan(words, pageMap);
+          const built = CartoucheApi.buildAudioInput(tokens);
+          const partOutput = leading + built + trailing;
+          cartoucheApiDebug('prepareAudioInput: unquoted part output', {
+            lineIndex,
+            partIndex: idx,
+            words,
+            tokens: cartoucheApiSummarizeTokens(tokens),
+            built: cartoucheApiShortString(built, 500),
+            partOutput: cartoucheApiShortString(partOutput, 500),
+          });
+          return partOutput;
+        });
+        const lineOutput = processed.join('');
+        cartoucheApiDebug('prepareAudioInput: line output', { lineIndex, lineOutput: cartoucheApiShortString(lineOutput, 800) });
+        return lineOutput;
+      }).join('\n');
+      cartoucheApiDebug('prepareAudioInput: final output', { output: cartoucheApiShortString(output, 2000) });
       return output;
     });
   }

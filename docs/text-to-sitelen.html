@@ -1077,9 +1077,14 @@ nanpa #~WI.
       TEXT_FONT_OPTION_NANPA_LINJA_N
     } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15";
 
-    import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=33';
+    import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=35';
     import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=166';
     import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=27';
+    import {
+      buildAndPlaySitelenAudioFromRawText,
+      stopSitelenAudioPlayback,
+      summarizeSkippedAudio as summarizeSitelenAudioSkipped
+    } from './js/sitelen-audio-plan.js?v=2';
     let pageMap = new Map();
 
     "use strict";
@@ -1548,7 +1553,7 @@ function hideStartupLoading() {
     const VECTOR_DIAG_IMPORTS = Object.freeze({
       renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=172",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
-      cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=30",
+      cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
       vectorExporter: "./js/sitelen-vector-exporter.js?v=166",
       vectorWasm: "./wasm/sitelen_vector_wasm.js?v=143"
     });
@@ -6644,360 +6649,16 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       return textToSitelenVoicePromise;
     }
 
-    function textAudioSilenceSamples(seconds, sampleRate) {
-      return new Float32Array(Math.max(0, Math.round(Number(seconds || 0) * Number(sampleRate || 48000))));
-    }
-
-    function concatTextAudioChunks(chunks) {
-      const total = chunks.reduce((sum, chunk) => sum + (chunk?.length || 0), 0);
-      const out = new Float32Array(total);
-      let offset = 0;
-      for (const chunk of chunks) {
-        if (!chunk?.length) continue;
-        out.set(chunk, offset);
-        offset += chunk.length;
-      }
-      return out;
-    }
-
-    function normalizeAudioWord(raw) {
-      return String(raw ?? "").replace(/'/g, "").toLowerCase();
-    }
-
-    function isAudioTpPhonotacticWord(raw) {
-      const w = normalizeAudioWord(raw);
-      if (w === "n") return true;
-      if (!w || !/^[aeiouptkmnswlj]+$/.test(w)) return false;
-
-      let i = 0;
-      while (i < w.length) {
-        if ("ptkmnswlj".includes(w[i])) {
-          if (i + 1 < w.length && "aeiou".includes(w[i + 1])) i += 1;
-          else return false;
-        }
-        if (i >= w.length || !"aeiou".includes(w[i])) return false;
-        i += 1;
-        if (i < w.length && w[i] === "n") {
-          const next = i + 1 < w.length ? w[i + 1] : "";
-          if (!next || "ptkmnswlj".includes(next)) i += 1;
-        }
-      }
-      return true;
-    }
-
-    function isReadableAudioTokiPonaText(text) {
-      const tokens = String(text ?? "").match(/[A-Za-z']+|[.,!?;:]/g) || [];
-      if (!tokens.length) return false;
-      return tokens.every(token => /^[.,!?;:]$/.test(token) || isAudioTpPhonotacticWord(token));
-    }
-
-    function compactSpeechWhitespace(text) {
-      return String(text ?? "").replace(/\s+/g, " ").trim();
-    }
-
-    function sanitizeTextToSitelenAudioText(text) {
-      // Remove visual-only text-to-sitelen control syntax before speech.
-      // Numeric cartouche runs are converted before this fallback is used.
-      return compactSpeechWhitespace(
-        String(text ?? "")
-          .replace(/[&+\-{}()\[\]\^<>|]/g, " ")
-          .replace(/[“”"]/g, " ")
-      );
-    }
-
-    function stripOuterBracketSyntaxForAudio(text) {
-      let s = String(text ?? "").trim();
-      if (s.startsWith("[") && s.endsWith("]")) s = s.slice(1, -1).trim();
-      return s;
-    }
-
-    function audioGlyphTokensFromCartoucheSource(text) {
-      return stripOuterBracketSyntaxForAudio(text)
-        .split(/\s+/)
-        .map(normalizeTpGlyphToken)
-        .filter(Boolean);
-    }
-
-    function audioInitialForGlyphToken(token) {
-      const t = normalizeTpGlyphToken(token);
-      if (!t) return "";
-      if (t === ":") return "k";      // kolon
-      if (t === "·" || t === ".") return "o"; // ota
-      if (t === ",") return "k";      // koma, if used literally
-      const m = /^[a-z]/.exec(t);
-      return m ? m[0] : "";
-    }
-
-    function audioInitialTextFromGlyphTokens(tokens) {
-      const letters = [];
-      for (const token of (tokens ?? [])) {
-        const initial = audioInitialForGlyphToken(token);
-        if (!initial) return "";
-        letters.push(initial);
-      }
-      return letters.join("");
-    }
-
-    function isAudioNanpaLinjanTpPhraseTokens(tokens) {
-      const words = Array.from(tokens ?? []).map(normalizeTpGlyphToken).filter(Boolean);
-      if (words.length < 3) return false;
-      if (words[0] !== "nanpa") return false;
-      if (!(words[1] === "e" || words[1] === "en" || words[1] === "esun")) return false;
-      if (words[words.length - 1] !== "nanpa") return false;
-
-      const digitGlyphWords = new Set(Object.values(TOKEN_TO_DIGIT_WORD).map(normalizeTpGlyphToken));
-      const relaxedSmallGlyphWords = new Set(["ala", "ike", "uta"]);
-      const allowedNumericGlyphWords = new Set([
-        ...Object.keys(NANPA_LINJA_N_WORD_TO_CP),
-        ...relaxedSmallGlyphWords,
-        "ala",
-        "ike",
-        "uta",
-        "kolon",
-        ":"
-      ]);
-
-      const payload = words.slice(2, -1);
-      if (!payload.some(w => digitGlyphWords.has(w))) return false;
-      return words.every(w => allowedNumericGlyphWords.has(w) || isKnownTpGlyphToken(w));
-    }
-
-    function tryNanpaLinjanTpPhraseSourceToCaps(text) {
-      const words = audioGlyphTokensFromCartoucheSource(text);
-      if (!isAudioNanpaLinjanTpPhraseTokens(words)) return "";
-
-      // Match the renderer's visual cartouche interpretation: the spoken
-      // nanpa-linja-n label is the cartouche spelling, i.e. the initial sound
-      // of each glyph token. This also covers relaxed numeric forms such as
-      // nanpa en mun uta nanpa -> NEMUN -> Nemun.
-      const caps = audioInitialTextFromGlyphTokens(words).toUpperCase();
-      if (!caps || !caps.startsWith("NE") || !caps.endsWith("N")) return "";
-      return caps;
-    }
-
-    function titleCaseAudioProperNameText(text) {
-      const s = String(text ?? "").trim().toLowerCase();
-      if (!s) return "";
-      return s[0].toUpperCase() + s.slice(1);
-    }
-
-    function isCapitalizedAudioProperNameText(text) {
-      const s = String(text ?? "").trim();
-      if (!/^[A-Z][A-Za-z']*$/.test(s)) return false;
-      return isAudioTpPhonotacticWord(s);
-    }
-
-    function isCapitalizedAudioProperNamePhraseText(text) {
-      const words = String(text ?? "").trim().split(/\s+/).filter(Boolean);
-      if (!words.length) return false;
-      return words.every(isCapitalizedAudioProperNameText);
-    }
-
-    function normalizeAudioProperNameCompareText(text) {
-      return String(text ?? "").replace(/@db\b/gi, "").replace(/_/g, "").replace(/[^A-Za-z']/g, "").toLowerCase();
-    }
-
-    function audioCartoucheSourceJoinedLetters(text) {
-      const words = audioGlyphTokensFromCartoucheSource(text);
-      if (!words.length) return "";
-      if (!words.every(token => isKnownTpGlyphToken(token) || isAudioTpPhonotacticWord(token))) return "";
-      return words.join("").replace(/[^a-z']/gi, "").toLowerCase();
-    }
-
-    function extractRawCapitalizedProperNameQueuesByLine(rawText) {
-      return String(rawText ?? "")
-        .split(/\n/)
-        .map(line => {
-          const out = [];
-          let inQuote = false;
-          let bracketDepth = 0;
-          const text = String(line ?? "");
-
-          for (let i = 0; i < text.length;) {
-            const ch = text[i];
-            if (ch === '"') { inQuote = !inQuote; i += 1; continue; }
-            if (!inQuote && ch === "[") { bracketDepth += 1; i += 1; continue; }
-            if (!inQuote && ch === "]") { bracketDepth = Math.max(0, bracketDepth - 1); i += 1; continue; }
-
-            if (!inQuote && bracketDepth === 0 && /[A-Z]/.test(ch)) {
-              const m = /^[A-Z][A-Za-z']*(?:@db\b)?/.exec(text.slice(i));
-              if (m) {
-                const token = m[0];
-                const clean = token.replace(/@db\b/i, "");
-                if (isCapitalizedAudioProperNameText(clean)) out.push({ raw: clean, used: false });
-                i += token.length;
-                continue;
-              }
-            }
-
-            i += 1;
-          }
-
-          return out;
-        });
-    }
-
-    function takeMatchingRawProperNameForCartoucheSource(sourceText, rawProperNameQueue) {
-      const joined = audioCartoucheSourceJoinedLetters(sourceText);
-      if (!joined || !Array.isArray(rawProperNameQueue)) return "";
-
-      for (const item of rawProperNameQueue) {
-        if (!item || item.used) continue;
-        const raw = String(item.raw ?? "").trim();
-        if (!raw || !isCapitalizedAudioProperNameText(raw)) continue;
-        if (normalizeAudioProperNameCompareText(raw) !== joined) continue;
-        item.used = true;
-        return raw;
-      }
-
-      return "";
-    }
-
-    function tryCartoucheSourceToSpokenSyllableText(text) {
-      const words = audioGlyphTokensFromCartoucheSource(text);
-      if (!words.length) return "";
-      if (!words.every(isKnownTpGlyphToken)) return "";
-
-      // First try the ordinary cartouche reading: glyph initials spell the name.
-      // Example: [mun uta] -> Mu.
-      const spelled = audioInitialTextFromGlyphTokens(words).toLowerCase();
-      if (spelled && isAudioTpPhonotacticWord(spelled)) {
-        return titleCaseAudioProperNameText(spelled);
-      }
-
-      return "";
-    }
-
-    function trySourceTextToNanpaProperName(text) {
-      const source = String(text ?? "").trim();
-      if (!source) return "";
-
-      try {
-        const caps = tryNanpaLinjanTpPhraseSourceToCaps(source);
-        if (caps) return NanpaParser.splitCapsToProperName(caps, { titleCase: true });
-      } catch {}
-
-      try {
-        const parsed = NanpaParser.parseNumber(source, {
-          mode: getNanpaLinjanMode(),
-          mixedStyle: "short",
-          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
-          relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled()
-        });
-        if (parsed?.properName) return parsed.properName;
-      } catch {}
-
-      return "";
-    }
-
-    function speechTextForRenderRun(run, skipped, rawProperNameQueue = []) {
-      if (!run) return "";
-      const kind = String(run.kind ?? "").toLowerCase();
-      const sourceKind = String(run.sourceKind ?? "").toLowerCase();
-      const sourceText = String(run.sourceText ?? run.encodedText ?? "").trim();
-      if (!sourceText) return "";
-
-      if (sourceKind === "image" || kind === "image") {
-        skipped.push({ kind: "image", text: sourceText });
-        return "";
-      }
-
-      if (run.isUnrecognized) {
-        skipped.push({ kind: "unknown", text: sourceText });
-        return "";
-      }
-
-      if (run.isQuoted || sourceKind === "quote") {
-        if (isReadableAudioTokiPonaText(sourceText)) return compactSpeechWhitespace(sourceText);
-        skipped.push({ kind: "quoted", text: sourceText });
-        return "";
-      }
-
-      if (kind === "cartouche") {
-        // A plain capitalized proper name such as Manlun may render visually as
-        // a cartouche, but its audio source must remain the original proper-name
-        // word. Do this before ordinary cartouche-initial spelling logic so
-        // Manlun is sent to the voice engine as Manlun, not as ma n lu n.
-        if (sourceKind !== "bracket" && isCapitalizedAudioProperNamePhraseText(sourceText)) {
-          return compactSpeechWhitespace(sourceText);
-        }
-
-        const properName = trySourceTextToNanpaProperName(sourceText);
-        if (properName) return compactSpeechWhitespace(properName);
-
-        const cartoucheSyllables = tryCartoucheSourceToSpokenSyllableText(sourceText);
-        if (cartoucheSyllables) return cartoucheSyllables;
-
-        if (sourceKind !== "bracket") {
-          const originalProperName = takeMatchingRawProperNameForCartoucheSource(sourceText, rawProperNameQueue);
-          if (originalProperName) return compactSpeechWhitespace(originalProperName);
-        }
-
-        // For non-bracket cartouches, allow already-capitalized DB/proper-name
-        // source text through if it is readable. Do not allow lowercase glyph
-        // words such as ma n lu n to fall through as ordinary speech.
-        const readableCartoucheText = sanitizeTextToSitelenAudioText(sourceText);
-        if (sourceKind !== "bracket" && /[A-Z]/.test(sourceText) && isReadableAudioTokiPonaText(readableCartoucheText)) {
-          return readableCartoucheText;
-        }
-
-        skipped.push({ kind: sourceKind === "bracket" ? "cartouche" : "numeric-cartouche", text: sourceText });
-        return "";
-      }
-
-      if (/^[.,!?;:]$/.test(sourceText)) return sourceText;
-      const readableText = sanitizeTextToSitelenAudioText(sourceText);
-      if (isReadableAudioTokiPonaText(readableText)) return readableText;
-
-      skipped.push({ kind: "unknown", text: sourceText });
-      return "";
-    }
-
-    function buildTextAudioLinesFromRenderPlan(plan, rawInput = "") {
-      const skipped = [];
-      const lines = [];
-      const rawProperNameQueues = extractRawCapitalizedProperNameQueuesByLine(rawInput);
-      const renderLines = Array.isArray(plan?.lines) ? plan.lines : [];
-
-      for (let lineIndex = 0; lineIndex < renderLines.length; lineIndex++) {
-        const line = renderLines[lineIndex];
-        const parts = [];
-        const rawProperNameQueue = rawProperNameQueues[lineIndex] || [];
-        for (const run of (line?.runs || [])) {
-          const speech = speechTextForRenderRun(run, skipped, rawProperNameQueue);
-          if (speech) parts.push(speech);
-        }
-        lines.push(compactSpeechWhitespace(parts.join(" ")));
-      }
-      return { lines, skipped };
-    }
-
-    async function ensureTextAudioRenderPlan() {
-      const raw = String(elTextIn?.value ?? "");
-      if (!raw.trim()) return null;
-      await renderFromTextarea();
-      return { plan: latestRenderPlan, rawInput: raw };
-    }
-
-    function summarizeSkippedAudio(skipped) {
-      const seen = new Set();
-      const sample = [];
-      for (const item of skipped || []) {
-        const label = `${item.kind}: ${String(item.text || "").slice(0, 40)}`;
-        if (seen.has(label)) continue;
-        seen.add(label);
-        sample.push(label);
-        if (sample.length >= 4) break;
-      }
-      return sample.join("; ");
-    }
+    // Core audio planning, speech-line extraction, sample concatenation, and
+    // playback rendering live in sitelen-audio-plan.js. The page keeps only
+    // UI state, button wiring, status messages, and voice-instance lifetime.
 
     function stopTextToSitelenAudio() {
       textAudioPlaySeq += 1;
       const voicePromise = textToSitelenVoicePromise;
       if (voicePromise) {
         voicePromise
-          .then(voice => { try { voice?.stop?.(); } catch (_) {} })
+          .then(voice => stopSitelenAudioPlayback({ voice }))
           .catch(() => {});
       }
       announceStatus("Audio stopped.");
@@ -7009,69 +6670,68 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       textAudioBusy = true;
       setTextAudioButtonsDisabled(true);
       try {
-        const prepared = await ensureTextAudioRenderPlan();
-        if (playSeq !== textAudioPlaySeq) return;
-        const plan = prepared?.plan;
-        if (!plan) {
+        const raw = String(elTextIn?.value ?? "");
+        if (!raw.trim()) {
           announceStatus("Nothing to read.");
           return;
         }
 
-        const { lines, skipped } = buildTextAudioLinesFromRenderPlan(plan, prepared.rawInput);
-        try { window.__TTS_LAST_TEXT_AUDIO_LINES__ = { lines: [...lines], skipped: [...skipped] }; } catch {}
-        const hasSpeech = lines.some(line => String(line || "").trim().length > 0);
-        if (!hasSpeech) {
+        // Preserve existing playback behavior: clicking audio first refreshes
+        // the visual render from the current textarea. The audio helper builds
+        // a separate audio-specific render plan after that.
+        await renderFromTextarea();
+        if (playSeq !== textAudioPlaySeq) return;
+
+        const renderer = await ensureRendererReady();
+        const rendererConfig = buildRendererCallConfig({ includeHalo: false });
+        const option = selectedTextAudioOption();
+
+        const result = await buildAndPlaySitelenAudioFromRawText({
+          rawText: raw,
+          pageMap,
+          renderer,
+          rendererConfig,
+          CartoucheApi,
+          NanpaParser,
+          nanpaLinjanMode: getNanpaLinjanMode(),
+          mixedStyle: "short",
+          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
+          relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+          getVoice: getTextToSitelenVoice,
+          renderOptions: {
+            synthesis_mode: "reference_audio",
+            pauseScale: option.value,
+            syllableGapSeconds: option.syllableGapSeconds
+          },
+          linePauseSeconds: option.linePauseSeconds,
+          shouldCancel: () => playSeq !== textAudioPlaySeq,
+          playSamples: true
+        });
+
+        if (result?.cancelled || playSeq !== textAudioPlaySeq) return;
+
+        const lines = Array.isArray(result?.lines) ? result.lines : [];
+        const skipped = Array.isArray(result?.skipped) ? result.skipped : [];
+        try {
+          window.__TTS_LAST_TEXT_AUDIO_LINES__ = {
+            lines: [...lines],
+            skipped: [...skipped],
+            audioInput: result?.audioPlan?.audioInput ?? ""
+          };
+        } catch {}
+
+        if (result?.status === "no-speech") {
           announceStatus("No readable Toki Pona text found for audio.");
           return;
         }
 
-        const option = selectedTextAudioOption();
-        const voice = await getTextToSitelenVoice();
-        if (playSeq !== textAudioPlaySeq) return;
-        const chunks = [];
-        let sampleRate = null;
-        let sawSpeech = false;
-        let pendingLinePauses = 0;
-        let spokenLineCount = 0;
-
-        for (const rawLine of lines) {
-          const lineText = String(rawLine ?? "").trim();
-          if (!lineText) {
-            if (sawSpeech) pendingLinePauses = Math.min(2, pendingLinePauses + 1);
-            continue;
-          }
-
-          if (sawSpeech && sampleRate) {
-            const pauses = Math.max(1, Math.min(2, pendingLinePauses || 1));
-            chunks.push(textAudioSilenceSamples(option.linePauseSeconds * pauses, sampleRate));
-          }
-
-          const rendered = await voice.render(lineText, {
-            synthesis_mode: "reference_audio",
-            pauseScale: option.value,
-            syllableGapSeconds: option.syllableGapSeconds
-          });
-          if (playSeq !== textAudioPlaySeq) return;
-
-          if (sampleRate != null && rendered.sampleRate !== sampleRate) {
-            throw new Error("Audio sample-rate changed between rendered lines.");
-          }
-          sampleRate = rendered.sampleRate;
-          chunks.push(rendered.samples);
-          sawSpeech = true;
-          pendingLinePauses = 1;
-          spokenLineCount += 1;
-        }
-
-        if (!sampleRate || !chunks.length) {
+        if (result?.status === "no-samples") {
           announceStatus("No audio samples were produced.");
           return;
         }
 
-        if (playSeq !== textAudioPlaySeq) return;
-        voice.playSamples(concatTextAudioChunks(chunks), sampleRate);
-        const skippedSummary = summarizeSkippedAudio(skipped);
-        announceStatus(`Playing input audio. Lines read: ${spokenLineCount}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
+        const skippedSummary = summarizeSitelenAudioSkipped(skipped);
+        announceStatus(`Playing input audio. Lines read: ${result?.spokenLineCount ?? 0}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
       } catch (e) {
         showAlertAndAnnounce(e?.message ?? String(e));
       } finally {

@@ -241,6 +241,46 @@
       margin-bottom: 2px;
     }
 
+    /* Audio cell */
+    .audioHeader {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .audioStopBtn,
+    .audioPlayBtn {
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      line-height: 1;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    .audioCell {
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    .audioCellInner {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+    .audioCell input[type="text"] {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      padding: 4px 6px;
+      min-width: 100px;
+      width: 100%;
+    }
+    .audioError {
+      margin-top: 2px;
+      color: var(--bad);
+      font-size: 10px;
+      white-space: normal;
+      line-height: 1.2;
+    }
+
     /* Validation badges */
     .vbadge {
       font-size: 10px;
@@ -718,12 +758,13 @@
       <table aria-label="Cartouche database">
         <thead>
           <tr>
-            <th style="width:18%;min-width:130px;">Name (words)</th>
+            <th style="width:16%;min-width:120px;">Name (words)</th>
             <th style="width:5%;min-width:50px;">@db</th>
-            <th style="width:7%;min-width:60px;">Merge</th>
-            <th style="width:28%;min-width:190px;">Mode</th>
-            <th style="width:33%;min-width:180px;">Cartouche (latin desc)</th>
-            <th style="width:14%;min-width:120px;">Actions</th>
+            <th style="width:6%;min-width:60px;">Merge</th>
+            <th style="width:24%;min-width:180px;">Mode</th>
+            <th style="width:29%;min-width:170px;">Cartouche (latin desc)</th>
+            <th style="width:14%;min-width:150px;"><span class="audioHeader">Audio <button id="btnStopAudio" class="audioStopBtn" type="button" title="Stop audio" aria-label="Stop audio">⏹</button></span></th>
+            <th style="width:10%;min-width:110px;">Actions</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -786,6 +827,7 @@
   <script type="module">
      import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=168";
     import { createSitelenFontPairController } from './js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14';
+    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=19';
     import {
       CartoucheApi,
       validateTpWord,
@@ -798,8 +840,10 @@
       buildEntryRendererInput,
       buildEntryDisplayInput,
       buildEntryPreviewInput,
+      buildEntryAudioInput,
+      validateEntryAudioText,
       entryUsesForceMergedWholeEntry,
-    } from './js/cartouche-api-v3-previewdesc.js?v=33';
+    } from './js/cartouche-api-v3-previewdesc.js?v=35';
 
     // ── Page-level constants (font, UI) ───────────────────────────────────────
     const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';
@@ -1099,6 +1143,7 @@
     // ── State ─────────────────────────────────────────────────────────────────
     let entries = [], renderer = null, fontCtrl = null, editingKey = null;
     let api = null;  // CartoucheApi instance (lookup:false — DB page)
+    let audioVoice = null, audioPlaySeq = 0;
     const $ = id => document.getElementById(id);
 
     // ── Font controller + renderer ────────────────────────────────────────────
@@ -1235,6 +1280,122 @@
       return entry.words.join('_');
     }
 
+    function defaultAudioTextForEntry(entry) {
+      const key = String(entry?.key ?? '').trim();
+      if (key) return key;
+      if (Array.isArray(entry?.words) && entry.words.length) return entry.words.join(' ');
+      return '';
+    }
+
+    function audioFieldValueForEntry(entry) {
+      const result = validateEntryAudioText(entry?.audio, {
+        merge: false,
+        defaultText: defaultAudioTextForEntry(entry),
+      });
+      if (result.ok) return result.storedText;
+      const fallback = validateEntryAudioText(defaultAudioTextForEntry(entry), { merge: false });
+      return fallback.ok ? fallback.storedText : '';
+    }
+
+    function audioValidationForEntry(entry, rawValue) {
+      return validateEntryAudioText(rawValue, {
+        merge: !!entry?.merge,
+        defaultText: defaultAudioTextForEntry(entry),
+      });
+    }
+
+    function setAudioCellError(entry, message = '') {
+      const td = $('tbody').querySelector(`td[data-audio-for="${CSS.escape(entry.key)}"]`);
+      if (!td) return;
+      const err = td.querySelector('.audioError');
+      if (err) err.textContent = message || '';
+    }
+
+    function updateAudioCell(entry) {
+      const td = $('tbody').querySelector(`td[data-audio-for="${CSS.escape(entry.key)}"]`);
+      if (!td) return;
+      const input = td.querySelector('input[type="text"]');
+      const playBtn = td.querySelector('.audioPlayBtn');
+      if (!input) return;
+      const result = audioValidationForEntry(entry, input.value);
+      if (result.ok) {
+        const title = `plays: ${result.effectiveText}`;
+        input.title = title;
+        if (playBtn) playBtn.title = title;
+      } else {
+        input.title = result.reason || 'Invalid audio text';
+        if (playBtn) playBtn.title = input.title;
+      }
+    }
+
+    async function ensureAudioVoice() {
+      if (!audioVoice) audioVoice = await createTokiPonaVoice();
+      return audioVoice;
+    }
+
+    async function stopCartoucheDbAudio() {
+      audioPlaySeq += 1;
+      try { audioVoice?.stop?.(); } catch (_) {}
+    }
+
+    async function playEntryAudio(entry, input, playBtn) {
+      const result = audioValidationForEntry(entry, input.value);
+      if (!result.ok) {
+        setAudioCellError(entry, result.reason || 'Invalid audio text.');
+        updateAudioCell(entry);
+        return;
+      }
+
+      input.value = result.storedText;
+      setAudioCellError(entry, '');
+      updateAudioCell(entry);
+
+      const effectiveText = buildEntryAudioInput({ ...entry, audio: result.storedText });
+      if (!effectiveText) {
+        setAudioCellError(entry, 'No valid audio output.');
+        return;
+      }
+
+      await stopCartoucheDbAudio();
+      const seq = ++audioPlaySeq;
+      const previousDisabled = !!playBtn?.disabled;
+      if (playBtn) playBtn.disabled = true;
+
+      try {
+        const voice = await ensureAudioVoice();
+        if (seq !== audioPlaySeq) return;
+        await voice.play(effectiveText, {
+          alreadyPreprocessed: true,
+          synthesis_mode: 'reference_audio',
+        });
+      } catch (err) {
+        if (seq === audioPlaySeq) {
+          setAudioCellError(entry, err?.message || 'Audio playback failed.');
+          console.warn('cartouche-db audio playback failed', err);
+        }
+      } finally {
+        if (playBtn) playBtn.disabled = previousDisabled;
+      }
+    }
+
+    async function commitEntryAudioInput(entry, input, savedValueRef) {
+      const result = audioValidationForEntry(entry, input.value);
+      if (!result.ok) {
+        input.value = savedValueRef.value;
+        setAudioCellError(entry, result.reason || 'Invalid audio text.');
+        updateAudioCell(entry);
+        return false;
+      }
+
+      input.value = result.storedText;
+      entry.audio = result.storedText;
+      savedValueRef.value = result.storedText;
+      setAudioCellError(entry, '');
+      updateAudioCell(entry);
+      await api.putEntry({ ...entry });
+      return true;
+    }
+
     function renderTable(filter) {
       const rawFilter = (filter || '').toLowerCase();
       const lookupFilter = rawFilter.replace(/@db$/, '');
@@ -1249,7 +1410,7 @@
       $('emptyState').classList.toggle('hidden', visible.length > 0 || !!rawFilter);
       if (visible.length === 0 && rawFilter) {
         const tr = tbody.insertRow(); const td = tr.insertCell();
-        td.colSpan = 6; td.style.cssText = 'text-align:center;color:var(--muted);padding:16px;';
+        td.colSpan = 7; td.style.cssText = 'text-align:center;color:var(--muted);padding:16px;';
         td.textContent = `No matches for "${rawFilter}"`; return;
       }
 
@@ -1335,6 +1496,7 @@
             entry.merge = newMerge;
             await api.putEntry({ ...entry });
             updateDescCell(entry);
+            updateAudioCell(entry);
             const previewTr = tbody.querySelector(`tr[data-preview-for="${CSS.escape(entry.key)}"]`);
             if (previewTr && !previewTr.classList.contains('hidden')) {
               await renderEntry(entry, previewTr.querySelector('canvas'));
@@ -1416,6 +1578,66 @@
         tdDesc.appendChild(literalEditor);
         tr.appendChild(tdDesc);
 
+        // ── Audio cell ──
+        const tdAudio = document.createElement('td');
+        tdAudio.className = 'audioCell';
+        tdAudio.dataset.audioFor = entry.key;
+
+        const audioWrap = document.createElement('div');
+        audioWrap.className = 'audioCellInner';
+
+        const audioInput = document.createElement('input');
+        audioInput.type = 'text';
+        audioInput.spellcheck = false;
+        audioInput.autocomplete = 'off';
+        audioInput.className = 'mono';
+        audioInput.placeholder = entry.key;
+        const savedAudioValue = { value: audioFieldValueForEntry(entry) };
+        audioInput.value = savedAudioValue.value;
+        if (!entry.audio) entry.audio = savedAudioValue.value;
+
+        const btnPlayAudio = document.createElement('button');
+        btnPlayAudio.type = 'button';
+        btnPlayAudio.className = 'audioPlayBtn';
+        btnPlayAudio.textContent = '▶';
+        btnPlayAudio.setAttribute('aria-label', `Play audio for ${entry.key}`);
+
+        const audioError = document.createElement('div');
+        audioError.className = 'audioError';
+
+        audioInput.addEventListener('blur', async () => {
+          await commitEntryAudioInput(entry, audioInput, savedAudioValue);
+        });
+        audioInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            audioInput.blur();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            audioInput.value = savedAudioValue.value;
+            setAudioCellError(entry, '');
+            updateAudioCell(entry);
+            audioInput.blur();
+          }
+        });
+        audioInput.addEventListener('input', () => {
+          setAudioCellError(entry, '');
+          updateAudioCell(entry);
+        });
+        btnPlayAudio.addEventListener('mousedown', e => {
+          e.preventDefault();
+        });
+        btnPlayAudio.addEventListener('click', async () => {
+          await playEntryAudio(entry, audioInput, btnPlayAudio);
+        });
+
+        audioWrap.appendChild(audioInput);
+        audioWrap.appendChild(btnPlayAudio);
+        tdAudio.appendChild(audioWrap);
+        tdAudio.appendChild(audioError);
+        tr.appendChild(tdAudio);
+        setTimeout(() => updateAudioCell(entry), 0);
+
         // ── Actions cell ──
         const tdAct = document.createElement('td');
         tdAct.className = 'actCell';
@@ -1471,7 +1693,7 @@
       const previewTr = document.createElement('tr');
       previewTr.dataset.previewFor = key;
       previewTr.className = 'previewRow hidden';
-      const tdPrev = document.createElement('td'); tdPrev.colSpan = 6; tdPrev.className = 'previewCell';
+      const tdPrev = document.createElement('td'); tdPrev.colSpan = 7; tdPrev.className = 'previewCell';
       const hdr = document.createElement('div'); hdr.className = 'previewHeader';
       const btnClose = document.createElement('button'); btnClose.textContent = '✕ close'; btnClose.style.cssText = 'font-size:11px;';
       btnClose.addEventListener('click', () => previewTr.classList.add('hidden'));
@@ -1619,7 +1841,7 @@
         $('nanpaWarn').classList.remove('show');
         const key = result.name;
         if (entries.find(e => e.key === key)) { $('addError').textContent = `"${key}" is already in the database.`; return; }
-        const entry = { key, words: result.words, merge: true, mode: 'preferred', cartoucheMap: result.cartoucheMap, tallyMap: result.tallyMap, forceNormal: false, literalText: key };
+        const entry = { key, words: result.words, merge: true, mode: 'preferred', cartoucheMap: result.cartoucheMap, tallyMap: result.tallyMap, forceNormal: false, literalText: key, audio: key };
         entries.unshift(entry);
         await api.putEntry(entry);
         $('addInput').value = '';
@@ -1642,7 +1864,7 @@
         $('nanpaWarn').classList.add('show');
       } else { $('nanpaWarn').classList.remove('show'); }
 
-      const entry = { key, words: result.words, merge: true, mode: 'random', cartoucheMap: {}, tallyMap: {}, forceNormal: false, literalText: key };
+      const entry = { key, words: result.words, merge: true, mode: 'random', cartoucheMap: {}, tallyMap: {}, forceNormal: false, literalText: key, audio: key };
       entries.unshift(entry);
       await api.putEntry(entry);
       $('addInput').value = '';
@@ -2301,6 +2523,11 @@
           forceNormal: !!e.forceNormal,
           literalText: cleanLiteralText(e.literalText) || key
         };
+        const audioResult = validateEntryAudioText(e.audio, {
+          merge: !!entry.merge,
+          defaultText: key,
+        });
+        entry.audio = audioResult.ok ? audioResult.storedText : key;
         const idx = entries.findIndex(x => x.key === key);
         if (idx >= 0) entries[idx] = entry; else entries.push(entry);
         await api.putEntry(entry);
@@ -2353,6 +2580,7 @@
       $('addInput').addEventListener('keydown', e => { if (e.key === 'Enter') addEntry(); });
       $('searchInput').addEventListener('input', () => renderTable($('searchInput').value));
       $('btnRenderAll').addEventListener('click', renderAll);
+      $('btnStopAudio').addEventListener('click', stopCartoucheDbAudio);
       $('btnExport').addEventListener('click', exportDb);
       $('btnClearDb').addEventListener('click', clearDb);
       $('btnImport').addEventListener('click', () => $('fileImport').click());
