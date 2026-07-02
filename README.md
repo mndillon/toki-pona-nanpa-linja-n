@@ -719,6 +719,142 @@ Examples:
 
 ---
 
+
+## Reference Counting Table
+
+You can calculate the nanpa-linja-n proper name for any number using this [renderer](https://www.nanpa-linja-n.com/renderer.html).  It also displays the number as a sitelen pona cartouche and provides an audio pronunciation.
+
+This table uses the rexaled versions of the digit syllables:
+
+| Decimal number | nanpa-linja-n proper name |
+| -------------: | ------------------------- |
+|              0 | Nenin                     |
+|              1 | Newan                     |
+|              2 | Netun                     |
+|              3 | Nesen                     |
+|              4 | Nenan                     |
+|              5 | Nelun                     |
+|              6 | Nenun                     |
+|              7 | Nemun                     |
+|              8 | Nepin                     |
+|              9 | Nejen                     |
+|             10 | Newanin                   |
+|             11 | Newawan                   |
+|             12 | Newatun                   |
+|              ⋮ | ⋮                         |
+|             20 | Netunin                   |
+|              ⋮ | ⋮                         |
+|             30 | Nesenin                   |
+|              ⋮ | ⋮                         |
+|             40 | Nenanin                   |
+|              ⋮ | ⋮                         |
+|             50 | Nelunin                   |
+|              ⋮ | ⋮                         |
+|             60 | Nenunin                   |
+|              ⋮ | ⋮                         |
+|             70 | Nemunin                   |
+|              ⋮ | ⋮                         |
+|             80 | Nepinin                   |
+|              ⋮ | ⋮                         |
+|             90 | Nejenin                   |
+|              ⋮ | ⋮                         |
+|             98 | Nejepin                   |
+|             99 | Nejejen                   |
+|            100 | Newan Inin                |
+|            101 | Newaniwan                 |
+|            102 | Newanitun                 |
+|              ⋮ | ⋮                         |
+|            200 | Netun Inin                |
+|              ⋮ | ⋮                         |
+|            300 | Nesen Inin                |
+|              ⋮ | ⋮                         |
+|            400 | Nenan Inin                |
+|              ⋮ | ⋮                         |
+|            500 | Nelun Inin                |
+|              ⋮ | ⋮                         |
+|            600 | Nenun Inin                |
+|              ⋮ | ⋮                         |
+|            700 | Nemun Inin                |
+|              ⋮ | ⋮                         |
+|            800 | Nepin Inin                |
+|              ⋮ | ⋮                         |
+|            900 | Nejen Inin                |
+|              ⋮ | ⋮                         |
+|            998 | Nejejepin                 |
+|            999 | Nejejejen                 |
+|          1,000 | Newan Eken                |
+|          1,001 | Newan Eke Niniwan         |
+|              ⋮ | ⋮                         |
+|          1,100 | Newan Eke Wan Inin        |
+|          1,101 | Newan Eke Waniwan        |
+|              ⋮ | ⋮                         |
+|          1,200 | Newan Eke Tun Inin        |
+|              ⋮ | ⋮                         |
+|          2,000 | Netun Eken                |
+|              ⋮ | ⋮                         |
+|          2,100 | Netun Eke Wan Inin        |
+|              ⋮ | ⋮                         |
+|          3,000 | Nesen Eken                |
+|              ⋮ | ⋮                         |
+|          4,000 | Nenan Eken                |
+|              ⋮ | ⋮                         |
+|          5,000 | Nelun Eken                |
+|              ⋮ | ⋮                         |
+|          6,000 | Nenun Eken                |
+|              ⋮ | ⋮                         |
+|          7,000 | Nemun Eken                |
+|              ⋮ | ⋮                         |
+|          8,000 | Nepin Eken                |
+|              ⋮ | ⋮                         |
+|          9,000 | Nejen Eken                |
+|              ⋮ | ⋮                         |
+|          9,998 | Nejen Eke Jejepin         |
+|          9,999 | Nejen Eke Jejejen         |
+|         10,000 | Newanin Eken              |
+|         10,001 | Newanin Eke Niniwan       |
+|              ⋮ | ⋮                         |
+|         20,000 | Netunin Eken              |
+|              ⋮ | ⋮                         |
+|         30,000 | Nesenin Eken              |
+|              ⋮ | ⋮                         |
+|         40,000 | Nenanin Eken              |
+|              ⋮ | ⋮                         |
+|         50,000 | Nelunin Eken              |
+|              ⋮ | ⋮                         |
+|         60,000 | Nenunin Eken              |
+|              ⋮ | ⋮                         |
+|         70,000 | Nemunin Eken              |
+|              ⋮ | ⋮                         |
+|         80,000 | Nepinin Eken              |
+|              ⋮ | ⋮                         |
+|         90,000 | Nejenin Eken              |
+|              ⋮ | ⋮                         |
+|         100,000 | Newan Inin Eken              |
+|         100,001 | Newan Inin Eke Niniwan              |
+|              ⋮ | ⋮                         |
+|        200,000 | Netun Inin Eken           |
+|              ⋮ | ⋮                         |
+|        300,000 | Nesen Inin Eken           |
+|              ⋮ | ⋮                         |
+|        400,000 | Nenan Inin Eken           |
+|              ⋮ | ⋮                         |
+|        500,000 | Nelun Inin Eken           |
+|              ⋮ | ⋮                         |
+|        600,000 | Nenun Inin Eken           |
+|              ⋮ | ⋮                         |
+|        700,000 | Nemun Inin Eken           |
+|              ⋮ | ⋮                         |
+|        800,000 | Nepin Inin Eken           |
+|              ⋮ | ⋮                         |
+|        900,000 | Nejen Inin Eken           |
+|              ⋮ | ⋮                         |
+|        999,999 | Nejejejen Eke Jejejen |
+|      1,000,000 | Newan Ekeken                    |
+|      1,000,001 | Newan Eke Nininin Eke Niniwan |
+
+
+---
+
 ## Design Rationale
 
 ### Digit Roots
