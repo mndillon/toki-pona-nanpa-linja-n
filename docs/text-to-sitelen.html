@@ -6565,8 +6565,14 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     const btnDownload = document.getElementById("appBtnDownloadPng");
 
     const TEXT_AUDIO_SPEED_STORAGE_KEY = "tpTextToSitelenAudioSpeed";
-    const TEXT_AUDIO_SPEED_DEFAULT = 2.25;
+    const TEXT_AUDIO_SPEED_DEFAULT = 0.75;
     const TEXT_AUDIO_OPTIONS = Object.freeze([
+    {
+    value: 0.75,
+    label: "Fast",
+    syllableGapSeconds: 0.010,
+    linePauseSeconds: 0.35
+  },
       { value: 1.00, label: "Normal", syllableGapSeconds: 0.200, linePauseSeconds: 0.350 },
       { value: 2.25, label: "Slow", syllableGapSeconds: 0.700, linePauseSeconds: 0.800 },
       { value: 4.00, label: "Very slow", syllableGapSeconds: 1.402, linePauseSeconds: 1.250 }
