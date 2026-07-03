@@ -4448,5 +4448,22 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=23";
   window.addEventListener("load", init);
 })();
 </script>
+
+<script>
+  const productionHosts = new Set([
+        'nanpa-linja-n.com',
+    'www.nanpa-linja-n.com'
+  ]);
+
+  if (!productionHosts.has(window.location.hostname)) {
+    window.goatcounter = { no_onload: true };
+  }
+</script>
+
+<script
+  data-goatcounter="https://nanpalinjan.goatcounter.com/count"
+  async
+  src="./js/goatcounter-count.js">
+</script>
 </body>
 </html>
