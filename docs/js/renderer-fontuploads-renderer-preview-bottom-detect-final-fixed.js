@@ -8736,7 +8736,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (t === "KE") { parts.push("k"); continue; }
         if (t === "KEKE") { parts.push("kk"); continue; }
         if (t === "KEKEKE") { parts.push("kkk"); continue; }
-        if (t === "OK") { parts.push("OK"); continue; }
+        if (t === "OK") { parts.push("ok"); continue; }
       }
       return "#~" + parts.join("");
     }
@@ -9123,7 +9123,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (t === "KE") { parts.push("k"); continue; }
       if (t === "KEKE") { parts.push("kk"); continue; }
       if (t === "KEKEKE") { parts.push("kkk"); continue; }
-      if (t === "OK") { parts.push("OK"); continue; }
+      if (t === "OK") { parts.push("ok"); continue; }
     }
     return "#~" + parts.join("");
   },
