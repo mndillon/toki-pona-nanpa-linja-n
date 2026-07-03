@@ -919,5 +919,22 @@
   </main>
   <script type="module" src="./js/nanpa-listening-quiz.js?v=29"></script>
 
+
+<script>
+  const productionHosts = new Set([
+    'www.nanpa-linja-n.com'
+  ]);
+
+  if (!productionHosts.has(window.location.hostname)) {
+    window.goatcounter = { no_onload: true };
+  }
+</script>
+
+<script
+  data-goatcounter="https://nanpalinjan.goatcounter.com/count"
+  async
+  src="/js/goatcounter-count.js">
+</script>
+
 </body>
 </html>
