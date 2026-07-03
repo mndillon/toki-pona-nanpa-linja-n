@@ -773,7 +773,8 @@ function renderQuiz(root) {
       <select id="nanpaListenQuizAudioPauseScale" data-quiz-audio-pause-scale>
         ${audioPauseScaleOptionsHtml(audioPauseScale)}
       </select>
-      <span class="help">Normal adds a small 0.2 s gap between assembled syllable units. Slow and Very slow add longer calculated silence; they do not stretch or slur the audio.</span>
+      <span class="help">Normal adds a small 0.2 s gap between assembled syllable units. Slow and Very slow add longer calculated silence; they do not stretch or slur the audio.</span><br/>
+      <span class="help">When inputting answers, click enter to start playing audio, then enter proper name or decimal value.</span>
     </div>
   `;
 

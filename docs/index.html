@@ -442,22 +442,84 @@
       </span>
     </div>
 
-    <div class="help" style="margin-top:10px;">
-      nanpa-linja-n provides a simple and functional way to communicate decimal sequences, including numbers.<br/>
-      nanpa-linja-n uses cartouches to encode decimal positional digits without requiring any additions to the Toki Pona lexicon.<br/>
-      Each number is encoded inside a cartouche as a unique nanpa-linja-n proper-name form, which can be communicated as a proper name in either sitelen Latin or sitelen pona.<br/>
-      See the <a href="#decimalToCartouche">decimal-to-cartouche diagram</a> for an example.
-      <span class="tpLine">
-        lon sitelen pona la nasin nanpa pi nanpa-linja-n li kepeken poki sitelen lon ni: ona li ken awen e nasin nanpa pi tenpo pini ala pi kipisi luka luka, li wile ala e nimi sin lon nimi ku pi toki pona.
-      </span>
-    </div>
+    <section id="overview" aria-labelledby="overviewTitle" style="margin-top:16px;">
+      <h2 id="overviewTitle" style="margin:0 0 6px;font-size:18px;">
+        Overview
+      </h2>
 
+      <div class="help" style="margin-top:10px;">
+        <strong>nanpa-linja-n</strong> encodes decimal numbers as proper names. In sitelen pona, these names are written inside numeric cartouches.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        The content of a nanpa-linja-n cartouche is a pure encoding. Each decimal digit—and each numeric delimiter, such as a decimal point—has a designated sitelen pona glyph and a corresponding Latin-letter representation. This mapping is unique and reversible, allowing the original decimal sequence to be reconstructed exactly from either form.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        nanpa-linja-n does <strong>not</strong> introduce any new Toki Pona words or add anything to the Toki Pona lexicon. It is a notation system only. Any “words” discussed below are identifier strings, or proper-name labels, derived from the encoded cartouche. When a nanpa-linja-n proper name is written in the Latin alphabet, each word begins with a capital letter.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        The ten Toki Pona letters <strong>i, w, t, s, a, l, u, m, p,</strong> and <strong>j</strong> represent the decimal digits <strong>0, 1, 2, 3, 4, 5, 6, 7, 8,</strong> and <strong>9</strong>, respectively, within numeric cartouches.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        The letters <strong>n</strong> and <strong>e</strong> are used to structure the encoding and make the proper name derived from the cartouche pronounceable. The letters <strong>o</strong> and <strong>k</strong>, used in various combinations, represent numeric punctuation and delimiters, such as the decimal point.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.
+      </div>
+
+      <h3 style="margin:18px 0 6px;font-size:14px;">
+        A simple example
+      </h3>
+
+      <div class="help">
+        How is <strong>125</strong> written as a nanpa-linja-n proper name?
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        Every nanpa-linja-n proper name for a number begins with <strong>Ne-</strong> and ends with <strong>-n</strong>. Each decimal digit maps to a unique Toki Pona Latin letter, which is expressed in the proper name using a designated syllable.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        Using the relaxed mapping described below:
+        <ul style="margin:6px 0 0 22px;padding:0;">
+          <li><strong>1 → wa</strong></li>
+          <li><strong>2 → tu</strong></li>
+          <li><strong>5 → lu</strong></li>
+        </ul>
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        These syllables are concatenated between the initial <strong>Ne-</strong> and the final <strong>-n</strong>:
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        <strong>Ne + wa + tu + lu + n → Newatulun</strong>
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        Therefore, the nanpa-linja-n proper name for <strong>125</strong> is <strong>Newatulun</strong>.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        See the <a href="#decimalToCartouche">decimal-to-cartouche diagram</a> for a more detailed example.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        The <a href="./renderer.html">decimal number renderer</a> can render any decimal number and produce an audio pronunciation. The encoding of decimal points and other numeric punctuation, together with the strict and relaxed digit mappings, is explained with examples on this page and in detail in the <a class="repoLink" href="https://github.com/mndillon/toki-pona-nanpa-linja-n" target="_blank" rel="noopener noreferrer">
+          nanpa-linja-n main documentation
+        </a>.
+      </div>
+    </section>
    
    <div class="help" style="margin-top:10px;">
-      To communicate "007", say "Neninimen".<br/>
+      To communicate "007", say "Neninimun".<br/>
       (It is very easy to encode decimal digit sequences and preserve leading and trailing zeros.)<br/>
       <span class="tpLine">
-        sina wile toki e "007" la, o toki e "Neninimen".<br/>
+        sina wile toki e "007" la, o toki e "Neninimun".<br/>
         (ni li pona mute tawa awen e nanpa ala lon open en lon pini.)
       </span><br/>
       Listen and <a href="#nanpaListeningQuiz">try to guess</a> the decimal numbers.
@@ -917,7 +979,7 @@
       <div class="help">#~n</div>
     </div>
   </main>
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=29"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=30"></script>
 
 
 <script>
