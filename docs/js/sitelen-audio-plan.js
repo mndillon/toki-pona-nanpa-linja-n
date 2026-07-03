@@ -556,6 +556,367 @@ export function concatAudioSampleChunks(chunks) {
   return out;
 }
 
+
+function isTerminalSentencePunctuationAt(text, index) {
+  const s = String(text ?? '');
+  const ch = s[index];
+  if (ch === '!' || ch === '?') return true;
+  if (ch !== '.') return false;
+
+  // A decimal point inside a number is not a sentence boundary.
+  const prev = index > 0 ? s[index - 1] : '';
+  const next = index + 1 < s.length ? s[index + 1] : '';
+  if (/\d/.test(prev) && /\d/.test(next)) return false;
+  return true;
+}
+
+export function splitSpeechTextIntoSentenceFragments(text) {
+  const s = compactSpeechWhitespace(text);
+  if (!s) return [];
+
+  const out = [];
+  let start = 0;
+  for (let i = 0; i < s.length; i++) {
+    if (!isTerminalSentencePunctuationAt(s, i)) continue;
+
+    // Keep a run of adjacent sentence punctuation together, e.g. "?!".
+    let end = i + 1;
+    while (end < s.length && (s[end] === '!' || s[end] === '?' || s[end] === '.')) {
+      if (s[end] === '.' && !isTerminalSentencePunctuationAt(s, end)) break;
+      end += 1;
+    }
+
+    const fragment = compactSpeechWhitespace(s.slice(start, end));
+    if (fragment) out.push({ text: fragment, endsSentence: true });
+    start = end;
+    i = end - 1;
+  }
+
+  const tail = compactSpeechWhitespace(s.slice(start));
+  if (tail) out.push({ text: tail, endsSentence: false });
+  return out;
+}
+
+function countSentenceBoundariesInSourceText(text, run = null) {
+  const kind = String(run?.kind ?? '').toLowerCase();
+  const sourceKind = String(run?.sourceKind ?? '').toLowerCase();
+
+  // Numeric and ordinary cartouche source strings may contain decimal points
+  // or visual control syntax that must never be interpreted as prose endings.
+  if (kind === 'cartouche' || sourceKind === 'bracket') return 0;
+
+  return splitSpeechTextIntoSentenceFragments(text)
+    .reduce((count, fragment) => count + (fragment.endsSentence ? 1 : 0), 0);
+}
+
+function containsSpokenWord(text) {
+  return /[A-Za-z]/.test(String(text ?? ''));
+}
+
+function appendUniqueRunRef(targets, run, fallbackRunIndex, lineIndex) {
+  if (!Array.isArray(targets) || !run) return;
+  const runIndex = Number.isFinite(Number(run.runIndex)) ? Number(run.runIndex) : fallbackRunIndex;
+  const id = run.id != null ? String(run.id) : `L${lineIndex}R${runIndex}`;
+  if (targets.some(item => item.id === id)) return;
+  targets.push({ id, lineIndex, runIndex });
+}
+
+/**
+ * Extract sentence-sized speech segments while preserving the physical render
+ * line and sentence ordinal needed by an opt-in visual playback UI.
+ *
+ * Newlines are hard boundaries. Within one line, '.', '!' and '?' terminate a
+ * sentence. The final spoken segment on every physical line is marked as a
+ * line boundary so callers can use line spacing instead of adding both a
+ * punctuation pause and a line pause.
+ */
+export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
+  const skipped = [];
+  const segments = [];
+  const rawInput = options.rawInput ?? options.sourceInput ?? '';
+  const rawProperNameQueues = extractRawCapitalizedProperNameQueuesByLine(rawInput);
+  const renderLines = Array.isArray(plan?.lines) ? plan.lines : [];
+
+  for (let lineIndex = 0; lineIndex < renderLines.length; lineIndex++) {
+    const line = renderLines[lineIndex];
+    const rawProperNameQueue = rawProperNameQueues[lineIndex] || [];
+    const firstSegmentIndexForLine = segments.length;
+    let sentenceIndexInLine = 0;
+    let parts = [];
+    let visualRunRefs = [];
+
+    const flush = (boundaryAfter) => {
+      const text = compactSpeechWhitespace(parts.join(' '));
+      if (text && containsSpokenWord(text)) {
+        segments.push({
+          text,
+          speechText: text,
+          lineIndex,
+          sentenceIndexInLine,
+          boundaryAfter,
+          visualRunRefs: visualRunRefs.slice()
+        });
+      }
+      parts = [];
+      visualRunRefs = [];
+    };
+
+    const runs = Array.isArray(line?.runs) ? line.runs : [];
+    for (let fallbackRunIndex = 0; fallbackRunIndex < runs.length; fallbackRunIndex++) {
+      const run = runs[fallbackRunIndex];
+      const speech = speechTextForRenderRun(run, skipped, {
+        ...options,
+        rawProperNameQueue,
+        lineIndex
+      });
+
+      const fragments = splitSpeechTextIntoSentenceFragments(speech);
+      let speechBoundaryCount = 0;
+
+      for (const fragment of fragments) {
+        if (fragment.text) {
+          parts.push(fragment.text);
+          appendUniqueRunRef(visualRunRefs, run, fallbackRunIndex, lineIndex);
+        }
+        if (fragment.endsSentence) {
+          speechBoundaryCount += 1;
+          flush('punctuation');
+          sentenceIndexInLine += 1;
+        }
+      }
+
+      // If a skipped/non-speakable visual run contains a sentence terminator,
+      // keep the ordinal aligned with the visible render plan. This is useful
+      // when an unknown sentence is skipped between two readable sentences.
+      if (speechBoundaryCount === 0) {
+        const sourceText = String(run?.sourceText ?? run?.encodedText ?? '');
+        const sourceBoundaryCount = countSentenceBoundariesInSourceText(sourceText, run);
+        for (let i = 0; i < sourceBoundaryCount; i++) {
+          flush('punctuation');
+          sentenceIndexInLine += 1;
+        }
+      }
+    }
+
+    if (parts.length) flush('line');
+
+    // A terminal punctuation mark directly before a newline must use only the
+    // line boundary spacing. Reclassify the final spoken segment on the line.
+    if (segments.length > firstSegmentIndexForLine) {
+      segments[segments.length - 1].boundaryAfter = 'line';
+    }
+  }
+
+  return { segments, skipped, warnings: [] };
+}
+
+export async function buildSitelenSentenceAudioPlan(options = {}) {
+  const base = await buildSitelenAudioPlan(options);
+  const extracted = extractSpeechSegmentsFromRenderPlan(base.audioPlan, {
+    sourceInput: base.audioInput,
+    rawInput: base.rawText,
+    NanpaParser: options.NanpaParser || options.nanpaParser,
+    nanpaParser: options.nanpaParser || options.NanpaParser,
+    nanpaLinjanMode: options.nanpaLinjanMode,
+    mixedStyle: options.mixedStyle,
+    relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
+    relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
+  });
+
+  return {
+    ...base,
+    speechSegments: extracted.segments,
+    sentenceSegments: extracted.segments,
+    sentenceSkipped: extracted.skipped,
+    skipped: extracted.skipped,
+    warnings: [...(base.warnings || []), ...(extracted.warnings || [])]
+  };
+}
+
+function stripTerminalSentencePunctuation(text) {
+  return compactSpeechWhitespace(String(text ?? '').replace(/[.!?]+\s*$/u, ''));
+}
+
+/**
+ * Render pre-extracted sentence segments as separate sample buffers.
+ * This is additive and does not change the existing line-concatenation API.
+ */
+export async function renderSpeechSegmentsToAudioBuffers({
+  segments,
+  voice,
+  renderOptions = {},
+  linePauseSeconds = 0.35,
+  shouldCancel = null
+} = {}) {
+  if (!voice || typeof voice.render !== 'function') {
+    throw new Error('renderSpeechSegmentsToAudioBuffers requires a voice with render().');
+  }
+
+  const inputSegments = Array.from(segments || []);
+  const entries = [];
+  let sampleRate = null;
+
+  for (let index = 0; index < inputSegments.length; index++) {
+    if (isSitelenAudioCancelled(shouldCancel)) {
+      return { cancelled: true, entries, sampleRate, spokenSentenceCount: entries.length };
+    }
+
+    const segment = inputSegments[index] || {};
+    const next = inputSegments[index + 1] || null;
+    const crossesLine = !!next && Number(next.lineIndex) > Number(segment.lineIndex);
+    const lineDistance = crossesLine
+      ? Math.max(1, Number(next.lineIndex) - Number(segment.lineIndex))
+      : 0;
+
+    // For a newline boundary, remove terminal punctuation from the audio input
+    // so the line pause replaces (rather than stacks on top of) its pause.
+    const renderText = crossesLine
+      ? stripTerminalSentencePunctuation(segment.text)
+      : compactSpeechWhitespace(segment.text);
+
+    if (!renderText || !containsSpokenWord(renderText)) continue;
+
+    const rendered = await voice.render(renderText, {
+      ...(renderOptions || {}),
+      alreadyPreprocessed: true
+    });
+
+    if (isSitelenAudioCancelled(shouldCancel)) {
+      return { cancelled: true, entries, sampleRate, spokenSentenceCount: entries.length };
+    }
+
+    if (rendered?.sampleRate != null) {
+      if (sampleRate != null && rendered.sampleRate !== sampleRate) {
+        throw new Error('Audio sample-rate changed between rendered sentence buffers.');
+      }
+      sampleRate = rendered.sampleRate;
+    }
+
+    if (!rendered?.samples?.length) continue;
+
+    entries.push({
+      ...segment,
+      index: entries.length,
+      sourceSegmentIndex: index,
+      renderText,
+      samples: rendered.samples,
+      sampleRate: rendered.sampleRate,
+      durationSeconds: rendered.samples.length / rendered.sampleRate,
+      pauseAfterSeconds: crossesLine
+        ? Number(linePauseSeconds || 0) * Math.min(2, lineDistance)
+        : 0
+    });
+  }
+
+  return {
+    cancelled: false,
+    entries,
+    buffers: entries,
+    sampleRate,
+    spokenSentenceCount: entries.length
+  };
+}
+
+export async function buildSitelenSentenceAudioBuffersFromRawText({
+  rawText,
+  pageMap,
+  renderer,
+  rendererConfig = {},
+  CartoucheApi,
+  NanpaParser = null,
+  nanpaParser = null,
+  nanpaLinjanMode = 'uniform',
+  mixedStyle = 'short',
+  relaxedNanpaLinjanParsing = false,
+  relaxedNanpaLinjanRendering = false,
+  normalizeNonDrawableSourceTokens = true,
+  voice = null,
+  getVoice = null,
+  renderOptions = {},
+  linePauseSeconds = 0.35,
+  shouldCancel = null
+} = {}) {
+  const audioPlan = await buildSitelenSentenceAudioPlan({
+    rawText,
+    pageMap,
+    renderer,
+    rendererConfig,
+    CartoucheApi,
+    NanpaParser,
+    nanpaParser,
+    nanpaLinjanMode,
+    mixedStyle,
+    relaxedNanpaLinjanParsing,
+    relaxedNanpaLinjanRendering,
+    normalizeNonDrawableSourceTokens
+  });
+
+  const segments = Array.isArray(audioPlan?.speechSegments) ? audioPlan.speechSegments : [];
+  const hasSpeech = segments.some(segment => containsSpokenWord(segment?.text));
+  if (!hasSpeech) {
+    return {
+      status: 'no-speech',
+      played: false,
+      hasSpeech: false,
+      audioPlan,
+      segments,
+      entries: [],
+      buffers: [],
+      skipped: audioPlan?.skipped || [],
+      sampleRate: null,
+      spokenSentenceCount: 0,
+      cancelled: false
+    };
+  }
+
+  if (isSitelenAudioCancelled(shouldCancel)) {
+    return {
+      status: 'cancelled',
+      played: false,
+      hasSpeech,
+      audioPlan,
+      segments,
+      entries: [],
+      buffers: [],
+      skipped: audioPlan?.skipped || [],
+      cancelled: true
+    };
+  }
+
+  const resolvedVoice = voice || (typeof getVoice === 'function' ? await getVoice() : null);
+  if (!resolvedVoice) throw new Error('buildSitelenSentenceAudioBuffersFromRawText requires voice or getVoice().');
+
+  const rendered = await renderSpeechSegmentsToAudioBuffers({
+    segments,
+    voice: resolvedVoice,
+    renderOptions,
+    linePauseSeconds,
+    shouldCancel
+  });
+
+  if (rendered.cancelled) {
+    return {
+      status: 'cancelled',
+      played: false,
+      hasSpeech,
+      audioPlan,
+      segments,
+      skipped: audioPlan?.skipped || [],
+      ...rendered
+    };
+  }
+
+  return {
+    status: rendered.entries.length ? 'rendered' : 'no-samples',
+    played: false,
+    hasSpeech,
+    audioPlan,
+    segments,
+    skipped: audioPlan?.skipped || [],
+    ...rendered
+  };
+}
+
 export async function renderSpeechLinesToAudioSamples({
   lines,
   voice,
@@ -777,6 +1138,11 @@ export default {
   buildAndPlaySitelenAudioFromRawText,
   playSitelenAudioPlan,
   renderSpeechLinesToAudioSamples,
+  buildSitelenSentenceAudioPlan,
+  buildSitelenSentenceAudioBuffersFromRawText,
+  renderSpeechSegmentsToAudioBuffers,
+  extractSpeechSegmentsFromRenderPlan,
+  splitSpeechTextIntoSentenceFragments,
   makeSilenceSamples,
   concatAudioSampleChunks,
   stopSitelenAudioPlayback,

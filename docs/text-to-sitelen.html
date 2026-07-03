@@ -242,6 +242,25 @@ body.shellReady {
       max-width: 100%;
     }
 
+    .outputCanvasWrap {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      line-height: 0;
+    }
+
+    .audioHighlightCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      pointer-events: none;
+    }
+
     .small { font-size: 12px; color: var(--muted); }
 
     button:focus-visible,
@@ -863,7 +882,10 @@ nanpa #~WI.
         Output canvas
         <span class="tpLine">ilo sitelen kama</span>
       </label>
-      <canvas id="appOutCanvas" aria-hidden="true"></canvas>
+      <div class="outputCanvasWrap">
+        <canvas id="appOutCanvas" aria-hidden="true"></canvas>
+        <canvas id="appAudioHighlightCanvas" class="audioHighlightCanvas" aria-hidden="true"></canvas>
+      </div>
 
       <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
         <button id="appBtnDownloadPng" type="button" class="btnBi" aria-describedby="btnDownloadHelp">
@@ -1081,10 +1103,10 @@ nanpa #~WI.
     import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=166';
     import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=27';
     import {
-      buildAndPlaySitelenAudioFromRawText,
+      buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback,
       summarizeSkippedAudio as summarizeSitelenAudioSkipped
-    } from './js/sitelen-audio-plan.js?v=2';
+    } from './js/sitelen-audio-plan.js?v=3';
     let pageMap = new Map();
 
     "use strict";
@@ -6580,7 +6602,11 @@ async function serializeRenderPlanToUnicodeJson(plan) {
 
     let textToSitelenVoicePromise = null;
     let textAudioBusy = false;
-    let textAudioPlaySeq = 0;
+    let textAudioGeneration = 0;
+    let textAudioState = "stopped";
+    let textAudioSession = null;
+
+    const audioHighlightCanvas = document.getElementById("appAudioHighlightCanvas");
 
     function normalizeTextAudioSpeed(value) {
       const n = Number(value);
@@ -6638,16 +6664,55 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const selected = loadTextAudioSpeedFromStorage();
       for (const sel of getTextAudioSpeedSelects()) {
         populateTextAudioSpeedSelect(sel, selected);
-        sel.addEventListener("change", () => setTextAudioSpeed(sel.value));
+        sel.addEventListener("change", () => {
+          resetTextToSitelenAudio({ announce: false });
+          setTextAudioSpeed(sel.value);
+        });
       }
       setTextAudioSpeed(selected, { persist: false });
+      updateTextAudioButtons();
+    }
+
+    function getTextAudioToggleButtons() {
+      return [
+        document.getElementById("appBtnPlayTextAudioMain"),
+        document.getElementById("appBtnPlayTextAudioPop")
+      ].filter(Boolean);
     }
 
     function setTextAudioButtonsDisabled(disabled) {
-      for (const id of ["appBtnPlayTextAudioMain", "appBtnPlayTextAudioPop"]) {
-        const btn = document.getElementById(id);
-        if (btn) btn.disabled = !!disabled;
+      for (const btn of getTextAudioToggleButtons()) btn.disabled = !!disabled;
+    }
+
+    function updateTextAudioButtons() {
+      const isPlaying = textAudioState === "playing";
+      const isPaused = textAudioState === "paused";
+      const isBuilding = textAudioState === "building";
+
+      for (const btn of getTextAudioToggleButtons()) {
+        btn.disabled = !!textAudioBusy;
+        if (isPlaying) {
+          btn.textContent = "⏸️";
+          btn.title = "Pause input audio";
+          btn.setAttribute("aria-label", "Pause input audio");
+        } else {
+          btn.textContent = "🤖🔊";
+          btn.title = isPaused
+            ? "Continue input audio"
+            : (isBuilding ? "Preparing input audio" : "Read input audio, ignore quoted text and unknowns");
+          btn.setAttribute(
+            "aria-label",
+            isPaused
+              ? "Continue input audio"
+              : (isBuilding ? "Preparing input audio" : "Read input audio, ignore quoted text and unknowns")
+          );
+        }
       }
+    }
+
+    function setTextAudioState(state) {
+      textAudioState = state;
+      updateTextAudioButtons();
     }
 
     async function getTextToSitelenVoice() {
@@ -6655,44 +6720,356 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       return textToSitelenVoicePromise;
     }
 
-    // Core audio planning, speech-line extraction, sample concatenation, and
-    // playback rendering live in sitelen-audio-plan.js. The page keeps only
-    // UI state, button wiring, status messages, and voice-instance lifetime.
+    function syncTextAudioHighlightCanvasSize() {
+      if (!audioHighlightCanvas || !outCanvas) return;
+      const width = Math.max(1, Number(outCanvas.width) || 1);
+      const height = Math.max(1, Number(outCanvas.height) || 1);
+      if (audioHighlightCanvas.width !== width) audioHighlightCanvas.width = width;
+      if (audioHighlightCanvas.height !== height) audioHighlightCanvas.height = height;
+    }
 
-    function stopTextToSitelenAudio() {
-      textAudioPlaySeq += 1;
+    function clearTextAudioHighlight() {
+      if (!audioHighlightCanvas) return;
+      syncTextAudioHighlightCanvasSize();
+      const ctx = audioHighlightCanvas.getContext("2d", { alpha: true });
+      ctx.clearRect(0, 0, audioHighlightCanvas.width, audioHighlightCanvas.height);
+    }
+
+    function isSentenceBoundaryAt(text, index) {
+      const s = String(text ?? "");
+      const ch = s[index];
+      if (ch === "!" || ch === "?") return true;
+      if (ch !== ".") return false;
+      const prev = index > 0 ? s[index - 1] : "";
+      const next = index + 1 < s.length ? s[index + 1] : "";
+      return !( /\d/.test(prev) && /\d/.test(next) );
+    }
+
+    function visualSentenceBoundaryInfo(run) {
+      const kind = String(run?.kind ?? "").toLowerCase();
+      const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
+      if (kind === "cartouche" || sourceKind === "bracket") return { count: 0, hasTail: true };
+
+      const text = String(run?.sourceText ?? run?.encodedText ?? "");
+      if (!text) return { count: 0, hasTail: true };
+
+      let count = 0;
+      let lastBoundaryEnd = -1;
+      for (let i = 0; i < text.length; i++) {
+        if (!isSentenceBoundaryAt(text, i)) continue;
+        count += 1;
+        let end = i + 1;
+        while (end < text.length && ".!?".includes(text[end]) && isSentenceBoundaryAt(text, end)) end += 1;
+        lastBoundaryEnd = end;
+        i = end - 1;
+      }
+      return {
+        count,
+        hasTail: count === 0 || String(text.slice(lastBoundaryEnd)).trim().length > 0
+      };
+    }
+
+    function usableHighlightRun(run) {
+      if (!run) return false;
+      const kind = String(run.kind ?? "").toLowerCase();
+      if (kind === "gap" || kind === "image") return false;
+      return Number(run.widthPx) > 0 && Number(run.heightPx) > 0;
+    }
+
+    function sentenceRectFromRuns(line, runs) {
+      const usable = (runs || []).filter(usableHighlightRun);
+      if (!usable.length) return null;
+      const x1 = Math.min(...usable.map(run => Number(run.xPx ?? run.drawXPx ?? 0)));
+      const x2 = Math.max(...usable.map(run => Number(run.xPx ?? run.drawXPx ?? 0) + Math.max(0, Number(run.widthPx) || 0)));
+      const y = Number(line?.yPx ?? Math.min(...usable.map(run => Number(run.yPx ?? 0))));
+      const height = Math.max(1, Number(line?.heightPx) || Math.max(...usable.map(run => Number(run.heightPx) || 1)));
+      return { x: x1, y, width: Math.max(1, x2 - x1), height };
+    }
+
+    function buildVisualSentenceHighlightMap(plan) {
+      const map = new Map();
+      const lines = Array.isArray(plan?.lines) ? plan.lines : [];
+
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const line = lines[lineIndex];
+        const runs = Array.isArray(line?.runs) ? line.runs : [];
+        let sentenceIndexInLine = 0;
+        let currentRuns = [];
+
+        const flush = () => {
+          const rect = sentenceRectFromRuns(line, currentRuns);
+          if (rect) map.set(`${lineIndex}:${sentenceIndexInLine}`, rect);
+          currentRuns = [];
+        };
+
+        for (const run of runs) {
+          if (usableHighlightRun(run)) currentRuns.push(run);
+          const info = visualSentenceBoundaryInfo(run);
+          for (let boundaryIndex = 0; boundaryIndex < info.count; boundaryIndex++) {
+            flush();
+            sentenceIndexInLine += 1;
+            if (boundaryIndex < info.count - 1 || info.hasTail) {
+              if (usableHighlightRun(run)) currentRuns = [run];
+            }
+          }
+        }
+
+        if (currentRuns.length) flush();
+      }
+
+      return map;
+    }
+
+    function fallbackHighlightRectForLine(plan, lineIndex) {
+      const line = plan?.lines?.[lineIndex];
+      if (!line) return null;
+      return {
+        x: Number(line.xPx ?? 0),
+        y: Number(line.yPx ?? 0),
+        width: Math.max(1, Number(line.widthPx) || 1),
+        height: Math.max(1, Number(line.heightPx) || 1)
+      };
+    }
+
+    function attachVisualRectsToAudioEntries(entries, plan) {
+      const map = buildVisualSentenceHighlightMap(plan);
+      return (entries || []).map(entry => ({
+        ...entry,
+        visualRect:
+          map.get(`${entry.lineIndex}:${entry.sentenceIndexInLine}`) ||
+          fallbackHighlightRectForLine(plan, entry.lineIndex)
+      }));
+    }
+
+    function drawTextAudioHighlight(entry) {
+      clearTextAudioHighlight();
+      const rect = entry?.visualRect;
+      if (!rect || !audioHighlightCanvas) return;
+
+      const ctx = audioHighlightCanvas.getContext("2d", { alpha: true });
+      const padding = Math.max(2, Math.round((latestRenderPlan?.fontPx || getFontPx()) * 0.05));
+      const x = Math.max(0, rect.x - padding);
+      const y = Math.max(0, rect.y - padding);
+      const width = Math.min(audioHighlightCanvas.width - x, rect.width + padding * 2);
+      const height = Math.min(audioHighlightCanvas.height - y, rect.height + padding * 2);
+      if (width <= 0 || height <= 0) return;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 214, 10, 0.28)";
+      ctx.strokeStyle = "rgba(128, 92, 0, 0.72)";
+      ctx.lineWidth = Math.max(1, Math.round((latestRenderPlan?.fontPx || getFontPx()) * 0.025));
+      const radius = Math.max(3, Math.min(10, Math.round(height * 0.14)));
+      ctx.beginPath();
+      if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, radius);
+      else ctx.rect(x, y, width, height);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function cancelTextAudioSource(session) {
+      if (!session?.currentSource) return;
+      const source = session.currentSource;
+      session.currentSource = null;
+      try { source.onended = null; } catch {}
+      try { source.stop(); } catch {}
+      try { source.disconnect(); } catch {}
+    }
+
+    function cancelTextAudioGap(session) {
+      if (!session?.gapTimer) return;
+      clearTimeout(session.gapTimer);
+      session.gapTimer = null;
+    }
+
+    function resetTextToSitelenAudio({ announce = false, message = "Audio stopped." } = {}) {
+      textAudioGeneration += 1;
+      const session = textAudioSession;
+      if (session) {
+        cancelTextAudioSource(session);
+        cancelTextAudioGap(session);
+      }
+      textAudioSession = null;
+      textAudioBusy = false;
+      setTextAudioState("stopped");
+      clearTextAudioHighlight();
+
       const voicePromise = textToSitelenVoicePromise;
       if (voicePromise) {
         voicePromise
           .then(voice => stopSitelenAudioPlayback({ voice }))
           .catch(() => {});
       }
-      announceStatus("Audio stopped.");
+      if (announce) announceStatus(message);
     }
 
-    async function playTextToSitelenAudio() {
+    function completeTextAudioPlayback(generation) {
+      if (generation !== textAudioGeneration) return;
+      const session = textAudioSession;
+      if (session) {
+        cancelTextAudioSource(session);
+        cancelTextAudioGap(session);
+      }
+      textAudioSession = null;
+      setTextAudioState("stopped");
+      clearTextAudioHighlight();
+      announceStatus("Audio finished.");
+    }
+
+    function getOrCreateEntryAudioBuffer(session, entry) {
+      if (entry._audioBuffer) return entry._audioBuffer;
+      const ctx = session.voice.getAudioContext();
+      const buffer = ctx.createBuffer(1, entry.samples.length, entry.sampleRate);
+      buffer.copyToChannel(entry.samples, 0);
+      entry._audioBuffer = buffer;
+      return buffer;
+    }
+
+    function scheduleTextAudioGap(seconds) {
+      const session = textAudioSession;
+      if (!session || session.generation !== textAudioGeneration) return;
+
+      const gapSeconds = Math.max(0, Number(seconds) || 0);
+      if (gapSeconds <= 0) {
+        session.inGap = false;
+        session.remainingGapSeconds = 0;
+        playCurrentTextAudioEntry();
+        return;
+      }
+
+      session.inGap = true;
+      session.remainingGapSeconds = gapSeconds;
+      session.gapStartedAtMs = performance.now();
+      clearTextAudioHighlight();
+      setTextAudioState("playing");
+      session.gapTimer = setTimeout(() => {
+        if (!textAudioSession || session !== textAudioSession || session.generation !== textAudioGeneration) return;
+        session.gapTimer = null;
+        session.inGap = false;
+        session.remainingGapSeconds = 0;
+        playCurrentTextAudioEntry();
+      }, Math.max(0, Math.round(gapSeconds * 1000)));
+    }
+
+    function playCurrentTextAudioEntry() {
+      const session = textAudioSession;
+      if (!session || session.generation !== textAudioGeneration) return;
+      if (session.currentIndex >= session.entries.length) {
+        completeTextAudioPlayback(session.generation);
+        return;
+      }
+
+      const entry = session.entries[session.currentIndex];
+      const buffer = getOrCreateEntryAudioBuffer(session, entry);
+      const offset = Math.max(0, Math.min(Number(session.currentOffsetSeconds) || 0, Math.max(0, buffer.duration - 0.001)));
+      const ctx = session.voice.getAudioContext();
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+
+      session.currentSource = source;
+      session.currentBuffer = buffer;
+      session.sourceStartedAt = ctx.currentTime;
+      session.sourceStartedOffset = offset;
+      session.inGap = false;
+      session.remainingGapSeconds = 0;
+      drawTextAudioHighlight(entry);
+      setTextAudioState("playing");
+
+      source.onended = () => {
+        if (!textAudioSession || session !== textAudioSession) return;
+        if (session.generation !== textAudioGeneration) return;
+        if (session.currentSource !== source || textAudioState !== "playing") return;
+
+        session.currentSource = null;
+        try { source.disconnect(); } catch {}
+        session.currentBuffer = null;
+        session.currentOffsetSeconds = 0;
+        clearTextAudioHighlight();
+        session.currentIndex += 1;
+
+        if (session.currentIndex >= session.entries.length) {
+          completeTextAudioPlayback(session.generation);
+          return;
+        }
+
+        scheduleTextAudioGap(entry.pauseAfterSeconds);
+      };
+
+      source.start(0, offset);
+    }
+
+    function pauseTextToSitelenAudio() {
+      const session = textAudioSession;
+      if (!session || textAudioState !== "playing") return;
+
+      if (session.inGap) {
+        const elapsed = Math.max(0, (performance.now() - session.gapStartedAtMs) / 1000);
+        session.remainingGapSeconds = Math.max(0, session.remainingGapSeconds - elapsed);
+        cancelTextAudioGap(session);
+        setTextAudioState("paused");
+        announceStatus("Audio paused between sentences.");
+        return;
+      }
+
+      if (session.currentSource) {
+        const ctx = session.voice.getAudioContext();
+        const elapsed = Math.max(0, ctx.currentTime - session.sourceStartedAt);
+        session.currentOffsetSeconds = Math.min(
+          session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
+          session.sourceStartedOffset + elapsed
+        );
+        cancelTextAudioSource(session);
+      }
+      setTextAudioState("paused");
+      announceStatus("Audio paused.");
+    }
+
+    function resumeTextToSitelenAudio() {
+      const session = textAudioSession;
+      if (!session || textAudioState !== "paused") return;
+      if (session.inGap) scheduleTextAudioGap(session.remainingGapSeconds);
+      else playCurrentTextAudioEntry();
+      announceStatus("Audio resumed.");
+    }
+
+    function stopTextToSitelenAudio() {
+      resetTextToSitelenAudio({ announce: true });
+    }
+
+    async function startTextToSitelenAudio() {
       if (textAudioBusy) return;
-      const playSeq = ++textAudioPlaySeq;
+
+      const generation = ++textAudioGeneration;
       textAudioBusy = true;
+      setTextAudioState("building");
       setTextAudioButtonsDisabled(true);
+      clearTextAudioHighlight();
+
       try {
         const raw = String(elTextIn?.value ?? "");
         if (!raw.trim()) {
           announceStatus("Nothing to read.");
+          setTextAudioState("stopped");
           return;
         }
 
-        // Preserve existing playback behavior: clicking audio first refreshes
-        // the visual render from the current textarea. The audio helper builds
-        // a separate audio-specific render plan after that.
-        await renderFromTextarea();
-        if (playSeq !== textAudioPlaySeq) return;
+        // Prevent an already-scheduled typing render from invalidating the
+        // playback generation immediately after the user presses Play.
+        if (typeof _autoRenderTimer !== "undefined" && _autoRenderTimer) {
+          clearTimeout(_autoRenderTimer);
+          _autoRenderTimer = null;
+        }
+
+        await renderFromTextarea({ preserveAudio: true });
+        if (generation !== textAudioGeneration) return;
 
         const renderer = await ensureRendererReady();
         const rendererConfig = buildRendererCallConfig({ includeHalo: false });
         const option = selectedTextAudioOption();
+        const voice = await getTextToSitelenVoice();
 
-        const result = await buildAndPlaySitelenAudioFromRawText({
+        const result = await buildSitelenSentenceAudioBuffersFromRawText({
           rawText: raw,
           pageMap,
           renderer,
@@ -6703,24 +7080,36 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           mixedStyle: "short",
           relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
           relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
-          getVoice: getTextToSitelenVoice,
+          voice,
           renderOptions: {
             synthesis_mode: "reference_audio",
             pauseScale: option.value,
             syllableGapSeconds: option.syllableGapSeconds
           },
           linePauseSeconds: option.linePauseSeconds,
-          shouldCancel: () => playSeq !== textAudioPlaySeq,
-          playSamples: true
+          shouldCancel: () => generation !== textAudioGeneration
         });
 
-        if (result?.cancelled || playSeq !== textAudioPlaySeq) return;
+        if (result?.cancelled || generation !== textAudioGeneration) return;
 
-        const lines = Array.isArray(result?.lines) ? result.lines : [];
         const skipped = Array.isArray(result?.skipped) ? result.skipped : [];
+        const entries = attachVisualRectsToAudioEntries(result?.entries || [], latestRenderPlan);
         try {
           window.__TTS_LAST_TEXT_AUDIO_LINES__ = {
-            lines: [...lines],
+            lines: [...(result?.audioPlan?.speechLines || [])],
+            skipped: [...skipped],
+            audioInput: result?.audioPlan?.audioInput ?? ""
+          };
+          window.__TTS_LAST_TEXT_AUDIO_SENTENCES__ = {
+            entries: entries.map(entry => ({
+              text: entry.text,
+              renderText: entry.renderText,
+              lineIndex: entry.lineIndex,
+              sentenceIndexInLine: entry.sentenceIndexInLine,
+              durationSeconds: entry.durationSeconds,
+              pauseAfterSeconds: entry.pauseAfterSeconds,
+              visualRect: entry.visualRect
+            })),
             skipped: [...skipped],
             audioInput: result?.audioPlan?.audioInput ?? ""
           };
@@ -6728,32 +7117,72 @@ async function serializeRenderPlanToUnicodeJson(plan) {
 
         if (result?.status === "no-speech") {
           announceStatus("No readable Toki Pona text found for audio.");
+          setTextAudioState("stopped");
+          return;
+        }
+        if (result?.status === "no-samples" || !entries.length) {
+          announceStatus("No audio samples were produced.");
+          setTextAudioState("stopped");
           return;
         }
 
-        if (result?.status === "no-samples") {
-          announceStatus("No audio samples were produced.");
-          return;
-        }
+        textAudioSession = {
+          generation,
+          voice,
+          entries,
+          currentIndex: 0,
+          currentOffsetSeconds: 0,
+          currentSource: null,
+          currentBuffer: null,
+          sourceStartedAt: 0,
+          sourceStartedOffset: 0,
+          inGap: false,
+          remainingGapSeconds: 0,
+          gapStartedAtMs: 0,
+          gapTimer: null
+        };
 
         const skippedSummary = summarizeSitelenAudioSkipped(skipped);
-        announceStatus(`Playing input audio. Lines read: ${result?.spokenLineCount ?? 0}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
+        announceStatus(`Playing input audio. Sentences read: ${entries.length}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
+        playCurrentTextAudioEntry();
       } catch (e) {
-        showAlertAndAnnounce(e?.message ?? String(e));
+        if (generation === textAudioGeneration) {
+          resetTextToSitelenAudio({ announce: false });
+          showAlertAndAnnounce(e?.message ?? String(e));
+        }
       } finally {
-        textAudioBusy = false;
-        setTextAudioButtonsDisabled(false);
+        if (generation === textAudioGeneration) {
+          textAudioBusy = false;
+          if (textAudioState === "building") setTextAudioState("stopped");
+          updateTextAudioButtons();
+        }
       }
     }
 
-    function wireTextAudioControls() {
-      document.getElementById("appBtnPlayTextAudioMain")?.addEventListener("click", playTextToSitelenAudio);
-      document.getElementById("appBtnPlayTextAudioPop")?.addEventListener("click", playTextToSitelenAudio);
-      document.getElementById("appBtnStopTextAudioMain")?.addEventListener("click", stopTextToSitelenAudio);
-      document.getElementById("appBtnStopTextAudioPop")?.addEventListener("click", stopTextToSitelenAudio);
+    function toggleTextToSitelenAudio() {
+      if (textAudioState === "playing") {
+        pauseTextToSitelenAudio();
+        return;
+      }
+      if (textAudioState === "paused") {
+        resumeTextToSitelenAudio();
+        return;
+      }
+      startTextToSitelenAudio();
     }
 
-    async function renderFromTextarea() {
+    function wireTextAudioControls() {
+      document.getElementById("appBtnPlayTextAudioMain")?.addEventListener("click", toggleTextToSitelenAudio);
+      document.getElementById("appBtnPlayTextAudioPop")?.addEventListener("click", toggleTextToSitelenAudio);
+      document.getElementById("appBtnStopTextAudioMain")?.addEventListener("click", stopTextToSitelenAudio);
+      document.getElementById("appBtnStopTextAudioPop")?.addEventListener("click", stopTextToSitelenAudio);
+
+      // Any edit invalidates the prepared buffers and the saved resume offset.
+      elTextIn?.addEventListener("input", () => resetTextToSitelenAudio({ announce: false }));
+    }
+
+    async function renderFromTextarea({ preserveAudio = false } = {}) {
+      if (!preserveAudio) resetTextToSitelenAudio({ announce: false });
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
       //const input = String(elTextIn.value ?? "");
@@ -6771,6 +7200,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         outCanvas.width = 1;
         outCanvas.height = 1;
         outCanvas.getContext("2d").clearRect(0, 0, 1, 1);
+        syncTextAudioHighlightCanvasSize();
+        clearTextAudioHighlight();
         latestRenderPlan = null;
         latestRenderedCanvas = null;
         announceStatus("Nothing to render (no recognized words).");
@@ -6785,6 +7216,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const ctx = outCanvas.getContext("2d", { alpha: true });
       ctx.clearRect(0, 0, outCanvas.width, outCanvas.height);
       ctx.drawImage(rendered.canvas, 0, 0);
+      syncTextAudioHighlightCanvasSize();
+      clearTextAudioHighlight();
 
       latestRenderPlan = plan;
       latestRenderedCanvas = rendered.canvas;
