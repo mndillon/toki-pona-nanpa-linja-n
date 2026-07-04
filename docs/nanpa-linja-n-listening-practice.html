@@ -1,0 +1,2070 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>nanpa-linja-n Listening Practice</title>
+
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <style>
+    :root{
+      --topbar-h:58px;
+      --bg:#F3DFC0;
+      --ink:#111;
+      --muted:#3f4750;
+      --panel:rgba(255,255,255,0.35);
+      --panel-strong:rgba(255,255,255,0.55);
+      --panel-border:rgba(17,17,17,0.18);
+      --good:#147a2a;
+      --bad:#b11a1a;
+      --warn:#8a5a00;
+      --board-max:900px;
+      --card-radius:18px;
+    }
+
+    @font-face{
+      font-family:"PatrickHand";
+      src:url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display:swap;
+    }
+    @font-face{
+      font-family:"TP-Cartouche-Font";
+      src:url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display:swap;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:"PatrickHand",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    }
+    body{ overflow:hidden; }
+
+    button,input,select{ font:inherit; }
+    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{
+      outline:3px solid #111;
+      outline-offset:2px;
+    }
+
+    .topbar{
+      height:var(--topbar-h);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-bottom:1px solid var(--panel-border);
+      background:var(--panel);
+      backdrop-filter:blur(6px);
+      overflow:hidden;
+      white-space:nowrap;
+    }
+    .brand{
+      font-size:21px;
+      font-weight:800;
+      line-height:1;
+      margin-right:6px;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid var(--panel-border);
+      background:rgba(255,255,255,0.50);
+      color:var(--ink);
+      padding:6px 9px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      min-height:32px;
+    }
+    .btn:hover{ background:rgba(255,255,255,0.68); }
+    .btn:disabled{ opacity:0.52; cursor:not-allowed; }
+    .btn.primary{ background:rgba(255,255,255,0.76); }
+
+    .controlBox{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 7px;
+      border:1px solid var(--panel-border);
+      background:var(--panel);
+      border-radius:12px;
+      min-height:32px;
+      flex:0 0 auto;
+    }
+    .controlLabel{ font-size:13px; color:var(--muted); }
+    .controlInput{
+      height:26px;
+      border-radius:10px;
+      border:1px solid rgba(17,17,17,0.22);
+      background:rgba(255,255,255,0.65);
+      color:var(--ink);
+      padding:0 8px;
+      font-size:14px;
+      min-width:88px;
+    }
+    .numberInput{ width:68px; min-width:68px; }
+    .status{
+      margin-left:auto;
+      color:var(--muted);
+      font-size:15px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .wrap{
+      height:calc(100dvh - var(--topbar-h));
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .main{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:auto;
+      padding:8px 10px;
+      display:grid;
+      place-items:start center;
+    }
+    .stack{
+      width:min(var(--board-max),94vw);
+      display:grid;
+      gap:8px;
+      padding-bottom:8px;
+    }
+    .card{
+      border:1px solid var(--panel-border);
+      background:var(--panel-strong);
+      border-radius:var(--card-radius);
+      padding:10px;
+      display:grid;
+      gap:8px;
+    }
+    .panelRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .between{ justify-content:space-between; }
+    h1,h2,h3,p{ margin:0; }
+    h1{ font-size:22px; }
+    h2{ font-size:19px; }
+    p{ line-height:1.28; }
+    .muted{ color:var(--muted); }
+    .goodText{ color:var(--good); font-weight:800; }
+    .badText{ color:var(--bad); font-weight:800; }
+    .warnText{ color:var(--warn); font-weight:800; }
+    .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
+    .properNameText{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
+
+    .progressGrid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(120px,1fr));
+      gap:6px;
+    }
+    .statCard{
+      border:1px solid var(--panel-border);
+      background:rgba(255,255,255,0.34);
+      border-radius:14px;
+      padding:5px 8px;
+      display:grid;
+      gap:1px;
+    }
+    .statCard strong{ font-size:17px; }
+    .statCard span{ font-size:13px; }
+
+    .questionCard{
+      min-height:360px;
+      align-content:start;
+    }
+    .prompt{
+      text-align:center;
+      font-size:21px;
+      font-weight:800;
+    }
+    .audioArea{
+      display:grid;
+      place-items:center;
+      gap:5px;
+      padding:12px;
+    }
+    .audioButton{
+      min-width:190px;
+      min-height:62px;
+      font-size:22px;
+      border-radius:18px;
+    }
+    .answerStage{
+      display:grid;
+      gap:6px;
+      max-width:720px;
+      width:100%;
+      margin:0 auto;
+    }
+    .answerRow{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:8px;
+      align-items:center;
+    }
+    .answerInput{
+      width:100%;
+      min-width:0;
+      height:44px;
+      border:1px solid rgba(17,17,17,0.28);
+      border-radius:12px;
+      background:rgba(255,255,255,0.72);
+      color:var(--ink);
+      padding:8px 10px;
+      font-size:17px;
+    }
+    .answerInput.correct{
+      border-color:rgba(20,122,42,0.65);
+      background:rgba(235,255,237,0.58);
+    }
+    .stageLabel{ font-weight:800; }
+    .feedback{
+      min-height:1.35em;
+      margin-top:8px;
+      border:1px solid var(--panel-border);
+      background:rgba(255,255,255,0.30);
+      border-radius:14px;
+      padding:7px 9px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .feedback.goodText{ font-weight:700; }
+    .feedback.badText{ color:#5a1f1f; font-weight:400; }
+
+    .reveal{
+      margin-top:8px;
+      border:1px solid var(--panel-border);
+      background:rgba(255,255,255,0.30);
+      border-radius:14px;
+      padding:9px;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .revealLine{
+      display:block;
+    }
+    .reveal canvas{
+      display:block;
+      max-width:100%;
+      height:auto;
+      margin-top:4px;
+      background:transparent;
+    }
+
+    .settingsGrid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(245px,1fr));
+      gap:8px;
+    }
+    .settingItem{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:8px;
+      background:rgba(255,255,255,0.28);
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+    }
+    .settingItem input{ margin-top:4px; width:17px; height:17px; accent-color:var(--ink); }
+    .settingText{ display:grid; gap:2px; }
+    .settingText strong{ font-size:16px; }
+    .settingText span{ color:var(--muted); font-size:14px; }
+
+
+    .tabs{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      padding:6px 10px 0;
+      flex:0 0 auto;
+    }
+    .tabBtn[aria-selected="true"]{
+      background:rgba(255,255,255,0.78);
+      box-shadow:inset 0 -2px 0 rgba(17,17,17,0.28);
+    }
+    .tabPanel{ width:100%; display:grid; gap:8px; }
+    .reviewList{ display:grid; gap:8px; }
+    .reviewItem{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:9px;
+      background:rgba(255,255,255,0.28);
+      display:grid;
+      gap:5px;
+    }
+    .reviewTop,.historySessionTop{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .reviewMeta,.historySessionMeta{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .reviewRevealGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:7px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .reviewRevealPanel{
+      min-width:0;
+      border:1px solid var(--panel-border);
+      border-radius:12px;
+      padding:7px 8px;
+      background:rgba(255,255,255,0.30);
+      display:grid;
+      gap:4px;
+      align-content:start;
+    }
+    .reviewRevealPanel.cartouchePanel{
+      grid-column:1 / -1;
+    }
+    .reviewRevealLabel{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:800;
+    }
+    .reviewRevealValue{
+      min-width:0;
+      overflow-wrap:anywhere;
+      user-select:text;
+      font-size:13px;
+    }
+    .reviewRevealPanel canvas{
+      display:block;
+      max-width:100%;
+      height:auto;
+      background:transparent;
+    }
+    .answerDetails{
+      border-top:1px solid var(--panel-border);
+      padding-top:6px;
+      display:grid;
+      gap:3px;
+      font-size:14px;
+    }
+    .answerDetailsTitle{
+      font-weight:800;
+      margin-bottom:1px;
+    }
+    .resultBadge{
+      display:inline-flex;
+      align-items:center;
+      border:1px solid var(--panel-border);
+      border-radius:999px;
+      padding:2px 7px;
+      font-size:13px;
+      font-weight:800;
+    }
+    .resultBadge.correct{ color:var(--good); }
+    .resultBadge.revealed{ color:var(--warn); }
+    .resultBadge.incomplete{ color:var(--muted); }
+    .historyGrid{
+      display:grid;
+      grid-template-columns:minmax(240px,.9fr) minmax(320px,1.4fr);
+      gap:8px;
+      min-height:0;
+    }
+    .historyList,.historyDetail{
+      display:grid;
+      gap:8px;
+      max-height:520px;
+      overflow:auto;
+    }
+    .historySessionBtn{
+      width:100%;
+      text-align:left;
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      background:rgba(255,255,255,0.34);
+      padding:8px;
+      display:grid;
+      gap:3px;
+      cursor:pointer;
+      color:var(--ink);
+    }
+    .historySessionBtn:hover,.historySessionBtn.active{ background:rgba(255,255,255,0.62); }
+    .historyHeader{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:9px;
+      background:rgba(255,255,255,0.28);
+      display:grid;
+      gap:5px;
+    }
+    .compactControl{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .compactControl input{ width:16px; height:16px; accent-color:var(--ink); }
+    .autoNextNotice{
+      min-height:18px;
+      text-align:center;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .summaryBox{
+      display:grid;
+      gap:7px;
+      text-align:center;
+      padding:18px 10px;
+    }
+    .summaryScore{ font-size:34px; font-weight:800; }
+    .hidden{ display:none !important; }
+
+    .footer{
+      flex:0 0 auto;
+      border-top:1px solid var(--panel-border);
+      background:var(--panel);
+      padding:5px 10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .footerRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      white-space:nowrap;
+    }
+    .footerLeft{ overflow:hidden; text-overflow:ellipsis; }
+    .footer a{ color:var(--muted); }
+
+    @media (max-width:980px){
+      :root{ --topbar-h:98px; }
+      .topbar{ flex-wrap:wrap; align-content:center; white-space:normal; }
+      .brand{ width:100%; font-size:19px; }
+      .status{ display:none; }
+    }
+    @media (max-width:720px){
+      .historyGrid{ grid-template-columns:1fr; }
+      .historyList,.historyDetail{ max-height:360px; }
+      .progressGrid{ grid-template-columns:repeat(2,minmax(120px,1fr)); }
+      .reviewRevealGrid{ grid-template-columns:1fr; }
+      .reviewRevealPanel.cartouchePanel{ grid-column:auto; }
+      .questionCard{ min-height:390px; }
+      .answerRow{ grid-template-columns:1fr; }
+      .answerRow .btn{ justify-self:start; }
+      .footerLeft{ display:none; }
+      .footerRow{ justify-content:flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">nanpa-linja-n listening practice</div>
+    <button id="startButton" class="btn primary" type="button">Start</button>
+    <button id="quitButton" class="btn" type="button" disabled>Quit</button>
+
+    <label class="controlBox">
+      <span class="controlLabel">Number type</span>
+      <select id="kindSelect" class="controlInput">
+        <option value="mixed">Mixed</option>
+        <option value="single-digit-integer">Single digits</option>
+        <option value="integer">Integers</option>
+        <option value="decimal">Decimals</option>
+        <option value="negative">Negative numbers</option>
+        <option value="thousands">Thousands</option>
+        <option value="millions">Millions</option>
+        <option value="percent">Percentages</option>
+        <option value="fraction">Fractions</option>
+        <option value="integer-and-fraction">Integer and fraction</option>
+        <option value="scientific-notation">Scientific notation</option>
+        <option value="hh-mm-time">Times</option>
+        <option value="iso-date">Dates</option>
+      </select>
+    </label>
+
+    <label class="controlBox">
+      <span class="controlLabel">Questions</span>
+      <input id="questionCountInput" class="controlInput numberInput" type="number" min="1" max="100" value="20" />
+    </label>
+
+    <label class="controlBox">
+      <span class="controlLabel">Mode</span>
+      <select id="properNameModeSelect" class="controlInput">
+        <option value="strict">strict</option>
+        <option value="relaxed" selected>relaxed</option>
+      </select>
+    </label>
+
+    <label class="controlBox">
+      <span class="controlLabel">Audio speed</span>
+      <select id="audioSpeedSelect" class="controlInput">
+        <option value="1.00">Normal</option>
+        <option value="2.25" selected>Slow</option>
+        <option value="4.00">Very slow</option>
+      </select>
+    </label>
+
+    <div id="status" class="status">Ready.</div>
+  </header>
+
+  <div class="wrap">
+    <div class="tabs" role="tablist" aria-label="Page sections">
+      <button class="btn tabBtn" data-tab="practice" aria-selected="true" type="button">Practice</button>
+      <button class="btn tabBtn" data-tab="review" aria-selected="false" type="button">Review</button>
+      <button class="btn tabBtn" data-tab="history" aria-selected="false" type="button">History</button>
+      <button class="btn tabBtn" data-tab="settings" aria-selected="false" type="button">Settings</button>
+    </div>
+
+    <main class="main">
+      <div class="stack">
+        <section id="tab-practice" class="tabPanel">
+          <section class="card">
+            <div class="panelRow between">
+              <div>
+                <h1>Listen and enter the number</h1>
+                <p class="muted">Enter either the decimal value or the nanpa-linja-n proper name that you hear.</p>
+              </div>
+              <div class="panelRow">
+                <button id="previousButton" class="btn" type="button" disabled>Prev</button>
+                <button id="nextButton" class="btn" type="button" disabled>Next</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card progressGrid" aria-label="Session progress">
+            <div class="statCard"><span class="muted">Score</span><strong id="scoreLabel">0 / 0</strong></div>
+            <div class="statCard"><span class="muted">Streak</span><strong id="streakLabel">0</strong></div>
+            <div class="statCard"><span class="muted">Question</span><strong id="questionLabel">0 / 0</strong></div>
+            <div class="statCard"><span class="muted">Type</span><strong id="typeLabel">—</strong></div>
+          </section>
+
+          <section id="questionCard" class="card questionCard">
+            <div id="prompt" class="prompt">Choose settings and press Start.</div>
+
+            <div class="audioArea">
+              <button id="audioButton" class="btn audioButton" type="button" disabled>🤖🔊 Play audio</button>
+              <span class="muted">Press Enter in an empty first field to play the audio.</span>
+            </div>
+
+            <div id="firstStage" class="answerStage">
+              <label class="stageLabel" for="firstAnswerInput">Decimal value or nanpa-linja-n proper name</label>
+              <div class="answerRow">
+                <input id="firstAnswerInput" class="answerInput mono" type="text" autocomplete="off" spellcheck="false" disabled
+                       placeholder="Enter the value or proper name" />
+                <button id="checkFirstButton" class="btn" type="button" disabled>Check</button>
+              </div>
+            </div>
+
+            <div id="decimalStage" class="answerStage hidden">
+              <label class="stageLabel" for="decimalAnswerInput">Now translate the proper name into its decimal value</label>
+              <div class="answerRow">
+                <input id="decimalAnswerInput" class="answerInput mono" type="text" autocomplete="off" spellcheck="false"
+                       placeholder="Enter the decimal value" />
+                <button id="checkDecimalButton" class="btn" type="button">Check value</button>
+              </div>
+            </div>
+
+            <div class="panelRow">
+              <button id="revealButton" class="btn" type="button" disabled>Reveal</button>
+            </div>
+
+            <div id="feedback" class="feedback muted" role="status" aria-live="polite">The first input accepts either format.</div>
+            <div id="autoNextNotice" class="autoNextNotice" aria-live="polite"></div>
+
+            <div id="reveal" class="reveal hidden">
+              <div class="revealLine"><strong>Value:</strong> <span id="revealValue" class="mono"></span></div>
+              <div id="revealStrictLine" class="revealLine hidden"><strong>strict nanpa-linja-n proper name:</strong> <span id="revealStrictName" class="properNameText"></span></div>
+              <div id="revealRelaxedLine" class="revealLine hidden"><strong>relaxed nanpa-linja-n proper name:</strong> <span id="revealRelaxedName" class="properNameText"></span></div>
+              <div class="revealLine"><strong>nanpa-linja-n cartouche:</strong> <canvas id="normalCartouche" aria-hidden="true"></canvas></div>
+              <div class="revealLine"><strong>nanpa-linja-n abbreviated cartouche:</strong> <canvas id="abbreviatedCartouche" aria-hidden="true"></canvas></div>
+              <div id="revealCodeLine" class="revealLine hidden"><strong>#~ abbreviation:</strong> <span id="revealCode" class="mono"></span></div>
+            </div>
+          </section>
+
+          <section id="summaryCard" class="card summaryBox hidden">
+            <h2>Session complete</h2>
+            <div id="summaryScore" class="summaryScore">0 / 0</div>
+            <p id="summaryText" class="muted"></p>
+            <div class="panelRow" style="justify-content:center">
+              <button id="restartButton" class="btn primary" type="button">Try another session</button>
+              <button id="summaryReviewButton" class="btn" type="button">Review this session</button>
+            </div>
+          </section>
+        </section>
+
+        <section id="tab-review" class="tabPanel hidden">
+          <section class="card">
+            <div class="panelRow between">
+              <div>
+                <h1>Current session review</h1>
+                <p id="reviewSummary" class="muted">No session has been started.</p>
+              </div>
+              <label class="compactControl">
+                <input id="reviewProblemsOnlyToggle" type="checkbox" />
+                Problems only
+              </label>
+            </div>
+          </section>
+          <div id="reviewList" class="reviewList"></div>
+        </section>
+
+        <section id="tab-history" class="tabPanel hidden">
+          <section class="card">
+            <div class="panelRow between">
+              <div>
+                <h1>History</h1>
+                <p id="historySummary" class="muted">Loading saved sessions…</p>
+              </div>
+              <div class="panelRow">
+                <button id="refreshHistoryButton" class="btn" type="button">Refresh</button>
+                <button id="clearHistoryButton" class="btn" type="button">Clear history</button>
+              </div>
+            </div>
+          </section>
+          <div class="historyGrid">
+            <section class="card">
+              <h2>Saved sessions</h2>
+              <div id="historyList" class="historyList"></div>
+            </section>
+            <section class="card">
+              <div class="panelRow between">
+                <h2>Session details</h2>
+                <label class="compactControl">
+                  <input id="historyProblemsOnlyToggle" type="checkbox" />
+                  Problems only
+                </label>
+              </div>
+              <div id="historyDetail" class="historyDetail"><p class="muted">Select a saved session.</p></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-settings" class="tabPanel hidden">
+          <section class="card">
+            <h1>Settings</h1>
+            <div class="settingsGrid">
+              <label class="settingItem">
+                <input id="requireDecimalToggle" type="checkbox" checked />
+                <span class="settingText">
+                  <strong>Require decimal value after a proper-name answer</strong>
+                  <span>A correct decimal answer in the first field completes the question immediately. A correct proper name opens a second value field.</span>
+                </span>
+              </label>
+
+              <label class="settingItem">
+                <input id="equivalentPunctuationToggle" type="checkbox" checked />
+                <span class="settingText">
+                  <strong>Accept equivalent punctuation</strong>
+                  <span>Accepts suitable dash, slash, colon and related punctuation variants according to the number type.</span>
+                </span>
+              </label>
+
+              <label class="settingItem">
+                <input id="autoNextToggle" type="checkbox" checked />
+                <span class="settingText">
+                  <strong>Automatically continue after showing the answer</strong>
+                  <span>Moves to the next question after a short pause following a correct answer or Reveal.</span>
+                </span>
+              </label>
+
+              <label class="settingItem">
+                <span class="settingText" style="width:100%">
+                  <strong>Automatic-next pause</strong>
+                  <span>How long the correct or revealed answer remains visible.</span>
+                  <select id="autoNextDelaySelect" class="controlInput" style="margin-top:5px;width:max-content">
+                    <option value="2000">2 seconds</option>
+                    <option value="4000" selected>4 seconds</option>
+                    <option value="6000">6 seconds</option>
+                    <option value="10000">10 seconds</option>
+                  </select>
+                </span>
+              </label>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footerRow">
+        <div class="footerLeft"><strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.</div>
+        <div><a href="./index.html">Back to index</a></div>
+      </div>
+    </footer>
+  </div>
+
+<script type="module">
+(() => {
+  "use strict";
+
+  const FONT_FAMILY = "TP-Cartouche-Font";
+  const LARGE_TINY_FONT_SIZE = 22;
+  const SMALL_TINY_FONT_SIZE = 8;
+  const CARTOUCHE_RENDER_OPTS = { padding:8, border:1, cornerRadius:10, letterGap:2 };
+  const SETTINGS_KEY = "nanpaListeningPractice.settings";
+  const HISTORY_DB_NAME = "nln-listening-practice-history";
+  const HISTORY_DB_VERSION = 1;
+  const HISTORY_STORE = "sessions";
+
+  const AUDIO_PAUSE_SCALE_OPTIONS = [
+    { value:1.00, label:"Normal", syllableGapSeconds:0.200 },
+    { value:2.25, label:"Slow", syllableGapSeconds:0.700 },
+    { value:4.00, label:"Very slow", syllableGapSeconds:1.402 }
+  ];
+
+  const KIND_LABELS = {
+    "single-digit-integer":"single digit",
+    integer:"integer",
+    decimal:"decimal",
+    negative:"negative",
+    thousands:"thousands",
+    millions:"millions",
+    percent:"percentage",
+    fraction:"fraction",
+    "integer-and-fraction":"integer and fraction",
+    "scientific-notation":"scientific notation",
+    "hh-mm-time":"time",
+    "iso-date":"date"
+  };
+
+  const MIXED_KINDS = Object.keys(KIND_LABELS);
+  const FRACTION_CHOICES = [
+    "1/2","1/3","2/3","1/4","3/4","1/5","2/5","3/5","4/5",
+    "1/8","3/8","5/8","7/8","1/10","3/10","7/10","9/10"
+  ];
+
+  const ABBREV_CP_NANPA = 0xF193D;
+  const ABBREV_CP_NENA  = 0xF1940;
+  const ABBREV_CP_EN    = 0xF190A;
+  const ABBREV_CP_OPEN  = 0xF1947;
+  const ABBREV_CP_ALA   = 0xF1902;
+  const ABBREV_CP_IKE   = 0xF190D;
+  const ABBREV_CP_UTA   = 0xF1970;
+  const ABBREV_DROP_AFTER_FIRST_NANPA = new Set([
+    ABBREV_CP_NANPA, ABBREV_CP_NENA, ABBREV_CP_EN, ABBREV_CP_OPEN,
+    ABBREV_CP_ALA, ABBREV_CP_IKE, ABBREV_CP_UTA
+  ]);
+
+  const STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
+    WE:"WA", TE:"TU", LE:"LU", ME:"MU", PE:"PI"
+  });
+  const STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
+  const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
+  const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
+  const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
+
+  let nanpaModulePromise = null;
+  let voicePromise = null;
+  let generationToken = 0;
+  let autoNextTimer = null;
+  let historyDbPromise = null;
+  let reviewRenderToken = 0;
+  let historyDetailRenderToken = 0;
+
+  const state = {
+    active:false,
+    tab:"practice",
+    items:[],
+    index:0,
+    score:0,
+    streak:0,
+    bestStreak:0,
+    completedCount:0,
+    startedAt:null,
+    sessionSaved:false,
+    history:[],
+    selectedHistoryId:null,
+    reviewProblemsOnly:false,
+    historyProblemsOnly:false,
+    settings:{
+      kind:"mixed",
+      questionCount:20,
+      properNameMode:"relaxed",
+      audioPauseScale:2.25,
+      requireDecimalAfterProperName:true,
+      acceptEquivalentPunctuation:true,
+      autoNext:true,
+      autoNextDelayMs:4000
+    }
+  };
+
+  const el = {};
+  const $ = id => document.getElementById(id);
+  const clamp = (n,min,max) => Math.max(min,Math.min(max,n));
+
+  function cacheElements(){
+    for (const id of [
+      "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status",
+      "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton",
+      "firstAnswerInput","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
+      "reveal","revealValue","revealStrictLine","revealStrictName","revealRelaxedLine","revealRelaxedName","normalCartouche",
+      "abbreviatedCartouche","revealCodeLine","revealCode","requireDecimalToggle","equivalentPunctuationToggle","autoNextToggle",
+      "autoNextDelaySelect","autoNextNotice","summaryCard","summaryScore","summaryText","restartButton","summaryReviewButton",
+      "reviewSummary","reviewProblemsOnlyToggle","reviewList","historySummary","refreshHistoryButton","clearHistoryButton",
+      "historyList","historyDetail","historyProblemsOnlyToggle"
+    ]) el[id] = $(id);
+  }
+
+  function randInt(min,max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function choice(items){ return items[randInt(0,items.length - 1)]; }
+  function shuffle(items){
+    const out = Array.from(items);
+    for (let i=out.length-1;i>0;i--){ const j=randInt(0,i); [out[i],out[j]]=[out[j],out[i]]; }
+    return out;
+  }
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function formatCommas(n){ return Number(n).toLocaleString("en-US"); }
+  function dayCountForMonth(year,month){ return new Date(year,month,0).getDate(); }
+
+  function normalizeProperNameMode(value){ return String(value).toLowerCase() === "strict" ? "strict" : "relaxed"; }
+  function isRelaxedProperNameMode(mode){ return normalizeProperNameMode(mode) !== "strict"; }
+
+  function loadSettings(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+      if (saved && typeof saved === "object") Object.assign(state.settings,saved);
+    }catch{}
+    if (!["mixed",...MIXED_KINDS].includes(state.settings.kind)) state.settings.kind = "mixed";
+    state.settings.questionCount = clamp(Math.round(Number(state.settings.questionCount) || 20),1,100);
+    state.settings.properNameMode = normalizeProperNameMode(state.settings.properNameMode);
+    const pause = Number(state.settings.audioPauseScale);
+    state.settings.audioPauseScale = AUDIO_PAUSE_SCALE_OPTIONS.some(x => Math.abs(x.value-pause)<0.001) ? pause : 2.25;
+    state.settings.requireDecimalAfterProperName = state.settings.requireDecimalAfterProperName !== false;
+    state.settings.acceptEquivalentPunctuation = state.settings.acceptEquivalentPunctuation !== false;
+    state.settings.autoNext = state.settings.autoNext !== false;
+    const delay = Math.round(Number(state.settings.autoNextDelayMs));
+    state.settings.autoNextDelayMs = [2000,4000,6000,10000].includes(delay) ? delay : 4000;
+  }
+
+  function saveSettings(){
+    try{ localStorage.setItem(SETTINGS_KEY,JSON.stringify(state.settings)); }catch{}
+  }
+
+  function syncSettingsUi(){
+    el.kindSelect.value = state.settings.kind;
+    el.questionCountInput.value = String(state.settings.questionCount);
+    el.properNameModeSelect.value = state.settings.properNameMode;
+    el.audioSpeedSelect.value = Number(state.settings.audioPauseScale).toFixed(2);
+    el.requireDecimalToggle.checked = !!state.settings.requireDecimalAfterProperName;
+    el.equivalentPunctuationToggle.checked = !!state.settings.acceptEquivalentPunctuation;
+    el.autoNextToggle.checked = !!state.settings.autoNext;
+    el.autoNextDelaySelect.value = String(state.settings.autoNextDelayMs);
+  }
+
+  function readSettingsFromUi(){
+    state.settings.kind = el.kindSelect.value;
+    state.settings.questionCount = clamp(Math.round(Number(el.questionCountInput.value) || 20),1,100);
+    state.settings.properNameMode = normalizeProperNameMode(el.properNameModeSelect.value);
+    state.settings.audioPauseScale = Number(el.audioSpeedSelect.value) || 2.25;
+    state.settings.requireDecimalAfterProperName = !!el.requireDecimalToggle.checked;
+    state.settings.acceptEquivalentPunctuation = !!el.equivalentPunctuationToggle.checked;
+    state.settings.autoNext = !!el.autoNextToggle.checked;
+    state.settings.autoNextDelayMs = [2000,4000,6000,10000].includes(Number(el.autoNextDelaySelect.value))
+      ? Number(el.autoNextDelaySelect.value) : 4000;
+    syncSettingsUi();
+    saveSettings();
+  }
+
+  function setSetupDisabled(disabled){
+    for (const node of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.requireDecimalToggle]) node.disabled = disabled;
+    // Audio speed and punctuation may safely change during a session.
+  }
+
+  function normalizeMinus(s){
+    return String(s ?? "").replace(/[\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]/g,"-");
+  }
+  function normalizeOuter(s){ return normalizeMinus(s).trim(); }
+  function normalizeCommasOptional(s){ return normalizeOuter(s).replace(/,/g,""); }
+  function normalizeScientificBasic(s){
+    return normalizeOuter(s).replace(/\s+/g,"").replace(/E/g,"e");
+  }
+  function normalizeProperNameAnswer(s){ return normalizeOuter(s).replace(/\s+/g,"").toLowerCase(); }
+  function properNameMatches(rawAnswer,properName){
+    const actual = normalizeProperNameAnswer(rawAnswer);
+    const expected = normalizeProperNameAnswer(properName);
+    return !!actual && actual === expected;
+  }
+
+  function canonicalEquivalentValue(item,raw){
+    let s = normalizeOuter(raw);
+    const kind = item.kind;
+
+    if (kind === "thousands" || kind === "millions") return s.replace(/[,_\s]/g,"");
+    if (kind === "negative") return s.replace(/\s+/g,"");
+    if (kind === "percent") return s.replace(/\s+/g,"").replace(/[％﹪]/g,"%");
+    if (kind === "decimal" || kind === "single-digit-integer" || kind === "integer") return s.replace(/\s+/g,"");
+
+    if (kind === "fraction"){
+      return s.replace(/\s+/g,"").replace(/[⁄∕÷:]/g,"/");
+    }
+
+    if (kind === "integer-and-fraction"){
+      s = s.replace(/[⁄∕÷:]/g,"/").trim();
+      // Permit a space between the whole number and fraction as an alternative to +.
+      s = s.replace(/^(\d+)\s+(\d+\/\d+)$/,"$1+$2");
+      return s.replace(/\s*\+\s*/g,"+").replace(/\s+/g,"");
+    }
+
+    if (kind === "hh-mm-time"){
+      return s.replace(/\s+/g,"").replace(/[.\/\-‐‑‒–—−]/g,":");
+    }
+
+    if (kind === "iso-date"){
+      return s.replace(/\s+/g,"").replace(/[.\/:‐‑‒–—−]/g,"-");
+    }
+
+    if (kind === "scientific-notation"){
+      s = s.replace(/\s+/g,"").replace(/E/g,"e").replace(/[×·]/g,"*");
+      const m = s.match(/^([+-]?\d+(?:\.\d+)?)(?:e|[xX*]10\^?)([+-]?\d+)$/);
+      if (m) return `${m[1]}e${m[2]}`;
+      return s;
+    }
+
+    return s;
+  }
+
+  function valueAnswerMatches(item,rawAnswer){
+    const actual = rawAnswer ?? "";
+    const expected = item.answer;
+
+    if (state.settings.acceptEquivalentPunctuation){
+      return canonicalEquivalentValue(item,actual) === canonicalEquivalentValue(item,expected);
+    }
+    if (item.answerMode === "commasOptional") return normalizeCommasOptional(actual) === normalizeCommasOptional(expected);
+    if (item.answerMode === "scientific") return normalizeScientificBasic(actual) === normalizeScientificBasic(expected);
+    return normalizeOuter(actual) === normalizeOuter(expected);
+  }
+
+  function tokenizeNanpaCapsForQuiz(caps){
+    const s = String(caps ?? "").trim().toUpperCase();
+    if (!s || !s.startsWith("NE") || !s.endsWith("N")) throw new Error(`Invalid nanpa caps: ${caps}`);
+    const tokens = [];
+    let i = 0;
+    while (i < s.length - 1){
+      let matched = null;
+      for (const pref of TOKEN_PREFIXES){ if (s.startsWith(pref,i)){ matched=pref; break; } }
+      if (matched){ tokens.push(matched); i += matched.length; continue; }
+      if (i + 2 <= s.length - 1){
+        const two = s.slice(i,i+2);
+        if (DIGIT_TOKENS.has(two)){ tokens.push(two); i += 2; continue; }
+      }
+      throw new Error(`Invalid nanpa caps token at position ${i}: ${caps}`);
+    }
+    tokens.push("N");
+    return tokens;
+  }
+
+  function capsForProperNameMode(caps,mode){
+    if (normalizeProperNameMode(mode) === "strict") return String(caps ?? "").trim().toUpperCase();
+    return tokenizeNanpaCapsForQuiz(caps).map(t => STRICT_TO_RELAXED_DIGIT_TOKEN[t] || t).join("");
+  }
+
+  function titleCaseNanpaProperNameForDisplay(nameStr){
+    return String(nameStr ?? "").trim().split(/\s+/).filter(Boolean).map(word => {
+      const lower = word.toLowerCase();
+      return lower.length <= 1 ? lower.toUpperCase() : lower[0].toUpperCase() + lower.slice(1);
+    }).join(" ");
+  }
+  function fixOkenSuffixSpacing(s){
+    const x = String(s ?? "");
+    if (/\sOken$/.test(x) || /\soken$/.test(x)) return x;
+    return x.replace(/Oken$/," Oken").replace(/oken$/," Oken");
+  }
+  function formatProperNameForDisplay(name){ return fixOkenSuffixSpacing(titleCaseNanpaProperNameForDisplay(name)); }
+
+  function makeItem(kind,parserInput,displayValue,answerMode,properNameMode){
+    return {
+      id:`${kind}-${Math.random().toString(36).slice(2)}`,
+      kind, parserInput, displayValue, answer:displayValue, answerMode,
+      properNameMode:normalizeProperNameMode(properNameMode),
+      parsedPromise:null,
+      firstAnswer:"",
+      decimalAnswer:"",
+      firstMatchType:null,
+      stage:"first",
+      completed:false,
+      revealed:false,
+      hadWrongAttempt:false,
+      firstAttempts:0,
+      decimalAttempts:0,
+      firstAttemptValues:[],
+      decimalAttemptValues:[],
+      counted:false
+    };
+  }
+
+  function generateItemForKind(kind,properNameMode){
+    if (kind === "single-digit-integer"){
+      const s = String(randInt(0,9));
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "integer"){
+      const magnitude = choice([99,999,9999,999999]);
+      const s = String(randInt(0,magnitude));
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "decimal"){
+      const whole = randInt(0,999);
+      const places = choice([1,2,3]);
+      const max = Math.pow(10,places)-1;
+      const frac = String(randInt(0,max)).padStart(places,"0");
+      const s = `${whole}.${frac}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "negative"){
+      const base = Math.random() < 0.35
+        ? `${randInt(0,999)}.${String(randInt(0,99)).padStart(2,"0")}`
+        : String(randInt(1,999999));
+      const s = `-${base}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "thousands"){
+      const s = formatCommas(randInt(1000,999999));
+      return makeItem(kind,s,s,"commasOptional",properNameMode);
+    }
+    if (kind === "millions"){
+      const s = formatCommas(randInt(1000000,99999999));
+      return makeItem(kind,s,s,"commasOptional",properNameMode);
+    }
+    if (kind === "percent"){
+      const s = Math.random() < 0.5 ? `${randInt(1,999)}%` : `${randInt(0,99)}.${randInt(1,9)}%`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "fraction"){
+      const s = choice(FRACTION_CHOICES);
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "integer-and-fraction"){
+      const s = `${randInt(1,99)}+${choice(FRACTION_CHOICES)}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "scientific-notation"){
+      const mantissa = `${randInt(1,9)}.${randInt(1,9)}`;
+      let exponent = randInt(-9,9);
+      if (exponent === 0) exponent = choice([-3,3]);
+      const s = `${mantissa}e${exponent}`;
+      return makeItem(kind,s,s,"scientific",properNameMode);
+    }
+    if (kind === "hh-mm-time"){
+      const s = `${pad2(randInt(0,23))}:${pad2(randInt(0,59))}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "iso-date"){
+      const year = randInt(1900,2099);
+      const month = randInt(1,12);
+      const day = randInt(1,dayCountForMonth(year,month));
+      const s = `${year}-${pad2(month)}-${pad2(day)}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    throw new Error(`Unsupported number type: ${kind}`);
+  }
+
+  function buildSessionItems(){
+    const count = state.settings.questionCount;
+    const requestedKind = state.settings.kind;
+    const items = [];
+    const used = new Set();
+
+    for (let i=0;i<count;i++){
+      const kind = requestedKind === "mixed" ? MIXED_KINDS[i % MIXED_KINDS.length] : requestedKind;
+      let candidate = null;
+      for (let attempt=0;attempt<200;attempt++){
+        candidate = generateItemForKind(kind,state.settings.properNameMode);
+        const key = `${candidate.kind}:${candidate.displayValue}`;
+        if (!used.has(key)){ used.add(key); break; }
+      }
+      items.push(candidate);
+    }
+    return requestedKind === "mixed" ? shuffle(items) : items;
+  }
+
+  async function getNanpaParser(){
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=176");
+    const mod = await nanpaModulePromise;
+    return mod.NanpaParser;
+  }
+
+  async function getVoice(){
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=25").then(m => m.createTokiPonaVoice());
+    return voicePromise;
+  }
+
+  async function ensureParsed(item){
+    if (!item.parsedPromise){
+      item.parsedPromise = (async () => {
+        const NanpaParser = await getNanpaParser();
+        const strictParsed = NanpaParser.parseNumber(item.parserInput,{ mode:"uniform", mixedStyle:"short" });
+        if (!strictParsed?.properName || !strictParsed?.caps) throw new Error(`Could not encode quiz value: ${item.parserInput}`);
+
+        let quizCaps = strictParsed.caps;
+        let quizProperName = strictParsed.properName;
+        let quizParsed = strictParsed;
+
+        if (isRelaxedProperNameMode(item.properNameMode)){
+          quizCaps = capsForProperNameMode(strictParsed.caps,item.properNameMode);
+          quizProperName = NanpaParser.splitCapsToProperName(quizCaps,{ titleCase:true, relaxedNanpaLinjanParsing:true });
+          const parsedRelaxedCaps = NanpaParser.capsToCodepoints(quizCaps,{
+            mode:"uniform", mixedStyle:"short",
+            relaxedNanpaLinjanParsing:true,
+            relaxedNanpaLinjanRendering:true
+          });
+          if (!parsedRelaxedCaps || !(parsedRelaxedCaps.innerCodepoints?.length || parsedRelaxedCaps.codepoints?.length)){
+            throw new Error(`Could not encode relaxed quiz value: ${item.parserInput}`);
+          }
+          quizParsed = {
+            ...parsedRelaxedCaps,
+            caps:quizCaps,
+            properName:quizProperName,
+            uniqueCode:strictParsed.uniqueCode,
+            ucsurCodepoints:Array.from(parsedRelaxedCaps.innerCodepoints ?? []),
+            tpWords:Array.from(parsedRelaxedCaps.words ?? []),
+            words:Array.from(parsedRelaxedCaps.words ?? [])
+          };
+        }
+
+        return {
+          ...strictParsed,
+          strictParsed,
+          quizParsed,
+          properName:strictParsed.properName,
+          quizProperName,
+          quizCaps,
+          properNameMode:item.properNameMode
+        };
+      })();
+    }
+    return item.parsedPromise;
+  }
+
+  async function classifyFirstAnswer(item,rawAnswer){
+    if (valueAnswerMatches(item,rawAnswer)) return "value";
+    const parsed = await ensureParsed(item);
+    if (properNameMatches(rawAnswer,parsed.strictParsed?.properName ?? parsed.properName)) return "proper-name";
+    if (isRelaxedProperNameMode(parsed.properNameMode) && properNameMatches(rawAnswer,parsed.quizProperName)) return "proper-name";
+    return "incorrect";
+  }
+
+  function getAudioSyllableGapSeconds(){
+    const scale = Number(state.settings.audioPauseScale);
+    return AUDIO_PAUSE_SCALE_OPTIONS.find(x => Math.abs(x.value-scale)<0.001)?.syllableGapSeconds ?? 0;
+  }
+
+  async function playCurrentAudio(){
+    const item = state.items[state.index];
+    if (!state.active || !item) return;
+    const token = ++generationToken;
+    try{
+      el.audioButton.disabled = true;
+      setStatus("Preparing audio…");
+      const parsed = await ensureParsed(item);
+      if (token !== generationToken) return;
+      const voice = await getVoice();
+      setStatus("Playing audio…");
+      await voice.play(parsed.quizProperName || parsed.properName,{
+        synthesis_mode:"reference_audio",
+        pauseScale:Number(state.settings.audioPauseScale),
+        syllableGapSeconds:getAudioSyllableGapSeconds()
+      });
+      setStatus("Ready.");
+    }catch(err){
+      console.error(err);
+      setFeedback(`Audio error: ${err?.message ?? String(err)}`,"bad");
+      setStatus("Audio error.");
+    }finally{
+      if (state.active && token === generationToken) el.audioButton.disabled = false;
+    }
+  }
+
+  function currentItem(){ return state.items[state.index] || null; }
+
+  function setStatus(text){ el.status.textContent = text; }
+  function setFeedback(text,kind="muted"){
+    el.feedback.className = `feedback ${kind === "good" ? "goodText" : kind === "bad" ? "badText" : kind === "warn" ? "warnText" : "muted"}`;
+    el.feedback.textContent = text;
+  }
+
+  function cancelAutoNext(){
+    if (autoNextTimer) clearTimeout(autoNextTimer);
+    autoNextTimer = null;
+    if (el.autoNextNotice) el.autoNextNotice.textContent = "";
+  }
+
+  function scheduleAutoNext(item){
+    cancelAutoNext();
+    if (!state.active || state.tab !== "practice" || !item || !(item.completed || item.revealed)) return;
+    if (!state.settings.autoNext){
+      if (el.autoNextNotice) el.autoNextNotice.textContent = "Press Enter or Next to continue.";
+      return;
+    }
+    const expectedIndex = state.index;
+    const delay = state.settings.autoNextDelayMs;
+    if (el.autoNextNotice) el.autoNextNotice.textContent = `Next question in ${Math.round(delay / 1000)} seconds… Press Enter to continue now.`;
+    autoNextTimer = setTimeout(async () => {
+      autoNextTimer = null;
+      if (!state.active || state.tab !== "practice" || state.index !== expectedIndex || currentItem() !== item) return;
+      await nextQuestion();
+    }, delay);
+  }
+
+  function showTab(tab){
+    cancelAutoNext();
+    state.tab = tab;
+    document.querySelectorAll(".tabBtn").forEach(btn => btn.setAttribute("aria-selected", btn.dataset.tab === tab ? "true" : "false"));
+    document.querySelectorAll(".tabPanel").forEach(panel => panel.classList.add("hidden"));
+    $("tab-" + tab)?.classList.remove("hidden");
+    if (tab === "review") renderCurrentReview();
+    if (tab === "history") loadHistory();
+  }
+
+  function itemWasAttempted(item){
+    return !!(item && (item.completed || item.revealed || item.hadWrongAttempt ||
+      item.firstAttempts > 0 || item.decimalAttempts > 0));
+  }
+
+  function itemIsProblem(item){
+    return !!(item && (item.revealed || item.hadWrongAttempt));
+  }
+
+  async function buildReviewRevealDataFromParsed(parsed){
+    const strictParsed = parsed.strictParsed ?? parsed;
+    const quizParsed = parsed.quizParsed ?? parsed;
+    const NanpaParser = await getNanpaParser();
+    const strictName = formatProperNameForDisplay(strictParsed.properName ?? parsed.properName);
+
+    const strictFullCodepoints = Array.from(
+      strictParsed.ucsurCodepoints ?? strictParsed.innerCodepoints ?? strictParsed.codepoints ?? []
+    ).map(Number);
+
+    let relaxedName = "";
+    let relaxedFullCodepoints = [];
+    try{
+      const relaxedCaps = capsForProperNameMode(strictParsed.caps,"relaxed");
+      relaxedName = formatProperNameForDisplay(NanpaParser.splitCapsToProperName(relaxedCaps,{
+        titleCase:true,
+        relaxedNanpaLinjanParsing:true
+      }));
+      const relaxedParsed = NanpaParser.capsToCodepoints(relaxedCaps,{
+        mode:"uniform",
+        mixedStyle:"short",
+        relaxedNanpaLinjanParsing:true,
+        relaxedNanpaLinjanRendering:true
+      });
+      relaxedFullCodepoints = Array.from(
+        relaxedParsed?.innerCodepoints ?? relaxedParsed?.ucsurCodepoints ?? relaxedParsed?.codepoints ?? []
+      ).map(Number);
+    }catch{
+      relaxedName = formatProperNameForDisplay(parsed.quizProperName || strictName);
+      if (isRelaxedProperNameMode(parsed.properNameMode)){
+        relaxedFullCodepoints = Array.from(
+          quizParsed.ucsurCodepoints ?? quizParsed.innerCodepoints ?? quizParsed.codepoints ?? []
+        ).map(Number);
+      }
+    }
+
+    // Preserve the mode-specific fields for the existing abbreviated-cartouche
+    // educational panel and for compatibility with records saved by older builds.
+    const fullCodepoints = Array.from(
+      quizParsed.ucsurCodepoints ?? quizParsed.innerCodepoints ?? quizParsed.codepoints ?? []
+    ).map(Number);
+
+    return {
+      strictName,
+      relaxedName,
+      uniqueCode:String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? ""),
+      strictFullCodepoints,
+      relaxedFullCodepoints,
+      fullCodepoints,
+      abbreviatedCodepoints:abbreviateNumericCartoucheCps(fullCodepoints)
+    };
+  }
+
+  async function ensureReviewRevealData(record){
+    const hasStoredReveal = Array.isArray(record.strictFullCodepoints) &&
+      Array.isArray(record.relaxedFullCodepoints) &&
+      Array.isArray(record.fullCodepoints) &&
+      Array.isArray(record.abbreviatedCodepoints) &&
+      typeof record.uniqueCode === "string" &&
+      record.strictName && record.relaxedName;
+    if (hasStoredReveal) return record;
+
+    const mode = normalizeProperNameMode(record.properNameMode || "relaxed");
+    const temp = makeItem(
+      record.kind || "integer",
+      record.value,
+      record.value,
+      "exact",
+      mode
+    );
+    const parsed = await ensureParsed(temp);
+    return {...record,...await buildReviewRevealDataFromParsed(parsed),properNameMode:mode};
+  }
+
+  async function makeReviewRecord(item,index){
+    const parsed = await ensureParsed(item);
+    const revealData = await buildReviewRevealDataFromParsed(parsed);
+    return {
+      index,
+      kind:item.kind,
+      kindLabel:KIND_LABELS[item.kind] || item.kind,
+      value:item.displayValue,
+      properNameMode:item.properNameMode,
+      ...revealData,
+      firstAnswer:item.firstAnswer || "",
+      decimalAnswer:item.decimalAnswer || "",
+      firstMatchType:item.firstMatchType || null,
+      completed:!!item.completed,
+      revealed:!!item.revealed,
+      hadWrongAttempt:!!item.hadWrongAttempt,
+      firstAttempts:Number(item.firstAttempts || 0),
+      decimalAttempts:Number(item.decimalAttempts || 0),
+      firstAttemptValues:Array.from(item.firstAttemptValues || []),
+      decimalAttemptValues:Array.from(item.decimalAttemptValues || [])
+    };
+  }
+
+  function reviewResult(record){
+    if (record.completed) return {label:"Correct",cls:"correct"};
+    if (record.revealed) return {label:"Revealed",cls:"revealed"};
+    return {label:"Incomplete",cls:"incomplete"};
+  }
+
+  function appendReviewTextPanel(grid,label,value,{ properName = false } = {}){
+    const panel = document.createElement("div");
+    panel.className = "reviewRevealPanel";
+    const heading = document.createElement("div");
+    heading.className = "reviewRevealLabel";
+    heading.textContent = label;
+    const content = document.createElement("div");
+    content.className = `reviewRevealValue ${properName ? "properNameText" : "mono"}`;
+    content.textContent = value || "—";
+    panel.append(heading,content);
+    grid.appendChild(panel);
+  }
+
+  function appendReviewCartouchePanel(grid,label,codepoints){
+    const panel = document.createElement("div");
+    panel.className = "reviewRevealPanel cartouchePanel";
+    const heading = document.createElement("div");
+    heading.className = "reviewRevealLabel";
+    heading.textContent = label;
+    const canvas = document.createElement("canvas");
+    canvas.setAttribute("aria-label",label);
+    panel.append(heading,canvas);
+    grid.appendChild(panel);
+    renderCartoucheToCanvas(canvas,codepoints);
+  }
+
+  async function appendReviewRecord(parent,rawRecord){
+    const record = await ensureReviewRevealData(rawRecord);
+    const item = document.createElement("div");
+    item.className = "reviewItem";
+    const top = document.createElement("div");
+    top.className = "reviewTop";
+    const title = document.createElement("strong");
+    title.textContent = `Question ${record.index + 1} — ${record.kindLabel}`;
+    const result = reviewResult(record);
+    const badge = document.createElement("span");
+    badge.className = `resultBadge ${result.cls}`;
+    badge.textContent = result.label;
+    top.append(title,badge);
+
+    const meta = document.createElement("div");
+    meta.className = "reviewMeta";
+    const attempts = Number(record.firstAttempts || 0) + Number(record.decimalAttempts || 0);
+    meta.textContent = `${attempts} checked attempt${attempts === 1 ? "" : "s"}${record.hadWrongAttempt ? " · included an incorrect attempt" : ""}`;
+
+    const revealGrid = document.createElement("div");
+    revealGrid.className = "reviewRevealGrid";
+    appendReviewTextPanel(revealGrid,"Decimal value",record.value);
+    appendReviewTextPanel(revealGrid,"Strict proper name",record.strictName,{ properName:true });
+    appendReviewTextPanel(revealGrid,"Relaxed proper name",record.relaxedName,{ properName:true });
+    await ensureCartoucheFontLoaded();
+    appendReviewCartouchePanel(revealGrid,"Strict full nanpa-linja-n cartouche",record.strictFullCodepoints || []);
+    appendReviewCartouchePanel(revealGrid,"Relaxed full nanpa-linja-n cartouche",record.relaxedFullCodepoints || []);
+    appendReviewCartouchePanel(revealGrid,"Abbreviated nanpa-linja-n cartouche",record.abbreviatedCodepoints || []);
+    appendReviewTextPanel(revealGrid,"#~ abbreviation",record.uniqueCode);
+
+    const details = document.createElement("div");
+    details.className = "answerDetails";
+    const detailsTitle = document.createElement("div");
+    detailsTitle.className = "answerDetailsTitle";
+    detailsTitle.textContent = "Your answers";
+    details.appendChild(detailsTitle);
+    const lines = [
+      ["First-input attempts",record.firstAttemptValues?.length ? record.firstAttemptValues.join(" → ") : (record.firstAnswer || "—")],
+      ...(record.firstMatchType ? [["First input matched",record.firstMatchType === "value" ? "decimal value" : "proper name"]] : []),
+      ...(record.decimalAttemptValues?.length ? [["Decimal follow-up attempts",record.decimalAttemptValues.join(" → ")]] :
+        (record.decimalAnswer ? [["Decimal follow-up",record.decimalAnswer]] : []))
+    ];
+    for (const [label,value] of lines){
+      const line = document.createElement("div");
+      const strong = document.createElement("strong");
+      strong.textContent = label + ": ";
+      const span = document.createElement("span");
+      span.className = "mono";
+      span.textContent = value;
+      line.append(strong,span);
+      details.appendChild(line);
+    }
+    item.append(top,meta,revealGrid,details);
+    parent.appendChild(item);
+  }
+
+  async function renderCurrentReview(){
+    if (!el.reviewList) return;
+    const renderToken = ++reviewRenderToken;
+    const attempted = state.items.map((item,index) => ({item,index})).filter(x => itemWasAttempted(x.item));
+    const filtered = state.reviewProblemsOnly ? attempted.filter(x => itemIsProblem(x.item)) : attempted;
+    el.reviewSummary.textContent = state.items.length
+      ? `${attempted.length} of ${state.items.length} questions attempted; ${state.items.filter(itemIsProblem).length} with an incorrect attempt or reveal.`
+      : "No session has been started.";
+
+    const staging = document.createDocumentFragment();
+    if (!filtered.length){
+      const p = document.createElement("p");
+      p.className = "card muted";
+      p.textContent = attempted.length ? "No problem answers match the current filter." : "Answer or reveal a question to add it to the current-session review.";
+      staging.appendChild(p);
+    }else{
+      for (const {item,index} of filtered){
+        try{ await appendReviewRecord(staging,await makeReviewRecord(item,index)); }
+        catch(err){ console.error("Could not render review item",err); }
+        if (renderToken !== reviewRenderToken) return;
+      }
+    }
+    if (renderToken === reviewRenderToken) el.reviewList.replaceChildren(staging);
+  }
+
+  function openHistoryDb(){
+    if (historyDbPromise) return historyDbPromise;
+    historyDbPromise = new Promise((resolve,reject) => {
+      const req = indexedDB.open(HISTORY_DB_NAME,HISTORY_DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        let store;
+        if (!db.objectStoreNames.contains(HISTORY_STORE)) store = db.createObjectStore(HISTORY_STORE,{keyPath:"id"});
+        else store = req.transaction.objectStore(HISTORY_STORE);
+        if (!store.indexNames.contains("finishedAt")) store.createIndex("finishedAt","finishedAt",{unique:false});
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("Could not open listening-practice history."));
+    });
+    return historyDbPromise;
+  }
+
+  function idbRequest(req){
+    return new Promise((resolve,reject) => {
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("IndexedDB request failed."));
+    });
+  }
+
+  async function putHistorySession(record){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE,"readwrite");
+    tx.objectStore(HISTORY_STORE).put(record);
+    await new Promise((resolve,reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
+  async function readHistorySessions(){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE,"readonly");
+    const rows = await idbRequest(tx.objectStore(HISTORY_STORE).getAll());
+    return rows.sort((a,b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
+  }
+
+  async function clearHistorySessions(){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE,"readwrite");
+    tx.objectStore(HISTORY_STORE).clear();
+    await new Promise((resolve,reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
+  async function buildHistoryRecord({quit=false}={}){
+    const finishedAt = new Date().toISOString();
+    const rows = [];
+    for (let index=0;index<state.items.length;index++){
+      const item = state.items[index];
+      if (!itemWasAttempted(item)) continue;
+      rows.push(await makeReviewRecord(item,index));
+    }
+    const revealed = rows.filter(x => x.revealed).length;
+    const problems = rows.filter(x => x.revealed || x.hadWrongAttempt).length;
+    return {
+      id:`${finishedAt}-${Math.random().toString(36).slice(2,9)}`,
+      startedAt:state.startedAt,
+      finishedAt,
+      endedBy:quit ? "stopped" : "finished",
+      kind:state.settings.kind,
+      kindLabel:state.settings.kind === "mixed" ? "Mixed" : (KIND_LABELS[state.settings.kind] || state.settings.kind),
+      properNameMode:state.settings.properNameMode,
+      score:state.score,
+      total:state.items.length,
+      attempted:rows.length,
+      revealed,
+      problems,
+      bestStreak:state.bestStreak,
+      settings:{...state.settings},
+      review:rows
+    };
+  }
+
+  async function saveCurrentSessionToHistory({quit=false}={}){
+    if (state.sessionSaved || !state.items.length) return;
+    const record = await buildHistoryRecord({quit});
+    await putHistorySession(record);
+    state.sessionSaved = true;
+    state.history = [record,...state.history.filter(x => x.id !== record.id)]
+      .sort((a,b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
+    state.selectedHistoryId = record.id;
+  }
+
+  function formatDateTime(iso){
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? String(iso || "") : d.toLocaleString(undefined,{year:"numeric",month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+  }
+
+  async function loadHistory(){
+    if (!el.historyList) return;
+    el.historySummary.textContent = "Loading saved sessions…";
+    try{
+      state.history = await readHistorySessions();
+      if (!state.selectedHistoryId && state.history.length) state.selectedHistoryId = state.history[0].id;
+      renderHistory();
+    }catch(err){
+      console.error(err);
+      el.historySummary.textContent = "Could not load history from IndexedDB.";
+      el.historyList.innerHTML = '<p class="muted">History is unavailable in this browser or session.</p>';
+    }
+  }
+
+  function renderHistory(){
+    const rows = state.history || [];
+    el.historySummary.textContent = rows.length ? `${rows.length} saved listening session${rows.length === 1 ? "" : "s"}.` : "No saved listening sessions yet.";
+    el.historyList.replaceChildren();
+    if (!rows.length){
+      const p = document.createElement("p"); p.className="muted"; p.textContent="Finish or stop a session to save it here.";
+      el.historyList.appendChild(p);
+      el.historyDetail.innerHTML = '<p class="muted">Select a saved session.</p>';
+      return;
+    }
+    if (!rows.some(x => x.id === state.selectedHistoryId)) state.selectedHistoryId = rows[0].id;
+    for (const record of rows){
+      const btn = document.createElement("button");
+      btn.type="button";
+      btn.className="historySessionBtn" + (record.id === state.selectedHistoryId ? " active" : "");
+      const top=document.createElement("div"); top.className="historySessionTop";
+      const title=document.createElement("strong"); title.textContent=`${record.kindLabel} · ${record.properNameMode}`;
+      const score=document.createElement("span"); score.textContent=`${record.score}/${record.total}`;
+      top.append(title,score);
+      const meta=document.createElement("div"); meta.className="historySessionMeta";
+      meta.textContent=`${formatDateTime(record.finishedAt)} · ${record.endedBy} · ${record.attempted} attempted`;
+      btn.append(top,meta);
+      btn.addEventListener("click",() => { state.selectedHistoryId=record.id; renderHistory(); });
+      el.historyList.appendChild(btn);
+    }
+    renderHistoryDetail(rows.find(x => x.id === state.selectedHistoryId) || rows[0]);
+  }
+
+  async function renderHistoryDetail(record){
+    const renderToken = ++historyDetailRenderToken;
+    const staging = document.createDocumentFragment();
+    if (!record){
+      const p=document.createElement("p"); p.className="muted"; p.textContent="Select a saved session.";
+      staging.appendChild(p);
+      if (renderToken === historyDetailRenderToken) el.historyDetail.replaceChildren(staging);
+      return;
+    }
+    const header=document.createElement("div"); header.className="historyHeader";
+    const top=document.createElement("div"); top.className="historySessionTop";
+    const h=document.createElement("h3"); h.textContent=`${record.kindLabel} · ${record.properNameMode}`;
+    const score=document.createElement("strong"); score.textContent=`${record.score}/${record.total}`;
+    top.append(h,score);
+    const meta=document.createElement("div"); meta.className="historySessionMeta";
+    meta.textContent=`${formatDateTime(record.finishedAt)} · ${record.endedBy} · ${record.attempted} attempted · ${record.revealed} revealed · best streak ${record.bestStreak}`;
+    header.append(top,meta);
+    staging.appendChild(header);
+    const rows=(record.review || []).filter(x => !state.historyProblemsOnly || x.revealed || x.hadWrongAttempt);
+    if (!rows.length){
+      const p=document.createElement("p"); p.className="muted"; p.textContent="No answers match the current filter.";
+      staging.appendChild(p);
+    }else{
+      for (const row of rows){
+        await appendReviewRecord(staging,{...row,properNameMode:row.properNameMode || record.properNameMode});
+        if (renderToken !== historyDetailRenderToken) return;
+      }
+    }
+    if (renderToken === historyDetailRenderToken) el.historyDetail.replaceChildren(staging);
+  }
+
+  function clearReveal(){
+    el.reveal.classList.add("hidden");
+    el.revealValue.textContent = "";
+    el.revealStrictLine.classList.add("hidden");
+    el.revealStrictName.textContent = "";
+    el.revealRelaxedLine.classList.add("hidden");
+    el.revealRelaxedName.textContent = "";
+    el.revealCodeLine.classList.add("hidden");
+    el.revealCode.textContent = "";
+    for (const canvas of [el.normalCartouche,el.abbreviatedCartouche]){
+      canvas.width = 1;
+      canvas.height = 1;
+    }
+  }
+
+  function updateStats(){
+    const total = state.items.length;
+    el.scoreLabel.textContent = `${state.score} / ${total}`;
+    el.streakLabel.textContent = `${state.streak} (best ${state.bestStreak})`;
+    el.questionLabel.textContent = total ? `${state.index + 1} / ${total}` : "0 / 0";
+    el.typeLabel.textContent = currentItem() ? KIND_LABELS[currentItem().kind] : "—";
+  }
+
+  function updateNavigation(){
+    const item = currentItem();
+    el.previousButton.disabled = !state.active || state.index <= 0;
+    el.nextButton.disabled = !state.active || !item || !(item.completed || item.revealed);
+  }
+
+  async function renderCurrentQuestion(){
+    const item = currentItem();
+    generationToken++;
+    cancelAutoNext();
+    clearReveal();
+    el.summaryCard.classList.add("hidden");
+    if (!item){
+      el.prompt.textContent = "Choose settings and press Start.";
+      return;
+    }
+
+    el.prompt.textContent = `Question ${state.index + 1}: listen and enter the ${KIND_LABELS[item.kind]}.`;
+    el.audioButton.disabled = false;
+    el.revealButton.disabled = false;
+
+    el.firstAnswerInput.value = item.firstAnswer || "";
+    el.firstAnswerInput.disabled = item.stage !== "first" || item.completed || item.revealed;
+    el.firstAnswerInput.classList.toggle("correct",item.firstMatchType === "proper-name" || item.firstMatchType === "value");
+    el.checkFirstButton.disabled = el.firstAnswerInput.disabled;
+
+    const decimalVisible = item.stage === "decimal" && !item.completed && !item.revealed;
+    el.decimalStage.classList.toggle("hidden",!decimalVisible);
+    el.decimalAnswerInput.value = item.decimalAnswer || "";
+    el.decimalAnswerInput.disabled = !decimalVisible;
+    el.checkDecimalButton.disabled = !decimalVisible;
+
+    if (item.completed){
+      setFeedback("✓ Correct", "good");
+      await showReveal(item);
+    }else if (item.revealed){
+      setFeedback("Answer revealed.","warn");
+      await showReveal(item);
+    }else if (item.stage === "decimal"){
+      setFeedback("✓ Correct proper name. Now enter the decimal value.","good");
+    }else{
+      setFeedback("Enter either the decimal value or the nanpa-linja-n proper name.");
+    }
+
+    updateStats();
+    updateNavigation();
+    const focusTarget = decimalVisible ? el.decimalAnswerInput : (!el.firstAnswerInput.disabled ? el.firstAnswerInput : null);
+    focusTarget?.focus();
+  }
+
+  function registerWrongAttempt(item,message){
+    item.hadWrongAttempt = true;
+    state.streak = 0;
+    setFeedback(message,"bad");
+    updateStats();
+  }
+
+  async function checkFirstAnswer(){
+    const item = currentItem();
+    if (!state.active || !item || item.stage !== "first" || item.completed || item.revealed) return;
+    const raw = el.firstAnswerInput.value;
+    if (!String(raw).trim()){
+      await playCurrentAudio();
+      return;
+    }
+
+    el.checkFirstButton.disabled = true;
+    item.firstAttempts++;
+    item.firstAttemptValues.push(raw);
+    try{
+      const matchType = await classifyFirstAnswer(item,raw);
+      item.firstAnswer = raw;
+      if (matchType === "value"){
+        item.firstMatchType = "value";
+        completeItem(item);
+        await renderCurrentQuestion();
+        scheduleAutoNext(item);
+        return;
+      }
+      if (matchType === "proper-name"){
+        item.firstMatchType = "proper-name";
+        if (state.settings.requireDecimalAfterProperName){
+          item.stage = "decimal";
+          await renderCurrentQuestion();
+        }else{
+          completeItem(item);
+          await renderCurrentQuestion();
+          scheduleAutoNext(item);
+        }
+        return;
+      }
+      registerWrongAttempt(item,"Not quite. Try again, or reveal the answer.");
+      el.revealButton.disabled = false;
+      el.checkFirstButton.disabled = false;
+      el.firstAnswerInput.focus();
+    }catch(err){
+      console.error(err);
+      setFeedback(`Check error: ${err?.message ?? String(err)}`,"bad");
+      el.checkFirstButton.disabled = false;
+    }
+  }
+
+  async function checkDecimalAnswer(){
+    const item = currentItem();
+    if (!state.active || !item || item.stage !== "decimal" || item.completed || item.revealed) return;
+    const raw = el.decimalAnswerInput.value;
+    item.decimalAnswer = raw;
+    item.decimalAttempts++;
+    item.decimalAttemptValues.push(raw);
+    if (valueAnswerMatches(item,raw)){
+      completeItem(item);
+      await renderCurrentQuestion();
+      scheduleAutoNext(item);
+    }else{
+      registerWrongAttempt(item,"The proper name is correct, but the decimal value is not quite right. Try again, or reveal the answer.");
+      el.decimalAnswerInput.focus();
+    }
+  }
+
+  function completeItem(item){
+    if (!item.counted){
+      item.counted = true;
+      state.score++;
+      state.completedCount++;
+      state.streak = item.hadWrongAttempt ? 1 : state.streak + 1;
+      state.bestStreak = Math.max(state.bestStreak,state.streak);
+    }
+    item.completed = true;
+    item.stage = "complete";
+  }
+
+  async function revealCurrent(){
+    const item = currentItem();
+    if (!state.active || !item || item.completed || item.revealed) return;
+    item.firstAnswer = el.firstAnswerInput.value;
+    item.decimalAnswer = el.decimalAnswerInput.value;
+    item.revealed = true;
+    item.stage = "revealed";
+    state.completedCount++;
+    state.streak = 0;
+    await renderCurrentQuestion();
+    scheduleAutoNext(item);
+  }
+
+  async function showReveal(item){
+    try{
+      const parsed = await ensureParsed(item);
+      const strictParsed = parsed.strictParsed ?? parsed;
+      const quizParsed = parsed.quizParsed ?? parsed;
+      const relaxedMode = isRelaxedProperNameMode(parsed.properNameMode);
+      el.revealValue.textContent = item.displayValue;
+
+      // During active play, show only the proper-name form selected for this
+      // quiz session. Review and History deliberately show both forms.
+      el.revealStrictLine.classList.toggle("hidden", relaxedMode);
+      el.revealStrictName.textContent = formatProperNameForDisplay(strictParsed.properName);
+      el.revealRelaxedLine.classList.toggle("hidden", !relaxedMode);
+      el.revealRelaxedName.textContent = formatProperNameForDisplay(parsed.quizProperName);
+
+      // The #~ abbreviation is reserved for the complete educational panels
+      // in Review and History, rather than the immediate play reveal.
+      el.revealCodeLine.classList.add("hidden");
+      el.revealCode.textContent = String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? "");
+      await ensureCartoucheFontLoaded();
+      renderCartoucheToCanvas(el.normalCartouche,quizParsed.ucsurCodepoints);
+      renderCartoucheToCanvas(el.abbreviatedCartouche,abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints));
+      el.reveal.classList.remove("hidden");
+    }catch(err){
+      console.error(err);
+      setFeedback(`Reveal error: ${err?.message ?? String(err)}`,"bad");
+    }
+  }
+
+  async function startSession(){
+    cancelAutoNext();
+    readSettingsFromUi();
+    state.items = buildSessionItems();
+    state.index = 0;
+    state.score = 0;
+    state.streak = 0;
+    state.bestStreak = 0;
+    state.completedCount = 0;
+    state.startedAt = new Date().toISOString();
+    state.sessionSaved = false;
+    state.active = true;
+    el.startButton.disabled = true;
+    el.quitButton.disabled = false;
+    setSetupDisabled(true);
+    showTab("practice");
+    setStatus("Session started.");
+    await renderCurrentQuestion();
+  }
+
+  async function finishSession({quit=false}={}){
+    if (!state.active) return;
+    cancelAutoNext();
+    state.active = false;
+    generationToken++;
+    el.startButton.disabled = false;
+    el.quitButton.disabled = true;
+    el.audioButton.disabled = true;
+    el.firstAnswerInput.disabled = true;
+    el.checkFirstButton.disabled = true;
+    el.decimalAnswerInput.disabled = true;
+    el.checkDecimalButton.disabled = true;
+    el.revealButton.disabled = true;
+    el.previousButton.disabled = true;
+    el.nextButton.disabled = true;
+    setSetupDisabled(false);
+
+    showTab("practice");
+    const total = state.items.length;
+    const revealed = state.items.filter(x => x.revealed).length;
+    el.summaryScore.textContent = `${state.score} / ${total}`;
+    el.summaryText.textContent = quit
+      ? `Session stopped after ${state.completedCount} of ${total} questions. Best streak: ${state.bestStreak}.`
+      : `Completed ${total} questions. Revealed answers: ${revealed}. Best streak: ${state.bestStreak}.`;
+    el.summaryCard.classList.remove("hidden");
+    setStatus(quit ? "Saving stopped session…" : "Saving completed session…");
+    try{
+      await saveCurrentSessionToHistory({quit});
+      setStatus(quit ? "Session stopped and saved." : "Session complete and saved.");
+    }catch(err){
+      console.error("Could not save listening history",err);
+      setStatus("Session ended, but history could not be saved.");
+    }
+    await renderCurrentReview();
+  }
+
+  async function nextQuestion(){
+    cancelAutoNext();
+    const item = currentItem();
+    if (!state.active || !item || !(item.completed || item.revealed)) return;
+    if (state.index >= state.items.length - 1){
+      await finishSession();
+      return;
+    }
+    state.index++;
+    await renderCurrentQuestion();
+  }
+
+  async function previousQuestion(){
+    cancelAutoNext();
+    if (!state.active || state.index <= 0) return;
+    state.index--;
+    await renderCurrentQuestion();
+  }
+
+  async function ensureCartoucheFontLoaded(){
+    if (!document.fonts?.load) return;
+    await document.fonts.load(`24px "${FONT_FAMILY}"`,String.fromCodePoint(0xF193D));
+    await document.fonts.ready;
+  }
+  function getQuarterCodepointsSet(){
+    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,0xF1909,0xF190B,0xF190A,0xF1947,0xF1902,0xF190D,0xF1970]);
+  }
+  function getOneThirdsCodepointsSet(){ return new Set([0xF1917]); }
+  function getHalfCodepointsSet(){ return new Set([0xF1914]); }
+  function getTwoThirdsCodepointsSet(){ return new Set([0xF1946,0xF1944,0xF191F]); }
+  function getVerticalOffsetForCartoucheCodepoint(cp,px){ return cp === 0xF1917 ? -Math.round(px * 0.22) : 0; }
+  function drawRoundedRect(ctx,x,y,w,h,r){
+    const radius = Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+radius,y);
+    ctx.arcTo(x+w,y,x+w,y+h,radius);
+    ctx.arcTo(x+w,y+h,x,y+h,radius);
+    ctx.arcTo(x,y+h,x,y,radius);
+    ctx.arcTo(x,y,x+w,y,radius);
+    ctx.closePath();
+  }
+  function abbreviateNumericCartoucheCps(cps){
+    const input = Array.from(cps ?? []).map(Number);
+    if (!input.length) return input;
+    const out = [];
+    let keptFirstNanpa = false;
+    for (let i=0;i<input.length;i++){
+      const cp = input[i];
+      const isFinalNanpa = cp === ABBREV_CP_NANPA && i === input.length - 1;
+      if (!keptFirstNanpa){ out.push(cp); if (cp === ABBREV_CP_NANPA) keptFirstNanpa=true; continue; }
+      if (isFinalNanpa){ out.push(cp); continue; }
+      if (ABBREV_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+      out.push(cp);
+    }
+    return out;
+  }
+  function renderCartoucheToCanvas(canvas,codepoints,largePx=LARGE_TINY_FONT_SIZE,smallPx=SMALL_TINY_FONT_SIZE,options=CARTOUCHE_RENDER_OPTS){
+    const pad=options.padding ?? 8, border=options.border ?? 1, corner=options.cornerRadius ?? 10, letterGap=options.letterGap ?? 2;
+    const oneThirdSet=getOneThirdsCodepointsSet(), quarterSet=getQuarterCodepointsSet(), halfSet=getHalfCodepointsSet(), twoThirdsSet=getTwoThirdsCodepointsSet();
+    const ctx=canvas.getContext("2d");
+    ctx.textBaseline="alphabetic";
+    const glyphRuns=[];
+    let totalWidth=0,maxAscent=0,maxDescent=0;
+    for (const cp of Array.from(codepoints ?? [])){
+      const ch=String.fromCodePoint(cp);
+      const px=oneThirdSet.has(cp)?Math.max(1,Math.round(largePx/3)):
+        quarterSet.has(cp)?smallPx:
+        halfSet.has(cp)?Math.max(1,Math.round(largePx*0.5)):
+        twoThirdsSet.has(cp)?Math.max(1,Math.round(largePx*(2/3))):largePx;
+      ctx.font=`${px}px "${FONT_FAMILY}"`;
+      const m=ctx.measureText(ch);
+      const ascent=m.actualBoundingBoxAscent ?? Math.ceil(px*0.8);
+      const descent=m.actualBoundingBoxDescent ?? Math.ceil(px*0.2);
+      const left=m.actualBoundingBoxLeft ?? 0;
+      const right=m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW=Math.ceil(left+right);
+      const yOffset=getVerticalOffsetForCartoucheCodepoint(cp,largePx);
+      glyphRuns.push({ch,px,tightW,left,ascent,descent,yOffset});
+      totalWidth += tightW + letterGap;
+      maxAscent=Math.max(maxAscent,ascent+Math.max(0,-yOffset));
+      maxDescent=Math.max(maxDescent,descent+Math.max(0,yOffset));
+    }
+    if (glyphRuns.length) totalWidth -= letterGap;
+    const textHeight=Math.ceil(maxAscent+maxDescent);
+    const cartW=Math.ceil(totalWidth+pad*2), cartH=Math.ceil(textHeight+pad*2);
+    canvas.width=cartW+border*2;
+    canvas.height=cartH+border*2;
+    const ctx2=canvas.getContext("2d");
+    ctx2.textBaseline="alphabetic";
+    ctx2.clearRect(0,0,canvas.width,canvas.height);
+    drawRoundedRect(ctx2,border,border,cartW,cartH,corner);
+    ctx2.lineWidth=border;
+    ctx2.strokeStyle="#111";
+    ctx2.stroke();
+    const baselineY=border+pad+maxAscent;
+    let x=border+pad;
+    ctx2.fillStyle="#111";
+    for (const g of glyphRuns){
+      ctx2.font=`${g.px}px "${FONT_FAMILY}"`;
+      ctx2.fillText(g.ch,x+(g.left ?? 0),baselineY+(g.yOffset ?? 0));
+      x += g.tightW + letterGap;
+    }
+  }
+
+  function wireEvents(){
+    el.startButton.addEventListener("click",startSession);
+    el.restartButton.addEventListener("click",startSession);
+    el.summaryReviewButton.addEventListener("click",() => showTab("review"));
+    el.quitButton.addEventListener("click",() => finishSession({quit:true}));
+    el.previousButton.addEventListener("click",previousQuestion);
+    el.nextButton.addEventListener("click",nextQuestion);
+    el.audioButton.addEventListener("click",playCurrentAudio);
+    el.checkFirstButton.addEventListener("click",checkFirstAnswer);
+    el.checkDecimalButton.addEventListener("click",checkDecimalAnswer);
+    el.revealButton.addEventListener("click",revealCurrent);
+    document.querySelectorAll(".tabBtn").forEach(btn => btn.addEventListener("click",() => showTab(btn.dataset.tab)));
+
+    el.firstAnswerInput.addEventListener("input",() => { const item=currentItem(); if (item) item.firstAnswer=el.firstAnswerInput.value; });
+    el.decimalAnswerInput.addEventListener("input",() => { const item=currentItem(); if (item) item.decimalAnswer=el.decimalAnswerInput.value; });
+
+    el.firstAnswerInput.addEventListener("keydown",async event => {
+      if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      if (!el.firstAnswerInput.value.trim()) await playCurrentAudio();
+      else await checkFirstAnswer();
+    });
+    el.decimalAnswerInput.addEventListener("keydown",async event => {
+      if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      await checkDecimalAnswer();
+    });
+
+    document.addEventListener("keydown",async event => {
+      if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
+      const item = currentItem();
+      if (!state.active || state.tab !== "practice" || !item || !(item.completed || item.revealed)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      cancelAutoNext();
+      await nextQuestion();
+    },true);
+
+    el.reviewProblemsOnlyToggle.addEventListener("change",() => {
+      state.reviewProblemsOnly = !!el.reviewProblemsOnlyToggle.checked;
+      renderCurrentReview();
+    });
+    el.historyProblemsOnlyToggle.addEventListener("change",() => {
+      state.historyProblemsOnly = !!el.historyProblemsOnlyToggle.checked;
+      renderHistoryDetail(state.history.find(x => x.id === state.selectedHistoryId) || state.history[0]);
+    });
+    el.refreshHistoryButton.addEventListener("click",loadHistory);
+    el.clearHistoryButton.addEventListener("click",async () => {
+      if (!confirm("Clear all saved listening-practice history on this device?")) return;
+      await clearHistorySessions();
+      state.history=[];
+      state.selectedHistoryId=null;
+      renderHistory();
+    });
+
+    for (const control of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.audioSpeedSelect,
+      el.requireDecimalToggle,el.equivalentPunctuationToggle,el.autoNextToggle,el.autoNextDelaySelect]){
+      control.addEventListener("change",() => {
+        readSettingsFromUi();
+        if (control === el.audioSpeedSelect) setStatus("Audio speed updated.");
+        if (control === el.equivalentPunctuationToggle) setStatus("Punctuation setting updated.");
+        if (control === el.autoNextToggle || control === el.autoNextDelaySelect){
+          cancelAutoNext();
+          setStatus("Automatic-next setting updated.");
+        }
+      });
+    }
+  }
+
+  async function init(){
+    cacheElements();
+    loadSettings();
+    syncSettingsUi();
+    wireEvents();
+    updateStats();
+    updateNavigation();
+    showTab("practice");
+    try{ state.history = await readHistorySessions(); }
+    catch(err){ console.warn("Listening-practice history unavailable",err); }
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",init,{once:true});
+  else init();
+})();
+</script>
+</body>
+</html>
