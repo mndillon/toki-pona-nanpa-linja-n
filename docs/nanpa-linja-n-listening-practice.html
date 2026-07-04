@@ -1169,6 +1169,22 @@
     return AUDIO_PAUSE_SCALE_OPTIONS.find(x => Math.abs(x.value-scale)<0.001)?.syllableGapSeconds ?? 0;
   }
 
+  function stopCurrentAudioPlayback({restoreAudioButton=true}={}){
+    // Cancel audio that is still being prepared or rendered.
+    generationToken++;
+
+    // Stop audio that has already started playing.
+    if (voicePromise){
+      Promise.resolve(voicePromise)
+        .then(voice => {
+          try{ voice?.stop?.(); }catch{}
+        })
+        .catch(() => {});
+    }
+
+    if (restoreAudioButton && state.active) el.audioButton.disabled = false;
+  }
+
   async function playCurrentAudio(){
     const item = state.items[state.index];
     if (!state.active || !item) return;
@@ -1176,17 +1192,25 @@
     try{
       el.audioButton.disabled = true;
       setStatus("Preparing audio…");
+
       const parsed = await ensureParsed(item);
-      if (token !== generationToken) return;
+      if (token !== generationToken || !state.active) return;
+
       const voice = await getVoice();
-      setStatus("Playing audio…");
-      await voice.play(parsed.quizProperName || parsed.properName,{
+      if (token !== generationToken || !state.active) return;
+
+      const rendered = await voice.render(parsed.quizProperName || parsed.properName,{
         synthesis_mode:"reference_audio",
         pauseScale:Number(state.settings.audioPauseScale),
         syllableGapSeconds:getAudioSyllableGapSeconds()
       });
+      if (token !== generationToken || !state.active) return;
+
+      setStatus("Playing audio…");
+      voice.playSamples(rendered.samples,rendered.sampleRate);
       setStatus("Ready.");
     }catch(err){
+      if (token !== generationToken) return;
       console.error(err);
       setFeedback(`Audio error: ${err?.message ?? String(err)}`,"bad");
       setStatus("Audio error.");
@@ -1845,7 +1869,7 @@
     if (!state.active) return;
     cancelAutoNext();
     state.active = false;
-    generationToken++;
+    stopCurrentAudioPlayback({restoreAudioButton:false});
     el.startButton.disabled = false;
     el.quitButton.disabled = true;
     el.audioButton.disabled = true;
@@ -2039,6 +2063,7 @@
     for (const control of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.audioSpeedSelect,
       el.requireDecimalToggle,el.equivalentPunctuationToggle,el.autoNextToggle,el.autoNextDelaySelect]){
       control.addEventListener("change",() => {
+        stopCurrentAudioPlayback();
         readSettingsFromUi();
         if (control === el.audioSpeedSelect) setStatus("Audio speed updated.");
         if (control === el.equivalentPunctuationToggle) setStatus("Punctuation setting updated.");
