@@ -299,6 +299,76 @@
       box-shadow:inset 0 -2px 0 rgba(17,17,17,0.28);
     }
     .tabPanel{ width:100%; display:grid; gap:8px; }
+
+    .examplesList{
+      display:grid;
+      gap:8px;
+    }
+    .exampleItem{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:9px;
+      background:rgba(255,255,255,0.28);
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr);
+      gap:10px;
+      align-items:start;
+    }
+    .exampleAudioButton{
+      min-width:48px;
+      min-height:42px;
+      padding:6px 8px;
+      font-size:18px;
+    }
+    .exampleBody{
+      min-width:0;
+      display:grid;
+      gap:6px;
+    }
+    .exampleHeading{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .exampleHeading h3{
+      font-size:17px;
+    }
+    .exampleOrder{
+      color:var(--muted);
+      font-size:13px;
+    }
+    .exampleReferenceGrid{
+      display:grid;
+      grid-template-columns:minmax(0,2fr) minmax(160px,0.8fr);
+      gap:7px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .exampleReferencePanel{
+      min-width:0;
+      border:1px solid var(--panel-border);
+      border-radius:12px;
+      padding:7px 8px;
+      background:rgba(255,255,255,0.30);
+      display:grid;
+      gap:4px;
+      align-content:start;
+    }
+    .exampleReferenceLabel{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:800;
+    }
+    .exampleReferenceValue{
+      min-width:0;
+      overflow-wrap:anywhere;
+      user-select:text;
+      font-size:13px;
+    }
+
     .reviewList{ display:grid; gap:8px; }
     .reviewItem{
       border:1px solid var(--panel-border);
@@ -470,6 +540,7 @@
       .progressGrid{ grid-template-columns:repeat(2,minmax(120px,1fr)); }
       .reviewRevealGrid{ grid-template-columns:1fr; }
       .reviewRevealPanel.cartouchePanel{ grid-column:auto; }
+      .exampleReferenceGrid{ grid-template-columns:1fr; }
       .questionCard{ min-height:390px; }
       .answerRow{ grid-template-columns:1fr; }
       .answerRow .btn{ justify-self:start; }
@@ -530,6 +601,7 @@
 
   <div class="wrap">
     <div class="tabs" role="tablist" aria-label="Page sections">
+      <button class="btn tabBtn" data-tab="examples" aria-selected="false" type="button">Examples</button>
       <button class="btn tabBtn" data-tab="practice" aria-selected="true" type="button">Practice</button>
       <button class="btn tabBtn" data-tab="review" aria-selected="false" type="button">Review</button>
       <button class="btn tabBtn" data-tab="history" aria-selected="false" type="button">History</button>
@@ -538,6 +610,17 @@
 
     <main class="main">
       <div class="stack">
+        <section id="tab-examples" class="tabPanel hidden">
+          <section class="card">
+            <div>
+              <h1>nanpa-linja-n listening examples</h1>
+              <p id="examplesSummary" class="muted">Loading examples…</p>
+              <p class="muted">When entering a nanpa-linja-n proper-name answer, spaces and letter case are ignored.</p>
+            </div>
+          </section>
+          <div id="examplesList" class="examplesList"></div>
+        </section>
+
         <section id="tab-practice" class="tabPanel">
           <section class="card">
             <div class="panelRow between">
@@ -676,7 +759,7 @@
                 <input id="equivalentPunctuationToggle" type="checkbox" checked />
                 <span class="settingText">
                   <strong>Accept equivalent punctuation</strong>
-                  <span>Accepts suitable dash, slash, colon and related punctuation variants according to the number type.</span>
+                  <span>Also accepts correctly grouped commas or spaces, spaces in place of + for mixed fractions, ISO date block separators such as spaces or underscores, and quiz-friendly scientific notation such as 4.5 10 -3.</span>
                 </span>
               </label>
 
@@ -748,6 +831,25 @@
   };
 
   const MIXED_KINDS = Object.keys(KIND_LABELS);
+
+  // Edit only the values in this array to change the Examples cheat sheet.
+  // The order is deliberately from simpler number forms to more complex forms.
+  const EXAMPLE_DEFINITIONS = [
+    { kind:"single-digit-integer", value:"7" },
+    { kind:"integer", value:"42" },
+    { kind:"integer", label:"hundreds", value:"1800" },
+    { kind:"thousands", value:"1,250" },
+    { kind:"millions", value:"2,000,000" },
+    { kind:"decimal", value:"12.5" },
+    { kind:"negative", value:"-8" },
+    { kind:"percent", value:"90%" },
+    { kind:"fraction", value:"3/4" },
+    { kind:"integer-and-fraction", value:"2+1/2" },
+    { kind:"hh-mm-time", value:"14:30" },
+    { kind:"iso-date", value:"2026-07-04" },
+    { kind:"scientific-notation", value:"4.5e-3" }
+  ];
+
   const FRACTION_CHOICES = [
     "1/2","1/3","2/3","1/4","3/4","1/5","2/5","3/5","4/5",
     "1/8","3/8","5/8","7/8","1/10","3/10","7/10","9/10"
@@ -780,6 +882,9 @@
   let historyDbPromise = null;
   let reviewRenderToken = 0;
   let historyDetailRenderToken = 0;
+  let examplesRenderToken = 0;
+  let activeExampleAudioButton = null;
+  const exampleItemCache = new Map();
 
   const state = {
     active:false,
@@ -821,7 +926,7 @@
       "abbreviatedCartouche","revealCodeLine","revealCode","requireDecimalToggle","equivalentPunctuationToggle","autoNextToggle",
       "autoNextDelaySelect","autoNextNotice","summaryCard","summaryScore","summaryText","restartButton","summaryReviewButton",
       "reviewSummary","reviewProblemsOnlyToggle","reviewList","historySummary","refreshHistoryButton","clearHistoryButton",
-      "historyList","historyDetail","historyProblemsOnlyToggle"
+      "historyList","historyDetail","historyProblemsOnlyToggle","examplesSummary","examplesList"
     ]) el[id] = $(id);
   }
 
@@ -905,41 +1010,127 @@
     return !!actual && actual === expected;
   }
 
-  function canonicalEquivalentValue(item,raw){
+  function normalizeGroupedUnsignedInteger(raw){
+    const s = String(raw ?? "").trim();
+    if (/^\d+$/.test(s)) return s;
+
+    // A grouping separator may be a comma, ASCII underscore, an underscore-like
+    // Unicode character, or one or more Unicode spacing characters. Every group
+    // after the first must contain exactly three digits.
+    const grouped = /^\d{1,3}(?:(?:[,_＿︳︴‗]|[\s\u00A0\u2000-\u200A\u202F\u205F\u3000]+)\d{3})+$/;
+    if (!grouped.test(s)) return null;
+    return s.replace(/[,_＿︳︴‗\s\u00A0\u2000-\u200A\u202F\u205F\u3000]/g,"");
+  }
+
+  function normalizeExactNumber(raw,{allowDecimal=true}={}){
     let s = normalizeOuter(raw);
+    let sign = "";
+    if (s.startsWith("+") || s.startsWith("-")){
+      sign = s[0];
+      s = s.slice(1).trim();
+    }
+
+    let integerPart = s;
+    let fractionalPart = null;
+    if (allowDecimal){
+      const decimalMatch = s.match(/^(.+?)\s*\.\s*(\d+)$/);
+      if (decimalMatch){
+        integerPart = decimalMatch[1];
+        fractionalPart = decimalMatch[2];
+      }
+    }
+
+    const integerDigits = normalizeGroupedUnsignedInteger(integerPart);
+    if (integerDigits == null) return null;
+    const normalizedSign = sign === "+" ? "" : sign;
+    return `${normalizedSign}${integerDigits}${fractionalPart == null ? "" : `.${fractionalPart}`}`;
+  }
+
+  function normalizeExactFraction(raw){
+    const s = normalizeOuter(raw).replace(/[⁄∕÷:]/g,"/");
+    const match = s.match(/^(.+?)\s*\/\s*(.+)$/);
+    if (!match) return null;
+    const numerator = normalizeExactNumber(match[1],{allowDecimal:false});
+    const denominator = normalizeGroupedUnsignedInteger(match[2]);
+    if (numerator == null || denominator == null) return null;
+    return `${numerator}/${denominator}`;
+  }
+
+  function normalizeMixedFraction(raw){
+    const s = normalizeOuter(raw).replace(/[⁄∕÷:]/g,"/");
+
+    let match = s.match(/^(.+?)\s*\+\s*(.+?)\s*\/\s*(.+)$/);
+    if (match){
+      const whole = normalizeExactNumber(match[1],{allowDecimal:false});
+      const numerator = normalizeGroupedUnsignedInteger(match[2]);
+      const denominator = normalizeGroupedUnsignedInteger(match[3]);
+      if (whole == null || numerator == null || denominator == null) return null;
+      return `${whole}+${numerator}/${denominator}`;
+    }
+
+    // In quiz input only, one or more spaces may replace the + separator.
+    // The greedy whole-number capture permits a correctly grouped value such
+    // as "1 234 1/2" while still rejecting malformed digit grouping.
+    match = s.match(/^(.+)\s+(\d+)\s*\/\s*(\d+)$/);
+    if (!match) return null;
+    const whole = normalizeExactNumber(match[1],{allowDecimal:false});
+    if (whole == null) return null;
+    return `${whole}+${match[2]}/${match[3]}`;
+  }
+
+  function normalizeScientificQuizValue(raw){
+    const s = normalizeOuter(raw);
+    let match = s.match(/^(.+?)\s*[eE]\s*([+-]?\s*\d+)$/);
+
+    if (!match){
+      // Accept an explicit multiplication form (4.5*10^-3) or, in this quiz
+      // only, spaces in place of both * and ^ (4.5 10 -3).
+      match = s.match(/^(.+?)(?:\s*[xX*×·]\s*|\s+)10\s*(?:\^\s*)?([+-]?\s*\d+)$/);
+    }
+    if (!match) return null;
+
+    const coefficient = normalizeExactNumber(match[1],{allowDecimal:true});
+    if (coefficient == null) return null;
+
+    const exponentMatch = match[2].match(/^([+-]?)\s*(\d+)$/);
+    if (!exponentMatch) return null;
+    const exponentSign = exponentMatch[1] === "+" ? "" : exponentMatch[1];
+    return `${coefficient}e${exponentSign}${exponentMatch[2]}`;
+  }
+
+  function canonicalEquivalentValue(item,raw){
+    const s = normalizeOuter(raw);
     const kind = item.kind;
 
-    if (kind === "thousands" || kind === "millions") return s.replace(/[,_\s]/g,"");
-    if (kind === "negative") return s.replace(/\s+/g,"");
-    if (kind === "percent") return s.replace(/\s+/g,"").replace(/[％﹪]/g,"%");
-    if (kind === "decimal" || kind === "single-digit-integer" || kind === "integer") return s.replace(/\s+/g,"");
-
-    if (kind === "fraction"){
-      return s.replace(/\s+/g,"").replace(/[⁄∕÷:]/g,"/");
+    if (["single-digit-integer","integer","thousands","millions","decimal","negative"].includes(kind)){
+      return normalizeExactNumber(s,{allowDecimal:kind === "decimal" || kind === "negative"});
     }
 
-    if (kind === "integer-and-fraction"){
-      s = s.replace(/[⁄∕÷:]/g,"/").trim();
-      // Permit a space between the whole number and fraction as an alternative to +.
-      s = s.replace(/^(\d+)\s+(\d+\/\d+)$/,"$1+$2");
-      return s.replace(/\s*\+\s*/g,"+").replace(/\s+/g,"");
+    if (kind === "percent"){
+      const match = s.match(/^(.*?)\s*[％﹪%]\s*$/);
+      if (!match) return null;
+      const number = normalizeExactNumber(match[1],{allowDecimal:true});
+      return number == null ? null : `${number}%`;
     }
+
+    if (kind === "fraction") return normalizeExactFraction(s);
+    if (kind === "integer-and-fraction") return normalizeMixedFraction(s);
 
     if (kind === "hh-mm-time"){
-      return s.replace(/\s+/g,"").replace(/[.\/\-‐‑‒–—−]/g,":");
+      const match = s.match(/^(\d{1,2})\s*[:.\/\-‐‑‒–—−]\s*(\d{1,2})$/);
+      return match ? `${match[1]}:${match[2]}` : null;
     }
 
     if (kind === "iso-date"){
-      return s.replace(/\s+/g,"").replace(/[.\/:‐‑‒–—−]/g,"-");
+      // Quiz input may separate ISO date blocks with the usual punctuation,
+      // one or more Unicode spacing characters, or underscore equivalents.
+      // This remains block-structured: exactly year, month, and day are required.
+      const isoSeparator = String.raw`(?:[.\/:\-‐‑‒–—−_＿︳︴‗]|[\s\u00A0\u2000-\u200A\u202F\u205F\u3000]+)`;
+      const match = s.match(new RegExp(`^(\\d{4})\\s*${isoSeparator}\\s*(\\d{1,2})\\s*${isoSeparator}\\s*(\\d{1,2})$`));
+      return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
     }
 
-    if (kind === "scientific-notation"){
-      s = s.replace(/\s+/g,"").replace(/E/g,"e").replace(/[×·]/g,"*");
-      const m = s.match(/^([+-]?\d+(?:\.\d+)?)(?:e|[xX*]10\^?)([+-]?\d+)$/);
-      if (m) return `${m[1]}e${m[2]}`;
-      return s;
-    }
-
+    if (kind === "scientific-notation") return normalizeScientificQuizValue(s);
     return s;
   }
 
@@ -991,6 +1182,28 @@
     return x.replace(/Oken$/," Oken").replace(/oken$/," Oken");
   }
   function formatProperNameForDisplay(name){ return fixOkenSuffixSpacing(titleCaseNanpaProperNameForDisplay(name)); }
+
+  function answerModeForKind(kind){
+    if (kind === "thousands" || kind === "millions") return "commasOptional";
+    if (kind === "scientific-notation") return "scientific";
+    return "exact";
+  }
+
+  function getExampleItem(definition){
+    const key = `${definition.kind}:${definition.value}`;
+    if (!exampleItemCache.has(key)){
+      // Build examples in relaxed mode so one parse provides both the strict
+      // and relaxed proper-name forms. Audio still follows the selected mode.
+      exampleItemCache.set(key,makeItem(
+        definition.kind,
+        definition.value,
+        definition.value,
+        answerModeForKind(definition.kind),
+        "relaxed"
+      ));
+    }
+    return exampleItemCache.get(key);
+  }
 
   function makeItem(kind,parserInput,displayValue,answerMode,properNameMode){
     return {
@@ -1183,6 +1396,10 @@
     }
 
     if (restoreAudioButton && state.active) el.audioButton.disabled = false;
+    if (activeExampleAudioButton){
+      activeExampleAudioButton.disabled = false;
+      activeExampleAudioButton = null;
+    }
   }
 
   async function playCurrentAudio(){
@@ -1219,6 +1436,130 @@
     }
   }
 
+  async function playExampleAudio(definition,button){
+    stopCurrentAudioPlayback();
+    const token = ++generationToken;
+    activeExampleAudioButton = button;
+    button.disabled = true;
+    try{
+      setStatus("Preparing example audio…");
+      const parsed = await ensureParsed(getExampleItem(definition));
+      if (token !== generationToken) return;
+      const voice = await getVoice();
+      if (token !== generationToken) return;
+
+      const useRelaxed = isRelaxedProperNameMode(state.settings.properNameMode);
+      const spokenName = useRelaxed ? parsed.quizProperName : (parsed.strictParsed?.properName ?? parsed.properName);
+      const rendered = await voice.render(spokenName,{
+        synthesis_mode:"reference_audio",
+        pauseScale:Number(state.settings.audioPauseScale),
+        syllableGapSeconds:getAudioSyllableGapSeconds()
+      });
+      if (token !== generationToken) return;
+
+      setStatus(`Playing ${state.settings.properNameMode} example audio…`);
+      voice.playSamples(rendered.samples,rendered.sampleRate);
+      setStatus("Ready.");
+    }catch(err){
+      if (token !== generationToken) return;
+      console.error(err);
+      setStatus(`Example audio error: ${err?.message ?? String(err)}`);
+    }finally{
+      if (token === generationToken){
+        button.disabled = false;
+        if (activeExampleAudioButton === button) activeExampleAudioButton = null;
+      }
+    }
+  }
+
+  function appendExampleReferencePanel(grid,label,value,{properName=false}={}){
+    const panel = document.createElement("div");
+    panel.className = "exampleReferencePanel";
+    const heading = document.createElement("div");
+    heading.className = "exampleReferenceLabel";
+    heading.textContent = label;
+    const content = document.createElement("div");
+    content.className = `exampleReferenceValue ${properName ? "properNameText" : "mono"}`;
+    content.textContent = value || "—";
+    panel.append(heading,content);
+    grid.appendChild(panel);
+  }
+
+  async function renderExamples(){
+    if (!el.examplesList) return;
+    const renderToken = ++examplesRenderToken;
+    const selectedMode = normalizeProperNameMode(state.settings.properNameMode);
+    el.examplesSummary.textContent =
+      `Examples progress from simpler to more complex forms. Each audio button plays the ${selectedMode} proper name selected for the quiz.`;
+
+    const staging = document.createDocumentFragment();
+    for (let index=0;index<EXAMPLE_DEFINITIONS.length;index++){
+      const definition = EXAMPLE_DEFINITIONS[index];
+      try{
+        const parsed = await ensureParsed(getExampleItem(definition));
+        if (renderToken !== examplesRenderToken) return;
+
+        const strictName = formatProperNameForDisplay(parsed.strictParsed?.properName ?? parsed.properName);
+        const relaxedName = formatProperNameForDisplay(parsed.quizProperName);
+
+        const row = document.createElement("section");
+        row.className = "exampleItem";
+
+        const audioButton = document.createElement("button");
+        audioButton.type = "button";
+        audioButton.className = "btn exampleAudioButton";
+        audioButton.textContent = "🤖🔊";
+        audioButton.title = `Play ${selectedMode} audio for ${definition.value}`;
+        audioButton.setAttribute("aria-label",`Play ${selectedMode} audio for ${definition.value}`);
+        audioButton.addEventListener("click",() => playExampleAudio(definition,audioButton));
+
+        const body = document.createElement("div");
+        body.className = "exampleBody";
+
+        const heading = document.createElement("div");
+        heading.className = "exampleHeading";
+        const title = document.createElement("h3");
+        title.textContent = definition.label || KIND_LABELS[definition.kind] || definition.kind;
+        heading.append(title);
+
+        const grid = document.createElement("div");
+        grid.className = "exampleReferenceGrid";
+        if (selectedMode === "strict"){
+          appendExampleReferencePanel(
+            grid,
+            "Expected strict nanpa-linja-n proper name input",
+            strictName,
+            {properName:true}
+          );
+        }else{
+          appendExampleReferencePanel(
+            grid,
+            "Expected relaxed nanpa-linja-n proper name input",
+            relaxedName,
+            {properName:true}
+          );
+        }
+        appendExampleReferencePanel(grid,"Expected decimal number input",definition.value);
+
+        body.append(heading,grid);
+        row.append(audioButton,body);
+        staging.appendChild(row);
+      }catch(err){
+        console.error("Could not render listening example",definition,err);
+        const row = document.createElement("section");
+        row.className = "exampleItem";
+        const marker = document.createElement("div");
+        marker.textContent = "⚠";
+        const message = document.createElement("p");
+        message.className = "badText";
+        message.textContent = `Could not build the ${definition.label || KIND_LABELS[definition.kind] || definition.kind} example (${definition.value}).`;
+        row.append(marker,message);
+        staging.appendChild(row);
+      }
+    }
+    if (renderToken === examplesRenderToken) el.examplesList.replaceChildren(staging);
+  }
+
   function currentItem(){ return state.items[state.index] || null; }
 
   function setStatus(text){ el.status.textContent = text; }
@@ -1252,10 +1593,12 @@
 
   function showTab(tab){
     cancelAutoNext();
+    if (state.tab !== tab) stopCurrentAudioPlayback();
     state.tab = tab;
     document.querySelectorAll(".tabBtn").forEach(btn => btn.setAttribute("aria-selected", btn.dataset.tab === tab ? "true" : "false"));
     document.querySelectorAll(".tabPanel").forEach(panel => panel.classList.add("hidden"));
     $("tab-" + tab)?.classList.remove("hidden");
+    if (tab === "examples") renderExamples();
     if (tab === "review") renderCurrentReview();
     if (tab === "history") loadHistory();
   }
@@ -2066,6 +2409,7 @@
         stopCurrentAudioPlayback();
         readSettingsFromUi();
         if (control === el.audioSpeedSelect) setStatus("Audio speed updated.");
+        if (control === el.properNameModeSelect && state.tab === "examples") renderExamples();
         if (control === el.equivalentPunctuationToggle) setStatus("Punctuation setting updated.");
         if (control === el.autoNextToggle || control === el.autoNextDelaySelect){
           cancelAutoNext();
