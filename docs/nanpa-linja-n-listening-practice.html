@@ -458,11 +458,17 @@
       grid-template-columns:minmax(240px,.9fr) minmax(320px,1.4fr);
       gap:8px;
       min-height:0;
+      height:min(700px,calc(100dvh - 140px));
+    }
+    .historyGrid > .card{
+      min-height:0;
+      grid-template-rows:auto minmax(0,1fr);
     }
     .historyList,.historyDetail{
       display:grid;
       gap:8px;
-      max-height:520px;
+      min-height:0;
+      max-height:none;
       overflow:auto;
     }
     .historySessionBtn{
@@ -535,8 +541,13 @@
       .status{ display:none; }
     }
     @media (max-width:720px){
-      .historyGrid{ grid-template-columns:1fr; }
-      .historyList,.historyDetail{ max-height:360px; }
+      .historyGrid{
+        grid-template-columns:1fr;
+        height:auto;
+      }
+      .historyList,.historyDetail{
+        max-height:360px;
+      }
       .progressGrid{ grid-template-columns:repeat(2,minmax(120px,1fr)); }
       .reviewRevealGrid{ grid-template-columns:1fr; }
       .reviewRevealPanel.cartouchePanel{ grid-column:auto; }
@@ -679,8 +690,8 @@
               <div class="revealLine"><strong>Value:</strong> <span id="revealValue" class="mono"></span></div>
               <div id="revealStrictLine" class="revealLine hidden"><strong>strict nanpa-linja-n proper name:</strong> <span id="revealStrictName" class="properNameText"></span></div>
               <div id="revealRelaxedLine" class="revealLine hidden"><strong>relaxed nanpa-linja-n proper name:</strong> <span id="revealRelaxedName" class="properNameText"></span></div>
-              <div class="revealLine"><strong>nanpa-linja-n cartouche:</strong> <canvas id="normalCartouche" aria-hidden="true"></canvas></div>
               <div class="revealLine"><strong>nanpa-linja-n abbreviated cartouche:</strong> <canvas id="abbreviatedCartouche" aria-hidden="true"></canvas></div>
+              <div class="revealLine"><strong>nanpa-linja-n cartouche:</strong> <canvas id="normalCartouche" aria-hidden="true"></canvas></div>
               <div id="revealCodeLine" class="revealLine hidden"><strong>#~ abbreviation:</strong> <span id="revealCode" class="mono"></span></div>
             </div>
           </section>
@@ -1766,9 +1777,9 @@
     appendReviewTextPanel(revealGrid,"Strict proper name",record.strictName,{ properName:true });
     appendReviewTextPanel(revealGrid,"Relaxed proper name",record.relaxedName,{ properName:true });
     await ensureCartoucheFontLoaded();
+    appendReviewCartouchePanel(revealGrid,"Abbreviated nanpa-linja-n cartouche",record.abbreviatedCodepoints || []);
     appendReviewCartouchePanel(revealGrid,"Strict full nanpa-linja-n cartouche",record.strictFullCodepoints || []);
     appendReviewCartouchePanel(revealGrid,"Relaxed full nanpa-linja-n cartouche",record.relaxedFullCodepoints || []);
-    appendReviewCartouchePanel(revealGrid,"Abbreviated nanpa-linja-n cartouche",record.abbreviatedCodepoints || []);
     appendReviewTextPanel(revealGrid,"#~ abbreviation",record.uniqueCode);
 
     const details = document.createElement("div");
