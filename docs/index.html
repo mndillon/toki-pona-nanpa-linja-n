@@ -1014,17 +1014,12 @@
     'www.nanpa-linja-n.com'
   ]);
 
-  window.isProductionHost = productionHosts.has(window.location.hostname);
+ if (!productionHosts.has(window.location.hostname)) { window.goatcounter = { no_onload: true }; }
 
-  if (!window.isProductionHost) {
-    window.goatcounter = {
-      ...(window.goatcounter || {}),
-      no_onload: true
-    };
-  }
+ 
 
   function trackUsage(eventName) {
-    if (!window.isProductionHost) {
+    if (!productionHosts.has(window.location.hostname)){
       return;
     }
 
