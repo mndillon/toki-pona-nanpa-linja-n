@@ -4261,7 +4261,7 @@
  
 
   function trackUsage(eventName) {
-    if (!productionHosts.has(window.location.hostname))
+    if (!productionHosts.has(window.location.hostname)){
       return;
     }
 
