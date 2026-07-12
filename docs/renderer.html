@@ -3385,6 +3385,11 @@
         try {
           btn.disabled = true;
           await voice.play(properName);
+
+          if (typeof window.trackUsage === "function") {
+            window.trackUsage("renderer-audio-play");
+          }
+
           announceStatus(`Played audio for ${properName}.`);
         } catch (err) {
           showAlertAndAnnounce(err?.message ?? String(err));
@@ -3578,6 +3583,10 @@
         lastAction = "decimal";
         if (clearOthers) clearOtherInputs("decimal");
         await runEncodeFromDecimal();
+
+        if (clearOthers && typeof window.trackUsage === "function") {
+          window.trackUsage("renderer-render");
+        }
       } catch (err) {
         setDecimalValueLine(null, null);
         showAlertAndAnnounce(err?.message ?? String(err));
@@ -4247,8 +4256,30 @@
     'www.nanpa-linja-n.com'
   ]);
 
-  if (!productionHosts.has(window.location.hostname)) {
-    window.goatcounter = { no_onload: true };
+  window.isProductionHost = productionHosts.has(window.location.hostname);
+
+  if (!window.isProductionHost) {
+    window.goatcounter = {
+      ...(window.goatcounter || {}),
+      no_onload: true
+    };
+  }
+
+  function trackUsage(eventName) {
+    if (!window.isProductionHost) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
   }
 </script>
 

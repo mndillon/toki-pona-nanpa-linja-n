@@ -679,6 +679,9 @@ async function playItemAudio(item, row) {
       pauseScale: getCurrentAudioPauseScale(),
       syllableGapSeconds: getCurrentAudioSyllableGapSeconds()
     });
+    if (typeof window.trackUsage === 'function') {
+      window.trackUsage('index-quiz-audio-play');
+    }
   } catch (err) {
     setFeedback(row, `Audio error: ${err?.message ?? String(err)}`, 'bad');
   } finally {

@@ -1005,7 +1005,7 @@
       <div class="help">#~n</div>
     </div>
   </main>
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=31"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=32"></script>
 
 
 <script>
@@ -1014,8 +1014,30 @@
     'www.nanpa-linja-n.com'
   ]);
 
-  if (!productionHosts.has(window.location.hostname)) {
-    window.goatcounter = { no_onload: true };
+  window.isProductionHost = productionHosts.has(window.location.hostname);
+
+  if (!window.isProductionHost) {
+    window.goatcounter = {
+      ...(window.goatcounter || {}),
+      no_onload: true
+    };
+  }
+
+  function trackUsage(eventName) {
+    if (!window.isProductionHost) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
   }
 </script>
 

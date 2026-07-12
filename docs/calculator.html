@@ -1591,6 +1591,11 @@
           btn.disabled = true;
           const voice = await getTokiPonaVoice();
           await voice.play(properName);
+
+          if (typeof window.trackUsage === "function") {
+            window.trackUsage("calculator-audio-play");
+          }
+
           if (elDisplayLive) elDisplayLive.textContent = `Played audio for ${properName}.`;
         } catch (err) {
           if (elDisplayLive) elDisplayLive.textContent = `Audio error: ${err?.message ?? String(err)}`;
@@ -1828,6 +1833,11 @@
         applyPendingIfReady(pendingOp);
         pendingOp = null;
         renderDisplay();
+
+        if (typeof window.trackUsage === "function") {
+          window.trackUsage("calculator-calculate");
+        }
+
         return;
       }
 
@@ -1837,6 +1847,11 @@
         if (!Number.isFinite(r)) { setError(); return; }
         inputStr = formatNumberForInput(r);
         renderDisplay();
+
+
+        if (typeof window.trackUsage === "function") {
+          window.trackUsage("calculator-calculate");
+        }
       }
     }
 
@@ -2220,8 +2235,30 @@
     'www.nanpa-linja-n.com'
   ]);
 
-  if (!productionHosts.has(window.location.hostname)) {
-    window.goatcounter = { no_onload: true };
+  window.isProductionHost = productionHosts.has(window.location.hostname);
+
+  if (!window.isProductionHost) {
+    window.goatcounter = {
+      ...(window.goatcounter || {}),
+      no_onload: true
+    };
+  }
+
+  function trackUsage(eventName) {
+    if (!window.isProductionHost) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
   }
 </script>
 

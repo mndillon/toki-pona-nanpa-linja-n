@@ -4259,6 +4259,12 @@ function joinTpNameParts(parts, boundary, opts){
       out.push(r);
     }
     renderRows(out);
+
+    if (out.length > 0) {
+      if (typeof window.trackUsage === "function") {
+        window.trackUsage("tokiponize-name-convert");
+      }
+    }
   }
 
   function openLic(){
@@ -4564,8 +4570,30 @@ function joinTpNameParts(parts, boundary, opts){
     'www.nanpa-linja-n.com'
   ]);
 
-  if (!productionHosts.has(window.location.hostname)) {
-    window.goatcounter = { no_onload: true };
+  window.isProductionHost = productionHosts.has(window.location.hostname);
+
+  if (!window.isProductionHost) {
+    window.goatcounter = {
+      ...(window.goatcounter || {}),
+      no_onload: true
+    };
+  }
+
+  function trackUsage(eventName) {
+    if (!window.isProductionHost) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
   }
 </script>
 
