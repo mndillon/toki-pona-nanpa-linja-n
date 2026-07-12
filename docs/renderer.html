@@ -4256,25 +4256,12 @@
     'www.nanpa-linja-n.com'
   ]);
 
-  if (!productionHosts.has(window.location.hostname)) { window.goatcounter = { no_onload: true }; }
-
+   if (!productionHosts.has(window.location.hostname)) {
+      window.goatcounter = { no_onload: true };
+  }
  
 
   function trackUsage(eventName) {
-    if (!productionHosts.has(window.location.hostname)){
-      return;
-    }
-
-    if (
-      window.goatcounter &&
-      typeof window.goatcounter.count === 'function'
-    ) {
-      window.goatcounter.count({
-        path: eventName,
-        title: eventName,
-        event: true
-      });
-    }
   }
 </script>
 
