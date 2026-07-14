@@ -6077,24 +6077,23 @@ function wireEvents(){
   </div>
 
   <script>
-  const productionHosts = new Set([
+      const productionHosts = new Set([
         'nanpa-linja-n.com',
-    'www.nanpa-linja-n.com'
-  ]);
+        'www.nanpa-linja-n.com'
+      ]);
 
-   if (!productionHosts.has(window.location.hostname)) {
-      window.goatcounter = { no_onload: true };
-  }
- 
+      if (!productionHosts.has(window.location.hostname)) {
+          window.goatcounter = { no_onload: true };
+      }
+    
 
-  function trackUsage(eventName) {
-  }
-</script>
-
-<script
-  data-goatcounter="https://nanpalinjan.goatcounter.com/count"
-  async
-  src="./js/goatcounter-count.js">
-</script>
+      function trackUsage(eventName) {
+      }
+  </script>
+  <script
+    data-goatcounter="https://nanpalinjan.goatcounter.com/count"
+    async
+    src="./js/goatcounter-count.js">
+  </script>
 </body>
 </html>

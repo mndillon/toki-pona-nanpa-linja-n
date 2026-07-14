@@ -874,6 +874,25 @@ nanpa #~WI.
             <span class="ctlLabel" style="margin:0;">Enabled</span>
           </label>
         </div>
+
+        <!-- Background toggle: intentionally after all previously existing properties -->
+        <div id="ctlBackgroundEnable" class="inlineControl inlinePill" role="group" aria-label="Background">
+          <span class="ctlLabel">
+            Background <span class="tpInline">kule monsi</span>
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+            <input id="appBackgroundEnable" type="checkbox" aria-label="Enable background">
+            <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+        </div>
+
+        <!-- Background color picker: intentionally the final property -->
+        <div id="ctlBackgroundColor" class="inlineControl inlinePill" role="group" aria-label="Background color">
+          <span class="ctlLabel">
+            Background color <span class="tpInline">kule monsi</span>
+          </span>
+          <input id="appBackgroundPick" class="swatch" type="color" aria-label="Background color">
+        </div>
       </div>
     </div>
 
@@ -892,7 +911,7 @@ nanpa #~WI.
           <span>Download PNG</span>
           <span class="tpLine">o kama jo e sitelen PNG</span>
         </button>
-        <div id="btnDownloadHelp" class="sr-only">Downloads the rendered output as a transparent PNG generated from SVG vector paths.</div>
+        <div id="btnDownloadHelp" class="sr-only">Downloads the rendered output as a PNG generated from SVG vector paths, using either transparency or the enabled background color.</div>
 
         <button id="appBtnDownloadSvg" type="button" class="btnBi" disabled aria-describedby="btnDownloadSvgHelp">
           <span>Download SVG</span>
@@ -900,7 +919,7 @@ nanpa #~WI.
         </button>
         <div id="btnDownloadSvgHelp" class="sr-only">Exports the current renderer plan as SVG vector paths using Rust/WASM.</div>
 
-        <span class="small">
+        <span id="appBackgroundStatus" class="small">
           (Transparent background)
           <span class="tpLine">(poka sitelen li lon ala)</span>
         </span>
@@ -2340,6 +2359,129 @@ function wireFgColorControls() {
   });
 }
 
+
+
+const BACKGROUND_ENABLED_STORAGE_KEY = "tpBackgroundEnabled";
+const BACKGROUND_COLOR_STORAGE_KEY = "tpBackgroundHex";
+const BACKGROUND_DEFAULT_ENABLED = false;
+const BACKGROUND_DEFAULT_HEX = "#FFFFFF";
+
+function loadBackgroundEnabledFromStorage() {
+  try {
+    const raw = localStorage.getItem(BACKGROUND_ENABLED_STORAGE_KEY);
+    if (raw == null) return null;
+    if (raw === "1" || raw === "true") return true;
+    if (raw === "0" || raw === "false") return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveBackgroundEnabledToStorage(v) {
+  try { localStorage.setItem(BACKGROUND_ENABLED_STORAGE_KEY, v ? "1" : "0"); } catch {}
+}
+
+function loadBackgroundHexFromStorage() {
+  try { return normalizeHexColor(localStorage.getItem(BACKGROUND_COLOR_STORAGE_KEY)); }
+  catch { return null; }
+}
+
+function saveBackgroundHexToStorage(hex) {
+  try { localStorage.setItem(BACKGROUND_COLOR_STORAGE_KEY, hex); } catch {}
+}
+
+function getBackgroundEnabled() {
+  const el = document.getElementById("appBackgroundEnable");
+  return !!el?.checked;
+}
+
+function getBackgroundHex() {
+  const pick = document.getElementById("appBackgroundPick");
+  return normalizeHexColor(pick?.value) ?? BACKGROUND_DEFAULT_HEX;
+}
+
+function updateBackgroundStatusLabel() {
+  const status = document.getElementById("appBackgroundStatus");
+  if (!status) return;
+
+  if (getBackgroundEnabled()) {
+    const hex = getBackgroundHex();
+    status.innerHTML = `(Background: <span class="mono">${hex}</span>)<span class="tpLine">(kule monsi li lon)</span>`;
+  } else {
+    status.innerHTML = `(Transparent background)<span class="tpLine">(poka sitelen li lon ala)</span>`;
+  }
+}
+
+function setBackgroundEnabled(v, { persist = true } = {}) {
+  const el = document.getElementById("appBackgroundEnable");
+  const b = !!v;
+  if (el) el.checked = b;
+  if (persist) saveBackgroundEnabledToStorage(b);
+  updateBackgroundStatusLabel();
+  return b;
+}
+
+function setBackgroundHex(hex, { persist = true } = {}) {
+  const pick = document.getElementById("appBackgroundPick");
+  const h = normalizeHexColor(hex) ?? BACKGROUND_DEFAULT_HEX;
+  if (pick) pick.value = h;
+  if (persist) saveBackgroundHexToStorage(h);
+  updateBackgroundStatusLabel();
+  return h;
+}
+
+function initBackgroundControls() {
+  setBackgroundEnabled(
+    loadBackgroundEnabledFromStorage() ?? BACKGROUND_DEFAULT_ENABLED,
+    { persist: false }
+  );
+  setBackgroundHex(
+    loadBackgroundHexFromStorage() ?? BACKGROUND_DEFAULT_HEX,
+    { persist: false }
+  );
+  updateBackgroundStatusLabel();
+}
+
+function wireBackgroundControls() {
+  const enabledEl = document.getElementById("appBackgroundEnable");
+  const pick = document.getElementById("appBackgroundPick");
+
+  enabledEl?.addEventListener("change", async () => {
+    try {
+      setBackgroundEnabled(enabledEl.checked);
+      await renderFromTextarea();
+    } catch (e) {
+      showAlertAndAnnounce(e?.message ?? String(e));
+    }
+  });
+
+  pick?.addEventListener("input", async () => {
+    try {
+      setBackgroundHex(getBackgroundHex());
+      await renderFromTextarea();
+    } catch (e) {
+      showAlertAndAnnounce(e?.message ?? String(e));
+    }
+  });
+}
+
+function paintConfiguredBackgroundBehindCanvas(canvas) {
+  if (!canvas || !getBackgroundEnabled()) return;
+  const width = Math.max(1, Number(canvas.width) || 1);
+  const height = Math.max(1, Number(canvas.height) || 1);
+  const ctx = canvas.getContext("2d", { alpha: true });
+  if (!ctx) return;
+
+  // The renderer has already drawn its transparent canvas. destination-over
+  // adds the selected color beneath every existing glyph, cartouche, halo,
+  // and unknown-text highlight without modifying the render plan or geometry.
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-over";
+  ctx.fillStyle = getBackgroundHex();
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
+}
 
 const HALO_ENABLED_STORAGE_KEY = "tpHaloEnabled";
 const HALO_COLOR_STORAGE_KEY   = "tpHaloHex";
@@ -7200,6 +7342,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         outCanvas.width = 1;
         outCanvas.height = 1;
         outCanvas.getContext("2d").clearRect(0, 0, 1, 1);
+        paintConfiguredBackgroundBehindCanvas(outCanvas);
         syncTextAudioHighlightCanvasSize();
         clearTextAudioHighlight();
         latestRenderPlan = null;
@@ -7216,6 +7359,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const ctx = outCanvas.getContext("2d", { alpha: true });
       ctx.clearRect(0, 0, outCanvas.width, outCanvas.height);
       ctx.drawImage(rendered.canvas, 0, 0);
+      paintConfiguredBackgroundBehindCanvas(outCanvas);
       syncTextAudioHighlightCanvasSize();
       clearTextAudioHighlight();
 
@@ -7225,8 +7369,10 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const hex = getFgHex();
       const haloOn = getHaloEnabled();
       const haloHex = getHaloHex();
+      const backgroundOn = getBackgroundEnabled();
+      const backgroundHex = getBackgroundHex();
       const preset = getActiveFontPreset();
-      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Nanpa relaxed: ${getNanpaRelaxedMode()}. Font: ${getFontPx()}px. Renderer font family: ${preset.label}. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}.`);
+      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Nanpa relaxed: ${getNanpaRelaxedMode()}. Font: ${getFontPx()}px. Renderer font family: ${preset.label}. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}. Background: ${backgroundOn ? backgroundHex : "transparent"}.`);
     }
 
 
@@ -7538,6 +7684,67 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const x = Number(n);
       if (!Number.isFinite(x)) return "0";
       return String(Math.round(x * 1000) / 1000);
+    }
+
+
+    function svgStageDimensionsFromText(svgText) {
+      try {
+        const doc = new DOMParser().parseFromString(String(svgText ?? ""), "image/svg+xml");
+        if (doc.querySelector("parsererror")) return null;
+        const root = doc.documentElement;
+        if (!root || String(root.localName || "").toLowerCase() !== "svg") return null;
+
+        const parseLength = value => {
+          const m = /^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))(?:px)?\s*$/i.exec(String(value ?? ""));
+          if (!m) return null;
+          const n = Number(m[1]);
+          return Number.isFinite(n) && n > 0 ? n : null;
+        };
+
+        const viewBox = String(root.getAttribute("viewBox") || "")
+          .trim()
+          .split(/[\s,]+/)
+          .map(Number);
+        const hasUsableViewBox =
+          viewBox.length >= 4 &&
+          viewBox.every(Number.isFinite) &&
+          viewBox[2] > 0 &&
+          viewBox[3] > 0;
+
+        // SVG child coordinates use viewBox user units when a viewBox exists.
+        // Fall back to the numeric viewport width/height only when there is no
+        // usable viewBox. This also keeps the PDF DOM conversion correct when
+        // viewport dimensions and viewBox dimensions differ.
+        if (hasUsableViewBox) {
+          return { x: viewBox[0], y: viewBox[1], width: viewBox[2], height: viewBox[3] };
+        }
+
+        const width = parseLength(root.getAttribute("width"));
+        const height = parseLength(root.getAttribute("height"));
+        if (!(width > 0 && height > 0)) return null;
+        return { x: 0, y: 0, width, height };
+      } catch {
+        return null;
+      }
+    }
+
+    async function injectBackgroundRectIntoSvgBlob(svgBlob) {
+      if (!getBackgroundEnabled()) return svgBlob;
+
+      const svgText = await svgBlob.text();
+      const dimensions = svgStageDimensionsFromText(svgText);
+      if (!dimensions) {
+        throw new Error("Unable to determine SVG dimensions for the enabled background.");
+      }
+
+      const svgStart = svgText.search(/<svg\b/i);
+      if (svgStart < 0) throw new Error("SVG root element is missing.");
+      const svgOpenEnd = svgText.indexOf(">", svgStart);
+      if (svgOpenEnd < 0) throw new Error("SVG root opening tag is incomplete.");
+
+      const rect = `<rect data-tts-background="1" x="${formatSvgNumber(dimensions.x)}" y="${formatSvgNumber(dimensions.y)}" width="${formatSvgNumber(dimensions.width)}" height="${formatSvgNumber(dimensions.height)}" fill="${escapeSvgAttr(getBackgroundHex())}" />`;
+      const out = svgText.slice(0, svgOpenEnd + 1) + rect + svgText.slice(svgOpenEnd + 1);
+      return new Blob([out], { type: "image/svg+xml;charset=utf-8" });
     }
 
     async function injectUnknownHighlightRectsIntoSvgBlob(svgBlob, plan, { exportPaddingPx = 0 } = {}) {
@@ -8158,10 +8365,14 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
       });
       const rawBlob = await exporter.exportTextToSvgBlob(args);
+      // Insert the optional full-stage background before all exported vector
+      // content. PNG rasterizes this SVG and PDF converts this same SVG DOM,
+      // so all three export formats share the identical background rectangle.
+      const backgroundBlob = await injectBackgroundRectIntoSvgBlob(rawBlob);
       // SVG coordinates from exportTextToSvgBlob already include the exporter padding.
       // Do not apply the PDF half-padding correction here; PNG is rasterized
       // from this same SVG, so SVG/PNG must use the unshifted rectangle boxes.
-      const blob = await injectUnknownHighlightRectsIntoSvgBlob(rawBlob, plan, { exportPaddingPx: 0 });
+      const blob = await injectUnknownHighlightRectsIntoSvgBlob(backgroundBlob, plan, { exportPaddingPx: 0 });
       vectorDiag("buildCurrentVectorSvgBlob END", { blobSize: blob?.size, blobType: blob?.type });
       return blob;
     }
@@ -8709,6 +8920,9 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         initFgColorControls();
         wireFgColorControls();
 
+        initBackgroundControls();
+        wireBackgroundControls();
+
         initHaloControls();
         wireHaloControls();
 
@@ -8762,7 +8976,9 @@ async function serializeRenderPlanToUnicodeJson(plan) {
             tpFontPx: localStorage.getItem("tpFontPx"),
             tpHaloEnabled: localStorage.getItem("tpHaloEnabled"),
             tpHaloWidthPx: localStorage.getItem("tpHaloWidthPx"),
-            tpHaloHex: localStorage.getItem("tpHaloHex")
+            tpHaloHex: localStorage.getItem("tpHaloHex"),
+            tpBackgroundEnabled: localStorage.getItem("tpBackgroundEnabled"),
+            tpBackgroundHex: localStorage.getItem("tpBackgroundHex")
           }
         });
 
