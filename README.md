@@ -173,15 +173,20 @@ Example:
 
 These tables show which syllables may represent each decimal digit when parsing or rendering a nanpa-linja-n proper name.
 
-In **strict mode**, each digit has only one accepted syllable. For example, digit 1 uses **we**, digit 2 uses **te**, and digit 3 uses **se**.
+In **strict mode**, each digit has only one accepted syllable. For example, digit 1 uses **we**, digit 2 uses **te**, and digit 5 uses **le**.
 
-In **relaxed mode**, some digits may also be represented by additional syllables. For example, digit 1 may use **we** or **wa**, digit 2 may use **te** or **tu**, and digit 5 may use **le** or **lu**. These additional choices can make spoken nanpa-linja-n proper names sound more natural.
+In **relaxed mode**, some digits can also use additional syllables that represent the same digit. For example, digit 1 can use **we** or **wa**, digit 2 can use **te** or **tu**, and digit 5 can use **le** or **lu**.
 
-The **e**, **a**, **i**, and **u** columns show the accepted syllables for each digit. The **large glyph** column identifies the principal sitelen pona glyph associated with that digit. The **small glyph** row identifies the small glyph associated with each vowel column.
+The **e**, **a**, **i**, and **u** columns show the nanpa-linja-n glyphs for the supporting vowel used in some digit syllables.
 
-For syllables beginning with the consonant **n**, the large glyph represents the vowel and carries the digit identity.
+For **ni**, **na**, and **nu**, the supporting consonant is represented in nanpa-linja-n by the sitelen pona glyph *nena*.
+
+The **large glyph** column shows the main sitelen pona glyph used for that digit. The **small glyph** row shows the small supporting glyph associated with each vowel column.
+
+In relaxed mode, for example, **Nemun**, as well as **Nemen**, is accepted as representing the number 7.
 
 Relaxed mode is preferred because it allows some digits to be represented using more natural syllables. For example, relaxed mode accepts both **Nemen** and **Nemun** as proper names representing the number 7. The additional permitted syllables are derived naturally from the sitelen pona glyph associated with the corresponding digit.
+
 
 
 ### relaxed
