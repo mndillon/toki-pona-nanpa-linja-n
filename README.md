@@ -181,7 +181,24 @@ The **e**, **a**, **i**, and **u** columns show the accepted syllables for each 
 
 For syllables beginning with the consonant **n**, the large glyph represents the vowel and carries the digit identity.
 
-For example, relaxed mode accepts both **Nemen** and **Nemun** as proper names representing the number 7. The additional permitted syllables are derived naturally from the sitelen pona glyph associated with the corresponding digit.
+Relaxed mode is preferred because it allows some digits to be represented using more natural syllables. For example, relaxed mode accepts both **Nemen** and **Nemun** as proper names representing the number 7. The additional permitted syllables are derived naturally from the sitelen pona glyph associated with the corresponding digit.
+
+
+### relaxed
+
+|       digit |  e  |  a  |  i  |  u  | large glyph |
+| ----------: | :-: | :-: | :-: | :-: | :---------- |
+|           0 |  -  |  -  |  ni |  -  | ijo         |
+|           1 |  we |  wa |  -  |  -  | wan         |
+|           2 |  te |  -  |  -  |  tu | tu          |
+|           3 |  se |  -  |  -  |  -  | seli        |
+|           4 |  -  |  na |  -  |  -  | awen        |
+|           5 |  le |  -  |  -  |  lu | luka        |
+|           6 |  -  |  -  |  -  |  nu | utala       |
+|           7 |  me |  -  |  -  |  mu | mun         |
+|           8 |  pe |  -  |  pi |  -  | pipi        |
+|           9 |  je |  -  |  -  |  -  | jo          |
+| small glyph |  en | ala | ike | uta |             |
 
 ### strict
 
@@ -199,21 +216,7 @@ For example, relaxed mode accepts both **Nemen** and **Nemun** as proper names r
 |           9 |  je |  -  |  -  |  -  | jo          |
 | small glyph |  en |     |     |     |             |
 
-### relaxed
 
-|       digit |  e  |  a  |  i  |  u  | large glyph |
-| ----------: | :-: | :-: | :-: | :-: | :---------- |
-|           0 |  -  |  -  |  ni |  -  | ijo         |
-|           1 |  we |  wa |  -  |  -  | wan         |
-|           2 |  te |  -  |  -  |  tu | tu          |
-|           3 |  se |  -  |  -  |  -  | seli        |
-|           4 |  -  |  na |  -  |  -  | awen        |
-|           5 |  le |  -  |  -  |  lu | luka        |
-|           6 |  -  |  -  |  -  |  nu | utala       |
-|           7 |  me |  -  |  -  |  mu | mun         |
-|           8 |  pe |  -  |  pi |  -  | pipi        |
-|           9 |  je |  -  |  -  |  -  | jo          |
-| small glyph |  en | ala | ike | uta |             |
 
 
 
