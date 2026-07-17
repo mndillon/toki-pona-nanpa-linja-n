@@ -1201,7 +1201,17 @@
         }
 
         if (token === "OK") {
-          units.push({ text: "oke", kind: "percent", sourceTokens: [token], reassignLeadingN: false });
+          /*
+           * The percent unit is shown before reassignment as noke:
+           * its leading n moves southwest to close the preceding numeric word,
+           * while oke continues south and becomes Oken after the final -n marker.
+           */
+          units.push({
+            text: "noke",
+            kind: "percent",
+            sourceTokens: [token],
+            reassignLeadingN: true
+          });
           i += 1;
           continue;
         }
@@ -1725,6 +1735,11 @@
           arrow.innerHTML =
             '<span title="In the special hundreds split, this n moves to the preceding proper-name word">↙</span>' +
             '<span title="In the special hundreds split, the remaining i begins Inin">↓</span>';
+        } else if (unit.kind === "percent") {
+          arrow.className = "arrow-cell dual";
+          arrow.innerHTML =
+            '<span title="The starting n in noke moves to the preceding numeric proper-name word">↙</span>' +
+            '<span title="The remaining oke continues downward and becomes Oken after the final -n marker">↓</span>';
         } else if (unit.reassignLeadingN) {
           arrow.className = "arrow-cell dual";
           arrow.innerHTML =
@@ -2673,22 +2688,22 @@
   </script>
 
   <script>
-  const productionHosts = new Set([
-    'nanpa-linja-n.com',
-    'www.nanpa-linja-n.com'
-  ]);
+    const productionHosts = new Set([
+      'nanpa-linja-n.com',
+      'www.nanpa-linja-n.com'
+    ]);
 
-  if (!productionHosts.has(window.location.hostname)) {
-      window.goatcounter = { no_onload: true };
-  }
- 
+    if (!productionHosts.has(window.location.hostname)) {
+        window.goatcounter = { no_onload: true };
+    }
+  
 
-  function trackUsage(eventName) {
-  }
-</script>
+    function trackUsage(eventName) {
+    }
+  </script>
 
-<script data-goatcounter="https://nanpalinjan.goatcounter.com/count" async src="./js/goatcounter-count.js">
-</script>
+  <script data-goatcounter="https://nanpalinjan.goatcounter.com/count" async src="./js/goatcounter-count.js">
+  </script>
 
 </body>
 </html>
