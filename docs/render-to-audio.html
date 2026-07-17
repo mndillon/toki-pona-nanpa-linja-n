@@ -1,0 +1,2693 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>From number to nanpa-linja-n cartouche and audio</title>
+
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <style>
+    :root {
+      --border: #d0d7de;
+      --bg: #f3dfc0;
+      --text: #111;
+      --muted: #3f4750;
+      --focus: #111;
+      --speaking-bg: #fff4a8;
+      --speaking-outline: #111;
+      --marker-bg: #dff2d8;
+      --breakdown-font-size: 1rem;
+      --learning-cell-min: 56px;
+      --learning-gap: 8px;
+      --learning-label-width: 205px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .card {
+      width: min(1400px, 100%);
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+      line-height: 1.3;
+    }
+
+    h2 {
+      margin: 18px 0 8px;
+      font-size: 0.95rem;
+    }
+
+    p { line-height: 1.45; }
+
+    .help,
+    .status,
+    .small {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .status {
+      min-height: 1.4em;
+      margin-top: 8px;
+    }
+
+    .status.error {
+      color: #7b1111;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+      margin-top: 16px;
+    }
+
+    .settings {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+      margin-top: 12px;
+    }
+
+    .field { min-width: 150px; }
+    .field.grow { min-width: 0; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 650;
+    }
+
+    input[type="text"],
+    select,
+    button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    select,
+    button {
+      min-height: 40px;
+      padding: 8px 11px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:disabled {
+      cursor: default;
+      opacity: 0.45;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    .skip-link:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      padding: 8px 10px;
+      border: 2px solid #111;
+      border-radius: 8px;
+      background: #fff;
+      color: #111;
+    }
+
+    .skip-link:focus {
+      left: 24px;
+      top: 24px;
+      z-index: 1000;
+    }
+
+    .result { margin-top: 16px; }
+
+    .breakdown-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 2px 12px;
+      border-block: 1px solid var(--border);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .breakdown {
+      width: max-content;
+      min-width: 100%;
+      padding: 4px 0 8px;
+      font-size: var(--breakdown-font-size);
+    }
+
+    .learning-row {
+      display: grid;
+      grid-template-columns: var(--learning-label-width) max-content;
+      gap: 14px;
+      align-items: center;
+      min-height: 50px;
+      padding: 6px 0;
+    }
+
+    .learning-label {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      padding: 4px 10px 4px 0;
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 750;
+      line-height: 1.3;
+    }
+
+    .aligned-line {
+      display: grid;
+      grid-template-columns: repeat(var(--column-count), minmax(var(--learning-cell-min), auto));
+      column-gap: var(--learning-gap);
+      align-items: center;
+      min-height: 38px;
+      white-space: nowrap;
+    }
+
+    .arrow-row {
+      min-height: 28px;
+      padding-block: 0;
+    }
+
+    .arrow-row .learning-label {
+      min-height: 28px;
+    }
+
+    .arrow-cell {
+      min-height: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.25em;
+      line-height: 1;
+      color: #222;
+      user-select: none;
+    }
+
+    .arrow-cell.dual {
+      justify-content: space-evenly;
+      gap: 4px;
+      font-size: 1.12em;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      min-width: 2.1em;
+      min-height: 2.05em;
+      padding: 0.42em 0.58em;
+      border: 1px solid rgba(63, 71, 80, 0.35);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      line-height: 1;
+    }
+
+    .chip.punctuation { border-style: dashed; }
+
+    .chip.marker {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(63, 71, 80, 0.35);
+      font-weight: 800;
+    }
+
+    .final-word {
+      justify-self: center;
+      min-width: max-content;
+      padding: 0.22em 0.25em;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      text-align: center;
+    }
+
+    .proper-name-sentence-block {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .proper-name-sentence-label {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 750;
+    }
+
+    .proper-name-sentence {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 0.58em;
+      align-items: baseline;
+      font-size: 1.12rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      line-height: 1.8;
+    }
+
+    .proper-name-word {
+      display: inline-flex;
+      gap: 0;
+      white-space: nowrap;
+    }
+
+    .audio-unit {
+      display: inline-block;
+      padding: 0.08em 0.04em;
+      border-radius: 4px;
+      transition: background-color 80ms linear, outline-color 80ms linear;
+    }
+
+    .audio-unit.is-speaking {
+      background: var(--speaking-bg);
+      outline: 2px solid var(--speaking-outline);
+      outline-offset: 1px;
+    }
+
+    .audio-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    .audio-button {
+      min-height: auto;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 2px 6px;
+      vertical-align: baseline;
+    }
+
+    .audio-button:hover { background: transparent; }
+
+    .audio-controls label {
+      display: inline;
+      margin: 0 2px 0 4px;
+    }
+
+    .audio-controls select {
+      min-height: 34px;
+      padding: 5px 8px;
+    }
+
+    .cartouche-stack {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .cartouche-panel {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .cartouche-panel h2 {
+      margin-top: 0;
+    }
+
+    .canvas-scroll {
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .cartouche-canvas-wrap {
+      position: relative;
+      display: inline-block;
+      max-width: none;
+      line-height: 0;
+    }
+
+    .cartouche-highlight-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      border: none;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    canvas {
+      display: block;
+      max-width: none;
+      height: auto;
+      background: transparent;
+    }
+
+
+    .tpLine {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10pt;
+      line-height: 1.25;
+    }
+
+    .tableWrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .digitTable {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+    }
+
+    .digitTable th,
+    .digitTable td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      vertical-align: middle;
+    }
+
+    .digitTable th {
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .digitTable td {
+      font-size: 0.82rem;
+    }
+
+    .nanpaModeTable th,
+    .nanpaModeTable td {
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .nanpaModeTable .modeSubhead {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .nanpaModeTable .modeGap {
+      width: 16px;
+      min-width: 16px;
+      padding-inline: 6px;
+      border-top: 0;
+      border-bottom: 0;
+      background: transparent;
+    }
+
+    .reference-section {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .reference-section + #nanpaLinjaNMode {
+      margin-top: 12px;
+    }
+
+    .disclaimer-section {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .back-to-index {
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .back-to-index h2 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 620px) {
+      .nanpaModeTable th,
+      .nanpaModeTable td {
+        padding: 6px;
+      }
+
+      .nanpaModeTable .modeGap {
+        width: 10px;
+        min-width: 10px;
+        padding-inline: 4px;
+      }
+    }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    [hidden] { display: none !important; }
+
+    @font-face {
+      font-family: "TP-Nasin-Nanpa-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "TP-Numeric-Cartouche-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      font-display: swap;
+    }
+
+    @media (min-width: 900px) {
+      /*
+       * Use more of the desktop viewport and fit normal learning examples
+       * without horizontal scrollbars. Very long values still reduce their
+       * breakdown scale through JavaScript before overflow is allowed.
+       */
+      .card {
+        width: min(1400px, calc(100vw - 48px));
+      }
+
+      .breakdown-scroll,
+      .canvas-scroll {
+        overflow-x: visible;
+      }
+
+      .cartouche-canvas-wrap {
+        max-width: 100%;
+      }
+
+      .cartouche-canvas-wrap > canvas:first-child,
+      .canvas-scroll > canvas {
+        max-width: 100%;
+        height: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body { margin: 12px; }
+      .card { padding: 13px; }
+      .controls { grid-template-columns: 1fr; }
+      .controls button { width: 100%; }
+      :root { --learning-label-width: 155px; --learning-cell-min: 50px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <main id="main" class="card" aria-labelledby="pageTitle">
+    <h1 id="pageTitle">From number to nanpa-linja-n proper name, cartouche, and audio</h1>
+    <p class="help">
+      Enter any numeric form accepted by the shared nanpa-linja-n parser. The page shows the
+      mode-specific units, the addition and reassignment of <strong>n</strong>, the completed
+      proper name, and its full and abbreviated cartouches.
+    </p>
+
+    <section class="disclaimer-section" aria-labelledby="disclaimerTitle">
+      <h2 id="disclaimerTitle">Disclaimer</h2>
+      <div class="help">
+        This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
+        complete, or suitable for any purpose. You are responsible for verifying results.
+        <span class="tpLine">
+          sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pi pona.
+          sina o lukin e ni: sitelen li pona anu seme.
+        </span>
+      </div>
+    </section>
+
+    <form id="numberForm" novalidate>
+
+      <div class="controls">
+        <div class="field grow">
+          <label for="numberInput">Number or supported numeric form</label>
+          <input
+            id="numberInput"
+            type="text"
+            value="-42,386.75"
+            maxlength="500"
+            inputmode="text"
+            autocomplete="off"
+            spellcheck="false"
+            aria-describedby="numberHelp"
+          />
+        </div>
+        <button id="renderButton" type="submit">Render breakdown</button>
+      </div>
+
+      <div id="numberHelp" class="help">
+        Examples: <span class="mono">0.00</span>, <span class="mono">.75</span>,
+        <span class="mono">-12,340</span>, <span class="mono">9¾</span>,
+        <span class="mono">8+1/2</span>, <span class="mono">7/8</span>,
+        <span class="mono">64.5M</span>, <span class="mono">10.5%</span>,
+        <span class="mono">3:49</span>, <span class="mono">2026-07-17</span>,
+        and <span class="mono">4.5e-3</span>. Press Enter or use the button.
+      </div>
+    </form>
+
+    <div id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <section id="result" class="result" aria-label="Number conversion breakdown" hidden>
+      <div id="breakdownScroll" class="breakdown-scroll" tabindex="0" aria-label="Conversion breakdown">
+        <div id="breakdown" class="breakdown">
+          <div class="learning-row">
+            <div class="learning-label">Input components</div>
+            <div id="inputComponents" class="aligned-line"></div>
+          </div>
+
+          <div class="learning-row arrow-row" aria-hidden="true">
+            <div class="learning-label"></div>
+            <div id="inputArrows" class="aligned-line"></div>
+          </div>
+
+          <div class="learning-row">
+            <div class="learning-label">nanpa-linja-n units before reassignment</div>
+            <div id="rawUnits" class="aligned-line"></div>
+          </div>
+
+          <div class="learning-row arrow-row" aria-hidden="true">
+            <div class="learning-label"></div>
+            <div id="rawArrows" class="aligned-line"></div>
+          </div>
+
+          <div class="learning-row">
+            <div class="learning-label">Add the outer markers before reassignment</div>
+            <div id="outerMarkerUnits" class="aligned-line"></div>
+          </div>
+
+          <div class="learning-row arrow-row" aria-hidden="true">
+            <div class="learning-label"></div>
+            <div id="reassignmentArrows" class="aligned-line"></div>
+          </div>
+
+          <div class="learning-row">
+            <div class="learning-label">Complete nanpa-linja-n proper name after reassignment</div>
+            <div id="alignedProperName" class="aligned-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="proper-name-sentence-block">
+        <div class="proper-name-sentence-label">nanpa-linja-n proper name</div>
+        <div id="properNameSentence" class="proper-name-sentence" aria-label="nanpa-linja-n proper name"></div>
+
+        <div class="audio-controls" aria-label="Audio controls">
+          <button
+            id="playToggleButton"
+            class="audio-button"
+            type="button"
+            title="Play nanpa-linja-n proper name"
+            aria-label="Play nanpa-linja-n proper name"
+            disabled
+          >🤖🔊</button>
+          <button
+            id="stopButton"
+            class="audio-button"
+            type="button"
+            title="Stop audio"
+            aria-label="Stop audio"
+            disabled
+          >⏹️</button>
+          <label for="speedSelect">Audio speed</label>
+          <select id="speedSelect">
+            <option value="1.00">Normal</option>
+            <option value="2.25">Slow</option>
+            <option value="4.00">Very slow</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cartouche-stack">
+        <section class="cartouche-panel" aria-labelledby="fullCartoucheTitle">
+          <h2 id="fullCartoucheTitle">nanpa-linja-n sitelen pona full cartouche</h2>
+          <div class="canvas-scroll">
+            <div class="cartouche-canvas-wrap">
+              <canvas id="fullCartouche" aria-hidden="true"></canvas>
+              <canvas
+                id="fullCartoucheHighlight"
+                class="cartouche-highlight-canvas"
+                aria-hidden="true"
+              ></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="cartouche-panel" aria-labelledby="abbreviatedCartoucheTitle">
+          <h2 id="abbreviatedCartoucheTitle">nanpa-linja-n sitelen pona abbreviated cartouche (preferred)</h2>
+          <div class="canvas-scroll">
+            <canvas id="abbreviatedCartouche" aria-hidden="true"></canvas>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="reference-section" aria-labelledby="bottomModeControlTitle">
+      <h2 id="bottomModeControlTitle">
+        Choose nanpa-linja-n mode
+        <span class="tpLine">o pona e nasin pi nanpa-linja-n</span>
+      </h2>
+      <div class="settings" aria-label="nanpa-linja-n settings">
+        <div class="field">
+          <label for="modeSelect">nanpa-linja-n mode</label>
+          <select id="modeSelect">
+            <option value="relaxed">relaxed</option>
+            <option value="strict">strict</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section id="nanpaLinjaNMode" class="reference-section" aria-labelledby="nanpaLinjaNModeTitle">
+        <h1 id="nanpaLinjaNModeTitle" style="margin:0 0 6px;font-size:18px;">
+          nanpa-linja-n mode
+          <span class="tpLine">nasin pi nanpa-linja-n</span>
+        </h1>
+
+<div class="small" style="margin-bottom:10px;">
+  This table shows which syllables are allowed for each decimal digit when reading and writing a nanpa-linja-n proper name. <br/>
+  In <strong>strict mode</strong>, each digit has only one accepted syllable. For example, digit 1 uses <strong>we</strong>, digit 2 uses <strong>te</strong>, and digit 5 uses <strong>le</strong>. <br/>
+  In <strong>relaxed mode</strong>, some digits can also use extra syllables that mean the same digit. For example, digit 1 can use <strong>we</strong> or <strong>wa</strong>, digit 2 can use <strong>te</strong> or <strong>tu</strong>, and digit 5 can use <strong>le</strong> or <strong>lu</strong>. <br/>
+  The <strong>e</strong>, <strong>a</strong>, <strong>i</strong>, and <strong>u</strong> columns show the nanpa-linja-n glyphs for the supporting vowel used in some digit syllables. <br/>
+  For <strong>ni</strong>, <strong>na</strong>, and <strong>nu</strong>, the supporting consonant is represented in nanpa-linja-n by the sitelen pona glyph nena.<br/>
+  The <strong>large glyph</strong> column shows the main sitelen pona glyph used for that digit.<br/>
+  The <strong>small glyph</strong> row shows the small supporting glyph associated with each vowel column.<br/>
+  In relaxed mode, for example, we will accept <strong>Nemun</strong>, as well as <strong>Nemen</strong>, to represent the number 7.<br/>
+  Relaxed mode is preferred because it allows some digits to be represented using more natural syllables.<br/>
+</div>
+
+
+        <div class="tableWrap" role="region" aria-label="strict and relaxed nanpa-linja-n mode table">
+          <table class="digitTable nanpaModeTable">
+            <thead>
+              <tr>
+                <th class="modeSubhead" colspan="6">relaxed</th>
+                <th class="modeGap" aria-hidden="true">&nbsp;</th>
+                <th class="modeSubhead" colspan="6">strict</th>
+              </tr>
+              <tr>
+                <th>digit</th>
+                <th>e</th>
+                <th>a</th>
+                <th>i</th>
+                <th>u</th>
+                <th>large glyph</th>
+                <th class="modeGap" aria-hidden="true">&nbsp;</th>
+                <th>digit</th>
+                <th>e</th>
+                <th>a</th>
+                <th>i</th>
+                <th>u</th>
+                <th>large glyph</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>0</td><td>-</td><td>-</td><td>ni</td><td>-</td><td>ijo</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>0</td><td>-</td><td>-</td><td>ni</td><td>-</td><td>ijo</td>
+              </tr>
+              <tr>
+                <td>1</td><td>we</td><td>wa</td><td>-</td><td>-</td><td>wan</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>1</td><td>we</td><td>-</td><td>-</td><td>-</td><td>wan</td>
+              </tr>
+              <tr>
+                <td>2</td><td>te</td><td>-</td><td>-</td><td>tu</td><td>tu</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>2</td><td>te</td><td>-</td><td>-</td><td>-</td><td>tu</td>
+              </tr>
+              <tr>
+                <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>seli</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>seli</td>
+              </tr>
+              <tr>
+                <td>4</td><td>-</td><td>na</td><td>-</td><td>-</td><td>awen</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>4</td><td>-</td><td>na</td><td>-</td><td>-</td><td>awen</td>
+              </tr>
+              <tr>
+                <td>5</td><td>le</td><td>-</td><td>-</td><td>lu</td><td>luka</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>5</td><td>le</td><td>-</td><td>-</td><td>-</td><td>luka</td>
+              </tr>
+              <tr>
+                <td>6</td><td>-</td><td>-</td><td>-</td><td>nu</td><td>utala</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>6</td><td>-</td><td>-</td><td>-</td><td>nu</td><td>utala</td>
+              </tr>
+              <tr>
+                <td>7</td><td>me</td><td>-</td><td>-</td><td>mu</td><td>mun</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>7</td><td>me</td><td>-</td><td>-</td><td>-</td><td>mun</td>
+              </tr>
+              <tr>
+                <td>8</td><td>pe</td><td>-</td><td>pi</td><td>-</td><td>pipi</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>8</td><td>pe</td><td>-</td><td>-</td><td>-</td><td>pipi</td>
+              </tr>
+              <tr>
+                <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
+              </tr>
+              <tr>
+                <td>small glyph</td><td>en</td><td>ala</td><td>ike</td><td>uta</td><td>&nbsp;</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>small glyph</td><td>en</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    <section class="back-to-index" aria-labelledby="backToIndexTitle">
+      <h2 id="backToIndexTitle">
+        More Toki Pona tools
+        <span class="tpLine">ilo ante lon toki pona</span>
+      </h2>
+      <div class="small">
+        <a class="repoLink" href="./index.html">Return to the Toki Pona nanpa-linja-n main page</a>
+        <span class="tpLine">o tawa lipu open pi nanpa-linja-n</span>
+      </div>
+    </section>
+
+    <div id="srProperName" class="sr-only"></div>
+  </main>
+
+  <script type="module">
+    "use strict";
+
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=176";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=27";
+    import {
+      buildSitelenSentenceAudioBuffersFromRawText,
+      stopSitelenAudioPlayback
+    } from "./js/sitelen-audio-plan.js?v=3";
+
+    const MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
+    const MODE_DEFAULT = "relaxed";
+    const AUDIO_SPEED_STORAGE_KEY = "nanpaListeningQuizAudioPauseScale";
+    const AUDIO_SPEED_DEFAULT = 1.00;
+
+    const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
+    const FONT_FAMILY_NUMBER = "TP-Numeric-Cartouche-Font";
+    const CARTOUCHE_START_CP = 0xF1990;
+    const CARTOUCHE_END_CP = 0xF1991;
+
+    const AUDIO_SPEED_OPTIONS = Object.freeze({
+      "1.00": { label: "Normal", syllableGapSeconds: 0.200 },
+      "2.25": { label: "Slow", syllableGapSeconds: 0.700 },
+      "4.00": { label: "Very slow", syllableGapSeconds: 1.402 }
+    });
+
+    const STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
+      WE: "WA",
+      TE: "TU",
+      LE: "LU",
+      ME: "MU",
+      PE: "PI"
+    });
+
+    const RELAXED_TO_STRICT_DIGIT_TOKEN = Object.freeze({
+      WA: "WE",
+      TU: "TE",
+      LU: "LE",
+      MU: "ME",
+      PI: "PE"
+    });
+
+    const DIGIT_TOKENS = new Set([
+      "NI", "WE", "WA", "TE", "TU", "SE", "NA", "LE", "LU", "NU", "ME", "MU", "PE", "PI", "JE"
+    ]);
+
+    /*
+     * Numeric punctuation recordings are complete nanpa_v2 audio units.
+     * They are not split with the ordinary Toki Pona syllable parser.
+     */
+    const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
+      "Eke", "Eken", "Ekeke", "Ekeken", "Ekekeke", "Ekekeken",
+      "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
+    ]);
+
+    const el = {
+      form: document.getElementById("numberForm"),
+      input: document.getElementById("numberInput"),
+      mode: document.getElementById("modeSelect"),
+      speed: document.getElementById("speedSelect"),
+      playToggle: document.getElementById("playToggleButton"),
+      stop: document.getElementById("stopButton"),
+      status: document.getElementById("status"),
+      result: document.getElementById("result"),
+      breakdownScroll: document.getElementById("breakdownScroll"),
+      breakdown: document.getElementById("breakdown"),
+      inputComponents: document.getElementById("inputComponents"),
+      inputArrows: document.getElementById("inputArrows"),
+      rawUnits: document.getElementById("rawUnits"),
+      rawArrows: document.getElementById("rawArrows"),
+      outerMarkerUnits: document.getElementById("outerMarkerUnits"),
+      reassignmentArrows: document.getElementById("reassignmentArrows"),
+      alignedProperName: document.getElementById("alignedProperName"),
+      properNameSentence: document.getElementById("properNameSentence"),
+      srProperName: document.getElementById("srProperName"),
+      fullCartouche: document.getElementById("fullCartouche"),
+      fullCartoucheHighlight: document.getElementById("fullCartoucheHighlight"),
+      abbreviatedCartouche: document.getElementById("abbreviatedCartouche")
+    };
+
+    let rendererPromise = null;
+    let voicePromise = null;
+    let currentModel = null;
+    let lastSubmittedInput = "";
+    let renderJobId = 0;
+
+    let audioGeneration = 0;
+    let audioBusy = false;
+    let audioState = "stopped";
+    let audioSession = null;
+
+    function normalizeMode(value) {
+      return String(value ?? "").trim().toLowerCase() === "strict" ? "strict" : "relaxed";
+    }
+
+    function loadMode() {
+      try {
+        const stored = localStorage.getItem(MODE_STORAGE_KEY);
+        return stored == null ? MODE_DEFAULT : normalizeMode(stored);
+      } catch {
+        return MODE_DEFAULT;
+      }
+    }
+
+    function saveMode(value) {
+      const mode = normalizeMode(value);
+      try { localStorage.setItem(MODE_STORAGE_KEY, mode); } catch {}
+      return mode;
+    }
+
+    function normalizeSpeed(value) {
+      const key = Number(value).toFixed(2);
+      return Object.prototype.hasOwnProperty.call(AUDIO_SPEED_OPTIONS, key)
+        ? key
+        : AUDIO_SPEED_DEFAULT.toFixed(2);
+    }
+
+    function loadSpeed() {
+      try {
+        const stored = localStorage.getItem(AUDIO_SPEED_STORAGE_KEY);
+        return stored == null ? AUDIO_SPEED_DEFAULT.toFixed(2) : normalizeSpeed(stored);
+      } catch {
+        return AUDIO_SPEED_DEFAULT.toFixed(2);
+      }
+    }
+
+    function saveSpeed(value) {
+      const speed = normalizeSpeed(value);
+      try { localStorage.setItem(AUDIO_SPEED_STORAGE_KEY, speed); } catch {}
+      return speed;
+    }
+
+    function selectedAudioOption() {
+      return AUDIO_SPEED_OPTIONS[normalizeSpeed(el.speed.value)];
+    }
+
+    function setStatus(message, kind = "") {
+      el.status.textContent = String(message ?? "");
+      el.status.classList.toggle("error", kind === "error");
+    }
+
+    function rendererFontRoles() {
+      return {
+        word: FONT_FAMILY_TEXT,
+        text: FONT_FAMILY_TEXT,
+        cartouche: FONT_FAMILY_NUMBER,
+        number: FONT_FAMILY_NUMBER,
+        literal: FONT_FAMILY_TEXT,
+        literalCartouche: FONT_FAMILY_TEXT,
+        unknown: FONT_FAMILY_TEXT
+      };
+    }
+
+    function rendererConfig(model, { abbreviated = false, fontPx = 64 } = {}) {
+      const relaxed = model?.mode === "relaxed";
+      return {
+        layout: {
+          fontPx,
+          paddingPx: 10,
+          align: "left",
+          spacingPreset: "compact"
+        },
+        paint: {
+          fillStyle: "#111111",
+          halo: { enabled: false, color: "#ffffff", widthPx: 0 }
+        },
+        parser: {
+          mode: "sitelen-seli-kiwen",
+          numericMode: "uniform",
+          mixedStyle: "short",
+          relaxedNanpaLinjanParsing: relaxed,
+          relaxedNanpaLinjanRendering: relaxed,
+          abbreviateNumericCartouches: abbreviated,
+          autoCartoucheStandaloneProperNames: true
+        },
+        fonts: {
+          roles: rendererFontRoles()
+        }
+      };
+    }
+
+    async function getRenderer() {
+      if (!rendererPromise) {
+        rendererPromise = SitelenRenderer.create({
+          fonts: { roles: rendererFontRoles() }
+        });
+      }
+      return rendererPromise;
+    }
+
+    async function getVoice() {
+      if (!voicePromise) voicePromise = createTokiPonaVoice();
+      return voicePromise;
+    }
+
+    function modeTokensFromStrictTokens(strictTokens, mode) {
+      if (normalizeMode(mode) === "strict") return Array.from(strictTokens);
+      return Array.from(strictTokens, token => STRICT_TO_RELAXED_DIGIT_TOKEN[token] || token);
+    }
+
+    function titleCaseWords(text) {
+      return String(text ?? "")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(word => word.length <= 1 ? word.toUpperCase() : word[0].toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+    }
+
+    function splitTokiPonaSyllables(word) {
+      const source = String(word ?? "");
+      const lower = source.toLowerCase();
+      const vowels = new Set(["a", "e", "i", "o", "u"]);
+      const consonants = new Set(["p", "t", "k", "m", "n", "s", "w", "l", "j"]);
+      const out = [];
+      let i = 0;
+
+      while (i < lower.length) {
+        const start = i;
+        if (consonants.has(lower[i])) i += 1;
+        if (i >= lower.length || !vowels.has(lower[i])) return [source];
+        i += 1;
+
+        if (i < lower.length && lower[i] === "n") {
+          const following = i + 1 < lower.length ? lower[i + 1] : "";
+          if (!following || consonants.has(following)) i += 1;
+        }
+
+        out.push(source.slice(start, i));
+      }
+
+      return out.length ? out : [source];
+    }
+
+    function buildAudioUnits(properName) {
+      const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+      const units = [];
+      let index = 0;
+
+      for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+        const word = words[wordIndex];
+        const wordUnits = WHOLE_NUMERIC_AUDIO_WORDS.has(word)
+          ? [word]
+          : splitTokiPonaSyllables(word);
+
+        for (let unitIndexInWord = 0; unitIndexInWord < wordUnits.length; unitIndexInWord++) {
+          units.push({
+            index,
+            text: wordUnits[unitIndexInWord],
+            word,
+            wordIndex,
+            unitIndexInWord,
+            wholeNumericPunctuationWord: WHOLE_NUMERIC_AUDIO_WORDS.has(word)
+          });
+          index += 1;
+        }
+      }
+
+      return units;
+    }
+
+    function formatParserInputForComponents(parsed, parserDisplayInput) {
+      const source = String(parserDisplayInput ?? "").trim();
+
+      if (parsed?.isTime) {
+        return source.replace(/,/g, ":");
+      }
+
+      if (parsed?.isDate) {
+        return source.replace(/,/g, "-");
+      }
+
+      return source;
+    }
+
+    function buildModel(rawInput, mode) {
+      const trimmedInput = String(rawInput ?? "").trim();
+      const normalizedMode = normalizeMode(mode);
+      const strictParsed = NanpaParser.parseNumber(trimmedInput, {
+        mode: "uniform",
+        mixedStyle: "short",
+        relaxedNanpaLinjanParsing: true
+      });
+
+      if (!strictParsed?.caps) {
+        throw new Error("The input is not a numeric format accepted by the nanpa-linja-n parser.");
+      }
+
+      const parsedTokens = NanpaParser.tokenizeCaps(strictParsed.caps, {
+        relaxedNanpaLinjanParsing: true
+      });
+      const strictTokens = parsedTokens.map(token => RELAXED_TO_STRICT_DIGIT_TOKEN[token] || token);
+      const tokens = modeTokensFromStrictTokens(strictTokens, normalizedMode);
+      const caps = tokens.join("");
+      const relaxed = normalizedMode === "relaxed";
+
+      const properName = titleCaseWords(NanpaParser.splitCapsToProperName(caps, {
+        titleCase: true,
+        relaxedNanpaLinjanParsing: relaxed
+      }));
+
+      const cartouche = NanpaParser.capsToCodepoints(caps, {
+        mode: "uniform",
+        mixedStyle: "short",
+        relaxedNanpaLinjanParsing: relaxed,
+        relaxedNanpaLinjanRendering: relaxed
+      });
+
+      if (!properName || !cartouche?.innerCodepoints?.length) {
+        throw new Error("The input was parsed, but the proper name or cartouche could not be generated.");
+      }
+
+      const parserDisplayInput = String(
+        strictParsed.displayValue ??
+        NanpaParser.decodeCaps(caps, {
+          relaxedNanpaLinjanParsing: relaxed,
+          relaxedNanpaLinjanRendering: relaxed
+        }) ??
+        trimmedInput
+      ).trim();
+
+      const componentDisplayInput =
+        formatParserInputForComponents(strictParsed, parserDisplayInput);
+
+      const rawUnits = rawUnitsFromCapsTokens(tokens);
+      const inputSourceCells =
+        inputSourceCellsForRawUnits(componentDisplayInput, rawUnits);
+      const audioUnits = buildAudioUnits(properName);
+      const finalWordPlacements = buildFinalWordPlacements(rawUnits, properName);
+      const hundredsSplitLeadingNiIndexes =
+        findHundredsSplitLeadingNiIndexes(rawUnits, properName);
+
+      return {
+        rawInput: trimmedInput,
+        parserDisplayInput,
+        componentDisplayInput,
+        mode: normalizedMode,
+        strictParsed,
+        tokens,
+        caps,
+        properName,
+        cartouche,
+        rawUnits,
+        inputSourceCells,
+        audioUnits,
+        finalWordPlacements,
+        hundredsSplitLeadingNiIndexes
+      };
+    }
+
+    function rawUnitsFromCapsTokens(tokens) {
+      const body = Array.from(tokens ?? []).slice(1, -1);
+      const units = [];
+
+      for (let i = 0; i < body.length;) {
+        const token = body[i];
+        const next = body[i + 1] || null;
+
+        if (DIGIT_TOKENS.has(token)) {
+          units.push({ text: token.toLowerCase(), kind: "digit", sourceTokens: [token], reassignLeadingN: false });
+          i += 1;
+          continue;
+        }
+
+        if (token === "OK") {
+          units.push({ text: "oke", kind: "percent", sourceTokens: [token], reassignLeadingN: false });
+          i += 1;
+          continue;
+        }
+
+        if (token === "NE") {
+          if (next === "NE" || next === "KO") {
+            units.push({
+              text: (token + next).toLowerCase(),
+              kind: "punctuation",
+              sourceTokens: [token, next],
+              reassignLeadingN: true
+            });
+            i += 2;
+            continue;
+          }
+
+          if (next === "KE" || next === "KEKE" || next === "KEKEKE") {
+            const sourceTokens = [token];
+            let text = token.toLowerCase();
+            i += 1;
+            while (i < body.length && (body[i] === "KE" || body[i] === "KEKE" || body[i] === "KEKEKE")) {
+              sourceTokens.push(body[i]);
+              text += body[i].toLowerCase();
+              i += 1;
+            }
+            units.push({ text, kind: "punctuation", sourceTokens, reassignLeadingN: true });
+            continue;
+          }
+
+          units.push({ text: "ne", kind: "punctuation", sourceTokens: [token], reassignLeadingN: true });
+          i += 1;
+          continue;
+        }
+
+        if (token === "NO" && next === "NE") {
+          units.push({ text: "none", kind: "punctuation", sourceTokens: [token, next], reassignLeadingN: true });
+          i += 2;
+          continue;
+        }
+
+        if (token === "NO") {
+          units.push({ text: "no", kind: "negative", sourceTokens: [token], reassignLeadingN: false });
+          i += 1;
+          continue;
+        }
+
+        if (token === "NONO" || token === "NONONO" || token === "NOKO") {
+          units.push({ text: token.toLowerCase(), kind: "punctuation", sourceTokens: [token], reassignLeadingN: true });
+          i += 1;
+          continue;
+        }
+
+        if (token === "KO" || token === "KE" || token === "KEKE" || token === "KEKEKE") {
+          units.push({ text: token.toLowerCase(), kind: "punctuation", sourceTokens: [token], reassignLeadingN: false });
+          i += 1;
+          continue;
+        }
+
+        units.push({
+          text: token.toLowerCase(),
+          kind: "punctuation",
+          sourceTokens: [token],
+          reassignLeadingN: token.startsWith("N")
+        });
+        i += 1;
+      }
+
+      return units;
+    }
+
+    function findHundredsSplitLeadingNiIndexes(rawUnits, properName) {
+      const ininWordCount = String(properName ?? "")
+        .trim()
+        .split(/\s+/)
+        .filter(word => word === "Inin")
+        .length;
+
+      if (!ininWordCount) return [];
+
+      /*
+       * The special hundreds split changes a trailing ni + ni sequence into:
+       *
+       *   ...n | Inin
+       *
+       * The first ni therefore has two destinations:
+       *   ↙ its initial n joins the preceding proper-name word;
+       *   ↓ its remaining i begins Inin.
+       *
+       * Exact Inin words are the parser's signal that this special split was
+       * actually applied. Ordinary ni syllables retain a single south arrow.
+       */
+      const candidateIndexes = [];
+
+      for (let index = 0; index + 1 < rawUnits.length; index += 1) {
+        const first = rawUnits[index];
+        const second = rawUnits[index + 1];
+
+        if (
+          first?.kind === "digit" &&
+          second?.kind === "digit" &&
+          first.text === "ni" &&
+          second.text === "ni"
+        ) {
+          candidateIndexes.push(index);
+        }
+      }
+
+      /*
+       * The split applies to the final qualifying hundreds groups. Selecting
+       * from the right prevents earlier ordinary zero pairs from being marked
+       * when the completed proper name contains fewer Inin words.
+       */
+      return candidateIndexes
+        .slice(-ininWordCount)
+        .sort((a, b) => a - b);
+    }
+
+    function buildFinalWordPlacements(rawUnits, properName) {
+      const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+      const placements = [];
+      const rightMarkerColumn = rawUnits.length + 2;
+      let wordIndex = 0;
+      let currentStartColumn = 1;
+      let startUnitIndex = 0;
+
+      if (rawUnits[0]?.kind === "negative" && words[wordIndex]) {
+        placements.push({
+          word: words[wordIndex++],
+          startColumn: 1,
+          endColumn: 2
+        });
+        currentStartColumn = 3;
+        startUnitIndex = 1;
+      }
+
+      for (let unitIndex = startUnitIndex; unitIndex < rawUnits.length; unitIndex++) {
+        const unit = rawUnits[unitIndex];
+        const column = unitIndex + 2;
+
+        if (unit.kind === "percent") {
+          if (currentStartColumn <= column - 1 && words[wordIndex]) {
+            placements.push({
+              word: words[wordIndex++],
+              startColumn: currentStartColumn,
+              endColumn: column - 1
+            });
+          }
+          if (words[wordIndex]) {
+            placements.push({
+              word: words[wordIndex++],
+              startColumn: column,
+              endColumn: rightMarkerColumn
+            });
+          }
+          currentStartColumn = rightMarkerColumn + 1;
+          break;
+        }
+
+        if (unit.reassignLeadingN) {
+          if (currentStartColumn <= column - 1 && words[wordIndex]) {
+            placements.push({
+              word: words[wordIndex++],
+              startColumn: currentStartColumn,
+              endColumn: column - 1
+            });
+          }
+
+          if (words[wordIndex]) {
+            placements.push({
+              word: words[wordIndex++],
+              startColumn: column,
+              endColumn: column
+            });
+          }
+
+          currentStartColumn = column + 1;
+        }
+      }
+
+      if (wordIndex < words.length && currentStartColumn <= rightMarkerColumn) {
+        placements.push({
+          word: words[wordIndex++],
+          startColumn: currentStartColumn,
+          endColumn: rightMarkerColumn
+        });
+      }
+
+      if (wordIndex !== words.length) {
+        return distributeWordPlacements(words, rightMarkerColumn);
+      }
+
+      return placements;
+    }
+
+    function distributeWordPlacements(words, columnCount) {
+      const count = Math.max(1, words.length);
+      return words.map((word, index) => {
+        const start = 1 + Math.floor(index * columnCount / count);
+        const end = Math.max(start, Math.floor((index + 1) * columnCount / count));
+        return { word, startColumn: start, endColumn: Math.min(columnCount, end) };
+      });
+    }
+
+    function graphemes(text) {
+      const source = String(text ?? "");
+      if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+        return Array.from(
+          new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(source),
+          item => item.segment
+        );
+      }
+      return Array.from(source);
+    }
+
+    function makeInputSourceCell(text = "", arrowKind = "none", sourceKind = "") {
+      return {
+        text: String(text ?? ""),
+        arrowKind,
+        sourceKind
+      };
+    }
+
+    function sourceCharacterMatchesUnit(character, unit) {
+      const ch = String(character ?? "");
+      if (!unit) return false;
+
+      if (unit.kind === "digit") return /\d/u.test(ch);
+      if (unit.kind === "negative") return /[-−‒–—]/u.test(ch);
+      if (unit.kind === "percent") return ch === "%";
+      if (unit.text === "none") return ch === ".";
+      if (unit.text === "nono") return ch === "/" || ch === "⁄";
+      if (unit.text === "nonono") return ch === "+";
+      if (/^neke/i.test(unit.text)) return /[,/:_\-]/u.test(ch);
+      if (/^eko/i.test(unit.text)) return /[eE]/u.test(ch);
+      if (/^ene/i.test(unit.text)) return /\s|_/u.test(ch);
+      return false;
+    }
+
+    function fallbackInputSourceCells(rawInput, rawUnits) {
+      const visible = graphemes(rawInput).filter(part => !/\s/u.test(part));
+
+      if (visible.length === rawUnits.length) {
+        return visible.map(text => makeInputSourceCell(text, "down", "one-to-one"));
+      }
+
+      const remaining = visible.map((text, index) => ({ text, index, used: false }));
+      const result = [];
+
+      function takeMatching(unit) {
+        const found = remaining.find(item =>
+          !item.used && sourceCharacterMatchesUnit(item.text, unit)
+        );
+        if (!found) return "";
+        found.used = true;
+        return found.text;
+      }
+
+      for (const unit of rawUnits) {
+        let value = takeMatching(unit);
+
+        if (!value) {
+          const next = remaining.find(item => !item.used);
+          if (next) {
+            next.used = true;
+            value = next.text;
+          }
+        }
+
+        result.push(
+          value
+            ? makeInputSourceCell(value, "down", "fallback")
+            : makeInputSourceCell("", "none", "unmapped")
+        );
+      }
+
+      const leftovers = remaining
+        .filter(item => !item.used)
+        .map(item => item.text)
+        .join("");
+
+      if (leftovers && result.length) {
+        let targetIndex = result.length - 1;
+        while (targetIndex > 0 && !result[targetIndex].text) targetIndex -= 1;
+        result[targetIndex].text += leftovers;
+      }
+
+      return result;
+    }
+
+    function findScientificExponentExpansionStart(rawUnits) {
+      for (let i = 0; i + 3 < rawUnits.length; i++) {
+        const a = rawUnits[i];
+        const b = rawUnits[i + 1];
+        const c = rawUnits[i + 2];
+        const d = rawUnits[i + 3];
+
+        const exponentOne =
+          b?.kind === "digit" &&
+          (b.text === "we" || b.text === "wa");
+
+        if (
+          a?.text === "neko" &&
+          exponentOne &&
+          c?.text === "ni" &&
+          d?.text === "neko"
+        ) {
+          return i;
+        }
+      }
+
+      return -1;
+    }
+
+    function scientificInputSourceCells(rawInput, rawUnits) {
+      const normalized = String(rawInput ?? "")
+        .trim()
+        .replace(/[−‒–—]/g, "-");
+
+      /*
+       * Source grouping for scientific notation is explicit rather than
+       * character-to-unit guessing. The exponent marker expands as:
+       *
+       *   e -> neko | we/wa | ni | neko
+       *
+       * The e occupies the first output column, the next three source cells
+       * remain blank, and its arrow cell contains ↓ followed by ↘.
+       */
+      const match = /^([+-]?)(.*?)([eE])([+-]?)(\d+)$/u.exec(normalized);
+      if (!match) return null;
+
+      const mantissaText = `${match[1]}${match[2]}`;
+      if (!/\d/u.test(mantissaText)) return null;
+
+      const expansionStart = findScientificExponentExpansionStart(rawUnits);
+      if (expansionStart < 0) return null;
+
+      const expansionLength = 4;
+      const expansionEnd = expansionStart + expansionLength;
+      if (expansionEnd > rawUnits.length) return null;
+
+      const mantissaUnits = rawUnits.slice(0, expansionStart);
+      const exponentUnits = rawUnits.slice(expansionEnd);
+
+      const mantissaCells = fallbackInputSourceCells(mantissaText, mantissaUnits);
+      const exponentSource = `${match[4]}${match[5]}`;
+      const exponentCells = fallbackInputSourceCells(exponentSource, exponentUnits);
+
+      if (
+        mantissaCells.length !== mantissaUnits.length ||
+        exponentCells.length !== exponentUnits.length
+      ) {
+        return null;
+      }
+
+      return [
+        ...mantissaCells,
+        makeInputSourceCell(match[3], "expand-southeast", "scientific-exponent-marker"),
+        makeInputSourceCell("", "none", "scientific-expansion-continuation"),
+        makeInputSourceCell("", "none", "scientific-expansion-continuation"),
+        makeInputSourceCell("", "none", "scientific-expansion-continuation"),
+        ...exponentCells
+      ];
+    }
+
+    function inputSourceCellsForRawUnits(rawInput, rawUnits) {
+      const scientific = scientificInputSourceCells(rawInput, rawUnits);
+      if (scientific && scientific.length === rawUnits.length) return scientific;
+      return fallbackInputSourceCells(rawInput, rawUnits);
+    }
+
+    function clearElement(node) {
+      while (node.firstChild) node.firstChild.remove();
+    }
+
+    function setColumnCount(node, count) {
+      node.style.setProperty("--column-count", String(Math.max(1, count)));
+    }
+
+    function placeAt(node, column, span = 1) {
+      node.style.gridColumn = `${column} / span ${Math.max(1, span)}`;
+    }
+
+    function makeChip(text, className = "") {
+      const span = document.createElement("span");
+      span.className = `chip ${className}`.trim();
+      span.textContent = text;
+      return span;
+    }
+
+    function appendEmptyCell(line, column) {
+      const cell = document.createElement("span");
+      cell.setAttribute("aria-hidden", "true");
+      placeAt(cell, column);
+      line.appendChild(cell);
+    }
+
+    function renderInputComponents(model, columnCount) {
+      clearElement(el.inputComponents);
+      setColumnCount(el.inputComponents, columnCount);
+
+      appendEmptyCell(el.inputComponents, 1);
+
+      model.inputSourceCells.forEach((component, index) => {
+        if (!component.text) return;
+        const chip = makeChip(component.text);
+        chip.title = component.sourceKind === "scientific-exponent-marker"
+          ? "The scientific-notation exponent marker expands into four nanpa-linja-n units"
+          : "Input component";
+        placeAt(chip, index + 2);
+        el.inputComponents.appendChild(chip);
+      });
+
+      appendEmptyCell(el.inputComponents, columnCount);
+    }
+
+    function renderInputArrows(line, model, columnCount) {
+      clearElement(line);
+      setColumnCount(line, columnCount);
+      appendEmptyCell(line, 1);
+
+      model.inputSourceCells.forEach((component, index) => {
+        if (component.arrowKind === "none") return;
+
+        const arrow = document.createElement("span");
+        const column = index + 2;
+
+        if (component.arrowKind === "expand-southeast") {
+          arrow.className = "arrow-cell dual";
+          arrow.innerHTML =
+            '<span title="The source symbol maps to the first generated unit">↓</span>' +
+            '<span title="The source symbol expands across the following generated units">↘</span>';
+        } else {
+          arrow.className = "arrow-cell";
+          arrow.textContent = "↓";
+        }
+
+        placeAt(arrow, column);
+        line.appendChild(arrow);
+      });
+
+      appendEmptyCell(line, columnCount);
+    }
+
+    function renderStraightArrows(line, model, columnCount) {
+      clearElement(line);
+      setColumnCount(line, columnCount);
+      appendEmptyCell(line, 1);
+      model.rawUnits.forEach((_unit, index) => {
+        const arrow = document.createElement("span");
+        arrow.className = "arrow-cell";
+        arrow.textContent = "↓";
+        placeAt(arrow, index + 2);
+        line.appendChild(arrow);
+      });
+      appendEmptyCell(line, columnCount);
+    }
+
+    function renderRawUnits(model, columnCount) {
+      clearElement(el.rawUnits);
+      setColumnCount(el.rawUnits, columnCount);
+      appendEmptyCell(el.rawUnits, 1);
+
+      model.rawUnits.forEach((unit, index) => {
+        const className =
+          unit.kind === "punctuation" || unit.kind === "percent"
+            ? "punctuation"
+            : "";
+        const chip = makeChip(unit.text, className);
+        chip.title = unit.kind === "digit"
+          ? "Mode-specific digit syllable"
+          : unit.kind === "negative"
+            ? "Negative marker: no never undergoes n reassignment"
+            : "Numeric punctuation shown as a separate word before n reassignment";
+        placeAt(chip, index + 2);
+        el.rawUnits.appendChild(chip);
+      });
+
+      appendEmptyCell(el.rawUnits, columnCount);
+    }
+
+    function renderOuterMarkerUnits(model, columnCount) {
+      clearElement(el.outerMarkerUnits);
+      setColumnCount(el.outerMarkerUnits, columnCount);
+
+      const start = makeChip("Ne-", "marker");
+      placeAt(start, 1);
+      el.outerMarkerUnits.appendChild(start);
+
+      model.rawUnits.forEach((unit, index) => {
+        const className =
+          unit.kind === "punctuation" || unit.kind === "percent"
+            ? "punctuation"
+            : "";
+        const chip = makeChip(unit.text, className);
+        placeAt(chip, index + 2);
+        el.outerMarkerUnits.appendChild(chip);
+      });
+
+      const end = makeChip("-n", "marker");
+      placeAt(end, columnCount);
+      el.outerMarkerUnits.appendChild(end);
+    }
+
+    function renderReassignmentArrows(model, columnCount) {
+      clearElement(el.reassignmentArrows);
+      setColumnCount(el.reassignmentArrows, columnCount);
+
+      const startArrow = document.createElement("span");
+      startArrow.className = "arrow-cell";
+      startArrow.textContent = "↘";
+      startArrow.title = "The opening Ne- joins the first proper-name word";
+      placeAt(startArrow, 1);
+      el.reassignmentArrows.appendChild(startArrow);
+
+      model.rawUnits.forEach((unit, index) => {
+        const arrow = document.createElement("span");
+        const column = index + 2;
+
+        if (model.hundredsSplitLeadingNiIndexes?.includes(index)) {
+          arrow.className = "arrow-cell dual";
+          arrow.innerHTML =
+            '<span title="In the special hundreds split, this n moves to the preceding proper-name word">↙</span>' +
+            '<span title="In the special hundreds split, the remaining i begins Inin">↓</span>';
+        } else if (unit.reassignLeadingN) {
+          arrow.className = "arrow-cell dual";
+          arrow.innerHTML =
+            '<span title="The starting n moves to the preceding proper-name word">↙</span>' +
+            '<span title="The remainder forms the word directly below">↓</span>';
+        } else {
+          arrow.className = "arrow-cell";
+          arrow.textContent = "↓";
+        }
+
+        placeAt(arrow, column);
+        el.reassignmentArrows.appendChild(arrow);
+      });
+
+      const endArrow = document.createElement("span");
+      endArrow.className = "arrow-cell";
+      endArrow.textContent = "↙";
+      endArrow.title = "The closing -n joins the final proper-name word";
+      placeAt(endArrow, columnCount);
+      el.reassignmentArrows.appendChild(endArrow);
+    }
+
+    function renderAlignedProperName(model, columnCount) {
+      clearElement(el.alignedProperName);
+      setColumnCount(el.alignedProperName, columnCount);
+
+      for (const placement of model.finalWordPlacements) {
+        const word = document.createElement("span");
+        word.className = "final-word";
+        word.textContent = placement.word;
+        word.style.gridColumn =
+          `${placement.startColumn} / ${Math.min(columnCount + 1, placement.endColumn + 1)}`;
+        el.alignedProperName.appendChild(word);
+      }
+    }
+
+    function renderProperNameSentence(model) {
+      clearElement(el.properNameSentence);
+
+      const words = model.properName.split(/\s+/).filter(Boolean);
+      let globalUnitIndex = 0;
+
+      for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+        const wordText = words[wordIndex];
+        const word = document.createElement("span");
+        word.className = "proper-name-word";
+
+        const units = model.audioUnits.filter(unit => unit.wordIndex === wordIndex);
+        for (const unit of units) {
+          const span = document.createElement("span");
+          span.className = "audio-unit";
+          span.dataset.audioUnitIndex = String(globalUnitIndex);
+          span.textContent = unit.text;
+          span.title = unit.wholeNumericPunctuationWord
+            ? "Complete numeric-punctuation audio word"
+            : "nanpa_v2 digit or supporting syllable";
+          word.appendChild(span);
+          globalUnitIndex += 1;
+        }
+
+        el.properNameSentence.appendChild(word);
+      }
+
+      el.properNameSentence.setAttribute("aria-label", model.properName);
+      el.srProperName.textContent = model.properName;
+    }
+
+    function setResponsiveBreakdownScale(model) {
+      const score = Math.max(model.rawUnits.length, model.audioUnits.length);
+      const fontPx = score <= 18 ? 16
+        : score <= 30 ? 14.7
+          : score <= 50 ? 13.1
+            : 11.8;
+
+      const cellMinPx = score <= 18 ? 56
+        : score <= 30 ? 50
+          : score <= 50 ? 44
+            : 38;
+
+      const gapPx = score <= 30 ? 8 : score <= 50 ? 6 : 4;
+
+      el.breakdown.style.setProperty("--breakdown-font-size", `${fontPx}px`);
+      el.breakdown.style.setProperty("--learning-cell-min", `${cellMinPx}px`);
+      el.breakdown.style.setProperty("--learning-gap", `${gapPx}px`);
+      el.breakdown.style.setProperty("--learning-label-width", "205px");
+    }
+
+    function fitBreakdownToDesktop() {
+      if (!el.breakdownScroll || !el.breakdown) return;
+      if (!window.matchMedia("(min-width: 900px)").matches) return;
+
+      const container = el.breakdownScroll;
+      const breakdown = el.breakdown;
+      const availableWidth = Math.max(1, container.clientWidth - 4);
+
+      let fontPx = parseFloat(getComputedStyle(breakdown).fontSize) || 16;
+      let cellMinPx = parseFloat(
+        getComputedStyle(breakdown).getPropertyValue("--learning-cell-min")
+      ) || 56;
+      let gapPx = parseFloat(
+        getComputedStyle(breakdown).getPropertyValue("--learning-gap")
+      ) || 8;
+      let labelWidthPx = parseFloat(
+        getComputedStyle(breakdown).getPropertyValue("--learning-label-width")
+      ) || 205;
+
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const contentWidth = breakdown.scrollWidth;
+        if (contentWidth <= availableWidth + 1) break;
+
+        const ratio = Math.max(
+          0.78,
+          Math.min(0.96, availableWidth / Math.max(1, contentWidth))
+        );
+
+        fontPx = Math.max(10, fontPx * ratio);
+        cellMinPx = Math.max(28, cellMinPx * ratio);
+        gapPx = Math.max(2, gapPx * ratio);
+        labelWidthPx = Math.max(150, labelWidthPx * Math.max(0.90, ratio));
+
+        breakdown.style.setProperty("--breakdown-font-size", `${fontPx}px`);
+        breakdown.style.setProperty("--learning-cell-min", `${cellMinPx}px`);
+        breakdown.style.setProperty("--learning-gap", `${gapPx}px`);
+        breakdown.style.setProperty("--learning-label-width", `${labelWidthPx}px`);
+
+        // Force layout before the next measurement.
+        void breakdown.offsetWidth;
+      }
+    }
+
+    function scheduleDesktopBreakdownFit() {
+      requestAnimationFrame(() => {
+        fitBreakdownToDesktop();
+      });
+    }
+
+    function copyCanvas(source, target) {
+      target.width = Math.max(1, source.width);
+      target.height = Math.max(1, source.height);
+      const ctx = target.getContext("2d", { alpha: true });
+      ctx.clearRect(0, 0, target.width, target.height);
+      ctx.drawImage(source, 0, 0);
+    }
+
+    function compactProperNameLetters(properName) {
+      return String(properName ?? "").replace(/\s+/g, "");
+    }
+
+    function findNumericCartoucheRun(plan) {
+      const runs = Array.isArray(plan?.lines)
+        ? plan.lines.flatMap(line => Array.isArray(line?.runs) ? line.runs : [])
+        : [];
+
+      return runs.find(run => {
+        const kind = String(run?.kind ?? run?._element?.type ?? "").toLowerCase();
+        const cps = Array.isArray(run?.cps)
+          ? run.cps
+          : (Array.isArray(run?._element?.cps) ? run._element.cps : []);
+        return kind === "cartouche" && cps.length > 0;
+      }) || null;
+    }
+
+    function syncFullCartoucheHighlightCanvasSize() {
+      const overlay = el.fullCartoucheHighlight;
+      const base = el.fullCartouche;
+      if (!overlay || !base) return;
+
+      const width = Math.max(1, Number(base.width) || 1);
+      const height = Math.max(1, Number(base.height) || 1);
+      if (overlay.width !== width) overlay.width = width;
+      if (overlay.height !== height) overlay.height = height;
+    }
+
+    function clearFullCartoucheHighlight() {
+      const overlay = el.fullCartoucheHighlight;
+      if (!overlay) return;
+      syncFullCartoucheHighlightCanvasSize();
+      const ctx = overlay.getContext("2d", { alpha: true });
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+    }
+
+    function compactCartouchePadForPx(fontPx) {
+      const px = Math.max(8, Number(fontPx) || 36);
+      return Math.max(2, Math.round(px * 0.06));
+    }
+
+    function measuredPrefixAdvance(ctx, cps, count) {
+      const prefix = [
+        CARTOUCHE_START_CP,
+        ...Array.from(cps || []).slice(0, Math.max(0, count))
+      ];
+      const text = prefix.map(cp => String.fromCodePoint(cp)).join("");
+      return ctx.measureText(text).width;
+    }
+
+    function buildFullCartoucheHighlightMap(model, plan) {
+      const run = findNumericCartoucheRun(plan);
+      if (!run) return [];
+
+      const cps = Array.isArray(run.cps)
+        ? Array.from(run.cps, Number)
+        : Array.from(run?._element?.cps || [], Number);
+
+      const compactName = compactProperNameLetters(model.properName);
+      const unitLetterCount = model.audioUnits.reduce(
+        (sum, unit) => sum + Array.from(String(unit.text ?? "")).length,
+        0
+      );
+
+      /*
+       * nanpa-linja-n's cartouche encoding is letter-oriented: each letter of
+       * the completed proper name corresponds to one inner cartouche codepoint.
+       * This includes reassigned n and complete delimiter words. Validate that
+       * invariant before constructing per-audio-unit rectangles.
+       */
+      if (
+        !cps.length ||
+        cps.length !== Array.from(compactName).length ||
+        cps.length !== unitLetterCount
+      ) {
+        console.warn("[render-to-audio] cartouche highlight mapping unavailable", {
+          codepointCount: cps.length,
+          compactProperNameLength: Array.from(compactName).length,
+          audioUnitLetterCount: unitLetterCount,
+          properName: model.properName
+        });
+        return [];
+      }
+
+      const overlay = el.fullCartoucheHighlight;
+      if (!overlay) return [];
+      syncFullCartoucheHighlightCanvasSize();
+
+      const ctx = overlay.getContext("2d", { alpha: true });
+      const fontPx = Math.max(
+        8,
+        Number(run.fontPx ?? run?._element?.fontPx ?? cartoucheFontPx(model)) || 36
+      );
+      const fontFamily = String(
+        run.fontFamily ?? run?._element?.fontFamily ?? FONT_FAMILY_NUMBER
+      );
+
+      ctx.font = `${fontPx}px "${fontFamily}"`;
+      ctx.textBaseline = "alphabetic";
+      try { ctx.fontKerning = "normal"; } catch {}
+      try { ctx.textRendering = "optimizeLegibility"; } catch {}
+
+      const fullText = [
+        CARTOUCHE_START_CP,
+        ...cps,
+        CARTOUCHE_END_CP
+      ].map(cp => String.fromCodePoint(cp)).join("");
+      const fullMetrics = ctx.measureText(fullText);
+      const actualLeft = Number.isFinite(fullMetrics.actualBoundingBoxLeft)
+        ? fullMetrics.actualBoundingBoxLeft
+        : 0;
+
+      const padLeft = compactCartouchePadForPx(fontPx);
+      const runX = Number(run.xPx ?? run.drawXPx ?? 0);
+      const runY = Number(run.yPx ?? 0);
+      const runHeight = Math.max(1, Number(run.heightPx ?? run?._element?.h ?? 1));
+
+      /*
+       * The renderer draws the cartouche string at:
+       * runX + compact pad + actualBoundingBoxLeft.
+       * Prefix advances measured with the same font locate each inner
+       * codepoint boundary without highlighting the outer cartouche markers.
+       */
+      const textOriginX = runX + padLeft + actualLeft;
+      const verticalInset = Math.max(1, Math.round(fontPx * 0.04));
+      const rectY = Math.max(0, runY + verticalInset);
+      const rectHeight = Math.max(1, runHeight - verticalInset * 2);
+
+      const map = [];
+      let codepointCursor = 0;
+
+      for (const unit of model.audioUnits) {
+        const letterCount = Array.from(String(unit.text ?? "")).length;
+        const startIndex = codepointCursor;
+        const endIndex = Math.min(cps.length, startIndex + letterCount);
+
+        const startX = textOriginX + measuredPrefixAdvance(ctx, cps, startIndex);
+        const endX = textOriginX + measuredPrefixAdvance(ctx, cps, endIndex);
+
+        map[unit.index] = {
+          x: Math.max(0, startX),
+          y: rectY,
+          width: Math.max(1, endX - startX),
+          height: rectHeight,
+          startCodepointIndex: startIndex,
+          endCodepointIndex: endIndex,
+          text: unit.text
+        };
+
+        codepointCursor = endIndex;
+      }
+
+      return map;
+    }
+
+    function drawFullCartoucheHighlight(audioUnitIndex) {
+      clearFullCartoucheHighlight();
+      const rect = currentModel?.fullCartoucheHighlightMap?.[audioUnitIndex];
+      const overlay = el.fullCartoucheHighlight;
+      if (!rect || !overlay) return;
+
+      const ctx = overlay.getContext("2d", { alpha: true });
+      const radius = Math.max(2, Math.min(7, rect.height * 0.15));
+      const x = rect.x;
+      const y = rect.y;
+      const width = rect.width;
+      const height = rect.height;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 225, 70, 0.46)";
+      ctx.strokeStyle = "rgba(17, 17, 17, 0.78)";
+      ctx.lineWidth = 1.25;
+
+      ctx.beginPath();
+      if (typeof ctx.roundRect === "function") {
+        ctx.roundRect(x, y, width, height, radius);
+      } else {
+        ctx.rect(x, y, width, height);
+      }
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function cartoucheFontPx(model) {
+      const count = model.audioUnits.length;
+
+      // Display the full and abbreviated numeric cartouches at half of the
+      // previous font sizes while preserving the existing responsive tiers.
+      if (count <= 14) return 36;
+      if (count <= 24) return 32;
+      if (count <= 40) return 27;
+      return 23;
+    }
+
+    async function renderCartouches(model) {
+      const renderer = await getRenderer();
+      const fontPx = cartoucheFontPx(model);
+      const fullConfig = rendererConfig(model, {
+        abbreviated: false,
+        fontPx
+      });
+      const abbreviatedConfig = rendererConfig(model, {
+        abbreviated: true,
+        fontPx
+      });
+
+      const [fullPlan, full, abbreviated] = await Promise.all([
+        renderer.buildRenderPlan({
+          input: model.properName,
+          ...fullConfig
+        }),
+        renderer.renderTextToNewCanvas({
+          input: model.properName,
+          ...fullConfig
+        }),
+        renderer.renderTextToNewCanvas({
+          input: model.properName,
+          ...abbreviatedConfig
+        })
+      ]);
+
+      copyCanvas(full.canvas, el.fullCartouche);
+      copyCanvas(abbreviated.canvas, el.abbreviatedCartouche);
+      syncFullCartoucheHighlightCanvasSize();
+      clearFullCartoucheHighlight();
+
+      model.fullCartouchePlan = fullPlan;
+      model.fullCartoucheHighlightMap = buildFullCartoucheHighlightMap(model, fullPlan);
+    }
+
+    function renderBreakdown(model) {
+      const columnCount = model.rawUnits.length + 2;
+      for (const line of [
+        el.inputComponents,
+        el.inputArrows,
+        el.rawUnits,
+        el.rawArrows,
+        el.outerMarkerUnits,
+        el.reassignmentArrows,
+        el.alignedProperName
+      ]) {
+        setColumnCount(line, columnCount);
+      }
+
+      renderInputComponents(model, columnCount);
+      renderInputArrows(el.inputArrows, model, columnCount);
+      renderRawUnits(model, columnCount);
+      renderStraightArrows(el.rawArrows, model, columnCount);
+      renderOuterMarkerUnits(model, columnCount);
+      renderReassignmentArrows(model, columnCount);
+      renderAlignedProperName(model, columnCount);
+      renderProperNameSentence(model);
+      setResponsiveBreakdownScale(model);
+      scheduleDesktopBreakdownFit();
+    }
+
+    async function submitCurrentInput() {
+      resetAudio({ announce: false });
+      const jobId = ++renderJobId;
+      const rawInput = String(el.input.value ?? "").trim();
+      const mode = normalizeMode(el.mode.value);
+
+      if (!rawInput) {
+        currentModel = null;
+        el.result.hidden = true;
+        updateAudioButtons();
+        setStatus("Enter a number or supported numeric form.", "error");
+        return;
+      }
+
+      try {
+        setStatus("Parsing and rendering…");
+        const model = buildModel(rawInput, mode);
+        renderBreakdown(model);
+        await renderCartouches(model);
+        if (jobId !== renderJobId) return;
+
+        currentModel = model;
+        lastSubmittedInput = rawInput;
+        el.result.hidden = false;
+        updateAudioButtons();
+        const parserDisplayNote =
+          model.componentDisplayInput !== model.rawInput
+            ? ` Parser display: ${model.componentDisplayInput}.`
+            : "";
+        setStatus(
+          `${model.mode === "relaxed" ? "Relaxed" : "Strict"} result: ${model.properName}.${parserDisplayNote}`
+        );
+      } catch (error) {
+        if (jobId !== renderJobId) return;
+        currentModel = null;
+        el.result.hidden = true;
+        updateAudioButtons();
+        setStatus(error?.message ?? String(error), "error");
+      }
+    }
+
+    function clearAudioHighlight() {
+      document.querySelectorAll(".audio-unit.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      clearFullCartoucheHighlight();
+    }
+
+    function highlightAudioUnit(index) {
+      const selector = `.audio-unit[data-audio-unit-index="${index}"]`;
+      const active = document.querySelector(selector);
+      document.querySelectorAll(".audio-unit.is-speaking").forEach(node => {
+        if (node !== active) node.classList.remove("is-speaking");
+      });
+      if (active) active.classList.add("is-speaking");
+      drawFullCartoucheHighlight(index);
+    }
+
+    function setAudioState(state) {
+      audioState = state;
+      updateAudioButtons();
+    }
+
+    function updateAudioButtons() {
+      const hasModel = !!currentModel;
+      el.playToggle.disabled = !hasModel || audioBusy;
+      el.stop.disabled = !hasModel || audioState === "stopped";
+
+      if (audioState === "playing") {
+        el.playToggle.textContent = "⏸️";
+        el.playToggle.title = "Pause nanpa-linja-n proper-name audio";
+        el.playToggle.setAttribute("aria-label", "Pause nanpa-linja-n proper-name audio");
+      } else {
+        el.playToggle.textContent = "🤖🔊";
+        el.playToggle.title = audioState === "paused"
+          ? "Continue nanpa-linja-n proper-name audio"
+          : "Play nanpa-linja-n proper name";
+        el.playToggle.setAttribute(
+          "aria-label",
+          audioState === "paused"
+            ? "Continue nanpa-linja-n proper-name audio"
+            : "Play nanpa-linja-n proper name"
+        );
+      }
+    }
+
+    function cancelCurrentSource(session) {
+      if (!session?.currentSource) return;
+      const source = session.currentSource;
+      session.currentSource = null;
+      try { source.onended = null; } catch {}
+      try { source.stop(); } catch {}
+      try { source.disconnect(); } catch {}
+    }
+
+    function resetAudio({ announce = false, message = "Audio stopped." } = {}) {
+      audioGeneration += 1;
+      if (audioSession) cancelCurrentSource(audioSession);
+      audioSession = null;
+      audioBusy = false;
+      clearAudioHighlight();
+      setAudioState("stopped");
+
+      if (voicePromise) {
+        voicePromise
+          .then(voice => stopSitelenAudioPlayback({ voice }))
+          .catch(() => {});
+      }
+
+      if (announce) setStatus(message);
+    }
+
+    function concatenateSamples(chunks) {
+      const valid = chunks.filter(chunk => chunk?.length);
+      const total = valid.reduce((sum, chunk) => sum + chunk.length, 0);
+      const output = new Float32Array(total);
+      let offset = 0;
+      for (const chunk of valid) {
+        output.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return output;
+    }
+
+    function silenceSamples(seconds, sampleRate) {
+      return new Float32Array(
+        Math.max(0, Math.round(Number(seconds || 0) * Number(sampleRate || 48000)))
+      );
+    }
+
+    function combineSharedAudioEntries(entries) {
+      const chunks = [];
+      let sampleRate = null;
+
+      for (const entry of entries || []) {
+        if (!entry?.samples?.length || !entry?.sampleRate) continue;
+        if (sampleRate == null) sampleRate = Number(entry.sampleRate);
+        if (Number(entry.sampleRate) !== sampleRate) {
+          throw new Error("The shared audio pipeline returned inconsistent sample rates.");
+        }
+        chunks.push(
+          entry.samples instanceof Float32Array
+            ? entry.samples
+            : Float32Array.from(entry.samples)
+        );
+        if (entry.pauseAfterSeconds > 0) {
+          chunks.push(silenceSamples(entry.pauseAfterSeconds, sampleRate));
+        }
+      }
+
+      if (!sampleRate || !chunks.length) {
+        throw new Error("The shared audio pipeline produced no audio samples.");
+      }
+
+      return { samples: concatenateSamples(chunks), sampleRate };
+    }
+
+    function caseInsensitiveObjectValue(object, names) {
+      if (!object || typeof object !== "object") return null;
+      const wanted = new Set(names.map(name => String(name).toLowerCase()));
+      for (const [key, value] of Object.entries(object)) {
+        if (wanted.has(String(key).toLowerCase())) return value;
+      }
+      return null;
+    }
+
+    function durationMillisecondsFromManifestEntry(entry) {
+      if (entry == null) return null;
+      if (typeof entry === "number" && Number.isFinite(entry)) return entry;
+      if (typeof entry !== "object") return null;
+
+      for (const key of ["duration_ms", "durationMs", "milliseconds", "ms"]) {
+        const value = Number(entry[key]);
+        if (Number.isFinite(value) && value > 0) return value;
+      }
+
+      for (const key of ["duration_seconds", "durationSeconds", "seconds"]) {
+        const value = Number(entry[key]);
+        if (Number.isFinite(value) && value > 0) return value * 1000;
+      }
+
+      return null;
+    }
+
+    function manifestDurationForUnit(voice, unitText) {
+      const names = [
+        unitText,
+        unitText.toLowerCase(),
+        unitText.toUpperCase(),
+        `${unitText}.wav`,
+        `${unitText.toLowerCase()}.wav`,
+        `${unitText.toUpperCase()}.wav`
+      ];
+
+      const roots = [
+        voice?.manifest,
+        voice?.audioManifest,
+        voice?.referenceAudioManifest,
+        voice?.config?.manifest,
+        voice?.config?.audioManifest
+      ].filter(Boolean);
+
+      for (const root of roots) {
+        const direct = caseInsensitiveObjectValue(root, names);
+        const directDuration = durationMillisecondsFromManifestEntry(direct);
+        if (directDuration) return directDuration;
+
+        for (const nestedName of ["nanpa_v2", "nanpaV2", "files", "assets", "entries"]) {
+          const nested = root?.[nestedName];
+          const nestedEntry = caseInsensitiveObjectValue(nested, names);
+          const nestedDuration = durationMillisecondsFromManifestEntry(nestedEntry);
+          if (nestedDuration) return nestedDuration;
+        }
+
+        if (Array.isArray(root)) {
+          const found = root.find(item => {
+            const filename = String(
+              item?.name ?? item?.filename ?? item?.file ?? item?.path ?? ""
+            ).split("/").pop();
+            return names.some(name => filename.toLowerCase() === String(name).toLowerCase());
+          });
+          const foundDuration = durationMillisecondsFromManifestEntry(found);
+          if (foundDuration) return foundDuration;
+        }
+      }
+
+      return null;
+    }
+
+    function estimatedUnitWeightMilliseconds(voice, unit) {
+      const manifestDuration = manifestDurationForUnit(voice, unit.text);
+      if (manifestDuration) return manifestDuration;
+
+      /*
+       * Fallback only affects highlight boundaries, never the audio itself.
+       * The complete audio buffer still comes from the same shared pipeline
+       * used by text-to-sitelen.html.
+       */
+      if (unit.wholeNumericPunctuationWord) {
+        return 260 + Math.max(0, unit.text.length - 2) * 75;
+      }
+      return 230 + Math.max(0, unit.text.length - 2) * 55;
+    }
+
+    function partitionSharedSamplesByAudioUnits(samples, sampleRate, units, voice, gapSeconds) {
+      const unitWeights = units.map(unit => estimatedUnitWeightMilliseconds(voice, unit));
+      const gapWeight = Math.max(0, Number(gapSeconds) || 0) * 1000;
+      const totalWeight =
+        unitWeights.reduce((sum, weight) => sum + weight, 0) +
+        Math.max(0, units.length - 1) * gapWeight;
+
+      const entries = [];
+      let sampleCursor = 0;
+      let accumulatedWeight = 0;
+
+      for (let index = 0; index < units.length; index++) {
+        const unit = units[index];
+        accumulatedWeight += unitWeights[index];
+        let unitEnd = index === units.length - 1
+          ? samples.length
+          : Math.round(samples.length * accumulatedWeight / totalWeight);
+        unitEnd = Math.max(sampleCursor, Math.min(samples.length, unitEnd));
+
+        entries.push({
+          kind: "unit",
+          highlightIndex: unit.index,
+          text: unit.text,
+          samples: samples.slice(sampleCursor, unitEnd),
+          sampleRate
+        });
+        sampleCursor = unitEnd;
+
+        if (index < units.length - 1 && gapWeight > 0) {
+          accumulatedWeight += gapWeight;
+          let gapEnd = Math.round(samples.length * accumulatedWeight / totalWeight);
+          gapEnd = Math.max(sampleCursor, Math.min(samples.length, gapEnd));
+          entries.push({
+            kind: "gap",
+            highlightIndex: null,
+            text: "",
+            samples: samples.slice(sampleCursor, gapEnd),
+            sampleRate
+          });
+          sampleCursor = gapEnd;
+        }
+      }
+
+      if (sampleCursor < samples.length && entries.length) {
+        const last = entries[entries.length - 1];
+        last.samples = concatenateSamples([last.samples, samples.slice(sampleCursor)]);
+      }
+
+      return entries.filter(entry => entry.samples.length > 0);
+    }
+
+    async function buildAudioEntries(model, generation) {
+      const voice = await getVoice();
+      const renderer = await getRenderer();
+      const option = selectedAudioOption();
+
+      /*
+       * This is the same high-level audio path used by text-to-sitelen.html:
+       * renderer plan -> sitelen audio plan -> voice.render(complete proper name).
+       * No WAV URL is constructed or fetched by this page.
+       */
+      const result = await buildSitelenSentenceAudioBuffersFromRawText({
+        rawText: model.properName,
+        renderer,
+        rendererConfig: rendererConfig(model, { abbreviated: false, fontPx: 56 }),
+        NanpaParser,
+        nanpaLinjanMode: "uniform",
+        mixedStyle: "short",
+        relaxedNanpaLinjanParsing: model.mode === "relaxed",
+        relaxedNanpaLinjanRendering: model.mode === "relaxed",
+        voice,
+        renderOptions: {
+          synthesis_mode: "reference_audio",
+          pauseScale: Number(normalizeSpeed(el.speed.value)),
+          syllableGapSeconds: option.syllableGapSeconds
+        },
+        linePauseSeconds: 0,
+        shouldCancel: () => generation !== audioGeneration
+      });
+
+      if (result?.cancelled || generation !== audioGeneration) return null;
+      if (result?.status === "no-speech") {
+        throw new Error("The shared audio plan did not identify the proper name as readable audio.");
+      }
+
+      const combined = combineSharedAudioEntries(result?.entries || []);
+      return {
+        voice,
+        entries: partitionSharedSamplesByAudioUnits(
+          combined.samples,
+          combined.sampleRate,
+          model.audioUnits,
+          voice,
+          option.syllableGapSeconds
+        )
+      };
+    }
+
+    function getOrCreateAudioBuffer(session, entry) {
+      if (entry._audioBuffer) return entry._audioBuffer;
+      const context = session.voice.getAudioContext();
+      const buffer = context.createBuffer(1, entry.samples.length, entry.sampleRate);
+      buffer.copyToChannel(entry.samples, 0);
+      entry._audioBuffer = buffer;
+      return buffer;
+    }
+
+    function completeAudioPlayback(generation) {
+      if (generation !== audioGeneration) return;
+      if (audioSession) cancelCurrentSource(audioSession);
+      audioSession = null;
+      clearAudioHighlight();
+      setAudioState("stopped");
+      setStatus("Audio finished.");
+    }
+
+    function playCurrentAudioEntry() {
+      const session = audioSession;
+      if (!session || session.generation !== audioGeneration) return;
+
+      if (session.currentIndex >= session.entries.length) {
+        completeAudioPlayback(session.generation);
+        return;
+      }
+
+      const entry = session.entries[session.currentIndex];
+      const buffer = getOrCreateAudioBuffer(session, entry);
+      const context = session.voice.getAudioContext();
+      const offset = Math.max(
+        0,
+        Math.min(
+          Number(session.currentOffsetSeconds) || 0,
+          Math.max(0, buffer.duration - 0.001)
+        )
+      );
+
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(context.destination);
+
+      session.currentSource = source;
+      session.currentBuffer = buffer;
+      session.sourceStartedAt = context.currentTime;
+      session.sourceStartedOffset = offset;
+
+      if (entry.kind === "unit" && Number.isInteger(entry.highlightIndex)) {
+        highlightAudioUnit(entry.highlightIndex);
+      } else {
+        clearAudioHighlight();
+      }
+
+      setAudioState("playing");
+
+      source.onended = () => {
+        if (!audioSession || session !== audioSession) return;
+        if (session.generation !== audioGeneration) return;
+        if (session.currentSource !== source || audioState !== "playing") return;
+
+        session.currentSource = null;
+        try { source.disconnect(); } catch {}
+        session.currentBuffer = null;
+        session.currentOffsetSeconds = 0;
+        clearAudioHighlight();
+        session.currentIndex += 1;
+        playCurrentAudioEntry();
+      };
+
+      source.start(0, offset);
+    }
+
+    function pauseAudio() {
+      const session = audioSession;
+      if (!session || audioState !== "playing" || !session.currentSource) return;
+
+      const context = session.voice.getAudioContext();
+      const elapsed = Math.max(0, context.currentTime - session.sourceStartedAt);
+      session.currentOffsetSeconds = Math.min(
+        session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
+        session.sourceStartedOffset + elapsed
+      );
+      cancelCurrentSource(session);
+      setAudioState("paused");
+      setStatus("Audio paused.");
+    }
+
+    function resumeAudio() {
+      if (!audioSession || audioState !== "paused") return;
+      playCurrentAudioEntry();
+      setStatus("Audio resumed.");
+    }
+
+    async function startAudio() {
+      if (!currentModel || audioBusy) return;
+
+      const generation = ++audioGeneration;
+      audioBusy = true;
+      setAudioState("building");
+      clearAudioHighlight();
+      updateAudioButtons();
+
+      try {
+        setStatus("Preparing audio with the shared text-to-sitelen audio pipeline…");
+        const built = await buildAudioEntries(currentModel, generation);
+        if (!built || generation !== audioGeneration) return;
+        if (!built.entries.length) throw new Error("No audio entries were produced.");
+
+        audioSession = {
+          generation,
+          voice: built.voice,
+          entries: built.entries,
+          currentIndex: 0,
+          currentOffsetSeconds: 0,
+          currentSource: null,
+          currentBuffer: null,
+          sourceStartedAt: 0,
+          sourceStartedOffset: 0
+        };
+
+        setStatus(`Playing ${currentModel.properName}.`);
+        playCurrentAudioEntry();
+      } catch (error) {
+        if (generation !== audioGeneration) return;
+        audioSession = null;
+        clearAudioHighlight();
+        setAudioState("stopped");
+        setStatus(`Audio error: ${error?.message ?? String(error)}`, "error");
+      } finally {
+        if (generation === audioGeneration) {
+          audioBusy = false;
+          if (audioState === "building") setAudioState("stopped");
+          updateAudioButtons();
+        }
+      }
+    }
+
+    function toggleAudio() {
+      if (audioState === "playing") {
+        pauseAudio();
+        return;
+      }
+      if (audioState === "paused") {
+        resumeAudio();
+        return;
+      }
+      startAudio();
+    }
+
+    el.form.addEventListener("submit", event => {
+      event.preventDefault();
+      submitCurrentInput();
+    });
+
+    el.input.addEventListener("input", () => {
+      renderJobId += 1;
+      resetAudio({ announce: false });
+      if (currentModel && String(el.input.value ?? "").trim() !== lastSubmittedInput) {
+        setStatus("Input changed. Press Enter or select Render breakdown to update the result.");
+      }
+    });
+
+    el.mode.addEventListener("change", async () => {
+      renderJobId += 1;
+      resetAudio({ announce: false });
+      saveMode(el.mode.value);
+      const currentInput = String(el.input.value ?? "").trim();
+
+      if (currentModel && currentInput === lastSubmittedInput) {
+        await submitCurrentInput();
+      } else if (currentInput) {
+        setStatus("Mode changed. Press Enter or select Render breakdown to update the result.");
+      }
+    });
+
+    el.speed.addEventListener("change", () => {
+      saveSpeed(el.speed.value);
+      resetAudio({ announce: false });
+      if (currentModel) setStatus("Audio speed changed. Select the audio icon to use the new speed.");
+    });
+
+    el.playToggle.addEventListener("click", toggleAudio);
+    el.stop.addEventListener("click", () => resetAudio({ announce: true }));
+
+    let desktopFitResizeTimer = null;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(desktopFitResizeTimer);
+      desktopFitResizeTimer = window.setTimeout(() => {
+        if (currentModel) {
+          setResponsiveBreakdownScale(currentModel);
+          scheduleDesktopBreakdownFit();
+        }
+      }, 80);
+    });
+
+    window.addEventListener("beforeunload", () => resetAudio({ announce: false }));
+
+    el.mode.value = loadMode();
+    el.speed.value = loadSpeed();
+    updateAudioButtons();
+    submitCurrentInput();
+  </script>
+
+  <script>
+  const productionHosts = new Set([
+    'nanpa-linja-n.com',
+    'www.nanpa-linja-n.com'
+  ]);
+
+  if (!productionHosts.has(window.location.hostname)) {
+      window.goatcounter = { no_onload: true };
+  }
+ 
+
+  function trackUsage(eventName) {
+  }
+</script>
+
+<script data-goatcounter="https://nanpalinjan.goatcounter.com/count" async src="./js/goatcounter-count.js">
+</script>
+</body>
+</html>
