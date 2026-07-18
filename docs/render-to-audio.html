@@ -56,21 +56,10 @@
     p { line-height: 1.45; }
 
     .help,
-    .status,
     .small {
       color: var(--muted);
       font-size: 0.8rem;
       line-height: 1.45;
-    }
-
-    .status {
-      min-height: 1.4em;
-      margin-top: 8px;
-    }
-
-    .status.error {
-      color: #7b1111;
-      font-weight: 700;
     }
 
     .controls {
@@ -634,8 +623,6 @@
       </div>
     </form>
 
-    <div id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></div>
-
     <section id="result" class="result" aria-label="Number conversion breakdown" hidden>
       <div id="breakdownScroll" class="breakdown-scroll" tabindex="0" aria-label="Conversion breakdown">
         <div id="breakdown" class="breakdown">
@@ -951,7 +938,6 @@
       speed: document.getElementById("speedSelect"),
       playToggle: document.getElementById("playToggleButton"),
       stop: document.getElementById("stopButton"),
-      status: document.getElementById("status"),
       result: document.getElementById("result"),
       breakdownScroll: document.getElementById("breakdownScroll"),
       breakdown: document.getElementById("breakdown"),
@@ -1023,9 +1009,22 @@
       return AUDIO_SPEED_OPTIONS[normalizeSpeed(el.speed.value)];
     }
 
-    function setStatus(message, kind = "") {
-      el.status.textContent = String(message ?? "");
-      el.status.classList.toggle("error", kind === "error");
+    function clearInputError() {
+      el.input.setCustomValidity("");
+    }
+
+    function reportInputError(message) {
+      el.input.setCustomValidity(String(message ?? "Invalid input."));
+      el.input.reportValidity();
+    }
+
+    function clearAudioError() {
+      el.playToggle.setCustomValidity("");
+    }
+
+    function reportAudioError(message) {
+      el.playToggle.setCustomValidity(String(message ?? "Audio playback failed."));
+      el.playToggle.reportValidity();
     }
 
     function rendererFontRoles() {
@@ -2179,7 +2178,7 @@
     }
 
     async function submitCurrentInput() {
-      resetAudio({ announce: false });
+      resetAudio();
       const jobId = ++renderJobId;
       const rawInput = String(el.input.value ?? "").trim();
       const mode = normalizeMode(el.mode.value);
@@ -2188,34 +2187,28 @@
         currentModel = null;
         el.result.hidden = true;
         updateAudioButtons();
-        setStatus("Enter a number or supported numeric form.", "error");
+        reportInputError("Enter a number or supported numeric form.");
         return;
       }
 
       try {
-        setStatus("Parsing and rendering…");
+        clearInputError();
         const model = buildModel(rawInput, mode);
         renderBreakdown(model);
         await renderCartouches(model);
         if (jobId !== renderJobId) return;
 
+        clearInputError();
         currentModel = model;
         lastSubmittedInput = rawInput;
         el.result.hidden = false;
         updateAudioButtons();
-        const parserDisplayNote =
-          model.componentDisplayInput !== model.rawInput
-            ? ` Parser display: ${model.componentDisplayInput}.`
-            : "";
-        setStatus(
-          `${model.mode === "relaxed" ? "Relaxed" : "Strict"} result: ${model.properName}.${parserDisplayNote}`
-        );
       } catch (error) {
         if (jobId !== renderJobId) return;
         currentModel = null;
         el.result.hidden = true;
         updateAudioButtons();
-        setStatus(error?.message ?? String(error), "error");
+        reportInputError(error?.message ?? String(error));
       }
     }
 
@@ -2273,12 +2266,13 @@
       try { source.disconnect(); } catch {}
     }
 
-    function resetAudio({ announce = false, message = "Audio stopped." } = {}) {
+    function resetAudio() {
       audioGeneration += 1;
       if (audioSession) cancelCurrentSource(audioSession);
       audioSession = null;
       audioBusy = false;
       clearAudioHighlight();
+      clearAudioError();
       setAudioState("stopped");
 
       if (voicePromise) {
@@ -2287,7 +2281,6 @@
           .catch(() => {});
       }
 
-      if (announce) setStatus(message);
     }
 
     function concatenateSamples(chunks) {
@@ -2535,7 +2528,6 @@
       audioSession = null;
       clearAudioHighlight();
       setAudioState("stopped");
-      setStatus("Audio finished.");
     }
 
     function playCurrentAudioEntry() {
@@ -2604,13 +2596,11 @@
       );
       cancelCurrentSource(session);
       setAudioState("paused");
-      setStatus("Audio paused.");
     }
 
     function resumeAudio() {
       if (!audioSession || audioState !== "paused") return;
       playCurrentAudioEntry();
-      setStatus("Audio resumed.");
     }
 
     async function startAudio() {
@@ -2623,7 +2613,7 @@
       updateAudioButtons();
 
       try {
-        setStatus("Preparing audio with the shared text-to-sitelen audio pipeline…");
+        clearAudioError();
         const built = await buildAudioEntries(currentModel, generation);
         if (!built || generation !== audioGeneration) return;
         if (!built.entries.length) throw new Error("No audio entries were produced.");
@@ -2640,14 +2630,13 @@
           sourceStartedOffset: 0
         };
 
-        setStatus(`Playing ${currentModel.properName}.`);
         playCurrentAudioEntry();
       } catch (error) {
         if (generation !== audioGeneration) return;
         audioSession = null;
         clearAudioHighlight();
         setAudioState("stopped");
-        setStatus(`Audio error: ${error?.message ?? String(error)}`, "error");
+        reportAudioError(`Audio error: ${error?.message ?? String(error)}`);
       } finally {
         if (generation === audioGeneration) {
           audioBusy = false;
@@ -2676,33 +2665,29 @@
 
     el.input.addEventListener("input", () => {
       renderJobId += 1;
-      resetAudio({ announce: false });
-      if (currentModel && String(el.input.value ?? "").trim() !== lastSubmittedInput) {
-        setStatus("Input changed. Press Enter or select Render breakdown to update the result.");
-      }
+      resetAudio();
+      clearInputError();
     });
 
     el.mode.addEventListener("change", async () => {
       renderJobId += 1;
-      resetAudio({ announce: false });
+      resetAudio();
       saveMode(el.mode.value);
       const currentInput = String(el.input.value ?? "").trim();
 
       if (currentModel && currentInput === lastSubmittedInput) {
         await submitCurrentInput();
-      } else if (currentInput) {
-        setStatus("Mode changed. Press Enter or select Render breakdown to update the result.");
       }
     });
 
     el.speed.addEventListener("change", () => {
       saveSpeed(el.speed.value);
-      resetAudio({ announce: false });
-      if (currentModel) setStatus("Audio speed changed. Select the audio icon to use the new speed.");
+      resetAudio();
+      clearAudioError();
     });
 
     el.playToggle.addEventListener("click", toggleAudio);
-    el.stop.addEventListener("click", () => resetAudio({ announce: true }));
+    el.stop.addEventListener("click", () => resetAudio());
 
     let desktopFitResizeTimer = null;
     window.addEventListener("resize", () => {
@@ -2715,7 +2700,7 @@
       }, 80);
     });
 
-    window.addEventListener("beforeunload", () => resetAudio({ announce: false }));
+    window.addEventListener("beforeunload", () => resetAudio());
 
     el.mode.value = loadMode();
     el.speed.value = loadSpeed();
