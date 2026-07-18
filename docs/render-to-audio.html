@@ -964,6 +964,11 @@
     let audioState = "stopped";
     let audioSession = null;
 
+    let audioPreparationGeneration = 0;
+    let preparedAudio = null;
+    let preparedAudioPromise = null;
+    let preparedAudioPromiseKey = "";
+
     function normalizeMode(value) {
       return String(value ?? "").trim().toLowerCase() === "strict" ? "strict" : "relaxed";
     }
@@ -1007,6 +1012,22 @@
 
     function selectedAudioOption() {
       return AUDIO_SPEED_OPTIONS[normalizeSpeed(el.speed.value)];
+    }
+
+    function audioCacheKey(model) {
+      if (!model) return "";
+      return [
+        model.properName,
+        model.mode,
+        normalizeSpeed(el.speed.value)
+      ].join("|");
+    }
+
+    function invalidatePreparedAudio() {
+      audioPreparationGeneration += 1;
+      preparedAudio = null;
+      preparedAudioPromise = null;
+      preparedAudioPromiseKey = "";
     }
 
     function clearInputError() {
@@ -2178,10 +2199,14 @@
     }
 
     async function submitCurrentInput() {
-      resetAudio();
-      const jobId = ++renderJobId;
       const rawInput = String(el.input.value ?? "").trim();
       const mode = normalizeMode(el.mode.value);
+      const shouldInvalidatePrepared =
+        rawInput !== lastSubmittedInput ||
+        mode !== currentModel?.mode;
+
+      resetAudio({ invalidatePrepared: shouldInvalidatePrepared });
+      const jobId = ++renderJobId;
 
       if (!rawInput) {
         currentModel = null;
@@ -2203,6 +2228,7 @@
         lastSubmittedInput = rawInput;
         el.result.hidden = false;
         updateAudioButtons();
+        prepareAudioInBackground(model);
       } catch (error) {
         if (jobId !== renderJobId) return;
         currentModel = null;
@@ -2236,13 +2262,29 @@
 
     function updateAudioButtons() {
       const hasModel = !!currentModel;
-      el.playToggle.disabled = !hasModel || audioBusy;
-      el.stop.disabled = !hasModel || audioState === "stopped";
+      const preparing =
+        audioState === "preparing" ||
+        audioState === "building";
 
-      if (audioState === "playing") {
+      el.playToggle.disabled = !hasModel || audioBusy || preparing;
+      el.stop.disabled =
+        !hasModel ||
+        audioState === "stopped" ||
+        preparing;
+
+      if (preparing) {
+        el.playToggle.textContent = "⏳";
+        el.playToggle.title = "Preparing nanpa-linja-n proper-name audio";
+        el.playToggle.setAttribute(
+          "aria-label",
+          "Preparing nanpa-linja-n proper-name audio"
+        );
+        el.playToggle.setAttribute("aria-busy", "true");
+      } else if (audioState === "playing") {
         el.playToggle.textContent = "⏸️";
         el.playToggle.title = "Pause nanpa-linja-n proper-name audio";
         el.playToggle.setAttribute("aria-label", "Pause nanpa-linja-n proper-name audio");
+        el.playToggle.removeAttribute("aria-busy");
       } else {
         el.playToggle.textContent = "🤖🔊";
         el.playToggle.title = audioState === "paused"
@@ -2254,6 +2296,7 @@
             ? "Continue nanpa-linja-n proper-name audio"
             : "Play nanpa-linja-n proper name"
         );
+        el.playToggle.removeAttribute("aria-busy");
       }
     }
 
@@ -2266,13 +2309,18 @@
       try { source.disconnect(); } catch {}
     }
 
-    function resetAudio() {
+    function resetAudio({ invalidatePrepared = false } = {}) {
       audioGeneration += 1;
       if (audioSession) cancelCurrentSource(audioSession);
       audioSession = null;
       audioBusy = false;
       clearAudioHighlight();
       clearAudioError();
+
+      if (invalidatePrepared) {
+        invalidatePreparedAudio();
+      }
+
       setAudioState("stopped");
 
       if (voicePromise) {
@@ -2280,7 +2328,6 @@
           .then(voice => stopSitelenAudioPlayback({ voice }))
           .catch(() => {});
       }
-
     }
 
     function concatenateSamples(chunks) {
@@ -2466,7 +2513,7 @@
       return entries.filter(entry => entry.samples.length > 0);
     }
 
-    async function buildAudioEntries(model, generation) {
+    async function buildAudioEntries(model, preparationGeneration) {
       const voice = await getVoice();
       const renderer = await getRenderer();
       const option = selectedAudioOption();
@@ -2492,10 +2539,10 @@
           syllableGapSeconds: option.syllableGapSeconds
         },
         linePauseSeconds: 0,
-        shouldCancel: () => generation !== audioGeneration
+        shouldCancel: () => preparationGeneration !== audioPreparationGeneration
       });
 
-      if (result?.cancelled || generation !== audioGeneration) return null;
+      if (result?.cancelled || preparationGeneration !== audioPreparationGeneration) return null;
       if (result?.status === "no-speech") {
         throw new Error("The shared audio plan did not identify the proper name as readable audio.");
       }
@@ -2511,6 +2558,87 @@
           option.syllableGapSeconds
         )
       };
+    }
+
+    function prepareAudio(model) {
+      const key = audioCacheKey(model);
+      if (!key) return Promise.resolve(null);
+
+      if (preparedAudio?.key === key) {
+        return Promise.resolve(preparedAudio);
+      }
+
+      if (
+        preparedAudioPromise &&
+        preparedAudioPromiseKey === key
+      ) {
+        return preparedAudioPromise;
+      }
+
+      const preparationGeneration = audioPreparationGeneration;
+      preparedAudioPromiseKey = key;
+
+      const promise = buildAudioEntries(model, preparationGeneration)
+        .then(built => {
+          if (
+            !built ||
+            preparationGeneration !== audioPreparationGeneration ||
+            key !== audioCacheKey(model)
+          ) {
+            return null;
+          }
+
+          preparedAudio = {
+            key,
+            voice: built.voice,
+            entries: built.entries
+          };
+          return preparedAudio;
+        })
+        .finally(() => {
+          if (preparedAudioPromise === promise) {
+            preparedAudioPromise = null;
+            preparedAudioPromiseKey = "";
+          }
+        });
+
+      preparedAudioPromise = promise;
+      return promise;
+    }
+
+    function prepareAudioInBackground(model) {
+      const key = audioCacheKey(model);
+      if (!key || preparedAudio?.key === key) return;
+
+      setAudioState("preparing");
+
+      prepareAudio(model)
+        .catch(() => {
+          // Explicit playback retries and reports any real audio error.
+        })
+        .finally(() => {
+          if (
+            audioState === "preparing" &&
+            currentModel &&
+            audioCacheKey(currentModel) === key
+          ) {
+            setAudioState("stopped");
+          }
+        });
+    }
+
+    function warmVoiceDuringIdle() {
+      const warm = () => {
+        getVoice().catch(() => {
+          // Explicit playback reports any real voice-engine error.
+        });
+      };
+
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(warm, { timeout: 2000 });
+      } else {
+        window.setTimeout(warm, 0);
+      }
     }
 
     function getOrCreateAudioBuffer(session, entry) {
@@ -2614,7 +2742,7 @@
 
       try {
         clearAudioError();
-        const built = await buildAudioEntries(currentModel, generation);
+        const built = await prepareAudio(currentModel);
         if (!built || generation !== audioGeneration) return;
         if (!built.entries.length) throw new Error("No audio entries were produced.");
 
@@ -2665,13 +2793,13 @@
 
     el.input.addEventListener("input", () => {
       renderJobId += 1;
-      resetAudio();
+      resetAudio({ invalidatePrepared: true });
       clearInputError();
     });
 
     el.mode.addEventListener("change", async () => {
       renderJobId += 1;
-      resetAudio();
+      resetAudio({ invalidatePrepared: true });
       saveMode(el.mode.value);
       const currentInput = String(el.input.value ?? "").trim();
 
@@ -2682,8 +2810,12 @@
 
     el.speed.addEventListener("change", () => {
       saveSpeed(el.speed.value);
-      resetAudio();
+      resetAudio({ invalidatePrepared: true });
       clearAudioError();
+
+      if (currentModel) {
+        prepareAudioInBackground(currentModel);
+      }
     });
 
     el.playToggle.addEventListener("click", toggleAudio);
@@ -2705,6 +2837,7 @@
     el.mode.value = loadMode();
     el.speed.value = loadSpeed();
     updateAudioButtons();
+    warmVoiceDuringIdle();
     submitCurrentInput();
   </script>
 
