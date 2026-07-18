@@ -452,6 +452,29 @@
       background: transparent;
     }
 
+    .numericPunctuationWrap {
+      width: calc((100% - 16px) / 2);
+      max-width: calc((100% - 16px) / 2);
+      margin-top: 14px;
+    }
+
+    .numericPunctuationTable {
+      width: 100%;
+      min-width: 100%;
+      margin-top: 0;
+    }
+
+    .numericPunctuationTable th,
+    .numericPunctuationTable td {
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .numericPunctuationTable td:nth-child(2),
+    .numericPunctuationTable td:nth-child(3) {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
     .reference-section {
       margin-top: 18px;
       padding-top: 14px;
@@ -481,6 +504,11 @@
     }
 
     @media (max-width: 620px) {
+      .numericPunctuationWrap {
+        width: 100%;
+        max-width: 100%;
+      }
+
       .nanpaModeTable th,
       .nanpaModeTable td {
         padding: 6px;
@@ -805,6 +833,34 @@
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>small glyph</td><td>en</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
               </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          class="tableWrap numericPunctuationWrap"
+          role="region"
+          aria-label="nanpa-linja-n numeric punctuation table"
+        >
+          <table class="digitTable numericPunctuationTable">
+            <thead>
+              <tr>
+                <th>numeric punctuation</th>
+                <th>nanpa-linja-n proper name letters</th>
+                <th>glyph sequence</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>negative</td><td>no</td><td>nena ona</td></tr>
+              <tr><td>decimal point</td><td>none</td><td>nena o nena en</td></tr>
+              <tr><td>ISO thousands</td><td>neke</td><td>nena en kulupu en</td></tr>
+              <tr><td>percentage</td><td>noke</td><td>nena open kipisi en</td></tr>
+              <tr><td>scientific notation</td><td>neko</td><td>nena en kala open</td></tr>
+              <tr><td>numerator vs denominator</td><td>nono</td><td>nena o nena o</td></tr>
+              <tr><td>integer vs fraction</td><td>noko</td><td>nena open kala open</td></tr>
+              <tr><td>date</td><td>neke</td><td>nena en kasi en</td></tr>
+              <tr><td>time</td><td>neke</td><td>nena en kasi en</td></tr>
+              <tr><td>spacer (no value)</td><td>nene</td><td>nena en nena en</td></tr>
             </tbody>
           </table>
         </div>
