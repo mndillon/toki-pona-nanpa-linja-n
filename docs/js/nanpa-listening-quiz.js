@@ -480,13 +480,17 @@ function ensureQuizLicenseStyles() {
       position: fixed;
       inset: 0;
       z-index: 19999;
+      box-sizing: border-box;
       display: none;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
-      overflow-y: auto;
-      padding: 18px 18px 40px;
+      overflow: hidden;
+      padding:
+        max(8px, env(safe-area-inset-top))
+        max(8px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(8px, env(safe-area-inset-left));
       background: rgba(0, 0, 0, 0.35);
-      -webkit-overflow-scrolling: touch;
     }
 
     #${QUIZ_LICENSE_OVERLAY_ID}.show {
@@ -495,9 +499,15 @@ function ensureQuizLicenseStyles() {
 
     #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseModal {
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
       width: min(980px, 100%);
-      margin: auto;
-      padding: 14px;
+      max-width: 100%;
+      max-height: calc(100vh - 16px);
+      max-height: calc(100dvh - 16px);
+      margin: 0;
+      padding: 12px;
+      overflow: hidden;
       border: 1px solid var(--border, #d0d7de);
       border-radius: 12px;
       background: var(--bg, #fff);
@@ -506,22 +516,34 @@ function ensureQuizLicenseStyles() {
 
     #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseHeader {
       display: flex;
-      align-items: center;
+      flex: 0 0 auto;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 10px;
     }
 
     #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseHeader h3 {
+      min-width: 0;
       margin: 0;
       font-size: 14px;
+      line-height: 1.3;
+    }
+
+    #${QUIZ_LICENSE_OVERLAY_ID} [data-quiz-license-close] {
+      flex: 0 0 auto;
     }
 
     #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseBody {
+      min-height: 0;
+      flex: 1 1 auto;
       margin-top: 10px;
       padding: 10px;
+      overflow: auto;
+      overscroll-behavior: contain;
       border: 1px solid var(--border, #d0d7de);
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.35);
+      -webkit-overflow-scrolling: touch;
     }
 
     #${QUIZ_LICENSE_OVERLAY_ID} pre {
@@ -529,16 +551,34 @@ function ensureQuizLicenseStyles() {
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       word-break: break-word;
+      font-size: 12px;
+      line-height: 1.35;
     }
 
     .nanpaListenQuizLicenseActions {
       margin-top: 10px;
     }
 
-    @media (min-height: 600px) and (min-width: 640px) {
+    @media (max-width: 639px) {
+      #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseModal {
+        width: 100%;
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
+        padding: 10px;
+        border-radius: 10px;
+      }
+
+      #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseHeader h3 {
+        font-size: 13px;
+      }
+
       #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseBody {
-        max-height: 65vh;
-        overflow: auto;
+        margin-top: 8px;
+        padding: 8px;
+      }
+
+      #${QUIZ_LICENSE_OVERLAY_ID} pre {
+        font-size: 11px;
       }
     }
   `;
@@ -596,6 +636,12 @@ function loadQuizLicenseText() {
 async function openQuizLicense() {
   const overlay = ensureQuizLicenseOverlay();
   const text = overlay.querySelector('[data-quiz-license-text]');
+
+  if (!overlay.classList.contains('show')) {
+    overlay.dataset.previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+
   overlay.classList.add('show');
   overlay.querySelector('[data-quiz-license-close]')?.focus();
 
@@ -610,7 +656,7 @@ async function openQuizLicense() {
     }
   } catch (error) {
     if (text) {
-      text.textContent = `The licence file could not be loaded. Make sure ${QUIZ_LICENSE_PATH.replace('./', '')} is deployed beside this quiz script.
+      text.textContent = `The licence file could not be loaded. Make sure ${QUIZ_LICENSE_PATH.replace('./', '')} is deployed at this page-relative path.
 
 ${error?.message ?? String(error)}`;
     }
@@ -620,7 +666,10 @@ ${error?.message ?? String(error)}`;
 function closeQuizLicense() {
   const overlay = document.getElementById(QUIZ_LICENSE_OVERLAY_ID);
   if (!overlay?.classList.contains('show')) return;
+
   overlay.classList.remove('show');
+  document.body.style.overflow = overlay.dataset.previousBodyOverflow ?? '';
+  delete overlay.dataset.previousBodyOverflow;
   document.querySelector('[data-quiz-license]')?.focus();
 }
 
