@@ -4,6 +4,9 @@
 // are lazy-loaded only after audio/check/reveal interaction.
 
 const QUIZ_ROOT_ID = 'nanpaListeningQuiz';
+const QUIZ_LICENSE_PATH = './licences/LICENSE-KOKORO.txt';
+const QUIZ_LICENSE_OVERLAY_ID = 'nanpaListeningQuizLicenseOverlay';
+const QUIZ_LICENSE_STYLE_ID = 'nanpaListeningQuizLicenseStyles';
 const FONT_FAMILY = 'TP-Cartouche-Font';
 const LARGE_TINY_FONT_SIZE = 22;
 const SMALL_TINY_FONT_SIZE = 8;
@@ -46,6 +49,7 @@ const ABBREV_DROP_AFTER_FIRST_NANPA = new Set([
 
 let nanpaModulePromise = null;
 let voicePromise = null;
+let quizLicenseTextPromise = null;
 let quizItems = [];
 
 function randInt(min, max) {
@@ -466,6 +470,164 @@ function updateTryMoreVisibility(root) {
   tryMore.hidden = !allItemsChecked();
 }
 
+function ensureQuizLicenseStyles() {
+  if (document.getElementById(QUIZ_LICENSE_STYLE_ID)) return;
+
+  const style = document.createElement('style');
+  style.id = QUIZ_LICENSE_STYLE_ID;
+  style.textContent = `
+    #${QUIZ_LICENSE_OVERLAY_ID} {
+      position: fixed;
+      inset: 0;
+      z-index: 19999;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 18px 18px 40px;
+      background: rgba(0, 0, 0, 0.35);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #${QUIZ_LICENSE_OVERLAY_ID}.show {
+      display: flex;
+    }
+
+    #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseModal {
+      box-sizing: border-box;
+      width: min(980px, 100%);
+      margin: auto;
+      padding: 14px;
+      border: 1px solid var(--border, #d0d7de);
+      border-radius: 12px;
+      background: var(--bg, #fff);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+    }
+
+    #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseHeader h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseBody {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--border, #d0d7de);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    #${QUIZ_LICENSE_OVERLAY_ID} pre {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .nanpaListenQuizLicenseActions {
+      margin-top: 10px;
+    }
+
+    @media (min-height: 600px) and (min-width: 640px) {
+      #${QUIZ_LICENSE_OVERLAY_ID} .nanpaListenQuizLicenseBody {
+        max-height: 65vh;
+        overflow: auto;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function ensureQuizLicenseOverlay() {
+  let overlay = document.getElementById(QUIZ_LICENSE_OVERLAY_ID);
+  if (overlay) return overlay;
+
+  ensureQuizLicenseStyles();
+  overlay = document.createElement('div');
+  overlay.id = QUIZ_LICENSE_OVERLAY_ID;
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', `${QUIZ_LICENSE_OVERLAY_ID}Title`);
+  overlay.innerHTML = `
+    <div class="nanpaListenQuizLicenseModal">
+      <div class="nanpaListenQuizLicenseHeader">
+        <h3 id="${QUIZ_LICENSE_OVERLAY_ID}Title">Kokoro audio library licence — Apache License 2.0</h3>
+        <button type="button" data-quiz-license-close>Close</button>
+      </div>
+      <div class="nanpaListenQuizLicenseBody">
+        <pre data-quiz-license-text>Loading licence…</pre>
+      </div>
+    </div>
+  `;
+
+  overlay.querySelector('[data-quiz-license-close]')?.addEventListener('click', closeQuizLicense);
+  overlay.addEventListener('click', event => {
+    if (event.target === overlay) closeQuizLicense();
+  });
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function loadQuizLicenseText() {
+  if (!quizLicenseTextPromise) {
+    quizLicenseTextPromise = fetch(QUIZ_LICENSE_PATH)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(text => String(text ?? '').trim())
+      .catch(error => {
+        quizLicenseTextPromise = null;
+        throw error;
+      });
+  }
+  return quizLicenseTextPromise;
+}
+
+async function openQuizLicense() {
+  const overlay = ensureQuizLicenseOverlay();
+  const text = overlay.querySelector('[data-quiz-license-text]');
+  overlay.classList.add('show');
+  overlay.querySelector('[data-quiz-license-close]')?.focus();
+
+  if (text?.dataset.loaded === 'true') return;
+  if (text) text.textContent = 'Loading licence…';
+
+  try {
+    const licence = await loadQuizLicenseText();
+    if (text) {
+      text.textContent = licence;
+      text.dataset.loaded = 'true';
+    }
+  } catch (error) {
+    if (text) {
+      text.textContent = `The licence file could not be loaded. Make sure ${QUIZ_LICENSE_PATH.replace('./', '')} is deployed beside this quiz script.
+
+${error?.message ?? String(error)}`;
+    }
+  }
+}
+
+function closeQuizLicense() {
+  const overlay = document.getElementById(QUIZ_LICENSE_OVERLAY_ID);
+  if (!overlay?.classList.contains('show')) return;
+  overlay.classList.remove('show');
+  document.querySelector('[data-quiz-license]')?.focus();
+}
+
+function handleQuizLicenseEscape(event) {
+  if (event.key === 'Escape') closeQuizLicense();
+}
+
 async function ensureCartoucheFontLoaded() {
   if (!document.fonts || !document.fonts.load) return;
   const sample = String.fromCodePoint(0xF193D);
@@ -778,6 +940,9 @@ function renderQuiz(root) {
       </select>
       <span class="help">Normal adds a small 0.2 s gap between assembled syllable units. Slow and Very slow add longer calculated silence; they do not stretch or slur the audio.</span><br/>
       <span class="help">When inputting answers, click enter to start playing audio, then enter proper name or decimal value.</span>
+      <div class="nanpaListenQuizLicenseActions">
+        <button data-quiz-license type="button">licences</button>
+      </div>
     </div>
   `;
 
@@ -789,6 +954,8 @@ function renderQuiz(root) {
   root.querySelector('[data-quiz-audio-pause-scale]')?.addEventListener('change', event => {
     saveAudioPauseScale(event.currentTarget.value);
   });
+
+  root.querySelector('[data-quiz-license]')?.addEventListener('click', openQuizLicense);
 
   root.appendChild(rows);
 
@@ -807,6 +974,8 @@ function renderQuiz(root) {
 function initQuiz() {
   const root = document.getElementById(QUIZ_ROOT_ID);
   if (!root) return;
+  ensureQuizLicenseOverlay();
+  document.addEventListener('keydown', handleQuizLicenseEscape);
   renderQuiz(root);
 }
 
