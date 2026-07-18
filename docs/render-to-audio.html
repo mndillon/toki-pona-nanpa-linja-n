@@ -839,7 +839,7 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=176";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=177";
     import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=27";
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
@@ -1615,11 +1615,25 @@
       appendEmptyCell(el.inputComponents, 1);
 
       model.inputSourceCells.forEach((component, index) => {
-        if (!component.text) return;
-        const chip = makeChip(component.text);
-        chip.title = component.sourceKind === "scientific-exponent-marker"
-          ? "The scientific-notation exponent marker expands into four nanpa-linja-n units"
-          : "Input component";
+        const correspondingUnit = model.rawUnits[index];
+        const hideSourcePunctuation = correspondingUnit?.text === "nene";
+
+        if (!component.text && !hideSourcePunctuation) return;
+
+        /*
+         * Keep the source cell visible when it maps to nene, but do not
+         * display the comma in the Input components row.
+         */
+        const displayText = hideSourcePunctuation ? "\u00A0" : component.text;
+        const chip = makeChip(displayText);
+        chip.title = hideSourcePunctuation
+          ? "The source separator is intentionally blank because this column maps to nene"
+          : component.sourceKind === "scientific-exponent-marker"
+            ? "The scientific-notation exponent marker expands into four nanpa-linja-n units"
+            : "Input component";
+        if (hideSourcePunctuation) {
+          chip.setAttribute("aria-label", "blank input component corresponding to nene");
+        }
         placeAt(chip, index + 2);
         el.inputComponents.appendChild(chip);
       });

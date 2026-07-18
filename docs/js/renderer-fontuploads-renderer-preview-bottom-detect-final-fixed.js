@@ -410,6 +410,7 @@ const SitelenRenderer = (() => {
       unknownTextDisplay: { ...__unknownTextDisplay },
       renderSpacing: { ...__renderSpacing },
       abbreviateNumericCartouches: __abbreviateNumericCartouches,
+      preserveNumericCartoucheBreaksInAbbreviation: __preserveNumericCartoucheBreaksInAbbreviation,
       autoCartoucheStandaloneProperNames: __autoCartoucheStandaloneProperNames,
       relaxedNanpaLinjanParsing: __relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering: __relaxedNanpaLinjanRendering,
@@ -439,6 +440,7 @@ const SitelenRenderer = (() => {
     };
     __renderSpacing = { ...DEFAULT_RENDER_SPACING, ...(state.renderSpacing || {}) };
     __abbreviateNumericCartouches = !!state.abbreviateNumericCartouches;
+    __preserveNumericCartoucheBreaksInAbbreviation = state.preserveNumericCartoucheBreaksInAbbreviation !== false;
     __autoCartoucheStandaloneProperNames = !!state.autoCartoucheStandaloneProperNames;
     __relaxedNanpaLinjanParsing = !!state.relaxedNanpaLinjanParsing;
     __relaxedNanpaLinjanRendering = !!state.relaxedNanpaLinjanRendering;
@@ -454,6 +456,12 @@ const SitelenRenderer = (() => {
   // Numeric/date/time cartouche display abbreviation.
   // Default false preserves the existing full nanpa-linja-n cartouche output.
   let __abbreviateNumericCartouches = false;
+
+  // When abbreviation is enabled, preserve each full-cartouche break sequence
+  // "nena en nena en" as one visible "en" codepoint. This renderer option is
+  // optional and defaults to true; explicitly set it to false for the previous
+  // behaviour, which drops the complete four-codepoint sequence.
+  let __preserveNumericCartoucheBreaksInAbbreviation = true;
 
   // Optional fallback for standalone capitalized proper-name words outside [].
   // Default to true preserves the existing unknown-text behavior.
@@ -489,6 +497,8 @@ const SitelenRenderer = (() => {
   function setShowUnknownText(v) { __showUnknownText = !!v; }
   function getAbbreviateNumericCartouches() { return !!__abbreviateNumericCartouches; }
   function setAbbreviateNumericCartouches(v) { __abbreviateNumericCartouches = !!v; }
+  function getPreserveNumericCartoucheBreaksInAbbreviation() { return __preserveNumericCartoucheBreaksInAbbreviation !== false; }
+  function setPreserveNumericCartoucheBreaksInAbbreviation(v) { __preserveNumericCartoucheBreaksInAbbreviation = v !== false; }
   function getAutoCartoucheStandaloneProperNames() { return !!__autoCartoucheStandaloneProperNames; }
   function setAutoCartoucheStandaloneProperNames(v) { __autoCartoucheStandaloneProperNames = !!v; }
   function getRelaxedNanpaLinjanParsing() { return !!__relaxedNanpaLinjanParsing; }
@@ -701,6 +711,12 @@ const SitelenRenderer = (() => {
     if (parser.abbreviateNumericCartouches != null) setAbbreviateNumericCartouches(!!parser.abbreviateNumericCartouches);
     else if (parser.numericCartoucheAbbreviation != null) setAbbreviateNumericCartouches(!!parser.numericCartoucheAbbreviation);
     else if (parser.abbreviatedNumericCartouches != null) setAbbreviateNumericCartouches(!!parser.abbreviatedNumericCartouches);
+
+    if (parser.preserveNumericCartoucheBreaksInAbbreviation != null) {
+      setPreserveNumericCartoucheBreaksInAbbreviation(parser.preserveNumericCartoucheBreaksInAbbreviation !== false);
+    } else if (parser.abbreviatedNumericCartoucheBreakAsEn != null) {
+      setPreserveNumericCartoucheBreaksInAbbreviation(parser.abbreviatedNumericCartoucheBreakAsEn !== false);
+    }
     if (parser.showUnknownText != null) setShowUnknownText(!!parser.showUnknownText);
     if (parser.autoCartoucheStandaloneProperNames != null) setAutoCartoucheStandaloneProperNames(!!parser.autoCartoucheStandaloneProperNames);
     if (parser.relaxedNanpaLinjanParsing != null) setRelaxedNanpaLinjanParsing(!!parser.relaxedNanpaLinjanParsing);
@@ -2385,6 +2401,7 @@ function wireHaloControls() {
 
       const out = [];
       let keptFirstNanpa = false;
+      const preserveBreaks = getPreserveNumericCartoucheBreaksInAbbreviation();
 
       for (let i = 0; i < input.length; i++) {
         const cp = input[i];
@@ -2398,6 +2415,21 @@ function wireHaloControls() {
 
         if (isFinalNanpa) {
           out.push(cp);
+          continue;
+        }
+
+        // A full numeric cartouche uses nena-en-nena-en as an internal break.
+        // In abbreviated output, optionally retain that break as one en glyph.
+        // This exact-sequence check must run before the generic drop set below.
+        if (
+          preserveBreaks &&
+          cp === CP_NENA &&
+          input[i + 1] === CP_EN &&
+          input[i + 2] === CP_NENA &&
+          input[i + 3] === CP_EN
+        ) {
+          out.push(CP_EN);
+          i += 3;
           continue;
         }
 
@@ -2424,6 +2456,7 @@ function wireHaloControls() {
         sourceSegmentIndex,
         fontPx,
         abbreviateNumericCartouches: getAbbreviateNumericCartouches(),
+        preserveNumericCartoucheBreaksInAbbreviation: getPreserveNumericCartoucheBreaksInAbbreviation(),
         inputCps: nanpaDebugCps(cps),
         displayCps: nanpaDebugCps(displayCps)
       });
