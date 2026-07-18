@@ -23,7 +23,6 @@
       --breakdown-font-size: 1rem;
       --learning-cell-min: 56px;
       --learning-gap: 8px;
-      --learning-label-width: 205px;
     }
 
     * { box-sizing: border-box; }
@@ -177,26 +176,10 @@
 
     .learning-row {
       display: grid;
-      grid-template-columns: var(--learning-label-width) max-content;
-      gap: 14px;
+      grid-template-columns: max-content;
       align-items: center;
       min-height: 50px;
       padding: 6px 0;
-    }
-
-    .learning-label {
-      position: sticky;
-      left: 0;
-      z-index: 3;
-      align-self: stretch;
-      display: flex;
-      align-items: center;
-      padding: 4px 10px 4px 0;
-      background: var(--bg);
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 750;
-      line-height: 1.3;
     }
 
     .aligned-line {
@@ -211,10 +194,6 @@
     .arrow-row {
       min-height: 28px;
       padding-block: 0;
-    }
-
-    .arrow-row .learning-label {
-      min-height: 28px;
     }
 
     .arrow-cell {
@@ -503,12 +482,15 @@
       font-size: 1rem;
     }
 
-    @media (max-width: 620px) {
+    @media (max-width: 900px),
+          (orientation: landscape) and (max-height: 620px) {
       .numericPunctuationWrap {
         width: 100%;
         max-width: 100%;
       }
+    }
 
+    @media (max-width: 620px) {
       .nanpaModeTable th,
       .nanpaModeTable td {
         padding: 6px;
@@ -573,12 +555,42 @@
       }
     }
 
+    @media (max-width: 900px),
+           (orientation: landscape) and (max-height: 620px) {
+      .breakdown {
+        font-size: var(--breakdown-font-size);
+      }
+
+      .learning-row {
+        min-height: 44px;
+        padding-block: 4px;
+      }
+
+      .arrow-row {
+        min-height: 24px;
+      }
+
+      .arrow-cell {
+        min-height: 24px;
+      }
+
+      .chip {
+        min-width: 1.8em;
+        min-height: 1.9em;
+        padding: 0.34em 0.42em;
+        border-radius: 7px;
+      }
+
+      .final-word {
+        padding-inline: 0.12em;
+      }
+    }
+
     @media (max-width: 760px) {
       body { margin: 12px; }
       .card { padding: 13px; }
       .controls { grid-template-columns: 1fr; }
       .controls button { width: 100%; }
-      :root { --learning-label-width: 155px; --learning-cell-min: 50px; }
     }
   </style>
 </head>
@@ -589,7 +601,7 @@
     <h1 id="pageTitle">From number to nanpa-linja-n proper name, cartouche, and audio</h1>
     <p class="help">
       Enter any numeric form accepted by the shared nanpa-linja-n parser. The page shows the
-      mode-specific units, the addition and reassignment of <strong>n</strong>, the completed
+      input components, the addition and reassignment of <strong>n</strong>, the completed
       proper name, and its full and abbreviated cartouches.
     </p>
 
@@ -628,37 +640,22 @@
       <div id="breakdownScroll" class="breakdown-scroll" tabindex="0" aria-label="Conversion breakdown">
         <div id="breakdown" class="breakdown">
           <div class="learning-row">
-            <div class="learning-label">Input components</div>
             <div id="inputComponents" class="aligned-line"></div>
           </div>
 
           <div class="learning-row arrow-row" aria-hidden="true">
-            <div class="learning-label"></div>
             <div id="inputArrows" class="aligned-line"></div>
           </div>
 
           <div class="learning-row">
-            <div class="learning-label">nanpa-linja-n units before reassignment</div>
-            <div id="rawUnits" class="aligned-line"></div>
-          </div>
-
-          <div class="learning-row arrow-row" aria-hidden="true">
-            <div class="learning-label"></div>
-            <div id="rawArrows" class="aligned-line"></div>
-          </div>
-
-          <div class="learning-row">
-            <div class="learning-label">Add the outer markers before reassignment</div>
             <div id="outerMarkerUnits" class="aligned-line"></div>
           </div>
 
           <div class="learning-row arrow-row" aria-hidden="true">
-            <div class="learning-label"></div>
             <div id="reassignmentArrows" class="aligned-line"></div>
           </div>
 
           <div class="learning-row">
-            <div class="learning-label">Complete nanpa-linja-n proper name after reassignment</div>
             <div id="alignedProperName" class="aligned-line"></div>
           </div>
         </div>
@@ -960,8 +957,6 @@
       breakdown: document.getElementById("breakdown"),
       inputComponents: document.getElementById("inputComponents"),
       inputArrows: document.getElementById("inputArrows"),
-      rawUnits: document.getElementById("rawUnits"),
-      rawArrows: document.getElementById("rawArrows"),
       outerMarkerUnits: document.getElementById("outerMarkerUnits"),
       reassignmentArrows: document.getElementById("reassignmentArrows"),
       alignedProperName: document.getElementById("alignedProperName"),
@@ -1725,43 +1720,6 @@
       appendEmptyCell(line, columnCount);
     }
 
-    function renderStraightArrows(line, model, columnCount) {
-      clearElement(line);
-      setColumnCount(line, columnCount);
-      appendEmptyCell(line, 1);
-      model.rawUnits.forEach((_unit, index) => {
-        const arrow = document.createElement("span");
-        arrow.className = "arrow-cell";
-        arrow.textContent = "↓";
-        placeAt(arrow, index + 2);
-        line.appendChild(arrow);
-      });
-      appendEmptyCell(line, columnCount);
-    }
-
-    function renderRawUnits(model, columnCount) {
-      clearElement(el.rawUnits);
-      setColumnCount(el.rawUnits, columnCount);
-      appendEmptyCell(el.rawUnits, 1);
-
-      model.rawUnits.forEach((unit, index) => {
-        const className =
-          unit.kind === "punctuation" || unit.kind === "percent"
-            ? "punctuation"
-            : "";
-        const chip = makeChip(unit.text, className);
-        chip.title = unit.kind === "digit"
-          ? "Mode-specific digit syllable"
-          : unit.kind === "negative"
-            ? "Negative marker: no never undergoes n reassignment"
-            : "Numeric punctuation shown as a separate word before n reassignment";
-        placeAt(chip, index + 2);
-        el.rawUnits.appendChild(chip);
-      });
-
-      appendEmptyCell(el.rawUnits, columnCount);
-    }
-
     function renderOuterMarkerUnits(model, columnCount) {
       clearElement(el.outerMarkerUnits);
       setColumnCount(el.outerMarkerUnits, columnCount);
@@ -1879,22 +1837,41 @@
 
     function setResponsiveBreakdownScale(model) {
       const score = Math.max(model.rawUnits.length, model.audioUnits.length);
-      const fontPx = score <= 18 ? 16
-        : score <= 30 ? 14.7
-          : score <= 50 ? 13.1
-            : 11.8;
+      const compactViewport = window.matchMedia(
+        "(max-width: 900px), (orientation: landscape) and (max-height: 620px)"
+      ).matches;
 
-      const cellMinPx = score <= 18 ? 56
-        : score <= 30 ? 50
-          : score <= 50 ? 44
-            : 38;
+      const fontPx = compactViewport
+        ? (score <= 18 ? 14
+          : score <= 30 ? 13
+            : score <= 50 ? 12
+              : 11)
+        : (score <= 18 ? 16
+          : score <= 30 ? 14.7
+            : score <= 50 ? 13.1
+              : 11.8);
 
-      const gapPx = score <= 30 ? 8 : score <= 50 ? 6 : 4;
+      const cellMinPx = compactViewport
+        ? (score <= 18 ? 42
+          : score <= 30 ? 38
+            : score <= 50 ? 34
+              : 30)
+        : (score <= 18 ? 56
+          : score <= 30 ? 50
+            : score <= 50 ? 44
+              : 38);
+
+      const gapPx = compactViewport
+        ? (score <= 18 ? 4
+          : score <= 30 ? 3
+            : 2)
+        : (score <= 30 ? 8
+          : score <= 50 ? 6
+            : 4);
 
       el.breakdown.style.setProperty("--breakdown-font-size", `${fontPx}px`);
       el.breakdown.style.setProperty("--learning-cell-min", `${cellMinPx}px`);
       el.breakdown.style.setProperty("--learning-gap", `${gapPx}px`);
-      el.breakdown.style.setProperty("--learning-label-width", "205px");
     }
 
     function fitBreakdownToDesktop() {
@@ -1912,10 +1889,6 @@
       let gapPx = parseFloat(
         getComputedStyle(breakdown).getPropertyValue("--learning-gap")
       ) || 8;
-      let labelWidthPx = parseFloat(
-        getComputedStyle(breakdown).getPropertyValue("--learning-label-width")
-      ) || 205;
-
       for (let attempt = 0; attempt < 12; attempt += 1) {
         const contentWidth = breakdown.scrollWidth;
         if (contentWidth <= availableWidth + 1) break;
@@ -1928,12 +1901,9 @@
         fontPx = Math.max(10, fontPx * ratio);
         cellMinPx = Math.max(28, cellMinPx * ratio);
         gapPx = Math.max(2, gapPx * ratio);
-        labelWidthPx = Math.max(150, labelWidthPx * Math.max(0.90, ratio));
-
         breakdown.style.setProperty("--breakdown-font-size", `${fontPx}px`);
         breakdown.style.setProperty("--learning-cell-min", `${cellMinPx}px`);
         breakdown.style.setProperty("--learning-gap", `${gapPx}px`);
-        breakdown.style.setProperty("--learning-label-width", `${labelWidthPx}px`);
 
         // Force layout before the next measurement.
         void breakdown.offsetWidth;
@@ -2191,8 +2161,6 @@
       for (const line of [
         el.inputComponents,
         el.inputArrows,
-        el.rawUnits,
-        el.rawArrows,
         el.outerMarkerUnits,
         el.reassignmentArrows,
         el.alignedProperName
@@ -2202,8 +2170,6 @@
 
       renderInputComponents(model, columnCount);
       renderInputArrows(el.inputArrows, model, columnCount);
-      renderRawUnits(model, columnCount);
-      renderStraightArrows(el.rawArrows, model, columnCount);
       renderOuterMarkerUnits(model, columnCount);
       renderReassignmentArrows(model, columnCount);
       renderAlignedProperName(model, columnCount);
