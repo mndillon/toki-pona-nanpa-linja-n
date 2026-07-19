@@ -900,10 +900,10 @@ function rowForItem(item) {
     <div class="nanpaListenQuizFeedback" role="status" aria-live="polite"></div>
     <div class="nanpaListenQuizReveal" hidden>
       <div class="nanpaListenQuizLine"><strong>Value:</strong> <span class="mono" data-quiz-value></span></div>
-      <div class="nanpaListenQuizLine"><strong>nanpa-linja-n proper name:</strong> <span class="mono" data-quiz-proper-name></span></div>
-      <div class="nanpaListenQuizLine" data-quiz-relaxed-proper-name-line hidden><strong>relaxed nanpa-linja-n proper name:</strong> <span class="mono" data-quiz-relaxed-proper-name></span></div>
+      <div class="nanpaListenQuizLine"><strong>strict nanpa-linja-n proper name:</strong> <span class="mono" data-quiz-proper-name></span></div>
+      <div class="nanpaListenQuizLine" data-quiz-relaxed-proper-name-line hidden><strong>relaxed nanpa-linja-n proper name (preferred):</strong> <span class="mono" data-quiz-relaxed-proper-name></span></div>
       <div class="nanpaListenQuizLine"><strong>nanpa-linja-n cartouche:</strong><canvas data-quiz-cartouche-normal aria-hidden="true"></canvas></div>
-      <div class="nanpaListenQuizLine"><strong>nanpa-linja-n abbreviated cartouche:</strong><canvas data-quiz-cartouche-abbrev aria-hidden="true"></canvas></div>
+      <div class="nanpaListenQuizLine"><strong>nanpa-linja-n abbreviated cartouche (preferred):</strong><canvas data-quiz-cartouche-abbrev aria-hidden="true"></canvas></div>
       <div class="nanpaListenQuizLine"><strong>#~ abbreviation:</strong> <span class="mono" data-quiz-code></span></div>
     </div>
   `;
