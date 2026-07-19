@@ -4003,6 +4003,8 @@
       ABBREV_CP_UTA
     ]);
 
+    const PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION = true;
+
     function abbreviateNumericCartoucheCps(cps) {
       const input = Array.from(cps ?? []).map(cp => Number(cp));
       if (!input.length) return input;
@@ -4012,11 +4014,15 @@
 
       for (let i = 0; i < input.length; i++) {
         const cp = input[i];
-        const isFinalNanpa = (cp === ABBREV_CP_NANPA && i === input.length - 1);
+        const isFinalNanpa =
+          cp === ABBREV_CP_NANPA &&
+          i === input.length - 1;
 
         if (!keptFirstNanpa) {
           out.push(cp);
-          if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
+          if (cp === ABBREV_CP_NANPA) {
+            keptFirstNanpa = true;
+          }
           continue;
         }
 
@@ -4025,7 +4031,25 @@
           continue;
         }
 
-        if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+        // This must run before the generic drop-set check.
+        if (
+          PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION &&
+          cp === ABBREV_CP_NENA &&
+          input[i + 1] === ABBREV_CP_EN &&
+          input[i + 2] === ABBREV_CP_NENA &&
+          input[i + 3] === ABBREV_CP_EN
+        ) {
+          out.push(ABBREV_CP_EN);
+          i += 3;
+          continue;
+        }
+
+        if (
+          NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)
+        ) {
+          continue;
+        }
+
         out.push(cp);
       }
 
@@ -4261,7 +4285,21 @@
   }
  
 
-  function trackUsage(eventName) {
+function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
   }
 </script>
 

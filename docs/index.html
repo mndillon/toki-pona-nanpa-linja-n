@@ -1039,7 +1039,7 @@
       <div class="help">#~n</div>
     </div>
   </main>
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=37"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=38"></script>
 
 
 <script>
@@ -1054,6 +1054,20 @@
  
 
   function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
   }
 </script>
 

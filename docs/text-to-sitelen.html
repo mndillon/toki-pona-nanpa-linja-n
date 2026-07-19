@@ -9012,7 +9012,21 @@ async function serializeRenderPlanToUnicodeJson(plan) {
   }
  
 
-  function trackUsage(eventName) {
+function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
   }
 </script>
 

@@ -1437,6 +1437,9 @@
       setStatus("Playing audio…");
       voice.playSamples(rendered.samples,rendered.sampleRate);
       setStatus("Ready.");
+      if (typeof window.trackUsage === "function"){
+        window.trackUsage("listening-practice-audio-play");
+      }
     }catch(err){
       if (token !== generationToken) return;
       console.error(err);
@@ -2459,7 +2462,21 @@
   }
  
 
-  function trackUsage(eventName) {
+function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
   }
 </script>
 

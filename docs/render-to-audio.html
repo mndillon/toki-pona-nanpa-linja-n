@@ -2213,7 +2213,8 @@
         el.result.hidden = true;
         updateAudioButtons();
         reportInputError("Enter a number or supported numeric form.");
-        return;
+
+        return false;
       }
 
       try {
@@ -2221,7 +2222,7 @@
         const model = buildModel(rawInput, mode);
         renderBreakdown(model);
         await renderCartouches(model);
-        if (jobId !== renderJobId) return;
+        if (jobId !== renderJobId) return false;
 
         clearInputError();
         currentModel = model;
@@ -2229,12 +2230,16 @@
         el.result.hidden = false;
         updateAudioButtons();
         prepareAudioInBackground(model);
+
+        return true;
       } catch (error) {
         if (jobId !== renderJobId) return;
         currentModel = null;
         el.result.hidden = true;
         updateAudioButtons();
         reportInputError(error?.message ?? String(error));
+
+        return false;
       }
     }
 
@@ -2759,6 +2764,10 @@
         };
 
         playCurrentAudioEntry();
+
+        if (typeof window.trackUsage === "function") {
+          window.trackUsage("render-to-audio-audio-play");
+        }
       } catch (error) {
         if (generation !== audioGeneration) return;
         audioSession = null;
@@ -2786,9 +2795,17 @@
       startAudio();
     }
 
-    el.form.addEventListener("submit", event => {
+    el.form.addEventListener("submit", async event => {
       event.preventDefault();
-      submitCurrentInput();
+
+      const rendered = await submitCurrentInput();
+
+      if (
+        rendered &&
+        typeof window.trackUsage === "function"
+      ) {
+        window.trackUsage("render-to-audio-render");
+      }
     });
 
     el.input.addEventListener("input", () => {
@@ -2852,8 +2869,23 @@
     }
   
 
-    function trackUsage(eventName) {
+function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
     }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
+  }
   </script>
 
   <script data-goatcounter="https://nanpalinjan.goatcounter.com/count" async src="./js/goatcounter-count.js">
