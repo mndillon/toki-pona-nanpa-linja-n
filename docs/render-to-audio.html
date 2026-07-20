@@ -969,8 +969,52 @@
     let preparedAudioPromise = null;
     let preparedAudioPromiseKey = "";
 
+    const INITIAL_VALUE_QUERY_PARAMS = Object.freeze([
+      "decimal",
+      "value",
+      "number",
+      "n"
+    ]);
+
     function normalizeMode(value) {
       return String(value ?? "").trim().toLowerCase() === "strict" ? "strict" : "relaxed";
+    }
+
+    function readValidInitialInputFromQuery() {
+      try {
+        const params = new URLSearchParams(window.location.search || "");
+        const maxLength = Number(el.input.maxLength) > 0
+          ? Number(el.input.maxLength)
+          : 500;
+
+        for (const name of INITIAL_VALUE_QUERY_PARAMS) {
+          if (!params.has(name)) continue;
+
+          const candidate = String(params.get(name) ?? "")
+            .trim()
+            .slice(0, maxLength);
+
+          if (!candidate) continue;
+
+          const parsed = NanpaParser.parseNumber(candidate, {
+            mode: "uniform",
+            mixedStyle: "short",
+            relaxedNanpaLinjanParsing: true
+          });
+
+          if (parsed?.caps) return candidate;
+        }
+      } catch {}
+
+      return null;
+    }
+
+    function applyInitialInputFromQuery() {
+      const initialInput = readValidInitialInputFromQuery();
+      if (initialInput == null) return null;
+
+      el.input.value = initialInput;
+      return initialInput;
     }
 
     function loadMode() {
@@ -2853,6 +2897,7 @@
 
     el.mode.value = loadMode();
     el.speed.value = loadSpeed();
+    applyInitialInputFromQuery();
     updateAudioButtons();
     warmVoiceDuringIdle();
     submitCurrentInput();
