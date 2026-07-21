@@ -160,6 +160,18 @@
       max-width: 100%;
     }
 
+    /* Why bother? examples table */
+    .whyBotherTable th:nth-child(2),
+    .whyBotherTable td:nth-child(2) {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .whyBotherTable th:nth-child(3),
+    .whyBotherTable td:nth-child(3) {
+      white-space: nowrap;
+    }
+
     /* nanpa-linja-n mode comparison table */
     .nanpaModeTable th,
     .nanpaModeTable td {
@@ -469,6 +481,53 @@
 
       <div class="help" style="margin-top:10px;">
         Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.
+      </div>
+
+      <h3 id="whyBotherTitle" style="margin:18px 0 6px;font-size:14px;">
+        Why bother?
+      </h3>
+
+      <div class="help">
+        Precise decimal numbers appear everywhere: in dates, times, measurements, percentages, telephone numbers and many other forms.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        nanpa-linja-n represents exact decimal numbers through proper names using a small, reusable set of digit syllables and numeric punctuation words. Once the ten digit syllables and a few separators are familiar, the same system can be used to read and write integers, decimals, fractions, dates, times and much more.
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        The examples below may initially look unfamiliar, but they are all constructed from the same repeating rules. You do not need to learn a separate method for each type of number.
+      </div>
+
+      <div class="tableWrap" role="region" aria-label="Examples of values represented as nanpa-linja-n proper names" style="margin-top:10px;">
+        <table class="digitTable whyBotherTable">
+          <thead>
+            <tr>
+              <th>Usage</th>
+              <th>Example</th>
+              <th>nanpa-linja-n proper name</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Integers</td><td><code>42</code></td><td><code>Nenatun</code></td></tr>
+            <tr><td>Negatives</td><td><code>-3</code></td><td><code>Neno Sen</code></td></tr>
+            <tr><td>Decimals</td><td><code>0.5</code></td><td><code>Nenin One Lun</code></td></tr>
+            <tr><td>ISO thousands</td><td><code>4,321</code></td><td><code>Nenan Eke Setuwan</code></td></tr>
+            <tr><td>Percentages</td><td><code>67%</code></td><td><code>Nenumun Oken</code></td></tr>
+            <tr><td>Scientific notation</td><td><code>9.8e-3</code></td><td><code>Nejen One Pin Eko Wanin Eko Nosen</code></td></tr>
+            <tr><td>Fractions</td><td><code>1/2</code></td><td><code>Newan Ono Tun</code></td></tr>
+            <tr><td>Integers and fractions</td><td><code>8+3/4</code></td><td><code>Nepin Oko Sen Ono Nan</code></td></tr>
+            <tr><td>Large integers</td><td><code>1,234,567</code></td><td><code>Newan Eke Tusenan Eke Lunumun</code></td></tr>
+            <tr><td>Dates</td><td><code>2026-07-18</code></td><td><code>Netunitunun Eke Nimun Eke Wapin</code></td></tr>
+            <tr><td>Times</td><td><code>06:30</code></td><td><code>Neninun Eke Senin</code></td></tr>
+            <tr><td>Telephone numbers</td><td><code>432-555-6789</code></td><td><code>Nenasetun Ene Lululun Ene Numupijen</code></td></tr>
+            <tr><td>Leading zeros</td><td><code>007</code></td><td><code>Neninimun</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="help" style="margin-top:10px;">
+        The aim is for learners to recognise the recurring patterns and eventually read, write and understand nanpa-linja-n directly.
       </div>
 
       <h3 style="margin:18px 0 6px;font-size:14px;">
