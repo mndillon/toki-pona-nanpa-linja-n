@@ -440,7 +440,7 @@ const SitelenRenderer = (() => {
     };
     __renderSpacing = { ...DEFAULT_RENDER_SPACING, ...(state.renderSpacing || {}) };
     __abbreviateNumericCartouches = !!state.abbreviateNumericCartouches;
-    __preserveNumericCartoucheBreaksInAbbreviation = state.preserveNumericCartoucheBreaksInAbbreviation !== false;
+    __preserveNumericCartoucheBreaksInAbbreviation = !!state.preserveNumericCartoucheBreaksInAbbreviation;
     __autoCartoucheStandaloneProperNames = !!state.autoCartoucheStandaloneProperNames;
     __relaxedNanpaLinjanParsing = !!state.relaxedNanpaLinjanParsing;
     __relaxedNanpaLinjanRendering = !!state.relaxedNanpaLinjanRendering;
@@ -457,11 +457,11 @@ const SitelenRenderer = (() => {
   // Default false preserves the existing full nanpa-linja-n cartouche output.
   let __abbreviateNumericCartouches = false;
 
-  // When abbreviation is enabled, preserve each full-cartouche break sequence
-  // "nena en nena en" as one visible "en" codepoint. This renderer option is
-  // optional and defaults to true; explicitly set it to false for the previous
-  // behaviour, which drops the complete four-codepoint sequence.
-  let __preserveNumericCartoucheBreaksInAbbreviation = true;
+ // When abbreviation is enabled, a full-cartouche break sequence
+  // "nena en nena en" may be represented by one visible "en" codepoint.
+  // This option defaults to false. Set it explicitly to true to show the
+  // internal break as "en" in abbreviated numeric cartouches.
+  let __preserveNumericCartoucheBreaksInAbbreviation = false;
 
   // Optional fallback for standalone capitalized proper-name words outside [].
   // Default to true preserves the existing unknown-text behavior.
@@ -497,8 +497,12 @@ const SitelenRenderer = (() => {
   function setShowUnknownText(v) { __showUnknownText = !!v; }
   function getAbbreviateNumericCartouches() { return !!__abbreviateNumericCartouches; }
   function setAbbreviateNumericCartouches(v) { __abbreviateNumericCartouches = !!v; }
-  function getPreserveNumericCartoucheBreaksInAbbreviation() { return __preserveNumericCartoucheBreaksInAbbreviation !== false; }
-  function setPreserveNumericCartoucheBreaksInAbbreviation(v) { __preserveNumericCartoucheBreaksInAbbreviation = v !== false; }
+  function getPreserveNumericCartoucheBreaksInAbbreviation() {
+    return !!__preserveNumericCartoucheBreaksInAbbreviation;
+  }
+  function setPreserveNumericCartoucheBreaksInAbbreviation(v) {
+    __preserveNumericCartoucheBreaksInAbbreviation = !!v;
+  }
   function getAutoCartoucheStandaloneProperNames() { return !!__autoCartoucheStandaloneProperNames; }
   function setAutoCartoucheStandaloneProperNames(v) { __autoCartoucheStandaloneProperNames = !!v; }
   function getRelaxedNanpaLinjanParsing() { return !!__relaxedNanpaLinjanParsing; }

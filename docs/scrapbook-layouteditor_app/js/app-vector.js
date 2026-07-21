@@ -2163,7 +2163,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=177').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=179').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Multiline Text → Sitelen Pona → PNG image file download</title>
+  <title>Sitelen Pona Vector Export Test</title>
 
   <link rel="icon" href="/icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
@@ -18,52 +18,6 @@
       --bg: #F3DFC0;
       --muted: #3f4750;
     }
-
-    /* ── Startup loading veil ── */
-body {
-  opacity: 1;
-}
-
-#loadingVeil {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: var(--bg, #F3DFC0);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  transition: opacity 0.25s ease;
-}
-
-#loadingVeil.ready {
-  opacity: 0;
-  pointer-events: none;
-}
-
-#loadingVeilSpinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgba(17,17,17,0.12);
-  border-top-color: rgba(17,17,17,0.55);
-  border-radius: 50%;
-  animation: veilSpin 0.7s linear infinite;
-}
-
-#loadingVeilLabel {
-  font: 500 14px/1 system-ui, sans-serif;
-  color: rgba(17,17,17,0.55);
-  letter-spacing: 0.02em;
-}
-
-body.shellReady {
-  opacity: 1;
-}
-
-@keyframes veilSpin {
-  to { transform: rotate(360deg); }
-}
 
     body {
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -181,40 +135,6 @@ body.shellReady {
     }
     button:hover { background: var(--bg); }
 
-    .audio-button {
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 0 6px 0 0;
-      vertical-align: baseline;
-    }
-
-    .audio-button:hover {
-      background: transparent;
-    }
-
-    .audio-button:disabled {
-      cursor: default;
-      opacity: 0.45;
-    }
-
-    .textAudioInlineControl {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin: 0;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .textAudioSpeedSelect {
-      width: auto !important;
-      min-width: 96px;
-      padding: 6px 8px;
-      height: 34px;
-    }
-
     .btnBi {
       display: flex;
       flex-direction: column;
@@ -240,25 +160,6 @@ body.shellReady {
       border-radius: 10px;
       background: transparent;
       max-width: 100%;
-    }
-
-    .outputCanvasWrap {
-      position: relative;
-      display: inline-block;
-      max-width: 100%;
-      line-height: 0;
-    }
-
-    .audioHighlightCanvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      max-width: none;
-      border: none;
-      border-radius: 10px;
-      background: transparent;
-      pointer-events: none;
     }
 
     .small { font-size: 12px; color: var(--muted); }
@@ -592,11 +493,6 @@ body.shellReady {
 </head>
 
 <body>
-  <div id="loadingVeil" aria-live="polite" aria-label="Loading">
-  <div id="loadingVeilSpinner"></div>
-  <div id="loadingVeilLabel">Loading…</div>
-</div>
-
   <a href="#main" class="skipLink">
     Skip to content
     <span class="tpLine">o tawa lipu ni</span>
@@ -604,7 +500,7 @@ body.shellReady {
 
   <main class="card" id="main" role="main" aria-labelledby="pageTitle">
     <h1 id="pageTitle" style="margin:0 0 6px;font-size:18px;">
-      Toki Pona Multiline text → sitelen pona glyphs → PNG image file download &amp; PDF file download
+      Toki Pona Multiline text → sitelen pona glyphs → PNG/PDF plus vector SVG/PDF test
       <span class="tpLine">toki pona sitelen mute-linja tawa sitelen pona lon ilo sitelen</span>
     </h1>
 
@@ -629,6 +525,7 @@ body.shellReady {
       <ul style="margin:6px 0 0 18px; padding:0;">
         <li>Converts Toki Pona words to sitelen pona glyphs.</li>
         <li>The sitelen pona glyphs can be downloaded as a png image file.</li>
+        <li><strong>Vector test:</strong> SVG/PDF vector export uses the same renderer plan as this page, then sends runs and font bytes to Rust/WASM for path extraction.</li>
         <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as nanpa-linja-n cartouches.</li>
         <li>Decimal-form numbers like <span class="mono">-5,432.10</span>, <span class="mono">1.2K</span>, or <span class="mono">.06</span> render as nanpa-linja-n cartouches.</li>
         <li>End-of-line full stops are not treated as part of a number (e.g. <span class="mono">06.</span>).</li>
@@ -638,7 +535,7 @@ body.shellReady {
         <li><strong>Middle dot:</strong> The Unicode character U+00B7 &#x2014; '&#x00B7;' is used to display the middle dot glyph.</li>
         <li><strong>Punctuation:</strong> Word 'ota' maps to middle dot, and word 'kolon' maps to colon, these are non-standard words and are used for convenience only.</li>
         <li><strong>Quotation:</strong> Text inside double quotes is rendered exactly as typed, e.g. "Hello World!".  The text font selector is used to pick the font for this text.</li>
-        <li><strong>Tokiponization:</strong> Text that starts with a capital letter e.g. <strong>Towasi</strong> or <strong>Nemen@db</strong> or <strong>Multi_Words@db</strong> will be looked up in the  <a class="repoLink" href="./cartouche-db.html" target="_blank" rel="noopener noreferrer">Proper Name Cartouche Database</a> to decide how to display it.</li>
+        <li><strong>Tokiponization:</strong> Text that starts with a capital letter e.g. <strong>Towasi</strong> or <strong>Nemen@db</strong> will be looked up in the  <a class="repoLink" href="./cartouche-db.html" target="_blank" rel="noopener noreferrer">Proper Name Cartouche Database</a> to decide how to display it.</li>
         <li>Unknown words are highlighted by default, but can be ignored.</li>
       </ul>
     </div>
@@ -670,27 +567,6 @@ body.shellReady {
             <span>Export .txt</span>
             <span class="tpLine">o pana e lipu</span>
           </button>
-
-          <button
-            id="appBtnPlayTextAudioMain"
-            class="audio-button"
-            type="button"
-            title="Read input audio, ignore quoted text and unknowns"
-            aria-label="Read input audio, ignore quoted text and unknowns"
-          >🤖🔊</button>
-
-          <button
-            id="appBtnStopTextAudioMain"
-            class="audio-button"
-            type="button"
-            title="Stop input audio"
-            aria-label="Stop input audio"
-          >⏹️</button>
-
-          <label class="textAudioInlineControl" for="appTextAudioSpeedSelMain">
-            <span>Audio speed</span>
-            <select id="appTextAudioSpeedSelMain" class="textAudioSpeedSelect" aria-label="Audio speed"></select>
-          </label>
 
           <button id="appBtnTogglePopoutMain" type="button" class="btnBi">
             <span>Pop-out editor</span>
@@ -763,17 +639,6 @@ nanpa #~WI.
             <input id="appNumericCartoucheAbbrevEnable" type="checkbox" aria-label="Abbreviate numeric cartouche output">
             <span class="ctlLabel" style="margin:0;">Enabled</span>
           </label>
-        </div>
-
-        <!-- Nanpa-linja-n relaxed mode -->
-        <div id="ctlNanpaRelaxedMode" class="inlineControl inlinePill" role="group" aria-label="Nanpa-linja-n strict or relaxed mode">
-          <span class="ctlLabel">
-            Nanpa-linja-n mode <span class="tpInline">nasin nanpa</span>
-          </span>
-          <select id="appNanpaRelaxedModeSel" aria-label="Nanpa-linja-n strict or relaxed mode">
-            <option value="strict" selected>Strict</option>
-            <option value="relaxed">Relaxed</option>
-          </select>
         </div>
 
         <!-- Font size -->
@@ -874,25 +739,6 @@ nanpa #~WI.
             <span class="ctlLabel" style="margin:0;">Enabled</span>
           </label>
         </div>
-
-        <!-- Background toggle: intentionally after all previously existing properties -->
-        <div id="ctlBackgroundEnable" class="inlineControl inlinePill" role="group" aria-label="Background">
-          <span class="ctlLabel">
-            Background <span class="tpInline">kule monsi</span>
-          </span>
-          <label style="display:flex; align-items:center; gap:8px; margin:0;">
-            <input id="appBackgroundEnable" type="checkbox" aria-label="Enable background">
-            <span class="ctlLabel" style="margin:0;">Enabled</span>
-          </label>
-        </div>
-
-        <!-- Background color picker: intentionally the final property -->
-        <div id="ctlBackgroundColor" class="inlineControl inlinePill" role="group" aria-label="Background color">
-          <span class="ctlLabel">
-            Background color <span class="tpInline">kule monsi</span>
-          </span>
-          <input id="appBackgroundPick" class="swatch" type="color" aria-label="Background color">
-        </div>
       </div>
     </div>
 
@@ -901,34 +747,25 @@ nanpa #~WI.
         Output canvas
         <span class="tpLine">ilo sitelen kama</span>
       </label>
-      <div class="outputCanvasWrap">
-        <canvas id="appOutCanvas" aria-hidden="true"></canvas>
-        <canvas id="appAudioHighlightCanvas" class="audioHighlightCanvas" aria-hidden="true"></canvas>
-      </div>
+      <canvas id="appOutCanvas" aria-hidden="true"></canvas>
 
       <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
         <button id="appBtnDownloadPng" type="button" class="btnBi" aria-describedby="btnDownloadHelp">
           <span>Download PNG</span>
           <span class="tpLine">o kama jo e sitelen PNG</span>
         </button>
-        <div id="btnDownloadHelp" class="sr-only">Downloads the rendered output as a PNG generated from SVG vector paths, using either transparency or the enabled background color.</div>
+        <div id="btnDownloadHelp" class="sr-only">Downloads the output canvas as a transparent PNG.</div>
 
-        <button id="appBtnDownloadSvg" type="button" class="btnBi" disabled aria-describedby="btnDownloadSvgHelp">
-          <span>Download SVG</span>
-          <span class="tpLine">o kama jo e SVG</span>
-        </button>
-        <div id="btnDownloadSvgHelp" class="sr-only">Exports the current renderer plan as SVG vector paths using Rust/WASM.</div>
-
-        <span id="appBackgroundStatus" class="small">
+        <span class="small">
           (Transparent background)
           <span class="tpLine">(poka sitelen li lon ala)</span>
         </span>
 
-        <button id="appBtnDownloadPdf" type="button" class="btnBi" disabled aria-describedby="btnDownloadPdfHelp">
+        <button id="appBtnDownloadPdf" type="button" class="btnBi" aria-describedby="btnDownloadPdfHelp">
           <span>Download PDF</span>
           <span class="tpLine">o kama jo e lipu PDF</span>
         </button>
-        <div id="btnDownloadPdfHelp" class="sr-only">Exports a PDF by converting the same SVG vector paths used by SVG export into PDF vector paths.</div>
+        <div id="btnDownloadPdfHelp" class="sr-only">Exports the rendered output as a PDF with embedded fonts.</div>
 
         <button id="appBtnDownloadUnicodeJson" type="button" class="btnBi" aria-describedby="btnDownloadUnicodeJsonHelp">
           <span>Download Unicode JSON</span>
@@ -936,7 +773,19 @@ nanpa #~WI.
         </button>
         <div id="btnDownloadUnicodeJsonHelp" class="sr-only">Exports the rendered output as Unicode JSON with fonts, run types, input text, and reconstructible codepoint streams.</div>
 
-        <label class="inlineControl inlinePill" style="flex-direction:row; align-items:center; gap:8px; margin:0; display:none;" title="When enabled, the exporter sends debug:true to Rust/WASM and prints detailed logs in the browser console.">
+        <button id="appBtnDownloadVectorSvg" type="button" class="btnBi" disabled aria-describedby="btnDownloadVectorSvgHelp">
+          <span>Download vector SVG</span>
+          <span class="tpLine">o kama jo e SVG</span>
+        </button>
+        <div id="btnDownloadVectorSvgHelp" class="sr-only">Exports the current renderer plan as SVG vector paths using Rust/WASM.</div>
+
+        <button id="appBtnDownloadVectorPdf" type="button" class="btnBi" disabled aria-describedby="btnDownloadVectorPdfHelp">
+          <span>Download vector PDF</span>
+          <span class="tpLine">o kama jo e PDF nasin linja</span>
+        </button>
+        <div id="btnDownloadVectorPdfHelp" class="sr-only">Exports the current renderer plan as PDF vector paths using Rust/WASM.</div>
+
+        <label class="inlineControl inlinePill" style="flex-direction:row; align-items:center; gap:8px; margin:0;" title="When enabled, the exporter sends debug:true to Rust/WASM and prints detailed logs in the browser console.">
           <input id="appVectorWasmDebugEnable" type="checkbox" checked aria-label="Enable vector WASM debug logging">
           <span class="ctlLabel" style="margin:0;">Debug vector WASM</span>
         </label>
@@ -975,9 +824,7 @@ nanpa #~WI.
       <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=2" />
       <div class="help">&nbsp;</div>
 
-      <div class="help">&nbsp;</div>
-      <img width="1550" src="./images/nanpa-linja-n-cartouche-abbrev-examples.png?v=4" />
-      <div class="help">&nbsp;</div>
+
 
 
       <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
@@ -1079,27 +926,6 @@ nanpa #~WI.
         <span>Export .txt</span>
         <span class="tpLine">o pana e lipu</span>
       </button>
-
-      <button
-        id="appBtnPlayTextAudioPop"
-        class="audio-button"
-        type="button"
-        title="Read input audio, ignore quoted text and unknowns"
-        aria-label="Read input audio, ignore quoted text and unknowns"
-      >🤖🔊</button>
-
-      <button
-        id="appBtnStopTextAudioPop"
-        class="audio-button"
-        type="button"
-        title="Stop input audio"
-        aria-label="Stop input audio"
-      >⏹️</button>
-
-      <label class="textAudioInlineControl" for="appTextAudioSpeedSelPop">
-        <span>Audio speed</span>
-        <select id="appTextAudioSpeedSelPop" class="textAudioSpeedSelect" aria-label="Audio speed"></select>
-      </label>
     </div>
 
     <input id="appFilePickTextIn" type="file" accept=".txt,text/plain" class="sr-only" />
@@ -1116,38 +942,13 @@ nanpa #~WI.
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
       TEXT_FONT_OPTION_NANPA_LINJA_N
-    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15";
+    } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 
-    import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=35';
+    import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=30';
     import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=166';
-    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=27';
-    import {
-      buildSitelenSentenceAudioBuffersFromRawText,
-      stopSitelenAudioPlayback,
-      summarizeSkippedAudio as summarizeSitelenAudioSkipped
-    } from './js/sitelen-audio-plan.js?v=3';
     let pageMap = new Map();
 
     "use strict";
-
-    function setStartupLoadingMessage(message) {
-  const label = document.getElementById("loadingVeilLabel");
-  if (label && message != null) label.textContent = String(message);
-}
-
-function hideStartupLoading() {
-  document.body.classList.add("shellReady");
-
-  const veil = document.getElementById("loadingVeil");
-  if (!veil) return;
-
-  veil.classList.add("ready");
-
-  window.setTimeout(() => {
-    try { veil.remove(); } catch {}
-  }, 300);
-}
-
 
     const elSrStatus = document.getElementById("appSrStatus");
     function announceStatus(msg) {
@@ -1163,165 +964,12 @@ function hideStartupLoading() {
       return new Promise(resolve => requestAnimationFrame(() => resolve()));
     }
 
-    const QUOTED_TEXT_FONT_DEBUG = true;
-    try {
-      window.__ttsQuotedFontDebugInstalled = true;
-      window.__ttsQuotedFontDebugVersion = "v6-hardcoded-liberation-face-fix";
-      console.warn("[tts-quoted-font-debug] installed", {
-        version: window.__ttsQuotedFontDebugVersion,
-        href: window.location.href
-      });
-    } catch {}
-
-    function quotedFontDebug(...args) {
-      if (!QUOTED_TEXT_FONT_DEBUG) return;
-      try { console.warn("[tts-quoted-font-debug]", ...args); } catch {}
-    }
-
-    function quotedFontWarn(...args) {
-      try { console.warn("[tts-quoted-font-debug]", ...args); } catch {}
-    }
-
-    function quotedFontCloneForLog(value) {
-      try { return JSON.parse(JSON.stringify(value)); }
-      catch { return value; }
-    }
-
-    function quotedFontFaceForFamily(family, preset = null) {
-      const fam = String(family ?? "").trim();
-      if (!fam) return null;
-
-      // HARD FIX: do not rely on preset.faces or controller state for the
-      // built-in Liberation quoted-text aliases.  These must always resolve
-      // to a concrete font file when the selected family is one of the
-      // vector-safe Liberation families.
-      const directFaceByFamily = {
-        "TP-Vector-Liberation-Sans-Font": {
-          family: "TP-Vector-Liberation-Sans-Font",
-          url: "./fonts/LiberationSans-Regular.ttf",
-          format: "truetype",
-          sample: "Hello"
-        },
-        "TP-Vector-Liberation-Serif-Font": {
-          family: "TP-Vector-Liberation-Serif-Font",
-          url: "./fonts/LiberationSerif-Regular.ttf",
-          format: "truetype",
-          sample: "Hello"
-        },
-        "TP-Vector-Liberation-Mono-Font": {
-          family: "TP-Vector-Liberation-Mono-Font",
-          url: "./fonts/LiberationMono-Regular.ttf",
-          format: "truetype",
-          sample: "Hello"
-        }
-      };
-
-      const directFace = directFaceByFamily[fam];
-      if (directFace) {
-        quotedFontDebug("quotedFontFaceForFamily DIRECT HARD-CODED VECTOR FACE", {
-          family: fam,
-          face: quotedFontCloneForLog(directFace)
-        });
-        return directFace;
-      }
-
-      const livePreset = preset || (() => { try { return getActiveFontPreset(); } catch { return null; } })();
-      const selectKey = (() => {
-        try { return document.getElementById("appScriptPresetSel")?.value || null; }
-        catch { return null; }
-      })();
-
-      // IMPORTANT: getActiveFontPreset() may return a controller-normalized/dynamic
-      // preset object that does not carry the static preset.faces array.  The
-      // Liberation fallback faces live in RENDER_FONT_PRESETS, so search both the
-      // live preset and the static registry entry.
-      const candidates = [
-        livePreset,
-        livePreset?.key ? RENDER_FONT_PRESETS?.[livePreset.key] : null,
-        selectKey ? RENDER_FONT_PRESETS?.[selectKey] : null
-      ].filter(Boolean);
-
-      const seen = new Set();
-      for (const p of candidates) {
-        if (seen.has(p)) continue;
-        seen.add(p);
-        const faces = Array.isArray(p?.faces) ? p.faces : [];
-        const face = faces.find(face => String(face?.family ?? "") === fam);
-        if (face) return face;
-      }
-
-      return null;
-    }
-
-    function quotedFontCssCheck(family, px = null, sample = "Hello") {
-      try {
-        if (!document.fonts || !family) return null;
-        const size = Math.max(8, Number(px ?? getFontPx?.() ?? 56));
-        return document.fonts.check(`${size}px "${family}"`, String(sample ?? "Hello"));
-      } catch {
-        return null;
-      }
-    }
-
-    function quotedFontDebugState(label, extra = {}) {
-      try {
-        const preset = getActiveFontPreset?.();
-        const optionKey = getSelectedTextFontOptionKey?.();
-        const normalizedOptionKey = normalizeTextFontOptionKey?.(optionKey);
-        const resolvedLiteralFamily = resolveLiteralFontFamily?.(optionKey, preset);
-        const controllerRoles = sitelenFontController?.buildFontRoles?.();
-        const face = quotedFontFaceForFamily(resolvedLiteralFamily, preset);
-        quotedFontDebug(label, {
-          selectedRaw: document.getElementById("appTextFontSel")?.value ?? null,
-          optionKey,
-          normalizedOptionKey,
-          resolvedLiteralFamily,
-          presetKey: preset?.key ?? null,
-          presetLabel: preset?.label ?? null,
-          face: face ? quotedFontCloneForLog(face) : null,
-          fontCssCheck: quotedFontCssCheck(resolvedLiteralFamily, getFontPx?.(), face?.sample || "Hello"),
-          controllerRoles: controllerRoles ? quotedFontCloneForLog(controllerRoles) : null,
-          ...extra
-        });
-      } catch (err) {
-        quotedFontWarn(label, "debug-state-failed", err);
-      }
-    }
-
     
 
 
     const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
     const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
     const FONT_FAMILY_LITERAL = "Patrick-Head-Font";
-    const FONT_FAMILY_LITERAL_CARTOUCHE = "TP-Nasin-Nanpa-Literal-Cartouche-Font";
-    const FONT_FAMILY_LIBERATION_SANS = "TP-Vector-Liberation-Sans-Font";
-    const FONT_FAMILY_LIBERATION_SERIF = "TP-Vector-Liberation-Serif-Font";
-    const FONT_FAMILY_LIBERATION_MONO = "TP-Vector-Liberation-Mono-Font";
-
-    // Direct vector-safe face map for quoted-text browser-font aliases.
-    // This is deliberately independent of preset.faces/controller state so
-    // Arial/Times/Courier/system-ui can always resolve to real font files.
-    const VECTOR_SAFE_LITERAL_FONT_FACE_BY_FAMILY = Object.freeze({
-      [FONT_FAMILY_LIBERATION_SANS]: {
-        family: FONT_FAMILY_LIBERATION_SANS,
-        url: "./fonts/LiberationSans-Regular.ttf",
-        format: "truetype",
-        sample: "Hello"
-      },
-      [FONT_FAMILY_LIBERATION_SERIF]: {
-        family: FONT_FAMILY_LIBERATION_SERIF,
-        url: "./fonts/LiberationSerif-Regular.ttf",
-        format: "truetype",
-        sample: "Hello"
-      },
-      [FONT_FAMILY_LIBERATION_MONO]: {
-        family: FONT_FAMILY_LIBERATION_MONO,
-        url: "./fonts/LiberationMono-Regular.ttf",
-        format: "truetype",
-        sample: "Hello"
-      }
-    });
 
     const RENDER_FONT_PRESETS = {
       nasinNanpa: {
@@ -1331,11 +979,9 @@ function hideStartupLoading() {
         textFamily: FONT_FAMILY_TEXT,
         cartoucheFamily: FONT_FAMILY_CARTOUCHE,
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: FONT_FAMILY_LITERAL_CARTOUCHE,
         settings: {
-          literalCartoucheRuleClipScale: 0.24985,
-          literalCartoucheRuleClipStrategy: "leftCap",
-          literalCartoucheLeftCapClipRatio: 0.90
+          literalCartoucheRuleClipScale: 0.42,
+          literalCartoucheRuleClipStrategy: "thinRule"
         },
         literalOptions: [
           [TEXT_FONT_OPTION_SITELEN, "sitelen font"],
@@ -1356,12 +1002,6 @@ function hideStartupLoading() {
             sample: String.fromCodePoint(0xF196C)
           },
           {
-            family: FONT_FAMILY_LITERAL_CARTOUCHE,
-            url: "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-            format: "opentype",
-            sample: "Hello"
-          },
-          {
             family: FONT_FAMILY_CARTOUCHE,
             url: "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf",
             format: "opentype",
@@ -1370,24 +1010,6 @@ function hideStartupLoading() {
           {
             family: FONT_FAMILY_LITERAL,
             url: "./fonts/PatrickHand-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_SANS,
-            url: "./fonts/LiberationSans-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_SERIF,
-            url: "./fonts/LiberationSerif-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_MONO,
-            url: "./fonts/LiberationMono-Regular.ttf",
             format: "truetype",
             sample: "Hello"
           }
@@ -1400,7 +1022,6 @@ function hideStartupLoading() {
         textFamily: "SSK-Juniko",
         cartoucheFamily: "SSK-Juniko-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "SSK-Juniko",
         settings: {
           literalCartoucheRuleClipScale: 0.0,
           literalCartoucheRuleClipStrategy: "none"
@@ -1434,24 +1055,6 @@ function hideStartupLoading() {
             url: "./fonts/PatrickHand-Regular.ttf",
             format: "truetype",
             sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_SANS,
-            url: "./fonts/LiberationSans-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_SERIF,
-            url: "./fonts/LiberationSerif-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_MONO,
-            url: "./fonts/LiberationMono-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
           }
         ]
       },
@@ -1462,9 +1065,8 @@ function hideStartupLoading() {
         textFamily: "fairfaxHd",
         cartoucheFamily: "fairfaxHd-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "fairfaxHd",
         settings: {
-          literalCartoucheRuleClipScale: 0.9,
+          literalCartoucheRuleClipScale: 0.90,
           literalCartoucheRuleClipStrategy: "compound"
         },
         literalOptions: [
@@ -1496,24 +1098,6 @@ function hideStartupLoading() {
             url: "./fonts/PatrickHand-Regular.ttf",
             format: "truetype",
             sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_SANS,
-            url: "./fonts/LiberationSans-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_SERIF,
-            url: "./fonts/LiberationSerif-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_MONO,
-            url: "./fonts/LiberationMono-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
           }
         ]
       },
@@ -1524,7 +1108,6 @@ function hideStartupLoading() {
         textFamily: "fairfaxPonaHd",
         cartoucheFamily: "fairfaxPonaHd-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
-        literalCartoucheFamily: "fairfaxPonaHd",
         settings: {
           literalCartoucheRuleClipScale: 0.90,
           literalCartoucheRuleClipStrategy: "compound"
@@ -1558,24 +1141,6 @@ function hideStartupLoading() {
             url: "./fonts/PatrickHand-Regular.ttf",
             format: "truetype",
             sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_SANS,
-            url: "./fonts/LiberationSans-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_SERIF,
-            url: "./fonts/LiberationSerif-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
-          },
-          {
-            family: FONT_FAMILY_LIBERATION_MONO,
-            url: "./fonts/LiberationMono-Regular.ttf",
-            format: "truetype",
-            sample: "Hello"
           }
         ]
       }
@@ -1590,44 +1155,17 @@ function hideStartupLoading() {
     let sitelenVectorExporterPromise = null;
     let sitelenVectorReady = false;
 
-    const VECTOR_DIAGNOSTIC_DEBUG = true;
-    const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=179",
-      fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
-      cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
-      vectorExporter: "./js/sitelen-vector-exporter.js?v=166",
-      vectorWasm: "./wasm/sitelen_vector_wasm.js?v=143"
-    });
-
-    function vectorDiag(...args) {
-      if (!VECTOR_DIAGNOSTIC_DEBUG) return;
-      try { console.info("[tts-vector-diagnostics]", ...args); } catch {}
-    }
-
-    function vectorDiagWarn(...args) {
-      try { console.warn("[tts-vector-diagnostics]", ...args); } catch {}
-    }
-
-    function safeCloneForLog(value) {
-      try { return JSON.parse(JSON.stringify(value)); }
-      catch { return value; }
-    }
-
     function setVectorButtonsEnabled(enabled) {
-      const svgBtn = document.getElementById("appBtnDownloadSvg");
-      const pdfBtn = document.getElementById("appBtnDownloadPdf");
+      const svgBtn = document.getElementById("appBtnDownloadVectorSvg");
+      const pdfBtn = document.getElementById("appBtnDownloadVectorPdf");
       if (svgBtn) svgBtn.disabled = !enabled;
       if (pdfBtn) pdfBtn.disabled = !enabled;
     }
 
     function announceVectorStatus(msg) {
-      vectorDiag("exporter status", msg);
       try { console.info("[vector-export]", msg); } catch {}
     }
 
-    function getVectorWasmDebugEnabled() {
-      return false;
-    }
 
     const VECTOR_WASM_DEBUG_STORAGE_KEY = "tpVectorWasmDebugLogs";
 
@@ -1643,6 +1181,11 @@ function hideStartupLoading() {
 
     function saveVectorWasmDebugEnabledToStorage(v) {
       try { localStorage.setItem(VECTOR_WASM_DEBUG_STORAGE_KEY, v ? "1" : "0"); } catch {}
+    }
+
+    function getVectorWasmDebugEnabled() {
+      const el = document.getElementById("appVectorWasmDebugEnable");
+      return !!el?.checked;
     }
 
     function setVectorWasmDebugEnabled(v, { persist = true } = {}) {
@@ -1662,57 +1205,22 @@ function hideStartupLoading() {
 
     function initVectorWasmDebugControl() {
       const saved = loadVectorWasmDebugEnabledFromStorage();
-      // Default ON so useful logs appear immediately.
+      // Default ON for this diagnostic test page so useful logs appear immediately.
       setVectorWasmDebugEnabled(saved ?? true, { persist: false });
       try { console.info("[vector-export] debug initial", getVectorWasmDebugEnabled()); } catch {}
-    }
-
-    function summarizeRunsForVectorDebug(plan) {
-      return (plan?.lines || []).flatMap((line, lineIndex) => (line?.runs || []).map((run, runIndex) => ({
-        lineIndex,
-        runIndex,
-        kind: run?.kind,
-        type: run?.type,
-        renderMode: run?.renderMode,
-        sourceKind: run?.sourceKind,
-        fontRole: run?.fontRole,
-        fontFamily: run?.fontFamily,
-        fontPx: run?.fontPx,
-        sourceText: run?.sourceText,
-        encodedText: run?.encodedText,
-        cpsHex: Array.isArray(run?.cps) ? run.cps.slice(0, 80).map(cp => "U+" + Number(cp).toString(16).toUpperCase()) : null,
-        xPx: run?.xPx,
-        drawXPx: run?.drawXPx,
-        baselineYPx: run?.baselineYPx,
-        yPx: run?.yPx,
-        widthPx: run?.widthPx,
-        heightPx: run?.heightPx,
-        ascentPx: run?.ascentPx,
-        descentPx: run?.descentPx,
-        haloEnabled: run?.halo?.enabled,
-        haloWidthPx: run?.halo?.widthPx,
-        haloColor: run?.halo?.color,
-        literalCartoucheRuleClipScale: run?.literalCartoucheRuleClipScale ?? run?._element?.literalCartoucheRuleClipScale ?? run?.element?.literalCartoucheRuleClipScale ?? null,
-        literalCartoucheRuleClipStrategy: run?.literalCartoucheRuleClipStrategy ?? run?._element?.literalCartoucheRuleClipStrategy ?? run?.element?.literalCartoucheRuleClipStrategy ?? null,
-      })));
-    }
-
-    function summarizeLiteralCartoucheRunsForVectorDebug(plan) {
-      return summarizeRunsForVectorDebug(plan).filter(r =>
-        r.kind === "cartouche" || /ABC|^"|"$/.test(String(r.sourceText || "")) || /cartouche/i.test(String(r.kind || ""))
-      );
     }
 
     async function ensureVectorExporterReady() {
       if (sitelenVectorExporter && sitelenVectorReady) return sitelenVectorExporter;
       if (!sitelenVectorExporterPromise) {
         sitelenVectorExporterPromise = (async () => {
-          vectorDiag("ensureVectorExporterReady START", { imports: VECTOR_DIAG_IMPORTS, location: window.location.href });
           const renderer = await ensureRendererReady();
           const ex = await SitelenVectorExporter.create({
             renderer,
             fontController: sitelenFontController,
-            wasmModuleUrl: new URL(VECTOR_DIAG_IMPORTS.vectorWasm, window.location.href).href,
+            // Resolved relative to this HTML page, then passed as an absolute URL.
+            // This avoids the earlier /js/wasm/... dynamic-import mistake.
+            wasmModuleUrl: new URL("./wasm/sitelen_vector_wasm.js?v=100", window.location.href).href,
             onStatus: announceVectorStatus,
             debug: getVectorWasmDebugEnabled(),
             debugWasm: getVectorWasmDebugEnabled()
@@ -1720,21 +1228,12 @@ function hideStartupLoading() {
           sitelenVectorExporter = ex;
           sitelenVectorReady = true;
           setVectorButtonsEnabled(true);
-          vectorDiag("ensureVectorExporterReady END", {
-            exporterDebug: ex?.debug,
-            exporterDebugWasm: ex?.debugWasm,
-            exporterClipScale: ex?.literalCartoucheRuleClipScale,
-            exporterClipStrategy: ex?.literalCartoucheRuleClipStrategy,
-            activePreset: safeCloneForLog(getActiveFontPreset()),
-            fontRoles: safeCloneForLog(buildFontRoles()),
-            activeFontPairSettings: safeCloneForLog(getActiveFontPairSettings())
-          });
           return ex;
         })().catch((err) => {
           sitelenVectorExporterPromise = null;
           sitelenVectorReady = false;
           setVectorButtonsEnabled(false);
-          vectorDiagWarn("ensureVectorExporterReady FAILED", err);
+          console.warn("[vector-export] load failed:", err);
           throw err;
         });
       }
@@ -1744,7 +1243,7 @@ function hideStartupLoading() {
     function startVectorExporterLoadInBackground() {
       setVectorButtonsEnabled(false);
       ensureVectorExporterReady()
-        .then(() => announceStatus("Vector export loaded. Ready to render/export. Diagnostics are enabled."))
+        .then(() => announceStatus("Vector export loaded. Ready to render/export."))
         .catch((err) => announceStatus(`Vector export unavailable: ${err?.message ?? String(err)}`));
     }
 
@@ -1794,30 +1293,8 @@ function hideStartupLoading() {
       return sitelenFontController.getSelectedTextFontOptionKey();
     }
 
-    function resolveVectorSafeLiteralFontFamily(optionKey, preset = getActiveFontPreset()) {
-      const key = String(optionKey ?? "").trim();
-      let resolved;
-      if (key === "Arial") resolved = FONT_FAMILY_LIBERATION_SANS;
-      else if (key === "system-ui") resolved = FONT_FAMILY_LIBERATION_SANS;
-      else if (key === "Times New Roman") resolved = FONT_FAMILY_LIBERATION_SERIF;
-      else if (key === "Courier New") resolved = FONT_FAMILY_LIBERATION_MONO;
-      else resolved = sitelenFontController.resolveLiteralFontFamily(optionKey, preset);
-
-      const face = quotedFontFaceForFamily(resolved, preset);
-      quotedFontDebug("resolveVectorSafeLiteralFontFamily", {
-        optionKey,
-        normalizedOptionKey: normalizeTextFontOptionKey(optionKey),
-        resolved,
-        presetKey: preset?.key ?? null,
-        presetLabel: preset?.label ?? null,
-        face: quotedFontCloneForLog(face),
-        fontCssCheck: quotedFontCssCheck(resolved, getFontPx?.(), face?.sample || "Hello")
-      });
-      return resolved;
-    }
-
     function resolveLiteralFontFamily(optionKey = getSelectedTextFontOptionKey(), preset = getActiveFontPreset()) {
-      return resolveVectorSafeLiteralFontFamily(optionKey, preset);
+      return sitelenFontController.resolveLiteralFontFamily(optionKey, preset);
     }
 
     function setSelectedTextFontOption(key, { persist = true } = {}) {
@@ -1879,68 +1356,21 @@ function hideStartupLoading() {
 
     function wireTextFontSelect() {
       const sel = getTextFontSelect();
-      if (!sel) {
-        quotedFontWarn("wireTextFontSelect missing #appTextFontSel");
-        return;
-      }
+      if (!sel) return;
       populateTextFontSelectOptions();
-      quotedFontDebug("wireTextFontSelect populated", {
-        value: sel.value,
-        options: Array.from(sel.options || []).map(o => ({ value: o.value, text: o.textContent }))
-      });
-      quotedFontDebugState("initial quoted font state after populate");
-      const logSelectEvent = (eventName) => quotedFontDebug(`text font select ${eventName}`, {
-        rawSelectValue: sel.value,
-        selectedText: sel.options?.[sel.selectedIndex]?.textContent ?? null
-      });
-      sel.addEventListener("focus", () => logSelectEvent("focus"));
-      sel.addEventListener("click", () => logSelectEvent("click"));
-      sel.addEventListener("input", () => logSelectEvent("input"));
       sel.addEventListener("change", async () => {
         try {
-          quotedFontDebug("text font select change START", { rawSelectValue: sel.value });
           setSelectedTextFontOption(sel.value);
-          sitelenRenderer = null;
-          sitelenRendererSignature = "";
-          if (typeof sitelenFontController?.resetFontLoadState === "function") {
-            sitelenFontController.resetFontLoadState();
-          }
-          quotedFontDebugState("after setSelectedTextFontOption", { rawSelectValue: sel.value });
           await waitForConfiguredFonts(getFontPx());
-          quotedFontDebugState("after waitForConfiguredFonts", { rawSelectValue: sel.value });
           await renderFromTextarea();
-          quotedFontDebugState("after renderFromTextarea", { rawSelectValue: sel.value });
         } catch (e) {
-          quotedFontWarn("text font select change FAILED", e);
           showAlertAndAnnounce(e?.message ?? String(e));
         }
       });
     }
 
     function buildFontRoles() {
-      const preset = getActiveFontPreset();
-      const optionKey = getSelectedTextFontOptionKey();
-      const resolvedLiteralFamily = resolveLiteralFontFamily(optionKey, preset);
-      const controllerRoles = sitelenFontController.buildFontRoles();
-      const roles = {
-        ...controllerRoles,
-        literal: resolvedLiteralFamily,
-        unknown: resolvedLiteralFamily
-      };
-      try {
-        quotedFontDebug("buildFontRoles", {
-          optionKey,
-          resolvedLiteralFamily,
-          presetKey: preset?.key ?? null,
-          controllerRoles: quotedFontCloneForLog(controllerRoles),
-          finalRoles: quotedFontCloneForLog(roles),
-          face: quotedFontCloneForLog(quotedFontFaceForFamily(resolvedLiteralFamily, preset)),
-          fontCssCheck: quotedFontCssCheck(resolvedLiteralFamily, getFontPx?.(), quotedFontFaceForFamily(resolvedLiteralFamily, preset)?.sample || "Hello")
-        });
-      } catch (err) {
-        quotedFontWarn("buildFontRoles debug failed", err);
-      }
-      return roles;
+      return sitelenFontController.buildFontRoles();
     }
 
     const DEFAULT_CARTOUCHE_TALLY_SETTINGS = {
@@ -2038,80 +1468,8 @@ function hideStartupLoading() {
       return sitelenFontController.uniqueConfiguredFontFamilies();
     }
 
-    async function ensureSelectedVectorSafeLiteralFontLoaded(fontPx = 56) {
-      const preset = getActiveFontPreset();
-      const optionKey = getSelectedTextFontOptionKey();
-      const family = resolveLiteralFontFamily(optionKey, preset);
-      const face = quotedFontFaceForFamily(family, preset);
-      const sample = face?.sample || "Hello";
-      const before = quotedFontCssCheck(family, fontPx, sample);
-      quotedFontDebug("ensureSelectedVectorSafeLiteralFontLoaded START", {
-        optionKey,
-        family,
-        fontPx,
-        face: quotedFontCloneForLog(face),
-        before
-      });
-      if (!family || !document.fonts) {
-        quotedFontWarn("ensureSelectedVectorSafeLiteralFontLoaded SKIP no document.fonts/family", {
-          optionKey,
-          family,
-          hasDocumentFonts: !!document.fonts
-        });
-        return before;
-      }
-
-      if (!face?.url) {
-        quotedFontWarn("ensureSelectedVectorSafeLiteralFontLoaded NO FACE FOUND", {
-          optionKey,
-          family,
-          presetKey: preset?.key ?? null,
-          selectKey: document.getElementById("appScriptPresetSel")?.value ?? null,
-          livePresetFacesCount: Array.isArray(preset?.faces) ? preset.faces.length : null,
-          staticPresetFacesCount: Array.isArray(RENDER_FONT_PRESETS?.[preset?.key]?.faces) ? RENDER_FONT_PRESETS[preset.key].faces.length : null
-        });
-        return before;
-      }
-
-      try {
-        // Do not trust document.fonts.check() alone here: it can be true because
-        // the browser is willing to use a fallback font.  Always explicitly
-        // register the selected vector-safe face when we have a configured URL.
-        const source = `url(${JSON.stringify(face.url)})`;
-        const fontFace = new FontFace(family, source, {
-          style: face.style || "normal",
-          weight: face.weight || "400",
-          display: "block"
-        });
-        const loaded = await fontFace.load();
-        document.fonts.add(loaded);
-        await document.fonts.ready;
-        const after = quotedFontCssCheck(family, fontPx, sample);
-        quotedFontDebug("ensureSelectedVectorSafeLiteralFontLoaded LOADED", {
-          optionKey,
-          family,
-          url: face.url,
-          before,
-          after,
-          status: loaded?.status ?? null
-        });
-        return after;
-      } catch (err) {
-        quotedFontWarn("ensureSelectedVectorSafeLiteralFontLoaded FAILED", {
-          optionKey,
-          family,
-          url: face?.url,
-          error: err?.message ?? String(err)
-        });
-        return false;
-      }
-    }
-
     async function waitForConfiguredFonts(fontPx = 56) {
-      quotedFontDebugState("waitForConfiguredFonts START", { fontPx });
       await sitelenFontController.waitForConfiguredFonts(fontPx);
-      await ensureSelectedVectorSafeLiteralFontLoaded(fontPx);
-      quotedFontDebugState("waitForConfiguredFonts END", { fontPx });
     }
 
 
@@ -2128,21 +1486,7 @@ function hideStartupLoading() {
       const preset = getActiveFontPreset();
       const haloEnabled = includeHalo && getHaloEnabled();
       const unknownHighlightEnabled = getUnknownHighlightEnabled();
-      const relaxedNanpaLinjan = getRelaxedNanpaLinjanEnabled();
       const fontPx = getFontPx();
-      const rolesForRendererConfig = buildFontRoles();
-      const resolvedLiteralFamilyForConfig = resolveLiteralFontFamily(getSelectedTextFontOptionKey(), preset);
-      quotedFontDebug("buildBaseRendererConfig", {
-        includeHalo,
-        fontPx,
-        presetKey: preset?.key ?? null,
-        relaxedNanpaLinjan,
-        selectedTextFontOption: getSelectedTextFontOptionKey(),
-        resolvedLiteralFamily: resolvedLiteralFamilyForConfig,
-        rolesForRendererConfig: quotedFontCloneForLog(rolesForRendererConfig),
-        face: quotedFontCloneForLog(quotedFontFaceForFamily(resolvedLiteralFamilyForConfig, preset)),
-        fontCssCheck: quotedFontCssCheck(resolvedLiteralFamilyForConfig, fontPx)
-      });
 
       return {
         layout: {
@@ -2156,7 +1500,7 @@ function hideStartupLoading() {
           halo: {
             enabled: haloEnabled,
             color: getHaloHex(),
-            widthPx: haloEnabled ? haloWidthForPx(fontPx) : 0
+            widthPx: haloEnabled ? getHaloWidthOverridePx() : 0
           },
           unknownText: {
             style: "outline-box",
@@ -2176,42 +1520,22 @@ function hideStartupLoading() {
           mixedStyle: "short",
           showUnknownText: unknownHighlightEnabled,
           abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
-          relaxedNanpaLinjanParsing: relaxedNanpaLinjan,
-          relaxedNanpaLinjanRendering: relaxedNanpaLinjan,
           ...buildCartoucheTallyParserConfig()
         },
         fonts: {
-          roles: rolesForRendererConfig,
-          settings: getActiveFontPairSettings()
+          roles: {
+            ...buildFontRoles(),
+            unknown: "Patrick-Head-Font"
+          }
         }
       };
     }
 
-    function forceQuotedFontRolesAfterControllerMerge(config, reason = "") {
-      const roles = buildFontRoles();
-      const out = config || {};
-      out.fonts = out.fonts || {};
-      out.fonts.roles = {
-        ...(out.fonts.roles || {}),
-        literal: roles.literal,
-        unknown: roles.unknown
-      };
-      quotedFontDebug("forceQuotedFontRolesAfterControllerMerge", {
-        reason,
-        selectedTextFontOption: getSelectedTextFontOptionKey(),
-        finalLiteral: out.fonts.roles.literal,
-        finalUnknown: out.fonts.roles.unknown,
-        finalRoles: quotedFontCloneForLog(out.fonts.roles)
-      });
-      return out;
-    }
-
     function mergeRendererConfigWithFontController(baseConfig) {
-      let merged = baseConfig;
       if (typeof sitelenFontController?.buildRendererConfig === "function") {
-        merged = sitelenFontController.buildRendererConfig({ baseConfig });
+        return sitelenFontController.buildRendererConfig({ baseConfig });
       }
-      return forceQuotedFontRolesAfterControllerMerge(merged, "mergeRendererConfigWithFontController");
+      return baseConfig;
     }
 
     function buildRendererInitConfig() {
@@ -2230,8 +1554,7 @@ function hideStartupLoading() {
         parserMode: preset.parserMode,
         roles,
         cartoucheTally: buildCartoucheTallyParserConfig(),
-        abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
-        relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled()
+        abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled()
       });
     }
 
@@ -2360,129 +1683,6 @@ function wireFgColorControls() {
 }
 
 
-
-const BACKGROUND_ENABLED_STORAGE_KEY = "tpBackgroundEnabled";
-const BACKGROUND_COLOR_STORAGE_KEY = "tpBackgroundHex";
-const BACKGROUND_DEFAULT_ENABLED = false;
-const BACKGROUND_DEFAULT_HEX = "#FFFFFF";
-
-function loadBackgroundEnabledFromStorage() {
-  try {
-    const raw = localStorage.getItem(BACKGROUND_ENABLED_STORAGE_KEY);
-    if (raw == null) return null;
-    if (raw === "1" || raw === "true") return true;
-    if (raw === "0" || raw === "false") return false;
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function saveBackgroundEnabledToStorage(v) {
-  try { localStorage.setItem(BACKGROUND_ENABLED_STORAGE_KEY, v ? "1" : "0"); } catch {}
-}
-
-function loadBackgroundHexFromStorage() {
-  try { return normalizeHexColor(localStorage.getItem(BACKGROUND_COLOR_STORAGE_KEY)); }
-  catch { return null; }
-}
-
-function saveBackgroundHexToStorage(hex) {
-  try { localStorage.setItem(BACKGROUND_COLOR_STORAGE_KEY, hex); } catch {}
-}
-
-function getBackgroundEnabled() {
-  const el = document.getElementById("appBackgroundEnable");
-  return !!el?.checked;
-}
-
-function getBackgroundHex() {
-  const pick = document.getElementById("appBackgroundPick");
-  return normalizeHexColor(pick?.value) ?? BACKGROUND_DEFAULT_HEX;
-}
-
-function updateBackgroundStatusLabel() {
-  const status = document.getElementById("appBackgroundStatus");
-  if (!status) return;
-
-  if (getBackgroundEnabled()) {
-    const hex = getBackgroundHex();
-    status.innerHTML = `(Background: <span class="mono">${hex}</span>)<span class="tpLine">(kule monsi li lon)</span>`;
-  } else {
-    status.innerHTML = `(Transparent background)<span class="tpLine">(poka sitelen li lon ala)</span>`;
-  }
-}
-
-function setBackgroundEnabled(v, { persist = true } = {}) {
-  const el = document.getElementById("appBackgroundEnable");
-  const b = !!v;
-  if (el) el.checked = b;
-  if (persist) saveBackgroundEnabledToStorage(b);
-  updateBackgroundStatusLabel();
-  return b;
-}
-
-function setBackgroundHex(hex, { persist = true } = {}) {
-  const pick = document.getElementById("appBackgroundPick");
-  const h = normalizeHexColor(hex) ?? BACKGROUND_DEFAULT_HEX;
-  if (pick) pick.value = h;
-  if (persist) saveBackgroundHexToStorage(h);
-  updateBackgroundStatusLabel();
-  return h;
-}
-
-function initBackgroundControls() {
-  setBackgroundEnabled(
-    loadBackgroundEnabledFromStorage() ?? BACKGROUND_DEFAULT_ENABLED,
-    { persist: false }
-  );
-  setBackgroundHex(
-    loadBackgroundHexFromStorage() ?? BACKGROUND_DEFAULT_HEX,
-    { persist: false }
-  );
-  updateBackgroundStatusLabel();
-}
-
-function wireBackgroundControls() {
-  const enabledEl = document.getElementById("appBackgroundEnable");
-  const pick = document.getElementById("appBackgroundPick");
-
-  enabledEl?.addEventListener("change", async () => {
-    try {
-      setBackgroundEnabled(enabledEl.checked);
-      await renderFromTextarea();
-    } catch (e) {
-      showAlertAndAnnounce(e?.message ?? String(e));
-    }
-  });
-
-  pick?.addEventListener("input", async () => {
-    try {
-      setBackgroundHex(getBackgroundHex());
-      await renderFromTextarea();
-    } catch (e) {
-      showAlertAndAnnounce(e?.message ?? String(e));
-    }
-  });
-}
-
-function paintConfiguredBackgroundBehindCanvas(canvas) {
-  if (!canvas || !getBackgroundEnabled()) return;
-  const width = Math.max(1, Number(canvas.width) || 1);
-  const height = Math.max(1, Number(canvas.height) || 1);
-  const ctx = canvas.getContext("2d", { alpha: true });
-  if (!ctx) return;
-
-  // The renderer has already drawn its transparent canvas. destination-over
-  // adds the selected color beneath every existing glyph, cartouche, halo,
-  // and unknown-text highlight without modifying the render plan or geometry.
-  ctx.save();
-  ctx.globalCompositeOperation = "destination-over";
-  ctx.fillStyle = getBackgroundHex();
-  ctx.fillRect(0, 0, width, height);
-  ctx.restore();
-}
-
 const HALO_ENABLED_STORAGE_KEY = "tpHaloEnabled";
 const HALO_COLOR_STORAGE_KEY   = "tpHaloHex";
 
@@ -2570,63 +1770,6 @@ function wireNumericCartoucheAbbrevToggle() {
   el.addEventListener("change", async () => {
     try {
       setNumericCartoucheAbbrevEnabled(el.checked);
-      await renderFromTextarea();
-    } catch (e) {
-      showAlertAndAnnounce(e?.message ?? String(e));
-    }
-  });
-}
-
-const NANPA_RELAXED_MODE_STORAGE_KEY = "tpNanpaRelaxedMode";
-const NANPA_RELAXED_MODE_DEFAULT = "strict";
-
-function normalizeNanpaRelaxedMode(value) {
-  const s = String(value ?? "").trim().toLowerCase();
-  return s === "relaxed" ? "relaxed" : "strict";
-}
-
-function loadNanpaRelaxedModeFromStorage() {
-  try {
-    const raw = localStorage.getItem(NANPA_RELAXED_MODE_STORAGE_KEY);
-    return raw == null ? null : normalizeNanpaRelaxedMode(raw);
-  } catch {
-    return null;
-  }
-}
-
-function saveNanpaRelaxedModeToStorage(value) {
-  try { localStorage.setItem(NANPA_RELAXED_MODE_STORAGE_KEY, normalizeNanpaRelaxedMode(value)); } catch {}
-}
-
-function getNanpaRelaxedMode() {
-  const sel = document.getElementById("appNanpaRelaxedModeSel");
-  return normalizeNanpaRelaxedMode(sel?.value ?? NANPA_RELAXED_MODE_DEFAULT);
-}
-
-function getRelaxedNanpaLinjanEnabled() {
-  return getNanpaRelaxedMode() === "relaxed";
-}
-
-function setNanpaRelaxedMode(value, { persist = true } = {}) {
-  const mode = normalizeNanpaRelaxedMode(value);
-  const sel = document.getElementById("appNanpaRelaxedModeSel");
-  if (sel) sel.value = mode;
-  if (persist) saveNanpaRelaxedModeToStorage(mode);
-  return mode;
-}
-
-function applyNanpaRelaxedModeFromStorage() {
-  setNanpaRelaxedMode(loadNanpaRelaxedModeFromStorage() ?? NANPA_RELAXED_MODE_DEFAULT, { persist: false });
-}
-
-function wireNanpaRelaxedModeSelect() {
-  const sel = document.getElementById("appNanpaRelaxedModeSel");
-  if (!sel) return;
-  sel.addEventListener("change", async () => {
-    try {
-      setNanpaRelaxedMode(sel.value);
-      sitelenRenderer = null;
-      sitelenRendererSignature = "";
       await renderFromTextarea();
     } catch (e) {
       showAlertAndAnnounce(e?.message ?? String(e));
@@ -3063,13 +2206,9 @@ function wireHaloControls() {
 
 
     async function ensureFontLoaded(pxOverride) {
-      const px = pxOverride ?? getFontPx();
-      quotedFontDebugState("ensureFontLoaded START", { px });
       try {
-        await sitelenFontController.ensureFamiliesLoaded(px);
-        quotedFontDebugState("ensureFontLoaded END", { px });
+        await sitelenFontController.ensureFamiliesLoaded(pxOverride ?? getFontPx());
       } catch (e) {
-        quotedFontWarn("ensureFontLoaded threw error", e);
         console.warn("[font] load threw error:", e);
       }
     }
@@ -3083,11 +2222,7 @@ function wireHaloControls() {
     }
 
     function fontsReadyForPx(px) {
-      const fontPx = px ?? getFontPx();
-      quotedFontDebugState("fontsReadyForPx check", { fontPx });
-      const ready = sitelenFontController.fontsReadyForPx(fontPx);
-      quotedFontDebug("fontsReadyForPx result", { fontPx, ready });
-      return ready;
+      return sitelenFontController.fontsReadyForPx(px ?? getFontPx());
     }
 
 
@@ -3178,167 +2313,6 @@ function wireHaloControls() {
       const s = readDefaultInputFromQuery();
       if (s == null) return;
       if (elTextIn) elTextIn.value = s;
-    }
-
-    function normalizeNonDrawableSourceTokensForRendererInput(rawText) {
-      const raw = String(rawText ?? "");
-
-      // Preserve line structure, but convert standalone source-control token "zz"
-      // into a quoted U+3000 ideographic space before the renderer sees it.
-      //
-      // Important: a raw U+3000 inserted into normal text is treated as whitespace
-      // and can be collapsed/ignored by the parser. Quoting the U+3000 preserves
-      // it as a literal spacing advance without drawing visible "zz" text and
-      // without letting the unknown-text highlighter classify zz as unknown text.
-      return raw
-        .split(/\n/)
-        .map(line => {
-          return String(line ?? "").replace(
-            /(^|[\t ])zz(?=$|[\t ])/gi,
-            (_match, lead) => `${lead}"\u3000"`
-          );
-        })
-        .join("\n");
-    }
-
-    const TTS_PREPARE_INPUT_DEBUG_PREFIX = "[tts-prepareInput]";
-    let ttsPrepareInputCallSeq = 0;
-
-    function ttsPrepareShortString(value, limit = 2000) {
-      const s = String(value ?? "");
-      if (s.length <= limit) return s;
-      return s.slice(0, limit) + `…<+${s.length - limit} chars>`;
-    }
-
-    function ttsPrepareSummarizeMapValue(value) {
-      if (value == null) return value;
-      if (typeof value !== "object") return value;
-      return {
-        input: ttsPrepareShortString(value.input, 800),
-        inputForceNormal: ttsPrepareShortString(value.inputForceNormal, 800),
-        forceNormal: !!value.forceNormal,
-        requiresAtDb: !!value.requiresAtDb
-      };
-    }
-
-    function ttsPrepareFlatValue(value) {
-      if (value == null) return String(value);
-      if (typeof value === "string") return JSON.stringify(value);
-      if (typeof value === "number" || typeof value === "boolean") return String(value);
-      try { return JSON.stringify(value); }
-      catch { return JSON.stringify(String(value)); }
-    }
-
-    function ttsPrepareFlatPayload(payload) {
-      if (!payload || typeof payload !== "object") return payload == null ? "" : `value=${ttsPrepareFlatValue(payload)}`;
-      return Object.entries(payload)
-        .map(([key, value]) => `${key}=${ttsPrepareFlatValue(value)}`)
-        .join(" ");
-    }
-
-    function ttsPrepareExtractAtDbLookups(rawText) {
-      const out = [];
-      const text = String(rawText ?? "");
-      const re = /\S+@db\b/g;
-      let m;
-      while ((m = re.exec(text)) !== null) {
-        const rawToken = m[0];
-        const cleanKey = rawToken.slice(0, -3).replace(/_/g, " ");
-        let mapHasKey = false;
-        let mapValueSummary = undefined;
-        try {
-          mapHasKey = !!pageMap?.has?.(cleanKey);
-          if (mapHasKey) mapValueSummary = ttsPrepareSummarizeMapValue(pageMap.get(cleanKey));
-        } catch (err) {
-          mapValueSummary = { error: err?.message ?? String(err) };
-        }
-        out.push({
-          rawToken,
-          cleanKey,
-          index: m.index,
-          end: m.index + rawToken.length,
-          mapHasKey,
-          mapValueSummary
-        });
-      }
-      return out;
-    }
-
-    function ttsPrepareFirstAtDbFlatFields(lookups) {
-      const first = Array.isArray(lookups) && lookups.length ? lookups[0] : null;
-      return {
-        atDbLookupCount: Array.isArray(lookups) ? lookups.length : 0,
-        atDb0RawToken: first?.rawToken ?? null,
-        atDb0CleanKey: first?.cleanKey ?? null,
-        atDb0MapHasKey: first?.mapHasKey ?? null,
-        atDb0MapValue: first?.mapValueSummary ?? null
-      };
-    }
-
-    function ttsPrepareLog(label, payload) {
-      try {
-        console.warn(`${TTS_PREPARE_INPUT_DEBUG_PREFIX} label=${JSON.stringify(label)} ${ttsPrepareFlatPayload(payload)}`);
-      } catch {}
-    }
-
-    function prepareRendererInputFromRawText(rawText, { context = "unknown" } = {}) {
-      const callId = ++ttsPrepareInputCallSeq;
-      const rawInput = String(rawText ?? "");
-      const controlTokenNormalizedInput = normalizeNonDrawableSourceTokensForRendererInput(rawInput);
-      const atDbLookupsBeforePrepare = ttsPrepareExtractAtDbLookups(controlTokenNormalizedInput);
-
-      ttsPrepareLog("START", {
-        callId,
-        context,
-        rawInput: ttsPrepareShortString(rawInput),
-        controlTokenNormalizedInput: ttsPrepareShortString(controlTokenNormalizedInput),
-        rawInputLength: rawInput.length,
-        controlTokenNormalizedInputLength: controlTokenNormalizedInput.length,
-        pageMapSize: pageMap?.size ?? null,
-        pageMapHasNemen: pageMap?.has?.("Nemen") ?? null,
-        pageMapValueNemen: pageMap?.has?.("Nemen") ? ttsPrepareSummarizeMapValue(pageMap.get("Nemen")) : null,
-        ...ttsPrepareFirstAtDbFlatFields(atDbLookupsBeforePrepare),
-        atDbLookupsBeforePrepare
-      });
-
-      let preparedInput;
-      try {
-        preparedInput = CartoucheApi.prepareInput(controlTokenNormalizedInput, pageMap);
-      } catch (err) {
-        ttsPrepareLog("ERROR", {
-          callId,
-          context,
-          error: err?.message ?? String(err),
-          stack: err?.stack ?? null
-        });
-        throw err;
-      }
-
-      const resultPayload = {
-        callId,
-        context,
-        preparedInput: ttsPrepareShortString(preparedInput),
-        preparedInputLength: String(preparedInput ?? "").length,
-        changedByControlTokenNormalization: controlTokenNormalizedInput !== rawInput,
-        changedByCartouchePrepareInput: preparedInput !== controlTokenNormalizedInput,
-        stillContainsAtDb: /@db\b/.test(String(preparedInput ?? ""))
-      };
-
-      ttsPrepareLog("END", resultPayload);
-      try {
-        window.__TTS_LAST_PREPARE_INPUT__ = {
-          ...resultPayload,
-          rawInput,
-          controlTokenNormalizedInput,
-          atDbLookupsBeforePrepare
-        };
-      } catch {}
-
-      return preparedInput;
-    }
-
-    function prepareRendererInputFromTextareaValue() {
-      return prepareRendererInputFromRawText(String(elTextIn?.value ?? ""), { context: "prepareRendererInputFromTextareaValue" });
     }
 
     /* ============================
@@ -4796,13 +3770,13 @@ function wireHaloControls() {
 
     function haloWidthForPx(px) {
       const p = Math.max(8, Number(px ?? 56));
-      const autoWidth = Math.max(2, Math.min(24, Math.round(p * 0.10)));
+
+      // User override: 0 => auto; otherwise exact px width.
       const override = getHaloWidthOverridePx();
-      // 0 = auto.
-      if (override <= 0) return autoWidth;
-      // Manual value is capped so it cannot become absurdly large
-      // relative to the current font size.
-      return Math.min(override, Math.max(autoWidth, Math.round(p * 0.18)));
+      if (override > 0) return override;
+
+      // Auto: ~10% of font size; clamp to sane minimum/maximum
+      return Math.max(2, Math.min(24, Math.round(p * 0.10)));
     }
 
 
@@ -4812,16 +3786,6 @@ function wireHaloControls() {
 
       ctx.font = `${px}px "${fontFamily}"`;
       setTextQuality(ctx);
-      quotedFontDebug("drawTextWithOptionalHalo", {
-        text: String(text ?? ""),
-        x,
-        yBaseline,
-        px,
-        fontFamily,
-        canvasFont: ctx.font,
-        fontCssCheck: quotedFontCssCheck(fontFamily, px, text || "Hello"),
-        face: quotedFontCloneForLog(quotedFontFaceForFamily(fontFamily, getActiveFontPreset()))
-      });
 
       if (haloEnabled) {
         ctx.save();
@@ -5301,20 +4265,9 @@ function wireHaloControls() {
       }
 
       // IMPORTANT: quoted text should not auto-inject word gaps; it should render literally
-      const quotedFontOptionKey = getSelectedTextFontOptionKey();
-      const quotedFontFamily = resolveLiteralFontFamily(quotedFontOptionKey, getActiveFontPreset());
-      quotedFontDebug("parseQuoteSegmentToElements", {
-        quoteContent,
-        literal,
-        fontPx,
-        quotedFontOptionKey,
-        quotedFontFamily,
-        face: quotedFontCloneForLog(quotedFontFaceForFamily(quotedFontFamily, getActiveFontPreset())),
-        fontCssCheck: quotedFontCssCheck(quotedFontFamily, fontPx, literal || "Hello")
-      });
       makeLiteralTextElement(elements, literal, {
         fontPx,
-        fontFamily: quotedFontFamily,
+        fontFamily: resolveLiteralFontFamily(),
         addLeadingGap: false,
         isQuoted: true, // <-- NEW
       });
@@ -5407,17 +4360,6 @@ function wireHaloControls() {
       ctx.font = `${px}px "${fontFamily}"`;
       setTextQuality(ctx);
       const m = ctx.measureText(chars);
-      quotedFontDebug("measureTextRun", {
-        text: chars,
-        px,
-        fontFamily,
-        canvasFont: ctx.font,
-        measuredWidth: m.width,
-        actualBoundingBoxAscent: m.actualBoundingBoxAscent ?? null,
-        actualBoundingBoxDescent: m.actualBoundingBoxDescent ?? null,
-        fontCssCheck: quotedFontCssCheck(fontFamily, px, chars || "Hello"),
-        face: quotedFontCloneForLog(quotedFontFaceForFamily(fontFamily, getActiveFontPreset()))
-      });
 
       const ascent  = (m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8));
       const descent = (m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2));
@@ -5443,22 +4385,11 @@ function wireHaloControls() {
         pushGapIfNeeded(elements, wordGapForPx(fontPx));
       }
 
-      const finalFontFamily = fontFamily || FONT_FAMILY_LITERAL;
-      quotedFontDebug("makeLiteralTextElement", {
-        text: s,
-        fontPx,
-        requestedFontFamily: fontFamily ?? null,
-        finalFontFamily,
-        isQuoted: !!isQuoted,
-        face: quotedFontCloneForLog(quotedFontFaceForFamily(finalFontFamily, getActiveFontPreset())),
-        fontCssCheck: quotedFontCssCheck(finalFontFamily, fontPx, s || "Hello")
-      });
-
       elements.push({
         type: "text",
         text: s,
         px: fontPx,
-        fontFamily: finalFontFamily,
+        fontFamily: fontFamily || FONT_FAMILY_LITERAL,
         isQuoted: !!isQuoted, // <-- NEW
       });
     }
@@ -5954,7 +4885,7 @@ function wireHaloControls() {
       const baseFontPx = getFontPx();
       await waitForConfiguredFonts(baseFontPx);
 
-      const input = prepareRendererInputFromTextareaValue();
+      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
       const baseConfig = buildRendererCallConfig({ includeHalo: false });
 
       const plan = await renderer.buildRenderPlan({
@@ -6091,10 +5022,10 @@ function wireHaloControls() {
       if (optionKey === TEXT_FONT_OPTION_SITELEN) return String((preset?.pdfTextFontUrl || "").split("/").pop() || "");
       if (optionKey === TEXT_FONT_OPTION_NANPA_LINJA_N) return String((preset?.pdfCartoucheFontUrl || "").split("/").pop() || "");
       if (optionKey === "Patrick-Head-Font") return "PatrickHand-Regular.ttf";
-      if (optionKey === "Arial") return "LiberationSans-Regular.ttf";
-      if (optionKey === "Times New Roman") return "LiberationSerif-Regular.ttf";
-      if (optionKey === "Courier New") return "LiberationMono-Regular.ttf";
-      if (optionKey === "system-ui") return "LiberationSans-Regular.ttf";
+      if (optionKey === "Arial") return "Arial";
+      if (optionKey === "Times New Roman") return "Times New Roman";
+      if (optionKey === "Courier New") return "Courier New";
+      if (optionKey === "system-ui") return "system-ui";
       return "PatrickHand-Regular.ttf";
     }
 
@@ -6134,34 +5065,8 @@ function wireHaloControls() {
         literalFontFile = cartoucheFontFile;
       } else if (optionKey === "Patrick-Head-Font") {
         literalFontFile = "PatrickHand-Regular.ttf";
-      } else if (optionKey === "Arial") {
-        literalFontFile = "LiberationSans-Regular.ttf";
-      } else if (optionKey === "Times New Roman") {
-        literalFontFile = "LiberationSerif-Regular.ttf";
-      } else if (optionKey === "Courier New") {
-        literalFontFile = "LiberationMono-Regular.ttf";
-      } else if (optionKey === "system-ui") {
-        literalFontFile = "LiberationSans-Regular.ttf";
       } else {
         literalFontFile = optionKey || "PatrickHand-Regular.ttf";
-      }
-
-      const literalCartoucheFamily = String(livePreset?.literalCartoucheFamily || livePreset?.textFamily || "");
-      let literalCartoucheFontFile = textFontFile;
-      if (literalCartoucheFamily && literalCartoucheFamily === String(livePreset?.cartoucheFamily || "")) {
-        literalCartoucheFontFile = cartoucheFontFile;
-      } else if (literalCartoucheFamily && literalCartoucheFamily === String(livePreset?.literalFamily || "") && literalCartoucheFamily === "Patrick-Head-Font") {
-        literalCartoucheFontFile = "PatrickHand-Regular.ttf";
-      } else if (staticPreset) {
-        const face = Array.isArray(staticPreset.faces) ? staticPreset.faces.find(f => String(f?.family || "") === literalCartoucheFamily) : null;
-        literalCartoucheFontFile = basename(face?.url) || textFontFile;
-      } else {
-        const pr = livePreset?.__pairRecord;
-        if (literalCartoucheFamily === String(pr?.literalCartoucheFamily || pr?.literalCartoucheFontFamily || "") && pr?.literalCartoucheFilename) {
-          literalCartoucheFontFile = String(pr.literalCartoucheFilename);
-        } else if (literalCartoucheFamily === String(pr?.companionFamily || "")) literalCartoucheFontFile = String(pr?.companionFilename || cartoucheFontFile);
-        else if (literalCartoucheFamily === String(pr?.baseFamily || "")) literalCartoucheFontFile = String(pr?.baseFilename || textFontFile);
-        else literalCartoucheFontFile = literalCartoucheFamily || textFontFile;
       }
 
       const result = {
@@ -6173,17 +5078,12 @@ function wireHaloControls() {
         result["3"] = literalFontFile;
       }
 
-      if (literalCartoucheFontFile && literalCartoucheFontFile !== result["1"] && literalCartoucheFontFile !== result["2"] && literalCartoucheFontFile !== result["3"]) {
-        result["4"] = literalCartoucheFontFile;
-      }
-
       return result;
     }
 
     function buildUnicodeJsonFontFamilyToId() {
       const preset = getActiveFontPreset();
       const literalFamily = resolveLiteralFontFamily(getSelectedTextFontOptionKey(), preset);
-      const literalCartoucheFamily = String(preset?.literalCartoucheFamily || preset?.textFamily || "");
 
       const map = new Map([
         [preset.textFamily, "1"],
@@ -6192,10 +5092,6 @@ function wireHaloControls() {
 
       if (literalFamily !== preset.textFamily && literalFamily !== preset.cartoucheFamily) {
         map.set(literalFamily, "3");
-      }
-
-      if (literalCartoucheFamily && !map.has(literalCartoucheFamily)) {
-        map.set(literalCartoucheFamily, "4");
       }
 
       return map;
@@ -6223,7 +5119,6 @@ function wireHaloControls() {
       const kind = String(run?.kind ?? "").toLowerCase();
       const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
 
-      if (role === "literalcartouche") return "literalCartouche";
       if (role === "literal" || kind === "text" || sourceKind === "quote") return "literal";
       if (sourceKind === "bracket") return "cartouche";
       if (role === "time" || mode === "time") return "time";
@@ -6361,7 +5256,7 @@ function wireHaloControls() {
       }
       return "";
     }
- 
+
     async function mergeConsecutiveUnicodeJsonTextRuns(runs) {
       const merged = [];
       for (const run of runs) {
@@ -6563,7 +5458,6 @@ async function buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, prese
       if (fontFamily === preset.textFamily) fontId = "1";
       else if (fontFamily === preset.cartoucheFamily) fontId = "2";
       else if (fontFamily === preset.literalFamily) fontId = "3";
-      else if (fontFamily === String(preset.literalCartoucheFamily || preset.textFamily || "")) fontId = "4";
       else fontId = "1";
     }
 
@@ -6698,9 +5592,34 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     async function buildLatestUnicodeJsonExportObject() {
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
-      const input = prepareRendererInputFromTextareaValue();
+      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
       const config = buildRendererCallConfig({ includeHalo: true });
       const plan = await renderer.buildRenderPlan({ input, ...config });
+      if (debug) {
+        const rawRuns = (plan?.lines || []).flatMap(line => line?.runs || []);
+        console.info("[vector-export] build plan result", {
+          lineCount: plan?.lines?.length || 0,
+          rawRunCount: rawRuns.length,
+          widthPx: plan?.widthPx,
+          heightPx: plan?.heightPx
+        });
+        console.table(rawRuns.slice(0, 100).map((run, index) => ({
+          index,
+          kind: run?.kind,
+          renderMode: run?.renderMode,
+          sourceKind: run?.sourceKind,
+          fontRole: run?.fontRole,
+          fontFamily: run?.fontFamily,
+          encodedText: run?.encodedText,
+          cpsLen: Array.isArray(run?.cps) ? run.cps.length : null,
+          xPx: run?.xPx,
+          drawXPx: run?.drawXPx,
+          baselineYPx: run?.baselineYPx,
+          widthPx: run?.widthPx,
+          heightPx: run?.heightPx
+        })));
+        console.info("[vector-export] buildCurrentVectorExportPlan END");
+      }
       const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(line => Array.isArray(line?.runs) && line.runs.length > 0);
       if (!hasRuns) throw new Error("Nothing to export (no recognized words).");
       latestRenderPlan = plan;
@@ -6723,612 +5642,92 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       return null;
     }
 
+    async function buildCurrentVectorExportPlan({ includeHalo = true } = {}) {
+      const debug = getVectorWasmDebugEnabled();
+      if (debug) console.info("[vector-export] buildCurrentVectorExportPlan START");
+      if (debug) console.info("[vector-export] build plan start", { includeHalo, fontPx: getFontPx() });
+      const renderer = await ensureRendererReady();
+      await waitForConfiguredFonts(getFontPx());
+      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
+      const config = buildRendererCallConfig({ includeHalo });
+      const plan = await renderer.buildRenderPlan({ input, ...config });
+      if (debug) {
+        const rawRuns = (plan?.lines || []).flatMap(line => line?.runs || []);
+        console.info("[vector-export] build plan result", {
+          lineCount: plan?.lines?.length || 0,
+          rawRunCount: rawRuns.length,
+          widthPx: plan?.widthPx,
+          heightPx: plan?.heightPx
+        });
+        console.table(rawRuns.slice(0, 100).map((run, index) => ({
+          index,
+          kind: run?.kind,
+          renderMode: run?.renderMode,
+          sourceKind: run?.sourceKind,
+          fontRole: run?.fontRole,
+          fontFamily: run?.fontFamily,
+          encodedText: run?.encodedText,
+          cpsLen: Array.isArray(run?.cps) ? run.cps.length : null,
+          xPx: run?.xPx,
+          drawXPx: run?.drawXPx,
+          baselineYPx: run?.baselineYPx,
+          widthPx: run?.widthPx,
+          heightPx: run?.heightPx
+        })));
+        console.info("[vector-export] buildCurrentVectorExportPlan END");
+      }
+      const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(
+        line => Array.isArray(line?.runs) && line.runs.some(run => run && run.kind !== "gap")
+      );
+      if (!hasRuns) throw new Error("Nothing to export (no drawable runs). ");
+      latestRenderPlan = plan;
+      return plan;
+    }
+
+    async function exportRenderedToVectorSvg() {
+      const debug = getVectorWasmDebugEnabled();
+      if (debug) console.info("[vector-export] Download vector SVG click START");
+      if (debug) console.info("[vector-export] SVG export start");
+      const exporter = await ensureVectorExporterReady();
+      const plan = await buildCurrentVectorExportPlan({ includeHalo: true });
+      await exporter.downloadSvg({
+        plan,
+        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
+        fallbackWidthPx: outCanvas?.width || null,
+        fallbackHeightPx: outCanvas?.height || null,
+        debugWasm: getVectorWasmDebugEnabled(),
+        filename: `${getExportFilenameBase()}-vector.svg`
+      });
+      if (debug) console.info("[vector-export] SVG export completed END");
+    }
+
+    async function exportRenderedToVectorPdf() {
+      const debug = getVectorWasmDebugEnabled();
+      if (debug) console.info("[vector-export] Download vector PDF click START");
+      if (debug) console.info("[vector-export] PDF export start");
+      const exporter = await ensureVectorExporterReady();
+      const plan = await buildCurrentVectorExportPlan({ includeHalo: true });
+      await exporter.downloadPdf({
+        plan,
+        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
+        fallbackWidthPx: outCanvas?.width || null,
+        fallbackHeightPx: outCanvas?.height || null,
+        debugWasm: getVectorWasmDebugEnabled(),
+        filename: `${getExportFilenameBase()}-vector.pdf`
+      });
+      if (debug) console.info("[vector-export] PDF export completed END");
+    }
+
     const elTextIn = document.getElementById("appTextIn");
     const outCanvas = document.getElementById("appOutCanvas");
     const btnRender = document.getElementById("appBtnRender");
     const btnDownload = document.getElementById("appBtnDownloadPng");
 
-    const TEXT_AUDIO_SPEED_STORAGE_KEY = "tpTextToSitelenAudioSpeed";
-    const TEXT_AUDIO_SPEED_DEFAULT = 0.75;
-    const TEXT_AUDIO_OPTIONS = Object.freeze([
-    {
-    value: 0.75,
-    label: "Fast",
-    syllableGapSeconds: 0.010,
-    linePauseSeconds: 0.35
-  },
-      { value: 1.00, label: "Normal", syllableGapSeconds: 0.200, linePauseSeconds: 0.350 },
-      { value: 2.25, label: "Slow", syllableGapSeconds: 0.700, linePauseSeconds: 0.800 },
-      { value: 4.00, label: "Very slow", syllableGapSeconds: 1.402, linePauseSeconds: 1.250 }
-    ]);
-
-    let textToSitelenVoicePromise = null;
-    let textAudioBusy = false;
-    let textAudioGeneration = 0;
-    let textAudioState = "stopped";
-    let textAudioSession = null;
-
-    const audioHighlightCanvas = document.getElementById("appAudioHighlightCanvas");
-
-    function normalizeTextAudioSpeed(value) {
-      const n = Number(value);
-      if (!Number.isFinite(n)) return TEXT_AUDIO_SPEED_DEFAULT;
-      const opt = TEXT_AUDIO_OPTIONS.find(item => Math.abs(item.value - n) < 0.001);
-      return opt ? opt.value : TEXT_AUDIO_SPEED_DEFAULT;
-    }
-
-    function loadTextAudioSpeedFromStorage() {
-      try {
-        const raw = localStorage.getItem(TEXT_AUDIO_SPEED_STORAGE_KEY);
-        return raw == null ? TEXT_AUDIO_SPEED_DEFAULT : normalizeTextAudioSpeed(raw);
-      } catch {
-        return TEXT_AUDIO_SPEED_DEFAULT;
-      }
-    }
-
-    function saveTextAudioSpeedToStorage(value) {
-      const v = normalizeTextAudioSpeed(value);
-      try { localStorage.setItem(TEXT_AUDIO_SPEED_STORAGE_KEY, String(v)); } catch {}
-      return v;
-    }
-
-    function getTextAudioSpeedSelects() {
-      return [
-        document.getElementById("appTextAudioSpeedSelMain"),
-        document.getElementById("appTextAudioSpeedSelPop")
-      ].filter(Boolean);
-    }
-
-    function selectedTextAudioOption() {
-      const selectValue = getTextAudioSpeedSelects()[0]?.value;
-      const speed = normalizeTextAudioSpeed(selectValue ?? loadTextAudioSpeedFromStorage());
-      return TEXT_AUDIO_OPTIONS.find(item => Math.abs(item.value - speed) < 0.001) || TEXT_AUDIO_OPTIONS[0];
-    }
-
-    function populateTextAudioSpeedSelect(select, selectedValue) {
-      if (!select) return;
-      const selected = normalizeTextAudioSpeed(selectedValue);
-      select.innerHTML = TEXT_AUDIO_OPTIONS.map(opt => {
-        const value = opt.value.toFixed(2);
-        const isSelected = Math.abs(opt.value - selected) < 0.001 ? " selected" : "";
-        return `<option value="${value}"${isSelected}>${opt.label}</option>`;
-      }).join("");
-    }
-
-    function setTextAudioSpeed(value, { persist = true } = {}) {
-      const v = normalizeTextAudioSpeed(value);
-      for (const sel of getTextAudioSpeedSelects()) sel.value = v.toFixed(2);
-      if (persist) saveTextAudioSpeedToStorage(v);
-      return v;
-    }
-
-    function initTextAudioControls() {
-      const selected = loadTextAudioSpeedFromStorage();
-      for (const sel of getTextAudioSpeedSelects()) {
-        populateTextAudioSpeedSelect(sel, selected);
-        sel.addEventListener("change", () => {
-          resetTextToSitelenAudio({ announce: false });
-          setTextAudioSpeed(sel.value);
-        });
-      }
-      setTextAudioSpeed(selected, { persist: false });
-      updateTextAudioButtons();
-    }
-
-    function getTextAudioToggleButtons() {
-      return [
-        document.getElementById("appBtnPlayTextAudioMain"),
-        document.getElementById("appBtnPlayTextAudioPop")
-      ].filter(Boolean);
-    }
-
-    function setTextAudioButtonsDisabled(disabled) {
-      for (const btn of getTextAudioToggleButtons()) btn.disabled = !!disabled;
-    }
-
-    function updateTextAudioButtons() {
-      const isPlaying = textAudioState === "playing";
-      const isPaused = textAudioState === "paused";
-      const isBuilding = textAudioState === "building";
-
-      for (const btn of getTextAudioToggleButtons()) {
-        btn.disabled = !!textAudioBusy;
-        if (isPlaying) {
-          btn.textContent = "⏸️";
-          btn.title = "Pause input audio";
-          btn.setAttribute("aria-label", "Pause input audio");
-        } else {
-          btn.textContent = "🤖🔊";
-          btn.title = isPaused
-            ? "Continue input audio"
-            : (isBuilding ? "Preparing input audio" : "Read input audio, ignore quoted text and unknowns");
-          btn.setAttribute(
-            "aria-label",
-            isPaused
-              ? "Continue input audio"
-              : (isBuilding ? "Preparing input audio" : "Read input audio, ignore quoted text and unknowns")
-          );
-        }
-      }
-    }
-
-    function setTextAudioState(state) {
-      textAudioState = state;
-      updateTextAudioButtons();
-    }
-
-    async function getTextToSitelenVoice() {
-      if (!textToSitelenVoicePromise) textToSitelenVoicePromise = createTokiPonaVoice();
-      return textToSitelenVoicePromise;
-    }
-
-    function syncTextAudioHighlightCanvasSize() {
-      if (!audioHighlightCanvas || !outCanvas) return;
-      const width = Math.max(1, Number(outCanvas.width) || 1);
-      const height = Math.max(1, Number(outCanvas.height) || 1);
-      if (audioHighlightCanvas.width !== width) audioHighlightCanvas.width = width;
-      if (audioHighlightCanvas.height !== height) audioHighlightCanvas.height = height;
-    }
-
-    function clearTextAudioHighlight() {
-      if (!audioHighlightCanvas) return;
-      syncTextAudioHighlightCanvasSize();
-      const ctx = audioHighlightCanvas.getContext("2d", { alpha: true });
-      ctx.clearRect(0, 0, audioHighlightCanvas.width, audioHighlightCanvas.height);
-    }
-
-    function isSentenceBoundaryAt(text, index) {
-      const s = String(text ?? "");
-      const ch = s[index];
-      if (ch === "!" || ch === "?") return true;
-      if (ch !== ".") return false;
-      const prev = index > 0 ? s[index - 1] : "";
-      const next = index + 1 < s.length ? s[index + 1] : "";
-      return !( /\d/.test(prev) && /\d/.test(next) );
-    }
-
-    function visualSentenceBoundaryInfo(run) {
-      const kind = String(run?.kind ?? "").toLowerCase();
-      const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
-      if (kind === "cartouche" || sourceKind === "bracket") return { count: 0, hasTail: true };
-
-      const text = String(run?.sourceText ?? run?.encodedText ?? "");
-      if (!text) return { count: 0, hasTail: true };
-
-      let count = 0;
-      let lastBoundaryEnd = -1;
-      for (let i = 0; i < text.length; i++) {
-        if (!isSentenceBoundaryAt(text, i)) continue;
-        count += 1;
-        let end = i + 1;
-        while (end < text.length && ".!?".includes(text[end]) && isSentenceBoundaryAt(text, end)) end += 1;
-        lastBoundaryEnd = end;
-        i = end - 1;
-      }
-      return {
-        count,
-        hasTail: count === 0 || String(text.slice(lastBoundaryEnd)).trim().length > 0
-      };
-    }
-
-    function usableHighlightRun(run) {
-      if (!run) return false;
-      const kind = String(run.kind ?? "").toLowerCase();
-      if (kind === "gap" || kind === "image") return false;
-      return Number(run.widthPx) > 0 && Number(run.heightPx) > 0;
-    }
-
-    function sentenceRectFromRuns(line, runs) {
-      const usable = (runs || []).filter(usableHighlightRun);
-      if (!usable.length) return null;
-      const x1 = Math.min(...usable.map(run => Number(run.xPx ?? run.drawXPx ?? 0)));
-      const x2 = Math.max(...usable.map(run => Number(run.xPx ?? run.drawXPx ?? 0) + Math.max(0, Number(run.widthPx) || 0)));
-      const y = Number(line?.yPx ?? Math.min(...usable.map(run => Number(run.yPx ?? 0))));
-      const height = Math.max(1, Number(line?.heightPx) || Math.max(...usable.map(run => Number(run.heightPx) || 1)));
-      return { x: x1, y, width: Math.max(1, x2 - x1), height };
-    }
-
-    function buildVisualSentenceHighlightMap(plan) {
-      const map = new Map();
-      const lines = Array.isArray(plan?.lines) ? plan.lines : [];
-
-      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-        const line = lines[lineIndex];
-        const runs = Array.isArray(line?.runs) ? line.runs : [];
-        let sentenceIndexInLine = 0;
-        let currentRuns = [];
-
-        const flush = () => {
-          const rect = sentenceRectFromRuns(line, currentRuns);
-          if (rect) map.set(`${lineIndex}:${sentenceIndexInLine}`, rect);
-          currentRuns = [];
-        };
-
-        for (const run of runs) {
-          if (usableHighlightRun(run)) currentRuns.push(run);
-          const info = visualSentenceBoundaryInfo(run);
-          for (let boundaryIndex = 0; boundaryIndex < info.count; boundaryIndex++) {
-            flush();
-            sentenceIndexInLine += 1;
-            if (boundaryIndex < info.count - 1 || info.hasTail) {
-              if (usableHighlightRun(run)) currentRuns = [run];
-            }
-          }
-        }
-
-        if (currentRuns.length) flush();
-      }
-
-      return map;
-    }
-
-    function fallbackHighlightRectForLine(plan, lineIndex) {
-      const line = plan?.lines?.[lineIndex];
-      if (!line) return null;
-      return {
-        x: Number(line.xPx ?? 0),
-        y: Number(line.yPx ?? 0),
-        width: Math.max(1, Number(line.widthPx) || 1),
-        height: Math.max(1, Number(line.heightPx) || 1)
-      };
-    }
-
-    function attachVisualRectsToAudioEntries(entries, plan) {
-      const map = buildVisualSentenceHighlightMap(plan);
-      return (entries || []).map(entry => ({
-        ...entry,
-        visualRect:
-          map.get(`${entry.lineIndex}:${entry.sentenceIndexInLine}`) ||
-          fallbackHighlightRectForLine(plan, entry.lineIndex)
-      }));
-    }
-
-    function drawTextAudioHighlight(entry) {
-      clearTextAudioHighlight();
-      const rect = entry?.visualRect;
-      if (!rect || !audioHighlightCanvas) return;
-
-      const ctx = audioHighlightCanvas.getContext("2d", { alpha: true });
-      const padding = Math.max(2, Math.round((latestRenderPlan?.fontPx || getFontPx()) * 0.05));
-      const x = Math.max(0, rect.x - padding);
-      const y = Math.max(0, rect.y - padding);
-      const width = Math.min(audioHighlightCanvas.width - x, rect.width + padding * 2);
-      const height = Math.min(audioHighlightCanvas.height - y, rect.height + padding * 2);
-      if (width <= 0 || height <= 0) return;
-
-      ctx.save();
-      ctx.fillStyle = "rgba(255, 214, 10, 0.28)";
-      ctx.strokeStyle = "rgba(128, 92, 0, 0.72)";
-      ctx.lineWidth = Math.max(1, Math.round((latestRenderPlan?.fontPx || getFontPx()) * 0.025));
-      const radius = Math.max(3, Math.min(10, Math.round(height * 0.14)));
-      ctx.beginPath();
-      if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, radius);
-      else ctx.rect(x, y, width, height);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function cancelTextAudioSource(session) {
-      if (!session?.currentSource) return;
-      const source = session.currentSource;
-      session.currentSource = null;
-      try { source.onended = null; } catch {}
-      try { source.stop(); } catch {}
-      try { source.disconnect(); } catch {}
-    }
-
-    function cancelTextAudioGap(session) {
-      if (!session?.gapTimer) return;
-      clearTimeout(session.gapTimer);
-      session.gapTimer = null;
-    }
-
-    function resetTextToSitelenAudio({ announce = false, message = "Audio stopped." } = {}) {
-      textAudioGeneration += 1;
-      const session = textAudioSession;
-      if (session) {
-        cancelTextAudioSource(session);
-        cancelTextAudioGap(session);
-      }
-      textAudioSession = null;
-      textAudioBusy = false;
-      setTextAudioState("stopped");
-      clearTextAudioHighlight();
-
-      const voicePromise = textToSitelenVoicePromise;
-      if (voicePromise) {
-        voicePromise
-          .then(voice => stopSitelenAudioPlayback({ voice }))
-          .catch(() => {});
-      }
-      if (announce) announceStatus(message);
-    }
-
-    function completeTextAudioPlayback(generation) {
-      if (generation !== textAudioGeneration) return;
-      const session = textAudioSession;
-      if (session) {
-        cancelTextAudioSource(session);
-        cancelTextAudioGap(session);
-      }
-      textAudioSession = null;
-      setTextAudioState("stopped");
-      clearTextAudioHighlight();
-      announceStatus("Audio finished.");
-    }
-
-    function getOrCreateEntryAudioBuffer(session, entry) {
-      if (entry._audioBuffer) return entry._audioBuffer;
-      const ctx = session.voice.getAudioContext();
-      const buffer = ctx.createBuffer(1, entry.samples.length, entry.sampleRate);
-      buffer.copyToChannel(entry.samples, 0);
-      entry._audioBuffer = buffer;
-      return buffer;
-    }
-
-    function scheduleTextAudioGap(seconds) {
-      const session = textAudioSession;
-      if (!session || session.generation !== textAudioGeneration) return;
-
-      const gapSeconds = Math.max(0, Number(seconds) || 0);
-      if (gapSeconds <= 0) {
-        session.inGap = false;
-        session.remainingGapSeconds = 0;
-        playCurrentTextAudioEntry();
-        return;
-      }
-
-      session.inGap = true;
-      session.remainingGapSeconds = gapSeconds;
-      session.gapStartedAtMs = performance.now();
-      clearTextAudioHighlight();
-      setTextAudioState("playing");
-      session.gapTimer = setTimeout(() => {
-        if (!textAudioSession || session !== textAudioSession || session.generation !== textAudioGeneration) return;
-        session.gapTimer = null;
-        session.inGap = false;
-        session.remainingGapSeconds = 0;
-        playCurrentTextAudioEntry();
-      }, Math.max(0, Math.round(gapSeconds * 1000)));
-    }
-
-    function playCurrentTextAudioEntry() {
-      const session = textAudioSession;
-      if (!session || session.generation !== textAudioGeneration) return;
-      if (session.currentIndex >= session.entries.length) {
-        completeTextAudioPlayback(session.generation);
-        return;
-      }
-
-      const entry = session.entries[session.currentIndex];
-      const buffer = getOrCreateEntryAudioBuffer(session, entry);
-      const offset = Math.max(0, Math.min(Number(session.currentOffsetSeconds) || 0, Math.max(0, buffer.duration - 0.001)));
-      const ctx = session.voice.getAudioContext();
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(ctx.destination);
-
-      session.currentSource = source;
-      session.currentBuffer = buffer;
-      session.sourceStartedAt = ctx.currentTime;
-      session.sourceStartedOffset = offset;
-      session.inGap = false;
-      session.remainingGapSeconds = 0;
-      drawTextAudioHighlight(entry);
-      setTextAudioState("playing");
-
-      source.onended = () => {
-        if (!textAudioSession || session !== textAudioSession) return;
-        if (session.generation !== textAudioGeneration) return;
-        if (session.currentSource !== source || textAudioState !== "playing") return;
-
-        session.currentSource = null;
-        try { source.disconnect(); } catch {}
-        session.currentBuffer = null;
-        session.currentOffsetSeconds = 0;
-        clearTextAudioHighlight();
-        session.currentIndex += 1;
-
-        if (session.currentIndex >= session.entries.length) {
-          completeTextAudioPlayback(session.generation);
-          return;
-        }
-
-        scheduleTextAudioGap(entry.pauseAfterSeconds);
-      };
-
-      source.start(0, offset);
-    }
-
-    function pauseTextToSitelenAudio() {
-      const session = textAudioSession;
-      if (!session || textAudioState !== "playing") return;
-
-      if (session.inGap) {
-        const elapsed = Math.max(0, (performance.now() - session.gapStartedAtMs) / 1000);
-        session.remainingGapSeconds = Math.max(0, session.remainingGapSeconds - elapsed);
-        cancelTextAudioGap(session);
-        setTextAudioState("paused");
-        announceStatus("Audio paused between sentences.");
-        return;
-      }
-
-      if (session.currentSource) {
-        const ctx = session.voice.getAudioContext();
-        const elapsed = Math.max(0, ctx.currentTime - session.sourceStartedAt);
-        session.currentOffsetSeconds = Math.min(
-          session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
-          session.sourceStartedOffset + elapsed
-        );
-        cancelTextAudioSource(session);
-      }
-      setTextAudioState("paused");
-      announceStatus("Audio paused.");
-    }
-
-    function resumeTextToSitelenAudio() {
-      const session = textAudioSession;
-      if (!session || textAudioState !== "paused") return;
-      if (session.inGap) scheduleTextAudioGap(session.remainingGapSeconds);
-      else playCurrentTextAudioEntry();
-      announceStatus("Audio resumed.");
-    }
-
-    function stopTextToSitelenAudio() {
-      resetTextToSitelenAudio({ announce: true });
-    }
-
-    async function startTextToSitelenAudio() {
-      if (textAudioBusy) return;
-
-      const generation = ++textAudioGeneration;
-      textAudioBusy = true;
-      setTextAudioState("building");
-      setTextAudioButtonsDisabled(true);
-      clearTextAudioHighlight();
-
-      try {
-        const raw = String(elTextIn?.value ?? "");
-        if (!raw.trim()) {
-          announceStatus("Nothing to read.");
-          setTextAudioState("stopped");
-          return;
-        }
-
-        // Prevent an already-scheduled typing render from invalidating the
-        // playback generation immediately after the user presses Play.
-        if (typeof _autoRenderTimer !== "undefined" && _autoRenderTimer) {
-          clearTimeout(_autoRenderTimer);
-          _autoRenderTimer = null;
-        }
-
-        await renderFromTextarea({ preserveAudio: true });
-        if (generation !== textAudioGeneration) return;
-
-        const renderer = await ensureRendererReady();
-        const rendererConfig = buildRendererCallConfig({ includeHalo: false });
-        const option = selectedTextAudioOption();
-        const voice = await getTextToSitelenVoice();
-
-        const result = await buildSitelenSentenceAudioBuffersFromRawText({
-          rawText: raw,
-          pageMap,
-          renderer,
-          rendererConfig,
-          CartoucheApi,
-          NanpaParser,
-          nanpaLinjanMode: getNanpaLinjanMode(),
-          mixedStyle: "short",
-          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
-          relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
-          voice,
-          renderOptions: {
-            synthesis_mode: "reference_audio",
-            pauseScale: option.value,
-            syllableGapSeconds: option.syllableGapSeconds
-          },
-          linePauseSeconds: option.linePauseSeconds,
-          shouldCancel: () => generation !== textAudioGeneration
-        });
-
-        if (result?.cancelled || generation !== textAudioGeneration) return;
-
-        const skipped = Array.isArray(result?.skipped) ? result.skipped : [];
-        const entries = attachVisualRectsToAudioEntries(result?.entries || [], latestRenderPlan);
-        try {
-          window.__TTS_LAST_TEXT_AUDIO_LINES__ = {
-            lines: [...(result?.audioPlan?.speechLines || [])],
-            skipped: [...skipped],
-            audioInput: result?.audioPlan?.audioInput ?? ""
-          };
-          window.__TTS_LAST_TEXT_AUDIO_SENTENCES__ = {
-            entries: entries.map(entry => ({
-              text: entry.text,
-              renderText: entry.renderText,
-              lineIndex: entry.lineIndex,
-              sentenceIndexInLine: entry.sentenceIndexInLine,
-              durationSeconds: entry.durationSeconds,
-              pauseAfterSeconds: entry.pauseAfterSeconds,
-              visualRect: entry.visualRect
-            })),
-            skipped: [...skipped],
-            audioInput: result?.audioPlan?.audioInput ?? ""
-          };
-        } catch {}
-
-        if (result?.status === "no-speech") {
-          announceStatus("No readable Toki Pona text found for audio.");
-          setTextAudioState("stopped");
-          return;
-        }
-        if (result?.status === "no-samples" || !entries.length) {
-          announceStatus("No audio samples were produced.");
-          setTextAudioState("stopped");
-          return;
-        }
-
-        textAudioSession = {
-          generation,
-          voice,
-          entries,
-          currentIndex: 0,
-          currentOffsetSeconds: 0,
-          currentSource: null,
-          currentBuffer: null,
-          sourceStartedAt: 0,
-          sourceStartedOffset: 0,
-          inGap: false,
-          remainingGapSeconds: 0,
-          gapStartedAtMs: 0,
-          gapTimer: null
-        };
-
-        const skippedSummary = summarizeSitelenAudioSkipped(skipped);
-        announceStatus(`Playing input audio. Sentences read: ${entries.length}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
-        playCurrentTextAudioEntry();
-      } catch (e) {
-        if (generation === textAudioGeneration) {
-          resetTextToSitelenAudio({ announce: false });
-          showAlertAndAnnounce(e?.message ?? String(e));
-        }
-      } finally {
-        if (generation === textAudioGeneration) {
-          textAudioBusy = false;
-          if (textAudioState === "building") setTextAudioState("stopped");
-          updateTextAudioButtons();
-        }
-      }
-    }
-
-    function toggleTextToSitelenAudio() {
-      if (textAudioState === "playing") {
-        pauseTextToSitelenAudio();
-        return;
-      }
-      if (textAudioState === "paused") {
-        resumeTextToSitelenAudio();
-        return;
-      }
-      startTextToSitelenAudio();
-    }
-
-    function wireTextAudioControls() {
-      document.getElementById("appBtnPlayTextAudioMain")?.addEventListener("click", toggleTextToSitelenAudio);
-      document.getElementById("appBtnPlayTextAudioPop")?.addEventListener("click", toggleTextToSitelenAudio);
-      document.getElementById("appBtnStopTextAudioMain")?.addEventListener("click", stopTextToSitelenAudio);
-      document.getElementById("appBtnStopTextAudioPop")?.addEventListener("click", stopTextToSitelenAudio);
-
-      // Any edit invalidates the prepared buffers and the saved resume offset.
-      elTextIn?.addEventListener("input", () => resetTextToSitelenAudio({ announce: false }));
-    }
-
-    async function renderFromTextarea({ preserveAudio = false } = {}) {
-      if (!preserveAudio) resetTextToSitelenAudio({ announce: false });
+    async function renderFromTextarea() {
       const renderer = await ensureRendererReady();
       await waitForConfiguredFonts(getFontPx());
       //const input = String(elTextIn.value ?? "");
-      const input = prepareRendererInputFromTextareaValue();
+      const input = CartoucheApi.prepareInput(String(elTextIn.value ?? ""), pageMap);
       const config = buildRendererCallConfig({ includeHalo: true });
 
       const parsed = await renderer.parseInput({
@@ -7342,9 +5741,6 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         outCanvas.width = 1;
         outCanvas.height = 1;
         outCanvas.getContext("2d").clearRect(0, 0, 1, 1);
-        paintConfiguredBackgroundBehindCanvas(outCanvas);
-        syncTextAudioHighlightCanvasSize();
-        clearTextAudioHighlight();
         latestRenderPlan = null;
         latestRenderedCanvas = null;
         announceStatus("Nothing to render (no recognized words).");
@@ -7359,9 +5755,6 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const ctx = outCanvas.getContext("2d", { alpha: true });
       ctx.clearRect(0, 0, outCanvas.width, outCanvas.height);
       ctx.drawImage(rendered.canvas, 0, 0);
-      paintConfiguredBackgroundBehindCanvas(outCanvas);
-      syncTextAudioHighlightCanvasSize();
-      clearTextAudioHighlight();
 
       latestRenderPlan = plan;
       latestRenderedCanvas = rendered.canvas;
@@ -7369,1063 +5762,10 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const hex = getFgHex();
       const haloOn = getHaloEnabled();
       const haloHex = getHaloHex();
-      const backgroundOn = getBackgroundEnabled();
-      const backgroundHex = getBackgroundHex();
       const preset = getActiveFontPreset();
-      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Nanpa relaxed: ${getNanpaRelaxedMode()}. Font: ${getFontPx()}px. Renderer font family: ${preset.label}. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}. Background: ${backgroundOn ? backgroundHex : "transparent"}.`);
+      announceStatus(`Rendered sitelen pona. Mode: ${getNanpaLinjanMode()}. Font: ${getFontPx()}px. Renderer font family: ${preset.label}. Color: ${hex}. Halo: ${haloOn ? "on" : "off"}${haloOn ? " " + haloHex : ""}.`);
     }
 
-
-
-    async function buildCurrentVectorExportPlan({ includeHalo = true, forceZeroHaloWidth = false } = {}) {
-      const debug = getVectorWasmDebugEnabled();
-      vectorDiag("buildCurrentVectorExportPlan START", { includeHalo, fontPx: getFontPx() });
-      const renderer = await ensureRendererReady();
-      await waitForConfiguredFonts(getFontPx());
-      const rawInput = String(elTextIn.value ?? "");
-      const controlTokenNormalizedInput = normalizeNonDrawableSourceTokensForRendererInput(rawInput);
-      const input = prepareRendererInputFromRawText(rawInput, { context: "buildCurrentVectorExportPlan" });
-      const config = buildRendererCallConfig({ includeHalo });
-      if (forceZeroHaloWidth && config?.paint?.halo) config.paint.halo.widthPx = 0;
-      const preset = getActiveFontPreset();
-      const exportArgsPreview = {
-        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
-        fallbackWidthPx: outCanvas?.width || null,
-        fallbackHeightPx: outCanvas?.height || null,
-        debugWasm: getVectorWasmDebugEnabled()
-      };
-      vectorDiag("pre-build state", {
-        rawInput,
-        controlTokenNormalizedInput,
-        preparedInput: input,
-        rawInputLength: rawInput.length,
-        preparedInputLength: String(input || "").length,
-        presetKey: preset?.key,
-        presetLabel: preset?.label,
-        presetSettings: safeCloneForLog(preset?.settings),
-        activeFontPairSettings: safeCloneForLog(getActiveFontPairSettings()),
-        fontRoles: safeCloneForLog(buildFontRoles()),
-        rendererSignature: getRendererSignature(),
-        config: safeCloneForLog(config),
-        exportArgsPreview,
-        outCanvas: { width: outCanvas?.width, height: outCanvas?.height }
-      });
-      const plan = await renderer.buildRenderPlan({ input, ...config });
-
-      // Defensive cleanup: if any renderer/exporter path still creates visible unknown
-      // runs from standalone "zz", remove those runs before SVG/PDF/PNG export.
-      // "zz" is a source-control spacing token, not drawable text.
-      for (const line of (plan?.lines || [])) {
-        if (!Array.isArray(line?.runs)) continue;
-        line.runs = line.runs.filter(run => {
-          const source = String(run?.sourceText ?? "").trim().toLowerCase();
-          const encoded = String(run?.encodedText ?? "").trim().toLowerCase();
-          const role = String(run?.fontRole ?? "").trim().toLowerCase();
-          const kind = String(run?.kind ?? "").trim().toLowerCase();
-
-          const isUnknownLike =
-            role === "unknown" ||
-            kind === "unknown" ||
-            kind === "text";
-
-          const isStandaloneZz =
-            source === "zz" ||
-            encoded === "zz";
-
-          return !(isUnknownLike && isStandaloneZz);
-        });
-      }
-
-      const rawRuns = (plan?.lines || []).flatMap(line => line?.runs || []);
-      const runSummary = summarizeRunsForVectorDebug(plan);
-      const literalCartoucheRuns = summarizeLiteralCartoucheRunsForVectorDebug(plan);
-      vectorDiag("build plan result", {
-        lineCount: plan?.lines?.length || 0,
-        rawRunCount: rawRuns.length,
-        widthPx: plan?.widthPx,
-        heightPx: plan?.heightPx,
-        astNormalizedInput: plan?.ast?.normalizedInput,
-        exportArgsPreview
-      });
-      console.table(runSummary.slice(0, 250));
-      console.table(literalCartoucheRuns);
-      window.__TTS_VECTOR_DEBUG_LAST_PLAN__ = plan;
-      window.__TTS_VECTOR_DEBUG_LAST_SUMMARY__ = {
-        rawInput,
-        controlTokenNormalizedInput,
-        preparedInput: input,
-        preset: safeCloneForLog(preset),
-        config: safeCloneForLog(config),
-        exportArgsPreview,
-        runSummary,
-        literalCartoucheRuns
-      };
-      const hasRuns = Array.isArray(plan?.lines) && plan.lines.some(
-        line => Array.isArray(line?.runs) && line.runs.some(run => run && run.kind !== "gap")
-      );
-      if (!hasRuns) throw new Error("Nothing to export (no drawable runs). ");
-      latestRenderPlan = plan;
-      return plan;
-    }
-
-    function downloadBlobAsFile(blob, filename) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-    }
-
-
-    // Unknown-highlight export overlay.
-    // Design constraints:
-    // - Do not redraw unknown text here; the vector exporter remains responsible for text.
-    // - Draw only the outline rectangle, using the renderer run geometry.
-    // - Do not affect known glyphs, quoted literal text, cartouches, or spacing/control tokens.
-    function isUnknownTextExportRun(run) {
-      if (!run || !getUnknownHighlightEnabled()) return false;
-
-      const el = run?._element || {};
-      const fontRole = String(run?.fontRole ?? el?.fontRole ?? "").trim().toLowerCase();
-      const sourceKind = String(run?.sourceKind ?? el?.sourceKind ?? "").trim().toLowerCase();
-      const renderMode = String(run?.renderMode ?? el?.renderMode ?? "").trim().toLowerCase();
-      const kind = String(run?.kind ?? el?.kind ?? "").trim().toLowerCase();
-      const type = String(run?.type ?? el?.type ?? "").trim().toLowerCase();
-      const source = String(run?.sourceText ?? el?.sourceText ?? "").trim();
-      const encoded = String(run?.encodedText ?? el?.text ?? "").trim();
-      const sourceLower = source.toLowerCase();
-      const encodedLower = encoded.toLowerCase();
-
-      // zz is a non-drawable spacing/control token. It is never unknown text.
-      if (sourceLower === "zz" || encodedLower === "zz") return false;
-
-      // These are deliberate non-unknown forms.
-      if (run?.kind === "cartouche" || el?.type === "cartouche") return false;
-      if (run?.kind === "glyph" || el?.type === "glyph") return false;
-      if (run?.kind === "gap" || el?.type === "gap") return false;
-      if (Array.isArray(run?.cps) && run.cps.length) return false;
-
-      // Quoted/literal text is intentional user text, not unknown text.
-      if (el?.isQuoted || sourceKind === "quote" || renderMode === "quote") return false;
-
-      // Strong metadata from the renderer, when present.
-      if (
-        fontRole === "unknown" ||
-        sourceKind === "unknown" ||
-        renderMode === "unknown" ||
-        kind === "unknown" ||
-        type === "unknown"
-      ) return true;
-
-      // Some renderer versions emit unknown plain-text as a normal text run using
-      // the unknown/literal font, without setting kind/fontRole to "unknown".
-      // In this page, unquoted text runs in a text source segment with no codepoints
-      // are the unknown-text output that needs the outline-box.  Known sitelen words,
-      // numbers, cartouches, and quoted text do not arrive here as this shape.
-      const isPlainTextRun =
-        (kind === "text" || type === "text" || el?.type === "text") &&
-        (sourceKind === "text" || sourceKind === "") &&
-        !Array.isArray(run?.cps);
-
-      return isPlainTextRun && (source.length > 0 || encoded.length > 0);
-    }
-
-    function unknownHighlightExportPaddingPx() {
-      const raw = Number(buildRendererCallConfig({ includeHalo: false })?.paint?.unknownText?.paddingPx ?? 2);
-      return Number.isFinite(raw) ? Math.max(0, raw) : 2;
-    }
-
-    function unknownHighlightExportLineWidthPx() {
-      const raw = Number(buildRendererCallConfig({ includeHalo: false })?.paint?.unknownText?.lineWidthPx ?? 1.5);
-      return Number.isFinite(raw) ? Math.max(0.1, raw) : 1.5;
-    }
-
-    function unknownHighlightExportStrokeHex() {
-      const configured = normalizeHexColor(buildRendererCallConfig({ includeHalo: false })?.paint?.unknownText?.color);
-      // Match the renderer's default unknown-text warning color. Do not fall back
-      // to the foreground text color, because that makes the highlight rectangle
-      // look like ordinary black text strokes in SVG/PDF exports.
-      return configured || "#FF0000";
-    }
-
-    function finiteNumberOrNull(value) {
-      const n = Number(value);
-      return Number.isFinite(n) ? n : null;
-    }
-
-    function unknownTextForGeometry(run) {
-      const el = run?._element || {};
-      const encoded = String(run?.encodedText ?? el?.text ?? "");
-      if (encoded.length > 0) return encoded;
-      return String(run?.sourceText ?? el?.sourceText ?? "");
-    }
-
-    function measureUnknownTextInkGeometry(run, { x, baselineY, fallbackWidth, fallbackAscent, fallbackDescent }) {
-      const text = unknownTextForGeometry(run);
-      if (!text) return null;
-
-      const el = run?._element || {};
-      const fontPx = Math.max(1, Number(run?.fontPx ?? el?.px ?? getFontPx() ?? 56));
-      const fontFamily = String(run?.fontFamily ?? el?.fontFamily ?? buildFontRoles()?.unknown ?? FONT_FAMILY_LITERAL);
-
-      try {
-        const canvas = measureUnknownTextInkGeometry._canvas || (measureUnknownTextInkGeometry._canvas = document.createElement("canvas"));
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return null;
-        ctx.textBaseline = "alphabetic";
-        ctx.font = `${fontPx}px "${fontFamily}"`;
-        setTextQuality(ctx);
-        const m = ctx.measureText(text);
-
-        const left = Number.isFinite(Number(m.actualBoundingBoxLeft)) ? Number(m.actualBoundingBoxLeft) : 0;
-        const right = Number.isFinite(Number(m.actualBoundingBoxRight)) ? Number(m.actualBoundingBoxRight) : Number(m.width ?? fallbackWidth ?? 0);
-        const ascent = Number.isFinite(Number(m.actualBoundingBoxAscent)) ? Number(m.actualBoundingBoxAscent) : Number(fallbackAscent ?? fontPx * 0.8);
-        const descent = Number.isFinite(Number(m.actualBoundingBoxDescent)) ? Number(m.actualBoundingBoxDescent) : Number(fallbackDescent ?? fontPx * 0.2);
-
-        const width = Math.max(0, left + right);
-        const height = Math.max(0, ascent + descent);
-        if (width > 0 && height > 0 && Number.isFinite(baselineY)) {
-          return {
-            x: x - left,
-            y: baselineY - ascent,
-            width,
-            height,
-            source: "canvas-actual-ink-bounds"
-          };
-        }
-      } catch (_) {}
-
-      return null;
-    }
-
-    function unknownTextRunGeometry(run) {
-      const el = run?._element || {};
-      const x = finiteNumberOrNull(run?.drawXPx ?? run?.xPx ?? el?.drawXPx ?? el?.xPx);
-      const width = finiteNumberOrNull(run?.widthPx ?? el?.widthPx ?? el?.w);
-      if (x == null || width == null || width <= 0) return null;
-
-      const baselineY = finiteNumberOrNull(run?.baselineYPx ?? el?.baselineYPx);
-      const ascent = finiteNumberOrNull(run?.ascentPx ?? el?.ascentPx);
-      const descent = finiteNumberOrNull(run?.descentPx ?? el?.descentPx) ?? 0;
-
-      // The highlight must surround the actual rendered unknown text ink, not the
-      // text advance origin or a line box. Canvas TextMetrics uses the same font
-      // and baseline model as the renderer, so it supplies the missing left-bearing
-      // and real ascent/descent that the exporter plan does not expose directly.
-      if (baselineY != null) {
-        const ink = measureUnknownTextInkGeometry(run, {
-          x,
-          baselineY,
-          fallbackWidth: width,
-          fallbackAscent: ascent,
-          fallbackDescent: descent
-        });
-        if (ink) return ink;
-      }
-
-      if (baselineY != null && ascent != null && ascent > 0) {
-        return { x, y: baselineY - ascent, width, height: ascent + Math.max(0, descent), source: "fallback-baseline-ascent-descent" };
-      }
-
-      const yPx = finiteNumberOrNull(run?.yPx ?? el?.yPx);
-      const heightPx = finiteNumberOrNull(run?.heightPx ?? el?.heightPx ?? el?.h);
-      if (yPx != null && heightPx != null && heightPx > 0) {
-        return { x, y: yPx, width, height: heightPx, source: "fallback-yPx-heightPx" };
-      }
-
-      return null;
-    }
-
-    function collectUnknownHighlightRectsFromPlan(plan, { exportPaddingPx = 0 } = {}) {
-      if (!getUnknownHighlightEnabled()) return [];
-      const pad = unknownHighlightExportPaddingPx();
-      // The exported unknown text lands between the raw plan coordinate space and
-      // the fully padded SVG/PDF document coordinate space.  Using the full
-      // exporter padding shifted the rectangle down/right; using zero shifted it
-      // up/left.  Apply the midpoint correction only to unknown highlight
-      // rectangles so the overlay tracks the rendered unknown run without
-      // changing any exporter, parser, cartouche, or text drawing behavior.
-      const exportPad = Math.max(0, Number(exportPaddingPx || 0)) * 0.5;
-      const rects = [];
-
-      for (const line of (plan?.lines || [])) {
-        for (const run of (line?.runs || [])) {
-          if (!isUnknownTextExportRun(run)) continue;
-          const g = unknownTextRunGeometry(run);
-          if (!g) continue;
-
-          rects.push({
-            x: exportPad + g.x - pad,
-            y: exportPad + g.y - pad,
-            width: g.width + pad * 2,
-            height: g.height + pad * 2,
-            geometrySource: g.source,
-            sourceText: String(run?.sourceText ?? run?._element?.sourceText ?? ""),
-            encodedText: String(run?.encodedText ?? run?._element?.text ?? "")
-          });
-        }
-      }
-
-      return rects;
-    }
-
-    function escapeSvgAttr(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/"/g, "&quot;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-    }
-
-    function formatSvgNumber(n) {
-      const x = Number(n);
-      if (!Number.isFinite(x)) return "0";
-      return String(Math.round(x * 1000) / 1000);
-    }
-
-
-    function svgStageDimensionsFromText(svgText) {
-      try {
-        const doc = new DOMParser().parseFromString(String(svgText ?? ""), "image/svg+xml");
-        if (doc.querySelector("parsererror")) return null;
-        const root = doc.documentElement;
-        if (!root || String(root.localName || "").toLowerCase() !== "svg") return null;
-
-        const parseLength = value => {
-          const m = /^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))(?:px)?\s*$/i.exec(String(value ?? ""));
-          if (!m) return null;
-          const n = Number(m[1]);
-          return Number.isFinite(n) && n > 0 ? n : null;
-        };
-
-        const viewBox = String(root.getAttribute("viewBox") || "")
-          .trim()
-          .split(/[\s,]+/)
-          .map(Number);
-        const hasUsableViewBox =
-          viewBox.length >= 4 &&
-          viewBox.every(Number.isFinite) &&
-          viewBox[2] > 0 &&
-          viewBox[3] > 0;
-
-        // SVG child coordinates use viewBox user units when a viewBox exists.
-        // Fall back to the numeric viewport width/height only when there is no
-        // usable viewBox. This also keeps the PDF DOM conversion correct when
-        // viewport dimensions and viewBox dimensions differ.
-        if (hasUsableViewBox) {
-          return { x: viewBox[0], y: viewBox[1], width: viewBox[2], height: viewBox[3] };
-        }
-
-        const width = parseLength(root.getAttribute("width"));
-        const height = parseLength(root.getAttribute("height"));
-        if (!(width > 0 && height > 0)) return null;
-        return { x: 0, y: 0, width, height };
-      } catch {
-        return null;
-      }
-    }
-
-    async function injectBackgroundRectIntoSvgBlob(svgBlob) {
-      if (!getBackgroundEnabled()) return svgBlob;
-
-      const svgText = await svgBlob.text();
-      const dimensions = svgStageDimensionsFromText(svgText);
-      if (!dimensions) {
-        throw new Error("Unable to determine SVG dimensions for the enabled background.");
-      }
-
-      const svgStart = svgText.search(/<svg\b/i);
-      if (svgStart < 0) throw new Error("SVG root element is missing.");
-      const svgOpenEnd = svgText.indexOf(">", svgStart);
-      if (svgOpenEnd < 0) throw new Error("SVG root opening tag is incomplete.");
-
-      const rect = `<rect data-tts-background="1" x="${formatSvgNumber(dimensions.x)}" y="${formatSvgNumber(dimensions.y)}" width="${formatSvgNumber(dimensions.width)}" height="${formatSvgNumber(dimensions.height)}" fill="${escapeSvgAttr(getBackgroundHex())}" />`;
-      const out = svgText.slice(0, svgOpenEnd + 1) + rect + svgText.slice(svgOpenEnd + 1);
-      return new Blob([out], { type: "image/svg+xml;charset=utf-8" });
-    }
-
-    async function injectUnknownHighlightRectsIntoSvgBlob(svgBlob, plan, { exportPaddingPx = 0 } = {}) {
-      const rects = collectUnknownHighlightRectsFromPlan(plan, { exportPaddingPx });
-      window.__TTS_VECTOR_DEBUG_LAST_UNKNOWN_RECTS__ = rects;
-      if (!rects.length) return svgBlob;
-
-      const svgText = await svgBlob.text();
-      const stroke = unknownHighlightExportStrokeHex();
-      const lineWidth = unknownHighlightExportLineWidthPx();
-      const overlay = [
-        `<g data-tts-unknown-highlight-rects="1" fill="none" stroke="${escapeSvgAttr(stroke)}" stroke-width="${formatSvgNumber(lineWidth)}" vector-effect="non-scaling-stroke">`,
-        ...rects.map(r => `<rect data-source="${escapeSvgAttr(r.sourceText || r.encodedText || "")}" x="${formatSvgNumber(r.x)}" y="${formatSvgNumber(r.y)}" width="${formatSvgNumber(r.width)}" height="${formatSvgNumber(r.height)}" />`),
-        `</g>`
-      ].join("");
-
-      // Draw after the exporter content so the outline is visible, but do not redraw text.
-      const closeSvg = svgText.lastIndexOf("</svg>");
-      if (closeSvg >= 0) {
-        const out = svgText.slice(0, closeSvg) + overlay + svgText.slice(closeSvg);
-        return new Blob([out], { type: "image/svg+xml;charset=utf-8" });
-      }
-
-      const svgOpenEnd = svgText.indexOf(">", svgText.indexOf("<svg"));
-      if (svgOpenEnd < 0) return svgBlob;
-      const out = svgText.slice(0, svgOpenEnd + 1) + overlay + svgText.slice(svgOpenEnd + 1);
-      return new Blob([out], { type: "image/svg+xml;charset=utf-8" });
-    }
-
-    function hexToPdfRgb(hex) {
-      const h = normalizeHexColor(hex) || "#000000";
-      const r = parseInt(h.slice(1, 3), 16) / 255;
-      const g = parseInt(h.slice(3, 5), 16) / 255;
-      const b = parseInt(h.slice(5, 7), 16) / 255;
-      return window.PDFLib.rgb(r, g, b);
-    }
-
-    async function exportVectorPdfBlobWithUnknownHighlightRects(exporter, args, plan) {
-      const rects = collectUnknownHighlightRectsFromPlan(plan, { exportPaddingPx: args.paddingPx });
-      window.__TTS_VECTOR_DEBUG_LAST_UNKNOWN_RECTS__ = rects;
-      if (!rects.length) {
-        await exporter.downloadPdf(args);
-        return;
-      }
-
-      if (!window.PDFLib) throw new Error("pdf-lib not loaded.");
-      if (typeof exporter.exportTextToPdfBlob !== "function") {
-        throw new Error("Vector PDF blob export is unavailable, so unknown highlight rectangles cannot be overlaid without changing the PDF export architecture.");
-      }
-
-      const basePdfBlob = await exporter.exportTextToPdfBlob(args);
-      const basePdfBytes = await basePdfBlob.arrayBuffer();
-      const pdfDoc = await window.PDFLib.PDFDocument.load(basePdfBytes);
-      const page = pdfDoc.getPage(0);
-      const pageHeightPt = page.getHeight();
-      const borderColor = hexToPdfRgb(unknownHighlightExportStrokeHex());
-      const borderWidth = unknownHighlightExportLineWidthPx() * PX_TO_PT;
-
-      for (const r of rects) {
-        page.drawRectangle({
-          x: r.x * PX_TO_PT,
-          y: pageHeightPt - ((r.y + r.height) * PX_TO_PT),
-          width: r.width * PX_TO_PT,
-          height: r.height * PX_TO_PT,
-          borderColor,
-          borderWidth,
-          opacity: 1,
-          borderOpacity: 1
-        });
-      }
-
-      const outBytes = await pdfDoc.save();
-      downloadBlobAsFile(new Blob([outBytes], { type: "application/pdf" }), args.filename || `${getExportFilenameBase()}-vector.pdf`);
-    }
-
-    async function svgBlobToPngBlob(svgBlob, { scale = 1 } = {}) {
-      const svgText = await svgBlob.text();
-      window.__TTS_VECTOR_DEBUG_LAST_SVG_TEXT__ = svgText;
-      vectorDiag("SVG blob before PNG rasterization", {
-        byteLength: svgBlob.size,
-        charLength: svgText.length,
-        svgHead: svgText.slice(0, 1000),
-        containsClipPath: svgText.includes("clipPath"),
-        containsDebugAttrs: svgText.includes("data-debug"),
-        overhangProbe: (svgText.match(/clipPath|data-debug|literal|cartouche|ABC/g) || []).slice(0, 100)
-      });
-      const url = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }));
-      try {
-        const img = new Image();
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = () => reject(new Error("SVG-to-PNG rasterization failed."));
-          img.src = url;
-        });
-        const w = Math.max(1, Math.ceil((img.naturalWidth || img.width || outCanvas?.width || 1) * scale));
-        const h = Math.max(1, Math.ceil((img.naturalHeight || img.height || outCanvas?.height || 1) * scale));
-        vectorDiag("SVG image decoded for PNG", { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight, drawWidth: w, drawHeight: h, scale });
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d", { alpha: true });
-        ctx.clearRect(0, 0, w, h);
-        ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(img, 0, 0, w, h);
-        return await new Promise((resolve, reject) => {
-          canvas.toBlob((blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error("PNG export failed (no blob)."));
-          }, "image/png");
-        });
-      } finally {
-        URL.revokeObjectURL(url);
-      }
-    }
-
-
-    // ============================================================
-    // SVG -> PDF vector conversion for text-to-sitelen
-    // ------------------------------------------------------------
-    // PDF export deliberately uses the exact SVG text produced by
-    // buildCurrentVectorSvgBlob(), which is also the source for PNG.
-    // This keeps SVG, PNG, and PDF in the same geometry pipeline and avoids
-    // the older exporter-internal PDF path that could use stale command data.
-    // ============================================================
-    const TTS_SVG_PDF_PT_PER_PX = 72 / 96;
-
-    function ttsSvgPdfClamp(n, lo, hi) {
-      return Math.min(hi, Math.max(lo, Number(n) || 0));
-    }
-
-    function ttsSvgPdfCssMap(styleText){
-      const out = {};
-      String(styleText || "").split(";").forEach(part => {
-        const idx = part.indexOf(":");
-        if (idx <= 0) return;
-        out[part.slice(0, idx).trim()] = part.slice(idx + 1).trim();
-      });
-      return out;
-    }
-
-    function ttsSvgPdfAttr(node, name, inheritedValue = undefined){
-      if (!node || !node.getAttribute) return inheritedValue;
-      const direct = node.getAttribute(name);
-      if (direct != null && direct !== "") return direct;
-      const style = ttsSvgPdfCssMap(node.getAttribute("style") || "");
-      return style[name] ?? inheritedValue;
-    }
-
-    function ttsSvgPdfNumber(value, fallback = 0){
-      const m = String(value ?? "").trim().match(/[-+]?\d*\.?\d+(?:e[-+]?\d+)?/i);
-      if (!m) return fallback;
-      const n = Number(m[0]);
-      return Number.isFinite(n) ? n : fallback;
-    }
-
-    function ttsSvgPdfNumberList(value){
-      return String(value ?? "").match(/[-+]?\d*\.?\d+(?:e[-+]?\d+)?/ig)?.map(Number).filter(Number.isFinite) || [];
-    }
-
-    function ttsSvgPdfMatrixMultiply(a, b){
-      return [
-        a[0] * b[0] + a[2] * b[1],
-        a[1] * b[0] + a[3] * b[1],
-        a[0] * b[2] + a[2] * b[3],
-        a[1] * b[2] + a[3] * b[3],
-        a[0] * b[4] + a[2] * b[5] + a[4],
-        a[1] * b[4] + a[3] * b[5] + a[5],
-      ];
-    }
-
-    function ttsSvgPdfTranslate(tx, ty){ return [1, 0, 0, 1, Number(tx) || 0, Number(ty) || 0]; }
-    function ttsSvgPdfScale(sx, sy = sx){ return [Number(sx) || 0, 0, 0, Number(sy) || 0, 0, 0]; }
-    function ttsSvgPdfRotate(degValue){
-      const a = (Number(degValue) || 0) * Math.PI / 180;
-      const c = Math.cos(a), s = Math.sin(a);
-      return [c, s, -s, c, 0, 0];
-    }
-
-    function ttsSvgPdfParseTransform(transformText){
-      let m = [1, 0, 0, 1, 0, 0];
-      const re = /(matrix|translate|scale|rotate)\s*\(([^)]*)\)/ig;
-      let hit;
-      while ((hit = re.exec(String(transformText || ""))) !== null){
-        const kind = hit[1].toLowerCase();
-        const nums = ttsSvgPdfNumberList(hit[2]);
-        let t = [1, 0, 0, 1, 0, 0];
-        if (kind === "matrix" && nums.length >= 6) {
-          t = nums.slice(0, 6);
-        } else if (kind === "translate") {
-          t = ttsSvgPdfTranslate(nums[0] || 0, nums.length > 1 ? nums[1] : 0);
-        } else if (kind === "scale") {
-          t = ttsSvgPdfScale(nums[0] ?? 1, nums.length > 1 ? nums[1] : (nums[0] ?? 1));
-        } else if (kind === "rotate") {
-          if (nums.length >= 3) {
-            t = ttsSvgPdfMatrixMultiply(ttsSvgPdfMatrixMultiply(ttsSvgPdfTranslate(nums[1], nums[2]), ttsSvgPdfRotate(nums[0])), ttsSvgPdfTranslate(-nums[1], -nums[2]));
-          } else {
-            t = ttsSvgPdfRotate(nums[0] || 0);
-          }
-        }
-        m = ttsSvgPdfMatrixMultiply(m, t);
-      }
-      return m;
-    }
-
-    function ttsSvgPdfMatrixPoint(m, x, y){
-      return { x: m[0] * x + m[2] * y + m[4], y: m[1] * x + m[3] * y + m[5] };
-    }
-
-    function ttsSvgPdfTransformedPointToPdfPath(m, x, y){
-      const p = ttsSvgPdfMatrixPoint(m, x, y);
-      // pdf-lib drawSvgPath applies the SVG-style Y inversion when opts.y is
-      // set to page height, so do not pre-flip Y here.
-      return { x: p.x * TTS_SVG_PDF_PT_PER_PX, y: p.y * TTS_SVG_PDF_PT_PER_PX };
-    }
-
-    function ttsSvgPdfMatrixApproxScale(m){
-      const sx = Math.hypot(Number(m?.[0] || 0), Number(m?.[1] || 0));
-      const sy = Math.hypot(Number(m?.[2] || 0), Number(m?.[3] || 0));
-      const vals = [sx, sy].filter(v => Number.isFinite(v) && v > 0);
-      if (!vals.length) return 1;
-      return vals.reduce((a, b) => a + b, 0) / vals.length;
-    }
-
-    function ttsSvgPdfTokenizePathData(d){
-      const tokens = [];
-      const re = /([AaCcHhLlMmQqSsTtVvZz])|([-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?)/g;
-      let m;
-      while ((m = re.exec(String(d || ""))) !== null) {
-        if (m[1]) tokens.push({ type: "cmd", value: m[1] });
-        else tokens.push({ type: "num", value: Number(m[2]) });
-      }
-      return tokens;
-    }
-
-    function ttsSvgPdfTransformPathDataToPdfPath(d, matrix){
-      const tokens = ttsSvgPdfTokenizePathData(d);
-      let i = 0;
-      let cmd = "";
-      let cx = 0, cy = 0;
-      let sx = 0, sy = 0;
-      const out = [];
-
-      function hasNum(){ return i < tokens.length && tokens[i].type === "num"; }
-      function readNum(){
-        if (!hasNum()) return null;
-        return tokens[i++].value;
-      }
-      function peekCmd(){ return i < tokens.length && tokens[i].type === "cmd" ? tokens[i].value : null; }
-      function emitPoint(prefix, x, y){
-        const p = ttsSvgPdfTransformedPointToPdfPath(matrix, x, y);
-        out.push(`${prefix} ${formatSvgNumber(p.x)} ${formatSvgNumber(p.y)}`);
-      }
-
-      while (i < tokens.length) {
-        const nextCmd = peekCmd();
-        if (nextCmd) { cmd = tokens[i++].value; }
-        if (!cmd) break;
-
-        const lower = cmd.toLowerCase();
-        const rel = cmd === lower;
-
-        if (lower === "z") {
-          out.push("Z");
-          cx = sx; cy = sy;
-          cmd = "";
-          continue;
-        }
-
-        if (lower === "m") {
-          let first = true;
-          while (hasNum()) {
-            const x0 = readNum(); const y0 = readNum();
-            if (x0 == null || y0 == null) break;
-            const x = rel ? cx + x0 : x0;
-            const y = rel ? cy + y0 : y0;
-            emitPoint(first ? "M" : "L", x, y);
-            cx = x; cy = y;
-            if (first) { sx = x; sy = y; first = false; }
-            if (peekCmd()) break;
-          }
-          continue;
-        }
-
-        if (lower === "l") {
-          while (hasNum()) {
-            const x0 = readNum(); const y0 = readNum();
-            if (x0 == null || y0 == null) break;
-            const x = rel ? cx + x0 : x0;
-            const y = rel ? cy + y0 : y0;
-            emitPoint("L", x, y);
-            cx = x; cy = y;
-            if (peekCmd()) break;
-          }
-          continue;
-        }
-
-        if (lower === "h") {
-          while (hasNum()) {
-            const x0 = readNum(); if (x0 == null) break;
-            const x = rel ? cx + x0 : x0;
-            emitPoint("L", x, cy);
-            cx = x;
-            if (peekCmd()) break;
-          }
-          continue;
-        }
-
-        if (lower === "v") {
-          while (hasNum()) {
-            const y0 = readNum(); if (y0 == null) break;
-            const y = rel ? cy + y0 : y0;
-            emitPoint("L", cx, y);
-            cy = y;
-            if (peekCmd()) break;
-          }
-          continue;
-        }
-
-        if (lower === "c") {
-          while (hasNum()) {
-            const x1 = readNum(), y1 = readNum(), x2 = readNum(), y2 = readNum(), x = readNum(), y = readNum();
-            if ([x1, y1, x2, y2, x, y].some(v => v == null)) break;
-            const ax1 = rel ? cx + x1 : x1;
-            const ay1 = rel ? cy + y1 : y1;
-            const ax2 = rel ? cx + x2 : x2;
-            const ay2 = rel ? cy + y2 : y2;
-            const ax = rel ? cx + x : x;
-            const ay = rel ? cy + y : y;
-            const p1 = ttsSvgPdfTransformedPointToPdfPath(matrix, ax1, ay1);
-            const p2 = ttsSvgPdfTransformedPointToPdfPath(matrix, ax2, ay2);
-            const p = ttsSvgPdfTransformedPointToPdfPath(matrix, ax, ay);
-            out.push(`C ${formatSvgNumber(p1.x)} ${formatSvgNumber(p1.y)} ${formatSvgNumber(p2.x)} ${formatSvgNumber(p2.y)} ${formatSvgNumber(p.x)} ${formatSvgNumber(p.y)}`);
-            cx = ax; cy = ay;
-            if (peekCmd()) break;
-          }
-          continue;
-        }
-
-        if (lower === "q") {
-          while (hasNum()) {
-            const x1 = readNum(), y1 = readNum(), x = readNum(), y = readNum();
-            if ([x1, y1, x, y].some(v => v == null)) break;
-            const ax1 = rel ? cx + x1 : x1;
-            const ay1 = rel ? cy + y1 : y1;
-            const ax = rel ? cx + x : x;
-            const ay = rel ? cy + y : y;
-            const p1 = ttsSvgPdfTransformedPointToPdfPath(matrix, ax1, ay1);
-            const p = ttsSvgPdfTransformedPointToPdfPath(matrix, ax, ay);
-            out.push(`Q ${formatSvgNumber(p1.x)} ${formatSvgNumber(p1.y)} ${formatSvgNumber(p.x)} ${formatSvgNumber(p.y)}`);
-            cx = ax; cy = ay;
-            if (peekCmd()) break;
-          }
-          continue;
-        }
-
-        console.warn("[tts-svg-pdf] unsupported SVG path command omitted", { cmd, d: String(d || "").slice(0, 160) });
-        break;
-      }
-
-      return out.join(" ");
-    }
-
-    function ttsSvgPdfNodeMatrix(node, isRootSvg = false){
-      let m = [1, 0, 0, 1, 0, 0];
-      const tag = String(node?.localName || "").toLowerCase();
-      if (tag === "svg") {
-        const x = isRootSvg ? 0 : ttsSvgPdfNumber(node.getAttribute("x"), 0);
-        const y = isRootSvg ? 0 : ttsSvgPdfNumber(node.getAttribute("y"), 0);
-        const w = ttsSvgPdfNumber(node.getAttribute("width"), 0);
-        const h = ttsSvgPdfNumber(node.getAttribute("height"), 0);
-        const vb = ttsSvgPdfNumberList(node.getAttribute("viewBox"));
-        m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfTranslate(x, y));
-        if (vb.length >= 4 && w > 0 && h > 0 && vb[2] > 0 && vb[3] > 0) {
-          const par = String(node.getAttribute("preserveAspectRatio") || "xMidYMid meet").trim();
-          if (/none/i.test(par)) {
-            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfScale(w / vb[2], h / vb[3]));
-            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfTranslate(-vb[0], -vb[1]));
-          } else {
-            const scale = Math.min(w / vb[2], h / vb[3]);
-            let ox = 0, oy = 0;
-            if (/xMid/i.test(par)) ox = (w - vb[2] * scale) / 2;
-            else if (/xMax/i.test(par)) ox = (w - vb[2] * scale);
-            if (/YMid/i.test(par)) oy = (h - vb[3] * scale) / 2;
-            else if (/YMax/i.test(par)) oy = (h - vb[3] * scale);
-            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfTranslate(ox, oy));
-            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfScale(scale, scale));
-            m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfTranslate(-vb[0], -vb[1]));
-          }
-        }
-      }
-      const tr = node?.getAttribute?.("transform");
-      if (tr) m = ttsSvgPdfMatrixMultiply(m, ttsSvgPdfParseTransform(tr));
-      return m;
-    }
-
-    function ttsSvgPdfColor(css, inheritedOpacity = 1){
-      const PDFLib = window.PDFLib;
-      if (!PDFLib) return null;
-      let s = String(css ?? "").trim();
-      if (!s || s === "none" || s === "transparent") return null;
-      let opacity = inheritedOpacity;
-      const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-      if (hex){
-        let h = hex[1];
-        if (h.length === 3) h = h.split("").map(ch => ch + ch).join("");
-        return {
-          color: PDFLib.rgb(parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255),
-          opacity
-        };
-      }
-      const rgb = s.match(/^rgba?\(([^)]+)\)$/i);
-      if (rgb){
-        const nums = rgb[1].split(",").map(x => Number(String(x).trim())).filter(Number.isFinite);
-        if (nums.length >= 3){
-          if (nums.length >= 4) opacity *= ttsSvgPdfClamp(nums[3], 0, 1);
-          return { color: PDFLib.rgb(ttsSvgPdfClamp(nums[0], 0, 255) / 255, ttsSvgPdfClamp(nums[1], 0, 255) / 255, ttsSvgPdfClamp(nums[2], 0, 255) / 255), opacity };
-        }
-      }
-      if (s.toLowerCase() === "black") return { color: PDFLib.rgb(0, 0, 0), opacity };
-      if (s.toLowerCase() === "white") return { color: PDFLib.rgb(1, 1, 1), opacity };
-      return null;
-    }
-
-    function ttsSvgPdfRectPath(node){
-      const x = ttsSvgPdfNumber(node.getAttribute("x"), 0);
-      const y = ttsSvgPdfNumber(node.getAttribute("y"), 0);
-      const w = ttsSvgPdfNumber(node.getAttribute("width"), 0);
-      const h = ttsSvgPdfNumber(node.getAttribute("height"), 0);
-      if (!(w > 0 && h > 0)) return "";
-      return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} Z`;
-    }
-
-    function ttsSvgPdfLinePath(node){
-      const x1 = ttsSvgPdfNumber(node.getAttribute("x1"), 0);
-      const y1 = ttsSvgPdfNumber(node.getAttribute("y1"), 0);
-      const x2 = ttsSvgPdfNumber(node.getAttribute("x2"), 0);
-      const y2 = ttsSvgPdfNumber(node.getAttribute("y2"), 0);
-      return `M ${x1} ${y1} L ${x2} ${y2}`;
-    }
-
-    function ttsSvgPdfResolveUrlId(value){
-      const s = String(value || "").trim();
-      const m = s.match(/^url\(\s*['"]?#([^'")]+)['"]?\s*\)$/i);
-      return m ? m[1] : "";
-    }
-
-    function ttsSvgPdfBuildClipPathMap(svgDoc){
-      const out = new Map();
-      for (const cp of Array.from(svgDoc.querySelectorAll("clipPath[id]"))) {
-        const id = cp.getAttribute("id") || "";
-        if (!id) continue;
-        const rect = cp.querySelector("rect");
-        if (rect) {
-          out.set(id, {
-            kind: "rect",
-            x: ttsSvgPdfNumber(rect.getAttribute("x"), 0),
-            y: ttsSvgPdfNumber(rect.getAttribute("y"), 0),
-            w: Math.max(0, ttsSvgPdfNumber(rect.getAttribute("width"), 0)),
-            h: Math.max(0, ttsSvgPdfNumber(rect.getAttribute("height"), 0))
-          });
-          continue;
-        }
-        const path = cp.querySelector("path[d]");
-        if (path) out.set(id, { kind: "path", d: String(path.getAttribute("d") || "") });
-      }
-      return out;
-    }
-
-    function ttsSvgPdfPointToPdfOperatorCoords(p, stageH){
-      return {
-        x: Number(p.x || 0) * TTS_SVG_PDF_PT_PER_PX,
-        y: (Number(stageH || 0) - Number(p.y || 0)) * TTS_SVG_PDF_PT_PER_PX
-      };
-    }
-
-    function ttsSvgPdfPushClipForCurrentNode(node, page, matrix, clipPathMap, stageH){
-      const P = window.PDFLib || {};
-      const clipRef = ttsSvgPdfAttr(node, "clip-path", "");
-      const clipId = ttsSvgPdfResolveUrlId(clipRef);
-      if (!clipId) return false;
-      const clipDef = clipPathMap?.get?.(clipId);
-      if (!clipDef) {
-        try { console.warn("[tts-svg-pdf] missing clipPath definition", { clipRef, clipId }); } catch {}
-        return false;
-      }
-
-      if (!(page && typeof page.pushOperators === "function" &&
-            P.pushGraphicsState && P.popGraphicsState && P.clip && P.endPath &&
-            P.moveTo && P.lineTo && P.closePath)) {
-        try { console.warn("[tts-svg-pdf] pdf-lib clipping operators unavailable; SVG clip-path omitted", { clipId }); } catch {}
-        return false;
-      }
-
-      const ops = [P.pushGraphicsState()];
-
-      if (clipDef.kind === "rect") {
-        const x = clipDef.x;
-        const y = clipDef.y;
-        const w = clipDef.w;
-        const h = clipDef.h;
-        if (!(w > 0 && h > 0)) return false;
-        const pts = [
-          ttsSvgPdfPointToPdfOperatorCoords(ttsSvgPdfMatrixPoint(matrix, x, y), stageH),
-          ttsSvgPdfPointToPdfOperatorCoords(ttsSvgPdfMatrixPoint(matrix, x + w, y), stageH),
-          ttsSvgPdfPointToPdfOperatorCoords(ttsSvgPdfMatrixPoint(matrix, x + w, y + h), stageH),
-          ttsSvgPdfPointToPdfOperatorCoords(ttsSvgPdfMatrixPoint(matrix, x, y + h), stageH)
-        ];
-        ops.push(P.moveTo(pts[0].x, pts[0].y));
-        ops.push(P.lineTo(pts[1].x, pts[1].y));
-        ops.push(P.lineTo(pts[2].x, pts[2].y));
-        ops.push(P.lineTo(pts[3].x, pts[3].y));
-        ops.push(P.closePath());
-      } else {
-        try { console.warn("[tts-svg-pdf] non-rect clipPath omitted", { clipId }); } catch {}
-        return false;
-      }
-
-      ops.push(P.clip());
-      ops.push(P.endPath());
-      page.pushOperators(...ops);
-      return true;
-    }
-
-    function ttsSvgPdfCanUseOperators(){
-      const P = window.PDFLib || {};
-      return !!(
-        P.pushGraphicsState && P.popGraphicsState && P.concatTransformationMatrix &&
-        P.clip && P.endPath && P.moveTo && P.lineTo && P.closePath
-      );
-    }
-
-    async function ttsDrawSvgDomNodeToPdf(node, pdfDoc, page, matrix, inherited, stageH, clipPathMap, isRootSvg = false){
-      if (!node || node.nodeType !== 1) return;
-      const tag = String(node.localName || "").toLowerCase();
-      if (tag === "defs" || tag === "clippath" || tag === "title" || tag === "desc") return;
-
-      const ownMatrix = ttsSvgPdfNodeMatrix(node, isRootSvg);
-      const nextMatrix = ttsSvgPdfMatrixMultiply(matrix, ownMatrix);
-      const opacityAttr = ttsSvgPdfAttr(node, "opacity", null);
-      const nextOpacity = inherited.opacity * (opacityAttr == null ? 1 : ttsSvgPdfClamp(Number(opacityAttr), 0, 1));
-      const nextStyle = {
-        fill: ttsSvgPdfAttr(node, "fill", inherited.fill),
-        stroke: ttsSvgPdfAttr(node, "stroke", inherited.stroke),
-        strokeWidth: ttsSvgPdfAttr(node, "stroke-width", inherited.strokeWidth),
-        opacity: nextOpacity,
-      };
-
-      const didPushClip = ttsSvgPdfPushClipForCurrentNode(node, page, nextMatrix, clipPathMap, stageH);
-      try {
-        if (tag === "path" || tag === "rect" || tag === "line"){
-          const d = tag === "path" ? String(node.getAttribute("d") || "") : (tag === "rect" ? ttsSvgPdfRectPath(node) : ttsSvgPdfLinePath(node));
-          if (d.trim()){
-            const transformedD = ttsSvgPdfTransformPathDataToPdfPath(d, nextMatrix);
-            const fill = ttsSvgPdfColor(nextStyle.fill, nextStyle.opacity);
-            const stroke = ttsSvgPdfColor(nextStyle.stroke, nextStyle.opacity);
-            const scaleForStroke = ttsSvgPdfMatrixApproxScale(nextMatrix);
-            const borderWidth = Math.max(0, ttsSvgPdfNumber(nextStyle.strokeWidth, 1) * scaleForStroke * TTS_SVG_PDF_PT_PER_PX);
-            const opts = { x: 0, y: stageH * TTS_SVG_PDF_PT_PER_PX };
-            if (fill) { opts.color = fill.color; opts.opacity = fill.opacity; }
-            if (stroke && borderWidth > 0) { opts.borderColor = stroke.color; opts.borderOpacity = stroke.opacity; opts.borderWidth = borderWidth; }
-            if (transformedD.trim() && (fill || (stroke && borderWidth > 0))){
-              page.drawSvgPath(transformedD, opts);
-            }
-          }
-          return;
-        }
-
-        for (const child of Array.from(node.childNodes || [])){
-          await ttsDrawSvgDomNodeToPdf(child, pdfDoc, page, nextMatrix, nextStyle, stageH, clipPathMap, false);
-        }
-      } finally {
-        if (didPushClip) {
-          try { page.pushOperators(window.PDFLib.popGraphicsState()); } catch (_) {}
-        }
-      }
-    }
-
-    async function ttsSvgTextToPdfBlob(svgText){
-      if (!window.PDFLib) throw new Error("pdf-lib is not loaded. Check ./vendor/pdf-lib.min.js is available.");
-      if (typeof window.PDFLib.PDFDocument?.create !== "function") throw new Error("pdf-lib PDFDocument is unavailable.");
-      if (!ttsSvgPdfCanUseOperators()) throw new Error("pdf-lib operator helpers are unavailable; cannot preserve SVG clip paths in PDF.");
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(svgText, "image/svg+xml");
-      const parseErr = doc.querySelector("parsererror");
-      if (parseErr) throw new Error("SVG could not be parsed for PDF export.");
-      const rootSvg = doc.documentElement;
-      const vb = ttsSvgPdfNumberList(rootSvg.getAttribute("viewBox"));
-      const stageW = Math.max(1, ttsSvgPdfNumber(rootSvg.getAttribute("width"), vb.length >= 4 ? vb[2] : 1));
-      const stageH = Math.max(1, ttsSvgPdfNumber(rootSvg.getAttribute("height"), vb.length >= 4 ? vb[3] : 1));
-      const pdfDoc = await window.PDFLib.PDFDocument.create();
-      const page = pdfDoc.addPage([stageW * TTS_SVG_PDF_PT_PER_PX, stageH * TTS_SVG_PDF_PT_PER_PX]);
-      const clipPathMap = ttsSvgPdfBuildClipPathMap(doc);
-      await ttsDrawSvgDomNodeToPdf(rootSvg, pdfDoc, page, [1, 0, 0, 1, 0, 0], { fill: "black", stroke: "none", strokeWidth: 1, opacity: 1 }, stageH, clipPathMap, true);
-      const bytes = await pdfDoc.save();
-      return new Blob([bytes], { type: "application/pdf" });
-    }
-
-    async function buildCurrentVectorSvgBlob({ includeHalo = true } = {}) {
-      vectorDiag("buildCurrentVectorSvgBlob START", { includeHalo });
-      const exporter = await ensureVectorExporterReady();
-      const plan = await buildCurrentVectorExportPlan({ includeHalo });
-      const args = {
-        plan,
-        paddingPx: Math.max(18, Math.ceil(getFontPx() * 0.20)),
-        fallbackWidthPx: outCanvas?.width || null,
-        fallbackHeightPx: outCanvas?.height || null,
-        debugWasm: getVectorWasmDebugEnabled(),
-        filename: `${getExportFilenameBase()}-vector.svg`
-      };
-      vectorDiag("exportTextToSvgBlob args", {
-        paddingPx: args.paddingPx,
-        fallbackWidthPx: args.fallbackWidthPx,
-        fallbackHeightPx: args.fallbackHeightPx,
-        debugWasm: args.debugWasm,
-        filename: args.filename,
-        exporterClipScale: exporter?.literalCartoucheRuleClipScale,
-        exporterClipStrategy: exporter?.literalCartoucheRuleClipStrategy
-      });
-      const rawBlob = await exporter.exportTextToSvgBlob(args);
-      // Insert the optional full-stage background before all exported vector
-      // content. PNG rasterizes this SVG and PDF converts this same SVG DOM,
-      // so all three export formats share the identical background rectangle.
-      const backgroundBlob = await injectBackgroundRectIntoSvgBlob(rawBlob);
-      // SVG coordinates from exportTextToSvgBlob already include the exporter padding.
-      // Do not apply the PDF half-padding correction here; PNG is rasterized
-      // from this same SVG, so SVG/PNG must use the unshifted rectangle boxes.
-      const blob = await injectUnknownHighlightRectsIntoSvgBlob(backgroundBlob, plan, { exportPaddingPx: 0 });
-      vectorDiag("buildCurrentVectorSvgBlob END", { blobSize: blob?.size, blobType: blob?.type });
-      return blob;
-    }
-
-    async function exportRenderedToVectorSvg() {
-      vectorDiag("Download SVG click START");
-      const svgBlob = await buildCurrentVectorSvgBlob({ includeHalo: true });
-      downloadBlobAsFile(svgBlob, `${getExportFilenameBase()}-vector.svg`);
-      vectorDiag("Download SVG click END");
-    }
-
-    async function exportRenderedToVectorPng() {
-      vectorDiag("Download PNG via SVG START");
-      const svgBlob = await buildCurrentVectorSvgBlob({ includeHalo: true });
-      const pngBlob = await svgBlobToPngBlob(svgBlob, { scale: 1 });
-      vectorDiag("Download PNG via SVG END", { pngBlobSize: pngBlob?.size });
-      downloadBlobAsFile(pngBlob, `${getExportFilenameBase()}-vector.png`);
-    }
-
-    async function exportRenderedToVectorPdf() {
-      vectorDiag("Download PDF via SVG path conversion START");
-      if (!window.PDFLib) throw new Error("pdf-lib is not loaded. Check ./vendor/pdf-lib.min.js is available.");
-      if (typeof window.PDFLib.PDFDocument?.create !== "function") throw new Error("pdf-lib PDFDocument is unavailable.");
-
-      const svgBlob = await buildCurrentVectorSvgBlob({ includeHalo: true });
-      const svgText = await svgBlob.text();
-      window.__TTS_VECTOR_DEBUG_LAST_PDF_SVG_TEXT__ = svgText;
-
-      const pathElementCount = (svgText.match(/<path\b/g) || []).length;
-      vectorDiag("PDF source SVG shared with SVG export", {
-        byteLength: svgBlob.size,
-        charLength: svgText.length,
-        containsPath: svgText.includes("<path"),
-        pathElementCount,
-        containsClipPath: svgText.includes("clipPath")
-      });
-
-      if (!pathElementCount) {
-        throw new Error("PDF vector export aborted: source SVG contains no <path> elements.");
-      }
-
-      // Keep PDF vector. Do not rasterize SVG to PNG here.
-      // SVG export writes the SVG path data directly.
-      // PNG export rasterizes that SVG because PNG is a bitmap format.
-      // PDF export converts that same SVG DOM into PDF path operators.
-      const pdfBlob = await ttsSvgTextToPdfBlob(svgText);
-      downloadBlobAsFile(pdfBlob, `${getExportFilenameBase()}-vector.pdf`);
-      vectorDiag("Download PDF via SVG path conversion END", {
-        svgBlobSize: svgBlob?.size,
-        pdfBlobSize: pdfBlob?.size,
-        pathElementCount
-      });
-    }
 
     let _autoRenderTimer = null;
     function scheduleAutoRender() {
@@ -8760,33 +6100,23 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       catch (e) { showAlertAndAnnounce(e?.message ?? String(e)); }
     });
 
-    btnDownload.addEventListener("click", async () => {
+    btnDownload.addEventListener("click", () => {
       try {
-        await exportRenderedToVectorPng();
-        announceStatus("Downloaded PNG from SVG vector paths. Diagnostics were logged to the console.");
+        downloadCanvasAsTransparentPng(outCanvas, { filenameBase: "sitelen", scale: 1 });
+        announceStatus("Downloaded PNG.");
       } catch (e) {
         showAlertAndAnnounce(e?.message ?? String(e));
       }
     });
 
 
-    const btnDownloadSvg = document.getElementById("appBtnDownloadSvg");
     const btnDownloadPdf = document.getElementById("appBtnDownloadPdf");
     const btnDownloadUnicodeJson = document.getElementById("appBtnDownloadUnicodeJson");
 
-    btnDownloadSvg?.addEventListener("click", async () => {
-      try {
-        await exportRenderedToVectorSvg();
-        announceStatus("Downloaded SVG. Diagnostics were logged to the console.");
-      } catch(e) {
-        showAlertAndAnnounce(e?.message ?? String(e));
-      }
-    });
-
     btnDownloadPdf?.addEventListener("click", async () => {
       try{
-        await exportRenderedToVectorPdf();
-        announceStatus("Downloaded PDF from SVG vector paths. Diagnostics were logged to the console.");
+        await exportRenderedToPdf();
+        announceStatus("Downloaded PDF.");
       } catch(e){
         showAlertAndAnnounce(e?.message ?? String(e));
       }
@@ -8801,10 +6131,34 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       }
     });
 
+    const btnDownloadVectorSvg = document.getElementById("appBtnDownloadVectorSvg");
+    const btnDownloadVectorPdf = document.getElementById("appBtnDownloadVectorPdf");
     const vectorDebugToggle = document.getElementById("appVectorWasmDebugEnable");
+
     vectorDebugToggle?.addEventListener("change", () => {
       setVectorWasmDebugEnabled(vectorDebugToggle.checked, { persist: true });
       try { console.info("[vector-export] debugWasm", getVectorWasmDebugEnabled()); } catch {}
+    });
+
+
+    btnDownloadVectorSvg?.addEventListener("click", async () => {
+      console.info("[vector-export] vector SVG button clicked", { debug: getVectorWasmDebugEnabled() });
+      try {
+        await exportRenderedToVectorSvg();
+        announceStatus("Downloaded vector SVG.");
+      } catch (e) {
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
+    });
+
+    btnDownloadVectorPdf?.addEventListener("click", async () => {
+      console.info("[vector-export] vector PDF button clicked", { debug: getVectorWasmDebugEnabled() });
+      try {
+        await exportRenderedToVectorPdf();
+        announceStatus("Downloaded vector PDF.");
+      } catch (e) {
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
     });
 
 
@@ -8855,8 +6209,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       try {
         if (btnRender) btnRender.disabled = true;
         if (btnDownload) btnDownload.disabled = true;
-
-        setStartupLoadingMessage("Loading fonts…");
+        setVectorButtonsEnabled(false);
         announceStatus("Loading fonts…");
 
         try {
@@ -8891,7 +6244,6 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         applyDefaultInputFromQuery();
         applyTextFontOptionFromStorage();
         applyNumericCartoucheAbbrevFromStorage();
-        applyNanpaRelaxedModeFromStorage();
 
         
 
@@ -8920,9 +6272,6 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         initFgColorControls();
         wireFgColorControls();
 
-        initBackgroundControls();
-        wireBackgroundControls();
-
         initHaloControls();
         wireHaloControls();
 
@@ -8935,52 +6284,22 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         wireScriptPresetSelect();
         wireTextFontSelect();
         wireNumericCartoucheAbbrevToggle();
-        wireNanpaRelaxedModeSelect();
         wireCartoucheDisplayLinks();
-        initTextAudioControls();
-        wireTextAudioControls();
 
         await fontsReadyForPx(getFontPx());
         warmUpCanvasFontsOnce();
 
         if (btnRender) btnRender.disabled = false;
         if (btnDownload) btnDownload.disabled = false;
+        initVectorWasmDebugControl();
+        startVectorExporterLoadInBackground();
 
         //warmup proper names cache
         try {
           //const cartoucheApi = await CartoucheApi.open({ lookup: true });
           const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
           pageMap = await cartoucheApi.resolvePageMap();
-          try {
-            ttsPrepareLog("PAGEMAP_LOADED", {
-              pageMapSize: pageMap?.size ?? null,
-              pageMapHasNemen: pageMap?.has?.("Nemen") ?? null,
-              pageMapValueNemen: pageMap?.has?.("Nemen") ? ttsPrepareSummarizeMapValue(pageMap.get("Nemen")) : null,
-              sampleKeys: Array.from(pageMap?.keys?.() || []).slice(0, 50)
-            });
-          } catch {}
         } catch (e) { console.warn('CartoucheApi load failed, continuing without:', e); }
-
-        startVectorExporterLoadInBackground();
-        initVectorWasmDebugControl();
-        vectorDiag("initial page state", {
-          imports: VECTOR_DIAG_IMPORTS,
-          activePreset: safeCloneForLog(getActiveFontPreset()),
-          activeFontPairSettings: safeCloneForLog(getActiveFontPairSettings()),
-          fontRoles: safeCloneForLog(buildFontRoles()),
-          rendererSignature: getRendererSignature(),
-          outCanvas: { width: outCanvas?.width, height: outCanvas?.height },
-          localStorage: {
-            tpScriptPreset: localStorage.getItem("tpScriptPreset"),
-            tpTextFontOption: localStorage.getItem("tpTextFontOption"),
-            tpFontPx: localStorage.getItem("tpFontPx"),
-            tpHaloEnabled: localStorage.getItem("tpHaloEnabled"),
-            tpHaloWidthPx: localStorage.getItem("tpHaloWidthPx"),
-            tpHaloHex: localStorage.getItem("tpHaloHex"),
-            tpBackgroundEnabled: localStorage.getItem("tpBackgroundEnabled"),
-            tpBackgroundHex: localStorage.getItem("tpBackgroundHex")
-          }
-        });
 
         // Auto-render on load (after restore)
         scheduleAutoRender();
@@ -8991,49 +6310,12 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         if (btnRender) btnRender.disabled = false;
         if (btnDownload) btnDownload.disabled = false;
         announceStatus("Font loading failed; rendering may use fallback fonts.");
-      } finally {
-    hideStartupLoading();
-  }
+      }
     });
 
     // Initialize pop-out editor
     initFloatingTextInEditor();
     wireImportExportButtons();
   </script>
-
-  <script>
-  const productionHosts = new Set([
-        'nanpa-linja-n.com',
-    'www.nanpa-linja-n.com'
-  ]);
-
-   if (!productionHosts.has(window.location.hostname)) {
-      window.goatcounter = { no_onload: true };
-  }
- 
-
-function trackUsage(eventName) {
-    if (!productionHosts.has(window.location.hostname)) {
-      return;
-    }
-
-    if (
-      window.goatcounter &&
-      typeof window.goatcounter.count === 'function'
-    ) {
-      window.goatcounter.count({
-        path: eventName,
-        title: eventName,
-        event: true
-      });
-    }
-  }
-</script>
-
-<script
-  data-goatcounter="https://nanpalinjan.goatcounter.com/count"
-  async
-  src="./js/goatcounter-count.js">
-</script>
 </body>
 </html>

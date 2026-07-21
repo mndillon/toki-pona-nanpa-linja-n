@@ -721,7 +721,7 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=177";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=179";
     import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=22";
 
     const voice = await createTokiPonaVoice();
@@ -4003,7 +4003,7 @@
       ABBREV_CP_UTA
     ]);
 
-    const PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION = true;
+    const PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION = false;
 
     function abbreviateNumericCartoucheCps(cps) {
       const input = Array.from(cps ?? []).map(cp => Number(cp));
