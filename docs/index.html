@@ -172,6 +172,45 @@
       white-space: nowrap;
     }
 
+    .whyBotherTable th:nth-child(4),
+    .whyBotherTable th:nth-child(5),
+    .whyBotherTable td:nth-child(4),
+    .whyBotherTable td:nth-child(5) {
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .whyBotherCartoucheImage {
+      display: block;
+      width: auto;
+      height: 3em;
+      max-width: 100%;
+      object-fit: contain;
+      margin-inline: 0;
+    }
+
+    @media (min-width: 1000px) {
+      .card {
+        max-width: 1400px;
+      }
+
+      .whyBotherTableWrap {
+        overflow-x: visible;
+      }
+
+      .whyBotherTable {
+        width: 100%;
+        min-width: 0;
+        table-layout: auto;
+      }
+
+      .whyBotherTable th,
+      .whyBotherTable td,
+      .whyBotherTable code {
+        white-space: nowrap !important;
+      }
+    }
+
     /* nanpa-linja-n mode comparison table */
     .nanpaModeTable th,
     .nanpaModeTable td {
@@ -499,29 +538,31 @@
         The examples below may initially look unfamiliar, but they are all constructed from the same repeating rules. You do not need to learn a separate method for each type of number.
       </div>
 
-      <div class="tableWrap" role="region" aria-label="Examples of values represented as nanpa-linja-n proper names" style="margin-top:10px;">
+      <div class="tableWrap whyBotherTableWrap" role="region" aria-label="Examples of values represented as nanpa-linja-n proper names" style="margin-top:10px;">
         <table class="digitTable whyBotherTable">
           <thead>
             <tr>
               <th>Usage</th>
               <th>Example</th>
               <th>nanpa-linja-n proper name</th>
+              <th>nanpa-linja-n sitelen cartouche</th>
+              <th>nanpa-linja-n abbreviated cartouche</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>Integers</td><td><code>42</code></td><td><code>Nenatun</code></td></tr>
-            <tr><td>Negatives</td><td><code>-3</code></td><td><code>Neno Sen</code></td></tr>
-            <tr><td>Decimals</td><td><code>0.5</code></td><td><code>Nenin One Lun</code></td></tr>
-            <tr><td>ISO thousands</td><td><code>4,321</code></td><td><code>Nenan Eke Setuwan</code></td></tr>
-            <tr><td>Percentages</td><td><code>67%</code></td><td><code>Nenumun Oken</code></td></tr>
-            <tr><td>Scientific notation</td><td><code>9.8e-3</code></td><td><code>Nejen One Pin Eko Wanin Eko Nosen</code></td></tr>
-            <tr><td>Fractions</td><td><code>1/2</code></td><td><code>Newan Ono Tun</code></td></tr>
-            <tr><td>Integers and fractions</td><td><code>8+3/4</code></td><td><code>Nepin Oko Sen Ono Nan</code></td></tr>
-            <tr><td>Large integers</td><td><code>1,234,567</code></td><td><code>Newan Eke Tusenan Eke Lunumun</code></td></tr>
-            <tr><td>Dates</td><td><code>2026-07-18</code></td><td><code>Netunitunun Eke Nimun Eke Wapin</code></td></tr>
-            <tr><td>Times</td><td><code>06:30</code></td><td><code>Neninun Eke Senin</code></td></tr>
-            <tr><td>Telephone numbers</td><td><code>432-555-6789</code></td><td><code>Nenasetun Ene Lululun Ene Numupijen</code></td></tr>
-            <tr><td>Leading zeros</td><td><code>007</code></td><td><code>Neninimun</code></td></tr>
+            <tr><td>Integers</td><td><code>42</code></td><td><code>Nenatun</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-integer-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-integer-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Negatives</td><td><code>-3</code></td><td><code>Neno Sen</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-negative-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-negative-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Decimals</td><td><code>0.5</code></td><td><code>Nenin One Lun</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-decimal-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-decimal-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>ISO thousands</td><td><code>4,321</code></td><td><code>Nenan Eke Setuwan</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-thousands-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-thousands-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Percentages</td><td><code>67%</code></td><td><code>Nenumun Oken</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-percentage-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-percentage-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Scientific notation</td><td><code>9.8e-3</code></td><td><code>Nejen One Pin Eko Wanin Eko Nosen</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-scientific-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-scientific-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Fractions</td><td><code>1/2</code></td><td><code>Newan Ono Tun</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-fraction-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-fraction-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Integers and fractions</td><td><code>8+3/4</code></td><td><code>Nepin Oko Sen Ono Nan</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-intfract-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-intfract-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Large integers</td><td><code>1,234,567</code></td><td><code>Newan Eke Tusenan Eke Lunumun</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-large-int-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-large-int-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Dates</td><td><code>2026-07-18</code></td><td><code>Netunitunun Eke Nimun Eke Wapin</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-date-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-date-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Times</td><td><code>06:30</code></td><td><code>Neninun Eke Senin</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-time-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-time-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Telephone numbers</td><td><code>432-555-6789</code></td><td><code>Nenasetun Ene Lululun Ene Numupijen</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-phone-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-phone-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Leading zeros</td><td><code>007</code></td><td><code>Neninimun</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-leading-zeros-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-leading-zeros-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
           </tbody>
         </table>
       </div>
