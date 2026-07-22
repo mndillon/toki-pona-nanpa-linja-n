@@ -764,6 +764,10 @@
         </div>
       </div>
 
+      <p id="numericPunctuationNote" class="help" hidden>
+        The nanpa-linja-n proper name usually separates into different words at numeric punctuation.
+      </p>
+
       <div class="proper-name-sentence-block">
         <div class="proper-name-sentence-label">nanpa-linja-n proper name</div>
         <div id="properNameSentence" class="proper-name-sentence" aria-label="nanpa-linja-n proper name"></div>
@@ -1292,6 +1296,7 @@
       outerMarkerUnits: document.getElementById("outerMarkerUnits"),
       reassignmentArrows: document.getElementById("reassignmentArrows"),
       alignedProperName: document.getElementById("alignedProperName"),
+      numericPunctuationNote: document.getElementById("numericPunctuationNote"),
       properNameSentence: document.getElementById("properNameSentence"),
       srProperName: document.getElementById("srProperName"),
       fullCartouche: document.getElementById("fullCartouche"),
@@ -2583,6 +2588,11 @@
       renderOuterMarkerUnits(model, columnCount);
       renderReassignmentArrows(model, columnCount);
       renderAlignedProperName(model, columnCount);
+      el.numericPunctuationNote.hidden = !model.rawUnits.some(unit =>
+        unit.kind === "negative" ||
+        unit.kind === "punctuation" ||
+        unit.kind === "percent"
+      );
       renderProperNameSentence(model);
       setResponsiveBreakdownScale(model);
       scheduleDesktopBreakdownFit();
