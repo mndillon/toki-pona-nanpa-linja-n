@@ -10,6 +10,15 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
 
+  <!-- Start loading the table glyph font as early as possible -->
+  <link
+    rel="preload"
+    href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf"
+    as="font"
+    type="font/otf"
+    crossorigin
+  >
+
   <style>
     :root {
       --border: #d0d7de;
@@ -399,30 +408,76 @@
       font-size: 0.82rem;
     }
 
-    .nanpaModeTable th,
-    .nanpaModeTable td {
-      text-align: center;
-      vertical-align: middle;
-    }
-
-    .nanpaModeTable .modeSubhead {
-      color: var(--muted);
-      font-size: 0.82rem;
-      font-weight: 700;
-    }
-
-    .nanpaModeTable .modeGap {
-      width: 16px;
-      min-width: 16px;
-      padding-inline: 6px;
-      border-top: 0;
-      border-bottom: 0;
-      background: transparent;
-    }
+    .nanpaModeTable {
+          --mode-large-glyph-size: 30px;
+          --mode-small-glyph-size: 7.5px;
+          --mode-abbreviated-glyph-size: 30px;
+          --mode-reference-small-glyph-size: 12px;
+        }
+    
+        .nanpaModeTable th,
+        .nanpaModeTable td {
+          text-align: center;
+          vertical-align: middle;
+        }
+    
+        .nanpaModeTable .modeSubhead {
+          font-size: 13px;
+          color: var(--muted);
+          font-weight: 700;
+        }
+    
+        .nanpaModeTable .modeGlyphCell {
+          min-width: 70px;
+          padding-block: 4px;
+        }
+    
+        .nanpaModeTable .modeGlyphSequence {
+          display: inline-flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 1px;
+          font-family: "TP-Nasin-Nanpa-Font";
+          line-height: 1;
+          white-space: nowrap;
+        }
+    
+        .nanpaModeTable .modeLargeGlyph {
+          font-size: var(--mode-large-glyph-size);
+        }
+    
+        .nanpaModeTable .modeSmallGlyph {
+          font-size: var(--mode-small-glyph-size);
+        }
+    
+        .nanpaModeTable .modeAbbreviatedGlyph,
+        .nanpaModeTable .modeReferenceSmallGlyph {
+          display: inline-block;
+          font-family: "TP-Nasin-Nanpa-Font";
+          line-height: 1;
+          white-space: nowrap;
+        }
+    
+        .nanpaModeTable .modeAbbreviatedGlyph {
+          font-size: var(--mode-abbreviated-glyph-size);
+        }
+    
+        .nanpaModeTable .modeReferenceSmallGlyph {
+          font-size: var(--mode-reference-small-glyph-size);
+        }
+    
+        .nanpaModeTable .modeGap {
+          border-top: 0;
+          border-bottom: 0;
+          background: transparent;
+          width: 16px;
+          min-width: 16px;
+          padding-inline: 6px;
+        }
 
     .numericPunctuationWrap {
-      width: calc((100% - 16px) / 2);
-      max-width: calc((100% - 16px) / 2);
+      width: 100%;
+      max-width: 100%;
       margin-top: 14px;
     }
 
@@ -441,6 +496,57 @@
     .numericPunctuationTable td:nth-child(2),
     .numericPunctuationTable td:nth-child(3) {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .numericPunctuationTable {
+      --punctuation-glyph-base-size: 30px;
+      --punctuation-glyph-quarter-size: 7.5px;
+      --punctuation-glyph-half-size: 15px;
+      --punctuation-glyph-two-thirds-size: 20px;
+    }
+
+    .numericPunctuationTable .punctuationGlyphCell {
+      min-width: 86px;
+      padding-block: 4px;
+      text-align: center;
+    }
+
+    .numericPunctuationTable .punctuationGlyphSequence {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 1px;
+      font-family: "TP-Nasin-Nanpa-Font";
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .numericPunctuationTable .punctuationGlyphQuarter {
+      font-size: var(--punctuation-glyph-quarter-size);
+    }
+
+    .numericPunctuationTable .punctuationGlyphHalf {
+      font-size: var(--punctuation-glyph-half-size);
+    }
+
+    .numericPunctuationTable .punctuationGlyphTwoThirds {
+      font-size: var(--punctuation-glyph-two-thirds-size);
+    }
+
+    .numericPunctuationTable .punctuationOptionalAbbreviation {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .numericPunctuationTable .punctuationOptionalNote {
+      color: var(--muted);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 400;
+      opacity: 0.72;
     }
 
     .reference-section {
@@ -532,6 +638,16 @@
       .canvas-scroll {
         overflow-x: visible;
       }
+
+      .numericPunctuationWrap {
+        overflow-x: visible;
+      }
+
+      .numericPunctuationTable {
+        width: 100%;
+        min-width: 0;
+      }
+
 
       .cartouche-canvas-wrap {
         max-width: 100%;
@@ -741,9 +857,9 @@
           <table class="digitTable nanpaModeTable">
             <thead>
               <tr>
-                <th class="modeSubhead" colspan="6">relaxed</th>
+                <th class="modeSubhead" colspan="8">relaxed</th>
                 <th class="modeGap" aria-hidden="true">&nbsp;</th>
-                <th class="modeSubhead" colspan="6">strict</th>
+                <th class="modeSubhead" colspan="8">strict</th>
               </tr>
               <tr>
                 <th>digit</th>
@@ -752,6 +868,8 @@
                 <th>i</th>
                 <th>u</th>
                 <th>large glyph</th>
+                <th>sitelen glyphs</th>
+                <th>abbreviated</th>
                 <th class="modeGap" aria-hidden="true">&nbsp;</th>
                 <th>digit</th>
                 <th>e</th>
@@ -759,63 +877,117 @@
                 <th>i</th>
                 <th>u</th>
                 <th>large glyph</th>
+                <th>sitelen glyphs</th>
+                <th>abbreviated</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>0</td><td>-</td><td>-</td><td>ni</td><td>-</td><td>ijo</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large ijo glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF190C;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="ijo glyph">&#xF190C;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>0</td><td>-</td><td>-</td><td>ni</td><td>-</td><td>ijo</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large ijo glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF190C;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="ijo glyph">&#xF190C;</span></td>
               </tr>
               <tr>
                 <td>1</td><td>we</td><td>wa</td><td>-</td><td>-</td><td>wan</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large wan glyph followed by small ala glyph"><span class="modeLargeGlyph">&#xF1973;</span><span class="modeSmallGlyph">&#xF1902;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="wan glyph">&#xF1973;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>1</td><td>we</td><td>-</td><td>-</td><td>-</td><td>wan</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large wan glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1973;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="wan glyph">&#xF1973;</span></td>
               </tr>
               <tr>
                 <td>2</td><td>te</td><td>-</td><td>-</td><td>tu</td><td>tu</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large tu glyph followed by small uta glyph"><span class="modeLargeGlyph">&#xF196E;</span><span class="modeSmallGlyph">&#xF1970;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="tu glyph">&#xF196E;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>2</td><td>te</td><td>-</td><td>-</td><td>-</td><td>tu</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large tu glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF196E;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="tu glyph">&#xF196E;</span></td>
               </tr>
               <tr>
                 <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>seli</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large seli glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1957;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="seli glyph">&#xF1957;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>seli</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large seli glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1957;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="seli glyph">&#xF1957;</span></td>
               </tr>
               <tr>
                 <td>4</td><td>-</td><td>na</td><td>-</td><td>-</td><td>awen</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large awen glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF1908;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="awen glyph">&#xF1908;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>4</td><td>-</td><td>na</td><td>-</td><td>-</td><td>awen</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large awen glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF1908;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="awen glyph">&#xF1908;</span></td>
               </tr>
               <tr>
                 <td>5</td><td>le</td><td>-</td><td>-</td><td>lu</td><td>luka</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large luka glyph followed by small uta glyph"><span class="modeLargeGlyph">&#xF192D;</span><span class="modeSmallGlyph">&#xF1970;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="luka glyph">&#xF192D;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>5</td><td>le</td><td>-</td><td>-</td><td>-</td><td>luka</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large luka glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF192D;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="luka glyph">&#xF192D;</span></td>
               </tr>
               <tr>
                 <td>6</td><td>-</td><td>-</td><td>-</td><td>nu</td><td>utala</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large utala glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF1971;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="utala glyph">&#xF1971;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>6</td><td>-</td><td>-</td><td>-</td><td>nu</td><td>utala</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large utala glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF1971;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="utala glyph">&#xF1971;</span></td>
               </tr>
               <tr>
                 <td>7</td><td>me</td><td>-</td><td>-</td><td>mu</td><td>mun</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large mun glyph followed by small uta glyph"><span class="modeLargeGlyph">&#xF193A;</span><span class="modeSmallGlyph">&#xF1970;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="mun glyph">&#xF193A;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>7</td><td>me</td><td>-</td><td>-</td><td>-</td><td>mun</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large mun glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF193A;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="mun glyph">&#xF193A;</span></td>
               </tr>
               <tr>
                 <td>8</td><td>pe</td><td>-</td><td>pi</td><td>-</td><td>pipi</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large pipi glyph followed by small ike glyph"><span class="modeLargeGlyph">&#xF1951;</span><span class="modeSmallGlyph">&#xF190D;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="pipi glyph">&#xF1951;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>8</td><td>pe</td><td>-</td><td>-</td><td>-</td><td>pipi</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large pipi glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1951;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="pipi glyph">&#xF1951;</span></td>
               </tr>
               <tr>
                 <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="jo glyph">&#xF1913;</span></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="jo glyph">&#xF1913;</span></td>
               </tr>
               <tr>
-                <td>small glyph</td><td>en</td><td>ala</td><td>ike</td><td>uta</td><td>&nbsp;</td>
+                <td>small glyph</td><td>en</td><td>ala</td><td>ike</td><td>uta</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
-                <td>small glyph</td><td>en</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                <td>small glyph</td><td>en</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+              </tr>
+              <tr>
+                <td>small sitelen glyph</td>
+                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="en glyph">&#xF190A;</span></td>
+                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="ala glyph">&#xF1902;</span></td>
+                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="ike glyph">&#xF190D;</span></td>
+                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="uta glyph">&#xF1970;</span></td>
+                <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                <td class="modeGap" aria-hidden="true">&nbsp;</td>
+                <td>small sitelen glyph</td>
+                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="en glyph">&#xF190A;</span></td>
+                <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
               </tr>
             </tbody>
           </table>
@@ -832,19 +1004,193 @@
                 <th>numeric punctuation</th>
                 <th>nanpa-linja-n proper name letters</th>
                 <th>glyph sequence</th>
+                <th>sitelen glyphs</th>
+                <th>abbreviated</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td>negative</td><td>no</td><td>nena ona</td></tr>
-              <tr><td>decimal point</td><td>none</td><td>nena o nena en</td></tr>
-              <tr><td>ISO thousands</td><td>neke</td><td>nena en kulupu en</td></tr>
-              <tr><td>percentage</td><td>noke</td><td>nena open kipisi en</td></tr>
-              <tr><td>scientific notation</td><td>neko</td><td>nena en kala open</td></tr>
-              <tr><td>numerator vs denominator</td><td>nono</td><td>nena o nena o</td></tr>
-              <tr><td>integer vs fraction</td><td>noko</td><td>nena open kala open</td></tr>
-              <tr><td>date</td><td>neke</td><td>nena en kasi en</td></tr>
-              <tr><td>time</td><td>neke</td><td>nena en kasi en</td></tr>
-              <tr><td>spacer (no value)</td><td>nene</td><td>nena en nena en</td></tr>
+              <tr>
+                <td>negative</td>
+                <td>no</td>
+                <td>nena ona</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph followed by two-thirds-sized ona glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF1946;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="two-thirds-sized ona glyph">
+                    <span class="punctuationGlyphTwoThirds">&#xF1946;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>decimal point</td>
+                <td>none</td>
+                <td>nena o nena en</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized o glyph, quarter-sized nena glyph, and quarter-sized en glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF1944;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="two-thirds-sized o glyph">
+                    <span class="punctuationGlyphTwoThirds">&#xF1944;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>ISO thousands</td>
+                <td>neke</td>
+                <td>nena en kulupu en</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, two-thirds-sized kulupu glyph, and quarter-sized en glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF191F;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="two-thirds-sized kulupu glyph">
+                    <span class="punctuationGlyphTwoThirds">&#xF191F;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>percentage</td>
+                <td>noke</td>
+                <td>nena open kipisi en</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized open glyph, two-thirds-sized kipisi glyph, and quarter-sized en glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1947;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF197B;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="two-thirds-sized kipisi glyph">
+                    <span class="punctuationGlyphTwoThirds">&#xF197B;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>scientific notation</td>
+                <td>neko</td>
+                <td>nena en kala open</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, half-sized kala glyph, and quarter-sized open glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphHalf">&#xF1914;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1947;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="half-sized kala glyph">
+                    <span class="punctuationGlyphHalf">&#xF1914;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>numerator vs denominator</td>
+                <td>nono</td>
+                <td>nena o nena o</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized o glyph, quarter-sized nena glyph, and two-thirds-sized o glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF1944;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF1944;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="two two-thirds-sized o glyphs">
+                    <span class="punctuationGlyphTwoThirds">&#xF1944;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF1944;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>integer vs fraction</td>
+                <td>noko</td>
+                <td>nena open kala open</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized open glyph, half-sized kala glyph, and quarter-sized open glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1947;</span>
+                    <span class="punctuationGlyphHalf">&#xF1914;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1947;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="half-sized kala glyph">
+                    <span class="punctuationGlyphHalf">&#xF1914;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>date</td>
+                <td>neke</td>
+                <td>nena en kasi en</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, half-sized kasi glyph, and quarter-sized en glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphHalf">&#xF1917;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="half-sized kasi glyph">
+                    <span class="punctuationGlyphHalf">&#xF1917;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>time</td>
+                <td>neke</td>
+                <td>nena en kasi en</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, half-sized kasi glyph, and quarter-sized en glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphHalf">&#xF1917;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="half-sized kasi glyph">
+                    <span class="punctuationGlyphHalf">&#xF1917;</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>spacer (no value)</td>
+                <td>nene</td>
+                <td>nena en nena en</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, quarter-sized nena glyph, and quarter-sized en glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationOptionalAbbreviation" aria-label="optional small en glyph">
+                    <span class="punctuationGlyphSequence" aria-hidden="true">
+                      <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    </span>
+                    <span class="punctuationOptionalNote">(optional)</span>
+                  </span>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
