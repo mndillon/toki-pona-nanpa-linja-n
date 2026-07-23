@@ -1735,18 +1735,21 @@
     return item.progressiveRevealPlan;
   }
 
-  function visibleProgressiveGlyphCount(item,plan){
+  function visibleProgressiveGlyphCount(item,plan,visibleGroupCount=null){
     if (!plan?.groups?.length) return 0;
     if (item.completed || item.revealed) return plan.abbreviatedCodepoints.length;
+    const requestedVisibleGroups = Number.isFinite(Number(visibleGroupCount))
+      ? Number(visibleGroupCount)
+      : Number(item.progressiveVisibleGroupCount);
     const visibleGroups = clamp(
-      Math.round(Number(item.progressiveVisibleGroupCount) || 1),
+      Math.round(requestedVisibleGroups || 1),
       1,
       plan.groups.length
     );
     return plan.groups[visibleGroups - 1]?.cumulativeGlyphCount ?? 0;
   }
 
-  function renderProgressiveQuestionCartouche(item,plan){
+  function renderProgressiveQuestionCartouche(item,plan,visibleGroupCount=null){
     renderCartoucheToCanvas(
       el.questionAbbreviatedCartouche,
       plan.abbreviatedCodepoints,
@@ -1757,9 +1760,40 @@
         border:2,
         cornerRadius:14,
         letterGap:4,
-        visibleCodepointCount:visibleProgressiveGlyphCount(item,plan)
+        visibleCodepointCount:visibleProgressiveGlyphCount(item,plan,visibleGroupCount)
       }
     );
+  }
+
+  async function previewProgressiveComposition(item){
+    if (!item || item !== currentItem() || item.stage !== "first" || item.completed || item.revealed) return null;
+    const generation = ++progressiveInputGeneration;
+    const plan = await ensureProgressiveRevealPlan(item);
+    if (generation !== progressiveInputGeneration || item !== currentItem()) return null;
+
+    const rawCompact = normalizeProgressiveProperNameInput(el.firstAnswerInput.value);
+    const matchedLength = longestEquivalentProperNamePrefixLength(rawCompact,plan.strictCompact,plan.relaxedCompact);
+    const confirmedFloor = clamp(
+      Math.round(Number(item.progressiveConfirmedLength) || 0),
+      0,
+      plan.expectedCompact.length
+    );
+    const acceptedLength = Math.max(confirmedFloor,matchedLength);
+    let visibleGroups = plan.groups.length
+      ? clamp(Math.round(Number(item.progressiveVisibleGroupCount) || 1),1,plan.groups.length)
+      : 0;
+
+    while (visibleGroups > 0 && visibleGroups < plan.groups.length){
+      const visibleGroup = plan.groups[visibleGroups - 1];
+      if (acceptedLength < visibleGroup.requiredLength) break;
+      visibleGroups++;
+    }
+
+    // Composition text is provisional. It may preview later glyphs, but it
+    // must not rewrite the input or permanently confirm progress until the
+    // mobile keyboard or IME commits the text with compositionend.
+    renderProgressiveQuestionCartouche(item,plan,visibleGroups);
+    return plan;
   }
 
   function visibleProgressiveProperNameLength(item,plan){
@@ -3465,11 +3499,15 @@
       const item = currentItem();
       if (item) void applyProgressiveInputCorrection(item);
     });
-    el.firstAnswerInput.addEventListener("input",() => {
+    el.firstAnswerInput.addEventListener("input",event => {
       const item = currentItem();
       if (!item) return;
+      if (firstAnswerCompositionActive || event.isComposing){
+        void previewProgressiveComposition(item);
+        return;
+      }
       item.firstAnswer = el.firstAnswerInput.value;
-      if (!firstAnswerCompositionActive) void applyProgressiveInputCorrection(item);
+      void applyProgressiveInputCorrection(item);
     });
     el.decimalAnswerInput.addEventListener("input",() => { const item=currentItem(); if (item) item.decimalAnswer=el.decimalAnswerInput.value; });
 

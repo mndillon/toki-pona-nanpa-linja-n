@@ -302,6 +302,68 @@
       }
     }
 
+
+
+    /* Collapsible information and practice sections */
+    .collapsibleSection {
+      margin-top: 16px;
+      scroll-margin-top: 16px;
+    }
+
+    .collapsibleSectionHeading {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .collapsibleSectionHeading--small {
+      font-size: 14px;
+    }
+
+    .collapsibleSectionToggle {
+      box-sizing: border-box;
+      display: flex;
+      width: 100%;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+    }
+
+    .collapsibleSectionToggleTitle {
+      min-width: 0;
+    }
+
+    .collapsibleSectionToggleState {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 6px;
+      padding-top: 1px;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .collapsibleSectionToggleIcon {
+      display: inline-block;
+      font-size: 13px;
+      line-height: 1;
+      transform: rotate(0deg);
+      transition: transform 120ms ease;
+    }
+
+    .collapsibleSection.is-collapsed .collapsibleSectionToggleIcon {
+      transform: rotate(-90deg);
+    }
+
+    .collapsibleSectionContent[hidden] {
+      display: none !important;
+    }
+
+
     /* =========================
        WCAG-oriented affordances
        ========================= */
@@ -549,10 +611,23 @@
       </span>
     </div>
 
-    <section id="overview" aria-labelledby="overviewTitle" style="margin-top:16px;">
-      <h2 id="overviewTitle" style="margin:0 0 6px;font-size:18px;">
-        Overview
+    <section id="overview" class="collapsibleSection" data-collapsible-section data-collapsible-key="overview" aria-labelledby="overviewTitle">
+      <h2 id="overviewTitle" class="collapsibleSectionHeading">
+        <button
+          class="collapsibleSectionToggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="overviewContent"
+          data-collapsible-toggle
+        >
+          <span class="collapsibleSectionToggleTitle">Overview</span>
+          <span class="collapsibleSectionToggleState" aria-hidden="true">
+            <span class="collapsibleSectionToggleIcon">▾</span>
+            <span data-collapsible-action>Hide</span>
+          </span>
+        </button>
       </h2>
+      <div id="overviewContent" class="collapsibleSectionContent" data-collapsible-content>
 
       <div class="help" style="margin-top:10px;">
         <strong>nanpa-linja-n</strong> encodes decimal numbers as proper names. In sitelen pona, these names are written inside numeric cartouches.
@@ -578,9 +653,27 @@
         Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.
       </div>
 
-      <h3 id="whyBotherTitle" style="margin:18px 0 6px;font-size:14px;">
-        Why bother?
-      </h3>
+
+      </div>
+    </section>
+
+    <section id="whyBother" class="collapsibleSection" data-collapsible-section data-collapsible-key="whyBother" aria-labelledby="whyBotherTitle">
+      <h2 id="whyBotherTitle" class="collapsibleSectionHeading collapsibleSectionHeading--small">
+        <button
+          class="collapsibleSectionToggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="whyBotherContent"
+          data-collapsible-toggle
+        >
+          <span class="collapsibleSectionToggleTitle">Why bother?</span>
+          <span class="collapsibleSectionToggleState" aria-hidden="true">
+            <span class="collapsibleSectionToggleIcon">▾</span>
+            <span data-collapsible-action>Hide</span>
+          </span>
+        </button>
+      </h2>
+      <div id="whyBotherContent" class="collapsibleSectionContent" data-collapsible-content>
 
       <div class="help">
         Precise decimal numbers appear everywhere: in dates, times, measurements, percentages, telephone numbers and many other forms.
@@ -627,9 +720,27 @@
         The aim is for learners to recognise the recurring patterns and eventually read, write and understand nanpa-linja-n directly.
       </div>
 
-      <h3 style="margin:18px 0 6px;font-size:14px;">
-        A simple example
-      </h3>
+
+      </div>
+    </section>
+
+    <section id="simpleExample" class="collapsibleSection" data-collapsible-section data-collapsible-key="simpleExample" aria-labelledby="simpleExampleTitle">
+      <h2 id="simpleExampleTitle" class="collapsibleSectionHeading collapsibleSectionHeading--small">
+        <button
+          class="collapsibleSectionToggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="simpleExampleContent"
+          data-collapsible-toggle
+        >
+          <span class="collapsibleSectionToggleTitle">A simple example</span>
+          <span class="collapsibleSectionToggleState" aria-hidden="true">
+            <span class="collapsibleSectionToggleIcon">▾</span>
+            <span data-collapsible-action>Hide</span>
+          </span>
+        </button>
+      </h2>
+      <div id="simpleExampleContent" class="collapsibleSectionContent" data-collapsible-content>
 
       <div class="help">
         How is <strong>125</strong> written as a nanpa-linja-n proper name?
@@ -659,6 +770,8 @@
       <div class="help" style="margin-top:10px;">
         Therefore, the nanpa-linja-n proper name for <strong>125</strong> is <strong>Newatulun</strong>.
       </div>
+      </div>
+    </section>
 
       <div class="help" style="margin-top:10px;">
         See the <a href="./render-to-audio.html">number-to-proper-name page</a> for a more interactive examples.
@@ -669,7 +782,7 @@
           nanpa-linja-n main documentation
         </a>.
       </div>
-    </section>
+
    
    <div class="help" style="margin-top:10px;">
       To communicate "007", say "Neninimun".<br/>
@@ -1072,6 +1185,23 @@
        <hr class="miniDivider"/>
 
 
+      <section id="moreExamples" class="collapsibleSection" data-collapsible-section data-collapsible-key="moreExamples" aria-labelledby="moreExamplesTitle">
+      <h2 id="moreExamplesTitle" class="collapsibleSectionHeading">
+        <button
+          class="collapsibleSectionToggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="moreExamplesContent"
+          data-collapsible-toggle
+        >
+          <span class="collapsibleSectionToggleTitle">More examples</span>
+          <span class="collapsibleSectionToggleState" aria-hidden="true">
+            <span class="collapsibleSectionToggleIcon">▾</span>
+            <span data-collapsible-action>Hide</span>
+          </span>
+        </button>
+      </h2>
+        <div id="moreExamplesContent" class="collapsibleSectionContent" data-collapsible-content>
      <div class="help">&nbsp;</div>
       <img id="decimalToCartouche" class="portrait1" src="./images/From_Decimal_Number_To_Cartouche.png"  />
       <div class="help">&nbsp;</div>
@@ -1115,12 +1245,28 @@
       
       
         <hr class="miniDivider"/>
+        </div>
+      </section>
 
-      <section id="nanpaLinjaNMode" aria-labelledby="nanpaLinjaNModeTitle">
-        <h1 id="nanpaLinjaNModeTitle" style="margin:0 0 6px;font-size:18px;">
-          nanpa-linja-n mode
-          <span class="tpLine">nasin pi nanpa-linja-n</span>
-        </h1>
+      <section id="nanpaLinjaNMode" class="collapsibleSection" data-collapsible-section data-collapsible-key="nanpaLinjaNMode" aria-labelledby="nanpaLinjaNModeTitle">
+      <h2 id="nanpaLinjaNModeTitle" class="collapsibleSectionHeading">
+        <button
+          class="collapsibleSectionToggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="nanpaLinjaNModeContent"
+          data-collapsible-toggle
+        >
+          <span class="collapsibleSectionToggleTitle">nanpa-linja-n mode
+          <span class="tpLine">nasin pi nanpa-linja-n</span></span>
+          <span class="collapsibleSectionToggleState" aria-hidden="true">
+            <span class="collapsibleSectionToggleIcon">▾</span>
+            <span data-collapsible-action>Hide</span>
+          </span>
+        </button>
+      </h2>
+
+        <div id="nanpaLinjaNModeContent" class="collapsibleSectionContent" data-collapsible-content>
 
 <div class="small" style="margin-bottom:10px;">
   This table shows which syllables are allowed for each decimal digit when reading and writing a nanpa-linja-n proper name. <br/>
@@ -1274,16 +1420,142 @@
             </tbody>
           </table>
         </div>
+        </div>
       </section>
 
-      <section id="nanpaListeningQuiz" aria-label="nanpa-linja-n listening quiz"></section>
+      <section id="nanpaListeningQuiz" class="collapsibleSection" data-collapsible-section data-collapsible-key="nanpaListeningQuiz" aria-labelledby="nanpaListeningQuizTitle">
+      <h2 id="nanpaListeningQuizTitle" class="collapsibleSectionHeading">
+        <button
+          class="collapsibleSectionToggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="nanpaListeningQuizContent"
+          data-collapsible-toggle
+        >
+          <span class="collapsibleSectionToggleTitle">Listen and guess the decimal number
+          <span class="tpLine">o kute, o alasa sona e nanpa</span></span>
+          <span class="collapsibleSectionToggleState" aria-hidden="true">
+            <span class="collapsibleSectionToggleIcon">▾</span>
+            <span data-collapsible-action>Hide</span>
+          </span>
+        </button>
+      </h2>
+        <div id="nanpaListeningQuizContent" class="collapsibleSectionContent" data-collapsible-content></div>
+      </section>
 
 
 
       <div class="help">#~n</div>
     </div>
   </main>
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=39"></script>
+
+<script>
+  (() => {
+    const STORAGE_PREFIX = 'indexSectionCollapsed:';
+    const sections = Array.from(document.querySelectorAll('[data-collapsible-section]'));
+
+    function storageKey(section) {
+      return `${STORAGE_PREFIX}${section.dataset.collapsibleKey || section.id}`;
+    }
+
+    function isStoredCollapsed(section) {
+      try {
+        return localStorage.getItem(storageKey(section)) === 'true';
+      } catch {
+        return false;
+      }
+    }
+
+    function saveCollapsed(section, collapsed) {
+      try {
+        if (collapsed) {
+          localStorage.setItem(storageKey(section), 'true');
+        } else {
+          localStorage.removeItem(storageKey(section));
+        }
+      } catch {}
+    }
+
+    function setSectionExpanded(section, expanded, persist = true) {
+      if (!section) return;
+
+      const toggle = section.querySelector(':scope > .collapsibleSectionHeading [data-collapsible-toggle]');
+      const content = section.querySelector(':scope > [data-collapsible-content]');
+      const action = toggle?.querySelector('[data-collapsible-action]');
+      if (!toggle || !content) return;
+
+      content.hidden = !expanded;
+      toggle.setAttribute('aria-expanded', String(expanded));
+      section.classList.toggle('is-collapsed', !expanded);
+      if (action) action.textContent = expanded ? 'Hide' : 'Show';
+      if (persist) saveCollapsed(section, !expanded);
+    }
+
+    function targetFromHash(hash) {
+      if (!hash || hash === '#') return null;
+      try {
+        return document.getElementById(decodeURIComponent(hash.slice(1)));
+      } catch {
+        return document.getElementById(hash.slice(1));
+      }
+    }
+
+    function revealHashTarget(hash = window.location.hash, scroll = true) {
+      const target = targetFromHash(hash);
+      if (!target) return false;
+
+      const section = target.closest('[data-collapsible-section]');
+      if (section) setSectionExpanded(section, true, true);
+
+      if (scroll) {
+        requestAnimationFrame(() => {
+          target.scrollIntoView({ block: 'start' });
+        });
+      }
+      return true;
+    }
+
+    window.revealCollapsibleHashTarget = revealHashTarget;
+
+    for (const section of sections) {
+      setSectionExpanded(section, !isStoredCollapsed(section), false);
+      const toggle = section.querySelector(':scope > .collapsibleSectionHeading [data-collapsible-toggle]');
+      toggle?.addEventListener('click', () => {
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        setSectionExpanded(section, !expanded, true);
+      });
+    }
+
+    document.addEventListener('click', event => {
+      const anchor = event.target.closest('a[href]');
+      if (!anchor) return;
+
+      let destination;
+      try {
+        destination = new URL(anchor.href, window.location.href);
+      } catch {
+        return;
+      }
+
+      const sameDocument =
+        destination.origin === window.location.origin &&
+        destination.pathname === window.location.pathname &&
+        destination.search === window.location.search;
+
+      if (sameDocument && destination.hash) {
+        revealHashTarget(destination.hash, false);
+      }
+    });
+
+    window.addEventListener('hashchange', () => revealHashTarget(window.location.hash, true));
+
+    if (window.location.hash) {
+      requestAnimationFrame(() => revealHashTarget(window.location.hash, true));
+    }
+  })();
+</script>
+
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=40"></script>
 
 
 <script>

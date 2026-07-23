@@ -3,7 +3,7 @@
 // Heavy code paths (NanpaParser, audio manifest, voice API, and canvas cartouches)
 // are lazy-loaded only after audio/check/reveal interaction.
 
-const QUIZ_ROOT_ID = 'nanpaListeningQuiz';
+const QUIZ_ROOT_ID = 'nanpaListeningQuizContent';
 const QUIZ_LICENSE_PATH = './licences/LICENSE-KOKORO.txt';
 const QUIZ_LICENSE_OVERLAY_ID = 'nanpaListeningQuizLicenseOverlay';
 const QUIZ_LICENSE_STYLE_ID = 'nanpaListeningQuizLicenseStyles';
@@ -1020,11 +1020,6 @@ function renderQuiz(root) {
 
   const audioPauseScale = storedAudioPauseScale();
   root.innerHTML = `
-    <hr class="miniDivider"/>
-    <h1 style="margin:0 0 6px;font-size:18px;">
-      Listen and guess the decimal number
-      <span class="tpLine">o kute, o alasa sona e nanpa</span>
-    </h1>
     <div class="help">
       Press an audio button as many times as you like, enter the decimal value or nanpa-linja-n proper name you hear, then check your answer.
       <span class="tpLine">o kute mute la sina ken. o pana e nanpa anu nimi pi nanpa-linja-n la o lukin e pona.</span>
@@ -1069,6 +1064,10 @@ function renderQuiz(root) {
   `;
   tryMoreWrap.querySelector('[data-quiz-try-more]')?.addEventListener('click', () => renderQuiz(root));
   root.appendChild(tryMoreWrap);
+
+  if (window.location.hash && typeof window.revealCollapsibleHashTarget === 'function') {
+    requestAnimationFrame(() => window.revealCollapsibleHashTarget(window.location.hash, true));
+  }
 }
 
 function initQuiz() {
