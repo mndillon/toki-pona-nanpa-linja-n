@@ -418,17 +418,59 @@
       font-size:13px;
       font-weight:800;
     }
+    .reviewRevealLabelRow{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .reviewEntryAudioButton{
+      min-width:28px;
+      min-height:24px;
+      padding:1px 5px;
+      border-radius:8px;
+      font-size:14px;
+      line-height:1;
+    }
     .reviewRevealValue{
       min-width:0;
       overflow-wrap:anywhere;
       user-select:text;
       font-size:13px;
     }
+    .reviewAudioWord{
+      display:inline-block;
+      white-space:nowrap;
+    }
+    .reviewAudioUnit{
+      display:inline-block;
+      padding:1px 1px;
+      border-radius:4px;
+      transition:background-color 80ms linear,outline-color 80ms linear;
+    }
+    .reviewAudioUnit.is-speaking{
+      background:#fff4a8;
+      outline:2px solid #111;
+      outline-offset:1px;
+    }
+    .reviewCartoucheCanvasWrap{
+      position:relative;
+      display:inline-block;
+      max-width:100%;
+      line-height:0;
+    }
     .reviewRevealPanel canvas{
       display:block;
       max-width:100%;
       height:auto;
       background:transparent;
+    }
+    .reviewCartoucheHighlightCanvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
     }
     .answerDetails{
       border-top:1px solid var(--panel-border);
@@ -885,6 +927,12 @@
   const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
   const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
   const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
+  const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
+    "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
+    "One","Ono","Oko","Eko","Oken","Ene","Inin"
+  ]);
+  const REVIEW_AUDIO_PAUSE_SCALE = 1.00;
+  const REVIEW_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
 
   let nanpaModulePromise = null;
   let voicePromise = null;
@@ -895,6 +943,12 @@
   let historyDetailRenderToken = 0;
   let examplesRenderToken = 0;
   let activeExampleAudioButton = null;
+  let reviewAudioGeneration = 0;
+  let reviewAudioState = "stopped";
+  let reviewAudioTarget = null;
+  let reviewAudioSession = null;
+  let reviewAudioContext = null;
+  const reviewAudioCache = new Map();
   const exampleItemCache = new Map();
 
   const state = {
@@ -1394,6 +1448,8 @@
   }
 
   function stopCurrentAudioPlayback({restoreAudioButton=true}={}){
+    stopReviewAudioPlayback();
+
     // Cancel audio that is still being prepared or rendered.
     generationToken++;
 
@@ -1626,69 +1682,54 @@
     return !!(item && (item.revealed || item.hadWrongAttempt));
   }
 
-  async function buildReviewRevealDataFromParsed(parsed){
+  async function buildReviewRevealDataFromParsed(parsed,properNameMode=parsed.properNameMode){
     const strictParsed = parsed.strictParsed ?? parsed;
     const quizParsed = parsed.quizParsed ?? parsed;
-    const NanpaParser = await getNanpaParser();
-    const strictName = formatProperNameForDisplay(strictParsed.properName ?? parsed.properName);
-
-    const strictFullCodepoints = Array.from(
-      strictParsed.ucsurCodepoints ?? strictParsed.innerCodepoints ?? strictParsed.codepoints ?? []
-    ).map(Number);
-
-    let relaxedName = "";
-    let relaxedFullCodepoints = [];
-    try{
-      const relaxedCaps = capsForProperNameMode(strictParsed.caps,"relaxed");
-      relaxedName = formatProperNameForDisplay(NanpaParser.splitCapsToProperName(relaxedCaps,{
-        titleCase:true,
-        relaxedNanpaLinjanParsing:true
-      }));
-      const relaxedParsed = NanpaParser.capsToCodepoints(relaxedCaps,{
-        mode:"uniform",
-        mixedStyle:"short",
-        relaxedNanpaLinjanParsing:true,
-        relaxedNanpaLinjanRendering:true
-      });
-      relaxedFullCodepoints = Array.from(
-        relaxedParsed?.innerCodepoints ?? relaxedParsed?.ucsurCodepoints ?? relaxedParsed?.codepoints ?? []
-      ).map(Number);
-    }catch{
-      relaxedName = formatProperNameForDisplay(parsed.quizProperName || strictName);
-      if (isRelaxedProperNameMode(parsed.properNameMode)){
-        relaxedFullCodepoints = Array.from(
-          quizParsed.ucsurCodepoints ?? quizParsed.innerCodepoints ?? quizParsed.codepoints ?? []
-        ).map(Number);
-      }
-    }
-
-    // Preserve the mode-specific fields for the existing abbreviated-cartouche
-    // educational panel and for compatibility with records saved by older builds.
+    const mode = normalizeProperNameMode(properNameMode);
+    const selectedParsed = mode === "strict" ? strictParsed : quizParsed;
+    const selectedName = mode === "strict"
+      ? (strictParsed.properName ?? parsed.properName)
+      : (parsed.quizProperName ?? selectedParsed.properName ?? strictParsed.properName ?? parsed.properName);
     const fullCodepoints = Array.from(
-      quizParsed.ucsurCodepoints ?? quizParsed.innerCodepoints ?? quizParsed.codepoints ?? []
+      selectedParsed.ucsurCodepoints ?? selectedParsed.innerCodepoints ?? selectedParsed.codepoints ?? []
     ).map(Number);
 
     return {
-      strictName,
-      relaxedName,
+      properName:formatProperNameForDisplay(selectedName),
       uniqueCode:String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? ""),
-      strictFullCodepoints,
-      relaxedFullCodepoints,
       fullCodepoints,
       abbreviatedCodepoints:abbreviateNumericCartoucheCps(fullCodepoints)
     };
   }
 
   async function ensureReviewRevealData(record){
-    const hasStoredReveal = Array.isArray(record.strictFullCodepoints) &&
-      Array.isArray(record.relaxedFullCodepoints) &&
+    const mode = normalizeProperNameMode(record.properNameMode || "relaxed");
+    const hasSelectedModeReveal =
+      typeof record.properName === "string" && !!record.properName &&
       Array.isArray(record.fullCodepoints) &&
       Array.isArray(record.abbreviatedCodepoints) &&
-      typeof record.uniqueCode === "string" &&
-      record.strictName && record.relaxedName;
-    if (hasStoredReveal) return record;
+      typeof record.uniqueCode === "string";
+    if (hasSelectedModeReveal) return {...record,properNameMode:mode};
 
-    const mode = normalizeProperNameMode(record.properNameMode || "relaxed");
+    // Older saved sessions contain both strict and relaxed fields. Select only
+    // the fields matching the mode used for that session, without displaying
+    // or copying the unselected mode into the new review presentation.
+    const legacyProperName = mode === "strict" ? record.strictName : record.relaxedName;
+    const legacyFullCodepoints = mode === "strict"
+      ? record.strictFullCodepoints
+      : record.relaxedFullCodepoints;
+    if (legacyProperName && Array.isArray(legacyFullCodepoints)){
+      const fullCodepoints = Array.from(legacyFullCodepoints).map(Number);
+      return {
+        ...record,
+        properNameMode:mode,
+        properName:legacyProperName,
+        fullCodepoints,
+        abbreviatedCodepoints:abbreviateNumericCartoucheCps(fullCodepoints),
+        uniqueCode:String(record.uniqueCode ?? "")
+      };
+    }
+
     const temp = makeItem(
       record.kind || "integer",
       record.value,
@@ -1697,12 +1738,16 @@
       mode
     );
     const parsed = await ensureParsed(temp);
-    return {...record,...await buildReviewRevealDataFromParsed(parsed),properNameMode:mode};
+    return {
+      ...record,
+      ...await buildReviewRevealDataFromParsed(parsed,mode),
+      properNameMode:mode
+    };
   }
 
   async function makeReviewRecord(item,index){
     const parsed = await ensureParsed(item);
-    const revealData = await buildReviewRevealDataFromParsed(parsed);
+    const revealData = await buildReviewRevealDataFromParsed(parsed,item.properNameMode);
     return {
       index,
       kind:item.kind,
@@ -1742,7 +1787,90 @@
     grid.appendChild(panel);
   }
 
-  function appendReviewCartouchePanel(grid,label,codepoints){
+  function splitReviewAudioSyllables(word){
+    const source = String(word ?? "");
+    const lower = source.toLowerCase();
+    const vowels = new Set(["a","e","i","o","u"]);
+    const consonants = new Set(["p","t","k","m","n","s","w","l","j"]);
+    const out = [];
+    let i = 0;
+    while (i < lower.length){
+      const start = i;
+      if (consonants.has(lower[i])) i++;
+      if (i >= lower.length || !vowels.has(lower[i])) return [source];
+      i++;
+      if (i < lower.length && lower[i] === "n"){
+        const following = i + 1 < lower.length ? lower[i + 1] : "";
+        if (!following || consonants.has(following)) i++;
+      }
+      out.push(source.slice(start,i));
+    }
+    return out.length ? out : [source];
+  }
+
+  function buildReviewAudioUnits(properName){
+    const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+    const units = [];
+    let index = 0;
+    for (let wordIndex=0;wordIndex<words.length;wordIndex++){
+      const word = words[wordIndex];
+      const wordUnits = WHOLE_NUMERIC_AUDIO_WORDS.has(word) ? [word] : splitReviewAudioSyllables(word);
+      for (let unitIndexInWord=0;unitIndexInWord<wordUnits.length;unitIndexInWord++){
+        units.push({
+          index,
+          text:wordUnits[unitIndexInWord],
+          word,
+          wordIndex,
+          unitIndexInWord,
+          wholeNumericPunctuationWord:WHOLE_NUMERIC_AUDIO_WORDS.has(word)
+        });
+        index++;
+      }
+    }
+    return units;
+  }
+
+  function appendReviewProperNamePanel(grid,label,value){
+    const panel = document.createElement("div");
+    panel.className = "reviewRevealPanel";
+
+    const headingRow = document.createElement("div");
+    headingRow.className = "reviewRevealLabelRow";
+    const heading = document.createElement("div");
+    heading.className = "reviewRevealLabel";
+    heading.textContent = label;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn reviewEntryAudioButton";
+    button.textContent = "🤖🔊";
+    button.title = `Play ${label.toLowerCase()} at normal speed`;
+    button.setAttribute("aria-label",button.title);
+    headingRow.append(heading,button);
+
+    const content = document.createElement("div");
+    content.className = "reviewRevealValue properNameText reviewAudioProperName";
+    const units = buildReviewAudioUnits(value);
+    const words = String(value ?? "").trim().split(/\s+/).filter(Boolean);
+    for (let wordIndex=0;wordIndex<words.length;wordIndex++){
+      const wordWrap = document.createElement("span");
+      wordWrap.className = "reviewAudioWord";
+      for (const unit of units.filter(x => x.wordIndex === wordIndex)){
+        const span = document.createElement("span");
+        span.className = "reviewAudioUnit";
+        span.dataset.reviewAudioUnitIndex = String(unit.index);
+        span.textContent = unit.text;
+        wordWrap.appendChild(span);
+      }
+      content.appendChild(wordWrap);
+      if (wordIndex < words.length - 1) content.appendChild(document.createTextNode(" "));
+    }
+
+    panel.append(headingRow,content);
+    grid.appendChild(panel);
+    return {button,content,units};
+  }
+
+  function appendReviewCartouchePanel(grid,label,codepoints,{highlightable=false}={}){
     const panel = document.createElement("div");
     panel.className = "reviewRevealPanel cartouchePanel";
     const heading = document.createElement("div");
@@ -1750,9 +1878,420 @@
     heading.textContent = label;
     const canvas = document.createElement("canvas");
     canvas.setAttribute("aria-label",label);
-    panel.append(heading,canvas);
+
+    let highlightCanvas = null;
+    if (highlightable){
+      const wrap = document.createElement("div");
+      wrap.className = "reviewCartoucheCanvasWrap";
+      highlightCanvas = document.createElement("canvas");
+      highlightCanvas.className = "reviewCartoucheHighlightCanvas";
+      highlightCanvas.setAttribute("aria-hidden","true");
+      wrap.append(canvas,highlightCanvas);
+      panel.append(heading,wrap);
+    }else{
+      panel.append(heading,canvas);
+    }
+
     grid.appendChild(panel);
     renderCartoucheToCanvas(canvas,codepoints);
+    if (highlightCanvas){
+      highlightCanvas.width = canvas.width;
+      highlightCanvas.height = canvas.height;
+    }
+    return {canvas,highlightCanvas};
+  }
+
+  function syncReviewCartoucheHighlightCanvas(target=reviewAudioTarget){
+    const base = target?.fullCanvas;
+    const overlay = target?.highlightCanvas;
+    if (!base || !overlay) return null;
+
+    const displayed = base.getBoundingClientRect();
+    const cssWidth = Math.max(1,displayed.width || base.clientWidth || base.width || 1);
+    const cssHeight = Math.max(1,displayed.height || base.clientHeight || base.height || 1);
+    const pixelRatio = Math.max(1,Number(window.devicePixelRatio) || 1);
+    const backingWidth = Math.max(1,Math.round(cssWidth * pixelRatio));
+    const backingHeight = Math.max(1,Math.round(cssHeight * pixelRatio));
+
+    overlay.style.width = `${cssWidth}px`;
+    overlay.style.height = `${cssHeight}px`;
+    if (overlay.width !== backingWidth) overlay.width = backingWidth;
+    if (overlay.height !== backingHeight) overlay.height = backingHeight;
+
+    const ctx = overlay.getContext("2d",{alpha:true});
+    return {
+      ctx,
+      scaleX:backingWidth / Math.max(1,base.width),
+      scaleY:backingHeight / Math.max(1,base.height),
+      pixelRatio
+    };
+  }
+
+  function clearReviewAudioHighlight(target=reviewAudioTarget){
+    target?.properNameContainer?.querySelectorAll(".reviewAudioUnit.is-speaking").forEach(node => {
+      node.classList.remove("is-speaking");
+    });
+    const synced = syncReviewCartoucheHighlightCanvas(target);
+    if (synced){
+      synced.ctx.setTransform(1,0,0,1,0,0);
+      synced.ctx.clearRect(0,0,synced.ctx.canvas.width,synced.ctx.canvas.height);
+    }
+  }
+
+  function buildReviewCartoucheHighlightMap(canvas,units){
+    const layout = canvas?._reviewCartoucheLayout;
+    const runs = Array.from(layout?.runs || []);
+    const expected = units.reduce((sum,unit) => sum + Array.from(String(unit.text ?? "")).length,0);
+    if (!runs.length || runs.length !== expected) return [];
+    const map = [];
+    let cursor = 0;
+    for (const unit of units){
+      const count = Array.from(String(unit.text ?? "")).length;
+      const selected = runs.slice(cursor,cursor + count);
+      if (!selected.length){ cursor += count; continue; }
+      const first = selected[0];
+      const last = selected[selected.length - 1];
+      map[unit.index] = {
+        x:Math.max(0,first.x - 1),
+        y:Math.max(0,layout.innerY),
+        width:Math.max(1,(last.x + last.width) - first.x + 2),
+        height:Math.max(1,layout.innerHeight)
+      };
+      cursor += count;
+    }
+    return map;
+  }
+
+  function highlightReviewAudioUnit(index){
+    const target = reviewAudioTarget;
+    if (!target) return;
+    target.properNameContainer.querySelectorAll(".reviewAudioUnit.is-speaking").forEach(node => {
+      node.classList.remove("is-speaking");
+    });
+    const active = target.properNameContainer.querySelector(`[data-review-audio-unit-index="${index}"]`);
+    active?.classList.add("is-speaking");
+
+    const synced = syncReviewCartoucheHighlightCanvas(target);
+    if (!synced) return;
+    const {ctx,scaleX,scaleY,pixelRatio} = synced;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    const rect = target.cartoucheHighlightMap?.[index];
+    if (!rect) return;
+    ctx.save();
+    ctx.setTransform(scaleX,0,0,scaleY,0,0);
+    ctx.fillStyle = "rgba(255,225,70,0.46)";
+    ctx.strokeStyle = "rgba(17,17,17,0.78)";
+    ctx.lineWidth = (1.25 * pixelRatio) / Math.max(scaleX,scaleY);
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") ctx.roundRect(rect.x,rect.y,rect.width,rect.height,Math.max(2,Math.min(6,rect.height * 0.15)));
+    else ctx.rect(rect.x,rect.y,rect.width,rect.height);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function setReviewAudioButtonState(state){
+    reviewAudioState = state;
+    const button = reviewAudioTarget?.button;
+    if (!button) return;
+    button.disabled = state === "building";
+    if (state === "building"){
+      button.textContent = "⏳";
+      button.title = "Preparing proper-name audio";
+      button.setAttribute("aria-label",button.title);
+      button.setAttribute("aria-busy","true");
+    }else if (state === "playing"){
+      button.textContent = "⏸️";
+      button.title = "Pause proper-name audio";
+      button.setAttribute("aria-label",button.title);
+      button.removeAttribute("aria-busy");
+    }else if (state === "paused"){
+      button.textContent = "▶️";
+      button.title = "Continue proper-name audio";
+      button.setAttribute("aria-label",button.title);
+      button.removeAttribute("aria-busy");
+    }else{
+      button.textContent = "🤖🔊";
+      button.title = "Play proper-name audio at normal speed";
+      button.setAttribute("aria-label",button.title);
+      button.removeAttribute("aria-busy");
+    }
+  }
+
+  function cancelReviewAudioSource(session){
+    if (!session?.currentSource) return;
+    const source = session.currentSource;
+    session.currentSource = null;
+    try{ source.onended = null; }catch{}
+    try{ source.stop(); }catch{}
+    try{ source.disconnect(); }catch{}
+  }
+
+  function stopReviewAudioPlayback(){
+    reviewAudioGeneration++;
+    if (reviewAudioSession) cancelReviewAudioSource(reviewAudioSession);
+    reviewAudioSession = null;
+    clearReviewAudioHighlight();
+    if (reviewAudioTarget){
+      const previous = reviewAudioTarget;
+      reviewAudioState = "stopped";
+      reviewAudioTarget = previous;
+      setReviewAudioButtonState("stopped");
+    }
+    reviewAudioTarget = null;
+    reviewAudioState = "stopped";
+  }
+
+  function caseInsensitiveReviewAudioValue(object,names){
+    if (!object || typeof object !== "object") return null;
+    const wanted = new Set(names.map(name => String(name).toLowerCase()));
+    for (const [key,value] of Object.entries(object)){
+      if (wanted.has(String(key).toLowerCase())) return value;
+    }
+    return null;
+  }
+
+  function reviewAudioDurationMilliseconds(entry){
+    if (entry == null) return null;
+    if (typeof entry === "number" && Number.isFinite(entry)) return entry;
+    if (typeof entry !== "object") return null;
+    for (const key of ["duration_ms","durationMs","milliseconds","ms"]){
+      const value = Number(entry[key]);
+      if (Number.isFinite(value) && value > 0) return value;
+    }
+    for (const key of ["duration_seconds","durationSeconds","seconds"]){
+      const value = Number(entry[key]);
+      if (Number.isFinite(value) && value > 0) return value * 1000;
+    }
+    return null;
+  }
+
+  function reviewManifestDuration(voice,unitText){
+    const names = [
+      unitText,unitText.toLowerCase(),unitText.toUpperCase(),
+      `${unitText}.wav`,`${unitText.toLowerCase()}.wav`,`${unitText.toUpperCase()}.wav`
+    ];
+    const roots = [
+      voice?.manifest,voice?.audioManifest,voice?.referenceAudioManifest,
+      voice?.config?.manifest,voice?.config?.audioManifest
+    ].filter(Boolean);
+    for (const root of roots){
+      const direct = caseInsensitiveReviewAudioValue(root,names);
+      const directDuration = reviewAudioDurationMilliseconds(direct);
+      if (directDuration) return directDuration;
+      for (const nestedName of ["nanpa_v2","nanpaV2","files","assets","entries"]){
+        const nested = root?.[nestedName];
+        const nestedEntry = caseInsensitiveReviewAudioValue(nested,names);
+        const nestedDuration = reviewAudioDurationMilliseconds(nestedEntry);
+        if (nestedDuration) return nestedDuration;
+      }
+      if (Array.isArray(root)){
+        const found = root.find(item => {
+          const filename = String(item?.name ?? item?.filename ?? item?.file ?? item?.path ?? "").split("/").pop();
+          return names.some(name => filename.toLowerCase() === String(name).toLowerCase());
+        });
+        const foundDuration = reviewAudioDurationMilliseconds(found);
+        if (foundDuration) return foundDuration;
+      }
+    }
+    return null;
+  }
+
+  function estimatedReviewAudioWeight(voice,unit){
+    const duration = reviewManifestDuration(voice,unit.text);
+    if (duration) return duration;
+    if (unit.wholeNumericPunctuationWord) return 260 + Math.max(0,unit.text.length - 2) * 75;
+    return 230 + Math.max(0,unit.text.length - 2) * 55;
+  }
+
+  function partitionReviewAudioSamples(samples,sampleRate,units,voice){
+    const weights = units.map(unit => estimatedReviewAudioWeight(voice,unit));
+    const gapWeight = REVIEW_AUDIO_SYLLABLE_GAP_SECONDS * 1000;
+    const totalWeight = weights.reduce((sum,weight) => sum + weight,0) + Math.max(0,units.length - 1) * gapWeight;
+    const entries = [];
+    let sampleCursor = 0;
+    let accumulatedWeight = 0;
+    for (let index=0;index<units.length;index++){
+      accumulatedWeight += weights[index];
+      let unitEnd = index === units.length - 1
+        ? samples.length
+        : Math.round(samples.length * accumulatedWeight / totalWeight);
+      unitEnd = Math.max(sampleCursor,Math.min(samples.length,unitEnd));
+      entries.push({
+        kind:"unit",
+        highlightIndex:units[index].index,
+        samples:samples.slice(sampleCursor,unitEnd),
+        sampleRate
+      });
+      sampleCursor = unitEnd;
+      if (index < units.length - 1 && gapWeight > 0){
+        accumulatedWeight += gapWeight;
+        let gapEnd = Math.round(samples.length * accumulatedWeight / totalWeight);
+        gapEnd = Math.max(sampleCursor,Math.min(samples.length,gapEnd));
+        entries.push({kind:"gap",highlightIndex:null,samples:samples.slice(sampleCursor,gapEnd),sampleRate});
+        sampleCursor = gapEnd;
+      }
+    }
+    if (sampleCursor < samples.length && entries.length){
+      const last = entries[entries.length - 1];
+      const merged = new Float32Array(last.samples.length + samples.length - sampleCursor);
+      merged.set(last.samples,0);
+      merged.set(samples.slice(sampleCursor),last.samples.length);
+      last.samples = merged;
+    }
+    return entries.filter(entry => entry.samples.length > 0);
+  }
+
+  async function prepareReviewAudio(target,generation){
+    const cacheKey = `${target.properName}|normal`;
+    if (reviewAudioCache.has(cacheKey)) return reviewAudioCache.get(cacheKey);
+    const voice = await getVoice();
+    if (generation !== reviewAudioGeneration) return null;
+    const rendered = await voice.render(target.properName,{
+      synthesis_mode:"reference_audio",
+      pauseScale:REVIEW_AUDIO_PAUSE_SCALE,
+      syllableGapSeconds:REVIEW_AUDIO_SYLLABLE_GAP_SECONDS
+    });
+    if (generation !== reviewAudioGeneration) return null;
+    const samples = rendered.samples instanceof Float32Array
+      ? rendered.samples
+      : Float32Array.from(rendered.samples || []);
+    const prepared = {
+      voice,
+      entries:partitionReviewAudioSamples(samples,rendered.sampleRate,target.units,voice)
+    };
+    reviewAudioCache.set(cacheKey,prepared);
+    return prepared;
+  }
+
+  function getReviewAudioContext(){
+    if (!reviewAudioContext){
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextCtor) throw new Error("Web Audio is not supported in this browser.");
+      reviewAudioContext = new AudioContextCtor();
+    }
+    return reviewAudioContext;
+  }
+
+  function reviewAudioBuffer(session,entry){
+    if (entry._audioBuffer) return entry._audioBuffer;
+    const context = session.audioContext;
+    const buffer = context.createBuffer(1,entry.samples.length,entry.sampleRate);
+    buffer.copyToChannel(entry.samples,0);
+    entry._audioBuffer = buffer;
+    return buffer;
+  }
+
+  function completeReviewAudioPlayback(generation){
+    if (generation !== reviewAudioGeneration) return;
+    if (reviewAudioSession) cancelReviewAudioSource(reviewAudioSession);
+    reviewAudioSession = null;
+    clearReviewAudioHighlight();
+    setReviewAudioButtonState("stopped");
+  }
+
+  function playReviewAudioEntry(){
+    const session = reviewAudioSession;
+    if (!session || session.generation !== reviewAudioGeneration) return;
+    if (session.currentIndex >= session.entries.length){
+      completeReviewAudioPlayback(session.generation);
+      return;
+    }
+    const entry = session.entries[session.currentIndex];
+    const buffer = reviewAudioBuffer(session,entry);
+    const context = session.audioContext;
+    const offset = Math.max(0,Math.min(Number(session.currentOffsetSeconds) || 0,Math.max(0,buffer.duration - 0.001)));
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(context.destination);
+    session.currentSource = source;
+    session.currentBuffer = buffer;
+    session.sourceStartedAt = context.currentTime;
+    session.sourceStartedOffset = offset;
+    if (entry.kind === "unit" && Number.isInteger(entry.highlightIndex)) highlightReviewAudioUnit(entry.highlightIndex);
+    else clearReviewAudioHighlight();
+    setReviewAudioButtonState("playing");
+    source.onended = () => {
+      if (!reviewAudioSession || reviewAudioSession !== session) return;
+      if (session.generation !== reviewAudioGeneration || session.currentSource !== source || reviewAudioState !== "playing") return;
+      session.currentSource = null;
+      try{ source.disconnect(); }catch{}
+      session.currentBuffer = null;
+      session.currentOffsetSeconds = 0;
+      clearReviewAudioHighlight();
+      session.currentIndex++;
+      playReviewAudioEntry();
+    };
+    source.start(0,offset);
+  }
+
+  function pauseReviewAudio(){
+    const session = reviewAudioSession;
+    if (!session || reviewAudioState !== "playing" || !session.currentSource) return;
+    const context = session.audioContext;
+    const elapsed = Math.max(0,context.currentTime - session.sourceStartedAt);
+    session.currentOffsetSeconds = Math.min(
+      session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
+      session.sourceStartedOffset + elapsed
+    );
+    cancelReviewAudioSource(session);
+    setReviewAudioButtonState("paused");
+  }
+
+  function resumeReviewAudio(){
+    if (!reviewAudioSession || reviewAudioState !== "paused") return;
+    playReviewAudioEntry();
+  }
+
+  async function startReviewAudio(target){
+    stopCurrentAudioPlayback();
+    const generation = ++reviewAudioGeneration;
+    reviewAudioTarget = target;
+    target.cartoucheHighlightMap = buildReviewCartoucheHighlightMap(target.fullCanvas,target.units);
+    setReviewAudioButtonState("building");
+    try{
+      target.button.setCustomValidity("");
+      const prepared = await prepareReviewAudio(target,generation);
+      if (!prepared || generation !== reviewAudioGeneration || reviewAudioTarget !== target) return;
+      const audioContext = getReviewAudioContext();
+      await audioContext.resume();
+      if (generation !== reviewAudioGeneration || reviewAudioTarget !== target) return;
+      reviewAudioSession = {
+        generation,
+        voice:prepared.voice,
+        audioContext,
+        entries:prepared.entries,
+        currentIndex:0,
+        currentOffsetSeconds:0,
+        currentSource:null,
+        currentBuffer:null,
+        sourceStartedAt:0,
+        sourceStartedOffset:0
+      };
+      if (!reviewAudioSession.entries.length) throw new Error("No audio entries were produced.");
+      playReviewAudioEntry();
+    }catch(err){
+      if (generation !== reviewAudioGeneration) return;
+      console.error(err);
+      reviewAudioSession = null;
+      clearReviewAudioHighlight();
+      setReviewAudioButtonState("stopped");
+      target.button.setCustomValidity(`Audio error: ${err?.message ?? String(err)}`);
+      target.button.reportValidity();
+    }
+  }
+
+  function toggleReviewAudio(target){
+    if (reviewAudioTarget === target && reviewAudioState === "playing"){
+      pauseReviewAudio();
+      return;
+    }
+    if (reviewAudioTarget === target && reviewAudioState === "paused"){
+      resumeReviewAudio();
+      return;
+    }
+    startReviewAudio(target);
   }
 
   async function appendReviewRecord(parent,rawRecord){
@@ -1776,14 +2315,30 @@
 
     const revealGrid = document.createElement("div");
     revealGrid.className = "reviewRevealGrid";
+    const mode = normalizeProperNameMode(record.properNameMode);
+    const modeLabel = mode === "strict" ? "Strict" : "Relaxed";
     appendReviewTextPanel(revealGrid,"Decimal value",record.value);
-    appendReviewTextPanel(revealGrid,"Strict proper name",record.strictName,{ properName:true });
-    appendReviewTextPanel(revealGrid,"Relaxed proper name",record.relaxedName,{ properName:true });
+    const properNameAudio = appendReviewProperNamePanel(revealGrid,`${modeLabel} proper name`,record.properName);
     await ensureCartoucheFontLoaded();
-    appendReviewCartouchePanel(revealGrid,"Abbreviated nanpa-linja-n cartouche",record.abbreviatedCodepoints || []);
-    appendReviewCartouchePanel(revealGrid,"Strict full nanpa-linja-n cartouche",record.strictFullCodepoints || []);
-    appendReviewCartouchePanel(revealGrid,"Relaxed full nanpa-linja-n cartouche",record.relaxedFullCodepoints || []);
+    const fullCartouche = appendReviewCartouchePanel(
+      revealGrid,
+      `${modeLabel} full nanpa-linja-n cartouche`,
+      record.fullCodepoints || [],
+      {highlightable:true}
+    );
+    appendReviewCartouchePanel(revealGrid,"Abbreviated nanpa-linja-n cartouche (preferred)",record.abbreviatedCodepoints || []);
     appendReviewTextPanel(revealGrid,"#~ abbreviation",record.uniqueCode);
+
+    const reviewAudioTargetForRecord = {
+      button:properNameAudio.button,
+      properName:record.properName,
+      properNameContainer:properNameAudio.content,
+      units:properNameAudio.units,
+      fullCanvas:fullCartouche.canvas,
+      highlightCanvas:fullCartouche.highlightCanvas,
+      cartoucheHighlightMap:[]
+    };
+    properNameAudio.button.addEventListener("click",() => toggleReviewAudio(reviewAudioTargetForRecord));
 
     const details = document.createElement("div");
     details.className = "answerDetails";
@@ -1813,6 +2368,7 @@
 
   async function renderCurrentReview(){
     if (!el.reviewList) return;
+    stopReviewAudioPlayback();
     const renderToken = ++reviewRenderToken;
     const attempted = state.items.map((item,index) => ({item,index})).filter(x => itemWasAttempted(x.item));
     const filtered = state.reviewProblemsOnly ? attempted.filter(x => itemIsProblem(x.item)) : attempted;
@@ -1948,6 +2504,7 @@
   }
 
   function renderHistory(){
+    stopReviewAudioPlayback();
     const rows = state.history || [];
     el.historySummary.textContent = rows.length ? `${rows.length} saved listening session${rows.length === 1 ? "" : "s"}.` : "No saved listening sessions yet.";
     el.historyList.replaceChildren();
@@ -1976,6 +2533,7 @@
   }
 
   async function renderHistoryDetail(record){
+    stopReviewAudioPlayback();
     const renderToken = ++historyDetailRenderToken;
     const staging = document.createDocumentFragment();
     if (!record){
@@ -2355,11 +2913,23 @@
     const baselineY=border+pad+maxAscent;
     let x=border+pad;
     ctx2.fillStyle="#111";
+    const positionedRuns=[];
     for (const g of glyphRuns){
       ctx2.font=`${g.px}px "${FONT_FAMILY}"`;
       ctx2.fillText(g.ch,x+(g.left ?? 0),baselineY+(g.yOffset ?? 0));
+      positionedRuns.push({
+        x,
+        width:g.tightW,
+        top:baselineY - g.ascent + (g.yOffset ?? 0),
+        height:g.ascent + g.descent
+      });
       x += g.tightW + letterGap;
     }
+    canvas._reviewCartoucheLayout = {
+      runs:positionedRuns,
+      innerY:border + 1,
+      innerHeight:Math.max(1,canvas.height - (border + 1) * 2)
+    };
   }
 
   function wireEvents(){
