@@ -992,6 +992,10 @@
     "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
     "One","Ono","Oko","Eko","Oken","Ene","Inin"
   ]);
+  const PROGRESSIVE_NUMERIC_PUNCTUATION_WORDS = new Set([
+    "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
+    "One","Ono","Oko","Eko","Oken","Ene","Neno","Inin"
+  ]);
   const REVIEW_AUDIO_PAUSE_SCALE = 1.00;
   const REVIEW_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
 
@@ -1567,6 +1571,31 @@
     return out.trimEnd();
   }
 
+  function shouldPreservePunctuationBoundarySpace(rawInput,canonicalPrefix,fullProperName){
+    if (!/\s$/u.test(String(rawInput ?? ""))) return false;
+
+    const prefixWords = String(canonicalPrefix ?? "").trim().split(/\s+/u).filter(Boolean);
+    const lastPrefixWord = prefixWords[prefixWords.length - 1] || "";
+
+    // Preserve one space immediately after a complete punctuation word,
+    // including the leading negative form Neno.
+    if (PROGRESSIVE_NUMERIC_PUNCTUATION_WORDS.has(lastPrefixWord)) return true;
+
+    // Also preserve one space immediately before a punctuation word. This lets
+    // the learner type, for example, "Jen Eke" rather than having the space
+    // after Jen removed before Eke is started.
+    const fullWords = String(fullProperName ?? "").trim().split(/\s+/u).filter(Boolean);
+    const prefixCompactLength = normalizeProgressiveProperNameInput(canonicalPrefix).length;
+    let completedCompactLength = 0;
+    for (let index=0;index<fullWords.length;index++){
+      completedCompactLength += normalizeProgressiveProperNameInput(fullWords[index]).length;
+      if (completedCompactLength !== prefixCompactLength) continue;
+      const nextWord = fullWords[index + 1] || "";
+      return PROGRESSIVE_NUMERIC_PUNCTUATION_WORDS.has(nextWord);
+    }
+    return false;
+  }
+
   function buildProgressiveCartoucheUnits(fullCodepoints,kind){
     const cps = Array.from(fullCodepoints ?? []).map(Number);
     const entries = abbreviateNumericCartoucheEntries(cps,abbreviationOptionsForKind(kind));
@@ -1811,7 +1840,8 @@
     const plan = await ensureProgressiveRevealPlan(item);
     if (generation !== progressiveInputGeneration || item !== currentItem()) return null;
 
-    const rawCompact = normalizeProgressiveProperNameInput(el.firstAnswerInput.value);
+    const rawInput = el.firstAnswerInput.value;
+    const rawCompact = normalizeProgressiveProperNameInput(rawInput);
     const matchedLength = longestEquivalentProperNamePrefixLength(rawCompact,plan.strictCompact,plan.relaxedCompact);
     const confirmedFloor = clamp(
       Math.round(Number(item.progressiveConfirmedLength) || 0),
@@ -1819,7 +1849,10 @@
       plan.expectedCompact.length
     );
     const acceptedLength = Math.max(confirmedFloor,matchedLength);
-    const corrected = canonicalProperNamePrefix(plan.properName,acceptedLength);
+    const canonicalPrefix = canonicalProperNamePrefix(plan.properName,acceptedLength);
+    const corrected = shouldPreservePunctuationBoundarySpace(rawInput,canonicalPrefix,plan.properName)
+      ? `${canonicalPrefix} `
+      : canonicalPrefix;
 
     if (el.firstAnswerInput.value !== corrected){
       el.firstAnswerInput.value = corrected;
