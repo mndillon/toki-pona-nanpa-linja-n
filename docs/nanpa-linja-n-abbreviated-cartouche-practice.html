@@ -1,0 +1,3548 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>nanpa-linja-n Abbreviated Cartouche Practice</title>
+
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <style>
+    :root{
+      --topbar-h:58px;
+      --bg:#F3DFC0;
+      --ink:#111;
+      --muted:#3f4750;
+      --panel:rgba(255,255,255,0.35);
+      --panel-strong:rgba(255,255,255,0.55);
+      --panel-border:rgba(17,17,17,0.18);
+      --good:#147a2a;
+      --bad:#b11a1a;
+      --warn:#8a5a00;
+      --board-max:900px;
+      --card-radius:18px;
+    }
+
+    @font-face{
+      font-family:"PatrickHand";
+      src:url("./fonts/PatrickHand-Regular.ttf") format("truetype");
+      font-display:swap;
+    }
+    @font-face{
+      font-family:"TP-Cartouche-Font";
+      src:url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display:swap;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:"PatrickHand",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    }
+    body{ overflow:hidden; }
+
+    button,input,select{ font:inherit; }
+    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{
+      outline:3px solid #111;
+      outline-offset:2px;
+    }
+
+    .topbar{
+      height:var(--topbar-h);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-bottom:1px solid var(--panel-border);
+      background:var(--panel);
+      backdrop-filter:blur(6px);
+      overflow:hidden;
+      white-space:nowrap;
+    }
+    .brand{
+      font-size:21px;
+      font-weight:800;
+      line-height:1;
+      margin-right:6px;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid var(--panel-border);
+      background:rgba(255,255,255,0.50);
+      color:var(--ink);
+      padding:6px 9px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      min-height:32px;
+    }
+    .btn:hover{ background:rgba(255,255,255,0.68); }
+    .btn:disabled{ opacity:0.52; cursor:not-allowed; }
+    .btn.primary{ background:rgba(255,255,255,0.76); }
+
+    .controlBox{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 7px;
+      border:1px solid var(--panel-border);
+      background:var(--panel);
+      border-radius:12px;
+      min-height:32px;
+      flex:0 0 auto;
+    }
+    .controlLabel{ font-size:13px; color:var(--muted); }
+    .controlInput{
+      height:26px;
+      border-radius:10px;
+      border:1px solid rgba(17,17,17,0.22);
+      background:rgba(255,255,255,0.65);
+      color:var(--ink);
+      padding:0 8px;
+      font-size:14px;
+      min-width:88px;
+    }
+    .numberInput{ width:68px; min-width:68px; }
+    .status{
+      margin-left:auto;
+      color:var(--muted);
+      font-size:15px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .wrap{
+      height:calc(100dvh - var(--topbar-h));
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .main{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:auto;
+      padding:8px 10px;
+      display:grid;
+      place-items:start center;
+    }
+    .stack{
+      width:min(var(--board-max),94vw);
+      display:grid;
+      gap:8px;
+      padding-bottom:8px;
+    }
+    .card{
+      border:1px solid var(--panel-border);
+      background:var(--panel-strong);
+      border-radius:var(--card-radius);
+      padding:10px;
+      display:grid;
+      gap:8px;
+    }
+    .panelRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .between{ justify-content:space-between; }
+    h1,h2,h3,p{ margin:0; }
+    h1{ font-size:22px; }
+    h2{ font-size:19px; }
+    p{ line-height:1.28; }
+    .muted{ color:var(--muted); }
+    .goodText{ color:var(--good); font-weight:800; }
+    .badText{ color:var(--bad); font-weight:800; }
+    .warnText{ color:var(--warn); font-weight:800; }
+    .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
+    .properNameText{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
+
+    .progressGrid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(120px,1fr));
+      gap:6px;
+    }
+    .statCard{
+      border:1px solid var(--panel-border);
+      background:rgba(255,255,255,0.34);
+      border-radius:14px;
+      padding:5px 8px;
+      display:grid;
+      gap:1px;
+    }
+    .statCard strong{ font-size:17px; }
+    .statCard span{ font-size:13px; }
+
+    .questionCard{
+      min-height:360px;
+      align-content:start;
+    }
+    .prompt{
+      text-align:center;
+      font-size:21px;
+      font-weight:800;
+    }
+    .audioArea{
+      display:grid;
+      place-items:center;
+      gap:5px;
+      padding:12px;
+    }
+    .audioButton{
+      min-width:190px;
+      min-height:62px;
+      font-size:22px;
+      border-radius:18px;
+    }
+    .visualCartoucheArea{
+      display:grid;
+      place-items:center;
+      gap:8px;
+      width:100%;
+      padding:18px 12px;
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      background:rgba(255,255,255,0.30);
+    }
+    .visualCartoucheLabel{
+      color:var(--muted);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      font-weight:800;
+      text-align:center;
+    }
+    .visualCartoucheCanvasWrap{
+      display:grid;
+      place-items:center;
+      width:100%;
+      min-height:96px;
+      overflow-x:auto;
+      padding:4px;
+    }
+    #questionAbbreviatedCartouche{
+      display:block;
+      max-width:100%;
+      height:auto;
+      background:transparent;
+    }
+    .exampleCartoucheCanvas{
+      display:block;
+      max-width:min(260px,100%);
+      height:auto;
+      align-self:center;
+      background:transparent;
+    }
+    .answerStage{
+      display:grid;
+      gap:6px;
+      max-width:720px;
+      width:100%;
+      margin:0 auto;
+    }
+    .answerRow{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto auto;
+      gap:8px;
+      align-items:center;
+    }
+    .hintButton{
+      touch-action:none;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .hintButton[aria-pressed="true"]{
+      background:rgba(255,255,255,0.88);
+      box-shadow:inset 0 0 0 2px rgba(17,17,17,0.28);
+    }
+    .answerInput{
+      width:100%;
+      min-width:0;
+      height:44px;
+      border:1px solid rgba(17,17,17,0.28);
+      border-radius:12px;
+      background:rgba(255,255,255,0.72);
+      color:var(--ink);
+      padding:8px 10px;
+      font-size:17px;
+    }
+    .answerInput.correct{
+      border-color:rgba(20,122,42,0.65);
+      background:rgba(235,255,237,0.58);
+    }
+    .stageLabel{ font-weight:800; }
+    .feedback{
+      min-height:1.35em;
+      margin-top:8px;
+      border:1px solid var(--panel-border);
+      background:rgba(255,255,255,0.30);
+      border-radius:14px;
+      padding:7px 9px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .feedback.goodText{ font-weight:700; }
+    .feedback.badText{ color:#5a1f1f; font-weight:400; }
+
+    .reveal{
+      margin-top:8px;
+      border:1px solid var(--panel-border);
+      background:rgba(255,255,255,0.30);
+      border-radius:14px;
+      padding:9px;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .revealLine{
+      display:block;
+    }
+    .reveal canvas{
+      display:block;
+      max-width:100%;
+      height:auto;
+      margin-top:4px;
+      background:transparent;
+    }
+
+    .settingsGrid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(245px,1fr));
+      gap:8px;
+    }
+    .settingItem{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:8px;
+      background:rgba(255,255,255,0.28);
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+    }
+    .settingItem input{ margin-top:4px; width:17px; height:17px; accent-color:var(--ink); }
+    .settingText{ display:grid; gap:2px; }
+    .settingText strong{ font-size:16px; }
+    .settingText span{ color:var(--muted); font-size:14px; }
+
+
+    .tabs{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      padding:6px 10px 0;
+      flex:0 0 auto;
+    }
+    .tabBtn[aria-selected="true"]{
+      background:rgba(255,255,255,0.78);
+      box-shadow:inset 0 -2px 0 rgba(17,17,17,0.28);
+    }
+    .tabPanel{ width:100%; display:grid; gap:8px; }
+
+    .examplesList{
+      display:grid;
+      gap:8px;
+    }
+    .exampleItem{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:9px;
+      background:rgba(255,255,255,0.28);
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr);
+      gap:10px;
+      align-items:start;
+    }
+    .exampleAudioButton{
+      min-width:48px;
+      min-height:42px;
+      padding:6px 8px;
+      font-size:18px;
+    }
+    .exampleBody{
+      min-width:0;
+      display:grid;
+      gap:6px;
+    }
+    .exampleHeading{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .exampleHeading h3{
+      font-size:17px;
+    }
+    .exampleOrder{
+      color:var(--muted);
+      font-size:13px;
+    }
+    .exampleReferenceGrid{
+      display:grid;
+      grid-template-columns:minmax(0,2fr) minmax(160px,0.8fr);
+      gap:7px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .exampleReferencePanel{
+      min-width:0;
+      border:1px solid var(--panel-border);
+      border-radius:12px;
+      padding:7px 8px;
+      background:rgba(255,255,255,0.30);
+      display:grid;
+      gap:4px;
+      align-content:start;
+    }
+    .exampleReferenceLabel{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:800;
+    }
+    .exampleReferenceValue{
+      min-width:0;
+      overflow-wrap:anywhere;
+      user-select:text;
+      font-size:13px;
+    }
+
+    .reviewList{ display:grid; gap:8px; }
+    .reviewItem{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:9px;
+      background:rgba(255,255,255,0.28);
+      display:grid;
+      gap:5px;
+    }
+    .reviewTop,.historySessionTop{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .reviewMeta,.historySessionMeta{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .reviewRevealGrid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:7px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .reviewRevealPanel{
+      min-width:0;
+      border:1px solid var(--panel-border);
+      border-radius:12px;
+      padding:7px 8px;
+      background:rgba(255,255,255,0.30);
+      display:grid;
+      gap:4px;
+      align-content:start;
+    }
+    .reviewRevealPanel.cartouchePanel{
+      grid-column:1 / -1;
+    }
+    .reviewRevealLabel{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:800;
+    }
+    .reviewRevealLabelRow{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .reviewEntryAudioButton{
+      min-width:28px;
+      min-height:24px;
+      padding:1px 5px;
+      border-radius:8px;
+      font-size:14px;
+      line-height:1;
+    }
+    .reviewRevealValue{
+      min-width:0;
+      overflow-wrap:anywhere;
+      user-select:text;
+      font-size:13px;
+    }
+    .reviewAudioWord{
+      display:inline-block;
+      white-space:nowrap;
+    }
+    .reviewAudioUnit{
+      display:inline-block;
+      padding:1px 1px;
+      border-radius:4px;
+      transition:background-color 80ms linear,outline-color 80ms linear;
+    }
+    .reviewAudioUnit.is-speaking{
+      background:#fff4a8;
+      outline:2px solid #111;
+      outline-offset:1px;
+    }
+    .reviewCartoucheCanvasWrap{
+      position:relative;
+      display:inline-block;
+      max-width:100%;
+      line-height:0;
+    }
+    .reviewRevealPanel canvas{
+      display:block;
+      max-width:100%;
+      height:auto;
+      background:transparent;
+    }
+    .reviewCartoucheHighlightCanvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+    }
+    .answerDetails{
+      border-top:1px solid var(--panel-border);
+      padding-top:6px;
+      display:grid;
+      gap:3px;
+      font-size:14px;
+    }
+    .answerDetailsTitle{
+      font-weight:800;
+      margin-bottom:1px;
+    }
+    .resultBadge{
+      display:inline-flex;
+      align-items:center;
+      border:1px solid var(--panel-border);
+      border-radius:999px;
+      padding:2px 7px;
+      font-size:13px;
+      font-weight:800;
+    }
+    .resultBadge.correct{ color:var(--good); }
+    .resultBadge.revealed{ color:var(--warn); }
+    .resultBadge.incomplete{ color:var(--muted); }
+    .historyGrid{
+      display:grid;
+      grid-template-columns:minmax(240px,.9fr) minmax(320px,1.4fr);
+      gap:8px;
+      min-height:0;
+      height:min(700px,calc(100dvh - 140px));
+    }
+    .historyGrid > .card{
+      min-height:0;
+      grid-template-rows:auto minmax(0,1fr);
+    }
+    .historyList,.historyDetail{
+      display:grid;
+      gap:8px;
+      min-height:0;
+      max-height:none;
+      overflow:auto;
+    }
+    .historySessionBtn{
+      width:100%;
+      text-align:left;
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      background:rgba(255,255,255,0.34);
+      padding:8px;
+      display:grid;
+      gap:3px;
+      cursor:pointer;
+      color:var(--ink);
+    }
+    .historySessionBtn:hover,.historySessionBtn.active{ background:rgba(255,255,255,0.62); }
+    .historyHeader{
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:9px;
+      background:rgba(255,255,255,0.28);
+      display:grid;
+      gap:5px;
+    }
+    .compactControl{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .compactControl input{ width:16px; height:16px; accent-color:var(--ink); }
+    .autoNextNotice{
+      min-height:18px;
+      text-align:center;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .summaryBox{
+      display:grid;
+      gap:7px;
+      text-align:center;
+      padding:18px 10px;
+    }
+    .summaryScore{ font-size:34px; font-weight:800; }
+    .hidden{ display:none !important; }
+
+    .footer{
+      flex:0 0 auto;
+      border-top:1px solid var(--panel-border);
+      background:var(--panel);
+      padding:5px 10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .footerRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      white-space:nowrap;
+    }
+    .footerLeft{ overflow:hidden; text-overflow:ellipsis; }
+    .footer a{ color:var(--muted); }
+
+    @media (max-width:980px){
+      :root{ --topbar-h:98px; }
+      .topbar{ flex-wrap:wrap; align-content:center; white-space:normal; }
+      .brand{ width:100%; font-size:19px; }
+      .status{ display:none; }
+    }
+    @media (max-width:720px){
+      .historyGrid{
+        grid-template-columns:1fr;
+        height:auto;
+      }
+      .historyList,.historyDetail{
+        max-height:360px;
+      }
+      .progressGrid{ grid-template-columns:repeat(2,minmax(120px,1fr)); }
+      .reviewRevealGrid{ grid-template-columns:1fr; }
+      .reviewRevealPanel.cartouchePanel{ grid-column:auto; }
+      .exampleReferenceGrid{ grid-template-columns:1fr; }
+      .questionCard{ min-height:390px; }
+      .answerRow{ grid-template-columns:1fr; }
+      .answerRow .btn{ justify-self:start; }
+      .footerLeft{ display:none; }
+      .footerRow{ justify-content:flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">nanpa-linja-n abbreviated cartouche practice</div>
+    <button id="startButton" class="btn primary" type="button">Start</button>
+    <button id="quitButton" class="btn" type="button" disabled>Quit</button>
+
+    <label class="controlBox">
+      <span class="controlLabel">Number type</span>
+      <select id="kindSelect" class="controlInput">
+        <option value="mixed">Mixed</option>
+        <option value="single-digit-integer">Single digits</option>
+        <option value="integer">Integers</option>
+        <option value="decimal">Decimals</option>
+        <option value="negative">Negative numbers</option>
+        <option value="thousands">Thousands</option>
+        <option value="millions">Millions</option>
+        <option value="percent">Percentages</option>
+        <option value="fraction">Fractions</option>
+        <option value="integer-and-fraction">Integer and fraction</option>
+        <option value="scientific-notation">Scientific notation</option>
+        <option value="hh-mm-time">Times</option>
+        <option value="iso-date">Dates</option>
+        <option value="telephone">Telephone numbers</option>
+      </select>
+    </label>
+
+    <label class="controlBox">
+      <span class="controlLabel">Questions</span>
+      <input id="questionCountInput" class="controlInput numberInput" type="number" min="1" max="100" value="20" />
+    </label>
+
+    <label class="controlBox">
+      <span class="controlLabel">Mode</span>
+      <select id="properNameModeSelect" class="controlInput">
+        <option value="strict">strict</option>
+        <option value="relaxed" selected>relaxed</option>
+      </select>
+    </label>
+
+    <label class="controlBox hidden">
+      <span class="controlLabel">Audio speed</span>
+      <select id="audioSpeedSelect" class="controlInput">
+        <option value="1.00">Normal</option>
+        <option value="2.25" selected>Slow</option>
+        <option value="4.00">Very slow</option>
+      </select>
+    </label>
+
+    <div id="status" class="status">Ready.</div>
+  </header>
+
+  <div class="wrap">
+    <div class="tabs" role="tablist" aria-label="Page sections">
+      <button class="btn tabBtn" data-tab="examples" aria-selected="false" type="button">Examples</button>
+      <button class="btn tabBtn" data-tab="practice" aria-selected="true" type="button">Practice</button>
+      <button class="btn tabBtn" data-tab="review" aria-selected="false" type="button">Review</button>
+      <button class="btn tabBtn" data-tab="history" aria-selected="false" type="button">History</button>
+      <button class="btn tabBtn" data-tab="settings" aria-selected="false" type="button">Settings</button>
+    </div>
+
+    <main class="main">
+      <div class="stack">
+        <section id="tab-examples" class="tabPanel hidden">
+          <section class="card">
+            <div>
+              <h1>nanpa-linja-n abbreviated cartouche examples</h1>
+              <p id="examplesSummary" class="muted">Loading examples…</p>
+              <p class="muted">When entering a nanpa-linja-n proper-name answer, spaces and letter case are ignored.</p>
+            </div>
+          </section>
+          <div id="examplesList" class="examplesList"></div>
+        </section>
+
+        <section id="tab-practice" class="tabPanel">
+          <section class="card">
+            <div class="panelRow between">
+              <div>
+                <h1>Read the abbreviated cartouche and enter the proper name</h1>
+                <p class="muted">Enter the nanpa-linja-n proper name represented by the abbreviated sitelen pona cartouche.</p>
+              </div>
+              <div class="panelRow">
+                <button id="previousButton" class="btn" type="button" disabled>Prev</button>
+                <button id="nextButton" class="btn" type="button" disabled>Next</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card progressGrid" aria-label="Session progress">
+            <div class="statCard"><span class="muted">Score</span><strong id="scoreLabel">0 / 0</strong></div>
+            <div class="statCard"><span class="muted">Streak</span><strong id="streakLabel">0</strong></div>
+            <div class="statCard"><span class="muted">Question</span><strong id="questionLabel">0 / 0</strong></div>
+            <div class="statCard"><span class="muted">Type</span><strong id="typeLabel">—</strong></div>
+          </section>
+
+          <section id="questionCard" class="card questionCard">
+            <div id="prompt" class="prompt">Choose settings and press Start.</div>
+
+            <div class="audioArea hidden" aria-hidden="true">
+              <button id="audioButton" class="btn audioButton" type="button" disabled>🤖🔊 Play audio</button>
+              <span class="muted">Practice audio is disabled on this page.</span>
+            </div>
+
+            <div class="visualCartoucheArea" aria-label="Abbreviated nanpa-linja-n cartouche to identify">
+              <div class="visualCartoucheLabel">abbreviated nanpa-linja-n sitelen pona cartouche, glyphs will reveal as you type</div>
+              <div class="visualCartoucheCanvasWrap">
+                <canvas id="questionAbbreviatedCartouche" width="1" height="1" aria-hidden="true"></canvas>
+              </div>
+            </div>
+
+            <div id="firstStage" class="answerStage">
+              <label class="stageLabel" for="firstAnswerInput">nanpa-linja-n proper name</label>
+              <div class="answerRow">
+                <input id="firstAnswerInput" class="answerInput mono" type="text" autocomplete="off" spellcheck="false" disabled
+                       placeholder="Enter the proper name" />
+                <button id="hintButton" class="btn hintButton" type="button" disabled aria-pressed="false"
+                        title="Hold to show the proper-name text represented by the currently visible glyphs">Hint</button>
+                <button id="checkFirstButton" class="btn" type="button" disabled>Check</button>
+              </div>
+            </div>
+
+            <div id="decimalStage" class="answerStage hidden">
+              <label class="stageLabel" for="decimalAnswerInput">Now translate the proper name into its decimal value</label>
+              <div class="answerRow">
+                <input id="decimalAnswerInput" class="answerInput mono" type="text" autocomplete="off" spellcheck="false"
+                       placeholder="Enter the decimal value" />
+                <button id="checkDecimalButton" class="btn" type="button">Check value</button>
+              </div>
+            </div>
+
+            <div class="panelRow">
+              <button id="revealButton" class="btn" type="button" disabled>Reveal</button>
+            </div>
+
+            <div id="feedback" class="feedback muted" role="status" aria-live="polite">Enter the proper name represented by the abbreviated cartouche.</div>
+            <div id="autoNextNotice" class="autoNextNotice" aria-live="polite"></div>
+
+            <div id="reveal" class="reveal hidden">
+              <div class="revealLine"><strong>Value:</strong> <span id="revealValue" class="mono"></span></div>
+              <div id="revealStrictLine" class="revealLine hidden"><strong>strict nanpa-linja-n proper name:</strong> <span id="revealStrictName" class="properNameText"></span></div>
+              <div id="revealRelaxedLine" class="revealLine hidden"><strong>relaxed nanpa-linja-n proper name:</strong> <span id="revealRelaxedName" class="properNameText"></span></div>
+              <div class="revealLine"><strong>nanpa-linja-n abbreviated cartouche:</strong> <canvas id="abbreviatedCartouche" aria-hidden="true"></canvas></div>
+              <div class="revealLine"><strong>nanpa-linja-n cartouche:</strong> <canvas id="normalCartouche" aria-hidden="true"></canvas></div>
+              <div id="revealCodeLine" class="revealLine hidden"><strong>#~ abbreviation:</strong> <span id="revealCode" class="mono"></span></div>
+            </div>
+          </section>
+
+          <section id="summaryCard" class="card summaryBox hidden">
+            <h2>Session complete</h2>
+            <div id="summaryScore" class="summaryScore">0 / 0</div>
+            <p id="summaryText" class="muted"></p>
+            <div class="panelRow" style="justify-content:center">
+              <button id="restartButton" class="btn primary" type="button">Try another session</button>
+              <button id="summaryReviewButton" class="btn" type="button">Review this session</button>
+            </div>
+          </section>
+        </section>
+
+        <section id="tab-review" class="tabPanel hidden">
+          <section class="card">
+            <div class="panelRow between">
+              <div>
+                <h1>Current visual-practice session review</h1>
+                <p id="reviewSummary" class="muted">No visual-practice session has been started.</p>
+              </div>
+              <label class="compactControl">
+                <input id="reviewProblemsOnlyToggle" type="checkbox" />
+                Problems only
+              </label>
+            </div>
+          </section>
+          <div id="reviewList" class="reviewList"></div>
+        </section>
+
+        <section id="tab-history" class="tabPanel hidden">
+          <section class="card">
+            <div class="panelRow between">
+              <div>
+                <h1>History</h1>
+                <p id="historySummary" class="muted">Loading saved sessions…</p>
+              </div>
+              <div class="panelRow">
+                <button id="refreshHistoryButton" class="btn" type="button">Refresh</button>
+                <button id="clearHistoryButton" class="btn" type="button">Clear history</button>
+              </div>
+            </div>
+          </section>
+          <div class="historyGrid">
+            <section class="card">
+              <h2>Saved sessions</h2>
+              <div id="historyList" class="historyList"></div>
+            </section>
+            <section class="card">
+              <div class="panelRow between">
+                <h2>Session details</h2>
+                <label class="compactControl">
+                  <input id="historyProblemsOnlyToggle" type="checkbox" />
+                  Problems only
+                </label>
+              </div>
+              <div id="historyDetail" class="historyDetail"><p class="muted">Select a saved session.</p></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-settings" class="tabPanel hidden">
+          <section class="card">
+            <h1>Settings</h1>
+            <div class="settingsGrid">
+              <label class="settingItem hidden">
+                <input id="requireDecimalToggle" type="checkbox" checked />
+                <span class="settingText">
+                  <strong>Require decimal value after a proper-name answer</strong>
+                  <span>A correct decimal answer in the first field completes the question immediately. A correct proper name opens a second value field.</span>
+                </span>
+              </label>
+
+              <label class="settingItem hidden">
+                <input id="equivalentPunctuationToggle" type="checkbox" checked />
+                <span class="settingText">
+                  <strong>Accept equivalent punctuation</strong>
+                  <span>Also accepts correctly grouped commas or spaces, spaces in place of + for mixed fractions, ISO date block separators such as spaces or underscores, and quiz-friendly scientific notation such as 4.5 10 -3.</span>
+                </span>
+              </label>
+
+              <label class="settingItem">
+                <input id="autoNextToggle" type="checkbox" checked />
+                <span class="settingText">
+                  <strong>Automatically continue after showing the answer</strong>
+                  <span>Moves to the next question after a short pause following a correct answer or Reveal.</span>
+                </span>
+              </label>
+
+              <label class="settingItem">
+                <span class="settingText" style="width:100%">
+                  <strong>Automatic-next pause</strong>
+                  <span>How long the correct or revealed answer remains visible before the next cartouche.</span>
+                  <select id="autoNextDelaySelect" class="controlInput" style="margin-top:5px;width:max-content">
+                    <option value="2000">2 seconds</option>
+                    <option value="4000" selected>4 seconds</option>
+                    <option value="6000">6 seconds</option>
+                    <option value="10000">10 seconds</option>
+                  </select>
+                </span>
+              </label>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footerRow">
+        <div class="footerLeft"><strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.</div>
+        <div><a href="./index.html">Back to index</a></div>
+      </div>
+    </footer>
+  </div>
+
+<script type="module">
+(() => {
+  "use strict";
+
+  const FONT_FAMILY = "TP-Cartouche-Font";
+  const LARGE_TINY_FONT_SIZE = 22;
+  const SMALL_TINY_FONT_SIZE = 8;
+  const CARTOUCHE_RENDER_OPTS = { padding:8, border:1, cornerRadius:10, letterGap:2 };
+  const SETTINGS_KEY = "nanpaAbbreviatedCartouchePractice.settings";
+  const HISTORY_DB_NAME = "nln-abbreviated-cartouche-practice-history";
+  const HISTORY_DB_VERSION = 1;
+  const HISTORY_STORE = "sessions";
+
+  const AUDIO_PAUSE_SCALE_OPTIONS = [
+    { value:1.00, label:"Normal", syllableGapSeconds:0.200 },
+    { value:2.25, label:"Slow", syllableGapSeconds:0.700 },
+    { value:4.00, label:"Very slow", syllableGapSeconds:1.402 }
+  ];
+
+  const KIND_LABELS = {
+    "single-digit-integer":"single digit",
+    integer:"integer",
+    decimal:"decimal",
+    negative:"negative",
+    thousands:"thousands",
+    millions:"millions",
+    percent:"percentage",
+    fraction:"fraction",
+    "integer-and-fraction":"integer and fraction",
+    "scientific-notation":"scientific notation",
+    "hh-mm-time":"time",
+    "iso-date":"date",
+    telephone:"telephone number"
+  };
+
+  const MIXED_KINDS = Object.keys(KIND_LABELS);
+
+  // Edit only the values in this array to change the Examples cheat sheet.
+  // The order is deliberately from simpler number forms to more complex forms.
+  const EXAMPLE_DEFINITIONS = [
+    { kind:"single-digit-integer", value:"7" },
+    { kind:"integer", value:"42" },
+    { kind:"integer", label:"hundreds", value:"1800" },
+    { kind:"thousands", value:"1,250" },
+    { kind:"millions", value:"2,000,000" },
+    { kind:"decimal", value:"12.5" },
+    { kind:"negative", value:"-8" },
+    { kind:"percent", value:"90%" },
+    { kind:"fraction", value:"3/4" },
+    { kind:"integer-and-fraction", value:"2+1/2" },
+    { kind:"hh-mm-time", value:"14:30" },
+    { kind:"iso-date", value:"2026-07-04" },
+    { kind:"scientific-notation", value:"4.5e-3" },
+    { kind:"telephone", value:"432-555-0078" }
+  ];
+
+  const FRACTION_CHOICES = [
+    "1/2","1/3","2/3","1/4","3/4","1/5","2/5","3/5","4/5",
+    "1/8","3/8","5/8","7/8","1/10","3/10","7/10","9/10"
+  ];
+
+  const ABBREV_CP_NANPA = 0xF193D;
+  const ABBREV_CP_NENA  = 0xF1940;
+  const ABBREV_CP_EN    = 0xF190A;
+  const ABBREV_CP_O     = 0xF1944;
+  const ABBREV_CP_ONA   = 0xF1946;
+  const ABBREV_CP_OPEN  = 0xF1947;
+  const ABBREV_CP_ALA   = 0xF1902;
+  const ABBREV_CP_IKE   = 0xF190D;
+  const ABBREV_CP_UTA   = 0xF1970;
+  const ABBREV_DROP_AFTER_FIRST_NANPA = new Set([
+    ABBREV_CP_NANPA, ABBREV_CP_NENA, ABBREV_CP_EN, ABBREV_CP_OPEN,
+    ABBREV_CP_ALA, ABBREV_CP_IKE, ABBREV_CP_UTA
+  ]);
+
+  const STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
+    WE:"WA", TE:"TU", LE:"LU", ME:"MU", PE:"PI"
+  });
+  const STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
+  const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
+  const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
+  const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
+  const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
+    "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
+    "One","Ono","Oko","Eko","Oken","Ene","Inin"
+  ]);
+  const REVIEW_AUDIO_PAUSE_SCALE = 1.00;
+  const REVIEW_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
+
+  let nanpaModulePromise = null;
+  let voicePromise = null;
+  let generationToken = 0;
+  let autoNextTimer = null;
+  let historyDbPromise = null;
+  let reviewRenderToken = 0;
+  let historyDetailRenderToken = 0;
+  let examplesRenderToken = 0;
+  let activeExampleAudioButton = null;
+  let reviewAudioGeneration = 0;
+  let reviewAudioState = "stopped";
+  let reviewAudioTarget = null;
+  let reviewAudioSession = null;
+  let reviewAudioContext = null;
+  let progressiveInputGeneration = 0;
+  let firstAnswerCompositionActive = false;
+  let hintPressRequested = false;
+  let hintPreviewActive = false;
+  let hintPreviewGeneration = 0;
+  let hintRestoreValue = "";
+  let hintRestoreSelectionStart = null;
+  let hintRestoreSelectionEnd = null;
+  const reviewAudioCache = new Map();
+  const exampleItemCache = new Map();
+
+  const state = {
+    active:false,
+    tab:"practice",
+    items:[],
+    index:0,
+    score:0,
+    streak:0,
+    bestStreak:0,
+    completedCount:0,
+    startedAt:null,
+    sessionSaved:false,
+    history:[],
+    selectedHistoryId:null,
+    reviewProblemsOnly:false,
+    historyProblemsOnly:false,
+    settings:{
+      kind:"mixed",
+      questionCount:20,
+      properNameMode:"relaxed",
+      audioPauseScale:2.25,
+      requireDecimalAfterProperName:false,
+      acceptEquivalentPunctuation:true,
+      autoNext:true,
+      autoNextDelayMs:4000
+    }
+  };
+
+  const el = {};
+  const $ = id => document.getElementById(id);
+  const clamp = (n,min,max) => Math.max(min,Math.min(max,n));
+
+  function cacheElements(){
+    for (const id of [
+      "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status",
+      "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton","questionAbbreviatedCartouche",
+      "firstAnswerInput","hintButton","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
+      "reveal","revealValue","revealStrictLine","revealStrictName","revealRelaxedLine","revealRelaxedName","normalCartouche",
+      "abbreviatedCartouche","revealCodeLine","revealCode","requireDecimalToggle","equivalentPunctuationToggle","autoNextToggle",
+      "autoNextDelaySelect","autoNextNotice","summaryCard","summaryScore","summaryText","restartButton","summaryReviewButton",
+      "reviewSummary","reviewProblemsOnlyToggle","reviewList","historySummary","refreshHistoryButton","clearHistoryButton",
+      "historyList","historyDetail","historyProblemsOnlyToggle","examplesSummary","examplesList"
+    ]) el[id] = $(id);
+  }
+
+  function randInt(min,max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function choice(items){ return items[randInt(0,items.length - 1)]; }
+  function shuffle(items){
+    const out = Array.from(items);
+    for (let i=out.length-1;i>0;i--){ const j=randInt(0,i); [out[i],out[j]]=[out[j],out[i]]; }
+    return out;
+  }
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function formatCommas(n){ return Number(n).toLocaleString("en-US"); }
+  function dayCountForMonth(year,month){ return new Date(year,month,0).getDate(); }
+
+  function normalizeProperNameMode(value){ return String(value).toLowerCase() === "strict" ? "strict" : "relaxed"; }
+  function isRelaxedProperNameMode(mode){ return normalizeProperNameMode(mode) !== "strict"; }
+
+  function loadSettings(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+      if (saved && typeof saved === "object") Object.assign(state.settings,saved);
+    }catch{}
+    if (!["mixed",...MIXED_KINDS].includes(state.settings.kind)) state.settings.kind = "mixed";
+    state.settings.questionCount = clamp(Math.round(Number(state.settings.questionCount) || 20),1,100);
+    state.settings.properNameMode = normalizeProperNameMode(state.settings.properNameMode);
+    const pause = Number(state.settings.audioPauseScale);
+    state.settings.audioPauseScale = AUDIO_PAUSE_SCALE_OPTIONS.some(x => Math.abs(x.value-pause)<0.001) ? pause : 2.25;
+    state.settings.requireDecimalAfterProperName = state.settings.requireDecimalAfterProperName !== false;
+    state.settings.acceptEquivalentPunctuation = state.settings.acceptEquivalentPunctuation !== false;
+    state.settings.autoNext = state.settings.autoNext !== false;
+    const delay = Math.round(Number(state.settings.autoNextDelayMs));
+    state.settings.autoNextDelayMs = [2000,4000,6000,10000].includes(delay) ? delay : 4000;
+  }
+
+  function saveSettings(){
+    try{ localStorage.setItem(SETTINGS_KEY,JSON.stringify(state.settings)); }catch{}
+  }
+
+  function syncSettingsUi(){
+    el.kindSelect.value = state.settings.kind;
+    el.questionCountInput.value = String(state.settings.questionCount);
+    el.properNameModeSelect.value = state.settings.properNameMode;
+    el.audioSpeedSelect.value = Number(state.settings.audioPauseScale).toFixed(2);
+    el.requireDecimalToggle.checked = !!state.settings.requireDecimalAfterProperName;
+    el.equivalentPunctuationToggle.checked = !!state.settings.acceptEquivalentPunctuation;
+    el.autoNextToggle.checked = !!state.settings.autoNext;
+    el.autoNextDelaySelect.value = String(state.settings.autoNextDelayMs);
+  }
+
+  function readSettingsFromUi(){
+    state.settings.kind = el.kindSelect.value;
+    state.settings.questionCount = clamp(Math.round(Number(el.questionCountInput.value) || 20),1,100);
+    state.settings.properNameMode = normalizeProperNameMode(el.properNameModeSelect.value);
+    state.settings.audioPauseScale = Number(el.audioSpeedSelect.value) || 2.25;
+    state.settings.requireDecimalAfterProperName = !!el.requireDecimalToggle.checked;
+    state.settings.acceptEquivalentPunctuation = !!el.equivalentPunctuationToggle.checked;
+    state.settings.autoNext = !!el.autoNextToggle.checked;
+    state.settings.autoNextDelayMs = [2000,4000,6000,10000].includes(Number(el.autoNextDelaySelect.value))
+      ? Number(el.autoNextDelaySelect.value) : 4000;
+    syncSettingsUi();
+    saveSettings();
+  }
+
+  function setSetupDisabled(disabled){
+    for (const node of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.requireDecimalToggle]) node.disabled = disabled;
+    // Audio speed and punctuation may safely change during a session.
+  }
+
+  function normalizeMinus(s){
+    return String(s ?? "").replace(/[\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]/g,"-");
+  }
+  function normalizeOuter(s){ return normalizeMinus(s).trim(); }
+  function normalizeCommasOptional(s){ return normalizeOuter(s).replace(/,/g,""); }
+  function normalizeScientificBasic(s){
+    return normalizeOuter(s).replace(/\s+/g,"").replace(/E/g,"e");
+  }
+  function normalizeProperNameAnswer(s){ return normalizeOuter(s).replace(/\s+/g,"").toLowerCase(); }
+  function properNameMatches(rawAnswer,properName){
+    const actual = normalizeProperNameAnswer(rawAnswer);
+    const expected = normalizeProperNameAnswer(properName);
+    return !!actual && actual === expected;
+  }
+
+  function normalizeGroupedUnsignedInteger(raw){
+    const s = String(raw ?? "").trim();
+    if (/^\d+$/.test(s)) return s;
+
+    // A grouping separator may be a comma, ASCII underscore, an underscore-like
+    // Unicode character, or one or more Unicode spacing characters. Every group
+    // after the first must contain exactly three digits.
+    const grouped = /^\d{1,3}(?:(?:[,_＿︳︴‗]|[\s\u00A0\u2000-\u200A\u202F\u205F\u3000]+)\d{3})+$/;
+    if (!grouped.test(s)) return null;
+    return s.replace(/[,_＿︳︴‗\s\u00A0\u2000-\u200A\u202F\u205F\u3000]/g,"");
+  }
+
+  function normalizeExactNumber(raw,{allowDecimal=true}={}){
+    let s = normalizeOuter(raw);
+    let sign = "";
+    if (s.startsWith("+") || s.startsWith("-")){
+      sign = s[0];
+      s = s.slice(1).trim();
+    }
+
+    let integerPart = s;
+    let fractionalPart = null;
+    if (allowDecimal){
+      const decimalMatch = s.match(/^(.+?)\s*\.\s*(\d+)$/);
+      if (decimalMatch){
+        integerPart = decimalMatch[1];
+        fractionalPart = decimalMatch[2];
+      }
+    }
+
+    const integerDigits = normalizeGroupedUnsignedInteger(integerPart);
+    if (integerDigits == null) return null;
+    const normalizedSign = sign === "+" ? "" : sign;
+    return `${normalizedSign}${integerDigits}${fractionalPart == null ? "" : `.${fractionalPart}`}`;
+  }
+
+  function normalizeExactFraction(raw){
+    const s = normalizeOuter(raw).replace(/[⁄∕÷:]/g,"/");
+    const match = s.match(/^(.+?)\s*\/\s*(.+)$/);
+    if (!match) return null;
+    const numerator = normalizeExactNumber(match[1],{allowDecimal:false});
+    const denominator = normalizeGroupedUnsignedInteger(match[2]);
+    if (numerator == null || denominator == null) return null;
+    return `${numerator}/${denominator}`;
+  }
+
+  function normalizeMixedFraction(raw){
+    const s = normalizeOuter(raw).replace(/[⁄∕÷:]/g,"/");
+
+    let match = s.match(/^(.+?)\s*\+\s*(.+?)\s*\/\s*(.+)$/);
+    if (match){
+      const whole = normalizeExactNumber(match[1],{allowDecimal:false});
+      const numerator = normalizeGroupedUnsignedInteger(match[2]);
+      const denominator = normalizeGroupedUnsignedInteger(match[3]);
+      if (whole == null || numerator == null || denominator == null) return null;
+      return `${whole}+${numerator}/${denominator}`;
+    }
+
+    // In quiz input only, one or more spaces may replace the + separator.
+    // The greedy whole-number capture permits a correctly grouped value such
+    // as "1 234 1/2" while still rejecting malformed digit grouping.
+    match = s.match(/^(.+)\s+(\d+)\s*\/\s*(\d+)$/);
+    if (!match) return null;
+    const whole = normalizeExactNumber(match[1],{allowDecimal:false});
+    if (whole == null) return null;
+    return `${whole}+${match[2]}/${match[3]}`;
+  }
+
+  function normalizeScientificQuizValue(raw){
+    const s = normalizeOuter(raw);
+    let match = s.match(/^(.+?)\s*[eE]\s*([+-]?\s*\d+)$/);
+
+    if (!match){
+      // Accept an explicit multiplication form (4.5*10^-3) or, in this quiz
+      // only, spaces in place of both * and ^ (4.5 10 -3).
+      match = s.match(/^(.+?)(?:\s*[xX*×·]\s*|\s+)10\s*(?:\^\s*)?([+-]?\s*\d+)$/);
+    }
+    if (!match) return null;
+
+    const coefficient = normalizeExactNumber(match[1],{allowDecimal:true});
+    if (coefficient == null) return null;
+
+    const exponentMatch = match[2].match(/^([+-]?)\s*(\d+)$/);
+    if (!exponentMatch) return null;
+    const exponentSign = exponentMatch[1] === "+" ? "" : exponentMatch[1];
+    return `${coefficient}e${exponentSign}${exponentMatch[2]}`;
+  }
+
+  function canonicalEquivalentValue(item,raw){
+    const s = normalizeOuter(raw);
+    const kind = item.kind;
+
+    if (["single-digit-integer","integer","thousands","millions","decimal","negative"].includes(kind)){
+      return normalizeExactNumber(s,{allowDecimal:kind === "decimal" || kind === "negative"});
+    }
+
+    if (kind === "percent"){
+      const match = s.match(/^(.*?)\s*[％﹪%]\s*$/);
+      if (!match) return null;
+      const number = normalizeExactNumber(match[1],{allowDecimal:true});
+      return number == null ? null : `${number}%`;
+    }
+
+    if (kind === "fraction") return normalizeExactFraction(s);
+    if (kind === "integer-and-fraction") return normalizeMixedFraction(s);
+
+    if (kind === "hh-mm-time"){
+      const match = s.match(/^(\d{1,2})\s*[:.\/\-‐‑‒–—−]\s*(\d{1,2})$/);
+      return match ? `${match[1]}:${match[2]}` : null;
+    }
+
+    if (kind === "iso-date"){
+      // Quiz input may separate ISO date blocks with the usual punctuation,
+      // one or more Unicode spacing characters, or underscore equivalents.
+      // This remains block-structured: exactly year, month, and day are required.
+      const isoSeparator = String.raw`(?:[.\/:\-‐‑‒–—−_＿︳︴‗]|[\s\u00A0\u2000-\u200A\u202F\u205F\u3000]+)`;
+      const match = s.match(new RegExp(`^(\\d{4})\\s*${isoSeparator}\\s*(\\d{1,2})\\s*${isoSeparator}\\s*(\\d{1,2})$`));
+      return match ? `${match[1]}-${match[2]}-${match[3]}` : null;
+    }
+
+    if (kind === "scientific-notation") return normalizeScientificQuizValue(s);
+    if (kind === "telephone"){
+      const match = s.match(/^(\d{3})\s*[-‐‑‒–—−]\s*555\s*[-‐‑‒–—−]\s*(\d{4})$/);
+      return match && match[1][0] !== "0" ? `${match[1]}-555-${match[2]}` : null;
+    }
+    return s;
+  }
+
+  function valueAnswerMatches(item,rawAnswer){
+    const actual = rawAnswer ?? "";
+    const expected = item.answer;
+
+    if (state.settings.acceptEquivalentPunctuation){
+      return canonicalEquivalentValue(item,actual) === canonicalEquivalentValue(item,expected);
+    }
+    if (item.answerMode === "commasOptional") return normalizeCommasOptional(actual) === normalizeCommasOptional(expected);
+    if (item.answerMode === "scientific") return normalizeScientificBasic(actual) === normalizeScientificBasic(expected);
+    return normalizeOuter(actual) === normalizeOuter(expected);
+  }
+
+  function tokenizeNanpaCapsForQuiz(caps){
+    const s = String(caps ?? "").trim().toUpperCase();
+    if (!s || !s.startsWith("NE") || !s.endsWith("N")) throw new Error(`Invalid nanpa caps: ${caps}`);
+    const tokens = [];
+    let i = 0;
+    while (i < s.length - 1){
+      let matched = null;
+      for (const pref of TOKEN_PREFIXES){ if (s.startsWith(pref,i)){ matched=pref; break; } }
+      if (matched){ tokens.push(matched); i += matched.length; continue; }
+      if (i + 2 <= s.length - 1){
+        const two = s.slice(i,i+2);
+        if (DIGIT_TOKENS.has(two)){ tokens.push(two); i += 2; continue; }
+      }
+      throw new Error(`Invalid nanpa caps token at position ${i}: ${caps}`);
+    }
+    tokens.push("N");
+    return tokens;
+  }
+
+  function capsForProperNameMode(caps,mode){
+    if (normalizeProperNameMode(mode) === "strict") return String(caps ?? "").trim().toUpperCase();
+    return tokenizeNanpaCapsForQuiz(caps).map(t => STRICT_TO_RELAXED_DIGIT_TOKEN[t] || t).join("");
+  }
+
+  function titleCaseNanpaProperNameForDisplay(nameStr){
+    return String(nameStr ?? "").trim().split(/\s+/).filter(Boolean).map(word => {
+      const lower = word.toLowerCase();
+      return lower.length <= 1 ? lower.toUpperCase() : lower[0].toUpperCase() + lower.slice(1);
+    }).join(" ");
+  }
+  function fixOkenSuffixSpacing(s){
+    const x = String(s ?? "");
+    if (/\sOken$/.test(x) || /\soken$/.test(x)) return x;
+    return x.replace(/Oken$/," Oken").replace(/oken$/," Oken");
+  }
+  function formatProperNameForDisplay(name){ return fixOkenSuffixSpacing(titleCaseNanpaProperNameForDisplay(name)); }
+
+  function answerModeForKind(kind){
+    if (kind === "thousands" || kind === "millions") return "commasOptional";
+    if (kind === "scientific-notation") return "scientific";
+    return "exact";
+  }
+
+  function getExampleItem(definition){
+    const key = `${definition.kind}:${definition.value}`;
+    if (!exampleItemCache.has(key)){
+      // Build examples in relaxed mode so one parse provides both the strict
+      // and relaxed proper-name forms. Audio still follows the selected mode.
+      exampleItemCache.set(key,makeItem(
+        definition.kind,
+        definition.value,
+        definition.value,
+        answerModeForKind(definition.kind),
+        "relaxed"
+      ));
+    }
+    return exampleItemCache.get(key);
+  }
+
+  function makeItem(kind,parserInput,displayValue,answerMode,properNameMode){
+    return {
+      id:`${kind}-${Math.random().toString(36).slice(2)}`,
+      kind, parserInput, displayValue, answer:displayValue, answerMode,
+      properNameMode:normalizeProperNameMode(properNameMode),
+      parsedPromise:null,
+      firstAnswer:"",
+      decimalAnswer:"",
+      firstMatchType:null,
+      stage:"first",
+      completed:false,
+      revealed:false,
+      hadWrongAttempt:false,
+      firstAttempts:0,
+      decimalAttempts:0,
+      firstAttemptValues:[],
+      decimalAttemptValues:[],
+      progressiveRevealPlan:null,
+      progressiveVisibleGroupCount:1,
+      progressiveConfirmedLength:0,
+      counted:false
+    };
+  }
+
+  function generateItemForKind(kind,properNameMode){
+    if (kind === "single-digit-integer"){
+      const s = String(randInt(0,9));
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "integer"){
+      const magnitude = choice([99,999,9999,999999]);
+      const s = String(randInt(0,magnitude));
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "decimal"){
+      const whole = randInt(0,999);
+      const places = choice([1,2,3]);
+      const max = Math.pow(10,places)-1;
+      const frac = String(randInt(0,max)).padStart(places,"0");
+      const s = `${whole}.${frac}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "negative"){
+      const base = Math.random() < 0.35
+        ? `${randInt(0,999)}.${String(randInt(0,99)).padStart(2,"0")}`
+        : String(randInt(1,999999));
+      const s = `-${base}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "thousands"){
+      const s = formatCommas(randInt(1000,999999));
+      return makeItem(kind,s,s,"commasOptional",properNameMode);
+    }
+    if (kind === "millions"){
+      const s = formatCommas(randInt(1000000,99999999));
+      return makeItem(kind,s,s,"commasOptional",properNameMode);
+    }
+    if (kind === "percent"){
+      const s = Math.random() < 0.5 ? `${randInt(1,999)}%` : `${randInt(0,99)}.${randInt(1,9)}%`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "fraction"){
+      const s = choice(FRACTION_CHOICES);
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "integer-and-fraction"){
+      const s = `${randInt(1,99)}+${choice(FRACTION_CHOICES)}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "scientific-notation"){
+      const mantissa = `${randInt(1,9)}.${randInt(1,9)}`;
+      let exponent = randInt(-9,9);
+      if (exponent === 0) exponent = choice([-3,3]);
+      const s = `${mantissa}e${exponent}`;
+      return makeItem(kind,s,s,"scientific",properNameMode);
+    }
+    if (kind === "hh-mm-time"){
+      const s = `${pad2(randInt(0,23))}:${pad2(randInt(0,59))}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "telephone"){
+      const area = String(randInt(100,999));
+      const line = String(randInt(0,9999)).padStart(4,"0");
+      const s = `${area}-555-${line}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    if (kind === "iso-date"){
+      const year = randInt(1900,2099);
+      const month = randInt(1,12);
+      const day = randInt(1,dayCountForMonth(year,month));
+      const s = `${year}-${pad2(month)}-${pad2(day)}`;
+      return makeItem(kind,s,s,"exact",properNameMode);
+    }
+    throw new Error(`Unsupported number type: ${kind}`);
+  }
+
+  function buildSessionItems(){
+    const count = state.settings.questionCount;
+    const requestedKind = state.settings.kind;
+    const items = [];
+    const used = new Set();
+
+    for (let i=0;i<count;i++){
+      const kind = requestedKind === "mixed" ? MIXED_KINDS[i % MIXED_KINDS.length] : requestedKind;
+      let candidate = null;
+      for (let attempt=0;attempt<200;attempt++){
+        candidate = generateItemForKind(kind,state.settings.properNameMode);
+        const key = `${candidate.kind}:${candidate.displayValue}`;
+        if (!used.has(key)){ used.add(key); break; }
+      }
+      items.push(candidate);
+    }
+    return requestedKind === "mixed" ? shuffle(items) : items;
+  }
+
+  async function getNanpaParser(){
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=177");
+    const mod = await nanpaModulePromise;
+    return mod.NanpaParser;
+  }
+
+  async function getVoice(){
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=25").then(m => m.createTokiPonaVoice());
+    return voicePromise;
+  }
+
+  async function ensureParsed(item){
+    if (!item.parsedPromise){
+      item.parsedPromise = (async () => {
+        const NanpaParser = await getNanpaParser();
+        const strictParsed = NanpaParser.parseNumber(item.parserInput,{ mode:"uniform", mixedStyle:"short" });
+        if (!strictParsed?.properName || !strictParsed?.caps) throw new Error(`Could not encode quiz value: ${item.parserInput}`);
+
+        const relaxedCaps = capsForProperNameMode(strictParsed.caps,"relaxed");
+        const relaxedProperName = NanpaParser.splitCapsToProperName(relaxedCaps,{ titleCase:true, relaxedNanpaLinjanParsing:true });
+        const parsedRelaxedCaps = NanpaParser.capsToCodepoints(relaxedCaps,{
+          mode:"uniform", mixedStyle:"short",
+          relaxedNanpaLinjanParsing:true,
+          relaxedNanpaLinjanRendering:true
+        });
+        if (!parsedRelaxedCaps || !(parsedRelaxedCaps.innerCodepoints?.length || parsedRelaxedCaps.codepoints?.length)){
+          throw new Error(`Could not encode relaxed quiz value: ${item.parserInput}`);
+        }
+        const relaxedParsed = {
+          ...parsedRelaxedCaps,
+          caps:relaxedCaps,
+          properName:relaxedProperName,
+          uniqueCode:strictParsed.uniqueCode,
+          ucsurCodepoints:Array.from(parsedRelaxedCaps.innerCodepoints ?? []),
+          tpWords:Array.from(parsedRelaxedCaps.words ?? []),
+          words:Array.from(parsedRelaxedCaps.words ?? [])
+        };
+        const useRelaxed = isRelaxedProperNameMode(item.properNameMode);
+        const quizCaps = useRelaxed ? relaxedCaps : strictParsed.caps;
+        const quizProperName = useRelaxed ? relaxedProperName : strictParsed.properName;
+        const quizParsed = useRelaxed ? relaxedParsed : strictParsed;
+
+        return {
+          ...strictParsed,
+          strictParsed,
+          quizParsed,
+          relaxedParsed,
+          relaxedProperName,
+          properName:strictParsed.properName,
+          quizProperName,
+          quizCaps,
+          properNameMode:item.properNameMode
+        };
+      })();
+    }
+    return item.parsedPromise;
+  }
+
+
+  function normalizeProgressiveProperNameInput(value){
+    return String(value ?? "").replace(/\s+/g,"").toLowerCase();
+  }
+
+  function longestCommonPrefixLength(left,right){
+    const a = String(left ?? "");
+    const b = String(right ?? "");
+    const limit = Math.min(a.length,b.length);
+    let index = 0;
+    while (index < limit && a[index] === b[index]) index++;
+    return index;
+  }
+
+  function longestEquivalentProperNamePrefixLength(input,...expectedVariants){
+    const actual = normalizeProgressiveProperNameInput(input);
+    const variants = expectedVariants.map(normalizeProgressiveProperNameInput).filter(Boolean);
+    const maxLength = Math.max(0,...variants.map(value => value.length));
+    let index = 0;
+    while (index < actual.length && index < maxLength){
+      const ch = actual[index];
+      if (!variants.some(value => value[index] === ch)) break;
+      index++;
+    }
+    return index;
+  }
+
+  function equivalentProperNameComplete(input,...expectedVariants){
+    const actual = normalizeProgressiveProperNameInput(input);
+    const variants = expectedVariants.map(normalizeProgressiveProperNameInput).filter(Boolean);
+    if (!variants.length || !variants.some(value => value.length === actual.length)) return false;
+    return longestEquivalentProperNamePrefixLength(actual,...variants) === actual.length;
+  }
+
+  function canonicalProperNamePrefix(fullName,compactLength){
+    const wanted = Math.max(0,Math.floor(Number(compactLength) || 0));
+    if (!wanted) return "";
+    let out = "";
+    let included = 0;
+    for (const ch of String(fullName ?? "")){
+      if (/\s/.test(ch)){
+        if (included > 0 && included < wanted && !out.endsWith(" ")) out += " ";
+        continue;
+      }
+      if (included >= wanted) break;
+      out += ch;
+      included++;
+    }
+    return out.trimEnd();
+  }
+
+  function buildProgressiveCartoucheUnits(fullCodepoints,kind){
+    const cps = Array.from(fullCodepoints ?? []).map(Number);
+    const entries = abbreviateNumericCartoucheEntries(cps,abbreviationOptionsForKind(kind));
+    const units = [];
+    if (!cps.length) return {entries,units};
+
+    // The outer opening marker is Ne: nanpa plus its supporting e glyph.
+    const openingEnd = Math.min(cps.length,2);
+    units.push({kind:"opening",start:0,end:openingEnd});
+
+    const hasClosingNanpa = cps.length > openingEnd && cps[cps.length - 1] === ABBREV_CP_NANPA;
+    const interiorEnd = hasClosingNanpa ? cps.length - 1 : cps.length;
+    let cursor = openingEnd;
+    while (cursor < interiorEnd){
+      let length = Math.min(2,interiorEnd - cursor);
+      let kind = "value";
+      if (cps[cursor] === ABBREV_CP_NENA && cursor + 1 < interiorEnd){
+        const next = cps[cursor + 1];
+        if (next === ABBREV_CP_ONA){
+          length = Math.min(2,interiorEnd - cursor);
+          kind = "negative";
+        }else if (next === ABBREV_CP_O || next === ABBREV_CP_EN || next === ABBREV_CP_OPEN){
+          length = Math.min(4,interiorEnd - cursor);
+          kind = "punctuation";
+        }
+      }
+      units.push({kind,start:cursor,end:cursor + length});
+      cursor += length;
+    }
+
+    if (hasClosingNanpa) units.push({kind:"closing",start:cps.length - 1,end:cps.length});
+
+    for (const unit of units){
+      unit.glyphEntries = entries.filter(entry => entry.sourceIndex >= unit.start && entry.sourceIndex < unit.end);
+    }
+    return {entries,units};
+  }
+
+  function groupProgressiveCartoucheUnits(units){
+    const groups = [];
+    let index = 0;
+    while (index < units.length){
+      const unit = units[index];
+      if (unit.kind === "closing"){
+        if (groups.length) groups[groups.length - 1].units.push(unit);
+        else groups.push({units:[unit]});
+        index++;
+        continue;
+      }
+
+      // Numeric punctuation is a visual prompt for the next part of the proper
+      // name. Reveal its complete glyph sequence together with the preceding
+      // value glyph, before the learner types the punctuation's reassigned n.
+      if (unit.kind === "punctuation" && groups.length){
+        groups[groups.length - 1].units.push(unit);
+        index++;
+        continue;
+      }
+
+      // A negative scientific exponent is presented with its following value
+      // glyph. A leading negative remains a separate reveal after Ne.
+      if (unit.kind === "negative" && index > 1 && index + 1 < units.length && units[index + 1].kind !== "closing"){
+        groups.push({units:[unit,units[index + 1]]});
+        index += 2;
+        continue;
+      }
+
+      groups.push({units:[unit]});
+      index++;
+    }
+
+    let cumulativeGlyphCount = 0;
+    for (const group of groups){
+      group.start = group.units[0]?.start ?? 0;
+      group.end = group.units[group.units.length - 1]?.end ?? group.start;
+      group.glyphEntries = group.units.flatMap(unit => unit.glyphEntries || []);
+      cumulativeGlyphCount += group.glyphEntries.length;
+      group.cumulativeGlyphCount = cumulativeGlyphCount;
+      group.requiredLength = group.end;
+    }
+    return groups;
+  }
+
+  async function ensureProgressiveRevealPlan(item){
+    if (item.progressiveRevealPlan) return item.progressiveRevealPlan;
+    const parsed = await ensureParsed(item);
+    const mode = normalizeProperNameMode(item.properNameMode);
+    const strictParsed = parsed.strictParsed ?? parsed;
+    const selectedParsed = mode === "strict" ? strictParsed : (parsed.quizParsed ?? parsed);
+    const properName = mode === "strict"
+      ? formatProperNameForDisplay(strictParsed.properName ?? parsed.properName)
+      : formatProperNameForDisplay(parsed.quizProperName ?? selectedParsed.properName ?? strictParsed.properName ?? parsed.properName);
+    const fullCodepoints = Array.from(
+      selectedParsed.ucsurCodepoints ?? selectedParsed.innerCodepoints ?? selectedParsed.codepoints ?? []
+    ).map(Number);
+    const {entries,units} = buildProgressiveCartoucheUnits(fullCodepoints,item.kind);
+    const groups = groupProgressiveCartoucheUnits(units);
+    const strictProperName = formatProperNameForDisplay(strictParsed.properName ?? parsed.properName);
+    const relaxedProperName = formatProperNameForDisplay(
+      parsed.relaxedProperName ?? parsed.relaxedParsed?.properName ?? parsed.quizProperName ?? strictParsed.properName ?? parsed.properName
+    );
+    const expectedCompact = normalizeProgressiveProperNameInput(properName);
+    const strictCompact = normalizeProgressiveProperNameInput(strictProperName);
+    const relaxedCompact = normalizeProgressiveProperNameInput(relaxedProperName);
+
+    // Full cartouche codepoints and the proper-name letters are intentionally
+    // one-to-one. Keep a safe fallback if an older parser build violates that.
+    if (expectedCompact.length !== fullCodepoints.length && groups.length){
+      const finalLength = expectedCompact.length;
+      for (let groupIndex=0;groupIndex<groups.length;groupIndex++){
+        const ratio = groups[groupIndex].end / Math.max(1,fullCodepoints.length);
+        groups[groupIndex].requiredLength = groupIndex === groups.length - 1
+          ? finalLength
+          : Math.max(0,Math.min(finalLength,Math.round(finalLength * ratio)));
+      }
+    }
+
+    item.progressiveRevealPlan = {
+      properName,
+      expectedCompact,
+      strictCompact,
+      relaxedCompact,
+      fullCodepoints,
+      abbreviatedCodepoints:entries.map(entry => entry.cp),
+      groups
+    };
+    item.progressiveVisibleGroupCount = clamp(
+      Math.round(Number(item.progressiveVisibleGroupCount) || 1),
+      groups.length ? 1 : 0,
+      Math.max(1,groups.length)
+    );
+    item.progressiveConfirmedLength = clamp(
+      Math.round(Number(item.progressiveConfirmedLength) || 0),
+      0,
+      expectedCompact.length
+    );
+    return item.progressiveRevealPlan;
+  }
+
+  function visibleProgressiveGlyphCount(item,plan){
+    if (!plan?.groups?.length) return 0;
+    if (item.completed || item.revealed) return plan.abbreviatedCodepoints.length;
+    const visibleGroups = clamp(
+      Math.round(Number(item.progressiveVisibleGroupCount) || 1),
+      1,
+      plan.groups.length
+    );
+    return plan.groups[visibleGroups - 1]?.cumulativeGlyphCount ?? 0;
+  }
+
+  function renderProgressiveQuestionCartouche(item,plan){
+    renderCartoucheToCanvas(
+      el.questionAbbreviatedCartouche,
+      plan.abbreviatedCodepoints,
+      54,
+      18,
+      {
+        padding:14,
+        border:2,
+        cornerRadius:14,
+        letterGap:4,
+        visibleCodepointCount:visibleProgressiveGlyphCount(item,plan)
+      }
+    );
+  }
+
+  function visibleProgressiveProperNameLength(item,plan){
+    if (!plan?.groups?.length) return 0;
+    if (item.completed || item.revealed) return plan.expectedCompact.length;
+    const visibleGroups = clamp(
+      Math.round(Number(item.progressiveVisibleGroupCount) || 1),
+      1,
+      plan.groups.length
+    );
+    return clamp(
+      Math.round(Number(plan.groups[visibleGroups - 1]?.requiredLength) || 0),
+      0,
+      plan.expectedCompact.length
+    );
+  }
+
+  function endHintPreview({restore=true,focusInput=true}={}){
+    hintPressRequested = false;
+    hintPreviewGeneration++;
+    if (!hintPreviewActive){
+      if (el.hintButton) el.hintButton.setAttribute("aria-pressed","false");
+      return;
+    }
+
+    hintPreviewActive = false;
+    if (el.hintButton) el.hintButton.setAttribute("aria-pressed","false");
+    if (el.firstAnswerInput){
+      el.firstAnswerInput.readOnly = false;
+      if (restore){
+        el.firstAnswerInput.value = hintRestoreValue;
+        try{
+          const max = hintRestoreValue.length;
+          const rawStart = Number(hintRestoreSelectionStart);
+          const rawEnd = Number(hintRestoreSelectionEnd);
+          const start = clamp(Number.isFinite(rawStart) ? rawStart : max,0,max);
+          const end = clamp(Number.isFinite(rawEnd) ? rawEnd : start,start,max);
+          el.firstAnswerInput.setSelectionRange(start,end);
+        }catch{}
+      }
+      if (focusInput && !el.firstAnswerInput.disabled){
+        try{ el.firstAnswerInput.focus({preventScroll:true}); }catch{ el.firstAnswerInput.focus(); }
+      }
+    }
+  }
+
+  async function beginHintPreview(){
+    const item = currentItem();
+    if (!hintPressRequested || hintPreviewActive || !state.active || state.tab !== "practice" ||
+        !item || item.stage !== "first" || item.completed || item.revealed || el.hintButton.disabled) return;
+
+    const generation = ++hintPreviewGeneration;
+    const plan = await ensureProgressiveRevealPlan(item);
+    if (!hintPressRequested || generation !== hintPreviewGeneration || item !== currentItem()) return;
+
+    hintRestoreValue = el.firstAnswerInput.value;
+    hintRestoreSelectionStart = el.firstAnswerInput.selectionStart;
+    hintRestoreSelectionEnd = el.firstAnswerInput.selectionEnd;
+    hintPreviewActive = true;
+    el.hintButton.setAttribute("aria-pressed","true");
+    el.firstAnswerInput.readOnly = true;
+
+    const visibleLength = visibleProgressiveProperNameLength(item,plan);
+    const hintText = canonicalProperNamePrefix(plan.properName,visibleLength);
+    el.firstAnswerInput.value = hintText;
+    try{ el.firstAnswerInput.setSelectionRange(hintText.length,hintText.length); }catch{}
+  }
+
+  function requestHintPreview(){
+    if (hintPressRequested) return;
+    hintPressRequested = true;
+    void beginHintPreview();
+  }
+
+  async function applyProgressiveInputCorrection(item,{announce=true}={}){
+    if (!item || item !== currentItem() || item.stage !== "first" || item.completed || item.revealed) return null;
+    const generation = ++progressiveInputGeneration;
+    const plan = await ensureProgressiveRevealPlan(item);
+    if (generation !== progressiveInputGeneration || item !== currentItem()) return null;
+
+    const rawCompact = normalizeProgressiveProperNameInput(el.firstAnswerInput.value);
+    const matchedLength = longestEquivalentProperNamePrefixLength(rawCompact,plan.strictCompact,plan.relaxedCompact);
+    const confirmedFloor = clamp(
+      Math.round(Number(item.progressiveConfirmedLength) || 0),
+      0,
+      plan.expectedCompact.length
+    );
+    const acceptedLength = Math.max(confirmedFloor,matchedLength);
+    const corrected = canonicalProperNamePrefix(plan.properName,acceptedLength);
+
+    if (el.firstAnswerInput.value !== corrected){
+      el.firstAnswerInput.value = corrected;
+      try{ el.firstAnswerInput.setSelectionRange(corrected.length,corrected.length); }catch{}
+    }
+    item.firstAnswer = corrected;
+
+    let visibleGroups = plan.groups.length
+      ? clamp(Math.round(Number(item.progressiveVisibleGroupCount) || 1),1,plan.groups.length)
+      : 0;
+    let advanced = false;
+    while (visibleGroups > 0 && visibleGroups <= plan.groups.length){
+      const visibleGroup = plan.groups[visibleGroups - 1];
+      if (acceptedLength < visibleGroup.requiredLength) break;
+      item.progressiveConfirmedLength = Math.max(item.progressiveConfirmedLength || 0,visibleGroup.requiredLength);
+      if (visibleGroups >= plan.groups.length) break;
+      visibleGroups++;
+      advanced = true;
+    }
+
+    if (visibleGroups !== item.progressiveVisibleGroupCount){
+      item.progressiveVisibleGroupCount = visibleGroups;
+      renderProgressiveQuestionCartouche(item,plan);
+    }
+
+    if (announce){
+      if (acceptedLength >= plan.expectedCompact.length){
+        setFeedback("Complete proper name entered. Press Check or Enter.","good");
+      }else if (advanced){
+        setFeedback("Correct so far. The next abbreviated glyphs have been revealed.","good");
+      }
+    }
+    return plan;
+  }
+
+  async function classifyFirstAnswer(item,rawAnswer){
+    const parsed = await ensureParsed(item);
+    const strictName = formatProperNameForDisplay(parsed.strictParsed?.properName ?? parsed.properName);
+    const relaxedName = formatProperNameForDisplay(parsed.quizProperName ?? parsed.quizParsed?.properName ?? strictName);
+    return equivalentProperNameComplete(rawAnswer,strictName,relaxedName) ? "proper-name" : "incorrect";
+  }
+
+  function getAudioSyllableGapSeconds(){
+    const scale = Number(state.settings.audioPauseScale);
+    return AUDIO_PAUSE_SCALE_OPTIONS.find(x => Math.abs(x.value-scale)<0.001)?.syllableGapSeconds ?? 0;
+  }
+
+  function stopCurrentAudioPlayback({restoreAudioButton=true}={}){
+    stopReviewAudioPlayback();
+
+    // Cancel audio that is still being prepared or rendered.
+    generationToken++;
+
+    // Stop audio that has already started playing.
+    if (voicePromise){
+      Promise.resolve(voicePromise)
+        .then(voice => {
+          try{ voice?.stop?.(); }catch{}
+        })
+        .catch(() => {});
+    }
+
+    if (restoreAudioButton && state.active) el.audioButton.disabled = false;
+    if (activeExampleAudioButton){
+      activeExampleAudioButton.disabled = false;
+      activeExampleAudioButton = null;
+    }
+  }
+
+  async function playCurrentAudio(){
+    const item = state.items[state.index];
+    if (!state.active || !item) return;
+    const token = ++generationToken;
+    try{
+      el.audioButton.disabled = true;
+      setStatus("Preparing audio…");
+
+      const parsed = await ensureParsed(item);
+      if (token !== generationToken || !state.active) return;
+
+      const voice = await getVoice();
+      if (token !== generationToken || !state.active) return;
+
+      const rendered = await voice.render(parsed.quizProperName || parsed.properName,{
+        synthesis_mode:"reference_audio",
+        pauseScale:Number(state.settings.audioPauseScale),
+        syllableGapSeconds:getAudioSyllableGapSeconds()
+      });
+      if (token !== generationToken || !state.active) return;
+
+      setStatus("Playing audio…");
+      voice.playSamples(rendered.samples,rendered.sampleRate);
+      setStatus("Ready.");
+      if (typeof window.trackUsage === "function"){
+        window.trackUsage("listening-practice-audio-play");
+      }
+    }catch(err){
+      if (token !== generationToken) return;
+      console.error(err);
+      setFeedback(`Audio error: ${err?.message ?? String(err)}`,"bad");
+      setStatus("Audio error.");
+    }finally{
+      if (state.active && token === generationToken) el.audioButton.disabled = false;
+    }
+  }
+
+  async function playExampleAudio(definition,button){
+    stopCurrentAudioPlayback();
+    const token = ++generationToken;
+    activeExampleAudioButton = button;
+    button.disabled = true;
+    try{
+      setStatus("Preparing example audio…");
+      const parsed = await ensureParsed(getExampleItem(definition));
+      if (token !== generationToken) return;
+      const voice = await getVoice();
+      if (token !== generationToken) return;
+
+      const useRelaxed = isRelaxedProperNameMode(state.settings.properNameMode);
+      const spokenName = useRelaxed ? parsed.quizProperName : (parsed.strictParsed?.properName ?? parsed.properName);
+      const rendered = await voice.render(spokenName,{
+        synthesis_mode:"reference_audio",
+        pauseScale:Number(state.settings.audioPauseScale),
+        syllableGapSeconds:getAudioSyllableGapSeconds()
+      });
+      if (token !== generationToken) return;
+
+      setStatus(`Playing ${state.settings.properNameMode} example audio…`);
+      voice.playSamples(rendered.samples,rendered.sampleRate);
+      setStatus("Ready.");
+    }catch(err){
+      if (token !== generationToken) return;
+      console.error(err);
+      setStatus(`Example audio error: ${err?.message ?? String(err)}`);
+    }finally{
+      if (token === generationToken){
+        button.disabled = false;
+        if (activeExampleAudioButton === button) activeExampleAudioButton = null;
+      }
+    }
+  }
+
+  function appendExampleReferencePanel(grid,label,value,{properName=false}={}){
+    const panel = document.createElement("div");
+    panel.className = "exampleReferencePanel";
+    const heading = document.createElement("div");
+    heading.className = "exampleReferenceLabel";
+    heading.textContent = label;
+    const content = document.createElement("div");
+    content.className = `exampleReferenceValue ${properName ? "properNameText" : "mono"}`;
+    content.textContent = value || "—";
+    panel.append(heading,content);
+    grid.appendChild(panel);
+  }
+
+  async function renderExamples(){
+    if (!el.examplesList) return;
+    const renderToken = ++examplesRenderToken;
+    const selectedMode = normalizeProperNameMode(state.settings.properNameMode);
+    el.examplesSummary.textContent =
+      `Examples progress from simpler to more complex forms using the currently selected ${selectedMode} mode.`;
+
+    await ensureCartoucheFontLoaded();
+    if (renderToken !== examplesRenderToken) return;
+
+    const staging = document.createDocumentFragment();
+    for (let index=0;index<EXAMPLE_DEFINITIONS.length;index++){
+      const definition = EXAMPLE_DEFINITIONS[index];
+      try{
+        const parsed = await ensureParsed(getExampleItem(definition));
+        if (renderToken !== examplesRenderToken) return;
+
+        const strictParsed = parsed.strictParsed ?? parsed;
+        const selectedParsed = selectedMode === "strict" ? strictParsed : (parsed.quizParsed ?? parsed);
+        const selectedName = selectedMode === "strict"
+          ? formatProperNameForDisplay(strictParsed.properName ?? parsed.properName)
+          : formatProperNameForDisplay(parsed.quizProperName ?? selectedParsed.properName);
+        const selectedCodepoints = Array.from(
+          selectedParsed.ucsurCodepoints ?? selectedParsed.innerCodepoints ?? selectedParsed.codepoints ?? []
+        ).map(Number);
+
+        const row = document.createElement("section");
+        row.className = "exampleItem";
+
+        const cartouche = document.createElement("canvas");
+        cartouche.className = "exampleCartoucheCanvas";
+        cartouche.setAttribute("aria-hidden","true");
+        renderCartoucheToCanvas(
+          cartouche,
+          abbreviateNumericCartoucheCps(selectedCodepoints,abbreviationOptionsForKind(definition.kind)),
+          34,
+          11,
+          {padding:10,border:1,cornerRadius:10,letterGap:2}
+        );
+
+        const body = document.createElement("div");
+        body.className = "exampleBody";
+
+        const heading = document.createElement("div");
+        heading.className = "exampleHeading";
+        const title = document.createElement("h3");
+        title.textContent = definition.label || KIND_LABELS[definition.kind] || definition.kind;
+        heading.append(title);
+
+        const grid = document.createElement("div");
+        grid.className = "exampleReferenceGrid";
+        appendExampleReferencePanel(
+          grid,
+          `Expected ${selectedMode} nanpa-linja-n proper name input`,
+          selectedName,
+          {properName:true}
+        );
+        appendExampleReferencePanel(grid,"Represented decimal number",definition.value);
+
+        body.append(heading,grid);
+        row.append(cartouche,body);
+        staging.appendChild(row);
+      }catch(err){
+        console.error("Could not render abbreviated-cartouche example",definition,err);
+        const row = document.createElement("section");
+        row.className = "exampleItem";
+        const marker = document.createElement("div");
+        marker.textContent = "⚠";
+        const message = document.createElement("p");
+        message.className = "badText";
+        message.textContent = `Could not build the ${definition.label || KIND_LABELS[definition.kind] || definition.kind} example (${definition.value}).`;
+        row.append(marker,message);
+        staging.appendChild(row);
+      }
+    }
+    if (renderToken === examplesRenderToken) el.examplesList.replaceChildren(staging);
+  }
+
+  function currentItem(){ return state.items[state.index] || null; }
+
+  function setStatus(text){ el.status.textContent = text; }
+  function setFeedback(text,kind="muted"){
+    el.feedback.className = `feedback ${kind === "good" ? "goodText" : kind === "bad" ? "badText" : kind === "warn" ? "warnText" : "muted"}`;
+    el.feedback.textContent = text;
+  }
+
+  function cancelAutoNext(){
+    if (autoNextTimer) clearTimeout(autoNextTimer);
+    autoNextTimer = null;
+    if (el.autoNextNotice) el.autoNextNotice.textContent = "";
+  }
+
+  function scheduleAutoNext(item){
+    cancelAutoNext();
+    if (!state.active || state.tab !== "practice" || !item || !(item.completed || item.revealed)) return;
+    if (!state.settings.autoNext){
+      if (el.autoNextNotice) el.autoNextNotice.textContent = "Press Enter or Next to continue.";
+      return;
+    }
+    const expectedIndex = state.index;
+    const delay = state.settings.autoNextDelayMs;
+    if (el.autoNextNotice) el.autoNextNotice.textContent = `Next question in ${Math.round(delay / 1000)} seconds… Press Enter to continue now.`;
+    autoNextTimer = setTimeout(async () => {
+      autoNextTimer = null;
+      if (!state.active || state.tab !== "practice" || state.index !== expectedIndex || currentItem() !== item) return;
+      await nextQuestion();
+    }, delay);
+  }
+
+  function showTab(tab){
+    cancelAutoNext();
+    if (state.tab !== tab) stopCurrentAudioPlayback();
+    state.tab = tab;
+    document.querySelectorAll(".tabBtn").forEach(btn => btn.setAttribute("aria-selected", btn.dataset.tab === tab ? "true" : "false"));
+    document.querySelectorAll(".tabPanel").forEach(panel => panel.classList.add("hidden"));
+    $("tab-" + tab)?.classList.remove("hidden");
+    if (tab === "examples") renderExamples();
+    if (tab === "review") renderCurrentReview();
+    if (tab === "history") loadHistory();
+  }
+
+  function itemWasAttempted(item){
+    return !!(item && (item.completed || item.revealed || item.hadWrongAttempt ||
+      item.firstAttempts > 0 || item.decimalAttempts > 0));
+  }
+
+  function itemIsProblem(item){
+    return !!(item && (item.revealed || item.hadWrongAttempt));
+  }
+
+  async function buildReviewRevealDataFromParsed(parsed,properNameMode=parsed.properNameMode,kind="integer"){
+    const strictParsed = parsed.strictParsed ?? parsed;
+    const quizParsed = parsed.quizParsed ?? parsed;
+    const mode = normalizeProperNameMode(properNameMode);
+    const selectedParsed = mode === "strict" ? strictParsed : quizParsed;
+    const selectedName = mode === "strict"
+      ? (strictParsed.properName ?? parsed.properName)
+      : (parsed.quizProperName ?? selectedParsed.properName ?? strictParsed.properName ?? parsed.properName);
+    const fullCodepoints = Array.from(
+      selectedParsed.ucsurCodepoints ?? selectedParsed.innerCodepoints ?? selectedParsed.codepoints ?? []
+    ).map(Number);
+
+    return {
+      properName:formatProperNameForDisplay(selectedName),
+      uniqueCode:String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? ""),
+      fullCodepoints,
+      abbreviatedCodepoints:abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(kind))
+    };
+  }
+
+  async function ensureReviewRevealData(record){
+    const mode = normalizeProperNameMode(record.properNameMode || "relaxed");
+    const hasSelectedModeReveal =
+      typeof record.properName === "string" && !!record.properName &&
+      Array.isArray(record.fullCodepoints) &&
+      Array.isArray(record.abbreviatedCodepoints) &&
+      typeof record.uniqueCode === "string";
+    if (hasSelectedModeReveal) return {...record,properNameMode:mode};
+
+    // Older saved sessions contain both strict and relaxed fields. Select only
+    // the fields matching the mode used for that session, without displaying
+    // or copying the unselected mode into the new review presentation.
+    const legacyProperName = mode === "strict" ? record.strictName : record.relaxedName;
+    const legacyFullCodepoints = mode === "strict"
+      ? record.strictFullCodepoints
+      : record.relaxedFullCodepoints;
+    if (legacyProperName && Array.isArray(legacyFullCodepoints)){
+      const fullCodepoints = Array.from(legacyFullCodepoints).map(Number);
+      return {
+        ...record,
+        properNameMode:mode,
+        properName:legacyProperName,
+        fullCodepoints,
+        abbreviatedCodepoints:abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(record.kind)),
+        uniqueCode:String(record.uniqueCode ?? "")
+      };
+    }
+
+    const temp = makeItem(
+      record.kind || "integer",
+      record.value,
+      record.value,
+      "exact",
+      mode
+    );
+    const parsed = await ensureParsed(temp);
+    return {
+      ...record,
+      ...await buildReviewRevealDataFromParsed(parsed,mode,record.kind),
+      properNameMode:mode
+    };
+  }
+
+  async function makeReviewRecord(item,index){
+    const parsed = await ensureParsed(item);
+    const revealData = await buildReviewRevealDataFromParsed(parsed,item.properNameMode,item.kind);
+    return {
+      index,
+      kind:item.kind,
+      kindLabel:KIND_LABELS[item.kind] || item.kind,
+      value:item.displayValue,
+      properNameMode:item.properNameMode,
+      ...revealData,
+      firstAnswer:item.firstAnswer || "",
+      decimalAnswer:item.decimalAnswer || "",
+      firstMatchType:item.firstMatchType || null,
+      completed:!!item.completed,
+      revealed:!!item.revealed,
+      hadWrongAttempt:!!item.hadWrongAttempt,
+      firstAttempts:Number(item.firstAttempts || 0),
+      decimalAttempts:Number(item.decimalAttempts || 0),
+      firstAttemptValues:Array.from(item.firstAttemptValues || []),
+      decimalAttemptValues:Array.from(item.decimalAttemptValues || [])
+    };
+  }
+
+  function reviewResult(record){
+    if (record.completed) return {label:"Correct",cls:"correct"};
+    if (record.revealed) return {label:"Revealed",cls:"revealed"};
+    return {label:"Incomplete",cls:"incomplete"};
+  }
+
+  function appendReviewTextPanel(grid,label,value,{ properName = false } = {}){
+    const panel = document.createElement("div");
+    panel.className = "reviewRevealPanel";
+    const heading = document.createElement("div");
+    heading.className = "reviewRevealLabel";
+    heading.textContent = label;
+    const content = document.createElement("div");
+    content.className = `reviewRevealValue ${properName ? "properNameText" : "mono"}`;
+    content.textContent = value || "—";
+    panel.append(heading,content);
+    grid.appendChild(panel);
+  }
+
+  function splitReviewAudioSyllables(word){
+    const source = String(word ?? "");
+    const lower = source.toLowerCase();
+    const vowels = new Set(["a","e","i","o","u"]);
+    const consonants = new Set(["p","t","k","m","n","s","w","l","j"]);
+    const out = [];
+    let i = 0;
+    while (i < lower.length){
+      const start = i;
+      if (consonants.has(lower[i])) i++;
+      if (i >= lower.length || !vowels.has(lower[i])) return [source];
+      i++;
+      if (i < lower.length && lower[i] === "n"){
+        const following = i + 1 < lower.length ? lower[i + 1] : "";
+        if (!following || consonants.has(following)) i++;
+      }
+      out.push(source.slice(start,i));
+    }
+    return out.length ? out : [source];
+  }
+
+  function buildReviewAudioUnits(properName){
+    const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+    const units = [];
+    let index = 0;
+    for (let wordIndex=0;wordIndex<words.length;wordIndex++){
+      const word = words[wordIndex];
+      const wordUnits = WHOLE_NUMERIC_AUDIO_WORDS.has(word) ? [word] : splitReviewAudioSyllables(word);
+      for (let unitIndexInWord=0;unitIndexInWord<wordUnits.length;unitIndexInWord++){
+        units.push({
+          index,
+          text:wordUnits[unitIndexInWord],
+          word,
+          wordIndex,
+          unitIndexInWord,
+          wholeNumericPunctuationWord:WHOLE_NUMERIC_AUDIO_WORDS.has(word)
+        });
+        index++;
+      }
+    }
+    return units;
+  }
+
+  function appendReviewProperNamePanel(grid,label,value){
+    const panel = document.createElement("div");
+    panel.className = "reviewRevealPanel";
+
+    const headingRow = document.createElement("div");
+    headingRow.className = "reviewRevealLabelRow";
+    const heading = document.createElement("div");
+    heading.className = "reviewRevealLabel";
+    heading.textContent = label;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn reviewEntryAudioButton";
+    button.textContent = "🤖🔊";
+    button.title = `Play ${label.toLowerCase()} at normal speed`;
+    button.setAttribute("aria-label",button.title);
+    headingRow.append(heading,button);
+
+    const content = document.createElement("div");
+    content.className = "reviewRevealValue properNameText reviewAudioProperName";
+    const units = buildReviewAudioUnits(value);
+    const words = String(value ?? "").trim().split(/\s+/).filter(Boolean);
+    for (let wordIndex=0;wordIndex<words.length;wordIndex++){
+      const wordWrap = document.createElement("span");
+      wordWrap.className = "reviewAudioWord";
+      for (const unit of units.filter(x => x.wordIndex === wordIndex)){
+        const span = document.createElement("span");
+        span.className = "reviewAudioUnit";
+        span.dataset.reviewAudioUnitIndex = String(unit.index);
+        span.textContent = unit.text;
+        wordWrap.appendChild(span);
+      }
+      content.appendChild(wordWrap);
+      if (wordIndex < words.length - 1) content.appendChild(document.createTextNode(" "));
+    }
+
+    panel.append(headingRow,content);
+    grid.appendChild(panel);
+    return {button,content,units};
+  }
+
+  function appendReviewCartouchePanel(grid,label,codepoints,{highlightable=false}={}){
+    const panel = document.createElement("div");
+    panel.className = "reviewRevealPanel cartouchePanel";
+    const heading = document.createElement("div");
+    heading.className = "reviewRevealLabel";
+    heading.textContent = label;
+    const canvas = document.createElement("canvas");
+    canvas.setAttribute("aria-label",label);
+
+    let highlightCanvas = null;
+    if (highlightable){
+      const wrap = document.createElement("div");
+      wrap.className = "reviewCartoucheCanvasWrap";
+      highlightCanvas = document.createElement("canvas");
+      highlightCanvas.className = "reviewCartoucheHighlightCanvas";
+      highlightCanvas.setAttribute("aria-hidden","true");
+      wrap.append(canvas,highlightCanvas);
+      panel.append(heading,wrap);
+    }else{
+      panel.append(heading,canvas);
+    }
+
+    grid.appendChild(panel);
+    renderCartoucheToCanvas(canvas,codepoints);
+    if (highlightCanvas){
+      highlightCanvas.width = canvas.width;
+      highlightCanvas.height = canvas.height;
+    }
+    return {canvas,highlightCanvas};
+  }
+
+  function syncReviewCartoucheHighlightCanvas(target=reviewAudioTarget){
+    const base = target?.fullCanvas;
+    const overlay = target?.highlightCanvas;
+    if (!base || !overlay) return null;
+
+    const displayed = base.getBoundingClientRect();
+    const cssWidth = Math.max(1,displayed.width || base.clientWidth || base.width || 1);
+    const cssHeight = Math.max(1,displayed.height || base.clientHeight || base.height || 1);
+    const pixelRatio = Math.max(1,Number(window.devicePixelRatio) || 1);
+    const backingWidth = Math.max(1,Math.round(cssWidth * pixelRatio));
+    const backingHeight = Math.max(1,Math.round(cssHeight * pixelRatio));
+
+    overlay.style.width = `${cssWidth}px`;
+    overlay.style.height = `${cssHeight}px`;
+    if (overlay.width !== backingWidth) overlay.width = backingWidth;
+    if (overlay.height !== backingHeight) overlay.height = backingHeight;
+
+    const ctx = overlay.getContext("2d",{alpha:true});
+    return {
+      ctx,
+      scaleX:backingWidth / Math.max(1,base.width),
+      scaleY:backingHeight / Math.max(1,base.height),
+      pixelRatio
+    };
+  }
+
+  function clearReviewAudioHighlight(target=reviewAudioTarget){
+    target?.properNameContainer?.querySelectorAll(".reviewAudioUnit.is-speaking").forEach(node => {
+      node.classList.remove("is-speaking");
+    });
+    const synced = syncReviewCartoucheHighlightCanvas(target);
+    if (synced){
+      synced.ctx.setTransform(1,0,0,1,0,0);
+      synced.ctx.clearRect(0,0,synced.ctx.canvas.width,synced.ctx.canvas.height);
+    }
+  }
+
+  function buildReviewCartoucheHighlightMap(canvas,units){
+    const layout = canvas?._reviewCartoucheLayout;
+    const runs = Array.from(layout?.runs || []);
+    const expected = units.reduce((sum,unit) => sum + Array.from(String(unit.text ?? "")).length,0);
+    if (!runs.length || runs.length !== expected) return [];
+    const map = [];
+    let cursor = 0;
+    for (const unit of units){
+      const count = Array.from(String(unit.text ?? "")).length;
+      const selected = runs.slice(cursor,cursor + count);
+      if (!selected.length){ cursor += count; continue; }
+      const first = selected[0];
+      const last = selected[selected.length - 1];
+      map[unit.index] = {
+        x:Math.max(0,first.x - 1),
+        y:Math.max(0,layout.innerY),
+        width:Math.max(1,(last.x + last.width) - first.x + 2),
+        height:Math.max(1,layout.innerHeight)
+      };
+      cursor += count;
+    }
+    return map;
+  }
+
+  function highlightReviewAudioUnit(index){
+    const target = reviewAudioTarget;
+    if (!target) return;
+    target.properNameContainer.querySelectorAll(".reviewAudioUnit.is-speaking").forEach(node => {
+      node.classList.remove("is-speaking");
+    });
+    const active = target.properNameContainer.querySelector(`[data-review-audio-unit-index="${index}"]`);
+    active?.classList.add("is-speaking");
+
+    const synced = syncReviewCartoucheHighlightCanvas(target);
+    if (!synced) return;
+    const {ctx,scaleX,scaleY,pixelRatio} = synced;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    const rect = target.cartoucheHighlightMap?.[index];
+    if (!rect) return;
+    ctx.save();
+    ctx.setTransform(scaleX,0,0,scaleY,0,0);
+    ctx.fillStyle = "rgba(255,225,70,0.46)";
+    ctx.strokeStyle = "rgba(17,17,17,0.78)";
+    ctx.lineWidth = (1.25 * pixelRatio) / Math.max(scaleX,scaleY);
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") ctx.roundRect(rect.x,rect.y,rect.width,rect.height,Math.max(2,Math.min(6,rect.height * 0.15)));
+    else ctx.rect(rect.x,rect.y,rect.width,rect.height);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function setReviewAudioButtonState(state){
+    reviewAudioState = state;
+    const button = reviewAudioTarget?.button;
+    if (!button) return;
+    button.disabled = state === "building";
+    if (state === "building"){
+      button.textContent = "⏳";
+      button.title = "Preparing proper-name audio";
+      button.setAttribute("aria-label",button.title);
+      button.setAttribute("aria-busy","true");
+    }else if (state === "playing"){
+      button.textContent = "⏸️";
+      button.title = "Pause proper-name audio";
+      button.setAttribute("aria-label",button.title);
+      button.removeAttribute("aria-busy");
+    }else if (state === "paused"){
+      button.textContent = "▶️";
+      button.title = "Continue proper-name audio";
+      button.setAttribute("aria-label",button.title);
+      button.removeAttribute("aria-busy");
+    }else{
+      button.textContent = "🤖🔊";
+      button.title = "Play proper-name audio at normal speed";
+      button.setAttribute("aria-label",button.title);
+      button.removeAttribute("aria-busy");
+    }
+  }
+
+  function cancelReviewAudioSource(session){
+    if (!session?.currentSource) return;
+    const source = session.currentSource;
+    session.currentSource = null;
+    try{ source.onended = null; }catch{}
+    try{ source.stop(); }catch{}
+    try{ source.disconnect(); }catch{}
+  }
+
+  function stopReviewAudioPlayback(){
+    reviewAudioGeneration++;
+    if (reviewAudioSession) cancelReviewAudioSource(reviewAudioSession);
+    reviewAudioSession = null;
+    clearReviewAudioHighlight();
+    if (reviewAudioTarget){
+      const previous = reviewAudioTarget;
+      reviewAudioState = "stopped";
+      reviewAudioTarget = previous;
+      setReviewAudioButtonState("stopped");
+    }
+    reviewAudioTarget = null;
+    reviewAudioState = "stopped";
+  }
+
+  function caseInsensitiveReviewAudioValue(object,names){
+    if (!object || typeof object !== "object") return null;
+    const wanted = new Set(names.map(name => String(name).toLowerCase()));
+    for (const [key,value] of Object.entries(object)){
+      if (wanted.has(String(key).toLowerCase())) return value;
+    }
+    return null;
+  }
+
+  function reviewAudioDurationMilliseconds(entry){
+    if (entry == null) return null;
+    if (typeof entry === "number" && Number.isFinite(entry)) return entry;
+    if (typeof entry !== "object") return null;
+    for (const key of ["duration_ms","durationMs","milliseconds","ms"]){
+      const value = Number(entry[key]);
+      if (Number.isFinite(value) && value > 0) return value;
+    }
+    for (const key of ["duration_seconds","durationSeconds","seconds"]){
+      const value = Number(entry[key]);
+      if (Number.isFinite(value) && value > 0) return value * 1000;
+    }
+    return null;
+  }
+
+  function reviewManifestDuration(voice,unitText){
+    const names = [
+      unitText,unitText.toLowerCase(),unitText.toUpperCase(),
+      `${unitText}.wav`,`${unitText.toLowerCase()}.wav`,`${unitText.toUpperCase()}.wav`
+    ];
+    const roots = [
+      voice?.manifest,voice?.audioManifest,voice?.referenceAudioManifest,
+      voice?.config?.manifest,voice?.config?.audioManifest
+    ].filter(Boolean);
+    for (const root of roots){
+      const direct = caseInsensitiveReviewAudioValue(root,names);
+      const directDuration = reviewAudioDurationMilliseconds(direct);
+      if (directDuration) return directDuration;
+      for (const nestedName of ["nanpa_v2","nanpaV2","files","assets","entries"]){
+        const nested = root?.[nestedName];
+        const nestedEntry = caseInsensitiveReviewAudioValue(nested,names);
+        const nestedDuration = reviewAudioDurationMilliseconds(nestedEntry);
+        if (nestedDuration) return nestedDuration;
+      }
+      if (Array.isArray(root)){
+        const found = root.find(item => {
+          const filename = String(item?.name ?? item?.filename ?? item?.file ?? item?.path ?? "").split("/").pop();
+          return names.some(name => filename.toLowerCase() === String(name).toLowerCase());
+        });
+        const foundDuration = reviewAudioDurationMilliseconds(found);
+        if (foundDuration) return foundDuration;
+      }
+    }
+    return null;
+  }
+
+  function estimatedReviewAudioWeight(voice,unit){
+    const duration = reviewManifestDuration(voice,unit.text);
+    if (duration) return duration;
+    if (unit.wholeNumericPunctuationWord) return 260 + Math.max(0,unit.text.length - 2) * 75;
+    return 230 + Math.max(0,unit.text.length - 2) * 55;
+  }
+
+  function partitionReviewAudioSamples(samples,sampleRate,units,voice){
+    const weights = units.map(unit => estimatedReviewAudioWeight(voice,unit));
+    const gapWeight = REVIEW_AUDIO_SYLLABLE_GAP_SECONDS * 1000;
+    const totalWeight = weights.reduce((sum,weight) => sum + weight,0) + Math.max(0,units.length - 1) * gapWeight;
+    const entries = [];
+    let sampleCursor = 0;
+    let accumulatedWeight = 0;
+    for (let index=0;index<units.length;index++){
+      accumulatedWeight += weights[index];
+      let unitEnd = index === units.length - 1
+        ? samples.length
+        : Math.round(samples.length * accumulatedWeight / totalWeight);
+      unitEnd = Math.max(sampleCursor,Math.min(samples.length,unitEnd));
+      entries.push({
+        kind:"unit",
+        highlightIndex:units[index].index,
+        samples:samples.slice(sampleCursor,unitEnd),
+        sampleRate
+      });
+      sampleCursor = unitEnd;
+      if (index < units.length - 1 && gapWeight > 0){
+        accumulatedWeight += gapWeight;
+        let gapEnd = Math.round(samples.length * accumulatedWeight / totalWeight);
+        gapEnd = Math.max(sampleCursor,Math.min(samples.length,gapEnd));
+        entries.push({kind:"gap",highlightIndex:null,samples:samples.slice(sampleCursor,gapEnd),sampleRate});
+        sampleCursor = gapEnd;
+      }
+    }
+    if (sampleCursor < samples.length && entries.length){
+      const last = entries[entries.length - 1];
+      const merged = new Float32Array(last.samples.length + samples.length - sampleCursor);
+      merged.set(last.samples,0);
+      merged.set(samples.slice(sampleCursor),last.samples.length);
+      last.samples = merged;
+    }
+    return entries.filter(entry => entry.samples.length > 0);
+  }
+
+  async function prepareReviewAudio(target,generation){
+    const cacheKey = `${target.properName}|normal`;
+    if (reviewAudioCache.has(cacheKey)) return reviewAudioCache.get(cacheKey);
+    const voice = await getVoice();
+    if (generation !== reviewAudioGeneration) return null;
+    const rendered = await voice.render(target.properName,{
+      synthesis_mode:"reference_audio",
+      pauseScale:REVIEW_AUDIO_PAUSE_SCALE,
+      syllableGapSeconds:REVIEW_AUDIO_SYLLABLE_GAP_SECONDS
+    });
+    if (generation !== reviewAudioGeneration) return null;
+    const samples = rendered.samples instanceof Float32Array
+      ? rendered.samples
+      : Float32Array.from(rendered.samples || []);
+    const prepared = {
+      voice,
+      entries:partitionReviewAudioSamples(samples,rendered.sampleRate,target.units,voice)
+    };
+    reviewAudioCache.set(cacheKey,prepared);
+    return prepared;
+  }
+
+  function getReviewAudioContext(){
+    if (!reviewAudioContext){
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextCtor) throw new Error("Web Audio is not supported in this browser.");
+      reviewAudioContext = new AudioContextCtor();
+    }
+    return reviewAudioContext;
+  }
+
+  function reviewAudioBuffer(session,entry){
+    if (entry._audioBuffer) return entry._audioBuffer;
+    const context = session.audioContext;
+    const buffer = context.createBuffer(1,entry.samples.length,entry.sampleRate);
+    buffer.copyToChannel(entry.samples,0);
+    entry._audioBuffer = buffer;
+    return buffer;
+  }
+
+  function completeReviewAudioPlayback(generation){
+    if (generation !== reviewAudioGeneration) return;
+    if (reviewAudioSession) cancelReviewAudioSource(reviewAudioSession);
+    reviewAudioSession = null;
+    clearReviewAudioHighlight();
+    setReviewAudioButtonState("stopped");
+  }
+
+  function playReviewAudioEntry(){
+    const session = reviewAudioSession;
+    if (!session || session.generation !== reviewAudioGeneration) return;
+    if (session.currentIndex >= session.entries.length){
+      completeReviewAudioPlayback(session.generation);
+      return;
+    }
+    const entry = session.entries[session.currentIndex];
+    const buffer = reviewAudioBuffer(session,entry);
+    const context = session.audioContext;
+    const offset = Math.max(0,Math.min(Number(session.currentOffsetSeconds) || 0,Math.max(0,buffer.duration - 0.001)));
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(context.destination);
+    session.currentSource = source;
+    session.currentBuffer = buffer;
+    session.sourceStartedAt = context.currentTime;
+    session.sourceStartedOffset = offset;
+    if (entry.kind === "unit" && Number.isInteger(entry.highlightIndex)) highlightReviewAudioUnit(entry.highlightIndex);
+    else clearReviewAudioHighlight();
+    setReviewAudioButtonState("playing");
+    source.onended = () => {
+      if (!reviewAudioSession || reviewAudioSession !== session) return;
+      if (session.generation !== reviewAudioGeneration || session.currentSource !== source || reviewAudioState !== "playing") return;
+      session.currentSource = null;
+      try{ source.disconnect(); }catch{}
+      session.currentBuffer = null;
+      session.currentOffsetSeconds = 0;
+      clearReviewAudioHighlight();
+      session.currentIndex++;
+      playReviewAudioEntry();
+    };
+    source.start(0,offset);
+  }
+
+  function pauseReviewAudio(){
+    const session = reviewAudioSession;
+    if (!session || reviewAudioState !== "playing" || !session.currentSource) return;
+    const context = session.audioContext;
+    const elapsed = Math.max(0,context.currentTime - session.sourceStartedAt);
+    session.currentOffsetSeconds = Math.min(
+      session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
+      session.sourceStartedOffset + elapsed
+    );
+    cancelReviewAudioSource(session);
+    setReviewAudioButtonState("paused");
+  }
+
+  function resumeReviewAudio(){
+    if (!reviewAudioSession || reviewAudioState !== "paused") return;
+    playReviewAudioEntry();
+  }
+
+  async function startReviewAudio(target){
+    stopCurrentAudioPlayback();
+    const generation = ++reviewAudioGeneration;
+    reviewAudioTarget = target;
+    target.cartoucheHighlightMap = buildReviewCartoucheHighlightMap(target.fullCanvas,target.units);
+    setReviewAudioButtonState("building");
+    try{
+      target.button.setCustomValidity("");
+      const prepared = await prepareReviewAudio(target,generation);
+      if (!prepared || generation !== reviewAudioGeneration || reviewAudioTarget !== target) return;
+      const audioContext = getReviewAudioContext();
+      await audioContext.resume();
+      if (generation !== reviewAudioGeneration || reviewAudioTarget !== target) return;
+      reviewAudioSession = {
+        generation,
+        voice:prepared.voice,
+        audioContext,
+        entries:prepared.entries,
+        currentIndex:0,
+        currentOffsetSeconds:0,
+        currentSource:null,
+        currentBuffer:null,
+        sourceStartedAt:0,
+        sourceStartedOffset:0
+      };
+      if (!reviewAudioSession.entries.length) throw new Error("No audio entries were produced.");
+      playReviewAudioEntry();
+    }catch(err){
+      if (generation !== reviewAudioGeneration) return;
+      console.error(err);
+      reviewAudioSession = null;
+      clearReviewAudioHighlight();
+      setReviewAudioButtonState("stopped");
+      target.button.setCustomValidity(`Audio error: ${err?.message ?? String(err)}`);
+      target.button.reportValidity();
+    }
+  }
+
+  function toggleReviewAudio(target){
+    if (reviewAudioTarget === target && reviewAudioState === "playing"){
+      pauseReviewAudio();
+      return;
+    }
+    if (reviewAudioTarget === target && reviewAudioState === "paused"){
+      resumeReviewAudio();
+      return;
+    }
+    startReviewAudio(target);
+  }
+
+  async function appendReviewRecord(parent,rawRecord){
+    const record = await ensureReviewRevealData(rawRecord);
+    const item = document.createElement("div");
+    item.className = "reviewItem";
+    const top = document.createElement("div");
+    top.className = "reviewTop";
+    const title = document.createElement("strong");
+    title.textContent = `Question ${record.index + 1} — ${record.kindLabel}`;
+    const result = reviewResult(record);
+    const badge = document.createElement("span");
+    badge.className = `resultBadge ${result.cls}`;
+    badge.textContent = result.label;
+    top.append(title,badge);
+
+    const meta = document.createElement("div");
+    meta.className = "reviewMeta";
+    const attempts = Number(record.firstAttempts || 0) + Number(record.decimalAttempts || 0);
+    meta.textContent = `${attempts} checked attempt${attempts === 1 ? "" : "s"}${record.hadWrongAttempt ? " · included an incorrect attempt" : ""}`;
+
+    const revealGrid = document.createElement("div");
+    revealGrid.className = "reviewRevealGrid";
+    const mode = normalizeProperNameMode(record.properNameMode);
+    const modeLabel = mode === "strict" ? "Strict" : "Relaxed";
+    appendReviewTextPanel(revealGrid,"Decimal value",record.value);
+    const properNameAudio = appendReviewProperNamePanel(revealGrid,`${modeLabel} proper name`,record.properName);
+    await ensureCartoucheFontLoaded();
+    const fullCartouche = appendReviewCartouchePanel(
+      revealGrid,
+      `${modeLabel} full nanpa-linja-n cartouche`,
+      record.fullCodepoints || [],
+      {highlightable:true}
+    );
+    appendReviewCartouchePanel(revealGrid,"Abbreviated nanpa-linja-n cartouche (preferred)",record.abbreviatedCodepoints || []);
+    appendReviewTextPanel(revealGrid,"#~ abbreviation",record.uniqueCode);
+
+    const reviewAudioTargetForRecord = {
+      button:properNameAudio.button,
+      properName:record.properName,
+      properNameContainer:properNameAudio.content,
+      units:properNameAudio.units,
+      fullCanvas:fullCartouche.canvas,
+      highlightCanvas:fullCartouche.highlightCanvas,
+      cartoucheHighlightMap:[]
+    };
+    properNameAudio.button.addEventListener("click",() => toggleReviewAudio(reviewAudioTargetForRecord));
+
+    const details = document.createElement("div");
+    details.className = "answerDetails";
+    const detailsTitle = document.createElement("div");
+    detailsTitle.className = "answerDetailsTitle";
+    detailsTitle.textContent = "Your answers";
+    details.appendChild(detailsTitle);
+    const lines = [
+      ["Proper-name attempts",record.firstAttemptValues?.length ? record.firstAttemptValues.join(" → ") : (record.firstAnswer || "—")],
+      ...(record.firstMatchType ? [["Answer matched","proper name"]] : []),
+      ...(record.decimalAttemptValues?.length ? [["Decimal follow-up attempts",record.decimalAttemptValues.join(" → ")]] :
+        (record.decimalAnswer ? [["Decimal follow-up",record.decimalAnswer]] : []))
+    ];
+    for (const [label,value] of lines){
+      const line = document.createElement("div");
+      const strong = document.createElement("strong");
+      strong.textContent = label + ": ";
+      const span = document.createElement("span");
+      span.className = "mono";
+      span.textContent = value;
+      line.append(strong,span);
+      details.appendChild(line);
+    }
+    item.append(top,meta,revealGrid,details);
+    parent.appendChild(item);
+  }
+
+  async function renderCurrentReview(){
+    if (!el.reviewList) return;
+    stopReviewAudioPlayback();
+    const renderToken = ++reviewRenderToken;
+    const attempted = state.items.map((item,index) => ({item,index})).filter(x => itemWasAttempted(x.item));
+    const filtered = state.reviewProblemsOnly ? attempted.filter(x => itemIsProblem(x.item)) : attempted;
+    el.reviewSummary.textContent = state.items.length
+      ? `${attempted.length} of ${state.items.length} questions attempted; ${state.items.filter(itemIsProblem).length} with an incorrect attempt or reveal.`
+      : "No session has been started.";
+
+    const staging = document.createDocumentFragment();
+    if (!filtered.length){
+      const p = document.createElement("p");
+      p.className = "card muted";
+      p.textContent = attempted.length ? "No problem answers match the current filter." : "Answer or reveal a question to add it to the current-session review.";
+      staging.appendChild(p);
+    }else{
+      for (const {item,index} of filtered){
+        try{ await appendReviewRecord(staging,await makeReviewRecord(item,index)); }
+        catch(err){ console.error("Could not render review item",err); }
+        if (renderToken !== reviewRenderToken) return;
+      }
+    }
+    if (renderToken === reviewRenderToken) el.reviewList.replaceChildren(staging);
+  }
+
+  function openHistoryDb(){
+    if (historyDbPromise) return historyDbPromise;
+    historyDbPromise = new Promise((resolve,reject) => {
+      const req = indexedDB.open(HISTORY_DB_NAME,HISTORY_DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        let store;
+        if (!db.objectStoreNames.contains(HISTORY_STORE)) store = db.createObjectStore(HISTORY_STORE,{keyPath:"id"});
+        else store = req.transaction.objectStore(HISTORY_STORE);
+        if (!store.indexNames.contains("finishedAt")) store.createIndex("finishedAt","finishedAt",{unique:false});
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("Could not open abbreviated-cartouche-practice history."));
+    });
+    return historyDbPromise;
+  }
+
+  function idbRequest(req){
+    return new Promise((resolve,reject) => {
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("IndexedDB request failed."));
+    });
+  }
+
+  async function putHistorySession(record){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE,"readwrite");
+    tx.objectStore(HISTORY_STORE).put(record);
+    await new Promise((resolve,reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
+  async function readHistorySessions(){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE,"readonly");
+    const rows = await idbRequest(tx.objectStore(HISTORY_STORE).getAll());
+    return rows.sort((a,b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
+  }
+
+  async function clearHistorySessions(){
+    const db = await openHistoryDb();
+    const tx = db.transaction(HISTORY_STORE,"readwrite");
+    tx.objectStore(HISTORY_STORE).clear();
+    await new Promise((resolve,reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
+  async function buildHistoryRecord({quit=false}={}){
+    const finishedAt = new Date().toISOString();
+    const rows = [];
+    for (let index=0;index<state.items.length;index++){
+      const item = state.items[index];
+      if (!itemWasAttempted(item)) continue;
+      rows.push(await makeReviewRecord(item,index));
+    }
+    const revealed = rows.filter(x => x.revealed).length;
+    const problems = rows.filter(x => x.revealed || x.hadWrongAttempt).length;
+    return {
+      id:`${finishedAt}-${Math.random().toString(36).slice(2,9)}`,
+      startedAt:state.startedAt,
+      finishedAt,
+      endedBy:quit ? "stopped" : "finished",
+      kind:state.settings.kind,
+      kindLabel:state.settings.kind === "mixed" ? "Mixed" : (KIND_LABELS[state.settings.kind] || state.settings.kind),
+      properNameMode:state.settings.properNameMode,
+      score:state.score,
+      total:state.items.length,
+      attempted:rows.length,
+      revealed,
+      problems,
+      bestStreak:state.bestStreak,
+      settings:{...state.settings},
+      review:rows
+    };
+  }
+
+  async function saveCurrentSessionToHistory({quit=false}={}){
+    if (state.sessionSaved || !state.items.length) return;
+    const record = await buildHistoryRecord({quit});
+    await putHistorySession(record);
+    state.sessionSaved = true;
+    state.history = [record,...state.history.filter(x => x.id !== record.id)]
+      .sort((a,b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
+    state.selectedHistoryId = record.id;
+  }
+
+  function formatDateTime(iso){
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? String(iso || "") : d.toLocaleString(undefined,{year:"numeric",month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+  }
+
+  async function loadHistory(){
+    if (!el.historyList) return;
+    el.historySummary.textContent = "Loading saved sessions…";
+    try{
+      state.history = await readHistorySessions();
+      if (!state.selectedHistoryId && state.history.length) state.selectedHistoryId = state.history[0].id;
+      renderHistory();
+    }catch(err){
+      console.error(err);
+      el.historySummary.textContent = "Could not load history from IndexedDB.";
+      el.historyList.innerHTML = '<p class="muted">History is unavailable in this browser or session.</p>';
+    }
+  }
+
+  function renderHistory(){
+    stopReviewAudioPlayback();
+    const rows = state.history || [];
+    el.historySummary.textContent = rows.length ? `${rows.length} saved visual-practice session${rows.length === 1 ? "" : "s"}.` : "No saved visual-practice sessions yet.";
+    el.historyList.replaceChildren();
+    if (!rows.length){
+      const p = document.createElement("p"); p.className="muted"; p.textContent="Finish or stop a session to save it here.";
+      el.historyList.appendChild(p);
+      el.historyDetail.innerHTML = '<p class="muted">Select a saved session.</p>';
+      return;
+    }
+    if (!rows.some(x => x.id === state.selectedHistoryId)) state.selectedHistoryId = rows[0].id;
+    for (const record of rows){
+      const btn = document.createElement("button");
+      btn.type="button";
+      btn.className="historySessionBtn" + (record.id === state.selectedHistoryId ? " active" : "");
+      const top=document.createElement("div"); top.className="historySessionTop";
+      const title=document.createElement("strong"); title.textContent=`${record.kindLabel} · ${record.properNameMode}`;
+      const score=document.createElement("span"); score.textContent=`${record.score}/${record.total}`;
+      top.append(title,score);
+      const meta=document.createElement("div"); meta.className="historySessionMeta";
+      meta.textContent=`${formatDateTime(record.finishedAt)} · ${record.endedBy} · ${record.attempted} attempted`;
+      btn.append(top,meta);
+      btn.addEventListener("click",() => { state.selectedHistoryId=record.id; renderHistory(); });
+      el.historyList.appendChild(btn);
+    }
+    renderHistoryDetail(rows.find(x => x.id === state.selectedHistoryId) || rows[0]);
+  }
+
+  async function renderHistoryDetail(record){
+    stopReviewAudioPlayback();
+    const renderToken = ++historyDetailRenderToken;
+    const staging = document.createDocumentFragment();
+    if (!record){
+      const p=document.createElement("p"); p.className="muted"; p.textContent="Select a saved session.";
+      staging.appendChild(p);
+      if (renderToken === historyDetailRenderToken) el.historyDetail.replaceChildren(staging);
+      return;
+    }
+    const header=document.createElement("div"); header.className="historyHeader";
+    const top=document.createElement("div"); top.className="historySessionTop";
+    const h=document.createElement("h3"); h.textContent=`${record.kindLabel} · ${record.properNameMode}`;
+    const score=document.createElement("strong"); score.textContent=`${record.score}/${record.total}`;
+    top.append(h,score);
+    const meta=document.createElement("div"); meta.className="historySessionMeta";
+    meta.textContent=`${formatDateTime(record.finishedAt)} · ${record.endedBy} · ${record.attempted} attempted · ${record.revealed} revealed · best streak ${record.bestStreak}`;
+    header.append(top,meta);
+    staging.appendChild(header);
+    const rows=(record.review || []).filter(x => !state.historyProblemsOnly || x.revealed || x.hadWrongAttempt);
+    if (!rows.length){
+      const p=document.createElement("p"); p.className="muted"; p.textContent="No answers match the current filter.";
+      staging.appendChild(p);
+    }else{
+      for (const row of rows){
+        await appendReviewRecord(staging,{...row,properNameMode:row.properNameMode || record.properNameMode});
+        if (renderToken !== historyDetailRenderToken) return;
+      }
+    }
+    if (renderToken === historyDetailRenderToken) el.historyDetail.replaceChildren(staging);
+  }
+
+  function clearReveal(){
+    el.reveal.classList.add("hidden");
+    el.revealValue.textContent = "";
+    el.revealStrictLine.classList.add("hidden");
+    el.revealStrictName.textContent = "";
+    el.revealRelaxedLine.classList.add("hidden");
+    el.revealRelaxedName.textContent = "";
+    el.revealCodeLine.classList.add("hidden");
+    el.revealCode.textContent = "";
+    for (const canvas of [el.normalCartouche,el.abbreviatedCartouche]){
+      canvas.width = 1;
+      canvas.height = 1;
+    }
+  }
+
+  function updateStats(){
+    const total = state.items.length;
+    el.scoreLabel.textContent = `${state.score} / ${total}`;
+    el.streakLabel.textContent = `${state.streak} (best ${state.bestStreak})`;
+    el.questionLabel.textContent = total ? `${state.index + 1} / ${total}` : "0 / 0";
+    el.typeLabel.textContent = currentItem() ? KIND_LABELS[currentItem().kind] : "—";
+  }
+
+  function updateNavigation(){
+    const item = currentItem();
+    el.previousButton.disabled = !state.active || state.index <= 0;
+    el.nextButton.disabled = !state.active || !item || !(item.completed || item.revealed);
+  }
+
+  async function renderCurrentQuestion(){
+    endHintPreview({restore:false,focusInput:false});
+    const item = currentItem();
+    generationToken++;
+    cancelAutoNext();
+    clearReveal();
+    el.summaryCard.classList.add("hidden");
+    if (!item){
+      el.prompt.textContent = "Choose settings and press Start.";
+      if (el.questionAbbreviatedCartouche){
+        el.questionAbbreviatedCartouche.width = 1;
+        el.questionAbbreviatedCartouche.height = 1;
+      }
+      return;
+    }
+
+    el.prompt.textContent = `Question ${state.index + 1}: enter the proper name for this abbreviated ${KIND_LABELS[item.kind]} cartouche.`;
+    el.audioButton.disabled = true;
+    el.revealButton.disabled = false;
+
+    try{
+      const plan = await ensureProgressiveRevealPlan(item);
+      if (item.completed || item.revealed){
+        item.progressiveVisibleGroupCount = plan.groups.length;
+        item.progressiveConfirmedLength = plan.expectedCompact.length;
+      }
+      await ensureCartoucheFontLoaded();
+      renderProgressiveQuestionCartouche(item,plan);
+    }catch(err){
+      console.error(err);
+      setFeedback(`Cartouche error: ${err?.message ?? String(err)}`,"bad");
+    }
+
+    el.firstAnswerInput.value = item.firstAnswer || "";
+    el.firstAnswerInput.disabled = item.stage !== "first" || item.completed || item.revealed;
+    el.firstAnswerInput.classList.toggle("correct",item.firstMatchType === "proper-name");
+    el.hintButton.disabled = el.firstAnswerInput.disabled;
+    el.checkFirstButton.disabled = el.firstAnswerInput.disabled;
+
+    el.decimalStage.classList.add("hidden");
+    el.decimalAnswerInput.value = "";
+    el.decimalAnswerInput.disabled = true;
+    el.checkDecimalButton.disabled = true;
+
+    if (item.completed){
+      setFeedback("✓ Correct", "good");
+      await showReveal(item);
+    }else if (item.revealed){
+      setFeedback("Answer revealed.","warn");
+      await showReveal(item);
+    }else{
+      setFeedback("Enter the nanpa-linja-n proper name represented by the abbreviated cartouche.");
+    }
+
+    updateStats();
+    updateNavigation();
+    if (!el.firstAnswerInput.disabled) el.firstAnswerInput.focus();
+  }
+
+  function registerWrongAttempt(item,message){
+    item.hadWrongAttempt = true;
+    state.streak = 0;
+    setFeedback(message,"bad");
+    updateStats();
+  }
+
+  async function checkFirstAnswer(){
+    endHintPreview({restore:true,focusInput:false});
+    const item = currentItem();
+    if (!state.active || !item || item.stage !== "first" || item.completed || item.revealed) return;
+
+    el.hintButton.disabled = true;
+    el.checkFirstButton.disabled = true;
+    await applyProgressiveInputCorrection(item,{announce:false});
+    const correctedRaw = el.firstAnswerInput.value;
+    if (!String(correctedRaw).trim()){
+      setFeedback("Enter the proper name before checking.","warn");
+      el.hintButton.disabled = false;
+      el.checkFirstButton.disabled = false;
+      el.firstAnswerInput.focus();
+      return;
+    }
+    item.firstAttempts++;
+    item.firstAttemptValues.push(correctedRaw);
+    try{
+      const matchType = await classifyFirstAnswer(item,correctedRaw);
+      item.firstAnswer = correctedRaw;
+      if (matchType === "proper-name"){
+        item.firstMatchType = "proper-name";
+        completeItem(item);
+        await renderCurrentQuestion();
+        scheduleAutoNext(item);
+        return;
+      }
+      registerWrongAttempt(item,"Not quite. Try again, or reveal the answer.");
+      el.revealButton.disabled = false;
+      el.hintButton.disabled = false;
+      el.checkFirstButton.disabled = false;
+      el.firstAnswerInput.focus();
+    }catch(err){
+      console.error(err);
+      setFeedback(`Check error: ${err?.message ?? String(err)}`,"bad");
+      el.hintButton.disabled = false;
+      el.checkFirstButton.disabled = false;
+    }
+  }
+
+  async function checkDecimalAnswer(){
+    const item = currentItem();
+    if (!state.active || !item || item.stage !== "decimal" || item.completed || item.revealed) return;
+    const raw = el.decimalAnswerInput.value;
+    item.decimalAnswer = raw;
+    item.decimalAttempts++;
+    item.decimalAttemptValues.push(raw);
+    if (valueAnswerMatches(item,raw)){
+      completeItem(item);
+      await renderCurrentQuestion();
+      scheduleAutoNext(item);
+    }else{
+      registerWrongAttempt(item,"The proper name is correct, but the decimal value is not quite right. Try again, or reveal the answer.");
+      el.decimalAnswerInput.focus();
+    }
+  }
+
+  function completeItem(item){
+    if (!item.counted){
+      item.counted = true;
+      state.score++;
+      state.completedCount++;
+      state.streak = item.hadWrongAttempt ? 1 : state.streak + 1;
+      state.bestStreak = Math.max(state.bestStreak,state.streak);
+    }
+    item.completed = true;
+    item.stage = "complete";
+  }
+
+  async function revealCurrent(){
+    const item = currentItem();
+    if (!state.active || !item || item.completed || item.revealed) return;
+    item.firstAnswer = el.firstAnswerInput.value;
+    item.decimalAnswer = "";
+    item.revealed = true;
+    item.stage = "revealed";
+    state.completedCount++;
+    state.streak = 0;
+    await renderCurrentQuestion();
+    scheduleAutoNext(item);
+  }
+
+  async function showReveal(item){
+    try{
+      const parsed = await ensureParsed(item);
+      const strictParsed = parsed.strictParsed ?? parsed;
+      const quizParsed = parsed.quizParsed ?? parsed;
+      const relaxedMode = isRelaxedProperNameMode(parsed.properNameMode);
+      el.revealValue.textContent = item.displayValue;
+
+      // During active play, show only the proper-name form selected for this
+      // visual-practice session. Review and History use the mode stored for each session.
+      el.revealStrictLine.classList.toggle("hidden", relaxedMode);
+      el.revealStrictName.textContent = formatProperNameForDisplay(strictParsed.properName);
+      el.revealRelaxedLine.classList.toggle("hidden", !relaxedMode);
+      el.revealRelaxedName.textContent = formatProperNameForDisplay(parsed.quizProperName);
+
+      // The #~ abbreviation is reserved for the complete educational panels
+      // in Review and History, rather than the immediate play reveal.
+      el.revealCodeLine.classList.add("hidden");
+      el.revealCode.textContent = String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? "");
+      await ensureCartoucheFontLoaded();
+      renderCartoucheToCanvas(el.normalCartouche,quizParsed.ucsurCodepoints);
+      renderCartoucheToCanvas(el.abbreviatedCartouche,abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints,abbreviationOptionsForKind(item.kind)));
+      el.reveal.classList.remove("hidden");
+    }catch(err){
+      console.error(err);
+      setFeedback(`Reveal error: ${err?.message ?? String(err)}`,"bad");
+    }
+  }
+
+  async function startSession(){
+    cancelAutoNext();
+    readSettingsFromUi();
+    state.items = buildSessionItems();
+    state.index = 0;
+    state.score = 0;
+    state.streak = 0;
+    state.bestStreak = 0;
+    state.completedCount = 0;
+    state.startedAt = new Date().toISOString();
+    state.sessionSaved = false;
+    state.active = true;
+    el.startButton.disabled = true;
+    el.quitButton.disabled = false;
+    setSetupDisabled(true);
+    showTab("practice");
+    setStatus("Session started.");
+    await renderCurrentQuestion();
+  }
+
+  async function finishSession({quit=false}={}){
+    if (!state.active) return;
+    cancelAutoNext();
+    state.active = false;
+    stopCurrentAudioPlayback({restoreAudioButton:false});
+    el.startButton.disabled = false;
+    el.quitButton.disabled = true;
+    el.audioButton.disabled = true;
+    endHintPreview({restore:false,focusInput:false});
+    el.firstAnswerInput.disabled = true;
+    el.hintButton.disabled = true;
+    el.checkFirstButton.disabled = true;
+    el.decimalAnswerInput.disabled = true;
+    el.checkDecimalButton.disabled = true;
+    el.revealButton.disabled = true;
+    el.previousButton.disabled = true;
+    el.nextButton.disabled = true;
+    setSetupDisabled(false);
+
+    showTab("practice");
+    const total = state.items.length;
+    const revealed = state.items.filter(x => x.revealed).length;
+    el.summaryScore.textContent = `${state.score} / ${total}`;
+    el.summaryText.textContent = quit
+      ? `Session stopped after ${state.completedCount} of ${total} questions. Best streak: ${state.bestStreak}.`
+      : `Completed ${total} questions. Revealed answers: ${revealed}. Best streak: ${state.bestStreak}.`;
+    el.summaryCard.classList.remove("hidden");
+    setStatus(quit ? "Saving stopped session…" : "Saving completed session…");
+    try{
+      await saveCurrentSessionToHistory({quit});
+      setStatus(quit ? "Session stopped and saved." : "Session complete and saved.");
+    }catch(err){
+      console.error("Could not save abbreviated-cartouche history",err);
+      setStatus("Session ended, but history could not be saved.");
+    }
+    await renderCurrentReview();
+  }
+
+  async function nextQuestion(){
+    cancelAutoNext();
+    const item = currentItem();
+    if (!state.active || !item || !(item.completed || item.revealed)) return;
+    if (state.index >= state.items.length - 1){
+      await finishSession();
+      return;
+    }
+    state.index++;
+    await renderCurrentQuestion();
+  }
+
+  async function previousQuestion(){
+    cancelAutoNext();
+    if (!state.active || state.index <= 0) return;
+    state.index--;
+    await renderCurrentQuestion();
+  }
+
+  async function ensureCartoucheFontLoaded(){
+    if (!document.fonts?.load) return;
+    await document.fonts.load(`24px "${FONT_FAMILY}"`,String.fromCodePoint(0xF193D));
+    await document.fonts.ready;
+  }
+  function getQuarterCodepointsSet(){
+    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,0xF1909,0xF190B,0xF190A,0xF1947,0xF1902,0xF190D,0xF1970]);
+  }
+  function getOneThirdsCodepointsSet(){ return new Set([0xF1917]); }
+  function getHalfCodepointsSet(){ return new Set([0xF1914]); }
+  function getTwoThirdsCodepointsSet(){ return new Set([0xF1946,0xF1944,0xF191F]); }
+  function getVerticalOffsetForCartoucheCodepoint(cp,px){ return cp === 0xF1917 ? -Math.round(px * 0.22) : 0; }
+  function drawRoundedRect(ctx,x,y,w,h,r){
+    const radius = Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+radius,y);
+    ctx.arcTo(x+w,y,x+w,y+h,radius);
+    ctx.arcTo(x+w,y+h,x,y+h,radius);
+    ctx.arcTo(x,y+h,x,y,radius);
+    ctx.arcTo(x,y,x+w,y,radius);
+    ctx.closePath();
+  }
+  function abbreviateNumericCartoucheEntries(cps,{showTelephoneHyphenEn=false}={}){
+    const input = Array.from(cps ?? []).map(Number);
+    if (!input.length) return [];
+    const out = [];
+    let keptFirstNanpa = false;
+    for (let i=0;i<input.length;i++){
+      if (showTelephoneHyphenEn && keptFirstNanpa &&
+          input[i] === ABBREV_CP_NENA && input[i+1] === ABBREV_CP_EN &&
+          input[i+2] === ABBREV_CP_NENA && input[i+3] === ABBREV_CP_EN){
+        out.push({cp:ABBREV_CP_EN,sourceIndex:i+3});
+        i += 3;
+        continue;
+      }
+      const cp = input[i];
+      const isFinalNanpa = cp === ABBREV_CP_NANPA && i === input.length - 1;
+      if (!keptFirstNanpa){
+        out.push({cp,sourceIndex:i});
+        if (cp === ABBREV_CP_NANPA) keptFirstNanpa=true;
+        continue;
+      }
+      if (isFinalNanpa){ out.push({cp,sourceIndex:i}); continue; }
+      if (ABBREV_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+      out.push({cp,sourceIndex:i});
+    }
+    return out;
+  }
+  function abbreviateNumericCartoucheCps(cps,options={}){
+    return abbreviateNumericCartoucheEntries(cps,options).map(entry => entry.cp);
+  }
+  function abbreviationOptionsForKind(kind){
+    return {showTelephoneHyphenEn:kind === "telephone"};
+  }
+  function renderCartoucheToCanvas(canvas,codepoints,largePx=LARGE_TINY_FONT_SIZE,smallPx=SMALL_TINY_FONT_SIZE,options=CARTOUCHE_RENDER_OPTS){
+    const pad=options.padding ?? 8, border=options.border ?? 1, corner=options.cornerRadius ?? 10, letterGap=options.letterGap ?? 2;
+    const oneThirdSet=getOneThirdsCodepointsSet(), quarterSet=getQuarterCodepointsSet(), halfSet=getHalfCodepointsSet(), twoThirdsSet=getTwoThirdsCodepointsSet();
+    const ctx=canvas.getContext("2d");
+    ctx.textBaseline="alphabetic";
+    const glyphRuns=[];
+    let totalWidth=0,maxAscent=0,maxDescent=0;
+    for (const cp of Array.from(codepoints ?? [])){
+      const ch=String.fromCodePoint(cp);
+      const px=oneThirdSet.has(cp)?Math.max(1,Math.round(largePx/3)):
+        quarterSet.has(cp)?smallPx:
+        halfSet.has(cp)?Math.max(1,Math.round(largePx*0.5)):
+        twoThirdsSet.has(cp)?Math.max(1,Math.round(largePx*(2/3))):largePx;
+      ctx.font=`${px}px "${FONT_FAMILY}"`;
+      const m=ctx.measureText(ch);
+      const ascent=m.actualBoundingBoxAscent ?? Math.ceil(px*0.8);
+      const descent=m.actualBoundingBoxDescent ?? Math.ceil(px*0.2);
+      const left=m.actualBoundingBoxLeft ?? 0;
+      const right=m.actualBoundingBoxRight ?? Math.ceil(m.width);
+      const tightW=Math.ceil(left+right);
+      const yOffset=getVerticalOffsetForCartoucheCodepoint(cp,largePx);
+      glyphRuns.push({ch,px,tightW,left,ascent,descent,yOffset});
+      totalWidth += tightW + letterGap;
+      maxAscent=Math.max(maxAscent,ascent+Math.max(0,-yOffset));
+      maxDescent=Math.max(maxDescent,descent+Math.max(0,yOffset));
+    }
+    if (glyphRuns.length) totalWidth -= letterGap;
+    const textHeight=Math.ceil(maxAscent+maxDescent);
+    const cartW=Math.ceil(totalWidth+pad*2), cartH=Math.ceil(textHeight+pad*2);
+    canvas.width=cartW+border*2;
+    canvas.height=cartH+border*2;
+    const ctx2=canvas.getContext("2d");
+    ctx2.textBaseline="alphabetic";
+    ctx2.clearRect(0,0,canvas.width,canvas.height);
+    drawRoundedRect(ctx2,border,border,cartW,cartH,corner);
+    ctx2.lineWidth=border;
+    ctx2.strokeStyle="#111";
+    ctx2.stroke();
+    const baselineY=border+pad+maxAscent;
+    let x=border+pad;
+    ctx2.fillStyle="#111";
+    const positionedRuns=[];
+    const visibleCodepointCount = Number.isFinite(Number(options.visibleCodepointCount))
+      ? clamp(Math.floor(Number(options.visibleCodepointCount)),0,glyphRuns.length)
+      : glyphRuns.length;
+    for (let glyphIndex=0;glyphIndex<glyphRuns.length;glyphIndex++){
+      const g = glyphRuns[glyphIndex];
+      ctx2.font=`${g.px}px "${FONT_FAMILY}"`;
+      if (glyphIndex < visibleCodepointCount){
+        ctx2.fillText(g.ch,x+(g.left ?? 0),baselineY+(g.yOffset ?? 0));
+      }
+      positionedRuns.push({
+        x,
+        width:g.tightW,
+        top:baselineY - g.ascent + (g.yOffset ?? 0),
+        height:g.ascent + g.descent
+      });
+      x += g.tightW + letterGap;
+    }
+    canvas._reviewCartoucheLayout = {
+      runs:positionedRuns,
+      innerY:border + 1,
+      innerHeight:Math.max(1,canvas.height - (border + 1) * 2)
+    };
+  }
+
+  function wireEvents(){
+    el.startButton.addEventListener("click",startSession);
+    el.restartButton.addEventListener("click",startSession);
+    el.summaryReviewButton.addEventListener("click",() => showTab("review"));
+    el.quitButton.addEventListener("click",() => finishSession({quit:true}));
+    el.previousButton.addEventListener("click",previousQuestion);
+    el.nextButton.addEventListener("click",nextQuestion);
+    el.audioButton.addEventListener("click",playCurrentAudio);
+    el.hintButton.addEventListener("pointerdown",event => {
+      if (event.button !== undefined && event.button !== 0) return;
+      event.preventDefault();
+      requestHintPreview();
+    });
+    el.hintButton.addEventListener("pointerleave",() => endHintPreview());
+    el.hintButton.addEventListener("lostpointercapture",() => endHintPreview());
+    el.hintButton.addEventListener("keydown",event => {
+      if ((event.key !== " " && event.key !== "Enter") || event.repeat) return;
+      event.preventDefault();
+      requestHintPreview();
+    });
+    el.hintButton.addEventListener("keyup",event => {
+      if (event.key !== " " && event.key !== "Enter") return;
+      event.preventDefault();
+      endHintPreview();
+    });
+    el.hintButton.addEventListener("blur",() => endHintPreview());
+    el.hintButton.addEventListener("click",event => event.preventDefault());
+    el.hintButton.addEventListener("contextmenu",event => event.preventDefault());
+    document.addEventListener("pointerup",() => endHintPreview());
+    document.addEventListener("pointercancel",() => endHintPreview());
+    el.checkFirstButton.addEventListener("click",checkFirstAnswer);
+    el.checkDecimalButton.addEventListener("click",checkDecimalAnswer);
+    el.revealButton.addEventListener("click",revealCurrent);
+    document.querySelectorAll(".tabBtn").forEach(btn => btn.addEventListener("click",() => showTab(btn.dataset.tab)));
+
+    el.firstAnswerInput.addEventListener("compositionstart",() => { firstAnswerCompositionActive = true; });
+    el.firstAnswerInput.addEventListener("compositionend",() => {
+      firstAnswerCompositionActive = false;
+      const item = currentItem();
+      if (item) void applyProgressiveInputCorrection(item);
+    });
+    el.firstAnswerInput.addEventListener("input",() => {
+      const item = currentItem();
+      if (!item) return;
+      item.firstAnswer = el.firstAnswerInput.value;
+      if (!firstAnswerCompositionActive) void applyProgressiveInputCorrection(item);
+    });
+    el.decimalAnswerInput.addEventListener("input",() => { const item=currentItem(); if (item) item.decimalAnswer=el.decimalAnswerInput.value; });
+
+    el.firstAnswerInput.addEventListener("keydown",async event => {
+      if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      await checkFirstAnswer();
+    });
+    el.decimalAnswerInput.addEventListener("keydown",async event => {
+      if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      await checkDecimalAnswer();
+    });
+
+    document.addEventListener("keydown",async event => {
+      if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
+      const item = currentItem();
+      if (!state.active || state.tab !== "practice" || !item || !(item.completed || item.revealed)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      cancelAutoNext();
+      await nextQuestion();
+    },true);
+
+    el.reviewProblemsOnlyToggle.addEventListener("change",() => {
+      state.reviewProblemsOnly = !!el.reviewProblemsOnlyToggle.checked;
+      renderCurrentReview();
+    });
+    el.historyProblemsOnlyToggle.addEventListener("change",() => {
+      state.historyProblemsOnly = !!el.historyProblemsOnlyToggle.checked;
+      renderHistoryDetail(state.history.find(x => x.id === state.selectedHistoryId) || state.history[0]);
+    });
+    el.refreshHistoryButton.addEventListener("click",loadHistory);
+    el.clearHistoryButton.addEventListener("click",async () => {
+      if (!confirm("Clear all saved abbreviated-cartouche-practice history on this device?")) return;
+      await clearHistorySessions();
+      state.history=[];
+      state.selectedHistoryId=null;
+      renderHistory();
+    });
+
+    for (const control of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.audioSpeedSelect,
+      el.requireDecimalToggle,el.equivalentPunctuationToggle,el.autoNextToggle,el.autoNextDelaySelect]){
+      control.addEventListener("change",() => {
+        stopCurrentAudioPlayback();
+        readSettingsFromUi();
+        if (control === el.audioSpeedSelect) setStatus("Audio speed updated.");
+        if (control === el.properNameModeSelect && state.tab === "examples") renderExamples();
+        if (control === el.equivalentPunctuationToggle) setStatus("Punctuation setting updated.");
+        if (control === el.autoNextToggle || control === el.autoNextDelaySelect){
+          cancelAutoNext();
+          setStatus("Automatic-next setting updated.");
+        }
+      });
+    }
+  }
+
+  async function init(){
+    cacheElements();
+    loadSettings();
+    syncSettingsUi();
+    wireEvents();
+    updateStats();
+    updateNavigation();
+    showTab("practice");
+    try{ state.history = await readHistorySessions(); }
+    catch(err){ console.warn("Abbreviated-cartouche-practice history unavailable",err); }
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",init,{once:true});
+  else init();
+})();
+</script>
+
+
+<script>
+  const productionHosts = new Set([
+    'nanpa-linja-n.com',
+    'www.nanpa-linja-n.com'
+  ]);
+
+   if (!productionHosts.has(window.location.hostname)) {
+      window.goatcounter = { no_onload: true };
+  }
+ 
+
+function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
+  }
+</script>
+
+<script data-goatcounter="https://nanpalinjan.goatcounter.com/count" async src="./js/goatcounter-count.js">
+</script>
+
+</body>
+</html>
