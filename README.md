@@ -106,11 +106,11 @@ Example:
   -5,432.10 →<br>
   <span style="display:inline-flex; align-items:center; gap:8px; line-height:1;">
     <span style="font-size:1.4em; line-height:1;">#</span>
-    <img src="images/number-minus-5-thousand-432-point-10_v3.png"
+    <img src="images/number-minus-5-thousand-432-point-10_v4.png"
         width="220" alt="-5,432.10" style="display:block;">
     <span style="line-height:1;">→</span>
   </span><br>
-  nanpa Neno Len Eke Naseten One Wenin →<br>
+  nanpa Neno Lun Eke Nasetun One Wanin →<br>
   #~oLkASToWI →<br>
   -5,432.10
 </div>
@@ -150,7 +150,7 @@ Rules:
 
 Example:
 
-- -1,530.9 → Neno Wen Eke Lesenin One Jen (pronounced Ne-no-Wen-Eke-Le-se-nin-One-Jen)
+- -1,530.9 → Neno Wan Eke Lusenin One Jen (pronounced Ne-no-Wan-Eke-Lu-se-nin-One-Jen)
 
 ---
 
@@ -159,12 +159,12 @@ Example:
 - Long nanpa-linja-n numeric proper names may be split into separate words at numeric punctuation markers to make them easier to read and communicate, each separate word will start with a capital letter.
 - All numeric punctuation markers begin with **n**. When a punctuation marker is split into a separate word, its initial **n** is normally attached to the end of the preceding word.
 - For example, the decimal separator **none** is split as **-n One**:
-  - 2.5 → Netenonelen
-  -  Split form: Neten One Len
+  - 2.5 → Netunonelun
+  -  Split form: Netun One Lun
 - The only exception is **no**, the negative marker. Since **no** represents the negative sign and can only appear at the start of a number or exponent, it is not split as **-n O**. It may attach to the **Ne-** at the start of a proper name to give **Neno**
 - For example:
-  - -1 → Nenowen
-  -  Split form: Neno Wen
+  - -1 → Nenowan
+  -  Split form: Neno Wan
 - The final **-n** is always attached to the final word of the full nanpa-linja-n proper name.
 
 ---
@@ -187,41 +187,54 @@ In relaxed mode, for example, **Nemun**, as well as **Nemen**, is accepted as re
 
 Relaxed mode is preferred because it allows some digits to be represented using more natural syllables. For example, relaxed mode accepts both **Nemen** and **Nemun** as proper names representing the number 7. The additional permitted syllables are derived naturally from the sitelen pona glyph associated with the corresponding digit.
 
-
-
 ### relaxed
 
-|       digit |  e  |  a  |  i  |  u  | large glyph |
-| ----------: | :-: | :-: | :-: | :-: | :---------- |
-|           0 |  -  |  -  |  ni |  -  | ijo         |
-|           1 |  we |  wa |  -  |  -  | wan         |
-|           2 |  te |  -  |  -  |  tu | tu          |
-|           3 |  se |  -  |  -  |  -  | seli        |
-|           4 |  -  |  na |  -  |  -  | awen        |
-|           5 |  le |  -  |  -  |  lu | luka        |
-|           6 |  -  |  -  |  -  |  nu | utala       |
-|           7 |  me |  -  |  -  |  mu | mun         |
-|           8 |  pe |  -  |  pi |  -  | pipi        |
-|           9 |  je |  -  |  -  |  -  | jo          |
-| small glyph |  en | ala | ike | uta |             |
+| digit | e | a | i | u | large glyph | sitelen glyphs | abbreviated |
+| ----: | :-: | :-: | :-: | :-: | :---------- | :-------------: | :-----------: |
+| 0 | - | - | ni | - | ijo | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-ijo.png" alt="ijo" height="30"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-ijo.png" alt="ijo" height="30"></span> |
+| 1 | we | wa | - | - | wan | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-wan.png" alt="wan" height="30"><img src="./images/nanpa-linja-n-mode-ala.png" alt="ala" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-wan.png" alt="wan" height="30"></span> |
+| 2 | te | - | - | tu | tu | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-tu.png" alt="tu" height="30"><img src="./images/nanpa-linja-n-mode-uta.png" alt="uta" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-tu.png" alt="tu" height="30"></span> |
+| 3 | se | - | - | - | seli | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-seli.png" alt="seli" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-seli.png" alt="seli" height="30"></span> |
+| 4 | - | na | - | - | awen | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-awen.png" alt="awen" height="30"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-awen.png" alt="awen" height="30"></span> |
+| 5 | le | - | - | lu | luka | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-luka.png" alt="luka" height="30"><img src="./images/nanpa-linja-n-mode-uta.png" alt="uta" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-luka.png" alt="luka" height="30"></span> |
+| 6 | - | - | - | nu | utala | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-utala.png" alt="utala" height="30"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-utala.png" alt="utala" height="30"></span> |
+| 7 | me | - | - | mu | mun | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-mun.png" alt="mun" height="30"><img src="./images/nanpa-linja-n-mode-uta.png" alt="uta" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-mun.png" alt="mun" height="30"></span> |
+| 8 | pe | - | pi | - | pipi | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-pipi.png" alt="pipi" height="30"><img src="./images/nanpa-linja-n-mode-ike.png" alt="ike" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-pipi.png" alt="pipi" height="30"></span> |
+| 9 | je | - | - | - | jo | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-jo.png" alt="jo" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-jo.png" alt="jo" height="30"></span> |
+| small glyph | en | ala | ike | uta | &nbsp; | &nbsp; | &nbsp; |
+| small sitelen glyph | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="12"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-ala.png" alt="ala" height="12"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-ike.png" alt="ike" height="12"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-uta.png" alt="uta" height="12"></span> | &nbsp; | &nbsp; | &nbsp; |
 
 ### strict
 
-|       digit |  e  |  a  |  i  |  u  | large glyph |
-| ----------: | :-: | :-: | :-: | :-: | :---------- |
-|           0 |  -  |  -  |  ni |  -  | ijo         |
-|           1 |  we |  -  |  -  |  -  | wan         |
-|           2 |  te |  -  |  -  |  -  | tu          |
-|           3 |  se |  -  |  -  |  -  | seli        |
-|           4 |  -  |  na |  -  |  -  | awen        |
-|           5 |  le |  -  |  -  |  -  | luka        |
-|           6 |  -  |  -  |  -  |  nu | utala       |
-|           7 |  me |  -  |  -  |  -  | mun         |
-|           8 |  pe |  -  |  -  |  -  | pipi        |
-|           9 |  je |  -  |  -  |  -  | jo          |
-| small glyph |  en |     |     |     |             |
+| digit | e | a | i | u | large glyph | sitelen glyphs | abbreviated |
+| ----: | :-: | :-: | :-: | :-: | :---------- | :-------------: | :-----------: |
+| 0 | - | - | ni | - | ijo | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-ijo.png" alt="ijo" height="30"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-ijo.png" alt="ijo" height="30"></span> |
+| 1 | we | - | - | - | wan | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-wan.png" alt="wan" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-wan.png" alt="wan" height="30"></span> |
+| 2 | te | - | - | - | tu | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-tu.png" alt="tu" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-tu.png" alt="tu" height="30"></span> |
+| 3 | se | - | - | - | seli | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-seli.png" alt="seli" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-seli.png" alt="seli" height="30"></span> |
+| 4 | - | na | - | - | awen | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-awen.png" alt="awen" height="30"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-awen.png" alt="awen" height="30"></span> |
+| 5 | le | - | - | - | luka | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-luka.png" alt="luka" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-luka.png" alt="luka" height="30"></span> |
+| 6 | - | - | - | nu | utala | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-utala.png" alt="utala" height="30"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-utala.png" alt="utala" height="30"></span> |
+| 7 | me | - | - | - | mun | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-mun.png" alt="mun" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-mun.png" alt="mun" height="30"></span> |
+| 8 | pe | - | - | - | pipi | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-pipi.png" alt="pipi" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-pipi.png" alt="pipi" height="30"></span> |
+| 9 | je | - | - | - | jo | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-jo.png" alt="jo" height="30"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-jo.png" alt="jo" height="30"></span> |
+| small glyph | en | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; |
+| small sitelen glyph | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="12"></span> | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; |
 
+### numeric punctuation
 
+| numeric punctuation | nanpa-linja-n proper name letters | glyph sequence | sitelen glyphs | abbreviated |
+| :------------------ | :-------------------------------- | :------------- | :-------------: | :-----------: |
+| negative | `no` | `nena ona` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-ona.png" alt="ona" height="20"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-ona.png" alt="ona" height="20"></span> |
+| decimal point | `none` | `nena o nena en` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-o.png" alt="o" height="20"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-o.png" alt="o" height="20"></span> |
+| ISO thousands | `neke` | `nena en kulupu en` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"><img src="./images/nanpa-linja-n-mode-kulupu.png" alt="kulupu" height="20"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-kulupu.png" alt="kulupu" height="20"></span> |
+| percentage | `noke` | `nena open kipisi en` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-open.png" alt="open" height="8"><img src="./images/nanpa-linja-n-mode-kipisi.png" alt="kipisi" height="20"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-kipisi.png" alt="kipisi" height="20"></span> |
+| scientific notation | `neko` | `nena en kala open` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"><img src="./images/nanpa-linja-n-mode-kala.png" alt="kala" height="15"><img src="./images/nanpa-linja-n-mode-open.png" alt="open" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-kala.png" alt="kala" height="15"></span> |
+| numerator vs denominator | `nono` | `nena o nena o` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-o.png" alt="o" height="20"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-o.png" alt="o" height="20"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-o.png" alt="o" height="20"><img src="./images/nanpa-linja-n-mode-o.png" alt="o" height="20"></span> |
+| integer vs fraction | `noko` | `nena open kin open` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-open.png" alt="open" height="8"><img src="./images/nanpa-linja-n-mode-kin.png" alt="kin" height="20"><img src="./images/nanpa-linja-n-mode-open.png" alt="open" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-kin.png" alt="kin" height="20"></span> |
+| date | `neke` | `nena en kasi en` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"><img src="./images/nanpa-linja-n-mode-kasi.png" alt="kasi" height="10"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-kasi.png" alt="kasi" height="10"></span> |
+| time | `neke` | `nena en kasi en` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"><img src="./images/nanpa-linja-n-mode-kasi.png" alt="kasi" height="10"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-kasi.png" alt="kasi" height="10"></span> |
+| spacer (no value) | `nene` | `nena en nena en` | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"><img src="./images/nanpa-linja-n-mode-nena.png" alt="nena" height="8"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"></span> | <span style="display:inline-flex;align-items:baseline;background:#fff;color:#000;padding:3px 4px;line-height:1;"><img src="./images/nanpa-linja-n-mode-en.png" alt="en" height="8"> <small>(optional)</small></span> |
 
 
 
@@ -252,16 +265,16 @@ Example:
 Rules:
 
 - Each digit has a unique sitelen pona glyph and a unique latin letter: 1 → wan → w
-- Latin nanpa-linja-n numeric proper name: ...we...
-- Numeric Cartouche [... wan en ...]
+- Latin nanpa-linja-n numeric proper name: ...wa...
+- Numeric Cartouche [... wan ala ...]
 - Abbreviated Cartouche: [... wan ...]
 - Abbreviation #~: ...W...
 
 Example:
 
 - 1
-- Newen
-- [nanpa en wan en nanpa]
+- Newan
+- [nanpa en wan ala nanpa]
 - [nanpa wan nanpa]
 - Abbreviation: #~W
 
@@ -272,16 +285,16 @@ Example:
 Rules:
 
 - Each digit has a unique sitelen pona glyph and a unique latin letter: 2 → tu → t
-- Latin nanpa-linja-n numeric proper name: ...te...
-- Numeric Cartouche [... tu en ...]
+- Latin nanpa-linja-n numeric proper name: ...tu...
+- Numeric Cartouche [... tu uta ...]
 - Abbreviated Cartouche: [... tu ...]
 - Abbreviation #~: ...T...
 
 Example:
 
 - 2
-- Neten
-- [nanpa en tu en nanpa]
+- Netun
+- [nanpa en tu uta nanpa]
 - [nanpa tu nanpa]
 - Abbreviation: #~T
 
@@ -332,16 +345,16 @@ Example:
 Rules:
 
 - Each digit has a unique sitelen pona glyph and a unique latin letter: 5 → luka → l
-- Latin nanpa-linja-n numeric proper name: ...le...
-- Numeric Cartouche [... luka en ...]
+- Latin nanpa-linja-n numeric proper name: ...lu...
+- Numeric Cartouche [... luka uta ...]
 - Abbreviated Cartouche: [... luka ...]
 - Abbreviation #~: ...L...
 
 Example:
 
 - 5
-- Nelen
-- [nanpa en luka en nanpa]
+- Nelun
+- [nanpa en luka uta nanpa]
 - [nanpa luka nanpa]
 - Abbreviation: #~L
 
@@ -372,16 +385,16 @@ Example:
 Rules:
 
 - Each digit has a unique sitelen pona glyph and a unique latin letter: 7 → mun → m
-- Latin nanpa-linja-n numeric proper name: ...me...
-- Numeric Cartouche [... mun en ...]
+- Latin nanpa-linja-n numeric proper name: ...mu...
+- Numeric Cartouche [... mun uta ...]
 - Abbreviated Cartouche: [... mun ...]
 - Abbreviation #~: ...M...
 
 Example:
 
 - 7
-- Nemen
-- [nanpa en mun en nanpa]
+- Nemun
+- [nanpa en mun uta nanpa]
 - [nanpa mun nanpa]
 - Abbreviation: #~M
 
@@ -392,16 +405,16 @@ Example:
 Rules:
 
 - Each digit has a unique sitelen pona glyph and a unique latin letter: 8 → pipi → p
-- Latin nanpa-linja-n numeric proper name: ...pe...
-- Numeric Cartouche [... pipi en ...]
+- Latin nanpa-linja-n numeric proper name: ...pi...
+- Numeric Cartouche [... pipi ike ...]
 - Abbreviated Cartouche: [... pipi ...]
 - Abbreviation #~: ...P...
 
 Example:
 
 - 8
-- Nepen
-- [nanpa en pipi en nanpa]
+- Nepin
+- [nanpa en pipi ike nanpa]
 - [nanpa pipi nanpa]
 - Abbreviation: #~P
 
@@ -441,52 +454,52 @@ Rules:
 
 ### Examples
 
-- 10 → we ni → **Newenin**
+- 10 → we ni → **Newanin**
 - 46 → na nu → **Nenanun**
-- 78 → me pe → **Nemepen**
-- 100 → we ni ni → **Neweninin**
-- 100 → we ni ni → **Newen Inin**
-- 567 → le nu me → **Nelenumen**
-- 234 → te se na → **Netesenan**
-- 801 → pe ni we → **Nepeniwen**
-- 950 → je le ni → **Nejelenin**
+- 78 → me pe → **Nemepin**
+- 100 → we ni ni → **Newaninin**
+- 100 → we ni ni → **Newan Inin**
+- 567 → le nu me → **Nelunumun**
+- 234 → te se na → **Netusenan**
+- 801 → pe ni we → **Nepiniwan**
+- 950 → je le ni → **Nejelunin**
 
 
 ### More Examples
 ```
-1           → Newen
-10          → Newenin
-100         → Newen Inin
-1,000       → Newen Eken
-10,000      → Newenin Eken
-100,000     → Newen Inin Eken
-1,000,000   → Newen Ekeken
-08          → Nenipen
-23          → Netesen
-679         → Nenumejen
-1,234       → Newen Eke Tesenan
-12,000      → Neweten Eken
-12000       → Newetenininin
+1           → Newan
+10          → Newanin
+100         → Newan Inin
+1,000       → Newan Eken
+10,000      → Newanin Eken
+100,000     → Newan Inin Eken
+1,000,000   → Newan Ekeken
+08          → Nenipin
+23          → Netusen
+679         → Nenumujen
+1,234       → Newan Eke Tusenan
+12,000      → Newatun Eken
+12000       → Newatunininin
 3,000,000   → Nesen Ekeken
 30,000,000  → Nesenin Ekeken
 300,000,000 → Neseninin Ekeken
 3,000,000,000 → Nesen Ekekeken
-7,321,900   → Nemen Eke Setewen Eke Jeninin
-64.5M       → Nenunan One Len Ekeken
-64.5B       → Nenunan One Len Ekekeken
-0123456789  → Neniwetesenalenumepejen (using block words is optional, but often very helpful for understanding)
-012-3456789 → Neniweten Ene Senalenumepejen (nene can be used anywhere to break up large numbers)
-012-3456-789 → Neniweten Ene Senalenun Ene Mepejen
-2025        → Netenitelen
-2,025       → Neten Eke Nitelen
-20-25       → Netenin Ene Telen
-2-0-2-5     → Neten Ene Nin Ene Ten Ene Len
-3.141592    → Nesen One Wenawelejeten
-−5          → Neno Len
-1/2         → Newen Ono Ten
+7,321,900   → Nemun Eke Setuwan Eke Jeninin
+64.5M       → Nenunan One Lun Ekeken
+64.5B       → Nenunan One Lun Ekekeken
+0123456789  → Neniwatusenalunumupijen (using block words is optional, but often very helpful for understanding)
+012-3456789 → Neniwatun Ene Senalunumupijen (nene can be used anywhere to break up large numbers)
+012-3456-789 → Neniwatun Ene Senalunun Ene Mupijen
+2025        → Netunitulun
+2,025       → Netun Eke Nitulun
+20-25       → Netunin Ene Tulun
+2-0-2-5     → Netun Ene Nin Ene Tun Ene Lun
+3.141592    → Nesen One Wanawalujetun
+−5          → Neno Lun
+1/2         → Newan Ono Tun
 9¾          → Nejen Oko Sen Ono Nan
-10.5%       → Newenin One Len Oken
-4.5*10^-3   → Nenan One Len Eko Wenin Eko Nosen
+10.5%       → Newanin One Lun Oken
+4.5*10^-3   → Nenan One Lun Eko Wanin Eko Nosen
 ```
 
 ---
@@ -616,8 +629,8 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...noko...
-- Numeric Cartouche: [... nena open kala open ...]
-- Abbreviated Cartouche: [... kala ...]
+- Numeric Cartouche: [... nena open kin open ...]
+- Abbreviated Cartouche: [... kin ...]
 - Abbreviation #~: ...oko...
 - If a mixed fraction is negative, the negative sign appears at the very start of the whole mixed fraction expression.
 
