@@ -270,26 +270,6 @@
     }
     .desktopCartoucheInstruction{ display:inline; }
     .mobileCartoucheInstruction{ display:none; }
-    .mobileKeyboardInstruction{
-      display:none;
-      position:fixed;
-      z-index:1000;
-      top:0;
-      left:0;
-      width:100%;
-      padding:calc(7px + env(safe-area-inset-top,0px)) 12px 7px;
-      border-bottom:1px solid var(--panel-border);
-      background:rgba(243,223,192,0.97);
-      backdrop-filter:blur(8px);
-      box-shadow:0 2px 8px rgba(17,17,17,0.18);
-      color:var(--ink);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      font-size:14px;
-      font-weight:800;
-      line-height:1.25;
-      text-align:center;
-      pointer-events:none;
-    }
     .answerInput{
       width:100%;
       min-width:0;
@@ -675,7 +655,110 @@
       .questionCard{ min-height:390px; }
       .desktopCartoucheInstruction{ display:none; }
       .mobileCartoucheInstruction{ display:inline; }
-      body.mobilePracticeInputFocused .mobileKeyboardInstruction{ display:block; }
+
+      /* While the mobile keyboard is open, turn the practice question into a
+         compact viewport-sized workspace. The instruction, complete cartouche,
+         hint line and input all receive their own layout space; nothing overlays
+         or obscures the cartouche. */
+      body.mobilePracticeInputFocused{ overflow:hidden; }
+      body.mobilePracticeInputFocused .topbar,
+      body.mobilePracticeInputFocused .tabs,
+      body.mobilePracticeInputFocused #tab-practice > .card:first-child,
+      body.mobilePracticeInputFocused #tab-practice > .progressGrid,
+      body.mobilePracticeInputFocused .footer{
+        display:none !important;
+      }
+      body.mobilePracticeInputFocused .wrap{
+        height:100dvh;
+      }
+      body.mobilePracticeInputFocused .main{
+        position:fixed;
+        z-index:1000;
+        top:var(--mobile-viewport-top,0px);
+        left:var(--mobile-viewport-left,0px);
+        width:var(--mobile-viewport-width,100vw);
+        height:var(--mobile-viewport-height,100dvh);
+        overflow:hidden;
+        padding:6px;
+        background:var(--bg);
+        display:block;
+      }
+      body.mobilePracticeInputFocused .stack,
+      body.mobilePracticeInputFocused #tab-practice{
+        width:100%;
+        height:100%;
+        min-height:0;
+        padding:0;
+        gap:0;
+      }
+      body.mobilePracticeInputFocused #questionCard{
+        width:100%;
+        height:100%;
+        min-height:0;
+        overflow:hidden;
+        padding:6px;
+        gap:6px;
+        border-radius:12px;
+        grid-template-rows:minmax(0,1fr) auto;
+      }
+      body.mobilePracticeInputFocused #questionCard > :not(.visualCartoucheArea):not(.answerStage){
+        display:none !important;
+      }
+      body.mobilePracticeInputFocused .visualCartoucheArea{
+        height:100%;
+        min-height:0;
+        overflow:hidden;
+        padding:7px 6px;
+        gap:4px;
+        grid-template-rows:auto minmax(0,1fr);
+      }
+      body.mobilePracticeInputFocused .visualCartoucheLabel{
+        flex:0 0 auto;
+        font-size:13px;
+        line-height:1.2;
+      }
+      body.mobilePracticeInputFocused .visualCartoucheCanvasWrap{
+        width:100%;
+        height:100%;
+        min-height:0;
+        overflow:hidden;
+        padding:2px;
+      }
+      body.mobilePracticeInputFocused #questionAbbreviatedCartouche{
+        max-width:100%;
+        max-height:100%;
+        width:auto;
+        height:auto;
+        object-fit:contain;
+      }
+      body.mobilePracticeInputFocused .answerStage{
+        width:100%;
+        max-width:none;
+        margin:0;
+        gap:3px;
+      }
+      body.mobilePracticeInputFocused .answerStage.hidden{
+        display:none !important;
+      }
+      body.mobilePracticeInputFocused .stageLabel{
+        display:none;
+      }
+      body.mobilePracticeInputFocused .typedHint{
+        height:1.25em;
+        line-height:1.25em;
+        font-size:13px;
+      }
+      body.mobilePracticeInputFocused .answerRow{
+        grid-template-columns:1fr;
+        gap:0;
+      }
+      body.mobilePracticeInputFocused .answerRow .btn{
+        display:none;
+      }
+      body.mobilePracticeInputFocused .answerInput{
+        height:44px;
+      }
+
       .answerRow{ grid-template-columns:1fr; }
       .answerRow .btn{ justify-self:start; }
       .footerLeft{ display:none; }
@@ -684,7 +767,6 @@
   </style>
 </head>
 <body>
-  <div id="mobileKeyboardInstruction" class="mobileKeyboardInstruction" role="note">type space to check progress or type 'h' and space for hint</div>
   <header class="topbar">
     <div class="brand">nanpa-linja-n abbreviated cartouche practice</div>
     <button id="startButton" class="btn primary" type="button">Start</button>
@@ -1093,7 +1175,7 @@
 
   function cacheElements(){
     for (const id of [
-      "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status","mobileKeyboardInstruction",
+      "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status",
       "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton","questionAbbreviatedCartouche",
       "firstAnswerInput","typedHint","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
       "reveal","revealValue","revealStrictLine","revealStrictName","revealRelaxedLine","revealRelaxedName","normalCartouche",
@@ -2167,27 +2249,31 @@
     return window.matchMedia?.("(max-width:720px)")?.matches ?? window.innerWidth <= 720;
   }
 
-  function syncMobileKeyboardInstruction(){
-    if (!el.mobileKeyboardInstruction) return;
+  function syncMobilePracticeViewport(){
     const focused = document.activeElement === el.firstAnswerInput || document.activeElement === el.decimalAnswerInput;
-    const shouldShow = isMobilePracticeViewport() && state.tab === "practice" && focused;
-    document.body.classList.toggle("mobilePracticeInputFocused",shouldShow);
+    const shouldUseCompactView = isMobilePracticeViewport() && state.tab === "practice" && focused;
+    document.body.classList.toggle("mobilePracticeInputFocused",shouldUseCompactView);
 
-    if (!shouldShow){
-      el.mobileKeyboardInstruction.style.removeProperty("top");
-      el.mobileKeyboardInstruction.style.removeProperty("left");
-      el.mobileKeyboardInstruction.style.removeProperty("width");
+    const root = document.documentElement;
+    if (!shouldUseCompactView){
+      for (const name of [
+        "--mobile-viewport-top","--mobile-viewport-left",
+        "--mobile-viewport-width","--mobile-viewport-height"
+      ]) root.style.removeProperty(name);
       return;
     }
 
-    // Follow the visual viewport so the instruction remains at the top of the
-    // actually visible screen when a mobile on-screen keyboard is open.
+    // Size the complete practice workspace to the visual viewport—the portion
+    // of the page that remains above the on-screen keyboard.
     const viewport = window.visualViewport;
-    if (viewport){
-      el.mobileKeyboardInstruction.style.top = `${Math.max(0,viewport.offsetTop)}px`;
-      el.mobileKeyboardInstruction.style.left = `${Math.max(0,viewport.offsetLeft)}px`;
-      el.mobileKeyboardInstruction.style.width = `${Math.max(1,viewport.width)}px`;
-    }
+    const top = viewport ? Math.max(0,viewport.offsetTop) : 0;
+    const left = viewport ? Math.max(0,viewport.offsetLeft) : 0;
+    const width = viewport ? Math.max(1,viewport.width) : Math.max(1,window.innerWidth);
+    const height = viewport ? Math.max(1,viewport.height) : Math.max(1,window.innerHeight);
+    root.style.setProperty("--mobile-viewport-top",`${top}px`);
+    root.style.setProperty("--mobile-viewport-left",`${left}px`);
+    root.style.setProperty("--mobile-viewport-width",`${width}px`);
+    root.style.setProperty("--mobile-viewport-height",`${height}px`);
   }
 
   function showTab(tab){
@@ -2200,7 +2286,7 @@
     if (tab === "examples") renderExamples();
     if (tab === "review") renderCurrentReview();
     if (tab === "history") loadHistory();
-    requestAnimationFrame(syncMobileKeyboardInstruction);
+    requestAnimationFrame(syncMobilePracticeViewport);
   }
 
   function itemWasAttempted(item){
@@ -3530,12 +3616,12 @@
     document.querySelectorAll(".tabBtn").forEach(btn => btn.addEventListener("click",() => showTab(btn.dataset.tab)));
 
     for (const input of [el.firstAnswerInput,el.decimalAnswerInput]){
-      input.addEventListener("focus",syncMobileKeyboardInstruction);
-      input.addEventListener("blur",() => setTimeout(syncMobileKeyboardInstruction,0));
+      input.addEventListener("focus",() => requestAnimationFrame(syncMobilePracticeViewport));
+      input.addEventListener("blur",() => setTimeout(syncMobilePracticeViewport,0));
     }
-    window.addEventListener("resize",syncMobileKeyboardInstruction);
-    window.visualViewport?.addEventListener("resize",syncMobileKeyboardInstruction);
-    window.visualViewport?.addEventListener("scroll",syncMobileKeyboardInstruction);
+    window.addEventListener("resize",syncMobilePracticeViewport);
+    window.visualViewport?.addEventListener("resize",syncMobilePracticeViewport);
+    window.visualViewport?.addEventListener("scroll",syncMobilePracticeViewport);
 
     el.firstAnswerInput.addEventListener("compositionstart",() => {
       firstAnswerCompositionActive = true;
