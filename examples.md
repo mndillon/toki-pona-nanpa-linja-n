@@ -6,52 +6,41 @@ This file provides real-world examples of how the **nanpa-linja-n** numeric syst
 
 # 📅 1. Dates
 
-### “25 January 2025“
+### “2023-04-11“
 
-25    → netelen<br>
-January → 1 → newen<br>
-2025  → neten ene nitelen<br>
-
-**nanpa-linja-n:**
-tenpo suno nanpa netelen pi mun sike nanpa newen pi sike nanpa neten ene nitelen.
-
-### “04/11/2023“
-
-4 → nenan<br>
-11 → newewen<br>
-2023 → neten ene nitesen<br>
+2023 → Netunitusen<br>
+04 → Neninan<br>
+11 → Newawan<br>
 
 **nanpa-linja-n:**
-tenpo suno nanpa nenan pi mun nanpa newewen pi sike nanpa neten ene nitesen.
+tenpo suno nanpa Netunitusen Eke Ninan Eke Wawan
+
 
 ### “Year is 2025“
 
-2 → neten<br>
-0 → nenin<br>
-2 → neten<br>
-5 → nelen<br>
+2 → Netun<br>
+0 → Nenin<br>
+2 → Netun<br>
+5 → Nelun<br>
 
 **nanpa-linja-n:**
-tenpo sike li nanpa neten ene nitelen.
-
-**nanpa-linja-n:**
-tenpo sike li nanpa netenitelen.
+tenpo sike li nanpa Netunitulun.
 
 
 ### “On Friday I go to sport“
 
-Friday → Weekday 5 → nelen
+Friday → Weekday 5 → Nelun
 
 **nanpa-linja-n:**
-suno sike nanpa nelen la mi tawa utala.
+suno sike Nelun la mi tawa utala.
 
 
 ### “On 2nd of October I travel“
 
-October → Month 10 → newenin
+October → Month 10 → Newanin
 
 **nanpa-linja-n:**
-tenpo suno nanpa tu lon mun sike nanpa newenin la mi tawa.
+tenpo suno nanpa tu lon mun sike Newanin la mi tawa.
 
 ---
 
@@ -59,17 +48,17 @@ tenpo suno nanpa tu lon mun sike nanpa newenin la mi tawa.
 
 ### “I am 37 years old”
 
-37 → nesemen<br>
+37 → Nesemun<br>
 
 **nanpa-linja-n:**
-tenpo sike nanpa nesemen la mi jan suli.
+tenpo sike Nesemun la mi jan suli.
 
 ### “She is 29”
 
-29 → netejen<br>
+29 → Netujen<br>
 
 **nanpa-linja-n:**
-ona li jo e tenpo sike nanpa netejen.
+ona li jo e tenpo sike Netujen.
 
 ---
 
@@ -77,28 +66,28 @@ ona li jo e tenpo sike nanpa netejen.
 
 ### “The meeting is at 14:30”
 
-14 → newenan<br>
-30 → nesenin<br>
+14 → Newanan<br>
+30 → Nesenin<br>
 
 **nanpa-linja-n:**
-tenpo suno la ni li lon tenpo newenan one senin.
+tenpo suno la ni li lon tenpo Newanan Eke Senin.
 
-### “It is 7:05”
+### “It is 07:05”
 
-7 → nemen<br>
-05 → nenilen<br>
+07 → Nenimun<br>
+05 → Nenilun<br>
 
 **nanpa-linja-n:**
-tenpo ni li nesen one nilen.
+tenpo ni li nanpa Nenimun Eke Nilun.
 
 ### “The logs say 21:34:56 UTC”
 
-21 → netewen<br>
-34 → nesenan<br>
-56 → nelenun<br>
+21 → Netuwan<br>
+34 → Nesenan<br>
+56 → Nelunun<br>
 
 **nanpa-linja-n:**
-toki pi lipu sona li toki e tenpo netewen one senan one lenun lon ma UTC.
+toki pi lipu sona li toki e tenpo Netuwan Eke Senan Eke Lunun lon ma UTC.
 
 ---
 
@@ -106,17 +95,17 @@ toki pi lipu sona li toki e tenpo netewen one senan one lenun lon ma UTC.
 
 ### “This costs 12 dollars”
 
-12 → neweten<br>
+12 → Newatun<br>
 
 **nanpa-linja-n:**
-mani pi ijo ni li neweten.
+mani pi ijo ni li nanpa Newatun.
 
 ### “The total is 3.75”
 
-3.75 → nesen one melen<br>
+3.75 → Nesen One Mulun<br>
 
 **nanpa-linja-n:**
-mani ale li nanpa nesen one melen.
+mani ale li nanpa Nesen One Mulun.
 
 ---
 
@@ -124,17 +113,17 @@ mani ale li nanpa nesen one melen.
 
 ### “Length: 2.5 m“
 
-2.5 → neten one len<br>
+2.5 → Netun One Lun<br>
 
 **nanpa-linja-n:**
-linja ni li suli neten one len mije.
+linja ni li suli Netun One Lun mije.
 
 ### “Weight: 0.75 kg“
 
-0.75 → nenin one melen<br>
+0.75 → Nenin One Mulun<br>
 
 **nanpa-linja-n:**
-kiwen ni li walo nenin one melen kilokilo.
+kiwen ni li walo Nenin One Mulun kilokilo.
 
 ---
 
@@ -142,17 +131,17 @@ kiwen ni li walo nenin one melen kilokilo.
 
 ### “Today it is 18 degrees”
 
-18 → newepen<br>
+18 → Newapin<br>
 
 **nanpa-linja-n:**
-tenpo suno ni li seli newepen.
+tenpo suno ni li seli Newapin.
 
 ### “Minus 3 degrees”
 
-−3 → nenosen<br>
+−3 → Neno Sen<br>
 
 **nanpa-linja-n:**
-tenpo suno ni li seli nenosen.
+tenpo suno ni li seli Neno Sen.
 
 ---
 
@@ -160,17 +149,17 @@ tenpo suno ni li seli nenosen.
 
 ### “The city is 12 km away”
 
-12 → neweten<br>
+12 → Newatun<br>
 
 **nanpa-linja-n:**
-tomo tawa li weka neweten kilometo tan ni.
+tomo tawa li weka Newatun kilometo tan ni.
 
 ### “The car is moving at 57 km/h”
 
-57 → nelemen<br>
+57 → Nelumun<br>
 
 **nanpa-linja-n:**
-tomo tawa li tawa kepeken wawa nelemen kilometo lon tenpo wan.
+tomo tawa li tawa kepeken wawa Nemulun kilometo lon tenpo wan.
 
 ---
 
@@ -178,28 +167,28 @@ tomo tawa li tawa kepeken wawa nelemen kilometo lon tenpo wan.
 
 ### “5 4 3 2 1”
 
-5 → nelen<br>
-4 → nenan<br>
-3 → nesen<br>
-2 → neten<br>
-1 → newen<br>
+5 → Nelun<br>
+4 → Nenan<br>
+3 → Nesen<br>
+2 → Netun<br>
+1 → Newan<br>
 
 **nanpa-linja-n:**
-nelen nenan nesen neten newen.
+Nelun Nenan Nesen Netun Newan.
 
 ### “I have 23 apples”
 
-23 → netesen<br>
+23 → Netusen<br>
 
 **nanpa-linja-n:**
-mi jo e kili nanpa netesen.
+mi jo e kili nanpa Netusen.
 
 ### “There are 100 people here”
 
-100 → neweninin<br>
+100 → Newan Inin<br>
 
 **nanpa-linja-n:**
-jan li neweninin lon ni.
+jan li nanpa Newan Inin lon ni.
 
 ---
 
@@ -207,11 +196,11 @@ jan li neweninin lon ni.
 
 ### “The point is at (3, 12)”
 
-3 → nesen<br>
-12 → neweten<br>
+3 → Nesen<br>
+12 → Newatun<br>
 
 **nanpa-linja-n:**
-poki li lon sitelen nesen en sitelen neweten.
+poki li lon sitelen Nesen en sitelen Newatun.
 
 ---
 
@@ -219,39 +208,39 @@ poki li lon sitelen nesen en sitelen neweten.
 
 ### “3 divided by 4 is 0.75”
 
-3/4 → nesen ono nan<br>
-0.75 → nenin one melen<br>
+3/4 → Nesen Ono Nan<br>
+0.75 → Nenin One Mulun<br>
 
 **nanpa-linja-n:**
-nesen ono nan li sama nenin one melen.
+nanpa la Nesen Ono Nan sama Nenin One Mulun.
 
 
 ### “17.3 + 9.5 = 26.8”
 
-17.3 → newemen one sen<br>
-9.5 → nejen one len<br>
-26.8 → netenun one pen<br>
+17.3 → Newamun One Sen<br>
+9.5 → Nejen One Lun<br>
+26.8 → Netunun One Pin<br>
 
 **nanpa-linja-n:**
-newemen one sen en nejen one len li sama netenun one pen.
+nanpa la Newamun One Sen en Nejen One Lun sama Netunun One Pin.
 
 ### “12 × 5 = 60”
 
-12 → neweten<br>
-5 → nelen<br>
-60 → nenunin<br>
+12 → Newatun<br>
+5 → Nelun<br>
+60 → Nenunin<br>
 
 **nanpa-linja-n:**
-neweten emute nelen li sama nenunin.
+nanpa la Newatun lete Nelun sama Nenunin.
 
 ### “27 × 0 = 0”
 
-27 → netemen<br>
-0 → nenin<br>
-0 → nenin<br>
+27 → Netumun<br>
+0 → Nenin<br>
+0 → Nenin<br>
 
 **nanpa-linja-n:**
-netemen emute nenin li sama nenin.
+nanpa la Netumen lete Nenin sama Nenin.
 
 ---
 
@@ -259,46 +248,46 @@ netemen emute nenin li sama nenin.
 
 ### “Room 204”
 
-204 → neteninan<br>
+204 → Netuninan<br>
 
 **nanpa-linja-n:**
-tomo ni li tomo nanpa neteninan.
+tomo ni li tomo nanpa Netuninan.
 
 ### “Your ID number is 40251”
 
-4 → nenan<br>
-0 → nenin<br>
-2 → neten<br>
-5 → nelen<br>
-1 → newen<br>
+4 → Nenan<br>
+0 → Nenin<br>
+2 → Netun<br>
+5 → Nelun<br>
+1 → Newan<br>
 
 **nanpa-linja-n:**
-nanpa sona sina li nenanitelewen.
+nanpa sona sina li nanpa Nenanituluwan.
 
 ### “007”
 
-0 → nenin<br>
-0 → nenin<br>
-7 → nemen<br>
+0 → Nenin<br>
+0 → Nenin<br>
+7 → Nemun<br>
 
 **nanpa-linja-n:**
-neninimen
+Neninimun
 
 ### “My telephone number is 243-555-0189”
 
-243  → netenasen<br>
-555  → nelelelen<br>
-0189 → neniwepejen<br>
+243  → Netunasen<br>
+555  → Nelululun<br>
+0189 → Neniwapijen<br>
 
 **nanpa-linja-n:**
-nanpa pi ilo toki mi li: netenasen ene lelelen ene niwepejen.
+nanpa pi ilo toki mi li: Netunasen Ene Lululun Ene Niwapijen.
 
 ### “Call 731!”
 
-731  → nemesewen<br>
+731  → Nemusewan<br>
 
 **nanpa-linja-n:**
-o tawa nemesewen!
+o tawa nanpa Nemusewan!
 
 ---
 
@@ -306,11 +295,11 @@ o tawa nemesewen!
 
 ### “Train arrives at 19:48”
 
-19 → newejen<br>
-48 → nenapen<br>
+19 → Newajen<br>
+48 → Nenapin<br>
 
 **nanpa-linja-n:**
-tomo tawa li kama lon tenpo newejen one napen.
+tomo tawa li kama lon tenpo Newajen Eke Napin.
 
 ---
 
@@ -318,10 +307,10 @@ tomo tawa li kama lon tenpo newejen one napen.
 
 ### “Add 250 ml of water”
 
-- 250 → netelenin<br>
+- 250 → Netulunin<br>
 
 **nanpa-linja-n:**
-o pana e telo nanpa netelenin mililita.
+o pana e telo nanpa Netulunin mililita.
 
 ---
 
