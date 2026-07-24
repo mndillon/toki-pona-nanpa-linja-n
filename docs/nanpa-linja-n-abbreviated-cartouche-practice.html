@@ -268,6 +268,9 @@
       visibility:visible;
       opacity:1;
     }
+    .typedHintLabel{ color:var(--muted); }
+    .typedHintCorrect{ color:var(--good); }
+    .typedHintTarget{ color:var(--bad); }
     .desktopCartoucheInstruction{ display:inline; }
     .mobileCartoucheInstruction{ display:none; }
     .answerInput{
@@ -1923,7 +1926,27 @@
 
     const visibleLength = visibleProgressiveProperNameLength(item,plan);
     const hintText = canonicalProperNamePrefix(plan.properName,visibleLength);
-    el.typedHint.textContent = `Hint: ${hintText || "—"}`;
+    const correctLength = Math.min(
+      visibleLength,
+      longestEquivalentProperNamePrefixLength(
+        el.firstAnswerInput.value,
+        plan.strictCompact,
+        plan.relaxedCompact
+      )
+    );
+    const correctText = canonicalProperNamePrefix(plan.properName,correctLength);
+    const targetText = hintText.slice(correctText.length);
+
+    const label = document.createElement("span");
+    label.className = "typedHintLabel";
+    label.textContent = "Hint: ";
+    const correct = document.createElement("span");
+    correct.className = "typedHintCorrect";
+    correct.textContent = correctText;
+    const target = document.createElement("span");
+    target.className = "typedHintTarget";
+    target.textContent = targetText || (hintText ? "" : "—");
+    el.typedHint.replaceChildren(label,correct,target);
     el.typedHint.classList.add("visible");
     // Use the same ten-second hint duration on laptop and mobile views.
     typedHintTimer = setTimeout(() => {
