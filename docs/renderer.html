@@ -721,7 +721,7 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=179";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=180";
     import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=22";
 
     const voice = await createTokiPonaVoice();
@@ -1193,6 +1193,7 @@
         0xF1946, // ona   <-- NEW: two-thirds size
         0xF1944, // o     <-- NEW: two-thirds size
         0xF191F, // kulupu <-- NEW: two-thirds size
+        0xF1979, // kin
       ]);
     }
 
@@ -1263,7 +1264,7 @@
     const MAGCHAR_TO_TOKEN = { "T": "KE", "M": "KEKE", "W": "KEKEKE" };
     const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
 
-    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "OK", "NE", "NO" ];
+    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NOKO", "OK", "NE", "NO" ];
 
     // Reverse map: digit word -> token
     const DIGIT_WORD_TO_TOKEN = Object.fromEntries(
@@ -1323,6 +1324,17 @@
           words[i + 2] === "nena" && words[i + 3] === "o"
         ) {
           capsParts.push("NONO");
+          i += 4;
+          continue;
+        }
+
+        if (
+          i + 3 < end &&
+          words[i] === "nena" && words[i + 1] === "open" &&
+          (words[i + 2] === "kala" || words[i + 2] === "kin") &&
+          words[i + 3] === "open"
+        ) {
+          capsParts.push("NOKO");
           i += 4;
           continue;
         }
@@ -2453,6 +2465,12 @@
 
         if (t === "NONO") {
           out.push("nena","o","nena","o");
+          afterStartingNe = false;
+          continue;
+        }
+
+        if (t === "NOKO") {
+          out.push("nena","open","kin","open");
           afterStartingNe = false;
           continue;
         }

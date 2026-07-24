@@ -937,7 +937,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=179";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=180";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -5312,7 +5312,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=179", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=180", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 

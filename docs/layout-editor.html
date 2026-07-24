@@ -1248,7 +1248,7 @@ import {
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=33';
 import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=166';
-import { createScrapbookCartoucheDbController } from './scrapbook-layouteditor_app/js/scrapbook-cartouche-db.js?v=90';
+import { createScrapbookCartoucheDbController } from './scrapbook-layouteditor_app/js/scrapbook-cartouche-db.js?v=180';
 
 (() => {
   "use strict";
@@ -2701,7 +2701,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=179').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=180').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }

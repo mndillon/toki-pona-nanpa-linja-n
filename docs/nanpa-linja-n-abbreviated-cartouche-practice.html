@@ -1463,7 +1463,7 @@
   }
 
   async function getNanpaParser(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=177");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=181");
     const mod = await nanpaModulePromise;
     return mod.NanpaParser;
   }
@@ -3350,7 +3350,7 @@
   }
   function getOneThirdsCodepointsSet(){ return new Set([0xF1917]); }
   function getHalfCodepointsSet(){ return new Set([0xF1914]); }
-  function getTwoThirdsCodepointsSet(){ return new Set([0xF1946,0xF1944,0xF191F]); }
+  function getTwoThirdsCodepointsSet(){ return new Set([0xF1946,0xF1944,0xF191F,0xF1979]); }
   function getVerticalOffsetForCartoucheCodepoint(cp,px){ return cp === 0xF1917 ? -Math.round(px * 0.22) : 0; }
   function drawRoundedRect(ctx,x,y,w,h,r){
     const radius = Math.min(r,w/2,h/2);

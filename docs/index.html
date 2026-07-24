@@ -329,6 +329,7 @@
     .numericPunctuationTable {
       --punctuation-glyph-base-size: 30px;
       --punctuation-glyph-quarter-size: 7.5px;
+      --punctuation-glyph-one-third-size: 10px;
       --punctuation-glyph-half-size: 15px;
       --punctuation-glyph-two-thirds-size: 20px;
     }
@@ -351,6 +352,10 @@
 
     .numericPunctuationTable .punctuationGlyphQuarter {
       font-size: var(--punctuation-glyph-quarter-size);
+    }
+
+    .numericPunctuationTable .punctuationGlyphOneThird {
+      font-size: var(--punctuation-glyph-one-third-size);
     }
 
     .numericPunctuationTable .punctuationGlyphHalf {
@@ -791,7 +796,7 @@
             <tr><td>Percentages</td><td><code>67%</code></td><td><code>Nenumun Oken</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-percentage-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-percentage-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
             <tr><td>Scientific notation</td><td><code>9.8e-3</code></td><td><code>Nejen One Pin Eko Wanin Eko Nosen</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-scientific-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-scientific-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
             <tr><td>Fractions</td><td><code>1/2</code></td><td><code>Newan Ono Tun</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-fraction-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-fraction-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
-            <tr><td>Integers and fractions</td><td><code>8+3/4</code></td><td><code>Nepin Oko Sen Ono Nan</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-intfract-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-intfract-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
+            <tr><td>Integers and fractions</td><td><code>8+3/4</code></td><td><code>Nepin Oko Sen Ono Nan</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-intfract-full.png?v=2" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-intfract-abbrev.png?v=2" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
             <tr><td>Large integers</td><td><code>1,234,567</code></td><td><code>Newan Eke Tusenan Eke Lunumun</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-large-int-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-large-int-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
             <tr><td>Dates</td><td><code>2026-07-18</code></td><td><code>Netunitunun Eke Nimun Eke Wapin</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-date-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-date-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
             <tr><td>Times</td><td><code>06:30</code></td><td><code>Neninun Eke Senin</code></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-time-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td><td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-time-abbrev.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td></tr>
@@ -1632,18 +1637,18 @@
               <tr>
                 <td>integer vs fraction</td>
                 <td>noko</td>
-                <td>nena open kala open</td>
+                <td>nena open kin open</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized open glyph, half-sized kala glyph, and quarter-sized open glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized open glyph, two-thirds-sized kin glyph, and quarter-sized open glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
                     <span class="punctuationGlyphQuarter">&#xF1947;</span>
-                    <span class="punctuationGlyphHalf">&#xF1914;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF1979;</span>
                     <span class="punctuationGlyphQuarter">&#xF1947;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="half-sized kala glyph">
-                    <span class="punctuationGlyphHalf">&#xF1914;</span>
+                  <span class="punctuationGlyphSequence" role="img" aria-label="two-thirds-sized kin glyph">
+                    <span class="punctuationGlyphTwoThirds">&#xF1979;</span>
                   </span>
                 </td>
               </tr>
@@ -1652,16 +1657,16 @@
                 <td>neke</td>
                 <td>nena en kasi en</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, half-sized kasi glyph, and quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, one-third-sized kasi glyph, and quarter-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
                     <span class="punctuationGlyphQuarter">&#xF190A;</span>
-                    <span class="punctuationGlyphHalf">&#xF1917;</span>
+                    <span class="punctuationGlyphOneThird">&#xF1917;</span>
                     <span class="punctuationGlyphQuarter">&#xF190A;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="half-sized kasi glyph">
-                    <span class="punctuationGlyphHalf">&#xF1917;</span>
+                  <span class="punctuationGlyphSequence" role="img" aria-label="one-third-sized kasi glyph">
+                    <span class="punctuationGlyphOneThird">&#xF1917;</span>
                   </span>
                 </td>
               </tr>
@@ -1670,16 +1675,16 @@
                 <td>neke</td>
                 <td>nena en kasi en</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, half-sized kasi glyph, and quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, one-third-sized kasi glyph, and quarter-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
                     <span class="punctuationGlyphQuarter">&#xF190A;</span>
-                    <span class="punctuationGlyphHalf">&#xF1917;</span>
+                    <span class="punctuationGlyphOneThird">&#xF1917;</span>
                     <span class="punctuationGlyphQuarter">&#xF190A;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="half-sized kasi glyph">
-                    <span class="punctuationGlyphHalf">&#xF1917;</span>
+                  <span class="punctuationGlyphSequence" role="img" aria-label="one-third-sized kasi glyph">
+                    <span class="punctuationGlyphOneThird">&#xF1917;</span>
                   </span>
                 </td>
               </tr>

@@ -2364,6 +2364,7 @@ function wireHaloControls() {
       "kipisi": 0xF197B,
       "kasi": 0xF1917,
       "kala": 0xF1914,
+      "kin": 0xF1979,
 
       "ijo":   0xF190C,
       "wan":   0xF1973,
@@ -2803,7 +2804,7 @@ function wireHaloControls() {
         }
 
         if (t === "NOKO") {
-          out.push("nena","open","kala","open");
+          out.push("nena","open","kin","open");
           afterStartingNe = false;
           continue;
         }
@@ -7479,6 +7480,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     "kipisi":0xF197B,
     "kasi":  0xF1917,
     "kala":  0xF1914,
+    "kin":   0xF1979,
     "ijo":   0xF190C,
     "wan":   0xF1973,
     "tu":    0xF196E,
@@ -7893,7 +7895,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
 
       if (t === "NOKO") {
-        out.push("nena","open","kala","open");
+        out.push("nena","open","kin","open");
         afterStartingNe = false;
         continue;
       }
@@ -9473,7 +9475,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   },
 
   getTwoThirdsCodepointsSet() {
-    return new Set([0xF1946, 0xF1944, 0xF191F]);
+    return new Set([0xF1946, 0xF1944, 0xF191F, 0xF1979]);
   },
 
   getHalfCodepointsSet() {
