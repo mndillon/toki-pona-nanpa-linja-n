@@ -2933,7 +2933,17 @@
   }
 
   function wireEvents(){
-    el.startButton.addEventListener("click",startSession);
+    el.startButton.addEventListener("click", async () => {
+      try{
+        await startSession();
+
+        if (typeof window.trackUsage === "function"){
+          window.trackUsage("listening-practice-start");
+        }
+      }catch(error){
+        console.error("Could not start practice session:", error);
+      }
+    });
     el.restartButton.addEventListener("click",startSession);
     el.summaryReviewButton.addEventListener("click",() => showTab("review"));
     el.quitButton.addEventListener("click",() => finishSession({quit:true}));
