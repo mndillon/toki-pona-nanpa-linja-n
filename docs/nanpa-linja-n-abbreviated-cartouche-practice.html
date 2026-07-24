@@ -247,19 +247,29 @@
     }
     .answerRow{
       display:grid;
-      grid-template-columns:minmax(0,1fr) auto auto;
+      grid-template-columns:minmax(0,1fr) auto;
       gap:8px;
       align-items:center;
     }
-    .hintButton{
-      touch-action:none;
-      user-select:none;
-      -webkit-user-select:none;
+    .typedHint{
+      height:1.35em;
+      line-height:1.35em;
+      color:var(--warn);
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      font-size:14px;
+      font-weight:800;
+      visibility:hidden;
+      opacity:0;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
     }
-    .hintButton[aria-pressed="true"]{
-      background:rgba(255,255,255,0.88);
-      box-shadow:inset 0 0 0 2px rgba(17,17,17,0.28);
+    .typedHint.visible{
+      visibility:visible;
+      opacity:1;
     }
+    .desktopCartoucheInstruction{ display:inline; }
+    .mobileCartoucheInstruction{ display:none; }
     .answerInput{
       width:100%;
       min-width:0;
@@ -303,6 +313,7 @@
       font-size:13px;
       line-height:1.35;
     }
+    .reveal.advanceReady{ cursor:pointer; }
     .revealLine{
       display:block;
     }
@@ -642,6 +653,8 @@
       .reviewRevealPanel.cartouchePanel{ grid-column:auto; }
       .exampleReferenceGrid{ grid-template-columns:1fr; }
       .questionCard{ min-height:390px; }
+      .desktopCartoucheInstruction{ display:none; }
+      .mobileCartoucheInstruction{ display:inline; }
       .answerRow{ grid-template-columns:1fr; }
       .answerRow .btn{ justify-self:start; }
       .footerLeft{ display:none; }
@@ -752,7 +765,10 @@
             </div>
 
             <div class="visualCartoucheArea" aria-label="Abbreviated nanpa-linja-n cartouche to identify">
-              <div class="visualCartoucheLabel">abbreviated nanpa-linja-n sitelen pona cartouche, glyphs will reveal as you type</div>
+              <div class="visualCartoucheLabel">
+                <span class="desktopCartoucheInstruction">glyphs will reveal as you type<br>, type 'h' for hint</span>
+                <span class="mobileCartoucheInstruction">type space to check progress or type 'h' and space for hint</span>
+              </div>
               <div class="visualCartoucheCanvasWrap">
                 <canvas id="questionAbbreviatedCartouche" width="1" height="1" aria-hidden="true"></canvas>
               </div>
@@ -760,11 +776,10 @@
 
             <div id="firstStage" class="answerStage">
               <label class="stageLabel" for="firstAnswerInput">nanpa-linja-n proper name</label>
+              <div id="typedHint" class="typedHint" role="status" aria-live="polite"></div>
               <div class="answerRow">
                 <input id="firstAnswerInput" class="answerInput mono" type="text" autocomplete="off" spellcheck="false" disabled
                        placeholder="Enter the proper name" />
-                <button id="hintButton" class="btn hintButton" type="button" disabled aria-pressed="false"
-                        title="Hold to show the proper-name text represented by the currently visible glyphs">Hint</button>
                 <button id="checkFirstButton" class="btn" type="button" disabled>Check</button>
               </div>
             </div>
@@ -1015,12 +1030,11 @@
   let reviewAudioContext = null;
   let progressiveInputGeneration = 0;
   let firstAnswerCompositionActive = false;
-  let hintPressRequested = false;
-  let hintPreviewActive = false;
-  let hintPreviewGeneration = 0;
-  let hintRestoreValue = "";
-  let hintRestoreSelectionStart = null;
-  let hintRestoreSelectionEnd = null;
+  let firstAnswerCompositionFallbackTimer = null;
+  let typedHintTimer = null;
+  let typedHintGeneration = 0;
+  let firstAnswerInputProcessingGeneration = 0;
+  let revealAdvanceInProgress = false;
   const reviewAudioCache = new Map();
   const exampleItemCache = new Map();
 
@@ -1059,7 +1073,7 @@
     for (const id of [
       "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status",
       "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton","questionAbbreviatedCartouche",
-      "firstAnswerInput","hintButton","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
+      "firstAnswerInput","typedHint","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
       "reveal","revealValue","revealStrictLine","revealStrictName","revealRelaxedLine","revealRelaxedName","normalCartouche",
       "abbreviatedCartouche","revealCodeLine","revealCode","requireDecimalToggle","equivalentPunctuationToggle","autoNextToggle",
       "autoNextDelaySelect","autoNextNotice","summaryCard","summaryScore","summaryText","restartButton","summaryReviewButton",
@@ -1767,37 +1781,6 @@
     );
   }
 
-  async function previewProgressiveComposition(item){
-    if (!item || item !== currentItem() || item.stage !== "first" || item.completed || item.revealed) return null;
-    const generation = ++progressiveInputGeneration;
-    const plan = await ensureProgressiveRevealPlan(item);
-    if (generation !== progressiveInputGeneration || item !== currentItem()) return null;
-
-    const rawCompact = normalizeProgressiveProperNameInput(el.firstAnswerInput.value);
-    const matchedLength = longestEquivalentProperNamePrefixLength(rawCompact,plan.strictCompact,plan.relaxedCompact);
-    const confirmedFloor = clamp(
-      Math.round(Number(item.progressiveConfirmedLength) || 0),
-      0,
-      plan.expectedCompact.length
-    );
-    const acceptedLength = Math.max(confirmedFloor,matchedLength);
-    let visibleGroups = plan.groups.length
-      ? clamp(Math.round(Number(item.progressiveVisibleGroupCount) || 1),1,plan.groups.length)
-      : 0;
-
-    while (visibleGroups > 0 && visibleGroups < plan.groups.length){
-      const visibleGroup = plan.groups[visibleGroups - 1];
-      if (acceptedLength < visibleGroup.requiredLength) break;
-      visibleGroups++;
-    }
-
-    // Composition text is provisional. It may preview later glyphs, but it
-    // must not rewrite the input or permanently confirm progress until the
-    // mobile keyboard or IME commits the text with compositionend.
-    renderProgressiveQuestionCartouche(item,plan,visibleGroups);
-    return plan;
-  }
-
   function visibleProgressiveProperNameLength(item,plan){
     if (!plan?.groups?.length) return 0;
     if (item.completed || item.revealed) return plan.expectedCompact.length;
@@ -1813,61 +1796,66 @@
     );
   }
 
-  function endHintPreview({restore=true,focusInput=true}={}){
-    hintPressRequested = false;
-    hintPreviewGeneration++;
-    if (!hintPreviewActive){
-      if (el.hintButton) el.hintButton.setAttribute("aria-pressed","false");
-      return;
-    }
-
-    hintPreviewActive = false;
-    if (el.hintButton) el.hintButton.setAttribute("aria-pressed","false");
-    if (el.firstAnswerInput){
-      el.firstAnswerInput.readOnly = false;
-      if (restore){
-        el.firstAnswerInput.value = hintRestoreValue;
-        try{
-          const max = hintRestoreValue.length;
-          const rawStart = Number(hintRestoreSelectionStart);
-          const rawEnd = Number(hintRestoreSelectionEnd);
-          const start = clamp(Number.isFinite(rawStart) ? rawStart : max,0,max);
-          const end = clamp(Number.isFinite(rawEnd) ? rawEnd : start,start,max);
-          el.firstAnswerInput.setSelectionRange(start,end);
-        }catch{}
-      }
-      if (focusInput && !el.firstAnswerInput.disabled){
-        try{ el.firstAnswerInput.focus({preventScroll:true}); }catch{ el.firstAnswerInput.focus(); }
-      }
+  function hideTypedHint(){
+    typedHintGeneration++;
+    if (typedHintTimer) clearTimeout(typedHintTimer);
+    typedHintTimer = null;
+    if (el.typedHint){
+      el.typedHint.textContent = "";
+      el.typedHint.classList.remove("visible");
     }
   }
 
-  async function beginHintPreview(){
-    const item = currentItem();
-    if (!hintPressRequested || hintPreviewActive || !state.active || state.tab !== "practice" ||
-        !item || item.stage !== "first" || item.completed || item.revealed || el.hintButton.disabled) return;
+  async function showTypedHint(item){
+    if (!item || item !== currentItem() || item.stage !== "first" || item.completed || item.revealed) return;
+    const generation = ++typedHintGeneration;
+    if (typedHintTimer) clearTimeout(typedHintTimer);
+    typedHintTimer = null;
 
-    const generation = ++hintPreviewGeneration;
     const plan = await ensureProgressiveRevealPlan(item);
-    if (!hintPressRequested || generation !== hintPreviewGeneration || item !== currentItem()) return;
-
-    hintRestoreValue = el.firstAnswerInput.value;
-    hintRestoreSelectionStart = el.firstAnswerInput.selectionStart;
-    hintRestoreSelectionEnd = el.firstAnswerInput.selectionEnd;
-    hintPreviewActive = true;
-    el.hintButton.setAttribute("aria-pressed","true");
-    el.firstAnswerInput.readOnly = true;
+    if (generation !== typedHintGeneration || item !== currentItem()) return;
 
     const visibleLength = visibleProgressiveProperNameLength(item,plan);
     const hintText = canonicalProperNamePrefix(plan.properName,visibleLength);
-    el.firstAnswerInput.value = hintText;
-    try{ el.firstAnswerInput.setSelectionRange(hintText.length,hintText.length); }catch{}
+    el.typedHint.textContent = `Hint: ${hintText || "—"}`;
+    el.typedHint.classList.add("visible");
+    typedHintTimer = setTimeout(() => {
+      if (generation === typedHintGeneration) hideTypedHint();
+    },2000);
   }
 
-  function requestHintPreview(){
-    if (hintPressRequested) return;
-    hintPressRequested = true;
-    void beginHintPreview();
+  function stripHintCommandsFromFirstAnswerInput(){
+    const input = el.firstAnswerInput;
+    const raw = String(input.value ?? "");
+    if (!/[hH]/.test(raw)) return false;
+
+    const rawStart = Number(input.selectionStart);
+    const rawEnd = Number(input.selectionEnd);
+    const start = Number.isFinite(rawStart) ? rawStart : raw.length;
+    const end = Number.isFinite(rawEnd) ? rawEnd : start;
+    const removedBeforeStart = (raw.slice(0,start).match(/[hH]/g) || []).length;
+    const removedBeforeEnd = (raw.slice(0,end).match(/[hH]/g) || []).length;
+    const filtered = raw.replace(/[hH]/g,"");
+
+    input.value = filtered;
+    try{
+      const correctedStart = clamp(start - removedBeforeStart,0,filtered.length);
+      const correctedEnd = clamp(end - removedBeforeEnd,correctedStart,filtered.length);
+      input.setSelectionRange(correctedStart,correctedEnd);
+    }catch{}
+    return true;
+  }
+
+  async function processCommittedFirstAnswerInput(item){
+    if (!item || item !== currentItem() || item.stage !== "first" || item.completed || item.revealed) return;
+    const generation = ++firstAnswerInputProcessingGeneration;
+    const requestedHint = stripHintCommandsFromFirstAnswerInput();
+    if (!requestedHint) hideTypedHint();
+
+    item.firstAnswer = el.firstAnswerInput.value;
+    await applyProgressiveInputCorrection(item);
+    if (generation !== firstAnswerInputProcessingGeneration || item !== currentItem()) return;
+    if (requestedHint) await showTypedHint(item);
   }
 
   async function applyProgressiveInputCorrection(item,{announce=true}={}){
@@ -2140,12 +2128,12 @@
     cancelAutoNext();
     if (!state.active || state.tab !== "practice" || !item || !(item.completed || item.revealed)) return;
     if (!state.settings.autoNext){
-      if (el.autoNextNotice) el.autoNextNotice.textContent = "Press Enter or Next to continue.";
+      if (el.autoNextNotice) el.autoNextNotice.textContent = "Click or tap the answer, press Enter, or press Next to continue.";
       return;
     }
     const expectedIndex = state.index;
     const delay = state.settings.autoNextDelayMs;
-    if (el.autoNextNotice) el.autoNextNotice.textContent = `Next question in ${Math.round(delay / 1000)} seconds… Press Enter to continue now.`;
+    if (el.autoNextNotice) el.autoNextNotice.textContent = `Next question in ${Math.round(delay / 1000)} seconds… Click or tap the answer, or press Enter to continue now.`;
     autoNextTimer = setTimeout(async () => {
       autoNextTimer = null;
       if (!state.active || state.tab !== "practice" || state.index !== expectedIndex || currentItem() !== item) return;
@@ -3057,6 +3045,9 @@
   }
 
   function clearReveal(){
+    revealAdvanceInProgress = false;
+    el.reveal.classList.remove("advanceReady");
+    el.reveal.removeAttribute("title");
     el.reveal.classList.add("hidden");
     el.revealValue.textContent = "";
     el.revealStrictLine.classList.add("hidden");
@@ -3086,7 +3077,8 @@
   }
 
   async function renderCurrentQuestion(){
-    endHintPreview({restore:false,focusInput:false});
+    firstAnswerInputProcessingGeneration++;
+    hideTypedHint();
     const item = currentItem();
     generationToken++;
     cancelAutoNext();
@@ -3121,7 +3113,6 @@
     el.firstAnswerInput.value = item.firstAnswer || "";
     el.firstAnswerInput.disabled = item.stage !== "first" || item.completed || item.revealed;
     el.firstAnswerInput.classList.toggle("correct",item.firstMatchType === "proper-name");
-    el.hintButton.disabled = el.firstAnswerInput.disabled;
     el.checkFirstButton.disabled = el.firstAnswerInput.disabled;
 
     el.decimalStage.classList.add("hidden");
@@ -3152,17 +3143,16 @@
   }
 
   async function checkFirstAnswer(){
-    endHintPreview({restore:true,focusInput:false});
+    firstAnswerInputProcessingGeneration++;
+    hideTypedHint();
     const item = currentItem();
     if (!state.active || !item || item.stage !== "first" || item.completed || item.revealed) return;
 
-    el.hintButton.disabled = true;
     el.checkFirstButton.disabled = true;
     await applyProgressiveInputCorrection(item,{announce:false});
     const correctedRaw = el.firstAnswerInput.value;
     if (!String(correctedRaw).trim()){
       setFeedback("Enter the proper name before checking.","warn");
-      el.hintButton.disabled = false;
       el.checkFirstButton.disabled = false;
       el.firstAnswerInput.focus();
       return;
@@ -3181,13 +3171,11 @@
       }
       registerWrongAttempt(item,"Not quite. Try again, or reveal the answer.");
       el.revealButton.disabled = false;
-      el.hintButton.disabled = false;
       el.checkFirstButton.disabled = false;
       el.firstAnswerInput.focus();
     }catch(err){
       console.error(err);
       setFeedback(`Check error: ${err?.message ?? String(err)}`,"bad");
-      el.hintButton.disabled = false;
       el.checkFirstButton.disabled = false;
     }
   }
@@ -3222,6 +3210,8 @@
   }
 
   async function revealCurrent(){
+    firstAnswerInputProcessingGeneration++;
+    hideTypedHint();
     const item = currentItem();
     if (!state.active || !item || item.completed || item.revealed) return;
     item.firstAnswer = el.firstAnswerInput.value;
@@ -3256,6 +3246,8 @@
       await ensureCartoucheFontLoaded();
       renderCartoucheToCanvas(el.normalCartouche,quizParsed.ucsurCodepoints);
       renderCartoucheToCanvas(el.abbreviatedCartouche,abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints,abbreviationOptionsForKind(item.kind)));
+      el.reveal.classList.add("advanceReady");
+      el.reveal.title = "Click or tap anywhere in this answer to continue";
       el.reveal.classList.remove("hidden");
     }catch(err){
       console.error(err);
@@ -3291,9 +3283,8 @@
     el.startButton.disabled = false;
     el.quitButton.disabled = true;
     el.audioButton.disabled = true;
-    endHintPreview({restore:false,focusInput:false});
+    hideTypedHint();
     el.firstAnswerInput.disabled = true;
-    el.hintButton.disabled = true;
     el.checkFirstButton.disabled = true;
     el.decimalAnswerInput.disabled = true;
     el.checkDecimalButton.disabled = true;
@@ -3319,6 +3310,20 @@
       setStatus("Session ended, but history could not be saved.");
     }
     await renderCurrentReview();
+  }
+
+  async function advanceFromRevealedAnswer(){
+    const item = currentItem();
+    if (revealAdvanceInProgress || !state.active || state.tab !== "practice" ||
+        !item || !(item.completed || item.revealed) || el.reveal.classList.contains("hidden")) return;
+
+    revealAdvanceInProgress = true;
+    cancelAutoNext();
+    try{
+      await nextQuestion();
+    }finally{
+      revealAdvanceInProgress = false;
+    }
   }
 
   async function nextQuestion(){
@@ -3468,48 +3473,34 @@
     el.previousButton.addEventListener("click",previousQuestion);
     el.nextButton.addEventListener("click",nextQuestion);
     el.audioButton.addEventListener("click",playCurrentAudio);
-    el.hintButton.addEventListener("pointerdown",event => {
-      if (event.button !== undefined && event.button !== 0) return;
-      event.preventDefault();
-      requestHintPreview();
-    });
-    el.hintButton.addEventListener("pointerleave",() => endHintPreview());
-    el.hintButton.addEventListener("lostpointercapture",() => endHintPreview());
-    el.hintButton.addEventListener("keydown",event => {
-      if ((event.key !== " " && event.key !== "Enter") || event.repeat) return;
-      event.preventDefault();
-      requestHintPreview();
-    });
-    el.hintButton.addEventListener("keyup",event => {
-      if (event.key !== " " && event.key !== "Enter") return;
-      event.preventDefault();
-      endHintPreview();
-    });
-    el.hintButton.addEventListener("blur",() => endHintPreview());
-    el.hintButton.addEventListener("click",event => event.preventDefault());
-    el.hintButton.addEventListener("contextmenu",event => event.preventDefault());
-    document.addEventListener("pointerup",() => endHintPreview());
-    document.addEventListener("pointercancel",() => endHintPreview());
     el.checkFirstButton.addEventListener("click",checkFirstAnswer);
     el.checkDecimalButton.addEventListener("click",checkDecimalAnswer);
     el.revealButton.addEventListener("click",revealCurrent);
+    el.reveal.addEventListener("click",() => { void advanceFromRevealedAnswer(); });
     document.querySelectorAll(".tabBtn").forEach(btn => btn.addEventListener("click",() => showTab(btn.dataset.tab)));
 
-    el.firstAnswerInput.addEventListener("compositionstart",() => { firstAnswerCompositionActive = true; });
+    el.firstAnswerInput.addEventListener("compositionstart",() => {
+      firstAnswerCompositionActive = true;
+      firstAnswerInputProcessingGeneration++;
+      hideTypedHint();
+      if (firstAnswerCompositionFallbackTimer) clearTimeout(firstAnswerCompositionFallbackTimer);
+      firstAnswerCompositionFallbackTimer = null;
+    });
     el.firstAnswerInput.addEventListener("compositionend",() => {
       firstAnswerCompositionActive = false;
-      const item = currentItem();
-      if (item) void applyProgressiveInputCorrection(item);
+      if (firstAnswerCompositionFallbackTimer) clearTimeout(firstAnswerCompositionFallbackTimer);
+      firstAnswerCompositionFallbackTimer = setTimeout(() => {
+        firstAnswerCompositionFallbackTimer = null;
+        const item = currentItem();
+        if (item) void processCommittedFirstAnswerInput(item);
+      },0);
     });
     el.firstAnswerInput.addEventListener("input",event => {
       const item = currentItem();
-      if (!item) return;
-      if (firstAnswerCompositionActive || event.isComposing){
-        void previewProgressiveComposition(item);
-        return;
-      }
-      item.firstAnswer = el.firstAnswerInput.value;
-      void applyProgressiveInputCorrection(item);
+      if (!item || firstAnswerCompositionActive || event.isComposing) return;
+      if (firstAnswerCompositionFallbackTimer) clearTimeout(firstAnswerCompositionFallbackTimer);
+      firstAnswerCompositionFallbackTimer = null;
+      void processCommittedFirstAnswerInput(item);
     });
     el.decimalAnswerInput.addEventListener("input",() => { const item=currentItem(); if (item) item.decimalAnswer=el.decimalAnswerInput.value; });
 
