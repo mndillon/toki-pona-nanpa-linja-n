@@ -656,10 +656,10 @@
       .desktopCartoucheInstruction{ display:none; }
       .mobileCartoucheInstruction{ display:inline; }
 
-      /* While the mobile keyboard is open, turn the practice question into a
-         compact viewport-sized workspace. The instruction, complete cartouche,
-         hint line and input all receive their own layout space; nothing overlays
-         or obscures the cartouche. */
+      /* During a mobile practice run, turn the question into a compact
+         viewport-sized workspace. It remains active between consecutive
+         questions while the keyboard stays open. The instruction, complete
+         cartouche, hint line and input all receive their own layout space. */
       body.mobilePracticeInputFocused{ overflow:hidden; }
       body.mobilePracticeInputFocused .topbar,
       body.mobilePracticeInputFocused .tabs,
@@ -1037,6 +1037,7 @@
   const HISTORY_DB_NAME = "nln-abbreviated-cartouche-practice-history";
   const HISTORY_DB_VERSION = 1;
   const HISTORY_STORE = "sessions";
+  const TYPED_HINT_DURATION_MS = 10000;
 
   const AUDIO_PAUSE_SCALE_OPTIONS = [
     { value:1.00, label:"Normal", syllableGapSeconds:0.200 },
@@ -1139,6 +1140,7 @@
   let typedHintGeneration = 0;
   let firstAnswerInputProcessingGeneration = 0;
   let revealAdvanceInProgress = false;
+  let mobileCompactPracticeActive = false;
   const reviewAudioCache = new Map();
   const exampleItemCache = new Map();
 
@@ -1176,7 +1178,7 @@
   function cacheElements(){
     for (const id of [
       "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status",
-      "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton","questionAbbreviatedCartouche",
+      "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton","questionCard","questionAbbreviatedCartouche",
       "firstAnswerInput","typedHint","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
       "reveal","revealValue","revealStrictLine","revealStrictName","revealRelaxedLine","revealRelaxedName","normalCartouche",
       "abbreviatedCartouche","revealCodeLine","revealCode","requireDecimalToggle","equivalentPunctuationToggle","autoNextToggle",
@@ -1923,9 +1925,10 @@
     const hintText = canonicalProperNamePrefix(plan.properName,visibleLength);
     el.typedHint.textContent = `Hint: ${hintText || "—"}`;
     el.typedHint.classList.add("visible");
+    // Use the same ten-second hint duration on laptop and mobile views.
     typedHintTimer = setTimeout(() => {
       if (generation === typedHintGeneration) hideTypedHint();
-    },2000);
+    },TYPED_HINT_DURATION_MS);
   }
 
   function stripHintCommandsFromFirstAnswerInput(){
@@ -2249,22 +2252,56 @@
     return window.matchMedia?.("(max-width:720px)")?.matches ?? window.innerWidth <= 720;
   }
 
+  function clearMobilePracticeViewportVariables(){
+    const root = document.documentElement;
+    for (const name of [
+      "--mobile-viewport-top","--mobile-viewport-left",
+      "--mobile-viewport-width","--mobile-viewport-height"
+    ]) root.style.removeProperty(name);
+  }
+
+  function isMobileCompactPracticeViewActive(){
+    return mobileCompactPracticeActive &&
+      isMobilePracticeViewport() &&
+      state.active &&
+      state.tab === "practice";
+  }
+
+  function enterMobileCompactPracticeView(){
+    if (!isMobilePracticeViewport() || !state.active || state.tab !== "practice") return;
+    mobileCompactPracticeActive = true;
+    syncMobilePracticeViewport();
+  }
+
+  function exitMobileCompactPracticeView({blurInput=false}={}){
+    mobileCompactPracticeActive = false;
+    document.body.classList.remove("mobilePracticeInputFocused");
+    clearMobilePracticeViewportVariables();
+
+    if (blurInput){
+      const active = document.activeElement;
+      if (active === el.firstAnswerInput || active === el.decimalAnswerInput){
+        try{ active.blur(); }catch{}
+      }
+    }
+  }
+
   function syncMobilePracticeViewport(){
-    const focused = document.activeElement === el.firstAnswerInput || document.activeElement === el.decimalAnswerInput;
-    const shouldUseCompactView = isMobilePracticeViewport() && state.tab === "practice" && focused;
+    const shouldUseCompactView = isMobileCompactPracticeViewActive();
     document.body.classList.toggle("mobilePracticeInputFocused",shouldUseCompactView);
 
-    const root = document.documentElement;
     if (!shouldUseCompactView){
-      for (const name of [
-        "--mobile-viewport-top","--mobile-viewport-left",
-        "--mobile-viewport-width","--mobile-viewport-height"
-      ]) root.style.removeProperty(name);
+      if (!isMobilePracticeViewport() || !state.active || state.tab !== "practice"){
+        mobileCompactPracticeActive = false;
+      }
+      clearMobilePracticeViewportVariables();
       return;
     }
 
-    // Size the complete practice workspace to the visual viewport—the portion
-    // of the page that remains above the on-screen keyboard.
+    // Keep the compact practice workspace active throughout consecutive mobile
+    // questions. Its dimensions follow the visual viewport—the portion of the
+    // page that remains above the on-screen keyboard.
+    const root = document.documentElement;
     const viewport = window.visualViewport;
     const top = viewport ? Math.max(0,viewport.offsetTop) : 0;
     const left = viewport ? Math.max(0,viewport.offsetLeft) : 0;
@@ -2278,6 +2315,7 @@
 
   function showTab(tab){
     cancelAutoNext();
+    if (tab !== "practice") exitMobileCompactPracticeView({blurInput:true});
     if (state.tab !== tab) stopCurrentAudioPlayback();
     state.tab = tab;
     document.querySelectorAll(".tabBtn").forEach(btn => btn.setAttribute("aria-selected", btn.dataset.tab === tab ? "true" : "false"));
@@ -3301,6 +3339,10 @@
       if (matchType === "proper-name"){
         item.firstMatchType = "proper-name";
         completeItem(item);
+        if (isMobileCompactPracticeViewActive()){
+          await nextQuestion();
+          return;
+        }
         await renderCurrentQuestion();
         scheduleAutoNext(item);
         return;
@@ -3325,6 +3367,10 @@
     item.decimalAttemptValues.push(raw);
     if (valueAnswerMatches(item,raw)){
       completeItem(item);
+      if (isMobileCompactPracticeViewActive()){
+        await nextQuestion();
+        return;
+      }
       await renderCurrentQuestion();
       scheduleAutoNext(item);
     }else{
@@ -3414,6 +3460,7 @@
   async function finishSession({quit=false}={}){
     if (!state.active) return;
     cancelAutoNext();
+    exitMobileCompactPracticeView({blurInput:true});
     state.active = false;
     stopCurrentAudioPlayback({restoreAudioButton:false});
     el.startButton.disabled = false;
@@ -3616,9 +3663,23 @@
     document.querySelectorAll(".tabBtn").forEach(btn => btn.addEventListener("click",() => showTab(btn.dataset.tab)));
 
     for (const input of [el.firstAnswerInput,el.decimalAnswerInput]){
-      input.addEventListener("focus",() => requestAnimationFrame(syncMobilePracticeViewport));
-      input.addEventListener("blur",() => setTimeout(syncMobilePracticeViewport,0));
+      input.addEventListener("focus",() => {
+        enterMobileCompactPracticeView();
+        requestAnimationFrame(syncMobilePracticeViewport);
+      });
+      // A transient blur can occur while one completed question is replaced by
+      // the next. Do not leave compact practice mode merely because focus moved.
+      input.addEventListener("blur",() => requestAnimationFrame(syncMobilePracticeViewport));
     }
+
+    document.addEventListener("pointerdown",event => {
+      if (!isMobileCompactPracticeViewActive()) return;
+      if (event.target?.closest?.(".answerInput")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      exitMobileCompactPracticeView({blurInput:true});
+    },true);
+
     window.addEventListener("resize",syncMobilePracticeViewport);
     window.visualViewport?.addEventListener("resize",syncMobilePracticeViewport);
     window.visualViewport?.addEventListener("scroll",syncMobilePracticeViewport);
