@@ -270,6 +270,26 @@
     }
     .desktopCartoucheInstruction{ display:inline; }
     .mobileCartoucheInstruction{ display:none; }
+    .mobileKeyboardInstruction{
+      display:none;
+      position:fixed;
+      z-index:1000;
+      top:0;
+      left:0;
+      width:100%;
+      padding:calc(7px + env(safe-area-inset-top,0px)) 12px 7px;
+      border-bottom:1px solid var(--panel-border);
+      background:rgba(243,223,192,0.97);
+      backdrop-filter:blur(8px);
+      box-shadow:0 2px 8px rgba(17,17,17,0.18);
+      color:var(--ink);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:14px;
+      font-weight:800;
+      line-height:1.25;
+      text-align:center;
+      pointer-events:none;
+    }
     .answerInput{
       width:100%;
       min-width:0;
@@ -655,6 +675,7 @@
       .questionCard{ min-height:390px; }
       .desktopCartoucheInstruction{ display:none; }
       .mobileCartoucheInstruction{ display:inline; }
+      body.mobilePracticeInputFocused .mobileKeyboardInstruction{ display:block; }
       .answerRow{ grid-template-columns:1fr; }
       .answerRow .btn{ justify-self:start; }
       .footerLeft{ display:none; }
@@ -663,6 +684,7 @@
   </style>
 </head>
 <body>
+  <div id="mobileKeyboardInstruction" class="mobileKeyboardInstruction" role="note">type space to check progress or type 'h' and space for hint</div>
   <header class="topbar">
     <div class="brand">nanpa-linja-n abbreviated cartouche practice</div>
     <button id="startButton" class="btn primary" type="button">Start</button>
@@ -1071,7 +1093,7 @@
 
   function cacheElements(){
     for (const id of [
-      "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status",
+      "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status","mobileKeyboardInstruction",
       "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton","questionAbbreviatedCartouche",
       "firstAnswerInput","typedHint","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
       "reveal","revealValue","revealStrictLine","revealStrictName","revealRelaxedLine","revealRelaxedName","normalCartouche",
@@ -2141,6 +2163,33 @@
     }, delay);
   }
 
+  function isMobilePracticeViewport(){
+    return window.matchMedia?.("(max-width:720px)")?.matches ?? window.innerWidth <= 720;
+  }
+
+  function syncMobileKeyboardInstruction(){
+    if (!el.mobileKeyboardInstruction) return;
+    const focused = document.activeElement === el.firstAnswerInput || document.activeElement === el.decimalAnswerInput;
+    const shouldShow = isMobilePracticeViewport() && state.tab === "practice" && focused;
+    document.body.classList.toggle("mobilePracticeInputFocused",shouldShow);
+
+    if (!shouldShow){
+      el.mobileKeyboardInstruction.style.removeProperty("top");
+      el.mobileKeyboardInstruction.style.removeProperty("left");
+      el.mobileKeyboardInstruction.style.removeProperty("width");
+      return;
+    }
+
+    // Follow the visual viewport so the instruction remains at the top of the
+    // actually visible screen when a mobile on-screen keyboard is open.
+    const viewport = window.visualViewport;
+    if (viewport){
+      el.mobileKeyboardInstruction.style.top = `${Math.max(0,viewport.offsetTop)}px`;
+      el.mobileKeyboardInstruction.style.left = `${Math.max(0,viewport.offsetLeft)}px`;
+      el.mobileKeyboardInstruction.style.width = `${Math.max(1,viewport.width)}px`;
+    }
+  }
+
   function showTab(tab){
     cancelAutoNext();
     if (state.tab !== tab) stopCurrentAudioPlayback();
@@ -2151,6 +2200,7 @@
     if (tab === "examples") renderExamples();
     if (tab === "review") renderCurrentReview();
     if (tab === "history") loadHistory();
+    requestAnimationFrame(syncMobileKeyboardInstruction);
   }
 
   function itemWasAttempted(item){
@@ -3478,6 +3528,14 @@
     el.revealButton.addEventListener("click",revealCurrent);
     el.reveal.addEventListener("click",() => { void advanceFromRevealedAnswer(); });
     document.querySelectorAll(".tabBtn").forEach(btn => btn.addEventListener("click",() => showTab(btn.dataset.tab)));
+
+    for (const input of [el.firstAnswerInput,el.decimalAnswerInput]){
+      input.addEventListener("focus",syncMobileKeyboardInstruction);
+      input.addEventListener("blur",() => setTimeout(syncMobileKeyboardInstruction,0));
+    }
+    window.addEventListener("resize",syncMobileKeyboardInstruction);
+    window.visualViewport?.addEventListener("resize",syncMobileKeyboardInstruction);
+    window.visualViewport?.addEventListener("scroll",syncMobileKeyboardInstruction);
 
     el.firstAnswerInput.addEventListener("compositionstart",() => {
       firstAnswerCompositionActive = true;
