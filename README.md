@@ -909,7 +909,7 @@ This table uses the rexaled versions of the digit syllables:
 ### Digit Roots
 - Unique syllables
 - Easy to remember and use
-- Very useful when speaking and hearing long sequences of digits ( 5201 → Neleteniwen → 5201 )
+- Very useful when speaking and hearing long sequences of digits ( 5201 → Nelutuniwan → 5201 )
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
