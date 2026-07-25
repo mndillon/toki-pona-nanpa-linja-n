@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "generated": "2026-07-24",
+  "generated": "2026-07-26",
   "pairs": [
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-07-24-063",
+      "rev": "2026-07-26-064",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
