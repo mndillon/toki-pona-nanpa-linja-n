@@ -514,6 +514,20 @@
       outline:2px solid #111;
       outline-offset:1px;
     }
+    .reviewDecimalValue{
+      white-space:pre;
+    }
+    .reviewDecimalCharacter{
+      display:inline-block;
+      padding:1px 0;
+      border-radius:4px;
+      transition:background-color 80ms linear,outline-color 80ms linear;
+    }
+    .reviewDecimalCharacter.is-speaking{
+      background:#fff4a8;
+      outline:2px solid #111;
+      outline-offset:1px;
+    }
     .reviewCartoucheCanvasWrap{
       position:relative;
       display:inline-block;
@@ -2462,6 +2476,28 @@
     content.textContent = value || "—";
     panel.append(heading,content);
     grid.appendChild(panel);
+    return {panel,content};
+  }
+
+  function appendReviewDecimalPanel(grid,label,value){
+    const panel = document.createElement("div");
+    panel.className = "reviewRevealPanel";
+    const heading = document.createElement("div");
+    heading.className = "reviewRevealLabel";
+    heading.textContent = label;
+    const content = document.createElement("div");
+    content.className = "reviewRevealValue mono reviewDecimalValue";
+    const characters = Array.from(String(value || "—"));
+    for (let index=0;index<characters.length;index++){
+      const span = document.createElement("span");
+      span.className = "reviewDecimalCharacter";
+      span.dataset.reviewDecimalIndex = String(index);
+      span.textContent = characters[index];
+      content.appendChild(span);
+    }
+    panel.append(heading,content);
+    grid.appendChild(panel);
+    return {panel,content};
   }
 
   function splitReviewAudioSyllables(word){
@@ -2578,9 +2614,261 @@
     return {canvas,highlightCanvas};
   }
 
-  function syncReviewCartoucheHighlightCanvas(target=reviewAudioTarget){
-    const base = target?.fullCanvas;
-    const overlay = target?.highlightCanvas;
+  const REVIEW_AUDIO_DIGIT_BY_SYLLABLE = Object.freeze({
+    ni:"0", we:"1", wa:"1", te:"2", tu:"2", se:"3", na:"4",
+    le:"5", lu:"5", nu:"6", me:"7", mu:"7", pe:"8", pi:"8", je:"9"
+  });
+
+  function reviewAudioUnitSourceRanges(units){
+    const ranges = [];
+    let cursor = 0;
+    for (const unit of units){
+      const count = Array.from(String(unit.text ?? "")).length;
+      ranges[unit.index] = {
+        start:cursor,
+        end:cursor + count,
+        wordIndex:unit.wordIndex
+      };
+      cursor += count;
+    }
+    return {ranges,total:cursor};
+  }
+
+  function reviewCartoucheRectsForRunIndexes(layout,runs,indexes){
+    const sorted = Array.from(new Set(indexes || []))
+      .filter(index => Number.isInteger(index) && index >= 0 && index < runs.length)
+      .sort((a,b) => a-b);
+    if (!sorted.length) return [];
+
+    const groups = [];
+    let current = [sorted[0]];
+    for (let index=1;index<sorted.length;index++){
+      if (sorted[index] === sorted[index - 1] + 1) current.push(sorted[index]);
+      else{
+        groups.push(current);
+        current = [sorted[index]];
+      }
+    }
+    groups.push(current);
+
+    return groups.map(group => {
+      const first = runs[group[0]];
+      const last = runs[group[group.length - 1]];
+      return {
+        x:Math.max(0,first.x - 1),
+        y:Math.max(0,layout.innerY),
+        width:Math.max(1,(last.x + last.width) - first.x + 2),
+        height:Math.max(1,layout.innerHeight)
+      };
+    });
+  }
+
+  function buildReviewCartoucheHighlightMap(canvas,units){
+    const layout = canvas?._reviewCartoucheLayout;
+    const runs = Array.from(layout?.runs || []);
+    const sourceRanges = reviewAudioUnitSourceRanges(units);
+    if (!runs.length || runs.length !== sourceRanges.total) return [];
+    const map = [];
+    for (const unit of units){
+      const range = sourceRanges.ranges[unit.index];
+      const indexes = [];
+      for (let index=range.start;index<range.end;index++) indexes.push(index);
+      map[unit.index] = reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
+    }
+    return map;
+  }
+
+  function buildReviewAbbreviatedCartoucheHighlightMap(canvas,units,fullCodepoints,kind){
+    const layout = canvas?._reviewCartoucheLayout;
+    const runs = Array.from(layout?.runs || []);
+    const entries = abbreviateNumericCartoucheEntries(fullCodepoints,abbreviationOptionsForKind(kind));
+    const sourceRanges = reviewAudioUnitSourceRanges(units);
+    if (!runs.length || runs.length !== entries.length || sourceRanges.total !== Array.from(fullCodepoints || []).length) return [];
+
+    const wordRanges = new Map();
+    for (const unit of units){
+      const range = sourceRanges.ranges[unit.index];
+      const existing = wordRanges.get(unit.wordIndex);
+      if (!existing) wordRanges.set(unit.wordIndex,{start:range.start,end:range.end});
+      else{
+        existing.start = Math.min(existing.start,range.start);
+        existing.end = Math.max(existing.end,range.end);
+      }
+    }
+
+    const map = [];
+    for (const unit of units){
+      const range = sourceRanges.ranges[unit.index];
+      let indexes = entries.map((entry,index) => ({entry,index}))
+        .filter(({entry}) => entry.sourceIndex >= range.start && entry.sourceIndex < range.end)
+        .map(({index}) => index);
+
+      if (!indexes.length){
+        const wordRange = wordRanges.get(unit.wordIndex);
+        const wordCandidates = entries.map((entry,index) => ({entry,index}))
+          .filter(({entry}) => wordRange && entry.sourceIndex >= wordRange.start && entry.sourceIndex < wordRange.end);
+        const candidates = wordCandidates.length
+          ? wordCandidates
+          : entries.map((entry,index) => ({entry,index}));
+        if (candidates.length){
+          const midpoint = (range.start + range.end - 1) / 2;
+          let bestDistance = Number.POSITIVE_INFINITY;
+          for (const candidate of candidates){
+            bestDistance = Math.min(bestDistance,Math.abs(candidate.entry.sourceIndex - midpoint));
+          }
+          indexes = candidates
+            .filter(candidate => Math.abs(candidate.entry.sourceIndex - midpoint) === bestDistance)
+            .map(candidate => candidate.index);
+        }
+      }
+      map[unit.index] = reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
+    }
+    return map;
+  }
+
+  function reviewDecimalPunctuationDescriptor(word,kind){
+    const lower = String(word ?? "").toLowerCase();
+    if (lower === "neno") return {characters:new Set(["-"]),count:1};
+    if (lower === "one") return {characters:new Set(["."]),count:1};
+    if (/^e(?:ke){1,3}n?$/.test(lower)){
+      const count = (lower.match(/ke/g) || []).length;
+      if (kind === "hh-mm-time") return {characters:new Set([":"]),count};
+      if (kind === "iso-date") return {characters:new Set(["-"]),count};
+      if (kind === "thousands" || kind === "millions") return {characters:new Set([","]),count};
+      return {characters:new Set([",",":","-"]),count,fallbackToNextDigit:true};
+    }
+    if (lower === "oken") return {characters:new Set(["%"]),count:1};
+    if (lower === "ono") return {characters:new Set(["/"]),count:1};
+    if (lower === "oko") return {characters:new Set(["+"]),count:1};
+    if (lower === "eko") return {characters:new Set(["e","E"]),count:1};
+    if (lower === "ene") return {characters:new Set(["-"]),count:1};
+    return null;
+  }
+
+  function reviewDigitForAudioUnit(unit){
+    let lower = String(unit?.text ?? "").toLowerCase();
+    if (lower.endsWith("n") && lower.length > 2) lower = lower.slice(0,-1);
+    return REVIEW_AUDIO_DIGIT_BY_SYLLABLE[lower] ?? null;
+  }
+
+  function reviewScientificNotationMarkerWordIndexes(units){
+    const words = [];
+    const seen = new Set();
+    for (const unit of units){
+      if (seen.has(unit.wordIndex)) continue;
+      seen.add(unit.wordIndex);
+      words.push({
+        wordIndex:unit.wordIndex,
+        text:String(unit.word ?? "").toLowerCase()
+      });
+    }
+
+    const markerWordIndexes = new Set();
+    for (let index=0;index+2<words.length;index++){
+      const first = words[index];
+      const middle = words[index + 1];
+      const last = words[index + 2];
+      if (first.text === "eko" && /^(?:wanin|wenin)$/.test(middle.text) && last.text === "eko"){
+        markerWordIndexes.add(first.wordIndex);
+        markerWordIndexes.add(middle.wordIndex);
+        markerWordIndexes.add(last.wordIndex);
+      }
+    }
+    return markerWordIndexes;
+  }
+
+  function buildReviewDecimalHighlightMap(value,units,kind){
+    const characters = Array.from(String(value ?? ""));
+    const map = [];
+    const used = new Set();
+    const punctuationTargetsByWord = new Map();
+    const scientificMarkerWordIndexes = kind === "scientific-notation"
+      ? reviewScientificNotationMarkerWordIndexes(units)
+      : new Set();
+    const scientificEIndex = kind === "scientific-notation"
+      ? characters.findIndex(character => character === "e" || character === "E")
+      : -1;
+    let scientificMarkerClaimed = false;
+    let cursor = 0;
+
+    const takeNext = (predicate,count=1) => {
+      const positions = [];
+      for (let index=cursor;index<characters.length && positions.length<count;index++){
+        if (!used.has(index) && predicate(characters[index],index)){
+          used.add(index);
+          positions.push(index);
+        }
+      }
+      if (positions.length) cursor = Math.max(cursor,positions[positions.length - 1] + 1);
+      return positions;
+    };
+
+    for (const unit of units){
+      const lowerText = String(unit.text ?? "").toLowerCase();
+
+      // Ne is only the outer opening syllable. It never represents a visible
+      // character in the decimal value, including when it is the first half
+      // of the negative punctuation word Neno.
+      if (unit.index === 0 && lowerText === "ne"){
+        map[unit.index] = [];
+        continue;
+      }
+
+      // Scientific notation writes the complete spoken marker
+      // Eko Wanin Eko (strict: Eko Wenin Eko) as one displayed e. Every audio
+      // unit in those three words therefore reuses the same character target.
+      if (scientificEIndex >= 0 && scientificMarkerWordIndexes.has(unit.wordIndex)){
+        if (!scientificMarkerClaimed){
+          used.add(scientificEIndex);
+          cursor = Math.max(cursor,scientificEIndex + 1);
+          scientificMarkerClaimed = true;
+        }
+        map[unit.index] = [scientificEIndex];
+        continue;
+      }
+
+      const punctuation = reviewDecimalPunctuationDescriptor(unit.word,kind);
+      if (punctuation){
+        if (!punctuationTargetsByWord.has(unit.wordIndex)){
+          let positions = takeNext(character => punctuation.characters.has(character),punctuation.count);
+          // Some plain integer displays omit visual grouping punctuation even
+          // though the proper name still speaks an Eke-family boundary. In
+          // that case, highlight the next displayed digit or digits at the
+          // start of the following group rather than leaving the decimal view
+          // without a synchronized target.
+          if (!positions.length && punctuation.fallbackToNextDigit){
+            positions = takeNext(character => /\d/.test(character),Math.max(1,punctuation.count));
+          }
+          punctuationTargetsByWord.set(unit.wordIndex,positions);
+        }
+        // Every spoken part of the same punctuation word deliberately reuses
+        // the same decimal target.
+        map[unit.index] = Array.from(punctuationTargetsByWord.get(unit.wordIndex) || []);
+        continue;
+      }
+
+      if (lowerText === "no"){
+        map[unit.index] = takeNext(character => character === "-",1);
+        continue;
+      }
+      if (lowerText === "inin"){
+        map[unit.index] = takeNext(character => /\d/.test(character),2);
+        continue;
+      }
+
+      const digit = reviewDigitForAudioUnit(unit);
+      if (digit != null){
+        map[unit.index] = takeNext(character => /\d/.test(character),1);
+        continue;
+      }
+      map[unit.index] = [];
+    }
+    return map;
+  }
+
+  function syncReviewCartoucheHighlightCanvas(cartoucheTarget){
+    const base = cartoucheTarget?.canvas;
+    const overlay = cartoucheTarget?.highlightCanvas;
     if (!base || !overlay) return null;
 
     const displayed = base.getBoundingClientRect();
@@ -2604,39 +2892,47 @@
     };
   }
 
+  function clearReviewCartoucheHighlight(cartoucheTarget){
+    const synced = syncReviewCartoucheHighlightCanvas(cartoucheTarget);
+    if (!synced) return;
+    synced.ctx.setTransform(1,0,0,1,0,0);
+    synced.ctx.clearRect(0,0,synced.ctx.canvas.width,synced.ctx.canvas.height);
+  }
+
   function clearReviewAudioHighlight(target=reviewAudioTarget){
     target?.properNameContainer?.querySelectorAll(".reviewAudioUnit.is-speaking").forEach(node => {
       node.classList.remove("is-speaking");
     });
-    const synced = syncReviewCartoucheHighlightCanvas(target);
-    if (synced){
-      synced.ctx.setTransform(1,0,0,1,0,0);
-      synced.ctx.clearRect(0,0,synced.ctx.canvas.width,synced.ctx.canvas.height);
-    }
+    target?.decimalContainer?.querySelectorAll(".reviewDecimalCharacter.is-speaking").forEach(node => {
+      node.classList.remove("is-speaking");
+    });
+    for (const cartoucheTarget of target?.cartoucheTargets || []) clearReviewCartoucheHighlight(cartoucheTarget);
   }
 
-  function buildReviewCartoucheHighlightMap(canvas,units){
-    const layout = canvas?._reviewCartoucheLayout;
-    const runs = Array.from(layout?.runs || []);
-    const expected = units.reduce((sum,unit) => sum + Array.from(String(unit.text ?? "")).length,0);
-    if (!runs.length || runs.length !== expected) return [];
-    const map = [];
-    let cursor = 0;
-    for (const unit of units){
-      const count = Array.from(String(unit.text ?? "")).length;
-      const selected = runs.slice(cursor,cursor + count);
-      if (!selected.length){ cursor += count; continue; }
-      const first = selected[0];
-      const last = selected[selected.length - 1];
-      map[unit.index] = {
-        x:Math.max(0,first.x - 1),
-        y:Math.max(0,layout.innerY),
-        width:Math.max(1,(last.x + last.width) - first.x + 2),
-        height:Math.max(1,layout.innerHeight)
-      };
-      cursor += count;
+  function drawReviewCartoucheHighlights(cartoucheTarget,index){
+    const synced = syncReviewCartoucheHighlightCanvas(cartoucheTarget);
+    if (!synced) return;
+    const {ctx,scaleX,scaleY,pixelRatio} = synced;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    const rects = Array.isArray(cartoucheTarget.highlightMap?.[index])
+      ? cartoucheTarget.highlightMap[index]
+      : [];
+    if (!rects.length) return;
+
+    ctx.save();
+    ctx.setTransform(scaleX,0,0,scaleY,0,0);
+    ctx.fillStyle = "rgba(255,225,70,0.46)";
+    ctx.strokeStyle = "rgba(17,17,17,0.78)";
+    ctx.lineWidth = (1.25 * pixelRatio) / Math.max(scaleX,scaleY);
+    for (const rect of rects){
+      ctx.beginPath();
+      if (typeof ctx.roundRect === "function") ctx.roundRect(rect.x,rect.y,rect.width,rect.height,Math.max(2,Math.min(6,rect.height * 0.15)));
+      else ctx.rect(rect.x,rect.y,rect.width,rect.height);
+      ctx.fill();
+      ctx.stroke();
     }
-    return map;
+    ctx.restore();
   }
 
   function highlightReviewAudioUnit(index){
@@ -2648,24 +2944,16 @@
     const active = target.properNameContainer.querySelector(`[data-review-audio-unit-index="${index}"]`);
     active?.classList.add("is-speaking");
 
-    const synced = syncReviewCartoucheHighlightCanvas(target);
-    if (!synced) return;
-    const {ctx,scaleX,scaleY,pixelRatio} = synced;
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
-    const rect = target.cartoucheHighlightMap?.[index];
-    if (!rect) return;
-    ctx.save();
-    ctx.setTransform(scaleX,0,0,scaleY,0,0);
-    ctx.fillStyle = "rgba(255,225,70,0.46)";
-    ctx.strokeStyle = "rgba(17,17,17,0.78)";
-    ctx.lineWidth = (1.25 * pixelRatio) / Math.max(scaleX,scaleY);
-    ctx.beginPath();
-    if (typeof ctx.roundRect === "function") ctx.roundRect(rect.x,rect.y,rect.width,rect.height,Math.max(2,Math.min(6,rect.height * 0.15)));
-    else ctx.rect(rect.x,rect.y,rect.width,rect.height);
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
+    target.decimalContainer?.querySelectorAll(".reviewDecimalCharacter.is-speaking").forEach(node => {
+      node.classList.remove("is-speaking");
+    });
+    for (const decimalIndex of target.decimalHighlightMap?.[index] || []){
+      target.decimalContainer?.querySelector(`[data-review-decimal-index="${decimalIndex}"]`)?.classList.add("is-speaking");
+    }
+
+    for (const cartoucheTarget of target.cartoucheTargets || []){
+      drawReviewCartoucheHighlights(cartoucheTarget,index);
+    }
   }
 
   function setReviewAudioButtonState(state){
@@ -2925,7 +3213,14 @@
     stopCurrentAudioPlayback();
     const generation = ++reviewAudioGeneration;
     reviewAudioTarget = target;
-    target.cartoucheHighlightMap = buildReviewCartoucheHighlightMap(target.fullCanvas,target.units);
+    target.decimalHighlightMap = buildReviewDecimalHighlightMap(target.value,target.units,target.kind);
+    for (const cartoucheTarget of target.cartoucheTargets || []){
+      cartoucheTarget.highlightMap = cartoucheTarget.mappingMode === "abbreviated"
+        ? buildReviewAbbreviatedCartoucheHighlightMap(
+            cartoucheTarget.canvas,target.units,target.fullCodepoints,target.kind
+          )
+        : buildReviewCartoucheHighlightMap(cartoucheTarget.canvas,target.units);
+    }
     setReviewAudioButtonState("building");
     try{
       target.button.setCustomValidity("");
@@ -2994,26 +3289,51 @@
     revealGrid.className = "reviewRevealGrid";
     const mode = normalizeProperNameMode(record.properNameMode);
     const modeLabel = mode === "strict" ? "Strict" : "Relaxed";
-    appendReviewTextPanel(revealGrid,"Decimal value",record.value);
+    const decimalValue = appendReviewDecimalPanel(revealGrid,"Decimal value",record.value);
     const properNameAudio = appendReviewProperNamePanel(revealGrid,`${modeLabel} proper name`,record.properName);
     await ensureCartoucheFontLoaded();
+    const fullCodepoints = Array.from(record.fullCodepoints || []).map(Number);
     const fullCartouche = appendReviewCartouchePanel(
       revealGrid,
       `${modeLabel} full nanpa-linja-n cartouche`,
-      record.fullCodepoints || [],
+      fullCodepoints,
       {highlightable:true}
     );
-    appendReviewCartouchePanel(revealGrid,"Abbreviated nanpa-linja-n cartouche (preferred)",record.abbreviatedCodepoints || []);
+    const abbreviatedEntries = abbreviateNumericCartoucheEntries(
+      fullCodepoints,abbreviationOptionsForKind(record.kind)
+    );
+    const abbreviatedCartouche = appendReviewCartouchePanel(
+      revealGrid,
+      "Abbreviated nanpa-linja-n cartouche (preferred)",
+      abbreviatedEntries.map(entry => entry.cp),
+      {highlightable:true}
+    );
     appendReviewTextPanel(revealGrid,"#~ abbreviation",record.uniqueCode);
 
     const reviewAudioTargetForRecord = {
       button:properNameAudio.button,
       properName:record.properName,
       properNameContainer:properNameAudio.content,
+      decimalContainer:decimalValue.content,
+      decimalHighlightMap:[],
+      value:record.value,
+      kind:record.kind,
+      fullCodepoints,
       units:properNameAudio.units,
-      fullCanvas:fullCartouche.canvas,
-      highlightCanvas:fullCartouche.highlightCanvas,
-      cartoucheHighlightMap:[]
+      cartoucheTargets:[
+        {
+          canvas:fullCartouche.canvas,
+          highlightCanvas:fullCartouche.highlightCanvas,
+          mappingMode:"full",
+          highlightMap:[]
+        },
+        {
+          canvas:abbreviatedCartouche.canvas,
+          highlightCanvas:abbreviatedCartouche.highlightCanvas,
+          mappingMode:"abbreviated",
+          highlightMap:[]
+        }
+      ]
     };
     properNameAudio.button.addEventListener("click",() => toggleReviewAudio(reviewAudioTargetForRecord));
 
