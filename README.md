@@ -519,17 +519,17 @@ Word-splitting:
 
 - **no** does not split as **-n O**.
 - Since **no** marks the negative sign, it may attach to the **Ne-** at the start of a proper name to give **Neno**
-- Example: -1 → Nenowen → Neno Wen
-- Example: 1e-3 → Newenekoweninekonosen → Newen Eko Wenin Eko Nosen
+- Example: -1 → Nenowan → Neno Wan
+- Example: 1e-3 → Newanekowaninekonosen → Newan Eko Wanin Eko Nosen
 
 Examples:
 
 ```
-−5         → Neno Len
-−12        → Neno Weten
+−5         → Neno Lun
+−12        → Neno Watun
 −0.4       → Neno Nin One Nan
 −30,000    → Neno Senin Eken
--4.5e-3    → Neno Nan One Len Eko Wenin Eko Nosen
+-4.5e-3    → Neno Nan One Lun Eko Wanin Eko Nosen
 ```
 
 ---
@@ -548,17 +548,17 @@ Rules:
 Word-splitting:
 
 - **none** may split as **-n One**.
-- Example: 2.5 → Netenonelen → Neten One Len
+- Example: 2.5 → Netunonelun → Netun One Lun
 
 Examples:
 
 ```
-0.5       → Nenin One Len
-3.75      → Nesen One Melen
-12.04     → Neweten One Ninan
-37.9      → Nesemen One Jen
-0.125     → Nenin One Wetelen
-3.141592  → Nesen One Wenawen Ene Lejeten
+0.5       → Nenin One Lun
+3.75      → Nesen One Mulun
+12.04     → Newatun One Ninan
+37.9      → Nesemun One Jen
+0.125     → Nenin One Watulun
+3.141592  → Nesen One Wanawan Ene Lujetun
 ```
 
 ---
@@ -577,18 +577,18 @@ Rules:
 Word-splitting:
 
 - **neke** may split as **-n Eke**.
-- Example: 1,234 → Neweneketesenan → Newen Eke Tesenan
+- Example: 1,234 → Newaneketusenan → Newan Eke Tusenan
 
 Examples:
 
 ```
-1,234       → Newen Eke Tesenan
-12,000      → Neweten Eken
+1,234       → Newan Eke Tusenan
+12,000      → Newatun Eken
 3,000,000   → Nesen Ekeken
 30,000,000  → Nesenin Ekeken
 300,000,000 → Neseninin Ekeken
 3,000,000,000 → Nesen Ekekeken
-7,321,900   → Nemen Eke Setewen Eke Jeninin
+7,321,900   → Nemun Eke Setuwan Eke Jeninin
 ```
 
 ---
@@ -607,18 +607,18 @@ Rules:
 Word-splitting:
 
 - **nono** may split as **-n Ono**.
-- Example: 1/2 → Newenonoten → Newen Ono Ten
+- Example: 1/2 → Newanonotun → Newan Ono Tun
 
 Examples:
 
 ```
-1/2                 → Newen Ono Ten
+1/2                 → Newan Ono Tun
 3/4                 → Nesen Ono Nan
-5/8                 → Nelen Ono Pen
-567/890             → Nelenumen Ono Pejenin
-1,234 / 56          → Newen Eke Tesenan Ono Lenun
-3 / 1,000,000,000   → Nesen Ono Wen Ekekeken
--7/9                → Neno Men Ono Jen
+5/8                 → Nelun Ono Pin
+567/890             → Nelunumun Ono Pijenin
+1,234 / 56          → Newan Eke Tusenan Ono Lunun
+3 / 1,000,000,000   → Nesen Ono Wan Ekekeken
+-7/9                → Neno Mun Ono Jen
 ```
 
 ---
@@ -643,7 +643,7 @@ Examples:
 
 ```
 9¾                  → Nejen Oko Sen Ono Nan
--8+1/2              → Neno Pen Oko Wen Ono Ten
+-8+1/2              → Neno Pin Oko Wan Ono Tun
 ```
 
 
@@ -664,16 +664,16 @@ Word-splitting:
 
 - **noke** may split as **-n Oke**.
 - Since **noke** occurs at the end of the numeric expression, the split form usually appears as **Oken**.
-- Example: 5% → Nelenoken → Nelen Oken
+- Example: 5% → Nelunoken → Nelun Oken
 
 Examples:
 
 ```
-5%          → Nelen Oken
--8%         → Neno Pen Oken
-10.5%       → Newenin One Len Oken
-1000%       → Newenininin Oken
-2,000%      → Neten Eken Oken
+5%          → Nelun Oken
+-8%         → Neno Pin Oken
+10.5%       → Newanin One Lun Oken
+1000%       → Newanininin Oken
+2,000%      → Netun Eken Oken
 ```
 
 ---
@@ -694,19 +694,19 @@ Rules:
 Word-splitting:
 
 - **neko** may split as **-n Eko**.
-- Example: 4.5e3 → Nenanonelenekoweninekosen → Nenan One Len Eko Wenin Eko Sen
+- Example: 4.5e3 → Nenanonelunekowaninekosen → Nenan One Lun Eko Wanin Eko Sen
 
 Examples:
 
 ```
-4.5*10^3    → Nenan One Len Eko Wenin Eko Sen
-4.5*10+3    → Nenan One Len Eko Wenin Eko Sen
-4.5e3       → Nenan One Len Eko Wenin Eko Sen
-4.5e+3      → Nenan One Len Eko Wenin Eko Sen
-4.5*10^-3   → Nenan One Len Eko Wenin Eko Nosen
-4.5*10-3    → Nenan One Len Eko Wenin Eko Nosen
-4.5e-3      → Nenan One Len Eko Wenin Eko Nosen
--4.5e-3     → Neno Nan One Len Eko Wenin Eko Nosen
+4.5*10^3    → Nenan One Lun Eko Wanin Eko Sen
+4.5*10+3    → Nenan One Lun Eko Wanin Eko Sen
+4.5e3       → Nenan One Lun Eko Wanin Eko Sen
+4.5e+3      → Nenan One Lun Eko Wanin Eko Sen
+4.5*10^-3   → Nenan One Lun Eko Wanin Eko Nosen
+4.5*10-3    → Nenan One Lun Eko Wanin Eko Nosen
+4.5e-3      → Nenan One Lun Eko Wanin Eko Nosen
+-4.5e-3     → Neno Nan One Lun Eko Wanin Eko Nosen
 ```
 
 
@@ -727,13 +727,13 @@ Rules:
 Word-splitting:
 
 - **neke** may split as **-n Eke**.
-- Example: 12:00 → Newetenekeninin → Neweten Eke Ninin
+- Example: 12:00 → Newatunekeninin → Newatun Eke Ninin
 
 Examples:
 
 ```
-14:30       → Newenan Eke Senin
-2026-03-17  → Netenitenun Eke Nisen Eke Wemen
+14:30       → Newanan Eke Senin
+2026-03-17  → Netunitunun Eke Nisen Eke Wemun
 ```
 
 
@@ -754,13 +754,13 @@ Rules:
 Word-splitting:
 
 - **nene** may split as **-n Ene**.
-- Example: 321-555-6789 → Nesetewenenelelelenenenumepejen → Nesetewen Ene Lelelen Ene Numepejen
+- Example: 321-555-6789 → Nesetuwanenelululunenenumupijen → Nesetuwan Ene Lululun Ene Numupijen
 
 Examples:
 
 ```
-321-555-6789  → Nesetewen Ene Lelelen Ene Numepejen
-3.141592      → Nesen One Wenawen Ene Lejeten
+321-555-6789  → Nesetuwan Ene Lululun Ene Numupijen
+3.141592      → Nesen One Wanawan Ene Lujetun
 ```
 
 
@@ -913,22 +913,22 @@ This table uses the rexaled versions of the digit syllables:
 - End in **-n** for structural consistency, for long digit sequences the end is clearly signaled
   - The speaker wants to communicate **"1 2 3 4 5"**:
     - for counting,
-      - might say: **"Newen Neten Nesen Nenan Nelen"**
+      - might say: **"Newan Netun Nesen Nenan Nelun"**
     - for value 12,345,
-      - might say: **"Neweten Eke Senalen"**
+      - might say: **"Newatun Eke Senalun"**
     - for sequence of digits, like an id,
-      - might say: **"Newetesenalen"**
+      - might say: **"Newatusenalun"**
     - for 1-2-3-4-5 digit emphasis,
-      - might say: **"Newen Ene Ten Ene Sen Ene Nan Ene Len"**
+      - might say: **"Newan Ene Tun Ene Sen Ene Nan Ene Lun"**
     - for breaking up long sequences with no change in value, (nene can be used anywhere)
-      - might say: **"Neweten Ene Senalen"**
+      - might say: **"Newatun Ene Senalun"**
     - In all cases the listener has understood the speaker as communicating **"12345"**
   - Screen readers can communicate longer digit sequences with less cognitive load
   - Automated text-to-speech systems can communicate longer digit sequences with less cognitive load
   - Can enhance compatability with [WCAG 2.2](WCAG%202.2%20compliance%20claims.md)
 - No conflict with Toki Pona vocabulary
 - Where possible, respects the first letter of existing Toki Pona digit names (from pu)
-- By starting digit sequences with **Ne-** and ending digit sequences with **-n**, words are more easily identified as **nanpa-linja-n** proper names for digit sequences ( Nemetesen → 723 )
+- By starting digit sequences with **Ne-** and ending digit sequences with **-n**, words are more easily identified as **nanpa-linja-n** proper names for digit sequences ( Nemutusen → 723 )
 - Respects the speaker’s freedom to choose how to express numbers:
   - Additive (**pu** style) numerals:
     - The speaker uses **pu** names ala, wan, tu, luka, mute, ale
@@ -939,7 +939,7 @@ This table uses the rexaled versions of the digit syllables:
   - Positional decimal (**nanpa-linja-n** style) strings:
     - The speaker uses **nanpa-linja-n** digit names with concatenation and **Ne-** signalling the start and **-n** signalling the end of the string of digits
     - The speaker thinks: 78 = 7 followed by 8
-    - The speaker says (the way they think): Nemepen
+    - The speaker says (the way they think): Nemupin
     - The listener recognises **nanpa-linja-n** semantics (since no word collision and syntax is consistent)
     - The listener understands: "78"
     - The listener may understand that "78" represents a numeric value, but that understanding is determined by context
@@ -970,56 +970,56 @@ The Toki Pona expression 'li sama' has an unfortunate sitelen pona appearance id
 - Shape of sitelen pona glyph (looks like equals)
 - Good candidate
 - Never appears in a numeric cartouche
-- Example: nanpa la zz Nenin One Len sama Newen Ono Ten
+- Example: nanpa la zz Nenin One Lun sama Newan Ono Tun
 
 ### Addition: en
 - Shape of sitelen pona glyph (looks like plus)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- Example: nanpa la zz Newen en Neten en Nesen sama Nenun
+- Example: nanpa la zz Newan en Netun en Nesen sama Nenun
 
 ### Subtract: lape
 - Shape of sitelen pona glyph (looks like subtract)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but negative symbol can appear in a numeric cartouche)
-- Example: nanpa la zz Nesen lape Nenoten sama Nelen
+- Example: nanpa la zz Nesen lape Nenotun sama Nelun
 
 ### Multiply: lete
 - Shape of sitelen pona glyph (looks like multiply in ascii)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- Example: nanpa la zz Nesen lete Neten sama Nenun
+- Example: nanpa la zz Nesen lete Netun sama Nenun
 
 ### Division: kipisi
 - Shape of sitelen pona glyph (looks like divide)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche (but fraction symbol can appear in a numeric cartouche)
-- Example: nanpa la zz Nepen kipisi Nenoten sama Nenonan
+- Example: nanpa la zz Nepin kipisi Nenotun sama Nenonan
 
 ### Power: sewi
 - Shape of sitelen pona glyph (looks like rising up)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- Example: nanpa la zz Neten sewi Nesen sama Nepen
+- Example: nanpa la zz Netun sewi Nesen sama Nepin
 
 ### Root: lili
 - Shape of sitelen pona glyph (looks like small part of)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- Example: nanpa la zz Nesen lili Nepen sama Neten
+- Example: nanpa la zz Nesen lili Nepin sama Netun
 
 ### Log: anpa
 - Shape of sitelen pona glyph (looks like below)
 - Good candidate
 - Adds more context, makes the assumption that the strings of digits represent numeric values
 - Never appears in a numeric cartouche
-- Example: nanpa la zz Nepen anpa Neten sama Nesen
+- Example: nanpa la zz Nepin anpa Netun sama Nesen
 
 
 <img src="images/arithmetic_operations_examples.png" width="550"/><br/>
