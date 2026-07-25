@@ -203,7 +203,7 @@ Relaxed mode is preferred because it allows some digits to be represented using 
 | 8 | pe | - | pi | - | pipi | <img src="./images/nanpa-linja-n-mode-8-sitelen.png" alt="relaxed digit 8 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-8-abbrev.png" alt="digit 8 abbreviated glyph" height="36"> |
 | 9 | je | - | - | - | jo | <img src="./images/nanpa-linja-n-mode-9-sitelen.png" alt="relaxed digit 9 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-9-abbrev.png" alt="digit 9 abbreviated glyph" height="36"> |
 | small glyph | en | ala | ike | uta | &nbsp; | &nbsp; | &nbsp; |
-| small sitelen glyph | <img src="./images/nanpa-linja-n-mode-en-small.png" alt="small en glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ala-small.png" alt="small ala glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ike-small.png" alt="small ike glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-open-small.png" alt="small uta glyph" height="20"> | &nbsp; | &nbsp; | &nbsp; |
+| small sitelen glyph | <img src="./images/nanpa-linja-n-mode-en-small.png" alt="small en glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ala-small.png" alt="small ala glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ike-small.png" alt="small ike glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-uta-small.png" alt="small uta glyph" height="20"> | &nbsp; | &nbsp; | &nbsp; |
 
 ### strict
 
