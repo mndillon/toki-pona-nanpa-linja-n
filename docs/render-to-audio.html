@@ -256,6 +256,16 @@
       font-weight: 750;
     }
 
+    .input-component-chip {
+      transition: background-color 80ms linear, outline-color 80ms linear;
+    }
+
+    .input-component-chip.is-speaking {
+      background: var(--speaking-bg);
+      outline: 2px solid var(--speaking-outline);
+      outline-offset: 1px;
+    }
+
     .proper-name-sentence {
       display: flex;
       flex-wrap: wrap;
@@ -821,7 +831,14 @@
         <section class="cartouche-panel" aria-labelledby="abbreviatedCartoucheTitle">
           <h2 id="abbreviatedCartoucheTitle">nanpa-linja-n sitelen pona abbreviated cartouche (preferred)</h2>
           <div class="canvas-scroll">
-            <canvas id="abbreviatedCartouche" aria-hidden="true"></canvas>
+            <div class="cartouche-canvas-wrap">
+              <canvas id="abbreviatedCartouche" aria-hidden="true"></canvas>
+              <canvas
+                id="abbreviatedCartoucheHighlight"
+                class="cartouche-highlight-canvas"
+                aria-hidden="true"
+              ></canvas>
+            </div>
           </div>
         </section>
       </div>
@@ -1251,6 +1268,23 @@
     const CARTOUCHE_START_CP = 0xF1990;
     const CARTOUCHE_END_CP = 0xF1991;
 
+    const ABBREV_CP_NANPA = 0xF193D;
+    const ABBREV_CP_NENA = 0xF1940;
+    const ABBREV_CP_EN = 0xF190A;
+    const ABBREV_CP_OPEN = 0xF1947;
+    const ABBREV_CP_ALA = 0xF1902;
+    const ABBREV_CP_IKE = 0xF190D;
+    const ABBREV_CP_UTA = 0xF1970;
+    const ABBREV_DROP_AFTER_FIRST_NANPA = new Set([
+      ABBREV_CP_NANPA,
+      ABBREV_CP_NENA,
+      ABBREV_CP_EN,
+      ABBREV_CP_OPEN,
+      ABBREV_CP_ALA,
+      ABBREV_CP_IKE,
+      ABBREV_CP_UTA
+    ]);
+
     const AUDIO_SPEED_OPTIONS = Object.freeze({
       "1.00": { label: "Normal", syllableGapSeconds: 0.200 },
       "2.25": { label: "Slow", syllableGapSeconds: 0.700 },
@@ -1306,7 +1340,8 @@
       srProperName: document.getElementById("srProperName"),
       fullCartouche: document.getElementById("fullCartouche"),
       fullCartoucheHighlight: document.getElementById("fullCartoucheHighlight"),
-      abbreviatedCartouche: document.getElementById("abbreviatedCartouche")
+      abbreviatedCartouche: document.getElementById("abbreviatedCartouche"),
+      abbreviatedCartoucheHighlight: document.getElementById("abbreviatedCartoucheHighlight")
     };
 
     let rendererPromise = null;
@@ -1319,6 +1354,7 @@
     let audioBusy = false;
     let audioState = "stopped";
     let audioSession = null;
+    let activeAudioHighlightIndex = null;
 
     let audioPreparationGeneration = 0;
     let preparedAudio = null;
@@ -1634,7 +1670,15 @@
       const rawUnits = rawUnitsFromCapsTokens(tokens);
       const inputSourceCells =
         inputSourceCellsForRawUnits(componentDisplayInput, rawUnits);
+      assignInputSourceCharacterIndexes(
+        componentDisplayInput,
+        inputSourceCells
+      );
       const audioUnits = buildAudioUnits(properName);
+      const numericValueHighlightMap = buildNumericValueHighlightMap(
+        componentDisplayInput,
+        audioUnits
+      );
       const finalWordPlacements = buildFinalWordPlacements(rawUnits, properName);
       const hundredsSplitLeadingNiIndexes =
         findHundredsSplitLeadingNiIndexes(rawUnits, properName);
@@ -1652,6 +1696,7 @@
         rawUnits,
         inputSourceCells,
         audioUnits,
+        numericValueHighlightMap,
         finalWordPlacements,
         hundredsSplitLeadingNiIndexes
       };
@@ -2053,6 +2098,47 @@
       return fallbackInputSourceCells(rawInput, rawUnits);
     }
 
+    function assignInputSourceCharacterIndexes(value, cells) {
+      const characters = Array.from(String(value ?? ""));
+      const used = new Set();
+      let cursor = 0;
+
+      for (const cell of cells) {
+        const indexes = [];
+        const parts = Array.from(String(cell?.text ?? ""));
+
+        for (const part of parts) {
+          let foundIndex = -1;
+
+          for (let index = cursor; index < characters.length; index += 1) {
+            if (!used.has(index) && characters[index] === part) {
+              foundIndex = index;
+              break;
+            }
+          }
+
+          if (foundIndex < 0) {
+            for (let index = 0; index < characters.length; index += 1) {
+              if (!used.has(index) && characters[index] === part) {
+                foundIndex = index;
+                break;
+              }
+            }
+          }
+
+          if (foundIndex >= 0) {
+            used.add(foundIndex);
+            indexes.push(foundIndex);
+            cursor = Math.max(cursor, foundIndex + 1);
+          }
+        }
+
+        cell.sourceCharacterIndexes = indexes;
+      }
+
+      return cells;
+    }
+
     function clearElement(node) {
       while (node.firstChild) node.firstChild.remove();
     }
@@ -2097,6 +2183,8 @@
          */
         const displayText = hideSourcePunctuation ? "\u00A0" : component.text;
         const chip = makeChip(displayText);
+        chip.classList.add("input-component-chip");
+        chip.dataset.inputComponentIndex = String(index);
         chip.title = hideSourcePunctuation
           ? "The source separator is intentionally blank because this column maps to nene"
           : component.sourceKind === "scientific-exponent-marker"
@@ -2224,6 +2312,8 @@
       }
     }
 
+
+
     function renderProperNameSentence(model) {
       clearElement(el.properNameSentence);
 
@@ -2348,39 +2438,6 @@
       return String(properName ?? "").replace(/\s+/g, "");
     }
 
-    function findNumericCartoucheRun(plan) {
-      const runs = Array.isArray(plan?.lines)
-        ? plan.lines.flatMap(line => Array.isArray(line?.runs) ? line.runs : [])
-        : [];
-
-      return runs.find(run => {
-        const kind = String(run?.kind ?? run?._element?.type ?? "").toLowerCase();
-        const cps = Array.isArray(run?.cps)
-          ? run.cps
-          : (Array.isArray(run?._element?.cps) ? run._element.cps : []);
-        return kind === "cartouche" && cps.length > 0;
-      }) || null;
-    }
-
-    function syncFullCartoucheHighlightCanvasSize() {
-      const overlay = el.fullCartoucheHighlight;
-      const base = el.fullCartouche;
-      if (!overlay || !base) return;
-
-      const width = Math.max(1, Number(base.width) || 1);
-      const height = Math.max(1, Number(base.height) || 1);
-      if (overlay.width !== width) overlay.width = width;
-      if (overlay.height !== height) overlay.height = height;
-    }
-
-    function clearFullCartoucheHighlight() {
-      const overlay = el.fullCartoucheHighlight;
-      if (!overlay) return;
-      syncFullCartoucheHighlightCanvasSize();
-      const ctx = overlay.getContext("2d", { alpha: true });
-      ctx.clearRect(0, 0, overlay.width, overlay.height);
-    }
-
     function compactCartouchePadForPx(fontPx) {
       const px = Math.max(8, Number(fontPx) || 36);
       return Math.max(2, Math.round(px * 0.06));
@@ -2395,51 +2452,451 @@
       return ctx.measureText(text).width;
     }
 
-    function buildFullCartoucheHighlightMap(model, plan) {
+    function findNumericCartoucheRun(plan) {
+      const runs = Array.isArray(plan?.lines)
+        ? plan.lines.flatMap(line => Array.isArray(line?.runs) ? line.runs : [])
+        : [];
+
+      return runs.find(run => {
+        const kind = String(run?.kind ?? run?._element?.type ?? "").toLowerCase();
+        const cps = Array.isArray(run?.cps)
+          ? run.cps
+          : (Array.isArray(run?._element?.cps) ? run._element.cps : []);
+        return kind === "cartouche" && cps.length > 0;
+      }) || null;
+    }
+
+    const AUDIO_DIGIT_BY_SYLLABLE = Object.freeze({
+      ni: "0",
+      we: "1",
+      wa: "1",
+      te: "2",
+      tu: "2",
+      se: "3",
+      na: "4",
+      le: "5",
+      lu: "5",
+      nu: "6",
+      me: "7",
+      mu: "7",
+      pe: "8",
+      pi: "8",
+      je: "9"
+    });
+
+    function audioUnitSourceRanges(units) {
+      const ranges = [];
+      let cursor = 0;
+
+      for (const unit of units) {
+        const count = Array.from(String(unit.text ?? "")).length;
+        ranges[unit.index] = {
+          start: cursor,
+          end: cursor + count,
+          wordIndex: unit.wordIndex
+        };
+        cursor += count;
+      }
+
+      return { ranges, total: cursor };
+    }
+
+    function numericPunctuationDescriptor(word) {
+      const lower = String(word ?? "").toLowerCase();
+
+      if (lower === "neno") {
+        return { characters: new Set(["-"]), count: 1 };
+      }
+
+      if (lower === "one") {
+        return { characters: new Set(["."]), count: 1 };
+      }
+
+      if (/^e(?:ke){1,3}n?$/.test(lower)) {
+        return {
+          characters: new Set([",", ":", "-"]),
+          count: Math.max(1, (lower.match(/ke/g) || []).length),
+          fallbackToNextDigit: true
+        };
+      }
+
+      if (lower === "oken") {
+        return { characters: new Set(["%"]), count: 1 };
+      }
+
+      if (lower === "ono") {
+        return { characters: new Set(["/", "⁄"]), count: 1 };
+      }
+
+      if (lower === "oko") {
+        return { characters: new Set(["+"]), count: 1 };
+      }
+
+      if (lower === "eko") {
+        return { characters: new Set(["e", "E"]), count: 1 };
+      }
+
+      if (lower === "ene") {
+        return { characters: new Set(["-", "_", " "]), count: 1 };
+      }
+
+      return null;
+    }
+
+    function digitForAudioUnit(unit) {
+      let lower = String(unit?.text ?? "").toLowerCase();
+      if (lower.endsWith("n") && lower.length > 2) {
+        lower = lower.slice(0, -1);
+      }
+      return AUDIO_DIGIT_BY_SYLLABLE[lower] ?? null;
+    }
+
+    function scientificNotationMarkerWordIndexes(units) {
+      const words = [];
+      const seen = new Set();
+
+      for (const unit of units) {
+        if (seen.has(unit.wordIndex)) continue;
+        seen.add(unit.wordIndex);
+        words.push({
+          wordIndex: unit.wordIndex,
+          text: String(unit.word ?? "").toLowerCase()
+        });
+      }
+
+      const markerWordIndexes = new Set();
+      for (let index = 0; index + 2 < words.length; index += 1) {
+        const first = words[index];
+        const middle = words[index + 1];
+        const last = words[index + 2];
+
+        if (
+          first.text === "eko" &&
+          /^(?:wanin|wenin)$/.test(middle.text) &&
+          last.text === "eko"
+        ) {
+          markerWordIndexes.add(first.wordIndex);
+          markerWordIndexes.add(middle.wordIndex);
+          markerWordIndexes.add(last.wordIndex);
+        }
+      }
+
+      return markerWordIndexes;
+    }
+
+    function buildNumericValueHighlightMap(value, units) {
+      const characters = Array.from(String(value ?? ""));
+      const map = [];
+      const used = new Set();
+      const punctuationTargetsByWord = new Map();
+      const scientificMarkerWords = scientificNotationMarkerWordIndexes(units);
+      const scientificEIndex = characters.findIndex(
+        character => character === "e" || character === "E"
+      );
+      let scientificMarkerClaimed = false;
+      let cursor = 0;
+
+      const takeNext = (predicate, count = 1) => {
+        const positions = [];
+
+        for (
+          let index = cursor;
+          index < characters.length && positions.length < count;
+          index += 1
+        ) {
+          if (!used.has(index) && predicate(characters[index], index)) {
+            used.add(index);
+            positions.push(index);
+          }
+        }
+
+        if (positions.length) {
+          cursor = Math.max(cursor, positions[positions.length - 1] + 1);
+        }
+
+        return positions;
+      };
+
+      for (const unit of units) {
+        const lowerText = String(unit.text ?? "").toLowerCase();
+
+        /*
+         * Ne is the outer opening syllable and never represents a displayed
+         * character. For a negative value, only the following no syllable
+         * highlights the minus sign.
+         */
+        if (unit.index === 0 && lowerText === "ne") {
+          map[unit.index] = [];
+          continue;
+        }
+
+        /*
+         * Scientific notation writes Eko Wanin Eko (strict: Eko Wenin Eko)
+         * as one e. Every audio unit in all three words deliberately reuses
+         * that same character target.
+         */
+        if (
+          scientificEIndex >= 0 &&
+          scientificMarkerWords.has(unit.wordIndex)
+        ) {
+          if (!scientificMarkerClaimed) {
+            used.add(scientificEIndex);
+            cursor = Math.max(cursor, scientificEIndex + 1);
+            scientificMarkerClaimed = true;
+          }
+
+          map[unit.index] = [scientificEIndex];
+          continue;
+        }
+
+        const punctuation = numericPunctuationDescriptor(unit.word);
+        if (punctuation) {
+          if (!punctuationTargetsByWord.has(unit.wordIndex)) {
+            let positions = takeNext(
+              character => punctuation.characters.has(character),
+              punctuation.count
+            );
+
+            /*
+             * A decoded plain integer can omit a visible grouping separator
+             * even though the proper name still speaks an Eke-family boundary.
+             * Reuse the next digit at the start of the following group.
+             */
+            if (!positions.length && punctuation.fallbackToNextDigit) {
+              positions = takeNext(
+                character => /\d/u.test(character),
+                Math.max(1, punctuation.count)
+              );
+            }
+
+            punctuationTargetsByWord.set(unit.wordIndex, positions);
+          }
+
+          map[unit.index] = Array.from(
+            punctuationTargetsByWord.get(unit.wordIndex) || []
+          );
+          continue;
+        }
+
+        if (lowerText === "no") {
+          map[unit.index] = takeNext(character => character === "-", 1);
+          continue;
+        }
+
+        if (lowerText === "inin") {
+          map[unit.index] = takeNext(character => /\d/u.test(character), 2);
+          continue;
+        }
+
+        if (digitForAudioUnit(unit) != null) {
+          map[unit.index] = takeNext(character => /\d/u.test(character), 1);
+          continue;
+        }
+
+        map[unit.index] = [];
+      }
+
+      return map;
+    }
+
+    function abbreviateNumericCartoucheEntries(
+      cps,
+      { showTelephoneHyphenEn = false } = {}
+    ) {
+      const input = Array.from(cps ?? [], Number);
+      if (!input.length) return [];
+
+      const out = [];
+      let keptFirstNanpa = false;
+
+      for (let index = 0; index < input.length; index += 1) {
+        if (
+          showTelephoneHyphenEn &&
+          keptFirstNanpa &&
+          input[index] === ABBREV_CP_NENA &&
+          input[index + 1] === ABBREV_CP_EN &&
+          input[index + 2] === ABBREV_CP_NENA &&
+          input[index + 3] === ABBREV_CP_EN
+        ) {
+          out.push({ cp: ABBREV_CP_EN, sourceIndex: index + 3 });
+          index += 3;
+          continue;
+        }
+
+        const cp = input[index];
+        const isFinalNanpa =
+          cp === ABBREV_CP_NANPA &&
+          index === input.length - 1;
+
+        if (!keptFirstNanpa) {
+          out.push({ cp, sourceIndex: index });
+          if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
+          continue;
+        }
+
+        if (isFinalNanpa) {
+          out.push({ cp, sourceIndex: index });
+          continue;
+        }
+
+        if (ABBREV_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+        out.push({ cp, sourceIndex: index });
+      }
+
+      return out;
+    }
+
+    function sameCodepointSequence(entries, codepoints) {
+      const left = Array.from(entries ?? [], entry => Number(entry.cp));
+      const right = Array.from(codepoints ?? [], Number);
+      return (
+        left.length === right.length &&
+        left.every((cp, index) => cp === right[index])
+      );
+    }
+
+    function fallbackAbbreviatedSourceEntries(
+      fullCodepoints,
+      abbreviatedCodepoints
+    ) {
+      const full = Array.from(fullCodepoints ?? [], Number);
+      const abbreviated = Array.from(abbreviatedCodepoints ?? [], Number);
+      const entries = [];
+      let fullCursor = 0;
+
+      for (
+        let abbreviatedIndex = 0;
+        abbreviatedIndex < abbreviated.length;
+        abbreviatedIndex += 1
+      ) {
+        const cp = abbreviated[abbreviatedIndex];
+        let sourceIndex = full.indexOf(cp, fullCursor);
+
+        if (sourceIndex < 0) {
+          sourceIndex = Math.min(
+            Math.max(0, full.length - 1),
+            Math.round(
+              abbreviatedIndex *
+              Math.max(0, full.length - 1) /
+              Math.max(1, abbreviated.length - 1)
+            )
+          );
+        } else {
+          fullCursor = sourceIndex + 1;
+        }
+
+        entries.push({ cp, sourceIndex });
+      }
+
+      return entries;
+    }
+
+    function abbreviatedSourceEntries(
+      fullCodepoints,
+      abbreviatedCodepoints
+    ) {
+      const normal = abbreviateNumericCartoucheEntries(fullCodepoints);
+      if (sameCodepointSequence(normal, abbreviatedCodepoints)) {
+        return normal;
+      }
+
+      const telephone = abbreviateNumericCartoucheEntries(fullCodepoints, {
+        showTelephoneHyphenEn: true
+      });
+      if (sameCodepointSequence(telephone, abbreviatedCodepoints)) {
+        return telephone;
+      }
+
+      return fallbackAbbreviatedSourceEntries(
+        fullCodepoints,
+        abbreviatedCodepoints
+      );
+    }
+
+    function syncCartoucheHighlightCanvas(target) {
+      const base = target?.canvas;
+      const overlay = target?.highlightCanvas;
+      if (!base || !overlay) return null;
+
+      const displayed = base.getBoundingClientRect();
+      const cssWidth = Math.max(
+        1,
+        displayed.width ||
+        base.clientWidth ||
+        base.width ||
+        1
+      );
+      const cssHeight = Math.max(
+        1,
+        displayed.height ||
+        base.clientHeight ||
+        base.height ||
+        1
+      );
+      const pixelRatio = Math.max(
+        1,
+        Number(window.devicePixelRatio) || 1
+      );
+      const backingWidth = Math.max(
+        1,
+        Math.round(cssWidth * pixelRatio)
+      );
+      const backingHeight = Math.max(
+        1,
+        Math.round(cssHeight * pixelRatio)
+      );
+
+      overlay.style.width = `${cssWidth}px`;
+      overlay.style.height = `${cssHeight}px`;
+
+      if (overlay.width !== backingWidth) overlay.width = backingWidth;
+      if (overlay.height !== backingHeight) overlay.height = backingHeight;
+
+      const ctx = overlay.getContext("2d", { alpha: true });
+      return {
+        ctx,
+        scaleX: backingWidth / Math.max(1, base.width),
+        scaleY: backingHeight / Math.max(1, base.height),
+        pixelRatio
+      };
+    }
+
+    function clearCartoucheHighlight(target) {
+      const synced = syncCartoucheHighlightCanvas(target);
+      if (!synced) return;
+
+      synced.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      synced.ctx.clearRect(
+        0,
+        0,
+        synced.ctx.canvas.width,
+        synced.ctx.canvas.height
+      );
+    }
+
+    function buildCartoucheGeometry(model, plan, target) {
       const run = findNumericCartoucheRun(plan);
-      if (!run) return [];
+      if (!run || !target?.canvas) return null;
 
       const cps = Array.isArray(run.cps)
         ? Array.from(run.cps, Number)
         : Array.from(run?._element?.cps || [], Number);
 
-      const compactName = compactProperNameLetters(model.properName);
-      const unitLetterCount = model.audioUnits.reduce(
-        (sum, unit) => sum + Array.from(String(unit.text ?? "")).length,
-        0
-      );
+      if (!cps.length) return null;
 
-      /*
-       * nanpa-linja-n's cartouche encoding is letter-oriented: each letter of
-       * the completed proper name corresponds to one inner cartouche codepoint.
-       * This includes reassigned n and complete delimiter words. Validate that
-       * invariant before constructing per-audio-unit rectangles.
-       */
-      if (
-        !cps.length ||
-        cps.length !== Array.from(compactName).length ||
-        cps.length !== unitLetterCount
-      ) {
-        console.warn("[render-to-audio] cartouche highlight mapping unavailable", {
-          codepointCount: cps.length,
-          compactProperNameLength: Array.from(compactName).length,
-          audioUnitLetterCount: unitLetterCount,
-          properName: model.properName
-        });
-        return [];
-      }
-
-      const overlay = el.fullCartoucheHighlight;
-      if (!overlay) return [];
-      syncFullCartoucheHighlightCanvasSize();
-
-      const ctx = overlay.getContext("2d", { alpha: true });
+      const ctx = target.canvas.getContext("2d", { alpha: true });
       const fontPx = Math.max(
         8,
-        Number(run.fontPx ?? run?._element?.fontPx ?? cartoucheFontPx(model)) || 36
+        Number(
+          run.fontPx ??
+          run?._element?.fontPx ??
+          cartoucheFontPx(model)
+        ) || 36
       );
       const fontFamily = String(
-        run.fontFamily ?? run?._element?.fontFamily ?? FONT_FAMILY_NUMBER
+        run.fontFamily ??
+        run?._element?.fontFamily ??
+        FONT_FAMILY_NUMBER
       );
 
       ctx.font = `${fontPx}px "${fontFamily}"`;
@@ -2460,72 +2917,275 @@
       const padLeft = compactCartouchePadForPx(fontPx);
       const runX = Number(run.xPx ?? run.drawXPx ?? 0);
       const runY = Number(run.yPx ?? 0);
-      const runHeight = Math.max(1, Number(run.heightPx ?? run?._element?.h ?? 1));
-
-      /*
-       * The renderer draws the cartouche string at:
-       * runX + compact pad + actualBoundingBoxLeft.
-       * Prefix advances measured with the same font locate each inner
-       * codepoint boundary without highlighting the outer cartouche markers.
-       */
+      const runHeight = Math.max(
+        1,
+        Number(run.heightPx ?? run?._element?.h ?? 1)
+      );
       const textOriginX = runX + padLeft + actualLeft;
-      const verticalInset = Math.max(1, Math.round(fontPx * 0.04));
+      const verticalInset = Math.max(
+        1,
+        Math.round(fontPx * 0.04)
+      );
       const rectY = Math.max(0, runY + verticalInset);
-      const rectHeight = Math.max(1, runHeight - verticalInset * 2);
+      const rectHeight = Math.max(
+        1,
+        runHeight - verticalInset * 2
+      );
 
-      const map = [];
-      let codepointCursor = 0;
+      const rects = cps.map((cp, index) => {
+        const startX =
+          textOriginX + measuredPrefixAdvance(ctx, cps, index);
+        const endX =
+          textOriginX + measuredPrefixAdvance(ctx, cps, index + 1);
 
-      for (const unit of model.audioUnits) {
-        const letterCount = Array.from(String(unit.text ?? "")).length;
-        const startIndex = codepointCursor;
-        const endIndex = Math.min(cps.length, startIndex + letterCount);
-
-        const startX = textOriginX + measuredPrefixAdvance(ctx, cps, startIndex);
-        const endX = textOriginX + measuredPrefixAdvance(ctx, cps, endIndex);
-
-        map[unit.index] = {
+        return {
           x: Math.max(0, startX),
           y: rectY,
           width: Math.max(1, endX - startX),
-          height: rectHeight,
-          startCodepointIndex: startIndex,
-          endCodepointIndex: endIndex,
-          text: unit.text
+          height: rectHeight
         };
+      });
 
-        codepointCursor = endIndex;
+      return { cps, rects };
+    }
+
+    function cartoucheRectsForIndexes(geometry, indexes) {
+      const sorted = Array.from(new Set(indexes || []))
+        .filter(
+          index =>
+            Number.isInteger(index) &&
+            index >= 0 &&
+            index < geometry.rects.length
+        )
+        .sort((left, right) => left - right);
+
+      if (!sorted.length) return [];
+
+      const groups = [];
+      let current = [sorted[0]];
+
+      for (let index = 1; index < sorted.length; index += 1) {
+        if (sorted[index] === sorted[index - 1] + 1) {
+          current.push(sorted[index]);
+        } else {
+          groups.push(current);
+          current = [sorted[index]];
+        }
+      }
+      groups.push(current);
+
+      return groups.map(group => {
+        const first = geometry.rects[group[0]];
+        const last = geometry.rects[group[group.length - 1]];
+
+        return {
+          x: Math.max(0, first.x - 1),
+          y: first.y,
+          width: Math.max(
+            1,
+            last.x + last.width - first.x + 2
+          ),
+          height: Math.max(1, first.height)
+        };
+      });
+    }
+
+    function buildFullCartoucheHighlightMap(model, plan, target) {
+      const geometry = buildCartoucheGeometry(model, plan, target);
+      const sourceRanges = audioUnitSourceRanges(model.audioUnits);
+
+      if (
+        !geometry ||
+        geometry.cps.length !== sourceRanges.total
+      ) {
+        console.warn(
+          "[render-to-audio] full cartouche highlight mapping unavailable",
+          {
+            codepointCount: geometry?.cps?.length ?? 0,
+            audioUnitLetterCount: sourceRanges.total,
+            properName: model.properName
+          }
+        );
+        return [];
+      }
+
+      const map = [];
+      for (const unit of model.audioUnits) {
+        const range = sourceRanges.ranges[unit.index];
+        const indexes = [];
+
+        for (let index = range.start; index < range.end; index += 1) {
+          indexes.push(index);
+        }
+
+        map[unit.index] = cartoucheRectsForIndexes(
+          geometry,
+          indexes
+        );
       }
 
       return map;
     }
 
-    function drawFullCartoucheHighlight(audioUnitIndex) {
-      clearFullCartoucheHighlight();
-      const rect = currentModel?.fullCartoucheHighlightMap?.[audioUnitIndex];
-      const overlay = el.fullCartoucheHighlight;
-      if (!rect || !overlay) return;
+    function buildAbbreviatedCartoucheHighlightMap(model, plan, target) {
+      const geometry = buildCartoucheGeometry(model, plan, target);
+      const fullCodepoints = Array.from(
+        model.cartouche?.innerCodepoints ?? [],
+        Number
+      );
+      const sourceRanges = audioUnitSourceRanges(model.audioUnits);
 
-      const ctx = overlay.getContext("2d", { alpha: true });
-      const radius = Math.max(2, Math.min(7, rect.height * 0.15));
-      const x = rect.x;
-      const y = rect.y;
-      const width = rect.width;
-      const height = rect.height;
+      if (
+        !geometry ||
+        sourceRanges.total !== fullCodepoints.length
+      ) {
+        console.warn(
+          "[render-to-audio] abbreviated cartouche highlight mapping unavailable",
+          {
+            abbreviatedCodepointCount: geometry?.cps?.length ?? 0,
+            fullCodepointCount: fullCodepoints.length,
+            audioUnitLetterCount: sourceRanges.total,
+            properName: model.properName
+          }
+        );
+        return [];
+      }
+
+      const entries = abbreviatedSourceEntries(
+        fullCodepoints,
+        geometry.cps
+      );
+
+      if (entries.length !== geometry.cps.length) return [];
+
+      const wordRanges = new Map();
+      for (const unit of model.audioUnits) {
+        const range = sourceRanges.ranges[unit.index];
+        const existing = wordRanges.get(unit.wordIndex);
+
+        if (!existing) {
+          wordRanges.set(unit.wordIndex, {
+            start: range.start,
+            end: range.end
+          });
+        } else {
+          existing.start = Math.min(existing.start, range.start);
+          existing.end = Math.max(existing.end, range.end);
+        }
+      }
+
+      const map = [];
+      for (const unit of model.audioUnits) {
+        const range = sourceRanges.ranges[unit.index];
+        let indexes = entries
+          .map((entry, index) => ({ entry, index }))
+          .filter(
+            ({ entry }) =>
+              entry.sourceIndex >= range.start &&
+              entry.sourceIndex < range.end
+          )
+          .map(({ index }) => index);
+
+        /*
+         * Supporting glyphs are intentionally removed in the abbreviated
+         * cartouche. Reuse the closest retained glyph in the same proper-name
+         * word so every spoken unit still has a visible synchronized target.
+         */
+        if (!indexes.length) {
+          const wordRange = wordRanges.get(unit.wordIndex);
+          const wordCandidates = entries
+            .map((entry, index) => ({ entry, index }))
+            .filter(
+              ({ entry }) =>
+                wordRange &&
+                entry.sourceIndex >= wordRange.start &&
+                entry.sourceIndex < wordRange.end
+            );
+          const candidates = wordCandidates.length
+            ? wordCandidates
+            : entries.map((entry, index) => ({ entry, index }));
+
+          if (candidates.length) {
+            const midpoint =
+              (range.start + range.end - 1) / 2;
+            let bestDistance = Number.POSITIVE_INFINITY;
+
+            for (const candidate of candidates) {
+              bestDistance = Math.min(
+                bestDistance,
+                Math.abs(candidate.entry.sourceIndex - midpoint)
+              );
+            }
+
+            indexes = candidates
+              .filter(
+                candidate =>
+                  Math.abs(
+                    candidate.entry.sourceIndex - midpoint
+                  ) === bestDistance
+              )
+              .map(candidate => candidate.index);
+          }
+        }
+
+        map[unit.index] = cartoucheRectsForIndexes(
+          geometry,
+          indexes
+        );
+      }
+
+      return map;
+    }
+
+    function drawCartoucheHighlights(target, audioUnitIndex) {
+      const synced = syncCartoucheHighlightCanvas(target);
+      if (!synced) return;
+
+      const { ctx, scaleX, scaleY, pixelRatio } = synced;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+      const rects = Array.isArray(target.highlightMap?.[audioUnitIndex])
+        ? target.highlightMap[audioUnitIndex]
+        : [];
+
+      if (!rects.length) return;
 
       ctx.save();
+      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
       ctx.fillStyle = "rgba(255, 225, 70, 0.46)";
       ctx.strokeStyle = "rgba(17, 17, 17, 0.78)";
-      ctx.lineWidth = 1.25;
+      ctx.lineWidth =
+        (1.25 * pixelRatio) /
+        Math.max(scaleX, scaleY);
 
-      ctx.beginPath();
-      if (typeof ctx.roundRect === "function") {
-        ctx.roundRect(x, y, width, height, radius);
-      } else {
-        ctx.rect(x, y, width, height);
+      for (const rect of rects) {
+        ctx.beginPath();
+
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height,
+            Math.max(
+              2,
+              Math.min(7, rect.height * 0.15)
+            )
+          );
+        } else {
+          ctx.rect(
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height
+          );
+        }
+
+        ctx.fill();
+        ctx.stroke();
       }
-      ctx.fill();
-      ctx.stroke();
+
       ctx.restore();
     }
 
@@ -2552,10 +3212,19 @@
         fontPx
       });
 
-      const [fullPlan, full, abbreviated] = await Promise.all([
+      const [
+        fullPlan,
+        abbreviatedPlan,
+        full,
+        abbreviated
+      ] = await Promise.all([
         renderer.buildRenderPlan({
           input: model.properName,
           ...fullConfig
+        }),
+        renderer.buildRenderPlan({
+          input: model.properName,
+          ...abbreviatedConfig
         }),
         renderer.renderTextToNewCanvas({
           input: model.properName,
@@ -2569,11 +3238,39 @@
 
       copyCanvas(full.canvas, el.fullCartouche);
       copyCanvas(abbreviated.canvas, el.abbreviatedCartouche);
-      syncFullCartoucheHighlightCanvasSize();
-      clearFullCartoucheHighlight();
+
+      const fullTarget = {
+        canvas: el.fullCartouche,
+        highlightCanvas: el.fullCartoucheHighlight,
+        highlightMap: []
+      };
+      const abbreviatedTarget = {
+        canvas: el.abbreviatedCartouche,
+        highlightCanvas: el.abbreviatedCartoucheHighlight,
+        highlightMap: []
+      };
+
+      fullTarget.highlightMap = buildFullCartoucheHighlightMap(
+        model,
+        fullPlan,
+        fullTarget
+      );
+      abbreviatedTarget.highlightMap =
+        buildAbbreviatedCartoucheHighlightMap(
+          model,
+          abbreviatedPlan,
+          abbreviatedTarget
+        );
 
       model.fullCartouchePlan = fullPlan;
-      model.fullCartoucheHighlightMap = buildFullCartoucheHighlightMap(model, fullPlan);
+      model.abbreviatedCartouchePlan = abbreviatedPlan;
+      model.cartoucheHighlightTargets = [
+        fullTarget,
+        abbreviatedTarget
+      ];
+
+      clearCartoucheHighlight(fullTarget);
+      clearCartoucheHighlight(abbreviatedTarget);
     }
 
     function renderBreakdown(model) {
@@ -2649,20 +3346,63 @@
     }
 
     function clearAudioHighlight() {
+      activeAudioHighlightIndex = null;
+
       document.querySelectorAll(".audio-unit.is-speaking").forEach(node => {
         node.classList.remove("is-speaking");
       });
-      clearFullCartoucheHighlight();
+
+      el.inputComponents
+        ?.querySelectorAll(".input-component-chip.is-speaking")
+        .forEach(node => {
+          node.classList.remove("is-speaking");
+        });
+
+      for (const target of currentModel?.cartoucheHighlightTargets || []) {
+        clearCartoucheHighlight(target);
+      }
     }
 
     function highlightAudioUnit(index) {
+      activeAudioHighlightIndex = index;
+
       const selector = `.audio-unit[data-audio-unit-index="${index}"]`;
       const active = document.querySelector(selector);
+
       document.querySelectorAll(".audio-unit.is-speaking").forEach(node => {
         if (node !== active) node.classList.remove("is-speaking");
       });
       if (active) active.classList.add("is-speaking");
-      drawFullCartoucheHighlight(index);
+
+      el.inputComponents
+        ?.querySelectorAll(".input-component-chip.is-speaking")
+        .forEach(node => {
+          node.classList.remove("is-speaking");
+        });
+
+      const numericIndexes =
+        currentModel?.numericValueHighlightMap?.[index] || [];
+
+      currentModel?.inputSourceCells?.forEach((cell, cellIndex) => {
+        const sourceIndexes = Array.from(
+          cell?.sourceCharacterIndexes || []
+        );
+        if (
+          sourceIndexes.some(sourceIndex =>
+            numericIndexes.includes(sourceIndex)
+          )
+        ) {
+          el.inputComponents
+            ?.querySelector(
+              `[data-input-component-index="${cellIndex}"]`
+            )
+            ?.classList.add("is-speaking");
+        }
+      });
+
+      for (const target of currentModel?.cartoucheHighlightTargets || []) {
+        drawCartoucheHighlights(target, index);
+      }
     }
 
     function setAudioState(state) {
@@ -3250,8 +3990,50 @@
         if (currentModel) {
           setResponsiveBreakdownScale(currentModel);
           scheduleDesktopBreakdownFit();
+
+          if (Number.isInteger(activeAudioHighlightIndex)) {
+            for (
+              const target of
+              currentModel.cartoucheHighlightTargets || []
+            ) {
+              drawCartoucheHighlights(
+                target,
+                activeAudioHighlightIndex
+              );
+            }
+          } else {
+            for (
+              const target of
+              currentModel.cartoucheHighlightTargets || []
+            ) {
+              clearCartoucheHighlight(target);
+            }
+          }
         }
       }, 80);
+    });
+
+    window.visualViewport?.addEventListener("resize", () => {
+      if (!currentModel) return;
+
+      if (Number.isInteger(activeAudioHighlightIndex)) {
+        for (
+          const target of
+          currentModel.cartoucheHighlightTargets || []
+        ) {
+          drawCartoucheHighlights(
+            target,
+            activeAudioHighlightIndex
+          );
+        }
+      } else {
+        for (
+          const target of
+          currentModel.cartoucheHighlightTargets || []
+        ) {
+          clearCartoucheHighlight(target);
+        }
+      }
     });
 
     window.addEventListener("beforeunload", () => resetAudio());
