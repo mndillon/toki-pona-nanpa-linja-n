@@ -83,6 +83,50 @@
       opacity: 0.45;
     }
 
+    .cartouche-audio-word {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .cartouche-audio-unit,
+    .cartouche-value-character {
+      display: inline-block;
+      padding: 1px 1px;
+      border-radius: 4px;
+      transition: background-color 80ms linear, outline-color 80ms linear;
+    }
+
+    .cartouche-value-character {
+      padding-inline: 0;
+    }
+
+    .cartouche-audio-unit.is-speaking,
+    .cartouche-value-character.is-speaking {
+      background: #fff4a8;
+      outline: 2px solid #111;
+      outline-offset: 1px;
+    }
+
+    .cartouche-audio-canvas-wrap {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      line-height: 0;
+    }
+
+    .cartouche-highlight-canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1px;
+      height: 1px;
+      max-width: none;
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent;
+      pointer-events: none;
+    }
+
     /* NEW: bilingual button layout */
     .btnBi {
       display: flex;
@@ -359,7 +403,14 @@
             sitelen pona cartouche
             <span class="tpLine">poki nimi sitelen pona</span>
           </h3>
-          <canvas id="canvasSmall" aria-hidden="true"></canvas>
+          <div class="cartouche-audio-canvas-wrap">
+            <canvas id="canvasSmall" aria-hidden="true"></canvas>
+            <canvas
+              id="canvasSmallHighlight"
+              class="cartouche-highlight-canvas"
+              aria-hidden="true"
+            ></canvas>
+          </div>
           <div id="cartoucheValueBox" class="help hidden" aria-label="Cartouche value">
             <strong>Cartouche value:</strong>
             <span id="cartoucheValueText" class="mono"></span>
@@ -725,6 +776,21 @@
     import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=22";
 
     const voice = await createTokiPonaVoice();
+
+    const CARTOUCHE_AUDIO_PAUSE_SCALE = 1.00;
+    const CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
+    const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
+      "Eke", "Eken", "Ekeke", "Ekeken", "Ekekeke", "Ekekeken",
+      "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
+    ]);
+
+    let currentCartoucheAudioModel = null;
+    let cartoucheAudioGeneration = 0;
+    let cartoucheAudioState = "stopped";
+    let cartoucheAudioSession = null;
+    let cartoucheAudioContext = null;
+    let activeCartoucheAudioUnitIndex = null;
+    const cartoucheAudioCache = new Map();
 
     /* ============================================================
        Accessibility helpers
@@ -3095,13 +3161,26 @@
       let x = border + pad;
 
       ctx2.fillStyle = "#111";
+      const positionedRuns = [];
 
       for (const g of glyphRuns) {
         ctx2.font = `${g.px}px "${FONT_FAMILY}"`;
         const drawX = x + (g.left ?? 0);
         ctx2.fillText(g.ch, drawX, baselineY + (g.yOffset ?? 0));
+        positionedRuns.push({
+          x,
+          width: g.tightW,
+          top: baselineY - g.ascent + (g.yOffset ?? 0),
+          height: g.ascent + g.descent
+        });
         x += g.tightW + letterGap;
       }
+
+      canvas._cartoucheAudioLayout = {
+        runs: positionedRuns,
+        innerY: border + 1,
+        innerHeight: Math.max(1, canvas.height - (border + 1) * 2)
+      };
 
       return { cartW, cartH, textW: totalWidth, textH: textHeight, maxAscent, maxDescent };
     }
@@ -3252,6 +3331,7 @@
 
     const canvasLarge = document.getElementById("canvasLarge");
     const canvasSmall = document.getElementById("canvasSmall");
+    const canvasSmallHighlight = document.getElementById("canvasSmallHighlight");
 
     const elCodesIn = document.getElementById("codepointsIn");
 
@@ -3381,40 +3461,828 @@
       });
     }
 
-    function getCurrentNanpaLinjanProperNameForAudio() {
-      const belowCartouche = String(elCartoucheValueTextTp?.textContent ?? "").trim();
-      if (belowCartouche) return belowCartouche;
+    function splitCartoucheAudioSyllables(word) {
+      const source = String(word ?? "");
+      const lower = source.toLowerCase();
+      const vowels = new Set(["a", "e", "i", "o", "u"]);
+      const consonants = new Set(["p", "t", "k", "m", "n", "s", "w", "l", "j"]);
+      const out = [];
+      let index = 0;
 
-      return String(elLatinOut?.value ?? "").trim();
+      while (index < lower.length) {
+        const start = index;
+        if (consonants.has(lower[index])) index += 1;
+        if (index >= lower.length || !vowels.has(lower[index])) return [source];
+        index += 1;
+
+        if (index < lower.length && lower[index] === "n") {
+          const following = index + 1 < lower.length ? lower[index + 1] : "";
+          if (!following || consonants.has(following)) index += 1;
+        }
+
+        out.push(source.slice(start, index));
+      }
+
+      return out.length ? out : [source];
+    }
+
+    function buildCartoucheAudioUnits(properName) {
+      const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+      const units = [];
+      let index = 0;
+
+      for (let wordIndex = 0; wordIndex < words.length; wordIndex += 1) {
+        const word = words[wordIndex];
+        const wordUnits = WHOLE_NUMERIC_AUDIO_WORDS.has(word)
+          ? [word]
+          : splitCartoucheAudioSyllables(word);
+
+        for (let unitIndexInWord = 0; unitIndexInWord < wordUnits.length; unitIndexInWord += 1) {
+          units.push({
+            index,
+            text: wordUnits[unitIndexInWord],
+            word,
+            wordIndex,
+            unitIndexInWord,
+            wholeNumericPunctuationWord: WHOLE_NUMERIC_AUDIO_WORDS.has(word)
+          });
+          index += 1;
+        }
+      }
+
+      return units;
+    }
+
+    function renderCartoucheAudioProperName(properName, units = buildCartoucheAudioUnits(properName)) {
+      if (!elCartoucheValueTextTp) return;
+      elCartoucheValueTextTp.replaceChildren();
+      const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+
+      for (let wordIndex = 0; wordIndex < words.length; wordIndex += 1) {
+        const wordWrap = document.createElement("span");
+        wordWrap.className = "cartouche-audio-word";
+
+        for (const unit of units.filter(item => item.wordIndex === wordIndex)) {
+          const span = document.createElement("span");
+          span.className = "cartouche-audio-unit";
+          span.dataset.cartoucheAudioUnitIndex = String(unit.index);
+          span.textContent = unit.text;
+          wordWrap.appendChild(span);
+        }
+
+        elCartoucheValueTextTp.appendChild(wordWrap);
+        if (wordIndex < words.length - 1) {
+          elCartoucheValueTextTp.appendChild(document.createTextNode(" "));
+        }
+      }
+    }
+
+    function renderCartoucheAudioValue(value) {
+      if (!elCartoucheValueText) return;
+      elCartoucheValueText.replaceChildren();
+      const characters = Array.from(String(value ?? ""));
+
+      for (let index = 0; index < characters.length; index += 1) {
+        const span = document.createElement("span");
+        span.className = "cartouche-value-character";
+        span.dataset.cartoucheValueIndex = String(index);
+        span.textContent = characters[index];
+        elCartoucheValueText.appendChild(span);
+      }
+    }
+
+    const CARTOUCHE_AUDIO_DIGIT_BY_SYLLABLE = Object.freeze({
+      ni: "0", we: "1", wa: "1", te: "2", tu: "2", se: "3", na: "4",
+      le: "5", lu: "5", nu: "6", me: "7", mu: "7", pe: "8", pi: "8", je: "9"
+    });
+
+    function cartoucheAudioDigitForUnit(unit) {
+      let lower = String(unit?.text ?? "").toLowerCase();
+      if (lower.endsWith("n") && lower.length > 2) lower = lower.slice(0, -1);
+      return CARTOUCHE_AUDIO_DIGIT_BY_SYLLABLE[lower] ?? null;
+    }
+
+    function cartoucheAudioKindForValue(value) {
+      const text = String(value ?? "");
+      if (/[eE]/.test(text)) return "scientific-notation";
+      if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(text)) return "hh-mm-time";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return "iso-date";
+      if (text.includes(",")) return "thousands";
+      return "numeric";
+    }
+
+    function cartoucheAudioPunctuationDescriptor(word, kind) {
+      const lower = String(word ?? "").toLowerCase();
+      if (lower === "neno") return { characters: new Set(["-"]), count: 1 };
+      if (lower === "one") return { characters: new Set(["."]), count: 1 };
+      if (/^e(?:ke){1,3}n?$/.test(lower)) {
+        const count = Math.max(1, (lower.match(/ke/g) || []).length);
+        if (kind === "hh-mm-time") return { characters: new Set([":"]), count };
+        if (kind === "iso-date") return { characters: new Set(["-"]), count };
+        if (kind === "thousands") return { characters: new Set([","]), count };
+        return {
+          characters: new Set([",", ":", "-", "K", "M", "B"]),
+          count,
+          fallbackToNextDigit: true
+        };
+      }
+      if (lower === "oken") return { characters: new Set(["%"]), count: 1 };
+      if (lower === "ono") return { characters: new Set(["/", "⁄"]), count: 1 };
+      if (lower === "oko") return { characters: new Set(["+"]), count: 1 };
+      if (lower === "eko") return { characters: new Set(["e", "E"]), count: 1 };
+      if (lower === "ene") return { characters: new Set(["-", "_", " "]), count: 1 };
+      return null;
+    }
+
+    function scientificMarkerWordIndexes(units) {
+      const words = [];
+      const seen = new Set();
+
+      for (const unit of units) {
+        if (seen.has(unit.wordIndex)) continue;
+        seen.add(unit.wordIndex);
+        words.push({ wordIndex: unit.wordIndex, text: String(unit.word ?? "").toLowerCase() });
+      }
+
+      const result = new Set();
+      for (let index = 0; index + 2 < words.length; index += 1) {
+        const first = words[index];
+        const middle = words[index + 1];
+        const last = words[index + 2];
+        if (first.text === "eko" && /^(?:wanin|wenin)$/.test(middle.text) && last.text === "eko") {
+          result.add(first.wordIndex);
+          result.add(middle.wordIndex);
+          result.add(last.wordIndex);
+        }
+      }
+      return result;
+    }
+
+    function buildCartoucheValueHighlightMap(value, units) {
+      const characters = Array.from(String(value ?? ""));
+      const kind = cartoucheAudioKindForValue(value);
+      const map = [];
+      const used = new Set();
+      const punctuationTargetsByWord = new Map();
+      const markerWords = kind === "scientific-notation"
+        ? scientificMarkerWordIndexes(units)
+        : new Set();
+      const scientificEIndex = kind === "scientific-notation"
+        ? characters.findIndex(character => character === "e" || character === "E")
+        : -1;
+      let scientificMarkerClaimed = false;
+      let cursor = 0;
+
+      const takeNext = (predicate, count = 1) => {
+        const positions = [];
+        for (let index = cursor; index < characters.length && positions.length < count; index += 1) {
+          if (!used.has(index) && predicate(characters[index], index)) {
+            used.add(index);
+            positions.push(index);
+          }
+        }
+        if (positions.length) cursor = Math.max(cursor, positions[positions.length - 1] + 1);
+        return positions;
+      };
+
+      for (const unit of units) {
+        const lowerText = String(unit.text ?? "").toLowerCase();
+
+        if (unit.index === 0 && lowerText === "ne") {
+          map[unit.index] = [];
+          continue;
+        }
+
+        if (scientificEIndex >= 0 && markerWords.has(unit.wordIndex)) {
+          if (!scientificMarkerClaimed) {
+            used.add(scientificEIndex);
+            cursor = Math.max(cursor, scientificEIndex + 1);
+            scientificMarkerClaimed = true;
+          }
+          map[unit.index] = [scientificEIndex];
+          continue;
+        }
+
+        const punctuation = cartoucheAudioPunctuationDescriptor(unit.word, kind);
+        if (punctuation) {
+          if (!punctuationTargetsByWord.has(unit.wordIndex)) {
+            let positions = takeNext(
+              character => punctuation.characters.has(character),
+              punctuation.count
+            );
+            if (!positions.length && punctuation.fallbackToNextDigit) {
+              positions = takeNext(character => /\d/.test(character), Math.max(1, punctuation.count));
+            }
+            punctuationTargetsByWord.set(unit.wordIndex, positions);
+          }
+          map[unit.index] = Array.from(punctuationTargetsByWord.get(unit.wordIndex) || []);
+          continue;
+        }
+
+        if (lowerText === "no") {
+          map[unit.index] = takeNext(character => character === "-", 1);
+          continue;
+        }
+        if (lowerText === "inin") {
+          map[unit.index] = takeNext(character => /\d/.test(character), 2);
+          continue;
+        }
+        if (cartoucheAudioDigitForUnit(unit) != null) {
+          map[unit.index] = takeNext(character => /\d/.test(character), 1);
+          continue;
+        }
+        map[unit.index] = [];
+      }
+
+      return map;
+    }
+
+    function cartoucheAudioUnitSourceRanges(units) {
+      const ranges = [];
+      let cursor = 0;
+      for (const unit of units) {
+        const count = Array.from(String(unit.text ?? "")).length;
+        ranges[unit.index] = { start: cursor, end: cursor + count, wordIndex: unit.wordIndex };
+        cursor += count;
+      }
+      return { ranges, total: cursor };
+    }
+
+    function cartoucheHighlightRectsForIndexes(layout, indexes) {
+      const runs = Array.from(layout?.runs || []);
+      const sorted = Array.from(new Set(indexes || []))
+        .filter(index => Number.isInteger(index) && index >= 0 && index < runs.length)
+        .sort((left, right) => left - right);
+      if (!sorted.length) return [];
+
+      const groups = [];
+      let current = [sorted[0]];
+      for (let index = 1; index < sorted.length; index += 1) {
+        if (sorted[index] === sorted[index - 1] + 1) current.push(sorted[index]);
+        else {
+          groups.push(current);
+          current = [sorted[index]];
+        }
+      }
+      groups.push(current);
+
+      return groups.map(group => {
+        const first = runs[group[0]];
+        const last = runs[group[group.length - 1]];
+        return {
+          x: Math.max(0, first.x - 1),
+          y: Math.max(0, layout.innerY),
+          width: Math.max(1, last.x + last.width - first.x + 2),
+          height: Math.max(1, layout.innerHeight)
+        };
+      });
+    }
+
+    function buildFullCartoucheAudioHighlightMap(units, fullCodepoints, layout) {
+      const sourceRanges = cartoucheAudioUnitSourceRanges(units);
+      const runs = Array.from(layout?.runs || []);
+      if (runs.length !== sourceRanges.total || runs.length !== Array.from(fullCodepoints || []).length) return [];
+
+      const map = [];
+      for (const unit of units) {
+        const range = sourceRanges.ranges[unit.index];
+        const indexes = [];
+        for (let index = range.start; index < range.end; index += 1) indexes.push(index);
+        map[unit.index] = cartoucheHighlightRectsForIndexes(layout, indexes);
+      }
+      return map;
+    }
+
+    function buildAbbreviatedCartoucheAudioHighlightMap(units, fullCodepoints, displayedCodepoints, layout) {
+      const sourceRanges = cartoucheAudioUnitSourceRanges(units);
+      const full = Array.from(fullCodepoints || [], Number);
+      const displayed = Array.from(displayedCodepoints || [], Number);
+      const entries = abbreviateNumericCartoucheEntries(full);
+      const runs = Array.from(layout?.runs || []);
+
+      if (
+        sourceRanges.total !== full.length ||
+        entries.length !== displayed.length ||
+        runs.length !== displayed.length ||
+        !entries.every((entry, index) => entry.cp === displayed[index])
+      ) return [];
+
+      const wordRanges = new Map();
+      for (const unit of units) {
+        const range = sourceRanges.ranges[unit.index];
+        const existing = wordRanges.get(unit.wordIndex);
+        if (!existing) wordRanges.set(unit.wordIndex, { start: range.start, end: range.end });
+        else {
+          existing.start = Math.min(existing.start, range.start);
+          existing.end = Math.max(existing.end, range.end);
+        }
+      }
+
+      const map = [];
+      for (const unit of units) {
+        const range = sourceRanges.ranges[unit.index];
+        let indexes = entries
+          .map((entry, index) => ({ entry, index }))
+          .filter(({ entry }) => entry.sourceIndex >= range.start && entry.sourceIndex < range.end)
+          .map(({ index }) => index);
+
+        if (!indexes.length) {
+          const wordRange = wordRanges.get(unit.wordIndex);
+          const sameWord = entries
+            .map((entry, index) => ({ entry, index }))
+            .filter(({ entry }) => wordRange && entry.sourceIndex >= wordRange.start && entry.sourceIndex < wordRange.end);
+          const candidates = sameWord.length
+            ? sameWord
+            : entries.map((entry, index) => ({ entry, index }));
+
+          if (candidates.length) {
+            const midpoint = (range.start + range.end - 1) / 2;
+            let bestDistance = Number.POSITIVE_INFINITY;
+            for (const candidate of candidates) {
+              bestDistance = Math.min(bestDistance, Math.abs(candidate.entry.sourceIndex - midpoint));
+            }
+            indexes = candidates
+              .filter(candidate => Math.abs(candidate.entry.sourceIndex - midpoint) === bestDistance)
+              .map(candidate => candidate.index);
+          }
+        }
+
+        map[unit.index] = cartoucheHighlightRectsForIndexes(layout, indexes);
+      }
+      return map;
+    }
+
+    function syncCartoucheHighlightCanvas() {
+      if (!canvasSmall || !canvasSmallHighlight) return null;
+      const displayed = canvasSmall.getBoundingClientRect();
+      const style = window.getComputedStyle ? window.getComputedStyle(canvasSmall) : null;
+      const borderLeft = Math.max(0, parseFloat(style?.borderLeftWidth) || 0);
+      const borderRight = Math.max(0, parseFloat(style?.borderRightWidth) || 0);
+      const borderTop = Math.max(0, parseFloat(style?.borderTopWidth) || 0);
+      const borderBottom = Math.max(0, parseFloat(style?.borderBottomWidth) || 0);
+      const cssWidth = Math.max(
+        1,
+        canvasSmall.clientWidth || displayed.width - borderLeft - borderRight || canvasSmall.width || 1
+      );
+      const cssHeight = Math.max(
+        1,
+        canvasSmall.clientHeight || displayed.height - borderTop - borderBottom || canvasSmall.height || 1
+      );
+      const pixelRatio = Math.max(1, Number(window.devicePixelRatio) || 1);
+      const backingWidth = Math.max(1, Math.round(cssWidth * pixelRatio));
+      const backingHeight = Math.max(1, Math.round(cssHeight * pixelRatio));
+
+      canvasSmallHighlight.style.left = `${borderLeft}px`;
+      canvasSmallHighlight.style.top = `${borderTop}px`;
+      canvasSmallHighlight.style.width = `${cssWidth}px`;
+      canvasSmallHighlight.style.height = `${cssHeight}px`;
+      if (canvasSmallHighlight.width !== backingWidth) canvasSmallHighlight.width = backingWidth;
+      if (canvasSmallHighlight.height !== backingHeight) canvasSmallHighlight.height = backingHeight;
+
+      const ctx = canvasSmallHighlight.getContext("2d", { alpha: true });
+      return {
+        ctx,
+        scaleX: backingWidth / Math.max(1, canvasSmall.width),
+        scaleY: backingHeight / Math.max(1, canvasSmall.height),
+        pixelRatio
+      };
+    }
+
+    function clearCartoucheCanvasHighlight() {
+      const synced = syncCartoucheHighlightCanvas();
+      if (!synced) return;
+      synced.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      synced.ctx.clearRect(0, 0, synced.ctx.canvas.width, synced.ctx.canvas.height);
+    }
+
+    function drawCartoucheCanvasHighlight(index) {
+      const synced = syncCartoucheHighlightCanvas();
+      if (!synced) return;
+      const { ctx, scaleX, scaleY, pixelRatio } = synced;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+      const rects = Array.isArray(currentCartoucheAudioModel?.cartoucheHighlightMap?.[index])
+        ? currentCartoucheAudioModel.cartoucheHighlightMap[index]
+        : [];
+      if (!rects.length) return;
+
+      ctx.save();
+      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+      ctx.fillStyle = "rgba(255, 225, 70, 0.46)";
+      ctx.strokeStyle = "rgba(17, 17, 17, 0.78)";
+      ctx.lineWidth = (1.25 * pixelRatio) / Math.max(scaleX, scaleY);
+
+      for (const rect of rects) {
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(rect.x, rect.y, rect.width, rect.height, Math.max(2, Math.min(6, rect.height * 0.15)));
+        } else {
+          ctx.rect(rect.x, rect.y, rect.width, rect.height);
+        }
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function clearCartoucheAudioHighlights() {
+      activeCartoucheAudioUnitIndex = null;
+      elCartoucheValueTextTp?.querySelectorAll(".cartouche-audio-unit.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      elCartoucheValueText?.querySelectorAll(".cartouche-value-character.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      clearCartoucheCanvasHighlight();
+    }
+
+    function highlightCartoucheAudioUnit(index) {
+      activeCartoucheAudioUnitIndex = index;
+      elCartoucheValueTextTp?.querySelectorAll(".cartouche-audio-unit.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      elCartoucheValueTextTp
+        ?.querySelector(`[data-cartouche-audio-unit-index="${index}"]`)
+        ?.classList.add("is-speaking");
+
+      elCartoucheValueText?.querySelectorAll(".cartouche-value-character.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      for (const valueIndex of currentCartoucheAudioModel?.valueHighlightMap?.[index] || []) {
+        elCartoucheValueText
+          ?.querySelector(`[data-cartouche-value-index="${valueIndex}"]`)
+          ?.classList.add("is-speaking");
+      }
+      drawCartoucheCanvasHighlight(index);
+    }
+
+    function configureCartoucheAudioModel({ properName, value, fullCodepoints, displayedCodepoints, abbreviated }) {
+      stopCartoucheAudioPlayback();
+      const units = buildCartoucheAudioUnits(properName);
+      renderCartoucheAudioProperName(properName, units);
+      renderCartoucheAudioValue(value);
+
+      const layout = canvasSmall?._cartoucheAudioLayout;
+      const cartoucheHighlightMap = abbreviated
+        ? buildAbbreviatedCartoucheAudioHighlightMap(units, fullCodepoints, displayedCodepoints, layout)
+        : buildFullCartoucheAudioHighlightMap(units, fullCodepoints, layout);
+
+      currentCartoucheAudioModel = {
+        properName,
+        value,
+        units,
+        fullCodepoints: Array.from(fullCodepoints || [], Number),
+        displayedCodepoints: Array.from(displayedCodepoints || [], Number),
+        abbreviated: !!abbreviated,
+        valueHighlightMap: buildCartoucheValueHighlightMap(value, units),
+        cartoucheHighlightMap
+      };
+      setCartoucheAudioButtonState("stopped");
+      clearCartoucheAudioHighlights();
+    }
+
+    function setCartoucheAudioButtonState(state) {
+      cartoucheAudioState = state;
+      const button = document.getElementById("btnPlayCartoucheAudio");
+      if (!button) return;
+      button.disabled = state === "building" || !currentCartoucheAudioModel;
+
+      if (state === "building") {
+        button.textContent = "⏳";
+        button.title = "Preparing audio";
+        button.setAttribute("aria-label", button.title);
+        button.setAttribute("aria-busy", "true");
+      } else if (state === "playing") {
+        button.textContent = "⏸️";
+        button.title = "Pause audio";
+        button.setAttribute("aria-label", button.title);
+        button.removeAttribute("aria-busy");
+      } else if (state === "paused") {
+        button.textContent = "▶️";
+        button.title = "Continue audio";
+        button.setAttribute("aria-label", button.title);
+        button.removeAttribute("aria-busy");
+      } else {
+        button.textContent = "🤖🔊";
+        button.title = "Play audio";
+        button.setAttribute("aria-label", button.title);
+        button.removeAttribute("aria-busy");
+      }
+    }
+
+    function cancelCartoucheAudioSource(session) {
+      if (!session?.currentSource) return;
+      const source = session.currentSource;
+      session.currentSource = null;
+      try { source.onended = null; } catch {}
+      try { source.stop(); } catch {}
+      try { source.disconnect(); } catch {}
+    }
+
+    function stopCartoucheAudioPlayback() {
+      cartoucheAudioGeneration += 1;
+      if (cartoucheAudioSession) cancelCartoucheAudioSource(cartoucheAudioSession);
+      cartoucheAudioSession = null;
+      clearCartoucheAudioHighlights();
+      try { voice?.stop?.(); } catch {}
+      setCartoucheAudioButtonState("stopped");
+    }
+
+    function caseInsensitiveAudioValue(object, names) {
+      if (!object || typeof object !== "object") return null;
+      const wanted = new Set(names.map(name => String(name).toLowerCase()));
+      for (const [key, value] of Object.entries(object)) {
+        if (wanted.has(String(key).toLowerCase())) return value;
+      }
+      return null;
+    }
+
+    function audioDurationMilliseconds(entry) {
+      if (entry == null) return null;
+      if (typeof entry === "number" && Number.isFinite(entry)) return entry;
+      if (typeof entry !== "object") return null;
+      for (const key of ["duration_ms", "durationMs", "milliseconds", "ms"]) {
+        const value = Number(entry[key]);
+        if (Number.isFinite(value) && value > 0) return value;
+      }
+      for (const key of ["duration_seconds", "durationSeconds", "seconds"]) {
+        const value = Number(entry[key]);
+        if (Number.isFinite(value) && value > 0) return value * 1000;
+      }
+      return null;
+    }
+
+    function manifestDurationForAudioUnit(unitText) {
+      const names = [
+        unitText, unitText.toLowerCase(), unitText.toUpperCase(),
+        `${unitText}.wav`, `${unitText.toLowerCase()}.wav`, `${unitText.toUpperCase()}.wav`
+      ];
+      const roots = [
+        voice?.manifest, voice?.audioManifest, voice?.referenceAudioManifest,
+        voice?.config?.manifest, voice?.config?.audioManifest
+      ].filter(Boolean);
+
+      for (const root of roots) {
+        const direct = caseInsensitiveAudioValue(root, names);
+        const directDuration = audioDurationMilliseconds(direct);
+        if (directDuration) return directDuration;
+        for (const nestedName of ["nanpa_v2", "nanpaV2", "files", "assets", "entries"]) {
+          const nested = root?.[nestedName];
+          const nestedEntry = caseInsensitiveAudioValue(nested, names);
+          const nestedDuration = audioDurationMilliseconds(nestedEntry);
+          if (nestedDuration) return nestedDuration;
+        }
+      }
+      return null;
+    }
+
+    function estimatedAudioUnitWeight(unit) {
+      const duration = manifestDurationForAudioUnit(unit.text);
+      if (duration) return duration;
+      if (unit.wholeNumericPunctuationWord) return 260 + Math.max(0, unit.text.length - 2) * 75;
+      return 230 + Math.max(0, unit.text.length - 2) * 55;
+    }
+
+    function partitionCartoucheAudioSamples(samples, sampleRate, units) {
+      const weights = units.map(estimatedAudioUnitWeight);
+      const gapWeight = CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS * 1000;
+      const totalWeight = weights.reduce((sum, weight) => sum + weight, 0) +
+        Math.max(0, units.length - 1) * gapWeight;
+      const entries = [];
+      let sampleCursor = 0;
+      let accumulatedWeight = 0;
+
+      for (let index = 0; index < units.length; index += 1) {
+        accumulatedWeight += weights[index];
+        let unitEnd = index === units.length - 1
+          ? samples.length
+          : Math.round(samples.length * accumulatedWeight / Math.max(1, totalWeight));
+        unitEnd = Math.max(sampleCursor, Math.min(samples.length, unitEnd));
+        entries.push({
+          kind: "unit",
+          highlightIndex: units[index].index,
+          samples: samples.slice(sampleCursor, unitEnd),
+          sampleRate
+        });
+        sampleCursor = unitEnd;
+
+        if (index < units.length - 1 && gapWeight > 0) {
+          accumulatedWeight += gapWeight;
+          let gapEnd = Math.round(samples.length * accumulatedWeight / Math.max(1, totalWeight));
+          gapEnd = Math.max(sampleCursor, Math.min(samples.length, gapEnd));
+          entries.push({
+            kind: "gap",
+            highlightIndex: null,
+            samples: samples.slice(sampleCursor, gapEnd),
+            sampleRate
+          });
+          sampleCursor = gapEnd;
+        }
+      }
+
+      if (sampleCursor < samples.length && entries.length) {
+        const last = entries[entries.length - 1];
+        const merged = new Float32Array(last.samples.length + samples.length - sampleCursor);
+        merged.set(last.samples, 0);
+        merged.set(samples.slice(sampleCursor), last.samples.length);
+        last.samples = merged;
+      }
+      return entries.filter(entry => entry.samples.length > 0);
+    }
+
+    async function prepareCartoucheAudio(model, generation) {
+      const key = `${model.properName}|normal`;
+      if (cartoucheAudioCache.has(key)) return cartoucheAudioCache.get(key);
+      const rendered = await voice.render(model.properName, {
+        synthesis_mode: "reference_audio",
+        pauseScale: CARTOUCHE_AUDIO_PAUSE_SCALE,
+        syllableGapSeconds: CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS
+      });
+      if (generation !== cartoucheAudioGeneration) return null;
+      const samples = rendered.samples instanceof Float32Array
+        ? rendered.samples
+        : Float32Array.from(rendered.samples || []);
+      const prepared = {
+        entries: partitionCartoucheAudioSamples(samples, rendered.sampleRate, model.units)
+      };
+      cartoucheAudioCache.set(key, prepared);
+      return prepared;
+    }
+
+    function getCartoucheAudioContext() {
+      if (!cartoucheAudioContext) {
+        const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextCtor) throw new Error("Web Audio is not supported in this browser.");
+        cartoucheAudioContext = new AudioContextCtor();
+      }
+      return cartoucheAudioContext;
+    }
+
+    function cartoucheAudioBuffer(session, entry) {
+      if (entry._audioBuffer) return entry._audioBuffer;
+      const buffer = session.audioContext.createBuffer(1, entry.samples.length, entry.sampleRate);
+      buffer.copyToChannel(entry.samples, 0);
+      entry._audioBuffer = buffer;
+      return buffer;
+    }
+
+    function completeCartoucheAudioPlayback(generation) {
+      if (generation !== cartoucheAudioGeneration) return;
+      if (cartoucheAudioSession) cancelCartoucheAudioSource(cartoucheAudioSession);
+      cartoucheAudioSession = null;
+      clearCartoucheAudioHighlights();
+      setCartoucheAudioButtonState("stopped");
+    }
+
+    function playCartoucheAudioEntry() {
+      const session = cartoucheAudioSession;
+      if (!session || session.generation !== cartoucheAudioGeneration) return;
+      if (session.currentIndex >= session.entries.length) {
+        completeCartoucheAudioPlayback(session.generation);
+        return;
+      }
+
+      const entry = session.entries[session.currentIndex];
+      const buffer = cartoucheAudioBuffer(session, entry);
+      const offset = Math.max(
+        0,
+        Math.min(Number(session.currentOffsetSeconds) || 0, Math.max(0, buffer.duration - 0.001))
+      );
+      const source = session.audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(session.audioContext.destination);
+      session.currentSource = source;
+      session.currentBuffer = buffer;
+      session.sourceStartedAt = session.audioContext.currentTime;
+      session.sourceStartedOffset = offset;
+
+      if (entry.kind === "unit" && Number.isInteger(entry.highlightIndex)) {
+        highlightCartoucheAudioUnit(entry.highlightIndex);
+      } else {
+        clearCartoucheAudioHighlights();
+      }
+      setCartoucheAudioButtonState("playing");
+
+      source.onended = () => {
+        if (!cartoucheAudioSession || cartoucheAudioSession !== session) return;
+        if (
+          session.generation !== cartoucheAudioGeneration ||
+          session.currentSource !== source ||
+          cartoucheAudioState !== "playing"
+        ) return;
+        session.currentSource = null;
+        try { source.disconnect(); } catch {}
+        session.currentBuffer = null;
+        session.currentOffsetSeconds = 0;
+        clearCartoucheAudioHighlights();
+        session.currentIndex += 1;
+        playCartoucheAudioEntry();
+      };
+      source.start(0, offset);
+    }
+
+    function pauseCartoucheAudio() {
+      const session = cartoucheAudioSession;
+      if (!session || cartoucheAudioState !== "playing" || !session.currentSource) return;
+      const elapsed = Math.max(0, session.audioContext.currentTime - session.sourceStartedAt);
+      session.currentOffsetSeconds = Math.min(
+        session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
+        session.sourceStartedOffset + elapsed
+      );
+      cancelCartoucheAudioSource(session);
+      setCartoucheAudioButtonState("paused");
+    }
+
+    function resumeCartoucheAudio() {
+      if (!cartoucheAudioSession || cartoucheAudioState !== "paused") return;
+      playCartoucheAudioEntry();
+    }
+
+    async function startCartoucheAudio() {
+      const model = currentCartoucheAudioModel;
+      if (!model) {
+        announceStatus("No nanpa-linja-n proper name to play.");
+        return;
+      }
+
+      const generation = ++cartoucheAudioGeneration;
+      setCartoucheAudioButtonState("building");
+      clearCartoucheAudioHighlights();
+
+      try {
+        const button = document.getElementById("btnPlayCartoucheAudio");
+        button?.setCustomValidity("");
+        const prepared = await prepareCartoucheAudio(model, generation);
+        if (!prepared || generation !== cartoucheAudioGeneration || currentCartoucheAudioModel !== model) return;
+        const audioContext = getCartoucheAudioContext();
+        await audioContext.resume();
+        if (generation !== cartoucheAudioGeneration || currentCartoucheAudioModel !== model) return;
+
+        cartoucheAudioSession = {
+          generation,
+          audioContext,
+          entries: prepared.entries,
+          currentIndex: 0,
+          currentOffsetSeconds: 0,
+          currentSource: null,
+          currentBuffer: null,
+          sourceStartedAt: 0,
+          sourceStartedOffset: 0
+        };
+        if (!cartoucheAudioSession.entries.length) throw new Error("No audio entries were produced.");
+        playCartoucheAudioEntry();
+
+        if (typeof window.trackUsage === "function") {
+          window.trackUsage("renderer-audio-play");
+        }
+      } catch (err) {
+        if (generation !== cartoucheAudioGeneration) return;
+        cartoucheAudioSession = null;
+        clearCartoucheAudioHighlights();
+        setCartoucheAudioButtonState("stopped");
+        const button = document.getElementById("btnPlayCartoucheAudio");
+        if (button) {
+          button.setCustomValidity(`Audio error: ${err?.message ?? String(err)}`);
+          button.reportValidity();
+        } else {
+          showAlertAndAnnounce(err?.message ?? String(err));
+        }
+      }
+    }
+
+    function toggleCartoucheAudio() {
+      if (cartoucheAudioState === "playing") {
+        pauseCartoucheAudio();
+        return;
+      }
+      if (cartoucheAudioState === "paused") {
+        resumeCartoucheAudio();
+        return;
+      }
+      startCartoucheAudio();
     }
 
     function wireCartoucheAudioButton() {
-      const btn = document.getElementById("btnPlayCartoucheAudio");
-      if (!btn) return;
+      const button = document.getElementById("btnPlayCartoucheAudio");
+      if (!button) return;
+      button.addEventListener("click", toggleCartoucheAudio);
 
-      btn.addEventListener("click", async () => {
-        const properName = getCurrentNanpaLinjanProperNameForAudio();
+      for (const input of [elDecimal, elCodesIn, elTpWordsIn]) {
+        input?.addEventListener("input", stopCartoucheAudioPlayback);
+      }
 
-        if (!properName) {
-          announceStatus("No nanpa-linja-n proper name to play.");
-          return;
+      const redraw = () => {
+        if (Number.isInteger(activeCartoucheAudioUnitIndex)) {
+          drawCartoucheCanvasHighlight(activeCartoucheAudioUnitIndex);
+        } else {
+          clearCartoucheCanvasHighlight();
         }
-
-        try {
-          btn.disabled = true;
-          await voice.play(properName);
-
-          if (typeof window.trackUsage === "function") {
-            window.trackUsage("renderer-audio-play");
-          }
-
-          announceStatus(`Played audio for ${properName}.`);
-        } catch (err) {
-          showAlertAndAnnounce(err?.message ?? String(err));
-        } finally {
-          btn.disabled = false;
-        }
-      });
+      };
+      window.addEventListener("resize", redraw);
+      window.visualViewport?.addEventListener("resize", redraw);
+      window.addEventListener("beforeunload", stopCartoucheAudioPlayback);
+      setCartoucheAudioButtonState("stopped");
     }
 
 
@@ -3427,7 +4295,9 @@
       const sCart = (cartoucheValueOrNull == null) ? "" : String(cartoucheValueOrNull).trim();
       const sProperName = (properNameOrNull == null) ? "" : String(properNameOrNull).trim();
 
-      // Existing hidden/large “Value:” line
+      stopCartoucheAudioPlayback();
+      currentCartoucheAudioModel = null;
+
       if (elDecimalValueLine && elDecimalValueText) {
         if (!sDisplay) {
           elDecimalValueText.textContent = "";
@@ -3438,18 +4308,20 @@
         }
       }
 
-      // Small-cartouche “Cartouche value” line
       if (elCartoucheValueBox && elCartoucheValueText && elCartoucheValueTextTp) {
         if (!sCart) {
-          elCartoucheValueText.textContent = "";
-          elCartoucheValueTextTp.textContent = "";
+          elCartoucheValueText.replaceChildren();
+          elCartoucheValueTextTp.replaceChildren();
           elCartoucheValueBox.classList.add("hidden");
         } else {
-          elCartoucheValueText.textContent = sCart;
-          elCartoucheValueTextTp.textContent = sProperName;
+          renderCartoucheAudioValue(sCart);
+          renderCartoucheAudioProperName(sProperName);
           elCartoucheValueBox.classList.remove("hidden");
         }
       }
+
+      setCartoucheAudioButtonState("stopped");
+      clearCartoucheCanvasHighlight();
     }
 
     function enforceMaxLen(el, maxLen = MAX_DECIMAL_INPUT_CHARS) {
@@ -4023,33 +4895,28 @@
 
     const PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION = false;
 
-    function abbreviateNumericCartoucheCps(cps) {
+    function abbreviateNumericCartoucheEntries(cps) {
       const input = Array.from(cps ?? []).map(cp => Number(cp));
-      if (!input.length) return input;
+      if (!input.length) return [];
 
       const out = [];
       let keptFirstNanpa = false;
 
       for (let i = 0; i < input.length; i++) {
         const cp = input[i];
-        const isFinalNanpa =
-          cp === ABBREV_CP_NANPA &&
-          i === input.length - 1;
+        const isFinalNanpa = cp === ABBREV_CP_NANPA && i === input.length - 1;
 
         if (!keptFirstNanpa) {
-          out.push(cp);
-          if (cp === ABBREV_CP_NANPA) {
-            keptFirstNanpa = true;
-          }
+          out.push({ cp, sourceIndex: i });
+          if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
           continue;
         }
 
         if (isFinalNanpa) {
-          out.push(cp);
+          out.push({ cp, sourceIndex: i });
           continue;
         }
 
-        // This must run before the generic drop-set check.
         if (
           PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION &&
           cp === ABBREV_CP_NENA &&
@@ -4057,21 +4924,20 @@
           input[i + 2] === ABBREV_CP_NENA &&
           input[i + 3] === ABBREV_CP_EN
         ) {
-          out.push(ABBREV_CP_EN);
+          out.push({ cp: ABBREV_CP_EN, sourceIndex: i + 3 });
           i += 3;
           continue;
         }
 
-        if (
-          NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)
-        ) {
-          continue;
-        }
-
-        out.push(cp);
+        if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
+        out.push({ cp, sourceIndex: i });
       }
 
       return out;
+    }
+
+    function abbreviateNumericCartoucheCps(cps) {
+      return abbreviateNumericCartoucheEntries(cps).map(entry => entry.cp);
     }
 
     function getNumericCartoucheDisplayCps(cps) {
@@ -4169,9 +5035,11 @@
     function __applyParsedNumberToUi(parsed, originalInput = null) {
       if (!parsed) throw new Error("Failed to parse numeric input.");
 
+      stopCartoucheAudioPlayback();
       const displayParsed = renderedParsedForCurrentNanpaLinjanMode(parsed);
       const properName = fixOkenSuffixSpacing(String(displayParsed.properName ?? ""));
       const decodeCaps = displayParsed.renderDecodeCaps || strictCapsForDisplayDecode(parsed);
+      let audioValue = "";
 
       if (parsed.isTime || parsed.isDate) {
         let valueText = "";
@@ -4193,6 +5061,7 @@
         }
 
         valueText = String(valueText ?? parsed.displayValue ?? originalInput ?? "").trim();
+        audioValue = valueText;
         setDecimalValueLine(valueText, valueText, properName);
       } else {
         const vDisplay = tryDecodeCapsToDisplayValue(decodeCaps) ?? parsed.displayValue ?? originalInput;
@@ -4203,13 +5072,22 @@
           fracGroupSep: "_"
         }) ?? vDisplay;
 
+        audioValue = String(vCartouche ?? "").trim();
         setDecimalValueLine(vDisplay, vCartouche, properName);
       }
 
       elLatinOut.value = properName;
       elNumberCodeOut.value = String(parsed.uniqueCode ?? "");
-      setDisplayCodepointOutputsFromCps(Array.from(displayParsed.ucsurCodepoints ?? []));
-      __renderNumericCartoucheFromCps(Array.from(displayParsed.ucsurCodepoints ?? []));
+      const fullCodepoints = Array.from(displayParsed.ucsurCodepoints ?? [], Number);
+      const displayedCodepoints = setDisplayCodepointOutputsFromCps(fullCodepoints);
+      __renderNumericCartoucheFromCps(fullCodepoints);
+      configureCartoucheAudioModel({
+        properName,
+        value: audioValue,
+        fullCodepoints,
+        displayedCodepoints,
+        abbreviated: getNumericCartoucheAbbrevEnabled()
+      });
     }
     numberStrToNanpaCaps = function (s, opts = {}) { return NanpaParser.encodeDecimal(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle: "short", ...opts }); };
     encodeDecimalToLatin = function (s) { const p = NanpaParser.parseNumber(s, getNanpaParserOptions()); return p ? renderedParsedForCurrentNanpaLinjanMode(p).properName : ""; };
