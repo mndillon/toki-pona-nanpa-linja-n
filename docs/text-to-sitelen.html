@@ -5746,13 +5746,36 @@ function wireHaloControls() {
       return t.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 80) || "sitelen";
     }
 
+    function localIsoDateTimeToMinute(date = new Date()) {
+      const pad2 = value => String(value).padStart(2, "0");
+      return [
+        String(date.getFullYear()).padStart(4, "0"),
+        pad2(date.getMonth() + 1),
+        pad2(date.getDate())
+      ].join("-") + "T" + [
+        pad2(date.getHours()),
+        pad2(date.getMinutes())
+      ].join("-");
+    }
+
+    function addLocalIsoMinuteSuffixToFilename(filename, date = new Date()) {
+      const raw = String(filename ?? "").trim() || "download";
+      const suffix = localIsoDateTimeToMinute(date);
+      const dotIndex = raw.lastIndexOf(".");
+
+      if (dotIndex > 0) {
+        return `${raw.slice(0, dotIndex)}-${suffix}${raw.slice(dotIndex)}`;
+      }
+      return `${raw}-${suffix}`;
+    }
+
     function downloadTextAsFile(text, { filename = "input.txt" } = {}) {
       const blob = new Blob([String(text ?? "")], { type: "text/plain;charset=utf-8" });
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = filename;
+      a.download = addLocalIsoMinuteSuffixToFilename(filename);
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -5799,7 +5822,7 @@ function wireHaloControls() {
 
           const a = document.createElement("a");
           a.href = url;
-          a.download = filename;
+          a.download = addLocalIsoMinuteSuffixToFilename(filename);
           document.body.appendChild(a);
           a.click();
           a.remove();
@@ -5812,7 +5835,7 @@ function wireHaloControls() {
       const dataUrl = out.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = filename;
+      a.download = addLocalIsoMinuteSuffixToFilename(filename);
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -6115,7 +6138,7 @@ function wireHaloControls() {
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = "sitelen.pdf";
+      a.download = addLocalIsoMinuteSuffixToFilename("sitelen.pdf");
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -8437,7 +8460,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = filename;
+      a.download = addLocalIsoMinuteSuffixToFilename(filename);
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -8751,7 +8774,12 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const rects = collectUnknownHighlightRectsFromPlan(plan, { exportPaddingPx: args.paddingPx });
       window.__TTS_VECTOR_DEBUG_LAST_UNKNOWN_RECTS__ = rects;
       if (!rects.length) {
-        await exporter.downloadPdf(args);
+        await exporter.downloadPdf({
+          ...args,
+          filename: addLocalIsoMinuteSuffixToFilename(
+            args.filename || `${getExportFilenameBase()}-vector.pdf`
+          )
+        });
         return;
       }
 
