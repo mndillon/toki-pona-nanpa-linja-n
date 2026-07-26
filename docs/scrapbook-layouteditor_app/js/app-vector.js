@@ -11,7 +11,7 @@ import {
   segmentWords,
   entryUsesForceMergedWholeEntry
 } from '../../js/cartouche-api-v3-previewdesc.js?v=33';
-import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=166';
+import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=167';
 
 (() => {
   "use strict";

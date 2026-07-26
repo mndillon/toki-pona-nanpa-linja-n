@@ -1,4 +1,4 @@
-console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v139 UNKNOWN-RECT-REFLOW loaded");
+console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v140 CORNER-BRACKET-WHITESPACE-SPLIT loaded");
 const DEFAULT_WASM_MODULE_URL = new URL("../wasm/sitelen_vector_wasm.js?v=143", import.meta.url).href;
 const PX_TO_PT = 72 / 96;
 const CARTOUCHE_START_CP = 0xF1990;
@@ -1647,13 +1647,132 @@ function wrapCartouchePayloadIfNeeded(run, payload) {
 }
 
 
-function isCornerBracketExportRun(run) {
+function runCodepoints(run) {
   const payload = runTextOrCps(run);
-  const cps = Array.isArray(payload.cps) && payload.cps.length
-    ? payload.cps
+  return Array.isArray(payload.cps) && payload.cps.length
+    ? payload.cps.map(Number).filter(Number.isFinite)
     : Array.from(String(payload.text || "")).map(ch => ch.codePointAt(0)).filter(Number.isFinite);
-  return cps.length === 1 &&
-    (Number(cps[0]) === LEFT_CORNER_BRACKET_CP || Number(cps[0]) === RIGHT_CORNER_BRACKET_CP);
+}
+
+function isCornerBracketCodepoint(cp) {
+  const n = Number(cp);
+  return n === LEFT_CORNER_BRACKET_CP || n === RIGHT_CORNER_BRACKET_CP;
+}
+
+function isWhitespaceCodepoint(cp) {
+  try { return /^\s$/u.test(String.fromCodePoint(Number(cp))); }
+  catch { return false; }
+}
+
+function measureCodepointPrefixWidthsForRun(run, cps) {
+  const count = cps.length;
+  const logicalWidth = Math.max(0, vectorRunLogicalWidth(run));
+  if (!count) return [0];
+
+  const fallbackWeights = cps.map(cp => isWhitespaceCodepoint(cp) ? 0.34 : 1);
+  const fallbackTotal = fallbackWeights.reduce((sum, n) => sum + n, 0) || count;
+  const fallback = [0];
+  let fallbackSoFar = 0;
+  for (const weight of fallbackWeights) {
+    fallbackSoFar += weight;
+    fallback.push(logicalWidth * fallbackSoFar / fallbackTotal);
+  }
+
+  try {
+    if (typeof document === "undefined" || typeof document.createElement !== "function") return fallback;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas?.getContext?.("2d");
+    if (!ctx || typeof ctx.measureText !== "function") return fallback;
+
+    const fontPx = getRunFontPx(run, 56);
+    const family = String(run?.fontFamily || run?._element?.fontFamily || "sans-serif").replace(/["\\]/g, "");
+    ctx.font = `${fontPx}px "${family}"`;
+
+    const chars = cps.map(cp => String.fromCodePoint(cp));
+    const measured = [0];
+    let prefix = "";
+    for (const ch of chars) {
+      prefix += ch;
+      measured.push(Number(ctx.measureText(prefix)?.width || 0));
+    }
+
+    const measuredTotal = measured[measured.length - 1];
+    if (!(measuredTotal > 0) || !(logicalWidth > 0)) return fallback;
+    const scale = logicalWidth / measuredTotal;
+    return measured.map(width => width * scale);
+  } catch {
+    return fallback;
+  }
+}
+
+function makeCornerBracketVectorSubrun(run, cp, logicalX, logicalWidth, segmentIndex) {
+  const text = String.fromCodePoint(cp);
+  const sourceStart = Number.isFinite(Number(run?.sourceStart))
+    ? Number(run.sourceStart) + segmentIndex
+    : run?.sourceStart;
+  const sourceEnd = Number.isFinite(Number(sourceStart)) ? Number(sourceStart) + text.length : run?.sourceEnd;
+  const originalElement = run?._element && typeof run._element === "object" ? run._element : {};
+
+  return {
+    ...run,
+    id: `${run?.id || "run"}:corner-bracket:${segmentIndex}`,
+    encodedText: text,
+    cps: null,
+    sourceText: text,
+    sourceStart,
+    sourceEnd,
+    xPx: logicalX,
+    drawXPx: logicalX,
+    widthPx: Math.max(0.01, logicalWidth),
+    __sitelenVectorCornerBracketSubrun: true,
+    __sitelenVectorOriginalGeometryPx: null,
+    _element: {
+      ...originalElement,
+      type: "text",
+      text,
+      cp: null,
+      cps: null,
+      sourceText: text,
+      sourceStart,
+      sourceEnd,
+      w: Math.max(0.01, logicalWidth)
+    }
+  };
+}
+
+// A quoted literal such as "「 " or " 」" is one browser-canvas text run.
+// The corner-bracket fallback previously required the complete run to contain
+// exactly one codepoint, so adding a space prevented the fallback from running.
+// Split only bracket-plus-whitespace runs into bracket subruns. Whitespace needs
+// no vector path: its advance remains encoded in the subrun X positions and in
+// the logical gap to the following renderer run.
+function expandWhitespaceCornerBracketRuns(runs) {
+  const out = [];
+  for (const run of asArray(runs)) {
+    const cps = runCodepoints(run);
+    const hasBracket = cps.some(isCornerBracketCodepoint);
+    const onlyBracketsAndWhitespace = cps.length > 1 && cps.every(cp => isCornerBracketCodepoint(cp) || isWhitespaceCodepoint(cp));
+
+    if (!hasBracket || !onlyBracketsAndWhitespace) {
+      out.push(run);
+      continue;
+    }
+
+    const prefixWidths = measureCodepointPrefixWidthsForRun(run, cps);
+    const logicalLeft = vectorRunLogicalLeft(run);
+    for (let i = 0; i < cps.length; i++) {
+      if (!isCornerBracketCodepoint(cps[i])) continue;
+      const start = Number(prefixWidths[i] || 0);
+      const end = Number(prefixWidths[i + 1] ?? start);
+      out.push(makeCornerBracketVectorSubrun(run, cps[i], logicalLeft + start, Math.max(0.01, end - start), i));
+    }
+  }
+  return out;
+}
+
+function isCornerBracketExportRun(run) {
+  const cps = runCodepoints(run);
+  return cps.length === 1 && isCornerBracketCodepoint(cps[0]);
 }
 
 function cornerBracketPayload(run) {
@@ -2649,7 +2768,7 @@ export class SitelenVectorExporter {
     this.debug = effectiveDebug;
     this.debugWasm = effectiveDebug;
     const allRawRuns = asArray(plan?.lines).flatMap(line => asArray(line?.runs));
-    const runs = flattenRuns(plan);
+    const runs = expandWhitespaceCornerBracketRuns(flattenRuns(plan));
     this.log("exportPlanToVectorDocument: plan summary", {
       lineCount: asArray(plan?.lines).length,
       rawRunCount: allRawRuns.length,
