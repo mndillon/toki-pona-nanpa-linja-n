@@ -2203,10 +2203,10 @@ export const REFERENCE_AUDIO_MANIFEST = {
     },
     "mu": {
       "unit": "Mu",
-      "file": "nanpa_v2/mu.wav",
+      "file": "nanpa_v3/mu.wav",
       "source": "uploaded nanpa-linja-n extra WAVs",
       "source_order": 41,
-      "duration_ms": 1450.0
+      "duration_ms": 522.5
     },
     "lun": {
       "unit": "Lun",

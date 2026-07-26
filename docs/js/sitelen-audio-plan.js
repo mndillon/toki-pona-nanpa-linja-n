@@ -793,9 +793,19 @@ function nearestDisplayedComponentsForSourceRange(sourceIndices, rangeStart, ran
     .map(item => item.index);
 }
 
-function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
+function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, options = {}) {
   const words = spokenWordTokens(speech);
   if (!words.length) return [];
+
+  const sourceText = String(run?.sourceText ?? run?.encodedText ?? '').trim();
+  const numericProperName = trySourceTextToNanpaProperName(sourceText, options);
+  const numericCartouche = !!numericProperName;
+  const numericCartoucheRunId = numericCartouche
+    ? runIdForAudio(run, fallbackRunIndex, lineIndex)
+    : null;
+  const numericCartouchePhrase = numericCartouche
+    ? compactSpeechWhitespace(numericProperName || speech)
+    : '';
 
   const displayedCps = runCodepointsForAudio(run);
   const componentCount = Math.max(1, displayedCps.length);
@@ -850,6 +860,10 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
         unitIndex,
         unitIndexInWord,
         wholeNumericPunctuationWord: wholeNumeric,
+        numericCartouche,
+        numericCartoucheRunId,
+        numericCartouchePhrase,
+        numericAudioUnitKey: numericCartouche ? normalizeAudioWord(piece) : '',
         visualTargets: [
           visualTargetForComponentIndices(run, componentIndices, fallbackRunIndex, lineIndex)
         ]
@@ -956,7 +970,8 @@ function buildGenericRunSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
 
 export function speechUnitsForRenderRun(run, speech, {
   fallbackRunIndex = 0,
-  lineIndex = 0
+  lineIndex = 0,
+  ...audioOptions
 } = {}) {
   const text = compactSpeechWhitespace(speech);
   if (!text) return [];
@@ -966,7 +981,7 @@ export function speechUnitsForRenderRun(run, speech, {
   if (run?.isQuoted || sourceKind === 'quote' || run?.isUnrecognized) return [];
 
   if (kind === 'cartouche') {
-    return buildCartoucheSpeechUnits(run, text, fallbackRunIndex, lineIndex);
+    return buildCartoucheSpeechUnits(run, text, fallbackRunIndex, lineIndex, audioOptions);
   }
 
   const cps = runCodepointsForAudio(run);
@@ -1044,6 +1059,7 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
       });
 
       const runUnits = speechUnitsForRenderRun(run, speech, {
+        ...options,
         fallbackRunIndex,
         lineIndex
       });
@@ -1141,222 +1157,400 @@ function stripTerminalSentencePunctuation(text) {
  * Render pre-extracted sentence segments as separate sample buffers.
  * This is additive and does not change the existing line-concatenation API.
  */
-function caseInsensitiveAudioValue(object, names) {
-  if (!object || typeof object !== 'object') return null;
-  const wanted = new Set(names.map(name => String(name).toLowerCase()));
-  for (const [key, value] of Object.entries(object)) {
-    if (wanted.has(String(key).toLowerCase())) return value;
-  }
-  return null;
+function cloneAudioVisualTargets(targets) {
+  return Array.isArray(targets)
+    ? targets.map(target => ({
+        ...target,
+        componentIndices: Array.isArray(target?.componentIndices)
+          ? target.componentIndices.slice()
+          : []
+      }))
+    : [];
 }
 
-function audioDurationMilliseconds(entry) {
-  if (entry == null) return null;
-  if (typeof entry === 'number' && Number.isFinite(entry)) return entry;
-  if (typeof entry !== 'object') return null;
-  for (const key of ['duration_ms', 'durationMs', 'milliseconds', 'ms']) {
-    const value = Number(entry[key]);
-    if (Number.isFinite(value) && value > 0) return value;
-  }
-  for (const key of ['duration_seconds', 'durationSeconds', 'seconds']) {
-    const value = Number(entry[key]);
-    if (Number.isFinite(value) && value > 0) return value * 1000;
-  }
-  return null;
+const VOICE_FINAL_WORD_PAUSE_SECONDS = 0.055;
+const VOICE_CROSSFADE_SECONDS = 0.006;
+const VOICE_NANPA_BOUNDARY_WORDS = new Set([
+  'one', 'ono', 'oko', 'eke', 'eko', 'ene', 'oken'
+]);
+
+function normalizedVoiceSpeed(renderOptions = {}) {
+  return Math.max(0.3, Number(renderOptions?.speed) || 1);
 }
 
-function manifestDurationForAudioUnit(voice, unitText) {
-  const text = String(unitText ?? '').trim();
-  if (!text) return null;
-  const names = [
-    text, text.toLowerCase(), text.toUpperCase(),
-    `${text}.wav`, `${text.toLowerCase()}.wav`, `${text.toUpperCase()}.wav`
-  ];
-  const roots = [
-    voice?.manifest, voice?.audioManifest, voice?.referenceAudioManifest,
-    voice?.config?.manifest, voice?.config?.audioManifest
-  ].filter(Boolean);
-
-  for (const root of roots) {
-    const directDuration = audioDurationMilliseconds(caseInsensitiveAudioValue(root, names));
-    if (directDuration) return directDuration;
-    for (const nestedName of ['nanpa_v2', 'nanpaV2', 'files', 'assets', 'entries', 'syllables']) {
-      const nestedDuration = audioDurationMilliseconds(caseInsensitiveAudioValue(root?.[nestedName], names));
-      if (nestedDuration) return nestedDuration;
-    }
-  }
-  return null;
+function normalizedVoicePauseScale(renderOptions = {}) {
+  const n = Number(renderOptions?.pauseScale);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(6, Math.max(0.5, n));
 }
 
-function estimatedAudioPieceWeight(voice, text, { wholeNumericPunctuationWord = false } = {}) {
-  const manifestDuration = manifestDurationForAudioUnit(voice, text);
-  if (manifestDuration) return manifestDuration;
-  const length = Math.max(1, normalizedSpeechLetters(text).length);
-  if (wholeNumericPunctuationWord) return 260 + Math.max(0, length - 2) * 75;
-  return 230 + Math.max(0, length - 2) * 55;
+function voiceScaledPauseSeconds(seconds, renderOptions = {}) {
+  return Math.max(0, Number(seconds) || 0) *
+    normalizedVoicePauseScale(renderOptions) /
+    normalizedVoiceSpeed(renderOptions);
 }
 
-function timingWeightForSpeechUnit(voice, unit, syllableGapMs) {
-  const wholeNumeric = !!unit?.wholeNumericPunctuationWord;
-  const timingText = String(unit?.timingText ?? unit?.text ?? '').trim();
-  if (wholeNumeric) {
-    return estimatedAudioPieceWeight(voice, timingText, { wholeNumericPunctuationWord: true });
-  }
-
-  const directDuration = manifestDurationForAudioUnit(voice, timingText);
-  if (directDuration) return directDuration;
-
-  const syllables = Array.isArray(unit?.timingSyllables) && unit.timingSyllables.length
-    ? unit.timingSyllables
-    : splitAudioTpWordIntoSyllables(timingText);
-  if (!syllables.length) return estimatedAudioPieceWeight(voice, timingText);
-
-  return syllables.reduce(
-    (sum, syllable) => sum + estimatedAudioPieceWeight(voice, syllable),
-    Math.max(0, syllables.length - 1) * syllableGapMs
-  );
+function voiceSpeedScaledSeconds(seconds, renderOptions = {}) {
+  return Math.max(0, Number(seconds) || 0) / normalizedVoiceSpeed(renderOptions);
 }
 
-function partitionRenderedSegmentSamples({
-  samples,
-  sampleRate,
+function voicePunctuationPauseSeconds(punctuation) {
+  const p = String(punctuation || '').trim()[0] || '';
+  if (p === '?') return 0.30;
+  if (p === '.' || p === '!') return 0.32;
+  if (p === ',' || p === ';' || p === ':') return 0.18;
+  return 0.12;
+}
+
+function isCartoucheAudioUnit(unit) {
+  const kind = String(unit?.kind || '').toLowerCase();
+  return kind === 'cartouche-syllable' || kind === 'numeric-punctuation-word';
+}
+
+function sameCartoucheWord(currentUnit, nextUnit) {
+  if (!isCartoucheAudioUnit(currentUnit) || !isCartoucheAudioUnit(nextUnit)) return false;
+  return Number.isFinite(Number(currentUnit?.wordIndex)) &&
+    Number(currentUnit.wordIndex) === Number(nextUnit?.wordIndex);
+}
+
+function cartoucheWordBoundaryPauseSeconds(currentUnit, nextUnit) {
+  const currentWord = normalizeAudioWord(currentUnit?.word || currentUnit?.text);
+  const nextWord = normalizeAudioWord(nextUnit?.word || nextUnit?.text);
+  return VOICE_NANPA_BOUNDARY_WORDS.has(currentWord) || VOICE_NANPA_BOUNDARY_WORDS.has(nextWord)
+    ? 0.14
+    : 0.075;
+}
+
+function exactUnitPauseAfterSeconds({
+  unit,
+  nextUnit,
   segment,
-  units,
-  voice,
-  renderOptions,
-  sourceSegmentIndex,
   crossesLine,
   lineDistance,
   linePauseSeconds,
-  renderText
+  renderOptions,
+  hasFollowingSegment
 }) {
-  const sourceSamples = samples instanceof Float32Array ? samples : Float32Array.from(samples || []);
-  if (!sourceSamples.length) return [];
+  if (nextUnit) {
+    if (sameCartoucheWord(unit, nextUnit)) {
+      return voiceSpeedScaledSeconds(renderOptions?.syllableGapSeconds, renderOptions);
+    }
+    if (isCartoucheAudioUnit(unit) && isCartoucheAudioUnit(nextUnit)) {
+      return voiceScaledPauseSeconds(
+        cartoucheWordBoundaryPauseSeconds(unit, nextUnit),
+        renderOptions
+      );
+    }
+    return voiceScaledPauseSeconds(VOICE_FINAL_WORD_PAUSE_SECONDS, renderOptions);
+  }
 
-  const syllableGapMs = Math.max(0, Number(renderOptions?.syllableGapSeconds) || 0) * 1000;
-  const pauseScale = Math.max(0.1, Number(renderOptions?.pauseScale) || 1);
-  const pieces = [];
+  if (crossesLine) {
+    return voiceScaledPauseSeconds(VOICE_FINAL_WORD_PAUSE_SECONDS, renderOptions) +
+      Math.max(0, Number(linePauseSeconds) || 0) * Math.min(2, Math.max(1, lineDistance));
+  }
 
-  for (let unitIndex = 0; unitIndex < units.length; unitIndex++) {
-    const unit = units[unitIndex] || {};
-    pieces.push({
-      kind: 'unit',
+  if (segment?.boundaryAfter === 'punctuation' && hasFollowingSegment) {
+    return voiceScaledPauseSeconds(VOICE_FINAL_WORD_PAUSE_SECONDS, renderOptions) +
+      voiceScaledPauseSeconds(
+        voicePunctuationPauseSeconds(segment?.terminalPunctuation),
+        renderOptions
+      );
+  }
+
+  return 0;
+}
+
+function trimVoiceGeneratedFinalWordPause(samples, sampleRate, renderOptions = {}) {
+  const source = samples instanceof Float32Array ? samples : Float32Array.from(samples || []);
+  if (!source.length || !sampleRate) return source;
+
+  const generatedGapSamples = Math.max(0, Math.round(
+    voiceScaledPauseSeconds(VOICE_FINAL_WORD_PAUSE_SECONDS, renderOptions) * sampleRate
+  ));
+  const crossfadeSamples = Math.max(0, Math.round(VOICE_CROSSFADE_SECONDS * sampleRate));
+  const removableSamples = Math.max(0, generatedGapSamples - crossfadeSamples);
+  if (!removableSamples || source.length <= removableSamples) return source;
+
+  let trailingNearZero = 0;
+  for (let index = source.length - 1; index >= 0 && trailingNearZero < removableSamples; index--) {
+    if (Math.abs(Number(source[index]) || 0) > 1e-7) break;
+    trailingNearZero += 1;
+  }
+  if (trailingNearZero < removableSamples) return source;
+  return source.slice(0, source.length - removableSamples);
+}
+
+async function renderExactSpeechUnitEntry({
+  unit,
+  unitIndex,
+  unitCount,
+  nextUnit,
+  segment,
+  segmentIndex,
+  voice,
+  renderOptions,
+  crossesLine,
+  lineDistance,
+  linePauseSeconds,
+  expectedSampleRate,
+  hasFollowingSegment
+}) {
+  const renderText = compactSpeechWhitespace(unit?.timingText ?? unit?.text ?? '');
+  if (!renderText || !containsSpokenWord(renderText)) return null;
+
+  const rendered = await voice.render(renderText, {
+    ...(renderOptions || {}),
+    alreadyPreprocessed: true
+  });
+
+  if (!rendered?.samples?.length || !rendered?.sampleRate) {
+    throw new Error(`No audio samples were produced for speech unit \"${renderText}\".`);
+  }
+  if (expectedSampleRate != null && rendered.sampleRate !== expectedSampleRate) {
+    throw new Error('Audio sample-rate changed between rendered speech units.');
+  }
+
+  const renderedSamples = rendered.samples instanceof Float32Array
+    ? rendered.samples
+    : Float32Array.from(rendered.samples || []);
+  const samples = trimVoiceGeneratedFinalWordPause(
+    renderedSamples,
+    rendered.sampleRate,
+    renderOptions
+  );
+
+  return {
+    ...segment,
+    text: unit?.text ?? renderText,
+    speechUnitText: unit?.text ?? renderText,
+    speechUnitKind: unit?.kind || 'word',
+    speechUnitIndex: unitIndex,
+    speechUnitCount: unitCount,
+    wholeNumericPunctuationWord: !!unit?.wholeNumericPunctuationWord,
+    visualTargets: cloneAudioVisualTargets(unit?.visualTargets),
+    sourceSegmentIndex: segmentIndex,
+    renderText,
+    renderedAsWholeSegment: false,
+    renderedAsExactUnit: true,
+    samples,
+    sampleRate: rendered.sampleRate,
+    durationSeconds: samples.length / rendered.sampleRate,
+    pauseAfterSeconds: exactUnitPauseAfterSeconds({
       unit,
-      unitIndex,
-      weight: Math.max(1, timingWeightForSpeechUnit(voice, unit, syllableGapMs))
-    });
-    if (unitIndex < units.length - 1 && syllableGapMs > 0) {
-      pieces.push({ kind: 'gap', weight: syllableGapMs });
+      nextUnit,
+      segment,
+      crossesLine,
+      lineDistance,
+      linePauseSeconds,
+      renderOptions,
+      hasFollowingSegment
+    })
+  };
+}
+
+
+function isNumericCartoucheAudioUnit(unit) {
+  return !!unit?.numericCartouche && !!unit?.numericCartoucheRunId;
+}
+
+function sameNumericCartoucheAudioGroup(left, right) {
+  return isNumericCartoucheAudioUnit(left) &&
+    isNumericCartoucheAudioUnit(right) &&
+    String(left.numericCartoucheRunId) === String(right.numericCartoucheRunId) &&
+    String(left.numericCartouchePhrase || '') === String(right.numericCartouchePhrase || '');
+}
+
+function numericCartoucheBoundaryPauseSeconds({
+  segment,
+  crossesLine,
+  lineDistance,
+  linePauseSeconds,
+  renderOptions,
+  hasFollowingSegment,
+  isLastUnitInSegment
+}) {
+  if (!isLastUnitInSegment) return 0;
+
+  // The voice-rendered nanpa phrase already contains the same final 0.055 s
+  // word gap used by Review and History. Only add the boundary beyond it.
+  if (crossesLine) {
+    return Math.max(0, Number(linePauseSeconds) || 0) *
+      Math.min(2, Math.max(1, lineDistance));
+  }
+
+  if (segment?.boundaryAfter === 'punctuation' && hasFollowingSegment) {
+    return voiceScaledPauseSeconds(
+      voicePunctuationPauseSeconds(segment?.terminalPunctuation),
+      renderOptions
+    );
+  }
+
+  return 0;
+}
+
+function validateContiguousVoiceTimeline(timeline, sampleLength) {
+  const records = Array.from(timeline || [])
+    .map(record => ({
+      ...record,
+      startSample: Math.max(0, Math.round(Number(record?.startSample) || 0)),
+      endSample: Math.max(0, Math.round(Number(record?.endSample) || 0))
+    }))
+    .filter(record => record.endSample > record.startSample);
+
+  if (!records.length) throw new Error('The voice API did not return a usable nanpa-unit timeline.');
+  if (records[0].startSample !== 0 || records[records.length - 1].endSample !== sampleLength) {
+    throw new Error('The voice API nanpa-unit timeline does not cover the complete rendered waveform.');
+  }
+  for (let index = 1; index < records.length; index++) {
+    if (records[index - 1].endSample !== records[index].startSample) {
+      throw new Error('The voice API nanpa-unit timeline is not contiguous.');
+    }
+  }
+  return records;
+}
+
+async function renderExactNumericCartoucheEntries({
+  units,
+  segment,
+  segmentIndex,
+  voice,
+  renderOptions,
+  crossesLine,
+  lineDistance,
+  linePauseSeconds,
+  expectedSampleRate,
+  hasFollowingSegment,
+  isLastUnitInSegment
+}) {
+  const groupUnits = Array.from(units || []);
+  if (!groupUnits.length) return [];
+
+  const phrase = compactSpeechWhitespace(groupUnits[0]?.numericCartouchePhrase || '');
+  if (!phrase) throw new Error('Numeric cartouche audio is missing its nanpa-linja-n proper-name phrase.');
+
+  const rendered = await voice.render(phrase, {
+    ...(renderOptions || {}),
+    synthesis_mode: 'reference_audio',
+    alreadyPreprocessed: true
+  });
+
+  if (!rendered?.samples?.length || !rendered?.sampleRate) {
+    throw new Error(`No nanpa reference-audio samples were produced for numeric cartouche "${phrase}".`);
+  }
+  if (expectedSampleRate != null && rendered.sampleRate !== expectedSampleRate) {
+    throw new Error('Audio sample-rate changed while rendering a numeric cartouche.');
+  }
+
+  const renderedSamples = rendered.samples instanceof Float32Array
+    ? rendered.samples
+    : Float32Array.from(rendered.samples || []);
+  const timeline = validateContiguousVoiceTimeline(rendered.timeline, renderedSamples.length);
+  const speechRecords = timeline.filter(record => record.kind === 'speech' && record.nanpaUnit);
+
+  if (speechRecords.length !== groupUnits.length) {
+    throw new Error(
+      `Nanpa reference-audio timeline mismatch for "${phrase}": ` +
+      `${speechRecords.length} nanpa units for ${groupUnits.length} highlight units.`
+    );
+  }
+
+  for (let index = 0; index < groupUnits.length; index++) {
+    const expected = normalizeAudioWord(groupUnits[index]?.numericAudioUnitKey || groupUnits[index]?.text);
+    const actual = normalizeAudioWord(speechRecords[index]?.audioUnitKey);
+    if (!expected || expected !== actual) {
+      throw new Error(
+        `Nanpa reference-audio unit mismatch for "${phrase}" at unit ${index + 1}: ` +
+        `expected "${expected}", received "${actual || 'none'}".`
+      );
     }
   }
 
-  if (segment?.boundaryAfter === 'punctuation' && !crossesLine) {
-    pieces.push({ kind: 'gap', terminal: true, weight: Math.max(80, 240 * pauseScale) });
-  }
-
-  if (!pieces.length) {
-    pieces.push({
-      kind: 'unit',
-      unit: {
-        text: segment?.text || renderText,
-        kind: 'segment',
-        visualTargets: (segment?.visualRunRefs || []).map(ref => ({
-          runId: ref.id,
-          lineIndex: ref.lineIndex,
-          runIndex: ref.runIndex,
-          componentIndices: []
-        }))
-      },
-      unitIndex: 0,
-      weight: 1
-    });
-  }
-
-  const totalWeight = Math.max(1, pieces.reduce((sum, piece) => sum + Math.max(0, Number(piece.weight) || 0), 0));
   const entries = [];
-  let cursor = 0;
-  let accumulatedWeight = 0;
+  let speechCursor = 0;
+  for (const record of timeline) {
+    const samples = renderedSamples.slice(record.startSample, record.endSample);
+    if (!samples.length) continue;
 
-  for (let pieceIndex = 0; pieceIndex < pieces.length; pieceIndex++) {
-    const piece = pieces[pieceIndex];
-    accumulatedWeight += Math.max(0, Number(piece.weight) || 0);
-    let end = pieceIndex === pieces.length - 1
-      ? sourceSamples.length
-      : Math.round(sourceSamples.length * accumulatedWeight / totalWeight);
-    end = Math.max(cursor, Math.min(sourceSamples.length, end));
-    const pieceSamples = sourceSamples.slice(cursor, end);
-    cursor = end;
-    if (!pieceSamples.length) continue;
-
-    const isLastPiece = pieceIndex === pieces.length - 1;
-    if (piece.kind === 'unit') {
-      const unit = piece.unit || {};
+    if (record.kind === 'speech' && record.nanpaUnit) {
+      const unit = groupUnits[speechCursor];
       entries.push({
         ...segment,
-        text: unit.text,
-        speechUnitText: unit.text,
-        speechUnitKind: unit.kind || 'word',
-        speechUnitIndex: piece.unitIndex,
-        speechUnitCount: units.length,
-        wholeNumericPunctuationWord: !!unit.wholeNumericPunctuationWord,
-        visualTargets: Array.isArray(unit.visualTargets)
-          ? unit.visualTargets.map(target => ({
-              ...target,
-              componentIndices: Array.isArray(target.componentIndices)
-                ? target.componentIndices.slice()
-                : []
-            }))
-          : [],
-        sourceSegmentIndex,
-        renderText,
-        renderedAsWholeSegment: true,
-        samples: pieceSamples,
-        sampleRate,
-        durationSeconds: pieceSamples.length / sampleRate,
-        pauseAfterSeconds: isLastPiece && crossesLine
-          ? Number(linePauseSeconds || 0) * Math.min(2, lineDistance)
-          : 0
+        text: unit?.text || record.audioUnitKey || '',
+        speechUnitText: unit?.text || record.audioUnitKey || '',
+        speechUnitKind: unit?.kind || 'cartouche-syllable',
+        speechUnitIndex: speechCursor,
+        speechUnitCount: groupUnits.length,
+        wholeNumericPunctuationWord: !!unit?.wholeNumericPunctuationWord,
+        numericCartouche: true,
+        numericCartoucheRunId: unit?.numericCartoucheRunId || null,
+        numericCartouchePhrase: phrase,
+        nanpaAudioUnitKey: record.audioUnitKey || '',
+        visualTargets: cloneAudioVisualTargets(unit?.visualTargets),
+        sourceSegmentIndex: segmentIndex,
+        renderText: phrase,
+        renderedAsWholeSegment: false,
+        renderedAsExactUnit: true,
+        renderedAsNanpaReferencePhrase: true,
+        samples,
+        sampleRate: rendered.sampleRate,
+        durationSeconds: samples.length / rendered.sampleRate,
+        pauseAfterSeconds: 0
       });
-    } else {
-      entries.push({
-        ...segment,
-        text: '',
-        speechUnitText: '',
-        speechUnitKind: piece.terminal ? 'terminal-pause' : 'audio-gap',
-        speechUnitIndex: null,
-        speechUnitCount: units.length,
-        wholeNumericPunctuationWord: false,
-        visualTargets: [],
-        sourceSegmentIndex,
-        renderText,
-        renderedAsWholeSegment: true,
-        samples: pieceSamples,
-        sampleRate,
-        durationSeconds: pieceSamples.length / sampleRate,
-        pauseAfterSeconds: isLastPiece && crossesLine
-          ? Number(linePauseSeconds || 0) * Math.min(2, lineDistance)
-          : 0
-      });
+      speechCursor += 1;
+      continue;
     }
+
+    entries.push({
+      ...segment,
+      text: '',
+      speechUnitText: '',
+      speechUnitKind: 'audio-gap',
+      speechUnitIndex: null,
+      speechUnitCount: groupUnits.length,
+      wholeNumericPunctuationWord: false,
+      numericCartouche: true,
+      numericCartoucheRunId: groupUnits[0]?.numericCartoucheRunId || null,
+      numericCartouchePhrase: phrase,
+      nanpaAudioGapKind: record.gapKind || 'gap',
+      visualTargets: [],
+      sourceSegmentIndex: segmentIndex,
+      renderText: phrase,
+      renderedAsWholeSegment: false,
+      renderedAsExactUnit: true,
+      renderedAsNanpaReferencePhrase: true,
+      samples,
+      sampleRate: rendered.sampleRate,
+      durationSeconds: samples.length / rendered.sampleRate,
+      pauseAfterSeconds: 0
+    });
   }
 
-  if (cursor < sourceSamples.length && entries.length) {
-    const last = entries[entries.length - 1];
-    const merged = new Float32Array(last.samples.length + sourceSamples.length - cursor);
-    merged.set(last.samples, 0);
-    merged.set(sourceSamples.slice(cursor), last.samples.length);
-    last.samples = merged;
-    last.durationSeconds = merged.length / sampleRate;
+  if (speechCursor !== groupUnits.length) {
+    throw new Error(`Not all numeric-cartouche highlight units were assigned for "${phrase}".`);
   }
 
+  if (entries.length) {
+    entries[entries.length - 1].pauseAfterSeconds = numericCartoucheBoundaryPauseSeconds({
+      segment,
+      crossesLine,
+      lineDistance,
+      linePauseSeconds,
+      renderOptions,
+      hasFollowingSegment,
+      isLastUnitInSegment
+    });
+  }
   return entries;
 }
 
 /**
- * Synthesize each complete sentence segment once, then partition that single
- * waveform for highlight timing. This preserves fluid pronunciation—including
- * whole numeric punctuation words such as Eke—while still exposing per-unit
- * playback entries to the page overlay.
+ * Render ordinary highlight units as exact individual waveforms. Numeric
+ * cartouches are rendered once as the complete nanpa-linja-n proper-name phrase,
+ * through the same reference-audio path used by Review and History, and are then
+ * divided only at exact sample boundaries supplied by the voice API timeline.
+ *
+ * No character-count or proportional waveform timing is used. The renderer plan
+ * and all visual-target mappings remain unchanged.
  */
 export async function renderSpeechSegmentsToAudioBuffers({
   segments,
@@ -1393,6 +1587,7 @@ export async function renderSpeechSegmentsToAudioBuffers({
           timingText: segment.text,
           timingSyllables: splitAudioTpWordIntoSyllables(segment.text),
           kind: 'segment',
+          wholeNumericPunctuationWord: false,
           visualTargets: (segment.visualRunRefs || []).map(ref => ({
             runId: ref.id,
             lineIndex: ref.lineIndex,
@@ -1401,48 +1596,71 @@ export async function renderSpeechSegmentsToAudioBuffers({
           }))
         }];
 
-    let renderText = compactSpeechWhitespace(segment.text);
-    if (!renderText || !containsSpokenWord(renderText)) continue;
-
-    if (segment.boundaryAfter === 'punctuation') {
-      const terminal = String(segment.terminalPunctuation || '').trim();
-      if (terminal) renderText += terminal;
-    }
-    if (crossesLine) renderText = stripTerminalSentencePunctuation(renderText);
-
-    const rendered = await voice.render(renderText, {
-      ...(renderOptions || {}),
-      alreadyPreprocessed: true
-    });
-
-    if (isSitelenAudioCancelled(shouldCancel)) {
-      return { cancelled: true, entries, sampleRate, spokenSentenceCount: spokenSegmentCount };
-    }
-
-    if (rendered?.sampleRate != null) {
-      if (sampleRate != null && rendered.sampleRate !== sampleRate) {
-        throw new Error('Audio sample-rate changed between rendered sentence buffers.');
+    let entriesBeforeSegment = entries.length;
+    for (let unitIndex = 0; unitIndex < units.length;) {
+      if (isSitelenAudioCancelled(shouldCancel)) {
+        return { cancelled: true, entries, sampleRate, spokenSentenceCount: spokenSegmentCount };
       }
-      sampleRate = rendered.sampleRate;
+
+      const unit = units[unitIndex];
+      if (isNumericCartoucheAudioUnit(unit)) {
+        let groupEnd = unitIndex + 1;
+        while (groupEnd < units.length && sameNumericCartoucheAudioGroup(unit, units[groupEnd])) {
+          groupEnd += 1;
+        }
+
+        const groupEntries = await renderExactNumericCartoucheEntries({
+          units: units.slice(unitIndex, groupEnd),
+          segment,
+          segmentIndex,
+          voice,
+          renderOptions,
+          crossesLine,
+          lineDistance,
+          linePauseSeconds,
+          expectedSampleRate: sampleRate,
+          hasFollowingSegment: !!nextSegment,
+          isLastUnitInSegment: groupEnd >= units.length
+        });
+
+        if (isSitelenAudioCancelled(shouldCancel)) {
+          return { cancelled: true, entries, sampleRate, spokenSentenceCount: spokenSegmentCount };
+        }
+        if (groupEntries.length) {
+          if (sampleRate == null) sampleRate = groupEntries[0].sampleRate;
+          entries.push(...groupEntries);
+        }
+        unitIndex = groupEnd;
+        continue;
+      }
+
+      const entry = await renderExactSpeechUnitEntry({
+        unit,
+        unitIndex,
+        unitCount: units.length,
+        nextUnit: units[unitIndex + 1] || null,
+        segment,
+        segmentIndex,
+        voice,
+        renderOptions,
+        crossesLine,
+        lineDistance,
+        linePauseSeconds,
+        expectedSampleRate: sampleRate,
+        hasFollowingSegment: !!nextSegment
+      });
+
+      if (isSitelenAudioCancelled(shouldCancel)) {
+        return { cancelled: true, entries, sampleRate, spokenSentenceCount: spokenSegmentCount };
+      }
+      if (entry) {
+        if (sampleRate == null) sampleRate = entry.sampleRate;
+        entries.push(entry);
+      }
+      unitIndex += 1;
     }
 
-    if (!rendered?.samples?.length || !rendered?.sampleRate) continue;
-
-    const segmentEntries = partitionRenderedSegmentSamples({
-      samples: rendered.samples,
-      sampleRate: rendered.sampleRate,
-      segment,
-      units,
-      voice,
-      renderOptions,
-      sourceSegmentIndex: segmentIndex,
-      crossesLine,
-      lineDistance,
-      linePauseSeconds,
-      renderText
-    });
-    entries.push(...segmentEntries);
-    if (segmentEntries.length) spokenSegmentCount += 1;
+    if (entries.length > entriesBeforeSegment) spokenSegmentCount += 1;
   }
 
   for (let index = 0; index < entries.length; index++) entries[index].index = index;

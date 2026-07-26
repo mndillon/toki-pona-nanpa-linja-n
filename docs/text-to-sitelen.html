@@ -249,6 +249,19 @@ body.shellReady {
       line-height: 0;
     }
 
+    .audioLineHighlightCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      pointer-events: none;
+      z-index: 2;
+    }
+
     .audioHighlightCanvas {
       position: absolute;
       inset: 0;
@@ -259,6 +272,27 @@ body.shellReady {
       border-radius: 10px;
       background: transparent;
       pointer-events: none;
+      z-index: 3;
+    }
+
+    .selectionHighlightCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #appOutCanvas {
+      position: relative;
+      z-index: 0;
+      cursor: copy;
+      touch-action: manipulation;
     }
 
     .small { font-size: 12px; color: var(--muted); }
@@ -903,6 +937,8 @@ nanpa #~WI.
       </label>
       <div class="outputCanvasWrap">
         <canvas id="appOutCanvas" aria-hidden="true"></canvas>
+        <canvas id="appSelectionHighlightCanvas" class="selectionHighlightCanvas" aria-hidden="true"></canvas>
+        <canvas id="appAudioLineHighlightCanvas" class="audioLineHighlightCanvas" aria-hidden="true"></canvas>
         <canvas id="appAudioHighlightCanvas" class="audioHighlightCanvas" aria-hidden="true"></canvas>
       </div>
 
@@ -1112,7 +1148,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=189";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=190";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -1121,12 +1157,12 @@ nanpa #~WI.
 
     import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=35';
     import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=166';
-    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=27';
+    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=28';
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback,
       summarizeSkippedAudio as summarizeSitelenAudioSkipped
-    } from './js/sitelen-audio-plan.js?v=8';
+    } from './js/sitelen-audio-plan.js?v=10';
     let pageMap = new Map();
 
     "use strict";
@@ -1593,7 +1629,7 @@ function hideStartupLoading() {
 
     const VECTOR_DIAGNOSTIC_DEBUG = true;
     const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=189",
+      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=190",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
       cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
       vectorExporter: "./js/sitelen-vector-exporter.js?v=166",
@@ -6418,7 +6454,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=189", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=190", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -6726,6 +6762,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
 
     const elTextIn = document.getElementById("appTextIn");
     const outCanvas = document.getElementById("appOutCanvas");
+    const selectionHighlightCanvas = document.getElementById("appSelectionHighlightCanvas");
+    let selectedRenderedSelectionId = null;
     const btnRender = document.getElementById("appBtnRender");
     const btnDownload = document.getElementById("appBtnDownloadPng");
 
@@ -6750,7 +6788,10 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     let textAudioSession = null;
     let textWavExportBusy = false;
 
+    const audioLineHighlightCanvas = document.getElementById("appAudioLineHighlightCanvas");
     const audioHighlightCanvas = document.getElementById("appAudioHighlightCanvas");
+    let textAudioHighlightedLineKey = null;
+    let textAudioHighlightedLineRectSignature = "";
 
     function normalizeTextAudioSpeed(value) {
       const n = Number(value);
@@ -7027,18 +7068,47 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     }
 
     function syncTextAudioHighlightCanvasSize() {
-      if (!audioHighlightCanvas || !outCanvas) return;
+      if (!outCanvas) return false;
       const width = Math.max(1, Number(outCanvas.width) || 1);
       const height = Math.max(1, Number(outCanvas.height) || 1);
-      if (audioHighlightCanvas.width !== width) audioHighlightCanvas.width = width;
-      if (audioHighlightCanvas.height !== height) audioHighlightCanvas.height = height;
+      let resized = false;
+      for (const canvas of [audioLineHighlightCanvas, audioHighlightCanvas]) {
+        if (!canvas) continue;
+        if (canvas.width !== width) {
+          canvas.width = width;
+          resized = true;
+        }
+        if (canvas.height !== height) {
+          canvas.height = height;
+          resized = true;
+        }
+      }
+      if (resized) {
+        textAudioHighlightedLineKey = null;
+        textAudioHighlightedLineRectSignature = "";
+      }
+      return resized;
     }
 
-    function clearTextAudioHighlight() {
+    function clearTextAudioActiveHighlight() {
       if (!audioHighlightCanvas) return;
       syncTextAudioHighlightCanvasSize();
       const ctx = audioHighlightCanvas.getContext("2d", { alpha: true });
       ctx.clearRect(0, 0, audioHighlightCanvas.width, audioHighlightCanvas.height);
+    }
+
+    function clearTextAudioLineHighlight() {
+      textAudioHighlightedLineKey = null;
+      textAudioHighlightedLineRectSignature = "";
+      if (!audioLineHighlightCanvas) return;
+      syncTextAudioHighlightCanvasSize();
+      const ctx = audioLineHighlightCanvas.getContext("2d", { alpha: true });
+      ctx.clearRect(0, 0, audioLineHighlightCanvas.width, audioLineHighlightCanvas.height);
+    }
+
+    function clearTextAudioHighlight() {
+      clearTextAudioActiveHighlight();
+      clearTextAudioLineHighlight();
     }
 
     function isSentenceBoundaryAt(text, index) {
@@ -7173,6 +7243,308 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       };
     }
 
+
+    function syncRenderedSelectionCanvasSize() {
+      if (!selectionHighlightCanvas || !outCanvas) return;
+      const width = Math.max(1, Number(outCanvas.width) || 1);
+      const height = Math.max(1, Number(outCanvas.height) || 1);
+      if (selectionHighlightCanvas.width !== width) selectionHighlightCanvas.width = width;
+      if (selectionHighlightCanvas.height !== height) selectionHighlightCanvas.height = height;
+    }
+
+    function clearRenderedUnicodeSelection({ announce = false } = {}) {
+      selectedRenderedSelectionId = null;
+      if (selectionHighlightCanvas) {
+        syncRenderedSelectionCanvasSize();
+        const ctx = selectionHighlightCanvas.getContext("2d", { alpha: true });
+        ctx?.clearRect(0, 0, selectionHighlightCanvas.width, selectionHighlightCanvas.height);
+      }
+      if (announce) announceStatus("Rendered Unicode selection cleared.");
+    }
+
+    function drawRenderedUnicodeSelection(selection) {
+      if (!selectionHighlightCanvas || !selection) return;
+      const runs = Array.isArray(selection.runs)
+        ? selection.runs.filter(Boolean)
+        : (selection ? [selection] : []);
+      if (!runs.length) return;
+
+      syncRenderedSelectionCanvasSize();
+      const ctx = selectionHighlightCanvas.getContext("2d", { alpha: true });
+      if (!ctx) return;
+      ctx.clearRect(0, 0, selectionHighlightCanvas.width, selectionHighlightCanvas.height);
+
+      // Draw one highlight rectangle per rendered line. This keeps a grouped
+      // literal selection accurate even if a future renderer version splits a
+      // quoted section into several runs or lines.
+      const runsByLine = new Map();
+      for (const run of runs) {
+        const lineKey = Number.isFinite(Number(run?.lineIndex)) ? Number(run.lineIndex) : 0;
+        if (!runsByLine.has(lineKey)) runsByLine.set(lineKey, []);
+        runsByLine.get(lineKey).push(run);
+      }
+
+      for (const lineRuns of runsByLine.values()) {
+        const rect = unionRects(lineRuns.map(rectForRun));
+        if (!rect) continue;
+        const maxFontPx = Math.max(
+          8,
+          ...lineRuns.map(run => Number(run?.fontPx) || Number(latestRenderPlan?.fontPx) || getFontPx())
+        );
+        const padding = Math.max(2, Math.round(maxFontPx * 0.055));
+        const x = Math.max(0, Number(rect.x) - padding);
+        const y = Math.max(0, Number(rect.y) - padding);
+        const width = Math.min(selectionHighlightCanvas.width - x, Number(rect.width) + padding * 2);
+        const height = Math.min(selectionHighlightCanvas.height - y, Number(rect.height) + padding * 2);
+        if (width <= 0 || height <= 0) continue;
+
+        const radius = Math.max(3, Math.min(10, Math.round(height * 0.14)));
+        ctx.save();
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, radius);
+        else ctx.rect(x, y, width, height);
+        ctx.fillStyle = "rgba(70, 130, 180, 0.25)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(17, 17, 17, 0.88)";
+        ctx.lineWidth = Math.max(1, Math.round(maxFontPx * 0.025));
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function renderedCanvasPointFromPointerEvent(event) {
+      if (!outCanvas) return null;
+      const bounds = outCanvas.getBoundingClientRect();
+      if (bounds.width <= 0 || bounds.height <= 0) return null;
+
+      const style = getComputedStyle(outCanvas);
+      const borderLeft = Number.parseFloat(style.borderLeftWidth) || 0;
+      const borderRight = Number.parseFloat(style.borderRightWidth) || 0;
+      const borderTop = Number.parseFloat(style.borderTopWidth) || 0;
+      const borderBottom = Number.parseFloat(style.borderBottomWidth) || 0;
+      const displayedWidth = Math.max(1, bounds.width - borderLeft - borderRight);
+      const displayedHeight = Math.max(1, bounds.height - borderTop - borderBottom);
+      const localX = Number(event.clientX) - bounds.left - borderLeft;
+      const localY = Number(event.clientY) - bounds.top - borderTop;
+
+      return {
+        x: Math.max(0, Math.min(outCanvas.width, localX * outCanvas.width / displayedWidth)),
+        y: Math.max(0, Math.min(outCanvas.height, localY * outCanvas.height / displayedHeight))
+      };
+    }
+
+    function isRenderedLiteralTextRun(run) {
+      if (!run || String(run.kind ?? "").toLowerCase() !== "text") return false;
+      return !!run.isQuoted || String(run.sourceKind ?? "").toLowerCase() === "quote";
+    }
+
+    function isRenderedUnknownTextRun(run) {
+      return !!run && String(run.kind ?? "").toLowerCase() === "text" && !!run.isUnrecognized;
+    }
+
+    function isRenderedRunUnicodeCopyable(run) {
+      if (!run || run.kind === "gap") return false;
+      if (run.imageAlt || run?._element?.isImage) return false;
+
+      // Text runs are selectable only when they are quoted literal text or an
+      // explicitly rendered unknown token. This avoids making invisible
+      // spacing-control text such as the zz/U+3000 run selectable.
+      if (String(run.kind ?? "").toLowerCase() === "text" &&
+          !isRenderedLiteralTextRun(run) &&
+          !isRenderedUnknownTextRun(run)) {
+        return false;
+      }
+
+      const cps = getUnicodeJsonRunCodepoints(run);
+      return Array.isArray(cps) && cps.length > 0 && cps.every(cp => Number.isFinite(Number(cp)));
+    }
+
+    function getAllRenderedRuns(plan = latestRenderPlan) {
+      return (plan?.lines || []).flatMap(line => (line?.runs || []).filter(Boolean));
+    }
+
+    function renderedRunStableId(run) {
+      return String(run?.id ?? `${run?.lineIndex ?? ""}:${run?.runIndex ?? ""}`);
+    }
+
+    function renderedLiteralSelectionKey(run) {
+      const lineIndex = Number.isFinite(Number(run?.lineIndex)) ? Number(run.lineIndex) : "";
+      const segmentIndex = Number.isFinite(Number(run?.sourceSegmentIndex))
+        ? Number(run.sourceSegmentIndex)
+        : `${run?.sourceStart ?? ""}:${run?.sourceEnd ?? ""}`;
+      return `literal:L${lineIndex}:S${segmentIndex}`;
+    }
+
+    function renderedLiteralRunsForRun(run) {
+      const key = renderedLiteralSelectionKey(run);
+      return getAllRenderedRuns().filter(candidate =>
+        isRenderedLiteralTextRun(candidate) && renderedLiteralSelectionKey(candidate) === key
+      );
+    }
+
+    function renderedLiteralCodepoints(runs) {
+      const out = [];
+      for (const run of (runs || [])) {
+        const cps = getUnicodeJsonRunCodepoints(run);
+        if (Array.isArray(cps)) out.push(...cps);
+      }
+      return out;
+    }
+
+    function getRenderedUnicodeSelectionForRun(run) {
+      if (!isRenderedRunUnicodeCopyable(run)) return null;
+
+      if (isRenderedLiteralTextRun(run)) {
+        const runs = renderedLiteralRunsForRun(run);
+        const cps = renderedLiteralCodepoints(runs);
+        if (!cps.length) return null;
+        return {
+          id: renderedLiteralSelectionKey(run),
+          type: "literal",
+          description: "literal text",
+          runs,
+          cps
+        };
+      }
+
+      const cps = getUnicodeJsonRunCodepoints(run);
+      if (!Array.isArray(cps) || !cps.length) return null;
+      return {
+        id: `run:${renderedRunStableId(run)}`,
+        type: isRenderedUnknownTextRun(run) ? "unknown" : "run",
+        description: isRenderedUnknownTextRun(run) ? "unknown text" : null,
+        runs: [run],
+        cps
+      };
+    }
+
+    function renderedRunHitRect(run) {
+      const rect = rectForRun(run);
+      if (!rect) return null;
+      const fontPx = Math.max(8, Number(run.fontPx) || Number(latestRenderPlan?.fontPx) || getFontPx());
+      const padding = Math.max(5, Math.round(fontPx * 0.12));
+      return {
+        x: Number(rect.x) - padding,
+        y: Number(rect.y) - padding,
+        width: Number(rect.width) + padding * 2,
+        height: Number(rect.height) + padding * 2,
+        visualRect: rect
+      };
+    }
+
+    function findRenderedUnicodeRunAtPoint(point) {
+      if (!point || !latestRenderPlan) return null;
+      const candidates = [];
+
+      for (const line of (latestRenderPlan.lines || [])) {
+        for (const run of (line?.runs || [])) {
+          if (!isRenderedRunUnicodeCopyable(run)) continue;
+          const hit = renderedRunHitRect(run);
+          if (!hit) continue;
+          if (
+            point.x < hit.x ||
+            point.x > hit.x + hit.width ||
+            point.y < hit.y ||
+            point.y > hit.y + hit.height
+          ) continue;
+
+          const visual = hit.visualRect;
+          const centreX = Number(visual.x) + Number(visual.width) / 2;
+          const centreY = Number(visual.y) + Number(visual.height) / 2;
+          const distanceSquared = Math.pow(point.x - centreX, 2) + Math.pow(point.y - centreY, 2);
+          candidates.push({
+            run,
+            distanceSquared,
+            area: Math.max(1, Number(visual.width) * Number(visual.height))
+          });
+        }
+      }
+
+      candidates.sort((a, b) => a.distanceSquared - b.distanceSquared || a.area - b.area);
+      return candidates[0]?.run || null;
+    }
+
+    function fallbackCopyRenderedUnicode(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = String(text ?? "");
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-100000px";
+      textarea.style.top = "0";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      let copied = false;
+      try { copied = document.execCommand("copy"); }
+      finally { textarea.remove(); }
+      if (!copied) throw new Error("The browser did not allow clipboard access.");
+    }
+
+    async function copyRenderedUnicodeText(text) {
+      const value = String(text ?? "");
+      if (!value) throw new Error("There is no Unicode text to copy.");
+      if (window.isSecureContext && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        await navigator.clipboard.writeText(value);
+        return;
+      }
+      fallbackCopyRenderedUnicode(value);
+    }
+
+    function renderedUnicodeSelectionDescription(run, cps, selection = null) {
+      if (selection?.description) return selection.description;
+      if (String(run?.kind ?? "").toLowerCase() === "cartouche") return "cartouche";
+      if (cps.includes(LONG_PI_START_CP)) return "long pi";
+      if (cps.length === 1) return "glyph";
+      return "glyph sequence";
+    }
+
+    async function handleRenderedUnicodePointerUp(event) {
+      if (!outCanvas || !latestRenderPlan) return;
+      if (event.pointerType === "mouse" && Number(event.button) !== 0) return;
+
+      const point = renderedCanvasPointFromPointerEvent(event);
+      const run = findRenderedUnicodeRunAtPoint(point);
+
+      if (!run) {
+        if (selectedRenderedSelectionId != null) clearRenderedUnicodeSelection({ announce: true });
+        return;
+      }
+
+      const selection = getRenderedUnicodeSelectionForRun(run);
+      if (!selection) return;
+
+      // A second click/tap anywhere inside the same logical selection toggles
+      // it off and does not copy it again. For literal text this means every
+      // word in the same quoted section shares one selection identity.
+      if (selectedRenderedSelectionId === selection.id) {
+        clearRenderedUnicodeSelection({ announce: true });
+        return;
+      }
+
+      const cps = selection.cps;
+      const unicodeText = codepointsToRawUnicodeString(cps);
+      const description = renderedUnicodeSelectionDescription(run, cps, selection);
+
+      selectedRenderedSelectionId = selection.id;
+      drawRenderedUnicodeSelection(selection);
+
+      try {
+        await copyRenderedUnicodeText(unicodeText);
+        announceStatus(`Copied ${description}: ${formatCodepointsUPlus(cps)}`);
+      } catch (error) {
+        clearRenderedUnicodeSelection();
+        showAlertAndAnnounce(`Could not copy the selected ${description}: ${error?.message ?? String(error)}`);
+      }
+    }
+
+    function wireRenderedUnicodeCopy() {
+      if (!outCanvas) return;
+      outCanvas.addEventListener("pointerup", handleRenderedUnicodePointerUp);
+      elTextIn?.addEventListener("input", () => clearRenderedUnicodeSelection());
+    }
+
     function unionRects(rects) {
       const usable = (rects || []).filter(rect =>
         rect &&
@@ -7304,16 +7676,17 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       const sentenceMap = buildVisualSentenceHighlightMap(plan);
       const runLookup = buildAudioRunLookup(plan);
       return (entries || []).map(entry => {
-        const lineRect =
+        const sentenceRect =
           sentenceMap.get(`${entry.lineIndex}:${entry.sentenceIndexInLine}`) ||
           fallbackHighlightRectForLine(plan, entry.lineIndex);
+        const lineRect = fallbackHighlightRectForLine(plan, entry.lineIndex) || sentenceRect;
         const activeRects = activeRectsForEntry(entry, runLookup);
         const isAudioGap = entry?.speechUnitKind === "audio-gap" || entry?.speechUnitKind === "terminal-pause";
         return {
           ...entry,
-          visualRect: lineRect,
+          visualRect: sentenceRect,
           lineVisualRect: lineRect,
-          activeVisualRects: activeRects.length ? activeRects : (isAudioGap ? [] : (lineRect ? [lineRect] : []))
+          activeVisualRects: activeRects.length ? activeRects : (isAudioGap ? [] : (sentenceRect ? [sentenceRect] : []))
         };
       });
     }
@@ -7344,25 +7717,59 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       }
     }
 
+    function textAudioLineKeyForEntry(entry) {
+      const lineIndex = Number(entry?.lineIndex);
+      return Number.isFinite(lineIndex) ? String(lineIndex) : null;
+    }
+
+    function textAudioRectSignature(rect) {
+      if (!rect) return "";
+      return [rect.x, rect.y, rect.width, rect.height]
+        .map(value => Number(value).toFixed(3))
+        .join(":");
+    }
+
+    function drawTextAudioLineHighlight(entry) {
+      if (!audioLineHighlightCanvas) return;
+      syncTextAudioHighlightCanvasSize();
+
+      const lineRect = entry?.lineVisualRect || entry?.visualRect;
+      const lineKey = textAudioLineKeyForEntry(entry);
+      const rectSignature = textAudioRectSignature(lineRect);
+      if (!lineRect || lineKey == null) {
+        clearTextAudioLineHighlight();
+        return;
+      }
+      if (
+        textAudioHighlightedLineKey === lineKey &&
+        textAudioHighlightedLineRectSignature === rectSignature
+      ) return;
+
+      const ctx = audioLineHighlightCanvas.getContext("2d", { alpha: true });
+      ctx.clearRect(0, 0, audioLineHighlightCanvas.width, audioLineHighlightCanvas.height);
+      const fontPx = latestRenderPlan?.fontPx || getFontPx();
+      ctx.save();
+      drawRoundedHighlightRect(ctx, lineRect, {
+        padding: Math.max(1, Math.round(fontPx * 0.035)),
+        fillStyle: "rgba(255, 214, 10, 0.16)",
+        strokeStyle: "rgba(17, 17, 17, 0.78)",
+        lineWidth: Math.max(1, Math.round(fontPx * 0.018))
+      });
+      ctx.restore();
+      textAudioHighlightedLineKey = lineKey;
+      textAudioHighlightedLineRectSignature = rectSignature;
+    }
+
     function drawTextAudioHighlight(entry) {
-      clearTextAudioHighlight();
+      drawTextAudioLineHighlight(entry);
+      clearTextAudioActiveHighlight();
       if (!audioHighlightCanvas) return;
 
       const ctx = audioHighlightCanvas.getContext("2d", { alpha: true });
       const fontPx = latestRenderPlan?.fontPx || getFontPx();
-      const lineRect = entry?.lineVisualRect || entry?.visualRect;
       const activeRects = Array.isArray(entry?.activeVisualRects) ? entry.activeVisualRects : [];
 
       ctx.save();
-      if (lineRect) {
-        drawRoundedHighlightRect(ctx, lineRect, {
-          padding: Math.max(1, Math.round(fontPx * 0.035)),
-          fillStyle: "rgba(255, 214, 10, 0.16)",
-          strokeStyle: "rgba(17, 17, 17, 0.78)",
-          lineWidth: Math.max(1, Math.round(fontPx * 0.018))
-        });
-      }
-
       for (const rect of activeRects) {
         drawRoundedHighlightRect(ctx, rect, {
           padding: Math.max(2, Math.round(fontPx * 0.05)),
@@ -7374,10 +7781,19 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       ctx.restore();
     }
 
+    function cancelTextAudioHighlightFrame(session) {
+      if (!session?.highlightFrame) return;
+      cancelAnimationFrame(session.highlightFrame);
+      session.highlightFrame = null;
+      session.activeHighlightEntryIndex = null;
+    }
+
     function cancelTextAudioSource(session) {
+      cancelTextAudioHighlightFrame(session);
       if (!session?.currentSource) return;
       const source = session.currentSource;
       session.currentSource = null;
+      session.currentPlaybackGroup = null;
       try { source.onended = null; } catch {}
       try { source.stop(); } catch {}
       try { source.disconnect(); } catch {}
@@ -7432,6 +7848,150 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       return buffer;
     }
 
+    function isNanpaReferencePhraseEntry(entry) {
+      return !!entry?.renderedAsNanpaReferencePhrase && !!entry?.numericCartoucheRunId;
+    }
+
+    function collectNanpaReferencePhraseGroup(session, startIndex) {
+      const entries = session?.entries || [];
+      const first = entries[startIndex];
+      if (!isNanpaReferencePhraseEntry(first)) return null;
+
+      const runId = String(first.numericCartoucheRunId);
+      const phrase = String(first.numericCartouchePhrase || "");
+      let endIndex = startIndex;
+      while (endIndex < entries.length) {
+        const candidate = entries[endIndex];
+        if (!isNanpaReferencePhraseEntry(candidate)) break;
+        if (String(candidate.numericCartoucheRunId) !== runId) break;
+        if (String(candidate.numericCartouchePhrase || "") !== phrase) break;
+        endIndex += 1;
+      }
+      if (endIndex <= startIndex) return null;
+
+      return {
+        startIndex,
+        endIndex,
+        runId,
+        phrase,
+        entries: entries.slice(startIndex, endIndex),
+        pauseAfterSeconds: Math.max(0, Number(entries[endIndex - 1]?.pauseAfterSeconds) || 0)
+      };
+    }
+
+    function getOrCreateNanpaReferencePhraseBuffer(session, group) {
+      const first = group?.entries?.[0];
+      const cache = first?._nanpaReferencePhraseBuffer;
+      if (cache && cache.endIndex === group.endIndex) return cache;
+
+      const sampleRate = Math.round(Number(first?.sampleRate));
+      if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
+        throw new Error("Invalid numeric-cartouche audio sample rate.");
+      }
+
+      const offsetsSeconds = [];
+      let totalSamples = 0;
+      for (const entry of group.entries) {
+        if (Math.round(Number(entry.sampleRate)) !== sampleRate) {
+          throw new Error("Numeric-cartouche audio entries use different sample rates.");
+        }
+        offsetsSeconds.push(totalSamples / sampleRate);
+        totalSamples += Number(entry.samples?.length) || 0;
+      }
+
+      const combined = new Float32Array(totalSamples);
+      let cursor = 0;
+      for (const entry of group.entries) {
+        const samples = entry.samples instanceof Float32Array
+          ? entry.samples
+          : Float32Array.from(entry.samples || []);
+        combined.set(samples, cursor);
+        cursor += samples.length;
+      }
+
+      const ctx = session.voice.getAudioContext();
+      const buffer = ctx.createBuffer(1, combined.length, sampleRate);
+      buffer.copyToChannel(combined, 0);
+      const prepared = {
+        endIndex: group.endIndex,
+        buffer,
+        offsetsSeconds,
+        totalDurationSeconds: combined.length / sampleRate
+      };
+      if (first) first._nanpaReferencePhraseBuffer = prepared;
+      return prepared;
+    }
+
+    function entryIndexForNanpaPhraseOffset(group, prepared, offsetSeconds) {
+      const offset = Math.max(0, Number(offsetSeconds) || 0);
+      let localIndex = prepared.offsetsSeconds.length - 1;
+      for (let index = 0; index < prepared.offsetsSeconds.length; index++) {
+        const nextStart = index + 1 < prepared.offsetsSeconds.length
+          ? prepared.offsetsSeconds[index + 1]
+          : prepared.totalDurationSeconds;
+        if (offset < nextStart || index === prepared.offsetsSeconds.length - 1) {
+          localIndex = index;
+          break;
+        }
+      }
+      return group.startIndex + Math.max(0, localIndex);
+    }
+
+    function isTextAudioGapEntry(entry) {
+      return entry?.speechUnitKind === "audio-gap";
+    }
+
+    function isTextAudioTerminalPauseEntry(entry) {
+      return entry?.speechUnitKind === "terminal-pause";
+    }
+
+    function findNextSpokenTextAudioEntry(entries, startIndex) {
+      for (let index = Math.max(0, Number(startIndex) || 0); index < (entries?.length || 0); index++) {
+        const entry = entries[index];
+        if (!isTextAudioGapEntry(entry) && !isTextAudioTerminalPauseEntry(entry)) return entry;
+      }
+      return null;
+    }
+
+    function drawTimedTextAudioEntry(entry) {
+      if (isTextAudioGapEntry(entry)) {
+        // A syllable/word gap is still part of the current rendered line.
+        // Remove only the moving unit highlight so the line highlight does not flash.
+        clearTextAudioActiveHighlight();
+      } else if (isTextAudioTerminalPauseEntry(entry)) {
+        clearTextAudioHighlight();
+      } else {
+        drawTextAudioHighlight(entry);
+      }
+    }
+
+    function updateNanpaReferencePhraseHighlight(session, group, prepared, offsetSeconds) {
+      const entryIndex = entryIndexForNanpaPhraseOffset(group, prepared, offsetSeconds);
+      if (session.activeHighlightEntryIndex === entryIndex) return;
+      session.activeHighlightEntryIndex = entryIndex;
+      drawTimedTextAudioEntry(session.entries[entryIndex]);
+    }
+
+    function startNanpaReferencePhraseHighlightLoop(session, group, prepared, source) {
+      cancelTextAudioHighlightFrame(session);
+      const ctx = session.voice.getAudioContext();
+
+      const tick = () => {
+        if (!textAudioSession || textAudioSession !== session) return;
+        if (session.generation !== textAudioGeneration) return;
+        if (session.currentSource !== source || textAudioState !== "playing") return;
+
+        const offset = session.sourceStartedOffset + Math.max(0, ctx.currentTime - session.sourceStartedAt);
+        updateNanpaReferencePhraseHighlight(session, group, prepared, offset);
+        if (offset < prepared.totalDurationSeconds) {
+          session.highlightFrame = requestAnimationFrame(tick);
+        }
+      };
+
+      updateNanpaReferencePhraseHighlight(session, group, prepared, session.sourceStartedOffset);
+      session.highlightFrame = requestAnimationFrame(tick);
+    }
+
     function scheduleTextAudioGap(seconds) {
       const session = textAudioSession;
       if (!session || session.generation !== textAudioGeneration) return;
@@ -7447,7 +8007,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       session.inGap = true;
       session.remainingGapSeconds = gapSeconds;
       session.gapStartedAtMs = performance.now();
-      clearTextAudioHighlight();
+      clearTextAudioActiveHighlight();
       setTextAudioState("playing");
       session.gapTimer = setTimeout(() => {
         if (!textAudioSession || session !== textAudioSession || session.generation !== textAudioGeneration) return;
@@ -7467,7 +8027,13 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       }
 
       const entry = session.entries[session.currentIndex];
-      const buffer = getOrCreateEntryAudioBuffer(session, entry);
+      const nanpaGroup = collectNanpaReferencePhraseGroup(session, session.currentIndex);
+      const preparedNanpaGroup = nanpaGroup
+        ? getOrCreateNanpaReferencePhraseBuffer(session, nanpaGroup)
+        : null;
+      const buffer = preparedNanpaGroup
+        ? preparedNanpaGroup.buffer
+        : getOrCreateEntryAudioBuffer(session, entry);
       const offset = Math.max(0, Math.min(Number(session.currentOffsetSeconds) || 0, Math.max(0, buffer.duration - 0.001)));
       const ctx = session.voice.getAudioContext();
       const source = ctx.createBufferSource();
@@ -7476,11 +8042,16 @@ async function serializeRenderPlanToUnicodeJson(plan) {
 
       session.currentSource = source;
       session.currentBuffer = buffer;
+      session.currentPlaybackGroup = nanpaGroup;
       session.sourceStartedAt = ctx.currentTime;
       session.sourceStartedOffset = offset;
       session.inGap = false;
       session.remainingGapSeconds = 0;
-      drawTextAudioHighlight(entry);
+      if (nanpaGroup) {
+        startNanpaReferencePhraseHighlightLoop(session, nanpaGroup, preparedNanpaGroup, source);
+      } else {
+        drawTimedTextAudioEntry(entry);
+      }
       setTextAudioState("playing");
 
       source.onended = () => {
@@ -7488,19 +8059,37 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         if (session.generation !== textAudioGeneration) return;
         if (session.currentSource !== source || textAudioState !== "playing") return;
 
+        cancelTextAudioHighlightFrame(session);
         session.currentSource = null;
         try { source.disconnect(); } catch {}
         session.currentBuffer = null;
+        session.currentPlaybackGroup = null;
         session.currentOffsetSeconds = 0;
-        clearTextAudioHighlight();
-        session.currentIndex += 1;
+        clearTextAudioActiveHighlight();
+
+        const pauseAfterSeconds = nanpaGroup
+          ? nanpaGroup.pauseAfterSeconds
+          : Math.max(0, Number(entry.pauseAfterSeconds) || 0);
+        const completedEntry = nanpaGroup
+          ? nanpaGroup.entries[nanpaGroup.entries.length - 1]
+          : entry;
+        session.currentIndex = nanpaGroup
+          ? nanpaGroup.endIndex
+          : session.currentIndex + 1;
 
         if (session.currentIndex >= session.entries.length) {
           completeTextAudioPlayback(session.generation);
           return;
         }
 
-        scheduleTextAudioGap(entry.pauseAfterSeconds);
+        const nextSpokenEntry = findNextSpokenTextAudioEntry(session.entries, session.currentIndex);
+        const completedLineKey = textAudioLineKeyForEntry(completedEntry);
+        const nextLineKey = textAudioLineKeyForEntry(nextSpokenEntry);
+        if (completedLineKey == null || nextLineKey !== completedLineKey) {
+          clearTextAudioLineHighlight();
+        }
+
+        scheduleTextAudioGap(pauseAfterSeconds);
       };
 
       source.start(0, offset);
@@ -7652,7 +8241,10 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           inGap: false,
           remainingGapSeconds: 0,
           gapStartedAtMs: 0,
-          gapTimer: null
+          gapTimer: null,
+          currentPlaybackGroup: null,
+          highlightFrame: null,
+          activeHighlightEntryIndex: null
         };
 
         const skippedSummary = summarizeSitelenAudioSkipped(skipped);
@@ -7716,6 +8308,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         paintConfiguredBackgroundBehindCanvas(outCanvas);
         syncTextAudioHighlightCanvasSize();
         clearTextAudioHighlight();
+        clearRenderedUnicodeSelection();
         latestRenderPlan = null;
         latestRenderedCanvas = null;
         announceStatus("Nothing to render (no recognized words).");
@@ -7733,6 +8326,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       paintConfiguredBackgroundBehindCanvas(outCanvas);
       syncTextAudioHighlightCanvasSize();
       clearTextAudioHighlight();
+      clearRenderedUnicodeSelection();
 
       latestRenderPlan = plan;
       latestRenderedCanvas = rendered.canvas;
@@ -9319,6 +9913,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         wireCartoucheDisplayLinks();
         initTextAudioControls();
         wireTextAudioControls();
+        wireRenderedUnicodeCopy();
 
         await fontsReadyForPx(getFontPx());
         warmUpCanvasFontsOnce();

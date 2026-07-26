@@ -1,5 +1,5 @@
 import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=175';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=18';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=19';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 
@@ -210,15 +210,48 @@ function normalizePeak(samples, peak = 0.95) {
   }
 }
 
-function concatChunks(chunks, sampleRate) {
+function concatChunkRecords(records, sampleRate) {
   let out = new Float32Array(0);
   const fade = Math.round(sampleRate * 0.006);
-  for (const c of chunks) {
+  const timeline = [];
+
+  for (const record of records || []) {
+    const c = record?.samples;
     if (!c || !c.length) continue;
+
+    const previousLength = out.length;
+    const overlap = previousLength > 0
+      ? Math.min(fade, previousLength, c.length)
+      : 0;
+
     out = crossfadeAppend(out, c, fade);
+
+    // Split each crossfade at its midpoint. This gives a contiguous,
+    // non-overlapping timeline whose slices reassemble to the exact waveform.
+    const startSample = previousLength > 0
+      ? Math.max(0, previousLength - Math.floor(overlap / 2))
+      : 0;
+    if (timeline.length) timeline[timeline.length - 1].endSample = startSample;
+
+    timeline.push({
+      ...(record.meta || {}),
+      startSample,
+      endSample: out.length
+    });
   }
+
   normalizePeak(out, 0.95);
-  return out;
+  return {
+    samples: out,
+    timeline: timeline.filter(item => item.endSample > item.startSample)
+  };
+}
+
+function concatChunks(chunks, sampleRate) {
+  return concatChunkRecords(
+    Array.from(chunks || []).map(samples => ({ samples, meta: null })),
+    sampleRate
+  ).samples;
 }
 
 function tryNanpaNumberToProperName(fragment) {
@@ -553,9 +586,15 @@ export class TokiPonaVoice {
     const ctx = this.getAudioContext();
     const sampleRate = ctx.sampleRate;
     const warnings = [...preprocessWarnings];
-    const chunks = [];
+    const chunkRecords = [];
     const lex = lexSpeechText(speechText);
     let i = 0;
+    let phraseIndex = 0;
+
+    const pushChunk = (samples, meta) => {
+      if (!samples || !samples.length) return;
+      chunkRecords.push({ samples, meta });
+    };
 
     while (i < lex.length) {
       const item = lex[i];
@@ -571,35 +610,89 @@ export class TokiPonaVoice {
           words.push(item.text);
           i += 1;
         }
+
         for (let wi = 0; wi < words.length; wi++) {
-          const wchunks = await this.chunksForWord(words[wi], opts, warnings, { preferNanpaUnits: isProperStart });
+          const word = words[wi];
+          const wchunks = await this.chunksForWord(word, opts, warnings, { preferNanpaUnits: isProperStart });
           const syllableGap = normalizeSyllableGapSeconds(opts.syllableGapSeconds);
+          const nanpaUnits = isProperStart && opts.synthesis_mode !== 'reference_words_only'
+            ? nanpaUnitsForWord(word, this.manifest)
+            : null;
 
           for (let ci = 0; ci < wchunks.length; ci++) {
-            chunks.push(wchunks[ci]);
+            pushChunk(wchunks[ci], {
+              kind: 'speech',
+              phraseIndex,
+              word,
+              normalizedWord: normalizedTpWord(word),
+              wordIndex: wi,
+              chunkIndexInWord: ci,
+              properName: isProperStart,
+              nanpaUnit: !!(nanpaUnits && nanpaUnits[ci]),
+              audioUnitKey: nanpaUnits?.[ci] || null
+            });
 
             // Optional quiz pacing: add silence only between chunks inside a word.
             // This is useful after trimming outer silence from nanpa unit WAVs.
             // Normal quiz speed passes 0, so trimmed WAVs stay tight by default.
             if (syllableGap > 0 && ci + 1 < wchunks.length) {
-              chunks.push(gapSamples(speedScaledSeconds(syllableGap, opts), sampleRate));
+              pushChunk(
+                gapSamples(speedScaledSeconds(syllableGap, opts), sampleRate),
+                {
+                  kind: 'gap',
+                  gapKind: 'syllable',
+                  phraseIndex,
+                  word,
+                  wordIndex: wi,
+                  afterChunkIndexInWord: ci,
+                  properName: isProperStart,
+                  nanpaUnit: !!nanpaUnits
+                }
+              );
             }
           }
 
           const gap = isProperStart && wi + 1 < words.length
             ? properNameWordPauseSeconds(words[wi], words[wi + 1])
             : 0.055;
-          chunks.push(gapSamples(scaledPauseSeconds(gap, opts), sampleRate));
+          pushChunk(
+            gapSamples(scaledPauseSeconds(gap, opts), sampleRate),
+            {
+              kind: 'gap',
+              gapKind: isProperStart && wi + 1 < words.length ? 'proper-name-word' : 'word',
+              phraseIndex,
+              word,
+              wordIndex: wi,
+              properName: isProperStart,
+              nanpaUnit: !!nanpaUnits
+            }
+          );
         }
+        phraseIndex += 1;
         continue;
       }
-      if (item.kind === 'punctuation') chunks.push(gapSamples(scaledPauseSeconds(punctuationPauseSeconds(item.text), opts), sampleRate));
-      if (item.kind === 'line_break') chunks.push(gapSamples(scaledPauseSeconds(0.22, opts), sampleRate));
+      if (item.kind === 'punctuation') {
+        pushChunk(
+          gapSamples(scaledPauseSeconds(punctuationPauseSeconds(item.text), opts), sampleRate),
+          { kind: 'gap', gapKind: 'punctuation', punctuation: item.text, phraseIndex }
+        );
+      }
+      if (item.kind === 'line_break') {
+        pushChunk(
+          gapSamples(scaledPauseSeconds(0.22, opts), sampleRate),
+          { kind: 'gap', gapKind: 'line', phraseIndex }
+        );
+      }
       i += 1;
     }
 
-    const samples = concatChunks(chunks, sampleRate);
-    return { samples, sampleRate, warnings };
+    const concatenated = concatChunkRecords(chunkRecords, sampleRate);
+    return {
+      samples: concatenated.samples,
+      timeline: concatenated.timeline,
+      sampleRate,
+      warnings
+    };
   }
 
   async render(input, options = {}) {
@@ -611,12 +704,14 @@ export class TokiPonaVoice {
     let samples;
     let sampleRate;
     let renderWarnings = [];
+    let timeline = [];
 
     if (isReferenceMode(opts.synthesis_mode)) {
       const rendered = await this.renderReferenceAudio(built.speechText, opts, built.warnings);
       samples = rendered.samples;
       sampleRate = rendered.sampleRate;
       renderWarnings = rendered.warnings;
+      timeline = Array.isArray(rendered.timeline) ? rendered.timeline : [];
     } else {
       if (!this.wasmReady || !this.wasm) {
         throw new Error('WASM is not loaded. Use reference audio mode, or call loadWasmOptional() after building with wasm-pack.');
@@ -637,6 +732,7 @@ export class TokiPonaVoice {
       analysis,
       samples,
       sampleRate,
+      timeline,
       wavBytes
     };
     this.lastResult = result;
