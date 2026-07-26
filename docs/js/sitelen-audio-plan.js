@@ -56,7 +56,7 @@ const AUDIO_NANPA_LINJA_N_WORDS = new Set([
   'nanpa','nasa','nasin','nena','ni','nimi','noka',
   'esun','en','e',
   'o','ona','ota','open',
-  'kulupu','kipisi','kasi','kala',
+  'kulupu','kipisi','kasi','kala','kin',
   'ijo','wan','tu','seli','awen','luka','utala','mun','pipi','jo',
   'kolon',':',
   ...Object.values(TOKEN_TO_DIGIT_WORD)
@@ -291,6 +291,45 @@ function getNanpaParserFromOptions(options = {}) {
   return options.NanpaParser || options.nanpaParser || options.parser?.NanpaParser || null;
 }
 
+const STRICT_TO_RELAXED_NANPA_CAPS_PAIR = Object.freeze({
+  WE: 'WA',
+  TE: 'TU',
+  LE: 'LU',
+  ME: 'MU',
+  PE: 'PI'
+});
+
+/**
+ * Convert only strict digit pairs in a valid nanpa-caps label to their relaxed
+ * equivalents. Numeric punctuation pairs and the final cartouche n are left
+ * unchanged. This is an audio-label conversion only; it does not alter the
+ * renderer plan, parser output, or displayed cartouche.
+ */
+export function nanpaCapsForAudioMode(caps, options = {}) {
+  const source = String(caps ?? '').trim().toUpperCase();
+  if (!options.relaxedNanpaLinjanRendering) return source;
+  if (!source.startsWith('NE') || !source.endsWith('N')) return source;
+
+  const pairArea = source.slice(0, -1);
+  if (pairArea.length % 2 !== 0) return source;
+
+  let converted = '';
+  for (let index = 0; index < pairArea.length; index += 2) {
+    const pair = pairArea.slice(index, index + 2);
+    converted += STRICT_TO_RELAXED_NANPA_CAPS_PAIR[pair] || pair;
+  }
+  return converted + 'N';
+}
+
+function splitNanpaCapsToAudioProperName(caps, NanpaParser, options = {}) {
+  if (!caps || typeof NanpaParser?.splitCapsToProperName !== 'function') return '';
+  const audioCaps = nanpaCapsForAudioMode(caps, options);
+  return NanpaParser.splitCapsToProperName(audioCaps, {
+    titleCase: true,
+    relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanRendering
+  }) || '';
+}
+
 export function trySourceTextToNanpaProperName(text, options = {}) {
   const source = String(text ?? '').trim();
   if (!source) return '';
@@ -300,9 +339,8 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
 
   try {
     const caps = tryNanpaLinjanTpPhraseSourceToCaps(source);
-    if (caps && typeof NanpaParser.splitCapsToProperName === 'function') {
-      return NanpaParser.splitCapsToProperName(caps, { titleCase: true }) || '';
-    }
+    const properName = splitNanpaCapsToAudioProperName(caps, NanpaParser, options);
+    if (properName) return properName;
   } catch {}
 
   try {
@@ -313,6 +351,10 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
       relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
     });
+    if (parsed?.caps) {
+      const properName = splitNanpaCapsToAudioProperName(parsed.caps, NanpaParser, options);
+      if (properName) return properName;
+    }
     if (parsed?.properName) return parsed.properName;
   } catch {}
 
@@ -342,7 +384,6 @@ export function speechTextForRenderRun(run, skipped = [], options = {}) {
   }
 
   if (run.isQuoted || sourceKind === 'quote') {
-    if (isReadableAudioTokiPonaText(sourceText)) return compactSpeechWhitespace(sourceText);
     skipped.push({ kind: 'quoted', text: sourceText });
     return '';
   }
@@ -601,9 +642,15 @@ function countSentenceBoundariesInSourceText(text, run = null) {
   const kind = String(run?.kind ?? '').toLowerCase();
   const sourceKind = String(run?.sourceKind ?? '').toLowerCase();
 
-  // Numeric and ordinary cartouche source strings may contain decimal points
-  // or visual control syntax that must never be interpreted as prose endings.
-  if (kind === 'cartouche' || sourceKind === 'bracket') return 0;
+  // Numeric/ordinary cartouches, quoted text, and unknown text are not prose
+  // sentence boundaries for audio/highlight alignment.
+  if (
+    kind === 'cartouche' ||
+    sourceKind === 'bracket' ||
+    sourceKind === 'quote' ||
+    run?.isQuoted ||
+    run?.isUnrecognized
+  ) return 0;
 
   return splitSpeechTextIntoSentenceFragments(text)
     .reduce((count, fragment) => count + (fragment.endsSentence ? 1 : 0), 0);
@@ -619,6 +666,315 @@ function appendUniqueRunRef(targets, run, fallbackRunIndex, lineIndex) {
   const id = run.id != null ? String(run.id) : `L${lineIndex}R${runIndex}`;
   if (targets.some(item => item.id === id)) return;
   targets.push({ id, lineIndex, runIndex });
+}
+
+
+const AUDIO_VISUAL_CONTROL_CPS = new Set([
+  0x200D,
+  0xF1990,
+  0xF1991,
+  0xF1992,
+  0xF1993,
+  0xF1994,
+  0xF1995,
+  0xF1996,
+  0xF1997,
+  0xF1998,
+  0xF199A,
+  0xF199B
+]);
+
+// These nanpa-linja-n punctuation words are reference-audio assets in their
+// own right. They must remain one audio/highlight unit: Eke must never be
+// resynthesised as separate "E" and "ke" pieces.
+const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
+  'eke', 'eken', 'ekeke', 'ekeken', 'ekekeke', 'ekekeken',
+  'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin'
+]);
+
+function spokenWordTokens(text) {
+  return String(text ?? '').match(/[A-Za-z']+/g) || [];
+}
+
+export function splitAudioTpWordIntoSyllables(rawWord) {
+  const source = String(rawWord ?? '').replace(/[^A-Za-z']/g, '');
+  const lower = source.replace(/'/g, '').toLowerCase();
+  if (!lower) return [];
+
+  const out = [];
+  let i = 0;
+  while (i < lower.length) {
+    const start = i;
+    if (TP_CONS.has(lower[i])) i += 1;
+    if (i >= lower.length || !TP_VOWS.has(lower[i])) return [source];
+    i += 1;
+    if (i < lower.length && lower[i] === 'n') {
+      const next = i + 1 < lower.length ? lower[i + 1] : '';
+      if (!next || TP_CONS.has(next)) i += 1;
+    }
+    out.push(source.slice(start, i));
+  }
+  return out.filter(Boolean);
+}
+
+function runIdForAudio(run, fallbackRunIndex, lineIndex) {
+  const runIndex = Number.isFinite(Number(run?.runIndex)) ? Number(run.runIndex) : fallbackRunIndex;
+  return run?.id != null ? String(run.id) : `L${lineIndex}R${runIndex}`;
+}
+
+function runCodepointsForAudio(run) {
+  const direct = Array.isArray(run?.cps) ? run.cps : run?._element?.cps;
+  if (Array.isArray(direct) && direct.length) return direct.map(Number).filter(Number.isFinite);
+  if (Number.isFinite(Number(run?._element?.cp))) return [Number(run._element.cp)];
+  return [];
+}
+
+function runAudioSourceCodepoints(run) {
+  const direct = Array.isArray(run?.audioSourceCps)
+    ? run.audioSourceCps
+    : run?._element?.audioSourceCps;
+  if (Array.isArray(direct) && direct.length) return direct.map(Number).filter(Number.isFinite);
+  return runCodepointsForAudio(run);
+}
+
+function runAudioSourceIndices(run, componentCount) {
+  const direct = Array.isArray(run?.audioSourceIndices)
+    ? run.audioSourceIndices
+    : run?._element?.audioSourceIndices;
+  if (Array.isArray(direct) && direct.length === componentCount) {
+    return direct.map((value, index) => Number.isFinite(Number(value)) ? Number(value) : index);
+  }
+  return Array.from({ length: componentCount }, (_unused, index) => index);
+}
+
+function visualTargetForComponentIndices(run, componentIndices, fallbackRunIndex, lineIndex) {
+  const unique = [...new Set(Array.from(componentIndices || []).map(Number).filter(Number.isFinite))];
+  return {
+    runId: runIdForAudio(run, fallbackRunIndex, lineIndex),
+    lineIndex,
+    runIndex: Number.isFinite(Number(run?.runIndex)) ? Number(run.runIndex) : fallbackRunIndex,
+    componentIndices: unique
+  };
+}
+
+function normalizedSpeechLetters(text) {
+  return String(text ?? '').replace(/[^A-Za-z]/g, '').toLowerCase();
+}
+
+function nearestDisplayedComponentsForSourceRange(sourceIndices, rangeStart, rangeEnd, fallbackRange = null) {
+  const direct = [];
+  for (let index = 0; index < sourceIndices.length; index++) {
+    const sourceIndex = Number(sourceIndices[index]);
+    if (Number.isFinite(sourceIndex) && sourceIndex >= rangeStart && sourceIndex < rangeEnd) direct.push(index);
+  }
+  if (direct.length) return direct;
+
+  const candidates = [];
+  for (let index = 0; index < sourceIndices.length; index++) {
+    const sourceIndex = Number(sourceIndices[index]);
+    if (!Number.isFinite(sourceIndex)) continue;
+    if (
+      fallbackRange &&
+      (sourceIndex < fallbackRange.start || sourceIndex >= fallbackRange.end)
+    ) continue;
+    candidates.push({ index, sourceIndex });
+  }
+  const usable = candidates.length
+    ? candidates
+    : sourceIndices.map((sourceIndex, index) => ({ index, sourceIndex: Number(sourceIndex) }))
+        .filter(item => Number.isFinite(item.sourceIndex));
+  if (!usable.length) return [];
+
+  const midpoint = (rangeStart + rangeEnd - 1) / 2;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const item of usable) bestDistance = Math.min(bestDistance, Math.abs(item.sourceIndex - midpoint));
+  return usable
+    .filter(item => Math.abs(item.sourceIndex - midpoint) === bestDistance)
+    .map(item => item.index);
+}
+
+function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
+  const words = spokenWordTokens(speech);
+  if (!words.length) return [];
+
+  const displayedCps = runCodepointsForAudio(run);
+  const componentCount = Math.max(1, displayedCps.length);
+  const sourceCps = runAudioSourceCodepoints(run);
+  const sourceCount = Math.max(1, sourceCps.length);
+  const sourceIndices = runAudioSourceIndices(run, componentCount);
+  const totalSpeechLetters = Math.max(1, normalizedSpeechLetters(speech).length);
+  const sourceScale = sourceCount / totalSpeechLetters;
+
+  const wordRecords = [];
+  let speechLetterCursor = 0;
+  let unitIndex = 0;
+
+  for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+    const word = words[wordIndex];
+    const wordLetters = Math.max(1, normalizedSpeechLetters(word).length);
+    const wordSpeechStart = speechLetterCursor;
+    const wordSpeechEnd = speechLetterCursor + wordLetters;
+    const wordSourceRange = {
+      start: Math.max(0, Math.floor(wordSpeechStart * sourceScale)),
+      end: Math.min(sourceCount, Math.max(1, Math.ceil(wordSpeechEnd * sourceScale)))
+    };
+    speechLetterCursor = wordSpeechEnd;
+
+    const wholeNumeric = WHOLE_NUMERIC_AUDIO_WORDS.has(word.toLowerCase());
+    const pieces = wholeNumeric ? [word] : (splitAudioTpWordIntoSyllables(word).length ? splitAudioTpWordIntoSyllables(word) : [word]);
+    let pieceLetterCursor = wordSpeechStart;
+
+    for (let unitIndexInWord = 0; unitIndexInWord < pieces.length; unitIndexInWord++) {
+      const piece = pieces[unitIndexInWord];
+      const pieceLetters = Math.max(1, normalizedSpeechLetters(piece).length);
+      const pieceSpeechStart = pieceLetterCursor;
+      const pieceSpeechEnd = Math.min(wordSpeechEnd, pieceLetterCursor + pieceLetters);
+      pieceLetterCursor += pieceLetters;
+
+      const rangeStart = Math.max(0, Math.floor(pieceSpeechStart * sourceScale));
+      const rangeEnd = Math.min(sourceCount, Math.max(rangeStart + 1, Math.ceil(pieceSpeechEnd * sourceScale)));
+      const componentIndices = nearestDisplayedComponentsForSourceRange(
+        sourceIndices,
+        rangeStart,
+        rangeEnd,
+        wordSourceRange
+      );
+
+      wordRecords.push({
+        text: piece,
+        timingText: piece,
+        timingSyllables: wholeNumeric ? [word] : [piece],
+        kind: wholeNumeric ? 'numeric-punctuation-word' : 'cartouche-syllable',
+        word,
+        wordIndex,
+        unitIndex,
+        unitIndexInWord,
+        wholeNumericPunctuationWord: wholeNumeric,
+        visualTargets: [
+          visualTargetForComponentIndices(run, componentIndices, fallbackRunIndex, lineIndex)
+        ]
+      });
+      unitIndex += 1;
+    }
+  }
+
+  return wordRecords;
+}
+
+function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
+  const words = spokenWordTokens(speech);
+  if (!words.length) return [];
+
+  const cps = runCodepointsForAudio(run);
+  const out = [];
+
+  for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+    let componentIndices = [];
+
+    if (wordIndex === 0) {
+      componentIndices = cps.length ? [0] : [];
+    } else {
+      const memberIndex = wordIndex - 1;
+      const glyphCpIndex = 1 + memberIndex * 2;
+      componentIndices = memberIndex === 0
+        ? [glyphCpIndex]
+        : [glyphCpIndex - 1, glyphCpIndex];
+      componentIndices = componentIndices.filter(index => index >= 0 && index < cps.length);
+    }
+
+    const word = words[wordIndex];
+    out.push({
+      text: word,
+      timingText: word,
+      timingSyllables: splitAudioTpWordIntoSyllables(word),
+      kind: wordIndex === 0 ? 'long-pi-head' : 'long-pi-member',
+      word,
+      wordIndex,
+      wholeNumericPunctuationWord: false,
+      visualTargets: [
+        visualTargetForComponentIndices(run, componentIndices, fallbackRunIndex, lineIndex)
+      ]
+    });
+  }
+
+  return out;
+}
+
+function visibleComponentGroups(cps) {
+  if (!cps.length) return [];
+  const visibleIndices = [];
+  for (let i = 0; i < cps.length; i++) {
+    if (!AUDIO_VISUAL_CONTROL_CPS.has(Number(cps[i]))) visibleIndices.push(i);
+  }
+  if (!visibleIndices.length) return [];
+
+  const groups = [];
+  let previousVisible = -1;
+  for (const visibleIndex of visibleIndices) {
+    const start = previousVisible + 1;
+    groups.push(Array.from({ length: visibleIndex - start + 1 }, (_unused, offset) => start + offset));
+    previousVisible = visibleIndex;
+  }
+  if (previousVisible < cps.length - 1) {
+    groups[groups.length - 1].push(...Array.from(
+      { length: cps.length - previousVisible - 1 },
+      (_unused, offset) => previousVisible + 1 + offset
+    ));
+  }
+  return groups;
+}
+
+function buildGenericRunSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
+  const words = spokenWordTokens(speech);
+  if (!words.length) return [];
+
+  const cps = runCodepointsForAudio(run);
+  const groups = visibleComponentGroups(cps);
+
+  return words.map((word, wordIndex) => {
+    let componentIndices = [];
+    if (groups.length) {
+      const start = Math.floor(groups.length * wordIndex / words.length);
+      const end = Math.max(start + 1, Math.ceil(groups.length * (wordIndex + 1) / words.length));
+      componentIndices = groups.slice(start, end).flat();
+    }
+
+    return {
+      text: word,
+      timingText: word,
+      timingSyllables: splitAudioTpWordIntoSyllables(word),
+      kind: 'word',
+      word,
+      wordIndex,
+      wholeNumericPunctuationWord: false,
+      visualTargets: [
+        visualTargetForComponentIndices(run, componentIndices, fallbackRunIndex, lineIndex)
+      ]
+    };
+  });
+}
+
+export function speechUnitsForRenderRun(run, speech, {
+  fallbackRunIndex = 0,
+  lineIndex = 0
+} = {}) {
+  const text = compactSpeechWhitespace(speech);
+  if (!text) return [];
+
+  const kind = String(run?.kind ?? '').toLowerCase();
+  const sourceKind = String(run?.sourceKind ?? '').toLowerCase();
+  if (run?.isQuoted || sourceKind === 'quote' || run?.isUnrecognized) return [];
+
+  if (kind === 'cartouche') {
+    return buildCartoucheSpeechUnits(run, text, fallbackRunIndex, lineIndex);
+  }
+
+  const cps = runCodepointsForAudio(run);
+  if (cps.includes(0xF1993)) {
+    return buildLongPiSpeechUnits(run, text, fallbackRunIndex, lineIndex);
+  }
+
+  return buildGenericRunSpeechUnits(run, text, fallbackRunIndex, lineIndex);
 }
 
 /**
@@ -643,7 +999,9 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
     const firstSegmentIndexForLine = segments.length;
     let sentenceIndexInLine = 0;
     let parts = [];
+    let speechUnits = [];
     let visualRunRefs = [];
+    let terminalPunctuation = '';
 
     const flush = (boundaryAfter) => {
       const text = compactSpeechWhitespace(parts.join(' '));
@@ -654,11 +1012,26 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
           lineIndex,
           sentenceIndexInLine,
           boundaryAfter,
-          visualRunRefs: visualRunRefs.slice()
+          terminalPunctuation,
+          visualRunRefs: visualRunRefs.slice(),
+          speechUnits: speechUnits.map(unit => ({
+            ...unit,
+            timingSyllables: Array.isArray(unit.timingSyllables) ? unit.timingSyllables.slice() : [],
+            visualTargets: Array.isArray(unit.visualTargets)
+              ? unit.visualTargets.map(target => ({
+                  ...target,
+                  componentIndices: Array.isArray(target.componentIndices)
+                    ? target.componentIndices.slice()
+                    : []
+                }))
+              : []
+          }))
         });
       }
       parts = [];
+      speechUnits = [];
       visualRunRefs = [];
+      terminalPunctuation = '';
     };
 
     const runs = Array.isArray(line?.runs) ? line.runs : [];
@@ -670,24 +1043,51 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
         lineIndex
       });
 
-      const fragments = splitSpeechTextIntoSentenceFragments(speech);
-      let speechBoundaryCount = 0;
+      const runUnits = speechUnitsForRenderRun(run, speech, {
+        fallbackRunIndex,
+        lineIndex
+      });
+      const groupsByWord = [];
+      for (const unit of runUnits) {
+        const wordIndex = Number.isFinite(Number(unit?.wordIndex)) ? Number(unit.wordIndex) : groupsByWord.length;
+        let group = groupsByWord.find(item => item.wordIndex === wordIndex);
+        if (!group) {
+          group = { wordIndex, units: [] };
+          groupsByWord.push(group);
+        }
+        group.units.push(unit);
+      }
+      groupsByWord.sort((a, b) => a.wordIndex - b.wordIndex);
+      let groupCursor = 0;
 
+      const fragments = splitSpeechTextIntoSentenceFragments(speech);
+      if (!fragments.length && containsSpokenWord(speech)) {
+        const core = compactSpeechWhitespace(speech);
+        if (core) parts.push(core);
+        speechUnits.push(...runUnits);
+        appendUniqueRunRef(visualRunRefs, run, fallbackRunIndex, lineIndex);
+      }
+
+      let speechBoundaryCount = 0;
       for (const fragment of fragments) {
-        if (fragment.text) {
-          parts.push(fragment.text);
+        const core = stripTerminalSentencePunctuation(fragment.text);
+        const fragmentWordCount = spokenWordTokens(core).length;
+        if (core && fragmentWordCount > 0) {
+          parts.push(core);
+          const selectedGroups = groupsByWord.slice(groupCursor, groupCursor + fragmentWordCount);
+          groupCursor += selectedGroups.length;
+          speechUnits.push(...selectedGroups.flatMap(group => group.units));
           appendUniqueRunRef(visualRunRefs, run, fallbackRunIndex, lineIndex);
         }
+
         if (fragment.endsSentence) {
           speechBoundaryCount += 1;
+          terminalPunctuation = String(fragment.text || '').match(/[.!?]+\s*$/u)?.[0]?.trim() || '.';
           flush('punctuation');
           sentenceIndexInLine += 1;
         }
       }
 
-      // If a skipped/non-speakable visual run contains a sentence terminator,
-      // keep the ordinal aligned with the visible render plan. This is useful
-      // when an unknown sentence is skipped between two readable sentences.
       if (speechBoundaryCount === 0) {
         const sourceText = String(run?.sourceText ?? run?.encodedText ?? '');
         const sourceBoundaryCount = countSentenceBoundariesInSourceText(sourceText, run);
@@ -700,8 +1100,8 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
 
     if (parts.length) flush('line');
 
-    // A terminal punctuation mark directly before a newline must use only the
-    // line boundary spacing. Reclassify the final spoken segment on the line.
+    // The explicit line pause replaces terminal punctuation immediately before
+    // a newline, matching the pre-existing playback behaviour.
     if (segments.length > firstSegmentIndexForLine) {
       segments[segments.length - 1].boundaryAfter = 'line';
     }
@@ -741,6 +1141,223 @@ function stripTerminalSentencePunctuation(text) {
  * Render pre-extracted sentence segments as separate sample buffers.
  * This is additive and does not change the existing line-concatenation API.
  */
+function caseInsensitiveAudioValue(object, names) {
+  if (!object || typeof object !== 'object') return null;
+  const wanted = new Set(names.map(name => String(name).toLowerCase()));
+  for (const [key, value] of Object.entries(object)) {
+    if (wanted.has(String(key).toLowerCase())) return value;
+  }
+  return null;
+}
+
+function audioDurationMilliseconds(entry) {
+  if (entry == null) return null;
+  if (typeof entry === 'number' && Number.isFinite(entry)) return entry;
+  if (typeof entry !== 'object') return null;
+  for (const key of ['duration_ms', 'durationMs', 'milliseconds', 'ms']) {
+    const value = Number(entry[key]);
+    if (Number.isFinite(value) && value > 0) return value;
+  }
+  for (const key of ['duration_seconds', 'durationSeconds', 'seconds']) {
+    const value = Number(entry[key]);
+    if (Number.isFinite(value) && value > 0) return value * 1000;
+  }
+  return null;
+}
+
+function manifestDurationForAudioUnit(voice, unitText) {
+  const text = String(unitText ?? '').trim();
+  if (!text) return null;
+  const names = [
+    text, text.toLowerCase(), text.toUpperCase(),
+    `${text}.wav`, `${text.toLowerCase()}.wav`, `${text.toUpperCase()}.wav`
+  ];
+  const roots = [
+    voice?.manifest, voice?.audioManifest, voice?.referenceAudioManifest,
+    voice?.config?.manifest, voice?.config?.audioManifest
+  ].filter(Boolean);
+
+  for (const root of roots) {
+    const directDuration = audioDurationMilliseconds(caseInsensitiveAudioValue(root, names));
+    if (directDuration) return directDuration;
+    for (const nestedName of ['nanpa_v2', 'nanpaV2', 'files', 'assets', 'entries', 'syllables']) {
+      const nestedDuration = audioDurationMilliseconds(caseInsensitiveAudioValue(root?.[nestedName], names));
+      if (nestedDuration) return nestedDuration;
+    }
+  }
+  return null;
+}
+
+function estimatedAudioPieceWeight(voice, text, { wholeNumericPunctuationWord = false } = {}) {
+  const manifestDuration = manifestDurationForAudioUnit(voice, text);
+  if (manifestDuration) return manifestDuration;
+  const length = Math.max(1, normalizedSpeechLetters(text).length);
+  if (wholeNumericPunctuationWord) return 260 + Math.max(0, length - 2) * 75;
+  return 230 + Math.max(0, length - 2) * 55;
+}
+
+function timingWeightForSpeechUnit(voice, unit, syllableGapMs) {
+  const wholeNumeric = !!unit?.wholeNumericPunctuationWord;
+  const timingText = String(unit?.timingText ?? unit?.text ?? '').trim();
+  if (wholeNumeric) {
+    return estimatedAudioPieceWeight(voice, timingText, { wholeNumericPunctuationWord: true });
+  }
+
+  const directDuration = manifestDurationForAudioUnit(voice, timingText);
+  if (directDuration) return directDuration;
+
+  const syllables = Array.isArray(unit?.timingSyllables) && unit.timingSyllables.length
+    ? unit.timingSyllables
+    : splitAudioTpWordIntoSyllables(timingText);
+  if (!syllables.length) return estimatedAudioPieceWeight(voice, timingText);
+
+  return syllables.reduce(
+    (sum, syllable) => sum + estimatedAudioPieceWeight(voice, syllable),
+    Math.max(0, syllables.length - 1) * syllableGapMs
+  );
+}
+
+function partitionRenderedSegmentSamples({
+  samples,
+  sampleRate,
+  segment,
+  units,
+  voice,
+  renderOptions,
+  sourceSegmentIndex,
+  crossesLine,
+  lineDistance,
+  linePauseSeconds,
+  renderText
+}) {
+  const sourceSamples = samples instanceof Float32Array ? samples : Float32Array.from(samples || []);
+  if (!sourceSamples.length) return [];
+
+  const syllableGapMs = Math.max(0, Number(renderOptions?.syllableGapSeconds) || 0) * 1000;
+  const pauseScale = Math.max(0.1, Number(renderOptions?.pauseScale) || 1);
+  const pieces = [];
+
+  for (let unitIndex = 0; unitIndex < units.length; unitIndex++) {
+    const unit = units[unitIndex] || {};
+    pieces.push({
+      kind: 'unit',
+      unit,
+      unitIndex,
+      weight: Math.max(1, timingWeightForSpeechUnit(voice, unit, syllableGapMs))
+    });
+    if (unitIndex < units.length - 1 && syllableGapMs > 0) {
+      pieces.push({ kind: 'gap', weight: syllableGapMs });
+    }
+  }
+
+  if (segment?.boundaryAfter === 'punctuation' && !crossesLine) {
+    pieces.push({ kind: 'gap', terminal: true, weight: Math.max(80, 240 * pauseScale) });
+  }
+
+  if (!pieces.length) {
+    pieces.push({
+      kind: 'unit',
+      unit: {
+        text: segment?.text || renderText,
+        kind: 'segment',
+        visualTargets: (segment?.visualRunRefs || []).map(ref => ({
+          runId: ref.id,
+          lineIndex: ref.lineIndex,
+          runIndex: ref.runIndex,
+          componentIndices: []
+        }))
+      },
+      unitIndex: 0,
+      weight: 1
+    });
+  }
+
+  const totalWeight = Math.max(1, pieces.reduce((sum, piece) => sum + Math.max(0, Number(piece.weight) || 0), 0));
+  const entries = [];
+  let cursor = 0;
+  let accumulatedWeight = 0;
+
+  for (let pieceIndex = 0; pieceIndex < pieces.length; pieceIndex++) {
+    const piece = pieces[pieceIndex];
+    accumulatedWeight += Math.max(0, Number(piece.weight) || 0);
+    let end = pieceIndex === pieces.length - 1
+      ? sourceSamples.length
+      : Math.round(sourceSamples.length * accumulatedWeight / totalWeight);
+    end = Math.max(cursor, Math.min(sourceSamples.length, end));
+    const pieceSamples = sourceSamples.slice(cursor, end);
+    cursor = end;
+    if (!pieceSamples.length) continue;
+
+    const isLastPiece = pieceIndex === pieces.length - 1;
+    if (piece.kind === 'unit') {
+      const unit = piece.unit || {};
+      entries.push({
+        ...segment,
+        text: unit.text,
+        speechUnitText: unit.text,
+        speechUnitKind: unit.kind || 'word',
+        speechUnitIndex: piece.unitIndex,
+        speechUnitCount: units.length,
+        wholeNumericPunctuationWord: !!unit.wholeNumericPunctuationWord,
+        visualTargets: Array.isArray(unit.visualTargets)
+          ? unit.visualTargets.map(target => ({
+              ...target,
+              componentIndices: Array.isArray(target.componentIndices)
+                ? target.componentIndices.slice()
+                : []
+            }))
+          : [],
+        sourceSegmentIndex,
+        renderText,
+        renderedAsWholeSegment: true,
+        samples: pieceSamples,
+        sampleRate,
+        durationSeconds: pieceSamples.length / sampleRate,
+        pauseAfterSeconds: isLastPiece && crossesLine
+          ? Number(linePauseSeconds || 0) * Math.min(2, lineDistance)
+          : 0
+      });
+    } else {
+      entries.push({
+        ...segment,
+        text: '',
+        speechUnitText: '',
+        speechUnitKind: piece.terminal ? 'terminal-pause' : 'audio-gap',
+        speechUnitIndex: null,
+        speechUnitCount: units.length,
+        wholeNumericPunctuationWord: false,
+        visualTargets: [],
+        sourceSegmentIndex,
+        renderText,
+        renderedAsWholeSegment: true,
+        samples: pieceSamples,
+        sampleRate,
+        durationSeconds: pieceSamples.length / sampleRate,
+        pauseAfterSeconds: isLastPiece && crossesLine
+          ? Number(linePauseSeconds || 0) * Math.min(2, lineDistance)
+          : 0
+      });
+    }
+  }
+
+  if (cursor < sourceSamples.length && entries.length) {
+    const last = entries[entries.length - 1];
+    const merged = new Float32Array(last.samples.length + sourceSamples.length - cursor);
+    merged.set(last.samples, 0);
+    merged.set(sourceSamples.slice(cursor), last.samples.length);
+    last.samples = merged;
+    last.durationSeconds = merged.length / sampleRate;
+  }
+
+  return entries;
+}
+
+/**
+ * Synthesize each complete sentence segment once, then partition that single
+ * waveform for highlight timing. This preserves fluid pronunciation—including
+ * whole numeric punctuation words such as Eke—while still exposing per-unit
+ * playback entries to the page overlay.
+ */
 export async function renderSpeechSegmentsToAudioBuffers({
   segments,
   voice,
@@ -755,26 +1372,43 @@ export async function renderSpeechSegmentsToAudioBuffers({
   const inputSegments = Array.from(segments || []);
   const entries = [];
   let sampleRate = null;
+  let spokenSegmentCount = 0;
 
-  for (let index = 0; index < inputSegments.length; index++) {
+  for (let segmentIndex = 0; segmentIndex < inputSegments.length; segmentIndex++) {
     if (isSitelenAudioCancelled(shouldCancel)) {
-      return { cancelled: true, entries, sampleRate, spokenSentenceCount: entries.length };
+      return { cancelled: true, entries, sampleRate, spokenSentenceCount: spokenSegmentCount };
     }
 
-    const segment = inputSegments[index] || {};
-    const next = inputSegments[index + 1] || null;
-    const crossesLine = !!next && Number(next.lineIndex) > Number(segment.lineIndex);
+    const segment = inputSegments[segmentIndex] || {};
+    const nextSegment = inputSegments[segmentIndex + 1] || null;
+    const crossesLine = !!nextSegment && Number(nextSegment.lineIndex) > Number(segment.lineIndex);
     const lineDistance = crossesLine
-      ? Math.max(1, Number(next.lineIndex) - Number(segment.lineIndex))
+      ? Math.max(1, Number(nextSegment.lineIndex) - Number(segment.lineIndex))
       : 0;
 
-    // For a newline boundary, remove terminal punctuation from the audio input
-    // so the line pause replaces (rather than stacks on top of) its pause.
-    const renderText = crossesLine
-      ? stripTerminalSentencePunctuation(segment.text)
-      : compactSpeechWhitespace(segment.text);
+    const units = Array.isArray(segment.speechUnits) && segment.speechUnits.length
+      ? segment.speechUnits
+      : [{
+          text: segment.text,
+          timingText: segment.text,
+          timingSyllables: splitAudioTpWordIntoSyllables(segment.text),
+          kind: 'segment',
+          visualTargets: (segment.visualRunRefs || []).map(ref => ({
+            runId: ref.id,
+            lineIndex: ref.lineIndex,
+            runIndex: ref.runIndex,
+            componentIndices: []
+          }))
+        }];
 
+    let renderText = compactSpeechWhitespace(segment.text);
     if (!renderText || !containsSpokenWord(renderText)) continue;
+
+    if (segment.boundaryAfter === 'punctuation') {
+      const terminal = String(segment.terminalPunctuation || '').trim();
+      if (terminal) renderText += terminal;
+    }
+    if (crossesLine) renderText = stripTerminalSentencePunctuation(renderText);
 
     const rendered = await voice.render(renderText, {
       ...(renderOptions || {}),
@@ -782,7 +1416,7 @@ export async function renderSpeechSegmentsToAudioBuffers({
     });
 
     if (isSitelenAudioCancelled(shouldCancel)) {
-      return { cancelled: true, entries, sampleRate, spokenSentenceCount: entries.length };
+      return { cancelled: true, entries, sampleRate, spokenSentenceCount: spokenSegmentCount };
     }
 
     if (rendered?.sampleRate != null) {
@@ -792,28 +1426,33 @@ export async function renderSpeechSegmentsToAudioBuffers({
       sampleRate = rendered.sampleRate;
     }
 
-    if (!rendered?.samples?.length) continue;
+    if (!rendered?.samples?.length || !rendered?.sampleRate) continue;
 
-    entries.push({
-      ...segment,
-      index: entries.length,
-      sourceSegmentIndex: index,
-      renderText,
+    const segmentEntries = partitionRenderedSegmentSamples({
       samples: rendered.samples,
       sampleRate: rendered.sampleRate,
-      durationSeconds: rendered.samples.length / rendered.sampleRate,
-      pauseAfterSeconds: crossesLine
-        ? Number(linePauseSeconds || 0) * Math.min(2, lineDistance)
-        : 0
+      segment,
+      units,
+      voice,
+      renderOptions,
+      sourceSegmentIndex: segmentIndex,
+      crossesLine,
+      lineDistance,
+      linePauseSeconds,
+      renderText
     });
+    entries.push(...segmentEntries);
+    if (segmentEntries.length) spokenSegmentCount += 1;
   }
+
+  for (let index = 0; index < entries.length; index++) entries[index].index = index;
 
   return {
     cancelled: false,
     entries,
     buffers: entries,
     sampleRate,
-    spokenSentenceCount: entries.length
+    spokenSentenceCount: spokenSegmentCount
   };
 }
 
@@ -1142,6 +1781,8 @@ export default {
   buildSitelenSentenceAudioBuffersFromRawText,
   renderSpeechSegmentsToAudioBuffers,
   extractSpeechSegmentsFromRenderPlan,
+  speechUnitsForRenderRun,
+  splitAudioTpWordIntoSyllables,
   splitSpeechTextIntoSentenceFragments,
   makeSilenceSamples,
   concatAudioSampleChunks,
@@ -1159,5 +1800,6 @@ export default {
   isCapitalizedAudioProperNameText,
   isCapitalizedAudioProperNamePhraseText,
   tryCartoucheSourceToSpokenSyllableText,
+  nanpaCapsForAudioMode,
   trySourceTextToNanpaProperName
 };

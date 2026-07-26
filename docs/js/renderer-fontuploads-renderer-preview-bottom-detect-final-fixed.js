@@ -1076,6 +1076,11 @@ const SitelenRenderer = (() => {
       base.canvas = el.canvas;
     }
     if (Array.isArray(el.cps)) base.cps = el.cps.slice();
+    if (Array.isArray(el.audioSourceCps)) base.audioSourceCps = el.audioSourceCps.slice();
+    if (Array.isArray(el.audioSourceIndices)) base.audioSourceIndices = el.audioSourceIndices.slice();
+    if (Array.isArray(el.audioGlyphLayout)) {
+      base.audioGlyphLayout = el.audioGlyphLayout.map(item => ({ ...item }));
+    }
     return base;
   }
 
@@ -1416,6 +1421,9 @@ const SitelenRenderer = (() => {
           sourceSegmentIndex: Number.isFinite(Number(el.sourceSegmentIndex)) ? Number(el.sourceSegmentIndex) : null,
           encodedText,
           cps: Array.isArray(el.cps) ? el.cps.slice() : (el.type === 'glyph' ? [el.cp] : null),
+          audioSourceCps: Array.isArray(el.audioSourceCps) ? el.audioSourceCps.slice() : null,
+          audioSourceIndices: Array.isArray(el.audioSourceIndices) ? el.audioSourceIndices.slice() : null,
+          audioGlyphLayout: Array.isArray(el.audioGlyphLayout) ? el.audioGlyphLayout.map(item => ({ ...item })) : null,
           imageAlt: el.imageAlt || null,
           isQuoted: !!el.isQuoted,
           isUnrecognized: !!el.isUnrecognized,
@@ -2692,11 +2700,12 @@ function wireHaloControls() {
       CP_UTA
     ]);
 
-    function abbreviateNumericCartoucheCps(cps) {
+    function abbreviateNumericCartoucheInfo(cps) {
       const input = Array.from(cps ?? []).map(cp => Number(cp));
-      if (!input.length) return input;
+      if (!input.length) return { cps: input, sourceIndices: [] };
 
       const out = [];
+      const sourceIndices = [];
       let keptFirstNanpa = false;
       const preserveBreaks = getPreserveNumericCartoucheBreaksInAbbreviation();
 
@@ -2706,18 +2715,20 @@ function wireHaloControls() {
 
         if (!keptFirstNanpa) {
           out.push(cp);
+          sourceIndices.push(i);
           if (cp === CP_NANPA) keptFirstNanpa = true;
           continue;
         }
 
         if (isFinalNanpa) {
           out.push(cp);
+          sourceIndices.push(i);
           continue;
         }
 
-        // A full numeric cartouche uses nena-en-nena-en as an internal break.
-        // In abbreviated output, optionally retain that break as one en glyph.
-        // This exact-sequence check must run before the generic drop set below.
+        // Preserve the exact visible abbreviation while recording which full
+        // cartouche source glyph each displayed glyph represents.  This is
+        // audio/highlight metadata only and is not used by rendering.
         if (
           preserveBreaks &&
           cp === CP_NENA &&
@@ -2726,24 +2737,36 @@ function wireHaloControls() {
           input[i + 3] === CP_EN
         ) {
           out.push(CP_EN);
+          sourceIndices.push(i + 1);
           i += 3;
           continue;
         }
 
         if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
         out.push(cp);
+        sourceIndices.push(i);
       }
 
-      return out;
+      return { cps: out, sourceIndices };
+    }
+
+    function abbreviateNumericCartoucheCps(cps) {
+      return abbreviateNumericCartoucheInfo(cps).cps;
+    }
+
+    function numericCartoucheDisplayInfo(cps) {
+      const input = Array.from(cps ?? []).map(cp => Number(cp));
+      if (getAbbreviateNumericCartouches()) return abbreviateNumericCartoucheInfo(input);
+      return { cps: input, sourceIndices: input.map((_cp, index) => index) };
     }
 
     function numericCartoucheDisplayCps(cps) {
-      const input = Array.from(cps ?? []).map(cp => Number(cp));
-      return getAbbreviateNumericCartouches() ? abbreviateNumericCartoucheCps(input) : input;
+      return numericCartoucheDisplayInfo(cps).cps;
     }
 
     function makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
-      const displayCps = numericCartoucheDisplayCps(cps);
+      const displayInfo = numericCartoucheDisplayInfo(cps);
+      const displayCps = displayInfo.cps;
       if (!displayCps || displayCps.length === 0) return;
       nanpaDebugEmit("numeric-cartouche:emit", {
         sourceText,
@@ -2770,7 +2793,9 @@ function wireHaloControls() {
         sourceStart,
         sourceEnd,
         sourceKind,
-        sourceSegmentIndex
+        sourceSegmentIndex,
+        audioSourceCps: Array.from(cps || []),
+        audioSourceIndices: displayInfo.sourceIndices
       });
     }
 
@@ -5072,6 +5097,38 @@ function findNanpaLinjanTpPhraseSequences(text) {
       ctx2.fillStyle = fgCss || "#111";
       ctx2.fillText(run, x, baselineY);
 
+      // Audio-only geometry.  This records advance-based positions for the
+      // already-rendered inner glyphs.  It does not alter the canvas, metrics,
+      // parser, layout, or any drawing operation.
+      const audioGlyphLayout = [];
+      {
+        const startChar = String.fromCodePoint(CARTOUCHE_START_CP);
+        const sourceChars = renderInnerCps.map(cp => String.fromCodePoint(cp));
+        const prefixAdvances = [ctx2.measureText(startChar).width || 0];
+        let prefix = startChar;
+        for (const ch of sourceChars) {
+          prefix += ch;
+          const measured = Number(ctx2.measureText(prefix).width);
+          prefixAdvances.push(Number.isFinite(measured) ? measured : prefixAdvances[prefixAdvances.length - 1]);
+        }
+
+        const top = Math.max(0, baselineY - ascent - Math.max(1, haloW));
+        const componentHeight = Math.max(1, Math.min(h - top, ascent + descent + haloW * 2));
+        const minimumWidth = Math.max(2, Math.round(px * 0.08));
+        for (let i = 0; i < sourceChars.length; i++) {
+          const left = Math.max(0, Math.min(w, x + prefixAdvances[i]));
+          const right = Math.max(left, Math.min(w, x + prefixAdvances[i + 1]));
+          audioGlyphLayout.push({
+            componentIndex: i,
+            cp: renderInnerCps[i],
+            x: left,
+            y: top,
+            width: Math.max(minimumWidth, right - left),
+            height: componentHeight
+          });
+        }
+      }
+
       if (hasManualTallies) {
         drawManualCartoucheTallies(ctx2, renderInnerCps, renderManualTallies, {
           fontPx: px,
@@ -5103,7 +5160,8 @@ function findNanpaLinjanTpPhraseSequences(text) {
         drawX: x,
         hasManualTallies,
         renderInnerCps: Array.from(renderInnerCps),
-        renderManualTallies: Array.isArray(renderManualTallies) ? renderManualTallies.slice() : null
+        renderManualTallies: Array.isArray(renderManualTallies) ? renderManualTallies.slice() : null,
+        audioGlyphLayout
       };
     }
 
@@ -5487,7 +5545,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   return finalCanvas;
 }
 
-    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false } = {}) {
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false, audioSourceCps = null, audioSourceIndices = null } = {}) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
 
@@ -5512,6 +5570,19 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const baselineY = Math.min(finalH, r.baselineY | 0);
       const ascent = Math.min(finalH, r.inkAscent ?? baselineY);
       const descent = Math.max(0, Math.min(finalH - ascent, r.inkDescent ?? (finalH - baselineY)));
+
+      const renderedAudioCps = Array.from(r.renderInnerCps || cps || []);
+      const normalizedAudioSourceCps = Array.from(audioSourceCps || cps || []);
+      const normalizedAudioSourceIndices = Array.isArray(audioSourceIndices) && audioSourceIndices.length === renderedAudioCps.length
+        ? audioSourceIndices.map((value, index) => Number.isFinite(Number(value)) ? Number(value) : index)
+        : renderedAudioCps.map((_cp, index) => index);
+      const normalizedAudioGlyphLayout = Array.isArray(r.audioGlyphLayout)
+        ? r.audioGlyphLayout.map((item, index) => ({
+            ...item,
+            componentIndex: index,
+            sourceIndex: normalizedAudioSourceIndices[index] ?? index
+          }))
+        : [];
 
       nanpaDebugEmit("cartouche-element:push", {
         sourceText,
@@ -5541,6 +5612,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         repairQuotedLatinLeftEdge: !!repairQuotedLatinLeftEdge,
         isLiteralCartouche: !!isLiteralCartouche,
         manualTallies: Array.isArray(manualTallies) ? manualTallies.slice() : null,
+        audioSourceCps: normalizedAudioSourceCps,
+        audioSourceIndices: normalizedAudioSourceIndices,
+        audioGlyphLayout: normalizedAudioGlyphLayout,
         sourceText: (typeof sourceText === 'string') ? sourceText : null,
         sourceStart: Number.isFinite(Number(sourceStart)) ? Number(sourceStart) : null,
         sourceEnd: Number.isFinite(Number(sourceEnd)) ? Number(sourceEnd) : null,

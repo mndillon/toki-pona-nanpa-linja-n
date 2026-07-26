@@ -919,16 +919,17 @@ nanpa #~WI.
         </button>
         <div id="btnDownloadSvgHelp" class="sr-only">Exports the current renderer plan as SVG vector paths using Rust/WASM.</div>
 
-        <span id="appBackgroundStatus" class="small">
-          (Transparent background)
-          <span class="tpLine">(poka sitelen li lon ala)</span>
-        </span>
-
         <button id="appBtnDownloadPdf" type="button" class="btnBi" disabled aria-describedby="btnDownloadPdfHelp">
           <span>Download PDF</span>
           <span class="tpLine">o kama jo e lipu PDF</span>
         </button>
         <div id="btnDownloadPdfHelp" class="sr-only">Exports a PDF by converting the same SVG vector paths used by SVG export into PDF vector paths.</div>
+
+        <button id="appBtnDownloadWav" type="button" class="btnBi" aria-describedby="btnDownloadWavHelp">
+          <span>Download WAV</span>
+          <span class="tpLine">o kama jo e kalama WAV</span>
+        </button>
+        <div id="btnDownloadWavHelp" class="sr-only">Downloads the complete readable input transcript as a mono 16-bit PCM WAV file using the selected audio speed and current nanpa-linja-n mode. Quoted and unknown text are skipped, as in normal playback.</div>
 
         <button id="appBtnDownloadUnicodeJson" type="button" class="btnBi" aria-describedby="btnDownloadUnicodeJsonHelp">
           <span>Download Unicode JSON</span>
@@ -1111,7 +1112,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=184";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=189";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -1125,7 +1126,7 @@ nanpa #~WI.
       buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback,
       summarizeSkippedAudio as summarizeSitelenAudioSkipped
-    } from './js/sitelen-audio-plan.js?v=3';
+    } from './js/sitelen-audio-plan.js?v=8';
     let pageMap = new Map();
 
     "use strict";
@@ -1592,7 +1593,7 @@ function hideStartupLoading() {
 
     const VECTOR_DIAGNOSTIC_DEBUG = true;
     const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=184",
+      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=189",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
       cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
       vectorExporter: "./js/sitelen-vector-exporter.js?v=166",
@@ -6417,7 +6418,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=184", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=189", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -6747,6 +6748,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     let textAudioGeneration = 0;
     let textAudioState = "stopped";
     let textAudioSession = null;
+    let textWavExportBusy = false;
 
     const audioHighlightCanvas = document.getElementById("appAudioHighlightCanvas");
 
@@ -6862,6 +6864,168 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       return textToSitelenVoicePromise;
     }
 
+
+    function setTextWavExportBusy(busy) {
+      textWavExportBusy = !!busy;
+      const btn = document.getElementById("appBtnDownloadWav");
+      if (btn) {
+        btn.disabled = textWavExportBusy;
+        btn.setAttribute("aria-busy", textWavExportBusy ? "true" : "false");
+      }
+    }
+
+    function concatenateTextAudioEntriesForWav(entries) {
+      const usable = Array.from(entries || []).filter(entry =>
+        entry && entry.samples && Number(entry.samples.length) > 0
+      );
+      if (!usable.length) throw new Error("No audio samples were produced.");
+
+      const sampleRate = Math.round(Number(usable[0].sampleRate));
+      if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
+        throw new Error("The generated audio has an invalid sample rate.");
+      }
+
+      const chunks = [];
+      let totalSamples = 0;
+      for (let i = 0; i < usable.length; i++) {
+        const entry = usable[i];
+        const entrySampleRate = Math.round(Number(entry.sampleRate));
+        if (entrySampleRate !== sampleRate) {
+          throw new Error(`Cannot combine audio entries with different sample rates (${sampleRate} and ${entrySampleRate}).`);
+        }
+
+        const samples = entry.samples instanceof Float32Array
+          ? entry.samples
+          : Float32Array.from(entry.samples || []);
+        chunks.push(samples);
+        totalSamples += samples.length;
+
+        // Match normal playback: include the entry's scheduled pause only when
+        // another spoken entry follows. Do not append trailing silence.
+        if (i < usable.length - 1) {
+          const pauseSeconds = Math.max(0, Number(entry.pauseAfterSeconds) || 0);
+          const pauseSamples = Math.max(0, Math.round(pauseSeconds * sampleRate));
+          if (pauseSamples > 0) {
+            chunks.push(new Float32Array(pauseSamples));
+            totalSamples += pauseSamples;
+          }
+        }
+      }
+
+      const combined = new Float32Array(totalSamples);
+      let offset = 0;
+      for (const chunk of chunks) {
+        combined.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return { samples: combined, sampleRate };
+    }
+
+    function encodeMonoPcm16Wav(samples, sampleRate) {
+      const pcm = samples instanceof Float32Array
+        ? samples
+        : Float32Array.from(samples || []);
+      const rate = Math.round(Number(sampleRate));
+      if (!Number.isFinite(rate) || rate <= 0) throw new Error("Invalid WAV sample rate.");
+
+      const bytesPerSample = 2;
+      const dataBytes = pcm.length * bytesPerSample;
+      const buffer = new ArrayBuffer(44 + dataBytes);
+      const view = new DataView(buffer);
+
+      function writeAscii(offset, text) {
+        for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
+      }
+
+      writeAscii(0, "RIFF");
+      view.setUint32(4, 36 + dataBytes, true);
+      writeAscii(8, "WAVE");
+      writeAscii(12, "fmt ");
+      view.setUint32(16, 16, true);       // PCM format chunk size
+      view.setUint16(20, 1, true);        // PCM
+      view.setUint16(22, 1, true);        // mono
+      view.setUint32(24, rate, true);
+      view.setUint32(28, rate * bytesPerSample, true);
+      view.setUint16(32, bytesPerSample, true);
+      view.setUint16(34, 16, true);
+      writeAscii(36, "data");
+      view.setUint32(40, dataBytes, true);
+
+      let byteOffset = 44;
+      for (let i = 0; i < pcm.length; i++, byteOffset += 2) {
+        const clamped = Math.max(-1, Math.min(1, Number(pcm[i]) || 0));
+        const signed = clamped < 0
+          ? Math.round(clamped * 0x8000)
+          : Math.round(clamped * 0x7FFF);
+        view.setInt16(byteOffset, signed, true);
+      }
+
+      return new Blob([buffer], { type: "audio/wav" });
+    }
+
+    async function downloadInputTranscriptWav() {
+      if (textWavExportBusy) return;
+
+      const raw = String(elTextIn?.value ?? "");
+      if (!raw.trim()) {
+        announceStatus("Nothing to export as WAV.");
+        return;
+      }
+
+      setTextWavExportBusy(true);
+      resetTextToSitelenAudio({ announce: false });
+      announceStatus("Preparing WAV transcript…");
+
+      try {
+        const renderer = await ensureRendererReady();
+        const rendererConfig = buildRendererCallConfig({ includeHalo: false });
+        const option = selectedTextAudioOption();
+        const voice = await getTextToSitelenVoice();
+
+        const result = await buildSitelenSentenceAudioBuffersFromRawText({
+          rawText: raw,
+          pageMap,
+          renderer,
+          rendererConfig,
+          CartoucheApi,
+          NanpaParser,
+          nanpaLinjanMode: getNanpaLinjanMode(),
+          mixedStyle: "short",
+          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
+          relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+          voice,
+          renderOptions: {
+            synthesis_mode: "reference_audio",
+            pauseScale: option.value,
+            syllableGapSeconds: option.syllableGapSeconds
+          },
+          linePauseSeconds: option.linePauseSeconds,
+          shouldCancel: () => false
+        });
+
+        if (result?.status === "no-speech") {
+          throw new Error("No readable Toki Pona text was found for the WAV transcript.");
+        }
+        if (result?.status === "no-samples") {
+          throw new Error("No audio samples were produced for the WAV transcript.");
+        }
+
+        const entries = Array.isArray(result?.entries) ? result.entries : [];
+        const combined = concatenateTextAudioEntriesForWav(entries);
+        const wavBlob = encodeMonoPcm16Wav(combined.samples, combined.sampleRate);
+        downloadBlobAsFile(wavBlob, `${getExportFilenameBase()}-transcript.wav`);
+
+        const skipped = Array.isArray(result?.skipped) ? result.skipped : [];
+        const skippedSummary = summarizeSitelenAudioSkipped(skipped);
+        announceStatus(
+          `Downloaded WAV transcript. Speed: ${option.label}.` +
+          (skippedSummary ? ` Skipped: ${skippedSummary}.` : "")
+        );
+      } finally {
+        setTextWavExportBusy(false);
+      }
+    }
+
     function syncTextAudioHighlightCanvasSize() {
       if (!audioHighlightCanvas || !outCanvas) return;
       const width = Math.max(1, Number(outCanvas.width) || 1);
@@ -6890,7 +7054,13 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     function visualSentenceBoundaryInfo(run) {
       const kind = String(run?.kind ?? "").toLowerCase();
       const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
-      if (kind === "cartouche" || sourceKind === "bracket") return { count: 0, hasTail: true };
+      if (
+        kind === "cartouche" ||
+        sourceKind === "bracket" ||
+        sourceKind === "quote" ||
+        run?.isQuoted ||
+        run?.isUnrecognized
+      ) return { count: 0, hasTail: false };
 
       const text = String(run?.sourceText ?? run?.encodedText ?? "");
       if (!text) return { count: 0, hasTail: true };
@@ -6914,7 +7084,14 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     function usableHighlightRun(run) {
       if (!run) return false;
       const kind = String(run.kind ?? "").toLowerCase();
-      if (kind === "gap" || kind === "image") return false;
+      const sourceKind = String(run.sourceKind ?? "").toLowerCase();
+      if (
+        kind === "gap" ||
+        kind === "image" ||
+        sourceKind === "quote" ||
+        run.isQuoted ||
+        run.isUnrecognized
+      ) return false;
       return Number(run.widthPx) > 0 && Number(run.heightPx) > 0;
     }
 
@@ -6965,6 +7142,9 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     function fallbackHighlightRectForLine(plan, lineIndex) {
       const line = plan?.lines?.[lineIndex];
       if (!line) return null;
+      const spokenRuns = Array.isArray(line.runs) ? line.runs.filter(usableHighlightRun) : [];
+      const spokenRect = sentenceRectFromRuns(line, spokenRuns);
+      if (spokenRect) return spokenRect;
       return {
         x: Number(line.xPx ?? 0),
         y: Number(line.yPx ?? 0),
@@ -6973,39 +7153,224 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       };
     }
 
-    function attachVisualRectsToAudioEntries(entries, plan) {
-      const map = buildVisualSentenceHighlightMap(plan);
-      return (entries || []).map(entry => ({
-        ...entry,
-        visualRect:
-          map.get(`${entry.lineIndex}:${entry.sentenceIndexInLine}`) ||
-          fallbackHighlightRectForLine(plan, entry.lineIndex)
-      }));
+    function buildAudioRunLookup(plan) {
+      const lookup = new Map();
+      for (const line of (plan?.lines || [])) {
+        for (const run of (line?.runs || [])) {
+          if (run?.id != null) lookup.set(String(run.id), run);
+        }
+      }
+      return lookup;
     }
 
-    function drawTextAudioHighlight(entry) {
-      clearTextAudioHighlight();
-      const rect = entry?.visualRect;
-      if (!rect || !audioHighlightCanvas) return;
+    function rectForRun(run) {
+      if (!run) return null;
+      return {
+        x: Number(run.xPx ?? run.drawXPx ?? 0),
+        y: Number(run.yPx ?? 0),
+        width: Math.max(1, Number(run.widthPx) || 1),
+        height: Math.max(1, Number(run.heightPx) || 1)
+      };
+    }
 
-      const ctx = audioHighlightCanvas.getContext("2d", { alpha: true });
-      const padding = Math.max(2, Math.round((latestRenderPlan?.fontPx || getFontPx()) * 0.05));
-      const x = Math.max(0, rect.x - padding);
-      const y = Math.max(0, rect.y - padding);
-      const width = Math.min(audioHighlightCanvas.width - x, rect.width + padding * 2);
-      const height = Math.min(audioHighlightCanvas.height - y, rect.height + padding * 2);
+    function unionRects(rects) {
+      const usable = (rects || []).filter(rect =>
+        rect &&
+        Number.isFinite(Number(rect.x)) &&
+        Number.isFinite(Number(rect.y)) &&
+        Number(rect.width) > 0 &&
+        Number(rect.height) > 0
+      );
+      if (!usable.length) return null;
+      const x1 = Math.min(...usable.map(rect => Number(rect.x)));
+      const y1 = Math.min(...usable.map(rect => Number(rect.y)));
+      const x2 = Math.max(...usable.map(rect => Number(rect.x) + Number(rect.width)));
+      const y2 = Math.max(...usable.map(rect => Number(rect.y) + Number(rect.height)));
+      return { x: x1, y: y1, width: Math.max(1, x2 - x1), height: Math.max(1, y2 - y1) };
+    }
+
+    const audioComponentRectCache = new WeakMap();
+    let audioComponentMeasureCanvas = null;
+
+    function audioRunCodepoints(run) {
+      const direct = Array.isArray(run?.cps) ? run.cps : run?._element?.cps;
+      if (Array.isArray(direct) && direct.length) return direct.map(Number).filter(Number.isFinite);
+      if (Number.isFinite(Number(run?._element?.cp))) return [Number(run._element.cp)];
+      return [];
+    }
+
+    function measuredComponentRectsForRun(run, base, cps) {
+      if (!audioComponentMeasureCanvas) audioComponentMeasureCanvas = document.createElement("canvas");
+      const ctx = audioComponentMeasureCanvas.getContext("2d");
+      const fontPx = Math.max(1, Number(run.fontPx) || Number(latestRenderPlan?.fontPx) || getFontPx());
+      const fontFamily = String(run.fontFamily || "sans-serif").replace(/"/g, "").replace(/\\/g, "");
+      ctx.font = `${fontPx}px "${fontFamily}"`;
+      ctx.textBaseline = "alphabetic";
+
+      const positions = [0];
+      let prefix = "";
+      for (const cp of cps) {
+        prefix += String.fromCodePoint(cp);
+        const width = Number(ctx.measureText(prefix)?.width);
+        positions.push(Number.isFinite(width) ? Math.max(0, width) : positions[positions.length - 1]);
+      }
+      const totalAdvance = Math.max(1, positions[positions.length - 1]);
+      const minimumWidth = Math.max(2, Math.min(base.width, fontPx * 0.12));
+
+      return cps.map((_cp, index) => {
+        let x1 = base.x + (positions[index] / totalAdvance) * base.width;
+        let x2 = base.x + (positions[index + 1] / totalAdvance) * base.width;
+        if (!Number.isFinite(x1) || !Number.isFinite(x2)) {
+          x1 = base.x + (index / cps.length) * base.width;
+          x2 = base.x + ((index + 1) / cps.length) * base.width;
+        }
+        if (x2 < x1) [x1, x2] = [x2, x1];
+        if (x2 - x1 < minimumWidth) {
+          const center = (x1 + x2) / 2;
+          x1 = Math.max(base.x, center - minimumWidth / 2);
+          x2 = Math.min(base.x + base.width, center + minimumWidth / 2);
+        }
+        return { x: x1, y: base.y, width: Math.max(1, x2 - x1), height: base.height };
+      });
+    }
+
+    function componentRectsForRun(run) {
+      if (!run || !usableHighlightRun(run)) return [];
+      const cached = audioComponentRectCache.get(run);
+      if (cached) return cached;
+
+      const base = rectForRun(run);
+      const cps = audioRunCodepoints(run);
+      if (!base || !cps.length) {
+        const fallback = base ? [base] : [];
+        audioComponentRectCache.set(run, fallback);
+        return fallback;
+      }
+      if (cps.length === 1) {
+        const single = [base];
+        audioComponentRectCache.set(run, single);
+        return single;
+      }
+
+      const audioLayout = Array.isArray(run.audioGlyphLayout)
+        ? run.audioGlyphLayout
+        : run?._element?.audioGlyphLayout;
+      let rects = [];
+      if (String(run.kind || "").toLowerCase() === "cartouche" && Array.isArray(audioLayout) && audioLayout.length === cps.length) {
+        rects = audioLayout.map(item => ({
+          x: base.x + Math.max(0, Number(item.x) || 0),
+          y: base.y + Math.max(0, Number(item.y) || 0),
+          width: Math.max(1, Number(item.width) || 1),
+          height: Math.max(1, Number(item.height) || base.height)
+        }));
+      } else {
+        rects = measuredComponentRectsForRun(run, base, cps);
+      }
+
+      audioComponentRectCache.set(run, rects);
+      return rects;
+    }
+
+    function activeRectsForEntry(entry, runLookup) {
+      const out = [];
+      for (const target of (entry?.visualTargets || [])) {
+        const run = runLookup.get(String(target?.runId ?? ""));
+        if (!run || !usableHighlightRun(run)) continue;
+        const indices = Array.isArray(target?.componentIndices)
+          ? target.componentIndices.map(Number).filter(Number.isFinite)
+          : [];
+        const components = componentRectsForRun(run);
+
+        if (!indices.length || !components.length) {
+          const fallback = rectForRun(run);
+          if (fallback) out.push(fallback);
+          continue;
+        }
+
+        const componentRects = indices
+          .filter(index => index >= 0 && index < components.length)
+          .map(index => components[index]);
+        const merged = unionRects(componentRects);
+        if (merged) out.push(merged);
+        else {
+          const fallback = rectForRun(run);
+          if (fallback) out.push(fallback);
+        }
+      }
+      return out;
+    }
+
+    function attachVisualRectsToAudioEntries(entries, plan) {
+      const sentenceMap = buildVisualSentenceHighlightMap(plan);
+      const runLookup = buildAudioRunLookup(plan);
+      return (entries || []).map(entry => {
+        const lineRect =
+          sentenceMap.get(`${entry.lineIndex}:${entry.sentenceIndexInLine}`) ||
+          fallbackHighlightRectForLine(plan, entry.lineIndex);
+        const activeRects = activeRectsForEntry(entry, runLookup);
+        const isAudioGap = entry?.speechUnitKind === "audio-gap" || entry?.speechUnitKind === "terminal-pause";
+        return {
+          ...entry,
+          visualRect: lineRect,
+          lineVisualRect: lineRect,
+          activeVisualRects: activeRects.length ? activeRects : (isAudioGap ? [] : (lineRect ? [lineRect] : []))
+        };
+      });
+    }
+
+    function drawRoundedHighlightRect(ctx, rect, {
+      padding,
+      fillStyle,
+      strokeStyle = null,
+      lineWidth = 1
+    } = {}) {
+      if (!rect) return;
+      const x = Math.max(0, Number(rect.x) - padding);
+      const y = Math.max(0, Number(rect.y) - padding);
+      const width = Math.min(audioHighlightCanvas.width - x, Number(rect.width) + padding * 2);
+      const height = Math.min(audioHighlightCanvas.height - y, Number(rect.height) + padding * 2);
       if (width <= 0 || height <= 0) return;
 
-      ctx.save();
-      ctx.fillStyle = "rgba(255, 214, 10, 0.28)";
-      ctx.strokeStyle = "rgba(128, 92, 0, 0.72)";
-      ctx.lineWidth = Math.max(1, Math.round((latestRenderPlan?.fontPx || getFontPx()) * 0.025));
       const radius = Math.max(3, Math.min(10, Math.round(height * 0.14)));
       ctx.beginPath();
       if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, radius);
       else ctx.rect(x, y, width, height);
+      ctx.fillStyle = fillStyle;
       ctx.fill();
-      ctx.stroke();
+      if (strokeStyle) {
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+    function drawTextAudioHighlight(entry) {
+      clearTextAudioHighlight();
+      if (!audioHighlightCanvas) return;
+
+      const ctx = audioHighlightCanvas.getContext("2d", { alpha: true });
+      const fontPx = latestRenderPlan?.fontPx || getFontPx();
+      const lineRect = entry?.lineVisualRect || entry?.visualRect;
+      const activeRects = Array.isArray(entry?.activeVisualRects) ? entry.activeVisualRects : [];
+
+      ctx.save();
+      if (lineRect) {
+        drawRoundedHighlightRect(ctx, lineRect, {
+          padding: Math.max(1, Math.round(fontPx * 0.035)),
+          fillStyle: "rgba(255, 214, 10, 0.16)",
+          strokeStyle: "rgba(17, 17, 17, 0.78)",
+          lineWidth: Math.max(1, Math.round(fontPx * 0.018))
+        });
+      }
+
+      for (const rect of activeRects) {
+        drawRoundedHighlightRect(ctx, rect, {
+          padding: Math.max(2, Math.round(fontPx * 0.05)),
+          fillStyle: "rgba(255, 214, 10, 0.42)",
+          strokeStyle: "rgba(17, 17, 17, 0.82)",
+          lineWidth: Math.max(1, Math.round(fontPx * 0.025))
+        });
+      }
       ctx.restore();
     }
 
@@ -7250,7 +7615,13 @@ async function serializeRenderPlanToUnicodeJson(plan) {
               sentenceIndexInLine: entry.sentenceIndexInLine,
               durationSeconds: entry.durationSeconds,
               pauseAfterSeconds: entry.pauseAfterSeconds,
-              visualRect: entry.visualRect
+              speechUnitKind: entry.speechUnitKind,
+              speechUnitText: entry.speechUnitText,
+              wholeNumericPunctuationWord: entry.wholeNumericPunctuationWord,
+              renderedAsWholeSegment: entry.renderedAsWholeSegment,
+              visualTargets: entry.visualTargets,
+              visualRect: entry.visualRect,
+              activeVisualRects: entry.activeVisualRects
             })),
             skipped: [...skipped],
             audioInput: result?.audioPlan?.audioInput ?? ""
@@ -7285,7 +7656,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         };
 
         const skippedSummary = summarizeSitelenAudioSkipped(skipped);
-        announceStatus(`Playing input audio. Sentences read: ${entries.length}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
+        announceStatus(`Playing input audio. Highlight units: ${entries.length}. Speed: ${option.label}.${skippedSummary ? " Skipped: " + skippedSummary + "." : ""}`);
         playCurrentTextAudioEntry();
       } catch (e) {
         if (generation === textAudioGeneration) {
@@ -8772,6 +9143,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
 
     const btnDownloadSvg = document.getElementById("appBtnDownloadSvg");
     const btnDownloadPdf = document.getElementById("appBtnDownloadPdf");
+    const btnDownloadWav = document.getElementById("appBtnDownloadWav");
     const btnDownloadUnicodeJson = document.getElementById("appBtnDownloadUnicodeJson");
 
     btnDownloadSvg?.addEventListener("click", async () => {
@@ -8788,6 +9160,14 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         await exportRenderedToVectorPdf();
         announceStatus("Downloaded PDF from SVG vector paths. Diagnostics were logged to the console.");
       } catch(e){
+        showAlertAndAnnounce(e?.message ?? String(e));
+      }
+    });
+
+    btnDownloadWav?.addEventListener("click", async () => {
+      try {
+        await downloadInputTranscriptWav();
+      } catch (e) {
         showAlertAndAnnounce(e?.message ?? String(e));
       }
     });
