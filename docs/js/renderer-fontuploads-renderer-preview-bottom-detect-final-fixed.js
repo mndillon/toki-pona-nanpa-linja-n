@@ -1232,7 +1232,7 @@ const SitelenRenderer = (() => {
       return { chars, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
     }
 
-    function measureTextLike(chars, px, fontFamily) {
+    function measureTextLike(chars, px, fontFamily, useAdvanceWidth = false) {
       ctx.font = `${px}px "${fontFamily}"`;
       const m = ctx.measureText(chars);
 
@@ -1241,11 +1241,14 @@ const SitelenRenderer = (() => {
 
       const s = String(chars ?? "");
 
-      // Only fix intentional ideographic-space runs.
-      // U+3000 has advance width but may have no ink bounds.
+      // Literal/unknown text is drawn by renderAllLinesToCanvas() using its
+      // complete advance width and no bounding-box-left offset.  Use the same
+      // geometry in the public render plan so later glyphs/cartouches and the
+      // complete line width remain identical after a visible literal run.
+      // U+3000 also has advance width but may have no ink bounds.
       const isIdeographicSpaceOnly = /^[\u3000]+$/u.test(s);
 
-      if (isIdeographicSpaceOnly) {
+      if (useAdvanceWidth || isIdeographicSpaceOnly) {
         return {
           chars,
           ascent,
@@ -1295,7 +1298,7 @@ const SitelenRenderer = (() => {
         }
         if (el.type === 'text') {
           const fam = el.fontFamily || FONT_FAMILY_LITERAL;
-          const m = measureTextLike(el.text, el.px ?? fontPx, fam);
+          const m = measureTextLike(el.text, el.px ?? fontPx, fam, true);
           measuredEls.push({ ...el, _index: ei, m });
           w += m.w;
           maxAscent = Math.max(maxAscent, m.ascent + haloExtra);

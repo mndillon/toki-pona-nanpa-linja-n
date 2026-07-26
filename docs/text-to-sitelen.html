@@ -1148,7 +1148,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=190";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=192";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -1160,6 +1160,7 @@ nanpa #~WI.
     import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=28';
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
+      extractSpeechSegmentsFromRenderPlan,
       stopSitelenAudioPlayback,
       summarizeSkippedAudio as summarizeSitelenAudioSkipped
     } from './js/sitelen-audio-plan.js?v=10';
@@ -1629,7 +1630,7 @@ function hideStartupLoading() {
 
     const VECTOR_DIAGNOSTIC_DEBUG = true;
     const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=190",
+      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=192",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
       cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
       vectorExporter: "./js/sitelen-vector-exporter.js?v=166",
@@ -6477,7 +6478,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=190", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=192", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -7174,28 +7175,198 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       };
     }
 
-    function usableHighlightRun(run) {
+    const highlightRunInkRectCache = new WeakMap();
+    let highlightRunMeasureCanvas = null;
+
+    function highlightFiniteNumber(...values) {
+      for (const value of values) {
+        const number = Number(value);
+        if (Number.isFinite(number)) return number;
+      }
+      return null;
+    }
+
+    function highlightRunElement(run) {
+      return run?._element || run?.element || {};
+    }
+
+    function highlightRunCodepoints(run) {
+      const el = highlightRunElement(run);
+      const direct = Array.isArray(run?.cps) ? run.cps : el?.cps;
+      if (Array.isArray(direct) && direct.length) {
+        return direct.map(Number).filter(Number.isFinite);
+      }
+      const cp = highlightFiniteNumber(run?.cp, el?.cp);
+      return cp == null ? [] : [cp];
+    }
+
+    function highlightRunText(run) {
+      const el = highlightRunElement(run);
+      const cps = highlightRunCodepoints(run);
+      if (cps.length) {
+        try { return String.fromCodePoint(...cps); }
+        catch {}
+      }
+      const encoded = String(run?.encodedText ?? el?.text ?? "");
+      if (encoded.length) return encoded;
+      return String(run?.sourceText ?? el?.sourceText ?? "");
+    }
+
+    function isCartoucheHighlightRun(run) {
+      const el = highlightRunElement(run);
+      return String(run?.kind ?? "").toLowerCase() === "cartouche" ||
+        String(el?.type ?? "").toLowerCase() === "cartouche";
+    }
+
+    function measuredHighlightInkRect(run) {
+      if (!run || isCartoucheHighlightRun(run)) return null;
+      if (highlightRunInkRectCache.has(run)) return highlightRunInkRectCache.get(run);
+
+      const el = highlightRunElement(run);
+      const text = highlightRunText(run);
+      const drawX = highlightFiniteNumber(run?.drawXPx, el?.drawXPx, run?.xPx, el?.xPx);
+      const baselineY = highlightFiniteNumber(run?.baselineYPx, el?.baselineYPx);
+      const fontPx = Math.max(1, highlightFiniteNumber(run?.fontPx, el?.px, latestRenderPlan?.fontPx, getFontPx()) || 1);
+      const fontFamily = String(run?.fontFamily ?? el?.fontFamily ?? "sans-serif");
+
+      let rect = null;
+      if (text && drawX != null && baselineY != null) {
+        try {
+          if (!highlightRunMeasureCanvas) highlightRunMeasureCanvas = document.createElement("canvas");
+          const ctx = highlightRunMeasureCanvas.getContext("2d");
+          if (ctx) {
+            ctx.textBaseline = "alphabetic";
+            ctx.font = `${fontPx}px "${fontFamily.replace(/"/g, "").replace(/\\/g, "")}"`;
+            setTextQuality(ctx);
+            const metrics = ctx.measureText(text);
+            const left = highlightFiniteNumber(metrics?.actualBoundingBoxLeft, 0) || 0;
+            const right = highlightFiniteNumber(metrics?.actualBoundingBoxRight, metrics?.width, 0) || 0;
+            const ascent = highlightFiniteNumber(metrics?.actualBoundingBoxAscent, run?.ascentPx, el?.ascentPx, fontPx * 0.8) || 0;
+            const descent = highlightFiniteNumber(metrics?.actualBoundingBoxDescent, run?.descentPx, el?.descentPx, fontPx * 0.2) || 0;
+            const width = Math.max(0, left + right);
+            const height = Math.max(0, ascent + descent);
+            if (width > 0 && height > 0) {
+              rect = {
+                x: drawX - left,
+                y: baselineY - ascent,
+                width,
+                height
+              };
+            }
+          }
+        } catch {}
+      }
+
+      highlightRunInkRectCache.set(run, rect);
+      return rect;
+    }
+
+    function rectForRun(run) {
+      if (!run) return null;
+      const el = highlightRunElement(run);
+      const width = Math.max(1, highlightFiniteNumber(run?.widthPx, el?.widthPx, el?.w, 1) || 1);
+      const height = Math.max(1, highlightFiniteNumber(run?.heightPx, el?.heightPx, el?.h, 1) || 1);
+      const y = highlightFiniteNumber(run?.yPx, el?.yPx, 0) || 0;
+
+      // Cartouches are positioned by their layout box. Ordinary glyph/text runs
+      // are drawn at drawXPx, which already includes the visual width of any
+      // preceding literal or unknown runs on the same rendered line.
+      if (isCartoucheHighlightRun(run)) {
+        const x = highlightFiniteNumber(
+          run?.xPx,
+          el?.xPx,
+          run?.drawXPx,
+          el?.drawXPx,
+          0
+        ) || 0;
+        return { x, y, width, height };
+      }
+
+      // Prefer the actual measured ink rectangle at the real drawing position.
+      // Do not union this with xPx: xPx may be segment-local after a literal and
+      // would stretch the active highlight back towards the wrong position.
+      const inkRect = measuredHighlightInkRect(run);
+      if (inkRect) return inkRect;
+
+      const x = highlightFiniteNumber(
+        run?.drawXPx,
+        el?.drawXPx,
+        run?.xPx,
+        el?.xPx,
+        0
+      ) || 0;
+      return { x, y, width, height };
+    }
+
+    function lineRectForRun(run) {
+      if (!run) return null;
+      const activeRect = rectForRun(run);
+      if (!activeRect) return null;
+      if (isCartoucheHighlightRun(run)) return activeRect;
+
+      const el = highlightRunElement(run);
+      const drawX = highlightFiniteNumber(
+        run?.drawXPx,
+        el?.drawXPx,
+        run?.xPx,
+        el?.xPx
+      );
+      const width = Math.max(1, highlightFiniteNumber(run?.widthPx, el?.widthPx, el?.w, activeRect.width, 1) || 1);
+      const y = highlightFiniteNumber(run?.yPx, el?.yPx, activeRect.y, 0) || 0;
+      const height = Math.max(1, highlightFiniteNumber(run?.heightPx, el?.heightPx, el?.h, activeRect.height, 1) || 1);
+
+      // The active highlight follows visible ink. The line highlight must also
+      // include the complete rendered advance, so it reaches the end of literals,
+      // unknown text, and the final glyph instead of stopping at tight ink bounds.
+      const advanceRect = drawX == null ? null : { x: drawX, y, width, height };
+      return unionRects([activeRect, advanceRect]);
+    }
+
+    function visibleHighlightRun(run) {
       if (!run) return false;
-      const kind = String(run.kind ?? "").toLowerCase();
-      const sourceKind = String(run.sourceKind ?? "").toLowerCase();
+      const el = highlightRunElement(run);
+      const kind = String(run?.kind ?? el?.kind ?? el?.type ?? "").toLowerCase();
+      if (kind === "gap") return false;
+
+      const rect = rectForRun(run);
+      if (!rect || rect.width <= 0 || rect.height <= 0) return false;
+
+      // A spacing-only text/control run has advance but no visible ink. Quoted
+      // literals containing any visible character remain included in full.
+      const cps = highlightRunCodepoints(run);
+      const text = highlightRunText(run);
+      if ((kind === "text" || String(el?.type ?? "").toLowerCase() === "text") &&
+          !cps.length && !String(text).trim()) {
+        return false;
+      }
+      return true;
+    }
+
+    function usableHighlightRun(run) {
+      if (!visibleHighlightRun(run)) return false;
+      const el = highlightRunElement(run);
+      const kind = String(run?.kind ?? el?.kind ?? el?.type ?? "").toLowerCase();
+      const sourceKind = String(run?.sourceKind ?? el?.sourceKind ?? "").toLowerCase();
       if (
-        kind === "gap" ||
         kind === "image" ||
         sourceKind === "quote" ||
-        run.isQuoted ||
-        run.isUnrecognized
+        run?.isQuoted ||
+        el?.isQuoted ||
+        run?.isUnrecognized ||
+        el?.isUnrecognized
       ) return false;
-      return Number(run.widthPx) > 0 && Number(run.heightPx) > 0;
+      return true;
     }
 
     function sentenceRectFromRuns(line, runs) {
-      const usable = (runs || []).filter(usableHighlightRun);
-      if (!usable.length) return null;
-      const x1 = Math.min(...usable.map(run => Number(run.xPx ?? run.drawXPx ?? 0)));
-      const x2 = Math.max(...usable.map(run => Number(run.xPx ?? run.drawXPx ?? 0) + Math.max(0, Number(run.widthPx) || 0)));
-      const y = Number(line?.yPx ?? Math.min(...usable.map(run => Number(run.yPx ?? 0))));
-      const height = Math.max(1, Number(line?.heightPx) || Math.max(...usable.map(run => Number(run.heightPx) || 1)));
-      return { x: x1, y, width: Math.max(1, x2 - x1), height };
+      const visible = (runs || []).filter(visibleHighlightRun);
+      const rect = unionRects(visible.map(lineRectForRun));
+      if (!rect) return null;
+      const lineY = highlightFiniteNumber(line?.yPx, rect.y);
+      const lineHeight = highlightFiniteNumber(line?.heightPx, rect.height);
+      const y = lineY == null ? rect.y : lineY;
+      const height = Math.max(1, lineHeight == null ? rect.height : lineHeight);
+      return { x: rect.x, y, width: rect.width, height };
     }
 
     function buildVisualSentenceHighlightMap(plan) {
@@ -7215,13 +7386,13 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         };
 
         for (const run of runs) {
-          if (usableHighlightRun(run)) currentRuns.push(run);
+          if (visibleHighlightRun(run)) currentRuns.push(run);
           const info = visualSentenceBoundaryInfo(run);
           for (let boundaryIndex = 0; boundaryIndex < info.count; boundaryIndex++) {
             flush();
             sentenceIndexInLine += 1;
             if (boundaryIndex < info.count - 1 || info.hasTail) {
-              if (usableHighlightRun(run)) currentRuns = [run];
+              if (visibleHighlightRun(run)) currentRuns = [run];
             }
           }
         }
@@ -7235,35 +7406,132 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     function fallbackHighlightRectForLine(plan, lineIndex) {
       const line = plan?.lines?.[lineIndex];
       if (!line) return null;
-      const spokenRuns = Array.isArray(line.runs) ? line.runs.filter(usableHighlightRun) : [];
-      const spokenRect = sentenceRectFromRuns(line, spokenRuns);
-      if (spokenRect) return spokenRect;
-      return {
-        x: Number(line.xPx ?? 0),
-        y: Number(line.yPx ?? 0),
-        width: Math.max(1, Number(line.widthPx) || 1),
-        height: Math.max(1, Number(line.heightPx) || 1)
-      };
+      const visibleRuns = Array.isArray(line.runs) ? line.runs.filter(visibleHighlightRun) : [];
+      const visibleRect = sentenceRectFromRuns(line, visibleRuns);
+
+      const lineWidth = Number(line.widthPx);
+      const lineHeight = Number(line.heightPx);
+      const declaredLineRect = Number.isFinite(lineWidth) && lineWidth > 0 &&
+        Number.isFinite(lineHeight) && lineHeight > 0
+        ? {
+            x: Number(line.xPx ?? visibleRect?.x ?? 0),
+            y: Number(line.yPx ?? visibleRect?.y ?? 0),
+            width: lineWidth,
+            height: lineHeight
+          }
+        : null;
+
+      // Use both the renderer's complete line box and the actual visible-run
+      // extents. This keeps literal runs in the whole-line highlight and also
+      // preserves any glyph ink or cartouche edge outside the nominal line box.
+      return unionRects([declaredLineRect, visibleRect]);
+    }
+
+    function audioLookupRunKeys(run, fallbackRunIndex, lineIndex) {
+      const runIndex = Number.isFinite(Number(run?.runIndex))
+        ? Number(run.runIndex)
+        : Number(fallbackRunIndex);
+      const keys = [];
+      if (run?.id != null) keys.push(String(run.id));
+      if (Number.isFinite(runIndex)) {
+        keys.push(`L${lineIndex}R${runIndex}`);
+        keys.push(`${lineIndex}:${runIndex}`);
+      }
+      return [...new Set(keys)];
     }
 
     function buildAudioRunLookup(plan) {
       const lookup = new Map();
-      for (const line of (plan?.lines || [])) {
-        for (const run of (line?.runs || [])) {
-          if (run?.id != null) lookup.set(String(run.id), run);
+      const lines = Array.isArray(plan?.lines) ? plan.lines : [];
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const runs = Array.isArray(lines[lineIndex]?.runs) ? lines[lineIndex].runs : [];
+        for (let runIndex = 0; runIndex < runs.length; runIndex++) {
+          const run = runs[runIndex];
+          for (const key of audioLookupRunKeys(run, runIndex, lineIndex)) lookup.set(key, run);
         }
       }
       return lookup;
     }
 
-    function rectForRun(run) {
-      if (!run) return null;
-      return {
-        x: Number(run.xPx ?? run.drawXPx ?? 0),
-        y: Number(run.yPx ?? 0),
-        width: Math.max(1, Number(run.widthPx) || 1),
-        height: Math.max(1, Number(run.heightPx) || 1)
-      };
+    function normalizeHighlightSpeechText(value) {
+      return String(value ?? "")
+        .replace(/'/g, "")
+        .replace(/[^A-Za-z]/g, "")
+        .toLowerCase();
+    }
+
+    function cloneHighlightVisualTargets(targets) {
+      return Array.isArray(targets)
+        ? targets.map(target => ({
+            ...target,
+            componentIndices: Array.isArray(target?.componentIndices)
+              ? target.componentIndices.slice()
+              : []
+          }))
+        : [];
+    }
+
+    function visualSpeechUnitsForHighlight(plan, rawText) {
+      const extracted = extractSpeechSegmentsFromRenderPlan(plan, {
+        sourceInput: rawText,
+        rawInput: rawText,
+        NanpaParser,
+        nanpaParser: NanpaParser,
+        nanpaLinjanMode: getNanpaLinjanMode(),
+        mixedStyle: "short",
+        relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
+        relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled()
+      });
+
+      const out = [];
+      for (const segment of (extracted?.segments || [])) {
+        for (const unit of (segment?.speechUnits || [])) {
+          out.push({
+            text: unit?.text ?? unit?.timingText ?? "",
+            kind: String(unit?.kind ?? ""),
+            lineIndex: Number(segment?.lineIndex),
+            sentenceIndexInLine: Number(segment?.sentenceIndexInLine),
+            visualTargets: cloneHighlightVisualTargets(unit?.visualTargets)
+          });
+        }
+      }
+      return out;
+    }
+
+    function bindAudioEntriesToVisualSpeechUnits(entries, plan, rawText) {
+      const visualUnits = visualSpeechUnitsForHighlight(plan, rawText);
+      let visualCursor = 0;
+
+      return (entries || []).map(entry => {
+        const isGap = entry?.speechUnitKind === "audio-gap" ||
+          entry?.speechUnitKind === "terminal-pause";
+        const wantedText = normalizeHighlightSpeechText(
+          entry?.speechUnitText ?? entry?.text ?? ""
+        );
+        if (isGap || !wantedText) return entry;
+
+        let matchIndex = -1;
+        for (let index = visualCursor; index < visualUnits.length; index++) {
+          if (normalizeHighlightSpeechText(visualUnits[index]?.text) === wantedText) {
+            matchIndex = index;
+            break;
+          }
+        }
+        if (matchIndex < 0) return entry;
+
+        const visualUnit = visualUnits[matchIndex];
+        visualCursor = matchIndex + 1;
+        return {
+          ...entry,
+          lineIndex: Number.isFinite(visualUnit.lineIndex)
+            ? visualUnit.lineIndex
+            : entry.lineIndex,
+          sentenceIndexInLine: Number.isFinite(visualUnit.sentenceIndexInLine)
+            ? visualUnit.sentenceIndexInLine
+            : entry.sentenceIndexInLine,
+          visualTargets: cloneHighlightVisualTargets(visualUnit.visualTargets)
+        };
+      });
     }
 
 
@@ -7669,7 +7937,14 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     function activeRectsForEntry(entry, runLookup) {
       const out = [];
       for (const target of (entry?.visualTargets || [])) {
-        const run = runLookup.get(String(target?.runId ?? ""));
+        const targetLineIndex = Number(target?.lineIndex);
+        const targetRunIndex = Number(target?.runIndex);
+        const run =
+          runLookup.get(String(target?.runId ?? "")) ||
+          (Number.isFinite(targetLineIndex) && Number.isFinite(targetRunIndex)
+            ? runLookup.get(`L${targetLineIndex}R${targetRunIndex}`) ||
+              runLookup.get(`${targetLineIndex}:${targetRunIndex}`)
+            : null);
         if (!run || !usableHighlightRun(run)) continue;
         const indices = Array.isArray(target?.componentIndices)
           ? target.componentIndices.map(Number).filter(Number.isFinite)
@@ -8212,7 +8487,15 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         if (result?.cancelled || generation !== textAudioGeneration) return;
 
         const skipped = Array.isArray(result?.skipped) ? result.skipped : [];
-        const entries = attachVisualRectsToAudioEntries(result?.entries || [], latestRenderPlan);
+        const visuallyBoundEntries = bindAudioEntriesToVisualSpeechUnits(
+          result?.entries || [],
+          latestRenderPlan,
+          raw
+        );
+        const entries = attachVisualRectsToAudioEntries(
+          visuallyBoundEntries,
+          latestRenderPlan
+        );
         try {
           window.__TTS_LAST_TEXT_AUDIO_LINES__ = {
             lines: [...(result?.audioPlan?.speechLines || [])],
