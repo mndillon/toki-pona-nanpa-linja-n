@@ -2984,8 +2984,16 @@
     }
   }
 
+  function cancelReviewAudioHighlightFrame(session){
+    if (!session?.highlightFrame) return;
+    cancelAnimationFrame(session.highlightFrame);
+    session.highlightFrame = null;
+  }
+
   function cancelReviewAudioSource(session){
-    if (!session?.currentSource) return;
+    if (!session) return;
+    cancelReviewAudioHighlightFrame(session);
+    if (!session.currentSource) return;
     const source = session.currentSource;
     session.currentSource = null;
     try{ source.onended = null; }catch{}
@@ -3008,104 +3016,61 @@
     reviewAudioState = "stopped";
   }
 
-  function caseInsensitiveReviewAudioValue(object,names){
-    if (!object || typeof object !== "object") return null;
-    const wanted = new Set(names.map(name => String(name).toLowerCase()));
-    for (const [key,value] of Object.entries(object)){
-      if (wanted.has(String(key).toLowerCase())) return value;
-    }
-    return null;
-  }
+  function buildReviewAudioTimeline(rendered,units,sampleLength){
+    const timeline = Array.from(rendered?.timeline || [])
+      .map(record => ({
+        ...record,
+        startSample:Math.max(0,Math.round(Number(record?.startSample) || 0)),
+        endSample:Math.max(0,Math.round(Number(record?.endSample) || 0))
+      }))
+      .filter(record => record.endSample > record.startSample);
 
-  function reviewAudioDurationMilliseconds(entry){
-    if (entry == null) return null;
-    if (typeof entry === "number" && Number.isFinite(entry)) return entry;
-    if (typeof entry !== "object") return null;
-    for (const key of ["duration_ms","durationMs","milliseconds","ms"]){
-      const value = Number(entry[key]);
-      if (Number.isFinite(value) && value > 0) return value;
+    if (!timeline.length){
+      throw new Error("The voice API did not return a usable nanpa-unit timeline.");
     }
-    for (const key of ["duration_seconds","durationSeconds","seconds"]){
-      const value = Number(entry[key]);
-      if (Number.isFinite(value) && value > 0) return value * 1000;
+    if (timeline[0].startSample !== 0 || timeline[timeline.length - 1].endSample !== sampleLength){
+      throw new Error("The voice API timeline does not cover the complete proper-name waveform.");
     }
-    return null;
-  }
-
-  function reviewManifestDuration(voice,unitText){
-    const names = [
-      unitText,unitText.toLowerCase(),unitText.toUpperCase(),
-      `${unitText}.wav`,`${unitText.toLowerCase()}.wav`,`${unitText.toUpperCase()}.wav`
-    ];
-    const roots = [
-      voice?.manifest,voice?.audioManifest,voice?.referenceAudioManifest,
-      voice?.config?.manifest,voice?.config?.audioManifest
-    ].filter(Boolean);
-    for (const root of roots){
-      const direct = caseInsensitiveReviewAudioValue(root,names);
-      const directDuration = reviewAudioDurationMilliseconds(direct);
-      if (directDuration) return directDuration;
-      for (const nestedName of ["nanpa_v2","nanpaV2","files","assets","entries"]){
-        const nested = root?.[nestedName];
-        const nestedEntry = caseInsensitiveReviewAudioValue(nested,names);
-        const nestedDuration = reviewAudioDurationMilliseconds(nestedEntry);
-        if (nestedDuration) return nestedDuration;
-      }
-      if (Array.isArray(root)){
-        const found = root.find(item => {
-          const filename = String(item?.name ?? item?.filename ?? item?.file ?? item?.path ?? "").split("/").pop();
-          return names.some(name => filename.toLowerCase() === String(name).toLowerCase());
-        });
-        const foundDuration = reviewAudioDurationMilliseconds(found);
-        if (foundDuration) return foundDuration;
+    for (let index=1;index<timeline.length;index++){
+      if (timeline[index - 1].endSample !== timeline[index].startSample){
+        throw new Error("The voice API timeline is not contiguous.");
       }
     }
-    return null;
-  }
 
-  function estimatedReviewAudioWeight(voice,unit){
-    const duration = reviewManifestDuration(voice,unit.text);
-    if (duration) return duration;
-    if (unit.wholeNumericPunctuationWord) return 260 + Math.max(0,unit.text.length - 2) * 75;
-    return 230 + Math.max(0,unit.text.length - 2) * 55;
-  }
+    const speechRecords = timeline.filter(record => record.kind === "speech" && record.nanpaUnit);
+    if (speechRecords.length !== units.length){
+      throw new Error(
+        `Nanpa audio timeline mismatch: ${speechRecords.length} audio units for ${units.length} highlight units.`
+      );
+    }
 
-  function partitionReviewAudioSamples(samples,sampleRate,units,voice){
-    const weights = units.map(unit => estimatedReviewAudioWeight(voice,unit));
-    const gapWeight = REVIEW_AUDIO_SYLLABLE_GAP_SECONDS * 1000;
-    const totalWeight = weights.reduce((sum,weight) => sum + weight,0) + Math.max(0,units.length - 1) * gapWeight;
-    const entries = [];
-    let sampleCursor = 0;
-    let accumulatedWeight = 0;
-    for (let index=0;index<units.length;index++){
-      accumulatedWeight += weights[index];
-      let unitEnd = index === units.length - 1
-        ? samples.length
-        : Math.round(samples.length * accumulatedWeight / totalWeight);
-      unitEnd = Math.max(sampleCursor,Math.min(samples.length,unitEnd));
-      entries.push({
-        kind:"unit",
-        highlightIndex:units[index].index,
-        samples:samples.slice(sampleCursor,unitEnd),
-        sampleRate
-      });
-      sampleCursor = unitEnd;
-      if (index < units.length - 1 && gapWeight > 0){
-        accumulatedWeight += gapWeight;
-        let gapEnd = Math.round(samples.length * accumulatedWeight / totalWeight);
-        gapEnd = Math.max(sampleCursor,Math.min(samples.length,gapEnd));
-        entries.push({kind:"gap",highlightIndex:null,samples:samples.slice(sampleCursor,gapEnd),sampleRate});
-        sampleCursor = gapEnd;
+    let speechIndex = 0;
+    return timeline.map(record => {
+      if (record.kind === "speech" && record.nanpaUnit){
+        const unit = units[speechIndex];
+        const expected = String(unit?.text ?? "").replace(/'/g,"").toLowerCase();
+        const actual = String(record.audioUnitKey ?? "").replace(/'/g,"").toLowerCase();
+        if (!expected || expected !== actual){
+          throw new Error(
+            `Nanpa audio unit mismatch at unit ${speechIndex + 1}: expected "${expected}", received "${actual || "none"}".`
+          );
+        }
+        speechIndex++;
+        return {
+          kind:"unit",
+          highlightIndex:unit.index,
+          startSample:record.startSample,
+          endSample:record.endSample
+        };
       }
-    }
-    if (sampleCursor < samples.length && entries.length){
-      const last = entries[entries.length - 1];
-      const merged = new Float32Array(last.samples.length + samples.length - sampleCursor);
-      merged.set(last.samples,0);
-      merged.set(samples.slice(sampleCursor),last.samples.length);
-      last.samples = merged;
-    }
-    return entries.filter(entry => entry.samples.length > 0);
+
+      return {
+        kind:"gap",
+        highlightIndex:null,
+        startSample:record.startSample,
+        endSample:record.endSample
+      };
+    });
   }
 
   async function prepareReviewAudio(target,generation){
@@ -3122,9 +3087,14 @@
     const samples = rendered.samples instanceof Float32Array
       ? rendered.samples
       : Float32Array.from(rendered.samples || []);
+    if (!samples.length || !rendered.sampleRate){
+      throw new Error("No nanpa-linja-n audio samples were produced.");
+    }
     const prepared = {
       voice,
-      entries:partitionReviewAudioSamples(samples,rendered.sampleRate,target.units,voice)
+      samples,
+      sampleRate:Number(rendered.sampleRate),
+      timeline:buildReviewAudioTimeline(rendered,target.units,samples.length)
     };
     reviewAudioCache.set(cacheKey,prepared);
     return prepared;
@@ -3139,12 +3109,11 @@
     return reviewAudioContext;
   }
 
-  function reviewAudioBuffer(session,entry){
-    if (entry._audioBuffer) return entry._audioBuffer;
-    const context = session.audioContext;
-    const buffer = context.createBuffer(1,entry.samples.length,entry.sampleRate);
-    buffer.copyToChannel(entry.samples,0);
-    entry._audioBuffer = buffer;
+  function reviewAudioBuffer(session){
+    if (session.audioBuffer) return session.audioBuffer;
+    const buffer = session.audioContext.createBuffer(1,session.samples.length,session.sampleRate);
+    buffer.copyToChannel(session.samples,0);
+    session.audioBuffer = buffer;
     return buffer;
   }
 
@@ -3156,37 +3125,86 @@
     setReviewAudioButtonState("stopped");
   }
 
-  function playReviewAudioEntry(){
+  function reviewAudioTimelineEntryAtOffset(session,offsetSeconds){
+    const sample = Math.max(
+      0,
+      Math.min(
+        session.samples.length - 1,
+        Math.floor((Number(offsetSeconds) || 0) * session.sampleRate)
+      )
+    );
+    for (const entry of session.timeline){
+      if (sample >= entry.startSample && sample < entry.endSample) return entry;
+    }
+    return session.timeline[session.timeline.length - 1] || null;
+  }
+
+  function drawReviewAudioTimelineEntry(session,entry){
+    const key = entry?.kind === "unit" && Number.isInteger(entry.highlightIndex)
+      ? entry.highlightIndex
+      : null;
+    if (session.activeHighlightIndex === key) return;
+    session.activeHighlightIndex = key;
+    if (key == null) clearReviewAudioHighlight();
+    else highlightReviewAudioUnit(key);
+  }
+
+  function startReviewAudioHighlightLoop(session,source){
+    cancelReviewAudioHighlightFrame(session);
+    const tick = () => {
+      if (!reviewAudioSession || reviewAudioSession !== session) return;
+      if (session.generation !== reviewAudioGeneration) return;
+      if (session.currentSource !== source || reviewAudioState !== "playing") return;
+
+      const offset = session.sourceStartedOffset +
+        Math.max(0,session.audioContext.currentTime - session.sourceStartedAt);
+      drawReviewAudioTimelineEntry(session,reviewAudioTimelineEntryAtOffset(session,offset));
+      if (offset < session.currentBuffer.duration){
+        session.highlightFrame = requestAnimationFrame(tick);
+      }
+    };
+
+    drawReviewAudioTimelineEntry(
+      session,
+      reviewAudioTimelineEntryAtOffset(session,session.sourceStartedOffset)
+    );
+    session.highlightFrame = requestAnimationFrame(tick);
+  }
+
+  function playReviewAudioBuffer(){
     const session = reviewAudioSession;
     if (!session || session.generation !== reviewAudioGeneration) return;
-    if (session.currentIndex >= session.entries.length){
-      completeReviewAudioPlayback(session.generation);
-      return;
-    }
-    const entry = session.entries[session.currentIndex];
-    const buffer = reviewAudioBuffer(session,entry);
-    const context = session.audioContext;
-    const offset = Math.max(0,Math.min(Number(session.currentOffsetSeconds) || 0,Math.max(0,buffer.duration - 0.001)));
-    const source = context.createBufferSource();
+    const buffer = reviewAudioBuffer(session);
+    const offset = Math.max(
+      0,
+      Math.min(
+        Number(session.currentOffsetSeconds) || 0,
+        Math.max(0,buffer.duration - 0.001)
+      )
+    );
+    const source = session.audioContext.createBufferSource();
     source.buffer = buffer;
-    source.connect(context.destination);
+    source.connect(session.audioContext.destination);
     session.currentSource = source;
     session.currentBuffer = buffer;
-    session.sourceStartedAt = context.currentTime;
+    session.sourceStartedAt = session.audioContext.currentTime;
     session.sourceStartedOffset = offset;
-    if (entry.kind === "unit" && Number.isInteger(entry.highlightIndex)) highlightReviewAudioUnit(entry.highlightIndex);
-    else clearReviewAudioHighlight();
+    startReviewAudioHighlightLoop(session,source);
     setReviewAudioButtonState("playing");
+
     source.onended = () => {
       if (!reviewAudioSession || reviewAudioSession !== session) return;
-      if (session.generation !== reviewAudioGeneration || session.currentSource !== source || reviewAudioState !== "playing") return;
+      if (
+        session.generation !== reviewAudioGeneration ||
+        session.currentSource !== source ||
+        reviewAudioState !== "playing"
+      ) return;
+      cancelReviewAudioHighlightFrame(session);
       session.currentSource = null;
       try{ source.disconnect(); }catch{}
       session.currentBuffer = null;
       session.currentOffsetSeconds = 0;
-      clearReviewAudioHighlight();
-      session.currentIndex++;
-      playReviewAudioEntry();
+      completeReviewAudioPlayback(session.generation);
     };
     source.start(0,offset);
   }
@@ -3194,8 +3212,7 @@
   function pauseReviewAudio(){
     const session = reviewAudioSession;
     if (!session || reviewAudioState !== "playing" || !session.currentSource) return;
-    const context = session.audioContext;
-    const elapsed = Math.max(0,context.currentTime - session.sourceStartedAt);
+    const elapsed = Math.max(0,session.audioContext.currentTime - session.sourceStartedAt);
     session.currentOffsetSeconds = Math.min(
       session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
       session.sourceStartedOffset + elapsed
@@ -3206,7 +3223,7 @@
 
   function resumeReviewAudio(){
     if (!reviewAudioSession || reviewAudioState !== "paused") return;
-    playReviewAudioEntry();
+    playReviewAudioBuffer();
   }
 
   async function startReviewAudio(target){
@@ -3233,16 +3250,20 @@
         generation,
         voice:prepared.voice,
         audioContext,
-        entries:prepared.entries,
-        currentIndex:0,
+        samples:prepared.samples,
+        sampleRate:prepared.sampleRate,
+        timeline:prepared.timeline,
         currentOffsetSeconds:0,
         currentSource:null,
         currentBuffer:null,
+        audioBuffer:null,
         sourceStartedAt:0,
-        sourceStartedOffset:0
+        sourceStartedOffset:0,
+        highlightFrame:null,
+        activeHighlightIndex:null
       };
-      if (!reviewAudioSession.entries.length) throw new Error("No audio entries were produced.");
-      playReviewAudioEntry();
+      if (!reviewAudioSession.samples.length) throw new Error("No audio samples were produced.");
+      playReviewAudioBuffer();
     }catch(err){
       if (generation !== reviewAudioGeneration) return;
       console.error(err);
