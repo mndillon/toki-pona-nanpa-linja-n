@@ -332,6 +332,94 @@ const SitelenRenderer = (() => {
     return preprocessTextAliases(input).replace(/\r\n/g, '\n');
   }
 
+  function isUnicodeScalarValue(cp) {
+    return Number.isInteger(cp) && cp >= 0 && cp <= 0x10FFFF && !(cp >= 0xD800 && cp <= 0xDFFF);
+  }
+
+  function parseUnicodeCodepointHex(hexText) {
+    const hex = String(hexText ?? "");
+    if (!/^[0-9A-Fa-f]{1,6}$/.test(hex)) {
+      throw new Error(`Invalid Unicode code point hexadecimal value: "${hex}"`);
+    }
+    const cp = Number.parseInt(hex, 16);
+    if (!isUnicodeScalarValue(cp)) {
+      throw new Error(`Invalid Unicode scalar value U+${hex.toUpperCase()}`);
+    }
+    return cp;
+  }
+
+  // Locate explicit U+... runs in ordinary renderer text. Horizontal whitespace
+  // between consecutive valid escapes belongs to the source syntax only and is
+  // deliberately omitted from the emitted codepoint run.
+  function findRawUnicodeCodepointSequences(input) {
+    const s = String(input ?? "");
+    if (!s) return [];
+
+    const tokenRe = /U\+([0-9A-Fa-f]{1,6})(?![0-9A-Fa-f])/gi;
+    const tokens = [];
+    let m;
+    while ((m = tokenRe.exec(s)) !== null) {
+      const cp = parseUnicodeCodepointHex(m[1]);
+      tokens.push({
+        index: m.index,
+        end: tokenRe.lastIndex,
+        sourceText: m[0],
+        cp
+      });
+    }
+    if (!tokens.length) return [];
+
+    const groups = [];
+    let current = null;
+    for (const tok of tokens) {
+      if (
+        current &&
+        /^[ \t]*$/.test(s.slice(current.end, tok.index))
+      ) {
+        current.end = tok.end;
+        current.cps.push(tok.cp);
+        current.sourceText = s.slice(current.index, current.end);
+        continue;
+      }
+      current = {
+        kind: "rawCodepoints",
+        index: tok.index,
+        end: tok.end,
+        sourceText: tok.sourceText,
+        cps: [tok.cp]
+      };
+      groups.push(current);
+    }
+    return groups;
+  }
+
+  function parseCompleteUnicodeCodepointInput(input) {
+    const raw = String(input ?? "").trim();
+    if (!raw) return [];
+
+    if (/U\+/i.test(raw)) {
+      const hits = findRawUnicodeCodepointSequences(raw);
+      if (!hits.length) throw new Error("No valid U+ Unicode code points were found.");
+
+      let pos = 0;
+      const cps = [];
+      for (const hit of hits) {
+        if (!/^[ \t\r\n]*$/.test(raw.slice(pos, hit.index))) {
+          throw new Error(`Invalid text between Unicode code points: "${raw.slice(pos, hit.index)}"`);
+        }
+        cps.push(...hit.cps);
+        pos = hit.end;
+      }
+      if (!/^[ \t\r\n]*$/.test(raw.slice(pos))) {
+        throw new Error(`Invalid text after Unicode code points: "${raw.slice(pos)}"`);
+      }
+      return cps;
+    }
+
+    // Preserve the older whitespace-separated bare-hex API form.
+    return raw.split(/\s+/).map(parseUnicodeCodepointHex);
+  }
+
   function astFromInput(input) {
     const normalized = normalizeAstInput(input);
     const lines = normalized.split('\n').map((line, index) => ({ type: 'line', index, children: splitLineIntoAstSegments(line) }));
@@ -853,9 +941,46 @@ const SitelenRenderer = (() => {
     return true;
   }
 
-  function parseSskTextSegmentToElements(segmentText, elements, { fontPx, parser = {}, mixedStyle = 'long', sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null }) {
+  function parseSskTextSegmentToElements(segmentText, elements, { fontPx, parser = {}, mixedStyle = 'long', sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null, allowRawCodepoints = true }) {
     const s = String(segmentText ?? '');
     if (!s.trim()) return;
+
+    if (allowRawCodepoints) {
+      const rawHits = findRawUnicodeCodepointSequences(s);
+      if (rawHits.length) {
+        let pos = 0;
+        for (const hit of rawHits) {
+          if (hit.index > pos) {
+            parseSskTextSegmentToElements(s.slice(pos, hit.index), elements, {
+              fontPx, parser, mixedStyle,
+              sourceBaseStart: sourceBaseStart + pos,
+              sourceKind, sourceSegmentIndex,
+              allowRawCodepoints: false
+            });
+          }
+          if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
+          __bridgeMakeRunElementFromCodepoints(elements, hit.cps, {
+            fontPx,
+            fontFamily: FONT_FAMILY_TEXT,
+            sourceText: s.slice(hit.index, hit.end),
+            sourceStart: sourceBaseStart + hit.index,
+            sourceEnd: sourceBaseStart + hit.end,
+            sourceKind,
+            sourceSegmentIndex
+          });
+          pos = hit.end;
+        }
+        if (pos < s.length) {
+          parseSskTextSegmentToElements(s.slice(pos), elements, {
+            fontPx, parser, mixedStyle,
+            sourceBaseStart: sourceBaseStart + pos,
+            sourceKind, sourceSegmentIndex,
+            allowRawCodepoints: false
+          });
+        }
+        return;
+      }
+    }
     const tokenRe = /(?:\{([^{}]+)\}\s*)?([A-Za-z][A-Za-z0-9_]*)(?:\s*\(([^()]+)\))|([A-Za-z][A-Za-z0-9_]*)\s*([&+-])\s*([A-Za-z][A-Za-z0-9_]*)|\{([^{}]+)\}\s*([A-Za-z][A-Za-z0-9_]*)/g;
     let pos = 0;
     let m;
@@ -1928,13 +2053,171 @@ function wireHaloControls() {
     // Letters-only normalization (used by number-phrase parsing etc.)
     function normalizeTpWord(raw) { return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, ""); }
 
+    // Standard alias names for alternative sitelen pona glyphs. These aliases
+    // intentionally contain digits, so they must be resolved before the normal
+    // glyph-key cleanup removes digits and before numeric scanning can claim
+    // the numeric suffix.
+    const TP_GLYPH_KEY_ALIASES = Object.freeze({
+      "ni01": "ni",
+      "ni02": "ni>",
+      "ni03": "ni^",
+      "ni04": "ni<",
+      "sewi01": "sewi",
+      "sewi02": "sewi^"
+    });
+
+    const TP_GLYPH_ALIAS_SOURCE_KEYS = Object.freeze(
+      Object.keys(TP_GLYPH_KEY_ALIASES).sort((a, b) => b.length - a.length)
+    );
+
+    function resolveTpGlyphAliasKey(raw) {
+      const key = String(raw ?? "").trim().toLowerCase();
+      return TP_GLYPH_KEY_ALIASES[key] ?? null;
+    }
+
+    function findTpGlyphAliasSpans(text) {
+      const s = String(text ?? "");
+      if (!s || TP_GLYPH_ALIAS_SOURCE_KEYS.length === 0) return [];
+
+      const alternatives = TP_GLYPH_ALIAS_SOURCE_KEYS
+        .map(key => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("|");
+
+      // Treat aliases as complete glyph-name tokens. The boundary class includes
+      // the suffix characters used by alternative glyph keys so strings such as
+      // "ni02^" are not silently accepted as the exact "ni02" alias.
+      const re = new RegExp(
+        `(^|[^A-Za-z0-9^<>])(${alternatives})(?=$|[^A-Za-z0-9^<>])`,
+        "gi"
+      );
+
+      const spans = [];
+      let m;
+      while ((m = re.exec(s)) !== null) {
+        const leadLength = String(m[1] ?? "").length;
+        const aliasText = String(m[2] ?? "");
+        const start = (m.index | 0) + leadLength;
+        spans.push({
+          start,
+          end: start + aliasText.length,
+          source: aliasText,
+          glyphKey: resolveTpGlyphAliasKey(aliasText)
+        });
+      }
+      return spans;
+    }
+
+    // Numeric recognizers intentionally accept ordinary spaces inside some
+    // number formats. Therefore protected glyph-name text must never be masked
+    // with spaces: doing so can make separate numbers on the same line merge
+    // across an intervening Toki Pona word. U+FFFD is a one-code-unit hard scan
+    // boundary, so source offsets remain unchanged while no numeric recognizer
+    // can cross the protected span.
+    const NUMERIC_SCAN_HARD_BOUNDARY_CHAR = "\uFFFD";
+
+    function maskTpGlyphAliasesForNumericScanning(text) {
+      const s = String(text ?? "");
+      const spans = findTpGlyphAliasSpans(s);
+      if (spans.length === 0) return { text: s, spans };
+
+      const chars = s.split("");
+      for (const span of spans) {
+        for (let i = span.start; i < span.end; i++) {
+          chars[i] = NUMERIC_SCAN_HARD_BOUNDARY_CHAR;
+        }
+      }
+      return { text: chars.join(""), spans };
+    }
+
+    // A known glyph name followed immediately by digits is two source
+    // sequences: the glyph name and that exact digit suffix. Build a dedicated
+    // numeric hit for the suffix and replace the complete combined token with
+    // hard scan boundaries in the general numeric-scan copy. This prevents the
+    // permissive decimal scanner from merging the suffix with anything that
+    // follows later on the line.
+    //
+    // Examples:
+    //   ni2          -> glyph "ni" + number "2"
+    //   ni020        -> glyph "ni" + number "020" (leading zero retained)
+    //   ni02         -> exact alias "ni>" (masked before this helper runs)
+    //   sewi020 34   -> glyph "sewi" + number "020" + number "34"
+    function maskTpGlyphPrefixesBeforeNumericSuffixes(text, opts = {}) {
+      const s = String(text ?? "");
+      if (!s) return { text: s, spans: [], hits: [] };
+
+      const chars = s.split("");
+      const spans = [];
+      const hits = [];
+      const re = /(^|[^A-Za-z0-9^<>])([A-Za-z^<>]+)([0-9]+)(?=$|[^A-Za-z0-9^<>])/g;
+      let m;
+
+      while ((m = re.exec(s)) !== null) {
+        const leadLength = String(m[1] ?? "").length;
+        const glyphText = String(m[2] ?? "");
+        const digits = String(m[3] ?? "");
+        const glyphKey = glyphText.toLowerCase();
+
+        if (!glyphText || !digits || WORD_TO_UCSUR_CP[glyphKey] == null) continue;
+
+        const glyphStart = (m.index | 0) + leadLength;
+        const glyphEnd = glyphStart + glyphText.length;
+        const digitEnd = glyphEnd + digits.length;
+
+        let caps = null;
+        try {
+          caps = decimalStringToCaps(digits, {
+            thousandsChar: ",",
+            groupFractionTriplets: true,
+            fractionGroupSize: 3,
+            ...opts
+          });
+        } catch {
+          caps = null;
+        }
+        if (!caps) continue;
+
+        // Hide the complete combined token from all general scanners. The
+        // dedicated hit below owns only the digit suffix in source coordinates.
+        for (let i = glyphStart; i < digitEnd; i++) {
+          chars[i] = NUMERIC_SCAN_HARD_BOUNDARY_CHAR;
+        }
+
+        const span = {
+          start: glyphStart,
+          glyphEnd,
+          end: digitEnd,
+          source: s.slice(glyphStart, digitEnd),
+          glyphText,
+          glyphKey,
+          digits
+        };
+        spans.push(span);
+        hits.push({
+          kind: "decimal",
+          match: digits,
+          index: glyphEnd,
+          end: digitEnd,
+          caps,
+          sourceKind: "glyphNumericSuffix"
+        });
+      }
+
+      return { text: chars.join(""), spans, hits };
+    }
+
     // NEW: glyph-key normalization (used for WORD_TO_UCSUR_CP lookups)
-    // Keeps: a-z plus ^ < > : , . and middle dot ·
+    // Keeps: a-z plus ^ < > : , . and middle dot ·. The six standard
+    // digit-bearing aliases above are canonicalized before digits are removed.
     function normalizeTpGlyphKey(raw) {
-      return String(raw ?? "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z^<>:,.·]/g, "");
+      const s = String(raw ?? "").toLowerCase().trim();
+      const directAlias = resolveTpGlyphAliasKey(s);
+      if (directAlias) return directAlias;
+
+      const stripped = s.replace(/^[^a-z0-9^<>:,.·]+|[^a-z0-9^<>:,.·]+$/g, "");
+      const strippedAlias = resolveTpGlyphAliasKey(stripped);
+      if (strippedAlias) return strippedAlias;
+
+      return stripped.replace(/[^a-z^<>:,.·]/g, "");
     }
 
     function parseKnownTpWords(innerText) {
@@ -2205,8 +2488,17 @@ function wireHaloControls() {
       if (s0 === ":" || s0 === "·" || s0 === ".") return s0;
       if (s0 === ",") return getCartoucheCommaTallyMarks() ? s0 : "";
 
-      const stripped = s0.replace(/^[^a-z^<>:,.·]+|[^a-z^<>:,.·]+$/g, "");
+      // Resolve digit-bearing standard aliases before any cleanup can discard
+      // their numeric suffix. This is required for ordinary [] cartouches as
+      // well as unbracketed glyph tokens.
+      const directAlias = resolveTpGlyphAliasKey(s0);
+      if (directAlias) return directAlias;
+
+      const stripped = s0.replace(/^[^a-z0-9^<>:,.·]+|[^a-z0-9^<>:,.·]+$/g, "");
       if (!stripped) return "";
+
+      const strippedAlias = resolveTpGlyphAliasKey(stripped);
+      if (strippedAlias) return strippedAlias;
 
       return normalizeTpGlyphKey(stripped);
     }
@@ -5429,6 +5721,27 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const trimmedEnd = tokMeta.start + coreEnd;
 
         if (trimmed) {
+          // These exact standard alias names must win before both the numeric
+          // identifier decoder and the generic "contains a digit" path.
+          const aliasGlyphKey = resolveTpGlyphAliasKey(trimmed);
+          const aliasGlyphCp = aliasGlyphKey ? WORD_TO_UCSUR_CP[aliasGlyphKey] : null;
+          if (aliasGlyphCp != null) {
+            pushGapIfNeeded(elements, wordGapForPx(fontPx));
+            elements.push({
+              type: "glyph",
+              cp: aliasGlyphCp,
+              px: fontPx,
+              fontFamily: FONT_FAMILY_TEXT,
+              sourceText: trimmed,
+              sourceStart: sourceBaseStart + trimmedStart,
+              sourceEnd: sourceBaseStart + trimmedEnd,
+              sourceKind,
+              sourceSegmentIndex
+            });
+            for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
+            continue;
+          }
+
           const idCps = tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ?? tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
           if (idCps && idCps.length) {
             nanpaDebugEmit("render-tp-words:token-decoded-as-numeric-identifier", {
@@ -5526,28 +5839,100 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
     }
 
-    function parseTextSegmentToElements(segmentText, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null, mixedStyle = "short" }) {
+    function parseTextSegmentToElements(segmentText, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null, mixedStyle = "short", allowRawCodepoints = true }) {
       const mode = getNanpaLinjanMode();
       const s = String(segmentText ?? "");
       if (!s.trim()) return;
+
+      // Explicit U+ escapes have highest precedence. Consecutive escapes form one
+      // exact font run; horizontal whitespace between them is source formatting
+      // and does not emit a space. Use U+00A0 when a visible non-breaking space
+      // is required in the output sequence.
+      if (allowRawCodepoints) {
+        const rawHits = findRawUnicodeCodepointSequences(s);
+        if (rawHits.length) {
+          nanpaDebugEmit("parse-text:raw-codepoint-hits", {
+            segmentText: s,
+            hits: rawHits.map(h => ({
+              sourceText: s.slice(h.index, h.end),
+              index: h.index,
+              end: h.end,
+              cps: nanpaDebugCps(h.cps)
+            }))
+          });
+
+          let pos = 0;
+          for (const hit of rawHits) {
+            if (hit.index > pos) {
+              parseTextSegmentToElements(s.slice(pos, hit.index), elements, {
+                fontPx,
+                sourceBaseStart: sourceBaseStart + pos,
+                sourceKind,
+                sourceSegmentIndex,
+                mixedStyle,
+                allowRawCodepoints: false
+              });
+            }
+
+            makeRunElementFromCodepoints(elements, hit.cps, {
+              fontPx,
+              fontFamily: FONT_FAMILY_TEXT,
+              sourceText: s.slice(hit.index, hit.end),
+              sourceStart: sourceBaseStart + hit.index,
+              sourceEnd: sourceBaseStart + hit.end,
+              sourceKind,
+              sourceSegmentIndex
+            });
+            pos = hit.end;
+          }
+
+          if (pos < s.length) {
+            parseTextSegmentToElements(s.slice(pos), elements, {
+              fontPx,
+              sourceBaseStart: sourceBaseStart + pos,
+              sourceKind,
+              sourceSegmentIndex,
+              mixedStyle,
+              allowRawCodepoints: false
+            });
+          }
+          return;
+        }
+      }
+
       nanpaDebugEmit("parse-text:start", { segmentText: s, fontPx, mode, sourceBaseStart, sourceKind, sourceSegmentIndex, mixedStyle });
 
-      const timeHits = findTimeSequencesWithCaps(s);
-      const dateHits = findDateSequencesWithCaps(s);
-      const decHits = findDecimalSequencesWithCaps(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
-      const codeHits = findNumberCodeSequencesWithCaps(s);
-      const nameHits = findNanpaLinjanProperNameSequencesWithCaps(s);
-      const phraseHits = findNanpaLinjanTpPhraseSequences(s);
+      // Protect the six exact digit-bearing alternative-glyph aliases from
+      // every numeric scanner. Then, for non-alias tokens such as ni2 or ni020,
+      // create a dedicated hit for the complete numeric suffix, including any
+      // leading zeros, and hide the whole combined token from general scanners.
+      // This prevents that suffix from merging with any later text or number on
+      // the same line. Both masks retain the original string length, so hit
+      // offsets stay aligned to the source.
+      const aliasScan = maskTpGlyphAliasesForNumericScanning(s);
+      const glyphSuffixScan = maskTpGlyphPrefixesBeforeNumericSuffixes(aliasScan.text, { mixedStyle });
+      const numericScanText = glyphSuffixScan.text;
+      const glyphSuffixHits = glyphSuffixScan.hits;
+
+      const timeHits = findTimeSequencesWithCaps(numericScanText);
+      const dateHits = findDateSequencesWithCaps(numericScanText);
+      const decHits = findDecimalSequencesWithCaps(numericScanText, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
+      const codeHits = findNumberCodeSequencesWithCaps(numericScanText);
+      const nameHits = findNanpaLinjanProperNameSequencesWithCaps(numericScanText);
+      const phraseHits = findNanpaLinjanTpPhraseSequences(numericScanText);
 
       nanpaDebugEmit("parse-text:raw-hit-counts", {
         segmentText: s,
+        protectedGlyphAliases: aliasScan.spans,
+        splitGlyphNumericSuffixes: glyphSuffixScan.spans,
+        glyphSuffixHits: glyphSuffixHits.length,
         timeHits: timeHits.length,
         dateHits: dateHits.length,
         decHits: decHits.length,
         codeHits: codeHits.length,
         nameHits: nameHits.length,
         phraseHits: phraseHits.length,
-        rawHits: [...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
+        rawHits: [...glyphSuffixHits, ...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
           kind: h.kind,
           sourceText: s.slice(h.index, h.end),
           index: h.index,
@@ -5557,7 +5942,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         }))
       });
 
-      const hits = mergeAndGreedyFilterHits([...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+      const hits = mergeAndGreedyFilterHits([...glyphSuffixHits, ...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
 
       nanpaDebugTable("parse-text:selected-hits", hits.map(h => ({
         kind: h.kind,
@@ -7457,6 +7842,23 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     "koma": 0xF199E, ".": 0xF199C
   };
 
+  // Exact, case-insensitive input aliases for standard alternative glyph names.
+  // These are input-only aliases; reverse codepoint-to-word output remains canonical
+  // (ni, ni>, ni^, ni<, sewi, sewi^).
+  const _NP_TP_WORD_INPUT_ALIASES = Object.freeze({
+    "ni01": "ni",
+    "ni02": "ni>",
+    "ni03": "ni^",
+    "ni04": "ni<",
+    "sewi01": "sewi",
+    "sewi02": "sewi^"
+  });
+
+  function _npResolveTpWordInputKey(raw) {
+    const key = String(raw ?? "").trim().toLowerCase();
+    return _NP_TP_WORD_INPUT_ALIASES[key] ?? key;
+  }
+
   const _NP_NANPA_LINJA_N_WORD_TO_CP = {
     "ala":   0xF1902,
     "ike":   0xF190D,
@@ -9353,8 +9755,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const parts = raw.split(/(\s+|[·:])/).filter(s => s && !/^\s+$/.test(s));
     const cps = [];
     for (const p of parts) {
-      const cp = _NP_WORD_TO_UCSUR_CP[p] ?? _NP_WORD_TO_UCSUR_CP[String(p).toLowerCase()];
-      if (cp == null) throw new Error(`Invalid Toki Pona word "${p}". Only mapped words are allowed.`);
+      const key = _npResolveTpWordInputKey(p);
+      const cp = _NP_WORD_TO_UCSUR_CP[key];
+      if (cp == null) throw new Error(`Invalid Toki Pona word "${p}". Only mapped words and exact alternative-glyph aliases are allowed.`);
       cps.push(cp);
     }
     for (const cp of cps) {
@@ -9382,20 +9785,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   },
 
   parseHexCodepoints(input) {
-    const raw = String(input ?? "").trim();
-    if (!raw) return [];
-    const parts = raw.split(/\s+/).map(s => s.replace(/^U\+/i, ""));
-    const cps = parts.map(p => {
-      const cp = parseInt(p, 16);
-      if (!Number.isFinite(cp)) throw new Error(`Invalid hex code point: "${p}"`);
-      return cp;
-    });
-
-    for (const cp of cps) {
-      if (!(Number.isInteger(cp) && ((cp >= _NP_TP_UCSUR_MIN && cp <= _NP_TP_UCSUR_MAX) || cp === _NP_CARTOUCHE_START_CP || cp === _NP_CARTOUCHE_END_CP))) {
-        throw new Error(`Disallowed code point U+${cp.toString(16).toUpperCase()}`);
-      }
-    }
+    const cps = parseCompleteUnicodeCodepointInput(input);
 
     if (cps.length >= 2 && cps[0] === _NP_CARTOUCHE_START_CP && cps[cps.length - 1] === _NP_CARTOUCHE_END_CP) {
       return cps.slice(1, -1);

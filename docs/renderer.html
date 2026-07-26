@@ -554,7 +554,7 @@
           autocomplete="off"
         />
         <div id="tpWordsHelp" class="help">
-          Allowed input: Valid Toki Pona words (case-insensitive) or a nanpa-linja-n proper name for a decimal value or a number code (starting with #~).
+          Allowed input: Valid Toki Pona words (case-insensitive), exact alternative-glyph aliases <span class="mono">ni01 ni02 ni03 ni04 sewi01 sewi02</span>, a nanpa-linja-n proper name for a decimal value, or a number code (starting with #~).
           <span class="tpLine">
             nimi toki pona lon mapu taso li ken. (suli/lili pi sitelen li wile ala.)
             sina ken kin pana e nimi pi nanpa-linja-n (nimi pi pana nanpa).
@@ -772,7 +772,7 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=180";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=184";
     import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=22";
 
     const voice = await createTokiPonaVoice();
@@ -1207,32 +1207,30 @@
       Object.entries(LATIN_CHAR_TO_CODEPOINT).map(([ch, cp]) => [cp, ch])
     );
 
+    // Legacy small-glyph helper retained for compatibility. Keep it aligned
+    // with the authoritative quarter-size cartouche glyph list below.
     function getSmallCodepointsSet() {
       return new Set([
-        0xF193D, // NANPA
-        0xF1940, // NENA
-        0xF1941, // NI
-        0xF193E, // NASA
-        0xF1909, // E
-        0xF190B, // ESUN
-        0xF190A, // EN
+        0xF193D, // nanpa
+        0xF1940, // nena
+        0xF190A, // en
+        0xF1902, // ala
+        0xF190D, // ike
+        0xF1970, // uta
+        0xF1947, // open
       ]);
     }
 
-    // ¼-size glyphs (already used for nanpa/en/etc). Add OPEN here too.
+    // ¼-size glyphs used by this page's cartouche renderer.
     function getQuarterCodepointsSet() {
       return new Set([
         0xF193D, // nanpa
         0xF1940, // nena
-        0xF1941, // ni
-        0xF193E, // nasa
-        0xF1909, // e
-        0xF190B, // esun
         0xF190A, // en
-        0xF1947, // open   <-- NEW: quarter size
-        0xF1902, // ala (relaxed nanpa-linja-n small glyph)
-        0xF190D, // ike (relaxed nanpa-linja-n small glyph)
-        0xF1970, // uta (relaxed nanpa-linja-n small glyph)
+        0xF1902, // ala
+        0xF190D, // ike
+        0xF1970, // uta
+        0xF1947, // open
       ]);
     }
 
@@ -1253,12 +1251,13 @@
       return 0;
     }
 
-    // ⅔-size glyphs
+    // ⅔-size glyphs used by this page's cartouche renderer.
     function getTwoThirdsCodepointsSet() {
       return new Set([
-        0xF1946, // ona   <-- NEW: two-thirds size
-        0xF1944, // o     <-- NEW: two-thirds size
-        0xF191F, // kulupu <-- NEW: two-thirds size
+        0xF1946, // ona
+        0xF1944, // o
+        0xF191F, // kulupu
+        0xF197B, // kipisi
         0xF1979, // kin
       ]);
     }
@@ -2719,6 +2718,34 @@
       "ota": 0xF199C, "kolon": 0xF199D, "koma": 0xF199E
     };
 
+    // Exact, case-insensitive input aliases for standard alternative glyph names.
+    // Keep these separate from WORD_TO_UCSUR_CP so reverse output remains canonical.
+    const TP_WORD_INPUT_ALIASES = Object.freeze({
+      "ni01": "ni",
+      "ni02": "ni>",
+      "ni03": "ni^",
+      "ni04": "ni<",
+      "sewi01": "sewi",
+      "sewi02": "sewi^"
+    });
+
+    const TP_ALTERNATIVE_GLYPH_CODEPOINTS = Object.freeze({
+      "ni>": 0xF198B,
+      "ni^": 0xF198A,
+      "ni<": 0xF1989,
+      "sewi^": 0xF198C
+    });
+
+    function resolveTpWordInputKey(raw) {
+      const key = String(raw ?? "").trim().toLowerCase();
+      return TP_WORD_INPUT_ALIASES[key] ?? key;
+    }
+
+    function codepointForTpWordInput(raw) {
+      const key = resolveTpWordInputKey(raw);
+      return WORD_TO_UCSUR_CP[key] ?? TP_ALTERNATIVE_GLYPH_CODEPOINTS[key] ?? null;
+    }
+
     const UCSUR_CP_TO_WORD = new Map(
       Object.entries(WORD_TO_UCSUR_CP).map(([w, cp]) => [cp, w])
     );
@@ -2749,17 +2776,11 @@
 
       const cps = [];
       for (const p of parts) {
-        const pp = WORD_TO_UCSUR_CP[p];
-        if(pp == null){
-          const w = p.toLowerCase();
-          const cp = WORD_TO_UCSUR_CP[w];
-          if (cp == null) {
-            throw new Error(`Invalid Toki Pona word "${p}". Only mapped words are allowed.`);
-          }
-          cps.push(cp);
-        }else{
-          cps.push(pp);
+        const cp = codepointForTpWordInput(p);
+        if (cp == null) {
+          throw new Error(`Invalid Toki Pona word "${p}". Only mapped words and exact alternative-glyph aliases are allowed.`);
         }
+        cps.push(cp);
       }
 
       assertAllAllowedTpUcsur(cps);
@@ -2769,8 +2790,7 @@
     function tpWordsToUcsurCodepoints(words) {
       const cps = [];
       for (const w of words) {
-        const key = String(w).toLowerCase();
-        const cp = WORD_TO_UCSUR_CP[key];
+        const cp = codepointForTpWordInput(w);
         if (cp == null) throw new Error(`No UCSUR code point for word "${w}"`);
         cps.push(cp);
       }
@@ -4831,10 +4851,10 @@
         return;
       }
 
-      // Accept valid mapped words (including en)
+      // Accept valid mapped words and the six exact alternative-glyph aliases.
       const parts = raw.split(/\s+/).filter(Boolean);
       for (const p of parts) {
-        if (WORD_TO_UCSUR_CP[p.toLowerCase()] == null) {
+        if (codepointForTpWordInput(p) == null) {
           elTpWordsIn.setCustomValidity(`Invalid word: ${p}`);
           return;
         }
