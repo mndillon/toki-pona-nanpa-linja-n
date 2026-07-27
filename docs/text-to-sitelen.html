@@ -705,27 +705,6 @@ body.shellReady {
             <span class="tpLine">o pana e lipu</span>
           </button>
 
-          <button
-            id="appBtnPlayTextAudioMain"
-            class="audio-button"
-            type="button"
-            title="Read input audio, ignore quoted text and unknowns"
-            aria-label="Read input audio, ignore quoted text and unknowns"
-          >🤖🔊</button>
-
-          <button
-            id="appBtnStopTextAudioMain"
-            class="audio-button"
-            type="button"
-            title="Stop input audio"
-            aria-label="Stop input audio"
-          >⏹️</button>
-
-          <label class="textAudioInlineControl" for="appTextAudioSpeedSelMain">
-            <span>Audio speed</span>
-            <select id="appTextAudioSpeedSelMain" class="textAudioSpeedSelect" aria-label="Audio speed"></select>
-          </label>
-
           <button id="appBtnTogglePopoutMain" type="button" class="btnBi">
             <span>Pop-out editor</span>
             <span class="tpLine">o open e ilo ante</span>
@@ -931,6 +910,29 @@ nanpa #~WI.
     </div>
 
     <div style="margin-top:14px;">
+      <div style="margin-bottom:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button
+          id="appBtnPlayTextAudioMain"
+          class="audio-button"
+          type="button"
+          title="Read input audio, ignore quoted text and unknowns"
+          aria-label="Read input audio, ignore quoted text and unknowns"
+        >🤖🔊</button>
+
+        <button
+          id="appBtnStopTextAudioMain"
+          class="audio-button"
+          type="button"
+          title="Stop input audio"
+          aria-label="Stop input audio"
+        >⏹️</button>
+
+        <label class="textAudioInlineControl" for="appTextAudioSpeedSelMain">
+          <span>Audio speed</span>
+          <select id="appTextAudioSpeedSelMain" class="textAudioSpeedSelect" aria-label="Audio speed"></select>
+        </label>
+      </div>
+
       <label>
         Output canvas
         <span class="tpLine">ilo sitelen kama</span>
@@ -6555,6 +6557,21 @@ async function getCpToTpNameMap() {
     if (!out.has(cp) && /^[a-z][a-z0-9_^<>-]*$/i.test(name)) {
       out.set(cp, String(name));
     }
+  }
+
+  // Unicode JSON uses the numbered Latin aliases for alternative ni and sewi
+  // glyphs. This changes only commonSitelenPonaCharacterNames; the exported
+  // codepoints, raw Unicode, parser aliases, and renderer output are unchanged.
+  const preferredAlternativeExportNames = Object.freeze({
+    "ni>": "ni02",
+    "ni^": "ni03",
+    "ni<": "ni04",
+    "sewi^": "sewi02"
+  });
+
+  for (const [glyphKey, exportName] of Object.entries(preferredAlternativeExportNames)) {
+    const cp = src[glyphKey];
+    if (Number.isInteger(cp)) out.set(cp, exportName);
   }
 
   __cpToTpNameCache = out;
