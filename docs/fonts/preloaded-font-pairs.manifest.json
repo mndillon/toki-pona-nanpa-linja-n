@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated": "2026-07-26",
+  "generated": "2026-07-27",
   "pairs": [
     {
       "fontKey": "nasinNanpa",
@@ -31,7 +31,7 @@
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-07-24-010",
+      "rev": "2026-07-27-012",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
@@ -89,7 +89,7 @@
     {
       "fontKey": "fairfaxPonaHd",
       "label": "FairfaxPonaHD predefined",
-      "rev": "2026-07-24-010",
+      "rev": "2026-07-27-011",
       "parserMode": "sitelen-seli-kiwen",
       "baseFamily": "fairfaxPonaHd",
       "companionFamily": "fairfaxPonaHd-Cartouche",
