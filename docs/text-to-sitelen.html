@@ -778,6 +778,17 @@ nanpa #~WI.
           </label>
         </div>
 
+        <!-- Abbreviated numeric cartouche spacer toggle -->
+        <div id="ctlNumericCartoucheSpacers" class="inlineControl inlinePill" role="group" aria-label="Show spacers in abbreviated cartouches">
+          <span class="ctlLabel">
+            Show spacers in abbreviated cartouches
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+            <input id="appNumericCartoucheSpacersEnable" type="checkbox" aria-label="Show spacers in abbreviated cartouches">
+            <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+        </div>
+
         <!-- Nanpa-linja-n relaxed mode -->
         <div id="ctlNanpaRelaxedMode" class="inlineControl inlinePill" role="group" aria-label="Nanpa-linja-n strict or relaxed mode">
           <span class="ctlLabel">
@@ -1176,7 +1187,7 @@ nanpa #~WI.
       extractSpeechSegmentsFromRenderPlan,
       stopSitelenAudioPlayback,
       summarizeSkippedAudio as summarizeSitelenAudioSkipped
-    } from './js/sitelen-audio-plan.js?v=12';
+    } from './js/sitelen-audio-plan.js?v=14';
     let pageMap = new Map();
 
     "use strict";
@@ -2227,6 +2238,7 @@ function hideStartupLoading() {
           mixedStyle: "short",
           showUnknownText: unknownHighlightEnabled,
           abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
+          preserveNumericCartoucheBreaksInAbbreviation: getNumericCartoucheSpacersEnabled(),
           relaxedNanpaLinjanParsing: relaxedNanpaLinjan,
           relaxedNanpaLinjanRendering: relaxedNanpaLinjan,
           nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
@@ -2283,6 +2295,7 @@ function hideStartupLoading() {
         roles,
         cartoucheTally: buildCartoucheTallyParserConfig(),
         abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
+        preserveNumericCartoucheBreaksInAbbreviation: getNumericCartoucheSpacersEnabled(),
         relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled(),
         nasinNanpaPona: getNasinNanpaPonaFormattingEnabled()
       });
@@ -2687,6 +2700,64 @@ function wireNumericCartoucheAbbrevToggle() {
       await renderFromTextarea();
     } catch (e) {
       showAlertAndAnnounce(e?.message ?? String(e));
+    }
+  });
+}
+
+const NUMERIC_CARTOUCHE_SPACERS_STORAGE_KEY = "tpShowSpacersInAbbreviatedCartouches";
+const NUMERIC_CARTOUCHE_SPACERS_DEFAULT_ENABLED = true;
+
+function loadNumericCartoucheSpacersFromStorage() {
+  try {
+    const raw = localStorage.getItem(NUMERIC_CARTOUCHE_SPACERS_STORAGE_KEY);
+    if (raw == null) return null;
+    if (raw === "1" || raw === "true") return true;
+    if (raw === "0" || raw === "false") return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveNumericCartoucheSpacersToStorage(value) {
+  try {
+    localStorage.setItem(
+      NUMERIC_CARTOUCHE_SPACERS_STORAGE_KEY,
+      value ? "1" : "0"
+    );
+  } catch {}
+}
+
+function getNumericCartoucheSpacersEnabled() {
+  const el = document.getElementById("appNumericCartoucheSpacersEnable");
+  return !!el?.checked;
+}
+
+function setNumericCartoucheSpacersEnabled(value, { persist = true } = {}) {
+  const enabled = !!value;
+  const el = document.getElementById("appNumericCartoucheSpacersEnable");
+  if (el) el.checked = enabled;
+  if (persist) saveNumericCartoucheSpacersToStorage(enabled);
+  return enabled;
+}
+
+function applyNumericCartoucheSpacersFromStorage() {
+  setNumericCartoucheSpacersEnabled(
+    loadNumericCartoucheSpacersFromStorage() ?? NUMERIC_CARTOUCHE_SPACERS_DEFAULT_ENABLED,
+    { persist: false }
+  );
+}
+
+function wireNumericCartoucheSpacersToggle() {
+  const el = document.getElementById("appNumericCartoucheSpacersEnable");
+  if (!el) return;
+
+  el.addEventListener("change", async () => {
+    try {
+      setNumericCartoucheSpacersEnabled(el.checked);
+      await renderFromTextarea();
+    } catch (error) {
+      showAlertAndAnnounce(error?.message ?? String(error));
     }
   });
 }
@@ -8555,11 +8626,14 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         const lineRect = fallbackHighlightRectForLine(plan, entry.lineIndex) || sentenceRect;
         const activeRects = activeRectsForEntry(entry, runLookup);
         const isAudioGap = entry?.speechUnitKind === "audio-gap" || entry?.speechUnitKind === "terminal-pause";
+        const suppressActiveHighlight = entry?.suppressActiveHighlight === true;
         return {
           ...entry,
           visualRect: sentenceRect,
           lineVisualRect: lineRect,
-          activeVisualRects: activeRects.length ? activeRects : (isAudioGap ? [] : (sentenceRect ? [sentenceRect] : []))
+          activeVisualRects: suppressActiveHighlight
+            ? []
+            : (activeRects.length ? activeRects : (isAudioGap ? [] : (sentenceRect ? [sentenceRect] : [])))
         };
       });
     }
@@ -10751,6 +10825,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         applyDefaultInputFromQuery();
         applyTextFontOptionFromStorage();
         applyNumericCartoucheAbbrevFromStorage();
+        applyNumericCartoucheSpacersFromStorage();
         applyNanpaRelaxedModeFromStorage();
         applyNasinNanpaPonaFormattingFromStorage();
 
@@ -10796,6 +10871,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         wireScriptPresetSelect();
         wireTextFontSelect();
         wireNumericCartoucheAbbrevToggle();
+        wireNumericCartoucheSpacersToggle();
         wireNanpaRelaxedModeSelect();
         wireNasinNanpaPonaFormattingToggle();
         wireCartoucheDisplayLinks();

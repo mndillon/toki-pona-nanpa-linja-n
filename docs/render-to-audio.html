@@ -1516,6 +1516,7 @@
           relaxedNanpaLinjanParsing: relaxed,
           relaxedNanpaLinjanRendering: relaxed,
           abbreviateNumericCartouches: abbreviated,
+          preserveNumericCartoucheBreaksInAbbreviation: abbreviated,
           autoCartoucheStandaloneProperNames: true
         },
         fonts: {
@@ -2701,7 +2702,7 @@
 
     function abbreviateNumericCartoucheEntries(
       cps,
-      { showTelephoneHyphenEn = false } = {}
+      { showTelephoneHyphenEn = true } = {}
     ) {
       const input = Array.from(cps ?? [], Number);
       if (!input.length) return [];

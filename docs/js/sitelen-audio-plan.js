@@ -704,6 +704,21 @@ const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
   'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin'
 ]);
 
+// A compound is one indivisible rendered visual even though its source words
+// are spoken separately. Every spoken member therefore targets the complete
+// run, including the joiner and both/all component glyphs.
+const AUDIO_COMPOUND_JOINER_CPS = new Set([
+  0x200D, // generic compound joiner (&)
+  0xF1995, // stacked compound joiner (-)
+  0xF1996  // scaled compound joiner (+)
+]);
+
+// The optional visible spacer in an abbreviated numeric cartouche represents
+// the full nena en nena en source sequence, pronounced as the single reference
+// audio unit "Ene".
+const AUDIO_CP_EN = 0xF190A;
+const AUDIO_CP_NENA = 0xF1940;
+
 function spokenWordTokens(text) {
   return String(text ?? '').match(/[A-Za-z']+/g) || [];
 }
@@ -805,6 +820,42 @@ function nearestDisplayedComponentsForSourceRange(sourceIndices, rangeStart, ran
     .map(item => item.index);
 }
 
+function abbreviatedNumericSpacerComponentIndices(run) {
+  const displayedCps = runCodepointsForAudio(run);
+  const sourceCps = runAudioSourceCodepoints(run);
+  const sourceIndices = runAudioSourceIndices(run, displayedCps.length);
+  const out = [];
+
+  for (let componentIndex = 0; componentIndex < displayedCps.length; componentIndex++) {
+    if (Number(displayedCps[componentIndex]) !== AUDIO_CP_EN) continue;
+
+    const mappedSourceIndex = Number(sourceIndices[componentIndex]);
+    if (!Number.isFinite(mappedSourceIndex)) continue;
+
+    // Accept the mapped source index anywhere inside the four-glyph break.
+    // The current renderer maps it to the first en, but this keeps the audio
+    // code robust if that internal mapping is adjusted later.
+    let representsBreak = false;
+    for (let start = Math.max(0, mappedSourceIndex - 3); start <= mappedSourceIndex; start++) {
+      if (
+        sourceCps[start] === AUDIO_CP_NENA &&
+        sourceCps[start + 1] === AUDIO_CP_EN &&
+        sourceCps[start + 2] === AUDIO_CP_NENA &&
+        sourceCps[start + 3] === AUDIO_CP_EN &&
+        mappedSourceIndex >= start &&
+        mappedSourceIndex < start + 4
+      ) {
+        representsBreak = true;
+        break;
+      }
+    }
+
+    if (representsBreak) out.push(componentIndex);
+  }
+
+  return out;
+}
+
 function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, options = {}) {
   const words = spokenWordTokens(speech);
   if (!words.length) return [];
@@ -855,12 +906,34 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
 
       const rangeStart = Math.max(0, Math.floor(pieceSpeechStart * sourceScale));
       const rangeEnd = Math.min(sourceCount, Math.max(rangeStart + 1, Math.ceil(pieceSpeechEnd * sourceScale)));
-      const componentIndices = nearestDisplayedComponentsForSourceRange(
+      let componentIndices = nearestDisplayedComponentsForSourceRange(
         sourceIndices,
         rangeStart,
         rangeEnd,
         wordSourceRange
       );
+
+      // Do not rely on proportional source-range matching for an abbreviated
+      // break. The nth spoken Ene unit targets the nth visible en spacer that
+      // explicitly represents nena en nena en in renderer metadata.
+      let suppressActiveHighlight = false;
+      if (numericCartouche && wholeNumeric && normalizeAudioWord(word) === 'ene') {
+        const spacerComponents = abbreviatedNumericSpacerComponentIndices(run);
+        const eneOrdinal = words
+          .slice(0, wordIndex + 1)
+          .filter(candidate => normalizeAudioWord(candidate) === 'ene')
+          .length - 1;
+
+        // Ene represents the optional abbreviated-cartouche spacer. If the
+        // spacer is hidden, there is no honest visual target: do not fall back
+        // to the nearest visible glyph.
+        componentIndices = [];
+        suppressActiveHighlight = true;
+        if (eneOrdinal >= 0 && eneOrdinal < spacerComponents.length) {
+          componentIndices = [spacerComponents[eneOrdinal]];
+          suppressActiveHighlight = false;
+        }
+      }
 
       wordRecords.push({
         text: piece,
@@ -872,6 +945,7 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
         unitIndex,
         unitIndexInWord,
         wholeNumericPunctuationWord: wholeNumeric,
+        suppressActiveHighlight,
         numericCartouche,
         numericCartoucheRunId,
         numericCartouchePhrase,
@@ -956,10 +1030,14 @@ function buildGenericRunSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
 
   const cps = runCodepointsForAudio(run);
   const groups = visibleComponentGroups(cps);
+  const isCompoundRun = cps.some(cp => AUDIO_COMPOUND_JOINER_CPS.has(Number(cp)));
+  const completeRunComponentIndices = isCompoundRun
+    ? Array.from({ length: cps.length }, (_unused, index) => index)
+    : [];
 
   return words.map((word, wordIndex) => {
-    let componentIndices = [];
-    if (groups.length) {
+    let componentIndices = completeRunComponentIndices.slice();
+    if (!isCompoundRun && groups.length) {
       const start = Math.floor(groups.length * wordIndex / words.length);
       const end = Math.max(start + 1, Math.ceil(groups.length * (wordIndex + 1) / words.length));
       componentIndices = groups.slice(start, end).flat();
@@ -1339,6 +1417,7 @@ async function renderExactSpeechUnitEntry({
     speechUnitIndex: unitIndex,
     speechUnitCount: unitCount,
     wholeNumericPunctuationWord: !!unit?.wholeNumericPunctuationWord,
+    suppressActiveHighlight: !!unit?.suppressActiveHighlight,
     visualTargets: cloneAudioVisualTargets(unit?.visualTargets),
     sourceSegmentIndex: segmentIndex,
     renderText,
@@ -1493,6 +1572,7 @@ async function renderExactNumericCartoucheEntries({
         speechUnitIndex: speechCursor,
         speechUnitCount: groupUnits.length,
         wholeNumericPunctuationWord: !!unit?.wholeNumericPunctuationWord,
+        suppressActiveHighlight: !!unit?.suppressActiveHighlight,
         numericCartouche: true,
         numericCartoucheRunId: unit?.numericCartoucheRunId || null,
         numericCartouchePhrase: phrase,

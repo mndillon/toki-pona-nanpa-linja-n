@@ -1071,7 +1071,21 @@ body.shellReady {
             <div class="row">
               <div class="field">
                 <label class="checkInline" style="margin:0;">
+                <input id="defNasinNanpaPona" type="checkbox" />Default nasin nanpa pona formatting</label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
                 <input id="defAbbreviateNumericCartouches" type="checkbox" />Default abbreviate numeric cartouche output</label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label class="checkInline" style="margin:0;">
+                <input id="defPreserveNumericCartoucheBreaksInAbbreviation" type="checkbox" />Default show spacers in abbreviated cartouches</label>
               </div>
             </div>
 
@@ -1380,7 +1394,9 @@ function hideStartupLoading() {
       lbl_stage_bg: "Stage background",
       lbl_default_render_font: "Default script family",
       lbl_default_text_font: "Default text font",
+      lbl_default_nasin_nanpa_pona: "Default nasin nanpa pona formatting",
       lbl_default_abbrev_numeric_cartouches: "Default abbreviate numeric cartouche output",
+      lbl_default_abbrev_numeric_cartouche_spacers: "Default show spacers in abbreviated cartouches",
       lbl_default_nanpa_linjan_mode: "Default nanpa-linja-n mode",
       lbl_default_preserve_center_auto_resize: "Default preserve center on auto resize",
       lbl_default_spacing: "Default sitelen spacing",
@@ -1434,7 +1450,9 @@ function hideStartupLoading() {
       props_scale_font_box: "Scale font with box",
       props_render_font_family: "Sitelen font family",
       props_font_family: "Quoted text font",
+      props_nasin_nanpa_pona: "nasin nanpa pona formatting",
       props_abbrev_numeric_cartouches: "Abbreviate numeric cartouche output",
+      props_abbrev_numeric_cartouche_spacers: "Show spacers in abbreviated cartouches",
       props_nanpa_linjan_mode: "nanpa-linja-n mode",
       opt_nanpa_linjan_strict: "Strict",
       opt_nanpa_linjan_relaxed: "Relaxed",
@@ -1606,7 +1624,9 @@ function hideStartupLoading() {
       lbl_stage_bg: "monsi pi supa",
       lbl_default_render_font: "kulupu sitelen pona open",
       lbl_default_text_font: "kulupu sitelen Lasina open",
+      lbl_default_nasin_nanpa_pona: "nasin nanpa pona open",
       lbl_default_abbrev_numeric_cartouches: "o lili e poki nimi nanpa open",
+      lbl_default_abbrev_numeric_cartouche_spacers: "o pana e weka lon poki nimi nanpa lili open",
       lbl_default_nanpa_linjan_mode: "nasin pi nanpa-linja-n open",
       lbl_default_preserve_center_auto_resize: "o awen e insa lon ante suli poki open",
       lbl_default_spacing: "weka pi sitelen pona open",
@@ -1659,7 +1679,9 @@ function hideStartupLoading() {
       props_scale_font_box: "suli sitelen li sama poki",
       props_render_font_family: "kulupu sitelen pi sitelen pona",
       props_font_family: "kulupu sitelen pi sitelen Lasina",
+      props_nasin_nanpa_pona: "nasin nanpa pona",
       props_abbrev_numeric_cartouches: "o lili e poki nimi nanpa",
+      props_abbrev_numeric_cartouche_spacers: "o pana e weka lon poki nimi nanpa lili",
       props_nanpa_linjan_mode: "nasin pi nanpa-linja-n",
       opt_nanpa_linjan_strict: "Strict",
       opt_nanpa_linjan_relaxed: "Relaxed",
@@ -1864,12 +1886,26 @@ function hideStartupLoading() {
     setLabel("defRenderFontPreset", "lbl_default_render_font");
     setLabel("defTextFontOption", "lbl_default_text_font");
     setLabel("defNanpaLinjanMode", "lbl_default_nanpa_linjan_mode");
+    const defNasinNanpaPonaLbl = document.querySelector('label.checkInline input#defNasinNanpaPona')?.closest('label');
+    if (defNasinNanpaPonaLbl) {
+      const input = defNasinNanpaPonaLbl.querySelector('input#defNasinNanpaPona');
+      defNasinNanpaPonaLbl.textContent = '';
+      if (input) defNasinNanpaPonaLbl.appendChild(input);
+      defNasinNanpaPonaLbl.appendChild(document.createTextNode(tr("lbl_default_nasin_nanpa_pona")));
+    }
     const defAbbrevLbl = document.querySelector('label.checkInline input#defAbbreviateNumericCartouches')?.closest('label');
     if (defAbbrevLbl) {
       const input = defAbbrevLbl.querySelector('input#defAbbreviateNumericCartouches');
       defAbbrevLbl.textContent = '';
       if (input) defAbbrevLbl.appendChild(input);
       defAbbrevLbl.appendChild(document.createTextNode(tr("lbl_default_abbrev_numeric_cartouches")));
+    }
+    const defAbbrevSpacersLbl = document.querySelector('label.checkInline input#defPreserveNumericCartoucheBreaksInAbbreviation')?.closest('label');
+    if (defAbbrevSpacersLbl) {
+      const input = defAbbrevSpacersLbl.querySelector('input#defPreserveNumericCartoucheBreaksInAbbreviation');
+      defAbbrevSpacersLbl.textContent = '';
+      if (input) defAbbrevSpacersLbl.appendChild(input);
+      defAbbrevSpacersLbl.appendChild(document.createTextNode(tr("lbl_default_abbrev_numeric_cartouche_spacers")));
     }
     const defAutoResizeLbl = document.querySelector('label.checkInline input#defPreserveCenterOnAutoResize')?.closest('label');
     if (defAutoResizeLbl) {
@@ -1985,7 +2021,9 @@ const FONT_URL_LIBERATION_MONO = "./fonts/LiberationMono-Regular.ttf";
     exportStageBackground: false,
     defaultRenderFontPreset: "nasinNanpa", // default sitelen/glyph preset
     defaultTextFontOption: FONT_FAMILY_LITERAL,
+    defaultNasinNanpaPona: false,
     defaultAbbreviateNumericCartouches: false,
+    defaultPreserveNumericCartoucheBreaksInAbbreviation: false,
     defaultNanpaLinjanMode: "strict",
     defaultPreserveCenterOnAutoResize: false,
     defaultSpacingPreset: "default",
@@ -2040,6 +2078,18 @@ function getSceneDefaultSpacingPreset(){
   );
 }
 
+function getSceneDefaultNasinNanpaPona(){
+  return !!(
+    Scene?.stage?.defaultNasinNanpaPona ??
+    DEFAULTS.defaultNasinNanpaPona ??
+    false
+  );
+}
+
+function getElementNasinNanpaPona(el){
+  return !!(el?.nasinNanpaPona ?? false);
+}
+
 function getSceneDefaultAbbreviateNumericCartouches(){
   return !!(
     Scene?.stage?.defaultAbbreviateNumericCartouches ??
@@ -2055,6 +2105,18 @@ function getElementAbbreviateNumericCartouches(el){
     DEFAULTS.defaultAbbreviateNumericCartouches ??
     false
   );
+}
+
+function getSceneDefaultPreserveNumericCartoucheBreaksInAbbreviation(){
+  return !!(
+    Scene?.stage?.defaultPreserveNumericCartoucheBreaksInAbbreviation ??
+    DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation ??
+    false
+  );
+}
+
+function getElementPreserveNumericCartoucheBreaksInAbbreviation(el){
+  return !!(el?.preserveNumericCartoucheBreaksInAbbreviation ?? false);
 }
 
 function getSceneDefaultNanpaLinjanMode(){
@@ -2813,7 +2875,9 @@ function buildRendererInitConfigForElement(el){
       cartoucheStyle: 'ssk',
       numericMode: 'compat',
       mixedStyle: 'short',
+      nasinNanpaPona: !!(el?.type === ElementType.Sitelen && getElementNasinNanpaPona(el)),
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
       relaxedNanpaLinjanParsing: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       ...buildCartoucheTallyParserConfig(el)
@@ -2868,7 +2932,9 @@ function buildRendererCallConfigForElement(el){
       cartoucheStyle: 'ssk',
       numericMode: 'compat',
       mixedStyle: 'short',
+      nasinNanpaPona: !!(el?.type === ElementType.Sitelen && getElementNasinNanpaPona(el)),
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
       relaxedNanpaLinjanParsing: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText),
@@ -3016,7 +3082,9 @@ function getElementRendererSignature(el){
     haloMode: String(el?.haloThicknessMode ?? 'auto'),
     haloThickness: Number(el?.haloThickness ?? 0),
     ignoreUnknownText: !!el?.ignoreUnknownText,
+    nasinNanpaPona: !!(el?.type === ElementType.Sitelen && getElementNasinNanpaPona(el)),
     abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+    preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
     nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
     sitelenBoundsGuardVersion: (el?.type === ElementType.Sitelen) ? SITELEN_BOUNDS_GUARD_VERSION : 0
   });
@@ -3464,7 +3532,9 @@ function normalizeScene(parsed){
     exportStageBackground: DEFAULTS.exportStageBackground,
     defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
     defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+    defaultNasinNanpaPona: DEFAULTS.defaultNasinNanpaPona,
     defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
+    defaultPreserveNumericCartoucheBreaksInAbbreviation: DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation,
     defaultNanpaLinjanMode: DEFAULTS.defaultNanpaLinjanMode,
     defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
     defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
@@ -3511,7 +3581,9 @@ function normalizeScene(parsed){
   if (out.stage.bgImgAssetId != null) out.stage.bgImgAssetId = String(out.stage.bgImgAssetId);
   out.stage.defaultRenderFontPreset = normalizeLegacyRenderFontPresetKey(out.stage.defaultRenderFontPreset || DEFAULTS.defaultRenderFontPreset);
   out.stage.defaultTextFontOption = normalizeLegacyTextFontOptionKey(out.stage.defaultTextFontOption || DEFAULTS.defaultTextFontOption, out.stage.defaultRenderFontPreset);
+  out.stage.defaultNasinNanpaPona = !!(out.stage.defaultNasinNanpaPona ?? false);
   out.stage.defaultAbbreviateNumericCartouches = !!(out.stage.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  out.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!(out.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? false);
   out.stage.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(out.stage.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
   out.stage.defaultPreserveCenterOnAutoResize = !!(out.stage.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   out.stage.defaultSpacingPreset = normalizeSpacingPreset(out.stage.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
@@ -3599,8 +3671,10 @@ function normalizeScene(parsed){
 
       if (el.type === ElementType.Sitelen){
         el.keepAspect = (el.keepAspect == null) ? true : !!el.keepAspect;
+        el.nasinNanpaPona = !!(el.nasinNanpaPona ?? false);
         // Imported sitelen elements missing this flag must stay false for backwards compatibility.
         el.abbreviateNumericCartouches = !!(el.abbreviateNumericCartouches ?? false);
+        el.preserveNumericCartoucheBreaksInAbbreviation = !!(el.preserveNumericCartoucheBreaksInAbbreviation ?? false);
         el.nanpaLinjanMode = normalizeNanpaLinjanMode(el.nanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
         el.spacingPreset = normalizeSpacingPreset(el.spacingPreset ?? out.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
         el.ignoreUnknownText = (el.ignoreUnknownText == null) ? !!(out.stage?.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText) : !!el.ignoreUnknownText;
@@ -3881,8 +3955,10 @@ function deserializeAssets(serialized){
       exportStageBackground: DEFAULTS.exportStageBackground,
       defaultRenderFontPreset: DEFAULTS.defaultRenderFontPreset,
       defaultTextFontOption: DEFAULTS.defaultTextFontOption,
+      defaultNasinNanpaPona: false,
       // New blank layout documents default this flag ON. Imported JSON is normalized separately.
       defaultAbbreviateNumericCartouches: true,
+      defaultPreserveNumericCartoucheBreaksInAbbreviation: true,
       // New blank layout documents default relaxed; imported/loaded legacy scenes normalize missing values to strict.
       defaultNanpaLinjanMode: "relaxed",
       defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
@@ -3986,7 +4062,9 @@ function deserializeAssets(serialized){
     el.fontFamily = el.quotedTextFontOption;
     el.fontSize = 44;
     el.align = "left";
+    el.nasinNanpaPona = getSceneDefaultNasinNanpaPona();
     el.abbreviateNumericCartouches = getSceneDefaultAbbreviateNumericCartouches();
+    el.preserveNumericCartoucheBreaksInAbbreviation = getSceneDefaultPreserveNumericCartoucheBreaksInAbbreviation();
     el.nanpaLinjanMode = getSceneDefaultNanpaLinjanMode();
     el.spacingPreset = getSceneDefaultSpacingPreset();
     el.color = Scene.stage.defaultTextColor ?? DEFAULTS.defaultTextColor;
@@ -9384,6 +9462,23 @@ if (!shouldKeepFloatingEditor){
       }
 
       if (sels.some(e => e && e.type === ElementType.Sitelen)){
+        const leaderNasinNanpaPona = topmostSelectedWhere(e => e && e.type === ElementType.Sitelen);
+        const nasinNanpaPonaVals = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(!!getElementNasinNanpaPona(e)));
+        const nasinNanpaPonaMixed = mixedLabelIfMixed(nasinNanpaPonaVals);
+        propsBody.appendChild(makeCheckbox(
+          tr("props_nasin_nanpa_pona") + (nasinNanpaPonaMixed ? " (" + nasinNanpaPonaMixed + ")" : ""),
+          !!getElementNasinNanpaPona(leaderNasinNanpaPona),
+          (checked) => {
+            applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+              e.nasinNanpaPona = !!checked;
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e);
+            });
+            scheduleAutosave();
+            render();
+          }
+        ));
+
         const leaderAbbrev = topmostSelectedWhere(e => e && e.type === ElementType.Sitelen);
         const abbrevVals = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(!!getElementAbbreviateNumericCartouches(e)));
         const abbrevMixed = mixedLabelIfMixed(abbrevVals);
@@ -9393,6 +9488,23 @@ if (!shouldKeepFloatingEditor){
           (checked) => {
             applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
               e.abbreviateNumericCartouches = !!checked;
+              invalidateSitelenCache(e.id);
+              updateSitelenLayout(e);
+            });
+            scheduleAutosave();
+            render();
+          }
+        ));
+
+        const leaderAbbrevSpacers = topmostSelectedWhere(e => e && e.type === ElementType.Sitelen);
+        const abbrevSpacersVals = sels.filter(e => e && e.type === ElementType.Sitelen).map(e => String(!!getElementPreserveNumericCartoucheBreaksInAbbreviation(e)));
+        const abbrevSpacersMixed = mixedLabelIfMixed(abbrevSpacersVals);
+        propsBody.appendChild(makeCheckbox(
+          tr("props_abbrev_numeric_cartouche_spacers") + (abbrevSpacersMixed ? " (" + abbrevSpacersMixed + ")" : ""),
+          !!getElementPreserveNumericCartoucheBreaksInAbbreviation(leaderAbbrevSpacers),
+          (checked) => {
+            applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => {
+              e.preserveNumericCartoucheBreaksInAbbreviation = !!checked;
               invalidateSitelenCache(e.id);
               updateSitelenLayout(e);
             });
@@ -9976,10 +10088,34 @@ if (!shouldKeepFloatingEditor){
 
     if (el.type === ElementType.Sitelen){
       propsBody.appendChild(makeCheckbox(
+        tr("props_nasin_nanpa_pona"),
+        !!getElementNasinNanpaPona(el),
+        (checked) => {
+          el.nasinNanpaPona = !!checked;
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+          scheduleAutosave();
+          render();
+        }
+      ));
+
+      propsBody.appendChild(makeCheckbox(
         tr("props_abbrev_numeric_cartouches"),
         !!getElementAbbreviateNumericCartouches(el),
         (checked) => {
           el.abbreviateNumericCartouches = !!checked;
+          invalidateSitelenCache(el.id);
+          updateSitelenLayout(el);
+          scheduleAutosave();
+          render();
+        }
+      ));
+
+      propsBody.appendChild(makeCheckbox(
+        tr("props_abbrev_numeric_cartouche_spacers"),
+        !!getElementPreserveNumericCartoucheBreaksInAbbreviation(el),
+        (checked) => {
+          el.preserveNumericCartoucheBreaksInAbbreviation = !!checked;
           invalidateSitelenCache(el.id);
           updateSitelenLayout(el);
           scheduleAutosave();
@@ -11994,7 +12130,9 @@ function syncStageDefaultsUiFromScene(){
   const expbg = document.getElementById("exportStageBackground");
   const drfp = document.getElementById("defRenderFontPreset");
   const dtfo = document.getElementById("defTextFontOption");
+  const dnnp = document.getElementById("defNasinNanpaPona");
   const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dancs = document.getElementById("defPreserveNumericCartoucheBreaksInAbbreviation");
   const dnlm = document.getElementById("defNanpaLinjanMode");
   const dpcoar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
@@ -12068,8 +12206,12 @@ function syncStageDefaultsUiFromScene(){
 
   if (drfp) drfp.value = st.defaultRenderFontPreset;
   if (dtfo) dtfo.value = st.defaultTextFontOption;
+  st.defaultNasinNanpaPona = !!(st.defaultNasinNanpaPona ?? false);
+  st.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!(st.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? false);
   st.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
+  if (dnnp) dnnp.checked = st.defaultNasinNanpaPona;
   if (danc) danc.checked = !!(st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
+  if (dancs) dancs.checked = st.defaultPreserveNumericCartoucheBreaksInAbbreviation;
   if (dnlm) dnlm.value = st.defaultNanpaLinjanMode;
   if (dpcoar) dpcoar.checked = !!(st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   if (dsp) dsp.value = normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
@@ -12843,7 +12985,9 @@ sitelenRendererInstancePromises.clear();
       literalCartoucheSettings: (el?.type === ElementType.Sitelen) ? getElementLiteralCartoucheSettings(el) : null,
       align: String(el?.align ?? ""), lineHeight: Number(el?.lineHeight ?? 0),
       spacingPreset: getElementSpacingPreset(el),
+      nasinNanpaPona: !!(el?.type === ElementType.Sitelen && getElementNasinNanpaPona(el)),
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
+      preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
       nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
       ignoreUnknownText: !!el?.ignoreUnknownText,
       haloEnabled: !!el?.haloEnabled, haloColor: String(el?.haloColor ?? ""),
@@ -14315,8 +14459,10 @@ $("btnNew").addEventListener("click", async () => {
     FONT_FAMILY_LITERAL,
     Scene.stage.defaultRenderFontPreset
   );
+  Scene.stage.defaultNasinNanpaPona = false;
   // New blank layout documents default this flag ON. Imported JSON is normalized separately.
   Scene.stage.defaultAbbreviateNumericCartouches = true;
+  Scene.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation = true;
   // New blank layout documents default relaxed; imported/loaded legacy scenes normalize missing values to strict.
   Scene.stage.defaultNanpaLinjanMode = "relaxed";
   Scene.stage.defaultSpacingPreset = DEFAULTS.defaultSpacingPreset;
@@ -14463,7 +14609,9 @@ function wireStageDefaultsUi(){
   const bg = document.getElementById("stageBg");
   const expbg = document.getElementById("exportStageBackground");
   const dtfo = document.getElementById("defTextFontOption");
+  const dnnp = document.getElementById("defNasinNanpaPona");
   const danc = document.getElementById("defAbbreviateNumericCartouches");
+  const dancs = document.getElementById("defPreserveNumericCartoucheBreaksInAbbreviation");
   const dnlm = document.getElementById("defNanpaLinjanMode");
   const dpcoar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
@@ -14570,9 +14718,25 @@ function wireStageDefaultsUi(){
     });
   }
 
+  if (dnnp){
+    dnnp.addEventListener("change", (e) => {
+      Scene.stage.defaultNasinNanpaPona = !!e.target.checked;
+      scheduleAutosave();
+      render();
+    });
+  }
+
   if (danc){
     danc.addEventListener("change", (e) => {
       Scene.stage.defaultAbbreviateNumericCartouches = !!e.target.checked;
+      scheduleAutosave();
+      render();
+    });
+  }
+
+  if (dancs){
+    dancs.addEventListener("change", (e) => {
+      Scene.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!e.target.checked;
       scheduleAutosave();
       render();
     });

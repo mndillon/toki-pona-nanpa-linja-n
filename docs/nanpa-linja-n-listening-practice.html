@@ -3198,7 +3198,7 @@
     ctx.arcTo(x,y,x+w,y,radius);
     ctx.closePath();
   }
-  function abbreviateNumericCartoucheEntries(cps,{showTelephoneHyphenEn=false}={}){
+  function abbreviateNumericCartoucheEntries(cps,{showTelephoneHyphenEn=true}={}){
     const input = Array.from(cps ?? []).map(Number);
     if (!input.length) return [];
     const out = [];
@@ -3228,7 +3228,9 @@
     return abbreviateNumericCartoucheEntries(cps,options).map(entry => entry.cp);
   }
   function abbreviationOptionsForKind(kind){
-    return {showTelephoneHyphenEn:kind === "telephone"};
+    // All abbreviated numeric cartouches show the optional Ene spacer.
+    // Keep the kind parameter so every existing call site remains unchanged.
+    return {showTelephoneHyphenEn:true};
   }
   function renderCartoucheToCanvas(canvas,codepoints,largePx=LARGE_TINY_FONT_SIZE,smallPx=SMALL_TINY_FONT_SIZE,options=CARTOUCHE_RENDER_OPTS){
     const pad=options.padding ?? 8, border=options.border ?? 1, corner=options.cornerRadius ?? 10, letterGap=options.letterGap ?? 2;

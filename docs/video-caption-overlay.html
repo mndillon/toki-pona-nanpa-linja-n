@@ -3418,7 +3418,9 @@ window.SitelenRenderer = SitelenRenderer;
           fontSize: 56,
           align: "center",
           spacingPreset: "default",
+          nasinNanpaPona: false,
           abbreviateNumericCartouches: true,
+          preserveNumericCartoucheBreaksInAbbreviation: true,
           nanpaLinjanMode: "relaxed",
           preserveCenterOnAutoResize: false,
           color: "#111111",
@@ -3519,7 +3521,9 @@ window.SitelenRenderer = SitelenRenderer;
     const importedDefaultsItem = (project.defaults && typeof project.defaults === "object" && project.defaults.item && typeof project.defaults.item === "object")
       ? project.defaults.item
       : {};
+    const importedDefaultsHadNasinNanpaPona = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "nasinNanpaPona");
     const importedDefaultsHadAbbreviateNumericCartouches = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "abbreviateNumericCartouches");
+    const importedDefaultsHadPreserveNumericCartoucheBreaksInAbbreviation = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "preserveNumericCartoucheBreaksInAbbreviation");
     const importedDefaultsHadNanpaLinjanMode = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "nanpaLinjanMode");
     project.schemaVersion = SCHEMA_VERSION;
 
@@ -3535,8 +3539,14 @@ window.SitelenRenderer = SitelenRenderer;
     project.defaults.item.fontSize = Math.max(6, Number(project.defaults.item.fontSize || base.defaults.item.fontSize));
     project.defaults.item.fontFamily = normalizeLiteralFontFamily(project.defaults.item.fontFamily, project.defaults.item.sitelenFontFamily);
     project.defaults.item.spacingPreset = normalizeSpacingPreset(project.defaults.item.spacingPreset);
+    project.defaults.item.nasinNanpaPona = importedDefaultsHadNasinNanpaPona
+      ? !!project.defaults.item.nasinNanpaPona
+      : false;
     project.defaults.item.abbreviateNumericCartouches = importedDefaultsHadAbbreviateNumericCartouches
       ? !!project.defaults.item.abbreviateNumericCartouches
+      : false;
+    project.defaults.item.preserveNumericCartoucheBreaksInAbbreviation = importedDefaultsHadPreserveNumericCartoucheBreaksInAbbreviation
+      ? !!project.defaults.item.preserveNumericCartoucheBreaksInAbbreviation
       : false;
     project.defaults.item.nanpaLinjanMode = importedDefaultsHadNanpaLinjanMode
       ? normalizeNanpaLinjanMode(project.defaults.item.nanpaLinjanMode)
@@ -3556,13 +3566,19 @@ window.SitelenRenderer = SitelenRenderer;
       if (!Array.isArray(seg.items)) seg.items = [];
       for (const item of seg.items){
         if (!item || typeof item !== "object") continue;
+        const itemHadNasinNanpaPona = Object.prototype.hasOwnProperty.call(item, "nasinNanpaPona");
         const itemHadAbbreviateNumericCartouches = Object.prototype.hasOwnProperty.call(item, "abbreviateNumericCartouches");
+        const itemHadPreserveNumericCartoucheBreaksInAbbreviation = Object.prototype.hasOwnProperty.call(item, "preserveNumericCartoucheBreaksInAbbreviation");
         const itemHadNanpaLinjanMode = Object.prototype.hasOwnProperty.call(item, "nanpaLinjanMode");
         item.sitelenFontFamily = normalizeSitelenFontFamilyKey(item.sitelenFontFamily);
         item.fontFamily = normalizeLiteralFontFamily(item.fontFamily, item.sitelenFontFamily);
         item.spacingPreset = normalizeSpacingPreset(item.spacingPreset ?? project.defaults.item.spacingPreset);
+        item.nasinNanpaPona = itemHadNasinNanpaPona ? !!item.nasinNanpaPona : false;
         item.abbreviateNumericCartouches = itemHadAbbreviateNumericCartouches
           ? !!item.abbreviateNumericCartouches
+          : false;
+        item.preserveNumericCartoucheBreaksInAbbreviation = itemHadPreserveNumericCartoucheBreaksInAbbreviation
+          ? !!item.preserveNumericCartoucheBreaksInAbbreviation
           : false;
         item.nanpaLinjanMode = itemHadNanpaLinjanMode
           ? normalizeNanpaLinjanMode(item.nanpaLinjanMode)
@@ -3626,7 +3642,9 @@ window.SitelenRenderer = SitelenRenderer;
         item0.sitelenFontFamily = normalizeSitelenFontFamilyKey(item0.sitelenFontFamily);
         item0.fontFamily = normalizeLiteralFontFamily(item0.fontFamily, item0.sitelenFontFamily);
         item0.spacingPreset = normalizeSpacingPreset(item0.spacingPreset ?? App.project.defaults.item.spacingPreset);
+        item0.nasinNanpaPona = !!(item0.nasinNanpaPona ?? false);
         item0.abbreviateNumericCartouches = !!(item0.abbreviateNumericCartouches ?? false);
+        item0.preserveNumericCartoucheBreaksInAbbreviation = !!(item0.preserveNumericCartoucheBreaksInAbbreviation ?? false);
         item0.nanpaLinjanMode = normalizeNanpaLinjanMode(item0.nanpaLinjanMode ?? "strict");
         item0.preserveCenterOnAutoResize = !!(item0.preserveCenterOnAutoResize ?? false);
         item0.color = normalizeColor(item0.color, App.project.defaults.item.color);
@@ -3681,7 +3699,9 @@ window.SitelenRenderer = SitelenRenderer;
       fontSize: d.fontSize,
       align: d.align,
       spacingPreset: normalizeSpacingPreset(d.spacingPreset),
+      nasinNanpaPona: !!d.nasinNanpaPona,
       abbreviateNumericCartouches: !!d.abbreviateNumericCartouches,
+      preserveNumericCartoucheBreaksInAbbreviation: !!d.preserveNumericCartoucheBreaksInAbbreviation,
       nanpaLinjanMode: normalizeNanpaLinjanMode(d.nanpaLinjanMode),
       preserveCenterOnAutoResize: !!d.preserveCenterOnAutoResize,
       color: d.color,
@@ -4147,7 +4167,9 @@ window.SitelenRenderer = SitelenRenderer;
     const fs = makeFontSizeControl(d.fontSize, (v) => { d.fontSize = Math.max(6, v); defaultsChanged(); });
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(d.sitelenFontFamily, (v) => { d.sitelenFontFamily = v; d.fontFamily = normalizeLiteralFontFamily(d.fontFamily, v); defaultsChanged(); })));
     sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(d.fontFamily, d.sitelenFontFamily, (v) => { d.fontFamily = v; defaultsChanged(); })));
+    sec.appendChild(makeField("Default nasin nanpa pona formatting", makeCheckbox(!!d.nasinNanpaPona, (checked) => { d.nasinNanpaPona = checked; defaultsChanged(); })));
     sec.appendChild(makeField("Default abbreviate numeric cartouche output", makeCheckbox(!!d.abbreviateNumericCartouches, (checked) => { d.abbreviateNumericCartouches = checked; defaultsChanged(); })));
+    sec.appendChild(makeField("Default show spacers in abbreviated cartouches", makeCheckbox(!!d.preserveNumericCartoucheBreaksInAbbreviation, (checked) => { d.preserveNumericCartoucheBreaksInAbbreviation = checked; defaultsChanged(); })));
     sec.appendChild(makeField("Default nanpa-linja-n mode", makeNanpaLinjanModeSelect(d.nanpaLinjanMode, (v) => { d.nanpaLinjanMode = v; defaultsChanged(); })));
     sec.appendChild(makeField("Font size", fs));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], d.align, (v) => { d.align = v; defaultsChanged(); })));
@@ -4182,7 +4204,9 @@ window.SitelenRenderer = SitelenRenderer;
         item.fontSize = d.fontSize;
         item.align = d.align;
         item.spacingPreset = normalizeSpacingPreset(d.spacingPreset);
+        item.nasinNanpaPona = !!d.nasinNanpaPona;
         item.abbreviateNumericCartouches = !!d.abbreviateNumericCartouches;
+        item.preserveNumericCartoucheBreaksInAbbreviation = !!d.preserveNumericCartoucheBreaksInAbbreviation;
         item.nanpaLinjanMode = normalizeNanpaLinjanMode(d.nanpaLinjanMode);
         item.preserveCenterOnAutoResize = !!d.preserveCenterOnAutoResize;
         item.color = d.color;
@@ -4278,7 +4302,9 @@ window.SitelenRenderer = SitelenRenderer;
 
     sec.appendChild(makeField("Sitelen font family", makeSitelenFontFamilySelect(item.sitelenFontFamily, (v) => patchActiveItem({ sitelenFontFamily: v, fontFamily: normalizeLiteralFontFamily(item.fontFamily, v) }, true))));
     sec.appendChild(makeField("Quoted text font", makeTextFontFamilySelect(item.fontFamily, item.sitelenFontFamily, (v) => patchActiveItem({ fontFamily: v }, true))));
+    sec.appendChild(makeField("nasin nanpa pona formatting", makeCheckbox(!!item.nasinNanpaPona, (checked) => patchActiveItem({ nasinNanpaPona: checked }, true))));
     sec.appendChild(makeField("Abbreviate numeric cartouche output", makeCheckbox(!!item.abbreviateNumericCartouches, (checked) => patchActiveItem({ abbreviateNumericCartouches: checked }, true))));
+    sec.appendChild(makeField("Show spacers in abbreviated cartouches", makeCheckbox(!!item.preserveNumericCartoucheBreaksInAbbreviation, (checked) => patchActiveItem({ preserveNumericCartoucheBreaksInAbbreviation: checked }, true))));
     sec.appendChild(makeField("nanpa-linja-n mode", makeNanpaLinjanModeSelect(getItemNanpaLinjanMode(item), (v) => patchActiveItem({ nanpaLinjanMode: v }, true))));
     sec.appendChild(makeField("Font size", makeFontSizeControl(item.fontSize, (v) => patchActiveItem({ fontSize: Math.max(6, v) }, true))));
     sec.appendChild(makeField("Align", makeSimpleSelect(["left","center","right"], item.align, (v) => patchActiveItem({ align: v }, true))));
@@ -5196,7 +5222,9 @@ window.SitelenRenderer = SitelenRenderer;
       Number(item.fontSize || 24),
       String(item.align || 'left'),
       getItemSpacingPreset(item),
+      !!item.nasinNanpaPona,
       !!item.abbreviateNumericCartouches,
+      !!item.preserveNumericCartoucheBreaksInAbbreviation,
       getItemNanpaLinjanMode(item),
       !!item.preserveCenterOnAutoResize,
       String(item.color || ''),
@@ -5232,7 +5260,9 @@ window.SitelenRenderer = SitelenRenderer;
         cartoucheStyle: 'ssk',
         numericMode: 'compat',
         mixedStyle: 'short',
+        nasinNanpaPona: false,
         abbreviateNumericCartouches: false,
+        preserveNumericCartoucheBreaksInAbbreviation: false,
         relaxedNanpaLinjanParsing: false,
         relaxedNanpaLinjanRendering: false,
         cartoucheCommaTallyMarks: true,
@@ -5360,7 +5390,9 @@ window.SitelenRenderer = SitelenRenderer;
           cartoucheStyle: 'ssk',
           numericMode: 'compat',
           mixedStyle: 'short',
+          nasinNanpaPona: !!item.nasinNanpaPona,
           abbreviateNumericCartouches: !!item.abbreviateNumericCartouches,
+          preserveNumericCartoucheBreaksInAbbreviation: !!item.preserveNumericCartoucheBreaksInAbbreviation,
           relaxedNanpaLinjanParsing: isItemRelaxedNanpaLinjanMode(item),
           relaxedNanpaLinjanRendering: isItemRelaxedNanpaLinjanMode(item),
           showUnknownText: !item.ignoreUnknownText,
