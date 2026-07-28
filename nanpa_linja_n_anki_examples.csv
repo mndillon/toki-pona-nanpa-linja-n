@@ -1,118 +1,132 @@
-concatinate rule,always start a nanpa-linja-n cartouche proper name with ne- and in the middle concatenate smaller pieces to make larger sequences and always end cartouche with -n
-nanpa-linja-n cartouche proper name rule,a nanpa-linja-n cartouche proper name can naturally split into separate words at numeric delimiters
-0,ni - Nenin
-ni,0
-1,we - Newen
-we,1
-2,te - Neten
-te,2
-3,se - Nesen
-se,3
-4,na - Nenan
-na,4
-5,le - Nelen
-le,5
-6,nu - Nenun
-nu,6
-7,me - Nemen
-me,7
-8,pe - Nepen
-pe,8
-9,je - Nejen
-je,9
-neke,thousand marker
-"2,345",Neten Ene Senalen
-thousand marker,neke
-neke,million marker
-million marker,neke
-"1,234,567",Newen Eke Tesenan Eke Lenumen
-neke,billion marker
-"30,567,209,481",Nesenin Eke Lenumen Eke Tenijen Eke Napewen
-billion marker,neke
-neken,exact thousand
-"73,000",Nemesen Eken
-exact thousand,neken
-nekeken,exact million
-"492,000,000",Nenajeten Ekeken
-exact million,nekeken
-nekekeken,exact billion
-"33,000,000,000",Nesesen Ekekeken
-exact billion,nekekeken
-nene,break up long digit sequences with no change in value
-breakup long sequences of digits more parts to follow,nene
-"243-555-0179",Netenasen Ene Lelelen Ene Niwemejen
-none,decimal separator
-decimal separator,none
-12.04,neweten one ninan
-nono,fraction separator
-fraction separator,nono
-5/8,nelen ono pen
-no,minus marker
-minus marker,no
--0.4,nenonin ono nan
-25 January 2025,tenpo suno nanpa netelen pi mun sike nanpa newen pi sike nanpa neten ene nitelen
-tenpo suno nanpa netelen pi mun sike nanpa newen pi sike nanpa neten ene nitelen,25 January 2025
-04/11/2023,tenpo suno nanpa nenan pi mun nanpa newewen pi sike nanpa neten ene nitesen
-tenpo suno nanpa nenan pi mun nanpa newewen pi sike nanpa neten ene nitesen,04/11/2023
-Year is 2025,tenpo sike li nanpa neten ene nitelen
-tenpo sike li nanpa neten ene nitelen,Year is 2025
-Year is 2025,tenpo sike li nanpa netenitelen
-tenpo sike li nanpa netenitelen,Year is 2025
-On Friday I go to sport,suno sike nanpa nelen la mi tawa utala
-suno sike nanpa nelen la mi tawa utala,On Friday I go to sport
-On 2nd of October I travel,tenpo suno nanpa tu lon mun sike nanpa newenin la mi tawa
-tenpo suno nanpa tu lon mun sike nanpa newenin la mi tawa,On 2nd of October I travel
-I am 37 years old,tenpo sike nanpa nesemen la mi jan suli
-tenpo sike nanpa nesemen la mi jan suli,I am 37 years old
-She is 29,ona li jo e tenpo sike nanpa netejen
-ona li jo e tenpo sike nanpa netejen,She is 29
-The meeting is at 14:30,tenpo suno la ni li lon tenpo newenan one senin
-tenpo suno la ni li lon tenpo newenan one senin,The meeting is at 14:30
-It is 7:05,tenpo ni li nesen one nilen
-tenpo ni li nesen one nilen,It is 7:05
-The logs say 21:34:56 UTC,toki pi lipu sona li toki e tenpo netewen one senan one lenun lon ma UTC
-toki pi lipu sona li toki e tenpo netewen one senan one lenun lon ma UTC,The logs say 21:34:56 UTC
-This costs 12 dollars,mani pi ijo ni li neweten
-mani pi ijo ni li neweten,This costs 12 dollars
-The total is 3.75,mani ale li nanpa nesen one melen
-mani ale li nanpa nesen one melen,The total is 3.75
-Length: 2.5 m,linja ni li suli neten one len mije
-linja ni li suli neten one len mije,Length: 2.5 m
-Weight: 0.75 kg,kiwen ni li walo nenin one melen kilokilo
-kiwen ni li walo nenin one melen kilokilo,Weight: 0.75 kg
-Today it is 18 degrees,tenpo suno ni li seli newepen
-tenpo suno ni li seli newepen,Today it is 18 degrees
-Minus 3 degrees,tenpo suno ni li seli nenosen
-tenpo suno ni li seli nenosen,Minus 3 degrees
-The city is 12 km away,tomo tawa li weka neweten kilometo tan ni
-tomo tawa li weka neweten kilometo tan ni,The city is 12 km away
-The car is moving at 57 km/h,tomo tawa li tawa kepeken wawa nelemen kilometo lon tenpo wan
-tomo tawa li tawa kepeken wawa nelemen kilometo lon tenpo wan,The car is moving at 57 km/h
-5 4 3 2 1,nelen nenan nesen neten newen
-nelen nenan nesen neten newen,5 4 3 2 1
-I have 23 apples,mi jo e kili nanpa netesen
-mi jo e kili nanpa netesen,I have 23 apples
-There are 100 people here,jan li neweninin lon ni
-jan li neweninin lon ni,There are 100 people here
-"The point is at (3,12)",poki li lon sitelen nesen en sitelen neweten
-poki li lon sitelen nesen en sitelen neweten,"The point is at (3,12)"
-3/4 is 0.75,nesen ono nan li sama nenin one melen
-nesen ono nan li sama nenin one melen,3/4 is 0.75
-17.3 + 9.5 = 26.8,newemen one sen en nejen one len li sama netenun one pen
-newemen one sen en nejen one len li sama netenun one pen,17.3 + 9.5 = 26.8
-12 × 5 = 60,neweten emute nelen li sama nenunin
-neweten emute nelen li sama nenunin,12 × 5 = 60
-27 × 0 = 0,netemen emute nenin li sama nenin
-netemen emute nenin li sama nenin,27 × 0 = 0
-Room 204,tomo ni li tomo nanpa neteninan
-tomo ni li tomo nanpa neteninan,Room 204
-Your ID number is 40251,nanpa sona sina li nenanitelewen
-nanpa sona sina li nenanitelewen,Your ID number is 40251
-My telephone number is 243-555-0189,"nanpa pi ilo toki mi li: netenasen ene lelelen ene niwepejen"
-"nanpa pi ilo toki mi li: netenasen ene lelelen ene niwepejen",My telephone number is 243-555-0189
-"Call 731!","o tawa nemesewen!"
-"o tawa nemesewen!","Call 731!"
-Train arrives at 19:48,tomo tawa li kama lon tenpo newejen one napen
-tomo tawa li kama lon tenpo newejen one napen,Train arrives at 19:48
-Add 250 ml of water,o pana e telo nanpa netelenin mililita
-o pana e telo nanpa netelenin mililita,Add 250 ml of water
+﻿Prompt,Answer,Extra,Category,Decimal,ProperNameRelaxed,StrictRecognition,FullCartoucheWords,AbbreviatedCartoucheWords,HashAbbreviation,Tags
+What is nanpa-linja-n?,A notation system that reversibly encodes decimal digit strings as proper names and numeric cartouches.,It does not add new words to the Toki Pona lexicon.,01 Foundations,,,,,,,foundation
+How does every nanpa-linja-n numeric proper name begin and end?,It begins with Ne- and ends with -n.,Example: 125 → Newatulun.,01 Foundations,,,,,,,foundation structure
+How are multi-digit values formed?,Concatenate one designated syllable for each decimal digit between initial Ne- and final -n.,Relaxed 125: Ne + wa + tu + lu + n → Newatulun.,01 Foundations,,,,,,,foundation structure
+Where may a long numeric proper name be split into words?,At numeric punctuation markers.,The marker’s initial n normally closes the preceding word: 2.5 → Netun One Lun.,01 Foundations,,,,,,,foundation word-splitting
+What is the exception to the normal punctuation word-splitting rule?,The negative marker no.,It can attach to initial Ne- as Neno: −5 → Neno Lun.,01 Foundations,,,,,,,foundation negative
+Which mode should beginners normally produce?,Relaxed mode.,"Strict forms remain useful for recognition, but relaxed mode supplies the preferred output forms used in this deck.",01 Foundations,,,,,,,foundation mode::relaxed
+How are exact hundreds optionally split?,The final two zeros may be written as a separate Inin word.,100 → Newan Inin; 200 → Netun Inin.,01 Foundations,,,,,,,foundation hundreds
+What changes when a numeric cartouche is abbreviated?,"Interior supporting nena, en and open glyphs are removed where the specification permits.",The value and pronunciation remain the same. Optional spacer en glyphs may still be shown.,01 Foundations,,,,,,,foundation cartouche::abbreviated
+Encode digit 0 in preferred relaxed mode.,ni — Nenin,Preferred relaxed syllable: ni. Main abbreviated-cartouche glyph: ijo.,02 Relaxed digits,0,Nenin,,[nanpa en nena ijo nanpa],[nanpa ijo nanpa],#~I,digit digit::0 mode::relaxed
+Which decimal digit is represented by relaxed syllable “ni”?,0,Nenin is the single-digit proper name.,02 Relaxed digits,0,Nenin,,[nanpa en nena ijo nanpa],[nanpa ijo nanpa],#~I,digit digit::0 recognition
+Encode digit 1 in preferred relaxed mode.,wa — Newan,Preferred relaxed syllable: wa. Main abbreviated-cartouche glyph: wan. Strict recognition form: we.,02 Relaxed digits,1,Newan,we,[nanpa en wan ala nanpa],[nanpa wan nanpa],#~W,digit digit::1 mode::relaxed
+Which decimal digit is represented by relaxed syllable “wa”?,1,Newan is the single-digit proper name.,02 Relaxed digits,1,Newan,we,[nanpa en wan ala nanpa],[nanpa wan nanpa],#~W,digit digit::1 recognition
+Encode digit 2 in preferred relaxed mode.,tu — Netun,Preferred relaxed syllable: tu. Main abbreviated-cartouche glyph: tu. Strict recognition form: te.,02 Relaxed digits,2,Netun,te,[nanpa en tu uta nanpa],[nanpa tu nanpa],#~T,digit digit::2 mode::relaxed
+Which decimal digit is represented by relaxed syllable “tu”?,2,Netun is the single-digit proper name.,02 Relaxed digits,2,Netun,te,[nanpa en tu uta nanpa],[nanpa tu nanpa],#~T,digit digit::2 recognition
+Encode digit 3 in preferred relaxed mode.,se — Nesen,Preferred relaxed syllable: se. Main abbreviated-cartouche glyph: seli.,02 Relaxed digits,3,Nesen,,[nanpa en seli en nanpa],[nanpa seli nanpa],#~S,digit digit::3 mode::relaxed
+Which decimal digit is represented by relaxed syllable “se”?,3,Nesen is the single-digit proper name.,02 Relaxed digits,3,Nesen,,[nanpa en seli en nanpa],[nanpa seli nanpa],#~S,digit digit::3 recognition
+Encode digit 4 in preferred relaxed mode.,na — Nenan,Preferred relaxed syllable: na. Main abbreviated-cartouche glyph: awen.,02 Relaxed digits,4,Nenan,,[nanpa en nena awen nanpa],[nanpa awen nanpa],#~A,digit digit::4 mode::relaxed
+Which decimal digit is represented by relaxed syllable “na”?,4,Nenan is the single-digit proper name.,02 Relaxed digits,4,Nenan,,[nanpa en nena awen nanpa],[nanpa awen nanpa],#~A,digit digit::4 recognition
+Encode digit 5 in preferred relaxed mode.,lu — Nelun,Preferred relaxed syllable: lu. Main abbreviated-cartouche glyph: luka. Strict recognition form: le.,02 Relaxed digits,5,Nelun,le,[nanpa en luka uta nanpa],[nanpa luka nanpa],#~L,digit digit::5 mode::relaxed
+Which decimal digit is represented by relaxed syllable “lu”?,5,Nelun is the single-digit proper name.,02 Relaxed digits,5,Nelun,le,[nanpa en luka uta nanpa],[nanpa luka nanpa],#~L,digit digit::5 recognition
+Encode digit 6 in preferred relaxed mode.,nu — Nenun,Preferred relaxed syllable: nu. Main abbreviated-cartouche glyph: utala.,02 Relaxed digits,6,Nenun,,[nanpa en nena utala nanpa],[nanpa utala nanpa],#~U,digit digit::6 mode::relaxed
+Which decimal digit is represented by relaxed syllable “nu”?,6,Nenun is the single-digit proper name.,02 Relaxed digits,6,Nenun,,[nanpa en nena utala nanpa],[nanpa utala nanpa],#~U,digit digit::6 recognition
+Encode digit 7 in preferred relaxed mode.,mu — Nemun,Preferred relaxed syllable: mu. Main abbreviated-cartouche glyph: mun. Strict recognition form: me.,02 Relaxed digits,7,Nemun,me,[nanpa en mun uta nanpa],[nanpa mun nanpa],#~M,digit digit::7 mode::relaxed
+Which decimal digit is represented by relaxed syllable “mu”?,7,Nemun is the single-digit proper name.,02 Relaxed digits,7,Nemun,me,[nanpa en mun uta nanpa],[nanpa mun nanpa],#~M,digit digit::7 recognition
+Encode digit 8 in preferred relaxed mode.,pi — Nepin,Preferred relaxed syllable: pi. Main abbreviated-cartouche glyph: pipi. Strict recognition form: pe.,02 Relaxed digits,8,Nepin,pe,[nanpa en pipi ike nanpa],[nanpa pipi nanpa],#~P,digit digit::8 mode::relaxed
+Which decimal digit is represented by relaxed syllable “pi”?,8,Nepin is the single-digit proper name.,02 Relaxed digits,8,Nepin,pe,[nanpa en pipi ike nanpa],[nanpa pipi nanpa],#~P,digit digit::8 recognition
+Encode digit 9 in preferred relaxed mode.,je — Nejen,Preferred relaxed syllable: je. Main abbreviated-cartouche glyph: jo.,02 Relaxed digits,9,Nejen,,[nanpa en jo en nanpa],[nanpa jo nanpa],#~J,digit digit::9 mode::relaxed
+Which decimal digit is represented by relaxed syllable “je”?,9,Nejen is the single-digit proper name.,02 Relaxed digits,9,Nejen,,[nanpa en jo en nanpa],[nanpa jo nanpa],#~J,digit digit::9 recognition
+"In strict mode, which digit is represented by “we”?",1,Preferred relaxed production uses “wa”; both are accepted in relaxed parsing.,03 Strict-mode recognition,1,Newan,we,[nanpa en wan ala nanpa],[nanpa wan nanpa],#~W,digit digit::1 mode::strict-recognition
+"In strict mode, which digit is represented by “te”?",2,Preferred relaxed production uses “tu”; both are accepted in relaxed parsing.,03 Strict-mode recognition,2,Netun,te,[nanpa en tu uta nanpa],[nanpa tu nanpa],#~T,digit digit::2 mode::strict-recognition
+"In strict mode, which digit is represented by “le”?",5,Preferred relaxed production uses “lu”; both are accepted in relaxed parsing.,03 Strict-mode recognition,5,Nelun,le,[nanpa en luka uta nanpa],[nanpa luka nanpa],#~L,digit digit::5 mode::strict-recognition
+"In strict mode, which digit is represented by “me”?",7,Preferred relaxed production uses “mu”; both are accepted in relaxed parsing.,03 Strict-mode recognition,7,Nemun,me,[nanpa en mun uta nanpa],[nanpa mun nanpa],#~M,digit digit::7 mode::strict-recognition
+"In strict mode, which digit is represented by “pe”?",8,Preferred relaxed production uses “pi”; both are accepted in relaxed parsing.,03 Strict-mode recognition,8,Nepin,pe,[nanpa en pipi ike nanpa],[nanpa pipi nanpa],#~P,digit digit::8 mode::strict-recognition
+What does the marker “no” represent?,negative marker,It may occur only at the start of a number or exponent.,04 Numeric punctuation,-5,Neno Lun,,[nanpa en nena ona luka uta nanpa],[nanpa ona luka nanpa],#~oL,punctuation punctuation::negative
+Which nanpa-linja-n marker represents negative marker?,no,It may occur only at the start of a number or exponent.,04 Numeric punctuation,-5,Neno Lun,,[nanpa en nena ona luka uta nanpa],[nanpa ona luka nanpa],#~oL,punctuation punctuation::negative recognition
+What does the marker “none” represent?,decimal separator,Canonical split form: -n One. At least one digit appears on each side.,04 Numeric punctuation,2.5,Netun One Lun,,[nanpa en tu uta nena o nena en luka uta nanpa],[nanpa tu o luka nanpa],#~ToL,punctuation punctuation::decimal
+Which nanpa-linja-n marker represents decimal separator?,none,Canonical split form: -n One. At least one digit appears on each side.,04 Numeric punctuation,2.5,Netun One Lun,,[nanpa en tu uta nena o nena en luka uta nanpa],[nanpa tu o luka nanpa],#~ToL,punctuation punctuation::decimal recognition
+What does the marker “neke” represent?,ISO thousands-block marker,"Canonical split form: -n Eke; exact trailing blocks may end in Eken, Ekeken or Ekekeken.",04 Numeric punctuation,"2,345",Netun Eke Senalun,,[nanpa en tu uta nena en kulupu en seli en nena awen luka uta nanpa],[nanpa tu kulupu seli awen luka nanpa],#~TkSAL,punctuation punctuation::thousands
+Which nanpa-linja-n marker represents ISO thousands-block marker?,neke,"Canonical split form: -n Eke; exact trailing blocks may end in Eken, Ekeken or Ekekeken.",04 Numeric punctuation,"2,345",Netun Eke Senalun,,[nanpa en tu uta nena en kulupu en seli en nena awen luka uta nanpa],[nanpa tu kulupu seli awen luka nanpa],#~TkSAL,punctuation punctuation::thousands recognition
+What does the marker “noke” represent?,percentage marker,It occurs at the end and normally appears as final Oken.,04 Numeric punctuation,10.5%,Newanin One Lun Oken,,[nanpa en wan ala nena ijo nena o nena en luka uta nena open kipisi en nanpa],[nanpa wan ijo o luka kipisi nanpa],#~WIoLok,punctuation punctuation::percent
+Which nanpa-linja-n marker represents percentage marker?,noke,It occurs at the end and normally appears as final Oken.,04 Numeric punctuation,10.5%,Newanin One Lun Oken,,[nanpa en wan ala nena ijo nena o nena en luka uta nena open kipisi en nanpa],[nanpa wan ijo o luka kipisi nanpa],#~WIoLok,punctuation punctuation::percent recognition
+What does the marker “nono” represent?,numerator/denominator separator,Canonical split form: -n Ono.,04 Numeric punctuation,5/8,Nelun Ono Pin,,[nanpa en luka uta nena o nena o pipi ike nanpa],[nanpa luka o o pipi nanpa],#~LooP,punctuation punctuation::fraction
+Which nanpa-linja-n marker represents numerator/denominator separator?,nono,Canonical split form: -n Ono.,04 Numeric punctuation,5/8,Nelun Ono Pin,,[nanpa en luka uta nena o nena o pipi ike nanpa],[nanpa luka o o pipi nanpa],#~LooP,punctuation punctuation::fraction recognition
+What does the marker “noko” represent?,integer/fraction separator in a mixed fraction,Canonical split form: -n Oko.,04 Numeric punctuation,9¾,Nejen Oko Sen Ono Nan,,[nanpa en jo en nena open kin open seli en nena o nena o nena awen nanpa],[nanpa jo kin seli o o awen nanpa],#~JokoSooA,punctuation punctuation::mixed-fraction
+Which nanpa-linja-n marker represents integer/fraction separator in a mixed fraction?,noko,Canonical split form: -n Oko.,04 Numeric punctuation,9¾,Nejen Oko Sen Ono Nan,,[nanpa en jo en nena open kin open seli en nena o nena o nena awen nanpa],[nanpa jo kin seli o o awen nanpa],#~JokoSooA,punctuation punctuation::mixed-fraction recognition
+What does the marker “neko” represent?,scientific-notation marker,It marks both the ×10 element and the exponent boundary.,04 Numeric punctuation,4.5e-3,Nenan One Lun Eko Wanin Eko Nosen,,[nanpa en nena awen nena o nena en luka uta nena en kala open wan ala nena ijo nena en kala open nena ona seli en nanpa],[nanpa awen o luka kala wan ijo kala ona seli nanpa],#~AoLkoWIkooS,punctuation punctuation::scientific
+Which nanpa-linja-n marker represents scientific-notation marker?,neko,It marks both the ×10 element and the exponent boundary.,04 Numeric punctuation,4.5e-3,Nenan One Lun Eko Wanin Eko Nosen,,[nanpa en nena awen nena o nena en luka uta nena en kala open wan ala nena ijo nena en kala open nena ona seli en nanpa],[nanpa awen o luka kala wan ijo kala ona seli nanpa],#~AoLkoWIkooS,punctuation punctuation::scientific recognition
+What does the marker “neke” represent?,date/time separator,Context distinguishes this from ISO thousands grouping; its cartouche glyph uses kasi.,04 Numeric punctuation,14:30,Newanan Eke Senin,,[nanpa en wan ala nena awen nena en kasi en seli en nena ijo nanpa],[nanpa wan awen kasi seli ijo nanpa],#~WAkSI,punctuation punctuation::datetime
+Which nanpa-linja-n marker represents date/time separator?,neke,Context distinguishes this from ISO thousands grouping; its cartouche glyph uses kasi.,04 Numeric punctuation,14:30,Newanan Eke Senin,,[nanpa en wan ala nena awen nena en kasi en seli en nena ijo nanpa],[nanpa wan awen kasi seli ijo nanpa],#~WAkSI,punctuation punctuation::datetime recognition
+What does the marker “nene” represent?,no-value spacer,It can divide a long digit sequence without changing its digits or numeric value.,04 Numeric punctuation,243-555-0189,Netunasen Ene Lululun Ene Niwapijen,,[nanpa en tu uta nena awen seli en nena en nena en luka uta luka uta luka uta nena en nena en nena ijo wan ala pipi ike jo en nanpa],[nanpa tu awen seli en luka luka luka en ijo wan pipi jo nanpa],#~TASLLLIWPJ,punctuation punctuation::spacer
+Which nanpa-linja-n marker represents no-value spacer?,nene,It can divide a long digit sequence without changing its digits or numeric value.,04 Numeric punctuation,243-555-0189,Netunasen Ene Lululun Ene Niwapijen,,[nanpa en tu uta nena awen seli en nena en nena en luka uta luka uta luka uta nena en nena en nena ijo wan ala pipi ike jo en nanpa],[nanpa tu awen seli en luka luka luka en ijo wan pipi jo nanpa],#~TASLLLIWPJ,punctuation punctuation::spacer recognition
+Encode 125 as a preferred relaxed nanpa-linja-n proper name.,Newatulun,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,125,Newatulun,,[nanpa en wan ala tu uta luka uta nanpa],[nanpa wan tu luka nanpa],#~WTL,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Newatulun,125,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,125,Newatulun,,[nanpa en wan ala tu uta luka uta nanpa],[nanpa wan tu luka nanpa],#~WTL,conversion direction::name-to-decimal
+Encode 23 as a preferred relaxed nanpa-linja-n proper name.,Netusen,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,23,Netusen,,[nanpa en tu uta seli en nanpa],[nanpa tu seli nanpa],#~TS,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Netusen,23,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,23,Netusen,,[nanpa en tu uta seli en nanpa],[nanpa tu seli nanpa],#~TS,conversion direction::name-to-decimal
+Encode 100 as a preferred relaxed nanpa-linja-n proper name.,Newan Inin,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,100,Newan Inin,,[nanpa en wan ala nena ijo nena ijo nanpa],[nanpa wan ijo ijo nanpa],#~WII,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Newan Inin,100,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,100,Newan Inin,,[nanpa en wan ala nena ijo nena ijo nanpa],[nanpa wan ijo ijo nanpa],#~WII,conversion direction::name-to-decimal
+"Encode 2,345 as a preferred relaxed nanpa-linja-n proper name.",Netun Eke Senalun,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,"2,345",Netun Eke Senalun,,[nanpa en tu uta nena en kulupu en seli en nena awen luka uta nanpa],[nanpa tu kulupu seli awen luka nanpa],#~TkSAL,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Netun Eke Senalun,"2,345","The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,"2,345",Netun Eke Senalun,,[nanpa en tu uta nena en kulupu en seli en nena awen luka uta nanpa],[nanpa tu kulupu seli awen luka nanpa],#~TkSAL,conversion direction::name-to-decimal
+"Encode 12,000 as a preferred relaxed nanpa-linja-n proper name.",Newatun Eken,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,"12,000",Newatun Eken,,[nanpa en wan ala tu uta nena en kulupu en nena ijo nena ijo nena ijo nanpa],[nanpa wan tu kulupu ijo ijo ijo nanpa],#~WTkIII,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Newatun Eken,"12,000","The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,"12,000",Newatun Eken,,[nanpa en wan ala tu uta nena en kulupu en nena ijo nena ijo nena ijo nanpa],[nanpa wan tu kulupu ijo ijo ijo nanpa],#~WTkIII,conversion direction::name-to-decimal
+Encode 007 as a preferred relaxed nanpa-linja-n proper name.,Neninimun,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,007,Neninimun,,[nanpa en nena ijo nena ijo mun uta nanpa],[nanpa ijo ijo mun nanpa],#~IIM,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Neninimun,007,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,007,Neninimun,,[nanpa en nena ijo nena ijo mun uta nanpa],[nanpa ijo ijo mun nanpa],#~IIM,conversion direction::name-to-decimal
+Encode 12.04 as a preferred relaxed nanpa-linja-n proper name.,Newatun One Ninan,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,12.04,Newatun One Ninan,,[nanpa en wan ala tu uta nena o nena en nena ijo nena awen nanpa],[nanpa wan tu o ijo awen nanpa],#~WToIA,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Newatun One Ninan,12.04,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,12.04,Newatun One Ninan,,[nanpa en wan ala tu uta nena o nena en nena ijo nena awen nanpa],[nanpa wan tu o ijo awen nanpa],#~WToIA,conversion direction::name-to-decimal
+Encode -0.4 as a preferred relaxed nanpa-linja-n proper name.,Neno Nin One Nan,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,-0.4,Neno Nin One Nan,,[nanpa en nena ona nena ijo nena o nena en nena awen nanpa],[nanpa ona ijo o awen nanpa],#~oIoA,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Neno Nin One Nan,-0.4,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,-0.4,Neno Nin One Nan,,[nanpa en nena ona nena ijo nena o nena en nena awen nanpa],[nanpa ona ijo o awen nanpa],#~oIoA,conversion direction::name-to-decimal
+Encode 5/8 as a preferred relaxed nanpa-linja-n proper name.,Nelun Ono Pin,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,5/8,Nelun Ono Pin,,[nanpa en luka uta nena o nena o pipi ike nanpa],[nanpa luka o o pipi nanpa],#~LooP,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Nelun Ono Pin,5/8,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,5/8,Nelun Ono Pin,,[nanpa en luka uta nena o nena o pipi ike nanpa],[nanpa luka o o pipi nanpa],#~LooP,conversion direction::name-to-decimal
+Encode 9¾ as a preferred relaxed nanpa-linja-n proper name.,Nejen Oko Sen Ono Nan,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,9¾,Nejen Oko Sen Ono Nan,,[nanpa en jo en nena open kin open seli en nena o nena o nena awen nanpa],[nanpa jo kin seli o o awen nanpa],#~JokoSooA,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Nejen Oko Sen Ono Nan,9¾,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,9¾,Nejen Oko Sen Ono Nan,,[nanpa en jo en nena open kin open seli en nena o nena o nena awen nanpa],[nanpa jo kin seli o o awen nanpa],#~JokoSooA,conversion direction::name-to-decimal
+Encode 10.5% as a preferred relaxed nanpa-linja-n proper name.,Newanin One Lun Oken,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,10.5%,Newanin One Lun Oken,,[nanpa en wan ala nena ijo nena o nena en luka uta nena open kipisi en nanpa],[nanpa wan ijo o luka kipisi nanpa],#~WIoLok,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Newanin One Lun Oken,10.5%,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,10.5%,Newanin One Lun Oken,,[nanpa en wan ala nena ijo nena o nena en luka uta nena open kipisi en nanpa],[nanpa wan ijo o luka kipisi nanpa],#~WIoLok,conversion direction::name-to-decimal
+Encode 4.5e-3 as a preferred relaxed nanpa-linja-n proper name.,Nenan One Lun Eko Wanin Eko Nosen,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,4.5e-3,Nenan One Lun Eko Wanin Eko Nosen,,[nanpa en nena awen nena o nena en luka uta nena en kala open wan ala nena ijo nena en kala open nena ona seli en nanpa],[nanpa awen o luka kala wan ijo kala ona seli nanpa],#~AoLkoWIkooS,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Nenan One Lun Eko Wanin Eko Nosen,4.5e-3,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,4.5e-3,Nenan One Lun Eko Wanin Eko Nosen,,[nanpa en nena awen nena o nena en luka uta nena en kala open wan ala nena ijo nena en kala open nena ona seli en nanpa],[nanpa awen o luka kala wan ijo kala ona seli nanpa],#~AoLkoWIkooS,conversion direction::name-to-decimal
+Encode 14:30 as a preferred relaxed nanpa-linja-n proper name.,Newanan Eke Senin,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,14:30,Newanan Eke Senin,,[nanpa en wan ala nena awen nena en kasi en seli en nena ijo nanpa],[nanpa wan awen kasi seli ijo nanpa],#~WAkSI,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Newanan Eke Senin,14:30,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,14:30,Newanan Eke Senin,,[nanpa en wan ala nena awen nena en kasi en seli en nena ijo nanpa],[nanpa wan awen kasi seli ijo nanpa],#~WAkSI,conversion direction::name-to-decimal
+Encode 2026-03-17 as a preferred relaxed nanpa-linja-n proper name.,Netunitunun Eke Nisen Eke Wamun,Spaces show the canonical readable split and do not change the underlying encoding.,05 Conversion practice,2026-03-17,Netunitunun Eke Nisen Eke Wamun,,[nanpa en tu uta nena ijo tu uta nena utala nena en kasi en nena ijo seli en nena en kasi en wan ala mun uta nanpa],[nanpa tu ijo tu utala kasi ijo seli kasi wan mun nanpa],#~TITUkISkWM,conversion direction::decimal-to-name
+Decode this nanpa-linja-n proper name: Netunitunun Eke Nisen Eke Wamun,2026-03-17,"The original decimal notation is preserved, including leading or trailing zeros.",05 Conversion practice,2026-03-17,Netunitunun Eke Nisen Eke Wamun,,[nanpa en tu uta nena ijo tu uta nena utala nena en kasi en nena ijo seli en nena en kasi en wan ala mun uta nanpa],[nanpa tu ijo tu utala kasi ijo seli kasi wan mun nanpa],#~TITUkISkWM,conversion direction::name-to-decimal
+2023-04-11,tenpo suno nanpa Netunitusen Eke Ninan Eke Wawan,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,2023-04-11,Netunitusen Eke Ninan Eke Wawan,,[nanpa en tu uta nena ijo tu uta seli en nena en kasi en nena ijo nena awen nena en kasi en wan ala wan ala nanpa],[nanpa tu ijo tu seli kasi ijo awen kasi wan wan nanpa],#~TITSkIAkWW,context direction::english-to-toki-pona
+tenpo suno nanpa Netunitusen Eke Ninan Eke Wawan,2023-04-11,Recognise the encoded decimal information in context.,06 Context examples,2023-04-11,Netunitusen Eke Ninan Eke Wawan,,[nanpa en tu uta nena ijo tu uta seli en nena en kasi en nena ijo nena awen nena en kasi en wan ala wan ala nanpa],[nanpa tu ijo tu seli kasi ijo awen kasi wan wan nanpa],#~TITSkIAkWW,context direction::toki-pona-to-english
+Year is 2025,tenpo sike li nanpa Netunitulun.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,2025,Netunitulun,,[nanpa en tu uta nena ijo tu uta luka uta nanpa],[nanpa tu ijo tu luka nanpa],#~TITL,context direction::english-to-toki-pona
+tenpo sike li nanpa Netunitulun.,Year is 2025,Recognise the encoded decimal information in context.,06 Context examples,2025,Netunitulun,,[nanpa en tu uta nena ijo tu uta luka uta nanpa],[nanpa tu ijo tu luka nanpa],#~TITL,context direction::toki-pona-to-english
+On Friday I go to sport,suno sike Nelun la mi tawa utala.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,5,Nelun,,[nanpa en luka uta nanpa],[nanpa luka nanpa],#~L,context direction::english-to-toki-pona
+suno sike Nelun la mi tawa utala.,On Friday I go to sport,Recognise the encoded decimal information in context.,06 Context examples,5,Nelun,,[nanpa en luka uta nanpa],[nanpa luka nanpa],#~L,context direction::toki-pona-to-english
+On 2nd of October I travel,tenpo suno nanpa tu lon mun sike Newanin la mi tawa.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,10,Newanin,,[nanpa en wan ala nena ijo nanpa],[nanpa wan ijo nanpa],#~WI,context direction::english-to-toki-pona
+tenpo suno nanpa tu lon mun sike Newanin la mi tawa.,On 2nd of October I travel,Recognise the encoded decimal information in context.,06 Context examples,10,Newanin,,[nanpa en wan ala nena ijo nanpa],[nanpa wan ijo nanpa],#~WI,context direction::toki-pona-to-english
+I am 37 years old,tenpo sike Nesemun la mi jan suli.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,37,Nesemun,,[nanpa en seli en mun uta nanpa],[nanpa seli mun nanpa],#~SM,context direction::english-to-toki-pona
+tenpo sike Nesemun la mi jan suli.,I am 37 years old,Recognise the encoded decimal information in context.,06 Context examples,37,Nesemun,,[nanpa en seli en mun uta nanpa],[nanpa seli mun nanpa],#~SM,context direction::toki-pona-to-english
+She is 29,ona li jo e tenpo sike Netujen.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,29,Netujen,,[nanpa en tu uta jo en nanpa],[nanpa tu jo nanpa],#~TJ,context direction::english-to-toki-pona
+ona li jo e tenpo sike Netujen.,She is 29,Recognise the encoded decimal information in context.,06 Context examples,29,Netujen,,[nanpa en tu uta jo en nanpa],[nanpa tu jo nanpa],#~TJ,context direction::toki-pona-to-english
+The meeting is at 14:30,tenpo suno la ni li lon tenpo Newanan Eke Senin.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,14:30,Newanan Eke Senin,,[nanpa en wan ala nena awen nena en kasi en seli en nena ijo nanpa],[nanpa wan awen kasi seli ijo nanpa],#~WAkSI,context direction::english-to-toki-pona
+tenpo suno la ni li lon tenpo Newanan Eke Senin.,The meeting is at 14:30,Recognise the encoded decimal information in context.,06 Context examples,14:30,Newanan Eke Senin,,[nanpa en wan ala nena awen nena en kasi en seli en nena ijo nanpa],[nanpa wan awen kasi seli ijo nanpa],#~WAkSI,context direction::toki-pona-to-english
+It is 07:05,tenpo ni li nanpa Nenimun Eke Nilun.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,07:05,Nenimun Eke Nilun,,[nanpa en nena ijo mun uta nena en kasi en nena ijo luka uta nanpa],[nanpa ijo mun kasi ijo luka nanpa],#~IMkIL,context direction::english-to-toki-pona
+tenpo ni li nanpa Nenimun Eke Nilun.,It is 07:05,Recognise the encoded decimal information in context.,06 Context examples,07:05,Nenimun Eke Nilun,,[nanpa en nena ijo mun uta nena en kasi en nena ijo luka uta nanpa],[nanpa ijo mun kasi ijo luka nanpa],#~IMkIL,context direction::toki-pona-to-english
+The logs say 21:34:56 UTC,toki pi lipu sona li toki e tenpo Netuwan Eke Senan Eke Lunun lon ma UTC.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,21:34:56,Netuwan Eke Senan Eke Lunun,,[nanpa en tu uta wan ala nena en kasi en seli en nena awen nena en kasi en luka uta nena utala nanpa],[nanpa tu wan kasi seli awen kasi luka utala nanpa],#~TWkSAkLU,context direction::english-to-toki-pona
+toki pi lipu sona li toki e tenpo Netuwan Eke Senan Eke Lunun lon ma UTC.,The logs say 21:34:56 UTC,Recognise the encoded decimal information in context.,06 Context examples,21:34:56,Netuwan Eke Senan Eke Lunun,,[nanpa en tu uta wan ala nena en kasi en seli en nena awen nena en kasi en luka uta nena utala nanpa],[nanpa tu wan kasi seli awen kasi luka utala nanpa],#~TWkSAkLU,context direction::toki-pona-to-english
+This costs 12 dollars,mani pi ijo ni li nanpa Newatun.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,12,Newatun,,[nanpa en wan ala tu uta nanpa],[nanpa wan tu nanpa],#~WT,context direction::english-to-toki-pona
+mani pi ijo ni li nanpa Newatun.,This costs 12 dollars,Recognise the encoded decimal information in context.,06 Context examples,12,Newatun,,[nanpa en wan ala tu uta nanpa],[nanpa wan tu nanpa],#~WT,context direction::toki-pona-to-english
+The total is 3.75,mani ale li nanpa Nesen One Mulun.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,3.75,Nesen One Mulun,,[nanpa en seli en nena o nena en mun uta luka uta nanpa],[nanpa seli o mun luka nanpa],#~SoML,context direction::english-to-toki-pona
+mani ale li nanpa Nesen One Mulun.,The total is 3.75,Recognise the encoded decimal information in context.,06 Context examples,3.75,Nesen One Mulun,,[nanpa en seli en nena o nena en mun uta luka uta nanpa],[nanpa seli o mun luka nanpa],#~SoML,context direction::toki-pona-to-english
+Length: 2.5 m,linja ni li suli Netun One Lun mije.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,2.5,Netun One Lun,,[nanpa en tu uta nena o nena en luka uta nanpa],[nanpa tu o luka nanpa],#~ToL,context direction::english-to-toki-pona
+linja ni li suli Netun One Lun mije.,Length: 2.5 m,Recognise the encoded decimal information in context.,06 Context examples,2.5,Netun One Lun,,[nanpa en tu uta nena o nena en luka uta nanpa],[nanpa tu o luka nanpa],#~ToL,context direction::toki-pona-to-english
+Weight: 0.75 kg,kiwen ni li walo Nenin One Mulun kilokilo.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,0.75,Nenin One Mulun,,[nanpa en nena ijo nena o nena en mun uta luka uta nanpa],[nanpa ijo o mun luka nanpa],#~IoML,context direction::english-to-toki-pona
+kiwen ni li walo Nenin One Mulun kilokilo.,Weight: 0.75 kg,Recognise the encoded decimal information in context.,06 Context examples,0.75,Nenin One Mulun,,[nanpa en nena ijo nena o nena en mun uta luka uta nanpa],[nanpa ijo o mun luka nanpa],#~IoML,context direction::toki-pona-to-english
+Today it is 18 degrees,tenpo suno ni li seli Newapin.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,18,Newapin,,[nanpa en wan ala pipi ike nanpa],[nanpa wan pipi nanpa],#~WP,context direction::english-to-toki-pona
+tenpo suno ni li seli Newapin.,Today it is 18 degrees,Recognise the encoded decimal information in context.,06 Context examples,18,Newapin,,[nanpa en wan ala pipi ike nanpa],[nanpa wan pipi nanpa],#~WP,context direction::toki-pona-to-english
+Minus 3 degrees,tenpo suno ni li seli Neno Sen.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,-3,Neno Sen,,[nanpa en nena ona seli en nanpa],[nanpa ona seli nanpa],#~oS,context direction::english-to-toki-pona
+tenpo suno ni li seli Neno Sen.,Minus 3 degrees,Recognise the encoded decimal information in context.,06 Context examples,-3,Neno Sen,,[nanpa en nena ona seli en nanpa],[nanpa ona seli nanpa],#~oS,context direction::toki-pona-to-english
+The city is 12 km away,tomo tawa li weka Newatun kilometo tan ni.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,12,Newatun,,[nanpa en wan ala tu uta nanpa],[nanpa wan tu nanpa],#~WT,context direction::english-to-toki-pona
+tomo tawa li weka Newatun kilometo tan ni.,The city is 12 km away,Recognise the encoded decimal information in context.,06 Context examples,12,Newatun,,[nanpa en wan ala tu uta nanpa],[nanpa wan tu nanpa],#~WT,context direction::toki-pona-to-english
+The car is moving at 57 km/h,tomo tawa li tawa kepeken wawa Nelumun kilometo lon tenpo wan.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,57,Nelumun,,[nanpa en luka uta mun uta nanpa],[nanpa luka mun nanpa],#~LM,context direction::english-to-toki-pona
+tomo tawa li tawa kepeken wawa Nelumun kilometo lon tenpo wan.,The car is moving at 57 km/h,Recognise the encoded decimal information in context.,06 Context examples,57,Nelumun,,[nanpa en luka uta mun uta nanpa],[nanpa luka mun nanpa],#~LM,context direction::toki-pona-to-english
+I have 23 apples,mi jo e kili nanpa Netusen.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,23,Netusen,,[nanpa en tu uta seli en nanpa],[nanpa tu seli nanpa],#~TS,context direction::english-to-toki-pona
+mi jo e kili nanpa Netusen.,I have 23 apples,Recognise the encoded decimal information in context.,06 Context examples,23,Netusen,,[nanpa en tu uta seli en nanpa],[nanpa tu seli nanpa],#~TS,context direction::toki-pona-to-english
+There are 100 people here,jan li nanpa Newan Inin lon ni.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,100,Newan Inin,,[nanpa en wan ala nena ijo nena ijo nanpa],[nanpa wan ijo ijo nanpa],#~WII,context direction::english-to-toki-pona
+jan li nanpa Newan Inin lon ni.,There are 100 people here,Recognise the encoded decimal information in context.,06 Context examples,100,Newan Inin,,[nanpa en wan ala nena ijo nena ijo nanpa],[nanpa wan ijo ijo nanpa],#~WII,context direction::toki-pona-to-english
+My telephone number is 243-555-0189,nanpa pi ilo toki mi li: Netunasen Ene Lululun Ene Niwapijen.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,243-555-0189,Netunasen Ene Lululun Ene Niwapijen,,[nanpa en tu uta nena awen seli en nena en nena en luka uta luka uta luka uta nena en nena en nena ijo wan ala pipi ike jo en nanpa],[nanpa tu awen seli en luka luka luka en ijo wan pipi jo nanpa],#~TASLLLIWPJ,context direction::english-to-toki-pona
+nanpa pi ilo toki mi li: Netunasen Ene Lululun Ene Niwapijen.,My telephone number is 243-555-0189,Recognise the encoded decimal information in context.,06 Context examples,243-555-0189,Netunasen Ene Lululun Ene Niwapijen,,[nanpa en tu uta nena awen seli en nena en nena en luka uta luka uta luka uta nena en nena en nena ijo wan ala pipi ike jo en nanpa],[nanpa tu awen seli en luka luka luka en ijo wan pipi jo nanpa],#~TASLLLIWPJ,context direction::toki-pona-to-english
+Train arrives at 19:48,tomo tawa li kama lon tenpo Newajen Eke Napin.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,19:48,Newajen Eke Napin,,[nanpa en wan ala jo en nena en kasi en nena awen pipi ike nanpa],[nanpa wan jo kasi awen pipi nanpa],#~WJkAP,context direction::english-to-toki-pona
+tomo tawa li kama lon tenpo Newajen Eke Napin.,Train arrives at 19:48,Recognise the encoded decimal information in context.,06 Context examples,19:48,Newajen Eke Napin,,[nanpa en wan ala jo en nena en kasi en nena awen pipi ike nanpa],[nanpa wan jo kasi awen pipi nanpa],#~WJkAP,context direction::toki-pona-to-english
+Add 250 ml of water,o pana e telo nanpa Netulunin mililita.,Translate the context using the preferred relaxed nanpa-linja-n form.,06 Context examples,250,Netulunin,,[nanpa en tu uta luka uta nena ijo nanpa],[nanpa tu luka ijo nanpa],#~TLI,context direction::english-to-toki-pona
+o pana e telo nanpa Netulunin mililita.,Add 250 ml of water,Recognise the encoded decimal information in context.,06 Context examples,250,Netulunin,,[nanpa en tu uta luka uta nena ijo nanpa],[nanpa tu luka ijo nanpa],#~TLI,context direction::toki-pona-to-english
+3/4 is 0.75,nanpa la Nesen Ono Nan sama Nenin One Mulun.,Current relaxed-mode example.,07 Additional examples,,,,,,,example topic::arithmetic
+17.3 + 9.5 = 26.8,nanpa la Newamun One Sen en Nejen One Lun sama Netunun One Pin.,Current relaxed-mode example.,07 Additional examples,,,,,,,example topic::arithmetic
+12 × 5 = 60,nanpa la Newatun lete Nelun sama Nenunin.,Current relaxed-mode example.,07 Additional examples,,,,,,,example topic::arithmetic
+27 × 0 = 0,nanpa la Netumun lete Nenin sama Nenin.,Current relaxed-mode example.,07 Additional examples,,,,,,,example topic::arithmetic
+Room 204,tomo ni li tomo nanpa Netuninan.,Current relaxed-mode example.,07 Additional examples,204,Netuninan,,[nanpa en tu uta nena ijo nena awen nanpa],[nanpa tu ijo awen nanpa],#~TIA,example topic::identifier
+Your ID number is 40251,nanpa sona sina li nanpa Nenanituluwan.,Current relaxed-mode example.,07 Additional examples,40251,Nenanituluwan,,[nanpa en nena awen nena ijo tu uta luka uta wan ala nanpa],[nanpa awen ijo tu luka wan nanpa],#~AITLW,example topic::identifier
+007,Neninimun,Current relaxed-mode example.,07 Additional examples,007,Neninimun,,[nanpa en nena ijo nena ijo mun uta nanpa],[nanpa ijo ijo mun nanpa],#~IIM,example topic::identifier
+Call 731!,o tawa nanpa Nemusewan!,Current relaxed-mode example.,07 Additional examples,731,Nemusewan,,[nanpa en mun uta seli en wan ala nanpa],[nanpa mun seli wan nanpa],#~MSW,example topic::identifier

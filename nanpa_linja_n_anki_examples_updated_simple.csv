@@ -1,0 +1,131 @@
+﻿What is nanpa-linja-n?,A notation system that reversibly encodes decimal digit strings as proper names and numeric cartouches.<br><br><small>It does not add new words to the Toki Pona lexicon.</small>
+How does every nanpa-linja-n numeric proper name begin and end?,It begins with Ne- and ends with -n.<br><br><small>Example: 125 → Newatulun.</small>
+How are multi-digit values formed?,Concatenate one designated syllable for each decimal digit between initial Ne- and final -n.<br><br><small>Relaxed 125: Ne + wa + tu + lu + n → Newatulun.</small>
+Where may a long numeric proper name be split into words?,At numeric punctuation markers.<br><br><small>The marker’s initial n normally closes the preceding word: 2.5 → Netun One Lun.</small>
+What is the exception to the normal punctuation word-splitting rule?,The negative marker no.<br><br><small>It can attach to initial Ne- as Neno: −5 → Neno Lun.</small>
+Which mode should beginners normally produce?,"Relaxed mode.<br><br><small>Strict forms remain useful for recognition, but relaxed mode supplies the preferred output forms used in this deck.</small>"
+How are exact hundreds optionally split?,The final two zeros may be written as a separate Inin word.<br><br><small>100 → Newan Inin; 200 → Netun Inin.</small>
+What changes when a numeric cartouche is abbreviated?,"Interior supporting nena, en and open glyphs are removed where the specification permits.<br><br><small>The value and pronunciation remain the same. Optional spacer en glyphs may still be shown.</small>"
+Encode digit 0 in preferred relaxed mode.,ni — Nenin<br><br><small>Preferred relaxed syllable: ni. Main abbreviated-cartouche glyph: ijo.</small>
+Which decimal digit is represented by relaxed syllable “ni”?,0<br><br><small>Nenin is the single-digit proper name.</small>
+Encode digit 1 in preferred relaxed mode.,wa — Newan<br><br><small>Preferred relaxed syllable: wa. Main abbreviated-cartouche glyph: wan. Strict recognition form: we.</small>
+Which decimal digit is represented by relaxed syllable “wa”?,1<br><br><small>Newan is the single-digit proper name.</small>
+Encode digit 2 in preferred relaxed mode.,tu — Netun<br><br><small>Preferred relaxed syllable: tu. Main abbreviated-cartouche glyph: tu. Strict recognition form: te.</small>
+Which decimal digit is represented by relaxed syllable “tu”?,2<br><br><small>Netun is the single-digit proper name.</small>
+Encode digit 3 in preferred relaxed mode.,se — Nesen<br><br><small>Preferred relaxed syllable: se. Main abbreviated-cartouche glyph: seli.</small>
+Which decimal digit is represented by relaxed syllable “se”?,3<br><br><small>Nesen is the single-digit proper name.</small>
+Encode digit 4 in preferred relaxed mode.,na — Nenan<br><br><small>Preferred relaxed syllable: na. Main abbreviated-cartouche glyph: awen.</small>
+Which decimal digit is represented by relaxed syllable “na”?,4<br><br><small>Nenan is the single-digit proper name.</small>
+Encode digit 5 in preferred relaxed mode.,lu — Nelun<br><br><small>Preferred relaxed syllable: lu. Main abbreviated-cartouche glyph: luka. Strict recognition form: le.</small>
+Which decimal digit is represented by relaxed syllable “lu”?,5<br><br><small>Nelun is the single-digit proper name.</small>
+Encode digit 6 in preferred relaxed mode.,nu — Nenun<br><br><small>Preferred relaxed syllable: nu. Main abbreviated-cartouche glyph: utala.</small>
+Which decimal digit is represented by relaxed syllable “nu”?,6<br><br><small>Nenun is the single-digit proper name.</small>
+Encode digit 7 in preferred relaxed mode.,mu — Nemun<br><br><small>Preferred relaxed syllable: mu. Main abbreviated-cartouche glyph: mun. Strict recognition form: me.</small>
+Which decimal digit is represented by relaxed syllable “mu”?,7<br><br><small>Nemun is the single-digit proper name.</small>
+Encode digit 8 in preferred relaxed mode.,pi — Nepin<br><br><small>Preferred relaxed syllable: pi. Main abbreviated-cartouche glyph: pipi. Strict recognition form: pe.</small>
+Which decimal digit is represented by relaxed syllable “pi”?,8<br><br><small>Nepin is the single-digit proper name.</small>
+Encode digit 9 in preferred relaxed mode.,je — Nejen<br><br><small>Preferred relaxed syllable: je. Main abbreviated-cartouche glyph: jo.</small>
+Which decimal digit is represented by relaxed syllable “je”?,9<br><br><small>Nejen is the single-digit proper name.</small>
+"In strict mode, which digit is represented by “we”?",1<br><br><small>Preferred relaxed production uses “wa”; both are accepted in relaxed parsing.</small>
+"In strict mode, which digit is represented by “te”?",2<br><br><small>Preferred relaxed production uses “tu”; both are accepted in relaxed parsing.</small>
+"In strict mode, which digit is represented by “le”?",5<br><br><small>Preferred relaxed production uses “lu”; both are accepted in relaxed parsing.</small>
+"In strict mode, which digit is represented by “me”?",7<br><br><small>Preferred relaxed production uses “mu”; both are accepted in relaxed parsing.</small>
+"In strict mode, which digit is represented by “pe”?",8<br><br><small>Preferred relaxed production uses “pi”; both are accepted in relaxed parsing.</small>
+What does the marker “no” represent?,negative marker<br><br><small>It may occur only at the start of a number or exponent.</small>
+Which nanpa-linja-n marker represents negative marker?,no<br><br><small>It may occur only at the start of a number or exponent.</small>
+What does the marker “none” represent?,decimal separator<br><br><small>Canonical split form: -n One. At least one digit appears on each side.</small>
+Which nanpa-linja-n marker represents decimal separator?,none<br><br><small>Canonical split form: -n One. At least one digit appears on each side.</small>
+What does the marker “neke” represent?,"ISO thousands-block marker<br><br><small>Canonical split form: -n Eke; exact trailing blocks may end in Eken, Ekeken or Ekekeken.</small>"
+Which nanpa-linja-n marker represents ISO thousands-block marker?,"neke<br><br><small>Canonical split form: -n Eke; exact trailing blocks may end in Eken, Ekeken or Ekekeken.</small>"
+What does the marker “noke” represent?,percentage marker<br><br><small>It occurs at the end and normally appears as final Oken.</small>
+Which nanpa-linja-n marker represents percentage marker?,noke<br><br><small>It occurs at the end and normally appears as final Oken.</small>
+What does the marker “nono” represent?,numerator/denominator separator<br><br><small>Canonical split form: -n Ono.</small>
+Which nanpa-linja-n marker represents numerator/denominator separator?,nono<br><br><small>Canonical split form: -n Ono.</small>
+What does the marker “noko” represent?,integer/fraction separator in a mixed fraction<br><br><small>Canonical split form: -n Oko.</small>
+Which nanpa-linja-n marker represents integer/fraction separator in a mixed fraction?,noko<br><br><small>Canonical split form: -n Oko.</small>
+What does the marker “neko” represent?,scientific-notation marker<br><br><small>It marks both the ×10 element and the exponent boundary.</small>
+Which nanpa-linja-n marker represents scientific-notation marker?,neko<br><br><small>It marks both the ×10 element and the exponent boundary.</small>
+What does the marker “neke” represent?,date/time separator<br><br><small>Context distinguishes this from ISO thousands grouping; its cartouche glyph uses kasi.</small>
+Which nanpa-linja-n marker represents date/time separator?,neke<br><br><small>Context distinguishes this from ISO thousands grouping; its cartouche glyph uses kasi.</small>
+What does the marker “nene” represent?,no-value spacer<br><br><small>It can divide a long digit sequence without changing its digits or numeric value.</small>
+Which nanpa-linja-n marker represents no-value spacer?,nene<br><br><small>It can divide a long digit sequence without changing its digits or numeric value.</small>
+Encode 125 as a preferred relaxed nanpa-linja-n proper name.,Newatulun<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Newatulun,"125<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 23 as a preferred relaxed nanpa-linja-n proper name.,Netusen<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Netusen,"23<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 100 as a preferred relaxed nanpa-linja-n proper name.,Newan Inin<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Newan Inin,"100<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+"Encode 2,345 as a preferred relaxed nanpa-linja-n proper name.",Netun Eke Senalun<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Netun Eke Senalun,"2,345<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+"Encode 12,000 as a preferred relaxed nanpa-linja-n proper name.",Newatun Eken<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Newatun Eken,"12,000<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 007 as a preferred relaxed nanpa-linja-n proper name.,Neninimun<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Neninimun,"007<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 12.04 as a preferred relaxed nanpa-linja-n proper name.,Newatun One Ninan<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Newatun One Ninan,"12.04<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode -0.4 as a preferred relaxed nanpa-linja-n proper name.,Neno Nin One Nan<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Neno Nin One Nan,"-0.4<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 5/8 as a preferred relaxed nanpa-linja-n proper name.,Nelun Ono Pin<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Nelun Ono Pin,"5/8<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 9¾ as a preferred relaxed nanpa-linja-n proper name.,Nejen Oko Sen Ono Nan<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Nejen Oko Sen Ono Nan,"9¾<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 10.5% as a preferred relaxed nanpa-linja-n proper name.,Newanin One Lun Oken<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Newanin One Lun Oken,"10.5%<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 4.5e-3 as a preferred relaxed nanpa-linja-n proper name.,Nenan One Lun Eko Wanin Eko Nosen<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Nenan One Lun Eko Wanin Eko Nosen,"4.5e-3<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 14:30 as a preferred relaxed nanpa-linja-n proper name.,Newanan Eke Senin<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Newanan Eke Senin,"14:30<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+Encode 2026-03-17 as a preferred relaxed nanpa-linja-n proper name.,Netunitunun Eke Nisen Eke Wamun<br><br><small>Spaces show the canonical readable split and do not change the underlying encoding.</small>
+Decode this nanpa-linja-n proper name: Netunitunun Eke Nisen Eke Wamun,"2026-03-17<br><br><small>The original decimal notation is preserved, including leading or trailing zeros.</small>"
+2023-04-11,tenpo suno nanpa Netunitusen Eke Ninan Eke Wawan<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tenpo suno nanpa Netunitusen Eke Ninan Eke Wawan,2023-04-11<br><br><small>Recognise the encoded decimal information in context.</small>
+Year is 2025,tenpo sike li nanpa Netunitulun.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tenpo sike li nanpa Netunitulun.,Year is 2025<br><br><small>Recognise the encoded decimal information in context.</small>
+On Friday I go to sport,suno sike Nelun la mi tawa utala.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+suno sike Nelun la mi tawa utala.,On Friday I go to sport<br><br><small>Recognise the encoded decimal information in context.</small>
+On 2nd of October I travel,tenpo suno nanpa tu lon mun sike Newanin la mi tawa.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tenpo suno nanpa tu lon mun sike Newanin la mi tawa.,On 2nd of October I travel<br><br><small>Recognise the encoded decimal information in context.</small>
+I am 37 years old,tenpo sike Nesemun la mi jan suli.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tenpo sike Nesemun la mi jan suli.,I am 37 years old<br><br><small>Recognise the encoded decimal information in context.</small>
+She is 29,ona li jo e tenpo sike Netujen.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+ona li jo e tenpo sike Netujen.,She is 29<br><br><small>Recognise the encoded decimal information in context.</small>
+The meeting is at 14:30,tenpo suno la ni li lon tenpo Newanan Eke Senin.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tenpo suno la ni li lon tenpo Newanan Eke Senin.,The meeting is at 14:30<br><br><small>Recognise the encoded decimal information in context.</small>
+It is 07:05,tenpo ni li nanpa Nenimun Eke Nilun.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tenpo ni li nanpa Nenimun Eke Nilun.,It is 07:05<br><br><small>Recognise the encoded decimal information in context.</small>
+The logs say 21:34:56 UTC,toki pi lipu sona li toki e tenpo Netuwan Eke Senan Eke Lunun lon ma UTC.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+toki pi lipu sona li toki e tenpo Netuwan Eke Senan Eke Lunun lon ma UTC.,The logs say 21:34:56 UTC<br><br><small>Recognise the encoded decimal information in context.</small>
+This costs 12 dollars,mani pi ijo ni li nanpa Newatun.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+mani pi ijo ni li nanpa Newatun.,This costs 12 dollars<br><br><small>Recognise the encoded decimal information in context.</small>
+The total is 3.75,mani ale li nanpa Nesen One Mulun.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+mani ale li nanpa Nesen One Mulun.,The total is 3.75<br><br><small>Recognise the encoded decimal information in context.</small>
+Length: 2.5 m,linja ni li suli Netun One Lun mije.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+linja ni li suli Netun One Lun mije.,Length: 2.5 m<br><br><small>Recognise the encoded decimal information in context.</small>
+Weight: 0.75 kg,kiwen ni li walo Nenin One Mulun kilokilo.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+kiwen ni li walo Nenin One Mulun kilokilo.,Weight: 0.75 kg<br><br><small>Recognise the encoded decimal information in context.</small>
+Today it is 18 degrees,tenpo suno ni li seli Newapin.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tenpo suno ni li seli Newapin.,Today it is 18 degrees<br><br><small>Recognise the encoded decimal information in context.</small>
+Minus 3 degrees,tenpo suno ni li seli Neno Sen.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tenpo suno ni li seli Neno Sen.,Minus 3 degrees<br><br><small>Recognise the encoded decimal information in context.</small>
+The city is 12 km away,tomo tawa li weka Newatun kilometo tan ni.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tomo tawa li weka Newatun kilometo tan ni.,The city is 12 km away<br><br><small>Recognise the encoded decimal information in context.</small>
+The car is moving at 57 km/h,tomo tawa li tawa kepeken wawa Nelumun kilometo lon tenpo wan.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tomo tawa li tawa kepeken wawa Nelumun kilometo lon tenpo wan.,The car is moving at 57 km/h<br><br><small>Recognise the encoded decimal information in context.</small>
+I have 23 apples,mi jo e kili nanpa Netusen.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+mi jo e kili nanpa Netusen.,I have 23 apples<br><br><small>Recognise the encoded decimal information in context.</small>
+There are 100 people here,jan li nanpa Newan Inin lon ni.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+jan li nanpa Newan Inin lon ni.,There are 100 people here<br><br><small>Recognise the encoded decimal information in context.</small>
+My telephone number is 243-555-0189,nanpa pi ilo toki mi li: Netunasen Ene Lululun Ene Niwapijen.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+nanpa pi ilo toki mi li: Netunasen Ene Lululun Ene Niwapijen.,My telephone number is 243-555-0189<br><br><small>Recognise the encoded decimal information in context.</small>
+Train arrives at 19:48,tomo tawa li kama lon tenpo Newajen Eke Napin.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+tomo tawa li kama lon tenpo Newajen Eke Napin.,Train arrives at 19:48<br><br><small>Recognise the encoded decimal information in context.</small>
+Add 250 ml of water,o pana e telo nanpa Netulunin mililita.<br><br><small>Translate the context using the preferred relaxed nanpa-linja-n form.</small>
+o pana e telo nanpa Netulunin mililita.,Add 250 ml of water<br><br><small>Recognise the encoded decimal information in context.</small>
+3/4 is 0.75,nanpa la Nesen Ono Nan sama Nenin One Mulun.<br><br><small>Current relaxed-mode example.</small>
+17.3 + 9.5 = 26.8,nanpa la Newamun One Sen en Nejen One Lun sama Netunun One Pin.<br><br><small>Current relaxed-mode example.</small>
+12 × 5 = 60,nanpa la Newatun lete Nelun sama Nenunin.<br><br><small>Current relaxed-mode example.</small>
+27 × 0 = 0,nanpa la Netumun lete Nenin sama Nenin.<br><br><small>Current relaxed-mode example.</small>
+Room 204,tomo ni li tomo nanpa Netuninan.<br><br><small>Current relaxed-mode example.</small>
+Your ID number is 40251,nanpa sona sina li nanpa Nenanituluwan.<br><br><small>Current relaxed-mode example.</small>
+007,Neninimun<br><br><small>Current relaxed-mode example.</small>
+Call 731!,o tawa nanpa Nemusewan!<br><br><small>Current relaxed-mode example.</small>
