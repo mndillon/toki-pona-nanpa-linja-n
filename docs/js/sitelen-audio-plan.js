@@ -371,7 +371,8 @@ export function speechTextForRenderRun(run, skipped = [], options = {}) {
   const kind = String(run.kind ?? '').toLowerCase();
   const sourceKind = String(run.sourceKind ?? '').toLowerCase();
   const sourceText = String(run.sourceText ?? run.encodedText ?? '').trim();
-  if (!sourceText) return '';
+  const audioText = String(run.audioText ?? run._element?.audioText ?? '').trim();
+  if (!sourceText && !audioText) return '';
 
   if (sourceKind === 'image' || kind === 'image') {
     skipped.push({ kind: 'image', text: sourceText });
@@ -386,6 +387,17 @@ export function speechTextForRenderRun(run, skipped = [], options = {}) {
   if (run.isQuoted || sourceKind === 'quote') {
     skipped.push({ kind: 'quoted', text: sourceText });
     return '';
+  }
+
+  // Renderer-generated nasin nanpa pona glyphs deliberately retain their
+  // original Arabic sourceText for selection and export reconstruction. When
+  // the renderer also supplies audioText, speak that generated ordinary Toki
+  // Pona word instead of attempting to pronounce the original number syntax.
+  // Restrict this override to non-cartouche runs so established numeric and
+  // proper-name cartouche audio behavior remains unchanged.
+  if (kind !== 'cartouche' && audioText) {
+    const readableAudioText = sanitizeTextToSitelenAudioText(audioText);
+    if (isReadableAudioTokiPonaText(readableAudioText)) return readableAudioText;
   }
 
   if (kind === 'cartouche') {

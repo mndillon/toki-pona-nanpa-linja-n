@@ -906,6 +906,17 @@ nanpa #~WI.
           </span>
           <input id="appBackgroundPick" class="swatch" type="color" aria-label="Background color">
         </div>
+
+        <!-- Optional nasin nanpa pona formatting of eligible decimal expressions -->
+        <div id="ctlNasinNanpaPonaFormatting" class="inlineControl inlinePill" role="group" aria-label="nasin nanpa pona formatting">
+          <span class="ctlLabel">
+            nasin nanpa pona formatting
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+            <input id="appNasinNanpaPonaFormattingEnable" type="checkbox" aria-label="Enable nasin nanpa pona formatting">
+            <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -1150,7 +1161,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=192";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=197";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -1165,7 +1176,7 @@ nanpa #~WI.
       extractSpeechSegmentsFromRenderPlan,
       stopSitelenAudioPlayback,
       summarizeSkippedAudio as summarizeSitelenAudioSkipped
-    } from './js/sitelen-audio-plan.js?v=10';
+    } from './js/sitelen-audio-plan.js?v=12';
     let pageMap = new Map();
 
     "use strict";
@@ -1632,7 +1643,7 @@ function hideStartupLoading() {
 
     const VECTOR_DIAGNOSTIC_DEBUG = true;
     const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=192",
+      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=197",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
       cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
       vectorExporter: "./js/sitelen-vector-exporter.js?v=167",
@@ -2218,6 +2229,7 @@ function hideStartupLoading() {
           abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
           relaxedNanpaLinjanParsing: relaxedNanpaLinjan,
           relaxedNanpaLinjanRendering: relaxedNanpaLinjan,
+          nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
           ...buildCartoucheTallyParserConfig()
         },
         fonts: {
@@ -2271,7 +2283,8 @@ function hideStartupLoading() {
         roles,
         cartoucheTally: buildCartoucheTallyParserConfig(),
         abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
-        relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled()
+        relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled(),
+        nasinNanpaPona: getNasinNanpaPonaFormattingEnabled()
       });
     }
 
@@ -2521,6 +2534,67 @@ function paintConfiguredBackgroundBehindCanvas(canvas) {
   ctx.fillStyle = getBackgroundHex();
   ctx.fillRect(0, 0, width, height);
   ctx.restore();
+}
+
+
+const NASIN_NANPA_PONA_FORMATTING_STORAGE_KEY = "tpNasinNanpaPonaFormatting";
+const NASIN_NANPA_PONA_FORMATTING_DEFAULT_ENABLED = false;
+
+function loadNasinNanpaPonaFormattingFromStorage() {
+  try {
+    const raw = localStorage.getItem(NASIN_NANPA_PONA_FORMATTING_STORAGE_KEY);
+    if (raw == null) return null;
+    if (raw === "1" || raw === "true") return true;
+    if (raw === "0" || raw === "false") return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveNasinNanpaPonaFormattingToStorage(value) {
+  try {
+    localStorage.setItem(
+      NASIN_NANPA_PONA_FORMATTING_STORAGE_KEY,
+      value ? "1" : "0"
+    );
+  } catch {}
+}
+
+function getNasinNanpaPonaFormattingEnabled() {
+  const el = document.getElementById("appNasinNanpaPonaFormattingEnable");
+  return !!el?.checked;
+}
+
+function setNasinNanpaPonaFormattingEnabled(value, { persist = true } = {}) {
+  const enabled = !!value;
+  const el = document.getElementById("appNasinNanpaPonaFormattingEnable");
+  if (el) el.checked = enabled;
+  if (persist) saveNasinNanpaPonaFormattingToStorage(enabled);
+  return enabled;
+}
+
+function applyNasinNanpaPonaFormattingFromStorage() {
+  setNasinNanpaPonaFormattingEnabled(
+    loadNasinNanpaPonaFormattingFromStorage() ?? NASIN_NANPA_PONA_FORMATTING_DEFAULT_ENABLED,
+    { persist: false }
+  );
+}
+
+function wireNasinNanpaPonaFormattingToggle() {
+  const el = document.getElementById("appNasinNanpaPonaFormattingEnable");
+  if (!el) return;
+
+  el.addEventListener("change", async () => {
+    try {
+      setNasinNanpaPonaFormattingEnabled(el.checked);
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
+      await renderFromTextarea();
+    } catch (error) {
+      showAlertAndAnnounce(error?.message ?? String(error));
+    }
+  });
 }
 
 const HALO_ENABLED_STORAGE_KEY = "tpHaloEnabled";
@@ -6435,8 +6509,17 @@ function wireHaloControls() {
         const segmentSource = sameSegment
           ? String(prev.__segmentSourceText || run.__segmentSourceText || "")
           : "";
+        const sameSourceSpan = !!prev
+          && Number.isFinite(prev.sourceStart)
+          && Number.isFinite(prev.sourceEnd)
+          && Number.isFinite(run.sourceStart)
+          && Number.isFinite(run.sourceEnd)
+          && prev.sourceStart === run.sourceStart
+          && prev.sourceEnd === run.sourceEnd;
         const gapText = (prev && sameSegment)
-          ? getUnicodeJsonWhitespaceGapText(segmentSource, prev.sourceEnd, run.sourceStart)
+          ? (sameSourceSpan
+              ? ""
+              : getUnicodeJsonWhitespaceGapText(segmentSource, prev.sourceEnd, run.sourceStart))
           : null;
         const canMerge = !!prev
           && prev.type === "text"
@@ -6452,16 +6535,23 @@ function wireHaloControls() {
           continue;
         }
 
-        prev.input = `${prev.input || ""}${gapText}${run.input || ""}`;
+        // A parser transformation may emit several glyph runs from one source
+        // expression. Those runs intentionally share the same source span and
+        // sourceText. Preserve that input once while combining the output cps.
+        if (!sameSourceSpan) {
+          prev.input = `${prev.input || ""}${gapText}${run.input || ""}`;
+        }
         prev.codepoints = prev.codepoints && run.codepoints
           ? `${prev.codepoints} ${run.codepoints}`
           : (prev.codepoints || run.codepoints || "");
-        prev.unicode = `${prev.unicode || ""}${gapText}${run.unicode || ""}`;//
+        prev.unicode = `${prev.unicode || ""}${gapText}${run.unicode || ""}`;
         prev.commonSitelenPonaCharacterNames = await decodeUnicodeStringToTpShortcuts(prev.unicode);
 
         if (prev.sourceStart == null && run.sourceStart != null) prev.sourceStart = run.sourceStart;
-        if (run.sourceEnd != null) prev.sourceEnd = run.sourceEnd;
-        else if (prev.sourceEnd == null) prev.sourceEnd = null;
+        if (!sameSourceSpan) {
+          if (run.sourceEnd != null) prev.sourceEnd = run.sourceEnd;
+          else if (prev.sourceEnd == null) prev.sourceEnd = null;
+        }
       }
       return merged.map(run => {
         const out = { ...run };
@@ -6480,7 +6570,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=192", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=197", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -7699,6 +7789,172 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       return out;
     }
 
+    /* ============================================================
+       Automatic non-cartouche nasin nanpa pona selection expansion
+       ============================================================ */
+    const NASIN_NANPA_PONA_SELECTION_WORD_BY_CP = new Map([
+      [WORD_TO_UCSUR_CP.weka, "weka"],
+      [WORD_TO_UCSUR_CP.ala, "ala"],
+      [WORD_TO_UCSUR_CP.ale, "ale"],
+      [WORD_TO_UCSUR_CP.mute, "mute"],
+      [WORD_TO_UCSUR_CP.luka, "luka"],
+      [WORD_TO_UCSUR_CP.tu, "tu"],
+      [WORD_TO_UCSUR_CP.wan, "wan"]
+    ]);
+
+    const NASIN_NANPA_PONA_ADDITIVE_VALUE = Object.freeze({
+      mute: 20,
+      luka: 5,
+      tu: 2,
+      wan: 1
+    });
+
+    function canonicalNasinNanpaPonaGroupWords(value) {
+      let remaining = Number(value);
+      if (!Number.isInteger(remaining) || remaining < 1 || remaining > 99) return null;
+
+      const words = [];
+      while (remaining >= 20) { words.push("mute"); remaining -= 20; }
+      while (remaining >= 5) { words.push("luka"); remaining -= 5; }
+      while (remaining >= 2) { words.push("tu"); remaining -= 2; }
+      if (remaining === 1) words.push("wan");
+      return words;
+    }
+
+    function isCanonicalNasinNanpaPonaGroup(words) {
+      const group = Array.from(words || []);
+      if (!group.length) return false;
+
+      let value = 0;
+      for (const word of group) {
+        const amount = NASIN_NANPA_PONA_ADDITIVE_VALUE[word];
+        if (!Number.isFinite(amount)) return false;
+        value += amount;
+      }
+
+      const canonical = canonicalNasinNanpaPonaGroupWords(value);
+      return !!canonical && canonical.length === group.length &&
+        canonical.every((word, index) => word === group[index]);
+    }
+
+    function splitNasinNanpaPonaGroups(words) {
+      const groups = [[]];
+      for (const word of (words || [])) {
+        if (word === "ale") groups.push([]);
+        else groups[groups.length - 1].push(word);
+      }
+      return groups;
+    }
+
+    function isValidNasinNanpaPonaIntegerWords(words) {
+      const integerWords = Array.from(words || []);
+      if (integerWords.length === 1 && integerWords[0] === "ala") return true;
+      if (!integerWords.length || integerWords.includes("ala") || integerWords.includes("weka")) return false;
+
+      const groups = splitNasinNanpaPonaGroups(integerWords);
+      if (!groups.length || groups[0].length === 0) return false;
+
+      // Empty groups after the first represent zero-valued base-100 positions.
+      return groups.every(group => group.length === 0 || isCanonicalNasinNanpaPonaGroup(group));
+    }
+
+    function isValidNasinNanpaPonaFractionWords(words) {
+      const fractionWords = Array.from(words || []);
+      if (!fractionWords.length || fractionWords.includes("ala") || fractionWords.includes("weka")) return false;
+
+      const groups = splitNasinNanpaPonaGroups(fractionWords);
+      if (!groups.length || groups[groups.length - 1].length === 0) return false;
+
+      // A leading or internal empty group retains a zero base-100 position.
+      return groups.every(group => group.length === 0 || isCanonicalNasinNanpaPonaGroup(group));
+    }
+
+    function isValidCompleteNasinNanpaPonaWords(words) {
+      let body = Array.from(words || []);
+      if (!body.length) return false;
+
+      let negative = false;
+      if (body[0] === "weka") {
+        negative = true;
+        body = body.slice(1);
+      }
+      if (!body.length || body.includes("weka")) return false;
+
+      // Complete zero is canonical only without a negative marker.
+      if (body.length === 1 && body[0] === "ala") return !negative;
+
+      if (body[0] === "ala") {
+        // Zero integer part followed by the decimal-point ala.
+        if (body.length < 3 || body[1] !== "ala") return false;
+        return isValidNasinNanpaPonaFractionWords(body.slice(2));
+      }
+
+      const decimalIndex = body.indexOf("ala");
+      if (decimalIndex < 0) return isValidNasinNanpaPonaIntegerWords(body);
+      if (body.indexOf("ala", decimalIndex + 1) >= 0) return false;
+
+      return isValidNasinNanpaPonaIntegerWords(body.slice(0, decimalIndex)) &&
+        isValidNasinNanpaPonaFractionWords(body.slice(decimalIndex + 1));
+    }
+
+    function nasinNanpaPonaSelectionWordForRun(run) {
+      // This feature deliberately excludes cartouches, long-pi runs, literal
+      // text, unknown text, and every multi-codepoint run.
+      if (!run || String(run.kind ?? "").toLowerCase() !== "glyph") return null;
+      const cps = getUnicodeJsonRunCodepoints(run);
+      if (!Array.isArray(cps) || cps.length !== 1) return null;
+      return NASIN_NANPA_PONA_SELECTION_WORD_BY_CP.get(Number(cps[0])) || null;
+    }
+
+    function getExpandedNasinNanpaPonaSelectionForRun(run) {
+      const selectedWord = nasinNanpaPonaSelectionWordForRun(run);
+      if (!selectedWord || !latestRenderPlan) return null;
+
+      const lineIndex = Number(run?.lineIndex);
+      const line = (latestRenderPlan.lines || []).find(candidate => Number(candidate?.lineIndex) === lineIndex);
+      const lineRuns = Array.isArray(line?.runs) ? line.runs.filter(Boolean) : [];
+      const selectedIndex = lineRuns.indexOf(run);
+      if (selectedIndex < 0) return null;
+
+      let blockStart = selectedIndex;
+      while (blockStart > 0 && nasinNanpaPonaSelectionWordForRun(lineRuns[blockStart - 1])) blockStart--;
+
+      let blockEnd = selectedIndex;
+      while (blockEnd + 1 < lineRuns.length && nasinNanpaPonaSelectionWordForRun(lineRuns[blockEnd + 1])) blockEnd++;
+
+      let best = null;
+      for (let start = blockStart; start <= selectedIndex; start++) {
+        for (let end = selectedIndex; end <= blockEnd; end++) {
+          const candidateRuns = lineRuns.slice(start, end + 1);
+          const candidateWords = candidateRuns.map(nasinNanpaPonaSelectionWordForRun);
+          if (!candidateWords.every(Boolean) || !isValidCompleteNasinNanpaPonaWords(candidateWords)) continue;
+
+          const length = candidateRuns.length;
+          if (!best || length > best.length ||
+              (length === best.length && start === selectedIndex && best.start !== selectedIndex)) {
+            best = { start, end, length, runs: candidateRuns, words: candidateWords };
+          }
+        }
+      }
+
+      if (!best || best.runs.length < 2) return null;
+
+      const cps = [];
+      for (const candidateRun of best.runs) {
+        const runCps = getUnicodeJsonRunCodepoints(candidateRun);
+        if (!Array.isArray(runCps) || runCps.length !== 1) return null;
+        cps.push(runCps[0]);
+      }
+
+      return {
+        id: `nasin-nanpa-pona:L${lineIndex}:R${renderedRunStableId(best.runs[0])}-${renderedRunStableId(best.runs[best.runs.length - 1])}`,
+        type: "nasinNanpaPona",
+        description: "nasin nanpa pona number",
+        runs: best.runs,
+        cps
+      };
+    }
+
     function getRenderedUnicodeSelectionForRun(run) {
       if (!isRenderedRunUnicodeCopyable(run)) return null;
 
@@ -7714,6 +7970,9 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           cps
         };
       }
+
+      const expandedNasinNanpaPona = getExpandedNasinNanpaPonaSelectionForRun(run);
+      if (expandedNasinNanpaPona) return expandedNasinNanpaPona;
 
       const cps = getUnicodeJsonRunCodepoints(run);
       if (!Array.isArray(cps) || !cps.length) return null;
@@ -10194,6 +10453,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         applyTextFontOptionFromStorage();
         applyNumericCartoucheAbbrevFromStorage();
         applyNanpaRelaxedModeFromStorage();
+        applyNasinNanpaPonaFormattingFromStorage();
 
         
 
@@ -10238,6 +10498,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         wireTextFontSelect();
         wireNumericCartoucheAbbrevToggle();
         wireNanpaRelaxedModeSelect();
+        wireNasinNanpaPonaFormattingToggle();
         wireCartoucheDisplayLinks();
         initTextAudioControls();
         wireTextAudioControls();
@@ -10281,7 +10542,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
             tpHaloWidthPx: localStorage.getItem("tpHaloWidthPx"),
             tpHaloHex: localStorage.getItem("tpHaloHex"),
             tpBackgroundEnabled: localStorage.getItem("tpBackgroundEnabled"),
-            tpBackgroundHex: localStorage.getItem("tpBackgroundHex")
+            tpBackgroundHex: localStorage.getItem("tpBackgroundHex"),
+            tpNasinNanpaPonaFormatting: localStorage.getItem("tpNasinNanpaPonaFormatting")
           }
         });
 

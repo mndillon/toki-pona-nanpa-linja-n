@@ -502,6 +502,7 @@ const SitelenRenderer = (() => {
       autoCartoucheStandaloneProperNames: __autoCartoucheStandaloneProperNames,
       relaxedNanpaLinjanParsing: __relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering: __relaxedNanpaLinjanRendering,
+      nasinNanpaPona: __nasinNanpaPona,
     };
   }
 
@@ -532,6 +533,7 @@ const SitelenRenderer = (() => {
     __autoCartoucheStandaloneProperNames = !!state.autoCartoucheStandaloneProperNames;
     __relaxedNanpaLinjanParsing = !!state.relaxedNanpaLinjanParsing;
     __relaxedNanpaLinjanRendering = !!state.relaxedNanpaLinjanRendering;
+    __nasinNanpaPona = !!state.nasinNanpaPona;
   }
 
   let __renderConfigScopeQueue = Promise.resolve();
@@ -558,6 +560,11 @@ const SitelenRenderer = (() => {
   // Relaxed nanpa-linja-n recognition/rendering. Defaults are strict/strict.
   let __relaxedNanpaLinjanParsing = false;
   let __relaxedNanpaLinjanRendering = false;
+
+  // Optional conversion of eligible plain Arabic integer/decimal expressions
+  // to ordinary Toki Pona words using nasin nanpa pona. Default false preserves
+  // every existing numeric/cartouche code path.
+  let __nasinNanpaPona = false;
 
   // Controls only ordinary, non-numeric, non-quoted cartouche parsing.
   // When true:  [meli,,] may produce cartouche tally marks.
@@ -597,6 +604,8 @@ const SitelenRenderer = (() => {
   function setRelaxedNanpaLinjanParsing(v) { __relaxedNanpaLinjanParsing = !!v; }
   function getRelaxedNanpaLinjanRendering() { return !!__relaxedNanpaLinjanRendering; }
   function setRelaxedNanpaLinjanRendering(v) { __relaxedNanpaLinjanRendering = !!v; }
+  function getNasinNanpaPona() { return !!__nasinNanpaPona; }
+  function setNasinNanpaPona(v) { __nasinNanpaPona = !!v; }
   function getCartoucheCommaTallyMarks() { return !!__cartoucheCommaTallyMarks; }
   function setCartoucheCommaTallyMarks(v) { __cartoucheCommaTallyMarks = !!v; }
   function normalizeCartoucheTallyMode(v) {
@@ -813,6 +822,7 @@ const SitelenRenderer = (() => {
     if (parser.autoCartoucheStandaloneProperNames != null) setAutoCartoucheStandaloneProperNames(!!parser.autoCartoucheStandaloneProperNames);
     if (parser.relaxedNanpaLinjanParsing != null) setRelaxedNanpaLinjanParsing(!!parser.relaxedNanpaLinjanParsing);
     if (parser.relaxedNanpaLinjanRendering != null) setRelaxedNanpaLinjanRendering(!!parser.relaxedNanpaLinjanRendering);
+    if (parser.nasinNanpaPona != null) setNasinNanpaPona(!!parser.nasinNanpaPona);
     if (parser.cartoucheCommaTallyMarks != null) setCartoucheCommaTallyMarks(!!parser.cartoucheCommaTallyMarks);
     else if (parser.commaTallyInCartouche != null) setCartoucheCommaTallyMarks(!!parser.commaTallyInCartouche);
     else if (parser.enableCartoucheCommaTally != null) setCartoucheCommaTallyMarks(!!parser.enableCartoucheCommaTally);
@@ -1422,6 +1432,8 @@ const SitelenRenderer = (() => {
           sourceEnd: Number.isFinite(Number(el.sourceEnd)) ? Number(el.sourceEnd) : null,
           sourceKind: (typeof el.sourceKind === 'string') ? el.sourceKind : null,
           sourceSegmentIndex: Number.isFinite(Number(el.sourceSegmentIndex)) ? Number(el.sourceSegmentIndex) : null,
+          audioText: (typeof el.audioText === 'string') ? el.audioText : null,
+          sourceTransform: (typeof el.sourceTransform === 'string') ? el.sourceTransform : null,
           encodedText,
           cps: Array.isArray(el.cps) ? el.cps.slice() : (el.type === 'glyph' ? [el.cp] : null),
           audioSourceCps: Array.isArray(el.audioSourceCps) ? el.audioSourceCps.slice() : null,
@@ -3354,6 +3366,126 @@ function wireHaloControls() {
       r = r.replace(/-+/g, "-");
 
       return (head + r).trim();
+    }
+
+
+    /* ============================================================
+       Optional nasin nanpa pona conversion
+       ============================================================ */
+    function nasinNanpaPonaBase100GroupToWords(groupValue) {
+      let n = Number(groupValue);
+      if (!Number.isInteger(n) || n < 0 || n > 99) return null;
+
+      const words = [];
+      while (n >= 20) { words.push("mute"); n -= 20; }
+      while (n >= 5)  { words.push("luka"); n -= 5; }
+      while (n >= 2)  { words.push("tu"); n -= 2; }
+      if (n === 1) words.push("wan");
+      return words;
+    }
+
+    function nasinNanpaPonaGroupedDigitsToWords(digitGroups) {
+      const groups = Array.from(digitGroups ?? []);
+      const words = [];
+
+      for (let i = 0; i < groups.length; i++) {
+        const groupText = String(groups[i] ?? "");
+        if (!/^\d{1,2}$/.test(groupText)) return null;
+        const groupWords = nasinNanpaPonaBase100GroupToWords(Number(groupText));
+        if (!groupWords) return null;
+        words.push(...groupWords);
+        if (i < groups.length - 1) words.push("ale");
+      }
+
+      return words;
+    }
+
+    function splitDigitsIntoBase100GroupsFromRight(digits) {
+      const s = String(digits ?? "");
+      if (!/^\d+$/.test(s)) return null;
+      const groups = [];
+      for (let end = s.length; end > 0; end -= 2) {
+        groups.unshift(s.slice(Math.max(0, end - 2), end));
+      }
+      return groups;
+    }
+
+    function splitDigitsIntoBase100GroupsFromLeft(digits) {
+      let s = String(digits ?? "");
+      if (!/^\d+$/.test(s)) return null;
+      if ((s.length % 2) !== 0) s += "0";
+      const groups = [];
+      for (let i = 0; i < s.length; i += 2) groups.push(s.slice(i, i + 2));
+      return groups;
+    }
+
+    function nasinNanpaPonaHitHasStandaloneNumericContext(sourceText, hit) {
+      const s = String(sourceText ?? "");
+      const start = Number(hit?.index);
+      const end = Number(hit?.end);
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start || end > s.length) return false;
+
+      const before = start > 0 ? s[start - 1] : "";
+      const after = end < s.length ? s[end] : "";
+      const numericJoiner = /[A-Za-z0-9+\-−‒–—\/%:^*_]/;
+
+      if (before && (numericJoiner.test(before) || before === ".")) return false;
+      if (after && numericJoiner.test(after)) return false;
+
+      // A single trailing full stop may be ordinary sentence punctuation. A
+      // following decimal-like continuation means the scanner found only a
+      // fragment of a malformed larger expression, so decline conversion.
+      if (after === ".") {
+        const afterNext = (end + 1 < s.length) ? s[end + 1] : "";
+        if (afterNext === "." || /[0-9]/.test(afterNext)) return false;
+      }
+
+      return true;
+    }
+
+    function tryConvertPlainDecimalToNasinNanpaPonaWords(rawValue) {
+      let raw = String(rawValue ?? "").trim().replace(/[−‒–—]/g, "-");
+      if (!raw) return null;
+
+      // Accept one plain integer/decimal expression, optionally using correctly
+      // placed comma thousands separators in the integer part. Structured formats
+      // (dates, times, fractions, percentages, scientific notation, magnitude
+      // suffixes, invalid comma grouping, and loose separators) decline this path
+      // and retain their established parser behavior.
+      const m = raw.match(/^(-)?(?:(0|[1-9]\d*|[1-9]\d{0,2}(?:,\d{3})+)(?:\.(\d+))?|\.(\d+))$/);
+      if (!m) return null;
+
+      const negative = !!m[1];
+      const integerDigits = (m[2] != null) ? m[2].replace(/,/g, "") : "0";
+      let fractionDigits = (m[3] != null) ? m[3] : ((m[4] != null) ? m[4] : "");
+
+      // nasin nanpa pona is value-based here: written fractional precision is
+      // not preserved, so 1.2, 1.20, and 1.2000 are equivalent.
+      fractionDigits = fractionDigits.replace(/0+$/, "");
+
+      const isZero = integerDigits === "0" && fractionDigits === "";
+      if (isZero) return { words: ["ala"] };
+
+      const integerGroups = splitDigitsIntoBase100GroupsFromRight(integerDigits);
+      if (!integerGroups) return null;
+
+      let integerWords;
+      if (integerDigits === "0") integerWords = ["ala"];
+      else integerWords = nasinNanpaPonaGroupedDigitsToWords(integerGroups);
+      if (!integerWords) return null;
+
+      const words = [];
+      if (negative) words.push("weka");
+      words.push(...integerWords);
+
+      if (fractionDigits) {
+        const fractionGroups = splitDigitsIntoBase100GroupsFromLeft(fractionDigits);
+        const fractionWords = nasinNanpaPonaGroupedDigitsToWords(fractionGroups);
+        if (!fractionWords) return null;
+        words.push("ala", ...fractionWords);
+      }
+
+      return { words };
     }
 
     const STRICT_DEC_DIGIT_TO_TOKEN = {
@@ -5916,6 +6048,40 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
     }
 
+    function renderGeneratedNasinNanpaPonaWordsAsOrdinaryText(words, elements, { fontPx, mode, sourceText, sourceStart, sourceEnd, sourceKind = 'text', sourceSegmentIndex = null, mixedStyle = "short" }) {
+      const generatedText = Array.from(words ?? []).join(" ");
+      if (!generatedText) return;
+
+      const firstNewElement = elements.length;
+      renderTpWordsFromText(generatedText, elements, {
+        fontPx,
+        mode,
+        sourceBaseStart: 0,
+        sourceKind,
+        sourceSegmentIndex,
+        mixedStyle
+      });
+
+      // Reuse the exact ordinary-word rendering path, then attach the original
+      // numeric source span to every generated glyph. Preserve each generated
+      // Toki Pona word separately as audioText so audio can speak the rendered
+      // words without losing the original numeric source used by selection and
+      // Unicode JSON reconstruction. Gaps remain ordinary gaps.
+      let generatedWordIndex = 0;
+      for (let i = firstNewElement; i < elements.length; i++) {
+        const el = elements[i];
+        if (!el || el.type === "gap") continue;
+        el.sourceText = String(sourceText ?? "");
+        el.sourceStart = Number.isFinite(Number(sourceStart)) ? Number(sourceStart) : null;
+        el.sourceEnd = Number.isFinite(Number(sourceEnd)) ? Number(sourceEnd) : null;
+        el.sourceKind = sourceKind;
+        el.sourceSegmentIndex = sourceSegmentIndex;
+        el.audioText = String(words[generatedWordIndex] ?? "");
+        el.sourceTransform = "nasinNanpaPona";
+        generatedWordIndex += 1;
+      }
+    }
+
     function parseTextSegmentToElements(segmentText, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null, mixedStyle = "short", allowRawCodepoints = true }) {
       const mode = getNanpaLinjanMode();
       const s = String(segmentText ?? "");
@@ -5994,6 +6160,15 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const timeHits = findTimeSequencesWithCaps(numericScanText);
       const dateHits = findDateSequencesWithCaps(numericScanText);
       const decHits = findDecimalSequencesWithCaps(numericScanText, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
+      if (getNasinNanpaPona()) {
+        for (const hit of decHits) {
+          if (!nasinNanpaPonaHitHasStandaloneNumericContext(s, hit)) continue;
+          const converted = tryConvertPlainDecimalToNasinNanpaPonaWords(hit.match);
+          if (converted?.words?.length) {
+            hit.nasinNanpaPonaWords = converted.words;
+          }
+        }
+      }
       const codeHits = findNumberCodeSequencesWithCaps(numericScanText);
       const nameHits = findNanpaLinjanProperNameSequencesWithCaps(numericScanText);
       const phraseHits = findNanpaLinjanTpPhraseSequences(numericScanText);
@@ -6015,7 +6190,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           index: h.index,
           end: h.end,
           caps: h.caps || null,
-          words: Array.isArray(h.words) ? h.words.join(" ") : null
+          words: Array.isArray(h.words) ? h.words.join(" ") : null,
+          nasinNanpaPonaWords: Array.isArray(h.nasinNanpaPonaWords) ? h.nasinNanpaPonaWords.join(" ") : null
         }))
       });
 
@@ -6027,7 +6203,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         index: h.index,
         end: h.end,
         caps: h.caps || null,
-        words: Array.isArray(h.words) ? h.words.join(" ") : null
+        words: Array.isArray(h.words) ? h.words.join(" ") : null,
+        nasinNanpaPonaWords: Array.isArray(h.nasinNanpaPonaWords) ? h.nasinNanpaPonaWords.join(" ") : null
       })));
 
       if (!hits || hits.length === 0) {
@@ -6044,7 +6221,18 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         }
         const fgCss = getFgHex();
         const matchText = s.slice(a, b);
-        if (h.kind === "tpPhrase") {
+        if (Array.isArray(h.nasinNanpaPonaWords) && h.nasinNanpaPonaWords.length > 0) {
+          renderGeneratedNasinNanpaPonaWordsAsOrdinaryText(h.nasinNanpaPonaWords, elements, {
+            fontPx,
+            mode,
+            sourceText: matchText,
+            sourceStart: sourceBaseStart + a,
+            sourceEnd: sourceBaseStart + b,
+            sourceKind,
+            sourceSegmentIndex,
+            mixedStyle
+          });
+        } else if (h.kind === "tpPhrase") {
           const cps = nanpaLinjanWordsToCodepoints(h.words, { mode });
           if (cps && cps.length) {
             makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText: matchText, sourceStart: sourceBaseStart + a, sourceEnd: sourceBaseStart + b, sourceKind, sourceSegmentIndex });
