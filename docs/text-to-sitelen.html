@@ -6441,6 +6441,301 @@ function wireHaloControls() {
       return "";
     }
 
+    function titleCaseUnicodeJsonCartoucheProperName(value) {
+      return String(value ?? "")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(word => word.length ? (word[0].toUpperCase() + word.slice(1)) : word)
+        .join(" ");
+    }
+
+    function stripUnicodeJsonCartoucheBrackets(value) {
+      const text = String(value ?? "").trim();
+      return text.startsWith("[") && text.endsWith("]")
+        ? text.slice(1, -1).trim()
+        : text;
+    }
+
+    function tryUnicodeJsonNanpaTpPhraseToCaps(value) {
+      const words = String(value ?? "")
+        .trim()
+        .split(/\s+/)
+        .map(word => word.toLowerCase().replace(/[^a-z]/g, ""))
+        .filter(Boolean);
+
+      if (words.length < 3 || words[0] !== "nanpa" || words[words.length - 1] !== "nanpa") return null;
+      if (words[1] !== "en" && words[1] !== "esun") return null;
+
+      const body = words.slice(2, -1);
+      const relaxed = getRelaxedNanpaLinjanEnabled();
+
+      const abbreviatedDigitToken = {
+        ijo: "NI",
+        wan: relaxed ? "WA" : "WE",
+        tu: relaxed ? "TU" : "TE",
+        seli: "SE",
+        awen: "NA",
+        luka: relaxed ? "LU" : "LE",
+        utala: "NU",
+        mun: relaxed ? "MU" : "ME",
+        pipi: relaxed ? "PI" : "PE",
+        jo: "JE"
+      };
+
+      if (body.length && body.every(word => abbreviatedDigitToken[word])) {
+        return "NE" + body.map(word => abbreviatedDigitToken[word]).join("") + "N";
+      }
+
+      const patterns = [
+        [["nena", "o", "nena", "o", "nena", "o"], "NONONO"],
+        [["nasa", "o", "nasa", "o", "nasa", "o"], "NONONO"],
+        [["nena", "open", "kipisi", "en"], "OK"],
+        [["noka", "open", "kipisi", "e"], "OK"],
+        [["nena", "open", "kin", "open"], "NOKO"],
+        [["nena", "en", "kasi", "en"], "NEKE"],
+        [["nasa", "e", "kasi", "e"], "NEKE"],
+        [["nena", "en", "kala", "open"], "NEKO"],
+        [["nasa", "e", "kala", "open"], "NEKO"],
+        [["nena", "o", "nena", "en"], "NONE"],
+        [["ni", "o", "nasa", "e"], "NONE"],
+        [["nena", "o", "nena", "o"], "NONO"],
+        [["nasa", "o", "nasa", "o"], "NONO"],
+
+        [["wan", "ala"], "WA"],
+        [["tu", "uta"], "TU"],
+        [["luka", "uta"], "LU"],
+        [["mun", "uta"], "MU"],
+        [["pipi", "ike"], "PI"],
+
+        [["nena", "ijo"], "NI"],
+        [["nasa", "ijo"], "NI"],
+        [["wan", "en"], "WE"],
+        [["wan", "esun"], "WE"],
+        [["tu", "en"], "TE"],
+        [["tu", "esun"], "TE"],
+        [["seli", "en"], "SE"],
+        [["seli", "esun"], "SE"],
+        [["nena", "awen"], "NA"],
+        [["nasa", "awen"], "NA"],
+        [["luka", "en"], "LE"],
+        [["luka", "esun"], "LE"],
+        [["nena", "utala"], "NU"],
+        [["nasa", "utala"], "NU"],
+        [["mun", "en"], "ME"],
+        [["mun", "esun"], "ME"],
+        [["pipi", "en"], "PE"],
+        [["pipi", "esun"], "PE"],
+        [["jo", "en"], "JE"],
+        [["jo", "esun"], "JE"],
+
+        [["nena", "ona"], "NO"],
+        [["nasa", "ona"], "NO"],
+        [["nena", "o"], "NO"],
+        [["ni", "o"], "NO"],
+        [["nena", "en"], "NE"],
+        [["nasa", "e"], "NE"],
+        [["kulupu", "en"], "KE"],
+        [["kulupu", "e"], "KE"]
+      ].sort((a, b) => b[0].length - a[0].length);
+
+      const memo = new Map();
+      function decodeFrom(index) {
+        if (index === body.length) return "";
+        if (memo.has(index)) return memo.get(index);
+
+        for (const [patternWords, token] of patterns) {
+          if (index + patternWords.length > body.length) continue;
+          let matches = true;
+          for (let offset = 0; offset < patternWords.length; offset++) {
+            if (body[index + offset] !== patternWords[offset]) {
+              matches = false;
+              break;
+            }
+          }
+          if (!matches) continue;
+
+          const rest = decodeFrom(index + patternWords.length);
+          if (rest != null) {
+            const decoded = token + rest;
+            memo.set(index, decoded);
+            return decoded;
+          }
+        }
+
+        memo.set(index, null);
+        return null;
+      }
+
+      const bodyCaps = decodeFrom(0);
+      return bodyCaps == null ? null : ("NE" + bodyCaps + "N");
+    }
+
+    function normalizeUnicodeJsonOrdinaryCartoucheGlyphWord(value) {
+      const raw = String(value ?? "").trim().toLowerCase();
+      if (!raw) return null;
+
+      if (raw === "zz") return { kind: "wordBreak" };
+      if (raw === "," || raw === "koma" || raw === String.fromCodePoint(CARTOUCHE_TALLY_CP)) {
+        return { kind: "tally" };
+      }
+
+      const punctuationWord = {
+        ".": "ota",
+        "·": "ota",
+        ":": "kolon"
+      }[raw];
+      if (punctuationWord) {
+        return { kind: "glyph", letters: punctuationWord, glyphKey: raw };
+      }
+
+      const alias = {
+        ni01: { glyphKey: "ni", letters: "ni" },
+        ni02: { glyphKey: "ni>", letters: "ni" },
+        ni03: { glyphKey: "ni^", letters: "ni" },
+        ni04: { glyphKey: "ni<", letters: "ni" },
+        sewi01: { glyphKey: "sewi", letters: "sewi" },
+        sewi02: { glyphKey: "sewi^", letters: "sewi" }
+      }[raw];
+      if (alias) return { kind: "glyph", ...alias };
+
+      const glyphKey = raw.replace(/[^a-z^<>]/g, "");
+      if (!glyphKey) return null;
+
+      const knownSpecialGlyphKey = glyphKey === "te" || glyphKey === "to";
+      if (!knownSpecialGlyphKey && WORD_TO_UCSUR_CP[glyphKey] == null) return null;
+
+      const letters = glyphKey.replace(/[^a-z]/g, "");
+      if (!letters) return null;
+
+      return { kind: "glyph", glyphKey, letters };
+    }
+
+    function tokenizeUnicodeJsonOrdinaryCartouche(value) {
+      const source = String(value ?? "");
+      const tallyCharacter = String.fromCodePoint(CARTOUCHE_TALLY_CP);
+      const tokens = [];
+      let current = "";
+
+      function flushCurrent() {
+        if (current) tokens.push(current);
+        current = "";
+      }
+
+      for (const ch of Array.from(source)) {
+        if (/\s/.test(ch)) {
+          flushCurrent();
+          continue;
+        }
+
+        if (ch === "," || ch === tallyCharacter) {
+          flushCurrent();
+          tokens.push(ch);
+          continue;
+        }
+
+        if (ch === "." || ch === "·" || ch === ":") {
+          flushCurrent();
+          tokens.push(ch);
+          continue;
+        }
+
+        current += ch;
+      }
+
+      flushCurrent();
+      return tokens;
+    }
+
+    function tryDecodeUnicodeJsonOrdinaryCartoucheProperName(value) {
+      const tokens = tokenizeUnicodeJsonOrdinaryCartouche(value);
+      if (!tokens.length) return null;
+
+      const properNameWords = [[]];
+      let previousGlyph = null;
+      let glyphCount = 0;
+
+      for (const token of tokens) {
+        const decoded = normalizeUnicodeJsonOrdinaryCartoucheGlyphWord(token);
+        if (!decoded) return null;
+
+        if (decoded.kind === "wordBreak") {
+          if (properNameWords[properNameWords.length - 1].length) properNameWords.push([]);
+          previousGlyph = null;
+          continue;
+        }
+
+        if (decoded.kind === "tally") {
+          if (previousGlyph) previousGlyph.tallyCount += 1;
+          continue;
+        }
+
+        const glyph = {
+          letters: decoded.letters,
+          tallyCount: 0
+        };
+        properNameWords[properNameWords.length - 1].push(glyph);
+        previousGlyph = glyph;
+        glyphCount += 1;
+      }
+
+      if (!glyphCount) return null;
+
+      const decodedWords = properNameWords
+        .map(glyphs => glyphs
+          .map(glyph => glyph.letters.slice(0, Math.max(1, 1 + glyph.tallyCount)))
+          .join(""))
+        .filter(Boolean);
+
+      if (!decodedWords.length) return null;
+      return titleCaseUnicodeJsonCartoucheProperName(decodedWords.join(" "));
+    }
+
+    function getUnicodeJsonCartoucheProperName(run) {
+      const type = getUnicodeJsonRunType(run);
+      if (type !== "number" && type !== "cartouche") return null;
+
+      const input = stripUnicodeJsonCartoucheBrackets(getUnicodeJsonRunInput(run));
+      if (!input) return null;
+
+      const role = String(run?.fontRole ?? "").toLowerCase();
+      const isNumericCartouche = type === "number" || role === "number";
+
+      if (isNumericCartouche) {
+        const parserOptions = {
+          numericMode: getNanpaLinjanMode(),
+          mixedStyle: "short",
+          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
+          relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled()
+        };
+
+        try {
+          const parsed = NanpaParser.parseNumber(input, parserOptions);
+          if (parsed?.properName) return titleCaseUnicodeJsonCartoucheProperName(parsed.properName);
+        } catch {}
+
+        try {
+          const caps = tryUnicodeJsonNanpaTpPhraseToCaps(input);
+          if (caps) {
+            return NanpaParser.splitCapsToProperName(caps, {
+              titleCase: true,
+              relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled()
+            });
+          }
+        } catch {}
+
+        return null;
+      }
+
+      const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
+      if (sourceKind !== "bracket") {
+        return titleCaseUnicodeJsonCartoucheProperName(input);
+      }
+
+      return tryDecodeUnicodeJsonOrdinaryCartoucheProperName(input)
+        ?? titleCaseUnicodeJsonCartoucheProperName(input);
+    }
+
     function serializeUnicodeJsonImageValue(value) {
       const desc = value || {};
       const parts = [];
@@ -6738,11 +7033,15 @@ async function buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, prese
     const sourceKind = String(run?.sourceKind || "");
     const sourceSegmentIndex = Number.isFinite(run?.sourceSegmentIndex) ? Number(run.sourceSegmentIndex) : null;
     const unicode = codepointsToRawUnicodeString(cps);
+    const type = getUnicodeJsonRunType(run);
+    const input = getUnicodeJsonRunInput(run);
+    const cartoucheProperName = getUnicodeJsonCartoucheProperName(run);
 
     return {
       font: fontId,
-      type: getUnicodeJsonRunType(run),
-      input: getUnicodeJsonRunInput(run),
+      type,
+      input,
+      ...(cartoucheProperName ? { cartoucheProperName } : {}),
       sourceStart: getUnicodeJsonRunSourceStart(run),
       sourceEnd: getUnicodeJsonRunSourceEnd(run),
       codepoints: formatCodepointsUPlus(cps),
