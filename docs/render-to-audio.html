@@ -1251,12 +1251,12 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=184";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=28";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=186";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=32";
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback
-    } from "./js/sitelen-audio-plan.js?v=12";
+    } from "./js/sitelen-audio-plan.js?v=16";
 
     const MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
     const MODE_DEFAULT = "relaxed";
@@ -1317,6 +1317,7 @@
      */
     const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
       "Eke", "Eken", "Ekeke", "Ekeken", "Ekekeke", "Ekekeken",
+      "Keke", "Keken", "Kekeke", "Kekeken",
       "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
     ]);
 
@@ -1951,6 +1952,30 @@
       };
     }
 
+    function magnitudeKeCountForProperNameWord(word) {
+      const lower = String(word ?? "").toLowerCase();
+      if (!/^(?:e(?:ke)+|(?:ke){2,3})n?$/.test(lower)) return 0;
+      return (lower.match(/ke/g) || []).length;
+    }
+
+    function magnitudeSuffixCharactersForKeCount(keCount) {
+      if (keCount === 1) return ["K", "k"];
+      if (keCount === 2) return ["M", "m"];
+      if (keCount === 3) return ["B", "b"];
+      if (keCount === 4) return ["T", "t"];
+      return [];
+    }
+
+    function magnitudeSuffixCharactersForEkeWord(word) {
+      const lower = String(word ?? "").toLowerCase();
+      const properNameForm = /^ne(?:ke)+n?$/.test(lower)
+        ? lower.slice(1)
+        : lower;
+      return magnitudeSuffixCharactersForKeCount(
+        magnitudeKeCountForProperNameWord(properNameForm)
+      );
+    }
+
     function sourceCharacterMatchesUnit(character, unit) {
       const ch = String(character ?? "");
       if (!unit) return false;
@@ -1961,7 +1986,12 @@
       if (unit.text === "none") return ch === ".";
       if (unit.text === "nono") return ch === "/" || ch === "⁄";
       if (unit.text === "nonono") return ch === "+";
-      if (/^neke/i.test(unit.text)) return /[,/:_\-]/u.test(ch);
+      if (/^neke/i.test(unit.text)) {
+        return (
+          /[,/:_\-]/u.test(ch) ||
+          magnitudeSuffixCharactersForEkeWord(unit.text).includes(ch)
+        );
+      }
       if (/^eko/i.test(unit.text)) return /[eE]/u.test(ch);
       if (/^ene/i.test(unit.text)) return /\s|_/u.test(ch);
       return false;
@@ -2248,6 +2278,7 @@
       });
 
       const end = makeChip("-n", "marker");
+      end.dataset.closingMarker = "true";
       placeAt(end, columnCount);
       el.outerMarkerUnits.appendChild(end);
     }
@@ -2293,10 +2324,33 @@
 
       const endArrow = document.createElement("span");
       endArrow.className = "arrow-cell";
+      endArrow.dataset.closingMarkerArrow = "true";
       endArrow.textContent = "↙";
       endArrow.title = "The closing -n joins the final proper-name word";
       placeAt(endArrow, columnCount);
       el.reassignmentArrows.appendChild(endArrow);
+    }
+
+    function alignClosingMarkerArrow() {
+      const marker = el.outerMarkerUnits?.querySelector('[data-closing-marker="true"]');
+      const arrow = el.reassignmentArrows?.querySelector('[data-closing-marker-arrow="true"]');
+      if (!marker || !arrow) return;
+
+      /*
+       * Each breakdown row intentionally keeps its own natural grid sizing.
+       * Move only the final southwest arrow so its centre sits directly below
+       * the closing -n marker; do not alter any other column or row alignment.
+       */
+      arrow.style.transform = "";
+      const markerRect = marker.getBoundingClientRect();
+      const arrowRect = arrow.getBoundingClientRect();
+      const offset =
+        markerRect.left + markerRect.width / 2 -
+        (arrowRect.left + arrowRect.width / 2);
+
+      if (Number.isFinite(offset) && Math.abs(offset) > 0.01) {
+        arrow.style.transform = `translateX(${offset}px)`;
+      }
     }
 
     function renderAlignedProperName(model, columnCount) {
@@ -2424,6 +2478,7 @@
     function scheduleDesktopBreakdownFit() {
       requestAnimationFrame(() => {
         fitBreakdownToDesktop();
+        alignClosingMarkerArrow();
       });
     }
 
@@ -2502,23 +2557,75 @@
       return { ranges, total: cursor };
     }
 
-    function numericPunctuationDescriptor(word) {
+    function buildMagnitudePunctuationDescriptors(units, characters) {
+      const words = [];
+      const seen = new Set();
+      for (const unit of units) {
+        if (seen.has(unit.wordIndex)) continue;
+        seen.add(unit.wordIndex);
+        words.push({
+          wordIndex: unit.wordIndex,
+          text: String(unit.word ?? "").toLowerCase()
+        });
+      }
+
+      const descriptors = new Map();
+      for (let index = 0; index < words.length; index += 1) {
+        const first = words[index];
+        if (!/^e(?:ke)+n?$/.test(first.text)) continue;
+
+        const sequence = [first];
+        let totalKeCount = magnitudeKeCountForProperNameWord(first.text);
+        let nextIndex = index + 1;
+        while (nextIndex < words.length && /^(?:ke){2,3}n?$/.test(words[nextIndex].text)) {
+          sequence.push(words[nextIndex]);
+          totalKeCount += magnitudeKeCountForProperNameWord(words[nextIndex].text);
+          nextIndex += 1;
+        }
+
+        const suffixCharacters = magnitudeSuffixCharactersForKeCount(totalKeCount);
+        const compactSuffix = suffixCharacters.some(character => characters.includes(character));
+        if (compactSuffix) {
+          const sharedTargetKey = `magnitude-suffix-${first.wordIndex}`;
+          for (const item of sequence) {
+            descriptors.set(item.wordIndex, {
+              characters: new Set(suffixCharacters),
+              count: 1,
+              fallbackToNextDigit: false,
+              targetKey: sharedTargetKey
+            });
+          }
+        } else {
+          for (const item of sequence) {
+            const itemKeCount = magnitudeKeCountForProperNameWord(item.text);
+            descriptors.set(item.wordIndex, {
+              characters: new Set([",", ":", "-"]),
+              count: Math.max(1, itemKeCount),
+              fallbackToNextDigit: true,
+              targetKey: item.wordIndex
+            });
+          }
+        }
+
+        index = nextIndex - 1;
+      }
+
+      return descriptors;
+    }
+
+    function numericPunctuationDescriptor(word, wordIndex, magnitudeDescriptors) {
       const lower = String(word ?? "").toLowerCase();
 
+      if (magnitudeDescriptors?.has(wordIndex)) {
+        return magnitudeDescriptors.get(wordIndex);
+      }
+
       if (lower === "neno") {
-        return { characters: new Set(["-"]), count: 1 };
+        return { characters: new Set(["-"]), count: 1, targetKey: wordIndex };
       }
 
       if (lower === "one") {
-        return { characters: new Set(["."]), count: 1 };
-      }
-
-      if (/^e(?:ke){1,3}n?$/.test(lower)) {
-        return {
-          characters: new Set([",", ":", "-"]),
-          count: Math.max(1, (lower.match(/ke/g) || []).length),
-          fallbackToNextDigit: true
-        };
+        return { characters: new Set(["."]), count: 1, targetKey: wordIndex };
       }
 
       if (lower === "oken") {
@@ -2590,6 +2697,7 @@
       const map = [];
       const used = new Set();
       const punctuationTargetsByWord = new Map();
+      const magnitudeDescriptors = buildMagnitudePunctuationDescriptors(units, characters);
       const scientificMarkerWords = scientificNotationMarkerWordIndexes(units);
       const scientificEIndex = characters.findIndex(
         character => character === "e" || character === "E"
@@ -2650,9 +2758,14 @@
           continue;
         }
 
-        const punctuation = numericPunctuationDescriptor(unit.word);
+        const punctuation = numericPunctuationDescriptor(
+          unit.word,
+          unit.wordIndex,
+          magnitudeDescriptors
+        );
         if (punctuation) {
-          if (!punctuationTargetsByWord.has(unit.wordIndex)) {
+          const punctuationTargetKey = punctuation.targetKey ?? unit.wordIndex;
+          if (!punctuationTargetsByWord.has(punctuationTargetKey)) {
             let positions = takeNext(
               character => punctuation.characters.has(character),
               punctuation.count
@@ -2670,11 +2783,11 @@
               );
             }
 
-            punctuationTargetsByWord.set(unit.wordIndex, positions);
+            punctuationTargetsByWord.set(punctuationTargetKey, positions);
           }
 
           map[unit.index] = Array.from(
-            punctuationTargetsByWord.get(unit.wordIndex) || []
+            punctuationTargetsByWord.get(punctuationTargetKey) || []
           );
           continue;
         }

@@ -1565,7 +1565,7 @@
 
     async function getTokiPonaVoice() {
       if (!tokiPonaVoicePromise) {
-        tokiPonaVoicePromise = import("./js/toki-pona-voice-api.js?v=28")
+        tokiPonaVoicePromise = import("./js/toki-pona-voice-api.js?v=32")
           .then(mod => mod.createTokiPonaVoice());
       }
       return tokiPonaVoicePromise;

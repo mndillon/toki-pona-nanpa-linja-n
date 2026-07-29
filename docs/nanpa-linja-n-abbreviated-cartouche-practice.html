@@ -1127,10 +1127,12 @@
   const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
   const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
     "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
+    "Keke","Keken","Kekeke","Kekeken",
     "One","Ono","Oko","Eko","Oken","Ene","Inin"
   ]);
   const PROGRESSIVE_NUMERIC_PUNCTUATION_WORDS = new Set([
     "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
+    "Keke","Keken","Kekeke","Kekeken",
     "One","Ono","Oko","Eko","Oken","Ene","Neno","Inin"
   ]);
   const REVIEW_AUDIO_PAUSE_SCALE = 1.00;
@@ -1600,13 +1602,13 @@
   }
 
   async function getNanpaParser(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=184");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=186");
     const mod = await nanpaModulePromise;
     return mod.NanpaParser;
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=28").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=32").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 
@@ -2726,18 +2728,77 @@
     return map;
   }
 
-  function reviewDecimalPunctuationDescriptor(word,kind){
+  function reviewMagnitudeKeCountForWord(word){
     const lower = String(word ?? "").toLowerCase();
-    if (lower === "neno") return {characters:new Set(["-"]),count:1};
-    if (lower === "one") return {characters:new Set(["."]),count:1};
-    if (/^e(?:ke){1,3}n?$/.test(lower)){
-      const count = (lower.match(/ke/g) || []).length;
-      if (kind === "hh-mm-time") return {characters:new Set([":"]),count};
-      if (kind === "iso-date") return {characters:new Set(["-"]),count};
-      if (kind === "thousands" || kind === "millions") return {characters:new Set([","]),count};
-      return {characters:new Set([",",":","-"]),count,fallbackToNextDigit:true};
+    if (!/^(?:e(?:ke)+|(?:ke){2,3})n?$/.test(lower)) return 0;
+    return (lower.match(/ke/g) || []).length;
+  }
+
+  function reviewMagnitudeSuffixCharacters(keCount){
+    if (keCount === 1) return ["K","k"];
+    if (keCount === 2) return ["M","m"];
+    if (keCount === 3) return ["B","b"];
+    if (keCount === 4) return ["T","t"];
+    return [];
+  }
+
+  function buildReviewMagnitudeDescriptors(value,units,kind){
+    const characters = Array.from(String(value ?? ""));
+    const words = [];
+    const seen = new Set();
+    for (const unit of units){
+      if (seen.has(unit.wordIndex)) continue;
+      seen.add(unit.wordIndex);
+      words.push({wordIndex:unit.wordIndex,text:String(unit.word ?? "").toLowerCase()});
     }
-    if (lower === "oken") return {characters:new Set(["%"]),count:1};
+
+    const descriptors = new Map();
+    for (let index=0;index<words.length;index++){
+      const first = words[index];
+      if (!/^e(?:ke)+n?$/.test(first.text)) continue;
+      const sequence = [first];
+      let totalKeCount = reviewMagnitudeKeCountForWord(first.text);
+      let nextIndex = index + 1;
+      while (nextIndex < words.length && /^(?:ke){2,3}n?$/.test(words[nextIndex].text)){
+        sequence.push(words[nextIndex]);
+        totalKeCount += reviewMagnitudeKeCountForWord(words[nextIndex].text);
+        nextIndex += 1;
+      }
+
+      const suffixCharacters = reviewMagnitudeSuffixCharacters(totalKeCount);
+      const compactSuffix = suffixCharacters.some(character => characters.includes(character));
+      if (compactSuffix){
+        const targetKey = `magnitude-suffix-${first.wordIndex}`;
+        for (const item of sequence){
+          descriptors.set(item.wordIndex,{characters:new Set(suffixCharacters),count:1,targetKey});
+        }
+      }else{
+        for (const item of sequence){
+          const count = Math.max(1,reviewMagnitudeKeCountForWord(item.text));
+          let charactersForWord;
+          if (kind === "hh-mm-time") charactersForWord = new Set([":"]);
+          else if (kind === "iso-date") charactersForWord = new Set(["-"]);
+          else if (kind === "thousands" || kind === "millions") charactersForWord = new Set([","]);
+          else charactersForWord = new Set([",",":","-"]);
+          descriptors.set(item.wordIndex,{
+            characters:charactersForWord,
+            count,
+            fallbackToNextDigit:true,
+            targetKey:item.wordIndex
+          });
+        }
+      }
+      index = nextIndex - 1;
+    }
+    return descriptors;
+  }
+
+  function reviewDecimalPunctuationDescriptor(word,kind,wordIndex,magnitudeDescriptors){
+    const lower = String(word ?? "").toLowerCase();
+    if (magnitudeDescriptors?.has(wordIndex)) return magnitudeDescriptors.get(wordIndex);
+    if (lower === "neno") return {characters:new Set(["-"]),count:1,targetKey:wordIndex};
+    if (lower === "one") return {characters:new Set(["."]),count:1,targetKey:wordIndex};
+    if (lower === "oken") return {characters:new Set(["%"]),count:1,targetKey:wordIndex};
     if (lower === "ono") return {characters:new Set(["/"]),count:1};
     if (lower === "oko") return {characters:new Set(["+"]),count:1};
     if (lower === "eko") return {characters:new Set(["e","E"]),count:1};
@@ -2782,6 +2843,7 @@
     const map = [];
     const used = new Set();
     const punctuationTargetsByWord = new Map();
+    const magnitudeDescriptors = buildReviewMagnitudeDescriptors(value,units,kind);
     const scientificMarkerWordIndexes = kind === "scientific-notation"
       ? reviewScientificNotationMarkerWordIndexes(units)
       : new Set();
@@ -2827,9 +2889,12 @@
         continue;
       }
 
-      const punctuation = reviewDecimalPunctuationDescriptor(unit.word,kind);
+      const punctuation = reviewDecimalPunctuationDescriptor(
+        unit.word,kind,unit.wordIndex,magnitudeDescriptors
+      );
       if (punctuation){
-        if (!punctuationTargetsByWord.has(unit.wordIndex)){
+        const punctuationTargetKey = punctuation.targetKey ?? unit.wordIndex;
+        if (!punctuationTargetsByWord.has(punctuationTargetKey)){
           let positions = takeNext(character => punctuation.characters.has(character),punctuation.count);
           // Some plain integer displays omit visual grouping punctuation even
           // though the proper name still speaks an Eke-family boundary. In
@@ -2839,11 +2904,11 @@
           if (!positions.length && punctuation.fallbackToNextDigit){
             positions = takeNext(character => /\d/.test(character),Math.max(1,punctuation.count));
           }
-          punctuationTargetsByWord.set(unit.wordIndex,positions);
+          punctuationTargetsByWord.set(punctuationTargetKey,positions);
         }
-        // Every spoken part of the same punctuation word deliberately reuses
-        // the same decimal target.
-        map[unit.index] = Array.from(punctuationTargetsByWord.get(unit.wordIndex) || []);
+        // Every spoken part of the same punctuation word, or each word in one
+        // split compact magnitude suffix, deliberately reuses the same target.
+        map[unit.index] = Array.from(punctuationTargetsByWord.get(punctuationTargetKey) || []);
         continue;
       }
 

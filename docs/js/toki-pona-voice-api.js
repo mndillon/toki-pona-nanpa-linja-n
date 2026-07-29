@@ -1,5 +1,5 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=175';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=19';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=186';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=20';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 

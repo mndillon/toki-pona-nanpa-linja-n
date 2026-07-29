@@ -361,6 +361,23 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
   return '';
 }
 
+function isSilentTeToAudioRun(run, sourceText, audioText, options = {}) {
+  if (options.silenceTeToAudio !== true) return false;
+  const kind = String(run?.kind ?? '').toLowerCase();
+  if (kind === 'cartouche') return false;
+  const candidate = compactSpeechWhitespace(audioText || sourceText).toLowerCase();
+  return candidate === 'te' || candidate === 'to';
+}
+
+function phonotacticUnknownSpeechText(sourceText) {
+  const candidate = sanitizeTextToSitelenAudioText(sourceText);
+  if (!candidate) return '';
+  const tokens = candidate.match(/[A-Za-z']+|[.,!?;:]/g) || [];
+  if (!tokens.some(token => /[A-Za-z]/.test(token))) return '';
+  if (!tokens.every(token => /^[.,!?;:]$/.test(token) || isAudioTpPhonotacticWord(token))) return '';
+  return compactSpeechWhitespace(candidate);
+}
+
 export function speechTextForRenderRun(run, skipped = [], options = {}) {
   if (!run) return '';
 
@@ -379,13 +396,25 @@ export function speechTextForRenderRun(run, skipped = [], options = {}) {
     return '';
   }
 
-  if (run.isUnrecognized) {
-    skipped.push({ kind: 'unknown', text: sourceText });
+  if (run.isQuoted || sourceKind === 'quote') {
+    skipped.push({ kind: 'quoted', text: sourceText });
     return '';
   }
 
-  if (run.isQuoted || sourceKind === 'quote') {
-    skipped.push({ kind: 'quoted', text: sourceText });
+  if (isSilentTeToAudioRun(run, sourceText, audioText, options)) {
+    skipped.push({ kind: 'silent-te-to', text: sourceText || audioText });
+    return '';
+  }
+
+  if (run.isUnrecognized) {
+    const phonotacticSpeech = phonotacticUnknownSpeechText(sourceText);
+    if (phonotacticSpeech && options.soundOutPhonotacticUnknownWords === true) {
+      return phonotacticSpeech;
+    }
+    skipped.push({
+      kind: phonotacticSpeech ? 'phonotactic-unknown-muted' : 'invalid-phonotactic-unknown',
+      text: sourceText
+    });
     return '';
   }
 
@@ -449,7 +478,10 @@ export function extractSpeechLinesFromRenderPlan(plan, options = {}) {
   for (let lineIndex = 0; lineIndex < renderLines.length; lineIndex++) {
     const line = renderLines[lineIndex];
     const parts = [];
-    const rawProperNameQueue = rawProperNameQueues[lineIndex] || [];
+    const sourceLineIndex = Number.isFinite(Number(line?.sourceLineIndex))
+      ? Number(line.sourceLineIndex)
+      : lineIndex;
+    const rawProperNameQueue = rawProperNameQueues[sourceLineIndex] || [];
     for (const run of (line?.runs || [])) {
       const speech = speechTextForRenderRun(run, skipped, {
         ...options,
@@ -541,6 +573,9 @@ export async function buildSitelenAudioPlan({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  silenceTeToAudio = false,
+  soundOutPhonotacticUnknownWords = false,
+  interpretDoubleQuotesAsTeTo = false,
   normalizeNonDrawableSourceTokens = true
 } = {}) {
   const originalRaw = String(rawText ?? '');
@@ -571,7 +606,10 @@ export async function buildSitelenAudioPlan({
     nanpaLinjanMode,
     mixedStyle,
     relaxedNanpaLinjanParsing,
-    relaxedNanpaLinjanRendering
+    relaxedNanpaLinjanRendering,
+    silenceTeToAudio,
+    soundOutPhonotacticUnknownWords,
+    interpretDoubleQuotesAsTeTo
   });
 
   return {
@@ -701,6 +739,7 @@ const AUDIO_VISUAL_CONTROL_CPS = new Set([
 // resynthesised as separate "E" and "ke" pieces.
 const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
   'eke', 'eken', 'ekeke', 'ekeken', 'ekekeke', 'ekekeken',
+  'keke', 'keken', 'kekeke', 'kekeken',
   'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin'
 ]);
 
@@ -1031,13 +1070,14 @@ function buildGenericRunSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
   const cps = runCodepointsForAudio(run);
   const groups = visibleComponentGroups(cps);
   const isCompoundRun = cps.some(cp => AUDIO_COMPOUND_JOINER_CPS.has(Number(cp)));
-  const completeRunComponentIndices = isCompoundRun
+  const isPhonotacticUnknownRun = run?.isUnrecognized === true;
+  const completeRunComponentIndices = (isCompoundRun || isPhonotacticUnknownRun)
     ? Array.from({ length: cps.length }, (_unused, index) => index)
     : [];
 
   return words.map((word, wordIndex) => {
     let componentIndices = completeRunComponentIndices.slice();
-    if (!isCompoundRun && groups.length) {
+    if (!isCompoundRun && !isPhonotacticUnknownRun && groups.length) {
       const start = Math.floor(groups.length * wordIndex / words.length);
       const end = Math.max(start + 1, Math.ceil(groups.length * (wordIndex + 1) / words.length));
       componentIndices = groups.slice(start, end).flat();
@@ -1047,7 +1087,7 @@ function buildGenericRunSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
       text: word,
       timingText: word,
       timingSyllables: splitAudioTpWordIntoSyllables(word),
-      kind: 'word',
+      kind: isPhonotacticUnknownRun ? 'phonotactic-unknown-word' : 'word',
       word,
       wordIndex,
       wholeNumericPunctuationWord: false,
@@ -1068,7 +1108,7 @@ export function speechUnitsForRenderRun(run, speech, {
 
   const kind = String(run?.kind ?? '').toLowerCase();
   const sourceKind = String(run?.sourceKind ?? '').toLowerCase();
-  if (run?.isQuoted || sourceKind === 'quote' || run?.isUnrecognized) return [];
+  if (run?.isQuoted || sourceKind === 'quote') return [];
 
   if (kind === 'cartouche') {
     return buildCartoucheSpeechUnits(run, text, fallbackRunIndex, lineIndex, audioOptions);
@@ -1100,7 +1140,10 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
 
   for (let lineIndex = 0; lineIndex < renderLines.length; lineIndex++) {
     const line = renderLines[lineIndex];
-    const rawProperNameQueue = rawProperNameQueues[lineIndex] || [];
+    const sourceLineIndex = Number.isFinite(Number(line?.sourceLineIndex))
+      ? Number(line.sourceLineIndex)
+      : lineIndex;
+    const rawProperNameQueue = rawProperNameQueues[sourceLineIndex] || [];
     const firstSegmentIndexForLine = segments.length;
     let sentenceIndexInLine = 0;
     let parts = [];
@@ -1226,7 +1269,10 @@ export async function buildSitelenSentenceAudioPlan(options = {}) {
     nanpaLinjanMode: options.nanpaLinjanMode,
     mixedStyle: options.mixedStyle,
     relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
-    relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
+    relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+    silenceTeToAudio: options.silenceTeToAudio === true,
+    soundOutPhonotacticUnknownWords: options.soundOutPhonotacticUnknownWords === true,
+    interpretDoubleQuotesAsTeTo: !!options.interpretDoubleQuotesAsTeTo
   });
 
   return {
@@ -1778,6 +1824,9 @@ export async function buildSitelenSentenceAudioBuffersFromRawText({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  silenceTeToAudio = false,
+  soundOutPhonotacticUnknownWords = false,
+  interpretDoubleQuotesAsTeTo = false,
   normalizeNonDrawableSourceTokens = true,
   voice = null,
   getVoice = null,
@@ -1797,6 +1846,9 @@ export async function buildSitelenSentenceAudioBuffersFromRawText({
     mixedStyle,
     relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering,
+    silenceTeToAudio,
+    soundOutPhonotacticUnknownWords,
+    interpretDoubleQuotesAsTeTo,
     normalizeNonDrawableSourceTokens
   });
 
@@ -2018,6 +2070,9 @@ export async function buildAndPlaySitelenAudioFromRawText({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  silenceTeToAudio = false,
+  soundOutPhonotacticUnknownWords = false,
+  interpretDoubleQuotesAsTeTo = false,
   normalizeNonDrawableSourceTokens = true,
   voice = null,
   getVoice = null,
@@ -2038,6 +2093,9 @@ export async function buildAndPlaySitelenAudioFromRawText({
     mixedStyle,
     relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering,
+    silenceTeToAudio,
+    soundOutPhonotacticUnknownWords,
+    interpretDoubleQuotesAsTeTo,
     normalizeNonDrawableSourceTokens
   });
 

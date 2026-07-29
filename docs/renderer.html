@@ -772,8 +772,8 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=184";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=28";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=198";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=32";
 
     const voice = await createTokiPonaVoice();
 
@@ -781,6 +781,7 @@
     const CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
     const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
       "Eke", "Eken", "Ekeke", "Ekeken", "Ekekeke", "Ekekeken",
+      "Keke", "Keken", "Kekeke", "Kekeken",
       "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
     ]);
 
@@ -1084,6 +1085,30 @@
     }
 
 
+    function magnitudeKeProperNameFragment(rawCount) {
+      const count = Math.max(0, Math.floor(Number(rawCount) || 0));
+      if (count < 1) return "";
+
+      // Keep the established one-, two-, and three-KE words. Longer runs use
+      // two-KE words, except that an odd final remainder stays as three KE.
+      // Only the first word carries the initial e; the caller attaches the
+      // final cartouche n to the final word.
+      if (count <= 3) return "e" + "ke".repeat(count);
+
+      const groupSizes = [2];
+      let remaining = count - 2;
+      while (remaining > 3) {
+        groupSizes.push(2);
+        remaining -= 2;
+      }
+      groupSizes.push(remaining);
+
+      return groupSizes
+        .map((size, index) => (index === 0 ? "e" : "") + "ke".repeat(size))
+        .join(" ");
+    }
+
+
     const STRICT_FINAL_HUNDRED_ININ_SUFFIXES = [
       "weninin", "teninin", "seninin", "naninin", "leninin",
       "nuninin", "meninin", "peninin", "jeninin"
@@ -1326,7 +1351,7 @@
     };
 
     const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
-    const MAGCHAR_TO_TOKEN = { "T": "KE", "M": "KEKE", "W": "KEKEKE" };
+    const MAGCHAR_TO_TOKEN = { "K": "KE", "M": "KEKE", "B": "KEKEKE", "T": "KEKEKEKE" };
     const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
 
     const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NOKO", "OK", "NE", "NO" ];
@@ -1559,6 +1584,10 @@
       const parts = ["NE"];
       let i = 0;
 
+      function ensureNEBeforeOperatorRun() {
+        if (parts[parts.length - 1] !== "NE") parts.push("NE");
+      }
+
       while (i < body.length) {
         const ch = body[i];
 
@@ -1596,8 +1625,9 @@
           while (j < body.length && body[j] === "K") j++;
           const count = j - i;
 
-          if (count < 1 || count > 3) throw new Error("Invalid run of 'K' in number code (max 3).");
+          if (count < 1) throw new Error("Invalid empty run of 'K' in number code.");
 
+          ensureNEBeforeOperatorRun();
           parts.push("KE".repeat(count));
           i = j;
           continue;
@@ -2041,8 +2071,9 @@
           const last = seg.slice(-1).toUpperCase();
           if (last === "K" || last === "T" || last === "M" || last === "B") {
             magnitudeSuffixKeCount =
-              (last === "K" || last === "T") ? 1 :
-              (last === "M") ? 2 : 3;
+              (last === "K") ? 1 :
+              (last === "M") ? 2 :
+              (last === "B") ? 3 : 4;
             seg = seg.slice(0, -1).trim();
             if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
           }
@@ -2331,6 +2362,7 @@
         if (suffixKeCount === 1) suffix = "K";
         else if (suffixKeCount === 2) suffix = "M";
         else if (suffixKeCount === 3) suffix = "B";
+        else if (suffixKeCount === 4) suffix = "T";
         else suffix = `×1000^${suffixKeCount}`;
       }
 
@@ -2888,11 +2920,10 @@
 
         if (pair === "NE" && nextPair === "KE") {
           outStr += "n ";
-          outStr += "e";
           let countKe = 1;
           let j = i;
           while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE") { countKe += 1; j += 2; }
-          outStr += "ke".repeat(countKe);
+          outStr += magnitudeKeProperNameFragment(countKe);
           if ((i + 2 * countKe) < end) outStr += " ";
           i += 2 + 2 * countKe;
           continue;
@@ -3005,7 +3036,7 @@
           let j = i;
           while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE") { countKe += 1; j += 2; }
           attachDelimiterN();
-          parts.push("e" + "ke".repeat(countKe));
+          parts.push(...magnitudeKeProperNameFragment(countKe).split(/\s+/).filter(Boolean));
           i += 2 + 2 * countKe;
           continue;
         }
@@ -3591,17 +3622,94 @@
       return "numeric";
     }
 
-    function cartoucheAudioPunctuationDescriptor(word, kind) {
+    function cartoucheMagnitudeKeCountForWord(word) {
       const lower = String(word ?? "").toLowerCase();
+      if (!/^(?:e(?:ke)+|(?:ke){2,3})n?$/.test(lower)) return 0;
+      return (lower.match(/ke/g) || []).length;
+    }
+
+    function cartoucheMagnitudeSuffixCharactersForKeCount(keCount) {
+      if (keCount === 1) return ["K", "k"];
+      if (keCount === 2) return ["M", "m"];
+      if (keCount === 3) return ["B", "b"];
+      if (keCount === 4) return ["T", "t"];
+      return [];
+    }
+
+    function buildCartoucheMagnitudePunctuationDescriptors(units, characters, kind) {
+      const words = [];
+      const seen = new Set();
+      for (const unit of units) {
+        if (seen.has(unit.wordIndex)) continue;
+        seen.add(unit.wordIndex);
+        words.push({
+          wordIndex: unit.wordIndex,
+          text: String(unit.word ?? "").toLowerCase()
+        });
+      }
+
+      const descriptors = new Map();
+      for (let index = 0; index < words.length; index += 1) {
+        const first = words[index];
+        if (!/^e(?:ke)+n?$/.test(first.text)) continue;
+
+        const sequence = [first];
+        let totalKeCount = cartoucheMagnitudeKeCountForWord(first.text);
+        let nextIndex = index + 1;
+        while (nextIndex < words.length && /^(?:ke){2,3}n?$/.test(words[nextIndex].text)) {
+          sequence.push(words[nextIndex]);
+          totalKeCount += cartoucheMagnitudeKeCountForWord(words[nextIndex].text);
+          nextIndex += 1;
+        }
+
+        const suffixCharacters = cartoucheMagnitudeSuffixCharactersForKeCount(totalKeCount);
+        const compactSuffix = suffixCharacters.some(character => characters.includes(character));
+        if (compactSuffix) {
+          const sharedTargetKey = `magnitude-suffix-${first.wordIndex}`;
+          for (const item of sequence) {
+            descriptors.set(item.wordIndex, {
+              characters: new Set(suffixCharacters),
+              count: 1,
+              fallbackToNextDigit: false,
+              targetKey: sharedTargetKey
+            });
+          }
+        } else {
+          const punctuationCharacters =
+            kind === "hh-mm-time" ? new Set([":"]) :
+            kind === "iso-date" ? new Set(["-"]) :
+            kind === "thousands" ? new Set([","]) :
+            new Set([",", ":", "-"]);
+
+          for (const item of sequence) {
+            const itemKeCount = cartoucheMagnitudeKeCountForWord(item.text);
+            descriptors.set(item.wordIndex, {
+              characters: punctuationCharacters,
+              count: Math.max(1, itemKeCount),
+              fallbackToNextDigit: true,
+              targetKey: item.wordIndex
+            });
+          }
+        }
+
+        index = nextIndex - 1;
+      }
+
+      return descriptors;
+    }
+
+    function cartoucheAudioPunctuationDescriptor(word, kind, wordIndex, magnitudeDescriptors) {
+      const lower = String(word ?? "").toLowerCase();
+      if (magnitudeDescriptors?.has(wordIndex)) return magnitudeDescriptors.get(wordIndex);
       if (lower === "neno") return { characters: new Set(["-"]), count: 1 };
       if (lower === "one") return { characters: new Set(["."]), count: 1 };
-      if (/^e(?:ke){1,3}n?$/.test(lower)) {
+      if (/^e(?:ke)+n?$/.test(lower)) {
         const count = Math.max(1, (lower.match(/ke/g) || []).length);
         if (kind === "hh-mm-time") return { characters: new Set([":"]), count };
         if (kind === "iso-date") return { characters: new Set(["-"]), count };
         if (kind === "thousands") return { characters: new Set([","]), count };
         return {
-          characters: new Set([",", ":", "-", "K", "M", "B"]),
+          characters: new Set([",", ":", "-", ...cartoucheMagnitudeSuffixCharactersForKeCount(count)]),
           count,
           fallbackToNextDigit: true
         };
@@ -3644,6 +3752,7 @@
       const map = [];
       const used = new Set();
       const punctuationTargetsByWord = new Map();
+      const magnitudeDescriptors = buildCartoucheMagnitudePunctuationDescriptors(units, characters, kind);
       const markerWords = kind === "scientific-notation"
         ? scientificMarkerWordIndexes(units)
         : new Set();
@@ -3683,9 +3792,15 @@
           continue;
         }
 
-        const punctuation = cartoucheAudioPunctuationDescriptor(unit.word, kind);
+        const punctuation = cartoucheAudioPunctuationDescriptor(
+          unit.word,
+          kind,
+          unit.wordIndex,
+          magnitudeDescriptors
+        );
         if (punctuation) {
-          if (!punctuationTargetsByWord.has(unit.wordIndex)) {
+          const punctuationTargetKey = punctuation.targetKey ?? unit.wordIndex;
+          if (!punctuationTargetsByWord.has(punctuationTargetKey)) {
             let positions = takeNext(
               character => punctuation.characters.has(character),
               punctuation.count
@@ -3693,9 +3808,9 @@
             if (!positions.length && punctuation.fallbackToNextDigit) {
               positions = takeNext(character => /\d/.test(character), Math.max(1, punctuation.count));
             }
-            punctuationTargetsByWord.set(unit.wordIndex, positions);
+            punctuationTargetsByWord.set(punctuationTargetKey, positions);
           }
-          map[unit.index] = Array.from(punctuationTargetsByWord.get(unit.wordIndex) || []);
+          map[unit.index] = Array.from(punctuationTargetsByWord.get(punctuationTargetKey) || []);
           continue;
         }
 

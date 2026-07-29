@@ -1,5 +1,5 @@
 export const REFERENCE_AUDIO_MANIFEST = {
-  "version": "0.6",
+  "version": "0.7",
   "sample_rate": 48000,
   "license_note": "Toki_Pona_audio_by_jan_Lakuse.zip contains _licence.txt: \"You can redistribute these files or use them in your project, but please mention audio provided by jan Lakuse.\" ku.zip did not include a licence file in the uploaded archive; treat those two files as local-project assets unless separately licensed.",
   "words": {
@@ -1528,7 +1528,7 @@ export const REFERENCE_AUDIO_MANIFEST = {
     },
     "ki": {
       "duration_ms": null,
-      "file": "syllables/ki.wav",
+      "file": "syllables_v2/ki.wav",
       "syllable": "ki"
     },
     "kin": {
@@ -2263,11 +2263,53 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "source": "uploaded nanpa-linja-n extra WAVs",
       "source_order": 49,
       "duration_ms": 1475.0
+    },
+    "ke": {
+      "unit": "Ke",
+      "file": "nanpa_v3/ke.wav",
+      "source": "derived from spoken nanpa.wav",
+      "source_order": 50,
+      "duration_ms": 450.8
+    },
+    "ken": {
+      "unit": "Ken",
+      "file": "nanpa_v3/ken.wav",
+      "source": "derived from spoken nanpa.wav",
+      "source_order": 51,
+      "duration_ms": 465.3
+    },
+    "keke": {
+      "unit": "Keke",
+      "file": "nanpa_v3/keke.wav",
+      "source": "derived from spoken nanpa.wav",
+      "source_order": 52,
+      "duration_ms": 683.3
+    },
+    "keken": {
+      "unit": "Keken",
+      "file": "nanpa_v3/keken.wav",
+      "source": "derived from spoken nanpa.wav",
+      "source_order": 53,
+      "duration_ms": 747.5
+    },
+    "kekeke": {
+      "unit": "Kekeke",
+      "file": "nanpa_v3/kekeke.wav",
+      "source": "derived from spoken nanpa.wav",
+      "source_order": 54,
+      "duration_ms": 912.3
+    },
+    "kekeken": {
+      "unit": "Kekeken",
+      "file": "nanpa_v3/kekeken.wav",
+      "source": "derived from spoken nanpa.wav",
+      "source_order": 55,
+      "duration_ms": 947.5
     }
   },
   "nanpa_unit_source": {
     "source_file": "spoken nanpa.wav",
-    "detected_units": 35,
+    "detected_units": 41,
     "source_sample_rate": 22050,
     "asset_sample_rate": 48000,
     "labels_in_order": [
@@ -2305,9 +2347,33 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "Ono",
       "Eko",
       "Oken",
-      "Ene"
+      "Ene",
+      "Ke",
+      "Ken",
+      "Keke",
+      "Keken",
+      "Kekeke",
+      "Kekeken"
     ],
-    "notes": "Purpose-recorded nanpa-linja-n unit bank. v0.5 refreshes the 35 nanpa WAV assets from the newer uploaded spoken nanpa.wav. Manifest paths updated to audio/nanpa_v2/.",
+    "derived_units": 6,
+    "derived_asset_sample_rate": 24000,
+    "derived_from_units": [
+      "Eke",
+      "Eken",
+      "Ekeke",
+      "Ekeken",
+      "Ekekeke",
+      "Ekekeken"
+    ],
+    "derived_labels_in_order": [
+      "Ke",
+      "Ken",
+      "Keke",
+      "Keken",
+      "Kekeke",
+      "Kekeken"
+    ],
+    "notes": "Purpose-recorded nanpa-linja-n unit bank. v0.5 refreshes the 35 nanpa WAV assets from the newer uploaded spoken nanpa.wav. Manifest paths updated to audio/nanpa_v2/. v0.7 adds six 24000 Hz nanpa_v3 units derived from the Eke-family recordings by removing the initial spoken e while preserving each recording's original leading silence.",
     "asset_sample_rates_in_package": [
       22050,
       24000

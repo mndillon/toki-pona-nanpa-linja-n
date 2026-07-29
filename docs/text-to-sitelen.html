@@ -622,6 +622,125 @@ body.shellReady {
 .btnRow{ flex-wrap: wrap !important; }
 .btnRow .inlineControl{ flex: 0 0 auto; }
 
+
+
+/* Render controls: fixed document order on desktop and mobile. */
+.renderPrimaryControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.renderPrimaryControls .inlineControl,
+.renderOptionsGrid .inlineControl {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.renderPrimaryControls .inlineControl select,
+.renderOptionsGrid .inlineControl select {
+  width: auto !important;
+  min-width: 108px;
+  height: 34px;
+  padding: 6px 10px;
+}
+
+.renderOptionsPanel {
+  margin-top: 12px;
+}
+
+.renderOptionsHeading {
+  margin: 0;
+  font-size: 14px;
+}
+
+.renderOptionsToggle {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.renderOptionsToggleTitle {
+  min-width: 0;
+  font-weight: 700;
+}
+
+.renderOptionsToggleState {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.renderOptionsToggleIcon {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 120ms ease;
+}
+
+.renderOptionsPanel.is-collapsed .renderOptionsToggleIcon {
+  transform: rotate(-90deg);
+}
+
+.renderOptionsContent {
+  padding-top: 10px;
+}
+
+.renderOptionsContent[hidden] {
+  display: none !important;
+}
+
+.renderOptionsGrid {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 520px) {
+  .renderPrimaryControls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .renderPrimaryControls > *,
+  .renderPrimaryControls #appBtnRender,
+  .renderPrimaryControls #ctlFontSize {
+    order: 0;
+    width: auto;
+  }
+
+  .renderOptionsGrid {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .renderOptionsGrid .inlineControl {
+    width: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
 </style>
 </head>
 
@@ -732,203 +851,242 @@ nanpa #~WI.
 "></textarea>
       </div>
 
-      <div class="btnRow" aria-label="Actions">
-        <button id="appBtnRender" type="button" class="btnBi">
-          <span>Render</span>
-          <span class="tpLine">o sitelen</span>
+      <div class="renderPrimaryControls" aria-label="Primary render controls">
+        <button class="btnBi" id="appBtnRender" type="button">
+        <span>Render</span>
+        <span class="tpLine">o sitelen</span>
         </button>
 
-        <!-- Foreground color picker -->
-        <div id="ctlTextColor" class="inlineControl inlinePill" role="group" aria-label="Text color">
-          <span class="ctlLabel">
-            Text color <span class="tpInline">kule pi sitelen</span>
-          </span>
-          <input id="appFgPick" class="swatch" type="color" aria-label="Foreground color">
-        </div>
-
-        <!-- Script/font preset -->
-        <div id="ctlScriptPreset" class="inlineControl inlinePill" role="group" aria-label="Script/font preset">
-          <span class="ctlLabel">
-            Script/font <span class="tpInline">nasin sitelen</span>
-          </span>
-          <select id="appScriptPresetSel" aria-describedby="scriptPresetHelp">
-            <option value="nasinNanpa" selected>nasin nanpa</option>
-            <option value="sitelenSeliKiwen">sitelen seli kiwen</option>
-          </select>
-          <div id="scriptPresetHelp" class="sr-only">Chooses the font family preset for preview, PNG export, and PDF export.</div>
-        </div>
-
-        <!-- Text font -->
-        <div id="ctlTextFont" class="inlineControl inlinePill" role="group" aria-label="Text font">
-          <span class="ctlLabel">
-            Quoted text font <span class="tpInline">nasin sitelen nimi</span>
-          </span>
-          <select id="appTextFontSel" aria-describedby="textFontHelp"></select>
-          <div id="textFontHelp" class="sr-only">Chooses the font used for literal quoted text only.</div>
-        </div>
-
-        <!-- Numeric cartouche abbreviation toggle -->
-        <div id="ctlNumericCartoucheAbbrev" class="inlineControl inlinePill" role="group" aria-label="Abbreviate numeric cartouche output">
-          <span class="ctlLabel">
-            Abbreviate numeric cartouche output <span class="tpInline">o lili e sitelen poki nanpa</span>
-          </span>
-          <label style="display:flex; align-items:center; gap:8px; margin:0;">
-            <input id="appNumericCartoucheAbbrevEnable" type="checkbox" aria-label="Abbreviate numeric cartouche output">
-            <span class="ctlLabel" style="margin:0;">Enabled</span>
-          </label>
-        </div>
-
-        <!-- Abbreviated numeric cartouche spacer toggle -->
-        <div id="ctlNumericCartoucheSpacers" class="inlineControl inlinePill" role="group" aria-label="Show spacers in abbreviated cartouches">
-          <span class="ctlLabel">
-            Show spacers in abbreviated cartouches
-          </span>
-          <label style="display:flex; align-items:center; gap:8px; margin:0;">
-            <input id="appNumericCartoucheSpacersEnable" type="checkbox" aria-label="Show spacers in abbreviated cartouches">
-            <span class="ctlLabel" style="margin:0;">Enabled</span>
-          </label>
-        </div>
-
-        <!-- Nanpa-linja-n relaxed mode -->
-        <div id="ctlNanpaRelaxedMode" class="inlineControl inlinePill" role="group" aria-label="Nanpa-linja-n strict or relaxed mode">
-          <span class="ctlLabel">
-            Nanpa-linja-n mode <span class="tpInline">nasin nanpa</span>
-          </span>
-          <select id="appNanpaRelaxedModeSel" aria-label="Nanpa-linja-n strict or relaxed mode">
-            <option value="strict" selected>Strict</option>
-            <option value="relaxed">Relaxed</option>
-          </select>
-        </div>
-
-        <!-- Font size -->
-        <div id="ctlFontSize" class="inlineControl inlinePill" role="group" aria-label="Font size">
-          <span class="ctlLabel">
-            Font size <span class="tpInline">suli pi sitelen</span>
-          </span>
-          <select id="appFontSizeSel" aria-describedby="fontSizeHelp">
-            <option value="8">8 px</option>
-            <option value="10">10 px</option>
-            <option value="12">12 px</option>
-            <option value="14">14 px</option>
-            <option value="16">16 px</option>
-            <option value="20">20 px</option>
-            <option value="24">24 px</option>
-            <option value="28">28 px</option>
-            <option value="32">32 px</option>
-            <option value="36">36 px</option>
-            <option value="40">40 px</option>
-            <option value="44">44 px</option>
-            <option value="48">48 px</option>
-            <option value="56" selected>56 px</option>
-            <option value="64">64 px</option>
-            <option value="72">72 px</option>
-            <option value="80">80 px</option>
-            <option value="88">88 px</option>
-             <option value="96">96 px</option>
-             <option value="104">104 px</option>
-            <option value="120">120 px</option>
-            <option value="144">144 px</option>
-          </select>
-          <div id="fontSizeHelp" class="sr-only">Changes the glyph and cartouche rendering size in the output.</div>
-        </div>
-
-        <!-- Alignment -->
-        <div id="ctlAlign" class="inlineControl inlinePill" role="group" aria-label="Alignment">
-          <span class="ctlLabel">
-            Align <span class="tpInline">nasin</span>
-          </span>
-          <select id="appAlignSel" aria-describedby="alignHelp">
-            <option value="left" selected>Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </select>
-          <div id="alignHelp" class="sr-only">Changes line alignment of the rendered output.</div>
-        </div>
-
-        <!-- Spacing preset -->
-        <div id="ctlSpacingPreset" class="inlineControl inlinePill" role="group" aria-label="Spacing preset">
-          <span class="ctlLabel">
-            Spacing <span class="tpInline">insa pi sitelen</span>
-          </span>
-          <select id="appSpacingPresetSel" aria-describedby="spacingPresetHelp">
-            <option value="default" selected>Default</option>
-            <option value="compact">Compact</option>
-            <option value="comfortable">Comfortable</option>
-          </select>
-          <div id="spacingPresetHelp" class="sr-only">Changes glyph, cartouche, and line spacing for preview, PNG export, and PDF export.</div>
-        </div>
-
-
-        <!-- Halo toggle -->
-        <div id="ctlHaloEnable" class="inlineControl inlinePill" role="group" aria-label="Halo">
-          <span class="ctlLabel">
-            Halo <span class="tpInline">poka walo</span>
-          </span>
-          <label style="display:flex; align-items:center; gap:8px; margin:0;">
-            <input id="appHaloEnable" type="checkbox" aria-label="Enable halo outline">
-            <span class="ctlLabel" style="margin:0;">Enabled</span>
-          </label>
-        </div>
-
-        <!-- Halo color picker -->
-        <div id="ctlHaloColor" class="inlineControl inlinePill" role="group" aria-label="Halo color">
-          <span class="ctlLabel">
-            Halo color <span class="tpInline">kule poka</span>
-          </span>
-          <input id="appHaloPick" class="swatch" type="color" aria-label="Halo color">
-        </div>
-
-
-        <!-- Halo width -->
-        <div id="ctlHaloWidth" class="inlineControl inlinePill" role="group" aria-label="Halo width">
-          <span class="ctlLabel">
-            Halo width <span class="tpInline">suli poka</span>
-          </span>
-          <input id="appHaloWidthSel" type="number" min="0" max="999" step="1" value="0" aria-describedby="haloWidthHelp" style="width:96px; height:34px; padding:6px 10px;">
-          <div id="haloWidthHelp" class="sr-only">0 means auto halo width. Any other value uses that width in pixels.</div>
-        </div>
-
-        <!-- Unknown text highlight toggle -->
-        <div id="ctlUnknownHighlightEnable" class="inlineControl inlinePill" role="group" aria-label="Highlight unknown output">
-          <span class="ctlLabel">
-            Highlight unknown <span class="tpInline">o kule e nimi sona ala</span>
-          </span>
-          <label style="display:flex; align-items:center; gap:8px; margin:0;">
-            <input id="appUnknownHighlightEnable" type="checkbox" aria-label="Highlight unknown output">
-            <span class="ctlLabel" style="margin:0;">Enabled</span>
-          </label>
-        </div>
-
-        <!-- Background toggle: intentionally after all previously existing properties -->
-        <div id="ctlBackgroundEnable" class="inlineControl inlinePill" role="group" aria-label="Background">
-          <span class="ctlLabel">
-            Background <span class="tpInline">kule monsi</span>
-          </span>
-          <label style="display:flex; align-items:center; gap:8px; margin:0;">
-            <input id="appBackgroundEnable" type="checkbox" aria-label="Enable background">
-            <span class="ctlLabel" style="margin:0;">Enabled</span>
-          </label>
-        </div>
-
-        <!-- Background color picker: intentionally the final property -->
-        <div id="ctlBackgroundColor" class="inlineControl inlinePill" role="group" aria-label="Background color">
-          <span class="ctlLabel">
-            Background color <span class="tpInline">kule monsi</span>
-          </span>
-          <input id="appBackgroundPick" class="swatch" type="color" aria-label="Background color">
-        </div>
-
-        <!-- Optional nasin nanpa pona formatting of eligible decimal expressions -->
-        <div id="ctlNasinNanpaPonaFormatting" class="inlineControl inlinePill" role="group" aria-label="nasin nanpa pona formatting">
-          <span class="ctlLabel">
-            nasin nanpa pona formatting
-          </span>
-          <label style="display:flex; align-items:center; gap:8px; margin:0;">
-            <input id="appNasinNanpaPonaFormattingEnable" type="checkbox" aria-label="Enable nasin nanpa pona formatting">
-            <span class="ctlLabel" style="margin:0;">Enabled</span>
-          </label>
+        <div aria-label="Font size" class="inlineControl inlinePill" id="ctlFontSize" role="group">
+        <span class="ctlLabel">
+                    Font size <span class="tpInline">suli pi sitelen</span>
+        </span>
+        <select aria-describedby="fontSizeHelp" id="appFontSizeSel">
+        <option value="8">8 px</option>
+        <option value="10">10 px</option>
+        <option value="12">12 px</option>
+        <option value="14">14 px</option>
+        <option value="16">16 px</option>
+        <option value="20">20 px</option>
+        <option value="24">24 px</option>
+        <option value="28">28 px</option>
+        <option value="32">32 px</option>
+        <option value="36">36 px</option>
+        <option value="40">40 px</option>
+        <option value="44">44 px</option>
+        <option value="48">48 px</option>
+        <option selected="" value="56">56 px</option>
+        <option value="64">64 px</option>
+        <option value="72">72 px</option>
+        <option value="80">80 px</option>
+        <option value="88">88 px</option>
+        <option value="96">96 px</option>
+        <option value="104">104 px</option>
+        <option value="120">120 px</option>
+        <option value="144">144 px</option>
+        </select>
+        <div class="sr-only" id="fontSizeHelp">Changes the glyph and cartouche rendering size in the output.</div>
         </div>
       </div>
+
+      <section
+        id="appRenderOptionsPanel"
+        class="renderOptionsPanel is-collapsed"
+        aria-labelledby="appRenderOptionsTitle"
+      >
+        <h2 id="appRenderOptionsTitle" class="renderOptionsHeading">
+          <button
+            id="appRenderOptionsToggle"
+            class="renderOptionsToggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="appRenderOptionsContent"
+          >
+            <span class="renderOptionsToggleTitle">Render options</span>
+            <span class="renderOptionsToggleState" aria-hidden="true">
+              <span class="renderOptionsToggleIcon">▾</span>
+              <span id="appRenderOptionsAction">Show</span>
+            </span>
+          </button>
+        </h2>
+        <div id="appRenderOptionsContent" class="renderOptionsContent" hidden>
+          <div class="renderOptionsGrid" role="group" aria-label="Render options">
+          <div aria-label="Text color" class="inlineControl inlinePill" id="ctlTextColor" role="group">
+          <span class="ctlLabel">
+                      Text color <span class="tpInline">kule pi sitelen</span>
+          </span>
+          <input aria-label="Foreground color" class="swatch" id="appFgPick" type="color"/>
+          </div>
+
+          <div aria-label="Script/font preset" class="inlineControl inlinePill" id="ctlScriptPreset" role="group">
+          <span class="ctlLabel">
+                      Script/font <span class="tpInline">nasin sitelen</span>
+          </span>
+          <select aria-describedby="scriptPresetHelp" id="appScriptPresetSel">
+          <option selected="" value="nasinNanpa">nasin nanpa</option>
+          <option value="sitelenSeliKiwen">sitelen seli kiwen</option>
+          </select>
+          <div class="sr-only" id="scriptPresetHelp">Chooses the font family preset for preview, PNG export, and PDF export.</div>
+          </div>
+
+          <div aria-label="Text font" class="inlineControl inlinePill" id="ctlTextFont" role="group">
+          <span class="ctlLabel">
+                      Quoted text font <span class="tpInline">nasin sitelen nimi</span>
+          </span>
+          <select aria-describedby="textFontHelp" id="appTextFontSel"></select>
+          <div class="sr-only" id="textFontHelp">Chooses the font used for literal quoted text only.</div>
+          </div>
+
+          <div aria-label="Abbreviate numeric cartouche output" class="inlineControl inlinePill" id="ctlNumericCartoucheAbbrev" role="group">
+          <span class="ctlLabel">
+                      Abbreviate numeric cartouche output <span class="tpInline">o lili e sitelen poki nanpa</span>
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Abbreviate numeric cartouche output" id="appNumericCartoucheAbbrevEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Show spacers in abbreviated cartouches" class="inlineControl inlinePill" id="ctlNumericCartoucheSpacers" role="group">
+          <span class="ctlLabel">
+                      Show spacers in abbreviated cartouches
+                    </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Show spacers in abbreviated cartouches" id="appNumericCartoucheSpacersEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Nanpa-linja-n strict or relaxed mode" class="inlineControl inlinePill" id="ctlNanpaRelaxedMode" role="group">
+          <span class="ctlLabel">
+                      Nanpa-linja-n mode <span class="tpInline">nasin nanpa</span>
+          </span>
+          <select aria-label="Nanpa-linja-n strict or relaxed mode" id="appNanpaRelaxedModeSel">
+          <option selected="" value="strict">Strict</option>
+          <option value="relaxed">Relaxed</option>
+          </select>
+          </div>
+
+          <div aria-label="Alignment" class="inlineControl inlinePill" id="ctlAlign" role="group">
+          <span class="ctlLabel">
+                      Align <span class="tpInline">nasin</span>
+          </span>
+          <select aria-describedby="alignHelp" id="appAlignSel">
+          <option selected="" value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+          </select>
+          <div class="sr-only" id="alignHelp">Changes line alignment of the rendered output.</div>
+          </div>
+
+          <div aria-label="Spacing preset" class="inlineControl inlinePill" id="ctlSpacingPreset" role="group">
+          <span class="ctlLabel">
+                      Spacing <span class="tpInline">insa pi sitelen</span>
+          </span>
+          <select aria-describedby="spacingPresetHelp" id="appSpacingPresetSel">
+          <option selected="" value="default">Default</option>
+          <option value="compact">Compact</option>
+          <option value="comfortable">Comfortable</option>
+          </select>
+          <div class="sr-only" id="spacingPresetHelp">Changes glyph, cartouche, and line spacing for preview, PNG export, and PDF export.</div>
+          </div>
+
+          <div aria-label="Halo" class="inlineControl inlinePill" id="ctlHaloEnable" role="group">
+          <span class="ctlLabel">
+                      Halo <span class="tpInline">poka walo</span>
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Enable halo outline" id="appHaloEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Halo color" class="inlineControl inlinePill" id="ctlHaloColor" role="group">
+          <span class="ctlLabel">
+                      Halo color <span class="tpInline">kule poka</span>
+          </span>
+          <input aria-label="Halo color" class="swatch" id="appHaloPick" type="color"/>
+          </div>
+
+          <div aria-label="Halo width" class="inlineControl inlinePill" id="ctlHaloWidth" role="group">
+          <span class="ctlLabel">
+                      Halo width <span class="tpInline">suli poka</span>
+          </span>
+          <input aria-describedby="haloWidthHelp" id="appHaloWidthSel" max="999" min="0" step="1" style="width:96px; height:34px; padding:6px 10px;" type="number" value="0"/>
+          <div class="sr-only" id="haloWidthHelp">0 means auto halo width. Any other value uses that width in pixels.</div>
+          </div>
+
+          <div aria-label="Highlight unknown output" class="inlineControl inlinePill" id="ctlUnknownHighlightEnable" role="group">
+          <span class="ctlLabel">
+                      Highlight unknown <span class="tpInline">o kule e nimi sona ala</span>
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Highlight unknown output" id="appUnknownHighlightEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Background" class="inlineControl inlinePill" id="ctlBackgroundEnable" role="group">
+          <span class="ctlLabel">
+                      Background <span class="tpInline">kule monsi</span>
+          </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Enable background" id="appBackgroundEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Background color" class="inlineControl inlinePill" id="ctlBackgroundColor" role="group">
+          <span class="ctlLabel">
+                      Background color <span class="tpInline">kule monsi</span>
+          </span>
+          <input aria-label="Background color" class="swatch" id="appBackgroundPick" type="color"/>
+          </div>
+
+          <div aria-label="nasin nanpa pona formatting" class="inlineControl inlinePill" id="ctlNasinNanpaPonaFormatting" role="group">
+          <span class="ctlLabel">
+                      nasin nanpa pona formatting
+                    </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Enable nasin nanpa pona formatting" id="appNasinNanpaPonaFormattingEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Silence te and to in audio" class="inlineControl inlinePill" id="ctlSilenceTeToAudio" role="group">
+          <span class="ctlLabel">Silence te/to in audio</span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Silence te and to in audio" id="appSilenceTeToAudioEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Sound out phonotactically valid unknown words" class="inlineControl inlinePill" id="ctlSoundOutPhonotacticUnknownWords" role="group">
+          <span class="ctlLabel">Sound out valid unknown words</span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Sound out phonotactically valid unknown words" id="appSoundOutPhonotacticUnknownWordsEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Interpret double quotes as te to" class="inlineControl inlinePill" id="ctlInterpretDoubleQuotesAsTeTo" role="group">
+          <span class="ctlLabel">Interpret double quotes as te/to</span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Interpret straight and curly double quotes as te and to" id="appInterpretDoubleQuotesAsTeToEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
+          <div aria-label="Break rendered lines at full stops" class="inlineControl inlinePill" id="ctlBreakLinesAtFullStops" role="group">
+          <span class="ctlLabel">One sentence per rendered line</span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Break rendered lines at sentence-ending full stops" id="appBreakLinesAtFullStopsEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <div style="margin-top:14px;">
@@ -937,8 +1095,8 @@ nanpa #~WI.
           id="appBtnPlayTextAudioMain"
           class="audio-button"
           type="button"
-          title="Read input audio, ignore quoted text and unknowns"
-          aria-label="Read input audio, ignore quoted text and unknowns"
+          title="Read input audio using the current audio flags"
+          aria-label="Read input audio using the current audio flags"
         >🤖🔊</button>
 
         <button
@@ -989,7 +1147,7 @@ nanpa #~WI.
           <span>Download WAV</span>
           <span class="tpLine">o kama jo e kalama WAV</span>
         </button>
-        <div id="btnDownloadWavHelp" class="sr-only">Downloads the complete readable input transcript as a mono 16-bit PCM WAV file using the selected audio speed and current nanpa-linja-n mode. Quoted and unknown text are skipped, as in normal playback.</div>
+        <div id="btnDownloadWavHelp" class="sr-only">Downloads the complete readable input transcript as a mono 16-bit PCM WAV file using the selected audio speed, current nanpa-linja-n mode, and current audio flags.</div>
 
         <button id="appBtnDownloadUnicodeJson" type="button" class="btnBi" aria-describedby="btnDownloadUnicodeJsonHelp">
           <span>Download Unicode JSON</span>
@@ -1145,8 +1303,8 @@ nanpa #~WI.
         id="appBtnPlayTextAudioPop"
         class="audio-button"
         type="button"
-        title="Read input audio, ignore quoted text and unknowns"
-        aria-label="Read input audio, ignore quoted text and unknowns"
+        title="Read input audio using the current audio flags"
+        aria-label="Read input audio using the current audio flags"
       >🤖🔊</button>
 
       <button
@@ -1172,7 +1330,7 @@ nanpa #~WI.
   <script src="./vendor/pdf-lib.min.js"></script>
   <script src="./vendor/fontkit.umd.min.js"></script>
   <script type="module">
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=197";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=200";
     import {
       createSitelenFontPairController,
       TEXT_FONT_OPTION_SITELEN,
@@ -1181,13 +1339,13 @@ nanpa #~WI.
 
     import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=35';
     import { SitelenVectorExporter } from './js/sitelen-vector-exporter.js?v=167';
-    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=28';
+    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=33';
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
       extractSpeechSegmentsFromRenderPlan,
       stopSitelenAudioPlayback,
       summarizeSkippedAudio as summarizeSitelenAudioSkipped
-    } from './js/sitelen-audio-plan.js?v=14';
+    } from './js/sitelen-audio-plan.js?v=19';
     let pageMap = new Map();
 
     "use strict";
@@ -1654,7 +1812,7 @@ function hideStartupLoading() {
 
     const VECTOR_DIAGNOSTIC_DEBUG = true;
     const VECTOR_DIAG_IMPORTS = Object.freeze({
-      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=197",
+      renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=200",
       fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
       cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
       vectorExporter: "./js/sitelen-vector-exporter.js?v=167",
@@ -2242,6 +2400,8 @@ function hideStartupLoading() {
           relaxedNanpaLinjanParsing: relaxedNanpaLinjan,
           relaxedNanpaLinjanRendering: relaxedNanpaLinjan,
           nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
+          interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
+          breakLinesAtFullStops: getBreakLinesAtFullStopsEnabled(),
           ...buildCartoucheTallyParserConfig()
         },
         fonts: {
@@ -2604,6 +2764,177 @@ function wireNasinNanpaPonaFormattingToggle() {
       sitelenRenderer = null;
       sitelenRendererSignature = "";
       await renderFromTextarea();
+    } catch (error) {
+      showAlertAndAnnounce(error?.message ?? String(error));
+    }
+  });
+}
+
+
+
+const RENDER_OPTIONS_PANEL_COLLAPSED_STORAGE_KEY = "tpRenderOptionsPanelCollapsed";
+const RENDER_OPTIONS_PANEL_DEFAULT_COLLAPSED = true;
+
+function loadRenderOptionsPanelCollapsed() {
+  try {
+    const raw = localStorage.getItem(RENDER_OPTIONS_PANEL_COLLAPSED_STORAGE_KEY);
+    if (raw === "true" || raw === "1") return true;
+    if (raw === "false" || raw === "0") return false;
+  } catch {}
+  return RENDER_OPTIONS_PANEL_DEFAULT_COLLAPSED;
+}
+
+function saveRenderOptionsPanelCollapsed(collapsed) {
+  try {
+    localStorage.setItem(
+      RENDER_OPTIONS_PANEL_COLLAPSED_STORAGE_KEY,
+      collapsed ? "true" : "false"
+    );
+  } catch {}
+}
+
+function setRenderOptionsPanelExpanded(expanded, { persist = true } = {}) {
+  const panel = document.getElementById("appRenderOptionsPanel");
+  const toggle = document.getElementById("appRenderOptionsToggle");
+  const content = document.getElementById("appRenderOptionsContent");
+  const action = document.getElementById("appRenderOptionsAction");
+  if (!panel || !toggle || !content) return;
+
+  const isExpanded = !!expanded;
+  content.hidden = !isExpanded;
+  toggle.setAttribute("aria-expanded", String(isExpanded));
+  panel.classList.toggle("is-collapsed", !isExpanded);
+  if (action) action.textContent = isExpanded ? "Hide" : "Show";
+  if (persist) saveRenderOptionsPanelCollapsed(!isExpanded);
+}
+
+function initRenderOptionsPanel() {
+  const toggle = document.getElementById("appRenderOptionsToggle");
+  if (!toggle) return;
+
+  setRenderOptionsPanelExpanded(!loadRenderOptionsPanelCollapsed(), { persist: false });
+  toggle.addEventListener("click", () => {
+    const expanded = toggle.getAttribute("aria-expanded") === "true";
+    setRenderOptionsPanelExpanded(!expanded, { persist: true });
+  });
+}
+
+const SILENCE_TE_TO_AUDIO_STORAGE_KEY = "tpSilenceTeToAudio";
+const SOUND_OUT_PHONOTACTIC_UNKNOWNS_STORAGE_KEY = "tpSoundOutPhonotacticUnknownWords";
+const INTERPRET_DOUBLE_QUOTES_AS_TE_TO_STORAGE_KEY = "tpInterpretDoubleQuotesAsTeTo";
+
+const SILENCE_TE_TO_AUDIO_DEFAULT_ENABLED = true;
+const SOUND_OUT_PHONOTACTIC_UNKNOWNS_DEFAULT_ENABLED = true;
+const INTERPRET_DOUBLE_QUOTES_AS_TE_TO_DEFAULT_ENABLED = false;
+
+function loadBooleanFlagFromStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw == null) return null;
+    if (raw === "1" || raw === "true") return true;
+    if (raw === "0" || raw === "false") return false;
+  } catch {}
+  return null;
+}
+
+function saveBooleanFlagToStorage(key, value) {
+  try { localStorage.setItem(key, value ? "1" : "0"); } catch {}
+}
+
+function getSilenceTeToAudioEnabled() {
+  return !!document.getElementById("appSilenceTeToAudioEnable")?.checked;
+}
+
+function getSoundOutPhonotacticUnknownWordsEnabled() {
+  return !!document.getElementById("appSoundOutPhonotacticUnknownWordsEnable")?.checked;
+}
+
+function getInterpretDoubleQuotesAsTeToEnabled() {
+  return !!document.getElementById("appInterpretDoubleQuotesAsTeToEnable")?.checked;
+}
+
+function setAudioParserFlag(id, storageKey, value, { persist = true } = {}) {
+  const enabled = !!value;
+  const el = document.getElementById(id);
+  if (el) el.checked = enabled;
+  if (persist) saveBooleanFlagToStorage(storageKey, enabled);
+  return enabled;
+}
+
+function applyAudioParserFlagsFromStorage() {
+  setAudioParserFlag(
+    "appSilenceTeToAudioEnable",
+    SILENCE_TE_TO_AUDIO_STORAGE_KEY,
+    loadBooleanFlagFromStorage(SILENCE_TE_TO_AUDIO_STORAGE_KEY) ?? SILENCE_TE_TO_AUDIO_DEFAULT_ENABLED,
+    { persist: false }
+  );
+  setAudioParserFlag(
+    "appSoundOutPhonotacticUnknownWordsEnable",
+    SOUND_OUT_PHONOTACTIC_UNKNOWNS_STORAGE_KEY,
+    loadBooleanFlagFromStorage(SOUND_OUT_PHONOTACTIC_UNKNOWNS_STORAGE_KEY) ?? SOUND_OUT_PHONOTACTIC_UNKNOWNS_DEFAULT_ENABLED,
+    { persist: false }
+  );
+  setAudioParserFlag(
+    "appInterpretDoubleQuotesAsTeToEnable",
+    INTERPRET_DOUBLE_QUOTES_AS_TE_TO_STORAGE_KEY,
+    loadBooleanFlagFromStorage(INTERPRET_DOUBLE_QUOTES_AS_TE_TO_STORAGE_KEY) ?? INTERPRET_DOUBLE_QUOTES_AS_TE_TO_DEFAULT_ENABLED,
+    { persist: false }
+  );
+}
+
+function wireAudioParserFlags() {
+  const silenceEl = document.getElementById("appSilenceTeToAudioEnable");
+  const unknownEl = document.getElementById("appSoundOutPhonotacticUnknownWordsEnable");
+  const quoteEl = document.getElementById("appInterpretDoubleQuotesAsTeToEnable");
+
+  silenceEl?.addEventListener("change", () => {
+    setAudioParserFlag(silenceEl.id, SILENCE_TE_TO_AUDIO_STORAGE_KEY, silenceEl.checked);
+    resetTextToSitelenAudio({ announce: false });
+    updateTextAudioButtons();
+  });
+
+  unknownEl?.addEventListener("change", () => {
+    setAudioParserFlag(unknownEl.id, SOUND_OUT_PHONOTACTIC_UNKNOWNS_STORAGE_KEY, unknownEl.checked);
+    resetTextToSitelenAudio({ announce: false });
+    updateTextAudioButtons();
+  });
+
+  quoteEl?.addEventListener("change", async () => {
+    try {
+      setAudioParserFlag(quoteEl.id, INTERPRET_DOUBLE_QUOTES_AS_TE_TO_STORAGE_KEY, quoteEl.checked);
+      resetTextToSitelenAudio({ announce: false });
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
+      await renderFromTextarea();
+      updateTextAudioButtons();
+    } catch (error) {
+      showAlertAndAnnounce(error?.message ?? String(error));
+    }
+  });
+}
+
+const BREAK_LINES_AT_FULL_STOPS_STORAGE_KEY = "tpBreakLinesAtFullStops";
+const BREAK_LINES_AT_FULL_STOPS_DEFAULT_ENABLED = true;
+
+function getBreakLinesAtFullStopsEnabled() {
+  return !!document.getElementById("appBreakLinesAtFullStopsEnable")?.checked;
+}
+
+function applyBreakLinesAtFullStopsFromStorage() {
+  const enabled = loadBooleanFlagFromStorage(BREAK_LINES_AT_FULL_STOPS_STORAGE_KEY)
+    ?? BREAK_LINES_AT_FULL_STOPS_DEFAULT_ENABLED;
+  const el = document.getElementById("appBreakLinesAtFullStopsEnable");
+  if (el) el.checked = enabled;
+}
+
+function wireBreakLinesAtFullStopsToggle() {
+  const el = document.getElementById("appBreakLinesAtFullStopsEnable");
+  el?.addEventListener("change", async () => {
+    try {
+      saveBooleanFlagToStorage(BREAK_LINES_AT_FULL_STOPS_STORAGE_KEY, el.checked);
+      resetTextToSitelenAudio({ announce: false });
+      await renderFromTextarea();
+      updateTextAudioButtons();
     } catch (error) {
       showAlertAndAnnounce(error?.message ?? String(error));
     }
@@ -6936,7 +7267,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
     return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=197", import.meta.url);
+  const rendererUrl = new URL("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=200", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -7385,12 +7716,12 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           btn.textContent = "🤖🔊";
           btn.title = isPaused
             ? "Continue input audio"
-            : (isBuilding ? "Preparing input audio" : "Read input audio, ignore quoted text and unknowns");
+            : (isBuilding ? "Preparing input audio" : "Read input audio using the current audio flags");
           btn.setAttribute(
             "aria-label",
             isPaused
               ? "Continue input audio"
-              : (isBuilding ? "Preparing input audio" : "Read input audio, ignore quoted text and unknowns")
+              : (isBuilding ? "Preparing input audio" : "Read input audio using the current audio flags")
           );
         }
       }
@@ -7535,6 +7866,9 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           mixedStyle: "short",
           relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
           relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+          silenceTeToAudio: getSilenceTeToAudioEnabled(),
+          soundOutPhonotacticUnknownWords: getSoundOutPhonotacticUnknownWordsEnabled(),
+          interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
           voice,
           renderOptions: {
             synthesis_mode: "reference_audio",
@@ -7828,9 +8162,7 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         kind === "image" ||
         sourceKind === "quote" ||
         run?.isQuoted ||
-        el?.isQuoted ||
-        run?.isUnrecognized ||
-        el?.isUnrecognized
+        el?.isQuoted
       ) return false;
       return true;
     }
@@ -7957,7 +8289,10 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         nanpaLinjanMode: getNanpaLinjanMode(),
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
-        relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled()
+        relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+        silenceTeToAudio: getSilenceTeToAudioEnabled(),
+        soundOutPhonotacticUnknownWords: getSoundOutPhonotacticUnknownWordsEnabled(),
+        interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled()
       });
 
       const out = [];
@@ -8106,6 +8441,20 @@ async function serializeRenderPlanToUnicodeJson(plan) {
       return !!run.isQuoted || String(run.sourceKind ?? "").toLowerCase() === "quote";
     }
 
+    function isRenderedQuotedSectionRun(run) {
+      return !!run && (
+        !!run.isQuoted ||
+        String(run.sourceKind ?? "").toLowerCase() === "quote"
+      );
+    }
+
+    function isRenderedInterpretedQuoteRun(run) {
+      return !!run && (
+        !!run.interpretedQuote ||
+        String(run.sourceKind ?? "").toLowerCase() === "interpretedquote"
+      );
+    }
+
     function isRenderedUnknownTextRun(run) {
       return !!run && String(run.kind ?? "").toLowerCase() === "text" && !!run.isUnrecognized;
     }
@@ -8146,14 +8495,52 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     function renderedLiteralRunsForRun(run) {
       const key = renderedLiteralSelectionKey(run);
       return getAllRenderedRuns().filter(candidate =>
-        isRenderedLiteralTextRun(candidate) && renderedLiteralSelectionKey(candidate) === key
+        isRenderedQuotedSectionRun(candidate) && renderedLiteralSelectionKey(candidate) === key
       );
     }
 
+    function quoteDelimiterCodepoint(run, propertyName) {
+      const value = run?.[propertyName] ?? run?._element?.[propertyName];
+      if (typeof value !== "string" || !value.length) return null;
+      const cp = value.codePointAt(0);
+      return Number.isFinite(cp) ? cp : null;
+    }
+
     function renderedLiteralCodepoints(runs) {
+      const ordered = Array.from(runs || []);
       const out = [];
-      for (const run of (runs || [])) {
+      const first = ordered[0] || null;
+      const last = ordered[ordered.length - 1] || first;
+      const openCp = quoteDelimiterCodepoint(first, "quoteOpenChar");
+      const closeCp = quoteDelimiterCodepoint(last, "quoteCloseChar");
+      if (openCp != null) out.push(openCp);
+      for (const run of ordered) {
         const cps = getUnicodeJsonRunCodepoints(run);
+        if (Array.isArray(cps)) out.push(...cps);
+      }
+      if (closeCp != null) out.push(closeCp);
+      return out;
+    }
+
+    function renderedInterpretedQuoteSelectionKey(run) {
+      const lineIndex = Number.isFinite(Number(run?.lineIndex)) ? Number(run.lineIndex) : "";
+      const segmentIndex = Number.isFinite(Number(run?.sourceSegmentIndex))
+        ? Number(run.sourceSegmentIndex)
+        : `${run?.sourceStart ?? ""}:${run?.sourceEnd ?? ""}`;
+      return `interpreted-quote:L${lineIndex}:S${segmentIndex}`;
+    }
+
+    function renderedInterpretedQuoteRunsForRun(run) {
+      const key = renderedInterpretedQuoteSelectionKey(run);
+      return getAllRenderedRuns().filter(candidate =>
+        isRenderedInterpretedQuoteRun(candidate) && renderedInterpretedQuoteSelectionKey(candidate) === key
+      );
+    }
+
+    function renderedRunSequenceCodepoints(runs) {
+      const out = [];
+      for (const candidate of (runs || [])) {
+        const cps = getUnicodeJsonRunCodepoints(candidate);
         if (Array.isArray(cps)) out.push(...cps);
       }
       return out;
@@ -8328,14 +8715,27 @@ async function serializeRenderPlanToUnicodeJson(plan) {
     function getRenderedUnicodeSelectionForRun(run) {
       if (!isRenderedRunUnicodeCopyable(run)) return null;
 
-      if (isRenderedLiteralTextRun(run)) {
+      if (isRenderedQuotedSectionRun(run)) {
         const runs = renderedLiteralRunsForRun(run);
         const cps = renderedLiteralCodepoints(runs);
         if (!cps.length) return null;
         return {
           id: renderedLiteralSelectionKey(run),
           type: "literal",
-          description: "literal text",
+          description: "quoted section",
+          runs,
+          cps
+        };
+      }
+
+      if (isRenderedInterpretedQuoteRun(run)) {
+        const runs = renderedInterpretedQuoteRunsForRun(run);
+        const cps = renderedRunSequenceCodepoints(runs);
+        if (!cps.length) return null;
+        return {
+          id: renderedInterpretedQuoteSelectionKey(run),
+          type: "interpretedQuote",
+          description: "te/to quotation section",
           runs,
           cps
         };
@@ -9123,6 +9523,9 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           mixedStyle: "short",
           relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
           relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+          silenceTeToAudio: getSilenceTeToAudioEnabled(),
+          soundOutPhonotacticUnknownWords: getSoundOutPhonotacticUnknownWordsEnabled(),
+          interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
           voice,
           renderOptions: {
             synthesis_mode: "reference_audio",
@@ -10818,6 +11221,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
           console.warn("[preloaded-fonts] manifest sync failed:", err);
         }
 
+        initRenderOptionsPanel();
+
         applyNanpaLinjanModeFromQueryOrStorage();
         applyFontPxFromQueryOrStorage();
         applyAlignFromStorage();
@@ -10828,6 +11233,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         applyNumericCartoucheSpacersFromStorage();
         applyNanpaRelaxedModeFromStorage();
         applyNasinNanpaPonaFormattingFromStorage();
+        applyAudioParserFlagsFromStorage();
+        applyBreakLinesAtFullStopsFromStorage();
 
         
 
@@ -10874,6 +11281,8 @@ async function serializeRenderPlanToUnicodeJson(plan) {
         wireNumericCartoucheSpacersToggle();
         wireNanpaRelaxedModeSelect();
         wireNasinNanpaPonaFormattingToggle();
+        wireAudioParserFlags();
+        wireBreakLinesAtFullStopsToggle();
         wireCartoucheDisplayLinks();
         initTextAudioControls();
         wireTextAudioControls();
@@ -10918,7 +11327,11 @@ async function serializeRenderPlanToUnicodeJson(plan) {
             tpHaloHex: localStorage.getItem("tpHaloHex"),
             tpBackgroundEnabled: localStorage.getItem("tpBackgroundEnabled"),
             tpBackgroundHex: localStorage.getItem("tpBackgroundHex"),
-            tpNasinNanpaPonaFormatting: localStorage.getItem("tpNasinNanpaPonaFormatting")
+            tpNasinNanpaPonaFormatting: localStorage.getItem("tpNasinNanpaPonaFormatting"),
+            tpSilenceTeToAudio: localStorage.getItem("tpSilenceTeToAudio"),
+            tpSoundOutPhonotacticUnknownWords: localStorage.getItem("tpSoundOutPhonotacticUnknownWords"),
+            tpInterpretDoubleQuotesAsTeTo: localStorage.getItem("tpInterpretDoubleQuotesAsTeTo"),
+            tpBreakLinesAtFullStops: localStorage.getItem("tpBreakLinesAtFullStops")
           }
         });
 

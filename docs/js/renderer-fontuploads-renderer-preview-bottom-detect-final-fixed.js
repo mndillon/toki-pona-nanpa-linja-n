@@ -9,6 +9,7 @@ const SitelenRenderer = (() => {
   let __bridgeMakeRunElementFromCodepoints = null;
   let __bridgeParseTextSegmentToElements = null;
   let __bridgeParseQuoteSegmentToElements = null;
+  let __bridgeParseInterpretedQuoteSegmentToElements = null;
   let __bridgeParseBracketSegmentToElements = null;
   let __bridgeFontsReadyForPx = null;
   let __bridgeWarmUpCanvasFontsOnce = null;
@@ -271,7 +272,14 @@ const SitelenRenderer = (() => {
         }
         if (!found) break;
         pushText(start, i);
-        out.push({ kind: 'quote', value: s.slice(i + 1, j) });
+        out.push({
+          kind: 'quote',
+          value: s.slice(i + 1, j),
+          openQuote: openCh,
+          closeQuote: s[j],
+          sourceStart: i,
+          sourceEnd: j + 1
+        });
         i = j + 1; start = i; continue;
       }
       if (s.startsWith('img(', i)) {
@@ -420,10 +428,120 @@ const SitelenRenderer = (() => {
     return raw.split(/\s+/).map(parseUnicodeCodepointHex);
   }
 
-  function astFromInput(input) {
+  const DEFAULT_RENDERER_PARSER_OPTIONS = Object.freeze({
+    // Shared renderer default: preserve the caller's physical input lines.
+    breakLinesAtFullStops: false
+  });
+
+  function isSentenceFullStopAt(text, index) {
+    const s = String(text ?? '');
+    if (s[index] !== '.') return false;
+
+    // A decimal point inside a number is not a sentence boundary. This covers
+    // both ordinary decimals (1.25) and leading-decimal forms (.25 / -.25).
+    const prev = index > 0 ? s[index - 1] : '';
+    const next = index + 1 < s.length ? s[index + 1] : '';
+    const isNumericDecimalPoint = /\d/.test(next) && (
+      /\d/.test(prev) ||
+      index === 0 ||
+      /\s/.test(prev) ||
+      /[+\-(,:=]/.test(prev)
+    );
+    return !isNumericDecimalPoint;
+  }
+
+  function splitSourceLineAtFullStops(line) {
+    const s = String(line ?? '');
+    const out = [];
+    let start = 0;
+    let quoteOpen = '';
+    let squareDepth = 0;
+    let parenDepth = 0;
+    let braceDepth = 0;
+
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+
+      if (quoteOpen) {
+        if (ch === '\\') {
+          i += 1;
+          continue;
+        }
+        const isClose =
+          (quoteOpen === '“' && (ch === '”' || ch === '"')) ||
+          (quoteOpen === '"' && (ch === '"' || ch === '”'));
+        if (isClose) quoteOpen = '';
+        continue;
+      }
+
+      if (ch === '"' || ch === '“') {
+        quoteOpen = ch;
+        continue;
+      }
+      if (ch === '[') { squareDepth += 1; continue; }
+      if (ch === ']') { squareDepth = Math.max(0, squareDepth - 1); continue; }
+      if (ch === '(') { parenDepth += 1; continue; }
+      if (ch === ')') { parenDepth = Math.max(0, parenDepth - 1); continue; }
+      if (ch === '{') { braceDepth += 1; continue; }
+      if (ch === '}') { braceDepth = Math.max(0, braceDepth - 1); continue; }
+
+      if (
+        ch !== '.' ||
+        squareDepth > 0 ||
+        parenDepth > 0 ||
+        braceDepth > 0 ||
+        !isSentenceFullStopAt(s, i)
+      ) continue;
+
+      // Keep adjacent full stops together, so an ellipsis remains on one line.
+      let end = i + 1;
+      while (end < s.length && s[end] === '.' && isSentenceFullStopAt(s, end)) end += 1;
+      out.push(s.slice(start, end));
+      start = end;
+      i = end - 1;
+    }
+
+    const tail = s.slice(start);
+    if (tail.trim().length > 0 || out.length === 0) out.push(tail);
+    return out;
+  }
+
+  function astFromInput(input, parser = {}) {
     const normalized = normalizeAstInput(input);
-    const lines = normalized.split('\n').map((line, index) => ({ type: 'line', index, children: splitLineIntoAstSegments(line) }));
-    return { type: 'document', normalizedInput: normalized, lines };
+    const parserOptions = {
+      ...DEFAULT_RENDERER_PARSER_OPTIONS,
+      ...(parser || {})
+    };
+    const lines = [];
+    const sourceLines = normalized.split('\n');
+
+    for (let sourceLineIndex = 0; sourceLineIndex < sourceLines.length; sourceLineIndex++) {
+      const sourceLine = sourceLines[sourceLineIndex];
+      const renderedSourceLines = parserOptions.breakLinesAtFullStops === true
+        ? splitSourceLineAtFullStops(sourceLine)
+        : [sourceLine];
+
+      for (let sentenceIndexInSourceLine = 0; sentenceIndexInSourceLine < renderedSourceLines.length; sentenceIndexInSourceLine++) {
+        const renderedSourceLine = renderedSourceLines[sentenceIndexInSourceLine];
+        lines.push({
+          type: 'line',
+          index: lines.length,
+          sourceLineIndex,
+          sentenceIndexInSourceLine,
+          sourceText: renderedSourceLine,
+          children: splitLineIntoAstSegments(renderedSourceLine)
+        });
+      }
+    }
+
+    return {
+      type: 'document',
+      normalizedInput: normalized,
+      parserOptions: {
+        breakLinesAtFullStops: parserOptions.breakLinesAtFullStops === true
+      },
+      lines
+    };
   }
 
   async function loadImageElementCanvas(desc, fontPx) {
@@ -869,7 +987,29 @@ const SitelenRenderer = (() => {
           if (parser.mode === 'sitelen-seli-kiwen') parseSskBracketSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
           else __bridgeParseBracketSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex, mixedStyle });
         }
-        else if (seg.kind === 'quote') __bridgeParseQuoteSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+        else if (seg.kind === 'quote') {
+          if (parser.interpretDoubleQuotesAsTeTo === true) {
+            __bridgeParseInterpretedQuoteSegmentToElements(seg.value, elements, {
+              fontPx,
+              parser,
+              mixedStyle,
+              sourceBaseStart: 0,
+              sourceKind: 'interpretedQuote',
+              sourceSegmentIndex,
+              openQuote: seg.openQuote,
+              closeQuote: seg.closeQuote
+            });
+          } else {
+            __bridgeParseQuoteSegmentToElements(seg.value, elements, {
+              fontPx,
+              sourceBaseStart: 0,
+              sourceKind,
+              sourceSegmentIndex,
+              openQuote: seg.openQuote,
+              closeQuote: seg.closeQuote
+            });
+          }
+        }
         else if (seg.kind === 'image') {
           if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
           const imgEl = await loadImageElementCanvas(seg.value, fontPx);
@@ -1441,6 +1581,9 @@ const SitelenRenderer = (() => {
           audioGlyphLayout: Array.isArray(el.audioGlyphLayout) ? el.audioGlyphLayout.map(item => ({ ...item })) : null,
           imageAlt: el.imageAlt || null,
           isQuoted: !!el.isQuoted,
+          interpretedQuote: !!el.interpretedQuote,
+          quoteOpenChar: (typeof el.quoteOpenChar === 'string') ? el.quoteOpenChar : null,
+          quoteCloseChar: (typeof el.quoteCloseChar === 'string') ? el.quoteCloseChar : null,
           isUnrecognized: !!el.isUnrecognized,
           unknownDisplay: el.unknownDisplay ? { ...el.unknownDisplay } : null,
           fillStyle: config?.paint?.fillStyle || null,
@@ -3014,10 +3157,12 @@ function wireHaloControls() {
           let j = i;
           while (j < body.length && body[j] === "K") j++;
           const count = j - i;
-          if (count < 1 || count > 3) throw new Error("Invalid run of 'K' in number code (max 3).");
+          if (count < 1) throw new Error("Invalid empty run of 'K' in number code.");
 
           ensureNEBeforeOperatorRun();
-          tokens.push("KE".repeat(count)); // KE / KEKE / KEKEKE
+          // K-runs encode repeated base-1000 boundaries. Keep the complete run;
+          // tokenization and rendering support any number of consecutive KE pairs.
+          tokens.push("KE".repeat(count));
           i = j;
           continue;
         }
@@ -3894,8 +4039,9 @@ function wireHaloControls() {
           const last = seg.slice(-1).toUpperCase();
           if (last === "K" || last === "T" || last === "M" || last === "B") {
             magnitudeSuffixKeCount =
-              (last === "K" || last === "T") ? 1 :
-              (last === "M") ? 2 : 3;
+              (last === "K") ? 1 :
+              (last === "M") ? 2 :
+              (last === "B") ? 3 : 4; // T/t = trillion = four base-1000 boundaries
             seg = seg.slice(0, -1).trim();
             if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
           }
@@ -3959,14 +4105,10 @@ function wireHaloControls() {
 
           if (trailingZeroGroups > 0) {
             out.push("NE");
-            let remaining = trailingZeroGroups;
-            while (remaining > 0) {
-              const chunk = Math.min(3, remaining);
-              if (out[out.length - 1] !== "NE") out.push("NE");
-              out.push("KE".repeat(chunk));
-              remaining -= chunk;
-              if (remaining > 0) out.push("NE");
-            }
+            // Preserve the complete base-1000 magnitude as one uninterrupted
+            // KE run. The tokenizer and renderer consume arbitrarily long runs
+            // as repeated KE-family tokens; no artificial NE boundary is needed.
+            out.push("KE".repeat(trailingZeroGroups));
           }
         }
 
@@ -3986,14 +4128,9 @@ function wireHaloControls() {
 
         if (magnitudeSuffixKeCount > 0) {
           out.push("NE");
-          let remaining = magnitudeSuffixKeCount;
-          while (remaining > 0) {
-            const chunk = Math.min(3, remaining);
-            if (out[out.length - 1] !== "NE") out.push("NE");
-            out.push("KE".repeat(chunk));
-            remaining -= chunk;
-            if (remaining > 0) out.push("NE");
-          }
+          // Keep all KE pairs consecutive, including T/t (four KE) and
+          // future magnitudes longer than the currently named suffixes.
+          out.push("KE".repeat(magnitudeSuffixKeCount));
         }
 
         out.push("N");
@@ -4751,7 +4888,14 @@ function findNanpaLinjanTpPhraseSequences(text) {
           if (!found) break;
 
           pushText(start, i);
-          out.push({ kind: "quote", value: s.slice(i + 1, j) });
+          out.push({
+            kind: "quote",
+            value: s.slice(i + 1, j),
+            openQuote: openCh,
+            closeQuote: s[j],
+            sourceStart: i,
+            sourceEnd: j + 1
+          });
           i = j + 1;
           start = i;
           continue;
@@ -6275,7 +6419,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       return out;
     }
 
-    function parseQuoteSegmentToElements(quoteContent, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'quote', sourceSegmentIndex = null }) {
+    function parseQuoteSegmentToElements(quoteContent, elements, { fontPx, sourceBaseStart = 0, sourceKind = 'quote', sourceSegmentIndex = null, openQuote = '"', closeQuote = '"' }) {
       const literal = unescapeQuotedText(quoteContent);
 
       if (literal.length === 0) return;
@@ -6294,6 +6438,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           sourceKind,
           sourceSegmentIndex,
         });
+        const created = elements[elements.length - 1];
+        if (created && created.type !== 'gap') {
+          created.quoteOpenChar = String(openQuote || '"');
+          created.quoteCloseChar = String(closeQuote || '"');
+        }
         return;
       }
 
@@ -6311,7 +6460,51 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         sourceEnd: sourceBaseStart + String(quoteContent ?? '').length,
         sourceKind,
         sourceSegmentIndex,
+        quoteOpenChar: String(openQuote || '"'),
+        quoteCloseChar: String(closeQuote || '"')
       });
+    }
+
+    function parseInterpretedQuoteSegmentToElements(quoteContent, elements, {
+      fontPx,
+      parser = {},
+      mixedStyle = 'short',
+      sourceBaseStart = 0,
+      sourceKind = 'interpretedQuote',
+      sourceSegmentIndex = null,
+      openQuote = '"',
+      closeQuote = '"'
+    } = {}) {
+      const content = unescapeQuotedText(quoteContent);
+      const interpretedText = content.length ? `te ${content} to` : 'te to';
+      const startIndex = elements.length;
+
+      if (parser.mode === 'sitelen-seli-kiwen') {
+        parseSskTextSegmentToElements(interpretedText, elements, {
+          fontPx,
+          parser,
+          mixedStyle,
+          sourceBaseStart,
+          sourceKind,
+          sourceSegmentIndex
+        });
+      } else {
+        parseTextSegmentToElements(interpretedText, elements, {
+          fontPx,
+          sourceBaseStart,
+          sourceKind,
+          sourceSegmentIndex,
+          mixedStyle
+        });
+      }
+
+      for (let index = startIndex; index < elements.length; index++) {
+        const element = elements[index];
+        if (!element || element.type === 'gap') continue;
+        element.interpretedQuote = true;
+        element.quoteOpenChar = String(openQuote || '"');
+        element.quoteCloseChar = String(closeQuote || '"');
+      }
     }
 
     function tryExtractFullUcsurCartoucheCodepoints(text) {
@@ -6586,12 +6779,27 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             });
           }
         } else if (seg.kind === "quote") {
-          parseQuoteSegmentToElements(seg.value, elements, {
-            fontPx,
-            sourceBaseStart: 0,
-            sourceKind,
-            sourceSegmentIndex
-          });
+          if (parser.interpretDoubleQuotesAsTeTo === true) {
+            parseInterpretedQuoteSegmentToElements(seg.value, elements, {
+              fontPx,
+              parser,
+              mixedStyle,
+              sourceBaseStart: 0,
+              sourceKind: 'interpretedQuote',
+              sourceSegmentIndex,
+              openQuote: seg.openQuote,
+              closeQuote: seg.closeQuote
+            });
+          } else {
+            parseQuoteSegmentToElements(seg.value, elements, {
+              fontPx,
+              sourceBaseStart: 0,
+              sourceKind,
+              sourceSegmentIndex,
+              openQuote: seg.openQuote,
+              closeQuote: seg.closeQuote
+            });
+          }
         }
       }
 
@@ -6622,7 +6830,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       };
     }
 
-    function makeLiteralTextElement(elements, text, { fontPx, fontFamily, addLeadingGap = true, isQuoted = false, isUnrecognized = false, unknownDisplay = null, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+    function makeLiteralTextElement(elements, text, { fontPx, fontFamily, addLeadingGap = true, isQuoted = false, isUnrecognized = false, unknownDisplay = null, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, quoteOpenChar = null, quoteCloseChar = null } = {}) {
       const s = String(text ?? "");
       if (!s) return;
 
@@ -6643,6 +6851,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         sourceEnd: Number.isFinite(Number(sourceEnd)) ? Number(sourceEnd) : null,
         sourceKind: (typeof sourceKind === 'string') ? sourceKind : null,
         sourceSegmentIndex: Number.isFinite(Number(sourceSegmentIndex)) ? Number(sourceSegmentIndex) : null,
+        quoteOpenChar: (typeof quoteOpenChar === 'string' && quoteOpenChar.length) ? quoteOpenChar : null,
+        quoteCloseChar: (typeof quoteCloseChar === 'string' && quoteCloseChar.length) ? quoteCloseChar : null,
       });
     }
 
@@ -7923,6 +8133,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     __bridgeMakeRunElementFromCodepoints = makeRunElementFromCodepoints;
     __bridgeParseTextSegmentToElements = parseTextSegmentToElements;
     __bridgeParseQuoteSegmentToElements = parseQuoteSegmentToElements;
+    __bridgeParseInterpretedQuoteSegmentToElements = parseInterpretedQuoteSegmentToElements;
     __bridgeParseBracketSegmentToElements = parseBracketSegmentToElements;
     __bridgeFontsReadyForPx = fontsReadyForPx;
     __bridgeWarmUpCanvasFontsOnce = warmUpCanvasFontsOnce;
@@ -7979,26 +8190,38 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       this.config = config || {};
     }
 
-    async parseInput({ input }) {
+    async parseInput({ input, parser = {} } = {}) {
       await ensureCore();
-      return { ast: astFromInput(input), diagnostics: [] };
+      const config = mergeRendererInstanceConfig(this.config, { parser });
+      return { ast: astFromInput(input, config.parser), diagnostics: [] };
     }
 
     async buildRenderPlan({ input, ast, layout = {}, paint = {}, parser = {}, fonts = {} }) {
       await ensureCore();
-      const effectiveAst = ast || astFromInput(input || '');
       const config = mergeRendererInstanceConfig(this.config, {
         layout,
         paint,
         parser,
         fonts
       });
+      const effectiveAst = ast || astFromInput(input || '', config.parser);
             
       return await withScopedRenderConfig(config, async () => {
         if (typeof __bridgeFontsReadyForPx === 'function') await __bridgeFontsReadyForPx(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56));
         if (typeof __bridgeWarmUpCanvasFontsOnce === 'function') __bridgeWarmUpCanvasFontsOnce();
         const linesElements = await astToLineElements(effectiveAst, config);
         const plan = buildMeasuredRenderPlan(linesElements, config);
+        for (let lineIndex = 0; lineIndex < (plan.lines || []).length; lineIndex++) {
+          const astLine = effectiveAst?.lines?.[lineIndex] || null;
+          const planLine = plan.lines[lineIndex];
+          if (!planLine) continue;
+          planLine.sourceLineIndex = Number.isFinite(Number(astLine?.sourceLineIndex))
+            ? Number(astLine.sourceLineIndex)
+            : lineIndex;
+          planLine.sentenceIndexInSourceLine = Number.isFinite(Number(astLine?.sentenceIndexInSourceLine))
+            ? Number(astLine.sentenceIndexInSourceLine)
+            : 0;
+        }
         applyConditionalLiteralCartoucheClipsToPlan(plan, config);
         plan.ast = effectiveAst;
         plan.linesElements = linesElements;
@@ -8016,7 +8239,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       await ensureCore();
       const config = mergeRendererInstanceConfig(this.config, opts);
       
-      return await renderAstToNewCanvas(astFromInput(opts.input || ''), config);
+      return await renderAstToNewCanvas(astFromInput(opts.input || '', config.parser), config);
     }
 
     async renderTextToCanvas(opts = {}) {
@@ -8348,6 +8571,29 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     "waninin", "tuninin", "luninin", "muninin", "pininin"
   ]);
 
+  function _npMagnitudeKeProperNameFragment(rawCount) {
+    const count = Math.max(0, Math.floor(Number(rawCount) || 0));
+    if (count < 1) return "";
+
+    // Preserve the established one-, two-, and three-boundary words. For any
+    // longer run, use two-boundary words, except that an odd final remainder
+    // is kept as one three-boundary word. Only the first word carries the
+    // initial e; the final cartouche n is appended by the caller.
+    if (count <= 3) return "e" + "ke".repeat(count);
+
+    const groupSizes = [2];
+    let remaining = count - 2;
+    while (remaining > 3) {
+      groupSizes.push(2);
+      remaining -= 2;
+    }
+    groupSizes.push(remaining); // final group is always 2 or 3
+
+    return groupSizes
+      .map((size, index) => (index === 0 ? "e" : "") + "ke".repeat(size))
+      .join(" ");
+  }
+
   function _npSplitFinalHundredIninWords(rawName, opts = {}) {
     const words = String(rawName ?? "").trim().split(/\s+/).filter(Boolean);
     if (!words.length) return "";
@@ -8455,9 +8701,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         let j = i;
         while (j < body.length && body[j] === "K") j++;
         const count = j - i;
-        if (count < 1 || count > 3) throw new Error("Invalid run of 'K' in number code (max 3).");
+        if (count < 1) throw new Error("Invalid empty run of 'K' in number code.");
 
         ensureNEBeforeOperatorRun();
+        // K-runs encode repeated base-1000 boundaries. Keep the complete run;
+        // tokenization and rendering support any number of consecutive KE pairs.
         tokens.push("KE".repeat(count));
         i = j;
         continue;
@@ -9051,8 +9299,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const last = seg.slice(-1).toUpperCase();
         if (last === "K" || last === "T" || last === "M" || last === "B") {
           magnitudeSuffixKeCount =
-            (last === "K" || last === "T") ? 1 :
-            (last === "M") ? 2 : 3;
+            (last === "K") ? 1 :
+            (last === "M") ? 2 :
+            (last === "B") ? 3 : 4; // T/t = trillion = four base-1000 boundaries
           seg = seg.slice(0, -1).trim();
           if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
         }
@@ -9115,14 +9364,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
         if (trailingZeroGroups > 0) {
           out.push("NE");
-          let remaining = trailingZeroGroups;
-          while (remaining > 0) {
-            const chunk = Math.min(3, remaining);
-            if (out[out.length - 1] !== "NE") out.push("NE");
-            out.push("KE".repeat(chunk));
-            remaining -= chunk;
-            if (remaining > 0) out.push("NE");
-          }
+          // Preserve the complete base-1000 magnitude as one uninterrupted
+          // KE run. The tokenizer and renderer consume arbitrarily long runs
+          // as repeated KE-family tokens; no artificial NE boundary is needed.
+          out.push("KE".repeat(trailingZeroGroups));
         }
       }
 
@@ -9142,14 +9387,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       if (magnitudeSuffixKeCount > 0) {
         out.push("NE");
-        let remaining = magnitudeSuffixKeCount;
-        while (remaining > 0) {
-          const chunk = Math.min(3, remaining);
-          if (out[out.length - 1] !== "NE") out.push("NE");
-          out.push("KE".repeat(chunk));
-          remaining -= chunk;
-          if (remaining > 0) out.push("NE");
-        }
+        // Keep all KE pairs consecutive, including T/t (four KE) and
+        // future magnitudes longer than the currently named suffixes.
+        out.push("KE".repeat(magnitudeSuffixKeCount));
       }
 
       out.push("N");
@@ -9381,10 +9621,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
         if (pair === "NE" && nextPair === "KE") {
           outStr += "n ";
-          outStr += "e";
           let countKe = 1; let j = i;
           while ((j + 6) <= end && mainS.slice(j + 4, j + 6) === "KE") { countKe++; j += 2; }
-          outStr += "ke".repeat(countKe);
+          outStr += _npMagnitudeKeProperNameFragment(countKe);
           if ((i + 2 * countKe) < end) outStr += " ";
           i += 2 + 2 * countKe; continue;
         }
@@ -9553,7 +9792,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         suffixKeCount === 1 ? "K" :
         suffixKeCount === 2 ? "M" :
         suffixKeCount === 3 ? "B" :
-        suffixKeCount > 3 ? `×1000^${suffixKeCount}` :
+        suffixKeCount === 4 ? "T" :
+        suffixKeCount > 4 ? `×1000^${suffixKeCount}` :
         "";
 
       const sign = neg ? "-" : "";
@@ -9774,10 +10014,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         }
         if (pair === "NE" && nextPair === "KE") {
           outStr += "n ";
-          outStr += "e";
           let countKe = 1; let j = i;
           while ((j + 6) <= end && mainS.slice(j + 4, j + 6) === "KE") { countKe++; j += 2; }
-          outStr += "ke".repeat(countKe);
+          outStr += _npMagnitudeKeProperNameFragment(countKe);
           if ((i + 2 * countKe) < end) outStr += " ";
           i += 2 + 2 * countKe; continue;
         }
@@ -9930,7 +10169,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         suffixKeCount === 1 ? "K" :
         suffixKeCount === 2 ? "M" :
         suffixKeCount === 3 ? "B" :
-        suffixKeCount > 3 ? `×1000^${suffixKeCount}` :
+        suffixKeCount === 4 ? "T" :
+        suffixKeCount > 4 ? `×1000^${suffixKeCount}` :
         "";
 
       const sign = neg ? "-" : "";
