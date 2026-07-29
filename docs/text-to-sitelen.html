@@ -133,9 +133,21 @@
       </span>
     </div>
 
-    <div class="help" style="margin-top:10px;">
-      Notes:
-      <ul style="margin:6px 0 0 18px; padding:0;">
+    <div id="appNotesPanel" class="help notes is-collapsed" style="margin-top:10px;">
+      <button
+        id="appNotesToggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="appNotesContent"
+        style="all:unset; box-sizing:border-box; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; font:inherit; color:inherit; text-align:left;"
+      >
+        <span>Notes</span>
+        <span aria-hidden="true" style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+          <span id="appNotesToggleIcon">▸</span>
+          <span id="appNotesAction">Show</span>
+        </span>
+      </button>
+      <ul id="appNotesContent" hidden style="margin:6px 0 0 18px; padding:0;">
         <li>Converts Toki Pona words to sitelen pona glyphs.</li>
         <li>The sitelen pona glyphs can be downloaded as a png image file.</li>
         <li>Recognized nanpa-linja-n number phrases (<span class="mono">nanpa esun|en … nanpa</span>) render as nanpa-linja-n cartouches.</li>
@@ -736,7 +748,7 @@ nanpa #~WI.
           await loadClassicScript("./vendor/fontkit.umd.min.js?v=49");
 
           setMessage("Loading renderer…");
-          await import("./js/text-to-sitelen-page-v51.js?v=51");
+          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=53");
         } catch (error) {
           showStartupError(error);
         }

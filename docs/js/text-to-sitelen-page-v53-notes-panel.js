@@ -1489,6 +1489,68 @@ setRenderOptionsPanelExpanded(!expanded, { persist: true });
   });
 }
 
+
+const NOTES_PANEL_COLLAPSED_STORAGE_KEY = "tpNotesPanelCollapsed";
+const NOTES_PANEL_DEFAULT_COLLAPSED = true;
+
+function loadNotesPanelCollapsed() {
+  try {
+    const raw = localStorage.getItem(NOTES_PANEL_COLLAPSED_STORAGE_KEY);
+    if (raw === "true" || raw === "1") return true;
+    if (raw === "false" || raw === "0") return false;
+  } catch {}
+  return NOTES_PANEL_DEFAULT_COLLAPSED;
+}
+
+function saveNotesPanelCollapsed(collapsed) {
+  try {
+    localStorage.setItem(
+      NOTES_PANEL_COLLAPSED_STORAGE_KEY,
+      collapsed ? "true" : "false"
+    );
+  } catch {}
+}
+
+function getNotesPanelElements() {
+  // The explicit .notes class identifies this exact help panel. No heading-text
+  // scanning or broad container guessing is used.
+  const panel = document.querySelector(".help.notes");
+  if (!panel) return null;
+
+  const toggle = panel.querySelector("#appNotesToggle");
+  const content = panel.querySelector("#appNotesContent");
+  const action = panel.querySelector("#appNotesAction");
+  const icon = panel.querySelector("#appNotesToggleIcon");
+
+  if (!toggle || !content) return null;
+  return { panel, toggle, content, action, icon };
+}
+
+function setNotesPanelExpanded(expanded, { persist = true } = {}) {
+  const parts = getNotesPanelElements();
+  if (!parts) return;
+
+  const isExpanded = !!expanded;
+  parts.content.hidden = !isExpanded;
+  parts.toggle.setAttribute("aria-expanded", String(isExpanded));
+  parts.panel.classList.toggle("is-collapsed", !isExpanded);
+
+  if (parts.action) parts.action.textContent = isExpanded ? "Hide" : "Show";
+  if (parts.icon) parts.icon.textContent = isExpanded ? "▾" : "▸";
+  if (persist) saveNotesPanelCollapsed(!isExpanded);
+}
+
+function initNotesPanel() {
+  const parts = getNotesPanelElements();
+  if (!parts) return;
+
+  setNotesPanelExpanded(!loadNotesPanelCollapsed(), { persist: false });
+  parts.toggle.addEventListener("click", () => {
+    const isExpanded = parts.toggle.getAttribute("aria-expanded") === "true";
+    setNotesPanelExpanded(!isExpanded, { persist: true });
+  });
+}
+
 const SILENCE_TE_TO_AUDIO_STORAGE_KEY = "tpSilenceTeToAudio";
 const SOUND_OUT_PHONOTACTIC_UNKNOWNS_STORAGE_KEY = "tpSoundOutPhonotacticUnknownWords";
 const INTERPRET_DOUBLE_QUOTES_AS_TE_TO_STORAGE_KEY = "tpInterpretDoubleQuotesAsTeTo";
@@ -9892,6 +9954,7 @@ async function initializeTextToSitelenPage() {
     }
 
     initRenderOptionsPanel();
+    initNotesPanel();
 
     applyNanpaLinjanModeFromQueryOrStorage();
     applyFontPxFromQueryOrStorage();
