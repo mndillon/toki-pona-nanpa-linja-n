@@ -605,7 +605,7 @@
       </h3>
       <textarea id="numberCodeOut" class="mono" readonly aria-readonly="true"></textarea>
       <div class="help">
-        Compact code derived from the nanpa-linja-n proper name. Most <span class="mono">n</span> and <span class="mono">e</span> letters are omitted; scientific notation keeps the lowercase separator <span class="mono">eko</span>.
+        Compact code derived from the nanpa-linja-n proper name. Most <span class="mono">n</span> and <span class="mono">e</span> letters are omitted; a no-value spacer keeps lowercase <span class="mono">ee</span>, and scientific notation keeps lowercase <span class="mono">eko</span>.
         <span class="tpLine">
           ni li nimi lili tan nimi pi nanpa-linja-n. nanpa sona la nimi <span class="mono">eko</span> li awen.
         </span>
@@ -772,7 +772,7 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=203";
     import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=33";
 
     const voice = await createTokiPonaVoice();
@@ -5118,7 +5118,7 @@
       elTpWordsIn.setCustomValidity("");
     }
 
-    if (elTpWordsIn) elTpWordsIn.addEventListener("input", validateTpWordsInputLive);
+    if (elTpWordsIn) elTpWordsIn.addEventListener("input", () => validateTpWordsInputLive());
 
     if (elDecimal) {
       elDecimal.addEventListener("keydown", (e) => {

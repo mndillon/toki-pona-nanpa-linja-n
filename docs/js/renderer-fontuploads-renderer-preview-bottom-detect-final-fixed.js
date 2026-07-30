@@ -3111,11 +3111,6 @@ function wireHaloControls() {
       const tokens = ["NE"];
       let i = 0;
 
-      const shortScientificMarkerIndex = body.indexOf("EKO");
-      const hasShortScientificNumberCodeMarker =
-        shortScientificMarkerIndex > 0 &&
-        (shortScientificMarkerIndex + "EKO".length) < body.length;
-
       const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
       const hasLegacyScientificNumberCodeMarker =
         legacyScientificMarkerIndex > 0 &&
@@ -3139,18 +3134,37 @@ function wireHaloControls() {
           continue;
         }
 
-        // New scientific #~ notation uses the lowercase output signature eko:
-        //   <mantissa-code> eko <exponent-code>
-        // Parsing is case-insensitive because the complete code body is normalized
-        // to uppercase. The E is syntax for the abbreviation and maps to NE+KO.
-        if (
-          hasShortScientificNumberCodeMarker &&
-          i === shortScientificMarkerIndex &&
-          body.startsWith("EKO", i)
-        ) {
-          ensureNEBeforeOperatorRun();
-          tokens.push("KO");
-          i += 3;
+        // A consecutive E run is parsed from left to right in pairs. Each EE
+        // is one exact NENE no-value spacer. If the run has one E left over,
+        // that final E is valid only as the start of EKO, the scientific marker.
+        // Examples: EE -> one spacer; EEEE -> two spacers; EEEKO -> spacer + EKO.
+        if (ch === "E") {
+          let j = i;
+          while (j < body.length && body[j] === "E") j++;
+          const count = j - i;
+          const spacerCount = Math.floor(count / 2);
+
+          for (let spacerIndex = 0; spacerIndex < spacerCount; spacerIndex++) {
+            tokens.push("NE", "NE");
+          }
+
+          if ((count % 2) === 1) {
+            const scientificMarkerIndex = j - 1;
+            const hasFollowingKo = body.startsWith("KO", j);
+            const hasContentBefore = scientificMarkerIndex > 0;
+            const hasContentAfter = (j + 2) < body.length;
+
+            if (!hasFollowingKo || !hasContentBefore || !hasContentAfter) {
+              throw new Error("An odd run of 'E' in number code must end with a valid EKO scientific marker.");
+            }
+
+            // The unpaired E contributes its own NE, even when a preceding EE
+            // spacer already left NE as the previous token.
+            tokens.push("NE", "KO");
+            i = j + 2;
+          } else {
+            i = j;
+          }
           continue;
         }
 
@@ -8788,11 +8802,6 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const tokens = ["NE"];
     let i = 0;
 
-    const shortScientificMarkerIndex = body.indexOf("EKO");
-    const hasShortScientificNumberCodeMarker =
-      shortScientificMarkerIndex > 0 &&
-      (shortScientificMarkerIndex + "EKO".length) < body.length;
-
     const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
     const hasLegacyScientificNumberCodeMarker =
       legacyScientificMarkerIndex > 0 &&
@@ -8812,16 +8821,37 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         continue;
       }
 
-      // New scientific #~ notation uses eko. The E is syntax for the
-      // abbreviation and maps to the shortened NE+KO scientific marker.
-      if (
-        hasShortScientificNumberCodeMarker &&
-        i === shortScientificMarkerIndex &&
-        body.startsWith("EKO", i)
-      ) {
-        ensureNEBeforeOperatorRun();
-        tokens.push("KO");
-        i += 3;
+      // A consecutive E run is parsed from left to right in pairs. Each EE
+      // is one exact NENE no-value spacer. If the run has one E left over,
+      // that final E is valid only as the start of EKO, the scientific marker.
+      // Examples: EE -> one spacer; EEEE -> two spacers; EEEKO -> spacer + EKO.
+      if (ch === "E") {
+        let j = i;
+        while (j < body.length && body[j] === "E") j++;
+        const count = j - i;
+        const spacerCount = Math.floor(count / 2);
+
+        for (let spacerIndex = 0; spacerIndex < spacerCount; spacerIndex++) {
+          tokens.push("NE", "NE");
+        }
+
+        if ((count % 2) === 1) {
+          const scientificMarkerIndex = j - 1;
+          const hasFollowingKo = body.startsWith("KO", j);
+          const hasContentBefore = scientificMarkerIndex > 0;
+          const hasContentAfter = (j + 2) < body.length;
+
+          if (!hasFollowingKo || !hasContentBefore || !hasContentAfter) {
+            throw new Error("An odd run of 'E' in number code must end with a valid EKO scientific marker.");
+          }
+
+          // The unpaired E contributes its own NE, even when a preceding EE
+          // spacer already left NE as the previous token.
+          tokens.push("NE", "KO");
+          i = j + 2;
+        } else {
+          i = j;
+        }
         continue;
       }
 
@@ -9832,12 +9862,26 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const parts = [];
       for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i];
-        if (t === "NE" && tokens[i + 1] === "KO") {
-          parts.push("eko");
-          i += 1;
+        if (t === "NE") {
+          let j = i;
+          while (j < tokens.length && tokens[j] === "NE") j++;
+          const count = j - i;
+          const nextToken = tokens[j];
+
+          // Pair every available NE as one no-value spacer. When an odd NE
+          // remains immediately before KO, that final NE+KO is scientific EKO.
+          const spacerCount = Math.floor(count / 2);
+          if (spacerCount > 0) parts.push("ee".repeat(spacerCount));
+
+          if ((count % 2) === 1 && nextToken === "KO") {
+            parts.push("eko");
+            i = j; // consume the KO as part of EKO
+          } else {
+            i = j - 1; // leave the following non-NE token for the main loop
+          }
           continue;
         }
-        if (t === "N" || t === "NE") continue;
+        if (t === "N") continue;
         if (_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]) {
           parts.push(_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]);
           continue;
@@ -10219,12 +10263,26 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const parts = [];
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i];
-      if (t === "NE" && tokens[i + 1] === "KO") {
-        parts.push("eko");
-        i += 1;
+      if (t === "NE") {
+        let j = i;
+        while (j < tokens.length && tokens[j] === "NE") j++;
+        const count = j - i;
+        const nextToken = tokens[j];
+
+        // Pair every available NE as one no-value spacer. When an odd NE
+        // remains immediately before KO, that final NE+KO is scientific EKO.
+        const spacerCount = Math.floor(count / 2);
+        if (spacerCount > 0) parts.push("ee".repeat(spacerCount));
+
+        if ((count % 2) === 1 && nextToken === "KO") {
+          parts.push("eko");
+          i = j; // consume the KO as part of EKO
+        } else {
+          i = j - 1; // leave the following non-NE token for the main loop
+        }
         continue;
       }
-      if (t === "N" || t === "NE") continue;
+      if (t === "N") continue;
       if (_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]) { parts.push(_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]); continue; }
       if (t === "NO") { parts.push("o"); continue; }
       if (t === "NONO") { parts.push("oo"); continue; }
