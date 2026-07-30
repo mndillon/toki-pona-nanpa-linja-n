@@ -193,9 +193,119 @@ function tryNanpaLinjanTpPhraseSourceToCaps(text) {
   // Match the renderer's visual cartouche interpretation: the spoken
   // nanpa-linja-n label is the cartouche spelling, i.e. the initial sound of
   // each glyph token.
-  const caps = audioInitialTextFromGlyphTokens(words).toUpperCase();
+  let caps = audioInitialTextFromGlyphTokens(words).toUpperCase();
   if (!caps || !caps.startsWith('NE') || !caps.endsWith('N')) return '';
+
+  // Expanded percent phrases end with the visible suffix words
+  // nena/noka + open + kipisi + en/e + nanpa, whose initials are NOKEN.
+  // Canonical nanpa-caps represents that suffix as OK immediately before the
+  // final N. Normalize it here so expanded phrases, raw UCSUR streams, decimal
+  // input, #~ input, and proper-name input all produce the same audio label.
+  if (caps.endsWith('NOKEN')) caps = caps.slice(0, -5) + 'OKN';
+
   return caps;
+}
+
+const ABBREVIATED_NANPA_DIGIT_WORD_TO_CODE = Object.freeze({
+  ijo: 'I',
+  wan: 'W',
+  tu: 'T',
+  seli: 'S',
+  awen: 'A',
+  luka: 'L',
+  utala: 'U',
+  mun: 'M',
+  pipi: 'P',
+  jo: 'J'
+});
+
+/**
+ * Decode a fully abbreviated numeric cartouche written directly as bracketed
+ * glyph words. The renderer accepts this compact form only when numeric
+ * cartouche abbreviation is enabled, for example:
+ *
+ *   [nanpa wan o seli kala ona pipi nanpa]
+ *
+ * The visible glyphs are a lossless shorthand for the #~ code. Reconstruct
+ * that code here so audio uses the same nanpa-linja-n proper name as the
+ * equivalent decimal, #~ code, or expanded numeric cartouche.
+ */
+function parseAbbreviatedNanpaLinjanCartoucheSource(text, options = {}) {
+  const words = audioGlyphTokensFromCartoucheSource(text);
+  if (words.length < 3 || words[0] !== 'nanpa' || words[words.length - 1] !== 'nanpa') return null;
+
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (!NanpaParser || typeof NanpaParser.parseNumber !== 'function') return null;
+
+  const payload = words.slice(1, -1);
+  let codeBody = '';
+  let hasDigit = false;
+
+  for (let index = 0; index < payload.length; index++) {
+    const word = payload[index];
+    const digitCode = ABBREVIATED_NANPA_DIGIT_WORD_TO_CODE[word];
+    if (digitCode) {
+      codeBody += digitCode;
+      hasDigit = true;
+      continue;
+    }
+
+    // Visible punctuation/operator glyphs retained by the renderer's
+    // abbreviation pass. Structural nena/en/open glyphs are omitted.
+    if (word === 'o' || word === 'ona') {
+      codeBody += 'O';
+      continue;
+    }
+    if (word === 'kulupu' || word === 'kasi' || word === 'kolon' || word === ':') {
+      codeBody += 'K';
+      continue;
+    }
+    if (word === 'kala') {
+      codeBody += 'EKO';
+      continue;
+    }
+    if (word === 'kin') {
+      codeBody += 'OKO';
+      continue;
+    }
+    if (word === 'kipisi') {
+      // Percent is a suffix in #~ notation and therefore must be the final
+      // visible payload glyph before the closing nanpa.
+      if (index !== payload.length - 1) return null;
+      codeBody += 'OK';
+      continue;
+    }
+
+    return null;
+  }
+
+  if (!hasDigit || !codeBody) return null;
+
+  try {
+    const parsed = NanpaParser.parseNumber(`#~${codeBody}`, {
+      mode: options.nanpaLinjanMode || options.mode || 'uniform',
+      mixedStyle: options.mixedStyle || 'short',
+      relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
+      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
+    });
+    if (!parsed) return null;
+    return { words, codeBody, parsed };
+  } catch {}
+
+  return null;
+}
+
+export function tryAbbreviatedNanpaLinjanCartoucheSourceToProperName(text, options = {}) {
+  const decoded = parseAbbreviatedNanpaLinjanCartoucheSource(text, options);
+  if (!decoded) return '';
+
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (decoded.parsed?.caps) {
+    const properName = splitNanpaCapsToAudioProperName(decoded.parsed.caps, NanpaParser, options);
+    if (properName) return compactSpeechWhitespace(properName);
+  }
+  if (decoded.parsed?.properName) return compactSpeechWhitespace(decoded.parsed.properName);
+  return '';
 }
 
 function titleCaseAudioProperNameText(text) {
@@ -344,6 +454,11 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
   } catch {}
 
   try {
+    const abbreviatedProperName = tryAbbreviatedNanpaLinjanCartoucheSourceToProperName(source, options);
+    if (abbreviatedProperName) return abbreviatedProperName;
+  } catch {}
+
+  try {
     if (typeof NanpaParser.parseNumber !== 'function') return '';
     const parsed = NanpaParser.parseNumber(source, {
       mode: options.nanpaLinjanMode || options.mode || 'uniform',
@@ -358,6 +473,223 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
     if (parsed?.properName) return parsed.properName;
   } catch {}
 
+  return '';
+}
+
+
+const RAW_AUDIO_CARTOUCHE_START_CP = 0xF1990;
+const RAW_AUDIO_CARTOUCHE_END_CP = 0xF1991;
+const RAW_AUDIO_SILENT_CONTROL_CPS = new Set([
+  0x200D, // zero-width joiner
+  0x3000, // ideographic spacing cell
+  0xF1992, // cartouche extension
+  0xF1994, // long-pi extension
+  0xF1995, // stacking joiner
+  0xF1996, // scaling/nesting joiner
+  0xF1997,
+  0xF1998,
+  0xF199A,
+  0xF199B
+]);
+
+function isExplicitRawCodepointAudioRun(run) {
+  const source = String(run?.sourceText ?? run?._element?.sourceText ?? '');
+  const cps = runCodepointsForAudio(run);
+  return cps.length > 0 && /U\+[0-9A-F]{1,6}/i.test(source);
+}
+
+function normalizeRawCodepointAudioWord(word) {
+  const w = String(word ?? '').trim().toLowerCase();
+  if (!w) return '';
+
+  // Alternative glyphs are visual forms of the same spoken Toki Pona word.
+  if (w === 'ni>' || w === 'ni^' || w === 'ni<') return 'ni';
+  if (w === 'sewi^') return 'sewi';
+
+  // Renderer convenience punctuation names must behave like their punctuation
+  // source paths, not like newly invented pronounceable words.
+  if (w === 'ota' || w === '.' || w === '·') return '.';
+  if (w === 'kolon' || w === ':') return ':';
+  if (w === 'koma' || w === ',') return ',';
+
+  return w;
+}
+
+function rawCodepointAudioWordForCp(cp, options = {}) {
+  const n = Number(cp);
+  if (!Number.isFinite(n)) return '';
+
+  if (n === 0x002E || n === 0x00B7 || n === 0xF199C) return '.';
+  if (n === 0x003A || n === 0xF199D) return ':';
+  if (n === 0x002C || n === 0xF199E) return ',';
+  if (n === 0x300C) return options.silenceTeToAudio === true ? '' : 'te';
+  if (n === 0x300D) return options.silenceTeToAudio === true ? '' : 'to';
+  if (n === 0xF1993) return 'pi'; // long-pi opening glyph
+  if (RAW_AUDIO_SILENT_CONTROL_CPS.has(n)) return '';
+
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (typeof NanpaParser?.codepointsToWords !== 'function') return '';
+  try {
+    const words = NanpaParser.codepointsToWords([n]);
+    return normalizeRawCodepointAudioWord(words?.[0] || '');
+  } catch {
+    return '';
+  }
+}
+
+function rawCartoucheSemanticEntries(innerCps, options = {}) {
+  const entries = [];
+  for (let index = 0; index < innerCps.length; index++) {
+    const cp = Number(innerCps[index]);
+    if (RAW_AUDIO_SILENT_CONTROL_CPS.has(cp)) continue;
+    const word = rawCodepointAudioWordForCp(cp, options);
+    if (!word) return [];
+    entries.push({ cp, index, word });
+  }
+  return entries;
+}
+
+function rawCodepointCartoucheSource(innerCps, options = {}) {
+  const entries = rawCartoucheSemanticEntries(innerCps, options);
+  if (!entries.length) return '';
+  return `[${entries.map(entry => entry.word).join(' ')}]`;
+}
+
+function fillNearestMappedSourceIndices(displayedLength, mappedPairs) {
+  const out = new Array(displayedLength).fill(null);
+  for (const pair of mappedPairs || []) {
+    if (pair && Number.isFinite(pair.displayedIndex) && Number.isFinite(pair.sourceIndex)) {
+      out[pair.displayedIndex] = pair.sourceIndex;
+    }
+  }
+  for (let i = 0; i < out.length; i++) {
+    if (out[i] != null) continue;
+    let left = i - 1;
+    let right = i + 1;
+    while (left >= 0 && out[left] == null) left -= 1;
+    while (right < out.length && out[right] == null) right += 1;
+    out[i] = left >= 0 ? out[left] : (right < out.length ? out[right] : 0);
+  }
+  return out.map(value => Number(value) || 0);
+}
+
+function expandedNumericSourceForRawCartouche(sourceText, displayedInnerCps, options = {}) {
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (!NanpaParser) return null;
+
+  const properName = trySourceTextToNanpaProperName(sourceText, options);
+  if (!properName || typeof NanpaParser.parseNumber !== 'function') return null;
+
+  try {
+    const parsed = NanpaParser.parseNumber(properName, {
+      mode: options.nanpaLinjanMode || options.mode || 'uniform',
+      mixedStyle: options.mixedStyle || 'short',
+      relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
+      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
+    });
+    const expanded = parsed?.innerCodepoints || parsed?.ucsurCodepoints;
+    if (!Array.isArray(expanded) || !expanded.length) return null;
+    const semanticEntries = rawCartoucheSemanticEntries(displayedInnerCps, options);
+    if (!semanticEntries.length) return null;
+    const aligned = alignDisplayedCodepointsToExpandedSource(
+      semanticEntries.map(entry => entry.cp),
+      expanded
+    );
+    if (!aligned || aligned.length !== semanticEntries.length) return null;
+    const mappedPairs = semanticEntries.map((entry, index) => ({
+      displayedIndex: entry.index,
+      sourceIndex: aligned[index]
+    }));
+    return {
+      sourceCps: Array.from(expanded).map(Number).filter(Number.isFinite),
+      innerSourceIndices: fillNearestMappedSourceIndices(displayedInnerCps.length, mappedPairs)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function analyzeExplicitRawCodepointRun(run, options = {}) {
+  if (!isExplicitRawCodepointAudioRun(run)) return null;
+
+  const cps = runCodepointsForAudio(run);
+  const segments = [];
+  const speechParts = [];
+  let index = 0;
+
+  while (index < cps.length) {
+    const cp = Number(cps[index]);
+
+    if (cp === RAW_AUDIO_CARTOUCHE_START_CP) {
+      const endIndex = cps.indexOf(RAW_AUDIO_CARTOUCHE_END_CP, index + 1);
+      if (endIndex >= 0) {
+        const innerCps = cps.slice(index + 1, endIndex);
+        const semanticEntries = rawCartoucheSemanticEntries(innerCps, options);
+        const sourceText = semanticEntries.length
+          ? `[${semanticEntries.map(entry => entry.word).join(' ')}]`
+          : '';
+        if (sourceText) {
+          const numericProperName = trySourceTextToNanpaProperName(sourceText, options);
+          const ordinaryProperName = numericProperName
+            ? ''
+            : tryCartoucheSourceToSpokenSyllableText(sourceText);
+          const speech = compactSpeechWhitespace(numericProperName || ordinaryProperName);
+          if (speech) {
+            const numericSource = numericProperName
+              ? expandedNumericSourceForRawCartouche(sourceText, innerCps, options)
+              : null;
+            segments.push({
+              kind: 'cartouche',
+              startIndex: index,
+              endIndex,
+              sourceText,
+              speech,
+              numeric: !!numericProperName,
+              numericSource,
+              semanticInnerCps: semanticEntries.map(entry => entry.cp),
+              ordinaryInnerSourceIndices: fillNearestMappedSourceIndices(
+                innerCps.length,
+                semanticEntries.map((entry, sourceIndex) => ({
+                  displayedIndex: entry.index,
+                  sourceIndex
+                }))
+              )
+            });
+            speechParts.push(speech);
+          }
+        }
+        index = endIndex + 1;
+        continue;
+      }
+    }
+
+    if (cp === RAW_AUDIO_CARTOUCHE_END_CP) {
+      index += 1;
+      continue;
+    }
+
+    const semantic = rawCodepointAudioWordForCp(cp, options);
+    if (semantic) {
+      const kind = /^[.,:;!?]$/.test(semantic) ? 'punctuation' : 'word';
+      segments.push({ kind, startIndex: index, endIndex: index, speech: semantic });
+      speechParts.push(semantic);
+    }
+    index += 1;
+  }
+
+  return {
+    speech: compactSpeechWhitespace(speechParts.join(' ')),
+    segments
+  };
+}
+
+function punctuationAliasSpeechText(run, sourceText) {
+  const kind = String(run?.kind ?? '').toLowerCase();
+  if (kind === 'cartouche') return '';
+  const source = compactSpeechWhitespace(sourceText).toLowerCase();
+  if (source === 'ota' || source === '·') return '.';
+  if (source === 'kolon') return ':';
+  if (source === 'koma') return ',';
   return '';
 }
 
@@ -405,6 +737,16 @@ export function speechTextForRenderRun(run, skipped = [], options = {}) {
     skipped.push({ kind: 'silent-te-to', text: sourceText || audioText });
     return '';
   }
+
+  const rawCodepointAudio = analyzeExplicitRawCodepointRun(run, options);
+  if (rawCodepointAudio) {
+    if (rawCodepointAudio.speech) return rawCodepointAudio.speech;
+    skipped.push({ kind: 'raw-codepoints-silent', text: sourceText });
+    return '';
+  }
+
+  const punctuationAlias = punctuationAliasSpeechText(run, sourceText);
+  if (punctuationAlias) return punctuationAlias;
 
   if (run.isUnrecognized) {
     const phonotacticSpeech = phonotacticUnknownSpeechText(sourceText);
@@ -813,6 +1155,51 @@ function runAudioSourceIndices(run, componentCount) {
   return Array.from({ length: componentCount }, (_unused, index) => index);
 }
 
+function alignDisplayedCodepointsToExpandedSource(displayedCps, expandedSourceCps) {
+  const displayed = Array.from(displayedCps || []).map(Number).filter(Number.isFinite);
+  const source = Array.from(expandedSourceCps || []).map(Number).filter(Number.isFinite);
+  if (!displayed.length || source.length < displayed.length) return null;
+
+  const memo = new Map();
+  const solve = (displayIndex, sourceStart) => {
+    if (displayIndex >= displayed.length) return [];
+    const key = `${displayIndex}:${sourceStart}`;
+    if (memo.has(key)) return memo.get(key);
+
+    const remainingDisplayed = displayed.length - displayIndex;
+    const lastPossibleSourceIndex = source.length - remainingDisplayed;
+    for (let sourceIndex = sourceStart; sourceIndex <= lastPossibleSourceIndex; sourceIndex++) {
+      if (source[sourceIndex] !== displayed[displayIndex]) continue;
+      const tail = solve(displayIndex + 1, sourceIndex + 1);
+      if (tail) {
+        const result = [sourceIndex, ...tail];
+        memo.set(key, result);
+        return result;
+      }
+    }
+
+    memo.set(key, null);
+    return null;
+  };
+
+  return solve(0, 0);
+}
+
+function expandedAudioSourceForAbbreviatedNumericCartouche(run, options, displayedCps) {
+  const sourceText = String(run?.sourceText ?? run?.encodedText ?? '').trim();
+  const decoded = parseAbbreviatedNanpaLinjanCartoucheSource(sourceText, options);
+  const expandedSourceCps = decoded?.parsed?.innerCodepoints || decoded?.parsed?.ucsurCodepoints;
+  if (!Array.isArray(expandedSourceCps) || !expandedSourceCps.length) return null;
+
+  const sourceIndices = alignDisplayedCodepointsToExpandedSource(displayedCps, expandedSourceCps);
+  if (!sourceIndices || sourceIndices.length !== displayedCps.length) return null;
+
+  return {
+    sourceCps: Array.from(expandedSourceCps).map(Number).filter(Number.isFinite),
+    sourceIndices
+  };
+}
+
 function visualTargetForComponentIndices(run, componentIndices, fallbackRunIndex, lineIndex) {
   const unique = [...new Set(Array.from(componentIndices || []).map(Number).filter(Number.isFinite))];
   return {
@@ -911,9 +1298,24 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
 
   const displayedCps = runCodepointsForAudio(run);
   const componentCount = Math.max(1, displayedCps.length);
-  const sourceCps = runAudioSourceCodepoints(run);
+  let sourceCps = runAudioSourceCodepoints(run);
+  let sourceIndices = runAudioSourceIndices(run, componentCount);
+
+  // A direct bracketed abbreviated cartouche is rendered from only its visible
+  // glyphs, so its renderer metadata has an identity source map. Reconstruct
+  // the same expanded numeric source used by an equivalent decimal/#~ input;
+  // this makes syllable-to-glyph highlighting identical for both spellings.
+  const expandedAbbreviatedSource = expandedAudioSourceForAbbreviatedNumericCartouche(
+    run,
+    options,
+    displayedCps
+  );
+  if (expandedAbbreviatedSource) {
+    sourceCps = expandedAbbreviatedSource.sourceCps;
+    sourceIndices = expandedAbbreviatedSource.sourceIndices;
+  }
+
   const sourceCount = Math.max(1, sourceCps.length);
-  const sourceIndices = runAudioSourceIndices(run, componentCount);
   const totalSpeechLetters = Math.max(1, normalizedSpeechLetters(speech).length);
   const sourceScale = sourceCount / totalSpeechLetters;
 
@@ -998,6 +1400,111 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
   }
 
   return wordRecords;
+}
+
+
+function offsetRawVisualTargets(units, offset) {
+  return Array.from(units || []).map(unit => ({
+    ...unit,
+    visualTargets: Array.from(unit?.visualTargets || []).map(target => ({
+      ...target,
+      componentIndices: Array.from(target?.componentIndices || []).map(index => Number(index) + offset)
+    }))
+  }));
+}
+
+function rawCompoundComponentIndices(cps, componentIndex) {
+  const input = Array.from(cps || []).map(Number);
+  let start = componentIndex;
+  let end = componentIndex;
+
+  while (start >= 2 && AUDIO_COMPOUND_JOINER_CPS.has(input[start - 1])) start -= 2;
+  while (end + 2 < input.length && AUDIO_COMPOUND_JOINER_CPS.has(input[end + 1])) end += 2;
+
+  if (start === end) return [componentIndex];
+  return Array.from({ length: end - start + 1 }, (_unused, offset) => start + offset);
+}
+
+function buildRawCodepointSpeechUnits(run, fallbackRunIndex, lineIndex, options = {}) {
+  const analyzed = analyzeExplicitRawCodepointRun(run, options);
+  if (!analyzed?.speech) return [];
+
+  const out = [];
+  for (const segment of analyzed.segments) {
+    if (segment.kind === 'punctuation') continue;
+
+    if (segment.kind === 'word') {
+      const word = String(segment.speech || '');
+      if (!word) continue;
+      out.push({
+        text: word,
+        timingText: word,
+        timingSyllables: splitAudioTpWordIntoSyllables(word),
+        kind: 'raw-codepoint-word',
+        word,
+        wordIndex: out.length,
+        wholeNumericPunctuationWord: false,
+        visualTargets: [
+          visualTargetForComponentIndices(
+            run,
+            rawCompoundComponentIndices(runCodepointsForAudio(run), segment.startIndex),
+            fallbackRunIndex,
+            lineIndex
+          )
+        ]
+      });
+      continue;
+    }
+
+    if (segment.kind === 'cartouche') {
+      const spanCps = runCodepointsForAudio(run).slice(segment.startIndex, segment.endIndex + 1);
+      const innerCps = spanCps.slice(1, -1);
+      let audioSourceCps = Array.isArray(segment.semanticInnerCps)
+        ? segment.semanticInnerCps
+        : innerCps;
+      let innerSourceIndices = Array.isArray(segment.ordinaryInnerSourceIndices)
+        ? segment.ordinaryInnerSourceIndices
+        : Array.from({ length: innerCps.length }, (_unused, index) => index);
+
+      if (segment.numericSource) {
+        audioSourceCps = segment.numericSource.sourceCps;
+        innerSourceIndices = segment.numericSource.innerSourceIndices;
+      }
+
+      const lastSourceIndex = Math.max(0, audioSourceCps.length - 1);
+      const audioSourceIndices = [
+        innerSourceIndices[0] ?? 0,
+        ...innerSourceIndices,
+        innerSourceIndices[innerSourceIndices.length - 1] ?? lastSourceIndex
+      ];
+
+      const proxyRun = {
+        ...run,
+        cps: spanCps,
+        sourceText: segment.sourceText,
+        audioSourceCps,
+        audioSourceIndices,
+        _element: {
+          ...(run?._element || {}),
+          cps: spanCps,
+          sourceText: segment.sourceText,
+          audioSourceCps,
+          audioSourceIndices
+        }
+      };
+
+      const units = buildCartoucheSpeechUnits(
+        proxyRun,
+        segment.speech,
+        fallbackRunIndex,
+        lineIndex,
+        options
+      );
+      out.push(...offsetRawVisualTargets(units, segment.startIndex));
+    }
+  }
+
+  return out;
 }
 
 function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
@@ -1109,6 +1616,10 @@ export function speechUnitsForRenderRun(run, speech, {
   const kind = String(run?.kind ?? '').toLowerCase();
   const sourceKind = String(run?.sourceKind ?? '').toLowerCase();
   if (run?.isQuoted || sourceKind === 'quote') return [];
+
+  if (isExplicitRawCodepointAudioRun(run)) {
+    return buildRawCodepointSpeechUnits(run, fallbackRunIndex, lineIndex, audioOptions);
+  }
 
   if (kind === 'cartouche') {
     return buildCartoucheSpeechUnits(run, text, fallbackRunIndex, lineIndex, audioOptions);
@@ -2168,6 +2679,7 @@ export default {
   isCapitalizedAudioProperNameText,
   isCapitalizedAudioProperNamePhraseText,
   tryCartoucheSourceToSpokenSyllableText,
+  tryAbbreviatedNanpaLinjanCartoucheSourceToProperName,
   nanpaCapsForAudioMode,
   trySourceTextToNanpaProperName
 };

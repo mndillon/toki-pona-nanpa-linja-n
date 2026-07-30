@@ -13,7 +13,7 @@ import {
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=19';
+} from './sitelen-audio-plan.js?v=22';
 let pageMap = new Map();
 
 "use strict";
@@ -9936,11 +9936,16 @@ async function initializeTextToSitelenPage() {
     setStartupLoadingMessage("Loading fonts…");
     announceStatus("Loading fonts…");
 
+    // Finish the controller's initial IndexedDB hydration before checking the
+    // manifest or restoring the saved font selection. This guarantees that a
+    // cached dynamic font preset is registered before it can be selected.
+    await sitelenFontController.ready;
+
     try {
       const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
         manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
         onlyIfExisting: false,
-        force: true
+        force: false
       });
 
       console.info("[preloaded-fonts] sync result:", syncResult);
