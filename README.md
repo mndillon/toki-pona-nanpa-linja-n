@@ -499,7 +499,7 @@ Rules:
 1/2         → Newan Ono Tun
 9¾          → Nejen Oko Sen Ono Nan
 10.5%       → Newanin One Lun Oken
-4.5*10^-3   → Nenan One Lun Eko Wanin Eko Nosen
+4.5*10^-3   → Nenan One Lun Eko Nosen
 ```
 
 ---
@@ -520,7 +520,7 @@ Word-splitting:
 - **no** does not split as **-n O**.
 - Since **no** marks the negative sign, it may attach to the **Ne-** at the start of a proper name to give **Neno**
 - Example: -1 → Nenowan → Neno Wan
-- Example: 1e-3 → Newanekowaninekonosen → Newan Eko Wanin Eko Nosen
+- Example: 1e-3 → Newanekonosen → Newan Eko Nosen
 
 Examples:
 
@@ -529,7 +529,7 @@ Examples:
 −12        → Neno Watun
 −0.4       → Neno Nin One Nan
 −30,000    → Neno Senin Eken
--4.5e-3    → Neno Nan One Lun Eko Wanin Eko Nosen
+-4.5e-3    → Neno Nan One Lun Eko Nosen
 ```
 
 ---
@@ -573,6 +573,7 @@ Rules:
 - Abbreviated Cartouche: [... kulupu ...]
 - Abbreviation #~: ...k...
 - If the numeric value ends in full blocks of thousands, the proper name can end with **... Eken**, **... Ekeken**, or **... Ekekeken**, depending on the number of full ISO thousands blocks at the end of the value.
+- If we go over more that three full blocks then the proper name will split the whole sequence into pairs, and if an odd number is needed then the last block gets the odd number.
 
 Word-splitting:
 
@@ -589,6 +590,8 @@ Examples:
 300,000,000 → Neseninin Ekeken
 3,000,000,000 → Nesen Ekekeken
 7,321,900   → Nemun Eke Setuwan Eke Jeninin
+1T          → Newan Ekeke Keken
+10,000T     → Newanin Ekeke Kekeken
 ```
 
 ---
@@ -623,7 +626,7 @@ Examples:
 
 ---
 
-## Fractions — noko
+## Mixed Fractions — noko
 **noko** separates the integer part from the fraction part of a mixed numeric fraction.
 
 Rules:
@@ -683,30 +686,29 @@ Examples:
 
 Rules:
 
-- Latin nanpa-linja-n numeric proper name: ...nekowenineko...
-- Numeric Cartouche: [... nena en kala open wan en nena ijo nena en kala open ...]
-- Abbreviated Cartouche: [... kala wan ijo kala ...]
-- Abbreviation #~: ...koWIko...
-- The scientific notation indicator is used for both the “by 10” marker and the exponent marker.
+- Latin nanpa-linja-n numeric proper name: ...neko...
+- Numeric Cartouche: [... nena en kala open ...]
+- Abbreviated Cartouche: [... kala ...]
+- Abbreviation #~: ...eko...
+- The scientific notation indicator is used to mark the whole statemant “by 10 to the power of”.
 - The exponent must be an integer.
-- The abbreviation ...okoWIkoo... is treated as an integer-and-fraction encoding, not as scientific notation, because it cannot occur in valid scientific notation.
 
 Word-splitting:
 
 - **neko** may split as **-n Eko**.
-- Example: 4.5e3 → Nenanonelunekowaninekosen → Nenan One Lun Eko Wanin Eko Sen
+- Example: 4.5e3 → Nenanonelunekosen → Nenan One Lun Eko Sen
 
 Examples:
 
 ```
-4.5*10^3    → Nenan One Lun Eko Wanin Eko Sen
-4.5*10+3    → Nenan One Lun Eko Wanin Eko Sen
-4.5e3       → Nenan One Lun Eko Wanin Eko Sen
-4.5e+3      → Nenan One Lun Eko Wanin Eko Sen
-4.5*10^-3   → Nenan One Lun Eko Wanin Eko Nosen
-4.5*10-3    → Nenan One Lun Eko Wanin Eko Nosen
-4.5e-3      → Nenan One Lun Eko Wanin Eko Nosen
--4.5e-3     → Neno Nan One Lun Eko Wanin Eko Nosen
+4.5*10^3    → Nenan One Lun Eko Sen
+4.5*10+3    → Nenan One Lun Eko Sen
+4.5e3       → Nenan One Lun Eko Sen
+4.5e+3      → Nenan One Lun Eko Sen
+4.5*10^-3   → Nenan One Lun Eko Nosen
+4.5*10-3    → Nenan One Lun Eko Nosen
+4.5e-3      → Nenan One Lun Eko Nosen
+-4.5e-3     → Neno Nan One Lun Eko Nosen
 ```
 
 
