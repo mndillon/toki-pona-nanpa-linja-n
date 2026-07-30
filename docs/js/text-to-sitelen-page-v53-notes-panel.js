@@ -1,4 +1,4 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=200";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=201";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -6093,6 +6093,14 @@ const cp = src[glyphKey];
 if (Number.isInteger(cp)) out.set(cp, exportName);
   }
 
+  // Export punctuation as standard characters. Keep te/to because they are
+  // recognised Common Sitelen Pona names for the corner quotation marks.
+  out.set(0xF199C, ".");
+  out.set(0xF199D, ":");
+  out.set(0xF199E, ",");
+  out.set(0x300C, "te");
+  out.set(0x300D, "to");
+
   __cpToTpNameCache = out;
   return __cpToTpNameCache;
 }
@@ -6132,7 +6140,7 @@ if (/\s/.test(ch)) {
   isWord = false;
 } else if (cpToName.has(cp)) {
   piece = cpToName.get(cp);
-  isWord = true;
+  isWord = /^[a-z][a-z0-9_^<>-]*$/i.test(piece);
 } else if (CONTROL_CP_TO_SHORTCUT.has(cp)) {
   piece = CONTROL_CP_TO_SHORTCUT.get(cp);
   isWord = false;

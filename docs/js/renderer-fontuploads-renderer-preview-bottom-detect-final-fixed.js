@@ -1244,6 +1244,10 @@ const SitelenRenderer = (() => {
   function inferFontRole(el) {
     if (!el) return 'word';
     const fam = String(el.fontFamily || '');
+    if (
+      el.isUnrecognized &&
+      (el.interpretedQuote || String(el.sourceKind || '').toLowerCase() === 'interpretedquote')
+    ) return 'unknown';
     if (el.type === 'text') return 'literal';
     if (el.type === 'cartouche') {
       if (el.isLiteralCartouche) return 'literalCartouche';
