@@ -3006,6 +3006,16 @@ function wireHaloControls() {
       "PI": "PE"
     });
 
+    // Scientific notation previously used the expanded marker
+    // NEKO + (WE|WA)NI + NEKO. Accept both legacy forms, but normalize every
+    // newly rendered/generated result to the shortened single NEKO marker.
+    function canonicalizeScientificNanpaCaps(caps) {
+      return String(caps ?? "")
+        .trim()
+        .toUpperCase()
+        .replace(/NEKO(?:WE|WA)NINEKO/g, "NEKO");
+    }
+
     const RELAXED_TOKEN_TO_RENDER_WORDS = Object.freeze({
       "WA": ["wan", "ala"],
       "TU": ["tu", "uta"],
@@ -3101,11 +3111,16 @@ function wireHaloControls() {
       const tokens = ["NE"];
       let i = 0;
 
-      const scientificMarkerIndex = body.indexOf("KOWIKO");
-      const hasScientificNumberCodeMarker =
-        scientificMarkerIndex > 0 &&
-        body[scientificMarkerIndex - 1] !== "O" &&
-        (scientificMarkerIndex + "KOWIKO".length) < body.length;
+      const shortScientificMarkerIndex = body.indexOf("EKO");
+      const hasShortScientificNumberCodeMarker =
+        shortScientificMarkerIndex > 0 &&
+        (shortScientificMarkerIndex + "EKO".length) < body.length;
+
+      const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
+      const hasLegacyScientificNumberCodeMarker =
+        legacyScientificMarkerIndex > 0 &&
+        body[legacyScientificMarkerIndex - 1] !== "O" &&
+        (legacyScientificMarkerIndex + "KOWIKO".length) < body.length;
 
       function ensureNEBeforeOperatorRun() {
         if (tokens[tokens.length - 1] !== "NE") tokens.push("NE");
@@ -3124,15 +3139,29 @@ function wireHaloControls() {
           continue;
         }
 
-        // Scientific #~ notation uses the full interior signature KOWIKO:
-        //   <mantissa-code> KO WI KO <exponent-code>
-        // A bare KO elsewhere must keep its older meaning as K + O. For example,
+        // New scientific #~ notation uses the lowercase output signature eko:
+        //   <mantissa-code> eko <exponent-code>
+        // Parsing is case-insensitive because the complete code body is normalized
+        // to uppercase. The E is syntax for the abbreviation and maps to NE+KO.
+        if (
+          hasShortScientificNumberCodeMarker &&
+          i === shortScientificMarkerIndex &&
+          body.startsWith("EKO", i)
+        ) {
+          ensureNEBeforeOperatorRun();
+          tokens.push("KO");
+          i += 3;
+          continue;
+        }
+
+        // Backward compatibility: the previous #~ signature KOWIKO remains valid.
+        // A bare KO elsewhere keeps its older meaning as K + O. For example,
         // #~WIkooS must continue to decode as 10,000/3, not 10^3.
         // #~JokoWIkooS must also stay integer+fraction because KOWIKO is part of OKO.
         if (
-          hasScientificNumberCodeMarker &&
+          hasLegacyScientificNumberCodeMarker &&
           body.startsWith("KO", i) &&
-          (i === scientificMarkerIndex || i === scientificMarkerIndex + 4)
+          (i === legacyScientificMarkerIndex || i === legacyScientificMarkerIndex + 4)
         ) {
           ensureNEBeforeOperatorRun();
           tokens.push("KO");
@@ -3182,7 +3211,7 @@ function wireHaloControls() {
 
       tokens.push("N");
 
-      const caps = tokens.join("");
+      const caps = canonicalizeScientificNanpaCaps(tokens.join(""));
       tokenizeNanpaCaps(caps);
       return { caps };
     }
@@ -3335,7 +3364,8 @@ function wireHaloControls() {
     }
 
     function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional", isTime = false } = {}) {
-      const tokens = tokenizeNanpaCaps(caps);
+      const canonicalCaps = canonicalizeScientificNanpaCaps(caps);
+      const tokens = tokenizeNanpaCaps(canonicalCaps);
       if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
       // Consume OK as a flag (your earlier change)
@@ -4197,7 +4227,7 @@ function wireHaloControls() {
       const exponentCore = exponentCaps.slice(2, -1);
       if (!mantissaCore || !exponentCore) return null;
 
-      const caps = mantissaCore + "NEKO" + "WENI" + "NEKO" + exponentCore + "N";
+      const caps = mantissaCore + "NEKO" + exponentCore + "N";
       tokenizeNanpaCaps(caps);
       return caps;
     }
@@ -4606,6 +4636,51 @@ function findNanpaLinjanTpPhraseSequences(text) {
       return false;
     }
 
+    function canonicalizeScientificTpPhraseWords(inputWords) {
+      const words = Array.from(inputWords ?? []).map(normalizeTpWord).filter(Boolean);
+      const legacyPatterns = [
+        {
+          old: ["nena", "en", "kala", "open", "wan", "en", "nena", "ijo", "nena", "en", "kala", "open"],
+          replacement: ["nena", "en", "kala", "open"]
+        },
+        {
+          old: ["nena", "en", "kala", "open", "wan", "ala", "nena", "ijo", "nena", "en", "kala", "open"],
+          replacement: ["nena", "en", "kala", "open"]
+        },
+        {
+          old: ["nasa", "e", "kala", "open", "wan", "esun", "nasa", "ijo", "nasa", "e", "kala", "open"],
+          replacement: ["nasa", "e", "kala", "open"]
+        },
+        {
+          old: ["nasa", "e", "kala", "open", "wan", "ala", "nasa", "ijo", "nasa", "e", "kala", "open"],
+          replacement: ["nasa", "e", "kala", "open"]
+        }
+      ];
+
+      const out = [];
+      for (let i = 0; i < words.length; ) {
+        let matched = null;
+        for (const pattern of legacyPatterns) {
+          if (
+            i + pattern.old.length <= words.length &&
+            pattern.old.every((word, offset) => words[i + offset] === word)
+          ) {
+            matched = pattern;
+            break;
+          }
+        }
+
+        if (matched) {
+          out.push(...matched.replacement);
+          i += matched.old.length;
+        } else {
+          out.push(words[i]);
+          i += 1;
+        }
+      }
+      return out;
+    }
+
     function tryParseNanpaLinjanTpPhraseWords(inputWords) {
       const words = Array.from(inputWords ?? []).map(normalizeTpWord).filter(Boolean);
 
@@ -4623,13 +4698,14 @@ function findNanpaLinjanTpPhraseSequences(text) {
       // tryParseFullyAbbreviatedNanpaLinjanCartoucheWords() and only inside [].
       if (hasAdjacentNanpaLinjanDigitWords(words)) return null;
 
+      const canonicalWords = canonicalizeScientificTpPhraseWords(words);
       const digitWords = nanpaLinjanDigitWordSet();
 
-      const payload = words.slice(2, -1);
+      const payload = canonicalWords.slice(2, -1);
       const hasDigit = payload.some(w => digitWords.has(w));
       if (!hasDigit) return null;
 
-      return { words };
+      return { words: canonicalWords };
     }
 
     function nanpaLinjanWordsToCodepoints(words, { mode = "traditional" } = {}) {
@@ -8421,6 +8497,49 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     "PI": "PE"
   });
 
+  function _npCanonicalizeScientificCaps(caps) {
+    return String(caps ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/NEKO(?:WE|WA)NINEKO/g, "NEKO");
+  }
+
+  function _npCanonicalizeScientificTokens(inputTokens) {
+    const tokens = Array.from(inputTokens ?? []);
+    const out = [];
+
+    for (let i = 0; i < tokens.length; ) {
+      const isLegacyMarker =
+        i + 5 < tokens.length &&
+        tokens[i] === "NE" &&
+        tokens[i + 1] === "KO" &&
+        (tokens[i + 2] === "WE" || tokens[i + 2] === "WA") &&
+        tokens[i + 3] === "NI" &&
+        tokens[i + 4] === "NE" &&
+        tokens[i + 5] === "KO";
+
+      if (isLegacyMarker) {
+        out.push("NE", "KO");
+        i += 6;
+        continue;
+      }
+
+      out.push(tokens[i]);
+      i += 1;
+    }
+
+    return out;
+  }
+
+  function _npFindScientificMarker(tokens, startIndex = 1, endIndex = null) {
+    const a = Array.from(tokens ?? []);
+    const end = endIndex == null ? a.length : Math.min(a.length, Number(endIndex));
+    for (let i = Math.max(0, Number(startIndex) || 0); i + 1 < end; i++) {
+      if (a[i] === "NE" && a[i + 1] === "KO") return { index: i, length: 2 };
+    }
+    return null;
+  }
+
   const _NP_RELAXED_TOKEN_TO_RENDER_WORDS = Object.freeze({
     "WA": ["wan", "ala"],
     "TU": ["tu", "uta"],
@@ -8649,11 +8768,16 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const tokens = ["NE"];
     let i = 0;
 
-    const scientificMarkerIndex = body.indexOf("KOWIKO");
-    const hasScientificNumberCodeMarker =
-      scientificMarkerIndex > 0 &&
-      body[scientificMarkerIndex - 1] !== "O" &&
-      (scientificMarkerIndex + "KOWIKO".length) < body.length;
+    const shortScientificMarkerIndex = body.indexOf("EKO");
+    const hasShortScientificNumberCodeMarker =
+      shortScientificMarkerIndex > 0 &&
+      (shortScientificMarkerIndex + "EKO".length) < body.length;
+
+    const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
+    const hasLegacyScientificNumberCodeMarker =
+      legacyScientificMarkerIndex > 0 &&
+      body[legacyScientificMarkerIndex - 1] !== "O" &&
+      (legacyScientificMarkerIndex + "KOWIKO".length) < body.length;
 
     function ensureNEBeforeOperatorRun() {
       if (tokens[tokens.length - 1] !== "NE") tokens.push("NE");
@@ -8668,15 +8792,27 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         continue;
       }
 
-      // Scientific #~ notation uses the full interior signature KOWIKO:
-      //   <mantissa-code> KO WI KO <exponent-code>
-      // A bare KO elsewhere must keep its older meaning as K + O. For example,
+      // New scientific #~ notation uses eko. The E is syntax for the
+      // abbreviation and maps to the shortened NE+KO scientific marker.
+      if (
+        hasShortScientificNumberCodeMarker &&
+        i === shortScientificMarkerIndex &&
+        body.startsWith("EKO", i)
+      ) {
+        ensureNEBeforeOperatorRun();
+        tokens.push("KO");
+        i += 3;
+        continue;
+      }
+
+      // Backward compatibility for the previous KOWIKO scientific signature.
+      // A bare KO elsewhere keeps its older meaning as K + O. For example,
       // #~WIkooS must continue to decode as 10,000/3, not 10^3.
       // #~JokoWIkooS must also stay integer+fraction because KOWIKO is part of OKO.
       if (
-        hasScientificNumberCodeMarker &&
+        hasLegacyScientificNumberCodeMarker &&
         body.startsWith("KO", i) &&
-        (i === scientificMarkerIndex || i === scientificMarkerIndex + 4)
+        (i === legacyScientificMarkerIndex || i === legacyScientificMarkerIndex + 4)
       ) {
         ensureNEBeforeOperatorRun();
         tokens.push("KO");
@@ -8724,7 +8860,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (hasPercent) tokens.push("OK");
     tokens.push("N");
 
-    const caps = tokens.join("");
+    const caps = _npCanonicalizeScientificCaps(tokens.join(""));
     _npTokenizeNanpaCaps(caps);
     return { caps };
   }
@@ -8860,7 +8996,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   }
 
   function _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional", isTime = false, relaxedParsing = false, relaxedRendering = false } = {}) {
-    const tokens = _npTokenizeNanpaCaps(caps, { relaxedNanpaLinjanParsing: relaxedParsing });
+    const canonicalCaps = _npCanonicalizeScientificCaps(caps);
+    const tokens = _npTokenizeNanpaCaps(canonicalCaps, { relaxedNanpaLinjanParsing: relaxedParsing });
     if (!_npNanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
     let hasPercent = false;
@@ -9456,7 +9593,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const exponentCore = exponentCaps.slice(2, -1);
     if (!mantissaCore || !exponentCore) return null;
 
-    const caps = mantissaCore + "NEKO" + "WENI" + "NEKO" + exponentCore + "N";
+    const caps = mantissaCore + "NEKO" + exponentCore + "N";
     _npTokenizeNanpaCaps(caps, opts);
     return caps;
   }
@@ -9539,6 +9676,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
 
       if (!caps) return null;
+      caps = _npCanonicalizeScientificCaps(caps);
 
       const isTime = _npNanpaCapsIsValidTimeOrDate(caps);
       const innerCodepoints = _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime });
@@ -9666,12 +9804,19 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     function capsToCanonicalUniqueCode(caps, opts = {}) {
+      const canonicalCaps = _npCanonicalizeScientificCaps(caps);
       let tokens;
-      try { tokens = _npTokenizeNanpaCaps(caps, opts); }
-      catch { return latinNameToUniqueCode(titleCaseCapsLabel(_npSplitFinalHundredIninWords(splitCapsLetters(caps), opts))); }
+      try { tokens = _npTokenizeNanpaCaps(canonicalCaps, opts); }
+      catch { return latinNameToUniqueCode(titleCaseCapsLabel(_npSplitFinalHundredIninWords(splitCapsLetters(canonicalCaps), opts))); }
 
       const parts = [];
-      for (const t of tokens) {
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        if (t === "NE" && tokens[i + 1] === "KO") {
+          parts.push("eko");
+          i += 1;
+          continue;
+        }
         if (t === "N" || t === "NE") continue;
         if (_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]) {
           parts.push(_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]);
@@ -9847,23 +9992,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         return hasPercent ? (base + "%") : base;
       }
 
-      const scientificMarkerIdx = (() => {
-        for (let i = 1; i + 5 < finalNIdx; i++) {
-          if (
-            tokens[i] === "NE" &&
-            tokens[i + 1] === "KO" &&
-            tokens[i + 2] === "WE" &&
-            tokens[i + 3] === "NI" &&
-            tokens[i + 4] === "NE" &&
-            tokens[i + 5] === "KO"
-          ) return i;
-        }
-        return -1;
-      })();
+      const scientificMarker = _npFindScientificMarker(tokens, 1, finalNIdx);
 
-      if (scientificMarkerIdx > 1) {
-        const mantissaStr = decodeSegmentTokensToString(tokens.slice(1, scientificMarkerIdx), decodeOpts);
-        const exponentStr = decodeSegmentTokensToString(tokens.slice(scientificMarkerIdx + 6, finalNIdx), decodeOpts);
+      if (scientificMarker && scientificMarker.index > 1) {
+        const mantissaStr = decodeSegmentTokensToString(tokens.slice(1, scientificMarker.index), decodeOpts);
+        const exponentStr = decodeSegmentTokensToString(tokens.slice(scientificMarker.index + scientificMarker.length, finalNIdx), decodeOpts);
         if (!mantissaStr || !exponentStr) return null;
         const base = `${mantissaStr}e${exponentStr}`;
         return hasPercent ? (base + "%") : base;
@@ -9905,6 +10038,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     if (!caps) return null;
+    caps = _npCanonicalizeScientificCaps(caps);
 
     try {
       const tokens = _npTokenizeNanpaCaps(caps, opts);
@@ -9981,6 +10115,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   },
 
   splitCapsToProperName(caps, { titleCase = true, relaxedNanpaLinjanParsing = false } = {}) {
+    caps = _npCanonicalizeScientificCaps(caps);
     function splitCapsLetters(sCaps) {
       if (sCaps == null) throw new Error("caps must be a string");
       const s0 = String(sCaps).trim().toUpperCase();
@@ -10049,6 +10184,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   },
 
   capsToUniqueCode(caps, opts = {}) {
+    caps = _npCanonicalizeScientificCaps(caps);
     let tokens;
     try {
       tokens = _npTokenizeNanpaCaps(caps, opts);
@@ -10061,7 +10197,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     const parts = [];
-    for (const t of tokens) {
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (t === "NE" && tokens[i + 1] === "KO") {
+        parts.push("eko");
+        i += 1;
+        continue;
+      }
       if (t === "N" || t === "NE") continue;
       if (_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]) { parts.push(_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]); continue; }
       if (t === "NO") { parts.push("o"); continue; }
@@ -10078,6 +10220,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   },
 
   decodeCaps(caps, opts = {}) {
+    caps = _npCanonicalizeScientificCaps(caps);
     function keTokenCount(t) {
       if (t === "KE") return 1;
       if (t === "KEKE") return 2;
@@ -10223,23 +10366,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       return hasPercent ? (base + "%") : base;
     }
 
-    const scientificMarkerIdx = (() => {
-      for (let i = 1; i + 5 < finalNIdx; i++) {
-        if (
-          tokens[i] === "NE" &&
-          tokens[i + 1] === "KO" &&
-          tokens[i + 2] === "WE" &&
-          tokens[i + 3] === "NI" &&
-          tokens[i + 4] === "NE" &&
-          tokens[i + 5] === "KO"
-        ) return i;
-      }
-      return -1;
-    })();
+    const scientificMarker = _npFindScientificMarker(tokens, 1, finalNIdx);
 
-    if (scientificMarkerIdx > 1) {
-      const mantissaStr = decodeSegmentTokensToString(tokens.slice(1, scientificMarkerIdx), opts);
-      const exponentStr = decodeSegmentTokensToString(tokens.slice(scientificMarkerIdx + 6, finalNIdx), opts);
+    if (scientificMarker && scientificMarker.index > 1) {
+      const mantissaStr = decodeSegmentTokensToString(tokens.slice(1, scientificMarker.index), opts);
+      const exponentStr = decodeSegmentTokensToString(tokens.slice(scientificMarker.index + scientificMarker.length, finalNIdx), opts);
       if (!mantissaStr || !exponentStr) return null;
       const base = `${mantissaStr}e${exponentStr}`;
       return hasPercent ? (base + "%") : base;
@@ -10342,7 +10473,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const mode = ((opts.mode === "traditional") || (opts.numericMode === "traditional"))
       ? "traditional"
       : "uniform";
-    return _npNanpaCapsTokensToTpWords(tokens, { mode, relaxedRendering: _npRelaxedRenderingFromOpts(opts) });
+    const canonicalTokens = _npCanonicalizeScientificTokens(tokens);
+    return _npNanpaCapsTokensToTpWords(canonicalTokens, { mode, relaxedRendering: _npRelaxedRenderingFromOpts(opts) });
   },
 
   tpWordsToUcsurCodepoints(words) {
@@ -10406,6 +10538,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   },
 
   capsToWords(caps, opts = {}) {
+    caps = _npCanonicalizeScientificCaps(caps);
     const mode = ((opts.mode === "traditional") || (opts.numericMode === "traditional"))
       ? "traditional"
       : "uniform";

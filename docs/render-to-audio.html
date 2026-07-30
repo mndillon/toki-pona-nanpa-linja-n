@@ -1251,8 +1251,8 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=186";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=32";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=187";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=33";
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback
@@ -2048,28 +2048,14 @@
       return result;
     }
 
-    function findScientificExponentExpansionStart(rawUnits) {
-      for (let i = 0; i + 3 < rawUnits.length; i++) {
-        const a = rawUnits[i];
-        const b = rawUnits[i + 1];
-        const c = rawUnits[i + 2];
-        const d = rawUnits[i + 3];
-
-        const exponentOne =
-          b?.kind === "digit" &&
-          (b.text === "we" || b.text === "wa");
-
-        if (
-          a?.text === "neko" &&
-          exponentOne &&
-          c?.text === "ni" &&
-          d?.text === "neko"
-        ) {
-          return i;
-        }
-      }
-
-      return -1;
+    function findScientificMarkerUnitIndex(rawUnits) {
+      return Array.from(rawUnits ?? []).findIndex(unit =>
+        unit?.text === "neko" &&
+        Array.isArray(unit?.sourceTokens) &&
+        unit.sourceTokens.length === 2 &&
+        unit.sourceTokens[0] === "NE" &&
+        unit.sourceTokens[1] === "KO"
+      );
     }
 
     function scientificInputSourceCells(rawInput, rawUnits) {
@@ -2079,12 +2065,12 @@
 
       /*
        * Source grouping for scientific notation is explicit rather than
-       * character-to-unit guessing. The exponent marker expands as:
+       * character-to-unit guessing. The shortened exponent marker is now:
        *
-       *   e -> neko | we/wa | ni | neko
+       *   e -> neko
        *
-       * The e occupies the first output column, the next three source cells
-       * remain blank, and its arrow cell contains ↓ followed by ↘.
+       * Legacy parser input is normalized by NanpaParser before this model is
+       * built, so every new breakdown uses this single marker unit.
        */
       const match = /^([+-]?)(.*?)([eE])([+-]?)(\d+)$/u.exec(normalized);
       if (!match) return null;
@@ -2092,15 +2078,11 @@
       const mantissaText = `${match[1]}${match[2]}`;
       if (!/\d/u.test(mantissaText)) return null;
 
-      const expansionStart = findScientificExponentExpansionStart(rawUnits);
-      if (expansionStart < 0) return null;
+      const markerIndex = findScientificMarkerUnitIndex(rawUnits);
+      if (markerIndex < 0) return null;
 
-      const expansionLength = 4;
-      const expansionEnd = expansionStart + expansionLength;
-      if (expansionEnd > rawUnits.length) return null;
-
-      const mantissaUnits = rawUnits.slice(0, expansionStart);
-      const exponentUnits = rawUnits.slice(expansionEnd);
+      const mantissaUnits = rawUnits.slice(0, markerIndex);
+      const exponentUnits = rawUnits.slice(markerIndex + 1);
 
       const mantissaCells = fallbackInputSourceCells(mantissaText, mantissaUnits);
       const exponentSource = `${match[4]}${match[5]}`;
@@ -2115,10 +2097,7 @@
 
       return [
         ...mantissaCells,
-        makeInputSourceCell(match[3], "expand-southeast", "scientific-exponent-marker"),
-        makeInputSourceCell("", "none", "scientific-expansion-continuation"),
-        makeInputSourceCell("", "none", "scientific-expansion-continuation"),
-        makeInputSourceCell("", "none", "scientific-expansion-continuation"),
+        makeInputSourceCell(match[3], "down", "scientific-exponent-marker"),
         ...exponentCells
       ];
     }
@@ -2219,7 +2198,7 @@
         chip.title = hideSourcePunctuation
           ? "The source separator is intentionally blank because this column maps to nene"
           : component.sourceKind === "scientific-exponent-marker"
-            ? "The scientific-notation exponent marker expands into four nanpa-linja-n units"
+            ? "The scientific-notation exponent marker maps to the shortened neko unit"
             : "Input component";
         if (hideSourcePunctuation) {
           chip.setAttribute("aria-label", "blank input component corresponding to nene");
@@ -2673,6 +2652,12 @@
       }
 
       const markerWordIndexes = new Set();
+
+      // Current output has one Eko word. Legacy output used
+      // Eko Wanin/Wenin Eko; all three legacy words still target the same e.
+      for (const word of words) {
+        if (word.text === "eko") markerWordIndexes.add(word.wordIndex);
+      }
       for (let index = 0; index + 2 < words.length; index += 1) {
         const first = words[index];
         const middle = words[index + 1];
@@ -2683,9 +2668,7 @@
           /^(?:wanin|wenin)$/.test(middle.text) &&
           last.text === "eko"
         ) {
-          markerWordIndexes.add(first.wordIndex);
           markerWordIndexes.add(middle.wordIndex);
-          markerWordIndexes.add(last.wordIndex);
         }
       }
 
@@ -2740,9 +2723,9 @@
         }
 
         /*
-         * Scientific notation writes Eko Wanin Eko (strict: Eko Wenin Eko)
-         * as one e. Every audio unit in all three words deliberately reuses
-         * that same character target.
+         * Scientific notation now writes one Eko word for one e. Legacy
+         * Eko Wanin/Wenin Eko input remains accepted, and every legacy audio
+         * unit deliberately reuses that same character target.
          */
         if (
           scientificEIndex >= 0 &&

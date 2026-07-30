@@ -357,7 +357,7 @@ function item(kind, parserInput, displayValue, answerMode, properNameMode = getC
 
 async function getNanpaParser() {
   if (!nanpaModulePromise) {
-    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=176');
+    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=177');
   }
   const mod = await nanpaModulePromise;
   return mod.NanpaParser;
@@ -365,7 +365,7 @@ async function getNanpaParser() {
 
 async function getVoice() {
   if (!voicePromise) {
-    voicePromise = import('./toki-pona-voice-api.js?v=32').then(m => m.createTokiPonaVoice());
+    voicePromise = import('./toki-pona-voice-api.js?v=33').then(m => m.createTokiPonaVoice());
   }
   return voicePromise;
 }

@@ -605,9 +605,9 @@
       </h3>
       <textarea id="numberCodeOut" class="mono" readonly aria-readonly="true"></textarea>
       <div class="help">
-        Derived from the nanpa-linja-n proper name: remove letters <span class="mono">n</span> and <span class="mono">e</span>.
+        Compact code derived from the nanpa-linja-n proper name. Most <span class="mono">n</span> and <span class="mono">e</span> letters are omitted; scientific notation keeps the lowercase separator <span class="mono">eko</span>.
         <span class="tpLine">
-          ni li tan nimi pi nanpa-linja-n: o weka e sitelen <span class="mono">n</span> en <span class="mono">e</span>.
+          ni li nimi lili tan nimi pi nanpa-linja-n. nanpa sona la nimi <span class="mono">eko</span> li awen.
         </span>
       </div>
 
@@ -772,8 +772,8 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=198";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=32";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=33";
 
     const voice = await createTokiPonaVoice();
 
@@ -1372,6 +1372,7 @@
      * Accepts both Traditional and Uniform mode wordings:
      * - Start: "nanpa esun" or "nanpa en"
      * - After digits: "<digitWord> esun" or "<digitWord> en"
+     * - Scientific marker: "nena en kala open"; legacy expanded marker remains accepted
      * - NE (non-initial): "(nasa|nena) (e|en)"
      * - KE: "kulupu (e|en)"
      * - NONONO: (nasa|nena) o x3
@@ -1395,6 +1396,38 @@
       let i = 2;
 
       while (i < end) {
+        const isScientificMarkerAt = (index) => (
+          index + 3 < end &&
+          (words[index] === "nasa" || words[index] === "nena") &&
+          (words[index + 1] === "e" || words[index + 1] === "en") &&
+          words[index + 2] === "kala" &&
+          words[index + 3] === "open"
+        );
+
+        // Scientific notation marker. New output uses one shortened marker:
+        //   nena en kala open
+        // Keep accepting the previous expanded marker and canonicalize it to NEKO:
+        //   nena en kala open wan en nena ijo nena en kala open
+        if (
+          isScientificMarkerAt(i) &&
+          i + 11 < end &&
+          words[i + 4] === "wan" &&
+          (words[i + 5] === "esun" || words[i + 5] === "en" || words[i + 5] === "ala") &&
+          (words[i + 6] === "nasa" || words[i + 6] === "nena") &&
+          words[i + 7] === "ijo" &&
+          isScientificMarkerAt(i + 8)
+        ) {
+          capsParts.push("NEKO");
+          i += 12;
+          continue;
+        }
+
+        if (isScientificMarkerAt(i)) {
+          capsParts.push("NEKO");
+          i += 4;
+          continue;
+        }
+
         // 1) NONONO: "(nasa|nena) o" repeated 3 times
         if (
           i + 5 < end &&
@@ -1584,6 +1617,17 @@
       const parts = ["NE"];
       let i = 0;
 
+      const shortScientificMarkerIndex = body.indexOf("EKO");
+      const hasShortScientificNumberCodeMarker =
+        shortScientificMarkerIndex > 0 &&
+        (shortScientificMarkerIndex + "EKO".length) < body.length;
+
+      const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
+      const hasLegacyScientificNumberCodeMarker =
+        legacyScientificMarkerIndex > 0 &&
+        body[legacyScientificMarkerIndex - 1] !== "O" &&
+        (legacyScientificMarkerIndex + "KOWIKO".length) < body.length;
+
       function ensureNEBeforeOperatorRun() {
         if (parts[parts.length - 1] !== "NE") parts.push("NE");
       }
@@ -1591,7 +1635,32 @@
       while (i < body.length) {
         const ch = body[i];
 
-                if (ch === "O") {
+        // New scientific #~ separator: <mantissa>eko<exponent>. Input is
+        // case-insensitive, while generated output is always lowercase eko.
+        if (
+          hasShortScientificNumberCodeMarker &&
+          i === shortScientificMarkerIndex &&
+          body.startsWith("EKO", i)
+        ) {
+          ensureNEBeforeOperatorRun();
+          parts.push("KO");
+          i += 3;
+          continue;
+        }
+
+        // Backward compatibility for the previous KOWIKO signature.
+        if (
+          hasLegacyScientificNumberCodeMarker &&
+          body.startsWith("KO", i) &&
+          (i === legacyScientificMarkerIndex || i === legacyScientificMarkerIndex + 4)
+        ) {
+          ensureNEBeforeOperatorRun();
+          parts.push("KO");
+          i += 2;
+          continue;
+        }
+
+        if (ch === "O") {
           let j = i;
           while (j < body.length && body[j] === "O") j++;
           const count = j - i;
@@ -1648,12 +1717,41 @@
         caps = caps.slice(0, -1) + "OKN";
       }
 
+      // Legacy scientific caps contained NEKO + WENI/WANI + NEKO. Accept
+      // them, but return the shortened canonical NEKO marker.
+      caps = caps.replace(/NEKO(?:WE|WA)NINEKO/g, "NEKO");
 
       tokenizeNanpaCaps(caps);
 
-      const canonicalBody = body + (hasPercentOK ? "OK" : "");
-      const canonicalStyled = canonicalBody.replace(/O/g, "o").replace(/K/g, "k");
-      const canonicalCode = "#~" + canonicalStyled;
+      // Always normalize accepted legacy scientific input to the new lowercase
+      // eko separator in subsequent output.
+      const canonicalCode = (() => {
+        const tokens = tokenizeNanpaCaps(caps);
+        const out = [];
+        const pairToLetter = Object.fromEntries(
+          Object.entries(NUMBER_CODE_LETTER_TO_PAIR).map(([letter, pair]) => [pair, letter])
+        );
+        for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
+          const token = tokens[tokenIndex];
+          if (token === "NE" && tokens[tokenIndex + 1] === "KO") {
+            out.push("eko");
+            tokenIndex += 1;
+            continue;
+          }
+          if (token === "N" || token === "NE") continue;
+          if (pairToLetter[token]) { out.push(pairToLetter[token]); continue; }
+          if (token === "NO") { out.push("o"); continue; }
+          if (token === "NONO") { out.push("oo"); continue; }
+          if (token === "NONONO") { out.push("ooo"); continue; }
+          if (token === "NOKO") { out.push("oko"); continue; }
+          if (token === "KO") { out.push("ko"); continue; }
+          if (token === "KE") { out.push("k"); continue; }
+          if (token === "KEKE") { out.push("kk"); continue; }
+          if (token === "KEKEKE") { out.push("kkk"); continue; }
+          if (token === "OK") { out.push("ok"); continue; }
+        }
+        return "#~" + out.join("");
+      })();
 
       return { caps, canonicalCode };
 
@@ -3733,14 +3831,18 @@
       }
 
       const result = new Set();
+
+      // Current output has one Eko word. Legacy output used
+      // Eko Wanin/Wenin Eko; all three legacy words still target the same e.
+      for (const word of words) {
+        if (word.text === "eko") result.add(word.wordIndex);
+      }
       for (let index = 0; index + 2 < words.length; index += 1) {
         const first = words[index];
         const middle = words[index + 1];
         const last = words[index + 2];
         if (first.text === "eko" && /^(?:wanin|wenin)$/.test(middle.text) && last.text === "eko") {
-          result.add(first.wordIndex);
           result.add(middle.wordIndex);
-          result.add(last.wordIndex);
         }
       }
       return result;

@@ -194,11 +194,81 @@
       gap:5px;
       padding:12px;
     }
+    .audioControls{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      flex-wrap:wrap;
+      width:100%;
+    }
     .audioButton{
       min-width:190px;
       min-height:62px;
       font-size:22px;
       border-radius:18px;
+    }
+    .compactSessionOnly{ display:none; }
+    .compactQuestionStatus{
+      color:var(--muted);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .validatedProperNamePanel{
+      max-width:720px;
+      width:100%;
+      margin:0 auto;
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      background:rgba(255,255,255,0.30);
+      padding:10px;
+      display:grid;
+      gap:8px;
+      min-height:0;
+      overflow:auto;
+    }
+    .validatedProperNameInstruction{
+      color:var(--muted);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      font-weight:800;
+    }
+    .practiceHintRow{
+      display:grid;
+      gap:3px;
+      min-width:0;
+    }
+    .practiceHintLabel{
+      color:var(--muted);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:13px;
+      font-weight:800;
+    }
+    .practiceHintValue{
+      min-width:0;
+      overflow-wrap:anywhere;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      font-size:16px;
+      line-height:1.45;
+    }
+    .practiceHintUnit{
+      display:inline-block;
+      border-radius:4px;
+      padding:0 1px;
+    }
+    .practiceHintCorrect{
+      color:var(--good);
+      font-weight:800;
+      background:rgba(20,122,42,0.10);
+    }
+    .practiceHintTarget{
+      color:var(--bad);
+      font-weight:800;
+      background:rgba(177,26,26,0.10);
+      outline:1px solid rgba(177,26,26,0.42);
+      outline-offset:1px;
     }
     .answerStage{
       display:grid;
@@ -609,6 +679,130 @@
       .reviewRevealPanel.cartouchePanel{ grid-column:auto; }
       .exampleReferenceGrid{ grid-template-columns:1fr; }
       .questionCard{ min-height:390px; }
+
+      body.mobileListeningSession{ overflow:hidden; }
+      body.mobileListeningSession .topbar,
+      body.mobileListeningSession .tabs,
+      body.mobileListeningSession #tab-practice > .card:first-child,
+      body.mobileListeningSession #tab-practice > .progressGrid,
+      body.mobileListeningSession .footer{
+        display:none !important;
+      }
+      body.mobileListeningSession .wrap{ height:100dvh; }
+      body.mobileListeningSession .main{
+        position:fixed;
+        z-index:1000;
+        top:var(--mobile-viewport-top,0px);
+        left:var(--mobile-viewport-left,0px);
+        width:var(--mobile-viewport-width,100vw);
+        height:var(--mobile-viewport-height,100dvh);
+        overflow:hidden;
+        padding:6px;
+        background:var(--bg);
+        display:block;
+      }
+      body.mobileListeningSession .stack,
+      body.mobileListeningSession #tab-practice{
+        width:100%;
+        height:100%;
+        min-height:0;
+        padding:0;
+        gap:0;
+      }
+      body.mobileListeningSession #questionCard{
+        width:100%;
+        height:100%;
+        min-height:0;
+        overflow:hidden;
+        padding:6px;
+        gap:6px;
+        border-radius:12px;
+        grid-template-rows:auto auto minmax(0,1fr) auto;
+        align-content:stretch;
+      }
+      body.mobileListeningSession #questionCard > .panelRow,
+      body.mobileListeningSession #feedback,
+      body.mobileListeningSession #autoNextNotice,
+      body.mobileListeningSession #reveal{
+        display:none !important;
+      }
+      body.mobileListeningSession .audioArea{
+        grid-row:1;
+        padding:0;
+        gap:3px;
+        place-items:stretch;
+      }
+      body.mobileListeningSession .audioControls{
+        display:flex;
+        align-items:stretch;
+        flex-wrap:nowrap;
+        gap:5px;
+      }
+      body.mobileListeningSession .audioButton{
+        min-width:0;
+        min-height:42px;
+        font-size:16px;
+        border-radius:10px;
+        padding:5px 7px;
+        flex:1 1 auto;
+      }
+      body.mobileListeningSession .compactSessionOnly{ display:inline-flex; }
+      body.mobileListeningSession .audioControls .compactSessionOnly{
+        flex:0 0 auto;
+        align-items:center;
+        justify-content:center;
+      }
+      body.mobileListeningSession .compactQuestionStatus{
+        display:block;
+        text-align:center;
+        font-size:12px;
+      }
+      body.mobileListeningSession .desktopAudioInstruction{ display:none; }
+      body.mobileListeningSession #prompt{
+        grid-row:2;
+        font-size:15px;
+        line-height:1.2;
+        padding:2px 4px;
+      }
+      body.mobileListeningSession .validatedProperNamePanel{
+        grid-row:3;
+        width:100%;
+        max-width:none;
+        margin:0;
+        padding:8px;
+        gap:6px;
+        overflow:auto;
+        align-content:start;
+      }
+      body.mobileListeningSession .validatedProperNameInstruction{
+        font-size:12px;
+        line-height:1.25;
+      }
+      body.mobileListeningSession .practiceHintLabel{ font-size:12px; }
+      body.mobileListeningSession .practiceHintValue{
+        font-size:14px;
+        line-height:1.35;
+      }
+      body.mobileListeningSession .answerStage{
+        grid-row:4;
+        width:100%;
+        max-width:none;
+        margin:0;
+        gap:3px;
+      }
+      body.mobileListeningSession .answerStage.hidden{ display:none !important; }
+      body.mobileListeningSession .stageLabel{
+        font-size:12px;
+        line-height:1.2;
+      }
+      body.mobileListeningSession .answerRow{
+        grid-template-columns:1fr;
+        gap:0;
+      }
+      body.mobileListeningSession .answerRow .btn{ display:none; }
+      body.mobileListeningSession .answerInput{ height:44px; }
+      body.mobileListeningSession #summaryCard{ display:none !important; }
+
       .answerRow{ grid-template-columns:1fr; }
       .answerRow .btn{ justify-self:start; }
       .footerLeft{ display:none; }
@@ -692,8 +886,8 @@
           <section class="card">
             <div class="panelRow between">
               <div>
-                <h1>Listen and enter the number</h1>
-                <p class="muted">Enter either the decimal value or the nanpa-linja-n proper name that you hear.</p>
+                <h1>Listen, enter the proper name, then enter the decimal value</h1>
+                <p class="muted">The first answer must be the nanpa-linja-n proper name. After it is validated, enter the corresponding decimal value.</p>
               </div>
               <div class="panelRow">
                 <button id="previousButton" class="btn" type="button" disabled>Prev</button>
@@ -713,24 +907,42 @@
             <div id="prompt" class="prompt">Choose settings and press Start.</div>
 
             <div class="audioArea">
-              <button id="audioButton" class="btn audioButton" type="button" disabled>🤖🔊 Play audio</button>
-              <span class="muted">Press Enter in an empty first field to play the audio.</span>
+              <div class="audioControls">
+                <button id="audioButton" class="btn audioButton" type="button" disabled>🤖🔊 Replay audio</button>
+                <button id="compactRevealButton" class="btn compactSessionOnly" type="button" disabled>Reveal</button>
+                <button id="compactNextButton" class="btn compactSessionOnly hidden" type="button" disabled>Next</button>
+                <button id="compactQuitButton" class="btn compactSessionOnly" type="button" disabled>Quit</button>
+              </div>
+              <span id="compactQuestionStatus" class="compactQuestionStatus compactSessionOnly"></span>
+              <span class="muted desktopAudioInstruction">Each question plays automatically. Press Enter in an empty proper-name field, or use Replay audio, to hear it again.</span>
+            </div>
+
+            <div id="validatedProperNamePanel" class="validatedProperNamePanel hidden" aria-live="polite">
+              <div class="validatedProperNameInstruction">Enter the decimal value. Type h at any time to show a ten-second hint.</div>
+              <div class="practiceHintRow">
+                <div class="practiceHintLabel">nanpa-linja-n proper name</div>
+                <div id="properNameHintValue" class="practiceHintValue"></div>
+              </div>
+              <div id="decimalHintRow" class="practiceHintRow hidden">
+                <div class="practiceHintLabel">Decimal hint</div>
+                <div id="decimalHintValue" class="practiceHintValue" role="status" aria-live="polite"></div>
+              </div>
             </div>
 
             <div id="firstStage" class="answerStage">
-              <label class="stageLabel" for="firstAnswerInput">Decimal value or nanpa-linja-n proper name</label>
+              <label class="stageLabel" for="firstAnswerInput">nanpa-linja-n proper name only — decimal values are not accepted here</label>
               <div class="answerRow">
                 <input id="firstAnswerInput" class="answerInput mono" type="text" autocomplete="off" spellcheck="false" disabled
-                       placeholder="Enter the value or proper name" />
-                <button id="checkFirstButton" class="btn" type="button" disabled>Check</button>
+                       placeholder="Enter the nanpa-linja-n proper name" />
+                <button id="checkFirstButton" class="btn" type="button" disabled>Check proper name</button>
               </div>
             </div>
 
             <div id="decimalStage" class="answerStage hidden">
-              <label class="stageLabel" for="decimalAnswerInput">Now translate the proper name into its decimal value</label>
+              <label class="stageLabel" for="decimalAnswerInput">Enter the decimal value; type h for a hint</label>
               <div class="answerRow">
                 <input id="decimalAnswerInput" class="answerInput mono" type="text" autocomplete="off" spellcheck="false"
-                       placeholder="Enter the decimal value" />
+                       placeholder="Enter the decimal value; type h for hint" />
                 <button id="checkDecimalButton" class="btn" type="button">Check value</button>
               </div>
             </div>
@@ -739,7 +951,7 @@
               <button id="revealButton" class="btn" type="button" disabled>Reveal</button>
             </div>
 
-            <div id="feedback" class="feedback muted" role="status" aria-live="polite">The first input accepts either format.</div>
+            <div id="feedback" class="feedback muted" role="status" aria-live="polite">Listen and enter the nanpa-linja-n proper name first.</div>
             <div id="autoNextNotice" class="autoNextNotice" aria-live="polite"></div>
 
             <div id="reveal" class="reveal hidden">
@@ -814,11 +1026,11 @@
           <section class="card">
             <h1>Settings</h1>
             <div class="settingsGrid">
-              <label class="settingItem">
+              <label class="settingItem hidden">
                 <input id="requireDecimalToggle" type="checkbox" checked />
                 <span class="settingText">
-                  <strong>Require decimal value after a proper-name answer</strong>
-                  <span>A correct decimal answer in the first field completes the question immediately. A correct proper name opens a second value field.</span>
+                  <strong>Proper name followed by decimal value</strong>
+                  <span>This two-stage order is required by listening practice.</span>
                 </span>
               </label>
 
@@ -875,6 +1087,7 @@
   const HISTORY_DB_NAME = "nln-listening-practice-history";
   const HISTORY_DB_VERSION = 1;
   const HISTORY_STORE = "sessions";
+  const DECIMAL_HINT_DURATION_MS = 10000;
 
   const AUDIO_PAUSE_SCALE_OPTIONS = [
     { value:1.00, label:"Normal", syllableGapSeconds:0.200 },
@@ -958,6 +1171,12 @@
   let historyDetailRenderToken = 0;
   let examplesRenderToken = 0;
   let activeExampleAudioButton = null;
+  let practiceAudioLabelTimer = null;
+  let decimalHintTimer = null;
+  let decimalHintGeneration = 0;
+  let decimalHintVisibleItemId = null;
+  let validatedProperNameRenderToken = 0;
+  let mobileCompactPracticeActive = false;
   let reviewAudioGeneration = 0;
   let reviewAudioState = "stopped";
   let reviewAudioTarget = null;
@@ -1000,7 +1219,9 @@
   function cacheElements(){
     for (const id of [
       "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status",
-      "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton",
+      "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton","questionCard",
+      "compactRevealButton","compactNextButton","compactQuitButton","compactQuestionStatus","firstStage",
+      "validatedProperNamePanel","properNameHintValue","decimalHintRow","decimalHintValue",
       "firstAnswerInput","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
       "reveal","revealValue","revealStrictLine","revealStrictName","revealRelaxedLine","revealRelaxedName","normalCartouche",
       "abbreviatedCartouche","revealCodeLine","revealCode","requireDecimalToggle","equivalentPunctuationToggle","autoNextToggle",
@@ -1034,7 +1255,7 @@
     state.settings.properNameMode = normalizeProperNameMode(state.settings.properNameMode);
     const pause = Number(state.settings.audioPauseScale);
     state.settings.audioPauseScale = AUDIO_PAUSE_SCALE_OPTIONS.some(x => Math.abs(x.value-pause)<0.001) ? pause : 2.25;
-    state.settings.requireDecimalAfterProperName = state.settings.requireDecimalAfterProperName !== false;
+    state.settings.requireDecimalAfterProperName = true;
     state.settings.acceptEquivalentPunctuation = state.settings.acceptEquivalentPunctuation !== false;
     state.settings.autoNext = state.settings.autoNext !== false;
     const delay = Math.round(Number(state.settings.autoNextDelayMs));
@@ -1061,7 +1282,7 @@
     state.settings.questionCount = clamp(Math.round(Number(el.questionCountInput.value) || 20),1,100);
     state.settings.properNameMode = normalizeProperNameMode(el.properNameModeSelect.value);
     state.settings.audioPauseScale = Number(el.audioSpeedSelect.value) || 2.25;
-    state.settings.requireDecimalAfterProperName = !!el.requireDecimalToggle.checked;
+    state.settings.requireDecimalAfterProperName = true;
     state.settings.acceptEquivalentPunctuation = !!el.equivalentPunctuationToggle.checked;
     state.settings.autoNext = !!el.autoNextToggle.checked;
     state.settings.autoNextDelayMs = [2000,4000,6000,10000].includes(Number(el.autoNextDelaySelect.value))
@@ -1302,6 +1523,7 @@
       decimalAttempts:0,
       firstAttemptValues:[],
       decimalAttemptValues:[],
+      formattedProperName:"",
       counted:false
     };
   }
@@ -1392,13 +1614,13 @@
   }
 
   async function getNanpaParser(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=186");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202");
     const mod = await nanpaModulePromise;
     return mod.NanpaParser;
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=32").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=33").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 
@@ -1450,11 +1672,138 @@
   }
 
   async function classifyFirstAnswer(item,rawAnswer){
-    if (valueAnswerMatches(item,rawAnswer)) return "value";
+    if (valueAnswerMatches(item,rawAnswer)) return "value-not-accepted";
     const parsed = await ensureParsed(item);
     if (properNameMatches(rawAnswer,parsed.strictParsed?.properName ?? parsed.properName)) return "proper-name";
     if (isRelaxedProperNameMode(parsed.properNameMode) && properNameMatches(rawAnswer,parsed.quizProperName)) return "proper-name";
     return "incorrect";
+  }
+
+  function selectedProperNameForParsedItem(item,parsed){
+    const strictParsed = parsed.strictParsed ?? parsed;
+    const selected = isRelaxedProperNameMode(item.properNameMode)
+      ? (parsed.quizProperName ?? parsed.quizParsed?.properName ?? strictParsed.properName ?? parsed.properName)
+      : (strictParsed.properName ?? parsed.properName);
+    return formatProperNameForDisplay(selected);
+  }
+
+  function canonicalDecimalHintPrefixLength(rawValue,expectedValue){
+    const actual = Array.from(normalizeMinus(String(rawValue ?? "")).trim());
+    const expected = Array.from(normalizeMinus(String(expectedValue ?? "")));
+    const limit = Math.min(actual.length,expected.length);
+    let index = 0;
+    while (index < limit && actual[index] === expected[index]) index++;
+    return index;
+  }
+
+  function hideDecimalHint(){
+    decimalHintGeneration++;
+    if (decimalHintTimer) clearTimeout(decimalHintTimer);
+    decimalHintTimer = null;
+    decimalHintVisibleItemId = null;
+    el.decimalHintRow?.classList.add("hidden");
+    if (el.decimalHintValue) el.decimalHintValue.textContent = "";
+  }
+
+  function stripHintCommandsFromDecimalInput(){
+    const input = el.decimalAnswerInput;
+    const raw = String(input.value ?? "");
+    if (!/[hH]/.test(raw)) return false;
+    const rawStart = Number(input.selectionStart);
+    const rawEnd = Number(input.selectionEnd);
+    const start = Number.isFinite(rawStart) ? rawStart : raw.length;
+    const end = Number.isFinite(rawEnd) ? rawEnd : start;
+    const removedBeforeStart = (raw.slice(0,start).match(/[hH]/g) || []).length;
+    const removedBeforeEnd = (raw.slice(0,end).match(/[hH]/g) || []).length;
+    const filtered = raw.replace(/[hH]/g,"");
+    input.value = filtered;
+    try{
+      const correctedStart = clamp(start - removedBeforeStart,0,filtered.length);
+      const correctedEnd = clamp(end - removedBeforeEnd,correctedStart,filtered.length);
+      input.setSelectionRange(correctedStart,correctedEnd);
+    }catch{}
+    return true;
+  }
+
+  async function renderValidatedProperNamePanel(item,{showHint=false,showComplete=false}={}){
+    if (!item) return;
+    const renderToken = ++validatedProperNameRenderToken;
+    const parsed = await ensureParsed(item);
+    if (renderToken !== validatedProperNameRenderToken || item !== currentItem()) return;
+
+    const properName = item.formattedProperName || selectedProperNameForParsedItem(item,parsed);
+    item.formattedProperName = properName;
+    const units = buildReviewAudioUnits(properName);
+    const decimalMap = buildReviewDecimalHighlightMap(item.displayValue,units,item.kind);
+    const prefixLength = showComplete
+      ? Array.from(String(item.displayValue)).length
+      : canonicalDecimalHintPrefixLength(el.decimalAnswerInput.value,item.displayValue);
+    const expectedCharacters = Array.from(String(item.displayValue));
+    const targetIndex = showComplete || prefixLength >= expectedCharacters.length ? null : prefixLength;
+
+    const fragment = document.createDocumentFragment();
+    const words = String(properName).trim().split(/\s+/).filter(Boolean);
+    for (let wordIndex=0;wordIndex<words.length;wordIndex++){
+      const wordWrap = document.createElement("span");
+      wordWrap.style.whiteSpace = "nowrap";
+      for (const unit of units.filter(unit => unit.wordIndex === wordIndex)){
+        const span = document.createElement("span");
+        span.className = "practiceHintUnit";
+        span.textContent = unit.text;
+        if (showHint || showComplete){
+          const mappedIndexes = Array.from(decimalMap[unit.index] || []);
+          if (targetIndex != null && mappedIndexes.includes(targetIndex)){
+            span.classList.add("practiceHintTarget");
+          }else if (mappedIndexes.length && mappedIndexes.every(index => index < prefixLength)){
+            span.classList.add("practiceHintCorrect");
+          }
+        }
+        wordWrap.appendChild(span);
+      }
+      fragment.appendChild(wordWrap);
+      if (wordIndex < words.length - 1) fragment.appendChild(document.createTextNode(" "));
+    }
+    el.properNameHintValue.replaceChildren(fragment);
+
+    const showDecimalLine = showHint || showComplete;
+    el.decimalHintRow.classList.toggle("hidden",!showDecimalLine);
+    if (showDecimalLine){
+      const correct = document.createElement("span");
+      correct.className = "practiceHintCorrect";
+      correct.textContent = expectedCharacters.slice(0,prefixLength).join("");
+      const target = document.createElement("span");
+      target.className = "practiceHintTarget";
+      target.textContent = targetIndex == null ? "" : expectedCharacters[targetIndex];
+      el.decimalHintValue.replaceChildren(correct,target);
+    }
+  }
+
+  async function showDecimalHint(item){
+    if (!item || item !== currentItem() || item.stage !== "decimal" || item.completed || item.revealed) return;
+    const generation = ++decimalHintGeneration;
+    if (decimalHintTimer) clearTimeout(decimalHintTimer);
+    decimalHintVisibleItemId = item.id;
+    await renderValidatedProperNamePanel(item,{showHint:true});
+    if (generation !== decimalHintGeneration || item !== currentItem()) return;
+    decimalHintTimer = setTimeout(() => {
+      if (generation !== decimalHintGeneration) return;
+      decimalHintTimer = null;
+      decimalHintVisibleItemId = null;
+      el.decimalHintRow.classList.add("hidden");
+      void renderValidatedProperNamePanel(item);
+    },DECIMAL_HINT_DURATION_MS);
+  }
+
+  async function processDecimalAnswerInput(){
+    const item = currentItem();
+    if (!item || item.stage !== "decimal" || item.completed || item.revealed) return;
+    const requestedHint = stripHintCommandsFromDecimalInput();
+    item.decimalAnswer = el.decimalAnswerInput.value;
+    if (requestedHint){
+      await showDecimalHint(item);
+    }else if (decimalHintVisibleItemId === item.id){
+      await renderValidatedProperNamePanel(item,{showHint:true});
+    }
   }
 
   function getAudioSyllableGapSeconds(){
@@ -1464,6 +1813,8 @@
 
   function stopCurrentAudioPlayback({restoreAudioButton=true}={}){
     stopReviewAudioPlayback();
+    if (practiceAudioLabelTimer) clearTimeout(practiceAudioLabelTimer);
+    practiceAudioLabelTimer = null;
 
     // Cancel audio that is still being prepared or rendered.
     generationToken++;
@@ -1484,12 +1835,46 @@
     }
   }
 
+  function activePracticeInput(){
+    const item = currentItem();
+    if (!state.active || !item || item.completed || item.revealed) return null;
+    return item.stage === "decimal" ? el.decimalAnswerInput : el.firstAnswerInput;
+  }
+
+  function restoreActivePracticeInputFocus(){
+    const input = activePracticeInput();
+    if (!input || input.disabled) return;
+    try{
+      input.focus({preventScroll:true});
+      const length = input.value.length;
+      input.setSelectionRange(length,length);
+    }catch{}
+  }
+
+  function setPracticeAudioButtonState(buttonState){
+    if (!el.audioButton) return;
+    if (buttonState === "preparing"){
+      el.audioButton.textContent = "⏳ Preparing…";
+      el.audioButton.disabled = true;
+    }else if (buttonState === "blocked"){
+      el.audioButton.textContent = "🔊 Tap to play audio";
+      el.audioButton.disabled = false;
+    }else if (buttonState === "playing"){
+      el.audioButton.textContent = "🔊 Playing — tap to replay";
+      el.audioButton.disabled = false;
+    }else{
+      el.audioButton.textContent = "🤖🔊 Replay audio";
+      el.audioButton.disabled = !state.active;
+    }
+  }
+
   async function playCurrentAudio(){
     const item = state.items[state.index];
     if (!state.active || !item) return;
+    stopCurrentAudioPlayback({restoreAudioButton:false});
     const token = ++generationToken;
     try{
-      el.audioButton.disabled = true;
+      setPracticeAudioButtonState("preparing");
       setStatus("Preparing audio…");
 
       const parsed = await ensureParsed(item);
@@ -1508,16 +1893,27 @@
       setStatus("Playing audio…");
       voice.playSamples(rendered.samples,rendered.sampleRate);
       setStatus("Ready.");
+      setPracticeAudioButtonState("playing");
+      const durationMs = Math.max(250,Math.ceil((rendered.samples?.length || 0) / Math.max(1,rendered.sampleRate || 1) * 1000));
+      practiceAudioLabelTimer = setTimeout(() => {
+        practiceAudioLabelTimer = null;
+        if (state.active && token === generationToken) setPracticeAudioButtonState("idle");
+      },durationMs + 80);
+      restoreActivePracticeInputFocus();
       if (typeof window.trackUsage === "function"){
         window.trackUsage("listening-practice-audio-play");
       }
     }catch(err){
       if (token !== generationToken) return;
       console.error(err);
-      setFeedback(`Audio error: ${err?.message ?? String(err)}`,"bad");
-      setStatus("Audio error.");
+      setPracticeAudioButtonState("blocked");
+      setFeedback("Audio could not start automatically. Tap the audio button to try again.","warn");
+      setStatus("Tap to play audio.");
+      restoreActivePracticeInputFocus();
     }finally{
-      if (state.active && token === generationToken) el.audioButton.disabled = false;
+      if (state.active && token === generationToken && el.audioButton.disabled){
+        setPracticeAudioButtonState("idle");
+      }
     }
   }
 
@@ -1676,8 +2072,63 @@
     }, delay);
   }
 
+  function isMobilePracticeViewport(){
+    return window.matchMedia?.("(max-width:720px)")?.matches ?? window.innerWidth <= 720;
+  }
+
+  function clearMobilePracticeViewportVariables(){
+    const root = document.documentElement;
+    for (const name of [
+      "--mobile-viewport-top","--mobile-viewport-left",
+      "--mobile-viewport-width","--mobile-viewport-height"
+    ]) root.style.removeProperty(name);
+  }
+
+  function isMobileCompactPracticeViewActive(){
+    return mobileCompactPracticeActive && isMobilePracticeViewport() && state.active && state.tab === "practice";
+  }
+
+  function enterMobileCompactPracticeView(){
+    if (!isMobilePracticeViewport() || !state.active || state.tab !== "practice") return;
+    mobileCompactPracticeActive = true;
+    syncMobilePracticeViewport();
+  }
+
+  function exitMobileCompactPracticeView({blurInput=false}={}){
+    mobileCompactPracticeActive = false;
+    document.body.classList.remove("mobileListeningSession");
+    clearMobilePracticeViewportVariables();
+    if (blurInput){
+      const active = document.activeElement;
+      if (active === el.firstAnswerInput || active === el.decimalAnswerInput){
+        try{ active.blur(); }catch{}
+      }
+    }
+  }
+
+  function syncMobilePracticeViewport(){
+    const active = isMobileCompactPracticeViewActive();
+    document.body.classList.toggle("mobileListeningSession",active);
+    if (!active){
+      if (!state.active || state.tab !== "practice") mobileCompactPracticeActive = false;
+      clearMobilePracticeViewportVariables();
+      return;
+    }
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    const top = viewport ? Math.max(0,viewport.offsetTop) : 0;
+    const left = viewport ? Math.max(0,viewport.offsetLeft) : 0;
+    const width = viewport ? Math.max(1,viewport.width) : Math.max(1,window.innerWidth);
+    const height = viewport ? Math.max(1,viewport.height) : Math.max(1,window.innerHeight);
+    root.style.setProperty("--mobile-viewport-top",`${top}px`);
+    root.style.setProperty("--mobile-viewport-left",`${left}px`);
+    root.style.setProperty("--mobile-viewport-width",`${width}px`);
+    root.style.setProperty("--mobile-viewport-height",`${height}px`);
+  }
+
   function showTab(tab){
     cancelAutoNext();
+    if (tab !== "practice") exitMobileCompactPracticeView({blurInput:true});
     if (state.tab !== tab) stopCurrentAudioPlayback();
     state.tab = tab;
     document.querySelectorAll(".tabBtn").forEach(btn => btn.setAttribute("aria-selected", btn.dataset.tab === tab ? "true" : "false"));
@@ -1686,6 +2137,7 @@
     if (tab === "examples") renderExamples();
     if (tab === "review") renderCurrentReview();
     if (tab === "history") loadHistory();
+    requestAnimationFrame(syncMobilePracticeViewport);
   }
 
   function itemWasAttempted(item){
@@ -3003,20 +3455,30 @@
     generationToken++;
     cancelAutoNext();
     clearReveal();
+    hideDecimalHint();
+    validatedProperNameRenderToken++;
     el.summaryCard.classList.add("hidden");
     if (!item){
       el.prompt.textContent = "Choose settings and press Start.";
       return;
     }
 
-    el.prompt.textContent = `Question ${state.index + 1}: listen and enter the ${KIND_LABELS[item.kind]}.`;
-    el.audioButton.disabled = false;
-    el.revealButton.disabled = false;
+    el.compactQuestionStatus.textContent = `Question ${state.index + 1} of ${state.items.length} · ${KIND_LABELS[item.kind]}`;
+    setPracticeAudioButtonState("idle");
+    el.revealButton.disabled = item.completed || item.revealed;
+    el.compactRevealButton.disabled = item.completed || item.revealed;
+    el.compactQuitButton.disabled = !state.active;
+    const canAdvance = item.completed || item.revealed;
+    el.compactNextButton.classList.toggle("hidden",!canAdvance);
+    el.compactNextButton.disabled = !canAdvance;
+    el.compactRevealButton.classList.toggle("hidden",canAdvance);
 
+    const firstVisible = item.stage === "first" && !item.completed && !item.revealed;
+    el.firstStage.classList.toggle("hidden",!firstVisible);
     el.firstAnswerInput.value = item.firstAnswer || "";
-    el.firstAnswerInput.disabled = item.stage !== "first" || item.completed || item.revealed;
-    el.firstAnswerInput.classList.toggle("correct",item.firstMatchType === "proper-name" || item.firstMatchType === "value");
-    el.checkFirstButton.disabled = el.firstAnswerInput.disabled;
+    el.firstAnswerInput.disabled = !firstVisible;
+    el.firstAnswerInput.classList.toggle("correct",item.firstMatchType === "proper-name");
+    el.checkFirstButton.disabled = !firstVisible;
 
     const decimalVisible = item.stage === "decimal" && !item.completed && !item.revealed;
     el.decimalStage.classList.toggle("hidden",!decimalVisible);
@@ -3024,22 +3486,38 @@
     el.decimalAnswerInput.disabled = !decimalVisible;
     el.checkDecimalButton.disabled = !decimalVisible;
 
+    const properNameVisible = item.stage === "decimal" || item.completed || item.revealed;
+    el.validatedProperNamePanel.classList.toggle("hidden",!properNameVisible);
+    if (properNameVisible){
+      await renderValidatedProperNamePanel(item,{showComplete:item.completed || item.revealed});
+    }else{
+      el.properNameHintValue.textContent = "";
+      el.decimalHintRow.classList.add("hidden");
+    }
+
     if (item.completed){
+      el.prompt.textContent = `Question ${state.index + 1}: correct.`;
       setFeedback("✓ Correct", "good");
       await showReveal(item);
     }else if (item.revealed){
+      el.prompt.textContent = `Question ${state.index + 1}: answer revealed.`;
       setFeedback("Answer revealed.","warn");
       await showReveal(item);
     }else if (item.stage === "decimal"){
-      setFeedback("✓ Correct proper name. Now enter the decimal value.","good");
+      el.prompt.textContent = "Proper name correct. Enter the decimal value; type h for a hint.";
+      setFeedback("✓ Correct proper name. Now enter the decimal value. Type h for a hint.","good");
     }else{
-      setFeedback("Enter either the decimal value or the nanpa-linja-n proper name.");
+      el.prompt.textContent = `Question ${state.index + 1}: listen and enter the ${state.settings.properNameMode} nanpa-linja-n proper name.`;
+      setFeedback("Enter the nanpa-linja-n proper name. Decimal values are not accepted in this field.");
     }
 
     updateStats();
     updateNavigation();
-    const focusTarget = decimalVisible ? el.decimalAnswerInput : (!el.firstAnswerInput.disabled ? el.firstAnswerInput : null);
-    focusTarget?.focus();
+    requestAnimationFrame(syncMobilePracticeViewport);
+    const focusTarget = decimalVisible ? el.decimalAnswerInput : (firstVisible ? el.firstAnswerInput : null);
+    if (focusTarget){
+      try{ focusTarget.focus({preventScroll:true}); }catch{ focusTarget.focus(); }
+    }
   }
 
   function registerWrongAttempt(item,message){
@@ -3063,28 +3541,28 @@
     item.firstAttemptValues.push(raw);
     try{
       const matchType = await classifyFirstAnswer(item,raw);
-      item.firstAnswer = raw;
-      if (matchType === "value"){
-        item.firstMatchType = "value";
-        completeItem(item);
-        await renderCurrentQuestion();
-        scheduleAutoNext(item);
+      if (matchType === "value-not-accepted"){
+        item.firstAnswer = raw;
+        registerWrongAttempt(item,"The decimal value is not accepted first. Enter the nanpa-linja-n proper name that you hear.");
+        el.revealButton.disabled = false;
+        el.compactRevealButton.disabled = false;
+        el.checkFirstButton.disabled = false;
+        el.firstAnswerInput.focus();
         return;
       }
       if (matchType === "proper-name"){
+        const parsed = await ensureParsed(item);
         item.firstMatchType = "proper-name";
-        if (state.settings.requireDecimalAfterProperName){
-          item.stage = "decimal";
-          await renderCurrentQuestion();
-        }else{
-          completeItem(item);
-          await renderCurrentQuestion();
-          scheduleAutoNext(item);
-        }
+        item.formattedProperName = selectedProperNameForParsedItem(item,parsed);
+        item.firstAnswer = item.formattedProperName;
+        item.stage = "decimal";
+        await renderCurrentQuestion();
         return;
       }
-      registerWrongAttempt(item,"Not quite. Try again, or reveal the answer.");
+      item.firstAnswer = raw;
+      registerWrongAttempt(item,"Not quite. Enter the nanpa-linja-n proper name, or reveal the answer.");
       el.revealButton.disabled = false;
+      el.compactRevealButton.disabled = false;
       el.checkFirstButton.disabled = false;
       el.firstAnswerInput.focus();
     }catch(err){
@@ -3102,6 +3580,7 @@
     item.decimalAttempts++;
     item.decimalAttemptValues.push(raw);
     if (valueAnswerMatches(item,raw)){
+      hideDecimalHint();
       completeItem(item);
       await renderCurrentQuestion();
       scheduleAutoNext(item);
@@ -3177,18 +3656,23 @@
     state.startedAt = new Date().toISOString();
     state.sessionSaved = false;
     state.active = true;
+    mobileCompactPracticeActive = isMobilePracticeViewport();
     el.startButton.disabled = true;
     el.quitButton.disabled = false;
     setSetupDisabled(true);
     showTab("practice");
     setStatus("Session started.");
     await renderCurrentQuestion();
+    enterMobileCompactPracticeView();
+    void playCurrentAudio();
   }
 
   async function finishSession({quit=false}={}){
     if (!state.active) return;
     cancelAutoNext();
     state.active = false;
+    hideDecimalHint();
+    exitMobileCompactPracticeView({blurInput:true});
     stopCurrentAudioPlayback({restoreAudioButton:false});
     el.startButton.disabled = false;
     el.quitButton.disabled = true;
@@ -3198,6 +3682,9 @@
     el.decimalAnswerInput.disabled = true;
     el.checkDecimalButton.disabled = true;
     el.revealButton.disabled = true;
+    el.compactRevealButton.disabled = true;
+    el.compactNextButton.disabled = true;
+    el.compactQuitButton.disabled = true;
     el.previousButton.disabled = true;
     el.nextButton.disabled = true;
     setSetupDisabled(false);
@@ -3231,6 +3718,7 @@
     }
     state.index++;
     await renderCurrentQuestion();
+    void playCurrentAudio();
   }
 
   async function previousQuestion(){
@@ -3238,6 +3726,7 @@
     if (!state.active || state.index <= 0) return;
     state.index--;
     await renderCurrentQuestion();
+    void playCurrentAudio();
   }
 
   async function ensureCartoucheFontLoaded(){
@@ -3373,14 +3862,29 @@
     el.quitButton.addEventListener("click",() => finishSession({quit:true}));
     el.previousButton.addEventListener("click",previousQuestion);
     el.nextButton.addEventListener("click",nextQuestion);
-    el.audioButton.addEventListener("click",playCurrentAudio);
+    el.audioButton.addEventListener("click",async () => {
+      await playCurrentAudio();
+      restoreActivePracticeInputFocus();
+    });
+    el.compactRevealButton.addEventListener("click",revealCurrent);
+    el.compactNextButton.addEventListener("click",nextQuestion);
+    el.compactQuitButton.addEventListener("click",() => finishSession({quit:true}));
     el.checkFirstButton.addEventListener("click",checkFirstAnswer);
     el.checkDecimalButton.addEventListener("click",checkDecimalAnswer);
     el.revealButton.addEventListener("click",revealCurrent);
     document.querySelectorAll(".tabBtn").forEach(btn => btn.addEventListener("click",() => showTab(btn.dataset.tab)));
 
+    for (const button of [el.audioButton,el.compactRevealButton,el.compactNextButton]){
+      button.addEventListener("pointerdown",event => {
+        if (isMobileCompactPracticeViewActive()) event.preventDefault();
+      });
+    }
+    window.addEventListener("resize",syncMobilePracticeViewport);
+    window.visualViewport?.addEventListener("resize",syncMobilePracticeViewport);
+    window.visualViewport?.addEventListener("scroll",syncMobilePracticeViewport);
+
     el.firstAnswerInput.addEventListener("input",() => { const item=currentItem(); if (item) item.firstAnswer=el.firstAnswerInput.value; });
-    el.decimalAnswerInput.addEventListener("input",() => { const item=currentItem(); if (item) item.decimalAnswer=el.decimalAnswerInput.value; });
+    el.decimalAnswerInput.addEventListener("input",() => { void processDecimalAnswerInput(); });
 
     el.firstAnswerInput.addEventListener("keydown",async event => {
       if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.metaKey) return;
