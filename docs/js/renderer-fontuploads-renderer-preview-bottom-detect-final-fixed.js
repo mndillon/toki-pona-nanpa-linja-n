@@ -4269,13 +4269,21 @@ function wireHaloControls() {
       const s = original.replace(/[−‒–—]/g, "-");
 
       const scientificHits = [];
-      const scientificRe = /(^|[^A-Za-z0-9_.])([+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*))(?:\s*[eE]\s*[+-]?\d+|\s*\*\s*10\s*\^\s*[+-]?\d+|\s*\*\s*10\s*[+-]\d+))(?![A-Za-z0-9_.])/g;
+      // Scientific notation uses the same terminal-punctuation rule as ordinary
+      // numeric input. A sentence full stop may immediately follow the exponent,
+      // but a decimal continuation such as "1e8.5" must not be accepted as the
+      // complete scientific value "1e8" plus punctuation. An optional percent
+      // suffix belongs to the scientific expression and is kept in the numeric
+      // cartouche before any following sentence punctuation.
+      const scientificRe = /(^|[^A-Za-z0-9_.])([+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*))(?:\s*[eE]\s*[+-]?\d+|\s*\*\s*10\s*\^\s*[+-]?\d+|\s*\*\s*10\s*[+-]\d+)(?:\s*%)?)(?=$|[^A-Za-z0-9_.]|\.(?!\d))/g;
       let sm;
       while ((sm = scientificRe.exec(s)) !== null) {
         const lead = sm[1] ?? "";
-        const candidate = String(sm[2] ?? "").trim();
+        const rawCandidate = String(sm[2] ?? "");
+        const candidate = rawCandidate.trim();
         if (!candidate) continue;
-        const start = (sm.index | 0) + String(lead).length;
+        const candidateOffset = rawCandidate.indexOf(candidate);
+        const start = (sm.index | 0) + String(lead).length + Math.max(0, candidateOffset);
         const end = start + candidate.length;
         try {
           const caps = decimalStringToCaps(candidate, {
@@ -4503,11 +4511,19 @@ function findNanpaLinjanTpPhraseSequences(text) {
       let m;
       while ((m = reTok.exec(s)) !== null) {
         const raw = m[0];
+        // Only a terminal punctuation suffix may be attached to a phrase word.
+        // Keep that punctuation outside the numeric hit so it is rendered and
+        // spoken through the normal punctuation path. Internal punctuation does
+        // not silently normalize into a valid nanpa-linja-n phrase word.
+        const wordMatch = /^([A-Za-z]+)([)\]},.;:!?]*)$/.exec(raw);
+        const wordRaw = wordMatch ? wordMatch[1] : "";
         tokens.push({
           raw,
-          norm: normalizeTpWord(raw),
+          norm: wordRaw.toLowerCase(),
           start: m.index,
-          end: (m.index + raw.length)
+          wordEnd: m.index + wordRaw.length,
+          end: (m.index + raw.length),
+          trailingPunctuation: wordMatch ? wordMatch[2] : ""
         });
       }
       if (tokens.length < 3) return [];
@@ -4529,8 +4545,12 @@ function findNanpaLinjanTpPhraseSequences(text) {
           const words = [];
 
           for (let k = i; k <= j; k++) {
-            const w = tokens[k].norm;
+            const token = tokens[k];
+            const w = token.norm;
             if (!w) break;
+            // Attached punctuation terminates the phrase. It is allowed only on
+            // the final closing "nanpa" token, where it remains outside the hit.
+            if (k < j && token.trailingPunctuation) break;
             words.push(w);
           }
 
@@ -4546,7 +4566,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
           hits.push({
             kind: "tpPhrase",
             index: tokens[i].start,
-            end: tokens[bestJ].end,
+            end: tokens[bestJ].wordEnd,
             words: bestWords
           });
           i = bestJ;
