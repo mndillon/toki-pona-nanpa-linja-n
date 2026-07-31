@@ -1131,7 +1131,14 @@ const SitelenRenderer = (() => {
         return;
       }
     }
-    const tokenRe = /(?:\{([^{}]+)\}\s*)?([A-Za-z][A-Za-z0-9_]*)(?:\s*\(([^()]+)\))|([A-Za-z][A-Za-z0-9_]*)\s*([&+-])\s*([A-Za-z][A-Za-z0-9_]*)|\{([^{}]+)\}\s*([A-Za-z][A-Za-z0-9_]*)/g;
+    // Modern SP ASCII syntax is whitespace-sensitive here:
+    //   head(inner words)  extended/long glyph
+    //   left+right         nested compound
+    //   left-right         stacked compound (ASCII U+002D only)
+    //   left&right         generic/font-defined compound
+    // Any whitespace before '(' or around a compound operator prevents the
+    // construction from being recognized.
+    const tokenRe = /(?:\{([^{}]+)\}\s*)?([A-Za-z][A-Za-z0-9_]*)\(([^()]+)\)|([A-Za-z][A-Za-z0-9_]*)([&+-])([A-Za-z][A-Za-z0-9_]*)|\{([^{}]+)\}\s*([A-Za-z][A-Za-z0-9_]*)/g;
     let pos = 0;
     let m;
     while ((m = tokenRe.exec(s)) !== null) {
@@ -6120,7 +6127,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const s = String(text ?? "");
       nanpaDebugEmit("render-tp-words:start", { text: s, fontPx, mode, sourceBaseStart, sourceKind, sourceSegmentIndex, mixedStyle });
       const rawTokens = [];
-      const tokenRe = /\S+/g;
+      // Non-ASCII dash/minus lookalikes are ordinary word separators, never
+      // compound operators. Numeric expressions are recognized before this
+      // ordinary-word fallback, so their existing Unicode-minus handling is
+      // unaffected. ASCII U+002D remains available to the SSK compound parser.
+      const tokenRe = /[^\s\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]+/g;
       let tm;
       while ((tm = tokenRe.exec(s)) !== null) {
         rawTokens.push({ text: tm[0], start: tm.index, end: tm.index + tm[0].length });
