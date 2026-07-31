@@ -554,15 +554,39 @@ nanpa #~WI.
         </fieldset>
       </div>
 
-      <div class="help">&nbsp;</div>
-      <img class="portrait1" src="./images/From_Decimal_Number_To_Cartouche.png"  />
-      <div class="help">&nbsp;</div>
+      <details id="appExamplesPanel" class="help" style="margin-top:10px;">
+        <summary style="cursor:pointer; font-weight:700;">Examples</summary>
+        <div class="help">&nbsp;</div>
+        <img class="portrait1" src="./images/From_Decimal_Number_To_Cartouche.png"  />
+        <div class="help">&nbsp;</div>
 
-      <div class="help">&nbsp;</div>
-      <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=2" />
-      <div class="help">&nbsp;</div>
+        <div class="help">&nbsp;</div>
+        <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=2" />
+        <div class="help">&nbsp;</div>
+      </details>
 
- 
+      <script>
+        (() => {
+          const panel = document.getElementById("appExamplesPanel");
+          if (!panel) return;
+
+          const storageKey = "textToSitelen.examplesPanelOpen";
+
+          try {
+            panel.open = localStorage.getItem(storageKey) === "true";
+          } catch (_) {
+            panel.open = false;
+          }
+
+          panel.addEventListener("toggle", () => {
+            try {
+              localStorage.setItem(storageKey, String(panel.open));
+            } catch (_) {
+              // Keep the panel functional when localStorage is unavailable.
+            }
+          });
+        })();
+      </script>
 
 
       <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
