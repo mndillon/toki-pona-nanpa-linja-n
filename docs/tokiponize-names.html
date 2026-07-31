@@ -397,8 +397,9 @@ James Bond 007
             <div class="accordionBody">
               <div class="help" style="margin-bottom: 8px;">
                 Export all your settings and overrides to a single JSON file, or import a previously exported config.
-                To edit your config: export it, edit the JSON file, then import it back.
-                Includes: UI options, name overrides, IPA overrides, and mapping policy.
+                To edit your config: change values only inside <span class="mono">editableSettings_CAN_EDIT</span>;
+                do not change <span class="mono">_internalBaseline_DO_NOT_EDIT</span>.
+                Legacy version-1 config files remain supported.
               </div>
               <div class="row">
                 <button id="btnExportConfig" class="btnBi" type="button" title="Export all settings and overrides to a JSON file">
@@ -3176,7 +3177,8 @@ function joinTpNameParts(parts, boundary, opts){
   const OVERRIDE_DB_STORE = "kv";
   const OVERRIDE_DB_VERSION = 1;
   const OVERRIDE_DB_KEY = "userOverrides.v1";
-  const POLICY_DB_KEY = "mappingPolicy.v3";
+  const POLICY_DB_KEY = "mappingPolicy.patch.v2";
+  const LEGACY_POLICY_DB_KEY = "mappingPolicy.v3";
 
   function _openOverridesDb(){
     return new Promise((resolve, reject) => {
@@ -3420,22 +3422,41 @@ function joinTpNameParts(parts, boundary, opts){
 
   async function loadUserMappingPolicyFromDb(){
     try{
-      const saved = await _dbGet(POLICY_DB_KEY);
-      const hasContent = saved && typeof saved === "object" && Object.keys(saved).some(k => k !== "version");
-      if (!hasContent){ userMappingPolicy = null; }
-      else {
-        const savedVersion = Number(saved.version) || 0;
-        if (savedVersion < 3){
-          // Older saved policy — merge user choices over v3 base and re-save as v3.
-          // deepMerge(base, userPolicy) means user's explicit entries win,
-          // new v3 symbols fall through to the base defaults automatically.
-          userMappingPolicy = mergeIntoV3Base(saved);
-          // Re-save as v3 so this migration only runs once.
-          try{ await _dbPut(POLICY_DB_KEY, userMappingPolicy || {}); } catch {}
-        } else {
-          userMappingPolicy = normalizeMappingPolicy(saved);
+      let saved = await _dbGet(POLICY_DB_KEY);
+      let hasContent = saved && typeof saved === "object" && Object.keys(saved).some(k => k !== "version");
+
+      if (!hasContent){
+        // One-time migration from the legacy key, which could contain a full
+        // effective policy rather than a true user-only patch.
+        const legacySaved = await _dbGet(LEGACY_POLICY_DB_KEY);
+        const legacyHasContent = legacySaved && typeof legacySaved === "object" &&
+          Object.keys(legacySaved).some(k => k !== "version");
+
+        if (legacyHasContent){
+          const snapshotStrict = String(LEGACY_V1_BASELINE_SNAPSHOT.ui?.strict ?? "on");
+          const currentStrict = _isStrictModeUiOn() ? "on" : "off";
+
+          if (currentStrict === snapshotStrict){
+            saved = _policyCustomPatchAgainstBaseline(
+              LEGACY_V1_BASELINE_SNAPSHOT.mappingPolicy || {},
+              legacySaved
+            );
+          } else {
+            // No exact relaxed legacy baseline was supplied. Preserve the
+            // stored values conservatively as user-owned.
+            saved = normalizeMappingPolicy(legacySaved) || {};
+          }
+
+          hasContent = saved && Object.keys(saved).some(k => k !== "version");
+          try{
+            if (hasContent) await _dbPut(POLICY_DB_KEY, saved);
+            else await _dbDel(POLICY_DB_KEY);
+            await _dbDel(LEGACY_POLICY_DB_KEY);
+          } catch {}
         }
       }
+
+      userMappingPolicy = hasContent ? (normalizeMappingPolicy(saved) || null) : null;
       recomputeEffectiveMappingPolicy();
       updatePolicyPill();
     } catch (e){
@@ -3447,8 +3468,16 @@ function joinTpNameParts(parts, boundary, opts){
 
   async function saveUserMappingPolicyToDb(){
     try{
-      await _dbPut(POLICY_DB_KEY, userMappingPolicy || {});
+      if (userMappingPolicy) await _dbPut(POLICY_DB_KEY, userMappingPolicy);
+      else await _dbDel(POLICY_DB_KEY);
+      // Remove the old full-policy key after any successful new-format save.
+      await _dbDel(LEGACY_POLICY_DB_KEY);
     } catch {}
+  }
+
+  async function deleteSavedUserMappingPolicy(){
+    try{ await _dbDel(POLICY_DB_KEY); } catch {}
+    try{ await _dbDel(LEGACY_POLICY_DB_KEY); } catch {}
   }
 
   function openPolicyModal(){
@@ -3496,7 +3525,7 @@ function joinTpNameParts(parts, boundary, opts){
         updatePolicyPill();
 
         // HARD clear persisted policy so only defaults can be used after reload
-        try{ await _dbDel(POLICY_DB_KEY); } catch {}
+        try{ await deleteSavedUserMappingPolicy(); } catch {}
 
         closePolicyModal();
 
@@ -3525,7 +3554,8 @@ function joinTpNameParts(parts, boundary, opts){
         }
 
         const norm = normalizeMappingPolicy(parsed) || {};
-        userMappingPolicy = norm;
+        const patch = _policyPatchFromEffective(BASE_MAPPING_POLICY, norm);
+        userMappingPolicy = Object.keys(patch).length ? patch : null;
         recomputeEffectiveMappingPolicy();
         updatePolicyPill();
         await saveUserMappingPolicyToDb();
@@ -3560,16 +3590,18 @@ function joinTpNameParts(parts, boundary, opts){
             throw new Error("not object");
           }
           const importedVersion = Number(parsed.version) || 0;
+          let importedEffective;
           if (importedVersion < 3){
-            // Older policy file — merge user choices over v3 base.
-            // User's explicit entries win; new v3 symbols get base defaults.
-            userMappingPolicy = mergeIntoV3Base(parsed) || {};
-            const msg = `Imported policy (v${importedVersion || "?"}) was merged with the v3 symbol map. ` +
-              `Your choices are preserved; new symbols added in v3 have been set to their defaults.`;
+            // Older policy file — merge user choices over the current base.
+            importedEffective = deepMergePlainObjects(BASE_MAPPING_POLICY, mergeIntoV3Base(parsed) || {});
+            const msg = `Imported policy (v${importedVersion || "?"}) was merged with the current symbol map. ` +
+              `Your choices are preserved; newly available symbols use their defaults.`;
             alert(msg);
           } else {
-            userMappingPolicy = normalizeMappingPolicy(parsed) || {};
+            importedEffective = normalizeMappingPolicy(parsed) || {};
           }
+          const patch = _policyPatchFromEffective(BASE_MAPPING_POLICY, importedEffective);
+          userMappingPolicy = Object.keys(patch).length ? patch : null;
           recomputeEffectiveMappingPolicy();
           updatePolicyPill();
           await saveUserMappingPolicyToDb();
@@ -3589,7 +3621,7 @@ function joinTpNameParts(parts, boundary, opts){
         recomputeEffectiveMappingPolicy();
         updatePolicyPill();
 
-        try{ await _dbDel(POLICY_DB_KEY); } catch {}
+        try{ await deleteSavedUserMappingPolicy(); } catch {}
 
         const tb = $("tbody");
         if (tb && tb.children && tb.children.length) runTokiponize();
@@ -4345,20 +4377,832 @@ function joinTpNameParts(parts, boundary, opts){
     userMappingPolicy = null;
     recomputeEffectiveMappingPolicy();
     updatePolicyPill();
-    try{ _dbDel(POLICY_DB_KEY); } catch {}
+    try{ deleteSavedUserMappingPolicy(); } catch {}
     closePolicyModal();
     const tb = $("tbody");
     if (tb && tb.children.length) runTokiponize();
   }
 
   // ─── Config export / import ──────────────────────────────────────────────
-  // Export: bundles all user-customisable state into one JSON file with a
-  //   type field so the importer can unambiguously identify it.
-  // Import: strict — type must be "tokiponize-config" and all four keys
-  //   (ui, overrides, ipaOverrides, mappingPolicy) must be present.
-  //   If not, the user is told to export first, edit, then re-import.
+  // Schema v2 deliberately separates the protected historical baseline from
+  // the complete effective settings that the user may edit.  The baseline lets
+  // a later importer distinguish unchanged old defaults from genuine user
+  // customisations and safely adopt newer defaults.
+  const CONFIG_SCHEMA_VERSION = 2;
+  const CURRENT_DEFAULTS_VERSION = 2;
+  const LEGACY_CONFIG_VERSION = 1;
 
-  function exportConfig(){
+  // Exact snapshot supplied with this build for importing legacy schema-v1
+  // files.  Its `overrides` and strict-mode `mappingPolicy` are the old default
+  // baseline.  Its `ipaOverrides` are NOT defaults; IPA overrides are always
+  // imported as user data from the file being imported.
+  const LEGACY_V1_BASELINE_SNAPSHOT = Object.freeze({
+  "type": "tokiponize-config",
+  "version": 1,
+  "ui": {
+    "outputStyle": "plain",
+    "boundary": "preserve",
+    "strict": "on",
+    "keepFinalCons": false
+  },
+  "overrides": {
+    "americas": "amelika",
+    "antarctica": "antasika",
+    "africa": "apika",
+    "asia": "asija",
+    "europe": "elopa",
+    "oceania": "osejanija",
+    "angola": "ankola",
+    "eritrea": "eliteja",
+    "ethiopia": "isijopija",
+    "cameroon": "kamelun",
+    "ghana": "kana",
+    "gambia": "kanpija",
+    "gabon": "kapon",
+    "kenya": "kenja",
+    "guinea": "kine",
+    "equatorial guinea": "kinejekatolija",
+    "guinea bissau": "kinepisa",
+    "comoros": "komo",
+    "congo": "kongo",
+    "cote d'ivoire": "kosiwa",
+    "liberia": "lapewija",
+    "lesotho": "lesoto",
+    "libya": "lipija",
+    "rwanda": "luwanta",
+    "madagascar": "malakasi",
+    "malawi": "malawi",
+    "mali": "mali",
+    "morocco": "malipe",
+    "egypt": "masu",
+    "mozambique": "mosanpi",
+    "mauritius": "mowisi",
+    "mauritania": "mulitanija",
+    "namibia": "namipija",
+    "nigeria": "naselija",
+    "niger": "nise",
+    "benin": "penen",
+    "botswana": "posuwana",
+    "burkina faso": "pukinapaso",
+    "zambia": "sanpija",
+    "central african republic": "santapiken",
+    "algeria": "sasali",
+    "chad": "sate",
+    "swaziland": "sawasi",
+    "senegal": "seneka",
+    "south africa": "setapika",
+    "sierra leone": "sijelalijon",
+    "zimbabwe": "singapuwe",
+    "djibouti": "sipusi",
+    "somalia": "somalija",
+    "sudan": "sutan",
+    "tanzania": "tansanija",
+    "togo": "toko",
+    "tunisia": "tunisi",
+    "uganda": "ukanta",
+    "argentina": "alensina",
+    "haiti": "awisi",
+    "ecuador": "ekato",
+    "greenland": "kalalinuna",
+    "canada": "kanata",
+    "guatemala": "katemala",
+    "grenada": "kenata",
+    "costa rica": "kosalika",
+    "cuba": "kupa",
+    "mexico": "mesiko",
+    "united states": "mewika",
+    "united states of america": "mewika",
+    "usa": "mewika",
+    "honduras": "ontula",
+    "paraguay": "palakawi",
+    "panama": "panama",
+    "barbados": "papeto",
+    "brazil": "pasila",
+    "bahamas": "pawama",
+    "peru": "pelu",
+    "bermuda": "pemuta",
+    "venezuela": "penesuwela",
+    "jamaica": "sameka",
+    "chile": "sile",
+    "trinidad and tobago": "sinita",
+    "dominican republic": "tominika",
+    "uruguay": "ulukawi",
+    "armenia": "aja",
+    "afghanistan": "akanisan",
+    "south korea": "anku",
+    "republic of korea": "anku",
+    "iraq": "ilakija",
+    "iran": "ilan",
+    "indonesia": "intonesija",
+    "israel": "isale",
+    "yemen": "jamanija",
+    "cambodia": "kanpusi",
+    "georgia": "katelo",
+    "kurdistan": "kuli",
+    "gujarat": "kusala",
+    "kuwait": "kuwasi",
+    "sri lanka": "lanka",
+    "russia": "losi",
+    "lebanon": "lunpan",
+    "malaysia": "malasija",
+    "myanmar": "mijama",
+    "japan": "nijon",
+    "pakistan": "pakisan",
+    "bahrain": "palani",
+    "india": "palata",
+    "bangladesh": "panla",
+    "philippines": "pilipina",
+    "palestine": "pilisin",
+    "tibet": "po",
+    "saudi arabia": "sawusi",
+    "china": "sonko",
+    "people's republic of china": "sonko",
+    "syria": "sulija",
+    "thailand": "tawi",
+    "turkey": "tuki",
+    "oman": "uman",
+    "jordan": "utun",
+    "vietnam": "wije",
+    "ireland": "alan",
+    "andorra": "antola",
+    "greece": "elena",
+    "spain": "epanja",
+    "austria": "esalasi",
+    "estonia": "esi",
+    "basque country": "esuka",
+    "england": "inli",
+    "iceland": "isilan",
+    "italy": "italija",
+    "united kingdom": "juke",
+    "uk": "juke",
+    "france": "kanse",
+    "catalan countries": "katala",
+    "wales": "kinla",
+    "cyprus": "kiposi",
+    "latvia": "lawi",
+    "lithuania": "lijatuwa",
+    "liechtenstein": "lisensan",
+    "romania": "lomani",
+    "croatia": "lowasi",
+    "slovakia": "lowenki",
+    "slovenia": "lowensina",
+    "luxembourg": "lusepu",
+    "macedonia": "maketonija",
+    "hungary": "mosijo",
+    "moldova": "motowa",
+    "netherlands": "netelan",
+    "norway": "nosiki",
+    "belarus": "pelalusi",
+    "belgium": "pesije",
+    "brittany": "peson",
+    "bulgaria": "pokasi",
+    "bosnia": "posan",
+    "poland": "posuka",
+    "portugal": "potuke",
+    "san marino": "samalino",
+    "czech republic": "seki",
+    "czechia": "seki",
+    "albania": "sipe",
+    "serbia": "sopisi",
+    "scotland": "sukosi",
+    "finland": "sumi",
+    "switzerland": "suwasi",
+    "denmark": "tansi",
+    "germany": "tosi",
+    "ukraine": "ukawina",
+    "vatican": "wasikano",
+    "sweden": "wensa",
+    "kiribati": "kilipasi",
+    "new zealand": "nusilan",
+    "australia": "oselija",
+    "papua new guinea": "papuwanijukini",
+    "fiji": "pisi",
+    "samoa": "samowa",
+    "tonga": "tona",
+    "tuvalu": "tuwalu",
+    "vanuatu": "wanuwatu",
+    "afrikaans": "apikan",
+    "amharic": "amali",
+    "arabic": "alapi",
+    "bengali": "panla",
+    "bantu languages": "antu",
+    "bosnian": "posan",
+    "bugis": "uki",
+    "cebuano": "supo",
+    "german": "tosi",
+    "greek (especially modern)": "elin",
+    "english": "inli",
+    "english (uk)": "inli pi ma juke",
+    "english (us)": "inli pi ma mewika",
+    "esperanto": "epelanto",
+    "spanish": "epanjo",
+    "eskayan": "ekaja",
+    "basque": "esuka",
+    "persian": "pasi",
+    "finnish": "sumi",
+    "filipino": "takalo",
+    "french": "kanse",
+    "french (canada)": "kanse pi ma kanata",
+    "frisian (especially west)": "lise",
+    "gujarati": "kusalasi",
+    "hebrew (especially modern)": "iwi",
+    "hindi": "insi",
+    "croatian": "kowata",
+    "hungarian": "maja",
+    "interlingua": "intelinwa",
+    "indonesian": "intonesija",
+    "ido": "ito",
+    "interslavic": "mesusowijan",
+    "italian": "italija",
+    "japanese": "nijon",
+    "lojban": "losupan",
+    "javanese": "sowa",
+    "khmer": "kame",
+    "korean": "anku",
+    "korean (north korean variety)": "soson",
+    "korean (south korean variety)": "anku",
+    "cornish": "kenuwe",
+    "latin": "lasina",
+    "l adan": "latan",
+    "elefen": "elepen",
+    "maasai": "ma",
+    "m ori": "majoli",
+    "marathi": "malasi",
+    "malay": "melaju",
+    "myanmar (burmese)": "mijama",
+    "min nan (southern min) chinese": "pan pi ma seli",
+    "dutch": "netelan",
+    "norwegian (nynorsk)": "nosiki sin",
+    "norwegian": "nosiki",
+    "norwegian (bokm l)": "nosiki lipu",
+    "polish": "posuka",
+    "portuguese": "potuke",
+    "portuguese (brazil)": "potuke pi ma pasiju",
+    "quenya": "kuwenja",
+    "russian": "lusi",
+    "sindarin": "sinlen",
+    "somali": "somali",
+    "serbian": "sopisi",
+    "swazi or swati": "suwasi",
+    "swedish": "sensa",
+    "swahili": "suwawili",
+    "tamil": "tami",
+    "telugu": "teluku",
+    "thai": "tawi",
+    "tagalog": "takalo",
+    "klingon": "sinan",
+    "tswana": "suwana",
+    "toki pona": "pona",
+    "turkish": "tuki",
+    "tsonga": "sonka",
+    "ukrainian": "ukawina",
+    "urdu": "utu",
+    "venda": "wenta",
+    "vietnamese": "wije",
+    "volap k": "olapu",
+    "wu chinese": "u",
+    "xhosa": "kosa",
+    "yoruba": "jolupa",
+    "yue chinese": "ju",
+    "cantonese": "konton",
+    "b laybalan": "palapalan",
+    "chinese": "sonko",
+    "simplified chinese": "sonko pi linja lili",
+    "simplified mandarin chinese": "an pi linja lili",
+    "traditional chinese": "sonko pi linja mute",
+    "traditional mandarin chinese": "an pi linja mute",
+    "chinese, mandarin": "sonko kulupu",
+    "zulu": "sulu",
+    "multiple languages": "mute",
+    "no linguistic content": "ala",
+    "hausa": "awasa",
+    "haitian creole": "awisi",
+    "greek": "elena",
+    "estonian": "esi",
+    "inuit": "inu",
+    "igbo": "ipo",
+    "icelandic": "isilan",
+    "hebrew": "iwisi",
+    "scottish gaelic": "kalike",
+    "irish": "kalika",
+    "welsh": "kinla",
+    "romanian": "lomani",
+    "jamaican patois": "sameka",
+    "breton": "peson",
+    "bulgarian": "pokasi",
+    "czech": "seki",
+    "tsez": "sesi",
+    "albanian": "sikipe",
+    "danish": "tansi",
+    "tok pisin": "topisin",
+    "sign language": "luka",
+    "french sign language": "luka kanse",
+    "quebec sign language": "luka kepeka",
+    "american sign language": "luka mewika",
+    "australian sign language": "luka oselija",
+    "british sign language": "luka piten",
+    "chinese sign language": "luka sonko",
+    "german sign language": "luka tosi",
+    "manually coded english": "inli luka",
+    "signed toki pona": "pona luka"
+  },
+  "ipaOverrides": {
+    "jean": "dʒan"
+  },
+  "mappingPolicy": {
+    "version": 4,
+    "stripChars": "ˈˌ'ː.!,?",
+    "diphthongs": [
+      [
+        "oʊ",
+        "o"
+      ],
+      [
+        "aɪ",
+        "a"
+      ],
+      [
+        "aʊ",
+        "a"
+      ],
+      [
+        "eɪ",
+        "e"
+      ],
+      [
+        "ɔɪ",
+        "o"
+      ],
+      [
+        "ɑ̃",
+        "a"
+      ],
+      [
+        "ɛ̃",
+        "e"
+      ],
+      [
+        "œ̃",
+        "o"
+      ],
+      [
+        "ɔ̃",
+        "o"
+      ],
+      [
+        "ã",
+        "a"
+      ],
+      [
+        "ẽ",
+        "e"
+      ],
+      [
+        "õ",
+        "o"
+      ],
+      [
+        "i ə",
+        "i j a"
+      ],
+      [
+        "iə",
+        "i j a"
+      ],
+      [
+        "ɪ æ",
+        "i j a"
+      ],
+      [
+        "ɪæ",
+        "i j a"
+      ],
+      [
+        "ɑ̃",
+        "a"
+      ],
+      [
+        "ɛ̃",
+        "e"
+      ],
+      [
+        "œ̃",
+        "o"
+      ],
+      [
+        "ɔ̃",
+        "o"
+      ],
+      [
+        "ã",
+        "a"
+      ],
+      [
+        "ẽ",
+        "e"
+      ],
+      [
+        "õ",
+        "o"
+      ]
+    ],
+    "symbolMap": {
+      "a": "a",
+      "e": "e",
+      "i": "i",
+      "o": "o",
+      "u": "u",
+      "æ": "a",
+      "ɑ": "a",
+      "ɐ": "a",
+      "ʌ": "a",
+      "ã": "a",
+      "ɛ": "e",
+      "ə": "a",
+      "ɜ": "e",
+      "ɝ": "e",
+      "ɚ": "e",
+      "ẽ": "e",
+      "ø": "o",
+      "œ": "o",
+      "œ̃": "o",
+      "ʏ": "j",
+      "ɯ": "u",
+      "ɨ": "i",
+      "ʉ": "u",
+      "ɪ": "i",
+      "ɔ": "o",
+      "ɒ": "o",
+      "ɵ": "o",
+      "ʊ": "u",
+      "õ": "o",
+      "ũ": "u",
+      "á": "a",
+      "é": "e",
+      "í": "i",
+      "ó": "o",
+      "ú": "u",
+      "p": "p",
+      "b": "p",
+      "t": "t",
+      "d": "t",
+      "k": "k",
+      "ɡ": "k",
+      "g": "k",
+      "q": "k",
+      "ʈ": "t",
+      "ɖ": "t",
+      "ʔ": "",
+      "m": "m",
+      "n": "n",
+      "ŋ": "n",
+      "ɲ": "n",
+      "ɳ": "n",
+      "ɱ": "m",
+      "f": "p",
+      "v": "w",
+      "θ": "s",
+      "ð": "s",
+      "s": "s",
+      "z": "s",
+      "ʃ": "s",
+      "ʒ": "s",
+      "ç": "s",
+      "ʝ": "j",
+      "x": "k",
+      "ɣ": "k",
+      "χ": "k",
+      "ʁ": "l",
+      "ħ": "",
+      "ʕ": "",
+      "h": "",
+      "ɦ": "",
+      "ɬ": "s",
+      "ɮ": "s",
+      "ɸ": "p",
+      "β": "w",
+      "tʃ": "s",
+      "dʒ": "s",
+      "ts": "s",
+      "dz": "s",
+      "tɕ": "s",
+      "dʑ": "s",
+      "ʈʂ": "s",
+      "ɖʐ": "s",
+      "pf": "p",
+      "bv": "w",
+      "l": "l",
+      "ɫ": "l",
+      "ɭ": "l",
+      "r": "w",
+      "ɹ": "w",
+      "ɾ": "w",
+      "ɻ": "w",
+      "ʀ": "w",
+      "w": "w",
+      "j": "j",
+      "ɥ": "w",
+      "ʋ": "w",
+      "ʂ": "s",
+      "ʐ": "s",
+      "ʎ": "l"
+    },
+    "asciiLetterMap": {
+      "a": "a",
+      "e": "e",
+      "i": "i",
+      "o": "o",
+      "u": "u",
+      "b": "p",
+      "d": "t",
+      "g": "k",
+      "c": "k",
+      "q": "k",
+      "p": "p",
+      "t": "t",
+      "k": "k",
+      "m": "m",
+      "n": "n",
+      "f": "p",
+      "v": "w",
+      "s": "s",
+      "z": "s",
+      "r": "w",
+      "l": "l",
+      "w": "w",
+      "y": "j",
+      "j": "j",
+      "x": "k s",
+      "h": ""
+    },
+    "finalEpenthesis": {
+      "s": "",
+      "t": "o",
+      "k": "u",
+      "p": "u"
+    }
+  }
+});
+
+  function _isPlainConfigObject(value){
+    return !!value && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function _cloneConfigValue(value){
+    if (value === undefined) return undefined;
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function _deepEqualConfigValue(a, b){
+    if (Object.is(a, b)) return true;
+    if (Array.isArray(a) || Array.isArray(b)){
+      if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++){
+        if (!_deepEqualConfigValue(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    if (_isPlainConfigObject(a) || _isPlainConfigObject(b)){
+      if (!_isPlainConfigObject(a) || !_isPlainConfigObject(b)) return false;
+      const ak = Object.keys(a);
+      const bk = Object.keys(b);
+      if (ak.length !== bk.length) return false;
+      for (const key of ak){
+        if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+        if (!_deepEqualConfigValue(a[key], b[key])) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function _stableConfigStringify(value){
+    if (Array.isArray(value)){
+      return "[" + value.map(_stableConfigStringify).join(",") + "]";
+    }
+    if (_isPlainConfigObject(value)){
+      return "{" + Object.keys(value).sort().map(key =>
+        JSON.stringify(key) + ":" + _stableConfigStringify(value[key])
+      ).join(",") + "}";
+    }
+    return JSON.stringify(value);
+  }
+
+  // FNV-1a is used only to detect accidental edits to the protected baseline.
+  // It is not a security or authentication mechanism.
+  function _configChecksum(value){
+    const text = _stableConfigStringify(value);
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++){
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return "fnv1a32:" + hash.toString(16).padStart(8, "0");
+  }
+
+  function _baselineChecksumPayload(section){
+    return {
+      defaultsVersion: Number(section?.defaultsVersion) || 0,
+      nameOverrides: _cloneConfigValue(section?.nameOverrides || {}),
+      mappingPolicy: _cloneConfigValue(section?.mappingPolicy || {}),
+    };
+  }
+
+  function _calculateBaselineChecksum(section){
+    return _configChecksum(_baselineChecksumPayload(section));
+  }
+
+  function _basePolicyForUi(ui){
+    return String(ui?.strict ?? "on") === "on"
+      ? DEFAULT_MAPPING_POLICY_SONJA
+      : DEFAULT_MAPPING_POLICY_PRACTICAL;
+  }
+
+  function _currentNameOverrideDefaults(){
+    // Config files use the same normalised soft-key representation as the
+    // effective override set shown by the existing exporter.
+    return Object.assign({}, DEFAULT_OVERRIDES_INDEX.soft || {});
+  }
+
+  function _currentBaselineForUi(ui){
+    return {
+      defaultsVersion: CURRENT_DEFAULTS_VERSION,
+      nameOverrides: _currentNameOverrideDefaults(),
+      mappingPolicy: _cloneConfigValue(_basePolicyForUi(ui)),
+    };
+  }
+
+  // Three-way merge:
+  //   oldDefault     = default recorded by the imported file
+  //   importedValue  = complete effective value the user exported/edited
+  //   currentDefault = default in this build
+  // An imported leaf equal to its old default adopts the current default.
+  // A differing leaf is preserved as a user customisation.  Current-only keys
+  // are added automatically.  Arrays are preserved whole once customised.
+  function _threeWayMergeConfigValue(oldDefault, importedValue, currentDefault){
+    if (_deepEqualConfigValue(importedValue, oldDefault)){
+      return _cloneConfigValue(currentDefault);
+    }
+
+    if (_isPlainConfigObject(importedValue)){
+      const oldObj = _isPlainConfigObject(oldDefault) ? oldDefault : {};
+      const currentObj = _isPlainConfigObject(currentDefault) ? currentDefault : {};
+      const result = {};
+      const keys = new Set([
+        ...Object.keys(oldObj),
+        ...Object.keys(importedValue),
+        ...Object.keys(currentObj),
+      ]);
+
+      for (const key of keys){
+        const importedHas = Object.prototype.hasOwnProperty.call(importedValue, key);
+        const oldHas = Object.prototype.hasOwnProperty.call(oldObj, key);
+        const currentHas = Object.prototype.hasOwnProperty.call(currentObj, key);
+
+        if (!importedHas){
+          // A missing value in a complete export means inherit the current
+          // default; built-in defaults cannot be deleted by omission.
+          if (currentHas) result[key] = _cloneConfigValue(currentObj[key]);
+          continue;
+        }
+
+        if (!oldHas){
+          // Not in the old baseline: this is a user-added value.
+          result[key] = _cloneConfigValue(importedValue[key]);
+          continue;
+        }
+
+        if (!currentHas){
+          // A removed default is dropped only when the imported value was still
+          // the old default.  A changed user value is preserved.
+          if (!_deepEqualConfigValue(importedValue[key], oldObj[key])){
+            result[key] = _cloneConfigValue(importedValue[key]);
+          }
+          continue;
+        }
+
+        result[key] = _threeWayMergeConfigValue(
+          oldObj[key],
+          importedValue[key],
+          currentObj[key]
+        );
+      }
+      return result;
+    }
+
+    return _cloneConfigValue(importedValue);
+  }
+
+  // Used only when the legacy snapshot does not contain the selected policy
+  // mode.  Existing imported values win; newly introduced current keys fill in.
+  function _overlayImportedOnCurrent(importedValue, currentDefault){
+    if (!_isPlainConfigObject(importedValue) || !_isPlainConfigObject(currentDefault)){
+      return importedValue === undefined
+        ? _cloneConfigValue(currentDefault)
+        : _cloneConfigValue(importedValue);
+    }
+    const result = _cloneConfigValue(currentDefault);
+    for (const [key, value] of Object.entries(importedValue)){
+      if (_isPlainConfigObject(value) && _isPlainConfigObject(result[key])){
+        result[key] = _overlayImportedOnCurrent(value, result[key]);
+      } else {
+        result[key] = _cloneConfigValue(value);
+      }
+    }
+    return result;
+  }
+
+  function _customPatchAgainstBaseline(oldBaseline, importedEffective){
+    const patch = {};
+    const oldObj = _isPlainConfigObject(oldBaseline) ? oldBaseline : {};
+    const importedObj = _isPlainConfigObject(importedEffective) ? importedEffective : {};
+
+    for (const [key, value] of Object.entries(importedObj)){
+      const oldHas = Object.prototype.hasOwnProperty.call(oldObj, key);
+      const oldValue = oldObj[key];
+      if (_isPlainConfigObject(value) && _isPlainConfigObject(oldValue)){
+        const child = _customPatchAgainstBaseline(oldValue, value);
+        if (Object.keys(child).length) patch[key] = child;
+      } else if (!oldHas || !_deepEqualConfigValue(value, oldValue)){
+        patch[key] = _cloneConfigValue(value);
+      }
+    }
+    return patch;
+  }
+
+  function _policyCustomPatchAgainstBaseline(oldBaseline, importedEffective){
+    const patch = _customPatchAgainstBaseline(oldBaseline, importedEffective);
+    if (Object.keys(patch).length){
+      patch.version = Number(importedEffective?.version ?? oldBaseline?.version) || 4;
+    }
+    return patch;
+  }
+
+  function _policyPatchFromEffective(base, effective){
+    const patch = {};
+    const baseObj = _isPlainConfigObject(base) ? base : {};
+    const effectiveObj = _isPlainConfigObject(effective) ? effective : {};
+
+    for (const [key, value] of Object.entries(effectiveObj)){
+      const baseHas = Object.prototype.hasOwnProperty.call(baseObj, key);
+      const baseValue = baseObj[key];
+      if (_isPlainConfigObject(value) && _isPlainConfigObject(baseValue)){
+        const child = _policyPatchFromEffective(baseValue, value);
+        // Child patches carry a policy version only at the top level.
+        delete child.version;
+        if (Object.keys(child).length) patch[key] = child;
+      } else if (!baseHas || !_deepEqualConfigValue(value, baseValue)){
+        patch[key] = _cloneConfigValue(value);
+      }
+    }
+
+    if (Object.keys(patch).length){
+      patch.version = Number(effectiveObj.version ?? baseObj.version) || 4;
+    }
+    return patch;
+  }
+
+  function _customNameOverridesFromEffective(effective){
+    const defaults = _currentNameOverrideDefaults();
+    const out = {};
+    if (!_isPlainConfigObject(effective)) return out;
+    for (const [key, value] of Object.entries(effective)){
+      if (typeof value !== "string" || !key) continue;
+      if (Object.prototype.hasOwnProperty.call(defaults, key) && defaults[key] === value) continue;
+      out[key] = value;
+    }
+    return out;
+  }
+
+  function _normaliseImportedIpaOverrides(value){
+    const out = {};
+    if (!_isPlainConfigObject(value)) return out;
+    for (const [key, ipa] of Object.entries(value)){
+      if (typeof key !== "string" || typeof ipa !== "string") continue;
+      const normalisedKey = normalizeIpaKey(key);
+      if (normalisedKey) out[normalisedKey] = ipa;
+    }
+    return out;
+  }
+
+  function _detectConfigFormat(parsed){
+    if (!_isPlainConfigObject(parsed) || parsed.type !== "tokiponize-config") return "invalid";
+    if (
+      Number(parsed.schemaVersion) >= 2 &&
+      _isPlainConfigObject(parsed._internalBaseline_DO_NOT_EDIT) &&
+      _isPlainConfigObject(parsed.editableSettings_CAN_EDIT || parsed.editableSettings)
+    ) return "schema-v2";
+    if (
+      Number(parsed.version) === LEGACY_CONFIG_VERSION &&
+      _isPlainConfigObject(parsed.ui) &&
+      _isPlainConfigObject(parsed.overrides) &&
+      _isPlainConfigObject(parsed.ipaOverrides) &&
+      _isPlainConfigObject(parsed.mappingPolicy)
+    ) return "legacy-v1";
+    return "unknown";
+  }
+
+  function _buildExportConfigPayload(){
     const ui = {
       outputStyle:   $("outputStyle")?.value   ?? "plain",
       boundary:      $("boundary")?.value      ?? "preserve",
@@ -4366,21 +5210,211 @@ function joinTpNameParts(parts, boundary, opts){
       keepFinalCons: !!$("keepFinalCons")?.checked,
     };
 
-    // Full merged overrides (defaults + custom).
-    const overrides = Object.assign({}, effectiveOverrides?.soft || {});
-
-    // Full effective mapping policy — never null so the config is self-contained.
-    const mappingPolicy = Object.assign({}, effectiveMappingPolicy || BASE_MAPPING_POLICY);
-
-    const payload = {
-      type: "tokiponize-config",
-      version: 1,
-      ui,
-      overrides,
-      ipaOverrides:  Object.assign({}, userIpaOverrides || {}),
-      mappingPolicy,
+    const baseline = _currentBaselineForUi(ui);
+    const protectedSection = {
+      warning:
+        "DO NOT EDIT, REMOVE, OR RENAME THIS SECTION. It records the defaults " +
+        "used when this file was exported so future versions can preserve your changes safely.",
+      defaultsVersion: baseline.defaultsVersion,
+      nameOverrides: baseline.nameOverrides,
+      mappingPolicy: baseline.mappingPolicy,
     };
+    protectedSection.baselineChecksum = _calculateBaselineChecksum(protectedSection);
 
+    return {
+      type: "tokiponize-config",
+      schemaVersion: CONFIG_SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+
+      _internalBaseline_DO_NOT_EDIT: protectedSection,
+
+      editableSettings_CAN_EDIT: {
+        instructions:
+          "YOU MAY EDIT VALUES IN THIS SECTION. Do not rename the section or its main fields.",
+        ui,
+        nameOverrides: Object.assign({}, effectiveOverrides?.soft || {}),
+        ipaOverrides: Object.assign({}, userIpaOverrides || {}),
+        mappingPolicy: _cloneConfigValue(effectiveMappingPolicy || BASE_MAPPING_POLICY),
+      },
+    };
+  }
+
+  function _resolveSchemaV2Config(parsed){
+    const schemaVersion = Number(parsed.schemaVersion) || 0;
+    if (schemaVersion > CONFIG_SCHEMA_VERSION){
+      throw new Error(
+        `This config uses schema version ${schemaVersion}, but this page supports up to version ${CONFIG_SCHEMA_VERSION}.`
+      );
+    }
+
+    const protectedSection = parsed._internalBaseline_DO_NOT_EDIT;
+    const editable = parsed.editableSettings_CAN_EDIT || parsed.editableSettings;
+    if (!_isPlainConfigObject(protectedSection) || !_isPlainConfigObject(editable)){
+      throw new Error("The protected baseline or editable settings section is missing.");
+    }
+
+    const requiredEditable = ["ui", "nameOverrides", "ipaOverrides", "mappingPolicy"];
+    const missing = requiredEditable.filter(key => !(key in editable));
+    if (missing.length){
+      throw new Error("The editable section is missing: " + missing.join(", ") + ".");
+    }
+
+    const expectedChecksum = String(protectedSection.baselineChecksum || "");
+    if (!expectedChecksum || expectedChecksum !== _calculateBaselineChecksum(protectedSection)){
+      throw new Error(
+        "The protected baseline section has been changed or damaged. Export a fresh config and edit only editableSettings_CAN_EDIT."
+      );
+    }
+
+    const oldDefaultsVersion = Number(protectedSection.defaultsVersion) || 0;
+    if (oldDefaultsVersion > CURRENT_DEFAULTS_VERSION){
+      throw new Error(
+        `This config was created with defaults version ${oldDefaultsVersion}, but this page only has version ${CURRENT_DEFAULTS_VERSION}.`
+      );
+    }
+
+    const ui = _isPlainConfigObject(editable.ui) ? _cloneConfigValue(editable.ui) : {};
+    const currentBaseline = _currentBaselineForUi(ui);
+    let effectiveNameOverrides = _cloneConfigValue(editable.nameOverrides || {});
+    let effectiveMappingPolicy = _cloneConfigValue(editable.mappingPolicy || {});
+    let upgraded = false;
+
+    if (oldDefaultsVersion < CURRENT_DEFAULTS_VERSION){
+      effectiveNameOverrides = _threeWayMergeConfigValue(
+        protectedSection.nameOverrides || {},
+        effectiveNameOverrides,
+        currentBaseline.nameOverrides
+      );
+      effectiveMappingPolicy = _threeWayMergeConfigValue(
+        protectedSection.mappingPolicy || {},
+        effectiveMappingPolicy,
+        currentBaseline.mappingPolicy
+      );
+      upgraded = true;
+    }
+
+    return {
+      sourceFormat: "schema-v2",
+      upgraded,
+      ui,
+      effectiveNameOverrides,
+      nameOverridePatch: _customPatchAgainstBaseline(
+        protectedSection.nameOverrides || {},
+        editable.nameOverrides || {}
+      ),
+      ipaOverrides: _normaliseImportedIpaOverrides(editable.ipaOverrides),
+      effectiveMappingPolicy,
+      mappingPolicyPatch: _policyCustomPatchAgainstBaseline(
+        protectedSection.mappingPolicy || {},
+        editable.mappingPolicy || {}
+      ),
+    };
+  }
+
+  function _resolveLegacyV1Config(parsed){
+    const ui = _cloneConfigValue(parsed.ui || {});
+    const currentBaseline = _currentBaselineForUi(ui);
+
+    // Name defaults are mode-independent, so the uploaded snapshot is an exact
+    // baseline for every legacy import.
+    const effectiveNameOverrides = _threeWayMergeConfigValue(
+      LEGACY_V1_BASELINE_SNAPSHOT.overrides || {},
+      parsed.overrides || {},
+      currentBaseline.nameOverrides
+    );
+
+    // The supplied legacy snapshot was exported in strict mode.  When a legacy
+    // file uses the same mode, perform a complete three-way merge.  For a
+    // relaxed legacy file, preserve all imported policy values and add only
+    // current keys that are missing, because no exact relaxed baseline exists.
+    const snapshotStrict = String(LEGACY_V1_BASELINE_SNAPSHOT.ui?.strict ?? "on");
+    const importedStrict = String(ui?.strict ?? "on");
+    const hasExactPolicyBaseline = importedStrict === snapshotStrict;
+    const effectiveMappingPolicy = hasExactPolicyBaseline
+      ? _threeWayMergeConfigValue(
+          LEGACY_V1_BASELINE_SNAPSHOT.mappingPolicy || {},
+          parsed.mappingPolicy || {},
+          currentBaseline.mappingPolicy
+        )
+      : _overlayImportedOnCurrent(parsed.mappingPolicy || {}, currentBaseline.mappingPolicy);
+
+    return {
+      sourceFormat: "legacy-v1",
+      upgraded: true,
+      ui,
+      effectiveNameOverrides,
+      nameOverridePatch: _customPatchAgainstBaseline(
+        LEGACY_V1_BASELINE_SNAPSHOT.overrides || {},
+        parsed.overrides || {}
+      ),
+      ipaOverrides: _normaliseImportedIpaOverrides(parsed.ipaOverrides),
+      effectiveMappingPolicy,
+      mappingPolicyPatch: hasExactPolicyBaseline
+        ? _policyCustomPatchAgainstBaseline(
+            LEGACY_V1_BASELINE_SNAPSHOT.mappingPolicy || {},
+            parsed.mappingPolicy || {}
+          )
+        : Object.assign(
+            { version: Number(parsed.mappingPolicy?.version) || 4 },
+            _cloneConfigValue(parsed.mappingPolicy || {})
+          ),
+    };
+  }
+
+  function _resolveConfigForImport(parsed){
+    const format = _detectConfigFormat(parsed);
+    if (format === "schema-v2") return _resolveSchemaV2Config(parsed);
+    if (format === "legacy-v1") return _resolveLegacyV1Config(parsed);
+    if (format === "invalid"){
+      throw new Error("This file is not a Tokiponize config file.");
+    }
+    throw new Error(
+      "This Tokiponize config format is not recognised. Export a fresh config from this page and edit only editableSettings_CAN_EDIT."
+    );
+  }
+
+  async function _applyResolvedImportedConfig(resolved){
+    const ui = resolved.ui || {};
+    if (ui.outputStyle !== undefined) _setSelectIfOption("outputStyle", ui.outputStyle);
+    if (ui.boundary    !== undefined) _setSelectIfOption("boundary",    ui.boundary);
+    if (ui.strict      !== undefined) _setSelectIfOption("strict",      ui.strict);
+    if (ui.keepFinalCons !== undefined){
+      const kfc = $("keepFinalCons");
+      if (kfc) kfc.checked = !!ui.keepFinalCons;
+    }
+    updateBaseMappingPolicyFromUi();
+    saveUiOptionsToStorage();
+
+    userOverridesRaw = _isPlainConfigObject(resolved.nameOverridePatch)
+      ? _cloneConfigValue(resolved.nameOverridePatch)
+      : _customNameOverridesFromEffective(resolved.effectiveNameOverrides);
+    userOverrides = normalizeOverrideMap(userOverridesRaw);
+    recomputeEffectiveOverrides();
+    updateOverridesPill();
+    try { await _dbPut(OVERRIDE_DB_KEY, userOverridesRaw); } catch {}
+
+    userIpaOverrides = _normaliseImportedIpaOverrides(resolved.ipaOverrides);
+    updateIpaPill();
+    try { await _dbPut(IPA_DB_KEY, userIpaOverrides); } catch {}
+
+    const importedPolicyPatch = _isPlainConfigObject(resolved.mappingPolicyPatch)
+      ? normalizeMappingPolicy(resolved.mappingPolicyPatch) || {}
+      : {};
+    const fallbackEffectivePolicy = normalizeMappingPolicy(resolved.effectiveMappingPolicy) || {};
+    const patch = Object.keys(importedPolicyPatch).length
+      ? importedPolicyPatch
+      : _policyPatchFromEffective(BASE_MAPPING_POLICY, fallbackEffectivePolicy);
+    userMappingPolicy = Object.keys(patch).length ? patch : null;
+    recomputeEffectiveMappingPolicy();
+    updatePolicyPill();
+    await saveUserMappingPolicyToDb();
+
+    const tb = $("tbody");
+    if (tb && tb.children && tb.children.length) runTokiponize();
+  }
+
+  function exportConfig(){
+    const payload = _buildExportConfigPayload();
     downloadTextFile(
       "tokiponize-config-" + new Date().toISOString().slice(0,10) + ".json",
       JSON.stringify(payload, null, 2)
@@ -4397,101 +5431,33 @@ function joinTpNameParts(parts, boundary, opts){
       return;
     }
 
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)){
-      alert("Config file must be a JSON object.");
+    let resolved;
+    try {
+      resolved = _resolveConfigForImport(parsed);
+    } catch (error) {
+      alert(error?.message || "Could not import this configuration.");
       return;
     }
 
-    // ── Strict type check ───────────────────────────────────────────────────
-    if (parsed.type !== "tokiponize-config"){
+    await _applyResolvedImportedConfig(resolved);
+
+    if (resolved.sourceFormat === "legacy-v1"){
       alert(
-        "This file is not a Tokiponize config file.\n\n" +
-        "To create one: click Export config, edit the downloaded JSON file " +
-        "as needed, then click Import config to load it."
+        "Legacy config imported successfully. Its settings were migrated using the embedded version-1 default baseline. " +
+        "Future exports will use the new protected-baseline schema."
       );
-      return;
-    }
-
-    // ── All four keys must be present ───────────────────────────────────────
-    const required = ["ui", "overrides", "ipaOverrides", "mappingPolicy"];
-    const missing = required.filter(k => !(k in parsed));
-    if (missing.length){
+    } else if (resolved.upgraded){
       alert(
-        "Config file is missing required fields: " + missing.join(", ") + ".\n\n" +
-        "To create a valid config: click Export config, edit the downloaded " +
-        "JSON file as needed, then click Import config to load it."
+        "Config imported successfully. Unchanged older defaults were upgraded, while user customisations were preserved."
       );
-      return;
     }
 
-    // ── UI options ──────────────────────────────────────────────────────────
-    if (parsed.ui && typeof parsed.ui === "object"){
-      const ui = parsed.ui;
-      if (ui.outputStyle !== undefined) _setSelectIfOption("outputStyle", ui.outputStyle);
-      if (ui.boundary    !== undefined) _setSelectIfOption("boundary",    ui.boundary);
-      if (ui.strict      !== undefined){
-        _setSelectIfOption("strict", ui.strict);
-        updateBaseMappingPolicyFromUi();
-      }
-      if (ui.keepFinalCons !== undefined){
-        const kfc = $("keepFinalCons");
-        if (kfc) kfc.checked = !!ui.keepFinalCons;
-      }
-      saveUiOptionsToStorage();
-    }
-
-    // ── Name overrides ──────────────────────────────────────────────────────
-    // Partition imported overrides back into default vs custom:
-    //   key in DEFAULT_OVERRIDES AND value matches default → skip (already baked in)
-    //   key in DEFAULT_OVERRIDES AND value differs         → store (user changed it)
-    //   key not in DEFAULT_OVERRIDES                       → store (pure custom)
-    if (typeof parsed.overrides === "object" && !Array.isArray(parsed.overrides)){
-      const newCustom = {};
-      for (const [k, v] of Object.entries(parsed.overrides)){
-        if (!k || typeof v !== "string") continue;
-        const defaultVal = DEFAULT_OVERRIDES[k];
-        if (defaultVal !== undefined && defaultVal === v) continue;
-        newCustom[k] = v;
-      }
-      userOverridesRaw = newCustom;
-      userOverrides = normalizeOverrideMap(userOverridesRaw);
-      recomputeEffectiveOverrides();
-      updateOverridesPill();
-      try { await _dbPut(OVERRIDE_DB_KEY, userOverridesRaw); } catch {}
-    }
-
-    // ── IPA overrides ───────────────────────────────────────────────────────
-    if (typeof parsed.ipaOverrides === "object" && !Array.isArray(parsed.ipaOverrides)){
-      const newIpa = {};
-      for (const [k, v] of Object.entries(parsed.ipaOverrides)){
-        if (typeof k === "string" && typeof v === "string") newIpa[k] = v;
-      }
-      userIpaOverrides = newIpa;
-      updateIpaPill();
-      try { await _dbPut(IPA_DB_KEY, userIpaOverrides); } catch {}
-    }
-
-    // ── Mapping policy ──────────────────────────────────────────────────────
-    // Exported policy is always the full effective policy so we store it
-    // directly as userMappingPolicy to exactly reproduce exported behaviour.
-    if (typeof parsed.mappingPolicy === "object" && !Array.isArray(parsed.mappingPolicy)){
-      const normalised = normalizeMappingPolicy(parsed.mappingPolicy);
-      userMappingPolicy = (normalised && Object.keys(normalised).length) ? normalised : null;
-      recomputeEffectiveMappingPolicy();
-      updatePolicyPill();
-      try {
-        if (userMappingPolicy) await _dbPut(POLICY_DB_KEY, userMappingPolicy);
-        else await _dbDel(POLICY_DB_KEY);
-      } catch {}
-    }
-
-    // Re-run if results already on screen.
-    const tb = $("tbody");
-    if (tb && tb.children && tb.children.length) runTokiponize();
-
-    // Brief non-blocking confirmation.
     const sp = $("btnImportConfig")?.querySelector("span");
-    if (sp){ const orig = sp.textContent; sp.textContent = "Imported ✓"; setTimeout(() => { sp.textContent = orig; }, 2000); }
+    if (sp){
+      const orig = sp.textContent;
+      sp.textContent = "Imported ✓";
+      setTimeout(() => { sp.textContent = orig; }, 2000);
+    }
   }
 
   function wireConfigUi(){
