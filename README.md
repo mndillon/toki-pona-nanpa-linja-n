@@ -484,6 +484,10 @@ Rules:
 30,000,000  → Nesenin Ekeken
 300,000,000 → Neseninin Ekeken
 3,000,000,000 → Nesen Ekekeken
+3K          → Nesen Eken
+3M          → Nesenin Ekeken
+3B          → Neseninin Ekekeken
+3T          → Nesen Ekeke Keken
 7,321,900   → Nemun Eke Setuwan Eke Jeninin
 64.5M       → Nenunan One Lun Ekeken
 64.5B       → Nenunan One Lun Ekekeken
@@ -952,6 +956,30 @@ This table uses the rexaled versions of the digit syllables:
 - (Yet another humble attempt at simply being functional, avoiding copy and paste and cognitive load)
 
 
+---
+
+
+
+## Future directions
+
+nanpa-linja-n is intended to remain stable and reversible, but several possible developments may make it more efficient, easier to speak and more reliable in practical use.
+These are currently speculation.
+
+### Shortened spoken names
+
+At present, every nanpa-linja-n proper name begins with `Ne-`. From a purely informational perspective, this syllable is redundant: once a name is known to represent a nanpa-linja-n value, `Ne-` does not distinguish one value from another.
+
+However, `Ne-` currently performs several useful functions. It identifies the name as numeric, marks the beginning of the encoded value and reduces the possibility of confusion with an ordinary proper name. It may therefore be preferable to retain the full form as the canonical written and machine-readable representation while permitting a shorter form in speech.
+
+For example, a future convention could distinguish between:
+
+* **the canonical form**, which always includes `Ne-`;
+* **a contextual spoken form**, in which `Ne-` may be omitted when the context already establishes that a nanpa-linja-n value follows;
+* **an explicit grammatical form**, in which the existing Toki Pona word `nanpa` introduces the shortened proper name.
+
+Another possibility would be to reinterpret `ne` as a noun or classifier meaning “a number encoded using nanpa-linja-n”. This would allow `ne` to introduce a proper name from which the initial `Ne-` had been removed. However, this would amount to introducing a new project-specific lexical meaning, so it should be considered an experimental extension rather than part of the core system.
+
+Any shortened form would need to remain unambiguous, reversible and easy for both people and software to recognise.
 
 
 
