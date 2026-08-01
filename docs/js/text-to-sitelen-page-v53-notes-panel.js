@@ -1431,6 +1431,11 @@ function wireNasinNanpaPonaFormattingToggle() {
   el.addEventListener("change", async () => {
 try {
   setNasinNanpaPonaFormattingEnabled(el.checked);
+  if (el.checked) {
+    trackUsage("text-to-sitelen-nasin-nanpa-pona-formatting-enabled");
+  } else {
+    trackUsage("text-to-sitelen-nasin-nanpa-pona-formatting-disabled");
+  }
   sitelenRenderer = null;
   sitelenRendererSignature = "";
   await renderFromTextarea();
