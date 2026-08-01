@@ -335,12 +335,15 @@
     .calculator-audio-word {
       display: inline-block;
       white-space: nowrap;
+      letter-spacing: 0;
+      word-spacing: 0;
     }
 
     .calculator-audio-unit,
     .calculator-value-character {
       display: inline-block;
-      padding: 1px 1px;
+      padding: 1px 0;
+      margin: 0;
       border-radius: 4px;
       transition: background-color 80ms linear, outline-color 80ms linear;
     }
@@ -1678,26 +1681,40 @@
       ctx2.fillText(chars, x, y);
     }
 
-    async function ensureFontLoaded(px = DISPLAY_LARGE_PX) {
+    let calculatorFontsReadyPromise = null;
+
+    async function ensureFontLoaded(_px = DISPLAY_LARGE_PX) {
       if (!document.fonts || !document.fonts.load) return;
+      if (calculatorFontsReadyPromise) return calculatorFontsReadyPromise;
 
-      const requests = [
-        document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, String.fromCodePoint(0xF196C)),
-        document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF1990)),
-        document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF193D))
-      ];
-      await Promise.all(requests);
-      await document.fonts.ready;
+      // Loading a FontFace is independent of the requested drawing size. Do it
+      // once, at the largest calculator size, rather than repeating the same
+      // network/font-set checks for every candidate size on every key press.
+      calculatorFontsReadyPromise = (async () => {
+        const probePx = DISPLAY_LARGE_PX;
+        const requests = [
+          document.fonts.load(`${probePx}px "${FONT_FAMILY_TEXT}"`, String.fromCodePoint(0xF196C)),
+          document.fonts.load(`${probePx}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF1990)),
+          document.fonts.load(`${probePx}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF193D))
+        ];
+        await Promise.all(requests);
+        await document.fonts.ready;
 
-      const required = [
-        [`${px}px "${FONT_FAMILY_TEXT}"`, String.fromCodePoint(0xF196C)],
-        [`${px}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF1990)]
-      ];
-      for (const [spec, sample] of required) {
-        if (typeof document.fonts.check === "function" && !document.fonts.check(spec, sample)) {
-          throw new Error(`Required calculator font did not load: ${spec}`);
+        const required = [
+          [`${probePx}px "${FONT_FAMILY_TEXT}"`, String.fromCodePoint(0xF196C)],
+          [`${probePx}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF1990)]
+        ];
+        for (const [spec, sample] of required) {
+          if (typeof document.fonts.check === "function" && !document.fonts.check(spec, sample)) {
+            throw new Error(`Required calculator font did not load: ${spec}`);
+          }
         }
-      }
+      })().catch(error => {
+        calculatorFontsReadyPromise = null;
+        throw error;
+      });
+
+      return calculatorFontsReadyPromise;
     }
 
     const displayCanvas = document.getElementById("displayCanvas");
@@ -1733,6 +1750,7 @@
     let calculatorRenderGeneration = 0;
     let pendingCalculatorSharedRender = null;
     let calculatorSharedRenderWorker = null;
+    let calculatorSharedRenderFrame = null;
 
     const CALCULATOR_AUDIO_PAUSE_SCALE = 1.00;
     const CALCULATOR_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
@@ -1843,30 +1861,59 @@
       if (!elProperNameText) return;
       elProperNameText.replaceChildren();
 
-      const grouped = new Map();
+      const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+      if (!words.length) return;
+
+      const grouped = words.map(() => []);
+      let fallbackWordIndex = 0;
       for (let index = 0; index < units.length; index += 1) {
         const unit = units[index];
-        const wordIndex = Number.isFinite(Number(unit.wordIndex)) ? Number(unit.wordIndex) : index;
-        if (!grouped.has(wordIndex)) grouped.set(wordIndex, []);
-        grouped.get(wordIndex).push({ ...unit, highlightIndex: index });
+        let wordIndex = Number(unit?.wordIndex);
+        if (!Number.isInteger(wordIndex) || wordIndex < 0 || wordIndex >= words.length) {
+          const unitWord = String(unit?.word ?? "").toLowerCase();
+          const matchedIndex = words.findIndex((word, candidateIndex) =>
+            candidateIndex >= fallbackWordIndex && word.toLowerCase() === unitWord
+          );
+          wordIndex = matchedIndex >= 0 ? matchedIndex : Math.min(fallbackWordIndex, words.length - 1);
+        }
+        grouped[wordIndex].push({ ...unit, highlightIndex: index });
+        fallbackWordIndex = Math.max(fallbackWordIndex, wordIndex);
       }
 
-      const wordIndexes = [...grouped.keys()].sort((a, b) => a - b);
-      for (let wi = 0; wi < wordIndexes.length; wi += 1) {
+      for (let wordIndex = 0; wordIndex < words.length; wordIndex += 1) {
+        const word = words[wordIndex];
+        const wordUnits = grouped[wordIndex];
         const wordWrap = document.createElement("span");
         wordWrap.className = "calculator-audio-word";
-        for (const unit of grouped.get(wordIndexes[wi])) {
-          const span = document.createElement("span");
-          span.className = "calculator-audio-unit";
-          span.dataset.calculatorAudioUnitIndex = String(unit.highlightIndex);
-          span.textContent = String(unit.text ?? unit.timingText ?? "");
-          wordWrap.appendChild(span);
-        }
-        elProperNameText.appendChild(wordWrap);
-        if (wi < wordIndexes.length - 1) elProperNameText.appendChild(document.createTextNode(" "));
-      }
 
-      if (!units.length) elProperNameText.textContent = properName;
+        if (!wordUnits.length) {
+          wordWrap.textContent = word;
+        } else {
+          // Use slices of the authoritative proper-name word instead of adding
+          // unit text with padding. This preserves capitalization and makes all
+          // syllables touch; only the explicit text node between words is a space.
+          let cursor = 0;
+          for (let unitIndex = 0; unitIndex < wordUnits.length; unitIndex += 1) {
+            const unit = wordUnits[unitIndex];
+            const rawPiece = String(unit.text ?? unit.timingText ?? "");
+            const remaining = Math.max(0, word.length - cursor);
+            const pieceLength = unitIndex === wordUnits.length - 1
+              ? remaining
+              : Math.min(remaining, Array.from(rawPiece).length);
+            const piece = word.slice(cursor, cursor + pieceLength) || rawPiece;
+            cursor += pieceLength;
+
+            const span = document.createElement("span");
+            span.className = "calculator-audio-unit";
+            span.dataset.calculatorAudioUnitIndex = String(unit.highlightIndex);
+            span.textContent = piece;
+            wordWrap.appendChild(span);
+          }
+        }
+
+        elProperNameText.appendChild(wordWrap);
+        if (wordIndex < words.length - 1) elProperNameText.appendChild(document.createTextNode(" "));
+      }
     }
 
     function calculatorDisplaySemanticCharacterIndices(displayValue) {
@@ -2704,18 +2751,48 @@
       rejectCalculatorInput("The sign key applies to the number currently being entered.");
     }
 
+    function removeTrailingOrphanedImplicitMultiplication() {
+      while (
+        expressionTokens.at(-1)?.type === "operator" &&
+        expressionTokens.at(-1)?.value === "*" &&
+        expressionTokens.at(-1)?.implicit === true
+      ) {
+        expressionTokens.pop();
+      }
+    }
+
     function pressBackspace() {
       clearCalculatorErrorForEdit();
       justEvaluated = false;
       repeatOperation = null;
       const last = lastExpressionToken();
-      if (!last) expressionTokens = [numberToken("0")];
-      else if (last.type === "number" && last.value.length > 1) {
+      const previous = expressionTokens.at(-2);
+
+      if (!last) {
+        expressionTokens = [numberToken("0")];
+      } else if (last.type === "number" && last.value.length > 1) {
         last.value = last.value.slice(0, -1);
         if (last.value === "-") expressionTokens.pop();
-      } else if (last.type === "lparen" && expressionTokens.at(-2)?.type === "function") expressionTokens.splice(-2, 2);
-      else if (last.type === "lparen" && expressionTokens.at(-2)?.type === "operator" && expressionTokens.at(-2)?.implicit === true) expressionTokens.splice(-2, 2);
-      else expressionTokens.pop();
+      } else if (last.type === "lparen" && previous?.type === "function") {
+        expressionTokens.splice(-2, 2);
+      } else if (last.type === "lparen" && previous?.type === "operator" && previous?.implicit === true) {
+        expressionTokens.splice(-2, 2);
+      } else if (
+        (last.type === "number" || last.type === "constant") &&
+        previous?.type === "operator" &&
+        previous?.value === "*" &&
+        previous?.implicit === true
+      ) {
+        // Adjacency is stored as an invisible implicit multiplication token
+        // followed by its operand. Backspace must remove the pair together;
+        // otherwise the visible expression looks complete while evaluation
+        // still sees a hidden trailing operator.
+        expressionTokens.splice(-2, 2);
+      } else {
+        expressionTokens.pop();
+      }
+
+      removeTrailingOrphanedImplicitMultiplication();
       if (!expressionTokens.length) expressionTokens = [numberToken("0")];
       renderExpressionChange();
     }
@@ -2863,10 +2940,9 @@
 
     function toggleScientificLayer() {
       // Changing the keypad is presentation-only. It must never evaluate,
-      // replace, or otherwise mutate the expression being entered.
+      // replace, rerender, or otherwise mutate the expression being entered.
       scientificLayerEnabled = !scientificLayerEnabled;
       buildKeypad();
-      renderDisplay();
       if (elDisplayLive) elDisplayLive.textContent = scientificLayerEnabled ? "Scientific keypad enabled." : "Number keypad enabled.";
     }
 
@@ -2939,25 +3015,35 @@
       return units;
     }
 
+    function startSharedCalculatorRenderWorker() {
+      if (calculatorSharedRenderWorker || calculatorSharedRenderFrame != null) return;
+
+      // Let the browser paint the immediately updated Input/Pending text and
+      // pressed-button state first. Multiple key presses in one frame collapse
+      // into the newest renderer request instead of queueing obsolete displays.
+      calculatorSharedRenderFrame = requestAnimationFrame(() => {
+        calculatorSharedRenderFrame = null;
+        calculatorSharedRenderWorker = (async () => {
+          while (pendingCalculatorSharedRender) {
+            const current = pendingCalculatorSharedRender;
+            pendingCalculatorSharedRender = null;
+            try {
+              current.resolve(await configureSharedCalculatorDisplay(current.request));
+            } catch (err) {
+              current.reject(err);
+            }
+          }
+          calculatorSharedRenderWorker = null;
+          if (pendingCalculatorSharedRender) startSharedCalculatorRenderWorker();
+        })();
+      });
+    }
+
     function scheduleSharedCalculatorResult(request) {
       return new Promise((resolve, reject) => {
         if (pendingCalculatorSharedRender?.resolve) pendingCalculatorSharedRender.resolve(null);
         pendingCalculatorSharedRender = { request, resolve, reject };
-
-        if (!calculatorSharedRenderWorker) {
-          calculatorSharedRenderWorker = (async () => {
-            while (pendingCalculatorSharedRender) {
-              const current = pendingCalculatorSharedRender;
-              pendingCalculatorSharedRender = null;
-              try {
-                current.resolve(await configureSharedCalculatorDisplay(current.request));
-              } catch (err) {
-                current.reject(err);
-              }
-            }
-            calculatorSharedRenderWorker = null;
-          })();
-        }
+        startSharedCalculatorRenderWorker();
       });
     }
 
@@ -3110,6 +3196,25 @@
       return { ctx, dpr };
     }
 
+    function displayCandidateFits(candidate, safeWidth, safeHeight) {
+      return candidate.actualWidth <= safeWidth && candidate.actualHeight <= safeHeight;
+    }
+
+    function estimateFittingFontPx(candidate, safeWidth, safeHeight, minFontPx) {
+      const padding = Math.max(0, SHARED_DISPLAY_PADDING_PX * 2);
+      const contentWidth = Math.max(1, candidate.actualWidth - padding);
+      const contentHeight = Math.max(1, candidate.actualHeight - padding);
+      const availableContentWidth = Math.max(1, safeWidth - padding);
+      const availableContentHeight = Math.max(1, safeHeight - padding);
+      const scale = Math.min(
+        1,
+        availableContentWidth / contentWidth,
+        availableContentHeight / contentHeight
+      );
+      const estimated = Math.floor((candidate.fontPx * scale * 0.985) / 2) * 2;
+      return Math.max(minFontPx, Math.min(candidate.fontPx - 2, estimated));
+    }
+
     async function renderSharedSourceIntoDisplay({ sourceText, kind, minFontPx, generation }) {
       const renderer = await getSharedResultRenderer();
       const viewport = getCalculatorDisplayViewportSize();
@@ -3118,42 +3223,70 @@
       const safeTop = Math.min(margin, Math.max(0, viewport.height - 1));
       const safeWidth = Math.max(1, viewport.width - safeLeft * 2);
       const safeHeight = Math.max(1, viewport.height - safeTop * 2);
-      let chosen = null;
+      const renderedByFontPx = new Map();
 
-      // Mirror text-to-sitelen: build a normal Toki Pona sentence, parse it,
-      // render that sentence with the configured font roles, then build the
-      // audio/highlight plan from the renderer AST. No calculator code draws
-      // or sizes individual nanpa glyphs in the main display.
-      const parserOptions = getSharedRendererParserOptions();
-      const parsedSentence = await renderer.parseInput({
-        input: sourceText,
-        parser: parserOptions
-      });
-
-      // Fit against the renderer's real output canvas at every size. The same
-      // parsed AST is used to build the plan that drives audio highlighting.
-      for (let fontPx = DISPLAY_LARGE_PX; fontPx >= minFontPx; fontPx -= 2) {
-        await ensureFontLoaded(fontPx);
-        const options = sharedDisplayOptions(sourceText, fontPx);
+      const renderAt = async fontPx => {
+        const normalizedFontPx = Math.max(minFontPx, Math.min(DISPLAY_LARGE_PX, Math.round(fontPx)));
+        if (renderedByFontPx.has(normalizedFontPx)) return renderedByFontPx.get(normalizedFontPx);
+        const options = sharedDisplayOptions(sourceText, normalizedFontPx);
         const rendered = await renderer.renderTextToNewCanvas(options);
-        const plan = await renderer.buildRenderPlan({
-          ...options,
-          ast: rendered?.ast || parsedSentence?.ast
-        });
         if (generation !== calculatorRenderGeneration) return null;
+        const actualWidth = Math.max(1, Number(rendered?.canvas?.width) || 1);
+        const actualHeight = Math.max(1, Number(rendered?.canvas?.height) || 1);
+        const candidate = {
+          fontPx: normalizedFontPx,
+          options,
+          rendered,
+          actualWidth,
+          actualHeight,
+          plan: null
+        };
+        renderedByFontPx.set(normalizedFontPx, candidate);
+        return candidate;
+      };
 
-        const actualWidth = Math.max(1, Number(rendered?.canvas?.width) || Number(plan?.widthPx) || 1);
-        const actualHeight = Math.max(1, Number(rendered?.canvas?.height) || Number(plan?.heightPx) || 1);
-        chosen = { fontPx, options, plan, rendered, parsedSentence, actualWidth, actualHeight };
-        if (actualWidth <= safeWidth && actualHeight <= safeHeight) break;
+      // Most values fit at the common starting size and now require one render.
+      // When reduction is needed, estimate the fitting size from the first real
+      // renderer canvas instead of rerendering every two pixels from 76 downward.
+      let chosen = await renderAt(DISPLAY_LARGE_PX);
+      if (!chosen) return null;
+
+      if (!displayCandidateFits(chosen, safeWidth, safeHeight)) {
+        let nextFontPx = estimateFittingFontPx(chosen, safeWidth, safeHeight, minFontPx);
+        if (nextFontPx >= chosen.fontPx) nextFontPx = Math.max(minFontPx, chosen.fontPx - 2);
+        chosen = await renderAt(nextFontPx);
+        if (!chosen) return null;
+
+        // One correction render handles non-linear font metrics and fixed
+        // renderer padding. Fall back directly to the documented minimum.
+        if (!displayCandidateFits(chosen, safeWidth, safeHeight) && chosen.fontPx > minFontPx) {
+          const correctedFontPx = estimateFittingFontPx(chosen, safeWidth, safeHeight, minFontPx);
+          chosen = await renderAt(correctedFontPx < chosen.fontPx ? correctedFontPx : minFontPx);
+          if (!chosen) return null;
+        }
+        if (!displayCandidateFits(chosen, safeWidth, safeHeight) && chosen.fontPx !== minFontPx) {
+          chosen = await renderAt(minFontPx);
+          if (!chosen) return null;
+        }
       }
 
-      if (!chosen) throw new Error("The shared renderer did not produce a display plan.");
-      const { rendered } = chosen;
       const fullWidth = chosen.actualWidth;
       const fullHeight = chosen.actualHeight;
       const clipped = fullWidth > safeWidth || fullHeight > safeHeight;
-      const cropLeft = kind === "expression"
+
+      // Results always need a plan for proper-name audio/highlighting. An
+      // expression needs one only when its left edge must be cropped at a run
+      // boundary. This avoids a second complete parser/layout pass for the
+      // common intermediate-expression case.
+      if (kind === "result" || clipped) {
+        chosen.plan = await renderer.buildRenderPlan({
+          ...chosen.options,
+          ast: chosen.rendered?.ast
+        });
+        if (generation !== calculatorRenderGeneration) return null;
+      }
+
+      const cropLeft = kind === "expression" && clipped && chosen.plan
         ? expressionCropLeftAtRunBoundary(chosen.plan, safeWidth)
         : Math.max(0, fullWidth - safeWidth);
       const cropTop = Math.max(0, Math.floor((fullHeight - safeHeight) / 2));
@@ -3167,7 +3300,7 @@
       const { ctx } = sizeDisplayBackingCanvas(viewport.width, viewport.height);
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(
-        rendered.canvas,
+        chosen.rendered.canvas,
         cropLeft, cropTop, sourceWidth, sourceHeight,
         destX, destY, sourceWidth, sourceHeight
       );
@@ -3193,6 +3326,7 @@
 
       return {
         ...chosen,
+        parsedSentence: { ast: chosen.rendered?.ast },
         viewport,
         safeLeft,
         safeTop,
@@ -3634,9 +3768,14 @@
       renderDisplay();
     });
 
+    let calculatorResizeFrame = null;
     window.addEventListener("resize", () => {
-      renderDisplay();
-      rerenderWideZeroKey();
+      if (calculatorResizeFrame != null) cancelAnimationFrame(calculatorResizeFrame);
+      calculatorResizeFrame = requestAnimationFrame(() => {
+        calculatorResizeFrame = null;
+        renderDisplay();
+        rerenderWideZeroKey();
+      });
     });
 
   </script>
