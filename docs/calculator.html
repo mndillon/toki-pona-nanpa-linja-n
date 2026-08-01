@@ -10,6 +10,9 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
 
+  <link rel="preload" href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf" as="font" type="font/otf" crossorigin>
+
   <style>
     :root {
       --pad: 14px;
@@ -36,6 +39,11 @@
     .small { font-size: 13px; color: var(--muted); }
     .help  { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
     .mono  { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    #displayTextVisible,
+    #displayTextVisibleTp {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
 
     /* NEW: Toki Pona line helper */
     .tpLine {
@@ -47,12 +55,14 @@
 
     .calc {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 14px;
       margin-top: 14px;
+      min-width: 0;
     }
 
     .displayBox {
+      min-width: 0;
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 0;
@@ -61,7 +71,8 @@
 
     .displayRow {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
+      min-width: 0;
       gap: 10px;
       align-items: center;
       padding: 12px;
@@ -77,6 +88,7 @@
 
     .displayMeta {
       display: flex;
+      min-width: 0;
       justify-content: space-between;
       gap: 10px;
       align-items: baseline;
@@ -85,6 +97,7 @@
 
     .keys {
       display: grid;
+      min-width: 0;
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
     }
@@ -108,6 +121,11 @@
     }
 
     .btn:active { transform: translateY(1px); }
+
+    .btn.is-active-layer {
+      outline: 2px solid #111;
+      outline-offset: -5px;
+    }
     .btnWide { grid-column: span 2; }
 
     .btnLabel {
@@ -160,12 +178,22 @@
       border: 0 !important;
     }
 
+    /*
+       Match the text-to-sitelen font roles exactly. Ordinary Toki Pona words
+       and compounds use the base sitelen font; numeric/cartouche runs use the
+       dedicated nanpa-linja-n cartouche font. Rendering waits for both faces,
+       so the browser never measures a calculator display with fallback glyphs.
+    */
+    @font-face {
+      font-family: "TP-Nasin-Nanpa-Font";
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: block;
+    }
+
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: 
-        /* Web-hosted files (order matters) */
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf")   format("opentype"); 
-      font-display: swap;
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      font-display: block;
     }
 
     /* =========================
@@ -254,6 +282,80 @@
       opacity: 0.45;
     }
 
+    .calculator-cartouche-canvas-wrap {
+      --display-inset-x: 10px;
+      --display-inset-y: 7px;
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 104px;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
+      padding: var(--display-inset-y) var(--display-inset-x);
+      border: 1px solid #aeb4bb;
+      border-radius: 12px;
+      background: var(--bg);
+      line-height: 0;
+    }
+
+    .calculator-cartouche-canvas-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    #displayCanvas,
+    #displayHighlightCanvas {
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      max-width: none;
+    }
+
+    #displayCanvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .calculator-cartouche-highlight-canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1px;
+      height: 1px;
+      max-width: none;
+      pointer-events: none;
+    }
+
+    .calculator-audio-word {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .calculator-audio-unit,
+    .calculator-value-character {
+      display: inline-block;
+      padding: 1px 1px;
+      border-radius: 4px;
+      transition: background-color 80ms linear, outline-color 80ms linear;
+    }
+
+    .calculator-value-character {
+      padding-inline: 0;
+    }
+
+    .calculator-audio-unit.is-speaking,
+    .calculator-value-character.is-speaking {
+      background: #fff4a8;
+      outline: 2px solid #111;
+      outline-offset: 1px;
+    }
+
     .nlModeControl{ display:none !important; }
 
     /* Portrait image: mobile-first */
@@ -269,6 +371,115 @@
       max-width:100vw;
       height:auto;
     }
+    @media (max-width: 600px) and (orientation: portrait) {
+      body {
+        margin: 6px;
+      }
+
+      .card {
+        padding: 8px;
+        border-radius: 8px;
+      }
+
+      .card > h1:first-of-type {
+        font-size: 16px !important;
+        line-height: 1.15;
+      }
+
+      .help {
+        margin-top: 4px;
+        font-size: 11px;
+        line-height: 1.2;
+      }
+
+      .tpLine {
+        margin-top: 1px;
+        font-size: 9pt;
+        line-height: 1.15;
+      }
+
+      .calc {
+        gap: 7px;
+        margin-top: 8px;
+      }
+
+      .displayRow {
+        gap: 6px;
+        padding: 7px;
+      }
+
+      .calculator-cartouche-canvas-wrap {
+        --display-inset-x: 7px;
+        --display-inset-y: 5px;
+        height: clamp(76px, 11.5dvh, 88px);
+        border-radius: 10px;
+      }
+
+      .calcInlineControls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 5px 8px;
+        overflow: visible;
+        width: 100%;
+      }
+
+      .abbrevToggle {
+        min-width: 0;
+        white-space: normal;
+        font-size: 10px;
+        line-height: 1.1;
+      }
+
+      .nanpaModeToggle {
+        justify-self: end;
+      }
+
+      .nanpaModeToggle select {
+        padding: 2px 4px;
+      }
+
+      .displayMeta {
+        gap: 4px 8px;
+      }
+
+      .displayMeta .small,
+      .displayRow > .help {
+        font-size: 10px;
+        line-height: 1.15;
+      }
+
+      .audio-button {
+        font-size: 0.9rem;
+        padding: 0 3px;
+      }
+
+      .keys {
+        gap: 4px;
+      }
+
+      .btn {
+        min-height: clamp(42px, 6.7dvh, 58px);
+        padding: 3px;
+        border-radius: 8px;
+      }
+
+      .btnCanvas {
+        max-width: 100%;
+        max-height: clamp(24px, 3.8dvh, 31px);
+      }
+
+      .btnLabel {
+        margin-top: 1px;
+        font-size: 10px;
+        line-height: 1;
+      }
+
+      .btn.is-active-layer {
+        outline-width: 1px;
+        outline-offset: -3px;
+      }
+    }
+
     @media (min-width:900px){
       img.portrait1{ max-width:568px; margin-inline:auto; }
       img.portrait2{ max-width:855px; margin-inline:auto; }
@@ -308,7 +519,16 @@
       <div class="displayBox" role="group" aria-label="Calculator display">
         <div class="displayRow">
           <!-- Decorative canvas -->
-          <canvas id="displayCanvas" aria-hidden="true"></canvas>
+          <div class="calculator-cartouche-canvas-wrap">
+            <div class="calculator-cartouche-canvas-inner">
+              <canvas id="displayCanvas" aria-hidden="true"></canvas>
+              <canvas
+                id="displayHighlightCanvas"
+                class="calculator-cartouche-highlight-canvas"
+                aria-hidden="true"
+              ></canvas>
+            </div>
+          </div>
 
           <div class="calcInlineControls" aria-label="Cartouche display controls">
             <label class="abbrevToggle" for="numericCartoucheAbbrevEnable">
@@ -472,8 +692,12 @@
     </div>
   </main>
 
-  <script>
+  <script type="module">
     "use strict";
+
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=205";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=33";
+    import { speechUnitsForRenderRun, splitAudioTpWordIntoSyllables } from "./js/sitelen-audio-plan.js?v=21";
 
     /* ============================================================
        NEW: Cartouche display mode (Traditional vs Uniform)
@@ -677,6 +901,8 @@
       "ni": 0xF1941, "nena": 0xF1940, "o": 0xF1944, "kulupu": 0xF191F,
 
       "ijo": 0xF190C, "wan": 0xF1973, "tu": 0xF196E, "sijelo": 0xF195B, "ante": 0xF1906,
+      "anpa": 0xF1905, "kala": 0xF1914, "lili": 0xF1928, "open": 0xF1947,
+      "pini": 0xF1950, "sewi": 0xF195A, "tan": 0xF1967,
       "luka": 0xF192D, "utala": 0xF1971, "uta": 0xF1970, "mun": 0xF193A, "pipi": 0xF1951, "jo": 0xF1913,
 
       "pana": 0xF194C, "weka": 0xF1976, "mute": 0xF193C, "kipisi": 0xF197B,
@@ -692,7 +918,15 @@
       "ona": 0xF1946,
     };
 
-    const FONT_FAMILY = "TP-Cartouche-Font";
+    const FONT_FAMILY_TEXT = "TP-Nasin-Nanpa-Font";
+    const FONT_FAMILY_CARTOUCHE = "TP-Cartouche-Font";
+    const FONT_FAMILY_NUMBER = FONT_FAMILY_CARTOUCHE;
+    const FONT_FAMILY_LITERAL = "system-ui";
+    const FONT_FAMILY_LITERAL_CARTOUCHE = FONT_FAMILY_TEXT;
+
+    // Legacy manual digit-button helpers intentionally use the cartouche face.
+    // Main display rendering does not use these helpers.
+    const FONT_FAMILY = FONT_FAMILY_CARTOUCHE;
 
     function getSmallCodepointsSet() {
       return new Set([
@@ -1415,104 +1649,11 @@
       }
     }
 
-    function renderMixedCartoucheToCanvasFixedWidthRightAligned(
-      canvas,
-      codepoints,
-      largePx,
-      smallPx,
-      smallCodepoints,
-      targetOuterWidthPx,
-      options = {}
-    ) {
-      const pad = options.padding ?? 18;
-      const border = options.border ?? 2;
-      const corner = options.cornerRadius ?? 16;
-      const letterGap = options.letterGap ?? 0;
-
-      const dpr = window.devicePixelRatio || 1;
-
-      const ctxMeasure = canvas.getContext("2d");
-      ctxMeasure.textBaseline = "alphabetic";
-
-      const glyphRuns = [];
-      let totalWidth = 0;
-      let maxAscent = 0;
-      let maxDescent = 0;
-
-      for (const cp of codepoints) {
-        const ch = String.fromCodePoint(cp);
-        const px = smallCodepoints.has(cp) ? smallPx : largePx;
-
-        ctxMeasure.font = `${px}px "${FONT_FAMILY}"`;
-        const m = ctxMeasure.measureText(ch);
-
-        const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
-        const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
-
-        const left = m.actualBoundingBoxLeft ?? 0;
-        const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
-        const tightW = Math.ceil(left + right);
-
-        glyphRuns.push({ ch, px, tightW, left, ascent, descent });
-
-        totalWidth += tightW + letterGap;
-        if (ascent > maxAscent) maxAscent = ascent;
-        if (descent > maxDescent) maxDescent = descent;
-      }
-
-      if (glyphRuns.length > 0) totalWidth -= letterGap;
-
-      const textHeight = Math.ceil(maxAscent + maxDescent);
-
-      const targetOuterW = Math.max(0, Math.floor(targetOuterWidthPx));
-      const targetCartW = Math.max(0, targetOuterW - border * 2);
-
-      const minCartW = Math.ceil(totalWidth + pad * 2);
-      const cartW = Math.max(targetCartW, minCartW);
-
-      const cartH = Math.ceil(textHeight + pad * 2);
-
-      const outerW = cartW + border * 2;
-      const outerH = cartH + border * 2;
-
-      canvas.style.width = `${outerW}px`;
-      canvas.style.height = `${outerH}px`;
-      canvas.width = Math.ceil(outerW * dpr);
-      canvas.height = Math.ceil(outerH * dpr);
-
-      const ctx = canvas.getContext("2d");
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.textBaseline = "alphabetic";
-      ctx.clearRect(0, 0, outerW, outerH);
-
-      drawRoundedRect(ctx, border, border, cartW, cartH, corner);
-      ctx.lineWidth = border;
-      ctx.strokeStyle = "#111";
-      ctx.stroke();
-
-      const baselineY = border + pad + maxAscent;
-
-      const innerLeft = border + pad;
-      const innerRight = border + cartW - pad;
-      const innerAvail = Math.max(0, innerRight - innerLeft);
-
-      const shift = Math.max(0, innerAvail - totalWidth);
-      let x = innerLeft + shift;
-
-      ctx.fillStyle = "#111";
-      for (const g of glyphRuns) {
-        ctx.font = `${g.px}px "${FONT_FAMILY}"`;
-        const drawX = x + (g.left ?? 0);
-        ctx.fillText(g.ch, drawX, baselineY);
-        x += g.tightW + letterGap;
-      }
-    }
-
-    function renderGlyphsCentered(canvas, codepoints, fontPx) {
+    function renderGlyphsCentered(canvas, codepoints, fontPx, fontFamily = FONT_FAMILY_TEXT) {
       const ctx = canvas.getContext("2d");
       const chars = codepoints.map(cp => String.fromCodePoint(cp)).join("");
 
-      ctx.font = `${fontPx}px "${FONT_FAMILY}"`;
+      ctx.font = `${fontPx}px "${fontFamily}"`;
       const m = ctx.measureText(chars);
 
       const ascent = m.actualBoundingBoxAscent ?? Math.ceil(fontPx * 0.8);
@@ -1529,7 +1670,7 @@
 
       ctx2.fillStyle = "#111";
       ctx2.textBaseline = "alphabetic";
-      ctx2.font = `${fontPx}px "${FONT_FAMILY}"`;
+      ctx2.font = `${fontPx}px "${fontFamily}"`;
 
       const x = Math.floor((canvas.width - m.width) / 2);
       const y = Math.floor((canvas.height + ascent - descent) / 2);
@@ -1537,20 +1678,43 @@
       ctx2.fillText(chars, x, y);
     }
 
-    async function ensureFontLoaded() {
-      const sampleCp = 0xF190B;
-      const sampleChar = String.fromCodePoint(sampleCp);
-      const fontSpec = `24px "${FONT_FAMILY}"`;
+    async function ensureFontLoaded(px = DISPLAY_LARGE_PX) {
+      if (!document.fonts || !document.fonts.load) return;
 
-      if (!document.fonts || !document.fonts.load || !document.fonts.check) return;
-      await document.fonts.load(fontSpec, sampleChar);
+      const requests = [
+        document.fonts.load(`${px}px "${FONT_FAMILY_TEXT}"`, String.fromCodePoint(0xF196C)),
+        document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF1990)),
+        document.fonts.load(`${px}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF193D))
+      ];
+      await Promise.all(requests);
       await document.fonts.ready;
+
+      const required = [
+        [`${px}px "${FONT_FAMILY_TEXT}"`, String.fromCodePoint(0xF196C)],
+        [`${px}px "${FONT_FAMILY_CARTOUCHE}"`, String.fromCodePoint(0xF1990)]
+      ];
+      for (const [spec, sample] of required) {
+        if (typeof document.fonts.check === "function" && !document.fonts.check(spec, sample)) {
+          throw new Error(`Required calculator font did not load: ${spec}`);
+        }
+      }
     }
 
     const displayCanvas = document.getElementById("displayCanvas");
     const elDisplayText = document.getElementById("displayText");
     const elPendingText = document.getElementById("pendingText");
     const elDisplayLive = document.getElementById("displayLive");
+
+    function getCalculatorDisplayViewportSize() {
+      const inner = displayCanvas?.parentElement;
+      const keys = document.getElementById("keys");
+      const width = Number(inner?.clientWidth) || Number(keys?.clientWidth) || Number(displayCanvas?.clientWidth) || 520;
+      const height = Number(inner?.clientHeight) || Number(displayCanvas?.clientHeight) || 88;
+      return {
+        width: Math.max(80, Math.floor(width)),
+        height: Math.max(52, Math.floor(height))
+      };
+    }
 
     // Visible help fields (bilingual)
     const elDisplayTextVisible = document.getElementById("displayTextVisible");
@@ -1562,58 +1726,496 @@
     const elProperNameText = document.getElementById("properNameText");
 
     let tokiPonaVoicePromise = null;
+    let sharedResultRendererPromise = null;
+    let currentCalculatorAudioModel = null;
+    let calculatorAudioGeneration = 0;
+    let calculatorAudioPlayback = null;
+    let calculatorRenderGeneration = 0;
+    let pendingCalculatorSharedRender = null;
+    let calculatorSharedRenderWorker = null;
+
+    const CALCULATOR_AUDIO_PAUSE_SCALE = 1.00;
+    const CALCULATOR_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
 
     async function getTokiPonaVoice() {
       if (!tokiPonaVoicePromise) {
-        tokiPonaVoicePromise = import("./js/toki-pona-voice-api.js?v=33")
-          .then(mod => mod.createTokiPonaVoice());
+        tokiPonaVoicePromise = createTokiPonaVoice();
       }
       return tokiPonaVoicePromise;
     }
 
+    async function getSharedResultRenderer() {
+      if (!sharedResultRendererPromise) {
+        await ensureFontLoaded(DISPLAY_LARGE_PX);
+        sharedResultRendererPromise = SitelenRenderer.create({
+          layout: {
+            fontPx: DISPLAY_LARGE_PX,
+            paddingPx: SHARED_DISPLAY_PADDING_PX,
+            align: "left",
+            spacingPreset: "compact"
+          },
+          parser: getSharedRendererParserOptions(),
+          fonts: sharedDisplayFonts()
+        });
+      }
+      return sharedResultRendererPromise;
+    }
+
+    function getSharedNanpaOptions() {
+      const relaxed = getRelaxedNanpaLinjanProperNamesEnabled();
+      return {
+        mode: "uniform",
+        numericMode: "uniform",
+        isoThousands: true,
+        mixedStyle: "short",
+        relaxedNanpaLinjanParsing: relaxed,
+        relaxedNanpaLinjanRendering: relaxed
+      };
+    }
+
+    function getSharedRendererParserOptions() {
+      return {
+        ...getSharedNanpaOptions(),
+        abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
+        mode: "sitelen-seli-kiwen",
+        literalStyle: "double-quote",
+        extensionStyle: "ssk",
+        cartoucheStyle: "ssk",
+        preserveNumericCartoucheBreaksInAbbreviation: true,
+        autoCartoucheStandaloneProperNames: true,
+        showUnknownText: false,
+        breakLinesAtFullStops: false
+      };
+    }
+
     function getCurrentNanpaLinjanProperNameForAudio() {
-      return String(elProperNameText?.textContent ?? "").trim();
+      return String(currentCalculatorAudioModel?.properName ?? "").trim();
+    }
+
+    function setProperNameAudioButtonState(state) {
+      const btn = document.getElementById("btnPlayProperNameAudio");
+      if (!btn) return;
+      btn.disabled = state === "building" || !currentCalculatorAudioModel;
+
+      if (state === "building") {
+        btn.textContent = "⏳";
+        btn.title = "Preparing audio";
+        btn.setAttribute("aria-label", btn.title);
+        btn.setAttribute("aria-busy", "true");
+      } else {
+        btn.textContent = "🤖🔊";
+        btn.title = "Play audio";
+        btn.setAttribute("aria-label", btn.title);
+        btn.removeAttribute("aria-busy");
+      }
+    }
+
+    function clearCalculatorAudioHighlights() {
+      elProperNameText?.querySelectorAll(".calculator-audio-unit.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      elDisplayTextVisible?.querySelectorAll(".calculator-value-character.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      clearCalculatorCartoucheHighlight();
+    }
+
+    function stopCalculatorAudioPlayback() {
+      calculatorAudioGeneration += 1;
+      const playback = calculatorAudioPlayback;
+      calculatorAudioPlayback = null;
+
+      if (playback?.highlightFrame) {
+        cancelAnimationFrame(playback.highlightFrame);
+      }
+      if (playback?.source) {
+        try { playback.source.onended = null; } catch {}
+        try { playback.source.stop(); } catch {}
+        try { playback.source.disconnect(); } catch {}
+      }
+      try { playback?.voice?.stop?.(); } catch {}
+
+      clearCalculatorAudioHighlights();
+      setProperNameAudioButtonState("stopped");
+    }
+
+    function renderCalculatorProperName(properName, units) {
+      if (!elProperNameText) return;
+      elProperNameText.replaceChildren();
+
+      const grouped = new Map();
+      for (let index = 0; index < units.length; index += 1) {
+        const unit = units[index];
+        const wordIndex = Number.isFinite(Number(unit.wordIndex)) ? Number(unit.wordIndex) : index;
+        if (!grouped.has(wordIndex)) grouped.set(wordIndex, []);
+        grouped.get(wordIndex).push({ ...unit, highlightIndex: index });
+      }
+
+      const wordIndexes = [...grouped.keys()].sort((a, b) => a - b);
+      for (let wi = 0; wi < wordIndexes.length; wi += 1) {
+        const wordWrap = document.createElement("span");
+        wordWrap.className = "calculator-audio-word";
+        for (const unit of grouped.get(wordIndexes[wi])) {
+          const span = document.createElement("span");
+          span.className = "calculator-audio-unit";
+          span.dataset.calculatorAudioUnitIndex = String(unit.highlightIndex);
+          span.textContent = String(unit.text ?? unit.timingText ?? "");
+          wordWrap.appendChild(span);
+        }
+        elProperNameText.appendChild(wordWrap);
+        if (wi < wordIndexes.length - 1) elProperNameText.appendChild(document.createTextNode(" "));
+      }
+
+      if (!units.length) elProperNameText.textContent = properName;
+    }
+
+    function calculatorDisplaySemanticCharacterIndices(displayValue) {
+      const out = [];
+      const chars = Array.from(String(displayValue ?? ""));
+      for (let index = 0; index < chars.length; index += 1) {
+        if (/[0-9.,eE\-]/.test(chars[index])) out.push(index);
+      }
+      return out;
+    }
+
+    function buildCalculatorValueHighlightMap(units, displayValue) {
+      const map = Array.from({ length: units.length }, () => []);
+      const valueCharacterIndices = calculatorDisplaySemanticCharacterIndices(displayValue);
+      if (!units.length || !valueCharacterIndices.length) return map;
+
+      // Every calculator value begins with the structural nanpa-linja-n "Ne"
+      // syllable. It has no Arabic character equivalent. Every later spoken
+      // unit corresponds in order to one semantic value character: a digit,
+      // decimal point, ISO-thousands comma, scientific-notation e, or minus
+      // sign. Display-only underscore grouping characters are skipped.
+      let unitIndex = 0;
+      const firstUnit = String(units[0]?.text ?? units[0]?.timingText ?? "")
+        .replace(/[^A-Za-z]/g, "")
+        .toLowerCase();
+      if (firstUnit === "ne") unitIndex = 1;
+
+      let valueIndex = 0;
+      const lastValueCharacterIndex = valueCharacterIndices[valueCharacterIndices.length - 1];
+      while (unitIndex < units.length) {
+        const unitKey = String(units[unitIndex]?.text ?? units[unitIndex]?.timingText ?? "")
+          .replace(/[^A-Za-z]/g, "")
+          .toLowerCase();
+
+        // Ene is a no-value spacer inserted between grouped fractional digits.
+        // It is spoken and highlighted in the proper name/cartouche, but there
+        // is deliberately no Arabic value character to highlight for it.
+        if (unitKey === "ene") {
+          unitIndex += 1;
+          continue;
+        }
+
+        if (valueIndex < valueCharacterIndices.length) {
+          map[unitIndex] = [valueCharacterIndices[valueIndex]];
+          valueIndex += 1;
+        } else if (Number.isInteger(lastValueCharacterIndex)) {
+          // A provisional trailing decimal such as "28." ends in "Onen".
+          // Its spoken form has two units ("O" + "nen") for the one decimal
+          // point, so the final extra unit continues to target that character.
+          map[unitIndex] = [lastValueCharacterIndex];
+        }
+        unitIndex += 1;
+      }
+      return map;
+    }
+
+    function renderCalculatorValueText(element, displayValue, valueHighlightMap = null) {
+      if (!element) return;
+      const value = String(displayValue ?? "");
+      if (!Array.isArray(valueHighlightMap)) {
+        element.textContent = value;
+        return;
+      }
+
+      const unitsByCharacterIndex = new Map();
+      for (let unitIndex = 0; unitIndex < valueHighlightMap.length; unitIndex += 1) {
+        for (const rawCharacterIndex of valueHighlightMap[unitIndex] || []) {
+          const characterIndex = Number(rawCharacterIndex);
+          if (!Number.isInteger(characterIndex) || characterIndex < 0) continue;
+          if (!unitsByCharacterIndex.has(characterIndex)) unitsByCharacterIndex.set(characterIndex, []);
+          unitsByCharacterIndex.get(characterIndex).push(unitIndex);
+        }
+      }
+
+      element.replaceChildren();
+      const chars = Array.from(value);
+      for (let characterIndex = 0; characterIndex < chars.length; characterIndex += 1) {
+        const span = document.createElement("span");
+        span.className = "calculator-value-character";
+        span.textContent = chars[characterIndex];
+        if (unitsByCharacterIndex.has(characterIndex)) {
+          span.dataset.calculatorValueUnitIndices = unitsByCharacterIndex.get(characterIndex).join(" ");
+        }
+        element.appendChild(span);
+      }
+    }
+
+    function renderCalculatorVisibleValues(displayValue, valueHighlightMap = null) {
+      renderCalculatorValueText(elDisplayTextVisible, displayValue, valueHighlightMap);
+      if (elDisplayTextVisibleTp) elDisplayTextVisibleTp.textContent = String(displayValue ?? "");
+    }
+
+    function calculatorHighlightRectsForComponentIndices(componentIndices) {
+      const layout = displayCanvas?._calculatorAudioLayout;
+      const runs = Array.from(layout?.runs || []);
+      const rects = [];
+      for (const rawIndex of componentIndices || []) {
+        const index = Number(rawIndex);
+        const run = Number.isInteger(index) ? runs[index] : null;
+        if (!run) continue;
+        rects.push({
+          x: Math.max(0, Number(run.x) || 0),
+          y: Math.max(0, Number(run.top) || 0),
+          width: Math.max(1, Number(run.width) || 1),
+          height: Math.max(1, Number(run.height) || 1)
+        });
+      }
+      return rects;
+    }
+
+    function buildCalculatorCartoucheHighlightMap(units, run) {
+      return units.map(unit => {
+        const target = Array.from(unit?.visualTargets || []).find(item =>
+          !item?.runId || item.runId === run?.id
+        ) || unit?.visualTargets?.[0];
+        return calculatorHighlightRectsForComponentIndices(target?.componentIndices || []);
+      });
+    }
+
+    function syncCalculatorHighlightCanvas() {
+      const overlay = document.getElementById("displayHighlightCanvas");
+      if (!displayCanvas || !overlay) return null;
+
+      const cssWidth = Math.max(1, displayCanvas.clientWidth || parseFloat(displayCanvas.style.width) || 1);
+      const cssHeight = Math.max(1, displayCanvas.clientHeight || parseFloat(displayCanvas.style.height) || 1);
+      const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
+      const backingWidth = Math.max(1, Math.round(cssWidth * dpr));
+      const backingHeight = Math.max(1, Math.round(cssHeight * dpr));
+
+      overlay.style.width = `${cssWidth}px`;
+      overlay.style.height = `${cssHeight}px`;
+      if (overlay.width !== backingWidth) overlay.width = backingWidth;
+      if (overlay.height !== backingHeight) overlay.height = backingHeight;
+
+      const ctx = overlay.getContext("2d", { alpha: true });
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, cssWidth, cssHeight, dpr };
+    }
+
+    function clearCalculatorCartoucheHighlight() {
+      const synced = syncCalculatorHighlightCanvas();
+      if (!synced) return;
+      synced.ctx.clearRect(0, 0, synced.cssWidth, synced.cssHeight);
+    }
+
+    function scaleCalculatorCartoucheHighlightRect(rect, sourceLayout, cssWidth, cssHeight) {
+      const sourceWidth = Math.max(1, Number(sourceLayout?.cssWidth) || Number(cssWidth) || 1);
+      const sourceHeight = Math.max(1, Number(sourceLayout?.cssHeight) || Number(cssHeight) || 1);
+      const scaleX = Math.max(0, Number(cssWidth) || 0) / sourceWidth;
+      const scaleY = Math.max(0, Number(cssHeight) || 0) / sourceHeight;
+      return {
+        x: (Number(rect?.x) || 0) * scaleX,
+        y: (Number(rect?.y) || 0) * scaleY,
+        width: Math.max(0, Number(rect?.width) || 0) * scaleX,
+        height: Math.max(0, Number(rect?.height) || 0) * scaleY
+      };
+    }
+
+    function drawCalculatorCartoucheHighlight(index) {
+      const synced = syncCalculatorHighlightCanvas();
+      if (!synced) return;
+      const { ctx, cssWidth, cssHeight, dpr } = synced;
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+      const rects = currentCalculatorAudioModel?.cartoucheHighlightMap?.[index] || [];
+      if (!rects.length) return;
+
+      // The display canvas can be CSS-shrunk by max-width:100%. Its glyph
+      // layout remains in the unscaled CSS coordinate space recorded at draw
+      // time, so scale every highlight rectangle into the canvas's current
+      // client dimensions before painting the overlay.
+      const sourceLayout = displayCanvas?._calculatorAudioLayout;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 225, 70, 0.46)";
+      ctx.strokeStyle = "rgba(17, 17, 17, 0.78)";
+      ctx.lineWidth = 1.25;
+      for (const rect of rects) {
+        const scaled = scaleCalculatorCartoucheHighlightRect(rect, sourceLayout, cssWidth, cssHeight);
+        const { x, y, width, height } = scaled;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(x, y, width, height, Math.max(2, Math.min(6, height * 0.15)));
+        } else {
+          ctx.rect(x, y, width, height);
+        }
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function highlightCalculatorAudioUnit(index) {
+      elProperNameText?.querySelectorAll(".calculator-audio-unit.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      elProperNameText
+        ?.querySelector(`[data-calculator-audio-unit-index="${index}"]`)
+        ?.classList.add("is-speaking");
+
+      elDisplayTextVisible?.querySelectorAll(".calculator-value-character.is-speaking").forEach(node => {
+        node.classList.remove("is-speaking");
+      });
+      elDisplayTextVisible
+        ?.querySelectorAll(`[data-calculator-value-unit-indices~="${index}"]`)
+        .forEach(node => node.classList.add("is-speaking"));
+      drawCalculatorCartoucheHighlight(index);
+    }
+
+    function calculatorAudioTimeline(rendered, units, sampleLength) {
+      const timeline = Array.from(rendered?.timeline || [])
+        .filter(record => Number.isFinite(Number(record?.startSample)) && Number.isFinite(Number(record?.endSample)))
+        .map(record => ({
+          ...record,
+          startSample: Math.max(0, Math.round(Number(record.startSample))),
+          endSample: Math.min(sampleLength, Math.round(Number(record.endSample)))
+        }))
+        .filter(record => record.endSample > record.startSample);
+
+      const speechRecords = timeline.filter(record => record.kind === "speech");
+      if (speechRecords.length !== units.length) {
+        throw new Error(`Nanpa audio timeline mismatch: ${speechRecords.length} audio units for ${units.length} highlight units.`);
+      }
+
+      let speechIndex = 0;
+      return timeline.map(record => ({
+        ...record,
+        highlightIndex: record.kind === "speech" ? speechIndex++ : null
+      }));
+    }
+
+    function calculatorTimelineEntryAtSample(timeline, sample) {
+      for (const entry of timeline || []) {
+        if (sample >= entry.startSample && sample < entry.endSample) return entry;
+      }
+      return timeline?.[timeline.length - 1] || null;
+    }
+
+    async function startCalculatorAudioPlayback() {
+      const model = currentCalculatorAudioModel;
+      if (!model) {
+        if (elDisplayLive) elDisplayLive.textContent = "No nanpa-linja-n proper name to play.";
+        return;
+      }
+
+      stopCalculatorAudioPlayback();
+      const generation = ++calculatorAudioGeneration;
+      setProperNameAudioButtonState("building");
+
+      try {
+        const voice = await getTokiPonaVoice();
+        const rendered = await voice.render(model.properName, {
+          synthesis_mode: "reference_audio",
+          pauseScale: CALCULATOR_AUDIO_PAUSE_SCALE,
+          syllableGapSeconds: CALCULATOR_AUDIO_SYLLABLE_GAP_SECONDS
+        });
+        if (generation !== calculatorAudioGeneration || currentCalculatorAudioModel !== model) return;
+
+        const samples = rendered.samples instanceof Float32Array
+          ? rendered.samples
+          : Float32Array.from(rendered.samples || []);
+        const sampleRate = Number(rendered.sampleRate);
+        if (!samples.length || !sampleRate) throw new Error("No nanpa-linja-n audio samples were produced.");
+
+        const timeline = calculatorAudioTimeline(rendered, model.units, samples.length);
+        const audioContext = voice.getAudioContext();
+        await audioContext.resume?.();
+        if (generation !== calculatorAudioGeneration || currentCalculatorAudioModel !== model) return;
+
+        const source = voice.playSamples(samples, sampleRate);
+        const playback = {
+          generation,
+          voice,
+          source,
+          audioContext,
+          sampleRate,
+          samples,
+          timeline,
+          startedAt: audioContext.currentTime,
+          highlightFrame: null,
+          activeHighlightIndex: null
+        };
+        calculatorAudioPlayback = playback;
+        setProperNameAudioButtonState("stopped");
+        const btn = document.getElementById("btnPlayProperNameAudio");
+        if (btn) btn.disabled = false;
+
+        const tick = () => {
+          if (calculatorAudioPlayback !== playback || generation !== calculatorAudioGeneration) return;
+          const sample = Math.min(
+            samples.length - 1,
+            Math.max(0, Math.floor((audioContext.currentTime - playback.startedAt) * sampleRate))
+          );
+          const entry = calculatorTimelineEntryAtSample(timeline, sample);
+          const highlightIndex = Number.isInteger(entry?.highlightIndex) ? entry.highlightIndex : null;
+          if (playback.activeHighlightIndex !== highlightIndex) {
+            playback.activeHighlightIndex = highlightIndex;
+            if (highlightIndex == null) clearCalculatorAudioHighlights();
+            else highlightCalculatorAudioUnit(highlightIndex);
+          }
+          playback.highlightFrame = requestAnimationFrame(tick);
+        };
+
+        source.onended = () => {
+          if (calculatorAudioPlayback !== playback || generation !== calculatorAudioGeneration) return;
+          if (playback.highlightFrame) cancelAnimationFrame(playback.highlightFrame);
+          calculatorAudioPlayback = null;
+          clearCalculatorAudioHighlights();
+          setProperNameAudioButtonState("stopped");
+          if (elDisplayLive) elDisplayLive.textContent = `Played audio for ${model.properName}.`;
+        };
+
+        playback.highlightFrame = requestAnimationFrame(tick);
+
+        if (typeof window.trackUsage === "function") {
+          window.trackUsage("calculator-audio-play");
+        }
+      } catch (err) {
+        if (generation !== calculatorAudioGeneration) return;
+        calculatorAudioPlayback = null;
+        clearCalculatorAudioHighlights();
+        setProperNameAudioButtonState("stopped");
+        if (elDisplayLive) elDisplayLive.textContent = `Audio error: ${err?.message ?? String(err)}`;
+        alert(`Audio error: ${err?.message ?? String(err)}`);
+      }
     }
 
     function wireProperNameAudioButton() {
       const btn = document.getElementById("btnPlayProperNameAudio");
       if (!btn) return;
-
-      btn.addEventListener("click", async () => {
-        const properName = getCurrentNanpaLinjanProperNameForAudio();
-
-        if (!properName) {
-          if (elDisplayLive) elDisplayLive.textContent = "No nanpa-linja-n proper name to play.";
-          return;
-        }
-
-        try {
-          btn.disabled = true;
-          const voice = await getTokiPonaVoice();
-          await voice.play(properName);
-
-          if (typeof window.trackUsage === "function") {
-            window.trackUsage("calculator-audio-play");
-          }
-
-          if (elDisplayLive) elDisplayLive.textContent = `Played audio for ${properName}.`;
-        } catch (err) {
-          if (elDisplayLive) elDisplayLive.textContent = `Audio error: ${err?.message ?? String(err)}`;
-          alert(`Audio error: ${err?.message ?? String(err)}`);
-        } finally {
-          btn.disabled = false;
-        }
-      });
+      btn.addEventListener("click", startCalculatorAudioPlayback);
+      window.addEventListener("beforeunload", stopCalculatorAudioPlayback);
+      setProperNameAudioButtonState("stopped");
     }
 
     const smallSet = getSmallCodepointsSet();
 
-    const DISPLAY_LARGE_PX = 92;
-    const DISPLAY_SMALL_PX = 26;
-    const DISPLAY_PAD = 24;
-    const DISPLAY_BORDER = 3;
-    const DISPLAY_CORNER = 18;
-    const DISPLAY_GAP = 4;
+    // Complete values and intermediate expressions start at the same renderer
+    // font size so entering the first operator does not cause a visual jump.
+    const DISPLAY_LARGE_PX = 76;
+    const RESULT_MIN_LARGE_PX = 12;
+    const EXPRESSION_LARGE_PX = DISPLAY_LARGE_PX;
+    const EXPRESSION_MIN_LARGE_PX = 20;
+
+    // Padding inside the shared renderer protects cartouche strokes and tall
+    // glyphs. The separate compositing margin keeps the renderer canvas away
+    // from the fixed display viewport edge, including on short portrait screens.
+    const SHARED_DISPLAY_PADDING_PX = 8;
+    const SHARED_DISPLAY_COMPOSITE_MARGIN_PX = 3;
 
     const BTN_LARGE_PX = 28;
     const BTN_SMALL_PX = 10;
@@ -1622,268 +2224,668 @@
     const BTN_CORNER = 14;
     const BTN_GAP = 2;
 
+    const MAX_DECIMALS = 12;
+    const MAX_DECIMAL_TEXT_LENGTH = 160;
+
+    let expressionTokens = [{ type: "number", value: "0" }];
     let inputStr = "0";
-    let acc = null;
-    let pendingOp = null;
-    let lastOp = null;
-    let lastArg = null;
+    let calculatorError = null;
+    let justEvaluated = false;
+    let repeatOperation = null;
+    let scientificLayerEnabled = false;
 
-    const MAX_DECIMALS = 5;
-
-    function isError() { return inputStr === "Error"; }
-
-    function setError() {
-      inputStr = "Error";
-      renderDisplay();
+    class CalculatorExpressionError extends Error {
+      constructor(kind, message) {
+        super(message);
+        this.name = "CalculatorExpressionError";
+        this.kind = kind || "invalid";
+      }
     }
+
+    function expressionFailure(kind, message) {
+      throw new CalculatorExpressionError(kind, message);
+    }
+
+    function numberToken(value) { return { type: "number", value: String(value) }; }
+    function operatorToken(value, options = {}) {
+      return { type: "operator", value: String(value), implicit: options.implicit === true };
+    }
+
+    function expressionTokenDisplay(token, index = -1, tokens = expressionTokens) {
+      if (!token) return "";
+      if (token.type === "number") return String(token.value).replace(/^-/, "−");
+      if (token.type === "lparen") return "(";
+      if (token.type === "rparen") return ")";
+      if (token.type === "constant") return token.value === "pi" ? "π" : "e";
+      if (token.type === "function") return token.value === "sqrt" ? "√" : "ln";
+      if (token.type === "postfix") return token.value === "square" ? "²" : "⁻¹";
+      if (token.type === "operator") {
+        if (token.value === "*" && token.implicit === true) return "";
+        if (token.value === "*") return " × ";
+        if (token.value === "/") return " ÷ ";
+        if (token.value === "^") return "^";
+        if (token.value === "EXP") return " × 10^";
+        if (token.value === "LOG") return " log ";
+        if (token.value === "-") return isUnaryOperatorAt(tokens, index) ? "−" : " − ";
+        if (token.value === "+") return isUnaryOperatorAt(tokens, index) ? "+" : " + ";
+        return ` ${token.value} `;
+      }
+      return "";
+    }
+
+    function expressionDisplayText(tokens = expressionTokens) {
+      const list = Array.from(tokens || []);
+      return list.map((token, index) => expressionTokenDisplay(token, index, list)).join("").replace(/\s+/g, " ").trim();
+    }
+
+    function syncInputStrFromExpression() {
+      inputStr = expressionDisplayText() || "0";
+      return inputStr;
+    }
+
+    function lastExpressionToken() { return expressionTokens[expressionTokens.length - 1] || null; }
+
+    function tokenCanEndValue(token) {
+      return !!token && ["number", "constant", "rparen", "postfix"].includes(token.type);
+    }
+
+    function tokenExpectsValue(token = lastExpressionToken()) {
+      return !token || ["operator", "lparen", "function"].includes(token.type);
+    }
+
+    function isDefaultZeroPlaceholder() {
+      return !justEvaluated && expressionTokens.length === 1 && expressionTokens[0]?.type === "number" && expressionTokens[0]?.value === "0";
+    }
+
+    function expressionParenthesisDepth(tokens = expressionTokens) {
+      let depth = 0;
+      for (const token of tokens || []) {
+        if (token?.type === "lparen") depth += 1;
+        else if (token?.type === "rparen") depth -= 1;
+      }
+      return depth;
+    }
+
+    function isUnaryOperatorAt(tokens, index) {
+      const token = tokens?.[index];
+      if (!token || token.type !== "operator" || !["+", "-"].includes(token.value)) return false;
+      if (index === 0) return true;
+      const previous = tokens[index - 1];
+      return !previous || ["operator", "lparen", "function"].includes(previous.type);
+    }
+
+    function clearCalculatorErrorForEdit() { calculatorError = null; }
+    function rejectCalculatorInput(message) { if (elDisplayLive) elDisplayLive.textContent = String(message || "That key is not valid here."); }
+    function isError() { return !!calculatorError; }
+    function setError(message = "Invalid expression.", kind = "invalid") { calculatorError = { kind, message: String(message) }; renderDisplay(); }
 
     function formatNumberForDisplay(raw, { groupSize = 3, intSep = ",", fracSep = "_" } = {}) {
       const s0 = String(raw ?? "");
-
-      // Preserve calculator special/mid-entry states
       if (s0 === "" || s0 === "-" || s0 === "Error") return s0;
-
       const neg = s0.startsWith("-");
       const s = neg ? s0.slice(1) : s0;
-
       const dot = s.indexOf(".");
       const hasDot = dot >= 0;
-
       const intPartRaw = hasDot ? s.slice(0, dot) : s;
       const fracRaw = hasDot ? s.slice(dot + 1) : "";
-
-      // Preserve "12." form (no fraction digits yet)
       const endsWithDot = hasDot && dot === s.length - 1;
-
-      // Integer grouping (from right)
       const intPart = (intPartRaw === "" ? "0" : intPartRaw);
       const intGrouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, intSep);
-
       if (!hasDot) return (neg ? "-" : "") + intGrouped;
       if (endsWithDot) return (neg ? "-" : "") + intGrouped + ".";
-
-      // Fraction grouping (from left, in groups of 3)
       let i = 0;
       while (i < fracRaw.length && /[0-9]/.test(fracRaw[i])) i++;
       const fracDigits = fracRaw.slice(0, i);
       const suffix = fracRaw.slice(i);
-
-      if (fracDigits.length <= groupSize) {
-        return (neg ? "-" : "") + intGrouped + "." + fracDigits + suffix;
-      }
-
+      if (fracDigits.length <= groupSize) return (neg ? "-" : "") + intGrouped + "." + fracDigits + suffix;
       const fracGrouped = fracDigits.replace(new RegExp(`(\\d{${groupSize}})(?=\\d)`, "g"), `$1${fracSep}`);
       return (neg ? "-" : "") + intGrouped + "." + fracGrouped + suffix;
     }
 
     function formatForCartoucheEncoding(raw, thousandsSep = ",") {
       const s0 = String(raw ?? "").trim();
-      if (!s0) return s0;
-      if (s0 === "Error") return s0;
-
-      // If it is already nanpa-caps, do not touch it
+      if (!s0 || s0 === "Error") return s0;
       if (looksLikeNanpaCaps(s0)) return s0;
-
-      // Preserve mid-entry states
       if (s0 === "-" || s0 === "." || s0 === "-.") return s0;
-
       const neg = s0.startsWith("-");
       const s = neg ? s0.slice(1) : s0;
-
       const dot = s.indexOf(".");
       const hasDot = dot >= 0;
-
       const intRaw = hasDot ? s.slice(0, dot) : s;
       const fracRaw = hasDot ? s.slice(dot + 1) : "";
-
-      // Preserve trailing dot (e.g. "12.")
       const endsWithDot = hasDot && dot === s.length - 1;
-
-      // If user already has thousands separators, keep them
       let intPart = intRaw === "" ? "0" : intRaw;
-      if (!intPart.includes(thousandsSep)) {
-        intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSep);
-      }
+      if (!intPart.includes(thousandsSep)) intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSep);
+      return (neg ? "-" : "") + intPart + (hasDot ? "." : "") + (endsWithDot ? "" : fracRaw);
+    }
 
-      const out = (neg ? "-" : "") + intPart + (hasDot ? "." : "") + (endsWithDot ? "" : fracRaw);
+    function expandExponentialDecimal(text) {
+      const match = /^([+-]?)(\d+)(?:\.(\d*))?[eE]([+-]?\d+)$/.exec(String(text));
+      if (!match) return String(text);
+      const sign = match[1] === "-" ? "-" : "";
+      const integer = match[2];
+      const fraction = match[3] || "";
+      const exponent = Number(match[4]);
+      const digits = integer + fraction;
+      const decimalPosition = integer.length + exponent;
+      let body;
+      if (decimalPosition <= 0) body = "0." + "0".repeat(-decimalPosition) + digits;
+      else if (decimalPosition >= digits.length) body = digits + "0".repeat(decimalPosition - digits.length);
+      else body = digits.slice(0, decimalPosition) + "." + digits.slice(decimalPosition);
+      return sign + body;
+    }
+
+    function trimDecimalText(text) {
+      let out = String(text);
+      if (out.includes(".")) out = out.replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "").replace(/\.$/, "");
+      out = out.replace(/^(-?)0+(?=\d)/, "$1");
+      if (out === "" || out === "-0" || /^-?0(?:\.0*)?$/.test(out)) return "0";
       return out;
     }
 
-    function normalizeInputString(s) {
-      if (!s || s === "-") return s;
-
-      const neg = s.startsWith("-");
-      const core = neg ? s.slice(1) : s;
-
-      if (core.includes(".")) {
-        const [a, b] = core.split(".", 2);
-        const a2 = a.replace(/^0+(?=\d)/, "") || "0";
-        return (neg ? "-" : "") + a2 + "." + b;
-      } else {
-        const a2 = core.replace(/^0+(?=\d)/, "") || "0";
-        return (neg ? "-" : "") + a2;
-      }
-    }
-
-    function parseInputToNumber(s) {
-      if (!s || s === "-" || s === "." || s === "-.") return 0;
-      const n = Number(s);
-      if (!Number.isFinite(n)) throw new Error("Invalid number");
-      return n;
-    }
-
     function formatNumberForInput(n) {
-      if (!Number.isFinite(n)) return "Error";
+      if (!Number.isFinite(n)) expressionFailure("overflow", "The result is outside the supported numeric range.");
       if (Object.is(n, -0)) n = 0;
-      if (Number.isInteger(n)) return String(n);
-
-      const fixed = n.toFixed(MAX_DECIMALS);
-      const trimmed = fixed.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
-      if (trimmed === "-0") return "0";
-      return trimmed;
+      let text = Number.isInteger(n) && Math.abs(n) < 1e21 ? String(n) : n.toPrecision(MAX_DECIMALS);
+      text = trimDecimalText(expandExponentialDecimal(text));
+      if (text.length > MAX_DECIMAL_TEXT_LENGTH) expressionFailure("overflow", "The decimal result is too long to display safely.");
+      return text;
     }
 
-    function compute(a, op, b) {
-      if (op === "+") return a + b;
-      if (op === "-") return a - b;
-      if (op === "*") return a * b;
-      if (op === "/") {
-        if (b === 0) return NaN;
-        return a / b;
+    function finiteResult(value, message = "The result is outside the supported numeric range.") {
+      if (!Number.isFinite(value)) expressionFailure("overflow", message);
+      return value;
+    }
+
+    function evaluateBinaryOperation(left, operator, right) {
+      if (operator === "+") return finiteResult(left + right);
+      if (operator === "-") return finiteResult(left - right);
+      if (operator === "*") return finiteResult(left * right);
+      if (operator === "/") {
+        if (right === 0) expressionFailure("undefined", "Division by zero is undefined.");
+        return finiteResult(left / right);
       }
-      throw new Error("Unknown op");
+      if (operator === "^") {
+        const value = Math.pow(left, right);
+        if (Number.isNaN(value)) expressionFailure("undefined", "That power has no real-number result.");
+        return finiteResult(value);
+      }
+      if (operator === "EXP") {
+        if (!Number.isInteger(right)) expressionFailure("undefined", "A scientific-notation exponent must be an integer.");
+        return finiteResult(left * Math.pow(10, right));
+      }
+      if (operator === "LOG") {
+        if (left <= 0) expressionFailure("undefined", "A logarithm requires a positive argument.");
+        if (right <= 0) expressionFailure("undefined", "A logarithm base must be positive.");
+        if (right === 1) expressionFailure("undefined", "A logarithm base cannot be 1.");
+        const value = Math.log(left) / Math.log(right);
+        if (Number.isNaN(value)) expressionFailure("undefined", "That logarithm has no real-number result.");
+        return finiteResult(value);
+      }
+      expressionFailure("invalid", `Unsupported operator ${operator}.`);
     }
 
-    function applyPendingIfReady(nextOpForRepeat = null) {
-      if (pendingOp == null || acc == null) return;
-
-      const b = parseInputToNumber(inputStr);
-      const r = compute(acc, pendingOp, b);
-
-      if (!Number.isFinite(r)) { setError(); return; }
-
-      lastOp = nextOpForRepeat ?? pendingOp;
-      lastArg = b;
-
-      acc = r;
-      inputStr = formatNumberForInput(r);
+    function evaluateScientificFunction(name, value) {
+      if (name === "sqrt") {
+        if (value < 0) expressionFailure("undefined", "Square root requires a non-negative real number.");
+        return finiteResult(Math.sqrt(value));
+      }
+      if (name === "ln") {
+        if (value <= 0) expressionFailure("undefined", "Natural logarithm requires a positive real number.");
+        return finiteResult(Math.log(value));
+      }
+      expressionFailure("invalid", `Unsupported function ${name}.`);
     }
+
+    function evaluatePostfixOperation(name, value) {
+      if (name === "square") return finiteResult(value * value);
+      if (name === "reciprocal") {
+        if (value === 0) expressionFailure("undefined", "The reciprocal of zero is undefined.");
+        return finiteResult(1 / value);
+      }
+      expressionFailure("invalid", `Unsupported postfix function ${name}.`);
+    }
+
+    class CalculatorExpressionParser {
+      constructor(tokens) { this.tokens = Array.from(tokens || []); this.index = 0; }
+      current() { return this.tokens[this.index] || null; }
+      consume() { const token = this.current(); this.index += 1; return token; }
+      evaluate() {
+        if (!this.tokens.length) expressionFailure("incomplete", "Enter a value before pressing equals.");
+        const value = this.parseAdditive();
+        const remaining = this.current();
+        if (remaining) {
+          if (remaining.type === "rparen") expressionFailure("invalid", "There is an unmatched closing parenthesis.");
+          expressionFailure("invalid", "The expression contains tokens in an invalid order.");
+        }
+        return finiteResult(value);
+      }
+      parseAdditive() {
+        let value = this.parseMultiplicative();
+        while (this.current()?.type === "operator" && ["+", "-"].includes(this.current().value)) {
+          const operator = this.consume().value;
+          value = evaluateBinaryOperation(value, operator, this.parseMultiplicative());
+        }
+        return value;
+      }
+      parseMultiplicative() {
+        let value = this.parseUnary();
+        while (this.current()?.type === "operator" && ["*", "/"].includes(this.current().value)) {
+          const operator = this.consume().value;
+          value = evaluateBinaryOperation(value, operator, this.parseUnary());
+        }
+        return value;
+      }
+      parseUnary() {
+        const token = this.current();
+        if (token?.type === "operator" && ["+", "-"].includes(token.value)) {
+          this.consume();
+          const value = this.parseUnary();
+          return token.value === "-" ? finiteResult(-value) : value;
+        }
+        if (token?.type === "function") {
+          this.consume();
+          return evaluateScientificFunction(token.value, this.parseUnary());
+        }
+        return this.parsePower();
+      }
+      parsePower() {
+        let value = this.parsePostfix();
+        const token = this.current();
+        if (token?.type === "operator" && ["^", "EXP", "LOG"].includes(token.value)) {
+          this.consume();
+          value = evaluateBinaryOperation(value, token.value, this.parseUnary());
+        }
+        return value;
+      }
+      parsePostfix() {
+        let value = this.parsePrimary();
+        while (this.current()?.type === "postfix") value = evaluatePostfixOperation(this.consume().value, value);
+        return value;
+      }
+      parsePrimary() {
+        const token = this.current();
+        if (!token) expressionFailure("incomplete", "The expression ends before a value is complete.");
+        if (token.type === "number") {
+          this.consume();
+          if (!/^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(token.value)) expressionFailure("invalid", `Invalid decimal value ${token.value}.`);
+          const value = Number(token.value);
+          if (!Number.isFinite(value)) expressionFailure("overflow", "That decimal value is outside the supported range.");
+          return value;
+        }
+        if (token.type === "constant") {
+          this.consume();
+          if (token.value === "pi") return Math.PI;
+          if (token.value === "e") return Math.E;
+          expressionFailure("invalid", `Unknown constant ${token.value}.`);
+        }
+        if (token.type === "lparen") {
+          this.consume();
+          if (this.current()?.type === "rparen") expressionFailure("invalid", "Empty parentheses are not a value.");
+          const value = this.parseAdditive();
+          if (!this.current()) expressionFailure("incomplete", "An opening parenthesis has not been closed.");
+          if (this.current().type !== "rparen") expressionFailure("invalid", "The parenthesized expression is invalid.");
+          this.consume();
+          return value;
+        }
+        if (token.type === "rparen") expressionFailure("invalid", "There is an unmatched closing parenthesis.");
+        if (token.type === "operator") expressionFailure("incomplete", "An operator is missing its right-hand value.");
+        expressionFailure("invalid", "A value was expected here.");
+      }
+    }
+
+    function evaluateExpressionTokens(tokens = expressionTokens) { return new CalculatorExpressionParser(tokens).evaluate(); }
+
+    function simpleRepeatOperation(tokens) {
+      if (!Array.isArray(tokens) || tokens.length !== 3) return null;
+      const [left, operator, right] = tokens;
+      if (left?.type !== "number" || right?.type !== "number" || operator?.type !== "operator") return null;
+      if (!["+", "-", "*", "/", "^", "EXP", "LOG"].includes(operator.value)) return null;
+      return { operator: operator.value, right: Number(right.value) };
+    }
+
+    function completeDecimalInput() {
+      if (calculatorError || expressionTokens.length !== 1 || expressionTokens[0]?.type !== "number") return null;
+      const value = String(expressionTokens[0].value ?? "");
+      return /^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value) ? value : null;
+    }
+
+
+    const COMPLETE_SCIENTIFIC_COEFFICIENT_RE = /^-?(?:\d+(?:\.\d+)?|\.\d+)$/;
+    const COMPLETE_SCIENTIFIC_EXPONENT_RE = /^\d+$/;
+
+    function scientificLiteralAtTokenIndex(tokens, startIndex) {
+      const list = Array.from(tokens || []);
+      const coefficient = list[startIndex];
+      const expOperator = list[startIndex + 1];
+      if (
+        coefficient?.type !== "number" ||
+        expOperator?.type !== "operator" ||
+        expOperator.value !== "EXP"
+      ) return null;
+
+      const coefficientText = String(coefficient.value ?? "");
+      if (!COMPLETE_SCIENTIFIC_COEFFICIENT_RE.test(coefficientText)) return null;
+
+      let cursor = startIndex + 2;
+      let exponentSign = "";
+      if (
+        list[cursor]?.type === "operator" &&
+        ["+", "-"].includes(list[cursor].value) &&
+        isUnaryOperatorAt(list, cursor)
+      ) {
+        exponentSign = list[cursor].value;
+        cursor += 1;
+      }
+
+      const exponent = list[cursor];
+      if (exponent?.type !== "number") return null;
+      let exponentText = String(exponent.value ?? "");
+      if (exponentText.startsWith("-")) {
+        if (exponentSign) return null;
+        exponentSign = "-";
+        exponentText = exponentText.slice(1);
+      } else if (exponentText.startsWith("+")) {
+        if (exponentSign) return null;
+        exponentSign = "+";
+        exponentText = exponentText.slice(1);
+      }
+      if (!COMPLETE_SCIENTIFIC_EXPONENT_RE.test(exponentText)) return null;
+
+      return {
+        canonical: `${coefficientText}e${exponentSign === "+" ? "" : exponentSign}${exponentText}`,
+        startIndex,
+        endIndex: cursor
+      };
+    }
+
+    function completeStandaloneNumericInput() {
+      if (calculatorError) return null;
+      const decimal = completeDecimalInput();
+      if (decimal != null) return { sourceText: decimal, displayValue: decimal, scientific: false };
+      const scientific = scientificLiteralAtTokenIndex(expressionTokens, 0);
+      if (scientific && scientific.endIndex === expressionTokens.length - 1) {
+        return { sourceText: scientific.canonical, displayValue: scientific.canonical, scientific: true };
+      }
+      return null;
+    }
+
+    function completeNumericRendererSource(numericInput) {
+      if (!numericInput) return "";
+      if (numericInput.scientific) return String(numericInput.sourceText ?? "");
+
+      // ISO-thousands rendering is expressed in the shared parser's input,
+      // not by a calculator-side drawing rule. Supplying comma-separated
+      // integer triplets makes 1000 render as the nanpa-linja-n thousand
+      // construction (wan + kulupu) and keeps the render plan, proper name,
+      // audio units, and highlight geometry derived from the same parse.
+      return formatForCartoucheEncoding(String(numericInput.sourceText ?? ""), ",");
+    }
+
+    function tokenIndexIsScientificExponentNumber(tokens, index) {
+      const list = Array.from(tokens || []);
+      if (list[index]?.type !== "number") return false;
+      if (list[index - 1]?.type === "operator" && list[index - 1].value === "EXP") return true;
+      return (
+        list[index - 2]?.type === "operator" && list[index - 2].value === "EXP" &&
+        list[index - 1]?.type === "operator" && ["+", "-"].includes(list[index - 1].value)
+      );
+    }
+
+    function resetExpressionForNewValueIfNeeded() {
+      if (justEvaluated) {
+        expressionTokens = [];
+        justEvaluated = false;
+        repeatOperation = null;
+      } else if (isDefaultZeroPlaceholder()) expressionTokens = [];
+    }
+
+    function renderExpressionChange() { syncInputStrFromExpression(); renderDisplay(); }
 
     function pressDigit(d) {
-      if (isError()) return;
-      if (inputStr === "0") inputStr = d;
-      else if (inputStr === "-0") inputStr = "-" + d;
-      else inputStr += d;
-
-      inputStr = normalizeInputString(inputStr);
-      renderDisplay();
+      clearCalculatorErrorForEdit();
+      resetExpressionForNewValueIfNeeded();
+      const last = lastExpressionToken();
+      if (last?.type === "number") {
+        if (last.value === "0") last.value = String(d);
+        else if (last.value === "-0") last.value = "-" + String(d);
+        else last.value += String(d);
+      } else if (tokenExpectsValue(last)) {
+        expressionTokens.push(numberToken(d));
+      } else if (tokenCanEndValue(last)) {
+        // Conventional adjacency such as (2 + 3)4 means multiplication.
+        expressionTokens.push(operatorToken("*", { implicit: true }), numberToken(d));
+      } else {
+        rejectCalculatorInput("Insert an operator before another value.");
+        return;
+      }
+      renderExpressionChange();
     }
 
     function pressDot() {
-      if (isError()) return;
-      if (!inputStr.includes(".")) {
-        inputStr = inputStr + ".";
-        renderDisplay();
+      clearCalculatorErrorForEdit();
+      resetExpressionForNewValueIfNeeded();
+      const last = lastExpressionToken();
+      if (last?.type === "number") {
+        const lastIndex = expressionTokens.length - 1;
+        if (tokenIndexIsScientificExponentNumber(expressionTokens, lastIndex)) {
+          rejectCalculatorInput("A scientific-notation exponent must be an integer.");
+          return;
+        }
+        if (last.value.includes(".")) { rejectCalculatorInput("The current number already has a decimal point."); return; }
+        last.value += ".";
+      } else if (tokenExpectsValue(last)) {
+        expressionTokens.push(numberToken("0."));
+      } else if (tokenCanEndValue(last)) {
+        expressionTokens.push(operatorToken("*", { implicit: true }), numberToken("0."));
+      } else {
+        rejectCalculatorInput("Insert an operator before another value.");
+        return;
       }
+      renderExpressionChange();
     }
 
     function pressSign() {
-      if (isError()) return;
-      if (inputStr.startsWith("-")) inputStr = inputStr.slice(1) || "0";
-      else inputStr = (inputStr === "0") ? "0" : "-" + inputStr;
-      renderDisplay();
+      clearCalculatorErrorForEdit();
+      const last = lastExpressionToken();
+      if (last?.type === "number") {
+        last.value = last.value.startsWith("-") ? (last.value.slice(1) || "0") : "-" + last.value;
+        justEvaluated = false;
+        repeatOperation = null;
+        renderExpressionChange();
+        return;
+      }
+      if (tokenExpectsValue(last)) {
+        if (last?.type === "operator" && last.value === "-" && isUnaryOperatorAt(expressionTokens, expressionTokens.length - 1)) expressionTokens.pop();
+        else expressionTokens.push(operatorToken("-"));
+        renderExpressionChange();
+        return;
+      }
+      rejectCalculatorInput("The sign key applies to the number currently being entered.");
     }
 
     function pressBackspace() {
-      if (isError()) return;
-      if (inputStr.length <= 1) { inputStr = "0"; renderDisplay(); return; }
-      inputStr = inputStr.slice(0, -1);
-      if (inputStr === "-" || inputStr === "-0") inputStr = "0";
-      renderDisplay();
+      clearCalculatorErrorForEdit();
+      justEvaluated = false;
+      repeatOperation = null;
+      const last = lastExpressionToken();
+      if (!last) expressionTokens = [numberToken("0")];
+      else if (last.type === "number" && last.value.length > 1) {
+        last.value = last.value.slice(0, -1);
+        if (last.value === "-") expressionTokens.pop();
+      } else if (last.type === "lparen" && expressionTokens.at(-2)?.type === "function") expressionTokens.splice(-2, 2);
+      else if (last.type === "lparen" && expressionTokens.at(-2)?.type === "operator" && expressionTokens.at(-2)?.implicit === true) expressionTokens.splice(-2, 2);
+      else expressionTokens.pop();
+      if (!expressionTokens.length) expressionTokens = [numberToken("0")];
+      renderExpressionChange();
     }
 
     function pressClear() {
-      inputStr = "0";
-      acc = null;
-      pendingOp = null;
-      lastOp = null;
-      lastArg = null;
-      renderDisplay();
+      expressionTokens = [numberToken("0")];
+      calculatorError = null;
+      justEvaluated = false;
+      repeatOperation = null;
+      const keypadChanged = scientificLayerEnabled;
+      scientificLayerEnabled = false;
+      if (keypadChanged) buildKeypad();
+      renderExpressionChange();
     }
 
     function pressOp(op) {
-      if (isError()) return;
-
-      if (pendingOp != null && acc != null) {
-        applyPendingIfReady(pendingOp);
-        if (isError()) return;
-      } else {
-        acc = parseInputToNumber(inputStr);
+      clearCalculatorErrorForEdit();
+      if (justEvaluated) justEvaluated = false;
+      const last = lastExpressionToken();
+      if (op === "EXP" && last?.type === "number" && tokenIndexIsScientificExponentNumber(expressionTokens, expressionTokens.length - 1)) {
+        rejectCalculatorInput("The current scientific-notation value already has an exponent.");
+        return;
       }
-
-      pendingOp = op;
-      inputStr = "0";
-      renderDisplay();
+      if (tokenCanEndValue(last)) {
+        expressionTokens.push(operatorToken(op));
+        renderExpressionChange();
+        return;
+      }
+      if (last?.type === "operator") {
+        const lastIndex = expressionTokens.length - 1;
+        const lastIsUnary = isUnaryOperatorAt(expressionTokens, lastIndex);
+        if (lastIsUnary) {
+          if (["+", "-"].includes(op)) { last.value = op; renderExpressionChange(); }
+          else rejectCalculatorInput("Complete the signed value before entering another operator.");
+          return;
+        }
+        if (op === "-") expressionTokens.push(operatorToken("-"));
+        else last.value = op;
+        renderExpressionChange();
+        return;
+      }
+      if (!last || last.type === "lparen" || last.type === "function") {
+        if (["+", "-"].includes(op)) { expressionTokens.push(operatorToken(op)); renderExpressionChange(); return; }
+      }
+      rejectCalculatorInput("An operator needs a value on its left.");
     }
 
-    function pressEquals() {
-      if (isError()) return;
+    function pressOpenParenthesis() {
+      clearCalculatorErrorForEdit();
+      resetExpressionForNewValueIfNeeded();
+      const last = lastExpressionToken();
+      if (tokenCanEndValue(last)) {
+        // Store multiplication explicitly for evaluation, but display the
+        // conventional compact form: 8(5 + 7), 2π, or (a)(b).
+        expressionTokens.push(operatorToken("*", { implicit: true }));
+      } else if (!tokenExpectsValue(last)) {
+        rejectCalculatorInput("An opening parenthesis is not valid here.");
+        return;
+      }
+      expressionTokens.push({ type: "lparen" });
+      renderExpressionChange();
+    }
 
-      if (pendingOp != null && acc != null) {
-        applyPendingIfReady(pendingOp);
-        pendingOp = null;
-        renderDisplay();
+    function pressCloseParenthesis() {
+      clearCalculatorErrorForEdit();
+      const last = lastExpressionToken();
+      if (expressionParenthesisDepth() <= 0) { rejectCalculatorInput("There is no unmatched opening parenthesis to close."); return; }
+      if (!tokenCanEndValue(last)) { rejectCalculatorInput("Complete the value before closing the parenthesis."); return; }
+      expressionTokens.push({ type: "rparen" });
+      renderExpressionChange();
+    }
 
-        if (typeof window.trackUsage === "function") {
-          window.trackUsage("calculator-calculate");
-        }
+    function pressConstant(name) {
+      clearCalculatorErrorForEdit();
+      resetExpressionForNewValueIfNeeded();
+      const last = lastExpressionToken();
+      if (tokenCanEndValue(last)) expressionTokens.push(operatorToken("*", { implicit: true }));
+      else if (!tokenExpectsValue(last)) { rejectCalculatorInput("A constant is not valid here."); return; }
+      expressionTokens.push({ type: "constant", value: name });
+      renderExpressionChange();
+    }
 
+    function pressScientificFunction(name) {
+      clearCalculatorErrorForEdit();
+
+      // A scientific function can be entered as a prefix (sqrt(...), ln(...),
+      // log(...)), or applied to a complete expression already on screen.
+      // Wrapping the existing expression matches familiar calculator behavior
+      // without evaluating it until the user presses equals.
+      const existingLast = lastExpressionToken();
+      if (tokenCanEndValue(existingLast) && expressionParenthesisDepth() === 0 && !isDefaultZeroPlaceholder()) {
+        expressionTokens = [
+          { type: "function", value: name },
+          { type: "lparen" },
+          ...expressionTokens,
+          { type: "rparen" }
+        ];
+        justEvaluated = false;
+        repeatOperation = null;
+        renderExpressionChange();
         return;
       }
 
-      if (lastOp != null && lastArg != null) {
-        const a = parseInputToNumber(inputStr);
-        const r = compute(a, lastOp, lastArg);
-        if (!Number.isFinite(r)) { setError(); return; }
-        inputStr = formatNumberForInput(r);
-        renderDisplay();
+      resetExpressionForNewValueIfNeeded();
+      const last = lastExpressionToken();
+      if (!tokenExpectsValue(last)) { rejectCalculatorInput("Insert an operator before a function."); return; }
+      expressionTokens.push({ type: "function", value: name }, { type: "lparen" });
+      renderExpressionChange();
+    }
 
+    function pressPostfixFunction(name) {
+      clearCalculatorErrorForEdit();
+      const last = lastExpressionToken();
+      if (!tokenCanEndValue(last)) { rejectCalculatorInput("Enter a value before applying that function."); return; }
+      expressionTokens.push({ type: "postfix", value: name });
+      justEvaluated = false;
+      repeatOperation = null;
+      renderExpressionChange();
+    }
 
-        if (typeof window.trackUsage === "function") {
-          window.trackUsage("calculator-calculate");
+    function pressEquals() {
+      clearCalculatorErrorForEdit();
+      try {
+        let result;
+        if (justEvaluated && repeatOperation) result = evaluateBinaryOperation(Number(completeDecimalInput()), repeatOperation.operator, repeatOperation.right);
+        else {
+          result = evaluateExpressionTokens(expressionTokens);
+          repeatOperation = simpleRepeatOperation(expressionTokens);
         }
+        expressionTokens = [numberToken(formatNumberForInput(result))];
+        justEvaluated = true;
+        calculatorError = null;
+        const keypadChanged = scientificLayerEnabled;
+        scientificLayerEnabled = false;
+        if (keypadChanged) buildKeypad();
+        renderExpressionChange();
+        if (typeof window.trackUsage === "function") window.trackUsage("calculator-calculate");
+      } catch (err) {
+        calculatorError = { kind: err instanceof CalculatorExpressionError ? err.kind : "invalid", message: err?.message || "Invalid expression." };
+        justEvaluated = false;
+        repeatOperation = null;
+        renderDisplay();
       }
+    }
+
+    function toggleScientificLayer() {
+      // Changing the keypad is presentation-only. It must never evaluate,
+      // replace, or otherwise mutate the expression being entered.
+      scientificLayerEnabled = !scientificLayerEnabled;
+      buildKeypad();
+      renderDisplay();
+      if (elDisplayLive) elDisplayLive.textContent = scientificLayerEnabled ? "Scientific keypad enabled." : "Number keypad enabled.";
     }
 
     function handleKeydown(e) {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
-
       const targetId = String(e.target?.id ?? "");
-      if (
-        targetId === "nanpaLinjanProperNameMode" ||
-        targetId === "numericCartoucheAbbrevEnable" ||
-        targetId === "btnPlayProperNameAudio"
-      ) {
-        return;
-      }
-
+      if (["nanpaLinjanProperNameMode", "numericCartoucheAbbrevEnable", "btnPlayProperNameAudio"].includes(targetId)) return;
       const k = e.key;
-
       if (k >= "0" && k <= "9") { e.preventDefault(); pressDigit(k); return; }
-
-      if (k === "+") { e.preventDefault(); pressOp("+"); return; }
-      if (k === "-") { e.preventDefault(); pressOp("-"); return; }
-      if (k === "*") { e.preventDefault(); pressOp("*"); return; }
-      if (k === "/") { e.preventDefault(); pressOp("/"); return; }
-
+      if (["+", "-", "*", "/", "^"].includes(k)) { e.preventDefault(); pressOp(k); return; }
+      if (k === "(") { e.preventDefault(); pressOpenParenthesis(); return; }
+      if (k === ")") { e.preventDefault(); pressCloseParenthesis(); return; }
       if (k === ".") { e.preventDefault(); pressDot(); return; }
-
       if (k === "Enter" || k === "=") { e.preventDefault(); pressEquals(); return; }
-
       if (k === "Backspace") { e.preventDefault(); pressBackspace(); return; }
       if (k === "Escape") { e.preventDefault(); pressClear(); return; }
-
       if (k === "F9") { e.preventDefault(); pressSign(); return; }
+      if (k === "e" || k === "E") { e.preventDefault(); pressConstant("e"); return; }
+      if (k === "p" || k === "P") { e.preventDefault(); pressConstant("pi"); return; }
     }
 
     window.addEventListener("keydown", handleKeydown);
@@ -1900,73 +2902,524 @@
       return tpWordsToUcsurCodepoints(words);
     }
 
-    function renderDisplay() {
-      // Display text under the cartouche: commas in integer, underscores in fraction triplets
-      const displayValue = formatNumberForDisplay(inputStr, { intSep: ",", fracSep: "_" });
+    const CALCULATOR_WHOLE_NUMERIC_AUDIO_WORDS = new Set([
+      "eke", "eken", "ekeke", "ekeken", "ekekeke", "ekekeken",
+      "keke", "keken", "kekeke", "kekeken",
+      "one", "ono", "oko", "eko", "oken", "ene", "inin"
+    ]);
 
-      elDisplayText.textContent = displayValue;
-
-      const pendingDisplay = (pendingOp != null && acc != null)
-        ? `${formatNumberForDisplay(formatNumberForInput(acc), { intSep: ",", fracSep: "_" })} ${pendingOp}`
-        : "";
-
-      elPendingText.textContent = pendingDisplay;
-
-      // Visible (bilingual) — mirrors the display values
-      if (elDisplayTextVisible) elDisplayTextVisible.textContent = displayValue;
-      if (elPendingTextVisible) elPendingTextVisible.textContent = pendingDisplay;
-      if (elDisplayTextVisibleTp) elDisplayTextVisibleTp.textContent = displayValue;
-      if (elPendingTextVisibleTp) elPendingTextVisibleTp.textContent = pendingDisplay;
-
-      const properName = encodeDecimalToProperNameDisplay(inputStr);
-      if (elProperNameText) elProperNameText.textContent = properName;
-
-      // Live region: bilingual
-      if (elDisplayLive) {
-        if (inputStr === "Error") {
-          elDisplayLive.textContent = "Error. Press Clear to reset. pakala. o pilin e nena Clear la, sina kama sin.";
-          if (elProperNameText) elProperNameText.textContent = "";
-        } else {
-          const pendingTextLive = (pendingOp != null && acc != null) ? pendingDisplay : "none";
-          elDisplayLive.textContent =
-            `Value: ${displayValue}. Pending operation: ${pendingTextLive}. ` +
-            `nanpa: ${displayValue}. pali awen: ${pendingTextLive}.`;
+    function fallbackCalculatorSpeechUnits(properName, run) {
+      const units = [];
+      const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+      let unitIndex = 0;
+      for (let wordIndex = 0; wordIndex < words.length; wordIndex += 1) {
+        const word = words[wordIndex];
+        const pieces = CALCULATOR_WHOLE_NUMERIC_AUDIO_WORDS.has(word.toLowerCase())
+          ? [word]
+          : (splitAudioTpWordIntoSyllables(word).length ? splitAudioTpWordIntoSyllables(word) : [word]);
+        for (let unitIndexInWord = 0; unitIndexInWord < pieces.length; unitIndexInWord += 1) {
+          units.push({
+            text: pieces[unitIndexInWord],
+            timingText: pieces[unitIndexInWord],
+            word,
+            wordIndex,
+            unitIndex,
+            unitIndexInWord,
+            wholeNumericPunctuationWord: CALCULATOR_WHOLE_NUMERIC_AUDIO_WORDS.has(word.toLowerCase()),
+            visualTargets: [{
+              runId: run?.id || null,
+              lineIndex: Number(run?.lineIndex) || 0,
+              runIndex: Number(run?.runIndex) || 0,
+              componentIndices: []
+            }]
+          });
+          unitIndex += 1;
         }
       }
+      return units;
+    }
 
+    function scheduleSharedCalculatorResult(request) {
+      return new Promise((resolve, reject) => {
+        if (pendingCalculatorSharedRender?.resolve) pendingCalculatorSharedRender.resolve(null);
+        pendingCalculatorSharedRender = { request, resolve, reject };
 
+        if (!calculatorSharedRenderWorker) {
+          calculatorSharedRenderWorker = (async () => {
+            while (pendingCalculatorSharedRender) {
+              const current = pendingCalculatorSharedRender;
+              pendingCalculatorSharedRender = null;
+              try {
+                current.resolve(await configureSharedCalculatorDisplay(current.request));
+              } catch (err) {
+                current.reject(err);
+              }
+            }
+            calculatorSharedRenderWorker = null;
+          })();
+        }
+      });
+    }
 
-      if (inputStr === "Error") {
-        const ctx = displayCanvas.getContext("2d");
-        displayCanvas.style.width = "520px";
-        displayCanvas.style.height = "120px";
-        displayCanvas.width = 520 * (window.devicePixelRatio || 1);
-        displayCanvas.height = 120 * (window.devicePixelRatio || 1);
+    function sharedDisplayFonts() {
+      return {
+        roles: {
+          word: FONT_FAMILY_TEXT,
+          text: FONT_FAMILY_TEXT,
+          cartouche: FONT_FAMILY_CARTOUCHE,
+          number: FONT_FAMILY_NUMBER,
+          date: FONT_FAMILY_NUMBER,
+          time: FONT_FAMILY_NUMBER,
+          literal: FONT_FAMILY_LITERAL,
+          literalCartouche: FONT_FAMILY_LITERAL_CARTOUCHE,
+          unknown: FONT_FAMILY_LITERAL
+        }
+      };
+    }
 
-        const dpr = window.devicePixelRatio || 1;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, 520, 120);
-        ctx.fillStyle = "#111";
-        ctx.font = `48px system-ui`;
-        ctx.fillText("Error", 24, 76);
+    function sharedDisplayOptions(sourceText, fontPx) {
+      return {
+        input: sourceText,
+        layout: {
+          fontPx,
+          paddingPx: SHARED_DISPLAY_PADDING_PX,
+          align: "left",
+          spacingPreset: "compact"
+        },
+        paint: {
+          fillStyle: "#111111",
+          halo: { enabled: false, color: "#FFFFFF", widthPx: 0 },
+          unknownText: {
+            style: "outline-box",
+            colorMode: "auto",
+            color: null,
+            lineWidthPx: 1.5,
+            paddingPx: 2,
+            dash: false
+          }
+        },
+        parser: getSharedRendererParserOptions(),
+        fonts: sharedDisplayFonts()
+      };
+    }
+
+    function rendererLiteralSource(value) {
+      const escaped = String(value ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      return `"${escaped}"`;
+    }
+
+    function expressionRendererSentence(tokens = expressionTokens) {
+      const list = Array.from(tokens || []);
+      const words = [];
+
+      for (let index = 0; index < list.length; index += 1) {
+        // A complete coefficient/exponent sequence is one numeric token. The
+        // shared parser then creates one scientific nanpa-linja-n cartouche.
+        const scientific = scientificLiteralAtTokenIndex(list, index);
+        if (scientific) {
+          words.push(scientific.canonical);
+          index = scientific.endIndex;
+          continue;
+        }
+
+        const token = list[index];
+        if (!token) continue;
+
+        if (token.type === "number") {
+          words.push(String(token.value));
+          continue;
+        }
+        if (token.type === "lparen") {
+          words.push(rendererLiteralSource("("));
+          continue;
+        }
+        if (token.type === "rparen") {
+          words.push(rendererLiteralSource(")"));
+          continue;
+        }
+        if (token.type === "constant") {
+          words.push(rendererLiteralSource(token.value === "pi" ? "π" : "e"));
+          continue;
+        }
+        if (token.type === "function") {
+          if (token.value === "sqrt") words.push("lili-tu");
+          else if (token.value === "ln") words.push("anpa-e");
+          continue;
+        }
+        if (token.type === "postfix") {
+          if (token.value === "square") words.push("sewi-tu");
+          else if (token.value === "reciprocal") words.push("tan");
+          continue;
+        }
+        if (token.type !== "operator") continue;
+        if (token.value === "*" && token.implicit === true) continue;
+
+        if (token.value === "+") words.push("en");
+        else if (token.value === "-") words.push(isUnaryOperatorAt(list, index) ? "ona" : "lape");
+        else if (token.value === "*") words.push("lete");
+        else if (token.value === "/") words.push("kipisi");
+        else if (token.value === "^") words.push("sewi");
+        else if (token.value === "LOG") words.push("anpa");
+        else if (token.value === "EXP") words.push("kala");
+      }
+
+      return words.join(" ").trim() || "0";
+    }
+
+    // Compatibility name retained for the existing display call sites.
+    function expressionRendererSource(tokens = expressionTokens) {
+      return expressionRendererSentence(tokens);
+    }
+
+    function rendererPlanRuns(plan) {
+      return Array.from(plan?.lines || []).flatMap(line => Array.from(line?.runs || []));
+    }
+
+    function expressionCropLeftAtRunBoundary(plan, availableWidth) {
+      const fullWidth = Math.max(0, Number(plan?.widthPx) || 0);
+      if (fullWidth <= availableWidth) return 0;
+      const runs = rendererPlanRuns(plan);
+      if (!runs.length) return Math.max(0, fullWidth - availableWidth);
+
+      let startX = fullWidth;
+      let found = false;
+      for (let index = runs.length - 1; index >= 0; index -= 1) {
+        const run = runs[index];
+        const candidateX = Math.max(0, Number(run.xPx) || 0);
+        const suffixWidth = fullWidth - candidateX;
+        if (suffixWidth > availableWidth && found) break;
+        startX = candidateX;
+        found = true;
+        if (suffixWidth > availableWidth) {
+          startX = Math.max(0, fullWidth - availableWidth);
+          break;
+        }
+      }
+      return startX;
+    }
+
+    function sizeDisplayBackingCanvas(width, height) {
+      const dpr = Math.max(1, Number(window.devicePixelRatio) || 1);
+      displayCanvas.style.width = `${width}px`;
+      displayCanvas.style.height = `${height}px`;
+      displayCanvas.width = Math.max(1, Math.ceil(width * dpr));
+      displayCanvas.height = Math.max(1, Math.ceil(height * dpr));
+      const ctx = displayCanvas.getContext("2d", { alpha: true });
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      return { ctx, dpr };
+    }
+
+    async function renderSharedSourceIntoDisplay({ sourceText, kind, minFontPx, generation }) {
+      const renderer = await getSharedResultRenderer();
+      const viewport = getCalculatorDisplayViewportSize();
+      const margin = Math.max(0, Math.floor(SHARED_DISPLAY_COMPOSITE_MARGIN_PX));
+      const safeLeft = Math.min(margin, Math.max(0, viewport.width - 1));
+      const safeTop = Math.min(margin, Math.max(0, viewport.height - 1));
+      const safeWidth = Math.max(1, viewport.width - safeLeft * 2);
+      const safeHeight = Math.max(1, viewport.height - safeTop * 2);
+      let chosen = null;
+
+      // Mirror text-to-sitelen: build a normal Toki Pona sentence, parse it,
+      // render that sentence with the configured font roles, then build the
+      // audio/highlight plan from the renderer AST. No calculator code draws
+      // or sizes individual nanpa glyphs in the main display.
+      const parserOptions = getSharedRendererParserOptions();
+      const parsedSentence = await renderer.parseInput({
+        input: sourceText,
+        parser: parserOptions
+      });
+
+      // Fit against the renderer's real output canvas at every size. The same
+      // parsed AST is used to build the plan that drives audio highlighting.
+      for (let fontPx = DISPLAY_LARGE_PX; fontPx >= minFontPx; fontPx -= 2) {
+        await ensureFontLoaded(fontPx);
+        const options = sharedDisplayOptions(sourceText, fontPx);
+        const rendered = await renderer.renderTextToNewCanvas(options);
+        const plan = await renderer.buildRenderPlan({
+          ...options,
+          ast: rendered?.ast || parsedSentence?.ast
+        });
+        if (generation !== calculatorRenderGeneration) return null;
+
+        const actualWidth = Math.max(1, Number(rendered?.canvas?.width) || Number(plan?.widthPx) || 1);
+        const actualHeight = Math.max(1, Number(rendered?.canvas?.height) || Number(plan?.heightPx) || 1);
+        chosen = { fontPx, options, plan, rendered, parsedSentence, actualWidth, actualHeight };
+        if (actualWidth <= safeWidth && actualHeight <= safeHeight) break;
+      }
+
+      if (!chosen) throw new Error("The shared renderer did not produce a display plan.");
+      const { rendered } = chosen;
+      const fullWidth = chosen.actualWidth;
+      const fullHeight = chosen.actualHeight;
+      const clipped = fullWidth > safeWidth || fullHeight > safeHeight;
+      const cropLeft = kind === "expression"
+        ? expressionCropLeftAtRunBoundary(chosen.plan, safeWidth)
+        : Math.max(0, fullWidth - safeWidth);
+      const cropTop = Math.max(0, Math.floor((fullHeight - safeHeight) / 2));
+      const sourceWidth = Math.max(1, Math.min(safeWidth, fullWidth - cropLeft));
+      const sourceHeight = Math.max(1, Math.min(safeHeight, fullHeight - cropTop));
+      const destX = safeLeft + safeWidth - sourceWidth;
+      const destY = safeTop + Math.floor((safeHeight - sourceHeight) / 2);
+      const offsetX = destX - cropLeft;
+      const offsetY = destY - cropTop;
+
+      const { ctx } = sizeDisplayBackingCanvas(viewport.width, viewport.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(
+        rendered.canvas,
+        cropLeft, cropTop, sourceWidth, sourceHeight,
+        destX, destY, sourceWidth, sourceHeight
+      );
+
+      displayCanvas._calculatorDisplayFit = {
+        kind,
+        rendererManaged: true,
+        fontPx: chosen.fontPx,
+        minFontPx,
+        clipped,
+        cropLeft,
+        cropTop,
+        fullWidth,
+        fullHeight,
+        availableWidth: viewport.width,
+        availableHeight: viewport.height,
+        safeLeft,
+        safeTop,
+        safeWidth,
+        safeHeight,
+        sourceText
+      };
+
+      return {
+        ...chosen,
+        viewport,
+        safeLeft,
+        safeTop,
+        safeWidth,
+        safeHeight,
+        cropLeft,
+        cropTop,
+        sourceWidth,
+        sourceHeight,
+        destX,
+        destY,
+        offsetX,
+        offsetY,
+        clipped
+      };
+    }
+
+    function installSharedCartoucheAudioLayout(run, sharedRender) {
+      const componentLayout = Array.from(run?.audioGlyphLayout || []);
+      const runs = [];
+      for (const item of componentLayout) {
+        const index = Number(item?.componentIndex);
+        if (!Number.isInteger(index) || index < 0) continue;
+        const rawX = sharedRender.offsetX + (Number(run?.xPx) || 0) + (Number(item?.x) || 0);
+        const rawY = sharedRender.offsetY + (Number(run?.yPx) || 0) + (Number(item?.y) || 0);
+        const rawWidth = Math.max(1, Number(item?.width) || 1);
+        const rawHeight = Math.max(1, Number(item?.height) || 1);
+        const left = Math.max(0, rawX);
+        const top = Math.max(0, rawY);
+        const right = Math.min(sharedRender.viewport.width, rawX + rawWidth);
+        const bottom = Math.min(sharedRender.viewport.height, rawY + rawHeight);
+        runs[index] = right > left && bottom > top ? {
+          x: left,
+          width: Math.max(1, right - left),
+          top,
+          height: Math.max(1, bottom - top)
+        } : null;
+      }
+
+      displayCanvas._calculatorAudioLayout = {
+        runs,
+        cssWidth: sharedRender.viewport.width,
+        cssHeight: sharedRender.viewport.height,
+        innerY: 0,
+        innerHeight: sharedRender.viewport.height
+      };
+      clearCalculatorCartoucheHighlight();
+    }
+
+    async function configureSharedCalculatorDisplay(request) {
+      const {
+        kind,
+        sourceText,
+        parsed = null,
+        generation,
+        displayValueOverride = null
+      } = request;
+
+      const sharedRender = await renderSharedSourceIntoDisplay({
+        sourceText,
+        kind,
+        minFontPx: kind === "expression" ? EXPRESSION_MIN_LARGE_PX : RESULT_MIN_LARGE_PX,
+        generation
+      });
+      if (!sharedRender || generation !== calculatorRenderGeneration) return null;
+
+      if (kind === "expression") {
+        currentCalculatorAudioModel = null;
+        displayCanvas._calculatorAudioModel = null;
+        displayCanvas._calculatorSharedRun = null;
+        displayCanvas._calculatorAudioLayout = null;
+        clearCalculatorAudioHighlights();
+        return sharedRender;
+      }
+
+      const run = rendererPlanRuns(sharedRender.plan)
+        .find(item => item?.kind === "cartouche" && Array.isArray(item?.cps));
+      if (!run) throw new Error("The shared renderer did not produce a numeric cartouche run.");
+
+      installSharedCartoucheAudioLayout(run, sharedRender);
+      const fullCodepoints = Array.from(parsed?.ucsurCodepoints || parsed?.innerCodepoints || [], Number);
+      const displayedCodepoints = Array.from(run.cps || [], Number);
+      if (!displayedCodepoints.length) throw new Error("The shared renderer produced an empty numeric cartouche.");
+
+      let units = speechUnitsForRenderRun(run, parsed?.properName, {
+        fallbackRunIndex: Number(run.runIndex) || 0,
+        lineIndex: Number(run.lineIndex) || 0,
+        NanpaParser,
+        nanpaLinjanMode: "uniform",
+        ...getSharedNanpaOptions()
+      });
+      if (!Array.isArray(units) || !units.length) units = fallbackCalculatorSpeechUnits(parsed?.properName, run);
+
+      const cartoucheHighlightMap = buildCalculatorCartoucheHighlightMap(units, run);
+      const resolvedDisplayValue = displayValueOverride ?? parsed?.displayValue ?? sourceText;
+      const valueHighlightMap = buildCalculatorValueHighlightMap(units, resolvedDisplayValue);
+      const model = {
+        properName: parsed?.properName || "",
+        displayValue: resolvedDisplayValue,
+        units,
+        fullCodepoints,
+        displayedCodepoints,
+        abbreviated: getNumericCartoucheAbbrevEnabled(),
+        cartoucheHighlightMap,
+        valueHighlightMap,
+        sharedRunId: run.id,
+        sharedAudioSourceIndices: Array.from(run.audioSourceIndices || [], Number),
+        rendererManaged: true
+      };
+
+      if (generation !== calculatorRenderGeneration) return null;
+      currentCalculatorAudioModel = model;
+      displayCanvas._calculatorAudioModel = model;
+      displayCanvas._calculatorSharedRun = run;
+      renderCalculatorProperName(parsed?.properName || "", units);
+      renderCalculatorVisibleValues(resolvedDisplayValue, valueHighlightMap);
+      clearCalculatorAudioHighlights();
+      setProperNameAudioButtonState("stopped");
+      return model;
+    }
+
+    function clearDisplayViewport() {
+      const viewport = getCalculatorDisplayViewportSize();
+      sizeDisplayBackingCanvas(viewport.width, viewport.height);
+      displayCanvas._calculatorAudioLayout = null;
+      clearCalculatorCartoucheHighlight();
+    }
+
+    function renderDisplay() {
+      stopCalculatorAudioPlayback();
+      const generation = ++calculatorRenderGeneration;
+      syncInputStrFromExpression();
+      currentCalculatorAudioModel = null;
+      displayCanvas._calculatorAudioModel = null;
+      displayCanvas._calculatorSharedRun = null;
+      displayCanvas._calculatorAudioLayout = null;
+      setProperNameAudioButtonState("stopped");
+
+      const numericInput = completeStandaloneNumericInput();
+      const expressionPreviewActive = !numericInput;
+      const displayValue = numericInput
+        ? (numericInput.scientific
+            ? numericInput.displayValue
+            : formatNumberForDisplay(numericInput.displayValue, { intSep: ",", fracSep: "_" }))
+        : inputStr;
+      const openParentheses = Math.max(0, expressionParenthesisDepth());
+      const pendingDisplay = calculatorError
+        ? calculatorError.message
+        : (openParentheses > 0 ? `${openParentheses} open parenthesis${openParentheses === 1 ? "" : "es"}` : "");
+
+      elDisplayText.textContent = displayValue;
+      elPendingText.textContent = pendingDisplay;
+      renderCalculatorVisibleValues(displayValue);
+      if (elPendingTextVisible) elPendingTextVisible.textContent = pendingDisplay;
+      if (elPendingTextVisibleTp) elPendingTextVisibleTp.textContent = pendingDisplay;
+      if (elDisplayLive) {
+        elDisplayLive.textContent = calculatorError
+          ? `${calculatorError.kind}: ${calculatorError.message}`
+          : `Input: ${displayValue}. ${pendingDisplay ? `Pending: ${pendingDisplay}.` : "Expression ready."}`;
+      }
+
+      // Keep the currently rendered canvas visible while the next shared
+      // renderer result is prepared. renderSharedSourceIntoDisplay() commits
+      // the replacement synchronously only after its off-screen render and
+      // plan are complete, preventing a blank flash on every key press.
+
+      if (calculatorError || expressionPreviewActive) {
+        if (elProperNameText) elProperNameText.textContent = "";
+        const sourceText = expressionRendererSource(expressionTokens);
+        const renderPromise = scheduleSharedCalculatorResult({
+          kind: "expression",
+          sourceText,
+          generation
+        }).catch(err => {
+          if (generation !== calculatorRenderGeneration) return null;
+          console.error("Shared calculator expression rendering failed", err);
+          if (elDisplayLive) elDisplayLive.textContent = `Rendering error: ${err?.message ?? String(err)}`;
+          return null;
+        });
+        window.__calculatorLastRenderPromise = renderPromise;
         return;
       }
 
-      // Cartouche rendering (encoding behavior depends on display mode)
-      const cps = getNumericCartoucheDisplayCps(decimalToUcsurCodepoints(inputStr));
+      const rawNumericSourceText = numericInput.sourceText;
+      let sourceText = completeNumericRendererSource(numericInput);
+      let parsed = NanpaParser.parseNumber(sourceText, getSharedNanpaOptions());
 
-      const keysEl = document.getElementById("keys");
-      const targetW = keysEl ? keysEl.getBoundingClientRect().width : displayCanvas.getBoundingClientRect().width;
+      // Preserve the established trailing-decimal cartouche, e.g. 28., by
+      // supplying its complete nanpa-linja-n proper name to the shared renderer.
+      if ((!parsed?.properName || !Array.isArray(parsed?.ucsurCodepoints) || !parsed.ucsurCodepoints.length) && /^-?\d+\.$/.test(rawNumericSourceText)) {
+        const provisionalProperName = encodeDecimalToProperNameDisplay(rawNumericSourceText);
+        const provisionalParsed = NanpaParser.parseNumber(provisionalProperName, getSharedNanpaOptions());
+        if (provisionalParsed?.properName && Array.isArray(provisionalParsed?.ucsurCodepoints)) {
+          sourceText = provisionalProperName;
+          parsed = provisionalParsed;
+        }
+      }
 
-      renderMixedCartoucheToCanvasFixedWidthRightAligned(
-        displayCanvas,
-        cps,
-        DISPLAY_LARGE_PX,
-        DISPLAY_SMALL_PX,
-        smallSet,
-        targetW,
-        { padding: DISPLAY_PAD, border: DISPLAY_BORDER, cornerRadius: DISPLAY_CORNER, letterGap: DISPLAY_GAP }
-      );
+      if (!parsed?.properName || !Array.isArray(parsed?.ucsurCodepoints) || !parsed.ucsurCodepoints.length) {
+        if (elProperNameText) elProperNameText.textContent = "";
+        const renderPromise = scheduleSharedCalculatorResult({
+          kind: "expression",
+          sourceText: expressionRendererSource(expressionTokens),
+          generation
+        }).catch(() => null);
+        window.__calculatorLastRenderPromise = renderPromise;
+        return;
+      }
+
+      if (elProperNameText) elProperNameText.textContent = parsed.properName;
+      const renderPromise = scheduleSharedCalculatorResult({
+        kind: "result",
+        sourceText,
+        parsed,
+        generation,
+        displayValueOverride: displayValue
+      }).catch(err => {
+        if (generation !== calculatorRenderGeneration || isError()) return null;
+        console.error("Shared calculator result rendering failed", err);
+        currentCalculatorAudioModel = null;
+        displayCanvas._calculatorAudioModel = null;
+        if (elProperNameText) elProperNameText.textContent = parsed.properName;
+        setProperNameAudioButtonState("stopped");
+        if (elDisplayLive) elDisplayLive.textContent = `Rendering error: ${err?.message ?? String(err)}`;
+        return null;
+      });
+      window.__calculatorLastRenderPromise = renderPromise;
     }
 
     function resolveReduceWidthPx(reduceWidthPx, btn) {
@@ -1993,7 +3446,7 @@
       return 0;
     }
 
-    function makeButton({ id, kind, labelText, ariaLabel, onPress, renderFn, wide=false, reduceWidthPx=0 }) {
+    function makeButton({ id, kind, labelText, labelHtml, ariaLabel, onPress, renderFn, wide=false, reduceWidthPx=0 }) {
       const btn = document.createElement("button");
       btn.className = "btn" + (wide ? " btnWide" : "");
       btn.type = "button";
@@ -2007,10 +3460,11 @@
       c.setAttribute("aria-hidden", "true");
       btn.appendChild(c);
 
-      if (labelText) {
+      if (labelHtml || labelText) {
         const lab = document.createElement("div");
         lab.className = "btnLabel mono";
-        lab.textContent = labelText;
+        if (labelHtml) lab.innerHTML = labelHtml;
+        else lab.textContent = labelText;
         btn.appendChild(lab);
       }
 
@@ -2062,146 +3516,103 @@
 
     function renderOpButtonCanvas(canvas, opKey, fontPx=34) {
       const cps = opWordsToCodepoints(opKey);
-      renderGlyphsCentered(canvas, cps, fontPx);
+      renderGlyphsCentered(canvas, cps, fontPx, FONT_FAMILY_TEXT);
+    }
+
+    const SCIENTIFIC_STACK_JOINER_CP = 0xF1995;
+
+    function renderPlainSymbolCentered(canvas, symbol, fontPx = 34) {
+      const ctx = canvas.getContext("2d");
+      ctx.font = `${fontPx}px system-ui`;
+      const metrics = ctx.measureText(String(symbol));
+      const ascent = metrics.actualBoundingBoxAscent ?? Math.ceil(fontPx * 0.8);
+      const descent = metrics.actualBoundingBoxDescent ?? Math.ceil(fontPx * 0.2);
+      canvas.width = Math.max(60, Math.ceil(metrics.width + 16));
+      canvas.height = Math.max(48, Math.ceil(ascent + descent + 14));
+      const draw = canvas.getContext("2d");
+      draw.clearRect(0, 0, canvas.width, canvas.height);
+      draw.fillStyle = "#111";
+      draw.textAlign = "center";
+      draw.textBaseline = "middle";
+      draw.font = `${fontPx}px system-ui`;
+      draw.fillText(String(symbol), canvas.width / 2, canvas.height / 2);
+    }
+
+    function renderScientificGlyphCanvas(canvas, glyphSpec, fontPx = 34) {
+      if (glyphSpec?.unicode != null) {
+        renderPlainSymbolCentered(canvas, glyphSpec.unicode, fontPx);
+        return;
+      }
+      const words = Array.from(glyphSpec?.words || []);
+      const cps = [];
+      for (let index = 0; index < words.length; index += 1) {
+        const cp = WORD_TO_UCSUR_CP[String(words[index]).toLowerCase()];
+        if (cp == null) throw new Error(`No scientific-key glyph for ${words[index]}`);
+        if (index > 0) cps.push(SCIENTIFIC_STACK_JOINER_CP);
+        cps.push(cp);
+      }
+      renderGlyphsCentered(canvas, cps, fontPx, FONT_FAMILY_TEXT);
     }
 
     function buildKeypad() {
       const keys = document.getElementById("keys");
       keys.innerHTML = "";
-
-      const add = (spec) => keys.appendChild(makeButton(spec));
-
-      add({
-        id: "clr", kind: "op", labelText: "C",
-        ariaLabel: "Clear / o weka e ale",
-        onPress: pressClear,
-        renderFn: (c) => renderOpButtonCanvas(c, "clr", 34)
+      const add = spec => keys.appendChild(makeButton(spec));
+      const addScientific = ({ id, labelText, labelHtml, ariaLabel, onPress, glyphSpec, fontPx = 34 }) => add({
+        id, kind: "scientific", labelText, labelHtml, ariaLabel, onPress,
+        renderFn: canvas => renderScientificGlyphCanvas(canvas, glyphSpec, fontPx)
       });
 
-      add({
-        id: "bk", kind: "op", labelText: "⌫",
-        ariaLabel: "Backspace / o weka e sitelen pini",
-        onPress: pressBackspace,
-        renderFn: (c) => renderOpButtonCanvas(c, "bk", 34)
-      });
+      // Editing and addition remain available in both layers.
+      add({ id: "clr", kind: "op", labelText: "C", ariaLabel: "Clear / o weka e ale", onPress: pressClear, renderFn: c => renderOpButtonCanvas(c, "clr", 34) });
+      add({ id: "bk", kind: "op", labelText: "⌫", ariaLabel: "Backspace / o weka e sitelen pini", onPress: pressBackspace, renderFn: c => renderOpButtonCanvas(c, "bk", 34) });
+      add({ id: "sign", kind: "op", labelText: "±", ariaLabel: "Toggle sign / o ante e sinpin (+/-)", onPress: pressSign, renderFn: c => renderOpButtonCanvas(c, "sign", 34) });
+      add({ id: "add", kind: "op", labelText: "+", ariaLabel: "Add / o pana", onPress: () => pressOp("+"), renderFn: c => renderOpButtonCanvas(c, "add", 34) });
 
-      add({
-        id: "sign", kind: "op", labelText: "±",
-        ariaLabel: "Toggle sign / o ante e sinpin (+/-)",
-        onPress: pressSign,
-        renderFn: (c) => renderOpButtonCanvas(c, "sign", 34)
-      });
-
-      add({
-        id: "add", kind: "op", labelText: "+",
-        ariaLabel: "Add / o pana",
-        onPress: () => pressOp("+"),
-        renderFn: (c) => renderOpButtonCanvas(c, "add", 34)
-      });
-
-      for (const d of ["7","8","9"]) {
-        add({
-          id: "d"+d, kind: "digit",
-          labelText: d,
-          ariaLabel: `Digit ${d} / nanpa ${d}`,
-          onPress: () => pressDigit(d),
-          renderFn: (c) => renderDigitButtonCanvas(c, d)
-        });
+      if (!scientificLayerEnabled) {
+        for (const d of ["7", "8", "9"]) add({ id: "d" + d, kind: "digit", labelText: d, ariaLabel: `Digit ${d} / nanpa ${d}`, onPress: () => pressDigit(d), renderFn: c => renderDigitButtonCanvas(c, d) });
+        add({ id: "sub", kind: "op", labelText: "−", ariaLabel: "Subtract / o weka", onPress: () => pressOp("-"), renderFn: c => renderOpButtonCanvas(c, "sub", 34) });
+        for (const d of ["4", "5", "6"]) add({ id: "d" + d, kind: "digit", labelText: d, ariaLabel: `Digit ${d} / nanpa ${d}`, onPress: () => pressDigit(d), renderFn: c => renderDigitButtonCanvas(c, d) });
+        add({ id: "mul", kind: "op", labelText: "×", ariaLabel: "Multiply / o mute", onPress: () => pressOp("*"), renderFn: c => renderOpButtonCanvas(c, "mul", 34) });
+        for (const d of ["1", "2", "3"]) add({ id: "d" + d, kind: "digit", labelText: d, ariaLabel: `Digit ${d} / nanpa ${d}`, onPress: () => pressDigit(d), renderFn: c => renderDigitButtonCanvas(c, d) });
+        add({ id: "div", kind: "op", labelText: "÷", ariaLabel: "Divide / o kipisi", onPress: () => pressOp("/"), renderFn: c => renderOpButtonCanvas(c, "div", 34) });
+        addScientific({ id: "sci", labelText: "SCI", ariaLabel: "Scientific keypad / nena ante", onPress: toggleScientificLayer, glyphSpec: { words: ["ante"] } });
+        add({ id: "d0", kind: "digit", labelText: "0", ariaLabel: "Digit 0 / nanpa 0", onPress: () => pressDigit("0"), renderFn: c => renderDigitButtonCanvas(c, "0") });
+        add({ id: "dot", kind: "op", labelText: ".", ariaLabel: "Decimal point / poka pi nanpa lili", onPress: pressDot, renderFn: c => renderOpButtonCanvas(c, "dot", 34) });
+        add({ id: "eq", kind: "op", labelText: "=", ariaLabel: "Equals / sama", onPress: pressEquals, renderFn: c => renderOpButtonCanvas(c, "eq", 34) });
+        return;
       }
 
-      add({
-        id: "sub", kind: "op", labelText: "−",
-        ariaLabel: "Subtract / o weka",
-        onPress: () => pressOp("-"),
-        renderFn: (c) => renderOpButtonCanvas(c, "sub", 34)
+      addScientific({ id: "openParen", labelText: "(", ariaLabel: "Open parenthesis", onPress: pressOpenParenthesis, glyphSpec: { unicode: "(" }, fontPx: 40 });
+      addScientific({ id: "closeParen", labelText: ")", ariaLabel: "Close parenthesis", onPress: pressCloseParenthesis, glyphSpec: { unicode: ")" }, fontPx: 40 });
+      addScientific({ id: "pi", labelText: "π", ariaLabel: "Pi constant", onPress: () => pressConstant("pi"), glyphSpec: { unicode: "π" }, fontPx: 36 });
+      add({ id: "sub", kind: "op", labelText: "−", ariaLabel: "Subtract / o weka", onPress: () => pressOp("-"), renderFn: c => renderOpButtonCanvas(c, "sub", 34) });
+
+      addScientific({ id: "sqrt", labelText: "√x", ariaLabel: "Square root", onPress: () => pressScientificFunction("sqrt"), glyphSpec: { words: ["lili", "tu"] } });
+      addScientific({ id: "square", labelText: "x²", ariaLabel: "Square", onPress: () => pressPostfixFunction("square"), glyphSpec: { words: ["sewi", "tu"] } });
+      addScientific({ id: "power", labelText: "xʸ", ariaLabel: "General power", onPress: () => pressOp("^"), glyphSpec: { words: ["sewi"] } });
+      add({ id: "mul", kind: "op", labelText: "×", ariaLabel: "Multiply / o mute", onPress: () => pressOp("*"), renderFn: c => renderOpButtonCanvas(c, "mul", 34) });
+
+      addScientific({ id: "ln", labelText: "ln", ariaLabel: "Natural logarithm", onPress: () => pressScientificFunction("ln"), glyphSpec: { words: ["anpa", "e"] } });
+      addScientific({ id: "log", labelHtml: "log<sub>y</sub>x", ariaLabel: "General logarithm: logarithm of x to base y", onPress: () => pressOp("LOG"), glyphSpec: { words: ["anpa"] } });
+      addScientific({ id: "eConstant", labelText: "e", ariaLabel: "Euler's number e", onPress: () => pressConstant("e"), glyphSpec: { unicode: "e" }, fontPx: 36 });
+      add({ id: "div", kind: "op", labelText: "÷", ariaLabel: "Divide / o kipisi", onPress: () => pressOp("/"), renderFn: c => renderOpButtonCanvas(c, "div", 34) });
+
+      const sciButton = makeButton({
+        id: "sci", kind: "scientific", labelText: "SCI", ariaLabel: "Return to number keypad / nena ante",
+        onPress: toggleScientificLayer,
+        renderFn: c => renderScientificGlyphCanvas(c, { words: ["ante"] }, 34)
       });
-
-      for (const d of ["4","5","6"]) {
-        add({
-          id: "d"+d, kind: "digit",
-          labelText: d,
-          ariaLabel: `Digit ${d} / nanpa ${d}`,
-          onPress: () => pressDigit(d),
-          renderFn: (c) => renderDigitButtonCanvas(c, d)
-        });
-      }
-
-      add({
-        id: "mul", kind: "op", labelText: "×",
-        ariaLabel: "Multiply / o mute",
-        onPress: () => pressOp("*"),
-        renderFn: (c) => renderOpButtonCanvas(c, "mul", 34)
-      });
-
-      for (const d of ["1","2","3"]) {
-        add({
-          id: "d"+d, kind: "digit",
-          labelText: d,
-          ariaLabel: `Digit ${d} / nanpa ${d}`,
-          onPress: () => pressDigit(d),
-          renderFn: (c) => renderDigitButtonCanvas(c, d)
-        });
-      }
-
-      add({
-        id: "div", kind: "op", labelText: "÷",
-        ariaLabel: "Divide / o kipisi",
-        onPress: () => pressOp("/"),
-        renderFn: (c) => renderOpButtonCanvas(c, "div", 34)
-      });
-
-      add({
-        id: "d0", kind: "digit",
-        labelText: "0",
-        ariaLabel: "Digit 0 / nanpa 0",
-        onPress: () => pressDigit("0"),
-        reduceWidthPx: "14%",
-        renderFn: (c) => {
-          requestAnimationFrame(() => {
-            const btn = c.closest("button");
-            if (!btn) { renderDigitButtonCanvas(c, "0"); return; }
-
-            const rect = btn.getBoundingClientRect();
-            const cs = window.getComputedStyle(btn);
-            const padL = parseFloat(cs.paddingLeft) || 0;
-            const padR = parseFloat(cs.paddingRight) || 0;
-
-            const innerW = Math.max(0, rect.width - padL - padR);
-            renderDigitButtonCanvas(c, "0", innerW);
-          });
-        },
-        wide: true
-      });
-
-      add({
-        id: "dot", kind: "op", labelText: ".",
-        ariaLabel: "Decimal point / poka pi nanpa lili",
-        onPress: pressDot,
-        renderFn: (c) => renderOpButtonCanvas(c, "dot", 34)
-      });
-
-      add({
-        id: "eq", kind: "op", labelText: "=",
-        ariaLabel: "Equals / sama",
-        onPress: pressEquals,
-        renderFn: (c) => renderOpButtonCanvas(c, "eq", 34)
-      });
+      sciButton.classList.add("is-active-layer");
+      keys.appendChild(sciButton);
+      addScientific({ id: "reciprocal", labelText: "1/x", ariaLabel: "Reciprocal", onPress: () => pressPostfixFunction("reciprocal"), glyphSpec: { words: ["tan"] } });
+      addScientific({ id: "exp", labelText: "EXP", ariaLabel: "Scientific notation times ten to an integer power", onPress: () => pressOp("EXP"), glyphSpec: { words: ["kala"] } });
+      add({ id: "eq", kind: "op", labelText: "=", ariaLabel: "Equals / sama", onPress: pressEquals, renderFn: c => renderOpButtonCanvas(c, "eq", 34) });
     }
 
     function rerenderWideZeroKey() {
       const c = document.querySelector('button[data-id="d0"] canvas.btnCanvas');
-      if (!c) return;
-
-      const btn = c.closest("button");
-      if (!btn) return;
-
-      const rect = btn.getBoundingClientRect();
-      const cs = window.getComputedStyle(btn);
-      const padL = parseFloat(cs.paddingLeft) || 0;
-      const padR = parseFloat(cs.paddingRight) || 0;
-
-      const innerW = Math.max(0, rect.width - padL - padR);
-      renderDigitButtonCanvas(c, "0", innerW);
+      if (c) renderDigitButtonCanvas(c, "0");
     }
 
     window.addEventListener("load", async () => {
@@ -2227,6 +3638,7 @@
       renderDisplay();
       rerenderWideZeroKey();
     });
+
   </script>
 
   <script>
