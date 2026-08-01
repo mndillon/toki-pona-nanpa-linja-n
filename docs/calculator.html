@@ -1925,6 +1925,59 @@
       return out;
     }
 
+    function calculatorMagnitudeKeCountForAudioUnit(unit) {
+      const candidates = [unit?.word, unit?.text, unit?.timingText];
+      for (const candidate of candidates) {
+        const key = String(candidate ?? "")
+          .replace(/[^A-Za-z]/g, "")
+          .toLowerCase();
+        if (!/^(?:e)?(?:ke)+n?$/.test(key)) continue;
+        return (key.match(/ke/g) || []).length;
+      }
+      return 0;
+    }
+
+    function calculatorCollapsedThousandsCharacterIndices(displayValue, startCharacterIndex, keCount) {
+      const characters = Array.from(String(displayValue ?? ""));
+      const count = Math.max(0, Math.floor(Number(keCount) || 0));
+      if (!Number.isInteger(startCharacterIndex) || startCharacterIndex < 0 || count < 1) return [];
+
+      const indices = [];
+      let cursor = startCharacterIndex;
+      for (let groupIndex = 0; groupIndex < count; groupIndex += 1) {
+        if (
+          characters[cursor] !== "," ||
+          characters[cursor + 1] !== "0" ||
+          characters[cursor + 2] !== "0" ||
+          characters[cursor + 3] !== "0"
+        ) return [];
+        indices.push(cursor, cursor + 1, cursor + 2, cursor + 3);
+        cursor += 4;
+      }
+
+      // A magnitude word replaces only trailing all-zero thousands groups.
+      // If another integer group follows, as in 1,000,001, those zeros have
+      // their own spoken digit units and must not be claimed by Eke.
+      if (cursor < characters.length && characters[cursor] !== ".") return [];
+      return indices;
+    }
+
+    function calculatorMagnitudeAudioRun(units, startUnitIndex) {
+      const records = [];
+      let totalKeCount = 0;
+      let unitIndex = Math.max(0, Math.floor(Number(startUnitIndex) || 0));
+
+      while (unitIndex < units.length) {
+        const keCount = calculatorMagnitudeKeCountForAudioUnit(units[unitIndex]);
+        if (keCount < 1) break;
+        records.push({ unitIndex, keCount });
+        totalKeCount += keCount;
+        unitIndex += 1;
+      }
+
+      return { records, totalKeCount, endUnitIndex: unitIndex };
+    }
+
     function buildCalculatorValueHighlightMap(units, displayValue) {
       const map = Array.from({ length: units.length }, () => []);
       const valueCharacterIndices = calculatorDisplaySemanticCharacterIndices(displayValue);
@@ -1944,7 +1997,8 @@
       let valueIndex = 0;
       const lastValueCharacterIndex = valueCharacterIndices[valueCharacterIndices.length - 1];
       while (unitIndex < units.length) {
-        const unitKey = String(units[unitIndex]?.text ?? units[unitIndex]?.timingText ?? "")
+        const unit = units[unitIndex];
+        const unitKey = String(unit?.text ?? unit?.timingText ?? "")
           .replace(/[^A-Za-z]/g, "")
           .toLowerCase();
 
@@ -1957,6 +2011,35 @@
         }
 
         if (valueIndex < valueCharacterIndices.length) {
+          const magnitudeRun = calculatorMagnitudeAudioRun(units, unitIndex);
+          if (magnitudeRun.totalKeCount > 0) {
+            const collapsedMagnitudeSuffix = calculatorCollapsedThousandsCharacterIndices(
+              displayValue,
+              valueCharacterIndices[valueIndex],
+              magnitudeRun.totalKeCount
+            );
+
+            if (collapsedMagnitudeSuffix.length) {
+              // The current shared audio plan keeps every magnitude word as one
+              // exact reference-audio/highlight unit. Allocate a consecutive
+              // collapsed suffix across the consecutive words in order:
+              //   Ekeke   -> first two ,000 groups
+              //   Kekeken -> following three ,000 groups
+              let suffixOffset = 0;
+              for (const record of magnitudeRun.records) {
+                const characterCount = record.keCount * 4;
+                map[record.unitIndex] = collapsedMagnitudeSuffix.slice(
+                  suffixOffset,
+                  suffixOffset + characterCount
+                );
+                suffixOffset += characterCount;
+              }
+              valueIndex += collapsedMagnitudeSuffix.length;
+              unitIndex = magnitudeRun.endUnitIndex;
+              continue;
+            }
+          }
+
           map[unitIndex] = [valueCharacterIndices[valueIndex]];
           valueIndex += 1;
         } else if (Number.isInteger(lastValueCharacterIndex)) {
