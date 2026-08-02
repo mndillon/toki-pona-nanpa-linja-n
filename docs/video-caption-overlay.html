@@ -437,12 +437,12 @@
 </div>
 
 <script type="module">
-import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202";
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=212";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";//sitelen-font-pair-controller.js";
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20";//sitelen-font-pair-controller.js";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=33';
 window.SitelenRenderer = SitelenRenderer;
 
@@ -463,7 +463,7 @@ window.SitelenRenderer = SitelenRenderer;
     nasinNanpa: {
       key: "nasinNanpa",
       label: "nasin nanpa predefined",
-      parserMode: "sitelen-seli-kiwen",
+      parserMode: "sitelen-pona-ascii-extended",
       textFamily: DEFAULT_SITELEN_FONT,
       cartoucheFamily: DEFAULT_CARTOUCHE_FONT,
       literalFamily: DEFAULT_LITERAL_FONT,
@@ -506,7 +506,7 @@ window.SitelenRenderer = SitelenRenderer;
     sitelenSeliKiwen: {
       key: "sitelenSeliKiwen",
       label: "sitelen seli kiwen predefined",
-      parserMode: "sitelen-seli-kiwen",
+      parserMode: "sitelen-pona-ascii-extended",
       textFamily: "SSK-Juniko",
       cartoucheFamily: "SSK-Juniko-Cartouche",
       literalFamily: DEFAULT_LITERAL_FONT,
@@ -562,7 +562,7 @@ window.SitelenRenderer = SitelenRenderer;
     fairfaxHd: {
         key: "fairfaxHd",
         label: "FairfaxHD predefined",
-        parserMode: "sitelen-seli-kiwen",
+        parserMode: "sitelen-pona-ascii-extended",
         textFamily: "fairfaxHd",
         cartoucheFamily: "fairfaxHd-Cartouche",
         literalFamily: DEFAULT_LITERAL_FONT,
@@ -606,7 +606,7 @@ window.SitelenRenderer = SitelenRenderer;
     fairfaxPonaHd: {
         key: "fairfaxPonaHd",
         label: "FairfaxPonaHD predefined",
-        parserMode: "sitelen-seli-kiwen",
+        parserMode: "sitelen-pona-ascii-extended",
         textFamily: "fairfaxPonaHd",
         cartoucheFamily: "fairfaxPonaHd-Cartouche",
         literalFamily: DEFAULT_LITERAL_FONT,
@@ -5211,13 +5211,40 @@ window.SitelenRenderer = SitelenRenderer;
       : {};
   }
 
+  function buildItemRendererConfig(item, baseConfig = {}) {
+    const preset = getSitelenFontPreset(item?.sitelenFontFamily);
+    const parserMode = String(preset?.parserMode || "sitelen-pona-ascii-extended");
+    const textFontOptionKey = normalizeLiteralFontFamily(item?.fontFamily, item?.sitelenFontFamily);
+    return sitelenFontController.buildRendererConfig({
+      preset,
+      textFontOptionKey,
+      baseConfig: {
+        ...(baseConfig || {}),
+        parser: {
+          ...((baseConfig && baseConfig.parser) || {}),
+          mode: parserMode
+        }
+      }
+    });
+  }
+
+  function getItemRendererPresetSignature(item) {
+    const config = buildItemRendererConfig(item, {});
+    return {
+      parserMode: String(config?.parser?.mode || "sitelen-pona-ascii-extended"),
+      renderAdapterId: String(config?.fonts?.renderAdapterId || "identity"),
+      renderAdapterSettings: config?.fonts?.renderAdapterSettings || {}
+    };
+  }
+
   function itemRasterKey(item){
     return [
       item.id,
       String(item.text || ''),
       normalizeSitelenFontFamilyKey(item.sitelenFontFamily),
-      // Add this so changed preset/database/manifest settings invalidate the raster cache.
+      // Add these so changed preset/database/manifest settings invalidate the raster cache.
       JSON.stringify(getItemFontPairSettings(item) || {}),
+      JSON.stringify(getItemRendererPresetSignature(item)),
       String(item.fontFamily || ''),
       Number(item.fontSize || 24),
       String(item.align || 'left'),
@@ -5254,7 +5281,7 @@ window.SitelenRenderer = SitelenRenderer;
     }
     App.runtime.sitelenRenderer = await window.SitelenRenderer.create({
       parser: {
-        mode: 'sitelen-seli-kiwen',
+        mode: 'sitelen-pona-ascii-extended',
         literalStyle: 'double-quote',
         extensionStyle: 'ssk',
         cartoucheStyle: 'ssk',
@@ -5361,7 +5388,7 @@ window.SitelenRenderer = SitelenRenderer;
     }
 
     try{
-      const rendered = await renderer.renderTextToNewCanvas({
+      const rendered = await renderer.renderTextToNewCanvas(buildItemRendererConfig(item, {
         input: CartoucheApi.prepareInput(String(item.text || ''), pageMap),
         layout,
         paint: {
@@ -5398,7 +5425,7 @@ window.SitelenRenderer = SitelenRenderer;
           showUnknownText: !item.ignoreUnknownText,
           ...buildItemCartoucheTallyParserConfig(item)
         }
-      });
+      }));
       return rendered.canvas;
     }catch(err){
       console.warn('Falling back to legacy sitelen renderer for item raster.', err);

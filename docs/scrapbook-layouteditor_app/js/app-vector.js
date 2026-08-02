@@ -2,7 +2,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=14";
+} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20";
 import {
   CartoucheApi,
   buildEntryRendererInput,
@@ -11,7 +11,7 @@ import {
   segmentWords,
   entryUsesForceMergedWholeEntry
 } from '../../js/cartouche-api-v3-previewdesc.js?v=33';
-import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=167';
+import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=172';
 
 (() => {
   "use strict";
@@ -1635,7 +1635,7 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
       nasinNanpa: {
         key: "nasinNanpa",
         label: "nasin nanpa predefined",
-        parserMode: "sitelen-seli-kiwen",
+        parserMode: "sitelen-pona-ascii-extended",
         textFamily: FONT_FAMILY_TEXT,
         cartoucheFamily: FONT_FAMILY_CARTOUCHE,
         literalFamily: FONT_FAMILY_LITERAL,
@@ -1682,7 +1682,7 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
       sitelenSeliKiwen: {
         key: "sitelenSeliKiwen",
         label: "sitelen seli kiwen predefined",
-        parserMode: "sitelen-seli-kiwen",
+        parserMode: "sitelen-pona-ascii-extended",
         textFamily: "SSK-Juniko",
         cartoucheFamily: "SSK-Juniko-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
@@ -1740,7 +1740,7 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
       fairfaxHd: {
         key: "fairfaxHd",
         label: "FairfaxHD predefined",
-        parserMode: "sitelen-seli-kiwen",
+        parserMode: "sitelen-pona-ascii-extended",
         textFamily: "fairfaxHd",
         cartoucheFamily: "fairfaxHd-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
@@ -1781,7 +1781,7 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
       fairfaxPonaHd: {
         key: "fairfaxPonaHd",
         label: "FairfaxPonaHD predefined",
-        parserMode: "sitelen-seli-kiwen",
+        parserMode: "sitelen-pona-ascii-extended",
         textFamily: "fairfaxPonaHd",
         cartoucheFamily: "fairfaxPonaHd-Cartouche",
         literalFamily: FONT_FAMILY_LITERAL,
@@ -2047,6 +2047,31 @@ function getElementFontPairSettings(el){
     : {};
 }
 
+function buildElementRendererConfig(el, baseConfig = {}){
+  const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
+  const parserMode = String(preset?.parserMode || "sitelen-pona-ascii-extended");
+  return stageFontPairController.buildRendererConfig({
+    preset,
+    textFontOptionKey: getElementQuotedTextFontOptionKey(el),
+    baseConfig: {
+      ...(baseConfig || {}),
+      parser: {
+        ...((baseConfig && baseConfig.parser) || {}),
+        mode: parserMode
+      }
+    }
+  });
+}
+
+function getElementRendererPresetSignature(el){
+  const config = buildElementRendererConfig(el, {});
+  return {
+    parserMode: String(config?.parser?.mode || "sitelen-pona-ascii-extended"),
+    renderAdapterId: String(config?.fonts?.renderAdapterId || "identity"),
+    renderAdapterSettings: config?.fonts?.renderAdapterSettings || {}
+  };
+}
+
 function getElementLiteralCartoucheSettings(el){
   return getElementFontPairSettings(el);
 }
@@ -2191,7 +2216,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=212').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -2292,9 +2317,9 @@ function buildCartoucheTallyParserConfig(el){
 }
 function buildRendererInitConfigForElement(el){
   const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
-  return {
+  return buildElementRendererConfig(el, {
     parser: {
-      mode: preset.parserMode,
+      mode: String(preset?.parserMode || 'sitelen-pona-ascii-extended'),
       literalStyle: 'double-quote',
       extensionStyle: 'ssk',
       cartoucheStyle: 'ssk',
@@ -2311,7 +2336,7 @@ function buildRendererInitConfigForElement(el){
       roles: buildRendererFontRolesForElement(el),
       settings: getElementFontPairSettings(el)
     }
-  };
+  });
 }
 function buildRendererCallConfigForElement(el){
   const fontPx = Math.max(6, Number(el?.fontSize ?? 44));
@@ -2329,7 +2354,8 @@ function buildRendererCallConfigForElement(el){
     paddingPx: (isGlyph ? 0 : DEFAULT_PAD_PX) + haloWidth
   };
   if (spacingPreset === "default") layout.lineGapPx = lineGapForPx(fontPx);
-  return {
+  const preset = getRenderFontPreset(getElementRenderFontPresetKey(el));
+  return buildElementRendererConfig(el, {
     layout,
     paint: {
       fillStyle: el?.color || '#111111',
@@ -2348,7 +2374,7 @@ function buildRendererCallConfigForElement(el){
       }
     },
     parser: {
-      mode: getRenderFontPreset(getElementRenderFontPresetKey(el)).parserMode,
+      mode: String(preset?.parserMode || 'sitelen-pona-ascii-extended'),
       literalStyle: 'double-quote',
       extensionStyle: 'ssk',
       cartoucheStyle: 'ssk',
@@ -2368,7 +2394,7 @@ function buildRendererCallConfigForElement(el){
       },
       settings: getElementFontPairSettings(el)
     }
-  };
+  });
 }
 async function getSitelenRendererForElement(el){
   const presetKey = getElementRenderFontPresetKey(el);
@@ -2377,7 +2403,8 @@ async function getSitelenRendererForElement(el){
   const extraFamilies = [];
   if (el?.type === ElementType.Glyph && el?.fontFamily) extraFamilies.push(String(el.fontFamily));
   const fontPairSettingsSig = JSON.stringify(getElementFontPairSettings(el) || {});
-  const cacheKey = `${presetKey}|literal:${literalFamily}|literalCartouche:${literalCartoucheFamily}|settings:${fontPairSettingsSig}|extra:${extraFamilies.join('|')}`;
+  const rendererPresetSig = JSON.stringify(getElementRendererPresetSignature(el));
+  const cacheKey = `${presetKey}|literal:${literalFamily}|literalCartouche:${literalCartoucheFamily}|settings:${fontPairSettingsSig}|rendererPreset:${rendererPresetSig}|extra:${extraFamilies.join('|')}`;
   vectorFontDebug("getSitelenRendererForElement", {
     elementId: el?.id || null,
     elementType: el?.type || null,
@@ -2491,6 +2518,7 @@ function getElementRendererSignature(el){
     color: String(el?.color ?? '#111111'),
     preset: getElementRenderFontPresetKey(el),
     fontPairSettings: getElementFontPairSettings(el),
+    rendererPreset: getElementRendererPresetSignature(el),
     fontFamily: (el?.type === ElementType.Sitelen) ? '' : String(el?.fontFamily ?? ''),
     quotedTextFontOption: (el?.type === ElementType.Sitelen) ? getElementQuotedTextFontOptionKey(el) : '',
     literalFamily: sitelenLiteralFontFamilyForElement(el),
@@ -15880,7 +15908,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202');
+        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=212');
         const NanpaParser = rendererMod?.NanpaParser;
         if (NanpaParser && !globalThis.NanpaParser) globalThis.NanpaParser = NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });

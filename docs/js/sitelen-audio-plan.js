@@ -145,11 +145,54 @@ export function isKnownTpGlyphToken(token) {
   return KNOWN_TP_GLYPH_WORDS.has(normalizeTpGlyphToken(token));
 }
 
+function audioGlyphGroupsFromCartoucheSource(text) {
+  const source = stripOuterBracketSyntaxForAudio(text);
+  const groups = [];
+  let current = '';
+
+  const flushCurrent = () => {
+    const token = normalizeTpGlyphToken(current);
+    current = '';
+    if (!token) return;
+    groups.push({ token, tallyCount: 0 });
+  };
+
+  for (const ch of Array.from(source)) {
+    if (/\s/.test(ch)) {
+      flushCurrent();
+      continue;
+    }
+
+    // These punctuation characters are standalone cartouche glyphs even when
+    // the source does not put spaces around them. This mirrors the renderer's
+    // ordinary-cartouche tokenizer.
+    if (ch === '.' || ch === '·' || ch === ':') {
+      flushCurrent();
+      groups.push({ token: ch, tallyCount: 0 });
+      continue;
+    }
+
+    // A comma is not part of the preceding word token. It is one combining
+    // tally mark attached to the most recent cartouche glyph. For example,
+    // [mani,,] means the first two sounds/letters of mani: "ma".
+    if (ch === ',') {
+      flushCurrent();
+      if (groups.length) {
+        const last = groups[groups.length - 1];
+        last.tallyCount = Math.min(32, Number(last.tallyCount || 0) + 1);
+      }
+      continue;
+    }
+
+    current += ch;
+  }
+
+  flushCurrent();
+  return groups;
+}
+
 function audioGlyphTokensFromCartoucheSource(text) {
-  return stripOuterBracketSyntaxForAudio(text)
-    .split(/\s+/)
-    .map(normalizeTpGlyphToken)
-    .filter(Boolean);
+  return audioGlyphGroupsFromCartoucheSource(text).map(group => group.token);
 }
 
 function audioInitialForGlyphToken(token) {
@@ -383,14 +426,43 @@ function takeMatchingRawProperNameForCartoucheSource(sourceText, rawProperNameQu
   return '';
 }
 
-export function tryCartoucheSourceToSpokenSyllableText(text) {
-  const words = audioGlyphTokensFromCartoucheSource(text);
-  if (!words.length) return '';
-  if (!words.every(isKnownTpGlyphToken)) return '';
+function audioWordTextForTallyGlyphToken(token) {
+  const normalized = normalizeTpGlyphToken(token);
+  if (!normalized) return '';
+  if (normalized === ':') return 'kolon';
+  if (normalized === '·' || normalized === '.') return 'ota';
+  if (normalized === ',') return 'koma';
+  if (normalized === 'ni>' || normalized === 'ni^' || normalized === 'ni<') return 'ni';
+  if (normalized === 'sewi^') return 'sewi';
+  return normalized.replace(/[^a-z']/g, '');
+}
 
-  // Ordinary cartouche reading: glyph initials spell the name.
-  // Example: [mun uta] -> Mu.
-  const spelled = audioInitialTextFromGlyphTokens(words).toLowerCase();
+function audioLettersForCartoucheGlyphGroup(group) {
+  const token = normalizeTpGlyphToken(group?.token);
+  if (!token || !isKnownTpGlyphToken(token)) return '';
+
+  const tallyCount = Math.max(0, Math.trunc(Number(group?.tallyCount) || 0));
+  if (tallyCount <= 0) return audioInitialForGlyphToken(token);
+
+  const wordText = audioWordTextForTallyGlyphToken(token).replace(/'/g, '').toLowerCase();
+  if (!wordText || tallyCount > wordText.length) return '';
+  return wordText.slice(0, tallyCount);
+}
+
+export function tryCartoucheSourceToSpokenSyllableText(text) {
+  const groups = audioGlyphGroupsFromCartoucheSource(text);
+  if (!groups.length) return '';
+  if (!groups.every(group => isKnownTpGlyphToken(group.token))) return '';
+
+  // Ordinary cartouche reading uses one initial per glyph. A tally mark changes
+  // only its attached glyph: one tally means the first sound/letter, two means
+  // the first two, and so on. Examples:
+  //   [mun uta]              -> Mu
+  //   [mani,,]               -> Ma
+  //   [a meli,,,, kala,,]    -> Amelika
+  const pieces = groups.map(audioLettersForCartoucheGlyphGroup);
+  if (pieces.some(piece => !piece)) return '';
+  const spelled = pieces.join('').toLowerCase();
   if (spelled && isAudioTpPhonotacticWord(spelled)) {
     return titleCaseAudioProperNameText(spelled);
   }
@@ -1513,11 +1585,24 @@ function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
 
   const cps = runCodepointsForAudio(run);
   const out = [];
+  const currentLongStartIndex = cps.indexOf(0xF1997);
+  const currentLongGroups = currentLongStartIndex > 0
+    ? visibleComponentGroups(cps)
+    : null;
 
   for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
     let componentIndices = [];
 
-    if (wordIndex === 0) {
+    if (currentLongGroups?.length) {
+      // Current Common Sitelen Pona encoding:
+      // pi, START OF LONG GLYPH, member(s), END OF LONG GLYPH.
+      // visibleComponentGroups() assigns each silent control to the following
+      // or preceding visible glyph so every spoken word targets its complete
+      // visual portion of the long construction.
+      componentIndices = Array.from(currentLongGroups[wordIndex] || []);
+    } else if (wordIndex === 0) {
+      // Deprecated START OF LONG PI encoding renders the opening control as the
+      // visible pi head.
       componentIndices = cps.length ? [0] : [];
     } else {
       const memberIndex = wordIndex - 1;
@@ -1626,7 +1711,7 @@ export function speechUnitsForRenderRun(run, speech, {
   }
 
   const cps = runCodepointsForAudio(run);
-  if (cps.includes(0xF1993)) {
+  if (cps.includes(0xF1993) || cps.includes(0xF1997)) {
     return buildLongPiSpeechUnits(run, text, fallbackRunIndex, lineIndex);
   }
 

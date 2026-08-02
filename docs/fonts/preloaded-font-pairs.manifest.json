@@ -1,12 +1,27 @@
 {
-  "schema": 1,
-  "generated": "2026-07-27",
+  "schema": 2,
+  "generated": "2026-08-02",
+  "migration": {
+    "clearIndexedDbPairsOnUpgrade": true,
+    "preserveFontKeys": [
+      "nasinNanpa",
+      "sitelenSeliKiwen",
+      "fairfaxHd",
+      "fairfaxPonaHd"
+    ],
+    "preloadFontKeys": [
+      "linjaPona",
+      "linjaSike",
+      "nasinSitelenPuMono",
+      "linjaLipamanka"
+    ]
+  },
   "pairs": [
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-07-26-064",
-      "parserMode": "sitelen-seli-kiwen",
+      "rev": "2026-08-02-065",
+      "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
       "baseFilename": "nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
@@ -24,15 +39,16 @@
         "literalCartoucheLeftCapClipRatio": 0.9
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-"literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
-"literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-"literalCartoucheFormat": "opentype"
+      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheFormat": "opentype",
+      "licenseUrl": "./fonts/LICENSE.txt"
     },
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-07-27-012",
-      "parserMode": "sitelen-seli-kiwen",
+      "rev": "2026-07-27-013",
+      "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
       "baseFilename": "sitelenselikiwenjuniko.ttf",
@@ -62,13 +78,14 @@
           }
         ]
       },
-      "literalCartoucheFamily": "SSK-Juniko"
+      "literalCartoucheFamily": "SSK-Juniko",
+      "licenseUrl": "./fonts/OFL-1.1.txt"
     },
     {
       "fontKey": "fairfaxHd",
       "label": "FairfaxHD predefined",
-      "rev": "2026-07-24-010",
-      "parserMode": "sitelen-seli-kiwen",
+      "rev": "2026-07-24-011",
+      "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "fairfaxHd",
       "companionFamily": "fairfaxHd-Cartouche",
       "baseFilename": "FairfaxHD.ttf",
@@ -84,13 +101,14 @@
         "literalCartoucheRuleClipScale": 0.9,
         "literalCartoucheRuleClipStrategy": "compound"
       },
-      "literalCartoucheFamily": "fairfaxHd"
+      "literalCartoucheFamily": "fairfaxHd",
+      "licenseUrl": "./fonts/OFL-1.1.txt"
     },
     {
       "fontKey": "fairfaxPonaHd",
       "label": "FairfaxPonaHD predefined",
-      "rev": "2026-07-27-011",
-      "parserMode": "sitelen-seli-kiwen",
+      "rev": "2026-07-27-012",
+      "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "fairfaxPonaHd",
       "companionFamily": "fairfaxPonaHd-Cartouche",
       "baseFilename": "FairfaxPonaHD.ttf",
@@ -106,7 +124,197 @@
         "literalCartoucheRuleClipScale": 0.9,
         "literalCartoucheRuleClipStrategy": "compound"
       },
-      "literalCartoucheFamily": "fairfaxPonaHd"
+      "literalCartoucheFamily": "fairfaxPonaHd",
+      "licenseUrl": "./fonts/OFL-1.1.txt"
+    },
+    {
+      "fontKey": "linjaPona",
+      "label": "linja pona predefined",
+      "rev": "2026-08-02-002",
+      "parserMode": "sitelen-pona-ascii-extended",
+      "renderAdapterId": "linja-pona-legacy-v1",
+      "renderAdapterSettings": {
+        "adaptRawUnicode": false,
+        "unsupportedReplacementCodepoint": 65533,
+        "maxLongPiCells": 3,
+        "cornerBracketMode": "synthetic"
+      },
+      "baseFamily": "TP-Linja-Pona-Font",
+      "companionFamily": "TP-Linja-Pona-Nanpa-Linja-N-Font",
+      "baseFilename": "linja-pona.otf",
+      "companionFilename": "linja-pona-nanpa-linja-n.otf",
+      "baseUrl": "./fonts/linja-pona.otf",
+      "companionUrl": "./fonts/linja-pona-nanpa-linja-n.otf",
+      "baseFormat": "opentype",
+      "companionFormat": "opentype",
+      "baseSample": "toki",
+      "companionSample": "[_nanpa_wan]",
+      "metadataSuffix": "-nanpa-linja-n",
+      "settings": {
+        "cartoucheCommaTallyMarks": true,
+        "cartoucheTallyMode": "manual"
+      },
+      "support": {
+        "adapterVersion": 1,
+        "directUcsur": false,
+        "legacyInput": "linja-pona",
+        "cartouches": "underscore-cells",
+        "longPi": "plus-count-1-to-3",
+        "compounds": "hyphen-collapsed",
+        "tallies": "renderer-manual",
+        "literalIsolationRequired": true,
+        "cornerBrackets": "renderer-synthetic-u300c-u300d"
+      },
+      "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
+      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheFormat": "opentype",
+      "literalCartoucheSample": "󱦐A󱦑",
+      "settingsRev": "2026-08-02-002",
+      "licenseUrl": "./fonts/OFL-1.1.txt"
+    },
+    {
+      "fontKey": "linjaSike",
+      "label": "linja sike predefined",
+      "rev": "2026-08-02-002",
+      "parserMode": "sitelen-pona-ascii-extended",
+      "renderAdapterId": "linja-sike-legacy-v1",
+      "renderAdapterSettings": {
+        "adaptRawUnicode": false,
+        "unsupportedReplacementCodepoint": 65533,
+        "maxLongPiCells": 3,
+        "cornerBracketMode": "synthetic"
+      },
+      "baseFamily": "TP-Linja-Sike-Font",
+      "companionFamily": "TP-Linja-Sike-Nanpa-Linja-N-Font",
+      "baseFilename": "linja-sike-5.otf",
+      "companionFilename": "linja-sike-5-nanpa-linja-n.otf",
+      "baseUrl": "./fonts/linja-sike-5.otf",
+      "companionUrl": "./fonts/linja-sike-5-nanpa-linja-n.otf",
+      "baseFormat": "opentype",
+      "companionFormat": "opentype",
+      "baseSample": "toki",
+      "companionSample": "[_nanpa_wan]",
+      "metadataSuffix": "-nanpa-linja-n",
+      "settings": {
+        "cartoucheCommaTallyMarks": true,
+        "cartoucheTallyMode": "manual"
+      },
+      "support": {
+        "adapterVersion": 1,
+        "directUcsur": false,
+        "legacyInput": "linja-sike",
+        "cartouches": "underscore-cells",
+        "longPi": "pi-plus-double-underscore-cells",
+        "compounds": "hyphen-collapsed",
+        "tallies": "renderer-manual",
+        "literalIsolationRequired": true,
+        "cornerBrackets": "renderer-synthetic-u300c-u300d"
+      },
+      "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
+      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheFormat": "opentype",
+      "literalCartoucheSample": "󱦐A󱦑",
+      "settingsRev": "2026-08-02-002",
+      "licenseUrl": "./fonts/OFL-1.1.txt"
+    },
+    {
+      "fontKey": "nasinSitelenPuMono",
+      "label": "nasin sitelen pu mono predefined",
+      "rev": "2026-08-02-002",
+      "parserMode": "sitelen-pona-ascii-extended",
+      "renderAdapterId": "nasin-sitelen-pu-mono-v1",
+      "renderAdapterSettings": {
+        "adaptRawUnicode": false,
+        "unsupportedReplacementCodepoint": 65533
+      },
+      "baseFamily": "TP-Nasin-Sitelen-Pu-Mono-Font",
+      "companionFamily": "TP-Nasin-Sitelen-Pu-Mono-Nanpa-Linja-N-Font",
+      "baseFilename": "NasinSitelenPuMono.otf",
+      "companionFilename": "NasinSitelenPuMono-nanpa-linja-n.otf",
+      "baseUrl": "./fonts/NasinSitelenPuMono.otf",
+      "companionUrl": "./fonts/NasinSitelenPuMono-nanpa-linja-n.otf",
+      "baseFormat": "opentype",
+      "companionFormat": "opentype",
+      "baseSample": "󱥬",
+      "companionSample": "󱦐󱤽󱥳󱦑",
+      "metadataSuffix": "-nanpa-linja-n",
+      "settings": {
+        "cartoucheCommaTallyMarks": true,
+        "cartoucheTallyMode": "manual"
+      },
+      "support": {
+        "adapterVersion": 1,
+        "directUcsur": "supported-inventory-only",
+        "cartouches": "canonical-ucsur",
+        "longPi": "ordinary-glyph-fallback",
+        "compounds": "ordinary-glyph-fallback",
+        "visiblePunctuation": "ascii-adapter",
+        "tallies": "renderer-manual",
+        "placeholderCoverageRequiresAllowlist": true,
+        "literalIsolationRequired": true
+      },
+      "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
+      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheFormat": "opentype",
+      "literalCartoucheSample": "󱦐A󱦑",
+      "licenseUrl": "./fonts/CC0-1.0.txt"
+    },
+    {
+      "fontKey": "linjaLipamanka",
+      "label": "linja lipamanka predefined",
+      "rev": "2026-08-02-002",
+      "parserMode": "sitelen-pona-ascii-extended",
+      "renderAdapterId": "linja-lipamanka-v1",
+      "renderAdapterSettings": {
+        "adaptRawUnicode": false,
+        "unsupportedReplacementCodepoint": 65533,
+        "genericCompoundOperator": "-",
+        "deterministicAlternates": true
+      },
+      "baseFamily": "TP-Linja-Lipamanka-Font",
+      "companionFamily": "TP-Linja-Lipamanka-Nanpa-Linja-N-Font",
+      "baseFilename": "linjalipamanka-normal.otf",
+      "companionFilename": "linjalipamanka-normal-nanpa-linja-n.otf",
+      "baseUrl": "./fonts/linjalipamanka-normal.otf",
+      "companionUrl": "./fonts/linjalipamanka-normal-nanpa-linja-n.otf",
+      "baseFormat": "opentype",
+      "companionFormat": "opentype",
+      "baseSample": "󱥬",
+      "companionSample": "󱦐󱤽󱥳󱦑",
+      "metadataSuffix": "-nanpa-linja-n",
+      "settings": {
+        "cartoucheCommaTallyMarks": true,
+        "cartoucheTallyMode": "manual"
+      },
+      "support": {
+        "adapterVersion": 1,
+        "directUcsur": "ordinary-words-cartouches-long-pi",
+        "cartouches": "canonical-ucsur-unless-translation-needed",
+        "longGlyphHeads": [
+          "pi",
+          "lon"
+        ],
+        "stackingOperator": "+",
+        "scalingOperator": "-",
+        "genericCompoundOperator": "-",
+        "punctuation": "ascii-adapter",
+        "directionalNi": "latin-alias-adapter",
+        "tallies": "renderer-manual",
+        "deterministicAlternates": [
+          "jaki",
+          "ko"
+        ],
+        "literalIsolationRequired": true
+      },
+      "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
+      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
+      "literalCartoucheFormat": "opentype",
+      "literalCartoucheSample": "󱦐A󱦑",
+      "licenseUrl": "./fonts/OFL-1.1.txt"
     }
   ]
 }

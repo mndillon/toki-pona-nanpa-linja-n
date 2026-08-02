@@ -1,19 +1,19 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=205";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=212";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=15";
+} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=20";
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
-import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=167';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=33';
+import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=172';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=34';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=22';
+} from './sitelen-audio-plan.js?v=23';
 let pageMap = new Map();
 
 "use strict";
@@ -482,10 +482,10 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=205",
-  fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=15",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=212",
+  fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
-  vectorExporter: "./js/sitelen-vector-exporter.js?v=167",
+  vectorExporter: "./js/sitelen-vector-exporter.js?v=172",
   vectorWasm: "./wasm/sitelen_vector_wasm.js?v=143"
 });
 
@@ -6004,7 +6004,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=205", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=212", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -6823,6 +6823,23 @@ function rectForRun(run) {
   const width = Math.max(1, highlightFiniteNumber(run?.widthPx, el?.widthPx, el?.w, 1) || 1);
   const height = Math.max(1, highlightFiniteNumber(run?.heightPx, el?.heightPx, el?.h, 1) || 1);
   const y = highlightFiniteNumber(run?.yPx, el?.yPx, 0) || 0;
+  const audioLayout = Array.isArray(run?.audioGlyphLayout)
+    ? run.audioGlyphLayout
+    : el?.audioGlyphLayout;
+
+  // An adapted run's audioGlyphLayout is expressed relative to the renderer's
+  // declared run box. Do not remeasure the canonical UCSUR sequence against a
+  // legacy font: that sequence is not what the browser drew.
+  if (!isCartoucheHighlightRun(run) && Array.isArray(audioLayout) && audioLayout.length) {
+    const x = highlightFiniteNumber(
+      run?.xPx,
+      el?.xPx,
+      run?.drawXPx,
+      el?.drawXPx,
+      0
+    ) || 0;
+    return { x, y, width, height };
+  }
 
   // Cartouches are positioned by their layout box. Ordinary glyph/text runs
   // are drawn at drawXPx, which already includes the visual width of any
@@ -7710,7 +7727,7 @@ function componentRectsForRun(run) {
     ? run.audioGlyphLayout
     : run?._element?.audioGlyphLayout;
   let rects = [];
-  if (String(run.kind || "").toLowerCase() === "cartouche" && Array.isArray(audioLayout) && audioLayout.length === cps.length) {
+  if (Array.isArray(audioLayout) && audioLayout.length === cps.length) {
     rects = audioLayout.map(item => ({
       x: base.x + Math.max(0, Number(item.x) || 0),
       y: base.y + Math.max(0, Number(item.y) || 0),

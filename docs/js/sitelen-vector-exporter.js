@@ -1,4 +1,4 @@
-console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v140 CORNER-BRACKET-WHITESPACE-SPLIT loaded");
+console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v141 ADAPTED-CARTOUCHE-PAYLOAD loaded");
 const DEFAULT_WASM_MODULE_URL = new URL("../wasm/sitelen_vector_wasm.js?v=143", import.meta.url).href;
 const PX_TO_PT = 72 / 96;
 const CARTOUCHE_START_CP = 0xF1990;
@@ -134,7 +134,75 @@ async function blobToUint8Array(blobOrBytes) {
   return null;
 }
 
+function normalizedRenderAdapterIdForRun(run) {
+  const value = run?.renderAdapterId ?? run?._element?.renderAdapterId ?? run?.element?.renderAdapterId ?? "identity";
+  const id = String(value ?? "").trim();
+  return id || "identity";
+}
+
+function codepointArraysEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (Number(a[i]) !== Number(b[i])) return false;
+  }
+  return true;
+}
+
+function firstNonEmptyCodepointArray(...values) {
+  for (const value of values) {
+    if (Array.isArray(value) && value.length) return value.map(cp => Number(cp));
+  }
+  return null;
+}
+
+function codepointsToString(cps) {
+  return Array.from(cps || [], cp => String.fromCodePoint(Number(cp))).join("");
+}
+
+function adaptedFullCartouchePayloadForRun(run) {
+  if (!isCartoucheRun(run) || normalizedRenderAdapterIdForRun(run) === "identity") return null;
+
+  const renderFullCps = firstNonEmptyCodepointArray(
+    run?.renderFullCps,
+    run?._element?.renderFullCps,
+    run?.element?.renderFullCps
+  );
+  if (!renderFullCps) return null;
+
+  const canonicalFullCps = firstNonEmptyCodepointArray(
+    run?.canonicalFullCps,
+    run?._element?.canonicalFullCps,
+    run?.element?.canonicalFullCps
+  );
+
+  // Preserve the established UCSUR cartouche path whenever the adapter did not
+  // actually alter the full sequence. This keeps existing/direct-UCSUR fonts on
+  // their prior vector-export behavior and limits the new path to real adapter
+  // translations such as [_nanpa_wan], [nanpa wan], or translated punctuation.
+  if (canonicalFullCps && codepointArraysEqual(renderFullCps, canonicalFullCps)) return null;
+
+  const canonicalInnerCps = firstNonEmptyCodepointArray(
+    run?.cps,
+    run?.canonicalCps,
+    run?._element?.cps,
+    run?._element?.canonicalCps,
+    run?.element?.cps,
+    run?.element?.canonicalCps
+  ) || [];
+
+  return {
+    text: codepointsToString(renderFullCps),
+    cps: [],
+    adapterPreparedCartouche: true,
+    renderAdapterId: normalizedRenderAdapterIdForRun(run),
+    rawInnerCpsForManualTallies: canonicalInnerCps
+  };
+}
+
 function runTextOrCps(run) {
+  const adaptedCartouche = adaptedFullCartouchePayloadForRun(run);
+  if (adaptedCartouche) return adaptedCartouche;
+
   if (typeof run?.encodedText === "string" && run.encodedText.length) return { text: run.encodedText, cps: [] };
   if (Array.isArray(run?.cps) && run.cps.length) return { text: "", cps: run.cps.slice() };
   const el = run?._element || {};
@@ -1562,6 +1630,19 @@ function buildManualTallyVectorPathsForRun(run, rawInnerCps, manualTallies, { fi
 function prepareCartouchePayloadForVector(run, payload, exporter = null) {
   if (!isCartoucheRun(run)) return payload;
 
+  // A non-identity renderer adapter has already produced the complete native
+  // cartouche input, including opening/closing syntax and cell separators.
+  // Passing it through canonical UCSUR reconstruction would discard that work
+  // and produce .notdef glyphs in legacy fonts such as linja pona/linja sike.
+  if (payload?.adapterPreparedCartouche === true) {
+    return {
+      ...payload,
+      rawInnerCpsForManualTallies: Array.isArray(payload.rawInnerCpsForManualTallies)
+        ? payload.rawInnerCpsForManualTallies.slice()
+        : []
+    };
+  }
+
   let inner = Array.isArray(payload?.cps) && payload.cps.length
     ? payload.cps.slice()
     : Array.from(String(payload?.text || "")).map(ch => ch.codePointAt(0)).filter(Number.isFinite);
@@ -2827,8 +2908,10 @@ export class SitelenVectorExporter {
         rawCps: rawPayload.cps,
         syntheticCornerBracket: isCornerBracketExportRun(run),
         syntheticCornerBracket: isCornerBracketExportRun(run),
-        cartoucheWrapped: isCartoucheRun(run),
-        dateOrTimeKasiRewrite: isCartoucheRun(run) && runIsDateOrTime(run),
+        adapterPreparedCartouche: payload?.adapterPreparedCartouche === true,
+        renderAdapterId: normalizedRenderAdapterIdForRun(run),
+        cartoucheWrapped: isCartoucheRun(run) && payload?.adapterPreparedCartouche !== true,
+        dateOrTimeKasiRewrite: isCartoucheRun(run) && payload?.adapterPreparedCartouche !== true && runIsDateOrTime(run),
         manualTallies: getManualTalliesForRun(run),
         cartoucheTallyMode: getCartoucheTallyModeForRun(run, this),
         manualTallyVector: isCartoucheRun(run) && isManualTallyModeForRun(run, this),
@@ -2912,8 +2995,12 @@ export class SitelenVectorExporter {
         cps: payload.cps,
         rawText: rawPayload.text,
         rawCps: rawPayload.cps,
-        cartoucheWrapped: isCartoucheRun(run),
-        dateOrTimeKasiRewrite: isCartoucheRun(run) && runIsDateOrTime(run),
+        ...(payload?.adapterPreparedCartouche === true ? {
+          adapterPreparedCartouche: true,
+          renderAdapterId: normalizedRenderAdapterIdForRun(run)
+        } : {}),
+        cartoucheWrapped: isCartoucheRun(run) && payload?.adapterPreparedCartouche !== true,
+        dateOrTimeKasiRewrite: isCartoucheRun(run) && payload?.adapterPreparedCartouche !== true && runIsDateOrTime(run),
         manualTallies: getManualTalliesForRun(run),
         cartoucheTallyMode: getCartoucheTallyModeForRun(run, this),
         manualTallyVector: isCartoucheRun(run) && isManualTallyModeForRun(run, this),

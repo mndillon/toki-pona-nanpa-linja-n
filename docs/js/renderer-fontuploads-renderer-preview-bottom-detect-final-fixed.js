@@ -336,8 +336,25 @@ const SitelenRenderer = (() => {
     return s;
   }
 
-  function normalizeAstInput(input) {
-    return preprocessTextAliases(input).replace(/\r\n/g, '\n');
+  const STANDARD_SITELEN_PONA_ASCII_CORE_MODE = 'standard-sitelen-pona-ascii-core';
+  const SITELEN_PONA_ASCII_EXTENDED_MODE = 'sitelen-pona-ascii-extended';
+
+  function isStandardSitelenPonaAsciiCoreMode(parser = {}) {
+    return String(parser?.mode || '') === STANDARD_SITELEN_PONA_ASCII_CORE_MODE;
+  }
+
+  function isSitelenPonaAsciiExtendedMode(parser = {}) {
+    return String(parser?.mode || '') === SITELEN_PONA_ASCII_EXTENDED_MODE;
+  }
+
+  function normalizeAstInput(input, parser = {}) {
+    // The strict standard ASCII core deliberately does not accept the renderer's
+    // convenience text aliases (for example 'stack-joiner' or 'long-start').
+    // Existing parser modes retain their previous alias preprocessing unchanged.
+    const source = isStandardSitelenPonaAsciiCoreMode(parser)
+      ? String(input ?? '')
+      : preprocessTextAliases(input);
+    return source.replace(/\r\n/g, '\n');
   }
 
   function isUnicodeScalarValue(cp) {
@@ -507,7 +524,7 @@ const SitelenRenderer = (() => {
   }
 
   function astFromInput(input, parser = {}) {
-    const normalized = normalizeAstInput(input);
+    const normalized = normalizeAstInput(input, parser);
     const parserOptions = {
       ...DEFAULT_RENDERER_PARSER_OPTIONS,
       ...(parser || {})
@@ -601,6 +618,687 @@ const SitelenRenderer = (() => {
   let FONT_FAMILY_LITERAL_CARTOUCHE = "TP-Nasin-Nanpa-Font";
   let FONT_FAMILY_UNKNOWN = "Patrick-Head-Font";
 
+  const DEFAULT_FONT_RENDER_ADAPTER_ID = "identity";
+  const __fontRenderAdapters = new Map();
+  let __renderAdapterId = DEFAULT_FONT_RENDER_ADAPTER_ID;
+  let __renderAdapterSettings = {};
+
+  function normalizeRenderAdapterId(value) {
+    const id = String(value ?? "").trim();
+    return id || DEFAULT_FONT_RENDER_ADAPTER_ID;
+  }
+
+  function cloneRenderAdapterSettings(value) {
+    return (value && typeof value === "object" && !Array.isArray(value)) ? { ...value } : {};
+  }
+
+  function identityCanonicalToRenderSpans(canonicalCps) {
+    return Array.from(canonicalCps || []).map((_cp, index) => ({
+      canonicalIndex: index,
+      renderStart: index,
+      renderEnd: index + 1
+    }));
+  }
+
+  function validateRenderCodepoints(value) {
+    if (!Array.isArray(value) && !(value && typeof value[Symbol.iterator] === "function")) return null;
+    const out = Array.from(value, cp => Number(cp));
+    if (out.some(cp => !isUnicodeScalarValue(cp))) return null;
+    return out;
+  }
+
+  function normalizeCanonicalToRenderSpans(value, canonicalLength, renderLength) {
+    if (!Array.isArray(value) || value.length !== canonicalLength) return null;
+    const out = [];
+    for (let i = 0; i < value.length; i++) {
+      const item = value[i];
+      const start = Number(item?.renderStart);
+      const end = Number(item?.renderEnd);
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end > renderLength) return null;
+      out.push({ canonicalIndex: i, renderStart: start, renderEnd: end });
+    }
+    return out;
+  }
+
+  function normalizeSyntheticCornerBrackets(value, canonicalLength, renderLength) {
+    if (!Array.isArray(value)) return [];
+    const out = [];
+    for (const item of value) {
+      const canonicalIndex = Number(item?.canonicalIndex);
+      const renderStart = Number(item?.renderStart);
+      const renderEnd = Number(item?.renderEnd);
+      const codepoint = Number(item?.codepoint);
+      if (!Number.isInteger(canonicalIndex) || canonicalIndex < 0 || canonicalIndex >= canonicalLength) continue;
+      if (!Number.isInteger(renderStart) || !Number.isInteger(renderEnd) || renderStart < 0 || renderEnd <= renderStart || renderEnd > renderLength) continue;
+      if (codepoint !== 0x300C && codepoint !== 0x300D) continue;
+      out.push({
+        canonicalIndex,
+        renderStart,
+        renderEnd,
+        codepoint,
+        side: codepoint === 0x300D ? 'right' : 'left'
+      });
+    }
+    return out;
+  }
+
+  function identityFontRenderAdapter({ canonicalCps }) {
+    const cps = Array.from(canonicalCps || []);
+    return {
+      renderCps: cps,
+      canonicalToRenderSpans: identityCanonicalToRenderSpans(cps)
+    };
+  }
+
+  __fontRenderAdapters.set(DEFAULT_FONT_RENDER_ADAPTER_ID, identityFontRenderAdapter);
+
+  // Built-in adapters for fonts whose OpenType input contract differs from
+  // canonical Common Sitelen Pona. The parser remains font-independent: these
+  // functions receive canonical code points only and translate at render time.
+  const SP_CP = Object.freeze({
+    CARTOUCHE_START: 0xF1990,
+    CARTOUCHE_END: 0xF1991,
+    CARTOUCHE_EXTENSION: 0xF1992,
+    DEPRECATED_LONG_PI_START: 0xF1993,
+    DEPRECATED_LONG_PI_EXTENSION: 0xF1994,
+    STACKING_JOINER: 0xF1995,
+    SCALING_JOINER: 0xF1996,
+    LONG_START: 0xF1997,
+    LONG_END: 0xF1998,
+    DEPRECATED_LONG_EXTENSION: 0xF1999,
+    REVERSE_LONG_START: 0xF199A,
+    REVERSE_LONG_END: 0xF199B,
+    MIDDLE_DOT: 0xF199C,
+    COLON: 0xF199D,
+    TALLY: 0xF199E,
+    ZWJ: 0x200D,
+    IDEOGRAPHIC_SPACE: 0x3000,
+    LEFT_CORNER: 0x300C,
+    RIGHT_CORNER: 0x300D,
+    NI: 0xF1941,
+    NI_LEFT: 0xF1989,
+    NI_UP: 0xF198A,
+    NI_RIGHT: 0xF198B,
+    SEWI: 0xF195A,
+    SEWI_ALT: 0xF198C,
+    JAKI: 0xF1910,
+    KO: 0xF191C,
+    PI: 0xF194D,
+    LON: 0xF192C,
+    MAJUNA: 0xF19A2,
+    LINLUWI: 0xF19A4,
+    KIKI: 0xF19A5,
+    SU: 0xF19A6
+  });
+
+  const SP_JOINERS = new Set([SP_CP.ZWJ, SP_CP.STACKING_JOINER, SP_CP.SCALING_JOINER]);
+  const SP_PREFERRED_WORD_NAMES = Object.freeze([
+    'a','akesi','ala','alasa','ale','anpa','ante','anu','awen','e','en','esun','ijo','ike','ilo','insa','jaki','jan','jelo','jo','kala','kalama','kama','kasi','ken','kepeken','kili','kiwen','ko','kon','kule','kulupu','kute','la','lape','laso','lawa','len','lete','li','lili','linja','lipu','loje','lon','luka','lukin','lupa','ma','mama','mani','meli','mi','mije','moku','moli','monsi','mu','mun','musi','mute','nanpa','nasa','nasin','nena','ni','nimi','noka','o','olin','ona','open','pakala','pali','palisa','pan','pana','pi','pilin','pimeja','pini','pipi','poka','poki','pona','pu','sama','seli','selo','seme','sewi','sijelo','sike','sin','sina','sinpin','sitelen','sona','soweli','suli','suno','supa','suwi','tan','taso','tawa','telo','tenpo','toki','tomo','tu','unpa','uta','utala','walo','wan','waso','wawa','weka','wile','namako','kin','oko','kipisi','leko','monsuta','tonsi','jasima','kijetesantakalu','soko','meso','epiku','kokosila','lanpan','n','misikeke','ku','pake','apeja','majuna','powe','linluwi','kiki','su'
+  ]);
+  let __preferredWordByCp = null;
+  const __fontRenderAdapterWarnings = new Set();
+
+  function warnFontRenderAdapterOnce(adapterId, message) {
+    const key = `${adapterId}:${message}`;
+    if (__fontRenderAdapterWarnings.has(key)) return;
+    __fontRenderAdapterWarnings.add(key);
+    try { console.warn(`[font-render-adapter:${adapterId}] ${message}`); } catch (_) {}
+  }
+
+  function preferredWordByCp() {
+    if (__preferredWordByCp) return __preferredWordByCp;
+    const out = new Map();
+    const source = (__bridgeWordToUcsurCp && typeof __bridgeWordToUcsurCp === 'object')
+      ? __bridgeWordToUcsurCp
+      : {};
+    for (const word of SP_PREFERRED_WORD_NAMES) {
+      const cp = Number(source[word]);
+      if (isUnicodeScalarValue(cp) && !out.has(cp)) out.set(cp, word);
+    }
+    __preferredWordByCp = out;
+    return out;
+  }
+
+  function stringToCodepoints(text) {
+    return Array.from(String(text ?? ''), ch => ch.codePointAt(0));
+  }
+
+  function createMappedRenderBuilder(canonicalLength) {
+    const renderCps = [];
+    const spans = Array.from({ length: canonicalLength }, (_unused, canonicalIndex) => ({
+      canonicalIndex,
+      renderStart: null,
+      renderEnd: null
+    }));
+
+    function attach(indices, start, end) {
+      for (const rawIndex of (indices || [])) {
+        const index = Number(rawIndex);
+        if (!Number.isInteger(index) || index < 0 || index >= spans.length) continue;
+        const span = spans[index];
+        span.renderStart = span.renderStart == null ? start : Math.min(span.renderStart, start);
+        span.renderEnd = span.renderEnd == null ? end : Math.max(span.renderEnd, end);
+      }
+    }
+
+    return {
+      get length() { return renderCps.length; },
+      append(text, indices = []) {
+        const start = renderCps.length;
+        renderCps.push(...stringToCodepoints(text));
+        attach(indices, start, renderCps.length);
+      },
+      appendCodepoints(cps, indices = []) {
+        const start = renderCps.length;
+        renderCps.push(...Array.from(cps || [], cp => Number(cp)));
+        attach(indices, start, renderCps.length);
+      },
+      mark(indices = []) {
+        attach(indices, renderCps.length, renderCps.length);
+      },
+      finish() {
+        let cursor = 0;
+        for (const span of spans) {
+          if (span.renderStart == null || span.renderEnd == null) {
+            span.renderStart = cursor;
+            span.renderEnd = cursor;
+          } else {
+            cursor = span.renderEnd;
+          }
+        }
+        return { renderCps, canonicalToRenderSpans: spans };
+      }
+    };
+  }
+
+  function splitCanonicalCells(cps, start = 0, end = cps.length) {
+    const cells = [];
+    let i = start;
+    while (i < end) {
+      const cp = cps[i];
+      if (cp === SP_CP.CARTOUCHE_EXTENSION || cp === SP_CP.DEPRECATED_LONG_EXTENSION || cp === SP_CP.DEPRECATED_LONG_PI_EXTENSION) {
+        cells.push({ indices: [i], cps: [cp], controlOnly: true });
+        i += 1;
+        continue;
+      }
+      const indices = [i];
+      const cellCps = [cp];
+      i += 1;
+      while (i + 1 < end && SP_JOINERS.has(cps[i])) {
+        indices.push(i, i + 1);
+        cellCps.push(cps[i], cps[i + 1]);
+        i += 2;
+      }
+      cells.push({ indices, cps: cellCps, controlOnly: false });
+    }
+    return cells;
+  }
+
+  function replacementForUnsupported(settings = {}) {
+    const configured = Number(settings.unsupportedReplacementCodepoint);
+    return isUnicodeScalarValue(configured) ? configured : 0xFFFD;
+  }
+
+  function appendUnsupported(builder, index, cp, adapterId, settings, reason = 'unsupported code point') {
+    warnFontRenderAdapterOnce(adapterId, `${reason}: U+${Number(cp).toString(16).toUpperCase()}`);
+    builder.appendCodepoints([replacementForUnsupported(settings)], [index]);
+  }
+
+  function legacyWordEncoding(cp, kind, settings = {}) {
+    if (cp === SP_CP.MIDDLE_DOT) return '.';
+    if (cp === SP_CP.COLON) return ':';
+    if (cp === SP_CP.IDEOGRAPHIC_SPACE) return kind === 'linja-lipamanka' ? 'zz' : '  ';
+
+    if (cp === SP_CP.NI_LEFT) {
+      if (kind === 'linja-sike') return 'ni';
+      if (kind === 'linja-lipamanka') return 'ni<';
+      return 'ni';
+    }
+    if (cp === SP_CP.NI_UP) {
+      if (kind === 'linja-sike' || kind === 'linja-lipamanka') return 'ni^';
+      return 'ni';
+    }
+    if (cp === SP_CP.NI_RIGHT) {
+      if (kind === 'linja-sike' || kind === 'linja-lipamanka') return 'ni>';
+      return 'ni';
+    }
+    if (cp === SP_CP.SEWI_ALT) {
+      if (kind === 'linja-sike') return 'sewi1';
+      return 'sewi';
+    }
+    if (
+      (cp === SP_CP.LEFT_CORNER || cp === SP_CP.RIGHT_CORNER) &&
+      (kind === 'linja-pona' || kind === 'linja-sike') &&
+      String(settings.cornerBracketMode || '').trim().toLowerCase() === 'synthetic'
+    ) {
+      return String.fromCodePoint(cp);
+    }
+    if (cp === SP_CP.LEFT_CORNER && kind === 'linja-lipamanka') return 'te';
+    if (cp === SP_CP.RIGHT_CORNER && kind === 'linja-lipamanka') return 'to';
+
+    const word = preferredWordByCp().get(cp) || null;
+    if (!word) return null;
+
+    if (kind === 'linja-pona' && (cp === SP_CP.MAJUNA || cp === SP_CP.LINLUWI || cp === SP_CP.SU || cp === SP_CP.KIKI)) {
+      return null;
+    }
+    if (kind === 'linja-lipamanka' && (cp === SP_CP.LINLUWI || cp === SP_CP.SU || cp === SP_CP.KIKI || cp > 0xF19A3)) {
+      return null;
+    }
+    return word;
+  }
+
+  function appendLegacyCell(builder, cell, kind, adapterId, settings = {}) {
+    const cps = cell.cps;
+    const indices = cell.indices;
+    if (cell.controlOnly) {
+      builder.mark(indices);
+      return true;
+    }
+    let pos = 0;
+    while (pos < cps.length) {
+      const cp = cps[pos];
+      const canonicalIndex = indices[pos];
+      const text = legacyWordEncoding(cp, kind, settings);
+      if (text == null) appendUnsupported(builder, canonicalIndex, cp, adapterId, settings, 'font has no reliable glyph input');
+      else builder.append(text, [canonicalIndex]);
+      pos += 1;
+      if (pos < cps.length) {
+        const joiner = cps[pos];
+        const joinerIndex = indices[pos];
+        let operator = '-';
+        if (kind === 'linja-lipamanka') {
+          if (joiner === SP_CP.STACKING_JOINER) operator = '+';
+          else if (joiner === SP_CP.SCALING_JOINER) operator = '-';
+          else operator = String(settings.genericCompoundOperator || '-').slice(0, 1) || '-';
+        }
+        builder.append(operator, [joinerIndex]);
+        pos += 1;
+      }
+    }
+    return true;
+  }
+
+  function findCurrentLongGlyph(cps) {
+    const start = cps.indexOf(SP_CP.LONG_START);
+    if (start <= 0) return null;
+    const end = cps.indexOf(SP_CP.LONG_END, start + 1);
+    if (end < 0) return null;
+    return { headIndex: start - 1, startIndex: start, endIndex: end };
+  }
+
+  function adaptLegacyLinja(canonicalCps, kind, context = {}) {
+    const adapterId = kind === 'linja-pona' ? 'linja-pona-legacy-v1' : 'linja-sike-legacy-v1';
+    const settings = context.settings || {};
+    const maxLongPiCells = Math.max(1, Math.min(3, Math.trunc(Number(settings.maxLongPiCells) || 3)));
+    const cps = Array.from(canonicalCps || []);
+    const builder = createMappedRenderBuilder(cps.length);
+
+    function finishLegacyResult() {
+      const result = builder.finish();
+      if (String(settings.cornerBracketMode || '').trim().toLowerCase() !== 'synthetic') return result;
+      const syntheticCornerBrackets = [];
+      for (let canonicalIndex = 0; canonicalIndex < cps.length; canonicalIndex++) {
+        const codepoint = cps[canonicalIndex];
+        if (codepoint !== SP_CP.LEFT_CORNER && codepoint !== SP_CP.RIGHT_CORNER) continue;
+        const span = result.canonicalToRenderSpans[canonicalIndex];
+        if (!span || span.renderEnd <= span.renderStart) continue;
+        syntheticCornerBrackets.push({
+          canonicalIndex,
+          renderStart: span.renderStart,
+          renderEnd: span.renderEnd,
+          codepoint,
+          side: codepoint === SP_CP.RIGHT_CORNER ? 'right' : 'left'
+        });
+      }
+      if (syntheticCornerBrackets.length) result.syntheticCornerBrackets = syntheticCornerBrackets;
+      return result;
+    }
+
+    const isCartouche = cps.length >= 2 && cps[0] === SP_CP.CARTOUCHE_START && cps[cps.length - 1] === SP_CP.CARTOUCHE_END;
+    if (isCartouche) {
+      builder.append('[', [0]);
+      const cells = splitCanonicalCells(cps, 1, cps.length - 1);
+      for (const cell of cells) {
+        if (cell.controlOnly) { builder.mark(cell.indices); continue; }
+        builder.append('_', [cell.indices[0]]);
+        appendLegacyCell(builder, cell, kind, adapterId, settings);
+      }
+      builder.append(']', [cps.length - 1]);
+      return finishLegacyResult();
+    }
+
+    const longGlyph = findCurrentLongGlyph(cps);
+    if (longGlyph) {
+      const headCp = cps[longGlyph.headIndex];
+      const cells = splitCanonicalCells(cps, longGlyph.startIndex + 1, longGlyph.endIndex);
+      const usableCells = cells.filter(cell => !cell.controlOnly);
+      if (headCp === SP_CP.PI && usableCells.length >= 1 && usableCells.length <= maxLongPiCells) {
+        builder.append('pi', [longGlyph.headIndex]);
+        if (kind === 'linja-pona') {
+          builder.append('+'.repeat(usableCells.length), [longGlyph.startIndex]);
+          usableCells.forEach((cell, index) => {
+            if (index > 0) builder.append(' ');
+            appendLegacyCell(builder, cell, kind, adapterId, settings);
+          });
+        } else {
+          builder.append('+', [longGlyph.startIndex]);
+          usableCells.forEach(cell => {
+            builder.append('__', [cell.indices[0]]);
+            appendLegacyCell(builder, cell, kind, adapterId, settings);
+          });
+        }
+        builder.mark([longGlyph.endIndex]);
+        for (let i = 0; i < cps.length; i++) {
+          if (i < longGlyph.headIndex || i > longGlyph.endIndex) {
+            const text = legacyWordEncoding(cps[i], kind, settings);
+            if (text == null) appendUnsupported(builder, i, cps[i], adapterId, settings);
+            else builder.append(text, [i]);
+          }
+        }
+        return finishLegacyResult();
+      }
+
+      warnFontRenderAdapterOnce(adapterId, 'non-pi or overlong long glyph rendered as ordinary cells');
+      for (let i = 0; i < cps.length; i++) {
+        if (i === longGlyph.startIndex || i === longGlyph.endIndex) { builder.mark([i]); continue; }
+        if (builder.length > 0) builder.append(' ');
+        const text = legacyWordEncoding(cps[i], kind, settings);
+        if (text == null) appendUnsupported(builder, i, cps[i], adapterId, settings);
+        else builder.append(text, [i]);
+      }
+      return finishLegacyResult();
+    }
+
+    // Basic normalization of the deprecated combining long-pi syntax.
+    if (cps[0] === SP_CP.DEPRECATED_LONG_PI_START) {
+      const cells = splitCanonicalCells(cps, 1, cps.length);
+      const usableCells = cells.filter(cell => !cell.controlOnly);
+      builder.append('pi', [0]);
+      if (kind === 'linja-pona') builder.append('+'.repeat(Math.max(1, Math.min(maxLongPiCells, usableCells.length))), [0]);
+      else builder.append('+', [0]);
+      usableCells.slice(0, maxLongPiCells).forEach((cell, index) => {
+        if (kind === 'linja-pona') { if (index > 0) builder.append(' '); }
+        else builder.append('__', [cell.indices[0]]);
+        appendLegacyCell(builder, cell, kind, adapterId, settings);
+      });
+      return finishLegacyResult();
+    }
+
+    const cells = splitCanonicalCells(cps);
+    cells.forEach((cell, cellIndex) => {
+      if (cell.controlOnly) { builder.mark(cell.indices); return; }
+      if (cellIndex > 0) builder.append(' ');
+      appendLegacyCell(builder, cell, kind, adapterId, settings);
+    });
+    return finishLegacyResult();
+  }
+
+  function nasinSitelenPuMonoMapCp(cp) {
+    if (cp === SP_CP.NI_LEFT || cp === SP_CP.NI_UP || cp === SP_CP.NI_RIGHT) return SP_CP.NI;
+    if (cp === SP_CP.SEWI_ALT) return SP_CP.SEWI;
+    if (cp === SP_CP.MIDDLE_DOT) return '.'.codePointAt(0);
+    if (cp === SP_CP.COLON) return ':'.codePointAt(0);
+    if ((cp >= 0xF1900 && cp <= 0xF1988) || (cp >= 0xF19A0 && cp <= 0xF19A3) || cp === SP_CP.CARTOUCHE_START || cp === SP_CP.CARTOUCHE_END || cp === SP_CP.IDEOGRAPHIC_SPACE || cp === SP_CP.LEFT_CORNER || cp === SP_CP.RIGHT_CORNER) return cp;
+    return null;
+  }
+
+  function nasinSitelenPuMonoAdapter({ canonicalCps, settings = {} }) {
+    const adapterId = 'nasin-sitelen-pu-mono-v1';
+    const cps = Array.from(canonicalCps || []);
+    const builder = createMappedRenderBuilder(cps.length);
+    for (let i = 0; i < cps.length; i++) {
+      const cp = cps[i];
+      if (SP_JOINERS.has(cp) || cp === SP_CP.LONG_START || cp === SP_CP.LONG_END || cp === SP_CP.REVERSE_LONG_START || cp === SP_CP.REVERSE_LONG_END || cp === SP_CP.CARTOUCHE_EXTENSION || cp === SP_CP.DEPRECATED_LONG_PI_START || cp === SP_CP.DEPRECATED_LONG_PI_EXTENSION || cp === SP_CP.DEPRECATED_LONG_EXTENSION) {
+        builder.mark([i]);
+        continue;
+      }
+      if (cp === SP_CP.TALLY) {
+        appendUnsupported(builder, i, cp, adapterId, settings, 'combining tally requires renderer manual-tally mode');
+        continue;
+      }
+      const mapped = nasinSitelenPuMonoMapCp(cp);
+      if (mapped == null) appendUnsupported(builder, i, cp, adapterId, settings, 'font maps this code point to a placeholder or lacks it');
+      else builder.appendCodepoints([mapped], [i]);
+    }
+    return builder.finish();
+  }
+
+  function lipamankaCpNeedsTranslation(cp, settings = {}) {
+    if (SP_JOINERS.has(cp) || cp === SP_CP.MIDDLE_DOT || cp === SP_CP.COLON || cp === SP_CP.TALLY || cp === SP_CP.NI_LEFT || cp === SP_CP.NI_UP || cp === SP_CP.NI_RIGHT || cp === SP_CP.SEWI_ALT || cp === SP_CP.LEFT_CORNER || cp === SP_CP.RIGHT_CORNER || cp === SP_CP.IDEOGRAPHIC_SPACE) return true;
+    if (cp === SP_CP.LINLUWI || cp === SP_CP.KIKI || cp === SP_CP.SU || cp > 0xF19A3) return true;
+    if (settings.deterministicAlternates !== false && (cp === SP_CP.JAKI || cp === SP_CP.KO)) return true;
+    return false;
+  }
+
+  function lipamankaSequenceNeedsTranslation(cps, settings = {}) {
+    return cps.some(cp => lipamankaCpNeedsTranslation(cp, settings));
+  }
+
+  function linjaLipamankaAdapter({ canonicalCps, settings = {} }) {
+    const adapterId = 'linja-lipamanka-v1';
+    const cps = Array.from(canonicalCps || []);
+    if (!lipamankaSequenceNeedsTranslation(cps, settings)) {
+      return identityFontRenderAdapter({ canonicalCps: cps });
+    }
+
+    const builder = createMappedRenderBuilder(cps.length);
+    const isCartouche = cps.length >= 2 && cps[0] === SP_CP.CARTOUCHE_START && cps[cps.length - 1] === SP_CP.CARTOUCHE_END;
+    if (isCartouche) {
+      builder.append('[', [0]);
+      const cells = splitCanonicalCells(cps, 1, cps.length - 1).filter(cell => !cell.controlOnly);
+      cells.forEach((cell, index) => {
+        if (index > 0) builder.append(' ');
+        appendLegacyCell(builder, cell, 'linja-lipamanka', adapterId, settings);
+      });
+      builder.append(']', [cps.length - 1]);
+      return builder.finish();
+    }
+
+    const longGlyph = findCurrentLongGlyph(cps);
+    if (longGlyph) {
+      const headCp = cps[longGlyph.headIndex];
+      const headName = legacyWordEncoding(headCp, 'linja-lipamanka', settings);
+      const supportedHead = headCp === SP_CP.PI || headCp === SP_CP.LON;
+      const cells = splitCanonicalCells(cps, longGlyph.startIndex + 1, longGlyph.endIndex).filter(cell => !cell.controlOnly);
+      if (supportedHead && headName) {
+        builder.append(headName, [longGlyph.headIndex]);
+        builder.append('(', [longGlyph.startIndex]);
+        cells.forEach((cell, index) => {
+          if (index > 0) builder.append(' ');
+          appendLegacyCell(builder, cell, 'linja-lipamanka', adapterId, settings);
+        });
+        builder.append(')', [longGlyph.endIndex]);
+        return builder.finish();
+      }
+      warnFontRenderAdapterOnce(adapterId, 'unsupported long-glyph head rendered as ordinary glyphs');
+    }
+
+    const cells = splitCanonicalCells(cps);
+    cells.forEach((cell, index) => {
+      if (cell.controlOnly) { builder.mark(cell.indices); return; }
+      if (index > 0) builder.append(' ');
+      appendLegacyCell(builder, cell, 'linja-lipamanka', adapterId, settings);
+    });
+    return builder.finish();
+  }
+
+  __fontRenderAdapters.set('linja-pona-legacy-v1', args => adaptLegacyLinja(args.canonicalCps, 'linja-pona', args));
+  __fontRenderAdapters.set('linja-sike-legacy-v1', args => adaptLegacyLinja(args.canonicalCps, 'linja-sike', args));
+  __fontRenderAdapters.set('nasin-sitelen-pu-mono-v1', nasinSitelenPuMonoAdapter);
+  __fontRenderAdapters.set('linja-lipamanka-v1', linjaLipamankaAdapter);
+
+  function registerFontRenderAdapter(id, adapter) {
+    const normalizedId = normalizeRenderAdapterId(id);
+    if (normalizedId === DEFAULT_FONT_RENDER_ADAPTER_ID) {
+      throw new Error('The built-in "identity" render adapter cannot be replaced.');
+    }
+    if (typeof adapter !== "function") throw new TypeError("Render adapter must be a function.");
+    __fontRenderAdapters.set(normalizedId, adapter);
+    return normalizedId;
+  }
+
+  function unregisterFontRenderAdapter(id) {
+    const normalizedId = normalizeRenderAdapterId(id);
+    if (normalizedId === DEFAULT_FONT_RENDER_ADAPTER_ID) return false;
+    return __fontRenderAdapters.delete(normalizedId);
+  }
+
+  function hasFontRenderAdapter(id) {
+    return __fontRenderAdapters.has(normalizeRenderAdapterId(id));
+  }
+
+  function adaptCanonicalCodepointsForFont(canonicalCps, context = {}) {
+    const canonical = validateRenderCodepoints(Array.from(canonicalCps || []));
+    if (!canonical) throw new Error("Canonical render code points must be valid Unicode scalar values.");
+
+    const requestedId = normalizeRenderAdapterId(context.renderAdapterId ?? __renderAdapterId);
+    const sourceKind = String(context.sourceKind || "").toLowerCase();
+    const rawUnicodeExact = sourceKind === "rawucsur" && context.adaptRawUnicode !== true && __renderAdapterSettings.adaptRawUnicode !== true;
+    const bypass = context.bypassRenderAdapter === true || context.isLiteral === true || context.isLiteralCartouche === true || rawUnicodeExact;
+    const adapter = bypass
+      ? identityFontRenderAdapter
+      : (__fontRenderAdapters.get(requestedId) || identityFontRenderAdapter);
+    const effectiveId = bypass || !__fontRenderAdapters.has(requestedId)
+      ? DEFAULT_FONT_RENDER_ADAPTER_ID
+      : requestedId;
+
+    try {
+      const rawResult = adapter({
+        canonicalCps: canonical.slice(),
+        renderAdapterId: effectiveId,
+        settings: cloneRenderAdapterSettings(__renderAdapterSettings),
+        ...context
+      });
+      const result = Array.isArray(rawResult) ? { renderCps: rawResult } : (rawResult || {});
+      const renderCps = validateRenderCodepoints(result.renderCps);
+      if (!renderCps || (canonical.length > 0 && renderCps.length === 0)) throw new Error("Render adapter returned an invalid or empty code-point sequence.");
+      const spans = normalizeCanonicalToRenderSpans(result.canonicalToRenderSpans, canonical.length, renderCps.length)
+        || (renderCps.length === canonical.length ? identityCanonicalToRenderSpans(canonical) : canonical.map((_cp, index) => ({ canonicalIndex: index, renderStart: 0, renderEnd: renderCps.length })));
+      const syntheticCornerBrackets = normalizeSyntheticCornerBrackets(
+        result.syntheticCornerBrackets,
+        canonical.length,
+        renderCps.length
+      );
+      return {
+        canonicalCps: canonical,
+        renderCps,
+        canonicalToRenderSpans: spans,
+        syntheticCornerBrackets,
+        renderAdapterId: effectiveId,
+        requestedRenderAdapterId: requestedId,
+        usedFallback: effectiveId !== requestedId
+      };
+    } catch (error) {
+      try { console.warn(`[font-render-adapter] ${requestedId} failed; using identity.`, error); } catch (_) {}
+      return {
+        canonicalCps: canonical,
+        renderCps: canonical.slice(),
+        canonicalToRenderSpans: identityCanonicalToRenderSpans(canonical),
+        syntheticCornerBrackets: [],
+        renderAdapterId: DEFAULT_FONT_RENDER_ADAPTER_ID,
+        requestedRenderAdapterId: requestedId,
+        usedFallback: true
+      };
+    }
+  }
+
+  function getElementCanonicalCps(el) {
+    if (!el || typeof el !== "object") return [];
+    if (Array.isArray(el.canonicalCps)) return el.canonicalCps;
+    if (Array.isArray(el.cps)) return el.cps;
+    if (Number.isInteger(el.cp)) return [el.cp];
+    return [];
+  }
+
+  function getElementRenderCps(el) {
+    if (!el || typeof el !== "object") return [];
+    if (Array.isArray(el.renderCps)) return el.renderCps;
+    if (Number.isInteger(el.renderCp)) return [el.renderCp];
+    return getElementCanonicalCps(el);
+  }
+
+  function getSyntheticCornerBracketCodepoint(el) {
+    if (!el || typeof el !== 'object') return null;
+    const instructions = Array.isArray(el.syntheticCornerBrackets) ? el.syntheticCornerBrackets : [];
+    if (instructions.length !== 1) return null;
+    const cp = Number(instructions[0]?.codepoint);
+    const canonical = getElementCanonicalCps(el);
+    if (canonical.length !== 1 || canonical[0] !== cp) return null;
+    return (cp === SP_CP.LEFT_CORNER || cp === SP_CP.RIGHT_CORNER) ? cp : null;
+  }
+
+  function measureSyntheticCornerBracket(fontPx, codepoint) {
+    const px = Math.max(1, Number(fontPx) || 1);
+    const w = Math.max(1, Math.ceil(px * 0.36));
+    const h = Math.max(1, Math.ceil(px * 0.76));
+    const isRight = Number(codepoint) === SP_CP.RIGHT_CORNER;
+    const lift = isRight ? 0 : Math.max(4, px * 0.18);
+    const yTopFromBaseline = -(h * 0.82) - lift;
+    const yBottomFromBaseline = yTopFromBaseline + h;
+    return {
+      chars: String.fromCodePoint(Number(codepoint)),
+      ascent: Math.max(0, -yTopFromBaseline),
+      descent: Math.max(0, yBottomFromBaseline),
+      left: 0,
+      w,
+      h,
+      px,
+      syntheticCornerBracket: true,
+      codepoint: Number(codepoint)
+    };
+  }
+
+  function drawSyntheticCornerBracket(ctx, codepoint, x, baseline, {
+    fontPx,
+    widthPx,
+    heightPx,
+    fillCss = '#111111',
+    halo = null
+  } = {}) {
+    if (!ctx) return;
+    const cp = Number(codepoint);
+    if (cp !== SP_CP.LEFT_CORNER && cp !== SP_CP.RIGHT_CORNER) return;
+    const px = Math.max(1, Number(fontPx) || 1);
+    const isRight = cp === SP_CP.RIGHT_CORNER;
+    const strokeW = px <= 12 ? Math.max(1.0, px * 0.065) : Math.max(2.5, px * 0.065);
+    const runW = Math.max(Number(widthPx) || 0, px * 0.36);
+    const runH = Math.max(Number(heightPx) || 0, px * 0.76);
+    const pad = Math.max(0.5, strokeW * 0.5);
+    const xLeft = Number(x) + pad;
+    const xRight = Number(x) + runW - pad;
+    let yTop = Number(baseline) - runH * 0.82;
+    if (!isRight) yTop -= Math.max(4, px * 0.18);
+    const yBottom = yTop + runH;
+    const arm = Math.max(px * 0.26, Math.min(runW * 0.82, px * 0.48));
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
+    if (isRight) {
+      ctx.moveTo(xRight - arm + strokeW * 0.5, yBottom - strokeW * 0.5);
+      ctx.lineTo(xRight - strokeW * 0.5, yBottom - strokeW * 0.5);
+      ctx.lineTo(xRight - strokeW * 0.5, yTop + strokeW * 0.5);
+    } else {
+      ctx.moveTo(xLeft + strokeW * 0.5, yBottom - strokeW * 0.5);
+      ctx.lineTo(xLeft + strokeW * 0.5, yTop + strokeW * 0.5);
+      ctx.lineTo(xLeft + arm - strokeW * 0.5, yTop + strokeW * 0.5);
+    }
+
+    const haloInfo = halo && typeof halo === 'object' ? halo : {};
+    const haloEnabled = haloInfo.enabled === true && Number(haloInfo.widthPx) > 0;
+    if (haloEnabled) {
+      ctx.strokeStyle = String(haloInfo.color || '#FFFFFF');
+      ctx.lineWidth = strokeW + Math.max(0, Number(haloInfo.widthPx) || 0) * 2;
+      ctx.stroke();
+    }
+    ctx.strokeStyle = String(fillCss || '#111111');
+    ctx.lineWidth = strokeW;
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function captureRenderFontState() {
     return {
       text: FONT_FAMILY_TEXT,
@@ -621,6 +1319,8 @@ const SitelenRenderer = (() => {
       relaxedNanpaLinjanParsing: __relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering: __relaxedNanpaLinjanRendering,
       nasinNanpaPona: __nasinNanpaPona,
+      renderAdapterId: __renderAdapterId,
+      renderAdapterSettings: cloneRenderAdapterSettings(__renderAdapterSettings),
     };
   }
 
@@ -652,6 +1352,8 @@ const SitelenRenderer = (() => {
     __relaxedNanpaLinjanParsing = !!state.relaxedNanpaLinjanParsing;
     __relaxedNanpaLinjanRendering = !!state.relaxedNanpaLinjanRendering;
     __nasinNanpaPona = !!state.nasinNanpaPona;
+    __renderAdapterId = normalizeRenderAdapterId(state.renderAdapterId);
+    __renderAdapterSettings = cloneRenderAdapterSettings(state.renderAdapterSettings);
   }
 
   let __renderConfigScopeQueue = Promise.resolve();
@@ -901,6 +1603,8 @@ const SitelenRenderer = (() => {
     const parser = config.parser || {};
     const fonts = config.fonts || {};
     const roles = fonts.roles || {};
+    __renderAdapterId = normalizeRenderAdapterId(fonts.renderAdapterId);
+    __renderAdapterSettings = cloneRenderAdapterSettings(fonts.renderAdapterSettings || fonts.settings?.renderAdapterSettings);
 
     if (layout.fontPx != null) {
       const el = document.getElementById('fontSizeSel');
@@ -980,12 +1684,26 @@ const SitelenRenderer = (() => {
         const sourceKind = seg.kind;
         const sourceSegmentIndex = si;
         if (seg.kind === 'text') {
-          if (parser.mode === 'sitelen-seli-kiwen') parseSskTextSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
-          else __bridgeParseTextSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex, mixedStyle });
+          if (parser.mode === 'sitelen-seli-kiwen') {
+            parseSskTextSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+          } else if (isSitelenPonaAsciiExtendedMode(parser)) {
+            parseSitelenPonaAsciiExtendedTextSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+          } else if (isStandardSitelenPonaAsciiCoreMode(parser)) {
+            parseStandardSitelenPonaAsciiCoreTextSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+          } else {
+            __bridgeParseTextSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex, mixedStyle });
+          }
         }
         else if (seg.kind === 'bracket') {
-          if (parser.mode === 'sitelen-seli-kiwen') parseSskBracketSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
-          else __bridgeParseBracketSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex, mixedStyle });
+          if (parser.mode === 'sitelen-seli-kiwen') {
+            parseSskBracketSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+          } else if (isSitelenPonaAsciiExtendedMode(parser)) {
+            parseSitelenPonaAsciiExtendedBracketSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+          } else if (isStandardSitelenPonaAsciiCoreMode(parser)) {
+            parseStandardSitelenPonaAsciiCoreBracketSegmentToElements(seg.value, elements, { fontPx, parser, mixedStyle, sourceBaseStart: 0, sourceKind, sourceSegmentIndex });
+          } else {
+            __bridgeParseBracketSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex, mixedStyle });
+          }
         }
         else if (seg.kind === 'quote') {
           if (parser.interpretDoubleQuotesAsTeTo === true) {
@@ -1116,7 +1834,8 @@ const SitelenRenderer = (() => {
             sourceStart: sourceBaseStart + hit.index,
             sourceEnd: sourceBaseStart + hit.end,
             sourceKind,
-            sourceSegmentIndex
+            sourceSegmentIndex,
+            bypassRenderAdapter: true
           });
           pos = hit.end;
         }
@@ -1200,6 +1919,8 @@ const SitelenRenderer = (() => {
       __bridgeMakeRunElementFromCodepoints(elements, [0xF1990, ...cps, 0xF1991], {
         fontPx,
         fontFamily: FONT_FAMILY_CARTOUCHE,
+        fontRole: 'cartouche',
+        elementKind: 'cartouche-run',
         sourceText: content,
         sourceStart: sourceBaseStart,
         sourceEnd: sourceBaseStart + content.length,
@@ -1211,6 +1932,475 @@ const SitelenRenderer = (() => {
 
     // Final fallback
     __bridgeParseBracketSegmentToElements(content, elements, {
+      fontPx,
+      sourceBaseStart,
+      sourceKind,
+      sourceSegmentIndex,
+      mixedStyle
+    });
+  }
+
+
+  function emitSitelenPonaAsciiExtendedLegacyLongPi(matchText, innerWords, elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
+    return emitSskExtendedGlyph(
+      matchText,
+      null,
+      'pi',
+      innerWords,
+      elements,
+      fontPx,
+      sourceBaseStart,
+      sourceKind,
+      sourceSegmentIndex
+    );
+  }
+
+  function getSitelenPonaAsciiExtendedLegacyLongPiInnerWords(aliasText) {
+    const source = String(aliasText ?? '');
+    const lower = source.toLowerCase();
+
+    // linja sike uses a single pi+ marker followed by one to three words,
+    // each introduced by a double underscore.
+    if (lower.startsWith('pi+__')) {
+      const words = source.slice(5).split('__');
+      if (words.length < 1 || words.length > 3) return null;
+      if (words.some(word => sskWordToCp(word) == null)) return null;
+      return words.join(' ');
+    }
+
+    // linja pona uses the number of repeated + markers as the long-pi length.
+    // The previously supported -- and --- aliases remain available unchanged.
+    const markerMatch = /^pi(\+{1,3}|-{2,3})(.*)$/i.exec(source);
+    if (!markerMatch) return null;
+
+    const marker = markerMatch[1];
+    const expectedWordCount = marker.length;
+    const words = String(markerMatch[2] ?? '').trim().split(/[ \t]+/).filter(Boolean);
+    if (words.length !== expectedWordCount) return null;
+    if (words.some(word => sskWordToCp(word) == null)) return null;
+    return words.join(' ');
+  }
+
+  function parseSitelenPonaAsciiExtendedTextSegmentToElements(segmentText, elements, {
+    fontPx,
+    parser = {},
+    mixedStyle = 'long',
+    sourceBaseStart = 0,
+    sourceKind = 'text',
+    sourceSegmentIndex = null
+  } = {}) {
+    const s = String(segmentText ?? '');
+    if (!s.trim()) return;
+
+    // Start with the complete existing sitelen-seli-kiwen parser vocabulary.
+    // Only this extended branch recognizes the historical linja pona and
+    // linja sike long-pi aliases below; every other parser branch is unchanged.
+    //
+    // linja pona:
+    //   pi+telo                 -> pi(telo)
+    //   pi++telo lete           -> pi(telo lete)
+    //   pi+++telo lete pona     -> pi(telo lete pona)
+    //
+    // linja sike:
+    //   pi+__telo               -> pi(telo)
+    //   pi+__telo__lete         -> pi(telo lete)
+    //   pi+__telo__lete__pona   -> pi(telo lete pona)
+    //
+    // The already-supported pi-- and pi--- aliases are retained.
+    const glyphToken = String.raw`[A-Za-z][A-Za-z0-9_^<>]*`;
+    const linjaSikeGlyphToken = String.raw`[A-Za-z][A-Za-z0-9^<>]*`;
+    const legacyLongPiRe = new RegExp(
+      String.raw`(^|[^A-Za-z0-9_^<>])(` +
+        String.raw`pi\+__${linjaSikeGlyphToken}(?:__${linjaSikeGlyphToken}){0,2}` +
+        String.raw`|pi(?:\+\+\+|---)(?![+-])[ \t]*${glyphToken}[ \t]+${glyphToken}[ \t]+${glyphToken}` +
+        String.raw`|pi(?:\+\+|--)(?![+-])[ \t]*${glyphToken}[ \t]+${glyphToken}` +
+        String.raw`|pi\+(?![+_-])${glyphToken}` +
+      String.raw`)(?=$|[^A-Za-z0-9_^<>+&-])`,
+      'gi'
+    );
+
+    let pos = 0;
+    let m;
+    while ((m = legacyLongPiRe.exec(s)) !== null) {
+      const lead = String(m[1] ?? '');
+      const aliasText = String(m[2] ?? '');
+      const aliasStart = (m.index | 0) + lead.length;
+      const aliasEnd = (m.index | 0) + String(m[0] ?? '').length;
+
+      if (aliasStart > pos) {
+        parseSskTextSegmentToElements(s.slice(pos, aliasStart), elements, {
+          fontPx,
+          parser,
+          mixedStyle,
+          sourceBaseStart: sourceBaseStart + pos,
+          sourceKind,
+          sourceSegmentIndex
+        });
+      }
+
+      const innerWords = getSitelenPonaAsciiExtendedLegacyLongPiInnerWords(aliasText);
+      const handled = innerWords != null && emitSitelenPonaAsciiExtendedLegacyLongPi(
+        aliasText,
+        innerWords,
+        elements,
+        fontPx,
+        sourceBaseStart + aliasStart,
+        sourceKind,
+        sourceSegmentIndex
+      );
+
+      if (!handled) {
+        parseSskTextSegmentToElements(aliasText, elements, {
+          fontPx,
+          parser,
+          mixedStyle,
+          sourceBaseStart: sourceBaseStart + aliasStart,
+          sourceKind,
+          sourceSegmentIndex
+        });
+      }
+
+      pos = aliasEnd;
+    }
+
+    if (pos < s.length) {
+      parseSskTextSegmentToElements(s.slice(pos), elements, {
+        fontPx,
+        parser,
+        mixedStyle,
+        sourceBaseStart: sourceBaseStart + pos,
+        sourceKind,
+        sourceSegmentIndex
+      });
+    }
+  }
+
+  function normalizeSitelenPonaAsciiExtendedLegacyCartoucheContent(bracketContent) {
+    const s = String(bracketContent ?? '');
+    let i = 0;
+    const tokens = [];
+
+    const skipHorizontalSpace = () => {
+      while (i < s.length && /[ \t]/.test(s[i])) i += 1;
+    };
+
+    skipHorizontalSpace();
+    if (s[i] !== '_') return null;
+
+    while (i < s.length) {
+      if (s[i] !== '_') return null;
+      i += 1;
+      skipHorizontalSpace();
+
+      const start = i;
+      while (i < s.length && s[i] !== '_' && !/[ \t]/.test(s[i])) i += 1;
+      const rawToken = s.slice(start, i);
+      if (!rawToken) return null;
+
+      if (sskWordToCp(rawToken) == null) return null;
+      tokens.push(rawToken);
+
+      skipHorizontalSpace();
+      if (i >= s.length) break;
+      if (s[i] !== '_') return null;
+    }
+
+    return tokens.length ? tokens.join(' ') : null;
+  }
+
+  function parseSitelenPonaAsciiExtendedBracketSegmentToElements(bracketContent, elements, {
+    fontPx,
+    parser = {},
+    mixedStyle = 'long',
+    sourceBaseStart = 0,
+    sourceKind = 'bracket',
+    sourceSegmentIndex = null
+  } = {}) {
+    const source = String(bracketContent ?? '');
+    const normalizedLegacyContent = normalizeSitelenPonaAsciiExtendedLegacyCartoucheContent(source);
+
+    if (normalizedLegacyContent != null) {
+      const startLen = elements.length;
+      parseSskBracketSegmentToElements(normalizedLegacyContent, elements, {
+        fontPx,
+        parser,
+        mixedStyle,
+        sourceBaseStart,
+        sourceKind,
+        sourceSegmentIndex
+      });
+
+      if (elements.length > startLen) {
+        for (let i = startLen; i < elements.length; i++) {
+          const el = elements[i];
+          if (!el || el.type === 'gap') continue;
+          el.sourceText = source;
+          el.sourceStart = sourceBaseStart;
+          el.sourceEnd = sourceBaseStart + source.length;
+          el.sourceKind = sourceKind;
+          el.sourceSegmentIndex = sourceSegmentIndex;
+        }
+        return;
+      }
+    }
+
+    parseSskBracketSegmentToElements(source, elements, {
+      fontPx,
+      parser,
+      mixedStyle,
+      sourceBaseStart,
+      sourceKind,
+      sourceSegmentIndex
+    });
+  }
+
+
+  function emitStandardSitelenPonaAsciiCoreLongPi(matchText, innerText, elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
+    const piCp = sskWordToCp('pi');
+    const innerCps = sskWordsToCps(innerText);
+    if (piCp == null || !innerCps || innerCps.length === 0) return false;
+
+    if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
+    __bridgeMakeRunElementFromCodepoints(elements, [piCp, 0xF1997, ...innerCps, 0xF1998], {
+      fontPx,
+      fontFamily: FONT_FAMILY_TEXT,
+      sourceText: String(matchText ?? ''),
+      sourceStart: sourceBaseStart,
+      sourceEnd: sourceBaseStart + String(matchText ?? '').length,
+      sourceKind,
+      sourceSegmentIndex
+    });
+    return true;
+  }
+
+  function emitStandardSitelenPonaAsciiCoreCompound(matchText, elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
+    const expression = String(matchText ?? '');
+    const pieces = expression.split(/([&+-])/);
+    if (pieces.length < 3 || (pieces.length % 2) === 0) return false;
+
+    const cps = [];
+    for (let i = 0; i < pieces.length; i++) {
+      if ((i % 2) === 0) {
+        const cp = sskWordToCp(pieces[i]);
+        if (cp == null) return false;
+        cps.push(cp);
+        continue;
+      }
+
+      const operator = pieces[i];
+      if (operator === '-') cps.push(0xF1995);
+      else if (operator === '+') cps.push(0xF1996);
+      else if (operator === '&') cps.push(0x200D);
+      else return false;
+    }
+
+    if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
+    __bridgeMakeRunElementFromCodepoints(elements, cps, {
+      fontPx,
+      fontFamily: FONT_FAMILY_TEXT,
+      sourceText: expression,
+      sourceStart: sourceBaseStart,
+      sourceEnd: sourceBaseStart + expression.length,
+      sourceKind,
+      sourceSegmentIndex
+    });
+    return true;
+  }
+
+  function emitStandardSitelenPonaAsciiCoreFullWidthSpace(elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
+    __bridgeMakeRunElementFromCodepoints(elements, [0x3000], {
+      fontPx,
+      fontFamily: FONT_FAMILY_LITERAL,
+      sourceText: '|',
+      sourceStart: sourceBaseStart,
+      sourceEnd: sourceBaseStart + 1,
+      sourceKind,
+      sourceSegmentIndex
+    });
+  }
+
+  function parseStandardSitelenPonaAsciiCoreUnsupportedLegacyLongPi(matchText, elements, {
+    fontPx,
+    mixedStyle = 'long',
+    sourceBaseStart = 0,
+    sourceKind = 'text',
+    sourceSegmentIndex = null
+  } = {}) {
+    const source = String(matchText ?? '');
+    const piMatch = /^pi\s+/i.exec(source);
+    if (!piMatch) {
+      __bridgeParseTextSegmentToElements(source, elements, { fontPx, sourceBaseStart, sourceKind, sourceSegmentIndex, mixedStyle });
+      return;
+    }
+
+    // Parse the two portions separately so the legacy base-parser syntax
+    // "pi { ... }" cannot activate deprecated long-pi code points in this mode.
+    __bridgeParseTextSegmentToElements(source.slice(0, 2), elements, {
+      fontPx,
+      sourceBaseStart,
+      sourceKind,
+      sourceSegmentIndex,
+      mixedStyle
+    });
+    __bridgeParseTextSegmentToElements(source.slice(2), elements, {
+      fontPx,
+      sourceBaseStart: sourceBaseStart + 2,
+      sourceKind,
+      sourceSegmentIndex,
+      mixedStyle
+    });
+  }
+
+  function parseStandardSitelenPonaAsciiCoreTextSegmentToElements(segmentText, elements, {
+    fontPx,
+    parser = {},
+    mixedStyle = 'long',
+    sourceBaseStart = 0,
+    sourceKind = 'text',
+    sourceSegmentIndex = null,
+    allowRawCodepoints = true
+  } = {}) {
+    const s = String(segmentText ?? '');
+    if (!s.trim()) return;
+
+    // Raw U+ escapes are an intentional project extension retained by request.
+    if (allowRawCodepoints) {
+      const rawHits = findRawUnicodeCodepointSequences(s);
+      if (rawHits.length) {
+        let pos = 0;
+        for (const hit of rawHits) {
+          if (hit.index > pos) {
+            parseStandardSitelenPonaAsciiCoreTextSegmentToElements(s.slice(pos, hit.index), elements, {
+              fontPx,
+              parser,
+              mixedStyle,
+              sourceBaseStart: sourceBaseStart + pos,
+              sourceKind,
+              sourceSegmentIndex,
+              allowRawCodepoints: false
+            });
+          }
+          if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
+          __bridgeMakeRunElementFromCodepoints(elements, hit.cps, {
+            fontPx,
+            fontFamily: FONT_FAMILY_TEXT,
+            sourceText: s.slice(hit.index, hit.end),
+            sourceStart: sourceBaseStart + hit.index,
+            sourceEnd: sourceBaseStart + hit.end,
+            sourceKind,
+            sourceSegmentIndex,
+            bypassRenderAdapter: true
+          });
+          pos = hit.end;
+        }
+        if (pos < s.length) {
+          parseStandardSitelenPonaAsciiCoreTextSegmentToElements(s.slice(pos), elements, {
+            fontPx,
+            parser,
+            mixedStyle,
+            sourceBaseStart: sourceBaseStart + pos,
+            sourceKind,
+            sourceSegmentIndex,
+            allowRawCodepoints: false
+          });
+        }
+        return;
+      }
+    }
+
+    // Standard ASCII Input v1.0 core supported here:
+    //   pi(words)           long pi
+    //   word-word           stacking joiner
+    //   word+word           scaling/nesting joiner
+    //   word&word           generic ZWJ compound
+    //   |                   ideographic/full-width space
+    // Reverse long glyphs, generic head(words), and manual extension aliases are
+    // deliberately excluded. Compound chains are accepted, as required by
+    // standard examples such as luka&luka&luka&luka.
+    const glyphToken = String.raw`[A-Za-z][A-Za-z0-9_^<>]*`;
+    const tokenRe = new RegExp(
+      String.raw`pi\(([^()]+)\)|(${glyphToken}(?:[&+-]${glyphToken})+)|(\|)|(pi\s+\{[^{}]*\})`,
+      'gi'
+    );
+
+    let pos = 0;
+    let m;
+    while ((m = tokenRe.exec(s)) !== null) {
+      const start = m.index;
+      const end = tokenRe.lastIndex;
+      if (start > pos) {
+        __bridgeParseTextSegmentToElements(s.slice(pos, start), elements, {
+          fontPx,
+          sourceBaseStart: sourceBaseStart + pos,
+          sourceKind,
+          sourceSegmentIndex,
+          mixedStyle
+        });
+      }
+
+      let handled = false;
+      if (m[1] != null) {
+        handled = emitStandardSitelenPonaAsciiCoreLongPi(
+          m[0], m[1], elements, fontPx,
+          sourceBaseStart + start, sourceKind, sourceSegmentIndex
+        );
+      } else if (m[2] != null) {
+        handled = emitStandardSitelenPonaAsciiCoreCompound(
+          m[0], elements, fontPx,
+          sourceBaseStart + start, sourceKind, sourceSegmentIndex
+        );
+      } else if (m[3] != null) {
+        emitStandardSitelenPonaAsciiCoreFullWidthSpace(
+          elements, fontPx,
+          sourceBaseStart + start, sourceKind, sourceSegmentIndex
+        );
+        handled = true;
+      } else if (m[4] != null) {
+        parseStandardSitelenPonaAsciiCoreUnsupportedLegacyLongPi(m[0], elements, {
+          fontPx,
+          mixedStyle,
+          sourceBaseStart: sourceBaseStart + start,
+          sourceKind,
+          sourceSegmentIndex
+        });
+        handled = true;
+      }
+
+      if (!handled) {
+        __bridgeParseTextSegmentToElements(m[0], elements, {
+          fontPx,
+          sourceBaseStart: sourceBaseStart + start,
+          sourceKind,
+          sourceSegmentIndex,
+          mixedStyle
+        });
+      }
+      pos = end;
+    }
+
+    if (pos < s.length) {
+      __bridgeParseTextSegmentToElements(s.slice(pos), elements, {
+        fontPx,
+        sourceBaseStart: sourceBaseStart + pos,
+        sourceKind,
+        sourceSegmentIndex,
+        mixedStyle
+      });
+    }
+  }
+
+  function parseStandardSitelenPonaAsciiCoreBracketSegmentToElements(bracketContent, elements, {
+    fontPx,
+    parser = {},
+    mixedStyle = 'long',
+    sourceBaseStart = 0,
+    sourceKind = 'bracket',
+    sourceSegmentIndex = null
+  } = {}) {
+    // Standard [ ... ] cartouches use the established bracket renderer. This
+    // also intentionally preserves nanpa-linja-n numeric cartouches, which are
+    // a project feature orthogonal to the ordinary Sitelen Pona ASCII syntax.
+    __bridgeParseBracketSegmentToElements(String(bracketContent ?? ''), elements, {
       fontPx,
       sourceBaseStart,
       sourceKind,
@@ -1233,6 +2423,12 @@ const SitelenRenderer = (() => {
       base.canvas = el.canvas;
     }
     if (Array.isArray(el.cps)) base.cps = el.cps.slice();
+    if (Array.isArray(el.canonicalCps)) base.canonicalCps = el.canonicalCps.slice();
+    if (Array.isArray(el.renderCps)) base.renderCps = el.renderCps.slice();
+    if (Array.isArray(el.canonicalFullCps)) base.canonicalFullCps = el.canonicalFullCps.slice();
+    if (Array.isArray(el.renderFullCps)) base.renderFullCps = el.renderFullCps.slice();
+    if (Array.isArray(el.canonicalToRenderSpans)) base.canonicalToRenderSpans = el.canonicalToRenderSpans.map(item => ({ ...item }));
+    if (Array.isArray(el.syntheticCornerBrackets)) base.syntheticCornerBrackets = el.syntheticCornerBrackets.map(item => ({ ...item }));
     if (Array.isArray(el.audioSourceCps)) base.audioSourceCps = el.audioSourceCps.slice();
     if (Array.isArray(el.audioSourceIndices)) base.audioSourceIndices = el.audioSourceIndices.slice();
     if (Array.isArray(el.audioGlyphLayout)) {
@@ -1243,6 +2439,7 @@ const SitelenRenderer = (() => {
 
   function classifyRenderMode(el) {
     if (!el) return 'text';
+    if (getSyntheticCornerBracketCodepoint(el) != null) return 'synthetic-corner-bracket';
     if (el.type === 'cartouche') return 'raster';
     if (el.type === 'text') return 'raster';
     return 'text';
@@ -1250,6 +2447,7 @@ const SitelenRenderer = (() => {
 
   function inferFontRole(el) {
     if (!el) return 'word';
+    if (typeof el.fontRole === 'string' && el.fontRole) return el.fontRole;
     const fam = String(el.fontFamily || '');
     if (
       el.isUnrecognized &&
@@ -1439,6 +2637,174 @@ const SitelenRenderer = (() => {
       };
     }
 
+    function sameAudioGeometryCodepoints(a, b) {
+      if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+      for (let index = 0; index < a.length; index++) {
+        if (Number(a[index]) !== Number(b[index])) return false;
+      }
+      return true;
+    }
+
+    const AUDIO_GEOMETRY_VISUAL_CONTROL_CPS = new Set([
+      0x200D,
+      0xF1990,
+      0xF1991,
+      0xF1992,
+      0xF1993,
+      0xF1994,
+      0xF1995,
+      0xF1996,
+      0xF1997,
+      0xF1998,
+      0xF199A,
+      0xF199B
+    ]);
+
+    function audioGeometryVisibleComponentGroups(cps) {
+      const source = Array.from(cps || [], cp => Number(cp));
+      const visibleIndices = [];
+      for (let index = 0; index < source.length; index++) {
+        if (!AUDIO_GEOMETRY_VISUAL_CONTROL_CPS.has(source[index])) visibleIndices.push(index);
+      }
+      if (!visibleIndices.length) return [];
+
+      const groups = [];
+      let previousVisible = -1;
+      for (const visibleIndex of visibleIndices) {
+        const start = previousVisible + 1;
+        groups.push(Array.from(
+          { length: visibleIndex - start + 1 },
+          (_unused, offset) => start + offset
+        ));
+        previousVisible = visibleIndex;
+      }
+      if (previousVisible < source.length - 1) {
+        groups[groups.length - 1].push(...Array.from(
+          { length: source.length - previousVisible - 1 },
+          (_unused, offset) => previousVisible + 1 + offset
+        ));
+      }
+      return groups;
+    }
+
+    function buildSemanticLongPiAudioGlyphLayout(canonicalCps, spans, boxWidth, boxHeight) {
+      const startIndex = canonicalCps.indexOf(0xF1997);
+      const endIndex = canonicalCps.indexOf(0xF1998, startIndex + 1);
+      if (startIndex <= 0 || endIndex < 0 || Number(canonicalCps[startIndex - 1]) !== 0xF194D) return null;
+
+      const groups = audioGeometryVisibleComponentGroups(canonicalCps);
+      if (groups.length < 2) return null;
+
+      const layout = new Array(canonicalCps.length);
+      const groupWidth = boxWidth / groups.length;
+      for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+        const left = groupIndex * groupWidth;
+        const right = groupIndex + 1 === groups.length
+          ? boxWidth
+          : (groupIndex + 1) * groupWidth;
+        for (const canonicalIndex of groups[groupIndex]) {
+          const span = spans?.[canonicalIndex] || {};
+          layout[canonicalIndex] = {
+            componentIndex: canonicalIndex,
+            cp: Number(canonicalCps[canonicalIndex]),
+            x: left,
+            y: 0,
+            width: Math.max(1, right - left),
+            height: boxHeight,
+            renderStart: Number.isInteger(Number(span.renderStart)) ? Number(span.renderStart) : null,
+            renderEnd: Number.isInteger(Number(span.renderEnd)) ? Number(span.renderEnd) : null,
+            semanticGroupIndex: groupIndex
+          };
+        }
+      }
+      return layout.every(Boolean) ? layout : null;
+    }
+
+    function buildAdaptedRunAudioGlyphLayout(el, measurement) {
+      if (!el || (el.type !== 'glyph' && el.type !== 'run')) return null;
+
+      const canonicalCps = getElementCanonicalCps(el);
+      const renderCps = getElementRenderCps(el);
+      const spans = Array.isArray(el.canonicalToRenderSpans)
+        ? el.canonicalToRenderSpans
+        : null;
+      const px = Math.max(1, Number(el.px ?? fontPx) || fontPx);
+      const boxWidth = Math.max(1, Number(measurement?.w) || 1);
+      const boxHeight = Math.max(1, Number(measurement?.h) || px);
+
+      if (!canonicalCps.length || !renderCps.length) return null;
+
+      // Long-pi shaping is contextual. Measuring truncated prefixes can make a
+      // later prefix narrower than an earlier one, especially for legacy-font
+      // aliases such as pi++telo lete and pi+__telo__lete. Give the pi head and
+      // every visible member one ordered semantic region instead. Silent long
+      // controls share the region of the member they visually construct.
+      const semanticLongPiLayout = buildSemanticLongPiAudioGlyphLayout(
+        canonicalCps,
+        spans,
+        boxWidth,
+        boxHeight
+      );
+      if (semanticLongPiLayout) return semanticLongPiLayout;
+
+      // Identity/direct-UCSUR non-long runs retain their established geometry.
+      // The explicit layout below is needed only when a font adapter changed
+      // the sequence that was actually measured and drawn.
+      if (
+        sameAudioGeometryCodepoints(canonicalCps, renderCps) ||
+        !spans ||
+        spans.length !== canonicalCps.length
+      ) return null;
+
+      const family = el.fontFamily || FONT_FAMILY_TEXT;
+      const renderChars = renderCps.map(cp => String.fromCodePoint(cp));
+      ctx.font = `${px}px "${family}"`;
+
+      const prefixAdvances = [0];
+      let prefix = '';
+      for (const ch of renderChars) {
+        prefix += ch;
+        const width = Number(ctx.measureText(prefix)?.width);
+        prefixAdvances.push(Number.isFinite(width)
+          ? Math.max(0, width)
+          : prefixAdvances[prefixAdvances.length - 1]);
+      }
+
+      const drawOriginX = Math.max(0, Number(measurement?.left) || 0);
+      const minimumWidth = Math.max(2, Math.min(boxWidth, px * 0.10));
+
+      return canonicalCps.map((cp, canonicalIndex) => {
+        const span = spans[canonicalIndex] || { renderStart: 0, renderEnd: renderCps.length };
+        const start = Math.max(0, Math.min(renderCps.length, Number(span.renderStart) || 0));
+        const end = Math.max(start, Math.min(renderCps.length, Number(span.renderEnd) || start));
+        let left = drawOriginX + (prefixAdvances[start] || 0);
+        let right = drawOriginX + (prefixAdvances[end] || prefixAdvances[start] || 0);
+
+        left = Math.max(0, Math.min(boxWidth, left));
+        right = Math.max(left, Math.min(boxWidth, right));
+        if (right - left < minimumWidth) {
+          const center = Math.max(0, Math.min(boxWidth, (left + right) / 2));
+          left = Math.max(0, center - minimumWidth / 2);
+          right = Math.min(boxWidth, center + minimumWidth / 2);
+          if (right - left < 1) {
+            left = Math.max(0, Math.min(boxWidth - 1, left));
+            right = Math.min(boxWidth, left + 1);
+          }
+        }
+
+        return {
+          componentIndex: canonicalIndex,
+          cp: Number(cp),
+          x: left,
+          y: 0,
+          width: Math.max(1, right - left),
+          height: boxHeight,
+          renderStart: start,
+          renderEnd: end
+        };
+      });
+    }
+
     const measuredLines = [];
     let maxLineW = 0;
     let totalH = 0;
@@ -1468,8 +2834,17 @@ const SitelenRenderer = (() => {
         }
         if (el.type === 'glyph') {
           const fam = el.fontFamily || FONT_FAMILY_TEXT;
-          const m = measureTextLike(String.fromCodePoint(el.cp), el.px ?? fontPx, fam);
-          measuredEls.push({ ...el, _index: ei, m });
+          const syntheticCp = getSyntheticCornerBracketCodepoint(el);
+          const m = syntheticCp != null
+            ? measureSyntheticCornerBracket(el.px ?? fontPx, syntheticCp)
+            : measureTextLike(getElementRenderCps(el).map(cp => String.fromCodePoint(cp)).join(''), el.px ?? fontPx, fam);
+          const audioGlyphLayout = buildAdaptedRunAudioGlyphLayout(el, m);
+          measuredEls.push({
+            ...el,
+            ...(audioGlyphLayout ? { audioGlyphLayout } : {}),
+            _index: ei,
+            m
+          });
           w += m.w;
           maxAscent = Math.max(maxAscent, m.ascent + haloExtra);
           maxDescent = Math.max(maxDescent, m.descent + haloExtra);
@@ -1477,9 +2852,18 @@ const SitelenRenderer = (() => {
         }
         if (el.type === 'run') {
           const fam = el.fontFamily || FONT_FAMILY_TEXT;
-          const chars = (el.cps || []).map(cp => String.fromCodePoint(cp)).join('');
-          const m = measureTextLike(chars, el.px ?? fontPx, fam);
-          measuredEls.push({ ...el, _index: ei, m });
+          const chars = getElementRenderCps(el).map(cp => String.fromCodePoint(cp)).join('');
+          const syntheticCp = getSyntheticCornerBracketCodepoint(el);
+          const m = syntheticCp != null
+            ? measureSyntheticCornerBracket(el.px ?? fontPx, syntheticCp)
+            : measureTextLike(chars, el.px ?? fontPx, fam);
+          const audioGlyphLayout = buildAdaptedRunAudioGlyphLayout(el, m);
+          measuredEls.push({
+            ...el,
+            ...(audioGlyphLayout ? { audioGlyphLayout } : {}),
+            _index: ei,
+            m
+          });
           w += m.w;
           maxAscent = Math.max(maxAscent, m.ascent + haloExtra);
           maxDescent = Math.max(maxDescent, m.descent + haloExtra);
@@ -1557,9 +2941,9 @@ const SitelenRenderer = (() => {
         const encodedText = el.type === 'text'
           ? String(el.text || '')
           : el.type === 'glyph'
-            ? String.fromCodePoint(el.cp)
+            ? getElementRenderCps(el).map(cp => String.fromCodePoint(cp)).join('')
             : el.type === 'run'
-              ? (el.cps || []).map(cp => String.fromCodePoint(cp)).join('')
+              ? getElementRenderCps(el).map(cp => String.fromCodePoint(cp)).join('')
               : null;
         outLine.runs.push({
           id: `L${L.lineIndex}R${el._index}`,
@@ -1586,7 +2970,22 @@ const SitelenRenderer = (() => {
           audioText: (typeof el.audioText === 'string') ? el.audioText : null,
           sourceTransform: (typeof el.sourceTransform === 'string') ? el.sourceTransform : null,
           encodedText,
-          cps: Array.isArray(el.cps) ? el.cps.slice() : (el.type === 'glyph' ? [el.cp] : null),
+          canonicalEncodedText: (el.type === 'glyph' || el.type === 'run')
+            ? getElementCanonicalCps(el).map(cp => String.fromCodePoint(cp)).join('')
+            : null,
+          cps: (el.type === 'glyph' || el.type === 'run') ? getElementCanonicalCps(el).slice() : (Array.isArray(el.cps) ? el.cps.slice() : null),
+          canonicalCps: (el.type === 'glyph' || el.type === 'run' || el.type === 'cartouche') ? getElementCanonicalCps(el).slice() : null,
+          renderCps: (el.type === 'glyph' || el.type === 'run') ? getElementRenderCps(el).slice() : (Array.isArray(el.renderCps) ? el.renderCps.slice() : null),
+          canonicalFullCps: Array.isArray(el.canonicalFullCps) ? el.canonicalFullCps.slice() : null,
+          renderFullCps: Array.isArray(el.renderFullCps) ? el.renderFullCps.slice() : null,
+          canonicalToRenderSpans: Array.isArray(el.canonicalToRenderSpans) ? el.canonicalToRenderSpans.map(item => ({ ...item })) : null,
+          ...(getSyntheticCornerBracketCodepoint(el) != null ? {
+            syntheticCornerBrackets: Array.isArray(el.syntheticCornerBrackets) ? el.syntheticCornerBrackets.map(item => ({ ...item })) : [],
+            syntheticCornerBracket: true,
+            syntheticCornerBracketCp: getSyntheticCornerBracketCodepoint(el)
+          } : {}),
+          renderAdapterId: el.renderAdapterId || DEFAULT_FONT_RENDER_ADAPTER_ID,
+          requestedRenderAdapterId: el.requestedRenderAdapterId || el.renderAdapterId || DEFAULT_FONT_RENDER_ADAPTER_ID,
           audioSourceCps: Array.isArray(el.audioSourceCps) ? el.audioSourceCps.slice() : null,
           audioSourceIndices: Array.isArray(el.audioSourceIndices) ? el.audioSourceIndices.slice() : null,
           audioGlyphLayout: Array.isArray(el.audioGlyphLayout) ? el.audioGlyphLayout.map(item => ({ ...item })) : null,
@@ -1632,8 +3031,13 @@ const SitelenRenderer = (() => {
     if (!run || !run._element) throw new Error('renderRunToNewCanvas requires a run object returned by buildRenderPlan().');
     const scale = Math.max(1, Number(supersampleScale) || 1);
     const el = run._element;
+    const syntheticCornerCp = getSyntheticCornerBracketCodepoint(el);
     const baseW = Math.max(1, Math.ceil(Number(run.widthPx || el.w || 1)));
-    const baseH = Math.max(1, Math.ceil(Number(run.heightPx || el.h || run.fontPx || 1)));
+    const baseH = Math.max(1, Math.ceil(
+      syntheticCornerCp != null
+        ? Math.max(Number(run.heightPx || 0), Number(run.ascentPx || 0) + Number(run.descentPx || 0), Number(run.fontPx || 1))
+        : Number(run.heightPx || el.h || run.fontPx || 1)
+    ));
     const drawW = Math.max(1, Math.ceil(baseW * scale));
     const drawH = Math.max(1, Math.ceil(baseH * scale));
     const c = document.createElement('canvas');
@@ -1642,7 +3046,20 @@ const SitelenRenderer = (() => {
     const ctx = c.getContext('2d', { alpha: true });
     ctx.clearRect(0, 0, drawW, drawH);
     const fillCss = run.fillStyle || getFgHex?.() || '#000000';
-    if (el.type === 'cartouche' && el.canvas) {
+    if (syntheticCornerCp != null) {
+      const px = Math.max(1, Number(run.fontPx || el.px || 16) * scale);
+      const baseline = Math.round(Number(run.ascentPx || Math.ceil((run.fontPx || 16) * 0.8)) * scale);
+      drawSyntheticCornerBracket(ctx, syntheticCornerCp, 0, baseline, {
+        fontPx: px,
+        widthPx: Number(run.widthPx || baseW) * scale,
+        heightPx: Number(run.heightPx || Math.max(1, (run.fontPx || 16) * 0.76)) * scale,
+        fillCss,
+        halo: run.halo ? {
+          ...run.halo,
+          widthPx: Math.max(0, Number(run.halo.widthPx || 0)) * scale
+        } : null
+      });
+    } else if (el.type === 'cartouche' && el.canvas) {
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(el.canvas, 0, 0, drawW, drawH);
     } else if (el.type === 'text') {
@@ -1669,7 +3086,7 @@ const SitelenRenderer = (() => {
       const fam = run.fontFamily || FONT_FAMILY_TEXT;
       const px = Math.max(1, Math.round((run.fontPx || 16) * scale));
       const baseline = Math.round((run.ascentPx || Math.ceil((run.fontPx || 16) * 0.8)) * scale);
-      const chars = el.type === 'glyph' ? String.fromCodePoint(el.cp) : (el.cps || []).map(cp => String.fromCodePoint(cp)).join('');
+      const chars = getElementRenderCps(el).map(cp => String.fromCodePoint(cp)).join('');
       if (typeof __bridgeDrawTextWithOptionalHalo === 'function') {
         __bridgeDrawTextWithOptionalHalo(ctx, chars, 0, baseline, { px, fontFamily: fam, fillCss });
       } else {
@@ -2964,7 +4381,9 @@ function wireHaloControls() {
         sourceKind,
         sourceSegmentIndex,
         audioSourceCps: Array.from(cps || []),
-        audioSourceIndices: displayInfo.sourceIndices
+        audioSourceIndices: displayInfo.sourceIndices,
+        fontRole: "number",
+        isNumericCartouche: true
       });
     }
 
@@ -5390,7 +6809,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       };
     }
 
-    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies = null }) {
+    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies = null, renderFullCps = null, canonicalToRenderSpans = null }) {
       if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
       if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
 
@@ -5411,10 +6830,11 @@ function findNanpaLinjanTpPhraseSequences(text) {
       const fam = fontFamily || FONT_FAMILY_TEXT;
       const hasManualTallies = !!(renderManualTallies && Array.isArray(renderManualTallies) && renderManualTallies.some(n => Number(n) > 0));
 
-      const run =
-        String.fromCodePoint(CARTOUCHE_START_CP) +
-        renderInnerCps.map(cp => String.fromCodePoint(cp)).join("") +
-        String.fromCodePoint(CARTOUCHE_END_CP);
+      const canonicalFullCps = [CARTOUCHE_START_CP, ...renderInnerCps, CARTOUCHE_END_CP];
+      const effectiveRenderFullCps = validateRenderCodepoints(renderFullCps) || canonicalFullCps;
+      const effectiveSpans = normalizeCanonicalToRenderSpans(canonicalToRenderSpans, canonicalFullCps.length, effectiveRenderFullCps.length)
+        || (effectiveRenderFullCps.length === canonicalFullCps.length ? identityCanonicalToRenderSpans(canonicalFullCps) : canonicalFullCps.map((_cp, index) => ({ canonicalIndex: index, renderStart: 0, renderEnd: effectiveRenderFullCps.length })));
+      const run = effectiveRenderFullCps.map(cp => String.fromCodePoint(cp)).join("");
 
       const ctx = canvas.getContext("2d", {  alpha: true , willReadFrequently: true });
       ctx.textBaseline = "alphabetic";
@@ -5497,16 +6917,14 @@ function findNanpaLinjanTpPhraseSequences(text) {
       ctx2.fillStyle = fgCss || "#111";
       ctx2.fillText(run, x, baselineY);
 
-      // Audio-only geometry.  This records advance-based positions for the
-      // already-rendered inner glyphs.  It does not alter the canvas, metrics,
-      // parser, layout, or any drawing operation.
+      // Audio-only geometry. Canonical inner glyphs retain their semantic
+      // identity while the adapter map locates the corresponding rendered span.
       const audioGlyphLayout = [];
       {
-        const startChar = String.fromCodePoint(CARTOUCHE_START_CP);
-        const sourceChars = renderInnerCps.map(cp => String.fromCodePoint(cp));
-        const prefixAdvances = [ctx2.measureText(startChar).width || 0];
-        let prefix = startChar;
-        for (const ch of sourceChars) {
+        const renderChars = effectiveRenderFullCps.map(cp => String.fromCodePoint(cp));
+        const prefixAdvances = [0];
+        let prefix = "";
+        for (const ch of renderChars) {
           prefix += ch;
           const measured = Number(ctx2.measureText(prefix).width);
           prefixAdvances.push(Number.isFinite(measured) ? measured : prefixAdvances[prefixAdvances.length - 1]);
@@ -5515,9 +6933,12 @@ function findNanpaLinjanTpPhraseSequences(text) {
         const top = Math.max(0, baselineY - ascent - Math.max(1, haloW));
         const componentHeight = Math.max(1, Math.min(h - top, ascent + descent + haloW * 2));
         const minimumWidth = Math.max(2, Math.round(px * 0.08));
-        for (let i = 0; i < sourceChars.length; i++) {
-          const left = Math.max(0, Math.min(w, x + prefixAdvances[i]));
-          const right = Math.max(left, Math.min(w, x + prefixAdvances[i + 1]));
+        for (let i = 0; i < renderInnerCps.length; i++) {
+          const span = effectiveSpans[i + 1] || { renderStart: 0, renderEnd: effectiveRenderFullCps.length };
+          const leftAdvance = prefixAdvances[Math.max(0, Math.min(prefixAdvances.length - 1, span.renderStart))] || 0;
+          const rightAdvance = prefixAdvances[Math.max(0, Math.min(prefixAdvances.length - 1, span.renderEnd))] || leftAdvance;
+          const left = Math.max(0, Math.min(w, x + leftAdvance));
+          const right = Math.max(left, Math.min(w, x + rightAdvance));
           audioGlyphLayout.push({
             componentIndex: i,
             cp: renderInnerCps[i],
@@ -5560,6 +6981,8 @@ function findNanpaLinjanTpPhraseSequences(text) {
         drawX: x,
         hasManualTallies,
         renderInnerCps: Array.from(renderInnerCps),
+        renderFullCps: Array.from(effectiveRenderFullCps),
+        canonicalToRenderSpans: effectiveSpans.map(item => ({ ...item })),
         renderManualTallies: Array.isArray(renderManualTallies) ? renderManualTallies.slice() : null,
         audioGlyphLayout
       };
@@ -5945,9 +7368,27 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   return finalCanvas;
 }
 
-    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false, audioSourceCps = null, audioSourceIndices = null } = {}) {
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fontRole = null, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false, isNumericCartouche = false, audioSourceCps = null, audioSourceIndices = null } = {}) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
+
+      const canonicalInnerCps = Array.from(cps, cp => Number(cp));
+      const normalizedTallyInput = normalizeManualTallyInputForCartouche(canonicalInnerCps, manualTallies);
+      const canonicalRenderInnerCps = normalizedTallyInput.cps;
+      const normalizedManualTallies = normalizedTallyInput.manualTallies;
+      const canonicalFullCps = [CARTOUCHE_START_CP, ...canonicalRenderInnerCps, CARTOUCHE_END_CP];
+      const effectiveRole = fontRole || (isNumericCartouche ? "number" : "cartouche");
+      const adapted = adaptCanonicalCodepointsForFont(canonicalFullCps, {
+        fontRole: effectiveRole,
+        elementKind: "cartouche",
+        fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        sourceText,
+        sourceKind,
+        sourceSegmentIndex,
+        isNumericCartouche: !!isNumericCartouche,
+        isLiteralCartouche: !!isLiteralCartouche,
+        bypassRenderAdapter: !!isLiteralCartouche
+      });
 
       const cart = document.createElement("canvas");
       const padPx = cartouchePadForPx(fontPx);
@@ -5955,12 +7396,22 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const haloEnabled = getHaloEnabled();
       const haloCss = getHaloHex();
 
-      const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies });
+      const r = renderFontCartoucheToCanvas(cart, canonicalRenderInnerCps, {
+        fontPx,
+        padPx,
+        fontFamily,
+        fgCss,
+        haloEnabled,
+        haloCss,
+        manualTallies: normalizedManualTallies,
+        renderFullCps: adapted.renderCps,
+        canonicalToRenderSpans: adapted.canonicalToRenderSpans
+      });
       if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
       let finalCanvas = cart;
       if (repairQuotedLatinLeftEdge) {
-        finalCanvas = repairQuotedCartoucheLeftEdgeWithLipuDonor(cart, cps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss }) || cart;
+        finalCanvas = repairQuotedCartoucheLeftEdgeWithLipuDonor(cart, canonicalRenderInnerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss }) || cart;
       }
 
       const finalW = finalCanvas.width | 0;
@@ -5971,8 +7422,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const ascent = Math.min(finalH, r.inkAscent ?? baselineY);
       const descent = Math.max(0, Math.min(finalH - ascent, r.inkDescent ?? (finalH - baselineY)));
 
-      const renderedAudioCps = Array.from(r.renderInnerCps || cps || []);
-      const normalizedAudioSourceCps = Array.from(audioSourceCps || cps || []);
+      const renderedAudioCps = Array.from(r.renderInnerCps || canonicalRenderInnerCps || []);
+      const normalizedAudioSourceCps = Array.from(audioSourceCps || canonicalInnerCps || []);
       const normalizedAudioSourceIndices = Array.isArray(audioSourceIndices) && audioSourceIndices.length === renderedAudioCps.length
         ? audioSourceIndices.map((value, index) => Number.isFinite(Number(value)) ? Number(value) : index)
         : renderedAudioCps.map((_cp, index) => index);
@@ -5991,17 +7442,31 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         sourceKind,
         sourceSegmentIndex,
         fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        fontRole: effectiveRole,
         fontPx,
         finalW,
         finalH,
-        cps: nanpaDebugCps(cps),
-        manualTallies: Array.isArray(manualTallies) ? manualTallies.slice() : null,
-        isLiteralCartouche: !!isLiteralCartouche
+        cps: nanpaDebugCps(canonicalInnerCps),
+        renderFullCps: nanpaDebugCps(adapted.renderCps),
+        renderAdapterId: adapted.renderAdapterId,
+        manualTallies: Array.isArray(normalizedManualTallies) ? normalizedManualTallies.slice() : null,
+        isLiteralCartouche: !!isLiteralCartouche,
+        isNumericCartouche: !!isNumericCartouche
       });
 
       elements.push({
         type: "cartouche",
-        cps: Array.from(cps),
+        cps: canonicalInnerCps.slice(),
+        canonicalCps: canonicalInnerCps.slice(),
+        canonicalFullCps: canonicalFullCps.slice(),
+        renderCps: adapted.renderCps.slice(),
+        renderFullCps: adapted.renderCps.slice(),
+        canonicalToRenderSpans: adapted.canonicalToRenderSpans.map(item => ({ ...item })),
+        ...(adapted.syntheticCornerBrackets.length ? {
+          syntheticCornerBrackets: adapted.syntheticCornerBrackets.map(item => ({ ...item }))
+        } : {}),
+        renderAdapterId: adapted.renderAdapterId,
+        requestedRenderAdapterId: adapted.requestedRenderAdapterId,
         canvas: finalCanvas,
         w: finalW,
         h: finalH,
@@ -6009,9 +7474,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         ascent,
         descent,
         fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        fontRole: effectiveRole,
         repairQuotedLatinLeftEdge: !!repairQuotedLatinLeftEdge,
         isLiteralCartouche: !!isLiteralCartouche,
-        manualTallies: Array.isArray(manualTallies) ? manualTallies.slice() : null,
+        isNumericCartouche: !!isNumericCartouche,
+        manualTallies: Array.isArray(normalizedManualTallies) ? normalizedManualTallies.slice() : null,
         audioSourceCps: normalizedAudioSourceCps,
         audioSourceIndices: normalizedAudioSourceIndices,
         audioGlyphLayout: normalizedAudioGlyphLayout,
@@ -6023,21 +7490,77 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       });
     }
 
-    function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+    function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily, fontRole = "word", elementKind = "run", sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, bypassRenderAdapter = false } = {}) {
       if (!cps || cps.length === 0) return;
       pushGapIfNeeded(elements, wordGapForPx(fontPx));
+      const canonicalCps = Array.from(cps, cp => Number(cp));
+      const adapted = adaptCanonicalCodepointsForFont(canonicalCps, {
+        fontRole,
+        elementKind,
+        fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        sourceText,
+        sourceKind,
+        sourceSegmentIndex,
+        bypassRenderAdapter
+      });
 
       elements.push({
         type: "run",
-        cps: Array.from(cps),
+        cps: canonicalCps.slice(),
+        canonicalCps: canonicalCps.slice(),
+        renderCps: adapted.renderCps.slice(),
+        canonicalToRenderSpans: adapted.canonicalToRenderSpans.map(item => ({ ...item })),
+        ...(adapted.syntheticCornerBrackets.length ? {
+          syntheticCornerBrackets: adapted.syntheticCornerBrackets.map(item => ({ ...item }))
+        } : {}),
+        renderAdapterId: adapted.renderAdapterId,
+        requestedRenderAdapterId: adapted.requestedRenderAdapterId,
         px: fontPx,
         fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        fontRole,
         sourceText: (typeof sourceText === 'string') ? sourceText : null,
         sourceStart: Number.isFinite(Number(sourceStart)) ? Number(sourceStart) : null,
         sourceEnd: Number.isFinite(Number(sourceEnd)) ? Number(sourceEnd) : null,
         sourceKind: (typeof sourceKind === 'string') ? sourceKind : null,
         sourceSegmentIndex: Number.isFinite(Number(sourceSegmentIndex)) ? Number(sourceSegmentIndex) : null
       });
+    }
+
+    function makeGlyphElementFromCodepoint(elements, cp, { fontPx, fontFamily, fontRole = "word", sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+      const canonicalCp = Number(cp);
+      if (!isUnicodeScalarValue(canonicalCp)) return;
+      pushGapIfNeeded(elements, wordGapForPx(fontPx));
+      const adapted = adaptCanonicalCodepointsForFont([canonicalCp], {
+        fontRole,
+        elementKind: "glyph",
+        fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        sourceText,
+        sourceKind,
+        sourceSegmentIndex
+      });
+      const common = {
+        canonicalCps: [canonicalCp],
+        renderCps: adapted.renderCps.slice(),
+        canonicalToRenderSpans: adapted.canonicalToRenderSpans.map(item => ({ ...item })),
+        ...(adapted.syntheticCornerBrackets.length ? {
+          syntheticCornerBrackets: adapted.syntheticCornerBrackets.map(item => ({ ...item }))
+        } : {}),
+        renderAdapterId: adapted.renderAdapterId,
+        requestedRenderAdapterId: adapted.requestedRenderAdapterId,
+        px: fontPx,
+        fontFamily: fontFamily || FONT_FAMILY_TEXT,
+        fontRole,
+        sourceText: (typeof sourceText === 'string') ? sourceText : null,
+        sourceStart: Number.isFinite(Number(sourceStart)) ? Number(sourceStart) : null,
+        sourceEnd: Number.isFinite(Number(sourceEnd)) ? Number(sourceEnd) : null,
+        sourceKind: (typeof sourceKind === 'string') ? sourceKind : null,
+        sourceSegmentIndex: Number.isFinite(Number(sourceSegmentIndex)) ? Number(sourceSegmentIndex) : null
+      };
+      if (adapted.renderCps.length === 1) {
+        elements.push({ ...common, type: "glyph", cp: canonicalCp, renderCp: adapted.renderCps[0] });
+      } else {
+        elements.push({ ...common, type: "run", cps: [canonicalCp] });
+      }
     }
 
 
@@ -6144,8 +7667,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         if (ch !== ":" && ch !== "·" && ch !== ".") return false;
         const cp = WORD_TO_UCSUR_CP[ch];
         if (cp == null) return false;
-        pushGapIfNeeded(elements, wordGapForPx(fontPx));
-        elements.push({ type: "glyph", cp, px: fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: String(ch), sourceStart: sourceBaseStart + start, sourceEnd: sourceBaseStart + end, sourceKind, sourceSegmentIndex });
+        makeGlyphElementFromCodepoint(elements, cp, { fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: String(ch), sourceStart: sourceBaseStart + start, sourceEnd: sourceBaseStart + end, sourceKind, sourceSegmentIndex });
         return true;
       }
 
@@ -6204,11 +7726,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           const aliasGlyphKey = resolveTpGlyphAliasKey(trimmed);
           const aliasGlyphCp = aliasGlyphKey ? WORD_TO_UCSUR_CP[aliasGlyphKey] : null;
           if (aliasGlyphCp != null) {
-            pushGapIfNeeded(elements, wordGapForPx(fontPx));
-            elements.push({
-              type: "glyph",
-              cp: aliasGlyphCp,
-              px: fontPx,
+            makeGlyphElementFromCodepoint(elements, aliasGlyphCp, {
+              fontPx,
               fontFamily: FONT_FAMILY_TEXT,
               sourceText: trimmed,
               sourceStart: sourceBaseStart + trimmedStart,
@@ -6301,8 +7820,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             sourceSegmentIndex,
           });
         } else if (glyphKey && WORD_TO_UCSUR_CP[glyphKey] != null) {
-          pushGapIfNeeded(elements, wordGapForPx(fontPx));
-          elements.push({ type: "glyph", cp: WORD_TO_UCSUR_CP[glyphKey], px: fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
+          makeGlyphElementFromCodepoint(elements, WORD_TO_UCSUR_CP[glyphKey], { fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
         } else if (trimmed) {
           emitUnknownTextElement(elements, trimmed, {
             fontPx,
@@ -6393,7 +7911,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
               sourceStart: sourceBaseStart + hit.index,
               sourceEnd: sourceBaseStart + hit.end,
               sourceKind,
-              sourceSegmentIndex
+              sourceSegmentIndex,
+              bypassRenderAdapter: true
             });
             pos = hit.end;
           }
@@ -6606,6 +8125,24 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       if (parser.mode === 'sitelen-seli-kiwen') {
         parseSskTextSegmentToElements(interpretedText, elements, {
+          fontPx,
+          parser,
+          mixedStyle,
+          sourceBaseStart,
+          sourceKind,
+          sourceSegmentIndex
+        });
+      } else if (isSitelenPonaAsciiExtendedMode(parser)) {
+        parseSitelenPonaAsciiExtendedTextSegmentToElements(interpretedText, elements, {
+          fontPx,
+          parser,
+          mixedStyle,
+          sourceBaseStart,
+          sourceKind,
+          sourceSegmentIndex
+        });
+      } else if (isStandardSitelenPonaAsciiCoreMode(parser)) {
+        parseStandardSitelenPonaAsciiCoreTextSegmentToElements(interpretedText, elements, {
           fontPx,
           parser,
           mixedStyle,
@@ -6847,7 +8384,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     function lineToElements(line, { fontPx, mixedStyle = "short", parser = {} } = {}) {
-      let s = preprocessTextAliases(line);
+      let s = isStandardSitelenPonaAsciiCoreMode(parser)
+        ? String(line ?? "")
+        : preprocessTextAliases(line);
 
       const segs = splitLineIntoSegments(s);
       const elements = [];
@@ -6875,6 +8414,24 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
               sourceKind,
               sourceSegmentIndex
             });
+          } else if (isSitelenPonaAsciiExtendedMode(parser)) {
+            parseSitelenPonaAsciiExtendedTextSegmentToElements(seg.value, elements, {
+              fontPx,
+              parser,
+              mixedStyle,
+              sourceBaseStart: 0,
+              sourceKind,
+              sourceSegmentIndex
+            });
+          } else if (isStandardSitelenPonaAsciiCoreMode(parser)) {
+            parseStandardSitelenPonaAsciiCoreTextSegmentToElements(seg.value, elements, {
+              fontPx,
+              parser,
+              mixedStyle,
+              sourceBaseStart: 0,
+              sourceKind,
+              sourceSegmentIndex
+            });
           } else {
             parseTextSegmentToElements(seg.value, elements, {
               fontPx,
@@ -6887,6 +8444,24 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         } else if (seg.kind === "bracket") {
           if (parser.mode === "sitelen-seli-kiwen") {
             parseSskBracketSegmentToElements(seg.value, elements, {
+              fontPx,
+              parser,
+              mixedStyle,
+              sourceBaseStart: 0,
+              sourceKind,
+              sourceSegmentIndex
+            });
+          } else if (isSitelenPonaAsciiExtendedMode(parser)) {
+            parseSitelenPonaAsciiExtendedBracketSegmentToElements(seg.value, elements, {
+              fontPx,
+              parser,
+              mixedStyle,
+              sourceBaseStart: 0,
+              sourceKind,
+              sourceSegmentIndex
+            });
+          } else if (isStandardSitelenPonaAsciiCoreMode(parser)) {
+            parseStandardSitelenPonaAsciiCoreBracketSegmentToElements(seg.value, elements, {
               fontPx,
               parser,
               mixedStyle,
@@ -7083,7 +8658,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
           if (el.type === "glyph") {
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
-            const g = measureGlyph(ctx, el.cp, el.px ?? fontPx, fam);
+            const renderCp = getElementRenderCps(el)[0] ?? el.cp;
+            const syntheticCp = getSyntheticCornerBracketCodepoint(el);
+            const g = syntheticCp != null
+              ? measureSyntheticCornerBracket(el.px ?? fontPx, syntheticCp)
+              : measureGlyph(ctx, renderCp, el.px ?? fontPx, fam);
             measuredEls.push({ ...el, m: g });
             w += g.w;
 
@@ -7094,7 +8673,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
           if (el.type === "run") {
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
-            const r = measureRun(ctx, el.cps, el.px ?? fontPx, fam);
+            const syntheticCp = getSyntheticCornerBracketCodepoint(el);
+            const r = syntheticCp != null
+              ? measureSyntheticCornerBracket(el.px ?? fontPx, syntheticCp)
+              : measureRun(ctx, getElementRenderCps(el), el.px ?? fontPx, fam);
             measuredEls.push({ ...el, m: r });
             w += r.w;
 
@@ -7181,6 +8763,22 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (el.type === "glyph") {
             const m = el.m;
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const syntheticCp = getSyntheticCornerBracketCodepoint(el);
+            if (syntheticCp != null) {
+              drawSyntheticCornerBracket(outCtx, syntheticCp, x, glyphBaseline, {
+                fontPx: el.px ?? fontPx,
+                widthPx: m.w,
+                heightPx: m.h,
+                fillCss: fgCss,
+                halo: {
+                  enabled: getHaloEnabled(),
+                  color: getHaloHex(),
+                  widthPx: getHaloEnabled() ? haloWidthForPx(el.px ?? fontPx) : 0
+                }
+              });
+              x += m.w;
+              continue;
+            }
             //outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
             //const drawX = x + (m.left ?? 0);
             //outCtx.fillText(m.ch, drawX, glyphBaseline);
@@ -7197,6 +8795,22 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (el.type === "run") {
             const m = el.m;
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
+            const syntheticCp = getSyntheticCornerBracketCodepoint(el);
+            if (syntheticCp != null) {
+              drawSyntheticCornerBracket(outCtx, syntheticCp, x, glyphBaseline, {
+                fontPx: el.px ?? fontPx,
+                widthPx: m.w,
+                heightPx: m.h,
+                fillCss: fgCss,
+                halo: {
+                  enabled: getHaloEnabled(),
+                  color: getHaloHex(),
+                  widthPx: getHaloEnabled() ? haloWidthForPx(el.px ?? fontPx) : 0
+                }
+              });
+              x += m.w;
+              continue;
+            }
             //outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
             //const drawX = x + (m.left ?? 0);
             //outCtx.fillText(m.chars, drawX, glyphBaseline);
@@ -7349,6 +8963,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           haloEnabled: false,
           haloCss: "#FFFFFF",
           manualTallies: Array.isArray(cartEl?.manualTallies) ? cartEl.manualTallies : null,
+          renderFullCps: Array.isArray(cartEl?.renderFullCps) ? cartEl.renderFullCps : null,
+          canonicalToRenderSpans: Array.isArray(cartEl?.canonicalToRenderSpans) ? cartEl.canonicalToRenderSpans : null,
         }
       );
 
@@ -7530,7 +9146,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (el.type === "glyph") {
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
             const px = (el.px ?? fontPx);
-            const ch = String.fromCodePoint(el.cp);
+            const ch = getElementRenderCps(el).map(cp => String.fromCodePoint(cp)).join("");
 
             const wThisPt = widthPtForText(fam, ch, px);
 
@@ -7547,7 +9163,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (el.type === "run") {
             const fam = el.fontFamily || FONT_FAMILY_TEXT;
             const px = (el.px ?? fontPx);
-            const chars = (el.cps ?? []).map(cp => String.fromCodePoint(cp)).join("");
+            const chars = getElementRenderCps(el).map(cp => String.fromCodePoint(cp)).join("");
 
             const wThisPt = widthPtForText(fam, chars, px);
 
@@ -10679,6 +12295,18 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     async create(config = {}) {
       await ensureCore();
       return new RendererInstance(config);
+    },
+    registerRenderAdapter(id, adapter) {
+      return registerFontRenderAdapter(id, adapter);
+    },
+    unregisterRenderAdapter(id) {
+      return unregisterFontRenderAdapter(id);
+    },
+    hasRenderAdapter(id) {
+      return hasFontRenderAdapter(id);
+    },
+    getDefaultRenderAdapterId() {
+      return DEFAULT_FONT_RENDER_ADAPTER_ID;
     },
     NanpaParser,
   };

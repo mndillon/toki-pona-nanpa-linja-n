@@ -1,12 +1,12 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202";
-import { buildSitelenAudioPlan } from "./sitelen-audio-plan.js";
-import { createTokiPonaVoice } from "./toki-pona-voice-api.js?v=33";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=212";
+import { buildSitelenAudioPlan } from "./sitelen-audio-plan.js?v=23";
+import { createTokiPonaVoice } from "./toki-pona-voice-api.js?v=34";
 import { REFERENCE_AUDIO_MANIFEST } from "./audio-manifest.js";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N,
-} from "./sitelen-font-pair-controller-merged-updated-font-label.js";
+} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=20";
 import { CartoucheApi } from "./cartouche-api-v3-previewdesc.js";
 import {
   canvasToPngBlob,

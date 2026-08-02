@@ -1,0 +1,3 @@
+linja-pona.otf and linja-pona-nanpa-linja-n.otf: OFL-1.1.txt
+linja-sike-5.otf and linja-sike-5-nanpa-linja-n.otf: OFL-1.1.txt
+NasinSitelenPuMono.otf and NasinSitelenPuMono-nanpa-linja-n.otf: CC0-1.0.txt

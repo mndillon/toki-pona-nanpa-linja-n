@@ -1,4 +1,4 @@
-import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202";
+import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=212";
 
 (() => {
   "use strict";
