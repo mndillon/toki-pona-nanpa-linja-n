@@ -745,6 +745,74 @@ When you paste/vend these libraries into this file, keep their MIT notices.
 
   const $ = (id) => document.getElementById(id);
 
+  const CONFIG_EDITOR_STATE = {
+    overrides: {
+      textareaId: "overridesText",
+      applyButtonId: "btnApplyOverrides",
+      baseline: ""
+    },
+    ipaOverrides: {
+      textareaId: "ipaOverridesText",
+      applyButtonId: "btnApplyIpaOverrides",
+      baseline: ""
+    },
+    policy: {
+      textareaId: "policyText",
+      applyButtonId: "btnApplyPolicy",
+      baseline: ""
+    }
+  };
+
+  function beginConfigEditorSession(kind){
+    const state = CONFIG_EDITOR_STATE[kind];
+    const ta = state ? $(state.textareaId) : null;
+    if (!state || !ta) return;
+    state.baseline = String(ta.value || "");
+  }
+
+  function markConfigEditorApplied(kind){
+    beginConfigEditorSession(kind);
+  }
+
+  function configEditorHasUnsavedChanges(kind){
+    const state = CONFIG_EDITOR_STATE[kind];
+    const ta = state ? $(state.textareaId) : null;
+    if (!state || !ta) return false;
+    return String(ta.value || "") !== state.baseline;
+  }
+
+  function anyConfigEditorHasUnsavedChanges(){
+    return Object.keys(CONFIG_EDITOR_STATE).some(configEditorHasUnsavedChanges);
+  }
+
+  function confirmConfigEditorClose(kind){
+    if (!configEditorHasUnsavedChanges(kind)) return true;
+
+    const save = window.confirm(
+      "You changed the configuration but have not applied it.\n\n" +
+      "Do you want to save the changes before closing?\n\n" +
+      "Select OK to apply the changes, or Cancel to continue editing."
+    );
+
+    if (save){
+      const state = CONFIG_EDITOR_STATE[kind];
+      const applyButton = state ? $(state.applyButtonId) : null;
+      if (applyButton) applyButton.click();
+    }
+
+    // Keep the editor open while Apply validates/saves, or when the user cancels.
+    return false;
+  }
+
+  function wireUnsavedConfigPageWarning(){
+    window.addEventListener("beforeunload", (event) => {
+      if (!anyConfigEditorHasUnsavedChanges()) return;
+      event.preventDefault();
+      // Modern browsers intentionally display their own standard warning text.
+      event.returnValue = "";
+    });
+  }
+
   function setPill(el, ok, text){
     el.textContent = text;
     el.style.color = ok ? "#1b5e20" : "#7a2e2e";
@@ -3178,6 +3246,7 @@ function joinTpNameParts(parts, boundary, opts){
   const OVERRIDE_DB_VERSION = 1;
   const OVERRIDE_DB_KEY = "userOverrides.v1";
   const POLICY_DB_KEY = "mappingPolicy.patch.v2";
+  const POLICY_STATE_DB_KEY = "mappingPolicy.patch.state.v1";
   const LEGACY_POLICY_DB_KEY = "mappingPolicy.v3";
 
   function _openOverridesDb(){
@@ -3290,6 +3359,7 @@ function joinTpNameParts(parts, boundary, opts){
     const ta = $("overridesText");
     if (ta){
       ta.value = JSON.stringify(userOverridesRaw || {}, null, 2);
+      beginConfigEditorSession("overrides");
       ta.focus();
       ta.setSelectionRange(0, 0);
     }
@@ -3297,7 +3367,8 @@ function joinTpNameParts(parts, boundary, opts){
 
   function closeOverridesModal(){
     const ov = $("overridesOverlay");
-    if (!ov) return;
+    if (!ov || !ov.classList.contains("show")) return;
+    if (!confirmConfigEditorClose("overrides")) return;
     ov.classList.remove("show");
   }
 
@@ -3338,6 +3409,7 @@ function joinTpNameParts(parts, boundary, opts){
         recomputeEffectiveOverrides();
         updateOverridesPill();
         await saveUserOverridesToDb();
+        markConfigEditorApplied("overrides");
         const tb = $("tbody");
         if (tb && tb.children.length) runTokiponize();
         closeOverridesModal();
@@ -3348,7 +3420,10 @@ function joinTpNameParts(parts, boundary, opts){
     if (bRevert){
       bRevert.addEventListener("click", () => {
         const ta = $("overridesText");
-        if (ta) ta.value = JSON.stringify(userOverridesRaw || {}, null, 2);
+        if (ta){
+          ta.value = JSON.stringify(userOverridesRaw || {}, null, 2);
+          beginConfigEditorSession("overrides");
+        }
       });
     }
 
@@ -3423,40 +3498,66 @@ function joinTpNameParts(parts, boundary, opts){
   async function loadUserMappingPolicyFromDb(){
     try{
       let saved = await _dbGet(POLICY_DB_KEY);
+      let savedState = await _dbGet(POLICY_STATE_DB_KEY);
       let hasContent = saved && typeof saved === "object" && Object.keys(saved).some(k => k !== "version");
 
       if (!hasContent){
-        // One-time migration from the legacy key, which could contain a full
-        // effective policy rather than a true user-only patch.
+        // One-time migration from the legacy key, which contains a complete
+        // effective policy rather than a user-only patch.
         const legacySaved = await _dbGet(LEGACY_POLICY_DB_KEY);
         const legacyHasContent = legacySaved && typeof legacySaved === "object" &&
           Object.keys(legacySaved).some(k => k !== "version");
 
         if (legacyHasContent){
-          const snapshotStrict = String(LEGACY_V1_BASELINE_SNAPSHOT.ui?.strict ?? "on");
-          const currentStrict = _isStrictModeUiOn() ? "on" : "off";
-
-          if (currentStrict === snapshotStrict){
-            saved = _policyCustomPatchAgainstBaseline(
-              LEGACY_V1_BASELINE_SNAPSHOT.mappingPolicy || {},
-              legacySaved
-            );
-          } else {
-            // No exact relaxed legacy baseline was supplied. Preserve the
-            // stored values conservatively as user-owned.
-            saved = normalizeMappingPolicy(legacySaved) || {};
-          }
-
+          const oldBaseline = _legacyStoredPolicyBaselineForCurrentMode();
+          const legacyEffective = normalizeMappingPolicy(legacySaved) || {};
+          saved = _policyPatchFromEffective(oldBaseline, legacyEffective);
+          savedState = {
+            defaultsVersion: LEGACY_STORED_POLICY_DEFAULTS_VERSION,
+            strict: _isStrictModeUiOn() ? "on" : "off",
+            baseline: oldBaseline,
+          };
           hasContent = saved && Object.keys(saved).some(k => k !== "version");
-          try{
-            if (hasContent) await _dbPut(POLICY_DB_KEY, saved);
-            else await _dbDel(POLICY_DB_KEY);
-            await _dbDel(LEGACY_POLICY_DB_KEY);
-          } catch {}
         }
       }
 
-      userMappingPolicy = hasContent ? (normalizeMappingPolicy(saved) || null) : null;
+      if (hasContent){
+        const normalisedSaved = normalizeMappingPolicy(saved) || {};
+        const normalisedState = _normaliseStoredPolicyState(savedState);
+        const currentBaseline = _cloneConfigValue(BASE_MAPPING_POLICY);
+
+        if (
+          normalisedState &&
+          normalisedState.defaultsVersion > CURRENT_DEFAULTS_VERSION
+        ){
+          // A newer build wrote this state. Preserve it rather than attempting
+          // a downgrade migration with an older set of defaults.
+          userMappingPolicy = normalisedSaved;
+        } else {
+          // Existing installs may have a policy patch but no accompanying
+          // baseline metadata. Treat those values as having been saved against
+          // the exact historical defaults that preceded the Kylian correction.
+          const oldBaseline = normalisedState?.baseline ||
+            _legacyStoredPolicyBaselineForCurrentMode();
+          const oldEffective = deepMergePlainObjects(oldBaseline, normalisedSaved);
+          const migratedEffective = _threeWayMergeConfigValue(
+            oldBaseline,
+            oldEffective,
+            currentBaseline
+          );
+          const migratedPatch = _policyPatchFromEffective(
+            currentBaseline,
+            migratedEffective
+          );
+          userMappingPolicy = Object.keys(migratedPatch).length ? migratedPatch : null;
+          await saveUserMappingPolicyToDb();
+        }
+      } else {
+        userMappingPolicy = null;
+        try{ await _dbDel(POLICY_STATE_DB_KEY); } catch {}
+        try{ await _dbDel(LEGACY_POLICY_DB_KEY); } catch {}
+      }
+
       recomputeEffectiveMappingPolicy();
       updatePolicyPill();
     } catch (e){
@@ -3468,8 +3569,13 @@ function joinTpNameParts(parts, boundary, opts){
 
   async function saveUserMappingPolicyToDb(){
     try{
-      if (userMappingPolicy) await _dbPut(POLICY_DB_KEY, userMappingPolicy);
-      else await _dbDel(POLICY_DB_KEY);
+      if (userMappingPolicy){
+        await _dbPut(POLICY_DB_KEY, userMappingPolicy);
+        await _dbPut(POLICY_STATE_DB_KEY, _currentStoredPolicyState());
+      } else {
+        await _dbDel(POLICY_DB_KEY);
+        await _dbDel(POLICY_STATE_DB_KEY);
+      }
       // Remove the old full-policy key after any successful new-format save.
       await _dbDel(LEGACY_POLICY_DB_KEY);
     } catch {}
@@ -3477,6 +3583,7 @@ function joinTpNameParts(parts, boundary, opts){
 
   async function deleteSavedUserMappingPolicy(){
     try{ await _dbDel(POLICY_DB_KEY); } catch {}
+    try{ await _dbDel(POLICY_STATE_DB_KEY); } catch {}
     try{ await _dbDel(LEGACY_POLICY_DB_KEY); } catch {}
   }
 
@@ -3487,6 +3594,7 @@ function joinTpNameParts(parts, boundary, opts){
     const ta = $("policyText");
     if (ta){
       ta.value = JSON.stringify(effectiveMappingPolicy || BASE_MAPPING_POLICY, null, 2);
+      beginConfigEditorSession("policy");
       ta.focus();
       ta.setSelectionRange(0, 0);
     }
@@ -3494,7 +3602,8 @@ function joinTpNameParts(parts, boundary, opts){
 
   function closePolicyModal(){
     const ov = $("policyOverlay");
-    if (!ov) return;
+    if (!ov || !ov.classList.contains("show")) return;
+    if (!confirmConfigEditorClose("policy")) return;
     ov.classList.remove("show");
   }
 
@@ -3527,6 +3636,9 @@ function joinTpNameParts(parts, boundary, opts){
         // HARD clear persisted policy so only defaults can be used after reload
         try{ await deleteSavedUserMappingPolicy(); } catch {}
 
+        const ta = $("policyText");
+        if (ta) ta.value = JSON.stringify(effectiveMappingPolicy || BASE_MAPPING_POLICY, null, 2);
+        markConfigEditorApplied("policy");
         closePolicyModal();
 
         // Optional: re-run if results already exist
@@ -3559,6 +3671,7 @@ function joinTpNameParts(parts, boundary, opts){
         recomputeEffectiveMappingPolicy();
         updatePolicyPill();
         await saveUserMappingPolicyToDb();
+        markConfigEditorApplied("policy");
 
         // Re-run if results already exist.
         const tb = $("tbody");
@@ -3682,6 +3795,7 @@ function joinTpNameParts(parts, boundary, opts){
     const ta = $("ipaOverridesText");
     if (ta){
       ta.value = JSON.stringify(userIpaOverrides || {}, null, 2);
+      beginConfigEditorSession("ipaOverrides");
       ta.focus();
       ta.setSelectionRange(0, 0);
     }
@@ -3689,7 +3803,8 @@ function joinTpNameParts(parts, boundary, opts){
 
   function closeIpaOverridesModal(){
     const ov = $("ipaOverridesOverlay");
-    if (!ov) return;
+    if (!ov || !ov.classList.contains("show")) return;
+    if (!confirmConfigEditorClose("ipaOverrides")) return;
     ov.classList.remove("show");
   }
 
@@ -3734,6 +3849,7 @@ function joinTpNameParts(parts, boundary, opts){
         userIpaOverrides = normalised;
         updateIpaPill();
         await saveUserIpaOverridesToDb();
+        markConfigEditorApplied("ipaOverrides");
         // Re-run if results already exist
         const tb = $("tbody");
         if (tb && tb.children.length) runTokiponize();
@@ -3745,7 +3861,10 @@ function joinTpNameParts(parts, boundary, opts){
     if (bRevert){
       bRevert.addEventListener("click", () => {
         const ta = $("ipaOverridesText");
-        if (ta) ta.value = JSON.stringify(userIpaOverrides || {}, null, 2);
+        if (ta){
+          ta.value = JSON.stringify(userIpaOverrides || {}, null, 2);
+          beginConfigEditorSession("ipaOverrides");
+        }
       });
     }
 
@@ -4389,8 +4508,43 @@ function joinTpNameParts(parts, boundary, opts){
   // a later importer distinguish unchanged old defaults from genuine user
   // customisations and safely adopt newer defaults.
   const CONFIG_SCHEMA_VERSION = 2;
-  const CURRENT_DEFAULTS_VERSION = 2;
+  const CURRENT_DEFAULTS_VERSION = 3;
   const LEGACY_CONFIG_VERSION = 1;
+  const LEGACY_STORED_POLICY_DEFAULTS_VERSION = 0;
+
+  // IndexedDB policy patches created before baseline metadata was introduced
+  // were based on the policy immediately before the Kylian /ɪæ/ correction.
+  // Reconstruct that exact baseline so unchanged old defaults can advance,
+  // while any value that genuinely differs from that baseline is preserved.
+  function _legacyStoredPolicyBaselineForCurrentMode(){
+    const baseline = _cloneConfigValue(BASE_MAPPING_POLICY);
+    if (Array.isArray(baseline.diphthongs)){
+      baseline.diphthongs = baseline.diphthongs.filter(pair => {
+        const source = Array.isArray(pair) ? String(pair[0] ?? "") : "";
+        return source !== "ɪ æ" && source !== "ɪæ";
+      });
+    }
+    return baseline;
+  }
+
+  function _normaliseStoredPolicyState(value){
+    if (!_isPlainConfigObject(value)) return null;
+    const baseline = normalizeMappingPolicy(value.baseline);
+    if (!baseline) return null;
+    return {
+      defaultsVersion: Number(value.defaultsVersion) || 0,
+      strict: String(value.strict ?? ""),
+      baseline,
+    };
+  }
+
+  function _currentStoredPolicyState(){
+    return {
+      defaultsVersion: CURRENT_DEFAULTS_VERSION,
+      strict: _isStrictModeUiOn() ? "on" : "off",
+      baseline: _cloneConfigValue(BASE_MAPPING_POLICY),
+    };
+  }
 
   // Exact snapshot supplied with this build for importing legacy schema-v1
   // files.  Its `overrides` and strict-mode `mappingPolicy` are the old default
@@ -5492,6 +5646,7 @@ function joinTpNameParts(parts, boundary, opts){
     wireOverridesUi();
     wireIpaOverridesUi();
     wirePolicyUi();
+    wireUnsavedConfigPageWarning();
     wireInputPersistence();
 
     $("btnGo").addEventListener("click", () => runTokiponize());
