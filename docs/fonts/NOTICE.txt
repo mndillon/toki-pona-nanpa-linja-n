@@ -18,6 +18,7 @@ FairfaxHD-nanpa-linja-n-good-kasi.ttf
 FairfaxPonaHD.ttf
 FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf
 linjalipamanka-normal.otf
+linjalipamanka-normal-nanpa-linja-n.otf
 linjalipamanka-normal-nanpa-linja-n-good-kasi.otf
 linja-pona.otf
 linja-pona-nanpa-linja-n.otf
