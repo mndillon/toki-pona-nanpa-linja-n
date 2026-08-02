@@ -749,16 +749,19 @@ When you paste/vend these libraries into this file, keep their MIT notices.
     overrides: {
       textareaId: "overridesText",
       applyButtonId: "btnApplyOverrides",
+      overlayId: "overridesOverlay",
       baseline: ""
     },
     ipaOverrides: {
       textareaId: "ipaOverridesText",
       applyButtonId: "btnApplyIpaOverrides",
+      overlayId: "ipaOverridesOverlay",
       baseline: ""
     },
     policy: {
       textareaId: "policyText",
       applyButtonId: "btnApplyPolicy",
+      overlayId: "policyOverlay",
       baseline: ""
     }
   };
@@ -785,22 +788,75 @@ When you paste/vend these libraries into this file, keep their MIT notices.
     return Object.keys(CONFIG_EDITOR_STATE).some(configEditorHasUnsavedChanges);
   }
 
+  function closeUnsavedConfigDialog(){
+    const existing = document.getElementById("unsavedConfigDialogOverlay");
+    if (existing) existing.remove();
+  }
+
+  function showUnsavedConfigDialog(kind){
+    const state = CONFIG_EDITOR_STATE[kind];
+    const ta = state ? $(state.textareaId) : null;
+    if (!state || !ta) return;
+
+    closeUnsavedConfigDialog();
+
+    const dialog = document.createElement("div");
+    dialog.id = "unsavedConfigDialogOverlay";
+    dialog.className = "modalOverlay show";
+    dialog.style.zIndex = "29999";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "unsavedConfigDialogTitle");
+
+    dialog.innerHTML = `
+      <div class="modal" style="width:min(520px,100%);">
+        <div class="modalHeader">
+          <h3 id="unsavedConfigDialogTitle">Unsaved configuration changes</h3>
+        </div>
+        <div class="modalBody">
+          <p style="margin:0;">
+            You changed the configuration but have not applied the changes.
+          </p>
+        </div>
+        <div class="row" style="margin-top:12px;align-items:center;">
+          <button id="btnUnsavedSaveClose" type="button">Save and close</button>
+          <button id="btnUnsavedDiscardClose" type="button">Discard and close</button>
+          <button id="btnUnsavedContinueEditing" type="button">Continue editing</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    const continueEditing = () => {
+      closeUnsavedConfigDialog();
+      ta.focus();
+    };
+
+    $("btnUnsavedSaveClose").addEventListener("click", () => {
+      closeUnsavedConfigDialog();
+      const applyButton = $(state.applyButtonId);
+      if (applyButton) applyButton.click();
+    });
+
+    $("btnUnsavedDiscardClose").addEventListener("click", () => {
+      ta.value = state.baseline;
+      closeUnsavedConfigDialog();
+      const editorOverlay = $(state.overlayId);
+      if (editorOverlay) editorOverlay.classList.remove("show");
+    });
+
+    $("btnUnsavedContinueEditing").addEventListener("click", continueEditing);
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) continueEditing();
+    });
+
+    $("btnUnsavedSaveClose").focus();
+  }
+
   function confirmConfigEditorClose(kind){
     if (!configEditorHasUnsavedChanges(kind)) return true;
-
-    const save = window.confirm(
-      "You changed the configuration but have not applied it.\n\n" +
-      "Do you want to save the changes before closing?\n\n" +
-      "Select OK to apply the changes, or Cancel to continue editing."
-    );
-
-    if (save){
-      const state = CONFIG_EDITOR_STATE[kind];
-      const applyButton = state ? $(state.applyButtonId) : null;
-      if (applyButton) applyButton.click();
-    }
-
-    // Keep the editor open while Apply validates/saves, or when the user cancels.
+    showUnsavedConfigDialog(kind);
     return false;
   }
 
@@ -5664,6 +5720,11 @@ function joinTpNameParts(parts, boundary, opts){
 
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
+      const unsavedDialog = document.getElementById("unsavedConfigDialogOverlay");
+      if (unsavedDialog){
+        closeUnsavedConfigDialog();
+        return;
+      }
       // Close the topmost modal only — policy and IPA overrides modal share z-index 19999,
       // above IPA editor (9999). Close whichever high-z modal is open first.
       if ($("policyOverlay").classList.contains("show")){ closePolicyModal(); return; }
