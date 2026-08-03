@@ -1354,13 +1354,94 @@ function abbreviatedNumericSpacerComponentIndices(run) {
   return out;
 }
 
+function isCartoucheRenderRunForAudio(run) {
+  const kind = String(run?.kind ?? run?.type ?? run?._element?.type ?? '').toLowerCase();
+  return kind === 'cartouche' || kind === 'cartoucheimg';
+}
+
+function isCartoucheAdjacencyGapRun(run) {
+  const kind = String(run?.kind ?? run?.type ?? run?._element?.type ?? '').toLowerCase();
+  return kind === 'gap';
+}
+
+function isConfirmedNumericCartoucheRun(run, options = {}) {
+  if (
+    run?.isNumericCartouche === true ||
+    run?._element?.isNumericCartouche === true ||
+    run?.element?.isNumericCartouche === true
+  ) return true;
+
+  const sourceText = String(run?.sourceText ?? run?.encodedText ?? run?._element?.sourceText ?? '').trim();
+  if (!sourceText) return false;
+  return !!trySourceTextToNanpaProperName(sourceText, options);
+}
+
+/**
+ * Classify uninterrupted cartouche sequences on one rendered line.
+ * Renderer gap runs are layout only and do not break adjacency. Any other run
+ * ends the sequence. Numeric reference audio is permitted only when every
+ * cartouche in the sequence is numeric; one ordinary cartouche forces the
+ * complete adjacent sequence to the ordinary syllable voice.
+ */
+function classifyAdjacentCartoucheAudioGroups(runs, options = {}) {
+  const classifications = new Map();
+  const input = Array.isArray(runs) ? runs : [];
+  let cursor = 0;
+  let groupOrdinal = 0;
+
+  while (cursor < input.length) {
+    if (!isCartoucheRenderRunForAudio(input[cursor])) {
+      cursor += 1;
+      continue;
+    }
+
+    const cartoucheRunIndices = [];
+    let scan = cursor;
+    while (scan < input.length) {
+      const candidate = input[scan];
+      if (isCartoucheRenderRunForAudio(candidate)) {
+        cartoucheRunIndices.push(scan);
+        scan += 1;
+        continue;
+      }
+      if (isCartoucheAdjacencyGapRun(candidate)) {
+        scan += 1;
+        continue;
+      }
+      break;
+    }
+
+    const allNumeric = cartoucheRunIndices.length > 0 && cartoucheRunIndices.every(index =>
+      isConfirmedNumericCartoucheRun(input[index], options)
+    );
+    const groupId = `L${Number(options?.lineIndex) || 0}C${groupOrdinal}`;
+
+    for (const runIndex of cartoucheRunIndices) {
+      classifications.set(runIndex, {
+        groupId,
+        allNumeric,
+        audioMode: allNumeric ? 'numeric' : 'ordinary',
+        cartoucheRunIndices: cartoucheRunIndices.slice()
+      });
+    }
+
+    groupOrdinal += 1;
+    cursor = Math.max(scan, cursor + 1);
+  }
+
+  return classifications;
+}
+
 function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, options = {}) {
   const words = spokenWordTokens(speech);
   if (!words.length) return [];
 
   const sourceText = String(run?.sourceText ?? run?.encodedText ?? '').trim();
   const numericProperName = trySourceTextToNanpaProperName(sourceText, options);
-  const numericCartouche = !!numericProperName;
+  const recognizedNumericCartouche = !!numericProperName || isConfirmedNumericCartoucheRun(run, options);
+  const forceOrdinaryCartoucheAudio = options?.cartoucheAudioMode === 'ordinary';
+  const numericCartouche = recognizedNumericCartouche && !forceOrdinaryCartoucheAudio;
+  const forceOrdinarySyllableAudio = !numericCartouche;
   const numericCartoucheRunId = numericCartouche
     ? runIdForAudio(run, fallbackRunIndex, lineIndex)
     : null;
@@ -1460,6 +1541,10 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
         wholeNumericPunctuationWord: wholeNumeric,
         suppressActiveHighlight,
         numericCartouche,
+        recognizedNumericCartouche,
+        cartoucheAudioGroupId: options?.cartoucheAudioGroupId || null,
+        cartoucheAudioMode: numericCartouche ? 'numeric' : 'ordinary',
+        forceOrdinarySyllableAudio,
         numericCartoucheRunId,
         numericCartouchePhrase,
         numericAudioUnitKey: numericCartouche ? normalizeAudioWord(piece) : '',
@@ -1843,6 +1928,10 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
     };
 
     const runs = Array.isArray(line?.runs) ? line.runs : [];
+    const cartoucheAudioGroups = classifyAdjacentCartoucheAudioGroups(runs, {
+      ...options,
+      lineIndex
+    });
     for (let fallbackRunIndex = 0; fallbackRunIndex < runs.length; fallbackRunIndex++) {
       const run = runs[fallbackRunIndex];
       const speech = speechTextForRenderRun(run, skipped, {
@@ -1851,10 +1940,13 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
         lineIndex
       });
 
+      const cartoucheAudioGroup = cartoucheAudioGroups.get(fallbackRunIndex) || null;
       const runUnits = speechUnitsForRenderRun(run, speech, {
         ...options,
         fallbackRunIndex,
-        lineIndex
+        lineIndex,
+        cartoucheAudioGroupId: cartoucheAudioGroup?.groupId || null,
+        cartoucheAudioMode: cartoucheAudioGroup?.audioMode || null
       });
       const groupsByWord = [];
       for (const unit of runUnits) {
@@ -2094,9 +2186,11 @@ async function renderExactSpeechUnitEntry({
   const renderText = compactSpeechWhitespace(unit?.timingText ?? unit?.text ?? '');
   if (!renderText || !containsSpokenWord(renderText)) return null;
 
+  const forceOrdinarySyllables = unit?.forceOrdinarySyllableAudio === true;
   const rendered = await voice.render(renderText, {
     ...(renderOptions || {}),
-    alreadyPreprocessed: true
+    alreadyPreprocessed: true,
+    ...(forceOrdinarySyllables ? { forceOrdinarySyllables: true } : {})
   });
 
   if (!rendered?.samples?.length || !rendered?.sampleRate) {
@@ -2124,6 +2218,8 @@ async function renderExactSpeechUnitEntry({
     speechUnitCount: unitCount,
     wholeNumericPunctuationWord: !!unit?.wholeNumericPunctuationWord,
     suppressActiveHighlight: !!unit?.suppressActiveHighlight,
+    cartoucheAudioMode: unit?.cartoucheAudioMode || null,
+    forceOrdinarySyllableAudio: forceOrdinarySyllables,
     visualTargets: cloneAudioVisualTargets(unit?.visualTargets),
     sourceSegmentIndex: segmentIndex,
     renderText,

@@ -1,4 +1,4 @@
-console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v141 ADAPTED-CARTOUCHE-PAYLOAD loaded");
+console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v142 EXACT-MANUAL-TALLY-LAYOUT loaded");
 const DEFAULT_WASM_MODULE_URL = new URL("../wasm/sitelen_vector_wasm.js?v=143", import.meta.url).href;
 const PX_TO_PT = 72 / 96;
 const CARTOUCHE_START_CP = 0xF1990;
@@ -497,6 +497,22 @@ function getManualTalliesForRun(run) {
   return null;
 }
 
+
+function getManualTallyLayoutForRun(run) {
+  const candidates = [
+    run?.manualTallyLayout,
+    run?._element?.manualTallyLayout,
+    run?.element?.manualTallyLayout
+  ];
+  for (const layout of candidates) {
+    if (!layout || typeof layout !== "object") continue;
+    if (!Array.isArray(layout.groups) || !layout.groups.length) continue;
+    if (!Number.isFinite(Number(layout.textOriginXPx))) continue;
+    if (!Number.isFinite(Number(layout.baselineYPx))) continue;
+    return layout;
+  }
+  return null;
+}
 
 function getCartoucheTallyModeForRun(run, exporter = null) {
   const candidates = [
@@ -1561,6 +1577,80 @@ function isCartoucheControlLikeCp(cp) {
     n === 0xF1996;
 }
 
+function buildManualTallyVectorPathsFromRendererLayout(run, layout, { fill = "#111111", halo = null } = {}) {
+  if (!layout || !Array.isArray(layout.groups) || !layout.groups.length) return [];
+
+  const textOriginXPx = Number(layout.textOriginXPx);
+  const canvasBaselineYPx = Number(layout.baselineYPx);
+  if (!Number.isFinite(textOriginXPx) || !Number.isFinite(canvasBaselineYPx)) return [];
+
+  // The renderer stores tally geometry in the cartouche canvas coordinate space.
+  // WASM vectorizes the same shaped font run with its text origin at runX and its
+  // alphabetic baseline at runBaseline. Translate the exact renderer geometry
+  // between those origins; do not re-measure or estimate glyph centers.
+  const dx = getRunX(run) - textOriginXPx;
+  const dy = getRunBaseline(run) - canvasBaselineYPx;
+  const defaultStrokeW = Math.max(0.01, Number(layout.strokeWidthPx) || 0.01);
+  const topInsetPx = Number.isFinite(Number(layout.topInsetPx)) ? Number(layout.topInsetPx) : 0;
+  const out = [];
+
+  const layoutHalo = layout.halo && typeof layout.halo === "object" ? layout.halo : {};
+  const haloEnabled = halo?.enabled === true && layoutHalo.enabled === true;
+  const haloFill = normalizeHex(layoutHalo.color || halo?.color || "#FFFFFF", "#FFFFFF");
+  const haloPadX = Math.max(0, Number(layoutHalo.padX) || 0);
+  const haloPadBottom = Math.max(0, Number(layoutHalo.padBottom) || 0);
+  const haloRadius = Math.max(0, Number(layoutHalo.radius) || 0);
+
+  for (const group of layout.groups) {
+    const bounds = group?.bounds;
+    if (haloEnabled && bounds) {
+      const left = Number(bounds.left);
+      const right = Number(bounds.right);
+      const top = Number(bounds.top) + topInsetPx;
+      const bottom = Number(bounds.bottom);
+      if ([left, right, top, bottom].every(Number.isFinite) && right > left && bottom >= top) {
+        out.push(makeSyntheticPathFromD(
+          buildSvgRectPath(
+            left + dx - haloPadX,
+            top + dy,
+            (right - left) + haloPadX * 2,
+            Math.max(1, (bottom - top) + haloPadBottom),
+            haloRadius
+          ),
+          { fill: haloFill, halo: null, source: "manual-tally-halo-bg" }
+        ));
+      }
+    }
+
+    for (const stroke of asArray(group?.strokes)) {
+      const centerX = Number(stroke?.x);
+      const yTop = Number(stroke?.yTop) + topInsetPx;
+      const yBottom = Number(stroke?.yBottom);
+      const strokeW = Math.max(0.01, Number(stroke?.strokeW) || defaultStrokeW);
+      if (![centerX, yTop, yBottom].every(Number.isFinite) || yBottom <= yTop) continue;
+
+      // Canvas draws a vertical line with lineCap=butt. A filled rectangle with
+      // half the line width on each side is the identical vector geometry.
+      out.push(makeSyntheticPathFromD(
+        buildSvgRectPath(
+          centerX + dx - strokeW / 2,
+          yTop + dy,
+          strokeW,
+          yBottom - yTop,
+          0
+        ),
+        { fill, halo: null, source: "manual-tally" }
+      ));
+    }
+  }
+
+  for (const path of out) {
+    path.manualTallyGeometrySource = "renderer-exact";
+    path.manualTallyTranslation = { dx, dy };
+  }
+  return out;
+}
+
 function estimateInnerGlyphCenters(run, innerCps, manualTallies, vectorResult = null) {
   const tallies = Array.isArray(manualTallies) ? manualTallies : [];
   const tallySlotCount = tallies.length || 0;
@@ -1666,6 +1756,14 @@ function buildManualTallyVectorPathsForRun(run, rawInnerCps, manualTallies, { fi
     : [];
   if (!tallies.some(n => n > 0)) return [];
 
+  const rendererLayout = getManualTallyLayoutForRun(run);
+  if (rendererLayout) {
+    const exactPaths = buildManualTallyVectorPathsFromRendererLayout(run, rendererLayout, { fill, halo });
+    if (exactPaths.length) return exactPaths;
+  }
+
+  // Backward-compatible fallback for render plans created by older renderer
+  // builds that do not publish exact manual-tally geometry.
   const placement = estimateInnerGlyphCenters(run, rawInnerCps, tallies, vectorResult);
   const { centers, baseline, fontPx } = placement;
 

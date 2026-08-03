@@ -2524,6 +2524,19 @@ const SitelenRenderer = (() => {
     return 0;
   }
 
+  function cloneManualTallyLayout(layout) {
+    if (!layout || typeof layout !== 'object') return null;
+    return {
+      ...layout,
+      halo: layout.halo && typeof layout.halo === 'object' ? { ...layout.halo } : null,
+      groups: Array.isArray(layout.groups) ? layout.groups.map(group => ({
+        ...group,
+        bounds: group?.bounds && typeof group.bounds === 'object' ? { ...group.bounds } : null,
+        strokes: Array.isArray(group?.strokes) ? group.strokes.map(stroke => ({ ...stroke })) : []
+      })) : []
+    };
+  }
+
   function clonePlanElement(el) {
     if (!el || typeof el !== 'object') return el;
     const base = { ...el };
@@ -2542,6 +2555,7 @@ const SitelenRenderer = (() => {
     if (Array.isArray(el.audioGlyphLayout)) {
       base.audioGlyphLayout = el.audioGlyphLayout.map(item => ({ ...item }));
     }
+    if (el.manualTallyLayout) base.manualTallyLayout = cloneManualTallyLayout(el.manualTallyLayout);
     return base;
   }
 
@@ -3264,6 +3278,7 @@ const SitelenRenderer = (() => {
           audioSourceIndices: Array.isArray(el.audioSourceIndices) ? el.audioSourceIndices.slice() : null,
           audioGlyphLayout: Array.isArray(el.audioGlyphLayout) ? el.audioGlyphLayout.map(item => ({ ...item })) : null,
           manualTallies: Array.isArray(el.manualTallies) ? el.manualTallies.slice() : null,
+          manualTallyLayout: cloneManualTallyLayout(el.manualTallyLayout),
           manualTallyLiftPx: Number.isFinite(Number(el.manualTallyLiftPx)) ? Number(el.manualTallyLiftPx) : 0,
           manualTallySmallFontMaxPx: Number.isFinite(Number(el.manualTallySmallFontMaxPx)) ? Number(el.manualTallySmallFontMaxPx) : 12,
           imageAlt: el.imageAlt || null,
@@ -6956,7 +6971,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
     function drawManualCartoucheTallies(ctx, innerCps, manualTallies, { fontPx, fontFamily, runX, baselineY, cartoucheW, cartoucheH, padPx, haloEnabled, haloCss, fgCss, cartoucheRunWidth = null, cartoucheBottomY = null, glyphLayout = null, manualTallyLiftPx = 0 }) {
       const tallies = Array.from(manualTallies ?? []);
-      if (!tallies.some(n => Number(n) > 0)) return;
+      if (!tallies.some(n => Number(n) > 0)) return null;
 
       const px = Math.max(8, Number(fontPx ?? 56));
       const fam = fontFamily || FONT_FAMILY_TEXT;
@@ -6990,11 +7005,18 @@ function findNanpaLinjanTpPhraseSequences(text) {
         glyphLayout,
         manualTallyLiftPx
       });
-      if (!groups.length) { ctx.restore(); return; }
+      if (!groups.length) { ctx.restore(); return null; }
 
       // Keep the halo backing attached to the cartouche bottom rule, but start the
       // visible tally strokes slightly below that rule so they do not eat into it.
       const tallyStrokeTopInset = 0;
+      let haloLayout = {
+        enabled: false,
+        color: haloCss || "#FFFFFF",
+        padX: 0,
+        padBottom: 0,
+        radius: 0
+      };
 
       if (haloEnabled) {
         const haloW = Math.max(1, haloWidthForPx(px));
@@ -7005,6 +7027,15 @@ function findNanpaLinjanTpPhraseSequences(text) {
           1.25,
           Math.min(haloW, px * 0.045)
         );
+
+        haloLayout = {
+          enabled: true,
+          color: haloCss || "#FFFFFF",
+          widthPx: haloW,
+          padX,
+          padBottom,
+          radius
+        };
 
         ctx.save();
         ctx.fillStyle = haloCss || "#FFFFFF";
@@ -7031,7 +7062,6 @@ function findNanpaLinjanTpPhraseSequences(text) {
       ctx.save();
       ctx.strokeStyle = fgCss || "#111";
       ctx.lineWidth = strokeW;
-      //ctx.lineCap = "round";
       ctx.lineCap = "butt";
 
       for (const group of groups) {
@@ -7045,6 +7075,26 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
       ctx.restore();
       ctx.restore();
+
+      // Publish the exact canvas geometry. Vector export translates this layout
+      // from the cartouche canvas text origin/baseline to the vector run origin/
+      // baseline instead of independently estimating tally positions.
+      return {
+        version: 1,
+        coordinateSpace: "cartouche-canvas",
+        textOriginXPx: Number(runX || 0),
+        baselineYPx: Number(baselineY || 0),
+        strokeWidthPx: strokeW,
+        lineCap: "butt",
+        topInsetPx: tallyStrokeTopInset,
+        halo: haloLayout,
+        groups: groups.map(group => ({
+          ownerGlyphIndex: group.ownerGlyphIndex,
+          count: group.count,
+          bounds: { ...group.bounds },
+          strokes: group.strokes.map(stroke => ({ ...stroke }))
+        }))
+      };
     }
 
     function normalizeManualTallyInputForCartouche(innerCps, manualTallies) {
@@ -7237,8 +7287,9 @@ function findNanpaLinjanTpPhraseSequences(text) {
         }
       }
 
+      let manualTallyLayout = null;
       if (hasManualTallies) {
-        drawManualCartoucheTallies(ctx2, renderInnerCps, renderManualTallies, {
+        manualTallyLayout = drawManualCartoucheTallies(ctx2, renderInnerCps, renderManualTallies, {
           fontPx: px,
           fontFamily: fam,
           runX: x,
@@ -7273,7 +7324,8 @@ function findNanpaLinjanTpPhraseSequences(text) {
         renderFullCps: Array.from(effectiveRenderFullCps),
         canonicalToRenderSpans: effectiveSpans.map(item => ({ ...item })),
         renderManualTallies: Array.isArray(renderManualTallies) ? renderManualTallies.slice() : null,
-        audioGlyphLayout
+        audioGlyphLayout,
+        manualTallyLayout: cloneManualTallyLayout(manualTallyLayout)
       };
     }
 
@@ -7771,6 +7823,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         isLiteralCartouche: !!isLiteralCartouche,
         isNumericCartouche: !!isNumericCartouche,
         manualTallies: Array.isArray(normalizedManualTallies) ? normalizedManualTallies.slice() : null,
+        manualTallyLayout: cloneManualTallyLayout(r.manualTallyLayout),
         manualTallyLiftPx,
         manualTallySmallFontMaxPx: __manualTallySmallFontMaxPx,
         audioSourceCps: normalizedAudioSourceCps,

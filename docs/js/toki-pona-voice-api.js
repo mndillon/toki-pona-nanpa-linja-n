@@ -546,13 +546,14 @@ export class TokiPonaVoice {
     const lower = normalizedTpWord(word);
     const words = this.manifest.words || {};
     const syllables = this.manifest.syllables || {};
+    const forceOrdinarySyllables = context.forceOrdinarySyllables === true || opts.forceOrdinarySyllables === true;
 
-    if (context.preferNanpaUnits && opts.synthesis_mode !== 'reference_words_only') {
+    if (!forceOrdinarySyllables && context.preferNanpaUnits && opts.synthesis_mode !== 'reference_words_only') {
       const nanpaChunks = await this.chunksForNanpaWord(word, warnings);
       if (nanpaChunks) return nanpaChunks;
     }
 
-    if (opts.synthesis_mode !== 'reference_syllables_only' && words[lower]) {
+    if (!forceOrdinarySyllables && opts.synthesis_mode !== 'reference_syllables_only' && words[lower]) {
       return [await this.loadAudioSamples(words[lower].file)];
     }
 
@@ -588,6 +589,7 @@ export class TokiPonaVoice {
     const warnings = [...preprocessWarnings];
     const chunkRecords = [];
     const lex = lexSpeechText(speechText);
+    const forceOrdinarySyllables = opts.forceOrdinarySyllables === true;
     let i = 0;
     let phraseIndex = 0;
 
@@ -613,9 +615,12 @@ export class TokiPonaVoice {
 
         for (let wi = 0; wi < words.length; wi++) {
           const word = words[wi];
-          const wchunks = await this.chunksForWord(word, opts, warnings, { preferNanpaUnits: isProperStart });
+          const wchunks = await this.chunksForWord(word, opts, warnings, {
+            preferNanpaUnits: isProperStart && !forceOrdinarySyllables,
+            forceOrdinarySyllables
+          });
           const syllableGap = normalizeSyllableGapSeconds(opts.syllableGapSeconds);
-          const nanpaUnits = isProperStart && opts.synthesis_mode !== 'reference_words_only'
+          const nanpaUnits = !forceOrdinarySyllables && isProperStart && opts.synthesis_mode !== 'reference_words_only'
             ? nanpaUnitsForWord(word, this.manifest)
             : null;
 
