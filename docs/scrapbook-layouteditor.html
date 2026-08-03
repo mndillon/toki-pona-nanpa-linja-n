@@ -189,6 +189,54 @@
     z-index:2;
     background:transparent;
   }
+
+  /* Small, understated home link beside the page heading */
+.pageHeadingRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.pageHomeLink {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: -4px;
+  color: #111;
+  opacity: 0.58;
+  text-decoration: none;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.pageHomeLink:hover {
+  opacity: 0.9;
+  background: rgba(17, 17, 17, 0.06);
+}
+
+.pageHomeLink:focus-visible {
+  opacity: 1;
+  outline: 2px solid rgba(17, 17, 17, 0.65);
+  outline-offset: 2px;
+}
+
+.pageHomeIcon {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* Align the shared home icon inside a top bar */
+.topbar .pageHomeLink {
+  margin-top: 0;
+}
 </style>
 </head>
 <body>
@@ -199,6 +247,30 @@
     <!-- CHANGE HERE: top toolbar -->
     <div class="topbar" id="topbar">
       <div class="topbarRow originalToolbarRow" id="topbarOriginalRow1">
+        <a
+          class="pageHomeLink"
+          style="margin-top:0"
+          href="./index.html"
+          aria-label="Home"
+          title="Home"
+        >
+          <svg
+            class="pageHomeIcon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M3.5 10.5 12 3.75l8.5 6.75M5.75 9.25V20h12.5V9.25M9.5 20v-6h5v6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </a>
+
         <button class="btn toolbarModeBtn" id="btnToggleToolbarLayout" type="button" title="Toggle toolbar layout">☰</button>
         <div class="topbarGroup" aria-label="Edit actions">
           <button class="btn" id="btnNew">New / Clear</button>
@@ -252,6 +324,28 @@
 
       <div class="topbarRow compactOnly" id="topbarCompactRow1">
         <div class="compactTopbarLeft">
+           <a
+    class="pageHomeLink"
+    href="./index.html"
+    aria-label="Home"
+    title="Home"
+  >
+    <svg
+      class="pageHomeIcon"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M3.5 10.5 12 3.75l8.5 6.75M5.75 9.25V20h12.5V9.25M9.5 20v-6h5v6"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </a>
           <button class="btn toolbarModeBtn" id="btnToggleToolbarLayoutCompact" type="button" title="Toggle toolbar layout">☰</button>
           <details class="topbarMenu" id="compactMenuFile"><summary class="btn topbarMenuBtn">File</summary><div class="topbarMenuPanel" id="compactMenuFilePanel"></div></details>
           <details class="topbarMenu" id="compactMenuPage"><summary class="btn topbarMenuBtn">Page</summary><div class="topbarMenuPanel" id="compactMenuPagePanel"></div></details>
