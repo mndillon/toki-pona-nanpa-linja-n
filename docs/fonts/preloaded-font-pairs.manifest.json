@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generated": "2026-08-02",
+  "generated": "2026-08-03",
   "migration": {
     "clearIndexedDbPairsOnUpgrade": true,
     "preserveFontKeys": [
@@ -20,7 +20,7 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-08-02-065",
+      "rev": "2026-08-03-066",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
@@ -36,7 +36,9 @@
         "cartoucheTallyMode": "manual",
         "literalCartoucheRuleClipScale": 0.24985,
         "literalCartoucheRuleClipStrategy": "leftCap",
-        "literalCartoucheLeftCapClipRatio": 0.9
+        "literalCartoucheLeftCapClipRatio": 0.9,
+        "manualTallySmallFontLiftPx": 1,
+        "manualTallySmallFontMaxPx": 12
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
       "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
@@ -222,7 +224,7 @@
     {
       "fontKey": "nasinSitelenPuMono",
       "label": "nasin sitelen pu mono predefined",
-      "rev": "2026-08-02-002",
+      "rev": "2026-08-03-003",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "nasin-sitelen-pu-mono-v1",
       "renderAdapterSettings": {
@@ -242,7 +244,9 @@
       "metadataSuffix": "-nanpa-linja-n",
       "settings": {
         "cartoucheCommaTallyMarks": true,
-        "cartoucheTallyMode": "manual"
+        "cartoucheTallyMode": "manual",
+        "manualTallySmallFontLiftPx": 1,
+        "manualTallySmallFontMaxPx": 12
       },
       "support": {
         "adapterVersion": 1,

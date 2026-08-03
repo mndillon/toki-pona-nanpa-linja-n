@@ -1579,32 +1579,83 @@ function buildRawCodepointSpeechUnits(run, fallbackRunIndex, lineIndex, options 
   return out;
 }
 
+function currentExtendedGlyphAudioStructure(cps) {
+  const source = Array.from(cps || []).map(Number);
+  const reverseStartIndex = source.indexOf(0xF199A);
+  const reverseEndIndex = reverseStartIndex >= 0
+    ? source.indexOf(0xF199B, reverseStartIndex + 1)
+    : -1;
+  const forwardStartIndex = source.indexOf(0xF1997);
+  const forwardEndIndex = forwardStartIndex >= 0
+    ? source.indexOf(0xF1998, forwardStartIndex + 1)
+    : -1;
+
+  const hasReverse = reverseStartIndex >= 0 && reverseEndIndex > reverseStartIndex;
+  const hasForward = forwardStartIndex > 0 && forwardEndIndex > forwardStartIndex;
+  if (!hasReverse && !hasForward) return null;
+
+  const reverseHeadIndex = hasReverse ? reverseEndIndex + 1 : -1;
+  const forwardHeadIndex = hasForward ? forwardStartIndex - 1 : -1;
+  if (hasReverse && (reverseHeadIndex < 0 || reverseHeadIndex >= source.length)) return null;
+  if (hasForward && (forwardHeadIndex < 0 || forwardHeadIndex >= source.length)) return null;
+  if (hasReverse && hasForward && reverseHeadIndex !== forwardHeadIndex) return null;
+
+  const headIndex = hasForward ? forwardHeadIndex : reverseHeadIndex;
+  return {
+    hasReverse,
+    hasForward,
+    headIndex,
+    headCp: source[headIndex]
+  };
+}
+
 function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
   const words = spokenWordTokens(speech);
   if (!words.length) return [];
 
   const cps = runCodepointsForAudio(run);
   const out = [];
-  const currentLongStartIndex = cps.indexOf(0xF1997);
-  const currentLongGroups = currentLongStartIndex > 0
-    ? visibleComponentGroups(cps)
-    : null;
+  const currentStructure = currentExtendedGlyphAudioStructure(cps);
+  const currentGroups = currentStructure ? visibleComponentGroups(cps) : null;
+  const headGroupIndex = currentGroups?.findIndex(group => group.includes(currentStructure.headIndex)) ?? -1;
+  const currentPiHead = headGroupIndex >= 0 && Number(currentStructure?.headCp) === 0xF194D;
 
   for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
     let componentIndices = [];
+    let semanticRole = 'long-pi-member';
 
-    if (currentLongGroups?.length) {
-      // Current Common Sitelen Pona encoding:
-      // pi, START OF LONG GLYPH, member(s), END OF LONG GLYPH.
-      // visibleComponentGroups() assigns each silent control to the following
-      // or preceding visible glyph so every spoken word targets its complete
-      // visual portion of the long construction.
-      componentIndices = Array.from(currentLongGroups[wordIndex] || []);
+    if (currentGroups?.length) {
+      // Source speech follows the visual order: reverse members, long head,
+      // then forward members. Map each word to that semantic group rather than
+      // assuming the first word is always pi. This restores the reverse side of
+      // forms such as {pona}ala(pona).
+      const groupIndex = words.length === currentGroups.length
+        ? wordIndex
+        : Math.min(
+            currentGroups.length - 1,
+            Math.floor(currentGroups.length * wordIndex / Math.max(1, words.length))
+          );
+
+      if (currentPiHead && groupIndex === headGroupIndex) {
+        // Speaking pi identifies the complete long-pi construction. Its shaped
+        // head is thin, but the pi audio still highlights the complete run.
+        componentIndices = Array.from({ length: cps.length }, (_unused, index) => index);
+        semanticRole = 'long-pi-head';
+      } else {
+        componentIndices = Array.from(currentGroups[groupIndex] || []);
+        if (groupIndex < headGroupIndex) semanticRole = 'reverse-long-member';
+        else if (groupIndex === headGroupIndex) semanticRole = 'long-glyph-head';
+        else semanticRole = 'forward-long-member';
+      }
     } else if (wordIndex === 0) {
-      // Deprecated START OF LONG PI encoding renders the opening control as the
-      // visible pi head.
-      componentIndices = cps.length ? [0] : [];
+      // Deprecated START OF LONG PI encoding renders the opening control as pi.
+      // Preserve the established behavior: pi identifies the complete legacy
+      // long-pi construction.
+      componentIndices = Array.from({ length: cps.length }, (_unused, index) => index);
+      semanticRole = 'long-pi-head';
     } else {
+      // Deprecated START OF LONG PI encoding: member glyphs follow the opening
+      // control with an extension control between later members.
       const memberIndex = wordIndex - 1;
       const glyphCpIndex = 1 + memberIndex * 2;
       componentIndices = memberIndex === 0
@@ -1618,7 +1669,7 @@ function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
       text: word,
       timingText: word,
       timingSyllables: splitAudioTpWordIntoSyllables(word),
-      kind: wordIndex === 0 ? 'long-pi-head' : 'long-pi-member',
+      kind: semanticRole,
       word,
       wordIndex,
       wholeNumericPunctuationWord: false,
@@ -1711,7 +1762,7 @@ export function speechUnitsForRenderRun(run, speech, {
   }
 
   const cps = runCodepointsForAudio(run);
-  if (cps.includes(0xF1993) || cps.includes(0xF1997)) {
+  if (cps.includes(0xF1993) || cps.includes(0xF1997) || cps.includes(0xF199A)) {
     return buildLongPiSpeechUnits(run, text, fallbackRunIndex, lineIndex);
   }
 

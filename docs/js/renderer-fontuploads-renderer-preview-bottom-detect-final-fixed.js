@@ -816,7 +816,15 @@ const SitelenRenderer = (() => {
     let i = start;
     while (i < end) {
       const cp = cps[i];
-      if (cp === SP_CP.CARTOUCHE_EXTENSION || cp === SP_CP.DEPRECATED_LONG_EXTENSION || cp === SP_CP.DEPRECATED_LONG_PI_EXTENSION) {
+      if (
+        cp === SP_CP.CARTOUCHE_EXTENSION ||
+        cp === SP_CP.DEPRECATED_LONG_EXTENSION ||
+        cp === SP_CP.DEPRECATED_LONG_PI_EXTENSION ||
+        cp === SP_CP.LONG_START ||
+        cp === SP_CP.LONG_END ||
+        cp === SP_CP.REVERSE_LONG_START ||
+        cp === SP_CP.REVERSE_LONG_END
+      ) {
         cells.push({ indices: [i], cps: [cp], controlOnly: true });
         i += 1;
         continue;
@@ -927,6 +935,23 @@ const SitelenRenderer = (() => {
     return { headIndex: start - 1, startIndex: start, endIndex: end };
   }
 
+  function hasReverseLongGlyphControls(cps) {
+    return cps.includes(SP_CP.REVERSE_LONG_START) || cps.includes(SP_CP.REVERSE_LONG_END);
+  }
+
+  function appendLegacyOrdinaryFallback(builder, cps, kind, adapterId, settings = {}) {
+    let emittedCellCount = 0;
+    for (const cell of splitCanonicalCells(cps)) {
+      if (cell.controlOnly) {
+        builder.mark(cell.indices);
+        continue;
+      }
+      if (emittedCellCount > 0) builder.append(' ');
+      appendLegacyCell(builder, cell, kind, adapterId, settings);
+      emittedCellCount += 1;
+    }
+  }
+
   function adaptLegacyLinja(canonicalCps, kind, context = {}) {
     const adapterId = kind === 'linja-pona' ? 'linja-pona-legacy-v1' : 'linja-sike-legacy-v1';
     const settings = context.settings || {};
@@ -973,7 +998,8 @@ const SitelenRenderer = (() => {
       const headCp = cps[longGlyph.headIndex];
       const cells = splitCanonicalCells(cps, longGlyph.startIndex + 1, longGlyph.endIndex);
       const usableCells = cells.filter(cell => !cell.controlOnly);
-      if (headCp === SP_CP.PI && usableCells.length >= 1 && usableCells.length <= maxLongPiCells) {
+      const hasReverseLong = hasReverseLongGlyphControls(cps);
+      if (!hasReverseLong && headCp === SP_CP.PI && usableCells.length >= 1 && usableCells.length <= maxLongPiCells) {
         builder.append('pi', [longGlyph.headIndex]);
         if (kind === 'linja-pona') {
           builder.append('+'.repeat(usableCells.length), [longGlyph.startIndex]);
@@ -999,14 +1025,8 @@ const SitelenRenderer = (() => {
         return finishLegacyResult();
       }
 
-      warnFontRenderAdapterOnce(adapterId, 'non-pi or overlong long glyph rendered as ordinary cells');
-      for (let i = 0; i < cps.length; i++) {
-        if (i === longGlyph.startIndex || i === longGlyph.endIndex) { builder.mark([i]); continue; }
-        if (builder.length > 0) builder.append(' ');
-        const text = legacyWordEncoding(cps[i], kind, settings);
-        if (text == null) appendUnsupported(builder, i, cps[i], adapterId, settings);
-        else builder.append(text, [i]);
-      }
+      warnFontRenderAdapterOnce(adapterId, 'unsupported, reverse, or overlong long glyph rendered as ordinary cells');
+      appendLegacyOrdinaryFallback(builder, cps, kind, adapterId, settings);
       return finishLegacyResult();
     }
 
@@ -1025,12 +1045,7 @@ const SitelenRenderer = (() => {
       return finishLegacyResult();
     }
 
-    const cells = splitCanonicalCells(cps);
-    cells.forEach((cell, cellIndex) => {
-      if (cell.controlOnly) { builder.mark(cell.indices); return; }
-      if (cellIndex > 0) builder.append(' ');
-      appendLegacyCell(builder, cell, kind, adapterId, settings);
-    });
+    appendLegacyOrdinaryFallback(builder, cps, kind, adapterId, settings);
     return finishLegacyResult();
   }
 
@@ -1072,7 +1087,13 @@ const SitelenRenderer = (() => {
   }
 
   function lipamankaSequenceNeedsTranslation(cps, settings = {}) {
-    return cps.some(cp => lipamankaCpNeedsTranslation(cp, settings));
+    if (cps.some(cp => lipamankaCpNeedsTranslation(cp, settings))) return true;
+    if (hasReverseLongGlyphControls(cps)) return true;
+
+    const longGlyph = findCurrentLongGlyph(cps);
+    if (!longGlyph) return false;
+    const headCp = cps[longGlyph.headIndex];
+    return headCp !== SP_CP.PI && headCp !== SP_CP.LON;
   }
 
   function linjaLipamankaAdapter({ canonicalCps, settings = {} }) {
@@ -1100,8 +1121,9 @@ const SitelenRenderer = (() => {
       const headCp = cps[longGlyph.headIndex];
       const headName = legacyWordEncoding(headCp, 'linja-lipamanka', settings);
       const supportedHead = headCp === SP_CP.PI || headCp === SP_CP.LON;
+      const hasReverseLong = hasReverseLongGlyphControls(cps);
       const cells = splitCanonicalCells(cps, longGlyph.startIndex + 1, longGlyph.endIndex).filter(cell => !cell.controlOnly);
-      if (supportedHead && headName) {
+      if (!hasReverseLong && supportedHead && headName) {
         builder.append(headName, [longGlyph.headIndex]);
         builder.append('(', [longGlyph.startIndex]);
         cells.forEach((cell, index) => {
@@ -1114,12 +1136,7 @@ const SitelenRenderer = (() => {
       warnFontRenderAdapterOnce(adapterId, 'unsupported long-glyph head rendered as ordinary glyphs');
     }
 
-    const cells = splitCanonicalCells(cps);
-    cells.forEach((cell, index) => {
-      if (cell.controlOnly) { builder.mark(cell.indices); return; }
-      if (index > 0) builder.append(' ');
-      appendLegacyCell(builder, cell, 'linja-lipamanka', adapterId, settings);
-    });
+    appendLegacyOrdinaryFallback(builder, cps, 'linja-lipamanka', adapterId, settings);
     return builder.finish();
   }
 
@@ -1311,6 +1328,8 @@ const SitelenRenderer = (() => {
       showUnknownText: __showUnknownText,
       cartoucheCommaTallyMarks: __cartoucheCommaTallyMarks,
       cartoucheTallyMode: __cartoucheTallyMode,
+      manualTallySmallFontLiftPx: __manualTallySmallFontLiftPx,
+      manualTallySmallFontMaxPx: __manualTallySmallFontMaxPx,
       unknownTextDisplay: { ...__unknownTextDisplay },
       renderSpacing: { ...__renderSpacing },
       abbreviateNumericCartouches: __abbreviateNumericCartouches,
@@ -1336,6 +1355,8 @@ const SitelenRenderer = (() => {
     __showUnknownText = !!state.showUnknownText;
     if (state.cartoucheCommaTallyMarks != null) __cartoucheCommaTallyMarks = !!state.cartoucheCommaTallyMarks;
     if (state.cartoucheTallyMode != null) __cartoucheTallyMode = normalizeCartoucheTallyMode(state.cartoucheTallyMode);
+    __manualTallySmallFontLiftPx = normalizeOptionalNonNegativeNumber(state.manualTallySmallFontLiftPx);
+    __manualTallySmallFontMaxPx = normalizePositiveNumber(state.manualTallySmallFontMaxPx, 12);
     __unknownTextDisplay = {
       style: "outline-box",
       colorMode: "auto",
@@ -1398,6 +1419,12 @@ const SitelenRenderer = (() => {
   //   "manual" = remove commas from the font run and draw tally strokes manually.
   let __cartoucheTallyMode = "ucsur";
 
+  // Some font pairs need a tiny overlap between renderer-drawn tally marks and
+  // the cartouche bottom rule at very small sizes. Null means use the built-in
+  // family fallback; an explicit numeric value is a per-font configuration.
+  let __manualTallySmallFontLiftPx = null;
+  let __manualTallySmallFontMaxPx = 12;
+
   let __unknownTextDisplay = {
     style: "outline-box",
     colorMode: "auto",
@@ -1436,6 +1463,28 @@ const SitelenRenderer = (() => {
   }
   function getCartoucheTallyMode() { return normalizeCartoucheTallyMode(__cartoucheTallyMode); }
   function setCartoucheTallyMode(v) { __cartoucheTallyMode = normalizeCartoucheTallyMode(v); }
+  function normalizeOptionalNonNegativeNumber(value) {
+    if (value == null || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(0, n) : null;
+  }
+  function normalizePositiveNumber(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  }
+  function isBuiltInSmallTallyLiftFamily(fontFamily) {
+    const family = String(fontFamily || "").trim();
+    return family === "TP-Cartouche-Font" ||
+      family === "TP-Nasin-Sitelen-Pu-Mono-Nanpa-Linja-N-Font";
+  }
+  function manualTallySmallFontLiftFor(fontFamily, fontPx) {
+    const px = Math.max(1, Number(fontPx) || 1);
+    const maxPx = normalizePositiveNumber(__manualTallySmallFontMaxPx, 12);
+    if (px > maxPx) return 0;
+    const configured = normalizeOptionalNonNegativeNumber(__manualTallySmallFontLiftPx);
+    if (configured != null) return configured;
+    return isBuiltInSmallTallyLiftFamily(fontFamily) ? 1 : 0;
+  }
   function getUnknownTextDisplay() { return { ...__unknownTextDisplay }; }
   function setUnknownTextDisplay(v = {}) {
     __unknownTextDisplay = {
@@ -1652,6 +1701,12 @@ const SitelenRenderer = (() => {
     if (parser.cartoucheTallyMode != null) setCartoucheTallyMode(parser.cartoucheTallyMode);
     else if (parser.cartoucheCommaTallyMode != null) setCartoucheTallyMode(parser.cartoucheCommaTallyMode);
     else if (parser.tallyMode != null) setCartoucheTallyMode(parser.tallyMode);
+
+    const fontSettings = (fonts.settings && typeof fonts.settings === "object") ? fonts.settings : {};
+    const configuredTallyLift = parser.manualTallySmallFontLiftPx ?? fonts.manualTallySmallFontLiftPx ?? fontSettings.manualTallySmallFontLiftPx;
+    const configuredTallyMaxPx = parser.manualTallySmallFontMaxPx ?? fonts.manualTallySmallFontMaxPx ?? fontSettings.manualTallySmallFontMaxPx;
+    if (configuredTallyLift != null) __manualTallySmallFontLiftPx = normalizeOptionalNonNegativeNumber(configuredTallyLift);
+    if (configuredTallyMaxPx != null) __manualTallySmallFontMaxPx = normalizePositiveNumber(configuredTallyMaxPx, 12);
 
     const unknownTextPaint = paint.unknownText || {};
     setUnknownTextDisplay({
@@ -2687,21 +2742,173 @@ const SitelenRenderer = (() => {
       return groups;
     }
 
-    function buildSemanticLongPiAudioGlyphLayout(canonicalCps, spans, boxWidth, boxHeight) {
-      const startIndex = canonicalCps.indexOf(0xF1997);
-      const endIndex = canonicalCps.indexOf(0xF1998, startIndex + 1);
-      if (startIndex <= 0 || endIndex < 0 || Number(canonicalCps[startIndex - 1]) !== 0xF194D) return null;
+    function currentExtendedGlyphStructure(canonicalCps) {
+      const cps = Array.from(canonicalCps || [], cp => Number(cp));
+      const reverseStartIndex = cps.indexOf(0xF199A);
+      const reverseEndIndex = reverseStartIndex >= 0
+        ? cps.indexOf(0xF199B, reverseStartIndex + 1)
+        : -1;
+      const forwardStartIndex = cps.indexOf(0xF1997);
+      const forwardEndIndex = forwardStartIndex >= 0
+        ? cps.indexOf(0xF1998, forwardStartIndex + 1)
+        : -1;
+
+      const hasReverse = reverseStartIndex >= 0 && reverseEndIndex > reverseStartIndex;
+      const hasForward = forwardStartIndex > 0 && forwardEndIndex > forwardStartIndex;
+      if (!hasReverse && !hasForward) return null;
+
+      const reverseHeadIndex = hasReverse ? reverseEndIndex + 1 : -1;
+      const forwardHeadIndex = hasForward ? forwardStartIndex - 1 : -1;
+      if (hasReverse && (reverseHeadIndex < 0 || reverseHeadIndex >= cps.length)) return null;
+      if (hasForward && (forwardHeadIndex < 0 || forwardHeadIndex >= cps.length)) return null;
+      if (hasReverse && hasForward && reverseHeadIndex !== forwardHeadIndex) return null;
+
+      const headIndex = hasForward ? forwardHeadIndex : reverseHeadIndex;
+      if (headIndex < 0 || headIndex >= cps.length) return null;
+      if (AUDIO_GEOMETRY_VISUAL_CONTROL_CPS.has(cps[headIndex])) return null;
+
+      return {
+        reverseStartIndex,
+        reverseEndIndex,
+        forwardStartIndex,
+        forwardEndIndex,
+        hasReverse,
+        hasForward,
+        headIndex,
+        headCp: cps[headIndex]
+      };
+    }
+
+    function buildSemanticExtendedGlyphAudioGlyphLayout(el, canonicalCps, spans, boxWidth, boxHeight) {
+      const structure = currentExtendedGlyphStructure(canonicalCps);
+      if (!structure) return null;
 
       const groups = audioGeometryVisibleComponentGroups(canonicalCps);
       if (groups.length < 2) return null;
+      const headGroupIndex = groups.findIndex(group => group.includes(structure.headIndex));
+      if (headGroupIndex < 0) return null;
+
+      const px = Math.max(1, Number(el?.px ?? fontPx) || fontPx);
+      const family = el?.fontFamily || FONT_FAMILY_TEXT;
+      ctx.font = `${px}px "${family}"`;
+
+      const adaptedCharsForCanonical = (subsetCps) => {
+        const adapted = adaptCanonicalCodepointsForFont(subsetCps, {
+          renderAdapterId: el?.renderAdapterId || DEFAULT_FONT_RENDER_ADAPTER_ID,
+          fontRole: el?.fontRole || 'word',
+          elementKind: el?.type || 'run',
+          fontFamily: family,
+          sourceText: el?.sourceText,
+          sourceKind: el?.sourceKind,
+          sourceSegmentIndex: el?.sourceSegmentIndex
+        });
+        return adapted.renderCps.map(cp => String.fromCodePoint(cp)).join('');
+      };
+
+      const measuredCanonicalWidth = (subsetCps) => {
+        const chars = adaptedCharsForCanonical(subsetCps);
+        if (!chars) return NaN;
+        const measured = ctx.measureText(chars);
+        const left = Number(measured.actualBoundingBoxLeft);
+        const right = Number(measured.actualBoundingBoxRight);
+        const tightWidth = Number.isFinite(left) && Number.isFinite(right)
+          ? left + right
+          : NaN;
+        const advanceWidth = Number(measured.width);
+        const width = Number.isFinite(tightWidth) && tightWidth > 0
+          ? tightWidth
+          : advanceWidth;
+        return Number.isFinite(width) && width > 0 ? width : NaN;
+      };
+
+      const payloadForGroup = (group) => Array.from(group || [])
+        .map(index => Number(canonicalCps[index]))
+        .filter(cp => Number.isFinite(cp) && !AUDIO_GEOMETRY_VISUAL_CONTROL_CPS.has(cp));
+
+      const groupPayloads = groups.map(payloadForGroup);
+      const headPayload = groupPayloads[headGroupIndex];
+      if (!headPayload.length) return null;
+
+      const headStandaloneWidth = measuredCanonicalWidth(headPayload);
+      const standaloneWeights = groupPayloads.map(payload => {
+        const measured = measuredCanonicalWidth(payload);
+        return Math.max(1, Number.isFinite(measured) ? measured : 1);
+      });
+
+      // Measure every contained glyph in a complete one-member long form. This
+      // captures each font's long-glyph cell sizing without using truncated
+      // prefixes, whose metrics can include the standalone head width or can
+      // reshape unpredictably before the closing control is present.
+      const semanticWeights = standaloneWeights.map((standaloneWeight, groupIndex) => {
+        if (groupIndex === headGroupIndex) return standaloneWeight;
+        const payload = groupPayloads[groupIndex];
+        if (!payload.length || !Number.isFinite(headStandaloneWidth)) return standaloneWeight;
+
+        let completeSingleMember = null;
+        if (groupIndex < headGroupIndex && structure.hasReverse) {
+          completeSingleMember = [0xF199A, ...payload, 0xF199B, ...headPayload];
+        } else if (groupIndex > headGroupIndex && structure.hasForward) {
+          completeSingleMember = [...headPayload, 0xF1997, ...payload, 0xF1998];
+        }
+        if (!completeSingleMember) return standaloneWeight;
+
+        const completeWidth = measuredCanonicalWidth(completeSingleMember);
+        const contribution = Number(completeWidth) - Number(headStandaloneWidth);
+        const ratio = contribution / Math.max(1, standaloneWeight);
+
+        // Unsupported fonts expose the long controls as ordinary tofu cells;
+        // that makes the apparent contribution roughly three times the member
+        // width. Reject such metrics and retain the actual member-glyph width.
+        if (!Number.isFinite(contribution) || contribution <= 0) return standaloneWeight;
+        if (!Number.isFinite(ratio) || ratio < 0.35 || ratio > 2.50) return standaloneWeight;
+        return Math.max(1, contribution);
+      });
+
+      const widths = new Array(groups.length).fill(0);
+      const piIsThinLongHead = Number(structure.headCp) === 0xF194D && structure.hasForward;
+
+      if (piIsThinLongHead) {
+        // In a shaped long pi, the initial pi is normally only a narrow
+        // horizontal head. It is spoken with the complete construction anyway,
+        // so reserve a small absolute head region and distribute the remaining
+        // width among the contained glyphs. Do not normalize standalone pi to a
+        // full ordinary-glyph share, which pushes every member too far right.
+        const measuredHead = Number.isFinite(headStandaloneWidth) ? headStandaloneWidth : px * 0.10;
+        const thinHeadWidth = Math.max(1, Math.min(
+          measuredHead,
+          px * 0.12,
+          boxWidth * 0.08,
+          boxWidth / Math.max(6, groups.length * 3)
+        ));
+        widths[headGroupIndex] = thinHeadWidth;
+
+        const remainingWidth = Math.max(1, boxWidth - thinHeadWidth);
+        const otherWeightTotal = semanticWeights.reduce(
+          (sum, weight, index) => index === headGroupIndex ? sum : sum + Math.max(1, weight),
+          0
+        ) || Math.max(1, groups.length - 1);
+        for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+          if (groupIndex === headGroupIndex) continue;
+          widths[groupIndex] = remainingWidth * Math.max(1, semanticWeights[groupIndex]) / otherWeightTotal;
+        }
+      } else {
+        const totalWeight = semanticWeights.reduce((sum, weight) => sum + Math.max(1, weight), 0) || groups.length;
+        for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+          widths[groupIndex] = boxWidth * Math.max(1, semanticWeights[groupIndex]) / totalWeight;
+        }
+      }
+
+      const boundaries = [0];
+      let accumulated = 0;
+      for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+        accumulated += widths[groupIndex];
+        boundaries.push(groupIndex === groups.length - 1 ? boxWidth : accumulated);
+      }
 
       const layout = new Array(canonicalCps.length);
-      const groupWidth = boxWidth / groups.length;
       for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
-        const left = groupIndex * groupWidth;
-        const right = groupIndex + 1 === groups.length
-          ? boxWidth
-          : (groupIndex + 1) * groupWidth;
+        const left = Math.max(0, Math.min(boxWidth, Number(boundaries[groupIndex]) || 0));
+        const right = Math.max(left + 1, Math.min(boxWidth, Number(boundaries[groupIndex + 1]) || boxWidth));
         for (const canonicalIndex of groups[groupIndex]) {
           const span = spans?.[canonicalIndex] || {};
           layout[canonicalIndex] = {
@@ -2713,7 +2920,10 @@ const SitelenRenderer = (() => {
             height: boxHeight,
             renderStart: Number.isInteger(Number(span.renderStart)) ? Number(span.renderStart) : null,
             renderEnd: Number.isInteger(Number(span.renderEnd)) ? Number(span.renderEnd) : null,
-            semanticGroupIndex: groupIndex
+            semanticGroupIndex: groupIndex,
+            semanticRole: groupIndex < headGroupIndex
+              ? 'reverse-member'
+              : (groupIndex === headGroupIndex ? 'head' : 'forward-member')
           };
         }
       }
@@ -2734,18 +2944,17 @@ const SitelenRenderer = (() => {
 
       if (!canonicalCps.length || !renderCps.length) return null;
 
-      // Long-pi shaping is contextual. Measuring truncated prefixes can make a
-      // later prefix narrower than an earlier one, especially for legacy-font
-      // aliases such as pi++telo lete and pi+__telo__lete. Give the pi head and
-      // every visible member one ordered semantic region instead. Silent long
+      // Current forward and reverse long-glyph shaping is contextual. Give
+      // every semantic member an explicit font-measured region; silent long
       // controls share the region of the member they visually construct.
-      const semanticLongPiLayout = buildSemanticLongPiAudioGlyphLayout(
+      const semanticExtendedGlyphLayout = buildSemanticExtendedGlyphAudioGlyphLayout(
+        el,
         canonicalCps,
         spans,
         boxWidth,
         boxHeight
       );
-      if (semanticLongPiLayout) return semanticLongPiLayout;
+      if (semanticExtendedGlyphLayout) return semanticExtendedGlyphLayout;
 
       // Identity/direct-UCSUR non-long runs retain their established geometry.
       // The explicit layout below is needed only when a font adapter changed
@@ -2989,6 +3198,9 @@ const SitelenRenderer = (() => {
           audioSourceCps: Array.isArray(el.audioSourceCps) ? el.audioSourceCps.slice() : null,
           audioSourceIndices: Array.isArray(el.audioSourceIndices) ? el.audioSourceIndices.slice() : null,
           audioGlyphLayout: Array.isArray(el.audioGlyphLayout) ? el.audioGlyphLayout.map(item => ({ ...item })) : null,
+          manualTallies: Array.isArray(el.manualTallies) ? el.manualTallies.slice() : null,
+          manualTallyLiftPx: Number.isFinite(Number(el.manualTallyLiftPx)) ? Number(el.manualTallyLiftPx) : 0,
+          manualTallySmallFontMaxPx: Number.isFinite(Number(el.manualTallySmallFontMaxPx)) ? Number(el.manualTallySmallFontMaxPx) : 12,
           imageAlt: el.imageAlt || null,
           isQuoted: !!el.isQuoted,
           interpretedQuote: !!el.interpretedQuote,
@@ -6617,9 +6829,10 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
 
 
-    function computeManualCartoucheTallyGroups(ctx, innerCps, manualTallies, { fontPx, runX, baselineY, cartoucheBottomY }) {
+    function computeManualCartoucheTallyGroups(ctx, innerCps, manualTallies, { fontPx, runX, baselineY, cartoucheBottomY, glyphLayout = null, manualTallyLiftPx = 0 }) {
       const tallies = Array.from(manualTallies ?? []);
       const px = Math.max(8, Number(fontPx ?? 56));
+      const layout = Array.isArray(glyphLayout) ? glyphLayout : [];
       const startChar = String.fromCodePoint(CARTOUCHE_START_CP);
       let penX = Number(runX || 0) + (ctx.measureText(startChar).width || 0);
 
@@ -6633,7 +6846,10 @@ function findNanpaLinjanTpPhraseSequences(text) {
       const detectedBottomY = Number.isFinite(Number(cartoucheBottomY)) ? Number(cartoucheBottomY) : null;
       const fallbackBottomY = Number(baselineY || 0) + px * 0.20;
       const bottomRuleY = detectedBottomY != null ? detectedBottomY : fallbackBottomY;
-      const yTop = bottomRuleY;
+      const liftPx = Math.max(0, Number(manualTallyLiftPx) || 0);
+      // A small positive lift overlaps the first tally pixel with the bottom rule,
+      // avoiding a one-pixel anti-aliasing gap in configured tiny font renders.
+      const yTop = bottomRuleY - liftPx;
       const yBottom = yTop + h;
 
       const groups = [];
@@ -6643,7 +6859,11 @@ function findNanpaLinjanTpPhraseSequences(text) {
         const advance = Math.max(1, ctx.measureText(ch).width || px * 0.7);
 
         if (count > 0) {
-          const centerX = penX + advance / 2;
+          const layoutItem = layout[i];
+          const layoutX = Number(layoutItem?.x);
+          const layoutWidth = Number(layoutItem?.width);
+          const hasMeasuredLayout = Number.isFinite(layoutX) && Number.isFinite(layoutWidth) && layoutWidth > 0;
+          const centerX = hasMeasuredLayout ? layoutX + layoutWidth / 2 : penX + advance / 2;
           const totalW = (count <= 1) ? strokeW : (count * strokeW + (count - 1) * gap);
           const firstX = centerX - totalW / 2 + strokeW / 2;
           const strokes = [];
@@ -6669,7 +6889,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       return { groups, strokeW, gap, height: h, belowGap, bottomY: yBottom };
     }
 
-    function drawManualCartoucheTallies(ctx, innerCps, manualTallies, { fontPx, fontFamily, runX, baselineY, cartoucheW, cartoucheH, padPx, haloEnabled, haloCss, fgCss, cartoucheRunWidth = null , cartoucheBottomY = null}) {
+    function drawManualCartoucheTallies(ctx, innerCps, manualTallies, { fontPx, fontFamily, runX, baselineY, cartoucheW, cartoucheH, padPx, haloEnabled, haloCss, fgCss, cartoucheRunWidth = null, cartoucheBottomY = null, glyphLayout = null, manualTallyLiftPx = 0 }) {
       const tallies = Array.from(manualTallies ?? []);
       if (!tallies.some(n => Number(n) > 0)) return;
 
@@ -6701,7 +6921,9 @@ function findNanpaLinjanTpPhraseSequences(text) {
         fontPx: px,
         runX,
         baselineY,
-        cartoucheBottomY: detectedBottomY
+        cartoucheBottomY: detectedBottomY,
+        glyphLayout,
+        manualTallyLiftPx
       });
       if (!groups.length) { ctx.restore(); return; }
 
@@ -6809,7 +7031,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       };
     }
 
-    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies = null, renderFullCps = null, canonicalToRenderSpans = null }) {
+    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies = null, renderFullCps = null, canonicalToRenderSpans = null, manualTallyLiftPx = 0 }) {
       if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
       if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
 
@@ -6963,7 +7185,9 @@ function findNanpaLinjanTpPhraseSequences(text) {
           haloCss,
           fgCss,
           cartoucheRunWidth: Math.max(1, Number(m.width || 0)),
-          cartoucheBottomY: cleanCartoucheBottomY
+          cartoucheBottomY: cleanCartoucheBottomY,
+          glyphLayout: audioGlyphLayout,
+          manualTallyLiftPx
         });
       }
 
@@ -7395,6 +7619,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       const haloEnabled = getHaloEnabled();
       const haloCss = getHaloHex();
+      const manualTallyLiftPx = manualTallySmallFontLiftFor(fontFamily || FONT_FAMILY_TEXT, fontPx);
 
       const r = renderFontCartoucheToCanvas(cart, canonicalRenderInnerCps, {
         fontPx,
@@ -7405,7 +7630,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         haloCss,
         manualTallies: normalizedManualTallies,
         renderFullCps: adapted.renderCps,
-        canonicalToRenderSpans: adapted.canonicalToRenderSpans
+        canonicalToRenderSpans: adapted.canonicalToRenderSpans,
+        manualTallyLiftPx
       });
       if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
@@ -7479,6 +7705,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         isLiteralCartouche: !!isLiteralCartouche,
         isNumericCartouche: !!isNumericCartouche,
         manualTallies: Array.isArray(normalizedManualTallies) ? normalizedManualTallies.slice() : null,
+        manualTallyLiftPx,
+        manualTallySmallFontMaxPx: __manualTallySmallFontMaxPx,
         audioSourceCps: normalizedAudioSourceCps,
         audioSourceIndices: normalizedAudioSourceIndices,
         audioGlyphLayout: normalizedAudioGlyphLayout,
@@ -8951,6 +9179,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       const fam = cartEl?.fontFamily || FONT_FAMILY_CARTOUCHE;
       const fgCss = getFgHex();
+      const baseManualTallyLiftPx = Number.isFinite(Number(cartEl?.manualTallyLiftPx))
+        ? Math.max(0, Number(cartEl.manualTallyLiftPx))
+        : manualTallySmallFontLiftFor(fam, basePx);
 
       const r = renderFontCartoucheToCanvas(
         c,
@@ -8965,6 +9196,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           manualTallies: Array.isArray(cartEl?.manualTallies) ? cartEl.manualTallies : null,
           renderFullCps: Array.isArray(cartEl?.renderFullCps) ? cartEl.renderFullCps : null,
           canonicalToRenderSpans: Array.isArray(cartEl?.canonicalToRenderSpans) ? cartEl.canonicalToRenderSpans : null,
+          manualTallyLiftPx: baseManualTallyLiftPx * scale,
         }
       );
 

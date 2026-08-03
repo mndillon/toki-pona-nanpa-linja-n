@@ -541,6 +541,69 @@ function isManualTallyModeForRun(run, exporter = null) {
   return getCartoucheTallyModeForRun(run, exporter) === "manual";
 }
 
+
+function isBuiltInSmallTallyLiftFamilyForVector(fontFamily) {
+  const family = String(fontFamily || "").trim();
+  return family === "TP-Cartouche-Font" ||
+    family === "TP-Nasin-Sitelen-Pu-Mono-Nanpa-Linja-N-Font";
+}
+
+function getManualTallySmallFontSettingForRun(run, exporter, key) {
+  const resolvedRunValue = key === "manualTallySmallFontLiftPx"
+    ? (run?.manualTallyLiftPx ?? run?._element?.manualTallyLiftPx ?? run?.element?.manualTallyLiftPx)
+    : null;
+  const candidates = [
+    resolvedRunValue,
+    run?.[key],
+    run?._element?.[key],
+    run?.element?.[key],
+    exporter?.[key],
+    exporter?.options?.[key]
+  ];
+
+  const fc = exporter?.fontController;
+  try {
+    const preset = fc?.getActivePreset?.();
+    candidates.push(
+      preset?.[key],
+      preset?.settings?.[key],
+      preset?.__pairRecord?.[key],
+      preset?.__pairRecord?.settings?.[key]
+    );
+  } catch {}
+
+  for (const name of ["getActivePresetRecord", "getActiveRecord", "getSelectedPairRecord", "getSelectedRecord", "getActivePairRecord", "getCurrentRecord", "getCurrentPreset"]) {
+    try {
+      const obj = (typeof fc?.[name] === "function") ? fc[name]() : null;
+      candidates.push(
+        obj?.[key],
+        obj?.settings?.[key],
+        obj?.pairRecord?.[key],
+        obj?.pairRecord?.settings?.[key]
+      );
+    } catch {}
+  }
+
+  for (const value of candidates) {
+    if (value == null || value === "") continue;
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+function getManualTallySmallFontLiftPxForRun(run, exporter = null) {
+  const fontPx = getRunFontPx(run, 56);
+  const configuredMaxPx = getManualTallySmallFontSettingForRun(run, exporter, "manualTallySmallFontMaxPx");
+  const maxPx = Number.isFinite(configuredMaxPx) && configuredMaxPx > 0 ? configuredMaxPx : 12;
+  if (fontPx > maxPx) return 0;
+
+  const configuredLiftPx = getManualTallySmallFontSettingForRun(run, exporter, "manualTallySmallFontLiftPx");
+  if (Number.isFinite(configuredLiftPx)) return Math.max(0, configuredLiftPx);
+
+  return isBuiltInSmallTallyLiftFamilyForVector(run?.fontFamily || run?._element?.fontFamily) ? 1 : 0;
+}
+
 function normalizeLiteralCartoucheRuleClipScale(value, fallback = DEFAULT_LITERAL_CARTOUCHE_RULE_CLIP_SCALE) {
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return fallback;
@@ -1512,7 +1575,33 @@ function estimateInnerGlyphCenters(run, innerCps, manualTallies, vectorResult = 
   const fontPx = getRunFontPx(run, 56);
   const runWidth = Math.max(Number(run?.widthPx || 0), fontPx * (count + 2));
 
-  // Preferred path: use visible outline path centers. This is more reliable than
+  // Preferred path: reuse the renderer's canonical-glyph layout. For legacy
+  // adapters this layout is measured from the actual shaped cartouche input
+  // (for example [_mani_toki]), so each tally stays attached to its owner cell.
+  const rendererLayouts = [
+    run?.audioGlyphLayout,
+    run?._element?.audioGlyphLayout,
+    run?.element?.audioGlyphLayout
+  ];
+  const rendererLayout = rendererLayouts.find(value => Array.isArray(value) && value.length >= count) || null;
+  if (rendererLayout) {
+    const rendererCenters = [];
+    for (let i = 0; i < count; i++) {
+      const item = rendererLayout[i];
+      const localX = Number(item?.x);
+      const width = Number(item?.width);
+      if (!Number.isFinite(localX) || !Number.isFinite(width) || width <= 0) {
+        rendererCenters.length = 0;
+        break;
+      }
+      rendererCenters.push(runX + localX + width / 2);
+    }
+    if (rendererCenters.length === count) {
+      return { centers: rendererCenters, baseline, fontPx, runWidth, source: "renderer-glyph-layout" };
+    }
+  }
+
+  // Secondary path: use visible outline path centers. This is more reliable than
   // advance data for cartouches because GSUB/extension glyphs can distort advances.
   const resultPaths = Array.isArray(vectorResult?.paths) ? vectorResult.paths : [];
   const visibleCenters = [];
@@ -1545,7 +1634,7 @@ function estimateInnerGlyphCenters(run, innerCps, manualTallies, vectorResult = 
     return { centers: centersFromPaths, baseline, fontPx, runWidth, source: "outline-bounds" };
   }
 
-  // Secondary path: use shaped glyph positions if present.
+  // Tertiary path: use shaped glyph positions if present.
   const glyphs = Array.isArray(vectorResult?.glyphs) ? vectorResult.glyphs : [];
   const shapedCenters = [];
   if (glyphs.length >= count + 2) {
@@ -1571,7 +1660,7 @@ function estimateInnerGlyphCenters(run, innerCps, manualTallies, vectorResult = 
   return { centers, baseline, fontPx, runWidth, source: "manual-slot-width" };
 }
 
-function buildManualTallyVectorPathsForRun(run, rawInnerCps, manualTallies, { fill = "#111111", halo = null, vectorResult = null } = {}) {
+function buildManualTallyVectorPathsForRun(run, rawInnerCps, manualTallies, { fill = "#111111", halo = null, vectorResult = null, exporter = null } = {}) {
   const tallies = Array.isArray(manualTallies)
     ? manualTallies.map(n => Math.max(0, Math.min(8, Math.round(Number(n) || 0))))
     : [];
@@ -1593,7 +1682,8 @@ function buildManualTallyVectorPathsForRun(run, rawInnerCps, manualTallies, { fi
   const tallyTopMinPx = isTinyFontPx ? Math.max(1, fontPx * 0.08) : 3;
 
   const tallyH = Math.max(tallyHMinPx, fontPx * 0.18);
-  const topY = baseline + Math.max(tallyTopMinPx, fontPx * 0.12);
+  const manualTallyLiftPx = getManualTallySmallFontLiftPxForRun(run, exporter);
+  const topY = baseline + Math.max(tallyTopMinPx, fontPx * 0.12) - manualTallyLiftPx;
 
   const radius = Math.max(0.75, Math.min(20.0, fontPx * 0.014));
   const out = [];
@@ -3127,7 +3217,7 @@ export class SitelenVectorExporter {
           run,
           payload.rawInnerCpsForManualTallies || rawPayload.cps || [],
           manualTallies,
-          { fill: request.fill, halo: request.halo, vectorResult: result }
+          { fill: request.fill, halo: request.halo, vectorResult: result, exporter: this }
         );
 
         if (syntheticTallyPaths.length) {
