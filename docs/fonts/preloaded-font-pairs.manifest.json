@@ -136,7 +136,7 @@
     {
       "fontKey": "linjaPona",
       "label": "linja pona predefined",
-      "rev": "2026-08-02-002",
+      "rev": "2026-08-02-003",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-pona-legacy-v1",
       "renderAdapterSettings": {
@@ -158,7 +158,9 @@
       "metadataSuffix": "-nanpa-linja-n",
       "settings": {
         "cartoucheCommaTallyMarks": true,
-        "cartoucheTallyMode": "manual"
+        "cartoucheTallyMode": "manual",
+        "manualTallySmallFontLiftPx": 1,
+        "manualTallySmallFontMaxPx": 144
       },
       "support": {
         "adapterVersion": 1,
@@ -273,7 +275,7 @@
     {
       "fontKey": "linjaLipamanka",
       "label": "linja lipamanka predefined",
-      "rev": "2026-08-03-003",
+      "rev": "2026-08-03-006",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-lipamanka-v1",
       "renderAdapterSettings": {
