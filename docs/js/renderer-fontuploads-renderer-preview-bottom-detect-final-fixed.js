@@ -939,6 +939,31 @@ const SitelenRenderer = (() => {
     return cps.includes(SP_CP.REVERSE_LONG_START) || cps.includes(SP_CP.REVERSE_LONG_END);
   }
 
+  function hasCanonicalLongGlyphControls(cps) {
+    const source = Array.from(cps || []).map(Number);
+    return source.some(cp =>
+      cp === SP_CP.DEPRECATED_LONG_PI_START ||
+      cp === SP_CP.DEPRECATED_LONG_PI_EXTENSION ||
+      cp === SP_CP.LONG_START ||
+      cp === SP_CP.LONG_END ||
+      cp === SP_CP.REVERSE_LONG_START ||
+      cp === SP_CP.REVERSE_LONG_END ||
+      cp === SP_CP.DEPRECATED_LONG_EXTENSION
+    );
+  }
+
+  function normalizeLongGlyphPresentation(value) {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    if (normalized === 'connected' || normalized === 'decomposed') return normalized;
+    return null;
+  }
+
+  function attachLongGlyphPresentation(result, presentation) {
+    const normalized = normalizeLongGlyphPresentation(presentation);
+    if (normalized && result && typeof result === 'object') result.longGlyphPresentation = normalized;
+    return result;
+  }
+
   function appendLegacyOrdinaryFallback(builder, cps, kind, adapterId, settings = {}) {
     let emittedCellCount = 0;
     for (const cell of splitCanonicalCells(cps)) {
@@ -959,8 +984,8 @@ const SitelenRenderer = (() => {
     const cps = Array.from(canonicalCps || []);
     const builder = createMappedRenderBuilder(cps.length);
 
-    function finishLegacyResult() {
-      const result = builder.finish();
+    function finishLegacyResult(longGlyphPresentation = null) {
+      const result = attachLongGlyphPresentation(builder.finish(), longGlyphPresentation);
       if (String(settings.cornerBracketMode || '').trim().toLowerCase() !== 'synthetic') return result;
       const syntheticCornerBrackets = [];
       for (let canonicalIndex = 0; canonicalIndex < cps.length; canonicalIndex++) {
@@ -1022,12 +1047,12 @@ const SitelenRenderer = (() => {
             else builder.append(text, [i]);
           }
         }
-        return finishLegacyResult();
+        return finishLegacyResult('connected');
       }
 
       warnFontRenderAdapterOnce(adapterId, 'unsupported, reverse, or overlong long glyph rendered as ordinary cells');
       appendLegacyOrdinaryFallback(builder, cps, kind, adapterId, settings);
-      return finishLegacyResult();
+      return finishLegacyResult('decomposed');
     }
 
     // Basic normalization of the deprecated combining long-pi syntax.
@@ -1042,7 +1067,7 @@ const SitelenRenderer = (() => {
         else builder.append('__', [cell.indices[0]]);
         appendLegacyCell(builder, cell, kind, adapterId, settings);
       });
-      return finishLegacyResult();
+      return finishLegacyResult('connected');
     }
 
     appendLegacyOrdinaryFallback(builder, cps, kind, adapterId, settings);
@@ -1076,7 +1101,10 @@ const SitelenRenderer = (() => {
       if (mapped == null) appendUnsupported(builder, i, cp, adapterId, settings, 'font maps this code point to a placeholder or lacks it');
       else builder.appendCodepoints([mapped], [i]);
     }
-    return builder.finish();
+    return attachLongGlyphPresentation(
+      builder.finish(),
+      hasCanonicalLongGlyphControls(cps) ? 'decomposed' : null
+    );
   }
 
   function lipamankaCpNeedsTranslation(cp, settings = {}) {
@@ -1131,13 +1159,16 @@ const SitelenRenderer = (() => {
           appendLegacyCell(builder, cell, 'linja-lipamanka', adapterId, settings);
         });
         builder.append(')', [longGlyph.endIndex]);
-        return builder.finish();
+        return attachLongGlyphPresentation(builder.finish(), 'connected');
       }
       warnFontRenderAdapterOnce(adapterId, 'unsupported long-glyph head rendered as ordinary glyphs');
     }
 
     appendLegacyOrdinaryFallback(builder, cps, 'linja-lipamanka', adapterId, settings);
-    return builder.finish();
+    return attachLongGlyphPresentation(
+      builder.finish(),
+      hasCanonicalLongGlyphControls(cps) ? 'decomposed' : null
+    );
   }
 
   __fontRenderAdapters.set('linja-pona-legacy-v1', args => adaptLegacyLinja(args.canonicalCps, 'linja-pona', args));
@@ -1197,11 +1228,14 @@ const SitelenRenderer = (() => {
         canonical.length,
         renderCps.length
       );
+      const longGlyphPresentation = normalizeLongGlyphPresentation(result.longGlyphPresentation)
+        || (hasCanonicalLongGlyphControls(canonical) ? 'connected' : null);
       return {
         canonicalCps: canonical,
         renderCps,
         canonicalToRenderSpans: spans,
         syntheticCornerBrackets,
+        longGlyphPresentation,
         renderAdapterId: effectiveId,
         requestedRenderAdapterId: requestedId,
         usedFallback: effectiveId !== requestedId
@@ -1213,6 +1247,7 @@ const SitelenRenderer = (() => {
         renderCps: canonical.slice(),
         canonicalToRenderSpans: identityCanonicalToRenderSpans(canonical),
         syntheticCornerBrackets: [],
+        longGlyphPresentation: hasCanonicalLongGlyphControls(canonical) ? 'connected' : null,
         renderAdapterId: DEFAULT_FONT_RENDER_ADAPTER_ID,
         requestedRenderAdapterId: requestedId,
         usedFallback: true
@@ -1471,6 +1506,24 @@ const SitelenRenderer = (() => {
   function normalizePositiveNumber(value, fallback) {
     const n = Number(value);
     return Number.isFinite(n) && n > 0 ? n : fallback;
+  }
+  function resolveLongPiHeadWidthPx(fontPx, boxWidth, measuredHead, groupCount, configuredScale = null) {
+    const px = Math.max(1, Number(fontPx) || 1);
+    const width = Math.max(1, Number(boxWidth) || 1);
+    const measured = Number(measuredHead);
+    const groups = Math.max(1, Number(groupCount) || 1);
+    const scale = Number(configuredScale);
+
+    if (Number.isFinite(scale) && scale > 0) {
+      return Math.max(1, Math.min(width, px * scale));
+    }
+
+    return Math.max(1, Math.min(
+      Number.isFinite(measured) ? measured : px * 0.10,
+      px * 0.12,
+      width * 0.08,
+      width / Math.max(6, groups * 3)
+    ));
   }
   function isBuiltInSmallTallyLiftFamily(fontFamily) {
     const family = String(fontFamily || "").trim();
@@ -2626,6 +2679,14 @@ const SitelenRenderer = (() => {
 
   function buildMeasuredRenderPlan(linesElements, config = {}) {
     const fontPx = Math.max(8, Number(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56) ?? 56));
+    const fontSettings = (config?.fonts?.settings && typeof config.fonts.settings === 'object')
+      ? config.fonts.settings
+      : {};
+    const rawLongPiHeadWidthScale = config?.fonts?.longPiHeadWidthScale ?? fontSettings.longPiHeadWidthScale;
+    const parsedLongPiHeadWidthScale = Number(rawLongPiHeadWidthScale);
+    const configuredLongPiHeadWidthScale = Number.isFinite(parsedLongPiHeadWidthScale) && parsedLongPiHeadWidthScale > 0
+      ? parsedLongPiHeadWidthScale
+      : null;
     const pad = Number.isFinite(Number(config?.layout?.paddingPx)) ? Math.max(0, Number(config.layout.paddingPx)) : 18;
     const lineGap = resolveLineGapPxForLayout(config?.layout || {}, fontPx);
     const haloOn = !!config?.paint?.halo?.enabled;
@@ -2780,6 +2841,8 @@ const SitelenRenderer = (() => {
     }
 
     function buildSemanticExtendedGlyphAudioGlyphLayout(el, canonicalCps, spans, boxWidth, boxHeight) {
+      if (normalizeLongGlyphPresentation(el?.longGlyphPresentation) === 'decomposed') return null;
+
       const structure = currentExtendedGlyphStructure(canonicalCps);
       if (!structure) return null;
 
@@ -2874,12 +2937,13 @@ const SitelenRenderer = (() => {
         // width among the contained glyphs. Do not normalize standalone pi to a
         // full ordinary-glyph share, which pushes every member too far right.
         const measuredHead = Number.isFinite(headStandaloneWidth) ? headStandaloneWidth : px * 0.10;
-        const thinHeadWidth = Math.max(1, Math.min(
+        const thinHeadWidth = resolveLongPiHeadWidthPx(
+          px,
+          boxWidth,
           measuredHead,
-          px * 0.12,
-          boxWidth * 0.08,
-          boxWidth / Math.max(6, groups.length * 3)
-        ));
+          groups.length,
+          configuredLongPiHeadWidthScale
+        );
         widths[headGroupIndex] = thinHeadWidth;
 
         const remainingWidth = Math.max(1, boxWidth - thinHeadWidth);
@@ -3195,6 +3259,7 @@ const SitelenRenderer = (() => {
           } : {}),
           renderAdapterId: el.renderAdapterId || DEFAULT_FONT_RENDER_ADAPTER_ID,
           requestedRenderAdapterId: el.requestedRenderAdapterId || el.renderAdapterId || DEFAULT_FONT_RENDER_ADAPTER_ID,
+          longGlyphPresentation: normalizeLongGlyphPresentation(el.longGlyphPresentation),
           audioSourceCps: Array.isArray(el.audioSourceCps) ? el.audioSourceCps.slice() : null,
           audioSourceIndices: Array.isArray(el.audioSourceIndices) ? el.audioSourceIndices.slice() : null,
           audioGlyphLayout: Array.isArray(el.audioGlyphLayout) ? el.audioGlyphLayout.map(item => ({ ...item })) : null,
@@ -7693,6 +7758,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         } : {}),
         renderAdapterId: adapted.renderAdapterId,
         requestedRenderAdapterId: adapted.requestedRenderAdapterId,
+        longGlyphPresentation: adapted.longGlyphPresentation,
         canvas: finalCanvas,
         w: finalW,
         h: finalH,
@@ -7743,6 +7809,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         } : {}),
         renderAdapterId: adapted.renderAdapterId,
         requestedRenderAdapterId: adapted.requestedRenderAdapterId,
+        longGlyphPresentation: adapted.longGlyphPresentation,
         px: fontPx,
         fontFamily: fontFamily || FONT_FAMILY_TEXT,
         fontRole,
@@ -7775,6 +7842,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         } : {}),
         renderAdapterId: adapted.renderAdapterId,
         requestedRenderAdapterId: adapted.requestedRenderAdapterId,
+        longGlyphPresentation: adapted.longGlyphPresentation,
         px: fontPx,
         fontFamily: fontFamily || FONT_FAMILY_TEXT,
         fontRole,

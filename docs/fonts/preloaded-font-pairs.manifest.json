@@ -20,7 +20,7 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-08-03-066",
+      "rev": "2026-08-03-067",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
@@ -38,7 +38,8 @@
         "literalCartoucheRuleClipStrategy": "leftCap",
         "literalCartoucheLeftCapClipRatio": 0.9,
         "manualTallySmallFontLiftPx": 1,
-        "manualTallySmallFontMaxPx": 12
+        "manualTallySmallFontMaxPx": 12,
+        "longPiHeadWidthScale": 0.41
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
       "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
@@ -49,7 +50,7 @@
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-07-27-013",
+      "rev": "2026-08-03-014",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
@@ -78,7 +79,8 @@
               "literalCartoucheLeftCapClipRatio": 0.8
             }
           }
-        ]
+        ],
+        "longPiHeadWidthScale": 0.275
       },
       "literalCartoucheFamily": "SSK-Juniko",
       "licenseUrl": "./fonts/OFL-1.1.txt"
@@ -86,7 +88,7 @@
     {
       "fontKey": "fairfaxHd",
       "label": "FairfaxHD predefined",
-      "rev": "2026-07-24-011",
+      "rev": "2026-08-03-012",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "fairfaxHd",
       "companionFamily": "fairfaxHd-Cartouche",
@@ -101,7 +103,8 @@
         "cartoucheCommaTallyMarks": true,
         "cartoucheTallyMode": "ucsur",
         "literalCartoucheRuleClipScale": 0.9,
-        "literalCartoucheRuleClipStrategy": "compound"
+        "literalCartoucheRuleClipStrategy": "compound",
+        "longPiHeadWidthScale": 0.465
       },
       "literalCartoucheFamily": "fairfaxHd",
       "licenseUrl": "./fonts/OFL-1.1.txt"
@@ -109,7 +112,7 @@
     {
       "fontKey": "fairfaxPonaHd",
       "label": "FairfaxPonaHD predefined",
-      "rev": "2026-07-27-012",
+      "rev": "2026-08-03-013",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "fairfaxPonaHd",
       "companionFamily": "fairfaxPonaHd-Cartouche",
@@ -124,7 +127,8 @@
         "cartoucheCommaTallyMarks": true,
         "cartoucheTallyMode": "ucsur",
         "literalCartoucheRuleClipScale": 0.9,
-        "literalCartoucheRuleClipStrategy": "compound"
+        "literalCartoucheRuleClipStrategy": "compound",
+        "longPiHeadWidthScale": 0.465
       },
       "literalCartoucheFamily": "fairfaxPonaHd",
       "licenseUrl": "./fonts/OFL-1.1.txt"
@@ -269,7 +273,7 @@
     {
       "fontKey": "linjaLipamanka",
       "label": "linja lipamanka predefined",
-      "rev": "2026-08-02-002",
+      "rev": "2026-08-03-003",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-lipamanka-v1",
       "renderAdapterSettings": {
@@ -291,7 +295,8 @@
       "metadataSuffix": "-nanpa-linja-n",
       "settings": {
         "cartoucheCommaTallyMarks": true,
-        "cartoucheTallyMode": "manual"
+        "cartoucheTallyMode": "manual",
+        "longPiHeadWidthScale": 0.514
       },
       "support": {
         "adapterVersion": 1,
@@ -318,7 +323,8 @@
       "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
       "literalCartoucheFormat": "opentype",
       "literalCartoucheSample": "󱦐A󱦑",
-      "licenseUrl": "./fonts/OFL-1.1.txt"
+      "licenseUrl": "./fonts/OFL-1.1.txt",
+      "settingsRev": "2026-08-03-003"
     }
   ]
 }

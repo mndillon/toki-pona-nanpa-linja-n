@@ -1,5 +1,5 @@
 import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=218";
-import { buildSitelenAudioPlan } from "./sitelen-audio-plan.js?v=26";
+import { buildSitelenAudioPlan } from "./sitelen-audio-plan.js?v=27";
 import { createTokiPonaVoice } from "./toki-pona-voice-api.js?v=35";
 import { REFERENCE_AUDIO_MANIFEST } from "./audio-manifest.js";
 import {

@@ -1609,6 +1609,15 @@ function currentExtendedGlyphAudioStructure(cps) {
   };
 }
 
+function longGlyphPresentationForAudioRun(run) {
+  const value = String(
+    run?.longGlyphPresentation ??
+    run?._element?.longGlyphPresentation ??
+    ''
+  ).trim().toLowerCase();
+  return value === 'decomposed' ? 'decomposed' : 'connected';
+}
+
 function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
   const words = spokenWordTokens(speech);
   if (!words.length) return [];
@@ -1619,6 +1628,7 @@ function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
   const currentGroups = currentStructure ? visibleComponentGroups(cps) : null;
   const headGroupIndex = currentGroups?.findIndex(group => group.includes(currentStructure.headIndex)) ?? -1;
   const currentPiHead = headGroupIndex >= 0 && Number(currentStructure?.headCp) === 0xF194D;
+  const longGlyphPresentation = longGlyphPresentationForAudioRun(run);
 
   for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
     let componentIndices = [];
@@ -1637,9 +1647,12 @@ function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
           );
 
       if (currentPiHead && groupIndex === headGroupIndex) {
-        // Speaking pi identifies the complete long-pi construction. Its shaped
-        // head is thin, but the pi audio still highlights the complete run.
-        componentIndices = Array.from({ length: cps.length }, (_unused, index) => index);
+        // A connected long pi has a thin shaped head, so speaking pi identifies
+        // the complete construction. A decomposed font fallback renders pi as
+        // an ordinary full-width glyph and must highlight only that head cell.
+        componentIndices = longGlyphPresentation === 'decomposed'
+          ? Array.from(currentGroups[headGroupIndex] || [])
+          : Array.from({ length: cps.length }, (_unused, index) => index);
         semanticRole = 'long-pi-head';
       } else {
         componentIndices = Array.from(currentGroups[groupIndex] || []);
