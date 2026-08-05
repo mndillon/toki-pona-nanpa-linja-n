@@ -5096,7 +5096,10 @@ function wireHaloControls() {
     }
 
     function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional", isTime = false } = {}) {
-      const canonicalCaps = canonicalizeScientificNanpaCaps(caps);
+      let canonicalCaps = canonicalizeScientificNanpaCaps(caps);
+      if (isTime && nanpaCapsIsValidTime(canonicalCaps)) {
+        canonicalCaps = normalizeTimeNegativeZeroCaps(canonicalCaps);
+      }
       const tokens = tokenizeNanpaCaps(canonicalCaps);
       if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
@@ -5435,21 +5438,121 @@ function wireHaloControls() {
     }
 
     /* ============================================================
-      Time recognizer (HH:MM[:SS]) + caps encoder
+      Time recognizer + caps encoder
+
+      Accepted text forms:
+      - H:MM / HH:MM
+      - H:MM:SS[.f|.ff|.fff] / HH:MM:SS[.f|.ff|.fff]
+      - D:HH:MM
+      - D:HH:MM:SS[.f|.ff|.fff]
+
+      D is any signed or unsigned integer. A leading minus applies to
+      the complete duration and is retained for -0 days whenever a later
+      component is non-zero. Complete negative zero is normalized to zero.
       ============================================================ */
     function tryParseTimeParts(raw) {
       const s = String(raw ?? "").trim();
-      const m = s.match(/^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/);
-      if (!m) return null;
+      if (!s || /\s/.test(s)) return null;
 
-      const hhStr = m[1];
-      const mmStr = m[2];
-      const ssStr = (m[3] != null) ? m[3] : null;
+      const fields = s.split(":");
+      if (fields.length < 2 || fields.length > 4) return null;
 
-      const hh = parseInt(hhStr, 10);
-      if (!Number.isFinite(hh) || hh < 0 || hh > 59) return null;
+      const firstMatch = fields[0].match(/^([+-]?)(\d+)$/);
+      if (!firstMatch) return null;
 
-      return { hhStr, mmStr, ssStr };
+      const sign = firstMatch[1];
+      const firstDigits = firstMatch[2];
+
+      function isClockPair(value) {
+        return /^[0-5]\d$/.test(String(value ?? ""));
+      }
+
+      function parseSeconds(value) {
+        const m = String(value ?? "").match(/^([0-5]\d)(?:\.(\d{1,3}))?$/);
+        if (!m) return null;
+        return { ssStr: m[1], fractionStr: m[2] ?? null };
+      }
+
+      function hasAnyNonZeroDigit(...values) {
+        return /[1-9]/.test(values.filter(v => v != null).join(""));
+      }
+
+      // Existing time form: H:MM or HH:MM.
+      if (fields.length === 2) {
+        if (sign) return null;
+        if (!/^\d{1,2}$/.test(firstDigits) || !isClockPair(fields[1])) return null;
+        const hh = parseInt(firstDigits, 10);
+        if (!Number.isFinite(hh) || hh < 0 || hh > 59) return null;
+        return {
+          hasDays: false,
+          negative: false,
+          dayStr: null,
+          hhStr: firstDigits,
+          mmStr: fields[1],
+          ssStr: null,
+          fractionStr: null,
+        };
+      }
+
+      // A fractional final component in a three-field value is unambiguously
+      // the existing H:MM:SS.f form. Signed values require an explicit day
+      // field and therefore use four fields when fractional seconds are present.
+      if (fields.length === 3) {
+        const finalSeconds = parseSeconds(fields[2]);
+        if (finalSeconds?.fractionStr != null) {
+          if (sign) return null;
+          if (!/^\d{1,2}$/.test(firstDigits) || !isClockPair(fields[1])) return null;
+          const hh = parseInt(firstDigits, 10);
+          if (!Number.isFinite(hh) || hh < 0 || hh > 59) return null;
+          return {
+            hasDays: false,
+            negative: false,
+            dayStr: null,
+            hhStr: firstDigits,
+            mmStr: fields[1],
+            ssStr: finalSeconds.ssStr,
+            fractionStr: finalSeconds.fractionStr,
+          };
+        }
+
+        // Expanded form: D:HH:MM. For an unsigned one- or two-digit first
+        // component this overlaps the legacy H:MM:SS spelling, but the encoded
+        // and rendered colon-separated cartouche is identical.
+        if (!isClockPair(fields[1]) || !isClockPair(fields[2])) return null;
+        const negative = sign === "-" && hasAnyNonZeroDigit(firstDigits, fields[1], fields[2]);
+        return {
+          hasDays: true,
+          negative,
+          dayStr: firstDigits,
+          hhStr: fields[1],
+          mmStr: fields[2],
+          ssStr: null,
+          fractionStr: null,
+        };
+      }
+
+      // Expanded form: D:HH:MM:SS[.f|.ff|.fff].
+      if (!isClockPair(fields[1]) || !isClockPair(fields[2])) return null;
+      const seconds = parseSeconds(fields[3]);
+      if (!seconds) return null;
+
+      const negative = sign === "-" && hasAnyNonZeroDigit(
+        firstDigits,
+        fields[1],
+        fields[2],
+        seconds.ssStr,
+        seconds.fractionStr
+      );
+
+      return {
+        hasDays: true,
+        negative,
+        dayStr: firstDigits,
+        hhStr: fields[1],
+        mmStr: fields[2],
+        ssStr: seconds.ssStr,
+        fractionStr: seconds.fractionStr,
+      };
     }
 
     function encodeDigitsOnly(digits) {
@@ -5469,14 +5572,14 @@ function wireHaloControls() {
     // Date support (YYYY{sep}MM{sep}DD)
     // ============================
     // Valid formats:
-    // - YYYY-MM-DD, YYYY/MM/DD, YYYY:MM:DD
+    // - YYYY-MM-DD, YYYY/MM/DD
     // Constraints:
     // - YYYY exactly 4 digits (0000-9999 allowed)
     // - MM 01-12
     // - DD 01-31
     function tryParseDateParts(raw) {
       const s = normalizeDateTimeInput(raw);
-      const m = s.match(/^(\d{4})([:\/-])(\d{2})\2(\d{2})$/);
+      const m = s.match(/^(\d{4})([\/-])(\d{2})\2(\d{2})$/);
       if (!m) return null;
 
       const yyyyStr = m[1];
@@ -5508,15 +5611,22 @@ function wireHaloControls() {
       return caps;
     }
 
-    // Returns nanpa-caps for a valid time, else null.
-    // We encode delimiters as NEKE so that:
-    //  - Proper-name / caps pipeline stays consistent ("...Eke...")
-    //  - We can later rewrite KE -> kolon when rendering time cartouches
+    // Returns nanpa-caps for a valid time, else null. Component delimiters use
+    // NEKE so the established proper-name, abbreviated-code, and renderer paths
+    // continue to share one canonical representation. Fractional seconds use
+    // the ordinary NO+NE decimal marker, which renders with the scaled o glyph.
     function timeStrToNanpaCaps(raw) {
       const parts = tryParseTimeParts(raw);
       if (!parts) return null;
 
       let caps = "NE";
+      if (parts.negative) caps += "NO";
+
+      if (parts.hasDays) {
+        caps += encodeDigitsOnly(parts.dayStr);
+        caps += "NEKE";
+      }
+
       caps += encodeDigitsOnly(parts.hhStr);
       caps += "NEKE";
       caps += encodeDigitsOnly(parts.mmStr);
@@ -5524,6 +5634,11 @@ function wireHaloControls() {
       if (parts.ssStr != null) {
         caps += "NEKE";
         caps += encodeDigitsOnly(parts.ssStr);
+        if (parts.fractionStr != null) {
+          caps += "NO";
+          caps += "NE";
+          caps += encodeDigitsOnly(parts.fractionStr);
+        }
       }
 
       caps += "N";
@@ -5531,54 +5646,8 @@ function wireHaloControls() {
       return caps;
     }
 
-    function nanpaCapsLooksLikeTime(caps){
-      let tokens;
-      try { tokens = tokenizeNanpaCaps(caps); } catch { return false; }
-      if (!tokens || tokens.length < 1) return false;
-
-      // Must start NE ... end N
-      if (tokens[0] !== "NE") return false;
-      if (tokens[tokens.length - 1] !== "N") return false;
-
-      // Disallow operators that cannot appear in time encoding
-      for (const t of tokens){
-        if (t === "NO" || t === "NONO" || t === "NONONO" || t === "NOKO" || t === "OK") return false;
-        if (t === "KEKE" || t === "KEKEKE") return false;
-      }
-
-      // Parse pattern:
-      // NE  (H digits: 1–2 digit tokens)
-      // NE KE (delimiter)
-      // (MM digits: exactly 2 digit tokens)
-      // [ NE KE (delimiter) (SS digits: exactly 2 digit tokens) ]
-      // N
-      let i = 1;
-
-      // hours digits: 1 or 2 digit tokens
-      let hCount = 0;
-      while (i < tokens.length && DIGIT_TOKENS.has(tokens[i]) && hCount < 2){
-        hCount++; i++;
-      }
-      if (hCount < 1) return false;
-
-      // delimiter 1
-      if (tokens[i] !== "NE") return false; i++;
-      if (tokens[i] !== "KE") return false; i++;
-
-      // minutes: exactly 2 digit tokens
-      if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
-      if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
-
-      // optional seconds
-      if (tokens[i] === "NE"){
-        i++;
-        if (tokens[i] !== "KE") return false; i++;
-        if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
-        if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
-      }
-
-      // must now be at final N
-      return i === tokens.length - 1;
+    function nanpaCapsLooksLikeTime(caps) {
+      return nanpaCapsDecodeTimeStrict(caps) != null;
     }
 
     function nanpaCapsDecodeTimeStrict(caps) {
@@ -5586,57 +5655,152 @@ function wireHaloControls() {
       try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
       catch { return null; }
 
+      if (!tokens || tokens.length < 2) return null;
       if (tokens[0] !== "NE") return null;
       if (tokens[tokens.length - 1] !== "N") return null;
 
+      const finalIndex = tokens.length - 1;
       let i = 1;
+      let negativeInput = false;
 
-      function readDigitChar() {
-        const t = tokens[i];
-        const ch = TOKEN_TO_DIGIT_CHAR[t];
-        if (ch == null) return null;
+      if (tokens[i] === "NO") {
+        negativeInput = true;
         i += 1;
-        return ch;
       }
 
-      // HH: 1–2 digits
-      const h1 = readDigitChar(); if (h1 == null) return null;
-      let h2 = null;
-      if (i < tokens.length && DIGIT_TOKENS.has(tokens[i])) h2 = readDigitChar();
-      const hhStr = (h2 == null) ? h1 : (h1 + h2);
+      const segments = [];
+      while (i < finalIndex) {
+        let integerStr = "";
+        while (i < finalIndex && DIGIT_TOKENS.has(tokens[i])) {
+          const ch = TOKEN_TO_DIGIT_CHAR[tokens[i]];
+          if (ch == null) return null;
+          integerStr += ch;
+          i += 1;
+        }
+        if (!integerStr) return null;
 
-      // delimiter 1
-      if (tokens[i] !== "NE") return null; i++;
-      if (tokens[i] !== "KE") return null; i++;
+        let fractionStr = null;
+        if (tokens[i] === "NO" && tokens[i + 1] === "NE") {
+          i += 2;
+          fractionStr = "";
+          while (i < finalIndex && DIGIT_TOKENS.has(tokens[i])) {
+            const ch = TOKEN_TO_DIGIT_CHAR[tokens[i]];
+            if (ch == null) return null;
+            fractionStr += ch;
+            i += 1;
+          }
+          if (fractionStr.length < 1 || fractionStr.length > 3) return null;
+        }
 
-      // MM: exactly 2 digits
-      const m1 = readDigitChar(); if (m1 == null) return null;
-      const m2 = readDigitChar(); if (m2 == null) return null;
-      const mmStr = m1 + m2;
+        segments.push({ integerStr, fractionStr });
 
-      // optional seconds
-      let ssStr = null;
-      if (tokens[i] === "NE") {
-        i++;
-        if (tokens[i] !== "KE") return null; i++;
-        const s1 = readDigitChar(); if (s1 == null) return null;
-        const s2 = readDigitChar(); if (s2 == null) return null;
-        ssStr = s1 + s2;
+        if (i === finalIndex) break;
+        if (tokens[i] !== "NE" || tokens[i + 1] !== "KE") return null;
+        i += 2;
       }
 
-      // must end at final N
-      if (i !== tokens.length - 1) return null;
+      if (i !== finalIndex) return null;
+      if (segments.length < 2 || segments.length > 4) return null;
+      if (segments.slice(0, -1).some(seg => seg.fractionStr != null)) return null;
 
-      // Range check
-      const hh = parseInt(hhStr, 10);
-      const mm = parseInt(mmStr, 10);
-      const ss = (ssStr == null) ? null : parseInt(ssStr, 10);
+      function isPairInRange(seg) {
+        return !!seg && seg.fractionStr == null && /^[0-5]\d$/.test(seg.integerStr);
+      }
 
-      if (!(hh >= 0 && hh <= 59)) return null;
-      if (!(mm >= 0 && mm <= 59)) return null;
-      if (ss != null && !(ss >= 0 && ss <= 59)) return null;
+      function isSecondsInRange(seg) {
+        return !!seg && /^[0-5]\d$/.test(seg.integerStr) &&
+          (seg.fractionStr == null || /^\d{1,3}$/.test(seg.fractionStr));
+      }
 
-      return { hh, mm, ss };
+      function normalizedNegative(daySeg, otherSegs) {
+        const allDigits = [daySeg.integerStr, ...otherSegs.map(seg => seg.integerStr),
+          ...otherSegs.map(seg => seg.fractionStr || "")].join("");
+        const isZero = !/[1-9]/.test(allDigits);
+        return { negative: negativeInput && !isZero, isZero };
+      }
+
+      if (segments.length === 2) {
+        if (negativeInput) return null;
+        const [hourSeg, minuteSeg] = segments;
+        if (hourSeg.fractionStr != null || !/^\d{1,2}$/.test(hourSeg.integerStr)) return null;
+        const hh = parseInt(hourSeg.integerStr, 10);
+        if (!(hh >= 0 && hh <= 59) || !isPairInRange(minuteSeg)) return null;
+        return {
+          hasDays: false,
+          negativeInput: false,
+          negative: false,
+          isZero: hh === 0 && minuteSeg.integerStr === "00",
+          dayStr: null,
+          hhStr: hourSeg.integerStr,
+          mmStr: minuteSeg.integerStr,
+          ssStr: null,
+          fractionStr: null,
+        };
+      }
+
+      if (segments.length === 3 && segments[2].fractionStr != null) {
+        if (negativeInput) return null;
+        const [hourSeg, minuteSeg, secondSeg] = segments;
+        if (hourSeg.fractionStr != null || !/^\d{1,2}$/.test(hourSeg.integerStr)) return null;
+        const hh = parseInt(hourSeg.integerStr, 10);
+        if (!(hh >= 0 && hh <= 59) || !isPairInRange(minuteSeg) || !isSecondsInRange(secondSeg)) return null;
+        return {
+          hasDays: false,
+          negativeInput: false,
+          negative: false,
+          isZero: !/[1-9]/.test(hourSeg.integerStr + minuteSeg.integerStr + secondSeg.integerStr + secondSeg.fractionStr),
+          dayStr: null,
+          hhStr: hourSeg.integerStr,
+          mmStr: minuteSeg.integerStr,
+          ssStr: secondSeg.integerStr,
+          fractionStr: secondSeg.fractionStr,
+        };
+      }
+
+      if (segments.length === 3) {
+        const [daySeg, hourSeg, minuteSeg] = segments;
+        if (daySeg.fractionStr != null || !/^\d+$/.test(daySeg.integerStr)) return null;
+        if (!isPairInRange(hourSeg) || !isPairInRange(minuteSeg)) return null;
+        const signState = normalizedNegative(daySeg, [hourSeg, minuteSeg]);
+        return {
+          hasDays: true,
+          negativeInput,
+          negative: signState.negative,
+          isZero: signState.isZero,
+          dayStr: daySeg.integerStr,
+          hhStr: hourSeg.integerStr,
+          mmStr: minuteSeg.integerStr,
+          ssStr: null,
+          fractionStr: null,
+        };
+      }
+
+      const [daySeg, hourSeg, minuteSeg, secondSeg] = segments;
+      if (daySeg.fractionStr != null || !/^\d+$/.test(daySeg.integerStr)) return null;
+      if (!isPairInRange(hourSeg) || !isPairInRange(minuteSeg) || !isSecondsInRange(secondSeg)) return null;
+      const signState = normalizedNegative(daySeg, [hourSeg, minuteSeg, secondSeg]);
+      return {
+        hasDays: true,
+        negativeInput,
+        negative: signState.negative,
+        isZero: signState.isZero,
+        dayStr: daySeg.integerStr,
+        hhStr: hourSeg.integerStr,
+        mmStr: minuteSeg.integerStr,
+        ssStr: secondSeg.integerStr,
+        fractionStr: secondSeg.fractionStr,
+      };
+    }
+
+    function normalizeTimeNegativeZeroCaps(caps) {
+      const decoded = nanpaCapsDecodeTimeStrict(caps);
+      if (!decoded || !decoded.negativeInput || !decoded.isZero) return caps;
+
+      let tokens;
+      try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
+      catch { return caps; }
+      if (tokens[0] === "NE" && tokens[1] === "NO") tokens.splice(1, 1);
+      return tokens.join("");
     }
 
     function nanpaCapsIsValidTime(caps) {
@@ -5704,16 +5868,32 @@ function wireHaloControls() {
     }
 
     function nanpaCapsIsValidTimeOrDate(caps) {
-      return nanpaCapsIsValidTime(caps) || nanpaCapsIsValidDate(caps);
+      // Date precedence is intentional: future time grammars may overlap valid
+      // date shapes, so a valid date must be claimed before testing as a time.
+      return nanpaCapsIsValidDate(caps) || nanpaCapsIsValidTime(caps);
+    }
+
+    function maskNumericScanRanges(text, hits) {
+      const s = String(text ?? "");
+      if (!s || !Array.isArray(hits) || hits.length === 0) return s;
+
+      const chars = s.split("");
+      for (const hit of hits) {
+        const start = Math.max(0, hit?.index | 0);
+        const end = Math.min(chars.length, Math.max(start, hit?.end | 0));
+        for (let i = start; i < end; i++) chars[i] = NUMERIC_SCAN_HARD_BOUNDARY_CHAR;
+      }
+      return chars.join("");
     }
 
     function findTimeSequencesWithCaps(text) {
       const s = String(text ?? "");
       if (!s) return [];
 
-      // No lookbehind: capture a non-digit boundary (or start-of-string) in group 1,
-      // and the time itself in group 2.
-      const re = /(^|[^0-9])(\d{1,2}:[0-5]\d(?::[0-5]\d)?)(?!\d)/g;
+      // No lookbehind: capture a non-digit boundary (or start-of-string) in group 1.
+      // Candidate validation is delegated to timeStrToNanpaCaps so malformed
+      // ranges and fractional-second precision are rejected as complete values.
+      const re = /(^|[^0-9])([+-]?\d+(?::\d{2}){1,3}(?:\.\d{1,3})?)(?![0-9.:])/g;
 
       const out = [];
       let m;
@@ -5722,6 +5902,12 @@ function wireHaloControls() {
         const lead = m[1] ?? "";
         const raw = m[2];
         if (!raw) continue;
+        // Do not reinterpret the right-hand side of an arithmetic sign as a
+        // standalone time when the sign was consumed as the boundary.
+        if ((lead === "-" || lead === "+") && !/^[+-]/.test(raw)) continue;
+        // Do not accept a valid-looking suffix cut from a malformed longer
+        // colon/decimal sequence.
+        if (lead === ":" || lead === ".") continue;
 
         // m.index points at the start of the whole match (including the lead char),
         // so we offset by the captured lead length.
@@ -5739,8 +5925,8 @@ function wireHaloControls() {
       if (!s) return [];
 
       // No lookbehind: boundary in group 1, date in group 2.
-      // Accept "-", "/", ":" (and unicode variants after normalization occurs inside dateStrToNanpaCaps).
-      const re = /(^|[^0-9])(\d{4}[:\/-]\d{2}[:\/-]\d{2})(?!\d)/g;
+      // Colon-separated values are reserved exclusively for time parsing.
+      const re = /(^|[^0-9])(\d{4}[\/-]\d{2}[\/-]\d{2})(?!\d)/g;
 
       const out = [];
       let m;
@@ -6318,9 +6504,9 @@ function findNanpaLinjanTpPhraseSequences(text) {
       );
 
       function priority(kind) {
+        if (kind === "date") return 5;
         if (kind === "decimal") return 4;
         if (kind === "time") return 4;
-        if (kind === "date") return 4;
         if (kind === "tpPhrase") return 3;
         if (kind === "code") return 2;
         return 1;
@@ -8104,8 +8290,17 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         }
 
         if (trimmed && /[0-9]/.test(trimmed)) {
-          const timeCandidate = trimmed.replace(/"\s*:\s*"/g, ":").replace(/"\s*:\s*/g, ":").replace(/\s*:\s*"/g, ":");
-          const timeCaps = (typeof timeStrToNanpaCaps === "function") ? timeStrToNanpaCaps(timeCandidate) : null;
+          const dateTimeCandidate = trimmed.replace(/"\s*:\s*"/g, ":").replace(/"\s*:\s*/g, ":").replace(/\s*:\s*"/g, ":");
+          const dateCaps = (typeof dateStrToNanpaCaps === "function") ? dateStrToNanpaCaps(dateTimeCandidate) : null;
+          if (dateCaps) {
+            const cps = nanpaCapsToNanpaLinjanCodepoints(dateCaps, { mode, isTime: true });
+            if (cps && cps.length) {
+              makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss: getFgHex(), sourceText: trimmed, sourceStart: sourceBaseStart + trimmedStart, sourceEnd: sourceBaseStart + trimmedEnd, sourceKind, sourceSegmentIndex });
+              for (let j = 0; j < trail.length; j++) emitPunctGlyph(trail[j], tokMeta.end - trail.length + j, tokMeta.end - trail.length + j + 1);
+              continue;
+            }
+          }
+          const timeCaps = (typeof timeStrToNanpaCaps === "function") ? timeStrToNanpaCaps(dateTimeCandidate) : null;
           if (timeCaps) {
             const cps = nanpaCapsToNanpaLinjanCodepoints(timeCaps, { mode, isTime: true });
             if (cps && cps.length) {
@@ -8294,8 +8489,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const numericScanText = glyphSuffixScan.text;
       const glyphSuffixHits = glyphSuffixScan.hits;
 
-      const timeHits = findTimeSequencesWithCaps(numericScanText);
+      // Dates must be recognized first. Mask valid date spans before running
+      // the time scanner so any present or future overlapping time grammar
+      // cannot reinterpret a value that has already passed date validation.
       const dateHits = findDateSequencesWithCaps(numericScanText);
+      const timeScanText = maskNumericScanRanges(numericScanText, dateHits);
+      const timeHits = findTimeSequencesWithCaps(timeScanText);
       const decHits = findDecimalSequencesWithCaps(numericScanText, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
       if (getNasinNanpaPona()) {
         for (const hit of decHits) {
@@ -8321,7 +8520,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         codeHits: codeHits.length,
         nameHits: nameHits.length,
         phraseHits: phraseHits.length,
-        rawHits: [...glyphSuffixHits, ...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
+        rawHits: [...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
           kind: h.kind,
           sourceText: s.slice(h.index, h.end),
           index: h.index,
@@ -8332,7 +8531,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         }))
       });
 
-      const hits = mergeAndGreedyFilterHits([...glyphSuffixHits, ...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+      const hits = mergeAndGreedyFilterHits([...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
 
       nanpaDebugTable("parse-text:selected-hits", hits.map(h => ({
         kind: h.kind,
@@ -11026,7 +11225,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   }
 
   function _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional", isTime = false, relaxedParsing = false, relaxedRendering = false } = {}) {
-    const canonicalCaps = _npCanonicalizeScientificCaps(caps);
+    let canonicalCaps = _npCanonicalizeScientificCaps(caps);
+    if (isTime && _npNanpaCapsIsValidTime(canonicalCaps, { relaxedNanpaLinjanParsing: relaxedParsing })) {
+      canonicalCaps = _npNormalizeTimeNegativeZeroCaps(canonicalCaps, { relaxedNanpaLinjanParsing: relaxedParsing });
+    }
     const tokens = _npTokenizeNanpaCaps(canonicalCaps, { relaxedNanpaLinjanParsing: relaxedParsing });
     if (!_npNanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
 
@@ -11194,17 +11396,99 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
   function _npTryParseTimeParts(raw) {
     const s = String(raw ?? "").trim();
-    const m = s.match(/^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/);
-    if (!m) return null;
+    if (!s || /\s/.test(s)) return null;
 
-    const hhStr = m[1];
-    const mmStr = m[2];
-    const ssStr = (m[3] != null) ? m[3] : null;
+    const fields = s.split(":");
+    if (fields.length < 2 || fields.length > 4) return null;
 
-    const hh = parseInt(hhStr, 10);
-    if (!Number.isFinite(hh) || hh < 0 || hh > 59) return null;
+    const firstMatch = fields[0].match(/^([+-]?)(\d+)$/);
+    if (!firstMatch) return null;
 
-    return { hhStr, mmStr, ssStr };
+    const sign = firstMatch[1];
+    const firstDigits = firstMatch[2];
+
+    function isClockPair(value) {
+      return /^[0-5]\d$/.test(String(value ?? ""));
+    }
+
+    function parseSeconds(value) {
+      const m = String(value ?? "").match(/^([0-5]\d)(?:\.(\d{1,3}))?$/);
+      if (!m) return null;
+      return { ssStr: m[1], fractionStr: m[2] ?? null };
+    }
+
+    function hasAnyNonZeroDigit(...values) {
+      return /[1-9]/.test(values.filter(v => v != null).join(""));
+    }
+
+    if (fields.length === 2) {
+      if (sign) return null;
+      if (!/^\d{1,2}$/.test(firstDigits) || !isClockPair(fields[1])) return null;
+      const hh = parseInt(firstDigits, 10);
+      if (!Number.isFinite(hh) || hh < 0 || hh > 59) return null;
+      return {
+        hasDays: false,
+        negative: false,
+        dayStr: null,
+        hhStr: firstDigits,
+        mmStr: fields[1],
+        ssStr: null,
+        fractionStr: null,
+      };
+    }
+
+    if (fields.length === 3) {
+      const finalSeconds = parseSeconds(fields[2]);
+      if (finalSeconds?.fractionStr != null) {
+        if (sign) return null;
+        if (!/^\d{1,2}$/.test(firstDigits) || !isClockPair(fields[1])) return null;
+        const hh = parseInt(firstDigits, 10);
+        if (!Number.isFinite(hh) || hh < 0 || hh > 59) return null;
+        return {
+          hasDays: false,
+          negative: false,
+          dayStr: null,
+          hhStr: firstDigits,
+          mmStr: fields[1],
+          ssStr: finalSeconds.ssStr,
+          fractionStr: finalSeconds.fractionStr,
+        };
+      }
+
+      if (!isClockPair(fields[1]) || !isClockPair(fields[2])) return null;
+      const negative = sign === "-" && hasAnyNonZeroDigit(firstDigits, fields[1], fields[2]);
+      return {
+        hasDays: true,
+        negative,
+        dayStr: firstDigits,
+        hhStr: fields[1],
+        mmStr: fields[2],
+        ssStr: null,
+        fractionStr: null,
+      };
+    }
+
+    if (!isClockPair(fields[1]) || !isClockPair(fields[2])) return null;
+    const seconds = parseSeconds(fields[3]);
+    if (!seconds) return null;
+
+    const negative = sign === "-" && hasAnyNonZeroDigit(
+      firstDigits,
+      fields[1],
+      fields[2],
+      seconds.ssStr,
+      seconds.fractionStr
+    );
+
+    return {
+      hasDays: true,
+      negative,
+      dayStr: firstDigits,
+      hhStr: fields[1],
+      mmStr: fields[2],
+      ssStr: seconds.ssStr,
+      fractionStr: seconds.fractionStr,
+    };
   }
 
   function _npEncodeDigitsOnly(digits, opts = {}) {
@@ -11221,7 +11505,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
   function _npTryParseDateParts(raw) {
     const s = _npNormalizeDateTimeInput(raw);
-    const m = s.match(/^(\d{4})([:\/-])(\d{2})\2(\d{2})$/);
+    const m = s.match(/^(\d{4})([\/-])(\d{2})\2(\d{2})$/);
     if (!m) return null;
 
     const yyyyStr = m[1];
@@ -11258,6 +11542,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (!parts) return null;
 
     let caps = "NE";
+    if (parts.negative) caps += "NO";
+
+    if (parts.hasDays) {
+      caps += _npEncodeDigitsOnly(parts.dayStr, opts);
+      caps += "NEKE";
+    }
+
     caps += _npEncodeDigitsOnly(parts.hhStr, opts);
     caps += "NEKE";
     caps += _npEncodeDigitsOnly(parts.mmStr, opts);
@@ -11265,6 +11556,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (parts.ssStr != null) {
       caps += "NEKE";
       caps += _npEncodeDigitsOnly(parts.ssStr, opts);
+      if (parts.fractionStr != null) {
+        caps += "NO";
+        caps += "NE";
+        caps += _npEncodeDigitsOnly(parts.fractionStr, opts);
+      }
     }
 
     caps += "N";
@@ -11272,39 +11568,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return caps;
   }
 
-  function _npNanpaCapsLooksLikeTime(caps, opts = {}){
-    let tokens;
-    try { tokens = _npTokenizeNanpaCaps(caps, opts); } catch { return false; }
-    if (!tokens || tokens.length < 1) return false;
-    if (tokens[0] !== "NE") return false;
-    if (tokens[tokens.length - 1] !== "N") return false;
-
-    for (const t of tokens){
-      if (t === "NO" || t === "NONO" || t === "NONONO" || t === "NOKO" || t === "OK") return false;
-      if (t === "KEKE" || t === "KEKEKE") return false;
-    }
-
-    let i = 1;
-    let hCount = 0;
-    while (i < tokens.length && _NP_DIGIT_TOKENS.has(tokens[i]) && hCount < 2){
-      hCount++; i++;
-    }
-    if (hCount < 1) return false;
-
-    if (tokens[i] !== "NE") return false; i++;
-    if (tokens[i] !== "KE") return false; i++;
-
-    if (!_NP_DIGIT_TOKENS.has(tokens[i])) return false; i++;
-    if (!_NP_DIGIT_TOKENS.has(tokens[i])) return false; i++;
-
-    if (tokens[i] === "NE"){
-      i++;
-      if (tokens[i] !== "KE") return false; i++;
-      if (!_NP_DIGIT_TOKENS.has(tokens[i])) return false; i++;
-      if (!_NP_DIGIT_TOKENS.has(tokens[i])) return false; i++;
-    }
-
-    return i === tokens.length - 1;
+  function _npNanpaCapsLooksLikeTime(caps, opts = {}) {
+    return _npNanpaCapsDecodeTimeStrict(caps, opts) != null;
   }
 
   function _npNanpaCapsDecodeTimeStrict(caps, opts = {}) {
@@ -11312,51 +11577,152 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     try { tokens = _npTokenizeNanpaCaps(String(caps).trim().toUpperCase(), opts); }
     catch { return null; }
 
+    if (!tokens || tokens.length < 2) return null;
     if (tokens[0] !== "NE") return null;
     if (tokens[tokens.length - 1] !== "N") return null;
 
+    const finalIndex = tokens.length - 1;
     let i = 1;
+    let negativeInput = false;
 
-    function readDigitChar() {
-      const t = tokens[i];
-      const ch = _NP_TOKEN_TO_DIGIT_CHAR[t];
-      if (!ch) return null;
+    if (tokens[i] === "NO") {
+      negativeInput = true;
       i += 1;
-      return ch;
     }
 
-    const h1 = readDigitChar(); if (h1 == null) return null;
-    let h2 = null;
-    if (i < tokens.length && _NP_DIGIT_TOKENS.has(tokens[i])) h2 = readDigitChar();
-    const hhStr = (h2 == null) ? h1 : (h1 + h2);
+    const segments = [];
+    while (i < finalIndex) {
+      let integerStr = "";
+      while (i < finalIndex && _NP_DIGIT_TOKENS.has(tokens[i])) {
+        const ch = _NP_TOKEN_TO_DIGIT_CHAR[tokens[i]];
+        if (ch == null) return null;
+        integerStr += ch;
+        i += 1;
+      }
+      if (!integerStr) return null;
 
-    if (tokens[i] !== "NE") return null; i++;
-    if (tokens[i] !== "KE") return null; i++;
+      let fractionStr = null;
+      if (tokens[i] === "NO" && tokens[i + 1] === "NE") {
+        i += 2;
+        fractionStr = "";
+        while (i < finalIndex && _NP_DIGIT_TOKENS.has(tokens[i])) {
+          const ch = _NP_TOKEN_TO_DIGIT_CHAR[tokens[i]];
+          if (ch == null) return null;
+          fractionStr += ch;
+          i += 1;
+        }
+        if (fractionStr.length < 1 || fractionStr.length > 3) return null;
+      }
 
-    const m1 = readDigitChar(); if (m1 == null) return null;
-    const m2 = readDigitChar(); if (m2 == null) return null;
-    const mmStr = m1 + m2;
+      segments.push({ integerStr, fractionStr });
 
-    let ssStr = null;
-    if (tokens[i] === "NE") {
-      i++;
-      if (tokens[i] !== "KE") return null; i++;
-      const s1 = readDigitChar(); if (s1 == null) return null;
-      const s2 = readDigitChar(); if (s2 == null) return null;
-      ssStr = s1 + s2;
+      if (i === finalIndex) break;
+      if (tokens[i] !== "NE" || tokens[i + 1] !== "KE") return null;
+      i += 2;
     }
 
-    if (i !== tokens.length - 1) return null;
+    if (i !== finalIndex) return null;
+    if (segments.length < 2 || segments.length > 4) return null;
+    if (segments.slice(0, -1).some(seg => seg.fractionStr != null)) return null;
 
-    const hh = parseInt(hhStr, 10);
-    const mm = parseInt(mmStr, 10);
-    const ss = (ssStr == null) ? null : parseInt(ssStr, 10);
+    function isPairInRange(seg) {
+      return !!seg && seg.fractionStr == null && /^[0-5]\d$/.test(seg.integerStr);
+    }
 
-    if (!(hh >= 0 && hh <= 59)) return null;
-    if (!(mm >= 0 && mm <= 59)) return null;
-    if (ss != null && !(ss >= 0 && ss <= 59)) return null;
+    function isSecondsInRange(seg) {
+      return !!seg && /^[0-5]\d$/.test(seg.integerStr) &&
+        (seg.fractionStr == null || /^\d{1,3}$/.test(seg.fractionStr));
+    }
 
-    return { hh, mm, ss };
+    function normalizedNegative(daySeg, otherSegs) {
+      const allDigits = [daySeg.integerStr, ...otherSegs.map(seg => seg.integerStr),
+        ...otherSegs.map(seg => seg.fractionStr || "")].join("");
+      const isZero = !/[1-9]/.test(allDigits);
+      return { negative: negativeInput && !isZero, isZero };
+    }
+
+    if (segments.length === 2) {
+      if (negativeInput) return null;
+      const [hourSeg, minuteSeg] = segments;
+      if (hourSeg.fractionStr != null || !/^\d{1,2}$/.test(hourSeg.integerStr)) return null;
+      const hh = parseInt(hourSeg.integerStr, 10);
+      if (!(hh >= 0 && hh <= 59) || !isPairInRange(minuteSeg)) return null;
+      return {
+        hasDays: false,
+        negativeInput: false,
+        negative: false,
+        isZero: hh === 0 && minuteSeg.integerStr === "00",
+        dayStr: null,
+        hhStr: hourSeg.integerStr,
+        mmStr: minuteSeg.integerStr,
+        ssStr: null,
+        fractionStr: null,
+      };
+    }
+
+    if (segments.length === 3 && segments[2].fractionStr != null) {
+      if (negativeInput) return null;
+      const [hourSeg, minuteSeg, secondSeg] = segments;
+      if (hourSeg.fractionStr != null || !/^\d{1,2}$/.test(hourSeg.integerStr)) return null;
+      const hh = parseInt(hourSeg.integerStr, 10);
+      if (!(hh >= 0 && hh <= 59) || !isPairInRange(minuteSeg) || !isSecondsInRange(secondSeg)) return null;
+      return {
+        hasDays: false,
+        negativeInput: false,
+        negative: false,
+        isZero: !/[1-9]/.test(hourSeg.integerStr + minuteSeg.integerStr + secondSeg.integerStr + secondSeg.fractionStr),
+        dayStr: null,
+        hhStr: hourSeg.integerStr,
+        mmStr: minuteSeg.integerStr,
+        ssStr: secondSeg.integerStr,
+        fractionStr: secondSeg.fractionStr,
+      };
+    }
+
+    if (segments.length === 3) {
+      const [daySeg, hourSeg, minuteSeg] = segments;
+      if (daySeg.fractionStr != null || !/^\d+$/.test(daySeg.integerStr)) return null;
+      if (!isPairInRange(hourSeg) || !isPairInRange(minuteSeg)) return null;
+      const signState = normalizedNegative(daySeg, [hourSeg, minuteSeg]);
+      return {
+        hasDays: true,
+        negativeInput,
+        negative: signState.negative,
+        isZero: signState.isZero,
+        dayStr: daySeg.integerStr,
+        hhStr: hourSeg.integerStr,
+        mmStr: minuteSeg.integerStr,
+        ssStr: null,
+        fractionStr: null,
+      };
+    }
+
+    const [daySeg, hourSeg, minuteSeg, secondSeg] = segments;
+    if (daySeg.fractionStr != null || !/^\d+$/.test(daySeg.integerStr)) return null;
+    if (!isPairInRange(hourSeg) || !isPairInRange(minuteSeg) || !isSecondsInRange(secondSeg)) return null;
+    const signState = normalizedNegative(daySeg, [hourSeg, minuteSeg, secondSeg]);
+    return {
+      hasDays: true,
+      negativeInput,
+      negative: signState.negative,
+      isZero: signState.isZero,
+      dayStr: daySeg.integerStr,
+      hhStr: hourSeg.integerStr,
+      mmStr: minuteSeg.integerStr,
+      ssStr: secondSeg.integerStr,
+      fractionStr: secondSeg.fractionStr,
+    };
+  }
+
+  function _npNormalizeTimeNegativeZeroCaps(caps, opts = {}) {
+    const decoded = _npNanpaCapsDecodeTimeStrict(caps, opts);
+    if (!decoded || !decoded.negativeInput || !decoded.isZero) return caps;
+
+    let tokens;
+    try { tokens = _npTokenizeNanpaCaps(String(caps).trim().toUpperCase(), opts); }
+    catch { return caps; }
+    if (tokens[0] === "NE" && tokens[1] === "NO") tokens.splice(1, 1);
+    return tokens.join("");
   }
 
   function _npNanpaCapsIsValidTime(caps, opts = {}) {
@@ -11416,7 +11782,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   }
 
   function _npNanpaCapsIsValidTimeOrDate(caps, opts = {}) {
-    return _npNanpaCapsIsValidTime(caps, opts) || _npNanpaCapsIsValidDate(caps, opts);
+    // Keep the public parser's precedence identical to the renderer core.
+    return _npNanpaCapsIsValidDate(caps, opts) || _npNanpaCapsIsValidTime(caps, opts);
   }
 
   function _npNumberStrToNanpaCaps(s, opts = {}) {
@@ -11707,6 +12074,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       if (!caps) return null;
       caps = _npCanonicalizeScientificCaps(caps);
+      if (_npNanpaCapsIsValidTime(caps, opts)) caps = _npNormalizeTimeNegativeZeroCaps(caps, opts);
 
       const isTime = _npNanpaCapsIsValidTimeOrDate(caps);
       const innerCodepoints = _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime });
@@ -12052,17 +12420,20 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     let caps = null;
+    let structuredKind = null;
     try {
       const normalized = _npNormalizeVulgarFractionInput(s);
-      const timeCaps = _npTimeStrToNanpaCaps(normalized, opts);
       const dateCaps = _npDateStrToNanpaCaps(normalized, opts);
+      const timeCaps = (dateCaps == null) ? _npTimeStrToNanpaCaps(normalized, opts) : null;
 
       if (_npLooksLikeNanpaCaps(normalized)) {
         caps = normalized.toUpperCase();
-      } else if (timeCaps != null) {
-        caps = timeCaps;
       } else if (dateCaps != null) {
         caps = dateCaps;
+        structuredKind = "date";
+      } else if (timeCaps != null) {
+        caps = timeCaps;
+        structuredKind = "time";
       } else if (_npIsValidNanpaLinjanProperName(s, { relaxedNanpaLinjanParsing: relaxedParsing })) {
         const core = s.replace(/\s+/g, "").slice(0, -1).toUpperCase();
         caps = (core.endsWith("NOKE") ? (core.slice(0, -4) + "OKN") : (core + "N"));
@@ -12083,10 +12454,23 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (!caps) return null;
     caps = _npCanonicalizeScientificCaps(caps);
+    if (_npNanpaCapsIsValidTime(caps, opts)) caps = _npNormalizeTimeNegativeZeroCaps(caps, opts);
 
     try {
       const tokens = _npTokenizeNanpaCaps(caps, opts);
-      const isTimeLike = _npNanpaCapsIsValidTimeOrDate(caps, opts);
+      const capsIsDate = _npNanpaCapsIsValidDate(caps, opts);
+      const capsIsTime = _npNanpaCapsIsValidTime(caps, opts);
+      const isDate = structuredKind === "date"
+        ? true
+        : structuredKind === "time"
+          ? false
+          : capsIsDate;
+      const isTime = structuredKind === "time"
+        ? true
+        : structuredKind === "date"
+          ? false
+          : (!capsIsDate && capsIsTime);
+      const isTimeLike = isDate || isTime;
       const hasOk = tokens.includes("OK");
       const tokensNoOk = tokens.filter(t => t !== "OK");
 
@@ -12127,8 +12511,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         tpWords,
         words: tpWords.slice(),
         displayValue,
-        isTime: _npNanpaCapsIsValidTime(caps, opts),
-        isDate: _npNanpaCapsIsValidDate(caps, opts),
+        isTime,
+        isDate,
         isTimeLike,
         innerCodepoints: ucsurCodepoints.slice(),
         codepoints: withCartoucheMarkers(ucsurCodepoints),
@@ -12597,6 +12981,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
   capsToWords(caps, opts = {}) {
     caps = _npCanonicalizeScientificCaps(caps);
+    if (_npNanpaCapsIsValidTime(caps, opts)) caps = _npNormalizeTimeNegativeZeroCaps(caps, opts);
     const mode = ((opts.mode === "traditional") || (opts.numericMode === "traditional"))
       ? "traditional"
       : "uniform";

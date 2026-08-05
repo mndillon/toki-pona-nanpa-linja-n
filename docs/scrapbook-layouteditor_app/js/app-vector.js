@@ -15908,7 +15908,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=221');
+        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223');
         const NanpaParser = rendererMod?.NanpaParser;
         if (NanpaParser && !globalThis.NanpaParser) globalThis.NanpaParser = NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });

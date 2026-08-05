@@ -1674,13 +1674,13 @@
   }
 
   async function getNanpaParser(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=218");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223");
     const mod = await nanpaModulePromise;
     return mod.NanpaParser;
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=35").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=38").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 

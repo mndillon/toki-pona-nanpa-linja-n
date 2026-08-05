@@ -83,50 +83,6 @@
       opacity: 0.45;
     }
 
-    .cartouche-audio-word {
-      display: inline-block;
-      white-space: nowrap;
-    }
-
-    .cartouche-audio-unit,
-    .cartouche-value-character {
-      display: inline-block;
-      padding: 1px 1px;
-      border-radius: 4px;
-      transition: background-color 80ms linear, outline-color 80ms linear;
-    }
-
-    .cartouche-value-character {
-      padding-inline: 0;
-    }
-
-    .cartouche-audio-unit.is-speaking,
-    .cartouche-value-character.is-speaking {
-      background: #fff4a8;
-      outline: 2px solid #111;
-      outline-offset: 1px;
-    }
-
-    .cartouche-audio-canvas-wrap {
-      position: relative;
-      display: inline-block;
-      max-width: 100%;
-      line-height: 0;
-    }
-
-    .cartouche-highlight-canvas {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 1px;
-      height: 1px;
-      max-width: none;
-      border: none !important;
-      border-radius: 0 !important;
-      background: transparent;
-      pointer-events: none;
-    }
-
     /* NEW: bilingual button layout */
     .btnBi {
       display: flex;
@@ -333,49 +289,6 @@
       img.portrait1{ max-width:568px; margin-inline:auto; }
       img.portrait2{ max-width:855px; margin-inline:auto; }
     }
-
-    /* Small, understated home link beside the page heading */
-.pageHeadingRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-}
-
-.pageHomeLink {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-top: -4px;
-  color: #111;
-  opacity: 0.58;
-  text-decoration: none;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  transition:
-    opacity 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.pageHomeLink:hover {
-  opacity: 0.9;
-  background: rgba(17, 17, 17, 0.06);
-}
-
-.pageHomeLink:focus-visible {
-  opacity: 1;
-  outline: 2px solid rgba(17, 17, 17, 0.65);
-  outline-offset: 2px;
-}
-
-.pageHomeIcon {
-  display: block;
-  width: 16px;
-  height: 16px;
-}
   </style>
 
 </head>
@@ -390,35 +303,10 @@
   <!-- Main landmark for assistive tech -->
   <main class="card" id="main" role="main" aria-labelledby="pageTitle">
 
-    <div class="pageHeadingRow">
-      <a
-        class="pageHomeLink"
-        href="./index.html"
-        aria-label="Home"
-        title="Home"
-      >
-        <svg
-          class="pageHomeIcon"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path
-            d="M3.5 10.5 12 3.75l8.5 6.75M5.75 9.25V20h12.5V9.25M9.5 20v-6h5v6"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </a>
-
     <h1 style="margin:0 0 6px;font-size:18px;">
       Represent decimal numbers as nanpa-linja-n proper names and sitelen pona cartouches
       <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
     </h1>
-    </div>
 
     <div class="help" style="margin-top:10px;">
       <strong>Note:</strong> The “nanpa-linja-n proper name” shown here is an encoding label for numbers only.
@@ -471,14 +359,7 @@
             sitelen pona cartouche
             <span class="tpLine">poki nimi sitelen pona</span>
           </h3>
-          <div class="cartouche-audio-canvas-wrap">
-            <canvas id="canvasSmall" aria-hidden="true"></canvas>
-            <canvas
-              id="canvasSmallHighlight"
-              class="cartouche-highlight-canvas"
-              aria-hidden="true"
-            ></canvas>
-          </div>
+          <canvas id="canvasSmall" aria-hidden="true"></canvas>
           <div id="cartoucheValueBox" class="help hidden" aria-label="Cartouche value">
             <strong>Cartouche value:</strong>
             <span id="cartoucheValueText" class="mono"></span>
@@ -622,7 +503,7 @@
           autocomplete="off"
         />
         <div id="tpWordsHelp" class="help">
-          Allowed input: Valid Toki Pona words (case-insensitive), exact alternative-glyph aliases <span class="mono">ni01 ni02 ni03 ni04 sewi01 sewi02</span>, a nanpa-linja-n proper name for a decimal value, or a number code (starting with #~).
+          Allowed input: Valid Toki Pona words (case-insensitive) or a nanpa-linja-n proper name for a decimal value or a number code (starting with #~).
           <span class="tpLine">
             nimi toki pona lon mapu taso li ken. (suli/lili pi sitelen li wile ala.)
             sina ken kin pana e nimi pi nanpa-linja-n (nimi pi pana nanpa).
@@ -673,9 +554,9 @@
       </h3>
       <textarea id="numberCodeOut" class="mono" readonly aria-readonly="true"></textarea>
       <div class="help">
-        Compact code derived from the nanpa-linja-n proper name. Most <span class="mono">n</span> and <span class="mono">e</span> letters are omitted; a no-value spacer keeps lowercase <span class="mono">ee</span>, and scientific notation keeps lowercase <span class="mono">eko</span>.
+        Derived from the nanpa-linja-n proper name: remove letters <span class="mono">n</span> and <span class="mono">e</span>.
         <span class="tpLine">
-          ni li nimi lili tan nimi pi nanpa-linja-n. nanpa sona la nimi <span class="mono">eko</span> li awen.
+          ni li tan nimi pi nanpa-linja-n: o weka e sitelen <span class="mono">n</span> en <span class="mono">e</span>.
         </span>
       </div>
 
@@ -748,11 +629,11 @@
       </div>
 
  <div class="help">&nbsp;</div>
-      <img class="portrait1" src="./images/From_Decimal_Number_To_Cartouche.png?v=2"  />
+      <img class="portrait1" src="./images/From_Decimal_Number_To_Cartouche.png"  />
       <div class="help">&nbsp;</div>
 
       <div class="help">&nbsp;</div>
-      <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=4" />
+      <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=2" />
       <div class="help">&nbsp;</div>
 
       <h1 class="nlModeControl" style="margin:0 0 6px;font-size:18px;">
@@ -840,26 +721,10 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=180";
     import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=38";
 
     const voice = await createTokiPonaVoice();
-
-    const CARTOUCHE_AUDIO_PAUSE_SCALE = 1.00;
-    const CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
-    const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
-      "Eke", "Eken", "Ekeke", "Ekeken", "Ekekeke", "Ekekeken",
-      "Keke", "Keken", "Kekeke", "Kekeken",
-      "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
-    ]);
-
-    let currentCartoucheAudioModel = null;
-    let cartoucheAudioGeneration = 0;
-    let cartoucheAudioState = "stopped";
-    let cartoucheAudioSession = null;
-    let cartoucheAudioContext = null;
-    let activeCartoucheAudioUnitIndex = null;
-    const cartoucheAudioCache = new Map();
 
     /* ============================================================
        Accessibility helpers
@@ -1153,30 +1018,6 @@
     }
 
 
-    function magnitudeKeProperNameFragment(rawCount) {
-      const count = Math.max(0, Math.floor(Number(rawCount) || 0));
-      if (count < 1) return "";
-
-      // Keep the established one-, two-, and three-KE words. Longer runs use
-      // two-KE words, except that an odd final remainder stays as three KE.
-      // Only the first word carries the initial e; the caller attaches the
-      // final cartouche n to the final word.
-      if (count <= 3) return "e" + "ke".repeat(count);
-
-      const groupSizes = [2];
-      let remaining = count - 2;
-      while (remaining > 3) {
-        groupSizes.push(2);
-        remaining -= 2;
-      }
-      groupSizes.push(remaining);
-
-      return groupSizes
-        .map((size, index) => (index === 0 ? "e" : "") + "ke".repeat(size))
-        .join(" ");
-    }
-
-
     const STRICT_FINAL_HUNDRED_ININ_SUFFIXES = [
       "weninin", "teninin", "seninin", "naninin", "leninin",
       "nuninin", "meninin", "peninin", "jeninin"
@@ -1300,30 +1141,32 @@
       Object.entries(LATIN_CHAR_TO_CODEPOINT).map(([ch, cp]) => [cp, ch])
     );
 
-    // Legacy small-glyph helper retained for compatibility. Keep it aligned
-    // with the authoritative quarter-size cartouche glyph list below.
     function getSmallCodepointsSet() {
       return new Set([
-        0xF193D, // nanpa
-        0xF1940, // nena
-        0xF190A, // en
-        0xF1902, // ala
-        0xF190D, // ike
-        0xF1970, // uta
-        0xF1947, // open
+        0xF193D, // NANPA
+        0xF1940, // NENA
+        0xF1941, // NI
+        0xF193E, // NASA
+        0xF1909, // E
+        0xF190B, // ESUN
+        0xF190A, // EN
       ]);
     }
 
-    // ¼-size glyphs used by this page's cartouche renderer.
+    // ¼-size glyphs (already used for nanpa/en/etc). Add OPEN here too.
     function getQuarterCodepointsSet() {
       return new Set([
         0xF193D, // nanpa
         0xF1940, // nena
+        0xF1941, // ni
+        0xF193E, // nasa
+        0xF1909, // e
+        0xF190B, // esun
         0xF190A, // en
-        0xF1902, // ala
-        0xF190D, // ike
-        0xF1970, // uta
-        0xF1947, // open
+        0xF1947, // open   <-- NEW: quarter size
+        0xF1902, // ala (relaxed nanpa-linja-n small glyph)
+        0xF190D, // ike (relaxed nanpa-linja-n small glyph)
+        0xF1970, // uta (relaxed nanpa-linja-n small glyph)
       ]);
     }
 
@@ -1344,14 +1187,12 @@
       return 0;
     }
 
-    // ⅔-size glyphs used by this page's cartouche renderer.
+    // ⅔-size glyphs
     function getTwoThirdsCodepointsSet() {
       return new Set([
-        0xF1946, // ona
-        0xF1944, // o
-        0xF191F, // kulupu
-        0xF197B, // kipisi
-        0xF1979, // kin
+        0xF1946, // ona   <-- NEW: two-thirds size
+        0xF1944, // o     <-- NEW: two-thirds size
+        0xF191F, // kulupu <-- NEW: two-thirds size
       ]);
     }
 
@@ -1419,10 +1260,10 @@
     };
 
     const OPCHAR_TO_TOKEN = { ".": "NONE", "-": "NO", "/": "NONO", "+": "NONONO" };
-    const MAGCHAR_TO_TOKEN = { "K": "KE", "M": "KEKE", "B": "KEKEKE", "T": "KEKEKEKE" };
+    const MAGCHAR_TO_TOKEN = { "T": "KE", "M": "KEKE", "W": "KEKEKE" };
     const DIGIT_TOKENS = new Set(Object.keys(TOKEN_TO_DIGIT_WORD));
 
-    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "NOKO", "OK", "NE", "NO" ];
+    const TOKEN_PREFIXES = [ "KEKEKE", "KEKE", "KE", "NONONO", "NONO", "OK", "NE", "NO" ];
 
     // Reverse map: digit word -> token
     const DIGIT_WORD_TO_TOKEN = Object.fromEntries(
@@ -1440,7 +1281,6 @@
      * Accepts both Traditional and Uniform mode wordings:
      * - Start: "nanpa esun" or "nanpa en"
      * - After digits: "<digitWord> esun" or "<digitWord> en"
-     * - Scientific marker: "nena en kala open"; legacy expanded marker remains accepted
      * - NE (non-initial): "(nasa|nena) (e|en)"
      * - KE: "kulupu (e|en)"
      * - NONONO: (nasa|nena) o x3
@@ -1464,38 +1304,6 @@
       let i = 2;
 
       while (i < end) {
-        const isScientificMarkerAt = (index) => (
-          index + 3 < end &&
-          (words[index] === "nasa" || words[index] === "nena") &&
-          (words[index + 1] === "e" || words[index + 1] === "en") &&
-          words[index + 2] === "kala" &&
-          words[index + 3] === "open"
-        );
-
-        // Scientific notation marker. New output uses one shortened marker:
-        //   nena en kala open
-        // Keep accepting the previous expanded marker and canonicalize it to NEKO:
-        //   nena en kala open wan en nena ijo nena en kala open
-        if (
-          isScientificMarkerAt(i) &&
-          i + 11 < end &&
-          words[i + 4] === "wan" &&
-          (words[i + 5] === "esun" || words[i + 5] === "en" || words[i + 5] === "ala") &&
-          (words[i + 6] === "nasa" || words[i + 6] === "nena") &&
-          words[i + 7] === "ijo" &&
-          isScientificMarkerAt(i + 8)
-        ) {
-          capsParts.push("NEKO");
-          i += 12;
-          continue;
-        }
-
-        if (isScientificMarkerAt(i)) {
-          capsParts.push("NEKO");
-          i += 4;
-          continue;
-        }
-
         // 1) NONONO: "(nasa|nena) o" repeated 3 times
         if (
           i + 5 < end &&
@@ -1515,17 +1323,6 @@
           words[i + 2] === "nena" && words[i + 3] === "o"
         ) {
           capsParts.push("NONO");
-          i += 4;
-          continue;
-        }
-
-        if (
-          i + 3 < end &&
-          words[i] === "nena" && words[i + 1] === "open" &&
-          (words[i + 2] === "kala" || words[i + 2] === "kin") &&
-          words[i + 3] === "open"
-        ) {
-          capsParts.push("NOKO");
           i += 4;
           continue;
         }
@@ -1685,50 +1482,10 @@
       const parts = ["NE"];
       let i = 0;
 
-      const shortScientificMarkerIndex = body.indexOf("EKO");
-      const hasShortScientificNumberCodeMarker =
-        shortScientificMarkerIndex > 0 &&
-        (shortScientificMarkerIndex + "EKO".length) < body.length;
-
-      const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
-      const hasLegacyScientificNumberCodeMarker =
-        legacyScientificMarkerIndex > 0 &&
-        body[legacyScientificMarkerIndex - 1] !== "O" &&
-        (legacyScientificMarkerIndex + "KOWIKO".length) < body.length;
-
-      function ensureNEBeforeOperatorRun() {
-        if (parts[parts.length - 1] !== "NE") parts.push("NE");
-      }
-
       while (i < body.length) {
         const ch = body[i];
 
-        // New scientific #~ separator: <mantissa>eko<exponent>. Input is
-        // case-insensitive, while generated output is always lowercase eko.
-        if (
-          hasShortScientificNumberCodeMarker &&
-          i === shortScientificMarkerIndex &&
-          body.startsWith("EKO", i)
-        ) {
-          ensureNEBeforeOperatorRun();
-          parts.push("KO");
-          i += 3;
-          continue;
-        }
-
-        // Backward compatibility for the previous KOWIKO signature.
-        if (
-          hasLegacyScientificNumberCodeMarker &&
-          body.startsWith("KO", i) &&
-          (i === legacyScientificMarkerIndex || i === legacyScientificMarkerIndex + 4)
-        ) {
-          ensureNEBeforeOperatorRun();
-          parts.push("KO");
-          i += 2;
-          continue;
-        }
-
-        if (ch === "O") {
+                if (ch === "O") {
           let j = i;
           while (j < body.length && body[j] === "O") j++;
           const count = j - i;
@@ -1762,9 +1519,8 @@
           while (j < body.length && body[j] === "K") j++;
           const count = j - i;
 
-          if (count < 1) throw new Error("Invalid empty run of 'K' in number code.");
+          if (count < 1 || count > 3) throw new Error("Invalid run of 'K' in number code (max 3).");
 
-          ensureNEBeforeOperatorRun();
           parts.push("KE".repeat(count));
           i = j;
           continue;
@@ -1785,41 +1541,12 @@
         caps = caps.slice(0, -1) + "OKN";
       }
 
-      // Legacy scientific caps contained NEKO + WENI/WANI + NEKO. Accept
-      // them, but return the shortened canonical NEKO marker.
-      caps = caps.replace(/NEKO(?:WE|WA)NINEKO/g, "NEKO");
 
       tokenizeNanpaCaps(caps);
 
-      // Always normalize accepted legacy scientific input to the new lowercase
-      // eko separator in subsequent output.
-      const canonicalCode = (() => {
-        const tokens = tokenizeNanpaCaps(caps);
-        const out = [];
-        const pairToLetter = Object.fromEntries(
-          Object.entries(NUMBER_CODE_LETTER_TO_PAIR).map(([letter, pair]) => [pair, letter])
-        );
-        for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
-          const token = tokens[tokenIndex];
-          if (token === "NE" && tokens[tokenIndex + 1] === "KO") {
-            out.push("eko");
-            tokenIndex += 1;
-            continue;
-          }
-          if (token === "N" || token === "NE") continue;
-          if (pairToLetter[token]) { out.push(pairToLetter[token]); continue; }
-          if (token === "NO") { out.push("o"); continue; }
-          if (token === "NONO") { out.push("oo"); continue; }
-          if (token === "NONONO") { out.push("ooo"); continue; }
-          if (token === "NOKO") { out.push("oko"); continue; }
-          if (token === "KO") { out.push("ko"); continue; }
-          if (token === "KE") { out.push("k"); continue; }
-          if (token === "KEKE") { out.push("kk"); continue; }
-          if (token === "KEKEKE") { out.push("kkk"); continue; }
-          if (token === "OK") { out.push("ok"); continue; }
-        }
-        return "#~" + out.join("");
-      })();
+      const canonicalBody = body + (hasPercentOK ? "OK" : "");
+      const canonicalStyled = canonicalBody.replace(/O/g, "o").replace(/K/g, "k");
+      const canonicalCode = "#~" + canonicalStyled;
 
       return { caps, canonicalCode };
 
@@ -2237,9 +1964,8 @@
           const last = seg.slice(-1).toUpperCase();
           if (last === "K" || last === "T" || last === "M" || last === "B") {
             magnitudeSuffixKeCount =
-              (last === "K") ? 1 :
-              (last === "M") ? 2 :
-              (last === "B") ? 3 : 4;
+              (last === "K" || last === "T") ? 1 :
+              (last === "M") ? 2 : 3;
             seg = seg.slice(0, -1).trim();
             if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
           }
@@ -2528,7 +2254,6 @@
         if (suffixKeCount === 1) suffix = "K";
         else if (suffixKeCount === 2) suffix = "M";
         else if (suffixKeCount === 3) suffix = "B";
-        else if (suffixKeCount === 4) suffix = "T";
         else suffix = `×1000^${suffixKeCount}`;
       }
 
@@ -2732,12 +2457,6 @@
           continue;
         }
 
-        if (t === "NOKO") {
-          out.push("nena","open","kin","open");
-          afterStartingNe = false;
-          continue;
-        }
-
         if (t === "NONONO") {
           // Uniform affects nasa -> nena via N_WORD
           out.push(N_WORD,"o",N_WORD,"o",N_WORD,"o");
@@ -2916,34 +2635,6 @@
       "ota": 0xF199C, "kolon": 0xF199D, "koma": 0xF199E
     };
 
-    // Exact, case-insensitive input aliases for standard alternative glyph names.
-    // Keep these separate from WORD_TO_UCSUR_CP so reverse output remains canonical.
-    const TP_WORD_INPUT_ALIASES = Object.freeze({
-      "ni01": "ni",
-      "ni02": "ni>",
-      "ni03": "ni^",
-      "ni04": "ni<",
-      "sewi01": "sewi",
-      "sewi02": "sewi^"
-    });
-
-    const TP_ALTERNATIVE_GLYPH_CODEPOINTS = Object.freeze({
-      "ni>": 0xF198B,
-      "ni^": 0xF198A,
-      "ni<": 0xF1989,
-      "sewi^": 0xF198C
-    });
-
-    function resolveTpWordInputKey(raw) {
-      const key = String(raw ?? "").trim().toLowerCase();
-      return TP_WORD_INPUT_ALIASES[key] ?? key;
-    }
-
-    function codepointForTpWordInput(raw) {
-      const key = resolveTpWordInputKey(raw);
-      return WORD_TO_UCSUR_CP[key] ?? TP_ALTERNATIVE_GLYPH_CODEPOINTS[key] ?? null;
-    }
-
     const UCSUR_CP_TO_WORD = new Map(
       Object.entries(WORD_TO_UCSUR_CP).map(([w, cp]) => [cp, w])
     );
@@ -2974,11 +2665,17 @@
 
       const cps = [];
       for (const p of parts) {
-        const cp = codepointForTpWordInput(p);
-        if (cp == null) {
-          throw new Error(`Invalid Toki Pona word "${p}". Only mapped words and exact alternative-glyph aliases are allowed.`);
+        const pp = WORD_TO_UCSUR_CP[p];
+        if(pp == null){
+          const w = p.toLowerCase();
+          const cp = WORD_TO_UCSUR_CP[w];
+          if (cp == null) {
+            throw new Error(`Invalid Toki Pona word "${p}". Only mapped words are allowed.`);
+          }
+          cps.push(cp);
+        }else{
+          cps.push(pp);
         }
-        cps.push(cp);
       }
 
       assertAllAllowedTpUcsur(cps);
@@ -2988,7 +2685,8 @@
     function tpWordsToUcsurCodepoints(words) {
       const cps = [];
       for (const w of words) {
-        const cp = codepointForTpWordInput(w);
+        const key = String(w).toLowerCase();
+        const cp = WORD_TO_UCSUR_CP[key];
         if (cp == null) throw new Error(`No UCSUR code point for word "${w}"`);
         cps.push(cp);
       }
@@ -3086,10 +2784,11 @@
 
         if (pair === "NE" && nextPair === "KE") {
           outStr += "n ";
+          outStr += "e";
           let countKe = 1;
           let j = i;
           while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE") { countKe += 1; j += 2; }
-          outStr += magnitudeKeProperNameFragment(countKe);
+          outStr += "ke".repeat(countKe);
           if ((i + 2 * countKe) < end) outStr += " ";
           i += 2 + 2 * countKe;
           continue;
@@ -3202,7 +2901,7 @@
           let j = i;
           while ((j + 6) <= end && s0.slice(j + 4, j + 6) === "KE") { countKe += 1; j += 2; }
           attachDelimiterN();
-          parts.push(...magnitudeKeProperNameFragment(countKe).split(/\s+/).filter(Boolean));
+          parts.push("e" + "ke".repeat(countKe));
           i += 2 + 2 * countKe;
           continue;
         }
@@ -3378,26 +3077,13 @@
       let x = border + pad;
 
       ctx2.fillStyle = "#111";
-      const positionedRuns = [];
 
       for (const g of glyphRuns) {
         ctx2.font = `${g.px}px "${FONT_FAMILY}"`;
         const drawX = x + (g.left ?? 0);
         ctx2.fillText(g.ch, drawX, baselineY + (g.yOffset ?? 0));
-        positionedRuns.push({
-          x,
-          width: g.tightW,
-          top: baselineY - g.ascent + (g.yOffset ?? 0),
-          height: g.ascent + g.descent
-        });
         x += g.tightW + letterGap;
       }
-
-      canvas._cartoucheAudioLayout = {
-        runs: positionedRuns,
-        innerY: border + 1,
-        innerHeight: Math.max(1, canvas.height - (border + 1) * 2)
-      };
 
       return { cartW, cartH, textW: totalWidth, textH: textHeight, maxAscent, maxDescent };
     }
@@ -3548,7 +3234,6 @@
 
     const canvasLarge = document.getElementById("canvasLarge");
     const canvasSmall = document.getElementById("canvasSmall");
-    const canvasSmallHighlight = document.getElementById("canvasSmallHighlight");
 
     const elCodesIn = document.getElementById("codepointsIn");
 
@@ -3678,955 +3363,40 @@
       });
     }
 
-    function splitCartoucheAudioSyllables(word) {
-      const source = String(word ?? "");
-      const lower = source.toLowerCase();
-      const vowels = new Set(["a", "e", "i", "o", "u"]);
-      const consonants = new Set(["p", "t", "k", "m", "n", "s", "w", "l", "j"]);
-      const out = [];
-      let index = 0;
-
-      while (index < lower.length) {
-        const start = index;
-        if (consonants.has(lower[index])) index += 1;
-        if (index >= lower.length || !vowels.has(lower[index])) return [source];
-        index += 1;
-
-        if (index < lower.length && lower[index] === "n") {
-          const following = index + 1 < lower.length ? lower[index + 1] : "";
-          if (!following || consonants.has(following)) index += 1;
-        }
-
-        out.push(source.slice(start, index));
-      }
-
-      return out.length ? out : [source];
-    }
-
-    function buildCartoucheAudioUnits(properName) {
-      const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
-      const units = [];
-      let index = 0;
-
-      for (let wordIndex = 0; wordIndex < words.length; wordIndex += 1) {
-        const word = words[wordIndex];
-        const wordUnits = WHOLE_NUMERIC_AUDIO_WORDS.has(word)
-          ? [word]
-          : splitCartoucheAudioSyllables(word);
-
-        for (let unitIndexInWord = 0; unitIndexInWord < wordUnits.length; unitIndexInWord += 1) {
-          units.push({
-            index,
-            text: wordUnits[unitIndexInWord],
-            word,
-            wordIndex,
-            unitIndexInWord,
-            wholeNumericPunctuationWord: WHOLE_NUMERIC_AUDIO_WORDS.has(word)
-          });
-          index += 1;
-        }
-      }
-
-      return units;
-    }
-
-    function renderCartoucheAudioProperName(properName, units = buildCartoucheAudioUnits(properName)) {
-      if (!elCartoucheValueTextTp) return;
-      elCartoucheValueTextTp.replaceChildren();
-      const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
-
-      for (let wordIndex = 0; wordIndex < words.length; wordIndex += 1) {
-        const wordWrap = document.createElement("span");
-        wordWrap.className = "cartouche-audio-word";
-
-        for (const unit of units.filter(item => item.wordIndex === wordIndex)) {
-          const span = document.createElement("span");
-          span.className = "cartouche-audio-unit";
-          span.dataset.cartoucheAudioUnitIndex = String(unit.index);
-          span.textContent = unit.text;
-          wordWrap.appendChild(span);
-        }
-
-        elCartoucheValueTextTp.appendChild(wordWrap);
-        if (wordIndex < words.length - 1) {
-          elCartoucheValueTextTp.appendChild(document.createTextNode(" "));
-        }
-      }
-    }
-
-    function renderCartoucheAudioValue(value) {
-      if (!elCartoucheValueText) return;
-      elCartoucheValueText.replaceChildren();
-      const characters = Array.from(String(value ?? ""));
-
-      for (let index = 0; index < characters.length; index += 1) {
-        const span = document.createElement("span");
-        span.className = "cartouche-value-character";
-        span.dataset.cartoucheValueIndex = String(index);
-        span.textContent = characters[index];
-        elCartoucheValueText.appendChild(span);
-      }
-    }
-
-    const CARTOUCHE_AUDIO_DIGIT_BY_SYLLABLE = Object.freeze({
-      ni: "0", we: "1", wa: "1", te: "2", tu: "2", se: "3", na: "4",
-      le: "5", lu: "5", nu: "6", me: "7", mu: "7", pe: "8", pi: "8", je: "9"
-    });
-
-    function cartoucheAudioDigitForUnit(unit) {
-      let lower = String(unit?.text ?? "").toLowerCase();
-      if (lower.endsWith("n") && lower.length > 2) lower = lower.slice(0, -1);
-      return CARTOUCHE_AUDIO_DIGIT_BY_SYLLABLE[lower] ?? null;
-    }
-
-    function cartoucheAudioKindForValue(value) {
-      const text = String(value ?? "");
-      if (/[eE]/.test(text)) return "scientific-notation";
-      if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(text)) return "hh-mm-time";
-      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return "iso-date";
-      if (text.includes(",")) return "thousands";
-      return "numeric";
-    }
-
-    function cartoucheMagnitudeKeCountForWord(word) {
-      const lower = String(word ?? "").toLowerCase();
-      if (!/^(?:e(?:ke)+|(?:ke){2,3})n?$/.test(lower)) return 0;
-      return (lower.match(/ke/g) || []).length;
-    }
-
-    function cartoucheMagnitudeSuffixCharactersForKeCount(keCount) {
-      if (keCount === 1) return ["K", "k"];
-      if (keCount === 2) return ["M", "m"];
-      if (keCount === 3) return ["B", "b"];
-      if (keCount === 4) return ["T", "t"];
-      return [];
-    }
-
-    function buildCartoucheMagnitudePunctuationDescriptors(units, characters, kind) {
-      const words = [];
-      const seen = new Set();
-      for (const unit of units) {
-        if (seen.has(unit.wordIndex)) continue;
-        seen.add(unit.wordIndex);
-        words.push({
-          wordIndex: unit.wordIndex,
-          text: String(unit.word ?? "").toLowerCase()
-        });
-      }
-
-      const descriptors = new Map();
-      for (let index = 0; index < words.length; index += 1) {
-        const first = words[index];
-        if (!/^e(?:ke)+n?$/.test(first.text)) continue;
-
-        const sequence = [first];
-        let totalKeCount = cartoucheMagnitudeKeCountForWord(first.text);
-        let nextIndex = index + 1;
-        while (nextIndex < words.length && /^(?:ke){2,3}n?$/.test(words[nextIndex].text)) {
-          sequence.push(words[nextIndex]);
-          totalKeCount += cartoucheMagnitudeKeCountForWord(words[nextIndex].text);
-          nextIndex += 1;
-        }
-
-        const suffixCharacters = cartoucheMagnitudeSuffixCharactersForKeCount(totalKeCount);
-        const compactSuffix = suffixCharacters.some(character => characters.includes(character));
-        if (compactSuffix) {
-          const sharedTargetKey = `magnitude-suffix-${first.wordIndex}`;
-          for (const item of sequence) {
-            descriptors.set(item.wordIndex, {
-              characters: new Set(suffixCharacters),
-              count: 1,
-              fallbackToNextDigit: false,
-              targetKey: sharedTargetKey
-            });
-          }
-        } else {
-          const punctuationCharacters =
-            kind === "hh-mm-time" ? new Set([":"]) :
-            kind === "iso-date" ? new Set(["-"]) :
-            kind === "thousands" ? new Set([","]) :
-            new Set([",", ":", "-"]);
-
-          for (const item of sequence) {
-            const itemKeCount = cartoucheMagnitudeKeCountForWord(item.text);
-            descriptors.set(item.wordIndex, {
-              characters: punctuationCharacters,
-              count: Math.max(1, itemKeCount),
-              fallbackToNextDigit: true,
-              targetKey: item.wordIndex
-            });
-          }
-        }
-
-        index = nextIndex - 1;
-      }
-
-      return descriptors;
-    }
-
-    function cartoucheAudioPunctuationDescriptor(word, kind, wordIndex, magnitudeDescriptors) {
-      const lower = String(word ?? "").toLowerCase();
-      if (magnitudeDescriptors?.has(wordIndex)) return magnitudeDescriptors.get(wordIndex);
-      if (lower === "neno") return { characters: new Set(["-"]), count: 1 };
-      if (lower === "one") return { characters: new Set(["."]), count: 1 };
-      if (/^e(?:ke)+n?$/.test(lower)) {
-        const count = Math.max(1, (lower.match(/ke/g) || []).length);
-        if (kind === "hh-mm-time") return { characters: new Set([":"]), count };
-        if (kind === "iso-date") return { characters: new Set(["-"]), count };
-        if (kind === "thousands") return { characters: new Set([","]), count };
-        return {
-          characters: new Set([",", ":", "-", ...cartoucheMagnitudeSuffixCharactersForKeCount(count)]),
-          count,
-          fallbackToNextDigit: true
-        };
-      }
-      if (lower === "oken") return { characters: new Set(["%"]), count: 1 };
-      if (lower === "ono") return { characters: new Set(["/", "⁄"]), count: 1 };
-      if (lower === "oko") return { characters: new Set(["+"]), count: 1 };
-      if (lower === "eko") return { characters: new Set(["e", "E"]), count: 1 };
-      if (lower === "ene") return { characters: new Set(["-", "_", " "]), count: 1 };
-      return null;
-    }
-
-    function scientificMarkerWordIndexes(units) {
-      const words = [];
-      const seen = new Set();
-
-      for (const unit of units) {
-        if (seen.has(unit.wordIndex)) continue;
-        seen.add(unit.wordIndex);
-        words.push({ wordIndex: unit.wordIndex, text: String(unit.word ?? "").toLowerCase() });
-      }
-
-      const result = new Set();
-
-      // Current output has one Eko word. Legacy output used
-      // Eko Wanin/Wenin Eko; all three legacy words still target the same e.
-      for (const word of words) {
-        if (word.text === "eko") result.add(word.wordIndex);
-      }
-      for (let index = 0; index + 2 < words.length; index += 1) {
-        const first = words[index];
-        const middle = words[index + 1];
-        const last = words[index + 2];
-        if (first.text === "eko" && /^(?:wanin|wenin)$/.test(middle.text) && last.text === "eko") {
-          result.add(middle.wordIndex);
-        }
-      }
-      return result;
-    }
-
-    function buildCartoucheValueHighlightMap(value, units) {
-      const characters = Array.from(String(value ?? ""));
-      const kind = cartoucheAudioKindForValue(value);
-      const map = [];
-      const used = new Set();
-      const punctuationTargetsByWord = new Map();
-      const magnitudeDescriptors = buildCartoucheMagnitudePunctuationDescriptors(units, characters, kind);
-      const markerWords = kind === "scientific-notation"
-        ? scientificMarkerWordIndexes(units)
-        : new Set();
-      const scientificEIndex = kind === "scientific-notation"
-        ? characters.findIndex(character => character === "e" || character === "E")
-        : -1;
-      let scientificMarkerClaimed = false;
-      let cursor = 0;
-
-      const takeNext = (predicate, count = 1) => {
-        const positions = [];
-        for (let index = cursor; index < characters.length && positions.length < count; index += 1) {
-          if (!used.has(index) && predicate(characters[index], index)) {
-            used.add(index);
-            positions.push(index);
-          }
-        }
-        if (positions.length) cursor = Math.max(cursor, positions[positions.length - 1] + 1);
-        return positions;
-      };
-
-      for (const unit of units) {
-        const lowerText = String(unit.text ?? "").toLowerCase();
-
-        if (unit.index === 0 && lowerText === "ne") {
-          map[unit.index] = [];
-          continue;
-        }
-
-        if (scientificEIndex >= 0 && markerWords.has(unit.wordIndex)) {
-          if (!scientificMarkerClaimed) {
-            used.add(scientificEIndex);
-            cursor = Math.max(cursor, scientificEIndex + 1);
-            scientificMarkerClaimed = true;
-          }
-          map[unit.index] = [scientificEIndex];
-          continue;
-        }
-
-        const punctuation = cartoucheAudioPunctuationDescriptor(
-          unit.word,
-          kind,
-          unit.wordIndex,
-          magnitudeDescriptors
-        );
-        if (punctuation) {
-          const punctuationTargetKey = punctuation.targetKey ?? unit.wordIndex;
-          if (!punctuationTargetsByWord.has(punctuationTargetKey)) {
-            let positions = takeNext(
-              character => punctuation.characters.has(character),
-              punctuation.count
-            );
-            if (!positions.length && punctuation.fallbackToNextDigit) {
-              positions = takeNext(character => /\d/.test(character), Math.max(1, punctuation.count));
-            }
-            punctuationTargetsByWord.set(punctuationTargetKey, positions);
-          }
-          map[unit.index] = Array.from(punctuationTargetsByWord.get(punctuationTargetKey) || []);
-          continue;
-        }
-
-        if (lowerText === "no") {
-          map[unit.index] = takeNext(character => character === "-", 1);
-          continue;
-        }
-        if (lowerText === "inin") {
-          map[unit.index] = takeNext(character => /\d/.test(character), 2);
-          continue;
-        }
-        if (cartoucheAudioDigitForUnit(unit) != null) {
-          map[unit.index] = takeNext(character => /\d/.test(character), 1);
-          continue;
-        }
-        map[unit.index] = [];
-      }
-
-      return map;
-    }
-
-    function cartoucheAudioUnitSourceRanges(units) {
-      const ranges = [];
-      let cursor = 0;
-      for (const unit of units) {
-        const count = Array.from(String(unit.text ?? "")).length;
-        ranges[unit.index] = { start: cursor, end: cursor + count, wordIndex: unit.wordIndex };
-        cursor += count;
-      }
-      return { ranges, total: cursor };
-    }
-
-    function cartoucheHighlightRectsForIndexes(layout, indexes) {
-      const runs = Array.from(layout?.runs || []);
-      const sorted = Array.from(new Set(indexes || []))
-        .filter(index => Number.isInteger(index) && index >= 0 && index < runs.length)
-        .sort((left, right) => left - right);
-      if (!sorted.length) return [];
-
-      const groups = [];
-      let current = [sorted[0]];
-      for (let index = 1; index < sorted.length; index += 1) {
-        if (sorted[index] === sorted[index - 1] + 1) current.push(sorted[index]);
-        else {
-          groups.push(current);
-          current = [sorted[index]];
-        }
-      }
-      groups.push(current);
-
-      return groups.map(group => {
-        const first = runs[group[0]];
-        const last = runs[group[group.length - 1]];
-        return {
-          x: Math.max(0, first.x - 1),
-          y: Math.max(0, layout.innerY),
-          width: Math.max(1, last.x + last.width - first.x + 2),
-          height: Math.max(1, layout.innerHeight)
-        };
-      });
-    }
-
-    function buildFullCartoucheAudioHighlightMap(units, fullCodepoints, layout) {
-      const sourceRanges = cartoucheAudioUnitSourceRanges(units);
-      const runs = Array.from(layout?.runs || []);
-      if (runs.length !== sourceRanges.total || runs.length !== Array.from(fullCodepoints || []).length) return [];
-
-      const map = [];
-      for (const unit of units) {
-        const range = sourceRanges.ranges[unit.index];
-        const indexes = [];
-        for (let index = range.start; index < range.end; index += 1) indexes.push(index);
-        map[unit.index] = cartoucheHighlightRectsForIndexes(layout, indexes);
-      }
-      return map;
-    }
-
-    function buildAbbreviatedCartoucheAudioHighlightMap(units, fullCodepoints, displayedCodepoints, layout) {
-      const sourceRanges = cartoucheAudioUnitSourceRanges(units);
-      const full = Array.from(fullCodepoints || [], Number);
-      const displayed = Array.from(displayedCodepoints || [], Number);
-      const entries = abbreviateNumericCartoucheEntries(full);
-      const runs = Array.from(layout?.runs || []);
-
-      if (
-        sourceRanges.total !== full.length ||
-        entries.length !== displayed.length ||
-        runs.length !== displayed.length ||
-        !entries.every((entry, index) => entry.cp === displayed[index])
-      ) return [];
-
-      const wordRanges = new Map();
-      for (const unit of units) {
-        const range = sourceRanges.ranges[unit.index];
-        const existing = wordRanges.get(unit.wordIndex);
-        if (!existing) wordRanges.set(unit.wordIndex, { start: range.start, end: range.end });
-        else {
-          existing.start = Math.min(existing.start, range.start);
-          existing.end = Math.max(existing.end, range.end);
-        }
-      }
-
-      const map = [];
-      for (const unit of units) {
-        const range = sourceRanges.ranges[unit.index];
-        let indexes = entries
-          .map((entry, index) => ({ entry, index }))
-          .filter(({ entry }) => entry.sourceIndex >= range.start && entry.sourceIndex < range.end)
-          .map(({ index }) => index);
-
-        if (!indexes.length) {
-          const wordRange = wordRanges.get(unit.wordIndex);
-          const sameWord = entries
-            .map((entry, index) => ({ entry, index }))
-            .filter(({ entry }) => wordRange && entry.sourceIndex >= wordRange.start && entry.sourceIndex < wordRange.end);
-          const candidates = sameWord.length
-            ? sameWord
-            : entries.map((entry, index) => ({ entry, index }));
-
-          if (candidates.length) {
-            const midpoint = (range.start + range.end - 1) / 2;
-            let bestDistance = Number.POSITIVE_INFINITY;
-            for (const candidate of candidates) {
-              bestDistance = Math.min(bestDistance, Math.abs(candidate.entry.sourceIndex - midpoint));
-            }
-            indexes = candidates
-              .filter(candidate => Math.abs(candidate.entry.sourceIndex - midpoint) === bestDistance)
-              .map(candidate => candidate.index);
-          }
-        }
-
-        map[unit.index] = cartoucheHighlightRectsForIndexes(layout, indexes);
-      }
-      return map;
-    }
-
-    function syncCartoucheHighlightCanvas() {
-      if (!canvasSmall || !canvasSmallHighlight) return null;
-      const displayed = canvasSmall.getBoundingClientRect();
-      const style = window.getComputedStyle ? window.getComputedStyle(canvasSmall) : null;
-      const borderLeft = Math.max(0, parseFloat(style?.borderLeftWidth) || 0);
-      const borderRight = Math.max(0, parseFloat(style?.borderRightWidth) || 0);
-      const borderTop = Math.max(0, parseFloat(style?.borderTopWidth) || 0);
-      const borderBottom = Math.max(0, parseFloat(style?.borderBottomWidth) || 0);
-      const cssWidth = Math.max(
-        1,
-        canvasSmall.clientWidth || displayed.width - borderLeft - borderRight || canvasSmall.width || 1
-      );
-      const cssHeight = Math.max(
-        1,
-        canvasSmall.clientHeight || displayed.height - borderTop - borderBottom || canvasSmall.height || 1
-      );
-      const pixelRatio = Math.max(1, Number(window.devicePixelRatio) || 1);
-      const backingWidth = Math.max(1, Math.round(cssWidth * pixelRatio));
-      const backingHeight = Math.max(1, Math.round(cssHeight * pixelRatio));
-
-      canvasSmallHighlight.style.left = `${borderLeft}px`;
-      canvasSmallHighlight.style.top = `${borderTop}px`;
-      canvasSmallHighlight.style.width = `${cssWidth}px`;
-      canvasSmallHighlight.style.height = `${cssHeight}px`;
-      if (canvasSmallHighlight.width !== backingWidth) canvasSmallHighlight.width = backingWidth;
-      if (canvasSmallHighlight.height !== backingHeight) canvasSmallHighlight.height = backingHeight;
-
-      const ctx = canvasSmallHighlight.getContext("2d", { alpha: true });
-      return {
-        ctx,
-        scaleX: backingWidth / Math.max(1, canvasSmall.width),
-        scaleY: backingHeight / Math.max(1, canvasSmall.height),
-        pixelRatio
-      };
-    }
-
-    function clearCartoucheCanvasHighlight() {
-      const synced = syncCartoucheHighlightCanvas();
-      if (!synced) return;
-      synced.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      synced.ctx.clearRect(0, 0, synced.ctx.canvas.width, synced.ctx.canvas.height);
-    }
-
-    function drawCartoucheCanvasHighlight(index) {
-      const synced = syncCartoucheHighlightCanvas();
-      if (!synced) return;
-      const { ctx, scaleX, scaleY, pixelRatio } = synced;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-      const rects = Array.isArray(currentCartoucheAudioModel?.cartoucheHighlightMap?.[index])
-        ? currentCartoucheAudioModel.cartoucheHighlightMap[index]
-        : [];
-      if (!rects.length) return;
-
-      ctx.save();
-      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
-      ctx.fillStyle = "rgba(255, 225, 70, 0.46)";
-      ctx.strokeStyle = "rgba(17, 17, 17, 0.78)";
-      ctx.lineWidth = (1.25 * pixelRatio) / Math.max(scaleX, scaleY);
-
-      for (const rect of rects) {
-        ctx.beginPath();
-        if (typeof ctx.roundRect === "function") {
-          ctx.roundRect(rect.x, rect.y, rect.width, rect.height, Math.max(2, Math.min(6, rect.height * 0.15)));
-        } else {
-          ctx.rect(rect.x, rect.y, rect.width, rect.height);
-        }
-        ctx.fill();
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    function clearCartoucheAudioHighlights() {
-      activeCartoucheAudioUnitIndex = null;
-      elCartoucheValueTextTp?.querySelectorAll(".cartouche-audio-unit.is-speaking").forEach(node => {
-        node.classList.remove("is-speaking");
-      });
-      elCartoucheValueText?.querySelectorAll(".cartouche-value-character.is-speaking").forEach(node => {
-        node.classList.remove("is-speaking");
-      });
-      clearCartoucheCanvasHighlight();
-    }
-
-    function highlightCartoucheAudioUnit(index) {
-      activeCartoucheAudioUnitIndex = index;
-      elCartoucheValueTextTp?.querySelectorAll(".cartouche-audio-unit.is-speaking").forEach(node => {
-        node.classList.remove("is-speaking");
-      });
-      elCartoucheValueTextTp
-        ?.querySelector(`[data-cartouche-audio-unit-index="${index}"]`)
-        ?.classList.add("is-speaking");
-
-      elCartoucheValueText?.querySelectorAll(".cartouche-value-character.is-speaking").forEach(node => {
-        node.classList.remove("is-speaking");
-      });
-      for (const valueIndex of currentCartoucheAudioModel?.valueHighlightMap?.[index] || []) {
-        elCartoucheValueText
-          ?.querySelector(`[data-cartouche-value-index="${valueIndex}"]`)
-          ?.classList.add("is-speaking");
-      }
-      drawCartoucheCanvasHighlight(index);
-    }
-
-    function configureCartoucheAudioModel({ properName, value, fullCodepoints, displayedCodepoints, abbreviated }) {
-      stopCartoucheAudioPlayback();
-      const units = buildCartoucheAudioUnits(properName);
-      renderCartoucheAudioProperName(properName, units);
-      renderCartoucheAudioValue(value);
-
-      const layout = canvasSmall?._cartoucheAudioLayout;
-      const cartoucheHighlightMap = abbreviated
-        ? buildAbbreviatedCartoucheAudioHighlightMap(units, fullCodepoints, displayedCodepoints, layout)
-        : buildFullCartoucheAudioHighlightMap(units, fullCodepoints, layout);
-
-      currentCartoucheAudioModel = {
-        properName,
-        value,
-        units,
-        fullCodepoints: Array.from(fullCodepoints || [], Number),
-        displayedCodepoints: Array.from(displayedCodepoints || [], Number),
-        abbreviated: !!abbreviated,
-        valueHighlightMap: buildCartoucheValueHighlightMap(value, units),
-        cartoucheHighlightMap
-      };
-      setCartoucheAudioButtonState("stopped");
-      clearCartoucheAudioHighlights();
-    }
-
-    function setCartoucheAudioButtonState(state) {
-      cartoucheAudioState = state;
-      const button = document.getElementById("btnPlayCartoucheAudio");
-      if (!button) return;
-      button.disabled = state === "building" || !currentCartoucheAudioModel;
-
-      if (state === "building") {
-        button.textContent = "⏳";
-        button.title = "Preparing audio";
-        button.setAttribute("aria-label", button.title);
-        button.setAttribute("aria-busy", "true");
-      } else if (state === "playing") {
-        button.textContent = "⏸️";
-        button.title = "Pause audio";
-        button.setAttribute("aria-label", button.title);
-        button.removeAttribute("aria-busy");
-      } else if (state === "paused") {
-        button.textContent = "▶️";
-        button.title = "Continue audio";
-        button.setAttribute("aria-label", button.title);
-        button.removeAttribute("aria-busy");
-      } else {
-        button.textContent = "🤖🔊";
-        button.title = "Play audio";
-        button.setAttribute("aria-label", button.title);
-        button.removeAttribute("aria-busy");
-      }
-    }
-
-    function cancelCartoucheAudioSource(session) {
-      if (session?.highlightFrame) {
-        cancelAnimationFrame(session.highlightFrame);
-        session.highlightFrame = null;
-      }
-      if (!session?.currentSource) return;
-      const source = session.currentSource;
-      session.currentSource = null;
-      try { source.onended = null; } catch {}
-      try { source.stop(); } catch {}
-      try { source.disconnect(); } catch {}
-    }
-
-    function stopCartoucheAudioPlayback() {
-      cartoucheAudioGeneration += 1;
-      if (cartoucheAudioSession) cancelCartoucheAudioSource(cartoucheAudioSession);
-      cartoucheAudioSession = null;
-      clearCartoucheAudioHighlights();
-      try { voice?.stop?.(); } catch {}
-      setCartoucheAudioButtonState("stopped");
-    }
-
-    function buildCartoucheAudioTimeline(rendered, units, sampleLength) {
-      const timeline = Array.from(rendered?.timeline || [])
-        .map(record => ({
-          ...record,
-          startSample: Math.max(0, Math.round(Number(record?.startSample) || 0)),
-          endSample: Math.max(0, Math.round(Number(record?.endSample) || 0))
-        }))
-        .filter(record => record.endSample > record.startSample);
-
-      if (!timeline.length) {
-        throw new Error("The voice API did not return a usable nanpa-unit timeline.");
-      }
-      if (
-        timeline[0].startSample !== 0 ||
-        timeline[timeline.length - 1].endSample !== sampleLength
-      ) {
-        throw new Error("The voice API timeline does not cover the complete proper-name waveform.");
-      }
-      for (let index = 1; index < timeline.length; index += 1) {
-        if (timeline[index - 1].endSample !== timeline[index].startSample) {
-          throw new Error("The voice API timeline is not contiguous.");
-        }
-      }
-
-      const speechRecords = timeline.filter(record =>
-        record.kind === "speech" && record.nanpaUnit
-      );
-      if (speechRecords.length !== units.length) {
-        throw new Error(
-          `Nanpa audio timeline mismatch: ${speechRecords.length} audio units for ${units.length} highlight units.`
-        );
-      }
-
-      let speechIndex = 0;
-      return timeline.map(record => {
-        if (record.kind === "speech" && record.nanpaUnit) {
-          const unit = units[speechIndex];
-          const expected = String(unit?.text ?? "").replace(/'/g, "").toLowerCase();
-          const actual = String(record.audioUnitKey ?? "").replace(/'/g, "").toLowerCase();
-          if (!expected || expected !== actual) {
-            throw new Error(
-              `Nanpa audio unit mismatch at unit ${speechIndex + 1}: expected "${expected}", received "${actual || "none"}".`
-            );
-          }
-          speechIndex += 1;
-          return {
-            kind: "unit",
-            highlightIndex: unit.index,
-            startSample: record.startSample,
-            endSample: record.endSample
-          };
-        }
-
-        return {
-          kind: "gap",
-          highlightIndex: null,
-          startSample: record.startSample,
-          endSample: record.endSample
-        };
-      });
-    }
-
-    async function prepareCartoucheAudio(model, generation) {
-      const key = `${model.properName}|normal`;
-      if (cartoucheAudioCache.has(key)) return cartoucheAudioCache.get(key);
-      const rendered = await voice.render(model.properName, {
-        synthesis_mode: "reference_audio",
-        pauseScale: CARTOUCHE_AUDIO_PAUSE_SCALE,
-        syllableGapSeconds: CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS
-      });
-      if (generation !== cartoucheAudioGeneration) return null;
-
-      const samples = rendered.samples instanceof Float32Array
-        ? rendered.samples
-        : Float32Array.from(rendered.samples || []);
-      if (!samples.length || !rendered.sampleRate) {
-        throw new Error("No nanpa-linja-n audio samples were produced.");
-      }
-
-      const prepared = {
-        samples,
-        sampleRate: Number(rendered.sampleRate),
-        timeline: buildCartoucheAudioTimeline(rendered, model.units, samples.length)
-      };
-      cartoucheAudioCache.set(key, prepared);
-      return prepared;
-    }
-
-    function getCartoucheAudioContext() {
-      if (!cartoucheAudioContext) {
-        const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextCtor) throw new Error("Web Audio is not supported in this browser.");
-        cartoucheAudioContext = new AudioContextCtor();
-      }
-      return cartoucheAudioContext;
-    }
-
-    function cartoucheAudioBuffer(session) {
-      if (session.audioBuffer) return session.audioBuffer;
-      const buffer = session.audioContext.createBuffer(
-        1,
-        session.samples.length,
-        session.sampleRate
-      );
-      buffer.copyToChannel(session.samples, 0);
-      session.audioBuffer = buffer;
-      return buffer;
-    }
-
-    function completeCartoucheAudioPlayback(generation) {
-      if (generation !== cartoucheAudioGeneration) return;
-      if (cartoucheAudioSession) cancelCartoucheAudioSource(cartoucheAudioSession);
-      cartoucheAudioSession = null;
-      clearCartoucheAudioHighlights();
-      setCartoucheAudioButtonState("stopped");
-    }
-
-    function cancelCartoucheAudioHighlightFrame(session) {
-      if (!session?.highlightFrame) return;
-      cancelAnimationFrame(session.highlightFrame);
-      session.highlightFrame = null;
-    }
-
-    function cartoucheAudioTimelineEntryAtOffset(session, offsetSeconds) {
-      const sample = Math.max(
-        0,
-        Math.min(
-          session.samples.length - 1,
-          Math.floor((Number(offsetSeconds) || 0) * session.sampleRate)
-        )
-      );
-
-      for (const entry of session.timeline) {
-        if (sample >= entry.startSample && sample < entry.endSample) return entry;
-      }
-      return session.timeline[session.timeline.length - 1] || null;
-    }
-
-    function drawCartoucheAudioTimelineEntry(session, entry) {
-      const key = entry?.kind === "unit" && Number.isInteger(entry.highlightIndex)
-        ? entry.highlightIndex
-        : null;
-      if (session.activeHighlightIndex === key) return;
-      session.activeHighlightIndex = key;
-
-      if (key == null) clearCartoucheAudioHighlights();
-      else highlightCartoucheAudioUnit(key);
-    }
-
-    function startCartoucheAudioHighlightLoop(session, source) {
-      cancelCartoucheAudioHighlightFrame(session);
-
-      const tick = () => {
-        if (!cartoucheAudioSession || cartoucheAudioSession !== session) return;
-        if (session.generation !== cartoucheAudioGeneration) return;
-        if (session.currentSource !== source || cartoucheAudioState !== "playing") return;
-
-        const offset =
-          session.sourceStartedOffset +
-          Math.max(0, session.audioContext.currentTime - session.sourceStartedAt);
-        drawCartoucheAudioTimelineEntry(
-          session,
-          cartoucheAudioTimelineEntryAtOffset(session, offset)
-        );
-
-        if (offset < session.currentBuffer.duration) {
-          session.highlightFrame = requestAnimationFrame(tick);
-        }
-      };
-
-      drawCartoucheAudioTimelineEntry(
-        session,
-        cartoucheAudioTimelineEntryAtOffset(session, session.sourceStartedOffset)
-      );
-      session.highlightFrame = requestAnimationFrame(tick);
-    }
-
-    function playCartoucheAudioBuffer() {
-      const session = cartoucheAudioSession;
-      if (!session || session.generation !== cartoucheAudioGeneration) return;
-
-      const buffer = cartoucheAudioBuffer(session);
-      const offset = Math.max(
-        0,
-        Math.min(
-          Number(session.currentOffsetSeconds) || 0,
-          Math.max(0, buffer.duration - 0.001)
-        )
-      );
-      const source = session.audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(session.audioContext.destination);
-
-      session.currentSource = source;
-      session.currentBuffer = buffer;
-      session.sourceStartedAt = session.audioContext.currentTime;
-      session.sourceStartedOffset = offset;
-      startCartoucheAudioHighlightLoop(session, source);
-      setCartoucheAudioButtonState("playing");
-
-      source.onended = () => {
-        if (!cartoucheAudioSession || cartoucheAudioSession !== session) return;
-        if (
-          session.generation !== cartoucheAudioGeneration ||
-          session.currentSource !== source ||
-          cartoucheAudioState !== "playing"
-        ) return;
-
-        cancelCartoucheAudioHighlightFrame(session);
-        session.currentSource = null;
-        try { source.disconnect(); } catch {}
-        session.currentBuffer = null;
-        session.currentOffsetSeconds = 0;
-        completeCartoucheAudioPlayback(session.generation);
-      };
-
-      source.start(0, offset);
-    }
-
-    function pauseCartoucheAudio() {
-      const session = cartoucheAudioSession;
-      if (!session || cartoucheAudioState !== "playing" || !session.currentSource) return;
-
-      const elapsed = Math.max(
-        0,
-        session.audioContext.currentTime - session.sourceStartedAt
-      );
-      session.currentOffsetSeconds = Math.min(
-        session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
-        session.sourceStartedOffset + elapsed
-      );
-      cancelCartoucheAudioHighlightFrame(session);
-      cancelCartoucheAudioSource(session);
-      setCartoucheAudioButtonState("paused");
-    }
-
-    function resumeCartoucheAudio() {
-      if (!cartoucheAudioSession || cartoucheAudioState !== "paused") return;
-      playCartoucheAudioBuffer();
-    }
-
-    async function startCartoucheAudio() {
-      const model = currentCartoucheAudioModel;
-      if (!model) {
-        announceStatus("No nanpa-linja-n proper name to play.");
-        return;
-      }
-
-      const generation = ++cartoucheAudioGeneration;
-      setCartoucheAudioButtonState("building");
-      clearCartoucheAudioHighlights();
-
-      try {
-        const button = document.getElementById("btnPlayCartoucheAudio");
-        button?.setCustomValidity("");
-        const prepared = await prepareCartoucheAudio(model, generation);
-        if (!prepared || generation !== cartoucheAudioGeneration || currentCartoucheAudioModel !== model) return;
-        const audioContext = getCartoucheAudioContext();
-        await audioContext.resume();
-        if (generation !== cartoucheAudioGeneration || currentCartoucheAudioModel !== model) return;
-
-        cartoucheAudioSession = {
-          generation,
-          audioContext,
-          samples: prepared.samples,
-          sampleRate: prepared.sampleRate,
-          timeline: prepared.timeline,
-          currentOffsetSeconds: 0,
-          currentSource: null,
-          currentBuffer: null,
-          audioBuffer: null,
-          sourceStartedAt: 0,
-          sourceStartedOffset: 0,
-          highlightFrame: null,
-          activeHighlightIndex: null
-        };
-        if (!cartoucheAudioSession.samples.length) throw new Error("No audio samples were produced.");
-        playCartoucheAudioBuffer();
-
-        if (typeof window.trackUsage === "function") {
-          window.trackUsage("renderer-audio-play");
-        }
-      } catch (err) {
-        if (generation !== cartoucheAudioGeneration) return;
-        cartoucheAudioSession = null;
-        clearCartoucheAudioHighlights();
-        setCartoucheAudioButtonState("stopped");
-        const button = document.getElementById("btnPlayCartoucheAudio");
-        if (button) {
-          button.setCustomValidity(`Audio error: ${err?.message ?? String(err)}`);
-          button.reportValidity();
-        } else {
-          showAlertAndAnnounce(err?.message ?? String(err));
-        }
-      }
-    }
-
-    function toggleCartoucheAudio() {
-      if (cartoucheAudioState === "playing") {
-        pauseCartoucheAudio();
-        return;
-      }
-      if (cartoucheAudioState === "paused") {
-        resumeCartoucheAudio();
-        return;
-      }
-      startCartoucheAudio();
+    function getCurrentNanpaLinjanProperNameForAudio() {
+      const belowCartouche = String(elCartoucheValueTextTp?.textContent ?? "").trim();
+      if (belowCartouche) return belowCartouche;
+
+      return String(elLatinOut?.value ?? "").trim();
     }
 
     function wireCartoucheAudioButton() {
-      const button = document.getElementById("btnPlayCartoucheAudio");
-      if (!button) return;
-      button.addEventListener("click", toggleCartoucheAudio);
+      const btn = document.getElementById("btnPlayCartoucheAudio");
+      if (!btn) return;
 
-      for (const input of [elDecimal, elCodesIn, elTpWordsIn]) {
-        input?.addEventListener("input", stopCartoucheAudioPlayback);
-      }
+      btn.addEventListener("click", async () => {
+        const properName = getCurrentNanpaLinjanProperNameForAudio();
 
-      const redraw = () => {
-        if (Number.isInteger(activeCartoucheAudioUnitIndex)) {
-          drawCartoucheCanvasHighlight(activeCartoucheAudioUnitIndex);
-        } else {
-          clearCartoucheCanvasHighlight();
+        if (!properName) {
+          announceStatus("No nanpa-linja-n proper name to play.");
+          return;
         }
-      };
-      window.addEventListener("resize", redraw);
-      window.visualViewport?.addEventListener("resize", redraw);
-      window.addEventListener("beforeunload", stopCartoucheAudioPlayback);
-      setCartoucheAudioButtonState("stopped");
+
+        try {
+          btn.disabled = true;
+          await voice.play(properName);
+
+          if (typeof window.trackUsage === "function") {
+            window.trackUsage("renderer-audio-play");
+          }
+
+          announceStatus(`Played audio for ${properName}.`);
+        } catch (err) {
+          showAlertAndAnnounce(err?.message ?? String(err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
     }
 
 
@@ -4639,9 +3409,7 @@
       const sCart = (cartoucheValueOrNull == null) ? "" : String(cartoucheValueOrNull).trim();
       const sProperName = (properNameOrNull == null) ? "" : String(properNameOrNull).trim();
 
-      stopCartoucheAudioPlayback();
-      currentCartoucheAudioModel = null;
-
+      // Existing hidden/large “Value:” line
       if (elDecimalValueLine && elDecimalValueText) {
         if (!sDisplay) {
           elDecimalValueText.textContent = "";
@@ -4652,20 +3420,18 @@
         }
       }
 
+      // Small-cartouche “Cartouche value” line
       if (elCartoucheValueBox && elCartoucheValueText && elCartoucheValueTextTp) {
         if (!sCart) {
-          elCartoucheValueText.replaceChildren();
-          elCartoucheValueTextTp.replaceChildren();
+          elCartoucheValueText.textContent = "";
+          elCartoucheValueTextTp.textContent = "";
           elCartoucheValueBox.classList.add("hidden");
         } else {
-          renderCartoucheAudioValue(sCart);
-          renderCartoucheAudioProperName(sProperName);
+          elCartoucheValueText.textContent = sCart;
+          elCartoucheValueTextTp.textContent = sProperName;
           elCartoucheValueBox.classList.remove("hidden");
         }
       }
-
-      setCartoucheAudioButtonState("stopped");
-      clearCartoucheCanvasHighlight();
     }
 
     function enforceMaxLen(el, maxLen = MAX_DECIMAL_INPUT_CHARS) {
@@ -5175,10 +3941,10 @@
         return;
       }
 
-      // Accept valid mapped words and the six exact alternative-glyph aliases.
+      // Accept valid mapped words (including en)
       const parts = raw.split(/\s+/).filter(Boolean);
       for (const p of parts) {
-        if (codepointForTpWordInput(p) == null) {
+        if (WORD_TO_UCSUR_CP[p.toLowerCase()] == null) {
           elTpWordsIn.setCustomValidity(`Invalid word: ${p}`);
           return;
         }
@@ -5186,7 +3952,7 @@
       elTpWordsIn.setCustomValidity("");
     }
 
-    if (elTpWordsIn) elTpWordsIn.addEventListener("input", () => validateTpWordsInputLive());
+    if (elTpWordsIn) elTpWordsIn.addEventListener("input", validateTpWordsInputLive);
 
     if (elDecimal) {
       elDecimal.addEventListener("keydown", (e) => {
@@ -5237,30 +4003,35 @@
       ABBREV_CP_UTA
     ]);
 
-    const PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION = true;
+    const PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION = false;
 
-    function abbreviateNumericCartoucheEntries(cps) {
+    function abbreviateNumericCartoucheCps(cps) {
       const input = Array.from(cps ?? []).map(cp => Number(cp));
-      if (!input.length) return [];
+      if (!input.length) return input;
 
       const out = [];
       let keptFirstNanpa = false;
 
       for (let i = 0; i < input.length; i++) {
         const cp = input[i];
-        const isFinalNanpa = cp === ABBREV_CP_NANPA && i === input.length - 1;
+        const isFinalNanpa =
+          cp === ABBREV_CP_NANPA &&
+          i === input.length - 1;
 
         if (!keptFirstNanpa) {
-          out.push({ cp, sourceIndex: i });
-          if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
+          out.push(cp);
+          if (cp === ABBREV_CP_NANPA) {
+            keptFirstNanpa = true;
+          }
           continue;
         }
 
         if (isFinalNanpa) {
-          out.push({ cp, sourceIndex: i });
+          out.push(cp);
           continue;
         }
 
+        // This must run before the generic drop-set check.
         if (
           PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION &&
           cp === ABBREV_CP_NENA &&
@@ -5268,20 +4039,21 @@
           input[i + 2] === ABBREV_CP_NENA &&
           input[i + 3] === ABBREV_CP_EN
         ) {
-          out.push({ cp: ABBREV_CP_EN, sourceIndex: i + 3 });
+          out.push(ABBREV_CP_EN);
           i += 3;
           continue;
         }
 
-        if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
-        out.push({ cp, sourceIndex: i });
+        if (
+          NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)
+        ) {
+          continue;
+        }
+
+        out.push(cp);
       }
 
       return out;
-    }
-
-    function abbreviateNumericCartoucheCps(cps) {
-      return abbreviateNumericCartoucheEntries(cps).map(entry => entry.cp);
     }
 
     function getNumericCartoucheDisplayCps(cps) {
@@ -5379,11 +4151,9 @@
     function __applyParsedNumberToUi(parsed, originalInput = null) {
       if (!parsed) throw new Error("Failed to parse numeric input.");
 
-      stopCartoucheAudioPlayback();
       const displayParsed = renderedParsedForCurrentNanpaLinjanMode(parsed);
       const properName = fixOkenSuffixSpacing(String(displayParsed.properName ?? ""));
       const decodeCaps = displayParsed.renderDecodeCaps || strictCapsForDisplayDecode(parsed);
-      let audioValue = "";
 
       if (parsed.isTime || parsed.isDate) {
         let valueText = "";
@@ -5405,7 +4175,6 @@
         }
 
         valueText = String(valueText ?? parsed.displayValue ?? originalInput ?? "").trim();
-        audioValue = valueText;
         setDecimalValueLine(valueText, valueText, properName);
       } else {
         const vDisplay = tryDecodeCapsToDisplayValue(decodeCaps) ?? parsed.displayValue ?? originalInput;
@@ -5416,22 +4185,13 @@
           fracGroupSep: "_"
         }) ?? vDisplay;
 
-        audioValue = String(vCartouche ?? "").trim();
         setDecimalValueLine(vDisplay, vCartouche, properName);
       }
 
       elLatinOut.value = properName;
       elNumberCodeOut.value = String(parsed.uniqueCode ?? "");
-      const fullCodepoints = Array.from(displayParsed.ucsurCodepoints ?? [], Number);
-      const displayedCodepoints = setDisplayCodepointOutputsFromCps(fullCodepoints);
-      __renderNumericCartoucheFromCps(fullCodepoints);
-      configureCartoucheAudioModel({
-        properName,
-        value: audioValue,
-        fullCodepoints,
-        displayedCodepoints,
-        abbreviated: getNumericCartoucheAbbrevEnabled()
-      });
+      setDisplayCodepointOutputsFromCps(Array.from(displayParsed.ucsurCodepoints ?? []));
+      __renderNumericCartoucheFromCps(Array.from(displayParsed.ucsurCodepoints ?? []));
     }
     numberStrToNanpaCaps = function (s, opts = {}) { return NanpaParser.encodeDecimal(s, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle: "short", ...opts }); };
     encodeDecimalToLatin = function (s) { const p = NanpaParser.parseNumber(s, getNanpaParserOptions()); return p ? renderedParsedForCurrentNanpaLinjanMode(p).properName : ""; };
