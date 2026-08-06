@@ -21,10 +21,13 @@ o weka e nimi ike.
 | Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, error prone    |
 | Toki Pona (nanpa-linja-n)| **Netusen Eke Nunalun**                              | natural                   |
 
+### PDF cheat sheet:
+
+[PDF cheat sheet](https://www.nanpa-linja-n.com/pdfs/nanpa-linja-n-cheat-sheet.pdf)
+
 ### Interactive decimal cartouche renderer:
 
 [decimal cartouche renderer](https://mndillon.github.io/toki-pona-nanpa-linja-n/renderer.html)
-
 
 ## Overview
 **nanpa-linja-n** encodes decimal numbers as proper names. In sitelen pona, these names are written inside numeric cartouches.  The remainder of this document explains how nanpa-linja-n encodes numbers.
