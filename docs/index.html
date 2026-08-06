@@ -2158,13 +2158,14 @@
 
 
       <section
-        id="fonts"
+        id="fontsSection"
         class="collapsibleSection"
         data-collapsible-section
         data-collapsible-key="fonts"
         data-collapsible-default="collapsed"
         aria-labelledby="fontsTitle"
       >
+        <div id="fonts" aria-hidden="true"></div>
         <h2 id="fontsTitle" class="collapsibleSectionHeading">
           <button
             class="collapsibleSectionToggle"
@@ -2188,6 +2189,9 @@
             Font details will load when this panel is opened.
           </div>
           <div data-fonts-table-container></div>
+          <div class="small" style="margin-top:10px;">
+            The nanpa-linja-n companion fonts are specialised variants for displaying nanpa-linja-n numeric cartouches, not general-purpose sitelen pona fonts. Only inside these cartouches, some glyphs are resized: <strong>nanpa, nena, en, ala, ike, uta,</strong> and <strong>open</strong> to one-quarter size; <strong>kasi</strong> to one-third; <strong>kala</strong> to one-half; and <strong>ona, o, kulupu, kipisi,</strong> and <strong>kin</strong> to two-thirds of the original font size. Outside numeric cartouches, the base font remains unchanged.
+          </div>
         </div>
       </section>
 
@@ -2404,7 +2408,7 @@
 
 <script>
   (() => {
-    const FONTS_SECTION_ID = 'fonts';
+    const FONTS_SECTION_ID = 'fontsSection';
     const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=5';
     const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v2';
     const FONTS_NOTICE_OVERLAY_ID = 'fontsNoticeOverlay';
