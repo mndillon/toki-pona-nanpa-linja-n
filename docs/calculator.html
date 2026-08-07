@@ -3280,7 +3280,7 @@
         }
         if (token.type === "function") {
           if (token.value === "sqrt") words.push("lili-tu");
-          else if (token.value === "ln") words.push("anpa-e");
+          else if (token.value === "ln") words.push("anpa-pona");
           continue;
         }
         if (token.type === "postfix") {
@@ -3878,7 +3878,7 @@
       addScientific({ id: "power", labelText: "xʸ", ariaLabel: "General power", onPress: () => pressOp("^"), glyphSpec: { words: ["sewi"] } });
       add({ id: "mul", kind: "op", labelText: "×", ariaLabel: "Multiply / o mute", onPress: () => pressOp("*"), renderFn: c => renderOpButtonCanvas(c, "mul", 34) });
 
-      addScientific({ id: "ln", labelText: "ln", ariaLabel: "Natural logarithm", onPress: () => pressScientificFunction("ln"), glyphSpec: { words: ["anpa", "e"] } });
+      addScientific({ id: "ln", labelText: "ln", ariaLabel: "Natural logarithm", onPress: () => pressScientificFunction("ln"), glyphSpec: { words: ["anpa", "pona"] } });
       addScientific({ id: "log", labelHtml: "log<sub>y</sub>x", ariaLabel: "General logarithm: logarithm of x to base y", onPress: () => pressOp("LOG"), glyphSpec: { words: ["anpa"] } });
       addScientific({ id: "eConstant", labelText: "e", ariaLabel: "Euler's number e", onPress: () => pressConstant("e"), glyphSpec: { unicode: "e" }, fontPx: 36 });
       add({ id: "div", kind: "op", labelText: "÷", ariaLabel: "Divide / o kipisi", onPress: () => pressOp("/"), renderFn: c => renderOpButtonCanvas(c, "div", 34) });
