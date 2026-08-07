@@ -1,5 +1,5 @@
 export const REFERENCE_AUDIO_MANIFEST = {
-  "version": "0.7",
+  "version": "0.8",
   "sample_rate": 48000,
   "license_note": "Toki_Pona_audio_by_jan_Lakuse.zip contains _licence.txt: \"You can redistribute these files or use them in your project, but please mention audio provided by jan Lakuse.\" ku.zip did not include a licence file in the uploaded archive; treat those two files as local-project assets unless separately licensed.",
   "words": {
@@ -1902,6 +1902,78 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "syllable": "win"
     }
   },
+  "letter_sounds": {
+    "a": {
+      "duration_ms": null,
+      "file": "letter_sounds/a.wav",
+      "letter": "a"
+    },
+    "e": {
+      "duration_ms": null,
+      "file": "letter_sounds/e.wav",
+      "letter": "e"
+    },
+    "i": {
+      "duration_ms": null,
+      "file": "letter_sounds/i.wav",
+      "letter": "i"
+    },
+    "j": {
+      "duration_ms": null,
+      "file": "letter_sounds/j.wav",
+      "letter": "j"
+    },
+    "k": {
+      "duration_ms": null,
+      "file": "letter_sounds/k.wav",
+      "letter": "k"
+    },
+    "l": {
+      "duration_ms": null,
+      "file": "letter_sounds/l.wav",
+      "letter": "l"
+    },
+    "m": {
+      "duration_ms": null,
+      "file": "letter_sounds/m.wav",
+      "letter": "m"
+    },
+    "n": {
+      "duration_ms": null,
+      "file": "letter_sounds/n.wav",
+      "letter": "n"
+    },
+    "o": {
+      "duration_ms": null,
+      "file": "letter_sounds/o.wav",
+      "letter": "o"
+    },
+    "p": {
+      "duration_ms": null,
+      "file": "letter_sounds/p.wav",
+      "letter": "p"
+    },
+    "s": {
+      "duration_ms": null,
+      "file": "letter_sounds/s.wav",
+      "letter": "s"
+    },
+    "t": {
+      "duration_ms": null,
+      "file": "letter_sounds/t.wav",
+      "letter": "t"
+    },
+    "u": {
+      "duration_ms": null,
+      "file": "letter_sounds/u.wav",
+      "letter": "u"
+    },
+    "w": {
+      "duration_ms": null,
+      "file": "letter_sounds/w.wav",
+      "letter": "w"
+    }
+  },
   "strict_disallowed_syllables": [
     "ji",
     "jin",
@@ -1918,6 +1990,7 @@ export const REFERENCE_AUDIO_MANIFEST = {
     "If a capitalized word has no exact nanpa unit, decompose it by Toki Pona syllables and use nanpa units when all syllables are covered.",
     "Use extracted general syllable units only after the nanpa unit bank fails.",
     "For missing CVn in the general syllable bank, combine CV + recorded n.",
+    "For isolated or otherwise unsyllabifiable ordinary-cartouche sounds, use letter_sounds assets.",
     "If audio units are missing, fall back to Rust/WASM synthetic engine when available."
   ],
   "nanpa_units": {

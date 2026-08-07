@@ -191,6 +191,148 @@ function audioGlyphGroupsFromCartoucheSource(text) {
   return groups;
 }
 
+
+function ordinaryAudioGlyphGroupsFromCartoucheSource(text) {
+  const source = stripOuterBracketSyntaxForAudio(text);
+  const groups = [];
+  let current = '';
+  let invalid = false;
+
+  const flushCurrent = () => {
+    const token = normalizeTpGlyphToken(current);
+    current = '';
+    if (!token) return;
+    groups.push({
+      token,
+      tallyCount: 0,
+      moraCount: 0,
+      wholeWord: false,
+      invalid: false
+    });
+  };
+
+  const currentGroup = () => {
+    flushCurrent();
+    const group = groups[groups.length - 1] || null;
+    if (!group) invalid = true;
+    return group;
+  };
+
+  for (const ch of Array.from(source)) {
+    if (/\s/.test(ch)) {
+      flushCurrent();
+      continue;
+    }
+
+    if (ch === '.' || ch === '·') {
+      const group = currentGroup();
+      if (!group) continue;
+      if (group.wholeWord || group.tallyCount > 0) group.invalid = true;
+      group.moraCount = Math.min(32, Number(group.moraCount || 0) + 1);
+      continue;
+    }
+
+    if (ch === ':') {
+      const group = currentGroup();
+      if (!group) continue;
+      if (group.wholeWord || group.moraCount > 0 || group.tallyCount > 0) group.invalid = true;
+      group.wholeWord = true;
+      continue;
+    }
+
+    // Preserve the existing tally convention independently of mora/whole-word
+    // punctuation. A glyph cannot combine both conventions in one audio group.
+    if (ch === ',') {
+      const group = currentGroup();
+      if (!group) continue;
+      if (group.wholeWord || group.moraCount > 0) group.invalid = true;
+      group.tallyCount = Math.min(32, Number(group.tallyCount || 0) + 1);
+      continue;
+    }
+
+    current += ch;
+  }
+
+  flushCurrent();
+  if (invalid || groups.some(group => group.invalid)) return [];
+  return groups;
+}
+
+export function splitAudioTpWordIntoMorae(rawWord) {
+  const word = audioWordTextForTallyGlyphToken(rawWord).replace(/'/g, '').toLowerCase();
+  if (!word) return [];
+  if (word === 'n') return ['n'];
+  if (!/^[aeiouptkmnswlj]+$/.test(word)) return [];
+
+  const morae = [];
+  let index = 0;
+  while (index < word.length) {
+    const start = index;
+    if (TP_CONS.has(word[index])) {
+      if (index + 1 >= word.length || !TP_VOWS.has(word[index + 1])) return [];
+      index += 1;
+    }
+    if (index >= word.length || !TP_VOWS.has(word[index])) return [];
+    index += 1;
+    morae.push(word.slice(start, index));
+
+    if (index < word.length && word[index] === 'n') {
+      const next = index + 1 < word.length ? word[index + 1] : '';
+      if (!next || TP_CONS.has(next)) {
+        morae.push('n');
+        index += 1;
+      }
+    }
+  }
+  return morae;
+}
+
+function ordinaryCartoucheTextForGlyphGroup(group) {
+  const token = normalizeTpGlyphToken(group?.token);
+  if (!token || !isKnownTpGlyphToken(token)) return '';
+  if (token === ':' || token === '.' || token === '·' || token === ',') return '';
+
+  const wordText = audioWordTextForTallyGlyphToken(token).replace(/'/g, '').toLowerCase();
+  if (!wordText) return '';
+
+  const tallyCount = Math.max(0, Math.trunc(Number(group?.tallyCount) || 0));
+  const moraCount = Math.max(0, Math.trunc(Number(group?.moraCount) || 0));
+  const wholeWord = group?.wholeWord === true;
+
+  if (Number(wholeWord) + Number(tallyCount > 0) + Number(moraCount > 0) > 1) return '';
+  if (wholeWord) return wordText;
+  if (tallyCount > 0) return tallyCount <= wordText.length ? wordText.slice(0, tallyCount) : '';
+  if (moraCount > 0) {
+    const morae = splitAudioTpWordIntoMorae(wordText);
+    return morae.length >= moraCount ? morae.slice(0, moraCount).join('') : '';
+  }
+  return audioInitialForGlyphToken(token);
+}
+
+function analyzeOrdinaryPhoneticCartoucheSource(text) {
+  const groups = ordinaryAudioGlyphGroupsFromCartoucheSource(text);
+  if (!groups.length) return null;
+
+  const letters = [];
+  const pieces = [];
+  for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
+    const piece = ordinaryCartoucheTextForGlyphGroup(groups[groupIndex]);
+    if (!piece || !/^[aeiouptkmnswlj]+$/.test(piece)) return null;
+    pieces.push(piece);
+    for (const char of Array.from(piece)) letters.push({ char, groupIndex });
+  }
+
+  const spelled = pieces.join('').toLowerCase();
+  if (!spelled) return null;
+  return {
+    groups,
+    pieces,
+    letters,
+    spelled,
+    displayText: titleCaseAudioProperNameText(spelled)
+  };
+}
+
 function audioGlyphTokensFromCartoucheSource(text) {
   return audioGlyphGroupsFromCartoucheSource(text).map(group => group.token);
 }
@@ -450,23 +592,8 @@ function audioLettersForCartoucheGlyphGroup(group) {
 }
 
 export function tryCartoucheSourceToSpokenSyllableText(text) {
-  const groups = audioGlyphGroupsFromCartoucheSource(text);
-  if (!groups.length) return '';
-  if (!groups.every(group => isKnownTpGlyphToken(group.token))) return '';
-
-  // Ordinary cartouche reading uses one initial per glyph. A tally mark changes
-  // only its attached glyph: one tally means the first sound/letter, two means
-  // the first two, and so on. Examples:
-  //   [mun uta]              -> Mu
-  //   [mani,,]               -> Ma
-  //   [a meli,,,, kala,,]    -> Amelika
-  const pieces = groups.map(audioLettersForCartoucheGlyphGroup);
-  if (pieces.some(piece => !piece)) return '';
-  const spelled = pieces.join('').toLowerCase();
-  if (spelled && isAudioTpPhonotacticWord(spelled)) {
-    return titleCaseAudioProperNameText(spelled);
-  }
-  return '';
+  const analyzed = analyzeOrdinaryPhoneticCartoucheSource(text);
+  return analyzed?.displayText || '';
 }
 
 function getNanpaParserFromOptions(options = {}) {
@@ -902,7 +1029,13 @@ export function extractSpeechLinesFromRenderPlan(plan, options = {}) {
         rawProperNameQueue,
         lineIndex
       });
-      if (speech) parts.push(speech);
+      if (speech) {
+        const sourceText = String(run?.sourceText ?? run?.encodedText ?? '').trim();
+        const ordinaryCartouche = String(run?.kind ?? '').toLowerCase() === 'cartouche' &&
+          !isConfirmedNumericCartoucheRun(run, options) &&
+          !!analyzeOrdinaryPhoneticCartoucheSource(sourceText);
+        parts.push(ordinaryCartouche ? speech.toLowerCase() : speech);
+      }
     }
     lines.push(compactSpeechWhitespace(parts.join(' ')));
   }
@@ -1209,6 +1342,171 @@ function runCodepointsForAudio(run) {
   return [];
 }
 
+
+function splitAudioTpTextIntoSyllableSpans(rawText) {
+  const source = String(rawText ?? '').replace(/[^A-Za-z']/g, '');
+  const lower = source.replace(/'/g, '').toLowerCase();
+  if (!lower) return [];
+
+  const spans = [];
+  let index = 0;
+  while (index < lower.length) {
+    const start = index;
+    if (TP_CONS.has(lower[index])) index += 1;
+    if (index >= lower.length || !TP_VOWS.has(lower[index])) return [];
+    index += 1;
+    if (index < lower.length && lower[index] === 'n') {
+      const next = index + 1 < lower.length ? lower[index + 1] : '';
+      if (!next || TP_CONS.has(next)) index += 1;
+    }
+    spans.push({ text: lower.slice(start, index), start, end: index, bank: 'syllables' });
+  }
+  return spans;
+}
+
+function splitOrdinaryCartoucheSoundIntoAudioSpans(spelled) {
+  const source = String(spelled ?? '').toLowerCase();
+  if (!source) return [];
+
+  // Ordinary cartouches are always sounded from the general syllable bank.
+  // A single vowel is therefore a valid one-letter syllable; only isolated
+  // consonants and other unsyllabifiable residual sounds use letter_sounds.
+  const completeSyllables = splitAudioTpTextIntoSyllableSpans(source);
+  if (completeSyllables.length) return completeSyllables;
+
+  // For an otherwise unsyllabifiable name, keep finding complete TP syllables
+  // wherever possible and use isolated letter sounds only for the residual
+  // sounds. A syllable may span multiple source glyphs.
+  const spans = [];
+  let index = 0;
+  while (index < source.length) {
+    const start = index;
+    let end = index;
+
+    if (TP_VOWS.has(source[index])) {
+      end = index + 1;
+      if (end < source.length && source[end] === 'n') {
+        const next = end + 1 < source.length ? source[end + 1] : '';
+        if (!next || TP_CONS.has(next)) end += 1;
+      }
+    } else if (
+      TP_CONS.has(source[index]) &&
+      index + 1 < source.length &&
+      TP_VOWS.has(source[index + 1])
+    ) {
+      end = index + 2;
+      if (end < source.length && source[end] === 'n') {
+        const next = end + 1 < source.length ? source[end + 1] : '';
+        if (!next || TP_CONS.has(next)) end += 1;
+      }
+    }
+
+    if (end > start) {
+      spans.push({ text: source.slice(start, end), start, end, bank: 'syllables' });
+      index = end;
+      continue;
+    }
+
+    spans.push({ text: source[index], start: index, end: index + 1, bank: 'letter_sounds' });
+    index += 1;
+  }
+  return spans;
+}
+
+function ordinaryCartoucheGroupComponentIndices(run, groups) {
+  const cps = runCodepointsForAudio(run);
+  const semanticIndices = [];
+  for (let index = 0; index < cps.length; index++) {
+    if (!AUDIO_VISUAL_CONTROL_CPS.has(Number(cps[index]))) semanticIndices.push(index);
+  }
+
+  const expectedCount = Array.from(groups || []).reduce((sum, group) => (
+    sum + 1 +
+    Math.max(0, Math.trunc(Number(group?.tallyCount) || 0)) +
+    Math.max(0, Math.trunc(Number(group?.moraCount) || 0)) +
+    (group?.wholeWord === true ? 1 : 0)
+  ), 0);
+
+  const mapped = [];
+  if (semanticIndices.length === expectedCount) {
+    let cursor = 0;
+    for (const group of groups || []) {
+      const count = 1 +
+        Math.max(0, Math.trunc(Number(group?.tallyCount) || 0)) +
+        Math.max(0, Math.trunc(Number(group?.moraCount) || 0)) +
+        (group?.wholeWord === true ? 1 : 0);
+      mapped.push(semanticIndices.slice(cursor, cursor + count));
+      cursor += count;
+    }
+    return mapped;
+  }
+
+  // Conservative fallback for adapter-specific codepoint layouts: one visible
+  // component group per source glyph. Attached punctuation may be omitted from
+  // the highlight rather than assigning it to an unrelated glyph.
+  const visibleGroups = visibleComponentGroups(cps);
+  for (let index = 0; index < (groups || []).length; index++) {
+    mapped.push(Array.from(visibleGroups[index] || []));
+  }
+  return mapped;
+}
+
+function buildOrdinaryPhoneticCartoucheSpeechUnits(
+  run,
+  analyzed,
+  fallbackRunIndex,
+  lineIndex,
+  options = {}
+) {
+  const spans = splitOrdinaryCartoucheSoundIntoAudioSpans(analyzed?.spelled);
+  if (!spans.length) return [];
+
+  const groupComponents = ordinaryCartoucheGroupComponentIndices(run, analyzed.groups);
+  const word = analyzed.displayText;
+
+  return spans.map((span, unitIndex) => {
+    const groupIndices = [...new Set(
+      analyzed.letters
+        .slice(span.start, span.end)
+        .map(letter => Number(letter.groupIndex))
+        .filter(Number.isFinite)
+    )];
+    const componentIndices = [...new Set(
+      groupIndices.flatMap(groupIndex => groupComponents[groupIndex] || [])
+    )];
+    const text = unitIndex === 0
+      ? titleCaseAudioProperNameText(span.text)
+      : span.text;
+    const letterSound = span.bank === 'letter_sounds';
+
+    return {
+      text,
+      timingText: span.text,
+      timingSyllables: [span.text],
+      kind: letterSound ? 'cartouche-letter-sound' : 'cartouche-syllable',
+      word,
+      wordIndex: 0,
+      unitIndex,
+      unitIndexInWord: unitIndex,
+      wholeNumericPunctuationWord: false,
+      suppressActiveHighlight: false,
+      numericCartouche: false,
+      recognizedNumericCartouche: false,
+      cartoucheAudioGroupId: options?.cartoucheAudioGroupId || null,
+      cartoucheAudioMode: 'ordinary',
+      forceOrdinarySyllableAudio: !letterSound,
+      audioBank: letterSound ? 'letter_sounds' : null,
+      audioUnitKey: letterSound ? span.text : '',
+      numericCartoucheRunId: null,
+      numericCartouchePhrase: '',
+      numericAudioUnitKey: '',
+      visualTargets: [
+        visualTargetForComponentIndices(run, componentIndices, fallbackRunIndex, lineIndex)
+      ]
+    };
+  });
+}
+
 function runAudioSourceCodepoints(run) {
   const direct = Array.isArray(run?.audioSourceCps)
     ? run.audioSourceCps
@@ -1448,6 +1746,19 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
   const numericCartouchePhrase = numericCartouche
     ? compactSpeechWhitespace(numericProperName || speech)
     : '';
+
+  if (!recognizedNumericCartouche) {
+    const ordinaryPhonetic = analyzeOrdinaryPhoneticCartoucheSource(sourceText);
+    if (ordinaryPhonetic) {
+      return buildOrdinaryPhoneticCartoucheSpeechUnits(
+        run,
+        ordinaryPhonetic,
+        fallbackRunIndex,
+        lineIndex,
+        options
+      );
+    }
+  }
 
   const displayedCps = runCodepointsForAudio(run);
   const componentCount = Math.max(1, displayedCps.length);
@@ -2092,7 +2403,10 @@ function voicePunctuationPauseSeconds(punctuation) {
 
 function isCartoucheAudioUnit(unit) {
   const kind = String(unit?.kind || '').toLowerCase();
-  return kind === 'cartouche-syllable' || kind === 'numeric-punctuation-word';
+  return kind === 'cartouche-syllable' ||
+    kind === 'cartouche-word' ||
+    kind === 'cartouche-letter-sound' ||
+    kind === 'numeric-punctuation-word';
 }
 
 function sameCartoucheWord(currentUnit, nextUnit) {
@@ -2187,10 +2501,13 @@ async function renderExactSpeechUnitEntry({
   if (!renderText || !containsSpokenWord(renderText)) return null;
 
   const forceOrdinarySyllables = unit?.forceOrdinarySyllableAudio === true;
+  const audioBank = String(unit?.audioBank || '').trim();
+  const audioUnitKey = String(unit?.audioUnitKey || '').trim();
   const rendered = await voice.render(renderText, {
     ...(renderOptions || {}),
     alreadyPreprocessed: true,
-    ...(forceOrdinarySyllables ? { forceOrdinarySyllables: true } : {})
+    ...(forceOrdinarySyllables ? { forceOrdinarySyllables: true } : {}),
+    ...(audioBank ? { audioBank, audioUnitKey } : {})
   });
 
   if (!rendered?.samples?.length || !rendered?.sampleRate) {
@@ -2220,6 +2537,8 @@ async function renderExactSpeechUnitEntry({
     suppressActiveHighlight: !!unit?.suppressActiveHighlight,
     cartoucheAudioMode: unit?.cartoucheAudioMode || null,
     forceOrdinarySyllableAudio: forceOrdinarySyllables,
+    audioBank: audioBank || null,
+    audioUnitKey: audioUnitKey || null,
     visualTargets: cloneAudioVisualTargets(unit?.visualTargets),
     sourceSegmentIndex: segmentIndex,
     renderText,
@@ -2709,7 +3028,8 @@ export async function renderSpeechLinesToAudioSamples({
 
     const rendered = await voice.render(lineText, {
       ...(renderOptions || {}),
-      alreadyPreprocessed: true
+      alreadyPreprocessed: true,
+      allowLetterSoundFallback: true
     });
 
     if (isSitelenAudioCancelled(shouldCancel)) {
@@ -2907,6 +3227,7 @@ export default {
   extractSpeechSegmentsFromRenderPlan,
   speechUnitsForRenderRun,
   splitAudioTpWordIntoSyllables,
+  splitAudioTpWordIntoMorae,
   splitSpeechTextIntoSentenceFragments,
   makeSilenceSamples,
   concatAudioSampleChunks,

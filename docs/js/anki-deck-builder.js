@@ -1,7 +1,7 @@
 import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223";
-import { buildSitelenAudioPlan } from "./sitelen-audio-plan.js?v=27";
-import { createTokiPonaVoice } from "./toki-pona-voice-api.js?v=38";
-import { REFERENCE_AUDIO_MANIFEST } from "./audio-manifest.js";
+import { buildSitelenAudioPlan } from "./sitelen-audio-plan.js?v=40";
+import { createTokiPonaVoice } from "./toki-pona-voice-api.js?v=40";
+import { REFERENCE_AUDIO_MANIFEST } from "./audio-manifest.js?v=22";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,

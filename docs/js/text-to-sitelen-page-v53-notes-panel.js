@@ -7,13 +7,13 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=176';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=38';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=40';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=37';
+} from './sitelen-audio-plan.js?v=40';
 let pageMap = new Map();
 
 "use strict";

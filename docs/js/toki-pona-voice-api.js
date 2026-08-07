@@ -1,5 +1,5 @@
 import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=20';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=22';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 
@@ -338,6 +338,14 @@ function preprocessNanpaNumbers(input) {
   return { text: out, warnings, conversions };
 }
 
+
+function letterSoundKeysForText(text, manifest = REFERENCE_AUDIO_MANIFEST) {
+  const bank = manifest.letter_sounds || {};
+  const keys = Array.from(String(text || '').replace(/'/g, '').toLowerCase());
+  if (!keys.length || !keys.every(key => Object.prototype.hasOwnProperty.call(bank, key))) return null;
+  return keys;
+}
+
 function nanpaUnitKey(s) {
   return String(s || '').replace(/'/g, '').toLowerCase();
 }
@@ -361,7 +369,18 @@ export function analyzeReferenceText(text, options = {}, manifest = REFERENCE_AU
   while (i < lex.length) {
     const item = lex[i];
     if (item.kind === 'word') {
-      if (isCapitalized(item.text) && isValidTpWordShape(item.text)) {
+      const letterSoundKeys = letterSoundKeysForText(item.text, manifest);
+      const usesLetterSounds = !!letterSoundKeys && (
+        opts.audioBank === 'letter_sounds' ||
+        (opts.allowLetterSoundFallback === true && !isValidTpWordShape(item.text))
+      );
+      if (usesLetterSounds) {
+        items.push({
+          kind: letterSoundKeys.length === 1 ? 'letter_sound' : 'letter_sound_sequence',
+          text: item.text,
+          letter_sounds: letterSoundKeys
+        });
+      } else if (isCapitalized(item.text) && isValidTpWordShape(item.text)) {
         const words = [];
         const source = [];
         while (i < lex.length && lex[i].kind === 'word' && isCapitalized(lex[i].text) && isValidTpWordShape(lex[i].text)) {
@@ -392,6 +411,7 @@ export function analyzeReferenceText(text, options = {}, manifest = REFERENCE_AU
     reference_audio: {
       words_available: Object.keys(manifest.words || {}).length,
       syllables_available: Object.keys(manifest.syllables || {}).length,
+      letter_sounds_available: Object.keys(manifest.letter_sounds || {}).length,
       nanpa_units_available: Object.keys(manifest.nanpa_units || {}).length,
       sample_rate: manifest.sample_rate || null
     },
@@ -513,6 +533,24 @@ export class TokiPonaVoice {
     return samples;
   }
 
+
+  async chunksForLetterSounds(text, warnings) {
+    const bank = this.manifest.letter_sounds || {};
+    const keys = letterSoundKeysForText(text, this.manifest);
+    if (!keys) {
+      warnings.push({
+        kind: 'letter_sound_audio',
+        source: String(text || ''),
+        message: 'missing isolated Toki Pona letter-sound asset'
+      });
+      return null;
+    }
+
+    const chunks = [];
+    for (const key of keys) chunks.push(await this.loadAudioSamples(bank[key].file));
+    return chunks;
+  }
+
   async chunksForNanpaWord(word, warnings) {
     const bank = this.manifest.nanpa_units || {};
     const units = nanpaUnitsForWord(word, this.manifest);
@@ -547,6 +585,12 @@ export class TokiPonaVoice {
     const words = this.manifest.words || {};
     const syllables = this.manifest.syllables || {};
     const forceOrdinarySyllables = context.forceOrdinarySyllables === true || opts.forceOrdinarySyllables === true;
+    const requestedAudioBank = String(context.audioBank || opts.audioBank || '').trim();
+    const requestedAudioUnitKey = String(context.audioUnitKey || opts.audioUnitKey || word || '').trim();
+
+    if (requestedAudioBank === 'letter_sounds') {
+      return await this.chunksForLetterSounds(requestedAudioUnitKey, warnings) || [];
+    }
 
     if (!forceOrdinarySyllables && context.preferNanpaUnits && opts.synthesis_mode !== 'reference_words_only') {
       const nanpaChunks = await this.chunksForNanpaWord(word, warnings);
@@ -559,6 +603,10 @@ export class TokiPonaVoice {
 
     const syls = syllabifyTpWord(lower);
     if (!syls.length) {
+      if (opts.allowLetterSoundFallback === true) {
+        const letterChunks = await this.chunksForLetterSounds(lower, warnings);
+        if (letterChunks) return letterChunks;
+      }
       warnings.push({ kind: 'reference_audio', source: word, message: 'not valid Toki Pona phonotactics; skipped by reference audio engine' });
       return [];
     }
@@ -617,12 +665,19 @@ export class TokiPonaVoice {
           const word = words[wi];
           const wchunks = await this.chunksForWord(word, opts, warnings, {
             preferNanpaUnits: isProperStart && !forceOrdinarySyllables,
-            forceOrdinarySyllables
+            forceOrdinarySyllables,
+            audioBank: opts.audioBank,
+            audioUnitKey: opts.audioUnitKey
           });
           const syllableGap = normalizeSyllableGapSeconds(opts.syllableGapSeconds);
           const nanpaUnits = !forceOrdinarySyllables && isProperStart && opts.synthesis_mode !== 'reference_words_only'
             ? nanpaUnitsForWord(word, this.manifest)
             : null;
+          const letterSoundKeys = opts.audioBank === 'letter_sounds'
+            ? letterSoundKeysForText(opts.audioUnitKey || word, this.manifest)
+            : (!isValidTpWordShape(word) && opts.allowLetterSoundFallback === true
+                ? letterSoundKeysForText(word, this.manifest)
+                : null);
 
           for (let ci = 0; ci < wchunks.length; ci++) {
             pushChunk(wchunks[ci], {
@@ -634,7 +689,8 @@ export class TokiPonaVoice {
               chunkIndexInWord: ci,
               properName: isProperStart,
               nanpaUnit: !!(nanpaUnits && nanpaUnits[ci]),
-              audioUnitKey: nanpaUnits?.[ci] || null
+              letterSound: !!(letterSoundKeys && letterSoundKeys[ci]),
+              audioUnitKey: letterSoundKeys?.[ci] || nanpaUnits?.[ci] || null
             });
 
             // Optional quiz pacing: add silence only between chunks inside a word.
