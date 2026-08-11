@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "dataset": "toki-pona-country-crossword-clue-bank",
-  "generatedAt": "2026-08-11",
+  "generatedAt": "2026-08-12",
   "language": {
     "clueSource": "Toki Pona Latin script",
     "displayTarget": "sitelen pona via existing crossword renderer"
@@ -84,7 +84,7 @@
   },
   "factBasis": {
     "names": "Uploaded tokiponize-names DEFAULT_OVERRIDES geographical section.",
-    "geography": "CountryInfo bundled country metadata for region, subregion, borders, area and centre coordinates, with manual gap fixes for Andorra, Myanmar, Palestine and Vatican City; landlocked status from a curated sovereign-state list; contentious border clue generation suppressed for selected cases.",
+    "geography": "CountryInfo bundled country metadata was the original basis for region, subregion, borders, area and centre coordinates. This fact-checked revision applies manual corrections for identified metadata anomalies; UN M49 is used for corrected regional classification where needed. Landlocked status remains from the curated sovereign-state list, and disputed-border clues are suppressed or rewritten to use non-contentious facts.",
     "directionNote": "Directional clues use broad relative positions of country centre coordinates within the same world region. They are intended as crossword clues, not legal boundary descriptions."
   },
   "validation": {
@@ -11706,7 +11706,7 @@
       "answer": "INTONESIJA",
       "geography": {
         "region": "Asia",
-        "subregion": "South-Eastern Asia",
+        "subregion": "South-eastern Asia",
         "landlocked": false,
         "areaKm2": 1904569,
         "borderCount": 3,
@@ -11722,10 +11722,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon anpa Asija li lon poka suno kama Asija. ona li jo e poka telo suli.",
-          "en": "This country is in southern Asia and in eastern Asia. It has a coast on a large body of water.",
+          "tp": "ma ni li lon Asija. ona li jo e poka telo suli.",
+          "en": "This country is in Asia. It has a coast on a large body of water.",
           "facts": [
-            "subregion:South-Eastern Asia",
+            "region:Asia",
             "landlocked:false"
           ]
         },
@@ -11758,12 +11758,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Malasija li lon sewi ona. ma Lanka li lon poka suno weka ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Malaysia is north of it. Sri Lanka is west of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Malasija li lon sewi ona. ma Lanka li lon poka suno weka ona. ma ni li lon Asija.",
+          "en": "Malaysia is north of it. Sri Lanka is west of it. This country is in Asia.",
           "facts": [
             "relative:N:MYS:rank0",
             "relative:W:LKA:rank0",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -11771,12 +11771,12 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "neighbour-direction",
-          "tp": "ma Malasija li lon sewi ona. ma Papuwanijukini li lon poka suno kama ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Malaysia is north of it. Papua New Guinea is east of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Malasija li lon sewi ona. ma Papuwanijukini li lon poka suno kama ona. ma ni li lon Asija.",
+          "en": "Malaysia is north of it. Papua New Guinea is east of it. This country is in Asia.",
           "facts": [
             "borderRelative:N:MYS",
             "borderRelative:E:PNG",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -12163,7 +12163,7 @@
       "answer": "KANPUSI",
       "geography": {
         "region": "Asia",
-        "subregion": "South-Eastern Asia",
+        "subregion": "South-eastern Asia",
         "landlocked": false,
         "areaKm2": 181035,
         "borderCount": 3,
@@ -12179,10 +12179,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon anpa Asija li lon poka suno kama Asija. ona li jo e poka telo suli.",
-          "en": "This country is in southern Asia and in eastern Asia. It has a coast on a large body of water.",
+          "tp": "ma ni li lon Asija. ona li jo e poka telo suli.",
+          "en": "This country is in Asia. It has a coast on a large body of water.",
           "facts": [
-            "subregion:South-Eastern Asia",
+            "region:Asia",
             "landlocked:false"
           ]
         },
@@ -12215,12 +12215,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Wije li lon sewi ona. ma Malasija li lon anpa ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Vietnam is north of it. Malaysia is south of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Wije li lon sewi ona. ma Malasija li lon anpa ona. ma ni li lon Asija.",
+          "en": "Vietnam is north of it. Malaysia is south of it. This country is in Asia.",
           "facts": [
             "relative:N:VNM:rank0",
             "relative:S:MYS:rank0",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -12228,12 +12228,12 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "neighbour-direction",
-          "tp": "ma Wije li lon sewi ona. ma Tawi li lon poka suno weka ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Vietnam is north of it. Thailand is west of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Wije li lon sewi ona. ma Tawi li lon poka suno weka ona. ma ni li lon Asija.",
+          "en": "Vietnam is north of it. Thailand is west of it. This country is in Asia.",
           "facts": [
             "borderRelative:N:VNM",
             "borderRelative:W:THA",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -12473,7 +12473,7 @@
         "areaKm2": 17818,
         "borderCount": 2,
         "mappedBorderIso3": [
-          "IRN",
+          "IRQ",
           "SAU"
         ],
         "borderFactsSuppressed": false
@@ -12496,10 +12496,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "named-neighbours",
-          "tp": "ma Ilan en ma Sawusi li poka ona. ma ni li lon Asija.",
-          "en": "Iran and Saudi Arabia border it. This country is in Asia.",
+          "tp": "ma Ilakija en ma Sawusi li poka ona. ma ni li lon Asija.",
+          "en": "Iraq and Saudi Arabia border it. This country is in Asia.",
           "facts": [
-            "borders:IRN,SAU",
+            "borders:IRQ,SAU",
             "region:Asia"
           ]
         },
@@ -12532,12 +12532,12 @@
           "id": "kwt-05",
           "difficulty": "medium",
           "difficultyLevel": 3,
-          "type": "neighbour-direction",
+          "type": "direction-pair",
           "tp": "ma Sawusi li lon anpa ona. ma Ilan li lon poka suno kama ona. ma ni li lon poka suno weka Asija.",
           "en": "Saudi Arabia is south of it. Iran is east of it. This country is in western Asia.",
           "facts": [
             "borderRelative:S:SAU",
-            "borderRelative:E:IRN",
+            "relative:E:IRN:rank0",
             "subregion:Western Asia"
           ]
         },
@@ -12572,11 +12572,11 @@
           "difficulty": "hard",
           "difficultyLevel": 4,
           "type": "extended-neighbours",
-          "tp": "ma Ilan en ma Sawusi li poka ona. ma Ilan li lon poka suno kama ona. ma Aja li lon sewi ona.",
-          "en": "Iran and Saudi Arabia border it. Iran is east of it. Armenia is north of it.",
+          "tp": "ma Ilakija en ma Sawusi li poka ona. ma Ilakija li lon sewi ona. ma Aja li lon sewi ona.",
+          "en": "Iraq and Saudi Arabia border it. Iraq is north of it. Armenia is north of it.",
           "facts": [
-            "borders:IRN,SAU",
-            "borderRelative:E:IRN",
+            "borders:IRQ,SAU",
+            "borderRelative:N:IRQ",
             "relative:N:ARM:rank1"
           ]
         },
@@ -12623,10 +12623,8 @@
         "subregion": "Southern Asia",
         "landlocked": false,
         "areaKm2": 65610,
-        "borderCount": 1,
-        "mappedBorderIso3": [
-          "IND"
-        ],
+        "borderCount": 0,
+        "mappedBorderIso3": [],
         "borderFactsSuppressed": false
       },
       "clues": [
@@ -12646,12 +12644,12 @@
           "id": "lka-02",
           "difficulty": "easy",
           "difficultyLevel": 1,
-          "type": "named-neighbours",
-          "tp": "ma Palata li poka ona. ma ni li lon Asija.",
-          "en": "India borders it. This country is in Asia.",
+          "type": "location-border-pattern",
+          "tp": "ma ni li lon anpa Asija. ma ante ala li poka ona lon ma.",
+          "en": "This country is in southern Asia. No other country borders it on land.",
           "facts": [
-            "borders:IND",
-            "region:Asia"
+            "subregion:Southern Asia",
+            "borderCount:0"
           ]
         },
         {
@@ -12659,11 +12657,11 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "border-pattern",
-          "tp": "ma ante wan li poka ona lon ma. ona li jo e poka telo suli.",
-          "en": "One other country borders it on land. It has a coast on a large body of water.",
+          "tp": "ma ante ala li poka ona lon ma. telo suli li sike e ona.",
+          "en": "No other country borders it on land. Large bodies of water surround it.",
           "facts": [
-            "borderCount:1",
-            "landlocked:false"
+            "borderCount:0",
+            "landBorders:0"
           ]
         },
         {
@@ -12683,11 +12681,11 @@
           "id": "lka-05",
           "difficulty": "medium",
           "difficultyLevel": 3,
-          "type": "neighbour-direction",
+          "type": "near-position",
           "tp": "ma Palata li lon sewi ona. ma ni li lon anpa Asija.",
           "en": "India is north of it. This country is in southern Asia.",
           "facts": [
-            "borderRelative:N:IND",
+            "relative:N:IND:rank0",
             "subregion:Southern Asia"
           ]
         },
@@ -12696,12 +12694,12 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "direction-pair",
-          "tp": "ma Palata li lon sewi ona. ma Tawi li lon poka suno kama ona. ma ante wan li poka ona lon ma.",
-          "en": "India is north of it. Thailand is east of it. One other country borders it on land.",
+          "tp": "ma Palata li lon sewi ona. ma Tawi li lon poka suno kama ona. ma ante ala li poka ona lon ma.",
+          "en": "India is north of it. Thailand is east of it. No other country borders it on land.",
           "facts": [
             "relative:N:IND:rank0",
             "relative:E:THA:rank0",
-            "borderCount:1"
+            "borderCount:0"
           ]
         },
         {
@@ -12721,13 +12719,13 @@
           "id": "lka-08",
           "difficulty": "hard",
           "difficultyLevel": 4,
-          "type": "extended-neighbours",
-          "tp": "ma Palata li poka ona. ma Palata li lon sewi ona. ma Panla li lon sewi ona.",
-          "en": "India borders it. India is north of it. Bangladesh is north of it.",
+          "type": "three-relations",
+          "tp": "ma Palata li lon sewi ona. ma Panla li lon sewi ona. ma ante ala li poka ona lon ma.",
+          "en": "India is north of it. Bangladesh is north of it. No other country borders it on land.",
           "facts": [
-            "borders:IND",
-            "borderRelative:N:IND",
-            "relative:N:BGD:rank1"
+            "relative:N:IND:rank0",
+            "relative:N:BGD:rank1",
+            "borderCount:0"
           ]
         },
         {
@@ -12748,12 +12746,12 @@
           "difficulty": "very-hard",
           "difficultyLevel": 5,
           "type": "far-position-mix",
-          "tp": "ma Ilan li lon poka suno weka ona. ma Sonko li lon sewi ona. ma ante wan li poka ona lon ma.",
-          "en": "Iran is west of it. China is north of it. One other country borders it on land.",
+          "tp": "ma Ilan li lon poka suno weka ona. ma Sonko li lon sewi ona. ma ante ala li poka ona lon ma.",
+          "en": "Iran is west of it. China is north of it. No other country borders it on land.",
           "facts": [
             "relative:W:IRN:rank3",
             "relative:N:CHN:rank4",
-            "borderCount:1"
+            "borderCount:0"
           ]
         }
       ]
@@ -13078,7 +13076,7 @@
       "answer": "MALASIJA",
       "geography": {
         "region": "Asia",
-        "subregion": "South-Eastern Asia",
+        "subregion": "South-eastern Asia",
         "landlocked": false,
         "areaKm2": 330803,
         "borderCount": 3,
@@ -13094,10 +13092,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon anpa Asija li lon poka suno kama Asija. ona li jo e poka telo suli.",
-          "en": "This country is in southern Asia and in eastern Asia. It has a coast on a large body of water.",
+          "tp": "ma ni li lon Asija. ona li jo e poka telo suli.",
+          "en": "This country is in Asia. It has a coast on a large body of water.",
           "facts": [
-            "subregion:South-Eastern Asia",
+            "region:Asia",
             "landlocked:false"
           ]
         },
@@ -13130,12 +13128,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Kanpusi li lon sewi ona. ma Intonesija li lon anpa ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Cambodia is north of it. Indonesia is south of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Kanpusi li lon sewi ona. ma Intonesija li lon anpa ona. ma ni li lon Asija.",
+          "en": "Cambodia is north of it. Indonesia is south of it. This country is in Asia.",
           "facts": [
             "relative:N:KHM:rank0",
             "relative:S:IDN:rank0",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -13143,12 +13141,12 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "neighbour-direction",
-          "tp": "ma Intonesija li lon anpa ona. ma Tawi li lon sewi ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Indonesia is south of it. Thailand is north of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Intonesija li lon anpa ona. ma Tawi li lon sewi ona. ma ni li lon Asija.",
+          "en": "Indonesia is south of it. Thailand is north of it. This country is in Asia.",
           "facts": [
             "borderRelative:S:IDN",
             "borderRelative:N:THA",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -13230,7 +13228,7 @@
       "answer": "MIJAMA",
       "geography": {
         "region": "Asia",
-        "subregion": "South-Eastern Asia",
+        "subregion": "South-eastern Asia",
         "landlocked": false,
         "areaKm2": 676578,
         "borderCount": 5,
@@ -13248,10 +13246,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon anpa Asija li lon poka suno kama Asija. ona li jo e poka telo suli.",
-          "en": "This country is in southern Asia and in eastern Asia. It has a coast on a large body of water.",
+          "tp": "ma ni li lon Asija. ona li jo e poka telo suli.",
+          "en": "This country is in Asia. It has a coast on a large body of water.",
           "facts": [
-            "subregion:South-Eastern Asia",
+            "region:Asia",
             "landlocked:false"
           ]
         },
@@ -13284,12 +13282,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Sonko li lon sewi ona. ma Tawi li lon anpa ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "China is north of it. Thailand is south of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Sonko li lon sewi ona. ma Tawi li lon anpa ona. ma ni li lon Asija.",
+          "en": "China is north of it. Thailand is south of it. This country is in Asia.",
           "facts": [
             "relative:N:CHN:rank0",
             "relative:S:THA:rank0",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -13297,12 +13295,12 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "neighbour-direction",
-          "tp": "ma Tawi li lon anpa ona. ma Panla li lon poka suno weka ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Thailand is south of it. Bangladesh is west of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Tawi li lon anpa ona. ma Panla li lon poka suno weka ona. ma ni li lon Asija.",
+          "en": "Thailand is south of it. Bangladesh is west of it. This country is in Asia.",
           "facts": [
             "borderRelative:S:THA",
             "borderRelative:W:BGD",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -13837,16 +13835,16 @@
         "subregion": "Southern Asia",
         "landlocked": false,
         "areaKm2": 3287590,
-        "borderCount": 8,
+        "borderCount": 6,
         "mappedBorderIso3": [
-          "AFG",
           "BGD",
-          "MMR",
+          "BTN",
           "CHN",
-          "PAK",
-          "LKA"
+          "MMR",
+          "NPL",
+          "PAK"
         ],
-        "borderFactsSuppressed": false
+        "borderFactsSuppressed": true
       },
       "clues": [
         {
@@ -13866,10 +13864,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "named-neighbours",
-          "tp": "ma Akanisan en ma Panla en ma Mijama li poka ona. ma ni li lon Asija.",
-          "en": "Afghanistan, Bangladesh and Myanmar border it. This country is in Asia.",
+          "tp": "ma Panla en ma Mijama en ma Sonko li poka ona. ma ni li lon Asija.",
+          "en": "Bangladesh, Myanmar and China border it. This country is in Asia.",
           "facts": [
-            "borders:AFG,BGD,MMR",
+            "borders:BGD,MMR,CHN",
             "region:Asia"
           ]
         },
@@ -13881,7 +13879,7 @@
           "tp": "ma ante mute li poka ona lon ma. ona li jo e poka telo suli.",
           "en": "Many other countries border it on land. It has a coast on a large body of water.",
           "facts": [
-            "borderCount:8",
+            "borderCount:6",
             "landlocked:false"
           ]
         },
@@ -13921,7 +13919,7 @@
           "facts": [
             "relative:N:PAK:rank0",
             "relative:S:LKA:rank0",
-            "borderCount:8"
+            "borderCount:6"
           ]
         },
         {
@@ -13946,7 +13944,7 @@
           "en": "Myanmar, China and Pakistan border it. Sri Lanka is south of it. Afghanistan is north of it.",
           "facts": [
             "borders:MMR,CHN,PAK",
-            "borderRelative:S:LKA",
+            "relative:S:LKA:rank0",
             "relative:N:AFG:rank1"
           ]
         },
@@ -13973,7 +13971,7 @@
           "facts": [
             "relative:E:KHM:rank3",
             "relative:W:YEM:rank3",
-            "borderCount:8"
+            "borderCount:6"
           ]
         }
       ]
@@ -14142,7 +14140,7 @@
       "answer": "PILIPINA",
       "geography": {
         "region": "Asia",
-        "subregion": "South-Eastern Asia",
+        "subregion": "South-eastern Asia",
         "landlocked": false,
         "areaKm2": 342353,
         "borderCount": 0,
@@ -14155,10 +14153,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon anpa Asija li lon poka suno kama Asija. telo suli li sike e ona.",
-          "en": "This country is in southern Asia and in eastern Asia. Large bodies of water surround it.",
+          "tp": "ma ni li lon Asija. telo suli li sike e ona.",
+          "en": "This country is in Asia. Large bodies of water surround it.",
           "facts": [
-            "subregion:South-Eastern Asia",
+            "region:Asia",
             "landBorders:0"
           ]
         },
@@ -14167,10 +14165,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "location-border-pattern",
-          "tp": "ma ni li lon anpa Asija li lon poka suno kama Asija. ma ante ala li poka ona lon ma.",
-          "en": "This country is in southern Asia and in eastern Asia. No other country borders it on land.",
+          "tp": "ma ni li lon Asija. ma ante ala li poka ona lon ma.",
+          "en": "This country is in Asia. No other country borders it on land.",
           "facts": [
-            "subregion:South-Eastern Asia",
+            "region:Asia",
             "borderCount:0"
           ]
         },
@@ -14191,12 +14189,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Anku li lon sewi ona. ma Malasija li lon anpa ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "South Korea is north of it. Malaysia is south of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Anku li lon sewi ona. ma Malasija li lon anpa ona. ma ni li lon Asija.",
+          "en": "South Korea is north of it. Malaysia is south of it. This country is in Asia.",
           "facts": [
             "relative:N:KOR:rank0",
             "relative:S:MYS:rank0",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -14911,7 +14909,7 @@
       "answer": "TAWI",
       "geography": {
         "region": "Asia",
-        "subregion": "South-Eastern Asia",
+        "subregion": "South-eastern Asia",
         "landlocked": false,
         "areaKm2": 513120,
         "borderCount": 4,
@@ -14928,10 +14926,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon anpa Asija li lon poka suno kama Asija. ona li jo e poka telo suli.",
-          "en": "This country is in southern Asia and in eastern Asia. It has a coast on a large body of water.",
+          "tp": "ma ni li lon Asija. ona li jo e poka telo suli.",
+          "en": "This country is in Asia. It has a coast on a large body of water.",
           "facts": [
-            "subregion:South-Eastern Asia",
+            "region:Asia",
             "landlocked:false"
           ]
         },
@@ -14964,12 +14962,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Mijama li lon sewi ona. ma Malasija li lon anpa ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Myanmar is north of it. Malaysia is south of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Mijama li lon sewi ona. ma Malasija li lon anpa ona. ma ni li lon Asija.",
+          "en": "Myanmar is north of it. Malaysia is south of it. This country is in Asia.",
           "facts": [
             "relative:N:MMR:rank0",
             "relative:S:MYS:rank0",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -14977,12 +14975,12 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "neighbour-direction",
-          "tp": "ma Kanpusi li lon poka suno kama ona. ma Mijama li lon sewi ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Cambodia is east of it. Myanmar is north of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Kanpusi li lon poka suno kama ona. ma Mijama li lon sewi ona. ma ni li lon Asija.",
+          "en": "Cambodia is east of it. Myanmar is north of it. This country is in Asia.",
           "facts": [
             "borderRelative:E:KHM",
             "borderRelative:N:MMR",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -15526,7 +15524,7 @@
       "answer": "WIJE",
       "geography": {
         "region": "Asia",
-        "subregion": "South-Eastern Asia",
+        "subregion": "South-eastern Asia",
         "landlocked": false,
         "areaKm2": 331212,
         "borderCount": 3,
@@ -15542,10 +15540,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon anpa Asija li lon poka suno kama Asija. ona li jo e poka telo suli.",
-          "en": "This country is in southern Asia and in eastern Asia. It has a coast on a large body of water.",
+          "tp": "ma ni li lon Asija. ona li jo e poka telo suli.",
+          "en": "This country is in Asia. It has a coast on a large body of water.",
           "facts": [
-            "subregion:South-Eastern Asia",
+            "region:Asia",
             "landlocked:false"
           ]
         },
@@ -15578,12 +15576,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Sonko li lon sewi ona. ma Kanpusi li lon anpa ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "China is north of it. Cambodia is south of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Sonko li lon sewi ona. ma Kanpusi li lon anpa ona. ma ni li lon Asija.",
+          "en": "China is north of it. Cambodia is south of it. This country is in Asia.",
           "facts": [
             "relative:N:CHN:rank0",
             "relative:S:KHM:rank0",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -15591,12 +15589,12 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "neighbour-direction",
-          "tp": "ma Kanpusi li lon anpa ona. ma Sonko li lon sewi ona. ma ni li lon anpa Asija li lon poka suno kama Asija.",
-          "en": "Cambodia is south of it. China is north of it. This country is in southern Asia and in eastern Asia.",
+          "tp": "ma Kanpusi li lon anpa ona. ma Sonko li lon sewi ona. ma ni li lon Asija.",
+          "en": "Cambodia is south of it. China is north of it. This country is in Asia.",
           "facts": [
             "borderRelative:S:KHM",
             "borderRelative:N:CHN",
-            "subregion:South-Eastern Asia"
+            "region:Asia"
           ]
         },
         {
@@ -17209,8 +17207,8 @@
       "tpName": "Kiposi",
       "answer": "KIPOSI",
       "geography": {
-        "region": "Europe",
-        "subregion": "Southern Europe",
+        "region": "Asia",
+        "subregion": "Western Asia",
         "landlocked": false,
         "areaKm2": 9251,
         "borderCount": 0,
@@ -17223,10 +17221,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon anpa Elopa. telo suli li sike e ona.",
-          "en": "This country is in southern Europe. Large bodies of water surround it.",
+          "tp": "ma ni li lon telo Mesikena. telo suli li sike e ona.",
+          "en": "This country is in the Mediterranean Sea. Large bodies of water surround it.",
           "facts": [
-            "subregion:Southern Europe",
+            "location:Mediterranean Sea",
             "landBorders:0"
           ]
         },
@@ -17235,10 +17233,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "location-size",
-          "tp": "ma ni li lon anpa Elopa. ma ni li lili.",
-          "en": "This country is in southern Europe. This country is small.",
+          "tp": "ma ni li lon telo Mesikena. ma ni li lili.",
+          "en": "This country is in the Mediterranean Sea. This country is small.",
           "facts": [
-            "subregion:Southern Europe",
+            "location:Mediterranean Sea",
             "size:small"
           ]
         },
@@ -17247,12 +17245,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Pokasi li lon sewi ona. ma Losi li lon poka suno kama ona. ma ni li lon anpa Elopa.",
-          "en": "Bulgaria is north of it. Russia is east of it. This country is in southern Europe.",
+          "tp": "ma Pokasi li lon sewi ona. ma Losi li lon poka suno kama ona. ma ni li lon telo Mesikena.",
+          "en": "Bulgaria is north of it. Russia is east of it. This country is in the Mediterranean Sea.",
           "facts": [
             "relative:N:BGR:rank0",
             "relative:E:RUS:rank0",
-            "subregion:Southern Europe"
+            "location:Mediterranean Sea"
           ]
         },
         {
@@ -17260,11 +17258,11 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-and-location",
-          "tp": "ma Pokasi li lon sewi ona. ma ni li lon anpa Elopa. telo suli li sike e ona.",
-          "en": "Bulgaria is north of it. This country is in southern Europe. Large bodies of water surround it.",
+          "tp": "ma Pokasi li lon sewi ona. ma ni li lon telo Mesikena. telo suli li sike e ona.",
+          "en": "Bulgaria is north of it. This country is in the Mediterranean Sea. Large bodies of water surround it.",
           "facts": [
             "relative:N:BGR:rank0",
-            "subregion:Southern Europe",
+            "location:Mediterranean Sea",
             "landBorders:0"
           ]
         },
@@ -19887,10 +19885,10 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "neighbour-direction",
-          "tp": "ma Sopisi li lon poka suno weka ona. ma Lowasi li lon poka suno weka ona. ma ni li lon anpa Elopa.",
-          "en": "Serbia is west of it. Croatia is west of it. This country is in southern Europe.",
+          "tp": "ma Sopisi li lon poka suno kama ona. ma Lowasi li lon poka suno weka ona. ma ni li lon anpa Elopa.",
+          "en": "Serbia is east of it. Croatia is west of it. This country is in southern Europe.",
           "facts": [
-            "borderRelative:W:SRB",
+            "borderRelative:E:SRB",
             "borderRelative:W:HRV",
             "subregion:Southern Europe"
           ]
@@ -20738,7 +20736,7 @@
       "answer": "SOPISI",
       "geography": {
         "region": "Europe",
-        "subregion": "Eastern Europe",
+        "subregion": "Southern Europe",
         "landlocked": true,
         "areaKm2": 49037,
         "borderCount": 9,
@@ -20759,10 +20757,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "region-water",
-          "tp": "ma ni li lon poka suno kama Elopa. ona li jo ala e poka telo suli.",
-          "en": "This country is in eastern Europe. It has no coast on a large body of water.",
+          "tp": "ma ni li lon anpa Elopa. ona li jo ala e poka telo suli.",
+          "en": "This country is in southern Europe. It has no coast on a large body of water.",
           "facts": [
-            "subregion:Eastern Europe",
+            "subregion:Southern Europe",
             "landlocked:true"
           ]
         },
@@ -20771,10 +20769,10 @@
           "difficulty": "easy",
           "difficultyLevel": 1,
           "type": "location-size",
-          "tp": "ma ni li lon poka suno kama Elopa. ma ni li lili.",
-          "en": "This country is in eastern Europe. This country is small.",
+          "tp": "ma ni li lon anpa Elopa. ma ni li lili.",
+          "en": "This country is in southern Europe. This country is small.",
           "facts": [
-            "subregion:Eastern Europe",
+            "subregion:Southern Europe",
             "size:small"
           ]
         },
@@ -20783,12 +20781,12 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-position",
-          "tp": "ma Lowasi li lon sewi ona. ma Sipe li lon anpa ona. ma ni li lon poka suno kama Elopa.",
-          "en": "Croatia is north of it. Albania is south of it. This country is in eastern Europe.",
+          "tp": "ma Lowasi li lon sewi ona. ma Sipe li lon anpa ona. ma ni li lon anpa Elopa.",
+          "en": "Croatia is north of it. Albania is south of it. This country is in southern Europe.",
           "facts": [
             "relative:N:HRV:rank0",
             "relative:S:ALB:rank0",
-            "subregion:Eastern Europe"
+            "subregion:Southern Europe"
           ]
         },
         {
@@ -20796,11 +20794,11 @@
           "difficulty": "easy-medium",
           "difficultyLevel": 2,
           "type": "near-and-location",
-          "tp": "ma Lowasi li lon sewi ona. ma ni li lon poka suno kama Elopa. ona li jo ala e poka telo suli.",
-          "en": "Croatia is north of it. This country is in eastern Europe. It has no coast on a large body of water.",
+          "tp": "ma Lowasi li lon sewi ona. ma ni li lon anpa Elopa. ona li jo ala e poka telo suli.",
+          "en": "Croatia is north of it. This country is in southern Europe. It has no coast on a large body of water.",
           "facts": [
             "relative:N:HRV:rank0",
-            "subregion:Eastern Europe",
+            "subregion:Southern Europe",
             "landlocked:true"
           ]
         },
@@ -20821,11 +20819,11 @@
           "difficulty": "medium",
           "difficultyLevel": 3,
           "type": "direction-water",
-          "tp": "ma Sipe li lon anpa ona. ma Posan li lon poka suno kama ona. ona li jo ala e poka telo suli.",
-          "en": "Albania is south of it. Bosnia and Herzegovina is east of it. It has no coast on a large body of water.",
+          "tp": "ma Sipe li lon anpa ona. ma Posan li lon poka suno weka ona. ona li jo ala e poka telo suli.",
+          "en": "Albania is south of it. Bosnia and Herzegovina is west of it. It has no coast on a large body of water.",
           "facts": [
             "relative:S:ALB:rank0",
-            "relative:E:BIH:rank0",
+            "relative:W:BIH:rank0",
             "landlocked:true"
           ]
         },

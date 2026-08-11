@@ -631,7 +631,7 @@ export async function buildCrosswordFromClueBank(clueBank, options = {}) {
 }
 
 async function loadDefaultClueBank() {
-  const url = new URL("../crossword_clues/toki-pona-country-clue-bank-v1.json", import.meta.url);
+  const url = new URL("../crossword_clues/toki-pona-country-clue-bank-v1.json?v=3", import.meta.url);
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`Could not load crossword clue bank (${response.status}).`);
   return await response.json();

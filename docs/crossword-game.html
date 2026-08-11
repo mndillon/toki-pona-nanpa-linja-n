@@ -905,7 +905,7 @@
       CROSSWORD_BUILDER_VERSION,
       CROSSWORD_PUZZLE_FORMAT_VERSION,
       CROSSWORD_CLUE_BANK_VERSION
-    } from "./js/crossword-builder.js?v=2";
+    } from "./js/crossword-builder.js?v=3";
 
     const DEFAULT_ROWS = [
       "#J#PUKINAPASO##",
@@ -973,7 +973,7 @@
       {n:15, answer:"LUNPAN", clue:"ma ni li lon poka suno kama telo Mesikena. ma Sulija li lon sewi en poka suno kama ona. nena suli li lon ma ni."},
       {n:16, answer:"LOSI", clue:"ma ni li suli nanpa wan lon ma ale. ona li tan Elopa tawa Asija."},
       {n:17, answer:"KONKO", clue:"ma Kapon en ma Kamelun li lon poka ona. telo suli li lon poka suno weka."},
-      {n:19, answer:"KUPA", clue:"ma ni li ma lili suli lon telo suli. ma Awisi li lon poka suno kama. ma Mewika li lon sewi."}
+      {n:19, answer:"KUPA", clue:"ma ni li ma lili suli lon telo suli. ma Awisi li lon poka suno kama. ma Mewika li lon poka suno weka."}
     ];
 
     function freshDefaultPuzzle() {
@@ -981,7 +981,7 @@
         schemaVersion: 1,
         puzzleFormatVersion: CROSSWORD_PUZZLE_FORMAT_VERSION,
         puzzleType: "default",
-        puzzleId: "built-in-default-v3",
+        puzzleId: "built-in-default-v4",
         clueBankVersion: null,
         rows: DEFAULT_ROWS.slice(),
         numbers: [...DEFAULT_NUMBERS.entries()].map(([cellKey,n])=>{
@@ -1179,7 +1179,7 @@
 
     function isCompatibleSavedPuzzle(puzzle,{forNext=false}={}) {
       if (!puzzle || Number(puzzle.puzzleFormatVersion)!==CROSSWORD_PUZZLE_FORMAT_VERSION) return false;
-      if (puzzle.puzzleType==="default") return !forNext && puzzle.puzzleId==="built-in-default-v3";
+      if (puzzle.puzzleType==="default") return !forNext && puzzle.puzzleId==="built-in-default-v4";
       if (puzzle.puzzleType!=="generated") return false;
       try { validateGeneratedPuzzle(puzzle); } catch { return false; }
       if (forNext) {
@@ -1225,7 +1225,7 @@
       let worker=null;
       const promise=new Promise((resolve,reject)=>{
         try {
-          worker=new Worker(new URL("./js/crossword-builder.js?v=2",import.meta.url),{type:"module"});
+          worker=new Worker(new URL("./js/crossword-builder.js?v=3",import.meta.url),{type:"module"});
           builderWorker=worker;
         } catch(err) {
           reject(err);
@@ -2528,7 +2528,7 @@
     }
 
     async function handleResetPuzzle() {
-      if (!confirm("Return to the original crossword? Your progress on the current crossword will be cleared.")) return;
+      if (!confirm("Return to the original default crossword and leave the current one? Your progress on the current crossword will be cleared.")) return;
       try {
         await switchToFreshPuzzle(freshDefaultPuzzle(),{statusText:"Original crossword restored."});
       } catch(err) {
@@ -3101,5 +3101,38 @@
     });
     setupMobileFocusedView();
   </script>
+
+  <script>
+  const productionHosts = new Set([
+    'nanpa-linja-n.com',
+    'www.nanpa-linja-n.com'
+  ]);
+
+  if (!productionHosts.has(window.location.hostname)) {
+      window.goatcounter = { no_onload: true };
+  }
+ 
+
+  function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
+  }
+</script>
+
+<script data-goatcounter="https://nanpalinjan.goatcounter.com/count" async src="./js/goatcounter-count.js">
+</script>
+ 
 </body>
 </html>
