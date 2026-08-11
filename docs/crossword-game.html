@@ -1,0 +1,3105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>musi nimi ma — toki pona crossword</title>
+  <style>
+    :root {
+      --bg: #F3DFC0;
+      --ink: #111;
+      --muted: #3f4750;
+      --border: #d0d7de;
+      --cell-line: rgba(17,17,17,.105);
+      --cartouche-line: rgba(17,17,17,.235);
+      --block: #24211d;
+      --wrong: rgba(155,55,45,.11);
+      --cell: clamp(26px, min(3vw, calc((100dvh - 118px) / 15)), 46px);
+      --frame: clamp(8px, .7vw, 11px);
+      --page-pad-y: 6px;
+      --page-pad-x: 12px;
+    }
+
+    /* The page is intended to sit in the same site tree as the existing
+       fonts directory.  Multiple relative/root paths make the draft work
+       whether crossword.html is copied to the site root or kept one folder
+       below it.  Font files are intentionally not redistributed in this ZIP. */
+    @font-face {
+      font-family: "TP-Nasin-Nanpa-Font";
+      src:
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype"),
+        url("../fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype"),
+        url("/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype"),
+        url("https://www.nanpa-linja-n.com/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      font-display: block;
+    }
+    @font-face {
+      font-family: "TP-Cartouche-Font";
+      src:
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype"),
+        url("../fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype"),
+        url("/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype"),
+        url("https://www.nanpa-linja-n.com/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      font-display: block;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--ink); }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      padding: var(--page-pad-y) var(--page-pad-x);
+    }
+
+    .page {
+      width: min(1900px, 100%);
+      margin-inline: auto;
+    }
+
+    .heading-row {
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .home-link {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      width: 27px;
+      height: 27px;
+      color: var(--ink);
+      opacity: .58;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+    .home-link:hover { opacity: .9; background: rgba(17,17,17,.06); }
+    .home-link:focus-visible { outline: 2px solid rgba(17,17,17,.65); outline-offset: 2px; }
+    .home-link svg { width: 16px; height: 16px; }
+
+    h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 650;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+    button {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--ink);
+      padding: 4px 7px;
+      border-radius: 7px;
+      cursor: pointer;
+      font: 600 10px/1.1 system-ui, sans-serif;
+    }
+    button:hover { background: rgba(255,255,255,.18); }
+    button:focus-visible { outline: 2px solid #111; outline-offset: 2px; }
+
+    .subhead {
+      display: block;
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 400;
+      line-height: 1.1;
+      white-space: normal;
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: clamp(14px, 1.8vw, 28px);
+      align-items: start;
+    }
+    .puzzle-pane {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 6px;
+      align-content: start;
+      justify-items: center;
+    }
+    .puzzle-stage {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-width: 0;
+      min-height: 0;
+    }
+    .puzzle-frame {
+      display: inline-block;
+      position: relative;
+      padding: var(--frame);
+      background: var(--block);
+      border-radius: calc(var(--frame) * 1.35);
+      overflow: hidden;
+    }
+    .puzzle-wrap {
+      display: inline-block;
+      position: relative;
+      z-index: 1;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(15, var(--cell));
+      grid-template-rows: repeat(15, var(--cell));
+      gap: 0;
+      user-select: none;
+    }
+    .puzzle-controls {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+      min-height: 25px;
+    }
+
+    .cell {
+      position: relative;
+      width: var(--cell);
+      height: var(--cell);
+    }
+    .cell.block {
+      background: var(--block);
+      overflow: hidden;
+    }
+    .cell.open {
+      background: var(--bg);
+      box-shadow: inset 0 0 0 .55px var(--cell-line);
+      overflow: visible;
+    }
+    .cell.open.wrong {
+      background: var(--wrong);
+    }
+
+    /* The open answer occupies the whole crossword cell.  These are only the
+       slightly darker longitudinal edges that visually tie cells into a
+       cartouche.  Intersections deliberately get none of these. */
+    .cartouche-line {
+      position: absolute;
+      z-index: 1;
+      pointer-events: none;
+      background: var(--cartouche-line);
+    }
+    .cartouche-line.top,
+    .cartouche-line.bottom {
+      left: 0;
+      right: 0;
+      height: 1px;
+    }
+    .cartouche-line.top { top: 0; }
+    .cartouche-line.bottom { bottom: 0; }
+    .cartouche-line.left,
+    .cartouche-line.right {
+      top: 0;
+      bottom: 0;
+      width: 1px;
+    }
+    .cartouche-line.left { left: 0; }
+    .cartouche-line.right { right: 0; }
+
+    /* Rounded negative-space cuts in neighbouring black squares form the
+       cartouche end caps. Multiple cuts can coexist in one black square. */
+    .black-cut {
+      position: absolute;
+      z-index: 2;
+      display: block;
+      background: var(--bg);
+      pointer-events: none;
+    }
+    .black-cut.left,
+    .black-cut.right {
+      width: 28%;
+      height: 72%;
+      top: 14%;
+    }
+    .black-cut.left {
+      left: 0;
+      border-radius: 0 999px 999px 0;
+    }
+    .black-cut.right {
+      right: 0;
+      border-radius: 999px 0 0 999px;
+    }
+    .black-cut.top,
+    .black-cut.bottom {
+      width: 72%;
+      height: 28%;
+      left: 14%;
+    }
+    .black-cut.top {
+      top: 0;
+      border-radius: 0 0 999px 999px;
+    }
+    .black-cut.bottom {
+      bottom: 0;
+      border-radius: 999px 999px 0 0;
+    }
+
+    /* When an answer reaches the outer edge, the surrounding black frame
+       supplies the missing cartouche cap. The cap stays inside the frame so
+       the continuous outer border remains visible. */
+    .outer-cap {
+      position: absolute;
+      z-index: 2;
+      display: block;
+      background: var(--bg);
+      pointer-events: none;
+    }
+    .outer-cap.left,
+    .outer-cap.right {
+      top: 14%;
+      width: calc(var(--frame) - 2px);
+      height: 72%;
+    }
+    .outer-cap.left {
+      right: 100%;
+      border-radius: 999px 0 0 999px;
+    }
+    .outer-cap.right {
+      left: 100%;
+      border-radius: 0 999px 999px 0;
+    }
+    .outer-cap.top,
+    .outer-cap.bottom {
+      left: 14%;
+      width: 72%;
+      height: calc(var(--frame) - 2px);
+    }
+    .outer-cap.top {
+      bottom: 100%;
+      border-radius: 999px 999px 0 0;
+    }
+    .outer-cap.bottom {
+      top: 100%;
+      border-radius: 0 0 999px 999px;
+    }
+
+    .cell-input {
+      position: absolute;
+      z-index: 4;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      outline: 0;
+      padding: 0;
+      background: transparent;
+      color: transparent;
+      caret-color: transparent;
+      text-transform: uppercase;
+      font-size: 16px;
+      cursor: text;
+    }
+    .cell.open:focus-within {
+      box-shadow:
+        inset 0 0 0 .55px var(--cell-line),
+        inset 0 0 0 2px rgba(17,17,17,.44);
+    }
+
+    .entry-glyph {
+      position: absolute;
+      z-index: 3;
+      inset: 1px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .entry-glyph canvas {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 99%;
+      max-height: 98%;
+    }
+    .entry-glyph.numeric-resolved canvas {
+      max-width: 100%;
+      max-height: 99%;
+    }
+
+    /* The clue-number cartouche is deliberately large enough to read as part
+       of the square. It sits behind the entered glyph (both canvases are
+       transparent), so it remains visible without covering the answer glyph. */
+    .number-label {
+      position: absolute;
+      z-index: 2;
+      top: 2px;
+      left: 2px;
+      width: calc(var(--cell) * .90);
+      height: calc(var(--cell) * .52);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      overflow: visible;
+      opacity: .62;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+    }
+    .number-label canvas {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    /* One clue set is visible at a time.  The tabbed layout gives the active
+       set the full right-hand width, allowing every clue to use one common,
+       substantially larger sitelen-pona render size without per-clue scaling. */
+    .clues {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      display: grid;
+      grid-template-rows: 50px minmax(0, 1fr);
+      overflow: hidden;
+    }
+    .clue-tabs {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 5px;
+      border-bottom: 1px solid rgba(17,17,17,.16);
+      padding-bottom: 4px;
+    }
+    .clue-tab {
+      min-width: 0;
+      height: 45px;
+      padding: 3px 10px;
+      border: 1px solid rgba(17,17,17,.16);
+      border-bottom-color: rgba(17,17,17,.22);
+      border-radius: 8px 8px 3px 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(255,255,255,.09);
+      opacity: .68;
+    }
+    .clue-tab[aria-selected="true"] {
+      background: rgba(255,255,255,.27);
+      border-color: rgba(17,17,17,.28);
+      opacity: 1;
+    }
+    .clue-tab:hover { background: rgba(255,255,255,.22); }
+    .direction-glyph {
+      flex: 0 0 auto;
+      height: 38px;
+      max-width: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .direction-glyph canvas {
+      display: block;
+      max-height: 38px;
+      max-width: 46px;
+      width: auto;
+      height: auto;
+    }
+    .direction-glyph.northwest canvas {
+      transform: rotate(-45deg);
+      transform-origin: center center;
+    }
+    .heading-text {
+      min-width: 0;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .heading-text canvas {
+      display: block;
+      max-height: 35px;
+      max-width: 100%;
+      width: auto;
+      height: auto;
+    }
+    .clue-panel {
+      min-width: 0;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: hidden;
+      padding: 4px 2px 2px 0;
+    }
+    .clue-panel[hidden] { display: none; }
+    .clue-list {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .context-section {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .context-section + .context-section {
+      margin-top: 7px;
+      padding-top: 5px;
+      border-top: 1px solid rgba(17,17,17,.12);
+    }
+    .context-section-heading {
+      min-width: 0;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 0 0 1px 2px;
+      opacity: .72;
+      overflow: visible;
+    }
+    .context-section-direction {
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+    }
+    .context-section-direction canvas {
+      display: block;
+      max-width: 28px;
+      max-height: 28px;
+      width: auto;
+      height: auto;
+    }
+    .context-section-title {
+      min-width: 0;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      overflow: visible;
+    }
+    .context-section-title canvas {
+      display: block;
+      max-height: 26px;
+      max-width: 100%;
+      width: auto;
+      height: auto;
+    }
+    .clue {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr);
+      gap: 6px;
+      align-items: start;
+      padding: 1px 0;
+    }
+    .clue-num {
+      width: 66px;
+      height: 36px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      overflow: visible;
+      opacity: .82;
+      mix-blend-mode: multiply;
+    }
+    .clue-num canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 36px;
+      width: auto;
+      height: auto;
+    }
+    .clue-text {
+      min-width: 0;
+      display: block;
+      overflow: visible;
+    }
+    .clue-text canvas {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: none;
+      max-height: none;
+    }
+
+    .disclaimer {
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(17,17,17,.14);
+      color: var(--muted);
+      font-size: clamp(9px, .62vw, 11px);
+      line-height: 1.2;
+    }
+    .disclaimer p { margin: 0; }
+    .disclaimer .tp-disclaimer { margin-top: 2px; }
+
+    .render-status {
+      display: none;
+      margin: 2px 0 4px 34px;
+      font-size: 10px;
+      color: #7a241f;
+    }
+    .render-status.show { display: block; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    /* Desktop keeps the entire puzzle in one viewport. The script chooses one
+       shared clue font size that fits BOTH clue sets, so neither tab scrolls
+       and every Across/Down clue uses exactly the same rendered size. */
+    @media (min-width: 900px) and (min-height: 640px) {
+      html, body { height: 100dvh; overflow: hidden; }
+      .page {
+        height: calc(100dvh - (2 * var(--page-pad-y)));
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        min-height: 0;
+      }
+      .workspace { min-height: 0; height: 100%; overflow: hidden; }
+      .puzzle-pane { min-height: 0; overflow: hidden; }
+      .clues { min-height: 0; height: 100%; overflow: hidden; }
+    }
+
+    @media (max-width: 899px), (max-height: 639px) {
+      :root { --cell: clamp(22px, 6.1vw, 33px); }
+      body { padding: 8px; }
+      h1 { font-size: 15px; white-space: normal; }
+      .subhead { margin-left: 0; }
+      .workspace { grid-template-columns: 1fr; gap: 10px; }
+      .puzzle-pane { justify-items: center; }
+      .clues { height: auto; min-height: 420px; overflow: visible; }
+      .clue-panel { max-height: none; overflow: visible; }
+      .clue { grid-template-columns: 66px minmax(0,1fr); gap: 7px; }
+      .clue-num { width: 64px; height: 38px; }
+    }
+
+
+    /* MOBILE_FOCUSED_WORD_VIEW_BEGIN
+       Additive mobile-only focused crossword presentation. These selectors
+       are unique to the focused view and do not alter the existing desktop
+       crossword layout or controls. */
+    .mobile-focus-view {
+      display: none;
+      position: fixed;
+      z-index: 5000;
+      top: var(--mobile-focus-top, 0px);
+      left: var(--mobile-focus-left, 0px);
+      width: var(--mobile-focus-width, 100vw);
+      height: var(--mobile-focus-height, 100dvh);
+      padding: 7px;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+    body.mobile-focused-crossword-active > main.page {
+      display: none;
+    }
+    body.mobile-focused-crossword-active .mobile-focus-view {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 7px;
+    }
+    .mobile-focus-toolbar {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .mobile-focus-toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .mobile-focus-toolbar button {
+      min-height: 40px;
+      padding: 7px 11px;
+      border-radius: 9px;
+      font-size: 14px;
+    }
+    .mobile-focus-message {
+      min-width: 0;
+      flex: 1 1 auto;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.15;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mobile-focus-layout {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .mobile-focus-layout.horizontal {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 8px;
+      align-content: center;
+    }
+    .mobile-focus-layout.vertical {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+    .mobile-focus-word-area {
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+    }
+    .mobile-focus-layout.horizontal .mobile-focus-word-area {
+      flex-direction: row;
+      padding: calc(var(--mobile-focus-cell, 42px) * .55) 3px;
+    }
+    .mobile-focus-layout.vertical .mobile-focus-word-area {
+      flex-direction: column;
+      padding: 3px calc(var(--mobile-focus-cell, 42px) * .55);
+    }
+    .mobile-focus-cell {
+      position: relative;
+      z-index: 2;
+      flex: 0 0 auto;
+      width: var(--mobile-focus-cell, 42px);
+      height: var(--mobile-focus-cell, 42px);
+      background: var(--bg);
+      box-shadow: inset 0 0 0 1px rgba(17,17,17,.20);
+    }
+    .mobile-focus-layout.horizontal .mobile-focus-cell:first-child {
+      border-radius: 999px 0 0 999px;
+    }
+    .mobile-focus-layout.horizontal .mobile-focus-cell:last-child {
+      border-radius: 0 999px 999px 0;
+    }
+    .mobile-focus-layout.vertical .mobile-focus-cell:first-child {
+      border-radius: 999px 999px 0 0;
+    }
+    .mobile-focus-layout.vertical .mobile-focus-cell:last-child {
+      border-radius: 0 0 999px 999px;
+    }
+    .mobile-focus-cell.is-selected {
+      box-shadow:
+        inset 0 0 0 1px rgba(17,17,17,.20),
+        inset 0 0 0 3px rgba(17,17,17,.50);
+    }
+    .mobile-focus-cell.is-wrong {
+      background: var(--wrong);
+    }
+    .mobile-focus-cell-input {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      border: 0;
+      outline: 0;
+      padding: 0;
+      background: transparent;
+      color: transparent;
+      caret-color: transparent;
+      font-size: 18px;
+      text-transform: uppercase;
+    }
+    .mobile-focus-glyph {
+      position: absolute;
+      z-index: 3;
+      inset: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .mobile-focus-glyph canvas {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 98%;
+      max-height: 98%;
+    }
+    .mobile-focus-offshoot {
+      appearance: none;
+      position: absolute;
+      z-index: 1;
+      margin: 0;
+      padding: 0;
+      border: 1px solid rgba(17,17,17,.25);
+      border-radius: 0;
+      background: var(--bg);
+      cursor: pointer;
+    }
+    .mobile-focus-layout.horizontal .mobile-focus-offshoot.before {
+      left: 0;
+      bottom: 100%;
+      width: 100%;
+      height: 50%;
+      border-radius: 7px 7px 0 0;
+    }
+    .mobile-focus-layout.horizontal .mobile-focus-offshoot.after {
+      left: 0;
+      top: 100%;
+      width: 100%;
+      height: 50%;
+      border-radius: 0 0 7px 7px;
+    }
+    .mobile-focus-layout.vertical .mobile-focus-offshoot.before {
+      right: 100%;
+      top: 0;
+      width: 50%;
+      height: 100%;
+      border-radius: 7px 0 0 7px;
+    }
+    .mobile-focus-layout.vertical .mobile-focus-offshoot.after {
+      left: 100%;
+      top: 0;
+      width: 50%;
+      height: 100%;
+      border-radius: 0 7px 7px 0;
+    }
+    .mobile-focus-offshoot:focus-visible {
+      z-index: 6;
+      outline: 2px solid #111;
+      outline-offset: 1px;
+    }
+    .mobile-focus-clue {
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+      padding: 7px 8px;
+      border: 1px solid rgba(17,17,17,.14);
+      border-radius: 10px;
+      background: rgba(255,255,255,.10);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+    .mobile-focus-layout.horizontal .mobile-focus-clue {
+      width: 100%;
+    }
+    .mobile-focus-layout.vertical .mobile-focus-clue {
+      height: 100%;
+      align-items: center;
+    }
+    .mobile-focus-clue canvas {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+    }
+    @media (min-width: 900px) {
+      .mobile-focus-view { display: none !important; }
+      body.mobile-focused-crossword-active > main.page { display: grid; }
+    }
+    /* MOBILE_FOCUSED_WORD_VIEW_END */
+  </style>
+</head>
+<body>
+  <main class="page" id="main">
+    <div class="heading-row">
+      <a class="home-link" href="./index.html" aria-label="Home" title="Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M3.5 10.5 12 3.75l8.5 6.75M5.75 9.25V20h12.5V9.25M9.5 20v-6h5v6"
+            fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <h1>musi nimi ma — crossword pi toki pona
+        <span class="subhead">nanpa-linja-n numeric-cartouche answers use abbreviated sitelen glyphs.</span>
+      </h1>
+    </div>
+    <div id="renderStatus" class="render-status" role="status" aria-live="polite"></div>
+
+    <div class="workspace">
+      <div class="puzzle-pane">
+        <section class="puzzle-stage" aria-label="15 by 15 crossword puzzle">
+          <div class="puzzle-frame" id="puzzleFrame">
+            <div class="puzzle-wrap">
+              <div id="grid" class="grid"></div>
+            </div>
+          </div>
+        </section>
+        <div class="puzzle-controls" aria-label="Puzzle controls">
+          <button id="hintBtn" type="button">Hint</button>
+          <button id="checkBtn" type="button">Check</button>
+          <button id="revealBtn" type="button">Reveal</button>
+          <button id="clearBtn" type="button">Clear</button>
+          <button id="newBtn" type="button">New Crossword</button>
+          <button id="resetBtn" type="button">Reset</button>
+        </div>
+      </div>
+
+      <section class="clues" aria-label="Crossword clues">
+        <div class="clue-tabs" role="tablist" aria-label="Clue direction">
+          <button id="acrossTab" class="clue-tab" type="button" role="tab" aria-label="Across" aria-selected="true" aria-controls="acrossPanel" tabindex="0">
+            <span id="acrossDirection" class="direction-glyph" aria-hidden="true"></span>
+            <span id="acrossHeading" class="heading-text"><span class="sr-only">Across</span></span>
+          </button>
+          <button id="downTab" class="clue-tab" type="button" role="tab" aria-label="Down" aria-selected="false" aria-controls="downPanel" tabindex="-1">
+            <span id="downDirection" class="direction-glyph" aria-hidden="true"></span>
+            <span id="downHeading" class="heading-text"><span class="sr-only">Down</span></span>
+          </button>
+          <button id="contextTab" class="clue-tab" type="button" role="tab" aria-label="Clues at square" aria-selected="false" aria-controls="contextPanel" tabindex="-1">
+            <span id="contextDirection" class="direction-glyph northwest" aria-hidden="true"></span>
+            <span id="contextHeading" class="heading-text"><span class="sr-only">Clues at square</span></span>
+          </button>
+        </div>
+        <div id="acrossPanel" class="clue-panel" role="tabpanel" aria-labelledby="acrossTab">
+          <div id="acrossClues" class="clue-list across"></div>
+        </div>
+        <div id="downPanel" class="clue-panel" role="tabpanel" aria-labelledby="downTab" hidden>
+          <div id="downClues" class="clue-list down"></div>
+        </div>
+        <div id="contextPanel" class="clue-panel" role="tabpanel" aria-labelledby="contextTab" hidden>
+          <div id="contextClues" class="clue-list context"></div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="disclaimer" aria-label="Disclaimer">
+      <p><strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.</p>
+      <p class="tp-disclaimer">sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pi pona. sina o lukin e ni: sitelen li pona anu seme.</p>
+    </footer>
+
+    <div id="status" class="sr-only" role="status" aria-live="polite"></div>
+  </main>
+
+  <!-- MOBILE_FOCUSED_WORD_VIEW_BEGIN: mobile-only focused crossword overlay -->
+  <section id="mobileFocusedView" class="mobile-focus-view" hidden aria-label="Focused crossword word">
+    <div class="mobile-focus-toolbar">
+      <div class="mobile-focus-toolbar-group">
+        <button id="mobileFocusBackBtn" type="button">← Crossword</button>
+        <button id="mobileFocusHintBtn" type="button">Hint</button>
+      </div>
+      <div id="mobileFocusMessage" class="mobile-focus-message" role="status" aria-live="polite"></div>
+    </div>
+    <div id="mobileFocusLayout" class="mobile-focus-layout horizontal">
+      <div id="mobileFocusWordArea" class="mobile-focus-word-area" aria-label="Focused answer"></div>
+      <div id="mobileFocusClue" class="mobile-focus-clue" aria-label="Current clue"></div>
+    </div>
+  </section>
+  <!-- MOBILE_FOCUSED_WORD_VIEW_END -->
+
+
+  <script type="module">
+    "use strict";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=5";
+    import {
+      validateGeneratedPuzzle,
+      CROSSWORD_BUILDER_VERSION,
+      CROSSWORD_PUZZLE_FORMAT_VERSION,
+      CROSSWORD_CLUE_BANK_VERSION
+    } from "./js/crossword-builder.js?v=2";
+
+    const DEFAULT_ROWS = [
+      "#J#PUKINAPASO##",
+      "#U#E######W#N##",
+      "#K#L#MALAWI#T##",
+      "KENATA#A##S#U##",
+      "I##L#L#W##I#L#J",
+      "L#TUNISI###KANA",
+      "I##S#P########M",
+      "PESIJE###SULIJA",
+      "A########A#I##N",
+      "SILE###LOWASI#I",
+      "I#U#K##O#U#E##J",
+      "##N#O##S#SENEKA",
+      "##P#NOSIKI#S#U#",
+      "##A#K######A#P#",
+      "##NSOWAWELJN#A#"
+    ];
+
+    const DEFAULT_NUMBERS = new Map([
+      ["0,1",1],["0,3",2],["0,10",3],["0,12",4],
+      ["2,5",5],["2,7",6],["3,0",7],["4,14",8],
+      ["5,2",9],["5,11",10],["7,0",11],["7,9",12],["7,11",13],
+      ["9,0",14],["9,2",15],["9,7",16],["10,4",17],
+      ["11,9",18],["11,13",19],["12,4",20],["14,2",21]
+    ]);
+
+    const PI_ACCEPTED_WORDS = Object.freeze([
+      Object.freeze(["nanpa","seli","o","wan","awen","wan","en","luka","jo","nanpa"]),
+      Object.freeze(["nanpa","seli","o","wan","awen","wan","luka","jo","tu","nanpa"]),
+      Object.freeze(["nanpa","seli","o","wan","awen","wan","luka","jo","seli","nanpa"])
+    ]);
+    const PI_ACCEPTED = Object.freeze(PI_ACCEPTED_WORDS.map(words =>
+      words.map(word => word[0].toUpperCase()).join("")
+    ));
+    const PI_WORDS = PI_ACCEPTED_WORDS[0];
+    const PI_EXPECTED = PI_ACCEPTED[0];
+
+    const DEFAULT_ACROSS = [
+      {n:2, answer:"PUKINAPASO", clue:"ma ni li lon Apika. ona li jo ala e poka telo suli. ma Mali li lon sewi ona. ma Kana en ma Toko li lon anpa."},
+      {n:5, answer:"MALAWI", clue:"ma ni li lon Apika. ma Tansanija en ma Mosanpi en ma Sanpija li poka ona. telo suli insa li suli mute."},
+      {n:7, answer:"KENATA", clue:"ma ni li lili. telo suli li sike e ona. ma Sinita li lon anpa ona."},
+      {n:9, answer:"TUNISI", clue:"ma ni li lon sewi Apika. ma Sasali li lon poka suno weka. ma Lipija li lon poka suno kama."},
+      {n:10, answer:"KANA", clue:"ma Kosiwa en ma Toko li poka ona. ma Pukinapaso li lon sewi ona. telo suli li lon anpa."},
+      {n:11, answer:"PESIJE", clue:"ma Kanse en ma Netelan en ma Tosi en ma Lusepu li poka ona."},
+      {n:12, answer:"SULIJA", clue:"ma Tuki li lon sewi ona. ma Ilakija li lon poka suno kama. telo suli li lon poka suno weka."},
+      {n:14, answer:"SILE", clue:"ma ni li linja mute tan sewi tawa anpa. ma Alensina li lon poka suno kama. telo suli li lon poka suno weka."},
+      {n:16, answer:"LOWASI", clue:"ma ni li lon Elopa. telo suli li lon poka suno weka. ma Posan en ma Sopisi en ma Lowensina li poka ona."},
+      {n:18, answer:"SENEKA", clue:"ma ni li lon poka suno weka Apika. telo suli li lon poka suno weka ona. ma ni li sike e ma Kanpija lon poka mute."},
+      {n:20, answer:"NOSIKI", clue:"ma ni li linja suli lon sewi Elopa. ma Wensa li lon poka suno kama. telo suli li lon poka suno weka."},
+      {n:21, answer:PI_EXPECTED, clue:"sike la, o kipisi e suli pi linja poka sike kepeken suli pi linja insa sike. nanpa ni li kama."}
+    ];
+
+    const DEFAULT_DOWN = [
+      {n:1, answer:"JUKE", clue:"ma ni li kulupu ma lon telo suli lon poka suno weka Elopa. ma Kanse li lon anpa poka ona."},
+      {n:2, answer:"PELALUSI", clue:"ma Losi li lon poka suno kama. ma Posuka li lon poka suno weka. ma Ukawina li lon anpa. ona li jo ala e poka telo suli."},
+      {n:3, answer:"AWISI", clue:"ma ni en ma Tominika li lon ma lili suli wan lon telo suli."},
+      {n:4, answer:"ONTULA", clue:"ma ni li lon insa ma Amelika. telo suli li lon sewi ona. ma Katemala li lon poka suno weka."},
+      {n:5, answer:"MALIPE", clue:"ma ni li lon sewi poka suno weka Apika. telo li lon insa ma ni en ma Epanja."},
+      {n:6, answer:"LAWI", clue:"ma Esi li lon sewi ona. ma Lijatuwa li lon anpa. telo suli li lon poka suno weka."},
+      {n:7, answer:"KILIPASI", clue:"ma ni li kulupu ma lili mute lon telo suli. ma lili ona li weka mute tan ona ante."},
+      {n:8, answer:"JAMANIJA", clue:"ma Sawusi li lon sewi ona. ma Uman li lon poka suno kama. telo suli li lon anpa."},
+      {n:12, answer:"SAWUSI", clue:"ma ni li suli mute. ma Jamanija en ma Uman li lon anpa ona. telo suli li lon poka suno weka en poka suno kama."},
+      {n:13, answer:"LISENSAN", clue:"ma ni li lili mute. ma Suwasi en ma Esalasi li poka ona. ona li jo ala e poka telo suli."},
+      {n:15, answer:"LUNPAN", clue:"ma ni li lon poka suno kama telo Mesikena. ma Sulija li lon sewi en poka suno kama ona. nena suli li lon ma ni."},
+      {n:16, answer:"LOSI", clue:"ma ni li suli nanpa wan lon ma ale. ona li tan Elopa tawa Asija."},
+      {n:17, answer:"KONKO", clue:"ma Kapon en ma Kamelun li lon poka ona. telo suli li lon poka suno weka."},
+      {n:19, answer:"KUPA", clue:"ma ni li ma lili suli lon telo suli. ma Awisi li lon poka suno kama. ma Mewika li lon sewi."}
+    ];
+
+    function freshDefaultPuzzle() {
+      return {
+        schemaVersion: 1,
+        puzzleFormatVersion: CROSSWORD_PUZZLE_FORMAT_VERSION,
+        puzzleType: "default",
+        puzzleId: "built-in-default-v3",
+        clueBankVersion: null,
+        rows: DEFAULT_ROWS.slice(),
+        numbers: [...DEFAULT_NUMBERS.entries()].map(([cellKey,n])=>{
+          const [r,c]=cellKey.split(",").map(Number);
+          return {r,c,n};
+        }),
+        across: DEFAULT_ACROSS.map(item=>({...item})),
+        down: DEFAULT_DOWN.map(item=>({...item}))
+      };
+    }
+
+    let currentPuzzle = freshDefaultPuzzle();
+    let ROWS = currentPuzzle.rows.slice();
+    let NUMBERS = new Map(currentPuzzle.numbers.map(({r,c,n})=>[`${r},${c}`,n]));
+    let ACROSS = currentPuzzle.across.map(item=>({...item}));
+    let DOWN = currentPuzzle.down.map(item=>({...item}));
+    let CLUE_BY_ID = new Map();
+
+    const VALID_ENTRY_LETTERS = new Set("AEIJKLMNOPSTUW".split(""));
+
+    const LETTER_WORDS = Object.freeze({
+      A:["a","akesi","ala","alasa","ale","anpa","ante","anu","awen"],
+      E:["e","en","esun"],
+      I:["ijo","ike","ilo","insa"],
+      J:["jaki","jan","jelo","jo"],
+      K:["kala","kalama","kama","kasi","ken","kepeken","kili","kiwen","ko","kon","kule","kulupu","kute"],
+      L:["la","lape","laso","lawa","len","lete","li","lili","linja","lipu","loje","lon","luka","lukin","lupa"],
+      M:["ma","mama","mani","meli","mi","mije","moku","moli","monsi","mu","mun","musi","mute"],
+      N:["namako","nanpa","nasa","nasin","nena","ni","nimi","noka"],
+      O:["o","olin","ona","open"],
+      P:["pakala","pali","palisa","pan","pana","pi","pilin","pimeja","pini","pipi","poka","poki","pona","pu"],
+      S:["sama","seli","selo","seme","sewi","sijelo","sike","sin","sina","sinpin","sitelen","sona","soweli","suli","suno","supa","suwi"],
+      T:["tan","taso","tawa","telo","tenpo","toki","tomo","tu"],
+      U:["unpa","uta","utala"],
+      W:["walo","wan","waso","wawa","weka","wile"]
+    });
+
+    const BASE_CONFIG = {
+      layout: { fontPx: 18, align: "left", spacingPreset: "compact" },
+      paint: { fillStyle: "#111111", halo: { enabled: false, widthPx: 0 } },
+      parser: {
+        mode: "sitelen-pona-ascii-extended",
+        numericMode: "uniform",
+        mixedStyle: "short",
+        abbreviateNumericCartouches: true,
+        preserveNumericCartoucheBreaksInAbbreviation: true,
+        relaxedNanpaLinjanParsing: true,
+        relaxedNanpaLinjanRendering: true,
+        autoCartoucheStandaloneProperNames: true,
+        breakLinesAtFullStops: false
+      },
+      fonts: {
+        roles: {
+          word: "TP-Nasin-Nanpa-Font",
+          text: "TP-Nasin-Nanpa-Font",
+          cartouche: "TP-Cartouche-Font",
+          number: "TP-Cartouche-Font",
+          date: "TP-Cartouche-Font",
+          time: "TP-Cartouche-Font"
+        }
+      }
+    };
+
+    let renderer = null;
+    const cells = new Map();
+    const blackCells = new Map();
+    let activeDirection = "A";
+    let hasActiveDirectionHistory = false;
+    let selectedCellKey = null;
+    let activeEntryId = null;
+    let activeClueTab = "A";
+    let contextPanelSignature = null;
+    let numericResolved = false;
+    const HINT_FILL_STYLE = "#A79A86";
+    let activeHintEntryId = null;
+    const activeHintCellKeys = new Set();
+    let hintGeneration = 0;
+
+    const CROSSWORD_DB_NAME = "tokiPonaCrossword.db";
+    const CROSSWORD_DB_VERSION = 1;
+    const CROSSWORD_DB_STORE = "state";
+    const CURRENT_STATE_KEY = "currentPuzzle";
+    const NEXT_PUZZLE_KEY = "nextPuzzle";
+    const CURRENT_STATE_SCHEMA_VERSION = 1;
+    const BACKGROUND_BUILD_BUDGET_MS = 5000;
+
+    let persistenceSuppressed = false;
+    let currentSaveTimer = 0;
+    let nextPuzzleMemory = null;
+    let builderWorker = null;
+    let builderPromise = null;
+    let builderRequestId = 0;
+
+    function openCrosswordDb() {
+      return new Promise((resolve,reject)=>{
+        if (!("indexedDB" in window)) return reject(new Error("IndexedDB is unavailable."));
+        const request=indexedDB.open(CROSSWORD_DB_NAME,CROSSWORD_DB_VERSION);
+        request.onupgradeneeded=()=>{
+          const db=request.result;
+          if (!db.objectStoreNames.contains(CROSSWORD_DB_STORE)) db.createObjectStore(CROSSWORD_DB_STORE);
+        };
+        request.onsuccess=()=>resolve(request.result);
+        request.onerror=()=>reject(request.error || new Error("IndexedDB open failed."));
+      });
+    }
+
+    async function dbGet(keyName) {
+      const db=await openCrosswordDb();
+      try {
+        return await new Promise((resolve,reject)=>{
+          const request=db.transaction(CROSSWORD_DB_STORE,"readonly").objectStore(CROSSWORD_DB_STORE).get(keyName);
+          request.onsuccess=()=>resolve(request.result);
+          request.onerror=()=>reject(request.error || new Error("IndexedDB read failed."));
+        });
+      } finally { db.close(); }
+    }
+
+    async function dbPut(keyName,value) {
+      const db=await openCrosswordDb();
+      try {
+        await new Promise((resolve,reject)=>{
+          const request=db.transaction(CROSSWORD_DB_STORE,"readwrite").objectStore(CROSSWORD_DB_STORE).put(value,keyName);
+          request.onsuccess=()=>resolve();
+          request.onerror=()=>reject(request.error || new Error("IndexedDB write failed."));
+        });
+      } finally { db.close(); }
+    }
+
+    async function dbDelete(keyName) {
+      const db=await openCrosswordDb();
+      try {
+        await new Promise((resolve,reject)=>{
+          const request=db.transaction(CROSSWORD_DB_STORE,"readwrite").objectStore(CROSSWORD_DB_STORE).delete(keyName);
+          request.onsuccess=()=>resolve();
+          request.onerror=()=>reject(request.error || new Error("IndexedDB delete failed."));
+        });
+      } finally { db.close(); }
+    }
+
+    function snapshotCurrentState() {
+      const progressCells={};
+      for (const [cellKey,info] of cells.entries()) {
+        if (!info.value && !info.word && !info.cell.classList.contains("wrong")) continue;
+        progressCells[cellKey]={
+          value:info.value || "",
+          word:info.word || null,
+          wrong:info.cell.classList.contains("wrong")
+        };
+      }
+      const focusedInfo=[...cells.entries()].find(([,info])=>info.input===document.activeElement);
+      const persistedSelectedCellKey=focusedInfo?.[0] || selectedCellKey;
+      const persistedMembership=persistedSelectedCellKey ? membership.get(persistedSelectedCellKey) : null;
+      const persistedActiveEntryId=entryId(persistedMembership?.[activeDirection]?.entry || null) || activeEntryId;
+      return {
+        schemaVersion:CURRENT_STATE_SCHEMA_VERSION,
+        savedAt:new Date().toISOString(),
+        puzzle:currentPuzzle,
+        progress:{cells:progressCells,numericResolved:!!numericResolved},
+        ui:{
+          selectedCellKey:persistedSelectedCellKey,
+          activeDirection,
+          hasActiveDirectionHistory,
+          activeEntryId:persistedActiveEntryId,
+          activeClueTab
+        }
+      };
+    }
+
+    async function saveCurrentStateNow() {
+      if (persistenceSuppressed || !currentPuzzle) return;
+      clearTimeout(currentSaveTimer);
+      currentSaveTimer=0;
+      try { await dbPut(CURRENT_STATE_KEY,snapshotCurrentState()); }
+      catch(err) { console.warn("crossword state save failed",err); }
+    }
+
+    function queueCurrentStateSave(delay=140) {
+      if (persistenceSuppressed) return;
+      clearTimeout(currentSaveTimer);
+      currentSaveTimer=setTimeout(()=>saveCurrentStateNow(),Math.max(0,delay));
+    }
+
+    function resetInteractionState() {
+      activeDirection="A";
+      hasActiveDirectionHistory=false;
+      selectedCellKey=null;
+      activeEntryId=null;
+      activeClueTab="A";
+      contextPanelSignature=null;
+      numericResolved=false;
+      activeHintEntryId=null;
+      activeHintCellKeys.clear();
+      hintGeneration++;
+    }
+
+    function isCompatibleSavedPuzzle(puzzle,{forNext=false}={}) {
+      if (!puzzle || Number(puzzle.puzzleFormatVersion)!==CROSSWORD_PUZZLE_FORMAT_VERSION) return false;
+      if (puzzle.puzzleType==="default") return !forNext && puzzle.puzzleId==="built-in-default-v3";
+      if (puzzle.puzzleType!=="generated") return false;
+      try { validateGeneratedPuzzle(puzzle); } catch { return false; }
+      if (forNext) {
+        if (Number(puzzle.clueBankVersion)!==CROSSWORD_CLUE_BANK_VERSION) return false;
+        if (Number(puzzle.generator?.version)!==CROSSWORD_BUILDER_VERSION) return false;
+      }
+      return true;
+    }
+
+    async function loadSavedCurrentState() {
+      try {
+        const saved=await dbGet(CURRENT_STATE_KEY);
+        if (!saved || Number(saved.schemaVersion)!==CURRENT_STATE_SCHEMA_VERSION) return null;
+        if (!isCompatibleSavedPuzzle(saved.puzzle)) return null;
+        return saved;
+      } catch(err) {
+        console.warn("crossword state load failed",err);
+        return null;
+      }
+    }
+
+    async function loadPreparedNextPuzzle() {
+      if (nextPuzzleMemory && isCompatibleSavedPuzzle(nextPuzzleMemory,{forNext:true})) return nextPuzzleMemory;
+      try {
+        const stored=await dbGet(NEXT_PUZZLE_KEY);
+        if (isCompatibleSavedPuzzle(stored,{forNext:true})) {
+          nextPuzzleMemory=stored;
+          return stored;
+        }
+        if (stored) await dbDelete(NEXT_PUZZLE_KEY);
+      } catch(err) { console.warn("next crossword load failed",err); }
+      return null;
+    }
+
+    function stopBuilderWorker() {
+      if (builderWorker) builderWorker.terminate();
+      builderWorker=null;
+    }
+
+    function buildNextPuzzleInWorker() {
+      if (builderPromise) return builderPromise;
+      const requestId=++builderRequestId;
+      let worker=null;
+      const promise=new Promise((resolve,reject)=>{
+        try {
+          worker=new Worker(new URL("./js/crossword-builder.js?v=2",import.meta.url),{type:"module"});
+          builderWorker=worker;
+        } catch(err) {
+          reject(err);
+          return;
+        }
+        const finish=()=>{
+          if (builderWorker===worker) builderWorker=null;
+          worker.terminate();
+        };
+        worker.addEventListener("message",event=>{
+          const message=event.data || {};
+          if (message.requestId!==requestId) return;
+          if (message.type==="built") {
+            try {
+              validateGeneratedPuzzle(message.puzzle);
+              const puzzle=message.puzzle;
+              finish();
+              resolve(puzzle);
+            } catch(err) { finish(); reject(err); }
+          } else if (message.type==="error") {
+            finish();
+            reject(new Error(message.message || "Crossword generation failed."));
+          }
+        });
+        worker.addEventListener("error",event=>{
+          const error=new Error(event.message || "Crossword worker failed.");
+          finish();
+          reject(error);
+        },{once:true});
+        worker.postMessage({type:"build",requestId,timeBudgetMs:BACKGROUND_BUILD_BUDGET_MS});
+      });
+      builderPromise=promise;
+      const clearPromise=()=>{ if (builderPromise===promise) builderPromise=null; };
+      promise.then(clearPromise,clearPromise);
+      return promise;
+    }
+
+    async function buildAndStoreNextPuzzle() {
+      const existing=await loadPreparedNextPuzzle();
+      if (existing) return existing;
+      const puzzle=await buildNextPuzzleInWorker();
+      nextPuzzleMemory=puzzle;
+      try { await dbPut(NEXT_PUZZLE_KEY,puzzle); }
+      catch(err) { console.warn("next crossword save failed",err); }
+      return puzzle;
+    }
+
+    function scheduleNextPuzzlePrefetch() {
+      const begin=()=>{
+        if (document.hidden) {
+          const onVisible=()=>{
+            if (document.hidden) return;
+            document.removeEventListener("visibilitychange",onVisible);
+            buildAndStoreNextPuzzle().catch(err=>console.warn("background crossword generation failed",err));
+          };
+          document.addEventListener("visibilitychange",onVisible);
+          return;
+        }
+        buildAndStoreNextPuzzle().catch(err=>console.warn("background crossword generation failed",err));
+      };
+      if ("requestIdleCallback" in window) requestIdleCallback(begin,{timeout:1200});
+      else setTimeout(begin,500);
+    }
+
+    function key(r,c){ return `${r},${c}`; }
+    function fmt(n){ return String(n).padStart(2,"0"); }
+
+    function deriveEntries() {
+      const entries = [];
+      for (let r=0;r<15;r++) {
+        for (let c=0;c<15;c++) {
+          if (ROWS[r][c] === "#") continue;
+          const num = NUMBERS.get(key(r,c));
+          if (!num) continue;
+
+          if ((c===0 || ROWS[r][c-1]==="#") && c+1<15 && ROWS[r][c+1]!=="#") {
+            const coords=[]; let cc=c;
+            while(cc<15 && ROWS[r][cc]!=="#") { coords.push([r,cc]); cc++; }
+            entries.push({n:num,dir:"A",coords});
+          }
+          if ((r===0 || ROWS[r-1][c]==="#") && r+1<15 && ROWS[r+1][c]!=="#") {
+            const coords=[]; let rr=r;
+            while(rr<15 && ROWS[rr][c]!=="#") { coords.push([rr,c]); rr++; }
+            entries.push({n:num,dir:"D",coords});
+          }
+        }
+      }
+      return entries;
+    }
+
+    let ENTRIES = [];
+    let ENTRY_BY_ID = new Map();
+    let PI_ENTRY = null;
+    let PI_INDEX_BY_CELL = new Map();
+    let membership = new Map();
+
+    function configurePuzzleRuntime(puzzle) {
+      currentPuzzle = puzzle || freshDefaultPuzzle();
+      ROWS = currentPuzzle.rows.slice();
+      NUMBERS = new Map((currentPuzzle.numbers || []).map(({r,c,n})=>[key(r,c),Number(n)]));
+      ACROSS = (currentPuzzle.across || []).map(item=>({...item}));
+      DOWN = (currentPuzzle.down || []).map(item=>({...item}));
+      CLUE_BY_ID = new Map([
+        ...ACROSS.map(item=>[`${item.n}A`,item]),
+        ...DOWN.map(item=>[`${item.n}D`,item])
+      ]);
+      ENTRIES = deriveEntries();
+      ENTRY_BY_ID = new Map(ENTRIES.map(e => [`${e.n}${e.dir}`, e]));
+      PI_ENTRY = currentPuzzle.puzzleType === "default" ? ENTRY_BY_ID.get("21A") : null;
+      PI_INDEX_BY_CELL = new Map((PI_ENTRY?.coords || []).map(([r,c],i)=>[key(r,c),i]));
+      membership = new Map();
+      for (const entry of ENTRIES) {
+        entry.coords.forEach(([r,c], index) => {
+          const k=key(r,c);
+          if (!membership.has(k)) membership.set(k, {A:null,D:null});
+          membership.get(k)[entry.dir] = {entry,index};
+        });
+      }
+      clueReferenceMetricsPromise = null;
+      contextPanelSignature = null;
+      document.body.dataset.puzzleType = currentPuzzle.puzzleType || "default";
+      document.body.dataset.puzzleId = currentPuzzle.puzzleId || "";
+    }
+
+    function addLine(cell, side) {
+      const s=document.createElement("span");
+      s.className=`cartouche-line ${side}`;
+      cell.appendChild(s);
+    }
+
+    function addLongitudinalCartoucheLines(cell, r, c) {
+      const m=membership.get(key(r,c)) || {A:null,D:null};
+      /* Any Across/Down intersection suppresses all four darker sides,
+         including end intersections. Rounded end caps are independent. */
+      if (m.A && m.D) return;
+      if (m.A) { addLine(cell,"top"); addLine(cell,"bottom"); }
+      else if (m.D) { addLine(cell,"left"); addLine(cell,"right"); }
+    }
+
+    function addBlackCut(blockCell, side) {
+      if (!blockCell || blockCell.querySelector(`.black-cut.${side}`)) return;
+      const cut=document.createElement("span");
+      cut.className=`black-cut ${side}`;
+      blockCell.appendChild(cut);
+    }
+
+    function addOuterCap(openCell, side) {
+      if (!openCell || openCell.querySelector(`.outer-cap.${side}`)) return;
+      const cap=document.createElement("span");
+      cap.className=`outer-cap ${side}`;
+      openCell.appendChild(cap);
+    }
+
+    function applyRoundedEndCuts() {
+      for (const entry of ENTRIES) {
+        const [sr,sc]=entry.coords[0];
+        const [er,ec]=entry.coords[entry.coords.length-1];
+        const startCell=cells.get(key(sr,sc))?.cell;
+        const endCell=cells.get(key(er,ec))?.cell;
+        if (entry.dir === "A") {
+          if (sc>0 && ROWS[sr][sc-1]==="#") addBlackCut(blackCells.get(key(sr,sc-1)), "right");
+          else if (sc===0) addOuterCap(startCell,"left");
+          if (ec<14 && ROWS[er][ec+1]==="#") addBlackCut(blackCells.get(key(er,ec+1)), "left");
+          else if (ec===14) addOuterCap(endCell,"right");
+        } else {
+          if (sr>0 && ROWS[sr-1][sc]==="#") addBlackCut(blackCells.get(key(sr-1,sc)), "bottom");
+          else if (sr===0) addOuterCap(startCell,"top");
+          if (er<14 && ROWS[er+1][ec]==="#") addBlackCut(blackCells.get(key(er+1,ec)), "top");
+          else if (er===14) addOuterCap(endCell,"bottom");
+        }
+      }
+    }
+
+    function chooseRandomWord(letter) {
+      const list=LETTER_WORDS[letter] || [];
+      if (!list.length) return null;
+      return list[Math.floor(Math.random()*list.length)];
+    }
+
+    function createGlyphHost(cell) {
+      const host=document.createElement("span");
+      host.className="entry-glyph";
+      cell.appendChild(host);
+      return host;
+    }
+
+    function buildGrid() {
+      const grid=document.getElementById("grid");
+      grid.replaceChildren();
+      cells.clear();
+      blackCells.clear();
+      for (let r=0;r<15;r++) {
+        for (let c=0;c<15;c++) {
+          const answer=ROWS[r][c];
+          const cell=document.createElement("div");
+          cell.className="cell " + (answer==="#" ? "block" : "open");
+          cell.dataset.row=r;
+          cell.dataset.col=c;
+
+          if (answer==="#") {
+            blackCells.set(key(r,c),cell);
+          } else {
+            addLongitudinalCartoucheLines(cell,r,c);
+            const glyphHost=createGlyphHost(cell);
+            const input=document.createElement("input");
+            input.className="cell-input";
+            input.maxLength=1;
+            input.autocomplete="off";
+            input.spellcheck=false;
+            input.inputMode="text";
+            input.setAttribute("aria-label",`row ${r+1}, column ${c+1}`);
+            cell.appendChild(input);
+
+            const info={cell,input,glyphHost,answer,value:"",word:null,renderSeq:0,r,c};
+            cells.set(key(r,c),info);
+
+            input.addEventListener("focus",()=>chooseDirectionForCell(r,c,false));
+            input.addEventListener("click",()=>handleSquareClick(r,c));
+            input.addEventListener("keydown",ev=>handleCellKey(ev,info));
+            input.addEventListener("input",()=>handleInputFallback(info));
+
+            const num=NUMBERS.get(key(r,c));
+            if (num) {
+              const label=document.createElement("span");
+              label.className="number-label";
+              label.dataset.number=fmt(num);
+              const sr=document.createElement("span");
+              sr.className="sr-only";
+              sr.textContent=fmt(num);
+              label.appendChild(sr);
+              cell.appendChild(label);
+            }
+          }
+          grid.appendChild(cell);
+        }
+      }
+      applyRoundedEndCuts();
+    }
+
+    function entryId(entry) {
+      return entry ? `${entry.n}${entry.dir}` : null;
+    }
+
+    function chooseDirectionForCell(r,c,toggle) {
+      const m=membership.get(key(r,c));
+      if (!m) return;
+      if (m.A && m.D) {
+        if (toggle) {
+          activeDirection = activeDirection === "A" ? "D" : "A";
+          hasActiveDirectionHistory = true;
+        }
+      } else if (m.A) {
+        activeDirection="A";
+        hasActiveDirectionHistory = true;
+      } else if (m.D) {
+        activeDirection="D";
+        hasActiveDirectionHistory = true;
+      }
+    }
+
+    function sharedEntryBetweenCells(previousKey,currentKey) {
+      if (!previousKey || !currentKey || previousKey===currentKey) return null;
+      const previous=membership.get(previousKey);
+      const current=membership.get(currentKey);
+      if (!previous || !current) return null;
+      for (const dir of ["A","D"]) {
+        const prevEntry=previous[dir]?.entry;
+        const curEntry=current[dir]?.entry;
+        if (prevEntry && curEntry && entryId(prevEntry)===entryId(curEntry)) return curEntry;
+      }
+      return null;
+    }
+
+    function chooseActiveEntryForClick(r,c) {
+      const currentKey=key(r,c);
+      const m=membership.get(currentKey);
+      if (!m) return null;
+
+      let chosen=null;
+      if (selectedCellKey===currentKey && m.A && m.D) {
+        activeDirection = activeDirection === "A" ? "D" : "A";
+        chosen=m[activeDirection]?.entry || null;
+      } else {
+        const shared=sharedEntryBetweenCells(selectedCellKey,currentKey);
+        if (shared) {
+          chosen=shared;
+          activeDirection=shared.dir;
+        } else if (m.A && !m.D) {
+          chosen=m.A.entry;
+          activeDirection="A";
+        } else if (m.D && !m.A) {
+          chosen=m.D.entry;
+          activeDirection="D";
+        } else if (m.A && m.D) {
+          const preferred=hasActiveDirectionHistory ? activeDirection : "A";
+          chosen=m[preferred]?.entry || m.A.entry;
+          activeDirection=chosen.dir;
+        }
+      }
+
+      if (!chosen) chosen=m[activeDirection]?.entry || m.A?.entry || m.D?.entry || null;
+      selectedCellKey=currentKey;
+      hasActiveDirectionHistory=true;
+      activeEntryId=entryId(chosen);
+      return chosen;
+    }
+
+    function clearHintIfLeavingWord(r,c) {
+      if (!activeHintEntryId) return;
+      const hintedEntry=ENTRY_BY_ID.get(activeHintEntryId);
+      if (!hintedEntry) {
+        clearActiveHint();
+        return;
+      }
+      const destinationKey=key(r,c);
+      const staysInHintedWord=hintedEntry.coords.some(([rr,cc])=>key(rr,cc)===destinationKey);
+      if (!staysInHintedWord) clearActiveHint();
+    }
+
+    function activateSquare(r,c) {
+      clearHintIfLeavingWord(r,c);
+      const entry=chooseActiveEntryForClick(r,c);
+      if (!entry) return null;
+      refreshContextPanel(entry).catch(err=>showRenderError(null,err));
+      selectClueTab("C");
+      queueCurrentStateSave();
+      return entry;
+    }
+
+    function handleSquareClick(r,c) {
+      activateSquare(r,c);
+    }
+
+    function entryPositionForCell(r,c,dir=activeDirection) {
+      const m=membership.get(key(r,c));
+      const membershipForDir=m?.[dir];
+      if (membershipForDir) return membershipForDir;
+      const other=dir==="A"?"D":"A";
+      return m?.[other] || null;
+    }
+
+    function focusRelative(info,delta) {
+      const pos=entryPositionForCell(info.r,info.c);
+      if (!pos) return;
+      const nextIndex=pos.index+delta;
+      if (nextIndex<0 || nextIndex>=pos.entry.coords.length) return;
+      const [r,c]=pos.entry.coords[nextIndex];
+      cells.get(key(r,c))?.input.focus();
+    }
+
+    function focusArrow(info,dr,dc) {
+      let r=info.r+dr,c=info.c+dc;
+      while(r>=0&&r<15&&c>=0&&c<15) {
+        const next=cells.get(key(r,c));
+        if (next) {
+          next.input.focus();
+          return next;
+        }
+        r+=dr; c+=dc;
+      }
+      return null;
+    }
+
+    function canvasFromRenderResult(rendered, context = "sitelen render") {
+      const canvas = rendered?.canvas;
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        throw new TypeError(`${context}: renderTextToNewCanvas() did not return { canvas: HTMLCanvasElement, ... }`);
+      }
+      return canvas;
+    }
+
+    async function renderOrdinaryGlyph(info, word, {fillStyle="#111111"}={}) {
+      if (!renderer || !word) { info.glyphHost.replaceChildren(); return; }
+      const seq=++info.renderSeq;
+      try {
+        const cellPx=Math.max(18,parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cell"))||30);
+        const rendered=await renderer.renderTextToNewCanvas({
+          input:word,
+          layout:{fontPx:Math.max(22,cellPx*.94),align:"center",spacingPreset:"compact",paddingPx:0},
+          paint:{fillStyle},
+          parser:{mode:"sitelen-pona-ascii-extended",numericMode:"uniform",breakLinesAtFullStops:false},
+          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Cartouche-Font"}}
+        });
+        const canvas=canvasFromRenderResult(rendered,`cell glyph ${word}`);
+        if (seq!==info.renderSeq) return;
+        canvas.setAttribute("aria-hidden","true");
+        info.glyphHost.classList.remove("numeric-resolved");
+        info.glyphHost.replaceChildren(canvas);
+      } catch (err) {
+        console.error("cell glyph render failed",word,err);
+        if (seq===info.renderSeq) info.glyphHost.replaceChildren();
+      }
+    }
+
+    function numericGlyphScaleForWord(word) {
+      const cps=NanpaParser.parseTpWordsToCodepoints(String(word||""));
+      const cp=Array.isArray(cps) && cps.length ? Number(cps[0]) : null;
+      if (!Number.isInteger(cp)) return 1;
+      if (NanpaParser.getQuarterCodepointsSet().has(cp)) return 0.25;
+      if (NanpaParser.getOneThirdCodepointsSet().has(cp)) return 1/3;
+      if (NanpaParser.getHalfCodepointsSet().has(cp)) return 0.5;
+      if (NanpaParser.getTwoThirdsCodepointsSet().has(cp)) return 2/3;
+      return 1;
+    }
+
+    async function renderResolvedNumericGlyph(info, word, {fillStyle="#111111"}={}) {
+      if (!renderer) return;
+      const seq=++info.renderSeq;
+      try {
+        const cellPx=Math.max(18,parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cell"))||30);
+        const rendered=await renderer.renderTextToNewCanvas({
+          input:word,
+          layout:{fontPx:Math.max(23,cellPx*.96),align:"center",spacingPreset:"compact",paddingPx:0},
+          paint:{fillStyle},
+          parser:{mode:"sitelen-pona-ascii-extended",numericMode:"uniform",breakLinesAtFullStops:false},
+          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Cartouche-Font"}}
+        });
+        const canvas=canvasFromRenderResult(rendered,`resolved numeric glyph ${word}`);
+        if (seq!==info.renderSeq) return;
+        const scale=numericGlyphScaleForWord(word);
+        canvas.style.transformOrigin="center center";
+        canvas.style.transform=`scale(${scale})`;
+        canvas.dataset.numericScale=String(scale);
+        canvas.setAttribute("aria-hidden","true");
+        info.glyphHost.classList.add("numeric-resolved");
+        info.glyphHost.replaceChildren(canvas);
+      } catch (err) {
+        console.error("numeric cell glyph render failed",word,err);
+      }
+    }
+
+    function piIndexForCell(info) {
+      const index=PI_INDEX_BY_CELL.get(key(info.r,info.c));
+      return Number.isInteger(index) ? index : null;
+    }
+
+    function numericWordForAcceptedLetter(index, letter) {
+      if (!Number.isInteger(index) || !letter) return null;
+      const upper=String(letter).toUpperCase();
+      for (const words of PI_ACCEPTED_WORDS) {
+        const word=words[index];
+        if (word && word[0].toUpperCase()===upper) return word;
+      }
+      return null;
+    }
+
+    function currentPiEntryValue() {
+      if (!PI_ENTRY) return "";
+      return PI_ENTRY.coords.map(([r,c])=>cells.get(key(r,c))?.value || "").join("");
+    }
+
+    function piCandidatesForCurrentEntry() {
+      if (!PI_ENTRY) return [];
+      return PI_ACCEPTED.filter(answer =>
+        PI_ENTRY.coords.every(([r,c],i) => {
+          const value=cells.get(key(r,c))?.value || "";
+          return !value || value===answer[i];
+        })
+      );
+    }
+
+    async function renderCellDisplay(info,{fillStyle="#111111"}={}) {
+      if (!info.value) {
+        info.renderSeq++;
+        info.glyphHost.classList.remove("numeric-resolved");
+        info.glyphHost.replaceChildren();
+        return;
+      }
+      const index=piIndexForCell(info);
+      const numericWord=index!==null ? numericWordForAcceptedLetter(index,info.value) : null;
+      if (numericWord) {
+        await renderResolvedNumericGlyph(info,numericWord,{fillStyle});
+        return;
+      }
+      await renderOrdinaryGlyph(info,info.word||chooseRandomWord(info.value),{fillStyle});
+    }
+
+    function currentEntryForHint() {
+      if (activeEntryId && ENTRY_BY_ID.has(activeEntryId)) return ENTRY_BY_ID.get(activeEntryId);
+
+      let currentKey=selectedCellKey;
+      const focused=[...cells.entries()].find(([,info])=>info.input===document.activeElement);
+      if (focused) currentKey=focused[0];
+      if (!currentKey) return null;
+
+      const m=membership.get(currentKey);
+      if (!m) return null;
+      return m[activeDirection]?.entry || m.A?.entry || m.D?.entry || null;
+    }
+
+    function clearActiveHint() {
+      hintGeneration++;
+      for (const cellKey of activeHintCellKeys) {
+        const info=cells.get(cellKey);
+        if (!info || info.value) continue;
+        info.renderSeq++;
+        info.glyphHost.classList.remove("numeric-resolved");
+        info.glyphHost.replaceChildren();
+      }
+      activeHintCellKeys.clear();
+      activeHintEntryId=null;
+    }
+
+    async function showHintForCurrentWord() {
+      const entry=currentEntryForHint();
+      if (!entry) {
+        document.getElementById("status").textContent="Select a crossword word before using Hint.";
+        return;
+      }
+
+      clearActiveHint();
+      const generation=hintGeneration;
+      activeHintEntryId=entryId(entry);
+      const renders=[];
+      const numericHintWords=(PI_ENTRY && entryId(entry)===entryId(PI_ENTRY))
+        ? (PI_ACCEPTED_WORDS.find(words => entry.coords.every(([r,c],index) => {
+            const value=cells.get(key(r,c))?.value || "";
+            return !value || value===words[index]?.[0]?.toUpperCase();
+          })) || PI_WORDS)
+        : null;
+
+      entry.coords.forEach(([r,c],index)=>{
+        const cellKey=key(r,c);
+        const info=cells.get(cellKey);
+        if (!info || info.value) return;
+        activeHintCellKeys.add(cellKey);
+
+        if (numericHintWords) {
+          const numericWord=numericHintWords[index] || null;
+          if (numericWord) renders.push(renderResolvedNumericGlyph(info,numericWord,{fillStyle:HINT_FILL_STYLE}));
+          return;
+        }
+
+        const hintWord=chooseRandomWord(info.answer);
+        if (hintWord) renders.push(renderOrdinaryGlyph(info,hintWord,{fillStyle:HINT_FILL_STYLE}));
+      });
+
+      if (!activeHintCellKeys.size) {
+        activeHintEntryId=null;
+        document.getElementById("status").textContent="The current word has no empty squares to hint.";
+        return;
+      }
+
+      await Promise.all(renders);
+      if (generation!==hintGeneration) return;
+      document.getElementById("status").textContent=`Hint shown for ${entry.n}${entry.dir}.`;
+    }
+
+    async function setCellLetter(info, letter, {advance=true, randomize=true}={}) {
+      clearActiveHint();
+      const upper=String(letter||"").toUpperCase();
+      if (!VALID_ENTRY_LETTERS.has(upper)) return false;
+      info.value=upper;
+      info.input.value=upper;
+      info.cell.classList.remove("wrong");
+      if (randomize || !info.word || info.word[0].toUpperCase()!==upper) info.word=chooseRandomWord(upper);
+      await renderCellDisplay(info);
+      numericResolved=isPiEntryCorrect();
+      if (piIndexForCell(info)!==null && numericResolved && PI_ENTRY) {
+        await Promise.all(PI_ENTRY.coords.map(([r,c])=>{
+          const piInfo=cells.get(key(r,c));
+          return piInfo?.value ? renderCellDisplay(piInfo,{fillStyle:"#111111"}) : Promise.resolve();
+        }));
+      }
+      if (advance && !numericResolved) focusRelative(info,1);
+      queueCurrentStateSave();
+      return true;
+    }
+
+    async function clearCell(info) {
+      clearActiveHint();
+      info.value="";
+      info.input.value="";
+      info.word=null;
+      info.cell.classList.remove("wrong");
+      info.renderSeq++;
+      info.glyphHost.classList.remove("numeric-resolved");
+      info.glyphHost.replaceChildren();
+      numericResolved=false;
+      queueCurrentStateSave();
+    }
+
+    async function handleCellKey(ev,info) {
+      if (/^[A-Za-z]$/.test(ev.key)) {
+        clearActiveHint();
+        const upper=ev.key.toUpperCase();
+        if (!VALID_ENTRY_LETTERS.has(upper)) {
+          ev.preventDefault();
+          document.getElementById("status").textContent=`${upper} is not a Toki Pona initial used by this crossword.`;
+          return;
+        }
+        ev.preventDefault();
+        await setCellLetter(info,upper,{advance:true,randomize:true});
+        return;
+      }
+      if (ev.key==="Backspace" || ev.key==="Delete") {
+        clearActiveHint();
+        ev.preventDefault();
+        if (info.value) await clearCell(info);
+        else focusRelative(info,-1);
+        return;
+      }
+      if (ev.key===" ") {
+        ev.preventDefault();
+        const m=membership.get(key(info.r,info.c));
+        if (m?.A && m?.D) {
+          activeDirection=activeDirection==="A"?"D":"A";
+          hasActiveDirectionHistory=true;
+          queueCurrentStateSave();
+        }
+        return;
+      }
+      const moves={ArrowLeft:[0,-1],ArrowRight:[0,1],ArrowUp:[-1,0],ArrowDown:[1,0]};
+      if (moves[ev.key]) {
+        ev.preventDefault();
+        const [dr,dc]=moves[ev.key];
+        const next=focusArrow(info,dr,dc);
+        if (next) activateSquare(next.r,next.c);
+      }
+    }
+
+    async function handleInputFallback(info) {
+      const raw=String(info.input.value||"").replace(/[^A-Za-z]/g,"").slice(-1).toUpperCase();
+      info.input.value=info.value;
+      if (raw && raw!==info.value && VALID_ENTRY_LETTERS.has(raw)) await setCellLetter(info,raw,{advance:true,randomize:true});
+    }
+
+    function isPiEntryCorrect() {
+      if (!PI_ENTRY) return false;
+      return PI_ACCEPTED.includes(currentPiEntryValue());
+    }
+
+    function clueEntry(item,dir=null) {
+      const row=document.createElement("div");
+      row.className="clue";
+      if (dir) row.dataset.direction=dir;
+      const num=document.createElement("div");
+      num.className="clue-num";
+      num.dataset.number=fmt(item.n);
+      const text=document.createElement("div");
+      text.className="clue-text";
+      text.dataset.clue=item.clue;
+      const sr=document.createElement("span");
+      sr.className="sr-only";
+      sr.textContent=`${fmt(item.n)}. ${item.clue}`;
+      row.append(num,text,sr);
+      return row;
+    }
+
+    function buildClues() {
+      const a=document.getElementById("acrossClues");
+      const d=document.getElementById("downClues");
+      const context=document.getElementById("contextClues");
+      a.replaceChildren();
+      d.replaceChildren();
+      context?.replaceChildren();
+      contextPanelSignature=null;
+      ACROSS.forEach(x=>a.appendChild(clueEntry(x,"A")));
+      DOWN.forEach(x=>d.appendChild(clueEntry(x,"D")));
+    }
+
+    function contextEntriesForEntry(entry) {
+      if (!entry) return [];
+      const opposite=entry.dir==="A" ? "D" : "A";
+      const result=[entry];
+      const seen=new Set([entryId(entry)]);
+      for (const [r,c] of entry.coords) {
+        const crossing=membership.get(key(r,c))?.[opposite]?.entry || null;
+        const id=entryId(crossing);
+        if (!crossing || !id || seen.has(id)) continue;
+        seen.add(id);
+        result.push(crossing);
+      }
+      return result;
+    }
+
+    function contextSection(direction,entries) {
+      const section=document.createElement("section");
+      section.className=`context-section ${direction==="D" ? "down" : "across"}`;
+      section.dataset.direction=direction;
+
+      const heading=document.createElement("div");
+      heading.className="context-section-heading";
+      const directionHost=document.createElement("span");
+      directionHost.className="context-section-direction";
+      directionHost.dataset.sitelen=direction==="D" ? "ni01" : "ni02";
+      directionHost.setAttribute("aria-hidden","true");
+      const titleHost=document.createElement("span");
+      titleHost.className="context-section-title";
+      titleHost.dataset.sitelen=direction==="D" ? "nimi tawa anpa" : "nimi tawa poka";
+      const sr=document.createElement("span");
+      sr.className="sr-only";
+      sr.textContent=direction==="D" ? "Down" : "Across";
+      titleHost.appendChild(sr);
+      heading.append(directionHost,titleHost);
+      section.appendChild(heading);
+
+      for (const contextEntry of entries) {
+        const item=CLUE_BY_ID.get(entryId(contextEntry));
+        if (item) section.appendChild(clueEntry(item,contextEntry.dir));
+      }
+      return section;
+    }
+
+    function contextSignatureForEntry(entry) {
+      if (!entry) return "";
+      const entries=contextEntriesForEntry(entry);
+      const otherDirection=entry.dir==="A" ? "D" : "A";
+      const groups=[entry.dir,otherDirection];
+      const groupedIds=groups.map(direction=>
+        entries.filter(contextEntry=>contextEntry.dir===direction).map(entryId).join(",")
+      ).join("|");
+      const clueFontPx=document.body.dataset.clueFontPx || "";
+      const clueTextWidth=document.body.dataset.clueTextWidth || "";
+      return `${entryId(entry)}:${groupedIds}:font=${clueFontPx}:width=${clueTextWidth}`;
+    }
+
+    async function refreshContextPanel(entry=null) {
+      const resolvedEntry=entry || (activeEntryId ? ENTRY_BY_ID.get(activeEntryId) : null);
+      const list=document.getElementById("contextClues");
+      if (!list) return;
+      if (!resolvedEntry) {
+        contextPanelSignature=null;
+        list.replaceChildren();
+        return;
+      }
+
+      const signature=contextSignatureForEntry(resolvedEntry);
+      if (signature===contextPanelSignature && list.childElementCount>0) return;
+      contextPanelSignature=signature;
+
+      const entries=contextEntriesForEntry(resolvedEntry);
+      const activeDirection=resolvedEntry.dir;
+      const otherDirection=activeDirection==="A" ? "D" : "A";
+      const groups=[activeDirection,otherDirection];
+      list.replaceChildren();
+      for (const direction of groups) {
+        const directionalEntries=entries.filter(contextEntry=>contextEntry.dir===direction);
+        if (directionalEntries.length) list.appendChild(contextSection(direction,directionalEntries));
+      }
+      if (!renderer) return;
+
+      for (const host of list.querySelectorAll(".context-section-direction")) {
+        await renderTextInto(host,host.dataset.sitelen,24,{center:true,paddingPx:1});
+      }
+      for (const host of list.querySelectorAll(".context-section-title")) {
+        await renderTextInto(host,host.dataset.sitelen,20,{paddingPx:1});
+      }
+      for (const host of list.querySelectorAll(".clue-num")) {
+        await renderNumericLabel(host,host.dataset.number,28);
+      }
+
+      const reference=await getClueReferenceMetrics();
+      const fontPx=Math.max(CLUE_FONT_DESKTOP_MIN,Number(document.body.dataset.clueFontPx)||CLUE_FONT_COMPACT);
+      const configuredWidth=Number(document.body.dataset.clueTextWidth)||0;
+      for (const host of list.querySelectorAll(".clue-text")) {
+        const maxWidth=Math.max(120,Math.floor(configuredWidth || host.clientWidth || 240));
+        const wrapped=wrapClueFromReferenceMetrics(host.dataset.clue,fontPx,maxWidth,reference);
+        await renderTextInto(host,wrapped,fontPx,{
+          sentenceBreaks:false,
+          paddingPx:clueRenderPaddingPx(fontPx),
+          lineGapScale:CLUE_LINE_GAP_SCALE,
+          lineGapMinPx:CLUE_LINE_GAP_MIN_PX
+        });
+      }
+    }
+
+    let renderErrorCount = 0;
+    function showRenderError(host,err) {
+      console.error(err);
+      renderErrorCount += 1;
+      if (host) host.replaceChildren();
+      document.body.dataset.renderErrors=String(renderErrorCount);
+      const status=document.getElementById("renderStatus");
+      if (status) {
+        status.classList.add("show");
+        const detail=String(err?.message||err||"unknown rendering error");
+        status.textContent=`sitelen rendering error: ${detail}`;
+      }
+    }
+
+    async function renderTextInto(host,input,fontPx,{numeric=false,center=false,sentenceBreaks=false,paddingPx=null,lineGapScale=null,lineGapMinPx=null}={}) {
+      try {
+        const layout={fontPx,align:center?"center":"left",spacingPreset:"compact"};
+        if (paddingPx!=null) layout.paddingPx=paddingPx;
+        if (lineGapScale!=null) layout.lineGapScale=lineGapScale;
+        if (lineGapMinPx!=null) layout.lineGapMinPx=lineGapMinPx;
+        const rendered=await renderer.renderTextToNewCanvas({
+          input,
+          layout,
+          parser:{
+            mode:"sitelen-pona-ascii-extended",
+            numericMode:"uniform",
+            mixedStyle:"short",
+            abbreviateNumericCartouches:numeric,
+            preserveNumericCartoucheBreaksInAbbreviation:true,
+            relaxedNanpaLinjanParsing:true,
+            relaxedNanpaLinjanRendering:true,
+            autoCartoucheStandaloneProperNames:true,
+            breakLinesAtFullStops:sentenceBreaks
+          },
+          fonts:{roles:{
+            word:"TP-Nasin-Nanpa-Font",
+            text:"TP-Nasin-Nanpa-Font",
+            cartouche:"TP-Cartouche-Font",
+            number:"TP-Cartouche-Font",
+            date:"TP-Cartouche-Font",
+            time:"TP-Cartouche-Font"
+          }}
+        });
+        const canvas=canvasFromRenderResult(rendered,`text render: ${input}`);
+        canvas.setAttribute("aria-hidden","true");
+        host.replaceChildren(canvas);
+        return canvas;
+      } catch(err) {
+        showRenderError(host,err);
+        return null;
+      }
+    }
+
+    function canvasInkTouchesEdge(canvas,clearancePx=2) {
+      if (!(canvas instanceof HTMLCanvasElement)) return true;
+      const w=canvas.width|0, h=canvas.height|0;
+      if (w<=0 || h<=0) return true;
+      const ctx=canvas.getContext("2d",{willReadFrequently:true});
+      const data=ctx.getImageData(0,0,w,h).data;
+      const band=Math.max(1,Math.min(clearancePx,Math.floor(Math.min(w,h)/2)));
+      const alphaAt=(x,y)=>data[((y*w+x)*4)+3];
+      for (let y=0;y<h;y++) {
+        for (let x=0;x<band;x++) if (alphaAt(x,y)>0 || alphaAt(w-1-x,y)>0) return true;
+      }
+      for (let y=0;y<band;y++) {
+        for (let x=0;x<w;x++) if (alphaAt(x,y)>0 || alphaAt(x,h-1-y)>0) return true;
+      }
+      return false;
+    }
+
+    async function renderNumericLabel(host,rawNumber,fontPx) {
+      const raw=String(rawNumber??"").trim().padStart(2,"0");
+      if (!/^\d{2}$/.test(raw)) throw new Error(`Invalid two-digit clue label ${raw}`);
+      const opts={
+        mode:"uniform",
+        mixedStyle:"short",
+        relaxedNanpaLinjanParsing:true,
+        relaxedNanpaLinjanRendering:true
+      };
+      const parsed=NanpaParser.parseNumber(raw,opts);
+      if (!parsed || parsed.displayValue!==raw || !Array.isArray(parsed.ucsurCodepoints) || !parsed.ucsurCodepoints.length) {
+        throw new Error(`NanpaParser failed to preserve clue number ${raw}`);
+      }
+      /* Render the literal two-digit value itself.  Numeric cartouches can
+         extend beyond the renderer's capped line box, so inspect the resulting
+         pixels and rerender with progressively larger REAL renderer padding
+         until the cartouche has transparent clearance on every canvas edge. */
+      const step=Math.max(3,Math.ceil(fontPx*0.10));
+      let padding=Math.max(6,Math.ceil(fontPx*0.24));
+      let canvas=null;
+      for (let attempt=0;attempt<4;attempt++) {
+        canvas=await renderTextInto(host,raw,fontPx,{numeric:true,center:true,paddingPx:padding});
+        if (!canvas || !canvasInkTouchesEdge(canvas,2)) break;
+        padding+=step;
+      }
+      if (canvas) {
+        canvas.dataset.numericLabel=raw;
+        canvas.dataset.numericPadding=String(padding);
+        if (canvasInkTouchesEdge(canvas,1)) {
+          throw new Error(`numeric clue label ${raw} still touches its canvas edge after ${padding}px renderer padding`);
+        }
+      }
+      return canvas;
+    }
+
+    async function renderNumberLabels() {
+      const cellHosts=[...document.querySelectorAll(".number-label")];
+      const clueHosts=[...document.querySelectorAll(".clue-num")];
+      const cellPx=Math.max(18,parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cell"))||30);
+      const cellLabelFont=Math.max(30,Math.round(cellPx*.82));
+      for (const host of cellHosts) {
+        try { await renderNumericLabel(host,host.dataset.number,cellLabelFont); }
+        catch(err) { showRenderError(host,err); }
+      }
+      for (const host of clueHosts) {
+        try { await renderNumericLabel(host,host.dataset.number,28); }
+        catch(err) { showRenderError(host,err); }
+      }
+    }
+
+    const CLUE_FONT_DESKTOP_MAX = 40;
+    const CLUE_FONT_DESKTOP_MIN = 13;
+    const CLUE_FONT_COMPACT = 22;
+    const CLUE_REFERENCE_FONT = 40;
+    const CLUE_ROW_GAP_PX = 2;
+    const CLUE_ROW_PAD_Y_PX = 1;
+    const CLUE_NUM_MIN_HEIGHT_PX = 36;
+    const CLUE_WIDTH_SAFETY_PX = 8;
+    /* The renderer caps cartouche ascent/descent when constructing a line box.
+       At larger clue sizes the cartouche canvas can therefore extend a few
+       pixels beyond that capped box.  Give the complete rendered clue canvas
+       font-relative outer clearance and use the same value in the fit model. */
+    const CLUE_RENDER_PADDING_SCALE = 0.18;
+    const CLUE_RENDER_PADDING_MIN_PX = 4;
+    const CLUE_LINE_GAP_SCALE = 0.36;
+    const CLUE_LINE_GAP_MIN_PX = 6;
+
+    function clueRenderPaddingPx(fontPx) {
+      return Math.max(CLUE_RENDER_PADDING_MIN_PX,Math.ceil(Number(fontPx||0)*CLUE_RENDER_PADDING_SCALE));
+    }
+    let clueReferenceMetricsPromise = null;
+    let clueRenderGeneration = 0;
+
+    function isDesktopClueLayout() {
+      return window.matchMedia("(min-width: 900px) and (min-height: 640px)").matches;
+    }
+
+    function clueTokens(text) {
+      return String(text||"").trim().split(/\s+/).filter(Boolean);
+    }
+
+    function rendererTextOptions(fontPx) {
+      return {
+        layout:{fontPx,align:"left",spacingPreset:"compact",paddingPx:0,lineGapScale:CLUE_LINE_GAP_SCALE,lineGapMinPx:CLUE_LINE_GAP_MIN_PX},
+        parser:{
+          mode:"sitelen-pona-ascii-extended",
+          numericMode:"uniform",
+          mixedStyle:"short",
+          abbreviateNumericCartouches:false,
+          preserveNumericCartoucheBreaksInAbbreviation:true,
+          relaxedNanpaLinjanParsing:true,
+          relaxedNanpaLinjanRendering:true,
+          autoCartoucheStandaloneProperNames:true,
+          breakLinesAtFullStops:false
+        },
+        fonts:{roles:{
+          word:"TP-Nasin-Nanpa-Font",
+          text:"TP-Nasin-Nanpa-Font",
+          cartouche:"TP-Cartouche-Font",
+          number:"TP-Cartouche-Font",
+          date:"TP-Cartouche-Font",
+          time:"TP-Cartouche-Font"
+        }}
+      };
+    }
+
+    async function getClueReferenceMetrics() {
+      if (clueReferenceMetricsPromise) return clueReferenceMetricsPromise;
+      clueReferenceMetricsPromise=(async()=>{
+        const tokens=[...new Set([...ACROSS,...DOWN].flatMap(item=>clueTokens(item.clue)))];
+        const measureLines=[...tokens,"ma ni"];
+        const plan=await renderer.buildRenderPlan({
+          input:measureLines.join("\n"),
+          ...rendererTextOptions(CLUE_REFERENCE_FONT)
+        });
+        if (!plan || !Array.isArray(plan.lines) || plan.lines.length!==measureLines.length) {
+          throw new Error(`clue measurement plan returned ${plan?.lines?.length ?? 0} lines for ${measureLines.length} measurements`);
+        }
+        const byToken=new Map();
+        let maxLineHeight=CLUE_REFERENCE_FONT;
+        tokens.forEach((token,index)=>{
+          const line=plan.lines[index];
+          const width=Math.max(1,Number(line?.w)||0);
+          const height=Math.max(CLUE_REFERENCE_FONT,Number(line?.lineBoxH)||CLUE_REFERENCE_FONT);
+          maxLineHeight=Math.max(maxLineHeight,height);
+          byToken.set(token,{width,height});
+        });
+        const pairLine=plan.lines[measureLines.length-1];
+        const ma=byToken.get("ma")?.width || 0;
+        const ni=byToken.get("ni")?.width || 0;
+        const measuredPairWidth=Math.max(0,Number(pairLine?.w)||0);
+        const wordGap=Math.max(1,measuredPairWidth-ma-ni);
+        return {
+          byToken,
+          maxLineHeight,
+          wordGap,
+          lineGap:Math.max(0,Number(plan.lineGapPx)||0)
+        };
+      })();
+      return clueReferenceMetricsPromise;
+    }
+
+    function wrapClueFromReferenceMetrics(text,fontPx,maxWidth,reference) {
+      const scale=fontPx/CLUE_REFERENCE_FONT;
+      const tokens=clueTokens(text);
+      const lines=[];
+      let line=[];
+      let lineWidth=0;
+      const gap=reference.wordGap*scale;
+      const safeWidth=Math.max(40,maxWidth-CLUE_WIDTH_SAFETY_PX);
+      for (const token of tokens) {
+        const metric=reference.byToken.get(token);
+        if (!metric) throw new Error(`missing clue metric: ${token}`);
+        const width=metric.width*scale;
+        const candidateWidth=line.length ? lineWidth+gap+width : width;
+        if (line.length && candidateWidth>safeWidth) {
+          lines.push(line.join(" "));
+          line=[token];
+          lineWidth=width;
+        } else {
+          line.push(token);
+          lineWidth=candidateWidth;
+        }
+      }
+      if (line.length) lines.push(line.join(" "));
+      return lines.join("\n");
+    }
+
+    function estimateClueSetHeightFromReference(items,fontPx,maxWidth,reference) {
+      const scale=fontPx/CLUE_REFERENCE_FONT;
+      const lineHeight=reference.maxLineHeight*scale;
+      const lineGap=Math.max(2,Math.round(reference.lineGap*scale));
+      let total=0;
+      for (const item of items) {
+        const wrapped=wrapClueFromReferenceMetrics(item.clue,fontPx,maxWidth,reference);
+        const lineCount=Math.max(1,wrapped.split("\n").length);
+        const clueHeight=(lineCount*lineHeight)+Math.max(0,lineCount-1)*lineGap;
+        const renderPadding=clueRenderPaddingPx(fontPx);
+        total += Math.max(CLUE_NUM_MIN_HEIGHT_PX,clueHeight + (2*renderPadding)) + (2*CLUE_ROW_PAD_Y_PX);
+      }
+      total += Math.max(0,items.length-1)*CLUE_ROW_GAP_PX;
+      return total;
+    }
+
+    function chooseSharedDesktopClueFont(maxWidth,availableHeight,reference) {
+      const widestToken=Math.max(...[...reference.byToken.values()].map(metric=>metric.width));
+      for (let fontPx=CLUE_FONT_DESKTOP_MAX;fontPx>=CLUE_FONT_DESKTOP_MIN;fontPx--) {
+        const scale=fontPx/CLUE_REFERENCE_FONT;
+        if (widestToken*scale > maxWidth-CLUE_WIDTH_SAFETY_PX) continue;
+        const acrossHeight=estimateClueSetHeightFromReference(ACROSS,fontPx,maxWidth,reference);
+        const downHeight=estimateClueSetHeightFromReference(DOWN,fontPx,maxWidth,reference);
+        if (Math.max(acrossHeight,downHeight)<=availableHeight-4) return fontPx;
+      }
+      return CLUE_FONT_DESKTOP_MIN;
+    }
+
+    async function renderAllClueTexts(fontPx,maxWidth,reference,generation) {
+      const totals={A:0,D:0};
+      const counts={A:0,D:0};
+      let maxCanvasWidth=0;
+      for (const host of document.querySelectorAll("#acrossClues .clue-text, #downClues .clue-text")) {
+        const dir=host.closest(".clue-list")?.classList.contains("down") ? "D" : "A";
+        const wrapped=wrapClueFromReferenceMetrics(host.dataset.clue,fontPx,maxWidth,reference);
+        if (generation!==clueRenderGeneration) return null;
+        const canvas=await renderTextInto(host,wrapped,fontPx,{
+          sentenceBreaks:false,
+          paddingPx:clueRenderPaddingPx(fontPx),
+          lineGapScale:CLUE_LINE_GAP_SCALE,
+          lineGapMinPx:CLUE_LINE_GAP_MIN_PX
+        });
+        if (!canvas) throw new Error(`clue render failed: ${host.dataset.clue}`);
+        maxCanvasWidth=Math.max(maxCanvasWidth,canvas.width);
+        totals[dir]+=Math.max(CLUE_NUM_MIN_HEIGHT_PX,canvas.height)+(2*CLUE_ROW_PAD_Y_PX);
+        counts[dir]++;
+      }
+      totals.A+=Math.max(0,counts.A-1)*CLUE_ROW_GAP_PX;
+      totals.D+=Math.max(0,counts.D-1)*CLUE_ROW_GAP_PX;
+      return {totals,maxCanvasWidth};
+    }
+
+    async function renderClues() {
+      const generation=++clueRenderGeneration;
+      await Promise.all([
+        renderTextInto(document.getElementById("acrossDirection"),"ni02",38,{center:true}),
+        renderTextInto(document.getElementById("acrossHeading"),"nimi tawa poka",29),
+        renderTextInto(document.getElementById("downDirection"),"ni01",38,{center:true}),
+        renderTextInto(document.getElementById("downHeading"),"nimi tawa anpa",29),
+        renderTextInto(document.getElementById("contextDirection"),"ni03",38,{center:true}),
+        renderTextInto(document.getElementById("contextHeading"),"sona pi leko ni",29)
+      ]);
+
+      const clues=document.querySelector(".clues");
+      const tabs=document.querySelector(".clue-tabs");
+      const sampleText=document.querySelector("#acrossClues .clue-text");
+      const fallbackWidth=Math.max(160,Math.floor(clues.clientWidth-90));
+      const maxWidth=Math.max(120,Math.floor(sampleText?.clientWidth || fallbackWidth));
+      const availableHeight=Math.max(120,Math.floor(clues.clientHeight-tabs.offsetHeight-8));
+      const reference=await getClueReferenceMetrics();
+      const desktop=isDesktopClueLayout();
+
+      if (!desktop) {
+        await renderAllClueTexts(CLUE_FONT_COMPACT,maxWidth,reference,generation);
+        document.body.dataset.clueFontPx=String(CLUE_FONT_COMPACT);
+        document.body.dataset.clueTextWidth=String(maxWidth);
+        if (activeEntryId) await refreshContextPanel();
+        return;
+      }
+
+      let fontPx=chooseSharedDesktopClueFont(maxWidth,availableHeight,reference);
+      let measured=null;
+      while (fontPx>=CLUE_FONT_DESKTOP_MIN) {
+        measured=await renderAllClueTexts(fontPx,maxWidth,reference,generation);
+        if (!measured || generation!==clueRenderGeneration) return;
+        const widthFits=measured.maxCanvasWidth<=maxWidth;
+        const heightFits=Math.max(measured.totals.A,measured.totals.D)<=availableHeight;
+        if (widthFits && heightFits) break;
+        fontPx--;
+      }
+      if (fontPx<CLUE_FONT_DESKTOP_MIN) fontPx=CLUE_FONT_DESKTOP_MIN;
+      document.body.dataset.clueFontPx=String(fontPx);
+      document.body.dataset.clueMaxCanvasWidth=String(Math.ceil(measured?.maxCanvasWidth||0));
+      document.body.dataset.clueTextWidth=String(maxWidth);
+      document.body.dataset.clueAcrossHeight=String(Math.ceil(measured?.totals.A||0));
+      document.body.dataset.clueDownHeight=String(Math.ceil(measured?.totals.D||0));
+      document.body.dataset.clueAvailableHeight=String(availableHeight);
+      document.body.dataset.clueFits=String(!!measured && measured.maxCanvasWidth<=maxWidth && Math.max(measured.totals.A,measured.totals.D)<=availableHeight);
+      if (activeEntryId) await refreshContextPanel();
+    }
+
+    function selectClueTab(direction,{focus=false}={}) {
+      const selected=["A","D","C"].includes(direction) ? direction : "A";
+      activeClueTab=selected;
+      const tabs={
+        A:document.getElementById("acrossTab"),
+        D:document.getElementById("downTab"),
+        C:document.getElementById("contextTab")
+      };
+      const panels={
+        A:document.getElementById("acrossPanel"),
+        D:document.getElementById("downPanel"),
+        C:document.getElementById("contextPanel")
+      };
+      for (const dir of ["A","D","C"]) {
+        const isSelected=dir===selected;
+        tabs[dir].setAttribute("aria-selected",String(isSelected));
+        tabs[dir].tabIndex=isSelected?0:-1;
+        panels[dir].hidden=!isSelected;
+      }
+      if (focus) tabs[selected].focus();
+      queueCurrentStateSave();
+    }
+
+    function setupClueTabs() {
+      const tabs=[
+        ["A",document.getElementById("acrossTab")],
+        ["D",document.getElementById("downTab")],
+        ["C",document.getElementById("contextTab")]
+      ];
+      for (const [dir,tab] of tabs) tab.addEventListener("click",()=>selectClueTab(dir));
+      for (let i=0;i<tabs.length;i++) {
+        const [,tab]=tabs[i];
+        tab.addEventListener("keydown",ev=>{
+          if (!["ArrowLeft","ArrowRight","Home","End"].includes(ev.key)) return;
+          ev.preventDefault();
+          let index=i;
+          if (ev.key==="ArrowLeft") index=(i+tabs.length-1)%tabs.length;
+          else if (ev.key==="ArrowRight") index=(i+1)%tabs.length;
+          else if (ev.key==="Home") index=0;
+          else if (ev.key==="End") index=tabs.length-1;
+          selectClueTab(tabs[index][0],{focus:true});
+        });
+      }
+      selectClueTab("A");
+    }
+
+    async function revealAll() {
+      clearActiveHint();
+      numericResolved=false;
+      for (const info of cells.values()) {
+        info.value=info.answer;
+        info.input.value=info.answer;
+        info.word=chooseRandomWord(info.answer);
+        info.cell.classList.remove("wrong");
+      }
+      await Promise.all([...cells.values()].map(info=>renderCellDisplay(info)));
+      numericResolved=isPiEntryCorrect();
+      document.getElementById("status").textContent="Solution revealed.";
+      await saveCurrentStateNow();
+    }
+
+    async function clearAll() {
+      clearActiveHint();
+      numericResolved=false;
+      for (const info of cells.values()) {
+        info.value="";
+        info.input.value="";
+        info.word=null;
+        info.cell.classList.remove("wrong");
+        info.renderSeq++;
+        info.glyphHost.classList.remove("numeric-resolved");
+        info.glyphHost.replaceChildren();
+      }
+      document.getElementById("status").textContent="Puzzle cleared.";
+      await saveCurrentStateNow();
+    }
+
+    async function checkAll() {
+      let wrong=0,blank=0;
+      const rerenders=[];
+      const piKeys=new Set((PI_ENTRY?.coords || []).map(([r,c])=>key(r,c)));
+
+      const normalRerenders=[];
+      for (const info of cells.values()) {
+        info.cell.classList.remove("wrong");
+        if (info.value) normalRerenders.push(renderCellDisplay(info,{fillStyle:"#111111"}));
+      }
+      if (normalRerenders.length) await Promise.all(normalRerenders);
+
+      for (const info of cells.values()) {
+        if (piKeys.has(key(info.r,info.c))) continue;
+        if (!info.value) { blank++; continue; }
+        if (info.value!==info.answer) {
+          wrong++;
+          info.cell.classList.add("wrong");
+          rerenders.push(renderOrdinaryGlyph(info,info.word||chooseRandomWord(info.value),{fillStyle:"#b42318"}));
+        }
+      }
+
+      if (PI_ENTRY) {
+        const piInfos=PI_ENTRY.coords.map(([r,c])=>cells.get(key(r,c)));
+        blank += piInfos.filter(info=>!info?.value).length;
+        const candidates=piCandidatesForCurrentEntry();
+        if (candidates.length===0) {
+          for (const info of piInfos) {
+            if (!info?.value) continue;
+            wrong++;
+            info.cell.classList.add("wrong");
+            rerenders.push(renderCellDisplay(info,{fillStyle:"#b42318"}));
+          }
+        }
+      }
+
+      if (rerenders.length) await Promise.all(rerenders);
+      document.getElementById("status").textContent = wrong
+        ? `${wrong} incorrect cells.`
+        : (blank ? `No incorrect cells; ${blank} cells remain.` : "Puzzle complete and correct.");
+      await saveCurrentStateNow();
+    }
+
+    async function restoreProgressFromState(savedState) {
+      const progressCells=savedState?.progress?.cells || {};
+      const renders=[];
+      for (const [cellKey,savedCell] of Object.entries(progressCells)) {
+        const info=cells.get(cellKey);
+        if (!info) continue;
+        const value=String(savedCell?.value || "").toUpperCase();
+        if (!/^[A-Z]$/.test(value)) continue;
+        info.value=value;
+        info.input.value=value;
+        const savedWord=String(savedCell?.word || "");
+        info.word=(savedWord && savedWord[0]?.toUpperCase()===value) ? savedWord : chooseRandomWord(value);
+        const wrong=!!savedCell?.wrong;
+        info.cell.classList.toggle("wrong",wrong);
+        renders.push(renderCellDisplay(info,{fillStyle:wrong?"#b42318":"#111111"}));
+      }
+      if (renders.length) await Promise.all(renders);
+      numericResolved=isPiEntryCorrect();
+
+      const ui=savedState?.ui || {};
+      const wantedKey=typeof ui.selectedCellKey==="string" && cells.has(ui.selectedCellKey) ? ui.selectedCellKey : null;
+      if (wantedKey) {
+        try { cells.get(wantedKey).input.focus({preventScroll:true}); } catch { cells.get(wantedKey).input.focus(); }
+      }
+      selectedCellKey=wantedKey;
+      activeDirection=ui.activeDirection==="D"?"D":"A";
+      hasActiveDirectionHistory=!!ui.hasActiveDirectionHistory;
+      activeEntryId=typeof ui.activeEntryId==="string" && ENTRY_BY_ID.has(ui.activeEntryId) ? ui.activeEntryId : null;
+      activeClueTab=["A","D","C"].includes(ui.activeClueTab) ? ui.activeClueTab : "A";
+      if (activeEntryId) await refreshContextPanel(ENTRY_BY_ID.get(activeEntryId));
+      if (activeClueTab==="C" && !activeEntryId) activeClueTab="A";
+      selectClueTab(activeClueTab);
+    }
+
+    async function switchToFreshPuzzle(puzzle,{statusText=""}={}) {
+      if (!isCompatibleSavedPuzzle(puzzle)) throw new Error("The requested crossword is not compatible with this page.");
+      clearActiveHint();
+      persistenceSuppressed=true;
+      try {
+        resetInteractionState();
+        configurePuzzleRuntime(puzzle);
+        validatePuzzleData();
+        buildGrid();
+        buildClues();
+        selectClueTab("A");
+        await renderClues();
+        await renderNumberLabels();
+      } finally {
+        persistenceSuppressed=false;
+      }
+      if (statusText) document.getElementById("status").textContent=statusText;
+      await saveCurrentStateNow();
+    }
+
+    async function handleNewCrossword() {
+      if (!confirm("Start a new crossword? Your progress on the current crossword will be cleared.")) return;
+      const button=document.getElementById("newBtn");
+      const oldDisabled=button.disabled;
+      button.disabled=true;
+      try {
+        document.getElementById("status").textContent="Preparing new crossword…";
+        const next=await loadPreparedNextPuzzle() || await buildAndStoreNextPuzzle();
+        validateGeneratedPuzzle(next);
+        await switchToFreshPuzzle(next,{statusText:"New crossword ready."});
+        nextPuzzleMemory=null;
+        try { await dbDelete(NEXT_PUZZLE_KEY); } catch(err) { console.warn("next crossword cleanup failed",err); }
+        scheduleNextPuzzlePrefetch();
+      } catch(err) {
+        console.error(err);
+        document.getElementById("status").textContent=`Could not build a new crossword: ${String(err?.message||err)}`;
+      } finally {
+        button.disabled=oldDisabled;
+      }
+    }
+
+    async function handleResetPuzzle() {
+      if (!confirm("Return to the original crossword? Your progress on the current crossword will be cleared.")) return;
+      try {
+        await switchToFreshPuzzle(freshDefaultPuzzle(),{statusText:"Original crossword restored."});
+      } catch(err) {
+        console.error(err);
+        document.getElementById("status").textContent=`Could not reset the crossword: ${String(err?.message||err)}`;
+      }
+    }
+
+    async function handleClearPuzzle() {
+      if (!confirm("Clear all answers in this crossword? The crossword and its clues will remain.")) return;
+      await clearAll();
+    }
+
+    function validatePuzzleData() {
+      if (ROWS.length!==15 || ROWS.some(r=>r.length!==15)) throw new Error("Grid must be exactly 15×15.");
+      const acrossByN=new Map(ACROSS.map(x=>[x.n,x.answer]));
+      const downByN=new Map(DOWN.map(x=>[x.n,x.answer]));
+      if (ENTRIES.length!==ACROSS.length+DOWN.length) {
+        throw new Error(`Entry count mismatch: grid ${ENTRIES.length}, clues ${ACROSS.length+DOWN.length}.`);
+      }
+      for (const e of ENTRIES) {
+        const actual=e.coords.map(([r,c])=>ROWS[r][c]).join("");
+        const expected=(e.dir==="A"?acrossByN:downByN).get(e.n);
+        if (actual!==expected) throw new Error(`${e.n}${e.dir}: grid ${actual} != answer ${expected}`);
+      }
+
+      if (currentPuzzle.puzzleType==="generated") {
+        validateGeneratedPuzzle(currentPuzzle);
+        if (PI_ENTRY) throw new Error("Generated country crossword unexpectedly contains the default numeric entry.");
+      } else {
+        const piGrid=PI_ENTRY?.coords.map(([r,c])=>ROWS[r][c]).join("") || "";
+        const piAcross=ACROSS.find(x=>x.n===21)?.answer || "";
+        const expectedPiAccepted=["NSOWAWELJN","NSOWAWLJTN","NSOWAWLJSN"];
+        if (JSON.stringify(PI_ACCEPTED)!==JSON.stringify(expectedPiAccepted)) {
+          throw new Error(`21A accepted initials changed unexpectedly: ${PI_ACCEPTED.join(", ")}`);
+        }
+        if (piGrid!==PI_EXPECTED) throw new Error(`21A grid ${piGrid} != canonical glyph initials ${PI_EXPECTED}`);
+        if (piAcross!==PI_EXPECTED) throw new Error(`21A canonical answer ${piAcross} != glyph initials ${PI_EXPECTED}`);
+        if (PI_ACCEPTED_WORDS.some(words=>words.length!==PI_ENTRY?.coords.length)) {
+          throw new Error("Every accepted 21A numeric cartouche must have exactly ten glyphs.");
+        }
+        PI_ENTRY?.coords.forEach(([r,c],i)=>{
+          if (!membership.get(key(r,c))?.D) return;
+          if (PI_ACCEPTED.some(answer=>answer[i]!==piGrid[i])) {
+            throw new Error(`21A alternative changes crossword intersection at position ${i+1}.`);
+          }
+        });
+      }
+
+      for (const n of [...new Set(NUMBERS.values())]) {
+        const raw=fmt(n);
+        if (!/^\d{2}$/.test(raw)) throw new Error(`clue number ${n} cannot be represented as a two-digit label`);
+        const parsed=NanpaParser.parseNumber(raw,{mode:"uniform",relaxedNanpaLinjanParsing:true,relaxedNanpaLinjanRendering:true});
+        if (!parsed || parsed.displayValue!==raw) throw new Error(`numeric clue label ${raw} does not preserve its two-digit value`);
+      }
+    }
+
+
+    async function ensureCrosswordFonts() {
+      if (!document.fonts || typeof document.fonts.load !== "function" || typeof document.fonts.check !== "function") {
+        console.warn("[font] CSS Font Loading API unavailable; renderer will attempt normal browser font resolution.");
+        return;
+      }
+
+      const px=18;
+      const textSpec=`${px}px "TP-Nasin-Nanpa-Font"`;
+      const cartSpec=`${px}px "TP-Cartouche-Font"`;
+      const sampleText=String.fromCodePoint(0xF196C);   // toki
+      const sampleCart=String.fromCodePoint(0xF1990);   // cartouche start
+
+      await Promise.all([
+        document.fonts.load(textSpec,sampleText),
+        document.fonts.load(cartSpec,sampleCart)
+      ]);
+      await document.fonts.ready;
+
+      const textOK=document.fonts.check(textSpec,sampleText);
+      const cartOK=document.fonts.check(cartSpec,sampleCart);
+      if (!textOK || !cartOK) {
+        const missing=[!textOK?"TP-Nasin-Nanpa-Font":null,!cartOK?"TP-Cartouche-Font":null].filter(Boolean).join(", ");
+        throw new Error(`required crossword font not confirmed: ${missing}`);
+      }
+    }
+
+
+
+    /* MOBILE_FOCUSED_WORD_VIEW_BEGIN
+       Additive touch/mobile presentation. Existing desktop event handlers and
+       functions remain unchanged; this layer intercepts grid taps only on a
+       compact coarse-pointer viewport. */
+    let mobileFocusedEntryId=null;
+    let mobileFocusedCellIndex=0;
+    let mobileFocusedRenderGeneration=0;
+    const mobileFocusedHintWords=new Map();
+    let mobileFocusedResizeTimer=0;
+
+    function isMobileFocusedCrosswordViewport() {
+      return window.matchMedia("(max-width: 899px)").matches &&
+        (window.matchMedia("(pointer: coarse)").matches || Number(navigator.maxTouchPoints||0)>0);
+    }
+
+    function mobileFocusedEntry() {
+      return mobileFocusedEntryId ? ENTRY_BY_ID.get(mobileFocusedEntryId) || null : null;
+    }
+
+    function mobileEntryForSquare(r,c) {
+      const m=membership.get(key(r,c));
+      if (!m) return null;
+      if (m.A && !m.D) return m.A.entry;
+      if (m.D && !m.A) return m.D.entry;
+      if (!m.A || !m.D) return m.A?.entry || m.D?.entry || null;
+
+      const current=activeEntryId ? ENTRY_BY_ID.get(activeEntryId) : null;
+      if (current && (entryId(current)===entryId(m.A.entry) || entryId(current)===entryId(m.D.entry))) return current;
+      const preferred=hasActiveDirectionHistory ? activeDirection : "A";
+      return m[preferred]?.entry || m.A.entry;
+    }
+
+    function setMobileFocusedViewportVariables() {
+      const root=document.documentElement;
+      const viewport=window.visualViewport;
+      const top=viewport ? Math.max(0,viewport.offsetTop) : 0;
+      const left=viewport ? Math.max(0,viewport.offsetLeft) : 0;
+      const width=viewport ? Math.max(1,viewport.width) : Math.max(1,window.innerWidth);
+      const height=viewport ? Math.max(1,viewport.height) : Math.max(1,window.innerHeight);
+      root.style.setProperty("--mobile-focus-top",`${top}px`);
+      root.style.setProperty("--mobile-focus-left",`${left}px`);
+      root.style.setProperty("--mobile-focus-width",`${width}px`);
+      root.style.setProperty("--mobile-focus-height",`${height}px`);
+
+      const entry=mobileFocusedEntry();
+      if (!entry) return {width,height};
+      const length=Math.max(1,entry.coords.length);
+      let cellPx;
+      if (entry.dir==="A") {
+        cellPx=Math.floor((width-18)/Math.max(1,length));
+        cellPx=Math.max(28,Math.min(64,cellPx));
+      } else {
+        cellPx=Math.floor((height-58)/Math.max(1,length));
+        cellPx=Math.max(27,Math.min(58,cellPx,Math.floor(width*.24)));
+      }
+      root.style.setProperty("--mobile-focus-cell",`${cellPx}px`);
+      return {width,height};
+    }
+
+    function clearMobileFocusedViewportVariables() {
+      const root=document.documentElement;
+      for (const name of [
+        "--mobile-focus-top","--mobile-focus-left","--mobile-focus-width",
+        "--mobile-focus-height","--mobile-focus-cell"
+      ]) root.style.removeProperty(name);
+    }
+
+    function clearMobileFocusedHintState({clearMainHint=true}={}) {
+      mobileFocusedHintWords.clear();
+      if (clearMainHint) clearActiveHint();
+    }
+
+    function setMobileFocusedSelection(index,{focus=false}={}) {
+      const entry=mobileFocusedEntry();
+      if (!entry) return;
+      mobileFocusedCellIndex=Math.max(0,Math.min(entry.coords.length-1,Number(index)||0));
+      const wordArea=document.getElementById("mobileFocusWordArea");
+      for (const cell of wordArea.querySelectorAll(".mobile-focus-cell")) {
+        cell.classList.toggle("is-selected",Number(cell.dataset.index)===mobileFocusedCellIndex);
+      }
+      const [r,c]=entry.coords[mobileFocusedCellIndex];
+      selectedCellKey=key(r,c);
+      activeDirection=entry.dir;
+      activeEntryId=entryId(entry);
+      hasActiveDirectionHistory=true;
+      if (focus) {
+        const input=wordArea.querySelector(`.mobile-focus-cell[data-index="${mobileFocusedCellIndex}"] .mobile-focus-cell-input`);
+        requestAnimationFrame(()=>{
+          try { input?.focus({preventScroll:true}); } catch { input?.focus(); }
+        });
+      }
+      queueCurrentStateSave();
+    }
+
+    async function renderMobileFocusedGlyph(host,info,{hintWord=null}={}) {
+      const generation=mobileFocusedRenderGeneration;
+      host.replaceChildren();
+      if (!renderer || !info) return;
+
+      let word=null;
+      let fillStyle="#111111";
+      let numeric=false;
+      if (info.value) {
+        const index=piIndexForCell(info);
+        const numericWord=index!==null ? numericWordForAcceptedLetter(index,info.value) : null;
+        if (numericWord) { word=numericWord; numeric=true; }
+        else word=info.word || chooseRandomWord(info.value);
+        if (info.cell.classList.contains("wrong")) fillStyle="#b42318";
+      } else if (hintWord) {
+        word=hintWord;
+        fillStyle=HINT_FILL_STYLE;
+        numeric=PI_INDEX_BY_CELL.has(key(info.r,info.c));
+      }
+      if (!word) return;
+
+      const cellPx=Math.max(27,parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mobile-focus-cell"))||42);
+      try {
+        const rendered=await renderer.renderTextToNewCanvas({
+          input:word,
+          layout:{fontPx:Math.max(24,cellPx*.90),align:"center",spacingPreset:"compact",paddingPx:0},
+          paint:{fillStyle},
+          parser:{mode:"sitelen-pona-ascii-extended",numericMode:"uniform",breakLinesAtFullStops:false},
+          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Cartouche-Font"}}
+        });
+        if (generation!==mobileFocusedRenderGeneration) return;
+        const canvas=canvasFromRenderResult(rendered,`mobile focused glyph ${word}`);
+        if (numeric) {
+          const scale=numericGlyphScaleForWord(word);
+          canvas.style.transformOrigin="center center";
+          canvas.style.transform=`scale(${scale})`;
+        }
+        canvas.setAttribute("aria-hidden","true");
+        host.replaceChildren(canvas);
+      } catch(err) {
+        console.error("mobile focused glyph render failed",word,err);
+      }
+    }
+
+    function mobileCrossingForCell(entry,r,c) {
+      const opposite=entry.dir==="A" ? "D" : "A";
+      return membership.get(key(r,c))?.[opposite] || null;
+    }
+
+    function appendMobileOffshoot(cell,entry,crossing,side,sharedKey) {
+      if (!crossing?.entry) return;
+      const button=document.createElement("button");
+      button.type="button";
+      button.className=`mobile-focus-offshoot ${side}`;
+      button.dataset.targetEntry=entryId(crossing.entry);
+      button.dataset.sharedKey=sharedKey;
+      button.setAttribute("aria-label",`Open crossing ${crossing.entry.n}${crossing.entry.dir}`);
+      button.addEventListener("pointerdown",ev=>ev.preventDefault());
+      button.addEventListener("click",ev=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        switchMobileFocusedEntry(button.dataset.targetEntry,button.dataset.sharedKey).catch(err=>showRenderError(null,err));
+      });
+      cell.appendChild(button);
+    }
+
+    function buildMobileFocusedCells(entry) {
+      const area=document.getElementById("mobileFocusWordArea");
+      area.replaceChildren();
+      entry.coords.forEach(([r,c],index)=>{
+        const info=cells.get(key(r,c));
+        const cell=document.createElement("div");
+        cell.className="mobile-focus-cell";
+        cell.dataset.index=String(index);
+        cell.classList.toggle("is-selected",index===mobileFocusedCellIndex);
+        cell.classList.toggle("is-wrong",!!info?.cell.classList.contains("wrong"));
+
+        const glyph=document.createElement("span");
+        glyph.className="mobile-focus-glyph";
+        glyph.dataset.cellKey=key(r,c);
+        cell.appendChild(glyph);
+
+        const input=document.createElement("input");
+        input.className="mobile-focus-cell-input";
+        input.type="text";
+        input.maxLength=1;
+        input.autocomplete="off";
+        input.spellcheck=false;
+        input.inputMode="text";
+        input.setAttribute("aria-label",`letter ${index+1} of ${entry.coords.length}`);
+        input.addEventListener("focus",()=>setMobileFocusedSelection(index));
+        input.addEventListener("click",()=>setMobileFocusedSelection(index));
+        input.addEventListener("keydown",ev=>handleMobileFocusedKey(ev,index));
+        input.addEventListener("input",()=>handleMobileFocusedInputFallback(input,index));
+        cell.appendChild(input);
+
+        const crossing=mobileCrossingForCell(entry,r,c);
+        if (crossing) {
+          const sharedKey=key(r,c);
+          if (crossing.index>0) appendMobileOffshoot(cell,entry,crossing,"before",sharedKey);
+          if (crossing.index<crossing.entry.coords.length-1) appendMobileOffshoot(cell,entry,crossing,"after",sharedKey);
+        }
+        area.appendChild(cell);
+      });
+    }
+
+    async function renderMobileFocusedClue() {
+      const entry=mobileFocusedEntry();
+      const host=document.getElementById("mobileFocusClue");
+      host.replaceChildren();
+      if (!entry || !renderer) return;
+      const item=CLUE_BY_ID.get(entryId(entry));
+      if (!item) return;
+      await new Promise(resolve=>requestAnimationFrame(resolve));
+      const {height}=setMobileFocusedViewportVariables();
+      const maxWidth=Math.max(100,Math.floor(host.clientWidth-12));
+      const fontPx=Math.max(18,Math.min(28,Math.round(Math.min(maxWidth/13,height/18))));
+      try {
+        const reference=await getClueReferenceMetrics();
+        const wrapped=wrapClueFromReferenceMetrics(item.clue,fontPx,maxWidth,reference);
+        await renderTextInto(host,wrapped,fontPx,{
+          sentenceBreaks:false,
+          paddingPx:clueRenderPaddingPx(fontPx),
+          lineGapScale:CLUE_LINE_GAP_SCALE,
+          lineGapMinPx:CLUE_LINE_GAP_MIN_PX
+        });
+      } catch(err) {
+        showRenderError(host,err);
+      }
+    }
+
+    async function renderMobileFocusedWord() {
+      const entry=mobileFocusedEntry();
+      if (!entry) return;
+      mobileFocusedRenderGeneration++;
+      const generation=mobileFocusedRenderGeneration;
+      buildMobileFocusedCells(entry);
+      const renders=[];
+      for (const [r,c] of entry.coords) {
+        const cellKey=key(r,c);
+        const info=cells.get(cellKey);
+        const host=document.querySelector(`#mobileFocusWordArea .mobile-focus-glyph[data-cell-key="${cellKey}"]`);
+        if (!host) continue;
+        renders.push(renderMobileFocusedGlyph(host,info,{hintWord:mobileFocusedHintWords.get(cellKey)||null}));
+      }
+      await Promise.all(renders);
+      if (generation!==mobileFocusedRenderGeneration) return;
+      setMobileFocusedSelection(mobileFocusedCellIndex);
+    }
+
+    async function renderMobileFocusedView({focus=true}={}) {
+      const entry=mobileFocusedEntry();
+      if (!entry) return;
+      const layout=document.getElementById("mobileFocusLayout");
+      layout.classList.toggle("horizontal",entry.dir==="A");
+      layout.classList.toggle("vertical",entry.dir==="D");
+      setMobileFocusedViewportVariables();
+      await renderMobileFocusedWord();
+      await renderMobileFocusedClue();
+      if (focus) setMobileFocusedSelection(mobileFocusedCellIndex,{focus:true});
+    }
+
+    async function openMobileFocusedView(r,c) {
+      if (!isMobileFocusedCrosswordViewport() || !renderer) return false;
+      const entry=mobileEntryForSquare(r,c);
+      if (!entry) return false;
+      clearMobileFocusedHintState();
+      mobileFocusedEntryId=entryId(entry);
+      mobileFocusedCellIndex=Math.max(0,entry.coords.findIndex(([rr,cc])=>rr===r && cc===c));
+      activeDirection=entry.dir;
+      activeEntryId=entryId(entry);
+      selectedCellKey=key(r,c);
+      hasActiveDirectionHistory=true;
+      try { document.activeElement?.blur?.(); } catch {}
+      document.body.classList.add("mobile-focused-crossword-active");
+      const view=document.getElementById("mobileFocusedView");
+      view.hidden=false;
+      document.getElementById("mobileFocusMessage").textContent="";
+      setMobileFocusedViewportVariables();
+      await renderMobileFocusedView({focus:true});
+      queueCurrentStateSave();
+      return true;
+    }
+
+    function closeMobileFocusedView() {
+      if (!mobileFocusedEntryId) return;
+      clearMobileFocusedHintState();
+      try { document.activeElement?.blur?.(); } catch {}
+      mobileFocusedEntryId=null;
+      mobileFocusedCellIndex=0;
+      mobileFocusedRenderGeneration++;
+      document.body.classList.remove("mobile-focused-crossword-active");
+      const view=document.getElementById("mobileFocusedView");
+      view.hidden=true;
+      document.getElementById("mobileFocusWordArea").replaceChildren();
+      document.getElementById("mobileFocusClue").replaceChildren();
+      document.getElementById("mobileFocusMessage").textContent="";
+      clearMobileFocusedViewportVariables();
+      queueCurrentStateSave();
+    }
+
+    async function switchMobileFocusedEntry(targetEntryId,sharedKey) {
+      const target=ENTRY_BY_ID.get(targetEntryId);
+      if (!target) return;
+      clearMobileFocusedHintState();
+      mobileFocusedEntryId=entryId(target);
+      const index=target.coords.findIndex(([r,c])=>key(r,c)===sharedKey);
+      mobileFocusedCellIndex=index>=0 ? index : 0;
+      activeDirection=target.dir;
+      activeEntryId=entryId(target);
+      selectedCellKey=sharedKey || key(...target.coords[mobileFocusedCellIndex]);
+      hasActiveDirectionHistory=true;
+      document.getElementById("mobileFocusMessage").textContent="";
+      await renderMobileFocusedView({focus:true});
+      queueCurrentStateSave();
+    }
+
+    async function showMobileFocusedHint() {
+      const entry=mobileFocusedEntry();
+      if (!entry) return;
+      activeDirection=entry.dir;
+      activeEntryId=entryId(entry);
+      await showHintForCurrentWord();
+      mobileFocusedHintWords.clear();
+
+      const numericHintWords=(PI_ENTRY && entryId(entry)===entryId(PI_ENTRY))
+        ? (PI_ACCEPTED_WORDS.find(words => entry.coords.every(([r,c],index) => {
+            const value=cells.get(key(r,c))?.value || "";
+            return !value || value===words[index]?.[0]?.toUpperCase();
+          })) || PI_WORDS)
+        : null;
+
+      entry.coords.forEach(([r,c],index)=>{
+        const info=cells.get(key(r,c));
+        if (!info || info.value) return;
+        const hintWord=numericHintWords ? numericHintWords[index] : chooseRandomWord(info.answer);
+        if (hintWord) mobileFocusedHintWords.set(key(r,c),hintWord);
+      });
+      document.getElementById("mobileFocusMessage").textContent=mobileFocusedHintWords.size
+        ? "Hint shown."
+        : "No empty squares to hint.";
+      await renderMobileFocusedWord();
+      setMobileFocusedSelection(mobileFocusedCellIndex,{focus:true});
+    }
+
+    async function handleMobileFocusedKey(ev,index) {
+      const entry=mobileFocusedEntry();
+      if (!entry) return;
+      const [r,c]=entry.coords[index];
+      const info=cells.get(key(r,c));
+      if (!info) return;
+      if (/^[A-Za-z]$/.test(ev.key)) {
+        const upper=ev.key.toUpperCase();
+        if (!VALID_ENTRY_LETTERS.has(upper)) {
+          ev.preventDefault();
+          document.getElementById("mobileFocusMessage").textContent=`${upper} is not used.`;
+          return;
+        }
+        ev.preventDefault();
+        clearMobileFocusedHintState();
+        await setCellLetter(info,upper,{advance:false,randomize:true});
+        document.getElementById("mobileFocusMessage").textContent="";
+        await renderMobileFocusedWord();
+        const next=Math.min(entry.coords.length-1,index+1);
+        setMobileFocusedSelection(next,{focus:true});
+        return;
+      }
+      if (ev.key==="Backspace" || ev.key==="Delete") {
+        ev.preventDefault();
+        clearMobileFocusedHintState();
+        if (info.value) {
+          await clearCell(info);
+          await renderMobileFocusedWord();
+          setMobileFocusedSelection(index,{focus:true});
+        } else {
+          setMobileFocusedSelection(Math.max(0,index-1),{focus:true});
+        }
+        return;
+      }
+      const stepKeys=entry.dir==="A"
+        ? {ArrowLeft:-1,ArrowRight:1}
+        : {ArrowUp:-1,ArrowDown:1};
+      if (stepKeys[ev.key]) {
+        ev.preventDefault();
+        setMobileFocusedSelection(Math.max(0,Math.min(entry.coords.length-1,index+stepKeys[ev.key])),{focus:true});
+      }
+    }
+
+    async function handleMobileFocusedInputFallback(input,index) {
+      const entry=mobileFocusedEntry();
+      if (!entry) return;
+      const raw=String(input.value||"").replace(/[^A-Za-z]/g,"").slice(-1).toUpperCase();
+      input.value="";
+      if (!raw || !VALID_ENTRY_LETTERS.has(raw)) return;
+      const [r,c]=entry.coords[index];
+      const info=cells.get(key(r,c));
+      if (!info) return;
+      clearMobileFocusedHintState();
+      await setCellLetter(info,raw,{advance:false,randomize:true});
+      await renderMobileFocusedWord();
+      setMobileFocusedSelection(Math.min(entry.coords.length-1,index+1),{focus:true});
+    }
+
+    function syncMobileFocusedViewport() {
+      if (!mobileFocusedEntryId) return;
+      if (!isMobileFocusedCrosswordViewport()) {
+        closeMobileFocusedView();
+        return;
+      }
+      setMobileFocusedViewportVariables();
+      clearTimeout(mobileFocusedResizeTimer);
+      mobileFocusedResizeTimer=setTimeout(()=>{
+        if (!mobileFocusedEntryId) return;
+        renderMobileFocusedClue().catch(err=>showRenderError(null,err));
+      },90);
+    }
+
+    function setupMobileFocusedView() {
+      const grid=document.getElementById("grid");
+      const back=document.getElementById("mobileFocusBackBtn");
+      const hint=document.getElementById("mobileFocusHintBtn");
+      if (!grid || !back || !hint) return;
+
+      grid.addEventListener("pointerdown",ev=>{
+        if (!isMobileFocusedCrosswordViewport() || !renderer) return;
+        if (!ev.target.closest?.(".cell-input")) return;
+        ev.preventDefault();
+      },true);
+      grid.addEventListener("click",ev=>{
+        if (!isMobileFocusedCrosswordViewport() || !renderer) return;
+        const input=ev.target.closest?.(".cell-input");
+        if (!input) return;
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        const cell=input.closest(".cell.open");
+        if (!cell) return;
+        const r=Number(cell.dataset.row), c=Number(cell.dataset.col);
+        openMobileFocusedView(r,c).catch(err=>showRenderError(null,err));
+      },true);
+
+      hint.addEventListener("pointerdown",ev=>ev.preventDefault());
+      hint.addEventListener("click",()=>showMobileFocusedHint().catch(err=>showRenderError(null,err)));
+      back.addEventListener("click",closeMobileFocusedView);
+      window.addEventListener("resize",syncMobileFocusedViewport);
+      window.visualViewport?.addEventListener("resize",syncMobileFocusedViewport);
+      window.visualViewport?.addEventListener("scroll",syncMobileFocusedViewport);
+    }
+    /* MOBILE_FOCUSED_WORD_VIEW_END */
+
+    async function init() {
+      persistenceSuppressed=true;
+      const savedState=await loadSavedCurrentState();
+      resetInteractionState();
+      configurePuzzleRuntime(savedState?.puzzle || freshDefaultPuzzle());
+      validatePuzzleData();
+      buildGrid();
+      buildClues();
+      setupClueTabs();
+      await ensureCrosswordFonts();
+      renderer=await SitelenRenderer.create(BASE_CONFIG);
+      await renderClues();
+      await renderNumberLabels();
+      if (savedState) await restoreProgressFromState(savedState);
+      else selectClueTab("A");
+      persistenceSuppressed=false;
+      await saveCurrentStateNow();
+
+      document.getElementById("hintBtn").addEventListener("click",()=>showHintForCurrentWord().catch(err=>showRenderError(null,err)));
+      document.getElementById("revealBtn").addEventListener("click",revealAll);
+      document.getElementById("clearBtn").addEventListener("click",handleClearPuzzle);
+      document.getElementById("checkBtn").addEventListener("click",checkAll);
+      document.getElementById("newBtn").addEventListener("click",handleNewCrossword);
+      document.getElementById("resetBtn").addEventListener("click",handleResetPuzzle);
+      let resizeTimer=0;
+      window.addEventListener("resize",()=>{
+        clearTimeout(resizeTimer);
+        resizeTimer=setTimeout(()=>renderClues().catch(err=>showRenderError(null,err)),140);
+      });
+      document.body.dataset.ready="1";
+      requestAnimationFrame(()=>{
+        document.body.dataset.viewportOverflow=String(Math.max(0,document.documentElement.scrollHeight-window.innerHeight));
+        document.body.dataset.viewportOverflowX=String(Math.max(0,document.documentElement.scrollWidth-window.innerWidth));
+      });
+      scheduleNextPuzzlePrefetch();
+    }
+
+    init().catch(err=>{
+      console.error(err);
+      document.getElementById("status").textContent=String(err?.message||err);
+    });
+    setupMobileFocusedView();
+  </script>
+</body>
+</html>
