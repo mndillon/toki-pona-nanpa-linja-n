@@ -639,6 +639,23 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .mobile-focus-keyboard-input {
+      position: absolute;
+      z-index: 0;
+      top: 48px;
+      left: 7px;
+      width: 1px;
+      height: 1px;
+      margin: 0;
+      border: 0;
+      padding: 0;
+      opacity: 0;
+      background: transparent;
+      color: transparent;
+      caret-color: transparent;
+      font-size: 16px;
+      pointer-events: none;
+    }
     .mobile-focus-layout {
       min-width: 0;
       min-height: 0;
@@ -886,9 +903,21 @@
       <div class="mobile-focus-toolbar-group">
         <button id="mobileFocusBackBtn" type="button">← Crossword</button>
         <button id="mobileFocusHintBtn" type="button">Hint</button>
+        <button id="mobileFocusCheckBtn" type="button">Check</button>
       </div>
       <div id="mobileFocusMessage" class="mobile-focus-message" role="status" aria-live="polite"></div>
     </div>
+    <input
+      id="mobileFocusKeyboardInput"
+      class="mobile-focus-keyboard-input"
+      type="text"
+      maxlength="1"
+      autocomplete="off"
+      autocapitalize="characters"
+      spellcheck="false"
+      inputmode="text"
+      aria-label="Crossword entry keyboard input"
+    />
     <div id="mobileFocusLayout" class="mobile-focus-layout horizontal">
       <div id="mobileFocusWordArea" class="mobile-focus-word-area" aria-label="Focused answer"></div>
       <div id="mobileFocusClue" class="mobile-focus-clue" aria-label="Current clue"></div>
@@ -2701,7 +2730,7 @@
       activeEntryId=entryId(entry);
       hasActiveDirectionHistory=true;
       if (focus) {
-        const input=wordArea.querySelector(`.mobile-focus-cell[data-index="${mobileFocusedCellIndex}"] .mobile-focus-cell-input`);
+        const input=document.getElementById("mobileFocusKeyboardInput");
         requestAnimationFrame(()=>{
           try { input?.focus({preventScroll:true}); } catch { input?.focus(); }
         });
@@ -2791,19 +2820,18 @@
         glyph.dataset.cellKey=key(r,c);
         cell.appendChild(glyph);
 
-        const input=document.createElement("input");
-        input.className="mobile-focus-cell-input";
-        input.type="text";
-        input.maxLength=1;
-        input.autocomplete="off";
-        input.spellcheck=false;
-        input.inputMode="text";
-        input.setAttribute("aria-label",`letter ${index+1} of ${entry.coords.length}`);
-        input.addEventListener("focus",()=>setMobileFocusedSelection(index));
-        input.addEventListener("click",()=>setMobileFocusedSelection(index));
-        input.addEventListener("keydown",ev=>handleMobileFocusedKey(ev,index));
-        input.addEventListener("input",()=>handleMobileFocusedInputFallback(input,index));
-        cell.appendChild(input);
+        cell.setAttribute("role","button");
+        cell.setAttribute("aria-label",`letter ${index+1} of ${entry.coords.length}`);
+        cell.addEventListener("pointerdown",ev=>{
+          if (ev.target.closest?.(".mobile-focus-offshoot")) return;
+          ev.preventDefault();
+          setMobileFocusedSelection(index,{focus:true});
+        });
+        cell.addEventListener("click",ev=>{
+          if (ev.target.closest?.(".mobile-focus-offshoot")) return;
+          ev.preventDefault();
+          setMobileFocusedSelection(index,{focus:true});
+        });
 
         const crossing=mobileCrossingForCell(entry,r,c);
         if (crossing) {
@@ -2815,6 +2843,18 @@
       });
     }
 
+    function wrapMobileFocusedClueBySentence(text,fontPx,maxWidth,reference) {
+      const sentences=String(text||"").trim().match(/[^.]+(?:\.|$)/g) || [];
+      const lines=[];
+      for (const rawSentence of sentences) {
+        const sentence=rawSentence.trim();
+        if (!sentence) continue;
+        const wrapped=wrapClueFromReferenceMetrics(sentence,fontPx,maxWidth,reference);
+        lines.push(...wrapped.split("\n"));
+      }
+      return lines.join("\n");
+    }
+
     async function renderMobileFocusedClue() {
       const entry=mobileFocusedEntry();
       const host=document.getElementById("mobileFocusClue");
@@ -2823,18 +2863,30 @@
       const item=CLUE_BY_ID.get(entryId(entry));
       if (!item) return;
       await new Promise(resolve=>requestAnimationFrame(resolve));
-      const {height}=setMobileFocusedViewportVariables();
-      const maxWidth=Math.max(100,Math.floor(host.clientWidth-12));
-      const fontPx=Math.max(18,Math.min(28,Math.round(Math.min(maxWidth/13,height/18))));
+      setMobileFocusedViewportVariables();
+      const maxWidth=Math.max(100,Math.floor(host.clientWidth-16));
+      const maxHeight=Math.max(60,Math.floor(host.clientHeight-14));
       try {
         const reference=await getClueReferenceMetrics();
-        const wrapped=wrapClueFromReferenceMetrics(item.clue,fontPx,maxWidth,reference);
-        await renderTextInto(host,wrapped,fontPx,{
-          sentenceBreaks:false,
-          paddingPx:clueRenderPaddingPx(fontPx),
-          lineGapScale:CLUE_LINE_GAP_SCALE,
-          lineGapMinPx:CLUE_LINE_GAP_MIN_PX
-        });
+        let lastCanvas=null;
+        let lastFontPx=18;
+        for (let fontPx=40;fontPx>=18;fontPx-=2) {
+          const wrapped=wrapMobileFocusedClueBySentence(item.clue,fontPx,maxWidth,reference);
+          const canvas=await renderTextInto(host,wrapped,fontPx,{
+            sentenceBreaks:true,
+            paddingPx:clueRenderPaddingPx(fontPx),
+            lineGapScale:CLUE_LINE_GAP_SCALE,
+            lineGapMinPx:CLUE_LINE_GAP_MIN_PX
+          });
+          if (!canvas) return;
+          lastCanvas=canvas;
+          lastFontPx=fontPx;
+          if (canvas.width<=maxWidth && canvas.height<=maxHeight) break;
+        }
+        if (lastCanvas) {
+          host.dataset.mobileClueFontPx=String(lastFontPx);
+          host.dataset.mobileClueSentenceLines="true";
+        }
       } catch(err) {
         showRenderError(host,err);
       }
@@ -2954,6 +3006,15 @@
       setMobileFocusedSelection(mobileFocusedCellIndex,{focus:true});
     }
 
+    async function checkMobileFocusedCrossword() {
+      if (!mobileFocusedEntry()) return;
+      await checkAll();
+      document.getElementById("mobileFocusMessage").textContent=
+        document.getElementById("status").textContent || "";
+      await renderMobileFocusedWord();
+      setMobileFocusedSelection(mobileFocusedCellIndex,{focus:true});
+    }
+
     async function handleMobileFocusedKey(ev,index) {
       const entry=mobileFocusedEntry();
       if (!entry) return;
@@ -3030,7 +3091,12 @@
       const grid=document.getElementById("grid");
       const back=document.getElementById("mobileFocusBackBtn");
       const hint=document.getElementById("mobileFocusHintBtn");
-      if (!grid || !back || !hint) return;
+      const check=document.getElementById("mobileFocusCheckBtn");
+      const keyboardInput=document.getElementById("mobileFocusKeyboardInput");
+      if (!grid || !back || !hint || !check || !keyboardInput) return;
+
+      keyboardInput.addEventListener("keydown",ev=>handleMobileFocusedKey(ev,mobileFocusedCellIndex));
+      keyboardInput.addEventListener("input",()=>handleMobileFocusedInputFallback(keyboardInput,mobileFocusedCellIndex));
 
       grid.addEventListener("pointerdown",ev=>{
         if (!isMobileFocusedCrosswordViewport() || !renderer) return;
@@ -3051,6 +3117,8 @@
 
       hint.addEventListener("pointerdown",ev=>ev.preventDefault());
       hint.addEventListener("click",()=>showMobileFocusedHint().catch(err=>showRenderError(null,err)));
+      check.addEventListener("pointerdown",ev=>ev.preventDefault());
+      check.addEventListener("click",()=>checkMobileFocusedCrossword().catch(err=>showRenderError(null,err)));
       back.addEventListener("click",closeMobileFocusedView);
       window.addEventListener("resize",syncMobileFocusedViewport);
       window.visualViewport?.addEventListener("resize",syncMobileFocusedViewport);
