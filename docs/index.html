@@ -13,7 +13,7 @@
  <!-- Start loading the font as early as possible -->
   <link
     rel="preload"
-    href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf"
+    href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf"
     as="font"
     type="font/otf"
     crossorigin
@@ -124,7 +124,7 @@
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
       font-display: swap;
     }
 
@@ -225,8 +225,10 @@
     .nanpaModeTable {
       --mode-large-glyph-size: 30px;
       --mode-small-glyph-size: 7.5px;
+      --mode-two-thirds-glyph-size: 20px;
       --mode-abbreviated-glyph-size: 30px;
       --mode-reference-small-glyph-size: 12px;
+      --mode-reference-two-thirds-glyph-size: 20px;
     }
 
     .nanpaModeTable th,
@@ -264,8 +266,13 @@
       font-size: var(--mode-small-glyph-size);
     }
 
+    .nanpaModeTable .modeTwoThirdsGlyph {
+      font-size: var(--mode-two-thirds-glyph-size);
+    }
+
     .nanpaModeTable .modeAbbreviatedGlyph,
-    .nanpaModeTable .modeReferenceSmallGlyph {
+    .nanpaModeTable .modeReferenceSmallGlyph,
+    .nanpaModeTable .modeReferenceTwoThirdsGlyph {
       display: inline-block;
       font-family: "TP-Cartouche-Font";
       line-height: 1;
@@ -278,6 +285,10 @@
 
     .nanpaModeTable .modeReferenceSmallGlyph {
       font-size: var(--mode-reference-small-glyph-size);
+    }
+
+    .nanpaModeTable .modeReferenceTwoThirdsGlyph {
+      font-size: var(--mode-reference-two-thirds-glyph-size);
     }
 
     .nanpaModeTable .modeGap {
@@ -426,8 +437,10 @@
       .nanpaModeTable {
         --mode-large-glyph-size: 28px;
         --mode-small-glyph-size: 7px;
+        --mode-two-thirds-glyph-size: 18.6667px;
         --mode-abbreviated-glyph-size: 28px;
         --mode-reference-small-glyph-size: 11px;
+        --mode-reference-two-thirds-glyph-size: 18.6667px;
       }
 
       .nanpaModeTable th,
@@ -1151,6 +1164,15 @@
       </tr>
 
       <tr>
+        <td>Positives</td>
+        <td><code>+89</code></td>
+        <td><code>Nene Pijen</code></td>
+        <td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-positive-full-v2.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td>
+        <td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-positive-abbrev-v2.png" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td>
+        <td><code>#~ePJ</code></td>
+      </tr>
+
+      <tr>
         <td>Negatives</td>
         <td><code>-3</code></td>
         <td><code>Neno Sen</code></td>
@@ -1242,11 +1264,11 @@
 
       <tr>
         <td>Telephone numbers</td>
-        <td><code>432-555-6789</code></td>
-        <td><code>Nenasetun Ene Lululun Ene Numupijen</code></td>
-        <td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-phone-full.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td>
-        <td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-phone-abbrev.png?v=4" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td>
-        <td><code>#~ASTeeLLLeeUMPJ</code></td>
+        <td><code>+1-432-555-6789</code></td>
+        <td><code>Nene Wan Ene Nasetun Ene Lululun Ene Numupijen</code></td>
+        <td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-phone-full-v2.png" alt="Full nanpa-linja-n sitelen cartouche" loading="lazy" decoding="async"></td>
+        <td><img class="whyBotherCartoucheImage" src="./images/index/sitelen-input-vector-phone-abbrev-v2.png?v=4" alt="Abbreviated nanpa-linja-n cartouche" loading="lazy" decoding="async"></td>
+        <td><code>#~eWeeASTeeLLLeeUMPJ</code></td>
       </tr>
 
       <tr>
@@ -1351,7 +1373,7 @@
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Wa" title="Play Wa using the numeric voice" aria-label="Play Wa using the numeric voice">🤖🔊</button></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>1</td><td>we</td><td>-</td><td>-</td><td>-</td><td>wan</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large wan glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1973;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large wan glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1973;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="wan glyph">&#xF1973;</span></td>
               </tr>
               <tr>
@@ -1361,17 +1383,17 @@
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Tu" title="Play Tu using the numeric voice" aria-label="Play Tu using the numeric voice">🤖🔊</button></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>2</td><td>te</td><td>-</td><td>-</td><td>-</td><td>tu</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large tu glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF196E;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large tu glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF196E;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="tu glyph">&#xF196E;</span></td>
               </tr>
               <tr>
                 <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>seli</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large seli glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1957;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large seli glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1957;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="seli glyph">&#xF1957;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Se" title="Play Se using the numeric voice" aria-label="Play Se using the numeric voice">🤖🔊</button></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>seli</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large seli glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1957;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large seli glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1957;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="seli glyph">&#xF1957;</span></td>
               </tr>
               <tr>
@@ -1391,7 +1413,7 @@
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Lu" title="Play Lu using the numeric voice" aria-label="Play Lu using the numeric voice">🤖🔊</button></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>5</td><td>le</td><td>-</td><td>-</td><td>-</td><td>luka</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large luka glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF192D;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large luka glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF192D;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="luka glyph">&#xF192D;</span></td>
               </tr>
               <tr>
@@ -1411,7 +1433,7 @@
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Mu" title="Play Mu using the numeric voice" aria-label="Play Mu using the numeric voice">🤖🔊</button></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>7</td><td>me</td><td>-</td><td>-</td><td>-</td><td>mun</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large mun glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF193A;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large mun glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF193A;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="mun glyph">&#xF193A;</span></td>
               </tr>
               <tr>
@@ -1421,28 +1443,28 @@
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Pi" title="Play Pi using the numeric voice" aria-label="Play Pi using the numeric voice">🤖🔊</button></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>8</td><td>pe</td><td>-</td><td>-</td><td>-</td><td>pipi</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large pipi glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1951;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large pipi glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1951;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="pipi glyph">&#xF1951;</span></td>
               </tr>
               <tr>
                 <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="jo glyph">&#xF1913;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Je" title="Play Je using the numeric voice" aria-label="Play Je using the numeric voice">🤖🔊</button></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by small en glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF190A;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="jo glyph">&#xF1913;</span></td>
               </tr>
               <tr>
-                <td>small glyph</td><td>en</td><td>ala</td><td>ike</td><td>uta</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                <td>small glyph</td><td>e</td><td>ala</td><td>ike</td><td>uta</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
                 <td class="tableAudioCell" aria-hidden="true">&nbsp;</td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
-                <td>small glyph</td><td>en</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                <td>small glyph</td><td>e</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
               </tr>
               <tr>
                 <td>small sitelen glyph</td>
-                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="en glyph">&#xF190A;</span></td>
+                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="e glyph">&#xF1909;</span></td>
                 <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="ala glyph">&#xF1902;</span></td>
                 <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="ike glyph">&#xF190D;</span></td>
                 <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="uta glyph">&#xF1970;</span></td>
@@ -1450,9 +1472,10 @@
                 <td class="tableAudioCell" aria-hidden="true">&nbsp;</td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>small sitelen glyph</td>
-                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="en glyph">&#xF190A;</span></td>
+                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="e glyph">&#xF1909;</span></td>
                 <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
               </tr>
+              <tr><td>&nbsp;</td></tr>
             </tbody>
           </table>
         </div>
@@ -1479,11 +1502,11 @@
                 <td>Starting nanpa-linja-n</td>
                 <td>Ne</td>
                 <td>Ne-</td>
-                <td>nanpa en</td>
+                <td>nanpa e</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nanpa glyph followed by quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nanpa glyph followed by two-thirds-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF193D;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
@@ -1492,6 +1515,24 @@
                   </span>
                 </td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Ne" title="Play Ne using the numeric voice" aria-label="Play Ne using the numeric voice">🤖🔊</button></td>
+              </tr>
+              <tr>
+                <td>positive</td>
+                <td>ne</td>
+                <td>ne</td>
+                <td>nena en</td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph followed by two-thirds-sized en glyph">
+                    <span class="punctuationGlyphQuarter">&#xF1940;</span>
+                    <span class="punctuationGlyphTwoThirds">&#xF190A;</span>
+                  </span>
+                </td>
+                <td class="punctuationGlyphCell">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="two-thirds-sized en glyph">
+                    <span class="punctuationGlyphTwoThirds">&#xF190A;</span>
+                  </span>
+                </td>
+                <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Ne" title="Play No using the numeric voice" aria-label="Play Ne using the numeric voice">🤖🔊</button></td>
               </tr>
               <tr>
                 <td>negative</td>
@@ -1515,13 +1556,13 @@
                 <td>decimal point</td>
                 <td>none</td>
                 <td>-n One</td>
-                <td>nena o nena en</td>
+                <td>nena o nena e</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized o glyph, quarter-sized nena glyph, and quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized o glyph, quarter-sized nena glyph, and two-thirds-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
                     <span class="punctuationGlyphTwoThirds">&#xF1944;</span>
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
@@ -1535,13 +1576,13 @@
                 <td>ISO thousands</td>
                 <td>neke</td>
                 <td>-n Eke</td>
-                <td>nena en kulupu en</td>
+                <td>nena e kulupu e</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, two-thirds-sized kulupu glyph, and quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized en glyph, two-thirds-sized kulupu glyph, and two-thirds-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                     <span class="punctuationGlyphTwoThirds">&#xF191F;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
@@ -1555,13 +1596,13 @@
                 <td>percentage</td>
                 <td>noke</td>
                 <td>-n Oke-n</td>
-                <td>nena open kipisi en</td>
+                <td>nena open kipisi e</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized open glyph, two-thirds-sized kipisi glyph, and quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized open glyph, two-thirds-sized kipisi glyph, and two-thirds-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
                     <span class="punctuationGlyphQuarter">&#xF1947;</span>
                     <span class="punctuationGlyphTwoThirds">&#xF197B;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
@@ -1575,11 +1616,11 @@
                 <td>scientific notation</td>
                 <td>neko</td>
                 <td>-n Eko</td>
-                <td>nena en kala open</td>
+                <td>nena e kala open</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, half-sized kala glyph, and quarter-sized open glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized en glyph, half-sized kala glyph, and quarter-sized open glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                     <span class="punctuationGlyphHalf">&#xF1914;</span>
                     <span class="punctuationGlyphQuarter">&#xF1947;</span>
                   </span>
@@ -1592,7 +1633,7 @@
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Eko" title="Play Eko using the numeric voice" aria-label="Play Eko using the numeric voice">🤖🔊</button></td>
               </tr>
               <tr>
-                <td>numerator vs denominator</td>
+                <td>fraction</td>
                 <td>nono</td>
                 <td>-n Ono</td>
                 <td>nena o nena o</td>
@@ -1613,7 +1654,7 @@
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Ono" title="Play Ono using the numeric voice" aria-label="Play Ono using the numeric voice">🤖🔊</button></td>
               </tr>
               <tr>
-                <td>integer vs fraction</td>
+                <td>mixed fraction</td>
                 <td>noko</td>
                 <td>-n Oko</td>
                 <td>nena open kin open</td>
@@ -1636,13 +1677,13 @@
                 <td>date</td>
                 <td>neke</td>
                 <td>-n Eke</td>
-                <td>nena en kasi en</td>
+                <td>nena e kasi e</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, one-third-sized kasi glyph, and quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized en glyph, one-third-sized kasi glyph, and two-thirds-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                     <span class="punctuationGlyphOneThird">&#xF1917;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
@@ -1656,13 +1697,13 @@
                 <td>time</td>
                 <td>neke</td>
                 <td>-n Eke</td>
-                <td>nena en kasi en</td>
+                <td>nena e kasi e</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, one-third-sized kasi glyph, and quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized en glyph, one-third-sized kasi glyph, and two-thirds-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                     <span class="punctuationGlyphOneThird">&#xF1917;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
@@ -1676,19 +1717,19 @@
                 <td>spacer (no value)</td>
                 <td>nene</td>
                 <td>-n Ene</td>
-                <td>nena en nena en</td>
+                <td>nena e nena e</td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, quarter-sized en glyph, quarter-sized nena glyph, and quarter-sized en glyph">
+                  <span class="punctuationGlyphSequence" role="img" aria-label="quarter-sized nena glyph, two-thirds-sized en glyph, quarter-sized nena glyph, and two-thirds-sized en glyph">
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                     <span class="punctuationGlyphQuarter">&#xF1940;</span>
-                    <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                    <span class="punctuationGlyphQuarter">&#xF1909;</span>
                   </span>
                 </td>
                 <td class="punctuationGlyphCell">
-                  <span class="punctuationOptionalAbbreviation" aria-label="optional small en glyph">
+                  <span class="punctuationOptionalAbbreviation" aria-label="optional two-thirds-sized en glyph">
                     <span class="punctuationGlyphSequence" aria-hidden="true">
-                      <span class="punctuationGlyphQuarter">&#xF190A;</span>
+                      <span class="punctuationGlyphQuarter">&#xF1909;</span>
                     </span>
                     <span class="punctuationOptionalNote">(optional)</span>
                   </span>
@@ -2205,7 +2246,7 @@
           </div>
           <div data-fonts-table-container></div>
           <div class="small" style="margin-top:10px;">
-            The nanpa-linja-n companion fonts are specialised variants for displaying nanpa-linja-n numeric cartouches, not general-purpose sitelen pona fonts. Only inside these cartouches, some glyphs are resized: <strong>nanpa, nena, en, ala, ike, uta,</strong> and <strong>open</strong> to one-quarter size; <strong>kasi</strong> to one-third; <strong>kala</strong> to one-half; and <strong>ona, o, kulupu, kipisi,</strong> and <strong>kin</strong> to two-thirds of the original font size. Outside numeric cartouches, the base font remains unchanged.
+            The nanpa-linja-n companion fonts are specialised variants for displaying nanpa-linja-n numeric cartouches, not general-purpose sitelen pona fonts. Only inside these cartouches, some glyphs are resized: <strong>nanpa, nena, e, ala, ike, uta,</strong> and <strong>open</strong> to one-quarter size; <strong>kasi</strong> to one-third; <strong>kala</strong> to one-half; <strong>ona, o, kulupu, kipisi, kin,</strong> and <strong>en</strong> to two-thirds; and <strong>nasin</strong> to three-quarters of the original font size. Outside numeric cartouches, the base font remains unchanged.
           </div>
         </div>
       </section>
@@ -2229,44 +2270,44 @@
       </h2>
         <div id="moreExamplesContent" class="collapsibleSectionContent" data-collapsible-content>
      <div class="help">&nbsp;</div>
-      <img id="decimalToCartouche" class="portrait1" src="./images/From_Decimal_Number_To_Cartouche.png?v=2"  />
+      <img id="decimalToCartouche" class="portrait1" src="./images/From_Decimal_Number_To_Cartouche.png?v=3"  />
       <div class="help">&nbsp;</div>
 
       <hr class="miniDivider"/>
 
       <div class="help">&nbsp;</div>
-      <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=4" />
+      <img class="portrait2" src="./images/nanpa-linja-n_cartouche_abbreviation.png?v=5" />
       <div class="help">&nbsp;</div>
       
        <hr class="miniDivider"/>
 
 
       <div class="help">&nbsp;</div>
-      <img id="nanpa-linja-n-abbreviated-numeric-cartouche-examples" width="1550" src="./images/numeric_cartouche_to_decimal_number.png?v=12" />
+      <img id="nanpa-linja-n-abbreviated-numeric-cartouche-examples" width="1550" src="./images/numeric_cartouche_to_decimal_number.png?v=13" />
       <div class="help">&nbsp;</div>
       
        <hr class="miniDivider"/>
 
        <div class="help">&nbsp;</div>
-      <img id="nanpa-linja-n-abbreviated-numeric-cartouche-examples" width="1550" src="./images/nanpa-linja-n-cartouche-abbrev-examples.png?v=5" />
+      <img id="nanpa-linja-n-abbreviated-numeric-cartouche-examples" width="1550" src="./images/nanpa-linja-n-cartouche-abbrev-examples.png?v=6" />
       <div class="help">&nbsp;</div>
       
        <hr class="miniDivider"/>
 
           <div class="help">&nbsp;</div>
-      <img id="nanpa-linja-n-abbreviated-numeric-cartouche-examples" width="500" src="./images/arithmetic_operations_examples.png?v=9" />
+      <img id="nanpa-linja-n-abbreviated-numeric-cartouche-examples" width="500" src="./images/arithmetic_operations_examples.png?v=10" />
       <div class="help">&nbsp;</div>
       
        <hr class="miniDivider"/>
 
     <div class="help">&nbsp;</div>
-      <img width="1500" src="./images/nanpa_linja_n_examples_with_rationale_fact_sheet.png?v=23" />
+      <img width="1500" src="./images/nanpa_linja_n_examples_with_rationale_fact_sheet.png?v=24" />
       <div class="help">&nbsp;</div>
       
        <hr class="miniDivider"/>
 
         <div class="help">&nbsp;</div>
-      <img width="1100" src="./images/numeric_decimal_cartouche_examples.png?v=5" />
+      <img width="1100" src="./images/numeric_decimal_cartouche_examples.png?v=7" />
       <div class="help">&nbsp;</div>
       
       
@@ -2424,8 +2465,8 @@
 <script>
   (() => {
     const FONTS_SECTION_ID = 'fontsSection';
-    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=5';
-    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v2';
+    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=6';
+    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v6';
     const FONTS_NOTICE_OVERLAY_ID = 'fontsNoticeOverlay';
 
     let fontsTableLoadPromise = null;
@@ -2726,11 +2767,11 @@
   })();
 </script>
 
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=48"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=50"></script>
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=40';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=44';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,

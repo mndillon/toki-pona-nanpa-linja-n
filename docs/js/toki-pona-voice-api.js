@@ -1,4 +1,4 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228';
 import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=22';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
@@ -296,10 +296,14 @@ function preprocessNanpaNumbers(input) {
   const conversions = [];
   const text = String(input || '');
   const patterns = [
-    /#~[A-Za-z]+/g,
+    /#~\+?[A-Za-z]+/g,
     /(?:^|(?<![A-Za-z0-9_.]))[+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*))(?:\s*[eE]\s*[+-]?\d+|\s*\*\s*10\s*\^\s*[+-]?\d+|\s*\*\s*10\s*[+-]\d+)(?![A-Za-z0-9_.])/g,
     /\b\d{4}[-/:]\d{2}[-/:]\d{2}\b/g,
     /\b\d{1,2}:[0-5]\d(?::[0-5]\d)?\b/g,
+    // Explicit leading plus is significant for nanpa-linja-n. Keep this as a
+    // separate higher-priority scan so arithmetic/mixed-fraction '+' is not
+    // reinterpreted merely because it appears between two numeric tokens.
+    /(?<![A-Za-z0-9_.])\+\s*(?:\d+\s*\+\s*\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?\s*%?)(?![A-Za-z])/g,
     /(?<![A-Za-z])(?:-?\s*\d+\s*\+\s*\d+\s*\/\s*\d+|-?\s*\d+\s*\/\s*\d+|-?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?\s*%?)(?![A-Za-z])/g
   ];
   const spans = [];
@@ -313,6 +317,16 @@ function preprocessNanpaNumbers(input) {
       const index = match.index + offset;
       raw = raw.replace(/^[^#\d.+\-¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞↉]+/, '');
       if (!raw || raw === '-' || raw === '+') continue;
+
+      // A leading plus is numeric only at the start of a numeric token. Ignore
+      // arithmetic uses such as "1 + 2", even when whitespace separates the
+      // operator from the following number.
+      if (raw.startsWith('+')) {
+        let previous = index - 1;
+        while (previous >= 0 && /\s/.test(text[previous])) previous -= 1;
+        if (previous >= 0 && /[A-Za-z0-9_.]/.test(text[previous])) continue;
+      }
+
       const parsed = tryNanpaNumberToProperName(raw);
       if (!parsed) continue;
       spans.push({ index, end: index + raw.length, raw, parsed });

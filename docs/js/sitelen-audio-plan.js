@@ -357,29 +357,61 @@ function audioInitialTextFromGlyphTokens(tokens) {
   return letters.join('');
 }
 
-function isAudioNanpaLinjanTpPhraseTokens(tokens) {
+const AUDIO_LEGACY_FULL_SCAFFOLD_WORDS = new Set(['e', 'en', 'nena', 'open', 'ala', 'ike', 'uta', 'nanpa']);
+
+function isAudioNanpaLinjanTpPhraseTokens(tokens, options = {}) {
   const words = Array.from(tokens ?? []).map(normalizeTpGlyphToken).filter(Boolean);
   if (words.length < 3) return false;
   if (words[0] !== 'nanpa') return false;
   if (!(words[1] === 'e' || words[1] === 'en' || words[1] === 'esun')) return false;
   if (words[words.length - 1] !== 'nanpa') return false;
 
+  // nasin remains an ordinary Toki Pona glyph, but it is no longer valid as a
+  // nanpa-linja-n numeric-cartouche glyph or positive marker.
+  if (words.includes('nasin')) return false;
+
   const digitGlyphWords = new Set(Object.values(TOKEN_TO_DIGIT_WORD).map(normalizeTpGlyphToken));
   const payload = words.slice(2, -1);
   if (!payload.some(w => digitGlyphWords.has(w))) return false;
 
+  // [nanpa en ...] is ambiguous: it is the historical full-form opening and
+  // the new explicit-positive abbreviated opening. Preserve the historical
+  // full interpretation only when full-form scaffolding appears after the
+  // opening en; otherwise let the abbreviated-positive parser handle it.
+  if (words[1] === 'en' && !words.slice(2, -1).some(w => AUDIO_LEGACY_FULL_SCAFFOLD_WORDS.has(w))) {
+    return false;
+  }
+
+  // Preserve the audio planner's historical permissive recognition for all
+  // other mapped glyph words. The renderer remains the authority that decides
+  // whether a rendered run is actually numeric.
   return words.every(w => AUDIO_NANPA_LINJA_N_WORDS.has(w) || isKnownTpGlyphToken(w));
 }
 
-function tryNanpaLinjanTpPhraseSourceToCaps(text) {
+function tryNanpaLinjanTpPhraseSourceToCaps(text, options = {}) {
   const words = audioGlyphTokensFromCartoucheSource(text);
-  if (!isAudioNanpaLinjanTpPhraseTokens(words)) return '';
+  if (!isAudioNanpaLinjanTpPhraseTokens(words, options)) return '';
 
   // Match the renderer's visual cartouche interpretation: the spoken
   // nanpa-linja-n label is the cartouche spelling, i.e. the initial sound of
   // each glyph token.
   let caps = audioInitialTextFromGlyphTokens(words).toUpperCase();
   if (!caps || !caps.startsWith('NE') || !caps.endsWith('N')) return '';
+
+  // The explicit-positive full opening is visually [nanpa e nena en ...] but
+  // internally uses the dedicated NS token so it cannot be confused with the
+  // historical NE+NE no-value spacer. Preserve that semantic distinction for
+  // audio/proper-name generation too.
+  if (
+    words.length >= 5 &&
+    words[0] === 'nanpa' &&
+    words[1] === 'e' &&
+    words[2] === 'nena' &&
+    words[3] === 'en' &&
+    caps.startsWith('NENE')
+  ) {
+    caps = 'NENS' + caps.slice(4);
+  }
 
   // Expanded percent phrases end with the visible suffix words
   // nena/noka + open + kipisi + en/e + nanpa, whose initials are NOKEN.
@@ -423,11 +455,18 @@ function parseAbbreviatedNanpaLinjanCartoucheSource(text, options = {}) {
   if (!NanpaParser || typeof NanpaParser.parseNumber !== 'function') return null;
 
   const payload = words.slice(1, -1);
+  const isExplicitPositive = payload[0] === 'en';
   let codeBody = '';
   let hasDigit = false;
 
   for (let index = 0; index < payload.length; index++) {
     const word = payload[index];
+
+    // The one leading en is the explicit-positive marker in an abbreviated
+    // cartouche. Any other structural e/en remains invalid in abbreviated
+    // source syntax and is handled by the full-cartouche parser when valid.
+    if (isExplicitPositive && index === 0 && word === 'en') continue;
+    if (word === 'nasin' || word === 'e' || word === 'en' || word === 'esun' || word === 'nena' || word === 'open') return null;
     const digitCode = ABBREVIATED_NANPA_DIGIT_WORD_TO_CODE[word];
     if (digitCode) {
       codeBody += digitCode;
@@ -467,14 +506,15 @@ function parseAbbreviatedNanpaLinjanCartoucheSource(text, options = {}) {
   if (!hasDigit || !codeBody) return null;
 
   try {
-    const parsed = NanpaParser.parseNumber(`#~${codeBody}`, {
+    const numberCode = `#~${isExplicitPositive ? '+' : ''}${codeBody}`;
+    const parsed = NanpaParser.parseNumber(numberCode, {
       mode: options.nanpaLinjanMode || options.mode || 'uniform',
       mixedStyle: options.mixedStyle || 'short',
       relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
     });
     if (!parsed) return null;
-    return { words, codeBody, parsed };
+    return { words, codeBody, numberCode, isExplicitPositive, parsed };
   } catch {}
 
   return null;
@@ -647,7 +687,7 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
   if (!NanpaParser) return '';
 
   try {
-    const caps = tryNanpaLinjanTpPhraseSourceToCaps(source);
+    const caps = tryNanpaLinjanTpPhraseSourceToCaps(source, options);
     const properName = splitNanpaCapsToAudioProperName(caps, NanpaParser, options);
     if (properName) return properName;
   } catch {}
@@ -971,6 +1011,14 @@ export function speechTextForRenderRun(run, skipped = [], options = {}) {
   }
 
   if (kind === 'cartouche') {
+    // A renderer-confirmed numeric proper name must use the renderer's canonical
+    // nanpa-linja-n phrase before the generic capitalized-proper-name passthrough.
+    // This is important when one attached source word expands to multiple spoken
+    // numeric words, for example Nenewan -> Nene Wan. Otherwise sentence
+    // segmentation sees one source word and can drop the Wan highlight group.
+    const renderedNumericProperName = tryRenderedNumericCartoucheToProperName(run, options);
+    if (renderedNumericProperName) return compactSpeechWhitespace(renderedNumericProperName);
+
     // A plain capitalized proper name such as Manlun may render visually as a
     // cartouche, but its audio source must remain the original proper-name word.
     if (sourceKind !== 'bracket' && isCapitalizedAudioProperNamePhraseText(sourceText)) {
@@ -1300,8 +1348,9 @@ const AUDIO_COMPOUND_JOINER_CPS = new Set([
 ]);
 
 // The optional visible spacer in an abbreviated numeric cartouche represents
-// the full nena en nena en source sequence, pronounced as the single reference
-// audio unit "Ene".
+// the full nena e nena e source sequence (legacy en is also accepted),
+// pronounced as the single reference audio unit "Ene".
+const AUDIO_CP_E = 0xF1909;
 const AUDIO_CP_EN = 0xF190A;
 const AUDIO_CP_NENA = 0xF1940;
 
@@ -1525,6 +1574,40 @@ function runAudioSourceIndices(run, componentCount) {
   return Array.from({ length: componentCount }, (_unused, index) => index);
 }
 
+/**
+ * Numeric-cartouche audio must follow the renderer's canonical numeric
+ * metadata, not legacy source spelling. This matters for accepted compatibility
+ * forms such as [nanpa en nena en ...], which the renderer normalizes to the
+ * modern unsigned cartouche before drawing. Reconstruct the proper name from
+ * that canonical expanded codepoint stream so speech and highlight units match
+ * what is actually visible.
+ */
+function tryRenderedNumericCartoucheToProperName(run, options = {}) {
+  if (!(
+    run?.isNumericCartouche === true ||
+    run?._element?.isNumericCartouche === true ||
+    run?.element?.isNumericCartouche === true
+  )) return '';
+
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (!NanpaParser || typeof NanpaParser.codepointsToWords !== 'function') return '';
+
+  const sourceCps = runAudioSourceCodepoints(run);
+  if (!sourceCps.length) return '';
+
+  try {
+    const words = Array.from(NanpaParser.codepointsToWords(sourceCps) || [])
+      .map(normalizeTpGlyphToken)
+      .filter(Boolean);
+    if (words.length < 3 || words[0] !== 'nanpa' || words[words.length - 1] !== 'nanpa') return '';
+    return compactSpeechWhitespace(
+      trySourceTextToNanpaProperName(`[${words.join(' ')}]`, options)
+    );
+  } catch {
+    return '';
+  }
+}
+
 function alignDisplayedCodepointsToExpandedSource(displayedCps, expandedSourceCps) {
   const displayed = Array.from(displayedCps || []).map(Number).filter(Number.isFinite);
   const source = Array.from(expandedSourceCps || []).map(Number).filter(Number.isFinite);
@@ -1616,40 +1699,42 @@ function nearestDisplayedComponentsForSourceRange(sourceIndices, rangeStart, ran
     .map(item => item.index);
 }
 
-function abbreviatedNumericSpacerComponentIndices(run) {
+function numericSpacerVisualComponentGroups(run) {
   const displayedCps = runCodepointsForAudio(run);
   const sourceCps = runAudioSourceCodepoints(run);
   const sourceIndices = runAudioSourceIndices(run, displayedCps.length);
-  const out = [];
+  const groups = [];
 
-  for (let componentIndex = 0; componentIndex < displayedCps.length; componentIndex++) {
-    if (Number(displayedCps[componentIndex]) !== AUDIO_CP_EN) continue;
+  // One spoken Ene is the E-N-E part of the canonical no-value spacer
+  // nena e nena e. The leading nena supplies the final N of the preceding
+  // numeric word, so it must NOT be highlighted as part of Ene. Build one
+  // visual group per spacer occurrence from source positions start+1..start+3:
+  //   full rendering                -> e nena e
+  //   abbreviated + spacer visible -> the one retained e/en glyph
+  //   abbreviated + spacer hidden  -> no active visual target
+  // Legacy renderer metadata may use en in either structural e position.
+  for (let start = 0; start + 3 < sourceCps.length; start++) {
+    if (!(
+      sourceCps[start] === AUDIO_CP_NENA &&
+      (sourceCps[start + 1] === AUDIO_CP_E || sourceCps[start + 1] === AUDIO_CP_EN) &&
+      sourceCps[start + 2] === AUDIO_CP_NENA &&
+      (sourceCps[start + 3] === AUDIO_CP_E || sourceCps[start + 3] === AUDIO_CP_EN)
+    )) continue;
 
-    const mappedSourceIndex = Number(sourceIndices[componentIndex]);
-    if (!Number.isFinite(mappedSourceIndex)) continue;
-
-    // Accept the mapped source index anywhere inside the four-glyph break.
-    // The current renderer maps it to the first en, but this keeps the audio
-    // code robust if that internal mapping is adjusted later.
-    let representsBreak = false;
-    for (let start = Math.max(0, mappedSourceIndex - 3); start <= mappedSourceIndex; start++) {
-      if (
-        sourceCps[start] === AUDIO_CP_NENA &&
-        sourceCps[start + 1] === AUDIO_CP_EN &&
-        sourceCps[start + 2] === AUDIO_CP_NENA &&
-        sourceCps[start + 3] === AUDIO_CP_EN &&
-        mappedSourceIndex >= start &&
-        mappedSourceIndex < start + 4
-      ) {
-        representsBreak = true;
-        break;
+    const componentIndices = [];
+    for (let componentIndex = 0; componentIndex < displayedCps.length; componentIndex++) {
+      const mappedSourceIndex = Number(sourceIndices[componentIndex]);
+      if (!Number.isFinite(mappedSourceIndex)) continue;
+      if (mappedSourceIndex >= start + 1 && mappedSourceIndex < start + 4) {
+        componentIndices.push(componentIndex);
       }
     }
 
-    if (representsBreak) out.push(componentIndex);
+    groups.push(componentIndices);
+    start += 3;
   }
 
-  return out;
+  return groups;
 }
 
 function isCartoucheRenderRunForAudio(run) {
@@ -1731,21 +1816,24 @@ function classifyAdjacentCartoucheAudioGroups(runs, options = {}) {
 }
 
 function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, options = {}) {
-  const words = spokenWordTokens(speech);
-  if (!words.length) return [];
-
   const sourceText = String(run?.sourceText ?? run?.encodedText ?? '').trim();
-  const numericProperName = trySourceTextToNanpaProperName(sourceText, options);
+  const renderedNumericProperName = tryRenderedNumericCartoucheToProperName(run, options);
+  const sourceNumericProperName = trySourceTextToNanpaProperName(sourceText, options);
+  const numericProperName = renderedNumericProperName || sourceNumericProperName;
   const recognizedNumericCartouche = !!numericProperName || isConfirmedNumericCartoucheRun(run, options);
   const forceOrdinaryCartoucheAudio = options?.cartoucheAudioMode === 'ordinary';
   const numericCartouche = recognizedNumericCartouche && !forceOrdinaryCartoucheAudio;
   const forceOrdinarySyllableAudio = !numericCartouche;
+  const effectiveSpeech = compactSpeechWhitespace(
+    numericCartouche ? (numericProperName || speech) : speech
+  );
+  const words = spokenWordTokens(effectiveSpeech);
+  if (!words.length) return [];
+
   const numericCartoucheRunId = numericCartouche
     ? runIdForAudio(run, fallbackRunIndex, lineIndex)
     : null;
-  const numericCartouchePhrase = numericCartouche
-    ? compactSpeechWhitespace(numericProperName || speech)
-    : '';
+  const numericCartouchePhrase = numericCartouche ? effectiveSpeech : '';
 
   if (!recognizedNumericCartouche) {
     const ordinaryPhonetic = analyzeOrdinaryPhoneticCartoucheSource(sourceText);
@@ -1780,7 +1868,7 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
   }
 
   const sourceCount = Math.max(1, sourceCps.length);
-  const totalSpeechLetters = Math.max(1, normalizedSpeechLetters(speech).length);
+  const totalSpeechLetters = Math.max(1, normalizedSpeechLetters(effectiveSpeech).length);
   const sourceScale = sourceCount / totalSpeechLetters;
 
   const wordRecords = [];
@@ -1818,25 +1906,25 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
         wordSourceRange
       );
 
-      // Do not rely on proportional source-range matching for an abbreviated
-      // break. The nth spoken Ene unit targets the nth visible en spacer that
-      // explicitly represents nena en nena en in renderer metadata.
+      // Do not rely on proportional source-range matching for a no-value
+      // spacer. The nth spoken Ene targets the nth canonical spacer occurrence.
+      // In full rendering this is the visible e nena e sequence (not the
+      // leading nena, which belongs to the preceding word). In abbreviated
+      // rendering it is the one preserved e/en glyph, or no active target when
+      // that optional spacer is hidden.
       let suppressActiveHighlight = false;
       if (numericCartouche && wholeNumeric && normalizeAudioWord(word) === 'ene') {
-        const spacerComponents = abbreviatedNumericSpacerComponentIndices(run);
+        const spacerGroups = numericSpacerVisualComponentGroups(run);
         const eneOrdinal = words
           .slice(0, wordIndex + 1)
           .filter(candidate => normalizeAudioWord(candidate) === 'ene')
           .length - 1;
 
-        // Ene represents the optional abbreviated-cartouche spacer. If the
-        // spacer is hidden, there is no honest visual target: do not fall back
-        // to the nearest visible glyph.
         componentIndices = [];
         suppressActiveHighlight = true;
-        if (eneOrdinal >= 0 && eneOrdinal < spacerComponents.length) {
-          componentIndices = [spacerComponents[eneOrdinal]];
-          suppressActiveHighlight = false;
+        if (eneOrdinal >= 0 && eneOrdinal < spacerGroups.length) {
+          componentIndices = Array.from(spacerGroups[eneOrdinal] || []);
+          suppressActiveHighlight = componentIndices.length === 0;
         }
       }
 

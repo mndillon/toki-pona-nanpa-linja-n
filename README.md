@@ -95,29 +95,6 @@ The proper name for the number also gives a unique abbreviation for the number.
 This gives us four (or five) uniquely decodable representations of the same underlying number: standard decimal notation, sitelen pona in a cartouche (or abbreviated cartouche), Latin pona proper name, and a unique numeric abbreviation.
 
 
-Example:
-
-<div style="
-  border:1px solid #d0d7de;
-  border-radius:6px;
-  padding:12px;
-  background:#f6f8fa;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 0.95em;
-  line-height: 1.6;
-">
-  -5,432.10 →<br>
-  <span style="display:inline-flex; align-items:center; gap:8px; line-height:1;">
-    <span style="font-size:1.4em; line-height:1;">#</span>
-    <img src="images/number-minus-5-thousand-432-point-10_v4.png"
-        width="220" alt="-5,432.10" style="display:block;">
-    <span style="line-height:1;">→</span>
-  </span><br>
-  nanpa Neno Lun Eke Nasetun One Wanin →<br>
-  #~oLkASToWI →<br>
-  -5,432.10
-</div>
-
 
 <img src="images/From_Decimal_Number_To_Cartouche.png" width="569"/><br/>
 <img src="images/nanpa-linja-n_cartouche_abbreviation.png" width="823"/><br/>
@@ -137,16 +114,16 @@ Rules:
 - All nanpa-linja-n numeric cartouches will start with nanpa and end with nanpa
 - All nanpa-linja-n numeric proper names derived from a cartouche will start with Ne- and end with -n
 - General Latin nanpa-linja-n numeric proper name form: Ne...n
-- General Numeric Cartouche form: [nanpa en ... nanpa]
+- General Numeric Cartouche form: [nanpa e ... nanpa]
 - General Abbreviated Cartouche form: [nanpa ... nanpa]
-- General Abbreviation #~ form: There is no general form used for all abbreviations, the letters 'n' and 'e' will never appear in any abbreviation form.
-- Abbreviated cartouches are numeric cartouches with the interior words 'nena', 'en' and 'open' removed for clarity of rendering.
+- General Abbreviation #~ form: There is no general form used for all abbreviations, the letters 'n' and 'e' will seldom appear in any abbreviation form.
+- Abbreviated cartouches are numeric cartouches with the interior words 'nena', 'e' and 'open' removed for clarity of rendering.  (A non-value spacer may still use 'e' in abbreviated cartouches.)
 - Abbreviated cartouches are pronounced in exactly the same way as the corresponding full numeric cartouche, they only facilitate clearer rendering.
 - A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation, each separate word will start with a capital letter
 - The final -n is always appended to the final nanpa-linja-n proper name word.
 - The letters i, w, t, s, a, l, u, m, p, and j are used to represent the digits 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9, respectively, in nanpa-linja-n numeric cartouches, and the digits are represented in sitelen pona by the specific fixed glyphs ijo, wan, tu, seli, awen, luka, utala, mun, pipi and jo.
 - The letters 'n' and 'e' are used in a nanpa-linja-n numeric cartouche to make the proper name derived from the cartouche more pronounceable and are represented in sitelen pona by various glyphs.
-- The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters) and are represented in sitelen pona by various glyphs.
+- The letters 'o' and 'k' are used in various combinations to represent numeric punctuation (decimal delimiters) and are represented in sitelen pona by various glyphs.  (The 'en' glyph is also used for optional positive sign.)
 - When rendering the sitelen pona form of a nanpa-linja-n numeric cartouche, glyphs are displayed at different font sizes to reflect their relative significance within the overall numeric representation.
 - A note on the pronunciation of nanpa-linja-n proper names: we assume that any “n” inside a word is pronounced with the vowel that follows it. For example, the proper name “Newanatun” for 142 is pronounced “Ne-wa-na-tun”. This makes the syllable boundaries for each digit clear.
 
@@ -164,10 +141,12 @@ Example:
 - For example, the decimal separator **none** is split as **-n One**:
   - 2.5 → Netunonelun
   -  Split form: Netun One Lun
-- The only exception is **no**, the negative marker. Since **no** represents the negative sign and can only appear at the start of a number or exponent, it is not split as **-n O**. It may attach to the **Ne-** at the start of a proper name to give **Neno**
+- The only exceptions are **no**, the negative marker. Since **no** represents the negative sign and can only appear at the start of a number or exponent, it is not split as **-n O**. It may attach to the **Ne-** at the start of a proper name to give **Neno**, and positive marker. Since **ne** represents the positive sign and can only appear at the start of a number, it is not split as **-n E**. It may attach to the **Ne-** at the start of a proper name to give **Nene**
 - For example:
   - -1 → Nenowan
   -  Split form: Neno Wan
+  - +1 → Nenewan
+  -  Split form: Nene Wan
 - The final **-n** is always attached to the final word of the full nanpa-linja-n proper name.
 
 ---
@@ -257,7 +236,7 @@ Example:
 
 - 0
 - Nenin
-- [nanpa en nena ijo nanpa]
+- [nanpa e nena ijo nanpa]
 - [nanpa ijo nanpa]
 - Abbreviation: #~I
 
@@ -277,7 +256,7 @@ Example:
 
 - 1
 - Newan
-- [nanpa en wan ala nanpa]
+- [nanpa e wan ala nanpa]
 - [nanpa wan nanpa]
 - Abbreviation: #~W
 
@@ -297,7 +276,7 @@ Example:
 
 - 2
 - Netun
-- [nanpa en tu uta nanpa]
+- [nanpa e tu uta nanpa]
 - [nanpa tu nanpa]
 - Abbreviation: #~T
 
@@ -309,7 +288,7 @@ Rules:
 
 - Each digit has a unique sitelen pona glyph and a unique latin letter: 3 → seli → s
 - Latin nanpa-linja-n numeric proper name: ...se...
-- Numeric Cartouche [... seli en ...]
+- Numeric Cartouche [... seli e ...]
 - Abbreviated Cartouche: [... seli ...]
 - Abbreviation #~: ...S...
 
@@ -317,7 +296,7 @@ Example:
 
 - 3
 - Nesen
-- [nanpa en seli en nanpa]
+- [nanpa e seli e nanpa]
 - [nanpa seli nanpa]
 - Abbreviation: #~S
 
@@ -337,7 +316,7 @@ Example:
 
 - 4
 - Nenan
-- [nanpa en nena awen nanpa]
+- [nanpa e nena awen nanpa]
 - [nanpa awen nanpa]
 - Abbreviation: #~A
 
@@ -357,7 +336,7 @@ Example:
 
 - 5
 - Nelun
-- [nanpa en luka uta nanpa]
+- [nanpa e luka uta nanpa]
 - [nanpa luka nanpa]
 - Abbreviation: #~L
 
@@ -377,7 +356,7 @@ Example:
 
 - 6
 - Nenun
-- [nanpa en nena utala nanpa]
+- [nanpa e nena utala nanpa]
 - [nanpa utala nanpa]
 - Abbreviation: #~U
 
@@ -397,7 +376,7 @@ Example:
 
 - 7
 - Nemun
-- [nanpa en mun uta nanpa]
+- [nanpa e mun uta nanpa]
 - [nanpa mun nanpa]
 - Abbreviation: #~M
 
@@ -417,7 +396,7 @@ Example:
 
 - 8
 - Nepin
-- [nanpa en pipi ike nanpa]
+- [nanpa e pipi ike nanpa]
 - [nanpa pipi nanpa]
 - Abbreviation: #~P
 
@@ -429,7 +408,7 @@ Rules:
 
 - Each digit has a unique sitelen pona glyph and a unique latin letter: 9 → jo → j
 - Latin nanpa-linja-n numeric proper name: ...je...
-- Numeric Cartouche [... jo en ...]
+- Numeric Cartouche [... jo e ...]
 - Abbreviated Cartouche: [... jo ...]
 - Abbreviation #~: ...J...
 
@@ -437,7 +416,7 @@ Example:
 
 - 9
 - Nejen
-- [nanpa en jo en nanpa]
+- [nanpa e jo e nanpa]
 - [nanpa jo nanpa]
 - Abbreviation: #~J
 
@@ -449,7 +428,7 @@ Rules:
 
 - To represent a multi-digit number in a cartouche just concatenate the single digit representations
 - Latin nanpa-linja-n numeric proper name: ...jese...
-- Numeric Cartouche [... jo en seli en ...]
+- Numeric Cartouche [... jo e seli e ...]
 - Abbreviated Cartouche: [... jo seli ...]
 - Abbreviation #~: ...JS...
 - A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation
@@ -511,6 +490,39 @@ Rules:
 
 ---
 
+## Positive Numbers — ne
+Prefix **ne** indicates a positive number
+
+Rules:
+
+- Latin nanpa-linja-n numeric proper name: ...ne...
+- Numeric Cartouche [... nena en ...]
+- Abbreviated Cartouche: [... en ...]
+- Abbreviation #~: e...
+- the positive indicator ...ne... must only appear at the start of a number
+- the positive number indicator is completely optional, but may be useful to indicate the international dialing code for telephone numbers
+
+Word-splitting:
+
+- **ne** does not split as **-n E**.
+- Since **ne** marks the positive sign, it may attach to the **Ne-** at the start of a proper name to give **Nene**
+- Example: +1 → Nenewan → Nene Wan
+- Example: +1e+3 → Nenewanekosen → Nene Wan Eko Sen
+
+Examples:
+
+```
++5               → Nene Lun
++12              → Nene Watun
++0.4             → Nene Nin One Nan
++30,000          → Nene Senin Eken
++4.5e-3          → Nene Nan One Lun Eko Nosen
++1-432-555-6789  → Nene Wan Ene Nasetun Ene Lululun Ene Numupijen
+```
+
+
+---
+
 ## Negative Numbers — no
 Prefix **no** indicates a negative number
 
@@ -547,7 +559,7 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...none...
-- Numeric Cartouche: [... nena o nena en ...]
+- Numeric Cartouche: [... nena o nena e ...]
 - Abbreviated Cartouche: [... o ...]
 - Abbreviation #~: ...o...
 - There must always be at least one digit before and after the decimal separator.
@@ -576,7 +588,7 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...neke...
-- Numeric Cartouche: [... nena en kulupu en ...]
+- Numeric Cartouche: [... nena e kulupu e ...]
 - Abbreviated Cartouche: [... kulupu ...]
 - Abbreviation #~: ...k...
 - If the numeric value ends in full blocks of thousands, the proper name can end with **... Eken**, **... Ekeken**, or **... Ekekeken**, depending on the number of full ISO thousands blocks at the end of the value.
@@ -665,7 +677,7 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...noke...
-- Numeric Cartouche: [... nena open kipisi en ...]
+- Numeric Cartouche: [... nena open kipisi e ...]
 - Abbreviated Cartouche: [... kipisi ...]
 - Abbreviation #~: ...ok
 - The percentage indicator always occurs at the end of the numeric expression, so it always receives the final **-n**.
@@ -694,7 +706,7 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...neko...
-- Numeric Cartouche: [... nena en kala open ...]
+- Numeric Cartouche: [... nena e kala open ...]
 - Abbreviated Cartouche: [... kala ...]
 - Abbreviation #~: ...eko...
 - The scientific notation indicator is used to mark the whole statemant “by 10 to the power of”.
@@ -728,7 +740,7 @@ The context will determine that we have a date or time cartouche.
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...neke...
-- Numeric Cartouche: [... nena en kasi en ...]
+- Numeric Cartouche: [... nena e kasi e ...]
 - Abbreviated Cartouche: [... kasi ...]
 - Abbreviation #~: ...k...
 
@@ -755,7 +767,7 @@ Examples:
 Rules:
 
 - Latin nanpa-linja-n numeric proper name: ...nene...
-- Numeric Cartouche: [... nena en nena en ...]
+- Numeric Cartouche: [... nena e nena e ...]
 - Abbreviated Cartouche: omitted; **nene** has no visible abbreviated-cartouche form.
 - Abbreviation #~: omitted; **nene** has no #~ abbreviation form, because the letters **n** and **e** never appear in abbreviated forms.
 - **nene** is useful for communicating long digit sequences such as phone numbers, where natural breaks can be represented without changing the numeric value.

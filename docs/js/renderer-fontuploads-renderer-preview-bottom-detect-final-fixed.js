@@ -1424,9 +1424,9 @@ const SitelenRenderer = (() => {
   let __abbreviateNumericCartouches = false;
 
  // When abbreviation is enabled, a full-cartouche break sequence
-  // "nena en nena en" may be represented by one visible "en" codepoint.
+  // "nena e nena e" may be represented by one visible "e" codepoint.
   // This option defaults to false. Set it explicitly to true to show the
-  // internal break as "en" in abbreviated numeric cartouches.
+  // internal break as "e" in abbreviated numeric cartouches.
   let __preserveNumericCartoucheBreaksInAbbreviation = false;
 
   // Optional fallback for standalone capitalized proper-name words outside [].
@@ -4562,7 +4562,9 @@ function wireHaloControls() {
 
     const CP_NANPA = NANPA_LINJA_N_WORD_TO_CP["nanpa"];
     const CP_NENA  = NANPA_LINJA_N_WORD_TO_CP["nena"];
+    const CP_NASIN = NANPA_LINJA_N_WORD_TO_CP["nasin"];
     const CP_EN    = NANPA_LINJA_N_WORD_TO_CP["en"];
+    const CP_E     = NANPA_LINJA_N_WORD_TO_CP["e"];
     const CP_OPEN  = NANPA_LINJA_N_WORD_TO_CP["open"];
     const CP_ALA   = NANPA_LINJA_N_WORD_TO_CP["ala"];
     const CP_IKE   = NANPA_LINJA_N_WORD_TO_CP["ike"];
@@ -4571,6 +4573,7 @@ function wireHaloControls() {
     const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
       CP_NANPA,
       CP_EN,
+      CP_E,
       CP_NENA,
       CP_OPEN,
       CP_ALA,
@@ -4586,6 +4589,21 @@ function wireHaloControls() {
       const sourceIndices = [];
       let keptFirstNanpa = false;
       const preserveBreaks = getPreserveNumericCartoucheBreaksInAbbreviation();
+      const hasFullPositiveOpening =
+        input.length >= 4 &&
+        input[0] === CP_NANPA &&
+        input[1] === CP_E &&
+        input[2] === CP_NENA &&
+        input[3] === CP_EN;
+      const hasFullScaffoldingAfterOpening = input.slice(2, -1).some(cp =>
+        cp === CP_E || NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)
+      );
+      const hasAlreadyAbbreviatedPositiveOpening =
+        !hasFullPositiveOpening &&
+        !hasFullScaffoldingAfterOpening &&
+        input.length >= 3 &&
+        input[0] === CP_NANPA &&
+        input[1] === CP_EN;
 
       for (let i = 0; i < input.length; i++) {
         const cp = input[i];
@@ -4604,17 +4622,33 @@ function wireHaloControls() {
           continue;
         }
 
+        // Explicit positive: full [nanpa e nena en ... nanpa] abbreviates to
+        // [nanpa en ... nanpa]. An already-abbreviated positive cartouche keeps
+        // that same leading en rather than dropping it as ordinary scaffolding.
+        if (hasFullPositiveOpening && i === 1) {
+          out.push(CP_EN);
+          sourceIndices.push(3);
+          i = 3;
+          continue;
+        }
+        if (hasAlreadyAbbreviatedPositiveOpening && i === 1) {
+          out.push(CP_EN);
+          sourceIndices.push(1);
+          continue;
+        }
+
         // Preserve the exact visible abbreviation while recording which full
-        // cartouche source glyph each displayed glyph represents.  This is
-        // audio/highlight metadata only and is not used by rendering.
+        // cartouche source glyph each displayed glyph represents. This is
+        // audio/highlight metadata only and is not used by rendering. Canonical
+        // numeric scaffolding now uses e; legacy en is accepted here as input.
         if (
           preserveBreaks &&
           cp === CP_NENA &&
-          input[i + 1] === CP_EN &&
+          (input[i + 1] === CP_E || input[i + 1] === CP_EN) &&
           input[i + 2] === CP_NENA &&
-          input[i + 3] === CP_EN
+          (input[i + 3] === CP_E || input[i + 3] === CP_EN)
         ) {
-          out.push(CP_EN);
+          out.push(CP_E);
           sourceIndices.push(i + 1);
           i += 3;
           continue;
@@ -4698,6 +4732,17 @@ function wireHaloControls() {
       const a = Array.from(cps ?? []);
       if (a.length === 0) return a;
 
+      // Only the new explicit-positive full opening keeps en:
+      // [nanpa e nena en ...]. Compute this from the original input before
+      // converting legacy en scaffolding to canonical e, so legacy
+      // [nanpa en nena en ...] remains an unsigned full cartouche.
+      const hasExplicitPositiveOpening =
+        a.length >= 4 &&
+        a[0] === CP_NANPA &&
+        a[1] === CP_E &&
+        a[2] === CP_NENA &&
+        a[3] === CP_EN;
+
       for (let i = 0; i < a.length; i++) {
         const cp = a[i];
 
@@ -4706,7 +4751,10 @@ function wireHaloControls() {
           continue;
         }
         if (UNIFORM_TO_NENA.has(cp)) { a[i] = CP_NENA; continue; }
-        if (UNIFORM_TO_EN.has(cp))   { a[i] = CP_EN; continue; }
+        if (UNIFORM_TO_EN.has(cp)) {
+          a[i] = (hasExplicitPositiveOpening && i === 3) ? CP_EN : CP_E;
+          continue;
+        }
       }
       return a;
     }
@@ -4714,7 +4762,9 @@ function wireHaloControls() {
     const STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
     const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
     const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
-    const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
+    // NS is an internal-only explicit-leading-plus token. It keeps leading
+    // plus distinct from an initial NE+NE no-value spacer.
+    const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NS","NO"];
 
     const RELAXED_TOKEN_TO_STRICT_TOKEN = Object.freeze({
       "WA": "WE",
@@ -4783,18 +4833,41 @@ function wireHaloControls() {
       return tokens;
     }
 
+    function nanpaLinjanProperNameToCaps(raw) {
+      const source = String(raw ?? "").trim();
+      if (!source) return null;
+      if (!/^[A-Za-z]+(?:\s+[A-Za-z]+)*$/.test(source)) return null;
+
+      const words = source.split(/\s+/).filter(Boolean);
+      const compact = words.join("");
+      if (!compact || !/[nN]$/.test(compact)) return null;
+
+      let core = compact.slice(0, -1);
+      if (core.length < 2 || (core.length % 2) !== 0) return null;
+
+      let hasPercent = false;
+      if (/noke$/i.test(core)) {
+        hasPercent = true;
+        core = core.slice(0, -4);
+        if (core.length < 2 || (core.length % 2) !== 0) return null;
+      }
+
+      let coreCaps = core.toUpperCase();
+      if (!coreCaps.startsWith("NE")) return null;
+
+      // An initial contiguous "Nene" is the explicit leading plus, whether the
+      // first digit syllable is attached (Nenewan...) or separated (Nene Wan...).
+      // Keep "N Ene ..." available as the existing no-value spacer.
+      if (/^nene/i.test(source) && coreCaps.startsWith("NENE")) {
+        coreCaps = "NENS" + coreCaps.slice(4);
+      }
+
+      return hasPercent ? (coreCaps + "OKN") : (coreCaps + "N");
+    }
+
     function isValidNanpaLinjanProperName(raw) {
-      const s = String(raw ?? "").replace(/\s+/g, "");
-      if (!s) return false;
-      if (!/^[a-zA-Z]+$/.test(s)) return false;
-      if (!/[nN]$/.test(s)) return false;
-
-      const core = s.slice(0, -1);
-      if (core.length < 2 || (core.length % 2) !== 0) return false;
-
-      const caps = core.toUpperCase() + "N";
-      if (!caps.startsWith("NE")) return false;
-
+      const caps = nanpaLinjanProperNameToCaps(raw);
+      if (!caps) return false;
       try { tokenizeNanpaCaps(caps); return true; }
       catch { return false; }
     }
@@ -4813,10 +4886,38 @@ function wireHaloControls() {
       if (!s0) return null;
       if (!s0.toUpperCase().startsWith("#~")) return null;
 
-      // CHANGED: body must be let, not const
-      let body = s0.slice(2).toUpperCase();
-      if (!body) throw new Error("Number code '#~' must have letters after it.");
-      if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may only contain letters A–Z after '#~'.");
+      let rawBody = s0.slice(2);
+      if (!rawBody) throw new Error("Number code '#~' must have content after it.");
+
+      // Explicit positive input accepts either the legacy literal + or the
+      // canonical single leading e. A single leading e is positive only when
+      // immediately followed by a digit-code letter. An even leading e-run is
+      // left untouched as one or more no-value spacers; odd leading runs greater
+      // than one are invalid at the start (scientific EKO is only non-initial).
+      let hasLeadingPlus = false;
+      if (rawBody.startsWith("+")) {
+        hasLeadingPlus = true;
+        rawBody = rawBody.slice(1);
+        if (!rawBody) throw new Error("Leading plus in number code must be followed immediately by a digit code.");
+      }
+
+      let body = rawBody.toUpperCase();
+      if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may contain only one optional leading '+' followed by letters A–Z.");
+
+      const leadingECount = /^E+/.exec(body)?.[0]?.length || 0;
+      if (hasLeadingPlus) {
+        if (!NUMBER_CODE_LETTER_TO_PAIR[body[0]]) {
+          throw new Error("Leading plus in number code must be followed immediately by a digit code.");
+        }
+      } else if (leadingECount === 1) {
+        if (!NUMBER_CODE_LETTER_TO_PAIR[body[1]]) {
+          throw new Error("A single leading 'e' positive marker must be followed immediately by a digit code.");
+        }
+        hasLeadingPlus = true;
+        body = body.slice(1);
+      } else if (leadingECount > 1 && (leadingECount % 2) === 1) {
+        throw new Error("At the start of a number code, 'e' must be either one positive marker before a digit or an even no-value-spacer run.");
+      }
 
       // NEW: treat trailing "OK" as percent marker token (not O-then-K operators)
       let hasPercent = false;
@@ -4827,6 +4928,7 @@ function wireHaloControls() {
       }
 
       const tokens = ["NE"];
+      if (hasLeadingPlus) tokens.push("NS");
       let i = 0;
 
       const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
@@ -4966,8 +5068,8 @@ function wireHaloControls() {
       const uniform = (mode === "uniform");
       const out = [];
 
-      const E_WORD = uniform ? "en" : "esun";
-      const E_WORD_FOR_NE_AFTER_START = uniform ? "en" : "e";
+      const E_WORD = uniform ? "e" : "esun";
+      const E_WORD_FOR_NE_AFTER_START = "e";
       const N_WORD = uniform ? "nena" : "nasa";
 
       const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
@@ -4999,6 +5101,15 @@ function wireHaloControls() {
             out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
             afterStartingNe = false;
           }
+          continue;
+        }
+
+        if (t === "NS") {
+          // Dedicated explicit-leading-positive token. The canonical full
+          // cartouche opening is: nanpa e nena en ...
+          out.push("nena", "en");
+          afterStartingNe = false;
+          afterScientificMarker = false;
           continue;
         }
 
@@ -5072,7 +5183,7 @@ function wireHaloControls() {
     // Time cartouche: rewrite the NE+KE delimiter expansion so the glyph shows kolon (:) not kulupu.
     // This preserves the surrounding "NE scaffolding" (nena/en ... join) and only swaps the delimiter word.
     function replaceTimeSeparatorsTpWords(tpWords, mode) {
-      const join = (mode === "uniform") ? "en" : "e";
+      const join = "e";
       const nWord = (mode === "uniform") ? "nena" : "nasa";
       const pattern = [nWord, join, "kulupu", join];
 
@@ -5129,7 +5240,7 @@ function wireHaloControls() {
       // NEW: mode-aware percent marker (insert before final "nanpa")
       if (hasPercent) {
         const suffixWords = (mode === "uniform")
-          ? ["nena", "open", "kipisi", "en"]
+          ? ["nena", "open", "kipisi", "e"]
           : ["noka", "open", "kipisi", "e"];   // FIX: noka (not nasa)
 
         const suffixCps = [];
@@ -5167,20 +5278,8 @@ function wireHaloControls() {
 
       if (!isValidNanpaLinjanProperName(s)) return null;
 
-      const compact = s.replace(/\s+/g, "");
-      const core = compact.slice(0, -1);
-
-      const coreUpper = core.toUpperCase();
-      let caps;
-
-      // NEW: trailing NOKE => OKN
-      if (coreUpper.endsWith("NOKE")) {
-        const base = coreUpper.slice(0, -4);
-        if (!base) return null;
-        caps = base + "OKN";
-      } else {
-        caps = coreUpper + "N";
-      }
+      const caps = nanpaLinjanProperNameToCaps(s);
+      if (!caps) return null;
 
       const isTime = nanpaCapsIsValidTimeOrDate(caps);
       return nanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime });
@@ -5218,8 +5317,8 @@ function wireHaloControls() {
         throw new Error("Vulgar fraction characters must appear at the end (e.g., 9¾ or ¾).");
       }
 
-      if (s.slice(1).includes("-")) {
-        throw new Error("Only one negative sign is allowed, and it must be at the start.");
+      if (s.slice(1).includes("-") || s.slice(1).includes("+")) {
+        throw new Error("A sign is allowed only once, at the start.");
       }
 
       const [num, den] = VULGAR_FRACTIONS.get(lastChar);
@@ -5227,12 +5326,12 @@ function wireHaloControls() {
 
       if (!prefixRaw) return `${num}/${den}`;
 
-      const isNeg = prefixRaw.startsWith("-");
-      const prefix = isNeg ? prefixRaw.slice(1).trim() : prefixRaw;
+      const sign = prefixRaw.startsWith("-") ? "-" : (prefixRaw.startsWith("+") ? "+" : "");
+      const prefix = sign ? prefixRaw.slice(1).trim() : prefixRaw;
 
-      if (!prefix) return `-${num}/${den}`;
+      if (!prefix) return `${sign}${num}/${den}`;
 
-      return isNeg ? `-${prefix}+${num}/${den}` : `${prefix}+${num}/${den}`;
+      return `${sign}${prefix}+${num}/${den}`;
     }
 
     function looksLikeNanpaCaps(s) {
@@ -5956,13 +6055,20 @@ function wireHaloControls() {
         raw = groupFractionDigitsOnly(raw, ".", fractionGroupSize, "_");
       }
 
+      let hasLeadingPlus = false;
+      if (raw.startsWith("+")) {
+        hasLeadingPlus = true;
+        raw = raw.slice(1).trim();
+        if (!raw) throw new Error("Missing numeric part after leading '+' sign");
+      }
+
       function stripFinalTerminator(segCaps) {
         if (!segCaps) return segCaps;
         if (!segCaps.endsWith("N")) throw new Error(`Segment caps did not end with 'N': ${segCaps}`);
         return segCaps.slice(0, -1);
       }
 
-      function encodeSingleNumberSegment(segment, includeInitialNe) {
+      function encodeSingleNumberSegment(segment, includeInitialNe, includeLeadingPlus = false) {
         let seg = String(segment).trim();
         if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
 
@@ -5973,6 +6079,7 @@ function wireHaloControls() {
 
         const out = [];
         if (includeInitialNe) out.push("NE");
+        if (includeInitialNe && includeLeadingPlus) out.push("NS");
 
         function pushNene() {
           const L = out.length;
@@ -6091,7 +6198,7 @@ function wireHaloControls() {
 
       if (raw.includes("+")) {
         const [left, right] = raw.split("+", 2);
-        let leftCaps = encodeSingleNumberSegment(left, true);
+        let leftCaps = encodeSingleNumberSegment(left, true, hasLeadingPlus);
 
         if (!right.includes("/")) throw new Error(`Mixed number must contain '/' after '+': ${s}`);
         const [num, den] = right.split("/", 2);
@@ -6108,13 +6215,13 @@ function wireHaloControls() {
 
       if (raw.includes("/")) {
         const [num, den] = raw.split("/", 2);
-        let numCaps = encodeSingleNumberSegment(num, true);
+        let numCaps = encodeSingleNumberSegment(num, true, hasLeadingPlus);
         let denCaps = encodeSingleNumberSegment(den, false);
         numCaps = stripFinalTerminator(numCaps);
         return numCaps + "NONO" + denCaps;
       }
 
-      return encodeSingleNumberSegment(raw, true);
+      return encodeSingleNumberSegment(raw, true, hasLeadingPlus);
     }
 
     function tryParseScientificDecimalToCaps(rawValue, opts = {}) {
@@ -6133,7 +6240,8 @@ function wireHaloControls() {
       let mantissa = String(m[1] ?? "").trim();
       let exponent = String(m[2] ?? "").trim();
       if (!mantissa || !exponent) return null;
-      if (mantissa.startsWith("+")) mantissa = mantissa.slice(1).trim();
+      // A plus on the mantissa is the number's explicit leading sign and is
+      // preserved. A plus on the exponent is intentionally ignored.
       if (exponent.startsWith("+")) exponent = exponent.slice(1).trim();
       if (!/^-?\d+$/.test(exponent)) return null;
 
@@ -6220,13 +6328,13 @@ function wireHaloControls() {
       const re = new RegExp(
         String.raw`(?<![A-Za-z])` +
         String.raw`(` +
-          String.raw`-?\s*\d*\s*[${vulgarChars}]` +
+          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\s*\d*\s*[${vulgarChars}]` +
           "|" +
-          String.raw`-?\s*\d[\d, _-]*\s*\+\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
+          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\s*\d[\d, _-]*\s*\+\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
           "|" +
-          String.raw`-?\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
+          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
           "|" +
-          String.raw`-?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?` +
+          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?` +
         String.raw`)` +
         String.raw`(?:\s*%)?` +          // NEW
         String.raw`(?![A-Za-z])`,
@@ -6282,7 +6390,7 @@ function wireHaloControls() {
       const s = String(text ?? "");
       if (!s) return [];
 
-      const re = /#~[A-Za-z]+/g;
+      const re = /#~\+?[A-Za-z]+/g;
       const out = [];
       let m;
 
@@ -6305,21 +6413,13 @@ function wireHaloControls() {
     }
 
         function makeNanpaLinjanProperNameHitFromSpan(rawSpan, start) {
-      const compact = String(rawSpan ?? "").replace(/[ \t]+/g, "");
+      const source = String(rawSpan ?? "");
+      const compact = source.replace(/[ \t]+/g, "");
       if (compact.length < 5) return null;
-      if (!isValidNanpaLinjanProperName(compact)) return null;
+      if (!isValidNanpaLinjanProperName(source)) return null;
 
-      let core = compact.slice(0, -1); // drop final N
-      let hasPercent = false;
-
-      if (/noke$/i.test(core)) {
-        hasPercent = true;
-        core = core.slice(0, -4);
-        if (core.length < 2) return null;
-      }
-
-      const coreCaps = core.toUpperCase();
-      const caps = hasPercent ? (coreCaps + "OKN") : (coreCaps + "N");
+      const caps = nanpaLinjanProperNameToCaps(source);
+      if (!caps) return null;
 
       return {
         kind: "name",
@@ -6452,7 +6552,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       for (let i = 0; i < tokens.length - 2; i++) {
         if (tokens[i].norm !== "nanpa") continue;
         const n1 = tokens[i + 1]?.norm;
-        if (!(n1 === "esun" || n1 === "en")) continue;
+        if (!(n1 === "esun" || n1 === "en" || n1 === "e")) continue;
 
         let bestJ = -1;
         let bestWords = null;
@@ -6559,6 +6659,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
     function isAllowedNanpaLinjanTpPhraseWord(words, index) {
       const w = words[index];
+      if (w === "nasin") return false;
       if (NANPA_LINJA_N_WORD_TO_CP[w] == null) return false;
       if (!RELAXED_ONLY_NANPA_PHRASE_WORDS.has(w)) return true;
       if (!getRelaxedNanpaLinjanParsing()) return false;
@@ -6578,12 +6679,20 @@ function findNanpaLinjanTpPhraseSequences(text) {
       const words = Array.from(inputWords ?? []).map(normalizeTpWord).filter(Boolean);
       const legacyPatterns = [
         {
+          old: ["nena", "e", "kala", "open", "wan", "e", "nena", "ijo", "nena", "e", "kala", "open"],
+          replacement: ["nena", "e", "kala", "open"]
+        },
+        {
+          old: ["nena", "e", "kala", "open", "wan", "ala", "nena", "ijo", "nena", "e", "kala", "open"],
+          replacement: ["nena", "e", "kala", "open"]
+        },
+        {
           old: ["nena", "en", "kala", "open", "wan", "en", "nena", "ijo", "nena", "en", "kala", "open"],
-          replacement: ["nena", "en", "kala", "open"]
+          replacement: ["nena", "e", "kala", "open"]
         },
         {
           old: ["nena", "en", "kala", "open", "wan", "ala", "nena", "ijo", "nena", "en", "kala", "open"],
-          replacement: ["nena", "en", "kala", "open"]
+          replacement: ["nena", "e", "kala", "open"]
         },
         {
           old: ["nasa", "e", "kala", "open", "wan", "esun", "nasa", "ijo", "nasa", "e", "kala", "open"],
@@ -6624,7 +6733,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
       if (words.length < 3) return null;
       if (words[0] !== "nanpa") return null;
-      if (!(words[1] === "esun" || words[1] === "en")) return null;
+      if (!(words[1] === "esun" || words[1] === "en" || words[1] === "e")) return null;
       if (words[words.length - 1] !== "nanpa") return null;
 
       for (let i = 0; i < words.length; i++) {
@@ -6636,12 +6745,58 @@ function findNanpaLinjanTpPhraseSequences(text) {
       // tryParseFullyAbbreviatedNanpaLinjanCartoucheWords() and only inside [].
       if (hasAdjacentNanpaLinjanDigitWords(words)) return null;
 
-      const canonicalWords = canonicalizeScientificTpPhraseWords(words);
+      let canonicalWords = canonicalizeScientificTpPhraseWords(words);
+
+      // Canonical rendering is based on numeric meaning, not legacy source
+      // scaffolding. Before the explicit-positive Nene convention existed,
+      // [nanpa en nena en ...] could be accepted as an unsigned full form.
+      // Keep accepting that input, but render it as the equivalent modern
+      // unsigned form [nanpa e ...], with the obsolete leading nena/en pair
+      // removed. This must be distinguished from the new positive opening
+      // [nanpa e nena en ...], where nena/en is semantically significant.
+      const hasLegacyUnsignedLeadingSpacer =
+        canonicalWords.length >= 6 &&
+        canonicalWords[0] === "nanpa" &&
+        canonicalWords[1] === "en" &&
+        canonicalWords[2] === "nena" &&
+        canonicalWords[3] === "en";
+
+      if (hasLegacyUnsignedLeadingSpacer) {
+        canonicalWords = ["nanpa", "e", ...canonicalWords.slice(4)];
+      }
+
+      // en remains accepted as legacy/full input wherever e is accepted, but
+      // e is the canonical rendered scaffolding. The sole exception is the
+      // semantically significant en in the new positive full opening.
+      const hasExplicitPositiveOpening =
+        canonicalWords.length >= 5 &&
+        canonicalWords[0] === "nanpa" &&
+        canonicalWords[1] === "e" &&
+        canonicalWords[2] === "nena" &&
+        canonicalWords[3] === "en";
+      canonicalWords = canonicalWords.map((word, index) =>
+        word === "en" && !(hasExplicitPositiveOpening && index === 3) ? "e" : word
+      );
+
       const digitWords = nanpaLinjanDigitWordSet();
 
       const payload = canonicalWords.slice(2, -1);
       const hasDigit = payload.some(w => digitWords.has(w));
       if (!hasDigit) return null;
+
+      // Backward compatibility: legacy full cartouches begin [nanpa en ...].
+      // That same prefix is now also the explicit-positive abbreviated marker.
+      // Give a legacy full form precedence only when its payload contains at
+      // least one full-cartouche scaffolding glyph beyond the opening en.
+      // Otherwise leave [nanpa en <abbreviated payload> nanpa] for the
+      // abbreviated-positive parser below.
+      if (words[1] === "en") {
+        const hasLegacyFullScaffolding = words.slice(2, -1).some(w => {
+          const cp = NANPA_LINJA_N_WORD_TO_CP[w];
+          return cp === CP_E || NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp);
+        });
+        if (!hasLegacyFullScaffolding) return null;
+      }
 
       return { words: canonicalWords };
     }
@@ -6664,6 +6819,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       if (words[0] !== "nanpa") return null;
       if (words[words.length - 1] !== "nanpa") return null;
 
+      const isExplicitPositive = words.length >= 4 && words[1] === "en";
       const cps = [];
       let hasDigit = false;
       const digitWords = new Set(
@@ -6672,14 +6828,16 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
       for (let i = 0; i < words.length; i++) {
         const w = words[i];
+        if (w === "nasin") return null;
         if (RELAXED_ONLY_NANPA_PHRASE_WORDS.has(w)) return null;
         const cp = NANPA_LINJA_N_WORD_TO_CP[w];
         if (cp == null) return null;
 
         const isFinalNanpa = (cp === CP_NANPA && i === words.length - 1);
-        if (i > 0 && !isFinalNanpa && NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) {
-          // Mixed forms like [nanpa en wan tu nanpa] or [nanpa wan en tu nanpa]
-          // are deliberately not accepted as abbreviated numeric cartouches.
+        const isPositiveMarker = isExplicitPositive && i === 1 && cp === CP_EN;
+        if (i > 0 && !isFinalNanpa && !isPositiveMarker && NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) {
+          // Apart from the one leading en positive marker, abbreviated numeric
+          // cartouches cannot contain full-form scaffolding.
           return null;
         }
 
@@ -6688,7 +6846,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       }
 
       if (!hasDigit) return null;
-      return { words, cps };
+      return { words, cps, isExplicitPositive };
     }
 
     function tpWordsToCodepoints(wordsOrTokens) {
@@ -10680,7 +10838,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
   const _NP_CP_NANPA = _NP_NANPA_LINJA_N_WORD_TO_CP["nanpa"];
   const _NP_CP_NENA  = _NP_NANPA_LINJA_N_WORD_TO_CP["nena"];
+  const _NP_CP_NASIN = _NP_NANPA_LINJA_N_WORD_TO_CP["nasin"];
   const _NP_CP_EN    = _NP_NANPA_LINJA_N_WORD_TO_CP["en"];
+  const _NP_CP_E     = _NP_NANPA_LINJA_N_WORD_TO_CP["e"];
 
   const _NP_UNIFORM_TO_NENA = new Set([
     _NP_NANPA_LINJA_N_WORD_TO_CP["nasa"],
@@ -10700,7 +10860,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   const _NP_STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
   const _NP_RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
   const _NP_DIGIT_TOKENS = new Set([..._NP_STRICT_DIGIT_TOKENS, ..._NP_RELAXED_DIGIT_TOKENS]);
-  const _NP_TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
+  const _NP_TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NS","NO"];
 
   const _NP_RELAXED_TOKEN_TO_STRICT_TOKEN = Object.freeze({
     "WA": "WE",
@@ -10833,6 +10993,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const a = Array.from(cps ?? []);
     if (a.length === 0) return a;
 
+    const hasExplicitPositiveOpening =
+      a.length >= 4 &&
+      a[0] === _NP_CP_NANPA &&
+      a[1] === _NP_CP_E &&
+      a[2] === _NP_CP_NENA &&
+      a[3] === _NP_CP_EN;
+
     for (let i = 0; i < a.length; i++) {
       const cp = a[i];
       if (cp === _NP_CP_NANPA) {
@@ -10840,7 +11007,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         continue;
       }
       if (_NP_UNIFORM_TO_NENA.has(cp)) { a[i] = _NP_CP_NENA; continue; }
-      if (_NP_UNIFORM_TO_EN.has(cp))   { a[i] = _NP_CP_EN; continue; }
+      if (_NP_UNIFORM_TO_EN.has(cp)) {
+        a[i] = (hasExplicitPositiveOpening && i === 3) ? _NP_CP_EN : _NP_CP_E;
+        continue;
+      }
     }
     return a;
   }
@@ -10882,20 +11052,38 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return tokens;
   }
 
+  function _npProperNameToCaps(raw, opts = {}) {
+    const source = String(raw ?? "").trim();
+    if (!source) return null;
+    if (!/^[A-Za-z]+(?:\s+[A-Za-z]+)*$/.test(source)) return null;
+
+    const words = source.split(/\s+/).filter(Boolean);
+    const compact = words.join("");
+    if (!compact || !/[nN]$/.test(compact)) return null;
+
+    let core = compact.slice(0, -1);
+    if (core.length < 2 || (core.length % 2) !== 0) return null;
+
+    let hasPercent = false;
+    if (/noke$/i.test(core)) {
+      hasPercent = true;
+      core = core.slice(0, -4);
+      if (core.length < 2 || (core.length % 2) !== 0) return null;
+    }
+
+    let coreCaps = core.toUpperCase();
+    if (!coreCaps.startsWith("NE")) return null;
+    if (/^nene/i.test(source) && coreCaps.startsWith("NENE")) {
+      coreCaps = "NENS" + coreCaps.slice(4);
+    }
+
+    const caps = hasPercent ? (coreCaps + "OKN") : (coreCaps + "N");
+    try { _npTokenizeNanpaCaps(caps, opts); return caps; }
+    catch { return null; }
+  }
+
   function _npIsValidNanpaLinjanProperName(raw, opts = {}) {
-    const s = String(raw ?? "").replace(/\s+/g, "");
-    if (!s) return false;
-    if (!/^[a-zA-Z]+$/.test(s)) return false;
-    if (!/[nN]$/.test(s)) return false;
-
-    const core = s.slice(0, -1);
-    if (core.length < 2 || (core.length % 2) !== 0) return false;
-
-    const caps = core.toUpperCase() + "N";
-    if (!caps.startsWith("NE")) return false;
-
-    try { _npTokenizeNanpaCaps(caps, opts); return true; }
-    catch { return false; }
+    return _npProperNameToCaps(raw, opts) != null;
   }
 
   const _NP_STRICT_HUNDRED_ININ_SUFFIXES = Object.freeze([
@@ -10967,9 +11155,33 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (!s0) return null;
     if (!s0.toUpperCase().startsWith("#~")) return null;
 
-    let body = s0.slice(2).toUpperCase();
-    if (!body) throw new Error("Number code '#~' must have letters after it.");
-    if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may only contain letters A–Z after '#~'.");
+    let rawBody = s0.slice(2);
+    if (!rawBody) throw new Error("Number code '#~' must have content after it.");
+
+    let hasLeadingPlus = false;
+    if (rawBody.startsWith("+")) {
+      hasLeadingPlus = true;
+      rawBody = rawBody.slice(1);
+      if (!rawBody) throw new Error("Leading plus in number code must be followed immediately by a digit code.");
+    }
+
+    let body = rawBody.toUpperCase();
+    if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may contain only one optional leading '+' followed by letters A–Z.");
+
+    const leadingECount = /^E+/.exec(body)?.[0]?.length || 0;
+    if (hasLeadingPlus) {
+      if (!_NP_NUMBER_CODE_LETTER_TO_PAIR[body[0]]) {
+        throw new Error("Leading plus in number code must be followed immediately by a digit code.");
+      }
+    } else if (leadingECount === 1) {
+      if (!_NP_NUMBER_CODE_LETTER_TO_PAIR[body[1]]) {
+        throw new Error("A single leading 'e' positive marker must be followed immediately by a digit code.");
+      }
+      hasLeadingPlus = true;
+      body = body.slice(1);
+    } else if (leadingECount > 1 && (leadingECount % 2) === 1) {
+      throw new Error("At the start of a number code, 'e' must be either one positive marker before a digit or an even no-value-spacer run.");
+    }
 
     let hasPercent = false;
     if (body.endsWith("OK")) {
@@ -10979,6 +11191,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     const tokens = ["NE"];
+    if (hasLeadingPlus) tokens.push("NS");
     let i = 0;
 
     const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
@@ -11100,8 +11313,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const uniform = (mode === "uniform");
     const out = [];
 
-    const E_WORD = uniform ? "en" : "esun";
-    const E_WORD_FOR_NE_AFTER_START = uniform ? "en" : "e";
+    const E_WORD = uniform ? "e" : "esun";
+    const E_WORD_FOR_NE_AFTER_START = "e";
     const N_WORD = uniform ? "nena" : "nasa";
 
     const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
@@ -11132,6 +11345,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
           afterStartingNe = false;
         }
+        continue;
+      }
+
+      if (t === "NS") {
+        out.push("nena", "en");
+        afterStartingNe = false;
+        afterScientificMarker = false;
         continue;
       }
 
@@ -11203,7 +11423,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   }
 
   function _npReplaceTimeSeparatorsTpWords(tpWords, mode) {
-    const join = (mode === "uniform") ? "en" : "e";
+    const join = "e";
     const nWord = (mode === "uniform") ? "nena" : "nasa";
     const pattern = [nWord, join, "kulupu", join];
 
@@ -11253,7 +11473,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (hasPercent) {
       const suffixWords = (mode === "uniform")
-        ? ["nena", "open", "kipisi", "en"]
+        ? ["nena", "open", "kipisi", "e"]
         : ["noka", "open", "kipisi", "e"];
 
       const suffixCps = [];
@@ -11287,19 +11507,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (!_npIsValidNanpaLinjanProperName(s, { relaxedNanpaLinjanParsing: relaxedParsing })) return null;
 
-    const compact = s.replace(/\s+/g, "");
-    const core = compact.slice(0, -1);
-
-    const coreUpper = core.toUpperCase();
-    let caps;
-
-    if (coreUpper.endsWith("NOKE")) {
-      const base = coreUpper.slice(0, -4);
-      if (!base) return null;
-      caps = base + "OKN";
-    } else {
-      caps = coreUpper + "N";
-    }
+    const caps = _npProperNameToCaps(s, { relaxedNanpaLinjanParsing: relaxedParsing });
+    if (!caps) return null;
 
     const isTime = _npNanpaCapsIsValidTimeOrDate(caps, { relaxedNanpaLinjanParsing: relaxedParsing });
     return _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime, relaxedParsing, relaxedRendering });
@@ -11323,8 +11532,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       throw new Error("Vulgar fraction characters must appear at the end (e.g., 9¾ or ¾).");
     }
 
-    if (s.slice(1).includes("-")) {
-      throw new Error("Only one negative sign is allowed, and it must be at the start.");
+    if (s.slice(1).includes("-") || s.slice(1).includes("+")) {
+      throw new Error("A sign is allowed only once, at the start.");
     }
 
     const [num, den] = _NP_VULGAR_FRACTIONS.get(lastChar);
@@ -11332,11 +11541,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (!prefixRaw) return `${num}/${den}`;
 
-    const isNeg = prefixRaw.startsWith("-");
-    const prefix = isNeg ? prefixRaw.slice(1).trim() : prefixRaw;
+    const sign = prefixRaw.startsWith("-") ? "-" : (prefixRaw.startsWith("+") ? "+" : "");
+    const prefix = sign ? prefixRaw.slice(1).trim() : prefixRaw;
 
-    if (!prefix) return `-${num}/${den}`;
-    return isNeg ? `-${prefix}+${num}/${den}` : `${prefix}+${num}/${den}`;
+    if (!prefix) return `${sign}${num}/${den}`;
+    return `${sign}${prefix}+${num}/${den}`;
   }
 
   function _npLooksLikeNanpaCaps(s) {
@@ -11802,13 +12011,20 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       raw = _npGroupFractionDigitsOnly(raw, ".", fractionGroupSize, "_");
     }
 
+    let hasLeadingPlus = false;
+    if (raw.startsWith("+")) {
+      hasLeadingPlus = true;
+      raw = raw.slice(1).trim();
+      if (!raw) throw new Error("Missing numeric part after leading '+' sign");
+    }
+
     function stripFinalTerminator(segCaps) {
       if (!segCaps) return segCaps;
       if (!segCaps.endsWith("N")) throw new Error(`Segment caps did not end with 'N': ${segCaps}`);
       return segCaps.slice(0, -1);
     }
 
-    function encodeSingleNumberSegment(segment, includeInitialNe) {
+    function encodeSingleNumberSegment(segment, includeInitialNe, includeLeadingPlus = false) {
       let seg = String(segment).trim();
       if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
 
@@ -11819,6 +12035,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       const out = [];
       if (includeInitialNe) out.push("NE");
+      if (includeInitialNe && includeLeadingPlus) out.push("NS");
 
       function pushNene() {
         const L = out.length;
@@ -11936,7 +12153,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (raw.includes("+")) {
       const [left, right] = raw.split("+", 2);
-      let leftCaps = encodeSingleNumberSegment(left, true);
+      let leftCaps = encodeSingleNumberSegment(left, true, hasLeadingPlus);
 
       if (!right.includes("/")) throw new Error(`Mixed number must contain '/' after '+': ${s}`);
       const [num, den] = right.split("/", 2);
@@ -11953,13 +12170,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (raw.includes("/")) {
       const [num, den] = raw.split("/", 2);
-      let numCaps = encodeSingleNumberSegment(num, true);
+      let numCaps = encodeSingleNumberSegment(num, true, hasLeadingPlus);
       let denCaps = encodeSingleNumberSegment(den, false);
       numCaps = stripFinalTerminator(numCaps);
       return numCaps + "NONO" + denCaps;
     }
 
-    return encodeSingleNumberSegment(raw, true);
+    return encodeSingleNumberSegment(raw, true, hasLeadingPlus);
   }
 
   function _npTryParseScientificDecimalToCaps(rawValue, opts = {}) {
@@ -11978,7 +12195,6 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     let mantissa = String(m[1] ?? "").trim();
     let exponent = String(m[2] ?? "").trim();
     if (!mantissa || !exponent) return null;
-    if (mantissa.startsWith("+")) mantissa = mantissa.slice(1).trim();
     if (exponent.startsWith("+")) exponent = exponent.slice(1).trim();
     if (!/^-?\d+$/.test(exponent)) return null;
 
@@ -12045,16 +12261,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (parsedCode?.caps) {
         caps = parsedCode.caps;
       } else if (_npIsValidNanpaLinjanProperName(s, opts)) {
-        const compact = s.replace(/\s+/g, "");
-        const core = compact.slice(0, -1);
-        const coreUpper = core.toUpperCase();
-        if (coreUpper.endsWith("NOKE")) {
-          const base = coreUpper.slice(0, -4);
-          if (!base) return null;
-          caps = base + "OKN";
-        } else {
-          caps = coreUpper + "N";
-        }
+        caps = _npProperNameToCaps(s, opts);
+        if (!caps) return null;
       } else {
         const dateCaps = _npDateStrToNanpaCaps(s, opts);
         if (dateCaps) {
@@ -12132,6 +12340,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const nextPair = (i + 4 <= end) ? mainS.slice(i + 2, i + 4) : null;
 
         if (pair === "NE" && nextPair === "NO" && i === 0) { outStr += "neno "; i += 4; continue; }
+        if (pair === "NE" && nextPair === "NS" && i === 0) { outStr += "nene "; i += 4; continue; }
         if (pair === "NE" && nextPair === "NE") { outStr += "n "; outStr += "ene "; i += 4; continue; }
         if (pair === "NO" && nextPair === "NE" && i > 0) { outStr += "n "; outStr += "one "; i += 4; continue; }
 
@@ -12211,6 +12420,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i];
         if (t === "NE") {
+          if (i === 0 && tokens[i + 1] === "NS") {
+            parts.push("e");
+            i += 1;
+            continue;
+          }
           let j = i;
           while (j < tokens.length && tokens[j] === "NE") j++;
           const count = j - i;
@@ -12267,8 +12481,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const tokens = Array.from(segmentTokens);
       let i = 0;
       const end = tokens.length;
+      let positive = false;
       let neg = false;
 
+      if (i < end && tokens[i] === "NS") {
+        positive = true;
+        i++;
+      }
       if (i < end && tokens[i] === "NO" && !(i + 1 < end && tokens[i + 1] === "NE")) {
         neg = true;
         i++;
@@ -12357,7 +12576,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         suffixKeCount > 4 ? `×1000^${suffixKeCount}` :
         "";
 
-      const sign = neg ? "-" : "";
+      const sign = neg ? "-" : (positive ? "+" : "");
       if (kind === "frac") return sign + intStr + "." + (fracStr || "0") + suffix;
       return sign + intStr + suffix;
     }
@@ -12426,7 +12645,20 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const dateCaps = _npDateStrToNanpaCaps(normalized, opts);
       const timeCaps = (dateCaps == null) ? _npTimeStrToNanpaCaps(normalized, opts) : null;
 
-      if (_npLooksLikeNanpaCaps(normalized)) {
+      // A mixed/title-case proper name beginning with contiguous Nene... is the
+      // explicit leading-plus form. Prefer that interpretation over the raw
+      // caps shorthand, because an attached form such as "Nenewan" otherwise
+      // also happens to look like the caps string NENEWAN. Keep an all-uppercase
+      // unspaced token available as explicit raw-caps input for compatibility.
+      const preferLeadingPlusProperName =
+        /^nene/i.test(s) &&
+        !/^[A-Z]+$/.test(s) &&
+        _npIsValidNanpaLinjanProperName(s, { relaxedNanpaLinjanParsing: relaxedParsing });
+
+      if (preferLeadingPlusProperName) {
+        caps = _npProperNameToCaps(s, { relaxedNanpaLinjanParsing: relaxedParsing });
+        if (!caps) return null;
+      } else if (_npLooksLikeNanpaCaps(normalized)) {
         caps = normalized.toUpperCase();
       } else if (dateCaps != null) {
         caps = dateCaps;
@@ -12435,8 +12667,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         caps = timeCaps;
         structuredKind = "time";
       } else if (_npIsValidNanpaLinjanProperName(s, { relaxedNanpaLinjanParsing: relaxedParsing })) {
-        const core = s.replace(/\s+/g, "").slice(0, -1).toUpperCase();
-        caps = (core.endsWith("NOKE") ? (core.slice(0, -4) + "OKN") : (core + "N"));
+        caps = _npProperNameToCaps(s, { relaxedNanpaLinjanParsing: relaxedParsing });
+        if (!caps) return null;
       } else {
         const parsed = _npTryParseNanpaLinjanNumberCodeToCaps(s);
         if (parsed?.caps) caps = parsed.caps;
@@ -12479,7 +12711,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       if (hasOk) {
         const suffixWords = (mode === "uniform")
-          ? ["nena", "open", "kipisi", "en"]
+          ? ["nena", "open", "kipisi", "e"]
           : ["noka", "open", "kipisi", "e"];
         const out = tpWords.slice();
         const lastNanpaIdx = out.lastIndexOf("nanpa");
@@ -12566,6 +12798,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const nextPair = (i + 4 <= end) ? mainS.slice(i + 2, i + 4) : null;
 
         if (pair === "NE" && nextPair === "NO" && i === 0) { outStr += "neno "; i += 4; continue; }
+        if (pair === "NE" && nextPair === "NS" && i === 0) { outStr += "nene "; i += 4; continue; }
         if (pair === "NE" && nextPair === "NE") { outStr += "n "; outStr += "ene "; i += 4; continue; }
         if (pair === "NO" && nextPair === "NE" && i > 0) { outStr += "n "; outStr += "one "; i += 4; continue; }
         if (pair === "NO" && nextPair === "KO" && i > 0) { outStr += "n "; outStr += "oko"; if ((i + 4) < end) outStr += " "; i += 4; continue; }
@@ -12628,6 +12861,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     for (let i = 0; i < tokens.length; i++) {
       const t = tokens[i];
       if (t === "NE") {
+        if (i === 0 && tokens[i + 1] === "NS") {
+          parts.push("e");
+          i += 1;
+          continue;
+        }
         let j = i;
         while (j < tokens.length && tokens[j] === "NE") j++;
         const count = j - i;
@@ -12680,7 +12918,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const tokens = Array.from(segmentTokens);
       let i = 0;
       const end = tokens.length;
+      let positive = false;
       let neg = false;
+      if (i < end && tokens[i] === "NS") {
+        positive = true;
+        i++;
+      }
       if (i < end && tokens[i] === "NO" && !(i + 1 < end && tokens[i + 1] === "NE")) {
         neg = true;
         i++;
@@ -12762,7 +13005,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         suffixKeCount > 4 ? `×1000^${suffixKeCount}` :
         "";
 
-      const sign = neg ? "-" : "";
+      const sign = neg ? "-" : (positive ? "+" : "");
       if (kind === "frac") return sign + intStr + "." + (fracStr || "0") + suffix;
       return sign + intStr + suffix;
     }
@@ -12997,7 +13240,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (!hasOk) return words;
 
     const suffixWords = (mode === "uniform")
-      ? ["nena", "open", "kipisi", "en"]
+      ? ["nena", "open", "kipisi", "e"]
       : ["noka", "open", "kipisi", "e"];
 
     const out = words.slice();

@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
 
   <link rel="preload" href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf" as="font" type="font/otf" crossorigin>
-  <link rel="preload" href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf" as="font" type="font/otf" crossorigin>
 
   <style>
     :root {
@@ -192,7 +192,7 @@
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
       font-display: block;
     }
 
@@ -759,16 +759,16 @@
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
       </div>
 
-      <div class="help">#~n</div>
+      <div class="help">#~e</div>
     </div>
   </main>
 
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=40";
-    import { speechUnitsForRenderRun, splitAudioTpWordIntoSyllables } from "./js/sitelen-audio-plan.js?v=40";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=44";
+    import { speechUnitsForRenderRun, splitAudioTpWordIntoSyllables } from "./js/sitelen-audio-plan.js?v=45";
 
     /* ============================================================
        NEW: Cartouche display mode (Traditional vs Uniform)
@@ -1007,11 +1007,16 @@
         0xF193E, // nasa
         0xF1909, // e
         0xF190B, // esun
-        0xF190A, // en  (added for uniform mode)
         0xF1902, // ala (relaxed nanpa-linja-n small glyph)
         0xF190D, // ike (relaxed nanpa-linja-n small glyph)
         0xF1970, // uta (relaxed nanpa-linja-n small glyph)
       ]);
+    }
+
+    function manualCartoucheGlyphPx(cp, largePx, smallPx, smallCodepoints) {
+      if (cp === 0xF190A) return Math.max(1, Math.round(largePx * (2 / 3))); // en
+      if (cp === 0xF193F) return Math.max(1, Math.round(largePx * 0.75)); // nasin
+      return smallCodepoints.has(cp) ? smallPx : largePx; // includes e at 1/4
     }
 
     const TP_UCSUR_MIN = 0xF1900;
@@ -1577,7 +1582,7 @@
 
       for (const cp of codepoints) {
         const ch = String.fromCodePoint(cp);
-        const px = smallCodepoints.has(cp) ? smallPx : largePx;
+        const px = manualCartoucheGlyphPx(cp, largePx, smallPx, smallCodepoints);
 
         ctx.font = `${px}px "${FONT_FAMILY}"`;
         const m = ctx.measureText(ch);
@@ -1653,7 +1658,7 @@
 
       for (const cp of codepoints) {
         const ch = String.fromCodePoint(cp);
-        const px = smallCodepoints.has(cp) ? smallPx : largePx;
+        const px = manualCartoucheGlyphPx(cp, largePx, smallPx, smallCodepoints);
 
         ctxMeasure.font = `${px}px "${FONT_FAMILY}"`;
         const m = ctxMeasure.measureText(ch);

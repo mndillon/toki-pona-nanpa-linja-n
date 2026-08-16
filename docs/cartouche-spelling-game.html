@@ -39,13 +39,13 @@
     /* Nanpa-linja-n cartouche font (for numbers/time) */
     @font-face{
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
       font-display: swap;
     }
 
     @font-face{
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
       font-display: swap;
     }
 
@@ -604,7 +604,7 @@ html, body{
   </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=202";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228";
 
 (() => {
   "use strict";
@@ -5777,22 +5777,22 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
       const t = tokens[i];
 
       if (t === "NE") {
-        if (out.length === 0) out.push("nanpa", "en");
-        else out.push("nena", "en");
+        if (out.length === 0) out.push("nanpa", "e");
+        else out.push("nena", "e");
         continue;
       }
 
       if (DIGIT_TOKENS.has(t)) {
         const digitWord = TOKEN_TO_DIGIT_WORD[t];
         if (t === "NI" || t === "NA" || t === "NU") out.push("nena", digitWord);
-        else out.push(digitWord, "en");
+        else out.push(digitWord, "e");
         continue;
       }
 
       if (t === "NO") { out.push("nena", "o"); continue; }
-      if (t === "KE") { out.push("kulupu", "en"); continue; }
+      if (t === "KE") { out.push("kulupu", "e"); continue; }
       if (t === "N")  { out.push("nanpa"); continue; }
-      if (t === "NONE") { out.push("nena", "en"); continue; } // decimal marker placeholder (future refine)
+      if (t === "NONE") { out.push("nena", "e"); continue; } // decimal marker placeholder (future refine)
 
       throw new Error(`Unsupported token "${t}" in nanpa-caps`);
     }
@@ -5835,12 +5835,12 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     const ss2 = String(ss).padStart(2, "0");
 
     const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
-    const cpEn    = WORD_TO_UCSUR_CP["en"];
+    const cpE     = WORD_TO_UCSUR_CP["e"];
     const cpKasi = WORD_TO_UCSUR_CP["kasi"];
 
     function digitInner(dChar){
       const cps = decimalToUcsurCodepoints(String(dChar));
-      // cps is ["nanpa","en", ...digit..., "nanpa"]
+      // cps is ["nanpa","e", ...digit..., "nanpa"]
       return (cps.length >= 4) ? cps.slice(2, cps.length - 1) : [];
     }
 
@@ -5848,12 +5848,12 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     for (const ch of mm2) inner.push(...digitInner(ch));
 
     if (typeof cpKasi === "number"){
-      inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKasi, WORD_TO_UCSUR_CP["en"]);
+      inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["e"], cpKasi, WORD_TO_UCSUR_CP["e"]);
     }
 
     for (const ch of ss2) inner.push(...digitInner(ch));
 
-    return [cpNanpa, cpEn, ...inner, cpNanpa].filter((x)=>typeof x === "number");
+    return [cpNanpa, cpE, ...inner, cpNanpa].filter((x)=>typeof x === "number");
   }
 
   function fitDrawCartouche(targetCanvas, innerCps, { cssW, cssH, fontPx, fontFamily, align = "center" }){
@@ -5889,11 +5889,13 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
 
   const TIMER_ABBREV_CP_NANPA = WORD_TO_UCSUR_CP["nanpa"];
   const TIMER_ABBREV_CP_NENA  = WORD_TO_UCSUR_CP["nena"];
+  const TIMER_ABBREV_CP_E     = WORD_TO_UCSUR_CP["e"];
   const TIMER_ABBREV_CP_EN    = WORD_TO_UCSUR_CP["en"];
   const TIMER_ABBREV_CP_OPEN  = WORD_TO_UCSUR_CP["open"];
 
   const TIMER_NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
     TIMER_ABBREV_CP_NANPA,
+    TIMER_ABBREV_CP_E,
     TIMER_ABBREV_CP_EN,
     TIMER_ABBREV_CP_NENA,
     TIMER_ABBREV_CP_OPEN
@@ -6560,20 +6562,13 @@ return renderMainPhrase(phrase);
       const gen = NLN_makeRandomNumericValue();
       const raw = gen.raw;
 
-      // ADD THIS BLOCK HERE:
-      const s = NLN_normalizeVulgarFractionInput(raw);
-      const timeCaps = NLN_timeStrToNanpaCaps(s);
-      const dateCaps = NLN_dateStrToNanpaCaps(s);
-      const caps = NLN_looksLikeNanpaCaps(s)
-        ? s.trim().toUpperCase()
-        : (timeCaps || dateCaps || NLN_numberStrToNanpaCaps(s, {
-            thousandsChar: ",",
-            groupFractionTriplets: true,
-            fractionGroupSize: 3
-          }));
-
-      const latinRaw = NLN_encodeDecimalToLatin(raw);
-      const cpsInner = NLN_numericProperNameToUcsurInnerCps(latinRaw, { isDateTime: gen.isDateTime });
+      // Use the shared renderer v228 parser as the numeric source of truth.
+      const parsed = SitelenRenderer.NanpaParser.parseNumber(raw, { mode:"uniform", mixedStyle:"short" });
+      const caps = String(parsed?.caps ?? "");
+      const latinRaw = String(parsed?.properName ?? "");
+      const cpsInner = Array.from(
+        parsed?.ucsurCodepoints ?? parsed?.innerCodepoints ?? parsed?.codepoints ?? []
+      ).map(Number);
 
       const answerNorm = normalizeGuess(latinRaw);
 

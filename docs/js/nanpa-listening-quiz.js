@@ -32,6 +32,7 @@ const PROPER_NAME_MODE_OPTIONS = [
 
 const ABBREV_CP_NANPA = 0xF193D;
 const ABBREV_CP_NENA  = 0xF1940;
+const ABBREV_CP_E     = 0xF1909;
 const ABBREV_CP_EN    = 0xF190A;
 const ABBREV_CP_OPEN  = 0xF1947;
 const ABBREV_CP_ALA   = 0xF1902;
@@ -297,6 +298,7 @@ function makeQuizItems(properNameMode = getCurrentProperNameMode()) {
   ];
 
   const singleDigit = String(randInt(0, 9));
+  const positiveInteger = `+${randInt(1, 999)}`;
 
   const decimalWhole = randInt(0, 99);
   const decimalFrac = String(randInt(1, 99)).padStart(2, '0');
@@ -328,6 +330,7 @@ function makeQuizItems(properNameMode = getCurrentProperNameMode()) {
 
   return shuffle([
     item('single-digit-integer', singleDigit, singleDigit, 'exact', properNameMode),
+    item('positive-integer', positiveInteger, positiveInteger, 'exact', properNameMode),
     item('decimal', decimal, decimal, 'exact', properNameMode),
     item('negative', negative, negative, 'exact', properNameMode),
     item('thousands', thousands, thousands, 'commasOptional', properNameMode),
@@ -357,7 +360,7 @@ function item(kind, parserInput, displayValue, answerMode, properNameMode = getC
 
 async function getNanpaParser() {
   if (!nanpaModulePromise) {
-    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223');
+    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228');
   }
   const mod = await nanpaModulePromise;
   return mod.NanpaParser;
@@ -365,7 +368,7 @@ async function getNanpaParser() {
 
 async function getVoice() {
   if (!voicePromise) {
-    voicePromise = import('./toki-pona-voice-api.js?v=40').then(m => m.createTokiPonaVoice());
+    voicePromise = import('./toki-pona-voice-api.js?v=44').then(m => m.createTokiPonaVoice());
   }
   return voicePromise;
 }
@@ -388,36 +391,62 @@ async function ensureParsed(item) {
       let quizParsed = strictParsed;
 
       if (isRelaxedProperNameMode(properNameMode)) {
-        quizCaps = capsForProperNameMode(strictParsed.caps, properNameMode);
-        quizProperName = NanpaParser.splitCapsToProperName(quizCaps, {
-          titleCase: true,
-          relaxedNanpaLinjanParsing: true
-        });
-        // Build the cartouche directly from the stored quiz caps. Do not
-        // re-parse the spaced proper-name string here: separators such as Ono
-        // for fractions, Eke for time/date, and Eko for scientific notation are
-        // valid inside nanpa-linja-n caps but are not all accepted by the simple
-        // parseNumber(properName) path.
-        const parsedRelaxedCaps = NanpaParser.capsToCodepoints(quizCaps, {
-          mode: 'uniform',
-          mixedStyle: 'short',
-          relaxedNanpaLinjanParsing: true,
-          relaxedNanpaLinjanRendering: true
-        });
+        if (item.kind === 'positive-integer') {
+          // Explicit positive integers already have a dedicated parser path.
+          // Re-parse the decimal value in relaxed mode so the public Nene/NE
+          // positive form is preserved while relaxed digit syllables are used.
+          const parsedRelaxedPositive = NanpaParser.parseNumber(item.parserInput, {
+            mode: 'uniform',
+            mixedStyle: 'short',
+            relaxedNanpaLinjanParsing: true,
+            relaxedNanpaLinjanRendering: true
+          });
 
-        if (!parsedRelaxedCaps || !(parsedRelaxedCaps.innerCodepoints?.length || parsedRelaxedCaps.codepoints?.length)) {
-          throw new Error(`Could not encode relaxed quiz value: ${item.parserInput}`);
+          if (!parsedRelaxedPositive || !parsedRelaxedPositive.properName || !(parsedRelaxedPositive.innerCodepoints?.length || parsedRelaxedPositive.codepoints?.length)) {
+            throw new Error(`Could not encode relaxed quiz value: ${item.parserInput}`);
+          }
+
+          quizCaps = parsedRelaxedPositive.caps;
+          quizProperName = parsedRelaxedPositive.properName;
+          quizParsed = {
+            ...parsedRelaxedPositive,
+            uniqueCode: strictParsed.uniqueCode,
+            ucsurCodepoints: Array.from(parsedRelaxedPositive.innerCodepoints ?? []),
+            tpWords: Array.from(parsedRelaxedPositive.words ?? []),
+            words: Array.from(parsedRelaxedPositive.words ?? [])
+          };
+        } else {
+          quizCaps = capsForProperNameMode(strictParsed.caps, properNameMode);
+          quizProperName = NanpaParser.splitCapsToProperName(quizCaps, {
+            titleCase: true,
+            relaxedNanpaLinjanParsing: true
+          });
+          // Build the cartouche directly from the stored quiz caps. Do not
+          // re-parse the spaced proper-name string here: separators such as Ono
+          // for fractions, Eke for time/date, and Eko for scientific notation are
+          // valid inside nanpa-linja-n caps but are not all accepted by the simple
+          // parseNumber(properName) path.
+          const parsedRelaxedCaps = NanpaParser.capsToCodepoints(quizCaps, {
+            mode: 'uniform',
+            mixedStyle: 'short',
+            relaxedNanpaLinjanParsing: true,
+            relaxedNanpaLinjanRendering: true
+          });
+
+          if (!parsedRelaxedCaps || !(parsedRelaxedCaps.innerCodepoints?.length || parsedRelaxedCaps.codepoints?.length)) {
+            throw new Error(`Could not encode relaxed quiz value: ${item.parserInput}`);
+          }
+
+          quizParsed = {
+            ...parsedRelaxedCaps,
+            caps: quizCaps,
+            properName: quizProperName,
+            uniqueCode: strictParsed.uniqueCode,
+            ucsurCodepoints: Array.from(parsedRelaxedCaps.innerCodepoints ?? []),
+            tpWords: Array.from(parsedRelaxedCaps.words ?? []),
+            words: Array.from(parsedRelaxedCaps.words ?? [])
+          };
         }
-
-        quizParsed = {
-          ...parsedRelaxedCaps,
-          caps: quizCaps,
-          properName: quizProperName,
-          uniqueCode: strictParsed.uniqueCode,
-          ucsurCodepoints: Array.from(parsedRelaxedCaps.innerCodepoints ?? []),
-          tpWords: Array.from(parsedRelaxedCaps.words ?? []),
-          words: Array.from(parsedRelaxedCaps.words ?? [])
-        };
       }
 
       return {
@@ -812,6 +841,30 @@ function abbreviateNumericCartoucheCps(cps) {
   return out;
 }
 
+function abbreviateExplicitPositiveIntegerCps(cps) {
+  const input = Array.from(cps ?? []).map(cp => Number(cp));
+  const hasPositiveOpening =
+    input.length >= 5 &&
+    input[0] === ABBREV_CP_NANPA &&
+    input[1] === ABBREV_CP_E &&
+    input[2] === ABBREV_CP_NENA &&
+    input[3] === ABBREV_CP_EN;
+
+  if (!hasPositiveOpening) return abbreviateNumericCartoucheCps(input);
+
+  const out = [ABBREV_CP_NANPA, ABBREV_CP_EN];
+  const drop = new Set([...ABBREV_DROP_AFTER_FIRST_NANPA, ABBREV_CP_E]);
+
+  for (let i = 4; i < input.length - 1; i++) {
+    const cp = input[i];
+    if (drop.has(cp)) continue;
+    out.push(cp);
+  }
+
+  if (input[input.length - 1] === ABBREV_CP_NANPA) out.push(ABBREV_CP_NANPA);
+  return out;
+}
+
 function renderCartoucheToCanvas(canvas, codepoints, largePx = LARGE_TINY_FONT_SIZE, smallPx = SMALL_TINY_FONT_SIZE, options = CARTOUCHE_RENDER_OPTS) {
   const pad = options.padding ?? 8;
   const border = options.border ?? 1;
@@ -1002,7 +1055,12 @@ async function revealItem(item, row) {
 
     await ensureCartoucheFontLoaded();
     if (normalCanvas) renderCartoucheToCanvas(normalCanvas, quizParsed.ucsurCodepoints);
-    if (abbrevCanvas) renderCartoucheToCanvas(abbrevCanvas, abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints));
+    if (abbrevCanvas) {
+      const abbreviatedCodepoints = item.kind === 'positive-integer'
+        ? abbreviateExplicitPositiveIntegerCps(quizParsed.ucsurCodepoints)
+        : abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints);
+      renderCartoucheToCanvas(abbrevCanvas, abbreviatedCodepoints);
+    }
 
     if (reveal) reveal.hidden = false;
   } catch (err) {

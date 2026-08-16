@@ -177,7 +177,7 @@
       font-family: "TP-Cartouche-Font";
       src: 
         /* Web-hosted files (order matters) */
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf")   format("opentype");
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf")   format("opentype");
       font-display: swap;
     }
 
@@ -834,14 +834,15 @@
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
       </div>
 
-      <div class="help">#~n</div>
+      <div class="help">#~e</div>
     </div>
   </main>
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=40";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=44";
+    import { trySourceTextToNanpaProperName } from "./js/sitelen-audio-plan.js?v=45";
 
     const voice = await createTokiPonaVoice();
 
@@ -1306,7 +1307,7 @@
       return new Set([
         0xF193D, // nanpa
         0xF1940, // nena
-        0xF190A, // en
+        0xF1909, // e
         0xF1902, // ala
         0xF190D, // ike
         0xF1970, // uta
@@ -1319,7 +1320,7 @@
       return new Set([
         0xF193D, // nanpa
         0xF1940, // nena
-        0xF190A, // en
+        0xF1909, // e
         0xF1902, // ala
         0xF190D, // ike
         0xF1970, // uta
@@ -1352,6 +1353,7 @@
         0xF191F, // kulupu
         0xF197B, // kipisi
         0xF1979, // kin
+        0xF190A, // en
       ]);
     }
 
@@ -1359,6 +1361,13 @@
     function getHalfCodepointsSet() {
       return new Set([
         0xF1914, // kala
+      ]);
+    }
+
+    // ¾-size glyphs used by this page's cartouche renderer.
+    function getThreeQuartersCodepointsSet() {
+      return new Set([
+        0xF193F, // nasin
       ]);
     }
 
@@ -1663,166 +1672,16 @@
     }
 
     function tryParseNanpaLinjanNumberCodeToCaps(raw) {
-      const s0 = normalizeNumberCodeInput(raw);
-      if (!s0) return null;
+      const source = normalizeNumberCodeInput(raw);
+      if (!source) return null;
+      if (!source.toUpperCase().startsWith("#~")) return null;
 
-      if (!s0.toUpperCase().startsWith("#~")) return null;
-
-      let body = s0.slice(2).toUpperCase();
-
-      let hasPercentOK = false;
-      if (body.length >= 2 && body.endsWith("OK")) {
-        hasPercentOK = true;
-        body = body.slice(0, -2);
-      }
-
-      if (!body) throw new Error("Number code '#~' must have letters after it.");
-
-      if (!/^[A-Z]+$/.test(body)) {
-        throw new Error("Number code may only contain letters A–Z after '#~'.");
-      }
-
-      const parts = ["NE"];
-      let i = 0;
-
-      const shortScientificMarkerIndex = body.indexOf("EKO");
-      const hasShortScientificNumberCodeMarker =
-        shortScientificMarkerIndex > 0 &&
-        (shortScientificMarkerIndex + "EKO".length) < body.length;
-
-      const legacyScientificMarkerIndex = body.indexOf("KOWIKO");
-      const hasLegacyScientificNumberCodeMarker =
-        legacyScientificMarkerIndex > 0 &&
-        body[legacyScientificMarkerIndex - 1] !== "O" &&
-        (legacyScientificMarkerIndex + "KOWIKO".length) < body.length;
-
-      function ensureNEBeforeOperatorRun() {
-        if (parts[parts.length - 1] !== "NE") parts.push("NE");
-      }
-
-      while (i < body.length) {
-        const ch = body[i];
-
-        // New scientific #~ separator: <mantissa>eko<exponent>. Input is
-        // case-insensitive, while generated output is always lowercase eko.
-        if (
-          hasShortScientificNumberCodeMarker &&
-          i === shortScientificMarkerIndex &&
-          body.startsWith("EKO", i)
-        ) {
-          ensureNEBeforeOperatorRun();
-          parts.push("KO");
-          i += 3;
-          continue;
-        }
-
-        // Backward compatibility for the previous KOWIKO signature.
-        if (
-          hasLegacyScientificNumberCodeMarker &&
-          body.startsWith("KO", i) &&
-          (i === legacyScientificMarkerIndex || i === legacyScientificMarkerIndex + 4)
-        ) {
-          ensureNEBeforeOperatorRun();
-          parts.push("KO");
-          i += 2;
-          continue;
-        }
-
-        if (ch === "O") {
-          let j = i;
-          while (j < body.length && body[j] === "O") j++;
-          const count = j - i;
-
-          if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
-
-          // IMPORTANT:
-          // - O at the very start of the number-code body represents a leading negative sign (NO).
-          // - O elsewhere represents the decimal point operator (NO + NE), i.e. "NONE" in caps.
-          // - OO represents NONO, OOO represents NONONO (kept as before).
-          if (count === 1) {
-            if (i === 0) {
-              // Leading sign
-              parts.push("NO");
-            } else {
-              // Decimal point marker: NO + NE => "NONE"
-              parts.push("NO", "NE");
-            }
-          } else {
-            // OO => "NONO", OOO => "NONONO"
-            parts.push("NO".repeat(count));
-          }
-
-          i = j;
-          continue;
-        }
-
-
-        if (ch === "K") {
-          let j = i;
-          while (j < body.length && body[j] === "K") j++;
-          const count = j - i;
-
-          if (count < 1) throw new Error("Invalid empty run of 'K' in number code.");
-
-          ensureNEBeforeOperatorRun();
-          parts.push("KE".repeat(count));
-          i = j;
-          continue;
-        }
-
-        const pair = NUMBER_CODE_LETTER_TO_PAIR[ch];
-        if (!pair) {
-          throw new Error(`Invalid letter '${ch}' in number code. Allowed: I,W,T,S,A,L,U,M,P,J plus O/K runs.`);
-        }
-
-        parts.push(pair);
-        i += 1;
-      }
-
-      let caps = parts.join("") + "N";
-      if (hasPercentOK) {
-        if (!caps.endsWith("N")) throw new Error("Internal error: caps must end with N");
-        caps = caps.slice(0, -1) + "OKN";
-      }
-
-      // Legacy scientific caps contained NEKO + WENI/WANI + NEKO. Accept
-      // them, but return the shortened canonical NEKO marker.
-      caps = caps.replace(/NEKO(?:WE|WA)NINEKO/g, "NEKO");
-
-      tokenizeNanpaCaps(caps);
-
-      // Always normalize accepted legacy scientific input to the new lowercase
-      // eko separator in subsequent output.
-      const canonicalCode = (() => {
-        const tokens = tokenizeNanpaCaps(caps);
-        const out = [];
-        const pairToLetter = Object.fromEntries(
-          Object.entries(NUMBER_CODE_LETTER_TO_PAIR).map(([letter, pair]) => [pair, letter])
-        );
-        for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
-          const token = tokens[tokenIndex];
-          if (token === "NE" && tokens[tokenIndex + 1] === "KO") {
-            out.push("eko");
-            tokenIndex += 1;
-            continue;
-          }
-          if (token === "N" || token === "NE") continue;
-          if (pairToLetter[token]) { out.push(pairToLetter[token]); continue; }
-          if (token === "NO") { out.push("o"); continue; }
-          if (token === "NONO") { out.push("oo"); continue; }
-          if (token === "NONONO") { out.push("ooo"); continue; }
-          if (token === "NOKO") { out.push("oko"); continue; }
-          if (token === "KO") { out.push("ko"); continue; }
-          if (token === "KE") { out.push("k"); continue; }
-          if (token === "KEKE") { out.push("kk"); continue; }
-          if (token === "KEKEKE") { out.push("kkk"); continue; }
-          if (token === "OK") { out.push("ok"); continue; }
-        }
-        return "#~" + out.join("");
-      })();
-
-      return { caps, canonicalCode };
-
+      // Keep this page-local compatibility helper aligned with the shared
+      // NanpaParser. The shared parser is authoritative for #~ grammar and
+      // canonical output (including the leading-e positive convention).
+      const parsed = NanpaParser.parseNumber(source, getNanpaParserOptions());
+      if (!parsed?.caps) throw new Error("Invalid nanpa-linja-n number code.");
+      return { caps: parsed.caps, canonicalCode: String(parsed.uniqueCode ?? "") };
     }
 
     function looksLikeNanpaCaps(s) {
@@ -3311,6 +3170,7 @@
       const ctx = canvas.getContext("2d");
       ctx.textBaseline = "alphabetic";
 
+      const threeQuartersSet = getThreeQuartersCodepointsSet();
       const glyphRuns = [];
       let totalWidth = 0;
       let maxAscent = 0;
@@ -3328,6 +3188,7 @@
           (quarterSet && quarterSet.has(cp)) ? smallPx :
           (halfSet && halfSet.has(cp)) ? Math.max(1, Math.round(largePx * 0.5)) :
           (twoThirdsSet && twoThirdsSet.has(cp)) ? Math.max(1, Math.round(largePx * (2/3))) :
+          threeQuartersSet.has(cp) ? Math.max(1, Math.round(largePx * 0.75)) :
           largePx;
 
 
@@ -3416,6 +3277,7 @@
       const ctx = canvas.getContext("2d");
       ctx.textBaseline = "alphabetic";
 
+      const threeQuartersSet = getThreeQuartersCodepointsSet();
       const glyphRuns = [];
       let totalWidth = 0;
       let maxAscent = 0;
@@ -3429,6 +3291,7 @@
           (quarterSet && quarterSet.has(cp)) ? Math.max(1, Math.round(fontPx * 0.25)) :
           (halfSet && halfSet.has(cp)) ? Math.max(1, Math.round(fontPx * 0.5)) :
           (twoThirdsSet && twoThirdsSet.has(cp)) ? Math.max(1, Math.round(fontPx * (2/3))) :
+          threeQuartersSet.has(cp) ? Math.max(1, Math.round(fontPx * 0.75)) :
           fontPx;
 
         ctx.font = `${px}px "${FONT_FAMILY}"`;
@@ -3949,6 +3812,19 @@
 
         if (unit.index === 0 && lowerText === "ne") {
           map[unit.index] = [];
+          continue;
+        }
+
+        // Explicit positive proper names begin with Nene. The first Ne is the
+        // ordinary nanpa opening; only the second ne represents the visible +.
+        if (
+          unit.wordIndex === 0 &&
+          unit.unitIndexInWord === 1 &&
+          lowerText === "ne" &&
+          String(unit.word ?? "").toLowerCase() === "nene" &&
+          characters[0] === "+"
+        ) {
+          map[unit.index] = takeNext(character => character === "+", 1);
           continue;
         }
 
@@ -5222,6 +5098,7 @@
     const ABBREV_CP_NANPA = 0xF193D;
     const ABBREV_CP_NENA  = 0xF1940;
     const ABBREV_CP_EN    = 0xF190A;
+    const ABBREV_CP_E     = 0xF1909;
     const ABBREV_CP_OPEN  = 0xF1947;
     const ABBREV_CP_ALA   = 0xF1902;
     const ABBREV_CP_IKE   = 0xF190D;
@@ -5230,6 +5107,7 @@
     const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
       ABBREV_CP_NANPA,
       ABBREV_CP_EN,
+      ABBREV_CP_E,
       ABBREV_CP_NENA,
       ABBREV_CP_OPEN,
       ABBREV_CP_ALA,
@@ -5245,6 +5123,21 @@
 
       const out = [];
       let keptFirstNanpa = false;
+      const hasFullPositiveOpening =
+        input.length >= 4 &&
+        input[0] === ABBREV_CP_NANPA &&
+        input[1] === ABBREV_CP_E &&
+        input[2] === ABBREV_CP_NENA &&
+        input[3] === ABBREV_CP_EN;
+      const hasFullScaffoldingAfterOpening = input.slice(2, -1).some(cp =>
+        cp === ABBREV_CP_E || NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)
+      );
+      const hasAlreadyAbbreviatedPositiveOpening =
+        !hasFullPositiveOpening &&
+        !hasFullScaffoldingAfterOpening &&
+        input.length >= 3 &&
+        input[0] === ABBREV_CP_NANPA &&
+        input[1] === ABBREV_CP_EN;
 
       for (let i = 0; i < input.length; i++) {
         const cp = input[i];
@@ -5261,14 +5154,24 @@
           continue;
         }
 
+        if (hasFullPositiveOpening && i === 1) {
+          out.push({ cp: ABBREV_CP_EN, sourceIndex: 3 });
+          i = 3;
+          continue;
+        }
+        if (hasAlreadyAbbreviatedPositiveOpening && i === 1) {
+          out.push({ cp: ABBREV_CP_EN, sourceIndex: 1 });
+          continue;
+        }
+
         if (
           PRESERVE_NUMERIC_CARTOUCHE_BREAKS_IN_ABBREVIATION &&
           cp === ABBREV_CP_NENA &&
-          input[i + 1] === ABBREV_CP_EN &&
+          (input[i + 1] === ABBREV_CP_E || input[i + 1] === ABBREV_CP_EN) &&
           input[i + 2] === ABBREV_CP_NENA &&
-          input[i + 3] === ABBREV_CP_EN
+          (input[i + 3] === ABBREV_CP_E || input[i + 3] === ABBREV_CP_EN)
         ) {
-          out.push({ cp: ABBREV_CP_EN, sourceIndex: i + 3 });
+          out.push({ cp: ABBREV_CP_E, sourceIndex: i + 1 });
           i += 3;
           continue;
         }
@@ -5481,7 +5384,7 @@
     };
 
     handleFromCodesClick = async function ({ clearOthers = true } = {}) { try { lastAction = "codes"; if (clearOthers) clearOtherInputs("codes"); await ensureFontLoaded(); enforceMaxLen(elCodesIn, MAX_HEX_CODE_INPUT_CHARS); const cps = NanpaParser.parseHexCodepoints(elCodesIn.value); const tpWords = NanpaParser.ucsurCodepointsToTpWords(cps); const asText = NanpaParser.tpWordsToText(tpWords); const parsed = NanpaParser.parseNumber(asText, getNanpaParserOptions()); if (parsed) { __applyParsedNumberToUi(parsed, asText); } else { elLatinOut.value = String.fromCodePoint(...cps); if (elCodepointsOut) elCodepointsOut.value = NanpaParser.codepointsToHexWithCartouche(cps); if (elTpWordsOut) elTpWordsOut.value = asText; elNumberCodeOut.value = ""; setDecimalValueLine(null, null); __renderUniformCartoucheFromCps(cps); } announceStatus("Rendered from code points."); } catch (err) { setDecimalValueLine(null, null); showAlertAndAnnounce(err?.message ?? String(err)); } };
-    handleFromWordsClick = async function ({ clearOthers = true } = {}) { try { lastAction = "words"; if (clearOthers) clearOtherInputs("words"); await ensureFontLoaded(); enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS); const rawInput = String(elTpWordsIn.value ?? "").trim(); const parsed = NanpaParser.parseNumber(rawInput, getNanpaParserOptions()); if (parsed) { __applyParsedNumberToUi(parsed, rawInput); announceStatus("Rendered numeric input from Toki Pona words / proper name / code."); return; } const phrase = tryParseNanpaLinjanTpPhraseToCaps(rawInput); if (phrase) { const parsedPhrase = NanpaParser.parseNumber(splitCartoucheCapsLettersSpaced(phrase.caps), getNanpaParserOptions()); if (!parsedPhrase) throw new Error("Failed to parse nanpa-linja-n TP phrase."); __applyParsedNumberToUi(parsedPhrase, rawInput); announceStatus("Recognized and rendered nanpa-linja-n TP-phrase number."); return; } const cps = NanpaParser.parseTpWordsToCodepoints(rawInput); if (!Array.isArray(cps) || cps.length === 0) throw new Error("No valid Toki Pona words to render."); if (elCodepointsOut) elCodepointsOut.value = NanpaParser.codepointsToHexWithCartouche(cps); if (elTpWordsOut) elTpWordsOut.value = NanpaParser.tpWordsToText(NanpaParser.ucsurCodepointsToTpWords(cps)); elLatinOut.value = String.fromCodePoint(...cps); elNumberCodeOut.value = ""; setDecimalValueLine(null, null); __renderUniformCartoucheFromCps(cps); announceStatus("Rendered from Toki Pona words."); } catch (err) { setDecimalValueLine(null, null); showAlertAndAnnounce(err?.message ?? String(err)); } };
+    handleFromWordsClick = async function ({ clearOthers = true } = {}) { try { lastAction = "words"; if (clearOthers) clearOtherInputs("words"); await ensureFontLoaded(); enforceMaxLen(elTpWordsIn, MAX_TOKI_PONA_WORD_INPUT_CHARS); const rawInput = String(elTpWordsIn.value ?? "").trim(); const parsed = NanpaParser.parseNumber(rawInput, getNanpaParserOptions()); if (parsed) { __applyParsedNumberToUi(parsed, rawInput); announceStatus("Rendered numeric input from Toki Pona words / proper name / code."); return; } const phraseProperName = trySourceTextToNanpaProperName(rawInput, { NanpaParser, nanpaLinjanMode: getCartoucheDisplayMode(), ...getNanpaParserOptions() }); if (phraseProperName) { const parsedPhrase = NanpaParser.parseNumber(phraseProperName, getNanpaParserOptions()); if (!parsedPhrase) throw new Error("Failed to parse nanpa-linja-n TP phrase."); __applyParsedNumberToUi(parsedPhrase, rawInput); announceStatus("Recognized and rendered nanpa-linja-n TP-phrase number."); return; } const cps = NanpaParser.parseTpWordsToCodepoints(rawInput); if (!Array.isArray(cps) || cps.length === 0) throw new Error("No valid Toki Pona words to render."); if (elCodepointsOut) elCodepointsOut.value = NanpaParser.codepointsToHexWithCartouche(cps); if (elTpWordsOut) elTpWordsOut.value = NanpaParser.tpWordsToText(NanpaParser.ucsurCodepointsToTpWords(cps)); elLatinOut.value = String.fromCodePoint(...cps); elNumberCodeOut.value = ""; setDecimalValueLine(null, null); __renderUniformCartoucheFromCps(cps); announceStatus("Rendered from Toki Pona words."); } catch (err) { setDecimalValueLine(null, null); showAlertAndAnnounce(err?.message ?? String(err)); } };
     validateTpWordsInputLive = function () { if (suppressInputHandlers) return; const raw = String(elTpWordsIn?.value ?? "").trim(); if (!raw) { elTpWordsIn.setCustomValidity(""); return; } const parsed = NanpaParser.parseNumber(raw, getNanpaParserOptions()); if (parsed) { elTpWordsIn.setCustomValidity(""); return; } try { const cps = NanpaParser.parseTpWordsToCodepoints(raw); if (Array.isArray(cps) && cps.length > 0) { elTpWordsIn.setCustomValidity(""); return; } } catch {} elTpWordsIn.setCustomValidity("Invalid Toki Pona words or nanpa-linja-n input."); };
 
     window.addEventListener("load", async () => {

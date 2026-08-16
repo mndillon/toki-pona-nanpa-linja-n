@@ -14,7 +14,7 @@
       --cartouche-line: rgba(17,17,17,.235);
       --block: #24211d;
       --wrong: rgba(155,55,45,.11);
-      --cell: clamp(26px, min(3vw, calc((100dvh - 118px) / 15)), 46px);
+      --cell: clamp(26px, min(3vw, calc((100dvh - 150px) / 15)), 46px);
       --frame: clamp(8px, .7vw, 11px);
       --page-pad-y: 6px;
       --page-pad-x: 12px;
@@ -1969,7 +1969,7 @@
       ).join("|");
       const clueFontPx=document.body.dataset.clueFontPx || "";
       const clueTextWidth=document.body.dataset.clueTextWidth || "";
-      return `${entryId(entry)}:${groupedIds}:font=${clueFontPx}:width=${clueTextWidth}`;
+      return `${entryId(entry)}:${groupedIds}:font=${clueFontPx}:width=${clueTextWidth}:layout=${resolvedDesktopClueLayoutRevision}`;
     }
 
     async function refreshContextPanel(entry=null) {
@@ -2010,9 +2010,13 @@
       const reference=await getClueReferenceMetrics();
       const fontPx=Math.max(CLUE_FONT_DESKTOP_MIN,Number(document.body.dataset.clueFontPx)||CLUE_FONT_COMPACT);
       const configuredWidth=Number(document.body.dataset.clueTextWidth)||0;
+      const desktop=isDesktopClueLayout();
       for (const host of list.querySelectorAll(".clue-text")) {
         const maxWidth=Math.max(120,Math.floor(configuredWidth || host.clientWidth || 240));
-        const wrapped=wrapClueFromReferenceMetrics(host.dataset.clue,fontPx,maxWidth,reference);
+        const clueId=clueIdForClueTextHost(host);
+        const wrapped=desktop && clueId && resolvedDesktopClueLayouts.has(clueId)
+          ? resolvedDesktopClueLayouts.get(clueId)
+          : wrapClueFromReferenceMetrics(host.dataset.clue,fontPx,maxWidth,reference);
         await renderTextInto(host,wrapped,fontPx,{
           sentenceBreaks:false,
           paddingPx:clueRenderPaddingPx(fontPx),
@@ -2164,6 +2168,8 @@
     }
     let clueReferenceMetricsPromise = null;
     let clueRenderGeneration = 0;
+    let resolvedDesktopClueLayouts = new Map();
+    let resolvedDesktopClueLayoutRevision = 0;
 
     function isDesktopClueLayout() {
       return window.matchMedia("(min-width: 900px) and (min-height: 640px)").matches;
@@ -2234,7 +2240,13 @@
       return clueReferenceMetricsPromise;
     }
 
-    function wrapClueFromReferenceMetrics(text,fontPx,maxWidth,reference) {
+    function clueSentences(text) {
+      return (String(text||"").trim().match(/[^.]+(?:\.|$)/g) || [])
+        .map(sentence=>sentence.trim())
+        .filter(Boolean);
+    }
+
+    function wrapClueSegmentFromReferenceMetrics(text,fontPx,maxWidth,reference) {
       const scale=fontPx/CLUE_REFERENCE_FONT;
       const tokens=clueTokens(text);
       const lines=[];
@@ -2258,6 +2270,22 @@
       }
       if (line.length) lines.push(line.join(" "));
       return lines.join("\n");
+    }
+
+    function wrapClueFromReferenceMetrics(text,fontPx,maxWidth,reference,forcedSentenceBreaks=0) {
+      const sentences=clueSentences(text);
+      const maxForcedBreaks=Math.max(0,sentences.length-1);
+      const breakCount=Math.max(0,Math.min(maxForcedBreaks,Number(forcedSentenceBreaks)||0));
+      if (!breakCount) return wrapClueSegmentFromReferenceMetrics(text,fontPx,maxWidth,reference);
+
+      const firstSplitIndex=sentences.length-breakCount;
+      const segments=[
+        sentences.slice(0,firstSplitIndex).join(" "),
+        ...sentences.slice(firstSplitIndex)
+      ].filter(Boolean);
+      return segments
+        .flatMap(segment=>wrapClueSegmentFromReferenceMetrics(segment,fontPx,maxWidth,reference).split("\n"))
+        .join("\n");
     }
 
     function estimateClueSetHeightFromReference(items,fontPx,maxWidth,reference) {
@@ -2288,13 +2316,26 @@
       return CLUE_FONT_DESKTOP_MIN;
     }
 
-    async function renderAllClueTexts(fontPx,maxWidth,reference,generation) {
+    function clueIdForClueTextHost(host) {
+      const row=host?.closest?.(".clue");
+      const direction=row?.dataset?.direction || "";
+      const rawNumber=row?.querySelector?.(".clue-num")?.dataset?.number || "";
+      const number=Number(rawNumber);
+      return Number.isFinite(number) && ["A","D"].includes(direction) ? `${number}${direction}` : null;
+    }
+
+    async function renderAllClueTexts(fontPx,maxWidth,reference,generation,forcedSentenceBreaks=null) {
       const totals={A:0,D:0};
       const counts={A:0,D:0};
+      const clueMeasurements=[];
+      const clueLayouts=new Map();
       let maxCanvasWidth=0;
       for (const host of document.querySelectorAll("#acrossClues .clue-text, #downClues .clue-text")) {
         const dir=host.closest(".clue-list")?.classList.contains("down") ? "D" : "A";
-        const wrapped=wrapClueFromReferenceMetrics(host.dataset.clue,fontPx,maxWidth,reference);
+        const forcedBreakCount=forcedSentenceBreaks?.get(host) || 0;
+        const wrapped=wrapClueFromReferenceMetrics(host.dataset.clue,fontPx,maxWidth,reference,forcedBreakCount);
+        const clueId=clueIdForClueTextHost(host);
+        if (clueId) clueLayouts.set(clueId,wrapped);
         if (generation!==clueRenderGeneration) return null;
         const canvas=await renderTextInto(host,wrapped,fontPx,{
           sentenceBreaks:false,
@@ -2303,13 +2344,15 @@
           lineGapMinPx:CLUE_LINE_GAP_MIN_PX
         });
         if (!canvas) throw new Error(`clue render failed: ${host.dataset.clue}`);
+        const maxForcedBreaks=Math.max(0,clueSentences(host.dataset.clue).length-1);
+        clueMeasurements.push({host,width:canvas.width,forcedBreakCount,maxForcedBreaks});
         maxCanvasWidth=Math.max(maxCanvasWidth,canvas.width);
         totals[dir]+=Math.max(CLUE_NUM_MIN_HEIGHT_PX,canvas.height)+(2*CLUE_ROW_PAD_Y_PX);
         counts[dir]++;
       }
       totals.A+=Math.max(0,counts.A-1)*CLUE_ROW_GAP_PX;
       totals.D+=Math.max(0,counts.D-1)*CLUE_ROW_GAP_PX;
-      return {totals,maxCanvasWidth};
+      return {totals,maxCanvasWidth,clueMeasurements,clueLayouts};
     }
 
     async function renderClues() {
@@ -2334,6 +2377,8 @@
 
       if (!desktop) {
         await renderAllClueTexts(CLUE_FONT_COMPACT,maxWidth,reference,generation);
+        resolvedDesktopClueLayouts.clear();
+        resolvedDesktopClueLayoutRevision++;
         document.body.dataset.clueFontPx=String(CLUE_FONT_COMPACT);
         document.body.dataset.clueTextWidth=String(maxWidth);
         if (activeEntryId) await refreshContextPanel();
@@ -2351,6 +2396,22 @@
         fontPx--;
       }
       if (fontPx<CLUE_FONT_DESKTOP_MIN) fontPx=CLUE_FONT_DESKTOP_MIN;
+
+      if (fontPx===CLUE_FONT_DESKTOP_MIN && measured?.maxCanvasWidth>maxWidth) {
+        const forcedSentenceBreaks=new Map();
+        while (measured.maxCanvasWidth>maxWidth) {
+          const widest=measured.clueMeasurements.reduce((current,item)=>
+            !current || item.width>current.width ? item : current
+          ,null);
+          if (!widest || widest.forcedBreakCount>=widest.maxForcedBreaks) break;
+          forcedSentenceBreaks.set(widest.host,widest.forcedBreakCount+1);
+          measured=await renderAllClueTexts(fontPx,maxWidth,reference,generation,forcedSentenceBreaks);
+          if (!measured || generation!==clueRenderGeneration) return;
+        }
+      }
+      resolvedDesktopClueLayouts=new Map(measured?.clueLayouts || []);
+      resolvedDesktopClueLayoutRevision++;
+      contextPanelSignature=null;
       document.body.dataset.clueFontPx=String(fontPx);
       document.body.dataset.clueMaxCanvasWidth=String(Math.ceil(measured?.maxCanvasWidth||0));
       document.body.dataset.clueTextWidth=String(maxWidth);

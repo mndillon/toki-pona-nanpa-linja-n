@@ -33,7 +33,7 @@
     }
     @font-face{
       font-family:"TP-Cartouche-Font";
-      src:url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src:url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
       font-display:swap;
     }
 
@@ -1124,7 +1124,8 @@
   const CARTOUCHE_RENDER_OPTS = { padding:8, border:1, cornerRadius:10, letterGap:2 };
   const SETTINGS_KEY = "nanpaAbbreviatedCartouchePractice.settings";
   const HISTORY_DB_NAME = "nln-abbreviated-cartouche-practice-history";
-  const HISTORY_DB_VERSION = 1;
+  const HISTORY_DB_VERSION = 2;
+  const HISTORY_RECORD_VERSION = 2;
   const HISTORY_STORE = "sessions";
   const TYPED_HINT_DURATION_MS = 10000;
 
@@ -1179,6 +1180,7 @@
   const ABBREV_CP_NANPA = 0xF193D;
   const ABBREV_CP_NENA  = 0xF1940;
   const ABBREV_CP_EN    = 0xF190A;
+  const ABBREV_CP_E     = 0xF1909;
   const ABBREV_CP_O     = 0xF1944;
   const ABBREV_CP_ONA   = 0xF1946;
   const ABBREV_CP_OPEN  = 0xF1947;
@@ -1186,7 +1188,7 @@
   const ABBREV_CP_IKE   = 0xF190D;
   const ABBREV_CP_UTA   = 0xF1970;
   const ABBREV_DROP_AFTER_FIRST_NANPA = new Set([
-    ABBREV_CP_NANPA, ABBREV_CP_NENA, ABBREV_CP_EN, ABBREV_CP_OPEN,
+    ABBREV_CP_NANPA, ABBREV_CP_NENA, ABBREV_CP_EN, ABBREV_CP_E, ABBREV_CP_OPEN,
     ABBREV_CP_ALA, ABBREV_CP_IKE, ABBREV_CP_UTA
   ]);
 
@@ -1674,13 +1676,13 @@
   }
 
   async function getNanpaParser(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=223");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228");
     const mod = await nanpaModulePromise;
     return mod.NanpaParser;
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=40").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=44").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 
@@ -2948,6 +2950,19 @@
         continue;
       }
 
+      // Explicit positive proper names begin with Nene. The first Ne is the
+      // ordinary nanpa opening; only the second ne represents the visible +.
+      if (
+        unit.wordIndex === 0 &&
+        unit.unitIndexInWord === 1 &&
+        lowerText === "ne" &&
+        String(unit.word ?? "").toLowerCase() === "nene" &&
+        characters[0] === "+"
+      ){
+        map[unit.index] = takeNext(character => character === "+",1);
+        continue;
+      }
+
       // Scientific notation writes the complete spoken marker
       // Eko Wanin Eko (strict: Eko Wenin Eko) as one displayed e. Every audio
       // unit in those three words therefore reuses the same character target.
@@ -3582,11 +3597,49 @@
     });
   }
 
+  async function migrateHistorySessionToV2(record){
+    const currentVersion = Number(record?.historyVersion) || 1;
+    if (currentVersion >= HISTORY_RECORD_VERSION) return record;
+
+    const migratedReview = [];
+    const reviewRows = Array.isArray(record?.review) ? record.review : [];
+    for (const rawReviewRecord of reviewRows){
+      const mode = normalizeProperNameMode(
+        rawReviewRecord?.properNameMode || record?.properNameMode || "relaxed"
+      );
+      const temp = makeItem(
+        rawReviewRecord?.kind || "integer",
+        rawReviewRecord?.value,
+        rawReviewRecord?.value,
+        "exact",
+        mode
+      );
+      const parsed = await ensureParsed(temp);
+      migratedReview.push({
+        ...rawReviewRecord,
+        properNameMode:mode,
+        ...await buildReviewRevealDataFromParsed(parsed,mode,rawReviewRecord?.kind || "integer")
+      });
+    }
+
+    return {
+      ...record,
+      historyVersion:HISTORY_RECORD_VERSION,
+      review:migratedReview
+    };
+  }
+
   async function readHistorySessions(){
     const db = await openHistoryDb();
     const tx = db.transaction(HISTORY_STORE,"readonly");
     const rows = await idbRequest(tx.objectStore(HISTORY_STORE).getAll());
-    return rows.sort((a,b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
+    const migratedRows = [];
+    for (const row of rows){
+      const migrated = await migrateHistorySessionToV2(row);
+      migratedRows.push(migrated);
+      if (migrated !== row) await putHistorySession(migrated);
+    }
+    return migratedRows.sort((a,b) => String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")));
   }
 
   async function clearHistorySessions(){
@@ -3612,6 +3665,7 @@
     const problems = rows.filter(x => x.revealed || x.hadWrongAttempt).length;
     return {
       id:`${finishedAt}-${Math.random().toString(36).slice(2,9)}`,
+      historyVersion:HISTORY_RECORD_VERSION,
       startedAt:state.startedAt,
       finishedAt,
       endedBy:quit ? "stopped" : "finished",
@@ -4035,11 +4089,12 @@
     await document.fonts.ready;
   }
   function getQuarterCodepointsSet(){
-    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,0xF1909,0xF190B,0xF190A,0xF1947,0xF1902,0xF190D,0xF1970]);
+    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970]);
   }
   function getOneThirdsCodepointsSet(){ return new Set([0xF1917]); }
   function getHalfCodepointsSet(){ return new Set([0xF1914]); }
-  function getTwoThirdsCodepointsSet(){ return new Set([0xF1946,0xF1944,0xF191F,0xF1979]); }
+  function getThreeQuartersCodepointsSet(){ return new Set([0xF193F]); }
+  function getTwoThirdsCodepointsSet(){ return new Set([0xF1946,0xF1944,0xF191F,0xF1979,0xF190A]); }
   function getVerticalOffsetForCartoucheCodepoint(cp,px){ return cp === 0xF1917 ? -Math.round(px * 0.22) : 0; }
   function drawRoundedRect(ctx,x,y,w,h,r){
     const radius = Math.min(r,w/2,h/2);
@@ -4056,11 +4111,26 @@
     if (!input.length) return [];
     const out = [];
     let keptFirstNanpa = false;
+    const hasFullPositiveOpening =
+      input.length >= 4 &&
+      input[0] === ABBREV_CP_NANPA &&
+      input[1] === ABBREV_CP_E &&
+      input[2] === ABBREV_CP_NENA &&
+      input[3] === ABBREV_CP_EN;
+    const hasFullScaffoldingAfterOpening = input.slice(2,-1).some(cp =>
+      cp === ABBREV_CP_E || ABBREV_DROP_AFTER_FIRST_NANPA.has(cp)
+    );
+    const hasAlreadyAbbreviatedPositiveOpening =
+      !hasFullPositiveOpening &&
+      !hasFullScaffoldingAfterOpening &&
+      input.length >= 3 &&
+      input[0] === ABBREV_CP_NANPA &&
+      input[1] === ABBREV_CP_EN;
     for (let i=0;i<input.length;i++){
       if (showTelephoneHyphenEn && keptFirstNanpa &&
-          input[i] === ABBREV_CP_NENA && input[i+1] === ABBREV_CP_EN &&
-          input[i+2] === ABBREV_CP_NENA && input[i+3] === ABBREV_CP_EN){
-        out.push({cp:ABBREV_CP_EN,sourceIndex:i+3});
+          input[i] === ABBREV_CP_NENA && (input[i+1] === ABBREV_CP_E || input[i+1] === ABBREV_CP_EN) &&
+          input[i+2] === ABBREV_CP_NENA && (input[i+3] === ABBREV_CP_E || input[i+3] === ABBREV_CP_EN)){
+        out.push({cp:ABBREV_CP_E,sourceIndex:i+1});
         i += 3;
         continue;
       }
@@ -4072,6 +4142,15 @@
         continue;
       }
       if (isFinalNanpa){ out.push({cp,sourceIndex:i}); continue; }
+      if (hasFullPositiveOpening && i === 1){
+        out.push({cp:ABBREV_CP_EN,sourceIndex:3});
+        i = 3;
+        continue;
+      }
+      if (hasAlreadyAbbreviatedPositiveOpening && i === 1){
+        out.push({cp:ABBREV_CP_EN,sourceIndex:1});
+        continue;
+      }
       if (ABBREV_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
       out.push({cp,sourceIndex:i});
     }
@@ -4087,7 +4166,7 @@
   }
   function renderCartoucheToCanvas(canvas,codepoints,largePx=LARGE_TINY_FONT_SIZE,smallPx=SMALL_TINY_FONT_SIZE,options=CARTOUCHE_RENDER_OPTS){
     const pad=options.padding ?? 8, border=options.border ?? 1, corner=options.cornerRadius ?? 10, letterGap=options.letterGap ?? 2;
-    const oneThirdSet=getOneThirdsCodepointsSet(), quarterSet=getQuarterCodepointsSet(), halfSet=getHalfCodepointsSet(), twoThirdsSet=getTwoThirdsCodepointsSet();
+    const oneThirdSet=getOneThirdsCodepointsSet(), quarterSet=getQuarterCodepointsSet(), halfSet=getHalfCodepointsSet(), twoThirdsSet=getTwoThirdsCodepointsSet(), threeQuartersSet=getThreeQuartersCodepointsSet();
     const ctx=canvas.getContext("2d");
     ctx.textBaseline="alphabetic";
     const glyphRuns=[];
@@ -4097,7 +4176,8 @@
       const px=oneThirdSet.has(cp)?Math.max(1,Math.round(largePx/3)):
         quarterSet.has(cp)?smallPx:
         halfSet.has(cp)?Math.max(1,Math.round(largePx*0.5)):
-        twoThirdsSet.has(cp)?Math.max(1,Math.round(largePx*(2/3))):largePx;
+        twoThirdsSet.has(cp)?Math.max(1,Math.round(largePx*(2/3))):
+        threeQuartersSet.has(cp)?Math.max(1,Math.round(largePx*0.75)):largePx;
       ctx.font=`${px}px "${FONT_FAMILY}"`;
       const m=ctx.measureText(ch);
       const ascent=m.actualBoundingBoxAscent ?? Math.ceil(px*0.8);
