@@ -2,7 +2,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20";
+} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=21";
 import { CartoucheApi } from '../../js/cartouche-api-v3-previewdesc.js?v=33';
 
 (() => {
@@ -14516,7 +14516,7 @@ document.addEventListener("keydown", (e) => {
 
       try {
         const syncResult = await stageFontPairController.syncPreloadedFontPairsFromManifest({
-          manifestUrl: "../../fonts/preloaded-font-pairs.manifest.json",
+          manifestUrl: "../../fonts/preloaded-font-pairs.manifest.json?v=10",
           onlyIfExisting: false,
           force: true
         });

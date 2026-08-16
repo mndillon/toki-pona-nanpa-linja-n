@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generated": "2026-08-15",
+  "generated": "2026-08-16",
   "migration": {
     "clearIndexedDbPairsOnUpgrade": true,
     "preserveFontKeys": [
@@ -20,13 +20,13 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-08-15-070",
+      "rev": "2026-08-16-072",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
-      "baseFilename": "nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
+      "baseFilename": "nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf",
       "companionFilename": "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf",
-      "baseUrl": "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf",
+      "baseUrl": "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf",
       "companionUrl": "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf",
       "baseFormat": "opentype",
       "companionFormat": "opentype",
@@ -50,13 +50,13 @@
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-08-15-016",
+      "rev": "2026-08-16-018",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
-      "baseFilename": "sitelenselikiwenjuniko.ttf",
+      "baseFilename": "sitelenselikiwenjuniko-latin-ligatures.ttf",
       "companionFilename": "sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en.ttf",
-      "baseUrl": "./fonts/sitelenselikiwenjuniko.ttf",
+      "baseUrl": "./fonts/sitelenselikiwenjuniko-latin-ligatures.ttf",
       "companionUrl": "./fonts/sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en.ttf",
       "baseFormat": "truetype",
       "companionFormat": "truetype",
@@ -230,7 +230,7 @@
     {
       "fontKey": "nasinSitelenPuMono",
       "label": "nasin sitelen pu mono predefined",
-      "rev": "2026-08-15-005",
+      "rev": "2026-08-16-006",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "nasin-sitelen-pu-mono-v1",
       "renderAdapterSettings": {

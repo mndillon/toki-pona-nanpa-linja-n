@@ -15869,7 +15869,7 @@ document.addEventListener("keydown", (e) => {
 
       try {
         const syncResult = await stageFontPairController.syncPreloadedFontPairsFromManifest({
-          manifestUrl: "../../fonts/preloaded-font-pairs.manifest.json?v=7",
+          manifestUrl: "../../fonts/preloaded-font-pairs.manifest.json?v=10",
           onlyIfExisting: false,
           force: true
         });

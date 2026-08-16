@@ -7,12 +7,14 @@ nasin-nanpa-5.0.0-beta.3-UCSUR.woff2
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.woff
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.woff2
+nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf
 
 
 The OFL-1.1.txt file covers the licence for these fonts:
 sitelenselikiwenjuniko.ttf
+sitelenselikiwenjuniko-latin-ligatures.ttf
 sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf
 sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en.ttf
 FairfaxHD.ttf

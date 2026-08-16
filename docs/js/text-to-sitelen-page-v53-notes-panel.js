@@ -5384,24 +5384,52 @@ function getUnicodeJsonFontMap() {
     return i >= 0 ? s.slice(i + 1) : s;
   };
 
-  // Read the select value to distinguish built-in vs uploaded presets.
   const presetKey = document.getElementById("appScriptPresetSel")?.value;
-  const staticPreset = RENDER_FONT_PRESETS[presetKey]; // defined only for built-ins
-  const livePreset  = getActiveFontPreset();
+  const staticPreset = RENDER_FONT_PRESETS[presetKey];
+  const livePreset = getActiveFontPreset() || {};
+  const livePresetKey = String(livePreset?.key || presetKey || "");
 
-  let textFontFile, cartoucheFontFile;
+  // The renderer uses the controller's live preset. For manifest-backed and
+  // uploaded presets, resolve export filenames from that same active pair
+  // record rather than from the page's older static bootstrap preset.
+  const pairRecordCandidates = [
+    livePreset?.__pairRecord,
+    ...getControllerFontExportObjects().flatMap(obj => [
+      obj?.__pairRecord,
+      obj?.pairRecord,
+      obj?.record,
+      obj
+    ])
+  ].filter(obj => obj && typeof obj === "object");
 
-  if (staticPreset) {
-    // Built-in preset: pdfTextFontUrl always has the full filename.
-    textFontFile      = basename(staticPreset.pdfTextFontUrl)      || String(staticPreset.textFamily      || "sitelen-font");
-    cartoucheFontFile = basename(staticPreset.pdfCartoucheFontUrl)  || String(staticPreset.cartoucheFamily || "cartouche-font");
-  } else {
-    // Dynamically-uploaded preset: filenames are in __pairRecord, not pdfTextFontUrl.
-    // textFamily / cartoucheFamily are CSS family names (e.g. "nasin-nanpa"), not filenames.
-    const pr = livePreset?.__pairRecord;
-    textFontFile      = String(pr?.baseFilename      || livePreset?.textFamily      || "uploaded-font.ttf");
-    cartoucheFontFile = String(pr?.companionFilename  || livePreset?.cartoucheFamily || "uploaded-font-nanpa-linja-n.ttf");
-  }
+  const matchingPairRecords = pairRecordCandidates.filter(pr => {
+    const recordKey = String(pr?.fontKey || pr?.key || pr?.presetKey || "");
+    const keyMatches = livePresetKey && recordKey && recordKey === livePresetKey;
+    const familiesMatch =
+      String(pr?.baseFamily || "") === String(livePreset?.textFamily || "") &&
+      String(pr?.companionFamily || "") === String(livePreset?.cartoucheFamily || "");
+    return keyMatches || familiesMatch;
+  });
+
+  const activePairRecord = matchingPairRecords.find(pr =>
+    pr?.baseFilename || pr?.companionFilename || pr?.baseUrl || pr?.companionUrl
+  ) || matchingPairRecords[0] || livePreset?.__pairRecord || null;
+
+  const textFontFile = String(
+    activePairRecord?.baseFilename ||
+    basename(activePairRecord?.baseUrl) ||
+    basename(livePreset?.pdfTextFontUrl) ||
+    livePreset?.textFamily ||
+    "uploaded-font.ttf"
+  );
+
+  const cartoucheFontFile = String(
+    activePairRecord?.companionFilename ||
+    basename(activePairRecord?.companionUrl) ||
+    basename(livePreset?.pdfCartoucheFontUrl) ||
+    livePreset?.cartoucheFamily ||
+    "uploaded-font-nanpa-linja-n.ttf"
+  );
 
   let literalFontFile = "PatrickHand-Regular.ttf";
   if (optionKey === TEXT_FONT_OPTION_SITELEN) {
@@ -5428,16 +5456,22 @@ function getUnicodeJsonFontMap() {
     literalCartoucheFontFile = cartoucheFontFile;
   } else if (literalCartoucheFamily && literalCartoucheFamily === String(livePreset?.literalFamily || "") && literalCartoucheFamily === "Patrick-Head-Font") {
     literalCartoucheFontFile = "PatrickHand-Regular.ttf";
+  } else if (activePairRecord) {
+    const pairLiteralCartoucheFamily = String(activePairRecord?.literalCartoucheFamily || activePairRecord?.literalCartoucheFontFamily || "");
+    if (literalCartoucheFamily === pairLiteralCartoucheFamily && (activePairRecord?.literalCartoucheFilename || activePairRecord?.literalCartoucheUrl)) {
+      literalCartoucheFontFile = String(activePairRecord?.literalCartoucheFilename || basename(activePairRecord?.literalCartoucheUrl));
+    } else if (literalCartoucheFamily === String(activePairRecord?.companionFamily || "")) {
+      literalCartoucheFontFile = String(activePairRecord?.companionFilename || basename(activePairRecord?.companionUrl) || cartoucheFontFile);
+    } else if (literalCartoucheFamily === String(activePairRecord?.baseFamily || "")) {
+      literalCartoucheFontFile = String(activePairRecord?.baseFilename || basename(activePairRecord?.baseUrl) || textFontFile);
+    } else {
+      literalCartoucheFontFile = literalCartoucheFamily || textFontFile;
+    }
   } else if (staticPreset) {
+    // Static preset is only a compatibility fallback when there is no active
+    // pair record (for example if manifest hydration has not happened).
     const face = Array.isArray(staticPreset.faces) ? staticPreset.faces.find(f => String(f?.family || "") === literalCartoucheFamily) : null;
     literalCartoucheFontFile = basename(face?.url) || textFontFile;
-  } else {
-    const pr = livePreset?.__pairRecord;
-    if (literalCartoucheFamily === String(pr?.literalCartoucheFamily || pr?.literalCartoucheFontFamily || "") && pr?.literalCartoucheFilename) {
-      literalCartoucheFontFile = String(pr.literalCartoucheFilename);
-    } else if (literalCartoucheFamily === String(pr?.companionFamily || "")) literalCartoucheFontFile = String(pr?.companionFilename || cartoucheFontFile);
-    else if (literalCartoucheFamily === String(pr?.baseFamily || "")) literalCartoucheFontFile = String(pr?.baseFilename || textFontFile);
-    else literalCartoucheFontFile = literalCartoucheFamily || textFontFile;
   }
 
   const result = {
@@ -9965,7 +9999,7 @@ async function initializeTextToSitelenPage() {
 
     try {
       const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
-        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=7",
+        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=10",
         onlyIfExisting: false,
         force: false
       });
