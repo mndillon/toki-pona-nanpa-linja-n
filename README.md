@@ -184,7 +184,7 @@ Relaxed mode is preferred because it allows some digits to be represented using 
 | 7 | me | - | - | mu | mun | <img src="./images/nanpa-linja-n-mode-7-sitelen.png" alt="relaxed digit 7 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-7-abbrev.png" alt="digit 7 abbreviated glyph" height="36"> |
 | 8 | pe | - | pi | - | pipi | <img src="./images/nanpa-linja-n-mode-8-sitelen.png" alt="relaxed digit 8 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-8-abbrev.png" alt="digit 8 abbreviated glyph" height="36"> |
 | 9 | je | - | - | - | jo | <img src="./images/nanpa-linja-n-mode-9-sitelen.png" alt="relaxed digit 9 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-9-abbrev.png" alt="digit 9 abbreviated glyph" height="36"> |
-| small glyph | en | ala | ike | uta | &nbsp; | &nbsp; | &nbsp; |
+| small glyph | e | ala | ike | uta | &nbsp; | &nbsp; | &nbsp; |
 | small sitelen glyph | <img src="./images/nanpa-linja-n-mode-en-small.png" alt="small en glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ala-small.png" alt="small ala glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ike-small.png" alt="small ike glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-uta-small.png" alt="small uta glyph" height="20"> | &nbsp; | &nbsp; | &nbsp; |
 
 ### strict
@@ -201,23 +201,24 @@ Relaxed mode is preferred because it allows some digits to be represented using 
 | 7 | me | - | - | - | mun | <img src="./images/nanpa-linja-n-mode-7-sitelen-strict.png" alt="strict digit 7 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-7-abbrev.png" alt="digit 7 abbreviated glyph" height="36"> |
 | 8 | pe | - | - | - | pipi | <img src="./images/nanpa-linja-n-mode-8-sitelen-strict.png" alt="strict digit 8 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-8-abbrev.png" alt="digit 8 abbreviated glyph" height="36"> |
 | 9 | je | - | - | - | jo | <img src="./images/nanpa-linja-n-mode-9-sitelen-strict.png" alt="strict digit 9 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-9-abbrev.png" alt="digit 9 abbreviated glyph" height="36"> |
-| small glyph | en | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; |
+| small glyph | e | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; |
 | small sitelen glyph | <img src="./images/nanpa-linja-n-mode-en-small.png" alt="small en glyph" height="20"> | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; |
 
 ### numeric punctuation
 
 | numeric punctuation | nanpa-linja-n proper name letters | glyph sequence | sitelen glyphs | abbreviated |
 | :------------------ | :-------------------------------- | :------------- | :-------------: | :-----------: |
+| positive | `ne` | `nena en` | <img src="./images/nanpa-linja-n-mode-positive-sitelen.png" alt="positive sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-positive-abbrev.png" alt="positive abbreviated glyph" height="18"> |
 | negative | `no` | `nena ona` | <img src="./images/nanpa-linja-n-mode-negative-sitelen.png" alt="negative sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-negative-abbrev.png" alt="negative abbreviated glyph" height="18"> |
-| decimal point | `none` | `nena o nena en` | <img src="./images/nanpa-linja-n-mode-decimal-sitelen.png" alt="decimal point sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-decimal-abbrev.png" alt="decimal point abbreviated glyph" height="18"> |
-| ISO thousands | `neke` | `nena en kulupu en` | <img src="./images/nanpa-linja-n-mode-thousands-sitelen.png" alt="ISO thousands sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-thousands-abbrev.png" alt="ISO thousands abbreviated glyph" height="18"> |
-| percentage | `noke` | `nena open kipisi en` | <img src="./images/nanpa-linja-n-mode-percentage-sitelen.png" alt="percentage sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-percentage-abbrev.png" alt="percentage abbreviated glyph" height="18"> |
-| scientific notation | `neko` | `nena en kala open` | <img src="./images/nanpa-linja-n-mode-scientific-sitelen.png" alt="scientific notation sitelen glyphs" height="12"> | <img src="./images/nanpa-linja-n-mode-scientific-abbrev.png" alt="scientific notation abbreviated glyph" height="12"> |
-| numerator vs denominator | `nono` | `nena o nena o` | <img src="./images/nanpa-linja-n-mode-fraction-sitelen.png" alt="numerator vs denominator sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-fraction-abbrev.png" alt="numerator vs denominator abbreviated glyph" height="18"> |
-| integer vs fraction | `noko` | `nena open kin open` | <img src="./images/nanpa-linja-n-mode-intfract-sitelen.png" alt="integer vs fraction sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-intfract-abbrev.png" alt="integer vs fraction abbreviated glyph" height="18"> |
-| date | `neke` | `nena en kasi en` | <img src="./images/nanpa-linja-n-mode-date-sitelen.png" alt="date sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-date-abbrev.png" alt="date abbreviated glyph" height="12"> |
-| time | `neke` | `nena en kasi en` | <img src="./images/nanpa-linja-n-mode-time-sitelen.png" alt="time sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-time-abbrev.png" alt="time abbreviated glyph" height="12"> |
-| spacer (no value) | `nene` | `nena en nena en` | <img src="./images/nanpa-linja-n-mode-spacer-sitelen.png" alt="spacer (no value) sitelen glyphs" height="12"> | <img src="./images/nanpa-linja-n-mode-spacer-abbrev.png" alt="optional spacer abbreviated glyph" height="12"> <small>(optional)</small> |
+| decimal point | `none` | `nena o nena e` | <img src="./images/nanpa-linja-n-mode-decimal-sitelen.png" alt="decimal point sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-decimal-abbrev.png" alt="decimal point abbreviated glyph" height="18"> |
+| ISO thousands | `neke` | `nena e kulupu e` | <img src="./images/nanpa-linja-n-mode-thousands-sitelen.png" alt="ISO thousands sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-thousands-abbrev.png" alt="ISO thousands abbreviated glyph" height="18"> |
+| percentage | `noke` | `nena open kipisi e` | <img src="./images/nanpa-linja-n-mode-percentage-sitelen.png" alt="percentage sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-percentage-abbrev.png" alt="percentage abbreviated glyph" height="18"> |
+| scientific notation | `neko` | `nena e kala open` | <img src="./images/nanpa-linja-n-mode-scientific-sitelen.png" alt="scientific notation sitelen glyphs" height="12"> | <img src="./images/nanpa-linja-n-mode-scientific-abbrev.png" alt="scientific notation abbreviated glyph" height="12"> |
+| fraction | `nono` | `nena o nena o` | <img src="./images/nanpa-linja-n-mode-fraction-sitelen.png" alt="numerator vs denominator sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-fraction-abbrev.png" alt="numerator vs denominator abbreviated glyph" height="18"> |
+| mixed fraction | `noko` | `nena open kin open` | <img src="./images/nanpa-linja-n-mode-intfract-sitelen.png" alt="integer vs fraction sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-intfract-abbrev.png" alt="integer vs fraction abbreviated glyph" height="18"> |
+| date | `neke` | `nena e kasi e` | <img src="./images/nanpa-linja-n-mode-date-sitelen.png" alt="date sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-date-abbrev.png" alt="date abbreviated glyph" height="12"> |
+| time | `neke` | `nena e kasi e` | <img src="./images/nanpa-linja-n-mode-time-sitelen.png" alt="time sitelen glyphs" height="18"> | <img src="./images/nanpa-linja-n-mode-time-abbrev.png" alt="time abbreviated glyph" height="12"> |
+| spacer (no value) | `nene` | `nena e nena e` | <img src="./images/nanpa-linja-n-mode-spacer-sitelen.png" alt="spacer (no value) sitelen glyphs" height="12"> | <img src="./images/nanpa-linja-n-mode-spacer-abbrev.png" alt="optional spacer abbreviated glyph" height="12"> <small>(optional)</small> |
 
 
 ---
