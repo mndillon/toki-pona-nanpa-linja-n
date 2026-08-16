@@ -6,7 +6,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N,
-} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=20";
+} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=21";
 import { CartoucheApi } from "./cartouche-api-v3-previewdesc.js";
 import {
   canvasToPngBlob,

@@ -921,7 +921,7 @@ export function createSitelenFontPairController({
   }
 
   async function syncPreloadedFontPairsFromManifest({
-    manifestUrl = "./fonts/preloaded-font-pairs.manifest.json",
+    manifestUrl = "./fonts/preloaded-font-pairs.manifest.json?v=7",
     dbName = DEFAULT_DB_NAME,
     dbVersion = DEFAULT_DB_VERSION,
     storeName = DEFAULT_STORE,

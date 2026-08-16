@@ -513,7 +513,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20";//sitelen-font-pair-controller.js";
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=21";//sitelen-font-pair-controller.js";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=33';
 window.SitelenRenderer = SitelenRenderer;
 
@@ -5119,7 +5119,7 @@ window.SitelenRenderer = SitelenRenderer;
 
     try {
       const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
-        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json",
+        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=7",
         onlyIfExisting: false,
         force: true
       });

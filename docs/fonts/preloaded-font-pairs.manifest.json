@@ -184,7 +184,7 @@
     {
       "fontKey": "linjaSike",
       "label": "linja sike predefined",
-      "rev": "2026-08-15-004",
+      "rev": "2026-08-16-005",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-sike-legacy-v1",
       "renderAdapterSettings": {
@@ -195,9 +195,9 @@
       },
       "baseFamily": "TP-Linja-Sike-Font",
       "companionFamily": "TP-Linja-Sike-Nanpa-Linja-N-Font",
-      "baseFilename": "linja-sike-5.otf",
+      "baseFilename": "llinja-sike-5-cartouche-fix.otf",
       "companionFilename": "linja-sike-5-nanpa-linja-n-nasin-e-en.otf",
-      "baseUrl": "./fonts/linja-sike-5.otf",
+      "baseUrl": "./fonts/linja-sike-5-cartouche-fix.otf",
       "companionUrl": "./fonts/linja-sike-5-nanpa-linja-n-nasin-e-en.otf",
       "baseFormat": "opentype",
       "companionFormat": "opentype",

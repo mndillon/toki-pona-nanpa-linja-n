@@ -28,6 +28,7 @@ linja-pona.otf
 linja-pona-nanpa-linja-n.otf
 linja-pona-nanpa-linja-n-nasin-e-en.otf
 linja-sike-5.otf
+linja-sike-5-cartouche-fix.otf
 linja-sike-5-nanpa-linja-n.otf
 linja-sike-5-nanpa-linja-n-nasin-e-en.otf
 
