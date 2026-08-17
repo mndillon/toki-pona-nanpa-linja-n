@@ -1372,6 +1372,7 @@ const SitelenRenderer = (() => {
       autoCartoucheStandaloneProperNames: __autoCartoucheStandaloneProperNames,
       relaxedNanpaLinjanParsing: __relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering: __relaxedNanpaLinjanRendering,
+      enableHexParsing: __enableHexParsing,
       nasinNanpaPona: __nasinNanpaPona,
       renderAdapterId: __renderAdapterId,
       renderAdapterSettings: cloneRenderAdapterSettings(__renderAdapterSettings),
@@ -1407,6 +1408,7 @@ const SitelenRenderer = (() => {
     __autoCartoucheStandaloneProperNames = !!state.autoCartoucheStandaloneProperNames;
     __relaxedNanpaLinjanParsing = !!state.relaxedNanpaLinjanParsing;
     __relaxedNanpaLinjanRendering = !!state.relaxedNanpaLinjanRendering;
+    __enableHexParsing = !!state.enableHexParsing;
     __nasinNanpaPona = !!state.nasinNanpaPona;
     __renderAdapterId = normalizeRenderAdapterId(state.renderAdapterId);
     __renderAdapterSettings = cloneRenderAdapterSettings(state.renderAdapterSettings);
@@ -1436,6 +1438,11 @@ const SitelenRenderer = (() => {
   // Relaxed nanpa-linja-n recognition/rendering. Defaults are strict/strict.
   let __relaxedNanpaLinjanParsing = false;
   let __relaxedNanpaLinjanRendering = false;
+
+  // Hexadecimal recognition is opt-in. This flag affects parsing only; once a
+  // source span has been classified as hexadecimal, its semantic run always
+  // renders as hexadecimal. Re-parsing source text applies the current flag.
+  let __enableHexParsing = false;
 
   // Optional conversion of eligible plain Arabic integer/decimal expressions
   // to ordinary Toki Pona words using nasin nanpa pona. Default false preserves
@@ -1486,6 +1493,8 @@ const SitelenRenderer = (() => {
   function setRelaxedNanpaLinjanParsing(v) { __relaxedNanpaLinjanParsing = !!v; }
   function getRelaxedNanpaLinjanRendering() { return !!__relaxedNanpaLinjanRendering; }
   function setRelaxedNanpaLinjanRendering(v) { __relaxedNanpaLinjanRendering = !!v; }
+  function getEnableHexParsing() { return !!__enableHexParsing; }
+  function setEnableHexParsing(v) { __enableHexParsing = !!v; }
   function getNasinNanpaPona() { return !!__nasinNanpaPona; }
   function setNasinNanpaPona(v) { __nasinNanpaPona = !!v; }
   function getCartoucheCommaTallyMarks() { return !!__cartoucheCommaTallyMarks; }
@@ -1746,6 +1755,7 @@ const SitelenRenderer = (() => {
     if (parser.autoCartoucheStandaloneProperNames != null) setAutoCartoucheStandaloneProperNames(!!parser.autoCartoucheStandaloneProperNames);
     if (parser.relaxedNanpaLinjanParsing != null) setRelaxedNanpaLinjanParsing(!!parser.relaxedNanpaLinjanParsing);
     if (parser.relaxedNanpaLinjanRendering != null) setRelaxedNanpaLinjanRendering(!!parser.relaxedNanpaLinjanRendering);
+    if (parser.enableHexParsing != null) setEnableHexParsing(!!parser.enableHexParsing);
     if (parser.nasinNanpaPona != null) setNasinNanpaPona(!!parser.nasinNanpaPona);
     if (parser.cartoucheCommaTallyMarks != null) setCartoucheCommaTallyMarks(!!parser.cartoucheCommaTallyMarks);
     else if (parser.commaTallyInCartouche != null) setCartoucheCommaTallyMarks(!!parser.commaTallyInCartouche);
@@ -3424,6 +3434,596 @@ const SitelenRenderer = (() => {
     };
   }
 
+
+  /* ============================================================
+     Optional hexadecimal numeric syntax (isolated from decimal)
+     ============================================================ */
+  const HEX_NUMERIC_CP = Object.freeze({
+    nasa: 0xF193E,
+    colon: 0xF199D,
+    nena: 0xF1940,
+    e: 0xF1909,
+    en: 0xF190A,
+    esun: 0xF190B,
+    kule: 0xF191E,
+    ala: 0xF1902,
+    ike: 0xF190D,
+    uta: 0xF1970,
+    ijo: 0xF190C,
+    wan: 0xF1973,
+    tu: 0xF196E,
+    seli: 0xF1957,
+    awen: 0xF1908,
+    luka: 0xF192D,
+    utala: 0xF1971,
+    mun: 0xF193A,
+    pipi: 0xF1951,
+    jo: 0xF1913,
+    sike: 0xF195C,
+    tawa: 0xF1969,
+    pan: 0xF194B,
+    mije: 0xF1935,
+    ma: 0xF1930,
+    lawa: 0xF1924
+  });
+
+  const HEX_STRICT_DIGIT_SYLLABLE = Object.freeze({
+    "0":"NI", "1":"WE", "2":"TE", "3":"SE", "4":"NA",
+    "5":"LE", "6":"NU", "7":"ME", "8":"PE", "9":"JE",
+    "A":"SI", "B":"TA", "C":"PA", "D":"MI", "E":"MA", "F":"LA"
+  });
+  const HEX_RELAXED_DIGIT_SYLLABLE = Object.freeze({
+    ...HEX_STRICT_DIGIT_SYLLABLE,
+    "1":"WA", "2":"TU", "5":"LU", "7":"MU", "8":"PI"
+  });
+  const HEX_SYLLABLE_TO_DIGIT_STRICT = Object.freeze(Object.fromEntries(
+    Object.entries(HEX_STRICT_DIGIT_SYLLABLE).map(([digit, syllable]) => [syllable, digit])
+  ));
+  const HEX_SYLLABLE_TO_DIGIT_RELAXED = Object.freeze(Object.fromEntries(
+    Object.entries(HEX_RELAXED_DIGIT_SYLLABLE).map(([digit, syllable]) => [syllable, digit])
+  ));
+  const HEX_ABBREVIATED_WORD_TO_DIGIT = Object.freeze({
+    ijo:"0", wan:"1", tu:"2", seli:"3", awen:"4", luka:"5", utala:"6", mun:"7", pipi:"8", jo:"9",
+    sike:"A", tawa:"B", pan:"C", mije:"D", ma:"E", lawa:"F"
+  });
+
+  function isAsciiHexDigit(ch) {
+    return /^[0-9A-Fa-f]$/.test(String(ch ?? ""));
+  }
+
+  function isAsciiLetter(ch) {
+    return /^[A-Za-z]$/.test(String(ch ?? ""));
+  }
+
+  function cloneHexSemantic(semantic) {
+    if (!semantic || semantic.kind !== "hex") return null;
+    return {
+      kind: "hex",
+      sourceType: semantic.sourceType || null,
+      sourceText: typeof semantic.sourceText === "string" ? semantic.sourceText : null,
+      parts: Array.from(semantic.parts || []).map(part => ({ ...part })),
+      digits: String(semantic.digits || "").toUpperCase()
+    };
+  }
+
+  function hexGroupingSizes(length) {
+    const n = Math.max(0, Math.trunc(Number(length) || 0));
+    if (n <= 0) return [];
+    if (n <= 3) return [n];
+    const out = [];
+    let remaining = n;
+    while (remaining > 3) {
+      out.push(2);
+      remaining -= 2;
+    }
+    out.push(remaining);
+    return out;
+  }
+
+  function hexGroupDigitRun(digitRun) {
+    const digits = String(digitRun ?? "").toUpperCase();
+    if (!digits || !/^[0-9A-F]+$/.test(digits)) return null;
+    const sizes = hexGroupingSizes(digits.length);
+    const groups = [];
+    let pos = 0;
+    for (const size of sizes) {
+      groups.push(digits.slice(pos, pos + size));
+      pos += size;
+    }
+    return groups;
+  }
+
+  function makeHexSemantic(parts, sourceType = null, sourceText = null) {
+    const normalized = [];
+    let digits = "";
+    for (const part of (parts || [])) {
+      if (!part || typeof part !== "object") continue;
+      if (part.kind === "digits") {
+        const run = String(part.digits ?? "").toUpperCase();
+        if (!run || !/^[0-9A-F]+$/.test(run)) return null;
+        normalized.push({ kind: "digits", digits: run });
+        digits += run;
+      } else if (part.kind === "delimiter") {
+        normalized.push({
+          kind: "delimiter",
+          char: typeof part.char === "string" && part.char.length ? part.char : null
+        });
+      } else {
+        return null;
+      }
+    }
+    if (!digits) return null;
+    if (!normalized.length || normalized[0].kind !== "digits") return null;
+    return { kind: "hex", sourceType, sourceText, parts: normalized, digits };
+  }
+
+  // Hash syntax: # begins the hexadecimal run. Hex digits are consumed;
+  // whitespace/newline or an ASCII letter outside A-F terminates the run.
+  // Every other non-hex character is preserved as one NENE no-value spacer.
+  function parseHexHashAt(text, start = 0) {
+    const s = String(text ?? "");
+    const index = Math.max(0, Number(start) | 0);
+    if (s[index] !== "#") return null;
+    if (!isAsciiHexDigit(s[index + 1])) return null;
+
+    const parts = [];
+    let currentDigits = "";
+    let digitCount = 0;
+    let i = index + 1;
+
+    const flushDigits = () => {
+      if (!currentDigits) return;
+      parts.push({ kind: "digits", digits: currentDigits.toUpperCase() });
+      currentDigits = "";
+    };
+
+    while (i < s.length) {
+      const ch = s[i];
+      if (/\s/.test(ch)) break;
+      if (isAsciiHexDigit(ch)) {
+        currentDigits += ch;
+        digitCount += 1;
+        i += 1;
+        continue;
+      }
+      if (isAsciiLetter(ch)) break;
+
+      flushDigits();
+      parts.push({ kind: "delimiter", char: ch });
+      i += 1;
+    }
+    flushDigits();
+    if (digitCount === 0) return null;
+
+    const semantic = makeHexSemantic(parts, "hash", s.slice(index, i));
+    if (!semantic) return null;
+    return { kind: "hex", index, end: i, hexSemantic: semantic };
+  }
+
+  function findHexHashSequences(text) {
+    const s = String(text ?? "");
+    if (!s) return [];
+    const out = [];
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] !== "#") continue;
+      const hit = parseHexHashAt(s, i);
+      if (!hit) continue;
+      out.push(hit);
+      i = Math.max(i, hit.end - 1);
+    }
+    return out;
+  }
+
+  function validateHexStructuredTokenSequence(tokens, sourceType = null, sourceText = null) {
+    const seq = Array.from(tokens || []);
+    if (!seq.length || seq[0]?.kind !== "digit") return null;
+    const parts = [];
+    let run = [];
+
+    function flushRun() {
+      if (!run.length) return true;
+      const groups = [];
+      let group = [];
+      for (const token of run) {
+        if (token.kind === "digit") {
+          group.push(String(token.digit || "").toUpperCase());
+          continue;
+        }
+        if (token.kind !== "generated" || !group.length) return false;
+        groups.push(group.join(""));
+        group = [];
+      }
+      if (!group.length) return false;
+      groups.push(group.join(""));
+      const digits = groups.join("");
+      const expected = hexGroupDigitRun(digits);
+      if (!expected || expected.length !== groups.length) return false;
+      for (let i = 0; i < groups.length; i++) {
+        if (groups[i] !== expected[i]) return false;
+      }
+      parts.push({ kind: "digits", digits });
+      run = [];
+      return true;
+    }
+
+    for (const token of seq) {
+      if (token.kind === "delimiter") {
+        if (run.length && !flushRun()) return null;
+        if (!parts.length) return null;
+        parts.push({ kind: "delimiter", char: token.char || null });
+        continue;
+      }
+      run.push(token);
+    }
+    if (run.length && !flushRun()) return null;
+    return makeHexSemantic(parts, sourceType, sourceText);
+  }
+
+  function hexProperNameToSemantic(raw, { relaxedParsing = false } = {}) {
+    const source = String(raw ?? "").trim();
+    if (!source || !/^[A-Za-z]+(?:[ \t]+[A-Za-z]+)*$/.test(source)) return null;
+    const compact = source.replace(/[ \t]+/g, "");
+    if (!/^nasa/i.test(compact)) return null;
+    let body = compact.slice(4);
+    if (!body || !/[nN]$/.test(body)) return null;
+    body = body.slice(0, -1).toUpperCase();
+    if (!body) return null;
+
+    const syllableMap = relaxedParsing
+      ? { ...HEX_SYLLABLE_TO_DIGIT_STRICT, ...HEX_SYLLABLE_TO_DIGIT_RELAXED }
+      : HEX_SYLLABLE_TO_DIGIT_STRICT;
+    const tokens = [];
+    let i = 0;
+    while (i < body.length) {
+      if (body.startsWith("NENE", i)) {
+        tokens.push({ kind: "delimiter", char: null });
+        i += 4;
+        continue;
+      }
+      if (body.startsWith("NEKE", i)) {
+        tokens.push({ kind: "generated" });
+        i += 4;
+        continue;
+      }
+      if (i + 2 > body.length) return null;
+      const syllable = body.slice(i, i + 2);
+      const digit = syllableMap[syllable];
+      if (digit == null) return null;
+      tokens.push({ kind: "digit", digit });
+      i += 2;
+    }
+    return validateHexStructuredTokenSequence(tokens, "properName", source);
+  }
+
+  function findHexProperNameSequences(text, { relaxedParsing = false } = {}) {
+    const s = String(text ?? "");
+    if (!s) return [];
+    const hits = [];
+    const lineRe = /[^\r\n]+/g;
+    let lineMatch;
+    while ((lineMatch = lineRe.exec(s)) !== null) {
+      const line = lineMatch[0];
+      const lineStart = lineMatch.index | 0;
+      const words = [];
+      const wordRe = /[A-Za-z]+/g;
+      let wm;
+      while ((wm = wordRe.exec(line)) !== null) {
+        words.push({ raw: wm[0], start: lineStart + wm.index, end: lineStart + wm.index + wm[0].length });
+      }
+      for (let i = 0; i < words.length; i++) {
+        const first = words[i];
+        if (!/^nasa/i.test(first.raw) || !/^[A-Z]/.test(first.raw)) continue;
+        let best = null;
+        let bestJ = -1;
+        const maxJ = Math.min(words.length - 1, i + 30);
+        for (let j = i; j <= maxJ; j++) {
+          if (j > i && !/^[A-Z]/.test(words[j].raw)) break;
+          const rawSpan = s.slice(first.start, words[j].end);
+          if (!/^[A-Za-z]+(?:[ \t]+[A-Za-z]+)*$/.test(rawSpan)) continue;
+          const semantic = hexProperNameToSemantic(rawSpan, { relaxedParsing });
+          if (!semantic) continue;
+          best = { kind: "hex", index: first.start, end: words[j].end, hexSemantic: semantic };
+          bestJ = j;
+        }
+        if (best) {
+          hits.push(best);
+          i = bestJ;
+        }
+      }
+    }
+    return hits;
+  }
+
+  function tokenizeHexCartoucheSource(raw) {
+    const s = String(raw ?? "").trim();
+    if (!s) return null;
+    const tokens = [];
+    let i = 0;
+    while (i < s.length) {
+      if (/\s/.test(s[i])) { i += 1; continue; }
+      if (s[i] === ":") { tokens.push(":"); i += 1; continue; }
+      if (/[A-Za-z]/.test(s[i])) {
+        const start = i;
+        while (i < s.length && /[A-Za-z]/.test(s[i])) i += 1;
+        tokens.push(s.slice(start, i).toLowerCase());
+        continue;
+      }
+      return null;
+    }
+    return tokens;
+  }
+
+  function hexFullDigitPatterns({ relaxedParsing = false } = {}) {
+    const joinWords = ["e", "en", "esun"];
+    const nWords = ["nena", "nasa"];
+    const out = [];
+    const add = (digit, a, bs) => {
+      for (const b of (Array.isArray(bs) ? bs : [bs])) out.push({ digit, words: [a, b] });
+    };
+    for (const n of nWords) add("0", n, "ijo");
+    add("1", "wan", joinWords);
+    add("2", "tu", joinWords);
+    add("3", "seli", joinWords);
+    for (const n of nWords) add("4", n, "awen");
+    add("5", "luka", joinWords);
+    for (const n of nWords) add("6", n, "utala");
+    add("7", "mun", joinWords);
+    add("8", "pipi", joinWords);
+    add("9", "jo", joinWords);
+    if (relaxedParsing) {
+      add("1", "wan", "ala");
+      add("2", "tu", "uta");
+      add("5", "luka", "uta");
+      add("7", "mun", "uta");
+      add("8", "pipi", "ike");
+    }
+    add("A", "sike", "ike");
+    add("B", "tawa", "ala");
+    add("C", "pan", "ala");
+    add("D", "mije", "ike");
+    add("E", "ma", "ala");
+    add("F", "lawa", "ala");
+    return out;
+  }
+
+  function hexCartoucheTokensToSemantic(tokensInput, { relaxedParsing = false, sourceText = null, preferAbbreviated = false } = {}) {
+    const tokens = Array.from(tokensInput || []).map(v => String(v).toLowerCase());
+    if (tokens.length < 3 || tokens[0] !== "nasa" || tokens[tokens.length - 1] !== "nasa") return null;
+    let start = 1;
+    if (tokens[start] === ":") start += 1; // optional on input; canonical output always includes it
+    const body = tokens.slice(start, -1);
+    if (!body.length) return null;
+
+    function tryAbbreviatedHexCartouche() {
+      const structured = [];
+      for (const word of body) {
+        if (word === "kule") { structured.push({ kind: "generated" }); continue; }
+        if (word === "e") { structured.push({ kind: "delimiter", char: null }); continue; }
+        const digit = HEX_ABBREVIATED_WORD_TO_DIGIT[word];
+        if (digit == null) return null;
+        structured.push({ kind: "digit", digit });
+      }
+      return validateHexStructuredTokenSequence(structured, "cartouche", sourceText);
+    }
+
+    // Some strict full digits end in e (for example seli e), while an
+    // abbreviated hex cartouche uses e as one NENE source delimiter. The
+    // current cartouche display mode therefore supplies the only intentional
+    // disambiguation: abbreviated mode tries the abbreviated grammar first.
+    if (preferAbbreviated) {
+      const abbreviatedSemantic = tryAbbreviatedHexCartouche();
+      if (abbreviatedSemantic) return abbreviatedSemantic;
+    }
+
+    // Full form first when the display/parser mode is full.
+    {
+      const structured = [];
+      const patterns = hexFullDigitPatterns({ relaxedParsing });
+      const isNWord = w => w === "nena" || w === "nasa";
+      const isJoinWord = w => w === "e" || w === "en" || w === "esun";
+      let i = 0;
+      let ok = true;
+      while (i < body.length) {
+        if (i + 3 < body.length && isNWord(body[i]) && isJoinWord(body[i + 1]) && body[i + 2] === "kule" && isJoinWord(body[i + 3])) {
+          structured.push({ kind: "generated" });
+          i += 4;
+          continue;
+        }
+        if (i + 3 < body.length && isNWord(body[i]) && isJoinWord(body[i + 1]) && isNWord(body[i + 2]) && isJoinWord(body[i + 3])) {
+          structured.push({ kind: "delimiter", char: null });
+          i += 4;
+          continue;
+        }
+        let match = null;
+        for (const pattern of patterns) {
+          if (i + pattern.words.length > body.length) continue;
+          if (pattern.words.every((word, offset) => body[i + offset] === word)) {
+            match = pattern;
+            break;
+          }
+        }
+        if (!match) { ok = false; break; }
+        structured.push({ kind: "digit", digit: match.digit });
+        i += match.words.length;
+      }
+      if (ok) {
+        const semantic = validateHexStructuredTokenSequence(structured, "cartouche", sourceText);
+        if (semantic) return semantic;
+      }
+    }
+
+    // If abbreviated mode did not already claim an ambiguous form, retain the
+    // permissive fallback so unambiguous abbreviated cartouches are accepted
+    // while the renderer is configured for full output.
+    if (!preferAbbreviated) {
+      const abbreviatedSemantic = tryAbbreviatedHexCartouche();
+      if (abbreviatedSemantic) return abbreviatedSemantic;
+    }
+    return null;
+  }
+
+  function hexCartoucheSourceToSemantic(raw, opts = {}) {
+    const tokens = tokenizeHexCartoucheSource(raw);
+    if (!tokens) return null;
+    return hexCartoucheTokensToSemantic(tokens, { ...opts, sourceText: String(raw ?? "") });
+  }
+
+  function hexFullWordsForDigit(digit, { mode = "uniform", relaxedRendering = false } = {}) {
+    const d = String(digit ?? "").toUpperCase();
+    if (d === "A") return ["sike", "ike"];
+    if (d === "B") return ["tawa", "ala"];
+    if (d === "C") return ["pan", "ala"];
+    if (d === "D") return ["mije", "ike"];
+    if (d === "E") return ["ma", "ala"];
+    if (d === "F") return ["lawa", "ala"];
+
+    if (relaxedRendering) {
+      if (d === "1") return ["wan", "ala"];
+      if (d === "2") return ["tu", "uta"];
+      if (d === "5") return ["luka", "uta"];
+      if (d === "7") return ["mun", "uta"];
+      if (d === "8") return ["pipi", "ike"];
+    }
+
+    const nWord = mode === "traditional" ? "nasa" : "nena";
+    const eWord = mode === "traditional" ? "esun" : "e";
+    if (d === "0") return [nWord, "ijo"];
+    if (d === "1") return ["wan", eWord];
+    if (d === "2") return ["tu", eWord];
+    if (d === "3") return ["seli", eWord];
+    if (d === "4") return [nWord, "awen"];
+    if (d === "5") return ["luka", eWord];
+    if (d === "6") return [nWord, "utala"];
+    if (d === "7") return ["mun", eWord];
+    if (d === "8") return ["pipi", eWord];
+    if (d === "9") return ["jo", eWord];
+    return null;
+  }
+
+  function hexAbbreviatedWordForDigit(digit) {
+    const d = String(digit ?? "").toUpperCase();
+    const map = {
+      "0":"ijo", "1":"wan", "2":"tu", "3":"seli", "4":"awen", "5":"luka", "6":"utala", "7":"mun", "8":"pipi", "9":"jo",
+      "A":"sike", "B":"tawa", "C":"pan", "D":"mije", "E":"ma", "F":"lawa"
+    };
+    return map[d] || null;
+  }
+
+  function hexSemanticToTpWords(semantic, { abbreviated = false, mode = "uniform", relaxedRendering = false } = {}) {
+    const sem = cloneHexSemantic(semantic);
+    if (!sem) return null;
+    const words = ["nasa", ":"];
+    for (const part of sem.parts) {
+      if (part.kind === "delimiter") {
+        if (abbreviated) words.push("e");
+        else words.push("nena", "e", "nena", "e");
+        continue;
+      }
+      const groups = hexGroupDigitRun(part.digits);
+      if (!groups) return null;
+      for (let gi = 0; gi < groups.length; gi++) {
+        for (const digit of groups[gi]) {
+          if (abbreviated) {
+            const word = hexAbbreviatedWordForDigit(digit);
+            if (!word) return null;
+            words.push(word);
+          } else {
+            const digitWords = hexFullWordsForDigit(digit, { mode, relaxedRendering });
+            if (!digitWords) return null;
+            words.push(...digitWords);
+          }
+        }
+        if (gi < groups.length - 1) {
+          if (abbreviated) words.push("kule");
+          else words.push("nena", "e", "kule", "e");
+        }
+      }
+    }
+    words.push("nasa");
+    return words;
+  }
+
+  function hexTpWordsToCodepoints(words) {
+    const out = [];
+    for (const word of (words || [])) {
+      if (word === ":") { out.push(HEX_NUMERIC_CP.colon); continue; }
+      const cp = HEX_NUMERIC_CP[String(word).toLowerCase()];
+      if (cp == null) return null;
+      out.push(cp);
+    }
+    return out;
+  }
+
+  function hexSemanticToInnerCodepoints(semantic, opts = {}) {
+    const words = hexSemanticToTpWords(semantic, opts);
+    return words ? hexTpWordsToCodepoints(words) : null;
+  }
+
+  function hexSyllableForDigit(digit, relaxedRendering = false) {
+    const d = String(digit ?? "").toUpperCase();
+    return (relaxedRendering ? HEX_RELAXED_DIGIT_SYLLABLE : HEX_STRICT_DIGIT_SYLLABLE)[d] || null;
+  }
+
+  function hexSemanticToProperName(semantic, { relaxedRendering = false } = {}) {
+    const sem = cloneHexSemantic(semantic);
+    if (!sem) return null;
+    const words = ["Nasa"];
+    const attachNAndPush = suffix => {
+      if (words.length <= 1) return false;
+      words[words.length - 1] += "n";
+      words.push(suffix);
+      return true;
+    };
+
+    for (const part of sem.parts) {
+      if (part.kind === "delimiter") {
+        if (!attachNAndPush("Ene")) return null;
+        continue;
+      }
+      const groups = hexGroupDigitRun(part.digits);
+      if (!groups) return null;
+      for (let gi = 0; gi < groups.length; gi++) {
+        let groupWord = "";
+        for (const digit of groups[gi]) {
+          const syllable = hexSyllableForDigit(digit, relaxedRendering);
+          if (!syllable) return null;
+          groupWord += syllable.toLowerCase();
+        }
+        words.push(groupWord[0].toUpperCase() + groupWord.slice(1));
+        if (gi < groups.length - 1) {
+          if (!attachNAndPush("Eke")) return null;
+        }
+      }
+    }
+    if (words.length <= 1) return null;
+    words[words.length - 1] += "n"; // final numeric terminator N
+    return words.join(" ");
+  }
+
+  function hexSemanticToCanonicalHash(semantic) {
+    const sem = cloneHexSemantic(semantic);
+    if (!sem) return null;
+    let out = "#";
+    for (const part of sem.parts) {
+      if (part.kind === "digits") out += part.digits;
+      else out += (part.char != null ? part.char : ":");
+    }
+    return out;
+  }
+
+  function parseCompleteHexInput(input, { relaxedParsing = false, preferAbbreviated = false } = {}) {
+    const s = String(input ?? "").trim();
+    if (!s) return null;
+    if (s.startsWith("#")) {
+      const hit = parseHexHashAt(s, 0);
+      return hit && hit.end === s.length ? hit.hexSemantic : null;
+    }
+    if (s.startsWith("[") && s.endsWith("]")) {
+      return hexCartoucheSourceToSemantic(s.slice(1, -1), { relaxedParsing, preferAbbreviated });
+    }
+    return hexProperNameToSemantic(s, { relaxedParsing });
+  }
+
   async function renderAstToNewCanvas(ast, config = {}) {
     return await withScopedRenderConfig(config, async () => {
       if (typeof __bridgeFontsReadyForPx === 'function') await __bridgeFontsReadyForPx(config?.layout?.fontPx ?? (__bridgeGetFontPx ? __bridgeGetFontPx() : 56));
@@ -4711,6 +5311,41 @@ function wireHaloControls() {
         fontRole: "number",
         isNumericCartouche: true
       });
+    }
+
+
+    function makeHexNumericCartoucheElementFromSemantic(elements, semantic, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+      const normalized = cloneHexSemantic(semantic);
+      if (!normalized) return;
+      const abbreviated = getAbbreviateNumericCartouches();
+      const cps = hexSemanticToInnerCodepoints(normalized, {
+        abbreviated,
+        mode: getNanpaLinjanMode(),
+        relaxedRendering: getRelaxedNanpaLinjanRendering()
+      });
+      if (!cps || !cps.length) return;
+      const before = elements.length;
+      makeCartoucheElementFromCodepoints(elements, cps, {
+        fontPx,
+        fontFamily: FONT_FAMILY_NUMBER,
+        fgCss,
+        sourceText,
+        sourceStart,
+        sourceEnd,
+        sourceKind,
+        sourceSegmentIndex,
+        fontRole: "number",
+        isNumericCartouche: true,
+        audioSourceCps: cps.slice(),
+        audioSourceIndices: cps.map((_cp, index) => index)
+      });
+      for (let i = before; i < elements.length; i++) {
+        const el = elements[i];
+        if (!el || el.type === "gap") continue;
+        el.isHexCartouche = true;
+        el.hexSemantic = cloneHexSemantic(normalized);
+        el.numericBase = 16;
+      }
     }
 
     const UNIFORM_TO_NENA = new Set([
@@ -6600,10 +7235,11 @@ function findNanpaLinjanTpPhraseSequences(text) {
         Number.isFinite(h.index) &&
         Number.isFinite(h.end) &&
         h.end > h.index &&
-        (h.caps || (Array.isArray(h.words) && h.words.length > 0))
+        (h.caps || h.hexSemantic || (Array.isArray(h.words) && h.words.length > 0))
       );
 
       function priority(kind) {
+        if (kind === "hex") return 6;
         if (kind === "date") return 5;
         if (kind === "decimal") return 4;
         if (kind === "time") return 4;
@@ -8647,6 +9283,16 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const numericScanText = glyphSuffixScan.text;
       const glyphSuffixHits = glyphSuffixScan.hits;
 
+      // Optional hexadecimal recognizers run in their own namespace. When the
+      // flag is off they contribute no hits and the existing decimal pipeline
+      // receives the source unchanged.
+      const hexHits = getEnableHexParsing()
+        ? [
+            ...findHexHashSequences(numericScanText),
+            ...findHexProperNameSequences(s, { relaxedParsing: getRelaxedNanpaLinjanParsing() })
+          ]
+        : [];
+
       // Dates must be recognized first. Mask valid date spans before running
       // the time scanner so any present or future overlapping time grammar
       // cannot reinterpret a value that has already passed date validation.
@@ -8678,18 +9324,20 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         codeHits: codeHits.length,
         nameHits: nameHits.length,
         phraseHits: phraseHits.length,
-        rawHits: [...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
+        hexHits: hexHits.length,
+        rawHits: [...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
           kind: h.kind,
           sourceText: s.slice(h.index, h.end),
           index: h.index,
           end: h.end,
           caps: h.caps || null,
           words: Array.isArray(h.words) ? h.words.join(" ") : null,
-          nasinNanpaPonaWords: Array.isArray(h.nasinNanpaPonaWords) ? h.nasinNanpaPonaWords.join(" ") : null
+          nasinNanpaPonaWords: Array.isArray(h.nasinNanpaPonaWords) ? h.nasinNanpaPonaWords.join(" ") : null,
+          hexDigits: h.hexSemantic?.digits || null
         }))
       });
 
-      const hits = mergeAndGreedyFilterHits([...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+      const hits = mergeAndGreedyFilterHits([...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
 
       nanpaDebugTable("parse-text:selected-hits", hits.map(h => ({
         kind: h.kind,
@@ -8725,6 +9373,16 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             sourceKind,
             sourceSegmentIndex,
             mixedStyle
+          });
+        } else if (h.kind === "hex" && h.hexSemantic) {
+          makeHexNumericCartoucheElementFromSemantic(elements, h.hexSemantic, {
+            fontPx,
+            fgCss,
+            sourceText: matchText,
+            sourceStart: sourceBaseStart + a,
+            sourceEnd: sourceBaseStart + b,
+            sourceKind,
+            sourceSegmentIndex
           });
         } else if (h.kind === "tpPhrase") {
           const cps = nanpaLinjanWordsToCodepoints(h.words, { mode });
@@ -8978,6 +9636,25 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       const mode = getNanpaLinjanMode();
       const fgCss = getFgHex();
+
+      if (getEnableHexParsing()) {
+        const hexSemantic = hexCartoucheSourceToSemantic(content, {
+          relaxedParsing: getRelaxedNanpaLinjanParsing(),
+          preferAbbreviated: getAbbreviateNumericCartouches()
+        });
+        if (hexSemantic) {
+          makeHexNumericCartoucheElementFromSemantic(elements, hexSemantic, {
+            fontPx,
+            fgCss,
+            sourceText: content,
+            sourceStart: sourceBaseStart,
+            sourceEnd: sourceBaseStart + content.length,
+            sourceKind,
+            sourceSegmentIndex
+          });
+          return;
+        }
+      }
      
       try {
         const dateCaps = dateStrToNanpaCaps(content);
@@ -12316,6 +12993,58 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (input == null || String(input).trim() === "") return null;
     const s = String(input).trim();
+
+    if (opts.enableHexParsing === true) {
+      const hexSemantic = parseCompleteHexInput(s, {
+        relaxedParsing,
+        preferAbbreviated: opts.abbreviateNumericCartouches === true ||
+          opts.numericCartoucheAbbreviation === true ||
+          opts.abbreviatedNumericCartouches === true
+      });
+      if (hexSemantic) {
+        const tpWords = hexSemanticToTpWords(hexSemantic, {
+          abbreviated: false,
+          mode,
+          relaxedRendering
+        });
+        const abbreviatedWords = hexSemanticToTpWords(hexSemantic, {
+          abbreviated: true,
+          mode,
+          relaxedRendering
+        });
+        const ucsurCodepoints = tpWords ? hexTpWordsToCodepoints(tpWords) : null;
+        const abbreviatedUcsurCodepoints = abbreviatedWords ? hexTpWordsToCodepoints(abbreviatedWords) : null;
+        if (!ucsurCodepoints || !ucsurCodepoints.length) return null;
+        const properName = hexSemanticToProperName(hexSemantic, { relaxedRendering });
+        const hash = hexSemanticToCanonicalHash(hexSemantic);
+        const codepoints = [_NP_CARTOUCHE_START_CP, ...ucsurCodepoints, _NP_CARTOUCHE_END_CP];
+        return {
+          input: s,
+          kind: "hex",
+          numberBase: 16,
+          isHex: true,
+          caps: null,
+          properName,
+          uniqueCode: hash,
+          displayValue: hash,
+          hexDigits: hexSemantic.digits,
+          hexParts: hexSemantic.parts.map(part => ({ ...part })),
+          ucsurCodepoints,
+          abbreviatedUcsurCodepoints: abbreviatedUcsurCodepoints || [],
+          hexCodepoints: ucsurCodepoints.map(cp => cp.toString(16).toUpperCase().padStart(4, "0")).join(" "),
+          hexWithCartouche: codepoints.map(cp => cp.toString(16).toUpperCase().padStart(4, "0")).join(" "),
+          tpWords,
+          abbreviatedWords: abbreviatedWords || [],
+          words: tpWords.slice(),
+          isTime: false,
+          isDate: false,
+          isTimeLike: false,
+          innerCodepoints: ucsurCodepoints.slice(),
+          codepoints,
+          numericMode: mode
+        };
+      }
+    }
 
     function splitCapsLetters(caps) {
       if (caps == null) throw new Error("caps must be a string");

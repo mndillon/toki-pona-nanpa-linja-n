@@ -703,7 +703,8 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
       mode: options.nanpaLinjanMode || options.mode || 'uniform',
       mixedStyle: options.mixedStyle || 'short',
       relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
-      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
+      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+      enableHexParsing: options.enableHexParsing === true
     });
     if (parsed?.caps) {
       const properName = splitNanpaCapsToAudioProperName(parsed.caps, NanpaParser, options);
@@ -1011,6 +1012,9 @@ export function speechTextForRenderRun(run, skipped = [], options = {}) {
   }
 
   if (kind === 'cartouche') {
+    const renderedHexProperName = tryRenderedHexCartoucheToProperName(run, options);
+    if (renderedHexProperName) return renderedHexProperName;
+
     // A renderer-confirmed numeric proper name must use the renderer's canonical
     // nanpa-linja-n phrase before the generic capitalized-proper-name passthrough.
     // This is important when one attached source word expands to multiple spoken
@@ -1168,6 +1172,7 @@ export async function buildSitelenAudioPlan({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  enableHexParsing = rendererConfig?.parser?.enableHexParsing === true,
   silenceTeToAudio = false,
   soundOutPhonotacticUnknownWords = false,
   interpretDoubleQuotesAsTeTo = false,
@@ -1202,6 +1207,7 @@ export async function buildSitelenAudioPlan({
     mixedStyle,
     relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering,
+    enableHexParsing,
     silenceTeToAudio,
     soundOutPhonotacticUnknownWords,
     interpretDoubleQuotesAsTeTo
@@ -1574,6 +1580,86 @@ function runAudioSourceIndices(run, componentCount) {
   return Array.from({ length: componentCount }, (_unused, index) => index);
 }
 
+function isRenderedHexCartouche(run) {
+  return run?.isHexCartouche === true ||
+    run?._element?.isHexCartouche === true ||
+    run?.element?.isHexCartouche === true ||
+    Number(run?.numericBase ?? run?._element?.numericBase ?? run?.element?.numericBase) === 16;
+}
+
+function hexSemanticForAudioRun(run) {
+  const semantic = run?.hexSemantic ?? run?._element?.hexSemantic ?? run?.element?.hexSemantic;
+  if (!semantic || typeof semantic !== 'object' || !Array.isArray(semantic.parts)) return null;
+  const parts = [];
+  let digits = '';
+  for (const part of semantic.parts) {
+    if (part?.kind === 'digits') {
+      const value = String(part.digits ?? '').toUpperCase();
+      if (!value || !/^[0-9A-F]+$/.test(value)) return null;
+      parts.push({ kind: 'digits', digits: value });
+      digits += value;
+      continue;
+    }
+    if (part?.kind === 'delimiter') {
+      parts.push({ kind: 'delimiter', char: typeof part.char === 'string' && part.char.length ? part.char : null });
+      continue;
+    }
+    return null;
+  }
+  if (!digits || !parts.length || parts[0].kind !== 'digits') return null;
+  return { kind: 'hex', digits, parts };
+}
+
+function canonicalHexHashFromSemantic(semantic) {
+  if (!semantic?.parts?.length) return '';
+  let out = '#';
+  for (const part of semantic.parts) {
+    if (part?.kind === 'digits') out += String(part.digits || '').toUpperCase();
+    else if (part?.kind === 'delimiter') out += (part.char != null ? String(part.char) : ':');
+    else return '';
+  }
+  return out.length > 1 ? out : '';
+}
+
+function parseHexForAudio(source, options = {}) {
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (!NanpaParser || typeof NanpaParser.parseNumber !== 'function') return null;
+  try {
+    const parsed = NanpaParser.parseNumber(String(source ?? '').trim(), {
+      mode: options.nanpaLinjanMode || options.mode || 'uniform',
+      mixedStyle: options.mixedStyle || 'short',
+      relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
+      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+      abbreviateNumericCartouches: !!options.abbreviateNumericCartouches,
+      enableHexParsing: true
+    });
+    return parsed?.isHex === true || Number(parsed?.numberBase) === 16 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function tryRenderedHexCartoucheToParsed(run, options = {}) {
+  const semantic = hexSemanticForAudioRun(run);
+  if (semantic) {
+    const hash = canonicalHexHashFromSemantic(semantic);
+    const parsed = parseHexForAudio(hash, options);
+    if (parsed) return parsed;
+  }
+  if (!isRenderedHexCartouche(run)) return null;
+  const sourceText = String(run?.sourceText ?? run?.encodedText ?? run?._element?.sourceText ?? '').trim();
+  return sourceText ? parseHexForAudio(sourceText, options) : null;
+}
+
+function trySourceTextToHexParsed(text, options = {}) {
+  if (options.enableHexParsing !== true) return null;
+  return parseHexForAudio(text, options);
+}
+
+function tryRenderedHexCartoucheToProperName(run, options = {}) {
+  return compactSpeechWhitespace(tryRenderedHexCartoucheToParsed(run, options)?.properName || '');
+}
+
 /**
  * Numeric-cartouche audio must follow the renderer's canonical numeric
  * metadata, not legacy source spelling. This matters for accepted compatibility
@@ -1583,6 +1669,7 @@ function runAudioSourceIndices(run, componentCount) {
  * what is actually visible.
  */
 function tryRenderedNumericCartoucheToProperName(run, options = {}) {
+  if (isRenderedHexCartouche(run)) return '';
   if (!(
     run?.isNumericCartouche === true ||
     run?._element?.isNumericCartouche === true ||
@@ -1815,8 +1902,253 @@ function classifyAdjacentCartoucheAudioGroups(runs, options = {}) {
   return classifications;
 }
 
+const HEX_STRICT_DIGIT_SYLLABLE_FOR_AUDIO = Object.freeze({
+  '0':'ni','1':'we','2':'te','3':'se','4':'na','5':'le','6':'nu','7':'me','8':'pe','9':'je',
+  'A':'si','B':'ta','C':'pa','D':'mi','E':'ma','F':'la'
+});
+
+const HEX_RELAXED_DIGIT_SYLLABLE_FOR_AUDIO = Object.freeze({
+  ...HEX_STRICT_DIGIT_SYLLABLE_FOR_AUDIO,
+  '1':'wa','2':'tu','5':'lu','7':'mu','8':'pi'
+});
+
+function hexGroupingSizesForAudio(length) {
+  const n = Math.max(0, Number(length) | 0);
+  if (n <= 0) return [];
+  if (n === 1) return [1];
+  if ((n % 2) === 0) return Array.from({ length: n / 2 }, () => 2);
+  return [...Array.from({ length: Math.max(0, (n - 3) / 2) }, () => 2), 3];
+}
+
+function hexDisplayedInnerCodepointsForAudio(run) {
+  const cps = runCodepointsForAudio(run);
+  if (
+    cps.length >= 2 &&
+    cps[0] === RAW_AUDIO_CARTOUCHE_START_CP &&
+    cps[cps.length - 1] === RAW_AUDIO_CARTOUCHE_END_CP
+  ) {
+    return { cps: cps.slice(1, -1), componentOffset: 1 };
+  }
+  return { cps, componentOffset: 0 };
+}
+
+function codepointsToAudioWords(cps, NanpaParser) {
+  const decoder = typeof NanpaParser?.codepointsToWords === 'function'
+    ? NanpaParser.codepointsToWords.bind(NanpaParser)
+    : (typeof NanpaParser?.ucsurCodepointsToTpWords === 'function'
+        ? NanpaParser.ucsurCodepointsToTpWords.bind(NanpaParser)
+        : null);
+  if (!decoder) return [];
+  try {
+    return Array.from(decoder(cps) || []).map(value => {
+      const word = normalizeTpGlyphToken(value);
+      return word === 'kolon' ? ':' : word;
+    }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function sameAudioWordSequence(a, b) {
+  const left = Array.from(a || []).map(normalizeTpGlyphToken);
+  const right = Array.from(b || []).map(normalizeTpGlyphToken);
+  return left.length === right.length && left.every((word, index) => word === right[index]);
+}
+
+function titleCaseAudioUnit(text) {
+  const s = String(text || '').toLowerCase();
+  return s ? s[0].toUpperCase() + s.slice(1) : '';
+}
+
+function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, options = {}) {
+  if (!parsed?.properName || !Array.isArray(parsed?.hexParts)) return [];
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (!NanpaParser) return [];
+
+  // Renderer-confirmed hex cartouches are numeric audio, just like decimal
+  // nanpa-linja-n cartouches. Keep the complete Nasa proper-name phrase
+  // together so the voice API resolves every syllable through nanpa_units
+  // before considering ordinary Toki Pona word recordings. This is especially
+  // important for collisions such as Tan/tan, Ma/ma and Mi/mi.
+  const forceOrdinaryCartoucheAudio = options?.cartoucheAudioMode === 'ordinary';
+  const numericCartouche = !forceOrdinaryCartoucheAudio;
+  const numericCartoucheRunId = numericCartouche
+    ? runIdForAudio(run, fallbackRunIndex, lineIndex)
+    : null;
+  const numericCartouchePhrase = numericCartouche
+    ? compactSpeechWhitespace(parsed.properName)
+    : '';
+
+  const displayed = hexDisplayedInnerCodepointsForAudio(run);
+  const displayedWords = codepointsToAudioWords(displayed.cps, NanpaParser);
+  if (!displayedWords.length) return [];
+
+  const fullWords = Array.from(parsed.tpWords || []).map(normalizeTpGlyphToken).filter(Boolean);
+  const abbreviatedWords = Array.from(parsed.abbreviatedWords || []).map(normalizeTpGlyphToken).filter(Boolean);
+  let abbreviated = false;
+  if (sameAudioWordSequence(displayedWords, abbreviatedWords)) abbreviated = true;
+  else if (!sameAudioWordSequence(displayedWords, fullWords)) return [];
+
+  const nodes = [];
+  const addNode = (kind, units) => {
+    const node = { kind, units: Array.from(units || []) };
+    nodes.push(node);
+    return node;
+  };
+  const lastNode = () => nodes[nodes.length - 1] || null;
+  const lastUnit = node => node?.units?.[node.units.length - 1] || null;
+  const attachCodaN = (node, componentIndex = null) => {
+    const unit = lastUnit(node);
+    if (!unit) return false;
+    if (!String(unit.baseText || '').endsWith('n')) unit.baseText = String(unit.baseText || '') + 'n';
+    if (Number.isFinite(componentIndex)) unit.componentIndices.push(Number(componentIndex));
+    return true;
+  };
+
+  let cursor = 0;
+  const withOffset = index => Number(index) + displayed.componentOffset;
+  if (displayedWords[0] !== 'nasa' || displayedWords[1] !== ':' || displayedWords[displayedWords.length - 1] !== 'nasa') return [];
+
+  addNode('opening', [{ baseText: 'nasa', componentIndices: [withOffset(cursor), withOffset(cursor + 1)] }]);
+  cursor += 2;
+
+  const syllableMap = options.relaxedNanpaLinjanRendering
+    ? HEX_RELAXED_DIGIT_SYLLABLE_FOR_AUDIO
+    : HEX_STRICT_DIGIT_SYLLABLE_FOR_AUDIO;
+
+  for (let partIndex = 0; partIndex < parsed.hexParts.length; partIndex++) {
+    const part = parsed.hexParts[partIndex];
+    if (part?.kind === 'digits') {
+      const digits = String(part.digits || '').toUpperCase();
+      const sizes = hexGroupingSizesForAudio(digits.length);
+      let digitCursor = 0;
+      for (let groupIndex = 0; groupIndex < sizes.length; groupIndex++) {
+        const size = sizes[groupIndex];
+        const groupDigits = digits.slice(digitCursor, digitCursor + size);
+        digitCursor += size;
+        const units = [];
+        for (const digit of groupDigits) {
+          const syllable = syllableMap[digit];
+          if (!syllable) return [];
+          const componentIndices = abbreviated
+            ? [withOffset(cursor)]
+            : [withOffset(cursor), withOffset(cursor + 1)];
+          cursor += abbreviated ? 1 : 2;
+          units.push({ baseText: syllable, componentIndices });
+        }
+        const groupNode = addNode('digits', units);
+
+        if (groupIndex < sizes.length - 1) {
+          if (abbreviated) {
+            attachCodaN(groupNode);
+            addNode('eke', [{ baseText: 'eke', componentIndices: [withOffset(cursor)] }]);
+            cursor += 1;
+          } else {
+            attachCodaN(groupNode, withOffset(cursor));
+            addNode('eke', [{
+              baseText: 'eke',
+              componentIndices: [withOffset(cursor + 1), withOffset(cursor + 2), withOffset(cursor + 3)]
+            }]);
+            cursor += 4;
+          }
+        }
+      }
+      continue;
+    }
+
+    if (part?.kind === 'delimiter') {
+      const previous = lastNode();
+      if (!previous) return [];
+      if (abbreviated) {
+        attachCodaN(previous);
+        addNode('ene', [{ baseText: 'ene', componentIndices: [withOffset(cursor)] }]);
+        cursor += 1;
+      } else {
+        attachCodaN(previous, withOffset(cursor));
+        addNode('ene', [{
+          baseText: 'ene',
+          componentIndices: [withOffset(cursor + 1), withOffset(cursor + 2), withOffset(cursor + 3)]
+        }]);
+        cursor += 4;
+      }
+      continue;
+    }
+
+    return [];
+  }
+
+  const finalNode = lastNode();
+  if (!finalNode || cursor >= displayedWords.length) return [];
+  attachCodaN(finalNode, withOffset(cursor));
+  cursor += 1;
+  if (cursor !== displayedWords.length) return [];
+
+  const unitsOut = [];
+  let unitIndex = 0;
+  for (let wordIndex = 0; wordIndex < nodes.length; wordIndex++) {
+    const node = nodes[wordIndex];
+    const wordLower = node.units.map(unit => String(unit.baseText || '')).join('').toLowerCase();
+    if (!wordLower) return [];
+    const word = titleCaseAudioUnit(wordLower);
+    for (let unitIndexInWord = 0; unitIndexInWord < node.units.length; unitIndexInWord++) {
+      const sourceUnit = node.units[unitIndexInWord];
+      const text = unitIndexInWord === 0
+        ? titleCaseAudioUnit(sourceUnit.baseText)
+        : String(sourceUnit.baseText || '').toLowerCase();
+      const wholeNumericPunctuationWord = node.kind === 'eke' || node.kind === 'ene';
+      unitsOut.push({
+        text,
+        timingText: text,
+        timingSyllables: [String(sourceUnit.baseText || '').toLowerCase()],
+        kind: wholeNumericPunctuationWord ? 'numeric-punctuation-word' : 'cartouche-syllable',
+        word,
+        wordIndex,
+        unitIndex,
+        unitIndexInWord,
+        wholeNumericPunctuationWord,
+        suppressActiveHighlight: false,
+        numericCartouche,
+        recognizedNumericCartouche: true,
+        hexCartouche: true,
+        numericBase: 16,
+        cartoucheAudioGroupId: options?.cartoucheAudioGroupId || null,
+        cartoucheAudioMode: numericCartouche ? 'hex' : 'ordinary',
+        forceOrdinarySyllableAudio: !numericCartouche,
+        audioBank: null,
+        audioUnitKey: '',
+        numericCartoucheRunId,
+        numericCartouchePhrase,
+        numericAudioUnitKey: numericCartouche ? normalizeAudioWord(sourceUnit.baseText) : '',
+        visualTargets: [
+          visualTargetForComponentIndices(
+            run,
+            sourceUnit.componentIndices,
+            fallbackRunIndex,
+            lineIndex
+          )
+        ]
+      });
+      unitIndex += 1;
+    }
+  }
+
+  const rebuiltProperName = nodes.map(node => titleCaseAudioUnit(
+    node.units.map(unit => String(unit.baseText || '')).join('')
+  )).join(' ');
+  if (normalizeAudioProperNameCompareText(rebuiltProperName) !== normalizeAudioProperNameCompareText(parsed.properName)) return [];
+  return unitsOut;
+}
+
 function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, options = {}) {
   const sourceText = String(run?.sourceText ?? run?.encodedText ?? '').trim();
+  const renderedHexParsed = tryRenderedHexCartoucheToParsed(run, options);
+  const sourceHexParsed = renderedHexParsed ? null : trySourceTextToHexParsed(sourceText, options);
+  const hexParsed = renderedHexParsed || sourceHexParsed;
+  if (hexParsed) {
+    const hexUnits = buildHexCartoucheSpeechUnits(run, hexParsed, fallbackRunIndex, lineIndex, options);
+    if (hexUnits.length) return hexUnits;
+  }
+
   const renderedNumericProperName = tryRenderedNumericCartoucheToProperName(run, options);
   const sourceNumericProperName = trySourceTextToNanpaProperName(sourceText, options);
   const numericProperName = renderedNumericProperName || sourceNumericProperName;
@@ -2412,6 +2744,9 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
 
 export async function buildSitelenSentenceAudioPlan(options = {}) {
   const base = await buildSitelenAudioPlan(options);
+  const enableHexParsing = options.enableHexParsing != null
+    ? options.enableHexParsing === true
+    : options.rendererConfig?.parser?.enableHexParsing === true;
   const extracted = extractSpeechSegmentsFromRenderPlan(base.audioPlan, {
     sourceInput: base.audioInput,
     rawInput: base.rawText,
@@ -2421,6 +2756,7 @@ export async function buildSitelenSentenceAudioPlan(options = {}) {
     mixedStyle: options.mixedStyle,
     relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+    enableHexParsing,
     silenceTeToAudio: options.silenceTeToAudio === true,
     soundOutPhonotacticUnknownWords: options.soundOutPhonotacticUnknownWords === true,
     interpretDoubleQuotesAsTeTo: !!options.interpretDoubleQuotesAsTeTo
@@ -2987,6 +3323,7 @@ export async function buildSitelenSentenceAudioBuffersFromRawText({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  enableHexParsing = rendererConfig?.parser?.enableHexParsing === true,
   silenceTeToAudio = false,
   soundOutPhonotacticUnknownWords = false,
   interpretDoubleQuotesAsTeTo = false,
@@ -3009,6 +3346,7 @@ export async function buildSitelenSentenceAudioBuffersFromRawText({
     mixedStyle,
     relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering,
+    enableHexParsing,
     silenceTeToAudio,
     soundOutPhonotacticUnknownWords,
     interpretDoubleQuotesAsTeTo,
@@ -3234,6 +3572,7 @@ export async function buildAndPlaySitelenAudioFromRawText({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  enableHexParsing = rendererConfig?.parser?.enableHexParsing === true,
   silenceTeToAudio = false,
   soundOutPhonotacticUnknownWords = false,
   interpretDoubleQuotesAsTeTo = false,
@@ -3257,6 +3596,7 @@ export async function buildAndPlaySitelenAudioFromRawText({
     mixedStyle,
     relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering,
+    enableHexParsing,
     silenceTeToAudio,
     soundOutPhonotacticUnknownWords,
     interpretDoubleQuotesAsTeTo,

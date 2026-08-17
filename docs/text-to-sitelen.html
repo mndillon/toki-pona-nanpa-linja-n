@@ -522,6 +522,14 @@ nanpa #~WI.
           <span class="ctlLabel" style="margin:0;">Enabled</span>
           </label>
           </div>
+
+          <div aria-label="Enable hex parsing" class="inlineControl inlinePill" id="ctlEnableHexParsing" role="group">
+          <span class="ctlLabel">Enable hex parsing</span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Enable hex parsing" id="appEnableHexParsingEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
           </div>
         </div>
       </section>
@@ -835,7 +843,7 @@ nanpa #~WI.
         bootStarted = true;
         try {
           setMessage("Loading page styles…");
-          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=51");
+          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=52");
 
           setMessage("Loading PDF support…");
           await loadClassicScript("./vendor/pdf-lib.min.js?v=49");
@@ -844,7 +852,7 @@ nanpa #~WI.
           await loadClassicScript("./vendor/fontkit.umd.min.js?v=49");
 
           setMessage("Loading renderer…");
-          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=241");
+          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=250");
         } catch (error) {
           showStartupError(error);
         }

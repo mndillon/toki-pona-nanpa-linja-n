@@ -1,5 +1,5 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=22';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=235';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=25';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 
@@ -17,7 +17,8 @@ export const DEFAULT_VOICE_OPTIONS = Object.freeze({
   synthesis_mode: 'reference_audio',
   sample_rate: 48000,
   pauseScale: 1.0,
-  syllableGapSeconds: 0.0
+  syllableGapSeconds: 0.0,
+  enableHexParsing: false
 });
 
 const TP_CONS = new Set(['p','t','k','m','n','s','w','l','j']);
@@ -254,10 +255,26 @@ function concatChunks(chunks, sampleRate) {
   ).samples;
 }
 
-function tryNanpaNumberToProperName(fragment) {
+function tryNanpaNumberToProperName(fragment, options = {}) {
   const s = String(fragment || '').trim();
   if (!s) return null;
-  const parsed = NanpaParser.parseNumber(s, { mode: 'uniform', mixedStyle: 'short' });
+  const enableHexParsing = options.enableHexParsing === true;
+  const potentialHex = enableHexParsing && (
+    /^#[0-9A-F]/i.test(s) ||
+    /^\[\s*nasa(?:\s|:)/i.test(s) ||
+    /^nasa/i.test(s)
+  );
+  const parserOptions = {
+    mode: 'uniform',
+    mixedStyle: 'short',
+    enableHexParsing
+  };
+  if (potentialHex) {
+    parserOptions.relaxedNanpaLinjanParsing = !!options.relaxedNanpaLinjanParsing;
+    parserOptions.relaxedNanpaLinjanRendering = !!options.relaxedNanpaLinjanRendering;
+    parserOptions.abbreviateNumericCartouches = !!options.abbreviateNumericCartouches;
+  }
+  const parsed = NanpaParser.parseNumber(s, parserOptions);
   if (!parsed || !parsed.properName) return null;
   return {
     source: s,
@@ -265,6 +282,9 @@ function tryNanpaNumberToProperName(fragment) {
     displayValue: parsed.displayValue || null,
     caps: parsed.caps || null,
     uniqueCode: parsed.uniqueCode || null,
+    kind: parsed.kind || null,
+    numberBase: parsed.numberBase || null,
+    isHex: parsed.isHex === true
   };
 }
 
@@ -279,19 +299,48 @@ function resolveDbToken(raw, db, warnings) {
   return '';
 }
 
-function preprocessCartoucheDb(input, db) {
+function preprocessCartoucheDb(input, db, options = {}) {
   const warnings = [];
   let text = String(input || '');
   text = text.replace(/\b[A-Za-z][A-Za-z_]*(?:\s+[A-Za-z][A-Za-z_]*)?@db\b/g, (m) => resolveDbToken(m, db, warnings));
   text = text.replace(/\[([^\]\n]+)\]/g, (_, inner) => {
     const s = String(inner || '').trim();
-    const parsed = tryNanpaNumberToProperName(s);
+    // Hex cartouches are parsed by NanpaParser with their bracket syntax intact.
+    // Decimal cartouches retain the historical inner-text fallback unchanged.
+    const parsed = options.enableHexParsing === true
+      ? (tryNanpaNumberToProperName(`[${s}]`, options) || tryNanpaNumberToProperName(s, options))
+      : tryNanpaNumberToProperName(s, options);
     return parsed ? parsed.properName : s;
   });
   return { text, warnings };
 }
 
-function preprocessNanpaNumbers(input) {
+function findHexHashSpansForAudio(text, options = {}) {
+  if (options.enableHexParsing !== true) return [];
+  const source = String(text || '');
+  const spans = [];
+  const isHexDigit = ch => typeof ch === 'string' && /^[0-9A-F]$/i.test(ch);
+  const isAsciiLetter = ch => typeof ch === 'string' && /^[A-Za-z]$/.test(ch);
+
+  for (let index = 0; index < source.length; index++) {
+    if (source[index] !== '#' || !isHexDigit(source[index + 1])) continue;
+    let end = index + 1;
+    while (end < source.length) {
+      const ch = source[end];
+      if (/\s/.test(ch)) break;
+      if (isHexDigit(ch)) { end += 1; continue; }
+      if (isAsciiLetter(ch)) break;
+      end += 1;
+    }
+    const raw = source.slice(index, end);
+    const parsed = tryNanpaNumberToProperName(raw, options);
+    if (parsed?.isHex) spans.push({ index, end, raw, parsed });
+    index = Math.max(index, end - 1);
+  }
+  return spans;
+}
+
+function preprocessNanpaNumbers(input, options = {}) {
   const warnings = [];
   const conversions = [];
   const text = String(input || '');
@@ -306,7 +355,7 @@ function preprocessNanpaNumbers(input) {
     /(?<![A-Za-z0-9_.])\+\s*(?:\d+\s*\+\s*\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?\s*%?)(?![A-Za-z])/g,
     /(?<![A-Za-z])(?:-?\s*\d+\s*\+\s*\d+\s*\/\s*\d+|-?\s*\d+\s*\/\s*\d+|-?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?\s*%?)(?![A-Za-z])/g
   ];
-  const spans = [];
+  const spans = findHexHashSpansForAudio(text, options);
   for (const re of patterns) {
     for (const match of text.matchAll(re)) {
       const raw0 = match[0];
@@ -327,7 +376,7 @@ function preprocessNanpaNumbers(input) {
         if (previous >= 0 && /[A-Za-z0-9_.]/.test(text[previous])) continue;
       }
 
-      const parsed = tryNanpaNumberToProperName(raw);
+      const parsed = tryNanpaNumberToProperName(raw, options);
       if (!parsed) continue;
       spans.push({ index, end: index + raw.length, raw, parsed });
     }
@@ -344,7 +393,14 @@ function preprocessNanpaNumbers(input) {
   let pos = 0;
   for (const s of chosen) {
     out += text.slice(pos, s.index);
-    out += s.parsed.properName;
+    let replacement = s.parsed.properName;
+    if (s.parsed.isHex) {
+      const previous = s.index > 0 ? text[s.index - 1] : '';
+      const next = s.end < text.length ? text[s.end] : '';
+      if (/[A-Za-z]/.test(previous) && /^[A-Za-z]/.test(replacement)) replacement = ' ' + replacement;
+      if (/[A-Za-z]$/.test(replacement) && /[A-Za-z]/.test(next)) replacement += ' ';
+    }
+    out += replacement;
     conversions.push({ source: s.raw, properName: s.parsed.properName, displayValue: s.parsed.displayValue, caps: s.parsed.caps, uniqueCode: s.parsed.uniqueCode });
     pos = s.end;
   }
@@ -514,8 +570,8 @@ export class TokiPonaVoice {
       db = {};
       warnings.push({ kind: 'cartouche_db_json', source: 'cartoucheDb', message: String(err?.message || err) });
     }
-    const dbPass = preprocessCartoucheDb(input, db);
-    const nanpaPass = preprocessNanpaNumbers(dbPass.text);
+    const dbPass = preprocessCartoucheDb(input, db, options);
+    const nanpaPass = preprocessNanpaNumbers(dbPass.text, options);
     return {
       speechText: nanpaPass.text,
       warnings: [...warnings, ...dbPass.warnings, ...nanpaPass.warnings],

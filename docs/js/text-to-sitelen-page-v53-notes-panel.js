@@ -1,4 +1,4 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=235";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -7,13 +7,13 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=176';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=44';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=54';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=45';
+} from './sitelen-audio-plan.js?v=47';
 let pageMap = new Map();
 
 "use strict";
@@ -482,7 +482,7 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=235",
   fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=176",
@@ -1072,6 +1072,7 @@ function buildBaseRendererConfig({ includeHalo = true } = {}) {
       nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
       interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
       breakLinesAtFullStops: getBreakLinesAtFullStopsEnabled(),
+      enableHexParsing: getEnableHexParsingEnabled(),
       ...buildCartoucheTallyParserConfig()
     },
     fonts: {
@@ -1127,7 +1128,8 @@ function getRendererSignature() {
     abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
     preserveNumericCartoucheBreaksInAbbreviation: getNumericCartoucheSpacersEnabled(),
     relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled(),
-    nasinNanpaPona: getNasinNanpaPonaFormattingEnabled()
+    nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
+    enableHexParsing: getEnableHexParsingEnabled()
   });
 }
 
@@ -1675,6 +1677,36 @@ try {
 } catch (error) {
   showAlertAndAnnounce(error?.message ?? String(error));
 }
+  });
+}
+
+const ENABLE_HEX_PARSING_STORAGE_KEY = "tpEnableHexParsing";
+const ENABLE_HEX_PARSING_DEFAULT_ENABLED = true;
+
+function getEnableHexParsingEnabled() {
+  return !!document.getElementById("appEnableHexParsingEnable")?.checked;
+}
+
+function applyEnableHexParsingFromStorage() {
+  const enabled = loadBooleanFlagFromStorage(ENABLE_HEX_PARSING_STORAGE_KEY)
+    ?? ENABLE_HEX_PARSING_DEFAULT_ENABLED;
+  const el = document.getElementById("appEnableHexParsingEnable");
+  if (el) el.checked = enabled;
+}
+
+function wireEnableHexParsingToggle() {
+  const el = document.getElementById("appEnableHexParsingEnable");
+  el?.addEventListener("change", async () => {
+    try {
+      saveBooleanFlagToStorage(ENABLE_HEX_PARSING_STORAGE_KEY, el.checked);
+      resetTextToSitelenAudio({ announce: false });
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
+      await renderFromTextarea();
+      updateTextAudioButtons();
+    } catch (error) {
+      showAlertAndAnnounce(error?.message ?? String(error));
+    }
   });
 }
 
@@ -6038,7 +6070,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=235", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -9999,7 +10031,7 @@ async function initializeTextToSitelenPage() {
 
     try {
       const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
-        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=10",
+        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=11",
         onlyIfExisting: false,
         force: false
       });
@@ -10037,6 +10069,7 @@ async function initializeTextToSitelenPage() {
     applyNasinNanpaPonaFormattingFromStorage();
     applyAudioParserFlagsFromStorage();
     applyBreakLinesAtFullStopsFromStorage();
+    applyEnableHexParsingFromStorage();
 
     
 
@@ -10085,6 +10118,7 @@ async function initializeTextToSitelenPage() {
     wireNasinNanpaPonaFormattingToggle();
     wireAudioParserFlags();
     wireBreakLinesAtFullStopsToggle();
+    wireEnableHexParsingToggle();
     wireCartoucheDisplayLinks();
     initTextAudioControls();
     wireTextAudioControls();

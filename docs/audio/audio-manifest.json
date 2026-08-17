@@ -1,5 +1,5 @@
 {
-  "version": "0.6",
+  "version": "1.2",
   "sample_rate": 48000,
   "license_note": "Toki_Pona_audio_by_jan_Lakuse.zip contains _licence.txt: \"You can redistribute these files or use them in your project, but please mention audio provided by jan Lakuse.\" ku.zip did not include a licence file in the uploaded archive; treat those two files as local-project assets unless separately licensed.",
   "words": {
@@ -2263,6 +2263,90 @@
       "source": "uploaded nanpa-linja-n extra WAVs",
       "source_order": 49,
       "duration_ms": 1475.0
+    },
+    "nasa": {
+      "unit": "Nasa",
+      "file": "nanpa_v4/nasa.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 50,
+      "duration_ms": 753.4
+    },
+    "ta": {
+      "unit": "Ta",
+      "file": "nanpa_v4/ta.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 51,
+      "duration_ms": 434.4
+    },
+    "tan": {
+      "unit": "Tan",
+      "file": "nanpa_v4/tan.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 52,
+      "duration_ms": 529.1
+    },
+    "pa": {
+      "unit": "Pa",
+      "file": "nanpa_v4/pa.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 53,
+      "duration_ms": 428.4
+    },
+    "pan": {
+      "unit": "Pan",
+      "file": "nanpa_v4/pan.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 54,
+      "duration_ms": 523.1
+    },
+    "mi": {
+      "unit": "Mi",
+      "file": "nanpa_v4/mi.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 55,
+      "duration_ms": 454.9
+    },
+    "min": {
+      "unit": "Min",
+      "file": "nanpa_v4/min.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 56,
+      "duration_ms": 527.2
+    },
+    "ma": {
+      "unit": "Ma",
+      "file": "nanpa_v4/ma.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 57,
+      "duration_ms": 459.4
+    },
+    "man": {
+      "unit": "Man",
+      "file": "nanpa_v4/man.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 58,
+      "duration_ms": 554.1
+    },
+    "la": {
+      "unit": "La",
+      "file": "nanpa_v6/la.wav",
+      "source": "uploaded replacement numeric La audio",
+      "source_order": 59,
+      "duration_ms": 545.0
+    },
+    "lan": {
+      "unit": "Lan",
+      "file": "nanpa_v6/lan.wav",
+      "source": "uploaded replacement numeric Lan audio",
+      "source_order": 60,
+      "duration_ms": 615.0
+    },
+    "enen": {
+      "unit": "Enen",
+      "file": "nanpa_v4/enen.wav",
+      "source": "derived from supplied numeric nanpa assets",
+      "source_order": 61,
+      "duration_ms": 593.1
     }
   },
   "nanpa_unit_source": {
@@ -2336,5 +2420,78 @@
       "wa"
     ],
     "notes": "Additional purpose-recorded nanpa-linja-n units added to nanpa_units so capitalized nanpa-linja-n proper-name words can prefer these assets before syllable assembly."
+  },
+  "nanpa_hex_unit_source": {
+    "source_file_group": "derived from supplied numeric nanpa assets",
+    "added_units": 12,
+    "asset_sample_rates": [
+      24000
+    ],
+    "labels_in_order": [
+      "Nasa",
+      "Ta",
+      "Tan",
+      "Pa",
+      "Pan",
+      "Mi",
+      "Min",
+      "Ma",
+      "Man",
+      "La",
+      "Lan",
+      "Enen"
+    ],
+    "derivations": {
+      "Nasa": [
+        "nanpa_v2/na.wav",
+        "nanpa_v2/si.wav",
+        "nanpa_v2/na.wav"
+      ],
+      "Ta": [
+        "nanpa_v2/te.wav",
+        "nanpa_v2/na.wav"
+      ],
+      "Tan": [
+        "nanpa_v2/te.wav",
+        "nanpa_v2/nan.wav"
+      ],
+      "Pa": [
+        "nanpa_v2/pe.wav",
+        "nanpa_v2/na.wav"
+      ],
+      "Pan": [
+        "nanpa_v2/pe.wav",
+        "nanpa_v2/nan.wav"
+      ],
+      "Mi": [
+        "nanpa_v2/me.wav",
+        "nanpa_v2/ni.wav"
+      ],
+      "Min": [
+        "nanpa_v2/me.wav",
+        "nanpa_v2/nin.wav"
+      ],
+      "Ma": [
+        "nanpa_v2/me.wav",
+        "nanpa_v2/na.wav"
+      ],
+      "Man": [
+        "nanpa_v2/me.wav",
+        "nanpa_v2/nan.wav"
+      ],
+      "La": [
+        "uploaded replacement numeric La audio",
+        "nanpa_v6/la.wav"
+      ],
+      "Lan": [
+        "uploaded replacement numeric Lan audio",
+        "nanpa_v6/lan.wav"
+      ],
+      "Enen": [
+        "nanpa_v2/ene.wav",
+        "nanpa_v2/nan.wav"
+      ]
+    },
+    "notes": "Hex-support nanpa units derived only from the supplied numeric WAV assets. Output is mono 16-bit PCM at 24000 Hz. Consonant onsets are retained from existing purpose-recorded numeric units; target vowel/coda portions are taken from existing Na/Nan or Ni/Nin units as appropriate. Nasa uses Na + a derived Sa (Si onset + Na vowel), and Enen uses Ene plus an existing terminal nasal. Source leading audio and source trailing audio are retained so the new units follow the timing convention of the supplied numeric bank. nanpa_v6 revises only La and Lan by replacing their initial /l/ onset with the corresponding Lu/Lun numeric onset, while preserving the original La/Lan sample count, sample rate, leading samples, and all samples after the onset crossfade. The current nanpa_v6 La/Lan files replace the previous onset-splice approach. Their initial 120 ms comes directly from supplied numeric Le/Len, the stable lateral is extended to produce a clearly sustained L, and the join enters La/Lan only after the previous consonant transition at a stable a/an vowel. No old La/Lan onset material is reused. The current nanpa_v6 La and Lan assets are the newly uploaded replacement recordings; manifest durations are measured directly from those WAV files."
   }
 }

@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generated": "2026-08-16",
+  "generated": "2026-08-17",
   "migration": {
     "clearIndexedDbPairsOnUpgrade": true,
     "preserveFontKeys": [
@@ -20,7 +20,7 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-08-16-072",
+      "rev": "2026-08-17-073",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
@@ -50,7 +50,7 @@
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-08-16-018",
+      "rev": "2026-08-17-019",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
@@ -88,7 +88,7 @@
     {
       "fontKey": "fairfaxHd",
       "label": "FairfaxHD predefined",
-      "rev": "2026-08-15-014",
+      "rev": "2026-08-17-015",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "fairfaxHd",
       "companionFamily": "fairfaxHd-Cartouche",
@@ -112,7 +112,7 @@
     {
       "fontKey": "fairfaxPonaHd",
       "label": "FairfaxPonaHD predefined",
-      "rev": "2026-08-15-015",
+      "rev": "2026-08-17-016",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "fairfaxPonaHd",
       "companionFamily": "fairfaxPonaHd-Cartouche",
@@ -136,7 +136,7 @@
     {
       "fontKey": "linjaPona",
       "label": "linja pona predefined",
-      "rev": "2026-08-15-005",
+      "rev": "2026-08-17-006",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-pona-legacy-v1",
       "renderAdapterSettings": {
@@ -184,7 +184,7 @@
     {
       "fontKey": "linjaSike",
       "label": "linja sike predefined",
-      "rev": "2026-08-16-005",
+      "rev": "2026-08-17-006",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-sike-legacy-v1",
       "renderAdapterSettings": {
@@ -230,7 +230,7 @@
     {
       "fontKey": "nasinSitelenPuMono",
       "label": "nasin sitelen pu mono predefined",
-      "rev": "2026-08-16-006",
+      "rev": "2026-08-17-007",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "nasin-sitelen-pu-mono-v1",
       "renderAdapterSettings": {
@@ -275,7 +275,7 @@
     {
       "fontKey": "linjaLipamanka",
       "label": "linja lipamanka predefined",
-      "rev": "2026-08-15-008",
+      "rev": "2026-08-17-009",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-lipamanka-v1",
       "renderAdapterSettings": {
