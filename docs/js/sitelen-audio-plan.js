@@ -1904,7 +1904,7 @@ function classifyAdjacentCartoucheAudioGroups(runs, options = {}) {
 
 const HEX_STRICT_DIGIT_SYLLABLE_FOR_AUDIO = Object.freeze({
   '0':'ni','1':'we','2':'te','3':'se','4':'na','5':'le','6':'nu','7':'me','8':'pe','9':'je',
-  'A':'ja','B':'la','C':'ma','D':'pa','E':'sa','F':'ta'
+  'A':'ja','B':'la','C':'ma','D':'pa','E':'si','F':'ta'
 });
 
 const HEX_RELAXED_DIGIT_SYLLABLE_FOR_AUDIO = Object.freeze({
@@ -1969,7 +1969,7 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
   // nanpa-linja-n cartouches. Keep the complete Nasa proper-name phrase
   // together so the voice API resolves every syllable through nanpa_units
   // before considering ordinary Toki Pona word recordings. This is especially
-  // important for collisions such as Jan/jan, Lawa/lawa, Ma/ma, Pan/pan, Sama/sama and Tawa/tawa.
+  // important for collisions such as Jan/jan, Lawa/lawa, Ma/ma, Pan/pan, Sike/sike and Tawa/tawa.
   const forceOrdinaryCartoucheAudio = options?.cartoucheAudioMode === 'ordinary';
   const numericCartouche = !forceOrdinaryCartoucheAudio;
   const numericCartoucheRunId = numericCartouche
