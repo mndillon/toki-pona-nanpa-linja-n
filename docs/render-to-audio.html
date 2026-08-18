@@ -957,7 +957,8 @@
         <span class="mono">8+1/2</span>, <span class="mono">7/8</span>,
         <span class="mono">64.5M</span>, <span class="mono">10.5%</span>,
         <span class="mono">3:49</span>, <span class="mono">2026-07-17</span>,
-        and <span class="mono">4.5e-3</span>. Press Enter or use the button.
+        <span class="mono">4.5e-3</span>, <span class="mono">#12AF</span>,
+        <span class="mono">#12-AF</span>, and <span class="mono">#AB:CD.12</span>. Press Enter or use the button.
       </div>
     </form>
 
@@ -1547,12 +1548,12 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=44";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=238";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=45";
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback
-    } from "./js/sitelen-audio-plan.js?v=45";
+    } from "./js/sitelen-audio-plan.js?v=46";
 
     const MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
     const MODE_DEFAULT = "relaxed";
@@ -1608,6 +1609,15 @@
     const DIGIT_TOKENS = new Set([
       "NI", "WE", "WA", "TE", "TU", "SE", "NA", "LE", "LU", "NU", "ME", "MU", "PE", "PI", "JE"
     ]);
+    const HEX_STRICT_DIGIT_SYLLABLE = Object.freeze({
+      "0":"ni", "1":"we", "2":"te", "3":"se", "4":"na", "5":"le", "6":"nu", "7":"me",
+      "8":"pe", "9":"je", "A":"ja", "B":"la", "C":"ma", "D":"pa", "E":"si", "F":"ta"
+    });
+    const HEX_RELAXED_DIGIT_SYLLABLE = Object.freeze({
+      ...HEX_STRICT_DIGIT_SYLLABLE,
+      "1":"wa", "2":"tu", "5":"lu", "7":"mu", "8":"pi"
+    });
+
 
     /*
      * Numeric punctuation recordings are complete nanpa_v2 audio units.
@@ -1690,10 +1700,12 @@
           const parsed = NanpaParser.parseNumber(candidate, {
             mode: "uniform",
             mixedStyle: "short",
-            relaxedNanpaLinjanParsing: true
+            relaxedNanpaLinjanParsing: true,
+            relaxedNanpaLinjanRendering: true,
+            enableHexParsing: true
           });
 
-          if (parsed?.caps) return candidate;
+          if (parsed?.caps || parsed?.isHex === true || Number(parsed?.numberBase) === 16) return candidate;
         }
       } catch {}
 
@@ -1814,6 +1826,7 @@
           mixedStyle: "short",
           relaxedNanpaLinjanParsing: relaxed,
           relaxedNanpaLinjanRendering: relaxed,
+          enableHexParsing: true,
           abbreviateNumericCartouches: abbreviated,
           preserveNumericCartoucheBreaksInAbbreviation: abbreviated,
           autoCartoucheStandaloneProperNames: true
@@ -1918,14 +1931,294 @@
       return source;
     }
 
+    function hexGroupingSizesForBreakdown(length) {
+      const n = Math.max(0, Math.trunc(Number(length) || 0));
+      if (n <= 0) return [];
+      if (n <= 3) return [n];
+      const out = [];
+      let remaining = n;
+      while (remaining > 3) {
+        out.push(2);
+        remaining -= 2;
+      }
+      out.push(remaining);
+      return out;
+    }
+
+    function buildHexBreakdownMetadata(parsed, rawInput, mode) {
+      if (!parsed?.isHex || !Array.isArray(parsed.hexParts)) return null;
+      const relaxed = normalizeMode(mode) === "relaxed";
+      const syllableMap = relaxed ? HEX_RELAXED_DIGIT_SYLLABLE : HEX_STRICT_DIGIT_SYLLABLE;
+      const nodes = [];
+      const rawUnits = [];
+      const inputSourceCells = [];
+      let fullCursor = 0;
+      let abbreviatedCursor = 0;
+      let sourceCursor = 1; // skip the leading # source marker
+
+      const addNode = (kind, units) => {
+        const node = { kind, units: Array.from(units || []) };
+        nodes.push(node);
+        return node;
+      };
+      const lastNode = () => nodes[nodes.length - 1] || null;
+      const lastUnit = node => node?.units?.[node.units.length - 1] || null;
+      const attachCodaN = (node, { fullIndex = null, abbreviatedIndex = null } = {}) => {
+        const unit = lastUnit(node);
+        if (!unit) return false;
+        if (!String(unit.baseText || '').endsWith('n')) unit.baseText = String(unit.baseText || '') + 'n';
+        if (Number.isInteger(fullIndex)) unit.fullIndexes.push(fullIndex);
+        if (Number.isInteger(abbreviatedIndex)) unit.abbreviatedIndexes.push(abbreviatedIndex);
+        return true;
+      };
+
+      addNode('opening', [{
+        baseText: 'nasa',
+        fullIndexes: [fullCursor, fullCursor + 1],
+        abbreviatedIndexes: [abbreviatedCursor, abbreviatedCursor + 1],
+        inputCharacterIndexes: [0]
+      }]);
+      fullCursor += 2;
+      abbreviatedCursor += 2;
+
+      for (const part of parsed.hexParts) {
+        if (part?.kind === 'digits') {
+          const digits = String(part.digits || '').toUpperCase();
+          const sizes = hexGroupingSizesForBreakdown(digits.length);
+          let digitCursor = 0;
+
+          for (let groupIndex = 0; groupIndex < sizes.length; groupIndex += 1) {
+            const groupDigits = digits.slice(digitCursor, digitCursor + sizes[groupIndex]);
+            digitCursor += sizes[groupIndex];
+            const units = [];
+
+            for (const digit of groupDigits) {
+              const syllable = syllableMap[digit];
+              if (!syllable) return null;
+              const sourceCharacter = String(rawInput ?? '')[sourceCursor] || digit;
+              const sourceIndexes = Number.isInteger(sourceCursor) ? [sourceCursor] : [];
+              rawUnits.push({
+                text: syllable,
+                kind: 'digit',
+                sourceTokens: [digit],
+                reassignLeadingN: false,
+                hexDigit: digit
+              });
+              const cell = makeInputSourceCell(sourceCharacter, 'down', 'hex-digit');
+              cell.sourceCharacterIndexes = sourceIndexes.slice();
+              inputSourceCells.push(cell);
+              units.push({
+                baseText: syllable,
+                fullIndexes: [fullCursor, fullCursor + 1],
+                abbreviatedIndexes: [abbreviatedCursor],
+                inputCharacterIndexes: sourceIndexes
+              });
+              fullCursor += 2;
+              abbreviatedCursor += 1;
+              sourceCursor += 1;
+            }
+
+            const groupNode = addNode('digits', units);
+            if (groupIndex < sizes.length - 1) {
+              if (!attachCodaN(groupNode, { fullIndex: fullCursor })) return null;
+              rawUnits.push({
+                text: 'neke',
+                kind: 'punctuation',
+                sourceTokens: ['NE', 'KE'],
+                reassignLeadingN: true,
+                hexGeneratedGroupBoundary: true
+              });
+              const generatedCell = makeInputSourceCell('', 'none', 'hex-generated-group-boundary');
+              generatedCell.sourceCharacterIndexes = [];
+              inputSourceCells.push(generatedCell);
+              addNode('eke', [{
+                baseText: 'eke',
+                fullIndexes: [fullCursor + 1, fullCursor + 2, fullCursor + 3],
+                abbreviatedIndexes: [abbreviatedCursor],
+                inputCharacterIndexes: []
+              }]);
+              fullCursor += 4;
+              abbreviatedCursor += 1;
+            }
+          }
+          continue;
+        }
+
+        if (part?.kind === 'delimiter') {
+          const previous = lastNode();
+          if (!previous || !attachCodaN(previous, { fullIndex: fullCursor })) return null;
+          const sourceCharacter = String(rawInput ?? '')[sourceCursor] || String(part.char ?? ':');
+          const sourceIndexes = Number.isInteger(sourceCursor) ? [sourceCursor] : [];
+          rawUnits.push({
+            text: 'nene',
+            kind: 'punctuation',
+            sourceTokens: ['NE', 'NE'],
+            reassignLeadingN: true,
+            hexDelimiter: true,
+            delimiterChar: part.char ?? null
+          });
+          const delimiterCell = makeInputSourceCell(sourceCharacter, 'down', 'hex-delimiter');
+          delimiterCell.sourceCharacterIndexes = sourceIndexes.slice();
+          inputSourceCells.push(delimiterCell);
+          addNode('ene', [{
+            baseText: 'ene',
+            fullIndexes: [fullCursor + 1, fullCursor + 2, fullCursor + 3],
+            abbreviatedIndexes: [abbreviatedCursor],
+            inputCharacterIndexes: sourceIndexes
+          }]);
+          fullCursor += 4;
+          abbreviatedCursor += 1;
+          sourceCursor += 1;
+          continue;
+        }
+
+        return null;
+      }
+
+      const finalNode = lastNode();
+      if (!finalNode || !attachCodaN(finalNode, {
+        fullIndex: fullCursor,
+        abbreviatedIndex: abbreviatedCursor
+      })) return null;
+      fullCursor += 1;
+      abbreviatedCursor += 1;
+
+      if (
+        fullCursor !== Array.from(parsed.ucsurCodepoints || []).length ||
+        abbreviatedCursor !== Array.from(parsed.abbreviatedUcsurCodepoints || []).length
+      ) return null;
+
+      const audioUnits = [];
+      let unitIndex = 0;
+      for (let wordIndex = 0; wordIndex < nodes.length; wordIndex += 1) {
+        const node = nodes[wordIndex];
+        const wordLower = node.units.map(unit => String(unit.baseText || '')).join('').toLowerCase();
+        if (!wordLower) return null;
+        const word = wordLower[0].toUpperCase() + wordLower.slice(1);
+        for (let unitIndexInWord = 0; unitIndexInWord < node.units.length; unitIndexInWord += 1) {
+          const source = node.units[unitIndexInWord];
+          const base = String(source.baseText || '').toLowerCase();
+          const text = unitIndexInWord === 0 ? base[0].toUpperCase() + base.slice(1) : base;
+          audioUnits.push({
+            index: unitIndex++,
+            text,
+            word,
+            wordIndex,
+            unitIndexInWord,
+            wholeNumericPunctuationWord: node.kind === 'eke' || node.kind === 'ene',
+            hexFullCodepointIndexes: source.fullIndexes.slice(),
+            hexAbbreviatedCodepointIndexes: source.abbreviatedIndexes.slice(),
+            hexInputCharacterIndexes: Array.from(source.inputCharacterIndexes || [])
+          });
+        }
+      }
+
+      return {
+        rawUnits,
+        inputSourceCells,
+        audioUnits,
+        numericValueHighlightMap: audioUnits.map(unit => unit.hexInputCharacterIndexes.slice())
+      };
+    }
+
+    function buildHexFinalWordPlacements(rawUnits, properName) {
+      const words = String(properName ?? '').trim().split(/\s+/).filter(Boolean);
+      const rightMarkerColumn = rawUnits.length + 2;
+      if (!words.length) return [];
+
+      const placements = [{ word: words[0], startColumn: 1, endColumn: 1 }];
+      let wordIndex = 1;
+      let currentStartColumn = 2;
+
+      for (let unitIndex = 0; unitIndex < rawUnits.length; unitIndex += 1) {
+        const unit = rawUnits[unitIndex];
+        const column = unitIndex + 2;
+        if (!unit.reassignLeadingN) continue;
+
+        if (currentStartColumn <= column - 1 && words[wordIndex]) {
+          placements.push({
+            word: words[wordIndex++],
+            startColumn: currentStartColumn,
+            endColumn: column - 1
+          });
+        }
+        if (words[wordIndex]) {
+          placements.push({
+            word: words[wordIndex++],
+            startColumn: column,
+            endColumn: column
+          });
+        }
+        currentStartColumn = column + 1;
+      }
+
+      if (wordIndex < words.length && currentStartColumn <= rightMarkerColumn) {
+        placements.push({
+          word: words[wordIndex++],
+          startColumn: currentStartColumn,
+          endColumn: rightMarkerColumn
+        });
+      }
+
+      return wordIndex === words.length
+        ? placements
+        : distributeWordPlacements(words, rightMarkerColumn);
+    }
+
+    function buildHexModel(trimmedInput, normalizedMode, parsed) {
+      const metadata = buildHexBreakdownMetadata(parsed, trimmedInput, normalizedMode);
+      if (!metadata) {
+        throw new Error('The hexadecimal input was parsed, but its breakdown metadata could not be generated.');
+      }
+
+      const properName = titleCaseWords(parsed.properName || '');
+      const fullCodepoints = Array.from(parsed.ucsurCodepoints || [], Number);
+      if (!properName || !fullCodepoints.length) {
+        throw new Error('The hexadecimal input was parsed, but the proper name or cartouche could not be generated.');
+      }
+
+      return {
+        rawInput: trimmedInput,
+        parserDisplayInput: String(parsed.displayValue ?? trimmedInput).trim(),
+        componentDisplayInput: trimmedInput,
+        mode: normalizedMode,
+        strictParsed: parsed,
+        parsed,
+        isHex: true,
+        numberBase: 16,
+        tokens: [],
+        caps: null,
+        properName,
+        cartouche: {
+          innerCodepoints: fullCodepoints,
+          words: Array.from(parsed.tpWords || [])
+        },
+        rawUnits: metadata.rawUnits,
+        inputSourceCells: metadata.inputSourceCells,
+        audioUnits: metadata.audioUnits,
+        numericValueHighlightMap: metadata.numericValueHighlightMap,
+        finalWordPlacements: buildHexFinalWordPlacements(metadata.rawUnits, properName),
+        hundredsSplitLeadingNiIndexes: [],
+        hexParts: Array.from(parsed.hexParts || []).map(part => ({ ...part })),
+        fullCodepoints,
+        abbreviatedCodepoints: Array.from(parsed.abbreviatedUcsurCodepoints || [], Number)
+      };
+    }
+
     function buildModel(rawInput, mode) {
       const trimmedInput = String(rawInput ?? "").trim();
       const normalizedMode = normalizeMode(mode);
       const strictParsed = NanpaParser.parseNumber(trimmedInput, {
         mode: "uniform",
         mixedStyle: "short",
-        relaxedNanpaLinjanParsing: true
+        relaxedNanpaLinjanParsing: true,
+        relaxedNanpaLinjanRendering: normalizedMode === "relaxed",
+        enableHexParsing: true
       });
+
+      if (strictParsed?.isHex === true || Number(strictParsed?.numberBase) === 16) {
+        return buildHexModel(trimmedInput, normalizedMode, strictParsed);
+      }
 
       if (!strictParsed?.caps) {
         throw new Error("The input is not a numeric format accepted by the nanpa-linja-n parser.");
@@ -2540,7 +2833,7 @@
       clearElement(el.outerMarkerUnits);
       setColumnCount(el.outerMarkerUnits, columnCount);
 
-      const start = makeChip("Ne-", "marker");
+      const start = makeChip(model.isHex ? "Nasa" : "Ne-", "marker");
       placeAt(start, 1);
       el.outerMarkerUnits.appendChild(start);
 
@@ -2566,8 +2859,10 @@
 
       const startArrow = document.createElement("span");
       startArrow.className = "arrow-cell";
-      startArrow.textContent = "↘";
-      startArrow.title = "The opening Ne- joins the first proper-name word";
+      startArrow.textContent = model.isHex ? "↓" : "↘";
+      startArrow.title = model.isHex
+        ? "The hexadecimal opening Nasa remains a separate proper-name word"
+        : "The opening Ne- joins the first proper-name word";
       placeAt(startArrow, 1);
       el.reassignmentArrows.appendChild(startArrow);
 
@@ -3423,7 +3718,34 @@
       });
     }
 
+    function buildHexCartoucheHighlightMap(model, plan, target, abbreviated) {
+      const geometry = buildCartoucheGeometry(model, plan, target);
+      if (!geometry) return [];
+      const expectedCodepoints = abbreviated
+        ? Array.from(model.abbreviatedCodepoints || [], Number)
+        : Array.from(model.fullCodepoints || model.cartouche?.innerCodepoints || [], Number);
+      if (geometry.cps.length !== expectedCodepoints.length) {
+        console.warn('[render-to-audio] hexadecimal cartouche highlight mapping unavailable', {
+          displayedCodepointCount: geometry.cps.length,
+          expectedCodepointCount: expectedCodepoints.length,
+          abbreviated: !!abbreviated,
+          properName: model.properName
+        });
+        return [];
+      }
+
+      const map = [];
+      for (const unit of model.audioUnits || []) {
+        const indexes = abbreviated
+          ? unit.hexAbbreviatedCodepointIndexes
+          : unit.hexFullCodepointIndexes;
+        map[unit.index] = cartoucheRectsForIndexes(geometry, indexes || []);
+      }
+      return map;
+    }
+
     function buildFullCartoucheHighlightMap(model, plan, target) {
+      if (model?.isHex) return buildHexCartoucheHighlightMap(model, plan, target, false);
       const geometry = buildCartoucheGeometry(model, plan, target);
       const sourceRanges = audioUnitSourceRanges(model.audioUnits);
 
@@ -3461,6 +3783,7 @@
     }
 
     function buildAbbreviatedCartoucheHighlightMap(model, plan, target) {
+      if (model?.isHex) return buildHexCartoucheHighlightMap(model, plan, target, true);
       const geometry = buildCartoucheGeometry(model, plan, target);
       const fullCodepoints = Array.from(
         model.cartouche?.innerCodepoints ?? [],
@@ -4034,6 +4357,7 @@
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: model.mode === "relaxed",
         relaxedNanpaLinjanRendering: model.mode === "relaxed",
+        enableHexParsing: true,
         voice,
         renderOptions: {
           synthesis_mode: "reference_audio",
@@ -4488,7 +4812,7 @@ function trackUsage(eventName) {
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=44';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=45';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,
