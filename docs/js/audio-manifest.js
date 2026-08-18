@@ -2456,11 +2456,25 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "source_order": 66,
       "duration_ms": 615.0
     },
+    "sa": {
+      "unit": "Sa",
+      "file": "nanpa_v6/sa.wav",
+      "source": "uploaded numeric Sa audio",
+      "source_order": 67,
+      "duration_ms": 562.5
+    },
+    "san": {
+      "unit": "San",
+      "file": "nanpa_v6/san.wav",
+      "source": "uploaded numeric San audio",
+      "source_order": 68,
+      "duration_ms": 605.0
+    },
     "enen": {
       "unit": "Enen",
       "file": "nanpa_v4/enen.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 67,
+      "source_order": 69,
       "duration_ms": 593.1
     }
   },
@@ -2561,8 +2575,8 @@ export const REFERENCE_AUDIO_MANIFEST = {
     "notes": "Additional purpose-recorded nanpa-linja-n units added to nanpa_units so capitalized nanpa-linja-n proper-name words can prefer these assets before syllable assembly."
   },
   "nanpa_hex_unit_source": {
-    "source_file_group": "derived from supplied numeric nanpa assets",
-    "added_units": 12,
+    "source_file_group": "derived and uploaded numeric nanpa assets",
+    "added_units": 14,
     "asset_sample_rates": [
       24000
     ],
@@ -2578,6 +2592,8 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "Man",
       "La",
       "Lan",
+      "Sa",
+      "San",
       "Enen"
     ],
     "derivations": {
@@ -2626,11 +2642,19 @@ export const REFERENCE_AUDIO_MANIFEST = {
         "uploaded replacement numeric Lan audio",
         "nanpa_v6/lan.wav"
       ],
+      "Sa": [
+        "uploaded numeric Sa audio",
+        "nanpa_v6/sa.wav"
+      ],
+      "San": [
+        "uploaded numeric San audio",
+        "nanpa_v6/san.wav"
+      ],
       "Enen": [
         "nanpa_v2/ene.wav",
         "nanpa_v2/nan.wav"
       ]
     },
-    "notes": "Hex-support nanpa units derived only from the supplied numeric WAV assets. Output is mono 16-bit PCM at 24000 Hz. Consonant onsets are retained from existing purpose-recorded numeric units; target vowel/coda portions are taken from existing Na/Nan or Ni/Nin units as appropriate. Nasa uses Na + a derived Sa (Si onset + Na vowel), and Enen uses Ene plus an existing terminal nasal. Source leading audio and source trailing audio are retained so the new units follow the timing convention of the supplied numeric bank. nanpa_v5 revises only La and Lan by replacing their initial /l/ onset with the corresponding Lu/Lun numeric onset, while preserving the original La/Lan sample count, sample rate, leading samples, and all samples after the onset crossfade. The current nanpa_v5 La/Lan files replace the previous onset-splice approach. Their initial 120 ms comes directly from supplied numeric Le/Len, the stable lateral is extended to produce a clearly sustained L, and the join enters La/Lan only after the previous consonant transition at a stable a/an vowel. No old La/Lan onset material is reused. The current nanpa_v6 La and Lan assets are the newly uploaded replacement recordings; manifest durations are measured directly from those WAV files."
+    "notes": "Hex-support nanpa units use derived and uploaded numeric WAV assets. Output is mono 16-bit PCM at 24000 Hz. Consonant onsets are retained from existing purpose-recorded numeric units; target vowel/coda portions are taken from existing Na/Nan or Ni/Nin units as appropriate. Nasa uses Na + a derived Sa (Si onset + Na vowel), and Enen uses Ene plus an existing terminal nasal. Source leading audio and source trailing audio are retained so the new units follow the timing convention of the supplied numeric bank. nanpa_v5 revises only La and Lan by replacing their initial /l/ onset with the corresponding Lu/Lun numeric onset, while preserving the original La/Lan sample count, sample rate, leading samples, and all samples after the onset crossfade. The current nanpa_v5 La/Lan files replace the previous onset-splice approach. Their initial 120 ms comes directly from supplied numeric Le/Len, the stable lateral is extended to produce a clearly sustained L, and the join enters La/Lan only after the previous consonant transition at a stable a/an vowel. No old La/Lan onset material is reused. The current nanpa_v6 La and Lan assets are the newly uploaded replacement recordings; manifest durations are measured directly from those WAV files. nanpa_v6 also adds the uploaded purpose-recorded Sa and San assets; their manifest durations are measured directly from those WAV files."
   }
 };
