@@ -6461,7 +6461,8 @@ async function embedPdfFonts(){
 const elTextIn = document.getElementById("appTextIn");
 const outCanvas = document.getElementById("appOutCanvas");
 const selectionHighlightCanvas = document.getElementById("appSelectionHighlightCanvas");
-let selectedRenderedSelectionId = null;
+const selectedRenderedSelectionIds = new Set();
+let renderedUnicodeSelectionAnchorId = null;
 const btnRender = document.getElementById("appBtnRender");
 const btnDownload = document.getElementById("appBtnDownloadPng");
 
@@ -7239,7 +7240,8 @@ function syncRenderedSelectionCanvasSize() {
 }
 
 function clearRenderedUnicodeSelection({ announce = false } = {}) {
-  selectedRenderedSelectionId = null;
+  selectedRenderedSelectionIds.clear();
+  renderedUnicodeSelectionAnchorId = null;
   if (selectionHighlightCanvas) {
     syncRenderedSelectionCanvasSize();
     const ctx = selectionHighlightCanvas.getContext("2d", { alpha: true });
@@ -7248,56 +7250,61 @@ function clearRenderedUnicodeSelection({ announce = false } = {}) {
   if (announce) announceStatus("Rendered Unicode selection cleared.");
 }
 
-function drawRenderedUnicodeSelection(selection) {
-  if (!selectionHighlightCanvas || !selection) return;
-  const runs = Array.isArray(selection.runs)
-    ? selection.runs.filter(Boolean)
-    : (selection ? [selection] : []);
-  if (!runs.length) return;
-
+function drawRenderedUnicodeSelections(selections) {
+  if (!selectionHighlightCanvas) return;
   syncRenderedSelectionCanvasSize();
   const ctx = selectionHighlightCanvas.getContext("2d", { alpha: true });
   if (!ctx) return;
   ctx.clearRect(0, 0, selectionHighlightCanvas.width, selectionHighlightCanvas.height);
 
-  // Draw one highlight rectangle per rendered line. This keeps a grouped
-  // literal selection accurate even if a future renderer version splits a
-  // quoted section into several runs or lines.
-  const runsByLine = new Map();
-  for (const run of runs) {
-    const lineKey = Number.isFinite(Number(run?.lineIndex)) ? Number(run.lineIndex) : 0;
-    if (!runsByLine.has(lineKey)) runsByLine.set(lineKey, []);
-    runsByLine.get(lineKey).push(run);
-  }
+  for (const selection of (selections || [])) {
+    if (!selection) continue;
+    const runs = Array.isArray(selection.runs)
+      ? selection.runs.filter(Boolean)
+      : [];
+    if (!runs.length) continue;
 
-  for (const lineRuns of runsByLine.values()) {
-    const rect = unionRects(lineRuns.map(rectForRun));
-    if (!rect) continue;
-    const maxFontPx = Math.max(
-      8,
-      ...lineRuns.map(run => Number(run?.fontPx) || Number(latestRenderPlan?.fontPx) || getFontPx())
-    );
-    const padding = Math.max(2, Math.round(maxFontPx * 0.055));
-    const x = Math.max(0, Number(rect.x) - padding);
-    const y = Math.max(0, Number(rect.y) - padding);
-    const width = Math.min(selectionHighlightCanvas.width - x, Number(rect.width) + padding * 2);
-    const height = Math.min(selectionHighlightCanvas.height - y, Number(rect.height) + padding * 2);
-    if (width <= 0 || height <= 0) continue;
+    // Keep distinct logical selections distinct. Within each logical selection,
+    // draw one rectangle per rendered line (for example a grouped quoted section).
+    const runsByLine = new Map();
+    for (const run of runs) {
+      const lineKey = Number.isFinite(Number(run?.lineIndex)) ? Number(run.lineIndex) : 0;
+      if (!runsByLine.has(lineKey)) runsByLine.set(lineKey, []);
+      runsByLine.get(lineKey).push(run);
+    }
 
-    const radius = Math.max(3, Math.min(10, Math.round(height * 0.14)));
-    ctx.save();
-    ctx.beginPath();
-    if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, radius);
-    else ctx.rect(x, y, width, height);
-    ctx.fillStyle = "rgba(70, 130, 180, 0.25)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(17, 17, 17, 0.88)";
-    ctx.lineWidth = Math.max(1, Math.round(maxFontPx * 0.025));
-    ctx.stroke();
-    ctx.restore();
+    for (const lineRuns of runsByLine.values()) {
+      const rect = unionRects(lineRuns.map(rectForRun));
+      if (!rect) continue;
+      const maxFontPx = Math.max(
+        8,
+        ...lineRuns.map(run => Number(run?.fontPx) || Number(latestRenderPlan?.fontPx) || getFontPx())
+      );
+      const padding = Math.max(2, Math.round(maxFontPx * 0.055));
+      const x = Math.max(0, Number(rect.x) - padding);
+      const y = Math.max(0, Number(rect.y) - padding);
+      const width = Math.min(selectionHighlightCanvas.width - x, Number(rect.width) + padding * 2);
+      const height = Math.min(selectionHighlightCanvas.height - y, Number(rect.height) + padding * 2);
+      if (width <= 0 || height <= 0) continue;
+
+      const radius = Math.max(3, Math.min(10, Math.round(height * 0.14)));
+      ctx.save();
+      ctx.beginPath();
+      if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, radius);
+      else ctx.rect(x, y, width, height);
+      ctx.fillStyle = "rgba(70, 130, 180, 0.25)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(17, 17, 17, 0.88)";
+      ctx.lineWidth = Math.max(1, Math.round(maxFontPx * 0.025));
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 }
 
+function drawRenderedUnicodeSelection(selection) {
+  drawRenderedUnicodeSelections(selection ? [selection] : []);
+}
 function renderedCanvasPointFromPointerEvent(event) {
   if (!outCanvas) return null;
   const bounds = outCanvas.getBoundingClientRect();
@@ -7641,6 +7648,73 @@ function getRenderedUnicodeSelectionForRun(run) {
   };
 }
 
+
+function renderedUnicodeSelectionLineIndex(selection) {
+  const lineIndexes = (selection?.runs || [])
+    .map(run => Number(run?.lineIndex))
+    .filter(Number.isFinite);
+  return lineIndexes.length ? Math.min(...lineIndexes) : 0;
+}
+
+function getRenderedUnicodeLogicalSelectionsInDocumentOrder() {
+  if (!latestRenderPlan) return [];
+  const out = [];
+  const seen = new Set();
+
+  for (const line of (latestRenderPlan.lines || [])) {
+    for (const run of (line?.runs || [])) {
+      if (!isRenderedRunUnicodeCopyable(run)) continue;
+      const selection = getRenderedUnicodeSelectionForRun(run);
+      if (!selection?.id || seen.has(selection.id)) continue;
+      seen.add(selection.id);
+      out.push(selection);
+    }
+  }
+  return out;
+}
+
+function selectedRenderedUnicodeSelectionsInDocumentOrder(catalog = null) {
+  const selections = Array.isArray(catalog)
+    ? catalog
+    : getRenderedUnicodeLogicalSelectionsInDocumentOrder();
+  return selections.filter(selection => selectedRenderedSelectionIds.has(selection.id));
+}
+
+function setRenderedUnicodeSelectionRange(anchorId, targetId, catalog) {
+  const selections = Array.isArray(catalog) ? catalog : [];
+  const anchorIndex = selections.findIndex(selection => selection.id === anchorId);
+  const targetIndex = selections.findIndex(selection => selection.id === targetId);
+  if (anchorIndex < 0 || targetIndex < 0) return false;
+
+  selectedRenderedSelectionIds.clear();
+  const first = Math.min(anchorIndex, targetIndex);
+  const last = Math.max(anchorIndex, targetIndex);
+  for (let index = first; index <= last; index++) {
+    selectedRenderedSelectionIds.add(selections[index].id);
+  }
+  return true;
+}
+
+function buildRenderedUnicodeSelectionClipboardText(selections) {
+  const ordered = Array.from(selections || []).filter(selection =>
+    selection && Array.isArray(selection.cps) && selection.cps.length
+  );
+  if (!ordered.length) return "";
+
+  let previousLineIndex = null;
+  let out = "";
+  for (const selection of ordered) {
+    const lineIndex = renderedUnicodeSelectionLineIndex(selection);
+    if (previousLineIndex != null && lineIndex !== previousLineIndex) out += "\n";
+    out += codepointsToRawUnicodeString(selection.cps);
+    previousLineIndex = lineIndex;
+  }
+  return out;
+}
+
+function renderedUnicodeSelectionLineCount(selections) {
+  return new Set((selections || []).map(renderedUnicodeSelectionLineIndex)).size;
+}
 function renderedRunHitRect(run) {
   const rect = rectForRun(run);
   if (!rect) return null;
@@ -7731,38 +7805,72 @@ async function handleRenderedUnicodePointerUp(event) {
   const run = findRenderedUnicodeRunAtPoint(point);
 
   if (!run) {
-    if (selectedRenderedSelectionId != null) clearRenderedUnicodeSelection({ announce: true });
+    if (selectedRenderedSelectionIds.size > 0 || renderedUnicodeSelectionAnchorId != null) clearRenderedUnicodeSelection({ announce: true });
     return;
   }
 
-  const selection = getRenderedUnicodeSelectionForRun(run);
-  if (!selection) return;
+  const clickedSelection = getRenderedUnicodeSelectionForRun(run);
+  if (!clickedSelection) return;
 
-  // A second click/tap anywhere inside the same logical selection toggles
-  // it off and does not copy it again. For literal text this means every
-  // word in the same quoted section shares one selection identity.
-  if (selectedRenderedSelectionId === selection.id) {
-    clearRenderedUnicodeSelection({ announce: true });
+  const catalog = getRenderedUnicodeLogicalSelectionsInDocumentOrder();
+  const selection = catalog.find(candidate => candidate.id === clickedSelection.id) || clickedSelection;
+  const ctrlToggle = !!(event.ctrlKey || event.metaKey);
+  const shiftRange = !!event.shiftKey && !ctrlToggle;
+
+  if (shiftRange) {
+    // Shift selects one contiguous logical range from the most recent plain-click
+    // anchor. Repeated Shift-clicks therefore extend or contract the same range.
+    if (!renderedUnicodeSelectionAnchorId ||
+        !setRenderedUnicodeSelectionRange(renderedUnicodeSelectionAnchorId, selection.id, catalog)) {
+      selectedRenderedSelectionIds.clear();
+      selectedRenderedSelectionIds.add(selection.id);
+      renderedUnicodeSelectionAnchorId = selection.id;
+    }
+  } else if (ctrlToggle) {
+    // Ctrl/Command toggles exactly this logical selection and deliberately leaves
+    // the Shift anchor unchanged.
+    if (selectedRenderedSelectionIds.has(selection.id)) selectedRenderedSelectionIds.delete(selection.id);
+    else selectedRenderedSelectionIds.add(selection.id);
+  } else {
+    // Preserve the previous single-selection toggle-off behavior for a second
+    // ordinary click on the sole selected logical item.
+    if (selectedRenderedSelectionIds.size === 1 && selectedRenderedSelectionIds.has(selection.id)) {
+      clearRenderedUnicodeSelection({ announce: true });
+      return;
+    }
+    selectedRenderedSelectionIds.clear();
+    selectedRenderedSelectionIds.add(selection.id);
+    renderedUnicodeSelectionAnchorId = selection.id;
+  }
+
+  const selectedSelections = selectedRenderedUnicodeSelectionsInDocumentOrder(catalog);
+  drawRenderedUnicodeSelections(selectedSelections);
+
+  if (!selectedSelections.length) {
+    // A Ctrl/Command toggle can intentionally remove the final selected item.
+    // Keep the Shift anchor intact, but do not replace the clipboard with empty text.
+    announceStatus("Rendered Unicode selection cleared.");
     return;
   }
 
-  const cps = selection.cps;
-  const unicodeText = codepointsToRawUnicodeString(cps);
+  const unicodeText = buildRenderedUnicodeSelectionClipboardText(selectedSelections);
   const canonicalDescriptionCps = getUnicodeJsonRunCodepoints(run);
   const description = renderedUnicodeSelectionDescription(run, canonicalDescriptionCps, selection);
 
-  selectedRenderedSelectionId = selection.id;
-  drawRenderedUnicodeSelection(selection);
-
   try {
     await copyRenderedUnicodeText(unicodeText);
-    announceStatus(`Copied ${description}: ${formatCodepointsUPlus(cps)}`);
+    if (selectedSelections.length === 1) {
+      announceStatus(`Copied ${description}: ${formatCodepointsUPlus(selectedSelections[0].cps)}`);
+    } else {
+      const lineCount = renderedUnicodeSelectionLineCount(selectedSelections);
+      announceStatus(`Copied ${selectedSelections.length} rendered selections${lineCount > 1 ? ` across ${lineCount} lines` : ""}.`);
+    }
   } catch (error) {
     clearRenderedUnicodeSelection();
-    showAlertAndAnnounce(`Could not copy the selected ${description}: ${error?.message ?? String(error)}`);
+    const failureDescription = selectedSelections.length === 1 ? `selected ${description}` : "rendered selection";
+    showAlertAndAnnounce(`Could not copy the ${failureDescription}: ${error?.message ?? String(error)}`);
   }
 }
-
 function wireRenderedUnicodeCopy() {
   if (!outCanvas) return;
   outCanvas.addEventListener("pointerup", handleRenderedUnicodePointerUp);
