@@ -755,21 +755,22 @@ body.shellReady {
 #ctlNumericCartoucheAbbrev { order: 4; }
 #ctlNumericCartoucheSpacers { order: 5; }
 #ctlNanpaRelaxedMode { order: 6; }
-#ctlAlign { order: 7; }
-#ctlSpacingPreset { order: 8; }
-#ctlHaloEnable { order: 9; }
-#ctlHaloColor { order: 10; }
-#ctlHaloWidth { order: 11; }
-#ctlUnknownHighlightEnable { order: 12; }
-#ctlBackgroundEnable { order: 13; }
-#ctlBackgroundColor { order: 14; }
-#ctlNasinNanpaPonaFormatting { order: 15; }
-#ctlSilenceTeToAudio { order: 16; }
-#ctlSoundOutPhonotacticUnknownWords { order: 17; }
-#ctlInterpretDoubleQuotesAsTeTo { order: 18; }
-#ctlBreakLinesAtFullStops { order: 19; }
-#ctlEnableHexParsing { order: 20; }
-#ctlCopyFontSpecificCodes { order: 21; }
+#ctlDisplayNanpaFormat { order: 7; }
+#ctlAlign { order: 8; }
+#ctlSpacingPreset { order: 9; }
+#ctlHaloEnable { order: 10; }
+#ctlHaloColor { order: 11; }
+#ctlHaloWidth { order: 12; }
+#ctlUnknownHighlightEnable { order: 13; }
+#ctlBackgroundEnable { order: 14; }
+#ctlBackgroundColor { order: 15; }
+#ctlNasinNanpaPonaFormatting { order: 16; }
+#ctlSilenceTeToAudio { order: 17; }
+#ctlSoundOutPhonotacticUnknownWords { order: 18; }
+#ctlInterpretDoubleQuotesAsTeTo { order: 19; }
+#ctlBreakLinesAtFullStops { order: 20; }
+#ctlEnableHexParsing { order: 21; }
+#ctlCopyFontSpecificCodes { order: 22; }
 
 @media (max-width: 520px) {
   .renderPrimaryControls {
