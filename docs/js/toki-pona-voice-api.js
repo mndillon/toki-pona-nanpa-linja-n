@@ -1,4 +1,4 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=238';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=239';
 import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=27';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
@@ -18,7 +18,9 @@ export const DEFAULT_VOICE_OPTIONS = Object.freeze({
   sample_rate: 48000,
   pauseScale: 1.0,
   syllableGapSeconds: 0.0,
-  enableHexParsing: false
+  enableHexParsing: false,
+  nanpaColonParsing: false,
+  nanpaColonRendering: false
 });
 
 const TP_CONS = new Set(['p','t','k','m','n','s','w','l','j']);
@@ -30,6 +32,8 @@ function normalizeUrlBase(base) {
 }
 
 function normalizeOptions(options = {}, sampleRate = 48000) {
+  const nanpaColonRendering = options.nanpaColonRendering === true;
+  const nanpaColonParsing = options.nanpaColonParsing === true || nanpaColonRendering;
   return {
     ...DEFAULT_VOICE_OPTIONS,
     ...options,
@@ -37,7 +41,9 @@ function normalizeOptions(options = {}, sampleRate = 48000) {
     speed: Number(options.speed ?? DEFAULT_VOICE_OPTIONS.speed),
     pitch: Number(options.pitch ?? DEFAULT_VOICE_OPTIONS.pitch),
     pauseScale: normalizePauseScale(options.pauseScale ?? DEFAULT_VOICE_OPTIONS.pauseScale),
-    syllableGapSeconds: normalizeSyllableGapSeconds(options.syllableGapSeconds ?? DEFAULT_VOICE_OPTIONS.syllableGapSeconds)
+    syllableGapSeconds: normalizeSyllableGapSeconds(options.syllableGapSeconds ?? DEFAULT_VOICE_OPTIONS.syllableGapSeconds),
+    nanpaColonParsing,
+    nanpaColonRendering
   };
 }
 
@@ -264,10 +270,13 @@ function tryNanpaNumberToProperName(fragment, options = {}) {
     /^\[\s*nasa(?:\s|:)/i.test(s) ||
     /^nasa/i.test(s)
   );
+  const nanpaColonRendering = options.nanpaColonRendering === true;
   const parserOptions = {
     mode: 'uniform',
     mixedStyle: 'short',
-    enableHexParsing
+    enableHexParsing,
+    nanpaColonParsing: options.nanpaColonParsing === true || nanpaColonRendering,
+    nanpaColonRendering
   };
   if (potentialHex) {
     parserOptions.relaxedNanpaLinjanParsing = !!options.relaxedNanpaLinjanParsing;
@@ -305,9 +314,12 @@ function preprocessCartoucheDb(input, db, options = {}) {
   text = text.replace(/\b[A-Za-z][A-Za-z_]*(?:\s+[A-Za-z][A-Za-z_]*)?@db\b/g, (m) => resolveDbToken(m, db, warnings));
   text = text.replace(/\[([^\]\n]+)\]/g, (_, inner) => {
     const s = String(inner || '').trim();
-    // Hex cartouches are parsed by NanpaParser with their bracket syntax intact.
-    // Decimal cartouches retain the historical inner-text fallback unchanged.
-    const parsed = options.enableHexParsing === true
+    // Hex cartouches and the opt-in nanpa-colon syntax require their bracket
+    // form to remain intact. Existing decimal cartouches keep the historical
+    // inner-text fallback when neither feature is enabled.
+    const preserveBracketSyntax = options.enableHexParsing === true ||
+      options.nanpaColonParsing === true || options.nanpaColonRendering === true;
+    const parsed = preserveBracketSyntax
       ? (tryNanpaNumberToProperName(`[${s}]`, options) || tryNanpaNumberToProperName(s, options))
       : tryNanpaNumberToProperName(s, options);
     return parsed ? parsed.properName : s;

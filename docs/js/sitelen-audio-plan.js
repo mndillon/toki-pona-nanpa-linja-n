@@ -359,11 +359,20 @@ function audioInitialTextFromGlyphTokens(tokens) {
 
 const AUDIO_LEGACY_FULL_SCAFFOLD_WORDS = new Set(['e', 'en', 'nena', 'open', 'ala', 'ike', 'uta', 'nanpa']);
 
+function nanpaColonRenderingEnabled(options = {}) {
+  return options.nanpaColonRendering === true;
+}
+
+function nanpaColonParsingEnabled(options = {}) {
+  return options.nanpaColonParsing === true || nanpaColonRenderingEnabled(options);
+}
+
 function isAudioNanpaLinjanTpPhraseTokens(tokens, options = {}) {
   const words = Array.from(tokens ?? []).map(normalizeTpGlyphToken).filter(Boolean);
   if (words.length < 3) return false;
   if (words[0] !== 'nanpa') return false;
-  if (!(words[1] === 'e' || words[1] === 'en' || words[1] === 'esun')) return false;
+  const colonHead = words[1] === ':' && nanpaColonParsingEnabled(options);
+  if (!(words[1] === 'e' || words[1] === 'en' || words[1] === 'esun' || colonHead)) return false;
   if (words[words.length - 1] !== 'nanpa') return false;
 
   // nasin remains an ordinary Toki Pona glyph, but it is no longer valid as a
@@ -373,6 +382,11 @@ function isAudioNanpaLinjanTpPhraseTokens(tokens, options = {}) {
   const digitGlyphWords = new Set(Object.values(TOKEN_TO_DIGIT_WORD).map(normalizeTpGlyphToken));
   const payload = words.slice(2, -1);
   if (!payload.some(w => digitGlyphWords.has(w))) return false;
+
+  // A colon head followed directly by compact payload is the abbreviated
+  // syntax and must be decoded by the abbreviated parser below. Keep this
+  // full-form path for forms that retain explicit e/esun scaffolding.
+  if (colonHead && !payload.some(w => w === 'e' || w === 'esun')) return false;
 
   // [nanpa en ...] is ambiguous: it is the historical full-form opening and
   // the new explicit-positive abbreviated opening. Preserve the historical
@@ -392,10 +406,17 @@ function tryNanpaLinjanTpPhraseSourceToCaps(text, options = {}) {
   const words = audioGlyphTokensFromCartoucheSource(text);
   if (!isAudioNanpaLinjanTpPhraseTokens(words, options)) return '';
 
+  // nanpa: is a whole-head spelling of the same initial NE semantic token.
+  // Substitute the historical e only for caps reconstruction; the visual
+  // source and its colon remain unchanged for renderer/highlight alignment.
+  const semanticWords = words[1] === ':'
+    ? [words[0], 'e', ...words.slice(2)]
+    : words;
+
   // Match the renderer's visual cartouche interpretation: the spoken
   // nanpa-linja-n label is the cartouche spelling, i.e. the initial sound of
-  // each glyph token.
-  let caps = audioInitialTextFromGlyphTokens(words).toUpperCase();
+  // each semantic glyph token.
+  let caps = audioInitialTextFromGlyphTokens(semanticWords).toUpperCase();
   if (!caps || !caps.startsWith('NE') || !caps.endsWith('N')) return '';
 
   // The explicit-positive full opening is visually [nanpa e nena en ...] but
@@ -403,11 +424,11 @@ function tryNanpaLinjanTpPhraseSourceToCaps(text, options = {}) {
   // historical NE+NE no-value spacer. Preserve that semantic distinction for
   // audio/proper-name generation too.
   if (
-    words.length >= 5 &&
-    words[0] === 'nanpa' &&
-    words[1] === 'e' &&
-    words[2] === 'nena' &&
-    words[3] === 'en' &&
+    semanticWords.length >= 5 &&
+    semanticWords[0] === 'nanpa' &&
+    semanticWords[1] === 'e' &&
+    semanticWords[2] === 'nena' &&
+    semanticWords[3] === 'en' &&
     caps.startsWith('NENE')
   ) {
     caps = 'NENS' + caps.slice(4);
@@ -454,7 +475,12 @@ function parseAbbreviatedNanpaLinjanCartoucheSource(text, options = {}) {
   const NanpaParser = getNanpaParserFromOptions(options);
   if (!NanpaParser || typeof NanpaParser.parseNumber !== 'function') return null;
 
-  const payload = words.slice(1, -1);
+  let payload = words.slice(1, -1);
+  const hasColonHead = payload[0] === ':';
+  if (hasColonHead) {
+    if (!nanpaColonParsingEnabled(options)) return null;
+    payload = payload.slice(1);
+  }
   const isExplicitPositive = payload[0] === 'en';
   let codeBody = '';
   let hasDigit = false;
@@ -511,7 +537,9 @@ function parseAbbreviatedNanpaLinjanCartoucheSource(text, options = {}) {
       mode: options.nanpaLinjanMode || options.mode || 'uniform',
       mixedStyle: options.mixedStyle || 'short',
       relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
-      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
+      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+      nanpaColonParsing: nanpaColonParsingEnabled(options),
+      nanpaColonRendering: nanpaColonRenderingEnabled(options)
     });
     if (!parsed) return null;
     return { words, codeBody, numberCode, isExplicitPositive, parsed };
@@ -675,7 +703,8 @@ function splitNanpaCapsToAudioProperName(caps, NanpaParser, options = {}) {
   const audioCaps = nanpaCapsForAudioMode(caps, options);
   return NanpaParser.splitCapsToProperName(audioCaps, {
     titleCase: true,
-    relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanRendering
+    relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanRendering,
+    nanpaColonRendering: nanpaColonRenderingEnabled(options)
   }) || '';
 }
 
@@ -704,6 +733,8 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
       mixedStyle: options.mixedStyle || 'short',
       relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+      nanpaColonParsing: nanpaColonParsingEnabled(options),
+      nanpaColonRendering: nanpaColonRenderingEnabled(options),
       enableHexParsing: options.enableHexParsing === true
     });
     if (parsed?.caps) {
@@ -825,7 +856,9 @@ function expandedNumericSourceForRawCartouche(sourceText, displayedInnerCps, opt
       mode: options.nanpaLinjanMode || options.mode || 'uniform',
       mixedStyle: options.mixedStyle || 'short',
       relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
-      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering
+      relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+      nanpaColonParsing: nanpaColonParsingEnabled(options),
+      nanpaColonRendering: nanpaColonRenderingEnabled(options)
     });
     const expanded = parsed?.innerCodepoints || parsed?.ucsurCodepoints;
     if (!Array.isArray(expanded) || !expanded.length) return null;
@@ -1172,6 +1205,8 @@ export async function buildSitelenAudioPlan({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  nanpaColonParsing = rendererConfig?.parser?.nanpaColonParsing === true,
+  nanpaColonRendering = rendererConfig?.parser?.nanpaColonRendering === true,
   enableHexParsing = rendererConfig?.parser?.enableHexParsing === true,
   silenceTeToAudio = false,
   soundOutPhonotacticUnknownWords = false,
@@ -1183,6 +1218,16 @@ export async function buildSitelenAudioPlan({
     ? normalizeNonDrawableSourceTokensForAudioInput(originalRaw)
     : originalRaw;
   const audioInput = prepareAudioInputForPlan(raw, pageMap, CartoucheApi);
+  const effectiveNanpaColonRendering = nanpaColonRendering === true;
+  const effectiveNanpaColonParsing = nanpaColonParsing === true || effectiveNanpaColonRendering;
+  const effectiveRendererConfig = {
+    ...(rendererConfig || {}),
+    parser: {
+      ...(rendererConfig?.parser || {}),
+      nanpaColonParsing: effectiveNanpaColonParsing,
+      nanpaColonRendering: effectiveNanpaColonRendering
+    }
+  };
 
   if (!audioInput.trim()) {
     return {
@@ -1197,7 +1242,7 @@ export async function buildSitelenAudioPlan({
     };
   }
 
-  const audioPlan = await buildRendererPlanForAudioInput(renderer, audioInput, rendererConfig);
+  const audioPlan = await buildRendererPlanForAudioInput(renderer, audioInput, effectiveRendererConfig);
   const extracted = extractSpeechLinesFromRenderPlan(audioPlan, {
     sourceInput: audioInput,
     rawInput: raw,
@@ -1207,6 +1252,8 @@ export async function buildSitelenAudioPlan({
     mixedStyle,
     relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering,
+    nanpaColonParsing: effectiveNanpaColonParsing,
+    nanpaColonRendering: effectiveNanpaColonRendering,
     enableHexParsing,
     silenceTeToAudio,
     soundOutPhonotacticUnknownWords,
@@ -1341,7 +1388,8 @@ const AUDIO_VISUAL_CONTROL_CPS = new Set([
 const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
   'eke', 'eken', 'ekeke', 'ekeken', 'ekekeke', 'ekekeken',
   'keke', 'keken', 'kekeke', 'kekeken',
-  'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin'
+  'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin',
+  'nanpa', 'nasa'
 ]);
 
 // A compound is one indivisible rendered visual even though its source words
@@ -1684,7 +1732,16 @@ function tryRenderedNumericCartoucheToProperName(run, options = {}) {
 
   try {
     const words = Array.from(NanpaParser.codepointsToWords(sourceCps) || [])
-      .map(normalizeTpGlyphToken)
+      .map(value => {
+        const word = normalizeTpGlyphToken(value);
+        // The shared parser's codepoint decoder names U+F199D "kolon" for
+        // ordinary glyph output. Numeric nanpa-colon syntax is written with
+        // the literal token ":", so normalize the alias before reconstructing
+        // the renderer-confirmed numeric source. Without this conversion an
+        // attached input such as Nanpalusen falls through as one surface word,
+        // and sentence grouping drops its Lu/Sen highlight units.
+        return word === 'kolon' ? ':' : word;
+      })
       .filter(Boolean);
     if (words.length < 3 || words[0] !== 'nanpa' || words[words.length - 1] !== 'nanpa') return '';
     return compactSpeechWhitespace(
@@ -2200,8 +2257,31 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
   }
 
   const sourceCount = Math.max(1, sourceCps.length);
-  const totalSpeechLetters = Math.max(1, normalizedSpeechLetters(effectiveSpeech).length);
-  const sourceScale = sourceCount / totalSpeechLetters;
+
+  // In the opt-in Nanpa format, the spoken opening word "Nanpa" represents
+  // exactly the two visible opening components [nanpa :]. The remaining
+  // proper-name letters continue to correspond one-for-one with the remaining
+  // canonical numeric source glyphs. Do not include the five letters of
+  // "Nanpa" in the proportional body mapping: doing so shifts every later
+  // audio unit and causes off-by-one or multi-glyph highlighting.
+  const hasNanpaColonSpeechHead =
+    numericCartouche &&
+    nanpaColonRenderingEnabled(options) &&
+    words.length > 1 &&
+    normalizeAudioWord(words[0]) === 'nanpa' &&
+    Number(sourceCps[0]) === 0xF193D &&
+    Number(sourceCps[1]) === 0xF199D;
+  const mappingSourceStart = hasNanpaColonSpeechHead ? 2 : 0;
+  const mappingSourceCount = Math.max(0, sourceCount - mappingSourceStart);
+  const mappingSpeechWords = hasNanpaColonSpeechHead ? words.slice(1) : words;
+  const mappingSpeechLetterCount = Math.max(
+    1,
+    mappingSpeechWords.reduce(
+      (sum, candidate) => sum + Math.max(1, normalizedSpeechLetters(candidate).length),
+      0
+    )
+  );
+  const sourceScale = Math.max(1, mappingSourceCount) / mappingSpeechLetterCount;
 
   const wordRecords = [];
   let speechLetterCursor = 0;
@@ -2210,13 +2290,25 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
   for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
     const word = words[wordIndex];
     const wordLetters = Math.max(1, normalizedSpeechLetters(word).length);
+    const isNanpaColonHeadWord = hasNanpaColonSpeechHead && wordIndex === 0;
     const wordSpeechStart = speechLetterCursor;
     const wordSpeechEnd = speechLetterCursor + wordLetters;
-    const wordSourceRange = {
-      start: Math.max(0, Math.floor(wordSpeechStart * sourceScale)),
-      end: Math.min(sourceCount, Math.max(1, Math.ceil(wordSpeechEnd * sourceScale)))
-    };
-    speechLetterCursor = wordSpeechEnd;
+    const wordSourceRange = isNanpaColonHeadWord
+      ? { start: 0, end: Math.min(sourceCount, 2) }
+      : {
+          start: Math.min(
+            sourceCount,
+            mappingSourceStart + Math.max(0, Math.floor(wordSpeechStart * sourceScale))
+          ),
+          end: Math.min(
+            sourceCount,
+            Math.max(
+              mappingSourceStart + 1,
+              mappingSourceStart + Math.ceil(wordSpeechEnd * sourceScale)
+            )
+          )
+        };
+    if (!isNanpaColonHeadWord) speechLetterCursor = wordSpeechEnd;
 
     const wholeNumeric = WHOLE_NUMERIC_AUDIO_WORDS.has(word.toLowerCase());
     const pieces = wholeNumeric ? [word] : (splitAudioTpWordIntoSyllables(word).length ? splitAudioTpWordIntoSyllables(word) : [word]);
@@ -2229,8 +2321,21 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
       const pieceSpeechEnd = Math.min(wordSpeechEnd, pieceLetterCursor + pieceLetters);
       pieceLetterCursor += pieceLetters;
 
-      const rangeStart = Math.max(0, Math.floor(pieceSpeechStart * sourceScale));
-      const rangeEnd = Math.min(sourceCount, Math.max(rangeStart + 1, Math.ceil(pieceSpeechEnd * sourceScale)));
+      const rangeStart = isNanpaColonHeadWord
+        ? 0
+        : Math.min(
+            sourceCount,
+            mappingSourceStart + Math.max(0, Math.floor(pieceSpeechStart * sourceScale))
+          );
+      const rangeEnd = isNanpaColonHeadWord
+        ? Math.min(sourceCount, 2)
+        : Math.min(
+            sourceCount,
+            Math.max(
+              rangeStart + 1,
+              mappingSourceStart + Math.ceil(pieceSpeechEnd * sourceScale)
+            )
+          );
       let componentIndices = nearestDisplayedComponentsForSourceRange(
         sourceIndices,
         rangeStart,
@@ -2245,7 +2350,15 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
       // rendering it is the one preserved e/en glyph, or no active target when
       // that optional spacer is hidden.
       let suppressActiveHighlight = false;
-      if (numericCartouche && wholeNumeric && normalizeAudioWord(word) === 'ene') {
+      const normalizedNumericWord = normalizeAudioWord(word);
+      if (numericCartouche && wholeNumeric && normalizedNumericWord === 'nanpa') {
+        const nanpaIndex = displayedCps.findIndex(cp => Number(cp) === 0xF193D);
+        if (nanpaIndex >= 0) {
+          componentIndices = [nanpaIndex];
+          if (Number(displayedCps[nanpaIndex + 1]) === 0xF199D) componentIndices.push(nanpaIndex + 1);
+        }
+      }
+      if (numericCartouche && wholeNumeric && normalizedNumericWord === 'ene') {
         const spacerGroups = numericSpacerVisualComponentGroups(run);
         const eneOrdinal = words
           .slice(0, wordIndex + 1)
@@ -2756,6 +2869,9 @@ export async function buildSitelenSentenceAudioPlan(options = {}) {
     mixedStyle: options.mixedStyle,
     relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+    nanpaColonParsing: options.nanpaColonParsing === true || options.nanpaColonRendering === true ||
+      options.rendererConfig?.parser?.nanpaColonParsing === true || options.rendererConfig?.parser?.nanpaColonRendering === true,
+    nanpaColonRendering: options.nanpaColonRendering === true || options.rendererConfig?.parser?.nanpaColonRendering === true,
     enableHexParsing,
     silenceTeToAudio: options.silenceTeToAudio === true,
     soundOutPhonotacticUnknownWords: options.soundOutPhonotacticUnknownWords === true,
@@ -2989,11 +3105,32 @@ function isNumericCartoucheAudioUnit(unit) {
   return !!unit?.numericCartouche && !!unit?.numericCartoucheRunId;
 }
 
-function sameNumericCartoucheAudioGroup(left, right) {
-  return isNumericCartoucheAudioUnit(left) &&
-    isNumericCartoucheAudioUnit(right) &&
-    String(left.numericCartoucheRunId) === String(right.numericCartoucheRunId) &&
-    String(left.numericCartouchePhrase || '') === String(right.numericCartouchePhrase || '');
+export const SITELEN_AUDIO_PLAN_BUILD = '20260818-nanpa-cartouche-group-v2';
+
+function numericCartoucheUnitOrdinal(unit) {
+  const value = Number(unit?.unitIndex);
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+function sameNumericCartoucheAudioGroup(previous, next) {
+  if (!isNumericCartoucheAudioUnit(previous) || !isNumericCartoucheAudioUnit(next)) return false;
+  if (String(previous.numericCartouchePhrase || '') !== String(next.numericCartouchePhrase || '')) return false;
+
+  // Normal case: all units belong to one renderer cartouche run.
+  if (String(previous.numericCartoucheRunId) === String(next.numericCartoucheRunId)) return true;
+
+  // Some font/render-plan paths expose one logical numeric cartouche through
+  // more than one visual run. The extraction layer already gives every such
+  // run the same cartoucheAudioGroupId. Continue the audio group only when the
+  // unit ordinals are sequential; this prevents two adjacent identical
+  // cartouches from being merged when the second cartouche restarts at unit 0.
+  const previousGroupId = String(previous.cartoucheAudioGroupId || '');
+  const nextGroupId = String(next.cartoucheAudioGroupId || '');
+  if (!previousGroupId || previousGroupId !== nextGroupId) return false;
+
+  const previousOrdinal = numericCartoucheUnitOrdinal(previous);
+  const nextOrdinal = numericCartoucheUnitOrdinal(next);
+  return previousOrdinal != null && nextOrdinal === previousOrdinal + 1;
 }
 
 function numericCartoucheBoundaryPauseSeconds({
@@ -3086,7 +3223,8 @@ async function renderExactNumericCartoucheEntries({
   if (speechRecords.length !== groupUnits.length) {
     throw new Error(
       `Nanpa reference-audio timeline mismatch for "${phrase}": ` +
-      `${speechRecords.length} nanpa units for ${groupUnits.length} highlight units.`
+      `${speechRecords.length} nanpa units for ${groupUnits.length} highlight units. ` +
+      `Audio-plan build ${SITELEN_AUDIO_PLAN_BUILD}.`
     );
   }
 
@@ -3242,7 +3380,10 @@ export async function renderSpeechSegmentsToAudioBuffers({
       const unit = units[unitIndex];
       if (isNumericCartoucheAudioUnit(unit)) {
         let groupEnd = unitIndex + 1;
-        while (groupEnd < units.length && sameNumericCartoucheAudioGroup(unit, units[groupEnd])) {
+        while (
+          groupEnd < units.length &&
+          sameNumericCartoucheAudioGroup(units[groupEnd - 1], units[groupEnd])
+        ) {
           groupEnd += 1;
         }
 
@@ -3323,6 +3464,8 @@ export async function buildSitelenSentenceAudioBuffersFromRawText({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  nanpaColonParsing = rendererConfig?.parser?.nanpaColonParsing === true,
+  nanpaColonRendering = rendererConfig?.parser?.nanpaColonRendering === true,
   enableHexParsing = rendererConfig?.parser?.enableHexParsing === true,
   silenceTeToAudio = false,
   soundOutPhonotacticUnknownWords = false,
@@ -3346,6 +3489,8 @@ export async function buildSitelenSentenceAudioBuffersFromRawText({
     mixedStyle,
     relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering,
+    nanpaColonParsing,
+    nanpaColonRendering,
     enableHexParsing,
     silenceTeToAudio,
     soundOutPhonotacticUnknownWords,
@@ -3572,6 +3717,8 @@ export async function buildAndPlaySitelenAudioFromRawText({
   mixedStyle = 'short',
   relaxedNanpaLinjanParsing = false,
   relaxedNanpaLinjanRendering = false,
+  nanpaColonParsing = rendererConfig?.parser?.nanpaColonParsing === true,
+  nanpaColonRendering = rendererConfig?.parser?.nanpaColonRendering === true,
   enableHexParsing = rendererConfig?.parser?.enableHexParsing === true,
   silenceTeToAudio = false,
   soundOutPhonotacticUnknownWords = false,
@@ -3596,6 +3743,8 @@ export async function buildAndPlaySitelenAudioFromRawText({
     mixedStyle,
     relaxedNanpaLinjanParsing,
     relaxedNanpaLinjanRendering,
+    nanpaColonParsing,
+    nanpaColonRendering,
     enableHexParsing,
     silenceTeToAudio,
     soundOutPhonotacticUnknownWords,

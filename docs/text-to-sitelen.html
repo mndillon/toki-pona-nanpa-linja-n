@@ -405,6 +405,16 @@ nanpa #~WI.
           </select>
           </div>
 
+          <div aria-label="Display nanpa format" class="inlineControl inlinePill" id="ctlDisplayNanpaFormat" role="group">
+          <span class="ctlLabel">
+                      Display nanpa format
+                    </span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Display nanpa format" id="appDisplayNanpaFormatEnable" type="checkbox" />
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
           <div aria-label="Alignment" class="inlineControl inlinePill" id="ctlAlign" role="group">
           <span class="ctlLabel">
                       Align <span class="tpInline">nasin</span>
@@ -851,7 +861,7 @@ nanpa #~WI.
         bootStarted = true;
         try {
           setMessage("Loading page styles…");
-          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=54");
+          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=55");
 
           setMessage("Loading PDF support…");
           await loadClassicScript("./vendor/pdf-lib.min.js?v=49");
@@ -860,7 +870,7 @@ nanpa #~WI.
           await loadClassicScript("./vendor/fontkit.umd.min.js?v=49");
 
           setMessage("Loading renderer…");
-          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=259");
+          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=263");
         } catch (error) {
           showStartupError(error);
         }

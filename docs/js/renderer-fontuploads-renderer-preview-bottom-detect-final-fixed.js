@@ -1372,6 +1372,8 @@ const SitelenRenderer = (() => {
       autoCartoucheStandaloneProperNames: __autoCartoucheStandaloneProperNames,
       relaxedNanpaLinjanParsing: __relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering: __relaxedNanpaLinjanRendering,
+      nanpaColonParsing: __nanpaColonParsing,
+      nanpaColonRendering: __nanpaColonRendering,
       enableHexParsing: __enableHexParsing,
       nasinNanpaPona: __nasinNanpaPona,
       renderAdapterId: __renderAdapterId,
@@ -1408,6 +1410,8 @@ const SitelenRenderer = (() => {
     __autoCartoucheStandaloneProperNames = !!state.autoCartoucheStandaloneProperNames;
     __relaxedNanpaLinjanParsing = !!state.relaxedNanpaLinjanParsing;
     __relaxedNanpaLinjanRendering = !!state.relaxedNanpaLinjanRendering;
+    __nanpaColonParsing = !!state.nanpaColonParsing;
+    __nanpaColonRendering = !!state.nanpaColonRendering;
     __enableHexParsing = !!state.enableHexParsing;
     __nasinNanpaPona = !!state.nasinNanpaPona;
     __renderAdapterId = normalizeRenderAdapterId(state.renderAdapterId);
@@ -1438,6 +1442,12 @@ const SitelenRenderer = (() => {
   // Relaxed nanpa-linja-n recognition/rendering. Defaults are strict/strict.
   let __relaxedNanpaLinjanParsing = false;
   let __relaxedNanpaLinjanRendering = false;
+
+  // Alternative decimal head syntax is opt-in. Rendering implies parsing so
+  // the renderer never emits syntax that the same configuration rejects.
+  // Both stored flags default to false when omitted.
+  let __nanpaColonParsing = false;
+  let __nanpaColonRendering = false;
 
   // Hexadecimal recognition is opt-in. This flag affects parsing only; once a
   // source span has been classified as hexadecimal, its semantic run always
@@ -1493,6 +1503,10 @@ const SitelenRenderer = (() => {
   function setRelaxedNanpaLinjanParsing(v) { __relaxedNanpaLinjanParsing = !!v; }
   function getRelaxedNanpaLinjanRendering() { return !!__relaxedNanpaLinjanRendering; }
   function setRelaxedNanpaLinjanRendering(v) { __relaxedNanpaLinjanRendering = !!v; }
+  function getNanpaColonParsing() { return !!(__nanpaColonParsing || __nanpaColonRendering); }
+  function setNanpaColonParsing(v) { __nanpaColonParsing = !!v; }
+  function getNanpaColonRendering() { return !!__nanpaColonRendering; }
+  function setNanpaColonRendering(v) { __nanpaColonRendering = !!v; }
   function getEnableHexParsing() { return !!__enableHexParsing; }
   function setEnableHexParsing(v) { __enableHexParsing = !!v; }
   function getNasinNanpaPona() { return !!__nasinNanpaPona; }
@@ -1755,6 +1769,8 @@ const SitelenRenderer = (() => {
     if (parser.autoCartoucheStandaloneProperNames != null) setAutoCartoucheStandaloneProperNames(!!parser.autoCartoucheStandaloneProperNames);
     if (parser.relaxedNanpaLinjanParsing != null) setRelaxedNanpaLinjanParsing(!!parser.relaxedNanpaLinjanParsing);
     if (parser.relaxedNanpaLinjanRendering != null) setRelaxedNanpaLinjanRendering(!!parser.relaxedNanpaLinjanRendering);
+    if (parser.nanpaColonParsing != null) setNanpaColonParsing(!!parser.nanpaColonParsing);
+    if (parser.nanpaColonRendering != null) setNanpaColonRendering(!!parser.nanpaColonRendering);
     if (parser.enableHexParsing != null) setEnableHexParsing(!!parser.enableHexParsing);
     if (parser.nasinNanpaPona != null) setNasinNanpaPona(!!parser.nasinNanpaPona);
     if (parser.cartoucheCommaTallyMarks != null) setCartoucheCommaTallyMarks(!!parser.cartoucheCommaTallyMarks);
@@ -5165,6 +5181,7 @@ function wireHaloControls() {
     const CP_NASIN = NANPA_LINJA_N_WORD_TO_CP["nasin"];
     const CP_EN    = NANPA_LINJA_N_WORD_TO_CP["en"];
     const CP_E     = NANPA_LINJA_N_WORD_TO_CP["e"];
+    const CP_COLON = NANPA_LINJA_N_WORD_TO_CP[":"];
     const CP_OPEN  = NANPA_LINJA_N_WORD_TO_CP["open"];
     const CP_ALA   = NANPA_LINJA_N_WORD_TO_CP["ala"];
     const CP_IKE   = NANPA_LINJA_N_WORD_TO_CP["ike"];
@@ -5189,12 +5206,19 @@ function wireHaloControls() {
       const sourceIndices = [];
       let keptFirstNanpa = false;
       const preserveBreaks = getPreserveNumericCartoucheBreaksInAbbreviation();
-      const hasFullPositiveOpening =
+      const hasTraditionalFullPositiveOpening =
         input.length >= 4 &&
         input[0] === CP_NANPA &&
         input[1] === CP_E &&
         input[2] === CP_NENA &&
         input[3] === CP_EN;
+      const hasColonFullPositiveOpening =
+        input.length >= 4 &&
+        input[0] === CP_NANPA &&
+        input[1] === CP_COLON &&
+        input[2] === CP_NENA &&
+        input[3] === CP_EN;
+      const hasFullPositiveOpening = hasTraditionalFullPositiveOpening || hasColonFullPositiveOpening;
       const hasFullScaffoldingAfterOpening = input.slice(2, -1).some(cp =>
         cp === CP_E || NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)
       );
@@ -5204,6 +5228,13 @@ function wireHaloControls() {
         input.length >= 3 &&
         input[0] === CP_NANPA &&
         input[1] === CP_EN;
+      const hasAlreadyAbbreviatedColonPositiveOpening =
+        !hasFullPositiveOpening &&
+        !hasFullScaffoldingAfterOpening &&
+        input.length >= 4 &&
+        input[0] === CP_NANPA &&
+        input[1] === CP_COLON &&
+        input[2] === CP_EN;
 
       for (let i = 0; i < input.length; i++) {
         const cp = input[i];
@@ -5225,7 +5256,13 @@ function wireHaloControls() {
         // Explicit positive: full [nanpa e nena en ... nanpa] abbreviates to
         // [nanpa en ... nanpa]. An already-abbreviated positive cartouche keeps
         // that same leading en rather than dropping it as ordinary scaffolding.
-        if (hasFullPositiveOpening && i === 1) {
+        if (hasTraditionalFullPositiveOpening && i === 1) {
+          out.push(CP_EN);
+          sourceIndices.push(3);
+          i = 3;
+          continue;
+        }
+        if (hasColonFullPositiveOpening && i === 2) {
           out.push(CP_EN);
           sourceIndices.push(3);
           i = 3;
@@ -5234,6 +5271,11 @@ function wireHaloControls() {
         if (hasAlreadyAbbreviatedPositiveOpening && i === 1) {
           out.push(CP_EN);
           sourceIndices.push(1);
+          continue;
+        }
+        if (hasAlreadyAbbreviatedColonPositiveOpening && i === 2) {
+          out.push(CP_EN);
+          sourceIndices.push(2);
           continue;
         }
 
@@ -5374,9 +5416,8 @@ function wireHaloControls() {
       const hasExplicitPositiveOpening =
         a.length >= 4 &&
         a[0] === CP_NANPA &&
-        a[1] === CP_E &&
-        a[2] === CP_NENA &&
-        a[3] === CP_EN;
+        ((a[1] === CP_E && a[2] === CP_NENA && a[3] === CP_EN) ||
+         (a[1] === CP_COLON && a[2] === CP_NENA && a[3] === CP_EN));
 
       for (let i = 0; i < a.length; i++) {
         const cp = a[i];
@@ -5468,9 +5509,47 @@ function wireHaloControls() {
       return tokens;
     }
 
+    function nanpaColonProperNameToCaps(raw) {
+      if (!getNanpaColonParsing()) return null;
+      const source = String(raw ?? "").trim();
+      if (!source) return null;
+
+      let remainder = "";
+      const attached = /^Nanpa([a-z]+)((?:[ \t]+[A-Z][a-z]*)*)$/.exec(source);
+      if (attached) {
+        const laterWords = attached[2].trim().split(/[ \t]+/).filter(Boolean);
+        remainder = attached[1] + laterWords.join("");
+      } else if (/^Nanpa(?:[ \t]+[A-Z][a-z]*)+$/.test(source)) {
+        remainder = source.split(/[ \t]+/).slice(1).join("");
+      } else return null;
+
+      if (!remainder || !/[nN]$/.test(remainder)) return null;
+      let core = remainder.slice(0, -1);
+      if (core.length < 2 || (core.length % 2) !== 0) return null;
+
+      let hasPercent = false;
+      if (/noke$/i.test(core)) {
+        hasPercent = true;
+        core = core.slice(0, -4);
+        if (core.length < 2 || (core.length % 2) !== 0) return null;
+      }
+
+      let bodyCaps = core.toUpperCase();
+      if (bodyCaps.startsWith("NE")) bodyCaps = "NS" + bodyCaps.slice(2);
+      const caps = "NE" + bodyCaps + (hasPercent ? "OKN" : "N");
+      try {
+        const tokens = tokenizeNanpaCaps(caps);
+        return nanpaCapsHasAtLeastOneDigitToken(tokens) ? caps : null;
+      } catch { return null; }
+    }
+
     function nanpaLinjanProperNameToCaps(raw) {
       const source = String(raw ?? "").trim();
       if (!source) return null;
+
+      const nanpaColonCaps = nanpaColonProperNameToCaps(source);
+      if (nanpaColonCaps) return nanpaColonCaps;
+
       if (!/^[A-Za-z]+(?:\s+[A-Za-z]+)*$/.test(source)) return null;
 
       const words = source.split(/\s+/).filter(Boolean);
@@ -5720,8 +5799,10 @@ function wireHaloControls() {
         if (t === "NE") {
           const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
           if (nxt === "KO") {
-            if (out.length === 0) out.push("nanpa", E_WORD, "kala", "open");
-            else out.push(N_WORD, E_WORD_FOR_NE_AFTER_START, "kala", "open");
+            if (out.length === 0) {
+              if (getNanpaColonRendering()) out.push("nanpa", ":", "kala", "open");
+              else out.push("nanpa", E_WORD, "kala", "open");
+            } else out.push(N_WORD, E_WORD_FOR_NE_AFTER_START, "kala", "open");
             afterStartingNe = false;
             afterScientificMarker = true;
             i += 1;
@@ -5730,7 +5811,8 @@ function wireHaloControls() {
 
           afterScientificMarker = false;
           if (out.length === 0) {
-            out.push("nanpa", E_WORD);
+            if (getNanpaColonRendering()) out.push("nanpa", ":");
+            else out.push("nanpa", E_WORD);
             afterStartingNe = true;
           } else {
             out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
@@ -7095,8 +7177,13 @@ function wireHaloControls() {
         for (let i = 0; i < words.length; i++) {
           const first = words[i];
 
-          // Numeric cartouche proper names start with Ne...
-          if (!/^ne/i.test(first.raw)) continue;
+          // Legacy numeric proper names start with Ne.... The alternative head
+          // is deliberately case-sensitive so lowercase nanpa remains the
+          // ordinary Toki Pona glyph and can never start a numeric proper name.
+          const startsLegacyNanpaName = /^ne/i.test(first.raw);
+          const startsNanpaColonName = getNanpaColonParsing() &&
+            (first.raw === "Nanpa" || /^Nanpa[a-z]+$/.test(first.raw));
+          if (!startsLegacyNanpaName && !startsNanpaColonName) continue;
 
           let best = null;
           let bestJ = -1;
@@ -7438,9 +7525,16 @@ function findNanpaLinjanTpPhraseSequences(text) {
     }
 
     function nanpaLinjanWordsToCodepoints(words, { mode = "traditional" } = {}) {
+      let sourceWords = Array.from(words ?? []);
+      if (getNanpaColonRendering() && sourceWords.length >= 3 &&
+          normalizeTpWord(sourceWords[0]) === "nanpa" &&
+          (normalizeTpWord(sourceWords[1]) === "e" || normalizeTpWord(sourceWords[1]) === "en" || normalizeTpWord(sourceWords[1]) === "esun")) {
+        sourceWords = [sourceWords[0], ":", ...sourceWords.slice(2)];
+      }
       const cps = [];
-      for (const w0 of (words ?? [])) {
-        const w = normalizeTpWord(w0);
+      for (const w0 of sourceWords) {
+        const rawWord = String(w0 ?? "").trim().toLowerCase();
+        const w = rawWord === ":" ? ":" : normalizeTpWord(w0);
         const cp = NANPA_LINJA_N_WORD_TO_CP[w];
         if (cp == null) return null;
         cps.push(cp);
@@ -9683,6 +9777,36 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         }
       } catch {}
 
+      if (getNanpaColonParsing()) {
+        const colonTokens = tokenizeHexCartoucheSource(content);
+        if (colonTokens && colonTokens.length >= 4 && colonTokens[0] === "nanpa" &&
+            colonTokens[1] === ":" && colonTokens[colonTokens.length - 1] === "nanpa") {
+          const withoutColon = ["nanpa", ...colonTokens.slice(2)];
+          const fullCandidate = ["nanpa", "e", ...colonTokens.slice(2)];
+          const parsedColonFull = tryParseNanpaLinjanTpPhraseWords(fullCandidate);
+          if (parsedColonFull) {
+            const cps = nanpaLinjanWordsToCodepoints(parsedColonFull.words, { mode });
+            if (cps) makeNumericCartoucheElementFromCodepoints(elements, cps, {
+              fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
+              sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+            });
+            return;
+          }
+          if (getAbbreviateNumericCartouches()) {
+            const parsedColonAbbreviated = tryParseFullyAbbreviatedNanpaLinjanCartoucheWords(withoutColon);
+            if (parsedColonAbbreviated?.cps?.length) {
+              let cps = parsedColonAbbreviated.cps;
+              if (getNanpaColonRendering()) cps = [CP_NANPA, CP_COLON, ...cps.slice(1)];
+              makeNumericCartoucheElementFromCodepoints(elements, cps, {
+                fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
+                sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+              });
+              return;
+            }
+          }
+        }
+      }
+
       const wordsRaw = content.split(/\s+/).filter(Boolean);
 
       // Strict numeric TP-phrase rule for []:
@@ -11619,6 +11743,14 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return !!opts.relaxedNanpaLinjanRendering;
   }
 
+  function _npNanpaColonRenderingFromOpts(opts = {}) {
+    return opts.nanpaColonRendering === true;
+  }
+
+  function _npNanpaColonParsingFromOpts(opts = {}) {
+    return opts.nanpaColonParsing === true || _npNanpaColonRenderingFromOpts(opts);
+  }
+
   function _npDigitTokensAcceptedByParser(opts = {}) {
     return _npRelaxedParsingFromOpts(opts) ? _NP_DIGIT_TOKENS : _NP_STRICT_DIGIT_TOKENS;
   }
@@ -11729,9 +11861,47 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return tokens;
   }
 
+  function _npNanpaColonProperNameToCaps(raw, opts = {}) {
+    if (!_npNanpaColonParsingFromOpts(opts)) return null;
+    const source = String(raw ?? "").trim();
+    if (!source) return null;
+
+    let remainder = "";
+    const attached = /^Nanpa([a-z]+)((?:[ \t]+[A-Z][a-z]*)*)$/.exec(source);
+    if (attached) {
+      const laterWords = attached[2].trim().split(/[ \t]+/).filter(Boolean);
+      remainder = attached[1] + laterWords.join("");
+    } else if (/^Nanpa(?:[ \t]+[A-Z][a-z]*)+$/.test(source)) {
+      remainder = source.split(/[ \t]+/).slice(1).join("");
+    } else return null;
+
+    if (!remainder || !/[nN]$/.test(remainder)) return null;
+    let core = remainder.slice(0, -1);
+    if (core.length < 2 || (core.length % 2) !== 0) return null;
+
+    let hasPercent = false;
+    if (/noke$/i.test(core)) {
+      hasPercent = true;
+      core = core.slice(0, -4);
+      if (core.length < 2 || (core.length % 2) !== 0) return null;
+    }
+
+    let bodyCaps = core.toUpperCase();
+    if (bodyCaps.startsWith("NE")) bodyCaps = "NS" + bodyCaps.slice(2);
+    const caps = "NE" + bodyCaps + (hasPercent ? "OKN" : "N");
+    try {
+      const tokens = _npTokenizeNanpaCaps(caps, opts);
+      return _npNanpaCapsHasAtLeastOneDigitToken(tokens) ? caps : null;
+    } catch { return null; }
+  }
+
   function _npProperNameToCaps(raw, opts = {}) {
     const source = String(raw ?? "").trim();
     if (!source) return null;
+
+    const nanpaColonCaps = _npNanpaColonProperNameToCaps(source, opts);
+    if (nanpaColonCaps) return nanpaColonCaps;
+
     if (!/^[A-Za-z]+(?:\s+[A-Za-z]+)*$/.test(source)) return null;
 
     const words = source.split(/\s+/).filter(Boolean);
@@ -11984,7 +12154,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return { caps };
   }
 
-  function _npNanpaCapsTokensToTpWords(tokens, { mode = "traditional", relaxedRendering = false } = {}) {
+  function _npNanpaCapsTokensToTpWords(tokens, { mode = "traditional", relaxedRendering = false, nanpaColonRendering = false } = {}) {
     if (!tokens || tokens.length === 0) return [];
 
     const uniform = (mode === "uniform");
@@ -12006,8 +12176,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (t === "NE") {
         const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
         if (nxt === "KO") {
-          if (out.length === 0) out.push("nanpa", E_WORD, "kala", "open");
-          else out.push(N_WORD, E_WORD_FOR_NE_AFTER_START, "kala", "open");
+          if (out.length === 0) {
+            if (nanpaColonRendering) out.push("nanpa", ":", "kala", "open");
+            else out.push("nanpa", E_WORD, "kala", "open");
+          } else out.push(N_WORD, E_WORD_FOR_NE_AFTER_START, "kala", "open");
           afterStartingNe = false;
           afterScientificMarker = true;
           i += 1;
@@ -12016,7 +12188,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
         afterScientificMarker = false;
         if (out.length === 0) {
-          out.push("nanpa", E_WORD);
+          if (nanpaColonRendering) out.push("nanpa", ":");
+          else out.push("nanpa", E_WORD);
           afterStartingNe = true;
         } else {
           out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
@@ -12121,7 +12294,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return out;
   }
 
-  function _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional", isTime = false, relaxedParsing = false, relaxedRendering = false } = {}) {
+  function _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode = "traditional", isTime = false, relaxedParsing = false, relaxedRendering = false, nanpaColonRendering = false } = {}) {
     let canonicalCaps = _npCanonicalizeScientificCaps(caps);
     if (isTime && _npNanpaCapsIsValidTime(canonicalCaps, { relaxedNanpaLinjanParsing: relaxedParsing })) {
       canonicalCaps = _npNormalizeTimeNegativeZeroCaps(canonicalCaps, { relaxedNanpaLinjanParsing: relaxedParsing });
@@ -12136,7 +12309,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       tokensNoOk.push(t);
     }
 
-    const tpWords = _npNanpaCapsTokensToTpWords(tokensNoOk, { mode, relaxedRendering });
+    const tpWords = _npNanpaCapsTokensToTpWords(tokensNoOk, { mode, relaxedRendering, nanpaColonRendering });
     const tpWordsFinal = isTime ? _npReplaceTimeSeparatorsTpWords(tpWords, mode) : tpWords;
 
     const cps = [];
@@ -12168,7 +12341,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return out;
   }
 
-  function _npTryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "traditional", relaxedParsing = false, relaxedRendering = false } = {}) {
+  function _npTryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "traditional", relaxedParsing = false, relaxedRendering = false, nanpaColonParsing = false, nanpaColonRendering = false } = {}) {
     const s = String(rawText ?? "").trim();
     if (!s) return null;
 
@@ -12176,19 +12349,20 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const parsed = _npTryParseNanpaLinjanNumberCodeToCaps(s);
       if (parsed?.caps) {
         const isTime = _npNanpaCapsIsValidTimeOrDate(parsed.caps);
-        return _npNanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode, isTime });
+        return _npNanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode, isTime, relaxedParsing, relaxedRendering, nanpaColonRendering });
       }
     } catch {
       return null;
     }
 
-    if (!_npIsValidNanpaLinjanProperName(s, { relaxedNanpaLinjanParsing: relaxedParsing })) return null;
+    const properOpts = { relaxedNanpaLinjanParsing: relaxedParsing, nanpaColonParsing, nanpaColonRendering };
+    if (!_npIsValidNanpaLinjanProperName(s, properOpts)) return null;
 
-    const caps = _npProperNameToCaps(s, { relaxedNanpaLinjanParsing: relaxedParsing });
+    const caps = _npProperNameToCaps(s, properOpts);
     if (!caps) return null;
 
     const isTime = _npNanpaCapsIsValidTimeOrDate(caps, { relaxedNanpaLinjanParsing: relaxedParsing });
-    return _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime, relaxedParsing, relaxedRendering });
+    return _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime, relaxedParsing, relaxedRendering, nanpaColonRendering });
   }
 
   function _npNormalizeVulgarFractionInput(raw) {
@@ -12962,7 +13136,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (_npNanpaCapsIsValidTime(caps, opts)) caps = _npNormalizeTimeNegativeZeroCaps(caps, opts);
 
       const isTime = _npNanpaCapsIsValidTimeOrDate(caps);
-      const innerCodepoints = _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime });
+      const innerCodepoints = _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime, relaxedParsing: _npRelaxedParsingFromOpts(opts), relaxedRendering: _npRelaxedRenderingFromOpts(opts), nanpaColonRendering: _npNanpaColonRenderingFromOpts(opts) });
       if (!innerCodepoints || !innerCodepoints.length) return null;
 
       const codepoints = _npWrapCartouche(innerCodepoints);
@@ -12980,6 +13154,92 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     } catch {
       return null;
     }
+  }
+
+  const _NP_ABBREVIATED_NANPA_WORD_TO_CODE = Object.freeze({
+    ijo: "I", wan: "W", tu: "T", seli: "S", awen: "A",
+    luka: "L", utala: "U", mun: "M", pipi: "P", jo: "J"
+  });
+
+  function _npTokenizeNanpaColonCartoucheSource(raw) {
+    const source = String(raw ?? "").trim();
+    if (!source.startsWith("[") || !source.endsWith("]")) return null;
+    const inner = source.slice(1, -1);
+    const tokens = [];
+    let i = 0;
+    while (i < inner.length) {
+      if (/\s/.test(inner[i])) { i += 1; continue; }
+      if (inner[i] === ":") { tokens.push(":"); i += 1; continue; }
+      if (/[A-Za-z]/.test(inner[i])) {
+        const start = i;
+        while (i < inner.length && /[A-Za-z]/.test(inner[i])) i += 1;
+        tokens.push(inner.slice(start, i).toLowerCase());
+        continue;
+      }
+      return null;
+    }
+    return tokens;
+  }
+
+  function _npTryParseNanpaColonCartoucheToCaps(raw, opts = {}) {
+    if (!_npNanpaColonParsingFromOpts(opts)) return null;
+    const tokens = _npTokenizeNanpaColonCartoucheSource(raw);
+    if (!tokens || tokens.length < 4 || tokens[0] !== "nanpa" || tokens[1] !== ":" ||
+        tokens[tokens.length - 1] !== "nanpa") return null;
+    const body = tokens.slice(2, -1);
+    if (!body.length || body.includes("nanpa") || body.includes("nasin")) return null;
+
+    const tryAbbreviated = () => {
+      let index = 0;
+      let positive = false;
+      if (body[0] === "en") { positive = true; index = 1; }
+      let code = "";
+      let hasDigit = false;
+      for (; index < body.length; index++) {
+        const word = body[index];
+        const digit = _NP_ABBREVIATED_NANPA_WORD_TO_CODE[word];
+        if (digit) { code += digit; hasDigit = true; continue; }
+        if (word === "o" || word === "ona") { code += "O"; continue; }
+        if (word === "kulupu" || word === "kasi" || word === "kolon" || word === ":") { code += "K"; continue; }
+        if (word === "kala") { code += "EKO"; continue; }
+        if (word === "kin") { code += "OKO"; continue; }
+        if (word === "kipisi" && index === body.length - 1) { code += "OK"; continue; }
+        return null;
+      }
+      if (!hasDigit || !code) return null;
+      try { return _npTryParseNanpaLinjanNumberCodeToCaps(`#~${positive ? "+" : ""}${code}`)?.caps || null; }
+      catch { return null; }
+    };
+
+    const tryFull = () => {
+      if (!body.every(word => Object.prototype.hasOwnProperty.call(_NP_NANPA_LINJA_N_WORD_TO_CP, word))) return null;
+      const letters = body.map(word => word === ":" ? "K" : word[0]).join("").toUpperCase();
+      let caps = "NE" + letters + "N";
+      if (body[0] === "nena" && body[1] === "en" && caps.startsWith("NENE")) caps = "NENS" + caps.slice(4);
+      if (caps.endsWith("NOKEN")) caps = caps.slice(0, -5) + "OKN";
+      try {
+        const parsedTokens = _npTokenizeNanpaCaps(caps, opts);
+        return _npNanpaCapsHasAtLeastOneDigitToken(parsedTokens) ? caps : null;
+      } catch { return null; }
+    };
+
+    const preferAbbreviated = opts.abbreviateNumericCartouches === true ||
+      opts.numericCartoucheAbbreviation === true || opts.abbreviatedNumericCartouches === true;
+    return preferAbbreviated ? (tryAbbreviated() || tryFull()) : (tryFull() || tryAbbreviated());
+  }
+
+  function _npNanpaColonProperNameFromLegacy(rawLegacyName) {
+    let body = String(rawLegacyName ?? "").trim().toLowerCase();
+    if (!body) return "";
+    if (body.startsWith("ne")) body = body.slice(2).trimStart();
+    else if (body.startsWith("n ene")) body = body.slice(2).trimStart();
+    const words = body.split(/\s+/).filter(Boolean);
+    if ((words[0] === "no" || words[0] === "ne") && words.length > 1) {
+      words[0] += words[1];
+      words.splice(1, 1);
+    }
+    const titled = words.map(word => word ? word[0].toUpperCase() + word.slice(1) : "").filter(Boolean);
+    return titled.length ? `Nanpa ${titled.join(" ")}` : "";
   }
 
   const NanpaParser = Object.freeze({
@@ -13370,7 +13630,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     let caps = null;
     let structuredKind = null;
     try {
+      const colonCartoucheCaps = _npTryParseNanpaColonCartoucheToCaps(s, opts);
       const normalized = _npNormalizeVulgarFractionInput(s);
+      if (colonCartoucheCaps) caps = colonCartoucheCaps;
       const dateCaps = _npDateStrToNanpaCaps(normalized, opts);
       const timeCaps = (dateCaps == null) ? _npTimeStrToNanpaCaps(normalized, opts) : null;
 
@@ -13382,10 +13644,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const preferLeadingPlusProperName =
         /^nene/i.test(s) &&
         !/^[A-Z]+$/.test(s) &&
-        _npIsValidNanpaLinjanProperName(s, { relaxedNanpaLinjanParsing: relaxedParsing });
+        _npIsValidNanpaLinjanProperName(s, { ...opts, relaxedNanpaLinjanParsing: relaxedParsing });
 
-      if (preferLeadingPlusProperName) {
-        caps = _npProperNameToCaps(s, { relaxedNanpaLinjanParsing: relaxedParsing });
+      if (caps) {
+        // already parsed from the opt-in [nanpa : ... nanpa] syntax
+      } else if (preferLeadingPlusProperName) {
+        caps = _npProperNameToCaps(s, { ...opts, relaxedNanpaLinjanParsing: relaxedParsing });
         if (!caps) return null;
       } else if (_npLooksLikeNanpaCaps(normalized)) {
         caps = normalized.toUpperCase();
@@ -13395,8 +13659,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       } else if (timeCaps != null) {
         caps = timeCaps;
         structuredKind = "time";
-      } else if (_npIsValidNanpaLinjanProperName(s, { relaxedNanpaLinjanParsing: relaxedParsing })) {
-        caps = _npProperNameToCaps(s, { relaxedNanpaLinjanParsing: relaxedParsing });
+      } else if (_npIsValidNanpaLinjanProperName(s, { ...opts, relaxedNanpaLinjanParsing: relaxedParsing })) {
+        caps = _npProperNameToCaps(s, { ...opts, relaxedNanpaLinjanParsing: relaxedParsing });
         if (!caps) return null;
       } else {
         const parsed = _npTryParseNanpaLinjanNumberCodeToCaps(s);
@@ -13435,7 +13699,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const hasOk = tokens.includes("OK");
       const tokensNoOk = tokens.filter(t => t !== "OK");
 
-      let tpWords = _npNanpaCapsTokensToTpWords(tokensNoOk, { mode, relaxedRendering });
+      let tpWords = _npNanpaCapsTokensToTpWords(tokensNoOk, { mode, relaxedRendering, nanpaColonRendering: _npNanpaColonRenderingFromOpts(opts) });
       if (isTimeLike) tpWords = _npReplaceTimeSeparatorsTpWords(tpWords, mode);
 
       if (hasOk) {
@@ -13455,7 +13719,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         return cp;
       });
 
-      const properName = titleCaseCapsLabel(_npSplitFinalHundredIninWords(splitCapsLetters(caps), { relaxedNanpaLinjanParsing: relaxedParsing }));
+      const legacyProperNameRaw = _npSplitFinalHundredIninWords(splitCapsLetters(caps), { relaxedNanpaLinjanParsing: relaxedParsing });
+      const properName = _npNanpaColonRenderingFromOpts(opts)
+        ? _npNanpaColonProperNameFromLegacy(legacyProperNameRaw)
+        : titleCaseCapsLabel(legacyProperNameRaw);
       const uniqueCode = capsToCanonicalUniqueCode(caps, opts);
       const hexCodepoints = codepointsToHexString(ucsurCodepoints);
       const hexWithCartouche = codepointsToHexString(withCartoucheMarkers(ucsurCodepoints));
@@ -13503,7 +13770,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return parsed ? Array.from(parsed.ucsurCodepoints ?? []) : [];
   },
 
-  splitCapsToProperName(caps, { titleCase = true, relaxedNanpaLinjanParsing = false } = {}) {
+  splitCapsToProperName(caps, { titleCase = true, relaxedNanpaLinjanParsing = false, nanpaColonRendering = false } = {}) {
     caps = _npCanonicalizeScientificCaps(caps);
     function splitCapsLetters(sCaps) {
       if (sCaps == null) throw new Error("caps must be a string");
@@ -13567,6 +13834,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     const raw = _npSplitFinalHundredIninWords(splitCapsLetters(caps), { relaxedNanpaLinjanParsing });
+    if (nanpaColonRendering) {
+      const alternative = _npNanpaColonProperNameFromLegacy(raw);
+      return titleCase ? alternative : alternative.toLowerCase();
+    }
     if (!titleCase) return raw;
     return String(raw).trim().split(/\s+/).filter(Boolean)
       .map(w => w.length === 1 ? w.toUpperCase() : (w[0].toUpperCase() + w.slice(1)))
@@ -13888,7 +14159,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       ? "traditional"
       : "uniform";
     const canonicalTokens = _npCanonicalizeScientificTokens(tokens);
-    return _npNanpaCapsTokensToTpWords(canonicalTokens, { mode, relaxedRendering: _npRelaxedRenderingFromOpts(opts) });
+    return _npNanpaCapsTokensToTpWords(canonicalTokens, { mode, relaxedRendering: _npRelaxedRenderingFromOpts(opts), nanpaColonRendering: _npNanpaColonRenderingFromOpts(opts) });
   },
 
   tpWordsToUcsurCodepoints(words) {
@@ -13939,7 +14210,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const mode = ((opts.mode === "traditional") || (opts.numericMode === "traditional"))
       ? "traditional"
       : "uniform";
-    const cps = _npTryDecodeNanpaLinjanIdentifierToCodepoints(input, { mode, relaxedParsing: _npRelaxedParsingFromOpts(opts), relaxedRendering: _npRelaxedRenderingFromOpts(opts) });
+    const cps = _npTryDecodeNanpaLinjanIdentifierToCodepoints(input, { mode, relaxedParsing: _npRelaxedParsingFromOpts(opts), relaxedRendering: _npRelaxedRenderingFromOpts(opts), nanpaColonParsing: _npNanpaColonParsingFromOpts(opts), nanpaColonRendering: _npNanpaColonRenderingFromOpts(opts) });
     if (!cps || !cps.length) return null;
 
     return {
@@ -13960,7 +14231,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const tokens = _npTokenizeNanpaCaps(caps, opts);
     const hasOk = tokens.includes("OK");
     const tokensNoOk = tokens.filter(t => t !== "OK");
-    let words = _npNanpaCapsTokensToTpWords(tokensNoOk, { mode, relaxedRendering: _npRelaxedRenderingFromOpts(opts) });
+    let words = _npNanpaCapsTokensToTpWords(tokensNoOk, { mode, relaxedRendering: _npRelaxedRenderingFromOpts(opts), nanpaColonRendering: _npNanpaColonRenderingFromOpts(opts) });
 
     if (_npNanpaCapsIsValidTimeOrDate(caps, opts)) {
       words = _npReplaceTimeSeparatorsTpWords(words, mode);
@@ -13984,7 +14255,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       ? "traditional"
       : "uniform";
     const isTime = _npNanpaCapsIsValidTimeOrDate(caps, opts);
-    const innerCodepoints = _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime, relaxedParsing: _npRelaxedParsingFromOpts(opts), relaxedRendering: _npRelaxedRenderingFromOpts(opts) });
+    const innerCodepoints = _npNanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime, relaxedParsing: _npRelaxedParsingFromOpts(opts), relaxedRendering: _npRelaxedRenderingFromOpts(opts), nanpaColonRendering: _npNanpaColonRenderingFromOpts(opts) });
     if (!innerCodepoints || !innerCodepoints.length) return null;
 
     return {

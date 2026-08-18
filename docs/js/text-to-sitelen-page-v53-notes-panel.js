@@ -1,4 +1,4 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=238";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=239";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -7,13 +7,13 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=176';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=57';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=58';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=49';
+} from './sitelen-audio-plan.js?v=52';
 let pageMap = new Map();
 
 "use strict";
@@ -482,7 +482,7 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=238",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=239",
   fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=176",
@@ -1069,6 +1069,8 @@ function buildBaseRendererConfig({ includeHalo = true } = {}) {
       preserveNumericCartoucheBreaksInAbbreviation: getNumericCartoucheSpacersEnabled(),
       relaxedNanpaLinjanParsing: relaxedNanpaLinjan,
       relaxedNanpaLinjanRendering: relaxedNanpaLinjan,
+      nanpaColonParsing: getDisplayNanpaFormatEnabled(),
+      nanpaColonRendering: getDisplayNanpaFormatEnabled(),
       nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
       interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
       breakLinesAtFullStops: getBreakLinesAtFullStopsEnabled(),
@@ -1128,6 +1130,7 @@ function getRendererSignature() {
     abbreviateNumericCartouches: getNumericCartoucheAbbrevEnabled(),
     preserveNumericCartoucheBreaksInAbbreviation: getNumericCartoucheSpacersEnabled(),
     relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled(),
+    displayNanpaFormat: getDisplayNanpaFormatEnabled(),
     nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
     enableHexParsing: getEnableHexParsingEnabled()
   });
@@ -1707,6 +1710,45 @@ try {
 } catch (error) {
   showAlertAndAnnounce(error?.message ?? String(error));
 }
+  });
+}
+
+const DISPLAY_NANPA_FORMAT_STORAGE_KEY = "tpDisplayNanpaFormat";
+const DISPLAY_NANPA_FORMAT_DEFAULT_ENABLED = false;
+
+function getDisplayNanpaFormatEnabled() {
+  return !!document.getElementById("appDisplayNanpaFormatEnable")?.checked;
+}
+
+function setDisplayNanpaFormatEnabled(value, { persist = true } = {}) {
+  const enabled = !!value;
+  const el = document.getElementById("appDisplayNanpaFormatEnable");
+  if (el) el.checked = enabled;
+  if (persist) saveBooleanFlagToStorage(DISPLAY_NANPA_FORMAT_STORAGE_KEY, enabled);
+  return enabled;
+}
+
+function applyDisplayNanpaFormatFromStorage() {
+  setDisplayNanpaFormatEnabled(
+    loadBooleanFlagFromStorage(DISPLAY_NANPA_FORMAT_STORAGE_KEY)
+      ?? DISPLAY_NANPA_FORMAT_DEFAULT_ENABLED,
+    { persist: false }
+  );
+}
+
+function wireDisplayNanpaFormatToggle() {
+  const el = document.getElementById("appDisplayNanpaFormatEnable");
+  el?.addEventListener("change", async () => {
+    try {
+      setDisplayNanpaFormatEnabled(el.checked);
+      resetTextToSitelenAudio({ announce: false });
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
+      await renderFromTextarea();
+      updateTextAudioButtons();
+    } catch (error) {
+      showAlertAndAnnounce(error?.message ?? String(error));
+    }
   });
 }
 
@@ -5966,7 +6008,9 @@ function getUnicodeJsonCartoucheProperName(run) {
       numericMode: getNanpaLinjanMode(),
       mixedStyle: "short",
       relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
-      relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled()
+      relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+      nanpaColonParsing: getDisplayNanpaFormatEnabled(),
+      nanpaColonRendering: getDisplayNanpaFormatEnabled()
     };
 
     try {
@@ -5979,7 +6023,9 @@ function getUnicodeJsonCartoucheProperName(run) {
       if (caps) {
         return NanpaParser.splitCapsToProperName(caps, {
           titleCase: true,
-          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled()
+          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
+          nanpaColonParsing: getDisplayNanpaFormatEnabled(),
+          nanpaColonRendering: getDisplayNanpaFormatEnabled()
         });
       }
     } catch {}
@@ -6125,7 +6171,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=238", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=239", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -6733,6 +6779,8 @@ async function downloadInputTranscriptWav() {
       mixedStyle: "short",
       relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
       relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+      nanpaColonParsing: getDisplayNanpaFormatEnabled(),
+      nanpaColonRendering: getDisplayNanpaFormatEnabled(),
       silenceTeToAudio: getSilenceTeToAudioEnabled(),
       soundOutPhonotacticUnknownWords: getSoundOutPhonotacticUnknownWordsEnabled(),
       interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
@@ -7174,6 +7222,8 @@ function visualSpeechUnitsForHighlight(plan, rawText) {
     mixedStyle: "short",
     relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
     relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+    nanpaColonParsing: getDisplayNanpaFormatEnabled(),
+    nanpaColonRendering: getDisplayNanpaFormatEnabled(),
     silenceTeToAudio: getSilenceTeToAudioEnabled(),
     soundOutPhonotacticUnknownWords: getSoundOutPhonotacticUnknownWordsEnabled(),
     interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled()
@@ -8518,6 +8568,8 @@ async function startTextToSitelenAudio() {
       mixedStyle: "short",
       relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanEnabled(),
       relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanEnabled(),
+      nanpaColonParsing: getDisplayNanpaFormatEnabled(),
+      nanpaColonRendering: getDisplayNanpaFormatEnabled(),
       silenceTeToAudio: getSilenceTeToAudioEnabled(),
       soundOutPhonotacticUnknownWords: getSoundOutPhonotacticUnknownWordsEnabled(),
       interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
@@ -10233,6 +10285,7 @@ async function initializeTextToSitelenPage() {
     applyNumericCartoucheAbbrevFromStorage();
     applyNumericCartoucheSpacersFromStorage();
     applyNanpaRelaxedModeFromStorage();
+    applyDisplayNanpaFormatFromStorage();
     applyNasinNanpaPonaFormattingFromStorage();
     applyAudioParserFlagsFromStorage();
     applyBreakLinesAtFullStopsFromStorage();
@@ -10283,6 +10336,7 @@ async function initializeTextToSitelenPage() {
     wireNumericCartoucheAbbrevToggle();
     wireNumericCartoucheSpacersToggle();
     wireNanpaRelaxedModeSelect();
+    wireDisplayNanpaFormatToggle();
     wireNasinNanpaPonaFormattingToggle();
     wireAudioParserFlags();
     wireBreakLinesAtFullStopsToggle();
