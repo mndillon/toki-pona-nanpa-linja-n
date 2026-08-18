@@ -1580,6 +1580,36 @@ function saveBooleanFlagToStorage(key, value) {
   try { localStorage.setItem(key, value ? "1" : "0"); } catch {}
 }
 
+const COPY_FONT_SPECIFIC_CODES_STORAGE_KEY = "tpCopyFontSpecificCodes";
+const COPY_FONT_SPECIFIC_CODES_DEFAULT_ENABLED = true;
+
+function getCopyFontSpecificCodesEnabled() {
+  return !!document.getElementById("appCopyFontSpecificCodesEnable")?.checked;
+}
+
+function setCopyFontSpecificCodesEnabled(value, { persist = true } = {}) {
+  const enabled = !!value;
+  const el = document.getElementById("appCopyFontSpecificCodesEnable");
+  if (el) el.checked = enabled;
+  if (persist) saveBooleanFlagToStorage(COPY_FONT_SPECIFIC_CODES_STORAGE_KEY, enabled);
+  return enabled;
+}
+
+function applyCopyFontSpecificCodesFromStorage() {
+  setCopyFontSpecificCodesEnabled(
+    loadBooleanFlagFromStorage(COPY_FONT_SPECIFIC_CODES_STORAGE_KEY) ?? COPY_FONT_SPECIFIC_CODES_DEFAULT_ENABLED,
+    { persist: false }
+  );
+}
+
+function wireCopyFontSpecificCodesToggle() {
+  const el = document.getElementById("appCopyFontSpecificCodesEnable");
+  el?.addEventListener("change", () => {
+    setCopyFontSpecificCodesEnabled(el.checked);
+    clearRenderedUnicodeSelection();
+  });
+}
+
 function getSilenceTeToAudioEnabled() {
   return !!document.getElementById("appSilenceTeToAudioEnable")?.checked;
 }
@@ -5635,6 +5665,31 @@ function getUnicodeJsonRunCodepoints(run) {
   return stringToCodepoints(text);
 }
 
+function getFontSpecificRenderedRunCodepoints(run) {
+  if (!run || typeof run !== "object") return [];
+
+  const isCartouche = String(run?.kind ?? run?._element?.type ?? "").toLowerCase() === "cartouche";
+  const candidates = isCartouche
+    ? [run?.renderFullCps, run?._element?.renderFullCps, run?.renderCps, run?._element?.renderCps]
+    : [run?.renderCps, run?._element?.renderCps];
+
+  for (const candidate of candidates) {
+    if (!Array.isArray(candidate) || !candidate.length) continue;
+    const cps = candidate.map(Number);
+    if (cps.every(cp => Number.isFinite(cp))) return cps;
+  }
+
+  // Identity/direct-UCSUR runs and older plans fall back to the existing
+  // canonical/Common codepoint reconstruction.
+  return getUnicodeJsonRunCodepoints(run);
+}
+
+function getRenderedUnicodeCopyRunCodepoints(run) {
+  return getCopyFontSpecificCodesEnabled()
+    ? getFontSpecificRenderedRunCodepoints(run)
+    : getUnicodeJsonRunCodepoints(run);
+}
+
 function getUnicodeJsonRunInput(run) {
   const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
   if (run?.sourceText != null && String(run.sourceText).length) {
@@ -7343,7 +7398,7 @@ function renderedLiteralCodepoints(runs) {
   const closeCp = quoteDelimiterCodepoint(last, "quoteCloseChar");
   if (openCp != null) out.push(openCp);
   for (const run of ordered) {
-    const cps = getUnicodeJsonRunCodepoints(run);
+    const cps = getRenderedUnicodeCopyRunCodepoints(run);
     if (Array.isArray(cps)) out.push(...cps);
   }
   if (closeCp != null) out.push(closeCp);
@@ -7368,7 +7423,7 @@ function renderedInterpretedQuoteRunsForRun(run) {
 function renderedRunSequenceCodepoints(runs) {
   const out = [];
   for (const candidate of (runs || [])) {
-    const cps = getUnicodeJsonRunCodepoints(candidate);
+    const cps = getRenderedUnicodeCopyRunCodepoints(candidate);
     if (Array.isArray(cps)) out.push(...cps);
   }
   return out;
@@ -7526,9 +7581,12 @@ function getExpandedNasinNanpaPonaSelectionForRun(run) {
 
   const cps = [];
   for (const candidateRun of best.runs) {
-    const runCps = getUnicodeJsonRunCodepoints(candidateRun);
-    if (!Array.isArray(runCps) || runCps.length !== 1) return null;
-    cps.push(runCps[0]);
+    const canonicalRunCps = getUnicodeJsonRunCodepoints(candidateRun);
+    if (!Array.isArray(canonicalRunCps) || canonicalRunCps.length !== 1) return null;
+
+    const copyRunCps = getRenderedUnicodeCopyRunCodepoints(candidateRun);
+    if (!Array.isArray(copyRunCps) || !copyRunCps.length) return null;
+    cps.push(...copyRunCps);
   }
 
   return {
@@ -7572,7 +7630,7 @@ function getRenderedUnicodeSelectionForRun(run) {
   const expandedNasinNanpaPona = getExpandedNasinNanpaPonaSelectionForRun(run);
   if (expandedNasinNanpaPona) return expandedNasinNanpaPona;
 
-  const cps = getUnicodeJsonRunCodepoints(run);
+  const cps = getRenderedUnicodeCopyRunCodepoints(run);
   if (!Array.isArray(cps) || !cps.length) return null;
   return {
     id: `run:${renderedRunStableId(run)}`,
@@ -7690,7 +7748,8 @@ async function handleRenderedUnicodePointerUp(event) {
 
   const cps = selection.cps;
   const unicodeText = codepointsToRawUnicodeString(cps);
-  const description = renderedUnicodeSelectionDescription(run, cps, selection);
+  const canonicalDescriptionCps = getUnicodeJsonRunCodepoints(run);
+  const description = renderedUnicodeSelectionDescription(run, canonicalDescriptionCps, selection);
 
   selectedRenderedSelectionId = selection.id;
   drawRenderedUnicodeSelection(selection);
@@ -10070,6 +10129,7 @@ async function initializeTextToSitelenPage() {
     applyAudioParserFlagsFromStorage();
     applyBreakLinesAtFullStopsFromStorage();
     applyEnableHexParsingFromStorage();
+    applyCopyFontSpecificCodesFromStorage();
 
     
 
@@ -10119,6 +10179,7 @@ async function initializeTextToSitelenPage() {
     wireAudioParserFlags();
     wireBreakLinesAtFullStopsToggle();
     wireEnableHexParsingToggle();
+    wireCopyFontSpecificCodesToggle();
     wireCartoucheDisplayLinks();
     initTextAudioControls();
     wireTextAudioControls();

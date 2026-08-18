@@ -530,6 +530,14 @@ nanpa #~WI.
           <span class="ctlLabel" style="margin:0;">Enabled</span>
           </label>
           </div>
+
+          <div aria-label="Copy font specific codes" class="inlineControl inlinePill" id="ctlCopyFontSpecificCodes" role="group">
+          <span class="ctlLabel">Copy font specific codes</span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Copy font specific codes" id="appCopyFontSpecificCodesEnable" type="checkbox" checked/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
           </div>
         </div>
       </section>
@@ -843,7 +851,7 @@ nanpa #~WI.
         bootStarted = true;
         try {
           setMessage("Loading page styles…");
-          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=52");
+          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=54");
 
           setMessage("Loading PDF support…");
           await loadClassicScript("./vendor/pdf-lib.min.js?v=49");
@@ -852,7 +860,7 @@ nanpa #~WI.
           await loadClassicScript("./vendor/fontkit.umd.min.js?v=49");
 
           setMessage("Loading renderer…");
-          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=250");
+          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=252");
         } catch (error) {
           showStartupError(error);
         }

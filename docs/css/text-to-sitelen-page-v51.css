@@ -768,6 +768,8 @@ body.shellReady {
 #ctlSoundOutPhonotacticUnknownWords { order: 17; }
 #ctlInterpretDoubleQuotesAsTeTo { order: 18; }
 #ctlBreakLinesAtFullStops { order: 19; }
+#ctlEnableHexParsing { order: 20; }
+#ctlCopyFontSpecificCodes { order: 21; }
 
 @media (max-width: 520px) {
   .renderPrimaryControls {
