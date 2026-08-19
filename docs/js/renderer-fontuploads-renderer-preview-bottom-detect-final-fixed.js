@@ -3478,9 +3478,9 @@ const SitelenRenderer = (() => {
     jan: 0xF1911,
     lawa: 0xF1924,
     ma: 0xF1930,
-    pan: 0xF194B,
+    pakala: 0xF1948,
     sike: 0xF195C,
-    tawa: 0xF1969
+    tan: 0xF1967
   });
 
   const HEX_STRICT_DIGIT_SYLLABLE = Object.freeze({
@@ -3500,7 +3500,7 @@ const SitelenRenderer = (() => {
   ));
   const HEX_ABBREVIATED_WORD_TO_DIGIT = Object.freeze({
     ijo:"0", wan:"1", tu:"2", seli:"3", awen:"4", luka:"5", utala:"6", mun:"7", pipi:"8", jo:"9",
-    jan:"A", lawa:"B", ma:"C", pan:"D", sike:"E", tawa:"F"
+    jan:"A", lawa:"B", ma:"C", pakala:"D", sike:"E", tan:"F"
   });
 
   function isAsciiHexDigit(ch) {
@@ -3796,9 +3796,9 @@ const SitelenRenderer = (() => {
     add("A", "jan", "ala");
     add("B", "lawa", "ala");
     add("C", "ma", "ala");
-    add("D", "pan", "ala");
+    add("D", "pakala", "ala");
     add("E", "sike", "ike");
-    add("F", "tawa", "ala");
+    add("F", "tan", "ala");
     return out;
   }
 
@@ -3889,9 +3889,9 @@ const SitelenRenderer = (() => {
     if (d === "A") return ["jan", "ala"];
     if (d === "B") return ["lawa", "ala"];
     if (d === "C") return ["ma", "ala"];
-    if (d === "D") return ["pan", "ala"];
+    if (d === "D") return ["pakala", "ala"];
     if (d === "E") return ["sike", "ike"];
-    if (d === "F") return ["tawa", "ala"];
+    if (d === "F") return ["tan", "ala"];
 
     if (relaxedRendering) {
       if (d === "1") return ["wan", "ala"];
@@ -3920,7 +3920,7 @@ const SitelenRenderer = (() => {
     const d = String(digit ?? "").toUpperCase();
     const map = {
       "0":"ijo", "1":"wan", "2":"tu", "3":"seli", "4":"awen", "5":"luka", "6":"utala", "7":"mun", "8":"pipi", "9":"jo",
-      "A":"jan", "B":"lawa", "C":"ma", "D":"pan", "E":"sike", "F":"tawa"
+      "A":"jan", "B":"lawa", "C":"ma", "D":"pakala", "E":"sike", "F":"tan"
     };
     return map[d] || null;
   }
