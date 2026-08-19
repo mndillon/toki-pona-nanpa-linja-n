@@ -2381,10 +2381,10 @@ export const REFERENCE_AUDIO_MANIFEST = {
     },
     "nasa": {
       "unit": "Nasa",
-      "file": "nanpa_v6/nasa.wav",
+      "file": "nanpa_v7/nasa.wav",
       "source": "uploaded whole-word numeric Nasa audio",
       "source_order": 56,
-      "duration_ms": 1014.4
+      "duration_ms": 928.4
     },
     "ta": {
       "unit": "Ta",
@@ -2479,10 +2479,10 @@ export const REFERENCE_AUDIO_MANIFEST = {
     },
     "nanpa": {
       "unit": "Nanpa",
-      "file": "nanpa_v6/nanpa.wav",
+      "file": "nanpa_v7/nanpa.wav",
       "source": "uploaded whole-word numeric Nanpa audio",
       "source_order": 70,
-      "duration_ms": 1079.4
+      "duration_ms": 1011.4
     }
   },
   "nanpa_unit_source": {
@@ -2606,7 +2606,7 @@ export const REFERENCE_AUDIO_MANIFEST = {
     "derivations": {
       "Nasa": [
         "uploaded whole-word numeric Nasa audio",
-        "nanpa_v6/nasa.wav"
+        "nanpa_v7/nasa.wav"
       ],
       "Ta": [
         "nanpa_v2/te.wav",
@@ -2661,6 +2661,6 @@ export const REFERENCE_AUDIO_MANIFEST = {
         "nanpa_v2/nan.wav"
       ]
     },
-    "notes": "Hex-support nanpa units use derived and uploaded numeric WAV assets. Output is mono 16-bit PCM at 24000 Hz. Consonant onsets are retained from existing purpose-recorded numeric units; target vowel/coda portions are taken from existing Na/Nan or Ni/Nin units as appropriate. The current Nasa asset is the uploaded whole-word recording in nanpa_v6/nasa.wav; its manifest duration is measured directly from that WAV. Enen uses Ene plus an existing terminal nasal. Source leading audio and source trailing audio are retained so the new units follow the timing convention of the supplied numeric bank. nanpa_v5 revises only La and Lan by replacing their initial /l/ onset with the corresponding Lu/Lun numeric onset, while preserving the original La/Lan sample count, sample rate, leading samples, and all samples after the onset crossfade. The current nanpa_v5 La/Lan files replace the previous onset-splice approach. Their initial 120 ms comes directly from supplied numeric Le/Len, the stable lateral is extended to produce a clearly sustained L, and the join enters La/Lan only after the previous consonant transition at a stable a/an vowel. No old La/Lan onset material is reused. The current nanpa_v6 La and Lan assets are the newly uploaded replacement recordings; manifest durations are measured directly from those WAV files. nanpa_v6 also adds the uploaded purpose-recorded Sa and San assets; their manifest durations are measured directly from those WAV files."
+    "notes": "Hex-support nanpa units use derived and uploaded numeric WAV assets. Output is mono 16-bit PCM at 24000 Hz. Consonant onsets are retained from existing purpose-recorded numeric units; target vowel/coda portions are taken from existing Na/Nan or Ni/Nin units as appropriate. The current Nasa asset is the uploaded whole-word recording in nanpa_v7/nasa.wav; its manifest duration is measured directly from that WAV. Enen uses Ene plus an existing terminal nasal. Source leading audio and source trailing audio are retained so the new units follow the timing convention of the supplied numeric bank. nanpa_v5 revises only La and Lan by replacing their initial /l/ onset with the corresponding Lu/Lun numeric onset, while preserving the original La/Lan sample count, sample rate, leading samples, and all samples after the onset crossfade. The current nanpa_v5 La/Lan files replace the previous onset-splice approach. Their initial 120 ms comes directly from supplied numeric Le/Len, the stable lateral is extended to produce a clearly sustained L, and the join enters La/Lan only after the previous consonant transition at a stable a/an vowel. No old La/Lan onset material is reused. The current nanpa_v6 La and Lan assets are the newly uploaded replacement recordings; manifest durations are measured directly from those WAV files. nanpa_v6 also adds the uploaded purpose-recorded Sa and San assets; their manifest durations are measured directly from those WAV files."
   }
 };

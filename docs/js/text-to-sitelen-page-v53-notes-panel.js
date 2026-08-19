@@ -7,7 +7,7 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=176';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=58';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=59';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
