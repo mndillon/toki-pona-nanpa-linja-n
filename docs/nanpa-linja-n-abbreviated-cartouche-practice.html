@@ -1220,7 +1220,7 @@
   const STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
   const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
   const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
-  const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
+  const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NS","NE","NO"];
   const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
     "Nanpa","Nasa",
     "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
@@ -1527,8 +1527,8 @@
 
     if (kind === "scientific-notation") return normalizeScientificQuizValue(s);
     if (kind === "telephone"){
-      const match = s.match(/^(\d{3})\s*[-‐‑‒–—−]\s*555\s*[-‐‑‒–—−]\s*(\d{4})$/);
-      return match && match[1][0] !== "0" ? `${match[1]}-555-${match[2]}` : null;
+      const match = s.match(/^\+\s*1\s*[-‐‑‒–—−]\s*(\d{3})\s*[-‐‑‒–—−]\s*555\s*[-‐‑‒–—−]\s*(\d{4})$/);
+      return match && match[1][0] !== "0" ? `+1-${match[1]}-555-${match[2]}` : null;
     }
     return s;
   }
@@ -1712,7 +1712,7 @@
     if (kind === "telephone"){
       const area = String(randInt(100,999));
       const line = String(randInt(0,9999)).padStart(4,"0");
-      const s = `${area}-555-${line}`;
+      const s = `+1-${area}-555-${line}`;
       return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "iso-date"){
