@@ -116,6 +116,7 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
+    .mobileOptionsToggle{ display:none; }
 
     .wrap{
       height:calc(100dvh - var(--topbar-h));
@@ -653,8 +654,15 @@
 
     @media (max-width:980px){
       :root{ --topbar-h:98px; }
+      body.mobileOptionsExpanded{ --topbar-h:min(360px,62dvh); }
       .topbar{ flex-wrap:wrap; align-content:center; white-space:normal; }
+      .topbar.mobileOptionsExpanded{
+        align-content:flex-start;
+        overflow-y:auto;
+        overscroll-behavior:contain;
+      }
       .brand{ width:100%; font-size:19px; }
+      .mobileOptionsToggle{ display:inline-flex; }
       .status{ display:none; }
     }
     @media (max-width:720px){
@@ -832,7 +840,7 @@
   </style>
 </head>
 <body>
-  <header class="topbar">
+  <header id="practiceTopbar" class="topbar">
     <a
       class="pageHomeLink"
       style="margin-top:0"
@@ -858,6 +866,7 @@
     </a>
 
     <div class="brand">nanpa-linja-n abbreviated cartouche practice</div>
+    <button id="mobileOptionsToggle" class="btn mobileOptionsToggle" type="button" aria-expanded="false" aria-controls="practiceTopbar">Options ▾</button>
     <button id="startButton" class="btn primary" type="button">Start</button>
     <button id="quitButton" class="btn" type="button" disabled>Quit</button>
 
@@ -878,6 +887,7 @@
         <option value="hh-mm-time">Times</option>
         <option value="iso-date">Dates</option>
         <option value="telephone">Telephone numbers</option>
+        <option value="hexadecimal">Hexadecimal</option>
       </select>
     </label>
 
@@ -892,6 +902,11 @@
         <option value="strict">strict</option>
         <option value="relaxed" selected>relaxed</option>
       </select>
+    </label>
+
+    <label class="controlBox" for="nanpaFormatToggle">
+      <span class="controlLabel">Nanpa format</span>
+      <input id="nanpaFormatToggle" type="checkbox" aria-label="Nanpa format" />
     </label>
 
     <label class="controlBox hidden">
@@ -1125,7 +1140,7 @@
   const SETTINGS_KEY = "nanpaAbbreviatedCartouchePractice.settings";
   const HISTORY_DB_NAME = "nln-abbreviated-cartouche-practice-history";
   const HISTORY_DB_VERSION = 2;
-  const HISTORY_RECORD_VERSION = 2;
+  const HISTORY_RECORD_VERSION = 3;
   const HISTORY_STORE = "sessions";
   const TYPED_HINT_DURATION_MS = 10000;
 
@@ -1148,10 +1163,11 @@
     "scientific-notation":"scientific notation",
     "hh-mm-time":"time",
     "iso-date":"date",
-    telephone:"telephone number"
+    telephone:"telephone number",
+    hexadecimal:"hexadecimal"
   };
 
-  const MIXED_KINDS = Object.keys(KIND_LABELS);
+  const MIXED_KINDS = Object.keys(KIND_LABELS).filter(kind => kind !== "hexadecimal");
 
   // Edit only the values in this array to change the Examples cheat sheet.
   // The order is deliberately from simpler number forms to more complex forms.
@@ -1169,7 +1185,9 @@
     { kind:"hh-mm-time", value:"14:30" },
     { kind:"iso-date", value:"2026-07-04" },
     { kind:"scientific-notation", value:"4.5e-3" },
-    { kind:"telephone", value:"432-555-0078" }
+    { kind:"telephone", value:"432-555-0078" },
+    { kind:"hexadecimal", value:"#C0FFEE" },
+    { kind:"hexadecimal", label:"hexadecimal with separators", value:"#FE:DC:BA" }
   ];
 
   const FRACTION_CHOICES = [
@@ -1178,6 +1196,10 @@
   ];
 
   const ABBREV_CP_NANPA = 0xF193D;
+  const ABBREV_CP_NASA   = 0xF193E;
+  const ABBREV_CP_KULE   = 0xF191E;
+  const ABBREV_CP_KULUPU = 0xF191F;
+  const ABBREV_CP_KOLON  = 0xF199D;
   const ABBREV_CP_NENA  = 0xF1940;
   const ABBREV_CP_EN    = 0xF190A;
   const ABBREV_CP_E     = 0xF1909;
@@ -1256,6 +1278,7 @@
       kind:"mixed",
       questionCount:20,
       properNameMode:"relaxed",
+      nanpaFormat:false,
       audioPauseScale:2.25,
       requireDecimalAfterProperName:false,
       acceptEquivalentPunctuation:true,
@@ -1270,7 +1293,7 @@
 
   function cacheElements(){
     for (const id of [
-      "startButton","quitButton","kindSelect","questionCountInput","properNameModeSelect","audioSpeedSelect","status",
+      "startButton","quitButton","mobileOptionsToggle","kindSelect","questionCountInput","properNameModeSelect","nanpaFormatToggle","audioSpeedSelect","status",
       "previousButton","nextButton","scoreLabel","streakLabel","questionLabel","typeLabel","prompt","audioButton","questionCard","questionAbbreviatedCartouche",
       "firstAnswerInput","typedHint","checkFirstButton","decimalStage","decimalAnswerInput","checkDecimalButton","revealButton","feedback",
       "reveal","revealValue","revealStrictLine","revealStrictName","revealRelaxedLine","revealRelaxedName","normalCartouche",
@@ -1300,9 +1323,10 @@
       const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
       if (saved && typeof saved === "object") Object.assign(state.settings,saved);
     }catch{}
-    if (!["mixed",...MIXED_KINDS].includes(state.settings.kind)) state.settings.kind = "mixed";
+    if (!["mixed",...MIXED_KINDS,"hexadecimal"].includes(state.settings.kind)) state.settings.kind = "mixed";
     state.settings.questionCount = clamp(Math.round(Number(state.settings.questionCount) || 20),1,100);
     state.settings.properNameMode = normalizeProperNameMode(state.settings.properNameMode);
+    state.settings.nanpaFormat = state.settings.nanpaFormat === true;
     const pause = Number(state.settings.audioPauseScale);
     state.settings.audioPauseScale = AUDIO_PAUSE_SCALE_OPTIONS.some(x => Math.abs(x.value-pause)<0.001) ? pause : 2.25;
     state.settings.requireDecimalAfterProperName = state.settings.requireDecimalAfterProperName !== false;
@@ -1320,6 +1344,7 @@
     el.kindSelect.value = state.settings.kind;
     el.questionCountInput.value = String(state.settings.questionCount);
     el.properNameModeSelect.value = state.settings.properNameMode;
+    el.nanpaFormatToggle.checked = !!state.settings.nanpaFormat;
     el.audioSpeedSelect.value = Number(state.settings.audioPauseScale).toFixed(2);
     el.requireDecimalToggle.checked = !!state.settings.requireDecimalAfterProperName;
     el.equivalentPunctuationToggle.checked = !!state.settings.acceptEquivalentPunctuation;
@@ -1331,6 +1356,7 @@
     state.settings.kind = el.kindSelect.value;
     state.settings.questionCount = clamp(Math.round(Number(el.questionCountInput.value) || 20),1,100);
     state.settings.properNameMode = normalizeProperNameMode(el.properNameModeSelect.value);
+    state.settings.nanpaFormat = !!el.nanpaFormatToggle.checked;
     state.settings.audioPauseScale = Number(el.audioSpeedSelect.value) || 2.25;
     state.settings.requireDecimalAfterProperName = !!el.requireDecimalToggle.checked;
     state.settings.acceptEquivalentPunctuation = !!el.equivalentPunctuationToggle.checked;
@@ -1342,7 +1368,7 @@
   }
 
   function setSetupDisabled(disabled){
-    for (const node of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.requireDecimalToggle]) node.disabled = disabled;
+    for (const node of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.nanpaFormatToggle,el.requireDecimalToggle]) node.disabled = disabled;
     // Audio speed and punctuation may safely change during a session.
   }
 
@@ -1449,9 +1475,25 @@
     return `${coefficient}e${exponentSign}${exponentMatch[2]}`;
   }
 
+  function normalizeHexBasic(raw){
+    return normalizeOuter(raw).replace(/\s+/g,"").toUpperCase();
+  }
+
+  function normalizeHexQuizValue(raw){
+    const source = normalizeOuter(raw).replace(/\s*([:.\-])\s*/g,"$1").toUpperCase();
+    if (!source.startsWith("#")) return null;
+    const body = source.slice(1);
+    if (!body) return null;
+    if (/^[0-9A-F]+$/.test(body)) return `#U:${body}`;
+    if (!/^[0-9A-F]+(?:[:.\-][0-9A-F]+)+$/.test(body)) return null;
+    return `#S:${body.split(/[:.\-]/).join(":")}`;
+  }
+
   function canonicalEquivalentValue(item,raw){
     const s = normalizeOuter(raw);
     const kind = item.kind;
+
+    if (kind === "hexadecimal") return normalizeHexQuizValue(s);
 
     if (["single-digit-integer","integer","thousands","millions","decimal","negative"].includes(kind)){
       return normalizeExactNumber(s,{allowDecimal:kind === "decimal" || kind === "negative"});
@@ -1498,6 +1540,7 @@
     }
     if (item.answerMode === "commasOptional") return normalizeCommasOptional(actual) === normalizeCommasOptional(expected);
     if (item.answerMode === "scientific") return normalizeScientificBasic(actual) === normalizeScientificBasic(expected);
+    if (item.answerMode === "hex") return normalizeHexBasic(actual) === normalizeHexBasic(expected);
     return normalizeOuter(actual) === normalizeOuter(expected);
   }
 
@@ -1541,11 +1584,12 @@
   function answerModeForKind(kind){
     if (kind === "thousands" || kind === "millions") return "commasOptional";
     if (kind === "scientific-notation") return "scientific";
+    if (kind === "hexadecimal") return "hex";
     return "exact";
   }
 
   function getExampleItem(definition){
-    const key = `${definition.kind}:${definition.value}`;
+    const key = `${definition.kind}:${definition.value}:${state.settings.nanpaFormat ? "nanpa" : "ne"}`;
     if (!exampleItemCache.has(key)){
       // Build examples in relaxed mode so one parse provides both the strict
       // and relaxed proper-name forms. Audio still follows the selected mode.
@@ -1554,17 +1598,19 @@
         definition.value,
         definition.value,
         answerModeForKind(definition.kind),
-        "relaxed"
+        "relaxed",
+        state.settings.nanpaFormat
       ));
     }
     return exampleItemCache.get(key);
   }
 
-  function makeItem(kind,parserInput,displayValue,answerMode,properNameMode){
+  function makeItem(kind,parserInput,displayValue,answerMode,properNameMode,nanpaFormat=false){
     return {
       id:`${kind}-${Math.random().toString(36).slice(2)}`,
       kind, parserInput, displayValue, answer:displayValue, answerMode,
       properNameMode:normalizeProperNameMode(properNameMode),
+      nanpaFormat:nanpaFormat === true,
       parsedPromise:null,
       firstAnswer:"",
       decimalAnswer:"",
@@ -1584,15 +1630,36 @@
     };
   }
 
+  function randomHexDigits(length){
+    const alphabet = "0123456789ABCDEF";
+    let out = "";
+    for (let index=0;index<length;index++) out += alphabet[randInt(0,alphabet.length - 1)];
+    return out;
+  }
+
+  function generateHexPracticeValue(){
+    const separated = Math.random() < 0.45;
+    if (separated){
+      const pairCount = choice([2,3,4]);
+      const separator = choice([":","-","."]);
+      return `#${Array.from({length:pairCount},() => randomHexDigits(2)).join(separator)}`;
+    }
+    return `#${randomHexDigits(choice([2,3,4,5,6]))}`;
+  }
+
   function generateItemForKind(kind,properNameMode){
+    if (kind === "hexadecimal"){
+      const s = generateHexPracticeValue();
+      return makeItem(kind,s,s,"hex",properNameMode,state.settings.nanpaFormat);
+    }
     if (kind === "single-digit-integer"){
       const s = String(randInt(0,9));
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "integer"){
       const magnitude = choice([99,999,9999,999999]);
       const s = String(randInt(0,magnitude));
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "decimal"){
       const whole = randInt(0,999);
@@ -1600,58 +1667,58 @@
       const max = Math.pow(10,places)-1;
       const frac = String(randInt(0,max)).padStart(places,"0");
       const s = `${whole}.${frac}`;
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "negative"){
       const base = Math.random() < 0.35
         ? `${randInt(0,999)}.${String(randInt(0,99)).padStart(2,"0")}`
         : String(randInt(1,999999));
       const s = `-${base}`;
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "thousands"){
       const s = formatCommas(randInt(1000,999999));
-      return makeItem(kind,s,s,"commasOptional",properNameMode);
+      return makeItem(kind,s,s,"commasOptional",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "millions"){
       const s = formatCommas(randInt(1000000,99999999));
-      return makeItem(kind,s,s,"commasOptional",properNameMode);
+      return makeItem(kind,s,s,"commasOptional",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "percent"){
       const s = Math.random() < 0.5 ? `${randInt(1,999)}%` : `${randInt(0,99)}.${randInt(1,9)}%`;
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "fraction"){
       const s = choice(FRACTION_CHOICES);
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "integer-and-fraction"){
       const s = `${randInt(1,99)}+${choice(FRACTION_CHOICES)}`;
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "scientific-notation"){
       const mantissa = `${randInt(1,9)}.${randInt(1,9)}`;
       let exponent = randInt(-9,9);
       if (exponent === 0) exponent = choice([-3,3]);
       const s = `${mantissa}e${exponent}`;
-      return makeItem(kind,s,s,"scientific",properNameMode);
+      return makeItem(kind,s,s,"scientific",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "hh-mm-time"){
       const s = `${pad2(randInt(0,23))}:${pad2(randInt(0,59))}`;
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "telephone"){
       const area = String(randInt(100,999));
       const line = String(randInt(0,9999)).padStart(4,"0");
       const s = `${area}-555-${line}`;
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     if (kind === "iso-date"){
       const year = randInt(1900,2099);
       const month = randInt(1,12);
       const day = randInt(1,dayCountForMonth(year,month));
       const s = `${year}-${pad2(month)}-${pad2(day)}`;
-      return makeItem(kind,s,s,"exact",properNameMode);
+      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
     }
     throw new Error(`Unsupported number type: ${kind}`);
   }
@@ -1676,13 +1743,13 @@
   }
 
   async function getNanpaParser(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=239");
     const mod = await nanpaModulePromise;
     return mod.NanpaParser;
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=44").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=57").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 
@@ -1690,6 +1757,51 @@
     if (!item.parsedPromise){
       item.parsedPromise = (async () => {
         const NanpaParser = await getNanpaParser();
+        const useNanpaFormat = item.nanpaFormat === true && item.kind !== "hexadecimal";
+        const isHex = item.kind === "hexadecimal";
+        if (useNanpaFormat || isHex){
+          const strictRaw = NanpaParser.parseNumber(item.parserInput,{
+            mode:"uniform", mixedStyle:"short",
+            enableHexParsing:true,
+            nanpaColonParsing:useNanpaFormat,
+            nanpaColonRendering:useNanpaFormat,
+            relaxedNanpaLinjanParsing:false,
+            relaxedNanpaLinjanRendering:false
+          });
+          if (!strictRaw?.properName) throw new Error(`Could not encode quiz value: ${item.parserInput}`);
+          const strictParsed = {
+            ...strictRaw,
+            ucsurCodepoints:Array.from(strictRaw.ucsurCodepoints ?? strictRaw.innerCodepoints ?? strictRaw.codepoints ?? [])
+          };
+
+          const relaxedRaw = NanpaParser.parseNumber(item.parserInput,{
+            mode:"uniform", mixedStyle:"short",
+            enableHexParsing:true,
+            nanpaColonParsing:useNanpaFormat,
+            nanpaColonRendering:useNanpaFormat,
+            relaxedNanpaLinjanParsing:true,
+            relaxedNanpaLinjanRendering:true
+          });
+          const relaxedParsed = relaxedRaw ? {
+            ...relaxedRaw,
+            ucsurCodepoints:Array.from(relaxedRaw.ucsurCodepoints ?? relaxedRaw.innerCodepoints ?? relaxedRaw.codepoints ?? [])
+          } : strictParsed;
+          const useRelaxed = isRelaxedProperNameMode(item.properNameMode);
+          const quizParsed = useRelaxed ? relaxedParsed : strictParsed;
+          return {
+            ...strictParsed,
+            strictParsed,
+            quizParsed,
+            relaxedParsed,
+            relaxedProperName:relaxedParsed.properName,
+            properName:strictParsed.properName,
+            quizProperName:quizParsed.properName,
+            quizCaps:quizParsed.caps ?? strictParsed.caps ?? "",
+            properNameMode:item.properNameMode,
+            nanpaFormat:item.nanpaFormat === true
+          };
+        }
+
         const strictParsed = NanpaParser.parseNumber(item.parserInput,{ mode:"uniform", mixedStyle:"short" });
         if (!strictParsed?.properName || !strictParsed?.caps) throw new Error(`Could not encode quiz value: ${item.parserInput}`);
 
@@ -1726,7 +1838,8 @@
           properName:strictParsed.properName,
           quizProperName,
           quizCaps,
-          properNameMode:item.properNameMode
+          properNameMode:item.properNameMode,
+          nanpaFormat:item.nanpaFormat === true
         };
       })();
     }
@@ -1815,31 +1928,50 @@
     const units = [];
     if (!cps.length) return {entries,units};
 
-    // The outer opening marker is Ne: nanpa plus its supporting e glyph.
-    const openingEnd = Math.min(cps.length,2);
-    units.push({kind:"opening",start:0,end:openingEnd});
+    // Decimal Ne-format, decimal Nanpa format, and hexadecimal Nasa format all
+    // have a structural opening frame followed by one supporting marker: e for
+    // Ne-format, or the visible colon for Nanpa/Nasa format.
+    const openingFrame = cps[0];
+    const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA;
+    let openingEnd = 1;
+    if (supportedFrame && cps.length > 1 && (cps[1] === ABBREV_CP_E || cps[1] === ABBREV_CP_EN || cps[1] === ABBREV_CP_KOLON)){
+      openingEnd = 2;
+    }
+    units.push({kind:"opening",start:0,end:Math.min(cps.length,openingEnd)});
 
-    const hasClosingNanpa = cps.length > openingEnd && cps[cps.length - 1] === ABBREV_CP_NANPA;
-    const interiorEnd = hasClosingNanpa ? cps.length - 1 : cps.length;
+    const hasClosingFrame = supportedFrame && cps.length > openingEnd && cps[cps.length - 1] === openingFrame;
+    const interiorEnd = hasClosingFrame ? cps.length - 1 : cps.length;
     let cursor = openingEnd;
     while (cursor < interiorEnd){
       let length = Math.min(2,interiorEnd - cursor);
-      let kind = "value";
+      let unitKind = "value";
       if (cps[cursor] === ABBREV_CP_NENA && cursor + 1 < interiorEnd){
         const next = cps[cursor + 1];
         if (next === ABBREV_CP_ONA){
           length = Math.min(2,interiorEnd - cursor);
-          kind = "negative";
-        }else if (next === ABBREV_CP_O || next === ABBREV_CP_EN || next === ABBREV_CP_OPEN){
-          length = Math.min(4,interiorEnd - cursor);
-          kind = "punctuation";
+          unitKind = "negative";
+        }else{
+          const third = cps[cursor + 2];
+          const fourth = cps[cursor + 3];
+          const hasFourPartPunctuation =
+            cursor + 3 < interiorEnd &&
+            (next === ABBREV_CP_E || next === ABBREV_CP_EN) &&
+            (kind === "hexadecimal"
+              ? (third === ABBREV_CP_NENA || third === ABBREV_CP_KULE)
+              : (third === ABBREV_CP_O || third === ABBREV_CP_EN || third === ABBREV_CP_OPEN ||
+                 third === ABBREV_CP_NENA || third === ABBREV_CP_KULUPU)) &&
+            (fourth === ABBREV_CP_E || fourth === ABBREV_CP_EN);
+          if (hasFourPartPunctuation || next === ABBREV_CP_O || next === ABBREV_CP_EN || next === ABBREV_CP_OPEN){
+            length = Math.min(4,interiorEnd - cursor);
+            unitKind = "punctuation";
+          }
         }
       }
-      units.push({kind,start:cursor,end:cursor + length});
+      units.push({kind:unitKind,start:cursor,end:cursor + length});
       cursor += length;
     }
 
-    if (hasClosingNanpa) units.push({kind:"closing",start:cps.length - 1,end:cps.length});
+    if (hasClosingFrame) units.push({kind:"closing",start:cps.length - 1,end:cps.length});
 
     for (const unit of units){
       unit.glyphEntries = entries.filter(entry => entry.sourceIndex >= unit.start && entry.sourceIndex < unit.end);
@@ -1914,9 +2046,59 @@
     const strictCompact = normalizeProgressiveProperNameInput(strictProperName);
     const relaxedCompact = normalizeProgressiveProperNameInput(relaxedProperName);
 
-    // Full cartouche codepoints and the proper-name letters are intentionally
-    // one-to-one. Keep a safe fallback if an older parser build violates that.
-    if (expectedCompact.length !== fullCodepoints.length && groups.length){
+    // Nanpa format replaces the two-letter Ne opening with the five-letter
+    // standalone word Nanpa while the remaining decimal proper-name letters
+    // retain their existing one-to-one relationship with the full cartouche
+    // source. Account for those three extra opening letters explicitly so the
+    // first hint reveals all of Nanpa and every later reveal boundary stays
+    // aligned with the existing decimal progression.
+    const properNameWords = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
+    const hasNanpaColonOpening =
+      properNameWords[0]?.toLowerCase() === "nanpa" &&
+      fullCodepoints[0] === ABBREV_CP_NANPA &&
+      fullCodepoints[1] === ABBREV_CP_KOLON;
+    const hasNasaColonOpening =
+      properNameWords[0]?.toLowerCase() === "nasa" &&
+      fullCodepoints[0] === ABBREV_CP_NASA &&
+      fullCodepoints[1] === ABBREV_CP_KOLON;
+
+    if (item.kind === "hexadecimal" && hasNasaColonOpening && groups.length){
+      // Hex follows the same progressive visual rule as decimal: the opening
+      // Nasa : is visible first, then exactly one value glyph at a time. When
+      // that value glyph is immediately followed by Eke/Ene punctuation, the
+      // punctuation glyph is revealed with it so the learner can infer the
+      // terminating n and the following punctuation word before advancing.
+      const finalLength = expectedCompact.length;
+      let semanticLength = normalizeProgressiveProperNameInput(properNameWords[0]).length;
+      for (let groupIndex=0;groupIndex<groups.length;groupIndex++){
+        const group = groups[groupIndex];
+        if (groupIndex > 0){
+          const valueUnitCount = group.units.filter(unit => unit.kind === "value").length;
+          semanticLength += valueUnitCount * 2;
+          if (group.units.some(unit => unit.kind === "punctuation")){
+            semanticLength += 4; // terminating n + Eke/Ene
+          }else if (groupIndex === groups.length - 1){
+            semanticLength += 1; // final numeric terminator n
+          }
+        }
+        groups[groupIndex].requiredLength = groupIndex === groups.length - 1
+          ? finalLength
+          : Math.max(0,Math.min(finalLength,semanticLength));
+      }
+    }else if (hasNanpaColonOpening && groups.length){
+      const finalLength = expectedCompact.length;
+      const openingSourceLength = Math.max(0,Number(groups[0]?.units?.[0]?.end) || 0);
+      const openingNameLength = normalizeProgressiveProperNameInput(properNameWords[0]).length;
+      const openingLengthDelta = openingNameLength - openingSourceLength;
+      for (let groupIndex=0;groupIndex<groups.length;groupIndex++){
+        groups[groupIndex].requiredLength = groupIndex === groups.length - 1
+          ? finalLength
+          : Math.max(0,Math.min(finalLength,groups[groupIndex].end + openingLengthDelta));
+      }
+    // Full Ne-format cartouche codepoints and proper-name letters are normally
+    // one-to-one. Keep the existing proportional fallback unchanged for older
+    // parser output and other formats that violate that assumption.
+    }else if (expectedCompact.length !== fullCodepoints.length && groups.length){
       const finalLength = expectedCompact.length;
       for (let groupIndex=0;groupIndex<groups.length;groupIndex++){
         const ratio = groups[groupIndex].end / Math.max(1,fullCodepoints.length);
@@ -2183,7 +2365,12 @@
       const rendered = await voice.render(parsed.quizProperName || parsed.properName,{
         synthesis_mode:"reference_audio",
         pauseScale:Number(state.settings.audioPauseScale),
-        syllableGapSeconds:getAudioSyllableGapSeconds()
+        syllableGapSeconds:getAudioSyllableGapSeconds(),
+        enableHexParsing:item.kind === "hexadecimal",
+        relaxedNanpaLinjanParsing:isRelaxedProperNameMode(item.properNameMode),
+        relaxedNanpaLinjanRendering:isRelaxedProperNameMode(item.properNameMode),
+        nanpaColonParsing:item.nanpaFormat === true,
+        nanpaColonRendering:item.nanpaFormat === true
       });
       if (token !== generationToken || !state.active) return;
 
@@ -2220,7 +2407,12 @@
       const rendered = await voice.render(spokenName,{
         synthesis_mode:"reference_audio",
         pauseScale:Number(state.settings.audioPauseScale),
-        syllableGapSeconds:getAudioSyllableGapSeconds()
+        syllableGapSeconds:getAudioSyllableGapSeconds(),
+        enableHexParsing:definition.kind === "hexadecimal",
+        relaxedNanpaLinjanParsing:useRelaxed,
+        relaxedNanpaLinjanRendering:useRelaxed,
+        nanpaColonParsing:state.settings.nanpaFormat === true,
+        nanpaColonRendering:state.settings.nanpaFormat === true
       });
       if (token !== generationToken) return;
 
@@ -2305,11 +2497,15 @@
         grid.className = "exampleReferenceGrid";
         appendExampleReferencePanel(
           grid,
-          `Expected ${selectedMode} nanpa-linja-n proper name input`,
+          definition.kind === "hexadecimal" ? "Expected hexadecimal nanpa-linja-n proper name input" : `Expected ${selectedMode} nanpa-linja-n proper name input`,
           selectedName,
           {properName:true}
         );
-        appendExampleReferencePanel(grid,"Represented decimal number",definition.value);
+        appendExampleReferencePanel(
+          grid,
+          definition.kind === "hexadecimal" ? "Represented hexadecimal value" : "Represented decimal number",
+          definition.value
+        );
 
         body.append(heading,grid);
         row.append(cartouche,body);
@@ -2471,12 +2667,13 @@
 
   async function ensureReviewRevealData(record){
     const mode = normalizeProperNameMode(record.properNameMode || "relaxed");
+    const nanpaFormat = record.nanpaFormat === true;
     const hasSelectedModeReveal =
       typeof record.properName === "string" && !!record.properName &&
       Array.isArray(record.fullCodepoints) &&
       Array.isArray(record.abbreviatedCodepoints) &&
       typeof record.uniqueCode === "string";
-    if (hasSelectedModeReveal) return {...record,properNameMode:mode};
+    if (hasSelectedModeReveal) return {...record,properNameMode:mode,nanpaFormat};
 
     // Older saved sessions contain both strict and relaxed fields. Select only
     // the fields matching the mode used for that session, without displaying
@@ -2490,6 +2687,7 @@
       return {
         ...record,
         properNameMode:mode,
+        nanpaFormat,
         properName:legacyProperName,
         fullCodepoints,
         abbreviatedCodepoints:abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(record.kind)),
@@ -2502,13 +2700,15 @@
       record.value,
       record.value,
       "exact",
-      mode
+      mode,
+      nanpaFormat
     );
     const parsed = await ensureParsed(temp);
     return {
       ...record,
       ...await buildReviewRevealDataFromParsed(parsed,mode,record.kind),
-      properNameMode:mode
+      properNameMode:mode,
+      nanpaFormat
     };
   }
 
@@ -2521,6 +2721,7 @@
       kindLabel:KIND_LABELS[item.kind] || item.kind,
       value:item.displayValue,
       properNameMode:item.properNameMode,
+      nanpaFormat:item.nanpaFormat === true,
       ...revealData,
       firstAnswer:item.firstAnswer || "",
       decimalAnswer:item.decimalAnswer || "",
@@ -2692,7 +2893,8 @@
 
   const REVIEW_AUDIO_DIGIT_BY_SYLLABLE = Object.freeze({
     ni:"0", we:"1", wa:"1", te:"2", tu:"2", se:"3", na:"4",
-    le:"5", lu:"5", nu:"6", me:"7", mu:"7", pe:"8", pi:"8", je:"9"
+    le:"5", lu:"5", nu:"6", me:"7", mu:"7", pe:"8", pi:"8", je:"9",
+    ja:"A", la:"B", ma:"C", pa:"D", si:"E", ta:"F"
   });
 
   function reviewAudioUnitSourceRanges(units){
@@ -2739,11 +2941,84 @@
     });
   }
 
+  function buildReviewSemanticSourceGroups(fullCodepoints){
+    const cps = Array.from(fullCodepoints || []).map(Number);
+    if (!cps.length) return [];
+    const groups = [];
+    const openingFrame = cps[0];
+    const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA;
+    let openingEnd = 1;
+    if (supportedFrame && cps.length > 1 && (cps[1] === ABBREV_CP_E || cps[1] === ABBREV_CP_EN || cps[1] === ABBREV_CP_KOLON)) openingEnd = 2;
+    groups.push(Array.from({length:openingEnd},(_,index) => index));
+
+    const hasClosingFrame = supportedFrame && cps.length > openingEnd && cps[cps.length - 1] === openingFrame;
+    const interiorEnd = hasClosingFrame ? cps.length - 1 : cps.length;
+    let cursor = openingEnd;
+    while (cursor < interiorEnd){
+      let length = Math.min(2,interiorEnd - cursor);
+      if (cps[cursor] === ABBREV_CP_NENA && cursor + 1 < interiorEnd){
+        const next = cps[cursor + 1];
+        if (next === ABBREV_CP_ONA){
+          length = Math.min(2,interiorEnd - cursor);
+        }else{
+          const third = cps[cursor + 2];
+          const fourth = cps[cursor + 3];
+          const fourPart = cursor + 3 < interiorEnd &&
+            (next === ABBREV_CP_E || next === ABBREV_CP_EN) &&
+            (third === ABBREV_CP_O || third === ABBREV_CP_EN || third === ABBREV_CP_OPEN || third === ABBREV_CP_NENA || third === ABBREV_CP_KULUPU) &&
+            (fourth === ABBREV_CP_E || fourth === ABBREV_CP_EN);
+          if (fourPart || next === ABBREV_CP_O || next === ABBREV_CP_EN || next === ABBREV_CP_OPEN) length = Math.min(4,interiorEnd - cursor);
+        }
+      }
+      groups.push(Array.from({length},(_,offset) => cursor + offset));
+      cursor += length;
+    }
+    if (hasClosingFrame){
+      if (groups.length) groups[groups.length - 1].push(cps.length - 1);
+      else groups.push([cps.length - 1]);
+    }
+    return groups;
+  }
+
+  function buildReviewSemanticUnitSourceMap(units,fullCodepoints){
+    const groups = buildReviewSemanticSourceGroups(fullCodepoints);
+    const map = Array.from({length:units.length},() => []);
+    if (!groups.length || !units.length) return map;
+    let unitCursor = 0;
+    let groupCursor = 0;
+    const firstWord = String(units[0]?.word ?? "").toLowerCase();
+    if (firstWord === "nanpa" || firstWord === "nasa"){
+      const firstWordIndex = units[0].wordIndex;
+      while (unitCursor < units.length && units[unitCursor].wordIndex === firstWordIndex){
+        map[units[unitCursor].index] = Array.from(groups[0]);
+        unitCursor++;
+      }
+      groupCursor = 1;
+    }
+    while (unitCursor < units.length && groupCursor < groups.length){
+      map[units[unitCursor].index] = Array.from(groups[groupCursor]);
+      unitCursor++;
+      groupCursor++;
+    }
+    if (unitCursor < units.length && groups.length){
+      const last = groups[groups.length - 1];
+      while (unitCursor < units.length){
+        map[units[unitCursor].index] = Array.from(last);
+        unitCursor++;
+      }
+    }
+    return map;
+  }
+
   function buildReviewCartoucheHighlightMap(canvas,units){
     const layout = canvas?._reviewCartoucheLayout;
     const runs = Array.from(layout?.runs || []);
     const sourceRanges = reviewAudioUnitSourceRanges(units);
-    if (!runs.length || runs.length !== sourceRanges.total) return [];
+    if (!runs.length) return [];
+    if (runs.length !== sourceRanges.total){
+      const semantic = buildReviewSemanticUnitSourceMap(units,canvas?._reviewFullCodepoints || []);
+      return semantic.map(indexes => reviewCartoucheRectsForRunIndexes(layout,runs,indexes));
+    }
     const map = [];
     for (const unit of units){
       const range = sourceRanges.ranges[unit.index];
@@ -2759,7 +3034,15 @@
     const runs = Array.from(layout?.runs || []);
     const entries = abbreviateNumericCartoucheEntries(fullCodepoints,abbreviationOptionsForKind(kind));
     const sourceRanges = reviewAudioUnitSourceRanges(units);
-    if (!runs.length || runs.length !== entries.length || sourceRanges.total !== Array.from(fullCodepoints || []).length) return [];
+    if (!runs.length || runs.length !== entries.length) return [];
+    if (sourceRanges.total !== Array.from(fullCodepoints || []).length){
+      const semantic = buildReviewSemanticUnitSourceMap(units,fullCodepoints);
+      return semantic.map(sourceIndexes => {
+        const sourceSet = new Set(sourceIndexes);
+        const indexes = entries.map((entry,index) => sourceSet.has(entry.sourceIndex) ? index : -1).filter(index => index >= 0);
+        return reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
+      });
+    }
 
     const wordRanges = new Map();
     for (const unit of units){
@@ -2876,14 +3159,19 @@
     if (lower === "ono") return {characters:new Set(["/"]),count:1};
     if (lower === "oko") return {characters:new Set(["+"]),count:1};
     if (lower === "eko") return {characters:new Set(["e","E"]),count:1};
+    if (kind === "hexadecimal" && lower === "eke") return {characters:new Set([]),count:1,fallbackToNextDigit:true,targetKey:wordIndex};
+    if (kind === "hexadecimal" && lower === "ene") return {characters:new Set([":","-","."]),count:1,targetKey:wordIndex};
     if (lower === "ene") return {characters:new Set(["-"]),count:1};
     return null;
   }
 
-  function reviewDigitForAudioUnit(unit){
+  function reviewDigitForAudioUnit(unit,kind){
     let lower = String(unit?.text ?? "").toLowerCase();
     if (lower.endsWith("n") && lower.length > 2) lower = lower.slice(0,-1);
-    return REVIEW_AUDIO_DIGIT_BY_SYLLABLE[lower] ?? null;
+    const digit = REVIEW_AUDIO_DIGIT_BY_SYLLABLE[lower] ?? null;
+    if (digit == null) return null;
+    if (kind !== "hexadecimal" && /^[A-F]$/.test(digit)) return null;
+    return digit;
   }
 
   function reviewScientificNotationMarkerWordIndexes(units){
@@ -2917,7 +3205,7 @@
     const map = [];
     const used = new Set();
     const punctuationTargetsByWord = new Map();
-    const magnitudeDescriptors = buildReviewMagnitudeDescriptors(value,units,kind);
+    const magnitudeDescriptors = kind === "hexadecimal" ? new Map() : buildReviewMagnitudeDescriptors(value,units,kind);
     const scientificMarkerWordIndexes = kind === "scientific-notation"
       ? reviewScientificNotationMarkerWordIndexes(units)
       : new Set();
@@ -2941,6 +3229,19 @@
 
     for (const unit of units){
       const lowerText = String(unit.text ?? "").toLowerCase();
+
+      if (kind !== "hexadecimal" && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === "nanpa"){
+        map[unit.index] = [];
+        continue;
+      }
+
+      if (kind === "hexadecimal" && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === "nasa"){
+        const hashIndex = characters.indexOf("#");
+        map[unit.index] = hashIndex >= 0 ? [hashIndex] : [];
+        if (hashIndex >= 0) used.add(hashIndex);
+        cursor = Math.max(cursor,hashIndex + 1);
+        continue;
+      }
 
       // Ne is only the outer opening syllable. It never represents a visible
       // character in the decimal value, including when it is the first half
@@ -2989,7 +3290,10 @@
           // start of the following group rather than leaving the decimal view
           // without a synchronized target.
           if (!positions.length && punctuation.fallbackToNextDigit){
-            positions = takeNext(character => /\d/.test(character),Math.max(1,punctuation.count));
+            positions = takeNext(
+              character => kind === "hexadecimal" ? /^[0-9A-F]$/i.test(character) : /\d/.test(character),
+              Math.max(1,punctuation.count)
+            );
           }
           punctuationTargetsByWord.set(punctuationTargetKey,positions);
         }
@@ -3008,9 +3312,12 @@
         continue;
       }
 
-      const digit = reviewDigitForAudioUnit(unit);
+      const digit = reviewDigitForAudioUnit(unit,kind);
       if (digit != null){
-        map[unit.index] = takeNext(character => /\d/.test(character),1);
+        map[unit.index] = takeNext(
+          character => kind === "hexadecimal" ? /^[0-9A-F]$/i.test(character) : /\d/.test(character),
+          1
+        );
         continue;
       }
       map[unit.index] = [];
@@ -3233,7 +3540,12 @@
     const rendered = await voice.render(target.properName,{
       synthesis_mode:"reference_audio",
       pauseScale:REVIEW_AUDIO_PAUSE_SCALE,
-      syllableGapSeconds:REVIEW_AUDIO_SYLLABLE_GAP_SECONDS
+      syllableGapSeconds:REVIEW_AUDIO_SYLLABLE_GAP_SECONDS,
+      enableHexParsing:target.kind === "hexadecimal",
+      relaxedNanpaLinjanParsing:isRelaxedProperNameMode(target.properNameMode),
+      relaxedNanpaLinjanRendering:isRelaxedProperNameMode(target.properNameMode),
+      nanpaColonParsing:target.nanpaFormat === true,
+      nanpaColonRendering:target.nanpaFormat === true
     });
     if (generation !== reviewAudioGeneration) return null;
     const samples = rendered.samples instanceof Float32Array
@@ -3461,8 +3773,9 @@
     const revealGrid = document.createElement("div");
     revealGrid.className = "reviewRevealGrid";
     const mode = normalizeProperNameMode(record.properNameMode);
-    const modeLabel = mode === "strict" ? "Strict" : "Relaxed";
-    const decimalValue = appendReviewDecimalPanel(revealGrid,"Decimal value",record.value);
+    const modeLabel = record.kind === "hexadecimal" ? "Hexadecimal" : (mode === "strict" ? "Strict" : "Relaxed");
+    const valueLabel = record.kind === "hexadecimal" ? "Hexadecimal value" : "Decimal value";
+    const decimalValue = appendReviewDecimalPanel(revealGrid,valueLabel,record.value);
     const properNameAudio = appendReviewProperNamePanel(revealGrid,`${modeLabel} proper name`,record.properName);
     await ensureCartoucheFontLoaded();
     const fullCodepoints = Array.from(record.fullCodepoints || []).map(Number);
@@ -3481,7 +3794,7 @@
       abbreviatedEntries.map(entry => entry.cp),
       {highlightable:true}
     );
-    appendReviewTextPanel(revealGrid,"#~ abbreviation",record.uniqueCode);
+    appendReviewTextPanel(revealGrid,record.kind === "hexadecimal" ? "Hexadecimal source" : "#~ abbreviation",record.uniqueCode);
 
     const reviewAudioTargetForRecord = {
       button:properNameAudio.button,
@@ -3491,6 +3804,8 @@
       decimalHighlightMap:[],
       value:record.value,
       kind:record.kind,
+      properNameMode:record.properNameMode,
+      nanpaFormat:record.nanpaFormat === true,
       fullCodepoints,
       units:properNameAudio.units,
       cartoucheTargets:[
@@ -3516,11 +3831,12 @@
     detailsTitle.className = "answerDetailsTitle";
     detailsTitle.textContent = "Your answers";
     details.appendChild(detailsTitle);
+    const answerValueLabel = record.kind === "hexadecimal" ? "Hexadecimal" : "Decimal";
     const lines = [
       ["Proper-name attempts",record.firstAttemptValues?.length ? record.firstAttemptValues.join(" → ") : (record.firstAnswer || "—")],
       ...(record.firstMatchType ? [["Answer matched","proper name"]] : []),
-      ...(record.decimalAttemptValues?.length ? [["Decimal follow-up attempts",record.decimalAttemptValues.join(" → ")]] :
-        (record.decimalAnswer ? [["Decimal follow-up",record.decimalAnswer]] : []))
+      ...(record.decimalAttemptValues?.length ? [[`${answerValueLabel} follow-up attempts`,record.decimalAttemptValues.join(" → ")]] :
+        (record.decimalAnswer ? [[`${answerValueLabel} follow-up`,record.decimalAnswer]] : []))
     ];
     for (const [label,value] of lines){
       const line = document.createElement("div");
@@ -3612,12 +3928,14 @@
         rawReviewRecord?.value,
         rawReviewRecord?.value,
         "exact",
-        mode
+        mode,
+        rawReviewRecord?.nanpaFormat ?? record?.nanpaFormat ?? record?.settings?.nanpaFormat ?? false
       );
       const parsed = await ensureParsed(temp);
       migratedReview.push({
         ...rawReviewRecord,
         properNameMode:mode,
+        nanpaFormat:temp.nanpaFormat === true,
         ...await buildReviewRevealDataFromParsed(parsed,mode,rawReviewRecord?.kind || "integer")
       });
     }
@@ -3625,6 +3943,7 @@
     return {
       ...record,
       historyVersion:HISTORY_RECORD_VERSION,
+      nanpaFormat:record?.nanpaFormat === true || record?.settings?.nanpaFormat === true,
       review:migratedReview
     };
   }
@@ -3672,6 +3991,7 @@
       kind:state.settings.kind,
       kindLabel:state.settings.kind === "mixed" ? "Mixed" : (KIND_LABELS[state.settings.kind] || state.settings.kind),
       properNameMode:state.settings.properNameMode,
+      nanpaFormat:state.settings.nanpaFormat === true,
       score:state.score,
       total:state.items.length,
       attempted:rows.length,
@@ -3729,7 +4049,7 @@
       btn.type="button";
       btn.className="historySessionBtn" + (record.id === state.selectedHistoryId ? " active" : "");
       const top=document.createElement("div"); top.className="historySessionTop";
-      const title=document.createElement("strong"); title.textContent=`${record.kindLabel} · ${record.properNameMode}`;
+      const title=document.createElement("strong"); title.textContent=`${record.kindLabel} · ${record.properNameMode}${record.nanpaFormat ? " · Nanpa format" : ""}`;
       const score=document.createElement("span"); score.textContent=`${record.score}/${record.total}`;
       top.append(title,score);
       const meta=document.createElement("div"); meta.className="historySessionMeta";
@@ -3753,7 +4073,7 @@
     }
     const header=document.createElement("div"); header.className="historyHeader";
     const top=document.createElement("div"); top.className="historySessionTop";
-    const h=document.createElement("h3"); h.textContent=`${record.kindLabel} · ${record.properNameMode}`;
+    const h=document.createElement("h3"); h.textContent=`${record.kindLabel} · ${record.properNameMode}${record.nanpaFormat ? " · Nanpa format" : ""}`;
     const score=document.createElement("strong"); score.textContent=`${record.score}/${record.total}`;
     top.append(h,score);
     const meta=document.createElement("div"); meta.className="historySessionMeta";
@@ -3766,7 +4086,7 @@
       staging.appendChild(p);
     }else{
       for (const row of rows){
-        await appendReviewRecord(staging,{...row,properNameMode:row.properNameMode || record.properNameMode});
+        await appendReviewRecord(staging,{...row,properNameMode:row.properNameMode || record.properNameMode,nanpaFormat:row.nanpaFormat ?? record.nanpaFormat ?? false});
         if (renderToken !== historyDetailRenderToken) return;
       }
     }
@@ -3995,6 +4315,7 @@
   async function startSession(){
     cancelAutoNext();
     readSettingsFromUi();
+    setMobileOptionsExpanded(false);
     state.items = buildSessionItems();
     state.index = 0;
     state.score = 0;
@@ -4089,7 +4410,7 @@
     await document.fonts.ready;
   }
   function getQuarterCodepointsSet(){
-    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970]);
+    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970,ABBREV_CP_KOLON]);
   }
   function getOneThirdsCodepointsSet(){ return new Set([0xF1917]); }
   function getHalfCodepointsSet(){ return new Set([0xF1914]); }
@@ -4110,8 +4431,11 @@
     const input = Array.from(cps ?? []).map(Number);
     if (!input.length) return [];
     const out = [];
-    let keptFirstNanpa = false;
+    const openingFrame = input[0];
+    const supportedOpeningFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA;
+    let keptOpeningFrame = false;
     const hasFullPositiveOpening =
+      openingFrame === ABBREV_CP_NANPA &&
       input.length >= 4 &&
       input[0] === ABBREV_CP_NANPA &&
       input[1] === ABBREV_CP_E &&
@@ -4122,12 +4446,13 @@
     );
     const hasAlreadyAbbreviatedPositiveOpening =
       !hasFullPositiveOpening &&
+      openingFrame === ABBREV_CP_NANPA &&
       !hasFullScaffoldingAfterOpening &&
       input.length >= 3 &&
       input[0] === ABBREV_CP_NANPA &&
       input[1] === ABBREV_CP_EN;
     for (let i=0;i<input.length;i++){
-      if (showTelephoneHyphenEn && keptFirstNanpa &&
+      if (showTelephoneHyphenEn && keptOpeningFrame &&
           input[i] === ABBREV_CP_NENA && (input[i+1] === ABBREV_CP_E || input[i+1] === ABBREV_CP_EN) &&
           input[i+2] === ABBREV_CP_NENA && (input[i+3] === ABBREV_CP_E || input[i+3] === ABBREV_CP_EN)){
         out.push({cp:ABBREV_CP_E,sourceIndex:i+1});
@@ -4135,13 +4460,13 @@
         continue;
       }
       const cp = input[i];
-      const isFinalNanpa = cp === ABBREV_CP_NANPA && i === input.length - 1;
-      if (!keptFirstNanpa){
+      const isFinalFrame = supportedOpeningFrame && cp === openingFrame && i === input.length - 1;
+      if (!keptOpeningFrame){
         out.push({cp,sourceIndex:i});
-        if (cp === ABBREV_CP_NANPA) keptFirstNanpa=true;
+        if (supportedOpeningFrame && cp === openingFrame) keptOpeningFrame=true;
         continue;
       }
-      if (isFinalNanpa){ out.push({cp,sourceIndex:i}); continue; }
+      if (isFinalFrame){ out.push({cp,sourceIndex:i}); continue; }
       if (hasFullPositiveOpening && i === 1){
         out.push({cp:ABBREV_CP_EN,sourceIndex:3});
         i = 3;
@@ -4224,6 +4549,7 @@
       });
       x += g.tightW + letterGap;
     }
+    canvas._reviewFullCodepoints = Array.from(codepoints || []).map(Number);
     canvas._reviewCartoucheLayout = {
       runs:positionedRuns,
       innerY:border + 1,
@@ -4231,7 +4557,25 @@
     };
   }
 
+  function setMobileOptionsExpanded(expanded){
+    const on = expanded === true && window.matchMedia?.("(max-width:980px)")?.matches;
+    document.body.classList.toggle("mobileOptionsExpanded",on);
+    document.getElementById("practiceTopbar")?.classList.toggle("mobileOptionsExpanded",on);
+    if (el.mobileOptionsToggle){
+      el.mobileOptionsToggle.setAttribute("aria-expanded",on ? "true" : "false");
+      el.mobileOptionsToggle.textContent = on ? "Options ▴" : "Options ▾";
+    }
+  }
+
   function wireEvents(){
+    el.mobileOptionsToggle?.addEventListener("click",() => {
+      const expanded = el.mobileOptionsToggle.getAttribute("aria-expanded") === "true";
+      setMobileOptionsExpanded(!expanded);
+    });
+    window.addEventListener("resize",() => {
+      if (!window.matchMedia?.("(max-width:980px)")?.matches) setMobileOptionsExpanded(false);
+    });
+
     el.startButton.addEventListener("click", async () => {
       try{
         await startSession();
@@ -4340,13 +4684,14 @@
       renderHistory();
     });
 
-    for (const control of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.audioSpeedSelect,
+    for (const control of [el.kindSelect,el.questionCountInput,el.properNameModeSelect,el.nanpaFormatToggle,el.audioSpeedSelect,
       el.requireDecimalToggle,el.equivalentPunctuationToggle,el.autoNextToggle,el.autoNextDelaySelect]){
       control.addEventListener("change",() => {
         stopCurrentAudioPlayback();
         readSettingsFromUi();
         if (control === el.audioSpeedSelect) setStatus("Audio speed updated.");
-        if (control === el.properNameModeSelect && state.tab === "examples") renderExamples();
+        if ((control === el.properNameModeSelect || control === el.nanpaFormatToggle || control === el.kindSelect) && state.tab === "examples") renderExamples();
+        if (control === el.nanpaFormatToggle) setStatus(`Nanpa format ${state.settings.nanpaFormat ? "enabled" : "disabled"}.`);
         if (control === el.equivalentPunctuationToggle) setStatus("Punctuation setting updated.");
         if (control === el.autoNextToggle || control === el.autoNextDelaySelect){
           cancelAutoNext();
@@ -4361,6 +4706,7 @@
     loadSettings();
     syncSettingsUi();
     wireEvents();
+    setMobileOptionsExpanded(false);
     updateStats();
     updateNavigation();
     showTab("practice");

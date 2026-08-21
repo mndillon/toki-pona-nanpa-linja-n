@@ -614,6 +614,11 @@
                 <option value="relaxed">relaxed</option>
               </select>
             </label>
+
+            <label class="abbrevToggle" for="nanpaFormatEnable">
+              <input id="nanpaFormatEnable" type="checkbox" aria-label="Nanpa format">
+              <span>Nanpa format</span>
+            </label>
           </div>
 
           <!-- Visible: value + pending, now bilingual -->
@@ -785,6 +790,9 @@
     const NANPA_LINJAN_PROPER_NAME_MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
     const NANPA_LINJAN_PROPER_NAME_MODE_DEFAULT = "relaxed";
 
+    const NANPA_FORMAT_STORAGE_KEY = "tpDisplayNanpaFormat";
+    const NANPA_FORMAT_DEFAULT_ENABLED = false;
+
     function normalizeNanpaLinjanProperNameMode(value) {
       const v = String(value ?? "").trim().toLowerCase();
       if (v === "relaxed" || v === "relaxed-alternative" || v === "relaxed-mixed") return "relaxed";
@@ -882,6 +890,53 @@
       });
     }
 
+    function loadNanpaFormatFromStorage() {
+      try {
+        const raw = localStorage.getItem(NANPA_FORMAT_STORAGE_KEY);
+        if (raw == null) return null;
+        if (raw === "1" || raw === "true") return true;
+        if (raw === "0" || raw === "false") return false;
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveNanpaFormatToStorage(value) {
+      try { localStorage.setItem(NANPA_FORMAT_STORAGE_KEY, value ? "1" : "0"); } catch {}
+    }
+
+    function getNanpaFormatEnabled() {
+      return !!document.getElementById("nanpaFormatEnable")?.checked;
+    }
+
+    function setNanpaFormatEnabled(value, { persist = true } = {}) {
+      const enabled = !!value;
+      const el = document.getElementById("nanpaFormatEnable");
+      if (el) el.checked = enabled;
+      if (persist) saveNanpaFormatToStorage(enabled);
+      return enabled;
+    }
+
+    function applyNanpaFormatFromStorage() {
+      setNanpaFormatEnabled(
+        loadNanpaFormatFromStorage() ?? NANPA_FORMAT_DEFAULT_ENABLED,
+        { persist: false }
+      );
+    }
+
+    function wireNanpaFormatToggle() {
+      const el = document.getElementById("nanpaFormatEnable");
+      if (!el) return;
+      el.addEventListener("change", () => {
+        setNanpaFormatEnabled(el.checked);
+        stopCalculatorAudioPlayback();
+        buildKeypad();
+        renderDisplay();
+        rerenderWideZeroKey();
+      });
+    }
+
     const WORD_FOR_NEGATIVE_SIGN = "ona" //"o" // could use ona
 
     function getCartoucheDisplayMode() {
@@ -969,7 +1024,7 @@
 
     const WORD_TO_UCSUR_CP = {
       "nanpa": 0xF193D, "esun": 0xF190B, "e": 0xF1909, "nasa": 0xF193E,
-      "ni": 0xF1941, "nena": 0xF1940, "o": 0xF1944, "kulupu": 0xF191F,
+      "ni": 0xF1941, "nena": 0xF1940, "o": 0xF1944, "kulupu": 0xF191F, ":": 0xF199D,
 
       "ijo": 0xF190C, "wan": 0xF1973, "tu": 0xF196E, "sijelo": 0xF195B, "ante": 0xF1906,
       "anpa": 0xF1905, "kala": 0xF1914, "lili": 0xF1928, "open": 0xF1947,
@@ -1010,6 +1065,7 @@
         0xF1902, // ala (relaxed nanpa-linja-n small glyph)
         0xF190D, // ike (relaxed nanpa-linja-n small glyph)
         0xF1970, // uta (relaxed nanpa-linja-n small glyph)
+        0xF199D, // colon (Nanpa-format opening marker)
       ]);
     }
 
@@ -1023,7 +1079,7 @@
     const TP_UCSUR_MAX = 0xF1988;
 
     function isAllowedTpUcsurCodepoint(cp) {
-      return Number.isInteger(cp) && cp >= TP_UCSUR_MIN && cp <= TP_UCSUR_MAX;
+      return Number.isInteger(cp) && ((cp >= TP_UCSUR_MIN && cp <= TP_UCSUR_MAX) || cp === 0xF199D);
     }
 
     function assertAllAllowedTpUcsur(codepoints) {
@@ -1422,8 +1478,13 @@
 
         if (t === "NE") {
           if (out.length === 0) {
-            out.push("nanpa", E_WORD);
-            afterStartingNe = true;
+            if (getNanpaFormatEnabled()) {
+              out.push("nanpa", ":");
+              afterStartingNe = false;
+            } else {
+              out.push("nanpa", E_WORD);
+              afterStartingNe = true;
+            }
           } else {
             out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
             afterStartingNe = false;
@@ -1860,7 +1921,9 @@
         isoThousands: true,
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: relaxed,
-        relaxedNanpaLinjanRendering: relaxed
+        relaxedNanpaLinjanRendering: relaxed,
+        nanpaColonParsing: getNanpaFormatEnabled(),
+        nanpaColonRendering: getNanpaFormatEnabled()
       };
     }
 
@@ -2065,7 +2128,17 @@
       const firstUnit = String(units[0]?.text ?? units[0]?.timingText ?? "")
         .replace(/[^A-Za-z]/g, "")
         .toLowerCase();
-      if (firstUnit === "ne") unitIndex = 1;
+      if (getNanpaFormatEnabled()) {
+        while (
+          unitIndex < units.length &&
+          Number(units[unitIndex]?.wordIndex) === 0 &&
+          String(units[unitIndex]?.word ?? "").replace(/[^A-Za-z]/g, "").toLowerCase() === "nanpa"
+        ) {
+          unitIndex += 1;
+        }
+      } else if (firstUnit === "ne") {
+        unitIndex = 1;
+      }
 
       let valueIndex = 0;
       const lastValueCharacterIndex = valueCharacterIndices[valueCharacterIndices.length - 1];
@@ -2324,7 +2397,9 @@
         const rendered = await voice.render(model.properName, {
           synthesis_mode: "reference_audio",
           pauseScale: CALCULATOR_AUDIO_PAUSE_SCALE,
-          syllableGapSeconds: CALCULATOR_AUDIO_SYLLABLE_GAP_SECONDS
+          syllableGapSeconds: CALCULATOR_AUDIO_SYLLABLE_GAP_SECONDS,
+          nanpaColonParsing: getNanpaFormatEnabled(),
+          nanpaColonRendering: getNanpaFormatEnabled()
         });
         if (generation !== calculatorAudioGeneration || currentCalculatorAudioModel !== model) return;
 
@@ -3105,7 +3180,7 @@
     function handleKeydown(e) {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
       const targetId = String(e.target?.id ?? "");
-      if (["nanpaLinjanProperNameMode", "numericCartoucheAbbrevEnable", "btnPlayProperNameAudio"].includes(targetId)) return;
+      if (["nanpaLinjanProperNameMode", "numericCartoucheAbbrevEnable", "nanpaFormatEnable", "btnPlayProperNameAudio"].includes(targetId)) return;
       const k = e.key;
       if (k >= "0" && k <= "9") { e.preventDefault(); pressDigit(k); return; }
       if (["+", "-", "*", "/", "^"].includes(k)) { e.preventDefault(); pressOp(k); return; }
@@ -3913,10 +3988,12 @@
       if (!setByQuery) loadCartoucheDisplayModeFromStorage();
       applyNumericCartoucheAbbrevFromStorage();
       applyNanpaLinjanProperNameModeFromStorage();
+      applyNanpaFormatFromStorage();
 
       wireCartoucheDisplayRadios();
       wireNumericCartoucheAbbrevToggle();
       wireNanpaLinjanProperNameModeSelect();
+      wireNanpaFormatToggle();
       wireProperNameAudioButton();
       updateCrossLinksWithCartoucheDisplay();
 

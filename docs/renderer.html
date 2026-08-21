@@ -465,6 +465,11 @@
                 <option value="relaxed">relaxed</option>
               </select>
             </label>
+
+            <label class="displayOpt" for="nanpaFormatEnable">
+              <input id="nanpaFormatEnable" type="checkbox" aria-label="Nanpa format">
+              <span>Nanpa format</span>
+            </label>
           </fieldset>
 
           <h3>
@@ -898,6 +903,9 @@
     const NANPA_LINJAN_PROPER_NAME_MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
     const NANPA_LINJAN_PROPER_NAME_MODE_DEFAULT = "relaxed";
 
+    const NANPA_FORMAT_STORAGE_KEY = "tpDisplayNanpaFormat";
+    const NANPA_FORMAT_DEFAULT_ENABLED = false;
+
     function normalizeNanpaLinjanProperNameMode(value) {
       const v = String(value ?? "").trim().toLowerCase();
       if (v === "relaxed" || v === "relaxed-alternative" || v === "relaxed-mixed") return "relaxed";
@@ -942,6 +950,8 @@
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: relaxed,
         relaxedNanpaLinjanRendering: relaxed,
+        nanpaColonParsing: getNanpaFormatEnabled(),
+        nanpaColonRendering: getNanpaFormatEnabled(),
         enableHexParsing: true,
         ...extra
       };
@@ -1005,6 +1015,57 @@
       if (!el) return;
       el.addEventListener("change", () => {
         setNumericCartoucheAbbrevEnabled(el.checked);
+
+        // Re-render based on the user's most recent action, but do NOT clear inputs.
+        buildDigitReferenceTable();
+
+        if (lastAction === "words") handleFromWordsClick({ clearOthers: false });
+        else if (lastAction === "codes") handleFromCodesClick({ clearOthers: false });
+        else handleEncodeClick({ clearOthers: false });
+      });
+    }
+
+    function loadNanpaFormatFromStorage() {
+      try {
+        const raw = localStorage.getItem(NANPA_FORMAT_STORAGE_KEY);
+        if (raw == null) return null;
+        if (raw === "1" || raw === "true") return true;
+        if (raw === "0" || raw === "false") return false;
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveNanpaFormatToStorage(value) {
+      try { localStorage.setItem(NANPA_FORMAT_STORAGE_KEY, value ? "1" : "0"); } catch {}
+    }
+
+    function getNanpaFormatEnabled() {
+      return !!document.getElementById("nanpaFormatEnable")?.checked;
+    }
+
+    function setNanpaFormatEnabled(value, { persist = true } = {}) {
+      const enabled = !!value;
+      const el = document.getElementById("nanpaFormatEnable");
+      if (el) el.checked = enabled;
+      if (persist) saveNanpaFormatToStorage(enabled);
+      return enabled;
+    }
+
+    function applyNanpaFormatFromStorage() {
+      setNanpaFormatEnabled(
+        loadNanpaFormatFromStorage() ?? NANPA_FORMAT_DEFAULT_ENABLED,
+        { persist: false }
+      );
+    }
+
+    function wireNanpaFormatToggle() {
+      const el = document.getElementById("nanpaFormatEnable");
+      if (!el) return;
+      el.addEventListener("change", () => {
+        setNanpaFormatEnabled(el.checked);
+        stopCartoucheAudioPlayback();
 
         // Re-render based on the user's most recent action, but do NOT clear inputs.
         buildDigitReferenceTable();
@@ -1154,6 +1215,8 @@
         preserveNumericCartoucheBreaksInAbbreviation: true,
         relaxedNanpaLinjanParsing: relaxed,
         relaxedNanpaLinjanRendering: relaxed,
+        nanpaColonParsing: getNanpaFormatEnabled(),
+        nanpaColonRendering: getNanpaFormatEnabled(),
         enableHexParsing: true,
         autoCartoucheStandaloneProperNames: true,
         showUnknownText: false
@@ -1168,6 +1231,8 @@
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: relaxed,
         relaxedNanpaLinjanRendering: relaxed,
+        nanpaColonParsing: getNanpaFormatEnabled(),
+        nanpaColonRendering: getNanpaFormatEnabled(),
         enableHexParsing: true,
         ...extra
       };
@@ -1347,7 +1412,8 @@
       });
       return String(NanpaParser.splitCapsToProperName(audioCaps, {
         titleCase: true,
-        relaxedNanpaLinjanParsing: relaxed
+        relaxedNanpaLinjanParsing: relaxed,
+        nanpaColonRendering: getNanpaFormatEnabled()
       }) || parsed.properName || "").trim();
     }
 
@@ -1747,7 +1813,10 @@
           continue;
         }
 
-        if (unit.index === 0 && lowerText === "ne") {
+        if (
+          (unit.index === 0 && lowerText === "ne") ||
+          (getNanpaFormatEnabled() && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === "nanpa")
+        ) {
           map[unit.index] = [];
           continue;
         }
@@ -2167,6 +2236,8 @@
         synthesis_mode: "reference_audio",
         pauseScale: CARTOUCHE_AUDIO_PAUSE_SCALE,
         syllableGapSeconds: CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS,
+        nanpaColonParsing: getNanpaFormatEnabled(),
+        nanpaColonRendering: getNanpaFormatEnabled(),
         enableHexParsing: model.isHex === true
       });
       if (generation !== cartoucheAudioGeneration) return null;
@@ -2753,12 +2824,14 @@
         applyCartoucheDisplayModeFromQueryOrStorage();
         applyNumericCartoucheAbbrevFromStorage();
         applyNanpaLinjanProperNameModeFromStorage();
+        applyNanpaFormatFromStorage();
         updateCalculatorLinkWithDisplayParam();
         updateTextToSitelenLinkWithDisplayParam();
 
         wireCartoucheDisplayRadios();
         wireNumericCartoucheAbbrevToggle();
         wireNanpaLinjanProperNameModeSelect();
+        wireNanpaFormatToggle();
         wireDownloadButton();
         wireCartoucheAudioButton();
 
