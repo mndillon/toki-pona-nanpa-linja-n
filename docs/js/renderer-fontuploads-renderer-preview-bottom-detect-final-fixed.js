@@ -9382,7 +9382,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       // receives the source unchanged.
       const hexHits = getEnableHexParsing()
         ? [
-            ...findHexHashSequences(numericScanText),
+            ...findHexHashSequences(s),
             ...findHexProperNameSequences(s, { relaxedParsing: getRelaxedNanpaLinjanParsing() })
           ]
         : [];

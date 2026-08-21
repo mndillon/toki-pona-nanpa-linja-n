@@ -1185,7 +1185,7 @@
     { kind:"hh-mm-time", value:"14:30" },
     { kind:"iso-date", value:"2026-07-04" },
     { kind:"scientific-notation", value:"4.5e-3" },
-    { kind:"telephone", value:"432-555-0078" },
+    { kind:"telephone", value:"+1-432-555-6789" },
     { kind:"hexadecimal", value:"#C0FFEE" },
     { kind:"hexadecimal", label:"hexadecimal with separators", value:"#FE:DC:BA" }
   ];
@@ -1222,6 +1222,7 @@
   const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
   const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
   const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
+    "Nanpa","Nasa",
     "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
     "Keke","Keken","Kekeke","Kekeken",
     "One","Ono","Oko","Eko","Oken","Ene","Inin"
@@ -1235,6 +1236,7 @@
   const REVIEW_AUDIO_SYLLABLE_GAP_SECONDS = 0.200;
 
   let nanpaModulePromise = null;
+  let sharedCartoucheRendererPromise = null;
   let voicePromise = null;
   let generationToken = 0;
   let autoNextTimer = null;
@@ -1741,11 +1743,147 @@
     }
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
+  async function getNanpaModule(){
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242");
+    return nanpaModulePromise;
+  }
 
   async function getNanpaParser(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=239");
-    const mod = await nanpaModulePromise;
-    return mod.NanpaParser;
+    return (await getNanpaModule()).NanpaParser;
+  }
+
+  async function getSharedCartoucheRenderer(){
+    if (!sharedCartoucheRendererPromise){
+      sharedCartoucheRendererPromise = getNanpaModule().then(async mod => {
+        const SitelenRenderer = mod.SitelenRenderer || mod.default;
+        if (!SitelenRenderer?.create) throw new Error("Shared SitelenRenderer is unavailable.");
+        return await SitelenRenderer.create({
+          paint:{
+            fillStyle:"#111111",
+            halo:{enabled:false,widthPx:0,color:"#FFFFFF"}
+          },
+          fonts:{
+            roles:{
+              word:FONT_FAMILY,
+              text:FONT_FAMILY,
+              cartouche:FONT_FAMILY,
+              number:FONT_FAMILY,
+              date:FONT_FAMILY,
+              time:FONT_FAMILY
+            }
+          }
+        });
+      });
+    }
+    return sharedCartoucheRendererPromise;
+  }
+
+  function sharedCartoucheParserOptions({kind,properNameMode,nanpaFormat,abbreviated}){
+    const relaxed = isRelaxedProperNameMode(properNameMode);
+    const useNanpaFormat = nanpaFormat === true && kind !== "hexadecimal";
+    return {
+      mode:"uniform",
+      numericMode:"uniform",
+      mixedStyle:"short",
+      abbreviateNumericCartouches:abbreviated === true,
+      preserveNumericCartoucheBreaksInAbbreviation:true,
+      relaxedNanpaLinjanParsing:relaxed,
+      relaxedNanpaLinjanRendering:relaxed,
+      enableHexParsing:true,
+      nanpaColonParsing:useNanpaFormat,
+      nanpaColonRendering:useNanpaFormat,
+      autoCartoucheStandaloneProperNames:true,
+      showUnknownText:false
+    };
+  }
+
+  async function renderSharedNumericCartoucheToCanvas(canvas,value,{
+    kind="integer",
+    properNameMode="relaxed",
+    nanpaFormat=false,
+    abbreviated=false,
+    fontPx=LARGE_TINY_FONT_SIZE,
+    requireHighlightLayout=false
+  }={}){
+    if (!canvas) throw new Error("Shared cartouche target canvas is missing.");
+    await ensureCartoucheFontLoaded();
+    const renderer = await getSharedCartoucheRenderer();
+    const parser = sharedCartoucheParserOptions({kind,properNameMode,nanpaFormat,abbreviated});
+    const plan = await renderer.buildRenderPlan({
+      input:String(value ?? ""),
+      layout:{fontPx:Math.max(8,Number(fontPx) || LARGE_TINY_FONT_SIZE),paddingPx:0,align:"left"},
+      parser,
+      fonts:{
+        roles:{
+          word:FONT_FAMILY,
+          text:FONT_FAMILY,
+          cartouche:FONT_FAMILY,
+          number:FONT_FAMILY,
+          date:FONT_FAMILY,
+          time:FONT_FAMILY
+        }
+      }
+    });
+    const numericRuns = Array.from(plan?.lines || []).flatMap(line => Array.from(line?.runs || []))
+      .filter(run => run?.kind === "cartouche" && (run?.fontRole === "number" || run?._element?.isNumericCartouche === true));
+    if (numericRuns.length !== 1){
+      throw new Error(`Shared renderer produced ${numericRuns.length} numeric cartouches for ${String(value ?? "")}.`);
+    }
+    const run = numericRuns[0];
+    const renderedCanvas = await renderer.renderRunToNewCanvas({run,supersampleScale:1,downsample:false});
+    if (!(renderedCanvas instanceof HTMLCanvasElement) || renderedCanvas.width < 1 || renderedCanvas.height < 1){
+      throw new Error("Shared renderer did not return a usable cartouche canvas.");
+    }
+
+    canvas.width = renderedCanvas.width;
+    canvas.height = renderedCanvas.height;
+    const ctx = canvas.getContext("2d",{alpha:true});
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(renderedCanvas,0,0);
+
+    const glyphLayout = Array.from(run?.audioGlyphLayout || run?._element?.audioGlyphLayout || []);
+    const sourceIndices = Array.from(run?.audioSourceIndices || run?._element?.audioSourceIndices || []);
+    const sourceCps = Array.from(run?.audioSourceCps || run?._element?.audioSourceCps || []).map(Number);
+    const displayCps = Array.from(run?.cps || run?._element?.cps || []).map(Number);
+    if (requireHighlightLayout && (!glyphLayout.length || glyphLayout.length !== displayCps.length)){
+      throw new Error("Shared renderer did not expose complete cartouche highlight geometry.");
+    }
+
+    canvas.dataset.sharedCartoucheRenderer = "true";
+    canvas.dataset.sharedCartoucheAbbreviated = abbreviated ? "true" : "false";
+    canvas._reviewFullCodepoints = sourceCps.length ? sourceCps : displayCps.slice();
+    canvas._reviewSharedCodepoints = displayCps.slice();
+    canvas._reviewSharedSourceIndices = displayCps.map((_cp,index) => {
+      const direct = Number(sourceIndices[index]);
+      if (Number.isInteger(direct) && direct >= 0) return direct;
+      const fromLayout = Number(glyphLayout[index]?.sourceIndex);
+      return Number.isInteger(fromLayout) && fromLayout >= 0 ? fromLayout : index;
+    });
+    canvas._reviewSharedKind = kind;
+    canvas._reviewSharedAbbreviated = abbreviated === true;
+    canvas._reviewSharedFontFamily = String(run?.fontFamily || run?._element?.fontFamily || "");
+    if (canvas._reviewSharedFontFamily && canvas._reviewSharedFontFamily !== FONT_FAMILY){
+      throw new Error(`Shared cartouche renderer used unexpected font ${canvas._reviewSharedFontFamily}.`);
+    }
+    const glyphTop = glyphLayout.length
+      ? Math.max(0,Math.min(...glyphLayout.map(item => Number(item?.y) || 0)))
+      : 0;
+    const glyphBottom = glyphLayout.length
+      ? Math.min(canvas.height,Math.max(...glyphLayout.map(item => (Number(item?.y) || 0) + Math.max(1,Number(item?.height) || 1))))
+      : canvas.height;
+    canvas._reviewCartoucheLayout = {
+      runs:glyphLayout.map((item,index) => ({
+        x:Math.max(0,Number(item?.x) || 0),
+        width:Math.max(1,Number(item?.width) || 1),
+        top:Math.max(0,Number(item?.y) || 0),
+        height:Math.max(1,Number(item?.height) || canvas.height),
+        sourceIndex:canvas._reviewSharedSourceIndices[index],
+        cp:displayCps[index]
+      })),
+      innerY:glyphTop,
+      innerHeight:Math.max(1,glyphBottom - glyphTop)
+    };
+    return {canvas,run,plan};
   }
 
   async function getVoice(){
@@ -2024,6 +2162,55 @@
     return groups;
   }
 
+  function buildHexProgressiveGroupsFromParser(abbreviatedCodepoints,abbreviatedWords){
+    const cps = Array.from(abbreviatedCodepoints ?? []).map(Number);
+    const words = Array.from(abbreviatedWords ?? [],word => String(word ?? "").toLowerCase());
+    if (cps.length < 4 || cps.length !== words.length) return null;
+    if (cps[0] !== ABBREV_CP_NASA || cps[1] !== ABBREV_CP_KOLON || cps[cps.length - 1] !== ABBREV_CP_NASA) return null;
+    if (words[0] !== "nasa" || words[words.length - 1] !== "nasa") return null;
+
+    const groups = [{
+      units:[{kind:"opening",glyphEntries:[{cp:cps[0]},{cp:cps[1]}]}]
+    }];
+    const interiorEnd = cps.length - 1;
+    let index = 2;
+
+    while (index < interiorEnd){
+      // Every hexadecimal value glyph begins a new reveal group.
+      const units = [{kind:"value",glyphEntries:[{cp:cps[index]}]}];
+      index++;
+
+      // If the value ends a group, reveal its separator cue at the same time:
+      // Ene is the e glyph; Eke is the kule glyph.
+      if (index < interiorEnd && (words[index] === "e" || words[index] === "kule")){
+        const punctuationCp = cps[index];
+        if (words[index] === "e" && punctuationCp !== ABBREV_CP_E) return null;
+        if (words[index] === "kule" && punctuationCp !== ABBREV_CP_KULE) return null;
+        units.push({
+          kind:"punctuation",
+          punctuationKind:words[index] === "kule" ? "eke" : "ene",
+          glyphEntries:[{cp:punctuationCp}]
+        });
+        index++;
+      }
+
+      // The final value glyph is always revealed together with the closing nasa.
+      if (index === interiorEnd){
+        units.push({kind:"closing",glyphEntries:[{cp:cps[interiorEnd]}]});
+      }
+      groups.push({units});
+    }
+
+    let cumulativeGlyphCount = 0;
+    for (const group of groups){
+      group.glyphEntries = group.units.flatMap(unit => unit.glyphEntries || []);
+      cumulativeGlyphCount += group.glyphEntries.length;
+      group.cumulativeGlyphCount = cumulativeGlyphCount;
+      group.requiredLength = 0;
+    }
+    return groups;
+  }
+
   async function ensureProgressiveRevealPlan(item){
     if (item.progressiveRevealPlan) return item.progressiveRevealPlan;
     const parsed = await ensureParsed(item);
@@ -2037,7 +2224,17 @@
       selectedParsed.ucsurCodepoints ?? selectedParsed.innerCodepoints ?? selectedParsed.codepoints ?? []
     ).map(Number);
     const {entries,units} = buildProgressiveCartoucheUnits(fullCodepoints,item.kind);
-    const groups = groupProgressiveCartoucheUnits(units);
+    let groups = groupProgressiveCartoucheUnits(units);
+    let abbreviatedCodepoints = entries.map(entry => entry.cp);
+    if (item.kind === "hexadecimal"){
+      const parserAbbreviatedCodepoints = Array.from(selectedParsed.abbreviatedUcsurCodepoints ?? []).map(Number);
+      const parserAbbreviatedWords = Array.from(selectedParsed.abbreviatedWords ?? []);
+      const parserGroups = buildHexProgressiveGroupsFromParser(parserAbbreviatedCodepoints,parserAbbreviatedWords);
+      if (parserGroups){
+        groups = parserGroups;
+        abbreviatedCodepoints = parserAbbreviatedCodepoints;
+      }
+    }
     const strictProperName = formatProperNameForDisplay(strictParsed.properName ?? parsed.properName);
     const relaxedProperName = formatProperNameForDisplay(
       parsed.relaxedProperName ?? parsed.relaxedParsed?.properName ?? parsed.quizProperName ?? strictParsed.properName ?? parsed.properName
@@ -2114,7 +2311,7 @@
       strictCompact,
       relaxedCompact,
       fullCodepoints,
-      abbreviatedCodepoints:entries.map(entry => entry.cp),
+      abbreviatedCodepoints,
       groups
     };
     item.progressiveVisibleGroupCount = clamp(
@@ -2466,23 +2663,19 @@
         const selectedName = selectedMode === "strict"
           ? formatProperNameForDisplay(strictParsed.properName ?? parsed.properName)
           : formatProperNameForDisplay(parsed.quizProperName ?? selectedParsed.properName);
-        const selectedCodepoints = Array.from(
-          selectedParsed.ucsurCodepoints ?? selectedParsed.innerCodepoints ?? selectedParsed.codepoints ?? []
-        ).map(Number);
-
         const row = document.createElement("section");
         row.className = "exampleItem";
 
         const cartouche = document.createElement("canvas");
         cartouche.className = "exampleCartoucheCanvas";
         cartouche.setAttribute("aria-hidden","true");
-        renderCartoucheToCanvas(
-          cartouche,
-          abbreviateNumericCartoucheCps(selectedCodepoints,abbreviationOptionsForKind(definition.kind)),
-          34,
-          11,
-          {padding:10,border:1,cornerRadius:10,letterGap:2}
-        );
+        await renderSharedNumericCartoucheToCanvas(cartouche,definition.value,{
+          kind:definition.kind,
+          properNameMode:selectedMode,
+          nanpaFormat:state.settings.nanpaFormat,
+          abbreviated:true,
+          fontPx:34
+        });
 
         const body = document.createElement("div");
         body.className = "exampleBody";
@@ -2859,8 +3052,7 @@
     grid.appendChild(panel);
     return {button,content,units};
   }
-
-  function appendReviewCartouchePanel(grid,label,codepoints,{highlightable=false}={}){
+  async function appendReviewCartouchePanel(grid,label,renderSpec,{highlightable=false}={}){
     const panel = document.createElement("div");
     panel.className = "reviewRevealPanel cartouchePanel";
     const heading = document.createElement("div");
@@ -2883,7 +3075,14 @@
     }
 
     grid.appendChild(panel);
-    renderCartoucheToCanvas(canvas,codepoints);
+    await renderSharedNumericCartoucheToCanvas(canvas,renderSpec.value,{
+      kind:renderSpec.kind,
+      properNameMode:renderSpec.properNameMode,
+      nanpaFormat:renderSpec.nanpaFormat,
+      abbreviated:renderSpec.abbreviated === true,
+      fontPx:LARGE_TINY_FONT_SIZE,
+      requireHighlightLayout:highlightable
+    });
     if (highlightCanvas){
       highlightCanvas.width = canvas.width;
       highlightCanvas.height = canvas.height;
@@ -2965,7 +3164,7 @@
           const fourth = cps[cursor + 3];
           const fourPart = cursor + 3 < interiorEnd &&
             (next === ABBREV_CP_E || next === ABBREV_CP_EN) &&
-            (third === ABBREV_CP_O || third === ABBREV_CP_EN || third === ABBREV_CP_OPEN || third === ABBREV_CP_NENA || third === ABBREV_CP_KULUPU) &&
+            (third === ABBREV_CP_O || third === ABBREV_CP_EN || third === ABBREV_CP_OPEN || third === ABBREV_CP_NENA || third === ABBREV_CP_KULE || third === ABBREV_CP_KULUPU) &&
             (fourth === ABBREV_CP_E || fourth === ABBREV_CP_EN);
           if (fourPart || next === ABBREV_CP_O || next === ABBREV_CP_EN || next === ABBREV_CP_OPEN) length = Math.min(4,interiorEnd - cursor);
         }
@@ -3009,8 +3208,81 @@
     }
     return map;
   }
+  function buildReviewSharedHexCartoucheHighlightMap(canvas,units){
+    const layout = canvas?._reviewCartoucheLayout;
+    const runs = Array.from(layout?.runs || []);
+    const cps = Array.from(canvas?._reviewSharedCodepoints || []).map(Number);
+    const abbreviated = canvas?._reviewSharedAbbreviated === true;
+    const map = Array.from({length:units.length},() => []);
+    if (!runs.length || runs.length !== cps.length || !units.length) return map;
 
+    let cursor = 0;
+    let unitCursor = 0;
+    let lastValueUnitIndex = null;
+    let lastValueRunIndexes = [];
+    const firstWord = String(units[0]?.word ?? "").toLowerCase();
+    if (firstWord === "nasa"){
+      const firstWordIndex = units[0].wordIndex;
+      const openingIndexes = [];
+      if (cps[cursor] === ABBREV_CP_NASA) openingIndexes.push(cursor++);
+      if (cps[cursor] === ABBREV_CP_KOLON) openingIndexes.push(cursor++);
+      while (unitCursor < units.length && units[unitCursor].wordIndex === firstWordIndex){
+        map[units[unitCursor].index] = reviewCartoucheRectsForRunIndexes(layout,runs,openingIndexes);
+        unitCursor++;
+      }
+    }
+
+    while (unitCursor < units.length && cursor < cps.length){
+      const unit = units[unitCursor];
+      const lowerWord = String(unit.word ?? "").toLowerCase();
+      let indexes = [];
+
+      if (lowerWord === "eke"){
+        if (abbreviated){
+          if (cps[cursor] === ABBREV_CP_KULE) indexes = [cursor++];
+        }else{
+          const pattern = [ABBREV_CP_NENA,ABBREV_CP_E,ABBREV_CP_KULE,ABBREV_CP_E];
+          if (pattern.every((cp,offset) => cps[cursor + offset] === cp)){
+            indexes = pattern.map((_cp,offset) => cursor + offset);
+            cursor += pattern.length;
+          }
+        }
+      }else if (lowerWord === "ene"){
+        if (abbreviated){
+          if (cps[cursor] === ABBREV_CP_E) indexes = [cursor++];
+        }else{
+          const pattern = [ABBREV_CP_NENA,ABBREV_CP_E,ABBREV_CP_NENA,ABBREV_CP_E];
+          if (pattern.every((cp,offset) => cps[cursor + offset] === cp)){
+            indexes = pattern.map((_cp,offset) => cursor + offset);
+            cursor += pattern.length;
+          }
+        }
+      }else if (reviewDigitForAudioUnit(unit,"hexadecimal") != null){
+        const count = abbreviated ? 1 : 2;
+        const available = Math.max(0,Math.min(count,cps.length - cursor));
+        indexes = Array.from({length:available},(_unused,offset) => cursor + offset);
+        cursor += available;
+        if (indexes.length){
+          lastValueUnitIndex = unit.index;
+          lastValueRunIndexes = indexes.slice();
+        }
+      }
+
+      map[unit.index] = reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
+      unitCursor++;
+    }
+
+    if (cps[cursor] === ABBREV_CP_NASA && lastValueUnitIndex != null){
+      map[lastValueUnitIndex] = reviewCartoucheRectsForRunIndexes(
+        layout,runs,[...lastValueRunIndexes,cursor]
+      );
+    }
+    return map;
+  }
   function buildReviewCartoucheHighlightMap(canvas,units){
+    if (canvas?._reviewSharedKind === "hexadecimal"){
+      return buildReviewSharedHexCartoucheHighlightMap(canvas,units);
+    }
     const layout = canvas?._reviewCartoucheLayout;
     const runs = Array.from(layout?.runs || []);
     const sourceRanges = reviewAudioUnitSourceRanges(units);
@@ -3028,18 +3300,20 @@
     }
     return map;
   }
-
   function buildReviewAbbreviatedCartoucheHighlightMap(canvas,units,fullCodepoints,kind){
+    if (canvas?._reviewSharedKind === "hexadecimal"){
+      return buildReviewSharedHexCartoucheHighlightMap(canvas,units);
+    }
     const layout = canvas?._reviewCartoucheLayout;
     const runs = Array.from(layout?.runs || []);
-    const entries = abbreviateNumericCartoucheEntries(fullCodepoints,abbreviationOptionsForKind(kind));
+    const sourceIndices = Array.from(canvas?._reviewSharedSourceIndices || []).map(Number);
     const sourceRanges = reviewAudioUnitSourceRanges(units);
-    if (!runs.length || runs.length !== entries.length) return [];
+    if (!runs.length || runs.length !== sourceIndices.length) return [];
     if (sourceRanges.total !== Array.from(fullCodepoints || []).length){
       const semantic = buildReviewSemanticUnitSourceMap(units,fullCodepoints);
       return semantic.map(sourceIndexes => {
         const sourceSet = new Set(sourceIndexes);
-        const indexes = entries.map((entry,index) => sourceSet.has(entry.sourceIndex) ? index : -1).filter(index => index >= 0);
+        const indexes = sourceIndices.map((sourceIndex,index) => sourceSet.has(sourceIndex) ? index : -1).filter(index => index >= 0);
         return reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
       });
     }
@@ -3058,25 +3332,25 @@
     const map = [];
     for (const unit of units){
       const range = sourceRanges.ranges[unit.index];
-      let indexes = entries.map((entry,index) => ({entry,index}))
-        .filter(({entry}) => entry.sourceIndex >= range.start && entry.sourceIndex < range.end)
+      let indexes = sourceIndices.map((sourceIndex,index) => ({sourceIndex,index}))
+        .filter(({sourceIndex}) => sourceIndex >= range.start && sourceIndex < range.end)
         .map(({index}) => index);
 
       if (!indexes.length){
         const wordRange = wordRanges.get(unit.wordIndex);
-        const wordCandidates = entries.map((entry,index) => ({entry,index}))
-          .filter(({entry}) => wordRange && entry.sourceIndex >= wordRange.start && entry.sourceIndex < wordRange.end);
+        const wordCandidates = sourceIndices.map((sourceIndex,index) => ({sourceIndex,index}))
+          .filter(({sourceIndex}) => wordRange && sourceIndex >= wordRange.start && sourceIndex < wordRange.end);
         const candidates = wordCandidates.length
           ? wordCandidates
-          : entries.map((entry,index) => ({entry,index}));
+          : sourceIndices.map((sourceIndex,index) => ({sourceIndex,index}));
         if (candidates.length){
           const midpoint = (range.start + range.end - 1) / 2;
           let bestDistance = Number.POSITIVE_INFINITY;
           for (const candidate of candidates){
-            bestDistance = Math.min(bestDistance,Math.abs(candidate.entry.sourceIndex - midpoint));
+            bestDistance = Math.min(bestDistance,Math.abs(candidate.sourceIndex - midpoint));
           }
           indexes = candidates
-            .filter(candidate => Math.abs(candidate.entry.sourceIndex - midpoint) === bestDistance)
+            .filter(candidate => Math.abs(candidate.sourceIndex - midpoint) === bestDistance)
             .map(candidate => candidate.index);
         }
       }
@@ -3159,7 +3433,7 @@
     if (lower === "ono") return {characters:new Set(["/"]),count:1};
     if (lower === "oko") return {characters:new Set(["+"]),count:1};
     if (lower === "eko") return {characters:new Set(["e","E"]),count:1};
-    if (kind === "hexadecimal" && lower === "eke") return {characters:new Set([]),count:1,fallbackToNextDigit:true,targetKey:wordIndex};
+    if (kind === "hexadecimal" && lower === "eke") return {characters:new Set([]),count:1,targetKey:wordIndex};
     if (kind === "hexadecimal" && lower === "ene") return {characters:new Set([":","-","."]),count:1,targetKey:wordIndex};
     if (lower === "ene") return {characters:new Set(["-"]),count:1};
     return null;
@@ -3290,10 +3564,17 @@
           // start of the following group rather than leaving the decimal view
           // without a synchronized target.
           if (!positions.length && punctuation.fallbackToNextDigit){
-            positions = takeNext(
-              character => kind === "hexadecimal" ? /^[0-9A-F]$/i.test(character) : /\d/.test(character),
-              Math.max(1,punctuation.count)
-            );
+            if (kind === "hexadecimal" && punctuation.characters.size === 0){
+              const nextIndex = characters.findIndex((character,index) =>
+                index >= cursor && !used.has(index) && /^[0-9A-F]$/i.test(character)
+              );
+              positions = nextIndex >= 0 ? [nextIndex] : [];
+            }else{
+              positions = takeNext(
+                character => kind === "hexadecimal" ? /^[0-9A-F]$/i.test(character) : /\d/.test(character),
+                Math.max(1,punctuation.count)
+              );
+            }
           }
           punctuationTargetsByWord.set(punctuationTargetKey,positions);
         }
@@ -3777,21 +4058,23 @@
     const valueLabel = record.kind === "hexadecimal" ? "Hexadecimal value" : "Decimal value";
     const decimalValue = appendReviewDecimalPanel(revealGrid,valueLabel,record.value);
     const properNameAudio = appendReviewProperNamePanel(revealGrid,`${modeLabel} proper name`,record.properName);
-    await ensureCartoucheFontLoaded();
     const fullCodepoints = Array.from(record.fullCodepoints || []).map(Number);
-    const fullCartouche = appendReviewCartouchePanel(
+    const sharedRenderSpec = {
+      value:record.value,
+      kind:record.kind,
+      properNameMode:record.properNameMode,
+      nanpaFormat:record.nanpaFormat === true
+    };
+    const fullCartouche = await appendReviewCartouchePanel(
       revealGrid,
       `${modeLabel} full nanpa-linja-n cartouche`,
-      fullCodepoints,
+      {...sharedRenderSpec,abbreviated:false},
       {highlightable:true}
     );
-    const abbreviatedEntries = abbreviateNumericCartoucheEntries(
-      fullCodepoints,abbreviationOptionsForKind(record.kind)
-    );
-    const abbreviatedCartouche = appendReviewCartouchePanel(
+    const abbreviatedCartouche = await appendReviewCartouchePanel(
       revealGrid,
       "Abbreviated nanpa-linja-n cartouche (preferred)",
-      abbreviatedEntries.map(entry => entry.cp),
+      {...sharedRenderSpec,abbreviated:true},
       {highlightable:true}
     );
     appendReviewTextPanel(revealGrid,record.kind === "hexadecimal" ? "Hexadecimal source" : "#~ abbreviation",record.uniqueCode);
@@ -4412,10 +4695,29 @@
   function getQuarterCodepointsSet(){
     return new Set([0xF193D,0xF1940,0xF1941,0xF193E,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970,ABBREV_CP_KOLON]);
   }
-  function getOneThirdsCodepointsSet(){ return new Set([0xF1917]); }
+  function getOneThirdsCodepointsSet(){ return new Set([0xF1917,ABBREV_CP_KULE]); }
   function getHalfCodepointsSet(){ return new Set([0xF1914]); }
   function getThreeQuartersCodepointsSet(){ return new Set([0xF193F]); }
   function getTwoThirdsCodepointsSet(){ return new Set([0xF1946,0xF1944,0xF191F,0xF1979,0xF190A]); }
+  function getKuleOneThirdFontSize(quarterPx){
+    return Math.max(1,Math.round(Number(quarterPx) * (4 / 3)));
+  }
+  function centerKuleGlyphRunsVertically(glyphRuns,largePx){
+    const runs = Array.from(glyphRuns || []);
+    const fullSizeReference = runs.filter(run => run.cp !== ABBREV_CP_KULE && run.px === largePx);
+    const referenceRuns = fullSizeReference.length
+      ? fullSizeReference
+      : runs.filter(run => run.cp !== ABBREV_CP_KULE);
+    if (!referenceRuns.length) return;
+    const referenceAscent = Math.max(...referenceRuns.map(run => run.ascent));
+    const referenceDescent = Math.max(...referenceRuns.map(run => run.descent));
+    const referenceCenter = (referenceDescent - referenceAscent) / 2;
+    for (const run of runs){
+      if (run.cp !== ABBREV_CP_KULE) continue;
+      const glyphCenter = (run.descent - run.ascent) / 2;
+      run.yOffset += Math.round(referenceCenter - glyphCenter);
+    }
+  }
   function getVerticalOffsetForCartoucheCodepoint(cp,px){ return cp === 0xF1917 ? -Math.round(px * 0.22) : 0; }
   function drawRoundedRect(ctx,x,y,w,h,r){
     const radius = Math.min(r,w/2,h/2);
@@ -4440,7 +4742,7 @@
       input[0] === ABBREV_CP_NANPA &&
       input[1] === ABBREV_CP_E &&
       input[2] === ABBREV_CP_NENA &&
-      input[3] === ABBREV_CP_EN;
+      input[3] === ABBREV_CP_E;
     const hasFullScaffoldingAfterOpening = input.slice(2,-1).some(cp =>
       cp === ABBREV_CP_E || ABBREV_DROP_AFTER_FIRST_NANPA.has(cp)
     );
@@ -4498,7 +4800,8 @@
     let totalWidth=0,maxAscent=0,maxDescent=0;
     for (const cp of Array.from(codepoints ?? [])){
       const ch=String.fromCodePoint(cp);
-      const px=oneThirdSet.has(cp)?Math.max(1,Math.round(largePx/3)):
+      const px=cp === ABBREV_CP_KULE?getKuleOneThirdFontSize(smallPx):
+        oneThirdSet.has(cp)?Math.max(1,Math.round(largePx/3)):
         quarterSet.has(cp)?smallPx:
         halfSet.has(cp)?Math.max(1,Math.round(largePx*0.5)):
         twoThirdsSet.has(cp)?Math.max(1,Math.round(largePx*(2/3))):
@@ -4511,10 +4814,13 @@
       const right=m.actualBoundingBoxRight ?? Math.ceil(m.width);
       const tightW=Math.ceil(left+right);
       const yOffset=getVerticalOffsetForCartoucheCodepoint(cp,largePx);
-      glyphRuns.push({ch,px,tightW,left,ascent,descent,yOffset});
+      glyphRuns.push({cp,ch,px,tightW,left,ascent,descent,yOffset});
       totalWidth += tightW + letterGap;
-      maxAscent=Math.max(maxAscent,ascent+Math.max(0,-yOffset));
-      maxDescent=Math.max(maxDescent,descent+Math.max(0,yOffset));
+    }
+    centerKuleGlyphRunsVertically(glyphRuns,largePx);
+    for (const g of glyphRuns){
+      maxAscent=Math.max(maxAscent,g.ascent+Math.max(0,-g.yOffset));
+      maxDescent=Math.max(maxDescent,g.descent+Math.max(0,g.yOffset));
     }
     if (glyphRuns.length) totalWidth -= letterGap;
     const textHeight=Math.ceil(maxAscent+maxDescent);

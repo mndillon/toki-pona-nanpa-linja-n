@@ -1,4 +1,4 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=240";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -7,13 +7,13 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=176';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=59';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=60';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=52';
+} from './sitelen-audio-plan.js?v=53';
 let pageMap = new Map();
 
 "use strict";
@@ -482,7 +482,7 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=240",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242",
   fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=176",
@@ -6171,7 +6171,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=240", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
