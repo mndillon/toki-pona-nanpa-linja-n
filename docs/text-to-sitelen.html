@@ -541,6 +541,14 @@ nanpa #~WI.
           </label>
           </div>
 
+          <div aria-label="Enable binary parsing" class="inlineControl inlinePill" id="ctlEnableBinaryParsing" role="group">
+          <span class="ctlLabel">Enable binary parsing</span>
+          <label style="display:flex; align-items:center; gap:8px; margin:0;">
+          <input aria-label="Enable binary parsing" id="appEnableBinaryParsingEnable" type="checkbox"/>
+          <span class="ctlLabel" style="margin:0;">Enabled</span>
+          </label>
+          </div>
+
           <div aria-label="Copy font specific codes" class="inlineControl inlinePill" id="ctlCopyFontSpecificCodes" role="group">
           <span class="ctlLabel">Copy font specific codes</span>
           <label style="display:flex; align-items:center; gap:8px; margin:0;">
@@ -861,7 +869,7 @@ nanpa #~WI.
         bootStarted = true;
         try {
           setMessage("Loading page styles…");
-          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=56");
+          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=57");
 
           setMessage("Loading PDF support…");
           await loadClassicScript("./vendor/pdf-lib.min.js?v=49");
@@ -870,7 +878,7 @@ nanpa #~WI.
           await loadClassicScript("./vendor/fontkit.umd.min.js?v=49");
 
           setMessage("Loading renderer…");
-          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=268");
+          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=272");
         } catch (error) {
           showStartupError(error);
         }

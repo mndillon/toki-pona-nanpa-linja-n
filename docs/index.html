@@ -1098,7 +1098,7 @@
       </div>
 
       <div class="help" style="margin-top:10px;">
-        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.   <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=5" target="_blank" rel="noopener noreferrer">
+        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.   <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=6" target="_blank" rel="noopener noreferrer">
           PDF cheat sheet
         </a>
       </div>
@@ -2083,6 +2083,85 @@
       </div>
     </section>
 
+    <section
+      id="binaryNumbers"
+      class="collapsibleSection"
+      data-collapsible-section
+      data-collapsible-key="binaryNumbers"
+      data-collapsible-default="collapsed"
+      aria-labelledby="binaryNumbersTitle"
+    >
+      <h2 id="binaryNumbersTitle" class="collapsibleSectionHeading collapsibleSectionHeading--small">
+        <button
+          class="collapsibleSectionToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="binaryNumbersContent"
+          data-collapsible-toggle
+        >
+          <span class="collapsibleSectionToggleTitle">Binary numbers and binary cartouches (experimental)</span>
+          <span class="collapsibleSectionToggleState" aria-hidden="true">
+            <span class="collapsibleSectionToggleIcon">▾</span>
+            <span data-collapsible-action>Show</span>
+          </span>
+        </button>
+      </h2>
+      <div id="binaryNumbersContent" class="collapsibleSectionContent" data-collapsible-content hidden>
+        <div class="help">
+          Binary is a base-2 number system using only the digits <strong>0</strong> and <strong>1</strong>. To enter a binary value, begin it with lowercase <strong>0b</strong>, for example <code>0b101</code> or <code>0b11001010</code>. Uppercase <code>0B</code> is not a binary prefix. Binary digits reuse the existing nanpa-linja-n digit syllables and sitelen pona glyphs for decimal digits 0 and 1.
+        </div>
+
+        <div class="help" style="margin-top:10px;">
+          Binary proper names begin with <strong>Noka</strong>. Binary cartouches use <strong>noka</strong> at the beginning and end, with a colon after the opening <strong>noka</strong>. When parsing a binary cartouche, the colon is optional in the same way as the existing hexadecimal <strong>nasa</strong> cartouche syntax; canonical rendering includes the colon.
+        </div>
+
+        <div class="small" style="margin:14px 0 8px;">
+          Binary uses the existing 0 and 1 mappings. In relaxed mode, digit 0 is <strong>ni</strong> and digit 1 is <strong>wa</strong>; strict mode uses <strong>ni</strong> and <strong>we</strong>.
+        </div>
+        <div class="tableWrap nanpaModeWrap" role="region" aria-label="nanpa-linja-n binary digit table">
+          <table class="digitTable nanpaModeTable">
+            <thead><tr><th>binary digit</th><th>relaxed syllable</th><th>strict syllable</th><th>large glyph</th><th>full sitelen glyphs (relaxed)</th><th>abbreviated</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>0</td><td>ni</td><td>ni</td><td>ijo</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large ijo glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF190C;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="ijo glyph">&#xF190C;</span></td>
+              </tr>
+              <tr>
+                <td>1</td><td>wa</td><td>we</td><td>wan</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large wan glyph followed by small ala glyph"><span class="modeLargeGlyph">&#xF1973;</span><span class="modeSmallGlyph">&#xF1902;</span></span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="wan glyph">&#xF1973;</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="small" style="margin:14px 0 8px;">Example binary input and output:</div>
+        <div class="tableWrap nanpaModeWrap" role="region" aria-label="nanpa-linja-n binary examples">
+          <table class="digitTable nanpaModeTable">
+            <thead><tr><th>input</th><th>relaxed binary proper name</th><th>full binary cartouche</th><th>abbreviated binary cartouche</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>0b101</code></td>
+                <td><code>Noka Waniwan</code></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full binary cartouche for 0b101">&#xF1990;&#xF1943;&#xF199D;&#xF1973;&#xF1902;&#xF1940;&#xF190C;&#xF1973;&#xF1902;&#xF1943;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated binary cartouche for 0b101">&#xF1990;&#xF1943;&#xF199D;&#xF1973;&#xF190C;&#xF1973;&#xF1943;&#xF1991;</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="help" style="margin-top:10px;">
+          The source cartouche forms for <code>0b101</code> are <code>[noka : wan ala nena ijo wan ala noka]</code> in relaxed full form and <code>[noka : wan ijo wan noka]</code> in abbreviated form. Binary input and rendering are experimental and use the same parser/rendering conventions as hexadecimal, with <code>0b</code> and digits 0–1 replacing <code>#</code> and hexadecimal digits.
+        </div>
+
+        <div class="help" style="margin-top:10px;">
+&nbsp;<br/> 
+</div>
+
+      </div>
+    </section>
+
       <div class="help" style="margin-top:10px;">
         See the <a href="./render-to-audio.html">number-to-proper-name page</a> for a more interactive experience.
       </div>
@@ -2455,7 +2534,7 @@
           nanpa-linja-n main documentation
         </a>
         <br/>
-        <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=5" target="_blank" rel="noopener noreferrer">
+        <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=6" target="_blank" rel="noopener noreferrer">
           PDF cheat sheet
         </a>
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
@@ -2747,8 +2826,8 @@
 <script>
   (() => {
     const FONTS_SECTION_ID = 'fontsSection';
-    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=10';
-    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v10';
+    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=11';
+    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v11';
     const FONTS_NOTICE_OVERLAY_ID = 'fontsNoticeOverlay';
 
     let fontsTableLoadPromise = null;

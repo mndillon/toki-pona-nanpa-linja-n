@@ -1375,6 +1375,8 @@ const SitelenRenderer = (() => {
       nanpaColonParsing: __nanpaColonParsing,
       nanpaColonRendering: __nanpaColonRendering,
       enableHexParsing: __enableHexParsing,
+      enableBinaryParsing: __enableBinaryParsing,
+      enableBinaryRendering: __enableBinaryRendering,
       nasinNanpaPona: __nasinNanpaPona,
       renderAdapterId: __renderAdapterId,
       renderAdapterSettings: cloneRenderAdapterSettings(__renderAdapterSettings),
@@ -1413,6 +1415,8 @@ const SitelenRenderer = (() => {
     __nanpaColonParsing = !!state.nanpaColonParsing;
     __nanpaColonRendering = !!state.nanpaColonRendering;
     __enableHexParsing = !!state.enableHexParsing;
+    __enableBinaryParsing = !!state.enableBinaryParsing;
+    __enableBinaryRendering = !!state.enableBinaryRendering;
     __nasinNanpaPona = !!state.nasinNanpaPona;
     __renderAdapterId = normalizeRenderAdapterId(state.renderAdapterId);
     __renderAdapterSettings = cloneRenderAdapterSettings(state.renderAdapterSettings);
@@ -1453,6 +1457,12 @@ const SitelenRenderer = (() => {
   // source span has been classified as hexadecimal, its semantic run always
   // renders as hexadecimal. Re-parsing source text applies the current flag.
   let __enableHexParsing = false;
+
+  // Binary recognition/rendering is opt-in. Both stored flags default false.
+  // Rendering implies parsing, matching the established nanpa-colon flag model:
+  // once a binary source has been classified, its semantic run renders as binary.
+  let __enableBinaryParsing = false;
+  let __enableBinaryRendering = false;
 
   // Optional conversion of eligible plain Arabic integer/decimal expressions
   // to ordinary Toki Pona words using nasin nanpa pona. Default false preserves
@@ -1509,6 +1519,10 @@ const SitelenRenderer = (() => {
   function setNanpaColonRendering(v) { __nanpaColonRendering = !!v; }
   function getEnableHexParsing() { return !!__enableHexParsing; }
   function setEnableHexParsing(v) { __enableHexParsing = !!v; }
+  function getEnableBinaryParsing() { return !!(__enableBinaryParsing || __enableBinaryRendering); }
+  function setEnableBinaryParsing(v) { __enableBinaryParsing = !!v; }
+  function getEnableBinaryRendering() { return !!__enableBinaryRendering; }
+  function setEnableBinaryRendering(v) { __enableBinaryRendering = !!v; }
   function getNasinNanpaPona() { return !!__nasinNanpaPona; }
   function setNasinNanpaPona(v) { __nasinNanpaPona = !!v; }
   function getCartoucheCommaTallyMarks() { return !!__cartoucheCommaTallyMarks; }
@@ -1772,6 +1786,8 @@ const SitelenRenderer = (() => {
     if (parser.nanpaColonParsing != null) setNanpaColonParsing(!!parser.nanpaColonParsing);
     if (parser.nanpaColonRendering != null) setNanpaColonRendering(!!parser.nanpaColonRendering);
     if (parser.enableHexParsing != null) setEnableHexParsing(!!parser.enableHexParsing);
+    if (parser.enableBinaryParsing != null) setEnableBinaryParsing(!!parser.enableBinaryParsing);
+    if (parser.enableBinaryRendering != null) setEnableBinaryRendering(!!parser.enableBinaryRendering);
     if (parser.nasinNanpaPona != null) setNasinNanpaPona(!!parser.nasinNanpaPona);
     if (parser.cartoucheCommaTallyMarks != null) setCartoucheCommaTallyMarks(!!parser.cartoucheCommaTallyMarks);
     else if (parser.commaTallyInCartouche != null) setCartoucheCommaTallyMarks(!!parser.commaTallyInCartouche);
@@ -3456,6 +3472,7 @@ const SitelenRenderer = (() => {
      ============================================================ */
   const HEX_NUMERIC_CP = Object.freeze({
     nasa: 0xF193E,
+    noka: 0xF1943,
     colon: 0xF199D,
     nena: 0xF1940,
     e: 0xF1909,
@@ -4038,6 +4055,320 @@ const SitelenRenderer = (() => {
       return hexCartoucheSourceToSemantic(s.slice(1, -1), { relaxedParsing, preferAbbreviated });
     }
     return hexProperNameToSemantic(s, { relaxedParsing });
+  }
+
+
+  /* ============================================================
+     Optional binary numeric syntax (parallel to hexadecimal)
+     ============================================================ */
+  function isAsciiBinaryDigit(ch) {
+    return ch === "0" || ch === "1";
+  }
+
+  function cloneBinarySemantic(semantic) {
+    if (!semantic || semantic.kind !== "binary") return null;
+    return {
+      kind: "binary",
+      sourceType: semantic.sourceType || null,
+      sourceText: typeof semantic.sourceText === "string" ? semantic.sourceText : null,
+      parts: Array.from(semantic.parts || []).map(part => ({ ...part })),
+      digits: String(semantic.digits || "")
+    };
+  }
+
+  function makeBinarySemantic(parts, sourceType = null, sourceText = null) {
+    const normalized = [];
+    let digits = "";
+    for (const part of (parts || [])) {
+      if (!part || typeof part !== "object") continue;
+      if (part.kind === "digits") {
+        const run = String(part.digits ?? "");
+        if (!run || !/^[01]+$/.test(run)) return null;
+        normalized.push({ kind: "digits", digits: run });
+        digits += run;
+      } else if (part.kind === "delimiter") {
+        normalized.push({ kind: "delimiter", char: typeof part.char === "string" && part.char.length ? part.char : null });
+      } else {
+        return null;
+      }
+    }
+    if (!digits || !normalized.length || normalized[0].kind !== "digits") return null;
+    return { kind: "binary", sourceType, sourceText, parts: normalized, digits };
+  }
+
+  // Binary prefix syntax deliberately mirrors parseHexHashAt(): lowercase 0b
+  // identifies the run, whitespace/newline terminates it, an ASCII letter or
+  // non-binary decimal digit terminates it, and other punctuation is retained
+  // as one no-value delimiter. Uppercase 0B is intentionally not accepted.
+  function parseBinaryPrefixAt(text, start = 0) {
+    const s = String(text ?? "");
+    const index = Math.max(0, Number(start) | 0);
+    if (s.slice(index, index + 2) !== "0b") return null;
+    if (!isAsciiBinaryDigit(s[index + 2])) return null;
+
+    const parts = [];
+    let currentDigits = "";
+    let digitCount = 0;
+    let i = index + 2;
+    const flushDigits = () => {
+      if (!currentDigits) return;
+      parts.push({ kind: "digits", digits: currentDigits });
+      currentDigits = "";
+    };
+
+    while (i < s.length) {
+      const ch = s[i];
+      if (/\s/.test(ch)) break;
+      if (isAsciiBinaryDigit(ch)) { currentDigits += ch; digitCount += 1; i += 1; continue; }
+      // Unlike hex, 2-9 are not valid payload digits and therefore terminate.
+      if (/[2-9]/.test(ch) || isAsciiLetter(ch)) break;
+      flushDigits();
+      parts.push({ kind: "delimiter", char: ch });
+      i += 1;
+    }
+    flushDigits();
+    if (digitCount === 0) return null;
+    const semantic = makeBinarySemantic(parts, "prefix", s.slice(index, i));
+    if (!semantic) return null;
+    return { kind: "binary", index, end: i, binarySemantic: semantic };
+  }
+
+  function findBinaryPrefixSequences(text) {
+    const s = String(text ?? "");
+    if (!s) return [];
+    const out = [];
+    for (let i = 0; i < s.length - 1; i++) {
+      if (s[i] !== "0" || s[i + 1] !== "b") continue;
+      const hit = parseBinaryPrefixAt(s, i);
+      if (!hit) continue;
+      out.push(hit);
+      i = Math.max(i, hit.end - 1);
+    }
+    return out;
+  }
+
+  function validateBinaryStructuredTokenSequence(tokens, sourceType = null, sourceText = null) {
+    const seq = Array.from(tokens || []);
+    if (!seq.length || seq[0]?.kind !== "digit") return null;
+    const parts = [];
+    let digits = "";
+
+    function flushDigits() {
+      if (!digits) return true;
+      parts.push({ kind: "digits", digits });
+      digits = "";
+      return true;
+    }
+
+    for (const token of seq) {
+      if (token.kind === "delimiter") {
+        if (!digits || !flushDigits()) return null;
+        if (!parts.length) return null;
+        parts.push({ kind: "delimiter", char: token.char || null });
+        continue;
+      }
+      if (token.kind !== "digit" || (token.digit !== "0" && token.digit !== "1")) return null;
+      digits += token.digit;
+    }
+
+    if (!digits || !flushDigits()) return null;
+    return makeBinarySemantic(parts, sourceType, sourceText);
+  }
+
+  function binaryProperNameToSemantic(raw, { relaxedParsing = false } = {}) {
+    const source = String(raw ?? "").trim();
+    if (!source || !/^[A-Za-z]+(?:[ \t]+[A-Za-z]+)*$/.test(source)) return null;
+    const compact = source.replace(/[ \t]+/g, "");
+    if (!/^noka/i.test(compact)) return null;
+    let body = compact.slice(4);
+    if (!body || !/[nN]$/.test(body)) return null;
+    body = body.slice(0, -1).toUpperCase();
+    if (!body) return null;
+    const syllableMap = relaxedParsing
+      ? { NI: "0", WE: "1", WA: "1" }
+      : { NI: "0", WE: "1" };
+    const tokens = [];
+    let i = 0;
+    while (i < body.length) {
+      if (body.startsWith("NENE", i)) { tokens.push({ kind: "delimiter", char: null }); i += 4; continue; }
+      if (i + 2 > body.length) return null;
+      const digit = syllableMap[body.slice(i, i + 2)];
+      if (digit == null) return null;
+      tokens.push({ kind: "digit", digit });
+      i += 2;
+    }
+    return validateBinaryStructuredTokenSequence(tokens, "properName", source);
+  }
+
+  function findBinaryProperNameSequences(text, { relaxedParsing = false } = {}) {
+    const s = String(text ?? "");
+    if (!s) return [];
+    const hits = [];
+    const lineRe = /[^\r\n]+/g;
+    let lineMatch;
+    while ((lineMatch = lineRe.exec(s)) !== null) {
+      const line = lineMatch[0];
+      const lineStart = lineMatch.index | 0;
+      const words = [];
+      const wordRe = /[A-Za-z]+/g;
+      let wm;
+      while ((wm = wordRe.exec(line)) !== null) words.push({ raw: wm[0], start: lineStart + wm.index, end: lineStart + wm.index + wm[0].length });
+      for (let i = 0; i < words.length; i++) {
+        const first = words[i];
+        if (!/^noka/i.test(first.raw) || !/^[A-Z]/.test(first.raw)) continue;
+        let best = null, bestJ = -1;
+        const maxJ = Math.min(words.length - 1, i + 30);
+        for (let j = i; j <= maxJ; j++) {
+          if (j > i && !/^[A-Z]/.test(words[j].raw)) break;
+          const rawSpan = s.slice(first.start, words[j].end);
+          if (!/^[A-Za-z]+(?:[ \t]+[A-Za-z]+)*$/.test(rawSpan)) continue;
+          const semantic = binaryProperNameToSemantic(rawSpan, { relaxedParsing });
+          if (!semantic) continue;
+          best = { kind: "binary", index: first.start, end: words[j].end, binarySemantic: semantic };
+          bestJ = j;
+        }
+        if (best) { hits.push(best); i = bestJ; }
+      }
+    }
+    return hits;
+  }
+
+  function binaryCartoucheTokensToSemantic(tokensInput, { relaxedParsing = false, sourceText = null, preferAbbreviated = false } = {}) {
+    const tokens = Array.from(tokensInput || []).map(v => String(v).toLowerCase());
+    if (tokens.length < 3 || tokens[0] !== "noka" || tokens[tokens.length - 1] !== "noka") return null;
+    let start = 1;
+    if (tokens[start] === ":") start += 1; // optional on input, canonical output always includes it
+    const body = tokens.slice(start, -1);
+    if (!body.length) return null;
+
+    function tryAbbreviated() {
+      const structured = [];
+      for (const word of body) {
+        if (word === "e") { structured.push({ kind: "delimiter", char: null }); continue; }
+        if (word === "ijo") structured.push({ kind: "digit", digit: "0" });
+        else if (word === "wan") structured.push({ kind: "digit", digit: "1" });
+        else return null;
+      }
+      return validateBinaryStructuredTokenSequence(structured, "cartouche", sourceText);
+    }
+    if (preferAbbreviated) {
+      const sem = tryAbbreviated();
+      if (sem) return sem;
+    }
+
+    {
+      const structured = [];
+      const patterns = hexFullDigitPatterns({ relaxedParsing }).filter(p => p.digit === "0" || p.digit === "1");
+      const isNWord = w => w === "nena" || w === "nasa";
+      const isJoinWord = w => w === "e" || w === "en" || w === "esun";
+      let i = 0, ok = true;
+      while (i < body.length) {
+        if (i + 3 < body.length && isNWord(body[i]) && isJoinWord(body[i + 1]) && isNWord(body[i + 2]) && isJoinWord(body[i + 3])) { structured.push({ kind: "delimiter", char: null }); i += 4; continue; }
+        let match = null;
+        for (const pattern of patterns) {
+          if (i + pattern.words.length <= body.length && pattern.words.every((word, offset) => body[i + offset] === word)) { match = pattern; break; }
+        }
+        if (!match) { ok = false; break; }
+        structured.push({ kind: "digit", digit: match.digit });
+        i += match.words.length;
+      }
+      if (ok) {
+        const sem = validateBinaryStructuredTokenSequence(structured, "cartouche", sourceText);
+        if (sem) return sem;
+      }
+    }
+    if (!preferAbbreviated) return tryAbbreviated();
+    return null;
+  }
+
+  function binaryCartoucheSourceToSemantic(raw, opts = {}) {
+    const tokens = tokenizeHexCartoucheSource(raw);
+    if (!tokens) return null;
+    return binaryCartoucheTokensToSemantic(tokens, { ...opts, sourceText: String(raw ?? "") });
+  }
+
+  function binarySemanticToTpWords(semantic, { abbreviated = false, mode = "uniform", relaxedRendering = false } = {}) {
+    const sem = cloneBinarySemantic(semantic);
+    if (!sem) return null;
+    const words = ["noka", ":"];
+    for (const part of sem.parts) {
+      if (part.kind === "delimiter") {
+        if (abbreviated) words.push("e");
+        else words.push("nena", "e", "nena", "e");
+        continue;
+      }
+      const digits = String(part.digits || "");
+      if (!digits || !/^[01]+$/.test(digits)) return null;
+      for (const digit of digits) {
+        if (abbreviated) words.push(digit === "0" ? "ijo" : "wan");
+        else {
+          const digitWords = hexFullWordsForDigit(digit, { mode, relaxedRendering });
+          if (!digitWords) return null;
+          words.push(...digitWords);
+        }
+      }
+    }
+    words.push("noka");
+    return words;
+  }
+
+  function binaryTpWordsToCodepoints(words) {
+    const out = [];
+    for (const word of (words || [])) {
+      if (word === ":") { out.push(HEX_NUMERIC_CP.colon); continue; }
+      const cp = HEX_NUMERIC_CP[String(word).toLowerCase()];
+      if (cp == null) return null;
+      out.push(cp);
+    }
+    return out;
+  }
+
+  function binarySemanticToInnerCodepoints(semantic, opts = {}) {
+    const words = binarySemanticToTpWords(semantic, opts);
+    return words ? binaryTpWordsToCodepoints(words) : null;
+  }
+
+  function binarySemanticToProperName(semantic, { relaxedRendering = false } = {}) {
+    const sem = cloneBinarySemantic(semantic);
+    if (!sem) return null;
+    const words = ["Noka"];
+    const attachNAndPush = suffix => { if (words.length <= 1) return false; words[words.length - 1] += "n"; words.push(suffix); return true; };
+    for (const part of sem.parts) {
+      if (part.kind === "delimiter") { if (!attachNAndPush("Ene")) return null; continue; }
+      const digits = String(part.digits || "");
+      if (!digits || !/^[01]+$/.test(digits)) return null;
+      let digitWord = "";
+      for (const digit of digits) {
+        const syllable = digit === "0" ? "NI" : (relaxedRendering ? "WA" : "WE");
+        digitWord += syllable.toLowerCase();
+      }
+      words.push(digitWord[0].toUpperCase() + digitWord.slice(1));
+    }
+    if (words.length <= 1) return null;
+    words[words.length - 1] += "n";
+    return words.join(" ");
+  }
+
+  function binarySemanticToCanonicalPrefix(semantic) {
+    const sem = cloneBinarySemantic(semantic);
+    if (!sem) return null;
+    let out = "0b";
+    for (const part of sem.parts) {
+      if (part.kind === "digits") out += part.digits;
+      else out += (part.char != null ? part.char : ":");
+    }
+    return out;
+  }
+
+  function parseCompleteBinaryInput(input, { relaxedParsing = false, preferAbbreviated = false } = {}) {
+    const s = String(input ?? "").trim();
+    if (!s) return null;
+    if (s.startsWith("0b")) {
+      const hit = parseBinaryPrefixAt(s, 0);
+      return hit && hit.end === s.length ? hit.binarySemantic : null;
+    }
+    if (s.startsWith("[") && s.endsWith("]")) return binaryCartoucheSourceToSemantic(s.slice(1, -1), { relaxedParsing, preferAbbreviated });
+    return binaryProperNameToSemantic(s, { relaxedParsing });
   }
 
   async function renderAstToNewCanvas(ast, config = {}) {
@@ -5387,6 +5718,30 @@ function wireHaloControls() {
         el.isHexCartouche = true;
         el.hexSemantic = cloneHexSemantic(normalized);
         el.numericBase = 16;
+      }
+    }
+
+    function makeBinaryNumericCartoucheElementFromSemantic(elements, semantic, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+      const normalized = cloneBinarySemantic(semantic);
+      if (!normalized) return;
+      const abbreviated = getAbbreviateNumericCartouches();
+      const cps = binarySemanticToInnerCodepoints(normalized, {
+        abbreviated,
+        mode: getNanpaLinjanMode(),
+        relaxedRendering: getRelaxedNanpaLinjanRendering()
+      });
+      if (!cps || !cps.length) return;
+      const before = elements.length;
+      makeCartoucheElementFromCodepoints(elements, cps, {
+        fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText, sourceStart, sourceEnd, sourceKind, sourceSegmentIndex,
+        fontRole: "number", isNumericCartouche: true, audioSourceCps: cps.slice(), audioSourceIndices: cps.map((_cp, index) => index)
+      });
+      for (let i = before; i < elements.length; i++) {
+        const el = elements[i];
+        if (!el || el.type === "gap") continue;
+        el.isBinaryCartouche = true;
+        el.binarySemantic = cloneBinarySemantic(normalized);
+        el.numericBase = 2;
       }
     }
 
@@ -7322,11 +7677,11 @@ function findNanpaLinjanTpPhraseSequences(text) {
         Number.isFinite(h.index) &&
         Number.isFinite(h.end) &&
         h.end > h.index &&
-        (h.caps || h.hexSemantic || (Array.isArray(h.words) && h.words.length > 0))
+        (h.caps || h.hexSemantic || h.binarySemantic || (Array.isArray(h.words) && h.words.length > 0))
       );
 
       function priority(kind) {
-        if (kind === "hex") return 6;
+        if (kind === "hex" || kind === "binary") return 6;
         if (kind === "date") return 5;
         if (kind === "decimal") return 4;
         if (kind === "time") return 4;
@@ -9386,6 +9741,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             ...findHexProperNameSequences(s, { relaxedParsing: getRelaxedNanpaLinjanParsing() })
           ]
         : [];
+      const binaryHits = getEnableBinaryParsing()
+        ? [
+            ...findBinaryPrefixSequences(s),
+            ...findBinaryProperNameSequences(s, { relaxedParsing: getRelaxedNanpaLinjanParsing() })
+          ]
+        : [];
 
       // Dates must be recognized first. Mask valid date spans before running
       // the time scanner so any present or future overlapping time grammar
@@ -9419,7 +9780,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         nameHits: nameHits.length,
         phraseHits: phraseHits.length,
         hexHits: hexHits.length,
-        rawHits: [...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
+        binaryHits: binaryHits.length,
+        rawHits: [...binaryHits, ...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
           kind: h.kind,
           sourceText: s.slice(h.index, h.end),
           index: h.index,
@@ -9427,11 +9789,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           caps: h.caps || null,
           words: Array.isArray(h.words) ? h.words.join(" ") : null,
           nasinNanpaPonaWords: Array.isArray(h.nasinNanpaPonaWords) ? h.nasinNanpaPonaWords.join(" ") : null,
-          hexDigits: h.hexSemantic?.digits || null
+          hexDigits: h.hexSemantic?.digits || null,
+          binaryDigits: h.binarySemantic?.digits || null
         }))
       });
 
-      const hits = mergeAndGreedyFilterHits([...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+      const hits = mergeAndGreedyFilterHits([...binaryHits, ...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
 
       nanpaDebugTable("parse-text:selected-hits", hits.map(h => ({
         kind: h.kind,
@@ -9467,6 +9830,16 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             sourceKind,
             sourceSegmentIndex,
             mixedStyle
+          });
+        } else if (h.kind === "binary" && h.binarySemantic) {
+          makeBinaryNumericCartoucheElementFromSemantic(elements, h.binarySemantic, {
+            fontPx,
+            fgCss,
+            sourceText: matchText,
+            sourceStart: sourceBaseStart + a,
+            sourceEnd: sourceBaseStart + b,
+            sourceKind,
+            sourceSegmentIndex
           });
         } else if (h.kind === "hex" && h.hexSemantic) {
           makeHexNumericCartoucheElementFromSemantic(elements, h.hexSemantic, {
@@ -9730,6 +10103,19 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       const mode = getNanpaLinjanMode();
       const fgCss = getFgHex();
+
+      if (getEnableBinaryParsing()) {
+        const binarySemantic = binaryCartoucheSourceToSemantic(content, {
+          relaxedParsing: getRelaxedNanpaLinjanParsing(),
+          preferAbbreviated: getAbbreviateNumericCartouches()
+        });
+        if (binarySemantic) {
+          makeBinaryNumericCartoucheElementFromSemantic(elements, binarySemantic, {
+            fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+          });
+          return;
+        }
+      }
 
       if (getEnableHexParsing()) {
         const hexSemantic = hexCartoucheSourceToSemantic(content, {
@@ -13253,6 +13639,34 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (input == null || String(input).trim() === "") return null;
     const s = String(input).trim();
+
+    if (opts.enableBinaryParsing === true || opts.enableBinaryRendering === true) {
+      const binarySemantic = parseCompleteBinaryInput(s, {
+        relaxedParsing,
+        preferAbbreviated: opts.abbreviateNumericCartouches === true ||
+          opts.numericCartoucheAbbreviation === true ||
+          opts.abbreviatedNumericCartouches === true
+      });
+      if (binarySemantic) {
+        const tpWords = binarySemanticToTpWords(binarySemantic, { abbreviated: false, mode, relaxedRendering });
+        const abbreviatedWords = binarySemanticToTpWords(binarySemantic, { abbreviated: true, mode, relaxedRendering });
+        const ucsurCodepoints = tpWords ? binaryTpWordsToCodepoints(tpWords) : null;
+        const abbreviatedUcsurCodepoints = abbreviatedWords ? binaryTpWordsToCodepoints(abbreviatedWords) : null;
+        if (!ucsurCodepoints || !ucsurCodepoints.length) return null;
+        const properName = binarySemanticToProperName(binarySemantic, { relaxedRendering });
+        const prefix = binarySemanticToCanonicalPrefix(binarySemantic);
+        const codepoints = [_NP_CARTOUCHE_START_CP, ...ucsurCodepoints, _NP_CARTOUCHE_END_CP];
+        return {
+          input: s, kind: "binary", numberBase: 2, isBinary: true, caps: null, properName, uniqueCode: prefix, displayValue: prefix,
+          binaryDigits: binarySemantic.digits, binaryParts: binarySemantic.parts.map(part => ({ ...part })),
+          ucsurCodepoints, abbreviatedUcsurCodepoints: abbreviatedUcsurCodepoints || [],
+          hexCodepoints: ucsurCodepoints.map(cp => cp.toString(16).toUpperCase().padStart(4, "0")).join(" "),
+          hexWithCartouche: codepoints.map(cp => cp.toString(16).toUpperCase().padStart(4, "0")).join(" "),
+          tpWords, abbreviatedWords: abbreviatedWords || [], words: tpWords.slice(), isTime: false, isDate: false, isTimeLike: false,
+          innerCodepoints: ucsurCodepoints.slice(), codepoints, numericMode: mode
+        };
+      }
+    }
 
     if (opts.enableHexParsing === true) {
       const hexSemantic = parseCompleteHexInput(s, {

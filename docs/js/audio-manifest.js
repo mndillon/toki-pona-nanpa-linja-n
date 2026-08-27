@@ -1,5 +1,5 @@
 export const REFERENCE_AUDIO_MANIFEST = {
-  "version": "1.3",
+  "version": "1.2",
   "sample_rate": 48000,
   "license_note": "Toki_Pona_audio_by_jan_Lakuse.zip contains _licence.txt: \"You can redistribute these files or use them in your project, but please mention audio provided by jan Lakuse.\" ku.zip did not include a licence file in the uploaded archive; treat those two files as local-project assets unless separately licensed.",
   "words": {
@@ -1528,7 +1528,7 @@ export const REFERENCE_AUDIO_MANIFEST = {
     },
     "ki": {
       "duration_ms": null,
-      "file": "syllables_v2/ki.wav",
+      "file": "syllables/ki.wav",
       "syllable": "ki"
     },
     "kin": {
@@ -1902,78 +1902,6 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "syllable": "win"
     }
   },
-  "letter_sounds": {
-    "a": {
-      "duration_ms": null,
-      "file": "letter_sounds/a.wav",
-      "letter": "a"
-    },
-    "e": {
-      "duration_ms": null,
-      "file": "letter_sounds/e.wav",
-      "letter": "e"
-    },
-    "i": {
-      "duration_ms": null,
-      "file": "letter_sounds/i.wav",
-      "letter": "i"
-    },
-    "j": {
-      "duration_ms": null,
-      "file": "letter_sounds/j.wav",
-      "letter": "j"
-    },
-    "k": {
-      "duration_ms": null,
-      "file": "letter_sounds/k.wav",
-      "letter": "k"
-    },
-    "l": {
-      "duration_ms": null,
-      "file": "letter_sounds/l.wav",
-      "letter": "l"
-    },
-    "m": {
-      "duration_ms": null,
-      "file": "letter_sounds/m.wav",
-      "letter": "m"
-    },
-    "n": {
-      "duration_ms": null,
-      "file": "letter_sounds/n.wav",
-      "letter": "n"
-    },
-    "o": {
-      "duration_ms": null,
-      "file": "letter_sounds/o.wav",
-      "letter": "o"
-    },
-    "p": {
-      "duration_ms": null,
-      "file": "letter_sounds/p.wav",
-      "letter": "p"
-    },
-    "s": {
-      "duration_ms": null,
-      "file": "letter_sounds/s.wav",
-      "letter": "s"
-    },
-    "t": {
-      "duration_ms": null,
-      "file": "letter_sounds/t.wav",
-      "letter": "t"
-    },
-    "u": {
-      "duration_ms": null,
-      "file": "letter_sounds/u.wav",
-      "letter": "u"
-    },
-    "w": {
-      "duration_ms": null,
-      "file": "letter_sounds/w.wav",
-      "letter": "w"
-    }
-  },
   "strict_disallowed_syllables": [
     "ji",
     "jin",
@@ -1990,7 +1918,6 @@ export const REFERENCE_AUDIO_MANIFEST = {
     "If a capitalized word has no exact nanpa unit, decompose it by Toki Pona syllables and use nanpa units when all syllables are covered.",
     "Use extracted general syllable units only after the nanpa unit bank fails.",
     "For missing CVn in the general syllable bank, combine CV + recorded n.",
-    "For isolated or otherwise unsyllabifiable ordinary-cartouche sounds, use letter_sounds assets.",
     "If audio units are missing, fall back to Rust/WASM synthetic engine when available."
   ],
   "nanpa_units": {
@@ -2276,10 +2203,10 @@ export const REFERENCE_AUDIO_MANIFEST = {
     },
     "mu": {
       "unit": "Mu",
-      "file": "nanpa_v3/mu.wav",
+      "file": "nanpa_v2/mu.wav",
       "source": "uploaded nanpa-linja-n extra WAVs",
       "source_order": 41,
-      "duration_ms": 522.5
+      "duration_ms": 1450.0
     },
     "lun": {
       "unit": "Lun",
@@ -2337,157 +2264,122 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "source_order": 49,
       "duration_ms": 1475.0
     },
-    "ke": {
-      "unit": "Ke",
-      "file": "nanpa_v3/ke.wav",
-      "source": "derived from spoken nanpa.wav",
-      "source_order": 50,
-      "duration_ms": 450.8
-    },
-    "ken": {
-      "unit": "Ken",
-      "file": "nanpa_v3/ken.wav",
-      "source": "derived from spoken nanpa.wav",
-      "source_order": 51,
-      "duration_ms": 465.3
-    },
-    "keke": {
-      "unit": "Keke",
-      "file": "nanpa_v3/keke.wav",
-      "source": "derived from spoken nanpa.wav",
-      "source_order": 52,
-      "duration_ms": 683.3
-    },
-    "keken": {
-      "unit": "Keken",
-      "file": "nanpa_v3/keken.wav",
-      "source": "derived from spoken nanpa.wav",
-      "source_order": 53,
-      "duration_ms": 747.5
-    },
-    "kekeke": {
-      "unit": "Kekeke",
-      "file": "nanpa_v3/kekeke.wav",
-      "source": "derived from spoken nanpa.wav",
-      "source_order": 54,
-      "duration_ms": 912.3
-    },
-    "kekeken": {
-      "unit": "Kekeken",
-      "file": "nanpa_v3/kekeken.wav",
-      "source": "derived from spoken nanpa.wav",
-      "source_order": 55,
-      "duration_ms": 947.5
-    },
     "nasa": {
       "unit": "Nasa",
       "file": "nanpa_v7/nasa.wav",
       "source": "uploaded whole-word numeric Nasa audio",
-      "source_order": 56,
+      "source_order": 50,
       "duration_ms": 928.4
     },
     "ta": {
       "unit": "Ta",
       "file": "nanpa_v4/ta.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 57,
+      "source_order": 51,
       "duration_ms": 434.4
     },
     "tan": {
       "unit": "Tan",
       "file": "nanpa_v4/tan.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 58,
+      "source_order": 52,
       "duration_ms": 529.1
     },
     "pa": {
       "unit": "Pa",
       "file": "nanpa_v4/pa.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 59,
+      "source_order": 53,
       "duration_ms": 428.4
     },
     "pan": {
       "unit": "Pan",
       "file": "nanpa_v4/pan.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 60,
+      "source_order": 54,
       "duration_ms": 523.1
     },
     "mi": {
       "unit": "Mi",
       "file": "nanpa_v4/mi.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 61,
+      "source_order": 55,
       "duration_ms": 454.9
     },
     "min": {
       "unit": "Min",
       "file": "nanpa_v4/min.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 62,
+      "source_order": 56,
       "duration_ms": 527.2
     },
     "ma": {
       "unit": "Ma",
       "file": "nanpa_v4/ma.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 63,
+      "source_order": 57,
       "duration_ms": 459.4
     },
     "man": {
       "unit": "Man",
       "file": "nanpa_v4/man.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 64,
+      "source_order": 58,
       "duration_ms": 554.1
     },
     "la": {
       "unit": "La",
       "file": "nanpa_v6/la.wav",
       "source": "uploaded replacement numeric La audio",
-      "source_order": 65,
+      "source_order": 59,
       "duration_ms": 545.0
     },
     "lan": {
       "unit": "Lan",
       "file": "nanpa_v6/lan.wav",
       "source": "uploaded replacement numeric Lan audio",
-      "source_order": 66,
+      "source_order": 60,
       "duration_ms": 615.0
     },
     "sa": {
       "unit": "Sa",
       "file": "nanpa_v6/sa.wav",
       "source": "uploaded numeric Sa audio",
-      "source_order": 67,
+      "source_order": 61,
       "duration_ms": 562.5
     },
     "san": {
       "unit": "San",
       "file": "nanpa_v6/san.wav",
       "source": "uploaded numeric San audio",
-      "source_order": 68,
+      "source_order": 62,
       "duration_ms": 605.0
     },
     "enen": {
       "unit": "Enen",
       "file": "nanpa_v4/enen.wav",
       "source": "derived from supplied numeric nanpa assets",
-      "source_order": 69,
+      "source_order": 63,
       "duration_ms": 593.1
     },
     "nanpa": {
       "unit": "Nanpa",
       "file": "nanpa_v7/nanpa.wav",
       "source": "uploaded whole-word numeric Nanpa audio",
-      "source_order": 70,
+      "source_order": 64,
       "duration_ms": 1011.4
+    },
+    "noka": {
+      "unit": "Noka",
+      "file": "nanpa_v7/noka.wav",
+      "source": "uploaded whole-word numeric Noka audio",
+      "source_order": 65,
+      "duration_ms": 940.5
     }
   },
   "nanpa_unit_source": {
     "source_file": "spoken nanpa.wav",
-    "detected_units": 41,
+    "detected_units": 35,
     "source_sample_rate": 22050,
     "asset_sample_rate": 48000,
     "labels_in_order": [
@@ -2525,33 +2417,9 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "Ono",
       "Eko",
       "Oken",
-      "Ene",
-      "Ke",
-      "Ken",
-      "Keke",
-      "Keken",
-      "Kekeke",
-      "Kekeken"
+      "Ene"
     ],
-    "derived_units": 6,
-    "derived_asset_sample_rate": 24000,
-    "derived_from_units": [
-      "Eke",
-      "Eken",
-      "Ekeke",
-      "Ekeken",
-      "Ekekeke",
-      "Ekekeken"
-    ],
-    "derived_labels_in_order": [
-      "Ke",
-      "Ken",
-      "Keke",
-      "Keken",
-      "Kekeke",
-      "Kekeken"
-    ],
-    "notes": "Purpose-recorded nanpa-linja-n unit bank. v0.5 refreshes the 35 nanpa WAV assets from the newer uploaded spoken nanpa.wav. Manifest paths updated to audio/nanpa_v2/. v0.7 adds six 24000 Hz nanpa_v3 units derived from the Eke-family recordings by removing the initial spoken e while preserving each recording's original leading silence.",
+    "notes": "Purpose-recorded nanpa-linja-n unit bank. v0.5 refreshes the 35 nanpa WAV assets from the newer uploaded spoken nanpa.wav. Manifest paths updated to audio/nanpa_v2/.",
     "asset_sample_rates_in_package": [
       22050,
       24000
@@ -2661,6 +2529,25 @@ export const REFERENCE_AUDIO_MANIFEST = {
         "nanpa_v2/nan.wav"
       ]
     },
-    "notes": "Hex-support nanpa units use derived and uploaded numeric WAV assets. Output is mono 16-bit PCM at 24000 Hz. Consonant onsets are retained from existing purpose-recorded numeric units; target vowel/coda portions are taken from existing Na/Nan or Ni/Nin units as appropriate. The current Nasa asset is the uploaded whole-word recording in nanpa_v7/nasa.wav; its manifest duration is measured directly from that WAV. Enen uses Ene plus an existing terminal nasal. Source leading audio and source trailing audio are retained so the new units follow the timing convention of the supplied numeric bank. nanpa_v5 revises only La and Lan by replacing their initial /l/ onset with the corresponding Lu/Lun numeric onset, while preserving the original La/Lan sample count, sample rate, leading samples, and all samples after the onset crossfade. The current nanpa_v5 La/Lan files replace the previous onset-splice approach. Their initial 120 ms comes directly from supplied numeric Le/Len, the stable lateral is extended to produce a clearly sustained L, and the join enters La/Lan only after the previous consonant transition at a stable a/an vowel. No old La/Lan onset material is reused. The current nanpa_v6 La and Lan assets are the newly uploaded replacement recordings; manifest durations are measured directly from those WAV files. nanpa_v6 also adds the uploaded purpose-recorded Sa and San assets; their manifest durations are measured directly from those WAV files."
+    "notes": "Hex-support nanpa units use derived and uploaded numeric WAV assets. Output is mono 16-bit PCM at 24000 Hz. Consonant onsets are retained from existing purpose-recorded numeric units; target vowel/coda portions are taken from existing Na/Nan or Ni/Nin units as appropriate. The current Nasa asset is the uploaded whole-word recording in nanpa_v7/nasa.wav; its manifest duration is measured directly from that WAV. Enen uses Ene plus an existing terminal nasal. Source leading audio and source trailing audio are retained so the new units follow the timing convention of the supplied numeric bank. nanpa_v6 revises only La and Lan by replacing their initial /l/ onset with the corresponding Lu/Lun numeric onset, while preserving the original La/Lan sample count, sample rate, leading samples, and all samples after the onset crossfade. The current nanpa_v6 La/Lan files replace the previous onset-splice approach. Their initial 120 ms comes directly from supplied numeric Le/Len, the stable lateral is extended to produce a clearly sustained L, and the join enters La/Lan only after the previous consonant transition at a stable a/an vowel. No old La/Lan onset material is reused. The current nanpa_v6 La and Lan assets are the newly uploaded replacement recordings; manifest durations are measured directly from those WAV files. nanpa_v6 also adds the uploaded purpose-recorded Sa and San assets; their manifest durations are measured directly from those WAV files."
+  },
+  "nanpa_binary_unit_source": {
+    "source_file_group": "uploaded numeric binary nanpa asset",
+    "added_units": 1,
+    "asset_sample_rates": [
+      24000
+    ],
+    "labels_in_order": [
+      "Noka"
+    ],
+    "derivations": {
+      "Noka": [
+        "uploaded whole-word numeric Noka audio",
+        "nanpa_v7/noka.wav"
+      ]
+    },
+    "notes": "Binary numeric Noka uses the uploaded whole-word recording in nanpa_v7/noka.wav. Manifest duration is measured directly from that WAV."
   }
 };
+
+export default REFERENCE_AUDIO_MANIFEST;

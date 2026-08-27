@@ -1,4 +1,4 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=244";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -7,13 +7,13 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=176';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=60';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=61';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=53';
+} from './sitelen-audio-plan.js?v=54';
 let pageMap = new Map();
 
 "use strict";
@@ -482,7 +482,7 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=244",
   fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=176",
@@ -1075,6 +1075,8 @@ function buildBaseRendererConfig({ includeHalo = true } = {}) {
       interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
       breakLinesAtFullStops: getBreakLinesAtFullStopsEnabled(),
       enableHexParsing: getEnableHexParsingEnabled(),
+      enableBinaryParsing: getEnableBinaryParsingEnabled(),
+      enableBinaryRendering: getEnableBinaryParsingEnabled(),
       ...buildCartoucheTallyParserConfig()
     },
     fonts: {
@@ -1132,7 +1134,9 @@ function getRendererSignature() {
     relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled(),
     displayNanpaFormat: getDisplayNanpaFormatEnabled(),
     nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
-    enableHexParsing: getEnableHexParsingEnabled()
+    enableHexParsing: getEnableHexParsingEnabled(),
+    enableBinaryParsing: getEnableBinaryParsingEnabled(),
+    enableBinaryRendering: getEnableBinaryParsingEnabled()
   });
 }
 
@@ -1771,6 +1775,37 @@ function wireEnableHexParsingToggle() {
   el?.addEventListener("change", async () => {
     try {
       saveBooleanFlagToStorage(ENABLE_HEX_PARSING_STORAGE_KEY, el.checked);
+      resetTextToSitelenAudio({ announce: false });
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
+      await renderFromTextarea();
+      updateTextAudioButtons();
+    } catch (error) {
+      showAlertAndAnnounce(error?.message ?? String(error));
+    }
+  });
+}
+
+const ENABLE_BINARY_PARSING_STORAGE_KEY = "tpEnableBinaryParsing";
+// Keep the page default exactly aligned with the current hex parsing default.
+const ENABLE_BINARY_PARSING_DEFAULT_ENABLED = ENABLE_HEX_PARSING_DEFAULT_ENABLED;
+
+function getEnableBinaryParsingEnabled() {
+  return !!document.getElementById("appEnableBinaryParsingEnable")?.checked;
+}
+
+function applyEnableBinaryParsingFromStorage() {
+  const enabled = loadBooleanFlagFromStorage(ENABLE_BINARY_PARSING_STORAGE_KEY)
+    ?? ENABLE_BINARY_PARSING_DEFAULT_ENABLED;
+  const el = document.getElementById("appEnableBinaryParsingEnable");
+  if (el) el.checked = enabled;
+}
+
+function wireEnableBinaryParsingToggle() {
+  const el = document.getElementById("appEnableBinaryParsingEnable");
+  el?.addEventListener("change", async () => {
+    try {
+      saveBooleanFlagToStorage(ENABLE_BINARY_PARSING_STORAGE_KEY, el.checked);
       resetTextToSitelenAudio({ announce: false });
       sitelenRenderer = null;
       sitelenRendererSignature = "";
@@ -6171,7 +6206,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=244", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -10290,6 +10325,7 @@ async function initializeTextToSitelenPage() {
     applyAudioParserFlagsFromStorage();
     applyBreakLinesAtFullStopsFromStorage();
     applyEnableHexParsingFromStorage();
+    applyEnableBinaryParsingFromStorage();
     applyCopyFontSpecificCodesFromStorage();
 
     
@@ -10341,6 +10377,7 @@ async function initializeTextToSitelenPage() {
     wireAudioParserFlags();
     wireBreakLinesAtFullStopsToggle();
     wireEnableHexParsingToggle();
+    wireEnableBinaryParsingToggle();
     wireCopyFontSpecificCodesToggle();
     wireCartoucheDisplayLinks();
     initTextAudioControls();

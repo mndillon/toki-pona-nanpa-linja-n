@@ -415,7 +415,7 @@
       </a>
 
     <h1 style="margin:0 0 6px;font-size:18px;">
-      Represent decimal and hexadecimal numbers as nanpa-linja-n proper names and sitelen pona cartouches
+      Represent decimal, hexadecimal and binary numbers as nanpa-linja-n proper names and sitelen pona cartouches
       <span class="tpLine">ilo pi pana nanpa (poka) + ilo sitelen pi poki nimi</span>
     </h1>
     </div>
@@ -539,7 +539,7 @@
     <div class="row" style="margin-top:14px;" role="group" aria-label="Numeric input and encode action">
       <div class="col">
         <label for="decimalInput">
-          Enter decimal value or hexadecimal value beginning with #
+          Enter decimal value, hexadecimal value beginning with #, or binary value beginning with 0b
           <span class="tpLine">o pana e nanpa poka (nasin en-US)</span>
         </label>
         <input
@@ -553,7 +553,7 @@
           aria-controls="latinOut numberCodeOut tpWordsOut canvasSmall canvasLarge digitTable"
         />
         <div id="decimalHelp" class="help">
-          Examples: <span class="mono">0.00</span>; <span class="mono">.75</span>; <span class="mono">-12,340</span>; <span class="mono">#12AF</span>; <span class="mono">#12-AF</span>;  <span class="mono">2000</span>; <span class="mono">5,000</span>; 
+          Examples: <span class="mono">0.00</span>; <span class="mono">.75</span>; <span class="mono">-12,340</span>; <span class="mono">#12AF</span>; <span class="mono">#12-AF</span>; <span class="mono">0b101</span>; <span class="mono">2000</span>; <span class="mono">5,000</span>; 
           <span class="mono">9¾</span>; <span class="mono">8+1/2</span>; <span class="mono">7/8</span>; <span class="mono">64.5M</span>; 
           <span class="mono">007</span>; <span class="mono">432-555-0189</span>; <span class="mono">10.5%</span>; <span class="mono">3:49</span>; <span class="mono">14:53:27</span>; <span class="mono">4.5e-3</span>; <span class="mono">#ABCDEF</span>.
           nanpa-linja-n encoder decides how to represent these.
@@ -627,7 +627,7 @@
           autocomplete="off"
         />
         <div id="tpWordsHelp" class="help">
-          Allowed input: Valid Toki Pona words (case-insensitive), exact alternative-glyph aliases <span class="mono">ni01 ni02 ni03 ni04 sewi01 sewi02</span>, a nanpa-linja-n proper name for a numeric value, a number code (starting with #~), or a hexadecimal number beginning with #.
+          Allowed input: Valid Toki Pona words (case-insensitive), exact alternative-glyph aliases <span class="mono">ni01 ni02 ni03 ni04 sewi01 sewi02</span>, a nanpa-linja-n proper name for a numeric value, a number code (starting with #~), a hexadecimal number beginning with #, or a binary number beginning with 0b.
           <span class="tpLine">
             nimi toki pona lon mapu taso li ken. (suli/lili pi sitelen li wile ala.)
             sina ken kin pana e nimi pi nanpa-linja-n (nimi pi pana nanpa).
@@ -845,8 +845,8 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=45";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=244";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=46";
     import {
       trySourceTextToNanpaProperName,
       nanpaCapsForAudioMode,
@@ -953,6 +953,8 @@
         nanpaColonParsing: getNanpaFormatEnabled(),
         nanpaColonRendering: getNanpaFormatEnabled(),
         enableHexParsing: true,
+        enableBinaryParsing: true,
+        enableBinaryRendering: true,
         ...extra
       };
     }
@@ -1218,6 +1220,8 @@
         nanpaColonParsing: getNanpaFormatEnabled(),
         nanpaColonRendering: getNanpaFormatEnabled(),
         enableHexParsing: true,
+        enableBinaryParsing: true,
+        enableBinaryRendering: true,
         autoCartoucheStandaloneProperNames: true,
         showUnknownText: false
       };
@@ -1234,6 +1238,8 @@
         nanpaColonParsing: getNanpaFormatEnabled(),
         nanpaColonRendering: getNanpaFormatEnabled(),
         enableHexParsing: true,
+        enableBinaryParsing: true,
+        enableBinaryRendering: true,
         ...extra
       };
     }
@@ -1384,8 +1390,19 @@
     async function parseAnyNumericInput(raw) {
       const source = String(raw ?? "").trim();
       if (!source) return null;
-      const parsed = NanpaParser.parseNumber(source, getNanpaParserOptions());
+      const parserOptions = getNanpaParserOptions();
+      const parsed = NanpaParser.parseNumber(source, parserOptions);
       if (parsed) return parsed;
+
+      // The shared binary parser accepts the canonical bracketed cartouche form.
+      // On this dedicated "Toki Pona words" page input, also accept the same
+      // cartouche body without brackets: noka : ... noka / noka ... noka.
+      if (/^noka\b[\s\S]*\bnoka$/i.test(source)) {
+        const wrappedBinary = NanpaParser.parseNumber(`[${source}]`, parserOptions);
+        if (wrappedBinary?.isBinary === true || Number(wrappedBinary?.numberBase) === 2) {
+          return wrappedBinary;
+        }
+      }
 
       const audioOpts = sharedAudioOptions();
       const candidates = [source];
@@ -1401,7 +1418,10 @@
 
     function numericProperNameFromRun(_run, parsed) {
       if (!parsed) return "";
-      if (parsed.isHex === true || Number(parsed.numberBase) === 16) {
+      if (
+        parsed.isHex === true || Number(parsed.numberBase) === 16 ||
+        parsed.isBinary === true || Number(parsed.numberBase) === 2
+      ) {
         return String(parsed.properName || "").trim();
       }
       const caps = String(parsed.caps || "").trim();
@@ -1635,6 +1655,7 @@
     function cartoucheAudioKindForValue(value) {
       const text = String(value ?? "");
       if (/^#/.test(text)) return "hex";
+      if (/^0b[01]/.test(text)) return "binary";
       if (/[eE]/.test(text)) return "scientific-notation";
       if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(text)) return "hh-mm-time";
       if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return "iso-date";
@@ -1740,7 +1761,7 @@
       if (lower === "oko") return { characters: new Set(["+"]), count: 1 };
       if (lower === "eko") return { characters: new Set(["e", "E"]), count: 1 };
       if (lower === "ene") {
-        return kind === "hex"
+        return (kind === "hex" || kind === "binary")
           ? { characters: new Set(["-", "_", ".", ":", "/", "+", ",", ";", "|", " "]), count: 1 }
           : { characters: new Set(["-", "_", " "]), count: 1 };
       }
@@ -1810,6 +1831,18 @@
 
         if (unit.index === 0 && lowerText === "nasa" && kind === "hex") {
           map[unit.index] = takeNext(character => character === "#", 1);
+          continue;
+        }
+
+        if (unit.index === 0 && lowerText === "noka" && kind === "binary") {
+          const head = [];
+          if (characters[0] === "0" && characters[1] === "b") {
+            used.add(0);
+            used.add(1);
+            cursor = Math.max(cursor, 2);
+            head.push(0, 1);
+          }
+          map[unit.index] = head;
           continue;
         }
 
@@ -1884,7 +1917,10 @@
         }
         if (cartoucheAudioDigitForUnit(unit) != null) {
           map[unit.index] = takeNext(
-            character => kind === "hex" ? /^[0-9A-F]$/i.test(character) : /\d/.test(character),
+            character =>
+              kind === "hex" ? /^[0-9A-F]$/i.test(character) :
+              kind === "binary" ? /^[01]$/.test(character) :
+              /\d/.test(character),
             1
           );
           continue;
@@ -2109,6 +2145,7 @@
         valueHighlightMap: buildCartoucheValueHighlightMap(value, units),
         cartoucheHighlightMap,
         isHex: parsed?.isHex === true || Number(parsed?.numberBase) === 16,
+        isBinary: parsed?.isBinary === true || Number(parsed?.numberBase) === 2,
         run
       };
       setCartoucheAudioButtonState("stopped");
@@ -2230,7 +2267,7 @@
     }
 
     async function prepareCartoucheAudio(model, generation) {
-      const key = `${model.properName}|normal`;
+      const key = `${model.properName}|${model.isHex ? "hex" : model.isBinary ? "binary" : "normal"}`;
       if (cartoucheAudioCache.has(key)) return cartoucheAudioCache.get(key);
       const rendered = await voice.render(model.properName, {
         synthesis_mode: "reference_audio",
@@ -2238,7 +2275,9 @@
         syllableGapSeconds: CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS,
         nanpaColonParsing: getNanpaFormatEnabled(),
         nanpaColonRendering: getNanpaFormatEnabled(),
-        enableHexParsing: model.isHex === true
+        enableHexParsing: model.isHex === true,
+        enableBinaryParsing: model.isBinary === true,
+        enableBinaryRendering: model.isBinary === true
       });
       if (generation !== cartoucheAudioGeneration) return null;
 
@@ -2597,7 +2636,10 @@
     }
 
     function decodedDisplayValues(parsed, originalInput = null) {
-      if (parsed?.isHex === true || Number(parsed?.numberBase) === 16) {
+      if (
+        parsed?.isHex === true || Number(parsed?.numberBase) === 16 ||
+        parsed?.isBinary === true || Number(parsed?.numberBase) === 2
+      ) {
         const value = String(parsed?.displayValue ?? originalInput ?? parsed?.uniqueCode ?? "").trim();
         return { display: value, cartouche: value };
       }
@@ -2610,7 +2652,9 @@
         const canonical = NanpaParser.parseNumber(String(parsed.uniqueCode), {
           mode: getCartoucheDisplayMode(),
           mixedStyle: "short",
-          enableHexParsing: true
+          enableHexParsing: true,
+          enableBinaryParsing: true,
+          enableBinaryRendering: true
         });
         if (canonical?.caps) caps = String(canonical.caps).trim();
       }

@@ -770,7 +770,8 @@ body.shellReady {
 #ctlInterpretDoubleQuotesAsTeTo { order: 19; }
 #ctlBreakLinesAtFullStops { order: 20; }
 #ctlEnableHexParsing { order: 21; }
-#ctlCopyFontSpecificCodes { order: 22; }
+#ctlEnableBinaryParsing { order: 22; }
+#ctlCopyFontSpecificCodes { order: 23; }
 
 @media (max-width: 520px) {
   .renderPrimaryControls {

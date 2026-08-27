@@ -914,6 +914,7 @@
         <option value="hh-mm-time">Times</option>
         <option value="iso-date">Dates</option>
         <option value="hexadecimal">Hexadecimal</option>
+        <option value="binary">Binary</option>
       </select>
     </label>
 
@@ -974,7 +975,7 @@
             <div class="panelRow between">
               <div>
                 <h1>Listen, enter the proper name, then enter the value</h1>
-                <p class="muted">The first answer must be the nanpa-linja-n proper name. After it is validated, enter the corresponding decimal or hexadecimal value.</p>
+                <p class="muted">The first answer must be the nanpa-linja-n proper name. After it is validated, enter the corresponding decimal, hexadecimal, or binary value.</p>
               </div>
               <div class="panelRow">
                 <button id="previousButton" class="btn" type="button" disabled>Prev</button>
@@ -1196,10 +1197,11 @@
     "scientific-notation":"scientific notation",
     "hh-mm-time":"time",
     "iso-date":"date",
-    hexadecimal:"hexadecimal"
+    hexadecimal:"hexadecimal",
+    binary:"binary"
   };
 
-  const MIXED_KINDS = Object.keys(KIND_LABELS).filter(kind => kind !== "hexadecimal");
+  const MIXED_KINDS = Object.keys(KIND_LABELS).filter(kind => kind !== "hexadecimal" && kind !== "binary");
 
   // Edit only the values in this array to change the Examples cheat sheet.
   // The order is deliberately from simpler number forms to more complex forms.
@@ -1218,7 +1220,8 @@
     { kind:"iso-date", value:"2026-07-04" },
     { kind:"scientific-notation", value:"4.5e-3" },
     { kind:"hexadecimal", value:"#C0FFEE" },
-    { kind:"hexadecimal", label:"hexadecimal with separators", value:"#FE:DC:BA" }
+    { kind:"hexadecimal", label:"hexadecimal with separators", value:"#FE:DC:BA" },
+    { kind:"binary", value:"0b101" }
   ];
 
   const FRACTION_CHOICES = [
@@ -1228,6 +1231,7 @@
 
   const ABBREV_CP_NANPA = 0xF193D;
   const ABBREV_CP_NASA   = 0xF193E;
+  const ABBREV_CP_NOKA   = 0xF1943;
   const ABBREV_CP_KULE   = 0xF191E;
   const ABBREV_CP_KULUPU = 0xF191F;
   const ABBREV_CP_KOLON  = 0xF199D;
@@ -1253,7 +1257,7 @@
   const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
   const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
   const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
-    "Nanpa","Nasa",
+    "Nanpa","Nasa","Noka",
     "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
     "Keke","Keken","Kekeke","Kekeken",
     "One","Ono","Oko","Eko","Oken","Ene","Inin"
@@ -1351,7 +1355,7 @@
       const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
       if (saved && typeof saved === "object") Object.assign(state.settings,saved);
     }catch{}
-    if (!["mixed",...MIXED_KINDS,"hexadecimal"].includes(state.settings.kind)) state.settings.kind = "mixed";
+    if (!["mixed",...MIXED_KINDS,"hexadecimal","binary"].includes(state.settings.kind)) state.settings.kind = "mixed";
     state.settings.questionCount = clamp(Math.round(Number(state.settings.questionCount) || 20),1,100);
     state.settings.properNameMode = normalizeProperNameMode(state.settings.properNameMode);
     state.settings.nanpaFormat = state.settings.nanpaFormat === true;
@@ -1518,11 +1522,26 @@
     return `#S:${canonicalBody}`;
   }
 
+  function normalizeBinaryBasic(raw){
+    return normalizeOuter(raw).replace(/\s+/g,"");
+  }
+
+  function normalizeBinaryQuizValue(raw){
+    const source = normalizeOuter(raw).replace(/\s*([:.\-])\s*/g,"$1");
+    if (!source.startsWith("0b")) return null;
+    const body = source.slice(2);
+    if (!body) return null;
+    if (/^[01]+$/.test(body)) return `0bU:${body}`;
+    if (!/^[01]+(?:[:.\-][01]+)+$/.test(body)) return null;
+    return `0bS:${body.split(/[:.\-]/).join(":")}`;
+  }
+
   function canonicalEquivalentValue(item,raw){
     const s = normalizeOuter(raw);
     const kind = item.kind;
 
     if (kind === "hexadecimal") return normalizeHexQuizValue(s);
+    if (kind === "binary") return normalizeBinaryQuizValue(s);
 
     if (["single-digit-integer","integer","thousands","millions","decimal","negative"].includes(kind)){
       return normalizeExactNumber(s,{allowDecimal:kind === "decimal" || kind === "negative"});
@@ -1610,6 +1629,7 @@
     if (kind === "thousands" || kind === "millions") return "commasOptional";
     if (kind === "scientific-notation") return "scientific";
     if (kind === "hexadecimal") return "hex";
+    if (kind === "binary") return "binary";
     return "exact";
   }
 
@@ -1670,7 +1690,21 @@
     return `#${randomHexDigits(choice([2,3,4,5,6]))}`;
   }
 
+  function randomBinaryDigits(length){
+    let out = "";
+    for (let index=0;index<length;index++) out += Math.random() < 0.5 ? "0" : "1";
+    return out;
+  }
+
+  function generateBinaryPracticeValue(){
+    return `0b${randomBinaryDigits(choice([3,4,5,6,8,10]))}`;
+  }
+
   function generateItemForKind(kind,properNameMode){
+    if (kind === "binary"){
+      const s = generateBinaryPracticeValue();
+      return makeItem(kind,s,s,"binary",properNameMode,state.settings.nanpaFormat);
+    }
     if (kind === "hexadecimal"){
       const s = generateHexPracticeValue();
       return makeItem(kind,s,s,"hex",properNameMode,state.settings.nanpaFormat);
@@ -1759,7 +1793,7 @@
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
   async function getNanpaModule(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=243");
     return nanpaModulePromise;
   }
 
@@ -1795,7 +1829,7 @@
 
   function sharedCartoucheParserOptions({kind,properNameMode,nanpaFormat,abbreviated}){
     const relaxed = isRelaxedProperNameMode(properNameMode);
-    const useNanpaFormat = nanpaFormat === true && kind !== "hexadecimal";
+    const useNanpaFormat = nanpaFormat === true && kind !== "hexadecimal" && kind !== "binary";
     return {
       mode:"uniform",
       numericMode:"uniform",
@@ -1805,6 +1839,8 @@
       relaxedNanpaLinjanParsing:relaxed,
       relaxedNanpaLinjanRendering:relaxed,
       enableHexParsing:true,
+      enableBinaryParsing:true,
+      enableBinaryRendering:true,
       nanpaColonParsing:useNanpaFormat,
       nanpaColonRendering:useNanpaFormat,
       autoCartoucheStandaloneProperNames:true,
@@ -1910,12 +1946,15 @@
     if (!item.parsedPromise){
       item.parsedPromise = (async () => {
         const NanpaParser = await getNanpaParser();
-        const useNanpaFormat = item.nanpaFormat === true && item.kind !== "hexadecimal";
+        const useNanpaFormat = item.nanpaFormat === true && item.kind !== "hexadecimal" && item.kind !== "binary";
         const isHex = item.kind === "hexadecimal";
-        if (useNanpaFormat || isHex){
+        const isBinary = item.kind === "binary";
+        if (useNanpaFormat || isHex || isBinary){
           const strictRaw = NanpaParser.parseNumber(item.parserInput,{
             mode:"uniform", mixedStyle:"short",
             enableHexParsing:true,
+            enableBinaryParsing:true,
+            enableBinaryRendering:true,
             nanpaColonParsing:useNanpaFormat,
             nanpaColonRendering:useNanpaFormat,
             relaxedNanpaLinjanParsing:false,
@@ -1930,6 +1969,8 @@
           const relaxedRaw = NanpaParser.parseNumber(item.parserInput,{
             mode:"uniform", mixedStyle:"short",
             enableHexParsing:true,
+            enableBinaryParsing:true,
+            enableBinaryRendering:true,
             nanpaColonParsing:useNanpaFormat,
             nanpaColonRendering:useNanpaFormat,
             relaxedNanpaLinjanParsing:true,
@@ -2017,7 +2058,7 @@
 
   function canonicalDecimalHintPrefixLength(rawValue,expectedValue){
     const expectedText = normalizeMinus(String(expectedValue ?? ""));
-    if (expectedText.startsWith("#")){
+    if (expectedText.startsWith("#") || expectedText.startsWith("0b")){
       const actual = Array.from(normalizeMinus(String(rawValue ?? "")).trimStart());
       const expected = Array.from(expectedText);
       const isHexSeparator = character => character === ":" || character === "." ||
@@ -2254,6 +2295,8 @@
         pauseScale:Number(state.settings.audioPauseScale),
         syllableGapSeconds:getAudioSyllableGapSeconds(),
         enableHexParsing:item.kind === "hexadecimal",
+        enableBinaryParsing:item.kind === "binary",
+        enableBinaryRendering:item.kind === "binary",
         relaxedNanpaLinjanParsing:isRelaxedProperNameMode(item.properNameMode),
         relaxedNanpaLinjanRendering:isRelaxedProperNameMode(item.properNameMode),
         nanpaColonParsing:item.nanpaFormat === true,
@@ -2307,6 +2350,8 @@
         pauseScale:Number(state.settings.audioPauseScale),
         syllableGapSeconds:getAudioSyllableGapSeconds(),
         enableHexParsing:definition.kind === "hexadecimal",
+        enableBinaryParsing:definition.kind === "binary",
+        enableBinaryRendering:definition.kind === "binary",
         relaxedNanpaLinjanParsing:useRelaxed,
         relaxedNanpaLinjanRendering:useRelaxed,
         nanpaColonParsing:state.settings.nanpaFormat === true,
@@ -2384,21 +2429,21 @@
         if (selectedMode === "strict"){
           appendExampleReferencePanel(
             grid,
-            definition.kind === "hexadecimal" ? "Expected hexadecimal nanpa-linja-n proper name input" : "Expected strict nanpa-linja-n proper name input",
+            definition.kind === "hexadecimal" ? "Expected hexadecimal nanpa-linja-n proper name input" : definition.kind === "binary" ? "Expected binary nanpa-linja-n proper name input" : "Expected strict nanpa-linja-n proper name input",
             strictName,
             {properName:true}
           );
         }else{
           appendExampleReferencePanel(
             grid,
-            definition.kind === "hexadecimal" ? "Expected hexadecimal nanpa-linja-n proper name input" : "Expected relaxed nanpa-linja-n proper name input",
+            definition.kind === "hexadecimal" ? "Expected hexadecimal nanpa-linja-n proper name input" : definition.kind === "binary" ? "Expected binary nanpa-linja-n proper name input" : "Expected relaxed nanpa-linja-n proper name input",
             relaxedName,
             {properName:true}
           );
         }
         appendExampleReferencePanel(
           grid,
-          definition.kind === "hexadecimal" ? "Expected hexadecimal input" : "Expected decimal number input",
+          definition.kind === "hexadecimal" ? "Expected hexadecimal input" : definition.kind === "binary" ? "Expected binary input" : "Expected decimal number input",
           definition.value
         );
 
@@ -2545,7 +2590,7 @@
       properName:formatProperNameForDisplay(selectedName),
       uniqueCode:String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? ""),
       fullCodepoints,
-      abbreviatedCodepoints:abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(kind))
+      abbreviatedCodepoints:kind === "binary" ? Array.from(selectedParsed.abbreviatedUcsurCodepoints ?? [],Number) : abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(kind))
     };
   }
 
@@ -2574,7 +2619,7 @@
         nanpaFormat,
         properName:legacyProperName,
         fullCodepoints,
-        abbreviatedCodepoints:abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(record.kind)),
+        abbreviatedCodepoints:record.kind === "binary" ? Array.from(fullCodepoints.length ? (await ensureParsed(makeItem(record.kind,record.value,record.value,"binary",mode,nanpaFormat))).quizParsed?.abbreviatedUcsurCodepoints ?? [] : [],Number) : abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(record.kind)),
         uniqueCode:String(record.uniqueCode ?? "")
       };
     }
@@ -2836,7 +2881,7 @@
     if (!cps.length) return [];
     const groups = [];
     const openingFrame = cps[0];
-    const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA;
+    const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA;
     let openingEnd = 1;
     if (supportedFrame && cps.length > 1 && (cps[1] === ABBREV_CP_E || cps[1] === ABBREV_CP_EN || cps[1] === ABBREV_CP_KOLON)) openingEnd = 2;
     groups.push(Array.from({length:openingEnd},(_,index) => index));
@@ -2899,7 +2944,7 @@
     }
     return map;
   }
-  function buildReviewSharedHexCartoucheHighlightMap(canvas,units){
+  function buildReviewSharedBasedCartoucheHighlightMap(canvas,units){
     const layout = canvas?._reviewCartoucheLayout;
     const runs = Array.from(layout?.runs || []);
     const cps = Array.from(canvas?._reviewSharedCodepoints || []).map(Number);
@@ -2912,10 +2957,12 @@
     let lastValueUnitIndex = null;
     let lastValueRunIndexes = [];
     const firstWord = String(units[0]?.word ?? "").toLowerCase();
-    if (firstWord === "nasa"){
+    const basedKind = canvas?._reviewSharedKind;
+    const openingCp = basedKind === "binary" ? ABBREV_CP_NOKA : ABBREV_CP_NASA;
+    if (firstWord === (basedKind === "binary" ? "noka" : "nasa")){
       const firstWordIndex = units[0].wordIndex;
       const openingIndexes = [];
-      if (cps[cursor] === ABBREV_CP_NASA) openingIndexes.push(cursor++);
+      if (cps[cursor] === openingCp) openingIndexes.push(cursor++);
       if (cps[cursor] === ABBREV_CP_KOLON) openingIndexes.push(cursor++);
       while (unitCursor < units.length && units[unitCursor].wordIndex === firstWordIndex){
         map[units[unitCursor].index] = reviewCartoucheRectsForRunIndexes(layout,runs,openingIndexes);
@@ -2948,7 +2995,7 @@
             cursor += pattern.length;
           }
         }
-      }else if (reviewDigitForAudioUnit(unit,"hexadecimal") != null){
+      }else if (reviewDigitForAudioUnit(unit,basedKind) != null){
         const count = abbreviated ? 1 : 2;
         const available = Math.max(0,Math.min(count,cps.length - cursor));
         indexes = Array.from({length:available},(_unused,offset) => cursor + offset);
@@ -2963,7 +3010,7 @@
       unitCursor++;
     }
 
-    if (cps[cursor] === ABBREV_CP_NASA && lastValueUnitIndex != null){
+    if (cps[cursor] === openingCp && lastValueUnitIndex != null){
       map[lastValueUnitIndex] = reviewCartoucheRectsForRunIndexes(
         layout,runs,[...lastValueRunIndexes,cursor]
       );
@@ -2971,8 +3018,8 @@
     return map;
   }
   function buildReviewCartoucheHighlightMap(canvas,units){
-    if (canvas?._reviewSharedKind === "hexadecimal"){
-      return buildReviewSharedHexCartoucheHighlightMap(canvas,units);
+    if (canvas?._reviewSharedKind === "hexadecimal" || canvas?._reviewSharedKind === "binary"){
+      return buildReviewSharedBasedCartoucheHighlightMap(canvas,units);
     }
     const layout = canvas?._reviewCartoucheLayout;
     const runs = Array.from(layout?.runs || []);
@@ -2992,8 +3039,8 @@
     return map;
   }
   function buildReviewAbbreviatedCartoucheHighlightMap(canvas,units,fullCodepoints,kind){
-    if (canvas?._reviewSharedKind === "hexadecimal"){
-      return buildReviewSharedHexCartoucheHighlightMap(canvas,units);
+    if (canvas?._reviewSharedKind === "hexadecimal" || canvas?._reviewSharedKind === "binary"){
+      return buildReviewSharedBasedCartoucheHighlightMap(canvas,units);
     }
     const layout = canvas?._reviewCartoucheLayout;
     const runs = Array.from(layout?.runs || []);
@@ -3125,7 +3172,7 @@
     if (lower === "oko") return {characters:new Set(["+"]),count:1};
     if (lower === "eko") return {characters:new Set(["e","E"]),count:1};
     if (kind === "hexadecimal" && lower === "eke") return {characters:new Set([]),count:1,fallbackToNextDigit:true,targetKey:wordIndex};
-    if (kind === "hexadecimal" && lower === "ene") return {characters:new Set([":","-","."]),count:1,targetKey:wordIndex};
+    if ((kind === "hexadecimal" || kind === "binary") && lower === "ene") return {characters:new Set([":","-","."]),count:1,targetKey:wordIndex};
     if (lower === "ene") return {characters:new Set(["-"]),count:1};
     return null;
   }
@@ -3135,7 +3182,8 @@
     if (lower.endsWith("n") && lower.length > 2) lower = lower.slice(0,-1);
     const digit = REVIEW_AUDIO_DIGIT_BY_SYLLABLE[lower] ?? null;
     if (digit == null) return null;
-    if (kind !== "hexadecimal" && /^[A-F]$/.test(digit)) return null;
+    if (kind === "binary" && !/^[01]$/.test(digit)) return null;
+    if (kind !== "hexadecimal" && kind !== "binary" && /^[A-F]$/.test(digit)) return null;
     return digit;
   }
 
@@ -3170,7 +3218,7 @@
     const map = [];
     const used = new Set();
     const punctuationTargetsByWord = new Map();
-    const magnitudeDescriptors = kind === "hexadecimal" ? new Map() : buildReviewMagnitudeDescriptors(value,units,kind);
+    const magnitudeDescriptors = (kind === "hexadecimal" || kind === "binary") ? new Map() : buildReviewMagnitudeDescriptors(value,units,kind);
     const scientificMarkerWordIndexes = kind === "scientific-notation"
       ? reviewScientificNotationMarkerWordIndexes(units)
       : new Set();
@@ -3195,16 +3243,23 @@
     for (const unit of units){
       const lowerText = String(unit.text ?? "").toLowerCase();
 
-      if (kind !== "hexadecimal" && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === "nanpa"){
+      if (kind !== "hexadecimal" && kind !== "binary" && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === "nanpa"){
         map[unit.index] = [];
         continue;
       }
 
-      if (kind === "hexadecimal" && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === "nasa"){
-        const hashIndex = characters.indexOf("#");
-        map[unit.index] = hashIndex >= 0 ? [hashIndex] : [];
-        if (hashIndex >= 0) used.add(hashIndex);
-        cursor = Math.max(cursor,hashIndex + 1);
+      if ((kind === "hexadecimal" || kind === "binary") && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === (kind === "binary" ? "noka" : "nasa")){
+        if (kind === "binary"){
+          const prefixIndexes = characters[0] === "0" && characters[1] === "b" ? [0,1] : [];
+          map[unit.index] = prefixIndexes;
+          for (const index of prefixIndexes) used.add(index);
+          cursor = Math.max(cursor,prefixIndexes.length ? 2 : 0);
+        }else{
+          const hashIndex = characters.indexOf("#");
+          map[unit.index] = hashIndex >= 0 ? [hashIndex] : [];
+          if (hashIndex >= 0) used.add(hashIndex);
+          cursor = Math.max(cursor,hashIndex + 1);
+        }
         continue;
       }
 
@@ -3255,14 +3310,14 @@
           // start of the following group rather than leaving the decimal view
           // without a synchronized target.
           if (!positions.length && punctuation.fallbackToNextDigit){
-            if (kind === "hexadecimal" && punctuation.characters.size === 0){
+            if ((kind === "hexadecimal" || kind === "binary") && punctuation.characters.size === 0){
               const nextIndex = characters.findIndex((character,index) =>
                 index >= cursor && !used.has(index) && /^[0-9A-F]$/i.test(character)
               );
               positions = nextIndex >= 0 ? [nextIndex] : [];
             }else{
               positions = takeNext(
-                character => kind === "hexadecimal" ? /^[0-9A-F]$/i.test(character) : /\d/.test(character),
+                character => kind === "hexadecimal" ? /^[0-9A-F]$/i.test(character) : kind === "binary" ? /^[01]$/.test(character) : /\d/.test(character),
                 Math.max(1,punctuation.count)
               );
             }
@@ -3287,7 +3342,7 @@
       const digit = reviewDigitForAudioUnit(unit,kind);
       if (digit != null){
         map[unit.index] = takeNext(
-          character => kind === "hexadecimal" ? /^[0-9A-F]$/i.test(character) : /\d/.test(character),
+          character => kind === "hexadecimal" ? /^[0-9A-F]$/i.test(character) : kind === "binary" ? /^[01]$/.test(character) : /\d/.test(character),
           1
         );
         continue;
@@ -3514,6 +3569,8 @@
       pauseScale:REVIEW_AUDIO_PAUSE_SCALE,
       syllableGapSeconds:REVIEW_AUDIO_SYLLABLE_GAP_SECONDS,
       enableHexParsing:target.kind === "hexadecimal",
+      enableBinaryParsing:target.kind === "binary",
+      enableBinaryRendering:target.kind === "binary",
       relaxedNanpaLinjanParsing:isRelaxedProperNameMode(target.properNameMode),
       relaxedNanpaLinjanRendering:isRelaxedProperNameMode(target.properNameMode),
       nanpaColonParsing:target.nanpaFormat === true,
@@ -3745,8 +3802,8 @@
     const revealGrid = document.createElement("div");
     revealGrid.className = "reviewRevealGrid";
     const mode = normalizeProperNameMode(record.properNameMode);
-    const modeLabel = record.kind === "hexadecimal" ? "Hexadecimal" : (mode === "strict" ? "Strict" : "Relaxed");
-    const valueLabel = record.kind === "hexadecimal" ? "Hexadecimal value" : "Decimal value";
+    const modeLabel = record.kind === "hexadecimal" ? "Hexadecimal" : record.kind === "binary" ? "Binary" : (mode === "strict" ? "Strict" : "Relaxed");
+    const valueLabel = record.kind === "hexadecimal" ? "Hexadecimal value" : record.kind === "binary" ? "Binary value" : "Decimal value";
     const decimalValue = appendReviewDecimalPanel(revealGrid,valueLabel,record.value);
     const properNameAudio = appendReviewProperNamePanel(revealGrid,`${modeLabel} proper name`,record.properName);
     const fullCodepoints = Array.from(record.fullCodepoints || []).map(Number);
@@ -3768,7 +3825,7 @@
       {...sharedRenderSpec,abbreviated:true},
       {highlightable:true}
     );
-    appendReviewTextPanel(revealGrid,record.kind === "hexadecimal" ? "Hexadecimal source" : "#~ abbreviation",record.uniqueCode);
+    appendReviewTextPanel(revealGrid,record.kind === "hexadecimal" ? "Hexadecimal source" : record.kind === "binary" ? "Binary source" : "#~ abbreviation",record.uniqueCode);
 
     const reviewAudioTargetForRecord = {
       button:properNameAudio.button,
@@ -3805,7 +3862,7 @@
     detailsTitle.className = "answerDetailsTitle";
     detailsTitle.textContent = "Your answers";
     details.appendChild(detailsTitle);
-    const answerValueLabel = record.kind === "hexadecimal" ? "Hexadecimal" : "Decimal";
+    const answerValueLabel = record.kind === "hexadecimal" ? "Hexadecimal" : record.kind === "binary" ? "Binary" : "Decimal";
     const lines = [
       ["First-input attempts",record.firstAttemptValues?.length ? record.firstAttemptValues.join(" → ") : (record.firstAnswer || "—")],
       ...(record.firstMatchType ? [["First input matched",record.firstMatchType === "value" ? "decimal value" : "proper name"]] : []),
@@ -4109,8 +4166,8 @@
       return;
     }
 
-    const valueKindText = item.kind === "hexadecimal" ? "hexadecimal value" : "decimal value";
-    const valueKindTitle = item.kind === "hexadecimal" ? "Hexadecimal value" : "Decimal value";
+    const valueKindText = item.kind === "hexadecimal" ? "hexadecimal value" : item.kind === "binary" ? "binary value" : "decimal value";
+    const valueKindTitle = item.kind === "hexadecimal" ? "Hexadecimal value" : item.kind === "binary" ? "Binary value" : "Decimal value";
     el.compactQuestionStatus.textContent = `Question ${state.index + 1} of ${state.items.length} · ${KIND_LABELS[item.kind]}`;
     const firstStageLabel = el.firstStage.querySelector(".stageLabel");
     if (firstStageLabel) firstStageLabel.textContent = `nanpa-linja-n proper name only — ${valueKindText}s are not accepted here`;
@@ -4164,7 +4221,7 @@
       el.prompt.textContent = `Proper name correct. Enter the ${valueKindText}; type h for a hint.`;
       setFeedback(`✓ Correct proper name. Now enter the ${valueKindText}. Type h for a hint.`,"good");
     }else{
-      const nameModeText = item.kind === "hexadecimal" ? "hexadecimal" : state.settings.properNameMode;
+      const nameModeText = item.kind === "hexadecimal" ? "hexadecimal" : item.kind === "binary" ? "binary" : state.settings.properNameMode;
       el.prompt.textContent = `Question ${state.index + 1}: listen and enter the ${nameModeText} nanpa-linja-n proper name.`;
       setFeedback(`Enter the nanpa-linja-n proper name. ${valueKindTitle}s are not accepted in this field.`);
     }
@@ -4201,7 +4258,7 @@
       const matchType = await classifyFirstAnswer(item,raw);
       if (matchType === "value-not-accepted"){
         item.firstAnswer = raw;
-        registerWrongAttempt(item,`The ${item.kind === "hexadecimal" ? "hexadecimal" : "decimal"} value is not accepted first. Enter the nanpa-linja-n proper name that you hear.`);
+        registerWrongAttempt(item,`The ${item.kind === "hexadecimal" ? "hexadecimal" : item.kind === "binary" ? "binary" : "decimal"} value is not accepted first. Enter the nanpa-linja-n proper name that you hear.`);
         el.revealButton.disabled = false;
         el.compactRevealButton.disabled = false;
         el.checkFirstButton.disabled = false;
@@ -4243,7 +4300,7 @@
       await renderCurrentQuestion();
       scheduleAutoNext(item);
     }else{
-      registerWrongAttempt(item,`The proper name is correct, but the ${item.kind === "hexadecimal" ? "hexadecimal" : "decimal"} value is not quite right. Try again, or reveal the answer.`);
+      registerWrongAttempt(item,`The proper name is correct, but the ${item.kind === "hexadecimal" ? "hexadecimal" : item.kind === "binary" ? "binary" : "decimal"} value is not quite right. Try again, or reveal the answer.`);
       el.decimalAnswerInput.focus();
     }
   }
@@ -4394,7 +4451,7 @@
     await document.fonts.ready;
   }
   function getQuarterCodepointsSet(){
-    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970,ABBREV_CP_KOLON]);
+    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,ABBREV_CP_NOKA,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970,ABBREV_CP_KOLON]);
   }
   function getOneThirdsCodepointsSet(){ return new Set([0xF1917,ABBREV_CP_KULE]); }
   function getHalfCodepointsSet(){ return new Set([0xF1914]); }
@@ -4435,7 +4492,7 @@
     if (!input.length) return [];
     const out = [];
     const openingFrame = input[0];
-    const supportedOpeningFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA;
+    const supportedOpeningFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA;
     let keptOpeningFrame = false;
     const hasFullPositiveOpening =
       openingFrame === ABBREV_CP_NANPA &&

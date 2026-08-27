@@ -19,6 +19,8 @@ export const DEFAULT_VOICE_OPTIONS = Object.freeze({
   pauseScale: 1.0,
   syllableGapSeconds: 0.0,
   enableHexParsing: false,
+  enableBinaryParsing: false,
+  enableBinaryRendering: false,
   nanpaColonParsing: false,
   nanpaColonRendering: false
 });
@@ -265,20 +267,28 @@ function tryNanpaNumberToProperName(fragment, options = {}) {
   const s = String(fragment || '').trim();
   if (!s) return null;
   const enableHexParsing = options.enableHexParsing === true;
+  const enableBinaryParsing = options.enableBinaryParsing === true || options.enableBinaryRendering === true;
   const potentialHex = enableHexParsing && (
     /^#[0-9A-F]/i.test(s) ||
     /^\[\s*nasa(?:\s|:)/i.test(s) ||
     /^nasa/i.test(s)
+  );
+  const potentialBinary = enableBinaryParsing && (
+    /^0b[01]/.test(s) ||
+    /^\[\s*noka(?:\s|:)/i.test(s) ||
+    /^noka/i.test(s)
   );
   const nanpaColonRendering = options.nanpaColonRendering === true;
   const parserOptions = {
     mode: 'uniform',
     mixedStyle: 'short',
     enableHexParsing,
+    enableBinaryParsing,
+    enableBinaryRendering: enableBinaryParsing,
     nanpaColonParsing: options.nanpaColonParsing === true || nanpaColonRendering,
     nanpaColonRendering
   };
-  if (potentialHex) {
+  if (potentialHex || potentialBinary) {
     parserOptions.relaxedNanpaLinjanParsing = !!options.relaxedNanpaLinjanParsing;
     parserOptions.relaxedNanpaLinjanRendering = !!options.relaxedNanpaLinjanRendering;
     parserOptions.abbreviateNumericCartouches = !!options.abbreviateNumericCartouches;
@@ -293,7 +303,8 @@ function tryNanpaNumberToProperName(fragment, options = {}) {
     uniqueCode: parsed.uniqueCode || null,
     kind: parsed.kind || null,
     numberBase: parsed.numberBase || null,
-    isHex: parsed.isHex === true
+    isHex: parsed.isHex === true,
+    isBinary: parsed.isBinary === true
   };
 }
 
@@ -318,6 +329,7 @@ function preprocessCartoucheDb(input, db, options = {}) {
     // form to remain intact. Existing decimal cartouches keep the historical
     // inner-text fallback when neither feature is enabled.
     const preserveBracketSyntax = options.enableHexParsing === true ||
+      options.enableBinaryParsing === true || options.enableBinaryRendering === true ||
       options.nanpaColonParsing === true || options.nanpaColonRendering === true;
     const parsed = preserveBracketSyntax
       ? (tryNanpaNumberToProperName(`[${s}]`, options) || tryNanpaNumberToProperName(s, options))
@@ -352,6 +364,32 @@ function findHexHashSpansForAudio(text, options = {}) {
   return spans;
 }
 
+
+function findBinaryPrefixSpansForAudio(text, options = {}) {
+  if (options.enableBinaryParsing !== true && options.enableBinaryRendering !== true) return [];
+  const source = String(text || '');
+  const spans = [];
+  const isBinaryDigit = ch => typeof ch === 'string' && /^[01]$/.test(ch);
+  const isAsciiLetter = ch => typeof ch === 'string' && /^[A-Za-z]$/.test(ch);
+
+  for (let index = 0; index + 2 < source.length; index++) {
+    if (source.slice(index, index + 2) !== '0b' || !isBinaryDigit(source[index + 2])) continue;
+    let end = index + 2;
+    while (end < source.length) {
+      const ch = source[end];
+      if (/\s/.test(ch)) break;
+      if (isBinaryDigit(ch)) { end += 1; continue; }
+      if (/[2-9]/.test(ch) || isAsciiLetter(ch)) break;
+      end += 1;
+    }
+    const raw = source.slice(index, end);
+    const parsed = tryNanpaNumberToProperName(raw, options);
+    if (parsed?.isBinary) spans.push({ index, end, raw, parsed });
+    index = Math.max(index, end - 1);
+  }
+  return spans;
+}
+
 function preprocessNanpaNumbers(input, options = {}) {
   const warnings = [];
   const conversions = [];
@@ -367,7 +405,7 @@ function preprocessNanpaNumbers(input, options = {}) {
     /(?<![A-Za-z0-9_.])\+\s*(?:\d+\s*\+\s*\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?\s*%?)(?![A-Za-z])/g,
     /(?<![A-Za-z])(?:-?\s*\d+\s*\+\s*\d+\s*\/\s*\d+|-?\s*\d+\s*\/\s*\d+|-?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?\s*%?)(?![A-Za-z])/g
   ];
-  const spans = findHexHashSpansForAudio(text, options);
+  const spans = [...findHexHashSpansForAudio(text, options), ...findBinaryPrefixSpansForAudio(text, options)];
   for (const re of patterns) {
     for (const match of text.matchAll(re)) {
       const raw0 = match[0];
@@ -406,7 +444,7 @@ function preprocessNanpaNumbers(input, options = {}) {
   for (const s of chosen) {
     out += text.slice(pos, s.index);
     let replacement = s.parsed.properName;
-    if (s.parsed.isHex) {
+    if (s.parsed.isHex || s.parsed.isBinary) {
       const previous = s.index > 0 ? text[s.index - 1] : '';
       const next = s.end < text.length ? text[s.end] : '';
       if (/[A-Za-z]/.test(previous) && /^[A-Za-z]/.test(replacement)) replacement = ' ' + replacement;

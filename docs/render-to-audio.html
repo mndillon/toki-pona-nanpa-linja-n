@@ -958,7 +958,7 @@
         <span class="mono">64.5M</span>, <span class="mono">10.5%</span>,
         <span class="mono">3:49</span>, <span class="mono">2026-07-17</span>,
         <span class="mono">4.5e-3</span>, <span class="mono">#12AF</span>,
-        <span class="mono">#12-AF</span>, and <span class="mono">#AB:CD.12</span>. Press Enter or use the button.
+        <span class="mono">#12-AF</span>, <span class="mono">#AB:CD.12</span>, and <span class="mono">0b101</span>. Press Enter or use the button.
       </div>
     </form>
 
@@ -1702,10 +1702,12 @@
             mixedStyle: "short",
             relaxedNanpaLinjanParsing: true,
             relaxedNanpaLinjanRendering: true,
-            enableHexParsing: true
+            enableHexParsing: true,
+            enableBinaryParsing: true,
+            enableBinaryRendering: true
           });
 
-          if (parsed?.caps || parsed?.isHex === true || Number(parsed?.numberBase) === 16) return candidate;
+          if (parsed?.caps || parsed?.isHex === true || Number(parsed?.numberBase) === 16 || parsed?.isBinary === true || Number(parsed?.numberBase) === 2) return candidate;
         }
       } catch {}
 
@@ -1827,6 +1829,8 @@
           relaxedNanpaLinjanParsing: relaxed,
           relaxedNanpaLinjanRendering: relaxed,
           enableHexParsing: true,
+          enableBinaryParsing: true,
+          enableBinaryRendering: true,
           abbreviateNumericCartouches: abbreviated,
           preserveNumericCartoucheBreaksInAbbreviation: abbreviated,
           autoCartoucheStandaloneProperNames: true
@@ -2121,6 +2125,98 @@
       };
     }
 
+    function buildBinaryBreakdownMetadata(parsed, rawInput, mode) {
+      if (!parsed?.isBinary || !Array.isArray(parsed.binaryParts)) return null;
+      const relaxed = normalizeMode(mode) === "relaxed";
+      const syllableMap = relaxed ? HEX_RELAXED_DIGIT_SYLLABLE : HEX_STRICT_DIGIT_SYLLABLE;
+      const nodes = [];
+      const rawUnits = [];
+      const inputSourceCells = [];
+      let fullCursor = 0;
+      let abbreviatedCursor = 0;
+      let sourceCursor = 2; // skip lowercase 0b marker
+      const addNode = (kind, units) => { const node={kind,units:Array.from(units||[])}; nodes.push(node); return node; };
+      const lastNode = () => nodes[nodes.length-1] || null;
+      const lastUnit = node => node?.units?.[node.units.length-1] || null;
+      const attachCodaN = (node,{fullIndex=null,abbreviatedIndex=null}={}) => {
+        const unit=lastUnit(node); if(!unit) return false;
+        if(!String(unit.baseText||'').endsWith('n')) unit.baseText=String(unit.baseText||'')+'n';
+        if(Number.isInteger(fullIndex)) unit.fullIndexes.push(fullIndex);
+        if(Number.isInteger(abbreviatedIndex)) unit.abbreviatedIndexes.push(abbreviatedIndex);
+        return true;
+      };
+      addNode('opening',[{baseText:'noka',fullIndexes:[0,1],abbreviatedIndexes:[0,1],inputCharacterIndexes:[0,1]}]);
+      fullCursor=2; abbreviatedCursor=2;
+      for(const part of parsed.binaryParts){
+        if(part?.kind==='digits'){
+          const digits=String(part.digits||'');
+          const sizes=hexGroupingSizesForBreakdown(digits.length);
+          let digitCursor=0;
+          for(let groupIndex=0;groupIndex<sizes.length;groupIndex++){
+            const groupDigits=digits.slice(digitCursor,digitCursor+sizes[groupIndex]); digitCursor+=sizes[groupIndex];
+            const units=[];
+            for(const digit of groupDigits){
+              const syllable=syllableMap[digit]; if(!syllable) return null;
+              const sourceCharacter=String(rawInput??'')[sourceCursor]||digit;
+              const sourceIndexes=[sourceCursor];
+              rawUnits.push({text:syllable,kind:'digit',sourceTokens:[digit],reassignLeadingN:false,binaryDigit:digit});
+              const cell=makeInputSourceCell(sourceCharacter,'down','binary-digit'); cell.sourceCharacterIndexes=sourceIndexes.slice(); inputSourceCells.push(cell);
+              units.push({baseText:syllable,fullIndexes:[fullCursor,fullCursor+1],abbreviatedIndexes:[abbreviatedCursor],inputCharacterIndexes:sourceIndexes});
+              fullCursor+=2; abbreviatedCursor+=1; sourceCursor+=1;
+            }
+            const groupNode=addNode('digits',units);
+            if(groupIndex<sizes.length-1){
+              if(!attachCodaN(groupNode,{fullIndex:fullCursor})) return null;
+              rawUnits.push({text:'neke',kind:'punctuation',sourceTokens:['NE','KE'],reassignLeadingN:true,binaryGeneratedGroupBoundary:true});
+              const generatedCell=makeInputSourceCell('','none','binary-generated-group-boundary'); generatedCell.sourceCharacterIndexes=[]; inputSourceCells.push(generatedCell);
+              fullCursor+=4; abbreviatedCursor+=1;
+            }
+          }
+          continue;
+        }
+        if(part?.kind==='delimiter'){
+          const previous=lastNode(); if(!previous) return null;
+          const char=String(part.char??':');
+          if(!attachCodaN(previous,{fullIndex:fullCursor})) return null;
+          rawUnits.push({text:'nene',kind:'punctuation',sourceTokens:['NE','NE'],reassignLeadingN:true,binaryDelimiter:true});
+          const cell=makeInputSourceCell(char,'down','binary-delimiter'); cell.sourceCharacterIndexes=[sourceCursor]; inputSourceCells.push(cell);
+          fullCursor+=4; abbreviatedCursor+=1; sourceCursor+=1;
+          continue;
+        }
+        return null;
+      }
+      const finalNode=lastNode(); if(!finalNode) return null;
+      if(!attachCodaN(finalNode,{fullIndex:fullCursor,abbreviatedIndex:abbreviatedCursor})) return null;
+      fullCursor+=1; abbreviatedCursor+=1;
+      if(fullCursor!==Array.from(parsed.ucsurCodepoints||[]).length || abbreviatedCursor!==Array.from(parsed.abbreviatedUcsurCodepoints||[]).length) return null;
+      const audioUnits=[]; let unitIndex=0;
+      for(let wordIndex=0;wordIndex<nodes.length;wordIndex++){
+        const node=nodes[wordIndex]; const wordLower=node.units.map(u=>String(u.baseText||'')).join('').toLowerCase(); if(!wordLower) return null;
+        const word=wordLower[0].toUpperCase()+wordLower.slice(1);
+        for(let unitIndexInWord=0;unitIndexInWord<node.units.length;unitIndexInWord++){
+          const source=node.units[unitIndexInWord]; const b=String(source.baseText||'').toLowerCase(); const text=unitIndexInWord===0?b[0].toUpperCase()+b.slice(1):b;
+          audioUnits.push({index:unitIndex++,text,word,wordIndex,unitIndexInWord,wholeNumericPunctuationWord:node.kind==='eke'||node.kind==='ene',binaryFullCodepointIndexes:source.fullIndexes.slice(),binaryAbbreviatedCodepointIndexes:source.abbreviatedIndexes.slice(),binaryInputCharacterIndexes:Array.from(source.inputCharacterIndexes||[])});
+        }
+      }
+      return {rawUnits,inputSourceCells,audioUnits,numericValueHighlightMap:audioUnits.map(u=>u.binaryInputCharacterIndexes.slice())};
+    }
+
+    function buildBinaryModel(trimmedInput, normalizedMode, parsed) {
+      const metadata=buildBinaryBreakdownMetadata(parsed,trimmedInput,normalizedMode);
+      if(!metadata) throw new Error('The binary input was parsed, but its breakdown metadata could not be generated.');
+      const properName=titleCaseWords(parsed.properName||'');
+      const fullCodepoints=Array.from(parsed.ucsurCodepoints||[],Number);
+      if(!properName||!fullCodepoints.length) throw new Error('The binary input was parsed, but the proper name or cartouche could not be generated.');
+      return {
+        rawInput:trimmedInput,parserDisplayInput:String(parsed.displayValue??trimmedInput).trim(),componentDisplayInput:trimmedInput,
+        mode:normalizedMode,strictParsed:parsed,parsed,isBinary:true,numberBase:2,tokens:[],caps:null,properName,
+        cartouche:{innerCodepoints:fullCodepoints,words:Array.from(parsed.tpWords||[])},
+        rawUnits:metadata.rawUnits,inputSourceCells:metadata.inputSourceCells,audioUnits:metadata.audioUnits,numericValueHighlightMap:metadata.numericValueHighlightMap,
+        finalWordPlacements:buildHexFinalWordPlacements(metadata.rawUnits,properName),hundredsSplitLeadingNiIndexes:[],
+        binaryParts:Array.from(parsed.binaryParts||[]).map(part=>({...part})),fullCodepoints,abbreviatedCodepoints:Array.from(parsed.abbreviatedUcsurCodepoints||[],Number)
+      };
+    }
+
     function buildHexFinalWordPlacements(rawUnits, properName) {
       const words = String(properName ?? '').trim().split(/\s+/).filter(Boolean);
       const rightMarkerColumn = rawUnits.length + 2;
@@ -2213,8 +2309,14 @@
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: true,
         relaxedNanpaLinjanRendering: normalizedMode === "relaxed",
-        enableHexParsing: true
+        enableHexParsing: true,
+            enableBinaryParsing: true,
+            enableBinaryRendering: true
       });
+
+      if (strictParsed?.isBinary === true || Number(strictParsed?.numberBase) === 2) {
+        return buildBinaryModel(trimmedInput, normalizedMode, strictParsed);
+      }
 
       if (strictParsed?.isHex === true || Number(strictParsed?.numberBase) === 16) {
         return buildHexModel(trimmedInput, normalizedMode, strictParsed);
@@ -2833,7 +2935,7 @@
       clearElement(el.outerMarkerUnits);
       setColumnCount(el.outerMarkerUnits, columnCount);
 
-      const start = makeChip(model.isHex ? "Nasa" : "Ne-", "marker");
+      const start = makeChip(model.isHex ? "Nasa" : model.isBinary ? "Noka" : "Ne-", "marker");
       placeAt(start, 1);
       el.outerMarkerUnits.appendChild(start);
 
@@ -2859,10 +2961,12 @@
 
       const startArrow = document.createElement("span");
       startArrow.className = "arrow-cell";
-      startArrow.textContent = model.isHex ? "↓" : "↘";
+      startArrow.textContent = (model.isHex || model.isBinary) ? "↓" : "↘";
       startArrow.title = model.isHex
         ? "The hexadecimal opening Nasa remains a separate proper-name word"
-        : "The opening Ne- joins the first proper-name word";
+        : model.isBinary
+          ? "The binary opening Noka remains a separate proper-name word"
+          : "The opening Ne- joins the first proper-name word";
       placeAt(startArrow, 1);
       el.reassignmentArrows.appendChild(startArrow);
 
@@ -3744,7 +3848,21 @@
       return map;
     }
 
+    function buildBinaryCartoucheHighlightMap(model, plan, target, abbreviated) {
+      const geometry = buildCartoucheGeometry(model, plan, target);
+      if (!geometry) return [];
+      const expectedCodepoints = abbreviated ? Array.from(model.abbreviatedCodepoints || [], Number) : Array.from(model.fullCodepoints || model.cartouche?.innerCodepoints || [], Number);
+      if (geometry.cps.length !== expectedCodepoints.length) return [];
+      const map=[];
+      for (const unit of model.audioUnits || []) {
+        const indexes = abbreviated ? unit.binaryAbbreviatedCodepointIndexes : unit.binaryFullCodepointIndexes;
+        map[unit.index] = cartoucheRectsForIndexes(geometry,indexes || []);
+      }
+      return map;
+    }
+
     function buildFullCartoucheHighlightMap(model, plan, target) {
+      if (model?.isBinary) return buildBinaryCartoucheHighlightMap(model, plan, target, false);
       if (model?.isHex) return buildHexCartoucheHighlightMap(model, plan, target, false);
       const geometry = buildCartoucheGeometry(model, plan, target);
       const sourceRanges = audioUnitSourceRanges(model.audioUnits);
@@ -3783,6 +3901,7 @@
     }
 
     function buildAbbreviatedCartoucheHighlightMap(model, plan, target) {
+      if (model?.isBinary) return buildBinaryCartoucheHighlightMap(model, plan, target, true);
       if (model?.isHex) return buildHexCartoucheHighlightMap(model, plan, target, true);
       const geometry = buildCartoucheGeometry(model, plan, target);
       const fullCodepoints = Array.from(
@@ -4358,6 +4477,8 @@
         relaxedNanpaLinjanParsing: model.mode === "relaxed",
         relaxedNanpaLinjanRendering: model.mode === "relaxed",
         enableHexParsing: true,
+        enableBinaryParsing: true,
+        enableBinaryRendering: true,
         voice,
         renderOptions: {
           synthesis_mode: "reference_audio",

@@ -2368,6 +2368,13 @@
       "source": "uploaded whole-word numeric Nanpa audio",
       "source_order": 64,
       "duration_ms": 1011.4
+    },
+    "noka": {
+      "unit": "Noka",
+      "file": "nanpa_v7/noka.wav",
+      "source": "uploaded whole-word numeric Noka audio",
+      "source_order": 65,
+      "duration_ms": 940.5
     }
   },
   "nanpa_unit_source": {
@@ -2523,5 +2530,22 @@
       ]
     },
     "notes": "Hex-support nanpa units use derived and uploaded numeric WAV assets. Output is mono 16-bit PCM at 24000 Hz. Consonant onsets are retained from existing purpose-recorded numeric units; target vowel/coda portions are taken from existing Na/Nan or Ni/Nin units as appropriate. The current Nasa asset is the uploaded whole-word recording in nanpa_v7/nasa.wav; its manifest duration is measured directly from that WAV. Enen uses Ene plus an existing terminal nasal. Source leading audio and source trailing audio are retained so the new units follow the timing convention of the supplied numeric bank. nanpa_v6 revises only La and Lan by replacing their initial /l/ onset with the corresponding Lu/Lun numeric onset, while preserving the original La/Lan sample count, sample rate, leading samples, and all samples after the onset crossfade. The current nanpa_v6 La/Lan files replace the previous onset-splice approach. Their initial 120 ms comes directly from supplied numeric Le/Len, the stable lateral is extended to produce a clearly sustained L, and the join enters La/Lan only after the previous consonant transition at a stable a/an vowel. No old La/Lan onset material is reused. The current nanpa_v6 La and Lan assets are the newly uploaded replacement recordings; manifest durations are measured directly from those WAV files. nanpa_v6 also adds the uploaded purpose-recorded Sa and San assets; their manifest durations are measured directly from those WAV files."
+  },
+  "nanpa_binary_unit_source": {
+    "source_file_group": "uploaded numeric binary nanpa asset",
+    "added_units": 1,
+    "asset_sample_rates": [
+      24000
+    ],
+    "labels_in_order": [
+      "Noka"
+    ],
+    "derivations": {
+      "Noka": [
+        "uploaded whole-word numeric Noka audio",
+        "nanpa_v7/noka.wav"
+      ]
+    },
+    "notes": "Binary numeric Noka uses the uploaded whole-word recording in nanpa_v7/noka.wav. Manifest duration is measured directly from that WAV."
   }
 }
