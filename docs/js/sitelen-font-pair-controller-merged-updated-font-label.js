@@ -25,6 +25,45 @@ const PRELOADED_MANIFEST_METADATA_DB_SUFFIX = '-preloaded-manifest-metadata';
 const PRELOADED_MANIFEST_METADATA_STORE = 'schemas';
 const VALID_CARTOUCHE_TALLY_MODES = new Set(['ucsur', 'comma', 'manual']);
 
+// Runtime aliases for the opt-in cartouche-scale OpenType features.
+// The source font remains unchanged: the aliases reuse the same URL and only
+// add one FontFace featureSettings descriptor.
+const CARTOUCHE_SCALE_SS12_ALIAS_SUFFIX = '--nanpa-cartouche-ss12';
+const CARTOUCHE_SCALE_SS13_ALIAS_SUFFIX = '--nanpa-cartouche-ss13';
+const CARTOUCHE_SCALE_HALF_MAX_PX = 18;
+const CARTOUCHE_SCALE_THIRD_MAX_PX = 29;
+
+function cartoucheScaleAliasFamily(family, featureTag) {
+  const base = String(family || '').trim();
+  if (!base) return base;
+  if (featureTag === 'ss12') return `${base}${CARTOUCHE_SCALE_SS12_ALIAS_SUFFIX}`;
+  if (featureTag === 'ss13') return `${base}${CARTOUCHE_SCALE_SS13_ALIAS_SUFFIX}`;
+  return base;
+}
+
+function cartoucheScaleFamilyForPx(family, fontPx) {
+  const px = Math.max(8, Number(fontPx || 56));
+  if (px <= CARTOUCHE_SCALE_HALF_MAX_PX) return cartoucheScaleAliasFamily(family, 'ss12');
+  if (px <= CARTOUCHE_SCALE_THIRD_MAX_PX) return cartoucheScaleAliasFamily(family, 'ss13');
+  return String(family || '').trim();
+}
+
+function mergeCartoucheScaleFeatureSettings(value, activeTag) {
+  const raw = String(value ?? '').trim();
+  const parts = (!raw || raw.toLowerCase() === 'normal')
+    ? []
+    : raw.split(',').map(item => item.trim()).filter(Boolean);
+  const filtered = parts.filter(item => !/^['"]ss1[23]['"](?:\s|$)/i.test(item));
+  if (activeTag === 'ss12' || activeTag === 'ss13') filtered.push(`"${activeTag}" 1`);
+  return filtered.length ? filtered.join(', ') : 'normal';
+}
+
+function descriptorsWithCartoucheScaleFeature(descriptors, activeTag) {
+  const out = { ...((descriptors && typeof descriptors === 'object') ? descriptors : {}) };
+  out.featureSettings = mergeCartoucheScaleFeatureSettings(out.featureSettings, activeTag);
+  return out;
+}
+
 function byIdOrElement(value) {
   if (!value) return null;
   if (typeof value === 'string') return document.getElementById(value);
@@ -607,10 +646,16 @@ export function createSitelenFontPairController({
     return null;
   }
 
-  async function ensureFaceLoaded(face) {
-    if (!face?.family || !face?.url || !document.fonts) return;
-    const family = String(face.family).trim();
-    const url = String(face.url).trim();
+  function familyUsesCartoucheScaleFeatures(family) {
+    const fam = String(family || '').trim();
+    if (!fam) return false;
+    for (const [, preset] of presetEntries()) {
+      if (String(preset?.cartoucheFamily || '').trim() === fam) return true;
+    }
+    return false;
+  }
+
+  async function ensureFontFaceRegistration({ family, url, format, descriptors = {} }) {
     const faceKey = `${family}::${url}`;
     if (registeredFaces.has(faceKey)) return;
     if (loadPromisesByFaceKey.has(faceKey)) {
@@ -619,8 +664,8 @@ export function createSitelenFontPairController({
     }
 
     const loader = (async () => {
-      const source = `url("${url.replace(/"/g, '\\"')}") format("${normalizeFormat(face.format)}")`;
-      const fontFace = new FontFace(family, source, face.descriptors || {});
+      const source = `url("${url.replace(/"/g, '\\"')}") format("${normalizeFormat(format)}")`;
+      const fontFace = new FontFace(family, source, descriptors || {});
       await fontFace.load();
       document.fonts.add(fontFace);
       registeredFaces.add(faceKey);
@@ -632,6 +677,41 @@ export function createSitelenFontPairController({
     } finally {
       loadPromisesByFaceKey.delete(faceKey);
     }
+  }
+
+  async function ensureFaceLoaded(face) {
+    if (!face?.family || !face?.url || !document.fonts) return;
+    const family = String(face.family).trim();
+    const url = String(face.url).trim();
+
+    await ensureFontFaceRegistration({
+      family,
+      url,
+      format: face.format,
+      descriptors: face.descriptors || {}
+    });
+
+    // Only the configured nanpa-linja-n/cartouche companion family receives
+    // these aliases. Other dynamically loaded fonts are left completely alone.
+    if (!familyUsesCartoucheScaleFeatures(family)) return;
+
+    const variants = [
+      ['ss12', CARTOUCHE_SCALE_SS12_ALIAS_SUFFIX],
+      ['ss13', CARTOUCHE_SCALE_SS13_ALIAS_SUFFIX],
+    ];
+    await Promise.all(variants.map(async ([featureTag, suffix]) => {
+      try {
+        await ensureFontFaceRegistration({
+          family: `${family}${suffix}`,
+          url,
+          format: face.format,
+          descriptors: descriptorsWithCartoucheScaleFeature(face.descriptors || {}, featureTag)
+        });
+      } catch (error) {
+        // Alias failure must never break the existing/base font path.
+        try { console.warn(`[fonts] Could not load ${featureTag} cartouche-scale alias for ${family}.`, error); } catch {}
+      }
+    }));
   }
 
   async function ensureFamiliesLoaded(fontPx = 56, families = uniqueConfiguredFontFamilies()) {
@@ -679,7 +759,12 @@ export function createSitelenFontPairController({
     for (const family of families) {
       const face = findFaceByFamily(family);
       const sample = String(face?.sample || fontLoadSample || 'A');
-      ctx.font = `${px}px ${quotedFontFamily(family)}`;
+      const renderFamily = familyUsesCartoucheScaleFeatures(family)
+        ? cartoucheScaleFamilyForPx(family, px)
+        : family;
+      ctx.font = renderFamily === family
+        ? `${px}px ${quotedFontFamily(family)}`
+        : `${px}px ${quotedFontFamily(renderFamily)}, ${quotedFontFamily(family)}`;
       ctx.fillText(sample, 0, 3);
     }
   }

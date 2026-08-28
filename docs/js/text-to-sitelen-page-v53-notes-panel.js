@@ -1,9 +1,9 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=245";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=246";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=21";
+} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=22";
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=176';
@@ -482,8 +482,8 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=245",
-  fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=20",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=246",
+  fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=22",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=176",
   vectorWasm: "./wasm/sitelen_vector_wasm.js?v=143"
@@ -6206,7 +6206,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=245", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=246", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 

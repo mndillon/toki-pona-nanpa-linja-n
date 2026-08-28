@@ -618,6 +618,35 @@ const SitelenRenderer = (() => {
   let FONT_FAMILY_LITERAL_CARTOUCHE = "TP-Nasin-Nanpa-Font";
   let FONT_FAMILY_UNKNOWN = "Patrick-Head-Font";
 
+  // OpenType cartouche scale convention used by the patched nanpa-linja-n fonts.
+  // The font-pair controller registers these aliases from the same source font.
+  // If an alias is absent (for example an unrelated/system font), Canvas falls
+  // back to the unchanged base family in the same font stack.
+  const CARTOUCHE_SCALE_SS12_ALIAS_SUFFIX = "--nanpa-cartouche-ss12";
+  const CARTOUCHE_SCALE_SS13_ALIAS_SUFFIX = "--nanpa-cartouche-ss13";
+  const CARTOUCHE_SCALE_HALF_MAX_PX = 18;
+  const CARTOUCHE_SCALE_THIRD_MAX_PX = 29;
+
+  function cartoucheScaleAliasFamilyForPx(fontFamily, logicalFontPx) {
+    const family = String(fontFamily || "").trim();
+    const px = Math.max(8, Number(logicalFontPx ?? 56));
+    if (!family) return family;
+    if (px <= CARTOUCHE_SCALE_HALF_MAX_PX) return `${family}${CARTOUCHE_SCALE_SS12_ALIAS_SUFFIX}`;
+    if (px <= CARTOUCHE_SCALE_THIRD_MAX_PX) return `${family}${CARTOUCHE_SCALE_SS13_ALIAS_SUFFIX}`;
+    return family;
+  }
+
+  function canvasFontFamilyStack(fontFamily, logicalFontPx) {
+    const family = String(fontFamily || "").trim();
+    const alias = cartoucheScaleAliasFamilyForPx(family, logicalFontPx);
+    if (!family || alias === family) return `"${family}"`;
+    return `"${alias}", "${family}"`;
+  }
+
+  function canvasFontShorthand(renderPx, fontFamily, logicalFontPx = renderPx) {
+    return `${renderPx}px ${canvasFontFamilyStack(fontFamily, logicalFontPx)}`;
+  }
+
   const DEFAULT_FONT_RENDER_ADAPTER_ID = "identity";
   const __fontRenderAdapters = new Map();
   let __renderAdapterId = DEFAULT_FONT_RENDER_ADAPTER_ID;
@@ -2772,7 +2801,7 @@ const SitelenRenderer = (() => {
     ctx.textBaseline = 'alphabetic';
 
     function measureTextLikeORIG(chars, px, fontFamily) {
-      ctx.font = `${px}px "${fontFamily}"`;
+      ctx.font = canvasFontShorthand(px, fontFamily);
       const m = ctx.measureText(chars);
       const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
       const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
@@ -2783,7 +2812,7 @@ const SitelenRenderer = (() => {
     }
 
     function measureTextLike(chars, px, fontFamily, useAdvanceWidth = false) {
-      ctx.font = `${px}px "${fontFamily}"`;
+      ctx.font = canvasFontShorthand(px, fontFamily);
       const m = ctx.measureText(chars);
 
       const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
@@ -2928,7 +2957,7 @@ const SitelenRenderer = (() => {
 
       const px = Math.max(1, Number(el?.px ?? fontPx) || fontPx);
       const family = el?.fontFamily || FONT_FAMILY_TEXT;
-      ctx.font = `${px}px "${family}"`;
+      ctx.font = canvasFontShorthand(px, family);
 
       const adaptedCharsForCanonical = (subsetCps) => {
         const adapted = adaptCanonicalCodepointsForFont(subsetCps, {
@@ -3106,7 +3135,7 @@ const SitelenRenderer = (() => {
 
       const family = el.fontFamily || FONT_FAMILY_TEXT;
       const renderChars = renderCps.map(cp => String.fromCodePoint(cp));
-      ctx.font = `${px}px "${family}"`;
+      ctx.font = canvasFontShorthand(px, family);
 
       const prefixAdvances = [0];
       let prefix = '';
@@ -3428,9 +3457,9 @@ const SitelenRenderer = (() => {
         }, (run.unknownDisplay || el.unknownDisplay || getUnknownTextDisplay()), fillCss);
       }
       if (typeof __bridgeDrawTextWithOptionalHalo === 'function') {
-        __bridgeDrawTextWithOptionalHalo(ctx, String(el.text || ''), 0, baseline, { px, fontFamily: fam, fillCss });
+        __bridgeDrawTextWithOptionalHalo(ctx, String(el.text || ''), 0, baseline, { px, fontFamily: fam, fillCss, cartoucheScaleFontPx: run.fontPx || el.px || 16 });
       } else {
-        ctx.font = `${px}px "${fam}"`;
+        ctx.font = canvasFontShorthand(px, fam, run.fontPx || el.px || 16);
         ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = fillCss;
         ctx.fillText(String(el.text || ''), 0, baseline);
@@ -3441,9 +3470,9 @@ const SitelenRenderer = (() => {
       const baseline = Math.round((run.ascentPx || Math.ceil((run.fontPx || 16) * 0.8)) * scale);
       const chars = getElementRenderCps(el).map(cp => String.fromCodePoint(cp)).join('');
       if (typeof __bridgeDrawTextWithOptionalHalo === 'function') {
-        __bridgeDrawTextWithOptionalHalo(ctx, chars, 0, baseline, { px, fontFamily: fam, fillCss });
+        __bridgeDrawTextWithOptionalHalo(ctx, chars, 0, baseline, { px, fontFamily: fam, fillCss, cartoucheScaleFontPx: run.fontPx || el.px || 16 });
       } else {
-        ctx.font = `${px}px "${fam}"`;
+        ctx.font = canvasFontShorthand(px, fam, run.fontPx || el.px || 16);
         ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = fillCss;
         ctx.fillText(chars, 0, baseline);
@@ -5136,13 +5165,13 @@ function wireHaloControls() {
 
       ctx.textBaseline = "alphabetic";
 
-      ctx.font = `${px}px "${FONT_FAMILY_TEXT}"`;
+      ctx.font = canvasFontShorthand(px, FONT_FAMILY_TEXT);
       ctx.fillText(String.fromCodePoint(0xF196C), 0, 1);
 
-      ctx.font = `${px}px "${FONT_FAMILY_CARTOUCHE}"`;
+      ctx.font = canvasFontShorthand(px, FONT_FAMILY_CARTOUCHE);
       ctx.fillText(String.fromCodePoint(0xF1990), 0, 1);
 
-      ctx.font = `${px}px "${FONT_FAMILY_LITERAL_CARTOUCHE}"`;
+      ctx.font = canvasFontShorthand(px, FONT_FAMILY_LITERAL_CARTOUCHE);
       ctx.fillText(String.fromCodePoint(0xF1990) + "A" + String.fromCodePoint(0xF1991), 0, 1);
     }
 
@@ -7986,11 +8015,11 @@ function findNanpaLinjanTpPhraseSequences(text) {
     }
 
 
-    function drawTextWithOptionalHalo(ctx, text, x, yBaseline, { px, fontFamily, fillCss }) {
+    function drawTextWithOptionalHalo(ctx, text, x, yBaseline, { px, fontFamily, fillCss, cartoucheScaleFontPx = px }) {
       const haloEnabled = getHaloEnabled();
       const haloCss = getHaloHex();
 
-      ctx.font = `${px}px "${fontFamily}"`;
+      ctx.font = canvasFontShorthand(px, fontFamily, cartoucheScaleFontPx);
       setTextQuality(ctx);
 
       if (haloEnabled) {
@@ -8422,7 +8451,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       return { groups, strokeW, gap, height: h, belowGap, bottomY: yBottom };
     }
 
-    function drawManualCartoucheTallies(ctx, innerCps, manualTallies, { fontPx, fontFamily, runX, baselineY, cartoucheW, cartoucheH, padPx, haloEnabled, haloCss, fgCss, cartoucheRunWidth = null, cartoucheBottomY = null, glyphLayout = null, manualTallyLiftPx = 0 }) {
+    function drawManualCartoucheTallies(ctx, innerCps, manualTallies, { fontPx, fontFamily, runX, baselineY, cartoucheW, cartoucheH, padPx, haloEnabled, haloCss, fgCss, cartoucheRunWidth = null, cartoucheBottomY = null, glyphLayout = null, manualTallyLiftPx = 0, cartoucheScaleFontPx = fontPx }) {
       const tallies = Array.from(manualTallies ?? []);
       if (!tallies.some(n => Number(n) > 0)) return null;
 
@@ -8430,7 +8459,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       const fam = fontFamily || FONT_FAMILY_TEXT;
       ctx.save();
       ctx.textBaseline = "alphabetic";
-      ctx.font = `${px}px "${fam}"`;
+      ctx.font = canvasFontShorthand(px, fam, cartoucheScaleFontPx);
       setTextQuality(ctx);
 
       let detectedBottomY = Number.isFinite(Number(cartoucheBottomY))
@@ -8599,7 +8628,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       };
     }
 
-    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies = null, renderFullCps = null, canonicalToRenderSpans = null, manualTallyLiftPx = 0 }) {
+    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies = null, renderFullCps = null, canonicalToRenderSpans = null, manualTallyLiftPx = 0, cartoucheScaleFontPx = fontPx }) {
       if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
       if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
 
@@ -8628,7 +8657,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
 
       const ctx = canvas.getContext("2d", {  alpha: true , willReadFrequently: true });
       ctx.textBaseline = "alphabetic";
-      ctx.font = `${px}px "${fam}"`;
+      ctx.font = canvasFontShorthand(px, fam, cartoucheScaleFontPx);
       setTextQuality(ctx);
       const m = ctx.measureText(run);
 
@@ -8651,7 +8680,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
       const ctx2 = canvas.getContext("2d", { alpha: true , willReadFrequently: true});
       ctx2.clearRect(0, 0, w, h);
       ctx2.textBaseline = "alphabetic";
-      ctx2.font = `${px}px "${fam}"`;
+      ctx2.font = canvasFontShorthand(px, fam, cartoucheScaleFontPx);
       setTextQuality(ctx2);
 
       const x = padLeft + left + haloW + tallySideExtra;
@@ -8670,7 +8699,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
         const mctx = mask.getContext("2d", { alpha: true, willReadFrequently: true });
         mctx.clearRect(0, 0, w, h);
         mctx.textBaseline = "alphabetic";
-        mctx.font = `${px}px "${fam}"`;
+        mctx.font = canvasFontShorthand(px, fam, cartoucheScaleFontPx);
         setTextQuality(mctx);
 
         mctx.fillStyle = "#000000";
@@ -8756,7 +8785,8 @@ function findNanpaLinjanTpPhraseSequences(text) {
           cartoucheRunWidth: Math.max(1, Number(m.width || 0)),
           cartoucheBottomY: cleanCartoucheBottomY,
           glyphLayout: audioGlyphLayout,
-          manualTallyLiftPx
+          manualTallyLiftPx,
+          cartoucheScaleFontPx
         });
       }
 
@@ -8921,14 +8951,14 @@ function findNanpaLinjanTpPhraseSequences(text) {
       return null;
     }
 
-function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss }) {
+function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, cartoucheScaleFontPx = fontPx }) {
   if (!canvas) return null;
 
   const donorCp = WORD_TO_UCSUR_CP["lili"];
   if (donorCp == null) return null;
 
   const donor = document.createElement("canvas");
-  renderFontCartoucheToCanvas(donor, [donorCp], { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss });
+  renderFontCartoucheToCanvas(donor, [donorCp], { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, cartoucheScaleFontPx });
 
   const w = canvas.width | 0;
   const h = canvas.height | 0;
@@ -10427,7 +10457,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     function measureTextRun(ctx, text, px, fontFamily) {
       const chars = String(text ?? "");
-      ctx.font = `${px}px "${fontFamily}"`;
+      ctx.font = canvasFontShorthand(px, fontFamily);
       setTextQuality(ctx);
       const m = ctx.measureText(chars);
 
@@ -10475,7 +10505,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     function measureGlyph(ctx, cp, px, fontFamily) {
       const ch = String.fromCodePoint(cp);
-      ctx.font = `${px}px "${fontFamily}"`;
+      ctx.font = canvasFontShorthand(px, fontFamily);
       setTextQuality(ctx);
       const m = ctx.measureText(ch);
 
@@ -10491,7 +10521,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     function measureRun(ctx, cps, px, fontFamily) {
       const chars = (cps ?? []).map(cp => String.fromCodePoint(cp)).join("");
-      ctx.font = `${px}px "${fontFamily}"`;
+      ctx.font = canvasFontShorthand(px, fontFamily);
       setTextQuality(ctx);
       const m = ctx.measureText(chars);
 
@@ -10508,7 +10538,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const PX_TO_PT = 72 / 96; // 0.75
 
     function measureChars(ctx, chars, px, fontFamily){
-      ctx.font = `${px}px "${fontFamily}"`;
+      ctx.font = canvasFontShorthand(px, fontFamily);
       setTextQuality(ctx);
 
       const m = ctx.measureText(chars);
@@ -10886,6 +10916,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           renderFullCps: Array.isArray(cartEl?.renderFullCps) ? cartEl.renderFullCps : null,
           canonicalToRenderSpans: Array.isArray(cartEl?.canonicalToRenderSpans) ? cartEl.canonicalToRenderSpans : null,
           manualTallyLiftPx: baseManualTallyLiftPx * scale,
+          cartoucheScaleFontPx: basePx,
         }
       );
 
@@ -10898,6 +10929,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           fgCss,
           haloEnabled: false,
           haloCss: "#FFFFFF",
+          cartoucheScaleFontPx: basePx,
         }) || c;
       }
 
@@ -10927,7 +10959,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const c = document.createElement("canvas");
       const ctx = c.getContext("2d");
       ctx.textBaseline = "alphabetic";
-      ctx.font = `${pxHi}px "${fontFamily}"`;
+      ctx.font = canvasFontShorthand(pxHi, fontFamily, basePx);
       setTextQuality(ctx);
 
       const s = String(txt ?? "");
@@ -10944,7 +10976,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const ctx2 = c.getContext("2d", { alpha: true });
       ctx2.clearRect(0, 0, wHi, hHi);
       ctx2.textBaseline = "alphabetic";
-      ctx2.font = `${pxHi}px "${fontFamily}"`;
+      ctx2.font = canvasFontShorthand(pxHi, fontFamily, basePx);
       setTextQuality(ctx2);
 
       const xHi = padHi;                // left
