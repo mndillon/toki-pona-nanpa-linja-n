@@ -162,7 +162,7 @@ function __wbg_get_imports() {
             const ret = arg0.length;
             return ret;
         },
-        __wbg_log_14b14d600bca9472: function(arg0, arg1) {
+        __wbg_log_2a0c755f14d978f5: function(arg0, arg1) {
             console.log(getStringFromWasm0(arg0, arg1));
         },
         __wbg_new_02d162bc6cf02f60: function() {
@@ -198,7 +198,7 @@ function __wbg_get_imports() {
             const ret = arg0.value;
             return ret;
         },
-        __wbg_warn_1f6e8cc9f75f13be: function(arg0, arg1) {
+        __wbg_warn_b849ac4dc39c924d: function(arg0, arg1) {
             console.warn(getStringFromWasm0(arg0, arg1));
         },
         __wbindgen_cast_0000000000000001: function(arg0) {
@@ -499,7 +499,7 @@ async function __wbg_init(module_or_path) {
     }
 
     if (module_or_path === undefined) {
-        module_or_path = new URL('sitelen_vector_wasm_bg.wasm', import.meta.url);
+        module_or_path = new URL('sitelen_vector_wasm_bg.wasm?v=145', import.meta.url);
     }
     const imports = __wbg_get_imports();
 

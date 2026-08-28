@@ -1,5 +1,5 @@
 console.log("[sitelen-vector-js] CARTOUCHE-RUN-REFLOW EXPORTER v142 EXACT-MANUAL-TALLY-LAYOUT loaded");
-const DEFAULT_WASM_MODULE_URL = new URL("../wasm/sitelen_vector_wasm.js?v=143", import.meta.url).href;
+const DEFAULT_WASM_MODULE_URL = new URL("../wasm/sitelen_vector_wasm.js?v=145", import.meta.url).href;
 const PX_TO_PT = 72 / 96;
 const CARTOUCHE_START_CP = 0xF1990;
 const CARTOUCHE_END_CP = 0xF1991;
@@ -459,6 +459,19 @@ function fontRunPrefersCompanion(run, preset = null) {
   if (family && preset?.cartoucheFamily && family === String(preset.cartoucheFamily)) return true;
   if (/cartouche/i.test(family) && role !== "word") return true;
   return false;
+}
+
+const CARTOUCHE_SCALE_HALF_MAX_PX = 18;
+const CARTOUCHE_SCALE_THIRD_MAX_PX = 29;
+
+function getCartoucheScaleOpenTypeFeaturesForRun(run, exporter = null) {
+  const preset = exporter?.fontController?.getActivePreset?.() || null;
+  if (!fontRunPrefersCompanion(run, preset)) return [];
+
+  const fontPx = getRunFontPx(run, 56);
+  if (fontPx <= CARTOUCHE_SCALE_HALF_MAX_PX) return ["ss12"];
+  if (fontPx <= CARTOUCHE_SCALE_THIRD_MAX_PX) return ["ss13"];
+  return [];
 }
 
 function isCartoucheRun(run) {
@@ -3195,6 +3208,7 @@ export class SitelenVectorExporter {
         xPx: getRunX(run),
         baselineYPx: getRunBaseline(run),
         fontPx: getRunFontPx(run, plan?.fontPx || 56),
+        openTypeFeatures: getCartoucheScaleOpenTypeFeaturesForRun(run, this),
         fill: getRunFill(run, plan?.fillStyle || "#111111"),
         halo: getRunHalo(run),
         debugLogs: false

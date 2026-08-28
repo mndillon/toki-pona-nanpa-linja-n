@@ -6,7 +6,7 @@ import {
 } from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=22";
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
-import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=176';
+import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=178';
 import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=61';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
@@ -485,8 +485,8 @@ const VECTOR_DIAG_IMPORTS = Object.freeze({
   renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=246",
   fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=22",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
-  vectorExporter: "./js/sitelen-vector-exporter.js?v=176",
-  vectorWasm: "./wasm/sitelen_vector_wasm.js?v=143"
+  vectorExporter: "./js/sitelen-vector-exporter.js?v=178",
+  vectorWasm: "./wasm/sitelen_vector_wasm.js?v=144"
 });
 
 function vectorDiag(...args) {
