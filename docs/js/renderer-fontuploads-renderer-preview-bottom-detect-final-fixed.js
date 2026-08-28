@@ -1909,14 +1909,47 @@ const SitelenRenderer = (() => {
     return (__bridgeWordToUcsurCp && __bridgeWordToUcsurCp[key] != null) ? __bridgeWordToUcsurCp[key] : null;
   }
 
-  function sskWordsToCps(text) {
-    const words = String(text ?? '').trim().split(/\s+/).filter(Boolean);
-    if (!words.length) return null;
+  function sskCompoundOperatorToCp(operator) {
+    if (operator === '&') return 0x200D; // generic/font-defined compound
+    if (operator === '-') return 0xF1995; // stacked compound
+    if (operator === '+') return 0xF1996; // scaled/nested compound
+    return null;
+  }
+
+  // Parse one whitespace-free glyph expression. Compound operators are
+  // resolved here before any enclosing long-glyph or cartouche parser gets a
+  // chance to classify the expression as an unknown word.
+  function sskGlyphExpressionToCps(expression) {
+    const source = String(expression ?? '').trim();
+    if (!source || /\s/.test(source)) return null;
+
+    const pieces = source.split(/([&+-])/);
+    if (!pieces.length || (pieces.length % 2) === 0) return null;
+
     const cps = [];
-    for (const w of words) {
-      const cp = sskWordToCp(w);
-      if (cp == null) return null;
-      cps.push(cp);
+    for (let i = 0; i < pieces.length; i++) {
+      if ((i % 2) === 0) {
+        if (!pieces[i]) return null;
+        const cp = sskWordToCp(pieces[i]);
+        if (cp == null) return null;
+        cps.push(cp);
+      } else {
+        const joinCp = sskCompoundOperatorToCp(pieces[i]);
+        if (joinCp == null) return null;
+        cps.push(joinCp);
+      }
+    }
+    return cps;
+  }
+
+  function sskWordsToCps(text) {
+    const expressions = String(text ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!expressions.length) return null;
+    const cps = [];
+    for (const expression of expressions) {
+      const expressionCps = sskGlyphExpressionToCps(expression);
+      if (!expressionCps || !expressionCps.length) return null;
+      cps.push(...expressionCps);
     }
     return cps;
   }
@@ -1947,15 +1980,11 @@ const SitelenRenderer = (() => {
     return true;
   }
 
-  function emitSskCompound(matchText, leftWord, operator, rightWord, elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
-    const leftCp = sskWordToCp(leftWord);
-    const rightCp = sskWordToCp(rightWord);
-    if (leftCp == null || rightCp == null) return false;
-    let joinCp = 0x200D; // generic compound
-    if (operator === '-') joinCp = 0xF1995; // stacked
-    else if (operator === '+') joinCp = 0xF1996; // scaled
+  function emitSskCompound(matchText, elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
+    const cps = sskGlyphExpressionToCps(matchText);
+    if (!cps || cps.length < 3) return false;
     if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
-    __bridgeMakeRunElementFromCodepoints(elements, [leftCp, joinCp, rightCp], { fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: String(matchText ?? ''), sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + String(matchText ?? '').length, sourceKind, sourceSegmentIndex });
+    __bridgeMakeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_TEXT, sourceText: String(matchText ?? ''), sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + String(matchText ?? '').length, sourceKind, sourceSegmentIndex });
     return true;
   }
 
@@ -2007,7 +2036,13 @@ const SitelenRenderer = (() => {
     //   left&right         generic/font-defined compound
     // Any whitespace before '(' or around a compound operator prevents the
     // construction from being recognized.
-    const tokenRe = /(?:\{([^{}]+)\}\s*)?([A-Za-z][A-Za-z0-9_]*)\(([^()]+)\)|([A-Za-z][A-Za-z0-9_]*)([&+-])([A-Za-z][A-Za-z0-9_]*)|\{([^{}]+)\}\s*([A-Za-z][A-Za-z0-9_]*)/g;
+    const glyphToken = String.raw`[A-Za-z][A-Za-z0-9_^<>]*`;
+    const tokenRe = new RegExp(
+      String.raw`(?:\{([^{}]+)\}\s*)?(${glyphToken})\(([^()]+)\)` +
+      String.raw`|(${glyphToken}(?:[&+-]${glyphToken})+)` +
+      String.raw`|\{([^{}]+)\}\s*(${glyphToken})`,
+      'g'
+    );
     let pos = 0;
     let m;
     while ((m = tokenRe.exec(s)) !== null) {
@@ -2017,10 +2052,10 @@ const SitelenRenderer = (() => {
       let ok = false;
       if (m[2] && (m[1] != null || m[3] != null)) {
         ok = emitSskExtendedGlyph(m[0], m[1], m[2], m[3], elements, fontPx, sourceBaseStart + start, sourceKind, sourceSegmentIndex);
-      } else if (m[4] && m[5] && m[6]) {
-        ok = emitSskCompound(m[0], m[4], m[5], m[6], elements, fontPx, sourceBaseStart + start, sourceKind, sourceSegmentIndex);
-      } else if (m[7] && m[8]) {
-        ok = emitSskExtendedGlyph(m[0], m[7], m[8], null, elements, fontPx, sourceBaseStart + start, sourceKind, sourceSegmentIndex);
+      } else if (m[4]) {
+        ok = emitSskCompound(m[0], elements, fontPx, sourceBaseStart + start, sourceKind, sourceSegmentIndex);
+      } else if (m[5] && m[6]) {
+        ok = emitSskExtendedGlyph(m[0], m[5], m[6], null, elements, fontPx, sourceBaseStart + start, sourceKind, sourceSegmentIndex);
       }
       if (!ok) __bridgeParseTextSegmentToElements(m[0], elements, { fontPx, sourceBaseStart: sourceBaseStart + start, sourceKind, sourceSegmentIndex, mixedStyle });
       pos = end;
@@ -2325,24 +2360,8 @@ const SitelenRenderer = (() => {
 
   function emitStandardSitelenPonaAsciiCoreCompound(matchText, elements, fontPx, sourceBaseStart = 0, sourceKind = 'text', sourceSegmentIndex = null) {
     const expression = String(matchText ?? '');
-    const pieces = expression.split(/([&+-])/);
-    if (pieces.length < 3 || (pieces.length % 2) === 0) return false;
-
-    const cps = [];
-    for (let i = 0; i < pieces.length; i++) {
-      if ((i % 2) === 0) {
-        const cp = sskWordToCp(pieces[i]);
-        if (cp == null) return false;
-        cps.push(cp);
-        continue;
-      }
-
-      const operator = pieces[i];
-      if (operator === '-') cps.push(0xF1995);
-      else if (operator === '+') cps.push(0xF1996);
-      else if (operator === '&') cps.push(0x200D);
-      else return false;
-    }
+    const cps = sskGlyphExpressionToCps(expression);
+    if (!cps || cps.length < 3) return false;
 
     if (elements.length > 0) __bridgePushGapIfNeeded(elements, __bridgeWordGapForPx(fontPx));
     __bridgeMakeRunElementFromCodepoints(elements, cps, {
@@ -5399,12 +5418,17 @@ function wireHaloControls() {
       }
 
       function flushCur() {
-        const t = normalizeTpGlyphToken(cur);
+        const expression = cur;
         cur = "";
-        if (!t) return true;
-        const cp = WORD_TO_UCSUR_CP[t];
-        if (cp == null) return false;
-        return pushCp(cp, 0);
+        if (!String(expression ?? "").trim()) return true;
+
+        // Resolve glyph compounds before the ordinary-cartouche fallback can
+        // mistake an operator-bearing expression for a misspelled word and
+        // spell it out letter by letter.
+        const expressionCps = sskGlyphExpressionToCps(expression);
+        if (!expressionCps || !expressionCps.length) return false;
+        for (const cp of expressionCps) pushCp(cp, 0);
+        return true;
       }
 
       for (const ch of Array.from(s)) {

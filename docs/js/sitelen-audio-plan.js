@@ -194,6 +194,7 @@ function audioGlyphGroupsFromCartoucheSource(text) {
 
 function ordinaryAudioGlyphGroupsFromCartoucheSource(text) {
   const source = stripOuterBracketSyntaxForAudio(text);
+  const sourceChars = Array.from(source);
   const groups = [];
   let current = '';
   let invalid = false;
@@ -218,8 +219,22 @@ function ordinaryAudioGlyphGroupsFromCartoucheSource(text) {
     return group;
   };
 
-  for (const ch of Array.from(source)) {
+  for (let sourceIndex = 0; sourceIndex < sourceChars.length; sourceIndex++) {
+    const ch = sourceChars[sourceIndex];
     if (/\s/.test(ch)) {
+      flushCurrent();
+      continue;
+    }
+
+    // Compact compound operators are silent visual structure. Split the
+    // component words for ordinary-cartouche pronunciation, but accept the
+    // operator only when it directly joins two tokens. This deliberately keeps
+    // whitespace-surrounded operators invalid, matching the renderer parser.
+    if (ch === '&' || ch === '-' || ch === '+') {
+      const next = sourceChars[sourceIndex + 1] || '';
+      if (!current || !next || /\s/.test(next) || next === '&' || next === '-' || next === '+') {
+        invalid = true;
+      }
       flushCurrent();
       continue;
     }
@@ -1412,6 +1427,31 @@ const AUDIO_COMPOUND_JOINER_CPS = new Set([
   0xF1996  // scaled compound joiner (+)
 ]);
 
+function compoundChainForVisibleComponent(cps, componentIndex) {
+  const source = Array.from(cps || []).map(Number);
+  const index = Number(componentIndex);
+  if (!Number.isInteger(index) || index < 0 || index >= source.length) return [];
+  if (AUDIO_VISUAL_CONTROL_CPS.has(source[index])) return [];
+
+  let start = index;
+  let end = index;
+  while (start >= 2 && AUDIO_COMPOUND_JOINER_CPS.has(source[start - 1])) start -= 2;
+  while (end + 2 < source.length && AUDIO_COMPOUND_JOINER_CPS.has(source[end + 1])) end += 2;
+  if (start === end) return [];
+  return Array.from({ length: end - start + 1 }, (_unused, offset) => start + offset);
+}
+
+function compoundVisualComponentIndices(cps, componentIndices) {
+  const original = [...new Set(
+    Array.from(componentIndices || []).map(Number).filter(Number.isFinite)
+  )];
+  for (const componentIndex of original) {
+    const compound = compoundChainForVisibleComponent(cps, componentIndex);
+    if (compound.length) return compound;
+  }
+  return original;
+}
+
 // The optional visible spacer in an abbreviated numeric cartouche represents
 // the full nena e nena e source sequence (legacy en is also accepted),
 // pronounced as the single reference audio unit "Ene".
@@ -1552,7 +1592,7 @@ function ordinaryCartoucheGroupComponentIndices(run, groups) {
       mapped.push(semanticIndices.slice(cursor, cursor + count));
       cursor += count;
     }
-    return mapped;
+    return mapped.map(indices => compoundVisualComponentIndices(cps, indices));
   }
 
   // Conservative fallback for adapter-specific codepoint layouts: one visible
@@ -1560,7 +1600,7 @@ function ordinaryCartoucheGroupComponentIndices(run, groups) {
   // the highlight rather than assigning it to an unrelated glyph.
   const visibleGroups = visibleComponentGroups(cps);
   for (let index = 0; index < (groups || []).length; index++) {
-    mapped.push(Array.from(visibleGroups[index] || []));
+    mapped.push(compoundVisualComponentIndices(cps, visibleGroups[index] || []));
   }
   return mapped;
 }
@@ -2885,6 +2925,14 @@ function buildLongPiSpeechUnits(run, speech, fallbackRunIndex, lineIndex) {
       componentIndices = componentIndices.filter(index => index >= 0 && index < cps.length);
     }
 
+    // A compound is one rendered glyph even though each member is a separate
+    // spoken word. Every member therefore receives the identical complete
+    // compound target for its whole audio duration. Preserve the established
+    // connected-long-pi head behaviour, which highlights the full construction.
+    if (semanticRole !== 'long-pi-head') {
+      componentIndices = compoundVisualComponentIndices(cps, componentIndices);
+    }
+
     const word = words[wordIndex];
     out.push({
       text: word,
@@ -3392,7 +3440,7 @@ function isNumericCartoucheAudioUnit(unit) {
   return !!unit?.numericCartouche && !!unit?.numericCartoucheRunId;
 }
 
-export const SITELEN_AUDIO_PLAN_BUILD = '20260827-binary-cartouche-audio-v1';
+export const SITELEN_AUDIO_PLAN_BUILD = '20260828-compound-audio-highlight-v1';
 
 function numericCartoucheUnitOrdinal(unit) {
   const value = Number(unit?.unitIndex);

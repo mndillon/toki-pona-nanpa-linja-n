@@ -275,7 +275,7 @@
     {
       "fontKey": "linjaLipamanka",
       "label": "linja lipamanka predefined",
-      "rev": "2026-08-27-014",
+      "rev": "2026-08-28-015",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-lipamanka-v1",
       "renderAdapterSettings": {
@@ -286,9 +286,9 @@
       },
       "baseFamily": "TP-Linja-Lipamanka-Font",
       "companionFamily": "TP-Linja-Lipamanka-Nanpa-Linja-N-Font",
-      "baseFilename": "linjalipamanka-normal.otf",
+      "baseFilename": "linjalipamanka-normal-cartouche-fix.otf",
       "companionFilename": "linjalipamanka-normal-nanpa-linja-n-nasin-e-en.otf",
-      "baseUrl": "./fonts/linjalipamanka-normal.otf",
+      "baseUrl": "./fonts/linjalipamanka-normal-cartouche-fix.otf",
       "companionUrl": "./fonts/linjalipamanka-normal-nanpa-linja-n-nasin-e-en.otf",
       "baseFormat": "opentype",
       "companionFormat": "opentype",
