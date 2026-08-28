@@ -10,6 +10,7 @@ nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.woff2
 nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf
 nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf
+nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf
 
 
 The OFL-1.1.txt file covers the licence for these fonts:
@@ -17,22 +18,28 @@ sitelenselikiwenjuniko.ttf
 sitelenselikiwenjuniko-latin-ligatures.ttf
 sitelenselikiwenjuniko-nanpa-linja-n-good-kasi.ttf
 sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en.ttf
+sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
 FairfaxHD.ttf
 FairfaxHD-nanpa-linja-n-good-kasi.ttf
 FairfaxHD-nanpa-linja-n-good-kasi-nasin-e-en.ttf
+FairfaxHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
 FairfaxPonaHD.ttf
 FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf
 FairfaxPonaHD-nanpa-linja-n-good-kasi-nasin-e-en.ttf
+FairfaxPonaHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
 linjalipamanka-normal.otf
 linjalipamanka-normal-nanpa-linja-n-good-kasi.otf
 linjalipamanka-normal-nanpa-linja-n-good-kasi-nasin-e-en.otf
+linjalipamanka-normal-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf
 linja-pona.otf
 linja-pona-nanpa-linja-n.otf
 linja-pona-nanpa-linja-n-nasin-e-en.otf
+linja-pona-nanpa-linja-n-nasin-e-en-ss1223.otf
 linja-sike-5.otf
 linja-sike-5-cartouche-fix.otf
 linja-sike-5-nanpa-linja-n.otf
 linja-sike-5-nanpa-linja-n-nasin-e-en.otf
+linja-sike-5-nanpa-linja-n-nasin-e-en-ss1223.otf
 
 
 
@@ -40,6 +47,7 @@ The CC0-1.0.txt file covers the licence for these fonts:
 NasinSitelenPuMono.otf
 NasinSitelenPuMono-nanpa-linja-n.otf
 NasinSitelenPuMono-nanpa-linja-n-nasin-e-en.otf
+NasinSitelenPuMono-nanpa-linja-n-nasin-e-en-ss1223.otf
 
 
 
