@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generated": "2026-08-28",
+  "generated": "2026-08-29",
   "migration": {
     "clearIndexedDbPairsOnUpgrade": true,
     "preserveFontKeys": [
@@ -20,7 +20,7 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-08-28-078",
+      "rev": "2026-09-28-079",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",

@@ -1250,10 +1250,10 @@
   ]);
 
   const STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
-    WE:"WA", TE:"TU", LE:"LU", ME:"MU", PE:"PI"
+    WE:"WA", TE:"TU", LE:"LU", ME:"MU", PE:"PI", JE:"JO"
   });
   const STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
-  const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI"]);
+  const RELAXED_DIGIT_TOKENS = new Set(["WA","TU","LU","MU","PI","JO"]);
   const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
   const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
   const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
@@ -1793,7 +1793,7 @@
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
   async function getNanpaModule(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=243");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249");
     return nanpaModulePromise;
   }
 
@@ -1938,7 +1938,7 @@
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=57").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=63").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 
@@ -2828,7 +2828,7 @@
 
   const REVIEW_AUDIO_DIGIT_BY_SYLLABLE = Object.freeze({
     ni:"0", we:"1", wa:"1", te:"2", tu:"2", se:"3", na:"4",
-    le:"5", lu:"5", nu:"6", me:"7", mu:"7", pe:"8", pi:"8", je:"9",
+    le:"5", lu:"5", nu:"6", me:"7", mu:"7", pe:"8", pi:"8", je:"9", jo:"9",
     ja:"A", la:"B", ma:"C", pa:"D", si:"E", ta:"F"
   });
 

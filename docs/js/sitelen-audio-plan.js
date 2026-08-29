@@ -688,7 +688,8 @@ const STRICT_TO_RELAXED_NANPA_CAPS_PAIR = Object.freeze({
   TE: 'TU',
   LE: 'LU',
   ME: 'MU',
-  PE: 'PI'
+  PE: 'PI',
+  JE: 'JO'
 });
 
 /**
@@ -2098,7 +2099,7 @@ const HEX_STRICT_DIGIT_SYLLABLE_FOR_AUDIO = Object.freeze({
 
 const HEX_RELAXED_DIGIT_SYLLABLE_FOR_AUDIO = Object.freeze({
   ...HEX_STRICT_DIGIT_SYLLABLE_FOR_AUDIO,
-  '1':'wa','2':'tu','5':'lu','7':'mu','8':'pi'
+  '1':'wa','2':'tu','5':'lu','7':'mu','8':'pi','9':'jo'
 });
 
 function hexGroupingSizesForAudio(length) {

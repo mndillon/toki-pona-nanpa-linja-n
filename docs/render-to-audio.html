@@ -233,6 +233,10 @@
       font-weight: 800;
     }
 
+    .chip.marker.nanpa-opening-marker {
+      padding-inline: 0.05em;
+    }
+
     .final-word {
       justify-self: center;
       min-width: max-content;
@@ -679,7 +683,7 @@
       }
 
       .nanpaModeTable tbody tr:nth-last-child(-n + 2) td:first-child,
-      .nanpaModeTable tbody tr:nth-last-child(-n + 2) td:nth-child(11) {
+      .nanpaModeTable tbody tr:nth-last-child(-n + 2) td:nth-child(12) {
         white-space: normal;
         line-height: 1.15;
       }
@@ -1018,6 +1022,8 @@
             <option value="2.25">Slow</option>
             <option value="4.00">Very slow</option>
           </select>
+          <label for="nanpaFormatEnable">Nanpa format</label>
+          <input id="nanpaFormatEnable" type="checkbox" aria-label="Nanpa format">
         </div>
       </div>
 
@@ -1078,7 +1084,7 @@
   This table shows which syllables are allowed for each decimal digit when reading and writing a nanpa-linja-n proper name. <br/>
   In <strong>strict mode</strong>, each digit has only one accepted syllable. For example, digit 1 uses <strong>we</strong>, digit 2 uses <strong>te</strong>, and digit 5 uses <strong>le</strong>. <br/>
   In <strong>relaxed mode</strong>, some digits can also use extra syllables that mean the same digit. For example, digit 1 can use <strong>we</strong> or <strong>wa</strong>, digit 2 can use <strong>te</strong> or <strong>tu</strong>, and digit 5 can use <strong>le</strong> or <strong>lu</strong>. <br/>
-  The <strong>e</strong>, <strong>a</strong>, <strong>i</strong>, and <strong>u</strong> columns show the nanpa-linja-n glyphs for the supporting vowel used in some digit syllables. <br/>
+  The <strong>e</strong>, <strong>a</strong>, <strong>i</strong>, <strong>o</strong>, and <strong>u</strong> columns show the nanpa-linja-n glyphs for the supporting vowel used in some digit syllables. <br/>
   For <strong>ni</strong>, <strong>na</strong>, and <strong>nu</strong>, the supporting consonant is represented in nanpa-linja-n by the sitelen pona glyph nena.<br/>
   The <strong>large glyph</strong> column shows the main sitelen pona glyph used for that digit.<br/>
   The <strong>small glyph</strong> row shows the small supporting glyph associated with each vowel column.<br/>
@@ -1091,7 +1097,7 @@
           <table class="digitTable nanpaModeTable">
             <thead>
               <tr>
-                <th class="modeSubhead" colspan="9">relaxed</th>
+                <th class="modeSubhead" colspan="10">relaxed</th>
                 <th class="modeGap" aria-hidden="true">&nbsp;</th>
                 <th class="modeSubhead" colspan="8">strict</th>
               </tr>
@@ -1100,6 +1106,7 @@
                 <th>e</th>
                 <th>a</th>
                 <th>i</th>
+                <th>o</th>
                 <th>u</th>
                 <th>large glyph</th>
                 <th>sitelen glyphs</th>
@@ -1118,7 +1125,7 @@
             </thead>
             <tbody>
               <tr>
-                <td>0</td><td>-</td><td>-</td><td>ni</td><td>-</td><td>ijo</td>
+                <td>0</td><td>-</td><td>-</td><td>ni</td><td>-</td><td>-</td><td>ijo</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large ijo glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF190C;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="ijo glyph">&#xF190C;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Ni" title="Play Ni using the numeric voice" aria-label="Play Ni using the numeric voice">🤖🔊</button></td>
@@ -1128,7 +1135,7 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="ijo glyph">&#xF190C;</span></td>
               </tr>
               <tr>
-                <td>1</td><td>we</td><td>wa</td><td>-</td><td>-</td><td>wan</td>
+                <td>1</td><td>we</td><td>wa</td><td>-</td><td>-</td><td>-</td><td>wan</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large wan glyph followed by small ala glyph"><span class="modeLargeGlyph">&#xF1973;</span><span class="modeSmallGlyph">&#xF1902;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="wan glyph">&#xF1973;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Wa" title="Play Wa using the numeric voice" aria-label="Play Wa using the numeric voice">🤖🔊</button></td>
@@ -1138,7 +1145,7 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="wan glyph">&#xF1973;</span></td>
               </tr>
               <tr>
-                <td>2</td><td>te</td><td>-</td><td>-</td><td>tu</td><td>tu</td>
+                <td>2</td><td>te</td><td>-</td><td>-</td><td>-</td><td>tu</td><td>tu</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large tu glyph followed by small uta glyph"><span class="modeLargeGlyph">&#xF196E;</span><span class="modeSmallGlyph">&#xF1970;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="tu glyph">&#xF196E;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Tu" title="Play Tu using the numeric voice" aria-label="Play Tu using the numeric voice">🤖🔊</button></td>
@@ -1148,7 +1155,7 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="tu glyph">&#xF196E;</span></td>
               </tr>
               <tr>
-                <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>seli</td>
+                <td>3</td><td>se</td><td>-</td><td>-</td><td>-</td><td>-</td><td>seli</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large seli glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1957;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="seli glyph">&#xF1957;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Se" title="Play Se using the numeric voice" aria-label="Play Se using the numeric voice">🤖🔊</button></td>
@@ -1158,7 +1165,7 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="seli glyph">&#xF1957;</span></td>
               </tr>
               <tr>
-                <td>4</td><td>-</td><td>na</td><td>-</td><td>-</td><td>awen</td>
+                <td>4</td><td>-</td><td>na</td><td>-</td><td>-</td><td>-</td><td>awen</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large awen glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF1908;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="awen glyph">&#xF1908;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Na" title="Play Na using the numeric voice" aria-label="Play Na using the numeric voice">🤖🔊</button></td>
@@ -1168,7 +1175,7 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="awen glyph">&#xF1908;</span></td>
               </tr>
               <tr>
-                <td>5</td><td>le</td><td>-</td><td>-</td><td>lu</td><td>luka</td>
+                <td>5</td><td>le</td><td>-</td><td>-</td><td>-</td><td>lu</td><td>luka</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large luka glyph followed by small uta glyph"><span class="modeLargeGlyph">&#xF192D;</span><span class="modeSmallGlyph">&#xF1970;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="luka glyph">&#xF192D;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Lu" title="Play Lu using the numeric voice" aria-label="Play Lu using the numeric voice">🤖🔊</button></td>
@@ -1178,7 +1185,7 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="luka glyph">&#xF192D;</span></td>
               </tr>
               <tr>
-                <td>6</td><td>-</td><td>-</td><td>-</td><td>nu</td><td>utala</td>
+                <td>6</td><td>-</td><td>-</td><td>-</td><td>-</td><td>nu</td><td>utala</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="small nena glyph followed by large utala glyph"><span class="modeSmallGlyph">&#xF1940;</span><span class="modeLargeGlyph">&#xF1971;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="utala glyph">&#xF1971;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Nu" title="Play Nu using the numeric voice" aria-label="Play Nu using the numeric voice">🤖🔊</button></td>
@@ -1188,7 +1195,7 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="utala glyph">&#xF1971;</span></td>
               </tr>
               <tr>
-                <td>7</td><td>me</td><td>-</td><td>-</td><td>mu</td><td>mun</td>
+                <td>7</td><td>me</td><td>-</td><td>-</td><td>-</td><td>mu</td><td>mun</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large mun glyph followed by small uta glyph"><span class="modeLargeGlyph">&#xF193A;</span><span class="modeSmallGlyph">&#xF1970;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="mun glyph">&#xF193A;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Mu" title="Play Mu using the numeric voice" aria-label="Play Mu using the numeric voice">🤖🔊</button></td>
@@ -1198,7 +1205,7 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="mun glyph">&#xF193A;</span></td>
               </tr>
               <tr>
-                <td>8</td><td>pe</td><td>-</td><td>pi</td><td>-</td><td>pipi</td>
+                <td>8</td><td>pe</td><td>-</td><td>pi</td><td>-</td><td>-</td><td>pipi</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large pipi glyph followed by small ike glyph"><span class="modeLargeGlyph">&#xF1951;</span><span class="modeSmallGlyph">&#xF190D;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="pipi glyph">&#xF1951;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Pi" title="Play Pi using the numeric voice" aria-label="Play Pi using the numeric voice">🤖🔊</button></td>
@@ -1208,17 +1215,17 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="pipi glyph">&#xF1951;</span></td>
               </tr>
               <tr>
-                <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
-                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
+                <td>9</td><td>je</td><td>-</td><td>-</td><td>jo</td><td>-</td><td>jo</td>
+                <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by small open glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF1947;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="jo glyph">&#xF1913;</span></td>
-                <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Je" title="Play Je using the numeric voice" aria-label="Play Je using the numeric voice">🤖🔊</button></td>
+                <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Jo" title="Play Jo using the numeric voice" aria-label="Play Jo using the numeric voice">🤖🔊</button></td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>9</td><td>je</td><td>-</td><td>-</td><td>-</td><td>jo</td>
                 <td class="modeGlyphCell"><span class="modeGlyphSequence" role="img" aria-label="large jo glyph followed by two-thirds-sized en glyph"><span class="modeLargeGlyph">&#xF1913;</span><span class="modeSmallGlyph">&#xF1909;</span></span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="jo glyph">&#xF1913;</span></td>
               </tr>
               <tr>
-                <td>small glyph</td><td>e</td><td>ala</td><td>ike</td><td>uta</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+                <td>small glyph</td><td>e</td><td>ala</td><td>ike</td><td>open</td><td>uta</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
                 <td class="tableAudioCell" aria-hidden="true">&nbsp;</td>
                 <td class="modeGap" aria-hidden="true">&nbsp;</td>
                 <td>small glyph</td><td>e</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
@@ -1228,6 +1235,7 @@
                 <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="e glyph">&#xF1909;</span></td>
                 <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="ala glyph">&#xF1902;</span></td>
                 <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="ike glyph">&#xF190D;</span></td>
+                <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="open glyph">&#xF1947;</span></td>
                 <td class="modeGlyphCell"><span class="modeReferenceSmallGlyph" role="img" aria-label="uta glyph">&#xF1970;</span></td>
                 <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
                 <td class="tableAudioCell" aria-hidden="true">&nbsp;</td>
@@ -1548,15 +1556,18 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=242";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=45";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=250";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=64";
+    import { REFERENCE_AUDIO_MANIFEST } from "./js/audio-manifest.js?v=30";
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback
-    } from "./js/sitelen-audio-plan.js?v=53";
+    } from "./js/sitelen-audio-plan.js?v=56";
 
     const MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
     const MODE_DEFAULT = "relaxed";
+    const NANPA_FORMAT_STORAGE_KEY = "tpDisplayNanpaFormat";
+    const NANPA_FORMAT_DEFAULT = true;
     const AUDIO_SPEED_STORAGE_KEY = "renderToAudioAudioPauseScale";
     const AUDIO_SPEED_DEFAULT = 1.00;
 
@@ -1595,7 +1606,8 @@
       TE: "TU",
       LE: "LU",
       ME: "MU",
-      PE: "PI"
+      PE: "PI",
+      JE: "JO"
     });
 
     const RELAXED_TO_STRICT_DIGIT_TOKEN = Object.freeze({
@@ -1603,11 +1615,12 @@
       TU: "TE",
       LU: "LE",
       MU: "ME",
-      PI: "PE"
+      PI: "PE",
+      JO: "JE"
     });
 
     const DIGIT_TOKENS = new Set([
-      "NI", "WE", "WA", "TE", "TU", "SE", "NA", "LE", "LU", "NU", "ME", "MU", "PE", "PI", "JE"
+      "NI", "WE", "WA", "TE", "TU", "SE", "NA", "LE", "LU", "NU", "ME", "MU", "PE", "PI", "JE", "JO"
     ]);
     const HEX_STRICT_DIGIT_SYLLABLE = Object.freeze({
       "0":"ni", "1":"we", "2":"te", "3":"se", "4":"na", "5":"le", "6":"nu", "7":"me",
@@ -1615,7 +1628,7 @@
     });
     const HEX_RELAXED_DIGIT_SYLLABLE = Object.freeze({
       ...HEX_STRICT_DIGIT_SYLLABLE,
-      "1":"wa", "2":"tu", "5":"lu", "7":"mu", "8":"pi"
+      "1":"wa", "2":"tu", "5":"lu", "7":"mu", "8":"pi", "9":"jo"
     });
 
 
@@ -1626,7 +1639,7 @@
     const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
       "Eke", "Eken", "Ekeke", "Ekeken", "Ekekeke", "Ekekeken",
       "Keke", "Keken", "Kekeke", "Kekeken",
-      "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
+      "Nanpa", "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
     ]);
 
     const el = {
@@ -1634,6 +1647,7 @@
       input: document.getElementById("numberInput"),
       mode: document.getElementById("modeSelect"),
       speed: document.getElementById("speedSelect"),
+      nanpaFormat: document.getElementById("nanpaFormatEnable"),
       playToggle: document.getElementById("playToggleButton"),
       stop: document.getElementById("stopButton"),
       result: document.getElementById("result"),
@@ -1702,6 +1716,8 @@
             mixedStyle: "short",
             relaxedNanpaLinjanParsing: true,
             relaxedNanpaLinjanRendering: true,
+            nanpaColonParsing: getNanpaFormatEnabled(),
+            nanpaColonRendering: getNanpaFormatEnabled(),
             enableHexParsing: true,
             enableBinaryParsing: true,
             enableBinaryRendering: true
@@ -1737,6 +1753,26 @@
       return mode;
     }
 
+    function loadNanpaFormat() {
+      try {
+        const raw = localStorage.getItem(NANPA_FORMAT_STORAGE_KEY);
+        if (raw == null) return NANPA_FORMAT_DEFAULT;
+        if (raw === "1" || raw === "true") return true;
+        if (raw === "0" || raw === "false") return false;
+      } catch {}
+      return NANPA_FORMAT_DEFAULT;
+    }
+
+    function saveNanpaFormat(value) {
+      const enabled = !!value;
+      try { localStorage.setItem(NANPA_FORMAT_STORAGE_KEY, enabled ? "1" : "0"); } catch {}
+      return enabled;
+    }
+
+    function getNanpaFormatEnabled() {
+      return el.nanpaFormat ? !!el.nanpaFormat.checked : NANPA_FORMAT_DEFAULT;
+    }
+
     function normalizeSpeed(value) {
       const key = Number(value).toFixed(2);
       return Object.prototype.hasOwnProperty.call(AUDIO_SPEED_OPTIONS, key)
@@ -1768,6 +1804,7 @@
       return [
         model.properName,
         model.mode,
+        model.nanpaFormat === true ? "nanpa" : "ne",
         normalizeSpeed(el.speed.value)
       ].join("|");
     }
@@ -1828,6 +1865,8 @@
           mixedStyle: "short",
           relaxedNanpaLinjanParsing: relaxed,
           relaxedNanpaLinjanRendering: relaxed,
+          nanpaColonParsing: model?.nanpaFormat === true,
+          nanpaColonRendering: model?.nanpaFormat === true,
           enableHexParsing: true,
           enableBinaryParsing: true,
           enableBinaryRendering: true,
@@ -1851,7 +1890,7 @@
     }
 
     async function getVoice() {
-      if (!voicePromise) voicePromise = createTokiPonaVoice();
+      if (!voicePromise) voicePromise = createTokiPonaVoice({ manifest: REFERENCE_AUDIO_MANIFEST });
       return voicePromise;
     }
 
@@ -2209,7 +2248,7 @@
       if(!properName||!fullCodepoints.length) throw new Error('The binary input was parsed, but the proper name or cartouche could not be generated.');
       return {
         rawInput:trimmedInput,parserDisplayInput:String(parsed.displayValue??trimmedInput).trim(),componentDisplayInput:trimmedInput,
-        mode:normalizedMode,strictParsed:parsed,parsed,isBinary:true,numberBase:2,tokens:[],caps:null,properName,
+        mode:normalizedMode,nanpaFormat:false,strictParsed:parsed,parsed,isBinary:true,numberBase:2,tokens:[],caps:null,properName,
         cartouche:{innerCodepoints:fullCodepoints,words:Array.from(parsed.tpWords||[])},
         rawUnits:metadata.rawUnits,inputSourceCells:metadata.inputSourceCells,audioUnits:metadata.audioUnits,numericValueHighlightMap:metadata.numericValueHighlightMap,
         finalWordPlacements:buildHexFinalWordPlacements(metadata.rawUnits,properName),hundredsSplitLeadingNiIndexes:[],
@@ -2278,6 +2317,7 @@
         parserDisplayInput: String(parsed.displayValue ?? trimmedInput).trim(),
         componentDisplayInput: trimmedInput,
         mode: normalizedMode,
+        nanpaFormat: false,
         strictParsed: parsed,
         parsed,
         isHex: true,
@@ -2304,11 +2344,14 @@
     function buildModel(rawInput, mode) {
       const trimmedInput = String(rawInput ?? "").trim();
       const normalizedMode = normalizeMode(mode);
+      const nanpaFormat = getNanpaFormatEnabled();
       const strictParsed = NanpaParser.parseNumber(trimmedInput, {
         mode: "uniform",
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: true,
         relaxedNanpaLinjanRendering: normalizedMode === "relaxed",
+        nanpaColonParsing: nanpaFormat,
+        nanpaColonRendering: nanpaFormat,
         enableHexParsing: true,
             enableBinaryParsing: true,
             enableBinaryRendering: true
@@ -2336,14 +2379,18 @@
 
       const properName = titleCaseWords(NanpaParser.splitCapsToProperName(caps, {
         titleCase: true,
-        relaxedNanpaLinjanParsing: relaxed
+        relaxedNanpaLinjanParsing: relaxed,
+        relaxedNanpaLinjanRendering: relaxed,
+        nanpaColonRendering: nanpaFormat
       }));
 
       const cartouche = NanpaParser.capsToCodepoints(caps, {
         mode: "uniform",
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: relaxed,
-        relaxedNanpaLinjanRendering: relaxed
+        relaxedNanpaLinjanRendering: relaxed,
+        nanpaColonParsing: nanpaFormat,
+        nanpaColonRendering: nanpaFormat
       });
 
       if (!properName || !cartouche?.innerCodepoints?.length) {
@@ -2354,7 +2401,9 @@
         strictParsed.displayValue ??
         NanpaParser.decodeCaps(caps, {
           relaxedNanpaLinjanParsing: relaxed,
-          relaxedNanpaLinjanRendering: relaxed
+          relaxedNanpaLinjanRendering: relaxed,
+          nanpaColonParsing: nanpaFormat,
+          nanpaColonRendering: nanpaFormat
         }) ??
         trimmedInput
       ).trim();
@@ -2362,7 +2411,7 @@
       const componentDisplayInput =
         formatParserInputForComponents(strictParsed, parserDisplayInput);
 
-      const rawUnits = rawUnitsFromCapsTokens(tokens);
+      const rawUnits = rawUnitsFromCapsTokens(tokens, { nanpaFormat });
       const inputSourceCells =
         inputSourceCellsForRawUnits(componentDisplayInput, rawUnits);
       assignInputSourceCharacterIndexes(
@@ -2372,9 +2421,12 @@
       const audioUnits = buildAudioUnits(properName);
       const numericValueHighlightMap = buildNumericValueHighlightMap(
         componentDisplayInput,
-        audioUnits
+        audioUnits,
+        { nanpaFormat }
       );
-      const finalWordPlacements = buildFinalWordPlacements(rawUnits, properName);
+      const finalWordPlacements = buildFinalWordPlacements(rawUnits, properName, {
+        separateOpeningWord: nanpaFormat
+      });
       const hundredsSplitLeadingNiIndexes =
         findHundredsSplitLeadingNiIndexes(rawUnits, properName);
 
@@ -2383,6 +2435,7 @@
         parserDisplayInput,
         componentDisplayInput,
         mode: normalizedMode,
+        nanpaFormat,
         strictParsed,
         tokens,
         caps,
@@ -2397,7 +2450,7 @@
       };
     }
 
-    function rawUnitsFromCapsTokens(tokens) {
+    function rawUnitsFromCapsTokens(tokens, { nanpaFormat = false } = {}) {
       const body = Array.from(tokens ?? []).slice(1, -1);
       const units = [];
 
@@ -2407,6 +2460,12 @@
 
         if (DIGIT_TOKENS.has(token)) {
           units.push({ text: token.toLowerCase(), kind: "digit", sourceTokens: [token], reassignLeadingN: false });
+          i += 1;
+          continue;
+        }
+
+        if (token === "NS" && nanpaFormat) {
+          units.push({ text: "ne", kind: "positive", sourceTokens: [token], reassignLeadingN: false });
           i += 1;
           continue;
         }
@@ -2540,7 +2599,7 @@
         .sort((a, b) => a - b);
     }
 
-    function buildFinalWordPlacements(rawUnits, properName) {
+    function buildFinalWordPlacements(rawUnits, properName, { separateOpeningWord = false } = {}) {
       const words = String(properName ?? "").trim().split(/\s+/).filter(Boolean);
       const placements = [];
       const rightMarkerColumn = rawUnits.length + 2;
@@ -2548,7 +2607,14 @@
       let currentStartColumn = 1;
       let startUnitIndex = 0;
 
-      if (rawUnits[0]?.kind === "negative" && words[wordIndex]) {
+      if (separateOpeningWord && words[wordIndex]) {
+        placements.push({
+          word: words[wordIndex++],
+          startColumn: 1,
+          endColumn: 1
+        });
+        currentStartColumn = 2;
+      } else if (rawUnits[0]?.kind === "negative" && words[wordIndex]) {
         placements.push({
           word: words[wordIndex++],
           startColumn: 1,
@@ -2674,6 +2740,7 @@
       if (!unit) return false;
 
       if (unit.kind === "digit") return /\d/u.test(ch);
+      if (unit.kind === "positive") return ch === "+";
       if (unit.kind === "negative") return /[-−‒–—]/u.test(ch);
       if (unit.kind === "percent") return ch === "%";
       if (unit.text === "none") return ch === ".";
@@ -2935,7 +3002,13 @@
       clearElement(el.outerMarkerUnits);
       setColumnCount(el.outerMarkerUnits, columnCount);
 
-      const start = makeChip(model.isHex ? "Nasa" : model.isBinary ? "Noka" : "Ne-", "marker");
+      const start = makeChip(
+        model.isHex ? "Nasa" : model.isBinary ? "Noka" : model.nanpaFormat ? "Nanpa" : "Ne-",
+        "marker"
+      );
+      if (!model.isHex && !model.isBinary && model.nanpaFormat) {
+        start.classList.add("nanpa-opening-marker");
+      }
       placeAt(start, 1);
       el.outerMarkerUnits.appendChild(start);
 
@@ -2961,12 +3034,14 @@
 
       const startArrow = document.createElement("span");
       startArrow.className = "arrow-cell";
-      startArrow.textContent = (model.isHex || model.isBinary) ? "↓" : "↘";
+      startArrow.textContent = (model.isHex || model.isBinary || model.nanpaFormat) ? "↓" : "↘";
       startArrow.title = model.isHex
         ? "The hexadecimal opening Nasa remains a separate proper-name word"
         : model.isBinary
           ? "The binary opening Noka remains a separate proper-name word"
-          : "The opening Ne- joins the first proper-name word";
+          : model.nanpaFormat
+            ? "The decimal opening Nanpa remains a separate proper-name word"
+            : "The opening Ne- joins the first proper-name word";
       placeAt(startArrow, 1);
       el.reassignmentArrows.appendChild(startArrow);
 
@@ -3213,15 +3288,22 @@
       mu: "7",
       pe: "8",
       pi: "8",
-      je: "9"
+      je: "9",
+      jo: "9"
     });
 
-    function audioUnitSourceRanges(units) {
+    function audioUnitSourceRanges(units, { nanpaFormat = false } = {}) {
       const ranges = [];
       let cursor = 0;
 
       for (const unit of units) {
-        const count = Array.from(String(unit.text ?? "")).length;
+        const isNanpaOpening =
+          nanpaFormat &&
+          unit.index === 0 &&
+          String(unit.word ?? unit.text ?? "").toLowerCase() === "nanpa";
+        const count = isNanpaOpening
+          ? 2
+          : Array.from(String(unit.text ?? "")).length;
         ranges[unit.index] = {
           start: cursor,
           end: cursor + count,
@@ -3372,7 +3454,7 @@
       return markerWordIndexes;
     }
 
-    function buildNumericValueHighlightMap(value, units) {
+    function buildNumericValueHighlightMap(value, units, { nanpaFormat = false } = {}) {
       const characters = Array.from(String(value ?? ""));
       const map = [];
       const used = new Set();
@@ -3414,8 +3496,22 @@
          * character. For a negative value, only the following no syllable
          * highlights the minus sign.
          */
-        if (unit.index === 0 && lowerText === "ne") {
+        if (
+          (unit.index === 0 && lowerText === "ne") ||
+          (nanpaFormat && unit.index === 0 && lowerText === "nanpa")
+        ) {
           map[unit.index] = [];
+          continue;
+        }
+
+        if (
+          nanpaFormat &&
+          unit.wordIndex === 1 &&
+          unit.unitIndexInWord === 0 &&
+          lowerText === "ne" &&
+          characters[0] === "+"
+        ) {
+          map[unit.index] = takeNext(character => character === "+", 1);
           continue;
         }
 
@@ -3865,7 +3961,7 @@
       if (model?.isBinary) return buildBinaryCartoucheHighlightMap(model, plan, target, false);
       if (model?.isHex) return buildHexCartoucheHighlightMap(model, plan, target, false);
       const geometry = buildCartoucheGeometry(model, plan, target);
-      const sourceRanges = audioUnitSourceRanges(model.audioUnits);
+      const sourceRanges = audioUnitSourceRanges(model.audioUnits, { nanpaFormat: model.nanpaFormat === true });
 
       if (
         !geometry ||
@@ -3908,7 +4004,7 @@
         model.cartouche?.innerCodepoints ?? [],
         Number
       );
-      const sourceRanges = audioUnitSourceRanges(model.audioUnits);
+      const sourceRanges = audioUnitSourceRanges(model.audioUnits, { nanpaFormat: model.nanpaFormat === true });
 
       if (
         !geometry ||
@@ -4178,9 +4274,11 @@
     async function submitCurrentInput() {
       const rawInput = String(el.input.value ?? "").trim();
       const mode = normalizeMode(el.mode.value);
+      const nanpaFormat = getNanpaFormatEnabled();
       const shouldInvalidatePrepared =
         rawInput !== lastSubmittedInput ||
-        mode !== currentModel?.mode;
+        mode !== currentModel?.mode ||
+        nanpaFormat !== currentModel?.nanpaFormat;
 
       resetAudio({ invalidatePrepared: shouldInvalidatePrepared });
       const jobId = ++renderJobId;
@@ -4476,6 +4574,8 @@
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: model.mode === "relaxed",
         relaxedNanpaLinjanRendering: model.mode === "relaxed",
+        nanpaColonParsing: model.nanpaFormat === true,
+        nanpaColonRendering: model.nanpaFormat === true,
         enableHexParsing: true,
         enableBinaryParsing: true,
         enableBinaryRendering: true,
@@ -4820,6 +4920,17 @@
       }
     });
 
+    el.nanpaFormat?.addEventListener("change", async () => {
+      renderJobId += 1;
+      resetAudio({ invalidatePrepared: true });
+      saveNanpaFormat(el.nanpaFormat.checked);
+      const currentInput = String(el.input.value ?? "").trim();
+
+      if (currentModel && currentInput === lastSubmittedInput) {
+        await submitCurrentInput();
+      }
+    });
+
     el.speed.addEventListener("change", () => {
       saveSpeed(el.speed.value);
       resetAudio({ invalidatePrepared: true });
@@ -4890,6 +5001,7 @@
 
     el.mode.value = loadMode();
     el.speed.value = loadSpeed();
+    if (el.nanpaFormat) el.nanpaFormat.checked = loadNanpaFormat();
     applyInitialInputFromQuery();
     updateAudioButtons();
     warmVoiceDuringIdle();
@@ -4933,7 +5045,8 @@ function trackUsage(eventName) {
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=45';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=64';
+      const NUMERIC_AUDIO_MANIFEST_MODULE_PATH = './js/audio-manifest.js?v=30';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,
@@ -4944,8 +5057,13 @@ function trackUsage(eventName) {
 
       function getNumericTableVoice() {
         if (!numericTableVoicePromise) {
-          numericTableVoicePromise = import(NUMERIC_VOICE_MODULE_PATH)
-            .then(module => module.createTokiPonaVoice())
+          numericTableVoicePromise = Promise.all([
+            import(NUMERIC_VOICE_MODULE_PATH),
+            import(NUMERIC_AUDIO_MANIFEST_MODULE_PATH)
+          ])
+            .then(([voiceModule, manifestModule]) => voiceModule.createTokiPonaVoice({
+              manifest: manifestModule.REFERENCE_AUDIO_MANIFEST
+            }))
             .catch(error => {
               numericTableVoicePromise = null;
               throw error;

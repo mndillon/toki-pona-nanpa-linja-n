@@ -1340,7 +1340,7 @@ import {
 } from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=22";
 import { CartoucheApi } from './js/cartouche-api-v3-previewdesc.js?v=35';
 import SitelenVectorExporter from './js/sitelen-vector-exporter.js?v=178';
-import { createScrapbookCartoucheDbController } from './scrapbook-layouteditor_app/js/scrapbook-cartouche-db.js?v=220';
+import { createScrapbookCartoucheDbController } from './scrapbook-layouteditor_app/js/scrapbook-cartouche-db.js?v=221';
 
 (() => {
   "use strict";
@@ -2917,7 +2917,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=246').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -13440,7 +13440,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=246');
+        const rendererMod = await import('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249');
         const NanpaParser = rendererMod?.NanpaParser;
         layoutCartoucheNanpaParser = NanpaParser || null;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });

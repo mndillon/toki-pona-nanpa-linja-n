@@ -1,5 +1,5 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=240';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=28';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=250';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=30';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 
@@ -286,13 +286,11 @@ function tryNanpaNumberToProperName(fragment, options = {}) {
     enableBinaryParsing,
     enableBinaryRendering: enableBinaryParsing,
     nanpaColonParsing: options.nanpaColonParsing === true || nanpaColonRendering,
-    nanpaColonRendering
+    nanpaColonRendering,
+    relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
+    relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+    abbreviateNumericCartouches: !!options.abbreviateNumericCartouches
   };
-  if (potentialHex || potentialBinary) {
-    parserOptions.relaxedNanpaLinjanParsing = !!options.relaxedNanpaLinjanParsing;
-    parserOptions.relaxedNanpaLinjanRendering = !!options.relaxedNanpaLinjanRendering;
-    parserOptions.abbreviateNumericCartouches = !!options.abbreviateNumericCartouches;
-  }
   const parsed = NanpaParser.parseNumber(s, parserOptions);
   if (!parsed || !parsed.properName) return null;
   return {
