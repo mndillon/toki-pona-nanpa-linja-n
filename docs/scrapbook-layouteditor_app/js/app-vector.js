@@ -2,7 +2,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=21";
+} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=22";
 import {
   CartoucheApi,
   buildEntryRendererInput,
@@ -10,8 +10,8 @@ import {
   segmentLetters,
   segmentWords,
   entryUsesForceMergedWholeEntry
-} from '../../js/cartouche-api-v3-previewdesc.js?v=33';
-import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=175';
+} from '../../js/cartouche-api-v3-previewdesc.js?v=35';
+import SitelenVectorExporter from '../../js/sitelen-vector-exporter.js?v=178';
 
 (() => {
   "use strict";
@@ -534,6 +534,11 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       lbl_default_abbrev_numeric_cartouches: "Default abbreviate numeric cartouche output",
       lbl_default_abbrev_numeric_cartouche_spacers: "Default show spacers in abbreviated cartouches",
       lbl_default_nanpa_linjan_mode: "Default nanpa-linja-n mode",
+      lbl_default_nanpa_format: "Default Nanpa format",
+      lbl_default_enable_hex_parsing: "Default enable hex parsing",
+      lbl_default_enable_binary_parsing: "Default enable binary parsing",
+      lbl_default_interpret_double_quotes_as_te_to: "Default interpret double quotes as te/to",
+      lbl_default_break_lines_at_full_stops: "Default one sentence per rendered line",
       lbl_default_preserve_center_auto_resize: "Default preserve center on auto resize",
       lbl_default_spacing: "Default sitelen spacing",
       lbl_default_text: "Default text",
@@ -592,6 +597,11 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       props_abbrev_numeric_cartouches: "Abbreviate numeric cartouche output",
       props_abbrev_numeric_cartouche_spacers: "Show spacers in abbreviated cartouches",
       props_nanpa_linjan_mode: "nanpa-linja-n mode",
+      props_nanpa_format: "Nanpa format",
+      props_enable_hex_parsing: "Enable hex parsing",
+      props_enable_binary_parsing: "Enable binary parsing",
+      props_interpret_double_quotes_as_te_to: "Interpret double quotes as te/to",
+      props_break_lines_at_full_stops: "One sentence per rendered line",
       opt_nanpa_linjan_strict: "Strict",
       opt_nanpa_linjan_relaxed: "Relaxed",
       props_scale_font_box: "Scale font with box",
@@ -829,6 +839,11 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       lbl_default_abbrev_numeric_cartouches: "o lili e poki sitelen pi nanpa",
       lbl_default_abbrev_numeric_cartouche_spacers: "o pana e weka lon poki sitelen nanpa lili open",
       lbl_default_nanpa_linjan_mode: "nasin pi nanpa-linja-n open",
+      lbl_default_nanpa_format: "nasin Nanpa open",
+      lbl_default_enable_hex_parsing: "o ken lukin e nanpa Hex open",
+      lbl_default_enable_binary_parsing: "o ken lukin e nanpa Binary open",
+      lbl_default_interpret_double_quotes_as_te_to: "o lukin e sitelen \"\" sama te/to open",
+      lbl_default_break_lines_at_full_stops: "o kipisi e linja lon pini open",
       lbl_default_preserve_center_auto_resize: "ante suli la insa li awen",
       lbl_default_spacing: "weka pi sitelen pona open",
       lbl_default_text: "kule sitelen open",
@@ -886,6 +901,11 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       props_abbrev_numeric_cartouches: "o lili e poki sitelen pi nanpa",
       props_abbrev_numeric_cartouche_spacers: "o pana e weka lon poki sitelen nanpa lili",
       props_nanpa_linjan_mode: "nasin pi nanpa-linja-n",
+      props_nanpa_format: "nasin Nanpa",
+      props_enable_hex_parsing: "o ken lukin e nanpa Hex",
+      props_enable_binary_parsing: "o ken lukin e nanpa Binary",
+      props_interpret_double_quotes_as_te_to: "o lukin e sitelen \"\" sama te/to",
+      props_break_lines_at_full_stops: "o kipisi e linja lon pini",
       opt_nanpa_linjan_strict: "Strict",
       opt_nanpa_linjan_relaxed: "Relaxed",
       props_scale_font_box: "suli sitelen li sama poki",
@@ -1187,6 +1207,11 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
     setLabel("defAbbreviateNumericCartouches", "lbl_default_abbrev_numeric_cartouches");
     setLabel("defPreserveNumericCartoucheBreaksInAbbreviation", "lbl_default_abbrev_numeric_cartouche_spacers");
     setLabel("defNanpaLinjanMode", "lbl_default_nanpa_linjan_mode");
+    setLabel("defNanpaFormat", "lbl_default_nanpa_format");
+    setLabel("defEnableHexParsing", "lbl_default_enable_hex_parsing");
+    setLabel("defEnableBinaryParsing", "lbl_default_enable_binary_parsing");
+    setLabel("defInterpretDoubleQuotesAsTeTo", "lbl_default_interpret_double_quotes_as_te_to");
+    setLabel("defBreakLinesAtFullStops", "lbl_default_break_lines_at_full_stops");
     setLabel("defPreserveCenterOnAutoResize", "lbl_default_preserve_center_auto_resize");
     setLabel("defSpacingPreset", "lbl_default_spacing");
     setLabel("defTextColor", "lbl_default_text");
@@ -1465,6 +1490,11 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
     defaultAbbreviateNumericCartouches: false,
     defaultPreserveNumericCartoucheBreaksInAbbreviation: false,
     defaultNanpaLinjanMode: "strict",
+    defaultNanpaFormat: false,
+    defaultEnableHexParsing: false,
+    defaultEnableBinaryParsing: false,
+    defaultInterpretDoubleQuotesAsTeTo: false,
+    defaultBreakLinesAtFullStops: false,
     defaultPreserveCenterOnAutoResize: false,
     defaultSpacingPreset: "default",
     defaultTextColor: "#000000",        // default text color (Text/Sitelen/Glyph)
@@ -1556,6 +1586,17 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
   function isElementRelaxedNanpaLinjanMode(el){
     return isRelaxedNanpaLinjanMode(getElementNanpaLinjanMode(el));
   }
+
+  function getSceneDefaultNanpaFormat(){ return !!(Scene?.stage?.defaultNanpaFormat ?? DEFAULTS.defaultNanpaFormat ?? false); }
+  function getElementNanpaFormat(el){ return !!(el?.nanpaFormat ?? false); }
+  function getSceneDefaultEnableHexParsing(){ return !!(Scene?.stage?.defaultEnableHexParsing ?? DEFAULTS.defaultEnableHexParsing ?? false); }
+  function getElementEnableHexParsing(el){ return !!(el?.enableHexParsing ?? false); }
+  function getSceneDefaultEnableBinaryParsing(){ return !!(Scene?.stage?.defaultEnableBinaryParsing ?? DEFAULTS.defaultEnableBinaryParsing ?? false); }
+  function getElementEnableBinaryParsing(el){ return !!(el?.enableBinaryParsing ?? false); }
+  function getSceneDefaultInterpretDoubleQuotesAsTeTo(){ return !!(Scene?.stage?.defaultInterpretDoubleQuotesAsTeTo ?? DEFAULTS.defaultInterpretDoubleQuotesAsTeTo ?? false); }
+  function getElementInterpretDoubleQuotesAsTeTo(el){ return !!(el?.interpretDoubleQuotesAsTeTo ?? false); }
+  function getSceneDefaultBreakLinesAtFullStops(){ return !!(Scene?.stage?.defaultBreakLinesAtFullStops ?? DEFAULTS.defaultBreakLinesAtFullStops ?? false); }
+  function getElementBreakLinesAtFullStops(el){ return !!(el?.breakLinesAtFullStops ?? false); }
 
   function getSceneDefaultPreserveCenterOnAutoResize(){
     return !!(Scene?.stage?.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
@@ -2216,7 +2257,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=246').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -2330,6 +2371,13 @@ function buildRendererInitConfigForElement(el){
       preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
       relaxedNanpaLinjanParsing: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
+      nanpaColonParsing: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+      nanpaColonRendering: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+      enableHexParsing: !!(el?.type === ElementType.Sitelen && getElementEnableHexParsing(el)),
+      enableBinaryParsing: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
+      enableBinaryRendering: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
+      interpretDoubleQuotesAsTeTo: !!(el?.type === ElementType.Sitelen && getElementInterpretDoubleQuotesAsTeTo(el)),
+      breakLinesAtFullStops: !!(el?.type === ElementType.Sitelen && getElementBreakLinesAtFullStops(el)),
       ...buildCartoucheTallyParserConfig(el)
     },
     fonts: {
@@ -2385,6 +2433,13 @@ function buildRendererCallConfigForElement(el){
       preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
       relaxedNanpaLinjanParsing: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
+      nanpaColonParsing: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+      nanpaColonRendering: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+      enableHexParsing: !!(el?.type === ElementType.Sitelen && getElementEnableHexParsing(el)),
+      enableBinaryParsing: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
+      enableBinaryRendering: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
+      interpretDoubleQuotesAsTeTo: !!(el?.type === ElementType.Sitelen && getElementInterpretDoubleQuotesAsTeTo(el)),
+      breakLinesAtFullStops: !!(el?.type === ElementType.Sitelen && getElementBreakLinesAtFullStops(el)),
       showUnknownText: !!(el?.type === ElementType.Sitelen && !el?.ignoreUnknownText),
       ...buildCartoucheTallyParserConfig(el)
     },
@@ -2532,6 +2587,11 @@ function getElementRendererSignature(el){
     abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
     preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
     nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
+    nanpaFormat: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+    enableHexParsing: !!(el?.type === ElementType.Sitelen && getElementEnableHexParsing(el)),
+    enableBinaryParsing: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
+    interpretDoubleQuotesAsTeTo: !!(el?.type === ElementType.Sitelen && getElementInterpretDoubleQuotesAsTeTo(el)),
+    breakLinesAtFullStops: !!(el?.type === ElementType.Sitelen && getElementBreakLinesAtFullStops(el)),
     preserveCenterOnAutoResize: !!getElementPreserveCenterOnAutoResize(el),
     sitelenResizeAnchor: (el?.type === ElementType.Sitelen) ? getElementSitelenResizeAnchor(el) : "",
     sitelenBoundsGuardVersion: (el?.type === ElementType.Sitelen) ? SITELEN_BOUNDS_GUARD_VERSION : 0
@@ -2922,6 +2982,11 @@ function normalizeScene(parsed){
     defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
     defaultPreserveNumericCartoucheBreaksInAbbreviation: DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation,
     defaultNanpaLinjanMode: DEFAULTS.defaultNanpaLinjanMode,
+    defaultNanpaFormat: DEFAULTS.defaultNanpaFormat,
+    defaultEnableHexParsing: DEFAULTS.defaultEnableHexParsing,
+    defaultEnableBinaryParsing: DEFAULTS.defaultEnableBinaryParsing,
+    defaultInterpretDoubleQuotesAsTeTo: DEFAULTS.defaultInterpretDoubleQuotesAsTeTo,
+    defaultBreakLinesAtFullStops: DEFAULTS.defaultBreakLinesAtFullStops,
     defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
     defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
     defaultTextColor: DEFAULTS.defaultTextColor,
@@ -2971,6 +3036,11 @@ function normalizeScene(parsed){
   out.stage.defaultAbbreviateNumericCartouches = !!(out.stage.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
   out.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!(out.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? false);
   out.stage.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(out.stage.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
+  out.stage.defaultNanpaFormat = !!(out.stage.defaultNanpaFormat ?? false);
+  out.stage.defaultEnableHexParsing = !!(out.stage.defaultEnableHexParsing ?? false);
+  out.stage.defaultEnableBinaryParsing = !!(out.stage.defaultEnableBinaryParsing ?? false);
+  out.stage.defaultInterpretDoubleQuotesAsTeTo = !!(out.stage.defaultInterpretDoubleQuotesAsTeTo ?? false);
+  out.stage.defaultBreakLinesAtFullStops = !!(out.stage.defaultBreakLinesAtFullStops ?? false);
   out.stage.defaultPreserveCenterOnAutoResize = !!(out.stage.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   out.stage.defaultIgnoreUnknownText = !!(out.stage.defaultIgnoreUnknownText ?? DEFAULTS.defaultIgnoreUnknownText);
 
@@ -3063,6 +3133,11 @@ function normalizeScene(parsed){
         el.abbreviateNumericCartouches = (el.abbreviateNumericCartouches == null) ? false : !!el.abbreviateNumericCartouches;
         el.preserveNumericCartoucheBreaksInAbbreviation = (el.preserveNumericCartoucheBreaksInAbbreviation == null) ? false : !!el.preserveNumericCartoucheBreaksInAbbreviation;
         el.nanpaLinjanMode = normalizeNanpaLinjanMode(el.nanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
+        el.nanpaFormat = !!(el.nanpaFormat ?? false);
+        el.enableHexParsing = !!(el.enableHexParsing ?? false);
+        el.enableBinaryParsing = !!(el.enableBinaryParsing ?? false);
+        el.interpretDoubleQuotesAsTeTo = !!(el.interpretDoubleQuotesAsTeTo ?? false);
+        el.breakLinesAtFullStops = !!(el.breakLinesAtFullStops ?? false);
         el.spacingPreset = normalizeSpacingPreset(el.spacingPreset ?? out.stage?.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
         el.quotedTextFontOption = normalizeValidQuotedTextFontOptionForSitelen(
           el.quotedTextFontOption || el.fontFamily || out.stage?.defaultTextFontOption || DEFAULTS.defaultTextFontOption,
@@ -3434,6 +3509,11 @@ function deserializeAssets(serialized){
       defaultAbbreviateNumericCartouches: DEFAULTS.defaultAbbreviateNumericCartouches,
       defaultPreserveNumericCartoucheBreaksInAbbreviation: DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation,
       defaultNanpaLinjanMode: "relaxed",
+      defaultNanpaFormat: true,
+      defaultEnableHexParsing: true,
+      defaultEnableBinaryParsing: true,
+      defaultInterpretDoubleQuotesAsTeTo: false,
+      defaultBreakLinesAtFullStops: false,
       defaultPreserveCenterOnAutoResize: DEFAULTS.defaultPreserveCenterOnAutoResize,
       defaultSpacingPreset: DEFAULTS.defaultSpacingPreset,
       defaultTextColor: DEFAULTS.defaultTextColor,
@@ -3544,6 +3624,11 @@ function deserializeAssets(serialized){
     el.abbreviateNumericCartouches = getSceneDefaultAbbreviateNumericCartouches();
     el.preserveNumericCartoucheBreaksInAbbreviation = getSceneDefaultPreserveNumericCartoucheBreaksInAbbreviation();
     el.nanpaLinjanMode = getSceneDefaultNanpaLinjanMode();
+    el.nanpaFormat = getSceneDefaultNanpaFormat();
+    el.enableHexParsing = getSceneDefaultEnableHexParsing();
+    el.enableBinaryParsing = getSceneDefaultEnableBinaryParsing();
+    el.interpretDoubleQuotesAsTeTo = getSceneDefaultInterpretDoubleQuotesAsTeTo();
+    el.breakLinesAtFullStops = getSceneDefaultBreakLinesAtFullStops();
     el.preserveCenterOnAutoResize = getSceneDefaultPreserveCenterOnAutoResize();
     el.spacingPreset = getSceneDefaultSpacingPreset();
     el.sitelenResizeAnchor = el.preserveCenterOnAutoResize ? "centre" : "topLeft"; // new elements default to top-left anchor unless scene default preserves centre
@@ -4207,2388 +4292,40 @@ function ensureColorKeyRaster(el, alreadyLoadedImg){
 
 
 
-//******* new code for displaying sitelen elements
-
-
-
-
-/* ============================================================
-   Multiline text → elements → bounding box → draw-to-canvas
-   Extracted/minimized from your page: includes parsing + measuring + rendering.
-   You can paste this into another HTML page and call:
-
-     const linesEls = parseMultilineToElements(inputText, { fontPx, mode });
-     const box = measureMultiline(linesEls, { fontPx, padPx: 18, lineGapPx: 18 });
-     renderMultilineToCanvas(canvas, linesEls, { fontPx, fgCss: "000", padPx: 18, lineGapPx: 18 });
-
-   CHANGE HERE blocks indicate where to paste your existing maps and font names.
-   ============================================================ */
-
-/* ============================
-   CHANGE HERE: font family names used by canvas ctx.font
-   ============================ */
-
-/* ============================
-   Layout constants used by bbox + draw
-   ============================ */
-const WORD_GAP_PX = 12;
-const LINE_GAP_PX = 18;   // can override via options
+//******* shared sitelen rendering helpers
+// Parsing and sitelen rendering are provided exclusively by the shared SitelenRenderer.
 const DEFAULT_PAD_PX = 18;
-
-function wordGapForPx(px){
-  const p = Math.max(8, Number(px ?? 56));
-  return Math.max(2, Math.min(24, Math.round(p * 0.22)));  // ~22% of font size
-}
-
-function cartoucheLeadGapForPx(fontPx){
-  // smaller than normal word gap; tune these
-  const p = Math.max(8, Number(fontPx ?? 56));
-  return Math.max(0, Math.round(p * 0.08)); // e.g. ~8% of font size
-}
-
-function lineGapForPx(px){
-  const p = Math.max(8, Number(px ?? 56));
-  return Math.max(4, Math.min(40, Math.round(p * 0.32)));  // ~32% of font size
-}
-
-/* ============================
-   Cartouche and long-pi codepoints
-   ============================ */
-const CARTOUCHE_START_CP = 0xF1990;
-const CARTOUCHE_END_CP   = 0xF1991;
-
-// Long "pi { ... }" container glyphs
-const LONG_PI_START_CP = 0xF1993;   // START OF LONG PI
-const LONG_PI_EXT_CP   = 0xF1994;   // COMBINING LONG PI EXTENSION
-
-/* ============================
-   CHANGE HERE: word → UCSUR codepoint map
-   - Paste your full MULTI_LINE_WORD_TO_UCSUR_CP object here (including punctuation keys).
-   - This is required for parsing and rendering known words and punctuation.
-   ============================ */
-const MULTI_LINE_WORD_TO_UCSUR_CP = {
-  /* PASTE YOUR EXISTING MULTI_LINE_WORD_TO_UCSUR_CP HERE */
-  // Example minimal placeholders:
-  ...WORD_TO_UCSUR_CP,
-  ":": 0xF199D,
-  "·": 0xF199C,
-  ",": 0xF199E,
-  ".": 0xF199C,
-
-  "kolon": 0xF199D,
-  "ota": 0xF199C,
-  "koma": 0xF199E
-};
-
-function isKnownTpWordKey(k) {
-  return MULTI_LINE_WORD_TO_UCSUR_CP[k] != null;
-}
-
-/* ============================
-   CHANGE HERE: nanpa-linja-n TP word → CP map
-   - Paste your full NANPA_LINJA_N_WORD_TO_CP here if you want cartouches.
-   - If you do not need number cartouches on the new page, you can keep a minimal map
-     and skip using nanpa-linja-n features.
-   ============================ */
-const NANPA_LINJA_N_WORD_TO_CP = {
-  /* PASTE YOUR EXISTING NANPA_LINJA_N_WORD_TO_CP HERE */
-  "nanpa": 0xF193D,
-  "en":    0xF190A,
-  "esun":  0xF190B,
-  "e":     0xF1909,
-  "nena":  0xF1940,
-  "nasa":  0xF193E,
-  "ni":    0xF1941,
-  "o":     0xF1944,
-  "ona":   0xF1946,
-  "kulupu":0xF191F,
-  "ijo":   0xF190C,
-  "wan":   0xF1973,
-  "tu":    0xF196E,
-  "seli":  0xF1957,
-  "awen":  0xF1908,
-  "luka":  0xF192D,
-  "utala": 0xF1971,
-  "mun":   0xF193A,
-  "pipi":  0xF1951,
-  "jo":    0xF1913,
-  "open":   0xF1947,
-  "kipisi": 0xF197B,
-  "kasi":   0xF1917,
-  // time/date delimiter support (cartouche path): default to kasi for numeric cartouches.
-  "kolon": 0xF199D,
-  ":":     0xF199D
-};
-
-const CP_NANPA = NANPA_LINJA_N_WORD_TO_CP["nanpa"];
-const CP_NENA  = NANPA_LINJA_N_WORD_TO_CP["nena"];
-const CP_EN    = NANPA_LINJA_N_WORD_TO_CP["en"];
-
-const UNIFORM_TO_NENA = new Set([
-  NANPA_LINJA_N_WORD_TO_CP["nasa"],
-  NANPA_LINJA_N_WORD_TO_CP["nasin"],
-  NANPA_LINJA_N_WORD_TO_CP["ni"],
-  NANPA_LINJA_N_WORD_TO_CP["nimi"],
-  NANPA_LINJA_N_WORD_TO_CP["noka"],
-  NANPA_LINJA_N_WORD_TO_CP["nena"]
-]);
-
-const UNIFORM_TO_EN = new Set([
-  NANPA_LINJA_N_WORD_TO_CP["e"],
-  NANPA_LINJA_N_WORD_TO_CP["en"],
-  NANPA_LINJA_N_WORD_TO_CP["esun"]
-]);
-
-function uniformizeNanpaLinjanCartoucheCps(cps) {
-  const a = Array.from(cps ?? []);
-  if (a.length === 0) return a;
-
-  for (let i = 0; i < a.length; i++) {
-    const cp = a[i];
-
-    if (cp === CP_NANPA) {
-      if (i !== 0 && i !== a.length - 1) a[i] = CP_NENA;
-      continue;
-    }
-    if (UNIFORM_TO_NENA.has(cp)) { a[i] = CP_NENA; continue; }
-    if (UNIFORM_TO_EN.has(cp))   { a[i] = CP_EN; continue; }
-  }
-  return a;
-}
-
-/* ============================
-   Common helpers
-   ============================ */
-
-function hexToRgba(hex, a = 1){
-  const h = String(hex || "").trim().replace("#","");
-  if (h.length !== 6) return `rgba(255,255,255,${a})`;
-  const r = parseInt(h.slice(0,2), 16);
-  const g = parseInt(h.slice(2,4), 16);
-  const b = parseInt(h.slice(4,6), 16);
-  return `rgba(${r},${g},${b},${a})`;
-}
-
+function lineGapForPx(px){ const p = Math.max(8, Number(px ?? 56)); return Math.max(4, Math.min(40, Math.round(p * 0.32))); }
 function rgbaOrHexToHex(value, fallback="#FFFFFF"){
   if(value === null) return fallback.toUpperCase();
-  const s = String(value || "").trim();
-  if (s.startsWith("#") && (s.length === 7)) return s;
-  // parse rgba(r,g,b,a) -> hex (drop alpha)
-  const m = s.match(/rgba?\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)(?:\s*,\s*([0-9.]+))?\s*\)/i);
+  const sv = String(value || "").trim();
+  if (sv.startsWith("#") && sv.length === 7) return sv;
+  const m = sv.match(/rgba?\(\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)(?:\s*,\s*([0-9.]+))?\s*\)/i);
   if (!m) return fallback.toUpperCase();
   const r = clamp(parseInt(m[1],10),0,255).toString(16).padStart(2,"0");
   const g = clamp(parseInt(m[2],10),0,255).toString(16).padStart(2,"0");
   const b = clamp(parseInt(m[3],10),0,255).toString(16).padStart(2,"0");
   return `#${r}${g}${b}`.toUpperCase();
 }
-
-function setTextQuality(ctx) {
-  try { ctx.textRendering = "optimizeLegibility"; } catch (_) {}
-  try { ctx.fontKerning = "normal"; } catch (_) {}
-}
-
-// ============================================================
-// Halo helpers (per-element + scene defaults)
-// ============================================================
-function elementSupportsHalo(el){
-  const t = el?.type;
-  return t === ElementType.Text || t === ElementType.Sitelen || t === ElementType.Glyph || t === ElementType.Rect;
-}
-
-function clampHaloThicknessPx(px){
-  // Keep halo sane; values are in "element font px" units (pre-zoom)
-  const v = Math.round(Number(px) || 0);
-  return clamp(v, 0, 48);
-}
-
-function defaultHaloThicknessForFontPx(fontPx){
-  const p = Math.max(6, Number(fontPx || 24));
-  // ~10% of font size; clamp to sane minimum/maximum
-  return clamp(Math.round(p * 0.10), 2, 24);
-}
-
+function setTextQuality(ctx){ try { ctx.textRendering = "optimizeLegibility"; } catch (_) {} try { ctx.fontKerning = "normal"; } catch (_) {} }
+function elementSupportsHalo(el){ const t=el?.type; return t===ElementType.Text || t===ElementType.Sitelen || t===ElementType.Glyph || t===ElementType.Rect; }
+function clampHaloThicknessPx(px){ return clamp(Math.round(Number(px)||0),0,48); }
+function defaultHaloThicknessForFontPx(fontPx){ const p=Math.max(6,Number(fontPx||24)); return clamp(Math.round(p*0.10),2,24); }
 function ensureHaloFields(el, stageOverride){
   if (!el || !elementSupportsHalo(el)) return;
-  const st = stageOverride || Scene.stage || {};
-
-  if (typeof el.haloEnabled !== "boolean") el.haloEnabled = !!(st.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled);
-  if (typeof el.haloColor !== "string") el.haloColor = rgbaOrHexToHex(st.defaultHaloColor ?? DEFAULTS.defaultHaloColor, "#FFFFFF");
-
-  if (el.haloThicknessMode !== "manual" && el.haloThicknessMode !== "auto"){
-    el.haloThicknessMode = (st.defaultHaloThicknessMode === "manual") ? "manual" : "auto";
-  }
-
-  const basisFontPx = (el.type === ElementType.Rect)
-    ? 28
-    : Math.max(6, Number(el.fontSize ?? 24));
-
+  const st=stageOverride || Scene.stage || {};
+  if (typeof el.haloEnabled !== "boolean") el.haloEnabled=!!(st.defaultHaloEnabled ?? DEFAULTS.defaultHaloEnabled);
+  if (typeof el.haloColor !== "string") el.haloColor=rgbaOrHexToHex(st.defaultHaloColor ?? DEFAULTS.defaultHaloColor,"#FFFFFF");
+  if (el.haloThicknessMode !== "manual" && el.haloThicknessMode !== "auto") el.haloThicknessMode=(st.defaultHaloThicknessMode === "manual") ? "manual" : "auto";
+  const basis=(el.type===ElementType.Rect)?28:Math.max(6,Number(el.fontSize ?? 24));
   if (!Number.isFinite(el.haloThickness) || el.haloThickness < 0){
-    if (el.haloThicknessMode === "manual"){
-      const defManual = Number.isFinite(st.defaultHaloThicknessPx) ? st.defaultHaloThicknessPx : DEFAULTS.defaultHaloThicknessPx;
-      el.haloThickness = clampHaloThicknessPx(defManual || defaultHaloThicknessForFontPx(basisFontPx));
-    } else {
-      el.haloThickness = defaultHaloThicknessForFontPx(basisFontPx);
-    }
-  } else {
-    el.haloThickness = clampHaloThicknessPx(el.haloThickness);
-  }
-}
-
-function effectiveHaloThicknessForElement(el){
-  if (!el || !elementSupportsHalo(el) || !el.haloEnabled) return 0;
-
-  const basisFontPx = (el.type === ElementType.Rect)
-    ? 28
-    : Math.max(6, Number(el.fontSize ?? 24));
-
-  const basePx = (el.haloThicknessMode === "manual")
-    ? clampHaloThicknessPx(el.haloThickness)
-    : defaultHaloThicknessForFontPx(basisFontPx);
-
-  // Scale with zoom so what you see is what you export
-  return basePx * (Scene.view?.zoom ?? 1);
-}
-
-function effectiveHaloThicknessForElementExport(el){
-  if (!el || !elementSupportsHalo(el) || !el.haloEnabled) return 0;
-
-  const basisFontPx = (el.type === ElementType.Rect)
-    ? 28
-    : Math.max(6, Number(el.fontSize ?? 24));
-
-  const basePx = (el.haloThicknessMode === "manual")
-    ? clampHaloThicknessPx(el.haloThickness)
-    : defaultHaloThicknessForFontPx(basisFontPx);
-
-  // IMPORTANT: export is in stage coords (zoom = 1)
-  return basePx;
-}
-
-// Active halo options for sitelen raster parsing/cartouches (set by renderTextToCanvas)
-let ACTIVE_SITELEN_HALO = { enabled: false, css: "#FFFFFF", mode: "auto", thickness: 0 };
-
-function normalizeTpWord(raw) {
-  return String(raw ?? "").toLowerCase().replace(/[^a-z]/g, "");
-}
-
-// Glyph-key normalization for MULTI_LINE_WORD_TO_UCSUR_CP lookups
-// Keeps: a-z plus ^ < > : , . and middle dot ·
-function normalizeTpGlyphKey(raw) {
-  return String(raw ?? "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z^<>:,.·]/g, "");
-}
-
-function normalizeTpGlyphToken(raw) {
-  const s0 = String(raw ?? "").trim().toLowerCase();
-  if (!s0) return "";
-  if (s0 === ":" || s0 === "·" || s0 === "," || s0 === ".") return s0;
-
-  const stripped = s0.replace(/^[^a-z^<>:,.·]+|[^a-z^<>:,.·]+$/g, "");
-  if (!stripped) return "";
-  return normalizeTpGlyphKey(stripped);
-}
-
-/* ============================
-   Long pi helpers
-   ============================ */
-function tokenHasOpenCurly(tok) { return String(tok ?? "").includes("{"); }
-function tokenHasCloseCurly(tok){ return String(tok ?? "").includes("}"); }
-
-function extractCurlyContentFromTokens(tokens, startIdx) {
-  let j = startIdx;
-  while (j < tokens.length && !tokenHasCloseCurly(tokens[j])) j++;
-  if (j >= tokens.length) return null;
-
-  const joined = tokens.slice(startIdx, j + 1).join(" ");
-  const open = joined.indexOf("{");
-  const close = joined.lastIndexOf("}");
-  if (open < 0 || close < 0 || close <= open) return null;
-
-  const inner = joined.slice(open + 1, close).trim();
-  return { inner, endIndex: j };
-}
-
-function parseKnownTpWords(innerText) {
-  const raw = String(innerText ?? "");
-  const parts = raw.split(/\s+/).map(normalizeTpGlyphKey).filter(Boolean);
-  const known = parts.filter(w => MULTI_LINE_WORD_TO_UCSUR_CP[w] != null);
-  return known;
-}
-
-/* ============================
-   Random letters → glyphs (used in [ ... ] cartouches when unknown words exist)
-   - Optional. Remove if you do not need random mapping behaviour.
-   ============================ */
-function buildLetterBuckets() {
-  const buckets = new Map();
-  for (const w of Object.keys(MULTI_LINE_WORD_TO_UCSUR_CP)) {
-    const k = String(w);
-    if (!k) continue;
-    const first = k[0].toLowerCase();
-    if (!/^[a-z]$/.test(first)) continue;
-    if (!buckets.has(first)) buckets.set(first, []);
-    buckets.get(first).push(k);
-  }
-  return buckets;
-}
-const LETTER_BUCKETS = buildLetterBuckets();
-
-function randInt(n) {
-  if (n <= 0) return 0;
-  if (globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function") {
-    const buf = new Uint32Array(1);
-    globalThis.crypto.getRandomValues(buf);
-    return buf[0] % n;
-  }
-  return Math.floor(Math.random() * n);
-}
-
-function randomGlyphCpForLetter(letter) {
-  const l = String(letter ?? "").toLowerCase();
-  const arr = LETTER_BUCKETS.get(l);
-  if (!arr || arr.length === 0) return null;
-
-  // Exclude convenience punctuation-words from random output (matches your current behavior)
-  const banned = new Set(["ota", "kolon", "koma"]);
-  const filtered = arr.filter(w => !banned.has(w));
-  if (filtered.length === 0) return null;
-
-  const word = filtered[randInt(filtered.length)];
-  return MULTI_LINE_WORD_TO_UCSUR_CP[word] ?? null;
-}
-
-function lettersToRandomGlyphCps(letters) {
-  const cps = [];
-  const s = String(letters ?? "").toLowerCase().replace(/[^a-z]/g, "");
-  for (const ch of s) {
-    const cp = randomGlyphCpForLetter(ch);
-    if (cp != null) cps.push(cp);
-  }
-  return cps;
-}
-
-/* ============================================================
-   nanpa-linja-n tokenization + conversions (needed for cartouches)
-   (This is the minimal dependency set for the cartouche parser in your pipeline.)
-   ============================================================ */
-const DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
-const TOKEN_PREFIXES = ["KEKEKE","KEKE","KE","NONONO","NONO","OK","NE","NO"];
-
-function nanpaCapsHasAtLeastOneDigitToken(tokens) {
-  for (const t of (tokens ?? [])) if (DIGIT_TOKENS.has(t)) return true;
-  return false;
-}
-
-function tokenizeNanpaCaps(caps) {
-  const s = String(caps ?? "").trim().toUpperCase();
-  if (!s) throw new Error("caps is empty");
-  if (!s.endsWith("N")) throw new Error("nanpa-caps must end with final terminator 'N'");
-  if (!s.startsWith("NE")) throw new Error("nanpa-caps must start with 'NE'");
-
-  const tokens = [];
-  let i = 0;
-  const end = s.length;
-
-  while (i < end - 1) {
-    let matched = null;
-    for (const pref of TOKEN_PREFIXES) {
-      if (s.startsWith(pref, i)) { matched = pref; break; }
-    }
-    if (matched != null) { tokens.push(matched); i += matched.length; continue; }
-
-    if (i + 2 <= end - 1) {
-      const two = s.slice(i, i + 2);
-      if (DIGIT_TOKENS.has(two)) { tokens.push(two); i += 2; continue; }
-    }
-
-    throw new Error(`Invalid tokenization at position ${i} in caps string "${caps}"`);
-  }
-
-  tokens.push("N");
-  return tokens;
-}
-
-function isValidNanpaLinjanProperName(raw) {
-  const s = String(raw ?? "").replace(/\s+/g, "");
-  if (!s) return false;
-  if (!/^[a-zA-Z]+$/.test(s)) return false;
-  if (!/[nN]$/.test(s)) return false;
-
-  const core = s.slice(0, -1);
-  if (core.length < 2 || (core.length % 2) !== 0) return false;
-
-  const caps = core.toUpperCase() + "N";
-  if (!caps.startsWith("NE")) return false;
-
-  try { tokenizeNanpaCaps(caps); return true; }
-  catch { return false; }
-}
-
-const NUMBER_CODE_LETTER_TO_PAIR = {
-  "I":"NI","W":"WE","T":"TE","S":"SE","A":"NA",
-  "L":"LE","U":"NU","M":"ME","P":"PE","J":"JE"
-};
-
-function tryParseNanpaLinjanNumberCodeToCaps(raw) {
-  const s0 = String(raw ?? "").trim().replace(/\s+/g, "");
-  if (!s0) return null;
-  if (!s0.toUpperCase().startsWith("#~")) return null;
-
-  let body = s0.slice(2).toUpperCase();
-
-  // NEW: treat trailing OK as a percent marker token, not operators
-  let hasPercent = false;
-  if (body.endsWith("OK")) {
-    hasPercent = true;
-    body = body.slice(0, -2);
-    if (!body) throw new Error("Number code '#~' must have letters before trailing OK.");
-  }
-
-  if (!body) throw new Error("Number code '#~' must have letters after it.");
-  if (!/^[A-Z]+$/.test(body)) throw new Error("Number code may only contain letters A–Z after '#~'.");
-
-  const tokens = ["NE"];
-  let i = 0;
-
-  function ensureNEBeforeOperatorRun() {
-    if (tokens[tokens.length - 1] !== "NE") tokens.push("NE");
-  }
-
-  while (i < body.length) {
-    const ch = body[i];
-
-    if (ch === "O") {
-      let j = i;
-      while (j < body.length && body[j] === "O") j++;
-      const count = j - i;
-      if (count < 1 || count > 3) throw new Error("Invalid run of 'O' in number code (max 3).");
-
-      if (count === 1) {
-        if (i === 0) tokens.push("NO");
-        else tokens.push("NO", "NE");
-      } else {
-        tokens.push("NO".repeat(count)); // NONO / NONONO
-      }
-
-      i = j;
-      continue;
-    }
-
-    if (ch === "K") {
-      let j = i;
-      while (j < body.length && body[j] === "K") j++;
-      const count = j - i;
-      if (count < 1 || count > 3) throw new Error("Invalid run of 'K' in number code (max 3).");
-
-      ensureNEBeforeOperatorRun();
-      tokens.push("KE".repeat(count)); // KE / KEKE / KEKEKE
-      i = j;
-      continue;
-    }
-
-    const pair = NUMBER_CODE_LETTER_TO_PAIR[ch];
-    if (!pair) throw new Error(`Invalid letter '${ch}' in number code.`);
-    tokens.push(pair);
-    i += 1;
-  }
-
-  // NEW: insert OK *before* final N terminator
-  if (hasPercent) tokens.push("OK");
-
-  tokens.push("N");
-  const caps = tokens.join("");
-  tokenizeNanpaCaps(caps);
-  return { caps };
-}
-
-const TOKEN_TO_DIGIT_CHAR = {
-  "NI":"0","WE":"1","TE":"2","SE":"3","NA":"4",
-  "LE":"5","NU":"6","ME":"7","PE":"8","JE":"9"
-};
-
-const TOKEN_TO_DIGIT_WORD = {
-  "NI":"ijo","WE":"wan","TE":"tu","SE":"seli","NA":"awen",
-  "LE":"luka","NU":"utala","ME":"mun","PE":"pipi","JE":"jo"
-};
-const WORD_FOR_NEGATIVE_SIGN = "ona";
-
-function nanpaCapsTokensToTpWords(tokens, { mode = "uniform" } = {}) {
-  if (!tokens || tokens.length === 0) return [];
-
-  const uniform = (mode === "uniform");
-  const out = [];
-
-  const E_WORD = uniform ? "en" : "esun";
-  const E_WORD_FOR_NE_AFTER_START = uniform ? "en" : "e";
-  const N_WORD = uniform ? "nena" : "nasa";
-
-  const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
-  const N_END_WORD = "nanpa";
-
-  let afterStartingNe = false;
-
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-
-    if (t === "OK") {
-      out.push("open", "kipisi", E_WORD_FOR_NE_AFTER_START);
-      afterStartingNe = false;
-      continue;
-    }
-
-
-    if (t === "NE") {
-      if (out.length === 0) {
-        out.push("nanpa", E_WORD);
-        afterStartingNe = true;
-      } else {
-        out.push(N_WORD, E_WORD_FOR_NE_AFTER_START);
-        afterStartingNe = false;
-      }
-      continue;
-    }
-
-    if (DIGIT_TOKENS.has(t)) {
-      afterStartingNe = false;
-      const digitWord = TOKEN_TO_DIGIT_WORD[t];
-      if (t === "NI" || t === "NA" || t === "NU") out.push(N_WORD, digitWord);
-      else out.push(digitWord, E_WORD);
-      continue;
-    }
-
-    if (t === "NO") {
-      if (afterStartingNe) {
-        out.push(N_WORD, WORD_FOR_NEGATIVE_SIGN);
-        afterStartingNe = false;
-        continue;
-      }
-
-      const nxt = (i + 1 < tokens.length) ? tokens[i + 1] : null;
-      if (nxt === "NE") {
-        out.push(N_WORD_DECIMAL_POINT, "o", N_WORD, E_WORD_FOR_NE_AFTER_START);
-        afterStartingNe = false;
-        i += 1;
-        continue;
-      }
-
-      out.push(N_WORD_DECIMAL_POINT, "o");
-      afterStartingNe = false;
-      continue;
-    }
-
-    if (t === "NONO") { out.push("nena","o","nena","o"); afterStartingNe=false; continue; }
-    if (t === "NONONO") { out.push(N_WORD,"o",N_WORD,"o",N_WORD,"o"); afterStartingNe=false; continue; }
-
-    if (t === "KE")     { out.push("kulupu", E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
-    if (t === "KEKE")   { out.push("kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
-    if (t === "KEKEKE") { out.push("kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START,"kulupu",E_WORD_FOR_NE_AFTER_START); afterStartingNe=false; continue; }
-
-    if (t === "N") { out.push(N_END_WORD); afterStartingNe=false; continue; }
-
-    throw new Error(`Unknown token "${t}"`);
-  }
-
-  return out;
-}
-
-const NANPA_DATE_TIME_SEPARATOR_WORD = "kasi";
-
-// Date/time cartouches: rewrite the NE+KE delimiter expansion so the glyph uses
-// kasi, not kolon. This keeps the whole static page aligned with the
-// good-kasi nanpa-linja-n companion fonts.
-function replaceTimeSeparatorsTpWords(tpWords, mode) {
-  const join = (mode === "uniform") ? "en" : "e";
-  const nWord = (mode === "uniform") ? "nena" : "nasa";
-  const pattern = [nWord, join, "kulupu", join];
-
-  const out = [];
-  for (let i = 0; i < tpWords.length; ) {
-    const isMatch =
-      i + pattern.length <= tpWords.length &&
-      pattern.every((w, k) => tpWords[i + k] === w);
-
-    if (isMatch) {
-      out.push(nWord, join, NANPA_DATE_TIME_SEPARATOR_WORD, join); // nena en kasi en
-      i += pattern.length;
-    } else {
-      out.push(tpWords[i]);
-      i += 1;
-    }
-  }
-  return out;
-}
-
-
-function nanpaCapsToNanpaLinjanCodepoints(caps, { mode = "uniform",  isTime = false } = {}) {
-  const tokens = tokenizeNanpaCaps(caps);
-  if (!nanpaCapsHasAtLeastOneDigitToken(tokens)) return null;
-
-  // Consume OK as a flag
-  let hasPercent = false;
-  const tokensNoOk = [];
-  for (const t of tokens) {
-    if (t === "OK") { hasPercent = true; continue; }
-    tokensNoOk.push(t);
-  }
-
-  const tpWords = nanpaCapsTokensToTpWords(tokensNoOk, { mode });
-  const tpWordsFinal = isTime ? replaceTimeSeparatorsTpWords(tpWords, mode) : tpWords;
-
-  const cps = [];
-  for (const w of tpWordsFinal) {
-    const cp = NANPA_LINJA_N_WORD_TO_CP[w];
-    if (cp == null) return null;
-    cps.push(cp);
-  }
-
-  // Preserve existing uniformization behavior
-  const out = (mode === "uniform") ? uniformizeNanpaLinjanCartoucheCps(cps) : cps;
-
-  // Percent marker: insert BEFORE the closing nanpa glyph
-  if (hasPercent) {
-    const suffixWords = (mode === "uniform")
-      ? ["nena", "open", "kipisi", "en"]
-      : ["noka", "open", "kipisi", "e"];
-
-    const suffixCps = [];
-    for (const w of suffixWords) {
-      const cp = NANPA_LINJA_N_WORD_TO_CP[w];
-      if (cp == null) return null;
-      suffixCps.push(cp);
-    }
-
-    const lastNanpaIdx = out.lastIndexOf(CP_NANPA);
-    if (lastNanpaIdx >= 0) out.splice(lastNanpaIdx, 0, ...suffixCps);
-    else out.push(...suffixCps);
-  }
-
-  return out;
-}
-
-
-function tryDecodeNanpaLinjanIdentifierToCodepoints(rawText, { mode = "uniform" } = {}) {
-  const s = String(rawText ?? "").trim();
-  if (!s) return null;
-
-  try {
-    const parsed = tryParseNanpaLinjanNumberCodeToCaps(s);
-    if (parsed?.caps) {
-      const isTime = nanpaCapsIsValidTimeOrDate(parsed.caps);
-      return nanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode, isTime });
-    }
-  } catch {
-    return null;
-  }
-
-  if (!isValidNanpaLinjanProperName(s)) return null;
-
-  const compact = s.replace(/\s+/g, "");
-  const core = compact.slice(0, -1);
-
-  const coreUpper = core.toUpperCase();
-  let caps;
-
-  // NEW: trailing NOKE => OKN
-  if (coreUpper.endsWith("NOKE")) {
-    const base = coreUpper.slice(0, -4);
-    if (!base) return null;
-    caps = base + "OKN";
-  } else {
-    caps = coreUpper + "N";
-  }
-
-  const isTime = nanpaCapsIsValidTimeOrDate(caps);
-  return nanpaCapsToNanpaLinjanCodepoints(caps, { mode, isTime });
-
-}
-
-/* ============================================================
-   Minimal scanners for cartouche triggers in plain text:
-   - Decimals: findDecimalSequencesWithCaps
-   - #~ code:  findNumberCodeSequencesWithCaps
-   - Proper:   findNanpaLinjanProperNameSequencesWithCaps
-   - TP phrase:findNanpaLinjanTpPhraseSequences
-   NOTE: These are the same style as your page; if you want a smaller feature set,
-         delete what you do not need and remove callers in parseTextSegmentToElements.
-   ============================================================ */
-const VULGAR_FRACTIONS = new Map([
-  ["¼", [1, 4]], ["½", [1, 2]], ["¾", [3, 4]],
-  ["⅐", [1, 7]], ["⅑", [1, 9]], ["⅒", [1, 10]],
-  ["⅓", [1, 3]], ["⅔", [2, 3]],
-  ["⅕", [1, 5]], ["⅖", [2, 5]], ["⅗", [3, 5]], ["⅘", [4, 5]],
-  ["⅙", [1, 6]], ["⅚", [5, 6]],
-  ["⅛", [1, 8]], ["⅜", [3, 8]], ["⅝", [5, 8]], ["⅞", [7, 8]],
-  ["↉", [0, 3]],
-]);
-
-function normalizeVulgarFractionInput(raw) {
-  if (raw == null) return "";
-  let s = String(raw).trim();
-  if (!s) return s;
-
-  s = s.replace(/\u2044/g, "/");
-
-  let found = null;
-  for (const ch of s) {
-    if (VULGAR_FRACTIONS.has(ch)) { found = ch; break; }
-  }
-  if (!found) return s;
-
-  const lastChar = s.slice(-1);
-  if (!VULGAR_FRACTIONS.has(lastChar)) {
-    throw new Error("Vulgar fraction characters must appear at the end (e.g., 9¾ or ¾).");
-  }
-
-  const [num, den] = VULGAR_FRACTIONS.get(lastChar);
-  const prefixRaw = s.slice(0, -1).trim();
-
-  if (!prefixRaw) return `${num}/${den}`;
-
-  const isNeg = prefixRaw.startsWith("-");
-  const prefix = isNeg ? prefixRaw.slice(1).trim() : prefixRaw;
-  if (!prefix) return `-${num}/${den}`;
-
-  return isNeg ? `-${prefix}+${num}/${den}` : `${prefix}+${num}/${den}`;
-}
-
-function looksLikeNanpaCaps(s) {
-  const t = String(s ?? "").trim();
-  if (!t) return false;
-  if (!/^[A-Za-z]+[Nn]$/.test(t)) return false;
-  return t.slice(0, 2).toUpperCase() === "NE";
-}
-
-function groupFractionDigitsOnly(s, decimalChar=".", groupSize=3, sepChar="_") {
-  const str = String(s);
-  const idx = str.indexOf(decimalChar);
-  if (idx < 0) return str;
-
-  const left = str.slice(0, idx);
-  const right = str.slice(idx + 1);
-
-  let i = 0;
-  while (i < right.length && /[0-9]/.test(right[i])) i++;
-  const fracDigits = right.slice(0, i);
-  const suffix = right.slice(i);
-
-  if (fracDigits.length <= groupSize) return str;
-  if (sepChar && fracDigits.includes(sepChar)) return str;
-
-  const groups = [];
-  for (let j = 0; j < fracDigits.length; j += groupSize) {
-    groups.push(fracDigits.slice(j, j + groupSize));
-  }
-  return `${left}${decimalChar}${groups.join(sepChar)}${suffix}`;
-}
-
-function normalizeLooseSeparators(raw) {
-  if (raw == null) return "";
-  let s = String(raw);
-  s = s.replace(/[−‒–—]/g, "-");
-  const isNeg = s.startsWith("-");
-  const head = isNeg ? "-" : "";
-  const rest = isNeg ? s.slice(1) : s;
-  let r = rest.replace(/\s+/g, " ");
-  r = r.replace(/-+/g, "-");
-  return (head + r).trim();
-}
-
-const DEC_DIGIT_TO_TOKEN = {
-  "0": "NI", "1": "WE", "2": "TE", "3": "SE", "4": "NA",
-  "5": "LE", "6": "NU", "7": "ME", "8": "PE", "9": "JE",
-};
-
-function normalizeDateTimeInput(raw) {
-  let s = String(raw ?? "").trim();
-
-  // dates/times: remove internal whitespace
-  s = s.replace(/\s+/g, "");
-
-  // Normalize common unicode variants (copy/paste-safe)
-  // Hyphen/minus variants -> "-"
-  s = s.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]/g, "-");
-  // Slash variants -> "/"
-  s = s.replace(/[\u2044\u2215\uFF0F]/g, "/");
-  // Fullwidth colon -> ":"
-  s = s.replace(/[\uFF1A]/g, ":");
-
-  return s;
-}
-
-/* ============================================================
-   Time recognizer (HH:MM[:SS]) + caps encoder
-   ============================================================ */
-function tryParseTimeParts(raw) {
-  const s = String(raw ?? "").trim();
-  const m = s.match(/^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/);
-  if (!m) return null;
-
-  const hhStr = m[1];
-  const mmStr = m[2];
-  const ssStr = (m[3] != null) ? m[3] : null;
-
-  const hh = parseInt(hhStr, 10);
-  if (!Number.isFinite(hh) || hh < 0 || hh > 59) return null;
-
-  return { hhStr, mmStr, ssStr };
-}
-
-function encodeDigitsOnly(digits) {
-  const s = String(digits ?? "");
-  if (!/^\d+$/.test(s)) throw new Error(`Expected only digits, got "${digits}"`);
-  let out = "";
-  for (const ch of s) {
-    const tok = DEC_DIGIT_TO_TOKEN[ch];
-    if (!tok) throw new Error(`Unsupported digit "${ch}"`);
-    out += tok;
-  }
-  return out;
-}
-
-// ============================
-// Date support (YYYY{sep}MM{sep}DD)
-// ============================
-// Valid formats:
-// - YYYY-MM-DD, YYYY/MM/DD, YYYY:MM:DD
-// Constraints:
-// - YYYY exactly 4 digits (0000-9999 allowed)
-// - MM 01-12
-// - DD 01-31
-function tryParseDateParts(raw) {
-  const s = normalizeDateTimeInput(raw);
-  const m = s.match(/^(\d{4})([:\/-])(\d{2})\2(\d{2})$/);
-  if (!m) return null;
-
-  const yyyyStr = m[1];
-  const mmStr = m[3];
-  const ddStr = m[4];
-
-  const mm = parseInt(mmStr, 10);
-  const dd = parseInt(ddStr, 10);
-
-  if (!(mm >= 1 && mm <= 12)) return null;
-  if (!(dd >= 1 && dd <= 31)) return null;
-
-  return { yyyyStr, mmStr, ddStr };
-}
-
-function dateStrToNanpaCaps(raw) {
-  const parts = tryParseDateParts(raw);
-  if (!parts) return null;
-
-  let caps = "NE";
-  caps += encodeDigitsOnly(parts.yyyyStr);
-  caps += "NEKE";
-  caps += encodeDigitsOnly(parts.mmStr);
-  caps += "NEKE";
-  caps += encodeDigitsOnly(parts.ddStr);
-  caps += "N";
-
-  tokenizeNanpaCaps(caps); // sanity-check
-  return caps;
-}
-
-function timeStrToNanpaCaps(raw) {
-  const parts = tryParseTimeParts(raw);
-  if (!parts) return null;
-
-  let caps = "NE";
-  caps += encodeDigitsOnly(parts.hhStr);
-  caps += "NEKE";
-  caps += encodeDigitsOnly(parts.mmStr);
-
-  if (parts.ssStr != null) {
-    caps += "NEKE";
-    caps += encodeDigitsOnly(parts.ssStr);
-  }
-
-  caps += "N";
-  tokenizeNanpaCaps(caps); // sanity-check
-  return caps;
-}
-
-function nanpaCapsLooksLikeTime(caps){
-  let tokens;
-  try { tokens = tokenizeNanpaCaps(caps); } catch { return false; }
-  if (!tokens || tokens.length < 1) return false;
-
-  // Must start NE ... end N
-  if (tokens[0] !== "NE") return false;
-  if (tokens[tokens.length - 1] !== "N") return false;
-
-  // Disallow operators that cannot appear in time encoding
-  for (const t of tokens){
-    if (t === "NO" || t === "NONO" || t === "NONONO" || t === "OK") return false;
-    if (t === "KEKE" || t === "KEKEKE") return false;
-  }
-
-  // Parse pattern:
-  // NE  (H digits: 1–2 digit tokens)
-  // NE KE (delimiter)
-  // (MM digits: exactly 2 digit tokens)
-  // [ NE KE (delimiter) (SS digits: exactly 2 digit tokens) ]
-  // N
-  let i = 1;
-
-  // hours digits: 1 or 2 digit tokens
-  let hCount = 0;
-  while (i < tokens.length && DIGIT_TOKENS.has(tokens[i]) && hCount < 2){
-    hCount++; i++;
-  }
-  if (hCount < 1) return false;
-
-  // delimiter 1
-  if (tokens[i] !== "NE") return false; i++;
-  if (tokens[i] !== "KE") return false; i++;
-
-  // minutes: exactly 2 digit tokens
-  if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
-  if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
-
-  // optional seconds
-  if (tokens[i] === "NE"){
-    i++;
-    if (tokens[i] !== "KE") return false; i++;
-    if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
-    if (!DIGIT_TOKENS.has(tokens[i])) return false; i++;
-  }
-
-  // must now be at final N
-  return i === tokens.length - 1;
-}
-
-function nanpaCapsDecodeTimeStrict(caps) {
-  let tokens;
-  try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
-  catch { return null; }
-
-  if (tokens[0] !== "NE") return null;
-  if (tokens[tokens.length - 1] !== "N") return null;
-
-  let i = 1;
-
-  function readDigitChar() {
-    const t = tokens[i];
-    const w = TOKEN_TO_DIGIT_WORD[t];
-    if (!w) return null;
-
-    // Reverse map: token -> digit char
-    // NI 0, WE 1, TE 2, SE 3, NA 4, LE 5, NU 6, ME 7, PE 8, JE 9
-    const map = { NI:"0", WE:"1", TE:"2", SE:"3", NA:"4", LE:"5", NU:"6", ME:"7", PE:"8", JE:"9" };
-    const ch = map[t];
-    if (!ch) return null;
-
-    i += 1;
-    return ch;
-  }
-
-  // HH: 1–2 digits
-  const h1 = readDigitChar(); if (h1 == null) return null;
-  let h2 = null;
-  if (i < tokens.length && DIGIT_TOKENS.has(tokens[i])) h2 = readDigitChar();
-  const hhStr = (h2 == null) ? h1 : (h1 + h2);
-
-  // delimiter 1
-  if (tokens[i] !== "NE") return null; i++;
-  if (tokens[i] !== "KE") return null; i++;
-
-  // MM: exactly 2 digits
-  const m1 = readDigitChar(); if (m1 == null) return null;
-  const m2 = readDigitChar(); if (m2 == null) return null;
-  const mmStr = m1 + m2;
-
-  // optional seconds
-  let ssStr = null;
-  if (tokens[i] === "NE") {
-    i++;
-    if (tokens[i] !== "KE") return null; i++;
-    const s1 = readDigitChar(); if (s1 == null) return null;
-    const s2 = readDigitChar(); if (s2 == null) return null;
-    ssStr = s1 + s2;
-  }
-
-  // must end at final N
-  if (i !== tokens.length - 1) return null;
-
-  // Range check
-  const hh = parseInt(hhStr, 10);
-  const mm = parseInt(mmStr, 10);
-  const ss = (ssStr == null) ? null : parseInt(ssStr, 10);
-
-  if (!(hh >= 0 && hh <= 59)) return null;
-  if (!(mm >= 0 && mm <= 59)) return null;
-  if (ss != null && !(ss >= 0 && ss <= 59)) return null;
-
-  return { hh, mm, ss };
-}
-
-function nanpaCapsIsValidTime(caps) {
-  return nanpaCapsDecodeTimeStrict(caps) != null;
-}
-
-function nanpaCapsDecodeDateStrict(caps) {
-  let tokens;
-  try { tokens = tokenizeNanpaCaps(String(caps).trim().toUpperCase()); }
-  catch { return null; }
-
-  if (tokens[0] !== "NE") return null;
-  if (tokens[tokens.length - 1] !== "N") return null;
-
-  // Pattern:
-  // NE (YYYY digits: 4) NE KE (MM digits: 2) NE KE (DD digits: 2) N
-  let i = 1;
-
-  function readDigit() {
-    const t = tokens[i];
-    const ch = TOKEN_TO_DIGIT_CHAR[t];
-    if (ch == null) return null;
-    i += 1;
-    return ch;
-  }
-
-  // YYYY: exactly 4 digits
-  const y1 = readDigit(); if (y1 == null) return null;
-  const y2 = readDigit(); if (y2 == null) return null;
-  const y3 = readDigit(); if (y3 == null) return null;
-  const y4 = readDigit(); if (y4 == null) return null;
-
-  // delimiter 1
-  if (tokens[i] !== "NE") return null; i++;
-  if (tokens[i] !== "KE") return null; i++;
-
-  // MM: exactly 2 digits
-  const m1 = readDigit(); if (m1 == null) return null;
-  const m2 = readDigit(); if (m2 == null) return null;
-  const mmStr = m1 + m2;
-
-  // delimiter 2
-  if (tokens[i] !== "NE") return null; i++;
-  if (tokens[i] !== "KE") return null; i++;
-
-  // DD: exactly 2 digits
-  const d1 = readDigit(); if (d1 == null) return null;
-  const d2 = readDigit(); if (d2 == null) return null;
-  const ddStr = d1 + d2;
-
-  // must end at final N
-  if (i !== tokens.length - 1) return null;
-
-  const mm = parseInt(mmStr, 10);
-  const dd = parseInt(ddStr, 10);
-
-  if (!(mm >= 1 && mm <= 12)) return null;
-  if (!(dd >= 1 && dd <= 31)) return null;
-
-  return { mm, dd };
-}
-
-function nanpaCapsIsValidDate(caps) {
-  return nanpaCapsDecodeDateStrict(caps) != null;
-}
-
-function nanpaCapsIsValidTimeOrDate(caps) {
-  return nanpaCapsIsValidTime(caps) || nanpaCapsIsValidDate(caps);
-}
-
-function findTimeSequencesWithCaps(text) {
-  const s = String(text ?? "");
-  if (!s) return [];
-
-  // No lookbehind: boundary is group 1, time is group 2
-  const re = /(^|[^0-9])(\d{1,2}:[0-5]\d(?::[0-5]\d)?)(?!\d)/g;
-
-  const out = [];
-  let m;
-  while ((m = re.exec(s)) !== null) {
-    const lead = m[1] ?? "";
-    const raw = m[2];
-    if (!raw) continue;
-
-    const start = (m.index | 0) + String(lead).length;
-    const end = start + raw.length;
-
-    const caps = timeStrToNanpaCaps(raw);
-    if (caps != null) out.push({ kind: "time", match: raw, index: start, end, caps });
-  }
-  return out;
-}
-
-function findDateSequencesWithCaps(text) {
-  const s = String(text ?? "");
-  if (!s) return [];
-
-  // No lookbehind: boundary in group 1, date in group 2.
-  // Accept "-", "/", ":" (and unicode variants after normalization occurs inside dateStrToNanpaCaps).
-  const re = /(^|[^0-9])(\d{4}[:\/-]\d{2}[:\/-]\d{2})(?!\d)/g;
-
-  const out = [];
-  let m;
-  while ((m = re.exec(s)) !== null) {
-    const lead = m[1] ?? "";
-    const raw = m[2];
-    if (!raw) continue;
-
-    const start = (m.index | 0) + String(lead).length;
-    const end = start + raw.length;
-
-    const caps = dateStrToNanpaCaps(raw);
-    if (caps != null) out.push({ kind: "date", match: raw, index: start, end, caps });
-  }
-  return out;
-}
-
-
-function numberStrToNanpaCaps(
-      s,
-      { thousandsChar = ",", groupFractionTriplets = true, fractionGroupSize = 3 } = {}
-    ) {
-      if (s == null) throw new Error("s must be a string");
-      let raw = normalizeLooseSeparators(String(s));
-      if (!raw) throw new Error("Empty value cannot be encoded");
-
-      if (groupFractionTriplets) {
-        raw = groupFractionDigitsOnly(raw, ".", fractionGroupSize, "_");
-      }
-
-      function stripFinalTerminator(segCaps) {
-        if (!segCaps) return segCaps;
-        if (!segCaps.endsWith("N")) throw new Error(`Segment caps did not end with 'N': ${segCaps}`);
-        return segCaps.slice(0, -1);
-      }
-
-      function encodeSingleNumberSegment(segment, includeInitialNe) {
-        let seg = String(segment).trim();
-        if (seg === "") throw new Error(`Empty numeric segment in ${s}`);
-
-        if (seg.slice(0, 1).toUpperCase() === "N") {
-          seg = seg.slice(1).trim();
-          if (seg === "") throw new Error(`Missing numeric part after leading 'N' prefix in ${s}`);
-        }
-
-        const out = [];
-        if (includeInitialNe) out.push("NE");
-
-        function pushNene() {
-          const L = out.length;
-          if (L >= 2 && out[L-2] === "NE" && out[L-1] === "NE") return;
-          out.push("NE", "NE");
-        }
-
-        if (seg.startsWith("-")) {
-          if (seg.startsWith("-.")) seg = "-0." + seg.slice(2);
-          out.push("NO");
-          seg = seg.slice(1).trim();
-        }
-
-        let magnitudeSuffixKeCount = 0;
-        if (seg.length > 0) {
-          const last = seg.slice(-1).toUpperCase();
-          if (last === "K" || last === "T" || last === "M" || last === "B") {
-            magnitudeSuffixKeCount =
-              (last === "K" || last === "T") ? 1 :
-              (last === "M") ? 2 : 3;
-            seg = seg.slice(0, -1).trim();
-            if (!seg) throw new Error(`Missing numeric part before magnitude suffix ${last} in ${s}`);
-          }
-        }
-
-        if ((seg.match(/\./g) || []).length > 1) {
-          throw new Error(`Invalid numeric segment with multiple decimals: ${segment}`);
-        }
-
-        let intPart = seg;
-        let fracPart = "";
-        let hasDecimal = false;
-        if (seg.includes(".")) {
-          [intPart, fracPart] = seg.split(".", 2);
-          hasDecimal = true;
-        }
-
-        let ip = String(intPart ?? "").trim();
-        if (ip === "") ip = "0";
-
-        const intHasThousandsComma = (thousandsChar && ip.includes(thousandsChar));
-        const hasLooseSep = /[ -]/.test(ip);
-
-        if (hasLooseSep) {
-          let ip2 = String(ip)
-            .replace(/\s+/g, " ")
-            .replace(/-+/g, "-")
-            .trim();
-
-          ip2 = ip2.replace(/^[ -]+/, "").replace(/[ -]+$/, "");
-          if (ip2 === "") ip2 = "0";
-
-          for (const ch of ip2) {
-            if (/\d/.test(ch)) { out.push(DEC_DIGIT_TO_TOKEN[ch]); continue; }
-            if (ch === " " || ch === "-") { pushNene(); continue; }
-            if (thousandsChar && ch === thousandsChar) { out.push("NE","KE"); continue; }
-            throw new Error(`Unsupported character "${ch}" in integer part of "${s}"`);
-          }
-        } else {
-          const groups = thousandsChar ? ip.split(thousandsChar) : [ip];
-          for (const g of groups) {
-            if (g === "" || !/^\d+$/.test(g)) throw new Error(`Invalid integer group "${g}" in "${s}"`);
-          }
-
-          let trailingZeroGroups = 0;
-          for (let k = groups.length - 1; k >= 1; k--) {
-            const g = groups[k];
-            if (g.length === 3 && g === "000") trailingZeroGroups += 1;
-            else break;
-          }
-
-          for (const d of groups[0]) out.push(DEC_DIGIT_TO_TOKEN[d]);
-
-          const nGroups = groups.length;
-          const lastNonTrailingIdx = nGroups - trailingZeroGroups;
-
-          for (let idx = 1; idx < lastNonTrailingIdx; idx++) {
-            out.push("NE","KE");
-            for (const d of groups[idx]) out.push(DEC_DIGIT_TO_TOKEN[d]);
-          }
-
-          if (trailingZeroGroups > 0) {
-            out.push("NE");
-            let remaining = trailingZeroGroups;
-            while (remaining > 0) {
-              const chunk = Math.min(3, remaining);
-              if (out[out.length - 1] !== "NE") out.push("NE");
-              out.push("KE".repeat(chunk));
-              remaining -= chunk;
-              if (remaining > 0) out.push("NE");
-            }
-          }
-        }
-
-        if (hasDecimal) {
-          out.push("NO","NE");
-
-          if (!fracPart) throw new Error(`Missing fraction digits after '.' in "${s}"`);
-
-          for (const ch of fracPart) {
-            if (/\d/.test(ch)) { out.push(DEC_DIGIT_TO_TOKEN[ch]); continue; }
-            if (ch === "_") { pushNene(); continue; }
-            if (ch === ",") { pushNene(); continue; }
-            if (ch === " " || ch === "-") { pushNene(); continue; }
-            throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
-          }
-        }
-
-        if (magnitudeSuffixKeCount > 0) {
-          out.push("NE");
-          let remaining = magnitudeSuffixKeCount;
-          while (remaining > 0) {
-            const chunk = Math.min(3, remaining);
-            if (out[out.length - 1] !== "NE") out.push("NE");
-            out.push("KE".repeat(chunk));
-            remaining -= chunk;
-            if (remaining > 0) out.push("NE");
-          }
-        }
-
-        out.push("N");
-        return out.join("");
-      }
-
-      if (raw.includes("+")) {
-        const [left, right] = raw.split("+", 2);
-        let leftCaps = encodeSingleNumberSegment(left, true);
-
-        if (!right.includes("/")) throw new Error(`Mixed number must contain '/' after '+': ${s}`);
-        const [num, den] = right.split("/", 2);
-
-        let numCaps = encodeSingleNumberSegment(num, false);
-        let denCaps = encodeSingleNumberSegment(den, false);
-
-        leftCaps = stripFinalTerminator(leftCaps);
-        numCaps = stripFinalTerminator(numCaps);
-
-        return leftCaps + "NONONO" + numCaps + "NONO" + denCaps;
-      }
-
-      if (raw.includes("/")) {
-        const [num, den] = raw.split("/", 2);
-        let numCaps = encodeSingleNumberSegment(num, true);
-        let denCaps = encodeSingleNumberSegment(den, false);
-        numCaps = stripFinalTerminator(numCaps);
-        return numCaps + "NONO" + denCaps;
-      }
-
-      return encodeSingleNumberSegment(raw, true);
-}
-
-function decimalStringToCaps(rawDecimal, opts = {}) {
-  let s = String(rawDecimal ?? "").trim();
-  if (!s) throw new Error("Empty decimal.");
-
-  // NEW: allow trailing percent sign
-  let hasPercent = false;
-  if (/%\s*$/.test(s)) {
-    hasPercent = true;
-    s = s.replace(/%\s*$/, "").trim();
-  }
-
-  const normalized = normalizeVulgarFractionInput(s);
-
-  const capsCore = looksLikeNanpaCaps(normalized)
-    ? normalized.toUpperCase()
-    : numberStrToNanpaCaps(normalized, opts);
-
-  // Ensure valid caps before we tack on OK
-  tokenizeNanpaCaps(capsCore);
-
-  if (!hasPercent) return capsCore;
-
-  // Insert OK before final N (terminator)
-  if (!capsCore.endsWith("N")) throw new Error("Nanpa caps must end in N.");
-  const caps = capsCore.slice(0, -1) + "OKN";
-
-  tokenizeNanpaCaps(caps);
-  return caps;
-}
-
-
-function findDecimalSequencesWithCaps(text, opts = {}) {
-  const original = String(text ?? "");
-  if (!original) return [];
-
-  const s = original.replace(/[−‒–—]/g, "-");
-
-  const vulgarChars = "¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞↉";
-  const re = new RegExp(
-    String.raw`(?<![A-Za-z])` +
-    String.raw`(` +
-      String.raw`-?\s*\d*\s*[${vulgarChars}]` +
-      "|" +
-      String.raw`-?\s*\d[\d, _-]*\s*\+\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
-      "|" +
-      String.raw`-?\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
-      "|" +
-      String.raw`-?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?` +
-    String.raw`)` +
-    String.raw`(?:\s*%)?` +          // NEW: allow trailing %
-    String.raw`(?![A-Za-z])`,
-    "g"
-  );
-
-  const results = [];
-  let m;
-
-  while ((m = re.exec(s)) !== null) {
-    const rawMatch = m[0]; // includes optional trailing %
-    if (!rawMatch) continue;
-
-    let candidate = rawMatch.trim().replace(/[)\]}.,;:!?]+$/g, "").trim();
-    if (!candidate) continue;
-    if (candidate === "-" || candidate === "+") continue;
-
-    const rel = rawMatch.indexOf(candidate);
-    const start = (rel >= 0) ? (m.index + rel) : m.index;
-    const end = start + candidate.length;
-
-    try {
-      const hasPercent = /%\s*$/.test(candidate);
-      const candidateNoPct = hasPercent ? candidate.replace(/%\s*$/, "").trim() : candidate;
-
-      let caps = decimalStringToCaps(candidateNoPct, {
-        thousandsChar: ",",
-        groupFractionTriplets: true,
-        fractionGroupSize: 3,
-        ...opts,
-      });
-
-      // Append OK before the terminator N
-      if (hasPercent) {
-        if (!caps.endsWith("N")) throw new Error("decimalStringToCaps must end with N");
-        caps = caps.slice(0, -1) + "OKN";
-      }
-
-      results.push({ kind: "decimal", match: candidate, index: start, end, caps });
-
-    } catch {
-      // ignore
-    }
-  }
-
-  results.sort((a, b) => a.index - b.index || b.end - a.end);
-  const filtered = [];
-  let lastEnd = -1;
-  for (const r of results) {
-    if (r.index < lastEnd) continue;
-    filtered.push(r);
-    lastEnd = r.end;
-  }
-  return filtered;
-}
-
-
-function findNumberCodeSequencesWithCaps(text) {
-  const s = String(text ?? "");
-  if (!s) return [];
-
-  const re = /#~[A-Za-z]+/g;
-  const out = [];
-  let m;
-
-  while ((m = re.exec(s)) !== null) {
-    const raw = m[0];
-    if (!raw) continue;
-
-    const start = m.index | 0;
-    const end = start + raw.length;
-
-    try {
-      const parsed = tryParseNanpaLinjanNumberCodeToCaps(raw);
-      if (parsed?.caps) out.push({ kind: "code", index: start, end, caps: parsed.caps });
-    } catch {
-      // ignore
-    }
-  }
-
-  return out;
-}
-
-function findNanpaLinjanProperNameSequencesWithCaps(text) {
-  const s = String(text ?? "");
-  if (!s) return [];
-
-  const re = /(^|[^A-Za-z])((?:ne)[A-Za-z]*(?:\s+[A-Za-z]{2,}){0,20}[A-Za-z]*[nN])(?![A-Za-z])/gi;
-
-  const hits = [];
-  let m;
-
-  while ((m = re.exec(s)) !== null) {
-    const lead = m[1] ?? "";
-    const rawMatch = m[2] ?? "";
-    if (!rawMatch) continue;
-
-    const start = (m.index | 0) + lead.length;
-    const end = start + rawMatch.length;
-
-    const compact = rawMatch.replace(/\s+/g, "");
-    if (compact.length < 5) continue;
-    if (!isValidNanpaLinjanProperName(compact)) continue;
-
-    const core = compact.slice(0, -1); // drop final N
-
-    let caps;
-    const coreUpper = core.toUpperCase();
-
-    // NEW: treat trailing NOKE as percent marker -> OK before final N
-    if (coreUpper.endsWith("NOKE")) {
-      const base = coreUpper.slice(0, -4);
-      if (!base) continue;
-      caps = base + "OKN";
-    } else {
-      caps = coreUpper + "N";
-    }
-
-    hits.push({ kind: "name", index: start, end, caps });
-
-  }
-
-  return hits;
-}
-
-function findNanpaLinjanTpPhraseSequences(text) {
-  const s = String(text ?? "");
-  if (!s) return [];
-
-  const tokens = [];
-  const reTok = /\S+/g;
-  let m;
-  while ((m = reTok.exec(s)) !== null) {
-    const raw = m[0];
-    tokens.push({
-      raw,
-      norm: normalizeTpWord(raw),
-      start: m.index,
-      end: (m.index + raw.length)
-    });
-  }
-  if (tokens.length < 3) return [];
-
-  const digitWords = new Set(Object.values(TOKEN_TO_DIGIT_WORD));
-  const hits = [];
-
-  for (let i = 0; i < tokens.length - 2; i++) {
-    if (tokens[i].norm !== "nanpa") continue;
-    const n1 = tokens[i + 1]?.norm;
-    if (!(n1 === "esun" || n1 === "en")) continue;
-
-    let bestJ = -1;
-    let bestWords = null;
-
-    for (let j = i + 2; j < tokens.length; j++) {
-      if (tokens[j].norm !== "nanpa") continue;
-
-      const words = [];
-      let allOk = true;
-      let hasDigit = false;
-
-      for (let k = i; k <= j; k++) {
-        const w = tokens[k].norm;
-        if (!w) { allOk = false; break; }
-        if (NANPA_LINJA_N_WORD_TO_CP[w] == null) { allOk = false; break; }
-        if (k >= i + 2 && k <= j - 1 && digitWords.has(w)) hasDigit = true;
-        words.push(w);
-      }
-
-      if (!allOk || !hasDigit) continue;
-
-      bestJ = j;
-      bestWords = words;
-    }
-
-    if (bestJ >= 0 && bestWords) {
-      hits.push({
-        kind: "tpPhrase",
-        index: tokens[i].start,
-        end: tokens[bestJ].end,
-        words: bestWords
-      });
-      i = bestJ;
-    }
-  }
-
-  return hits;
-}
-
-function mergeAndGreedyFilterHits(allHits) {
-  const hits = Array.from(allHits ?? []).filter(h =>
-    h &&
-    Number.isFinite(h.index) &&
-    Number.isFinite(h.end) &&
-    h.end > h.index &&
-    (h.caps || (Array.isArray(h.words) && h.words.length > 0))
-  );
-
-  function priority(kind) {
-    if (kind === "decimal") return 4;
-    if (kind === "time") return 4;
-    if (kind === "date") return 4;
-    if (kind === "tpPhrase") return 3;
-    if (kind === "code") return 2;
-    return 1; // proper name
-  }
-
-  hits.sort((a, b) => {
-    if (a.index !== b.index) return a.index - b.index;
-    const la = (a.end - a.index);
-    const lb = (b.end - b.index);
-    if (la !== lb) return lb - la;
-    return priority(b.kind) - priority(a.kind);
-  });
-
-  const out = [];
-  let lastEnd = -1;
-
-  for (const h of hits) {
-    if (h.index < lastEnd) continue;
-    out.push(h);
-    lastEnd = h.end;
-  }
-
-  return out;
-}
-
-function nanpaLinjanWordsToCodepoints(words, { mode = "uniform" } = {}) {
-  const cps = [];
-  for (const w0 of (words ?? [])) {
-    const w = normalizeTpWord(w0);
-    const cp = NANPA_LINJA_N_WORD_TO_CP[w];
-    if (cp == null) return null;
-    cps.push(cp);
-  }
-  if (mode === "uniform") return uniformizeNanpaLinjanCartoucheCps(cps);
-  return cps;
-}
-
-function tpWordsToCodepoints(wordsOrTokens) {
-  const cps = [];
-  for (const w of (wordsOrTokens ?? [])) {
-    const cp = MULTI_LINE_WORD_TO_UCSUR_CP[w];
-    if (cp != null) cps.push(cp);
-  }
-  return cps;
-}
-
-/* ============================================================
-   Segment splitting: plain text, [bracket], "quote"
-   ============================================================ */
-function splitLineIntoSegments(line) {
-  const s = String(line ?? "");
-  const out = [];
-
-  let i = 0;
-  function pushTextSegment(txt) { if (txt) out.push({ kind: "text", value: txt }); }
-
-  while (i < s.length) {
-    const ch = s[i];
-
-    if (ch === "[") {
-      const j = s.indexOf("]", i + 1);
-      if (j < 0) { pushTextSegment(s.slice(i)); break; }
-      pushTextSegment(s.slice(i, i)); // no-op, kept from your structure
-      out.push({ kind: "bracket", value: s.slice(i + 1, j) });
-      i = j + 1;
-      continue;
-    }
-
-    if (ch === '"') {
-      let j = i + 1;
-      let found = false;
-      while (j < s.length) {
-        if (s[j] === '"' && s[j - 1] !== "\\") { found = true; break; }
-        j++;
-      }
-      if (!found) { pushTextSegment(s.slice(i)); break; }
-      out.push({ kind: "quote", value: s.slice(i + 1, j) });
-      i = j + 1;
-      continue;
-    }
-
-    let j = i;
-    while (j < s.length && s[j] !== "[" && s[j] !== '"') j++;
-    pushTextSegment(s.slice(i, j));
-    i = j;
-  }
-
-  return out;
-}
-
-/* ============================================================
-   Elements model + builders
-   ============================================================ */
-function pushGapIfNeeded(elements, px) {
-  if (elements.length === 0) return;
-  const last = elements[elements.length - 1];
-  if (last && last.type === "gap") return;
-  elements.push({ type: "gap", px: px });
-}
-
-function renderFontCartoucheToCanvas(
-  canvas,
-  innerCps,
-  {
-    fontPx,
-    padPx,
-    fontFamily,
-    fgCss,
-
-    // NEW: halo (optional)
-    haloEnabled = false,
-    haloCss = "#FFFFFF",
-    haloThicknessMode = "auto",
-    haloThickness = 0,
-  } = {}
-) {
-  if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
-  if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
-
-  const px = fontPx;
-  const pad = padPx;
-  const fam = fontFamily || FONT_FAMILY_TEXT;
-
-  const run =
-    String.fromCodePoint(CARTOUCHE_START_CP) +
-    innerCps.map(cp => String.fromCodePoint(cp)).join("") +
-    String.fromCodePoint(CARTOUCHE_END_CP);
-
-  // Decide halo width in *cartouche canvas pixels*
-  let haloW = 0;
-  if (haloEnabled) {
-    haloW =
-      (haloThicknessMode === "manual" && Number.isFinite(haloThickness) && haloThickness > 0)
-        ? clampHaloThicknessPx(haloThickness)
-        : defaultHaloThicknessForFontPx(px);
-  }
-
-  // Measure
-  const ctx = canvas.getContext("2d");
-  ctx.textBaseline = "alphabetic";
-  ctx.font = `${px}px "${fam}"`;
-  setTextQuality(ctx);
-  const m = ctx.measureText(run);
-
-  const ascent  = (m.actualBoundingBoxAscent  != null) ? m.actualBoundingBoxAscent  : Math.ceil(px * 0.95);
-  const descent = (m.actualBoundingBoxDescent != null) ? m.actualBoundingBoxDescent : Math.ceil(px * 0.35);
-
-  const left  = (m.actualBoundingBoxLeft  != null) ? m.actualBoundingBoxLeft  : 0;
-  const right = (m.actualBoundingBoxRight != null) ? m.actualBoundingBoxRight : Math.ceil(m.width);
-
-  // IMPORTANT: expand canvas for halo so it won't clip
-  const w = Math.max(1, Math.ceil(left + right + pad * 2 + haloW * 2));
-  const h = Math.max(1, Math.ceil(ascent + descent + pad * 2 + haloW * 2));
-
-  canvas.width = w;
-  canvas.height = h;
-
-  const ctx2 = canvas.getContext("2d", { alpha: true });
-  ctx2.clearRect(0, 0, w, h);
-  ctx2.textBaseline = "alphabetic";
-  ctx2.font = `${px}px "${fam}"`;
-  setTextQuality(ctx2);
-
-  const x = pad + left + haloW;
-  const baselineY = pad + ascent + haloW;
-
-  // NEW: halo behind fill
-  if (haloW > 0) {
-    ctx2.strokeStyle = haloCss || "#FFFFFF";
-    ctx2.lineWidth = haloW;
-    ctx2.lineJoin = "round";
-    ctx2.miterLimit = 2;
-    ctx2.strokeText(run, x, baselineY);
-  }
-
-  ctx2.fillStyle = fgCss || "#111";
-  ctx2.fillText(run, x, baselineY);
-
-  return { w, h, baselineY, inkAscent: Math.ceil(ascent), inkDescent: Math.ceil(descent), haloW, pad};
-}
-
-function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fgCss, 
-  // IMPORTANT: do NOT default these to "false"/"#fff"/"auto"/0
-    // Leave them undefined so we can inherit ACTIVE_SITELEN_HALO.
-    haloEnabled,
-    haloCss,
-    haloThicknessMode,
-    haloThickness, 
-  } = {}) {
-  if (!cps || cps.length === 0) return;
-  pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
-
-  // If caller didn’t pass halo options, inherit from the current sitelen render
- const _he = (haloEnabled === undefined || haloEnabled === null)
-  ? !!ACTIVE_SITELEN_HALO.enabled
-  : !!haloEnabled;
-
-  const _hc = (haloCss === undefined || haloCss === null)
-    ? ACTIVE_SITELEN_HALO.css
-    : haloCss;
-
-  const _hm = (haloThicknessMode === undefined || haloThicknessMode === null)
-    ? ACTIVE_SITELEN_HALO.mode
-    : haloThicknessMode;
-
-  const _ht = (haloThickness === undefined || haloThickness === null)
-    ? ACTIVE_SITELEN_HALO.thickness
-    : haloThickness;
-
-  const cart = document.createElement("canvas");
-  const padPx = Math.max(4, Math.round(fontPx * 0.11));
-
-  const r = renderFontCartoucheToCanvas(cart, cps, { fontPx, padPx, fontFamily, fgCss, haloEnabled: _he, haloCss: _hc, haloThicknessMode: _hm, haloThickness: _ht });
-  if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
-
-  const baselineY = r.baselineY | 0;
-
-  //const ascent = baselineY;
-  //const descent = (r.h | 0) - baselineY;
-  const ascent = r.inkAscent ?? baselineY;
-  const descent = r.inkDescent ?? ((r.h | 0) - baselineY);
-
-  elements.push({
-    type: "cartouche",
-    cps: Array.from(cps),   // <-- ADD THIS
-    canvas: cart,
-    w: r.w,
-    h: r.h,
-    baselineY,
-    ascent,
-    descent,
-    fontFamily: fontFamily || FONT_FAMILY_TEXT
-  });
-}
-
-function makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily }) {
-  if (!cps || cps.length === 0) return;
-  pushGapIfNeeded(elements, wordGapForPx(fontPx));
-  elements.push({
-    type: "run",
-    cps: Array.from(cps),
-    px: fontPx,
-    fontFamily: fontFamily || FONT_FAMILY_TEXT
-  });
-}
-
-function makeLiteralTextElement(elements, text, { fontPx, fontFamily }) {
-  const s = String(text ?? "");
-  if (!s) return;
-  pushGapIfNeeded(elements, wordGapForPx(fontPx));
-  elements.push({
-    type: "text",
-    text: s,
-    px: fontPx,
-    fontFamily: fontFamily || FONT_FAMILY_LITERAL
-  });
-}
-
-/* ============================================================
-   Token rendering for plain text segments (words + punctuation)
-   ============================================================ */
-function renderTpWordsFromText(text, elements, { fontPx, mode }) {
-  const rawTokens = String(text ?? "").trim().split(/\s+/).filter(Boolean);
-
-  function emitPunctGlyph(ch) {
-    if (ch !== ":" && ch !== "·" && ch !== "," && ch !== ".") return false;
-    const cp = MULTI_LINE_WORD_TO_UCSUR_CP[ch];
-    if (cp == null) return false;
-    pushGapIfNeeded(elements, wordGapForPx(fontPx));
-    elements.push({ type: "glyph", cp, px: fontPx, fontFamily: FONT_FAMILY_TEXT });
-    return true;
-  }
-
-  function splitTokenPunct(tok) {
-    const s = String(tok ?? "");
-    if (!s) return { lead: "", core: "", trail: "" };
-
-    const numericLike =
-      /[0-9]/.test(s) ||
-      /^-?\.\d/.test(s) ||
-      /^-?\d/.test(s);
-
-    const coreChar = numericLike
-      ? /[#~A-Za-z0-9^<>.,_-]/
-      : /[#~A-Za-z0-9^<>]/;
-
-    let a = 0;
-    let b = s.length;
-
-    while (a < b && !coreChar.test(s[a])) a++;
-    while (b > a && !coreChar.test(s[b - 1])) b--;
-
-    // strip typical sentence punctuation at end of token
-    while (b > a && /[)\]}.,;:!?]+$/.test(s.slice(b - 1, b))) b--;
-
-    return { lead: s.slice(0, a), core: s.slice(a, b), trail: s.slice(b) };
-  }
-
-  for (let i = 0; i < rawTokens.length; i++) {
-    const tok = rawTokens[i];
-    const normTok = normalizeTpWord(tok);
-
-    // long pi: pi { ... }
-    if (normTok === "pi") {
-      const nextTok = rawTokens[i + 1];
-      if (nextTok != null && tokenHasOpenCurly(nextTok)) {
-        const extracted = extractCurlyContentFromTokens(rawTokens, i + 1);
-        if (extracted && extracted.inner != null) {
-          const innerWords = parseKnownTpWords(extracted.inner);
-          if (innerWords.length >= 2) {
-            const cps = [];
-            cps.push(LONG_PI_START_CP);
-            cps.push(MULTI_LINE_WORD_TO_UCSUR_CP[innerWords[0]]);
-            for (let k = 1; k < innerWords.length; k++) {
-              cps.push(LONG_PI_EXT_CP);
-              cps.push(MULTI_LINE_WORD_TO_UCSUR_CP[innerWords[k]]);
-            }
-            makeRunElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_TEXT });
-            i = extracted.endIndex;
-            continue;
-          }
-        }
-      }
-    }
-
-    const { lead, core, trail } = splitTokenPunct(tok);
-    for (const ch of lead) emitPunctGlyph(ch);
-
-    const trimmed = core;
-
-    // identifier cartouche: #~... or NE...n proper-name
-    if (trimmed) {
-      const idCps =
-        tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode }) ??
-        tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode });
-
-      if (idCps && idCps.length) {
-        makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
-        for (const ch of trail) emitPunctGlyph(ch);
-        continue;
-      }
-    }
-
-    // numeric/time cartouche fallback:
-    // If the token contains digits, try to render it as a nanpa-linja-n cartouche
-    // before falling back to glyph-key normalization (which strips digits).
-    if (trimmed && /[0-9]/.test(trimmed)) {
-      // 1) Time-like: allow optional quotes around ':' so 23":"45 => 23:45
-      const timeCandidate = trimmed.replace(/"\s*:\s*"/g, ":").replace(/"\s*:\s*/g, ":").replace(/\s*:\s*"/g, ":");
-      const timeCaps = (typeof timeStrToNanpaCaps === "function") ? timeStrToNanpaCaps(timeCandidate) : null;
-
-      if (timeCaps) {
-        const cps = nanpaCapsToNanpaLinjanCodepoints(timeCaps, { mode, isTime: true });
-        if (cps && cps.length) {
-          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
-          for (const ch of trail) emitPunctGlyph(ch);
-          continue;
-        }
-      }
-
-      // 2) Decimal/integer-like: try the existing decimal parser (it already accepts integers)
-      try {
-        const caps = decimalStringToCaps(trimmed, {
-          thousandsChar: ",",
-          groupFractionTriplets: true,
-          fractionGroupSize: 3
-        });
-        const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
-        if (cps && cps.length) {
-          makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE });
-          for (const ch of trail) emitPunctGlyph(ch);
-          continue;
-        }
-      } catch {
-        // not a valid numeric; fall through to normal glyph handling
-      }
-    }
-
-    // normal word glyph
-    const glyphKey = normalizeTpGlyphKey(trimmed);
-    if (glyphKey && MULTI_LINE_WORD_TO_UCSUR_CP[glyphKey] != null) {
-      pushGapIfNeeded(elements, wordGapForPx(fontPx));
-      elements.push({ type: "glyph", cp: MULTI_LINE_WORD_TO_UCSUR_CP[glyphKey], px: fontPx, fontFamily: FONT_FAMILY_TEXT });
-    }
-
-    for (const ch of trail) emitPunctGlyph(ch);
-  }
-}
-
-/* ============================================================
-   Segment parsers: text / bracket / quote
-   ============================================================ */
-function parseTextSegmentToElements(segmentText, elements, { fontPx, mode, fgCss = "#000111" ,literalFontFamily}) {
-  const s = String(segmentText ?? "");
-  if (!s.trim()) return;
-
-  const timeHits   = findTimeSequencesWithCaps(s);
-  const dateHits = findDateSequencesWithCaps(s);
-  const decHits    = findDecimalSequencesWithCaps(s);
-  const codeHits   = findNumberCodeSequencesWithCaps(s);
-  const nameHits   = findNanpaLinjanProperNameSequencesWithCaps(s);
-  const phraseHits = findNanpaLinjanTpPhraseSequences(s);
-
-  const hits = mergeAndGreedyFilterHits([...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
-
-  if (!hits || hits.length === 0) {
-    renderTpWordsFromText(s, elements, { fontPx, mode });
-    return;
-  }
-
-  let pos = 0;
-
-  for (const h of hits) {
-    const a = Math.max(0, h.index | 0);
-    const b = Math.max(a, h.end | 0);
-
-    if (a > pos) {
-      renderTpWordsFromText(s.slice(pos, a), elements, { fontPx, mode });
-    }
-
-    if (h.kind === "tpPhrase") {
-      const cps = nanpaLinjanWordsToCodepoints(h.words, { mode });
-      if (cps && cps.length) {
-        makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
-      } else {
-        renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
-      }
-    } else {
-      const isTimeLike = (h.kind === "time") || (h.kind === "date") || nanpaCapsIsValidTimeOrDate(h.caps);
-      const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode, isTime: isTimeLike });
-      if (cps && cps.length) {
-        makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
-      } else {
-        renderTpWordsFromText(s.slice(a, b), elements, { fontPx, mode });
-      }
-    }
-
-    pos = b;
-  }
-
-  if (pos < s.length) {
-    renderTpWordsFromText(s.slice(pos), elements, { fontPx, mode });
-  }
-}
-
-function parseQuoteSegmentToElements(quoteContent, elements, { fontPx, literalFontFamily } = {}) {
-  const raw = String(quoteContent ?? "");
-  let literal = raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
-  literal = literal.replace(/\t/g, "    ");
-  if (literal.length === 0) return;
-
-  const fam = String(literalFontFamily ?? "").trim() || FONT_FAMILY_LITERAL;
-  makeLiteralTextElement(elements, literal, { fontPx, fontFamily: fam });
-}
-
-
-function parseBracketSegmentToElements(bracketContent, elements, { fontPx, mode, fgCss = "#000111", literalFontFamily }) {
-  const content = String(bracketContent ?? "").trim();
-  if (!content) return;
-
-  // Use the same scanners as plain text, but require a FULL-CONTENT hit.
-  const timeHits = findTimeSequencesWithCaps(content);
-  const dateHits = findDateSequencesWithCaps(content);
-  const decHits    = findDecimalSequencesWithCaps(content);
-  const codeHits   = findNumberCodeSequencesWithCaps(content);
-  const nameHits   = findNanpaLinjanProperNameSequencesWithCaps(content);
-  const phraseHits = findNanpaLinjanTpPhraseSequences(content);
-
-  const hits = mergeAndGreedyFilterHits([...timeHits, ...dateHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
-  const full = (hits || []).find(h => (h.index|0) === 0 && (h.end|0) === content.length);
-
-  if (full) {
-    if (full.kind === "tpPhrase") {
-      const cps = nanpaLinjanWordsToCodepoints(full.words, { mode });
-      if (cps && cps.length) {
-        makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
-        return;
-      }
-    } else {
-      const isTimeLike = (full.kind === "time") || (full.kind === "date") || nanpaCapsIsValidTimeOrDate(full.caps);
-      const cps = nanpaCapsToNanpaLinjanCodepoints(full.caps, { mode, isTime: isTimeLike });
-      if (cps && cps.length) {
-        makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
-        return;
-      }
-    }
-    // If scanner matched but conversion failed, fall through to legacy behavior.
-  }
-
-  // Legacy behavior (unchanged):
-  const idCps =
-    tryDecodeNanpaLinjanIdentifierToCodepoints(content, { mode }) ??
-    tryDecodeNanpaLinjanIdentifierToCodepoints(content.replace(/\s+/g, ""), { mode });
-
-  if (idCps && idCps.length) {
-    makeCartoucheElementFromCodepoints(elements, idCps, { fontPx, fontFamily: FONT_FAMILY_CARTOUCHE, fgCss });
-    return;
-  }
-
-  const wordsRaw = content.split(/\s+/).filter(Boolean);
-  const glyphTokens = wordsRaw.map(normalizeTpGlyphToken).filter(Boolean);
-  if (glyphTokens.length >= 1 && glyphTokens.every(isKnownTpWordKey)) {
-    makeCartoucheElementFromCodepoints(elements, tpWordsToCodepoints(glyphTokens), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss });
-    return;
-  }
-
-  makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(content), { fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss });
-}
-
-
-/* ============================================================
-   Line parsing: line → elements
-   ============================================================ */
-function lineToElements(line, { fontPx, mode = "uniform", fgCss = "#000111", literalFontFamily } = {}) {
-  const segs = splitLineIntoSegments(line);
-  const elements = [];
-
-  for (const seg of segs) {
-    if (seg.kind === "text") {
-      parseTextSegmentToElements(seg.value, elements, { fontPx, mode, fgCss, literalFontFamily });
-    } else if (seg.kind === "bracket") {
-      parseBracketSegmentToElements(seg.value, elements, { fontPx, mode, fgCss, literalFontFamily });
-    } else if (seg.kind === "quote") {
-      parseQuoteSegmentToElements(seg.value, elements, { fontPx, literalFontFamily });
-    }
-  }
-
-  while (elements.length > 0 && elements[elements.length - 1].type === "gap") elements.pop();
-  return elements;
-}
-
-function parseMultilineToElements(multilineText, { fontPx, mode = "uniform", fgCss = "#000111", literalFontFamily } = {}) {
-  const raw = String(multilineText ?? "");
-  const lines = raw.replace(/\r\n/g, "\n").split("\n");
-  return lines.map(line => lineToElements(line, { fontPx, mode, fgCss, literalFontFamily }));
-}
-
-/* ============================================================
-   Measuring primitives (used by bounding box and rendering)
-   ============================================================ */
-function measureTextRun(ctx, text, px, fontFamily) {
-  const chars = String(text ?? "");
-  ctx.font = `${px}px "${fontFamily}"`;
-  setTextQuality(ctx);
-  const m = ctx.measureText(chars);
-
-  const ascent  = (m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8));
-  const descent = (m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2));
-  const w = Math.ceil(m.width);
-
-  return { chars, ascent, descent, left: 0, w, h: Math.ceil(ascent + descent), px, fontFamily };
-}
-
-function measureGlyph(ctx, cp, px, fontFamily) {
-  const ch = String.fromCodePoint(cp);
-  ctx.font = `${px}px "${fontFamily}"`;
-  setTextQuality(ctx);
-  const m = ctx.measureText(ch);
-
-  const ascent  = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
-  const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
-
-  const left = m.actualBoundingBoxLeft ?? 0;
-  const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
-  const tightW = Math.ceil(left + right);
-
-  return { ch, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
-}
-
-function measureRun(ctx, cps, px, fontFamily) {
-  const chars = (cps ?? []).map(cp => String.fromCodePoint(cp)).join("");
-  ctx.font = `${px}px "${fontFamily}"`;
-  setTextQuality(ctx);
-  const m = ctx.measureText(chars);
-
-  const ascent  = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
-  const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
-
-  const left = m.actualBoundingBoxLeft ?? 0;
-  const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
-  const tightW = Math.ceil(left + right);
-
-  return { chars, ascent, descent, left, w: tightW, h: Math.ceil(ascent + descent), px, fontFamily };
-}
-
-/* ============================================================
-   BOUNDING BOX: measure multi-line before drawing
-   Returns: { width, height, padPx, lineGapPx, lines:[...lineMetrics...] }
-   ============================================================ */
-function measureMultiline(linesElements, { fontPx, padPx = DEFAULT_PAD_PX, lineGapPx = lineGapForPx(fontPx) } = {}) {
-  const tmp = document.createElement("canvas");
-  const ctx = tmp.getContext("2d");
-  ctx.textBaseline = "alphabetic";
-
-  const measuredLines = [];
-  let maxLineW = 0;
-  let totalH = 0;
-
-  for (const lineEls of (linesElements ?? [])) {
-    let w = 0;
-    let maxAscent = 0;
-    let maxDescent = 0;
-
-    const measuredEls = [];
-
-    for (const el of lineEls) {
-      if (el.type === "text") {
-        const fam = el.fontFamily || FONT_FAMILY_LITERAL;
-        const r = measureTextRun(ctx, el.text, el.px ?? fontPx, fam);
-        measuredEls.push({ ...el, m: r });
-        w += r.w;
-        if (r.ascent > maxAscent) maxAscent = r.ascent;
-        if (r.descent > maxDescent) maxDescent = r.descent;
-        continue;
-      }
-
-      if (el.type === "gap") {
-        measuredEls.push(el);
-        w += Math.max(0, el.px | 0);
-        continue;
-      }
-
-      if (el.type === "glyph") {
-        const fam = el.fontFamily || FONT_FAMILY_TEXT;
-        const g = measureGlyph(ctx, el.cp, el.px ?? fontPx, fam);
-        measuredEls.push({ ...el, m: g });
-        w += g.w;
-        if (g.ascent > maxAscent) maxAscent = g.ascent;
-        if (g.descent > maxDescent) maxDescent = g.descent;
-        continue;
-      }
-
-      if (el.type === "run") {
-        const fam = el.fontFamily || FONT_FAMILY_TEXT;
-        const r = measureRun(ctx, el.cps, el.px ?? fontPx, fam);
-        measuredEls.push({ ...el, m: r });
-        w += r.w;
-        if (r.ascent > maxAscent) maxAscent = r.ascent;
-        if (r.descent > maxDescent) maxDescent = r.descent;
-        continue;
-      }
-
-      if (el.type === "cartouche") {
-        measuredEls.push(el);
-        w += (el.w | 0);
-
-        const a = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
-        const d = el.descent ?? Math.ceil((el.h | 0) * 0.3);
-
-        if (a > maxAscent) maxAscent = a;
-        if (d > maxDescent) maxDescent = d;
-        continue;
-      }
-    }
-
-    const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
-    measuredLines.push({ measuredEls, w, lineBoxH, maxAscent, maxDescent });
-
-    if (w > maxLineW) maxLineW = w;
-    totalH += lineBoxH;
-  }
-
-  totalH += Math.max(0, (measuredLines.length - 1) * lineGapPx);
-
-  const width  = Math.max(1, Math.ceil(maxLineW + padPx * 2));
-  const height = Math.max(1, Math.ceil(totalH  + padPx * 2));
-
-  return { width, height, padPx, lineGapPx, lines: measuredLines };
-}
-
-
-/* ============================================================
-   DRAW: render multi-line to a canvas (also computes bounding box)
-   ============================================================ */
-function renderMultilineToCanvas(outCanvas, linesElements, { fontPx, fgCss = "#000111", padPx = DEFAULT_PAD_PX, lineGapPx = lineGapForPx(fontPx), literalFontAlignment = "left", haloEnabled = false, haloCss = "#FFFFFF", haloThicknessMode = "auto", haloThickness = 0 } = {}) {
-  if (!outCanvas) throw new Error("renderMultilineToCanvas: outCanvas missing");
-
-  const box = measureMultiline(linesElements, { fontPx, padPx, lineGapPx });
-  outCanvas.width = box.width;
-  outCanvas.height = box.height;
-
-  const outCtx = outCanvas.getContext("2d", { alpha: true });
-  outCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
-  outCtx.textBaseline = "alphabetic";
-  outCtx.fillStyle = fgCss;
-  setTextQuality(outCtx);
-
-  const _haloOn = !!haloEnabled;
-  const _haloBasePx = _haloOn ? ((haloThicknessMode === "manual" && Number.isFinite(haloThickness) && haloThickness > 0)
-    ? clampHaloThicknessPx(haloThickness)
-    : defaultHaloThicknessForFontPx(fontPx)) : 0;
-  if (_haloBasePx > 0){
-    outCtx.strokeStyle = rgbaOrHexToHex(haloCss, "#FFFFFF");
-    outCtx.lineWidth = _haloBasePx;
-    outCtx.lineJoin = "round";
-    outCtx.miterLimit = 2;
-  }
-
-  let y = box.padPx;
-
-  for (let li = 0; li < box.lines.length; li++) {
-    const L = box.lines[li];
-    let x = box.padPx;
-
-    //we can use alignment here to push x to the right  ??????????????
-    //we get the line width from L
-    const lineWidth = L.w;
-    //we calculate extra space on this line
-    const extraSpaceOnLine = Math.max( 0, box.width - lineWidth - box.padPx * 2 );
-    //we push the starting x over depending on alignment
-    if (literalFontAlignment === "center") x = x + extraSpaceOnLine / 2;
-    if (literalFontAlignment === "right")  x = x + extraSpaceOnLine;
-
-
-    const glyphBaseline = y + L.maxAscent;
-
-    for (const el of L.measuredEls) {
-      if (el.type === "text") {
-        const m = el.m;
-        const fam = el.fontFamily || FONT_FAMILY_LITERAL;
-        outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
-        if (_haloBasePx > 0) outCtx.strokeText(m.chars, x, glyphBaseline);
-        outCtx.fillText(m.chars, x, glyphBaseline);
-        x += m.w;
-        continue;
-      }
-
-      if (el.type === "gap") { x += Math.max(0, el.px | 0); continue; }
-
-      if (el.type === "glyph") {
-        const m = el.m;
-        const fam = el.fontFamily || FONT_FAMILY_TEXT;
-        outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
-        const drawX = x + (m.left ?? 0);
-        if (_haloBasePx > 0) outCtx.strokeText(m.ch, drawX, glyphBaseline);
-        outCtx.fillText(m.ch, drawX, glyphBaseline);
-        x += m.w;
-        continue;
-      }
-
-      if (el.type === "run") {
-        const m = el.m;
-        const fam = el.fontFamily || FONT_FAMILY_TEXT;
-        outCtx.font = `${(el.px ?? fontPx)}px "${fam}"`;
-        const drawX = x + (m.left ?? 0);
-        if (_haloBasePx > 0) outCtx.strokeText(m.chars, drawX, glyphBaseline);
-        outCtx.fillText(m.chars, drawX, glyphBaseline);
-        x += m.w;
-        continue;
-      }
-
-      if (el.type === "cartouche") {
-        const by = (el.baselineY != null) ? (el.baselineY | 0) : Math.floor((el.h | 0) * 0.75);
-        const drawY = glyphBaseline - by;
-        outCtx.drawImage(el.canvas, x, drawY);
-        x += el.w;
-        continue;
-      }
-    }
-
-    y += L.lineBoxH;
-    if (li < box.lines.length - 1) y += box.lineGapPx;
-  }
-
-  return box; // return measured bbox/metrics for callers that want it
-}
-
-/* ============================================================
-   Convenience: parse + measure + draw in one call
-   ============================================================ */
-function renderTextToCanvas(
-  outCanvas,
-  multilineText,
-  {
-    fontPx,
-    mode = "uniform",
-    fgCss = "#000111",
-    padPx = DEFAULT_PAD_PX,
-    lineGapPx = lineGapForPx(fontPx),
-    literalFontFamily,            // NEW: accept it
-    literalFontAlignment,   //New accept alignment
-
-    // NEW: halo
-    haloEnabled = false,
-    haloCss = "#FFFFFF",
-    haloThicknessMode = "auto",
-    haloThickness = 0,
-  } = {}
-) {
-  // NEW: forward literalFontFamily into the parser so "..." segments use the element’s font
-  ACTIVE_SITELEN_HALO = { enabled: !!haloEnabled, css: haloCss, mode: haloThicknessMode, thickness: haloThickness };
-
-  const linesEls = parseMultilineToElements(multilineText, {
-    fontPx,
-    mode,
-    fgCss,
-    literalFontFamily,
-  });
-
-  return renderMultilineToCanvas(outCanvas, linesEls, {
-    fontPx,
-    fgCss,
-    padPx,
-    lineGapPx,
-    literalFontAlignment,
-
-    haloEnabled,
-    haloCss,
-    haloThicknessMode,
-    haloThickness,
-  });
-}
-
-
-
-
-
-
-//******* end of new code for displaying sitelen elements
+    if (el.haloThicknessMode === "manual") { const d=Number.isFinite(st.defaultHaloThicknessPx)?st.defaultHaloThicknessPx:DEFAULTS.defaultHaloThicknessPx; el.haloThickness=clampHaloThicknessPx(d || defaultHaloThicknessForFontPx(basis)); }
+    else el.haloThickness=defaultHaloThicknessForFontPx(basis);
+  } else el.haloThickness=clampHaloThicknessPx(el.haloThickness);
+}
+function effectiveHaloThicknessForElement(el){ if(!el||!elementSupportsHalo(el)||!el.haloEnabled)return 0; const basis=(el.type===ElementType.Rect)?28:Math.max(6,Number(el.fontSize??24)); const v=(el.haloThicknessMode==="manual")?clampHaloThicknessPx(el.haloThickness):defaultHaloThicknessForFontPx(basis); return v*(Scene.view?.zoom??1); }
+function effectiveHaloThicknessForElementExport(el){ if(!el||!elementSupportsHalo(el)||!el.haloEnabled)return 0; const basis=(el.type===ElementType.Rect)?28:Math.max(6,Number(el.fontSize??24)); return (el.haloThicknessMode==="manual")?clampHaloThicknessPx(el.haloThickness):defaultHaloThicknessForFontPx(basis); }
+//******* end shared sitelen rendering helpers
 
 /* ============================================================
    Sitelen raster cache (text -> offscreen canvas)
@@ -10791,6 +8528,22 @@ if (sitelenOnlyEls.length){
     nanpaModeMixed
   ));
 
+  const sharedBoolProps = [
+    ["props_nanpa_format", getElementNanpaFormat, "nanpaFormat"],
+    ["props_enable_hex_parsing", getElementEnableHexParsing, "enableHexParsing"],
+    ["props_enable_binary_parsing", getElementEnableBinaryParsing, "enableBinaryParsing"],
+    ["props_interpret_double_quotes_as_te_to", getElementInterpretDoubleQuotesAsTeTo, "interpretDoubleQuotesAsTeTo"],
+    ["props_break_lines_at_full_stops", getElementBreakLinesAtFullStops, "breakLinesAtFullStops"],
+  ];
+  for (const [labelKey, getter, field] of sharedBoolProps) {
+    const vals = sitelenOnlyEls.map(e => String(!!getter(e)));
+    const mixed = mixedLabelIfMixed(vals);
+    propsBody.appendChild(makeCheckbox(tr(labelKey), !!getter(sitelenOnlyEls[0]), (checked) => {
+      applyToAllWhere(e => e && e.type === ElementType.Sitelen, (e) => { e[field] = !!checked; invalidateSitelenCache(e.id); updateSitelenLayout(e); });
+      scheduleAutosave(); render();
+    }, { mixedLabel: mixed, indeterminate: !!mixed }));
+  }
+
   const ignoreVals = sitelenOnlyEls.map(e => !!e.ignoreUnknownText);
   const ignoreMixed = (new Set(ignoreVals.map(v => String(v))).size > 1);
   propsBody.appendChild(makeCheckbox(
@@ -11511,6 +9264,17 @@ if (textField && textField._popoutElementId){
           render();
         }
       ));
+
+      const sharedBoolProps = [
+        ["props_nanpa_format", getElementNanpaFormat, "nanpaFormat"],
+        ["props_enable_hex_parsing", getElementEnableHexParsing, "enableHexParsing"],
+        ["props_enable_binary_parsing", getElementEnableBinaryParsing, "enableBinaryParsing"],
+        ["props_interpret_double_quotes_as_te_to", getElementInterpretDoubleQuotesAsTeTo, "interpretDoubleQuotesAsTeTo"],
+        ["props_break_lines_at_full_stops", getElementBreakLinesAtFullStops, "breakLinesAtFullStops"],
+      ];
+      for (const [labelKey, getter, field] of sharedBoolProps) {
+        propsBody.appendChild(makeCheckbox(tr(labelKey), !!getter(el), (checked) => { el[field] = !!checked; invalidateSitelenCache(el.id); updateSitelenLayout(el); scheduleAutosave(); render(); }));
+      }
     }
 
 
@@ -14027,6 +11791,11 @@ function syncStageDefaultsUiFromScene(){
   const danc = document.getElementById("defAbbreviateNumericCartouches");
   const dancs = document.getElementById("defPreserveNumericCartoucheBreaksInAbbreviation");
   const dnlm = document.getElementById("defNanpaLinjanMode");
+  const dnf = document.getElementById("defNanpaFormat");
+  const dhexp = document.getElementById("defEnableHexParsing");
+  const dbinp = document.getElementById("defEnableBinaryParsing");
+  const dquote = document.getElementById("defInterpretDoubleQuotesAsTeTo");
+  const dbreak = document.getElementById("defBreakLinesAtFullStops");
   const dpcar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
@@ -14093,6 +11862,11 @@ function syncStageDefaultsUiFromScene(){
   st.defaultAbbreviateNumericCartouches = !!(st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
   st.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!(st.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? false);
   st.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
+  st.defaultNanpaFormat = !!(st.defaultNanpaFormat ?? false);
+  st.defaultEnableHexParsing = !!(st.defaultEnableHexParsing ?? false);
+  st.defaultEnableBinaryParsing = !!(st.defaultEnableBinaryParsing ?? false);
+  st.defaultInterpretDoubleQuotesAsTeTo = !!(st.defaultInterpretDoubleQuotesAsTeTo ?? false);
+  st.defaultBreakLinesAtFullStops = !!(st.defaultBreakLinesAtFullStops ?? false);
   st.defaultPreserveCenterOnAutoResize = !!(st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
   st.defaultSpacingPreset = normalizeSpacingPreset(st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
@@ -14104,6 +11878,11 @@ function syncStageDefaultsUiFromScene(){
   if (danc) danc.checked = !!st.defaultAbbreviateNumericCartouches;
   if (dancs) dancs.checked = !!st.defaultPreserveNumericCartoucheBreaksInAbbreviation;
   if (dnlm) dnlm.value = st.defaultNanpaLinjanMode;
+  if (dnf) dnf.checked = st.defaultNanpaFormat;
+  if (dhexp) dhexp.checked = st.defaultEnableHexParsing;
+  if (dbinp) dbinp.checked = st.defaultEnableBinaryParsing;
+  if (dquote) dquote.checked = st.defaultInterpretDoubleQuotesAsTeTo;
+  if (dbreak) dbreak.checked = st.defaultBreakLinesAtFullStops;
   if (dpcar) dpcar.checked = !!st.defaultPreserveCenterOnAutoResize;
   if (dsp) dsp.value = st.defaultSpacingPreset;
 
@@ -15422,6 +13201,11 @@ function wireStageDefaultsUi(){
   const danc = document.getElementById("defAbbreviateNumericCartouches");
   const dancs = document.getElementById("defPreserveNumericCartoucheBreaksInAbbreviation");
   const dnlm = document.getElementById("defNanpaLinjanMode");
+  const dnf = document.getElementById("defNanpaFormat");
+  const dhexp = document.getElementById("defEnableHexParsing");
+  const dbinp = document.getElementById("defEnableBinaryParsing");
+  const dquote = document.getElementById("defInterpretDoubleQuotesAsTeTo");
+  const dbreak = document.getElementById("defBreakLinesAtFullStops");
   const dpcar = document.getElementById("defPreserveCenterOnAutoResize");
   const dsp = document.getElementById("defSpacingPreset");
   const dt = document.getElementById("defTextColor");
@@ -15557,6 +13341,12 @@ function wireStageDefaultsUi(){
       render();
     });
   }
+
+  if (dnf) dnf.addEventListener("change", (e) => { Scene.stage.defaultNanpaFormat = !!e.target.checked; scheduleAutosave(); render(); });
+  if (dhexp) dhexp.addEventListener("change", (e) => { Scene.stage.defaultEnableHexParsing = !!e.target.checked; scheduleAutosave(); render(); });
+  if (dbinp) dbinp.addEventListener("change", (e) => { Scene.stage.defaultEnableBinaryParsing = !!e.target.checked; scheduleAutosave(); render(); });
+  if (dquote) dquote.addEventListener("change", (e) => { Scene.stage.defaultInterpretDoubleQuotesAsTeTo = !!e.target.checked; scheduleAutosave(); render(); });
+  if (dbreak) dbreak.addEventListener("change", (e) => { Scene.stage.defaultBreakLinesAtFullStops = !!e.target.checked; scheduleAutosave(); render(); });
 
   if (dpcar){
     dpcar.addEventListener("change", (e) => {
@@ -15908,7 +13698,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=228');
+        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=246');
         const NanpaParser = rendererMod?.NanpaParser;
         if (NanpaParser && !globalThis.NanpaParser) globalThis.NanpaParser = NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
@@ -16278,6 +14068,11 @@ document.addEventListener("keydown", (e) => {
       defaultAbbreviateNumericCartouches: !!(d.defaultAbbreviateNumericCartouches ?? st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches),
       defaultPreserveNumericCartoucheBreaksInAbbreviation: !!(d.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? st.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation),
       defaultNanpaLinjanMode: normalizeNanpaLinjanMode(d.defaultNanpaLinjanMode ?? st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode),
+      defaultNanpaFormat: !!(d.defaultNanpaFormat ?? st.defaultNanpaFormat ?? DEFAULTS.defaultNanpaFormat),
+      defaultEnableHexParsing: !!(d.defaultEnableHexParsing ?? st.defaultEnableHexParsing ?? DEFAULTS.defaultEnableHexParsing),
+      defaultEnableBinaryParsing: !!(d.defaultEnableBinaryParsing ?? st.defaultEnableBinaryParsing ?? DEFAULTS.defaultEnableBinaryParsing),
+      defaultInterpretDoubleQuotesAsTeTo: !!(d.defaultInterpretDoubleQuotesAsTeTo ?? st.defaultInterpretDoubleQuotesAsTeTo ?? DEFAULTS.defaultInterpretDoubleQuotesAsTeTo),
+      defaultBreakLinesAtFullStops: !!(d.defaultBreakLinesAtFullStops ?? st.defaultBreakLinesAtFullStops ?? DEFAULTS.defaultBreakLinesAtFullStops),
       defaultPreserveCenterOnAutoResize: !!(d.defaultPreserveCenterOnAutoResize ?? st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize),
       defaultSpacingPreset: normalizeSpacingPreset(d.defaultSpacingPreset ?? st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset),
       defaultTextColor: rgbaOrHexToHex(d.defaultTextColor ?? st.defaultTextColor ?? DEFAULTS.defaultTextColor, DEFAULTS.defaultTextColor),
@@ -16341,12 +14136,22 @@ document.addEventListener("keydown", (e) => {
     const rawDocumentDefaultsHasAbbrev = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultAbbreviateNumericCartouches');
     const rawDocumentDefaultsHasAbbrevSpacers = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultPreserveNumericCartoucheBreaksInAbbreviation');
     const rawDocumentDefaultsHasNanpaMode = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultNanpaLinjanMode');
+    const rawDocumentDefaultsHasNanpaFormat = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultNanpaFormat');
+    const rawDocumentDefaultsHasEnableHexParsing = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultEnableHexParsing');
+    const rawDocumentDefaultsHasEnableBinaryParsing = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultEnableBinaryParsing');
+    const rawDocumentDefaultsHasInterpretDoubleQuotesAsTeTo = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultInterpretDoubleQuotesAsTeTo');
+    const rawDocumentDefaultsHasBreakLinesAtFullStops = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultBreakLinesAtFullStops');
     doc.documentDefaults = normalizeScrapbookDocumentDefaults(rawDocumentDefaults, Scene.stage || {});
     // Existing/imported documents that lack these flags must stay visually unchanged.
     if (!rawDocumentDefaultsHasNasinNanpaPona) doc.documentDefaults.defaultNasinNanpaPona = false;
     if (!rawDocumentDefaultsHasAbbrev) doc.documentDefaults.defaultAbbreviateNumericCartouches = false;
     if (!rawDocumentDefaultsHasAbbrevSpacers) doc.documentDefaults.defaultPreserveNumericCartoucheBreaksInAbbreviation = false;
     if (!rawDocumentDefaultsHasNanpaMode) doc.documentDefaults.defaultNanpaLinjanMode = "strict";
+    if (!rawDocumentDefaultsHasNanpaFormat) doc.documentDefaults.defaultNanpaFormat = false;
+    if (!rawDocumentDefaultsHasEnableHexParsing) doc.documentDefaults.defaultEnableHexParsing = false;
+    if (!rawDocumentDefaultsHasEnableBinaryParsing) doc.documentDefaults.defaultEnableBinaryParsing = false;
+    if (!rawDocumentDefaultsHasInterpretDoubleQuotesAsTeTo) doc.documentDefaults.defaultInterpretDoubleQuotesAsTeTo = false;
+    if (!rawDocumentDefaultsHasBreakLinesAtFullStops) doc.documentDefaults.defaultBreakLinesAtFullStops = false;
     doc.assets = deep(doc.assets || { byId: [] });
     doc.cartoucheDb = normalizeScrapbookCartoucheDb(doc.cartoucheDb);
     // Normalise media guard settings (default all ON for new/old docs that lack them)
@@ -16533,9 +14338,8 @@ document.addEventListener("keydown", (e) => {
   function resolveGlyphSearchCodepoint(query){
     const raw = normalizeSearchText(query);
     if (!raw || !/^[A-Za-z]+$/.test(raw)) return null;
-    const key = normalizeTpWord(raw);
-    if (!key || key !== raw.toLowerCase()) return null;
-    const cp = MULTI_LINE_WORD_TO_UCSUR_CP[key];
+    const key = raw.toLowerCase();
+    const cp = WORD_TO_UCSUR_CP[key];
     return Number.isFinite(cp) ? cp : null;
   }
 
@@ -16969,17 +14773,32 @@ document.addEventListener("keydown", (e) => {
     payload.scene.stage.defaultAbbreviateNumericCartouches = true;
     payload.scene.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation = true;
     payload.scene.stage.defaultNanpaLinjanMode = "relaxed";
+    payload.scene.stage.defaultNanpaFormat = true;
+    payload.scene.stage.defaultEnableHexParsing = true;
+    payload.scene.stage.defaultEnableBinaryParsing = true;
+    payload.scene.stage.defaultInterpretDoubleQuotesAsTeTo = false;
+    payload.scene.stage.defaultBreakLinesAtFullStops = false;
     const st = Object.assign({}, Scene.stage || {}, payload.scene.stage || {}, {
       defaultNasinNanpaPona: false,
       defaultAbbreviateNumericCartouches: true,
       defaultPreserveNumericCartoucheBreaksInAbbreviation: true,
-      defaultNanpaLinjanMode: "relaxed"
+      defaultNanpaLinjanMode: "relaxed",
+      defaultNanpaFormat: true,
+      defaultEnableHexParsing: true,
+      defaultEnableBinaryParsing: true,
+      defaultInterpretDoubleQuotesAsTeTo: false,
+      defaultBreakLinesAtFullStops: false
     });
     const documentDefaults = normalizeScrapbookDocumentDefaults({
       defaultNasinNanpaPona: false,
       defaultAbbreviateNumericCartouches: true,
       defaultPreserveNumericCartoucheBreaksInAbbreviation: true,
-      defaultNanpaLinjanMode: "relaxed"
+      defaultNanpaLinjanMode: "relaxed",
+      defaultNanpaFormat: true,
+      defaultEnableHexParsing: true,
+      defaultEnableBinaryParsing: true,
+      defaultInterpretDoubleQuotesAsTeTo: false,
+      defaultBreakLinesAtFullStops: false
     }, st);
     return {
       format: 'StaticScrapbookDocument',
@@ -17025,6 +14844,11 @@ document.addEventListener("keydown", (e) => {
     st.defaultAbbreviateNumericCartouches = !!(docDefaults.defaultAbbreviateNumericCartouches ?? st.defaultAbbreviateNumericCartouches ?? DEFAULTS.defaultAbbreviateNumericCartouches);
     st.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!(docDefaults.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? st.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation);
     st.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(docDefaults.defaultNanpaLinjanMode ?? st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
+    st.defaultNanpaFormat = !!(docDefaults.defaultNanpaFormat ?? st.defaultNanpaFormat ?? DEFAULTS.defaultNanpaFormat);
+    st.defaultEnableHexParsing = !!(docDefaults.defaultEnableHexParsing ?? st.defaultEnableHexParsing ?? DEFAULTS.defaultEnableHexParsing);
+    st.defaultEnableBinaryParsing = !!(docDefaults.defaultEnableBinaryParsing ?? st.defaultEnableBinaryParsing ?? DEFAULTS.defaultEnableBinaryParsing);
+    st.defaultInterpretDoubleQuotesAsTeTo = !!(docDefaults.defaultInterpretDoubleQuotesAsTeTo ?? st.defaultInterpretDoubleQuotesAsTeTo ?? DEFAULTS.defaultInterpretDoubleQuotesAsTeTo);
+    st.defaultBreakLinesAtFullStops = !!(docDefaults.defaultBreakLinesAtFullStops ?? st.defaultBreakLinesAtFullStops ?? DEFAULTS.defaultBreakLinesAtFullStops);
     st.defaultPreserveCenterOnAutoResize = !!(docDefaults.defaultPreserveCenterOnAutoResize ?? st.defaultPreserveCenterOnAutoResize ?? DEFAULTS.defaultPreserveCenterOnAutoResize);
     st.defaultSpacingPreset = normalizeSpacingPreset(docDefaults.defaultSpacingPreset ?? st.defaultSpacingPreset ?? DEFAULTS.defaultSpacingPreset);
 
@@ -17377,6 +15201,11 @@ document.addEventListener("keydown", (e) => {
       abbreviateNumericCartouches: !!(el?.type === ElementType.Sitelen && getElementAbbreviateNumericCartouches(el)),
       preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
       nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
+      nanpaFormat: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+      enableHexParsing: !!(el?.type === ElementType.Sitelen && getElementEnableHexParsing(el)),
+      enableBinaryParsing: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
+      interpretDoubleQuotesAsTeTo: !!(el?.type === ElementType.Sitelen && getElementInterpretDoubleQuotesAsTeTo(el)),
+      breakLinesAtFullStops: !!(el?.type === ElementType.Sitelen && getElementBreakLinesAtFullStops(el)),
       ignoreUnknownText: !!el?.ignoreUnknownText,
       haloEnabled: !!el?.haloEnabled, haloColor: String(el?.haloColor ?? ""),
       haloMode: String(el?.haloThicknessMode ?? ""), haloThickness: Number(el?.haloThickness ?? 0),
@@ -18259,34 +16088,8 @@ document.addEventListener("keydown", (e) => {
       `${parts.filter(Boolean).join('\n')}\n</svg>`;
   }
 
-  function abbreviateNumericCartoucheCpsForExport(cps) {
-    const input = Array.from(cps || []).map(cp => Number(cp)).filter(Number.isFinite);
-    if (!input.length) return input;
-    const dropAfterFirstNanpa = new Set([CP_NANPA, CP_EN, CP_NENA, NANPA_LINJA_N_WORD_TO_CP["open"]].filter(Number.isFinite));
-    const out = [];
-    let keptFirstNanpa = false;
-    for (let i = 0; i < input.length; i++) {
-      const cp = input[i];
-      const isFinalNanpa = (cp === CP_NANPA && i === input.length - 1);
-      if (!keptFirstNanpa) {
-        out.push(cp);
-        if (cp === CP_NANPA) keptFirstNanpa = true;
-        continue;
-      }
-      if (isFinalNanpa) {
-        out.push(cp);
-        continue;
-      }
-      if (dropAfterFirstNanpa.has(cp)) continue;
-      out.push(cp);
-    }
-    return out;
-  }
-
   async function buildCoverDateCartoucheSvgFragment(doc, exportDate, stageW, fragmentH){
     const cleanDate = String(exportDate || '').trim();
-    const caps = dateStrToNanpaCaps(cleanDate);
-    if (!caps) throw new Error(`Cover date is not encodable as nanpa-linja-n date: ${cleanDate}`);
     const abbreviateCoverDate = documentCoverDateUsesAbbreviatedCartouche(doc);
 
     // IMPORTANT: Do not manually remove codepoints here. The scrapbook cover
@@ -18950,120 +16753,6 @@ document.addEventListener("keydown", (e) => {
     return /No drawable runs in render plan/i.test(String(err && (err.message || err) || ""));
   }
 
-  function findWholeSitelenNumericCartoucheHit(rawText){
-    const raw = String(rawText ?? "");
-    const trimmed = raw.trim();
-    if (!trimmed) return null;
-
-    // This helper is intentionally strict: it is only for a whole sitelen element
-    // whose complete text is numeric/date/time/code/proper-name input. Mixed
-    // ordinary sitelen text still goes through the production renderer/parser.
-    const hitSets = [
-      ...findTimeSequencesWithCaps(trimmed),
-      ...findDateSequencesWithCaps(trimmed),
-      ...findDecimalSequencesWithCaps(trimmed),
-      ...findNumberCodeSequencesWithCaps(trimmed),
-      ...findNanpaLinjanProperNameSequencesWithCaps(trimmed)
-    ];
-
-    for (const h of hitSets) {
-      if ((h.index | 0) !== 0 || (h.end | 0) !== trimmed.length) continue;
-      if (h.kind === "tpPhrase") continue;
-      if (!h.caps) continue;
-      const isTimeLike = (h.kind === "time") || (h.kind === "date") || nanpaCapsIsValidTimeOrDate(h.caps);
-      const cps = nanpaCapsToNanpaLinjanCodepoints(h.caps, { mode: "uniform", isTime: isTimeLike });
-      if (cps && cps.length) return { ...h, cps, isTimeLike, raw: trimmed };
-    }
-
-    const idCps =
-      tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed, { mode: "uniform" }) ??
-      tryDecodeNanpaLinjanIdentifierToCodepoints(trimmed.replace(/\s+/g, ""), { mode: "uniform" });
-    if (idCps && idCps.length) return { kind: "properName", cps: idCps, raw: trimmed };
-
-    return null;
-  }
-
-  function buildDirectNumericCartoucheVectorPlanForElement(el, numericHit, config){
-    if (!numericHit || !Array.isArray(numericHit.cps) || !numericHit.cps.length) return null;
-
-    const fontPx = Math.max(6, Number(el?.fontSize ?? config?.layout?.fontPx ?? 44));
-    const halo = config?.paint?.halo || {};
-    const haloWidth = halo?.enabled ? Math.max(0, Number(halo.widthPx || 0)) : 0;
-    const padPx = Math.max(4, Math.round(fontPx * 0.11));
-    const cartoucheFamily = String(getRenderFontPreset(getElementRenderFontPresetKey(el))?.cartoucheFamily || FONT_FAMILY_CARTOUCHE);
-    const fillStyle = el?.color || config?.paint?.fillStyle || "#111111";
-
-    let innerCps = Array.from(numericHit.cps || []);
-    if (el?.abbreviateNumericCartouches) {
-      innerCps = abbreviateNumericCartoucheCpsForExport(innerCps);
-    }
-    const frameCps = [CARTOUCHE_START_CP, ...innerCps, CARTOUCHE_END_CP];
-    const chars = frameCps.map(cp => String.fromCodePoint(cp)).join("");
-
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    ctx.textBaseline = "alphabetic";
-    ctx.font = `${fontPx}px "${cartoucheFamily}"`;
-    setTextQuality(ctx);
-    const m = ctx.measureText(chars);
-
-    const ascent = (m.actualBoundingBoxAscent != null) ? m.actualBoundingBoxAscent : Math.ceil(fontPx * 0.95);
-    const descent = (m.actualBoundingBoxDescent != null) ? m.actualBoundingBoxDescent : Math.ceil(fontPx * 0.35);
-    const left = (m.actualBoundingBoxLeft != null) ? m.actualBoundingBoxLeft : 0;
-    const right = (m.actualBoundingBoxRight != null) ? m.actualBoundingBoxRight : Math.ceil(m.width);
-    const tightW = Math.max(1, Math.ceil(left + right));
-    const tightH = Math.max(1, Math.ceil(ascent + descent));
-    const widthPx = Math.max(1, Math.ceil(tightW + padPx * 2 + haloWidth * 2));
-    const heightPx = Math.max(1, Math.ceil(tightH + padPx * 2 + haloWidth * 2));
-    const drawXPx = padPx + left + haloWidth;
-    const baselineYPx = padPx + ascent + haloWidth;
-
-    const run = {
-      kind: "glyph",
-      renderMode: "rawUcsur",
-      sourceKind: numericHit.kind || "numeric",
-      fontRole: "number",
-      fontFamily: cartoucheFamily,
-      fontPx,
-      cps: frameCps,
-      xPx: drawXPx,
-      drawXPx,
-      baselineYPx,
-      widthPx: tightW,
-      heightPx: tightH,
-      ascentPx: ascent,
-      descentPx: descent,
-      fillStyle,
-      halo: {
-        enabled: !!halo?.enabled,
-        color: halo?.color || "#FFFFFF",
-        widthPx: haloWidth
-      },
-      _element: {
-        type: "run",
-        cps: frameCps,
-        fontFamily: cartoucheFamily,
-        fillStyle,
-        halo: { enabled: !!halo?.enabled, color: halo?.color || "#FFFFFF", widthPx: haloWidth }
-      }
-    };
-
-    return {
-      widthPx,
-      heightPx,
-      lines: [{
-        index: 0,
-        yPx: 0,
-        baselineYPx,
-        heightPx,
-        runs: [run]
-      }],
-      diagnostics: [],
-      normalizedInput: String(numericHit.raw || el?.text || ""),
-      directNumericCartouche: true
-    };
-  }
-
   function normalizeSitelenVectorExportInput(rawText){
     return prepareSitelenInputWithActiveCartoucheDb(rawText);
   }
@@ -19173,24 +16862,6 @@ document.addEventListener("keydown", (e) => {
     let plan = null;
     let selectedInput = null;
     let lastPlanError = null;
-
-    const numericHit = findWholeSitelenNumericCartoucheHit(String(el.text ?? ""));
-    if (numericHit) {
-      plan = buildDirectNumericCartoucheVectorPlanForElement(el, numericHit, sitelenConfig);
-      selectedInput = {
-        label: "whole-numeric-cartouche-direct",
-        input: String(el.text ?? ""),
-        kind: numericHit.kind || "numeric"
-      };
-      vectorFontDebug("svgSitelenElementForExport direct numeric cartouche plan", {
-        elementId: el?.id || null,
-        text: String(el.text ?? ""),
-        numericKind: numericHit.kind || null,
-        abbreviated: !!el?.abbreviateNumericCartouches,
-        planSize: { widthPx: plan?.widthPx, heightPx: plan?.heightPx },
-        runs: summarizeVectorFontPlan(plan)
-      });
-    }
 
     if (!plan) {
       const normalizedInput = normalizeSitelenVectorExportInput(String(el.text ?? ""));
@@ -21328,6 +18999,11 @@ ${unknownTextRects}` : nested.inner;
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefAbbrevNumeric" type="checkbox"${defs.defaultAbbreviateNumericCartouches ? ' checked' : ''}>Default abbreviate numeric cartouche output</label></div></div>
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefAbbrevNumericSpacers" type="checkbox"${defs.defaultPreserveNumericCartoucheBreaksInAbbreviation ? ' checked' : ''}>Default show spacers in abbreviated cartouches</label></div></div>
         <div class="row"><div class="field"><label for="sbDefNanpaLinjanMode">Default nanpa-linja-n mode</label><select id="sbDefNanpaLinjanMode">${optionListHtml(nanpaLinjanModeSelectOptions(), defs.defaultNanpaLinjanMode)}</select></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefNanpaFormat" type="checkbox"${defs.defaultNanpaFormat ? ' checked' : ''}>Default Nanpa format</label></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefEnableHexParsing" type="checkbox"${defs.defaultEnableHexParsing ? ' checked' : ''}>Default enable hex parsing</label></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefEnableBinaryParsing" type="checkbox"${defs.defaultEnableBinaryParsing ? ' checked' : ''}>Default enable binary parsing</label></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefInterpretDoubleQuotesAsTeTo" type="checkbox"${defs.defaultInterpretDoubleQuotesAsTeTo ? ' checked' : ''}>Default interpret double quotes as te/to</label></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefBreakLinesAtFullStops" type="checkbox"${defs.defaultBreakLinesAtFullStops ? ' checked' : ''}>Default one sentence per rendered line</label></div></div>
         <div class="row"><div class="field"><label for="sbDefSpacingPreset">Default sitelen spacing</label><select id="sbDefSpacingPreset">${optionListHtml(spacingPresetSelectOptions(), defs.defaultSpacingPreset)}</select></div><div class="field"><label class="checkInline"><input id="sbDefPreserveCenter" type="checkbox"${defs.defaultPreserveCenterOnAutoResize ? ' checked' : ''}>Default preserve center on auto resize</label></div></div>
         <div class="row"><div class="field"><label for="sbDefTextColor">Default text</label><input id="sbDefTextColor" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.defaultTextColor, DEFAULTS.defaultTextColor))}"></div><div class="field"><label class="checkInline"><input id="sbDefIgnoreUnknown" type="checkbox"${defs.defaultIgnoreUnknownText ? ' checked' : ''}>Default ignore unknown text</label></div></div>
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefHaloEnabled" type="checkbox"${defs.defaultHaloEnabled ? ' checked' : ''}>Default halo</label></div><div class="field"><label for="sbDefHaloColor">Default halo color</label><input id="sbDefHaloColor" type="color" value="${escapeHtml(rgbaOrHexToHex(defs.defaultHaloColor, DEFAULTS.defaultHaloColor))}"></div><div class="field"><label for="sbDefHaloThickness">Default halo thickness (px)</label><input id="sbDefHaloThickness" type="number" min="0" max="200" step="1" value="${defs.defaultHaloThicknessPx}"></div></div>
@@ -21368,6 +19044,11 @@ ${unknownTextRects}` : nested.inner;
     bindChange('sbDefAbbrevNumeric', el => { defs.defaultAbbreviateNumericCartouches = !!el.checked; });
     bindChange('sbDefAbbrevNumericSpacers', el => { defs.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!el.checked; });
     bindChange('sbDefNanpaLinjanMode', el => { defs.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(el.value); });
+    bindChange('sbDefNanpaFormat', el => { defs.defaultNanpaFormat = !!el.checked; });
+    bindChange('sbDefEnableHexParsing', el => { defs.defaultEnableHexParsing = !!el.checked; });
+    bindChange('sbDefEnableBinaryParsing', el => { defs.defaultEnableBinaryParsing = !!el.checked; });
+    bindChange('sbDefInterpretDoubleQuotesAsTeTo', el => { defs.defaultInterpretDoubleQuotesAsTeTo = !!el.checked; });
+    bindChange('sbDefBreakLinesAtFullStops', el => { defs.defaultBreakLinesAtFullStops = !!el.checked; });
     bindChange('sbDefSpacingPreset', el => { defs.defaultSpacingPreset = normalizeSpacingPreset(el.value); });
     bindChange('sbDefPreserveCenter', el => { defs.defaultPreserveCenterOnAutoResize = !!el.checked; });
     bindChange('sbDefTextColor', el => { defs.defaultTextColor = el.value; addDynamicSwatch(el.value); });
