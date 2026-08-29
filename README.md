@@ -130,7 +130,7 @@ Rules:
 
 Example:
 
-- -1,530.9 → Neno Wan Eke Lusenin One Jen (pronounced Ne-no-Wan-Eke-Lu-se-nin-One-Jen)
+- -1,530.9 → Neno Wan Eke Lusenin One Jon (pronounced Ne-no-Wan-Eke-Lu-se-nin-One-Jon)
 
 ---
 
@@ -172,20 +172,20 @@ Relaxed mode is preferred because it allows some digits to be represented using 
 
 ### relaxed
 
-| digit | e | a | i | u | large glyph | sitelen glyphs | abbreviated |
-| ----: | :-: | :-: | :-: | :-: | :---------- | :-------------: | :-----------: |
-| 0 | - | - | ni | - | ijo | <img src="./images/nanpa-linja-n-mode-0-sitelen.png" alt="relaxed digit 0 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-0-abbrev.png" alt="digit 0 abbreviated glyph" height="36"> |
-| 1 | we | wa | - | - | wan | <img src="./images/nanpa-linja-n-mode-1-sitelen.png" alt="relaxed digit 1 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-1-abbrev.png" alt="digit 1 abbreviated glyph" height="36"> |
-| 2 | te | - | - | tu | tu | <img src="./images/nanpa-linja-n-mode-2-sitelen.png" alt="relaxed digit 2 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-2-abbrev.png" alt="digit 2 abbreviated glyph" height="36"> |
-| 3 | se | - | - | - | seli | <img src="./images/nanpa-linja-n-mode-3-sitelen.png" alt="relaxed digit 3 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-3-abbrev.png" alt="digit 3 abbreviated glyph" height="36"> |
-| 4 | - | na | - | - | awen | <img src="./images/nanpa-linja-n-mode-4-sitelen.png" alt="relaxed digit 4 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-4-abbrev.png" alt="digit 4 abbreviated glyph" height="36"> |
-| 5 | le | - | - | lu | luka | <img src="./images/nanpa-linja-n-mode-5-sitelen.png" alt="relaxed digit 5 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-5-abbrev.png" alt="digit 5 abbreviated glyph" height="36"> |
-| 6 | - | - | - | nu | utala | <img src="./images/nanpa-linja-n-mode-6-sitelen.png" alt="relaxed digit 6 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-6-abbrev.png" alt="digit 6 abbreviated glyph" height="36"> |
-| 7 | me | - | - | mu | mun | <img src="./images/nanpa-linja-n-mode-7-sitelen.png" alt="relaxed digit 7 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-7-abbrev.png" alt="digit 7 abbreviated glyph" height="36"> |
-| 8 | pe | - | pi | - | pipi | <img src="./images/nanpa-linja-n-mode-8-sitelen.png" alt="relaxed digit 8 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-8-abbrev.png" alt="digit 8 abbreviated glyph" height="36"> |
-| 9 | je | - | - | - | jo | <img src="./images/nanpa-linja-n-mode-9-sitelen.png" alt="relaxed digit 9 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-9-abbrev.png" alt="digit 9 abbreviated glyph" height="36"> |
-| small glyph | e | ala | ike | uta | &nbsp; | &nbsp; | &nbsp; |
-| small sitelen glyph | <img src="./images/nanpa-linja-n-mode-en-small.png" alt="small en glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ala-small.png" alt="small ala glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ike-small.png" alt="small ike glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-uta-small.png" alt="small uta glyph" height="20"> | &nbsp; | &nbsp; | &nbsp; |
+|               digit |                                           e                                           |                                            a                                            |                                            i                                            |                                             o                                             |                                            u                                            | large glyph |                                             sitelen glyphs                                             |                                            abbreviated                                           |
+| ------------------: | :-----------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------: | :---------- | :----------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------: |
+|                   0 |                                           -                                           |                                            -                                            |                                            ni                                           |                                             -                                             |                                            -                                            | ijo         | <img src="./images/nanpa-linja-n-mode-0-sitelen.png" alt="relaxed digit 0 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-0-abbrev.png" alt="digit 0 abbreviated glyph" height="36"> |
+|                   1 |                                           we                                          |                                            wa                                           |                                            -                                            |                                             -                                             |                                            -                                            | wan         | <img src="./images/nanpa-linja-n-mode-1-sitelen.png" alt="relaxed digit 1 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-1-abbrev.png" alt="digit 1 abbreviated glyph" height="36"> |
+|                   2 |                                           te                                          |                                            -                                            |                                            -                                            |                                             -                                             |                                            tu                                           | tu          | <img src="./images/nanpa-linja-n-mode-2-sitelen.png" alt="relaxed digit 2 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-2-abbrev.png" alt="digit 2 abbreviated glyph" height="36"> |
+|                   3 |                                           se                                          |                                            -                                            |                                            -                                            |                                             -                                             |                                            -                                            | seli        | <img src="./images/nanpa-linja-n-mode-3-sitelen.png" alt="relaxed digit 3 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-3-abbrev.png" alt="digit 3 abbreviated glyph" height="36"> |
+|                   4 |                                           -                                           |                                            na                                           |                                            -                                            |                                             -                                             |                                            -                                            | awen        | <img src="./images/nanpa-linja-n-mode-4-sitelen.png" alt="relaxed digit 4 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-4-abbrev.png" alt="digit 4 abbreviated glyph" height="36"> |
+|                   5 |                                           le                                          |                                            -                                            |                                            -                                            |                                             -                                             |                                            lu                                           | luka        | <img src="./images/nanpa-linja-n-mode-5-sitelen.png" alt="relaxed digit 5 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-5-abbrev.png" alt="digit 5 abbreviated glyph" height="36"> |
+|                   6 |                                           -                                           |                                            -                                            |                                            -                                            |                                             -                                             |                                            nu                                           | utala       | <img src="./images/nanpa-linja-n-mode-6-sitelen.png" alt="relaxed digit 6 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-6-abbrev.png" alt="digit 6 abbreviated glyph" height="36"> |
+|                   7 |                                           me                                          |                                            -                                            |                                            -                                            |                                             -                                             |                                            mu                                           | mun         | <img src="./images/nanpa-linja-n-mode-7-sitelen.png" alt="relaxed digit 7 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-7-abbrev.png" alt="digit 7 abbreviated glyph" height="36"> |
+|                   8 |                                           pe                                          |                                            -                                            |                                            pi                                           |                                             -                                             |                                            -                                            | pipi        | <img src="./images/nanpa-linja-n-mode-8-sitelen.png" alt="relaxed digit 8 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-8-abbrev.png" alt="digit 8 abbreviated glyph" height="36"> |
+|                   9 |                                           -                                           |                                            -                                            |                                            -                                            |                                             jo                                            |                                            -                                            | jo          | <img src="./images/nanpa-linja-n-mode-9-sitelen.png" alt="relaxed digit 9 sitelen glyphs" height="36"> | <img src="./images/nanpa-linja-n-mode-9-abbrev.png" alt="digit 9 abbreviated glyph" height="36"> |
+|         small glyph |                                           e                                           |                                           ala                                           |                                           ike                                           |                                            open                                           |                                           uta                                           |             |                                                                                                        |                                                                                                  |
+| small sitelen glyph | <img src="./images/nanpa-linja-n-mode-en-small.png" alt="small en glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ala-small.png" alt="small ala glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-ike-small.png" alt="small ike glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-open-small.png" alt="small open glyph" height="20"> | <img src="./images/nanpa-linja-n-mode-uta-small.png" alt="small uta glyph" height="20"> |             |                                                                                                        |                                                                                                  |
 
 ### strict
 
@@ -408,16 +408,16 @@ Example:
 Rules:
 
 - Each digit has a unique sitelen pona glyph and a unique latin letter: 9 → jo → j
-- Latin nanpa-linja-n numeric proper name: ...je...
-- Numeric Cartouche [... jo e ...]
+- Latin nanpa-linja-n numeric proper name: ...jo...
+- Numeric Cartouche [... jo open ...]
 - Abbreviated Cartouche: [... jo ...]
 - Abbreviation #~: ...J...
 
 Example:
 
 - 9
-- Nejen
-- [nanpa e jo e nanpa]
+- Nejon
+- [nanpa e jo open nanpa]
 - [nanpa jo nanpa]
 - Abbreviation: #~J
 
@@ -428,8 +428,8 @@ Example:
 Rules:
 
 - To represent a multi-digit number in a cartouche just concatenate the single digit representations
-- Latin nanpa-linja-n numeric proper name: ...jese...
-- Numeric Cartouche [... jo e seli e ...]
+- Latin nanpa-linja-n numeric proper name: ...jose...
+- Numeric Cartouche [... jo open seli e ...]
 - Abbreviated Cartouche: [... jo seli ...]
 - Abbreviation #~: ...JS...
 - A long nanpa-linja-n proper name will usually be split into separate words at numeric punctuation
@@ -445,7 +445,7 @@ Rules:
 - 567 → le nu me → **Nelunumun**
 - 234 → te se na → **Netusenan**
 - 801 → pe ni we → **Nepiniwan**
-- 950 → je le ni → **Nejelunin**
+- 950 → jo le ni → **Nejolunin**
 
 
 ### More Examples
@@ -459,7 +459,7 @@ Rules:
 1,000,000   → Newan Ekeken
 08          → Nenipin
 23          → Netusen
-679         → Nenumujen
+679         → Nenumujon
 1,234       → Newan Eke Tusenan
 12,000      → Newatun Eken
 12000       → Newatunininin
@@ -471,20 +471,20 @@ Rules:
 3M          → Nesenin Ekeken
 3B          → Neseninin Ekekeken
 3T          → Nesen Ekeke Keken
-7,321,900   → Nemun Eke Setuwan Eke Jeninin
+7,321,900   → Nemun Eke Setuwan Eke Joninin
 64.5M       → Nenunan One Lun Ekeken
 64.5B       → Nenunan One Lun Ekekeken
-0123456789  → Neniwatusenalunumupijen (using block words is optional, but often very helpful for understanding)
-012-3456789 → Neniwatun Ene Senalunumupijen (nene can be used anywhere to break up large numbers)
-012-3456-789 → Neniwatun Ene Senalunun Ene Mupijen
+0123456789  → Neniwatusenalunumupijon (using block words is optional, but often very helpful for understanding)
+012-3456789 → Neniwatun Ene Senalunumupijon (nene can be used anywhere to break up large numbers)
+012-3456-789 → Neniwatun Ene Senalunun Ene Mupijon
 2025        → Netunitulun
 2,025       → Netun Eke Nitulun
 20-25       → Netunin Ene Tulun
 2-0-2-5     → Netun Ene Nin Ene Tun Ene Lun
-3.141592    → Nesen One Wanawalujetun
+3.141592    → Nesen One Wanawalujotun
 −5          → Neno Lun
 1/2         → Newan Ono Tun
-9¾          → Nejen Oko Sen Ono Nan
+9¾          → Nejon Oko Sen Ono Nan
 10.5%       → Newanin One Lun Oken
 4.5*10^-3   → Nenan One Lun Eko Nosen
 ```
@@ -518,7 +518,7 @@ Examples:
 +0.4             → Nene Nin One Nan
 +30,000          → Nene Senin Eken
 +4.5e-3          → Nene Nan One Lun Eko Nosen
-+1-432-555-6789  → Nene Wan Ene Nasetun Ene Lululun Ene Numupijen
++1-432-555-6789  → Nene Wan Ene Nasetun Ene Lululun Ene Numupijon
 ```
 
 
@@ -576,9 +576,9 @@ Examples:
 0.5       → Nenin One Lun
 3.75      → Nesen One Mulun
 12.04     → Newatun One Ninan
-37.9      → Nesemun One Jen
+37.9      → Nesemun One Jon
 0.125     → Nenin One Watulun
-3.141592  → Nesen One Wanawan Ene Lujetun
+3.141592  → Nesen One Wanawan Ene Lujotun
 ```
 
 ---
@@ -609,7 +609,7 @@ Examples:
 30,000,000  → Nesenin Ekeken
 300,000,000 → Neseninin Ekeken
 3,000,000,000 → Nesen Ekekeken
-7,321,900   → Nemun Eke Setuwan Eke Jeninin
+7,321,900   → Nemun Eke Setuwan Eke Joninin
 1T          → Newan Ekeke Keken
 10,000T     → Newanin Ekeke Kekeken
 ```
@@ -638,10 +638,10 @@ Examples:
 1/2                 → Newan Ono Tun
 3/4                 → Nesen Ono Nan
 5/8                 → Nelun Ono Pin
-567/890             → Nelunumun Ono Pijenin
+567/890             → Nelunumun Ono Pijonin
 1,234 / 56          → Newan Eke Tusenan Ono Lunun
 3 / 1,000,000,000   → Nesen Ono Wan Ekekeken
--7/9                → Neno Mun Ono Jen
+-7/9                → Neno Mun Ono Jon
 ```
 
 ---
@@ -660,12 +660,12 @@ Rules:
 Word-splitting:
 
 - **noko** may split as **-n Oko**.
-- Example: 9¾ → Nejenokosenononan → Nejen Oko Sen Ono Nan
+- Example: 9¾ → Nejonokosenononan → Nejon Oko Sen Ono Nan
 
 Examples:
 
 ```
-9¾                  → Nejen Oko Sen Ono Nan
+9¾                  → Nejon Oko Sen Ono Nan
 -8+1/2              → Neno Pin Oko Wan Ono Tun
 ```
 
@@ -776,13 +776,13 @@ Rules:
 Word-splitting:
 
 - **nene** may split as **-n Ene**.
-- Example: 321-555-6789 → Nesetuwanenelululunenenumupijen → Nesetuwan Ene Lululun Ene Numupijen
+- Example: 321-555-6789 → Nesetuwanenelululunenenumupijon → Nesetuwan Ene Lululun Ene Numupijon
 
 Examples:
 
 ```
-321-555-6789  → Nesetuwan Ene Lululun Ene Numupijen
-3.141592      → Nesen One Wanawan Ene Lujetun
+321-555-6789  → Nesetuwan Ene Lululun Ene Numupijon
+3.141592      → Nesen One Wanawan Ene Lujotun
 ```
 
 
@@ -808,7 +808,7 @@ This table uses the rexaled versions of the digit syllables:
 |              6 | Nenun                     |
 |              7 | Nemun                     |
 |              8 | Nepin                     |
-|              9 | Nejen                     |
+|              9 | Nejon                     |
 |             10 | Newanin                   |
 |             11 | Newawan                   |
 |             12 | Newatun                   |
@@ -827,10 +827,10 @@ This table uses the rexaled versions of the digit syllables:
 |              ⋮ | ⋮                         |
 |             80 | Nepinin                   |
 |              ⋮ | ⋮                         |
-|             90 | Nejenin                   |
+|             90 | Nejonin                   |
 |              ⋮ | ⋮                         |
-|             98 | Nejepin                   |
-|             99 | Nejejen                   |
+|             98 | Nejopin                   |
+|             99 | Nejojon                   |
 |            100 | Newan Inin                |
 |            101 | Newaniwan                 |
 |            102 | Newanitun                 |
@@ -849,10 +849,10 @@ This table uses the rexaled versions of the digit syllables:
 |              ⋮ | ⋮                         |
 |            800 | Nepin Inin                |
 |              ⋮ | ⋮                         |
-|            900 | Nejen Inin                |
+|            900 | Nejon Inin                |
 |              ⋮ | ⋮                         |
-|            998 | Nejejepin                 |
-|            999 | Nejejejen                 |
+|            998 | Nejojopin                 |
+|            999 | Nejojojon                 |
 |          1,000 | Newan Eken                |
 |          1,001 | Newan Eke Niniwan         |
 |              ⋮ | ⋮                         |
@@ -877,10 +877,10 @@ This table uses the rexaled versions of the digit syllables:
 |              ⋮ | ⋮                         |
 |          8,000 | Nepin Eken                |
 |              ⋮ | ⋮                         |
-|          9,000 | Nejen Eken                |
+|          9,000 | Nejon Eken                |
 |              ⋮ | ⋮                         |
-|          9,998 | Nejen Eke Jejepin         |
-|          9,999 | Nejen Eke Jejejen         |
+|          9,998 | Nejon Eke Jojopin         |
+|          9,999 | Nejon Eke Jojojon         |
 |         10,000 | Newanin Eken              |
 |         10,001 | Newanin Eke Niniwan       |
 |              ⋮ | ⋮                         |
@@ -898,7 +898,7 @@ This table uses the rexaled versions of the digit syllables:
 |              ⋮ | ⋮                         |
 |         80,000 | Nepinin Eken              |
 |              ⋮ | ⋮                         |
-|         90,000 | Nejenin Eken              |
+|         90,000 | Nejonin Eken              |
 |              ⋮ | ⋮                         |
 |         100,000 | Newan Inin Eken              |
 |         100,001 | Newan Inin Eke Niniwan              |
@@ -917,9 +917,9 @@ This table uses the rexaled versions of the digit syllables:
 |              ⋮ | ⋮                         |
 |        800,000 | Nepin Inin Eken           |
 |              ⋮ | ⋮                         |
-|        900,000 | Nejen Inin Eken           |
+|        900,000 | Nejon Inin Eken           |
 |              ⋮ | ⋮                         |
-|        999,999 | Nejejejen Eke Jejejen |
+|        999,999 | Nejojojon Eke Jojojon |
 |      1,000,000 | Newan Ekeken                    |
 |      1,000,001 | Newan Eke Nininin Eke Niniwan |
 
