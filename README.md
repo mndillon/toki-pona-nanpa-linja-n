@@ -997,6 +997,15 @@ Another possibility would be to reinterpret `ne` as a noun or classifier meaning
 
 Any shortened form would need to remain unambiguous, reversible and easy for both people and software to recognise.
 
+### Explicit number-system markers
+
+Another experimental direction is to use a separate opening word to identify the number system explicitly: `Nanpa` for decimal values, `Nasa` for hexadecimal values and `Noka` for binary values. The encoded digit syllables themselves remain unchanged within each system. For example, decimal `125` may be written as `Nanpa Watulun`, hexadecimal `#AF` as `Nasa Jatan`, and binary `0b101` as `Noka Waniwan`.
+
+In sitelen pona, these forms use the corresponding `nanpa`, `nasa` or `noka` glyph as both the opening and closing marker, with a colon immediately after the opening glyph. This gives decimal, hexadecimal and binary cartouches visibly distinct frames while preserving a common structural convention. It also makes the number system explicit before the encoded value is read, which may improve recognition in both human communication and machine parsing.
+
+Hexadecimal requires six additional digit identifiers for the values `A`–`F`. Their consonants are assigned in order as `j`, `l`, `m`, `p`, `s` and `t`, producing the syllables `ja`, `la`, `ma`, `pa`, `si` and `ta`. The vowel `a` is used throughout except for `s`, where `si` is used because `sa` already occurs in the opening marker `Nasa`. Unlike the decimal digit mappings, these hexadecimal assignments are largely arbitrary identifiers rather than associations derived from the meanings of the Toki Pona words. The corresponding sitelen pona glyph choices are likewise primarily conventional: they provide six visually distinguishable symbols for the additional hexadecimal values rather than attempting to express their numeric values semantically.
+
+These forms are currently experimental rather than replacements for the established decimal `Ne-` form. Their usefulness will depend on whether the additional explicitness and consistency outweigh the cost of introducing alternative representations for the same values.
 
 
 
