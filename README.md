@@ -1159,7 +1159,7 @@ Discussion welcome via:
 
 ## Libre Office Integration
 
-**nanpa-linja-n** [font](./docs/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf) can be integrated with Libre Office.  This provides one way of displaying sitelen pona glyphs in documents.
+**nanpa-linja-n** [font](./docs/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf) can be integrated with Libre Office.  This provides one way of displaying sitelen pona glyphs in documents.
 
 This [Libre Office macro](./docs/fonts/libre%20office%20macro%20for%20inserting%20UCSUR%20hexcodes%20-%20run%20InsertHexCodepoints.txt) can be used to insert UCSUR codes into Libre Office Writer documents, using the font to display sitelen pona glyphs.
 
