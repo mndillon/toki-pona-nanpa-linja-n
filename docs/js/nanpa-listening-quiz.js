@@ -25,12 +25,17 @@ const AUDIO_PAUSE_SCALE_OPTIONS = [
 
 const PROPER_NAME_MODE_STORAGE_KEY = 'nanpaListeningQuizProperNameMode';
 const PROPER_NAME_MODE_DEFAULT = 'relaxed';
+const NANPA_FORMAT_STORAGE_KEY = 'nanpaListeningQuizNanpaFormat';
+const NANPA_FORMAT_DEFAULT = true;
 const PROPER_NAME_MODE_OPTIONS = [
   { value: 'strict', label: 'strict' },
   { value: 'relaxed', label: 'relaxed' }
 ];
 
 const ABBREV_CP_NANPA = 0xF193D;
+const ABBREV_CP_SUNO  = 0xF1964;
+const ABBREV_CP_TENPO = 0xF196B;
+const ABBREV_CP_KOLON = 0xF199D;
 const ABBREV_CP_NENA  = 0xF1940;
 const ABBREV_CP_E     = 0xF1909;
 const ABBREV_CP_EN    = 0xF190A;
@@ -152,6 +157,27 @@ function saveProperNameMode(value) {
 function getCurrentProperNameMode() {
   const el = document.querySelector('[data-quiz-proper-name-mode]');
   return normalizeProperNameMode(el?.value ?? storedProperNameMode());
+}
+
+function storedNanpaFormat() {
+  try {
+    const raw = localStorage.getItem(NANPA_FORMAT_STORAGE_KEY);
+    if (raw == null) return NANPA_FORMAT_DEFAULT;
+    if (raw === '1' || raw === 'true') return true;
+    if (raw === '0' || raw === 'false') return false;
+  } catch {}
+  return NANPA_FORMAT_DEFAULT;
+}
+
+function saveNanpaFormat(value) {
+  const enabled = !!value;
+  try { localStorage.setItem(NANPA_FORMAT_STORAGE_KEY, enabled ? '1' : '0'); } catch {}
+  return enabled;
+}
+
+function getCurrentNanpaFormat() {
+  const el = document.querySelector('[data-quiz-nanpa-format]');
+  return el ? !!el.checked : storedNanpaFormat();
 }
 
 function properNameModeOptionsHtml(selectedValue) {
@@ -285,11 +311,23 @@ function formatProperNameForDisplay(properName) {
   return fixOkenSuffixSpacing(titleCaseNanpaProperNameForDisplay(properName));
 }
 
+function typedDateTimeProperName(parsed, nanpaFormat, properName) {
+  const name = formatProperNameForDisplay(properName);
+  if (!name || nanpaFormat !== true) return name;
+  const head = parsed?.isTime === true ? 'Tenpo' : parsed?.isDate === true ? 'Suno' : '';
+  if (!head) return name;
+  if (/^(?:Tenpo|Suno)\b/.test(name)) return name.replace(/^(?:Tenpo|Suno)\b/, head);
+  return name.replace(/^Nanpa\b/, head);
+}
+
 function dayCountForMonth(year, month) {
   return new Date(year, month, 0).getDate();
 }
 
-function makeQuizItems(properNameMode = getCurrentProperNameMode()) {
+function makeQuizItems(
+  properNameMode = getCurrentProperNameMode(),
+  nanpaFormat = getCurrentNanpaFormat()
+) {
   const fractionChoices = [
     ['1/2', 1, 2], ['1/3', 1, 3], ['2/3', 2, 3],
     ['1/4', 1, 4], ['3/4', 3, 4], ['1/5', 1, 5],
@@ -299,52 +337,73 @@ function makeQuizItems(properNameMode = getCurrentProperNameMode()) {
 
   const singleDigit = String(randInt(0, 9));
   const positiveInteger = `+${randInt(1, 999)}`;
+  const negative = `-${randInt(1, 999)}`;
 
   const decimalWhole = randInt(0, 99);
   const decimalFrac = String(randInt(1, 99)).padStart(2, '0');
   const decimal = `${decimalWhole}.${decimalFrac}`;
-
-  const negative = `-${randInt(1, 999)}`;
-
-  const thousands = formatCommas(randInt(1000, 999999));
-  const millions = formatCommas(randInt(1000000, 99999999));
 
   const percent = Math.random() < 0.5
     ? `${randInt(1, 99)}%`
     : `${randInt(1, 99)}.${randInt(1, 9)}%`;
 
   const fraction = choice(fractionChoices)[0];
+  const thousands = formatCommas(randInt(1000, 999999));
   const mixedFraction = `${randInt(1, 12)}+${choice(fractionChoices)[0]}`;
+  const millions = formatCommas(randInt(1000000, 99999999));
+
+  const time = `${pad2(randInt(0, 23))}:${pad2(randInt(0, 59))}`;
 
   const mantissa = `${randInt(1, 9)}.${randInt(1, 9)}`;
   let exponent = randInt(-6, 6);
   if (exponent === 0) exponent = 3;
   const scientific = `${mantissa}e${exponent}`;
 
-  const time = `${pad2(randInt(0, 23))}:${pad2(randInt(0, 59))}`;
-
   const year = randInt(2024, 2031);
   const month = randInt(1, 12);
   const day = randInt(1, dayCountForMonth(year, month));
   const isoDate = `${year}-${pad2(month)}-${pad2(day)}`;
 
-  return shuffle([
-    item('single-digit-integer', singleDigit, singleDigit, 'exact', properNameMode),
-    item('positive-integer', positiveInteger, positiveInteger, 'exact', properNameMode),
-    item('decimal', decimal, decimal, 'exact', properNameMode),
-    item('negative', negative, negative, 'exact', properNameMode),
-    item('thousands', thousands, thousands, 'commasOptional', properNameMode),
-    item('millions', millions, millions, 'commasOptional', properNameMode),
-    item('percent', percent, percent, 'exact', properNameMode),
-    item('fraction', fraction, fraction, 'exact', properNameMode),
-    item('integer-and-fraction', mixedFraction, mixedFraction, 'exact', properNameMode),
-    item('scientific-notation', scientific, scientific, 'scientific', properNameMode),
-    item('hh-mm-time', time, time, 'exact', properNameMode),
-    item('iso-date', isoDate, isoDate, 'exact', properNameMode)
-  ]);
+  const quiz = [
+    item('single-digit-integer', singleDigit, singleDigit, 'exact', properNameMode, nanpaFormat),
+    item('positive-integer', positiveInteger, positiveInteger, 'exact', properNameMode, nanpaFormat),
+    item('negative', negative, negative, 'exact', properNameMode, nanpaFormat),
+    item('decimal', decimal, decimal, 'exact', properNameMode, nanpaFormat),
+    item('percent', percent, percent, 'exact', properNameMode, nanpaFormat),
+    item('fraction', fraction, fraction, 'exact', properNameMode, nanpaFormat),
+    item('thousands', thousands, thousands, 'commasOptional', properNameMode, nanpaFormat),
+    item('integer-and-fraction', mixedFraction, mixedFraction, 'exact', properNameMode, nanpaFormat),
+    item('millions', millions, millions, 'commasOptional', properNameMode, nanpaFormat),
+    item('hh-mm-time', time, time, 'exact', properNameMode, nanpaFormat),
+    item('scientific-notation', scientific, scientific, 'scientific', properNameMode, nanpaFormat),
+    item('iso-date', isoDate, isoDate, 'exact', properNameMode, nanpaFormat)
+  ];
+
+  if (nanpaFormat) {
+    const hexDigits = '0123456789ABCDEF';
+    let hexadecimal = '#';
+    for (let i = 0; i < 6; i += 1) hexadecimal += hexDigits[randInt(0, hexDigits.length - 1)];
+
+    let binary = '0b';
+    for (let i = 0; i < 5; i += 1) binary += String(randInt(0, 1));
+
+    quiz.push(
+      item('hexadecimal', hexadecimal, hexadecimal, 'exact', properNameMode, nanpaFormat),
+      item('binary', binary, binary, 'exact', properNameMode, nanpaFormat)
+    );
+  }
+
+  return quiz;
 }
 
-function item(kind, parserInput, displayValue, answerMode, properNameMode = getCurrentProperNameMode()) {
+function item(
+  kind,
+  parserInput,
+  displayValue,
+  answerMode,
+  properNameMode = getCurrentProperNameMode(),
+  nanpaFormat = getCurrentNanpaFormat()
+) {
   return {
     id: `${kind}-${Math.random().toString(36).slice(2)}`,
     kind,
@@ -353,6 +412,7 @@ function item(kind, parserInput, displayValue, answerMode, properNameMode = getC
     answer: displayValue,
     answerMode,
     properNameMode: normalizeProperNameMode(properNameMode),
+    nanpaFormat: nanpaFormat === true,
     checkedOnce: false,
     parsedPromise: null
   };
@@ -378,6 +438,54 @@ async function ensureParsed(item) {
     item.parsedPromise = (async () => {
       const NanpaParser = await getNanpaParser();
       const properNameMode = normalizeProperNameMode(item.properNameMode ?? getCurrentProperNameMode());
+      const nanpaFormat = item.nanpaFormat === true;
+      const isHex = item.kind === 'hexadecimal';
+      const isBinary = item.kind === 'binary';
+
+      if (nanpaFormat || isHex || isBinary) {
+        const parserOptions = relaxed => ({
+          mode: 'uniform',
+          mixedStyle: 'short',
+          relaxedNanpaLinjanParsing: relaxed,
+          relaxedNanpaLinjanRendering: relaxed,
+          nanpaColonParsing: nanpaFormat && !isHex && !isBinary,
+          nanpaColonRendering: nanpaFormat && !isHex && !isBinary,
+          enableHexParsing: true,
+          enableBinaryParsing: true,
+          enableBinaryRendering: true
+        });
+
+        const strictRaw = NanpaParser.parseNumber(item.parserInput, parserOptions(false));
+        if (!strictRaw?.properName) {
+          throw new Error(`Could not encode quiz value: ${item.parserInput}`);
+        }
+        const strictParsed = {
+          ...strictRaw,
+          properName: typedDateTimeProperName(strictRaw, nanpaFormat, strictRaw.properName),
+          ucsurCodepoints: Array.from(strictRaw.ucsurCodepoints ?? strictRaw.innerCodepoints ?? strictRaw.codepoints ?? [])
+        };
+
+        const relaxedRaw = NanpaParser.parseNumber(item.parserInput, parserOptions(true));
+        const relaxedParsed = relaxedRaw ? {
+          ...relaxedRaw,
+          properName: typedDateTimeProperName(relaxedRaw, nanpaFormat, relaxedRaw.properName),
+          ucsurCodepoints: Array.from(relaxedRaw.ucsurCodepoints ?? relaxedRaw.innerCodepoints ?? relaxedRaw.codepoints ?? [])
+        } : strictParsed;
+
+        const quizParsed = isRelaxedProperNameMode(properNameMode) ? relaxedParsed : strictParsed;
+        return {
+          ...strictParsed,
+          strictParsed,
+          quizParsed,
+          relaxedParsed,
+          properName: strictParsed.properName,
+          quizProperName: quizParsed.properName,
+          quizCaps: quizParsed.caps ?? strictParsed.caps ?? '',
+          properNameMode,
+          nanpaFormat
+        };
+      }
+
       const strictParsed = NanpaParser.parseNumber(item.parserInput, {
         mode: 'uniform',
         mixedStyle: 'short'
@@ -456,7 +564,8 @@ async function ensureParsed(item) {
         properName: strictParsed.properName,
         quizProperName,
         quizCaps,
-        properNameMode
+        properNameMode,
+        nanpaFormat
       };
     })();
   }
@@ -767,21 +876,27 @@ async function ensureCartoucheFontLoaded() {
 function getQuarterCodepointsSet() {
   return new Set([
     0xF193D, // nanpa
+    0xF1964, // suno
+    0xF196B, // tenpo
     0xF1940, // nena
     0xF1941, // ni
     0xF193E, // nasa
+    0xF1943, // noka
     0xF1909, // e
     0xF190B, // esun
-    0xF190A, // en
     0xF1947, // open
     0xF1902, // ala (relaxed small glyph)
     0xF190D, // ike (relaxed small glyph)
-    0xF1970  // uta (relaxed small glyph)
+    0xF1970, // uta (relaxed small glyph)
+    0xF199D  // colon
   ]);
 }
 
 function getOneThirdsCodepointsSet() {
-  return new Set([0xF1917]); // kasi
+  return new Set([
+    0xF1917, // kasi
+    0xF191E  // kule
+  ]);
 }
 
 function getHalfCodepointsSet() {
@@ -792,7 +907,10 @@ function getTwoThirdsCodepointsSet() {
   return new Set([
     0xF1946, // ona
     0xF1944, // o
-    0xF191F  // kulupu
+    0xF191F, // kulupu
+    0xF190A, // en
+    0xF1979, // kin
+    0xF197B  // kipisi
   ]);
 }
 
@@ -862,6 +980,35 @@ function abbreviateExplicitPositiveIntegerCps(cps) {
   }
 
   if (input[input.length - 1] === ABBREV_CP_NANPA) out.push(ABBREV_CP_NANPA);
+  return out;
+}
+
+function abbreviateNanpaFormatCps(cps) {
+  const input = Array.from(cps ?? []).map(cp => Number(cp));
+  if (!input.length) return input;
+
+  const typedOpening = input[0] === ABBREV_CP_NANPA || input[0] === ABBREV_CP_SUNO || input[0] === ABBREV_CP_TENPO;
+  if (!typedOpening || input[1] !== ABBREV_CP_KOLON) return abbreviateNumericCartoucheCps(input);
+
+  const out = [input[0], input[1]];
+  const drop = new Set([...ABBREV_DROP_AFTER_FIRST_NANPA, ABBREV_CP_E]);
+  let index = 2;
+
+  // Full positive Nanpa format uses nena + en after the opening colon;
+  // abbreviated Nanpa format keeps only en as the positive sign.
+  if (input[index] === ABBREV_CP_NENA && input[index + 1] === ABBREV_CP_EN) {
+    out.push(ABBREV_CP_EN);
+    index += 2;
+  }
+
+  const finalIndex = input.length - 1;
+  for (; index < finalIndex; index += 1) {
+    const cp = input[index];
+    if (drop.has(cp)) continue;
+    out.push(cp);
+  }
+
+  if (input[finalIndex] === ABBREV_CP_NANPA) out.push(ABBREV_CP_NANPA);
   return out;
 }
 
@@ -946,7 +1093,7 @@ function rowForItem(item) {
   row.innerHTML = `
     <div class="nanpaListenQuizControls">
       <button class="audio-button nanpaListenQuizAudio" type="button" title="Play audio" aria-label="Play audio">🤖🔊</button>
-      <input class="mono nanpaListenQuizGuess" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="Your decimal value or nanpa-linja-n proper-name guess" placeholder="press enter to start audio, then enter the decimal value or the proper name" />
+      <input class="mono nanpaListenQuizGuess" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-label="Your numeric value or nanpa-linja-n proper-name guess" placeholder="press enter to start audio, then enter the numeric value or the proper name" />
       <button class="nanpaListenQuizCheck" type="button">Check</button>
       <button class="nanpaListenQuizRevealButton" type="button" hidden>Reveal</button>
     </div>
@@ -992,7 +1139,17 @@ async function playItemAudio(item, row) {
     await voice.play(parsed.quizProperName || parsed.properName, {
       synthesis_mode: 'reference_audio',
       pauseScale: getCurrentAudioPauseScale(),
-      syllableGapSeconds: getCurrentAudioSyllableGapSeconds()
+      syllableGapSeconds: getCurrentAudioSyllableGapSeconds(),
+      ...(item.nanpaFormat === true ? {
+        enableHexParsing: item.kind === 'hexadecimal',
+        enableBinaryParsing: item.kind === 'binary',
+        enableBinaryRendering: item.kind === 'binary',
+        relaxedNanpaLinjanParsing: isRelaxedProperNameMode(item.properNameMode),
+        relaxedNanpaLinjanRendering: isRelaxedProperNameMode(item.properNameMode),
+        nanpaColonParsing: item.kind !== 'hexadecimal' && item.kind !== 'binary',
+        nanpaColonRendering: item.kind !== 'hexadecimal' && item.kind !== 'binary',
+        numericTypedHeadSyllableAudio: item.kind === 'hh-mm-time' || item.kind === 'iso-date'
+      } : {})
     });
     if (typeof window.trackUsage === 'function') {
       window.trackUsage('index-quiz-audio-play');
@@ -1056,9 +1213,13 @@ async function revealItem(item, row) {
     await ensureCartoucheFontLoaded();
     if (normalCanvas) renderCartoucheToCanvas(normalCanvas, quizParsed.ucsurCodepoints);
     if (abbrevCanvas) {
-      const abbreviatedCodepoints = item.kind === 'positive-integer'
-        ? abbreviateExplicitPositiveIntegerCps(quizParsed.ucsurCodepoints)
-        : abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints);
+      const abbreviatedCodepoints = (item.kind === 'hexadecimal' || item.kind === 'binary') && quizParsed.abbreviatedUcsurCodepoints?.length
+        ? Array.from(quizParsed.abbreviatedUcsurCodepoints)
+        : item.nanpaFormat === true
+          ? abbreviateNanpaFormatCps(quizParsed.ucsurCodepoints)
+          : item.kind === 'positive-integer'
+            ? abbreviateExplicitPositiveIntegerCps(quizParsed.ucsurCodepoints)
+            : abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints);
       renderCartoucheToCanvas(abbrevCanvas, abbreviatedCodepoints);
     }
 
@@ -1070,7 +1231,8 @@ async function revealItem(item, row) {
 
 function renderQuiz(root) {
   const properNameMode = storedProperNameMode();
-  quizItems = makeQuizItems(properNameMode);
+  const nanpaFormat = storedNanpaFormat();
+  quizItems = makeQuizItems(properNameMode, nanpaFormat);
 
   const rows = document.createElement('div');
   rows.className = 'nanpaListenQuizRows';
@@ -1079,7 +1241,7 @@ function renderQuiz(root) {
   const audioPauseScale = storedAudioPauseScale();
   root.innerHTML = `
     <div class="help">
-      Press an audio button as many times as you like, enter the decimal value or nanpa-linja-n proper name you hear, then check your answer.
+      Press an audio button as many times as you like, enter the numeric value or nanpa-linja-n proper name you hear, then check your answer.
       <span class="tpLine">o kute mute la sina ken. o pana e nanpa anu nimi pi nanpa-linja-n la o lukin e pona.</span>
     </div>
     <div class="nanpaListenQuizAudioSettings" role="group" aria-label="Nanpa-linja-n mode and audio settings">
@@ -1087,12 +1249,13 @@ function renderQuiz(root) {
       <select id="nanpaListenQuizProperNameMode" data-quiz-proper-name-mode>
         ${properNameModeOptionsHtml(properNameMode)}
       </select>
+      <label for="nanpaListenQuizNanpaFormat">Nanpa format</label>
+      <input id="nanpaListenQuizNanpaFormat" data-quiz-nanpa-format type="checkbox"${nanpaFormat ? ' checked' : ''}>
       <label for="nanpaListenQuizAudioPauseScale">Audio speed</label>
       <select id="nanpaListenQuizAudioPauseScale" data-quiz-audio-pause-scale>
         ${audioPauseScaleOptionsHtml(audioPauseScale)}
-      </select>
-      <span class="help">Normal adds a small 0.2 s gap between assembled syllable units. Slow and Very slow add longer calculated silence; they do not stretch or slur the audio.</span><br/>
-      <span class="help">When inputting answers, click enter to start playing audio, then enter proper name or decimal value.</span>
+      </select><br/>
+      <span class="help">When inputting answers, click enter to start playing audio, then enter proper name or numeric value.</span>
       <div class="nanpaListenQuizLicenseActions">
         <button data-quiz-license type="button">licences</button>
       </div>
@@ -1101,6 +1264,11 @@ function renderQuiz(root) {
 
   root.querySelector('[data-quiz-proper-name-mode]')?.addEventListener('change', event => {
     saveProperNameMode(event.currentTarget.value);
+    renderQuiz(root);
+  });
+
+  root.querySelector('[data-quiz-nanpa-format]')?.addEventListener('change', event => {
+    saveNanpaFormat(event.currentTarget.checked);
     renderQuiz(root);
   });
 
