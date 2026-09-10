@@ -1,5 +1,5 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=250';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=30';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=31';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 
@@ -471,11 +471,30 @@ function nanpaUnitKey(s) {
 function nanpaUnitsForWord(word, manifest = REFERENCE_AUDIO_MANIFEST) {
   const bank = manifest.nanpa_units || {};
   const key = nanpaUnitKey(word);
+
+  // Suno/Tenpo have dedicated numeric-head recordings, but they remain
+  // ordinary Toki Pona words everywhere else. The typed numeric-head path
+  // selects those recordings explicitly via typedNumericHeadReferenceUnits().
+  if (key === 'suno' || key === 'tenpo') return null;
+
   if (bank[key]) return [key];
   const syls = syllabifyTpWord(key);
   if (!syls.length) return null;
   if (syls.every(sy => bank[sy])) return syls;
   return null;
+}
+
+// Typed decimal date/time heads use dedicated whole-word numeric reference
+// audio from the nanpa unit bank. This keeps their voice consistent with the
+// other numeric cartouche units while leaving ordinary words/suno.wav and
+// words/tenpo.wav behavior unchanged outside the typed numeric-head path.
+function typedNumericHeadReferenceUnits(word, manifest = REFERENCE_AUDIO_MANIFEST) {
+  const key = nanpaUnitKey(word);
+  if (key !== 'suno' && key !== 'tenpo') return null;
+
+  const unit = (manifest.nanpa_units || {})[key];
+  if (!unit?.file) return null;
+  return [{ key, bank: 'nanpa_units', file: unit.file }];
 }
 
 export function analyzeReferenceText(text, options = {}, manifest = REFERENCE_AUDIO_MANIFEST, preprocessWarnings = []) {
@@ -684,6 +703,21 @@ export class TokiPonaVoice {
     return chunks;
   }
 
+  async chunksForTypedNumericHead(word, warnings) {
+    const units = typedNumericHeadReferenceUnits(word, this.manifest);
+    if (!units) {
+      warnings.push({
+        kind: 'nanpa_audio',
+        source: word,
+        message: 'missing typed date/time head numeric reference audio'
+      });
+      return null;
+    }
+    const chunks = [];
+    for (const unit of units) chunks.push(await this.loadAudioSamples(unit.file));
+    return { chunks, units };
+  }
+
   async unitSamplesForSyllable(sy, warnings) {
     const syllables = this.manifest.syllables || {};
     if (syllables[sy]) return [await this.loadAudioSamples(syllables[sy].file)];
@@ -781,16 +815,29 @@ export class TokiPonaVoice {
 
         for (let wi = 0; wi < words.length; wi++) {
           const word = words[wi];
-          const wchunks = await this.chunksForWord(word, opts, warnings, {
-            preferNanpaUnits: isProperStart && !forceOrdinarySyllables,
-            forceOrdinarySyllables,
-            audioBank: opts.audioBank,
-            audioUnitKey: opts.audioUnitKey
-          });
-          const syllableGap = normalizeSyllableGapSeconds(opts.syllableGapSeconds);
-          const nanpaUnits = !forceOrdinarySyllables && isProperStart && opts.synthesis_mode !== 'reference_words_only'
-            ? nanpaUnitsForWord(word, this.manifest)
+          const useTypedNumericHeadAudio =
+            opts.numericTypedHeadSyllableAudio === true &&
+            isProperStart &&
+            wi === 0 &&
+            (normalizedTpWord(word) === 'suno' || normalizedTpWord(word) === 'tenpo') &&
+            opts.synthesis_mode !== 'reference_words_only';
+          const typedHeadAudio = useTypedNumericHeadAudio
+            ? await this.chunksForTypedNumericHead(word, warnings)
             : null;
+          const wchunks = useTypedNumericHeadAudio
+            ? (typedHeadAudio?.chunks || [])
+            : await this.chunksForWord(word, opts, warnings, {
+                preferNanpaUnits: isProperStart && !forceOrdinarySyllables,
+                forceOrdinarySyllables,
+                audioBank: opts.audioBank,
+                audioUnitKey: opts.audioUnitKey
+              });
+          const syllableGap = normalizeSyllableGapSeconds(opts.syllableGapSeconds);
+          const nanpaUnits = useTypedNumericHeadAudio
+            ? (typedHeadAudio?.units || []).map(unit => unit.key)
+            : (!forceOrdinarySyllables && isProperStart && opts.synthesis_mode !== 'reference_words_only'
+                ? nanpaUnitsForWord(word, this.manifest)
+                : null);
           const letterSoundKeys = opts.audioBank === 'letter_sounds'
             ? letterSoundKeysForText(opts.audioUnitKey || word, this.manifest)
             : (!isValidTpWordShape(word) && opts.allowLetterSoundFallback === true

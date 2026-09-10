@@ -177,7 +177,7 @@
       font-family: "TP-Cartouche-Font";
       src: 
         /* Web-hosted files (order matters) */
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf")   format("opentype");
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf")   format("opentype");
       font-display: swap;
     }
 
@@ -845,13 +845,13 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=63";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=68";
     import {
       trySourceTextToNanpaProperName,
       nanpaCapsForAudioMode,
       speechUnitsForRenderRun
-    } from "./js/sitelen-audio-plan.js?v=53";
+    } from "./js/sitelen-audio-plan.js?v=60";
 
     const voice = await createTokiPonaVoice();
 
@@ -1342,7 +1342,13 @@
     }
 
     async function renderNumericParsedWithSharedRenderer(parsed) {
-      const source = String(parsed?.uniqueCode || parsed?.input || parsed?.properName || "").trim();
+      const semanticProperName = numericProperNameFromRun(null, parsed);
+      const useTypedDateTimeSource = getNanpaFormatEnabled() && (parsed?.isTime === true || parsed?.isDate === true);
+      const source = String(
+        useTypedDateTimeSource
+          ? semanticProperName
+          : (parsed?.uniqueCode || parsed?.input || parsed?.properName || "")
+      ).trim();
       if (!source) throw new Error("No canonical numeric source was available for shared rendering.");
 
       const small = await buildSharedRun(source, LARGE_TINY_FONT_SIZE, { numeric: true });
@@ -1416,6 +1422,15 @@
       return null;
     }
 
+    function typedDateTimeProperName(parsed, properName) {
+      const name = String(properName || "").trim();
+      if (!name || !getNanpaFormatEnabled()) return name;
+      const head = parsed?.isTime === true ? "Tenpo" : parsed?.isDate === true ? "Suno" : "";
+      if (!head) return name;
+      if (/^(?:Tenpo|Suno)\b/.test(name)) return name.replace(/^(?:Tenpo|Suno)\b/, head);
+      return name.replace(/^Nanpa\b/, head);
+    }
+
     function numericProperNameFromRun(_run, parsed) {
       if (!parsed) return "";
       if (
@@ -1425,16 +1440,17 @@
         return String(parsed.properName || "").trim();
       }
       const caps = String(parsed.caps || "").trim();
-      if (!caps) return String(parsed.properName || "").trim();
+      if (!caps) return typedDateTimeProperName(parsed, parsed.properName);
       const relaxed = getRelaxedNanpaLinjanProperNamesEnabled();
       const audioCaps = nanpaCapsForAudioMode(caps, {
         relaxedNanpaLinjanRendering: relaxed
       });
-      return String(NanpaParser.splitCapsToProperName(audioCaps, {
+      const properName = String(NanpaParser.splitCapsToProperName(audioCaps, {
         titleCase: true,
         relaxedNanpaLinjanParsing: relaxed,
         nanpaColonRendering: getNanpaFormatEnabled()
       }) || parsed.properName || "").trim();
+      return typedDateTimeProperName(parsed, properName);
     }
 
     function numericAudioUnitsFromRun(run, properName) {
@@ -1658,7 +1674,7 @@
       if (/^0b[01]/.test(text)) return "binary";
       if (/[eE]/.test(text)) return "scientific-notation";
       if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(text)) return "hh-mm-time";
-      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return "iso-date";
+      if (/^(?:\d{4}|--)-\d{2}-\d{2}$/.test(text)) return "iso-date";
       if (text.includes(",")) return "thousands";
       return "numeric";
     }
@@ -1848,7 +1864,7 @@
 
         if (
           (unit.index === 0 && lowerText === "ne") ||
-          (getNanpaFormatEnabled() && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === "nanpa")
+          (getNanpaFormatEnabled() && unit.wordIndex === 0 && ["nanpa", "tenpo", "suno"].includes(String(unit.word ?? "").toLowerCase()))
         ) {
           map[unit.index] = [];
           continue;
@@ -2146,6 +2162,8 @@
         cartoucheHighlightMap,
         isHex: parsed?.isHex === true || Number(parsed?.numberBase) === 16,
         isBinary: parsed?.isBinary === true || Number(parsed?.numberBase) === 2,
+        isTime: parsed?.isTime === true,
+        isDate: parsed?.isDate === true,
         run
       };
       setCartoucheAudioButtonState("stopped");
@@ -2275,6 +2293,7 @@
         syllableGapSeconds: CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS,
         nanpaColonParsing: getNanpaFormatEnabled(),
         nanpaColonRendering: getNanpaFormatEnabled(),
+        numericTypedHeadSyllableAudio: model.isTime === true || model.isDate === true,
         enableHexParsing: model.isHex === true,
         enableBinaryParsing: model.isBinary === true,
         enableBinaryRendering: model.isBinary === true
@@ -2668,6 +2687,10 @@
       };
 
       if (parsed.isDate) {
+        const parserDateValue = String(parsed.displayValue ?? originalInput ?? "").trim();
+        if (/^--\d{2}-\d{2}$/.test(parserDateValue)) {
+          return { display: parserDateValue, cartouche: parserDateValue };
+        }
         const value = NanpaParser.decodeCaps(caps, {
           ...relaxedDecode,
           intEneSep: "-", intGroupSep: "-", fracEneSep: "_", fracGroupSep: "_"

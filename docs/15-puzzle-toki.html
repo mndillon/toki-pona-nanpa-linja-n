@@ -58,7 +58,7 @@
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
       src:
-        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
       font-display: swap;
     }
 
@@ -505,7 +505,7 @@
   </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
 
 (() => {
   "use strict";
@@ -1008,7 +1008,12 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
 
   function timeCartoucheInputFromGlyphs(glyphs) {
     const words = [];
+    const colonCp = WORD_TO_UCSUR_CP.kolon;
     for (const cp of Array.from(glyphs ?? [])) {
+      if (Number(cp) === Number(colonCp)) {
+        words.push(":");
+        continue;
+      }
       const word = UCSUR_CP_TO_WORD.get(Number(cp));
       if (!word) throw new Error(`No Toki Pona word for timer codepoint U+${Number(cp).toString(16).toUpperCase()}`);
       words.push(word);
@@ -1038,6 +1043,8 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
         mixedStyle: "short",
         showUnknownText: false,
         abbreviateNumericCartouches: true,
+        nanpaColonParsing: true,
+        nanpaColonRendering: true,
         cartoucheCommaTallyMarks: false,
         cartoucheTallyMode: "ucsur"
       },
@@ -1235,27 +1242,29 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   }
 
   function buildTimeCartoucheGlyphs(totalSeconds) {
-    const mm = Math.floor(totalSeconds / 60);
-    const ss = totalSeconds % 60;
-
-    const mm2 = String(mm).padStart(2, "0");
-    const ss2 = String(ss).padStart(2, "0");
-
-    const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
-    const cpEn    = WORD_TO_UCSUR_CP["en"];
-
-    function digitInner(dChar) {
-      const cps = decimalToUcsurCodepoints(String(dChar));
-      if (cps.length < 3) return [];
-      return cps.slice(2, cps.length - 1);
-    }
-
-    const inner = [];
-    for (const ch of mm2) inner.push(...digitInner(ch));
-    inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], WORD_TO_UCSUR_CP["kasi"], WORD_TO_UCSUR_CP["en"]);
-    for (const ch of ss2) inner.push(...digitInner(ch));
-
-    return numericCartoucheDisplayCps([cpNanpa, cpEn, ...inner, cpNanpa]);
+    const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const parts = safe < 3600
+      ? [Math.floor(safe / 60), safe % 60]
+      : [Math.floor(safe / 3600), Math.floor((safe % 3600) / 60), safe % 60];
+    const digitMap = {
+      "0": WORD_TO_UCSUR_CP.ijo,
+      "1": WORD_TO_UCSUR_CP.wan,
+      "2": WORD_TO_UCSUR_CP.tu,
+      "3": WORD_TO_UCSUR_CP.seli,
+      "4": WORD_TO_UCSUR_CP.awen,
+      "5": WORD_TO_UCSUR_CP.luka,
+      "6": WORD_TO_UCSUR_CP.utala,
+      "7": WORD_TO_UCSUR_CP.mun,
+      "8": WORD_TO_UCSUR_CP.pipi,
+      "9": WORD_TO_UCSUR_CP.jo
+    };
+    const glyphs = [WORD_TO_UCSUR_CP.tenpo, WORD_TO_UCSUR_CP.kolon];
+    parts.forEach((value, partIndex) => {
+      for (const ch of String(value).padStart(2, "0")) glyphs.push(digitMap[ch]);
+      if (partIndex + 1 < parts.length) glyphs.push(WORD_TO_UCSUR_CP.kasi);
+    });
+    glyphs.push(WORD_TO_UCSUR_CP.nanpa);
+    return glyphs.filter(Number.isFinite);
   }
 
   async function ensureFontsLoaded() {

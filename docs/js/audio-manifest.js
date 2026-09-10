@@ -2389,6 +2389,20 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "source": "uploaded numeric Jon audio",
       "source_order": 67,
       "duration_ms": 572.5
+    },
+    "suno": {
+      "unit": "Suno",
+      "file": "nanpa_v7/suno.wav",
+      "source": "joined whole-word numeric Suno audio",
+      "source_order": 68,
+      "duration_ms": 909.0
+    },
+    "tenpo": {
+      "unit": "Tenpo",
+      "file": "nanpa_v7/tenpo.wav",
+      "source": "joined whole-word numeric Tenpo audio",
+      "source_order": 69,
+      "duration_ms": 1056.6
     }
   },
   "nanpa_unit_source": {

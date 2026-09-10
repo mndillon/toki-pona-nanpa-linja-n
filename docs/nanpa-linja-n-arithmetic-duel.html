@@ -39,7 +39,7 @@
     }
     @font-face{
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
       font-display: swap;
     }
     @font-face{
@@ -216,6 +216,13 @@
     }
     .statCard strong{ font-size:17px; }
     .statCard span{ font-size:13px; }
+    .duelTimerCanvas{
+      width: 150px;
+      height: 36px;
+      max-width: 100%;
+      display: none;
+      justify-self: start;
+    }
     .questionCard{
       min-height: 0;
       align-content:start;
@@ -622,7 +629,7 @@
           <div class="card progressGrid">
             <div class="statCard"><span class="muted">Score</span><strong id="scoreLabel">0 / 0</strong></div>
             <div class="statCard"><span class="muted">Streak</span><strong id="streakLabel">0</strong></div>
-            <div class="statCard"><span class="muted">Time</span><strong id="timeLabel">off</strong></div>
+            <div class="statCard"><span class="muted">Time</span><canvas id="timeCanvas" class="duelTimerCanvas" aria-label="Time remaining"></canvas><strong id="timeLabel">off</strong></div>
             <div class="statCard"><span class="muted">Question</span><strong id="questionLabel">0 / 0</strong></div>
           </div>
 
@@ -775,7 +782,7 @@
 
 <script src="./vendor/pdf-lib.min.js"></script>
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
 
 (() => {
   "use strict";
@@ -949,7 +956,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   }
 
   function cacheEls(){
-    for (const id of ["btnStart","btnPrev","btnNext","btnQuit","levelSelect","modeSelect","countInput","languageSelect","levelLabel","modeLabel","questionsLabel","languageLabel","status","seedLabel","btnRandomSeed","btnNewSeed","practiceTitle","levelHelp","scoreLabel","streakLabel","timeLabel","questionLabel","prompt","questionDisplay","sortSelected","answers","feedback","seedInput","btnUseSeed","btnCopySeedUrl","btnGenerateWorksheet","btnToggleAnswerKey","worksheetAnswerKeyToggle","worksheetAnswerKeyLabel","btnPrintWorksheet","worksheetAbbrevToggle","worksheetAbbrevLabel","worksheetTitle","worksheetHelp","worksheetQuestions","reviewSummary","btnRetryMistakes","btnClearReview","weakAreas","reviewList","cartoucheModeSelect","latinDisplaySelect","properDisplaySelect","fontPxSelect","spacingSelect","timerToggle","secondsPerQuestionSelect","timerTotalLabel","cartoucheOnlyToggle","soundToggle","autoNextToggle","levelList","historySummary","historyList","historyDetail","historyMissedOnlyToggle","btnRefreshHistory","btnClearHistory"]){ el[id] = $(id); }
+    for (const id of ["btnStart","btnPrev","btnNext","btnQuit","levelSelect","modeSelect","countInput","languageSelect","levelLabel","modeLabel","questionsLabel","languageLabel","status","seedLabel","btnRandomSeed","btnNewSeed","practiceTitle","levelHelp","scoreLabel","streakLabel","timeCanvas","timeLabel","questionLabel","prompt","questionDisplay","sortSelected","answers","feedback","seedInput","btnUseSeed","btnCopySeedUrl","btnGenerateWorksheet","btnToggleAnswerKey","worksheetAnswerKeyToggle","worksheetAnswerKeyLabel","btnPrintWorksheet","worksheetAbbrevToggle","worksheetAbbrevLabel","worksheetTitle","worksheetHelp","worksheetQuestions","reviewSummary","btnRetryMistakes","btnClearReview","weakAreas","reviewList","cartoucheModeSelect","latinDisplaySelect","properDisplaySelect","fontPxSelect","spacingSelect","timerToggle","secondsPerQuestionSelect","timerTotalLabel","cartoucheOnlyToggle","soundToggle","autoNextToggle","levelList","historySummary","historyList","historyDetail","historyMissedOnlyToggle","btnRefreshHistory","btnClearHistory"]){ el[id] = $(id); }
   }
 
   function buildRendererConfig({ abbreviate = false, fontPx = state.settings.fontPx, spacingPreset = state.settings.spacingPreset, paddingPx = 12 } = {}){
@@ -959,6 +966,78 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
       parser:{ numericMode:"uniform", mixedStyle:"short", abbreviateNumericCartouches: !!abbreviate },
       fonts:{ roles:{ word:"TP-Nasin-Nanpa-Font", text:"TP-Nasin-Nanpa-Font", cartouche:"TP-Nasin-Nanpa-Font", number:"TP-Cartouche-Font", date:"TP-Cartouche-Font", time:"TP-Cartouche-Font", literal:"PatrickHand", unknown:"PatrickHand" } }
     };
+  }
+
+
+  function buildDuelTimeRendererConfig(fontPx = 34) {
+    const config = buildRendererConfig({ abbreviate: true, fontPx, spacingPreset: "compact", paddingPx: Math.max(8, Math.round(fontPx * 0.22)) });
+    return {
+      ...config,
+      layout: { ...config.layout, align: "left" },
+      parser: {
+        ...config.parser,
+        nanpaColonParsing: true,
+        nanpaColonRendering: true,
+        abbreviateNumericCartouches: true
+      },
+      fonts: {
+        roles: {
+          ...config.fonts.roles,
+          cartouche: "TP-Numeric-Cartouche-Font",
+          number: "TP-Numeric-Cartouche-Font",
+          date: "TP-Numeric-Cartouche-Font",
+          time: "TP-Numeric-Cartouche-Font"
+        }
+      }
+    };
+  }
+
+  function duelTimeCartoucheInput(totalSeconds) {
+    const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const parts = safe < 3600
+      ? [Math.floor(safe / 60), safe % 60]
+      : [Math.floor(safe / 3600), Math.floor((safe % 3600) / 60), safe % 60];
+    const digitWord = {
+      "0":"ijo", "1":"wan", "2":"tu", "3":"seli", "4":"awen",
+      "5":"luka", "6":"utala", "7":"mun", "8":"pipi", "9":"jo"
+    };
+    const words = ["tenpo", ":"];
+    parts.forEach((value, partIndex) => {
+      for (const ch of String(value).padStart(2, "0")) words.push(digitWord[ch]);
+      if (partIndex + 1 < parts.length) words.push("kasi");
+    });
+    words.push("nanpa");
+    return `[${words.join(" ")}]`;
+  }
+
+  let duelTimerRenderSeq = 0;
+
+  async function renderDuelTimerCanvas(totalSeconds) {
+    const canvas = el.timeCanvas;
+    if (!canvas) return;
+    const seq = ++duelTimerRenderSeq;
+    const renderer = await ensureRenderer();
+    const fontPx = 32;
+    const rendered = await renderer.renderTextToNewCanvas({
+      input: duelTimeCartoucheInput(totalSeconds),
+      ...buildDuelTimeRendererConfig(fontPx)
+    });
+    if (seq !== duelTimerRenderSeq) return;
+    const src = cropCanvasToVisibleBounds(rendered.canvas, Math.max(4, Math.round(fontPx * 0.10)));
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = Math.max(110, Math.floor(canvas.clientWidth || 150));
+    const cssH = Math.max(28, Math.floor(canvas.clientHeight || 36));
+    canvas.width = Math.ceil(cssW * dpr);
+    canvas.height = Math.ceil(cssH * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    const scale = Math.min(cssW / src.width, cssH / src.height);
+    const drawW = Math.max(1, Math.floor(src.width * scale));
+    const drawH = Math.max(1, Math.floor(src.height * scale));
+    const x = Math.floor((cssW - drawW) / 2);
+    const y = Math.floor((cssH - drawH) / 2);
+    ctx.drawImage(src, x, y, drawW, drawH);
   }
 
   async function ensureRenderer(){
@@ -1853,8 +1932,27 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     el.scoreLabel.textContent = `${state.score} / ${state.session.length || 0}`;
     el.streakLabel.textContent = `${state.streak} (best ${state.bestStreak})`;
     el.questionLabel.textContent = state.session.length ? `${Math.min(state.index+1,state.session.length)} / ${state.session.length}` : "0 / 0";
-    if (state.settings.timer && state.active) el.timeLabel.textContent = `${Math.max(0,state.remainingSec)}s`;
-    else el.timeLabel.textContent = state.settings.timer ? "ready" : "off";
+    if (state.settings.timer) {
+      const perQuestion = normalizeSecondsPerQuestion(state.settings.secondsPerQuestion);
+      const questionCount = Math.max(1, state.session?.length || state.settings.questionCount || LEVELS[state.settings.level].count || 10);
+      const shownSeconds = state.active ? Math.max(0, state.remainingSec) : questionCount * perQuestion;
+      if (el.timeLabel) el.timeLabel.style.display = "none";
+      if (el.timeCanvas) {
+        el.timeCanvas.style.display = "block";
+        renderDuelTimerCanvas(shownSeconds).catch(err => console.error("Could not render duel timer", err));
+      }
+    } else {
+      duelTimerRenderSeq++;
+      if (el.timeCanvas) {
+        el.timeCanvas.style.display = "none";
+        const ctx = el.timeCanvas.getContext("2d");
+        if (ctx) ctx.clearRect(0, 0, el.timeCanvas.width, el.timeCanvas.height);
+      }
+      if (el.timeLabel) {
+        el.timeLabel.style.display = "";
+        el.timeLabel.textContent = "off";
+      }
+    }
   }
 
   async function rerenderCurrentQuestion(){

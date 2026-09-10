@@ -778,7 +778,7 @@
 
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
       font-display: swap;
     }
 
@@ -960,7 +960,7 @@
         <span class="mono">-12,340</span>, <span class="mono">9¾</span>,
         <span class="mono">8+1/2</span>, <span class="mono">7/8</span>,
         <span class="mono">64.5M</span>, <span class="mono">10.5%</span>,
-        <span class="mono">3:49</span>, <span class="mono">2026-07-17</span>,
+        <span class="mono">3:49</span>, <span class="mono">2026-07-17</span>, <span class="mono">--07-17</span>,
         <span class="mono">4.5e-3</span>, <span class="mono">#12AF</span>,
         <span class="mono">#12-AF</span>, <span class="mono">#AB:CD.12</span>, and <span class="mono">0b101</span>. Press Enter or use the button.
       </div>
@@ -1556,13 +1556,13 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=250";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=64";
-    import { REFERENCE_AUDIO_MANIFEST } from "./js/audio-manifest.js?v=30";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=68";
+    import { REFERENCE_AUDIO_MANIFEST } from "./js/audio-manifest.js?v=31";
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback
-    } from "./js/sitelen-audio-plan.js?v=56";
+    } from "./js/sitelen-audio-plan.js?v=60";
 
     const MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
     const MODE_DEFAULT = "relaxed";
@@ -1577,6 +1577,8 @@
     const CARTOUCHE_END_CP = 0xF1991;
 
     const ABBREV_CP_NANPA = 0xF193D;
+    const ABBREV_CP_SUNO = 0xF1964;
+    const ABBREV_CP_TENPO = 0xF196B;
     const ABBREV_CP_NENA = 0xF1940;
     const ABBREV_CP_EN = 0xF190A;
     const ABBREV_CP_E = 0xF1909;
@@ -1639,7 +1641,7 @@
     const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
       "Eke", "Eken", "Ekeke", "Ekeken", "Ekekeke", "Ekekeken",
       "Keke", "Keken", "Kekeke", "Kekeken",
-      "Nanpa", "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
+      "Nanpa", "Suno", "Tenpo", "One", "Ono", "Oko", "Eko", "Oken", "Ene", "Inin"
     ]);
 
     const el = {
@@ -1906,6 +1908,15 @@
         .filter(Boolean)
         .map(word => word.length <= 1 ? word.toUpperCase() : word[0].toUpperCase() + word.slice(1).toLowerCase())
         .join(" ");
+    }
+
+    function typedDateTimeProperName(parsed, nanpaFormat, properName) {
+      const name = titleCaseWords(properName);
+      if (!name || nanpaFormat !== true) return name;
+      const head = parsed?.isTime === true ? "Tenpo" : parsed?.isDate === true ? "Suno" : "";
+      if (!head) return name;
+      if (/^(?:Tenpo|Suno)\b/.test(name)) return name.replace(/^(?:Tenpo|Suno)\b/, head);
+      return name.replace(/^Nanpa\b/, head);
     }
 
     function splitTokiPonaSyllables(word) {
@@ -2377,14 +2388,14 @@
       const caps = tokens.join("");
       const relaxed = normalizedMode === "relaxed";
 
-      const properName = titleCaseWords(NanpaParser.splitCapsToProperName(caps, {
+      const properName = typedDateTimeProperName(strictParsed, nanpaFormat, NanpaParser.splitCapsToProperName(caps, {
         titleCase: true,
         relaxedNanpaLinjanParsing: relaxed,
         relaxedNanpaLinjanRendering: relaxed,
         nanpaColonRendering: nanpaFormat
       }));
 
-      const cartouche = NanpaParser.capsToCodepoints(caps, {
+      let cartouche = NanpaParser.capsToCodepoints(caps, {
         mode: "uniform",
         mixedStyle: "short",
         relaxedNanpaLinjanParsing: relaxed,
@@ -2392,6 +2403,32 @@
         nanpaColonParsing: nanpaFormat,
         nanpaColonRendering: nanpaFormat
       });
+
+      if (nanpaFormat && (strictParsed.isTime === true || strictParsed.isDate === true)) {
+        const semanticCodepoints = Array.from(
+          strictParsed.ucsurCodepoints ?? strictParsed.innerCodepoints ?? strictParsed.codepoints ?? [],
+          Number
+        );
+        if (semanticCodepoints.length) {
+          if (cartouche?.innerCodepoints?.length) {
+            if (semanticCodepoints.length === cartouche.innerCodepoints.length) {
+              cartouche.innerCodepoints = semanticCodepoints;
+            } else {
+              cartouche.innerCodepoints = Array.from(cartouche.innerCodepoints, Number);
+              cartouche.innerCodepoints[0] = strictParsed.isTime === true ? ABBREV_CP_TENPO : ABBREV_CP_SUNO;
+            }
+            cartouche.words = Array.from(strictParsed.tpWords ?? cartouche.words ?? []);
+          } else {
+            cartouche = {
+              innerCodepoints: semanticCodepoints,
+              codepoints: [CARTOUCHE_START_CP, ...semanticCodepoints, CARTOUCHE_END_CP],
+              words: Array.from(strictParsed.tpWords ?? []),
+              numericMode: "uniform",
+              isTimeLike: true
+            };
+          }
+        }
+      }
 
       if (!properName || !cartouche?.innerCodepoints?.length) {
         throw new Error("The input was parsed, but the proper name or cartouche could not be generated.");
@@ -2436,11 +2473,14 @@
         componentDisplayInput,
         mode: normalizedMode,
         nanpaFormat,
+        isTime: strictParsed.isTime === true,
+        isDate: strictParsed.isDate === true,
         strictParsed,
         tokens,
         caps,
         properName,
         cartouche,
+        fullCodepoints: Array.from(cartouche.innerCodepoints ?? [], Number),
         rawUnits,
         inputSourceCells,
         audioUnits,
@@ -3003,7 +3043,11 @@
       setColumnCount(el.outerMarkerUnits, columnCount);
 
       const start = makeChip(
-        model.isHex ? "Nasa" : model.isBinary ? "Noka" : model.nanpaFormat ? "Nanpa" : "Ne-",
+        model.isHex ? "Nasa" :
+          model.isBinary ? "Noka" :
+            model.nanpaFormat && model.isTime ? "Tenpo" :
+              model.nanpaFormat && model.isDate ? "Suno" :
+                model.nanpaFormat ? "Nanpa" : "Ne-",
         "marker"
       );
       if (!model.isHex && !model.isBinary && model.nanpaFormat) {
@@ -3039,9 +3083,13 @@
         ? "The hexadecimal opening Nasa remains a separate proper-name word"
         : model.isBinary
           ? "The binary opening Noka remains a separate proper-name word"
-          : model.nanpaFormat
-            ? "The decimal opening Nanpa remains a separate proper-name word"
-            : "The opening Ne- joins the first proper-name word";
+          : model.nanpaFormat && model.isTime
+            ? "The time opening Tenpo remains a separate proper-name word"
+            : model.nanpaFormat && model.isDate
+              ? "The date opening Suno remains a separate proper-name word"
+              : model.nanpaFormat
+                ? "The decimal opening Nanpa remains a separate proper-name word"
+                : "The opening Ne- joins the first proper-name word";
       placeAt(startArrow, 1);
       el.reassignmentArrows.appendChild(startArrow);
 
@@ -3127,7 +3175,6 @@
       let globalUnitIndex = 0;
 
       for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
-        const wordText = words[wordIndex];
         const word = document.createElement("span");
         word.className = "proper-name-word";
 
@@ -3295,15 +3342,27 @@
     function audioUnitSourceRanges(units, { nanpaFormat = false } = {}) {
       const ranges = [];
       let cursor = 0;
+      let typedOpeningRange = null;
 
       for (const unit of units) {
-        const isNanpaOpening =
+        const isTypedOpening =
           nanpaFormat &&
-          unit.index === 0 &&
-          String(unit.word ?? unit.text ?? "").toLowerCase() === "nanpa";
-        const count = isNanpaOpening
-          ? 2
-          : Array.from(String(unit.text ?? "")).length;
+          unit.wordIndex === 0 &&
+          ["nanpa", "tenpo", "suno"].includes(String(unit.word ?? unit.text ?? "").toLowerCase());
+
+        if (isTypedOpening) {
+          if (!typedOpeningRange) {
+            typedOpeningRange = { start: cursor, end: cursor + 2 };
+            cursor = typedOpeningRange.end;
+          }
+          ranges[unit.index] = {
+            ...typedOpeningRange,
+            wordIndex: unit.wordIndex
+          };
+          continue;
+        }
+
+        const count = Array.from(String(unit.text ?? "")).length;
         ranges[unit.index] = {
           start: cursor,
           end: cursor + count,
@@ -3498,7 +3557,7 @@
          */
         if (
           (unit.index === 0 && lowerText === "ne") ||
-          (nanpaFormat && unit.index === 0 && lowerText === "nanpa")
+          (nanpaFormat && unit.wordIndex === 0 && ["nanpa", "tenpo", "suno"].includes(String(unit.word ?? unit.text ?? "").toLowerCase()))
         ) {
           map[unit.index] = [];
           continue;
@@ -3611,6 +3670,7 @@
 
       const out = [];
       let keptFirstNanpa = false;
+      const typedDateTimeOpening = input[0] === ABBREV_CP_TENPO || input[0] === ABBREV_CP_SUNO;
       const hasFullPositiveOpening =
         input.length >= 4 &&
         input[0] === ABBREV_CP_NANPA &&
@@ -3658,7 +3718,7 @@
 
         if (!keptFirstNanpa) {
           out.push({ cp, sourceIndex: index });
-          if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
+          if (cp === ABBREV_CP_NANPA || (typedDateTimeOpening && index === 0)) keptFirstNanpa = true;
           continue;
         }
 
@@ -4438,7 +4498,10 @@
 
     function resetAudio({ invalidatePrepared = false } = {}) {
       audioGeneration += 1;
-      if (audioSession) cancelCurrentSource(audioSession);
+      if (audioSession) {
+        cancelCurrentSource(audioSession);
+        cancelAudioGap(audioSession);
+      }
       audioSession = null;
       audioBusy = false;
       clearAudioHighlight();
@@ -4457,113 +4520,17 @@
       }
     }
 
-    function concatenateSamples(chunks) {
-      const valid = chunks.filter(chunk => chunk?.length);
-      const total = valid.reduce((sum, chunk) => sum + chunk.length, 0);
-      const output = new Float32Array(total);
-      let offset = 0;
-      for (const chunk of valid) {
-        output.set(chunk, offset);
-        offset += chunk.length;
-      }
-      return output;
-    }
-
-    function silenceSamples(seconds, sampleRate) {
-      return new Float32Array(
-        Math.max(0, Math.round(Number(seconds || 0) * Number(sampleRate || 48000)))
-      );
-    }
-
-    function buildContinuousSharedAudio(entries, model) {
-      const sourceEntries = Array.from(entries || []);
-      const chunks = [];
-      const timeline = [];
-      let sampleRate = null;
-      let sampleCursor = 0;
-
-      for (const entry of sourceEntries) {
-        if (!entry?.samples?.length || !entry?.sampleRate) continue;
-        if (sampleRate == null) sampleRate = Number(entry.sampleRate);
-        if (Number(entry.sampleRate) !== sampleRate) {
-          throw new Error("The shared audio pipeline returned inconsistent sample rates.");
-        }
-
-        const samples = entry.samples instanceof Float32Array
-          ? entry.samples
-          : Float32Array.from(entry.samples);
-        const startSample = sampleCursor;
-        const endSample = startSample + samples.length;
-        const isGap =
-          entry.speechUnitKind === "audio-gap" ||
-          entry.speechUnitKind === "terminal-pause";
-        const highlightIndex = isGap
-          ? null
-          : Number(entry.speechUnitIndex);
-
-        if (!isGap) {
-          if (!Number.isInteger(highlightIndex) || !model?.audioUnits?.[highlightIndex]) {
-            throw new Error("The shared audio timeline could not be matched to a displayed syllable.");
-          }
-          const expected = String(model.audioUnits[highlightIndex]?.text ?? "")
-            .replace(/'/g, "")
-            .toLowerCase();
-          const actual = String(entry.speechUnitText ?? entry.text ?? "")
-            .replace(/'/g, "")
-            .toLowerCase();
-          if (!expected || expected !== actual) {
-            throw new Error(
-              `Shared audio unit mismatch at unit ${highlightIndex + 1}: expected "${expected}", received "${actual || "none"}".`
-            );
-          }
-        }
-
-        chunks.push(samples);
-        timeline.push({
-          kind: isGap ? "gap" : "unit",
-          highlightIndex: Number.isInteger(highlightIndex) ? highlightIndex : null,
-          startSample,
-          endSample
-        });
-        sampleCursor = endSample;
-
-        const pauseAfterSeconds = Math.max(0, Number(entry.pauseAfterSeconds) || 0);
-        if (pauseAfterSeconds > 0) {
-          const pause = silenceSamples(pauseAfterSeconds, sampleRate);
-          if (pause.length) {
-            const pauseStart = sampleCursor;
-            chunks.push(pause);
-            sampleCursor += pause.length;
-            timeline.push({
-              kind: "gap",
-              highlightIndex: null,
-              startSample: pauseStart,
-              endSample: sampleCursor
-            });
-          }
-        }
-      }
-
-      if (!sampleRate || !chunks.length) {
-        throw new Error("The shared audio pipeline produced no audio samples.");
-      }
-
-      return {
-        samples: concatenateSamples(chunks),
-        sampleRate,
-        timeline
-      };
-    }
-
     async function buildAudioEntries(model, preparationGeneration) {
       const voice = await getVoice();
       const renderer = await getRenderer();
       const option = selectedAudioOption();
 
       /*
-       * This is the same high-level audio path used by text-to-sitelen.html:
-       * renderer plan -> sitelen audio plan -> voice.render(complete proper name).
-       * No WAV URL is constructed or fetched by this page.
+       * Use the same shared audio pipeline as text-to-sitelen. The audio plan
+       * is the authority for exact numeric-cartouche waveforms and timing,
+       * including typed Suno/Tenpo heads. Do not re-render date/time proper
+       * names directly here and do not reject audio because a display-only
+       * highlight index cannot be matched.
        */
       const result = await buildSitelenSentenceAudioBuffersFromRawText({
         rawText: model.properName,
@@ -4594,10 +4561,14 @@
         throw new Error("The shared audio plan did not identify the proper name as readable audio.");
       }
 
-      return {
-        voice,
-        ...buildContinuousSharedAudio(result?.entries || [], model)
-      };
+      const entries = Array.from(result?.entries || []).filter(entry =>
+        entry?.samples?.length && Number(entry?.sampleRate) > 0
+      );
+      if (!entries.length || result?.status === "no-samples") {
+        throw new Error("The shared audio pipeline produced no audio samples.");
+      }
+
+      return { voice, entries };
     }
 
     function prepareAudio(model) {
@@ -4631,9 +4602,7 @@
           preparedAudio = {
             key,
             voice: built.voice,
-            samples: built.samples,
-            sampleRate: built.sampleRate,
-            timeline: built.timeline
+            entries: built.entries
           };
           return preparedAudio;
         })
@@ -4655,8 +4624,8 @@
       setAudioState("preparing");
 
       prepareAudio(model)
-        .catch(() => {
-          // Explicit playback retries and reports any real audio error.
+        .catch(error => {
+          console.error("[render-to-audio] background audio preparation failed", error);
         })
         .finally(() => {
           if (
@@ -4671,8 +4640,8 @@
 
     function warmVoiceDuringIdle() {
       const warm = () => {
-        getVoice().catch(() => {
-          // Explicit playback reports any real voice-engine error.
+        getVoice().catch(error => {
+          console.error("[render-to-audio] voice warm-up failed", error);
         });
       };
 
@@ -4683,22 +4652,152 @@
       }
     }
 
-    function getOrCreateAudioBuffer(session) {
-      if (session.audioBuffer) return session.audioBuffer;
+    function isAudioGapEntry(entry) {
+      return entry?.speechUnitKind === "audio-gap" ||
+        entry?.speechUnitKind === "terminal-pause";
+    }
+
+    function isNanpaReferencePhraseEntry(entry) {
+      return !!entry?.renderedAsNanpaReferencePhrase && !!entry?.numericCartoucheRunId;
+    }
+
+    function collectNanpaReferencePhraseGroup(session, startIndex) {
+      const entries = session?.entries || [];
+      const first = entries[startIndex];
+      if (!isNanpaReferencePhraseEntry(first)) return null;
+
+      const runId = String(first.numericCartoucheRunId);
+      const phrase = String(first.numericCartouchePhrase || "");
+      let endIndex = startIndex;
+      while (endIndex < entries.length) {
+        const candidate = entries[endIndex];
+        if (!isNanpaReferencePhraseEntry(candidate)) break;
+        if (String(candidate.numericCartoucheRunId) !== runId) break;
+        if (String(candidate.numericCartouchePhrase || "") !== phrase) break;
+        endIndex += 1;
+      }
+      if (endIndex <= startIndex) return null;
+
+      return {
+        startIndex,
+        endIndex,
+        runId,
+        phrase,
+        entries: entries.slice(startIndex, endIndex),
+        pauseAfterSeconds: Math.max(0, Number(entries[endIndex - 1]?.pauseAfterSeconds) || 0)
+      };
+    }
+
+    function getOrCreateEntryPlayback(session, entry, entryIndex) {
+      if (entry?._renderToAudioPlayback) return entry._renderToAudioPlayback;
+
+      const sampleRate = Math.round(Number(entry?.sampleRate));
+      if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
+        throw new Error("Invalid audio sample rate.");
+      }
+      const samples = entry.samples instanceof Float32Array
+        ? entry.samples
+        : Float32Array.from(entry.samples || []);
+      if (!samples.length) throw new Error("Audio entry contains no samples.");
+
       const context = session.voice.getAudioContext();
-      const buffer = context.createBuffer(
-        1,
-        session.samples.length,
-        session.sampleRate
-      );
-      buffer.copyToChannel(session.samples, 0);
-      session.audioBuffer = buffer;
-      return buffer;
+      const buffer = context.createBuffer(1, samples.length, sampleRate);
+      buffer.copyToChannel(samples, 0);
+      const highlightIndex = isAudioGapEntry(entry)
+        ? null
+        : (Number.isInteger(Number(entry?.speechUnitIndex)) ? Number(entry.speechUnitIndex) : null);
+      const prepared = {
+        buffer,
+        sampleRate,
+        timeline: [{
+          entryIndex,
+          highlightIndex,
+          startSample: 0,
+          endSample: samples.length
+        }],
+        endIndex: entryIndex + 1,
+        pauseAfterSeconds: Math.max(0, Number(entry?.pauseAfterSeconds) || 0)
+      };
+      entry._renderToAudioPlayback = prepared;
+      return prepared;
+    }
+
+    function getOrCreateNanpaReferencePhrasePlayback(session, group) {
+      const first = group?.entries?.[0];
+      const cached = first?._renderToAudioPhrasePlayback;
+      if (cached && cached.endIndex === group.endIndex) return cached;
+
+      const sampleRate = Math.round(Number(first?.sampleRate));
+      if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
+        throw new Error("Invalid numeric-cartouche audio sample rate.");
+      }
+
+      const chunks = [];
+      const timeline = [];
+      let totalSamples = 0;
+      for (let localIndex = 0; localIndex < group.entries.length; localIndex += 1) {
+        const entry = group.entries[localIndex];
+        if (Math.round(Number(entry?.sampleRate)) !== sampleRate) {
+          throw new Error("Numeric-cartouche audio entries use different sample rates.");
+        }
+        const samples = entry.samples instanceof Float32Array
+          ? entry.samples
+          : Float32Array.from(entry.samples || []);
+        if (!samples.length) continue;
+
+        const startSample = totalSamples;
+        totalSamples += samples.length;
+        chunks.push(samples);
+        timeline.push({
+          entryIndex: group.startIndex + localIndex,
+          highlightIndex: isAudioGapEntry(entry)
+            ? null
+            : (Number.isInteger(Number(entry?.speechUnitIndex)) ? Number(entry.speechUnitIndex) : null),
+          startSample,
+          endSample: totalSamples
+        });
+      }
+
+      if (!totalSamples || !timeline.length) {
+        throw new Error("Numeric-cartouche audio group contains no samples.");
+      }
+
+      const combined = new Float32Array(totalSamples);
+      let cursor = 0;
+      for (const samples of chunks) {
+        combined.set(samples, cursor);
+        cursor += samples.length;
+      }
+
+      const context = session.voice.getAudioContext();
+      const buffer = context.createBuffer(1, combined.length, sampleRate);
+      buffer.copyToChannel(combined, 0);
+      const prepared = {
+        buffer,
+        sampleRate,
+        timeline,
+        endIndex: group.endIndex,
+        pauseAfterSeconds: group.pauseAfterSeconds
+      };
+      if (first) first._renderToAudioPhrasePlayback = prepared;
+      return prepared;
+    }
+
+    function playbackForCurrentEntry(session) {
+      const entry = session?.entries?.[session.currentIndex];
+      if (!entry) return null;
+      const group = collectNanpaReferencePhraseGroup(session, session.currentIndex);
+      return group
+        ? getOrCreateNanpaReferencePhrasePlayback(session, group)
+        : getOrCreateEntryPlayback(session, entry, session.currentIndex);
     }
 
     function completeAudioPlayback(generation) {
       if (generation !== audioGeneration) return;
-      if (audioSession) cancelCurrentSource(audioSession);
+      if (audioSession) {
+        cancelCurrentSource(audioSession);
+        cancelAudioGap(audioSession);
+      }
       audioSession = null;
       clearAudioHighlight();
       setAudioState("stopped");
@@ -4710,33 +4809,38 @@
       session.highlightFrame = null;
     }
 
-    function audioTimelineEntryAtOffset(session, offsetSeconds) {
+    function cancelAudioGap(session) {
+      if (!session?.gapTimer) return;
+      clearTimeout(session.gapTimer);
+      session.gapTimer = null;
+    }
+
+    function audioTimelineEntryAtOffset(playback, offsetSeconds) {
+      if (!playback?.timeline?.length || !playback.sampleRate) return null;
       const sample = Math.max(
         0,
         Math.min(
-          session.samples.length - 1,
-          Math.floor((Number(offsetSeconds) || 0) * session.sampleRate)
+          playback.buffer.length - 1,
+          Math.floor((Number(offsetSeconds) || 0) * playback.sampleRate)
         )
       );
-
-      for (const entry of session.timeline) {
+      for (const entry of playback.timeline) {
         if (sample >= entry.startSample && sample < entry.endSample) return entry;
       }
-      return session.timeline[session.timeline.length - 1] || null;
+      return playback.timeline[playback.timeline.length - 1] || null;
     }
 
     function drawAudioTimelineEntry(session, entry) {
-      const key = entry?.kind === "unit" && Number.isInteger(entry.highlightIndex)
+      const key = Number.isInteger(entry?.highlightIndex) && currentModel?.audioUnits?.[entry.highlightIndex]
         ? entry.highlightIndex
         : null;
       if (session.activeHighlightIndex === key) return;
       session.activeHighlightIndex = key;
-
       if (key == null) clearAudioHighlight();
       else highlightAudioUnit(key);
     }
 
-    function startAudioHighlightLoop(session, source) {
+    function startAudioHighlightLoop(session, playback, source) {
       cancelAudioHighlightFrame(session);
       const context = session.voice.getAudioContext();
 
@@ -4748,43 +4852,80 @@
         const offset =
           session.sourceStartedOffset +
           Math.max(0, context.currentTime - session.sourceStartedAt);
-        drawAudioTimelineEntry(session, audioTimelineEntryAtOffset(session, offset));
+        drawAudioTimelineEntry(session, audioTimelineEntryAtOffset(playback, offset));
 
-        if (offset < session.currentBuffer.duration) {
+        if (offset < playback.buffer.duration) {
           session.highlightFrame = requestAnimationFrame(tick);
         }
       };
 
       drawAudioTimelineEntry(
         session,
-        audioTimelineEntryAtOffset(session, session.sourceStartedOffset)
+        audioTimelineEntryAtOffset(playback, session.sourceStartedOffset)
       );
       session.highlightFrame = requestAnimationFrame(tick);
     }
 
-    function playContinuousAudio() {
+    function scheduleAudioGap(seconds) {
       const session = audioSession;
       if (!session || session.generation !== audioGeneration) return;
 
-      const buffer = getOrCreateAudioBuffer(session);
+      const gapSeconds = Math.max(0, Number(seconds) || 0);
+      if (gapSeconds <= 0) {
+        session.inGap = false;
+        session.remainingGapSeconds = 0;
+        playCurrentAudioEntry();
+        return;
+      }
+
+      session.inGap = true;
+      session.remainingGapSeconds = gapSeconds;
+      session.gapStartedAtMs = performance.now();
+      clearAudioHighlight();
+      setAudioState("playing");
+      session.gapTimer = setTimeout(() => {
+        if (!audioSession || session !== audioSession || session.generation !== audioGeneration) return;
+        session.gapTimer = null;
+        session.inGap = false;
+        session.remainingGapSeconds = 0;
+        playCurrentAudioEntry();
+      }, Math.max(0, Math.round(gapSeconds * 1000)));
+    }
+
+    function playCurrentAudioEntry() {
+      const session = audioSession;
+      if (!session || session.generation !== audioGeneration) return;
+      if (session.currentIndex >= session.entries.length) {
+        completeAudioPlayback(session.generation);
+        return;
+      }
+
+      const playback = playbackForCurrentEntry(session);
+      if (!playback) {
+        completeAudioPlayback(session.generation);
+        return;
+      }
+
       const context = session.voice.getAudioContext();
       const offset = Math.max(
         0,
         Math.min(
           Number(session.currentOffsetSeconds) || 0,
-          Math.max(0, buffer.duration - 0.001)
+          Math.max(0, playback.buffer.duration - 0.001)
         )
       );
-
       const source = context.createBufferSource();
-      source.buffer = buffer;
+      source.buffer = playback.buffer;
       source.connect(context.destination);
 
       session.currentSource = source;
-      session.currentBuffer = buffer;
+      session.currentBuffer = playback.buffer;
+      session.currentPlayback = playback;
       session.sourceStartedAt = context.currentTime;
       session.sourceStartedOffset = offset;
-      startAudioHighlightLoop(session, source);
+      session.inGap = false;
+      session.remainingGapSeconds = 0;
+      startAudioHighlightLoop(session, playback, source);
       setAudioState("playing");
 
       source.onended = () => {
@@ -4796,8 +4937,16 @@
         session.currentSource = null;
         try { source.disconnect(); } catch {}
         session.currentBuffer = null;
+        session.currentPlayback = null;
         session.currentOffsetSeconds = 0;
-        completeAudioPlayback(session.generation);
+        clearAudioHighlight();
+
+        session.currentIndex = playback.endIndex;
+        if (session.currentIndex >= session.entries.length) {
+          completeAudioPlayback(session.generation);
+          return;
+        }
+        scheduleAudioGap(playback.pauseAfterSeconds);
       };
 
       source.start(0, offset);
@@ -4805,22 +4954,34 @@
 
     function pauseAudio() {
       const session = audioSession;
-      if (!session || audioState !== "playing" || !session.currentSource) return;
+      if (!session || audioState !== "playing") return;
 
-      const context = session.voice.getAudioContext();
-      const elapsed = Math.max(0, context.currentTime - session.sourceStartedAt);
-      session.currentOffsetSeconds = Math.min(
-        session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
-        session.sourceStartedOffset + elapsed
-      );
-      cancelAudioHighlightFrame(session);
-      cancelCurrentSource(session);
+      if (session.inGap) {
+        const elapsed = Math.max(0, (performance.now() - session.gapStartedAtMs) / 1000);
+        session.remainingGapSeconds = Math.max(0, session.remainingGapSeconds - elapsed);
+        cancelAudioGap(session);
+        setAudioState("paused");
+        return;
+      }
+
+      if (session.currentSource) {
+        const context = session.voice.getAudioContext();
+        const elapsed = Math.max(0, context.currentTime - session.sourceStartedAt);
+        session.currentOffsetSeconds = Math.min(
+          session.currentBuffer?.duration || Number.POSITIVE_INFINITY,
+          session.sourceStartedOffset + elapsed
+        );
+        cancelAudioHighlightFrame(session);
+        cancelCurrentSource(session);
+      }
       setAudioState("paused");
     }
 
     function resumeAudio() {
-      if (!audioSession || audioState !== "paused") return;
-      playContinuousAudio();
+      const session = audioSession;
+      if (!session || audioState !== "paused") return;
+      if (session.inGap) scheduleAudioGap(session.remainingGapSeconds);
+      else playCurrentAudioEntry();
     }
 
     async function startAudio() {
@@ -4836,7 +4997,7 @@
         clearAudioError();
         const built = await prepareAudio(currentModel);
         if (!built || generation !== audioGeneration) return;
-        if (!built.samples?.length) throw new Error("No audio samples were produced.");
+        if (!built.entries?.length) throw new Error("No audio samples were produced.");
 
         const context = built.voice.getAudioContext();
         await context.resume();
@@ -4845,26 +5006,30 @@
         audioSession = {
           generation,
           voice: built.voice,
-          samples: built.samples,
-          sampleRate: built.sampleRate,
-          timeline: built.timeline,
+          entries: built.entries,
+          currentIndex: 0,
           currentOffsetSeconds: 0,
           currentSource: null,
           currentBuffer: null,
-          audioBuffer: null,
+          currentPlayback: null,
           sourceStartedAt: 0,
           sourceStartedOffset: 0,
+          inGap: false,
+          remainingGapSeconds: 0,
+          gapStartedAtMs: 0,
+          gapTimer: null,
           highlightFrame: null,
           activeHighlightIndex: null
         };
 
-        playContinuousAudio();
+        playCurrentAudioEntry();
 
         if (typeof window.trackUsage === "function") {
           window.trackUsage("render-to-audio-audio-play");
         }
       } catch (error) {
         if (generation !== audioGeneration) return;
+        console.error("[render-to-audio] audio playback failed", error);
         audioSession = null;
         clearAudioHighlight();
         setAudioState("stopped");
@@ -5045,8 +5210,8 @@ function trackUsage(eventName) {
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=64';
-      const NUMERIC_AUDIO_MANIFEST_MODULE_PATH = './js/audio-manifest.js?v=30';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=68';
+      const NUMERIC_AUDIO_MANIFEST_MODULE_PATH = './js/audio-manifest.js?v=31';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,

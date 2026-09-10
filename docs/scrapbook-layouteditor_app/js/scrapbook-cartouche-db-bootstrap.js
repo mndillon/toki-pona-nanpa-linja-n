@@ -6,7 +6,7 @@ function scrapbookCartoucheBootstrapError(...args) {
   if (SCRAPBOOK_CARTOUCHE_DB_BOOTSTRAP_DEBUG) console.error(...args);
 }
 
-import { createScrapbookCartoucheDbController } from './scrapbook-cartouche-db.js?v=221';
+import { createScrapbookCartoucheDbController } from './scrapbook-cartouche-db.js?v=222';
 
 const DEFAULT_DB = {
   type: 'scrapbook-cartouche-db',
@@ -160,7 +160,6 @@ function requestRenderAll() {
 }
 
 function installRendererInputBridge(controller) {
-  // Debug/manual helper only. app-vector.js uses the combined page map directly.
   window.prepareScrapbookCartoucheInput = rawInput => controller.prepareInput(rawInput);
 }
 
@@ -209,7 +208,7 @@ async function initScrapbookCartoucheDb() {
   window.scrapbookCartoucheDb = controller;
   installRendererInputBridge(controller);
 
-  // If app-vector.js has already exposed a document, bind it immediately.
+
   const doc = getBestKnownDocument();
   if (doc && doc !== fallbackDocument) {
     window.registerScrapbookCartoucheDbDocument(doc, boundCallbacks);

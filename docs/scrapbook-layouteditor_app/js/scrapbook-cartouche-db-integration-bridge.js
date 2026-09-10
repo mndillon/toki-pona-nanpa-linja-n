@@ -3,9 +3,7 @@ function scrapbookCartoucheBridgeWarn(...args) {
   if (SCRAPBOOK_CARTOUCHE_DB_BRIDGE_DEBUG) scrapbookCartoucheBridgeWarn(...args);
 }
 
-/* scrapbook-cartouche-db-integration-bridge v12
-   Early bridge for scrapbook-local proper-name DB persistence and render refresh.
-   Loads before app-vector.js so IndexedDB writes can be augmented with document.cartoucheDb. */
+
 
 const DEFAULT_DB = Object.freeze({
   type: 'scrapbook-cartouche-db',

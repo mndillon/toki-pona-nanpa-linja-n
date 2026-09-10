@@ -47,7 +47,7 @@
 
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
       font-display: swap;
     }
 
@@ -503,7 +503,7 @@
   </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
 
 (() => {
   "use strict";
@@ -806,70 +806,6 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
     return cps;
   }
 
-  function decimalToUcsurCodepoints(decimalStr) {
-    const raw0 = String(decimalStr ?? "").trim();
-    if (!raw0) return [];
-    const caps = numberStrToNanpaCaps(raw0, { thousandsChar: "," });
-    const tokens = tokenizeNanpaCaps(caps);
-    const tpWords = nanpaCapsTokensToTpWords(tokens);
-    return tpWordsToUcsurCodepoints(tpWords);
-  }
-
-  const ABBREV_CP_NANPA = WORD_TO_UCSUR_CP["nanpa"];
-  const ABBREV_CP_NENA  = WORD_TO_UCSUR_CP["nena"];
-  const ABBREV_CP_EN    = WORD_TO_UCSUR_CP["en"];
-  const ABBREV_CP_OPEN  = WORD_TO_UCSUR_CP["open"];
-
-  const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
-    ABBREV_CP_NANPA,
-    ABBREV_CP_EN,
-    ABBREV_CP_NENA,
-    ABBREV_CP_OPEN
-  ]);
-
-  function abbreviateNumericCartoucheCps(cps) {
-    const input = Array.from(cps ?? []).map(cp => Number(cp));
-    if (!input.length) return input;
-
-    const out = [];
-    let keptFirstNanpa = false;
-
-    for (let i = 0; i < input.length; i++) {
-      const cp = input[i];
-      const isFinalNanpa = (cp === ABBREV_CP_NANPA && i === input.length - 1);
-
-      if (!keptFirstNanpa) {
-        out.push(cp);
-        if (cp === ABBREV_CP_NANPA) keptFirstNanpa = true;
-        continue;
-      }
-
-      if (isFinalNanpa) {
-        out.push(cp);
-        continue;
-      }
-
-      if (NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
-      out.push(cp);
-    }
-
-    return out;
-  }
-
-  function numericCartoucheDisplayCps(cps) {
-    return abbreviateNumericCartoucheCps(cps);
-  }
-
-  function numericCartoucheInputFromCps(cps) {
-    const words = [];
-    for (const cp of Array.from(cps ?? [])) {
-      const word = UCSUR_CP_TO_WORD.get(Number(cp));
-      if (!word) throw new Error(`No Toki Pona word for numeric cartouche codepoint U+${Number(cp).toString(16).toUpperCase()}`);
-      words.push(word);
-    }
-    return `[${words.join(" ")}]`;
-  }
-
   function buildNumericCartoucheRendererConfig(fontPx) {
     const px = Math.max(8, Number(fontPx) || 34);
     return {
@@ -892,6 +828,8 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
         mixedStyle: "short",
         showUnknownText: false,
         abbreviateNumericCartouches: true,
+        nanpaColonParsing: true,
+        nanpaColonRendering: true,
         cartoucheCommaTallyMarks: false,
         cartoucheTallyMode: "ucsur"
       },
@@ -981,17 +919,16 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
     return out;
   }
 
-  async function renderNumericCartoucheToNewCanvas(cps, fontPx) {
-    const displayCps = numericCartoucheDisplayCps(cps);
+  async function renderNumericValueToNewCanvas(value, fontPx) {
     const renderer = await ensureNumericSitelenRenderer(fontPx);
-    const input = numericCartoucheInputFromCps(displayCps);
+    const input = `[${String(value)}]`;
     const rendered = await renderer.renderTextToNewCanvas({
       input,
       ...buildNumericCartoucheRendererConfig(fontPx)
     });
 
     const src = rendered && rendered.canvas;
-    if (!src) throw new Error("Numeric cartouche renderer did not return a canvas");
+    if (!src) throw new Error(`Numeric cartouche renderer did not return a canvas for ${value}`);
     return cropCanvasToVisibleBounds(src, Math.max(4, Math.round((Number(fontPx) || 34) * 0.12)));
   }
 
@@ -1565,33 +1502,69 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
   }
 
   function buildTimeCartoucheGlyphs(totalSeconds) {
-    const mm = Math.floor(totalSeconds / 60);
-    const ss = totalSeconds % 60;
+    const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const parts = safe < 3600
+      ? [Math.floor(safe / 60), safe % 60]
+      : [Math.floor(safe / 3600), Math.floor((safe % 3600) / 60), safe % 60];
+    const digitMap = {
+      "0": WORD_TO_UCSUR_CP.ijo,
+      "1": WORD_TO_UCSUR_CP.wan,
+      "2": WORD_TO_UCSUR_CP.tu,
+      "3": WORD_TO_UCSUR_CP.seli,
+      "4": WORD_TO_UCSUR_CP.awen,
+      "5": WORD_TO_UCSUR_CP.luka,
+      "6": WORD_TO_UCSUR_CP.utala,
+      "7": WORD_TO_UCSUR_CP.mun,
+      "8": WORD_TO_UCSUR_CP.pipi,
+      "9": WORD_TO_UCSUR_CP.jo
+    };
+    const glyphs = [WORD_TO_UCSUR_CP.tenpo, WORD_TO_UCSUR_CP.kolon];
+    parts.forEach((value, partIndex) => {
+      for (const ch of String(value).padStart(2, "0")) glyphs.push(digitMap[ch]);
+      if (partIndex + 1 < parts.length) glyphs.push(WORD_TO_UCSUR_CP.kasi);
+    });
+    glyphs.push(WORD_TO_UCSUR_CP.nanpa);
+    return glyphs.filter(Number.isFinite);
+  }
 
-    const mm2 = String(mm).padStart(2, "0");
-    const ss2 = String(ss).padStart(2, "0");
 
-    const cpNanpa = WORD_TO_UCSUR_CP["nanpa"];
-    const cpEn    = WORD_TO_UCSUR_CP["en"];
-    const cpKasi = WORD_TO_UCSUR_CP["kasi"];
-
-    function digitInner(dChar) {
-      const cps = decimalToUcsurCodepoints(String(dChar));
-      if (cps.length < 3) return [];
-      // decimalToUcsurCodepoints returns: [nanpa,en, ...digitGlyphs..., nanpa]
-      return cps.slice(2, cps.length - 1);
+  function timeCartoucheInputFromGlyphs(glyphs) {
+    const words = [];
+    const colonCp = WORD_TO_UCSUR_CP["kolon"];
+    for (const cp of Array.from(glyphs ?? [])) {
+      if (Number(cp) === Number(colonCp)) {
+        words.push(":");
+        continue;
+      }
+      const word = UCSUR_CP_TO_WORD.get(Number(cp));
+      if (!word) throw new Error(`No Toki Pona word for timer codepoint U+${Number(cp).toString(16).toUpperCase()}`);
+      words.push(word);
     }
+    return `[${words.join(" ")}]`;
+  }
 
-    const inner = [];
-    for (const ch of mm2) inner.push(...digitInner(ch));
+  function buildTimeRendererConfig(fontPx) {
+    const config = buildNumericCartoucheRendererConfig(fontPx);
+    return {
+      ...config,
+      parser: {
+        ...config.parser,
+        nanpaColonParsing: true,
+        nanpaColonRendering: true
+      }
+    };
+  }
 
-    // Use the dedicated "kasi" glyph as the time separator.
-    if (typeof cpKasi === "number") inner.push(WORD_TO_UCSUR_CP["nena"], WORD_TO_UCSUR_CP["en"], cpKasi, WORD_TO_UCSUR_CP["en"]);
-    else inner.push(":");
-
-    for (const ch of ss2) inner.push(...digitInner(ch));
-
-    return numericCartoucheDisplayCps([cpNanpa, cpEn, ...inner, cpNanpa]);
+  async function renderTimeCartoucheToNewCanvas(totalSeconds, fontPx) {
+    const renderer = await ensureNumericSitelenRenderer(fontPx);
+    const input = timeCartoucheInputFromGlyphs(buildTimeCartoucheGlyphs(totalSeconds));
+    const rendered = await renderer.renderTextToNewCanvas({
+      input,
+      ...buildTimeRendererConfig(fontPx)
+    });
+    const src = rendered && rendered.canvas;
+    if (!src) throw new Error("Time cartouche renderer did not return a canvas");
+    return cropCanvasToVisibleBounds(src, Math.max(4, Math.round((Number(fontPx) || 34) * 0.12)));
   }
 
 
@@ -1674,8 +1647,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     timerCtx.clearRect(0, 0, TIMER_CFG.targetCssW, TIMER_CFG.targetCssH);
 
     const seq = ++topTimerRenderSeq;
-    const glyphs = buildTimeCartoucheGlyphs(totalSeconds);
-    const rendered = await renderNumericCartoucheToNewCanvas(glyphs, TIMER_CFG.largePx);
+    const rendered = await renderTimeCartoucheToNewCanvas(totalSeconds, TIMER_CFG.largePx);
     if (seq !== topTimerRenderSeq) return;
 
     timerOffscreen.width = rendered.width;
@@ -1741,8 +1713,7 @@ function renderEmptyCartouche(canvas, cssHeight=92) {
     bestCtx.clearRect(0, 0, targetCssW, targetCssH);
 
     const seq = ++topBestRenderSeq;
-    const glyphs = buildTimeCartoucheGlyphs(secOrNull);
-    const rendered = await renderNumericCartoucheToNewCanvas(glyphs, TIMER_CFG.largePx);
+    const rendered = await renderTimeCartoucheToNewCanvas(secOrNull, TIMER_CFG.largePx);
     if (seq !== topBestRenderSeq) return;
 
     bestOffscreen.width = rendered.width;
@@ -1983,15 +1954,14 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
 
   async function renderNumberCartouche(canvas, n, { largePx=72, smallPx=24, pad=18, border=3, corner=18, gap=2, shrinkToNatural=false } = {}) {
     const seq = nextCanvasRenderSeq(canvas);
-    const cps = decimalToUcsurCodepoints(String(n));
-    const rendered = await renderNumericCartoucheToNewCanvas(cps, largePx);
+    const rendered = await renderNumericValueToNewCanvas(n, largePx);
     if (!isCanvasRenderSeqCurrent(canvas, seq)) return;
     drawRenderedCartoucheIntoVisibleCanvas(canvas, rendered, { shrinkToNatural });
   }
 
-  async function renderPrefixedNumericCartoucheToCanvas(canvas, prefixCps, cartoucheGlyphs, largePx, smallPx, smallCodepoints, options = {}) {
+  async function renderPrefixedNumericCartoucheToCanvas(canvas, prefixCps, numericValue, largePx, smallPx, smallCodepoints, options = {}) {
     const seq = nextCanvasRenderSeq(canvas);
-    const src = await renderNumericCartoucheToNewCanvas(cartoucheGlyphs, largePx);
+    const src = await renderNumericValueToNewCanvas(numericValue, largePx);
     if (!isCanvasRenderSeqCurrent(canvas, seq)) return;
 
     const gapPx = options.prefixGapPx ?? 8;
@@ -2086,17 +2056,14 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
 
     // Running or finished
     if (state === GameState.finished) {
-      // After a win, show the final time cartouche prefixed immediately by "tenpo nanpa" in UCSUR.
-      const timeGlyphs = buildTimeCartoucheGlyphs(timerSeconds);
-      const prefix = [WORD_TO_UCSUR_CP["tenpo"], WORD_TO_UCSUR_CP["lili"]].filter(cp => typeof cp === "number");
-      renderPrefixedNumericCartoucheToCanvas(
-        bestHighCanvas,
-        prefix,
-        timeGlyphs,
-        64, 22,
-        SMALL_SET,
-        { padding: 16, border: 3, cornerRadius: 18, letterGap: 2, prefixGapPx: 4, interGlyphGapPx: 4 }
-      );
+      // Final elapsed time uses the same typed Tenpo numeric-cartouche path as the top timer.
+      const seq = nextCanvasRenderSeq(bestHighCanvas);
+      renderTimeCartoucheToNewCanvas(timerSeconds, 64)
+        .then((src) => {
+          if (!isCanvasRenderSeqCurrent(bestHighCanvas, seq)) return;
+          drawRenderedCartoucheIntoVisibleCanvas(bestHighCanvas, src, { shrinkToNatural: true });
+        })
+        .catch((err) => console.error("[final-time-cartouche] render failed", err));
     } else {
       if (bestHigh == null) renderEmptyCartouche(bestHighCanvas, emptyH);
       else renderNumberCartouche(bestHighCanvas, bestHigh, { largePx: 64, smallPx: 22, pad: 16, border: 3, corner: 18, gap: 2 });
@@ -2114,7 +2081,6 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
     if (state === GameState.finished) {
       // After a win, show the guess count cartouche prefixed immediately by:
       // "sina pali e wile sona nanpa" in UCSUR.
-      const guessGlyphs = numericCartoucheDisplayCps(decimalToUcsurCodepoints(String(guessCount)));
       const prefix = [
         WORD_TO_UCSUR_CP["sina"],
         WORD_TO_UCSUR_CP["pali"],
@@ -2126,7 +2092,7 @@ const GameState = { idle: "idle", running: "running", finished: "finished" };
       renderPrefixedNumericCartoucheToCanvas(
         bestLowCanvas,
         prefix,
-        guessGlyphs,
+        guessCount,
         64, 22,
         SMALL_SET,
         { padding: 16, border: 3, cornerRadius: 18, letterGap: 2, prefixGapPx: 4, interGlyphGapPx: 4 }
@@ -2326,14 +2292,12 @@ function makeKeyButton({ id, labelText, ariaLabel, onPress, renderFn, wide=false
 
 
   async function renderDigitButtonCanvas(canvas, digitStr) {
-  const cps = decimalToUcsurCodepoints(digitStr);
-
   // Mobile: make the digit cartouche use the smaller renderer size, but keep CSS-driven key sizing.
   const mobile = isMobileTopbarMode();
   const px = mobile ? 22 : 28;
 
   const seq = nextCanvasRenderSeq(canvas);
-  const rendered = await renderNumericCartoucheToNewCanvas(cps, px);
+  const rendered = await renderNumericValueToNewCanvas(digitStr, px);
   if (!isCanvasRenderSeqCurrent(canvas, seq)) return;
   drawRenderedCartoucheIntoVisibleCanvas(canvas, rendered, { shrinkToNatural: false });
 }

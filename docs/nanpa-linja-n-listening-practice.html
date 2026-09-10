@@ -33,7 +33,7 @@
     }
     @font-face{
       font-family:"TP-Cartouche-Font";
-      src:url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
+      src:url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
       font-display:swap;
     }
 
@@ -1232,7 +1232,10 @@
   const ABBREV_CP_NANPA = 0xF193D;
   const ABBREV_CP_NASA   = 0xF193E;
   const ABBREV_CP_NOKA   = 0xF1943;
+  const ABBREV_CP_SUNO   = 0xF1964;
+  const ABBREV_CP_TENPO  = 0xF196B;
   const ABBREV_CP_KULE   = 0xF191E;
+  const ABBREV_CP_KASI   = 0xF1917;
   const ABBREV_CP_KULUPU = 0xF191F;
   const ABBREV_CP_KOLON  = 0xF199D;
   const ABBREV_CP_NENA  = 0xF1940;
@@ -1257,7 +1260,7 @@
   const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
   const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NE","NO"];
   const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
-    "Nanpa","Nasa","Noka",
+    "Nanpa","Nasa","Noka","Suno","Tenpo",
     "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
     "Keke","Keken","Kekeke","Kekeken",
     "One","Ono","Oko","Eko","Oken","Ene","Inin"
@@ -1625,6 +1628,18 @@
   }
   function formatProperNameForDisplay(name){ return fixOkenSuffixSpacing(titleCaseNanpaProperNameForDisplay(name)); }
 
+  function usesTypedDateTimeHead(kind,nanpaFormat){
+    return nanpaFormat === true && (kind === "hh-mm-time" || kind === "iso-date");
+  }
+
+  function typedDateTimeProperName(kind,nanpaFormat,name){
+    const formatted = formatProperNameForDisplay(name);
+    if (!formatted || !usesTypedDateTimeHead(kind,nanpaFormat)) return formatted;
+    const head = kind === "hh-mm-time" ? "Tenpo" : "Suno";
+    if (/^(?:Tenpo|Suno)\b/.test(formatted)) return formatted.replace(/^(?:Tenpo|Suno)\b/,head);
+    return formatted.replace(/^Nanpa\b/,head);
+  }
+
   function answerModeForKind(kind){
     if (kind === "thousands" || kind === "millions") return "commasOptional";
     if (kind === "scientific-notation") return "scientific";
@@ -1793,7 +1808,7 @@
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
   async function getNanpaModule(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254");
     return nanpaModulePromise;
   }
 
@@ -1938,7 +1953,7 @@
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=63").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=68").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 
@@ -1963,6 +1978,7 @@
           if (!strictRaw?.properName) throw new Error(`Could not encode quiz value: ${item.parserInput}`);
           const strictParsed = {
             ...strictRaw,
+            properName:typedDateTimeProperName(item.kind,item.nanpaFormat,strictRaw.properName),
             ucsurCodepoints:Array.from(strictRaw.ucsurCodepoints ?? strictRaw.innerCodepoints ?? strictRaw.codepoints ?? [])
           };
 
@@ -1978,6 +1994,7 @@
           });
           const relaxedParsed = relaxedRaw ? {
             ...relaxedRaw,
+            properName:typedDateTimeProperName(item.kind,item.nanpaFormat,relaxedRaw.properName),
             ucsurCodepoints:Array.from(relaxedRaw.ucsurCodepoints ?? relaxedRaw.innerCodepoints ?? relaxedRaw.codepoints ?? [])
           } : strictParsed;
           const useRelaxed = isRelaxedProperNameMode(item.properNameMode);
@@ -2300,7 +2317,8 @@
         relaxedNanpaLinjanParsing:isRelaxedProperNameMode(item.properNameMode),
         relaxedNanpaLinjanRendering:isRelaxedProperNameMode(item.properNameMode),
         nanpaColonParsing:item.nanpaFormat === true,
-        nanpaColonRendering:item.nanpaFormat === true
+        nanpaColonRendering:item.nanpaFormat === true,
+        numericTypedHeadSyllableAudio:usesTypedDateTimeHead(item.kind,item.nanpaFormat)
       });
       if (token !== generationToken || !state.active) return;
 
@@ -2355,7 +2373,8 @@
         relaxedNanpaLinjanParsing:useRelaxed,
         relaxedNanpaLinjanRendering:useRelaxed,
         nanpaColonParsing:state.settings.nanpaFormat === true,
-        nanpaColonRendering:state.settings.nanpaFormat === true
+        nanpaColonRendering:state.settings.nanpaFormat === true,
+        numericTypedHeadSyllableAudio:usesTypedDateTimeHead(definition.kind,state.settings.nanpaFormat)
       });
       if (token !== generationToken) return;
 
@@ -2602,7 +2621,12 @@
       Array.isArray(record.fullCodepoints) &&
       Array.isArray(record.abbreviatedCodepoints) &&
       typeof record.uniqueCode === "string";
-    if (hasSelectedModeReveal) return {...record,properNameMode:mode,nanpaFormat};
+    if (hasSelectedModeReveal) return {
+      ...record,
+      properNameMode:mode,
+      nanpaFormat,
+      properName:typedDateTimeProperName(record.kind,nanpaFormat,record.properName)
+    };
 
     // Older saved sessions contain both strict and relaxed fields. Select only
     // the fields matching the mode used for that session, without displaying
@@ -2617,7 +2641,7 @@
         ...record,
         properNameMode:mode,
         nanpaFormat,
-        properName:legacyProperName,
+        properName:typedDateTimeProperName(record.kind,nanpaFormat,legacyProperName),
         fullCodepoints,
         abbreviatedCodepoints:record.kind === "binary" ? Array.from(fullCodepoints.length ? (await ensureParsed(makeItem(record.kind,record.value,record.value,"binary",mode,nanpaFormat))).quizParsed?.abbreviatedUcsurCodepoints ?? [] : [],Number) : abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(record.kind)),
         uniqueCode:String(record.uniqueCode ?? "")
@@ -2881,12 +2905,14 @@
     if (!cps.length) return [];
     const groups = [];
     const openingFrame = cps[0];
-    const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA;
+    const typedDateTimeOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO;
+    const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA || typedDateTimeOpening;
+    const closingFrame = typedDateTimeOpening ? ABBREV_CP_NANPA : openingFrame;
     let openingEnd = 1;
     if (supportedFrame && cps.length > 1 && (cps[1] === ABBREV_CP_E || cps[1] === ABBREV_CP_EN || cps[1] === ABBREV_CP_KOLON)) openingEnd = 2;
     groups.push(Array.from({length:openingEnd},(_,index) => index));
 
-    const hasClosingFrame = supportedFrame && cps.length > openingEnd && cps[cps.length - 1] === openingFrame;
+    const hasClosingFrame = supportedFrame && cps.length > openingEnd && cps[cps.length - 1] === closingFrame;
     const interiorEnd = hasClosingFrame ? cps.length - 1 : cps.length;
     let cursor = openingEnd;
     while (cursor < interiorEnd){
@@ -2900,7 +2926,8 @@
           const fourth = cps[cursor + 3];
           const fourPart = cursor + 3 < interiorEnd &&
             (next === ABBREV_CP_E || next === ABBREV_CP_EN) &&
-            (third === ABBREV_CP_O || third === ABBREV_CP_EN || third === ABBREV_CP_OPEN || third === ABBREV_CP_NENA || third === ABBREV_CP_KULUPU) &&
+            (third === ABBREV_CP_O || third === ABBREV_CP_EN || third === ABBREV_CP_OPEN || third === ABBREV_CP_NENA || third === ABBREV_CP_KULUPU ||
+             (typedDateTimeOpening && third === ABBREV_CP_KASI)) &&
             (fourth === ABBREV_CP_E || fourth === ABBREV_CP_EN);
           if (fourPart || next === ABBREV_CP_O || next === ABBREV_CP_EN || next === ABBREV_CP_OPEN) length = Math.min(4,interiorEnd - cursor);
         }
@@ -2922,7 +2949,7 @@
     let unitCursor = 0;
     let groupCursor = 0;
     const firstWord = String(units[0]?.word ?? "").toLowerCase();
-    if (firstWord === "nanpa" || firstWord === "nasa"){
+    if (["nanpa","nasa","tenpo","suno"].includes(firstWord)){
       const firstWordIndex = units[0].wordIndex;
       while (unitCursor < units.length && units[unitCursor].wordIndex === firstWordIndex){
         map[units[unitCursor].index] = Array.from(groups[0]);
@@ -3243,7 +3270,7 @@
     for (const unit of units){
       const lowerText = String(unit.text ?? "").toLowerCase();
 
-      if (kind !== "hexadecimal" && kind !== "binary" && unit.wordIndex === 0 && String(unit.word ?? "").toLowerCase() === "nanpa"){
+      if (kind !== "hexadecimal" && kind !== "binary" && unit.wordIndex === 0 && ["nanpa","tenpo","suno"].includes(String(unit.word ?? "").toLowerCase())){
         map[unit.index] = [];
         continue;
       }
@@ -3574,7 +3601,8 @@
       relaxedNanpaLinjanParsing:isRelaxedProperNameMode(target.properNameMode),
       relaxedNanpaLinjanRendering:isRelaxedProperNameMode(target.properNameMode),
       nanpaColonParsing:target.nanpaFormat === true,
-      nanpaColonRendering:target.nanpaFormat === true
+      nanpaColonRendering:target.nanpaFormat === true,
+      numericTypedHeadSyllableAudio:usesTypedDateTimeHead(target.kind,target.nanpaFormat)
     });
     if (generation !== reviewAudioGeneration) return null;
     const samples = rendered.samples instanceof Float32Array
@@ -4451,7 +4479,7 @@
     await document.fonts.ready;
   }
   function getQuarterCodepointsSet(){
-    return new Set([0xF193D,0xF1940,0xF1941,0xF193E,ABBREV_CP_NOKA,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970,ABBREV_CP_KOLON]);
+    return new Set([0xF193D,ABBREV_CP_SUNO,ABBREV_CP_TENPO,0xF1940,0xF1941,0xF193E,ABBREV_CP_NOKA,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970,ABBREV_CP_KOLON]);
   }
   function getOneThirdsCodepointsSet(){ return new Set([0xF1917,ABBREV_CP_KULE]); }
   function getHalfCodepointsSet(){ return new Set([0xF1914]); }
@@ -4492,7 +4520,9 @@
     if (!input.length) return [];
     const out = [];
     const openingFrame = input[0];
-    const supportedOpeningFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA;
+    const typedDateTimeOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO;
+    const supportedOpeningFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA || typedDateTimeOpening;
+    const closingFrame = typedDateTimeOpening ? ABBREV_CP_NANPA : openingFrame;
     let keptOpeningFrame = false;
     const hasFullPositiveOpening =
       openingFrame === ABBREV_CP_NANPA &&
@@ -4520,7 +4550,7 @@
         continue;
       }
       const cp = input[i];
-      const isFinalFrame = supportedOpeningFrame && cp === openingFrame && i === input.length - 1;
+      const isFinalFrame = supportedOpeningFrame && cp === closingFrame && i === input.length - 1;
       if (!keptOpeningFrame){
         out.push({cp,sourceIndex:i});
         if (supportedOpeningFrame && cp === openingFrame) keptOpeningFrame=true;

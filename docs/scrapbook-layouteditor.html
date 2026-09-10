@@ -809,16 +809,7 @@
   <input id="filePickVideo" type="file" accept="video/*" style="display:none;" />
 
 
-  <!--
-    PERF: `type="module"` is implicitly deferred — the browser downloads and
-    parses the script without blocking HTML parsing, then executes it after
-    the DOM is ready. No need for an explicit `defer` attribute.
-
-    The script no longer lives inline, so:
-      • The HTML is small and parses near-instantly
-      • js/app-vector.js is a separate cacheable resource
-      • A future build step can code-split or minify js/app-vector.js independently
-  -->
+ 
 
   <script>
   // Keep noisy development diagnostics out of normal use.
@@ -853,12 +844,10 @@
     }
   })();
   </script>
-  <script type="module" src="scrapbook-layouteditor_app/js/scrapbook-cartouche-db-bootstrap.js?v=221"></script>
-  <script type="module" src="scrapbook-layouteditor_app/js/app-vector.js?v=228"></script>
+  <script type="module" src="scrapbook-layouteditor_app/js/scrapbook-cartouche-db-bootstrap.js?v=222"></script>
+  <script type="module" src="scrapbook-layouteditor_app/js/app-vector.js?v=229"></script>
 
   <script type="module">
-  // Adds the same discreet Proper Name Cartouche Database link used by
-  // layout-editor.html, without changing scrapbook-layouteditor_app/js/app-vector.js.
   (() => {
     const DB_URL = "./cartouche-db.html";
     const DB_LABEL = "Proper Name Cartouche Database";

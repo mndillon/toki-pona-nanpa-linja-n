@@ -42,6 +42,15 @@
         url("https://www.nanpa-linja-n.com/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
       font-display: block;
     }
+    @font-face {
+      font-family: "TP-Numeric-Cartouche-Font";
+      src:
+        url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype"),
+        url("../fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype"),
+        url("/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype"),
+        url("https://www.nanpa-linja-n.com/fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
+      font-display: block;
+    }
 
     * { box-sizing: border-box; }
     html, body { margin: 0; background: var(--bg); color: var(--ink); }
@@ -928,7 +937,7 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
     import {
       validateGeneratedPuzzle,
       CROSSWORD_BUILDER_VERSION,
@@ -963,7 +972,7 @@
     ]);
 
     const PI_ACCEPTED_WORDS = Object.freeze([
-      Object.freeze(["nanpa","seli","o","wan","awen","wan","en","luka","jo","nanpa"]),
+      Object.freeze(["nanpa","seli","o","wan","awen","wan","e","luka","jo","nanpa"]),
       Object.freeze(["nanpa","seli","o","wan","awen","wan","luka","jo","tu","nanpa"]),
       Object.freeze(["nanpa","seli","o","wan","awen","wan","luka","jo","seli","nanpa"])
     ]);
@@ -1067,9 +1076,9 @@
           word: "TP-Nasin-Nanpa-Font",
           text: "TP-Nasin-Nanpa-Font",
           cartouche: "TP-Cartouche-Font",
-          number: "TP-Cartouche-Font",
-          date: "TP-Cartouche-Font",
-          time: "TP-Cartouche-Font"
+          number: "TP-Numeric-Cartouche-Font",
+          date: "TP-Numeric-Cartouche-Font",
+          time: "TP-Numeric-Cartouche-Font"
         }
       }
     };
@@ -1636,7 +1645,7 @@
           layout:{fontPx:Math.max(22,cellPx*.94),align:"center",spacingPreset:"compact",paddingPx:0},
           paint:{fillStyle},
           parser:{mode:"sitelen-pona-ascii-extended",numericMode:"uniform",breakLinesAtFullStops:false},
-          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Cartouche-Font"}}
+          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Numeric-Cartouche-Font"}}
         });
         const canvas=canvasFromRenderResult(rendered,`cell glyph ${word}`);
         if (seq!==info.renderSeq) return;
@@ -1670,7 +1679,7 @@
           layout:{fontPx:Math.max(23,cellPx*.96),align:"center",spacingPreset:"compact",paddingPx:0},
           paint:{fillStyle},
           parser:{mode:"sitelen-pona-ascii-extended",numericMode:"uniform",breakLinesAtFullStops:false},
-          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Cartouche-Font"}}
+          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Numeric-Cartouche-Font"}}
         });
         const canvas=canvasFromRenderResult(rendered,`resolved numeric glyph ${word}`);
         if (seq!==info.renderSeq) return;
@@ -2040,7 +2049,7 @@
       }
     }
 
-    async function renderTextInto(host,input,fontPx,{numeric=false,center=false,sentenceBreaks=false,paddingPx=null,lineGapScale=null,lineGapMinPx=null}={}) {
+    async function renderTextInto(host,input,fontPx,{numeric=false,nanpaFormat=false,center=false,sentenceBreaks=false,paddingPx=null,lineGapScale=null,lineGapMinPx=null}={}) {
       try {
         const layout={fontPx,align:center?"center":"left",spacingPreset:"compact"};
         if (paddingPx!=null) layout.paddingPx=paddingPx;
@@ -2055,6 +2064,8 @@
             mixedStyle:"short",
             abbreviateNumericCartouches:numeric,
             preserveNumericCartoucheBreaksInAbbreviation:true,
+            nanpaColonParsing:nanpaFormat,
+            nanpaColonRendering:nanpaFormat,
             relaxedNanpaLinjanParsing:true,
             relaxedNanpaLinjanRendering:true,
             autoCartoucheStandaloneProperNames:true,
@@ -2064,9 +2075,9 @@
             word:"TP-Nasin-Nanpa-Font",
             text:"TP-Nasin-Nanpa-Font",
             cartouche:"TP-Cartouche-Font",
-            number:"TP-Cartouche-Font",
-            date:"TP-Cartouche-Font",
-            time:"TP-Cartouche-Font"
+            number:"TP-Numeric-Cartouche-Font",
+            date:"TP-Numeric-Cartouche-Font",
+            time:"TP-Numeric-Cartouche-Font"
           }}
         });
         const canvas=canvasFromRenderResult(rendered,`text render: ${input}`);
@@ -2117,7 +2128,7 @@
       let padding=Math.max(6,Math.ceil(fontPx*0.24));
       let canvas=null;
       for (let attempt=0;attempt<4;attempt++) {
-        canvas=await renderTextInto(host,raw,fontPx,{numeric:true,center:true,paddingPx:padding});
+        canvas=await renderTextInto(host,raw,fontPx,{numeric:true,nanpaFormat:true,center:true,paddingPx:padding});
         if (!canvas || !canvasInkTouchesEdge(canvas,2)) break;
         padding+=step;
       }
@@ -2197,9 +2208,9 @@
           word:"TP-Nasin-Nanpa-Font",
           text:"TP-Nasin-Nanpa-Font",
           cartouche:"TP-Cartouche-Font",
-          number:"TP-Cartouche-Font",
-          date:"TP-Cartouche-Font",
-          time:"TP-Cartouche-Font"
+          number:"TP-Numeric-Cartouche-Font",
+          date:"TP-Numeric-Cartouche-Font",
+          time:"TP-Numeric-Cartouche-Font"
         }}
       };
     }
@@ -2686,19 +2697,27 @@
       const px=18;
       const textSpec=`${px}px "TP-Nasin-Nanpa-Font"`;
       const cartSpec=`${px}px "TP-Cartouche-Font"`;
+      const numericCartSpec=`${px}px "TP-Numeric-Cartouche-Font"`;
       const sampleText=String.fromCodePoint(0xF196C);   // toki
       const sampleCart=String.fromCodePoint(0xF1990);   // cartouche start
+      const sampleNumeric=String.fromCodePoint(0xF193D); // nanpa
 
       await Promise.all([
         document.fonts.load(textSpec,sampleText),
-        document.fonts.load(cartSpec,sampleCart)
+        document.fonts.load(cartSpec,sampleCart),
+        document.fonts.load(numericCartSpec,sampleNumeric)
       ]);
       await document.fonts.ready;
 
       const textOK=document.fonts.check(textSpec,sampleText);
       const cartOK=document.fonts.check(cartSpec,sampleCart);
-      if (!textOK || !cartOK) {
-        const missing=[!textOK?"TP-Nasin-Nanpa-Font":null,!cartOK?"TP-Cartouche-Font":null].filter(Boolean).join(", ");
+      const numericCartOK=document.fonts.check(numericCartSpec,sampleNumeric);
+      if (!textOK || !cartOK || !numericCartOK) {
+        const missing=[
+          !textOK?"TP-Nasin-Nanpa-Font":null,
+          !cartOK?"TP-Cartouche-Font":null,
+          !numericCartOK?"TP-Numeric-Cartouche-Font":null
+        ].filter(Boolean).join(", ");
         throw new Error(`required crossword font not confirmed: ${missing}`);
       }
     }
@@ -2827,7 +2846,7 @@
           layout:{fontPx:Math.max(24,cellPx*.90),align:"center",spacingPreset:"compact",paddingPx:0},
           paint:{fillStyle},
           parser:{mode:"sitelen-pona-ascii-extended",numericMode:"uniform",breakLinesAtFullStops:false},
-          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Cartouche-Font"}}
+          fonts:{roles:{word:"TP-Nasin-Nanpa-Font",text:"TP-Nasin-Nanpa-Font",cartouche:"TP-Cartouche-Font",number:"TP-Numeric-Cartouche-Font"}}
         });
         if (generation!==mobileFocusedRenderGeneration) return;
         const canvas=canvasFromRenderResult(rendered,`mobile focused glyph ${word}`);

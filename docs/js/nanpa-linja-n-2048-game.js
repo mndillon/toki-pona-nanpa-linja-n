@@ -1,4 +1,4 @@
-import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249";
+import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
 
 (() => {
   "use strict";
@@ -123,6 +123,8 @@ import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-dete
         mixedStyle: "short",
         showUnknownText: false,
         abbreviateNumericCartouches: true,
+        nanpaColonParsing: true,
+        nanpaColonRendering: true,
         cartoucheCommaTallyMarks: false,
         cartoucheTallyMode: "ucsur"
       },
@@ -202,12 +204,13 @@ import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-dete
   }
 
   async function renderNumericCartouche(value, { fontPx = 72, paddingPx = 8, cache = cartoucheCache } = {}) {
-    const key = `${value}|${fontPx}|${paddingPx}`;
+    const input = `[${String(value)}]`;
+    const key = `${input}|${fontPx}|${paddingPx}`;
     if (cache.has(key)) return cache.get(key);
 
     const r = await ensureRenderer();
     const rendered = await r.renderTextToNewCanvas({
-      input: `[${value}]`,
+      input,
       ...rendererConfig(fontPx, paddingPx),
     });
     const src = rendered?.canvas;
@@ -247,9 +250,15 @@ import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-dete
 
   function formatTime(totalSeconds) {
     const total = Math.max(0, Math.floor(Number(totalSeconds) || 0));
-    const mm = Math.floor(total / 60);
+    if (total < 3600) {
+      const mm = Math.floor(total / 60);
+      const ss = total % 60;
+      return `${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+    }
+    const hh = Math.floor(total / 3600);
+    const mm = Math.floor((total % 3600) / 60);
     const ss = total % 60;
-    return `${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
   }
 
   async function renderStats() {

@@ -13,7 +13,7 @@
  <!-- Start loading the font as early as possible -->
   <link
     rel="preload"
-    href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf"
+    href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf"
     as="font"
     type="font/otf"
     crossorigin
@@ -124,7 +124,7 @@
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
       font-display: swap;
     }
 
@@ -1098,7 +1098,7 @@
       </div>
 
       <div class="help" style="margin-top:10px;">
-        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.   <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=7" target="_blank" rel="noopener noreferrer">
+        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.   <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=8" target="_blank" rel="noopener noreferrer">
           PDF cheat sheet
         </a>
       </div>
@@ -1889,6 +1889,88 @@
     </section>
 
     <section
+      id="alternativeDateTimeNotation"
+      class="collapsibleSection"
+      data-collapsible-section
+      data-collapsible-key="alternativeDateTimeNotation"
+      data-collapsible-default="collapsed"
+      aria-labelledby="alternativeDateTimeNotationTitle"
+    >
+      <h2 id="alternativeDateTimeNotationTitle" class="collapsibleSectionHeading collapsibleSectionHeading--small">
+        <button
+          class="collapsibleSectionToggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="alternativeDateTimeNotationContent"
+          data-collapsible-toggle
+        >
+          <span class="collapsibleSectionToggleTitle">Alternative date/time format (experimental)</span>
+          <span class="collapsibleSectionToggleState" aria-hidden="true">
+            <span class="collapsibleSectionToggleIcon">▾</span>
+            <span data-collapsible-action>Show</span>
+          </span>
+        </button>
+      </h2>
+      <div id="alternativeDateTimeNotationContent" class="collapsibleSectionContent" data-collapsible-content hidden>
+
+        <div class="help">
+          As an experimental alternative, date and time nanpa-linja-n cartouches can use an explicit opening word to identify their meaning. A time cartouche begins with <strong>Tenpo</strong>, while a date cartouche begins with <strong>Suno</strong>. The decimal digit syllables and the existing <strong>Eke</strong> date/time separators do not change.
+        </div>
+
+        <div class="help" style="margin-top:10px;">
+          In sitelen pona, the opening <strong>tenpo</strong> or <strong>suno</strong> glyph is followed immediately by a colon. The closing <strong>nanpa</strong> glyph is unchanged, and <strong>kasi</strong> continues to separate the components of a date or time.
+        </div>
+
+        <div class="help" style="margin-top:10px;">
+          This makes the meaning explicit when the same numeric structure could otherwise be ambiguous. For example, <code>12:30</code> is a time and therefore uses <strong>Tenpo</strong>, while <code>--12-30</code> is a yearless month-and-day date and therefore uses <strong>Suno</strong>. A complete date such as <code>2025-12-30</code> also uses <strong>Suno</strong>.
+        </div>
+
+        <div class="tableWrap nanpaModeWrap" role="region" aria-label="alternative nanpa-linja-n date and time format examples" style="margin-top:10px;">
+          <table class="digitTable nanpaModeTable">
+            <thead>
+              <tr>
+                <th>input</th>
+                <th>traditional proper name</th>
+                <th>alternative proper name</th>
+                <th>full cartouche</th>
+                <th>abbreviated cartouche</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>12:30</code></td>
+                <td><code>Newatun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Newatun Eke Senin" title="Play Newatun Eke Senin using the numeric voice" aria-label="Play Newatun Eke Senin using the numeric voice">🤖🔊</button></td>
+                <td><code>Tenpo Watun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Tenpo Watun Eke Senin" title="Play Tenpo Watun Eke Senin using the numeric voice" aria-label="Play Tenpo Watun Eke Senin using the numeric voice">🤖🔊</button></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative time cartouche for 12:30">&#xF1990;&#xF196B;&#xF199D;&#xF1973;&#xF1902;&#xF196E;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1957;&#xF1909;&#xF1940;&#xF190C;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative time cartouche for 12:30">&#xF1990;&#xF196B;&#xF199D;&#xF1973;&#xF196E;&#xF1917;&#xF1957;&#xF190C;&#xF193D;&#xF1991;</span></td>
+              </tr>
+              <tr>
+                <td><code>--12-30</code></td>
+                <td><code>Newatun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Newatun Eke Senin" title="Play Newatun Eke Senin using the numeric voice" aria-label="Play Newatun Eke Senin using the numeric voice">🤖🔊</button></td>
+                <td><code>Suno Watun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Suno Watun Eke Senin" title="Play Suno Watun Eke Senin using the numeric voice" aria-label="Play Suno Watun Eke Senin using the numeric voice">🤖🔊</button></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative yearless date cartouche for --12-30">&#xF1990;&#xF1964;&#xF199D;&#xF1973;&#xF1902;&#xF196E;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1957;&#xF1909;&#xF1940;&#xF190C;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative yearless date cartouche for --12-30">&#xF1990;&#xF1964;&#xF199D;&#xF1973;&#xF196E;&#xF1917;&#xF1957;&#xF190C;&#xF193D;&#xF1991;</span></td>
+              </tr>
+              <tr>
+                <td><code>2025-12-30</code></td>
+                <td><code>Netunitulun Eke Watun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Netunitulun Eke Watun Eke Senin" title="Play Netunitulun Eke Watun Eke Senin using the numeric voice" aria-label="Play Netunitulun Eke Watun Eke Senin using the numeric voice">🤖🔊</button></td>
+                <td><code>Suno Tunitulun Eke Watun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Suno Tunitulun Eke Watun Eke Senin" title="Play Suno Tunitulun Eke Watun Eke Senin using the numeric voice" aria-label="Play Suno Tunitulun Eke Watun Eke Senin using the numeric voice">🤖🔊</button></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative date cartouche for 2025-12-30">&#xF1990;&#xF1964;&#xF199D;&#xF196E;&#xF1970;&#xF1940;&#xF190C;&#xF196E;&#xF1970;&#xF192D;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1973;&#xF1902;&#xF196E;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1957;&#xF1909;&#xF1940;&#xF190C;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative date cartouche for 2025-12-30">&#xF1990;&#xF1964;&#xF199D;&#xF196E;&#xF190C;&#xF196E;&#xF192D;&#xF1917;&#xF1973;&#xF196E;&#xF1917;&#xF1957;&#xF190C;&#xF193D;&#xF1991;</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="small" style="margin-top:10px;">
+          Cartouche source forms for <code>12:30</code> are <code>[tenpo : wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[tenpo : wan tu kasi seli ijo nanpa]</code> for the abbreviated form.<br/>
+          Cartouche source forms for <code>--12-30</code> are <code>[suno : wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[suno : wan tu kasi seli ijo nanpa]</code> for the abbreviated form.<br/>
+          Cartouche source forms for <code>2025-12-30</code> are <code>[suno : tu uta nena ijo tu uta luka uta nena e kasi e wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[suno : tu ijo tu luka kasi wan tu kasi seli ijo nanpa]</code> for the abbreviated form.
+        </div>
+      </div>
+    </section>
+
+    <section
       id="hexadecimalNumbers"
       class="collapsibleSection"
       data-collapsible-section
@@ -2543,7 +2625,7 @@
           nanpa-linja-n main documentation
         </a>
         <br/>
-        <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=7" target="_blank" rel="noopener noreferrer">
+        <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=8" target="_blank" rel="noopener noreferrer">
           PDF cheat sheet
         </a>
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
@@ -2835,8 +2917,8 @@
 <script>
   (() => {
     const FONTS_SECTION_ID = 'fontsSection';
-    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=14';
-    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v14';
+    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=15';
+    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v15';
     const FONTS_NOTICE_OVERLAY_ID = 'fontsNoticeOverlay';
 
     let fontsTableLoadPromise = null;
@@ -3137,29 +3219,24 @@
   })();
 </script>
 
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=51"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=52"></script>
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=64';
-      const NUMERIC_AUDIO_MANIFEST_MODULE_PATH = './js/audio-manifest.js?v=30';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=68';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,
-        syllableGapSeconds: 0
+        syllableGapSeconds: 0,
+        numericTypedHeadSyllableAudio: true
       });
 
       let numericTableVoicePromise = null;
 
       function getNumericTableVoice() {
         if (!numericTableVoicePromise) {
-          numericTableVoicePromise = Promise.all([
-            import(NUMERIC_VOICE_MODULE_PATH),
-            import(NUMERIC_AUDIO_MANIFEST_MODULE_PATH)
-          ])
-            .then(([voiceModule, manifestModule]) => voiceModule.createTokiPonaVoice({
-              manifest: manifestModule.REFERENCE_AUDIO_MANIFEST
-            }))
+          numericTableVoicePromise = import(NUMERIC_VOICE_MODULE_PATH)
+            .then(module => module.createTokiPonaVoice())
             .catch(error => {
               numericTableVoicePromise = null;
               throw error;

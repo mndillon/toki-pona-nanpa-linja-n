@@ -41,7 +41,7 @@
 
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
       font-display: swap;
     }
 
@@ -410,7 +410,7 @@
   </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed.js?v=249";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
 
 (() => {
   "use strict";
@@ -968,7 +968,9 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     return new Set([
       TP_WORD_TO_CP.nanpa,
       TP_WORD_TO_CP.nena,
-      TP_WORD_TO_CP.en
+      TP_WORD_TO_CP.en,
+      TP_WORD_TO_CP.tenpo,
+      TP_WORD_TO_CP.kolon
     ].filter(Number.isFinite));
   }
 
@@ -1107,11 +1109,10 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   let endGameTimePendingKey = "";
 
   function buildTimeCartoucheGlyphs(totalSeconds) {
-    const mm = Math.floor(totalSeconds / 60);
-    const ss = totalSeconds % 60;
-    const mm2 = String(mm).padStart(2, "0");
-    const ss2 = String(ss).padStart(2, "0");
-
+    const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const parts = safe < 3600
+      ? [Math.floor(safe / 60), safe % 60]
+      : [Math.floor(safe / 3600), Math.floor((safe % 3600) / 60), safe % 60];
     const digitMap = {
       "0": TP_WORD_TO_CP.ijo,
       "1": TP_WORD_TO_CP.wan,
@@ -1124,27 +1125,23 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
       "8": TP_WORD_TO_CP.pipi,
       "9": TP_WORD_TO_CP.jo
     };
-
-    function digitInner(dChar) {
-      const cp = digitMap[dChar];
-      if (!Number.isFinite(cp)) return [];
-      if (dChar === "0" || dChar === "4" || dChar === "6") {
-        return [TP_WORD_TO_CP.nena, cp];
-      }
-      return [cp, TP_WORD_TO_CP.en];
-    }
-
-    const inner = [];
-    for (const ch of mm2) inner.push(...digitInner(ch));
-    inner.push(TP_WORD_TO_CP.nena, TP_WORD_TO_CP.en, TP_WORD_TO_CP.kasi, TP_WORD_TO_CP.en);
-    for (const ch of ss2) inner.push(...digitInner(ch));
-
-    return numericCartoucheDisplayCps([TP_WORD_TO_CP.nanpa, TP_WORD_TO_CP.en, ...inner, TP_WORD_TO_CP.nanpa]);
+    const glyphs = [TP_WORD_TO_CP.tenpo, TP_WORD_TO_CP.kolon];
+    parts.forEach((value, partIndex) => {
+      for (const ch of String(value).padStart(2, "0")) glyphs.push(digitMap[ch]);
+      if (partIndex + 1 < parts.length) glyphs.push(TP_WORD_TO_CP.kasi);
+    });
+    glyphs.push(TP_WORD_TO_CP.nanpa);
+    return glyphs.filter(Number.isFinite);
   }
 
   function timeCartoucheInputFromGlyphs(glyphs) {
     const words = [];
+    const colonCp = TP_WORD_TO_CP.kolon;
     for (const cp of Array.from(glyphs ?? [])) {
+      if (Number(cp) === Number(colonCp)) {
+        words.push(":");
+        continue;
+      }
       const word = UCSUR_CP_TO_WORD.get(Number(cp));
       if (!word) throw new Error(`No Toki Pona word for timer codepoint U+${Number(cp).toString(16).toUpperCase()}`);
       words.push(word);
@@ -1174,6 +1171,8 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
         mixedStyle: "short",
         showUnknownText: false,
         abbreviateNumericCartouches: true,
+        nanpaColonParsing: true,
+        nanpaColonRendering: true,
         cartoucheCommaTallyMarks: false,
         cartoucheTallyMode: "ucsur"
       },
@@ -3101,7 +3100,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   function drawPrefixedTimeCartouche(ctxArg, totalSeconds, boxX, centerY, maxWidth, maxHeight, largePx, smallPx) {
     const safeSeconds = Math.max(0, Math.floor(totalSeconds || 0));
     const key = `${safeSeconds}|${largePx}|${maxWidth}|${maxHeight}`;
-    const prefixCps = [TP_WORD_TO_CP.tenpo, TP_WORD_TO_CP.lili].filter(Number.isFinite);
+    const prefixCps = [];
 
     if (endGameTimeRenderKey === key && endGameTimeOffscreen.width && endGameTimeOffscreen.height) {
       drawRenderedTimeCartoucheInBox(ctxArg, endGameTimeOffscreen, prefixCps, boxX, centerY, maxWidth, maxHeight, largePx);
