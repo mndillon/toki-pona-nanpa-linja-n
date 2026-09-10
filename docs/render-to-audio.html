@@ -1562,7 +1562,7 @@
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
       stopSitelenAudioPlayback
-    } from "./js/sitelen-audio-plan.js?v=60";
+    } from "./js/sitelen-audio-plan.js?v=61";
 
     const MODE_STORAGE_KEY = "tpNanpaLinjanProperNameMode";
     const MODE_DEFAULT = "relaxed";
@@ -2200,28 +2200,20 @@
       for(const part of parsed.binaryParts){
         if(part?.kind==='digits'){
           const digits=String(part.digits||'');
-          const sizes=hexGroupingSizesForBreakdown(digits.length);
-          let digitCursor=0;
-          for(let groupIndex=0;groupIndex<sizes.length;groupIndex++){
-            const groupDigits=digits.slice(digitCursor,digitCursor+sizes[groupIndex]); digitCursor+=sizes[groupIndex];
-            const units=[];
-            for(const digit of groupDigits){
-              const syllable=syllableMap[digit]; if(!syllable) return null;
-              const sourceCharacter=String(rawInput??'')[sourceCursor]||digit;
-              const sourceIndexes=[sourceCursor];
-              rawUnits.push({text:syllable,kind:'digit',sourceTokens:[digit],reassignLeadingN:false,binaryDigit:digit});
-              const cell=makeInputSourceCell(sourceCharacter,'down','binary-digit'); cell.sourceCharacterIndexes=sourceIndexes.slice(); inputSourceCells.push(cell);
-              units.push({baseText:syllable,fullIndexes:[fullCursor,fullCursor+1],abbreviatedIndexes:[abbreviatedCursor],inputCharacterIndexes:sourceIndexes});
-              fullCursor+=2; abbreviatedCursor+=1; sourceCursor+=1;
-            }
-            const groupNode=addNode('digits',units);
-            if(groupIndex<sizes.length-1){
-              if(!attachCodaN(groupNode,{fullIndex:fullCursor})) return null;
-              rawUnits.push({text:'neke',kind:'punctuation',sourceTokens:['NE','KE'],reassignLeadingN:true,binaryGeneratedGroupBoundary:true});
-              const generatedCell=makeInputSourceCell('','none','binary-generated-group-boundary'); generatedCell.sourceCharacterIndexes=[]; inputSourceCells.push(generatedCell);
-              fullCursor+=4; abbreviatedCursor+=1;
-            }
+          if(!/^[01]+$/.test(digits)) return null;
+          // Binary digit runs are continuous. Do not reuse hexadecimal's
+          // automatic Eke grouping; only explicit delimiters split the word.
+          const units=[];
+          for(const digit of digits){
+            const syllable=syllableMap[digit]; if(!syllable) return null;
+            const sourceCharacter=String(rawInput??'')[sourceCursor]||digit;
+            const sourceIndexes=[sourceCursor];
+            rawUnits.push({text:syllable,kind:'digit',sourceTokens:[digit],reassignLeadingN:false,binaryDigit:digit});
+            const cell=makeInputSourceCell(sourceCharacter,'down','binary-digit'); cell.sourceCharacterIndexes=sourceIndexes.slice(); inputSourceCells.push(cell);
+            units.push({baseText:syllable,fullIndexes:[fullCursor,fullCursor+1],abbreviatedIndexes:[abbreviatedCursor],inputCharacterIndexes:sourceIndexes});
+            fullCursor+=2; abbreviatedCursor+=1; sourceCursor+=1;
           }
+          addNode('digits',units);
           continue;
         }
         if(part?.kind==='delimiter'){
@@ -2230,6 +2222,7 @@
           if(!attachCodaN(previous,{fullIndex:fullCursor})) return null;
           rawUnits.push({text:'nene',kind:'punctuation',sourceTokens:['NE','NE'],reassignLeadingN:true,binaryDelimiter:true});
           const cell=makeInputSourceCell(char,'down','binary-delimiter'); cell.sourceCharacterIndexes=[sourceCursor]; inputSourceCells.push(cell);
+          addNode('ene',[{baseText:'ene',fullIndexes:[fullCursor+1,fullCursor+2,fullCursor+3],abbreviatedIndexes:[abbreviatedCursor],inputCharacterIndexes:[sourceCursor]}]);
           fullCursor+=4; abbreviatedCursor+=1; sourceCursor+=1;
           continue;
         }

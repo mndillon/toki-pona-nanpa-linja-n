@@ -13,7 +13,7 @@ import {
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=60';
+} from './sitelen-audio-plan.js?v=61';
 let pageMap = new Map();
 
 "use strict";

@@ -2484,39 +2484,21 @@ function buildBinaryCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineInde
     if (part?.kind === 'digits') {
       const digits = String(part.digits || '');
       if (!/^[01]+$/.test(digits)) return [];
-      const sizes = hexGroupingSizesForAudio(digits.length);
-      let digitCursor = 0;
-      for (let groupIndex = 0; groupIndex < sizes.length; groupIndex++) {
-        const size = sizes[groupIndex];
-        const groupDigits = digits.slice(digitCursor, digitCursor + size);
-        digitCursor += size;
-        const units = [];
-        for (const digit of groupDigits) {
-          const syllable = syllableMap[digit];
-          if (!syllable) return [];
-          const componentIndices = abbreviated
-            ? [withOffset(cursor)]
-            : [withOffset(cursor), withOffset(cursor + 1)];
-          cursor += abbreviated ? 1 : 2;
-          units.push({ baseText: syllable, componentIndices });
-        }
-        const groupNode = addNode('digits', units);
 
-        if (groupIndex < sizes.length - 1) {
-          if (abbreviated) {
-            attachCodaN(groupNode);
-            addNode('eke', [{ baseText: 'eke', componentIndices: [withOffset(cursor)] }]);
-            cursor += 1;
-          } else {
-            attachCodaN(groupNode, withOffset(cursor));
-            addNode('eke', [{
-              baseText: 'eke',
-              componentIndices: [withOffset(cursor + 1), withOffset(cursor + 2), withOffset(cursor + 3)]
-            }]);
-            cursor += 4;
-          }
-        }
+      // Binary digit runs are continuous. Unlike hexadecimal, binary does not
+      // insert automatic Eke grouping boundaries; only an explicit source
+      // delimiter creates a separate Ene word.
+      const units = [];
+      for (const digit of digits) {
+        const syllable = syllableMap[digit];
+        if (!syllable) return [];
+        const componentIndices = abbreviated
+          ? [withOffset(cursor)]
+          : [withOffset(cursor), withOffset(cursor + 1)];
+        cursor += abbreviated ? 1 : 2;
+        units.push({ baseText: syllable, componentIndices });
       }
+      addNode('digits', units);
       continue;
     }
 
