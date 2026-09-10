@@ -2691,9 +2691,7 @@
           </div>
           <div data-fonts-table-container></div>
           <div class="small" style="margin-top:10px;">
-            The nanpa-linja-n companion fonts are specialised variants for displaying nanpa-linja-n numeric cartouches, not general-purpose sitelen pona fonts. Only inside these cartouches, some glyphs are resized: <strong>nanpa, nena, e, ala, ike, uta,</strong> and <strong>open</strong> to one-quarter size; <strong>kasi</strong> to one-third; <strong>kala</strong> to one-half; <strong>ona, o, kulupu, kipisi, kin,</strong> and <strong>en</strong> to two-thirds; and <strong>nasin</strong> to three-quarters of the original font size. Outside numeric cartouches, the base font remains unchanged.
-          </div>
-        </div>
+   The nanpa-linja-n companion fonts are specialised variants for displaying nanpa-linja-n numeric, hexadecimal, binary, date and time cartouches, not general-purpose sitelen pona fonts. Only inside these cartouches, selected glyphs are resized. By default, nanpa, nasa, noka, colon, tenpo, and suno are displayed at one-half of their original size; nena, e, ala, ike, uta, and open at one-quarter; kasi at one-third; kala at one-half; ona, o, kulupu, kipisi, kin, and en at two-thirds of the original font size. The fonts also provide OpenType stylistic-set features for the six cartouche markers nanpa, nasa, noka, colon, tenpo, and suno: ss12 displays them at one-half size, ss13 at one-third size, and ss14 at one-quarter size. With no stylistic set enabled, their default cartouche scale is one-half. These stylistic sets affect those glyphs only in their cartouche forms; outside cartouches, the base glyphs and the rest of the font remain unchanged.       </div>
       </section>
 
        <hr class="miniDivider"/>
@@ -2917,8 +2915,8 @@
 <script>
   (() => {
     const FONTS_SECTION_ID = 'fontsSection';
-    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=15';
-    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v15';
+    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=16';
+    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v16';
     const FONTS_NOTICE_OVERLAY_ID = 'fontsNoticeOverlay';
 
     let fontsTableLoadPromise = null;
@@ -3219,11 +3217,11 @@
   })();
 </script>
 
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=52"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=53"></script>
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=68';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=69';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,

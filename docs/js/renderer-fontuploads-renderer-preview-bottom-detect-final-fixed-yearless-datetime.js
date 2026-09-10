@@ -627,10 +627,19 @@ const SitelenRenderer = (() => {
   const CARTOUCHE_SCALE_HALF_MAX_PX = 18;
   const CARTOUCHE_SCALE_THIRD_MAX_PX = 29;
 
+  // Keep the historical size-based stylistic-set selection code available,
+  // but do not activate any OpenType stylistic-set alias by default. The
+  // patched fonts now provide the intended cartouche scaling as their normal
+  // no-feature behavior. Set this to true only if a caller deliberately wants
+  // the legacy automatic ss12/ss13 size switching.
+  const CARTOUCHE_SCALE_STYLISTIC_FEATURES_ENABLED = false;
+
   function cartoucheScaleAliasFamilyForPx(fontFamily, logicalFontPx) {
     const family = String(fontFamily || "").trim();
-    const px = Math.max(8, Number(logicalFontPx ?? 56));
     if (!family) return family;
+    if (!CARTOUCHE_SCALE_STYLISTIC_FEATURES_ENABLED) return family;
+
+    const px = Math.max(8, Number(logicalFontPx ?? 56));
     if (px <= CARTOUCHE_SCALE_HALF_MAX_PX) return `${family}${CARTOUCHE_SCALE_SS12_ALIAS_SUFFIX}`;
     if (px <= CARTOUCHE_SCALE_THIRD_MAX_PX) return `${family}${CARTOUCHE_SCALE_SS13_ALIAS_SUFFIX}`;
     return family;

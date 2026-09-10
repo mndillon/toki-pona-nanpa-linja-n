@@ -1556,8 +1556,8 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=68";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=255";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=69";
     import { REFERENCE_AUDIO_MANIFEST } from "./js/audio-manifest.js?v=31";
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
@@ -2902,9 +2902,36 @@
       ];
     }
 
+    function yearlessDateInputSourceCells(rawInput, rawUnits) {
+      const normalized = String(rawInput ?? "")
+        .trim()
+        .replace(/[−‒–—]/g, "-");
+      const match = /^--(\d{2})-(\d{2})$/u.exec(normalized);
+      if (!match) return null;
+
+      /*
+       * In the yearless ISO-like date form --MM-DD, the leading -- selects
+       * the Suno date form; it is not one of the numeric payload units. Map
+       * only MM-DD onto the generated numeric units so those two marker
+       * characters cannot be consumed as the date separator or appended to
+       * the final digit by the generic fallback mapper.
+       */
+      const cells = fallbackInputSourceCells(`${match[1]}-${match[2]}`, rawUnits);
+      if (cells.length !== rawUnits.length) return null;
+
+      for (const cell of cells) {
+        if (cell.sourceKind === "one-to-one") cell.sourceKind = "yearless-date";
+      }
+      return cells;
+    }
+
     function inputSourceCellsForRawUnits(rawInput, rawUnits) {
       const scientific = scientificInputSourceCells(rawInput, rawUnits);
       if (scientific && scientific.length === rawUnits.length) return scientific;
+
+      const yearlessDate = yearlessDateInputSourceCells(rawInput, rawUnits);
+      if (yearlessDate && yearlessDate.length === rawUnits.length) return yearlessDate;
+
       return fallbackInputSourceCells(rawInput, rawUnits);
     }
 
@@ -5210,7 +5237,7 @@ function trackUsage(eventName) {
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=68';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=69';
       const NUMERIC_AUDIO_MANIFEST_MODULE_PATH = './js/audio-manifest.js?v=31';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',

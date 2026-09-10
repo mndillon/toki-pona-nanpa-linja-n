@@ -604,7 +604,7 @@ html, body{
   </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=254";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=255";
 
 (() => {
   "use strict";
@@ -1309,6 +1309,123 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   }
 
   function NLN_isNumericQuestion(obj){ return obj && obj.kind === "numeric"; }
+
+  // Numeric spelling questions use Nanpa-format rendering and relaxed digit
+  // syllables. Keep these aliases local to the numeric quiz path so ordinary
+  // cartouche spelling behavior remains unchanged.
+  const NLN_STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
+    WE:"WA", TE:"TU", LE:"LU", ME:"MU", PE:"PI", JE:"JO"
+  });
+  const NLN_RELAXED_TO_STRICT_DIGIT_TOKEN = Object.freeze({
+    WA:"WE", TU:"TE", LU:"LE", MU:"ME", PI:"PE", JO:"JE"
+  });
+
+  function NLN_tokenizeCapsRelaxed(caps){
+    return SitelenRenderer.NanpaParser.tokenizeCaps(String(caps ?? ""), {
+      relaxedNanpaLinjanParsing:true
+    });
+  }
+
+  function NLN_capsForRelaxedSpelling(caps){
+    return NLN_tokenizeCapsRelaxed(caps)
+      .map(token => NLN_STRICT_TO_RELAXED_DIGIT_TOKEN[token] || token)
+      .join("");
+  }
+
+  function NLN_canonicalStrictCaps(caps){
+    try {
+      return NLN_tokenizeCapsRelaxed(caps)
+        .map(token => NLN_RELAXED_TO_STRICT_DIGIT_TOKEN[token] || token)
+        .join("");
+    } catch {
+      return "";
+    }
+  }
+
+  function NLN_numericHeadForParsed(parsed){
+    if (parsed?.isTime === true) return "Tenpo";
+    if (parsed?.isDate === true) return "Suno";
+    return "Nanpa";
+  }
+
+  function NLN_relaxedNanpaFormatProperName(parsed){
+    const caps = String(parsed?.caps ?? "");
+    if (!caps) return "";
+
+    const relaxedCaps = NLN_capsForRelaxedSpelling(caps);
+    const generated = SitelenRenderer.NanpaParser.splitCapsToProperName(relaxedCaps, {
+      titleCase:true,
+      relaxedNanpaLinjanParsing:true,
+      relaxedNanpaLinjanRendering:true,
+      nanpaColonRendering:true
+    });
+
+    let formatted = titleCaseNanpaProperNameForDisplay(generated || parsed?.properName || "");
+    const head = NLN_numericHeadForParsed(parsed);
+    if (/^(?:Nanpa|Suno|Tenpo)\b/.test(formatted)) {
+      formatted = formatted.replace(/^(?:Nanpa|Suno|Tenpo)\b/, head);
+    }
+    return fixOkenSuffixSpacing(formatted);
+  }
+
+  function NLN_numericGuessCandidates(raw){
+    const source = String(raw ?? "").trim();
+    const normalized = normalizeGuess(source);
+    if (!normalized) return [];
+
+    const out = new Set();
+    const titleWord = word => {
+      const lower = String(word ?? "").toLowerCase();
+      return lower ? lower[0].toUpperCase() + lower.slice(1) : "";
+    };
+
+    // Preserve the game's existing punctuation/spacing tolerance while giving
+    // the shared parser the title-case proper-name form it expects.
+    const words = source.match(/[A-Za-z]+/g) || [];
+    if (words.length) out.add(words.map(titleWord).join(" "));
+
+    for (const headLower of ["nanpa", "suno", "tenpo"]) {
+      if (!normalized.startsWith(headLower) || normalized.length <= headLower.length) continue;
+      const tail = normalized.slice(headLower.length);
+      const head = titleWord(headLower);
+      if (headLower === "nanpa") out.add(head + tail);
+      out.add(`${head} ${titleWord(tail)}`);
+    }
+
+    return Array.from(out).filter(Boolean);
+  }
+
+  function NLN_numericGuessMatchesCurrent(raw){
+    if (!NLN_isNumericQuestion(current)) return false;
+
+    const normalized = normalizeGuess(raw);
+    const expectedHead = NLN_numericHeadForParsed(current).toLowerCase();
+    if (!normalized.startsWith(expectedHead)) return false;
+
+    const targetCaps = NLN_canonicalStrictCaps(current.caps);
+    if (!targetCaps) return false;
+
+    for (const candidate of NLN_numericGuessCandidates(raw)) {
+      try {
+        const parsed = SitelenRenderer.NanpaParser.parseNumber(candidate, {
+          mode:"uniform",
+          mixedStyle:"short",
+          nanpaColonParsing:true,
+          nanpaColonRendering:true,
+          relaxedNanpaLinjanParsing:true,
+          relaxedNanpaLinjanRendering:true
+        });
+        if (!parsed?.caps) continue;
+        if (NLN_canonicalStrictCaps(parsed.caps) !== targetCaps) continue;
+
+        if (current.isDate === true && parsed.isDate !== true) continue;
+        if (current.isTime === true && parsed.isTime !== true) continue;
+        if (current.isDate !== true && current.isTime !== true && (parsed.isDate === true || parsed.isTime === true)) continue;
+        return true;
+      } catch {}
+    }
+    return false;
+  }
 
 
   /* ============================================================
@@ -6571,25 +6688,37 @@ return renderMainPhrase(phrase);
       const gen = NLN_makeRandomNumericValue();
       const raw = gen.raw;
 
-      // Keep the existing answer/proper-name semantics, but render the numeric
-      // cartouche itself in Nanpa format (with Suno/Tenpo semantic heads where applicable).
-      const parsed = SitelenRenderer.NanpaParser.parseNumber(raw, { mode:"uniform", mixedStyle:"short" });
+      // Numeric quiz questions are always displayed in Nanpa format and use
+      // relaxed nanpa-linja-n digit rendering. This path is intentionally
+      // isolated from the ordinary word-cartouche pipeline.
       const displayParsed = SitelenRenderer.NanpaParser.parseNumber(raw, {
         mode:"uniform",
         mixedStyle:"short",
         nanpaColonParsing:true,
-        nanpaColonRendering:true
+        nanpaColonRendering:true,
+        relaxedNanpaLinjanParsing:true,
+        relaxedNanpaLinjanRendering:true
       });
-      const caps = String(parsed?.caps ?? "");
-      const latinRaw = String(parsed?.properName ?? "");
+      const caps = String(displayParsed?.caps ?? "");
+      const latinRaw = NLN_relaxedNanpaFormatProperName(displayParsed);
       const cpsInner = Array.from(
         displayParsed?.ucsurCodepoints ?? displayParsed?.innerCodepoints ?? displayParsed?.codepoints ?? []
       ).map(Number);
 
       const answerNorm = normalizeGuess(latinRaw);
 
-      // INCLUDE caps IN THE RETURNED OBJECT:
-      return { kind:"numeric", rawValue: raw, caps, cpsInner, latinRaw, answerNorm, isDateTime: gen.isDateTime, countedWrongTokenKeys: new Set() };
+      return {
+        kind:"numeric",
+        rawValue:raw,
+        caps,
+        cpsInner,
+        latinRaw,
+        answerNorm,
+        isDateTime:gen.isDateTime,
+        isDate:displayParsed?.isDate === true,
+        isTime:displayParsed?.isTime === true,
+        countedWrongTokenKeys:new Set()
+      };
     }
     return pickNext();
   }
@@ -6727,18 +6856,9 @@ return renderMainPhrase(phrase);
     return x.replace(/Oken$/, " Oken");
   }
 
-  // Numeric-only: renderer-style display of the proper name
+  // Numeric-only: show the same relaxed Nanpa-format spelling used by the quiz.
   function prettyNumericAnswer(){
-    try {
-      const caps = current?.caps;
-      if (!caps) return "";
-
-      const prettyNameRaw = NLN_splitCartoucheCapsLettersSpaced(caps);
-      const prettyNameDisplay = titleCaseNanpaProperNameForDisplay(prettyNameRaw);
-      return fixOkenSuffixSpacing(prettyNameDisplay);
-    } catch { 
-      return titleCaseNanpaProperNameForDisplay(current.latinRaw || ""); 
-    }
+    return fixOkenSuffixSpacing(titleCaseNanpaProperNameForDisplay(current?.latinRaw || ""));
   }
 
   function submitGuess(){
@@ -6753,7 +6873,11 @@ return renderMainPhrase(phrase);
       return;
     }
 
-    if (typedNorm === current.answerNorm){
+    const guessIsCorrect = current.kind === "numeric"
+      ? NLN_numericGuessMatchesCurrent(typedRaw)
+      : typedNorm === current.answerNorm;
+
+    if (guessIsCorrect){
       const pts = computePointsFromNorm(current.answerNorm);
       score += pts;
       updateScoreUi();
