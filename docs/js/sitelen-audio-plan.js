@@ -53,7 +53,7 @@ const TOKEN_TO_DIGIT_WORD = Object.freeze({
 
 const AUDIO_NANPA_LINJA_N_WORDS = new Set([
   'ala','ike','uta',
-  'nanpa','nasa','nasin','nena','ni','nimi','noka','suno','tenpo',
+  'nanpa','nasa','nasin','nena','ni','nimi','noka','suno','tenpo','toki',
   'esun','en','e',
   'o','ona','ota','open',
   'kulupu','kipisi','kasi','kala','kin',
@@ -388,7 +388,8 @@ function isAudioNanpaLinjanTpPhraseTokens(tokens, options = {}) {
   const openingHead = words[0];
   const isLegacyNanpaHead = openingHead === 'nanpa';
   const isTypedDateTimeHead = openingHead === 'suno' || openingHead === 'tenpo';
-  if (!isLegacyNanpaHead && !isTypedDateTimeHead) return false;
+  const isTypedNumericHead = openingHead === 'toki';
+  if (!isLegacyNanpaHead && !isTypedDateTimeHead && !isTypedNumericHead) return false;
   const colonHead = words[1] === ':' && nanpaColonParsingEnabled(options);
   if (isLegacyNanpaHead) {
     if (!(words[1] === 'e' || words[1] === 'en' || words[1] === 'esun' || colonHead)) return false;
@@ -428,16 +429,17 @@ function tryNanpaLinjanTpPhraseSourceToCaps(text, options = {}) {
   const words = audioGlyphTokensFromCartoucheSource(text);
   if (!isAudioNanpaLinjanTpPhraseTokens(words, options)) return '';
 
-  // nanpa:/suno:/tenpo: are typed visual heads for the same initial NE
-  // semantic token in the spoken nanpa-linja-n proper name. Substitute the
-  // historical nanpa+e opening only for caps reconstruction; the visual head
-  // and colon remain unchanged for renderer/highlight alignment.
+  // nanpa:/suno:/tenpo:/toki: are typed visual heads for the same initial NE
+  // semantic token in the spoken nanpa-linja-n proper name. Toki may also be
+  // used as the configured opening marker in the non-colon form. Substitute
+  // the historical nanpa opening only for caps reconstruction; the visual head
+  // remains unchanged for renderer/highlight alignment.
   const isTypedColonHead =
     words[1] === ':' &&
-    (words[0] === 'nanpa' || words[0] === 'suno' || words[0] === 'tenpo');
+    (words[0] === 'nanpa' || words[0] === 'suno' || words[0] === 'tenpo' || words[0] === 'toki');
   const semanticWords = isTypedColonHead
     ? ['nanpa', 'e', ...words.slice(2)]
-    : words;
+    : (words[0] === 'toki' ? ['nanpa', ...words.slice(1)] : words);
 
   // Match the renderer's visual cartouche interpretation: the spoken
   // nanpa-linja-n label is the cartouche spelling, i.e. the initial sound of
@@ -498,8 +500,9 @@ function parseAbbreviatedNanpaLinjanCartoucheSource(text, options = {}) {
   const words = audioGlyphTokensFromCartoucheSource(text);
   const openingHead = words[0];
   const isTypedDateTimeHead = openingHead === 'suno' || openingHead === 'tenpo';
+  const isTypedNumericHead = openingHead === 'toki';
   if (words.length < 3 ||
-      !(openingHead === 'nanpa' || isTypedDateTimeHead) ||
+      !(openingHead === 'nanpa' || isTypedDateTimeHead || isTypedNumericHead) ||
       words[words.length - 1] !== 'nanpa') return null;
 
   const NanpaParser = getNanpaParserFromOptions(options);
@@ -1477,7 +1480,7 @@ const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
   'eke', 'eken', 'ekeke', 'ekeken', 'ekekeke', 'ekekeken',
   'keke', 'keken', 'kekeke', 'kekeken',
   'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin',
-  'nanpa', 'nasa', 'suno', 'tenpo'
+  'nanpa', 'nasa', 'suno', 'tenpo', 'toki'
 ]);
 
 // A compound is one indivisible rendered visual even though its source words
@@ -1523,16 +1526,24 @@ const AUDIO_CP_NENA = 0xF1940;
 const AUDIO_CP_NANPA = 0xF193D;
 const AUDIO_CP_SUNO = 0xF1964;
 const AUDIO_CP_TENPO = 0xF196B;
+const AUDIO_CP_TOKI = 0xF196C;
 const AUDIO_CP_COLON = 0xF199D;
-const AUDIO_TYPED_DECIMAL_HEAD_CPS = new Set([AUDIO_CP_NANPA, AUDIO_CP_SUNO, AUDIO_CP_TENPO]);
+const AUDIO_TYPED_DECIMAL_HEAD_CPS = new Set([AUDIO_CP_NANPA, AUDIO_CP_SUNO, AUDIO_CP_TENPO, AUDIO_CP_TOKI]);
 
 function spokenWordTokens(text) {
   return String(text ?? '').match(/[A-Za-z']+/g) || [];
 }
 
 function typedDecimalAudioHeadWordFromCodepoints(cps, options = {}) {
-  if (!nanpaColonRenderingEnabled(options)) return '';
   const source = Array.from(cps || []).map(Number);
+  if (!source.length) return '';
+
+  // Toki is a configurable numeric-cartouche start glyph in both the legacy
+  // and Nanpa-colon forms. Its dedicated numeric-head recording is therefore
+  // selected whenever it is the renderer-confirmed first numeric glyph.
+  if (source[0] === AUDIO_CP_TOKI) return 'Toki';
+
+  if (!nanpaColonRenderingEnabled(options)) return '';
   if (source.length < 2 || source[1] !== AUDIO_CP_COLON) return '';
   if (source[0] === AUDIO_CP_SUNO) return 'Suno';
   if (source[0] === AUDIO_CP_TENPO) return 'Tenpo';
@@ -1546,6 +1557,7 @@ function typedDecimalAudioHeadWordFromSourceText(text, options = {}) {
   if (words.length < 2 || words[1] !== ':') return '';
   if (words[0] === 'suno') return 'Suno';
   if (words[0] === 'tenpo') return 'Tenpo';
+  if (words[0] === 'toki') return 'Toki';
   if (words[0] === 'nanpa') return 'Nanpa';
   return '';
 }
@@ -1553,10 +1565,23 @@ function typedDecimalAudioHeadWordFromSourceText(text, options = {}) {
 function applyTypedDateTimeAudioHead(properName, headWord) {
   const phrase = compactSpeechWhitespace(properName);
   const head = String(headWord || '').trim();
-  if (!phrase || (head !== 'Suno' && head !== 'Tenpo')) return phrase;
-  return /^Nanpa(?:\s+|$)/.test(phrase)
-    ? phrase.replace(/^Nanpa(?=\s+|$)/, head)
-    : phrase;
+  if (!phrase || (head !== 'Suno' && head !== 'Tenpo' && head !== 'Toki')) return phrase;
+
+  if (/^Nanpa(?:\s+|$)/.test(phrase)) {
+    return phrase.replace(/^Nanpa(?=\s+|$)/, head);
+  }
+
+  // Outside Nanpa-colon rendering, the canonical decimal proper name begins
+  // with the syllable Ne rather than the word Nanpa. A renderer-confirmed Toki
+  // start glyph replaces only that initial Ne audio unit; the rest of the
+  // canonical numeric pronunciation remains unchanged.
+  if (head === 'Toki' && /^Ne[A-Za-z']/.test(phrase)) {
+    const tail = phrase.slice(2).trim();
+    if (!tail) return head;
+    return `${head} ${tail[0].toUpperCase()}${tail.slice(1)}`;
+  }
+
+  return phrase;
 }
 
 export function splitAudioTpWordIntoSyllables(rawWord) {
@@ -1972,8 +1997,21 @@ function tryRenderedNumericCartoucheToProperName(run, options = {}) {
       })
       .filter(Boolean);
     if (words.length < 3 ||
-        !(words[0] === 'nanpa' || words[0] === 'suno' || words[0] === 'tenpo') ||
+        !(words[0] === 'nanpa' || words[0] === 'suno' || words[0] === 'tenpo' || words[0] === 'toki') ||
         words[words.length - 1] !== 'nanpa') return '';
+
+    // Toki is a visual numeric-head override, not a different numeric grammar.
+    // Reconstruct the canonical Nanpa source for parsing, then restore Toki in
+    // the spoken phrase so the dedicated numeric-head WAV and visual target
+    // remain aligned without shifting any later unit indexes.
+    if (words[0] === 'toki') {
+      const canonicalWords = ['nanpa', ...words.slice(1)];
+      const canonicalProperName = compactSpeechWhitespace(
+        trySourceTextToNanpaProperName(`[${canonicalWords.join(' ')}]`, options)
+      );
+      return applyTypedDateTimeAudioHead(canonicalProperName, 'Toki');
+    }
+
     return compactSpeechWhitespace(
       trySourceTextToNanpaProperName(`[${words.join(' ')}]`, options)
     );
@@ -2657,21 +2695,24 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
 
   const sourceCount = Math.max(1, sourceCps.length);
 
-  // In the opt-in Nanpa format, the first spoken word matches the visible
-  // typed opening head and targets exactly [head :]: Nanpa for ordinary decimal,
-  // Suno for dates, and Tenpo for times. Exclude that whole head word from the
-  // proportional body mapping so every later numeric unit remains aligned.
+  // A renderer-confirmed dedicated numeric head is mapped explicitly before
+  // the proportional body mapping. In Nanpa format the head and colon are one
+  // visual/audio unit. Toki may also be the configured head in the legacy form,
+  // where only the Toki glyph belongs to that first unit. This keeps every later
+  // numeric audio/highlight index anchored to the actual source position.
   const expectedTypedHeadWord = typedDecimalAudioHeadWordFromCodepoints(sourceCps, options);
-  const hasTypedColonSpeechHead =
+  const numericHeadSourceWidth =
     numericCartouche &&
     !!expectedTypedHeadWord &&
     words.length > 1 &&
     normalizeAudioWord(words[0]) === normalizeAudioWord(expectedTypedHeadWord) &&
-    AUDIO_TYPED_DECIMAL_HEAD_CPS.has(Number(sourceCps[0])) &&
-    Number(sourceCps[1]) === AUDIO_CP_COLON;
-  const mappingSourceStart = hasTypedColonSpeechHead ? 2 : 0;
+    AUDIO_TYPED_DECIMAL_HEAD_CPS.has(Number(sourceCps[0]))
+      ? (Number(sourceCps[1]) === AUDIO_CP_COLON ? 2 : (Number(sourceCps[0]) === AUDIO_CP_TOKI ? 1 : 0))
+      : 0;
+  const hasTypedNumericSpeechHead = numericHeadSourceWidth > 0;
+  const mappingSourceStart = numericHeadSourceWidth;
   const mappingSourceCount = Math.max(0, sourceCount - mappingSourceStart);
-  const mappingSpeechWords = hasTypedColonSpeechHead ? words.slice(1) : words;
+  const mappingSpeechWords = hasTypedNumericSpeechHead ? words.slice(1) : words;
   const mappingSpeechLetterCount = Math.max(
     1,
     mappingSpeechWords.reduce(
@@ -2688,11 +2729,11 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
   for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
     const word = words[wordIndex];
     const wordLetters = Math.max(1, normalizedSpeechLetters(word).length);
-    const isTypedColonHeadWord = hasTypedColonSpeechHead && wordIndex === 0;
+    const isTypedNumericHeadWord = hasTypedNumericSpeechHead && wordIndex === 0;
     const wordSpeechStart = speechLetterCursor;
     const wordSpeechEnd = speechLetterCursor + wordLetters;
-    const wordSourceRange = isTypedColonHeadWord
-      ? { start: 0, end: Math.min(sourceCount, 2) }
+    const wordSourceRange = isTypedNumericHeadWord
+      ? { start: 0, end: Math.min(sourceCount, numericHeadSourceWidth) }
       : {
           start: Math.min(
             sourceCount,
@@ -2706,7 +2747,7 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
             )
           )
         };
-    if (!isTypedColonHeadWord) speechLetterCursor = wordSpeechEnd;
+    if (!isTypedNumericHeadWord) speechLetterCursor = wordSpeechEnd;
 
     const wholeNumeric = WHOLE_NUMERIC_AUDIO_WORDS.has(word.toLowerCase());
     const pieces = wholeNumeric ? [word] : (splitAudioTpWordIntoSyllables(word).length ? splitAudioTpWordIntoSyllables(word) : [word]);
@@ -2719,14 +2760,14 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
       const pieceSpeechEnd = Math.min(wordSpeechEnd, pieceLetterCursor + pieceLetters);
       pieceLetterCursor += pieceLetters;
 
-      const rangeStart = isTypedColonHeadWord
+      const rangeStart = isTypedNumericHeadWord
         ? 0
         : Math.min(
             sourceCount,
             mappingSourceStart + Math.max(0, Math.floor(pieceSpeechStart * sourceScale))
           );
-      const rangeEnd = isTypedColonHeadWord
-        ? Math.min(sourceCount, 2)
+      const rangeEnd = isTypedNumericHeadWord
+        ? Math.min(sourceCount, numericHeadSourceWidth)
         : Math.min(
             sourceCount,
             Math.max(
@@ -2749,7 +2790,7 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
       // that optional spacer is hidden.
       let suppressActiveHighlight = false;
       const normalizedNumericWord = normalizeAudioWord(word);
-      if (numericCartouche && wholeNumeric && normalizedNumericWord === 'nanpa' && !isTypedColonHeadWord) {
+      if (numericCartouche && wholeNumeric && normalizedNumericWord === 'nanpa' && !isTypedNumericHeadWord) {
         const nanpaIndex = displayedCps.findIndex(cp => Number(cp) === AUDIO_CP_NANPA);
         if (nanpaIndex >= 0) {
           componentIndices = [nanpaIndex];
@@ -3619,7 +3660,7 @@ async function renderExactNumericCartoucheEntries({
     ...(renderOptions || {}),
     synthesis_mode: 'reference_audio',
     alreadyPreprocessed: true,
-    // Typed Suno/Tenpo numeric heads use their dedicated whole-word
+    // Typed Suno/Tenpo/Toki numeric heads use their dedicated whole-word
     // nanpa_v7 reference units, never the ordinary words/ recordings. The
     // legacy private option name is retained to avoid changing external callers.
     numericTypedHeadSyllableAudio: true

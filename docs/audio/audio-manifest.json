@@ -2403,6 +2403,13 @@
       "source": "joined whole-word numeric Tenpo audio",
       "source_order": 69,
       "duration_ms": 1056.6
+    },
+    "toki": {
+      "unit": "Toki",
+      "file": "nanpa_v7/toki.wav",
+      "source": "joined whole-word numeric Toki audio",
+      "source_order": 70,
+      "duration_ms": 904.5
     }
   },
   "nanpa_unit_source": {

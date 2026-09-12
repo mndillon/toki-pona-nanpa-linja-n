@@ -1,5 +1,5 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=255';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=31';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=258';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=33';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 
@@ -472,10 +472,10 @@ function nanpaUnitsForWord(word, manifest = REFERENCE_AUDIO_MANIFEST) {
   const bank = manifest.nanpa_units || {};
   const key = nanpaUnitKey(word);
 
-  // Suno/Tenpo have dedicated numeric-head recordings, but they remain
+  // Suno/Tenpo/Toki have dedicated numeric-head recordings, but they remain
   // ordinary Toki Pona words everywhere else. The typed numeric-head path
   // selects those recordings explicitly via typedNumericHeadReferenceUnits().
-  if (key === 'suno' || key === 'tenpo') return null;
+  if (key === 'suno' || key === 'tenpo' || key === 'toki') return null;
 
   if (bank[key]) return [key];
   const syls = syllabifyTpWord(key);
@@ -484,13 +484,13 @@ function nanpaUnitsForWord(word, manifest = REFERENCE_AUDIO_MANIFEST) {
   return null;
 }
 
-// Typed decimal date/time heads use dedicated whole-word numeric reference
-// audio from the nanpa unit bank. This keeps their voice consistent with the
-// other numeric cartouche units while leaving ordinary words/suno.wav and
-// words/tenpo.wav behavior unchanged outside the typed numeric-head path.
+// Typed numeric heads use dedicated whole-word numeric reference audio from
+// the nanpa unit bank. This keeps their voice consistent with the other numeric
+// cartouche units while leaving ordinary words/suno.wav, words/tenpo.wav and
+// words/toki.wav behavior unchanged outside the typed numeric-head path.
 function typedNumericHeadReferenceUnits(word, manifest = REFERENCE_AUDIO_MANIFEST) {
   const key = nanpaUnitKey(word);
-  if (key !== 'suno' && key !== 'tenpo') return null;
+  if (key !== 'suno' && key !== 'tenpo' && key !== 'toki') return null;
 
   const unit = (manifest.nanpa_units || {})[key];
   if (!unit?.file) return null;
@@ -819,7 +819,7 @@ export class TokiPonaVoice {
             opts.numericTypedHeadSyllableAudio === true &&
             isProperStart &&
             wi === 0 &&
-            (normalizedTpWord(word) === 'suno' || normalizedTpWord(word) === 'tenpo') &&
+            (normalizedTpWord(word) === 'suno' || normalizedTpWord(word) === 'tenpo' || normalizedTpWord(word) === 'toki') &&
             opts.synthesis_mode !== 'reference_words_only';
           const typedHeadAudio = useTypedNumericHeadAudio
             ? await this.chunksForTypedNumericHead(word, warnings)
