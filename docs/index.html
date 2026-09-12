@@ -1904,7 +1904,7 @@
           aria-controls="alternativeDateTimeNotationContent"
           data-collapsible-toggle
         >
-          <span class="collapsibleSectionToggleTitle">Alternative date/time format (experimental)</span>
+          <span class="collapsibleSectionToggleTitle">Alternative date/time/telephone format (experimental)</span>
           <span class="collapsibleSectionToggleState" aria-hidden="true">
             <span class="collapsibleSectionToggleIcon">▾</span>
             <span data-collapsible-action>Show</span>
@@ -1914,18 +1914,22 @@
       <div id="alternativeDateTimeNotationContent" class="collapsibleSectionContent" data-collapsible-content hidden>
 
         <div class="help">
-          As an experimental alternative, date and time nanpa-linja-n cartouches can use an explicit opening word to identify their meaning. A time cartouche begins with <strong>Tenpo</strong>, while a date cartouche begins with <strong>Suno</strong>. The decimal digit syllables and the existing <strong>Eke</strong> date/time separators do not change.
+          As an experimental alternative, date, time and telephone nanpa-linja-n cartouches can use an explicit opening word to identify their meaning. A time cartouche begins with <strong>Tenpo</strong>, a date cartouche begins with <strong>Suno</strong>, and a telephone-number cartouche may begin with <strong>Toki</strong>. The decimal digit syllables and the existing numeric separators do not change.
         </div>
 
         <div class="help" style="margin-top:10px;">
-          In sitelen pona, the opening <strong>tenpo</strong> or <strong>suno</strong> glyph is followed immediately by a colon. The closing <strong>nanpa</strong> glyph is unchanged, and <strong>kasi</strong> continues to separate the components of a date or time.
+          In sitelen pona, the opening <strong>tenpo</strong>, <strong>suno</strong> or <strong>toki</strong> glyph is followed immediately by a colon. The closing <strong>nanpa</strong> glyph is unchanged. <strong>kasi</strong> continues to separate the components of a date or time, while the existing no-value spacer continues to separate groups in a telephone number.
         </div>
 
         <div class="help" style="margin-top:10px;">
-          This makes the meaning explicit when the same numeric structure could otherwise be ambiguous. For example, <code>12:30</code> is a time and therefore uses <strong>Tenpo</strong>, while <code>--12-30</code> is a yearless month-and-day date and therefore uses <strong>Suno</strong>. A complete date such as <code>2025-12-30</code> also uses <strong>Suno</strong>.
+          Telephone numbers will normally be parsed and rendered using the explicit decimal <strong>Nanpa</strong> opening. However, when a successfully parsed telephone-number proper name explicitly begins with <strong>Toki</strong>, the telephone-number type is preserved and the cartouche may instead be rendered with the opening <strong>toki</strong> glyph. Other ordinary decimal numeric input continues to use <strong>Nanpa</strong> by default.
         </div>
 
-        <div class="tableWrap nanpaModeWrap" role="region" aria-label="alternative nanpa-linja-n date and time format examples" style="margin-top:10px;">
+        <div class="help" style="margin-top:10px;">
+          This makes the meaning explicit when the same numeric structure could otherwise be ambiguous. For example, <code>12:30</code> is a time and therefore uses <strong>Tenpo</strong>, while <code>--12-30</code> is a yearless month-and-day date and therefore uses <strong>Suno</strong>. A complete date such as <code>2025-12-30</code> also uses <strong>Suno</strong>. The telephone example <code>+1-234-555-6789</code> can use <strong>Toki</strong> when that opening is explicitly present in the parsed proper name.
+        </div>
+
+        <div class="tableWrap nanpaModeWrap" role="region" aria-label="alternative nanpa-linja-n date, time and telephone format examples" style="margin-top:10px;">
           <table class="digitTable nanpaModeTable">
             <thead>
               <tr>
@@ -1958,6 +1962,13 @@
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative date cartouche for 2025-12-30">&#xF1990;&#xF1964;&#xF199D;&#xF196E;&#xF1970;&#xF1940;&#xF190C;&#xF196E;&#xF1970;&#xF192D;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1973;&#xF1902;&#xF196E;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1957;&#xF1909;&#xF1940;&#xF190C;&#xF193D;&#xF1991;</span></td>
                 <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative date cartouche for 2025-12-30">&#xF1990;&#xF1964;&#xF199D;&#xF196E;&#xF190C;&#xF196E;&#xF192D;&#xF1917;&#xF1973;&#xF196E;&#xF1917;&#xF1957;&#xF190C;&#xF193D;&#xF1991;</span></td>
               </tr>
+              <tr>
+                <td><code>+1-234-555-6789</code></td>
+                <td><code>Nanpa Newan Ene Tusenan Ene Lululun Ene Numupijon</code> <button class="tableAudioButton" type="button" data-numeric-audio="Nanpa Newan Ene Tusenan Ene Lululun Ene Numupijon" title="Play Nanpa Newan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice" aria-label="Play Nanpa Newan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice">🤖🔊</button></td>
+                <td><code>Toki Newan Ene Tusenan Ene Lululun Ene Numupijon</code> <button class="tableAudioButton" type="button" data-numeric-audio="Toki Newan Ene Tusenan Ene Lululun Ene Numupijon" title="Play Toki Newan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice" aria-label="Play Toki Newan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice">🤖🔊</button></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative telephone cartouche for +1-234-555-6789">&#xF1990;&#xF196C;&#xF199D;&#xF1940;&#xF190A;&#xF1973;&#xF1902;&#xF1940;&#xF1909;&#xF1940;&#xF1909;&#xF196E;&#xF1970;&#xF1957;&#xF1909;&#xF1940;&#xF1908;&#xF1940;&#xF1909;&#xF1940;&#xF1909;&#xF192D;&#xF1970;&#xF192D;&#xF1970;&#xF192D;&#xF1970;&#xF1940;&#xF1909;&#xF1940;&#xF1909;&#xF1940;&#xF1971;&#xF193A;&#xF1970;&#xF1951;&#xF190D;&#xF1913;&#xF1947;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative telephone cartouche for +1-234-555-6789">&#xF1990;&#xF196C;&#xF199D;&#xF190A;&#xF1973;&#xF1909;&#xF196E;&#xF1957;&#xF1908;&#xF1909;&#xF192D;&#xF192D;&#xF192D;&#xF1909;&#xF1971;&#xF193A;&#xF1951;&#xF1913;&#xF193D;&#xF1991;</span></td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -1965,7 +1976,8 @@
         <div class="small" style="margin-top:10px;">
           Cartouche source forms for <code>12:30</code> are <code>[tenpo : wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[tenpo : wan tu kasi seli ijo nanpa]</code> for the abbreviated form.<br/>
           Cartouche source forms for <code>--12-30</code> are <code>[suno : wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[suno : wan tu kasi seli ijo nanpa]</code> for the abbreviated form.<br/>
-          Cartouche source forms for <code>2025-12-30</code> are <code>[suno : tu uta nena ijo tu uta luka uta nena e kasi e wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[suno : tu ijo tu luka kasi wan tu kasi seli ijo nanpa]</code> for the abbreviated form.
+          Cartouche source forms for <code>2025-12-30</code> are <code>[suno : tu uta nena ijo tu uta luka uta nena e kasi e wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[suno : tu ijo tu luka kasi wan tu kasi seli ijo nanpa]</code> for the abbreviated form.<br/>
+          Cartouche source forms for <code>+1-234-555-6789</code> are <code>[toki : nena en wan ala nena e nena e tu uta seli e nena awen nena e nena e luka uta luka uta luka uta nena e nena e nena utala mun uta pipi ike jo open nanpa]</code> for the full form and <code>[toki : en wan e tu seli awen e luka luka luka e utala mun pipi jo nanpa]</code> for the abbreviated form.
         </div>
       </div>
     </section>
@@ -3217,11 +3229,11 @@
   })();
 </script>
 
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=58"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=60"></script>
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=71';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=76';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,

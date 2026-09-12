@@ -6339,14 +6339,15 @@ function wireHaloControls() {
       const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
       const N_WORD_FRACTION = "nena";
       const N_END_WORD = "nanpa";
-      const SEMANTIC_DEFAULT_HEAD_WORD = normalizeNumericCartoucheStartGlyph(semanticStartGlyph)
-        || (getNanpaColonRendering()
-          ? (semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa"))
-          : "nanpa");
-      const NUMERIC_START_WORD = resolveNumericCartoucheStartGlyph(
-        getNumericCartoucheStartGlyph(),
-        SEMANTIC_DEFAULT_HEAD_WORD
-      );
+      const EXPLICIT_SEMANTIC_HEAD_WORD = normalizeNumericCartoucheStartGlyph(semanticStartGlyph);
+      const SEMANTIC_DEFAULT_HEAD_WORD = getNanpaColonRendering()
+        ? (semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa"))
+        : "nanpa";
+      const NUMERIC_START_WORD = EXPLICIT_SEMANTIC_HEAD_WORD
+        || resolveNumericCartoucheStartGlyph(
+          getNumericCartoucheStartGlyph(),
+          SEMANTIC_DEFAULT_HEAD_WORD
+        );
 
       let afterStartingNe = false;
       let afterScientificMarker = false;
@@ -10558,7 +10559,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (!typed?.caps) return null;
           const semanticKind = typed.semanticKind || (nanpaCapsIsValidDate(typed.caps) ? "date" : (nanpaCapsIsValidTime(typed.caps) ? "time" : null));
           const isTimeLike = semanticKind === "date" || semanticKind === "time";
-          return nanpaCapsToNanpaLinjanCodepoints(typed.caps, { mode, isTime: isTimeLike, semanticKind });
+          return nanpaCapsToNanpaLinjanCodepoints(typed.caps, {
+            mode,
+            isTime: isTimeLike,
+            semanticKind,
+            semanticStartGlyph: typed.semanticStartGlyph || null
+          });
         };
 
         // New explicit typed heads are additive. Legacy nanpa : parsing remains
@@ -10616,6 +10622,22 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
               const typedNanpa = typedColon?.head === "nanpa" ? typedColon : null;
               let cps = typedNanpa ? renderTypedColonCaps(typedNanpa) : parsedColonAbbreviated.cps;
               if (!typedNanpa && getNanpaColonRendering()) cps = [CP_NANPA, CP_COLON, ...cps.slice(1)];
+              makeNumericCartoucheElementFromCodepoints(elements, cps, {
+                fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
+                sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+              });
+              return;
+            }
+          }
+
+          // Preserve all legacy nanpa-colon precedence above. If those older
+          // branches did not accept the source but the shared typed parser did,
+          // render that parsed numeric cartouche as a compatibility fallback.
+          // This covers abbreviated nanpa-colon input whose visible `e` glyphs
+          // represent NENE no-value/break spacers.
+          if (typedColon?.head === "nanpa" && typedColon.form === "abbreviated") {
+            const cps = renderTypedColonCaps(typedColon);
+            if (cps?.length) {
               makeNumericCartoucheElementFromCodepoints(elements, cps, {
                 fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
                 sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
@@ -13107,11 +13129,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
     const N_END_WORD = "nanpa";
-    const SEMANTIC_DEFAULT_HEAD_WORD = normalizeNumericCartoucheStartGlyph(semanticStartGlyph)
-      || (nanpaColonRendering
-        ? (semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa"))
-        : "nanpa");
-    const NUMERIC_START_WORD = resolveNumericCartoucheStartGlyph(numericCartoucheStartGlyph, SEMANTIC_DEFAULT_HEAD_WORD);
+    const EXPLICIT_SEMANTIC_HEAD_WORD = normalizeNumericCartoucheStartGlyph(semanticStartGlyph);
+    const SEMANTIC_DEFAULT_HEAD_WORD = nanpaColonRendering
+      ? (semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa"))
+      : "nanpa";
+    const NUMERIC_START_WORD = EXPLICIT_SEMANTIC_HEAD_WORD
+      || resolveNumericCartoucheStartGlyph(numericCartoucheStartGlyph, SEMANTIC_DEFAULT_HEAD_WORD);
 
     let afterStartingNe = false;
     let afterScientificMarker = false;
@@ -13296,7 +13319,15 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (parsed?.caps) {
         const semanticKind = parsed.semanticKind || (_npNanpaCapsIsValidDate(parsed.caps) ? "date" : (_npNanpaCapsIsValidTime(parsed.caps) ? "time" : null));
         const isTime = semanticKind === "date" || semanticKind === "time";
-        return _npNanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode, isTime, relaxedParsing, relaxedRendering, nanpaColonRendering, semanticKind });
+        return _npNanpaCapsToNanpaLinjanCodepoints(parsed.caps, {
+          mode,
+          isTime,
+          relaxedParsing,
+          relaxedRendering,
+          nanpaColonRendering,
+          semanticKind,
+          numericCartoucheStartGlyph
+        });
       }
     } catch {
       return null;
@@ -14181,6 +14212,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         innerCodepoints,
         words,
         numericMode: mode,
+        semanticStartGlyph: semanticStartGlyph || null,
         isTimeLike: !!isTime
       };
     } catch {
@@ -14195,8 +14227,15 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
   function _npTokenizeNanpaColonCartoucheSource(raw) {
     const source = String(raw ?? "").trim();
-    if (!source.startsWith("[") || !source.endsWith("]")) return null;
-    const inner = source.slice(1, -1);
+    if (!source) return null;
+
+    // Accept the canonical bracketed cartouche form and the same typed body
+    // when supplied directly to a numeric-input field. A stray single bracket
+    // remains invalid so this does not broaden malformed cartouche syntax.
+    const hasOpenBracket = source.startsWith("[");
+    const hasCloseBracket = source.endsWith("]");
+    if (hasOpenBracket !== hasCloseBracket) return null;
+    const inner = hasOpenBracket ? source.slice(1, -1).trim() : source;
     const tokens = [];
     let i = 0;
     while (i < inner.length) {
@@ -14232,6 +14271,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const word = body[index];
         const digit = _NP_ABBREVIATED_NANPA_WORD_TO_CODE[word];
         if (digit) { code += digit; hasDigit = true; continue; }
+        if (word === "e") { code += "EE"; continue; }
         if (word === "o" || word === "ona") { code += "O"; continue; }
         if (word === "kulupu" || word === "kasi" || word === "kolon" || word === ":") { code += "K"; continue; }
         if (word === "kala") { code += "EKO"; continue; }
@@ -14258,27 +14298,45 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     const preferAbbreviated = opts.abbreviateNumericCartouches === true ||
       opts.numericCartoucheAbbreviation === true || opts.abbreviatedNumericCartouches === true;
-    const caps = preferAbbreviated ? (tryAbbreviated() || tryFull()) : (tryFull() || tryAbbreviated());
+    let parsedForm = null;
+    const parseAbbreviated = () => {
+      const value = tryAbbreviated();
+      if (value) parsedForm = "abbreviated";
+      return value;
+    };
+    const parseFull = () => {
+      const value = tryFull();
+      if (value) parsedForm = "full";
+      return value;
+    };
+    const caps = preferAbbreviated ? (parseAbbreviated() || parseFull()) : (parseFull() || parseAbbreviated());
     if (!caps) return null;
 
     if (head === "suno") {
       const isFullDate = _npNanpaCapsIsValidDate(caps, opts);
       const isYearlessDate = _npNanpaCapsDecodeYearlessDateStrict(caps, opts) != null;
       if (!isFullDate && !isYearlessDate) return null;
-      return { caps, semanticKind: "date", dateKind: isYearlessDate && !isFullDate ? "yearless" : "full", head };
+      return { caps, semanticKind: "date", dateKind: isYearlessDate && !isFullDate ? "yearless" : "full", head, form: parsedForm };
     }
     if (head === "tenpo") {
       if (!_npNanpaCapsIsValidTime(caps, opts)) return null;
-      return { caps, semanticKind: "time", dateKind: null, head };
+      return { caps, semanticKind: "time", dateKind: null, head, form: parsedForm };
     }
-    return { caps, semanticKind: null, dateKind: null, head };
+    return {
+      caps,
+      semanticKind: null,
+      dateKind: null,
+      head,
+      form: parsedForm,
+      semanticStartGlyph: head === "toki" ? "toki" : null
+    };
   }
 
   function _npTryParseNanpaColonCartoucheToCaps(raw, opts = {}) {
     return _npTryParseTypedNanpaColonCartouche(raw, opts)?.caps || null;
   }
 
-  function _npNanpaColonProperNameFromLegacy(rawLegacyName) {
+  function _npNanpaColonProperNameFromLegacy(rawLegacyName, { semanticStartGlyph = null } = {}) {
     let body = String(rawLegacyName ?? "").trim().toLowerCase();
     if (!body) return "";
     if (body.startsWith("ne")) body = body.slice(2).trimStart();
@@ -14289,7 +14347,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       words.splice(1, 1);
     }
     const titled = words.map(word => word ? word[0].toUpperCase() + word.slice(1) : "").filter(Boolean);
-    return titled.length ? `Nanpa ${titled.join(" ")}` : "";
+    const semanticHead = normalizeNumericCartoucheStartGlyph(semanticStartGlyph);
+    const properNameHead = semanticHead === "toki" ? "Toki" : "Nanpa";
+    return titled.length ? `${properNameHead} ${titled.join(" ")}` : "";
   }
 
   const NanpaParser = Object.freeze({
@@ -14730,6 +14790,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const normalized = _npNormalizeVulgarFractionInput(s);
       if (!caps && colonCartoucheCaps) {
         caps = colonCartoucheCaps;
+        semanticStartGlyph = typedColonCartouche?.semanticStartGlyph || null;
         if (typedColonCartouche?.semanticKind === "date") structuredKind = typedColonCartouche.dateKind === "yearless" ? "date-yearless" : "date";
         else if (typedColonCartouche?.semanticKind === "time") structuredKind = "time";
       }
@@ -14848,8 +14909,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const legacyProperNameRaw = _npSplitFinalHundredIninWords(splitCapsLetters(properNameCaps), {
         relaxedNanpaLinjanParsing: relaxedParsing || relaxedRendering
       });
-      const properName = _npNanpaColonRenderingFromOpts(opts)
-        ? _npNanpaColonProperNameFromLegacy(legacyProperNameRaw)
+      const properName = (semanticStartGlyph === "toki" || _npNanpaColonRenderingFromOpts(opts))
+        ? _npNanpaColonProperNameFromLegacy(legacyProperNameRaw, { semanticStartGlyph })
         : titleCaseCapsLabel(legacyProperNameRaw);
       const uniqueCode = capsToCanonicalUniqueCode(caps, opts, structuredKind);
       const hexCodepoints = codepointsToHexString(ucsurCodepoints);
@@ -14874,6 +14935,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         isDate,
         isTelephone: structuredKind === "telephone",
         semanticKind: semanticKind || null,
+        semanticStartGlyph: semanticStartGlyph || null,
         isTimeLike,
         innerCodepoints: ucsurCodepoints.slice(),
         codepoints: withCartoucheMarkers(ucsurCodepoints),

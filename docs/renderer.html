@@ -699,7 +699,7 @@
       </div>
 
       <h3>
-        Toki Pona words (for UCSUR code points excluding cartouche start and end codes)
+        Toki Pona words (for UCSUR code points)
         <span class="tpLine">nimi pi toki pona (tan nanpa sitelen)</span>
       </h3>
       <textarea id="tpWordsOut" class="mono" readonly aria-readonly="true"></textarea>
@@ -845,8 +845,8 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=260";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=75";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=263";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=76";
     import {
       trySourceTextToNanpaProperName,
       nanpaCapsForAudioMode,
@@ -1286,8 +1286,10 @@
       return runs.find(run => String(run?.kind || "").toLowerCase() === "cartouche" || run?._element?.type === "cartouche") || null;
     }
 
-    async function buildSharedRun(input, fontPx, { numeric = false } = {}) {
+    async function buildSharedRun(input, fontPx, { numeric = false, numericCartoucheStartGlyph = null } = {}) {
       const renderer = await ensureSharedRenderer();
+      const parserOptions = sharedRendererParserOptions();
+      if (numericCartoucheStartGlyph) parserOptions.numericCartoucheStartGlyph = numericCartoucheStartGlyph;
       const plan = await renderer.buildRenderPlan({
         input: String(input ?? ""),
         layout: { fontPx, align: "left" },
@@ -1295,7 +1297,7 @@
           fillStyle: "#111111",
           halo: { enabled: false, widthPx: 0, color: "#FFFFFF" }
         },
-        parser: sharedRendererParserOptions(),
+        parser: parserOptions,
         fonts: {
           roles: {
             word: FONT_FAMILY,
@@ -1351,8 +1353,9 @@
       ).trim();
       if (!source) throw new Error("No canonical numeric source was available for shared rendering.");
 
-      const small = await buildSharedRun(source, LARGE_TINY_FONT_SIZE, { numeric: true });
-      const large = await buildSharedRun(source, LARGE_FONT_SIZE, { numeric: true });
+      const numericCartoucheStartGlyph = String(parsed?.semanticStartGlyph || "").trim().toLowerCase() || null;
+      const small = await buildSharedRun(source, LARGE_TINY_FONT_SIZE, { numeric: true, numericCartoucheStartGlyph });
+      const large = await buildSharedRun(source, LARGE_FONT_SIZE, { numeric: true, numericCartoucheStartGlyph });
       await blitSharedRunToCanvas(canvasSmall, small.run);
       await blitSharedRunToCanvas(canvasLarge, large.run);
 
@@ -1378,6 +1381,11 @@
       );
     }
 
+    function numericTokiPonaWordsOutputTextFromCodepoints(cps) {
+      const inner = String(tokiPonaWordsOutputTextFromCodepoints(cps) || "").trim();
+      return inner ? `[${inner}]` : "[]";
+    }
+
     function ordinaryCartoucheSourceFromCodepoints(cps) {
       const words = NanpaParser.ucsurCodepointsToTpWords(Array.from(cps || [], Number));
       if (!words.length) throw new Error("No Toki Pona glyph sequence could be derived from the codepoints.");
@@ -1397,7 +1405,10 @@
       const source = String(raw ?? "").trim();
       if (!source) return null;
       const parserOptions = getNanpaParserOptions();
-      const parsed = NanpaParser.parseNumber(source, parserOptions);
+      const isTypedColonNumericInput = /^\[?\s*(?:nanpa|toki|tenpo|suno)\s*:/i.test(source) && /\bnanpa\s*\]?$/i.test(source);
+      const parsed = NanpaParser.parseNumber(source, isTypedColonNumericInput
+        ? { ...parserOptions, nanpaColonParsing: true }
+        : parserOptions);
       if (parsed) return parsed;
 
       // The shared binary parser accepts the canonical bracketed cartouche form.
@@ -1445,6 +1456,22 @@
       const audioCaps = nanpaCapsForAudioMode(caps, {
         relaxedNanpaLinjanRendering: relaxed
       });
+      if (String(parsed?.semanticStartGlyph || "").toLowerCase() === "toki") {
+        const semanticName = String(parsed?.properName || "").trim();
+        if (semanticName) {
+          if (/^Toki\b/i.test(semanticName)) return semanticName.replace(/^toki\b/i, "Toki");
+          if (/^Nanpa\b/i.test(semanticName)) return semanticName.replace(/^nanpa\b/i, "Toki");
+        }
+        const generated = String(NanpaParser.splitCapsToProperName(audioCaps, {
+          titleCase: true,
+          relaxedNanpaLinjanParsing: relaxed,
+          nanpaColonRendering: true
+        }) || "").trim();
+        if (generated) {
+          if (/^Toki\b/i.test(generated)) return generated.replace(/^toki\b/i, "Toki");
+          if (/^Nanpa\b/i.test(generated)) return generated.replace(/^nanpa\b/i, "Toki");
+        }
+      }
       const properName = String(NanpaParser.splitCapsToProperName(audioCaps, {
         titleCase: true,
         relaxedNanpaLinjanParsing: relaxed,
@@ -2164,6 +2191,7 @@
         isBinary: parsed?.isBinary === true || Number(parsed?.numberBase) === 2,
         isTime: parsed?.isTime === true,
         isDate: parsed?.isDate === true,
+        semanticStartGlyph: String(parsed?.semanticStartGlyph || "").trim().toLowerCase() || null,
         run
       };
       setCartoucheAudioButtonState("stopped");
@@ -2287,13 +2315,16 @@
     async function prepareCartoucheAudio(model, generation) {
       const key = `${model.properName}|${model.isHex ? "hex" : model.isBinary ? "binary" : "normal"}`;
       if (cartoucheAudioCache.has(key)) return cartoucheAudioCache.get(key);
+      const semanticStartGlyph = String(model?.semanticStartGlyph || "").trim().toLowerCase();
+      const usesTokiNumericHead = semanticStartGlyph === "toki";
+      const useNanpaColonAudio = getNanpaFormatEnabled() || usesTokiNumericHead;
       const rendered = await voice.render(model.properName, {
         synthesis_mode: "reference_audio",
         pauseScale: CARTOUCHE_AUDIO_PAUSE_SCALE,
         syllableGapSeconds: CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS,
-        nanpaColonParsing: getNanpaFormatEnabled(),
-        nanpaColonRendering: getNanpaFormatEnabled(),
-        numericTypedHeadSyllableAudio: model.isTime === true || model.isDate === true,
+        nanpaColonParsing: useNanpaColonAudio,
+        nanpaColonRendering: useNanpaColonAudio,
+        numericTypedHeadSyllableAudio: model.isTime === true || model.isDate === true || usesTokiNumericHead,
         enableHexParsing: model.isHex === true,
         enableBinaryParsing: model.isBinary === true,
         enableBinaryRendering: model.isBinary === true
@@ -2727,7 +2758,7 @@
         elCodepointsOut.value = NanpaParser.codepointsToHexWithCartouche(rendered.displayedCodepoints);
       }
       if (elTpWordsOut) {
-        elTpWordsOut.value = tokiPonaWordsOutputTextFromCodepoints(rendered.displayedCodepoints);
+        elTpWordsOut.value = numericTokiPonaWordsOutputTextFromCodepoints(rendered.displayedCodepoints);
       }
 
       setDecimalValueLine(values.display, values.cartouche, properName);
