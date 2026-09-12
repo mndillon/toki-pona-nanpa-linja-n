@@ -1480,7 +1480,7 @@ const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
   'eke', 'eken', 'ekeke', 'ekeken', 'ekekeke', 'ekekeken',
   'keke', 'keken', 'kekeke', 'kekeken',
   'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin',
-  'nanpa', 'nasa', 'suno', 'tenpo', 'toki'
+  'nanpa', 'nasa', 'noka', 'suno', 'tenpo', 'toki'
 ]);
 
 // A compound is one indivisible rendered visual even though its source words
@@ -1524,11 +1524,13 @@ const AUDIO_CP_E = 0xF1909;
 const AUDIO_CP_EN = 0xF190A;
 const AUDIO_CP_NENA = 0xF1940;
 const AUDIO_CP_NANPA = 0xF193D;
+const AUDIO_CP_NASA = 0xF193E;
+const AUDIO_CP_NOKA = 0xF1943;
 const AUDIO_CP_SUNO = 0xF1964;
 const AUDIO_CP_TENPO = 0xF196B;
 const AUDIO_CP_TOKI = 0xF196C;
 const AUDIO_CP_COLON = 0xF199D;
-const AUDIO_TYPED_DECIMAL_HEAD_CPS = new Set([AUDIO_CP_NANPA, AUDIO_CP_SUNO, AUDIO_CP_TENPO, AUDIO_CP_TOKI]);
+const AUDIO_TYPED_DECIMAL_HEAD_CPS = new Set([AUDIO_CP_NANPA, AUDIO_CP_NASA, AUDIO_CP_NOKA, AUDIO_CP_SUNO, AUDIO_CP_TENPO, AUDIO_CP_TOKI]);
 
 function spokenWordTokens(text) {
   return String(text ?? '').match(/[A-Za-z']+/g) || [];
@@ -1542,6 +1544,15 @@ function typedDecimalAudioHeadWordFromCodepoints(cps, options = {}) {
   // and Nanpa-colon forms. Its dedicated numeric-head recording is therefore
   // selected whenever it is the renderer-confirmed first numeric glyph.
   if (source[0] === AUDIO_CP_TOKI) return 'Toki';
+
+  // Hex and binary numeric heads always use their visible colon as part of the
+  // same whole-word audio/highlight unit. Recognize them here too so the
+  // renderer-confirmed generic fallback cannot split Nasa/Noka into syllables
+  // and drift out of sync with the whole-word reference-audio timeline.
+  if (source.length >= 2 && source[1] === AUDIO_CP_COLON) {
+    if (source[0] === AUDIO_CP_NASA) return 'Nasa';
+    if (source[0] === AUDIO_CP_NOKA) return 'Noka';
+  }
 
   if (!nanpaColonRenderingEnabled(options)) return '';
   if (source.length < 2 || source[1] !== AUDIO_CP_COLON) return '';
@@ -2314,6 +2325,12 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
   if (sameAudioWordSequence(displayedWords, abbreviatedWords)) abbreviated = true;
   else if (!sameAudioWordSequence(displayedWords, fullWords)) return [];
 
+  // Use the dedicated mapping for both full and abbreviated hex cartouches.
+  // In abbreviated hex, each digit and each visible Eke/Ene separator is one
+  // glyph, so each spoken unit must target exactly that one glyph. The only
+  // intentional multi-glyph targets are the opening nasa+colon pair and the
+  // final digit together with the closing nasa.
+
   const nodes = [];
   const addNode = (kind, units) => {
     const node = { kind, units: Array.from(units || []) };
@@ -2369,10 +2386,15 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
             addNode('eke', [{ baseText: 'eke', componentIndices: [withOffset(cursor)] }]);
             cursor += 1;
           } else {
-            attachCodaN(groupNode, withOffset(cursor));
+            // Full hex grouping is rendered as: nena e kule e. The terminal
+            // -n belongs to the spoken digit group only; it does not own a
+            // separate visual glyph. Highlight only the visible kule separator
+            // while Eke is spoken, leaving the surrounding nena/e scaffolding
+            // unclaimed by active audio highlighting.
+            attachCodaN(groupNode);
             addNode('eke', [{
               baseText: 'eke',
-              componentIndices: [withOffset(cursor + 1), withOffset(cursor + 2), withOffset(cursor + 3)]
+              componentIndices: [withOffset(cursor + 2)]
             }]);
             cursor += 4;
           }
@@ -2389,10 +2411,14 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
         addNode('ene', [{ baseText: 'ene', componentIndices: [withOffset(cursor)] }]);
         cursor += 1;
       } else {
-        attachCodaN(previous, withOffset(cursor));
+        // Full explicit hex delimiters are rendered as: nena e nena e. As
+        // with generated grouping, the preceding spoken coda -n does not
+        // claim a structural glyph. Highlight only the delimiter nena while
+        // Ene is spoken.
+        attachCodaN(previous);
         addNode('ene', [{
           baseText: 'ene',
-          componentIndices: [withOffset(cursor + 1), withOffset(cursor + 2), withOffset(cursor + 3)]
+          componentIndices: [withOffset(cursor + 2)]
         }]);
         cursor += 4;
       }
@@ -2420,7 +2446,7 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
       const text = unitIndexInWord === 0
         ? titleCaseAudioUnit(sourceUnit.baseText)
         : String(sourceUnit.baseText || '').toLowerCase();
-      const wholeNumericPunctuationWord = node.kind === 'eke' || node.kind === 'ene';
+      const wholeNumericPunctuationWord = node.kind === 'opening' || node.kind === 'eke' || node.kind === 'ene';
       unitsOut.push({
         text,
         timingText: text,
@@ -2437,7 +2463,7 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
         hexCartouche: true,
         numericBase: 16,
         cartoucheAudioGroupId: options?.cartoucheAudioGroupId || null,
-        cartoucheAudioMode: numericCartouche ? 'hex' : 'ordinary',
+        cartoucheAudioMode: numericCartouche ? 'numeric' : 'ordinary',
         forceOrdinarySyllableAudio: !numericCartouche,
         audioBank: null,
         audioUnitKey: '',
@@ -2781,6 +2807,23 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
         rangeEnd,
         wordSourceRange
       );
+
+      // Numeric opening heads are exact visual structures, not proportional
+      // text ranges. When the renderer confirms a whole-word numeric head,
+      // bind the first audio unit directly to the visible head glyph and, when
+      // present, its immediately following colon. This is the same invariant
+      // used by the dedicated hex/binary builders and prevents an off-by-one
+      // shift from propagating to every later highlight unit.
+      if (numericCartouche && isTypedNumericHeadWord) {
+        const expectedHeadCp = Number(sourceCps[0]);
+        const visibleHeadIndex = displayedCps.findIndex(cp => Number(cp) === expectedHeadCp);
+        if (visibleHeadIndex >= 0) {
+          componentIndices = [visibleHeadIndex];
+          if (Number(displayedCps[visibleHeadIndex + 1]) === AUDIO_CP_COLON) {
+            componentIndices.push(visibleHeadIndex + 1);
+          }
+        }
+      }
 
       // Do not rely on proportional source-range matching for a no-value
       // spacer. The nth spoken Ene targets the nth canonical spacer occurrence.
@@ -3560,7 +3603,7 @@ function isNumericCartoucheAudioUnit(unit) {
   return !!unit?.numericCartouche && !!unit?.numericCartoucheRunId;
 }
 
-export const SITELEN_AUDIO_PLAN_BUILD = '20260909-typed-date-time-head-whole-audio-v4';
+export const SITELEN_AUDIO_PLAN_BUILD = '20260912-base-specific-numeric-markers-v10';
 
 function numericCartoucheUnitOrdinal(unit) {
   const value = Number(unit?.unitIndex);

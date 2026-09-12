@@ -1493,11 +1493,12 @@ const SitelenRenderer = (() => {
   let __nanpaColonParsing = false;
   let __nanpaColonRendering = false;
 
-  // Optional opening-marker override for numeric cartouches. The closing marker
-  // is invariant: every numeric cartouche closes with nanpa. Invalid values are
-  // ignored and the semantic default is used.
+  // Optional opening-marker override for decimal/date/time numeric cartouches.
+  // Hexadecimal and binary use fixed paired markers (nasa...nasa and
+  // noka...noka) so their number systems remain visually distinct. Invalid
+  // override values are ignored and the semantic default is used.
   const ALLOWED_NUMERIC_CARTOUCHE_START_GLYPHS = new Set([
-    "nanpa", "nasa", "noka", "tenpo", "suno", "toki"
+    "nanpa", "tenpo", "suno", "toki"
   ]);
   let __numericCartoucheStartGlyph = null;
 
@@ -3907,7 +3908,7 @@ const SitelenRenderer = (() => {
 
   function hexCartoucheTokensToSemantic(tokensInput, { relaxedParsing = false, sourceText = null, preferAbbreviated = false } = {}) {
     const tokens = Array.from(tokensInput || []).map(v => String(v).toLowerCase());
-    if (tokens.length < 3 || tokens[0] !== "nasa" || !["nasa", "nanpa"].includes(tokens[tokens.length - 1])) return null;
+    if (tokens.length < 3 || tokens[0] !== "nasa" || tokens[tokens.length - 1] !== "nasa") return null;
     let start = 1;
     if (tokens[start] === ":") start += 1; // optional on input; canonical output always includes it
     const body = tokens.slice(start, -1);
@@ -4032,8 +4033,8 @@ const SitelenRenderer = (() => {
   function hexSemanticToTpWords(semantic, { abbreviated = false, mode = "uniform", relaxedRendering = false, startGlyph = null } = {}) {
     const sem = cloneHexSemantic(semantic);
     if (!sem) return null;
-    const head = resolveNumericCartoucheStartGlyph(startGlyph ?? getNumericCartoucheStartGlyph(), "nasa");
-    const words = [head, ":"];
+    // Hexadecimal has a fixed nasa opener/closer; decimal head overrides do not apply.
+    const words = ["nasa", ":"];
     for (const part of sem.parts) {
       if (part.kind === "delimiter") {
         if (abbreviated) words.push("e");
@@ -4060,7 +4061,7 @@ const SitelenRenderer = (() => {
         }
       }
     }
-    words.push("nanpa");
+    words.push("nasa");
     return words;
   }
 
@@ -4323,7 +4324,7 @@ const SitelenRenderer = (() => {
 
   function binaryCartoucheTokensToSemantic(tokensInput, { relaxedParsing = false, sourceText = null, preferAbbreviated = false } = {}) {
     const tokens = Array.from(tokensInput || []).map(v => String(v).toLowerCase());
-    if (tokens.length < 3 || tokens[0] !== "noka" || !["noka", "nanpa"].includes(tokens[tokens.length - 1])) return null;
+    if (tokens.length < 3 || tokens[0] !== "noka" || tokens[tokens.length - 1] !== "noka") return null;
     let start = 1;
     if (tokens[start] === ":") start += 1; // optional on input, canonical output always includes it
     const body = tokens.slice(start, -1);
@@ -4378,8 +4379,8 @@ const SitelenRenderer = (() => {
   function binarySemanticToTpWords(semantic, { abbreviated = false, mode = "uniform", relaxedRendering = false, startGlyph = null } = {}) {
     const sem = cloneBinarySemantic(semantic);
     if (!sem) return null;
-    const head = resolveNumericCartoucheStartGlyph(startGlyph ?? getNumericCartoucheStartGlyph(), "noka");
-    const words = [head, ":"];
+    // Binary has a fixed noka opener/closer; decimal head overrides do not apply.
+    const words = ["noka", ":"];
     for (const part of sem.parts) {
       if (part.kind === "delimiter") {
         if (abbreviated) words.push("e");
@@ -4397,7 +4398,7 @@ const SitelenRenderer = (() => {
         }
       }
     }
-    words.push("nanpa");
+    words.push("noka");
     return words;
   }
 
@@ -14215,7 +14216,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   function _npTryParseTypedNanpaColonCartouche(raw, opts = {}) {
     if (!_npNanpaColonParsingFromOpts(opts)) return null;
     const tokens = _npTokenizeNanpaColonCartoucheSource(raw);
-    if (!tokens || tokens.length < 4 || !["nanpa", "nasa", "noka", "tenpo", "suno", "toki"].includes(tokens[0]) || tokens[1] !== ":" ||
+    if (!tokens || tokens.length < 4 || !["nanpa", "tenpo", "suno", "toki"].includes(tokens[0]) || tokens[1] !== ":" ||
         tokens[tokens.length - 1] !== "nanpa") return null;
     const head = tokens[0];
     const body = tokens.slice(2, -1);
