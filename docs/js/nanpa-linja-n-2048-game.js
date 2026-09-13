@@ -1,4 +1,4 @@
-import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=263";
+import SitelenRenderer from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=266";
 
 (() => {
   "use strict";

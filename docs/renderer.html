@@ -845,8 +845,8 @@
 
   <script type="module">
     "use strict";
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=263";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=76";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=266";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=77";
     import {
       trySourceTextToNanpaProperName,
       nanpaCapsForAudioMode,
@@ -1456,11 +1456,16 @@
       const audioCaps = nanpaCapsForAudioMode(caps, {
         relaxedNanpaLinjanRendering: relaxed
       });
-      if (String(parsed?.semanticStartGlyph || "").toLowerCase() === "toki") {
+      const semanticStartGlyph = String(parsed?.semanticStartGlyph || "").toLowerCase();
+      const semanticNumberHead = semanticStartGlyph === "toki"
+        ? "Toki"
+        : (semanticStartGlyph === "suno" && parsed?.isDate !== true ? "Suno" : "");
+      if (semanticNumberHead) {
         const semanticName = String(parsed?.properName || "").trim();
         if (semanticName) {
-          if (/^Toki\b/i.test(semanticName)) return semanticName.replace(/^toki\b/i, "Toki");
-          if (/^Nanpa\b/i.test(semanticName)) return semanticName.replace(/^nanpa\b/i, "Toki");
+          const semanticHeadRe = new RegExp(`^${semanticNumberHead}\\b`, "i");
+          if (semanticHeadRe.test(semanticName)) return semanticName.replace(semanticHeadRe, semanticNumberHead);
+          if (/^Nanpa\b/i.test(semanticName)) return semanticName.replace(/^nanpa\b/i, semanticNumberHead);
         }
         const generated = String(NanpaParser.splitCapsToProperName(audioCaps, {
           titleCase: true,
@@ -1468,8 +1473,9 @@
           nanpaColonRendering: true
         }) || "").trim();
         if (generated) {
-          if (/^Toki\b/i.test(generated)) return generated.replace(/^toki\b/i, "Toki");
-          if (/^Nanpa\b/i.test(generated)) return generated.replace(/^nanpa\b/i, "Toki");
+          const semanticHeadRe = new RegExp(`^${semanticNumberHead}\\b`, "i");
+          if (semanticHeadRe.test(generated)) return generated.replace(semanticHeadRe, semanticNumberHead);
+          if (/^Nanpa\b/i.test(generated)) return generated.replace(/^nanpa\b/i, semanticNumberHead);
         }
       }
       const properName = String(NanpaParser.splitCapsToProperName(audioCaps, {
@@ -2317,14 +2323,16 @@
       if (cartoucheAudioCache.has(key)) return cartoucheAudioCache.get(key);
       const semanticStartGlyph = String(model?.semanticStartGlyph || "").trim().toLowerCase();
       const usesTokiNumericHead = semanticStartGlyph === "toki";
-      const useNanpaColonAudio = getNanpaFormatEnabled() || usesTokiNumericHead;
+      const usesSunoNumericHead = semanticStartGlyph === "suno" && model.isDate !== true;
+      const usesExplicitNumericHead = usesTokiNumericHead || usesSunoNumericHead;
+      const useNanpaColonAudio = getNanpaFormatEnabled() || usesExplicitNumericHead;
       const rendered = await voice.render(model.properName, {
         synthesis_mode: "reference_audio",
         pauseScale: CARTOUCHE_AUDIO_PAUSE_SCALE,
         syllableGapSeconds: CARTOUCHE_AUDIO_SYLLABLE_GAP_SECONDS,
         nanpaColonParsing: useNanpaColonAudio,
         nanpaColonRendering: useNanpaColonAudio,
-        numericTypedHeadSyllableAudio: model.isTime === true || model.isDate === true || usesTokiNumericHead,
+        numericTypedHeadSyllableAudio: model.isTime === true || model.isDate === true || usesExplicitNumericHead,
         enableHexParsing: model.isHex === true,
         enableBinaryParsing: model.isBinary === true,
         enableBinaryRendering: model.isBinary === true

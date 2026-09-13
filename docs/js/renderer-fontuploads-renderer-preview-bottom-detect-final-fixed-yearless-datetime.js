@@ -6045,6 +6045,19 @@ function wireHaloControls() {
       return { caps, head: "toki", semanticStartGlyph: "toki" };
     }
 
+    function nanpaCapsIsDayOfMonthNumber(caps) {
+      let tokens;
+      try { tokens = tokenizeNanpaCaps(caps); }
+      catch { return false; }
+      if (!tokens || tokens.length < 3 || tokens[0] !== "NE" || tokens[tokens.length - 1] !== "N") return false;
+      const body = tokens.slice(1, -1);
+      if (!body.length || !body.every(token => DIGIT_TOKENS.has(token))) return false;
+      const digits = body.map(token => TOKEN_TO_DIGIT_CHAR[token]).join("");
+      if (!/^\d+$/.test(digits)) return false;
+      const value = Number(digits);
+      return Number.isInteger(value) && value >= 1 && value <= 31;
+    }
+
     function nanpaTypedDateTimeProperNameToInfo(raw) {
       if (!getNanpaColonParsing()) return null;
       const source = String(raw ?? "").trim();
@@ -6063,13 +6076,24 @@ function wireHaloControls() {
 
       const isFullDate = nanpaCapsIsValidDate(caps);
       const isYearlessDate = nanpaCapsDecodeYearlessDateStrict(caps) != null;
-      if (!isFullDate && !isYearlessDate) return null;
-      return {
-        caps,
-        semanticKind: "date",
-        dateKind: isYearlessDate && !isFullDate ? "yearless" : "full",
-        head: "suno"
-      };
+      if (isFullDate || isYearlessDate) {
+        return {
+          caps,
+          semanticKind: "date",
+          dateKind: isYearlessDate && !isFullDate ? "yearless" : "full",
+          head: "suno"
+        };
+      }
+      if (nanpaCapsIsDayOfMonthNumber(caps)) {
+        return {
+          caps,
+          semanticKind: null,
+          dateKind: null,
+          head: "suno",
+          semanticStartGlyph: "suno"
+        };
+      }
+      return null;
     }
 
     function nanpaLinjanProperNameToCaps(raw) {
@@ -6567,10 +6591,12 @@ function wireHaloControls() {
 
       const typedDateTime = nanpaTypedDateTimeProperNameToInfo(s);
       if (typedDateTime?.caps) {
+        const isTimeLike = typedDateTime.semanticKind === "date" || typedDateTime.semanticKind === "time";
         return nanpaCapsToNanpaLinjanCodepoints(typedDateTime.caps, {
           mode,
-          isTime: true,
-          semanticKind: typedDateTime.semanticKind
+          isTime: isTimeLike,
+          semanticKind: typedDateTime.semanticKind,
+          semanticStartGlyph: typedDateTime.semanticStartGlyph || null
         });
       }
 
@@ -7840,7 +7866,8 @@ function wireHaloControls() {
           end: start + String(rawSpan).length,
           caps: typedDateTime.caps,
           semanticKind: typedDateTime.semanticKind,
-          dateKind: typedDateTime.dateKind
+          dateKind: typedDateTime.dateKind,
+          semanticStartGlyph: typedDateTime.semanticStartGlyph || null
         };
       }
 
@@ -12813,6 +12840,19 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return { caps, head: "toki", semanticStartGlyph: "toki" };
   }
 
+  function _npNanpaCapsIsDayOfMonthNumber(caps, opts = {}) {
+    let tokens;
+    try { tokens = _npTokenizeNanpaCaps(caps, opts); }
+    catch { return false; }
+    if (!tokens || tokens.length < 3 || tokens[0] !== "NE" || tokens[tokens.length - 1] !== "N") return false;
+    const body = tokens.slice(1, -1);
+    if (!body.length || !body.every(token => _NP_DIGIT_TOKENS.has(token))) return false;
+    const digits = body.map(token => _NP_TOKEN_TO_DIGIT_CHAR[token]).join("");
+    if (!/^\d+$/.test(digits)) return false;
+    const value = Number(digits);
+    return Number.isInteger(value) && value >= 1 && value <= 31;
+  }
+
   function _npTypedDateTimeProperNameToInfo(raw, opts = {}) {
     if (!_npNanpaColonParsingFromOpts(opts)) return null;
     const source = String(raw ?? "").trim();
@@ -12831,13 +12871,24 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     const isFullDate = _npNanpaCapsIsValidDate(caps, opts);
     const isYearlessDate = _npNanpaCapsDecodeYearlessDateStrict(caps, opts) != null;
-    if (!isFullDate && !isYearlessDate) return null;
-    return {
-      caps,
-      semanticKind: "date",
-      dateKind: isYearlessDate && !isFullDate ? "yearless" : "full",
-      head: "suno"
-    };
+    if (isFullDate || isYearlessDate) {
+      return {
+        caps,
+        semanticKind: "date",
+        dateKind: isYearlessDate && !isFullDate ? "yearless" : "full",
+        head: "suno"
+      };
+    }
+    if (_npNanpaCapsIsDayOfMonthNumber(caps, opts)) {
+      return {
+        caps,
+        semanticKind: null,
+        dateKind: null,
+        head: "suno",
+        semanticStartGlyph: "suno"
+      };
+    }
+    return null;
   }
 
   function _npProperNameToCaps(raw, opts = {}) {
@@ -13352,12 +13403,15 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     const typedDateTime = _npTypedDateTimeProperNameToInfo(s, properOpts);
     if (typedDateTime?.caps) {
+      const isTimeLike = typedDateTime.semanticKind === "date" || typedDateTime.semanticKind === "time";
       const typedCps = _npNanpaCapsToNanpaLinjanCodepoints(typedDateTime.caps, {
         mode,
-        isTime: true,
+        isTime: isTimeLike,
         relaxedParsing,
         relaxedRendering,
-        nanpaColonRendering
+        nanpaColonRendering,
+        semanticKind: typedDateTime.semanticKind,
+        semanticStartGlyph: typedDateTime.semanticStartGlyph || null
       });
       if (!typedCps?.length) return null;
       if (nanpaColonRendering && typedCps[0] === _NP_CP_NANPA) {
@@ -14255,10 +14309,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   function _npTryParseTypedNanpaColonCartouche(raw, opts = {}) {
     if (!_npNanpaColonParsingFromOpts(opts)) return null;
     const tokens = _npTokenizeNanpaColonCartoucheSource(raw);
-    if (!tokens || tokens.length < 4 || !["nanpa", "tenpo", "suno", "toki"].includes(tokens[0]) || tokens[1] !== ":" ||
+    if (!tokens || tokens.length < 3 || !["nanpa", "tenpo", "suno", "toki"].includes(tokens[0]) ||
         tokens[tokens.length - 1] !== "nanpa") return null;
     const head = tokens[0];
-    const body = tokens.slice(2, -1);
+    const hasColon = tokens[1] === ":";
+    if (!hasColon && head !== "suno") return null;
+    const body = tokens.slice(hasColon ? 2 : 1, -1);
     if (!body.length || body.includes("nanpa") || body.includes("nasin")) return null;
 
     const tryAbbreviated = () => {
@@ -14309,14 +14365,35 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (value) parsedForm = "full";
       return value;
     };
-    const caps = preferAbbreviated ? (parseAbbreviated() || parseFull()) : (parseFull() || parseAbbreviated());
+    let caps = preferAbbreviated ? (parseAbbreviated() || parseFull()) : (parseFull() || parseAbbreviated());
     if (!caps) return null;
 
     if (head === "suno") {
-      const isFullDate = _npNanpaCapsIsValidDate(caps, opts);
-      const isYearlessDate = _npNanpaCapsDecodeYearlessDateStrict(caps, opts) != null;
-      if (!isFullDate && !isYearlessDate) return null;
-      return { caps, semanticKind: "date", dateKind: isYearlessDate && !isFullDate ? "yearless" : "full", head, form: parsedForm };
+      let isFullDate = _npNanpaCapsIsValidDate(caps, opts);
+      let isYearlessDate = _npNanpaCapsDecodeYearlessDateStrict(caps, opts) != null;
+      let isDayOfMonthNumber = _npNanpaCapsIsDayOfMonthNumber(caps, opts);
+
+      // In abbreviated display mode, a full digit ending in `e` (notably
+      // strict/uniform digit 3: `seli e`) can also look like an abbreviated
+      // no-value delimiter. If that preferred abbreviated interpretation is
+      // not a valid date or 1-31 day number, retry the existing full grammar.
+      if (!isFullDate && !isYearlessDate && !isDayOfMonthNumber && preferAbbreviated && parsedForm === "abbreviated") {
+        const fullCaps = parseFull();
+        if (fullCaps) {
+          caps = fullCaps;
+          isFullDate = _npNanpaCapsIsValidDate(caps, opts);
+          isYearlessDate = _npNanpaCapsDecodeYearlessDateStrict(caps, opts) != null;
+          isDayOfMonthNumber = _npNanpaCapsIsDayOfMonthNumber(caps, opts);
+        }
+      }
+
+      if (isFullDate || isYearlessDate) {
+        return { caps, semanticKind: "date", dateKind: isYearlessDate && !isFullDate ? "yearless" : "full", head, form: parsedForm };
+      }
+      if (isDayOfMonthNumber) {
+        return { caps, semanticKind: null, dateKind: null, head, form: parsedForm, semanticStartGlyph: "suno" };
+      }
+      return null;
     }
     if (head === "tenpo") {
       if (!_npNanpaCapsIsValidTime(caps, opts)) return null;
@@ -14348,7 +14425,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
     const titled = words.map(word => word ? word[0].toUpperCase() + word.slice(1) : "").filter(Boolean);
     const semanticHead = normalizeNumericCartoucheStartGlyph(semanticStartGlyph);
-    const properNameHead = semanticHead === "toki" ? "Toki" : "Nanpa";
+    const properNameHead = semanticHead === "toki" ? "Toki" : (semanticHead === "suno" ? "Suno" : "Nanpa");
     return titled.length ? `${properNameHead} ${titled.join(" ")}` : "";
   }
 
@@ -14815,9 +14892,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         semanticStartGlyph = typedNumericProperName.semanticStartGlyph;
       } else if (typedDateTimeProperName?.caps) {
         caps = typedDateTimeProperName.caps;
+        semanticStartGlyph = typedDateTimeProperName.semanticStartGlyph || null;
         structuredKind = typedDateTimeProperName.semanticKind === "date"
           ? (typedDateTimeProperName.dateKind === "yearless" ? "date-yearless" : "date")
-          : "time";
+          : (typedDateTimeProperName.semanticKind === "time" ? "time" : null);
       } else if (preferLeadingPlusProperName) {
         caps = _npProperNameToCaps(s, { ...opts, relaxedNanpaLinjanParsing: relaxedParsing });
         if (!caps) return null;
