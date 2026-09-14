@@ -6367,11 +6367,10 @@ function wireHaloControls() {
       const SEMANTIC_DEFAULT_HEAD_WORD = getNanpaColonRendering()
         ? (semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa"))
         : "nanpa";
-      const NUMERIC_START_WORD = EXPLICIT_SEMANTIC_HEAD_WORD
-        || resolveNumericCartoucheStartGlyph(
-          getNumericCartoucheStartGlyph(),
-          SEMANTIC_DEFAULT_HEAD_WORD
-        );
+      const NUMERIC_START_WORD = resolveNumericCartoucheStartGlyph(
+        getNumericCartoucheStartGlyph(),
+        EXPLICIT_SEMANTIC_HEAD_WORD || SEMANTIC_DEFAULT_HEAD_WORD
+      );
 
       let afterStartingNe = false;
       let afterScientificMarker = false;
@@ -7674,40 +7673,6 @@ function wireHaloControls() {
     }
 
 
-    function findTelephoneSequencesWithCaps(text, opts = {}) {
-      const s = String(text ?? "");
-      if (!s) return [];
-      const out = [];
-      // Telephone classification is intentionally conservative. A leading + is
-      // strong evidence; otherwise require parentheses, or a phone-like grouped
-      // layout. Dates/times are masked before this scanner is called.
-      const re = /(^|[^A-Za-z0-9])((?:\+)?\d(?:[\d ()-]*\d))(?![A-Za-z0-9])/g;
-      let m;
-      while ((m = re.exec(s)) !== null) {
-        const lead = m[1] ?? "";
-        const raw = String(m[2] ?? "").trim();
-        if (!raw) continue;
-        if ((lead === "-" || lead === "+") && !raw.startsWith("+")) continue;
-        const digits = raw.replace(/\D/g, "");
-        if (digits.length < 7 || digits.length > 15) continue;
-        const hasPlus = raw.startsWith("+");
-        const hasParens = /[()]/.test(raw);
-        const separators = (raw.match(/[ -]+/g) || []).length;
-        const localLeadingZero = /^0\d/.test(raw) && /[ -]/.test(raw) && digits.length >= 8 && digits.length <= 12;
-        if (!(hasPlus || hasParens || separators >= 2 || localLeadingZero)) continue;
-        if (/[,:/.]/.test(raw)) continue;
-        const normalized = raw.replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
-        try {
-          const caps = numberStrToNanpaCaps(normalized, opts);
-          const start = (m.index | 0) + String(lead).length + Math.max(0, String(m[2]).indexOf(raw));
-          out.push({ kind: "telephone", semanticKind: "telephone", match: raw, index: start, end: start + raw.length, caps });
-        } catch {
-          // Not a valid nanpa-linja-n digit sequence after normalization.
-        }
-      }
-      return out;
-    }
-
     function findDecimalSequencesWithCaps(text, opts = {}) {
       const original = String(text ?? "");
       if (!original) return [];
@@ -8082,7 +8047,6 @@ function findNanpaLinjanTpPhraseSequences(text) {
       function priority(kind) {
         if (kind === "hex" || kind === "binary") return 6;
         if (kind === "date") return 5;
-        if (kind === "telephone") return 5;
         if (kind === "decimal") return 4;
         if (kind === "time") return 4;
         if (kind === "tpPhrase") return 3;
@@ -10157,9 +10121,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const dateHits = findDateSequencesWithCaps(numericScanText);
       const timeScanText = maskNumericScanRanges(numericScanText, dateHits);
       const timeHits = findTimeSequencesWithCaps(timeScanText);
-      const telephoneScanText = maskNumericScanRanges(timeScanText, timeHits);
-      const telephoneHits = findTelephoneSequencesWithCaps(telephoneScanText, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
-      const decimalScanText = maskNumericScanRanges(numericScanText, telephoneHits);
+      const decimalScanText = maskNumericScanRanges(timeScanText, timeHits);
       const decHits = findDecimalSequencesWithCaps(decimalScanText, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
       if (getNasinNanpaPona()) {
         for (const hit of decHits) {
@@ -10181,14 +10143,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         glyphSuffixHits: glyphSuffixHits.length,
         timeHits: timeHits.length,
         dateHits: dateHits.length,
-        telephoneHits: telephoneHits.length,
         decHits: decHits.length,
         codeHits: codeHits.length,
         nameHits: nameHits.length,
         phraseHits: phraseHits.length,
         hexHits: hexHits.length,
         binaryHits: binaryHits.length,
-        rawHits: [...binaryHits, ...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...telephoneHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
+        rawHits: [...binaryHits, ...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits].map(h => ({
           kind: h.kind,
           sourceText: s.slice(h.index, h.end),
           index: h.index,
@@ -10201,7 +10162,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         }))
       });
 
-      const hits = mergeAndGreedyFilterHits([...binaryHits, ...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...telephoneHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
+      const hits = mergeAndGreedyFilterHits([...binaryHits, ...hexHits, ...glyphSuffixHits, ...dateHits, ...timeHits, ...decHits, ...phraseHits, ...codeHits, ...nameHits]);
 
       nanpaDebugTable("parse-text:selected-hits", hits.map(h => ({
         kind: h.kind,
@@ -12654,31 +12615,6 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return normalizeNumericCartoucheStartGlyph(opts.numericCartoucheStartGlyph);
   }
 
-  function _npTelephoneInputToCaps(raw, opts = {}) {
-    const s = String(raw ?? "").trim();
-    if (!s || /[,:/.]/.test(s)) return null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s) || /^--\d{2}-\d{2}$/.test(s) || /^XXXX-\d{2}-\d{2}$/i.test(s)) return null;
-    if (!/^(?:\+)?\d(?:[\d ()-]*\d)$/.test(s)) return null;
-    const digits = s.replace(/\D/g, "");
-    if (digits.length < 7 || digits.length > 15) return null;
-    const hasPlus = s.startsWith("+");
-    const hasParens = /[()]/.test(s);
-    const separators = (s.match(/[ -]+/g) || []).length;
-    const localLeadingZero = /^0\d/.test(s) && /[ -]/.test(s) && digits.length >= 8 && digits.length <= 12;
-    if (!(hasPlus || hasParens || separators >= 2 || localLeadingZero)) return null;
-    const normalized = s.replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
-    try {
-      return _npDecimalStringToCaps(normalized, {
-        thousandsChar: ",",
-        groupFractionTriplets: true,
-        fractionGroupSize: 3,
-        ...opts
-      });
-    } catch {
-      return null;
-    }
-  }
-
   function _npNanpaColonParsingFromOpts(opts = {}) {
     return opts.nanpaColonParsing === true || _npNanpaColonRenderingFromOpts(opts);
   }
@@ -13184,8 +13120,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const SEMANTIC_DEFAULT_HEAD_WORD = nanpaColonRendering
       ? (semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa"))
       : "nanpa";
-    const NUMERIC_START_WORD = EXPLICIT_SEMANTIC_HEAD_WORD
-      || resolveNumericCartoucheStartGlyph(numericCartoucheStartGlyph, SEMANTIC_DEFAULT_HEAD_WORD);
+    const NUMERIC_START_WORD = resolveNumericCartoucheStartGlyph(
+      numericCartoucheStartGlyph,
+      EXPLICIT_SEMANTIC_HEAD_WORD || SEMANTIC_DEFAULT_HEAD_WORD
+    );
 
     let afterStartingNe = false;
     let afterScientificMarker = false;
@@ -14849,11 +14787,6 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     let structuredKind = null;
     let semanticStartGlyph = null;
     try {
-      const telephoneCaps = _npTelephoneInputToCaps(s, { ...opts, mixedStyle });
-      if (telephoneCaps) {
-        caps = telephoneCaps;
-        structuredKind = "telephone";
-      }
       const typedColonCartouche = _npTryParseTypedNanpaColonCartouche(s, opts);
       const colonCartoucheCaps = typedColonCartouche?.caps || null;
       const typedNumericProperName = _npTypedNumericProperNameToInfo(s, {
@@ -14952,7 +14885,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const hasOk = tokens.includes("OK");
       const tokensNoOk = tokens.filter(t => t !== "OK");
 
-      const semanticKind = isDate ? "date" : (isTime ? "time" : (structuredKind === "telephone" ? "telephone" : null));
+      const semanticKind = isDate ? "date" : (isTime ? "time" : null);
       let tpWords = _npNanpaCapsTokensToTpWords(tokensNoOk, {
         mode,
         relaxedRendering,
@@ -14994,9 +14927,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const hexCodepoints = codepointsToHexString(ucsurCodepoints);
       const hexWithCartouche = codepointsToHexString(withCartoucheMarkers(ucsurCodepoints));
       const yearlessParts = structuredKind === "date-yearless" ? _npNanpaCapsDecodeYearlessDateStrict(caps, opts) : null;
-      const displayValue = structuredKind === "telephone"
-        ? s
-        : (yearlessParts ? `--${yearlessParts.mmStr}-${yearlessParts.ddStr}` : decodeCapsToDisplayValue(caps, opts));
+      const displayValue = yearlessParts
+        ? `--${yearlessParts.mmStr}-${yearlessParts.ddStr}`
+        : decodeCapsToDisplayValue(caps, opts);
 
       return {
         input: s,
@@ -15011,7 +14944,6 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         displayValue,
         isTime,
         isDate,
-        isTelephone: structuredKind === "telephone",
         semanticKind: semanticKind || null,
         semanticStartGlyph: semanticStartGlyph || null,
         isTimeLike,
