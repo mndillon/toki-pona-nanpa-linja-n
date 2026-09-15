@@ -1354,7 +1354,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     const diffH = document.querySelector('#tab-settings .card:nth-of-type(2) h2'); if (diffH) diffH.textContent = lang()==='tok' ? 'suli musi ale' : 'Difficulty map';
     if (!state.active && el.prompt) el.prompt.textContent = tr('pressStart');
     if (!state.active && el.feedback) el.feedback.textContent = lang()==='tok' ? 'suli musi 1–8 li lon.' : 'Levels 1–8 are included. Level 8 enables timed duel, replay seeds, cartouche-only answers, and mixed full/abbreviated numeric cartouches.';
-    const footerLeft = document.querySelector('.footerLeft'); if (footerLeft) footerLeft.innerHTML = lang()==='tok' ? '<strong>sona:</strong> ilo ni li lon nasin “as is”. mi pana ala e wawa pi pona. sina o lukin e ni: sitelen li pona anu seme.' : '<strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.';
+    const footerLeft = document.querySelector('.footerLeft'); if (footerLeft) footerLeft.innerHTML = lang()==='tok' ? '<strong>sona:</strong> ilo ni li lon nasin “as is”. mi pana ala e wawa pona. sina o lukin e ni: sitelen li pona anu seme.' : '<strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.';
     const back = document.querySelector('.footerRight a'); if (back) back.textContent = lang()==='tok' ? 'o tawa lipu open' : 'Back to index';
     syncWorksheetControls();
   }
