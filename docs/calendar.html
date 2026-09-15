@@ -21,6 +21,9 @@
       --calendar-weekday-weekend: rgba(83, 86, 82, 0.17);
       --calendar-latin: rgba(63, 71, 80, 0.62);
       --calendar-latin-print: rgba(63, 71, 80, 0.68);
+      --holiday: rgba(132, 91, 36, 0.13);
+      --holiday-weekend: rgba(107, 84, 54, 0.18);
+      --holiday-dot: rgba(17, 17, 17, 0.74);
       --ink: #111;
     }
 
@@ -373,6 +376,108 @@
     .printRichDay .fullMoonMarker.moon-left { left: 1mm; }
     .printRichDay .fullMoonMarker.moon-right { right: 1mm; }
 
+    .compactDay.holidayDay,
+    .richDay.holidayDay { background: var(--holiday); }
+    .compactDay.weekend.holidayDay,
+    .richDay.weekend.holidayDay { background: var(--holiday-weekend); }
+
+    .holidayDots {
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      bottom: 3px;
+      height: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      overflow: hidden;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .holidayDot {
+      flex: 0 0 5px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--holiday-dot);
+    }
+    .compactDay .holidayDots { left: 2px; right: 2px; bottom: 1px; height: 3px; gap: 2px; }
+    .compactDay .holidayDot { flex-basis: 3px; width: 3px; height: 3px; }
+    .compactDay.hasHolidayDots .fullMoonMarker { bottom: 7px; }
+    .richDay.hasHolidayDots .fullMoonMarker { bottom: 13px; }
+
+    .holidayList {
+      margin-top: 16px;
+      border: 1px solid var(--calendar-grid);
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.025);
+      min-width: 0;
+      max-width: 100%;
+    }
+    .holidayListTitle {
+      margin: 0;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--calendar-grid);
+      background: var(--calendar-header);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .holidayMonthGroup + .holidayMonthGroup { border-top: 1px solid var(--calendar-grid); }
+    .holidayMonthHeading {
+      padding: 10px 12px 9px;
+      background: rgba(105, 83, 53, 0.065);
+      min-width: 0;
+    }
+    .holidayMonthGlyphLine {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      font-size: 21px;
+      line-height: 1;
+    }
+    .holidayMonthGlyphLine .numericCartouche { font-size: 20px; max-width: min(72%, 360px); }
+    .holidayMonthLatin { margin-top: 4px; color: var(--calendar-latin); font-size: 10px; }
+    .holidayEntries { display: block; }
+    .holidayEntry {
+      padding: 10px 12px 11px;
+      min-width: 0;
+    }
+    .holidayEntry + .holidayEntry { border-top: 1px solid rgba(91, 80, 65, 0.18); }
+    .holidayDateRow {
+      width: 100%;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 7px;
+      padding-top: 3px;
+      overflow: visible;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .holidayDateRow .holidayDateCartouche {
+      flex: 0 0 auto;
+      max-width: none;
+      font-size: var(--holiday-date-font-px, 22px);
+    }
+    .holidayRangeDash {
+      flex: 0 0 auto;
+      font-size: var(--holiday-date-dash-font-px, 18px);
+      line-height: 1;
+    }
+    .holidayName {
+      margin-top: 7px;
+      font-size: 13px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      min-width: 0;
+    }
+
     .printRoot { display: none; }
 
     .printPage {
@@ -607,6 +712,17 @@
       .richDay .fullMoonMarker { bottom: 3px; font-size: 9px; }
       .richDay .fullMoonMarker.moon-left { left: 2px; }
       .richDay .fullMoonMarker.moon-right { right: 2px; }
+      .richDay .holidayDots { left: 2px; right: 2px; bottom: 2px; height: 4px; gap: 2px; }
+      .richDay .holidayDot { flex-basis: 4px; width: 4px; height: 4px; }
+      .richDay.hasHolidayDots .fullMoonMarker { bottom: 12px; }
+      .holidayList { margin-top: 12px; }
+      .holidayListTitle { padding: 9px 10px; font-size: 14px; }
+      .holidayMonthHeading { padding: 9px 10px 8px; }
+      .holidayMonthGlyphLine { font-size: 18px; gap: 5px; }
+      .holidayMonthGlyphLine .numericCartouche { font-size: 17px; }
+      .holidayEntry { padding: 9px 10px 10px; }
+      .holidayDateRow { gap: 4px; }
+      .holidayName { margin-top: 6px; font-size: 12px; }
 
       /* Full-year view remains one month per row on mobile.  Use one uniform
          compact date size that also fits the narrow 320 px phone case. */
@@ -658,6 +774,23 @@
           <select id="languageSelect" aria-label="toki">
             <option value="tok" selected>toki pona</option>
             <option value="en">English</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="countrySelect" data-ui="countryLabel">ma</label>
+          <select id="countrySelect" aria-label="ma" disabled>
+            <option value="US">US</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="holidayTypeSelect" data-ui="holidayTypeLabel">nasin pi tenpo suno suli</label>
+          <select id="holidayTypeSelect" aria-label="nasin pi tenpo suno suli">
+            <option value="none" data-ui="holidayNoneOption">tenpo suno suli ala</option>
+            <option value="public" data-ui="holidayPublicOption" selected>pi jan ale</option>
+            <option value="others" data-ui="holidayOthersOption">ante</option>
+            <option value="all" data-ui="holidayAllOption">ale</option>
           </select>
         </div>
 
@@ -811,6 +944,8 @@
     const WEEKDAY_GLYPHS = ["mun", "seli", "telo", "kasi", "kiwen", "ma", "suno"];
 
     const languageSelect = document.getElementById("languageSelect");
+    const countrySelect = document.getElementById("countrySelect");
+    const holidayTypeSelect = document.getElementById("holidayTypeSelect");
     const yearSelect = document.getElementById("yearSelect");
     const monthSelect = document.getElementById("monthSelect");
     const exportMonthBtn = document.getElementById("exportMonthBtn");
@@ -821,6 +956,307 @@
 
     const UI_LANGUAGE_STORAGE_KEY = "nanpaLinjaNCalendarLanguage";
     const UI_LANGUAGE_DEFAULT = "tok";
+    const HOLIDAY_COUNTRY_STORAGE_KEY = "nanpaLinjaNCalendarHolidayCountry";
+    const HOLIDAY_TYPE_STORAGE_KEY = "nanpaLinjaNCalendarHolidayType";
+    const HOLIDAY_COUNTRY_DEFAULT = "US";
+    const HOLIDAY_TYPE_DEFAULT = "public";
+    const HOLIDAY_DATA_ROOT = "./calendar-holidays";
+    const HOLIDAY_MANIFEST_URL = `${HOLIDAY_DATA_ROOT}/manifest-version.json`;
+    const HOLIDAY_INDEX_URL = `${HOLIDAY_DATA_ROOT}/index.json`;
+    const HOLIDAY_SHARED_FILE_URLS = Object.freeze({
+      "index.json": HOLIDAY_INDEX_URL,
+      "toki-pona-name-map.json": `${HOLIDAY_DATA_ROOT}/toki-pona-name-map.json`,
+      "holiday-names.json": `${HOLIDAY_DATA_ROOT}/holiday-names.json`
+    });
+    const HOLIDAY_CACHE_DB_NAME = "nanpaLinjaNCalendarHolidayCache";
+    const HOLIDAY_CACHE_DB_VERSION = 1;
+    const HOLIDAY_CACHE_FILES_STORE = "files";
+    const HOLIDAY_CACHE_METADATA_STORE = "metadata";
+    const HOLIDAY_CACHE_MANIFEST_KEY = "manifestVersion";
+    const HOLIDAY_CACHE_COUNTRY_ZIP_PREFIX = "countryZip:";
+    const HOLIDAY_TYPES = new Set(["none", "all", "public", "others"]);
+    // IANA zone1970.tab maps some timezones to multiple countries. Only zones
+    // with exactly one country are used for automatic country selection.
+    const UNAMBIGUOUS_TIMEZONE_COUNTRY = Object.freeze({
+      'Africa/Algiers': 'DZ',
+      'Africa/Bissau': 'GW',
+      'Africa/Cairo': 'EG',
+      'Africa/Casablanca': 'MA',
+      'Africa/Ceuta': 'ES',
+      'Africa/El_Aaiun': 'EH',
+      'Africa/Juba': 'SS',
+      'Africa/Khartoum': 'SD',
+      'Africa/Monrovia': 'LR',
+      'Africa/Ndjamena': 'TD',
+      'Africa/Sao_Tome': 'ST',
+      'Africa/Tripoli': 'LY',
+      'Africa/Tunis': 'TN',
+      'Africa/Windhoek': 'NA',
+      'America/Adak': 'US',
+      'America/Anchorage': 'US',
+      'America/Araguaina': 'BR',
+      'America/Argentina/Buenos_Aires': 'AR',
+      'America/Argentina/Catamarca': 'AR',
+      'America/Argentina/Cordoba': 'AR',
+      'America/Argentina/Jujuy': 'AR',
+      'America/Argentina/La_Rioja': 'AR',
+      'America/Argentina/Mendoza': 'AR',
+      'America/Argentina/Rio_Gallegos': 'AR',
+      'America/Argentina/Salta': 'AR',
+      'America/Argentina/San_Juan': 'AR',
+      'America/Argentina/San_Luis': 'AR',
+      'America/Argentina/Tucuman': 'AR',
+      'America/Argentina/Ushuaia': 'AR',
+      'America/Asuncion': 'PY',
+      'America/Bahia': 'BR',
+      'America/Bahia_Banderas': 'MX',
+      'America/Barbados': 'BB',
+      'America/Belem': 'BR',
+      'America/Belize': 'BZ',
+      'America/Boa_Vista': 'BR',
+      'America/Bogota': 'CO',
+      'America/Boise': 'US',
+      'America/Cambridge_Bay': 'CA',
+      'America/Campo_Grande': 'BR',
+      'America/Cancun': 'MX',
+      'America/Caracas': 'VE',
+      'America/Cayenne': 'GF',
+      'America/Chicago': 'US',
+      'America/Chihuahua': 'MX',
+      'America/Ciudad_Juarez': 'MX',
+      'America/Costa_Rica': 'CR',
+      'America/Coyhaique': 'CL',
+      'America/Cuiaba': 'BR',
+      'America/Danmarkshavn': 'GL',
+      'America/Dawson': 'CA',
+      'America/Dawson_Creek': 'CA',
+      'America/Denver': 'US',
+      'America/Detroit': 'US',
+      'America/Edmonton': 'CA',
+      'America/Eirunepe': 'BR',
+      'America/El_Salvador': 'SV',
+      'America/Fort_Nelson': 'CA',
+      'America/Fortaleza': 'BR',
+      'America/Glace_Bay': 'CA',
+      'America/Goose_Bay': 'CA',
+      'America/Grand_Turk': 'TC',
+      'America/Guatemala': 'GT',
+      'America/Guayaquil': 'EC',
+      'America/Guyana': 'GY',
+      'America/Halifax': 'CA',
+      'America/Havana': 'CU',
+      'America/Hermosillo': 'MX',
+      'America/Indiana/Indianapolis': 'US',
+      'America/Indiana/Knox': 'US',
+      'America/Indiana/Marengo': 'US',
+      'America/Indiana/Petersburg': 'US',
+      'America/Indiana/Tell_City': 'US',
+      'America/Indiana/Vevay': 'US',
+      'America/Indiana/Vincennes': 'US',
+      'America/Indiana/Winamac': 'US',
+      'America/Inuvik': 'CA',
+      'America/Iqaluit': 'CA',
+      'America/Jamaica': 'JM',
+      'America/Juneau': 'US',
+      'America/Kentucky/Louisville': 'US',
+      'America/Kentucky/Monticello': 'US',
+      'America/La_Paz': 'BO',
+      'America/Lima': 'PE',
+      'America/Los_Angeles': 'US',
+      'America/Maceio': 'BR',
+      'America/Managua': 'NI',
+      'America/Manaus': 'BR',
+      'America/Martinique': 'MQ',
+      'America/Matamoros': 'MX',
+      'America/Mazatlan': 'MX',
+      'America/Menominee': 'US',
+      'America/Merida': 'MX',
+      'America/Metlakatla': 'US',
+      'America/Mexico_City': 'MX',
+      'America/Miquelon': 'PM',
+      'America/Moncton': 'CA',
+      'America/Monterrey': 'MX',
+      'America/Montevideo': 'UY',
+      'America/New_York': 'US',
+      'America/Nome': 'US',
+      'America/Noronha': 'BR',
+      'America/North_Dakota/Beulah': 'US',
+      'America/North_Dakota/Center': 'US',
+      'America/North_Dakota/New_Salem': 'US',
+      'America/Nuuk': 'GL',
+      'America/Ojinaga': 'MX',
+      'America/Paramaribo': 'SR',
+      'America/Port-au-Prince': 'HT',
+      'America/Porto_Velho': 'BR',
+      'America/Punta_Arenas': 'CL',
+      'America/Rankin_Inlet': 'CA',
+      'America/Recife': 'BR',
+      'America/Regina': 'CA',
+      'America/Resolute': 'CA',
+      'America/Rio_Branco': 'BR',
+      'America/Santarem': 'BR',
+      'America/Santiago': 'CL',
+      'America/Santo_Domingo': 'DO',
+      'America/Sao_Paulo': 'BR',
+      'America/Scoresbysund': 'GL',
+      'America/Sitka': 'US',
+      'America/St_Johns': 'CA',
+      'America/Swift_Current': 'CA',
+      'America/Tegucigalpa': 'HN',
+      'America/Thule': 'GL',
+      'America/Tijuana': 'MX',
+      'America/Vancouver': 'CA',
+      'America/Whitehorse': 'CA',
+      'America/Winnipeg': 'CA',
+      'America/Yakutat': 'US',
+      'Antarctica/Casey': 'AQ',
+      'Antarctica/Davis': 'AQ',
+      'Antarctica/Macquarie': 'AU',
+      'Antarctica/Mawson': 'AQ',
+      'Antarctica/Palmer': 'AQ',
+      'Antarctica/Rothera': 'AQ',
+      'Antarctica/Troll': 'AQ',
+      'Antarctica/Vostok': 'AQ',
+      'Asia/Almaty': 'KZ',
+      'Asia/Amman': 'JO',
+      'Asia/Anadyr': 'RU',
+      'Asia/Aqtau': 'KZ',
+      'Asia/Aqtobe': 'KZ',
+      'Asia/Ashgabat': 'TM',
+      'Asia/Atyrau': 'KZ',
+      'Asia/Baghdad': 'IQ',
+      'Asia/Baku': 'AZ',
+      'Asia/Barnaul': 'RU',
+      'Asia/Beirut': 'LB',
+      'Asia/Bishkek': 'KG',
+      'Asia/Chita': 'RU',
+      'Asia/Colombo': 'LK',
+      'Asia/Damascus': 'SY',
+      'Asia/Dhaka': 'BD',
+      'Asia/Dili': 'TL',
+      'Asia/Dushanbe': 'TJ',
+      'Asia/Famagusta': 'CY',
+      'Asia/Gaza': 'PS',
+      'Asia/Hebron': 'PS',
+      'Asia/Ho_Chi_Minh': 'VN',
+      'Asia/Hong_Kong': 'HK',
+      'Asia/Hovd': 'MN',
+      'Asia/Irkutsk': 'RU',
+      'Asia/Jakarta': 'ID',
+      'Asia/Jayapura': 'ID',
+      'Asia/Jerusalem': 'IL',
+      'Asia/Kabul': 'AF',
+      'Asia/Kamchatka': 'RU',
+      'Asia/Karachi': 'PK',
+      'Asia/Kathmandu': 'NP',
+      'Asia/Khandyga': 'RU',
+      'Asia/Kolkata': 'IN',
+      'Asia/Krasnoyarsk': 'RU',
+      'Asia/Macau': 'MO',
+      'Asia/Magadan': 'RU',
+      'Asia/Makassar': 'ID',
+      'Asia/Manila': 'PH',
+      'Asia/Nicosia': 'CY',
+      'Asia/Novokuznetsk': 'RU',
+      'Asia/Novosibirsk': 'RU',
+      'Asia/Omsk': 'RU',
+      'Asia/Oral': 'KZ',
+      'Asia/Pontianak': 'ID',
+      'Asia/Pyongyang': 'KP',
+      'Asia/Qostanay': 'KZ',
+      'Asia/Qyzylorda': 'KZ',
+      'Asia/Sakhalin': 'RU',
+      'Asia/Samarkand': 'UZ',
+      'Asia/Seoul': 'KR',
+      'Asia/Shanghai': 'CN',
+      'Asia/Srednekolymsk': 'RU',
+      'Asia/Taipei': 'TW',
+      'Asia/Tashkent': 'UZ',
+      'Asia/Tbilisi': 'GE',
+      'Asia/Tehran': 'IR',
+      'Asia/Thimphu': 'BT',
+      'Asia/Tomsk': 'RU',
+      'Asia/Ulaanbaatar': 'MN',
+      'Asia/Urumqi': 'CN',
+      'Asia/Ust-Nera': 'RU',
+      'Asia/Vladivostok': 'RU',
+      'Asia/Yakutsk': 'RU',
+      'Asia/Yekaterinburg': 'RU',
+      'Asia/Yerevan': 'AM',
+      'Atlantic/Azores': 'PT',
+      'Atlantic/Bermuda': 'BM',
+      'Atlantic/Canary': 'ES',
+      'Atlantic/Cape_Verde': 'CV',
+      'Atlantic/Faroe': 'FO',
+      'Atlantic/Madeira': 'PT',
+      'Atlantic/South_Georgia': 'GS',
+      'Atlantic/Stanley': 'FK',
+      'Australia/Adelaide': 'AU',
+      'Australia/Brisbane': 'AU',
+      'Australia/Broken_Hill': 'AU',
+      'Australia/Darwin': 'AU',
+      'Australia/Eucla': 'AU',
+      'Australia/Hobart': 'AU',
+      'Australia/Lindeman': 'AU',
+      'Australia/Lord_Howe': 'AU',
+      'Australia/Melbourne': 'AU',
+      'Australia/Perth': 'AU',
+      'Australia/Sydney': 'AU',
+      'Europe/Andorra': 'AD',
+      'Europe/Astrakhan': 'RU',
+      'Europe/Athens': 'GR',
+      'Europe/Bucharest': 'RO',
+      'Europe/Budapest': 'HU',
+      'Europe/Chisinau': 'MD',
+      'Europe/Dublin': 'IE',
+      'Europe/Gibraltar': 'GI',
+      'Europe/Istanbul': 'TR',
+      'Europe/Kaliningrad': 'RU',
+      'Europe/Kirov': 'RU',
+      'Europe/Kyiv': 'UA',
+      'Europe/Lisbon': 'PT',
+      'Europe/Madrid': 'ES',
+      'Europe/Malta': 'MT',
+      'Europe/Minsk': 'BY',
+      'Europe/Moscow': 'RU',
+      'Europe/Riga': 'LV',
+      'Europe/Samara': 'RU',
+      'Europe/Saratov': 'RU',
+      'Europe/Sofia': 'BG',
+      'Europe/Tallinn': 'EE',
+      'Europe/Tirane': 'AL',
+      'Europe/Ulyanovsk': 'RU',
+      'Europe/Vienna': 'AT',
+      'Europe/Vilnius': 'LT',
+      'Europe/Volgograd': 'RU',
+      'Europe/Warsaw': 'PL',
+      'Indian/Chagos': 'IO',
+      'Indian/Mauritius': 'MU',
+      'Pacific/Apia': 'WS',
+      'Pacific/Bougainville': 'PG',
+      'Pacific/Chatham': 'NZ',
+      'Pacific/Easter': 'CL',
+      'Pacific/Efate': 'VU',
+      'Pacific/Fakaofo': 'TK',
+      'Pacific/Fiji': 'FJ',
+      'Pacific/Galapagos': 'EC',
+      'Pacific/Gambier': 'PF',
+      'Pacific/Honolulu': 'US',
+      'Pacific/Kanton': 'KI',
+      'Pacific/Kiritimati': 'KI',
+      'Pacific/Kosrae': 'FM',
+      'Pacific/Kwajalein': 'MH',
+      'Pacific/Marquesas': 'PF',
+      'Pacific/Nauru': 'NR',
+      'Pacific/Niue': 'NU',
+      'Pacific/Norfolk': 'NF',
+      'Pacific/Noumea': 'NC',
+      'Pacific/Palau': 'PW',
+      'Pacific/Pitcairn': 'PN',
+      'Pacific/Rarotonga': 'CK',
+      'Pacific/Tahiti': 'PF',
+      'Pacific/Tongatapu': 'TO',
+    });
     const UI_LANGUAGES = Object.freeze({
       tok: Object.freeze({
         documentTitle: "lipu tenpo pi nanpa-linja-n",
@@ -828,12 +1264,19 @@
         home: "tomo",
         introHelp: 'lipu tenpo Gregorian ni li open e esun kepeken tenpo suno mun. tenpo mun en tenpo suno li kepeken sitelen poki nanpa pi nanpa-linja-n; sitelen poki pi tenpo suno li open kepeken <strong>suno</strong> li pini kepeken <strong>nanpa</strong>. lipu PDF pi tenpo sike li jo e lukin 4 × 3 lon lipu nanpa wan, li jo e lipu wan pi tenpo mun lon lipu 12 ante.',
         languageLabel: "toki",
+        countryLabel: "ma",
+        holidayTypeLabel: "nasin pi tenpo suno suli",
+        holidayNoneOption: "tenpo suno suli ala",
+        holidayAllOption: "ale",
+        holidayPublicOption: "pi jan ale",
+        holidayOthersOption: "ante",
+        holidaysHeading: "tenpo suno suli",
         yearLabel: "tenpo sike",
         monthLabel: "tenpo mun",
         allOption: "ale",
         exportMonth: "o kama jo e PDF pi tenpo mun",
         exportYear: "o kama jo e PDF pi tenpo sike",
-        pdfHelp: "ilo ni li pana e lipu PDF A4 lon nasin supa. lipu PDF pi tenpo sike li jo e lukin 4 × 3 lon lipu nanpa wan, li jo e lipu wan pi tenpo mun lon lipu 12 ante.",
+        pdfHelp: "ilo ni li pana e lipu PDF A4 lon nasin supa. lipu PDF pi tenpo sike li jo e lukin 4 × 3 lon lipu nanpa wan, li jo e lipu wan pi tenpo mun lon lipu 12 ante. tenpo suno suli la lipu PDF li pana e lipu ante pi nimi tenpo suno suli.",
         controlsAria: "ilo pi lipu tenpo",
         calendarAria: "lipu tenpo",
         disclaimer: '<strong>sona:</strong> ilo ni li lon nasin “as is”. mi pana ala e wawa pona. sina o lukin e ni: sitelen li pona anu seme.',
@@ -854,12 +1297,19 @@
         home: "Home",
         introHelp: 'Monday-first Gregorian calendar. Month and date identities use nanpa-linja-n numeric cartouches; date cartouches open with <strong>suno</strong> and close with <strong>nanpa</strong>. Full-year PDF export uses a 4 × 3 landscape overview on page 1, followed by one full landscape month per page.',
         languageLabel: "Language",
+        countryLabel: "Country",
+        holidayTypeLabel: "Holiday type",
+        holidayNoneOption: "No Holidays",
+        holidayAllOption: "All",
+        holidayPublicOption: "Public",
+        holidayOthersOption: "Others",
+        holidaysHeading: "Holidays",
         yearLabel: "Year",
         monthLabel: "Month",
         allOption: "All",
         exportMonth: "Export month PDF",
         exportYear: "Export full year PDF",
-        pdfHelp: "PDF export downloads an A4 landscape PDF directly. Full-year export contains a 4 × 3 overview page followed by one full landscape page per month.",
+        pdfHelp: "PDF export downloads an A4 landscape PDF directly. Full-year export contains a 4 × 3 overview page followed by one full landscape page per month. When holidays are selected, additional holiday-list pages are appended as needed.",
         controlsAria: "Calendar controls",
         calendarAria: "Calendar",
         disclaimer: '<strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.',
@@ -893,6 +1343,730 @@
     }
 
     let uiLanguage = loadUiLanguage();
+    let holidayCountries = [];
+    let holidayCountryByCode = new Map();
+    let holidayLoadGeneration = 0;
+    const holidayCountryArchiveMemory = new Map();
+    let holidaySharedDataState = {
+      manifestVersion: null,
+      source: null,
+      files: null,
+      error: null
+    };
+    let holidayDataState = {
+      country: null,
+      year: null,
+      url: null,
+      data: null,
+      filteredHolidays: [],
+      holidayListEntries: [],
+      error: null
+    };
+
+    function idbRequestResult(request) {
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("IndexedDB request failed."));
+      });
+    }
+
+    function idbTransactionComplete(transaction) {
+      return new Promise((resolve, reject) => {
+        transaction.oncomplete = () => resolve();
+        transaction.onabort = () => reject(transaction.error || new Error("IndexedDB transaction was aborted."));
+        transaction.onerror = () => reject(transaction.error || new Error("IndexedDB transaction failed."));
+      });
+    }
+
+    function openHolidayCacheDb() {
+      if (!globalThis.indexedDB) return Promise.reject(new Error("IndexedDB is unavailable."));
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(HOLIDAY_CACHE_DB_NAME, HOLIDAY_CACHE_DB_VERSION);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(HOLIDAY_CACHE_FILES_STORE)) db.createObjectStore(HOLIDAY_CACHE_FILES_STORE);
+          if (!db.objectStoreNames.contains(HOLIDAY_CACHE_METADATA_STORE)) db.createObjectStore(HOLIDAY_CACHE_METADATA_STORE);
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Holiday cache database could not be opened."));
+      });
+    }
+
+    function completeHolidaySharedFiles(files) {
+      return !!files && Object.keys(HOLIDAY_SHARED_FILE_URLS).every(name => files[name] != null);
+    }
+
+    async function readHolidaySharedCache() {
+      const db = await openHolidayCacheDb();
+      try {
+        const transaction = db.transaction(
+          [HOLIDAY_CACHE_FILES_STORE, HOLIDAY_CACHE_METADATA_STORE],
+          "readonly"
+        );
+        const done = idbTransactionComplete(transaction);
+        const filesStore = transaction.objectStore(HOLIDAY_CACHE_FILES_STORE);
+        const metadataStore = transaction.objectStore(HOLIDAY_CACHE_METADATA_STORE);
+        const versionPromise = idbRequestResult(metadataStore.get(HOLIDAY_CACHE_MANIFEST_KEY));
+        const fileEntries = await Promise.all(
+          Object.keys(HOLIDAY_SHARED_FILE_URLS).map(async name => [name, await idbRequestResult(filesStore.get(name))])
+        );
+        const manifestVersion = await versionPromise;
+        await done;
+        return {
+          manifestVersion: typeof manifestVersion === "string" ? manifestVersion : null,
+          files: Object.fromEntries(fileEntries)
+        };
+      } finally {
+        db.close();
+      }
+    }
+
+    async function writeHolidaySharedCache(manifestVersion, files, { clearFiles = false } = {}) {
+      const db = await openHolidayCacheDb();
+      try {
+        const transaction = db.transaction(
+          [HOLIDAY_CACHE_FILES_STORE, HOLIDAY_CACHE_METADATA_STORE],
+          "readwrite"
+        );
+        const done = idbTransactionComplete(transaction);
+        const filesStore = transaction.objectStore(HOLIDAY_CACHE_FILES_STORE);
+        const metadataStore = transaction.objectStore(HOLIDAY_CACHE_METADATA_STORE);
+        if (clearFiles) filesStore.clear();
+        for (const name of Object.keys(HOLIDAY_SHARED_FILE_URLS)) filesStore.put(files[name], name);
+        metadataStore.put(String(manifestVersion), HOLIDAY_CACHE_MANIFEST_KEY);
+        await done;
+      } finally {
+        db.close();
+      }
+    }
+
+    async function fetchHolidayJson(url, options = {}) {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`.trim());
+      return response.json();
+    }
+
+    function holidayCountryArchiveCacheKey(countryCode) {
+      return `${HOLIDAY_CACHE_COUNTRY_ZIP_PREFIX}${String(countryCode || "").toUpperCase()}`;
+    }
+
+    function holidayCountryArchiveUrl(countryCode) {
+      const code = String(countryCode || "").toUpperCase();
+      return `${HOLIDAY_DATA_ROOT}/${code}.zip`;
+    }
+
+    function holidayCountryArchiveMember(countryCode, year) {
+      const code = String(countryCode || "").toUpperCase();
+      const numericYear = Number(year);
+      return `${code}/${numericYear}/${code}_${numericYear}.json`;
+    }
+
+    async function readHolidayCountryArchiveCache(countryCode) {
+      const db = await openHolidayCacheDb();
+      try {
+        const transaction = db.transaction(HOLIDAY_CACHE_FILES_STORE, "readonly");
+        const done = idbTransactionComplete(transaction);
+        const value = await idbRequestResult(
+          transaction.objectStore(HOLIDAY_CACHE_FILES_STORE).get(
+            holidayCountryArchiveCacheKey(countryCode)
+          )
+        );
+        await done;
+        if (value instanceof ArrayBuffer) return value;
+        if (ArrayBuffer.isView(value)) {
+          return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+        }
+        if (value instanceof Blob) return value.arrayBuffer();
+        return null;
+      } finally {
+        db.close();
+      }
+    }
+
+    async function writeHolidayCountryArchiveCache(countryCode, arrayBuffer) {
+      const db = await openHolidayCacheDb();
+      try {
+        const transaction = db.transaction(HOLIDAY_CACHE_FILES_STORE, "readwrite");
+        const done = idbTransactionComplete(transaction);
+        transaction.objectStore(HOLIDAY_CACHE_FILES_STORE).put(
+          arrayBuffer,
+          holidayCountryArchiveCacheKey(countryCode)
+        );
+        await done;
+      } finally {
+        db.close();
+      }
+    }
+
+    async function fetchHolidayCountryArchive(countryCode) {
+      const url = holidayCountryArchiveUrl(countryCode);
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`.trim());
+      return response.arrayBuffer();
+    }
+
+    async function loadHolidayCountryArchive(countryCode) {
+      const code = String(countryCode || "").toUpperCase();
+      if (holidayCountryArchiveMemory.has(code)) {
+        return {
+          arrayBuffer: holidayCountryArchiveMemory.get(code),
+          source: "memory"
+        };
+      }
+
+      try {
+        const cached = await readHolidayCountryArchiveCache(code);
+        if (cached) {
+          holidayCountryArchiveMemory.set(code, cached);
+          return { arrayBuffer: cached, source: "indexeddb" };
+        }
+      } catch (error) {
+        console.warn(`Holiday ZIP cache could not be read for ${code}:`, error);
+      }
+
+      const arrayBuffer = await fetchHolidayCountryArchive(code);
+      holidayCountryArchiveMemory.set(code, arrayBuffer);
+
+      if (holidaySharedDataState.manifestVersion) {
+        try {
+          await writeHolidayCountryArchiveCache(code, arrayBuffer);
+        } catch (error) {
+          console.warn(`Holiday ZIP could not be saved to IndexedDB for ${code}:`, error);
+        }
+      }
+
+      return { arrayBuffer, source: "network" };
+    }
+
+    function findHolidayZipEntry(arrayBuffer, memberName) {
+      const bytes = new Uint8Array(arrayBuffer);
+      const view = new DataView(arrayBuffer);
+      const minimumEocdSize = 22;
+      if (bytes.byteLength < minimumEocdSize) throw new Error("Holiday ZIP is too small.");
+
+      const eocdSearchStart = Math.max(0, bytes.byteLength - 65557);
+      let eocdOffset = -1;
+      for (let offset = bytes.byteLength - minimumEocdSize; offset >= eocdSearchStart; offset -= 1) {
+        if (view.getUint32(offset, true) === 0x06054b50) {
+          eocdOffset = offset;
+          break;
+        }
+      }
+      if (eocdOffset < 0) throw new Error("Holiday ZIP end record was not found.");
+
+      const entryCount = view.getUint16(eocdOffset + 10, true);
+      const centralDirectoryOffset = view.getUint32(eocdOffset + 16, true);
+      const decoder = new TextDecoder("utf-8");
+      let offset = centralDirectoryOffset;
+
+      for (let index = 0; index < entryCount; index += 1) {
+        if (offset + 46 > bytes.byteLength || view.getUint32(offset, true) !== 0x02014b50) {
+          throw new Error("Holiday ZIP central directory is invalid.");
+        }
+
+        const flags = view.getUint16(offset + 8, true);
+        const compressionMethod = view.getUint16(offset + 10, true);
+        const compressedSize = view.getUint32(offset + 20, true);
+        const uncompressedSize = view.getUint32(offset + 24, true);
+        const nameLength = view.getUint16(offset + 28, true);
+        const extraLength = view.getUint16(offset + 30, true);
+        const commentLength = view.getUint16(offset + 32, true);
+        const localHeaderOffset = view.getUint32(offset + 42, true);
+        const nameStart = offset + 46;
+        const nameEnd = nameStart + nameLength;
+        if (nameEnd > bytes.byteLength) throw new Error("Holiday ZIP member name is invalid.");
+        const name = decoder.decode(bytes.subarray(nameStart, nameEnd));
+
+        if (name === memberName) {
+          if ((flags & 0x0001) !== 0) throw new Error(`Holiday ZIP member is encrypted: ${memberName}`);
+          if (localHeaderOffset + 30 > bytes.byteLength || view.getUint32(localHeaderOffset, true) !== 0x04034b50) {
+            throw new Error(`Holiday ZIP local header is invalid: ${memberName}`);
+          }
+
+          const localNameLength = view.getUint16(localHeaderOffset + 26, true);
+          const localExtraLength = view.getUint16(localHeaderOffset + 28, true);
+          const dataOffset = localHeaderOffset + 30 + localNameLength + localExtraLength;
+          const dataEnd = dataOffset + compressedSize;
+          if (dataEnd > bytes.byteLength) throw new Error(`Holiday ZIP member data is truncated: ${memberName}`);
+
+          return {
+            name,
+            compressionMethod,
+            uncompressedSize,
+            compressedData: bytes.slice(dataOffset, dataEnd)
+          };
+        }
+
+        offset = nameEnd + extraLength + commentLength;
+      }
+
+      throw new Error(`Holiday ZIP member was not found: ${memberName}`);
+    }
+
+    async function holidayZipEntryBytes(arrayBuffer, memberName) {
+      const entry = findHolidayZipEntry(arrayBuffer, memberName);
+      let bytes;
+
+      if (entry.compressionMethod === 0) {
+        bytes = entry.compressedData;
+      } else if (entry.compressionMethod === 8) {
+        if (typeof DecompressionStream !== "function") {
+          throw new Error("This browser does not support DEFLATE ZIP extraction.");
+        }
+        const stream = new Blob([entry.compressedData])
+          .stream()
+          .pipeThrough(new DecompressionStream("deflate-raw"));
+        bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+      } else {
+        throw new Error(
+          `Unsupported ZIP compression method ${entry.compressionMethod} for ${memberName}.`
+        );
+      }
+
+      if (bytes.byteLength !== entry.uncompressedSize) {
+        throw new Error(`Holiday ZIP member size mismatch: ${memberName}`);
+      }
+      return bytes;
+    }
+
+    async function loadHolidayYearFromCountryArchive(countryCode, year) {
+      const code = String(countryCode || "").toUpperCase();
+      const member = holidayCountryArchiveMember(code, year);
+      const archive = await loadHolidayCountryArchive(code);
+      const bytes = await holidayZipEntryBytes(archive.arrayBuffer, member);
+      const text = new TextDecoder("utf-8").decode(bytes);
+      return {
+        data: JSON.parse(text),
+        source: archive.source,
+        archiveUrl: holidayCountryArchiveUrl(code),
+        member
+      };
+    }
+
+    async function fetchHolidaySharedFiles() {
+      const entries = await Promise.all(
+        Object.entries(HOLIDAY_SHARED_FILE_URLS).map(async ([name, url]) => [name, await fetchHolidayJson(url, { cache: "no-store" })])
+      );
+      return Object.fromEntries(entries);
+    }
+
+    async function loadHolidaySharedData() {
+      let manifestVersion = null;
+      let manifestError = null;
+      try {
+        const manifest = await fetchHolidayJson(HOLIDAY_MANIFEST_URL, { cache: "no-store" });
+        manifestVersion = String(manifest?.version || "").trim();
+        if (!manifestVersion) throw new Error("Holiday manifest has no version value.");
+      } catch (error) {
+        manifestError = error;
+      }
+
+      let cached = null;
+      let cacheReadError = null;
+      try {
+        cached = await readHolidaySharedCache();
+      } catch (error) {
+        cacheReadError = error;
+      }
+
+      if (!manifestError && cached?.manifestVersion === manifestVersion && completeHolidaySharedFiles(cached.files)) {
+        holidaySharedDataState = { manifestVersion, source: "indexeddb", files: cached.files, error: null };
+        return holidaySharedDataState;
+      }
+
+      if (manifestError && completeHolidaySharedFiles(cached?.files)) {
+        console.warn(`Holiday manifest could not be loaded from ${HOLIDAY_MANIFEST_URL}; using IndexedDB cache:`, manifestError);
+        holidaySharedDataState = {
+          manifestVersion: cached.manifestVersion,
+          source: "indexeddb-stale",
+          files: cached.files,
+          error: String(manifestError?.message || manifestError)
+        };
+        return holidaySharedDataState;
+      }
+
+      try {
+        const files = await fetchHolidaySharedFiles();
+        if (!manifestError) {
+          try {
+            const manifestChanged = cached?.manifestVersion !== manifestVersion;
+            if (manifestChanged) holidayCountryArchiveMemory.clear();
+            await writeHolidaySharedCache(
+              manifestVersion,
+              files,
+              { clearFiles: manifestChanged }
+            );
+          } catch (error) {
+            console.warn("Holiday shared data could not be saved to IndexedDB:", error);
+          }
+        } else if (cacheReadError) {
+          console.warn("Holiday IndexedDB cache is unavailable:", cacheReadError);
+        }
+        holidaySharedDataState = {
+          manifestVersion: manifestError ? null : manifestVersion,
+          source: "network",
+          files,
+          error: manifestError ? String(manifestError?.message || manifestError) : null
+        };
+        return holidaySharedDataState;
+      } catch (error) {
+        if (completeHolidaySharedFiles(cached?.files)) {
+          console.warn("Holiday shared data refresh failed; using the existing IndexedDB cache:", error);
+          holidaySharedDataState = {
+            manifestVersion: cached.manifestVersion,
+            source: "indexeddb-stale",
+            files: cached.files,
+            error: String(error?.message || error)
+          };
+          return holidaySharedDataState;
+        }
+        holidaySharedDataState = {
+          manifestVersion: manifestError ? null : manifestVersion,
+          source: null,
+          files: null,
+          error: String(error?.message || error)
+        };
+        throw error;
+      }
+    }
+
+    function normalizeHolidayType(value) {
+      const normalized = String(value || "").toLowerCase();
+      return HOLIDAY_TYPES.has(normalized) ? normalized : HOLIDAY_TYPE_DEFAULT;
+    }
+
+    function loadSavedHolidayCountry() {
+      try { return String(localStorage.getItem(HOLIDAY_COUNTRY_STORAGE_KEY) || "").toUpperCase(); }
+      catch { return ""; }
+    }
+
+    function saveHolidayCountry(value) {
+      try { localStorage.setItem(HOLIDAY_COUNTRY_STORAGE_KEY, String(value || "").toUpperCase()); }
+      catch {}
+    }
+
+    function loadHolidayType() {
+      try { return normalizeHolidayType(localStorage.getItem(HOLIDAY_TYPE_STORAGE_KEY)); }
+      catch { return HOLIDAY_TYPE_DEFAULT; }
+    }
+
+    function saveHolidayType(value) {
+      try { localStorage.setItem(HOLIDAY_TYPE_STORAGE_KEY, normalizeHolidayType(value)); }
+      catch {}
+    }
+
+    function browserTimeZoneCountryCandidate() {
+      let timeZone = "";
+      try {
+        timeZone = String(Intl.DateTimeFormat().resolvedOptions().timeZone || "").trim();
+      } catch {}
+      const code = String(UNAMBIGUOUS_TIMEZONE_COUNTRY[timeZone] || "").toUpperCase();
+      return /^[A-Z]{2}$/.test(code) ? code : "";
+    }
+
+    function browserLocaleCountryCandidates() {
+      const localeValues = [];
+      if (Array.isArray(navigator.languages)) localeValues.push(...navigator.languages);
+      if (navigator.language) localeValues.push(navigator.language);
+      const out = [];
+      for (const rawLocale of localeValues) {
+        const locale = String(rawLocale || "").trim().replace(/_/g, "-");
+        if (!locale) continue;
+        let region = "";
+        try {
+          if (typeof Intl?.Locale === "function") region = String(new Intl.Locale(locale).region || "").toUpperCase();
+        } catch {}
+        if (!region) {
+          const parts = locale.split("-");
+          for (let i = parts.length - 1; i >= 1; i -= 1) {
+            if (/^[A-Za-z]{2}$/.test(parts[i])) {
+              region = parts[i].toUpperCase();
+              break;
+            }
+          }
+        }
+        if (/^[A-Z]{2}$/.test(region) && !out.includes(region)) out.push(region);
+      }
+      return out;
+    }
+
+    function detectBrowserCountryCode(validCodes) {
+      const codes = validCodes instanceof Set ? validCodes : new Set(validCodes || []);
+      const timeZoneCode = browserTimeZoneCountryCandidate();
+      if (timeZoneCode && codes.has(timeZoneCode)) return timeZoneCode;
+      for (const code of browserLocaleCountryCandidates()) {
+        if (codes.has(code)) return code;
+      }
+      if (codes.has(HOLIDAY_COUNTRY_DEFAULT)) return HOLIDAY_COUNTRY_DEFAULT;
+      return codes.values().next().value || HOLIDAY_COUNTRY_DEFAULT;
+    }
+
+    function holidayFileUrl(countryCode, year) {
+      const code = String(countryCode || "").toUpperCase();
+      return `${holidayCountryArchiveUrl(code)}!${holidayCountryArchiveMember(code, year)}`;
+    }
+
+    function holidayMatchesType(holiday, type = holidayTypeSelect?.value) {
+      if (holiday?.calendarExcluded === true) return false;
+      const normalizedType = normalizeHolidayType(type);
+      const categories = Array.isArray(holiday?.categories) ? holiday.categories.map(value => String(value).toLowerCase()) : [];
+      if (normalizedType === "none") return false;
+      if (normalizedType === "all") return true;
+      if (normalizedType === "public") return categories.includes("public");
+      return categories.some(category => category !== "public");
+    }
+
+    function filterHolidayData(data, type = holidayTypeSelect?.value) {
+      const holidays = Array.isArray(data?.holidays) ? data.holidays : [];
+      return holidays.filter(holiday => holidayMatchesType(holiday, type));
+    }
+
+    function multiDayHolidayGroupKey(holiday) {
+      if (holiday?.multiDay !== true) return null;
+      const start = String(holiday?.multiDayStart || "").trim();
+      const end = String(holiday?.multiDayEnd || "").trim();
+      if (!start || !end) return null;
+
+      const name = String(holiday?.name || "");
+      const baseName = String(holiday?.baseName || "");
+      const observed = holiday?.observed === true ? "1" : "0";
+      const categories = Array.isArray(holiday?.categories)
+        ? holiday.categories.map(value => String(value).toLowerCase()).sort().join(",")
+        : "";
+
+      return [start, end, name, baseName, observed, categories].join("|");
+    }
+
+    function collapseMultiDayHolidayEntries(holidays) {
+      const source = Array.isArray(holidays) ? holidays : [];
+      const out = [];
+      const seenMultiDayGroups = new Set();
+
+      for (const holiday of source) {
+        const groupKey = multiDayHolidayGroupKey(holiday);
+        if (groupKey == null) {
+          out.push(holiday);
+          continue;
+        }
+        if (seenMultiDayGroups.has(groupKey)) continue;
+        seenMultiDayGroups.add(groupKey);
+        out.push(holiday);
+      }
+
+      return out;
+    }
+
+    function holidayListEntries(data, type = holidayTypeSelect?.value) {
+      return collapseMultiDayHolidayEntries(filterHolidayData(data, type));
+    }
+
+    let holidayTokiPonaMapSource = null;
+    let holidayTokiPonaMap = new Map();
+
+    function holidayTokiPonaNameMap() {
+      const source = holidaySharedDataState.files?.["toki-pona-name-map.json"] || null;
+      if (source === holidayTokiPonaMapSource) return holidayTokiPonaMap;
+      holidayTokiPonaMapSource = source;
+      const next = new Map();
+      const rows = Array.isArray(source?.names) ? source.names : (Array.isArray(source) ? source : []);
+      for (const row of rows) {
+        const name = String(row?.name || "").trim();
+        const tokiPona = String(row?.tokiPona || "").trim();
+        if (name && tokiPona) next.set(name, tokiPona);
+      }
+      holidayTokiPonaMap = next;
+      return holidayTokiPonaMap;
+    }
+
+    function holidayDisplayName(holiday, language = uiLanguage) {
+      if (normalizeUiLanguage(language) === "en") return String(holiday?.name || holiday?.baseName || "").trim();
+      const map = holidayTokiPonaNameMap();
+      const baseName = String(holiday?.baseName || "").trim();
+      const exactName = String(holiday?.name || "").trim();
+      return map.get(baseName) || map.get(exactName) || "";
+    }
+
+    function parseHolidayIsoDate(value) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || "").trim());
+      if (!match) return null;
+      const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
+      if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day) || month < 1 || month > 12 || day < 1 || day > 31) return null;
+      return { iso: `${match[1]}-${match[2]}-${match[3]}`, year, month, day };
+    }
+
+    function holidayEventsByDayForMonth(year, month, holidays = holidayDataState.filteredHolidays) {
+      const map = new Map();
+      for (const holiday of (Array.isArray(holidays) ? holidays : [])) {
+        const parsed = parseHolidayIsoDate(holiday?.date);
+        if (!parsed || parsed.year !== Number(year) || parsed.month !== Number(month)) continue;
+        if (!map.has(parsed.day)) map.set(parsed.day, []);
+        map.get(parsed.day).push(holiday);
+      }
+      return map;
+    }
+
+    function holidayEntryStartIso(holiday) {
+      const start = holiday?.multiDay === true ? String(holiday?.multiDayStart || "").trim() : "";
+      return parseHolidayIsoDate(start)?.iso || parseHolidayIsoDate(holiday?.date)?.iso || "";
+    }
+
+    function holidayEntryEndIso(holiday) {
+      const end = holiday?.multiDay === true ? String(holiday?.multiDayEnd || "").trim() : "";
+      return parseHolidayIsoDate(end)?.iso || parseHolidayIsoDate(holiday?.date)?.iso || "";
+    }
+
+    function holidayYearlessDateSource(value) {
+      const parsed = parseHolidayIsoDate(value);
+      if (!parsed) return "";
+      return `--${String(parsed.month).padStart(2, "0")}-${String(parsed.day).padStart(2, "0")}`;
+    }
+
+    function compareHolidayEntries(a, b) {
+      return holidayEntryStartIso(a).localeCompare(holidayEntryStartIso(b)) ||
+        String(a?.name || "").localeCompare(String(b?.name || ""));
+    }
+
+    function holidayListEntriesForMonth(year, month) {
+      const inMonth = holidayDataState.filteredHolidays.filter(holiday => {
+        const parsed = parseHolidayIsoDate(holiday?.date);
+        return parsed && parsed.year === Number(year) && parsed.month === Number(month);
+      });
+      return collapseMultiDayHolidayEntries(inMonth).sort(compareHolidayEntries);
+    }
+
+    function holidayListEntriesForYearMonth(year, month) {
+      return holidayDataState.holidayListEntries.filter(holiday => {
+        const start = parseHolidayIsoDate(holidayEntryStartIso(holiday));
+        const own = parseHolidayIsoDate(holiday?.date);
+        const anchor = start?.year === Number(year) ? start : own;
+        return anchor && anchor.year === Number(year) && anchor.month === Number(month);
+      }).sort(compareHolidayEntries);
+    }
+
+    function countryOptionText(country) {
+      const code = String(country?.code || "").toUpperCase();
+      const preferred = uiLanguage === "en"
+        ? country?.englishName
+        : (country?.tokiPonaName || country?.englishName);
+      const name = String(preferred || code).trim() || code;
+      return name === code ? code : `${name} (${code})`;
+    }
+
+    function refreshCountryOptions() {
+      if (!countrySelect || holidayCountries.length === 0) return;
+      const selected = String(countrySelect.value || "").toUpperCase();
+      const collator = new Intl.Collator("en", { sensitivity: "base" });
+      const sortedCountries = [...holidayCountries].sort((a, b) => {
+        const aName = String(uiLanguage === "en" ? (a?.englishName || a?.code || "") : (a?.tokiPonaName || a?.englishName || a?.code || ""));
+        const bName = String(uiLanguage === "en" ? (b?.englishName || b?.code || "") : (b?.tokiPonaName || b?.englishName || b?.code || ""));
+        return collator.compare(aName, bName) || collator.compare(String(a?.code || ""), String(b?.code || ""));
+      });
+      const fragment = document.createDocumentFragment();
+      for (const country of sortedCountries) {
+        const option = document.createElement("option");
+        option.value = String(country.code || "").toUpperCase();
+        option.textContent = countryOptionText(country);
+        fragment.append(option);
+      }
+      countrySelect.replaceChildren(fragment);
+      if (holidayCountryByCode.has(selected)) countrySelect.value = selected;
+    }
+
+    function updateFilteredHolidayState() {
+      holidayDataState = {
+        ...holidayDataState,
+        filteredHolidays: filterHolidayData(holidayDataState.data, holidayTypeSelect?.value),
+        holidayListEntries: holidayListEntries(holidayDataState.data, holidayTypeSelect?.value)
+      };
+    }
+
+    async function loadHolidayDataForSelection() {
+      const country = String(countrySelect?.value || HOLIDAY_COUNTRY_DEFAULT).toUpperCase();
+      const year = Number(yearSelect?.value);
+      const generation = ++holidayLoadGeneration;
+      if (normalizeHolidayType(holidayTypeSelect?.value) === "none") {
+        holidayDataState = {
+          country,
+          year,
+          url: null,
+          data: null,
+          filteredHolidays: [],
+          holidayListEntries: [],
+          error: null
+        };
+        return null;
+      }
+      const url = holidayFileUrl(country, year);
+      try {
+        const loaded = await loadHolidayYearFromCountryArchive(country, year);
+        const data = loaded.data;
+        if (String(data?.country || "").toUpperCase() !== country) throw new Error(`Holiday country mismatch in ${url}.`);
+        if (Number(data?.year) !== year) throw new Error(`Holiday year mismatch in ${url}.`);
+        if (!Array.isArray(data?.holidays)) throw new Error(`Holiday list is missing in ${url}.`);
+        if (generation !== holidayLoadGeneration) return null;
+        holidayDataState = {
+          country,
+          year,
+          url,
+          data,
+          filteredHolidays: filterHolidayData(data, holidayTypeSelect?.value),
+          holidayListEntries: holidayListEntries(data, holidayTypeSelect?.value),
+          error: null
+        };
+        return data;
+      } catch (error) {
+        if (generation !== holidayLoadGeneration) return null;
+        holidayDataState = {
+          country,
+          year,
+          url,
+          data: null,
+          filteredHolidays: [],
+          holidayListEntries: [],
+          error: String(error?.message || error)
+        };
+        console.warn(`Holiday data could not be loaded from ${url}:`, error);
+        return null;
+      }
+    }
+
+    async function initializeHolidayControls() {
+      if (holidayTypeSelect) {
+        holidayTypeSelect.value = loadHolidayType();
+        saveHolidayType(holidayTypeSelect.value);
+      }
+
+      try {
+        const sharedData = await loadHolidaySharedData();
+        const indexData = sharedData.files?.["index.json"];
+        if (!Array.isArray(indexData?.countries)) throw new Error("Holiday country index has no countries array.");
+        holidayCountries = indexData.countries
+          .filter(country => /^[A-Za-z]{2}$/.test(String(country?.code || "")))
+          .map(country => ({ ...country, code: String(country.code).toUpperCase() }));
+        holidayCountryByCode = new Map(holidayCountries.map(country => [country.code, country]));
+        if (holidayCountries.length === 0) throw new Error("Holiday country index contains no two-letter country codes.");
+
+        const validCodes = new Set(holidayCountryByCode.keys());
+        const savedCountry = loadSavedHolidayCountry();
+        const initialCountry = validCodes.has(savedCountry)
+          ? savedCountry
+          : detectBrowserCountryCode(validCodes);
+        refreshCountryOptions();
+        countrySelect.value = validCodes.has(initialCountry) ? initialCountry : detectBrowserCountryCode(validCodes);
+        countrySelect.disabled = false;
+        saveHolidayCountry(countrySelect.value);
+      } catch (error) {
+        console.warn(`Holiday country index could not be loaded from ${HOLIDAY_INDEX_URL}:`, error);
+        holidayCountries = [];
+        holidayCountryByCode = new Map();
+        countrySelect.replaceChildren(new Option(HOLIDAY_COUNTRY_DEFAULT, HOLIDAY_COUNTRY_DEFAULT));
+        countrySelect.value = HOLIDAY_COUNTRY_DEFAULT;
+        countrySelect.disabled = true;
+        saveHolidayCountry(HOLIDAY_COUNTRY_DEFAULT);
+      }
+
+      return loadHolidayDataForSelection();
+    }
 
     function uiText(key, ...args) {
       const value = UI_LANGUAGES[uiLanguage]?.[key] ?? UI_LANGUAGES[UI_LANGUAGE_DEFAULT]?.[key] ?? "";
@@ -914,6 +2088,10 @@
       const controls = document.getElementById("calendarControls");
       const homeLink = document.querySelector(".pageHomeLink");
       const allOption = monthSelect?.querySelector('option[value="all"]');
+      const holidayNoneOption = holidayTypeSelect?.querySelector('option[value="none"]');
+      const holidayAllOption = holidayTypeSelect?.querySelector('option[value="all"]');
+      const holidayPublicOption = holidayTypeSelect?.querySelector('option[value="public"]');
+      const holidayOthersOption = holidayTypeSelect?.querySelector('option[value="others"]');
 
       if (pageTitle) pageTitle.textContent = uiText("pageTitle");
       if (introHelp) introHelp.innerHTML = uiText("introHelp");
@@ -928,6 +2106,8 @@
 
       const labelMap = {
         languageLabel: "languageLabel",
+        countryLabel: "countryLabel",
+        holidayTypeLabel: "holidayTypeLabel",
         yearLabel: "yearLabel",
         monthLabel: "monthLabel",
         exportMonth: "exportMonth",
@@ -938,9 +2118,16 @@
         if (node) node.textContent = uiText(textKey);
       }
       if (allOption) allOption.textContent = uiText("allOption");
+      if (holidayNoneOption) holidayNoneOption.textContent = uiText("holidayNoneOption");
+      if (holidayAllOption) holidayAllOption.textContent = uiText("holidayAllOption");
+      if (holidayPublicOption) holidayPublicOption.textContent = uiText("holidayPublicOption");
+      if (holidayOthersOption) holidayOthersOption.textContent = uiText("holidayOthersOption");
       if (languageSelect) languageSelect.setAttribute("aria-label", uiText("languageLabel"));
+      if (countrySelect) countrySelect.setAttribute("aria-label", uiText("countryLabel"));
+      if (holidayTypeSelect) holidayTypeSelect.setAttribute("aria-label", uiText("holidayTypeLabel"));
       if (yearSelect) yearSelect.setAttribute("aria-label", uiText("yearLabel"));
       if (monthSelect) monthSelect.setAttribute("aria-label", uiText("monthLabel"));
+      refreshCountryOptions();
     }
 
     let renderGeneration = 0;
@@ -1341,6 +2528,120 @@
       return marker;
     }
 
+    function makeHolidayDots(count) {
+      const total = Math.max(0, Math.trunc(Number(count) || 0));
+      if (total < 1) return null;
+      const dots = el("span", "holidayDots");
+      dots.dataset.holidayCount = String(total);
+      dots.setAttribute("aria-hidden", "true");
+      return dots;
+    }
+
+    function holidayDotMetrics(cell) {
+      const compact = cell?.classList?.contains("compactDay");
+      const rich = cell?.classList?.contains("richDay");
+      const mobileRich = rich && window.innerWidth <= MOBILE_LAYOUT_MAX_WIDTH_PX;
+      if (compact) return { diameter: 3, gap: 2, inset: 4 };
+      if (mobileRich) return { diameter: 4, gap: 2, inset: 4 };
+      return { diameter: 5, gap: 4, inset: 6 };
+    }
+
+    function maxHolidayDotsForWidth(width, diameter, gap, inset) {
+      const usable = Math.max(0, Number(width) - 2 * Math.max(0, Number(inset) || 0));
+      const d = Math.max(1, Number(diameter) || 1);
+      const g = Math.max(0, Number(gap) || 0);
+      return Math.max(0, Math.floor((usable + g) / (d + g)));
+    }
+
+    function applyHolidayDotSizing(root = calendarHost) {
+      if (!root?.querySelectorAll) return;
+      for (const container of root.querySelectorAll(".holidayDots")) {
+        const cell = container.closest(".compactDay, .richDay");
+        if (!cell) continue;
+        const total = Math.max(0, Math.trunc(Number(container.dataset.holidayCount) || 0));
+        const metrics = holidayDotMetrics(cell);
+        const width = Number(cell.getBoundingClientRect?.().width || cell.clientWidth || 0);
+        const visible = Math.min(total, maxHolidayDotsForWidth(width, metrics.diameter, metrics.gap, metrics.inset));
+        if (container.childElementCount === visible) continue;
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < visible; i += 1) fragment.append(el("span", "holidayDot"));
+        container.replaceChildren(fragment);
+        container.dataset.visibleHolidayDots = String(visible);
+      }
+    }
+
+    function makeHolidayDateRow(holiday) {
+      const row = el("div", "holidayDateRow");
+      const startIso = holidayEntryStartIso(holiday);
+      const endIso = holidayEntryEndIso(holiday);
+      const startDate = holidayYearlessDateSource(startIso);
+      const endDate = holidayYearlessDateSource(endIso);
+      if (!startDate) return row;
+      row.append(makeCartouche(startDate, "suno", "numericCartouche holidayDateCartouche"));
+      if (endDate && endIso !== startIso) {
+        row.append(el("span", "holidayRangeDash", "—"));
+        row.append(makeCartouche(endDate, "suno", "numericCartouche holidayDateCartouche"));
+      }
+      return row;
+    }
+
+    function makeHolidayMonthHeading(month) {
+      const heading = el("div", "holidayMonthHeading");
+      const glyphLine = el("div", "holidayMonthGlyphLine");
+      glyphLine.append(sitelen("tenpo mun"));
+      glyphLine.append(makeCartouche(month, "nanpa", "numericCartouche"));
+      heading.append(glyphLine);
+      heading.append(el("div", "holidayMonthLatin", `tenpo mun ${properName(month)}`));
+      return heading;
+    }
+
+    function buildHolidayList(year, months) {
+      const requestedMonths = Array.from(months || []).map(Number).filter(month => month >= 1 && month <= 12);
+      const groups = [];
+      const fullYear = requestedMonths.length === 12;
+      for (const month of requestedMonths) {
+        const entries = fullYear ? holidayListEntriesForYearMonth(year, month) : holidayListEntriesForMonth(year, month);
+        if (entries.length) groups.push({ month, entries });
+      }
+      if (!groups.length) return null;
+
+      const section = el("section", "holidayList");
+      section.setAttribute("aria-label", uiText("holidaysHeading"));
+      section.append(el("h2", "holidayListTitle", uiText("holidaysHeading")));
+      for (const { month, entries } of groups) {
+        const group = el("section", "holidayMonthGroup");
+        group.append(makeHolidayMonthHeading(month));
+        const list = el("div", "holidayEntries");
+        for (const holiday of entries) {
+          const entry = el("article", "holidayEntry");
+          entry.append(makeHolidayDateRow(holiday));
+          const name = holidayDisplayName(holiday, uiLanguage);
+          if (name) entry.append(el("div", "holidayName", name));
+          list.append(entry);
+        }
+        group.append(list);
+        section.append(group);
+      }
+      return section;
+    }
+
+    function applyHolidayDateRowSizing(root = calendarHost) {
+      if (!root?.querySelectorAll) return;
+      for (const row of root.querySelectorAll(".holidayDateRow")) {
+        row.style.setProperty("--holiday-date-font-px", "22px");
+        row.style.setProperty("--holiday-date-dash-font-px", "18px");
+        const available = Number(row.clientWidth || row.getBoundingClientRect?.().width || 0);
+        if (!(available > 0)) continue;
+        let px = 22;
+        while (px > 7 && row.scrollWidth > available + 0.5) {
+          px -= 0.5;
+          row.style.setProperty("--holiday-date-font-px", `${px}px`);
+          row.style.setProperty("--holiday-date-dash-font-px", `${Math.max(7, px * 0.82)}px`);
+        }
+      }
+      applyDynamicCartoucheStyles(root);
+    }
+
     function isWeekendColumn(index) {
       const col = index % 7;
       return col === 5 || col === 6;
@@ -1404,6 +2705,7 @@
       const days = el("div", print ? "printMiniDays" : "compactDays");
       const cells = monthCells(year, month);
       const fullMoons = fullMoonEventsByDay(year, month);
+      const holidaysByDay = holidayEventsByDayForMonth(year, month);
       for (let index = 0; index < 42; index += 1) {
         const day = cells[index];
         const cell = el("div", print ? "printMiniDay" : "compactDay");
@@ -1411,9 +2713,15 @@
         if (day == null) {
           cell.classList.add("empty");
         } else {
+          const dayHolidays = holidaysByDay.get(day) || [];
+          if (dayHolidays.length) cell.classList.add("holidayDay", "hasHolidayDots");
           if (!print && isTodayDate(year, month, day)) cell.classList.add("today");
           cell.append(makeCartouche(day, "suno", "numericCartouche"));
           for (const moonEvent of (fullMoons.get(day) || [])) cell.append(makeFullMoonMarker(moonEvent));
+          if (!print) {
+            const dots = makeHolidayDots(dayHolidays.length);
+            if (dots) cell.append(dots);
+          }
         }
         days.append(cell);
       }
@@ -1459,6 +2767,7 @@
       const days = el("div", print ? "printRichDays" : "richDays");
       const cells = monthCells(year, month);
       const fullMoons = fullMoonEventsByDay(year, month);
+      const holidaysByDay = holidayEventsByDayForMonth(year, month);
       for (let index = 0; index < 42; index += 1) {
         const day = cells[index];
         const cell = el("div", print ? "printRichDay" : "richDay");
@@ -1466,10 +2775,16 @@
         if (day == null) {
           cell.classList.add("empty");
         } else {
+          const dayHolidays = holidaysByDay.get(day) || [];
+          if (dayHolidays.length) cell.classList.add("holidayDay", "hasHolidayDots");
           if (!print && isTodayDate(year, month, day)) cell.classList.add("today");
           cell.append(makeCartouche(day, "suno", "numericCartouche"));
           cell.append(el("div", "dayLatin", properName(day, "Suno")));
           for (const moonEvent of (fullMoons.get(day) || [])) cell.append(makeFullMoonMarker(moonEvent));
+          if (!print) {
+            const dots = makeHolidayDots(dayHolidays.length);
+            if (dots) cell.append(dots);
+          }
         }
         days.append(cell);
       }
@@ -1517,21 +2832,28 @@
       const richMonth = calendarHost.querySelector(".richMonth");
       if (!richMonth) {
         applyDynamicCartoucheStyles(calendarHost);
+        applyHolidayDotSizing(calendarHost);
+        applyHolidayDateRowSizing(calendarHost);
         return;
       }
 
       if (window.innerWidth > MOBILE_LAYOUT_MAX_WIDTH_PX) {
         richMonth.style.removeProperty("--mobile-rich-date-font-px");
         applyDynamicCartoucheStyles(richMonth);
+        applyHolidayDotSizing(calendarHost);
+        applyHolidayDateRowSizing(calendarHost);
         return;
       }
 
       const daysGrid = richMonth.querySelector(".richDays");
       const gridWidth = Number(daysGrid?.getBoundingClientRect?.().width || 0);
-      if (!(gridWidth > 0)) return;
-      const uniformPx = selectMobileRichDateFontPx(gridWidth / 7);
-      richMonth.style.setProperty("--mobile-rich-date-font-px", `${uniformPx}px`);
-      applyDynamicCartoucheStyles(richMonth);
+      if (gridWidth > 0) {
+        const uniformPx = selectMobileRichDateFontPx(gridWidth / 7);
+        richMonth.style.setProperty("--mobile-rich-date-font-px", `${uniformPx}px`);
+        applyDynamicCartoucheStyles(richMonth);
+      }
+      applyHolidayDotSizing(calendarHost);
+      applyHolidayDateRowSizing(calendarHost);
     }
 
     function scheduleMobileCalendarSizing() {
@@ -1557,6 +2879,16 @@
         grid.append(await buildCompactMonth(year, month));
       }
       wrap.append(grid);
+      const holidayList = buildHolidayList(year, Array.from({ length: 12 }, (_, index) => index + 1));
+      if (holidayList) wrap.append(holidayList);
+      return wrap;
+    }
+
+    async function buildScreenMonth(year, month) {
+      const wrap = el("div", "monthView");
+      wrap.append(await buildRichMonth(year, month));
+      const holidayList = buildHolidayList(year, [month]);
+      if (holidayList) wrap.append(holidayList);
       return wrap;
     }
 
@@ -1576,11 +2908,11 @@
       try {
         const next = isAll
           ? await buildScreenYear(year)
-          : await buildRichMonth(year, Number(monthValue));
+          : await buildScreenMonth(year, Number(monthValue));
         if (generation !== renderGeneration) return;
         calendarHost.replaceChildren(next);
         applyDynamicCartoucheStyles(calendarHost);
-        if (!isAll) scheduleMobileCalendarSizing();
+        scheduleMobileCalendarSizing();
         setStatus(isAll ? uiText("fullYearStatus", year) : uiText("monthStatus", year, monthValue));
       } catch (error) {
         console.error(error);
@@ -1654,7 +2986,10 @@
       header: blendRgb("#F3DFC0", "#695335", 0.105),
       weekday: blendRgb("#F3DFC0", "#695335", 0.145),
       weekend: blendRgb("#F3DFC0", "#4E5B68", 0.11),
-      weekdayWeekend: blendRgb("#F3DFC0", "#535652", 0.17)
+      weekdayWeekend: blendRgb("#F3DFC0", "#535652", 0.17),
+      holiday: blendRgb("#F3DFC0", "#845B24", 0.13),
+      holidayWeekend: blendRgb("#F3DFC0", "#6B5436", 0.18),
+      holidayDot: "#4A4742"
     });
 
     function makePdfCanvas() {
@@ -1781,14 +3116,33 @@
       return String.fromCodePoint(...cps);
     }
 
-    function drawMoonMarker(ctx, event, x, y, w, h, fontPx, inset = 5) {
+    function drawMoonMarker(ctx, event, x, y, w, h, fontPx, inset = 5, bottomReserve = 0) {
       const txt = moonMarkerText();
-      const markerY = y + h - inset - fontPx*0.48;
+      const markerY = y + h - inset - Math.max(0, Number(bottomReserve) || 0) - fontPx*0.48;
       let markerX, align;
       if (event.position === "left") { markerX = x + inset; align = "left"; }
       else if (event.position === "right") { markerX = x + w - inset; align = "right"; }
       else { markerX = x + w/2; align = "center"; }
       drawFitText(ctx, txt, markerX, markerY, Math.max(10,w-2*inset), fontPx, FONT_FAMILY, "#4a4742", align);
+    }
+
+    function drawHolidayDots(ctx, count, x, y, w, h, { diameter = 4, gap = 3, inset = 5, bottom = 3 } = {}) {
+      const total = Math.max(0, Math.trunc(Number(count) || 0));
+      const visible = Math.min(total, maxHolidayDotsForWidth(w, diameter, gap, inset));
+      if (visible < 1) return 0;
+      const rowW = visible * diameter + Math.max(0, visible - 1) * gap;
+      let cx = x + (w - rowW) / 2 + diameter / 2;
+      const cy = y + h - bottom - diameter / 2;
+      ctx.save();
+      ctx.fillStyle = PDF_COLORS.holidayDot;
+      for (let i = 0; i < visible; i += 1) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, diameter / 2, 0, Math.PI * 2);
+        ctx.fill();
+        cx += diameter + gap;
+      }
+      ctx.restore();
+      return visible;
     }
 
     function pdfOverviewDateCellWidthPx() {
@@ -1806,8 +3160,32 @@
       return selectPdfOverviewUniformDateFontPx(probeCtx, year, pdfOverviewDateCellWidthPx());
     }
 
-    function renderPdfOverviewCanvas(year) {
+    function pdfCountryLabel(countryCode) {
+      const code = String(countryCode || "").toUpperCase();
+      if (!code) return "";
+      const country = holidayCountryByCode.get(code);
+      return country ? countryOptionText(country) : code;
+    }
+
+    function drawPdfCountryCode(ctx, countryCode) {
+      const code = String(countryCode || "").toUpperCase();
+      if (!code) return;
+      drawFitText(
+        ctx,
+        code,
+        PDF_CANVAS_W - 24,
+        18,
+        42,
+        10,
+        "Arial",
+        PDF_COLORS.latin,
+        "right"
+      );
+    }
+
+    function renderPdfOverviewCanvas(year, countryCode = "") {
       const { canvas, ctx } = makePdfCanvas();
+      drawPdfCountryCode(ctx, countryCode);
       const margin = 20;
       const headingH = 60;
       const headingText = `${String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo","sike"]))} ${cartoucheText(year,"nanpa")}`;
@@ -1837,23 +3215,27 @@
           drawRect(ctx,x+c*cellW,y+headH,cellW,weekH,c>=5?PDF_COLORS.weekdayWeekend:PDF_COLORS.weekday,PDF_COLORS.border,0.75);
           drawSitelen(ctx,weekdayGlyphs[c],x+(c+0.5)*cellW,y+headH+weekH/2,cellW-3,12,"center");
         }
-        const cells=monthCells(year,month), fullMoons=fullMoonEventsByDay(year,month);
+        const cells=monthCells(year,month), fullMoons=fullMoonEventsByDay(year,month), holidaysByDay=holidayEventsByDayForMonth(year,month);
         const dayY=y+headH+weekH, dayH=(monthH-headH-weekH)/6;
         for (let i=0;i<42;i++) {
           const r=Math.floor(i/7), c=i%7, dx=x+c*cellW, dy=dayY+r*dayH;
-          drawRect(ctx,dx,dy,cellW,dayH,c>=5?PDF_COLORS.weekend:PDF_COLORS.bg,PDF_COLORS.border,0.75);
           const day=cells[i];
+          const dayHolidays=day==null?[]:(holidaysByDay.get(day)||[]);
+          const fill=dayHolidays.length ? (c>=5?PDF_COLORS.holidayWeekend:PDF_COLORS.holiday) : (c>=5?PDF_COLORS.weekend:PDF_COLORS.bg);
+          drawRect(ctx,dx,dy,cellW,dayH,fill,PDF_COLORS.border,0.75);
           if (day!=null) {
             drawSitelenFixed(ctx,cartoucheText(day,"suno"),dx+cellW/2,dy+dayH*0.46,uniformDateFontPx,"center");
-            for (const event of (fullMoons.get(day)||[])) drawMoonMarker(ctx,event,dx,dy,cellW,dayH,5.7,2.5);
+            const dots=drawHolidayDots(ctx,dayHolidays.length,dx,dy,cellW,dayH,{diameter:2.5,gap:1.8,inset:2.5,bottom:1.8});
+            for (const event of (fullMoons.get(day)||[])) drawMoonMarker(ctx,event,dx,dy,cellW,dayH,5.7,2.5,dots?5:0);
           }
         }
       }
       return canvas;
     }
 
-    function renderPdfMonthCanvas(year, month) {
+    function renderPdfMonthCanvas(year, month, countryCode = "") {
       const { canvas, ctx } = makePdfCanvas();
+      drawPdfCountryCode(ctx, countryCode);
       const margin=24;
       const contentW=PDF_CANVAS_W-2*margin;
       const top=20, headerH=145, weekdayH=86;
@@ -1880,18 +3262,199 @@
 
       const dayY=weekY+weekdayH;
       const dayH=(PDF_CANVAS_H-margin-dayY)/6;
-      const cells=monthCells(year,month), fullMoons=fullMoonEventsByDay(year,month);
+      const cells=monthCells(year,month), fullMoons=fullMoonEventsByDay(year,month), holidaysByDay=holidayEventsByDayForMonth(year,month);
       for (let i=0;i<42;i++) {
         const r=Math.floor(i/7), c=i%7, x=margin+c*cellW, y=dayY+r*dayH;
-        drawRect(ctx,x,y,cellW,dayH,c>=5?PDF_COLORS.weekend:PDF_COLORS.bg,PDF_COLORS.border,1);
         const day=cells[i];
+        const dayHolidays=day==null?[]:(holidaysByDay.get(day)||[]);
+        const fill=dayHolidays.length ? (c>=5?PDF_COLORS.holidayWeekend:PDF_COLORS.holiday) : (c>=5?PDF_COLORS.weekend:PDF_COLORS.bg);
+        drawRect(ctx,x,y,cellW,dayH,fill,PDF_COLORS.border,1);
         if (day!=null) {
           drawSitelen(ctx,cartoucheText(day,"suno"),x+cellW/2,y+dayH*0.36,cellW-10,22,"center");
           drawLatin(ctx,properName(day,"Suno"),x+cellW/2,y+dayH*0.60,cellW-8,9.5,"center");
-          for (const event of (fullMoons.get(day)||[])) drawMoonMarker(ctx,event,x,y,cellW,dayH,11,6);
+          const dots=drawHolidayDots(ctx,dayHolidays.length,x,y,cellW,dayH,{diameter:5,gap:4,inset:8,bottom:4});
+          for (const event of (fullMoons.get(day)||[])) drawMoonMarker(ctx,event,x,y,cellW,dayH,11,6,dots?14:0);
         }
       }
       return canvas;
+    }
+
+    function wrapPdfText(ctx, text, maxW, fontPx, family = "Arial") {
+      const source = String(text || "").trim();
+      if (!source) return [];
+      ctx.font = `${fontPx}px "${family}"`;
+      const words = source.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let line = "";
+
+      const splitLongWord = word => {
+        const parts = [];
+        let part = "";
+        for (const ch of Array.from(word)) {
+          const candidate = part + ch;
+          if (part && ctx.measureText(candidate).width > maxW) {
+            parts.push(part);
+            part = ch;
+          } else {
+            part = candidate;
+          }
+        }
+        if (part) parts.push(part);
+        return parts;
+      };
+
+      for (const rawWord of words) {
+        const chunks = ctx.measureText(rawWord).width <= maxW ? [rawWord] : splitLongWord(rawWord);
+        for (const word of chunks) {
+          const candidate = line ? `${line} ${word}` : word;
+          if (line && ctx.measureText(candidate).width > maxW) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = candidate;
+          }
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    function measurePdfCartoucheWidth(ctx, text, fontPx) {
+      const family = cartoucheCanvasFamilyForFontPx(fontPx);
+      ctx.font = `${fontPx}px "${family}"`;
+      return ctx.measureText(text).width;
+    }
+
+    function drawPdfHolidayDateRow(ctx, holiday, x, y, maxW) {
+      const startIso = holidayEntryStartIso(holiday);
+      const endIso = holidayEntryEndIso(holiday);
+      const startDate = holidayYearlessDateSource(startIso);
+      const endDate = holidayYearlessDateSource(endIso);
+      if (!startDate) return 0;
+      const startText = cartoucheText(startDate, "suno");
+      const hasRange = !!endDate && endIso !== startIso;
+      const endText = hasRange ? cartoucheText(endDate, "suno") : "";
+      let px = 22;
+      const minPx = 7;
+      let dashW = 0;
+      let startW = 0;
+      let endW = 0;
+      while (px >= minPx) {
+        startW = measurePdfCartoucheWidth(ctx, startText, px);
+        endW = hasRange ? measurePdfCartoucheWidth(ctx, endText, px) : 0;
+        ctx.font = `${Math.max(7, px * 0.82)}px "Arial"`;
+        dashW = hasRange ? ctx.measureText("—").width : 0;
+        const gaps = hasRange ? 14 : 0;
+        if (startW + endW + dashW + gaps <= maxW) break;
+        px -= 0.5;
+      }
+      px = Math.max(minPx, px);
+      startW = measurePdfCartoucheWidth(ctx, startText, px);
+      endW = hasRange ? measurePdfCartoucheWidth(ctx, endText, px) : 0;
+      ctx.font = `${Math.max(7, px * 0.82)}px "Arial"`;
+      dashW = hasRange ? ctx.measureText("—").width : 0;
+      const gap = hasRange ? 7 : 0;
+      const totalW = startW + endW + dashW + (hasRange ? gap * 2 : 0);
+      let cursor = x;
+      drawSitelenFixed(ctx, startText, cursor, y, px, "left");
+      cursor += startW;
+      if (hasRange) {
+        cursor += gap;
+        drawFitText(ctx, "—", cursor + dashW / 2, y, dashW + 2, Math.max(7, px * 0.82), "Arial", PDF_COLORS.ink, "center");
+        cursor += dashW + gap;
+        drawSitelenFixed(ctx, endText, cursor, y, px, "left");
+      }
+      return px;
+    }
+
+    function holidayPdfGroups(year, month = null) {
+      const months = month == null ? Array.from({ length: 12 }, (_, index) => index + 1) : [Number(month)];
+      const fullYear = month == null;
+      const groups = [];
+      for (const monthNumber of months) {
+        const entries = fullYear ? holidayListEntriesForYearMonth(year, monthNumber) : holidayListEntriesForMonth(year, monthNumber);
+        if (entries.length) groups.push({ month: monthNumber, entries });
+      }
+      return groups;
+    }
+
+    function renderPdfHolidayListCanvases(year, month = null, countryCode = "") {
+      const groups = holidayPdfGroups(year, month);
+      if (!groups.length) return [];
+
+      const margin = 34;
+      const titleY = 42;
+      const contentTop = 78;
+      const bottom = PDF_CANVAS_H - 34;
+      const contentW = PDF_CANVAS_W - 2 * margin;
+      const monthHeadingH = 58;
+      const dateRowH = 31;
+      const nameFontPx = 15;
+      const nameLineH = 20;
+      const entryPadTop = 10;
+      const entryPadBottom = 12;
+      const canvases = [];
+      let canvas = null;
+      let ctx = null;
+      let y = contentTop;
+
+      function newPage() {
+        ({ canvas, ctx } = makePdfCanvas());
+        drawPdfCountryCode(ctx, countryCode);
+        const countryLabel = pdfCountryLabel(countryCode);
+        const title = countryLabel
+          ? `${uiText("holidaysHeading")} — ${countryLabel}`
+          : uiText("holidaysHeading");
+        drawFitText(ctx, title, margin, titleY, contentW, 25, "Arial", PDF_COLORS.ink, "left");
+        canvases.push(canvas);
+        y = contentTop;
+      }
+
+      function drawMonthHeading(monthNumber) {
+        if (!canvas) newPage();
+        if (y + monthHeadingH > bottom) newPage();
+        drawRect(ctx, margin, y, contentW, monthHeadingH, PDF_COLORS.header, PDF_COLORS.border, 1);
+        const tpMonth = String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo", "mun"]));
+        const heading = `${tpMonth} ${cartoucheText(monthNumber, "nanpa")}`;
+        drawSitelen(ctx, heading, margin + 12, y + 21, contentW - 24, 22, "left");
+        drawLatin(ctx, `tenpo mun ${properName(monthNumber)}`, margin + 12, y + 43, contentW - 24, 10, "left");
+        y += monthHeadingH;
+      }
+
+      newPage();
+      for (const group of groups) {
+        drawMonthHeading(group.month);
+        for (const holiday of group.entries) {
+          const name = holidayDisplayName(holiday, uiLanguage);
+          const nameLines = wrapPdfText(ctx, name, contentW - 28, nameFontPx, "Arial");
+          const entryH = entryPadTop + dateRowH + (nameLines.length ? 6 + nameLines.length * nameLineH : 0) + entryPadBottom;
+          if (y + entryH > bottom) {
+            newPage();
+            drawMonthHeading(group.month);
+          }
+          drawPdfHolidayDateRow(ctx, holiday, margin + 14, y + entryPadTop + dateRowH * 0.5, contentW - 28);
+          let nameY = y + entryPadTop + dateRowH + 8;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "top";
+          ctx.fillStyle = PDF_COLORS.ink;
+          ctx.font = `${nameFontPx}px "Arial"`;
+          for (const line of nameLines) {
+            ctx.fillText(line, margin + 14, nameY);
+            nameY += nameLineH;
+          }
+          y += entryH;
+          if (y < bottom) {
+            ctx.strokeStyle = PDF_COLORS.border;
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(margin + 12, y - 1);
+            ctx.lineTo(PDF_CANVAS_W - margin - 12, y - 1);
+            ctx.stroke();
+          }
+        }
+        y += 8;
+      }
+      return canvases;
     }
 
     async function canvasToJpegBytes(canvas, quality=0.94) {
@@ -1952,11 +3515,24 @@
       try {
         await ensureCartoucheStyleFontFaces();
         if (document.fonts?.ready) await document.fonts.ready;
+        const selectedCountry = String(countrySelect?.value || HOLIDAY_COUNTRY_DEFAULT).toUpperCase();
+        const includeHolidayCountry = normalizeHolidayType(holidayTypeSelect?.value) !== "none";
+        const pdfCountryCode = includeHolidayCountry ? selectedCountry : "";
+        if (includeHolidayCountry && (
+          !holidayDataState.data ||
+          holidayDataState.country !== selectedCountry ||
+          holidayDataState.year !== year
+        )) {
+          await loadHolidayDataForSelection();
+        }
         const canvases=[];
-        if (kind === "month") canvases.push(renderPdfMonthCanvas(year,month));
-        else {
-          canvases.push(renderPdfOverviewCanvas(year));
-          for (let m=1;m<=12;m++) canvases.push(renderPdfMonthCanvas(year,m));
+        if (kind === "month") {
+          canvases.push(renderPdfMonthCanvas(year,month,pdfCountryCode));
+          canvases.push(...renderPdfHolidayListCanvases(year, month, pdfCountryCode));
+        } else {
+          canvases.push(renderPdfOverviewCanvas(year,pdfCountryCode));
+          for (let m=1;m<=12;m++) canvases.push(renderPdfMonthCanvas(year,m,pdfCountryCode));
+          canvases.push(...renderPdfHolidayListCanvases(year, null, pdfCountryCode));
         }
         const jpegPages=[];
         for (let i=0;i<canvases.length;i++) {
@@ -1965,9 +3541,10 @@
           await new Promise(resolve=>setTimeout(resolve,0));
         }
         const blob=buildJpegPagesPdf(jpegPages);
+        const countrySuffix = pdfCountryCode ? `-${pdfCountryCode}` : "";
         const filename=kind === "month"
-          ? `nanpa-linja-n-calendar-${year}-${String(month).padStart(2,"0")}.pdf`
-          : `nanpa-linja-n-calendar-${year}.pdf`;
+          ? `nanpa-linja-n-calendar-${year}-${String(month).padStart(2,"0")}${countrySuffix}.pdf`
+          : `nanpa-linja-n-calendar-${year}${countrySuffix}.pdf`;
         downloadBlob(blob,filename);
         setStatus(uiText("downloadedPdf", canvases.length));
       } catch (error) {
@@ -1995,12 +3572,45 @@
 
     languageSelect.addEventListener("change", () => {
       applyUiLanguage(languageSelect.value, { persist: true });
-      // UI language is deliberately isolated from calendar rendering/content.
-      const year = Number(yearSelect.value);
-      const monthValue = monthSelect.value;
-      setStatus(monthValue === "all" ? uiText("fullYearStatus", year) : uiText("monthStatus", year, monthValue));
+      void renderScreen();
     });
-    yearSelect.addEventListener("change", renderScreen);
+    countrySelect.addEventListener("change", () => {
+      saveHolidayCountry(countrySelect.value);
+      void (async () => {
+        await loadHolidayDataForSelection();
+        await renderScreen();
+      })();
+    });
+    holidayTypeSelect.addEventListener("change", () => {
+      holidayTypeSelect.value = normalizeHolidayType(holidayTypeSelect.value);
+      saveHolidayType(holidayTypeSelect.value);
+      const selectedCountry = String(countrySelect?.value || HOLIDAY_COUNTRY_DEFAULT).toUpperCase();
+      const selectedYear = Number(yearSelect?.value);
+      if (holidayTypeSelect.value === "none") {
+        void (async () => {
+          await loadHolidayDataForSelection();
+          await renderScreen();
+        })();
+      } else if (
+        holidayDataState.data &&
+        holidayDataState.country === selectedCountry &&
+        holidayDataState.year === selectedYear
+      ) {
+        updateFilteredHolidayState();
+        void renderScreen();
+      } else {
+        void (async () => {
+          await loadHolidayDataForSelection();
+          await renderScreen();
+        })();
+      }
+    });
+    yearSelect.addEventListener("change", () => {
+      void (async () => {
+        await loadHolidayDataForSelection();
+        await renderScreen();
+      })();
+    });
     monthSelect.addEventListener("change", renderScreen);
     exportMonthBtn.addEventListener("click", () => exportPdf("month"));
     exportYearBtn.addEventListener("click", () => exportPdf("year"));
@@ -2023,6 +3633,7 @@
       await renderScreen();
     }
 
+    void initializeHolidayControls().then(() => renderScreen());
     startCalendar();
 
     // Expose deterministic calendar helpers for regression tests in headless browsers.
@@ -2052,6 +3663,45 @@
       cartoucheCanvasFamilyForFontPx,
       ensureCartoucheStyleFontFaces,
       applyDynamicCartoucheStyles,
+      holidayFileUrl,
+      holidayCountryArchiveUrl,
+      holidayCountryArchiveMember,
+      holidayCountryArchiveCacheKey,
+      findHolidayZipEntry,
+      holidayZipEntryBytes,
+      loadHolidayYearFromCountryArchive,
+      readHolidayCountryArchiveCache,
+      writeHolidayCountryArchiveCache,
+      holidayMatchesType,
+      filterHolidayData,
+      multiDayHolidayGroupKey,
+      collapseMultiDayHolidayEntries,
+      holidayListEntries,
+      holidayDisplayName,
+      parseHolidayIsoDate,
+      holidayEventsByDayForMonth,
+      holidayListEntriesForMonth,
+      holidayListEntriesForYearMonth,
+      maxHolidayDotsForWidth,
+      applyHolidayDotSizing,
+      applyHolidayDateRowSizing,
+      renderPdfHolidayListCanvases,
+      detectBrowserCountryCode,
+      browserTimeZoneCountryCandidate,
+      browserLocaleCountryCandidates,
+      loadHolidaySharedData,
+      readHolidaySharedCache,
+      writeHolidaySharedCache,
+      loadHolidayDataForSelection,
+      getHolidaySharedDataState: () => ({
+        ...holidaySharedDataState,
+        files: holidaySharedDataState.files ? { ...holidaySharedDataState.files } : null
+      }),
+      getHolidayDataState: () => ({
+        ...holidayDataState,
+        filteredHolidays: holidayDataState.filteredHolidays.slice(),
+        holidayListEntries: holidayDataState.holidayListEntries.slice()
+      }),
       pdfOverviewDateTextsForYear,
       pdfOverviewDateCellWidthPx,
       pdfOverviewDateFontPxForYear

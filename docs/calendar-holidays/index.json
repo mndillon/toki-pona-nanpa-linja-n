@@ -1,0 +1,6439 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "library": "Vacanza holidays",
+    "pythonPackage": "holidays",
+    "version": "0.104"
+  },
+  "requestedLanguage": "en_US",
+  "yearRange": [
+    1900,
+    2100
+  ],
+  "countryCount": 250,
+  "countries": [
+    {
+      "code": "AD",
+      "englishName": "Andorra",
+      "tokiPonaName": "Antola",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ca",
+        "en_US",
+        "uk"
+      ],
+      "defaultLanguage": "ca",
+      "supportedCategories": [
+        "government",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 167,
+      "holidayEntries": 2946,
+      "categoryErrors": []
+    },
+    {
+      "code": "AE",
+      "englishName": "United Arab Emirates",
+      "tokiPonaName": "Uniteto Awapu Emiwate",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "government",
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 129,
+      "holidayEntries": 1448,
+      "categoryErrors": []
+    },
+    {
+      "code": "AF",
+      "englishName": "Afghanistan",
+      "tokiPonaName": "Akanisan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fa_AF",
+        "ps_AF"
+      ],
+      "defaultLanguage": "fa_AF",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 182,
+      "holidayEntries": 2245,
+      "categoryErrors": []
+    },
+    {
+      "code": "AG",
+      "englishName": "Antigua & Barbuda",
+      "tokiPonaName": "Anteka Paputa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 146,
+      "holidayEntries": 1716,
+      "categoryErrors": []
+    },
+    {
+      "code": "AI",
+      "englishName": "Anguilla",
+      "tokiPonaName": "Anula",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_AI",
+        "en_US"
+      ],
+      "defaultLanguage": "en_AI",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 100,
+      "holidayEntries": 1698,
+      "categoryErrors": []
+    },
+    {
+      "code": "AL",
+      "englishName": "Albania",
+      "tokiPonaName": "Sipe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "sq",
+        "uk"
+      ],
+      "defaultLanguage": "sq",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 108,
+      "holidayEntries": 2106,
+      "categoryErrors": []
+    },
+    {
+      "code": "AM",
+      "englishName": "Armenia",
+      "tokiPonaName": "Aja",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "hy"
+      ],
+      "defaultLanguage": "hy",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [
+        "AG",
+        "AR",
+        "AV",
+        "ER",
+        "GR",
+        "KT",
+        "LO",
+        "SH",
+        "SU",
+        "TV",
+        "VD"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 3563,
+      "categoryErrors": []
+    },
+    {
+      "code": "AO",
+      "englishName": "Angola",
+      "tokiPonaName": "Ankola",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "pt_AO",
+        "uk"
+      ],
+      "defaultLanguage": "pt_AO",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 126,
+      "holidayEntries": 1775,
+      "categoryErrors": []
+    },
+    {
+      "code": "AQ",
+      "englishName": "Antarctica",
+      "tokiPonaName": "Antasika",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 139,
+      "holidayEntries": 508,
+      "categoryErrors": []
+    },
+    {
+      "code": "AR",
+      "englishName": "Argentina",
+      "tokiPonaName": "Alensina",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "armenian",
+        "bank",
+        "government",
+        "hebrew",
+        "islamic",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 144,
+      "holidayEntries": 3721,
+      "categoryErrors": []
+    },
+    {
+      "code": "AS",
+      "englishName": "American Samoa",
+      "tokiPonaName": "Amewikan Samowa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_US",
+      "supportedCategories": [
+        "public",
+        "unofficial"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 4415,
+      "categoryErrors": []
+    },
+    {
+      "code": "AT",
+      "englishName": "Austria",
+      "tokiPonaName": "Esalasi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "de",
+        "en_US",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "de",
+      "supportedCategories": [
+        "bank",
+        "protestant",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 167,
+      "holidayEntries": 2625,
+      "categoryErrors": []
+    },
+    {
+      "code": "AU",
+      "englishName": "Australia",
+      "tokiPonaName": "Oselija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_AU",
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_AU",
+      "supportedCategories": [
+        "bank",
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "ACT",
+        "NSW",
+        "NT",
+        "QLD",
+        "SA",
+        "TAS",
+        "VIC",
+        "WA"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 1386,
+      "categoryErrors": []
+    },
+    {
+      "code": "AW",
+      "englishName": "Aruba",
+      "tokiPonaName": "Awepa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "nl",
+        "pap_AW",
+        "uk"
+      ],
+      "defaultLanguage": "pap_AW",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 146,
+      "holidayEntries": 1596,
+      "categoryErrors": []
+    },
+    {
+      "code": "AX",
+      "englishName": "Åland Islands",
+      "tokiPonaName": "Alanto Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fi",
+        "sv_FI",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fi",
+      "supportedCategories": [
+        "public",
+        "unofficial",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 180,
+      "holidayEntries": 5192,
+      "categoryErrors": []
+    },
+    {
+      "code": "AZ",
+      "englishName": "Azerbaijan",
+      "tokiPonaName": "Asepejan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "az",
+        "en_US",
+        "uk"
+      ],
+      "defaultLanguage": "az",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 111,
+      "holidayEntries": 2888,
+      "categoryErrors": []
+    },
+    {
+      "code": "BA",
+      "englishName": "Bosnia & Herzegovina",
+      "tokiPonaName": "Posan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "bs",
+        "en_US",
+        "sr",
+        "uk"
+      ],
+      "defaultLanguage": "bs",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "BIH",
+        "BRC",
+        "SRP"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 1916,
+      "categoryErrors": []
+    },
+    {
+      "code": "BB",
+      "englishName": "Barbados",
+      "tokiPonaName": "Papeto",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 132,
+      "holidayEntries": 1700,
+      "categoryErrors": []
+    },
+    {
+      "code": "BD",
+      "englishName": "Bangladesh",
+      "tokiPonaName": "Panla",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "bn",
+        "en_BD",
+        "en_US"
+      ],
+      "defaultLanguage": "bn",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 3266,
+      "categoryErrors": []
+    },
+    {
+      "code": "BE",
+      "englishName": "Belgium",
+      "tokiPonaName": "Pesije",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "de",
+        "en_US",
+        "fr",
+        "nl",
+        "uk"
+      ],
+      "defaultLanguage": "nl",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 3000,
+      "categoryErrors": []
+    },
+    {
+      "code": "BF",
+      "englishName": "Burkina Faso",
+      "tokiPonaName": "Pukinapaso",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_BF",
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "en_BF",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 140,
+      "holidayEntries": 2171,
+      "categoryErrors": []
+    },
+    {
+      "code": "BG",
+      "englishName": "Bulgaria",
+      "tokiPonaName": "Pokasi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "bg",
+        "en_US",
+        "uk"
+      ],
+      "defaultLanguage": "bg",
+      "supportedCategories": [
+        "half_day",
+        "public",
+        "school"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1878,
+      "categoryErrors": []
+    },
+    {
+      "code": "BH",
+      "englishName": "Bahrain",
+      "tokiPonaName": "Palani",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 129,
+      "holidayEntries": 1609,
+      "categoryErrors": []
+    },
+    {
+      "code": "BI",
+      "englishName": "Burundi",
+      "tokiPonaName": "Puwente",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr_BI"
+      ],
+      "defaultLanguage": "fr_BI",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 139,
+      "holidayEntries": 1979,
+      "categoryErrors": []
+    },
+    {
+      "code": "BJ",
+      "englishName": "Benin",
+      "tokiPonaName": "Penen",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr_BJ"
+      ],
+      "defaultLanguage": "fr_BJ",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 124,
+      "holidayEntries": 1934,
+      "categoryErrors": []
+    },
+    {
+      "code": "BL",
+      "englishName": "St. Barthélemy",
+      "tokiPonaName": "To Patelema",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 93,
+      "holidayEntries": 1112,
+      "categoryErrors": []
+    },
+    {
+      "code": "BM",
+      "englishName": "Bermuda",
+      "tokiPonaName": "Pemuta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_BM",
+        "en_US"
+      ],
+      "defaultLanguage": "en_BM",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 1732,
+      "categoryErrors": []
+    },
+    {
+      "code": "BN",
+      "englishName": "Brunei",
+      "tokiPonaName": "Pune",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ms",
+        "th"
+      ],
+      "defaultLanguage": "ms",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 117,
+      "holidayEntries": 2012,
+      "categoryErrors": []
+    },
+    {
+      "code": "BO",
+      "englishName": "Bolivia",
+      "tokiPonaName": "Poliwa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "B",
+        "C",
+        "H",
+        "L",
+        "N",
+        "O",
+        "P",
+        "S",
+        "T"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2092,
+      "categoryErrors": []
+    },
+    {
+      "code": "BQ",
+      "englishName": "Caribbean Netherlands",
+      "tokiPonaName": "Kawipen Netelan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_BQ",
+        "en_US",
+        "nl",
+        "pap_BQ"
+      ],
+      "defaultLanguage": "nl",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "BON",
+        "SAB",
+        "STA"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 90,
+      "holidayEntries": 913,
+      "categoryErrors": []
+    },
+    {
+      "code": "BR",
+      "englishName": "Brazil",
+      "tokiPonaName": "Pasila",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "pt_BR",
+        "uk"
+      ],
+      "defaultLanguage": "pt_BR",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AC",
+        "AL",
+        "AM",
+        "AP",
+        "BA",
+        "CE",
+        "DF",
+        "ES",
+        "GO",
+        "MA",
+        "MG",
+        "MS",
+        "MT",
+        "PA",
+        "PB",
+        "PE",
+        "PI",
+        "PR",
+        "RJ",
+        "RN",
+        "RO",
+        "RR",
+        "RS",
+        "SC",
+        "SE",
+        "SP",
+        "São Paulo Capital",
+        "TO"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 3345,
+      "categoryErrors": []
+    },
+    {
+      "code": "BS",
+      "englishName": "Bahamas",
+      "tokiPonaName": "Pawama",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 127,
+      "holidayEntries": 1544,
+      "categoryErrors": []
+    },
+    {
+      "code": "BT",
+      "englishName": "Bhutan",
+      "tokiPonaName": "Putan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "dz",
+        "en_US"
+      ],
+      "defaultLanguage": "dz",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "21",
+        "22",
+        "23",
+        "24",
+        "31",
+        "32",
+        "33",
+        "34",
+        "41",
+        "42",
+        "43",
+        "44",
+        "45",
+        "GA",
+        "TY"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 94,
+      "holidayEntries": 1624,
+      "categoryErrors": []
+    },
+    {
+      "code": "BV",
+      "englishName": "Bouvet Island",
+      "tokiPonaName": "Poweto Ilanto",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 0,
+      "holidayEntries": 0,
+      "categoryErrors": []
+    },
+    {
+      "code": "BW",
+      "englishName": "Botswana",
+      "tokiPonaName": "Posuwana",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 135,
+      "holidayEntries": 2035,
+      "categoryErrors": []
+    },
+    {
+      "code": "BY",
+      "englishName": "Belarus",
+      "tokiPonaName": "Pelalusi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "be",
+        "en_US",
+        "ru",
+        "th"
+      ],
+      "defaultLanguage": "be",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 2000,
+      "categoryErrors": []
+    },
+    {
+      "code": "BZ",
+      "englishName": "Belize",
+      "tokiPonaName": "Pelise",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 119,
+      "holidayEntries": 1997,
+      "categoryErrors": []
+    },
+    {
+      "code": "CA",
+      "englishName": "Canada",
+      "tokiPonaName": "Kanata",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_CA",
+        "en_US",
+        "fr",
+        "th"
+      ],
+      "defaultLanguage": "en_CA",
+      "supportedCategories": [
+        "government",
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AB",
+        "BC",
+        "MB",
+        "NB",
+        "NL",
+        "NS",
+        "NT",
+        "NU",
+        "ON",
+        "PE",
+        "QC",
+        "SK",
+        "YT"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2169,
+      "categoryErrors": []
+    },
+    {
+      "code": "CC",
+      "englishName": "Cocos (Keeling) Islands",
+      "tokiPonaName": "Koko Kelin Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "coa_CC",
+        "en_CC",
+        "en_US"
+      ],
+      "defaultLanguage": "en_CC",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 116,
+      "holidayEntries": 1670,
+      "categoryErrors": []
+    },
+    {
+      "code": "CD",
+      "englishName": "Democratic Republic of the Congo",
+      "tokiPonaName": "Temokateku Wepupiku Opu Te Konko",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 121,
+      "holidayEntries": 1499,
+      "categoryErrors": []
+    },
+    {
+      "code": "CF",
+      "englishName": "Central African Republic",
+      "tokiPonaName": "Santapiken",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 142,
+      "holidayEntries": 1784,
+      "categoryErrors": []
+    },
+    {
+      "code": "CG",
+      "englishName": "Republic of the Congo",
+      "tokiPonaName": "Wepupiku Opu Te Konko",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 107,
+      "holidayEntries": 1054,
+      "categoryErrors": []
+    },
+    {
+      "code": "CH",
+      "englishName": "Switzerland",
+      "tokiPonaName": "Suwasi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "de",
+        "en_US",
+        "fr",
+        "it",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "de",
+      "supportedCategories": [
+        "de_facto",
+        "half_day",
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AG",
+        "AI",
+        "AR",
+        "BE",
+        "BL",
+        "BS",
+        "FR",
+        "GE",
+        "GL",
+        "GR",
+        "JU",
+        "LU",
+        "NE",
+        "NW",
+        "OW",
+        "SG",
+        "SH",
+        "SO",
+        "SZ",
+        "Stadt Zurich",
+        "TG",
+        "TI",
+        "UR",
+        "VD",
+        "VS",
+        "ZG",
+        "ZH"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 804,
+      "categoryErrors": []
+    },
+    {
+      "code": "CI",
+      "englishName": "Côte d’Ivoire",
+      "tokiPonaName": "Kosiwa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_CI",
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 104,
+      "holidayEntries": 1441,
+      "categoryErrors": []
+    },
+    {
+      "code": "CK",
+      "englishName": "Cook Islands",
+      "tokiPonaName": "Koku Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_CK",
+        "en_US"
+      ],
+      "defaultLanguage": "en_CK",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 101,
+      "holidayEntries": 1440,
+      "categoryErrors": []
+    },
+    {
+      "code": "CL",
+      "englishName": "Chile",
+      "tokiPonaName": "Sile",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AI",
+        "AN",
+        "AP",
+        "AR",
+        "AT",
+        "BI",
+        "CO",
+        "LI",
+        "LL",
+        "LR",
+        "MA",
+        "ML",
+        "NB",
+        "RM",
+        "TA",
+        "VS"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 186,
+      "holidayEntries": 3427,
+      "categoryErrors": []
+    },
+    {
+      "code": "CM",
+      "englishName": "Cameroon",
+      "tokiPonaName": "Kamelun",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 141,
+      "holidayEntries": 1641,
+      "categoryErrors": []
+    },
+    {
+      "code": "CN",
+      "englishName": "China",
+      "tokiPonaName": "Sonko",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th",
+        "zh_CN",
+        "zh_TW"
+      ],
+      "defaultLanguage": "zh_CN",
+      "supportedCategories": [
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 151,
+      "holidayEntries": 2746,
+      "categoryErrors": []
+    },
+    {
+      "code": "CO",
+      "englishName": "Colombia",
+      "tokiPonaName": "Koloma",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 4208,
+      "categoryErrors": []
+    },
+    {
+      "code": "CR",
+      "englishName": "Costa Rica",
+      "tokiPonaName": "Kosalika",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2374,
+      "categoryErrors": []
+    },
+    {
+      "code": "CU",
+      "englishName": "Cuba",
+      "tokiPonaName": "Kupa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 142,
+      "holidayEntries": 1291,
+      "categoryErrors": []
+    },
+    {
+      "code": "CV",
+      "englishName": "Cape Verde",
+      "tokiPonaName": "Kape Wete",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "de",
+        "en_US",
+        "es",
+        "fr",
+        "pt_CV"
+      ],
+      "defaultLanguage": "pt_CV",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "BR",
+        "BV",
+        "CA",
+        "CF",
+        "CR",
+        "MA",
+        "MO",
+        "PA",
+        "PN",
+        "PR",
+        "RB",
+        "RG",
+        "RS",
+        "SD",
+        "SF",
+        "SL",
+        "SM",
+        "SO",
+        "SS",
+        "SV",
+        "TA",
+        "TS"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 125,
+      "holidayEntries": 1822,
+      "categoryErrors": []
+    },
+    {
+      "code": "CW",
+      "englishName": "Curaçao",
+      "tokiPonaName": "Kuwaka",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "nl",
+        "pap_CW",
+        "uk"
+      ],
+      "defaultLanguage": "pap_CW",
+      "supportedCategories": [
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 146,
+      "holidayEntries": 1862,
+      "categoryErrors": []
+    },
+    {
+      "code": "CX",
+      "englishName": "Christmas Island",
+      "tokiPonaName": "Teta Ilanto",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_CX",
+        "en_US"
+      ],
+      "defaultLanguage": "en_CX",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 94,
+      "holidayEntries": 1324,
+      "categoryErrors": []
+    },
+    {
+      "code": "CY",
+      "englishName": "Cyprus",
+      "tokiPonaName": "Kiposi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "el",
+        "en_CY",
+        "en_US",
+        "uk"
+      ],
+      "defaultLanguage": "el",
+      "supportedCategories": [
+        "bank",
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 140,
+      "holidayEntries": 2502,
+      "categoryErrors": []
+    },
+    {
+      "code": "CZ",
+      "englishName": "Czechia",
+      "tokiPonaName": "Seki",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "cs",
+        "en_US",
+        "sk",
+        "uk"
+      ],
+      "defaultLanguage": "cs",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 149,
+      "holidayEntries": 1774,
+      "categoryErrors": []
+    },
+    {
+      "code": "DE",
+      "englishName": "Germany",
+      "tokiPonaName": "Tosi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "de",
+        "en_US",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "de",
+      "supportedCategories": [
+        "catholic",
+        "public",
+        "school"
+      ],
+      "supportedSubdivisions": [
+        "Augsburg",
+        "BB",
+        "BE",
+        "BW",
+        "BY",
+        "HB",
+        "HE",
+        "HH",
+        "MV",
+        "NI",
+        "NW",
+        "RP",
+        "SH",
+        "SL",
+        "SN",
+        "ST",
+        "TH"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 995,
+      "categoryErrors": []
+    },
+    {
+      "code": "DJ",
+      "englishName": "Djibouti",
+      "tokiPonaName": "Sipusi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 123,
+      "holidayEntries": 1438,
+      "categoryErrors": []
+    },
+    {
+      "code": "DK",
+      "englishName": "Denmark",
+      "tokiPonaName": "Tansi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "da",
+        "en_US",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "da",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2938,
+      "categoryErrors": []
+    },
+    {
+      "code": "DM",
+      "englishName": "Dominica",
+      "tokiPonaName": "Tominika",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 111,
+      "holidayEntries": 1417,
+      "categoryErrors": []
+    },
+    {
+      "code": "DO",
+      "englishName": "Dominican Republic",
+      "tokiPonaName": "Tominika",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 103,
+      "holidayEntries": 1529,
+      "categoryErrors": []
+    },
+    {
+      "code": "DZ",
+      "englishName": "Algeria",
+      "tokiPonaName": "Sasali",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US",
+        "fr",
+        "kab"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "christian",
+        "hebrew",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 137,
+      "holidayEntries": 2658,
+      "categoryErrors": []
+    },
+    {
+      "code": "EC",
+      "englishName": "Ecuador",
+      "tokiPonaName": "Ekato",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2548,
+      "categoryErrors": []
+    },
+    {
+      "code": "EE",
+      "englishName": "Estonia",
+      "tokiPonaName": "Esi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "et",
+        "uk"
+      ],
+      "defaultLanguage": "et",
+      "supportedCategories": [
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1693,
+      "categoryErrors": []
+    },
+    {
+      "code": "EG",
+      "englishName": "Egypt",
+      "tokiPonaName": "Masu",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar_EG",
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "ar_EG",
+      "supportedCategories": [
+        "government",
+        "public",
+        "school"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 147,
+      "holidayEntries": 2673,
+      "categoryErrors": []
+    },
+    {
+      "code": "EH",
+      "englishName": "Western Sahara",
+      "tokiPonaName": "Weten Sawa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US",
+        "es",
+        "fr"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 101,
+      "holidayEntries": 1013,
+      "categoryErrors": []
+    },
+    {
+      "code": "ER",
+      "englishName": "Eritrea",
+      "tokiPonaName": "Eliteja",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "government",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 107,
+      "holidayEntries": 1651,
+      "categoryErrors": []
+    },
+    {
+      "code": "ES",
+      "englishName": "Spain",
+      "tokiPonaName": "Epanja",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ca",
+        "en_US",
+        "es",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AN",
+        "AR",
+        "AS",
+        "CB",
+        "CE",
+        "CL",
+        "CM",
+        "CN",
+        "CT",
+        "EX",
+        "GA",
+        "IB",
+        "MC",
+        "MD",
+        "ML",
+        "NC",
+        "PV",
+        "RI",
+        "VC"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 93,
+      "holidayEntries": 930,
+      "categoryErrors": []
+    },
+    {
+      "code": "ET",
+      "englishName": "Ethiopia",
+      "tokiPonaName": "Isijopija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "am",
+        "ar",
+        "en_ET",
+        "en_US"
+      ],
+      "defaultLanguage": "am",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 125,
+      "holidayEntries": 1703,
+      "categoryErrors": []
+    },
+    {
+      "code": "FI",
+      "englishName": "Finland",
+      "tokiPonaName": "Sumi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fi",
+        "sv_FI",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fi",
+      "supportedCategories": [
+        "public",
+        "unofficial",
+        "workday"
+      ],
+      "supportedSubdivisions": [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 5360,
+      "categoryErrors": []
+    },
+    {
+      "code": "FJ",
+      "englishName": "Fiji",
+      "tokiPonaName": "Pisi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 85,
+      "holidayEntries": 1022,
+      "categoryErrors": []
+    },
+    {
+      "code": "FK",
+      "englishName": "Falkland Islands",
+      "tokiPonaName": "Pakanto Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GB",
+        "en_US"
+      ],
+      "defaultLanguage": "en_GB",
+      "supportedCategories": [
+        "government",
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 118,
+      "holidayEntries": 1610,
+      "categoryErrors": []
+    },
+    {
+      "code": "FM",
+      "englishName": "Micronesia",
+      "tokiPonaName": "Mikonesa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_FM",
+        "en_US"
+      ],
+      "defaultLanguage": "en_FM",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "KSA",
+        "PNI",
+        "TRK",
+        "YAP"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 114,
+      "holidayEntries": 1073,
+      "categoryErrors": []
+    },
+    {
+      "code": "FO",
+      "englishName": "Faroe Islands",
+      "tokiPonaName": "Pawe Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "da",
+        "en_US",
+        "fo",
+        "is",
+        "no",
+        "sv"
+      ],
+      "defaultLanguage": "fo",
+      "supportedCategories": [
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 152,
+      "holidayEntries": 2584,
+      "categoryErrors": []
+    },
+    {
+      "code": "FR",
+      "englishName": "France",
+      "tokiPonaName": "Kanse",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "57",
+        "6AE",
+        "971",
+        "972",
+        "973",
+        "974",
+        "976",
+        "BL",
+        "MF",
+        "NC",
+        "PF",
+        "PM",
+        "TF",
+        "WF"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2092,
+      "categoryErrors": []
+    },
+    {
+      "code": "GA",
+      "englishName": "Gabon",
+      "tokiPonaName": "Kapon",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 124,
+      "holidayEntries": 1871,
+      "categoryErrors": []
+    },
+    {
+      "code": "GB",
+      "englishName": "United Kingdom",
+      "tokiPonaName": "Juke",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GB",
+        "en_US",
+        "th",
+        "ur_PK"
+      ],
+      "defaultLanguage": "en_GB",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "ENG",
+        "NIR",
+        "SCT",
+        "WLS"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 1142,
+      "categoryErrors": []
+    },
+    {
+      "code": "GD",
+      "englishName": "Grenada",
+      "tokiPonaName": "Kenata",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GD",
+        "en_US"
+      ],
+      "defaultLanguage": "en_GD",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 101,
+      "holidayEntries": 1507,
+      "categoryErrors": []
+    },
+    {
+      "code": "GE",
+      "englishName": "Georgia",
+      "tokiPonaName": "Katelo",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ka",
+        "uk"
+      ],
+      "defaultLanguage": "ka",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1948,
+      "categoryErrors": []
+    },
+    {
+      "code": "GF",
+      "englishName": "French Guiana",
+      "tokiPonaName": "Kanse Kana",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2209,
+      "categoryErrors": []
+    },
+    {
+      "code": "GG",
+      "englishName": "Guernsey",
+      "tokiPonaName": "Kunseja",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 192,
+      "holidayEntries": 1786,
+      "categoryErrors": []
+    },
+    {
+      "code": "GH",
+      "englishName": "Ghana",
+      "tokiPonaName": "Kana",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 99,
+      "holidayEntries": 1323,
+      "categoryErrors": []
+    },
+    {
+      "code": "GI",
+      "englishName": "Gibraltar",
+      "tokiPonaName": "Jepatawa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GB",
+        "en_US"
+      ],
+      "defaultLanguage": "en_GB",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 101,
+      "holidayEntries": 1372,
+      "categoryErrors": []
+    },
+    {
+      "code": "GL",
+      "englishName": "Greenland",
+      "tokiPonaName": "Kalalinuna",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "da",
+        "en_US",
+        "fi",
+        "is",
+        "kl",
+        "no",
+        "sv",
+        "uk"
+      ],
+      "defaultLanguage": "kl",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 122,
+      "holidayEntries": 1948,
+      "categoryErrors": []
+    },
+    {
+      "code": "GM",
+      "englishName": "Gambia",
+      "tokiPonaName": "Kanpija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GM",
+        "en_US"
+      ],
+      "defaultLanguage": "en_GM",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 135,
+      "holidayEntries": 2294,
+      "categoryErrors": []
+    },
+    {
+      "code": "GN",
+      "englishName": "Guinea",
+      "tokiPonaName": "Kine",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 142,
+      "holidayEntries": 1669,
+      "categoryErrors": []
+    },
+    {
+      "code": "GP",
+      "englishName": "Guadeloupe",
+      "tokiPonaName": "Katelope",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2728,
+      "categoryErrors": []
+    },
+    {
+      "code": "GQ",
+      "englishName": "Equatorial Guinea",
+      "tokiPonaName": "Kinejekatolija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AN",
+        "BN",
+        "BS",
+        "CS",
+        "DJ",
+        "KN",
+        "LI",
+        "WN"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 94,
+      "holidayEntries": 1439,
+      "categoryErrors": []
+    },
+    {
+      "code": "GR",
+      "englishName": "Greece",
+      "tokiPonaName": "Elena",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "el",
+        "en_US",
+        "uk"
+      ],
+      "defaultLanguage": "el",
+      "supportedCategories": [
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2830,
+      "categoryErrors": []
+    },
+    {
+      "code": "GS",
+      "englishName": "South Georgia & South Sandwich Islands",
+      "tokiPonaName": "Soto Katelo Soto Santeto Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GS",
+        "en_US"
+      ],
+      "defaultLanguage": "en_GS",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 89,
+      "holidayEntries": 1038,
+      "categoryErrors": []
+    },
+    {
+      "code": "GT",
+      "englishName": "Guatemala",
+      "tokiPonaName": "Katemala",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2273,
+      "categoryErrors": []
+    },
+    {
+      "code": "GU",
+      "englishName": "Guam",
+      "tokiPonaName": "Kan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_US",
+      "supportedCategories": [
+        "public",
+        "unofficial"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 4362,
+      "categoryErrors": []
+    },
+    {
+      "code": "GW",
+      "englishName": "Guinea-Bissau",
+      "tokiPonaName": "Kinepisa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "pt_GW"
+      ],
+      "defaultLanguage": "pt_GW",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 78,
+      "holidayEntries": 816,
+      "categoryErrors": []
+    },
+    {
+      "code": "GY",
+      "englishName": "Guyana",
+      "tokiPonaName": "Kujana",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GY",
+        "en_US"
+      ],
+      "defaultLanguage": "en_GY",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 133,
+      "holidayEntries": 1820,
+      "categoryErrors": []
+    },
+    {
+      "code": "HK",
+      "englishName": "Hong Kong",
+      "tokiPonaName": "On Kon",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_HK",
+        "en_US",
+        "th",
+        "zh_CN",
+        "zh_HK"
+      ],
+      "defaultLanguage": "zh_HK",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 155,
+      "holidayEntries": 2903,
+      "categoryErrors": []
+    },
+    {
+      "code": "HM",
+      "englishName": "Heard & McDonald Islands",
+      "tokiPonaName": "Eto Ma Tonato Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 0,
+      "holidayEntries": 0,
+      "categoryErrors": []
+    },
+    {
+      "code": "HN",
+      "englishName": "Honduras",
+      "tokiPonaName": "Ontula",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2200,
+      "categoryErrors": []
+    },
+    {
+      "code": "HR",
+      "englishName": "Croatia",
+      "tokiPonaName": "Lowasi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "hr",
+        "uk"
+      ],
+      "defaultLanguage": "hr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 109,
+      "holidayEntries": 1484,
+      "categoryErrors": []
+    },
+    {
+      "code": "HT",
+      "englishName": "Haiti",
+      "tokiPonaName": "Awisi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "fr_HT",
+        "ht"
+      ],
+      "defaultLanguage": "fr_HT",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 114,
+      "holidayEntries": 2850,
+      "categoryErrors": []
+    },
+    {
+      "code": "HU",
+      "englishName": "Hungary",
+      "tokiPonaName": "Mosijo",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "hu",
+        "uk"
+      ],
+      "defaultLanguage": "hu",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 156,
+      "holidayEntries": 1980,
+      "categoryErrors": []
+    },
+    {
+      "code": "ID",
+      "englishName": "Indonesia",
+      "tokiPonaName": "Intonesija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "id",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "id",
+      "supportedCategories": [
+        "government",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 155,
+      "holidayEntries": 2256,
+      "categoryErrors": []
+    },
+    {
+      "code": "IE",
+      "englishName": "Ireland",
+      "tokiPonaName": "Alan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 1842,
+      "categoryErrors": []
+    },
+    {
+      "code": "IL",
+      "englishName": "Israel",
+      "tokiPonaName": "Isale",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "he",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "he",
+      "supportedCategories": [
+        "optional",
+        "public",
+        "school"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 5345,
+      "categoryErrors": []
+    },
+    {
+      "code": "IM",
+      "englishName": "Isle of Man",
+      "tokiPonaName": "Ile Opu Man",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GB",
+        "en_US",
+        "th",
+        "ur_PK"
+      ],
+      "defaultLanguage": "en_GB",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 1978,
+      "categoryErrors": []
+    },
+    {
+      "code": "IN",
+      "englishName": "India",
+      "tokiPonaName": "Palata",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "bn",
+        "en_IN",
+        "en_US",
+        "gu",
+        "hi",
+        "kn",
+        "ml",
+        "mr",
+        "pa",
+        "ta",
+        "te"
+      ],
+      "defaultLanguage": "en_IN",
+      "supportedCategories": [
+        "government",
+        "optional",
+        "optional_women",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AN",
+        "AP",
+        "AR",
+        "AS",
+        "BR",
+        "CG",
+        "CH",
+        "DH",
+        "DL",
+        "GA",
+        "GJ",
+        "HP",
+        "HR",
+        "JH",
+        "JK",
+        "KA",
+        "KL",
+        "LA",
+        "LD",
+        "MH",
+        "ML",
+        "MN",
+        "MP",
+        "MZ",
+        "NL",
+        "OD",
+        "PB",
+        "PY",
+        "RJ",
+        "SK",
+        "TN",
+        "TR",
+        "TS",
+        "UK",
+        "UP",
+        "WB"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 4304,
+      "categoryErrors": []
+    },
+    {
+      "code": "IO",
+      "englishName": "British Indian Ocean Territory",
+      "tokiPonaName": "Pite Intan Osen Tewitoja",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 0,
+      "holidayEntries": 0,
+      "categoryErrors": []
+    },
+    {
+      "code": "IQ",
+      "englishName": "Iraq",
+      "tokiPonaName": "Ilakija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "christian",
+        "hebrew",
+        "public",
+        "sabian",
+        "yazidi"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 137,
+      "holidayEntries": 5733,
+      "categoryErrors": []
+    },
+    {
+      "code": "IR",
+      "englishName": "Iran",
+      "tokiPonaName": "Ilan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fa_IR"
+      ],
+      "defaultLanguage": "fa_IR",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 121,
+      "holidayEntries": 2955,
+      "categoryErrors": []
+    },
+    {
+      "code": "IS",
+      "englishName": "Iceland",
+      "tokiPonaName": "Isilan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "is",
+        "uk"
+      ],
+      "defaultLanguage": "is",
+      "supportedCategories": [
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 3118,
+      "categoryErrors": []
+    },
+    {
+      "code": "IT",
+      "englishName": "Italy",
+      "tokiPonaName": "Italija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "it_IT",
+        "th"
+      ],
+      "defaultLanguage": "it_IT",
+      "supportedCategories": [
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AG",
+        "AL",
+        "AN",
+        "AO",
+        "AP",
+        "AQ",
+        "AR",
+        "AT",
+        "AV",
+        "Andria",
+        "BA",
+        "BG",
+        "BI",
+        "BL",
+        "BN",
+        "BO",
+        "BR",
+        "BS",
+        "BT",
+        "BZ",
+        "Barletta",
+        "CA",
+        "CB",
+        "CE",
+        "CH",
+        "CL",
+        "CN",
+        "CO",
+        "CR",
+        "CS",
+        "CT",
+        "CZ",
+        "Cesena",
+        "EN",
+        "FC",
+        "FE",
+        "FG",
+        "FI",
+        "FM",
+        "FR",
+        "Forli",
+        "GE",
+        "GO",
+        "GR",
+        "IM",
+        "IS",
+        "KR",
+        "LC",
+        "LE",
+        "LI",
+        "LO",
+        "LT",
+        "LU",
+        "MB",
+        "MC",
+        "ME",
+        "MI",
+        "MN",
+        "MO",
+        "MS",
+        "MT",
+        "NA",
+        "NO",
+        "NU",
+        "OR",
+        "PA",
+        "PC",
+        "PD",
+        "PE",
+        "PG",
+        "PI",
+        "PN",
+        "PO",
+        "PR",
+        "PT",
+        "PU",
+        "PV",
+        "PZ",
+        "Pesaro",
+        "RA",
+        "RC",
+        "RE",
+        "RG",
+        "RI",
+        "RM",
+        "RN",
+        "RO",
+        "SA",
+        "SI",
+        "SO",
+        "SP",
+        "SR",
+        "SS",
+        "SU",
+        "SV",
+        "TA",
+        "TE",
+        "TN",
+        "TO",
+        "TP",
+        "TR",
+        "TS",
+        "TV",
+        "Trani",
+        "UD",
+        "Urbino",
+        "VA",
+        "VB",
+        "VC",
+        "VE",
+        "VI",
+        "VR",
+        "VT",
+        "VV"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2758,
+      "categoryErrors": []
+    },
+    {
+      "code": "JE",
+      "englishName": "Jersey",
+      "tokiPonaName": "Jeseja",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 149,
+      "holidayEntries": 1448,
+      "categoryErrors": []
+    },
+    {
+      "code": "JM",
+      "englishName": "Jamaica",
+      "tokiPonaName": "Sameka",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2090,
+      "categoryErrors": []
+    },
+    {
+      "code": "JO",
+      "englishName": "Jordan",
+      "tokiPonaName": "Utun",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2380,
+      "categoryErrors": []
+    },
+    {
+      "code": "JP",
+      "englishName": "Japan",
+      "tokiPonaName": "Nijon",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ja",
+        "th"
+      ],
+      "defaultLanguage": "ja",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 151,
+      "holidayEntries": 3012,
+      "categoryErrors": []
+    },
+    {
+      "code": "KE",
+      "englishName": "Kenya",
+      "tokiPonaName": "Kenja",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_KE",
+        "en_US",
+        "sw"
+      ],
+      "defaultLanguage": "en_KE",
+      "supportedCategories": [
+        "hindu",
+        "islamic",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 137,
+      "holidayEntries": 1799,
+      "categoryErrors": []
+    },
+    {
+      "code": "KG",
+      "englishName": "Kyrgyzstan",
+      "tokiPonaName": "Kitan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ky",
+        "ru_KG"
+      ],
+      "defaultLanguage": "ky",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 109,
+      "holidayEntries": 2408,
+      "categoryErrors": []
+    },
+    {
+      "code": "KH",
+      "englishName": "Cambodia",
+      "tokiPonaName": "Kanpusi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "km",
+        "th"
+      ],
+      "defaultLanguage": "km",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 108,
+      "holidayEntries": 2426,
+      "categoryErrors": []
+    },
+    {
+      "code": "KI",
+      "englishName": "Kiribati",
+      "tokiPonaName": "Kilipasi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 121,
+      "holidayEntries": 1766,
+      "categoryErrors": []
+    },
+    {
+      "code": "KM",
+      "englishName": "Comoros",
+      "tokiPonaName": "Komo",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 125,
+      "holidayEntries": 1562,
+      "categoryErrors": []
+    },
+    {
+      "code": "KN",
+      "englishName": "St. Kitts & Nevis",
+      "tokiPonaName": "To Kita Newi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "half_day",
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 118,
+      "holidayEntries": 1612,
+      "categoryErrors": []
+    },
+    {
+      "code": "KP",
+      "englishName": "North Korea",
+      "tokiPonaName": "Soson",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ko_KP"
+      ],
+      "defaultLanguage": "ko_KP",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 2839,
+      "categoryErrors": []
+    },
+    {
+      "code": "KR",
+      "englishName": "South Korea",
+      "tokiPonaName": "Anku",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ko",
+        "th"
+      ],
+      "defaultLanguage": "ko",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 2952,
+      "categoryErrors": []
+    },
+    {
+      "code": "KW",
+      "englishName": "Kuwait",
+      "tokiPonaName": "Kuwasi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2180,
+      "categoryErrors": []
+    },
+    {
+      "code": "KY",
+      "englishName": "Cayman Islands",
+      "tokiPonaName": "Kaman Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GB",
+        "en_US"
+      ],
+      "defaultLanguage": "en_GB",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 95,
+      "holidayEntries": 1216,
+      "categoryErrors": []
+    },
+    {
+      "code": "KZ",
+      "englishName": "Kazakhstan",
+      "tokiPonaName": "Kasakan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "kk",
+        "uk"
+      ],
+      "defaultLanguage": "kk",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1933,
+      "categoryErrors": []
+    },
+    {
+      "code": "LA",
+      "englishName": "Laos",
+      "tokiPonaName": "La",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "lo",
+        "th"
+      ],
+      "defaultLanguage": "lo",
+      "supportedCategories": [
+        "bank",
+        "public",
+        "school",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 125,
+      "holidayEntries": 4362,
+      "categoryErrors": []
+    },
+    {
+      "code": "LB",
+      "englishName": "Lebanon",
+      "tokiPonaName": "Lunpan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "bank",
+        "government",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 123,
+      "holidayEntries": 2527,
+      "categoryErrors": []
+    },
+    {
+      "code": "LC",
+      "englishName": "St. Lucia",
+      "tokiPonaName": "To Lusa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_LC",
+        "en_US"
+      ],
+      "defaultLanguage": "en_LC",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 122,
+      "holidayEntries": 1726,
+      "categoryErrors": []
+    },
+    {
+      "code": "LI",
+      "englishName": "Liechtenstein",
+      "tokiPonaName": "Lisensan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "de",
+        "en_US",
+        "uk"
+      ],
+      "defaultLanguage": "de",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 4400,
+      "categoryErrors": []
+    },
+    {
+      "code": "LK",
+      "englishName": "Sri Lanka",
+      "tokiPonaName": "Lanka",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "si_LK",
+        "ta_LK"
+      ],
+      "defaultLanguage": "si_LK",
+      "supportedCategories": [
+        "bank",
+        "government",
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 24,
+      "holidayEntries": 659,
+      "categoryErrors": []
+    },
+    {
+      "code": "LR",
+      "englishName": "Liberia",
+      "tokiPonaName": "Lapewija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 144,
+      "holidayEntries": 1592,
+      "categoryErrors": []
+    },
+    {
+      "code": "LS",
+      "englishName": "Lesotho",
+      "tokiPonaName": "Lesoto",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 105,
+      "holidayEntries": 1156,
+      "categoryErrors": []
+    },
+    {
+      "code": "LT",
+      "englishName": "Lithuania",
+      "tokiPonaName": "Lijatuwa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "lt",
+        "uk"
+      ],
+      "defaultLanguage": "lt",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 111,
+      "holidayEntries": 1732,
+      "categoryErrors": []
+    },
+    {
+      "code": "LU",
+      "englishName": "Luxembourg",
+      "tokiPonaName": "Lusepu",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "de",
+        "en_US",
+        "fr",
+        "lb",
+        "uk"
+      ],
+      "defaultLanguage": "lb",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2682,
+      "categoryErrors": []
+    },
+    {
+      "code": "LV",
+      "englishName": "Latvia",
+      "tokiPonaName": "Lawi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "lv",
+        "ru",
+        "uk"
+      ],
+      "defaultLanguage": "lv",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1815,
+      "categoryErrors": []
+    },
+    {
+      "code": "LY",
+      "englishName": "Libya",
+      "tokiPonaName": "Lipija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 113,
+      "holidayEntries": 1627,
+      "categoryErrors": []
+    },
+    {
+      "code": "MA",
+      "englishName": "Morocco",
+      "tokiPonaName": "Malipe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2808,
+      "categoryErrors": []
+    },
+    {
+      "code": "MC",
+      "englishName": "Monaco",
+      "tokiPonaName": "Monako",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr_MC",
+        "uk"
+      ],
+      "defaultLanguage": "fr_MC",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 134,
+      "holidayEntries": 1734,
+      "categoryErrors": []
+    },
+    {
+      "code": "MD",
+      "englishName": "Moldova",
+      "tokiPonaName": "Motowa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ro",
+        "uk"
+      ],
+      "defaultLanguage": "ro",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1467,
+      "categoryErrors": []
+    },
+    {
+      "code": "ME",
+      "englishName": "Montenegro",
+      "tokiPonaName": "Monteneko",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "cnr",
+        "en_US",
+        "uk"
+      ],
+      "defaultLanguage": "cnr",
+      "supportedCategories": [
+        "catholic",
+        "hebrew",
+        "islamic",
+        "orthodox",
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 94,
+      "holidayEntries": 2819,
+      "categoryErrors": []
+    },
+    {
+      "code": "MF",
+      "englishName": "St. Martin",
+      "tokiPonaName": "To Maten",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 93,
+      "holidayEntries": 1201,
+      "categoryErrors": []
+    },
+    {
+      "code": "MG",
+      "englishName": "Madagascar",
+      "tokiPonaName": "Malakasi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "mg",
+        "uk"
+      ],
+      "defaultLanguage": "mg",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 154,
+      "holidayEntries": 2387,
+      "categoryErrors": []
+    },
+    {
+      "code": "MH",
+      "englishName": "Marshall Islands",
+      "tokiPonaName": "Masala Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 112,
+      "holidayEntries": 1252,
+      "categoryErrors": []
+    },
+    {
+      "code": "MK",
+      "englishName": "North Macedonia",
+      "tokiPonaName": "Noto Maketonija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "mk",
+        "uk"
+      ],
+      "defaultLanguage": "mk",
+      "supportedCategories": [
+        "albanian",
+        "bosnian",
+        "catholic",
+        "hebrew",
+        "islamic",
+        "orthodox",
+        "public",
+        "roma",
+        "serbian",
+        "turkish",
+        "vlach"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 102,
+      "holidayEntries": 2701,
+      "categoryErrors": []
+    },
+    {
+      "code": "ML",
+      "englishName": "Mali",
+      "tokiPonaName": "Mali",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 140,
+      "holidayEntries": 1472,
+      "categoryErrors": []
+    },
+    {
+      "code": "MM",
+      "englishName": "Myanmar",
+      "tokiPonaName": "Mijama",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "my",
+        "th"
+      ],
+      "defaultLanguage": "my",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 3945,
+      "categoryErrors": []
+    },
+    {
+      "code": "MN",
+      "englishName": "Mongolia",
+      "tokiPonaName": "Monola",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "mn"
+      ],
+      "defaultLanguage": "mn",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 97,
+      "holidayEntries": 7955,
+      "categoryErrors": []
+    },
+    {
+      "code": "MO",
+      "englishName": "Macao",
+      "tokiPonaName": "Maka",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_MO",
+        "en_US",
+        "pt_MO",
+        "th",
+        "zh_CN",
+        "zh_MO"
+      ],
+      "defaultLanguage": "zh_MO",
+      "supportedCategories": [
+        "government",
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "I",
+        "M"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 119,
+      "holidayEntries": 3148,
+      "categoryErrors": []
+    },
+    {
+      "code": "MP",
+      "englishName": "Northern Mariana Islands",
+      "tokiPonaName": "Noten Mawana Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_US",
+      "supportedCategories": [
+        "public",
+        "unofficial"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 3736,
+      "categoryErrors": []
+    },
+    {
+      "code": "MQ",
+      "englishName": "Martinique",
+      "tokiPonaName": "Matenike",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2527,
+      "categoryErrors": []
+    },
+    {
+      "code": "MR",
+      "englishName": "Mauritania",
+      "tokiPonaName": "Mulitanija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 1689,
+      "categoryErrors": []
+    },
+    {
+      "code": "MS",
+      "englishName": "Montserrat",
+      "tokiPonaName": "Montewato",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_MS",
+        "en_US"
+      ],
+      "defaultLanguage": "en_MS",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 84,
+      "holidayEntries": 1141,
+      "categoryErrors": []
+    },
+    {
+      "code": "MT",
+      "englishName": "Malta",
+      "tokiPonaName": "Mata",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "mt"
+      ],
+      "defaultLanguage": "mt",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 121,
+      "holidayEntries": 1641,
+      "categoryErrors": []
+    },
+    {
+      "code": "MU",
+      "englishName": "Mauritius",
+      "tokiPonaName": "Mowisi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_MU",
+        "en_US"
+      ],
+      "defaultLanguage": "en_MU",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 113,
+      "holidayEntries": 1365,
+      "categoryErrors": []
+    },
+    {
+      "code": "MV",
+      "englishName": "Maldives",
+      "tokiPonaName": "Matewe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "dv",
+        "en_US"
+      ],
+      "defaultLanguage": "dv",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 3054,
+      "categoryErrors": []
+    },
+    {
+      "code": "MW",
+      "englishName": "Malawi",
+      "tokiPonaName": "Malawi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 101,
+      "holidayEntries": 1370,
+      "categoryErrors": []
+    },
+    {
+      "code": "MX",
+      "englishName": "Mexico",
+      "tokiPonaName": "Mesiko",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 1352,
+      "categoryErrors": []
+    },
+    {
+      "code": "MY",
+      "englishName": "Malaysia",
+      "tokiPonaName": "Malasija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ms_MY",
+        "th"
+      ],
+      "defaultLanguage": "ms_MY",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 149,
+      "holidayEntries": 1947,
+      "categoryErrors": []
+    },
+    {
+      "code": "MZ",
+      "englishName": "Mozambique",
+      "tokiPonaName": "Mosanpi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "pt_MZ",
+        "uk"
+      ],
+      "defaultLanguage": "pt_MZ",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 126,
+      "holidayEntries": 1274,
+      "categoryErrors": []
+    },
+    {
+      "code": "NA",
+      "englishName": "Namibia",
+      "tokiPonaName": "Namipija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_NA",
+        "en_US",
+        "uk"
+      ],
+      "defaultLanguage": "en_NA",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1537,
+      "categoryErrors": []
+    },
+    {
+      "code": "NC",
+      "englishName": "New Caledonia",
+      "tokiPonaName": "Newa Kaletona",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2240,
+      "categoryErrors": []
+    },
+    {
+      "code": "NE",
+      "englishName": "Niger",
+      "tokiPonaName": "Nise",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr_NE"
+      ],
+      "defaultLanguage": "fr_NE",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 141,
+      "holidayEntries": 2510,
+      "categoryErrors": []
+    },
+    {
+      "code": "NF",
+      "englishName": "Norfolk Island",
+      "tokiPonaName": "Nopoku Ilanto",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_NF",
+        "en_US"
+      ],
+      "defaultLanguage": "en_NF",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 85,
+      "holidayEntries": 1155,
+      "categoryErrors": []
+    },
+    {
+      "code": "NG",
+      "englishName": "Nigeria",
+      "tokiPonaName": "Naselija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_NG",
+        "en_US"
+      ],
+      "defaultLanguage": "en_NG",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 122,
+      "holidayEntries": 1741,
+      "categoryErrors": []
+    },
+    {
+      "code": "NI",
+      "englishName": "Nicaragua",
+      "tokiPonaName": "Nikawaka",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AN",
+        "AS",
+        "BO",
+        "CA",
+        "CI",
+        "CO",
+        "ES",
+        "GR",
+        "JI",
+        "LE",
+        "MD",
+        "MN",
+        "MS",
+        "MT",
+        "NS",
+        "RI",
+        "SJ"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 1801,
+      "categoryErrors": []
+    },
+    {
+      "code": "NL",
+      "englishName": "Netherlands",
+      "tokiPonaName": "Netelan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fy",
+        "nl",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "nl",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 135,
+      "holidayEntries": 1492,
+      "categoryErrors": []
+    },
+    {
+      "code": "NO",
+      "englishName": "Norway",
+      "tokiPonaName": "Nosiki",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "no",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "no",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "03",
+        "11",
+        "15",
+        "18",
+        "21",
+        "22",
+        "31",
+        "32",
+        "33",
+        "34",
+        "39",
+        "40",
+        "42",
+        "46",
+        "50",
+        "55",
+        "56"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2308,
+      "categoryErrors": []
+    },
+    {
+      "code": "NP",
+      "englishName": "Nepal",
+      "tokiPonaName": "Nepala",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "kn",
+        "ne"
+      ],
+      "defaultLanguage": "ne",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 91,
+      "holidayEntries": 1236,
+      "categoryErrors": []
+    },
+    {
+      "code": "NR",
+      "englishName": "Nauru",
+      "tokiPonaName": "Nowe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_NR",
+        "en_US"
+      ],
+      "defaultLanguage": "en_NR",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 132,
+      "holidayEntries": 2034,
+      "categoryErrors": []
+    },
+    {
+      "code": "NU",
+      "englishName": "Niue",
+      "tokiPonaName": "Ne",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_NU",
+        "en_US"
+      ],
+      "defaultLanguage": "en_NU",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 139,
+      "holidayEntries": 1792,
+      "categoryErrors": []
+    },
+    {
+      "code": "NZ",
+      "englishName": "New Zealand",
+      "tokiPonaName": "Nusilan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AUK",
+        "BOP",
+        "CAN",
+        "CIT",
+        "GIS",
+        "HKB",
+        "MBH",
+        "MWT",
+        "NSN",
+        "NTL",
+        "OTA",
+        "STL",
+        "South Canterbury",
+        "TAS",
+        "TKI",
+        "WGN",
+        "WKO",
+        "WTC"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2224,
+      "categoryErrors": []
+    },
+    {
+      "code": "OM",
+      "englishName": "Oman",
+      "tokiPonaName": "Uman",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 131,
+      "holidayEntries": 1580,
+      "categoryErrors": []
+    },
+    {
+      "code": "PA",
+      "englishName": "Panama",
+      "tokiPonaName": "Panama",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 2166,
+      "categoryErrors": []
+    },
+    {
+      "code": "PE",
+      "englishName": "Peru",
+      "tokiPonaName": "Pelu",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2913,
+      "categoryErrors": []
+    },
+    {
+      "code": "PF",
+      "englishName": "French Polynesia",
+      "tokiPonaName": "Kanse Ponesa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2532,
+      "categoryErrors": []
+    },
+    {
+      "code": "PG",
+      "englishName": "Papua New Guinea",
+      "tokiPonaName": "Papuwanijukini",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 148,
+      "holidayEntries": 1675,
+      "categoryErrors": []
+    },
+    {
+      "code": "PH",
+      "englishName": "Philippines",
+      "tokiPonaName": "Pilipina",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_PH",
+        "en_US",
+        "fil",
+        "th"
+      ],
+      "defaultLanguage": "en_PH",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 113,
+      "holidayEntries": 2071,
+      "categoryErrors": []
+    },
+    {
+      "code": "PK",
+      "englishName": "Pakistan",
+      "tokiPonaName": "Pakisan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_PK",
+        "en_US",
+        "ur_PK"
+      ],
+      "defaultLanguage": "en_PK",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 153,
+      "holidayEntries": 2117,
+      "categoryErrors": []
+    },
+    {
+      "code": "PL",
+      "englishName": "Poland",
+      "tokiPonaName": "Posuka",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "de",
+        "en_US",
+        "pl",
+        "uk"
+      ],
+      "defaultLanguage": "pl",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 176,
+      "holidayEntries": 2347,
+      "categoryErrors": []
+    },
+    {
+      "code": "PM",
+      "englishName": "St. Pierre & Miquelon",
+      "tokiPonaName": "To Pewe Mikelon",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2092,
+      "categoryErrors": []
+    },
+    {
+      "code": "PN",
+      "englishName": "Pitcairn Islands",
+      "tokiPonaName": "Piten Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "government",
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 85,
+      "holidayEntries": 935,
+      "categoryErrors": []
+    },
+    {
+      "code": "PR",
+      "englishName": "Puerto Rico",
+      "tokiPonaName": "Puto Wiko",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_US",
+      "supportedCategories": [
+        "government",
+        "half_day",
+        "public",
+        "unofficial"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 198,
+      "holidayEntries": 5167,
+      "categoryErrors": []
+    },
+    {
+      "code": "PS",
+      "englishName": "Palestine",
+      "tokiPonaName": "Pilisin",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "catholic",
+        "orthodox",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 112,
+      "holidayEntries": 3686,
+      "categoryErrors": []
+    },
+    {
+      "code": "PT",
+      "englishName": "Portugal",
+      "tokiPonaName": "Potuke",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "pt_PT",
+        "uk"
+      ],
+      "defaultLanguage": "pt_PT",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "20",
+        "30"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 3437,
+      "categoryErrors": []
+    },
+    {
+      "code": "PW",
+      "englishName": "Palau",
+      "tokiPonaName": "Palo",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "armed_forces",
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 120,
+      "holidayEntries": 1469,
+      "categoryErrors": []
+    },
+    {
+      "code": "PY",
+      "englishName": "Paraguay",
+      "tokiPonaName": "Palakawi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "government",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1526,
+      "categoryErrors": []
+    },
+    {
+      "code": "QA",
+      "englishName": "Qatar",
+      "tokiPonaName": "Katawa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar_QA",
+        "en_US"
+      ],
+      "defaultLanguage": "ar_QA",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 130,
+      "holidayEntries": 1068,
+      "categoryErrors": []
+    },
+    {
+      "code": "RE",
+      "englishName": "Réunion",
+      "tokiPonaName": "Wenon",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2210,
+      "categoryErrors": []
+    },
+    {
+      "code": "RO",
+      "englishName": "Romania",
+      "tokiPonaName": "Lomani",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ro",
+        "uk"
+      ],
+      "defaultLanguage": "ro",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 104,
+      "holidayEntries": 1602,
+      "categoryErrors": []
+    },
+    {
+      "code": "RS",
+      "englishName": "Serbia",
+      "tokiPonaName": "Sopisi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "sr"
+      ],
+      "defaultLanguage": "sr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 94,
+      "holidayEntries": 1222,
+      "categoryErrors": []
+    },
+    {
+      "code": "RU",
+      "englishName": "Russia",
+      "tokiPonaName": "Losi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ru",
+        "th",
+        "zh_CN"
+      ],
+      "defaultLanguage": "ru",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1640,
+      "categoryErrors": []
+    },
+    {
+      "code": "RW",
+      "englishName": "Rwanda",
+      "tokiPonaName": "Luwanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "rw"
+      ],
+      "defaultLanguage": "rw",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 89,
+      "holidayEntries": 1504,
+      "categoryErrors": []
+    },
+    {
+      "code": "SA",
+      "englishName": "Saudi Arabia",
+      "tokiPonaName": "Sawusi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "bn",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 176,
+      "holidayEntries": 1854,
+      "categoryErrors": []
+    },
+    {
+      "code": "SB",
+      "englishName": "Solomon Islands",
+      "tokiPonaName": "Solomon Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "CE",
+        "CH",
+        "CT",
+        "GU",
+        "IS",
+        "MK",
+        "ML",
+        "RB",
+        "TE",
+        "WE"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 122,
+      "holidayEntries": 1285,
+      "categoryErrors": []
+    },
+    {
+      "code": "SC",
+      "englishName": "Seychelles",
+      "tokiPonaName": "Setele",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_SC",
+        "en_US"
+      ],
+      "defaultLanguage": "en_SC",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 107,
+      "holidayEntries": 1528,
+      "categoryErrors": []
+    },
+    {
+      "code": "SD",
+      "englishName": "Sudan",
+      "tokiPonaName": "Sutan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar_SD",
+        "en_US"
+      ],
+      "defaultLanguage": "ar_SD",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 116,
+      "holidayEntries": 1458,
+      "categoryErrors": []
+    },
+    {
+      "code": "SE",
+      "englishName": "Sweden",
+      "tokiPonaName": "Wensa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "sv",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "sv",
+      "supportedCategories": [
+        "bank",
+        "de_facto",
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 148,
+      "holidayEntries": 11903,
+      "categoryErrors": []
+    },
+    {
+      "code": "SG",
+      "englishName": "Singapore",
+      "tokiPonaName": "Sinapowe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_SG",
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_SG",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2526,
+      "categoryErrors": []
+    },
+    {
+      "code": "SH",
+      "englishName": "St. Helena",
+      "tokiPonaName": "To Elena",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GB",
+        "en_US"
+      ],
+      "defaultLanguage": "en_GB",
+      "supportedCategories": [
+        "government",
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AC",
+        "HL",
+        "TA"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 86,
+      "holidayEntries": 682,
+      "categoryErrors": []
+    },
+    {
+      "code": "SI",
+      "englishName": "Slovenia",
+      "tokiPonaName": "Lowensina",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "sl",
+        "uk"
+      ],
+      "defaultLanguage": "sl",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 109,
+      "holidayEntries": 2175,
+      "categoryErrors": []
+    },
+    {
+      "code": "SJ",
+      "englishName": "Svalbard & Jan Mayen",
+      "tokiPonaName": "Wapato Jan Majen",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "no",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "no",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2308,
+      "categoryErrors": []
+    },
+    {
+      "code": "SK",
+      "englishName": "Slovakia",
+      "tokiPonaName": "Lowenki",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "sk",
+        "uk"
+      ],
+      "defaultLanguage": "sk",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 108,
+      "holidayEntries": 1689,
+      "categoryErrors": []
+    },
+    {
+      "code": "SL",
+      "englishName": "Sierra Leone",
+      "tokiPonaName": "Sijelalijon",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_SL",
+        "en_US"
+      ],
+      "defaultLanguage": "en_SL",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 139,
+      "holidayEntries": 1869,
+      "categoryErrors": []
+    },
+    {
+      "code": "SM",
+      "englishName": "San Marino",
+      "tokiPonaName": "Samalino",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "it",
+        "uk"
+      ],
+      "defaultLanguage": "it",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 139,
+      "holidayEntries": 2780,
+      "categoryErrors": []
+    },
+    {
+      "code": "SN",
+      "englishName": "Senegal",
+      "tokiPonaName": "Seneka",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr_SN"
+      ],
+      "defaultLanguage": "fr_SN",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 137,
+      "holidayEntries": 1786,
+      "categoryErrors": []
+    },
+    {
+      "code": "SO",
+      "englishName": "Somalia",
+      "tokiPonaName": "Somalija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 140,
+      "holidayEntries": 1283,
+      "categoryErrors": []
+    },
+    {
+      "code": "SR",
+      "englishName": "Suriname",
+      "tokiPonaName": "Suwiname",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "nl"
+      ],
+      "defaultLanguage": "nl",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 129,
+      "holidayEntries": 1616,
+      "categoryErrors": []
+    },
+    {
+      "code": "SS",
+      "englishName": "South Sudan",
+      "tokiPonaName": "Soto Sutan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "islamic",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 89,
+      "holidayEntries": 1429,
+      "categoryErrors": []
+    },
+    {
+      "code": "ST",
+      "englishName": "São Tomé & Príncipe",
+      "tokiPonaName": "Sa Tome Pinsipe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "pt_ST"
+      ],
+      "defaultLanguage": "pt_ST",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "P"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 87,
+      "holidayEntries": 989,
+      "categoryErrors": []
+    },
+    {
+      "code": "SV",
+      "englishName": "El Salvador",
+      "tokiPonaName": "Ela Sawatowa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "AH",
+        "CA",
+        "CH",
+        "CU",
+        "LI",
+        "MO",
+        "PA",
+        "SA",
+        "SM",
+        "SO",
+        "SS",
+        "SV",
+        "UN",
+        "US"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 128,
+      "holidayEntries": 1325,
+      "categoryErrors": []
+    },
+    {
+      "code": "SX",
+      "englishName": "Sint Maarten",
+      "tokiPonaName": "Sinto Maten",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "nl"
+      ],
+      "defaultLanguage": "nl",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 90,
+      "holidayEntries": 1310,
+      "categoryErrors": []
+    },
+    {
+      "code": "SY",
+      "englishName": "Syria",
+      "tokiPonaName": "Sulija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 97,
+      "holidayEntries": 1791,
+      "categoryErrors": []
+    },
+    {
+      "code": "SZ",
+      "englishName": "Eswatini",
+      "tokiPonaName": "Sawasi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 162,
+      "holidayEntries": 1754,
+      "categoryErrors": []
+    },
+    {
+      "code": "TC",
+      "englishName": "Turks & Caicos Islands",
+      "tokiPonaName": "Tuka Keko Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_TC",
+        "en_US"
+      ],
+      "defaultLanguage": "en_TC",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 138,
+      "holidayEntries": 1821,
+      "categoryErrors": []
+    },
+    {
+      "code": "TD",
+      "englishName": "Chad",
+      "tokiPonaName": "Sate",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 140,
+      "holidayEntries": 1709,
+      "categoryErrors": []
+    },
+    {
+      "code": "TF",
+      "englishName": "French Southern Territories",
+      "tokiPonaName": "Kanse Soten Tewitowe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 145,
+      "holidayEntries": 1570,
+      "categoryErrors": []
+    },
+    {
+      "code": "TG",
+      "englishName": "Togo",
+      "tokiPonaName": "Toko",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 140,
+      "holidayEntries": 1924,
+      "categoryErrors": []
+    },
+    {
+      "code": "TH",
+      "englishName": "Thailand",
+      "tokiPonaName": "Tawi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "th",
+      "supportedCategories": [
+        "armed_forces",
+        "bank",
+        "government",
+        "public",
+        "school",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 187,
+      "holidayEntries": 6266,
+      "categoryErrors": []
+    },
+    {
+      "code": "TJ",
+      "englishName": "Tajikistan",
+      "tokiPonaName": "Tajekitan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ru",
+        "tg"
+      ],
+      "defaultLanguage": "tg",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 109,
+      "holidayEntries": 1260,
+      "categoryErrors": []
+    },
+    {
+      "code": "TK",
+      "englishName": "Tokelau",
+      "tokiPonaName": "Tokelo",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_TK",
+        "en_US",
+        "tkl"
+      ],
+      "defaultLanguage": "en_TK",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 98,
+      "holidayEntries": 588,
+      "categoryErrors": []
+    },
+    {
+      "code": "TL",
+      "englishName": "Timor-Leste",
+      "tokiPonaName": "Temowa Lete",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_TL",
+        "en_US",
+        "pt_TL",
+        "tet",
+        "th"
+      ],
+      "defaultLanguage": "pt_TL",
+      "supportedCategories": [
+        "government",
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 95,
+      "holidayEntries": 2338,
+      "categoryErrors": []
+    },
+    {
+      "code": "TM",
+      "englishName": "Turkmenistan",
+      "tokiPonaName": "Tukenitan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "ru",
+        "tk"
+      ],
+      "defaultLanguage": "tk",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 109,
+      "holidayEntries": 1221,
+      "categoryErrors": []
+    },
+    {
+      "code": "TN",
+      "englishName": "Tunisia",
+      "tokiPonaName": "Tunisi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 3022,
+      "categoryErrors": []
+    },
+    {
+      "code": "TO",
+      "englishName": "Tonga",
+      "tokiPonaName": "Tona",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "to"
+      ],
+      "defaultLanguage": "to",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 112,
+      "holidayEntries": 1528,
+      "categoryErrors": []
+    },
+    {
+      "code": "TR",
+      "englishName": "Türkiye",
+      "tokiPonaName": "Tuki",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "tr",
+        "uk"
+      ],
+      "defaultLanguage": "tr",
+      "supportedCategories": [
+        "half_day",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 165,
+      "holidayEntries": 2593,
+      "categoryErrors": []
+    },
+    {
+      "code": "TT",
+      "englishName": "Trinidad & Tobago",
+      "tokiPonaName": "Sinita",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_TT",
+        "en_US"
+      ],
+      "defaultLanguage": "en_TT",
+      "supportedCategories": [
+        "optional",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 138,
+      "holidayEntries": 2316,
+      "categoryErrors": []
+    },
+    {
+      "code": "TV",
+      "englishName": "Tuvalu",
+      "tokiPonaName": "Tuwalu",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_GB",
+        "en_US",
+        "tvl"
+      ],
+      "defaultLanguage": "tvl",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [
+        "FUN",
+        "NIT",
+        "NKF",
+        "NKL",
+        "NMA",
+        "NMG",
+        "NUI",
+        "VAI"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 111,
+      "holidayEntries": 1414,
+      "categoryErrors": []
+    },
+    {
+      "code": "TW",
+      "englishName": "Taiwan",
+      "tokiPonaName": "Tewan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th",
+        "zh_CN",
+        "zh_TW"
+      ],
+      "defaultLanguage": "zh_TW",
+      "supportedCategories": [
+        "government",
+        "optional",
+        "public",
+        "school",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 103,
+      "holidayEntries": 3554,
+      "categoryErrors": []
+    },
+    {
+      "code": "TZ",
+      "englishName": "Tanzania",
+      "tokiPonaName": "Tansanija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "sw"
+      ],
+      "defaultLanguage": "sw",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 136,
+      "holidayEntries": 2354,
+      "categoryErrors": []
+    },
+    {
+      "code": "UA",
+      "englishName": "Ukraine",
+      "tokiPonaName": "Ukawina",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "uk",
+      "supportedCategories": [
+        "public",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 1413,
+      "categoryErrors": []
+    },
+    {
+      "code": "UG",
+      "englishName": "Uganda",
+      "tokiPonaName": "Ukanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 138,
+      "holidayEntries": 1781,
+      "categoryErrors": []
+    },
+    {
+      "code": "UM",
+      "englishName": "United States Minor Outlying Islands",
+      "tokiPonaName": "Uniteto Tate Minowa Oten Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_US",
+      "supportedCategories": [
+        "public",
+        "unofficial"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 3673,
+      "categoryErrors": []
+    },
+    {
+      "code": "US",
+      "englishName": "United States",
+      "tokiPonaName": "Mewika",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_US",
+      "supportedCategories": [
+        "government",
+        "half_day",
+        "public",
+        "unofficial"
+      ],
+      "supportedSubdivisions": [
+        "AK",
+        "AL",
+        "AR",
+        "AS",
+        "AZ",
+        "CA",
+        "CO",
+        "CT",
+        "DC",
+        "DE",
+        "FL",
+        "GA",
+        "GU",
+        "HI",
+        "IA",
+        "ID",
+        "IL",
+        "IN",
+        "KS",
+        "KY",
+        "LA",
+        "MA",
+        "MD",
+        "ME",
+        "MI",
+        "MN",
+        "MO",
+        "MP",
+        "MS",
+        "MT",
+        "NC",
+        "ND",
+        "NE",
+        "NH",
+        "NJ",
+        "NM",
+        "NV",
+        "NY",
+        "OH",
+        "OK",
+        "OR",
+        "PA",
+        "PR",
+        "RI",
+        "SC",
+        "SD",
+        "TN",
+        "TX",
+        "UM",
+        "UT",
+        "VA",
+        "VI",
+        "VT",
+        "WA",
+        "WI",
+        "WV",
+        "WY"
+      ],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 4218,
+      "categoryErrors": []
+    },
+    {
+      "code": "UY",
+      "englishName": "Uruguay",
+      "tokiPonaName": "Ulukawi",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "bank",
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 181,
+      "holidayEntries": 3567,
+      "categoryErrors": []
+    },
+    {
+      "code": "UZ",
+      "englishName": "Uzbekistan",
+      "tokiPonaName": "Upekitan",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "uk",
+        "uz"
+      ],
+      "defaultLanguage": "uz",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 109,
+      "holidayEntries": 1182,
+      "categoryErrors": []
+    },
+    {
+      "code": "VA",
+      "englishName": "Vatican City",
+      "tokiPonaName": "Wasikano",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "it",
+        "th"
+      ],
+      "defaultLanguage": "it",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 172,
+      "holidayEntries": 4910,
+      "categoryErrors": []
+    },
+    {
+      "code": "VC",
+      "englishName": "St. Vincent & Grenadines",
+      "tokiPonaName": "To Winsento Kenatene",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "en_VC"
+      ],
+      "defaultLanguage": "en_VC",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 122,
+      "holidayEntries": 1664,
+      "categoryErrors": []
+    },
+    {
+      "code": "VE",
+      "englishName": "Venezuela",
+      "tokiPonaName": "Penesuwela",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "es",
+        "uk"
+      ],
+      "defaultLanguage": "es",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 191,
+      "holidayEntries": 2682,
+      "categoryErrors": []
+    },
+    {
+      "code": "VG",
+      "englishName": "British Virgin Islands",
+      "tokiPonaName": "Pite Wijen Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "en_VG"
+      ],
+      "defaultLanguage": "en_VG",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 134,
+      "holidayEntries": 1980,
+      "categoryErrors": []
+    },
+    {
+      "code": "VI",
+      "englishName": "U.S. Virgin Islands",
+      "tokiPonaName": "U Wijen Ilanta",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th"
+      ],
+      "defaultLanguage": "en_US",
+      "supportedCategories": [
+        "public",
+        "unofficial"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 183,
+      "holidayEntries": 4862,
+      "categoryErrors": []
+    },
+    {
+      "code": "VN",
+      "englishName": "Vietnam",
+      "tokiPonaName": "Wije",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "th",
+        "vi"
+      ],
+      "defaultLanguage": "vi",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2163,
+      "categoryErrors": []
+    },
+    {
+      "code": "VU",
+      "englishName": "Vanuatu",
+      "tokiPonaName": "Wanuwatu",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 120,
+      "holidayEntries": 1854,
+      "categoryErrors": []
+    },
+    {
+      "code": "WF",
+      "englishName": "Wallis & Futuna",
+      "tokiPonaName": "Wali Putuna",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 139,
+      "holidayEntries": 1923,
+      "categoryErrors": []
+    },
+    {
+      "code": "WS",
+      "englishName": "Samoa",
+      "tokiPonaName": "Samowa",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 200,
+      "holidayEntries": 2200,
+      "categoryErrors": []
+    },
+    {
+      "code": "XK",
+      "englishName": "Kosovo",
+      "tokiPonaName": "Kosowe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "sq",
+        "sr"
+      ],
+      "defaultLanguage": "sq",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 92,
+      "holidayEntries": 1498,
+      "categoryErrors": []
+    },
+    {
+      "code": "YE",
+      "englishName": "Yemen",
+      "tokiPonaName": "Jamanija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "ar",
+        "en_US"
+      ],
+      "defaultLanguage": "ar",
+      "supportedCategories": [
+        "public",
+        "school",
+        "workday"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 110,
+      "holidayEntries": 2088,
+      "categoryErrors": []
+    },
+    {
+      "code": "YT",
+      "englishName": "Mayotte",
+      "tokiPonaName": "Majote",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [
+        "en_US",
+        "fr",
+        "th",
+        "uk"
+      ],
+      "defaultLanguage": "fr",
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 201,
+      "holidayEntries": 2209,
+      "categoryErrors": []
+    },
+    {
+      "code": "ZA",
+      "englishName": "South Africa",
+      "tokiPonaName": "Setapika",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 190,
+      "holidayEntries": 2311,
+      "categoryErrors": []
+    },
+    {
+      "code": "ZM",
+      "englishName": "Zambia",
+      "tokiPonaName": "Sanpija",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 117,
+      "holidayEntries": 1944,
+      "categoryErrors": []
+    },
+    {
+      "code": "ZW",
+      "englishName": "Zimbabwe",
+      "tokiPonaName": "Sinpapuwe",
+      "requestedLanguage": "en_US",
+      "supportedLanguages": [],
+      "defaultLanguage": null,
+      "supportedCategories": [
+        "public"
+      ],
+      "supportedSubdivisions": [],
+      "yearsRequested": [
+        1900,
+        2100
+      ],
+      "yearsWithEntries": 113,
+      "holidayEntries": 1565,
+      "categoryErrors": []
+    }
+  ],
+  "failedCountries": [],
+  "notes": [
+    "National-level calendars only; subdivisions are not exported.",
+    "An empty holidays array means Vacanza returned no entries for that country/year/category combination.",
+    "Observed entries are detected by comparing observed=True with observed=False.",
+    "originalDate is null when the exporter cannot safely infer the source holiday date.",
+    "Names are requested in en_US; where unsupported Vacanza may return the entity's original language."
+  ]
+}
