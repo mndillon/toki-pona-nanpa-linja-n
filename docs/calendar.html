@@ -451,7 +451,7 @@
       width: 100%;
       min-width: 0;
       display: flex;
-      align-items: center;
+      align-items: stretch;
       justify-content: flex-start;
       gap: 7px;
       padding-top: 3px;
@@ -459,14 +459,45 @@
       white-space: nowrap;
       line-height: 1;
     }
+    .holidayDatePoint,
+    .holidayRangeConnector {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+    }
+    .holidayDateGlyphLine {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .holidayDateTenpoGlyph {
+      flex: 0 0 auto;
+      font-size: var(--holiday-date-connector-font-px, 18px);
+      line-height: 1;
+    }
     .holidayDateRow .holidayDateCartouche {
       flex: 0 0 auto;
       max-width: none;
       font-size: var(--holiday-date-font-px, 22px);
     }
-    .holidayRangeDash {
+    .holidayDateLatin,
+    .holidayRangeLatin {
+      margin-top: 4px;
+      color: rgba(63, 71, 80, 0.42);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: var(--holiday-date-latin-font-px, 9px);
+      line-height: 1.05;
+      white-space: nowrap;
+    }
+    .holidayRangeGlyph {
       flex: 0 0 auto;
-      font-size: var(--holiday-date-dash-font-px, 18px);
+      font-size: var(--holiday-date-connector-font-px, 18px);
       line-height: 1;
     }
     .holidayName {
@@ -2575,6 +2606,16 @@
       }
     }
 
+    function makeHolidayDatePoint(dateSource) {
+      const point = el("span", "holidayDatePoint");
+      const glyphLine = el("span", "holidayDateGlyphLine");
+      glyphLine.append(sitelen("tenpo", "holidayDateTenpoGlyph"));
+      glyphLine.append(makeCartouche(dateSource, "suno", "numericCartouche holidayDateCartouche"));
+      point.append(glyphLine);
+      point.append(el("span", "holidayDateLatin", `tenpo ${properName(dateSource, "Suno")}`));
+      return point;
+    }
+
     function makeHolidayDateRow(holiday) {
       const row = el("div", "holidayDateRow");
       const startIso = holidayEntryStartIso(holiday);
@@ -2582,10 +2623,13 @@
       const startDate = holidayYearlessDateSource(startIso);
       const endDate = holidayYearlessDateSource(endIso);
       if (!startDate) return row;
-      row.append(makeCartouche(startDate, "suno", "numericCartouche holidayDateCartouche"));
+      row.append(makeHolidayDatePoint(startDate));
       if (endDate && endIso !== startIso) {
-        row.append(el("span", "holidayRangeDash", "—"));
-        row.append(makeCartouche(endDate, "suno", "numericCartouche holidayDateCartouche"));
+        const connector = el("span", "holidayRangeConnector");
+        connector.append(sitelen("tawa", "holidayRangeGlyph"));
+        connector.append(el("span", "holidayRangeLatin", "tawa"));
+        row.append(connector);
+        row.append(makeHolidayDatePoint(endDate));
       }
       return row;
     }
@@ -2634,14 +2678,18 @@
       if (!root?.querySelectorAll) return;
       for (const row of root.querySelectorAll(".holidayDateRow")) {
         row.style.setProperty("--holiday-date-font-px", "22px");
-        row.style.setProperty("--holiday-date-dash-font-px", "18px");
+        row.style.setProperty("--holiday-date-connector-font-px", "18px");
+        row.style.setProperty("--holiday-date-latin-font-px", "9px");
         const available = Number(row.clientWidth || row.getBoundingClientRect?.().width || 0);
         if (!(available > 0)) continue;
         let px = 22;
+        applyDynamicCartoucheStyles(row);
         while (px > 7 && row.scrollWidth > available + 0.5) {
           px -= 0.5;
           row.style.setProperty("--holiday-date-font-px", `${px}px`);
-          row.style.setProperty("--holiday-date-dash-font-px", `${Math.max(7, px * 0.82)}px`);
+          row.style.setProperty("--holiday-date-connector-font-px", `${Math.max(7, px * 0.82)}px`);
+          row.style.setProperty("--holiday-date-latin-font-px", `${Math.max(6, Math.min(9, px * 0.42))}px`);
+          applyDynamicCartoucheStyles(row);
         }
       }
       applyDynamicCartoucheStyles(root);
@@ -3330,44 +3378,98 @@
       return ctx.measureText(text).width;
     }
 
-    function drawPdfHolidayDateRow(ctx, holiday, x, y, maxW) {
+    function drawPdfHolidayDateRow(ctx, holiday, x, topY, maxW) {
       const startIso = holidayEntryStartIso(holiday);
       const endIso = holidayEntryEndIso(holiday);
       const startDate = holidayYearlessDateSource(startIso);
       const endDate = holidayYearlessDateSource(endIso);
       if (!startDate) return 0;
+
       const startText = cartoucheText(startDate, "suno");
+      const startLatin = `tenpo ${properName(startDate, "Suno")}`;
       const hasRange = !!endDate && endIso !== startIso;
       const endText = hasRange ? cartoucheText(endDate, "suno") : "";
+      const endLatin = hasRange ? `tenpo ${properName(endDate, "Suno")}` : "";
+      const tenpoText = String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo"]));
+      const tawaText = hasRange
+        ? String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tawa"]))
+        : "";
+
       let px = 22;
       const minPx = 7;
-      let dashW = 0;
+      let helperPx = 9;
+      let connectorPx = 18;
       let startW = 0;
       let endW = 0;
+      let connectorW = 0;
+      let startItemW = 0;
+      let endItemW = 0;
+
       while (px >= minPx) {
+        helperPx = Math.max(6, Math.min(9, px * 0.42));
+        connectorPx = Math.max(7, px * 0.82);
         startW = measurePdfCartoucheWidth(ctx, startText, px);
         endW = hasRange ? measurePdfCartoucheWidth(ctx, endText, px) : 0;
-        ctx.font = `${Math.max(7, px * 0.82)}px "Arial"`;
-        dashW = hasRange ? ctx.measureText("—").width : 0;
-        const gaps = hasRange ? 14 : 0;
-        if (startW + endW + dashW + gaps <= maxW) break;
+
+        ctx.font = `${helperPx}px "Arial"`;
+        const startLatinW = ctx.measureText(startLatin).width;
+        const endLatinW = hasRange ? ctx.measureText(endLatin).width : 0;
+        const tawaLatinW = hasRange ? ctx.measureText("tawa").width : 0;
+
+        ctx.font = `${connectorPx}px "${FONT_FAMILY}"`;
+        const tenpoGlyphW = ctx.measureText(tenpoText).width;
+        const tawaGlyphW = hasRange ? ctx.measureText(tawaText).width : 0;
+        const prefixGap = Math.max(2, px * 0.14);
+
+        startItemW = Math.max(tenpoGlyphW + prefixGap + startW, startLatinW);
+        endItemW = hasRange ? Math.max(tenpoGlyphW + prefixGap + endW, endLatinW) : 0;
+        connectorW = hasRange ? Math.max(tawaGlyphW, tawaLatinW) : 0;
+        const totalW = startItemW + endItemW + connectorW + (hasRange ? 14 : 0);
+        if (totalW <= maxW) break;
         px -= 0.5;
       }
+
       px = Math.max(minPx, px);
+      helperPx = Math.max(6, Math.min(9, px * 0.42));
+      connectorPx = Math.max(7, px * 0.82);
       startW = measurePdfCartoucheWidth(ctx, startText, px);
       endW = hasRange ? measurePdfCartoucheWidth(ctx, endText, px) : 0;
-      ctx.font = `${Math.max(7, px * 0.82)}px "Arial"`;
-      dashW = hasRange ? ctx.measureText("—").width : 0;
+      ctx.font = `${helperPx}px "Arial"`;
+      const startLatinW = ctx.measureText(startLatin).width;
+      const endLatinW = hasRange ? ctx.measureText(endLatin).width : 0;
+      const tawaLatinW = hasRange ? ctx.measureText("tawa").width : 0;
+      ctx.font = `${connectorPx}px "${FONT_FAMILY}"`;
+      const tenpoGlyphW = ctx.measureText(tenpoText).width;
+      const tawaGlyphW = hasRange ? ctx.measureText(tawaText).width : 0;
+      const prefixGap = Math.max(2, px * 0.14);
+      startItemW = Math.max(tenpoGlyphW + prefixGap + startW, startLatinW);
+      endItemW = hasRange ? Math.max(tenpoGlyphW + prefixGap + endW, endLatinW) : 0;
+      connectorW = hasRange ? Math.max(tawaGlyphW, tawaLatinW) : 0;
+
+      const glyphY = topY + 13;
+      const latinY = topY + 31;
       const gap = hasRange ? 7 : 0;
-      const totalW = startW + endW + dashW + (hasRange ? gap * 2 : 0);
       let cursor = x;
-      drawSitelenFixed(ctx, startText, cursor, y, px, "left");
-      cursor += startW;
+      let center = cursor + startItemW / 2;
+      let glyphGroupW = tenpoGlyphW + prefixGap + startW;
+      let glyphLeft = center - glyphGroupW / 2;
+      drawSitelenFixed(ctx, tenpoText, glyphLeft + tenpoGlyphW / 2, glyphY, connectorPx, "center");
+      drawSitelenFixed(ctx, startText, glyphLeft + tenpoGlyphW + prefixGap + startW / 2, glyphY, px, "center");
+      drawFitText(ctx, startLatin, center, latinY, startItemW, helperPx, "Arial", "rgba(63,71,80,0.55)", "center");
+      cursor += startItemW;
+
       if (hasRange) {
         cursor += gap;
-        drawFitText(ctx, "—", cursor + dashW / 2, y, dashW + 2, Math.max(7, px * 0.82), "Arial", PDF_COLORS.ink, "center");
-        cursor += dashW + gap;
-        drawSitelenFixed(ctx, endText, cursor, y, px, "left");
+        center = cursor + connectorW / 2;
+        drawSitelenFixed(ctx, tawaText, center, glyphY, connectorPx, "center");
+        drawFitText(ctx, "tawa", center, latinY, connectorW, helperPx, "Arial", "rgba(63,71,80,0.55)", "center");
+        cursor += connectorW + gap;
+        center = cursor + endItemW / 2;
+        glyphGroupW = tenpoGlyphW + prefixGap + endW;
+        glyphLeft = center - glyphGroupW / 2;
+        drawSitelenFixed(ctx, tenpoText, glyphLeft + tenpoGlyphW / 2, glyphY, connectorPx, "center");
+        drawSitelenFixed(ctx, endText, glyphLeft + tenpoGlyphW + prefixGap + endW / 2, glyphY, px, "center");
+        drawFitText(ctx, endLatin, center, latinY, endItemW, helperPx, "Arial", "rgba(63,71,80,0.55)", "center");
       }
       return px;
     }
@@ -3393,7 +3495,7 @@
       const bottom = PDF_CANVAS_H - 34;
       const contentW = PDF_CANVAS_W - 2 * margin;
       const monthHeadingH = 58;
-      const dateRowH = 31;
+      const dateRowH = 43;
       const nameFontPx = 15;
       const nameLineH = 20;
       const entryPadTop = 10;
@@ -3437,7 +3539,7 @@
             newPage();
             drawMonthHeading(group.month);
           }
-          drawPdfHolidayDateRow(ctx, holiday, margin + 14, y + entryPadTop + dateRowH * 0.5, contentW - 28);
+          drawPdfHolidayDateRow(ctx, holiday, margin + 14, y + entryPadTop, contentW - 28);
           let nameY = y + entryPadTop + dateRowH + 8;
           ctx.textAlign = "left";
           ctx.textBaseline = "top";
