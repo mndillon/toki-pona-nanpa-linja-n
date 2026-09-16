@@ -3485,7 +3485,7 @@
     },
     {
       "name": "Boxing Day",
-      "tokiPona": "tenpo suno Boxing",
+      "tokiPona": "tenpo suno poki",
       "categories": [
         "government",
         "optional",
@@ -3556,7 +3556,7 @@
     },
     {
       "name": "Boxing Day (observed)",
-      "tokiPona": "tenpo suno Boxing (lon tenpo ante)",
+      "tokiPona": "tenpo suno poki (lon tenpo ante)",
       "categories": [
         "public"
       ],
@@ -3731,7 +3731,7 @@
     },
     {
       "name": "Canada Day",
-      "tokiPona": "tenpo suno pi ma Canada",
+      "tokiPona": "tenpo suno pi ma Kanata",
       "categories": [
         "government",
         "public"
@@ -28006,7 +28006,7 @@
     },
     {
       "name": "National Day for Truth and Reconciliation",
-      "tokiPona": "tenpo suno ma lon en kama pona kulupu",
+      "tokiPona": "tenpo suno pi pona kulupu",
       "categories": [
         "government"
       ],

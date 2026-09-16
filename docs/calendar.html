@@ -1883,7 +1883,12 @@
       const map = holidayTokiPonaNameMap();
       const baseName = String(holiday?.baseName || "").trim();
       const exactName = String(holiday?.name || "").trim();
-      return map.get(baseName) || map.get(exactName) || "";
+      const translated = map.get(exactName) || map.get(baseName) || "";
+      if (!translated) return "";
+      if (holiday?.observed === true && !/\blon tenpo ante\b/.test(translated)) {
+        return `${translated} (lon tenpo ante)`;
+      }
+      return translated;
     }
 
     function parseHolidayIsoDate(value) {
