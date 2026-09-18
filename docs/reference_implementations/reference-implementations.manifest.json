@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "version": "2026-09-18-002",
+  "protocolVersion": "1.0.0",
+  "protocolPackage": {
+    "label": "Protocol",
+    "description": "Frozen nanpa-linja-n Protocol v1.0.0",
+    "filename": "nanpa-linja-n-protocol-v1.0.0.zip",
+    "url": "./reference_implementations/nanpa-linja-n-protocol-v1.0.0.zip"
+  },
+  "documentation": {
+    "readme": {
+      "filename": "README.md",
+      "url": "./reference_implementations/README.md"
+    },
+    "license": {
+      "filename": "LICENSE",
+      "url": "./reference_implementations/LICENSE"
+    }
+  },
+  "implementations": [
+    {
+      "language": "JavaScript",
+      "implementationModel": "Canonical browser JavaScript reference",
+      "filename": "nanpa-linja-n-javascript-reference-for-protocol-v1.0.0.zip",
+      "url": "./reference_implementations/nanpa-linja-n-javascript-reference-for-protocol-v1.0.0.zip"
+    },
+    {
+      "language": "TypeScript",
+      "implementationModel": "Strongly typed facade over the bundled canonical JavaScript runtime",
+      "filename": "nanpa-linja-n-typescript-reference-for-protocol-v1.0.0.zip",
+      "url": "./reference_implementations/nanpa-linja-n-typescript-reference-for-protocol-v1.0.0.zip"
+    },
+    {
+      "language": "Node.js",
+      "implementationModel": "Canonical JavaScript runtime hosted directly under Node.js",
+      "filename": "nanpa-linja-n-nodejs-reference-for-protocol-v1.0.0.zip",
+      "url": "./reference_implementations/nanpa-linja-n-nodejs-reference-for-protocol-v1.0.0.zip"
+    },
+    {
+      "language": "Python",
+      "implementationModel": "Native Python implementation",
+      "filename": "nanpa-linja-n-python-reference-for-protocol-v1.0.0.zip",
+      "url": "./reference_implementations/nanpa-linja-n-python-reference-for-protocol-v1.0.0.zip"
+    },
+    {
+      "language": "Rust",
+      "implementationModel": "Native Rust implementation",
+      "filename": "nanpa-linja-n-rust-reference-for-protocol-v1.0.0.zip",
+      "url": "./reference_implementations/nanpa-linja-n-rust-reference-for-protocol-v1.0.0.zip"
+    },
+    {
+      "language": "Go",
+      "implementationModel": "Native Go implementation",
+      "filename": "nanpa-linja-n-go-reference-for-protocol-v1.0.0.zip",
+      "url": "./reference_implementations/nanpa-linja-n-go-reference-for-protocol-v1.0.0.zip"
+    },
+    {
+      "language": "Dart",
+      "implementationModel": "Native Dart implementation",
+      "filename": "nanpa-linja-n-dart-reference-for-protocol-v1.0.0.zip",
+      "url": "./reference_implementations/nanpa-linja-n-dart-reference-for-protocol-v1.0.0.zip"
+    },
+    {
+      "language": "Java",
+      "implementationModel": "Native Java 21 implementation",
+      "filename": "nanpa-linja-n-java-reference-for-protocol-v1.0.0.zip",
+      "url": "./reference_implementations/nanpa-linja-n-java-reference-for-protocol-v1.0.0.zip"
+    }
+  ]
+}
