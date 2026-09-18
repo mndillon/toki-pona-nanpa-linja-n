@@ -805,6 +805,329 @@
     }
 
 
+
+    /* Reference implementation manifest table and document viewer */
+    .referenceImplementationsStatus {
+      margin-top: 10px;
+    }
+
+    .referenceImplementationsMeta {
+      margin-top: 10px;
+      font-weight: 700;
+    }
+
+    .referenceDocumentation {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .referenceDocumentationTitle,
+    .referenceImplementationsSubheading {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .referenceImplementationsSubheading {
+      margin-top: 14px;
+    }
+
+    .referenceDocumentationActions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .referenceActionLink {
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 39px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: inherit;
+      background: var(--bg);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.15;
+      text-decoration: none;
+      text-align: center;
+    }
+
+    .referenceImplementationsTable {
+      width: 100%;
+      min-width: 0;
+      margin-top: 10px;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+
+    .referenceImplementationsTable th,
+    .referenceImplementationsTable td {
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .referenceImplementationsTable th {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .referenceImplementationsTable td {
+      font-size: 13px;
+    }
+
+    .referenceImplementationsTable th:nth-child(1),
+    .referenceImplementationsTable td:nth-child(1) {
+      width: 18%;
+    }
+
+    .referenceImplementationsTable th:nth-child(2),
+    .referenceImplementationsTable td:nth-child(2) {
+      width: 48%;
+    }
+
+    .referenceImplementationsTable th:nth-child(3),
+    .referenceImplementationsTable td:nth-child(3) {
+      width: 34%;
+    }
+
+    .referenceDownloadFilename {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    html.referenceNoticeOpen,
+    body.referenceNoticeOpen {
+      overflow: hidden !important;
+      overscroll-behavior: none;
+    }
+
+    #referenceNoticeOverlay {
+      --reference-notice-viewport-width: 100vw;
+      --reference-notice-viewport-height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 19999;
+      box-sizing: border-box;
+      display: none;
+      width: var(--reference-notice-viewport-width);
+      height: var(--reference-notice-viewport-height);
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    #referenceNoticeOverlay.show {
+      display: block;
+    }
+
+    #referenceNoticeOverlay .referenceNoticeModal {
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      margin: 0;
+      padding:
+        max(10px, env(safe-area-inset-top))
+        max(10px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+      overflow: hidden;
+      border: 0;
+      border-radius: 0;
+      background: var(--bg);
+      box-shadow: none;
+    }
+
+    #referenceNoticeOverlay .referenceNoticeHeader {
+      box-sizing: border-box;
+      display: flex;
+      flex: 0 0 auto;
+      align-items: flex-start;
+      justify-content: space-between;
+      min-width: 0;
+      gap: 10px;
+    }
+
+    #referenceNoticeOverlay .referenceNoticeHeader h3 {
+      min-width: 0;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+
+    #referenceNoticeOverlay [data-reference-notice-close] {
+      flex: 0 0 auto;
+    }
+
+    #referenceNoticeOverlay .referenceNoticeBody {
+      box-sizing: border-box;
+      flex: 1 1 0;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      margin-top: 8px;
+      padding: 8px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.35);
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+
+    #referenceNoticeOverlay pre {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 620px) {
+      .referenceDocumentationActions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .referenceDocumentationActions > button,
+      .referenceDocumentationActions > .referenceActionLink {
+        width: 100%;
+      }
+
+      .referenceImplementationsTable,
+      .referenceImplementationsTable tbody,
+      .referenceImplementationsTable tr,
+      .referenceImplementationsTable td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .referenceImplementationsTable {
+        border: 0;
+      }
+
+      .referenceImplementationsTable thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .referenceImplementationsTable tr {
+        margin-top: 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .referenceImplementationsTable td,
+      .referenceImplementationsTable td:nth-child(1),
+      .referenceImplementationsTable td:nth-child(2),
+      .referenceImplementationsTable td:nth-child(3) {
+        display: grid;
+        grid-template-columns: minmax(92px, 0.42fr) minmax(0, 1fr);
+        gap: 8px;
+        width: 100%;
+        border: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .referenceImplementationsTable td:last-child {
+        border-bottom: 0;
+      }
+
+      .referenceImplementationsTable td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .referenceImplementationsTable .referenceDownloadLink {
+        display: inline-block;
+        max-width: 100%;
+      }
+    }
+
+    @media (min-width: 640px) {
+      #referenceNoticeOverlay {
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      #referenceNoticeOverlay.show {
+        display: flex;
+      }
+
+      #referenceNoticeOverlay .referenceNoticeModal {
+        position: relative;
+        inset: auto;
+        width: min(980px, 100%);
+        height: calc(100% - 36px);
+        max-height: 760px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+      }
+
+      #referenceNoticeOverlay .referenceNoticeHeader h3 {
+        font-size: 14px;
+      }
+
+      #referenceNoticeOverlay .referenceNoticeBody {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 10px;
+      }
+
+      #referenceNoticeOverlay pre {
+        font-size: 12px;
+      }
+    }
+
     /* =========================
        WCAG-oriented affordances
        ========================= */
@@ -2742,6 +3065,7 @@
             </span>
           </button>
         </h2>
+
         <div
           id="referenceImplementationsContent"
           class="collapsibleSectionContent"
@@ -2749,15 +3073,36 @@
           hidden
         >
           <div class="small">
-            Reference implementations of the <strong>nanpa-linja-n</strong> library are available in several programming languages. Download the ZIP archive below and unzip it to access the available reference libraries.
+            Reference implementations of the <strong>nanpa-linja-n</strong> library are available in several programming languages. The list below is loaded from the reference implementation manifest when this panel is opened.
           </div>
-          <div class="small" style="margin-top:10px;">
-            <a
-              class="repoLink"
-              href="./reference_implementations/nanpa-linja-n_reference_libraries.zip?v=2"
-            >
-              Download nanpa-linja-n reference implementations
-            </a>
+
+          <div
+            class="referenceImplementationsStatus small"
+            data-reference-implementations-status
+            role="status"
+            aria-live="polite"
+          >
+            Reference implementation details will load when this panel is opened.
+          </div>
+
+          <div data-reference-implementations-content hidden>
+            <div class="referenceImplementationsMeta small" data-reference-implementations-meta></div>
+
+            <div class="referenceDocumentation">
+              <div class="referenceDocumentationTitle">Documentation</div>
+              <div class="small">
+                The README is the primary guide to installing, testing and using the reference implementations, including parser, renderer, font and <code>astToText</code> usage.
+              </div>
+
+              <div class="referenceDocumentationActions">
+                <button type="button" data-reference-readme-view>Read README</button>
+                <a class="referenceActionLink" data-reference-readme-download download>Download README.md</a>
+                <button type="button" data-reference-license-view>View license</button>
+              </div>
+            </div>
+
+            <div class="referenceImplementationsSubheading">Available reference implementations</div>
+            <div data-reference-implementations-table-container></div>
           </div>
         </div>
       </section>
@@ -3281,6 +3626,465 @@
       document.addEventListener('DOMContentLoaded', initFontsPanel, { once: true });
     } else {
       initFontsPanel();
+    }
+  })();
+</script>
+
+<script>
+  (() => {
+    const REFERENCE_SECTION_ID = 'referenceImplementations';
+    const REFERENCE_MANIFEST_PATH =
+      './reference_implementations/reference-implementations.manifest.json';
+    const REFERENCE_SESSION_CACHE_KEY =
+      'indexReferenceImplementationsManifestCache';
+    const REFERENCE_NOTICE_OVERLAY_ID = 'referenceNoticeOverlay';
+
+    let referenceLoadPromise = null;
+    const referenceTextPromises = new Map();
+    let referenceNoticeReturnFocus = null;
+
+    function normalizeReferenceImplementation(item) {
+      return {
+        language: String(item?.language ?? '').trim(),
+        implementationModel: String(item?.implementationModel ?? '').trim(),
+        filename: String(item?.filename ?? '').trim(),
+        url: String(item?.url ?? '').trim()
+      };
+    }
+
+    function normalizeReferenceManifest(manifest) {
+      if (!manifest || typeof manifest !== 'object') return null;
+
+      const version = String(manifest.version ?? '').trim();
+      const protocolVersion = String(manifest.protocolVersion ?? '').trim();
+      const schemaVersion = Number(manifest.schemaVersion ?? 0);
+
+      const protocolPackage = {
+        label: String(manifest?.protocolPackage?.label ?? 'Protocol').trim(),
+        description: String(manifest?.protocolPackage?.description ?? '').trim(),
+        filename: String(manifest?.protocolPackage?.filename ?? '').trim(),
+        url: String(manifest?.protocolPackage?.url ?? '').trim()
+      };
+
+      const readme = {
+        filename: String(manifest?.documentation?.readme?.filename ?? 'README.md').trim(),
+        url: String(manifest?.documentation?.readme?.url ?? '').trim()
+      };
+
+      const license = {
+        filename: String(manifest?.documentation?.license?.filename ?? 'LICENSE').trim(),
+        url: String(manifest?.documentation?.license?.url ?? '').trim()
+      };
+
+      const implementations = Array.isArray(manifest.implementations)
+        ? manifest.implementations
+            .map(normalizeReferenceImplementation)
+            .filter(item => item.language && item.filename && item.url)
+        : [];
+
+      if (!version || !protocolVersion || !schemaVersion || !implementations.length) {
+        return null;
+      }
+
+      return {
+        schemaVersion,
+        version,
+        protocolVersion,
+        protocolPackage,
+        documentation: { readme, license },
+        implementations
+      };
+    }
+
+    function readReferenceSessionCache() {
+      try {
+        const raw = sessionStorage.getItem(REFERENCE_SESSION_CACHE_KEY);
+        if (!raw) return null;
+        return normalizeReferenceManifest(JSON.parse(raw));
+      } catch {
+        return null;
+      }
+    }
+
+    function writeReferenceSessionCache(manifest) {
+      try {
+        sessionStorage.setItem(
+          REFERENCE_SESSION_CACHE_KEY,
+          JSON.stringify(manifest)
+        );
+      } catch {}
+    }
+
+    function createReferenceDownload(item) {
+      const wrap = document.createElement('div');
+
+      const link = document.createElement('a');
+      link.className = 'repoLink referenceDownloadLink';
+      link.href = item.url;
+      link.setAttribute('download', item.filename);
+      link.textContent = 'Download ZIP';
+      wrap.appendChild(link);
+
+      const filename = document.createElement('span');
+      filename.className = 'referenceDownloadFilename';
+      filename.textContent = item.filename;
+      wrap.appendChild(filename);
+
+      return wrap;
+    }
+
+    function renderReferenceImplementations(manifest, statusText = '') {
+      const content = document.querySelector('[data-reference-implementations-content]');
+      const status = document.querySelector('[data-reference-implementations-status]');
+      const meta = document.querySelector('[data-reference-implementations-meta]');
+      const tableContainer = document.querySelector('[data-reference-implementations-table-container]');
+      const readmeView = document.querySelector('[data-reference-readme-view]');
+      const readmeDownload = document.querySelector('[data-reference-readme-download]');
+      const licenseView = document.querySelector('[data-reference-license-view]');
+
+      if (!content || !status || !meta || !tableContainer) return;
+
+      const readme = manifest.documentation.readme;
+      const license = manifest.documentation.license;
+
+      meta.textContent =
+        `Protocol v${manifest.protocolVersion} · ${manifest.implementations.length} reference implementation${manifest.implementations.length === 1 ? '' : 's'}`;
+
+      if (readmeView) {
+        readmeView.hidden = !readme.url;
+        readmeView.dataset.documentUrl = readme.url;
+        readmeView.dataset.documentTitle = 'Reference implementation README';
+      }
+
+      if (readmeDownload) {
+        readmeDownload.hidden = !readme.url;
+        if (readme.url) {
+          readmeDownload.href = readme.url;
+          readmeDownload.setAttribute('download', readme.filename || 'README.md');
+        }
+      }
+
+      if (licenseView) {
+        licenseView.hidden = !license.url;
+        licenseView.dataset.documentUrl = license.url;
+        licenseView.dataset.documentTitle = 'Reference implementation license';
+      }
+
+      const table = document.createElement('table');
+      table.className = 'referenceImplementationsTable';
+      table.setAttribute(
+        'aria-label',
+        'nanpa-linja-n reference implementations and downloads'
+      );
+
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      for (const heading of ['Language', 'Implementation', 'Download']) {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = heading;
+        headRow.appendChild(th);
+      }
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+
+      if (manifest.protocolPackage?.filename && manifest.protocolPackage?.url) {
+        const protocolRow = document.createElement('tr');
+
+        const protocolLabelCell = document.createElement('td');
+        protocolLabelCell.dataset.label = 'Language';
+        protocolLabelCell.textContent = manifest.protocolPackage.label || 'Protocol';
+        protocolRow.appendChild(protocolLabelCell);
+
+        const protocolDescriptionCell = document.createElement('td');
+        protocolDescriptionCell.dataset.label = 'Implementation';
+        protocolDescriptionCell.textContent =
+          manifest.protocolPackage.description ||
+          `nanpa-linja-n Protocol v${manifest.protocolVersion}`;
+        protocolRow.appendChild(protocolDescriptionCell);
+
+        const protocolDownloadCell = document.createElement('td');
+        protocolDownloadCell.dataset.label = 'Download';
+        protocolDownloadCell.appendChild(createReferenceDownload(manifest.protocolPackage));
+        protocolRow.appendChild(protocolDownloadCell);
+
+        tbody.appendChild(protocolRow);
+      }
+
+      for (const item of manifest.implementations) {
+        const row = document.createElement('tr');
+
+        const languageCell = document.createElement('td');
+        languageCell.dataset.label = 'Language';
+        languageCell.textContent = item.language;
+        row.appendChild(languageCell);
+
+        const implementationCell = document.createElement('td');
+        implementationCell.dataset.label = 'Implementation';
+        implementationCell.textContent =
+          item.implementationModel || 'Reference implementation';
+        row.appendChild(implementationCell);
+
+        const downloadCell = document.createElement('td');
+        downloadCell.dataset.label = 'Download';
+        downloadCell.appendChild(createReferenceDownload(item));
+        row.appendChild(downloadCell);
+
+        tbody.appendChild(row);
+      }
+
+      table.appendChild(tbody);
+      tableContainer.replaceChildren(table);
+
+      content.hidden = false;
+      status.textContent =
+        statusText ||
+        `${manifest.implementations.length} reference implementation${manifest.implementations.length === 1 ? '' : 's'} loaded.`;
+    }
+
+    async function fetchReferenceManifest() {
+      const response = await fetch(REFERENCE_MANIFEST_PATH, {
+        cache: 'no-store'
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const manifest = normalizeReferenceManifest(await response.json());
+      if (!manifest) {
+        throw new Error(
+          'The manifest does not contain valid reference implementation data.'
+        );
+      }
+      return manifest;
+    }
+
+    async function loadReferenceImplementations() {
+      if (referenceLoadPromise) return referenceLoadPromise;
+
+      referenceLoadPromise = (async () => {
+        const status = document.querySelector(
+          '[data-reference-implementations-status]'
+        );
+        const cached = readReferenceSessionCache();
+
+        if (cached) {
+          renderReferenceImplementations(
+            cached,
+            'Checking for updated reference implementation details…'
+          );
+        } else if (status) {
+          status.textContent = 'Loading reference implementation details…';
+        }
+
+        try {
+          const fresh = await fetchReferenceManifest();
+
+          if (!cached || cached.version !== fresh.version) {
+            writeReferenceSessionCache(fresh);
+            renderReferenceImplementations(fresh);
+          } else {
+            renderReferenceImplementations(
+              cached,
+              `${cached.implementations.length} reference implementation${cached.implementations.length === 1 ? '' : 's'} loaded.`
+            );
+          }
+
+          return fresh;
+        } catch (error) {
+          if (cached) {
+            renderReferenceImplementations(
+              cached,
+              `Showing cached reference implementation details because the manifest could not be refreshed. ${error?.message ?? String(error)}`
+            );
+            return cached;
+          }
+
+          referenceLoadPromise = null;
+          if (status) {
+            status.textContent =
+              `The reference implementation list could not be loaded. Make sure ${REFERENCE_MANIFEST_PATH.replace('./', '')} is deployed at this page-relative path. ${error?.message ?? String(error)}`;
+          }
+          throw error;
+        }
+      })();
+
+      return referenceLoadPromise;
+    }
+
+    function syncReferenceNoticeViewport() {
+      const overlay = document.getElementById(REFERENCE_NOTICE_OVERLAY_ID);
+      if (!overlay) return;
+
+      const viewport = window.visualViewport;
+      const width = Math.max(1, Math.round(viewport?.width ?? window.innerWidth));
+      const height = Math.max(1, Math.round(viewport?.height ?? window.innerHeight));
+
+      overlay.style.setProperty('--reference-notice-viewport-width', `${width}px`);
+      overlay.style.setProperty('--reference-notice-viewport-height', `${height}px`);
+    }
+
+    function ensureReferenceNoticeOverlay() {
+      let overlay = document.getElementById(REFERENCE_NOTICE_OVERLAY_ID);
+      if (overlay) return overlay;
+
+      overlay = document.createElement('div');
+      overlay.id = REFERENCE_NOTICE_OVERLAY_ID;
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute(
+        'aria-labelledby',
+        `${REFERENCE_NOTICE_OVERLAY_ID}Title`
+      );
+      overlay.innerHTML = `
+        <div class="referenceNoticeModal">
+          <div class="referenceNoticeHeader">
+            <h3 id="${REFERENCE_NOTICE_OVERLAY_ID}Title">Reference implementation document</h3>
+            <button type="button" data-reference-notice-close>Close</button>
+          </div>
+          <div class="referenceNoticeBody">
+            <pre data-reference-notice-text>Loading…</pre>
+          </div>
+        </div>
+      `;
+
+      overlay
+        .querySelector('[data-reference-notice-close]')
+        ?.addEventListener('click', closeReferenceNotice);
+
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) closeReferenceNotice();
+      });
+
+      document.body.appendChild(overlay);
+      return overlay;
+    }
+
+    function loadReferenceText(url) {
+      if (!referenceTextPromises.has(url)) {
+        const promise = fetch(url, { cache: 'no-store' })
+          .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.text();
+          })
+          .catch(error => {
+            referenceTextPromises.delete(url);
+            throw error;
+          });
+
+        referenceTextPromises.set(url, promise);
+      }
+
+      return referenceTextPromises.get(url);
+    }
+
+    async function openReferenceNotice(event, url, titleText) {
+      if (!url) return;
+
+      referenceNoticeReturnFocus = event?.currentTarget ?? null;
+      const overlay = ensureReferenceNoticeOverlay();
+      const title = overlay.querySelector(
+        `#${REFERENCE_NOTICE_OVERLAY_ID}Title`
+      );
+      const text = overlay.querySelector('[data-reference-notice-text]');
+
+      if (title) {
+        title.textContent =
+          titleText || 'Reference implementation document';
+      }
+
+      syncReferenceNoticeViewport();
+      document.documentElement.classList.add('referenceNoticeOpen');
+      document.body.classList.add('referenceNoticeOpen');
+      overlay.classList.add('show');
+      overlay.querySelector('[data-reference-notice-close]')?.focus();
+
+      if (text?.dataset.loadedUrl === url) return;
+
+      if (text) {
+        text.textContent = 'Loading…';
+        delete text.dataset.loadedUrl;
+      }
+
+      try {
+        const documentText = await loadReferenceText(url);
+        if (text) {
+          text.textContent = documentText;
+          text.dataset.loadedUrl = url;
+        }
+      } catch (error) {
+        if (text) {
+          text.textContent =
+            `The document could not be loaded. Make sure ${url.replace('./', '')} is deployed at this page-relative path.\n\n${error?.message ?? String(error)}`;
+        }
+      }
+    }
+
+    function closeReferenceNotice() {
+      const overlay = document.getElementById(REFERENCE_NOTICE_OVERLAY_ID);
+      if (!overlay?.classList.contains('show')) return;
+
+      overlay.classList.remove('show');
+      document.documentElement.classList.remove('referenceNoticeOpen');
+      document.body.classList.remove('referenceNoticeOpen');
+      referenceNoticeReturnFocus?.focus?.();
+    }
+
+    function handleReferenceNoticeEscape(event) {
+      if (event.key === 'Escape') closeReferenceNotice();
+    }
+
+    function initReferenceImplementationsPanel() {
+      const section = document.getElementById(REFERENCE_SECTION_ID);
+      const toggle = section?.querySelector(
+        ':scope > .collapsibleSectionHeading [data-collapsible-toggle]'
+      );
+
+      if (!section || !toggle) return;
+
+      const loadIfExpanded = () => {
+        if (toggle.getAttribute('aria-expanded') === 'true') {
+          loadReferenceImplementations().catch(() => {});
+        }
+      };
+
+      const observer = new MutationObserver(loadIfExpanded);
+      observer.observe(toggle, {
+        attributes: true,
+        attributeFilter: ['aria-expanded']
+      });
+
+      section.addEventListener('click', event => {
+        const button = event.target.closest(
+          '[data-reference-readme-view], [data-reference-license-view]'
+        );
+        if (!button) return;
+
+        openReferenceNotice(
+          event,
+          button.dataset.documentUrl,
+          button.dataset.documentTitle
+        );
+      });
+
+      document.addEventListener('keydown', handleReferenceNoticeEscape);
+      window.addEventListener('resize', syncReferenceNoticeViewport);
+      window.visualViewport?.addEventListener(
+        'resize',
+        syncReferenceNoticeViewport
+      );
+
+      loadIfExpanded();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener(
+        'DOMContentLoaded',
+        initReferenceImplementationsPanel,
+        { once: true }
+      );
+    } else {
+      initReferenceImplementationsPanel();
     }
   })();
 </script>
