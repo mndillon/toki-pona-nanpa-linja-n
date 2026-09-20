@@ -33,7 +33,7 @@
     }
     @font-face{
       font-family:"TP-Cartouche-Font";
-      src:url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
+      src:url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
       font-display:swap;
     }
 
@@ -1808,7 +1808,7 @@
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
   async function getNanpaModule(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=267");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268");
     return nanpaModulePromise;
   }
 
@@ -1953,7 +1953,7 @@
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=78").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=79").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 

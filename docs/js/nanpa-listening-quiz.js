@@ -420,7 +420,7 @@ function item(
 
 async function getNanpaParser() {
   if (!nanpaModulePromise) {
-    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=267');
+    nanpaModulePromise = import('./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268');
   }
   const mod = await nanpaModulePromise;
   return mod.NanpaParser;
@@ -428,7 +428,7 @@ async function getNanpaParser() {
 
 async function getVoice() {
   if (!voicePromise) {
-    voicePromise = import('./toki-pona-voice-api.js?v=78').then(m => m.createTokiPonaVoice());
+    voicePromise = import('./toki-pona-voice-api.js?v=79').then(m => m.createTokiPonaVoice());
   }
   return voicePromise;
 }

@@ -13,9 +13,9 @@
  <!-- Start loading the font as early as possible -->
   <link
     rel="preload"
-    href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf"
+    href="./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf"
     as="font"
-    type="font/otf"
+    type="font/ttf"
     crossorigin
   >
 
@@ -124,7 +124,7 @@
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf") format("opentype");
+      src: url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
       font-display: swap;
     }
 
@@ -3330,8 +3330,8 @@
 <script>
   (() => {
     const FONTS_SECTION_ID = 'fontsSection';
-    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=16';
-    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v16';
+    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=18';
+    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v18';
     const FONTS_NOTICE_OVERLAY_ID = 'fontsNoticeOverlay';
 
     let fontsTableLoadPromise = null;
@@ -4091,11 +4091,11 @@
   })();
 </script>
 
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=64"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=65"></script>
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=78';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=79';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,

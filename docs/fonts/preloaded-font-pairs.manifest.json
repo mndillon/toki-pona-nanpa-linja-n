@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generated": "2026-09-12",
+  "generated": "2026-09-20",
   "migration": {
     "clearIndexedDbPairsOnUpgrade": true,
     "preserveFontKeys": [
@@ -20,16 +20,16 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-09-12-085",
+      "rev": "2026-09-20-092",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
-      "baseFilename": "nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf",
-      "companionFilename": "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf",
-      "baseUrl": "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf",
-      "companionUrl": "./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf",
-      "baseFormat": "opentype",
-      "companionFormat": "opentype",
+      "baseFilename": "nasin-nanpa-nanpa-linja-n-Regular.ttf",
+      "companionFilename": "nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf",
+      "baseUrl": "./fonts/nasin-nanpa-nanpa-linja-n-Regular.ttf",
+      "companionUrl": "./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf",
+      "baseFormat": "truetype",
+      "companionFormat": "truetype",
       "metadataSuffix": "-nanpa-linja-n",
       "settings": {
         "cartoucheCommaTallyMarks": true,
@@ -42,10 +42,18 @@
         "longPiHeadWidthScale": 0.41
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheFormat": "opentype",
-      "licenseUrl": "./fonts/LICENSE.txt"
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFormat": "truetype",
+      "literalCartoucheLicenseUrls": [
+        "./fonts/SIL_LICENSE",
+        "./fonts/LICENSE.txt"
+      ],
+      "licenseUrl": "./fonts/SIL_LICENSE",
+      "licenseUrls": [
+        "./fonts/SIL_LICENSE",
+        "./fonts/LICENSE.txt"
+      ]
     },
     {
       "fontKey": "sitelenSeliKiwen",
@@ -136,7 +144,7 @@
     {
       "fontKey": "linjaPona",
       "label": "linja pona predefined",
-      "rev": "2026-09-12-017",
+      "rev": "2026-09-20-018",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-pona-legacy-v1",
       "renderAdapterSettings": {
@@ -174,9 +182,13 @@
         "cornerBrackets": "renderer-synthetic-u300c-u300d"
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheFormat": "opentype",
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFormat": "truetype",
+      "literalCartoucheLicenseUrls": [
+        "./fonts/SIL_LICENSE",
+        "./fonts/LICENSE.txt"
+      ],
       "literalCartoucheSample": "󱦐A󱦑",
       "settingsRev": "2026-08-02-002",
       "licenseUrl": "./fonts/OFL-1.1.txt"
@@ -184,7 +196,7 @@
     {
       "fontKey": "linjaSike",
       "label": "linja sike predefined",
-      "rev": "2026-09-12-015",
+      "rev": "2026-09-20-016",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-sike-legacy-v1",
       "renderAdapterSettings": {
@@ -220,9 +232,13 @@
         "cornerBrackets": "renderer-synthetic-u300c-u300d"
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheFormat": "opentype",
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFormat": "truetype",
+      "literalCartoucheLicenseUrls": [
+        "./fonts/SIL_LICENSE",
+        "./fonts/LICENSE.txt"
+      ],
       "literalCartoucheSample": "󱦐A󱦑",
       "settingsRev": "2026-08-02-002",
       "licenseUrl": "./fonts/OFL-1.1.txt"
@@ -230,7 +246,7 @@
     {
       "fontKey": "nasinSitelenPuMono",
       "label": "nasin sitelen pu mono predefined",
-      "rev": "2026-09-12-015",
+      "rev": "2026-09-20-016",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "nasin-sitelen-pu-mono-v1",
       "renderAdapterSettings": {
@@ -266,16 +282,20 @@
         "literalIsolationRequired": true
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheFormat": "opentype",
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFormat": "truetype",
+      "literalCartoucheLicenseUrls": [
+        "./fonts/SIL_LICENSE",
+        "./fonts/LICENSE.txt"
+      ],
       "literalCartoucheSample": "󱦐A󱦑",
       "licenseUrl": "./fonts/CC0-1.0.txt"
     },
     {
       "fontKey": "linjaLipamanka",
       "label": "linja lipamanka predefined",
-      "rev": "2026-09-12-022",
+      "rev": "2026-09-20-023",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-lipamanka-v1",
       "renderAdapterSettings": {
@@ -321,12 +341,42 @@
         "literalIsolationRequired": true
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheUrl": "./fonts/nasin-nanpa-4.0.2-Helvetica.otf",
-      "literalCartoucheFormat": "opentype",
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFormat": "truetype",
+      "literalCartoucheLicenseUrls": [
+        "./fonts/SIL_LICENSE",
+        "./fonts/LICENSE.txt"
+      ],
       "literalCartoucheSample": "󱦐A󱦑",
       "licenseUrl": "./fonts/OFL-1.1.txt",
       "settingsRev": "2026-08-03-003"
     }
-  ]
+  ],
+  "supportFonts": {
+    "literalText": {
+      "family": "Patrick Hand",
+      "filename": "PatrickHand-Regular.ttf",
+      "format": "truetype",
+      "licenseUrl": "./fonts/OFL.txt"
+    },
+    "vectorSans": {
+      "family": "Liberation Sans",
+      "filename": "LiberationSans-Regular.ttf",
+      "format": "truetype",
+      "licenseUrl": "./fonts/SIL_LICENSE"
+    },
+    "vectorSerif": {
+      "family": "Liberation Serif",
+      "filename": "LiberationSerif-Regular.ttf",
+      "format": "truetype",
+      "licenseUrl": "./fonts/SIL_LICENSE"
+    },
+    "vectorMono": {
+      "family": "Liberation Mono",
+      "filename": "LiberationMono-Regular.ttf",
+      "format": "truetype",
+      "licenseUrl": "./fonts/SIL_LICENSE"
+    }
+  }
 }

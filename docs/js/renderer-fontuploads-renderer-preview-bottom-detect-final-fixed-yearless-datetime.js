@@ -6698,7 +6698,7 @@ function wireHaloControls() {
       const head = isNeg ? "-" : "";
       const rest = isNeg ? s.slice(1) : s;
 
-      let r = rest.replace(/\s+/g, " ");
+      let r = rest;
       r = r.replace(/-+/g, "-");
 
       return (head + r).trim();
@@ -6845,8 +6845,8 @@ function wireHaloControls() {
     function normalizeDateTimeInput(raw) {
       let s = String(raw ?? "").trim();
 
-      // dates/times: remove internal whitespace
-      s = s.replace(/\s+/g, "");
+      // Whitespace is a hard boundary for digit-based numeric input.
+      // Do not remove internal whitespace here; the date grammar must reject it.
 
       // Normalize common unicode variants (copy/paste-safe)
       // Hyphen/minus variants -> "-"
@@ -7433,8 +7433,10 @@ function wireHaloControls() {
       { thousandsChar = ",", groupFractionTriplets = true, fractionGroupSize = 3, mixedStyle = "short" } = {}
     ) {
       if (s == null) throw new Error("s must be a string");
-      let raw = normalizeLooseSeparators(String(s));
-      if (!raw) throw new Error("Empty value cannot be encoded");
+      const source = String(s).trim();
+      if (!source) throw new Error("Empty value cannot be encoded");
+      if (/\s/.test(source)) throw new Error("Whitespace terminates a digit-based numeric token");
+      let raw = normalizeLooseSeparators(source);
 
       if (groupFractionTriplets) {
         raw = groupFractionDigitsOnly(raw, ".", fractionGroupSize, "_");
@@ -7507,20 +7509,19 @@ function wireHaloControls() {
         if (ip === "") ip = "0";
 
         const intHasThousandsComma = (thousandsChar && ip.includes(thousandsChar));
-        const hasLooseSep = /[ -]/.test(ip);
+        const hasLooseSep = /-/.test(ip);
 
         if (hasLooseSep) {
           let ip2 = String(ip)
-            .replace(/\s+/g, " ")
             .replace(/-+/g, "-")
             .trim();
 
-          ip2 = ip2.replace(/^[ -]+/, "").replace(/[ -]+$/, "");
+          ip2 = ip2.replace(/^-+/, "").replace(/-+$/, "");
           if (ip2 === "") ip2 = "0";
 
           for (const ch of ip2) {
             if (/\d/.test(ch)) { out.push(decimalDigitToNanpaToken(ch)); continue; }
-            if (ch === " " || ch === "-") { pushNene(); continue; }
+            if (ch === "-") { pushNene(); continue; }
             if (thousandsChar && ch === thousandsChar) { out.push("NE","KE"); continue; }
             throw new Error(`Unsupported character "${ch}" in integer part of "${s}"`);
           }
@@ -7565,7 +7566,7 @@ function wireHaloControls() {
             if (/\d/.test(ch)) { out.push(decimalDigitToNanpaToken(ch)); continue; }
             if (ch === "_") { pushNene(); continue; }
             if (ch === ",") { pushNene(); continue; }
-            if (ch === " " || ch === "-") { pushNene(); continue; }
+            if (ch === "-") { pushNene(); continue; }
             throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
           }
         }
@@ -7614,10 +7615,10 @@ function wireHaloControls() {
       if (!raw) return null;
       raw = raw.replace(/[−‒–—]/g, "-");
 
-      const mantissaPattern = String.raw`([+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*)))`;
-      const eRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*[eE]\s*([+-]?\d+)\s*$`);
-      const powWithCaretRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*\*\s*10\s*\^\s*([+-]?\d+)\s*$`);
-      const powSignedNoCaretRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*\*\s*10\s*([+-]\d+)\s*$`);
+      const mantissaPattern = String.raw`([+-]?(?:(?:\d[\d,_-]*)(?:\.\d[\d,_-]*)?|(?:\.\d[\d,_-]*)))`;
+      const eRe = new RegExp(String.raw`^${mantissaPattern}[eE]([+-]?\d+)$`);
+      const powWithCaretRe = new RegExp(String.raw`^${mantissaPattern}\*10\^([+-]?\d+)$`);
+      const powSignedNoCaretRe = new RegExp(String.raw`^${mantissaPattern}\*10([+-]\d+)$`);
 
       const m = raw.match(eRe) || raw.match(powWithCaretRe) || raw.match(powSignedNoCaretRe);
       if (!m) return null;
@@ -7648,10 +7649,11 @@ function wireHaloControls() {
       let raw = String(rawDecimal ?? "").trim();
       let percent = false;
 
-      // Allow optional whitespace before %
+      if (/\s/.test(raw)) throw new Error("Whitespace terminates a digit-based numeric token");
       if (/%$/.test(raw)) {
         percent = true;
-        raw = raw.replace(/\s*%\s*$/g, "").trim();
+        raw = raw.slice(0, -1);
+        if (!raw) throw new Error("Missing numeric part before '%'");
       }
 
       const normalized = normalizeVulgarFractionInput(raw);
@@ -7686,7 +7688,7 @@ function wireHaloControls() {
       // complete scientific value "1e8" plus punctuation. An optional percent
       // suffix belongs to the scientific expression and is kept in the numeric
       // cartouche before any following sentence punctuation.
-      const scientificRe = /(^|[^A-Za-z0-9_.])([+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*))(?:\s*[eE]\s*[+-]?\d+|\s*\*\s*10\s*\^\s*[+-]?\d+|\s*\*\s*10\s*[+-]\d+)(?:\s*%)?)(?=$|[^A-Za-z0-9_.]|\.(?!\d))/g;
+      const scientificRe = /(^|[^A-Za-z0-9_.])([+-]?(?:(?:\d[\d,_-]*)(?:\.\d[\d,_-]*)?|(?:\.\d[\d,_-]*))(?:[eE][+-]?\d+|\*10\^[+-]?\d+|\*10[+-]\d+)(?:%)?)(?=$|[^A-Za-z0-9_.]|\.(?!\d))/g;
       let sm;
       while ((sm = scientificRe.exec(s)) !== null) {
         const lead = sm[1] ?? "";
@@ -7713,15 +7715,15 @@ function wireHaloControls() {
       const re = new RegExp(
         String.raw`(?<![A-Za-z])` +
         String.raw`(` +
-          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\s*\d*\s*[${vulgarChars}]` +
+          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\d*[${vulgarChars}]` +
           "|" +
-          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\s*\d[\d, _-]*\s*\+\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
+          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\d[\d,_-]*\+\d[\d,_-]*\/\d[\d,_-]*` +
           "|" +
-          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\s*\d[\d, _-]*\s*\/\s*\d[\d, _-]*` +
+          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\d[\d,_-]*\/\d[\d,_-]*` +
           "|" +
-          String.raw`(?:(?<![A-Za-z0-9])\+|-)?\s*(?:\d[\d, _-]*|\.\d+)(?:\.\d[\d, _-]*)?(?:\s*[kKtTmMbB])?` +
+          String.raw`(?:(?<![A-Za-z0-9])\+|-)?(?:\d[\d,_-]*|\.\d+)(?:\.\d[\d,_-]*)?(?:[kKtTmMbB])?` +
         String.raw`)` +
-        String.raw`(?:\s*%)?` +          // NEW
+        String.raw`(?:%)?` +          // whitespace terminates the numeric token
         String.raw`(?![A-Za-z])`,
         "g"
       );
@@ -13441,7 +13443,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const head = isNeg ? "-" : "";
     const rest = isNeg ? s.slice(1) : s;
 
-    let r = rest.replace(/\s+/g, " ");
+    let r = rest;
     r = r.replace(/-+/g, "-");
 
     return (head + r).trim();
@@ -13449,7 +13451,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
   function _npNormalizeDateTimeInput(raw) {
     let s = String(raw ?? "").trim();
-    s = s.replace(/\s+/g, "");
+    // Whitespace is a hard boundary for digit-based numeric input.
+    // Leave internal whitespace untouched so the date grammar rejects it.
     s = s.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]/g, "-");
     s = s.replace(/[\u2044\u2215\uFF0F]/g, "/");
     s = s.replace(/[\uFF1A]/g, ":");
@@ -13901,8 +13904,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     } = opts || {};
 
     if (s == null) throw new Error("s must be a string");
-    let raw = _npNormalizeLooseSeparators(String(s));
-    if (!raw) throw new Error("Empty value cannot be encoded");
+    const source = String(s).trim();
+    if (!source) throw new Error("Empty value cannot be encoded");
+    if (/\s/.test(source)) throw new Error("Whitespace terminates a digit-based numeric token");
+    let raw = _npNormalizeLooseSeparators(source);
 
     if (groupFractionTriplets) {
       raw = _npGroupFractionDigitsOnly(raw, ".", fractionGroupSize, "_");
@@ -13974,20 +13979,19 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       let ip = String(intPart ?? "").trim();
       if (ip === "") ip = "0";
 
-      const hasLooseSep = /[ -]/.test(ip);
+      const hasLooseSep = /-/.test(ip);
 
       if (hasLooseSep) {
         let ip2 = String(ip)
-          .replace(/\s+/g, " ")
           .replace(/-+/g, "-")
           .trim();
 
-        ip2 = ip2.replace(/^[ -]+/, "").replace(/[ -]+$/, "");
+        ip2 = ip2.replace(/^-+/, "").replace(/-+$/, "");
         if (ip2 === "") ip2 = "0";
 
         for (const ch of ip2) {
           if (/\d/.test(ch)) { out.push(_npDecimalDigitToNanpaToken(ch, opts)); continue; }
-          if (ch === " " || ch === "-") { pushNene(); continue; }
+          if (ch === "-") { pushNene(); continue; }
           if (thousandsChar && ch === thousandsChar) { out.push("NE","KE"); continue; }
           throw new Error(`Unsupported character "${ch}" in integer part of "${s}"`);
         }
@@ -14032,7 +14036,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (/\d/.test(ch)) { out.push(_npDecimalDigitToNanpaToken(ch, opts)); continue; }
           if (ch === "_") { pushNene(); continue; }
           if (ch === ",") { pushNene(); continue; }
-          if (ch === " " || ch === "-") { pushNene(); continue; }
+          if (ch === "-") { pushNene(); continue; }
           throw new Error(`Unsupported character "${ch}" in fraction part of "${s}"`);
         }
       }
@@ -14081,10 +14085,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (!raw) return null;
     raw = raw.replace(/[−‒–—]/g, "-");
 
-    const mantissaPattern = String.raw`([+-]?(?:(?:\d[\d, _-]*)(?:\.\d[\d, _-]*)?|(?:\.\d[\d, _-]*)))`;
-    const eRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*[eE]\s*([+-]?\d+)\s*$`);
-    const powWithCaretRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*\*\s*10\s*\^\s*([+-]?\d+)\s*$`);
-    const powSignedNoCaretRe = new RegExp(String.raw`^\s*${mantissaPattern}\s*\*\s*10\s*([+-]\d+)\s*$`);
+    const mantissaPattern = String.raw`([+-]?(?:(?:\d[\d,_-]*)(?:\.\d[\d,_-]*)?|(?:\.\d[\d,_-]*)))`;
+    const eRe = new RegExp(String.raw`^${mantissaPattern}[eE]([+-]?\d+)$`);
+    const powWithCaretRe = new RegExp(String.raw`^${mantissaPattern}\*10\^([+-]?\d+)$`);
+    const powSignedNoCaretRe = new RegExp(String.raw`^${mantissaPattern}\*10([+-]\d+)$`);
 
     const m = raw.match(eRe) || raw.match(powWithCaretRe) || raw.match(powSignedNoCaretRe);
     if (!m) return null;
@@ -14112,9 +14116,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     let raw = String(rawDecimal ?? "").trim();
     let percent = false;
 
+    if (/\s/.test(raw)) throw new Error("Whitespace terminates a digit-based numeric token");
     if (/%$/.test(raw)) {
       percent = true;
-      raw = raw.replace(/\s*%\s*$/g, "").trim();
+      raw = raw.slice(0, -1);
+      if (!raw) throw new Error("Missing numeric part before '%'");
     }
 
     const normalized = _npNormalizeVulgarFractionInput(raw);
@@ -14797,16 +14803,15 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         ...opts,
         relaxedNanpaLinjanParsing: relaxedParsing
       });
-      const normalized = _npNormalizeVulgarFractionInput(s);
       if (!caps && colonCartoucheCaps) {
         caps = colonCartoucheCaps;
         semanticStartGlyph = typedColonCartouche?.semanticStartGlyph || null;
         if (typedColonCartouche?.semanticKind === "date") structuredKind = typedColonCartouche.dateKind === "yearless" ? "date-yearless" : "date";
         else if (typedColonCartouche?.semanticKind === "time") structuredKind = "time";
       }
-      const dateParts = _npTryParseDateParts(normalized);
-      const dateCaps = dateParts ? _npDateStrToNanpaCaps(normalized, opts) : null;
-      const timeCaps = (dateCaps == null) ? _npTimeStrToNanpaCaps(normalized, opts) : null;
+      const dateParts = _npTryParseDateParts(s);
+      const dateCaps = dateParts ? _npDateStrToNanpaCaps(s, opts) : null;
+      const timeCaps = (dateCaps == null) ? _npTimeStrToNanpaCaps(s, opts) : null;
 
       // A mixed/title-case proper name beginning with contiguous Nene... is the
       // explicit leading-plus form. Prefer that interpretation over the raw
@@ -14832,8 +14837,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       } else if (preferLeadingPlusProperName) {
         caps = _npProperNameToCaps(s, { ...opts, relaxedNanpaLinjanParsing: relaxedParsing });
         if (!caps) return null;
-      } else if (_npLooksLikeNanpaCaps(normalized)) {
-        caps = normalized.toUpperCase();
+      } else if (_npLooksLikeNanpaCaps(s)) {
+        caps = s.toUpperCase();
       } else if (dateCaps != null) {
         caps = dateCaps;
         structuredKind = dateParts?.yearless ? "date-yearless" : "date";
@@ -14850,7 +14855,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (parsed.semanticKind === "date") structuredKind = parsed.dateKind === "yearless" ? "date-yearless" : "date";
           else if (parsed.semanticKind === "time") structuredKind = "time";
         }
-        else caps = _npDecimalStringToCaps(normalized, {
+        else caps = _npDecimalStringToCaps(s, {
           thousandsChar: ",",
           groupFractionTriplets: true,
           fractionGroupSize: 3,

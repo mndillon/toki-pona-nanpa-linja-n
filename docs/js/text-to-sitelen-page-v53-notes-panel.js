@@ -1,4 +1,4 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=267";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -7,7 +7,7 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=178';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=78';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=79';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
@@ -482,7 +482,7 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=267",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268",
   fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=22",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=178",
@@ -2575,22 +2575,12 @@ function applyDefaultInputFromQuery() {
 function normalizeNonDrawableSourceTokensForRendererInput(rawText) {
   const raw = String(rawText ?? "");
 
-  // Preserve line structure, but convert standalone source-control token "zz"
-  // into a quoted U+3000 ideographic space before the renderer sees it.
-  //
-  // Important: a raw U+3000 inserted into normal text is treated as whitespace
-  // and can be collapsed/ignored by the parser. Quoting the U+3000 preserves
-  // it as a literal spacing advance without drawing visible "zz" text and
-  // without letting the unknown-text highlighter classify zz as unknown text.
-  return raw
-    .split(/\n/)
-    .map(line => {
-      return String(line ?? "").replace(
-        /(^|[\t ])zz(?=$|[\t ])/gi,
-        (_match, lead) => `${lead}"\u3000"`
-      );
-    })
-    .join("\n");
+  // The renderer now recognizes standalone "zz" directly and emits U+3000
+  // IDEOGRAPHIC SPACE itself. Preserve the user's source text exactly here.
+  // In particular, do not wrap zz/U+3000 in synthetic double quotes: doing so
+  // makes the renderer's optional "interpret double quotes as te/to" mode
+  // incorrectly manufacture te/to around a spacing token the user never quoted.
+  return raw;
 }
 
 const TTS_PREPARE_INPUT_DEBUG_PREFIX = "[tts-prepareInput]";
@@ -6206,7 +6196,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=267", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -10285,7 +10275,7 @@ async function initializeTextToSitelenPage() {
 
     try {
       const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
-        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=11",
+        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=17",
         onlyIfExisting: false,
         force: false
       });

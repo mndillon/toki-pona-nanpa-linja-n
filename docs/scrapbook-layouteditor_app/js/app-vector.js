@@ -2,7 +2,7 @@ import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=22";
+} from "../../js/sitelen-font-pair-controller-merged-updated-font-label.js?v=25";
 import {
   CartoucheApi,
   buildEntryRendererInput,
@@ -2257,7 +2257,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=267').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -13659,7 +13659,7 @@ document.addEventListener("keydown", (e) => {
 
       try {
         const syncResult = await stageFontPairController.syncPreloadedFontPairsFromManifest({
-          manifestUrl: "../../fonts/preloaded-font-pairs.manifest.json?v=10",
+          manifestUrl: "../../fonts/preloaded-font-pairs.manifest.json?v=17",
           onlyIfExisting: false,
           force: true
         });
@@ -13698,7 +13698,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=267');
+        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268');
         const NanpaParser = rendererMod?.NanpaParser;
         if (NanpaParser && !globalThis.NanpaParser) globalThis.NanpaParser = NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });

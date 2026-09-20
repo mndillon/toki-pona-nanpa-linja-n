@@ -1,16 +1,8 @@
-The OFL.txt file covers the license for PatrickHead-Regular.ttf font file
+The OFL.txt file covers the license for PatrickHand-Regular.ttf font file
 
-The LICENCE.txt file covers the licence for the font files:
-nasin-nanpa-5.0.0-beta.3-UCSUR.otf
-nasin-nanpa-5.0.0-beta.3-UCSUR.woff
-nasin-nanpa-5.0.0-beta.3-UCSUR.woff2
-nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.otf
-nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.woff
-nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n.woff2
-nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf
-nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf
-nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf
-nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf
+The LICENSE.txt file covers the licence for the font files:
+nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf
+
 
 
 The OFL-1.1.txt file covers the licence for these fonts:
@@ -28,9 +20,11 @@ FairfaxPonaHD-nanpa-linja-n-good-kasi.ttf
 FairfaxPonaHD-nanpa-linja-n-good-kasi-nasin-e-en.ttf
 FairfaxPonaHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
 linjalipamanka-normal.otf
+linjalipamanka-normal-cartouche-fix.otf
+linjalipamanka-normal-nanpa-linja-n.otf
 linjalipamanka-normal-nanpa-linja-n-good-kasi.otf
-linjalipamanka-normal-nanpa-linja-n-good-kasi-nasin-e-en.otf
-linjalipamanka-normal-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf
+linjalipamanka-normal-nanpa-linja-n-nasin-e-en.otf
+linjalipamanka-normal-nanpa-linja-n-nasin-e-en-ss1223.otf
 linja-pona.otf
 linja-pona-nanpa-linja-n.otf
 linja-pona-nanpa-linja-n-nasin-e-en.otf
@@ -51,22 +45,36 @@ NasinSitelenPuMono-nanpa-linja-n-nasin-e-en-ss1223.otf
 
 
 
-The SIL_LICENCE.txt file covers the licence for the font files:
+The SIL_LICENSE file covers the licence for the font files:
 LiberationSerif-Regular.ttf
 LiberationSans-Regular.ttf
 LiberationMono-Regular.ttf
 
 
+The following modified font files incorporate material covered by both
+the SIL Open Font License 1.1 and the MIT License:
 
-The original site for nasin-nanpa-5.0.0-beta.3-UCSUR.otf is loacated here: https://github.com/etbcor/nasin-nanpa
+nasin-nanpa-nanpa-linja-n-Regular.ttf
+nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf
+nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf
+nanpa-linja-n-nasin-nanpa-liberation-sans.ttf
 
-NOTE: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf font file
-is derived from the nasin-nanpa-5.0.0-beta.3-UCSUR.otf font file and is only used to render
+These modified font files are distributed under the SIL Open Font License
+1.1. The MIT License and associated copyright notices apply to the
+incorporated nasin nanpa material.
+
+
+
+
+The original site for nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf is loacated here: https://github.com/etbcor/nasin-nanpa
+
+NOTE: The nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf font file
+is derived from the nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf font file and is only used to render
 cartouches that have glyphs that define nanpa-linja-n decimal numbers,
 any Unicode code point that represents a Toki Pona word that begins with 'n' or 'e' will be displayed as
 one quarter original font size inside any cartouche that uses this font file.
 
-DISCLAIMER: The nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf font file is provided “as is”,
+DISCLAIMER: The nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf font file is provided “as is”,
 with no claim, guarantee, or warranty that the output is correct,
 complete, or suitable for any purpose. You are responsible for verifying results.
 
@@ -74,13 +82,13 @@ complete, or suitable for any purpose. You are responsible for verifying results
 --------------------------
 
 
-Using the nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf font in Python:
+Using the nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf font in Python:
 
 #import functionality from PIL
 from PIL import Image, ImageDraw, ImageFont
 
 #font file name
-SITELEN_NANPA_LINJA_N_FONT = "nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf"
+SITELEN_NANPA_LINJA_N_FONT = "nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf"
 
 #define font (with RAQM renderer)
 sitelen_nanpa_linja_n_font = ImageFont.truetype(

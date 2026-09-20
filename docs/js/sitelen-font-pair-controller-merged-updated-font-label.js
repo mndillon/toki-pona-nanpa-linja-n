@@ -261,6 +261,8 @@ function recordToStoredShape(record, fallbackLiteralOptions = DEFAULT_TEXT_FONT_
     literalCartoucheBlob: record.literalCartoucheBlob || record.literalCartoucheFontBlob || null,
     baseFilename: cleanString(record.baseFilename || record.baseFileName || 'uploaded-font.ttf'),
     companionFilename: cleanString(record.companionFilename || record.companionFileName || 'uploaded-font-nanpa-linja-n.ttf'),
+    baseUrl: cleanString(record.baseUrl || record.textUrl || ''),
+    companionUrl: cleanString(record.companionUrl || record.cartoucheUrl || ''),
     baseSample: cleanString(record.baseSample || record.textSample || DEFAULT_FONT_LOAD_SAMPLE, DEFAULT_FONT_LOAD_SAMPLE),
     companionSample: cleanString(record.companionSample || record.cartoucheSample || DEFAULT_FONT_LOAD_SAMPLE, DEFAULT_FONT_LOAD_SAMPLE),
     literalCartoucheSample: cleanString(record.literalCartoucheSample || DEFAULT_FONT_LOAD_SAMPLE, DEFAULT_FONT_LOAD_SAMPLE),
@@ -280,6 +282,14 @@ function recordToStoredShape(record, fallbackLiteralOptions = DEFAULT_TEXT_FONT_
     settings: normalizeStoredSettings(record.settings || null),
     notes: record.notes || null,
     metadataSuffix: cleanString(record.metadataSuffix || '-nanpa-linja-n'),
+    manifestRev: cleanString(record.manifestRev || record.preloadedRev || ''),
+    preloadedRev: cleanString(record.preloadedRev || record.manifestRev || ''),
+    fontRev: cleanString(record.fontRev || record.preloadedFontRev || record.manifestRev || record.preloadedRev || ''),
+    preloadedFontRev: cleanString(record.preloadedFontRev || record.fontRev || record.manifestRev || record.preloadedRev || ''),
+    settingsRev: cleanString(record.settingsRev || record.preloadedSettingsRev || record.manifestRev || record.preloadedRev || ''),
+    preloadedSettingsRev: cleanString(record.preloadedSettingsRev || record.settingsRev || record.manifestRev || record.preloadedRev || ''),
+    preloadedManifestUrl: cleanString(record.preloadedManifestUrl || ''),
+    preloadedManifestSchema: normalizeManifestSchema(record.preloadedManifestSchema || 1),
   };
 }
 
@@ -360,6 +370,16 @@ export function createSitelenFontPairController({
   const dynamicRegistryMap = new Map();
   const runtimePairMap = new Map();
   const objectUrlByKey = new Map();
+
+  // The successfully loaded preloaded manifest is the runtime authority for
+  // bundled/predefined font metadata. IndexedDB is only a blob/cache layer.
+  const manifestPairMap = new Map();
+
+  // If the manifest says a cached record is stale but refreshing its assets
+  // fails, do not allow that stale IndexedDB record to override the manifest
+  // backed built-in preset during hydration.
+  const blockedManifestCacheKeys = new Set();
+
   const controllerChangeEventName = changeEventName || DEFAULT_CHANGED_EVENT;
 
   const scriptEl = byIdOrElement(scriptSelect);
@@ -456,6 +476,189 @@ export function createSitelenFontPairController({
     normalizedDecorated.literalOptions = resolveDynamicLiteralOptions(record, normalizedDecorated);
     normalizedDecorated.defaultTextFontOption = resolveDefaultDynamicTextFontOption(record, normalizedDecorated, normalizedDecorated.literalOptions);
     return normalizedDecorated;
+  }
+
+  function cloneManifestPair(pair) {
+    if (!pair || typeof pair !== 'object') return null;
+    return {
+      ...pair,
+      settings: (pair.settings && typeof pair.settings === 'object' && !Array.isArray(pair.settings))
+        ? { ...pair.settings }
+        : pair.settings,
+      renderAdapterSettings: (pair.renderAdapterSettings && typeof pair.renderAdapterSettings === 'object' && !Array.isArray(pair.renderAdapterSettings))
+        ? { ...pair.renderAdapterSettings }
+        : pair.renderAdapterSettings,
+      support: (pair.support && typeof pair.support === 'object' && !Array.isArray(pair.support))
+        ? { ...pair.support }
+        : pair.support,
+    };
+  }
+
+  function applyManifestPairToBuiltInPreset(pair) {
+    const fontKey = cleanString(pair?.fontKey);
+    if (!fontKey || !builtInRegistryMap.has(fontKey)) return false;
+
+    const current = clonePreset(builtInRegistryMap.get(fontKey));
+    const textFamily = cleanString(pair.baseFamily || pair.textFamily || current.textFamily || fontKey, fontKey);
+    const cartoucheFamily = cleanString(
+      pair.companionFamily || pair.cartoucheFamily || current.cartoucheFamily || `${fontKey}-nanpa-linja-n`,
+      `${fontKey}-nanpa-linja-n`
+    );
+    const literalCartoucheFamily = cleanString(
+      pair.literalCartoucheFamily ||
+      pair.literalCartoucheFontFamily ||
+      current.literalCartoucheFamily ||
+      textFamily,
+      textFamily
+    );
+
+    const baseUrl = cleanString(pair.baseUrl);
+    const companionUrl = cleanString(pair.companionUrl);
+    const literalCartoucheUrl = cleanString(pair.literalCartoucheUrl || pair.literalCartoucheFontUrl);
+
+    const replacedFamilies = new Set([
+      cleanString(current.textFamily),
+      cleanString(current.cartoucheFamily),
+      cleanString(current.literalCartoucheFamily),
+      textFamily,
+      cartoucheFamily,
+      literalCartoucheFamily,
+    ].filter(Boolean));
+
+    // Keep generic literal/vector fallback faces, but replace every face owned
+    // by the manifest-managed base/cartouche/literal-cartouche families.
+    const faces = (Array.isArray(current.faces) ? current.faces : [])
+      .filter(face => !replacedFamilies.has(cleanString(face?.family)));
+
+    if (baseUrl) {
+      faces.unshift({
+        family: textFamily,
+        url: baseUrl,
+        format: normalizeFormat(pair.baseFormat || inferFormatFromFilename(pair.baseFilename || baseUrl)),
+        sample: cleanString(pair.baseSample || DEFAULT_FONT_LOAD_SAMPLE, DEFAULT_FONT_LOAD_SAMPLE),
+      });
+    }
+
+    if (companionUrl) {
+      faces.push({
+        family: cartoucheFamily,
+        url: companionUrl,
+        format: normalizeFormat(pair.companionFormat || inferFormatFromFilename(pair.companionFilename || companionUrl)),
+        sample: cleanString(pair.companionSample || DEFAULT_FONT_LOAD_SAMPLE, DEFAULT_FONT_LOAD_SAMPLE),
+      });
+    }
+
+    if (literalCartoucheUrl && literalCartoucheFamily) {
+      faces.push({
+        family: literalCartoucheFamily,
+        url: literalCartoucheUrl,
+        format: normalizeFormat(
+          pair.literalCartoucheFormat ||
+          inferFormatFromFilename(pair.literalCartoucheFilename || literalCartoucheUrl)
+        ),
+        sample: cleanString(pair.literalCartoucheSample || DEFAULT_FONT_LOAD_SAMPLE, DEFAULT_FONT_LOAD_SAMPLE),
+      });
+    }
+
+    const manifestPair = cloneManifestPair(pair);
+    const updated = clonePreset({
+      ...current,
+      key: fontKey,
+      fontKey,
+      label: cleanString(pair.label || current.label || fontKey, fontKey),
+      textFamily,
+      cartoucheFamily,
+      literalCartoucheFamily,
+      parserMode: cleanString(pair.parserMode || current.parserMode || DEFAULT_PARSER_MODE, DEFAULT_PARSER_MODE),
+      renderAdapterId: cleanString(pair.renderAdapterId || current.renderAdapterId || DEFAULT_RENDER_ADAPTER_ID, DEFAULT_RENDER_ADAPTER_ID),
+      renderAdapterSettings: (pair.renderAdapterSettings && typeof pair.renderAdapterSettings === 'object' && !Array.isArray(pair.renderAdapterSettings))
+        ? { ...pair.renderAdapterSettings }
+        : { ...(current.renderAdapterSettings || {}) },
+      metadataSuffix: cleanString(pair.metadataSuffix || current.metadataSuffix || '-nanpa-linja-n'),
+      settings: (pair.settings && typeof pair.settings === 'object' && !Array.isArray(pair.settings))
+        ? { ...pair.settings }
+        : current.settings,
+      support: pair.support || current.support || null,
+      pdfTextFontUrl: baseUrl || current.pdfTextFontUrl,
+      pdfCartoucheFontUrl: companionUrl || current.pdfCartoucheFontUrl,
+      faces,
+      __manifestPair: manifestPair,
+    });
+
+    builtInRegistryMap.set(fontKey, updated);
+    return true;
+  }
+
+  function rememberManifestPairs(pairs) {
+    manifestPairMap.clear();
+    blockedManifestCacheKeys.clear();
+
+    for (const pair of (Array.isArray(pairs) ? pairs : [])) {
+      const fontKey = cleanString(pair?.fontKey);
+      if (!fontKey) continue;
+      const cloned = cloneManifestPair(pair);
+      manifestPairMap.set(fontKey, cloned);
+      applyManifestPairToBuiltInPreset(cloned);
+    }
+
+    // The manifest may have changed labels/families/options for built-ins.
+    invalidate();
+    populateScriptSelectOptions();
+    populateTextSelectOptions();
+  }
+
+  function getManifestPair(fontKey) {
+    const key = cleanString(fontKey);
+    if (!key) return null;
+    return cloneManifestPair(manifestPairMap.get(key));
+  }
+
+  function isManifestCacheBlocked(fontKey) {
+    return blockedManifestCacheKeys.has(cleanString(fontKey));
+  }
+
+  function storedRecordMatchesManifestPairMetadata(record, pair) {
+    if (!record || !pair) return false;
+
+    const fontKey = cleanString(pair.fontKey);
+    const rev = cleanString(pair.rev);
+    const baseUrl = cleanString(pair.baseUrl);
+    const companionUrl = cleanString(pair.companionUrl);
+    const literalCartoucheUrl = cleanString(pair.literalCartoucheUrl || pair.literalCartoucheFontUrl);
+    const baseFilename = cleanString(pair.baseFilename || baseUrl.split("/").pop() || "");
+    const companionFilename = cleanString(pair.companionFilename || companionUrl.split("/").pop() || "");
+    const literalCartoucheFilename = cleanString(
+      pair.literalCartoucheFilename ||
+      pair.literalCartoucheFileName ||
+      (literalCartoucheUrl ? literalCartoucheUrl.split("/").pop() : "") ||
+      ""
+    );
+    const baseFamily = cleanString(pair.baseFamily || pair.textFamily || fontKey, fontKey);
+    const companionFamily = cleanString(
+      pair.companionFamily || pair.cartoucheFamily || `${fontKey}-nanpa-linja-n`,
+      `${fontKey}-nanpa-linja-n`
+    );
+    const literalCartoucheFamily = cleanString(
+      pair.literalCartoucheFamily || pair.literalCartoucheFontFamily || baseFamily,
+      baseFamily
+    );
+
+    return (
+      cleanString(record.fontKey) === fontKey &&
+      cleanString(record.manifestRev || record.preloadedRev) === rev &&
+      cleanString(record.baseFilename) === baseFilename &&
+      cleanString(record.companionFilename) === companionFilename &&
+      cleanString(record.baseUrl) === baseUrl &&
+      cleanString(record.companionUrl) === companionUrl &&
+      cleanString(record.baseFamily) === baseFamily &&
+      cleanString(record.companionFamily) === companionFamily &&
+      cleanString(record.literalCartoucheFamily) === literalCartoucheFamily &&
+      cleanString(record.literalCartoucheFilename) === literalCartoucheFilename &&
+      cleanString(record.literalCartoucheUrl) === literalCartoucheUrl &&
+      !!record.baseBlob &&
+      !!record.companionBlob &&
+      (!literalCartoucheUrl || !!record.literalCartoucheBlob)
+    );
   }
 
   function invalidate() {
@@ -1006,7 +1209,7 @@ export function createSitelenFontPairController({
   }
 
   async function syncPreloadedFontPairsFromManifest({
-    manifestUrl = "./fonts/preloaded-font-pairs.manifest.json?v=7",
+    manifestUrl = "./fonts/preloaded-font-pairs.manifest.json",
     dbName = DEFAULT_DB_NAME,
     dbVersion = DEFAULT_DB_VERSION,
     storeName = DEFAULT_STORE,
@@ -1014,7 +1217,7 @@ export function createSitelenFontPairController({
     onlyIfExisting = true
   } = {}) {
     if (typeof indexedDB === "undefined" || !indexedDB) {
-      return { updated: 0, skipped: 0, reason: "indexeddb-unavailable" };
+      return { updated: 0, skipped: 0, failedKeys: [], manifestLoaded: false, reason: "indexeddb-unavailable" };
     }
 
     let manifest;
@@ -1022,16 +1225,21 @@ export function createSitelenFontPairController({
       const res = await fetch(manifestUrl, { cache: "no-store" });
       if (!res.ok) {
         console.warn("[preloaded-fonts] manifest not found:", manifestUrl, res.status);
-        return { updated: 0, skipped: 0, reason: "manifest-not-found" };
+        return { updated: 0, skipped: 0, failedKeys: [], manifestLoaded: false, reason: "manifest-not-found" };
       }
       manifest = await res.json();
     } catch (err) {
       console.warn("[preloaded-fonts] manifest load failed:", err);
-      return { updated: 0, skipped: 0, reason: "manifest-load-failed" };
+      return { updated: 0, skipped: 0, failedKeys: [], manifestLoaded: false, reason: "manifest-load-failed" };
     }
 
     const pairs = Array.isArray(manifest?.pairs) ? manifest.pairs : [];
-    if (!pairs.length) return { updated: 0, skipped: 0, reason: "empty-manifest" };
+    if (!pairs.length) return { updated: 0, skipped: 0, failedKeys: [], manifestLoaded: true, reason: "empty-manifest" };
+
+    // Apply manifest metadata to runtime built-ins immediately, before any
+    // IndexedDB hydration. This prevents stale static bootstrap URLs from
+    // becoming authoritative merely because the cache cannot be refreshed.
+    rememberManifestPairs(pairs);
 
     const manifestSchema = normalizeManifestSchema(manifest?.schema);
     const migrationConfig = (manifest?.migration && typeof manifest.migration === "object")
@@ -1052,6 +1260,7 @@ export function createSitelenFontPairController({
 
     let updated = 0;
     let skipped = 0;
+    const failedKeys = [];
     let migration = {
       applied: false,
       manifestSchema,
@@ -1275,8 +1484,14 @@ export function createSitelenFontPairController({
           dynamicRegistryMap.delete(key);
           revokeObjectUrlsForKey(key);
         }
-        for (const key of preservedExistingKeys) migrationHandledKeys.add(key);
-        for (const key of preloadFontKeys) migrationHandledKeys.add(key);
+        // Freshly preloaded records were installed from this manifest and do
+        // not need a second pass. Preserved records are deliberately NOT
+        // marked handled: preserve means "do not delete during migration",
+        // not "ignore future manifest revision changes".
+        for (const key of preloadFontKeys) {
+          migrationHandledKeys.add(key);
+          blockedManifestCacheKeys.delete(key);
+        }
 
         updated += recordsToInstall.length + parserModesUpdated;
         migration = {
@@ -1305,8 +1520,9 @@ export function createSitelenFontPairController({
           continue;
         }
 
-        // The destructive migration has already handled these exact records.
-        // In particular, preserved records are not rewritten during migration.
+        // Freshly installed migration preload records already match this
+        // manifest. Preserved records still continue through normal revision
+        // comparison below.
         if (migrationHandledKeys.has(fontKey)) {
           skipped++;
           continue;
@@ -1326,32 +1542,6 @@ export function createSitelenFontPairController({
         const settingsRev = cleanString(pair.settingsRev || rev);
         const fontRev = cleanString(pair.fontRev || rev);
 
-        const existingManifestRev = String(existing?.manifestRev || existing?.preloadedRev || "");
-        const existingFontRev = String(existing?.fontRev || existing?.preloadedFontRev || existingManifestRev);
-        const existingSettingsRev = String(existing?.settingsRev || existing?.preloadedSettingsRev || existingManifestRev);
-
-        const needsLiteralCartoucheFontUpdate = !!literalCartoucheUrl && (
-          !existing?.literalCartoucheBlob ||
-          String(existing?.literalCartoucheUrl || existing?.literalCartoucheFontUrl || '') !== literalCartoucheUrl
-        );
-        const needsFontUpdate = !existing || existingFontRev !== fontRev || !existing?.baseBlob || !existing?.companionBlob || needsLiteralCartoucheFontUpdate;
-        const manifestParserMode = cleanString(pair.parserMode || existing?.parserMode || DEFAULT_PARSER_MODE, DEFAULT_PARSER_MODE);
-        const manifestRenderAdapterId = cleanString(pair.renderAdapterId || existing?.renderAdapterId || DEFAULT_RENDER_ADAPTER_ID, DEFAULT_RENDER_ADAPTER_ID);
-        const manifestRenderAdapterSettings = (pair.renderAdapterSettings && typeof pair.renderAdapterSettings === 'object' && !Array.isArray(pair.renderAdapterSettings))
-          ? pair.renderAdapterSettings
-          : ((existing?.renderAdapterSettings && typeof existing.renderAdapterSettings === 'object') ? existing.renderAdapterSettings : {});
-        const existingRenderAdapterSettings = (existing?.renderAdapterSettings && typeof existing.renderAdapterSettings === 'object') ? existing.renderAdapterSettings : {};
-        const adapterSettingsChanged = JSON.stringify(existingRenderAdapterSettings) !== JSON.stringify(manifestRenderAdapterSettings);
-        const needsSettingsUpdate = !existing || existingSettingsRev !== settingsRev ||
-          cleanString(existing?.parserMode || DEFAULT_PARSER_MODE, DEFAULT_PARSER_MODE) !== manifestParserMode ||
-          cleanString(existing?.renderAdapterId || DEFAULT_RENDER_ADAPTER_ID, DEFAULT_RENDER_ADAPTER_ID) !== manifestRenderAdapterId ||
-          adapterSettingsChanged;
-
-        if (!force && existing && !needsFontUpdate && !needsSettingsUpdate) {
-          skipped++;
-          continue;
-        }
-
         const baseFilename = cleanString(pair.baseFilename || baseUrl.split("/").pop() || "preloaded-base.ttf");
         const companionFilename = cleanString(pair.companionFilename || companionUrl.split("/").pop() || "preloaded-companion.ttf");
         const literalCartoucheFilename = cleanString(
@@ -1362,6 +1552,74 @@ export function createSitelenFontPairController({
           existing?.literalCartoucheFileName ||
           ''
         );
+
+        const manifestBaseFamily = cleanString(pair.baseFamily || pair.textFamily || fontKey, fontKey);
+        const manifestCompanionFamily = cleanString(
+          pair.companionFamily || pair.cartoucheFamily || `${fontKey}-nanpa-linja-n`,
+          `${fontKey}-nanpa-linja-n`
+        );
+        const manifestLiteralCartoucheFamily = cleanString(
+          pair.literalCartoucheFamily || pair.literalCartoucheFontFamily || pair.baseFamily || pair.textFamily || fontKey,
+          manifestBaseFamily
+        );
+        const manifestParserMode = cleanString(pair.parserMode || existing?.parserMode || DEFAULT_PARSER_MODE, DEFAULT_PARSER_MODE);
+        const manifestRenderAdapterId = cleanString(pair.renderAdapterId || existing?.renderAdapterId || DEFAULT_RENDER_ADAPTER_ID, DEFAULT_RENDER_ADAPTER_ID);
+        const manifestRenderAdapterSettings = (pair.renderAdapterSettings && typeof pair.renderAdapterSettings === 'object' && !Array.isArray(pair.renderAdapterSettings))
+          ? pair.renderAdapterSettings
+          : ((existing?.renderAdapterSettings && typeof existing.renderAdapterSettings === 'object') ? existing.renderAdapterSettings : {});
+
+        const existingManifestRev = String(existing?.manifestRev || existing?.preloadedRev || "");
+        const manifestRevChanged = !existing || existingManifestRev !== rev;
+
+        // A matching revision normally means the IndexedDB cache is valid and
+        // no write is needed. Older buggy builds could, however, stamp the new
+        // revision while retaining stale filenames/blobs. Treat a same-revision
+        // metadata mismatch as cache corruption and repair it once.
+        const cacheMetadataMismatch = !!existing && (
+          cleanString(existing?.baseFilename) !== baseFilename ||
+          cleanString(existing?.companionFilename) !== companionFilename ||
+          cleanString(existing?.baseUrl) !== baseUrl ||
+          cleanString(existing?.companionUrl) !== companionUrl ||
+          cleanString(existing?.baseFamily) !== manifestBaseFamily ||
+          cleanString(existing?.companionFamily) !== manifestCompanionFamily ||
+          cleanString(existing?.literalCartoucheFamily) !== manifestLiteralCartoucheFamily ||
+          cleanString(existing?.literalCartoucheFilename) !== literalCartoucheFilename ||
+          cleanString(existing?.literalCartoucheUrl) !== literalCartoucheUrl ||
+          cleanString(existing?.parserMode || DEFAULT_PARSER_MODE, DEFAULT_PARSER_MODE) !== manifestParserMode ||
+          cleanString(existing?.renderAdapterId || DEFAULT_RENDER_ADAPTER_ID, DEFAULT_RENDER_ADAPTER_ID) !== manifestRenderAdapterId ||
+          JSON.stringify((existing?.renderAdapterSettings && typeof existing.renderAdapterSettings === 'object') ? existing.renderAdapterSettings : {}) !==
+            JSON.stringify(manifestRenderAdapterSettings)
+        );
+
+        if (!force && existing && !manifestRevChanged && !cacheMetadataMismatch) {
+          blockedManifestCacheKeys.delete(fontKey);
+          skipped++;
+          continue;
+        }
+
+        if (!force && existing && !manifestRevChanged && cacheMetadataMismatch) {
+          console.warn("[preloaded-fonts] repairing same-revision stale cache:", fontKey, rev);
+        }
+
+        const existingFontRev = String(existing?.fontRev || existing?.preloadedFontRev || existingManifestRev);
+        const baseAssetIdentityChanged =
+          cleanString(existing?.baseFilename) !== baseFilename ||
+          cleanString(existing?.baseUrl) !== baseUrl;
+        const companionAssetIdentityChanged =
+          cleanString(existing?.companionFilename) !== companionFilename ||
+          cleanString(existing?.companionUrl) !== companionUrl;
+        const needsLiteralCartoucheFontUpdate = !!literalCartoucheUrl && (
+          !existing?.literalCartoucheBlob ||
+          String(existing?.literalCartoucheFilename || existing?.literalCartoucheFileName || '') !== literalCartoucheFilename ||
+          String(existing?.literalCartoucheUrl || existing?.literalCartoucheFontUrl || '') !== literalCartoucheUrl
+        );
+        const needsFontUpdate = !existing ||
+          existingFontRev !== fontRev ||
+          !existing?.baseBlob ||
+          !existing?.companionBlob ||
+          baseAssetIdentityChanged ||
+          companionAssetIdentityChanged ||
+          needsLiteralCartoucheFontUpdate;
 
         let baseBlob = existing?.baseBlob || null;
         let companionBlob = existing?.companionBlob || null;
@@ -1396,7 +1654,11 @@ export function createSitelenFontPairController({
               literalCartoucheBuffer = await literalCartoucheRes.arrayBuffer();
             }
           } catch (err) {
-            console.warn("[preloaded-fonts] font fetch failed:", fontKey, err);
+            // The manifest loaded successfully and says this cache entry needs
+            // different assets. Never hydrate the now-known-stale record.
+            blockedManifestCacheKeys.add(fontKey);
+            if (!failedKeys.includes(fontKey)) failedKeys.push(fontKey);
+            console.error("[preloaded-fonts] manifest asset refresh failed; stale cache blocked:", fontKey, err);
             skipped++;
             continue;
           }
@@ -1440,6 +1702,8 @@ export function createSitelenFontPairController({
 
           baseFilename,
           companionFilename,
+          baseUrl,
+          companionUrl,
           literalCartoucheFilename,
           literalCartoucheUrl,
           baseSample: cleanString(pair.baseSample || existing?.baseSample || DEFAULT_FONT_LOAD_SAMPLE, DEFAULT_FONT_LOAD_SAMPLE),
@@ -1493,6 +1757,7 @@ export function createSitelenFontPairController({
           await requestToPromise(store.put(stored));
         });
 
+        blockedManifestCacheKeys.delete(fontKey);
         updated++;
       }
     } finally {
@@ -1510,7 +1775,14 @@ export function createSitelenFontPairController({
       });
     }
 
-    return { updated, skipped, manifestSchema, migration };
+    return {
+      updated,
+      skipped,
+      failedKeys: [...failedKeys],
+      manifestLoaded: true,
+      manifestSchema,
+      migration
+    };
   }
 
   async function removeStoredPair(fontKey) {
@@ -1540,6 +1812,17 @@ export function createSitelenFontPairController({
     const records = await listStoredFontPairs();
     const seen = new Set();
     for (const rec of records) {
+      const recKey = cleanString(rec?.fontKey);
+      const authoritativeManifestPair = manifestPairMap.get(recKey) || null;
+      if (
+        blockedManifestCacheKeys.has(recKey) ||
+        (authoritativeManifestPair && !storedRecordMatchesManifestPairMetadata(rec, authoritativeManifestPair))
+      ) {
+        // Once the manifest has loaded, a stale/mismatched cache record must
+        // never override the manifest-backed runtime preset. Keep the record
+        // on disk for offline recovery, but exclude it from this live session.
+        continue;
+      }
       seen.add(rec.fontKey);
       try {
         const preset = buildDynamicPresetFromStoredRecord(rec, { sourceType: 'indexeddb' });
@@ -1804,18 +2087,18 @@ export function createSitelenFontPairController({
     registerPresetObject,
     getDynamicRegistrySnapshot,
     getCombinedRegistrySnapshot,
+    getManifestPair,
+    isManifestCacheBlocked,
     hasPresetKey,
     destroy,
   };
 
   api.ready = (async () => {
+    // Basic controller/UI initialization only. Font-pair IndexedDB hydration
+    // is intentionally deferred until the page has reconciled the authoritative
+    // preloaded manifest with the local cache.
     populateScriptSelectOptions();
     populateTextSelectOptions();
-    try {
-      await hydrateDynamicPresetsFromDb({ force: true });
-    } catch (err) {
-      console.warn('Could not hydrate dynamic font presets during controller startup.', err);
-    }
     applyStoredSelections();
     return api;
   })();
