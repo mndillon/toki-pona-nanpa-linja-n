@@ -1,17 +1,972 @@
 # nanpa-linja-n
 
-This repository contains the frozen **nanpa-linja-n Protocol v1.0.0** and eight reference implementations:
+This repository contains the frozen **nanpa-linja-n Protocol v1.0.0** and eight reference implementations: JavaScript, TypeScript, Node.js, Python, Rust, Go, Dart, and Java.
 
-- JavaScript
-- TypeScript
-- Node.js
-- Python
-- Rust
-- Go
-- Dart
-- Java
+This README is organized for application developers first. The language sections below show the shortest practical path from an extracted reference package to a working external consumer that parses a full document, serializes its AST with `astToText`, demonstrates the available numeric output forms, and renders a PNG. Detailed API behavior, parser/AST documentation, font-manifest details, protocol/specification material, and conformance information are collected later in the README.
 
-The protocol is normative. The reference implementations demonstrate conformance with the protocol and provide platform-appropriate parsing and production/full-rendering APIs.
+All paths in the examples are generic. Replace `/absolute/path/to/...` with the path on your own system.
+
+## JavaScript: first working browser application
+
+The JavaScript reference is the canonical browser parser/renderer. A normal external browser application installs the extracted reference package locally and imports the facade from `node_modules`; the production fonts are supplied by the package.
+
+### Requirements
+
+- Node.js 20 or newer
+- npm
+- a modern browser
+- Python 3 only if you use the simple static-server command shown below
+
+A Chromium-family browser is additionally required for the reference package's own browser regression suite, but not specifically for the minimal consumer shown here.
+
+### 1. Extract and optionally validate the reference package
+
+```bash
+unzip nanpa-linja-n-javascript-reference-for-protocol-v1.0.0.zip
+cd /absolute/path/to/extracted-javascript-reference
+npm install
+./tools/run_javascript_regression.sh
+```
+
+For the first external application, return to a separate directory rather than putting application files inside the reference package.
+
+### 2. Create an external application
+
+```bash
+mkdir hello-nanpa-javascript
+cd hello-nanpa-javascript
+npm init -y
+npm install /absolute/path/to/extracted-javascript-reference
+```
+
+Create `index.html`:
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>nanpa-linja-n JavaScript Hello World</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "nanpa-linja-n-browser-font-regression":
+        "./node_modules/nanpa-linja-n-browser-font-regression/src/nanpa-linja-n.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <h1>nanpa-linja-n JavaScript</h1>
+  <pre id="textOutput"></pre>
+  <div id="output"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
+```
+
+Create `app.js`:
+
+```js
+import { NanpaLinjaN }
+  from "nanpa-linja-n-browser-font-regression";
+
+const nanpa = await NanpaLinjaN.create();
+
+const text =
+  "toki&pona 123 456 zz pi(telo lete) te tomo to";
+
+const parserOptions = {
+  abbreviateNumericCartouches: true,
+  preserveNumericCartoucheBreaksInAbbreviation: true,
+};
+
+// Parse the full document once.
+const parsed = await nanpa.parse(text, { parser: parserOptions });
+
+// Serialize the same AST in each supported numeric-output form.
+const outputs = {
+  source: nanpa.astToText(parsed.ast, {
+    numericOutput: "source",
+    parser: parserOptions,
+  }),
+  properName: nanpa.astToText(parsed.ast, {
+    numericOutput: "properName",
+    parser: parserOptions,
+  }),
+  hashTilde: nanpa.astToText(parsed.ast, {
+    numericOutput: "#~",
+    parser: parserOptions,
+  }),
+  fullCartouche: nanpa.astToText(parsed.ast, {
+    numericOutput: "cartouche",
+    parser: {
+      ...parserOptions,
+      abbreviateNumericCartouches: false,
+    },
+  }),
+  abbreviatedCartouche: nanpa.astToText(parsed.ast, {
+    numericOutput: "cartouche",
+    parser: {
+      ...parserOptions,
+      abbreviateNumericCartouches: true,
+    },
+  }),
+  nasinNanpaPona: nanpa.astToText(parsed.ast, {
+    numericOutput: "cartouche",
+    parser: {
+      ...parserOptions,
+      nasinNanpaPona: true,
+      abbreviateNumericCartouches: false,
+    },
+  }),
+};
+
+document.getElementById("textOutput").textContent =
+  Object.entries(outputs)
+    .map(([name, value]) => `${name}:\n${value}`)
+    .join("\n\n");
+
+// Rendering does not require a second parse call.
+const result = await nanpa.renderToPng(text, {
+  font: "linjaPona",
+  fontSize: 56,
+  paddingPx: 18,
+  parser: parserOptions,
+});
+
+const image = document.createElement("img");
+image.src = URL.createObjectURL(result.blob);
+image.alt = text;
+document.getElementById("output").append(image);
+```
+
+The example deliberately parses once and reuses the same AST. `numericOutput: "source"` reconstructs the source representation, `"properName"` writes recognized numbers as proper names, `"#~"` requests compact number-code output where one exists, and `"cartouche"` can produce either full or abbreviated numeric cartouche source depending on the parser options. Enabling `nasinNanpaPona` selects that textual number form.
+
+### 3. Run it
+
+```bash
+python3 -m http.server 8000
+```
+
+Open `http://localhost:8000/` in the browser. A rendered image should appear. No system-wide installation of the production fonts and no `NANPA_FONT_DIR` setting are required for this normal package-consumer path.
+
+---
+
+## TypeScript: first working browser application
+
+The TypeScript reference provides a typed facade over the bundled canonical JavaScript runtime. The supplied browser-consumer pattern uses the package's already-built `dist/index.js`, so **you do not compile the reference implementation or the browser demo before running this Hello World**.
+
+### Requirements
+
+- Node.js 18 or newer
+- npm
+- a modern browser
+- Python 3 only if you use the simple static-server command shown below
+
+### 1. Extract and optionally validate the reference package
+
+```bash
+unzip nanpa-linja-n-typescript-reference-for-protocol-v1.0.0.zip
+cd /absolute/path/to/extracted-typescript-reference
+npm install
+./tools/run_typescript_regression.sh
+```
+
+### 2. Create an external application
+
+```bash
+mkdir hello-nanpa-typescript
+cd hello-nanpa-typescript
+npm init -y
+npm install /absolute/path/to/extracted-typescript-reference
+```
+
+Create `index.html`:
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>nanpa-linja-n TypeScript Hello World</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "nanpa-linja-n-typescript":
+        "./node_modules/nanpa-linja-n-typescript/dist/index.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <h1>nanpa-linja-n TypeScript reference</h1>
+  <pre id="textOutput"></pre>
+  <div id="output"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
+```
+
+Create `app.js`:
+
+```js
+import { NanpaLinjaN } from "nanpa-linja-n-typescript";
+
+const nanpa = await NanpaLinjaN.create();
+
+const text =
+  "toki&pona 123 456 zz pi(telo lete) te tomo to";
+
+const parserOptions = {
+  abbreviateNumericCartouches: true,
+  preserveNumericCartoucheBreaksInAbbreviation: true,
+};
+
+const parsed = await nanpa.parse(text, { parser: parserOptions });
+
+const outputs = {
+  source: nanpa.astToText(parsed.ast, {
+    numericOutput: "source", parser: parserOptions,
+  }),
+  properName: nanpa.astToText(parsed.ast, {
+    numericOutput: "properName", parser: parserOptions,
+  }),
+  hashTilde: nanpa.astToText(parsed.ast, {
+    numericOutput: "#~", parser: parserOptions,
+  }),
+  fullCartouche: nanpa.astToText(parsed.ast, {
+    numericOutput: "cartouche",
+    parser: { ...parserOptions, abbreviateNumericCartouches: false },
+  }),
+  abbreviatedCartouche: nanpa.astToText(parsed.ast, {
+    numericOutput: "cartouche",
+    parser: { ...parserOptions, abbreviateNumericCartouches: true },
+  }),
+  nasinNanpaPona: nanpa.astToText(parsed.ast, {
+    numericOutput: "cartouche",
+    parser: {
+      ...parserOptions,
+      nasinNanpaPona: true,
+      abbreviateNumericCartouches: false,
+    },
+  }),
+};
+
+document.getElementById("textOutput").textContent =
+  Object.entries(outputs)
+    .map(([name, value]) => `${name}:\n${value}`)
+    .join("\n\n");
+
+const result = await nanpa.renderToPng(text, {
+  font: "linjaPona",
+  fontSize: 56,
+  paddingPx: 18,
+  parser: parserOptions,
+});
+
+const image = document.createElement("img");
+image.src = URL.createObjectURL(result.blob);
+image.alt = text;
+document.getElementById("output").append(image);
+```
+
+This browser consumer uses the built TypeScript facade and demonstrates the same AST-to-text output modes as the canonical JavaScript reference. The code is JavaScript importing the compiled typed package; an application written in TypeScript can use the same methods with the package's exported types.
+
+### 3. Run it
+
+```bash
+python3 -m http.server 8000
+```
+
+Open `http://localhost:8000/`. The import map deliberately points at `dist/index.js`; there is no separate client-side TypeScript build step for this supplied browser-consumer pattern.
+
+---
+
+## Node.js: first working command-line application
+
+The Node.js reference runs the canonical JavaScript parser/renderer directly under Node.js. Its production font and vector resources are bundled with the package.
+
+### Requirements
+
+- Node.js 20 or newer
+- npm
+- a platform supported by the package's `skia-canvas` dependency
+
+### 1. Extract and optionally validate the reference package
+
+```bash
+unzip nanpa-linja-n-nodejs-reference-for-protocol-v1.0.0.zip
+cd /absolute/path/to/extracted-nodejs-reference
+npm install
+./tools/run_nodejs_regression.sh
+```
+
+### 2. Create an external application
+
+```bash
+mkdir hello-nanpa-node
+cd hello-nanpa-node
+npm init -y
+npm install /absolute/path/to/extracted-nodejs-reference
+```
+
+Create `hello.mjs`:
+
+```js
+import { writeFile } from "node:fs/promises";
+import { NanpaLinjaN }
+  from "nanpa-linja-n-nodejs-reference";
+
+const nanpa = await NanpaLinjaN.create();
+
+try {
+  const text =
+    "toki&pona 123 456 zz pi(telo lete) te tomo to";
+
+  const parserOptions = {
+    abbreviateNumericCartouches: true,
+    preserveNumericCartoucheBreaksInAbbreviation: true,
+  };
+
+  const parsed = await nanpa.parse(text, { parser: parserOptions });
+
+  const modes = [
+    ["source", { numericOutput: "source", parser: parserOptions }],
+    ["properName", { numericOutput: "properName", parser: parserOptions }],
+    ["#~", { numericOutput: "#~", parser: parserOptions }],
+    ["full cartouche", {
+      numericOutput: "cartouche",
+      parser: { ...parserOptions, abbreviateNumericCartouches: false },
+    }],
+    ["abbreviated cartouche", {
+      numericOutput: "cartouche",
+      parser: { ...parserOptions, abbreviateNumericCartouches: true },
+    }],
+    ["nasin nanpa pona", {
+      numericOutput: "cartouche",
+      parser: {
+        ...parserOptions,
+        nasinNanpaPona: true,
+        abbreviateNumericCartouches: false,
+      },
+    }],
+  ];
+
+  for (const [label, options] of modes) {
+    console.log(`\n${label.toUpperCase()}`);
+    console.log(nanpa.astToText(parsed.ast, options));
+  }
+
+  const png = await nanpa.renderToPng(text, {
+    font: "linjaPona",
+    fontSize: 56,
+    paddingPx: 18,
+    parser: parserOptions,
+  });
+
+  await writeFile("hello.png", png.bytes);
+  console.log(`\nwrote hello.png (${png.bytes.length} bytes)`);
+} finally {
+  await nanpa.destroy();
+}
+```
+
+The six `astToText` calls all reuse the same parsed document AST. This makes the example useful both as a first renderer program and as a quick demonstration of the alternate textual representations that the full-document API can emit.
+
+### 3. Run it
+
+```bash
+node hello.mjs
+```
+
+Success creates `hello.png` in the current directory. No application-side font directory is required for the normal bundled-resource path.
+
+---
+
+## Python: first working application
+
+The Python reference is a native Python implementation. Install the extracted reference as a normal local Python package; the installed package supplies its production font resources.
+
+### Requirements
+
+- Python 3.10 or newer
+- the native/system libraries required by the Python rendering dependencies described later in this section and by the package regression suite
+
+### 1. Extract the reference package
+
+```bash
+unzip nanpa-linja-n-python-reference-for-protocol-v1.0.0.zip
+```
+
+To validate the reference itself from its package directory:
+
+```bash
+cd /absolute/path/to/extracted-python-reference
+python3 -m pip install -e .
+./tools/run_python_regression.sh
+```
+
+### 2. Create an isolated external application
+
+```bash
+mkdir hello-nanpa-python
+cd hello-nanpa-python
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install /absolute/path/to/extracted-python-reference
+```
+
+Create `hello.py`:
+
+```python
+from pathlib import Path
+from nanpa_linja_n import NanpaLinjaN
+
+nanpa = NanpaLinjaN.create()
+
+text = "toki&pona 123 456 zz pi(telo lete) te tomo to"
+
+parser_options = {
+    "abbreviateNumericCartouches": True,
+    "preserveNumericCartoucheBreaksInAbbreviation": True,
+}
+
+# Parse the full document once.
+ast = nanpa.parse_input(text, {"parser": parser_options})
+
+def show(label, options):
+    print(f"\n{label}")
+    print(nanpa.ast_to_text(ast, options))
+
+show("SOURCE", {
+    "numericOutput": "source",
+    "parser": parser_options,
+})
+show("PROPER NAME", {
+    "numericOutput": "properName",
+    "parser": parser_options,
+})
+show("#~", {
+    "numericOutput": "#~",
+    "parser": parser_options,
+})
+show("FULL CARTOUCHE", {
+    "numericOutput": "cartouche",
+    "parser": {
+        **parser_options,
+        "abbreviateNumericCartouches": False,
+    },
+})
+show("ABBREVIATED CARTOUCHE", {
+    "numericOutput": "cartouche",
+    "parser": {
+        **parser_options,
+        "abbreviateNumericCartouches": True,
+    },
+})
+show("NASIN NANPA PONA", {
+    "numericOutput": "cartouche",
+    "parser": {
+        **parser_options,
+        "nasinNanpaPona": True,
+        "abbreviateNumericCartouches": False,
+    },
+})
+
+png = nanpa.render_full_to_png(
+    text,
+    {
+        "font": "linjaPona",
+        "fontSize": 56,
+        "paddingPx": 18,
+        "parser": parser_options,
+    },
+)
+
+Path("hello.png").write_bytes(png)
+print(f"\nwrote hello.png ({len(png)} bytes)")
+```
+
+Python's native names are `parse_input(...)` and `ast_to_text(...)`; JavaScript-style aliases such as `parseInput` and `astToText` are also available. The `numericOutput` values shown above have the same meaning as in the JavaScript facade.
+
+### 3. Run it
+
+```bash
+python hello.py
+```
+
+Success creates `hello.png`. Normal installed-package use does not require `NANPA_FONT_DIR`; that environment variable is used by specific audit tooling, not by this basic consumer path.
+
+---
+
+## Rust: first working application
+
+The Rust reference is a native Rust crate. Its production manifest and font bytes are embedded at compile time, so an external consumer only needs a Cargo dependency on the extracted reference package.
+
+### Requirements
+
+- a Rust toolchain with Cargo and Edition 2024 support
+
+Python 3 is used by some reference-package integrity/regression helpers, but it is not required merely to compile the external Rust consumer below.
+
+### 1. Extract and optionally validate the reference package
+
+```bash
+unzip nanpa-linja-n-rust-reference-for-protocol-v1.0.0.zip
+cd /absolute/path/to/extracted-rust-reference
+./tools/run_rust_regression.sh
+```
+
+### 2. Create an external Cargo application
+
+```bash
+mkdir hello-nanpa-rust
+cd hello-nanpa-rust
+cargo init --bin .
+```
+
+Add the reference crate to `Cargo.toml`:
+
+```toml
+[dependencies]
+nanpa-linja-n-rust = { path = "/absolute/path/to/extracted-rust-reference" }
+```
+
+Replace `src/main.rs` with:
+
+```rust
+use std::error::Error;
+use std::fs;
+
+use nanpa_linja_n_rust::facade::NanpaLinjaN;
+use nanpa_linja_n_rust::{DocumentAst, FullRenderOptions};
+
+fn print_mode(
+    nanpa: &NanpaLinjaN,
+    ast: &DocumentAst,
+    base: &FullRenderOptions,
+    label: &str,
+    numeric_output: &str,
+    abbreviate: bool,
+    nasin_nanpa_pona: bool,
+) -> Result<(), Box<dyn Error>> {
+    let mut options = base.clone();
+    options.numeric_output = numeric_output.to_string();
+    options.parser.abbreviate_numeric_cartouches = abbreviate;
+    options.parser.nasin_nanpa_pona = nasin_nanpa_pona;
+
+    println!(
+        "\n{label}\n{}",
+        nanpa.ast_to_text_with_options(ast, &options)?
+    );
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let nanpa = NanpaLinjaN::create()?;
+
+    let text =
+        "toki&pona 123 456 zz pi(telo lete) te tomo to";
+
+    let mut base = FullRenderOptions::default();
+    base.font = "linjaPona".to_string();
+    base.font_size = 56.0;
+    base.padding_px = 18;
+    base.parser.abbreviate_numeric_cartouches = true;
+    base.parser.preserve_numeric_cartouche_breaks = true;
+
+    let ast = nanpa.parse_input(text, &base);
+
+    print_mode(&nanpa, &ast, &base, "SOURCE", "source", true, false)?;
+    print_mode(&nanpa, &ast, &base, "PROPER NAME", "properName", true, false)?;
+    print_mode(&nanpa, &ast, &base, "#~", "#~", true, false)?;
+    print_mode(&nanpa, &ast, &base, "FULL CARTOUCHE", "cartouche", false, false)?;
+    print_mode(&nanpa, &ast, &base, "ABBREVIATED CARTOUCHE", "cartouche", true, false)?;
+    print_mode(&nanpa, &ast, &base, "NASIN NANPA PONA", "cartouche", false, true)?;
+
+    let png = nanpa.render_full_to_png(text, &base)?;
+    fs::write("hello.png", &png)?;
+    println!("\nwrote hello.png ({} bytes)", png.len());
+
+    Ok(())
+}
+```
+
+Rust uses `ast_to_text_with_options(...)` when the serialized numeric representation needs to be selected. The simpler `ast_to_text(...)`/`astToText(...)` aliases remain useful for ordinary source reconstruction.
+
+### 3. Build and run it
+
+```bash
+cargo tree
+cargo run --release
+```
+
+Success creates `hello.png`. Do not copy the font files into the consumer project and do not set `NANPA_FONT_DIR`; the Rust reference embeds them when the reference crate is built.
+
+---
+
+## Go: first working application
+
+The Go reference uses module path `nanpa-linja-n.com`; application code imports the public package as `nanpa-linja-n.com/nanpa`. Production font resources are embedded in the reference module and materialized internally when needed by native rendering.
+
+### Requirements
+
+- Go 1.18 or newer
+- for graphical PNG/SVG/PDF rendering on Linux: cgo plus Pango/PangoCairo, HarfBuzz, Cairo, Fontconfig, and GLib/GObject runtime/development libraries appropriate to the system
+
+### 1. Extract and optionally validate the reference package
+
+```bash
+unzip nanpa-linja-n-go-reference-for-protocol-v1.0.0.zip
+cd /absolute/path/to/extracted-go-reference
+./tools/run_go_regression.sh
+```
+
+### 2. Create an external Go module
+
+```bash
+mkdir hello-nanpa-go
+cd hello-nanpa-go
+go mod init hello-nanpa
+go mod edit -require=nanpa-linja-n.com@v0.0.0
+go mod edit -replace=nanpa-linja-n.com=/absolute/path/to/extracted-go-reference
+```
+
+Create `main.go`:
+
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+
+    nanpa "nanpa-linja-n.com/nanpa"
+)
+
+func main() {
+    renderer, err := nanpa.CreateNanpaLinjaN()
+    if err != nil { panic(err) }
+    defer renderer.Close()
+
+    text := "toki&pona 123 456 zz pi(telo lete) te tomo to"
+
+    base := nanpa.DefaultFullRenderOptions()
+    base.Font = "linjaPona"
+    base.FontSize = 56
+    base.PaddingPx = 18
+    base.Parser.AbbreviateNumericCartouches = true
+    base.Parser.PreserveNumericCartoucheBreaks = true
+
+    ast := renderer.ParseInput(text, base)
+
+    printMode := func(label, mode string, mutate func(*nanpa.FullRenderOptions)) {
+        opts := base
+        opts.NumericOutput = mode
+        if mutate != nil { mutate(&opts) }
+
+        value, err := renderer.AstToText(ast, opts)
+        if err != nil { panic(err) }
+        fmt.Printf("\n%s\n%s\n", label, value)
+    }
+
+    printMode("SOURCE", "source", nil)
+    printMode("PROPER NAME", "properName", nil)
+    printMode("#~", "#~", nil)
+    printMode("FULL CARTOUCHE", "cartouche", func(o *nanpa.FullRenderOptions) {
+        o.Parser.AbbreviateNumericCartouches = false
+    })
+    printMode("ABBREVIATED CARTOUCHE", "cartouche", func(o *nanpa.FullRenderOptions) {
+        o.Parser.AbbreviateNumericCartouches = true
+    })
+    printMode("NASIN NANPA PONA", "cartouche", func(o *nanpa.FullRenderOptions) {
+        o.Parser.NasinNanpaPona = true
+        o.Parser.AbbreviateNumericCartouches = false
+    })
+
+    png, err := renderer.RenderFullToPNG(text, base)
+    if err != nil { panic(err) }
+
+    if err := os.WriteFile("hello.png", png, 0644); err != nil {
+        panic(err)
+    }
+    fmt.Printf("\nwrote hello.png (%d bytes)\n", len(png))
+}
+```
+
+Go stores the requested AST serialization mode in `FullRenderOptions.NumericOutput`; the parser fields determine whether `cartouche` output is full, abbreviated, or converted through `nasinNanpaPona`.
+
+### 3. Run it
+
+```bash
+go mod tidy
+go run .
+```
+
+You can also verify that the consumer builds as a standalone executable:
+
+```bash
+go build -o hello-nanpa .
+```
+
+Success creates `hello.png`. No `NANPA_FONT_DIR` setting is used by the Go reference.
+
+---
+
+## Dart: first working application
+
+The Dart reference is a native Dart package. Core parsing is pure Dart; production graphical rendering uses the native Pango/HarfBuzz/Cairo/Fontconfig stack. Flutter is not required.
+
+### Requirements
+
+- Dart SDK 3.3 or newer
+- Pango/HarfBuzz, Cairo, and Fontconfig runtime libraries for production graphical rendering
+
+### 1. Extract and optionally validate the reference package
+
+```bash
+unzip nanpa-linja-n-dart-reference-for-protocol-v1.0.0.zip
+cd /absolute/path/to/extracted-dart-reference
+dart pub get
+./tools/run_dart_regression.sh
+```
+
+### 2. Create an external Dart application
+
+```bash
+mkdir -p hello-nanpa-dart/bin
+cd hello-nanpa-dart
+```
+
+Create `pubspec.yaml`:
+
+```yaml
+name: hello_nanpa
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  nanpa_linja_n:
+    path: /absolute/path/to/extracted-dart-reference
+```
+
+Create `bin/main.dart`:
+
+```dart
+import 'dart:io';
+import 'package:nanpa_linja_n/nanpa_linja_n.dart';
+
+void main() {
+  final nanpa = NanpaLinjaN.create();
+
+  const text =
+      'toki&pona 123 456 zz pi(telo lete) te tomo to';
+
+  const baseParser = FullParserOptions(
+    abbreviateNumericCartouches: true,
+    preserveNumericCartoucheBreaks: true,
+  );
+
+  final ast = nanpa.parseInput(
+    text,
+    options: const FullRenderOptions(parser: baseParser),
+  );
+
+  void show(String label, FullRenderOptions options) {
+    print('\n$label');
+    print(nanpa.astToText(ast, options: options));
+  }
+
+  show('SOURCE', const FullRenderOptions(
+    numericOutput: 'source', parser: baseParser,
+  ));
+  show('PROPER NAME', const FullRenderOptions(
+    numericOutput: 'properName', parser: baseParser,
+  ));
+  show('#~', const FullRenderOptions(
+    numericOutput: '#~', parser: baseParser,
+  ));
+  show('FULL CARTOUCHE', const FullRenderOptions(
+    numericOutput: 'cartouche',
+    parser: FullParserOptions(
+      abbreviateNumericCartouches: false,
+      preserveNumericCartoucheBreaks: true,
+    ),
+  ));
+  show('ABBREVIATED CARTOUCHE', const FullRenderOptions(
+    numericOutput: 'cartouche',
+    parser: FullParserOptions(
+      abbreviateNumericCartouches: true,
+      preserveNumericCartoucheBreaks: true,
+    ),
+  ));
+  show('NASIN NANPA PONA', const FullRenderOptions(
+    numericOutput: 'cartouche',
+    parser: FullParserOptions(nasinNanpaPona: true),
+  ));
+
+  final png = nanpa.renderFullToPng(
+    text,
+    options: const FullRenderOptions(
+      font: 'linjaPona',
+      fontSize: 56,
+      paddingPx: 18,
+      parser: baseParser,
+    ),
+  );
+
+  File('hello.png').writeAsBytesSync(png);
+  print('\nwrote hello.png (${png.length} bytes)');
+}
+```
+
+Dart's `FullRenderOptions.numericOutput` selects the AST serialization form. Its AST values are immutable, but the same parsed AST can be serialized repeatedly with different option objects as shown above.
+
+### 3. Resolve the local dependency and run it
+
+```bash
+dart pub get
+dart run bin/main.dart
+```
+
+Success creates `hello.png`. The reference discovers its packaged production assets; no `NANPA_FONT_DIR` setting is required for this consumer path.
+
+---
+
+## Java: first working application
+
+The Java reference targets Java 21. For an external standalone consumer, build the reference classes into a JAR and include the package's `resources/fonts.zip` as `com/nanpalinjan/fonts.zip` inside that JAR. The supplied `HelloWorld` pattern can then call `NanpaLinjaN.create()` without a machine-specific font path.
+
+### Requirements
+
+- JDK 21
+- a POSIX-like shell for the exact commands below
+
+Maven is optional; the following path uses `javac`, `jar`, and `java` directly so that every required step is explicit.
+
+### 1. Extract and optionally validate the reference package
+
+```bash
+unzip nanpa-linja-n-java-reference-for-protocol-v1.0.0.zip
+cd /absolute/path/to/extracted-java-reference
+./tools/run_java_regression.sh
+```
+
+### 2. Build a reusable reference JAR
+
+From any working directory:
+
+```bash
+REF=/absolute/path/to/extracted-java-reference
+BUILD=/tmp/nanpa-java-build
+
+rm -rf "$BUILD"
+mkdir -p "$BUILD/classes/com/nanpalinjan"
+
+find "$REF/src/main/java" -name '*.java' -print0 \
+  | xargs -0 javac --release 21 -d "$BUILD/classes"
+
+cp "$REF/resources/fonts.zip" \
+  "$BUILD/classes/com/nanpalinjan/fonts.zip"
+
+jar --create \
+  --file "$BUILD/nanpa-linja-n-java-1.0.0.jar" \
+  -C "$BUILD/classes" .
+```
+
+The important resource rule is that `fonts.zip` must be stored in the JAR at:
+
+```text
+com/nanpalinjan/fonts.zip
+```
+
+### 3. Create the external Hello World
+
+```bash
+mkdir hello-nanpa-java
+cd hello-nanpa-java
+```
+
+Create `HelloWorld.java`:
+
+```java
+import com.nanpalinjan.*;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
+public class HelloWorld {
+    public static void main(String[] args) throws Exception {
+        String text =
+            "toki&pona 123 456 zz pi(telo lete) te tomo to";
+
+        ParseOptions parserOptions = ParseOptions.fromMap(Map.of(
+            "abbreviateNumericCartouches", true,
+            "preserveNumericCartoucheBreaksInAbbreviation", true
+        ));
+
+        RenderOptions renderOptions = new RenderOptions()
+            .withFont("linjaPona")
+            .withFontSize(56)
+            .withPaddingPx(18)
+            .withParser(parserOptions);
+
+        try (NanpaLinjaN nanpa = NanpaLinjaN.create()) {
+            // Parse the complete document and reconstruct its source.
+            DocumentAst ast = nanpa.parseInput(text, renderOptions);
+            String source = nanpa.astToText(ast);
+
+            System.out.println("\nSOURCE");
+            System.out.println(source);
+
+            // The numeric parser exposes the alternate representations for
+            // an individual recognized number.
+            FacadeParseResult number = nanpa.parse("123");
+            System.out.println("\nPARSE 123");
+            System.out.println(number);
+
+            // Render the original full document to PNG.
+            PngRenderResult png = nanpa.renderToPng(text, renderOptions);
+            Files.write(Path.of("hello.png"), png.bytes());
+
+            System.out.println(
+                "\nwrote hello.png (" + png.bytes().length + " bytes)"
+            );
+        }
+    }
+}
+```
+
+The supplied Java consumer establishes `parseInput(...) -> DocumentAst -> astToText(...)` source reconstruction and the Java numeric parse result. The uploaded Java example does not establish the Java call signature for selecting `properName`, `#~`, full-cartouche, abbreviated-cartouche, or `nasin nanpa pona` directly through `astToText`; those signatures are therefore not invented in this README. When the Java consumer example is updated to exercise those modes, this section should mirror that tested syntax just as the other language sections do.
+
+### 4. Compile and run the external application
+
+```bash
+JAR=/tmp/nanpa-java-build/nanpa-linja-n-java-1.0.0.jar
+
+javac --release 21 -cp "$JAR" HelloWorld.java
+java -Djava.awt.headless=true -cp ".:$JAR" HelloWorld
+```
+
+Success creates `hello.png`. With `fonts.zip` embedded as shown above, this Hello World does not need `NANPA_FONT_DIR` or a system-installed font family.
+
+## `astToText` output modes used in the examples
+
+The language examples above deliberately use one full-document AST and then serialize it in multiple ways. The canonical modes demonstrated by the bindings that expose the current option surface are:
+
+| `numericOutput` / mode | Result |
+| --- | --- |
+| `source` | Preserve/reconstruct the source representation retained by the AST. |
+| `properName` | Replace recognized numeric structures with their nanpa-linja-n proper-name representation. |
+| `#~` | Replace recognized numeric structures with their compact `#~` number-code representation where one exists; unsupported forms preserve/fall back according to the binding/profile. |
+| `cartouche` + abbreviation off | Emit full numeric-cartouche source. |
+| `cartouche` + abbreviation on | Emit abbreviated numeric-cartouche source. |
+| `cartouche` + `nasinNanpaPona` | Emit the nasin nanpa pona textual representation selected by that parser option. |
+
+These operations serialize the AST back to text; they are not separate rendering engines. The resulting text can be inspected, edited, stored, or passed back into the normal renderer.
 
 ## Repository structure
 
@@ -53,174 +1008,6 @@ nanpa-linja-n_reference_libraries_v1.0.0/
 
 The native implementations reproduce protocol and rendering behavior using platform-appropriate graphics/text APIs. They are not expected to have source-code structure identical to JavaScript, but their observable parser, render-plan, cartouche/tally, and output behavior is qualified against the protocol and the frozen JavaScript-derived renderer profile.
 
-## Protocol v1.0.0
-
-Extract the protocol release and verify it before using a reference implementation as a compatibility target:
-
-```bash
-unzip nanpa-linja-n-protocol-v1.0.0.zip
-cd nanpa-linja-n-protocol-v1.0.0
-python verify_release.py
-```
-
-Primary protocol documents:
-
-```text
-SPEC.md
-API.md
-CONFORMANCE.md
-RENDERING-PROFILE.md
-VERSIONING.md
-README.md
-```
-
-Use `SPEC.md` as the primary protocol specification. The bundled language-neutral conformance corpus is the compatibility target.
-
-Current reference packages target:
-
-```text
-nanpa-linja-n Protocol v1.0.0
-Conformance corpus v1.0.2
-1017 frozen protocol regression checks
-```
-
-## Fonts: required files, manifest and directory layout
-
-A first-time user does **not** select a font by `.ttf`/`.otf` filename and does not need an operating-system font family called `nasinNanpa`, `linjaPona`, and so on. The public `font` option is a logical **manifest `fontKey`**. The manifest tells the renderer which real files, font families, adapters and tally rules belong to that key.
-
-The eight production font keys are:
-
-```text
-nasinNanpa
-sitelenSeliKiwen
-fairfaxHd
-fairfaxPonaHd
-linjaPona
-linjaSike
-nasinSitelenPuMono
-linjaLipamanka
-```
-
-### What one manifest entry means
-
-A production manifest entry normally defines these roles:
-
-| Manifest field | Purpose |
-| --- | --- |
-| `fontKey` | Public logical name passed to the library, for example `nasinNanpa`. |
-| `baseFamily` / `baseFilename` | Main sitelen pona face used for ordinary glyph text and ordinary cartouches. |
-| `companionFamily` / `companionFilename` | nanpa-linja-n companion face used for numeric cartouches. |
-| `literalCartoucheFamily` | Face used for exact literal/Latin cartouche content such as `["HELLO"]`. |
-| `literalCartoucheFilename` / `literalCartoucheUrl` | Optional separate file for that literal-cartouche face. |
-| `parserMode` | Text grammar appropriate for the selected font. Normally selected automatically with the font pair. |
-| `renderAdapterId` / `renderAdapterSettings` | Font-specific translation needed before shaping, for fonts whose native encoding differs from canonical UCSUR input. |
-| `settings` | Font-specific renderer settings, including manual-vs-UCSUR tally behavior and cartouche adjustments. |
-
-A call such as:
-
-```text
-font = nasinNanpa
-```
-
-therefore means: **find the manifest record whose `fontKey` is `nasinNanpa`, then load/use the faces and renderer settings named by that record**.
-
-### What happens when `literalCartoucheFilename` is not defined
-
-A separate literal-cartouche font file is **optional**.
-
-The production behavior is:
-
-1. If `literalCartoucheFilename`/`literalCartoucheUrl` is supplied, load that separate face and use `literalCartoucheFamily` for literal cartouches.
-2. If no separate literal file is supplied but `literalCartoucheFamily` names the same family as the base face, reuse the already-loaded base font. No third file is required.
-3. If `literalCartoucheFamily` itself is omitted, the renderer falls back to the base/text family for literal cartouches.
-
-For a **custom manifest**, do not name a different `literalCartoucheFamily` unless that family is otherwise available to the renderer. The portable approach is either to reuse the base family or provide an explicit literal-cartouche file/URL.
-
-The current production set uses these rules:
-
-| `fontKey` | Base file | Numeric companion file | Literal-cartouche source |
-| --- | --- | --- | --- |
-| `nasinNanpa` | `nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf` | `nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
-| `sitelenSeliKiwen` | `sitelenselikiwenjuniko-latin-ligatures.ttf` | `sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf` | reuses base family `SSK-Juniko` |
-| `fairfaxHd` | `FairfaxHD.ttf` | `FairfaxHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf` | reuses base family `fairfaxHd` |
-| `fairfaxPonaHd` | `FairfaxPonaHD.ttf` | `FairfaxPonaHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf` | reuses base family `fairfaxPonaHd` |
-| `linjaPona` | `linja-pona.otf` | `linja-pona-nanpa-linja-n-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
-| `linjaSike` | `linja-sike-5-cartouche-fix.otf` | `linja-sike-5-nanpa-linja-n-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
-| `nasinSitelenPuMono` | `NasinSitelenPuMono.otf` | `NasinSitelenPuMono-nanpa-linja-n-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
-| `linjaLipamanka` | `linjalipamanka-normal-cartouche-fix.otf` | `linjalipamanka-normal-nanpa-linja-n-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
-
-Because the same literal face is shared, the complete eight-font production profile requires **17 distinct manifest-referenced font binaries**, not 24.
-
-### Expected portable `fonts/` directory
-
-For packages/tools that load production fonts from a filesystem directory, a complete canonical font directory can be laid out as follows:
-
-```text
-fonts/
-├── preloaded-font-pairs.manifest.json
-├── nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf
-├── nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf
-├── nasin-nanpa-4.0.2-Helvetica.otf
-├── sitelenselikiwenjuniko-latin-ligatures.ttf
-├── sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
-├── FairfaxHD.ttf
-├── FairfaxHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
-├── FairfaxPonaHD.ttf
-├── FairfaxPonaHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
-├── linja-pona.otf
-├── linja-pona-nanpa-linja-n-nasin-e-en-ss1223.otf
-├── linja-sike-5-cartouche-fix.otf
-├── linja-sike-5-nanpa-linja-n-nasin-e-en-ss1223.otf
-├── NasinSitelenPuMono.otf
-├── NasinSitelenPuMono-nanpa-linja-n-nasin-e-en-ss1223.otf
-├── linjalipamanka-normal-cartouche-fix.otf
-└── linjalipamanka-normal-nanpa-linja-n-nasin-e-en-ss1223.otf
-```
-
-Some packages call the manifest `production-font-pairs.manifest.json` instead of `preloaded-font-pairs.manifest.json`; use the filename expected by that package. Rust and Go embed the equivalent manifest and font bytes at build time, and Java bundles the manifest but expects the actual font binaries from the configured font directory. Each language section below states its exact behavior.
-
-### Additional support fonts
-
-The canonical browser/vector asset set also contains these support faces:
-
-```text
-PatrickHand-Regular.ttf
-LiberationSans-Regular.ttf
-LiberationSerif-Regular.ttf
-LiberationMono-Regular.ttf
-```
-
-They are **not additional production `fontKey` pairs**. `PatrickHand-Regular.ttf` is used by the canonical/full renderer for literal or unknown Latin text where that role is required. The Liberation faces provide deterministic vector-export substitutes for common Latin/system families such as Arial/system-ui, Times New Roman and Courier New.
-
-When copying the canonical JavaScript/Node/Python font asset directory wholesale, keep these files with it. Native implementations that do not use those browser/vector fallback roles do not necessarily require all four support faces; their language sections and regression scripts are authoritative for their runtime requirements.
-
-### Manual-tally versus font-glyph tally configurations
-
-Five production configurations use **renderer-drawn manual tallies**:
-
-```text
-nasinNanpa
-linjaPona
-linjaSike
-nasinSitelenPuMono
-linjaLipamanka
-```
-
-For those five configurations, **U+F199E must not be inserted into the shaped font run**. The renderer owns the tally geometry. When halo is enabled, the tally-group halo backing is painted first and the normal foreground tally strokes are painted on top.
-
-The other three production configurations use their native UCSUR U+F199E tally glyph.
-
-### First-time setup rule
-
-For a basic application, do not manually choose `baseFilename`, `companionFilename`, or tally mode. Do this instead:
-
-1. create/open the language facade;
-2. make sure that implementation can find its production manifest and font assets as described in its language section;
-3. pass one of the eight `fontKey` values, for example `nasinNanpa`;
-4. parse or render text.
-
-The manifest is the configuration contract between the font key and the renderer.
-
 ## Common regression and visual-audit workflow
 
 Every reference package includes a language-specific regression wrapper and the same two top-level visual audit commands:
@@ -243,7 +1030,7 @@ font = nasinNanpa
 
 therefore means “use the production manifest entry whose `fontKey` is `nasinNanpa`”; it does **not** mean “ask the operating system for a font family named `nasinNanpa`”. The renderer then uses the manifest's `baseFilename`/`baseFamily` for normal sitelen pona text and ordinary-cartouche work, the `companionFilename`/`companionFamily` for nanpa-linja-n numeric cartouches, and any additional manifest settings required by that font pair.
 
-The physical source of those font files differs by language. Some packages load files from a bundled asset directory, Rust and Go embed them into the compiled program, Dart discovers its packaged asset directory at runtime, and Java deliberately keeps the font binaries external. **For that reason the exact font-path setup is repeated in every language section below.**
+The physical source of those font files differs by language. Some packages load files from a bundled asset directory, Rust and Go embed them into the compiled program, Dart discovers its packaged asset directory at runtime, and Java deliberately keeps the font binaries external. **For that reason the exact font-path setup is summarized in every language section above.**
 
 ### Numeric visual audit
 
@@ -281,6 +1068,16 @@ The ordinary audit uses `[jan pona]` and `[jan pona,,]`. For the five manual-tal
 - U+F199E is not shaped for a manual-tally font.
 
 The visual exporters are inspection tools. They do not replace the automated protocol/full-renderer regression suite.
+
+## Release qualification checklist
+
+Before calling a reference archive release-ready:
+
+1. Run its `./tools/run_<language>_regression.sh` wrapper and require a clean PASS.
+2. Run `./tools/export_visual_pngs.sh` and inspect the numeric production-font matrix.
+3. Run `./tools/export_cartouche_audit.sh` and inspect all eight ordinary-cartouche contact sheets.
+4. Pay particular attention to the five renderer-manual tally fonts and compare halo/non-halo placement.
+5. Do not substitute the visual exporters for the automated regression suite, and do not treat a partial/core-only test as a complete production/full-renderer qualification.
 
 ## Parsing, document ASTs, and `astToText`
 
@@ -440,777 +1237,6 @@ This API is deliberately additive: existing applications that render source text
 
 ---
 
-## JavaScript reference implementation
-
-The JavaScript package is the canonical browser renderer/parser reference.
-
-### Requirements
-
-- Node.js 20 or newer
-- npm
-- a Chromium-family browser for browser/rendering regression
-
-Set `NANPA_CHROMIUM=/absolute/path/to/browser` when the browser is not discoverable automatically.
-
-### Install and test
-
-```bash
-unzip nanpa-linja-n-javascript-reference-for-protocol-v1.0.0.zip
-cd nanpa-linja-n-browser-font-regression-v0.1.3-reference
-npm install
-
-# The browser regression uses the bundled assets directly. The two visual
-# exporters require NANPA_FONT_DIR, so point it at this package's bundled set.
-export NANPA_FONT_DIR="$PWD/assets/fonts"
-
-./tools/run_javascript_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-The regression wrapper runs `npm test`. Useful lower-level checks include:
-
-```bash
-npm run verify:references
-npm run browser:which
-npm run test:browser
-npm run test:assets
-npm run test:svg
-```
-
-The canonical JavaScript renderer/parser source remains:
-
-```text
-reference/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js
-```
-
-Do not rename that file when comparing or maintaining reference implementations.
-
-### Font files and font-key resolution
-
-The JavaScript archive contains the production font files under `assets/fonts/` together with `assets/fonts/preloaded-font-pairs.manifest.json`. `NanpaLinjaN.create()` uses that manifest by default, relative to the module. The browser font-pair controller turns each manifest record into a preset and registers the referenced base/companion/literal faces with the browser `FontFace` API.
-
-When code specifies:
-
-```js
-{ font: 'nasinNanpa' }
-```
-
-the facade looks up the manifest record whose `fontKey` is `nasinNanpa`. The manifest then supplies the actual font families and files; the application does not need those fonts installed system-wide. The same applies to `linjaPona`, `linjaSike`, and the other production keys.
-
-For the supplied visual-audit scripts, `NANPA_FONT_DIR` is an explicit filesystem source for the same files. When testing the untouched archive, use:
-
-```bash
-export NANPA_FONT_DIR="$PWD/assets/fonts"
-```
-
-### Basic usage
-
-```js
-import { NanpaLinjaN } from './src/nanpa-linja-n.js';
-
-const nanpa = await NanpaLinjaN.create();
-
-// Parse when the application needs the document structure.
-const parsed = await nanpa.parse(
-  'mi toki e ni: [jan pona,,] "Hello"'
-);
-for (const line of parsed.ast.lines) {
-  console.log(line.children.map(segment => ({
-    kind: segment.kind,
-    value: segment.value,
-  })));
-}
-
-// Rendering itself does not require a separate parse call.
-const canvas = await nanpa.renderToCanvas('[jan pona,,]', {
-  font: 'linjaPona',
-  fontSize: 56,
-});
-document.body.append(canvas.canvas);
-
-const png = await nanpa.renderToPng('123.45', {
-  font: 'linjaPona',
-});
-console.log(png.width, png.height, png.bytes);
-```
-
-Main facade methods include:
-
-```text
-NanpaLinjaN.create()
-parse()
-astToText()
-buildRenderPlan()
-render()
-renderToCanvas()
-renderToPng()
-renderToSvg()
-renderToPdf()
-listFonts()
-getFontInfo()
-```
-
----
-
-## TypeScript reference implementation
-
-The TypeScript package is a strongly typed facade around the bundled canonical JavaScript production runtime. It does not independently reinterpret the renderer algorithms.
-
-### Requirements
-
-- Node.js 18 or newer
-- npm
-- a Chromium-family browser for graphical regression
-
-### Install and test
-
-```bash
-unzip nanpa-linja-n-typescript-reference-for-protocol-v1.0.0.zip
-cd nanpa-linja-n-typescript-reference-for-protocol-v1.0.0
-npm install
-
-# The visual exporters require an explicit font directory.
-export NANPA_FONT_DIR="$PWD/runtime/assets/fonts"
-
-./tools/run_typescript_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-The regression wrapper runs `npm test`, which includes build/type checks, bundled-runtime integrity checks, protocol tests, export-parity tests and browser rendering tests.
-
-Useful individual commands:
-
-```bash
-npm run build
-npm run typecheck
-npm run verify:runtime
-npm run test:protocol
-npm run test:browser
-```
-
-### Font files and font-key resolution
-
-The TypeScript package carries the canonical runtime assets under `runtime/assets/fonts/`, including `preloaded-font-pairs.manifest.json`. Its typed facade delegates font selection to the bundled canonical JavaScript runtime, so `font: 'nasinNanpa'` is resolved through the same manifest `fontKey` mechanism as JavaScript.
-
-The manifest maps the key to the real base, companion and optional literal-cartouche files/families plus adapter and tally settings. The caller therefore selects a logical production font key, not a `.ttf`/`.otf` filename.
-
-For the supplied visual exporters use the bundled directory explicitly:
-
-```bash
-export NANPA_FONT_DIR="$PWD/runtime/assets/fonts"
-```
-
-No system-wide installation of the production fonts is required.
-
-### Basic usage
-
-```ts
-import { NanpaLinjaN } from 'nanpa-linja-n-typescript';
-
-const nanpa = await NanpaLinjaN.create();
-
-const parsed = await nanpa.parse(
-  'mi toki e ni: [jan pona,,] "Hello"'
-);
-
-for (const line of parsed.ast.lines) {
-  console.log(line.children?.map(segment => ({
-    kind: segment.kind,
-    value: 'value' in segment ? segment.value : undefined,
-  })));
-}
-
-// A parsed AST can be serialized back to valid renderer source.
-console.log(nanpa.astToText(parsed.ast));
-
-const png = await nanpa.renderToPng('[jan pona,,]', {
-  font: 'linjaPona',
-  fontSize: 56,
-});
-
-console.log(png.bytes);
-
-const svg = await nanpa.renderToSvg('#ABCDEF', {
-  font: 'linjaSike',
-});
-console.log(svg.svg);
-```
-
-Advanced typed exports are available from `nanpa-linja-n-typescript/runtime`, `/advanced`, and the typed `/reference/...` subpaths.
-
----
-
-## Node.js reference implementation
-
-The Node.js package runs the canonical JavaScript parser, renderer, font-pair controller, facade and vector exporter directly under Node.js without Chromium. Node-specific code is confined to the platform adapter.
-
-### Requirements
-
-- Node.js 20 or newer
-- npm
-- a platform supported by `skia-canvas` 3.0.8
-
-The production fonts and vector WASM are bundled. `NANPA_FONT_DIR` is optional unless you deliberately want to audit an external font copy.
-
-### Install and test
-
-```bash
-unzip nanpa-linja-n-nodejs-reference-for-protocol-v1.0.0.zip
-cd nanpa-linja-n-nodejs-reference-for-protocol-v1.0.0
-npm install
-
-# Optional for normal use, but setting it makes the tested font source explicit.
-export NANPA_FONT_DIR="$PWD/assets/fonts"
-
-./tools/run_nodejs_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-`run_nodejs_regression.sh` also installs the declared Node dependency automatically when necessary. It does not launch Chromium; browser parity is checked against the frozen canonical browser oracle.
-
-### Font files and font-key resolution
-
-The Node.js archive bundles `assets/fonts/preloaded-font-pairs.manifest.json` and the production font binaries. The Node platform adapter defaults to that directory. If `NANPA_FONT_DIR` is set, it uses that directory instead; if the external directory does not contain its own manifest, the bundled manifest is retained and its filenames are resolved against the external directory.
-
-For the archive itself, the explicit test setting is:
-
-```bash
-export NANPA_FONT_DIR="$PWD/assets/fonts"
-```
-
-`font: 'nasinNanpa'` is still a manifest `fontKey`. The Node adapter resolves the manifest's actual font filenames and registers/loads those files for the canonical renderer; `nasinNanpa` is not treated as an operating-system font-family name.
-
-### Basic usage
-
-```js
-import { writeFile } from 'node:fs/promises';
-import { NanpaLinjaN } from './src/node.js';
-
-const nanpa = await NanpaLinjaN.create();
-
-const parsed = await nanpa.parse(
-  'mi toki e ni: [jan pona,,] "Hello"'
-);
-for (const line of parsed.ast.lines) {
-  console.log(line.children.map(segment => ({
-    kind: segment.kind,
-    value: segment.value,
-  })));
-}
-
-const roundTripSource = nanpa.astToText(parsed.ast);
-console.log(roundTripSource);
-
-const plan = await nanpa.buildRenderPlan('[jan pona,,]');
-console.log(plan.plan);
-
-const png = await nanpa.renderToPng('[jan pona,,]', {
-  font: 'nasinNanpa',
-  fontSize: 56,
-  paddingPx: 18,
-});
-await writeFile('cartouche.png', png.bytes);
-
-const svg = await nanpa.renderToSvg('2026-09-13', {
-  font: 'linjaSike',
-});
-await writeFile('date.svg', svg.svg);
-
-const pdf = await nanpa.renderToPdf('0b10101');
-await writeFile('binary.pdf', pdf.bytes);
-
-await nanpa.destroy();
-```
-
-Parser-only use is also available:
-
-```js
-import { NanpaParser } from './src/node.js';
-
-console.log(NanpaParser.parseNumber('123.45', {
-  numericMode: 'uniform',
-  relaxedNanpaLinjanParsing: true,
-}));
-```
-
----
-
-## Python reference implementation
-
-The Python package is a native Python implementation. It does not execute JavaScript at runtime; the canonical JavaScript material is retained as qualification evidence/oracle data.
-
-### Requirements
-
-- Python 3.10 or newer
-- Pillow 9+ with RAQM/HarfBuzz support
-- fontTools 4.40+
-- CairoSVG 2.7+ for vector PDF output
-- system HarfBuzz (`libharfbuzz`) for complete-run shaping/caret geometry
-
-### Install and test
-
-```bash
-unzip nanpa-linja-n-python-reference-for-protocol-v1.0.0.zip
-cd nanpa-linja-n-python-reference-for-protocol-v1.0.0
-python -m pip install .
-
-# The regression suite has bundled/package assets; the visual exporters require
-# NANPA_FONT_DIR explicitly. In the source archive use the top-level fonts/.
-export NANPA_FONT_DIR="$PWD/fonts"
-
-./tools/run_python_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-The regression wrapper runs the complete configured Python gate, including the frozen 1017-check corpus, unit tests, differential checks, production-font goldens and Full Renderer Profile qualification.
-
-The underlying commands can also be run directly:
-
-```bash
-python scripts/run_all.py
-python scripts/run_full_renderer_profile.py
-```
-
-### Font files and font-key resolution
-
-The Python distribution includes its production assets inside `nanpa_linja_n/assets/fonts/`. `NanpaLinjaN.create()` with no arguments loads the packaged `preloaded-font-pairs.manifest.json` and resolves the font files from that package asset directory. The source archive also contains a top-level `fonts/` copy used by regression/audit tooling.
-
-For the supplied visual exporters, set:
-
-```bash
-export NANPA_FONT_DIR="$PWD/fonts"
-```
-
-That environment variable is for the audit helper; the normal high-level Python facade does **not** need it when using the packaged assets. In application code, `font="nasinNanpa"` is looked up in the manifest. Python then obtains the real base/companion/literal file paths from that record and passes those files to its shaping/raster/vector backends.
-
-Advanced callers can override the source-tree asset root through `project_root`/`manifest_path`, but normal callers should use the bundled package assets.
-
-### Basic usage
-
-```python
-from pathlib import Path
-from nanpa_linja_n import NanpaLinjaN
-
-nanpa = NanpaLinjaN.create()
-
-parsed = nanpa.parse("12:30")
-print("display:", parsed["displayValue"])
-print("semantic kind:", parsed["semanticKind"])
-print("proper name:", parsed["properName"])
-print("Toki Pona words:", parsed["tpWords"])
-print("UCSUR code points:", parsed["ucsurCodepoints"])
-
-# Stable numeric facade.
-Path("number.png").write_bytes(
-    nanpa.render_to_png("123.45", font="linjaPona")
-)
-
-# Full-document renderer: ordinary text/cartouches + numeric content.
-text = 'mi toki e ni: [jan pona,,] 123.45 "Hello"'
-plan = nanpa.build_full_render_plan(text)
-print(plan)
-
-Path("mixed.png").write_bytes(nanpa.render_full_to_png(text))
-Path("mixed.svg").write_text(nanpa.render_to_svg(text), encoding="utf-8")
-Path("mixed.pdf").write_bytes(nanpa.render_to_pdf(text))
-```
-
-For document editing, use `parse_input(...)` to obtain the full `DocumentAst`, edit/replace the relevant segment records, then call `ast_to_text(...)` before using the existing renderer. `astToText(...)` is also provided as the JavaScript-style alias.
-
-The full-document API also exposes JavaScript-style aliases such as `parseInput`, `astToText`, `buildRenderPlan`, `renderToCanvas`, `renderToPng`, `renderToSvg` and `renderToPdf`.
-
----
-
-## Rust reference implementation
-
-The Rust package is a native Rust implementation with the frozen Core-v1 parser/API plus production and full-document rendering.
-
-### Requirements
-
-- Rust toolchain with Cargo and Edition 2024 support
-- Python 3 for the source/integrity helper checks used by the regression wrapper
-
-### Build and test
-
-```bash
-unzip nanpa-linja-n-rust-reference-for-protocol-v1.0.0.zip
-cd nanpa-linja-n-rust-reference-for-protocol-v1.0.0
-
-# No NANPA_FONT_DIR export is used by the Rust reference. The manifest and
-# production font bytes are compile-time embedded from $PWD/fonts/.
-./tools/run_rust_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-The regression wrapper forces a clean package rebuild, runs source/integrity checks, Cargo checks/tests, the 64 semantic diagnostics and the Full Renderer Profile gate.
-
-### Font files and font-key resolution
-
-Rust deliberately does **not** use `NANPA_FONT_DIR`. `fonts/preloaded-font-pairs.manifest.json` is included with `include_str!`, and the production `.ttf`/`.otf` files are included with `include_bytes!`. They therefore become compile-time assets in the Rust binary.
-
-The source assets live at:
-
-```text
-fonts/
-fonts/preloaded-font-pairs.manifest.json
-```
-
-`font: "nasinNanpa"` selects the corresponding embedded manifest record. The registry then selects the embedded base/companion/literal bytes and that record's renderer settings. There is no runtime filesystem font lookup and no requirement to install the production fonts into the operating system. If the files under `fonts/` are changed, rebuild the Rust program so the new bytes are embedded.
-
-### Basic usage
-
-```rust
-use nanpa_linja_n_rust::facade::{NanpaLinjaN, RenderOptions};
-use nanpa_linja_n_rust::options::ParseOptions;
-use nanpa_linja_n_rust::FullRenderOptions;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let nanpa = NanpaLinjaN::create()?;
-
-    let parsed = nanpa.parse("12:30", &ParseOptions::default())?;
-    println!("{parsed:?}");
-
-    let options = RenderOptions {
-        font: "linjaPona".into(),
-        ..RenderOptions::default()
-    };
-    let png = nanpa.render_to_png("123.45", &options)?;
-    std::fs::write("number.png", png)?;
-
-    let full = FullRenderOptions {
-        font: "nasinNanpa".into(),
-        ..FullRenderOptions::default()
-    };
-    let mixed = nanpa.render_full_to_png(
-        "mi toki e ni: [jan pona,,] 123.45",
-        &full,
-    )?;
-    std::fs::write("mixed.png", mixed)?;
-
-    Ok(())
-}
-```
-
-For full-document inspection/editing, use `nanpa.parse_input(...)`. The returned `DocumentAst` can be edited (for example, change a bracket segment's `value`) and serialized with `nanpa.ast_to_text(&ast)`; the cross-language alias `nanpa.astToText(&ast)` is equivalent. Feed the resulting text to the existing `render_full_to_...` methods.
-
-See the package's `RENDERING-FACADE.md` and Rust source API for the complete facade surface.
-
----
-
-## Go reference implementation
-
-The Go package is a native Go implementation. Its module path is `nanpa-linja-n.com`; the public library package remains `nanpa`, so consumers import it as `nanpa-linja-n.com/nanpa`. Core parsing/render-plan construction builds without cgo; native graphical rendering currently targets Linux with cgo and the system text/vector libraries.
-
-### Requirements
-
-- Go 1.18 or newer
-- a POSIX shell for the supplied regression wrapper
-- `sha256sum`
-- for PNG/SVG/PDF qualification on Linux: cgo plus Pango/PangoCairo, HarfBuzz, Cairo, Fontconfig and GLib/GObject runtime libraries
-
-### Build and test
-
-```bash
-unzip nanpa-linja-n-go-reference-for-protocol-v1.0.0.zip
-cd nanpa-linja-n-go-reference-for-protocol-v1.0.0
-
-# No NANPA_FONT_DIR export is used by the Go reference. assets/fonts/* is
-# compiled into the assets package through go:embed.
-./tools/run_go_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-Additional Go checks:
-
-```bash
-go test ./... -count=1
-go vet ./...
-./tools/run_full_renderer_profile.sh
-```
-
-### Font files and font-key resolution
-
-Go deliberately does **not** use `NANPA_FONT_DIR`. The `assets` package contains a `//go:embed fonts/*` declaration, so `assets/fonts/preloaded-font-pairs.manifest.json` and the production font binaries are compiled into the Go program.
-
-`CreateNanpaLinjaN()` reads the embedded manifest. When code sets:
-
-```go
-opts.Font = "nasinNanpa"
-```
-
-the production registry resolves that manifest `fontKey` (or a recognized alias) to its base/companion filenames and renderer settings. For native graphical rendering, the implementation materializes the required embedded font bytes into its private temporary font directory; callers do not provide a font path and do not need to install the fonts system-wide. `renderer.Close()` removes that temporary directory.
-
-### Basic usage
-
-```go
-package main
-
-import (
-    "fmt"
-    "os"
-
-    nanpa "nanpa-linja-n.com/nanpa"
-)
-
-func main() {
-    renderer, err := nanpa.CreateNanpaLinjaN()
-    if err != nil {
-        panic(err)
-    }
-    defer renderer.Close()
-
-    parsed, err := renderer.Parse("12:30", nanpa.DefaultProductionOptions())
-    if err != nil {
-        panic(err)
-    }
-    fmt.Println(parsed)
-
-    opts := nanpa.DefaultRenderOptions()
-    opts.Font = "linjaPona"
-    png, err := renderer.RenderToPNG("123.45", opts)
-    if err != nil {
-        panic(err)
-    }
-    if err := os.WriteFile("number.png", png, 0644); err != nil {
-        panic(err)
-    }
-
-    full := nanpa.DefaultFullRenderOptions()
-    full.Font = "nasinNanpa"
-    mixed, err := renderer.RenderFullToPNG(
-        `mi toki e ni: [jan pona,,] 123.45 "Hello"`,
-        full,
-    )
-    if err != nil {
-        panic(err)
-    }
-    if err := os.WriteFile("mixed.png", mixed, 0644); err != nil {
-        panic(err)
-    }
-}
-```
-
-For full-document inspection/editing, call `renderer.ParseInput(...)`, modify the returned `DocumentAST` content fields, then call `renderer.AstToText(ast)` (or package-level `nanpa.AstToText(ast)`) and pass the resulting text to the existing full renderer.
-
-Because Go cannot overload the frozen numeric facade methods by option type, full-document methods use explicit names such as `ParseInput`, `AstToText`, `BuildFullRenderPlan`, `RenderFullToPNG`, `RenderFullToSVG` and `RenderFullToPDF`.
-
----
-
-## Dart reference implementation
-
-The Dart package is a native Dart implementation. Core-v1 parsing/logical rendering remains pure Dart; production graphical rendering uses the native Pango/HarfBuzz/Cairo/Fontconfig stack.
-
-### Requirements
-
-- Dart SDK 3.3 or newer
-- no third-party Dart package dependencies
-- Pango/HarfBuzz, Cairo and Fontconfig runtime libraries for production graphical rendering
-
-Flutter is not required.
-
-### Build and test
-
-```bash
-unzip nanpa-linja-n-dart-reference-for-protocol-v1.0.0.zip
-cd nanpa-linja-n-dart-reference-for-protocol-v1.0.0
-
-# No NANPA_FONT_DIR export is used by the Dart reference. Its normal package
-# asset root is $PWD/assets/fonts/. Run these commands from the package root.
-dart pub get
-./tools/run_dart_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-`run_dart_regression.sh` itself performs `dart pub get`, compiler checks, Core/API regression, production rendering and the Full Renderer Profile gate, so running `dart pub get` separately is optional.
-
-### Font files and font-key resolution
-
-Dart does **not** use `NANPA_FONT_DIR`. The package ships the production files under `assets/fonts/` with `assets/fonts/production-font-pairs.manifest.json`. `NanpaLinjaN.create()` discovers that asset directory by walking from the current/script location and, when applicable, through Dart package configuration. Running the supplied tools from the package root therefore uses `$PWD/assets/fonts`.
-
-`font: 'nasinNanpa'` is resolved against the manifest's `fontKey`; the resulting `ProductionFontInfo` contains the concrete base, companion and optional literal-cartouche paths and renderer settings. The native renderer uses those paths with the Pango/HarfBuzz/Cairo/Fontconfig stack.
-
-If automatic discovery is inappropriate for an application, pass the directory containing `production-font-pairs.manifest.json` and the font files explicitly:
-
-```dart
-final nanpa = NanpaLinjaN.create(assetRoot: '/absolute/path/to/fonts');
-```
-
-### Basic usage
-
-```dart
-import 'dart:io';
-import 'package:nanpa_linja_n/nanpa_linja_n.dart';
-
-void main() {
-  final nanpa = NanpaLinjaN.create();
-
-  final parsed = nanpa.parse('12:30');
-  print(parsed.toJson());
-
-  final png = nanpa.renderToPng(
-    '123.45',
-    font: 'linjaPona',
-    fontSize: 56,
-  );
-  File('number.png').writeAsBytesSync(png);
-
-  final full = FullRenderOptions(font: 'nasinNanpa');
-  final mixed = nanpa.renderFullToPng(
-    'mi toki e ni: [jan pona,,] 123.45 "Hello"',
-    options: full,
-  );
-  File('mixed.png').writeAsBytesSync(mixed);
-}
-```
-
-The production facade provides `parse`, `buildRenderPlan`, `render`, `renderToPng`, `renderToSvg`, `renderToPdf`, `listFonts` and `getFontInfo`. The additive full-document surface provides `parseInput`, `astToText`, `buildFullRenderPlan`, `renderFull`, `renderFullToPng`, `renderFullToSvg` and `renderFullToPdf`.
-
-Dart's document AST objects are immutable. To edit parsed source, construct replacement `DocumentSegment`/`DocumentLine`/`DocumentAst` objects, call `nanpa.astToText(editedAst)`, then render the returned source text through the normal full-document renderer.
-
----
-
-## Java reference implementation
-
-The Java package is an independent Java 21 implementation of Protocol v1.0.0 plus the Full Renderer Profile candidate. Its Java namespace is `com.nanpalinjan`.
-
-### Requirements
-
-- JDK 21
-- all eight production base + companion font pairs for complete rendering qualification
-- Maven 3.9+ is optional; the primary regression script uses `javac` and `java` directly
-
-The Java source archive deliberately does not duplicate the production font binaries. Set `NANPA_FONT_DIR` to the existing production font directory, or place the font set under `assets/fonts/`.
-
-### Build and test
-
-```bash
-unzip nanpa-linja-n-java-reference-for-protocol-v1.0.0.zip
-cd nanpa-linja-n-java
-
-export NANPA_FONT_DIR="/path/to/production/fonts"
-./tools/run_java_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-Core-only testing when the production font set is intentionally unavailable:
-
-```bash
-./tools/run_java_core_regression.sh
-```
-
-Optional Maven entry point:
-
-```bash
-mvn test
-NANPA_FONT_DIR="/path/to/production/fonts" mvn test
-```
-
-### Font files and font-key resolution
-
-Java is the one reference archive that deliberately does **not** duplicate the production font binaries. Its production manifest is bundled (`rendering/production-font-pairs.manifest.json` in the source tree and as a classpath resource), but the actual `.ttf`/`.otf` files must come from a font directory.
-
-For the supplied full regression and visual-audit commands set:
-
-```bash
-export NANPA_FONT_DIR="/absolute/path/to/production/fonts"
-```
-
-The directory must contain the filenames named by the production manifest. `NanpaLinjaN.create()` discovers a font directory in this order: the `nanpa.font.dir` JVM system property, `NANPA_FONT_DIR`, then a local `assets/fonts/` directory. Application code may bypass discovery and pass the directory explicitly with `NanpaLinjaN.create(Path fontDirectory)`.
-
-When Java code specifies `.withFont("nasinNanpa")`, the string is resolved as a manifest `fontKey`/alias. The manifest identifies the required base/companion/literal filenames and rendering settings, and Java loads those exact files from the configured directory. The user does not need to register a system font called `nasinNanpa`.
-
-### Basic usage
-
-```java
-import java.nio.file.Files;
-import java.nio.file.Path;
-import com.nanpalinjan.*;
-
-public class Example {
-    public static void main(String[] args) throws Exception {
-        Path fonts = Path.of(System.getenv("NANPA_FONT_DIR"));
-
-        try (NanpaLinjaN nanpa = NanpaLinjaN.create(fonts)) {
-            FacadeParseResult parsed = nanpa.parse("12:30");
-            System.out.println(parsed);
-
-            PngRenderResult png = nanpa.renderToPng(
-                "123.45",
-                new RenderOptions().withFont("linjaPona")
-            );
-            Files.write(Path.of("number.png"), png.bytes());
-
-            RenderPlan mixed = nanpa.buildRenderPlan(
-                "mi toki e ni: [jan pona,,] 123.45 \"Hello\"",
-                new RenderOptions().withFont("nasinNanpa")
-            );
-            System.out.println(mixed);
-
-            PngRenderResult mixedPng = nanpa.renderToPng(
-                "mi toki e ni: [jan pona,,] 123.45",
-                new RenderOptions().withFont("nasinNanpa")
-            );
-            Files.write(Path.of("mixed.png"), mixedPng.bytes());
-        }
-    }
-}
-```
-
-For full-document editing, `parseInput(...)` returns the immutable `DocumentAst`; construct replacement records for the content being changed, call `astToText(editedAst)`, and pass the resulting source to the normal `renderTo...()` methods.
-
-The Java facade also provides `parseInput`, `astToText`, Java-native canvas/image output, SVG, PDF, low-level text/UCSUR drawing, vector-document conversion and runtime render-adapter registration.
-
----
-
-## Release qualification checklist
-
-Before calling a reference archive release-ready:
-
-1. Run its `./tools/run_<language>_regression.sh` wrapper and require a clean PASS.
-2. Run `./tools/export_visual_pngs.sh` and inspect the numeric production-font matrix.
-3. Run `./tools/export_cartouche_audit.sh` and inspect all eight ordinary-cartouche contact sheets.
-4. Pay particular attention to the five renderer-manual tally fonts and compare halo/non-halo placement.
-5. Do not substitute the visual exporters for the automated regression suite, and do not treat a partial/core-only test as a complete production/full-renderer qualification.
-
-## Implementing nanpa-linja-n in another language
-
-Use the protocol, not a reference implementation, as the definition of expected behavior.
-
-Start with:
-
-```text
-protocol/nanpa-linja-n-protocol-v1.0.0.zip
-```
-
-Read at minimum:
-
-```text
-SPEC.md
-CONFORMANCE.md
-API.md
-RENDERING-PROFILE.md
-```
-
-Use the bundled conformance corpus as the compatibility target. Reference implementations are useful for implementation details, diagnostics and differential testing, but they do not override the protocol.
-
-For full-document rendering compatibility, preserve the semantic distinctions used by the reference profile, including font-specific render adapters and the manual-vs-UCSUR tally routing defined by the production font manifest.
-
-## Canonical JavaScript reference
-
-The canonical JavaScript renderer filename used for cross-reference and maintenance is:
-
-```text
-renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js
-```
-
 ## Parser and renderer input reference
 
 This section is intended as the practical starting point for application authors. All examples below use the **uniform numeric format**, which is the default and the recommended format going forward. The older traditional/uniform mode-selection properties are intentionally not documented here.
@@ -1358,7 +1384,206 @@ For a first application in any language, the recommended flow is:
 6. render `"123.45"`, `"[jan pona,,]"`, or the source returned by `astToText` with `font = "nasinNanpa"` or another production key;
 7. write/display the returned PNG/SVG/PDF/canvas result.
 
-If the application only needs rendering, skip steps 4 and 5: rendering methods parse their input internally. The language-specific **Basic usage** sections above show the appropriate package/import syntax and font-discovery mechanism.
+If the application only needs rendering, skip steps 4 and 5: rendering methods parse their input internally. The language-specific Hello World sections above show the appropriate package/import syntax and font-discovery mechanism.
+
+## Fonts: required files, manifest and directory layout
+
+A first-time user does **not** select a font by `.ttf`/`.otf` filename and does not need an operating-system font family called `nasinNanpa`, `linjaPona`, and so on. The public `font` option is a logical **manifest `fontKey`**. The manifest tells the renderer which real files, font families, adapters and tally rules belong to that key.
+
+The eight production font keys are:
+
+```text
+nasinNanpa
+sitelenSeliKiwen
+fairfaxHd
+fairfaxPonaHd
+linjaPona
+linjaSike
+nasinSitelenPuMono
+linjaLipamanka
+```
+
+### What one manifest entry means
+
+A production manifest entry normally defines these roles:
+
+| Manifest field | Purpose |
+| --- | --- |
+| `fontKey` | Public logical name passed to the library, for example `nasinNanpa`. |
+| `baseFamily` / `baseFilename` | Main sitelen pona face used for ordinary glyph text and ordinary cartouches. |
+| `companionFamily` / `companionFilename` | nanpa-linja-n companion face used for numeric cartouches. |
+| `literalCartoucheFamily` | Face used for exact literal/Latin cartouche content such as `["HELLO"]`. |
+| `literalCartoucheFilename` / `literalCartoucheUrl` | Optional separate file for that literal-cartouche face. |
+| `parserMode` | Text grammar appropriate for the selected font. Normally selected automatically with the font pair. |
+| `renderAdapterId` / `renderAdapterSettings` | Font-specific translation needed before shaping, for fonts whose native encoding differs from canonical UCSUR input. |
+| `settings` | Font-specific renderer settings, including manual-vs-UCSUR tally behavior and cartouche adjustments. |
+
+A call such as:
+
+```text
+font = nasinNanpa
+```
+
+therefore means: **find the manifest record whose `fontKey` is `nasinNanpa`, then load/use the faces and renderer settings named by that record**.
+
+### What happens when `literalCartoucheFilename` is not defined
+
+A separate literal-cartouche font file is **optional**.
+
+The production behavior is:
+
+1. If `literalCartoucheFilename`/`literalCartoucheUrl` is supplied, load that separate face and use `literalCartoucheFamily` for literal cartouches.
+2. If no separate literal file is supplied but `literalCartoucheFamily` names the same family as the base face, reuse the already-loaded base font. No third file is required.
+3. If `literalCartoucheFamily` itself is omitted, the renderer falls back to the base/text family for literal cartouches.
+
+For a **custom manifest**, do not name a different `literalCartoucheFamily` unless that family is otherwise available to the renderer. The portable approach is either to reuse the base family or provide an explicit literal-cartouche file/URL.
+
+The current production set uses these rules:
+
+| `fontKey` | Base file | Numeric companion file | Literal-cartouche source |
+| --- | --- | --- | --- |
+| `nasinNanpa` | `nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf` | `nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
+| `sitelenSeliKiwen` | `sitelenselikiwenjuniko-latin-ligatures.ttf` | `sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf` | reuses base family `SSK-Juniko` |
+| `fairfaxHd` | `FairfaxHD.ttf` | `FairfaxHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf` | reuses base family `fairfaxHd` |
+| `fairfaxPonaHd` | `FairfaxPonaHD.ttf` | `FairfaxPonaHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf` | reuses base family `fairfaxPonaHd` |
+| `linjaPona` | `linja-pona.otf` | `linja-pona-nanpa-linja-n-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
+| `linjaSike` | `linja-sike-5-cartouche-fix.otf` | `linja-sike-5-nanpa-linja-n-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
+| `nasinSitelenPuMono` | `NasinSitelenPuMono.otf` | `NasinSitelenPuMono-nanpa-linja-n-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
+| `linjaLipamanka` | `linjalipamanka-normal-cartouche-fix.otf` | `linjalipamanka-normal-nanpa-linja-n-nasin-e-en-ss1223.otf` | separate `nasin-nanpa-4.0.2-Helvetica.otf` |
+
+Because the same literal face is shared, the complete eight-font production profile requires **17 distinct manifest-referenced font binaries**, not 24.
+
+### Expected portable `fonts/` directory
+
+For packages/tools that load production fonts from a filesystem directory, a complete canonical font directory can be laid out as follows:
+
+```text
+fonts/
+├── preloaded-font-pairs.manifest.json
+├── nasin-nanpa-5.0.0-beta.3-UCSUR-v5-ascii-ligatures.otf
+├── nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.otf
+├── nasin-nanpa-4.0.2-Helvetica.otf
+├── sitelenselikiwenjuniko-latin-ligatures.ttf
+├── sitelenselikiwenjuniko-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
+├── FairfaxHD.ttf
+├── FairfaxHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
+├── FairfaxPonaHD.ttf
+├── FairfaxPonaHD-nanpa-linja-n-good-kasi-nasin-e-en-ss1223.ttf
+├── linja-pona.otf
+├── linja-pona-nanpa-linja-n-nasin-e-en-ss1223.otf
+├── linja-sike-5-cartouche-fix.otf
+├── linja-sike-5-nanpa-linja-n-nasin-e-en-ss1223.otf
+├── NasinSitelenPuMono.otf
+├── NasinSitelenPuMono-nanpa-linja-n-nasin-e-en-ss1223.otf
+├── linjalipamanka-normal-cartouche-fix.otf
+└── linjalipamanka-normal-nanpa-linja-n-nasin-e-en-ss1223.otf
+```
+
+Some packages call the manifest `production-font-pairs.manifest.json` instead of `preloaded-font-pairs.manifest.json`; use the filename expected by that package. Rust and Go embed the equivalent manifest and font bytes at build time, and Java bundles the manifest but expects the actual font binaries from the configured font directory. Each language section above states its exact consumer behavior.
+
+### Additional support fonts
+
+The canonical browser/vector asset set also contains these support faces:
+
+```text
+PatrickHand-Regular.ttf
+LiberationSans-Regular.ttf
+LiberationSerif-Regular.ttf
+LiberationMono-Regular.ttf
+```
+
+They are **not additional production `fontKey` pairs**. `PatrickHand-Regular.ttf` is used by the canonical/full renderer for literal or unknown Latin text where that role is required. The Liberation faces provide deterministic vector-export substitutes for common Latin/system families such as Arial/system-ui, Times New Roman and Courier New.
+
+When copying the canonical JavaScript/Node/Python font asset directory wholesale, keep these files with it. Native implementations that do not use those browser/vector fallback roles do not necessarily require all four support faces; their language sections and regression scripts are authoritative for their runtime requirements.
+
+### Manual-tally versus font-glyph tally configurations
+
+Five production configurations use **renderer-drawn manual tallies**:
+
+```text
+nasinNanpa
+linjaPona
+linjaSike
+nasinSitelenPuMono
+linjaLipamanka
+```
+
+For those five configurations, **U+F199E must not be inserted into the shaped font run**. The renderer owns the tally geometry. When halo is enabled, the tally-group halo backing is painted first and the normal foreground tally strokes are painted on top.
+
+The other three production configurations use their native UCSUR U+F199E tally glyph.
+
+### First-time setup rule
+
+For a basic application, do not manually choose `baseFilename`, `companionFilename`, or tally mode. Do this instead:
+
+1. create/open the language facade;
+2. make sure that implementation can find its production manifest and font assets as described in its language section;
+3. pass one of the eight `fontKey` values, for example `nasinNanpa`;
+4. parse or render text.
+
+The manifest is the configuration contract between the font key and the renderer.
+
+## Protocol v1.0.0
+
+Extract the protocol release and verify it before using a reference implementation as a compatibility target:
+
+```bash
+unzip nanpa-linja-n-protocol-v1.0.0.zip
+cd nanpa-linja-n-protocol-v1.0.0
+python verify_release.py
+```
+
+Primary protocol documents:
+
+```text
+SPEC.md
+API.md
+CONFORMANCE.md
+RENDERING-PROFILE.md
+VERSIONING.md
+README.md
+```
+
+Use `SPEC.md` as the primary protocol specification. The bundled language-neutral conformance corpus is the compatibility target.
+
+Current reference packages target:
+
+```text
+nanpa-linja-n Protocol v1.0.0
+Conformance corpus v1.0.2
+1017 frozen protocol regression checks
+```
+
+## Implementing nanpa-linja-n in another language
+
+Use the protocol, not a reference implementation, as the definition of expected behavior.
+
+Start with:
+
+```text
+protocol/nanpa-linja-n-protocol-v1.0.0.zip
+```
+
+Read at minimum:
+
+```text
+SPEC.md
+CONFORMANCE.md
+API.md
+RENDERING-PROFILE.md
+```
+
+Use the bundled conformance corpus as the compatibility target. Reference implementations are useful for implementation details, diagnostics and differential testing, but they do not override the protocol.
+
+For full-document rendering compatibility, preserve the semantic distinctions used by the reference profile, including font-specific render adapters and the manual-vs-UCSUR tally routing defined by the production font manifest.
+
+## Canonical JavaScript reference
+
+The canonical JavaScript renderer filename used for cross-reference and maintenance is:
+
+```text
+renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js
+```
 
 ## Disclaimer
 
