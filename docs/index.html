@@ -3329,8 +3329,8 @@
 <script>
   (() => {
     const FONTS_SECTION_ID = 'fontsSection';
-    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=18';
-    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v18';
+    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=19';
+    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v19';
     const FONTS_NOTICE_OVERLAY_ID = 'fontsNoticeOverlay';
 
     let fontsTableLoadPromise = null;
@@ -3341,6 +3341,17 @@
       const label = String(pair?.label ?? pair?.fontKey ?? '')
         .replace(/\s+predefined\s*$/i, '')
         .trim();
+      const legacyLicenseUrl = String(pair?.licenseUrl ?? '').trim();
+      const manifestLicenseUrls = Array.isArray(pair?.licenseUrls)
+        ? pair.licenseUrls
+            .map(url => String(url ?? '').trim())
+            .filter(Boolean)
+        : [];
+      const licenseUrls = manifestLicenseUrls.length
+        ? Array.from(new Set(manifestLicenseUrls))
+        : legacyLicenseUrl
+          ? [legacyLicenseUrl]
+          : [];
 
       return {
         label: label || 'Unnamed font',
@@ -3348,7 +3359,8 @@
         baseUrl: String(pair?.baseUrl ?? '').trim(),
         companionFilename: String(pair?.companionFilename ?? '').trim(),
         companionUrl: String(pair?.companionUrl ?? '').trim(),
-        licenseUrl: String(pair?.licenseUrl ?? '').trim()
+        licenseUrl: licenseUrls[0] ?? '',
+        licenseUrls
       };
     }
 
@@ -3399,12 +3411,15 @@
     }
 
     function createLicenseButton(pair) {
-      if (!pair.licenseUrl) return null;
+      if (!pair.licenseUrls?.length) return null;
 
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = 'View license';
-      button.setAttribute('aria-label', `View license for ${pair.label}`);
+      button.textContent = pair.licenseUrls.length === 1 ? 'View license' : 'View licenses';
+      button.setAttribute(
+        'aria-label',
+        `${pair.licenseUrls.length === 1 ? 'View license' : 'View licenses'} for ${pair.label}`
+      );
       button.addEventListener('click', event => openFontsNotice(event, pair));
       return button;
     }
@@ -3554,37 +3569,75 @@
       return fontsLicenseTextPromises.get(licenseUrl);
     }
 
+    function fontLicenseDisplayName(licenseUrl) {
+      const cleanUrl = String(licenseUrl ?? '').split(/[?#]/, 1)[0];
+      const filename = cleanUrl.split('/').filter(Boolean).pop();
+      return filename || String(licenseUrl ?? 'License');
+    }
+
+    function formatFontsLicenseNotice(licenseUrls, results) {
+      const lines = ['Licenses', '========', ''];
+
+      licenseUrls.forEach((licenseUrl, index) => {
+        lines.push(`${index + 1}. ${fontLicenseDisplayName(licenseUrl)}`);
+        lines.push(`   ${licenseUrl}`);
+      });
+
+      results.forEach((result, index) => {
+        const licenseUrl = licenseUrls[index];
+        const displayName = fontLicenseDisplayName(licenseUrl);
+        lines.push('', '', displayName, '='.repeat(Math.max(3, displayName.length)), licenseUrl, '');
+
+        if (result.status === 'fulfilled') {
+          lines.push(result.value);
+        } else {
+          lines.push(
+            `The license file could not be loaded. Make sure ${licenseUrl.replace('./', '')} is deployed at this page-relative path.`,
+            '',
+            result.reason?.message ?? String(result.reason)
+          );
+        }
+      });
+
+      return lines.join('\n');
+    }
+
     async function openFontsNotice(event, pair) {
-      if (!pair?.licenseUrl) return;
+      const licenseUrls = Array.isArray(pair?.licenseUrls)
+        ? pair.licenseUrls.filter(Boolean)
+        : pair?.licenseUrl
+          ? [pair.licenseUrl]
+          : [];
+      if (!licenseUrls.length) return;
 
       fontsNoticeReturnFocus = event?.currentTarget ?? null;
       const overlay = ensureFontsNoticeOverlay();
       const title = overlay.querySelector(`#${FONTS_NOTICE_OVERLAY_ID}Title`);
       const text = overlay.querySelector('[data-fonts-notice-text]');
+      const loadedKey = JSON.stringify(licenseUrls);
 
-      if (title) title.textContent = `${pair.label} license`;
+      if (title) {
+        title.textContent = `${pair.label} ${licenseUrls.length === 1 ? 'license' : 'licenses'}`;
+      }
       syncFontsNoticeViewport();
       document.documentElement.classList.add('fontsNoticeOpen');
       document.body.classList.add('fontsNoticeOpen');
       overlay.classList.add('show');
       overlay.querySelector('[data-fonts-notice-close]')?.focus();
 
-      if (text?.dataset.loadedUrl === pair.licenseUrl) return;
+      if (text?.dataset.loadedKey === loadedKey) return;
       if (text) {
-        text.textContent = 'Loading license…';
-        delete text.dataset.loadedUrl;
+        text.textContent = `Loading license${licenseUrls.length === 1 ? '' : 's'}…`;
+        delete text.dataset.loadedKey;
       }
 
-      try {
-        const licenseText = await loadFontsLicenseText(pair.licenseUrl);
-        if (text) {
-          text.textContent = licenseText;
-          text.dataset.loadedUrl = pair.licenseUrl;
-        }
-      } catch (error) {
-        if (text) {
-          text.textContent = `The license file could not be loaded. Make sure ${pair.licenseUrl.replace('./', '')} is deployed at this page-relative path.\n\n${error?.message ?? String(error)}`;
-        }
+      const results = await Promise.allSettled(
+        licenseUrls.map(licenseUrl => loadFontsLicenseText(licenseUrl))
+      );
+
+      if (text) {
+        text.textContent = formatFontsLicenseNotice(licenseUrls, results);
+        text.dataset.loadedKey = loadedKey;
       }
     }
 
