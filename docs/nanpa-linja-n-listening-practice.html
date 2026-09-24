@@ -33,7 +33,7 @@
     }
     @font-face{
       font-family:"TP-Cartouche-Font";
-      src:url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+      src:url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display:swap;
     }
 
@@ -1808,7 +1808,7 @@
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
   async function getNanpaModule(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275");
     return nanpaModulePromise;
   }
 
@@ -1858,6 +1858,7 @@
       enableBinaryRendering:true,
       nanpaColonParsing:useNanpaFormat,
       nanpaColonRendering:useNanpaFormat,
+      cartoucheVulgarFractions:true,
       autoCartoucheStandaloneProperNames:true,
       showUnknownText:false
     };
@@ -1953,7 +1954,7 @@
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=79").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=81").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 

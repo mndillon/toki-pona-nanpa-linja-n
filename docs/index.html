@@ -608,6 +608,11 @@
       word-break: break-word;
     }
 
+    /* Retain companion-font data/code for possible future use, but do not display it. */
+    .fontsTable .fontsCompanionColumn {
+      display: none !important;
+    }
+
     html.fontsNoticeOpen,
     body.fontsNoticeOpen {
       overflow: hidden !important;
@@ -3030,21 +3035,23 @@
         </h2>
         <div id="fontsContent" class="collapsibleSectionContent" data-collapsible-content hidden>
           <div class="small">
-            The available base fonts and their nanpa-linja-n companion fonts are loaded from the preloaded font-pairs manifest when this panel is first opened.
+            The available nanpa-linja-n fonts are loaded from the preloaded font-pairs manifest when this panel is first opened.
           </div>
           <div class="fontsTableStatus small" data-fonts-table-status role="status" aria-live="polite">
             Font details will load when this panel is opened.
           </div>
           <div data-fonts-table-container></div>
           <div class="small" style="margin-top:10px;">
-   The nanpa-linja-n companion fonts are specialised variants for displaying nanpa-linja-n numeric, hexadecimal, binary, date and time cartouches, not general-purpose sitelen pona fonts. Only inside these cartouches, selected glyphs are resized. By default, nanpa, nasa, noka, colon, tenpo, and suno are displayed at one-half of their original size; nena, e, ala, ike, uta, and open at one-quarter; kasi at one-third; kala at one-half; ona, o, kulupu, kipisi, kin, and en at two-thirds of the original font size. The fonts also provide OpenType stylistic-set features for the six cartouche markers nanpa, nasa, noka, colon, tenpo, and suno: ss12 displays them at one-half size, ss13 at one-third size, and ss14 at one-quarter size. With no stylistic set enabled, their default cartouche scale is one-half. These stylistic sets affect those glyphs only in their cartouche forms; outside cartouches, the base glyphs and the rest of the font remain unchanged.       </div>
+  These nanpa-linja-n fonts introduce a cartouche-only glyph-scaling convention: the Unicode vulgar fractions ¼ (U+00BC), ⅓ (U+2153), ½ (U+00BD), ⅔ (U+2154), and ¾ (U+00BE) scale the immediately preceding glyph to that fraction of the font size used by the cartouche.
+          </div>
       </section>
 
-       <hr class="miniDivider" />
+       <hr class="miniDivider" hidden/>
 
       <section
         id="referenceImplementations"
         class="collapsibleSection"
+        hidden
         data-collapsible-section
         data-collapsible-key="referenceImplementations"
         data-collapsible-default="collapsed"
@@ -3329,8 +3336,8 @@
 <script>
   (() => {
     const FONTS_SECTION_ID = 'fontsSection';
-    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=19';
-    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v19';
+    const FONTS_MANIFEST_PATH = './fonts/preloaded-font-pairs.manifest.json?v=22';
+    const FONTS_SESSION_CACHE_KEY = 'indexFontsManifestCache:v22';
     const FONTS_NOTICE_OVERLAY_ID = 'fontsNoticeOverlay';
 
     let fontsTableLoadPromise = null;
@@ -3410,6 +3417,25 @@
       return link;
     }
 
+    function fontPairUsesSameFile(pair) {
+      const baseUrl = String(pair?.baseUrl ?? '').trim();
+      const companionUrl = String(pair?.companionUrl ?? '').trim();
+
+      if (baseUrl && companionUrl) {
+        try {
+          const base = new URL(baseUrl, window.location.href);
+          const companion = new URL(companionUrl, window.location.href);
+          return base.origin === companion.origin && base.pathname === companion.pathname;
+        } catch {
+          return baseUrl === companionUrl;
+        }
+      }
+
+      const baseFilename = String(pair?.baseFilename ?? '').trim();
+      const companionFilename = String(pair?.companionFilename ?? '').trim();
+      return !!baseFilename && baseFilename === companionFilename;
+    }
+
     function createLicenseButton(pair) {
       if (!pair.licenseUrls?.length) return null;
 
@@ -3431,14 +3457,15 @@
 
       const table = document.createElement('table');
       table.className = 'fontsTable';
-      table.setAttribute('aria-label', 'Toki Pona base fonts, nanpa-linja-n companion fonts, and licenses');
+      table.setAttribute('aria-label', 'Toki Pona nanpa-linja-n fonts and licenses');
 
       const thead = document.createElement('thead');
       const headRow = document.createElement('tr');
-      for (const heading of ['Font name', 'Base font', 'nanpa-linja-n companion font', 'License']) {
+      for (const heading of ['Font name', 'nanpa-linja-n font', 'nanpa-linja-n companion font', 'License']) {
         const th = document.createElement('th');
         th.scope = 'col';
         th.textContent = heading;
+        if (heading === 'nanpa-linja-n companion font') th.className = 'fontsCompanionColumn';
         headRow.appendChild(th);
       }
       thead.appendChild(headRow);
@@ -3454,13 +3481,18 @@
         row.appendChild(nameCell);
 
         const baseCell = document.createElement('td');
-        baseCell.dataset.label = 'Base font';
+        baseCell.dataset.label = 'nanpa-linja-n font';
         baseCell.appendChild(createFontLink(pair.baseFilename, pair.baseUrl));
         row.appendChild(baseCell);
 
         const companionCell = document.createElement('td');
+        companionCell.className = 'fontsCompanionColumn';
         companionCell.dataset.label = 'nanpa-linja-n companion font';
-        companionCell.appendChild(createFontLink(pair.companionFilename, pair.companionUrl));
+        if (fontPairUsesSameFile(pair)) {
+          companionCell.textContent = 'Same as base font';
+        } else {
+          companionCell.appendChild(createFontLink(pair.companionFilename, pair.companionUrl));
+        }
         row.appendChild(companionCell);
 
         const licenseCell = document.createElement('td');
@@ -3474,7 +3506,7 @@
       table.appendChild(tbody);
 
       container.replaceChildren(table);
-      status.textContent = `${pairs.length} font pair${pairs.length === 1 ? '' : 's'} loaded.`;
+      status.textContent = `${pairs.length} font${pairs.length === 1 ? '' : 's'} loaded.`;
     }
 
     async function loadFontsTable() {
@@ -4143,11 +4175,11 @@
   })();
 </script>
 
-  <script type="module" src="./js/nanpa-listening-quiz.js?v=65"></script>
+  <script type="module" src="./js/nanpa-listening-quiz.js?v=67"></script>
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=79';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=81';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',
         pauseScale: 1.00,

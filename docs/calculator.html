@@ -10,8 +10,8 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
 
-  <link rel="preload" href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf" as="font" type="font/otf" crossorigin>
-  <link rel="preload" href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf" as="font" type="font/otf" crossorigin>
+  <link rel="preload" href="./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf" as="font" type="font/ttf" crossorigin>
 
   <style>
     :root {
@@ -186,13 +186,13 @@
     */
     @font-face {
       font-family: "TP-Nasin-Nanpa-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: block;
     }
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: block;
     }
 
@@ -771,8 +771,8 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=79";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=81";
     import { speechUnitsForRenderRun, splitAudioTpWordIntoSyllables } from "./js/sitelen-audio-plan.js?v=70";
 
     /* ============================================================
@@ -1938,7 +1938,8 @@
         preserveNumericCartoucheBreaksInAbbreviation: true,
         autoCartoucheStandaloneProperNames: true,
         showUnknownText: false,
-        breakLinesAtFullStops: false
+        breakLinesAtFullStops: false,
+        cartoucheVulgarFractions: true
       };
     }
 

@@ -41,13 +41,13 @@
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
@@ -503,7 +503,7 @@
   </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
+import SitelenRenderer from "./js73";
 
 (() => {
   "use strict";
@@ -830,6 +830,7 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
         abbreviateNumericCartouches: true,
         nanpaColonParsing: true,
         nanpaColonRendering: true,
+        cartoucheVulgarFractions: true,
         cartoucheCommaTallyMarks: false,
         cartoucheTallyMode: "ucsur"
       },
@@ -922,9 +923,14 @@ const SECRET_RUNNING_TEXT = "???????"; // running (and not yet solved)
   async function renderNumericValueToNewCanvas(value, fontPx) {
     const renderer = await ensureNumericSitelenRenderer(fontPx);
     const input = `[${String(value)}]`;
+    const config = buildNumericCartoucheRendererConfig(fontPx);
     const rendered = await renderer.renderTextToNewCanvas({
       input,
-      ...buildNumericCartoucheRendererConfig(fontPx)
+      ...config,
+      parser: {
+        ...config.parser,
+        numericCartoucheStartGlyph: "nanpa"
+      }
     });
 
     const src = rendered && rendered.canvas;

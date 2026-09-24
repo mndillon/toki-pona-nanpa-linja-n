@@ -124,6 +124,37 @@
   width: 16px;
   height: 16px;
 }
+
+/* Compact input helpers: deliberately secondary to the main editor controls. */
+.vulgarFractionInsertRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: -2px 0 7px;
+}
+
+.vulgarFractionInsertButton {
+  box-sizing: border-box;
+  min-width: 28px;
+  height: 24px;
+  padding: 1px 6px;
+  border: 1px solid rgba(17, 17, 17, 0.24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  color: inherit;
+  font: 600 14px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  cursor: pointer;
+}
+
+.vulgarFractionInsertButton:hover {
+  background: rgba(255, 255, 255, 0.30);
+}
+
+.vulgarFractionInsertButton:focus-visible {
+  outline: 2px solid rgba(17, 17, 17, 0.65);
+  outline-offset: 1px;
+}
   </style>
 </head>
 
@@ -266,6 +297,14 @@
             <span>Pop-out editor</span>
             <span class="tpLine">o open e ilo ante</span>
           </button>
+        </div>
+
+        <div class="vulgarFractionInsertRow" role="group" aria-label="Insert vulgar fraction into input">
+          <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="¼" data-vulgar-fraction-target="appTextIn" title="Insert ¼" aria-label="Insert one quarter">¼</button>
+          <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="⅓" data-vulgar-fraction-target="appTextIn" title="Insert ⅓" aria-label="Insert one third">⅓</button>
+          <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="½" data-vulgar-fraction-target="appTextIn" title="Insert ½" aria-label="Insert one half">½</button>
+          <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="⅔" data-vulgar-fraction-target="appTextIn" title="Insert ⅔" aria-label="Insert two thirds">⅔</button>
+          <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="¾" data-vulgar-fraction-target="appTextIn" title="Insert ¾" aria-label="Insert three quarters">¾</button>
         </div>
 
         <textarea id="appTextIn" rows="18" class="mono" spellcheck="false" autocapitalize="none" autocomplete="off"
@@ -819,6 +858,14 @@ nanpa #~WI.
       </label>
     </div>
 
+    <div class="vulgarFractionInsertRow" role="group" aria-label="Insert vulgar fraction into pop-out input">
+      <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="¼" data-vulgar-fraction-target="appFloatingTextInEditorTextarea" title="Insert ¼" aria-label="Insert one quarter">¼</button>
+      <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="⅓" data-vulgar-fraction-target="appFloatingTextInEditorTextarea" title="Insert ⅓" aria-label="Insert one third">⅓</button>
+      <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="½" data-vulgar-fraction-target="appFloatingTextInEditorTextarea" title="Insert ½" aria-label="Insert one half">½</button>
+      <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="⅔" data-vulgar-fraction-target="appFloatingTextInEditorTextarea" title="Insert ⅔" aria-label="Insert two thirds">⅔</button>
+      <button type="button" class="vulgarFractionInsertButton" data-vulgar-fraction="¾" data-vulgar-fraction-target="appFloatingTextInEditorTextarea" title="Insert ¾" aria-label="Insert three quarters">¾</button>
+    </div>
+
     <input id="appFilePickTextIn" type="file" accept=".txt,text/plain" class="sr-only" />
     <textarea id="appFloatingTextInEditorTextarea" class="mono" spellcheck="false"></textarea>
   </div>
@@ -878,7 +925,7 @@ nanpa #~WI.
           await loadClassicScript("./vendor/fontkit.umd.min.js?v=49");
 
           setMessage("Loading renderer…");
-          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=330");
+          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=347");
         } catch (error) {
           showStartupError(error);
         }

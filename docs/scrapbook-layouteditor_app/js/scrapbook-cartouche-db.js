@@ -9,7 +9,8 @@ import {
   makeKey,
   parseAndValidateLine,
   entryUsesForceMergedWholeEntry,
-} from '../../js/cartouche-api-v3-previewdesc.js?v=33';
+  setNanpaParser,
+} from '../../js/cartouche-api-v3-previewdesc.js?v=37';
 
 const SCRAPBOOK_CARTOUCHE_DB_DEBUG = !!globalThis.SCRAPBOOK_CARTOUCHE_DB_DEBUG;
 function scrapbookCartoucheDebugWarn(...args) {
@@ -27,7 +28,7 @@ const PREVIEW_FONT_URL_TEXT = '../../fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf
 const PREVIEW_FONT_URL_CARTOUCHE = '../../fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf';
 const PREVIEW_FONT_URL_LITERAL = '../../fonts/PatrickHand-Regular.ttf';
 const PREVIEW_FONT_URL_LITERAL_CARTOUCHE = '../../fonts/nasin-nanpa-4.0.2-Helvetica.otf';
-const PREVIEW_RENDERER_URL = '../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268';
+const PREVIEW_RENDERER_URL = '../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275';
 
 function mergedLettersToWordForLocalDb(words) {
   return segmentLetters(words).letters.join('');
@@ -56,8 +57,10 @@ const LOCAL_TP_KNOWN_WORDS = new Set([
 function localWordsLookLikeNanpaRun(words) {
   if (!Array.isArray(words) || !words.length) return false;
   try {
-    const parser = globalThis.NanpaParser || null;
-    return !!(parser && typeof parser.isValidCaps === 'function' && parser.isValidCaps(words.map(w => String(w).toUpperCase()).join('')));
+    // segmentWords now delegates numeric-source recognition to the injected
+    // professional NanpaParser using the ORIGINAL source words, including
+    // strict + relaxed proper names and Nanpa/Toki/Suno/Tenpo forms.
+    return segmentWords(words).some(seg => seg && seg.type === 'nanpa');
   } catch {
     return false;
   }
@@ -236,8 +239,11 @@ function storedCartoucheContentTokens(value) {
 function buildStoredCartoucheInput(value, { forceNormal = false } = {}) {
   const tokens = storedCartoucheContentTokens(value);
   if (!tokens.length) return '';
-  const body = forceNormal ? `"" ${tokens.join(' ')}` : tokens.join(' ');
-  return `[ ${body} ]`;
+  // This path bypasses buildEntryRendererInput for partial preferred entries,
+  // so enforce the same ordinary-cartouche invariant locally: exactly one
+  // leading "" and no later "" tokens. storedCartoucheContentTokens()
+  // has already removed every stored "" placeholder.
+  return `[ "" ${tokens.join(' ')} ]`;
 }
 
 function buildPreferredSplitForceNormalPartialInput(entry) {
@@ -1211,6 +1217,8 @@ async function getNasinNanpaPreviewRenderer(fontPx = 40) {
           cartoucheStyle: 'ssk',
           numericMode: 'compat',
           mixedStyle: 'short',
+          relaxedNanpaLinjanParsing: true,
+          nanpaColonParsing: true,
           cartoucheCommaTallyMarks: true,
           cartoucheTallyMode: 'manual',
         },
@@ -1348,7 +1356,8 @@ export function createScrapbookCartoucheDbController(options = {}) {
   const requestRenderAll = typeof options.requestRenderAll === 'function' ? options.requestRenderAll : () => {};
   const onCombinedPageMapChanged = typeof options.onCombinedPageMapChanged === 'function' ? options.onCombinedPageMapChanged : () => {};
   const getGlobalPageMap = typeof options.getGlobalPageMap === 'function' ? options.getGlobalPageMap : () => state.globalMap;
-  const nanpaParser = options.nanpaParser || null;
+  const nanpaParser = options.nanpaParser || globalThis.NanpaParser || null;
+  if (nanpaParser) setNanpaParser(nanpaParser);
 
   const scopeName = String(options.scopeName || 'scrapbook');
   const scopeLabel = String(options.scopeLabel || scopeName);
@@ -1636,7 +1645,7 @@ export function createScrapbookCartoucheDbController(options = {}) {
       input,
       layout: { fontPx: sizePx, paddingPx: 10, align: 'left' },
       paint: { fgColor: '#111111' },
-      parser: { cartoucheCommaTallyMarks: true, cartoucheTallyMode: 'ucsur', mixedStyle: 'short', showUnknownText: false },
+      parser: { cartoucheCommaTallyMarks: true, cartoucheTallyMode: 'ucsur', mixedStyle: 'short', relaxedNanpaLinjanParsing: true, nanpaColonParsing: true, showUnknownText: false },
       fonts: { roles },
     });
     const svg = renderPlanToVectorSvgElement(plan);

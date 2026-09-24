@@ -33,7 +33,7 @@
     }
     @font-face{
       font-family:"TP-Cartouche-Font";
-      src:url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+      src:url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display:swap;
     }
 
@@ -1187,7 +1187,7 @@
     { kind:"hh-mm-time", value:"14:30" },
     { kind:"iso-date", value:"2026-07-04" },
     { kind:"scientific-notation", value:"4.5e-3" },
-    { kind:"telephone", value:"+1-432-555-6789" },
+    { kind:"telephone", value:"+1-432-555-0100" },
     { kind:"hexadecimal", value:"#C0FFEE" },
     { kind:"hexadecimal", label:"hexadecimal with separators", value:"#FE:DC:BA" },
     { kind:"binary", value:"0b101" }
@@ -1203,6 +1203,7 @@
   const ABBREV_CP_NOKA   = 0xF1943;
   const ABBREV_CP_SUNO   = 0xF1964;
   const ABBREV_CP_TENPO  = 0xF196B;
+  const ABBREV_CP_TOKI   = 0xF196C;
   const ABBREV_CP_KULE   = 0xF191E;
   const ABBREV_CP_KASI   = 0xF1917;
   const ABBREV_CP_KULUPU = 0xF191F;
@@ -1216,10 +1217,6 @@
   const ABBREV_CP_ALA   = 0xF1902;
   const ABBREV_CP_IKE   = 0xF190D;
   const ABBREV_CP_UTA   = 0xF1970;
-  const ABBREV_DROP_AFTER_FIRST_NANPA = new Set([
-    ABBREV_CP_NANPA, ABBREV_CP_NENA, ABBREV_CP_EN, ABBREV_CP_E, ABBREV_CP_OPEN,
-    ABBREV_CP_ALA, ABBREV_CP_IKE, ABBREV_CP_UTA
-  ]);
 
   const STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
     WE:"WA", TE:"TU", LE:"LU", ME:"MU", PE:"PI"
@@ -1229,7 +1226,7 @@
   const DIGIT_TOKENS = new Set([...STRICT_DIGIT_TOKENS, ...RELAXED_DIGIT_TOKENS]);
   const TOKEN_PREFIXES = ["KEKEKE","KEKE","KO","KE","NONONO","NONO","NOKO","OK","NS","NE","NO"];
   const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
-    "Nanpa","Nasa","Noka","Suno","Tenpo",
+    "Nanpa","Nasa","Noka","Suno","Tenpo","Toki",
     "Eke","Eken","Ekeke","Ekeken","Ekekeke","Ekekeken",
     "Keke","Keken","Kekeke","Kekeken",
     "One","Ono","Oko","Eko","Oken","Ene","Inin"
@@ -1314,6 +1311,24 @@
   }
 
   function randInt(min,max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function randomNanpAreaCode(){
+    // NANP area-code shape is NXX (N=2–9). Exclude N11 service codes
+    // such as 211/311/.../911; the 555-0100–0199 subscriber block below
+    // keeps generated practice numbers within the fictional-use range.
+    let area;
+    do {
+      area = `${randInt(2,9)}${randInt(0,9)}${randInt(0,9)}`;
+    } while (area[1] === "1" && area[2] === "1");
+    return area;
+  }
+  function generateInternationalTelephonePracticeValue(){
+    const area = randomNanpAreaCode();
+    const line = String(randInt(100,199)).padStart(4,"0");
+    // Telephone practice is intentionally international NANP form. Keep the
+    // explicit +1 in the source. The shared renderer may use the visible `en`
+    // glyph for +, while the proper-name encoding retains its canonical Ne.
+    return `+1-${area}-555-${line}`;
+  }
   function choice(items){ return items[randInt(0,items.length - 1)]; }
   function shuffle(items){
     const out = Array.from(items);
@@ -1607,15 +1622,16 @@
   function formatProperNameForDisplay(name){ return fixOkenSuffixSpacing(titleCaseNanpaProperNameForDisplay(name)); }
 
   function usesTypedDateTimeHead(kind,nanpaFormat){
-    return nanpaFormat === true && (kind === "hh-mm-time" || kind === "iso-date");
+    return nanpaFormat === true && (kind === "hh-mm-time" || kind === "iso-date" || kind === "telephone");
   }
 
   function typedDateTimeProperName(kind,nanpaFormat,name){
-    const formatted = formatProperNameForDisplay(name);
+    let formatted = formatProperNameForDisplay(name);
     if (!formatted || !usesTypedDateTimeHead(kind,nanpaFormat)) return formatted;
-    const head = kind === "hh-mm-time" ? "Tenpo" : "Suno";
-    if (/^(?:Tenpo|Suno)\b/.test(formatted)) return formatted.replace(/^(?:Tenpo|Suno)\b/,head);
-    return formatted.replace(/^Nanpa\b/,head);
+    const head = kind === "hh-mm-time" ? "Tenpo" : (kind === "iso-date" ? "Suno" : "Toki");
+    if (/^(?:Tenpo|Suno|Toki)\b/.test(formatted)) formatted = formatted.replace(/^(?:Tenpo|Suno|Toki)\b/,head);
+    else formatted = formatted.replace(/^Nanpa\b/,head);
+    return formatted;
   }
 
   function answerModeForKind(kind){
@@ -1695,84 +1711,63 @@
     return `0b${randomBinaryDigits(choice([3,4,5,6,8,10]))}`;
   }
 
-  function generateItemForKind(kind,properNameMode){
-    if (kind === "binary"){
-      const s = generateBinaryPracticeValue();
-      return makeItem(kind,s,s,"binary",properNameMode,state.settings.nanpaFormat);
-    }
-    if (kind === "hexadecimal"){
-      const s = generateHexPracticeValue();
-      return makeItem(kind,s,s,"hex",properNameMode,state.settings.nanpaFormat);
-    }
-    if (kind === "single-digit-integer"){
-      const s = String(randInt(0,9));
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
-    }
+  function generateSourceTextForKind(kind){
+    // Every question starts as one canonical source-text value.  Nothing else
+    // about the question is invented here; cartouches, proper names, codepoints,
+    // abbreviations, hints and review data are derived from this text by the
+    // shared nanpa-linja-n library.
+    if (kind === "binary") return generateBinaryPracticeValue();
+    if (kind === "hexadecimal") return generateHexPracticeValue();
+    if (kind === "single-digit-integer") return String(randInt(0,9));
     if (kind === "integer"){
       const magnitude = choice([99,999,9999,999999]);
-      const s = String(randInt(0,magnitude));
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
+      return String(randInt(0,magnitude));
     }
     if (kind === "decimal"){
       const whole = randInt(0,999);
       const places = choice([1,2,3]);
       const max = Math.pow(10,places)-1;
       const frac = String(randInt(0,max)).padStart(places,"0");
-      const s = `${whole}.${frac}`;
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
+      return `${whole}.${frac}`;
     }
     if (kind === "negative"){
       const base = Math.random() < 0.35
         ? `${randInt(0,999)}.${String(randInt(0,99)).padStart(2,"0")}`
         : String(randInt(1,999999));
-      const s = `-${base}`;
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
+      return `-${base}`;
     }
-    if (kind === "thousands"){
-      const s = formatCommas(randInt(1000,999999));
-      return makeItem(kind,s,s,"commasOptional",properNameMode,state.settings.nanpaFormat);
-    }
-    if (kind === "millions"){
-      const s = formatCommas(randInt(1000000,99999999));
-      return makeItem(kind,s,s,"commasOptional",properNameMode,state.settings.nanpaFormat);
-    }
-    if (kind === "percent"){
-      const s = Math.random() < 0.5 ? `${randInt(1,999)}%` : `${randInt(0,99)}.${randInt(1,9)}%`;
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
-    }
-    if (kind === "fraction"){
-      const s = choice(FRACTION_CHOICES);
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
-    }
-    if (kind === "integer-and-fraction"){
-      const s = `${randInt(1,99)}+${choice(FRACTION_CHOICES)}`;
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
-    }
+    if (kind === "thousands") return formatCommas(randInt(1000,999999));
+    if (kind === "millions") return formatCommas(randInt(1000000,99999999));
+    if (kind === "percent") return Math.random() < 0.5 ? `${randInt(1,999)}%` : `${randInt(0,99)}.${randInt(1,9)}%`;
+    if (kind === "fraction") return choice(FRACTION_CHOICES);
+    if (kind === "integer-and-fraction") return `${randInt(1,99)}+${choice(FRACTION_CHOICES)}`;
     if (kind === "scientific-notation"){
       const mantissa = `${randInt(1,9)}.${randInt(1,9)}`;
       let exponent = randInt(-9,9);
       if (exponent === 0) exponent = choice([-3,3]);
-      const s = `${mantissa}e${exponent}`;
-      return makeItem(kind,s,s,"scientific",properNameMode,state.settings.nanpaFormat);
+      return `${mantissa}e${exponent}`;
     }
-    if (kind === "hh-mm-time"){
-      const s = `${pad2(randInt(0,23))}:${pad2(randInt(0,59))}`;
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
-    }
-    if (kind === "telephone"){
-      const area = String(randInt(100,999));
-      const line = String(randInt(0,9999)).padStart(4,"0");
-      const s = `+1-${area}-555-${line}`;
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
-    }
+    if (kind === "hh-mm-time") return `${pad2(randInt(0,23))}:${pad2(randInt(0,59))}`;
+    if (kind === "telephone") return generateInternationalTelephonePracticeValue();
     if (kind === "iso-date"){
       const year = randInt(1900,2099);
       const month = randInt(1,12);
       const day = randInt(1,dayCountForMonth(year,month));
-      const s = `${year}-${pad2(month)}-${pad2(day)}`;
-      return makeItem(kind,s,s,"exact",properNameMode,state.settings.nanpaFormat);
+      return `${year}-${pad2(month)}-${pad2(day)}`;
     }
     throw new Error(`Unsupported number type: ${kind}`);
+  }
+
+  function generateItemForKind(kind,properNameMode){
+    const sourceText = generateSourceTextForKind(kind);
+    return makeItem(
+      kind,
+      sourceText,
+      sourceText,
+      answerModeForKind(kind),
+      properNameMode,
+      state.settings.nanpaFormat
+    );
   }
 
   function buildSessionItems(){
@@ -1794,7 +1789,7 @@
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
   async function getNanpaModule(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275");
     return nanpaModulePromise;
   }
 
@@ -1844,12 +1839,14 @@
       enableBinaryRendering:true,
       nanpaColonParsing:useNanpaFormat,
       nanpaColonRendering:useNanpaFormat,
+      numericCartoucheStartGlyph:useNanpaFormat && kind === "telephone" ? "toki" : undefined,
+      cartoucheVulgarFractions:true,
       autoCartoucheStandaloneProperNames:true,
       showUnknownText:false
     };
   }
 
-  async function renderSharedNumericCartoucheToCanvas(canvas,value,{
+  async function deriveSharedNumericCartouche(value,{
     kind="integer",
     properNameMode="relaxed",
     nanpaFormat=false,
@@ -1857,11 +1854,10 @@
     fontPx=LARGE_TINY_FONT_SIZE,
     requireHighlightLayout=false
   }={}){
-    if (!canvas) throw new Error("Shared cartouche target canvas is missing.");
     await ensureCartoucheFontLoaded();
     const renderer = await getSharedCartoucheRenderer();
     const parser = sharedCartoucheParserOptions({kind,properNameMode,nanpaFormat,abbreviated});
-    const plan = await renderer.buildRenderPlan({
+    const renderPlan = await renderer.buildRenderPlan({
       input:String(value ?? ""),
       layout:{fontPx:Math.max(8,Number(fontPx) || LARGE_TINY_FONT_SIZE),paddingPx:0,align:"left"},
       parser,
@@ -1876,7 +1872,7 @@
         }
       }
     });
-    const numericRuns = Array.from(plan?.lines || []).flatMap(line => Array.from(line?.runs || []))
+    const numericRuns = Array.from(renderPlan?.lines || []).flatMap(line => Array.from(line?.runs || []))
       .filter(run => run?.kind === "cartouche" && (run?.fontRole === "number" || run?._element?.isNumericCartouche === true));
     if (numericRuns.length !== 1){
       throw new Error(`Shared renderer produced ${numericRuns.length} numeric cartouches for ${String(value ?? "")}.`);
@@ -1887,36 +1883,59 @@
       throw new Error("Shared renderer did not return a usable cartouche canvas.");
     }
 
+    const glyphLayout = Array.from(run?.audioGlyphLayout || run?._element?.audioGlyphLayout || []);
+    const rawSourceIndices = Array.from(run?.audioSourceIndices || run?._element?.audioSourceIndices || []);
+    const sourceCps = Array.from(run?.audioSourceCps || run?._element?.audioSourceCps || []).map(Number);
+    const displayCps = Array.from(run?.cps || run?._element?.cps || []).map(Number);
+    if (requireHighlightLayout && (!glyphLayout.length || glyphLayout.length !== displayCps.length)){
+      throw new Error("Shared renderer did not expose complete cartouche highlight geometry.");
+    }
+    const sourceIndices = displayCps.map((_cp,index) => {
+      const direct = Number(rawSourceIndices[index]);
+      if (Number.isInteger(direct) && direct >= 0) return direct;
+      const fromLayout = Number(glyphLayout[index]?.sourceIndex);
+      return Number.isInteger(fromLayout) && fromLayout >= 0 ? fromLayout : index;
+    });
+    const fontFamily = String(run?.fontFamily || run?._element?.fontFamily || "");
+    if (fontFamily && fontFamily !== FONT_FAMILY){
+      throw new Error(`Shared cartouche renderer used unexpected font ${fontFamily}.`);
+    }
+
+    return {
+      renderer,
+      parser,
+      plan:renderPlan,
+      run,
+      renderedCanvas,
+      glyphLayout,
+      sourceCps:sourceCps.length ? sourceCps : displayCps.slice(),
+      displayCps,
+      sourceIndices,
+      fontFamily
+    };
+  }
+
+  async function renderSharedNumericCartoucheToCanvas(canvas,value,options={}){
+    if (!canvas) throw new Error("Shared cartouche target canvas is missing.");
+    const abbreviated = options.abbreviated === true;
+    const kind = options.kind || "integer";
+    const derived = await deriveSharedNumericCartouche(value,options);
+    const {run,plan,renderedCanvas,glyphLayout,sourceCps,displayCps,sourceIndices,fontFamily} = derived;
+
     canvas.width = renderedCanvas.width;
     canvas.height = renderedCanvas.height;
     const ctx = canvas.getContext("2d",{alpha:true});
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(renderedCanvas,0,0);
 
-    const glyphLayout = Array.from(run?.audioGlyphLayout || run?._element?.audioGlyphLayout || []);
-    const sourceIndices = Array.from(run?.audioSourceIndices || run?._element?.audioSourceIndices || []);
-    const sourceCps = Array.from(run?.audioSourceCps || run?._element?.audioSourceCps || []).map(Number);
-    const displayCps = Array.from(run?.cps || run?._element?.cps || []).map(Number);
-    if (requireHighlightLayout && (!glyphLayout.length || glyphLayout.length !== displayCps.length)){
-      throw new Error("Shared renderer did not expose complete cartouche highlight geometry.");
-    }
-
     canvas.dataset.sharedCartoucheRenderer = "true";
     canvas.dataset.sharedCartoucheAbbreviated = abbreviated ? "true" : "false";
-    canvas._reviewFullCodepoints = sourceCps.length ? sourceCps : displayCps.slice();
+    canvas._reviewFullCodepoints = sourceCps.slice();
     canvas._reviewSharedCodepoints = displayCps.slice();
-    canvas._reviewSharedSourceIndices = displayCps.map((_cp,index) => {
-      const direct = Number(sourceIndices[index]);
-      if (Number.isInteger(direct) && direct >= 0) return direct;
-      const fromLayout = Number(glyphLayout[index]?.sourceIndex);
-      return Number.isInteger(fromLayout) && fromLayout >= 0 ? fromLayout : index;
-    });
+    canvas._reviewSharedSourceIndices = sourceIndices.slice();
     canvas._reviewSharedKind = kind;
-    canvas._reviewSharedAbbreviated = abbreviated === true;
-    canvas._reviewSharedFontFamily = String(run?.fontFamily || run?._element?.fontFamily || "");
-    if (canvas._reviewSharedFontFamily && canvas._reviewSharedFontFamily !== FONT_FAMILY){
-      throw new Error(`Shared cartouche renderer used unexpected font ${canvas._reviewSharedFontFamily}.`);
-    }
+    canvas._reviewSharedAbbreviated = abbreviated;
+    canvas._reviewSharedFontFamily = fontFamily;
     const glyphTop = glyphLayout.length
       ? Math.max(0,Math.min(...glyphLayout.map(item => Number(item?.y) || 0)))
       : 0;
@@ -1929,17 +1948,17 @@
         width:Math.max(1,Number(item?.width) || 1),
         top:Math.max(0,Number(item?.y) || 0),
         height:Math.max(1,Number(item?.height) || canvas.height),
-        sourceIndex:canvas._reviewSharedSourceIndices[index],
+        sourceIndex:sourceIndices[index],
         cp:displayCps[index]
       })),
       innerY:glyphTop,
       innerHeight:Math.max(1,glyphBottom - glyphTop)
     };
-    return {canvas,run,plan};
+    return {canvas,run,plan,derived};
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=79").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=81").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 
@@ -1958,6 +1977,7 @@
             enableBinaryRendering:true,
             nanpaColonParsing:useNanpaFormat,
             nanpaColonRendering:useNanpaFormat,
+            numericCartoucheStartGlyph:useNanpaFormat && item.kind === "telephone" ? "toki" : undefined,
             relaxedNanpaLinjanParsing:false,
             relaxedNanpaLinjanRendering:false
           });
@@ -1975,6 +1995,7 @@
             enableBinaryRendering:true,
             nanpaColonParsing:useNanpaFormat,
             nanpaColonRendering:useNanpaFormat,
+            numericCartoucheStartGlyph:useNanpaFormat && item.kind === "telephone" ? "toki" : undefined,
             relaxedNanpaLinjanParsing:true,
             relaxedNanpaLinjanRendering:true
           });
@@ -2119,34 +2140,46 @@
     return false;
   }
 
-  function buildProgressiveCartoucheUnits(fullCodepoints,kind){
+  function buildProgressiveCartoucheUnits(fullCodepoints,kind,sharedAbbreviatedEntries){
     const cps = Array.from(fullCodepoints ?? []).map(Number);
-    const entries = abbreviateNumericCartoucheEntries(cps,abbreviationOptionsForKind(kind));
+    const entries = Array.from(sharedAbbreviatedEntries ?? []).map((entry,index) => ({
+      cp:Number(entry?.cp),
+      sourceIndex:Number.isInteger(Number(entry?.sourceIndex)) ? Number(entry.sourceIndex) : index
+    })).filter(entry => Number.isFinite(entry.cp));
+    if (cps.length && !entries.length) throw new Error("Shared renderer did not provide abbreviated cartouche glyphs.");
     const units = [];
     if (!cps.length) return {entries,units};
 
-    // Decimal Ne-format, decimal Nanpa format, and hexadecimal Nasa format all
-    // have a structural opening frame followed by one supporting marker: e for
-    // Ne-format, or the visible colon for Nanpa/Nasa format.
+    // Nanpa-format decimal/date/time/telephone questions begin by revealing
+    // only their semantic opening glyph. The colon is structural and is held
+    // back until the learner has entered Nanpa/Suno/Tenpo/Toki.
     const openingFrame = cps[0];
-    const typedDateTimeOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO;
+    const typedDateTimeOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO || openingFrame === ABBREV_CP_TOKI;
     const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA || typedDateTimeOpening;
     const closingFrame = typedDateTimeOpening ? ABBREV_CP_NANPA : openingFrame;
-    let openingEnd = 1;
-    if (supportedFrame && cps.length > 1 && (cps[1] === ABBREV_CP_E || cps[1] === ABBREV_CP_EN || cps[1] === ABBREV_CP_KOLON)){
-      openingEnd = 2;
-    }
+    const hasColonOpening = supportedFrame && cps.length > 1 && cps[1] === ABBREV_CP_KOLON;
+    const openingEnd = hasColonOpening ? 1 : (
+      supportedFrame && cps.length > 1 && (cps[1] === ABBREV_CP_E || cps[1] === ABBREV_CP_EN) ? 2 : 1
+    );
     units.push({kind:"opening",start:0,end:Math.min(cps.length,openingEnd)});
+    if (hasColonOpening) units.push({kind:"separator",start:1,end:2});
 
-    const hasClosingFrame = supportedFrame && cps.length > openingEnd && cps[cps.length - 1] === closingFrame;
+    const contentStart = hasColonOpening ? 2 : openingEnd;
+    const hasClosingFrame = supportedFrame && cps.length > contentStart && cps[cps.length - 1] === closingFrame;
     const interiorEnd = hasClosingFrame ? cps.length - 1 : cps.length;
-    let cursor = openingEnd;
+    let cursor = contentStart;
     while (cursor < interiorEnd){
       let length = Math.min(2,interiorEnd - cursor);
       let unitKind = "value";
       if (cps[cursor] === ABBREV_CP_NENA && cursor + 1 < interiorEnd){
         const next = cps[cursor + 1];
-        if (next === ABBREV_CP_ONA){
+        // Immediately after a Nanpa-format colon, nena+en is the explicit
+        // positive sign. Keep it as its own semantic reveal unit so the
+        // following digit is not exposed until the learner has entered Ne.
+        if (hasColonOpening && cursor === 2 && next === ABBREV_CP_EN){
+          length = 2;
+          unitKind = "positive";
+        }else if (next === ABBREV_CP_ONA){
           length = Math.min(2,interiorEnd - cursor);
           unitKind = "negative";
         }else{
@@ -2191,11 +2224,29 @@
         continue;
       }
 
-      // Numeric punctuation is a visual prompt for the next part of the proper
-      // name. Reveal its complete glyph sequence together with the preceding
-      // value glyph, before the learner types the punctuation's reassigned n.
-      if (unit.kind === "punctuation" && groups.length){
-        groups[groups.length - 1].units.push(unit);
+      // The Nanpa-format colon is structural rather than something the learner
+      // types. Reveal it only after the opener has been completed, together with
+      // the next semantic unit. If that unit is an explicit positive sign, the
+      // following numeric value remains a later reveal.
+      if (unit.kind === "separator"){
+        if (index + 1 < units.length && units[index + 1].kind !== "closing"){
+          groups.push({units:[unit,units[index + 1]]});
+          index += 2;
+        }else{
+          groups.push({units:[unit]});
+          index++;
+        }
+        continue;
+      }
+
+      // Numeric punctuation is a visual cue for the value immediately before it.
+      // Reveal it together with that preceding value so the learner can infer
+      // the value's terminating n and the punctuation word that follows. This
+      // applies in Nanpa format as well as legacy Ne format. The explicit +
+      // remains separate because it is represented by its own "positive" unit.
+      if (unit.kind === "punctuation"){
+        if (groups.length) groups[groups.length - 1].units.push(unit);
+        else groups.push({units:[unit]});
         index++;
         continue;
       }
@@ -2284,20 +2335,32 @@
     const properName = mode === "strict"
       ? formatProperNameForDisplay(strictParsed.properName ?? parsed.properName)
       : formatProperNameForDisplay(parsed.quizProperName ?? selectedParsed.properName ?? strictParsed.properName ?? parsed.properName);
-    const fullCodepoints = Array.from(
-      selectedParsed.ucsurCodepoints ?? selectedParsed.innerCodepoints ?? selectedParsed.codepoints ?? []
-    ).map(Number);
-    const {entries,units} = buildProgressiveCartoucheUnits(fullCodepoints,item.kind);
+    // Derive the visual sequence from the original generated source text with
+    // the shared renderer.  In particular, this is the authoritative place
+    // where a leading telephone `+` becomes the abbreviated visible `en` glyph.
+    const sharedAbbreviated = await deriveSharedNumericCartouche(item.parserInput,{
+      kind:item.kind,
+      properNameMode:mode,
+      nanpaFormat:item.nanpaFormat,
+      abbreviated:true,
+      fontPx:54,
+      requireHighlightLayout:true
+    });
+    const fullCodepoints = sharedAbbreviated.sourceCps.slice();
+    const sharedEntries = sharedAbbreviated.displayCps.map((cp,index) => ({
+      cp,
+      sourceIndex:sharedAbbreviated.sourceIndices[index]
+    }));
+    const {entries,units} = buildProgressiveCartoucheUnits(fullCodepoints,item.kind,sharedEntries);
     let groups = groupProgressiveCartoucheUnits(units);
-    let abbreviatedCodepoints = entries.map(entry => entry.cp);
+    const abbreviatedCodepoints = entries.map(entry => entry.cp);
     if (item.kind === "hexadecimal" || item.kind === "binary"){
       const parserAbbreviatedCodepoints = Array.from(selectedParsed.abbreviatedUcsurCodepoints ?? []).map(Number);
       const parserAbbreviatedWords = Array.from(selectedParsed.abbreviatedWords ?? []);
       const parserGroups = buildBasedProgressiveGroupsFromParser(parserAbbreviatedCodepoints,parserAbbreviatedWords,item.kind);
-      if (parserGroups){
-        groups = parserGroups;
-        abbreviatedCodepoints = parserAbbreviatedCodepoints;
-      }
+      const parserMatchesShared = parserAbbreviatedCodepoints.length === abbreviatedCodepoints.length &&
+        parserAbbreviatedCodepoints.every((cp,index) => cp === abbreviatedCodepoints[index]);
+      if (parserGroups && parserMatchesShared) groups = parserGroups;
     }
     const strictProperName = formatProperNameForDisplay(strictParsed.properName ?? parsed.properName);
     const relaxedProperName = formatProperNameForDisplay(
@@ -2326,7 +2389,11 @@
       properNameWords[0]?.toLowerCase() === "suno" &&
       fullCodepoints[0] === ABBREV_CP_SUNO &&
       fullCodepoints[1] === ABBREV_CP_KOLON;
-    const hasTypedDecimalColonOpening = hasNanpaColonOpening || hasTenpoColonOpening || hasSunoColonOpening;
+    const hasTokiColonOpening =
+      properNameWords[0]?.toLowerCase() === "toki" &&
+      fullCodepoints[0] === ABBREV_CP_TOKI &&
+      fullCodepoints[1] === ABBREV_CP_KOLON;
+    const hasTypedDecimalColonOpening = hasNanpaColonOpening || hasTenpoColonOpening || hasSunoColonOpening || hasTokiColonOpening;
     const hasNasaColonOpening =
       properNameWords[0]?.toLowerCase() === "nasa" && fullCodepoints[0] === ABBREV_CP_NASA && fullCodepoints[1] === ABBREV_CP_KOLON;
     const hasNokaColonOpening =
@@ -2357,13 +2424,28 @@
       }
     }else if (hasTypedDecimalColonOpening && groups.length){
       const finalLength = expectedCompact.length;
-      const openingSourceLength = Math.max(0,Number(groups[0]?.units?.[0]?.end) || 0);
       const openingNameLength = normalizeProgressiveProperNameInput(properNameWords[0]).length;
-      const openingLengthDelta = openingNameLength - openingSourceLength;
+      // In the shared source stream, opener+colon occupy two codepoints but the
+      // proper name represents them with the opener word alone. After that
+      // boundary every source codepoint again advances one compact proper-name
+      // character, including the two-codepoint explicit-positive Ne token.
+      const openingLengthDelta = openingNameLength - 2;
       for (let groupIndex=0;groupIndex<groups.length;groupIndex++){
-        groups[groupIndex].requiredLength = groupIndex === groups.length - 1
-          ? finalLength
-          : Math.max(0,Math.min(finalLength,groups[groupIndex].end + openingLengthDelta));
+        if (groupIndex === 0){
+          groups[groupIndex].requiredLength = Math.min(finalLength,openingNameLength);
+          continue;
+        }
+        if (groupIndex === groups.length - 1){
+          groups[groupIndex].requiredLength = finalLength;
+          continue;
+        }
+        let requiredLength = groups[groupIndex].end + openingLengthDelta;
+        const lastUnitKind = groups[groupIndex].units[groups[groupIndex].units.length - 1]?.kind;
+        const nextFirstUnitKind = groups[groupIndex + 1]?.units?.[0]?.kind;
+        // A value immediately before numeric punctuation contributes the
+        // terminating n to the proper name before the punctuation word begins.
+        if (lastUnitKind === "value" && nextFirstUnitKind === "punctuation") requiredLength += 1;
+        groups[groupIndex].requiredLength = Math.max(0,Math.min(finalLength,requiredLength));
       }
     // Full Ne-format cartouche codepoints and proper-name letters are normally
     // one-to-one. Keep the existing proportional fallback unchanged for older
@@ -2383,8 +2465,10 @@
       expectedCompact,
       strictCompact,
       relaxedCompact,
+      sourceText:item.parserInput,
       fullCodepoints,
       abbreviatedCodepoints,
+      abbreviatedSourceIndices:sharedAbbreviated.sourceIndices.slice(),
       groups
     };
     item.progressiveVisibleGroupCount = clamp(
@@ -2917,7 +3001,7 @@
     return !!(item && (item.revealed || item.hadWrongAttempt));
   }
 
-  async function buildReviewRevealDataFromParsed(parsed,properNameMode=parsed.properNameMode,kind="integer"){
+  async function buildReviewRevealDataFromParsed(parsed,properNameMode=parsed.properNameMode,kind="integer",sourceValue="",nanpaFormat=false){
     const strictParsed = parsed.strictParsed ?? parsed;
     const quizParsed = parsed.quizParsed ?? parsed;
     const mode = normalizeProperNameMode(properNameMode);
@@ -2925,15 +3009,19 @@
     const selectedName = mode === "strict"
       ? (strictParsed.properName ?? parsed.properName)
       : (parsed.quizProperName ?? selectedParsed.properName ?? strictParsed.properName ?? parsed.properName);
-    const fullCodepoints = Array.from(
-      selectedParsed.ucsurCodepoints ?? selectedParsed.innerCodepoints ?? selectedParsed.codepoints ?? []
-    ).map(Number);
+    const shared = await deriveSharedNumericCartouche(sourceValue,{
+      kind,
+      properNameMode:mode,
+      nanpaFormat:nanpaFormat === true,
+      abbreviated:true,
+      fontPx:LARGE_TINY_FONT_SIZE
+    });
 
     return {
       properName:formatProperNameForDisplay(selectedName),
       uniqueCode:String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? ""),
-      fullCodepoints,
-      abbreviatedCodepoints:kind === "binary" ? Array.from(selectedParsed.abbreviatedUcsurCodepoints ?? [],Number) : abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(kind))
+      fullCodepoints:shared.sourceCps.slice(),
+      abbreviatedCodepoints:shared.displayCps.slice()
     };
   }
 
@@ -2945,12 +3033,23 @@
       Array.isArray(record.fullCodepoints) &&
       Array.isArray(record.abbreviatedCodepoints) &&
       typeof record.uniqueCode === "string";
-    if (hasSelectedModeReveal) return {
-      ...record,
-      properNameMode:mode,
-      nanpaFormat,
-      properName:typedDateTimeProperName(record.kind,nanpaFormat,record.properName)
-    };
+    if (hasSelectedModeReveal){
+      const shared = await deriveSharedNumericCartouche(record.value,{
+        kind:record.kind || "integer",
+        properNameMode:mode,
+        nanpaFormat,
+        abbreviated:true,
+        fontPx:LARGE_TINY_FONT_SIZE
+      });
+      return {
+        ...record,
+        properNameMode:mode,
+        nanpaFormat,
+        properName:typedDateTimeProperName(record.kind,nanpaFormat,record.properName),
+        fullCodepoints:shared.sourceCps.slice(),
+        abbreviatedCodepoints:shared.displayCps.slice()
+      };
+    }
 
     // Older saved sessions contain both strict and relaxed fields. Select only
     // the fields matching the mode used for that session, without displaying
@@ -2960,14 +3059,20 @@
       ? record.strictFullCodepoints
       : record.relaxedFullCodepoints;
     if (legacyProperName && Array.isArray(legacyFullCodepoints)){
-      const fullCodepoints = Array.from(legacyFullCodepoints).map(Number);
+      const shared = await deriveSharedNumericCartouche(record.value,{
+        kind:record.kind || "integer",
+        properNameMode:mode,
+        nanpaFormat,
+        abbreviated:true,
+        fontPx:LARGE_TINY_FONT_SIZE
+      });
       return {
         ...record,
         properNameMode:mode,
         nanpaFormat,
         properName:typedDateTimeProperName(record.kind,nanpaFormat,legacyProperName),
-        fullCodepoints,
-        abbreviatedCodepoints:record.kind === "binary" ? Array.from(fullCodepoints.length ? (await ensureParsed(makeItem(record.kind,record.value,record.value,"binary",mode,nanpaFormat))).quizParsed?.abbreviatedUcsurCodepoints ?? [] : [],Number) : abbreviateNumericCartoucheCps(fullCodepoints,abbreviationOptionsForKind(record.kind)),
+        fullCodepoints:shared.sourceCps.slice(),
+        abbreviatedCodepoints:shared.displayCps.slice(),
         uniqueCode:String(record.uniqueCode ?? "")
       };
     }
@@ -2983,7 +3088,7 @@
     const parsed = await ensureParsed(temp);
     return {
       ...record,
-      ...await buildReviewRevealDataFromParsed(parsed,mode,record.kind),
+      ...await buildReviewRevealDataFromParsed(parsed,mode,record.kind,record.value,nanpaFormat),
       properNameMode:mode,
       nanpaFormat
     };
@@ -2991,7 +3096,7 @@
 
   async function makeReviewRecord(item,index){
     const parsed = await ensureParsed(item);
-    const revealData = await buildReviewRevealDataFromParsed(parsed,item.properNameMode,item.kind);
+    const revealData = await buildReviewRevealDataFromParsed(parsed,item.properNameMode,item.kind,item.parserInput,item.nanpaFormat);
     return {
       index,
       kind:item.kind,
@@ -3229,7 +3334,7 @@
     if (!cps.length) return [];
     const groups = [];
     const openingFrame = cps[0];
-    const typedDateTimeOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO;
+    const typedDateTimeOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO || openingFrame === ABBREV_CP_TOKI;
     const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA || typedDateTimeOpening;
     const closingFrame = typedDateTimeOpening ? ABBREV_CP_NANPA : openingFrame;
     let openingEnd = 1;
@@ -3273,7 +3378,7 @@
     let unitCursor = 0;
     let groupCursor = 0;
     const firstWord = String(units[0]?.word ?? "").toLowerCase();
-    if (["nanpa","nasa","tenpo","suno"].includes(firstWord)){
+    if (["nanpa","nasa","tenpo","suno","toki"].includes(firstWord)){
       const firstWordIndex = units[0].wordIndex;
       while (unitCursor < units.length && units[unitCursor].wordIndex === firstWordIndex){
         map[units[unitCursor].index] = Array.from(groups[0]);
@@ -3594,7 +3699,7 @@
     for (const unit of units){
       const lowerText = String(unit.text ?? "").toLowerCase();
 
-      if (kind !== "hexadecimal" && kind !== "binary" && unit.wordIndex === 0 && ["nanpa","tenpo","suno"].includes(String(unit.word ?? "").toLowerCase())){
+      if (kind !== "hexadecimal" && kind !== "binary" && unit.wordIndex === 0 && ["nanpa","tenpo","suno","toki"].includes(String(unit.word ?? "").toLowerCase())){
         map[unit.index] = [];
         continue;
       }
@@ -4683,9 +4788,20 @@
       // in Review and History, rather than the immediate play reveal.
       el.revealCodeLine.classList.add("hidden");
       el.revealCode.textContent = String(strictParsed.uniqueCode ?? parsed.uniqueCode ?? "");
-      await ensureCartoucheFontLoaded();
-      renderCartoucheToCanvas(el.normalCartouche,quizParsed.ucsurCodepoints);
-      renderCartoucheToCanvas(el.abbreviatedCartouche,item.kind === "binary" ? Array.from(quizParsed.abbreviatedUcsurCodepoints ?? [],Number) : abbreviateNumericCartoucheCps(quizParsed.ucsurCodepoints,abbreviationOptionsForKind(item.kind)));
+      await renderSharedNumericCartoucheToCanvas(el.normalCartouche,item.parserInput,{
+        kind:item.kind,
+        properNameMode:item.properNameMode,
+        nanpaFormat:item.nanpaFormat,
+        abbreviated:false,
+        fontPx:LARGE_TINY_FONT_SIZE
+      });
+      await renderSharedNumericCartoucheToCanvas(el.abbreviatedCartouche,item.parserInput,{
+        kind:item.kind,
+        properNameMode:item.properNameMode,
+        nanpaFormat:item.nanpaFormat,
+        abbreviated:true,
+        fontPx:LARGE_TINY_FONT_SIZE
+      });
       el.reveal.classList.add("advanceReady");
       el.reveal.title = "Click or tap anywhere in this answer to continue";
       el.reveal.classList.remove("hidden");
@@ -4793,7 +4909,7 @@
     await document.fonts.ready;
   }
   function getQuarterCodepointsSet(){
-    return new Set([0xF193D,ABBREV_CP_SUNO,ABBREV_CP_TENPO,0xF1940,0xF1941,0xF193E,ABBREV_CP_NOKA,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970,ABBREV_CP_KOLON]);
+    return new Set([0xF193D,ABBREV_CP_SUNO,ABBREV_CP_TENPO,ABBREV_CP_TOKI,0xF1940,0xF1941,0xF193E,ABBREV_CP_NOKA,0xF1909,0xF190B,0xF1947,0xF1902,0xF190D,0xF1970,ABBREV_CP_KOLON]);
   }
   function getOneThirdsCodepointsSet(){ return new Set([0xF1917,ABBREV_CP_KULE]); }
   function getHalfCodepointsSet(){ return new Set([0xF1914]); }
@@ -4828,70 +4944,6 @@
     ctx.arcTo(x,y+h,x,y,radius);
     ctx.arcTo(x,y,x+w,y,radius);
     ctx.closePath();
-  }
-  function abbreviateNumericCartoucheEntries(cps,{showTelephoneHyphenEn=true}={}){
-    const input = Array.from(cps ?? []).map(Number);
-    if (!input.length) return [];
-    const out = [];
-    const openingFrame = input[0];
-    const typedDateTimeOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO;
-    const supportedOpeningFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA || typedDateTimeOpening;
-    const closingFrame = typedDateTimeOpening ? ABBREV_CP_NANPA : openingFrame;
-    let keptOpeningFrame = false;
-    const hasFullPositiveOpening =
-      openingFrame === ABBREV_CP_NANPA &&
-      input.length >= 4 &&
-      input[0] === ABBREV_CP_NANPA &&
-      input[1] === ABBREV_CP_E &&
-      input[2] === ABBREV_CP_NENA &&
-      input[3] === ABBREV_CP_E;
-    const hasFullScaffoldingAfterOpening = input.slice(2,-1).some(cp =>
-      cp === ABBREV_CP_E || ABBREV_DROP_AFTER_FIRST_NANPA.has(cp)
-    );
-    const hasAlreadyAbbreviatedPositiveOpening =
-      !hasFullPositiveOpening &&
-      openingFrame === ABBREV_CP_NANPA &&
-      !hasFullScaffoldingAfterOpening &&
-      input.length >= 3 &&
-      input[0] === ABBREV_CP_NANPA &&
-      input[1] === ABBREV_CP_EN;
-    for (let i=0;i<input.length;i++){
-      if (showTelephoneHyphenEn && keptOpeningFrame &&
-          input[i] === ABBREV_CP_NENA && (input[i+1] === ABBREV_CP_E || input[i+1] === ABBREV_CP_EN) &&
-          input[i+2] === ABBREV_CP_NENA && (input[i+3] === ABBREV_CP_E || input[i+3] === ABBREV_CP_EN)){
-        out.push({cp:ABBREV_CP_E,sourceIndex:i+1});
-        i += 3;
-        continue;
-      }
-      const cp = input[i];
-      const isFinalFrame = supportedOpeningFrame && cp === closingFrame && i === input.length - 1;
-      if (!keptOpeningFrame){
-        out.push({cp,sourceIndex:i});
-        if (supportedOpeningFrame && cp === openingFrame) keptOpeningFrame=true;
-        continue;
-      }
-      if (isFinalFrame){ out.push({cp,sourceIndex:i}); continue; }
-      if (hasFullPositiveOpening && i === 1){
-        out.push({cp:ABBREV_CP_EN,sourceIndex:3});
-        i = 3;
-        continue;
-      }
-      if (hasAlreadyAbbreviatedPositiveOpening && i === 1){
-        out.push({cp:ABBREV_CP_EN,sourceIndex:1});
-        continue;
-      }
-      if (ABBREV_DROP_AFTER_FIRST_NANPA.has(cp)) continue;
-      out.push({cp,sourceIndex:i});
-    }
-    return out;
-  }
-  function abbreviateNumericCartoucheCps(cps,options={}){
-    return abbreviateNumericCartoucheEntries(cps,options).map(entry => entry.cp);
-  }
-  function abbreviationOptionsForKind(kind){
-    // All abbreviated numeric cartouches show the optional Ene spacer.
-    // Keep the kind parameter so every existing call site remains unchanged.
-    return {showTelephoneHyphenEn:true};
   }
   function renderCartoucheToCanvas(canvas,codepoints,largePx=LARGE_TINY_FONT_SIZE,smallPx=SMALL_TINY_FONT_SIZE,options=CARTOUCHE_RENDER_OPTS){
     const pad=options.padding ?? 8, border=options.border ?? 1, corner=options.cornerRadius ?? 10, letterGap=options.letterGap ?? 2;

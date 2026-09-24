@@ -637,6 +637,13 @@ const SitelenRenderer = (() => {
   function cartoucheScaleAliasFamilyForPx(fontFamily, logicalFontPx) {
     const family = String(fontFamily || "").trim();
     if (!family) return family;
+    // Fonts that use inline cartouche scaling (native vulgar-fraction mode or
+    // renderer-side legacy emulation) must never combine it with ss12/ss13/ss14
+    // aliases. The base family receives the inline scale-control stream directly.
+    if (
+      (typeof __cartoucheVulgarFractions !== "undefined" && __cartoucheVulgarFractions) ||
+      (typeof __emulateLegacyCartoucheScaling !== "undefined" && __emulateLegacyCartoucheScaling)
+    ) return family;
     if (!CARTOUCHE_SCALE_STYLISTIC_FEATURES_ENABLED) return family;
 
     const px = Math.max(8, Number(logicalFontPx ?? 56));
@@ -1401,6 +1408,8 @@ const SitelenRenderer = (() => {
       showUnknownText: __showUnknownText,
       cartoucheCommaTallyMarks: __cartoucheCommaTallyMarks,
       cartoucheTallyMode: __cartoucheTallyMode,
+      cartoucheVulgarFractions: __cartoucheVulgarFractions,
+      emulateLegacyCartoucheScaling: __emulateLegacyCartoucheScaling,
       manualTallySmallFontLiftPx: __manualTallySmallFontLiftPx,
       manualTallySmallFontMaxPx: __manualTallySmallFontMaxPx,
       unknownTextDisplay: { ...__unknownTextDisplay },
@@ -1434,6 +1443,8 @@ const SitelenRenderer = (() => {
     __showUnknownText = !!state.showUnknownText;
     if (state.cartoucheCommaTallyMarks != null) __cartoucheCommaTallyMarks = !!state.cartoucheCommaTallyMarks;
     if (state.cartoucheTallyMode != null) __cartoucheTallyMode = normalizeCartoucheTallyMode(state.cartoucheTallyMode);
+    __cartoucheVulgarFractions = state.cartoucheVulgarFractions === true;
+    __emulateLegacyCartoucheScaling = state.emulateLegacyCartoucheScaling === true;
     __manualTallySmallFontLiftPx = normalizeOptionalNonNegativeNumber(state.manualTallySmallFontLiftPx);
     __manualTallySmallFontMaxPx = normalizePositiveNumber(state.manualTallySmallFontMaxPx, 12);
     __unknownTextDisplay = {
@@ -1470,8 +1481,9 @@ const SitelenRenderer = (() => {
   let __showUnknownText = false;
 
   // Numeric/date/time cartouche display abbreviation.
-  // Default false preserves the existing full nanpa-linja-n cartouche output.
-  let __abbreviateNumericCartouches = false;
+  // Shared-library default is abbreviated; callers may explicitly set false
+  // to request the full nanpa-linja-n cartouche output.
+  let __abbreviateNumericCartouches = true;
 
  // When abbreviation is enabled, a full-cartouche break sequence
   // "nena e nena e" may be represented by one visible "e" codepoint.
@@ -1483,15 +1495,16 @@ const SitelenRenderer = (() => {
   // Default to true preserves the existing unknown-text behavior.
   let __autoCartoucheStandaloneProperNames = true;
 
-  // Relaxed nanpa-linja-n recognition/rendering. Defaults are strict/strict.
-  let __relaxedNanpaLinjanParsing = false;
-  let __relaxedNanpaLinjanRendering = false;
+  // Relaxed nanpa-linja-n recognition/rendering. Shared-library defaults are
+  // relaxed/relaxed; callers may explicitly set either flag false.
+  let __relaxedNanpaLinjanParsing = true;
+  let __relaxedNanpaLinjanRendering = true;
 
-  // Alternative decimal head syntax is opt-in. Rendering implies parsing so
-  // the renderer never emits syntax that the same configuration rejects.
-  // Both stored flags default to false when omitted.
-  let __nanpaColonParsing = false;
-  let __nanpaColonRendering = false;
+  // Nanpa-format decimal head syntax is enabled by default. Rendering implies
+  // parsing so the renderer never emits syntax that the same configuration
+  // rejects. Callers may explicitly set the corresponding flags false.
+  let __nanpaColonParsing = true;
+  let __nanpaColonRendering = true;
 
   // Optional opening-marker override for decimal/date/time numeric cartouches.
   // Hexadecimal and binary use fixed paired markers (nasa...nasa and
@@ -1537,6 +1550,20 @@ const SitelenRenderer = (() => {
   //   "comma"  = preserve comma U+002C for fonts that shape comma ligatures in HTML.
   //   "manual" = remove commas from the font run and draw tally strokes manually.
   let __cartoucheTallyMode = "ucsur";
+
+  // Per-font opt-in. When true, U+00BC/U+2153/U+00BD/U+2154/U+00BE act as
+  // postfix cartouche scale controls and numeric cartouches receive automatic
+  // per-glyph scale markers when the source did not explicitly provide one.
+  // Missing/false preserves the historical parser and renderer unchanged.
+  let __cartoucheVulgarFractions = false;
+
+  // Per-font migration flag. When true while cartoucheVulgarFractions is false,
+  // the renderer reproduces the legacy numeric-cartouche scale behavior using
+  // internal vulgar-fraction scale controls instead of requesting real
+  // ss12/ss13/ss14 font features. User-authored vulgar scale syntax remains
+  // disabled; only renderer-generated numeric-cartouche scaling is emulated.
+  // Missing/false leaves legacy fonts on their existing stylistic-set path.
+  let __emulateLegacyCartoucheScaling = false;
 
   // Some font pairs need a tiny overlap between renderer-drawn tally marks and
   // the cartouche bottom rule at very small sizes. Null means use the built-in
@@ -1594,6 +1621,13 @@ const SitelenRenderer = (() => {
   }
   function getCartoucheTallyMode() { return normalizeCartoucheTallyMode(__cartoucheTallyMode); }
   function setCartoucheTallyMode(v) { __cartoucheTallyMode = normalizeCartoucheTallyMode(v); }
+  function getCartoucheVulgarFractions() { return __cartoucheVulgarFractions === true; }
+  function setCartoucheVulgarFractions(v) { __cartoucheVulgarFractions = v === true; }
+  function getEmulateLegacyCartoucheScaling() { return __emulateLegacyCartoucheScaling === true; }
+  function setEmulateLegacyCartoucheScaling(v) { __emulateLegacyCartoucheScaling = v === true; }
+  function useInlineCartoucheScaleMarkers() {
+    return getCartoucheVulgarFractions() || getEmulateLegacyCartoucheScaling();
+  }
   function normalizeOptionalNonNegativeNumber(value) {
     if (value == null || value === "") return null;
     const n = Number(value);
@@ -1860,6 +1894,16 @@ const SitelenRenderer = (() => {
     else if (parser.tallyMode != null) setCartoucheTallyMode(parser.tallyMode);
 
     const fontSettings = (fonts.settings && typeof fonts.settings === "object") ? fonts.settings : {};
+    const configuredVulgarFractions =
+      parser.cartoucheVulgarFractions ??
+      fonts.cartoucheVulgarFractions ??
+      fontSettings.cartoucheVulgarFractions;
+    setCartoucheVulgarFractions(configuredVulgarFractions === true);
+    const configuredLegacyScaleEmulation =
+      parser.emulateLegacyCartoucheScaling ??
+      fonts.emulateLegacyCartoucheScaling ??
+      fontSettings.emulateLegacyCartoucheScaling;
+    setEmulateLegacyCartoucheScaling(configuredLegacyScaleEmulation === true);
     const configuredTallyLift = parser.manualTallySmallFontLiftPx ?? fonts.manualTallySmallFontLiftPx ?? fontSettings.manualTallySmallFontLiftPx;
     const configuredTallyMaxPx = parser.manualTallySmallFontMaxPx ?? fonts.manualTallySmallFontMaxPx ?? fontSettings.manualTallySmallFontMaxPx;
     if (configuredTallyLift != null) __manualTallySmallFontLiftPx = normalizeOptionalNonNegativeNumber(configuredTallyLift);
@@ -5479,12 +5523,26 @@ function wireHaloControls() {
 
       const cps = [];
       const manualTallies = [];
+      const scaleMarkers = [];
+      const scaleMarkerSourceIndices = [];
       let cur = "";
+      let lastScalableGlyphIndex = -1;
+      let lastTallyTargetIndex = -1;
+      let tallyStartedForGlyph = false;
 
-      function pushCp(cp, tallyCount = 0) {
+      function pushCp(cp, tallyCount = 0, { scalable = true, tallyTarget = true } = {}) {
         if (cp == null) return false;
         cps.push(cp);
         manualTallies.push(Math.max(0, Math.min(8, Number(tallyCount) || 0)));
+        scaleMarkers.push(null);
+        const index = cps.length - 1;
+        if (scalable) {
+          lastScalableGlyphIndex = index;
+          tallyStartedForGlyph = false;
+        } else {
+          lastScalableGlyphIndex = -1;
+        }
+        if (tallyTarget) lastTallyTargetIndex = index;
         return true;
       }
 
@@ -5498,14 +5556,61 @@ function wireHaloControls() {
         // spell it out letter by letter.
         const expressionCps = sskGlyphExpressionToCps(expression);
         if (!expressionCps || !expressionCps.length) return false;
-        for (const cp of expressionCps) pushCp(cp, 0);
+        for (let i = 0; i < expressionCps.length; i++) {
+          pushCp(expressionCps[i], 0, {
+            scalable: i === expressionCps.length - 1,
+            tallyTarget: i === expressionCps.length - 1
+          });
+        }
         return true;
       }
 
-      for (const ch of Array.from(s)) {
+      for (let sourceIndex = 0; sourceIndex < s.length; sourceIndex++) {
+        const ch = s[sourceIndex];
+
         if (/\s/.test(ch)) {
           if (!flushCur()) return null;
           continue;
+        }
+
+        const vulgarScaleCp = cartoucheVulgarScaleMarkerCpFromChar(ch);
+        if (vulgarScaleCp != null && getCartoucheVulgarFractions()) {
+          if (!flushCur()) return null;
+          // Scale controls are postfix modifiers: glyph [spaces] scale
+          // [spaces] optional tallies. They cannot stand alone, repeat, or
+          // appear after a tally for the same glyph.
+          if (
+            lastScalableGlyphIndex < 0 ||
+            tallyStartedForGlyph ||
+            scaleMarkers[lastScalableGlyphIndex] != null
+          ) return null;
+          scaleMarkers[lastScalableGlyphIndex] = vulgarScaleCp;
+          scaleMarkerSourceIndices.push(sourceIndex);
+          continue;
+        }
+
+        // Inside cartouches only, accept the approved ASCII vulgar-fraction
+        // aliases as exact postfix scale controls. Whitespace before the alias
+        // is insignificant because a preceding glyph remains the active scale
+        // target after flushCur(). A bare fraction such as [1/2] has no active
+        // glyph target and therefore remains available to normal numeric parsing.
+        const asciiVulgarScaleCp = getCartoucheVulgarFractions()
+          ? cartoucheAsciiVulgarScaleMarkerCpAt(s, sourceIndex)
+          : null;
+        if (asciiVulgarScaleCp != null) {
+          const hadPendingExpression = String(cur ?? "").trim().length > 0;
+          if (hadPendingExpression && !flushCur()) return null;
+
+          if (lastScalableGlyphIndex >= 0) {
+            if (
+              tallyStartedForGlyph ||
+              scaleMarkers[lastScalableGlyphIndex] != null
+            ) return null;
+            scaleMarkers[lastScalableGlyphIndex] = asciiVulgarScaleCp;
+            scaleMarkerSourceIndices.push(sourceIndex, sourceIndex + 1, sourceIndex + 2);
+            sourceIndex += 2;
+            continue;
+          }
         }
 
         // Decimal/date/time cartouches are parsed before this ordinary glyph path.
@@ -5515,7 +5620,7 @@ function wireHaloControls() {
           const key = (ch === ".") ? "." : ch;
           const cp = WORD_TO_UCSUR_CP[key];
           if (cp == null) return null;
-          pushCp(cp, 0);
+          pushCp(cp, 0, { scalable: true, tallyTarget: true });
           continue;
         }
 
@@ -5524,20 +5629,28 @@ function wireHaloControls() {
         // cartoucheCommaTallyMarks and cartoucheTallyMode.
         if (ch === ",") {
           if (!flushCur()) return null;
+          tallyStartedForGlyph = true;
+          lastScalableGlyphIndex = -1;
           if (!getCartoucheCommaTallyMarks()) continue;
 
           const mode = getCartoucheTallyMode();
           if (mode === "manual") {
-            if (manualTallies.length > 0) {
-              const i = manualTallies.length - 1;
-              manualTallies[i] = Math.min(8, (manualTallies[i] || 0) + 1);
+            if (lastTallyTargetIndex >= 0 && lastTallyTargetIndex < manualTallies.length) {
+              manualTallies[lastTallyTargetIndex] = Math.min(
+                8,
+                (manualTallies[lastTallyTargetIndex] || 0) + 1
+              );
             }
           } else if (mode === "comma") {
-            pushCp(0x002C, 0);
+            cps.push(0x002C);
+            manualTallies.push(0);
+            scaleMarkers.push(null);
           } else {
             const cp = WORD_TO_UCSUR_CP[","];
             if (cp == null) return null;
-            pushCp(cp, 0);
+            cps.push(cp);
+            manualTallies.push(0);
+            scaleMarkers.push(null);
           }
           continue;
         }
@@ -5550,7 +5663,9 @@ function wireHaloControls() {
 
       return {
         cps,
-        manualTallies: manualTallies.some(n => n > 0) ? manualTallies : null
+        manualTallies: manualTallies.some(n => n > 0) ? manualTallies : null,
+        scaleMarkers: scaleMarkers.some(cp => cp != null) ? scaleMarkers : null,
+        scaleMarkerSourceIndices
       };
     }
 
@@ -5620,6 +5735,351 @@ function wireHaloControls() {
     const CP_ALA   = NANPA_LINJA_N_WORD_TO_CP["ala"];
     const CP_IKE   = NANPA_LINJA_N_WORD_TO_CP["ike"];
     const CP_UTA   = NANPA_LINJA_N_WORD_TO_CP["uta"];
+
+    const CARTOUCHE_VULGAR_SCALE_MARKERS = Object.freeze({
+      quarter: 0x00BC,       // ¼
+      third: 0x2153,         // ⅓
+      half: 0x00BD,          // ½
+      twoThirds: 0x2154,     // ⅔
+      threeQuarters: 0x00BE  // ¾
+    });
+    const CARTOUCHE_VULGAR_SCALE_MARKER_SET = new Set(Object.values(CARTOUCHE_VULGAR_SCALE_MARKERS));
+
+    function isCartoucheVulgarScaleMarkerCp(cp) {
+      return CARTOUCHE_VULGAR_SCALE_MARKER_SET.has(Number(cp));
+    }
+
+    function cartoucheVulgarScaleMarkerCpFromChar(ch) {
+      const cps = Array.from(String(ch ?? ""), c => c.codePointAt(0));
+      return cps.length === 1 && isCartoucheVulgarScaleMarkerCp(cps[0]) ? cps[0] : null;
+    }
+
+    function cartoucheAsciiVulgarScaleMarkerCpAt(text, sourceIndex) {
+      const s = String(text ?? "");
+      const i = Number(sourceIndex);
+      if (!Number.isInteger(i) || i < 0 || i + 3 > s.length) return null;
+
+      const alias = s.slice(i, i + 3);
+      let marker = null;
+      if (alias === "1/4") marker = CARTOUCHE_VULGAR_SCALE_MARKERS.quarter;
+      else if (alias === "1/3") marker = CARTOUCHE_VULGAR_SCALE_MARKERS.third;
+      else if (alias === "1/2") marker = CARTOUCHE_VULGAR_SCALE_MARKERS.half;
+      else if (alias === "2/3") marker = CARTOUCHE_VULGAR_SCALE_MARKERS.twoThirds;
+      else if (alias === "3/4") marker = CARTOUCHE_VULGAR_SCALE_MARKERS.threeQuarters;
+      if (marker == null) return null;
+
+      // Do not consume a prefix of a longer numeric/fraction token such as
+      // 1/20 or 1/2/3. Immediate following glyph text is allowed so spacing
+      // inside a cartouche remains optional.
+      const next = s[i + 3] || "";
+      if (next && /[0-9/]/.test(next)) return null;
+      return marker;
+    }
+
+    // Fixed cartouche-only scales used by nanpa-linja-n numeric components.
+    // Structural heads/colon/closers and the semantic leading positive sign are
+    // handled positionally below. All other interior Toki Pona words beginning
+    // with e or n use quarter scale; unlisted glyphs remain at ordinary size.
+    const NUMERIC_CARTOUCHE_FIXED_VULGAR_SCALE_BY_CP = (() => {
+      const out = new Map();
+      const add = (marker, words) => {
+        for (const word of words) {
+          const cp = WORD_TO_UCSUR_CP[word] ?? NANPA_LINJA_N_WORD_TO_CP[word];
+          if (cp != null) out.set(cp, marker);
+        }
+      };
+      add(CARTOUCHE_VULGAR_SCALE_MARKERS.quarter, [
+        "ala", "ike", "uta", "open"
+      ]);
+      add(CARTOUCHE_VULGAR_SCALE_MARKERS.third, ["kasi", "kule"]);
+      add(CARTOUCHE_VULGAR_SCALE_MARKERS.half, ["kala"]);
+      add(CARTOUCHE_VULGAR_SCALE_MARKERS.twoThirds, [
+        "ona", "o", "kulupu", "kipisi", "kin"
+      ]);
+      return out;
+    })();
+
+    const NUMERIC_CARTOUCHE_INTERIOR_QUARTER_INITIAL_CPS = (() => {
+      const out = new Set();
+      for (const [word, cp] of Object.entries(NANPA_LINJA_N_WORD_TO_CP)) {
+        if (/^[en][a-z]*$/i.test(String(word)) && Number.isInteger(Number(cp))) {
+          out.add(Number(cp));
+        }
+      }
+      return out;
+    })();
+
+    const NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS = new Set([
+      CP_NANPA, CP_NASA, CP_NOKA, CP_TENPO, CP_SUNO, CP_TOKI
+    ]);
+    const NUMERIC_CARTOUCHE_HALF_SCALE_CLOSER_CPS = new Set([
+      CP_NANPA, CP_NASA, CP_NOKA
+    ]);
+
+    function numericCartoucheHasLeadingPositiveEnAt(canonical, index) {
+      const firstInnerIndex = 1;
+      const firstInnerCp = canonical[firstInnerIndex];
+      if (!NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(firstInnerCp) || canonical[index] !== CP_EN) return false;
+
+      // Abbreviated positive forms:
+      //   head en ...
+      //   head : en ...
+      if (index === firstInnerIndex + 1) return true;
+      if (
+        index === firstInnerIndex + 2 &&
+        canonical[firstInnerIndex + 1] === CP_COLON
+      ) return true;
+
+      // Full uniform positive forms:
+      //   head e nena en ...
+      //   head : nena en ...
+      return (
+        index === firstInnerIndex + 3 &&
+        canonical[firstInnerIndex + 2] === CP_NENA &&
+        (canonical[firstInnerIndex + 1] === CP_E || canonical[firstInnerIndex + 1] === CP_COLON)
+      );
+    }
+
+    function numericCartoucheAutoVulgarScaleMarkerForCanonicalIndex(canonicalFullCps, canonicalIndex) {
+      const canonical = Array.from(canonicalFullCps || []).map(Number);
+      const index = Number(canonicalIndex);
+      if (!Number.isInteger(index) || index <= 0 || index >= canonical.length - 1) return null;
+
+      const cp = canonical[index];
+      const firstInnerIndex = 1;
+      const lastInnerIndex = canonical.length - 2;
+      const firstInnerCp = canonical[firstInnerIndex];
+
+      // Numeric structural glyphs are always 1/2 scale for the font-facing
+      // stream: opening nanpa/nasa/noka/tenpo/suno/toki, a colon immediately
+      // following that opening head, and closing nanpa/nasa/noka.
+      if (index === firstInnerIndex && NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(cp)) {
+        return CARTOUCHE_VULGAR_SCALE_MARKERS.half;
+      }
+      if (
+        index === firstInnerIndex + 1 &&
+        cp === CP_COLON &&
+        NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(firstInnerCp)
+      ) {
+        return CARTOUCHE_VULGAR_SCALE_MARKERS.half;
+      }
+      if (index === lastInnerIndex && NUMERIC_CARTOUCHE_HALF_SCALE_CLOSER_CPS.has(cp)) {
+        return CARTOUCHE_VULGAR_SCALE_MARKERS.half;
+      }
+
+      // The semantic leading positive sign is the one role-specific en. It is
+      // 2/3 scale in both full and abbreviated numeric-cartouche forms.
+      if (numericCartoucheHasLeadingPositiveEnAt(canonical, index)) {
+        return CARTOUCHE_VULGAR_SCALE_MARKERS.twoThirds;
+      }
+
+      // Interior e*/n* Toki Pona glyphs are quarter scale. Positional structural
+      // cases above deliberately override this rule.
+      if (NUMERIC_CARTOUCHE_INTERIOR_QUARTER_INITIAL_CPS.has(cp)) {
+        return CARTOUCHE_VULGAR_SCALE_MARKERS.quarter;
+      }
+
+      return NUMERIC_CARTOUCHE_FIXED_VULGAR_SCALE_BY_CP.get(cp) ?? null;
+    }
+
+    function cartoucheVulgarScaleSourceInfo(rawContent) {
+      const content = String(rawContent ?? "").trim();
+      if (!content || !getCartoucheVulgarFractions()) {
+        return { cleanedContent: content, sourceCps: null, sourceScaleMarkers: null };
+      }
+
+      const parsed = parseCartoucheGlyphContentForRendering(content);
+      if (!parsed?.scaleMarkers || !Array.isArray(parsed.scaleMarkerSourceIndices) || !parsed.scaleMarkerSourceIndices.length) {
+        return { cleanedContent: content, sourceCps: null, sourceScaleMarkers: null };
+      }
+
+      const removeAt = new Set(parsed.scaleMarkerSourceIndices.map(Number));
+      let cleaned = "";
+      for (let i = 0; i < content.length; i++) {
+        if (!removeAt.has(i)) cleaned += content[i];
+      }
+      return {
+        cleanedContent: cleaned,
+        sourceCps: Array.from(parsed.cps || []),
+        sourceScaleMarkers: Array.from(parsed.scaleMarkers || [])
+      };
+    }
+
+    function mapExplicitCartoucheScaleMarkersToTarget(sourceInfo, targetCps) {
+      const target = Array.from(targetCps || []).map(Number);
+      const source = Array.from(sourceInfo?.sourceCps || []).map(Number);
+      const markers = Array.from(sourceInfo?.sourceScaleMarkers || []);
+      if (!target.length || !source.length || !markers.some(cp => isCartoucheVulgarScaleMarkerCp(cp))) {
+        return null;
+      }
+
+      const out = new Array(target.length).fill(null);
+
+      // Exact-length explicit cartouches are position-preserving even when
+      // uniformization changes the canonical glyph identity at that position.
+      if (source.length === target.length) {
+        for (let i = 0; i < target.length; i++) {
+          if (isCartoucheVulgarScaleMarkerCp(markers[i])) out[i] = Number(markers[i]);
+        }
+        return out.some(cp => cp != null) ? out : null;
+      }
+
+      // When abbreviation/semantic normalization changes the number of visible
+      // components, align annotated source glyphs to matching target glyphs in
+      // order. Anchor the first and final components by position when they keep
+      // the same glyph identity; this prevents a closing nanpa/nasa/noka marker
+      // from being captured by the matching opening glyph.
+      let searchFrom = 0;
+      for (let sourceIndex = 0; sourceIndex < source.length; sourceIndex++) {
+        const marker = Number(markers[sourceIndex]);
+        if (!isCartoucheVulgarScaleMarkerCp(marker)) continue;
+        const cp = source[sourceIndex];
+        let targetIndex = -1;
+
+        if (sourceIndex === 0 && target[0] === cp) {
+          targetIndex = 0;
+        } else if (sourceIndex === source.length - 1 && target[target.length - 1] === cp) {
+          targetIndex = target.length - 1;
+        }
+
+        if (targetIndex < 0) {
+          for (let i = searchFrom; i < target.length; i++) {
+            if (target[i] === cp) { targetIndex = i; break; }
+          }
+        }
+        if (targetIndex < 0) {
+          for (let i = 0; i < target.length; i++) {
+            if (out[i] == null && target[i] === cp) { targetIndex = i; break; }
+          }
+        }
+        if (targetIndex < 0 && sourceIndex < target.length) targetIndex = sourceIndex;
+        if (targetIndex >= 0 && targetIndex < target.length) {
+          out[targetIndex] = marker;
+          searchFrom = Math.max(searchFrom, targetIndex + 1);
+        }
+      }
+      return out.some(cp => cp != null) ? out : null;
+    }
+
+    function applyCartoucheVulgarScaleMarkersToAdapted(adapted, canonicalFullCps, {
+      isNumericCartouche = false,
+      explicitInnerScaleMarkers = null
+    } = {}) {
+      if (!useInlineCartoucheScaleMarkers() || !adapted || !Array.isArray(adapted.renderCps)) return adapted;
+
+      const canonical = Array.from(canonicalFullCps || []).map(Number);
+      if (canonical.length < 3) return adapted;
+
+      const renderCps = Array.from(adapted.renderCps || []).map(Number);
+      const spans = Array.isArray(adapted.canonicalToRenderSpans)
+        ? adapted.canonicalToRenderSpans.map(item => ({ ...item }))
+        : identityCanonicalToRenderSpans(canonical);
+      const explicit = Array.isArray(explicitInnerScaleMarkers)
+        ? explicitInnerScaleMarkers.map(cp => isCartoucheVulgarScaleMarkerCp(cp) ? Number(cp) : null)
+        : [];
+
+      const insertions = [];
+      for (let canonicalIndex = 1; canonicalIndex < canonical.length - 1; canonicalIndex++) {
+        const innerIndex = canonicalIndex - 1;
+        const explicitMarker = explicit[innerIndex];
+        const marker = isCartoucheVulgarScaleMarkerCp(explicitMarker)
+          ? explicitMarker
+          : (isNumericCartouche ? numericCartoucheAutoVulgarScaleMarkerForCanonicalIndex(canonical, canonicalIndex) : null);
+        if (!isCartoucheVulgarScaleMarkerCp(marker)) continue;
+
+        const span = spans[canonicalIndex];
+        const renderEnd = Number(span?.renderEnd);
+        if (!Number.isInteger(renderEnd) || renderEnd < 0 || renderEnd > renderCps.length) continue;
+
+        // An explicit marker always wins. If an adapter already emitted a scale
+        // marker immediately after this semantic component, keep that marker
+        // rather than appending a duplicate.
+        const existingNext = renderCps[renderEnd];
+        if (isCartoucheVulgarScaleMarkerCp(existingNext)) {
+          insertions.push({
+            canonicalIndex,
+            position: renderEnd,
+            marker: existingNext,
+            alreadyPresent: true
+          });
+          continue;
+        }
+
+        insertions.push({
+          canonicalIndex,
+          position: renderEnd,
+          marker: Number(marker),
+          alreadyPresent: false
+        });
+      }
+
+      const actualInsertions = insertions.filter(item => !item.alreadyPresent);
+      if (!actualInsertions.length) {
+        return {
+          ...adapted,
+          cartoucheVulgarScaleMarkers: insertions.map(item => ({ ...item }))
+        };
+      }
+
+      actualInsertions.sort((a, b) => (a.position - b.position) || (a.canonicalIndex - b.canonicalIndex));
+      const byPosition = new Map();
+      for (const item of actualInsertions) {
+        if (!byPosition.has(item.position)) byPosition.set(item.position, []);
+        byPosition.get(item.position).push(item);
+      }
+
+      const transformed = [];
+      for (let pos = 0; pos <= renderCps.length; pos++) {
+        const items = byPosition.get(pos) || [];
+        for (const item of items) transformed.push(item.marker);
+        if (pos < renderCps.length) transformed.push(renderCps[pos]);
+      }
+
+      const countBefore = (position) => actualInsertions.reduce(
+        (n, item) => n + (item.position < position ? 1 : 0),
+        0
+      );
+      const countAtOrBefore = (position) => actualInsertions.reduce(
+        (n, item) => n + (item.position <= position ? 1 : 0),
+        0
+      );
+
+      const transformedSpans = spans.map((span, canonicalIndex) => {
+        const oldStart = Math.max(0, Number(span?.renderStart) || 0);
+        const oldEnd = Math.max(oldStart, Number(span?.renderEnd) || oldStart);
+        const ownAtEnd = actualInsertions.filter(
+          item => item.canonicalIndex === canonicalIndex && item.position === oldEnd
+        ).length;
+
+        // Insertions at a boundary belong visually to the preceding component:
+        // they shift the next component's start, while the owner component's end
+        // expands to include its marker.
+        const newStart = oldStart + countAtOrBefore(oldStart);
+        const newEnd = oldEnd + countBefore(oldEnd) + ownAtEnd;
+        return {
+          canonicalIndex,
+          renderStart: Math.min(transformed.length, newStart),
+          renderEnd: Math.min(transformed.length, Math.max(newStart, newEnd))
+        };
+      });
+
+      return {
+        ...adapted,
+        renderCps: transformed,
+        canonicalToRenderSpans: transformedSpans,
+        // Vector export treats a non-identity cartouche run as already prepared
+        // in the font-facing input syntax. Inline vulgar-fraction scaling is a
+        // post-adapter transformation, so an identity-adapted cartouche that
+        // receives scale markers must likewise be exported from renderFullCps
+        // instead of being reconstructed from canonical cps (which would drop
+        // these invisible scaling controls). Keep the original requested adapter
+        // id unchanged so parser/font-adapter semantics remain intact.
+        renderAdapterId: String(adapted.renderAdapterId || "identity") === "identity"
+          ? "identity-inline-cartouche-scale-v1"
+          : adapted.renderAdapterId,
+        cartoucheVulgarScaleMarkers: insertions.map(item => ({ ...item }))
+      };
+    }
 
     const NUMERIC_CARTOUCHE_ABBREVIATION_DROP_AFTER_FIRST_NANPA = new Set([
       CP_NANPA,
@@ -5765,9 +6225,18 @@ function wireHaloControls() {
       return numericCartoucheDisplayInfo(cps).cps;
     }
 
-    function makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+    function makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, scaleSourceInfo = null, explicitScaleMarkers = null } = {}) {
+      const inputExplicitScaleMarkers = Array.isArray(explicitScaleMarkers)
+        ? explicitScaleMarkers
+        : mapExplicitCartoucheScaleMarkersToTarget(scaleSourceInfo, cps);
       const displayInfo = numericCartoucheDisplayInfo(cps);
       const displayCps = displayInfo.cps;
+      const displayScaleMarkers = Array.isArray(inputExplicitScaleMarkers)
+        ? displayInfo.sourceIndices.map(sourceIndex => {
+            const marker = inputExplicitScaleMarkers[sourceIndex];
+            return isCartoucheVulgarScaleMarkerCp(marker) ? Number(marker) : null;
+          })
+        : null;
       if (!displayCps || displayCps.length === 0) return;
       nanpaDebugEmit("numeric-cartouche:emit", {
         sourceText,
@@ -5797,13 +6266,14 @@ function wireHaloControls() {
         sourceSegmentIndex,
         audioSourceCps: Array.from(cps || []),
         audioSourceIndices: displayInfo.sourceIndices,
+        explicitScaleMarkers: displayScaleMarkers,
         fontRole: "number",
         isNumericCartouche: true
       });
     }
 
 
-    function makeHexNumericCartoucheElementFromSemantic(elements, semantic, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+    function makeHexNumericCartoucheElementFromSemantic(elements, semantic, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, scaleSourceInfo = null } = {}) {
       const normalized = cloneHexSemantic(semantic);
       if (!normalized) return;
       const abbreviated = getAbbreviateNumericCartouches();
@@ -5813,6 +6283,7 @@ function wireHaloControls() {
         relaxedRendering: getRelaxedNanpaLinjanRendering()
       });
       if (!cps || !cps.length) return;
+      const explicitScaleMarkers = mapExplicitCartoucheScaleMarkersToTarget(scaleSourceInfo, cps);
       const before = elements.length;
       makeCartoucheElementFromCodepoints(elements, cps, {
         fontPx,
@@ -5825,6 +6296,7 @@ function wireHaloControls() {
         sourceSegmentIndex,
         fontRole: "number",
         isNumericCartouche: true,
+        explicitScaleMarkers,
         audioSourceCps: cps.slice(),
         audioSourceIndices: cps.map((_cp, index) => index)
       });
@@ -5837,7 +6309,7 @@ function wireHaloControls() {
       }
     }
 
-    function makeBinaryNumericCartoucheElementFromSemantic(elements, semantic, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null } = {}) {
+    function makeBinaryNumericCartoucheElementFromSemantic(elements, semantic, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, scaleSourceInfo = null } = {}) {
       const normalized = cloneBinarySemantic(semantic);
       if (!normalized) return;
       const abbreviated = getAbbreviateNumericCartouches();
@@ -5847,10 +6319,12 @@ function wireHaloControls() {
         relaxedRendering: getRelaxedNanpaLinjanRendering()
       });
       if (!cps || !cps.length) return;
+      const explicitScaleMarkers = mapExplicitCartoucheScaleMarkersToTarget(scaleSourceInfo, cps);
       const before = elements.length;
       makeCartoucheElementFromCodepoints(elements, cps, {
         fontPx, fontFamily: FONT_FAMILY_NUMBER, fgCss, sourceText, sourceStart, sourceEnd, sourceKind, sourceSegmentIndex,
-        fontRole: "number", isNumericCartouche: true, audioSourceCps: cps.slice(), audioSourceIndices: cps.map((_cp, index) => index)
+        fontRole: "number", isNumericCartouche: true, explicitScaleMarkers,
+        audioSourceCps: cps.slice(), audioSourceIndices: cps.map((_cp, index) => index)
       });
       for (let i = before; i < elements.length; i++) {
         const el = elements[i];
@@ -8943,14 +9417,14 @@ function findNanpaLinjanTpPhraseSequences(text) {
       };
     }
 
-    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies = null, renderFullCps = null, canonicalToRenderSpans = null, manualTallyLiftPx = 0, cartoucheScaleFontPx = fontPx }) {
+    function renderFontCartoucheToCanvas(canvas, innerCps, { fontPx, padPx, fontFamily, fgCss, haloEnabled, haloCss, manualTallies = null, renderFullCps = null, canonicalToRenderSpans = null, manualTallyLiftPx = 0, cartoucheScaleFontPx = fontPx, allowEmptyCartouche = false }) {
       if (!canvas) throw new Error("renderFontCartoucheToCanvas: canvas missing");
-      if (!innerCps || innerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
+      if (!innerCps || (innerCps.length === 0 && !allowEmptyCartouche)) return { w: 0, h: 0, baselineY: 0 };
 
       const normalizedTallyInput = normalizeManualTallyInputForCartouche(innerCps, manualTallies);
       const renderInnerCps = normalizedTallyInput.cps;
       const renderManualTallies = normalizedTallyInput.manualTallies;
-      if (!renderInnerCps || renderInnerCps.length === 0) return { w: 0, h: 0, baselineY: 0 };
+      if (!renderInnerCps || (renderInnerCps.length === 0 && !allowEmptyCartouche)) return { w: 0, h: 0, baselineY: 0 };
 
       const px = fontPx;
       const pad = padPx;
@@ -9507,17 +9981,27 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   return finalCanvas;
 }
 
-    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fontRole = null, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false, isNumericCartouche = false, audioSourceCps = null, audioSourceIndices = null } = {}) {
-      if (!cps || cps.length === 0) return;
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fontRole = null, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false, isNumericCartouche = false, audioSourceCps = null, audioSourceIndices = null, explicitScaleMarkers = null, allowEmptyCartouche = false } = {}) {
+      if (!cps || (cps.length === 0 && !allowEmptyCartouche)) return;
       pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
 
       const canonicalInnerCps = Array.from(cps, cp => Number(cp));
-      const normalizedTallyInput = normalizeManualTallyInputForCartouche(canonicalInnerCps, manualTallies);
+
+      // Numeric cartouches never carry tally marks. Tally input is an
+      // ordinary-cartouche feature only; strip either UCSUR or literal comma
+      // tally code points before the numeric font run is constructed.
+      const tallyCp = (WORD_TO_UCSUR_CP && WORD_TO_UCSUR_CP[","] != null) ? WORD_TO_UCSUR_CP[","] : 0xF199E;
+      const numericTallyFreeCps = isNumericCartouche
+        ? canonicalInnerCps.filter(cp => cp !== tallyCp && cp !== 0x002C)
+        : canonicalInnerCps;
+      const normalizedTallyInput = isNumericCartouche
+        ? { cps: numericTallyFreeCps, manualTallies: null, changed: numericTallyFreeCps.length !== canonicalInnerCps.length }
+        : normalizeManualTallyInputForCartouche(canonicalInnerCps, manualTallies);
       const canonicalRenderInnerCps = normalizedTallyInput.cps;
-      const normalizedManualTallies = normalizedTallyInput.manualTallies;
+      const normalizedManualTallies = isNumericCartouche ? null : normalizedTallyInput.manualTallies;
       const canonicalFullCps = [CARTOUCHE_START_CP, ...canonicalRenderInnerCps, CARTOUCHE_END_CP];
       const effectiveRole = fontRole || (isNumericCartouche ? "number" : "cartouche");
-      const adapted = adaptCanonicalCodepointsForFont(canonicalFullCps, {
+      const baseAdapted = adaptCanonicalCodepointsForFont(canonicalFullCps, {
         fontRole: effectiveRole,
         elementKind: "cartouche",
         fontFamily: fontFamily || FONT_FAMILY_TEXT,
@@ -9527,6 +10011,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         isNumericCartouche: !!isNumericCartouche,
         isLiteralCartouche: !!isLiteralCartouche,
         bypassRenderAdapter: !!isLiteralCartouche
+      });
+      const adapted = applyCartoucheVulgarScaleMarkersToAdapted(baseAdapted, canonicalFullCps, {
+        isNumericCartouche: !!isNumericCartouche,
+        explicitInnerScaleMarkers: explicitScaleMarkers
       });
 
       const cart = document.createElement("canvas");
@@ -9546,7 +10034,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         manualTallies: normalizedManualTallies,
         renderFullCps: adapted.renderCps,
         canonicalToRenderSpans: adapted.canonicalToRenderSpans,
-        manualTallyLiftPx
+        manualTallyLiftPx,
+        allowEmptyCartouche
       });
       if ((r.w | 0) <= 0 || (r.h | 0) <= 0) return;
 
@@ -9597,8 +10086,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       elements.push({
         type: "cartouche",
-        cps: canonicalInnerCps.slice(),
-        canonicalCps: canonicalInnerCps.slice(),
+        cps: (isNumericCartouche ? canonicalRenderInnerCps : canonicalInnerCps).slice(),
+        canonicalCps: (isNumericCartouche ? canonicalRenderInnerCps : canonicalInnerCps).slice(),
         canonicalFullCps: canonicalFullCps.slice(),
         renderCps: adapted.renderCps.slice(),
         renderFullCps: adapted.renderCps.slice(),
@@ -9609,6 +10098,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         renderAdapterId: adapted.renderAdapterId,
         requestedRenderAdapterId: adapted.requestedRenderAdapterId,
         longGlyphPresentation: adapted.longGlyphPresentation,
+        cartoucheVulgarScaleMarkers: Array.isArray(adapted.cartoucheVulgarScaleMarkers)
+          ? adapted.cartoucheVulgarScaleMarkers.map(item => ({ ...item }))
+          : null,
+        explicitScaleMarkers: Array.isArray(explicitScaleMarkers)
+          ? explicitScaleMarkers.map(cp => isCartoucheVulgarScaleMarkerCp(cp) ? Number(cp) : null)
+          : null,
         canvas: finalCanvas,
         w: finalW,
         h: finalH,
@@ -9808,9 +10303,28 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
 
       function emitPunctGlyph(ch, start, end) {
-        // Outside cartouches, comma must never be translated to the sitelen
-        // pona combining tally mark. Only these non-comma punctuation glyphs
-        // are emitted through the sitelen font path.
+        // Outside cartouches:
+        //   :     -> project/Toki Pona colon
+        //   . / · -> project middle dot
+        //   ,     -> ordinary ASCII U+002C comma in the selected sitelen font
+        //
+        // The outside comma must never enter the cartouche tally path. Render
+        // the literal U+002C directly and bypass font adapters that interpret
+        // canonical sitelen-pona code points.
+        if (ch === ",") {
+          makeRunElementFromCodepoints(elements, [0x002C], {
+            fontPx,
+            fontFamily: FONT_FAMILY_TEXT,
+            sourceText: String(ch),
+            sourceStart: sourceBaseStart + start,
+            sourceEnd: sourceBaseStart + end,
+            sourceKind,
+            sourceSegmentIndex,
+            bypassRenderAdapter: true
+          });
+          return true;
+        }
+
         if (ch !== ":" && ch !== "·" && ch !== ".") return false;
         const cp = WORD_TO_UCSUR_CP[ch];
         if (cp == null) return false;
@@ -10435,6 +10949,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (!content) return;
       //console.log("BRACKET PARSER HIT", bracketContent);
 
+      // A leading empty quote pair is the force-ordinary escape. It has higher
+      // precedence than literal or numeric cartouche recognition. The sentinel
+      // is consumed and never rendered; the remainder is parsed exactly as
+      // ordinary cartouche content. [""] is therefore an empty ordinary cartouche.
+      const forceOrdinaryCartouche = content.startsWith('""');
+
 
             // Exact latin-in-cartouche syntax: ["HELLO"]
       // IMPORTANT:
@@ -10442,7 +10962,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       // - no spaces allowed between [ and " or between " and ]
       // - since `content` is trimmed above, reject any case where trimming changed
       //   the raw bracket content, so [ "HELLO" ] does not match
-      if (String(bracketContent ?? "") === content && content.length >= 2 && content.startsWith('"') && content.endsWith('"')) {
+      if (!forceOrdinaryCartouche && String(bracketContent ?? "") === content && content.length >= 2 && content.startsWith('"') && content.endsWith('"')) {
         const literal = unescapeQuotedText(content.slice(1, -1));
         if (literal.length > 0) {
           const literalCps = Array.from(literal, ch => ch.codePointAt(0));
@@ -10480,21 +11000,70 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const mode = getNanpaLinjanMode();
       const fgCss = getFgHex();
 
+      if (forceOrdinaryCartouche) {
+        const ordinaryContent = content.slice(2).trim();
+        if (!ordinaryContent) {
+          makeCartoucheElementFromCodepoints(elements, [], {
+            fontPx,
+            fontFamily: FONT_FAMILY_TEXT,
+            fgCss,
+            sourceText: content,
+            sourceStart: sourceBaseStart,
+            sourceEnd: sourceBaseStart + content.length,
+            sourceKind,
+            sourceSegmentIndex,
+            allowEmptyCartouche: true
+          });
+          return;
+        }
+
+        const parsedForcedOrdinary = parseCartoucheGlyphContentForRendering(ordinaryContent);
+        if (parsedForcedOrdinary && parsedForcedOrdinary.cps && parsedForcedOrdinary.cps.length >= 1) {
+          makeCartoucheElementFromCodepoints(elements, parsedForcedOrdinary.cps, {
+            fontPx,
+            fontFamily: FONT_FAMILY_TEXT,
+            fgCss,
+            manualTallies: parsedForcedOrdinary.manualTallies,
+            explicitScaleMarkers: parsedForcedOrdinary.scaleMarkers,
+            sourceText: content,
+            sourceStart: sourceBaseStart,
+            sourceEnd: sourceBaseStart + content.length,
+            sourceKind,
+            sourceSegmentIndex
+          });
+          return;
+        }
+
+        makeCartoucheElementFromCodepoints(elements, lettersToRandomGlyphCps(ordinaryContent), {
+          fontPx, fontFamily: FONT_FAMILY_TEXT, fgCss, sourceText: content,
+          sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length,
+          sourceKind, sourceSegmentIndex
+        });
+        return;
+      }
+
+      // Scale markers are only removed from the numeric-recognition view when
+      // they occur in a valid postfix glyph position. A vulgar fraction used
+      // as a numeric value (for example [1½]) remains part of numeric input.
+      const scaleSourceInfo = cartoucheVulgarScaleSourceInfo(content);
+      const numericContent = scaleSourceInfo.cleanedContent;
+
       if (getEnableBinaryParsing()) {
-        const binarySemantic = binaryCartoucheSourceToSemantic(content, {
+        const binarySemantic = binaryCartoucheSourceToSemantic(numericContent, {
           relaxedParsing: getRelaxedNanpaLinjanParsing(),
           preferAbbreviated: getAbbreviateNumericCartouches()
         });
         if (binarySemantic) {
           makeBinaryNumericCartoucheElementFromSemantic(elements, binarySemantic, {
-            fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+            fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex,
+            scaleSourceInfo
           });
           return;
         }
       }
 
       if (getEnableHexParsing()) {
-        const hexSemantic = hexCartoucheSourceToSemantic(content, {
+        const hexSemantic = hexCartoucheSourceToSemantic(numericContent, {
           relaxedParsing: getRelaxedNanpaLinjanParsing(),
           preferAbbreviated: getAbbreviateNumericCartouches()
         });
@@ -10506,41 +11075,42 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             sourceStart: sourceBaseStart,
             sourceEnd: sourceBaseStart + content.length,
             sourceKind,
-            sourceSegmentIndex
+            sourceSegmentIndex,
+            scaleSourceInfo
           });
           return;
         }
       }
      
       try {
-        const dateCaps = dateStrToNanpaCaps(content);
+        const dateCaps = dateStrToNanpaCaps(numericContent);
         if (dateCaps != null) {
           const cpsDate = nanpaCapsToNanpaLinjanCodepoints(dateCaps, { mode, isTime: true, semanticKind: "date" });
           if (cpsDate && cpsDate.length) {
-            makeNumericCartoucheElementFromCodepoints(elements, cpsDate, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
+            makeNumericCartoucheElementFromCodepoints(elements, cpsDate, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex, scaleSourceInfo });
             return;
           }
         }
 
-        const timeCaps = timeStrToNanpaCaps(content);
+        const timeCaps = timeStrToNanpaCaps(numericContent);
         if (timeCaps != null) {
           const cpsTime = nanpaCapsToNanpaLinjanCodepoints(timeCaps, { mode, isTime: true, semanticKind: "time" });
           if (cpsTime && cpsTime.length) {
-            makeNumericCartoucheElementFromCodepoints(elements, cpsTime, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
+            makeNumericCartoucheElementFromCodepoints(elements, cpsTime, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex, scaleSourceInfo });
             return;
           }
         }
 
-        const caps = decimalStringToCaps(content, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
+        const caps = decimalStringToCaps(numericContent, { thousandsChar: ",", groupFractionTriplets: true, fractionGroupSize: 3, mixedStyle });
         const cps = nanpaCapsToNanpaLinjanCodepoints(caps, { mode });
         if (cps && cps.length) {
-          makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
+          makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex, scaleSourceInfo });
           return;
         }
       } catch {}
 
       if (getNanpaColonParsing()) {
-        const typedColon = _npTryParseTypedNanpaColonCartouche(`[${content}]`, {
+        const typedColon = _npTryParseTypedNanpaColonCartouche(`[${numericContent}]`, {
           nanpaColonParsing: true,
           relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanParsing(),
           abbreviateNumericCartouches: getAbbreviateNumericCartouches()
@@ -10564,20 +11134,21 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           if (cps?.length) {
             makeNumericCartoucheElementFromCodepoints(elements, cps, {
               fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
-              sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+              sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex,
+              scaleSourceInfo
             });
             return;
           }
         }
 
-        const colonTokens = tokenizeHexCartoucheSource(content);
+        const colonTokens = tokenizeHexCartoucheSource(numericContent);
         if (colonTokens && colonTokens.length >= 4 && colonTokens[0] === "nanpa" &&
             colonTokens[1] === ":" && colonTokens[colonTokens.length - 1] === "nanpa") {
           const withoutColon = ["nanpa", ...colonTokens.slice(2)];
           if (!getAbbreviateNumericCartouches()) {
             const parsedColonAbbreviated = tryParseFullyAbbreviatedNanpaLinjanCartoucheWords(withoutColon);
             if (parsedColonAbbreviated?.cps?.length) {
-              const colonCaps = _npTryParseNanpaColonCartoucheToCaps(`[${content}]`, {
+              const colonCaps = _npTryParseNanpaColonCartoucheToCaps(`[${numericContent}]`, {
                 nanpaColonParsing: true,
                 relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanParsing(),
                 abbreviateNumericCartouches: true
@@ -10588,7 +11159,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
                 if (cps) {
                   makeNumericCartoucheElementFromCodepoints(elements, cps, {
                     fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
-                    sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+                    sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex,
+                    scaleSourceInfo
                   });
                   return;
                 }
@@ -10602,7 +11174,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             const cps = typedNanpa ? renderTypedColonCaps(typedNanpa) : nanpaLinjanWordsToCodepoints(parsedColonFull.words, { mode });
             if (cps) makeNumericCartoucheElementFromCodepoints(elements, cps, {
               fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
-              sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+              sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex,
+              scaleSourceInfo
             });
             return;
           }
@@ -10614,7 +11187,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
               if (!typedNanpa && getNanpaColonRendering()) cps = [CP_NANPA, CP_COLON, ...cps.slice(1)];
               makeNumericCartoucheElementFromCodepoints(elements, cps, {
                 fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
-                sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+                sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex,
+                scaleSourceInfo
               });
               return;
             }
@@ -10630,7 +11204,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             if (cps?.length) {
               makeNumericCartoucheElementFromCodepoints(elements, cps, {
                 fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart,
-                sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex
+                sourceEnd: sourceBaseStart + content.length, sourceKind, sourceSegmentIndex,
+                scaleSourceInfo
               });
               return;
             }
@@ -10638,7 +11213,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         }
       }
 
-      const wordsRaw = content.split(/\s+/).filter(Boolean);
+      const wordsRaw = numericContent.split(/\s+/).filter(Boolean);
 
       // Strict numeric TP-phrase rule for []:
       // every raw token must already be a clean TP word token.
@@ -10672,7 +11247,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           sourceStart: sourceBaseStart,
           sourceEnd: sourceBaseStart + content.length,
           sourceKind,
-          sourceSegmentIndex
+          sourceSegmentIndex,
+          scaleSourceInfo
         });
         return;
       }
@@ -10687,18 +11263,19 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             sourceStart: sourceBaseStart,
             sourceEnd: sourceBaseStart + content.length,
             sourceKind,
-            sourceSegmentIndex
+            sourceSegmentIndex,
+            scaleSourceInfo
           });
           return;
         }
       }
 
       const idCps =
-        tryDecodeNanpaLinjanIdentifierToCodepoints(content, { mode }) ??
-        tryDecodeNanpaLinjanIdentifierToCodepoints(content.replace(/\s+/g, ""), { mode });
+        tryDecodeNanpaLinjanIdentifierToCodepoints(numericContent, { mode }) ??
+        tryDecodeNanpaLinjanIdentifierToCodepoints(numericContent.replace(/\s+/g, ""), { mode });
 
       if (idCps && idCps.length) {
-        makeNumericCartoucheElementFromCodepoints(elements, idCps, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex });
+        makeNumericCartoucheElementFromCodepoints(elements, idCps, { fontPx, fgCss, sourceText: content, sourceStart: sourceBaseStart, sourceEnd: sourceBaseStart + content.length , sourceKind, sourceSegmentIndex, scaleSourceInfo });
         return;
       }
 
@@ -10709,6 +11286,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           fontFamily: FONT_FAMILY_TEXT,
           fgCss,
           manualTallies: parsedGlyphContent.manualTallies,
+          explicitScaleMarkers: parsedGlyphContent.scaleMarkers,
           sourceText: content,
           sourceStart: sourceBaseStart,
           sourceEnd: sourceBaseStart + content.length,
@@ -12592,10 +13170,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   });
 
   function _npRelaxedParsingFromOpts(opts = {}) {
+    if (opts.relaxedNanpaLinjanParsing == null) return true;
     return !!opts.relaxedNanpaLinjanParsing;
   }
 
   function _npRelaxedRenderingFromOpts(opts = {}) {
+    if (opts.relaxedNanpaLinjanRendering == null) return true;
     return !!opts.relaxedNanpaLinjanRendering;
   }
 
@@ -12610,6 +13190,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   }
 
   function _npNanpaColonRenderingFromOpts(opts = {}) {
+    if (opts.nanpaColonRendering == null) return true;
     return opts.nanpaColonRendering === true;
   }
 
@@ -12619,6 +13200,17 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
   function _npNanpaColonParsingFromOpts(opts = {}) {
     return opts.nanpaColonParsing === true || _npNanpaColonRenderingFromOpts(opts);
+  }
+
+  function _npAbbreviateNumericCartouchesFromOpts(opts = {}) {
+    const hasExplicitValue =
+      opts.abbreviateNumericCartouches != null ||
+      opts.numericCartoucheAbbreviation != null ||
+      opts.abbreviatedNumericCartouches != null;
+    if (!hasExplicitValue) return true;
+    return opts.abbreviateNumericCartouches === true ||
+      opts.numericCartoucheAbbreviation === true ||
+      opts.abbreviatedNumericCartouches === true;
   }
 
   function _npDigitTokensAcceptedByParser(opts = {}) {
@@ -14296,8 +14888,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       } catch { return null; }
     };
 
-    const preferAbbreviated = opts.abbreviateNumericCartouches === true ||
-      opts.numericCartoucheAbbreviation === true || opts.abbreviatedNumericCartouches === true;
+    const preferAbbreviated = _npAbbreviateNumericCartouchesFromOpts(opts);
     let parsedForm = null;
     const parseAbbreviated = () => {
       const value = tryAbbreviated();
@@ -14388,9 +14979,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (opts.enableBinaryParsing === true || opts.enableBinaryRendering === true) {
       const binarySemantic = parseCompleteBinaryInput(s, {
         relaxedParsing,
-        preferAbbreviated: opts.abbreviateNumericCartouches === true ||
-          opts.numericCartoucheAbbreviation === true ||
-          opts.abbreviatedNumericCartouches === true
+        preferAbbreviated: _npAbbreviateNumericCartouchesFromOpts(opts)
       });
       if (binarySemantic) {
         const tpWords = binarySemanticToTpWords(binarySemantic, { abbreviated: false, mode, relaxedRendering, startGlyph: _npNumericCartoucheStartGlyphFromOpts(opts) });
@@ -14416,9 +15005,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     if (opts.enableHexParsing === true) {
       const hexSemantic = parseCompleteHexInput(s, {
         relaxedParsing,
-        preferAbbreviated: opts.abbreviateNumericCartouches === true ||
-          opts.numericCartoucheAbbreviation === true ||
-          opts.abbreviatedNumericCartouches === true
+        preferAbbreviated: _npAbbreviateNumericCartouchesFromOpts(opts)
       });
       if (hexSemantic) {
         const tpWords = hexSemanticToTpWords(hexSemantic, {
@@ -14980,7 +15567,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return parsed ? Array.from(parsed.ucsurCodepoints ?? []) : [];
   },
 
-  splitCapsToProperName(caps, { titleCase = true, relaxedNanpaLinjanParsing = false, relaxedNanpaLinjanRendering = false, nanpaColonRendering = false } = {}) {
+  splitCapsToProperName(caps, { titleCase = true, relaxedNanpaLinjanParsing = true, relaxedNanpaLinjanRendering = true, nanpaColonRendering = true } = {}) {
     caps = _npCapsForOutputRendering(caps, {
       relaxedNanpaLinjanParsing,
       relaxedNanpaLinjanRendering

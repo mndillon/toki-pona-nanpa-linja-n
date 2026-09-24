@@ -105,6 +105,8 @@ function normalizeStoredSettings(settings = null) {
     ...src,
     cartoucheCommaTallyMarks: src.cartoucheCommaTallyMarks !== false,
     cartoucheTallyMode: normalizeCartoucheTallyMode(src.cartoucheTallyMode),
+    cartoucheVulgarFractions: src.cartoucheVulgarFractions === true,
+    emulateLegacyCartoucheScaling: src.emulateLegacyCartoucheScaling === true,
   };
 }
 
@@ -655,6 +657,10 @@ export function createSitelenFontPairController({
       cleanString(record.literalCartoucheFamily) === literalCartoucheFamily &&
       cleanString(record.literalCartoucheFilename) === literalCartoucheFilename &&
       cleanString(record.literalCartoucheUrl) === literalCartoucheUrl &&
+      normalizeStoredSettings(record.settings || null).cartoucheVulgarFractions ===
+        normalizeStoredSettings(pair.settings || null).cartoucheVulgarFractions &&
+      normalizeStoredSettings(record.settings || null).emulateLegacyCartoucheScaling ===
+        normalizeStoredSettings(pair.settings || null).emulateLegacyCartoucheScaling &&
       !!record.baseBlob &&
       !!record.companionBlob &&
       (!literalCartoucheUrl || !!record.literalCartoucheBlob)
@@ -797,6 +803,8 @@ export function createSitelenFontPairController({
       ...(baseParser || {}),
       cartoucheCommaTallyMarks: tally.cartoucheCommaTallyMarks !== false,
       cartoucheTallyMode: normalizeCartoucheTallyMode(tally.cartoucheTallyMode),
+      cartoucheVulgarFractions: tally.cartoucheVulgarFractions === true,
+      emulateLegacyCartoucheScaling: tally.emulateLegacyCartoucheScaling === true,
     };
   }
 
@@ -853,7 +861,13 @@ export function createSitelenFontPairController({
     const fam = String(family || '').trim();
     if (!fam) return false;
     for (const [, preset] of presetEntries()) {
-      if (String(preset?.cartoucheFamily || '').trim() === fam) return true;
+      if (String(preset?.cartoucheFamily || '').trim() !== fam) continue;
+      const settings = normalizeStoredSettings(preset?.settings || preset?.__pairRecord?.settings || null);
+      // Inline-scaling fonts encode per-glyph scale controls in the render
+      // stream and must never receive ss12/ss13/ss14 aliases. This applies to
+      // native vulgar mode and to renderer-side legacy scale emulation.
+      if (settings.cartoucheVulgarFractions === true || settings.emulateLegacyCartoucheScaling === true) continue;
+      return true;
     }
     return false;
   }
@@ -1588,7 +1602,11 @@ export function createSitelenFontPairController({
           cleanString(existing?.parserMode || DEFAULT_PARSER_MODE, DEFAULT_PARSER_MODE) !== manifestParserMode ||
           cleanString(existing?.renderAdapterId || DEFAULT_RENDER_ADAPTER_ID, DEFAULT_RENDER_ADAPTER_ID) !== manifestRenderAdapterId ||
           JSON.stringify((existing?.renderAdapterSettings && typeof existing.renderAdapterSettings === 'object') ? existing.renderAdapterSettings : {}) !==
-            JSON.stringify(manifestRenderAdapterSettings)
+            JSON.stringify(manifestRenderAdapterSettings) ||
+          normalizeStoredSettings(existing?.settings || null).cartoucheVulgarFractions !==
+            normalizeStoredSettings(pair.settings || null).cartoucheVulgarFractions ||
+          normalizeStoredSettings(existing?.settings || null).emulateLegacyCartoucheScaling !==
+            normalizeStoredSettings(pair.settings || null).emulateLegacyCartoucheScaling
         );
 
         if (!force && existing && !manifestRevChanged && !cacheMetadataMismatch) {

@@ -30,7 +30,7 @@
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
       src:
-        url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+        url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
@@ -875,10 +875,10 @@
   <script type="module">
     "use strict";
 
-    import { NanpaParser } from "./js/renderer-calendar.js?v=3";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
 
     const FONT_FAMILY = "TP-Numeric-Cartouche-Font";
-    const FONT_URL = "./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf";
+    const FONT_URL = "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf";
     const CARTOUCHE_FONT_FAMILY_SS12 = "TP-Numeric-Cartouche-Font-SS12";
     const CARTOUCHE_FONT_FAMILY_SS13 = "TP-Numeric-Cartouche-Font-SS13";
     const CARTOUCHE_STYLE_HALF_MAX_PX = 18;
@@ -888,10 +888,9 @@
     let cartoucheStyleFontFacesLoaded = false;
 
     function cartoucheStyleForFontPx(fontPx) {
-      const px = Number(fontPx);
-      if (!Number.isFinite(px) || px <= 0) return null;
-      if (px <= CARTOUCHE_STYLE_HALF_MAX_PX) return "ss12";
-      if (px <= CARTOUCHE_STYLE_THIRD_MAX_PX) return "ss13";
+      // Numeric cartouche glyph scaling is now encoded with vulgar-fraction
+      // postfix controls by the shared renderer. Do not combine those controls
+      // with the legacy whole-cartouche SS12/SS13 font aliases.
       return null;
     }
 
@@ -2146,6 +2145,7 @@
 
     const cartoucheTextCache = new Map();
     const properNameCache = new Map();
+    let calendarRendererPromise = null;
 
     function setStatus(message) {
       statusEl.textContent = String(message || "");
@@ -2166,8 +2166,34 @@
         enableBinaryRendering: false,
         autoCartoucheStandaloneProperNames: true,
         showUnknownText: false,
+        cartoucheVulgarFractions: true,
+        emulateLegacyCartoucheScaling: false,
         ...extra
       };
+    }
+
+    function calendarRendererFonts() {
+      return {
+        roles: {
+          word: FONT_FAMILY,
+          text: FONT_FAMILY,
+          cartouche: FONT_FAMILY,
+          number: FONT_FAMILY,
+          date: FONT_FAMILY,
+          time: FONT_FAMILY,
+          literalCartouche: FONT_FAMILY,
+          unknown: FONT_FAMILY
+        }
+      };
+    }
+
+    function getCalendarRenderer() {
+      if (!calendarRendererPromise) {
+        calendarRendererPromise = SitelenRenderer.create({
+          fonts: calendarRendererFonts()
+        });
+      }
+      return calendarRendererPromise;
     }
 
     function parseNumeric(value, startGlyph = null) {
@@ -2193,132 +2219,66 @@
       return name;
     }
 
-    // Calendar numeric cartouches always use the abbreviated display form.
-    // parseNumber() returns the canonical/full decimal cartouche codepoints, so
-    // apply the same abbreviation rule used by the shared renderer before the
-    // UCSUR string is placed in the page.
     const CARTOUCHE_START_CP = 0xF1990;
     const CARTOUCHE_END_CP = 0xF1991;
 
-    function wordCp(word) {
-      const cps = NanpaParser.tpWordsToUcsurCodepoints([word]);
-      if (!cps || cps.length !== 1) throw new Error(`No UCSUR code point for ${word}.`);
-      return Number(cps[0]);
+    function cartoucheCacheKey(value, startGlyph) {
+      return `${value}|${String(startGlyph || "nanpa").toLowerCase()}|abbreviated`;
     }
 
-    const ABBREV_CP = Object.freeze({
-      nanpa: wordCp("nanpa"),
-      nasa: wordCp("nasa"),
-      noka: wordCp("noka"),
-      tenpo: wordCp("tenpo"),
-      suno: wordCp("suno"),
-      toki: wordCp("toki"),
-      nena: wordCp("nena"),
-      en: wordCp("en"),
-      e: wordCp("e"),
-      kolon: wordCp(":"),
-      open: wordCp("open"),
-      ala: wordCp("ala"),
-      ike: wordCp("ike"),
-      uta: wordCp("uta")
-    });
+    async function buildCalendarCartoucheBatch(values, startGlyph) {
+      const normalizedHead = String(startGlyph || "nanpa").toLowerCase();
+      const pendingValues = Array.from(new Set(Array.from(values || [], value => String(value))))
+        .filter(value => !cartoucheTextCache.has(cartoucheCacheKey(value, normalizedHead)));
+      if (!pendingValues.length) return;
 
-    const ABBREV_START_CPS = new Set([
-      ABBREV_CP.nanpa, ABBREV_CP.nasa, ABBREV_CP.noka,
-      ABBREV_CP.tenpo, ABBREV_CP.suno, ABBREV_CP.toki
-    ]);
+      const renderer = await getCalendarRenderer();
+      const plan = await renderer.buildRenderPlan({
+        input: pendingValues.join("\n"),
+        parser: parserOptions({ numericCartoucheStartGlyph: normalizedHead }),
+        layout: { fontPx: 32, paddingPx: 0, align: "left" },
+        fonts: calendarRendererFonts()
+      });
 
-    const ABBREV_DROP_AFTER_HEAD = new Set([
-      ABBREV_CP.nanpa, ABBREV_CP.en, ABBREV_CP.e, ABBREV_CP.nena,
-      ABBREV_CP.open, ABBREV_CP.ala, ABBREV_CP.ike, ABBREV_CP.uta
-    ]);
-
-    function abbreviateNumericInnerCps(cps) {
-      const input = Array.from(cps || [], Number);
-      if (!input.length) return input;
-
-      const out = [];
-      let keptOpeningHead = false;
-      const hasTraditionalFullPositiveOpening =
-        input.length >= 4 && ABBREV_START_CPS.has(input[0]) &&
-        input[1] === ABBREV_CP.e && input[2] === ABBREV_CP.nena && input[3] === ABBREV_CP.en;
-      const hasColonFullPositiveOpening =
-        input.length >= 4 && ABBREV_START_CPS.has(input[0]) &&
-        input[1] === ABBREV_CP.kolon && input[2] === ABBREV_CP.nena && input[3] === ABBREV_CP.en;
-      const hasFullPositiveOpening = hasTraditionalFullPositiveOpening || hasColonFullPositiveOpening;
-      const hasFullScaffoldingAfterOpening = input.slice(2, -1).some(cp =>
-        cp === ABBREV_CP.e || ABBREV_DROP_AFTER_HEAD.has(cp)
-      );
-      const hasAlreadyAbbreviatedPositiveOpening =
-        !hasFullPositiveOpening && !hasFullScaffoldingAfterOpening &&
-        input.length >= 3 && ABBREV_START_CPS.has(input[0]) && input[1] === ABBREV_CP.en;
-      const hasAlreadyAbbreviatedColonPositiveOpening =
-        !hasFullPositiveOpening && !hasFullScaffoldingAfterOpening &&
-        input.length >= 4 && ABBREV_START_CPS.has(input[0]) &&
-        input[1] === ABBREV_CP.kolon && input[2] === ABBREV_CP.en;
-
-      for (let i = 0; i < input.length; i += 1) {
-        const cp = input[i];
-        const isFinalNanpa = cp === ABBREV_CP.nanpa && i === input.length - 1;
-
-        if (!keptOpeningHead) {
-          out.push(cp);
-          if ((i === 0 && ABBREV_START_CPS.has(cp)) || cp === ABBREV_CP.nanpa) keptOpeningHead = true;
-          continue;
-        }
-        if (isFinalNanpa) {
-          out.push(cp);
-          continue;
-        }
-        if (hasTraditionalFullPositiveOpening && i === 1) {
-          out.push(ABBREV_CP.en);
-          i = 3;
-          continue;
-        }
-        if (hasColonFullPositiveOpening && i === 2) {
-          out.push(ABBREV_CP.en);
-          i = 3;
-          continue;
-        }
-        if (hasAlreadyAbbreviatedPositiveOpening && i === 1) {
-          out.push(ABBREV_CP.en);
-          continue;
-        }
-        if (hasAlreadyAbbreviatedColonPositiveOpening && i === 2) {
-          out.push(ABBREV_CP.en);
-          continue;
-        }
-
-        // Calendar uses the renderer's preserve-breaks abbreviation: the full
-        // nena e nena e scaffold becomes one visible e glyph.
-        if (
-          cp === ABBREV_CP.nena &&
-          (input[i + 1] === ABBREV_CP.e || input[i + 1] === ABBREV_CP.en) &&
-          input[i + 2] === ABBREV_CP.nena &&
-          (input[i + 3] === ABBREV_CP.e || input[i + 3] === ABBREV_CP.en)
-        ) {
-          out.push(ABBREV_CP.e);
-          i += 3;
-          continue;
-        }
-
-        if (ABBREV_DROP_AFTER_HEAD.has(cp)) continue;
-        out.push(cp);
+      if (!Array.isArray(plan?.lines) || plan.lines.length !== pendingValues.length) {
+        throw new Error(`Shared renderer returned ${plan?.lines?.length ?? 0} lines for ${pendingValues.length} calendar cartouches.`);
       }
-      return out;
+
+      for (let index = 0; index < pendingValues.length; index += 1) {
+        const value = pendingValues[index];
+        const line = plan.lines[index];
+        const run = Array.from(line?.runs || []).find(candidate => candidate?.kind === "cartouche");
+        const cps = Array.isArray(run?.renderFullCps) ? run.renderFullCps : null;
+        if (!cps?.length) {
+          throw new Error(`Shared renderer did not produce a cartouche run for ${normalizedHead} ${value}.`);
+        }
+        cartoucheTextCache.set(cartoucheCacheKey(value, normalizedHead), String.fromCodePoint(...cps));
+      }
+    }
+
+    async function primeCalendarCartoucheTextCache() {
+      const nanpaValues = [];
+      for (let month = 1; month <= 12; month += 1) nanpaValues.push(month);
+      for (let year = START_YEAR; year <= END_YEAR; year += 1) nanpaValues.push(year);
+
+      const sunoValues = [];
+      for (let day = 1; day <= 31; day += 1) sunoValues.push(day);
+      for (let month = 1; month <= 12; month += 1) {
+        const count = daysInMonth(2000, month);
+        for (let day = 1; day <= count; day += 1) {
+          sunoValues.push(`--${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+        }
+      }
+
+      await buildCalendarCartoucheBatch(nanpaValues, "nanpa");
+      await buildCalendarCartoucheBatch(sunoValues, "suno");
     }
 
     function cartoucheText(value, startGlyph = "nanpa") {
       const normalizedHead = String(startGlyph || "nanpa").toLowerCase();
-      const key = `${value}|${normalizedHead}|abbreviated`;
-      if (cartoucheTextCache.has(key)) return cartoucheTextCache.get(key);
-      const parsed = parseNumeric(value, normalizedHead);
-      const fullInner = Array.from(parsed.ucsurCodepoints || parsed.innerCodepoints || []);
-      if (!fullInner.length) throw new Error(`No cartouche codepoints were produced for ${value}.`);
-      const abbreviatedInner = abbreviateNumericInnerCps(fullInner);
-      const cps = [CARTOUCHE_START_CP, ...abbreviatedInner, CARTOUCHE_END_CP];
-      const text = String.fromCodePoint(...cps);
-      cartoucheTextCache.set(key, text);
+      const key = cartoucheCacheKey(value, normalizedHead);
+      const text = cartoucheTextCache.get(key);
+      if (!text) throw new Error(`Calendar cartouche was not prepared by the shared renderer: ${normalizedHead} ${value}.`);
       return text;
     }
 
@@ -3723,6 +3683,7 @@
         }
 
         await document.fonts.ready;
+        await primeCalendarCartoucheTextCache();
       } catch (error) {
         console.error("Calendar font failed to load; page will remain hidden:", error);
         return;

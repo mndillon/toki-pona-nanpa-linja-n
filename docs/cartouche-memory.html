@@ -38,19 +38,19 @@
 
     @font-face {
       font-family: "TP-Nasin-Nanpa-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
     @font-face {
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
@@ -799,7 +799,7 @@
   <div id="srStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script type="module">
-import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
 import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=23";
 
 (() => {
@@ -3405,7 +3405,8 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=23";
         nanpaColonParsing: true,
         nanpaColonRendering: true,
         cartoucheCommaTallyMarks: false,
-        cartoucheTallyMode: "ucsur"
+        cartoucheTallyMode: "ucsur",
+        cartoucheVulgarFractions: true
       },
       fonts: {
         roles: {
@@ -3805,14 +3806,20 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=23";
     return out;
   }
 
-  async function renderSitelenCanvas(renderInput, { preview = false } = {}) {
+  async function renderSitelenCanvas(renderInput, { preview = false, numeric = false } = {}) {
     const fontPx = preview ? 96 : 64;
     const paddingPx = preview ? 18 : 14;
     const renderer = await ensureRendererReady();
     const input = sanitizeRenderInput(renderInput);
-    const cacheKey = JSON.stringify({ input, sig: getRendererSignature(), fontPx, paddingPx });
+    const cacheKey = JSON.stringify({ input, sig: getRendererSignature(), fontPx, paddingPx, numeric: !!numeric });
     if (renderedCardCache.has(cacheKey)) return cloneCanvas(renderedCardCache.get(cacheKey));
-    const rendered = await renderer.renderTextToNewCanvas({ input, ...buildBaseRendererConfig({ fontPx, paddingPx }) });
+    const renderConfig = buildBaseRendererConfig({ fontPx, paddingPx });
+    if (numeric) {
+      renderConfig.parser.nanpaColonParsing = true;
+      renderConfig.parser.nanpaColonRendering = true;
+      renderConfig.parser.cartoucheVulgarFractions = true;
+    }
+    const rendered = await renderer.renderTextToNewCanvas({ input, ...renderConfig });
     const trimmed = trimTransparentCanvas(rendered.canvas, preview ? 5 : 3);
     renderedCardCache.set(cacheKey, trimmed);
     return cloneCanvas(trimmed);
@@ -4028,7 +4035,7 @@ import { CartoucheApi } from "./js/cartouche-api-v3-previewdesc.js?v=23";
       document.fonts?.ready?.then?.(() => fitOneLineChild(container, span)).catch?.(() => {});
       return;
     }
-    const canvas = await renderSitelenCanvas(card.renderInput, { preview });
+    const canvas = await renderSitelenCanvas(card.renderInput, { preview, numeric: card.type === "number" });
     container.appendChild(canvas);
   }
 

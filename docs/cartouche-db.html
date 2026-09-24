@@ -893,11 +893,12 @@
   </div>
 
   <script type="module">
-     import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
+     import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
     import { createSitelenFontPairController } from './js/sitelen-font-pair-controller-merged-updated-font-label.js?v=25';
-    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=79';
+    import { createTokiPonaVoice } from './js/toki-pona-voice-api.js?v=81';
     import {
       CartoucheApi,
+      setNanpaParser,
       validateTpWord,
       segmentWords,
       validateBoundaries,
@@ -911,7 +912,12 @@
       buildEntryAudioInput,
       validateEntryAudioText,
       entryUsesForceMergedWholeEntry,
-    } from './js/cartouche-api-v3-previewdesc.js?v=35';
+    } from './js/cartouche-api-v3-previewdesc.js?v=38';
+
+    // Install the professional shared nanpa-linja-n parser before any DB
+    // segmentation occurs. The shared cartouche API now asks parseNumber()
+    // about original source spelling in both strict and relaxed modes.
+    setNanpaParser(NanpaParser);
 
     // ── Page-level constants (font, UI) ───────────────────────────────────────
     const FONT_FAMILY_TEXT      = 'TP-Nasin-Nanpa-Font';
@@ -1200,10 +1206,10 @@
       nasinNanpa: {
         key: 'nasinNanpa', label: 'nasin-nanpa', parserMode: 'sitelen-seli-kiwen',
         textFamily: FONT_FAMILY_TEXT, cartoucheFamily: FONT_FAMILY_CARTOUCHE,
-        settings: { cartoucheCommaTallyMarks: true, cartoucheTallyMode: 'manual' },
+        settings: { cartoucheCommaTallyMarks: true, cartoucheTallyMode: 'manual', cartoucheVulgarFractions: true },
         faces: [
-          { family: FONT_FAMILY_TEXT,      url: './fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf',                        format: 'opentype', sample: String.fromCodePoint(0xF196C) },
-          { family: FONT_FAMILY_CARTOUCHE, url: './fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf', format: 'opentype', sample: String.fromCodePoint(0xF1990) },
+          { family: FONT_FAMILY_TEXT,      url: './fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf', format: 'truetype', sample: String.fromCodePoint(0xF196C) },
+          { family: FONT_FAMILY_CARTOUCHE, url: './fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf', format: 'truetype', sample: String.fromCodePoint(0xF1990) },
         ],
       },
     };
@@ -1303,8 +1309,23 @@
 
     // Returns parser config from the active font preset — picks up per-font tally settings.
     function getParserConfig(baseParser = {}) {
-      if (fontCtrl) { try { return fontCtrl.buildRendererParserConfig({ baseParser }); } catch {} }
-      return { ...baseParser, cartoucheCommaTallyMarks: true, cartoucheTallyMode: 'ucsur' };
+      // The DB management page previews every numeric proper-name syntax the
+      // shared parser can recognise, independent of strict/relaxed spelling.
+      const dbBaseParser = {
+        ...baseParser,
+        relaxedNanpaLinjanParsing: true,
+        nanpaColonParsing: true,
+      };
+      if (fontCtrl) {
+        try {
+          return {
+            ...fontCtrl.buildRendererParserConfig({ baseParser: dbBaseParser }),
+            relaxedNanpaLinjanParsing: true,
+            nanpaColonParsing: true,
+          };
+        } catch {}
+      }
+      return { ...dbBaseParser, cartoucheCommaTallyMarks: true, cartoucheTallyMode: 'ucsur' };
     }
 
     // ── Render ────────────────────────────────────────────────────────────────

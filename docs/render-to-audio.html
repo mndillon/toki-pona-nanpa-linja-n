@@ -13,9 +13,9 @@
   <!-- Start loading the table glyph font as early as possible -->
   <link
     rel="preload"
-    href="./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf"
+    href="./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf"
     as="font"
-    type="font/otf"
+    type="font/ttf"
     crossorigin
   >
 
@@ -772,13 +772,13 @@
 
     @font-face {
       font-family: "TP-Nasin-Nanpa-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
@@ -1556,8 +1556,8 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
-    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=79";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
+    import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=81";
     import { REFERENCE_AUDIO_MANIFEST } from "./js/audio-manifest.js?v=33";
     import {
       buildSitelenSentenceAudioBuffersFromRawText,
@@ -1869,6 +1869,7 @@
           relaxedNanpaLinjanRendering: relaxed,
           nanpaColonParsing: model?.nanpaFormat === true,
           nanpaColonRendering: model?.nanpaFormat === true,
+          cartoucheVulgarFractions: true,
           enableHexParsing: true,
           enableBinaryParsing: true,
           enableBinaryRendering: true,
@@ -5230,7 +5231,7 @@ function trackUsage(eventName) {
 
   <script type="module">
     (() => {
-      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=79';
+      const NUMERIC_VOICE_MODULE_PATH = './js/toki-pona-voice-api.js?v=81';
       const NUMERIC_AUDIO_MANIFEST_MODULE_PATH = './js/audio-manifest.js?v=33';
       const NUMERIC_VOICE_OPTIONS = Object.freeze({
         synthesis_mode: 'reference_audio',

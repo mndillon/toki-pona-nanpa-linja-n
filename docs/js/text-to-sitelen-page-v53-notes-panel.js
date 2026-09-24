@@ -1,13 +1,13 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=22";
+} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=23";
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=178';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=79';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=81';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
@@ -482,8 +482,8 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268",
-  fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=22",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275",
+  fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=23",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=178",
   vectorWasm: "./wasm/sitelen_vector_wasm.js?v=144"
@@ -6196,7 +6196,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -7325,6 +7325,38 @@ function clearRenderedUnicodeSelection({ announce = false } = {}) {
   if (announce) announceStatus("Rendered Unicode selection cleared.");
 }
 
+function renderedUnicodeSelectionRectForRun(run) {
+  if (!run) return null;
+  const el = highlightRunElement(run);
+
+  const width = Math.max(
+    1,
+    highlightFiniteNumber(run?.widthPx, el?.widthPx, el?.w, 1) || 1
+  );
+  const height = Math.max(
+    1,
+    highlightFiniteNumber(run?.heightPx, el?.heightPx, el?.h, 1) || 1
+  );
+  const y = highlightFiniteNumber(run?.yPx, el?.yPx, 0) || 0;
+
+  // buildRenderPlan() already measured the exact text/codepoint stream that
+  // was rendered. Its xPx is the left edge of the run's measured visible box.
+  // drawXPx is the Canvas text origin after the font's actualBoundingBoxLeft
+  // offset has been applied, so using drawXPx as the highlight origin shifts
+  // narrow punctuation (especially comma/colon/middle-dot forms) sideways by
+  // the glyph's left side bearing. Use xPx for the selection/hit rectangle and
+  // keep drawXPx only as a compatibility fallback for older render plans.
+  const x = highlightFiniteNumber(
+    run?.xPx,
+    el?.xPx,
+    run?.drawXPx,
+    el?.drawXPx,
+    0
+  );
+
+  return { x: x || 0, y, width, height };
+}
+
 function drawRenderedUnicodeSelections(selections) {
   if (!selectionHighlightCanvas) return;
   syncRenderedSelectionCanvasSize();
@@ -7349,7 +7381,7 @@ function drawRenderedUnicodeSelections(selections) {
     }
 
     for (const lineRuns of runsByLine.values()) {
-      const rect = unionRects(lineRuns.map(rectForRun));
+      const rect = unionRects(lineRuns.map(renderedUnicodeSelectionRectForRun));
       if (!rect) continue;
       const maxFontPx = Math.max(
         8,
@@ -7770,18 +7802,239 @@ function setRenderedUnicodeSelectionRange(anchorId, targetId, catalog) {
   return true;
 }
 
+function isTopLevelRenderedZzSpacingControlRun(run) {
+  if (!run || run.kind === "gap") return false;
+
+  const sourceKind = String(run?.sourceKind ?? run?._element?.sourceKind ?? "").trim().toLowerCase();
+  if (sourceKind === "quote" || sourceKind === "interpretedquote" || sourceKind === "bracket") return false;
+
+  const source = String(run?.sourceText ?? run?._element?.sourceText ?? "").trim().toLowerCase();
+  const encoded = String(run?.encodedText ?? run?._element?.encodedText ?? "").trim().toLowerCase();
+  if (source === "zz" || encoded === "zz") return true;
+
+  const cps = getUnicodeJsonRunCodepoints(run);
+  return Array.isArray(cps) && cps.length === 1 && Number(cps[0]) === 0x3000;
+}
+
+function renderedAstSegmentRawText(segment) {
+  if (!segment || typeof segment !== "object") return null;
+  const kind = String(segment.kind ?? "");
+  if (kind === "text") return String(segment.value ?? "");
+  if (kind === "bracket") return `[${String(segment.value ?? "")}]`;
+  if (kind === "quote") {
+    const open = String(segment.openQuote ?? '"');
+    const close = String(segment.closeQuote ?? (open === "“" ? "”" : '"'));
+    return `${open}${String(segment.value ?? "")}${close}`;
+  }
+  if (kind === "rawUcsur") return String(segment.value ?? "");
+  return null;
+}
+
+function renderedRunAbsoluteSourceRange(run, lineIndex) {
+  if (!latestRenderPlan || !run) return null;
+
+  const astLine = latestRenderPlan?.ast?.lines?.[lineIndex];
+  const lineSource = String(astLine?.sourceText ?? "");
+  const children = Array.isArray(astLine?.children) ? astLine.children : null;
+  if (!children || !lineSource) return null;
+
+  const sourceKind = String(run?.sourceKind ?? run?._element?.sourceKind ?? "");
+  const sourceSegmentIndex = Number(run?.sourceSegmentIndex ?? run?._element?.sourceSegmentIndex);
+  const localStart = Number(run?.sourceStart ?? run?._element?.sourceStart);
+  const localEnd = Number(run?.sourceEnd ?? run?._element?.sourceEnd);
+  if (!Number.isInteger(sourceSegmentIndex) ||
+      sourceSegmentIndex < 0 ||
+      sourceSegmentIndex >= children.length ||
+      !Number.isFinite(localStart) ||
+      !Number.isFinite(localEnd) ||
+      localEnd < localStart) {
+    return null;
+  }
+
+  let cursor = 0;
+  for (let index = 0; index < children.length; index++) {
+    const segment = children[index];
+    const rawText = renderedAstSegmentRawText(segment);
+    if (rawText == null) return null;
+
+    let rawStart = lineSource.indexOf(rawText, cursor);
+    if (rawStart < 0) {
+      // The AST is derived from this exact line, so cursor is the safest
+      // non-destructive fallback when a transformed segment cannot be found.
+      rawStart = cursor;
+      if (lineSource.slice(rawStart, rawStart + rawText.length) !== rawText) return null;
+    }
+    const rawEnd = rawStart + rawText.length;
+
+    if (index === sourceSegmentIndex) {
+      const kind = String(segment?.kind ?? "");
+      const content = String(segment?.value ?? "");
+      const runKindMatchesSegment =
+        sourceKind === kind ||
+        (sourceKind.toLowerCase() === "interpretedquote" && kind === "quote");
+
+      if (!runKindMatchesSegment) return null;
+
+      let contentStart = rawStart;
+      if (kind === "bracket" || kind === "quote") contentStart += 1;
+
+      // A bracket/quote run that spans the complete content logically represents
+      // the complete delimited source segment. Include the delimiters so a
+      // following/preceding " zz " gap can be sliced exactly across segments.
+      if ((kind === "bracket" || kind === "quote") &&
+          localStart <= 0 &&
+          localEnd >= content.length) {
+        return { start: rawStart, end: rawEnd, lineSource };
+      }
+
+      const start = contentStart + localStart;
+      const end = contentStart + localEnd;
+      if (start < rawStart || end > rawEnd || end < start) return null;
+      return { start, end, lineSource };
+    }
+
+    cursor = rawEnd;
+  }
+
+  return null;
+}
+
+function renderedUnicodeSpacingControlsBetweenSelections(previousSelection, selection) {
+  if (!latestRenderPlan || !previousSelection || !selection) return [];
+
+  const previousLineIndex = renderedUnicodeSelectionLineIndex(previousSelection);
+  const lineIndex = renderedUnicodeSelectionLineIndex(selection);
+  if (previousLineIndex !== lineIndex) return [];
+
+  const line = (latestRenderPlan.lines || []).find(candidate => Number(candidate?.lineIndex) === Number(lineIndex));
+  const lineRuns = Array.isArray(line?.runs) ? line.runs.filter(Boolean) : [];
+  if (!lineRuns.length) return [];
+
+  const previousRuns = Array.isArray(previousSelection.runs) ? previousSelection.runs : [];
+  const currentRuns = Array.isArray(selection.runs) ? selection.runs : [];
+  if (!previousRuns.length || !currentRuns.length) return [];
+
+  let previousEndIndex = -1;
+  for (const run of previousRuns) previousEndIndex = Math.max(previousEndIndex, lineRuns.indexOf(run));
+
+  let currentStartIndex = lineRuns.length;
+  for (const run of currentRuns) {
+    const index = lineRuns.indexOf(run);
+    if (index >= 0) currentStartIndex = Math.min(currentStartIndex, index);
+  }
+
+  if (previousEndIndex < 0 || currentStartIndex >= lineRuns.length || currentStartIndex <= previousEndIndex) return [];
+
+  const spacingControlRuns = [];
+  for (let index = previousEndIndex + 1; index < currentStartIndex; index++) {
+    const run = lineRuns[index];
+    if (isTopLevelRenderedZzSpacingControlRun(run)) spacingControlRuns.push(run);
+  }
+  if (!spacingControlRuns.length) return [];
+
+  // Prefer the exact source substring between the two selected items. This
+  // preserves the user's representation and only the whitespace that was
+  // actually typed: "zz", " zz ", tabs around zz, or literal U+3000.
+  const previousBoundaryRun = lineRuns[previousEndIndex];
+  const currentBoundaryRun = lineRuns[currentStartIndex];
+  // First try an absolute source-line slice. Unlike the older segment-local
+  // path, this also preserves exact spaces around zz/U+3000 when the selected
+  // items are separated by bracket/quote/text segment boundaries.
+  const previousAbsoluteRange = renderedRunAbsoluteSourceRange(previousBoundaryRun, lineIndex);
+  const currentAbsoluteRange = renderedRunAbsoluteSourceRange(currentBoundaryRun, lineIndex);
+  if (previousAbsoluteRange &&
+      currentAbsoluteRange &&
+      previousAbsoluteRange.lineSource === currentAbsoluteRange.lineSource &&
+      currentAbsoluteRange.start >= previousAbsoluteRange.end) {
+    const exactSourceGap = previousAbsoluteRange.lineSource.slice(
+      previousAbsoluteRange.end,
+      currentAbsoluteRange.start
+    );
+    const withoutSpacingControls = exactSourceGap
+      .replace(/zz/gi, "")
+      .replace(/\u3000/g, "");
+    if ((/zz/i.test(exactSourceGap) || exactSourceGap.includes("\u3000")) &&
+        /^\s*$/.test(withoutSpacingControls)) {
+      return stringToCodepoints(exactSourceGap);
+    }
+  }
+
+  const previousSourceKind = String(previousBoundaryRun?.sourceKind ?? previousBoundaryRun?._element?.sourceKind ?? "");
+  const currentSourceKind = String(currentBoundaryRun?.sourceKind ?? currentBoundaryRun?._element?.sourceKind ?? "");
+  const previousSegmentIndex = Number(previousBoundaryRun?.sourceSegmentIndex ?? previousBoundaryRun?._element?.sourceSegmentIndex);
+  const currentSegmentIndex = Number(currentBoundaryRun?.sourceSegmentIndex ?? currentBoundaryRun?._element?.sourceSegmentIndex);
+  const previousSourceEnd = Number(previousBoundaryRun?.sourceEnd ?? previousBoundaryRun?._element?.sourceEnd);
+  const currentSourceStart = Number(currentBoundaryRun?.sourceStart ?? currentBoundaryRun?._element?.sourceStart);
+
+  if (previousSourceKind === currentSourceKind &&
+      Number.isFinite(previousSegmentIndex) &&
+      previousSegmentIndex === currentSegmentIndex &&
+      Number.isFinite(previousSourceEnd) &&
+      Number.isFinite(currentSourceStart) &&
+      currentSourceStart >= previousSourceEnd) {
+    const segmentSource = getUnicodeJsonAstSegmentSourceText(
+      latestRenderPlan,
+      lineIndex,
+      previousSourceKind,
+      previousSegmentIndex
+    );
+    if (segmentSource && currentSourceStart <= segmentSource.length) {
+      const exactSourceGap = segmentSource.slice(previousSourceEnd, currentSourceStart);
+      const withoutSpacingControls = exactSourceGap
+        .replace(/zz/gi, "")
+        .replace(/\u3000/g, "");
+      if ((/zz/i.test(exactSourceGap) || exactSourceGap.includes("\u3000")) && /^\s*$/.test(withoutSpacingControls)) {
+        return stringToCodepoints(exactSourceGap);
+      }
+    }
+  }
+
+  // Fallback for older/transformed plans without usable source-span metadata:
+  // preserve the control token itself, but never invent surrounding spaces.
+  const cps = [];
+  for (const run of spacingControlRuns) {
+    const sourceText = String(run?.sourceText ?? run?._element?.sourceText ?? "");
+    const encodedText = String(run?.encodedText ?? run?._element?.encodedText ?? "");
+    if (sourceText.trim().toLowerCase() === "zz") {
+      cps.push(...stringToCodepoints(sourceText));
+      continue;
+    }
+    if (encodedText.trim().toLowerCase() === "zz") {
+      cps.push(...stringToCodepoints(encodedText));
+      continue;
+    }
+    if (sourceText.includes("\u3000") && /^\s*$/.test(sourceText.replace(/\u3000/g, ""))) {
+      cps.push(...stringToCodepoints(sourceText));
+      continue;
+    }
+    if (encodedText.includes("\u3000") && /^\s*$/.test(encodedText.replace(/\u3000/g, ""))) {
+      cps.push(...stringToCodepoints(encodedText));
+      continue;
+    }
+    cps.push(0x3000);
+  }
+  return cps;
+}
+
 function buildRenderedUnicodeSelectionClipboardText(selections) {
   const ordered = Array.from(selections || []).filter(selection =>
     selection && Array.isArray(selection.cps) && selection.cps.length
   );
   if (!ordered.length) return "";
 
+  let previousSelection = null;
   let previousLineIndex = null;
   let out = "";
   for (const selection of ordered) {
     const lineIndex = renderedUnicodeSelectionLineIndex(selection);
-    if (previousLineIndex != null && lineIndex !== previousLineIndex) out += "\n";
+    if (previousLineIndex != null && lineIndex !== previousLineIndex) {
+      out += "\n";
+    } else if (previousSelection) {
+      const spacingCps = renderedUnicodeSpacingControlsBetweenSelections(previousSelection, selection);
+      if (spacingCps.length) out += codepointsToRawUnicodeString(spacingCps);
+    }
     out += codepointsToRawUnicodeString(selection.cps);
+    previousSelection = selection;
     previousLineIndex = lineIndex;
   }
   return out;
@@ -7791,7 +8044,7 @@ function renderedUnicodeSelectionLineCount(selections) {
   return new Set((selections || []).map(renderedUnicodeSelectionLineIndex)).size;
 }
 function renderedRunHitRect(run) {
-  const rect = rectForRun(run);
+  const rect = renderedUnicodeSelectionRectForRun(run);
   if (!rect) return null;
   const fontPx = Math.max(8, Number(run.fontPx) || Number(latestRenderPlan?.fontPx) || getFontPx());
   const padding = Math.max(5, Math.round(fontPx * 0.12));
@@ -10087,6 +10340,47 @@ function initFloatingTextInEditor() {
 }
 
 
+function insertTextAtTextareaSelection(textarea, insertedText) {
+  if (!textarea) return false;
+
+  const text = String(insertedText ?? "");
+  if (!text) return false;
+
+  const value = String(textarea.value ?? "");
+  const start = Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : value.length;
+  const end = Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : start;
+  const scrollTop = textarea.scrollTop;
+  const scrollLeft = textarea.scrollLeft;
+
+  textarea.setRangeText(text, start, end, "end");
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+  try { textarea.focus({ preventScroll: true }); }
+  catch { textarea.focus(); }
+  textarea.scrollTop = scrollTop;
+  textarea.scrollLeft = scrollLeft;
+  return true;
+}
+
+function wireVulgarFractionInsertButtons() {
+  const buttons = document.querySelectorAll(".vulgarFractionInsertButton[data-vulgar-fraction][data-vulgar-fraction-target]");
+
+  buttons.forEach((button) => {
+    // Preserve the textarea's selection/caret on pointer activation. Keyboard
+    // activation still works normally and uses the textarea's retained selection.
+    button.addEventListener("pointerdown", (event) => {
+      if (event.button == null || event.button === 0) event.preventDefault();
+    });
+
+    button.addEventListener("click", () => {
+      const targetId = button.dataset.vulgarFractionTarget;
+      const fraction = button.dataset.vulgarFraction;
+      const textarea = targetId ? document.getElementById(targetId) : null;
+      insertTextAtTextareaSelection(textarea, fraction);
+    });
+  });
+}
+
 function applyNewInputTextWithPipeline(newText) {
   // Always write into the source textarea (#appTextIn), then trigger the existing pipeline:
   // - pop-out sync
@@ -10275,25 +10569,30 @@ async function initializeTextToSitelenPage() {
 
     try {
       const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
-        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=17",
+        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=18",
         onlyIfExisting: false,
         force: false
       });
 
       console.info("[preloaded-fonts] sync result:", syncResult);
 
-      if (syncResult.updated > 0) {
-        await sitelenFontController.hydrateDynamicPresetsFromDb({ force: true });
+      // Always rehydrate after a successful manifest synchronization attempt.
+      // The controller's startup hydration can legitimately run before the
+      // manifest sync has refreshed/installed records. Rehydrating here keeps
+      // every manifest-backed preset visible even when the sync itself reports
+      // updated: 0 because the IndexedDB records are already current.
+      await sitelenFontController.hydrateDynamicPresetsFromDb({ force: true });
 
+      if (syncResult.updated > 0) {
         sitelenFontController.resetFontLoadState?.();
         sitelenRenderer = null;
         sitelenRendererSignature = "";
-
-        console.info(
-          "[preloaded-fonts] active preset after hydrate:",
-          sitelenFontController.getActivePreset()
-        );
       }
+
+      console.info(
+        "[preloaded-fonts] active preset after hydrate:",
+        sitelenFontController.getActivePreset()
+      );
     } catch (err) {
       console.warn("[preloaded-fonts] manifest sync failed:", err);
     }
@@ -10438,6 +10737,7 @@ async function initializeTextToSitelenPage() {
 // Initialize pop-out editor after the DOM has been parsed.
 initFloatingTextInEditor();
 wireImportExportButtons();
+wireVulgarFractionInsertButtons();
 
 initializeTextToSitelenPage().catch((error) => {
   console.error("[startup] initialization failed", error);

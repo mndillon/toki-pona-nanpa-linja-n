@@ -267,6 +267,62 @@ function isNanpaCaps(s) {
   catch { return false; }
 }
 
+// Ask the injected nanpa-linja-n parser about the ORIGINAL source spelling.
+// This is deliberately broader than the historical isValidCaps(compactRun)
+// check: numeric proper-name syntax can depend on word boundaries, case and
+// semantic heads such as Nanpa, Toki, Suno and Tenpo.  Probe both strict and
+// relaxed proper-name parsing so DB classification means "can this be parsed
+// as a nanpa-linja-n numeric source?", not "does it match the current display
+// mode?".  nanpaColonParsing enables the Nanpa/Toki/Suno/Tenpo syntax family;
+// it does not require a literal ':' to be present (e.g. Nanpawan is valid input
+// when the shared parser accepts it).
+export function canBeParsedAsNanpa(source) {
+  const s = String(source ?? '').trim();
+  if (!s || !_nanpaParser) return false;
+
+  if (typeof _nanpaParser.parseNumber === 'function') {
+    const base = { nanpaColonParsing: true };
+    try {
+      const strict = _nanpaParser.parseNumber(s, {
+        ...base,
+        relaxedNanpaLinjanParsing: false,
+      });
+      if (strict && strict.caps) return true;
+    } catch {}
+
+    try {
+      const relaxed = _nanpaParser.parseNumber(s, {
+        ...base,
+        relaxedNanpaLinjanParsing: true,
+      });
+      if (relaxed && relaxed.caps) return true;
+    } catch {}
+  }
+
+  // Compatibility with older injected parser facades that expose proper-name
+  // validation but not parseNumber().
+  if (typeof _nanpaParser.isValidProperName === 'function') {
+    try {
+      if (_nanpaParser.isValidProperName(s, {
+        relaxedNanpaLinjanParsing: false,
+        nanpaColonParsing: true,
+      })) return true;
+    } catch {}
+    try {
+      if (_nanpaParser.isValidProperName(s, {
+        relaxedNanpaLinjanParsing: true,
+        nanpaColonParsing: true,
+      })) return true;
+    } catch {}
+  }
+
+  // Final backwards-compatible fallback for the original caps-only parser
+  // contract.  This intentionally runs last because compacting loses source
+  // word boundaries needed by typed forms such as "Toki ...".
+  const compact = s.replace(/\s+/g, '').toUpperCase();
+  return isNanpaCaps(compact);
+}
+
 // ── Greedy nanpa-linja-n run detection ─────────────────────────────────────
 // Returns array of segments: { type:'nanpa'|'normal', words:[] }
 export function segmentWords(words) {
@@ -275,10 +331,24 @@ export function segmentWords(words) {
   let i = 0;
   while (i < words.length) {
     let nanpaLen = 0;
-    for (let len = words.length - i; len >= 1; len--) {
-      const run = words.slice(i, i + len).map(w => w.toUpperCase()).join('');
-      if (isNanpaCaps(run)) { nanpaLen = len; break; }
+    const remainingLen = words.length - i;
+    const firstWord = String(words[i] ?? '');
+
+    for (let len = remainingLen; len >= 1; len--) {
+      const candidateWords = words.slice(i, i + len);
+      const source = candidateWords.join(' ');
+      if (!canBeParsedAsNanpa(source)) continue;
+
+      // Match the renderer's conservative Toki scanner: a Toki-headed numeric
+      // proper name may claim the run only when the COMPLETE remaining
+      // capitalised proper-name run is numeric.  Do not accept "Toki Wetesen"
+      // as a prefix of a longer invalid name such as "Toki Wetesen Pona".
+      if (firstWord === 'Toki' && len < remainingLen) continue;
+
+      nanpaLen = len;
+      break;
     }
+
     if (nanpaLen > 0) {
       segments.push({ type: 'nanpa', words: words.slice(i, i + nanpaLen) });
       i += nanpaLen;
@@ -471,6 +541,22 @@ function sanitizeStoredCartoucheText(value, { keepLeadingBlank = false } = {}) {
   return sanitizeStoredCartoucheTokens(tokenizeStoredCartouche(value), { keepLeadingBlank }).join(' ');
 }
 
+// Ordinary glyph cartouches use exactly one blank control token ("") and it
+// must be the first token. Any stored/internal "" tokens after that point are
+// placeholders only and must never escape to the renderer.
+function canonicalizeOrdinaryCartoucheTokens(tokens) {
+  const content = Array.from(tokens || []).filter(tok => tok && tok !== '""');
+  return ['""', ...content];
+}
+
+function canonicalizeOrdinaryCartoucheText(value) {
+  return canonicalizeOrdinaryCartoucheTokens(tokenizeStoredCartouche(value)).join(' ');
+}
+
+function buildOrdinaryCartoucheInputFromTokens(tokens) {
+  return `[ ${canonicalizeOrdinaryCartoucheTokens(tokens).join(' ')} ]`;
+}
+
 // Append tally commas to non-blank tokens in a raw cartouche word list.
 // Only called in preferred mode. Safe on old entries where tallyMap is absent.
 // subKey: the coordinate prefix matching the tallyMap key scheme, e.g. "0", "0_1"
@@ -486,11 +572,7 @@ function applyTalliesToTokens(tokens, tallyMap, subKey) {
 }
 
 function ensureLeadingBlankGlyphToken(value) {
-  const tokens = tokenizeStoredCartouche(value);
-  const cleaned = sanitizeStoredCartoucheTokens(tokens, { keepLeadingBlank: false });
-  if (!cleaned.length) return '""';
-  if (cleaned[0] !== '""') cleaned.unshift('""');
-  return cleaned.join(' ');
+  return canonicalizeOrdinaryCartoucheText(value);
 }
 
 function getStoredSegmentCartoucheText(seg, entry, segIndex) {
@@ -503,12 +585,12 @@ function getStoredSegmentCartoucheText(seg, entry, segIndex) {
   }
 
   if (entry.merge) {
-    return sanitizeStoredCartoucheText(cm[segIndex]);
+    return canonicalizeOrdinaryCartoucheText(cm[segIndex]);
   }
 
   return seg.words.map((w, wi) => {
     const stored = cm[`${segIndex}_${wi}`];
-    return `[ ${sanitizeStoredCartoucheText(stored)} ]`;
+    return buildOrdinaryCartoucheInputFromTokens(tokenizeStoredCartouche(stored));
   }).join(' ');
 }
 
@@ -529,15 +611,13 @@ export function buildSegmentRendererInput(seg, entry, segIndex) {
     if (entry.mode === 'preferred') {
       const rawTokens = tokenizeStoredCartouche((entry.cartoucheMap || {})[segIndex]);
       const withTallies = applyTalliesToTokens(rawTokens, tm, String(segIndex));
-      const cleaned = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false });
-      if (!cleaned.length) cleaned.unshift('""'); else if (cleaned[0] !== '""') cleaned.unshift('""');
-      const stored = cleaned.join(' ');
-      if (stored) return `["" ${stored} ]`;
+      return buildOrdinaryCartoucheInputFromTokens(withTallies);
     }
-    // Random — generate from the words' letters.
-    // Leading "" forces renderer to treat as glyph cartouche, not numeric.
+    // Random — generate from the words' letters, then enforce the same single
+    // leading "" invariant used by preferred ordinary cartouches.
     const letters = seg.words.join('').toLowerCase().split('');
-    return `[ "" ${buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true })} ]`;
+    const randomTokens = tokenizeStoredCartouche(buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true }));
+    return buildOrdinaryCartoucheInputFromTokens(randomTokens);
   }
 
   // Normal segment
@@ -545,21 +625,21 @@ export function buildSegmentRendererInput(seg, entry, segIndex) {
     if (entry.mode === 'preferred') {
       const rawTokens = tokenizeStoredCartouche((entry.cartoucheMap || {})[segIndex]);
       const withTallies = applyTalliesToTokens(rawTokens, tm, String(segIndex));
-      const sanitized = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false }).join(' ');
-      if (sanitized) return `[ ${sanitized} ]`;
+      if (withTallies.length) return buildOrdinaryCartoucheInputFromTokens(withTallies);
     }
     const { letters } = segmentLetters(seg.words);
-    return `[ ${buildRandomDescForLetters(letters)} ]`;
+    const randomTokens = tokenizeStoredCartouche(buildRandomDescForLetters(letters));
+    return buildOrdinaryCartoucheInputFromTokens(randomTokens);
   } else {
     return seg.words.map((w, wi) => {
       const cm = entry.cartoucheMap || {};
       if (entry.mode === 'preferred') {
         const rawTokens = tokenizeStoredCartouche(cm[`${segIndex}_${wi}`]);
         const withTallies = applyTalliesToTokens(rawTokens, tm, `${segIndex}_${wi}`);
-        const sanitized = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false }).join(' ');
-        if (sanitized) return `[ ${sanitized} ]`;
+        if (withTallies.length) return buildOrdinaryCartoucheInputFromTokens(withTallies);
       }
-      return `[ ${buildRandomDescForLetters(w.toLowerCase().split(''))} ]`;
+      const randomTokens = tokenizeStoredCartouche(buildRandomDescForLetters(w.toLowerCase().split('')));
+      return buildOrdinaryCartoucheInputFromTokens(randomTokens);
     }).join(' ');
   }
 }
@@ -574,15 +654,12 @@ function buildForceMergedWholeEntryRendererInput(entry) {
   if (entry.mode === 'preferred') {
     const rawTokens = tokenizeStoredCartouche((entry.cartoucheMap || {})['0']);
     const withTallies = applyTalliesToTokens(rawTokens, tm, '0');
-    const cleaned = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false });
-    if (!cleaned.length) cleaned.unshift('""');
-    else if (cleaned[0] !== '""') cleaned.unshift('""');
-    const stored = cleaned.join(' ');
-    if (stored) return `[ ${stored} ]`;
+    return buildOrdinaryCartoucheInputFromTokens(withTallies);
   }
 
   const { letters } = segmentLetters(entry.words);
-  return `[ "" ${buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true })} ]`;
+  const randomTokens = tokenizeStoredCartouche(buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true }));
+  return buildOrdinaryCartoucheInputFromTokens(randomTokens);
 }
 
 // Build full renderer input string for an entry (all segments)
@@ -912,6 +989,20 @@ export class CartoucheApi {
   // escape hatch and is handled by the caller via atDbRequested.
   static _nativeNanpaPrefixLength(words) {
     const runWords = Array.isArray(words) ? words : [];
+
+    // Preserve the renderer's conservative Toki rule across this outer prefix
+    // search too.  Calling segmentWords() on a shorter candidate would make
+    // that shorter slice look "complete" and could incorrectly protect
+    // "Toki Wetesen" inside the longer invalid run "Toki Wetesen Pona".
+    if (runWords[0] === 'Toki') {
+      const fullSegs = segmentWords(runWords);
+      return (
+        fullSegs.length === 1 &&
+        fullSegs[0].type === 'nanpa' &&
+        fullSegs[0].words.length === runWords.length
+      ) ? runWords.length : 0;
+    }
+
     for (let len = runWords.length; len >= 1; len--) {
       const candidateWords = runWords.slice(0, len);
       const candidateSegs = segmentWords(candidateWords);

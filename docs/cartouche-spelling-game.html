@@ -39,20 +39,20 @@
     /* Nanpa-linja-n cartouche font (for numbers/time) */
     @font-face{
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
     @font-face{
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
     /* Latin nasin nanpa (UCSUR v5) for normal glyph text */
     @font-face{
       font-family: "TP-Nasin-Nanpa-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
@@ -604,7 +604,7 @@ html, body{
   </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
 
 (() => {
   "use strict";
@@ -1310,9 +1310,10 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
 
   function NLN_isNumericQuestion(obj){ return obj && obj.kind === "numeric"; }
 
-  // Numeric spelling questions use Nanpa-format rendering and relaxed digit
-  // syllables. Keep these aliases local to the numeric quiz path so ordinary
-  // cartouche spelling behavior remains unchanged.
+  // Numeric spelling questions randomly use either legacy Ne-format or
+  // Nanpa-format rendering, while keeping relaxed digit syllables. Keep these
+  // helpers local to the numeric quiz path so ordinary cartouche spelling
+  // behavior remains unchanged.
   const NLN_STRICT_TO_RELAXED_DIGIT_TOKEN = Object.freeze({
     WE:"WA", TE:"TU", LE:"LU", ME:"MU", PE:"PI", JE:"JO"
   });
@@ -1399,8 +1400,13 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     if (!NLN_isNumericQuestion(current)) return false;
 
     const normalized = normalizeGuess(raw);
-    const expectedHead = NLN_numericHeadForParsed(current).toLowerCase();
-    if (!normalized.startsWith(expectedHead)) return false;
+    const useNanpaFormat = current.numericFormat === "nanpa";
+    if (useNanpaFormat) {
+      const expectedHead = NLN_numericHeadForParsed(current).toLowerCase();
+      if (!normalized.startsWith(expectedHead)) return false;
+    } else if (!normalized.startsWith("ne")) {
+      return false;
+    }
 
     const targetCaps = NLN_canonicalStrictCaps(current.caps);
     if (!targetCaps) return false;
@@ -1410,8 +1416,8 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
         const parsed = SitelenRenderer.NanpaParser.parseNumber(candidate, {
           mode:"uniform",
           mixedStyle:"short",
-          nanpaColonParsing:true,
-          nanpaColonRendering:true,
+          nanpaColonParsing:useNanpaFormat,
+          nanpaColonRendering:useNanpaFormat,
           relaxedNanpaLinjanParsing:true,
           relaxedNanpaLinjanRendering:true
         });
@@ -6019,6 +6025,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   let timeSitelenRendererPromise = null;
   let topTimerRenderSeq = 0;
   let topScoreRenderSeq = 0;
+  let mainNumericRenderSeq = 0;
 
   function abbreviateTimerNumericCartoucheCps(cps) {
     const input = Array.from(cps ?? []).map(cp => Number(cp));
@@ -6088,6 +6095,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
         abbreviateNumericCartouches: true,
         nanpaColonParsing: true,
         nanpaColonRendering: true,
+        cartoucheVulgarFractions: true,
         cartoucheCommaTallyMarks: false,
         cartoucheTallyMode: "ucsur"
       },
@@ -6114,6 +6122,24 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
         ...config.parser,
         nanpaColonParsing: true,
         nanpaColonRendering: true
+      }
+    };
+  }
+
+  function buildNumericQuestionRendererConfig(fontPx, useNanpaFormat = true, numericStartGlyph = null) {
+    const config = buildTimeRendererConfig(fontPx);
+    return {
+      ...config,
+      parser: {
+        ...config.parser,
+        numericMode: "uniform",
+        abbreviateNumericCartouches: false,
+        relaxedNanpaLinjanParsing: true,
+        relaxedNanpaLinjanRendering: true,
+        nanpaColonParsing: useNanpaFormat === true,
+        nanpaColonRendering: useNanpaFormat === true,
+        numericCartoucheStartGlyph: useNanpaFormat ? numericStartGlyph : null,
+        cartoucheVulgarFractions: true
       }
     };
   }
@@ -6185,6 +6211,33 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     outCtx.clearRect(0, 0, outW, outH);
     outCtx.drawImage(src, minX, minY, outW, outH, 0, 0, outW, outH);
     return out;
+  }
+
+  async function renderNumericQuestionCartoucheToNewCanvas(rawValue, fontPx, useNanpaFormat = true, numericStartGlyph = null) {
+    const renderer = await ensureTimeSitelenRenderer(fontPx);
+    const rendered = await renderer.renderTextToNewCanvas({
+      input: String(rawValue ?? ""),
+      ...buildNumericQuestionRendererConfig(fontPx, useNanpaFormat, numericStartGlyph)
+    });
+
+    const src = rendered && rendered.canvas;
+    if (!src) throw new Error("Numeric question cartouche renderer did not return a canvas");
+
+    return cropCanvasToVisibleBounds(src, Math.max(4, Math.round((Number(fontPx) || 96) * 0.12)));
+  }
+
+  function renderNumericQuestionIntoCanvas(targetCanvas, rawValue, { cssW, cssH, fontPx = 96, align = "center", useNanpaFormat = true, numericStartGlyph = null } = {}) {
+    if (!targetCanvas) return;
+    const seq = ++mainNumericRenderSeq;
+    renderNumericQuestionCartoucheToNewCanvas(rawValue, fontPx, useNanpaFormat, numericStartGlyph)
+      .then((off) => {
+        if (seq !== mainNumericRenderSeq) return;
+        drawRenderedCartoucheCanvas(targetCanvas, off, { cssW, cssH, align });
+      })
+      .catch((err) => {
+        if (seq !== mainNumericRenderSeq) return;
+        console.error("[numeric-question-cartouche] render failed", err);
+      });
   }
 
   async function renderTimeCartoucheToNewCanvas(totalSeconds, fontPx) {
@@ -6645,6 +6698,7 @@ function hideFinishPopup(){
   }
 
   function renderMainPhrase(phrase){
+    mainNumericRenderSeq += 1;
     const main = document.getElementById("mainCanvas");
     if (!main) return null;
 
@@ -6688,19 +6742,26 @@ return renderMainPhrase(phrase);
       const gen = NLN_makeRandomNumericValue();
       const raw = gen.raw;
 
-      // Numeric quiz questions are always displayed in Nanpa format and use
-      // relaxed nanpa-linja-n digit rendering. This path is intentionally
-      // isolated from the ordinary word-cartouche pipeline.
+      // Numeric quiz questions randomly use either legacy Ne-format or
+      // Nanpa format. Nanpa-format dates/times retain Suno/Tenpo semantic heads.
+      // Both branches use relaxed nanpa-linja-n digit rendering.
+      const numericFormat = Math.random() < 0.5 ? "legacy" : "nanpa";
+      const useNanpaFormat = numericFormat === "nanpa";
       const displayParsed = SitelenRenderer.NanpaParser.parseNumber(raw, {
         mode:"uniform",
         mixedStyle:"short",
-        nanpaColonParsing:true,
-        nanpaColonRendering:true,
+        nanpaColonParsing:useNanpaFormat,
+        nanpaColonRendering:useNanpaFormat,
         relaxedNanpaLinjanParsing:true,
         relaxedNanpaLinjanRendering:true
       });
       const caps = String(displayParsed?.caps ?? "");
-      const latinRaw = NLN_relaxedNanpaFormatProperName(displayParsed);
+      const numericStartGlyph = useNanpaFormat
+        ? (displayParsed?.isDate === true ? "suno" : (displayParsed?.isTime === true ? "tenpo" : "nanpa"))
+        : null;
+      const latinRaw = useNanpaFormat
+        ? NLN_relaxedNanpaFormatProperName(displayParsed)
+        : fixOkenSuffixSpacing(titleCaseNanpaProperNameForDisplay(displayParsed?.properName || ""));
       const cpsInner = Array.from(
         displayParsed?.ucsurCodepoints ?? displayParsed?.innerCodepoints ?? displayParsed?.codepoints ?? []
       ).map(Number);
@@ -6710,6 +6771,8 @@ return renderMainPhrase(phrase);
       return {
         kind:"numeric",
         rawValue:raw,
+        numericFormat,
+        numericStartGlyph,
         caps,
         cpsInner,
         latinRaw,
@@ -6739,12 +6802,13 @@ return renderMainPhrase(phrase);
     if (current.kind === "numeric"){
       const main = document.getElementById("mainCanvas");
       if (main){
-        const inner = Array.isArray(current.cpsInner) && current.cpsInner.length ? current.cpsInner : pointsToInnerCps(0);
-        fitDrawCartouche(main, inner, {
+        renderNumericQuestionIntoCanvas(main, current.rawValue, {
           cssW: main.clientWidth || 660,
           cssH: main.clientHeight || 140,
           fontPx: 96,
-          fontFamily: FONT_FAMILY_NUMERIC_CARTOUCHE
+          align: "center",
+          useNanpaFormat: current.numericFormat === "nanpa",
+          numericStartGlyph: current.numericStartGlyph
         });
       }
       current.displayPhrase = null;
@@ -7140,13 +7204,14 @@ return renderMainPhrase(phrase);
     if (current){
       if (NLN_isNumericQuestion(current)){
         const main = document.getElementById("mainCanvas");
-        if (main && Array.isArray(current.cpsInner)){
-          fitDrawCartouche(main, current.cpsInner, {
+        if (main){
+          renderNumericQuestionIntoCanvas(main, current.rawValue, {
             cssW: main.clientWidth || 660,
             cssH: main.clientHeight || 140,
             fontPx: 96,
-            fontFamily: FONT_FAMILY_NUMERIC_CARTOUCHE,
             align: "left",
+            useNanpaFormat: current.numericFormat === "nanpa",
+            numericStartGlyph: current.numericStartGlyph
           });
         }
       } else {

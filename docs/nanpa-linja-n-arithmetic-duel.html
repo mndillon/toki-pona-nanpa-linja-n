@@ -34,17 +34,17 @@
     }
     @font-face{
       font-family: "TP-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi-nasin-e-en.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
     @font-face{
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
     @font-face{
       font-family: "TP-Nasin-Nanpa-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
@@ -782,7 +782,7 @@
 
 <script src="./vendor/pdf-lib.min.js"></script>
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
 
 (() => {
   "use strict";
@@ -959,18 +959,18 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     for (const id of ["btnStart","btnPrev","btnNext","btnQuit","levelSelect","modeSelect","countInput","languageSelect","levelLabel","modeLabel","questionsLabel","languageLabel","status","seedLabel","btnRandomSeed","btnNewSeed","practiceTitle","levelHelp","scoreLabel","streakLabel","timeCanvas","timeLabel","questionLabel","prompt","questionDisplay","sortSelected","answers","feedback","seedInput","btnUseSeed","btnCopySeedUrl","btnGenerateWorksheet","btnToggleAnswerKey","worksheetAnswerKeyToggle","worksheetAnswerKeyLabel","btnPrintWorksheet","worksheetAbbrevToggle","worksheetAbbrevLabel","worksheetTitle","worksheetHelp","worksheetQuestions","reviewSummary","btnRetryMistakes","btnClearReview","weakAreas","reviewList","cartoucheModeSelect","latinDisplaySelect","properDisplaySelect","fontPxSelect","spacingSelect","timerToggle","secondsPerQuestionSelect","timerTotalLabel","cartoucheOnlyToggle","soundToggle","autoNextToggle","levelList","historySummary","historyList","historyDetail","historyMissedOnlyToggle","btnRefreshHistory","btnClearHistory"]){ el[id] = $(id); }
   }
 
-  function buildRendererConfig({ abbreviate = false, fontPx = state.settings.fontPx, spacingPreset = state.settings.spacingPreset, paddingPx = 12 } = {}){
+  function buildRendererConfig({ abbreviate = false, fontPx = state.settings.fontPx, spacingPreset = state.settings.spacingPreset, paddingPx = 12, cartoucheVulgarFractions = false } = {}){
     return {
       layout:{ fontPx, align:"center", paddingPx, spacingPreset },
       paint:{ fillStyle:"#111111", halo:{ enabled:false, widthPx:0, color:"#FFFFFF" } },
-      parser:{ numericMode:"uniform", mixedStyle:"short", abbreviateNumericCartouches: !!abbreviate },
+      parser:{ numericMode:"uniform", mixedStyle:"short", abbreviateNumericCartouches: !!abbreviate, cartoucheVulgarFractions: !!cartoucheVulgarFractions },
       fonts:{ roles:{ word:"TP-Nasin-Nanpa-Font", text:"TP-Nasin-Nanpa-Font", cartouche:"TP-Nasin-Nanpa-Font", number:"TP-Cartouche-Font", date:"TP-Cartouche-Font", time:"TP-Cartouche-Font", literal:"PatrickHand", unknown:"PatrickHand" } }
     };
   }
 
 
   function buildDuelTimeRendererConfig(fontPx = 34) {
-    const config = buildRendererConfig({ abbreviate: true, fontPx, spacingPreset: "compact", paddingPx: Math.max(8, Math.round(fontPx * 0.22)) });
+    const config = buildRendererConfig({ abbreviate: true, fontPx, spacingPreset: "compact", paddingPx: Math.max(8, Math.round(fontPx * 0.22)), cartoucheVulgarFractions: true });
     return {
       ...config,
       layout: { ...config.layout, align: "left" },
@@ -1052,7 +1052,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     const renderer = await ensureRenderer();
     const input = formatNumber(value, { plain:false });
     const fontPx = Math.max(8, Math.round(Number(opts.fontPx || state.settings.fontPx) || 56));
-    const rendered = await renderer.renderTextToNewCanvas({ input, ...buildRendererConfig({ ...opts, fontPx }) });
+    const rendered = await renderer.renderTextToNewCanvas({ input, ...buildRendererConfig({ ...opts, fontPx, cartoucheVulgarFractions: true }) });
     return cropCanvasToVisibleBounds(rendered.canvas, Math.max(4, Math.round(fontPx * 0.10)));
   }
 
@@ -3163,7 +3163,8 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
         // which can clip the top cartouche rule. Use scaled padding here so
         // the source raster contains the full cartouche before it is embedded.
         paddingPx:32 * PDF_CARTOUCHE_RASTER_SCALE,
-        cropPaddingPx:10 * PDF_CARTOUCHE_RASTER_SCALE
+        cropPaddingPx:10 * PDF_CARTOUCHE_RASTER_SCALE,
+        cartoucheVulgarFractions:true
       });
       const datePng = await embedCanvasPng(pdfDoc, dateCanvas);
       const dateNaturalW = dateCanvas.width / PDF_CARTOUCHE_RASTER_SCALE;

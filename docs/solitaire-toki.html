@@ -35,13 +35,13 @@
 
     @font-face {
       font-family: "TP-Nasin-Nanpa-Font";
-      src: url("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf") format("opentype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
     @font-face {
       font-family: "TP-Numeric-Cartouche-Font";
-      src: url("./fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf") format("truetype");
+      src: url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-vulgar-fit-tally-colon-middledotfix-unicode-alias-strong-brackets-punctuation-mapping-fixed.ttf") format("truetype");
       font-display: swap;
     }
 
@@ -410,7 +410,7 @@
   </div>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=268";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275";
 
 (() => {
   "use strict";
@@ -1173,6 +1173,7 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
         abbreviateNumericCartouches: true,
         nanpaColonParsing: true,
         nanpaColonRendering: true,
+        cartoucheVulgarFractions: true,
         cartoucheCommaTallyMarks: false,
         cartoucheTallyMode: "ucsur"
       },
@@ -2483,10 +2484,10 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     const backGlyphBlue = "#5450a8";
     const backGlyphYellow = "#e6d347";
 
-    drawFilledGlyphRegionsToContext(backCtx, tokiText, backCenterX, backCenterY - 9, 36, "center", "middle", 1, backGlyphYellow);
+    drawFilledGlyphRegionsToContext(backCtx, tokiText, backCenterX, backCenterY + 4, 36, "center", "middle", 1, backGlyphYellow);
     backCtx.fillStyle = backGlyphBlue;
-    drawSitelenGlyphStringToContext(backCtx, tokiText, backCenterX, backCenterY - 9, 36, "center", "middle");
-    drawSitelenGlyphStringToContext(backCtx, ponaText, backCenterX, backCenterY - 2, 15, "center", "middle");
+    drawSitelenGlyphStringToContext(backCtx, tokiText, backCenterX, backCenterY + 4, 36, "center", "middle");
+    drawSitelenGlyphStringToContext(backCtx, ponaText, backCenterX, backCenterY + 7, 15, "center", "middle");
     backCtx.restore();
     return backCanvas;
   }
@@ -2537,10 +2538,10 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     const backGlyphBlue = "#5450a8";
     const backGlyphYellow = "#e6d347";
 
-    drawFilledGlyphRegions(tokiText, backCenterX, backCenterY - 9, 36, "center", "middle", 1, backGlyphYellow);
+    drawFilledGlyphRegions(tokiText, backCenterX, backCenterY + 4, 36, "center", "middle", 1, backGlyphYellow);
     ctx.fillStyle = backGlyphBlue;
-    drawSitelenGlyphString(tokiText, backCenterX, backCenterY - 9, 36, "center", "middle");
-    drawSitelenGlyphString(ponaText, backCenterX, backCenterY - 2, 15, "center", "middle");
+    drawSitelenGlyphString(tokiText, backCenterX, backCenterY + 4, 36, "center", "middle");
+    drawSitelenGlyphString(ponaText, backCenterX, backCenterY + 7, 15, "center", "middle");
     ctx.restore();
   }
 
