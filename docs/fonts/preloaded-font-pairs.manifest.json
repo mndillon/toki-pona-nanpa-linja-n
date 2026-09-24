@@ -311,7 +311,7 @@
     {
       "fontKey": "linjaLipamanka",
       "label": "linja lipamanka predefined",
-      "rev": "2026-09-23-027",
+      "rev": "2026-09-23-028",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-lipamanka-v1",
       "renderAdapterSettings": {
@@ -322,10 +322,10 @@
       },
       "baseFamily": "TP-Linja-Lipamanka-Font",
       "companionFamily": "TP-Linja-Lipamanka-Nanpa-Linja-N-Font",
-      "baseFilename": "linjalipamanka-normal-cartouche-fix-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-fixed.otf",
-      "companionFilename": "linjalipamanka-normal-cartouche-fix-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-fixed.otf",
-      "baseUrl": "./fonts/linjalipamanka-normal-cartouche-fix-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-fixed.otf",
-      "companionUrl": "./fonts/linjalipamanka-normal-cartouche-fix-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-fixed.otf",
+      "baseFilename": "linjalipamanka-normal-cartouche-fix-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-fixed-csp2026.otf",
+      "companionFilename": "linjalipamanka-normal-cartouche-fix-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-fixed-csp2026.otf",
+      "baseUrl": "./fonts/linjalipamanka-normal-cartouche-fix-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-fixed-csp2026.otf",
+      "companionUrl": "./fonts/linjalipamanka-normal-cartouche-fix-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-fixed-csp2026.otf",
       "baseFormat": "opentype",
       "companionFormat": "opentype",
       "baseSample": "󱥬",
