@@ -904,15 +904,17 @@ const SitelenRenderer = (() => {
 
     if (cp === SP_CP.NI_LEFT) {
       if (kind === 'linja-sike') return 'ni';
-      if (kind === 'linja-lipamanka') return 'ni<';
+      if (kind === 'linja-lipamanka') return 'ni';
       return 'ni';
     }
     if (cp === SP_CP.NI_UP) {
-      if (kind === 'linja-sike' || kind === 'linja-lipamanka') return 'ni^';
+      if (kind === 'linja-sike') return 'ni^';
+      if (kind === 'linja-lipamanka') return 'ni';
       return 'ni';
     }
     if (cp === SP_CP.NI_RIGHT) {
-      if (kind === 'linja-sike' || kind === 'linja-lipamanka') return 'ni>';
+      if (kind === 'linja-sike') return 'ni>';
+      if (kind === 'linja-lipamanka') return 'ni';
       return 'ni';
     }
     if (cp === SP_CP.SEWI_ALT) {
@@ -935,7 +937,7 @@ const SitelenRenderer = (() => {
     if (kind === 'linja-pona' && (cp === SP_CP.MAJUNA || cp === SP_CP.LINLUWI || cp === SP_CP.SU || cp === SP_CP.KIKI)) {
       return null;
     }
-    if (kind === 'linja-lipamanka' && (cp === SP_CP.LINLUWI || cp === SP_CP.SU || cp === SP_CP.KIKI || cp > 0xF19A3)) {
+    if (kind === 'linja-lipamanka' && cp === SP_CP.KIKI) {
       return null;
     }
     return word;
@@ -1154,7 +1156,7 @@ const SitelenRenderer = (() => {
 
   function lipamankaCpNeedsTranslation(cp, settings = {}) {
     if (SP_JOINERS.has(cp) || cp === SP_CP.MIDDLE_DOT || cp === SP_CP.COLON || cp === SP_CP.TALLY || cp === SP_CP.NI_LEFT || cp === SP_CP.NI_UP || cp === SP_CP.NI_RIGHT || cp === SP_CP.SEWI_ALT || cp === SP_CP.LEFT_CORNER || cp === SP_CP.RIGHT_CORNER || cp === SP_CP.IDEOGRAPHIC_SPACE) return true;
-    if (cp === SP_CP.LINLUWI || cp === SP_CP.KIKI || cp === SP_CP.SU || cp > 0xF19A3) return true;
+    if (cp === SP_CP.KIKI || (cp > 0xF19A3 && cp !== SP_CP.LINLUWI && cp !== SP_CP.SU)) return true;
     if (settings.deterministicAlternates !== false && (cp === SP_CP.JAKI || cp === SP_CP.KO)) return true;
     return false;
   }
