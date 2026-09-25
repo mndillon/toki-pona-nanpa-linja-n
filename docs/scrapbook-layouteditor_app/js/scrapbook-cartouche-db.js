@@ -28,7 +28,7 @@ const PREVIEW_FONT_URL_TEXT = '../../fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf
 const PREVIEW_FONT_URL_CARTOUCHE = '../../fonts/nasin-nanpa-nanpa-linja-n-good-kasi-nasin-e-en-ss1223-Regular.ttf';
 const PREVIEW_FONT_URL_LITERAL = '../../fonts/PatrickHand-Regular.ttf';
 const PREVIEW_FONT_URL_LITERAL_CARTOUCHE = '../../fonts/nasin-nanpa-4.0.2-Helvetica.otf';
-const PREVIEW_RENDERER_URL = '../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=278';
+const PREVIEW_RENDERER_URL = '../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=279';
 
 function mergedLettersToWordForLocalDb(words) {
   return segmentLetters(words).letters.join('');

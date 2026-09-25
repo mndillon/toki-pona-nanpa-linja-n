@@ -1,4 +1,4 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=278";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=279";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -7,7 +7,7 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=178';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=81';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=82';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
@@ -482,7 +482,7 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=278",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=279",
   fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=23",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=178",
@@ -6196,7 +6196,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=278", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=279", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -8144,6 +8144,151 @@ function renderedUnicodeSpacingControlsBetweenSelections(previousSelection, sele
   return cps;
 }
 
+function renderedUnicodeSelectionUsesLatinFontSpecificCodes(selection) {
+  if (!getCopyFontSpecificCodesEnabled()) return false;
+  if (!selection || selection.type === "literal" || selection.type === "unknown") return false;
+
+  const cps = Array.isArray(selection.cps) ? selection.cps : [];
+  return cps.some(cp => {
+    const n = Number(cp);
+    return Number.isFinite(n) && ((n >= 0x41 && n <= 0x5A) || (n >= 0x61 && n <= 0x7A));
+  });
+}
+
+function renderedUnicodeShouldInsertLatinSpaceBetweenSelections(previousSelection, selection) {
+  if (!latestRenderPlan || !previousSelection || !selection) return false;
+  if (!getCopyFontSpecificCodesEnabled()) return false;
+
+  const previousLineIndex = renderedUnicodeSelectionLineIndex(previousSelection);
+  const lineIndex = renderedUnicodeSelectionLineIndex(selection);
+  if (previousLineIndex !== lineIndex) return false;
+
+  const previousUsesLatin = renderedUnicodeSelectionUsesLatinFontSpecificCodes(previousSelection);
+  const currentUsesLatin = renderedUnicodeSelectionUsesLatinFontSpecificCodes(selection);
+  if (!previousUsesLatin && !currentUsesLatin) return false;
+
+  const line = (latestRenderPlan.lines || []).find(candidate => Number(candidate?.lineIndex) === Number(lineIndex));
+  const lineRuns = Array.isArray(line?.runs) ? line.runs.filter(Boolean) : [];
+  if (!lineRuns.length) return previousUsesLatin && currentUsesLatin;
+
+  const previousRuns = Array.isArray(previousSelection.runs) ? previousSelection.runs : [];
+  const currentRuns = Array.isArray(selection.runs) ? selection.runs : [];
+  if (!previousRuns.length || !currentRuns.length) return previousUsesLatin && currentUsesLatin;
+
+  let previousEndIndex = -1;
+  for (const run of previousRuns) previousEndIndex = Math.max(previousEndIndex, lineRuns.indexOf(run));
+
+  let currentStartIndex = lineRuns.length;
+  for (const run of currentRuns) {
+    const index = lineRuns.indexOf(run);
+    if (index >= 0) currentStartIndex = Math.min(currentStartIndex, index);
+  }
+
+  if (previousEndIndex < 0 || currentStartIndex >= lineRuns.length || currentStartIndex <= previousEndIndex) {
+    return previousUsesLatin && currentUsesLatin;
+  }
+
+  const previousBoundaryRun = lineRuns[previousEndIndex];
+  const currentBoundaryRun = lineRuns[currentStartIndex];
+
+  // Use the exact original source gap whenever source-span metadata is available.
+  // This means ordinary source whitespace becomes one safe ASCII separator for
+  // Latin-ligature clipboard output, while deliberately adjacent constructs stay
+  // adjacent. zz/U+3000 are handled separately by
+  // renderedUnicodeSpacingControlsBetweenSelections().
+  const previousAbsoluteRange = renderedRunAbsoluteSourceRange(previousBoundaryRun, lineIndex);
+  const currentAbsoluteRange = renderedRunAbsoluteSourceRange(currentBoundaryRun, lineIndex);
+  if (previousAbsoluteRange &&
+      currentAbsoluteRange &&
+      previousAbsoluteRange.lineSource === currentAbsoluteRange.lineSource &&
+      currentAbsoluteRange.start >= previousAbsoluteRange.end) {
+    const exactSourceGap = previousAbsoluteRange.lineSource.slice(
+      previousAbsoluteRange.end,
+      currentAbsoluteRange.start
+    );
+    if (/zz/i.test(exactSourceGap) || exactSourceGap.includes("\u3000")) return false;
+    if (!exactSourceGap) return false;
+    if (/^\s+$/.test(exactSourceGap)) return true;
+    return false;
+  }
+
+  const previousSourceKind = String(previousBoundaryRun?.sourceKind ?? previousBoundaryRun?._element?.sourceKind ?? "");
+  const currentSourceKind = String(currentBoundaryRun?.sourceKind ?? currentBoundaryRun?._element?.sourceKind ?? "");
+  const previousSegmentIndex = Number(previousBoundaryRun?.sourceSegmentIndex ?? previousBoundaryRun?._element?.sourceSegmentIndex);
+  const currentSegmentIndex = Number(currentBoundaryRun?.sourceSegmentIndex ?? currentBoundaryRun?._element?.sourceSegmentIndex);
+  const previousSourceEnd = Number(previousBoundaryRun?.sourceEnd ?? previousBoundaryRun?._element?.sourceEnd);
+  const currentSourceStart = Number(currentBoundaryRun?.sourceStart ?? currentBoundaryRun?._element?.sourceStart);
+
+  if (previousSourceKind === currentSourceKind &&
+      Number.isFinite(previousSegmentIndex) &&
+      previousSegmentIndex === currentSegmentIndex &&
+      Number.isFinite(previousSourceEnd) &&
+      Number.isFinite(currentSourceStart) &&
+      currentSourceStart >= previousSourceEnd) {
+    const segmentSource = getUnicodeJsonAstSegmentSourceText(
+      latestRenderPlan,
+      lineIndex,
+      previousSourceKind,
+      previousSegmentIndex
+    );
+    if (segmentSource && currentSourceStart <= segmentSource.length) {
+      const exactSourceGap = segmentSource.slice(previousSourceEnd, currentSourceStart);
+      if (/zz/i.test(exactSourceGap) || exactSourceGap.includes("\u3000")) return false;
+      if (!exactSourceGap) return false;
+      if (/^\s+$/.test(exactSourceGap)) return true;
+      return false;
+    }
+  }
+
+  // Older/transformed plans can lack usable source spans. At that point the
+  // renderer has already grouped cartouches, compounds and long-pi constructs
+  // into their own atomic selections, so separating two independent Latin
+  // selections is the safest clipboard representation.
+  return previousUsesLatin && currentUsesLatin;
+}
+
+function renderedUnicodeSelectionClipboardText(selection) {
+  if (!selection || !Array.isArray(selection.cps) || !selection.cps.length) return "";
+
+  // Most logical selections are already atomic renderer output (including
+  // cartouches, compounds and long-pi). Keep those byte-for-byte as produced.
+  // The two grouped selection types below intentionally combine several
+  // independent renderer runs, so when those runs use Latin ligature codes we
+  // must also make their internal word boundaries explicit.
+  const groupedType = selection.type === "interpretedQuote" || selection.type === "nasinNanpaPona";
+  const runs = Array.isArray(selection.runs) ? selection.runs.filter(Boolean) : [];
+  if (!getCopyFontSpecificCodesEnabled() || !groupedType || runs.length < 2) {
+    return codepointsToRawUnicodeString(selection.cps);
+  }
+
+  let out = "";
+  let previousRunSelection = null;
+  for (const run of runs) {
+    const runCps = getRenderedUnicodeCopyRunCodepoints(run);
+    if (!Array.isArray(runCps) || !runCps.length) continue;
+
+    const runSelection = {
+      type: "run",
+      runs: [run],
+      cps: runCps
+    };
+
+    if (previousRunSelection) {
+      const spacingCps = renderedUnicodeSpacingControlsBetweenSelections(previousRunSelection, runSelection);
+      if (spacingCps.length) {
+        out += codepointsToRawUnicodeString(spacingCps);
+      } else if (renderedUnicodeShouldInsertLatinSpaceBetweenSelections(previousRunSelection, runSelection)) {
+        out += " ";
+      }
+    }
+
+    out += codepointsToRawUnicodeString(runCps);
+    previousRunSelection = runSelection;
+  }
+
+  return out || codepointsToRawUnicodeString(selection.cps);
+}
+
 function buildRenderedUnicodeSelectionClipboardText(selections) {
   const ordered = Array.from(selections || []).filter(selection =>
     selection && Array.isArray(selection.cps) && selection.cps.length
@@ -8156,12 +8301,17 @@ function buildRenderedUnicodeSelectionClipboardText(selections) {
   for (const selection of ordered) {
     const lineIndex = renderedUnicodeSelectionLineIndex(selection);
     if (previousLineIndex != null && lineIndex !== previousLineIndex) {
-      out += "\n";
+      const lineBreakCount = Math.max(1, Math.round(Number(lineIndex) - Number(previousLineIndex)));
+      out += "\n".repeat(lineBreakCount);
     } else if (previousSelection) {
       const spacingCps = renderedUnicodeSpacingControlsBetweenSelections(previousSelection, selection);
-      if (spacingCps.length) out += codepointsToRawUnicodeString(spacingCps);
+      if (spacingCps.length) {
+        out += codepointsToRawUnicodeString(spacingCps);
+      } else if (renderedUnicodeShouldInsertLatinSpaceBetweenSelections(previousSelection, selection)) {
+        out += " ";
+      }
     }
-    out += codepointsToRawUnicodeString(selection.cps);
+    out += renderedUnicodeSelectionClipboardText(selection);
     previousSelection = selection;
     previousLineIndex = lineIndex;
   }
@@ -10723,7 +10873,7 @@ async function initializeTextToSitelenPage() {
 
     try {
       const syncResult = await sitelenFontController.syncPreloadedFontPairsFromManifest({
-        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=18",
+        manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=19",
         onlyIfExisting: false,
         force: false
       });

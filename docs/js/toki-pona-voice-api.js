@@ -1,4 +1,4 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=275';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=279';
 import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=34';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };

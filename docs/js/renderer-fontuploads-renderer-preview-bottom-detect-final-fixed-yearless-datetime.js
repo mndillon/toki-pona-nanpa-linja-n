@@ -934,7 +934,7 @@ const SitelenRenderer = (() => {
     const word = preferredWordByCp().get(cp) || null;
     if (!word) return null;
 
-    if (kind === 'linja-pona' && (cp === SP_CP.MAJUNA || cp === SP_CP.KIKI)) {
+    if (kind === 'linja-pona' && (cp === SP_CP.KIKI || (cp === SP_CP.MAJUNA && settings.supportsMajuna !== true))) {
       return null;
     }
     if (kind === 'linja-lipamanka' && cp === SP_CP.KIKI) {
