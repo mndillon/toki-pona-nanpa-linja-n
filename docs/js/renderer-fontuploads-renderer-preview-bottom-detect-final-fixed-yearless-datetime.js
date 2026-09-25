@@ -934,7 +934,7 @@ const SitelenRenderer = (() => {
     const word = preferredWordByCp().get(cp) || null;
     if (!word) return null;
 
-    if (kind === 'linja-pona' && (cp === SP_CP.MAJUNA || cp === SP_CP.LINLUWI || cp === SP_CP.SU || cp === SP_CP.KIKI)) {
+    if (kind === 'linja-pona' && (cp === SP_CP.MAJUNA || cp === SP_CP.KIKI)) {
       return null;
     }
     if (kind === 'linja-lipamanka' && cp === SP_CP.KIKI) {
@@ -1126,7 +1126,7 @@ const SitelenRenderer = (() => {
     if (cp === SP_CP.SEWI_ALT) return SP_CP.SEWI;
     if (cp === SP_CP.MIDDLE_DOT) return '.'.codePointAt(0);
     if (cp === SP_CP.COLON) return ':'.codePointAt(0);
-    if ((cp >= 0xF1900 && cp <= 0xF1988) || (cp >= 0xF19A0 && cp <= 0xF19A3) || cp === SP_CP.CARTOUCHE_START || cp === SP_CP.CARTOUCHE_END || cp === SP_CP.IDEOGRAPHIC_SPACE || cp === SP_CP.LEFT_CORNER || cp === SP_CP.RIGHT_CORNER) return cp;
+    if ((cp >= 0xF1900 && cp <= 0xF1988) || (cp >= 0xF19A0 && cp <= 0xF19A3) || cp === SP_CP.LINLUWI || cp === SP_CP.SU || cp === SP_CP.CARTOUCHE_START || cp === SP_CP.CARTOUCHE_END || cp === SP_CP.IDEOGRAPHIC_SPACE || cp === SP_CP.LEFT_CORNER || cp === SP_CP.RIGHT_CORNER) return cp;
     return null;
   }
 
