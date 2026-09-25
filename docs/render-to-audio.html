@@ -3893,6 +3893,63 @@
 
       if (!cps.length) return null;
 
+      /*
+       * The renderer has already shaped the complete cartouche and exposes an
+       * audioGlyphLayout containing the exact visual region of every canonical
+       * inner glyph. Use that geometry verbatim. Re-measuring prefixes here is
+       * not equivalent for contextual/cartouche shaping: each prefix is shaped
+       * as a different string, so its advance can drift toward proportional or
+       * equal-looking slices and no longer follows the glyphs actually drawn.
+       *
+       * Keep the historical prefix-measurement path only as a compatibility
+       * fallback for older renderer builds that do not expose audioGlyphLayout.
+       */
+      const rendererGlyphLayout = Array.isArray(run.audioGlyphLayout)
+        ? run.audioGlyphLayout
+        : (Array.isArray(run?._element?.audioGlyphLayout)
+            ? run._element.audioGlyphLayout
+            : null);
+
+      if (rendererGlyphLayout?.length) {
+        const runX = Number(run.xPx ?? 0);
+        const runY = Number(run.yPx ?? 0);
+        const rects = new Array(cps.length);
+
+        for (let layoutIndex = 0; layoutIndex < rendererGlyphLayout.length; layoutIndex += 1) {
+          const item = rendererGlyphLayout[layoutIndex];
+          const componentIndex = Number.isInteger(Number(item?.componentIndex))
+            ? Number(item.componentIndex)
+            : layoutIndex;
+          if (componentIndex < 0 || componentIndex >= cps.length) continue;
+
+          const x = Number(item?.x);
+          const y = Number(item?.y);
+          const width = Number(item?.width);
+          const height = Number(item?.height);
+          if (![x, y, width, height].every(Number.isFinite)) continue;
+
+          rects[componentIndex] = {
+            x: Math.max(0, runX + x),
+            y: Math.max(0, runY + y),
+            width: Math.max(1, width),
+            height: Math.max(1, height)
+          };
+        }
+
+        if (rects.every(Boolean)) {
+          return { cps, rects };
+        }
+
+        console.warn(
+          "[render-to-audio] renderer audio glyph geometry incomplete; using compatibility fallback",
+          {
+            codepointCount: cps.length,
+            layoutCount: rendererGlyphLayout.length,
+            properName: model?.properName || ""
+          }
+        );
+      }
+
       const ctx = target.canvas.getContext("2d", { alpha: true });
       const fontPx = Math.max(
         8,
