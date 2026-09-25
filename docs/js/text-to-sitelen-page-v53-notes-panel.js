@@ -13,7 +13,7 @@ import {
   extractSpeechSegmentsFromRenderPlan,
   stopSitelenAudioPlayback,
   summarizeSkippedAudio as summarizeSitelenAudioSkipped
-} from './sitelen-audio-plan.js?v=70';
+} from './sitelen-audio-plan.js?v=74';
 let pageMap = new Map();
 
 "use strict";
@@ -7255,11 +7255,17 @@ function visualSpeechUnitsForHighlight(plan, rawText) {
   });
 
   const out = [];
-  for (const segment of (extracted?.segments || [])) {
-    for (const unit of (segment?.speechUnits || [])) {
+  const segments = Array.from(extracted?.segments || []);
+  for (let sourceSegmentIndex = 0; sourceSegmentIndex < segments.length; sourceSegmentIndex++) {
+    const segment = segments[sourceSegmentIndex];
+    const units = Array.from(segment?.speechUnits || []);
+    for (let segmentSpeechUnitIndex = 0; segmentSpeechUnitIndex < units.length; segmentSpeechUnitIndex++) {
+      const unit = units[segmentSpeechUnitIndex];
       out.push({
         text: unit?.text ?? unit?.timingText ?? "",
         kind: String(unit?.kind ?? ""),
+        sourceSegmentIndex,
+        segmentSpeechUnitIndex,
         lineIndex: Number(segment?.lineIndex),
         sentenceIndexInLine: Number(segment?.sentenceIndexInLine),
         visualTargets: cloneHighlightVisualTargets(unit?.visualTargets)
@@ -7269,40 +7275,162 @@ function visualSpeechUnitsForHighlight(plan, rawText) {
   return out;
 }
 
+function isSpokenAudioHighlightEntry(entry) {
+  return entry?.speechUnitKind !== "audio-gap" &&
+    entry?.speechUnitKind !== "terminal-pause" &&
+    !!normalizeHighlightSpeechText(entry?.speechUnitText ?? entry?.text ?? "");
+}
+
+function audioHighlightSentenceKey(value) {
+  const lineIndex = Number(value?.lineIndex);
+  const sentenceIndexInLine = Number(value?.sentenceIndexInLine);
+  return Number.isFinite(lineIndex) && Number.isFinite(sentenceIndexInLine)
+    ? `${lineIndex}:${sentenceIndexInLine}`
+    : null;
+}
+
+function bindAudioEntryToVisualUnit(entry, visualUnit, mode) {
+  return {
+    ...entry,
+    lineIndex: Number.isFinite(visualUnit?.lineIndex)
+      ? visualUnit.lineIndex
+      : entry?.lineIndex,
+    sentenceIndexInLine: Number.isFinite(visualUnit?.sentenceIndexInLine)
+      ? visualUnit.sentenceIndexInLine
+      : entry?.sentenceIndexInLine,
+    sourceSegmentIndex: Number.isFinite(visualUnit?.sourceSegmentIndex)
+      ? visualUnit.sourceSegmentIndex
+      : entry?.sourceSegmentIndex,
+    segmentSpeechUnitIndex: Number.isFinite(visualUnit?.segmentSpeechUnitIndex)
+      ? visualUnit.segmentSpeechUnitIndex
+      : entry?.segmentSpeechUnitIndex,
+    visualTargets: cloneHighlightVisualTargets(visualUnit?.visualTargets),
+    visualBindingResolved: true,
+    visualBindingMode: mode
+  };
+}
+
 function bindAudioEntriesToVisualSpeechUnits(entries, plan, rawText) {
   const visualUnits = visualSpeechUnitsForHighlight(plan, rawText);
-  let visualCursor = 0;
+  const rebound = Array.from(entries || []).map(entry => ({ ...entry }));
+  const claimedVisualUnits = new Set();
+  const boundAudioEntries = new Set();
 
-  return (entries || []).map(entry => {
-    const isGap = entry?.speechUnitKind === "audio-gap" ||
-      entry?.speechUnitKind === "terminal-pause";
-    const wantedText = normalizeHighlightSpeechText(
-      entry?.speechUnitText ?? entry?.text ?? ""
-    );
-    if (isGap || !wantedText) return entry;
+  const bind = (entryIndex, visualIndex, mode) => {
+    if (!Number.isInteger(entryIndex) || !Number.isInteger(visualIndex)) return false;
+    if (entryIndex < 0 || entryIndex >= rebound.length) return false;
+    if (visualIndex < 0 || visualIndex >= visualUnits.length) return false;
+    if (claimedVisualUnits.has(visualIndex)) return false;
+    rebound[entryIndex] = bindAudioEntryToVisualUnit(rebound[entryIndex], visualUnits[visualIndex], mode);
+    claimedVisualUnits.add(visualIndex);
+    boundAudioEntries.add(entryIndex);
+    return true;
+  };
 
-    let matchIndex = -1;
-    for (let index = visualCursor; index < visualUnits.length; index++) {
-      if (normalizeHighlightSpeechText(visualUnits[index]?.text) === wantedText) {
-        matchIndex = index;
-        break;
-      }
+  // First bind sentence-by-sentence. When both independently built render plans
+  // expose the same number of spoken units for a visible sentence, ordinal
+  // position is authoritative. This avoids relying on rewritten/synthesized text
+  // such as numeric proper names or DB-expanded cartouches.
+  const visualBySentence = new Map();
+  for (let visualIndex = 0; visualIndex < visualUnits.length; visualIndex++) {
+    const key = audioHighlightSentenceKey(visualUnits[visualIndex]);
+    if (key == null) continue;
+    if (!visualBySentence.has(key)) visualBySentence.set(key, []);
+    visualBySentence.get(key).push(visualIndex);
+  }
+
+  const audioBySentence = new Map();
+  for (let entryIndex = 0; entryIndex < rebound.length; entryIndex++) {
+    const entry = rebound[entryIndex];
+    if (!isSpokenAudioHighlightEntry(entry)) continue;
+    const key = audioHighlightSentenceKey(entry);
+    if (key == null) continue;
+    if (!audioBySentence.has(key)) audioBySentence.set(key, []);
+    audioBySentence.get(key).push(entryIndex);
+  }
+
+  for (const [key, entryIndices] of audioBySentence.entries()) {
+    const visualIndices = visualBySentence.get(key) || [];
+    if (!entryIndices.length || entryIndices.length !== visualIndices.length) continue;
+    for (let index = 0; index < entryIndices.length; index++) {
+      bind(entryIndices[index], visualIndices[index], "sentence-ordinal");
     }
-    if (matchIndex < 0) return entry;
+  }
 
-    const visualUnit = visualUnits[matchIndex];
-    visualCursor = matchIndex + 1;
-    return {
-      ...entry,
-      lineIndex: Number.isFinite(visualUnit.lineIndex)
-        ? visualUnit.lineIndex
-        : entry.lineIndex,
-      sentenceIndexInLine: Number.isFinite(visualUnit.sentenceIndexInLine)
-        ? visualUnit.sentenceIndexInLine
-        : entry.sentenceIndexInLine,
-      visualTargets: cloneHighlightVisualTargets(visualUnit.visualTargets)
+  // If sentence counts differ, use the stable segment/unit coordinates carried
+  // by the audio plan. The text check prevents a shifted segment from binding to
+  // a different spoken unit after preparation changed sentence structure.
+  const visualByStableKey = new Map();
+  for (let visualIndex = 0; visualIndex < visualUnits.length; visualIndex++) {
+    if (claimedVisualUnits.has(visualIndex)) continue;
+    const unit = visualUnits[visualIndex];
+    const segmentIndex = Number(unit?.sourceSegmentIndex);
+    const unitIndex = Number(unit?.segmentSpeechUnitIndex);
+    if (!Number.isFinite(segmentIndex) || !Number.isFinite(unitIndex)) continue;
+    visualByStableKey.set(`${segmentIndex}:${unitIndex}`, visualIndex);
+  }
+
+  for (let entryIndex = 0; entryIndex < rebound.length; entryIndex++) {
+    if (boundAudioEntries.has(entryIndex)) continue;
+    const entry = rebound[entryIndex];
+    if (!isSpokenAudioHighlightEntry(entry)) continue;
+    const segmentIndex = Number(entry?.sourceSegmentIndex);
+    const unitIndex = Number(entry?.segmentSpeechUnitIndex);
+    if (!Number.isFinite(segmentIndex) || !Number.isFinite(unitIndex)) continue;
+    const visualIndex = visualByStableKey.get(`${segmentIndex}:${unitIndex}`);
+    if (!Number.isInteger(visualIndex) || claimedVisualUnits.has(visualIndex)) continue;
+    const wantedText = normalizeHighlightSpeechText(entry?.speechUnitText ?? entry?.text ?? "");
+    const visualText = normalizeHighlightSpeechText(visualUnits[visualIndex]?.text ?? "");
+    if (wantedText && visualText && wantedText !== visualText) continue;
+    bind(entryIndex, visualIndex, "segment-unit");
+  }
+
+  // Guarded legacy fallback: match only unused current-plan units, preferring
+  // the same sentence and kind. Never retain a stale visualTargets array from
+  // the audio-only render plan when no current-plan match can be proven.
+  let globalVisualCursor = 0;
+  for (let entryIndex = 0; entryIndex < rebound.length; entryIndex++) {
+    if (boundAudioEntries.has(entryIndex)) continue;
+    const entry = rebound[entryIndex];
+    if (!isSpokenAudioHighlightEntry(entry)) continue;
+
+    const wantedText = normalizeHighlightSpeechText(entry?.speechUnitText ?? entry?.text ?? "");
+    const wantedKind = String(entry?.speechUnitKind ?? "");
+    const wantedSentenceKey = audioHighlightSentenceKey(entry);
+    let matchIndex = -1;
+
+    const findMatch = ({ sameSentence, sameKind }) => {
+      for (let visualIndex = globalVisualCursor; visualIndex < visualUnits.length; visualIndex++) {
+        if (claimedVisualUnits.has(visualIndex)) continue;
+        const candidate = visualUnits[visualIndex];
+        if (sameSentence && audioHighlightSentenceKey(candidate) !== wantedSentenceKey) continue;
+        if (sameKind && wantedKind && String(candidate?.kind ?? "") !== wantedKind) continue;
+        if (normalizeHighlightSpeechText(candidate?.text ?? "") !== wantedText) continue;
+        return visualIndex;
+      }
+      return -1;
     };
-  });
+
+    matchIndex = findMatch({ sameSentence: true, sameKind: true });
+    if (matchIndex < 0) matchIndex = findMatch({ sameSentence: true, sameKind: false });
+    if (matchIndex < 0) matchIndex = findMatch({ sameSentence: false, sameKind: true });
+    if (matchIndex < 0) matchIndex = findMatch({ sameSentence: false, sameKind: false });
+
+    if (matchIndex >= 0) {
+      bind(entryIndex, matchIndex, "guarded-text-fallback");
+      globalVisualCursor = Math.max(globalVisualCursor, matchIndex + 1);
+      continue;
+    }
+
+    rebound[entryIndex] = {
+      ...entry,
+      visualTargets: [],
+      visualBindingResolved: false,
+      visualBindingMode: "unresolved"
+    };
+  }
+
+  return rebound;
 }
 
 
@@ -8350,10 +8478,12 @@ function attachVisualRectsToAudioEntries(entries, plan) {
     const activeRects = activeRectsForEntry(entry, runLookup);
     const isAudioGap = entry?.speechUnitKind === "audio-gap" || entry?.speechUnitKind === "terminal-pause";
     const suppressActiveHighlight = entry?.suppressActiveHighlight === true;
+    const preciseVisualTargetResolved = suppressActiveHighlight || isAudioGap || activeRects.length > 0;
     return {
       ...entry,
       visualRect: sentenceRect,
       lineVisualRect: lineRect,
+      preciseVisualTargetResolved,
       activeVisualRects: suppressActiveHighlight
         ? []
         : (activeRects.length ? activeRects : (isAudioGap ? [] : (sentenceRect ? [sentenceRect] : [])))
@@ -8889,8 +9019,13 @@ async function startTextToSitelenAudio() {
           pauseAfterSeconds: entry.pauseAfterSeconds,
           speechUnitKind: entry.speechUnitKind,
           speechUnitText: entry.speechUnitText,
+          sourceSegmentIndex: entry.sourceSegmentIndex,
+          segmentSpeechUnitIndex: entry.segmentSpeechUnitIndex,
           wholeNumericPunctuationWord: entry.wholeNumericPunctuationWord,
           renderedAsWholeSegment: entry.renderedAsWholeSegment,
+          visualBindingResolved: entry.visualBindingResolved,
+          visualBindingMode: entry.visualBindingMode,
+          preciseVisualTargetResolved: entry.preciseVisualTargetResolved,
           visualTargets: entry.visualTargets,
           visualRect: entry.visualRect,
           activeVisualRects: entry.activeVisualRects
@@ -8899,6 +9034,25 @@ async function startTextToSitelenAudio() {
         audioInput: result?.audioPlan?.audioInput ?? ""
       };
     } catch {}
+
+    const unresolvedHighlightEntries = entries.filter(entry =>
+      isSpokenAudioHighlightEntry(entry) &&
+      entry?.suppressActiveHighlight !== true &&
+      entry?.preciseVisualTargetResolved !== true
+    );
+    if (unresolvedHighlightEntries.length) {
+      try {
+        console.warn("[tts-audio-highlight] unresolved precise visual targets", unresolvedHighlightEntries.map(entry => ({
+          text: entry?.speechUnitText ?? entry?.text ?? "",
+          kind: entry?.speechUnitKind ?? "",
+          lineIndex: entry?.lineIndex,
+          sentenceIndexInLine: entry?.sentenceIndexInLine,
+          sourceSegmentIndex: entry?.sourceSegmentIndex,
+          segmentSpeechUnitIndex: entry?.segmentSpeechUnitIndex,
+          visualBindingMode: entry?.visualBindingMode ?? null
+        })));
+      } catch {}
+    }
 
     if (result?.status === "no-speech") {
       announceStatus("No readable Toki Pona text found for audio.");

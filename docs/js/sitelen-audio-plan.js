@@ -1727,12 +1727,22 @@ function ordinaryCartoucheGroupComponentIndices(run, groups) {
     return mapped.map(indices => compoundVisualComponentIndices(cps, indices));
   }
 
-  // Conservative fallback for adapter-specific codepoint layouts: one visible
-  // component group per source glyph. Attached punctuation may be omitted from
-  // the highlight rather than assigning it to an unrelated glyph.
+  // Conservative fallback for adapter-specific codepoint layouts: preserve the
+  // established one-visible-component progression. A whole-word colon is
+  // silent audio structure belonging to the preceding source glyph, so attach
+  // exactly the next visible component to that glyph and advance past it.
+  // Do not absorb tally/mora components here; doing so changes highlight
+  // granularity and can grow later targets beyond their original glyph cells.
   const visibleGroups = visibleComponentGroups(cps);
-  for (let index = 0; index < (groups || []).length; index++) {
-    mapped.push(compoundVisualComponentIndices(cps, visibleGroups[index] || []));
+  let visibleCursor = 0;
+  for (const group of (groups || [])) {
+    const indices = Array.from(visibleGroups[visibleCursor] || []);
+    visibleCursor += 1;
+    if (group?.wholeWord === true && visibleCursor < visibleGroups.length) {
+      indices.push(...Array.from(visibleGroups[visibleCursor] || []));
+      visibleCursor += 1;
+    }
+    mapped.push(compoundVisualComponentIndices(cps, indices));
   }
   return mapped;
 }
@@ -2847,12 +2857,18 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
           .filter(candidate => normalizeAudioWord(candidate) === 'ene')
           .length - 1;
 
+        // In abbreviated rendering a canonical Ene spacer may be intentionally
+        // omitted from the visible component stream.  The audio still says
+        // Ene, so do not suppress the moving highlight.  Leave componentIndices
+        // empty when the spacer is hidden; the page's active-rect resolver then
+        // falls back to the complete numeric-cartouche run for that spoken
+        // interval.  When a spacer glyph is retained, keep the precise component
+        // highlight exactly as before.
         componentIndices = [];
-        suppressActiveHighlight = true;
         if (eneOrdinal >= 0 && eneOrdinal < spacerGroups.length) {
           componentIndices = Array.from(spacerGroups[eneOrdinal] || []);
-          suppressActiveHighlight = componentIndices.length === 0;
         }
+        suppressActiveHighlight = false;
       }
 
       wordRecords.push({
@@ -3570,6 +3586,7 @@ async function renderExactSpeechUnitEntry({
     speechUnitText: unit?.text ?? renderText,
     speechUnitKind: unit?.kind || 'word',
     speechUnitIndex: unitIndex,
+    segmentSpeechUnitIndex: unitIndex,
     speechUnitCount: unitCount,
     wholeNumericPunctuationWord: !!unit?.wholeNumericPunctuationWord,
     suppressActiveHighlight: !!unit?.suppressActiveHighlight,
@@ -3603,7 +3620,7 @@ function isNumericCartoucheAudioUnit(unit) {
   return !!unit?.numericCartouche && !!unit?.numericCartoucheRunId;
 }
 
-export const SITELEN_AUDIO_PLAN_BUILD = '20260912-base-specific-numeric-markers-v10';
+export const SITELEN_AUDIO_PLAN_BUILD = '20260925-audio-highlight-colon-cursor-v14';
 
 function numericCartoucheUnitOrdinal(unit) {
   const value = Number(unit?.unitIndex);
@@ -3684,6 +3701,7 @@ async function renderExactNumericCartoucheEntries({
   units,
   segment,
   segmentIndex,
+  segmentUnitStartIndex,
   voice,
   renderOptions,
   crossesLine,
@@ -3755,6 +3773,7 @@ async function renderExactNumericCartoucheEntries({
         speechUnitText: unit?.text || record.audioUnitKey || '',
         speechUnitKind: unit?.kind || 'cartouche-syllable',
         speechUnitIndex: speechCursor,
+        segmentSpeechUnitIndex: Math.max(0, Number(segmentUnitStartIndex) || 0) + speechCursor,
         speechUnitCount: groupUnits.length,
         wholeNumericPunctuationWord: !!unit?.wholeNumericPunctuationWord,
         suppressActiveHighlight: !!unit?.suppressActiveHighlight,
@@ -3783,6 +3802,7 @@ async function renderExactNumericCartoucheEntries({
       speechUnitText: '',
       speechUnitKind: 'audio-gap',
       speechUnitIndex: null,
+      segmentSpeechUnitIndex: null,
       speechUnitCount: groupUnits.length,
       wholeNumericPunctuationWord: false,
       numericCartouche: true,
@@ -3893,6 +3913,7 @@ export async function renderSpeechSegmentsToAudioBuffers({
           units: units.slice(unitIndex, groupEnd),
           segment,
           segmentIndex,
+          segmentUnitStartIndex: unitIndex,
           voice,
           renderOptions,
           crossesLine,
