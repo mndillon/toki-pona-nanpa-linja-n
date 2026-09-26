@@ -1428,7 +1428,7 @@
       </div>
 
       <div class="help" style="margin-top:10px;">
-        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.   <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=10" target="_blank" rel="noopener noreferrer">
+        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.   <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=10" target="_blank" rel="noopener noreferrer" data-download-track-type="pdf" data-download-track-name="nanpa-linja-n-cheat-sheet.pdf">
           PDF cheat sheet
         </a>
       </div>
@@ -2978,7 +2978,7 @@
           nanpa-linja-n main documentation
         </a>
         <br/>
-        <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=10" target="_blank" rel="noopener noreferrer">
+        <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=10" target="_blank" rel="noopener noreferrer" data-download-track-type="pdf" data-download-track-name="nanpa-linja-n-cheat-sheet.pdf">
           PDF cheat sheet
         </a>
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
@@ -3415,6 +3415,8 @@
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.textContent = filename;
+      link.dataset.downloadTrackType = 'font';
+      link.dataset.downloadTrackName = filename;
       return link;
     }
 
@@ -3810,6 +3812,8 @@
       link.href = item.url;
       link.setAttribute('download', item.filename);
       link.textContent = 'Download ZIP';
+      link.dataset.downloadTrackType = 'reference';
+      link.dataset.downloadTrackName = item.filename;
       wrap.appendChild(link);
 
       const filename = document.createElement('span');
@@ -4258,6 +4262,36 @@
   }
  
 
+  const pendingDownloadEvents = [];
+  let pendingDownloadEventsTimer = null;
+
+  function sendDownloadEvent(eventName) {
+    window.goatcounter.count({
+      path: eventName,
+      title: eventName,
+      event: true,
+      no_session: true
+    });
+  }
+
+  function flushPendingDownloadEvents() {
+    if (
+      !window.goatcounter ||
+      typeof window.goatcounter.count !== 'function'
+    ) {
+      return;
+    }
+
+    while (pendingDownloadEvents.length) {
+      sendDownloadEvent(pendingDownloadEvents.shift());
+    }
+
+    if (pendingDownloadEventsTimer !== null) {
+      clearInterval(pendingDownloadEventsTimer);
+      pendingDownloadEventsTimer = null;
+    }
+  }
+
   function trackUsage(eventName) {
     if (!productionHosts.has(window.location.hostname)) {
       return;
@@ -4267,13 +4301,28 @@
       window.goatcounter &&
       typeof window.goatcounter.count === 'function'
     ) {
-      window.goatcounter.count({
-        path: eventName,
-        title: eventName,
-        event: true
-      });
+      sendDownloadEvent(eventName);
+      return;
+    }
+
+    pendingDownloadEvents.push(eventName);
+
+    if (pendingDownloadEventsTimer === null) {
+      pendingDownloadEventsTimer = setInterval(flushPendingDownloadEvents, 100);
     }
   }
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest(
+      'a[data-download-track-type][data-download-track-name]'
+    );
+
+    if (!link) return;
+
+    const type = link.dataset.downloadTrackType;
+    const name = link.dataset.downloadTrackName;
+    trackUsage(`download-file-${type}-${name}`);
+  });
 </script>
 
 <script data-goatcounter="https://nanpalinjan.goatcounter.com/count" async src="./js/goatcounter-count.js">
