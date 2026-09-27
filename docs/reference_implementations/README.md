@@ -157,14 +157,14 @@ The current v1.1 production manifest resolves the eight keys as follows. Base an
 
 | `fontKey` | Base/companion file | Tally mode | Literal-cartouche source |
 | --- | --- | --- | --- |
-| `nasinNanpa` | `nanpa-linja-n-nasin-nanpa-liberation-sans-punctuation-mapping-fixed-ascii-vulgar-cartouche-only.ttf` | UCSUR | separate `nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf` |
+| `nasinNanpa` | `nanpa-linja-n-nasin-nanpa-sans-punctuation-mapping-fixed-ascii-vulgar-cartouche-only.ttf` | UCSUR | separate `nanpa-linja-n-nasin-nanpa-sans-literal.ttf` |
 | `sitelenSeliKiwen` | `sitelenselikiwenjuniko-latin-ligatures-compatible-punctuation-mapping-fixed-ascii-vulgar-cartouche-only-state-continuity-fixed.ttf` | UCSUR | reuses `SSK-Juniko` |
 | `fairfaxHd` | `FairfaxHD-compatible-punctuation-mapping-fixed.ttf` | UCSUR | reuses `fairfaxHd` |
 | `fairfaxPonaHd` | `FairfaxPonaHD-compatible-punctuation-mapping-fixed-ascii-fraction-cartouche-aliases.ttf` | UCSUR | reuses `fairfaxPonaHd` |
-| `linjaPona` | `linja-pona-n-epiku-majuna-fixed-corrected.otf` | manual | separate `nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf` |
-| `linjaSike` | `linja-sike-5-epiku-fixed.otf` | manual | separate `nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf` |
-| `nasinSitelenPuMono` | `NasinSitelenPuMono-majuna-fixed.otf` | manual | separate `nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf` |
-| `linjaLipamanka` | `linjalipamanka-epiku-fixed.otf` | manual | separate `nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf` |
+| `linjaPona` | `linja-pona-n-epiku-majuna-fixed-corrected.otf` | manual | separate `nanpa-linja-n-nasin-nanpa-sans-literal.ttf` |
+| `linjaSike` | `linja-sike-5-epiku-fixed.otf` | manual | separate `nanpa-linja-n-nasin-nanpa-sans-literal.ttf` |
+| `nasinSitelenPuMono` | `NasinSitelenPuMono-majuna-fixed.otf` | manual | separate `nanpa-linja-n-nasin-nanpa-sans-literal.ttf` |
+| `linjaLipamanka` | `linjalipamanka-epiku-fixed.otf` | manual | separate `nanpa-linja-n-nasin-nanpa-sans-literal.ttf` |
 
 For release packaging, use the manifest shipped with that release rather than copying this table into application logic; the manifest is the machine-readable authority.
 
