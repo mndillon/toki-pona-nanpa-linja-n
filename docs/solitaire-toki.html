@@ -2875,7 +2875,351 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     drawSitelenGlyphStringToContext(ctx, text, x, y, fontPx, align, baseline, scaleX);
   }
 
+  const GLYPH_SUPERSAMPLE = 4;
+  const RANK_GLYPH_SUPERSAMPLE = 8;
+  const CENTER_SUIT_GLYPH_FONT_PX = 42;
+  const CENTER_SUIT_GLYPH_CACHE_SIZE = 72;
+  const CENTER_SUIT_GLYPH_RENDER_PX = CENTER_SUIT_GLYPH_FONT_PX * GLYPH_SUPERSAMPLE;
+  const CENTER_SUIT_GLYPH_RENDER_SIZE = CENTER_SUIT_GLYPH_CACHE_SIZE * GLYPH_SUPERSAMPLE;
+
+  const SMALL_SUIT_GLYPH_FONT_PX = 18;
+  const SMALL_SUIT_GLYPH_CACHE_SIZE = 28;
+  const SMALL_SUIT_GLYPH_RENDER_PX = SMALL_SUIT_GLYPH_FONT_PX * GLYPH_SUPERSAMPLE;
+  const SMALL_SUIT_GLYPH_RENDER_SIZE = SMALL_SUIT_GLYPH_CACHE_SIZE * GLYPH_SUPERSAMPLE;
+  const SMALL_SUIT_GLYPH_PADDING_PX = 2;
+  const SMALL_SUIT_GLYPH_RENDER_PADDING_PX = SMALL_SUIT_GLYPH_PADDING_PX * GLYPH_SUPERSAMPLE;
+
+  const SMALL_RANK_FONT_PX = 22;
+  const SMALL_RANK_CACHE_SIZE = 30;
+  const SMALL_RANK_RENDER_SIZE = SMALL_RANK_CACHE_SIZE * RANK_GLYPH_SUPERSAMPLE;
+  const SMALL_RANK_RENDER_FONT_PX = SMALL_RANK_FONT_PX * RANK_GLYPH_SUPERSAMPLE;
+
+  const CENTER_SUIT_GLYPH_CACHE = new Map();
+  const SMALL_SUIT_GLYPH_CACHE = new Map();
+  const SMALL_RANK_GLYPH_CACHE = new Map();
+  const CARD_FRONT_CACHE = new Map();
+
+  function clearCardFaceCaches() {
+    CENTER_SUIT_GLYPH_CACHE.clear();
+    SMALL_SUIT_GLYPH_CACHE.clear();
+    SMALL_RANK_GLYPH_CACHE.clear();
+    CARD_FRONT_CACHE.clear();
+  }
+
+  function getSuitInk(suit) {
+    return suit === "♥" || suit === "♦" ? "#b32020" : "#111";
+  }
+
+  function normalizeInkColor(color) {
+    return color === "red" ? "#b32020" : "#111";
+  }
+
+  function createTransparentCanvas(width, height) {
+    const canvasEl = document.createElement("canvas");
+    canvasEl.width = width;
+    canvasEl.height = height;
+    return canvasEl;
+  }
+
+  function downscaleCanvas(sourceCanvas, outWidth, outHeight) {
+    const outCanvas = createTransparentCanvas(outWidth, outHeight);
+    const outCtx = outCanvas.getContext("2d", { alpha: true });
+    if (!outCtx) return outCanvas;
+    outCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
+    outCtx.imageSmoothingEnabled = true;
+    if ("imageSmoothingQuality" in outCtx) outCtx.imageSmoothingQuality = "high";
+    outCtx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height, 0, 0, outWidth, outHeight);
+    return outCanvas;
+  }
+
+  function buildCenterSuitGlyphCache() {
+    CENTER_SUIT_GLYPH_CACHE.clear();
+
+    for (const suit of SUITS) {
+      const suitGlyphs = CARD_SUIT_GLYPHS[suit] || [];
+      const suitText = glyphStringFromCodepoints(suitGlyphs);
+      if (!suitText) continue;
+
+      const glyphCanvas = createTransparentCanvas(CENTER_SUIT_GLYPH_RENDER_SIZE, CENTER_SUIT_GLYPH_RENDER_SIZE);
+      const glyphCtx = glyphCanvas.getContext("2d", { alpha: true });
+      if (!glyphCtx) continue;
+
+      glyphCtx.clearRect(0, 0, glyphCanvas.width, glyphCanvas.height);
+      glyphCtx.fillStyle = getSuitInk(suit);
+      drawSitelenGlyphStringToContext(
+        glyphCtx,
+        suitText,
+        glyphCanvas.width / 2,
+        glyphCanvas.height / 2,
+        CENTER_SUIT_GLYPH_RENDER_PX,
+        "center",
+        "middle"
+      );
+
+      CENTER_SUIT_GLYPH_CACHE.set(suit, glyphCanvas);
+    }
+  }
+
+  function buildSmallSuitGlyphCache() {
+    SMALL_SUIT_GLYPH_CACHE.clear();
+
+    for (const suit of SUITS) {
+      const suitGlyphs = CARD_SUIT_GLYPHS[suit] || [];
+      const suitText = glyphStringFromCodepoints(suitGlyphs);
+      if (!suitText) continue;
+
+      const uprightHighRes = createTransparentCanvas(SMALL_SUIT_GLYPH_RENDER_SIZE, SMALL_SUIT_GLYPH_RENDER_SIZE);
+      const uprightCtx = uprightHighRes.getContext("2d", { alpha: true });
+      if (!uprightCtx) continue;
+      uprightCtx.clearRect(0, 0, uprightHighRes.width, uprightHighRes.height);
+      uprightCtx.fillStyle = getSuitInk(suit);
+      drawSitelenGlyphStringToContext(
+        uprightCtx,
+        suitText,
+        SMALL_SUIT_GLYPH_RENDER_PADDING_PX,
+        SMALL_SUIT_GLYPH_RENDER_PADDING_PX,
+        SMALL_SUIT_GLYPH_RENDER_PX,
+        "left",
+        "top"
+      );
+
+      const invertedHighRes = createTransparentCanvas(SMALL_SUIT_GLYPH_RENDER_SIZE, SMALL_SUIT_GLYPH_RENDER_SIZE);
+      const invertedCtx = invertedHighRes.getContext("2d", { alpha: true });
+      if (!invertedCtx) continue;
+      invertedCtx.clearRect(0, 0, invertedHighRes.width, invertedHighRes.height);
+      invertedCtx.fillStyle = getSuitInk(suit);
+      invertedCtx.save();
+      invertedCtx.translate(
+        invertedHighRes.width - SMALL_SUIT_GLYPH_RENDER_PADDING_PX,
+        invertedHighRes.height - SMALL_SUIT_GLYPH_RENDER_PADDING_PX
+      );
+      invertedCtx.rotate(Math.PI);
+      drawSitelenGlyphStringToContext(
+        invertedCtx,
+        suitText,
+        SMALL_SUIT_GLYPH_RENDER_PADDING_PX,
+        SMALL_SUIT_GLYPH_RENDER_PADDING_PX,
+        SMALL_SUIT_GLYPH_RENDER_PX,
+        "left",
+        "top"
+      );
+      invertedCtx.restore();
+
+      SMALL_SUIT_GLYPH_CACHE.set(suit, {
+        upright: downscaleCanvas(uprightHighRes, SMALL_SUIT_GLYPH_CACHE_SIZE, SMALL_SUIT_GLYPH_CACHE_SIZE),
+        inverted: downscaleCanvas(invertedHighRes, SMALL_SUIT_GLYPH_CACHE_SIZE, SMALL_SUIT_GLYPH_CACHE_SIZE)
+      });
+    }
+  }
+
+  function buildSmallRankGlyphCache() {
+    SMALL_RANK_GLYPH_CACHE.clear();
+
+    for (const colorName of ["black", "red"]) {
+      const fillStyle = normalizeInkColor(colorName);
+      for (let rank = 1; rank <= 13; rank++) {
+        const rankGlyphs = CARD_RANK_GLYPHS[rank] || [];
+        const rankText = glyphStringFromCodepoints(rankGlyphs);
+        if (!rankText) continue;
+
+        const uprightHighRes = createTransparentCanvas(SMALL_RANK_RENDER_SIZE, SMALL_RANK_RENDER_SIZE);
+        const uprightCtx = uprightHighRes.getContext("2d", { alpha: true });
+        if (!uprightCtx) continue;
+        uprightCtx.clearRect(0, 0, uprightHighRes.width, uprightHighRes.height);
+        uprightCtx.fillStyle = fillStyle;
+        drawSitelenGlyphStringToContext(
+          uprightCtx,
+          rankText,
+          uprightHighRes.width / 2,
+          uprightHighRes.height / 2,
+          SMALL_RANK_RENDER_FONT_PX,
+          "center",
+          "middle",
+          1
+        );
+
+        const invertedHighRes = createTransparentCanvas(SMALL_RANK_RENDER_SIZE, SMALL_RANK_RENDER_SIZE);
+        const invertedCtx = invertedHighRes.getContext("2d", { alpha: true });
+        if (!invertedCtx) continue;
+        invertedCtx.clearRect(0, 0, invertedHighRes.width, invertedHighRes.height);
+        invertedCtx.fillStyle = fillStyle;
+        invertedCtx.save();
+        invertedCtx.translate(invertedHighRes.width / 2, invertedHighRes.height / 2);
+        invertedCtx.rotate(Math.PI);
+        drawSitelenGlyphStringToContext(
+          invertedCtx,
+          rankText,
+          0,
+          0,
+          SMALL_RANK_RENDER_FONT_PX,
+          "center",
+          "middle",
+          1
+        );
+        invertedCtx.restore();
+
+        SMALL_RANK_GLYPH_CACHE.set(`${rank}|${colorName}`, {
+          upright: downscaleCanvas(uprightHighRes, SMALL_RANK_CACHE_SIZE, SMALL_RANK_CACHE_SIZE),
+          inverted: downscaleCanvas(invertedHighRes, SMALL_RANK_CACHE_SIZE, SMALL_RANK_CACHE_SIZE)
+        });
+      }
+    }
+  }
+
+  function drawCachedCenterSuitGlyphToContext(targetCtx, card, x, y) {
+    const glyphCanvas = CENTER_SUIT_GLYPH_CACHE.get(card.suit);
+    if (glyphCanvas) {
+      const drawX = Math.round(x + CARD_W / 2 - CENTER_SUIT_GLYPH_CACHE_SIZE / 2);
+      const drawY = Math.round(y + CARD_H / 2 + 2 - CENTER_SUIT_GLYPH_CACHE_SIZE / 2);
+      targetCtx.save();
+      targetCtx.imageSmoothingEnabled = true;
+      if ("imageSmoothingQuality" in targetCtx) targetCtx.imageSmoothingQuality = "high";
+      targetCtx.drawImage(
+        glyphCanvas,
+        0,
+        0,
+        glyphCanvas.width,
+        glyphCanvas.height,
+        drawX,
+        drawY,
+        CENTER_SUIT_GLYPH_CACHE_SIZE,
+        CENTER_SUIT_GLYPH_CACHE_SIZE
+      );
+      targetCtx.restore();
+      return;
+    }
+
+    const suitGlyphs = CARD_SUIT_GLYPHS[card.suit] || [];
+    const suitText = glyphStringFromCodepoints(suitGlyphs);
+    if (!suitText) return;
+    targetCtx.fillStyle = normalizeInkColor(card.color);
+    drawSitelenGlyphStringToContext(
+      targetCtx,
+      suitText,
+      x + CARD_W / 2,
+      y + CARD_H / 2 + 2,
+      CENTER_SUIT_GLYPH_FONT_PX,
+      "center",
+      "middle"
+    );
+  }
+
+  function drawCachedSmallSuitGlyphToContext(targetCtx, suit, x, y, orientation = "upright") {
+    const cached = SMALL_SUIT_GLYPH_CACHE.get(suit);
+    const suitGlyphs = CARD_SUIT_GLYPHS[suit] || [];
+    const suitText = glyphStringFromCodepoints(suitGlyphs);
+    if (cached && cached[orientation]) {
+      targetCtx.drawImage(cached[orientation], Math.round(x), Math.round(y));
+      return;
+    }
+
+    if (!suitText) return;
+    targetCtx.fillStyle = getSuitInk(suit);
+    if (orientation === "inverted") {
+      targetCtx.save();
+      targetCtx.translate(x + SMALL_SUIT_GLYPH_CACHE_SIZE - SMALL_SUIT_GLYPH_PADDING_PX, y + SMALL_SUIT_GLYPH_CACHE_SIZE - SMALL_SUIT_GLYPH_PADDING_PX);
+      targetCtx.rotate(Math.PI);
+      drawSitelenGlyphStringToContext(targetCtx, suitText, SMALL_SUIT_GLYPH_PADDING_PX, SMALL_SUIT_GLYPH_PADDING_PX, SMALL_SUIT_GLYPH_FONT_PX, "left", "top");
+      targetCtx.restore();
+      return;
+    }
+
+    drawSitelenGlyphStringToContext(targetCtx, suitText, x + SMALL_SUIT_GLYPH_PADDING_PX, y + SMALL_SUIT_GLYPH_PADDING_PX, SMALL_SUIT_GLYPH_FONT_PX, "left", "top");
+  }
+
+  function drawCachedSmallRankGlyphToContext(targetCtx, rank, colorName, x, y, orientation = "upright") {
+    const cached = SMALL_RANK_GLYPH_CACHE.get(`${rank}|${colorName}`);
+    const rankGlyphs = CARD_RANK_GLYPHS[rank] || [];
+    const rankText = glyphStringFromCodepoints(rankGlyphs);
+    if (cached && cached[orientation]) {
+      targetCtx.drawImage(cached[orientation], Math.round(x), Math.round(y));
+      return;
+    }
+
+    if (!rankText) return;
+    targetCtx.fillStyle = normalizeInkColor(colorName);
+    if (orientation === "inverted") {
+      targetCtx.save();
+      targetCtx.translate(x + SMALL_RANK_CACHE_SIZE / 2, y + SMALL_RANK_CACHE_SIZE / 2);
+      targetCtx.rotate(Math.PI);
+      drawSitelenGlyphStringToContext(targetCtx, rankText, 0, 0, SMALL_RANK_FONT_PX, "center", "middle", 1);
+      targetCtx.restore();
+      return;
+    }
+
+    drawSitelenGlyphStringToContext(targetCtx, rankText, x + SMALL_RANK_CACHE_SIZE / 2, y + SMALL_RANK_CACHE_SIZE / 2, SMALL_RANK_FONT_PX, "center", "middle", 1);
+  }
+
+  function buildSingleCardFrontCache(card) {
+    const faceCanvas = createTransparentCanvas(CARD_W, CARD_H);
+    const faceCtx = faceCanvas.getContext("2d", { alpha: true });
+    if (!faceCtx) return null;
+
+    faceCtx.save();
+    drawRoundedRect(faceCtx, 0, 0, CARD_W, CARD_H, CARD_RADIUS);
+    faceCtx.fillStyle = "#fffdf8";
+    faceCtx.fill();
+    faceCtx.lineWidth = 2;
+    faceCtx.strokeStyle = "rgba(0,0,0,0.25)";
+    faceCtx.stroke();
+
+    const colorName = card.color === "red" ? "red" : "black";
+
+    drawCachedSmallRankGlyphToContext(faceCtx, card.rank, colorName, 4, 3, "upright");
+    drawCachedSmallSuitGlyphToContext(faceCtx, card.suit, 9, 28, "upright");
+
+    drawCachedSmallRankGlyphToContext(
+      faceCtx,
+      card.rank,
+      colorName,
+      CARD_W - 6 - SMALL_RANK_CACHE_SIZE,
+      CARD_H - 4 - SMALL_RANK_CACHE_SIZE,
+      "inverted"
+    );
+    drawCachedSmallSuitGlyphToContext(
+      faceCtx,
+      card.suit,
+      CARD_W - 9 - SMALL_SUIT_GLYPH_CACHE_SIZE,
+      CARD_H - 7 - 22 - SMALL_SUIT_GLYPH_CACHE_SIZE,
+      "inverted"
+    );
+
+    drawCachedCenterSuitGlyphToContext(faceCtx, card, 0, 0);
+    faceCtx.restore();
+    return faceCanvas;
+  }
+
+  function buildCardFrontCache() {
+    CARD_FRONT_CACHE.clear();
+    for (const suit of SUITS) {
+      for (let rank = 1; rank <= 13; rank++) {
+        const card = {
+          suit,
+          rank,
+          color: SUIT_COLORS[suit],
+          faceUp: true
+        };
+        const faceCanvas = buildSingleCardFrontCache(card);
+        if (faceCanvas) CARD_FRONT_CACHE.set(`${rank}|${suit}`, faceCanvas);
+      }
+    }
+  }
+
+  function rebuildCardFaceCaches() {
+    clearCardFaceCaches();
+    buildCenterSuitGlyphCache();
+    buildSmallSuitGlyphCache();
+    buildSmallRankGlyphCache();
+    buildCardFrontCache();
+  }
+
   function drawCardFront(card, x, y) {
+    const cachedFront = CARD_FRONT_CACHE.get(`${card.rank}|${card.suit}`);
+    if (cachedFront) {
+      ctx.drawImage(cachedFront, x, y);
+      return;
+    }
+
     ctx.save();
     drawRoundedRect(ctx, x, y, CARD_W, CARD_H, CARD_RADIUS);
     ctx.fillStyle = "#fffdf8";
@@ -2884,28 +3228,13 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
     ctx.strokeStyle = "rgba(0,0,0,0.25)";
     ctx.stroke();
 
-    const ink = card.color === "red" ? "#b32020" : "#111";
-    const rankGlyphs = CARD_RANK_GLYPHS[card.rank] || [];
-    const suitGlyphs = CARD_SUIT_GLYPHS[card.suit] || [];
-    const rankText = glyphStringFromCodepoints(rankGlyphs);
-    const suitText = glyphStringFromCodepoints(suitGlyphs);
-    const isTen = card.rank === "10";
-    const rankFontPx = isTen ? 18 : 22;
-    const rankScaleX = isTen ? 0.84 : 1;
+    const colorName = card.color === "red" ? "red" : "black";
+    drawCachedSmallRankGlyphToContext(ctx, card.rank, colorName, x + 4, y + 3, "upright");
+    drawCachedSmallSuitGlyphToContext(ctx, card.suit, x + 9, y + 28, "upright");
+    drawCachedSmallRankGlyphToContext(ctx, card.rank, colorName, x + CARD_W - 6 - SMALL_RANK_CACHE_SIZE, y + CARD_H - 4 - SMALL_RANK_CACHE_SIZE, "inverted");
+    drawCachedSmallSuitGlyphToContext(ctx, card.suit, x + CARD_W - 9 - SMALL_SUIT_GLYPH_CACHE_SIZE, y + CARD_H - 7 - 22 - SMALL_SUIT_GLYPH_CACHE_SIZE, "inverted");
 
-    ctx.fillStyle = ink;
-
-    drawSitelenGlyphString(rankText, x + 9, y + 8, rankFontPx, "left", "top", rankScaleX);
-    drawSitelenGlyphString(suitText, x + 11, y + 30, 18, "left", "top");
-
-    ctx.save();
-    ctx.translate(x + CARD_W - 9, y + CARD_H - 7);
-    ctx.rotate(Math.PI);
-    drawSitelenGlyphString(rankText, 0, 0, rankFontPx, "left", "top", rankScaleX);
-    drawSitelenGlyphString(suitText, 2, 22, 18, "left", "top");
-    ctx.restore();
-
-    drawSitelenGlyphString(suitText, x + CARD_W / 2, y + CARD_H / 2 + 2, card.rank === 10 ? 38 : 42, "center", "middle");
+    drawCachedCenterSuitGlyphToContext(ctx, card, x, y);
     ctx.restore();
   }
 
@@ -3175,7 +3504,8 @@ import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-d
   }
 
   ensureCardGlyphFontLoaded()
-    .catch(err => { console.warn("Card glyph font init failed", err); })
+    .then(() => { rebuildCardFaceCaches(); })
+    .catch(err => { console.warn("Card glyph font init failed", err); clearCardFaceCaches(); })
     .finally(() => { applyLanguage(); initFromStorage(); });
 })();
 </script>
