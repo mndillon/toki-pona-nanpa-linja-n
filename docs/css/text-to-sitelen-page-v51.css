@@ -824,3 +824,19 @@ body.shellReady {
     flex: 0 0 auto;
   }
 }
+
+/* Source-input font: preserve typed ASCII and directly encoded UCSUR unchanged. */
+@font-face {
+  font-family: "nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged";
+  src: url("../fonts/nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+#appTextIn,
+#appFloatingTextInEditorTextarea {
+  font-family: "nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged", monospace;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "dlig" 0, "calt" 0;
+}

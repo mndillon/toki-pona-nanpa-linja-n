@@ -1789,7 +1789,7 @@
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
   async function getNanpaModule(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=279");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=281");
     return nanpaModulePromise;
   }
 
@@ -1958,7 +1958,7 @@
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=82").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=83").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 

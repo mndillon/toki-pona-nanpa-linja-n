@@ -245,6 +245,13 @@ const SitelenRenderer = (() => {
     return out;
   }
 
+  function isBackslashEscapedAt(text, index) {
+    const s = String(text ?? '');
+    let count = 0;
+    for (let i = Number(index) - 1; i >= 0 && s[i] === '\\'; i--) count += 1;
+    return (count % 2) === 1;
+  }
+
   function splitLineIntoAstSegments(line) {
     const s = String(line ?? '');
     const out = [];
@@ -267,7 +274,7 @@ const SitelenRenderer = (() => {
         while (j < s.length) {
           const cj = s[j];
           const isClose = (cj === closeCh) || (openCh === '“' && cj === '"') || (openCh === '"' && cj === '”');
-          if (isClose && s[j - 1] !== '\\') { found = true; break; }
+          if (isClose && !isBackslashEscapedAt(s, j)) { found = true; break; }
           j++;
         }
         if (!found) break;
@@ -523,6 +530,278 @@ const SitelenRenderer = (() => {
     return out;
   }
 
+
+  // Common Sitelen Pona / UCSUR input normalization.
+  //
+  // IMPORTANT: this layer is deliberately opt-in by detection. If a line contains
+  // no recognized CSP/UCSUR input code point, it returns the original string
+  // unchanged and the existing Latin/ASCII parser path is used verbatim.
+  //
+  // The source textarea is never rewritten. This normalization exists only for
+  // parser interpretation so output remains font-independent and can continue
+  // through the existing canonical render-adapter pipeline.
+  const CSP_INPUT_SPECIAL_CP = Object.freeze({
+    CARTOUCHE_START: 0xF1990,
+    CARTOUCHE_END: 0xF1991,
+    CARTOUCHE_EXTENSION: 0xF1992,
+    DEPRECATED_LONG_PI_START: 0xF1993,
+    DEPRECATED_LONG_PI_EXTENSION: 0xF1994,
+    STACKING_JOINER: 0xF1995,
+    SCALING_JOINER: 0xF1996,
+    LONG_START: 0xF1997,
+    LONG_END: 0xF1998,
+    DEPRECATED_LONG_EXTENSION: 0xF1999,
+    REVERSE_LONG_START: 0xF199A,
+    REVERSE_LONG_END: 0xF199B,
+    MIDDLE_DOT: 0xF199C,
+    COLON: 0xF199D,
+    TALLY: 0xF199E,
+    NI_LEFT: 0xF1989,
+    NI_UP: 0xF198A,
+    NI_RIGHT: 0xF198B,
+    SEWI_ALT: 0xF198C,
+    TE_PUA: 0xF19B4,
+    TO_PUA: 0xF19B5,
+    ZWJ: 0x200D,
+    IDEOGRAPHIC_SPACE: 0x3000,
+    LEFT_CORNER: 0x300C,
+    RIGHT_CORNER: 0x300D
+  });
+
+  function cspInputWordForCodepoint(cp) {
+    if (cp === CSP_INPUT_SPECIAL_CP.NI_LEFT) return "ni<";
+    if (cp === CSP_INPUT_SPECIAL_CP.NI_UP) return "ni^";
+    if (cp === CSP_INPUT_SPECIAL_CP.NI_RIGHT) return "ni>";
+    if (cp === CSP_INPUT_SPECIAL_CP.SEWI_ALT) return "sewi^";
+    if (cp === CSP_INPUT_SPECIAL_CP.LEFT_CORNER || cp === CSP_INPUT_SPECIAL_CP.TE_PUA) return "te";
+    if (cp === CSP_INPUT_SPECIAL_CP.RIGHT_CORNER || cp === CSP_INPUT_SPECIAL_CP.TO_PUA) return "to";
+    if (cp === CSP_INPUT_SPECIAL_CP.IDEOGRAPHIC_SPACE) return "zz";
+    const byCp = preferredWordByCp();
+    return byCp.get(cp) || null;
+  }
+
+  function cspInputTokenForCodepoint(cp) {
+    const word = cspInputWordForCodepoint(cp);
+    if (word) return { type: "word", text: word };
+
+    switch (cp) {
+      case CSP_INPUT_SPECIAL_CP.CARTOUCHE_START: return { type: "cartoucheStart", text: "[" };
+      case CSP_INPUT_SPECIAL_CP.CARTOUCHE_END: return { type: "cartoucheEnd", text: "]" };
+      case CSP_INPUT_SPECIAL_CP.CARTOUCHE_EXTENSION: return { type: "ignorableControl", text: "" };
+      case CSP_INPUT_SPECIAL_CP.DEPRECATED_LONG_PI_START: return { type: "deprecatedLongPiStart", text: "" };
+      case CSP_INPUT_SPECIAL_CP.DEPRECATED_LONG_PI_EXTENSION: return { type: "deprecatedLongPiExtension", text: "" };
+      case CSP_INPUT_SPECIAL_CP.STACKING_JOINER: return { type: "joiner", text: "-" };
+      case CSP_INPUT_SPECIAL_CP.SCALING_JOINER: return { type: "joiner", text: "+" };
+      case CSP_INPUT_SPECIAL_CP.LONG_START: return { type: "longStart", text: "(" };
+      case CSP_INPUT_SPECIAL_CP.LONG_END: return { type: "longEnd", text: ")" };
+      case CSP_INPUT_SPECIAL_CP.DEPRECATED_LONG_EXTENSION: return { type: "ignorableControl", text: "" };
+      case CSP_INPUT_SPECIAL_CP.REVERSE_LONG_START: return { type: "reverseStart", text: "{" };
+      case CSP_INPUT_SPECIAL_CP.REVERSE_LONG_END: return { type: "reverseEnd", text: "}" };
+      case CSP_INPUT_SPECIAL_CP.MIDDLE_DOT: return { type: "middleDot", text: "." };
+      case CSP_INPUT_SPECIAL_CP.COLON: return { type: "colon", text: ":" };
+      case CSP_INPUT_SPECIAL_CP.TALLY: return { type: "tally", text: "," };
+      case CSP_INPUT_SPECIAL_CP.ZWJ: return { type: "joiner", text: "&" };
+      default: return null;
+    }
+  }
+
+  const CSP_INPUT_TRIGGER_RE = /[\u200D\u3000\u300C\u300D\u{F1900}-\u{F19FF}]/u;
+
+  function hasPotentialCspUnicodeInput(text) {
+    return CSP_INPUT_TRIGGER_RE.test(String(text ?? ""));
+  }
+
+  function containsRecognizedCspUnicodeInput(text) {
+    const s = String(text ?? "");
+    if (!hasPotentialCspUnicodeInput(s)) return false;
+    for (const ch of Array.from(s)) {
+      const cp = ch.codePointAt(0);
+      if (
+        cp !== CSP_INPUT_SPECIAL_CP.ZWJ &&
+        cp !== CSP_INPUT_SPECIAL_CP.IDEOGRAPHIC_SPACE &&
+        cp !== CSP_INPUT_SPECIAL_CP.LEFT_CORNER &&
+        cp !== CSP_INPUT_SPECIAL_CP.RIGHT_CORNER &&
+        !(cp >= 0xF1900 && cp <= 0xF19FF)
+      ) continue;
+      if (cspInputTokenForCodepoint(cp)) return true;
+    }
+    return false;
+  }
+
+  function cspTokenNeedsWordSeparator(left, right) {
+    if (!left || !right) return false;
+    if (left.type === "word" && right.type === "word") return true;
+    if (left.type === "longEnd" && right.type === "word") return true;
+    if (left.type === "cartoucheEnd" && right.type === "word") return true;
+    if (left.type === "middleDot" && right.type === "word") return true;
+    if (left.type === "tally" && right.type === "word") return true;
+    return false;
+  }
+
+  function serializeCspUnicodeTokenRun(tokens) {
+    const filtered = Array.from(tokens || []).filter(token => token && token.type !== "ignorableControl");
+    if (!filtered.length) return "";
+
+    // Deprecated long-pi encoding has an implicit pi head and no explicit end
+    // marker. Re-express it using the current canonical ASCII long-glyph syntax.
+    if (filtered[0].type === "deprecatedLongPiStart") {
+      const cells = filtered.slice(1).filter(token => token.type !== "deprecatedLongPiExtension");
+      let inner = "";
+      let prev = null;
+      for (const token of cells) {
+        if (cspTokenNeedsWordSeparator(prev, token)) inner += " ";
+        inner += token.text;
+        prev = token;
+      }
+      return `pi(${inner})`;
+    }
+
+    let out = "";
+    let prev = null;
+    for (const token of filtered) {
+      if (token.type === "deprecatedLongPiExtension") {
+        if (out && !out.endsWith(" ")) out += " ";
+        prev = null;
+        continue;
+      }
+
+      if (token.type === "colon") {
+        if (out && !out.endsWith(" ") && !out.endsWith("[")) out += " ";
+        out += ":";
+        prev = token;
+        continue;
+      }
+
+      if (prev && prev.type === "colon") {
+        if (out && !out.endsWith(" ")) out += " ";
+      } else if (cspTokenNeedsWordSeparator(prev, token)) {
+        if (out && !out.endsWith(" ")) out += " ";
+      }
+
+      out += token.text;
+      prev = token;
+    }
+    return out;
+  }
+
+  function cspBoundaryNeedsSpace(leftText, rightText) {
+    const left = String(leftText ?? "");
+    const right = String(rightText ?? "");
+    if (!left || !right) return false;
+    const leftCh = left[left.length - 1];
+    const rightCh = right[0];
+    return /[A-Za-z0-9_^<>]/.test(leftCh) && /[A-Za-z0-9_^<>]/.test(rightCh);
+  }
+
+  function findProtectedQuotedEnd(s, start) {
+    const openCh = s[start];
+    if (openCh !== '"' && openCh !== '“') return -1;
+    const closeCh = (openCh === '“') ? '”' : '"';
+    let j = start + 1;
+    while (j < s.length) {
+      const ch = s[j];
+      const isClose = (ch === closeCh) || (openCh === '“' && ch === '"') || (openCh === '"' && ch === '”');
+      if (isClose && !isBackslashEscapedAt(s, j)) return j + 1;
+      j += 1;
+    }
+    return -1;
+  }
+
+  function findProtectedImgEnd(s, start) {
+    if (!s.startsWith("img(", start)) return -1;
+    let j = start + 4;
+    let depth = 1;
+    let quote = null;
+    let esc = false;
+    while (j < s.length) {
+      const ch = s[j];
+      if (esc) { esc = false; j += 1; continue; }
+      if (ch === "\\") { esc = true; j += 1; continue; }
+      if (quote) { if (ch === quote) quote = null; j += 1; continue; }
+      if (ch === '"' || ch === "'") { quote = ch; j += 1; continue; }
+      if (ch === "(") depth += 1;
+      else if (ch === ")") {
+        depth -= 1;
+        if (depth === 0) return j + 1;
+      }
+      j += 1;
+    }
+    return -1;
+  }
+
+  function canonicalizeCspUnicodeInputLine(input, parser = {}) {
+    const source = String(input ?? "");
+    if (!source || !containsRecognizedCspUnicodeInput(source)) {
+      return { changed: false, text: source };
+    }
+
+    const pieces = [];
+    const interpretedQuotes = parser?.interpretDoubleQuotesAsTeTo === true;
+    let i = 0;
+
+    const pushRaw = (value) => {
+      if (!value) return;
+      pieces.push({ kind: "raw", text: value });
+    };
+    const pushConverted = (value) => {
+      if (!value) return;
+      pieces.push({ kind: "converted", text: value });
+    };
+
+    while (i < source.length) {
+      if (!interpretedQuotes && (source[i] === '"' || source[i] === '“')) {
+        const end = findProtectedQuotedEnd(source, i);
+        if (end > i) {
+          pushRaw(source.slice(i, end));
+          i = end;
+          continue;
+        }
+      }
+
+      if (source.startsWith("img(", i)) {
+        const end = findProtectedImgEnd(source, i);
+        if (end > i) {
+          pushRaw(source.slice(i, end));
+          i = end;
+          continue;
+        }
+      }
+
+      const firstCp = source.codePointAt(i);
+      const firstToken = cspInputTokenForCodepoint(firstCp);
+      if (!firstToken) {
+        const width = firstCp > 0xFFFF ? 2 : 1;
+        pushRaw(source.slice(i, i + width));
+        i += width;
+        continue;
+      }
+
+      const tokens = [];
+      let j = i;
+      while (j < source.length) {
+        const cp = source.codePointAt(j);
+        const token = cspInputTokenForCodepoint(cp);
+        if (!token) break;
+        tokens.push(token);
+        j += cp > 0xFFFF ? 2 : 1;
+      }
+      pushConverted(serializeCspUnicodeTokenRun(tokens));
+      i = j;
+    }
+
+    let out = "";
+    for (let index = 0; index < pieces.length; index++) {
+      const piece = pieces[index];
+      const previous = pieces[index - 1] || null;
+      if (previous && previous.kind !== piece.kind && cspBoundaryNeedsSpace(previous.text, piece.text)) {
+        if (!out.endsWith(" ")) out += " ";
+      }
+      out += piece.text;
+    }
+
+    return { changed: out !== source, text: out };
+  }
+
   function astFromInput(input, parser = {}) {
     const normalized = normalizeAstInput(input, parser);
     const parserOptions = {
@@ -540,13 +819,17 @@ const SitelenRenderer = (() => {
 
       for (let sentenceIndexInSourceLine = 0; sentenceIndexInSourceLine < renderedSourceLines.length; sentenceIndexInSourceLine++) {
         const renderedSourceLine = renderedSourceLines[sentenceIndexInSourceLine];
+        const cspNormalized = hasPotentialCspUnicodeInput(renderedSourceLine)
+          ? canonicalizeCspUnicodeInputLine(renderedSourceLine, parserOptions)
+          : { changed: false, text: renderedSourceLine };
         lines.push({
           type: 'line',
           index: lines.length,
           sourceLineIndex,
           sentenceIndexInSourceLine,
           sourceText: renderedSourceLine,
-          children: splitLineIntoAstSegments(renderedSourceLine)
+          ...(cspNormalized.changed ? { canonicalSourceText: cspNormalized.text, sourceEncoding: 'mixed-csp-unicode' } : {}),
+          children: splitLineIntoAstSegments(cspNormalized.changed ? cspNormalized.text : renderedSourceLine)
         });
       }
     }
@@ -8987,7 +9270,7 @@ function findNanpaLinjanTpPhraseSequences(text) {
               (openCh === "“" && cj === '"') ||
               (openCh === '"' && cj === "”");
 
-            if (isClose && s[j - 1] !== "\\") { found = true; break; }
+            if (isClose && !isBackslashEscapedAt(s, j)) { found = true; break; }
             j++;
           }
           if (!found) break;
@@ -10298,7 +10581,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       // compound operators. Numeric expressions are recognized before this
       // ordinary-word fallback, so their existing Unicode-minus handling is
       // unaffected. ASCII U+002D remains available to the SSK compound parser.
-      const tokenRe = /[^\s\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]+/g;
+      // Full stop is a sitelen pona middle-dot alias everywhere in ordinary
+      // parser text. Literal strings/cartouches never reach this tokenizer, so
+      // U+002E remains a literal full stop there. Keeping '.' as its own token
+      // also makes adjacent forms such as toki.pona and mixed UCSUR/ASCII input
+      // follow the same punctuation path as a standalone full stop.
+      const tokenRe = /\.|[^\s.\u2010\u2011\u2012\u2013\u2014\u2212\uFE63\uFF0D]+/g;
       let tm;
       while ((tm = tokenRe.exec(s)) !== null) {
         rawTokens.push({ text: tm[0], start: tm.index, end: tm.index + tm[0].length });

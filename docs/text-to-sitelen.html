@@ -916,7 +916,7 @@ nanpa #~WI.
         bootStarted = true;
         try {
           setMessage("Loading page styles…");
-          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=57");
+          await loadStylesheet("./css/text-to-sitelen-page-v51.css?v=58");
 
           setMessage("Loading PDF support…");
           await loadClassicScript("./vendor/pdf-lib.min.js?v=49");
@@ -925,7 +925,7 @@ nanpa #~WI.
           await loadClassicScript("./vendor/fontkit.umd.min.js?v=49");
 
           setMessage("Loading renderer…");
-          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=356");
+          await import("./js/text-to-sitelen-page-v53-notes-panel.js?v=359");
         } catch (error) {
           showStartupError(error);
         }

@@ -112,7 +112,6 @@
       <button class="fractionButton" type="button" data-fraction="¾" aria-label="Insert three quarters">¾</button>
     </div>
     <textarea id="proposalInput" class="mono" autocapitalize="none" autocomplete="off" spellcheck="false">toki [toki olin½ kute½ ilo½ pona olin½ nasin½ ale½]
-[kasi¾ ala½ nena¾ ala½ telo¾ ala½]
 [kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]</textarea>
 
     <div class="controls">
@@ -185,7 +184,7 @@
 </main>
 
 <script type="module">
-import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=279";
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=281";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN
@@ -196,7 +195,7 @@ const DRAFT_DB = "cartouche-vulgar-fraction-proposal";
 const DRAFT_STORE = "kv";
 const DRAFT_KEY = "draft:cartouche-vulgar-fraction-proposal:textIn:v1";
 const FONT_SIZE_KEY = "cartoucheVulgarFractionProposalFontSize";
-const DEFAULT_INPUT = `toki [toki olin½ kute½ ilo½ pona olin½ nasin½ ale½]\n[kasi¾ ala½ nena¾ ala½ telo¾ ala½]\n[kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]`;
+const DEFAULT_INPUT = `toki [toki olin½ kute½ ilo½ pona olin½ nasin½ ale½]\n[kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]`;
 
 const inputEl = document.getElementById("proposalInput");
 const fontEl = document.getElementById("proposalFontFamily");
