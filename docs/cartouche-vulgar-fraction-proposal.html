@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Proposal: fractional glyph scaling inside sitelen pona cartouches</title>
+<link rel="icon" href="/icons/favicon.ico" sizes="any">
+<link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/icons/favicon-16x16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="/icons/favicon-180x180.png" sizes="180x180">
+<style>
+  :root {
+    --bg: #F3DFC0;
+    --card: #FAECD7;
+    --border: #d0d7de;
+    --muted: #3f4750;
+    --text: #111;
+    --pad: 14px;
+    --gap: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text); }
+  body { font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; padding:24px; }
+  button, select, textarea { font:inherit; }
+  .skipLink { position:absolute; left:-10000px; top:auto; }
+  .skipLink:focus { left:12px; top:12px; z-index:1000; padding:8px 10px; background:#fff; color:#111; border:2px solid #111; border-radius:6px; }
+  .card { max-width:980px; margin:0; padding:var(--pad); border:1px solid var(--border); border-radius:12px; background:var(--bg); }
+  .pageHeadingRow { display:flex; align-items:flex-start; gap:7px; }
+  .pageHomeLink { display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; width:28px; height:28px; margin-top:-4px; color:#111; opacity:.58; text-decoration:none; border-radius:5px; }
+  .pageHomeLink:hover { opacity:.9; background:rgba(17,17,17,.06); }
+  .pageHomeLink:focus-visible { opacity:1; outline:2px solid rgba(17,17,17,.65); outline-offset:2px; }
+  .pageHomeIcon { width:16px; height:16px; }
+  h1 { margin:0 0 6px; font-size:18px; }
+  h2 { margin:0 0 8px; font-size:18px; }
+  h3 { margin:18px 0 6px; font-size:15px; }
+  p, li { line-height:1.55; }
+  .help { font-size:12px; color:var(--muted); line-height:1.45; }
+  .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+  .proposalIntro { margin:12px 0 18px; max-width:930px; }
+  .proposalIntro p { margin:8px 0; }
+  .proposalStatus { display:inline-block; margin:6px 0 4px; padding:4px 8px; border:1px solid rgba(17,17,17,.28); border-radius:999px; font-size:12px; font-weight:700; }
+  .proposalSection { margin-top:24px; }
+  .proposalCode { display:block; overflow-x:auto; white-space:nowrap; margin:6px 0; padding:7px 8px; border:1px solid rgba(17,17,17,.16); border-radius:7px; font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+  .proposalCompare { width:100%; border-collapse:collapse; margin:10px 0 14px; }
+  .proposalCompare th, .proposalCompare td { border:1px solid var(--border); padding:8px 9px; text-align:left; vertical-align:top; }
+  .proposalCompare th { font-size:12px; color:var(--muted); }
+  .playground { margin-top:26px; padding:14px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.08); }
+  .controls { display:grid; grid-template-columns:minmax(0,1fr) 150px; gap:12px; margin:10px 0; }
+  label { font-weight:650; font-size:13px; }
+  select, textarea, button { border:1px solid rgba(17,17,17,.28); border-radius:7px; background:rgba(255,255,255,.20); color:inherit; }
+  select, button { min-height:36px; padding:6px 9px; }
+  textarea { width:100%; min-height:126px; resize:vertical; padding:10px; line-height:1.45; }
+  button { cursor:pointer; font-weight:650; }
+  button:hover:not(:disabled) { background:rgba(255,255,255,.36); }
+  button:disabled { opacity:.55; cursor:default; }
+  .fractionRow { display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin:7px 0; }
+  .fractionButton { min-width:34px; min-height:30px; padding:3px 8px; font-size:15px; }
+  .buttonRow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:10px 0 0; }
+  .canvasWrap { margin-top:12px; padding:10px; min-height:90px; overflow:auto; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,.12); }
+  #renderCanvas { display:block; max-width:none; }
+  .status { min-height:1.4em; margin-top:8px; font-size:12px; color:var(--muted); }
+  .proposalDisclaimer { margin-top:30px; padding-top:14px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); line-height:1.5; }
+  .sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+  #loadingVeil { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:var(--bg); transition:opacity .2s ease; }
+  #loadingVeil.ready { opacity:0; pointer-events:none; }
+  #loadingVeilCard { width:min(360px,100%); padding:22px; border:2px solid rgba(17,17,17,.38); border-radius:14px; background:var(--card); text-align:center; box-shadow:0 4px 18px rgba(17,17,17,.12); }
+  #loadingVeilSpinner { width:46px; height:46px; margin:0 auto 12px; border:5px solid rgba(17,17,17,.18); border-top-color:#111; border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (max-width:720px) { body{padding:10px;} .controls{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div id="loadingVeil" role="status" aria-live="polite">
+  <div id="loadingVeilCard">
+    <div id="loadingVeilSpinner" aria-hidden="true"></div>
+    <div style="font-weight:750;font-size:18px">Loading proposal demo</div>
+    <div id="loadingVeilLabel" class="help" style="margin-top:7px">Loading fonts…</div>
+  </div>
+</div>
+<a class="skipLink" href="#main">Skip to content</a>
+<main class="card" id="main" aria-labelledby="pageTitle">
+  <div class="pageHeadingRow">
+    <a class="pageHomeLink" href="./index.html" aria-label="Home" title="Home">
+      <svg class="pageHomeIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 10.5 12 3.75l8.5 6.75M5.75 9.25V20h12.5V9.25M9.5 20v-6h5v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </a>
+    <h1 id="pageTitle">Proposal: fractional glyph scaling inside sitelen pona cartouches</h1>
+  </div>
+
+  <div class="proposalIntro">
+    <span class="proposalStatus">Experimental community proposal</span>
+    <p><strong>Overview.</strong> This proposal adds an optional typographic control for ordinary sitelen pona cartouches: a glyph may be followed by <span class="mono">¼</span>, <span class="mono">⅓</span>, <span class="mono">½</span>, <span class="mono">⅔</span>, or <span class="mono">¾</span> to draw that one glyph at the corresponding fractional scale inside the cartouche.</p>
+    <p>The fraction is a <strong>formatting instruction, not part of the proper name</strong>. It is not drawn. Full-size glyphs remain the default, and an author does not need to use scaling at all. The purpose is to give authors optional visual freedom to emphasize some glyphs and de-emphasize glyphs used mainly to help indicate pronunciation.</p>
+    <p>The same five controls may also be written with the ASCII aliases <span class="mono">1/4</span>, <span class="mono">1/3</span>, <span class="mono">1/2</span>, <span class="mono">2/3</span>, and <span class="mono">3/4</span>.</p>
+    <code class="proposalCode">[kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]</code>
+    <p><a href="./index.html#fonts">Fonts that implement this proposal</a></p>
+  </div>
+
+  <section class="playground" aria-labelledby="playgroundHeading">
+    <h2 id="playgroundHeading">Try the proposal</h2>
+    <p style="margin-top:0">Enter one or more cartouches, choose a font and size, then render. This page uses the existing renderer, font-pair controller, font manifest and vector exporter directly; it does not load the text-to-sitelen page code.</p>
+
+    <label for="proposalInput">Cartouche input</label>
+    <div class="fractionRow" role="group" aria-label="Insert vulgar fraction">
+      <span class="help">Insert:</span>
+      <button class="fractionButton" type="button" data-fraction="¼" aria-label="Insert one quarter">¼</button>
+      <button class="fractionButton" type="button" data-fraction="⅓" aria-label="Insert one third">⅓</button>
+      <button class="fractionButton" type="button" data-fraction="½" aria-label="Insert one half">½</button>
+      <button class="fractionButton" type="button" data-fraction="⅔" aria-label="Insert two thirds">⅔</button>
+      <button class="fractionButton" type="button" data-fraction="¾" aria-label="Insert three quarters">¾</button>
+    </div>
+    <textarea id="proposalInput" class="mono" autocapitalize="none" autocomplete="off" spellcheck="false">toki [toki olin½ kute½ ilo½ pona olin½ nasin½ ale½]
+[kasi¾ ala½ nena¾ ala½ telo¾ ala½]
+[kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]</textarea>
+
+    <div class="controls">
+      <div>
+        <label for="proposalFontFamily">Font family</label>
+        <select id="proposalFontFamily" style="width:100%"></select>
+      </div>
+      <div>
+        <label for="proposalFontSize">Font size</label>
+        <select id="proposalFontSize" style="width:100%">
+          <option value="8">8 px</option><option value="10">10 px</option><option value="12">12 px</option><option value="14">14 px</option><option value="16">16 px</option>
+          <option value="20">20 px</option><option value="24">24 px</option><option value="28">28 px</option><option value="32">32 px</option><option value="36">36 px</option>
+          <option value="40">40 px</option><option value="44">44 px</option><option value="48">48 px</option><option value="56" selected>56 px</option><option value="64">64 px</option>
+          <option value="72">72 px</option><option value="80">80 px</option><option value="88">88 px</option><option value="96">96 px</option><option value="104">104 px</option>
+          <option value="120">120 px</option><option value="144">144 px</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="buttonRow">
+      <button id="proposalRender" type="button">Render</button>
+      <button id="proposalDownloadPdf" type="button" disabled>Download PDF</button>
+    </div>
+    <div class="canvasWrap"><canvas id="renderCanvas" width="1" height="1" aria-label="Rendered sitelen pona output"></canvas></div>
+    <div id="proposalStatus" class="status" aria-live="polite"></div>
+  </section>
+
+  <section class="proposalSection" aria-labelledby="detailHeading">
+    <h2 id="detailHeading">Detailed proposal</h2>
+    <h3>1. Scope</h3>
+    <p>Fractional scaling applies only inside ordinary sitelen pona cartouches. Outside a cartouche, the Unicode vulgar-fraction characters keep their ordinary visible meaning and are not formatting controls.</p>
+
+    <h3>2. Available scale modifiers</h3>
+    <table class="proposalCompare">
+      <thead><tr><th>Unicode control</th><th>ASCII alias</th><th>Effect on the immediately preceding cartouche entry</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">¼</td><td class="mono">1/4</td><td>quarter scale</td></tr>
+        <tr><td class="mono">⅓</td><td class="mono">1/3</td><td>one-third scale</td></tr>
+        <tr><td class="mono">½</td><td class="mono">1/2</td><td>half scale</td></tr>
+        <tr><td class="mono">⅔</td><td class="mono">2/3</td><td>two-thirds scale</td></tr>
+        <tr><td class="mono">¾</td><td class="mono">3/4</td><td>three-quarter scale</td></tr>
+      </tbody>
+    </table>
+
+    <h3>3. Postfix rule</h3>
+    <p>A modifier applies to the single immediately preceding cartouche entry. The modifier itself is not drawn.</p>
+
+    <h3>4. Optional authorial emphasis</h3>
+    <p>Scaling is optional and does not change the linguistic value of the glyph or the proper name. A conventional unscaled cartouche remains valid. The proposal only gives the author an additional visual distinction when desired.</p>
+
+    <h3>5. ASCII aliases</h3>
+    <p>The ASCII forms are input conveniences. Within an ordinary cartouche, <span class="mono">jan1/2</span> and <span class="mono">jan½</span> request the same half-scale rendering. Fonts using underscore-style Latin ligatures may likewise accept the corresponding no-space underscore form where required by that font's convention.</p>
+
+    <h3>6. Compounds, punctuation and spacing</h3>
+    <p>The modifier belongs to the preceding rendered cartouche entry. Existing compound syntax remains separate. Colon and middle-dot entries remain inside the cartouche without breaking it. Using vulgar-fraction scaling with IDEOGRAPHIC SPACE or <span class="mono">zz</span> may or may not work for any given font.</p>
+
+    <h3>7. Tallies</h3>
+    <p>Where comma is used for the existing cartouche tally convention, tallies may follow a fraction-modified glyph. The preceding glyph is scaled; the tally marks themselves are not scaled.</p>
+
+    <h3>8. Literal cartouches</h3>
+    <p>Fraction aliases are not interpreted as scaling controls inside literal-cartouche forms. Literal content remains literal.</p>
+
+    <h3>9. Status</h3>
+    <p>This page describes an experimental proposal and an implementation for people to test. It is not a claim that fractional cartouche scaling is part of the Common Sitelen Pona standard or an established community convention.</p>
+  </section>
+
+  <div class="proposalDisclaimer">
+    <strong>Disclaimer:</strong> This proposal and demonstration are provided “as is”. The examples are illustrative rather than prescriptive, and no claim is made that the proposed notation is standard, universally accepted, or suitable for every font size or cartouche. Users should judge legibility and usefulness for themselves.
+  </div>
+</main>
+
+<script type="module">
+import SitelenRenderer from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=279";
+import {
+  createSitelenFontPairController,
+  TEXT_FONT_OPTION_SITELEN
+} from "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=23";
+import { SitelenVectorExporter } from "./js/sitelen-vector-exporter.js?v=178";
+
+const DRAFT_DB = "cartouche-vulgar-fraction-proposal";
+const DRAFT_STORE = "kv";
+const DRAFT_KEY = "draft:cartouche-vulgar-fraction-proposal:textIn:v1";
+const FONT_SIZE_KEY = "cartoucheVulgarFractionProposalFontSize";
+const DEFAULT_INPUT = `toki [toki olin½ kute½ ilo½ pona olin½ nasin½ ale½]\n[kasi¾ ala½ nena¾ ala½ telo¾ ala½]\n[kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]`;
+
+const inputEl = document.getElementById("proposalInput");
+const fontEl = document.getElementById("proposalFontFamily");
+const sizeEl = document.getElementById("proposalFontSize");
+const renderBtn = document.getElementById("proposalRender");
+const pdfBtn = document.getElementById("proposalDownloadPdf");
+const canvas = document.getElementById("renderCanvas");
+const statusEl = document.getElementById("proposalStatus");
+const loadingVeil = document.getElementById("loadingVeil");
+const loadingLabel = document.getElementById("loadingVeilLabel");
+
+function setStatus(message) { statusEl.textContent = String(message ?? ""); }
+function setLoading(message) { if (loadingLabel) loadingLabel.textContent = String(message ?? ""); }
+function hideLoading() {
+  loadingVeil?.classList.add("ready");
+  window.setTimeout(() => loadingVeil?.remove(), 250);
+}
+function fontPx() {
+  const n = Number(sizeEl?.value || 56);
+  return Number.isFinite(n) ? Math.max(8, n) : 56;
+}
+
+/* A single bootstrap entry is required by the existing controller. The
+   authoritative URLs, labels, families, settings and additional font pairs
+   are supplied by the existing preloaded-font-pairs manifest. */
+const bootstrapRegistry = {
+  nasinNanpa: {
+    key: "nasinNanpa",
+    label: "nasin nanpa",
+    parserMode: "sitelen-pona-ascii-extended",
+    textFamily: "nasinNanpa",
+    cartoucheFamily: "nasinNanpa-nanpa-linja-n",
+    literalCartoucheFamily: "nasinNanpa",
+    literalOptions: [[TEXT_FONT_OPTION_SITELEN, "sitelen font"]],
+    defaultTextFontOption: TEXT_FONT_OPTION_SITELEN,
+    faces: []
+  }
+};
+
+let renderer = null;
+let vectorExporter = null;
+let renderTimer = null;
+let saveTimer = null;
+
+const fontController = createSitelenFontPairController({
+  registry: bootstrapRegistry,
+  scriptSelect: fontEl,
+  textFontSelect: null,
+  storageKeyPrefix: "tpVulgarFractionProposal",
+  defaultPresetKey: "nasinNanpa",
+  defaultTextFontOption: TEXT_FONT_OPTION_SITELEN,
+  dynamicTextFontOption: TEXT_FONT_OPTION_SITELEN,
+  onInvalidate: () => {
+    renderer = null;
+    vectorExporter = null;
+  }
+});
+
+function openDraftDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DRAFT_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(DRAFT_STORE)) db.createObjectStore(DRAFT_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function readDraft() {
+  const db = await openDraftDb();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(DRAFT_STORE, "readonly");
+      const req = tx.objectStore(DRAFT_STORE).get(DRAFT_KEY);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => reject(req.error);
+    });
+  } finally { db.close(); }
+}
+
+async function writeDraft(value) {
+  const db = await openDraftDb();
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(DRAFT_STORE, "readwrite");
+      tx.objectStore(DRAFT_STORE).put(String(value ?? ""), DRAFT_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error("Draft save aborted."));
+    });
+  } finally { db.close(); }
+}
+
+function scheduleDraftSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    writeDraft(inputEl.value).catch(err => console.warn("[proposal draft] save failed", err));
+  }, 250);
+}
+
+function insertAtSelection(text) {
+  const start = Number.isFinite(inputEl.selectionStart) ? inputEl.selectionStart : inputEl.value.length;
+  const end = Number.isFinite(inputEl.selectionEnd) ? inputEl.selectionEnd : start;
+  const before = inputEl.value.slice(0, start);
+  const after = inputEl.value.slice(end);
+  inputEl.value = before + text + after;
+  const next = start + text.length;
+  inputEl.focus({ preventScroll: true });
+  inputEl.setSelectionRange(next, next);
+  inputEl.dispatchEvent(new Event("input", { bubbles:true }));
+}
+
+document.querySelectorAll("[data-fraction]").forEach(button => {
+  button.addEventListener("pointerdown", event => {
+    if (event.button == null || event.button === 0) event.preventDefault();
+  });
+  button.addEventListener("click", () => insertAtSelection(button.dataset.fraction || ""));
+});
+
+function buildBaseConfig() {
+  return {
+    layout: {
+      fontPx: fontPx(),
+      align: "left",
+      spacingPreset: "normal",
+      paddingPx: 18
+    },
+    paint: {
+      fillStyle: "#111111",
+      halo: { enabled:false, color:"#ffffff", widthPx:0 }
+    },
+    parser: {
+      mode: fontController.getActivePreset()?.parserMode || "sitelen-pona-ascii-extended",
+      literalStyle: "double-quote",
+      extensionStyle: "ssk",
+      cartoucheStyle: "ssk",
+      numericMode: "compat",
+      mixedStyle: "short",
+      showUnknownText: true,
+      abbreviateNumericCartouches: true,
+      preserveNumericCartoucheBreaksInAbbreviation: false,
+      relaxedNanpaLinjanParsing: true,
+      relaxedNanpaLinjanRendering: true,
+      nanpaColonParsing: true,
+      nanpaColonRendering: true,
+      nasinNanpaPona: false,
+      interpretDoubleQuotesAsTeTo: false,
+      breakLinesAtFullStops: false,
+      enableHexParsing: false,
+      enableBinaryParsing: false,
+      enableBinaryRendering: false
+    }
+  };
+}
+
+function buildConfig() {
+  return fontController.buildRendererConfig({
+    textFontOptionKey: TEXT_FONT_OPTION_SITELEN,
+    baseConfig: buildBaseConfig()
+  });
+}
+
+async function ensureRenderer() {
+  if (!renderer) renderer = await SitelenRenderer.create({});
+  return renderer;
+}
+
+async function renderNow() {
+  const input = String(inputEl.value ?? "");
+  if (!input.trim()) {
+    canvas.width = 1;
+    canvas.height = 1;
+    canvas.getContext("2d").clearRect(0, 0, 1, 1);
+    setStatus("Nothing to render.");
+    return;
+  }
+
+  renderBtn.disabled = true;
+  pdfBtn.disabled = true;
+  setStatus("Rendering…");
+  try {
+    await fontController.waitForConfiguredFonts(fontPx());
+    const r = await ensureRenderer();
+    const config = buildConfig();
+    const rendered = await r.renderTextToNewCanvas({ input, ...config });
+    canvas.width = rendered.canvas.width;
+    canvas.height = rendered.canvas.height;
+    const ctx = canvas.getContext("2d", { alpha:true });
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(rendered.canvas, 0, 0);
+    pdfBtn.disabled = false;
+    setStatus(`Rendered with ${fontController.getActivePreset()?.label || "selected font"} at ${fontPx()} px.`);
+  } catch (err) {
+    console.error(err);
+    setStatus(`Render failed: ${err?.message ?? String(err)}`);
+  } finally {
+    renderBtn.disabled = false;
+  }
+}
+
+function scheduleRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => renderNow(), 90);
+}
+
+async function ensureVectorExporter() {
+  if (vectorExporter) return vectorExporter;
+  const r = await ensureRenderer();
+  vectorExporter = await SitelenVectorExporter.create({
+    renderer: r,
+    fontController,
+    wasmModuleUrl: new URL("./wasm/sitelen_vector_wasm.js?v=144", window.location.href).href,
+    onStatus: message => setStatus(message),
+    debug: false,
+    debugWasm: false
+  });
+  return vectorExporter;
+}
+
+async function downloadPdf() {
+  const input = String(inputEl.value ?? "");
+  if (!input.trim()) return;
+  pdfBtn.disabled = true;
+  setStatus("Preparing vector PDF…");
+  try {
+    await fontController.waitForConfiguredFonts(fontPx());
+    const exporter = await ensureVectorExporter();
+    const config = buildConfig();
+    await exporter.downloadPdf({
+      input,
+      config,
+      paddingPx: Math.max(18, Math.ceil(fontPx() * 0.20)),
+      fallbackWidthPx: canvas.width || null,
+      fallbackHeightPx: canvas.height || null,
+      filename: "cartouche-vulgar-fraction-proposal.pdf"
+    });
+    setStatus("Downloaded vector PDF.");
+  } catch (err) {
+    console.error(err);
+    setStatus(`PDF export failed: ${err?.message ?? String(err)}`);
+  } finally {
+    pdfBtn.disabled = false;
+  }
+}
+
+inputEl.addEventListener("input", () => { scheduleDraftSave(); scheduleRender(); });
+renderBtn.addEventListener("click", () => renderNow());
+pdfBtn.addEventListener("click", () => downloadPdf());
+fontEl.addEventListener("change", async () => {
+  try {
+    fontController.setActivePreset(fontEl.value, { persist:true });
+    fontController.resetFontLoadState?.();
+    vectorExporter = null;
+    await renderNow();
+  } catch (err) {
+    setStatus(`Font change failed: ${err?.message ?? String(err)}`);
+  }
+});
+sizeEl.addEventListener("change", async () => {
+  try { localStorage.setItem(FONT_SIZE_KEY, sizeEl.value); } catch {}
+  fontController.resetFontLoadState?.();
+  vectorExporter = null;
+  await renderNow();
+});
+
+async function initialize() {
+  try {
+    setLoading("Preparing font controller…");
+    await fontController.ready;
+
+    setLoading("Loading font manifest…");
+    const syncResult = await fontController.syncPreloadedFontPairsFromManifest({
+      manifestUrl: "./fonts/preloaded-font-pairs.manifest.json?v=19",
+      onlyIfExisting: false,
+      force: false
+    });
+    if (!syncResult?.manifestLoaded) throw new Error("The preloaded font manifest could not be loaded.");
+
+    setLoading("Preparing fonts…");
+    await fontController.hydrateDynamicPresetsFromDb({ force:true });
+    fontController.populateScriptSelectOptions();
+    fontController.applyStoredSelections();
+
+    try {
+      const savedSize = localStorage.getItem(FONT_SIZE_KEY);
+      if (savedSize && Array.from(sizeEl.options).some(o => o.value === savedSize)) sizeEl.value = savedSize;
+    } catch {}
+
+    try {
+      const draft = await readDraft();
+      inputEl.value = (draft != null && String(draft).length) ? String(draft) : DEFAULT_INPUT;
+    } catch (err) {
+      console.warn("[proposal draft] restore failed", err);
+      inputEl.value = DEFAULT_INPUT;
+    }
+
+    await fontController.waitForConfiguredFonts(fontPx());
+    await ensureRenderer();
+    await renderNow();
+    hideLoading();
+  } catch (err) {
+    console.error(err);
+    setLoading(`Could not initialize: ${err?.message ?? String(err)}`);
+    setStatus(`Initialization failed: ${err?.message ?? String(err)}`);
+    renderBtn.disabled = false;
+  }
+}
+
+initialize();
+</script>
+
+
+
+<script>
+  const productionHosts = new Set([
+    'nanpa-linja-n.com',
+    'www.nanpa-linja-n.com'
+  ]);
+
+  if (!productionHosts.has(window.location.hostname)) {
+      window.goatcounter = { no_onload: true };
+  }
+ 
+
+  const pendingDownloadEvents = [];
+  let pendingDownloadEventsTimer = null;
+
+  function sendDownloadEvent(eventName) {
+    window.goatcounter.count({
+      path: eventName,
+      title: eventName,
+      event: true,
+      no_session: true
+    });
+  }
+
+  function flushPendingDownloadEvents() {
+    if (
+      !window.goatcounter ||
+      typeof window.goatcounter.count !== 'function'
+    ) {
+      return;
+    }
+
+    while (pendingDownloadEvents.length) {
+      sendDownloadEvent(pendingDownloadEvents.shift());
+    }
+
+    if (pendingDownloadEventsTimer !== null) {
+      clearInterval(pendingDownloadEventsTimer);
+      pendingDownloadEventsTimer = null;
+    }
+  }
+
+  function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      sendDownloadEvent(eventName);
+      return;
+    }
+
+    pendingDownloadEvents.push(eventName);
+
+    if (pendingDownloadEventsTimer === null) {
+      pendingDownloadEventsTimer = setInterval(flushPendingDownloadEvents, 100);
+    }
+  }
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest(
+      'a[data-download-track-type][data-download-track-name]'
+    );
+
+    if (!link) return;
+
+    const type = link.dataset.downloadTrackType;
+    const name = link.dataset.downloadTrackName;
+    trackUsage(`download-file-${type}-${name}`);
+  });
+</script>
+
+<script data-goatcounter="https://nanpalinjan.goatcounter.com/count" async src="./js/goatcounter-count.js">
+</script>
+ 
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "generated": "2026-09-26",
+  "generated": "2026-09-27",
   "migration": {
     "clearIndexedDbPairsOnUpgrade": true,
     "preserveFontKeys": [
@@ -20,7 +20,7 @@
     {
       "fontKey": "nasinNanpa",
       "label": "nasin nanpa predefined",
-      "rev": "2026-09-26-101",
+      "rev": "2026-09-27-104",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "TP-Nasin-Nanpa-Font",
       "companionFamily": "TP-Cartouche-Font",
@@ -60,7 +60,7 @@
     {
       "fontKey": "sitelenSeliKiwen",
       "label": "sitelen seli kiwen predefined",
-      "rev": "2026-09-23-032",
+      "rev": "2026-09-27-033",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "SSK-Juniko",
       "companionFamily": "SSK-Juniko-Cartouche",
@@ -100,7 +100,7 @@
     {
       "fontKey": "fairfaxHd",
       "label": "FairfaxHD predefined",
-      "rev": "2026-09-23-026",
+      "rev": "2026-09-27-027",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "fairfaxHd",
       "companionFamily": "fairfaxHd-Cartouche",
@@ -126,7 +126,7 @@
     {
       "fontKey": "fairfaxPonaHd",
       "label": "FairfaxPonaHD predefined",
-      "rev": "2026-09-23-027",
+      "rev": "2026-09-27-028",
       "parserMode": "sitelen-pona-ascii-extended",
       "baseFamily": "fairfaxPonaHd",
       "companionFamily": "fairfaxPonaHd-Cartouche",
@@ -152,7 +152,7 @@
     {
       "fontKey": "linjaPona",
       "label": "linja pona predefined",
-      "rev": "2026-09-25-001",
+      "rev": "2026-09-27-002",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-pona-legacy-v1",
       "renderAdapterSettings": {
@@ -193,8 +193,8 @@
         "cornerBrackets": "renderer-synthetic-u300c-u300d"
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
-      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-sans-literal.ttf",
       "literalCartoucheFormat": "truetype",
       "literalCartoucheLicenseUrls": [
         "./fonts/SIL_LICENSE",
@@ -207,7 +207,7 @@
     {
       "fontKey": "linjaSike",
       "label": "linja sike predefined",
-      "rev": "2026-09-23-025",
+      "rev": "2026-09-27-024",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-sike-legacy-v1",
       "renderAdapterSettings": {
@@ -247,8 +247,8 @@
         "cornerBrackets": "renderer-synthetic-u300c-u300d"
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
-      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-sans-literal.ttf",
       "literalCartoucheFormat": "truetype",
       "literalCartoucheLicenseUrls": [
         "./fonts/SIL_LICENSE",
@@ -261,7 +261,7 @@
     {
       "fontKey": "nasinSitelenPuMono",
       "label": "nasin sitelen pu mono predefined",
-      "rev": "2026-09-23-025",
+      "rev": "2026-09-27-026",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "nasin-sitelen-pu-mono-v1",
       "renderAdapterSettings": {
@@ -299,8 +299,8 @@
         "literalIsolationRequired": true
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
-      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-sans-literal.ttf",
       "literalCartoucheFormat": "truetype",
       "literalCartoucheLicenseUrls": [
         "./fonts/SIL_LICENSE",
@@ -312,7 +312,7 @@
     {
       "fontKey": "linjaLipamanka",
       "label": "linja lipamanka predefined",
-      "rev": "2026-09-23-029",
+      "rev": "2026-09-27-030",
       "parserMode": "sitelen-pona-ascii-extended",
       "renderAdapterId": "linja-lipamanka-v1",
       "renderAdapterSettings": {
@@ -360,8 +360,8 @@
         "literalIsolationRequired": true
       },
       "literalCartoucheFamily": "TP-Nasin-Nanpa-Literal-Cartouche-Font",
-      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
-      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-literal.ttf",
+      "literalCartoucheFilename": "nanpa-linja-n-nasin-nanpa-sans-literal.ttf",
+      "literalCartoucheUrl": "./fonts/nanpa-linja-n-nasin-nanpa-sans-literal.ttf",
       "literalCartoucheFormat": "truetype",
       "literalCartoucheLicenseUrls": [
         "./fonts/SIL_LICENSE",
