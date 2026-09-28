@@ -7724,7 +7724,10 @@ function openFloatingTextEditor({ title, elementId, sourceTextarea, onChange }){
   S.sourceTextarea = sourceTextarea || null;
   S.onChange = onChange || null;
   if (S.title) S.title.textContent = String(title || "Text");
-  if (sourceTextarea) S.ta.value = String(sourceTextarea.value || "");
+  if (sourceTextarea) {
+    S.ta.value = String(sourceTextarea.value || "");
+    S.ta.classList.toggle("nanpaSourceInputUnchanged", sourceTextarea.classList.contains("nanpaSourceInputUnchanged"));
+  }
   showFloatingTextEditor();
   if (!S.ta.disabled) S.ta.focus();
 }
@@ -7735,6 +7738,7 @@ function rebindFloatingSitelenEditorToTextarea(elementId, textareaEl, onChange){
   if (!textareaEl) return;
   S.sourceTextarea = textareaEl;
   S.onChange = onChange;
+  S.ta.classList.toggle("nanpaSourceInputUnchanged", textareaEl.classList.contains("nanpaSourceInputUnchanged"));
   if (textareaEl.value !== S.ta.value) textareaEl.value = S.ta.value;
 }
 function _setTextEditorActionButtons(enabled){
@@ -7782,6 +7786,7 @@ function refreshFloatingTextEditorForSelection(forceLeaderId){
     }
     S._boundElId = null; S._boundElType = null; S.elementId = null; S.sourceTextarea = null; S.onChange = null;
     S.suppressSync = true; S.ta.value = ""; S.suppressSync = false;
+    S.ta.classList.remove("nanpaSourceInputUnchanged");
     S.ta.disabled = true; S.ta.placeholder = S.defaultPlaceholder;
     if (S.title) S.title.textContent = S.defaultTitle;
     _setTextEditorActionButtons(false);
@@ -7794,6 +7799,7 @@ function refreshFloatingTextEditorForSelection(forceLeaderId){
   );
 
   S._boundElId = leader.id; S._boundElType = leaderType; S.ta.disabled = false; _setTextEditorActionButtons(true);
+  S.ta.classList.toggle("nanpaSourceInputUnchanged", leaderType === ElementType.Sitelen);
   let displayText = ""; let titleStr = "";
   if (leaderType === ElementType.Text){ displayText = String(leader.text ?? ""); titleStr = "Text"; }
   else if (leaderType === ElementType.Sitelen){ displayText = String(leader.text ?? ""); titleStr = "Sitelen"; }
@@ -8394,7 +8400,8 @@ const textField = makeTextarea(
       enablePopout,
       popoutTitle: "Sitelen",
       popoutElementId: enablePopout ? ("multi:sitelen:" + sitelenIds.join(",")) : null,
-      disabled
+      disabled,
+      sourceInputFont: textEls.length > 0 && textEls.every(e => e && e.type === ElementType.Sitelen)
     };
   })()
 );
@@ -9093,7 +9100,8 @@ if (textField && textField._popoutElementId){
       {
         enablePopout: el.type === ElementType.Sitelen,
         popoutTitle: el.type === ElementType.Sitelen ? "Sitelen" : "Text",
-        popoutElementId: el.id
+        popoutElementId: el.id,
+        sourceInputFont: el.type === ElementType.Sitelen
       }
     );
 
@@ -10003,6 +10011,7 @@ f.appendChild(l); f.appendChild(inp);
     const ta = document.createElement("textarea");
     ta.value = String(value ?? "");
     ta.placeholder = placeholder || "";
+    if (opts && opts.sourceInputFont) ta.classList.add("nanpaSourceInputUnchanged");
 
     if (opts && opts.readOnly) ta.readOnly = true;
     if (opts && opts.disabled) ta.disabled = true;

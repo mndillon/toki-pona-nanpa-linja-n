@@ -190,6 +190,21 @@
     background:transparent;
   }
 
+
+/* Source-input font: match text-to-sitelen without changing renderer/output fonts. */
+@font-face {
+  font-family: "nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged";
+  src: url("./fonts/nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+textarea.nanpaSourceInputUnchanged {
+  font-family: "nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged", monospace;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "dlig" 0, "calt" 0;
+}
+
   /* Small, understated home link beside the page heading */
 .pageHeadingRow {
   display: flex;
@@ -845,7 +860,7 @@
   })();
   </script>
   <script type="module" src="scrapbook-layouteditor_app/js/scrapbook-cartouche-db-bootstrap.js?v=241"></script>
-  <script type="module" src="scrapbook-layouteditor_app/js/app-vector.js?v=242"></script>
+  <script type="module" src="scrapbook-layouteditor_app/js/app-vector.js?v=243"></script>
 
   <script type="module">
   (() => {

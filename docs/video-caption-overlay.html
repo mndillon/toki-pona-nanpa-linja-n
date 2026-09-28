@@ -329,6 +329,21 @@
   .modalActions{ display:flex; justify-content:flex-end; gap: 8px; }
   .modalActions .primary{ background: var(--accent, #4c8bf5); border-color: rgba(255,255,255,0.18); color: #fff; }
 
+
+/* Source-input font: match text-to-sitelen without changing renderer/output fonts. */
+@font-face {
+  font-family: "nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged";
+  src: url("./fonts/nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+textarea.nanpaSourceInputUnchanged {
+  font-family: "nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged", monospace;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "dlig" 0, "calt" 0;
+}
+
 /* Small, understated home link beside the page heading */
 .pageHeadingRow {
   display: flex;
@@ -503,7 +518,7 @@
     <button id="btnCloseFloating" type="button">×</button>
   </div>
   <div class="floatingBody">
-    <textarea id="floatingTextarea" placeholder="Type Latin toki pona here..."></textarea>
+    <textarea id="floatingTextarea" class="nanpaSourceInputUnchanged" placeholder="Type Latin toki pona here..."></textarea>
   </div>
 </div>
 
@@ -1860,6 +1875,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(btnText);
 
     const ta = document.createElement("textarea");
+    ta.classList.add("nanpaSourceInputUnchanged");
     ta.value = item.text || "";
     ta.placeholder = "Type Latin toki pona here...";
     ta.addEventListener("input", () => updateActiveItemText(ta.value, false));

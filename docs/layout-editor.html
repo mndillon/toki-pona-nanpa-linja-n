@@ -889,6 +889,21 @@ body.shellReady {
 }
 
 
+
+/* Source-input font: match text-to-sitelen without changing renderer/output fonts. */
+@font-face {
+  font-family: "nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged";
+  src: url("./fonts/nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+textarea.nanpaSourceInputUnchanged {
+  font-family: "nanpa-linja-n-nasin-nanpa-sans-source-input-unchanged", monospace;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "dlig" 0, "calt" 0;
+}
+
 /* Small, understated home link beside the page heading */
 .pageHeadingRow {
   display: flex;
@@ -6774,6 +6789,7 @@ function openFloatingSitelenEditor({ title, elementId, sourceTextarea, onChange,
 
   if (S.title) S.title.textContent = String(title || "Text");
   S.ta.value = String(sourceTextarea.value || "");
+  S.ta.classList.toggle("nanpaSourceInputUnchanged", sourceTextarea.classList.contains("nanpaSourceInputUnchanged"));
   setFloatingSitelenEditorDbLinkVisible(!!showProperNameDbLink);
 
   S.root.classList.add("show");
@@ -6794,6 +6810,7 @@ function rebindFloatingSitelenEditorToTextarea(elementId, textareaEl, onChange, 
   S.elementId = nextElementId;
   S.sourceTextarea = textareaEl;
   S.onChange = onChange;
+  S.ta.classList.toggle("nanpaSourceInputUnchanged", textareaEl.classList.contains("nanpaSourceInputUnchanged"));
   setFloatingSitelenEditorDbLinkVisible(!!opts.showProperNameDbLink);
 
   if (sameBinding){
@@ -7254,7 +7271,8 @@ if (!shouldKeepFloatingEditor){
             popoutTitle: tr("props_text"),
             popoutElementId,
             disabled,
-            showProperNameDbLink: editTextEls.length > 0 && editTextEls.every(e => e && e.type === ElementType.Sitelen)
+            showProperNameDbLink: editTextEls.length > 0 && editTextEls.every(e => e && e.type === ElementType.Sitelen),
+            sourceInputFont: editTextEls.length > 0 && editTextEls.every(e => e && e.type === ElementType.Sitelen)
           };
         })()
       );
@@ -7908,7 +7926,8 @@ if (!shouldKeepFloatingEditor){
         enablePopout: (el.type === ElementType.Text || el.type === ElementType.Sitelen),
         popoutTitle: tr("props_text"),
         popoutElementId: el.id,
-        showProperNameDbLink: el.type === ElementType.Sitelen
+        showProperNameDbLink: el.type === ElementType.Sitelen,
+        sourceInputFont: el.type === ElementType.Sitelen
       }
     );
 
@@ -8747,6 +8766,7 @@ f.appendChild(l); f.appendChild(inp);
     const ta = document.createElement("textarea");
     ta.value = String(value ?? "");
     ta.placeholder = placeholder || "";
+    if (opts && opts.sourceInputFont) ta.classList.add("nanpaSourceInputUnchanged");
 
     if (opts && opts.readOnly) ta.readOnly = true;
     if (opts && opts.disabled) ta.disabled = true;
