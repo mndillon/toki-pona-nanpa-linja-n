@@ -111,7 +111,7 @@
       <button class="fractionButton" type="button" data-fraction="⅔" aria-label="Insert two thirds">⅔</button>
       <button class="fractionButton" type="button" data-fraction="¾" aria-label="Insert three quarters">¾</button>
     </div>
-    <textarea id="proposalInput" class="mono" autocapitalize="none" autocomplete="off" spellcheck="false">toki [toki olin½ kute½ ilo½ pona olin½ nasin½ ale½]
+    <textarea id="proposalInput" class="mono" autocapitalize="none" autocomplete="off" spellcheck="false">toki [toki olin½ kute½ ilo½ pona olin1/2 nasin1/2 ale1/2]
 [kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]</textarea>
 
     <div class="controls">
@@ -195,7 +195,7 @@ const DRAFT_DB = "cartouche-vulgar-fraction-proposal";
 const DRAFT_STORE = "kv";
 const DRAFT_KEY = "draft:cartouche-vulgar-fraction-proposal:textIn:v1";
 const FONT_SIZE_KEY = "cartoucheVulgarFractionProposalFontSize";
-const DEFAULT_INPUT = `toki [toki olin½ kute½ ilo½ pona olin½ nasin½ ale½]\n[kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]`;
+const DEFAULT_INPUT = `toki [toki olin½ kute½ ilo½ pona olin1/2 nasin1/2 ale1/2]\n[kulupu⅔ :⅔ soweli,, pipi,, kala,, waso,, nena⅓ akesi]`;
 
 const inputEl = document.getElementById("proposalInput");
 const fontEl = document.getElementById("proposalFontFamily");
