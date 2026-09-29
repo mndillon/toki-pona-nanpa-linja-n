@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "2026-09-29-009",
+  "version": "2026-09-29-011",
   "protocolVersion": "1.2.0",
   "protocolPackage": {
     "label": "Protocol",
@@ -66,12 +66,6 @@
       "implementationModel": "Native Java 21 implementation",
       "filename": "nanpa-linja-n-java-reference-for-protocol-v1.2.0.zip",
       "url": "./reference_implementations/nanpa-linja-n-java-reference-for-protocol-v1.2.0.zip"
-    },
-    {
-      "language": "Kotlin",
-      "implementationModel": "Native Kotlin implementation",
-      "filename": "nanpa-linja-n-kotlin-reference-for-protocol-v1.2.0.zip",
-      "url": "./reference_implementations/nanpa-linja-n-kotlin-reference-for-protocol-v1.2.0.zip"
     }
   ]
 }

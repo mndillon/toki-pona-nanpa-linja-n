@@ -1,6 +1,6 @@
 # nanpa-linja-n
 
-This repository contains the frozen **nanpa-linja-n Protocol v1.2.0** and nine reference implementations:
+This repository contains the frozen **nanpa-linja-n Protocol v1.2.0** and eight reference implementations:
 
 - JavaScript
 - TypeScript
@@ -10,7 +10,6 @@ This repository contains the frozen **nanpa-linja-n Protocol v1.2.0** and nine r
 - Go
 - Dart
 - Java
-- Kotlin/JVM
 
 The protocol is normative. The reference implementations demonstrate conformance with the protocol and provide platform-appropriate parsing and production/full-rendering APIs.
 
@@ -35,10 +34,8 @@ nanpa-linja-n_reference_libraries_v1.2.0/
     │   └── nanpa-linja-n-go-reference-for-protocol-v1.2.0.zip
     ├── dart/
     │   └── nanpa-linja-n-dart-reference-for-protocol-v1.2.0.zip
-    ├── java/
-    │   └── nanpa-linja-n-java-reference-for-protocol-v1.2.0.zip
-    └── kotlin/
-        └── nanpa-linja-n-kotlin-reference-for-protocol-v1.2.0.zip
+    └── java/
+        └── nanpa-linja-n-java-reference-for-protocol-v1.2.0.zip
 ```
 
 ## Reference implementations at a glance
@@ -53,7 +50,6 @@ nanpa-linja-n_reference_libraries_v1.2.0/
 | Go | Native Go implementation | `./tools/run_go_regression.sh` |
 | Dart | Native Dart implementation | `./tools/run_dart_regression.sh` |
 | Java | Native Java 21 implementation | `./tools/run_java_regression.sh` |
-| Kotlin/JVM | Native Kotlin/JVM implementation with Java 21 interoperability | `./tools/run_kotlin_regression.sh` |
 
 The native implementations reproduce protocol and rendering behavior using platform-appropriate graphics/text APIs. They are not expected to have source-code structure identical to JavaScript, but their observable parser, render-plan, cartouche/tally, and output behavior is qualified against the protocol and the frozen JavaScript-derived renderer profile.
 
@@ -309,7 +305,6 @@ The concrete method names differ slightly by language:
 | Go | `renderer.Parse(...)` | `renderer.ParseInput(...)` | `renderer.AstToText(...)` |
 | Dart | `nanpa.parse(...)` / `parseNumber(...)` | `nanpa.parseInput(...)` | `nanpa.astToText(...)` |
 | Java | `nanpa.parse(...)` | `nanpa.parseInput(...)` | `nanpa.astToText(...)` |
-| Kotlin/JVM | `nanpa.parse(...)` / `parseNumber(...)` | `nanpa.parseInput(...)` | `nanpa.astToText(...)` |
 
 Protocol v1.2 retains and standardizes the public numeric-conversion surface. `parseNumber`/the idiomatic equivalent returns the parsed numeric structure together with representation alternatives. `astToText` supports these `numericOutput` targets where exposed by the binding:
 
@@ -1172,70 +1167,6 @@ public class Example {
 The Java facade also provides `parseNumber`, `parseInput`, `astToText`, Java-native canvas/image output, SVG, PDF, low-level text/UCSUR drawing, vector-document conversion, and runtime render-adapter registration.
 
 For v1.2 qualification, generated numeric-cartouche SVG must remain true vector output with no raster `<image>`/`data:image` fallback, and generated PDF cartouche/text content must not be replaced by raster Image XObjects.
-
-
-## Kotlin/JVM reference implementation
-
-The Kotlin/JVM package is a native Kotlin implementation of Protocol v1.2.0 with Java 21 interoperability. Its public JVM namespace is `com.nanpalinjan`.
-
-### Requirements
-
-- JDK 21
-- the packaged Kotlin compiler under `compiler/` is sufficient for the supplied build/regression tooling; a separate system Kotlin installation is not required
-
-The distribution carries the production font payload in `resources/fonts.zip`. Normal use and the supplied regression runner do **not** require `NANPA_FONT_DIR`.
-
-### Build and test
-
-```bash
-unzip nanpa-linja-n-kotlin-reference-for-protocol-v1.2.0.zip
-cd nanpa-linja-n-kotlin-reference-for-protocol-v1.2.0
-
-./tools/build_kotlin_release_jar.sh
-python3 tools/check_v1_2_release.py
-./tools/run_kotlin_regression.sh
-./tools/export_visual_pngs.sh
-./tools/export_cartouche_audit.sh
-```
-
-The release build creates the runtime and regression JARs under `dist/`. The complete regression report is written under `test-output/`.
-
-### Font files and font-key resolution
-
-Kotlin/JVM uses the same logical production `fontKey` model as the other bindings. `NanpaLinjaN.create()` resolves the packaged Production-Font-Profile-v1.1 manifest/font assets; callers do not need to install the production fonts system-wide.
-
-A consumer can run from a directory separate from the extracted reference package by placing the runtime JAR on the classpath. The packaged font resources remain associated with the library rather than the consumer's working directory.
-
-### Basic usage
-
-```kotlin
-import com.nanpalinjan.NanpaLinjaN
-import com.nanpalinjan.ParseOptions
-import com.nanpalinjan.RenderOptions
-import java.nio.file.Files
-import java.nio.file.Path
-
-fun main() {
-    val input = "toki&pona 123 456 zz pi(telo lete) te tomo to"
-
-    NanpaLinjaN.create().use { nanpa ->
-        val ast = nanpa.parseInput(input)
-        println(nanpa.astToText(ast))
-
-        val options = RenderOptions()
-            .withFont("linjaPona")
-            .withParser(
-                ParseOptions()
-                    .withAbbreviateNumericCartouches(true)
-            )
-
-        val png = nanpa.renderToPng(input, options)
-        Files.write(Path.of("hello.png"), png.bytes)
-    }
-}
-```
-
-The Kotlin/JVM facade also exposes numeric parsing, full-document parsing, `astToText`, render-plan construction, PNG/SVG/PDF output, production-font enumeration, and the Protocol v1.2 canonical-source metadata on document lines.
 
 ---
 
