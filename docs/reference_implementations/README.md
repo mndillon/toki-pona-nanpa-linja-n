@@ -1,6 +1,6 @@
 # nanpa-linja-n
 
-This repository contains the frozen **nanpa-linja-n Protocol v1.1.0** and eight reference implementations:
+This repository contains the frozen **nanpa-linja-n Protocol v1.2.0** and nine reference implementations:
 
 - JavaScript
 - TypeScript
@@ -10,32 +10,35 @@ This repository contains the frozen **nanpa-linja-n Protocol v1.1.0** and eight 
 - Go
 - Dart
 - Java
+- Kotlin/JVM
 
 The protocol is normative. The reference implementations demonstrate conformance with the protocol and provide platform-appropriate parsing and production/full-rendering APIs.
 
 ## Repository structure
 
 ```text
-nanpa-linja-n_reference_libraries_v1.1.0/
+nanpa-linja-n_reference_libraries_v1.2.0/
 ├── protocol/
-│   └── nanpa-linja-n-protocol-v1.1.0.zip
+│   └── nanpa-linja-n-protocol-v1.2.0.zip
 └── reference_implementations/
     ├── javascript/
-    │   └── nanpa-linja-n-javascript-reference-for-protocol-v1.1.0.zip
+    │   └── nanpa-linja-n-javascript-reference-for-protocol-v1.2.0.zip
     ├── typescript/
-    │   └── nanpa-linja-n-typescript-reference-for-protocol-v1.1.0.zip
+    │   └── nanpa-linja-n-typescript-reference-for-protocol-v1.2.0.zip
     ├── nodejs/
-    │   └── nanpa-linja-n-nodejs-reference-for-protocol-v1.1.0.zip
+    │   └── nanpa-linja-n-nodejs-reference-for-protocol-v1.2.0.zip
     ├── python/
-    │   └── nanpa-linja-n-python-reference-for-protocol-v1.1.0.zip
+    │   └── nanpa-linja-n-python-reference-for-protocol-v1.2.0.zip
     ├── rust/
-    │   └── nanpa-linja-n-rust-reference-for-protocol-v1.1.0.zip
+    │   └── nanpa-linja-n-rust-reference-for-protocol-v1.2.0.zip
     ├── go/
-    │   └── nanpa-linja-n-go-reference-for-protocol-v1.1.0.zip
+    │   └── nanpa-linja-n-go-reference-for-protocol-v1.2.0.zip
     ├── dart/
-    │   └── nanpa-linja-n-dart-reference-for-protocol-v1.1.0.zip
-    └── java/
-        └── nanpa-linja-n-java-reference-for-protocol-v1.1.0.zip
+    │   └── nanpa-linja-n-dart-reference-for-protocol-v1.2.0.zip
+    ├── java/
+    │   └── nanpa-linja-n-java-reference-for-protocol-v1.2.0.zip
+    └── kotlin/
+        └── nanpa-linja-n-kotlin-reference-for-protocol-v1.2.0.zip
 ```
 
 ## Reference implementations at a glance
@@ -50,16 +53,17 @@ nanpa-linja-n_reference_libraries_v1.1.0/
 | Go | Native Go implementation | `./tools/run_go_regression.sh` |
 | Dart | Native Dart implementation | `./tools/run_dart_regression.sh` |
 | Java | Native Java 21 implementation | `./tools/run_java_regression.sh` |
+| Kotlin/JVM | Native Kotlin/JVM implementation with Java 21 interoperability | `./tools/run_kotlin_regression.sh` |
 
 The native implementations reproduce protocol and rendering behavior using platform-appropriate graphics/text APIs. They are not expected to have source-code structure identical to JavaScript, but their observable parser, render-plan, cartouche/tally, and output behavior is qualified against the protocol and the frozen JavaScript-derived renderer profile.
 
-## Protocol v1.1.0
+## Protocol v1.2.0
 
 Extract the protocol release and verify it before using a reference implementation as a compatibility target:
 
 ```bash
-unzip nanpa-linja-n-protocol-v1.1.0.zip
-cd nanpa-linja-n-protocol-v1.1.0
+unzip nanpa-linja-n-protocol-v1.2.0.zip
+cd nanpa-linja-n-protocol-v1.2.0
 python verify_release.py
 ```
 
@@ -76,21 +80,39 @@ CHANGELOG.md
 README.md
 ```
 
-Use `SPEC.md` as the primary protocol specification. `PARSER-RENDERER-PROFILE.md` records the current v1.1 parser/renderer behavior layered on the retained Core-v1 corpus. The bundled language-neutral conformance material is the compatibility target.
+Use `SPEC.md` as the primary protocol specification. `PARSER-RENDERER-PROFILE.md` records the current v1.2 parser/renderer behavior layered on the retained Core-v1 corpus. The bundled language-neutral conformance material is the compatibility target.
 
-Current v1.1 qualification authority includes:
+Current v1.2 qualification authority includes:
 
 ```text
-nanpa-linja-n Protocol v1.1.0
+nanpa-linja-n Protocol v1.2.0
 Core-v1 corpus: 320 parser / 15 renderer / 9 API / 8 equivalence groups
 1030 frozen Core-v1 checks
-Parser/Renderer Profile v1.1: 16 NanpaParser smoke cases
+Parser/Renderer Profile v1.2: 16 NanpaParser smoke cases + 24 normative parser/renderer regression cases
 Canonical syntax: 28 cases + 5 production-adapter cases
 Canonical full renderer: 254 cases
+Production-Font-Profile-v1.1 retained
 Production render-plan oracle: 16 logical cases × 8 fonts = 128 expectations
 ```
 
-Protocol v1.1.0 retains the frozen Core-v1 source authority while adding the current parser/renderer profile, production-font manifest, public v1.1 numeric facade behavior, and vector-output requirements.
+Protocol v1.2.0 retains the frozen Core-v1 numeric source authority and Production-Font-Profile-v1.1 while adding the v1.2 parser/renderer rules: ordinary full-stop-to-middle-dot mapping, direct recognized CSP/UCSUR canonicalization, quote-escape parity handling, canonical source metadata, and protected sentence splitting. Public numeric facade behavior and vector-output requirements remain part of the compatibility surface.
+
+### Protocol v1.2 parser/renderer additions
+
+The v1.2 profile adds these cross-language requirements without changing the frozen Core-v1 numeric semantics:
+
+- ordinary ASCII `.` maps to the CSP middle-dot code point U+F199C in ordinary renderer text, including adjacent forms such as `toki.pona`;
+- numeric parsing has precedence, so a decimal such as `1.25` remains one numeric construct rather than being split at the decimal point;
+- literal quoted text and literal cartouches preserve U+002E full stops;
+- force-ordinary cartouches beginning with `[""` use ordinary parsing after the sentinel, so ordinary punctuation mapping applies there;
+- `breakLinesAtFullStops` remains `false` by default and, when enabled, does not split inside quoted literals, cartouches, long-`pi`/parenthesized regions, reverse-long/braced regions, image descriptors, or numeric decimals;
+- recognized directly pasted CSP/UCSUR input is canonicalized before ordinary segment parsing while the original source text is retained;
+- when direct canonicalization changes a line, the line AST exposes `canonicalSourceText` and `sourceEncoding = "mixed-csp-unicode"` (or the binding's idiomatic equivalent);
+- explicit textual `U+...` input remains the raw-codepoint path and is not rewritten by direct CSP/UCSUR canonicalization;
+- closing-quote detection uses odd/even consecutive-backslash parity.
+
+The normative v1.2 parser/renderer regression corpus contains **24 cases**: 10 full-stop cases, 12 direct-CSP/UCSUR cases, and 2 quote-escape cases. The canonical full-renderer corpus remains **254 cases**.
+
 
 ## Fonts: required files, manifest and directory layout
 
@@ -109,11 +131,11 @@ nasinSitelenPuMono
 linjaLipamanka
 ```
 
-### The v1.1 font authority
+### Retained Production-Font-Profile-v1.1 authority
 
-Protocol v1.1 reference packages use the current production-font manifest together with the supplied `fonts.zip`/equivalent packaged font assets. **Do not hard-code old companion filenames.** The manifest and bundled font archive are authoritative.
+Protocol v1.2 reference packages retain **Production-Font-Profile-v1.1** and use its current production-font manifest together with the supplied `fonts.zip`/equivalent packaged font assets. **Do not hard-code old companion filenames.** The manifest and bundled font archive are authoritative.
 
-The v1.1 profile has:
+The retained Production-Font-Profile-v1.1 has:
 
 ```text
 8 production font records
@@ -134,14 +156,14 @@ A production manifest entry normally defines these roles:
 | --- | --- |
 | `fontKey` | Public logical name passed to the library, for example `nasinNanpa`. |
 | `baseFamily` / `baseFilename` | Main sitelen pona face/file for ordinary glyph text and ordinary cartouches. |
-| `companionFamily` / `companionFilename` | Numeric-cartouche role. In the current v1.1 set the base and companion roles may intentionally reference the same updated font file. |
+| `companionFamily` / `companionFilename` | Numeric-cartouche role. In the retained Production-Font-Profile-v1.1 set the base and companion roles may intentionally reference the same updated font file. |
 | `literalCartoucheFamily` | Face used for exact literal/Latin cartouche content such as `["HELLO"]`. |
 | `literalCartoucheFilename` / `literalCartoucheUrl` | Optional separate file for that literal-cartouche face. |
 | `parserMode` | Text grammar appropriate for the selected font. Normally selected automatically with the font record. |
 | `renderAdapterId` / `renderAdapterSettings` | Font-specific translation needed before shaping for fonts whose native behavior differs from canonical UCSUR input. |
 | `settings.cartoucheTallyMode` | Chooses native UCSUR tally handling or renderer-owned manual tallies. |
 | `settings.cartoucheVulgarFractions` | Enables the current inline vulgar-fraction/cartouche scale controls. |
-| `settings.emulateLegacyCartoucheScaling` | Must be `false` for the v1.1 production profile; legacy `ss12`/`ss13`/`ss14` scaling is not used. |
+| `settings.emulateLegacyCartoucheScaling` | Must be `false` for the retained Production-Font-Profile-v1.1; legacy `ss12`/`ss13`/`ss14` scaling is not used. |
 
 A call such as:
 
@@ -153,7 +175,7 @@ means: **find the manifest record whose `fontKey` is `nasinNanpa`, then use the 
 
 ### Current production font files
 
-The current v1.1 production manifest resolves the eight keys as follows. Base and companion roles intentionally use the same updated file in the current profile:
+The retained Production-Font-Profile-v1.1 manifest resolves the eight keys as follows. Base and companion roles intentionally use the same updated file in the current profile:
 
 | `fontKey` | Base/companion file | Tally mode | Literal-cartouche source |
 | --- | --- | --- | --- |
@@ -199,7 +221,7 @@ For those configurations, U+F199E must not be inserted as the tally into the sha
 For a basic application, do not manually choose `baseFilename`, `companionFilename`, or tally mode. Do this instead:
 
 1. create/open the language facade;
-2. let the implementation discover or unpack its packaged v1.1 font assets;
+2. let the implementation discover or unpack its packaged production font assets;
 3. pass one of the eight `fontKey` values, for example `nasinNanpa`;
 4. parse or render text.
 
@@ -227,7 +249,7 @@ font = nasinNanpa
 
 therefore means “use the production manifest entry whose `fontKey` is `nasinNanpa`”; it does **not** mean “ask the operating system for a font family named `nasinNanpa`”. The renderer then uses the manifest's `baseFilename`/`baseFamily` for normal sitelen pona text and ordinary-cartouche work, the `companionFilename`/`companionFamily` for nanpa-linja-n numeric cartouches, and any additional manifest settings required by that font pair.
 
-The physical form of the packaged font assets differs by binding: some use an asset directory directly, Rust and Go embed or materialize packaged bytes, Dart discovers its packaged assets, and Java v1.1 uses the bundled `resources/fonts.zip`. **Normal Java v1.1 use does not require `NANPA_FONT_DIR`.** The language sections below describe any audit-only or development overrides.
+The physical form of the packaged font assets differs by binding: some use an asset directory directly, Rust and Go embed or materialize packaged bytes, Dart discovers its packaged assets, and Java v1.2 uses the bundled `resources/fonts.zip`. **Normal Java v1.2 use does not require `NANPA_FONT_DIR`.** The language sections below describe any audit-only or development overrides.
 
 ### Numeric visual audit
 
@@ -287,8 +309,9 @@ The concrete method names differ slightly by language:
 | Go | `renderer.Parse(...)` | `renderer.ParseInput(...)` | `renderer.AstToText(...)` |
 | Dart | `nanpa.parse(...)` / `parseNumber(...)` | `nanpa.parseInput(...)` | `nanpa.astToText(...)` |
 | Java | `nanpa.parse(...)` | `nanpa.parseInput(...)` | `nanpa.astToText(...)` |
+| Kotlin/JVM | `nanpa.parse(...)` / `parseNumber(...)` | `nanpa.parseInput(...)` | `nanpa.astToText(...)` |
 
-Protocol v1.1 also standardizes the public numeric-conversion surface. `parseNumber`/the idiomatic equivalent returns the parsed numeric structure together with representation alternatives. `astToText` supports these `numericOutput` targets where exposed by the binding:
+Protocol v1.2 retains and standardizes the public numeric-conversion surface. `parseNumber`/the idiomatic equivalent returns the parsed numeric structure together with representation alternatives. `astToText` supports these `numericOutput` targets where exposed by the binding:
 
 ```text
 source
@@ -406,6 +429,8 @@ The normal editable content is:
 
 Structural/source metadata such as node `kind`/`type`, indexes, `sourceStart`, `sourceEnd`, `sourceText`, `normalizedInput`, and sentence indexes should normally be treated as parser metadata rather than editable content. `sourceLineIndex` is retained because `astToText` uses it to reconstruct physical source lines when `breakLinesAtFullStops` split one original line into several AST lines.
 
+Protocol v1.2 additionally records `canonicalSourceText` and `sourceEncoding` on a line when recognized directly pasted CSP/UCSUR input was canonicalized before parsing. `sourceText` remains the user's original line; applications should treat the canonical fields as parser metadata rather than replacing the original source unless they intentionally want the normalized textual form.
+
 JavaScript, TypeScript, Node.js, Rust, and Go expose AST values that can be edited directly where their type system permits. Python uses its dataclass replacement pattern, while Java and Dart use replacement immutable records/objects. The language package README shows the idiomatic edit pattern for that binding.
 
 ### What `astToText` preserves
@@ -451,8 +476,8 @@ Set `NANPA_CHROMIUM=/absolute/path/to/browser` when the browser is not discovera
 ### Install and test
 
 ```bash
-unzip nanpa-linja-n-javascript-reference-for-protocol-v1.1.0.zip
-cd nanpa-linja-n-browser-font-regression-v0.1.3-reference
+unzip nanpa-linja-n-javascript-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-javascript-reference-for-protocol-v1.2.0
 npm install
 
 # The browser regression uses the bundled assets directly. The two visual
@@ -562,8 +587,8 @@ The TypeScript package is a strongly typed facade around the bundled canonical J
 ### Install and test
 
 ```bash
-unzip nanpa-linja-n-typescript-reference-for-protocol-v1.1.0.zip
-cd nanpa-linja-n-typescript-reference-for-protocol-v1.1.0
+unzip nanpa-linja-n-typescript-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-typescript-reference-for-protocol-v1.2.0
 npm install
 
 # The visual exporters require an explicit font directory.
@@ -653,8 +678,8 @@ The production fonts and vector WASM are bundled. `NANPA_FONT_DIR` is optional u
 ### Install and test
 
 ```bash
-unzip nanpa-linja-n-nodejs-reference-for-protocol-v1.1.0.zip
-cd nanpa-linja-n-nodejs-reference-for-protocol-v1.1.0
+unzip nanpa-linja-n-nodejs-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-nodejs-reference-for-protocol-v1.2.0
 npm install
 
 # Optional for normal use, but setting it makes the tested font source explicit.
@@ -749,8 +774,8 @@ The Python package is a native Python implementation. It does not execute JavaSc
 ### Install and test
 
 ```bash
-unzip nanpa-linja-n-python-reference-for-protocol-v1.1.0.zip
-cd nanpa-linja-n-python-reference-for-protocol-v1.1.0
+unzip nanpa-linja-n-python-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-python-reference-for-protocol-v1.2.0
 python -m pip install .
 
 # The regression suite has bundled/package assets; the visual exporters require
@@ -833,8 +858,8 @@ The Rust package is a native Rust implementation with the frozen Core-v1 parser/
 ### Build and test
 
 ```bash
-unzip nanpa-linja-n-rust-reference-for-protocol-v1.1.0.zip
-cd nanpa-linja-n-rust-reference-for-protocol-v1.1.0
+unzip nanpa-linja-n-rust-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-rust-reference-for-protocol-v1.2.0
 
 # No NANPA_FONT_DIR export is used by the Rust reference. The manifest and
 # production font bytes are compile-time embedded from $PWD/fonts/.
@@ -910,8 +935,8 @@ The Go package is a native Go implementation. Its module path is `nanpa-linja-n.
 ### Build and test
 
 ```bash
-unzip nanpa-linja-n-go-reference-for-protocol-v1.1.0.zip
-cd nanpa-linja-n-go-reference-for-protocol-v1.1.0
+unzip nanpa-linja-n-go-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-go-reference-for-protocol-v1.2.0
 
 # No NANPA_FONT_DIR export is used by the Go reference. assets/fonts/* is
 # compiled into the assets package through go:embed.
@@ -1011,8 +1036,8 @@ Flutter is not required.
 ### Build and test
 
 ```bash
-unzip nanpa-linja-n-dart-reference-for-protocol-v1.1.0.zip
-cd nanpa-linja-n-dart-reference-for-protocol-v1.1.0
+unzip nanpa-linja-n-dart-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-dart-reference-for-protocol-v1.2.0
 
 # No NANPA_FONT_DIR export is used by the Dart reference. Its normal package
 # asset root is $PWD/assets/fonts/. Run these commands from the package root.
@@ -1072,20 +1097,20 @@ Dart's document AST objects are immutable. To edit parsed source, construct repl
 
 ## Java reference implementation
 
-The Java package is an independent Java 21 implementation of Protocol v1.1.0 and its Parser/Renderer Profile. Its Java namespace is `com.nanpalinjan`.
+The Java package is an independent Java 21 implementation of Protocol v1.2.0 and its Parser/Renderer Profile. Its Java namespace is `com.nanpalinjan`.
 
 ### Requirements
 
 - JDK 21
 - Maven 3.9+ is optional; the primary regression script uses `javac` and `java` directly
 
-The v1.1 distribution includes the production font payload in `resources/fonts.zip`. Normal use and the supplied regression runner do **not** require `NANPA_FONT_DIR`.
+The v1.2 distribution includes the production font payload in `resources/fonts.zip`. Normal use and the supplied regression runner do **not** require `NANPA_FONT_DIR`.
 
 ### Build and test
 
 ```bash
-unzip nanpa-linja-n-java-reference-for-protocol-v1.1.0.zip
-cd nanpa-linja-n-java
+unzip nanpa-linja-n-java-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-java-reference-for-protocol-v1.2.0
 
 ./tools/run_java_regression.sh
 ./tools/export_visual_pngs.sh
@@ -1106,7 +1131,7 @@ mvn test
 
 ### Font files and font-key resolution
 
-Java v1.1 carries `resources/fonts.zip` with the distribution. `NanpaLinjaN.create()` uses the packaged production font authority; applications do not need to install the fonts system-wide and do not need to point the library at an external font directory for normal use.
+Java v1.2 carries `resources/fonts.zip` with the distribution. `NanpaLinjaN.create()` uses the packaged production font authority; applications do not need to install the fonts system-wide and do not need to point the library at an external font directory for normal use.
 
 When Java code specifies `.withFont("nasinNanpa")`, the value is resolved as a manifest `fontKey`. The manifest selects the concrete packaged font file, adapter, tally mode, literal-cartouche role, and scale settings.
 
@@ -1146,7 +1171,73 @@ public class Example {
 
 The Java facade also provides `parseNumber`, `parseInput`, `astToText`, Java-native canvas/image output, SVG, PDF, low-level text/UCSUR drawing, vector-document conversion, and runtime render-adapter registration.
 
-For v1.1 qualification, generated numeric-cartouche SVG must remain true vector output with no raster `<image>`/`data:image` fallback, and generated PDF cartouche/text content must not be replaced by raster Image XObjects.
+For v1.2 qualification, generated numeric-cartouche SVG must remain true vector output with no raster `<image>`/`data:image` fallback, and generated PDF cartouche/text content must not be replaced by raster Image XObjects.
+
+
+## Kotlin/JVM reference implementation
+
+The Kotlin/JVM package is a native Kotlin implementation of Protocol v1.2.0 with Java 21 interoperability. Its public JVM namespace is `com.nanpalinjan`.
+
+### Requirements
+
+- JDK 21
+- the packaged Kotlin compiler under `compiler/` is sufficient for the supplied build/regression tooling; a separate system Kotlin installation is not required
+
+The distribution carries the production font payload in `resources/fonts.zip`. Normal use and the supplied regression runner do **not** require `NANPA_FONT_DIR`.
+
+### Build and test
+
+```bash
+unzip nanpa-linja-n-kotlin-reference-for-protocol-v1.2.0.zip
+cd nanpa-linja-n-kotlin-reference-for-protocol-v1.2.0
+
+./tools/build_kotlin_release_jar.sh
+python3 tools/check_v1_2_release.py
+./tools/run_kotlin_regression.sh
+./tools/export_visual_pngs.sh
+./tools/export_cartouche_audit.sh
+```
+
+The release build creates the runtime and regression JARs under `dist/`. The complete regression report is written under `test-output/`.
+
+### Font files and font-key resolution
+
+Kotlin/JVM uses the same logical production `fontKey` model as the other bindings. `NanpaLinjaN.create()` resolves the packaged Production-Font-Profile-v1.1 manifest/font assets; callers do not need to install the production fonts system-wide.
+
+A consumer can run from a directory separate from the extracted reference package by placing the runtime JAR on the classpath. The packaged font resources remain associated with the library rather than the consumer's working directory.
+
+### Basic usage
+
+```kotlin
+import com.nanpalinjan.NanpaLinjaN
+import com.nanpalinjan.ParseOptions
+import com.nanpalinjan.RenderOptions
+import java.nio.file.Files
+import java.nio.file.Path
+
+fun main() {
+    val input = "toki&pona 123 456 zz pi(telo lete) te tomo to"
+
+    NanpaLinjaN.create().use { nanpa ->
+        val ast = nanpa.parseInput(input)
+        println(nanpa.astToText(ast))
+
+        val options = RenderOptions()
+            .withFont("linjaPona")
+            .withParser(
+                ParseOptions()
+                    .withAbbreviateNumericCartouches(true)
+            )
+
+        val png = nanpa.renderToPng(input, options)
+        Files.write(Path.of("hello.png"), png.bytes)
+    }
+}
+```
+
+The Kotlin/JVM facade also exposes numeric parsing, full-document parsing, `astToText`, render-plan construction, PNG/SVG/PDF output, production-font enumeration, and the Protocol v1.2 canonical-source metadata on document lines.
+
+---
 
 ## Release qualification checklist
 
@@ -1165,7 +1256,7 @@ Use the protocol, not a reference implementation, as the definition of expected 
 Start with:
 
 ```text
-protocol/nanpa-linja-n-protocol-v1.1.0.zip
+protocol/nanpa-linja-n-protocol-v1.2.0.zip
 ```
 
 Read at minimum:
@@ -1198,7 +1289,7 @@ The exact method/property spelling is idiomatic to each binding: JavaScript/Type
 
 ### Input text accepted by the numeric parser
 
-The retained Core-v1 corpus together with the v1.1 Parser/Renderer Profile defines the exact validity rules. The following are the main source forms an application can pass to `parse`/the numeric parser:
+The retained Core-v1 corpus together with the v1.2 Parser/Renderer Profile defines the exact validity rules. The following are the main source forms an application can pass to `parse`/the numeric parser:
 
 | Input kind | Examples | Meaning |
 | --- | --- | --- |
@@ -1216,16 +1307,16 @@ The retained Core-v1 corpus together with the v1.1 Parser/Renderer Profile defin
 | Two-field clock time | `12:30`, `09:05`, `59:59` | Recognized semantic time when valid under the protocol rules. |
 | Three/four-field duration/time form | `1:02:03`, `123:04:05`, `1:02:03:04.5` | Duration/time forms defined by the corpus. Do not substitute a generic external time grammar. |
 | Grouped/telephone-like number | `321-555-6789`, `+1-321-555-6789` | Grouped numeric representation used by the protocol's telephone/grouped-number path. |
-| Hexadecimal | `#0`, `#A`, `#A:F` | Hexadecimal namespace; opens/closes with `nasa`. **Opt-in in v1.1:** enable hexadecimal parsing before using these source forms. |
-| Binary | `0b0`, `0b10101`, `0b1010:0101` | Binary namespace; opens/closes with `noka`. Prefix is lowercase `0b`. **Opt-in in v1.1:** enable binary parsing before using these source forms. |
+| Hexadecimal | `#0`, `#A`, `#A:F` | Hexadecimal namespace; opens/closes with `nasa`. **Opt-in in v1.2:** enable hexadecimal parsing before using these source forms. |
+| Binary | `0b0`, `0b10101`, `0b1010:0101` | Binary namespace; opens/closes with `noka`. Prefix is lowercase `0b`. **Opt-in in v1.2:** enable binary parsing before using these source forms. |
 | Encoded proper name | `Nanpa ...`, `Tenpo ...`, `Suno ...`, `Toki ...` | Proper-name representation of a numeric value. Dates/times/telephone forms may carry semantic/start-glyph information. |
 | Numeric cartouche source | `[nanpa : wa nanpa]`, `[tenpo : ... nanpa]`, `[suno : ... nanpa]`, `[toki : ... nanpa]` | Decimal cartouche source using the relaxed/default digit vocabulary. Decimal forms always close with `nanpa`. |
-| Hex/binary cartouche source | `[nasa : ... nasa]`, `[noka : ... noka]` | Explicit hexadecimal/binary cartouche source with namespace-specific closer. These namespaces are opt-in under the v1.1 defaults. |
-| Number-code/identifier forms | examples such as `#~W`, `#~T`, `#~WTS` | Protocol-defined compact abbreviated forms. Exact accepted forms are defined by the v1.1 profile and retained conformance material. |
+| Hex/binary cartouche source | `[nasa : ... nasa]`, `[noka : ... noka]` | Explicit hexadecimal/binary cartouche source with namespace-specific closer. These namespaces are opt-in under the v1.2 defaults. |
+| Number-code/identifier forms | examples such as `#~W`, `#~T`, `#~WTS` | Protocol-defined compact abbreviated forms. Exact accepted forms are defined by the v1.2 profile and retained conformance material. |
 
-If an input looks date/time-like but fails the protocol's semantic recognition rules, it may either be rejected or fall through to another numeric grammar exactly as specified by the retained Core-v1 corpus and v1.1 profile. Applications should therefore use the library parser rather than pre-classifying these strings themselves.
+If an input looks date/time-like but fails the protocol's semantic recognition rules, it may either be rejected or fall through to another numeric grammar exactly as specified by the retained Core-v1 corpus and v1.2 profile. Applications should therefore use the library parser rather than pre-classifying these strings themselves.
 
-Protocol v1.1 applies a strict whitespace boundary to decimal-digit numeric constructs: any whitespace ends the current decimal numeric construct. Thus `1 2 3` is three numbers, `1 1/2` is two numbers, and only `1+1/2` is the mixed fraction. This whitespace rule does not apply to numeric proper names or numeric cartouches.
+Protocol v1.2 retains the strict whitespace boundary to decimal-digit numeric constructs: any whitespace ends the current decimal numeric construct. Thus `1 2 3` is three numbers, `1 1/2` is two numbers, and only `1+1/2` is the mixed fraction. This whitespace rule does not apply to numeric proper names or numeric cartouches.
 
 For yearless dates, use the explicit yearless form such as `--02-29` (or another profile-supported explicit year placeholder). Bare `02-29` is not a yearless-date input.
 
@@ -1236,6 +1327,7 @@ The full renderer accepts ordinary document text in addition to standalone numer
 | Source form | Example | Renderer behavior |
 | --- | --- | --- |
 | Ordinary sitelen pona text | `mi toki e ni` | Parsed using the selected font pair's manifest `parserMode` and rendered with the base face. |
+| Ordinary ASCII full stop | `toki.pona` | In Protocol v1.2 ordinary renderer text, U+002E maps to CSP middle dot U+F199C. Numeric decimal syntax and protected literal regions retain their own semantics. |
 | Compound joiners | `toki&pona`, plus the canonical `+`/`-` forms where defined | `&` is part of canonical compound parsing and represents the ZWJ compound path alongside the other supported compound operators. |
 | Numeric text in a sentence | `tenpo ni li 12:30` | Numeric spans are recognized and rendered with the numeric companion face/cartouche rules. |
 | Ordinary cartouche | `[jan pona]` | Renders an ordinary cartouche using the selected base font/adaptation rules. |
@@ -1244,6 +1336,7 @@ The full renderer accepts ordinary document text in addition to standalone numer
 | Quoted literal text | `"Hello"` or `“Hello”` | Renders quoted literal text by default; `interpretDoubleQuotesAsTeTo` can instead interpret quotes as the `te`/`to` sitelen behavior. |
 | Non-breaking-space alias | `zz` | Produces the renderer's blank one-em/non-breaking-space cell. It does not introduce `te`/`to`, even when quote interpretation is available. |
 | Raw Unicode code points | `U+F1900 U+F1901` | Explicit Unicode scalar/codepoint sequence. Whitespace between consecutive `U+...` tokens is syntax, not emitted text. |
+| Direct CSP/UCSUR input | directly pasted recognized sitelen pona/CSP code points | Protocol v1.2 canonicalizes recognized direct CSP/UCSUR sequences before normal segment parsing, while retaining the original `sourceText` and recording canonical-source metadata when a change occurred. |
 | Image segment | `img(src="picture.png", h="1em", alt="example")` | Inserts an image element into a full-renderer line. Supported descriptor keys are `src`, `w`, `h`, `alt`, `valign`, `wriggle`, and `transparent`. Availability depends on the output/backend. |
 | Newline | an actual `\n` in the input | Starts a new physical renderer line. |
 
@@ -1262,10 +1355,10 @@ For normal use, start with defaults. The production font manifest supplies the a
 | `enableHexParsing` | `false` | Opts into hexadecimal source recognition (`#...` and hexadecimal cartouche/proper-name forms). |
 | `enableBinaryParsing` | `false` | Opts into binary source recognition (`0b...` and binary cartouche/proper-name forms). |
 | `mixedStyle` | `short` | Selects `short` or `long` mixed-fraction textual representation where the protocol offers both. |
-| `abbreviateNumericCartouches` | `true` | Uses the v1.1 abbreviated numeric-cartouche representation by default. Set `false` when the full cartouche form is required. |
+| `abbreviateNumericCartouches` | `true` | Uses the current v1.2 abbreviated numeric-cartouche representation by default. Set `false` when the full cartouche form is required. |
 | `preserveNumericCartoucheBreaksInAbbreviation` | `false` | Preserves protocol-defined numeric cartouche breaks when abbreviation is enabled. |
 | `numericCartoucheStartGlyph` | unset | Explicitly overrides the decimal starting glyph with `nanpa`, `tenpo`, `suno`, or `toki`. When unset, source metadata/semantic date-time defaults determine the head. |
-| `breakLinesAtFullStops` | `false` | In full-document parsing, splits physical source lines at sentence full stops while avoiding decimal points and protected bracket/quote/image content. |
+| `breakLinesAtFullStops` | `false` | In full-document parsing, splits at sentence full stops while protecting numeric decimals, quoted literals, all cartouches, long-`pi`/parenthesized regions, reverse-long/braced regions, and image descriptors. |
 | `showUnknownText` | `false` | Requests visible rendering/diagnostics for otherwise unrecognized text instead of silently omitting it. |
 | `autoCartoucheStandaloneProperNames` | `true` | Automatically treats supported standalone proper-name forms as cartouche/proper-name content. |
 | `interpretDoubleQuotesAsTeTo` | `false` | When `true`, double-quoted segments are interpreted through `te`/`to` sitelen semantics instead of as literal quoted text. |
@@ -1293,7 +1386,7 @@ These are the options an application is most likely to set:
 | `layout` | defaults below | Nested layout controls. |
 | `paint` | defaults below | Foreground/halo/unknown-text styling. |
 
-For Protocol v1.1 production output, PNG is raster by design. Numeric-cartouche SVG must remain true vector output without raster `<image>`/`data:image` fallback. PDF cartouche/text output must remain resolution-independent vector content and must not use raster Image XObjects as a substitute for generated cartouche content.
+For Protocol v1.2 production output, PNG is raster by design. Numeric-cartouche SVG must remain true vector output without raster `<image>`/`data:image` fallback. PDF cartouche/text output must remain resolution-independent vector content and must not use raster Image XObjects as a substitute for generated cartouche content.
 
 ### Layout options
 
