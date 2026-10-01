@@ -978,7 +978,6 @@
       </div>
 
       <div class="help" id="pdfHelp" data-ui="pdfHelp">ilo ni li pana e lipu PDF A4 lon nasin supa. lipu PDF pi tenpo sike li jo e lukin 4 × 3 lon lipu nanpa wan, li jo e lipu wan pi tenpo mun lon lipu 12 ante.</div>
-      <div class="status" id="status" role="status" aria-live="polite"></div>
 
       <section class="nationalDaysPanel" id="nationalDaysPanel" aria-labelledby="nationalDaysTitle">
         <div class="nationalDaysHeader">
@@ -1004,6 +1003,8 @@
           </div>
         </div>
       </section>
+
+      <div class="status" id="status" role="status" aria-live="polite"></div>
 
       <dialog id="nationalDayDialog" class="nationalDayDialog" aria-labelledby="nationalDayDialogCountry">
         <div class="nationalDayDialogHeader">
@@ -1481,8 +1482,8 @@
         calendarAria: "lipu tenpo",
         disclaimer: '<strong>sona:</strong> ilo ni li lon nasin “as is”. mi pana ala e wawa pona. sina o lukin e ni: sitelen li pona anu seme.',
         rendering: "mi pali e lipu tenpo…",
-        fullYearStatus: year => `${year} — tenpo sike ale`,
-        monthStatus: (year, month) => `${year} — tenpo mun ${month}`,
+        fullYearStatus: year => `tenpo sike ${properName(year, "Nanpa")} — tenpo sike ale`,
+        monthStatus: (year, month) => `tenpo sike ${properName(year, "Nanpa")} — tenpo mun ${properName(month, "Nanpa")}`,
         renderError: message => `pakala lon pali lipu tenpo: ${message}`,
         ready: "lipu tenpo li pona.",
         generatingMonthPdf: "mi pali e lipu PDF pi tenpo mun…",
