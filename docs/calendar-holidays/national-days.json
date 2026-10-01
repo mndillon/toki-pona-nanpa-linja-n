@@ -1,0 +1,4435 @@
+{
+  "schemaVersion": 2,
+  "asOf": "2026-10-01",
+  "sourceYear": 2026,
+  "description": "National-day information for every code in the calendar country index. Translation fields are explicit/editable. Dates use --MM-DD so the existing nanpa-linja-n suno cartouche renderer can render them directly. Areas without a separate record are retained with an explicit status instead of being omitted.",
+  "sources": {
+    "cn-mfa-2026": {
+      "name": "Ministry of Foreign Affairs of the People’s Republic of China — National Days",
+      "url": "https://www.mfa.gov.cn/web/lbfw_673061/fgzl_673083/202201/t20220114_10495612.shtml",
+      "published": "2026-01-23"
+    },
+    "au-dfat": {
+      "name": "Australian Department of Foreign Affairs and Trade — Protocol National Days",
+      "url": "https://protocol.dfat.gov.au/Public/NationalDays"
+    },
+    "vatican": {
+      "name": "Vatican — beginning of the Pontificate of Pope Leo XIV",
+      "url": "https://www.vatican.va/content/leo-xiv/en/events/event.dir.html/content/vaticanevents/en/2025/5/18/inizio-pontificato.html"
+    },
+    "tw-gov": {
+      "name": "Taiwan government sources — National Day / Double Tenth Day",
+      "url": "https://english.president.gov.tw/"
+    },
+    "greenland-national-day": {
+      "name": "Greenland National Day — 21 June",
+      "url": "https://www.timeanddate.com/holidays/greenland/national-day"
+    },
+    "faroe-national-day": {
+      "name": "Faroe Islands — National Day / Ólavsøka",
+      "url": "https://www.faroeislands.fo/the-big-picture/national-symbols/national-day"
+    },
+    "aland-self-government": {
+      "name": "Åland Self-Government Day — 9 June",
+      "url": "https://valtioneuvosto.fi/en/-/100th-anniversary-of-autonomous-aland-celebrated-in-aland-and-helsinki-on-9-june-2022"
+    },
+    "gibraltar-2026": {
+      "name": "Gibraltar National Day 2026",
+      "url": "https://www.gibraltar.gov.gi/press-releases/bank-holidays-2026-11299"
+    },
+    "hong-kong-2026": {
+      "name": "Hong Kong statutory holidays 2026",
+      "url": "https://www.labour.gov.hk/eng/news/latest_holidays2026.htm"
+    },
+    "macao-2026": {
+      "name": "Macao public holidays 2026",
+      "url": "https://www.gov.mo/en/public-holidays/year-2026/"
+    },
+    "supplemental-territory": {
+      "name": "Supplemental territory/area observance data; editable in this JSON independently of calendar code"
+    }
+  },
+  "countryCount": 250,
+  "countries": [
+    {
+      "code": "AD",
+      "englishName": "Andorra",
+      "tokiPonaName": "Antola",
+      "nationalDays": [
+        {
+          "date": "--09-08",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AE",
+      "englishName": "United Arab Emirates",
+      "tokiPonaName": "Uniteto Awapu Emiwate",
+      "nationalDays": [
+        {
+          "date": "--12-02",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AF",
+      "englishName": "Afghanistan",
+      "tokiPonaName": "Akanisan",
+      "nationalDays": [
+        {
+          "date": "--08-19",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AG",
+      "englishName": "Antigua & Barbuda",
+      "tokiPonaName": "Anteka Paputa",
+      "nationalDays": [
+        {
+          "date": "--11-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AI",
+      "englishName": "Anguilla",
+      "tokiPonaName": "Anula",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--05-30",
+          "nameEnglish": "Anguilla Day",
+          "nameTokiPona": "tenpo suno pi ma Anguilla",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "AL",
+      "englishName": "Albania",
+      "tokiPonaName": "Sipe",
+      "nationalDays": [
+        {
+          "date": "--11-28",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AM",
+      "englishName": "Armenia",
+      "tokiPonaName": "Aja",
+      "nationalDays": [
+        {
+          "date": "--09-21",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AO",
+      "englishName": "Angola",
+      "tokiPonaName": "Ankola",
+      "nationalDays": [
+        {
+          "date": "--11-11",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AQ",
+      "englishName": "Antarctica",
+      "tokiPonaName": "Antasika",
+      "status": "no-separate-national-day",
+      "statusEnglish": "No separate national day is listed for this uninhabited or non-permanently inhabited territory.",
+      "statusTokiPona": "ma ni la jan li awen ala. tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "AR",
+      "englishName": "Argentina",
+      "tokiPonaName": "Alensina",
+      "nationalDays": [
+        {
+          "date": "--05-25",
+          "nameEnglish": "25th of May Revolution, 1810",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AS",
+      "englishName": "American Samoa",
+      "tokiPonaName": "Amewikan Samowa",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--04-17",
+          "nameEnglish": "Flag Day",
+          "nameTokiPona": "tenpo suno pi len ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "AT",
+      "englishName": "Austria",
+      "tokiPonaName": "Esalasi",
+      "nationalDays": [
+        {
+          "date": "--10-26",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AU",
+      "englishName": "Australia",
+      "tokiPonaName": "Oselija",
+      "nationalDays": [
+        {
+          "date": "--01-26",
+          "nameEnglish": "Australia Day",
+          "nameTokiPona": "tenpo suno pi ma Australia",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "AW",
+      "englishName": "Aruba",
+      "tokiPonaName": "Awepa",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--03-18",
+          "nameEnglish": "National Anthem and Flag Day",
+          "nameTokiPona": "tenpo suno pi kalama ma en len ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "AX",
+      "englishName": "Åland Islands",
+      "tokiPonaName": "Alanto Ilanta",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--06-09",
+          "nameEnglish": "Autonomy Day",
+          "nameTokiPona": "tenpo suno pi lawa insa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "aland-self-government"
+        }
+      ]
+    },
+    {
+      "code": "AZ",
+      "englishName": "Azerbaijan",
+      "tokiPonaName": "Asepejan",
+      "nationalDays": [
+        {
+          "date": "--05-28",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BA",
+      "englishName": "Bosnia & Herzegovina",
+      "tokiPonaName": "Posan",
+      "nationalDays": [
+        {
+          "date": "--11-25",
+          "nameEnglish": "Statehood Day",
+          "nameTokiPona": "tenpo suno pi kama lon ma lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BB",
+      "englishName": "Barbados",
+      "tokiPonaName": "Papeto",
+      "nationalDays": [
+        {
+          "date": "--11-30",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BD",
+      "englishName": "Bangladesh",
+      "tokiPonaName": "Panla",
+      "nationalDays": [
+        {
+          "date": "--03-26",
+          "nameEnglish": "Independence and National Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BE",
+      "englishName": "Belgium",
+      "tokiPonaName": "Pesije",
+      "nationalDays": [
+        {
+          "date": "--07-21",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BF",
+      "englishName": "Burkina Faso",
+      "tokiPonaName": "Pukinapaso",
+      "nationalDays": [
+        {
+          "date": "--12-11",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BG",
+      "englishName": "Bulgaria",
+      "tokiPonaName": "Pokasi",
+      "nationalDays": [
+        {
+          "date": "--03-03",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BH",
+      "englishName": "Bahrain",
+      "tokiPonaName": "Palani",
+      "nationalDays": [
+        {
+          "date": "--12-16",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BI",
+      "englishName": "Burundi",
+      "tokiPonaName": "Puwente",
+      "nationalDays": [
+        {
+          "date": "--07-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BJ",
+      "englishName": "Benin",
+      "tokiPonaName": "Penen",
+      "nationalDays": [
+        {
+          "date": "--08-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BL",
+      "englishName": "St. Barthélemy",
+      "tokiPonaName": "To Patelema",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "BM",
+      "englishName": "Bermuda",
+      "tokiPonaName": "Pemuta",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--05-22",
+          "nameEnglish": "Bermuda Day",
+          "nameTokiPona": "tenpo suno pi ma Bermuda",
+          "noteEnglish": "2026 date; Bermuda Day is observed on the final Friday before the final Monday in May.",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "BN",
+      "englishName": "Brunei",
+      "tokiPonaName": "Pune",
+      "nationalDays": [
+        {
+          "date": "--02-23",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BO",
+      "englishName": "Bolivia",
+      "tokiPonaName": "Poliwa",
+      "nationalDays": [
+        {
+          "date": "--08-06",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BQ",
+      "englishName": "Caribbean Netherlands",
+      "tokiPonaName": "Kawipen Netelan",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "BR",
+      "englishName": "Brazil",
+      "tokiPonaName": "Pasila",
+      "nationalDays": [
+        {
+          "date": "--09-07",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BS",
+      "englishName": "Bahamas",
+      "tokiPonaName": "Pawama",
+      "nationalDays": [
+        {
+          "date": "--07-10",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BT",
+      "englishName": "Bhutan",
+      "tokiPonaName": "Putan",
+      "nationalDays": [
+        {
+          "date": "--12-17",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BV",
+      "englishName": "Bouvet Island",
+      "tokiPonaName": "Poweto Ilanto",
+      "status": "no-separate-national-day",
+      "statusEnglish": "No separate national day is listed for this uninhabited or non-permanently inhabited territory.",
+      "statusTokiPona": "ma ni la jan li awen ala. tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "BW",
+      "englishName": "Botswana",
+      "tokiPonaName": "Posuwana",
+      "nationalDays": [
+        {
+          "date": "--09-30",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BY",
+      "englishName": "Belarus",
+      "tokiPonaName": "Pelalusi",
+      "nationalDays": [
+        {
+          "date": "--07-03",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "BZ",
+      "englishName": "Belize",
+      "tokiPonaName": "Pelise",
+      "nationalDays": [
+        {
+          "date": "--09-21",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CA",
+      "englishName": "Canada",
+      "tokiPonaName": "Kanata",
+      "nationalDays": [
+        {
+          "date": "--07-01",
+          "nameEnglish": "Canada Day",
+          "nameTokiPona": "tenpo suno pi ma Kanata",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CC",
+      "englishName": "Cocos (Keeling) Islands",
+      "tokiPonaName": "Koko Kelin Ilanta",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "CD",
+      "englishName": "Democratic Republic of the Congo",
+      "tokiPonaName": "Temokateku Wepupiku Opu Te Konko",
+      "nationalDays": [
+        {
+          "date": "--06-30",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CF",
+      "englishName": "Central African Republic",
+      "tokiPonaName": "Santapiken",
+      "nationalDays": [
+        {
+          "date": "--12-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CG",
+      "englishName": "Republic of the Congo",
+      "tokiPonaName": "Wepupiku Opu Te Konko",
+      "nationalDays": [
+        {
+          "date": "--08-15",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CH",
+      "englishName": "Switzerland",
+      "tokiPonaName": "Suwasi",
+      "nationalDays": [
+        {
+          "date": "--08-01",
+          "nameEnglish": "Foundation of the Swiss Confederation",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CI",
+      "englishName": "Côte d’Ivoire",
+      "tokiPonaName": "Kosiwa",
+      "nationalDays": [
+        {
+          "date": "--08-07",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CK",
+      "englishName": "Cook Islands",
+      "tokiPonaName": "Koku Ilanta",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--08-04",
+          "nameEnglish": "Constitution Day",
+          "nameTokiPona": "tenpo suno pi lipu lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "CL",
+      "englishName": "Chile",
+      "tokiPonaName": "Sile",
+      "nationalDays": [
+        {
+          "date": "--09-18",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CM",
+      "englishName": "Cameroon",
+      "tokiPonaName": "Kamelun",
+      "nationalDays": [
+        {
+          "date": "--05-20",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CN",
+      "englishName": "China",
+      "tokiPonaName": "Sonko",
+      "nationalDays": [
+        {
+          "date": "--10-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CO",
+      "englishName": "Colombia",
+      "tokiPonaName": "Koloma",
+      "nationalDays": [
+        {
+          "date": "--07-20",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CR",
+      "englishName": "Costa Rica",
+      "tokiPonaName": "Kosalika",
+      "nationalDays": [
+        {
+          "date": "--09-15",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CU",
+      "englishName": "Cuba",
+      "tokiPonaName": "Kupa",
+      "nationalDays": [
+        {
+          "date": "--01-01",
+          "nameEnglish": "National Liberation Day",
+          "nameTokiPona": "tenpo suno pi kama weka tan lawa ante ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CV",
+      "englishName": "Cape Verde",
+      "tokiPonaName": "Kape Wete",
+      "nationalDays": [
+        {
+          "date": "--07-05",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CW",
+      "englishName": "Curaçao",
+      "tokiPonaName": "Kuwaka",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--10-10",
+          "nameEnglish": "Curaçao Day",
+          "nameTokiPona": "tenpo suno pi ma Curaçao",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "CX",
+      "englishName": "Christmas Island",
+      "tokiPonaName": "Teta Ilanto",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "CY",
+      "englishName": "Cyprus",
+      "tokiPonaName": "Kiposi",
+      "nationalDays": [
+        {
+          "date": "--10-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "CZ",
+      "englishName": "Czechia",
+      "tokiPonaName": "Seki",
+      "nationalDays": [
+        {
+          "date": "--10-28",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "DE",
+      "englishName": "Germany",
+      "tokiPonaName": "Tosi",
+      "nationalDays": [
+        {
+          "date": "--10-03",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "DJ",
+      "englishName": "Djibouti",
+      "tokiPonaName": "Sipusi",
+      "nationalDays": [
+        {
+          "date": "--06-27",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "DK",
+      "englishName": "Denmark",
+      "tokiPonaName": "Tansi",
+      "nationalDays": [
+        {
+          "date": "--06-05",
+          "nameEnglish": "Constitution Day",
+          "nameTokiPona": "tenpo suno pi lipu lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "DM",
+      "englishName": "Dominica",
+      "tokiPonaName": "Tominika",
+      "nationalDays": [
+        {
+          "date": "--11-03",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "DO",
+      "englishName": "Dominican Republic",
+      "tokiPonaName": "Tominika",
+      "nationalDays": [
+        {
+          "date": "--02-27",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "DZ",
+      "englishName": "Algeria",
+      "tokiPonaName": "Sasali",
+      "nationalDays": [
+        {
+          "date": "--11-01",
+          "nameEnglish": "Revolution Day",
+          "nameTokiPona": "tenpo suno pi ante lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "EC",
+      "englishName": "Ecuador",
+      "tokiPonaName": "Ekato",
+      "nationalDays": [
+        {
+          "date": "--08-10",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "EE",
+      "englishName": "Estonia",
+      "tokiPonaName": "Esi",
+      "nationalDays": [
+        {
+          "date": "--02-24",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "EG",
+      "englishName": "Egypt",
+      "tokiPonaName": "Masu",
+      "nationalDays": [
+        {
+          "date": "--07-23",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "EH",
+      "englishName": "Western Sahara",
+      "tokiPonaName": "Weten Sawa",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "ER",
+      "englishName": "Eritrea",
+      "tokiPonaName": "Eliteja",
+      "nationalDays": [
+        {
+          "date": "--05-24",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "ES",
+      "englishName": "Spain",
+      "tokiPonaName": "Epanja",
+      "nationalDays": [
+        {
+          "date": "--10-12",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "ET",
+      "englishName": "Ethiopia",
+      "tokiPonaName": "Isijopija",
+      "nationalDays": [
+        {
+          "date": "--05-28",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "FI",
+      "englishName": "Finland",
+      "tokiPonaName": "Sumi",
+      "nationalDays": [
+        {
+          "date": "--12-06",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "FJ",
+      "englishName": "Fiji",
+      "tokiPonaName": "Pisi",
+      "nationalDays": [
+        {
+          "date": "--10-10",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "FK",
+      "englishName": "Falkland Islands",
+      "tokiPonaName": "Pakanto Ilanta",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--06-14",
+          "nameEnglish": "Liberation Day",
+          "nameTokiPona": "tenpo suno pi kama weka tan lawa ante",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "FM",
+      "englishName": "Micronesia",
+      "tokiPonaName": "Mikonesa",
+      "nationalDays": [
+        {
+          "date": "--11-03",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "FO",
+      "englishName": "Faroe Islands",
+      "tokiPonaName": "Pawe Ilanta",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-29",
+          "nameEnglish": "Ólavsøka",
+          "nameTokiPona": "",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "faroe-national-day"
+        }
+      ]
+    },
+    {
+      "code": "FR",
+      "englishName": "France",
+      "tokiPonaName": "Kanse",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GA",
+      "englishName": "Gabon",
+      "tokiPonaName": "Kapon",
+      "nationalDays": [
+        {
+          "date": "--08-17",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GB",
+      "englishName": "United Kingdom",
+      "tokiPonaName": "Juke",
+      "nationalDays": [
+        {
+          "date": "--06-20",
+          "nameEnglish": "Birthday of His Majesty King Charles III",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "Diplomatic national-day listing for 2026; the UK does not have a single statutory national day.",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GD",
+      "englishName": "Grenada",
+      "tokiPonaName": "Kenata",
+      "nationalDays": [
+        {
+          "date": "--02-07",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GE",
+      "englishName": "Georgia",
+      "tokiPonaName": "Katelo",
+      "nationalDays": [
+        {
+          "date": "--05-26",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GF",
+      "englishName": "French Guiana",
+      "tokiPonaName": "Kanse Kana",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "GG",
+      "englishName": "Guernsey",
+      "tokiPonaName": "Kunseja",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--05-09",
+          "nameEnglish": "Liberation Day",
+          "nameTokiPona": "tenpo suno pi kama weka tan lawa ante",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "GH",
+      "englishName": "Ghana",
+      "tokiPonaName": "Kana",
+      "nationalDays": [
+        {
+          "date": "--03-06",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GI",
+      "englishName": "Gibraltar",
+      "tokiPonaName": "Jepatawa",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--09-10",
+          "nameEnglish": "Gibraltar National Day",
+          "nameTokiPona": "tenpo suno pi ma Gibraltar",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "gibraltar-2026"
+        }
+      ]
+    },
+    {
+      "code": "GL",
+      "englishName": "Greenland",
+      "tokiPonaName": "Kalalinuna",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--06-21",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "greenland-national-day"
+        }
+      ]
+    },
+    {
+      "code": "GM",
+      "englishName": "Gambia",
+      "tokiPonaName": "Kanpija",
+      "nationalDays": [
+        {
+          "date": "--02-18",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GN",
+      "englishName": "Guinea",
+      "tokiPonaName": "Kine",
+      "nationalDays": [
+        {
+          "date": "--10-02",
+          "nameEnglish": "Proclamation of the Republic",
+          "nameTokiPona": "tenpo suno pi nasin lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GP",
+      "englishName": "Guadeloupe",
+      "tokiPonaName": "Katelope",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "GQ",
+      "englishName": "Equatorial Guinea",
+      "tokiPonaName": "Kinejekatolija",
+      "nationalDays": [
+        {
+          "date": "--10-12",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GR",
+      "englishName": "Greece",
+      "tokiPonaName": "Elena",
+      "nationalDays": [
+        {
+          "date": "--03-25",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GS",
+      "englishName": "South Georgia & South Sandwich Islands",
+      "tokiPonaName": "Soto Katelo Soto Santeto Ilanta",
+      "status": "no-separate-national-day",
+      "statusEnglish": "No separate national day is listed for this uninhabited or non-permanently inhabited territory.",
+      "statusTokiPona": "ma ni la jan li awen ala. tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "GT",
+      "englishName": "Guatemala",
+      "tokiPonaName": "Katemala",
+      "nationalDays": [
+        {
+          "date": "--09-15",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GU",
+      "englishName": "Guam",
+      "tokiPonaName": "Kan",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-21",
+          "nameEnglish": "Liberation Day",
+          "nameTokiPona": "tenpo suno pi kama weka tan lawa ante",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "GW",
+      "englishName": "Guinea-Bissau",
+      "tokiPonaName": "Kinepisa",
+      "nationalDays": [
+        {
+          "date": "--09-24",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "GY",
+      "englishName": "Guyana",
+      "tokiPonaName": "Kujana",
+      "nationalDays": [
+        {
+          "date": "--02-23",
+          "nameEnglish": "Republic Day",
+          "nameTokiPona": "tenpo suno pi nasin lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "HK",
+      "englishName": "Hong Kong",
+      "tokiPonaName": "On Kon",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-01",
+          "nameEnglish": "Hong Kong Special Administrative Region Establishment Day",
+          "nameTokiPona": "tenpo suno pi kama lon ma On Kon",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "hong-kong-2026"
+        }
+      ]
+    },
+    {
+      "code": "HM",
+      "englishName": "Heard & McDonald Islands",
+      "tokiPonaName": "Eto Ma Tonato Ilanta",
+      "status": "no-separate-national-day",
+      "statusEnglish": "No separate national day is listed for this uninhabited or non-permanently inhabited territory.",
+      "statusTokiPona": "ma ni la jan li awen ala. tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "HN",
+      "englishName": "Honduras",
+      "tokiPonaName": "Ontula",
+      "nationalDays": [
+        {
+          "date": "--09-15",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "HR",
+      "englishName": "Croatia",
+      "tokiPonaName": "Lowasi",
+      "nationalDays": [
+        {
+          "date": "--05-30",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "HT",
+      "englishName": "Haiti",
+      "tokiPonaName": "Awisi",
+      "nationalDays": [
+        {
+          "date": "--01-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "HU",
+      "englishName": "Hungary",
+      "tokiPonaName": "Mosijo",
+      "nationalDays": [
+        {
+          "date": "--08-20",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "ID",
+      "englishName": "Indonesia",
+      "tokiPonaName": "Intonesija",
+      "nationalDays": [
+        {
+          "date": "--08-17",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "IE",
+      "englishName": "Ireland",
+      "tokiPonaName": "Alan",
+      "nationalDays": [
+        {
+          "date": "--03-17",
+          "nameEnglish": "St Patrick's Day",
+          "nameTokiPona": "tenpo suno pi jan sewi Patrick",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "IL",
+      "englishName": "Israel",
+      "tokiPonaName": "Isale",
+      "nationalDays": [
+        {
+          "date": "--04-22",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "2026 Gregorian date; the observance follows the Hebrew calendar and varies by year.",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "IM",
+      "englishName": "Isle of Man",
+      "tokiPonaName": "Ile Opu Man",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-05",
+          "nameEnglish": "Tynwald Day",
+          "nameTokiPona": "tenpo suno Tynwald",
+          "noteEnglish": "Traditional date; when 5 July falls on a weekend, the official ceremony may be held on the following Monday.",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "IN",
+      "englishName": "India",
+      "tokiPonaName": "Palata",
+      "nationalDays": [
+        {
+          "date": "--01-26",
+          "nameEnglish": "Republic Day",
+          "nameTokiPona": "tenpo suno pi nasin lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "IO",
+      "englishName": "British Indian Ocean Territory",
+      "tokiPonaName": "Pite Intan Osen Tewitoja",
+      "status": "no-separate-national-day",
+      "statusEnglish": "No separate national day is listed for this uninhabited or non-permanently inhabited territory.",
+      "statusTokiPona": "ma ni la jan li awen ala. tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "IQ",
+      "englishName": "Iraq",
+      "tokiPonaName": "Ilakija",
+      "nationalDays": [
+        {
+          "date": "--10-03",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "IR",
+      "englishName": "Iran",
+      "tokiPonaName": "Ilan",
+      "nationalDays": [
+        {
+          "date": "--02-11",
+          "nameEnglish": "Anniversary of the Victory of the Islamic Revolution",
+          "nameTokiPona": "tenpo suno pi ante lawa pi nasin sewi Islam",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "IS",
+      "englishName": "Iceland",
+      "tokiPonaName": "Isilan",
+      "nationalDays": [
+        {
+          "date": "--06-17",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "IT",
+      "englishName": "Italy",
+      "tokiPonaName": "Italija",
+      "nationalDays": [
+        {
+          "date": "--06-02",
+          "nameEnglish": "Foundation of the Republic",
+          "nameTokiPona": "tenpo suno pi nasin lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "JE",
+      "englishName": "Jersey",
+      "tokiPonaName": "Jeseja",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--05-09",
+          "nameEnglish": "Liberation Day",
+          "nameTokiPona": "tenpo suno pi kama weka tan lawa ante",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "JM",
+      "englishName": "Jamaica",
+      "tokiPonaName": "Sameka",
+      "nationalDays": [
+        {
+          "date": "--08-06",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "JO",
+      "englishName": "Jordan",
+      "tokiPonaName": "Utun",
+      "nationalDays": [
+        {
+          "date": "--05-25",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "JP",
+      "englishName": "Japan",
+      "tokiPonaName": "Nijon",
+      "nationalDays": [
+        {
+          "date": "--02-23",
+          "nameEnglish": "Birthday of His Majesty the Emperor",
+          "nameTokiPona": "tenpo suno pi kama lon pi jan lawa suli",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KE",
+      "englishName": "Kenya",
+      "tokiPonaName": "Kenja",
+      "nationalDays": [
+        {
+          "date": "--12-12",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KG",
+      "englishName": "Kyrgyzstan",
+      "tokiPonaName": "Kitan",
+      "nationalDays": [
+        {
+          "date": "--08-31",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KH",
+      "englishName": "Cambodia",
+      "tokiPonaName": "Kanpusi",
+      "nationalDays": [
+        {
+          "date": "--11-09",
+          "nameEnglish": "Independence and National Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KI",
+      "englishName": "Kiribati",
+      "tokiPonaName": "Kilipasi",
+      "nationalDays": [
+        {
+          "date": "--07-12",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KM",
+      "englishName": "Comoros",
+      "tokiPonaName": "Komo",
+      "nationalDays": [
+        {
+          "date": "--07-06",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KN",
+      "englishName": "St. Kitts & Nevis",
+      "tokiPonaName": "To Kita Newi",
+      "nationalDays": [
+        {
+          "date": "--09-19",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KP",
+      "englishName": "North Korea",
+      "tokiPonaName": "Soson",
+      "nationalDays": [
+        {
+          "date": "--09-09",
+          "nameEnglish": "Day of the Founding of the DPRK",
+          "nameTokiPona": "tenpo suno pi kama lon DPRK",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KR",
+      "englishName": "South Korea",
+      "tokiPonaName": "Anku",
+      "nationalDays": [
+        {
+          "date": "--10-03",
+          "nameEnglish": "National Foundation Day",
+          "nameTokiPona": "tenpo suno pi kama lon ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KW",
+      "englishName": "Kuwait",
+      "tokiPonaName": "Kuwasi",
+      "nationalDays": [
+        {
+          "date": "--02-25",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "KY",
+      "englishName": "Cayman Islands",
+      "tokiPonaName": "Kaman Ilanta",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "KZ",
+      "englishName": "Kazakhstan",
+      "tokiPonaName": "Kasakan",
+      "nationalDays": [
+        {
+          "date": "--10-25",
+          "nameEnglish": "Republic Day",
+          "nameTokiPona": "tenpo suno pi nasin lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LA",
+      "englishName": "Laos",
+      "tokiPonaName": "La",
+      "nationalDays": [
+        {
+          "date": "--12-02",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LB",
+      "englishName": "Lebanon",
+      "tokiPonaName": "Lunpan",
+      "nationalDays": [
+        {
+          "date": "--11-22",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LC",
+      "englishName": "St. Lucia",
+      "tokiPonaName": "To Lusa",
+      "nationalDays": [
+        {
+          "date": "--02-22",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LI",
+      "englishName": "Liechtenstein",
+      "tokiPonaName": "Lisensan",
+      "nationalDays": [
+        {
+          "date": "--08-15",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LK",
+      "englishName": "Sri Lanka",
+      "tokiPonaName": "Lanka",
+      "nationalDays": [
+        {
+          "date": "--02-04",
+          "nameEnglish": "Independence and National Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LR",
+      "englishName": "Liberia",
+      "tokiPonaName": "Lapewija",
+      "nationalDays": [
+        {
+          "date": "--07-26",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LS",
+      "englishName": "Lesotho",
+      "tokiPonaName": "Lesoto",
+      "nationalDays": [
+        {
+          "date": "--10-04",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LT",
+      "englishName": "Lithuania",
+      "tokiPonaName": "Lijatuwa",
+      "nationalDays": [
+        {
+          "date": "--02-16",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LU",
+      "englishName": "Luxembourg",
+      "tokiPonaName": "Lusepu",
+      "nationalDays": [
+        {
+          "date": "--06-23",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LV",
+      "englishName": "Latvia",
+      "tokiPonaName": "Lawi",
+      "nationalDays": [
+        {
+          "date": "--11-18",
+          "nameEnglish": "Proclamation of the Republic",
+          "nameTokiPona": "tenpo suno pi nasin lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "LY",
+      "englishName": "Libya",
+      "tokiPonaName": "Lipija",
+      "nationalDays": [
+        {
+          "date": "--12-24",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MA",
+      "englishName": "Morocco",
+      "tokiPonaName": "Malipe",
+      "nationalDays": [
+        {
+          "date": "--07-30",
+          "nameEnglish": "Enthronement Day",
+          "nameTokiPona": "tenpo suno pi lawa jan lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MC",
+      "englishName": "Monaco",
+      "tokiPonaName": "Monako",
+      "nationalDays": [
+        {
+          "date": "--11-19",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MD",
+      "englishName": "Moldova",
+      "tokiPonaName": "Motowa",
+      "nationalDays": [
+        {
+          "date": "--08-27",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "ME",
+      "englishName": "Montenegro",
+      "tokiPonaName": "Monteneko",
+      "nationalDays": [
+        {
+          "date": "--05-21",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        },
+        {
+          "date": "--07-13",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MF",
+      "englishName": "St. Martin",
+      "tokiPonaName": "To Maten",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "MG",
+      "englishName": "Madagascar",
+      "tokiPonaName": "Malakasi",
+      "nationalDays": [
+        {
+          "date": "--06-26",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MH",
+      "englishName": "Marshall Islands",
+      "tokiPonaName": "Masala Ilanta",
+      "nationalDays": [
+        {
+          "date": "--05-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MK",
+      "englishName": "North Macedonia",
+      "tokiPonaName": "Noto Maketonija",
+      "nationalDays": [
+        {
+          "date": "--09-08",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "ML",
+      "englishName": "Mali",
+      "tokiPonaName": "Mali",
+      "nationalDays": [
+        {
+          "date": "--09-22",
+          "nameEnglish": "Proclamation of Independence",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MM",
+      "englishName": "Myanmar",
+      "tokiPonaName": "Mijama",
+      "nationalDays": [
+        {
+          "date": "--01-04",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MN",
+      "englishName": "Mongolia",
+      "tokiPonaName": "Monola",
+      "nationalDays": [
+        {
+          "date": "--07-11",
+          "nameEnglish": "Anniversary of the People's Revolution",
+          "nameTokiPona": "tenpo suno pi ante lawa jan",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MO",
+      "englishName": "Macao",
+      "tokiPonaName": "Maka",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--12-20",
+          "nameEnglish": "Macao S.A.R. Establishment Day",
+          "nameTokiPona": "tenpo suno pi kama lon Macao S.A.R.",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "macao-2026"
+        }
+      ]
+    },
+    {
+      "code": "MP",
+      "englishName": "Northern Mariana Islands",
+      "tokiPonaName": "Noten Mawana Ilanta",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "MQ",
+      "englishName": "Martinique",
+      "tokiPonaName": "Matenike",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "MR",
+      "englishName": "Mauritania",
+      "tokiPonaName": "Mulitanija",
+      "nationalDays": [
+        {
+          "date": "--11-28",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MS",
+      "englishName": "Montserrat",
+      "tokiPonaName": "Montewato",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--03-17",
+          "nameEnglish": "St Patrick's Day",
+          "nameTokiPona": "",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "MT",
+      "englishName": "Malta",
+      "tokiPonaName": "Mata",
+      "nationalDays": [
+        {
+          "date": "--09-21",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MU",
+      "englishName": "Mauritius",
+      "tokiPonaName": "Mowisi",
+      "nationalDays": [
+        {
+          "date": "--03-12",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MV",
+      "englishName": "Maldives",
+      "tokiPonaName": "Matewe",
+      "nationalDays": [
+        {
+          "date": "--07-26",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MW",
+      "englishName": "Malawi",
+      "tokiPonaName": "Malawi",
+      "nationalDays": [
+        {
+          "date": "--07-06",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MX",
+      "englishName": "Mexico",
+      "tokiPonaName": "Mesiko",
+      "nationalDays": [
+        {
+          "date": "--09-16",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MY",
+      "englishName": "Malaysia",
+      "tokiPonaName": "Malasija",
+      "nationalDays": [
+        {
+          "date": "--08-31",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "MZ",
+      "englishName": "Mozambique",
+      "tokiPonaName": "Mosanpi",
+      "nationalDays": [
+        {
+          "date": "--06-25",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NA",
+      "englishName": "Namibia",
+      "tokiPonaName": "Namipija",
+      "nationalDays": [
+        {
+          "date": "--03-21",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NC",
+      "englishName": "New Caledonia",
+      "tokiPonaName": "Newa Kaletona",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "NE",
+      "englishName": "Niger",
+      "tokiPonaName": "Nise",
+      "nationalDays": [
+        {
+          "date": "--08-03",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        },
+        {
+          "date": "--12-18",
+          "nameEnglish": "Republic Day",
+          "nameTokiPona": "tenpo suno pi nasin lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NF",
+      "englishName": "Norfolk Island",
+      "tokiPonaName": "Nopoku Ilanto",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--06-08",
+          "nameEnglish": "Bounty Day",
+          "nameTokiPona": "tenpo suno Bounty",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "NG",
+      "englishName": "Nigeria",
+      "tokiPonaName": "Naselija",
+      "nationalDays": [
+        {
+          "date": "--10-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NI",
+      "englishName": "Nicaragua",
+      "tokiPonaName": "Nikawaka",
+      "nationalDays": [
+        {
+          "date": "--09-15",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NL",
+      "englishName": "Netherlands",
+      "tokiPonaName": "Netelan",
+      "nationalDays": [
+        {
+          "date": "--04-27",
+          "nameEnglish": "King's Day",
+          "nameTokiPona": "tenpo suno pi jan lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NO",
+      "englishName": "Norway",
+      "tokiPonaName": "Nosiki",
+      "nationalDays": [
+        {
+          "date": "--05-17",
+          "nameEnglish": "Constitution Day",
+          "nameTokiPona": "tenpo suno pi lipu lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NP",
+      "englishName": "Nepal",
+      "tokiPonaName": "Nepala",
+      "nationalDays": [
+        {
+          "date": "--09-19",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NR",
+      "englishName": "Nauru",
+      "tokiPonaName": "Nowe",
+      "nationalDays": [
+        {
+          "date": "--01-31",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "NU",
+      "englishName": "Niue",
+      "tokiPonaName": "Ne",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--10-19",
+          "nameEnglish": "Constitution Day",
+          "nameTokiPona": "tenpo suno pi lipu lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "NZ",
+      "englishName": "New Zealand",
+      "tokiPonaName": "Nusilan",
+      "nationalDays": [
+        {
+          "date": "--02-06",
+          "nameEnglish": "Waitangi Day",
+          "nameTokiPona": "tenpo suno Waitangi",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "OM",
+      "englishName": "Oman",
+      "tokiPonaName": "Uman",
+      "nationalDays": [
+        {
+          "date": "--11-18",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PA",
+      "englishName": "Panama",
+      "tokiPonaName": "Panama",
+      "nationalDays": [
+        {
+          "date": "--11-03",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PE",
+      "englishName": "Peru",
+      "tokiPonaName": "Pelu",
+      "nationalDays": [
+        {
+          "date": "--07-28",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PF",
+      "englishName": "French Polynesia",
+      "tokiPonaName": "Kanse Ponesa",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--06-29",
+          "nameEnglish": "Autonomy Day",
+          "nameTokiPona": "tenpo suno pi lawa insa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "PG",
+      "englishName": "Papua New Guinea",
+      "tokiPonaName": "Papuwanijukini",
+      "nationalDays": [
+        {
+          "date": "--09-16",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PH",
+      "englishName": "Philippines",
+      "tokiPonaName": "Pilipina",
+      "nationalDays": [
+        {
+          "date": "--06-12",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PK",
+      "englishName": "Pakistan",
+      "tokiPonaName": "Pakisan",
+      "nationalDays": [
+        {
+          "date": "--03-23",
+          "nameEnglish": "Pakistan Day",
+          "nameTokiPona": "tenpo suno pi ma Pakistan",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PL",
+      "englishName": "Poland",
+      "tokiPonaName": "Posuka",
+      "nationalDays": [
+        {
+          "date": "--05-03",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PM",
+      "englishName": "St. Pierre & Miquelon",
+      "tokiPonaName": "To Pewe Mikelon",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "PN",
+      "englishName": "Pitcairn Islands",
+      "tokiPonaName": "Piten Ilanta",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--01-23",
+          "nameEnglish": "Bounty Day",
+          "nameTokiPona": "tenpo suno Bounty",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "PR",
+      "englishName": "Puerto Rico",
+      "tokiPonaName": "Puto Wiko",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-25",
+          "nameEnglish": "Constitution Day",
+          "nameTokiPona": "tenpo suno pi lipu lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "PS",
+      "englishName": "Palestine",
+      "tokiPonaName": "Pilisin",
+      "nationalDays": [
+        {
+          "date": "--11-15",
+          "nameEnglish": "Declaration of Independence",
+          "nameTokiPona": "tenpo suno pi toki kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PT",
+      "englishName": "Portugal",
+      "tokiPonaName": "Potuke",
+      "nationalDays": [
+        {
+          "date": "--06-10",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PW",
+      "englishName": "Palau",
+      "tokiPonaName": "Palo",
+      "nationalDays": [
+        {
+          "date": "--10-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "PY",
+      "englishName": "Paraguay",
+      "tokiPonaName": "Palakawi",
+      "nationalDays": [
+        {
+          "date": "--05-14",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "QA",
+      "englishName": "Qatar",
+      "tokiPonaName": "Katawa",
+      "nationalDays": [
+        {
+          "date": "--12-18",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "RE",
+      "englishName": "Réunion",
+      "tokiPonaName": "Wenon",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "RO",
+      "englishName": "Romania",
+      "tokiPonaName": "Lomani",
+      "nationalDays": [
+        {
+          "date": "--12-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "RS",
+      "englishName": "Serbia",
+      "tokiPonaName": "Sopisi",
+      "nationalDays": [
+        {
+          "date": "--02-15",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "RU",
+      "englishName": "Russia",
+      "tokiPonaName": "Losi",
+      "nationalDays": [
+        {
+          "date": "--06-12",
+          "nameEnglish": "Russia Day",
+          "nameTokiPona": "tenpo suno pi ma Russia",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "RW",
+      "englishName": "Rwanda",
+      "tokiPonaName": "Luwanta",
+      "nationalDays": [
+        {
+          "date": "--07-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SA",
+      "englishName": "Saudi Arabia",
+      "tokiPonaName": "Sawusi",
+      "nationalDays": [
+        {
+          "date": "--09-23",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SB",
+      "englishName": "Solomon Islands",
+      "tokiPonaName": "Solomon Ilanta",
+      "nationalDays": [
+        {
+          "date": "--07-07",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SC",
+      "englishName": "Seychelles",
+      "tokiPonaName": "Setele",
+      "nationalDays": [
+        {
+          "date": "--06-29",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SD",
+      "englishName": "Sudan",
+      "tokiPonaName": "Sutan",
+      "nationalDays": [
+        {
+          "date": "--01-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SE",
+      "englishName": "Sweden",
+      "tokiPonaName": "Wensa",
+      "nationalDays": [
+        {
+          "date": "--06-06",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SG",
+      "englishName": "Singapore",
+      "tokiPonaName": "Sinapowe",
+      "nationalDays": [
+        {
+          "date": "--08-09",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SH",
+      "englishName": "St. Helena",
+      "tokiPonaName": "To Elena",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--05-21",
+          "nameEnglish": "St Helena Day",
+          "nameTokiPona": "tenpo suno pi ma Sen Elena",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "SI",
+      "englishName": "Slovenia",
+      "tokiPonaName": "Lowensina",
+      "nationalDays": [
+        {
+          "date": "--06-25",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SJ",
+      "englishName": "Svalbard & Jan Mayen",
+      "tokiPonaName": "Wapato Jan Majen",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "SK",
+      "englishName": "Slovakia",
+      "tokiPonaName": "Lowenki",
+      "nationalDays": [
+        {
+          "date": "--01-01",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SL",
+      "englishName": "Sierra Leone",
+      "tokiPonaName": "Sijelalijon",
+      "nationalDays": [
+        {
+          "date": "--04-27",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SM",
+      "englishName": "San Marino",
+      "tokiPonaName": "Samalino",
+      "nationalDays": [
+        {
+          "date": "--09-03",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SN",
+      "englishName": "Senegal",
+      "tokiPonaName": "Seneka",
+      "nationalDays": [
+        {
+          "date": "--04-04",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SO",
+      "englishName": "Somalia",
+      "tokiPonaName": "Somalija",
+      "nationalDays": [
+        {
+          "date": "--07-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SR",
+      "englishName": "Suriname",
+      "tokiPonaName": "Suwiname",
+      "nationalDays": [
+        {
+          "date": "--11-25",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SS",
+      "englishName": "South Sudan",
+      "tokiPonaName": "Soto Sutan",
+      "nationalDays": [
+        {
+          "date": "--07-09",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "ST",
+      "englishName": "São Tomé & Príncipe",
+      "tokiPonaName": "Sa Tome Pinsipe",
+      "nationalDays": [
+        {
+          "date": "--07-12",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SV",
+      "englishName": "El Salvador",
+      "tokiPonaName": "Ela Sawatowa",
+      "nationalDays": [
+        {
+          "date": "--09-15",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SX",
+      "englishName": "Sint Maarten",
+      "tokiPonaName": "Sinto Maten",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--10-10",
+          "nameEnglish": "Constitution Day",
+          "nameTokiPona": "tenpo suno pi lipu lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "SY",
+      "englishName": "Syria",
+      "tokiPonaName": "Sulija",
+      "nationalDays": [
+        {
+          "date": "--04-17",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "SZ",
+      "englishName": "Eswatini",
+      "tokiPonaName": "Sawasi",
+      "nationalDays": [
+        {
+          "date": "--09-06",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TC",
+      "englishName": "Turks & Caicos Islands",
+      "tokiPonaName": "Tuka Keko Ilanta",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "TD",
+      "englishName": "Chad",
+      "tokiPonaName": "Sate",
+      "nationalDays": [
+        {
+          "date": "--08-11",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TF",
+      "englishName": "French Southern Territories",
+      "tokiPonaName": "Kanse Soten Tewitowe",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "TG",
+      "englishName": "Togo",
+      "tokiPonaName": "Toko",
+      "nationalDays": [
+        {
+          "date": "--04-27",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TH",
+      "englishName": "Thailand",
+      "tokiPonaName": "Tawi",
+      "nationalDays": [
+        {
+          "date": "--12-05",
+          "nameEnglish": "Birthday of His Majesty King Bhumibol Adulyadej",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "Thailand observes 5 December as National Day.",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TJ",
+      "englishName": "Tajikistan",
+      "tokiPonaName": "Tajekitan",
+      "nationalDays": [
+        {
+          "date": "--09-09",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TK",
+      "englishName": "Tokelau",
+      "tokiPonaName": "Tokelo",
+      "status": "no-separate-record",
+      "statusEnglish": "No separate national-day record is currently included for this territory or area.",
+      "statusTokiPona": "sona pi tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "TL",
+      "englishName": "Timor-Leste",
+      "tokiPonaName": "Temowa Lete",
+      "nationalDays": [
+        {
+          "date": "--05-20",
+          "nameEnglish": "Restoration of Independence",
+          "nameTokiPona": "tenpo suno pi kama sin pi lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        },
+        {
+          "date": "--11-28",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TM",
+      "englishName": "Turkmenistan",
+      "tokiPonaName": "Tukenitan",
+      "nationalDays": [
+        {
+          "date": "--09-27",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TN",
+      "englishName": "Tunisia",
+      "tokiPonaName": "Tunisi",
+      "nationalDays": [
+        {
+          "date": "--03-20",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TO",
+      "englishName": "Tonga",
+      "tokiPonaName": "Tona",
+      "nationalDays": [
+        {
+          "date": "--11-04",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TR",
+      "englishName": "Türkiye",
+      "tokiPonaName": "Tuki",
+      "nationalDays": [
+        {
+          "date": "--10-29",
+          "nameEnglish": "Proclamation of the Republic",
+          "nameTokiPona": "tenpo suno pi nasin lawa ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TT",
+      "englishName": "Trinidad & Tobago",
+      "tokiPonaName": "Sinita",
+      "nationalDays": [
+        {
+          "date": "--08-31",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TV",
+      "englishName": "Tuvalu",
+      "tokiPonaName": "Tuwalu",
+      "nationalDays": [
+        {
+          "date": "--10-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TW",
+      "englishName": "Taiwan",
+      "tokiPonaName": "Tewan",
+      "nationalDays": [
+        {
+          "date": "--10-10",
+          "nameEnglish": "National Day (Double Tenth Day)",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "tw-gov"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "TZ",
+      "englishName": "Tanzania",
+      "tokiPonaName": "Tansanija",
+      "nationalDays": [
+        {
+          "date": "--04-26",
+          "nameEnglish": "Union Day",
+          "nameTokiPona": "tenpo suno pi kama wan",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "UA",
+      "englishName": "Ukraine",
+      "tokiPonaName": "Ukawina",
+      "nationalDays": [
+        {
+          "date": "--08-24",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "UG",
+      "englishName": "Uganda",
+      "tokiPonaName": "Ukanta",
+      "nationalDays": [
+        {
+          "date": "--10-09",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "UM",
+      "englishName": "United States Minor Outlying Islands",
+      "tokiPonaName": "Uniteto Tate Minowa Oten Ilanta",
+      "status": "no-separate-national-day",
+      "statusEnglish": "No separate national day is listed for this uninhabited or non-permanently inhabited territory.",
+      "statusTokiPona": "ma ni la jan li awen ala. tenpo suno ma ante li lon ala lon lipu ni.",
+      "nationalDays": []
+    },
+    {
+      "code": "US",
+      "englishName": "United States",
+      "tokiPonaName": "Mewika",
+      "nationalDays": [
+        {
+          "date": "--07-04",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "UY",
+      "englishName": "Uruguay",
+      "tokiPonaName": "Ulukawi",
+      "nationalDays": [
+        {
+          "date": "--08-25",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "UZ",
+      "englishName": "Uzbekistan",
+      "tokiPonaName": "Upekitan",
+      "nationalDays": [
+        {
+          "date": "--09-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "VA",
+      "englishName": "Vatican City",
+      "tokiPonaName": "Wasikano",
+      "nationalDays": [
+        {
+          "date": "--05-18",
+          "nameEnglish": "Anniversary of the beginning of the pontificate of Pope Leo XIV",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "Pope Leo XIV began his Petrine Ministry on 18 May 2025.",
+          "noteTokiPona": "",
+          "source": "vatican"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "VC",
+      "englishName": "St. Vincent & Grenadines",
+      "tokiPonaName": "To Winsento Kenatene",
+      "nationalDays": [
+        {
+          "date": "--10-27",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "VE",
+      "englishName": "Venezuela",
+      "tokiPonaName": "Penesuwela",
+      "nationalDays": [
+        {
+          "date": "--07-05",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "VG",
+      "englishName": "British Virgin Islands",
+      "tokiPonaName": "Pite Wijen Ilanta",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-01",
+          "nameEnglish": "Territory Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "VI",
+      "englishName": "U.S. Virgin Islands",
+      "tokiPonaName": "U Wijen Ilanta",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--03-31",
+          "nameEnglish": "Transfer Day",
+          "nameTokiPona": "tenpo suno pi pana ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "VN",
+      "englishName": "Vietnam",
+      "tokiPonaName": "Wije",
+      "nationalDays": [
+        {
+          "date": "--09-02",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "VU",
+      "englishName": "Vanuatu",
+      "tokiPonaName": "Wanuwatu",
+      "nationalDays": [
+        {
+          "date": "--07-30",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "WF",
+      "englishName": "Wallis & Futuna",
+      "tokiPonaName": "Wali Putuna",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-29",
+          "nameEnglish": "Territory Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "WS",
+      "englishName": "Samoa",
+      "tokiPonaName": "Samowa",
+      "nationalDays": [
+        {
+          "date": "--06-01",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "XK",
+      "englishName": "Kosovo",
+      "tokiPonaName": "Kosowe",
+      "nationalDays": [
+        {
+          "date": "--02-17",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "au-dfat"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "YE",
+      "englishName": "Yemen",
+      "tokiPonaName": "Jamanija",
+      "nationalDays": [
+        {
+          "date": "--05-22",
+          "nameEnglish": "National Day",
+          "nameTokiPona": "tenpo suno ma",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "YT",
+      "englishName": "Mayotte",
+      "tokiPonaName": "Majote",
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon.",
+      "nationalDays": [
+        {
+          "date": "--07-14",
+          "nameEnglish": "French National Day",
+          "nameTokiPona": "tenpo suno ma pi ma Kanse",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "supplemental-territory"
+        }
+      ]
+    },
+    {
+      "code": "ZA",
+      "englishName": "South Africa",
+      "tokiPonaName": "Setapika",
+      "nationalDays": [
+        {
+          "date": "--04-27",
+          "nameEnglish": "Freedom Day",
+          "nameTokiPona": "tenpo suno ken",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "ZM",
+      "englishName": "Zambia",
+      "tokiPonaName": "Sanpija",
+      "nationalDays": [
+        {
+          "date": "--10-24",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    },
+    {
+      "code": "ZW",
+      "englishName": "Zimbabwe",
+      "tokiPonaName": "Sinpapuwe",
+      "nationalDays": [
+        {
+          "date": "--04-18",
+          "nameEnglish": "Independence Day",
+          "nameTokiPona": "tenpo suno pi kama lawa",
+          "noteEnglish": "",
+          "noteTokiPona": "",
+          "source": "cn-mfa-2026"
+        }
+      ],
+      "status": "national-day-recorded",
+      "statusEnglish": "National-day information is available.",
+      "statusTokiPona": "sona pi tenpo suno ma li lon."
+    }
+  ]
+}

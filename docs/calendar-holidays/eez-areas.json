@@ -1,0 +1,1438 @@
+{
+  "schemaVersion": 1,
+  "dataVersion": "2026-10-01-001",
+  "areaUnit": "km²",
+  "countryCount": 250,
+  "source": {
+    "primary": "Global Deep-Sea Capacity Assessment — Global Data Tables, Table 4",
+    "primaryEezReference": "Flanders Marine Institute (2019), Maritime Boundaries Geodatabase: Maritime Boundaries and Exclusive Economic Zones (200NM), version 11",
+    "marineRegionsCurrentReference": "Flanders Marine Institute (2023), Maritime Boundaries Geodatabase, version 12",
+    "marineRegionsCurrentDoi": "10.14284/632",
+    "note": "Most numeric values are the v11-derived published Table 4 areas and are generally rounded to the nearest 1,000 km². Composite and supplementary records are explicitly noted. Null means no separate unambiguous value is included in this release."
+  },
+  "countries": {
+    "AD": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "AE": {
+      "areaKm2": 51000,
+      "sourceKeys": [
+        "United Arab Emirates"
+      ]
+    },
+    "AF": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "AG": {
+      "areaKm2": 111000,
+      "sourceKeys": [
+        "Antigua & Barbuda"
+      ]
+    },
+    "AI": {
+      "areaKm2": 90000,
+      "sourceKeys": [
+        "Anguilla"
+      ]
+    },
+    "AL": {
+      "areaKm2": 12000,
+      "sourceKeys": [
+        "Albania"
+      ]
+    },
+    "AM": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "AO": {
+      "areaKm2": 495000,
+      "sourceKeys": [
+        "Angola"
+      ]
+    },
+    "AQ": {
+      "areaKm2": null,
+      "sourceKeys": [],
+      "note": "No EEZ value is assigned to Antarctica."
+    },
+    "AR": {
+      "areaKm2": 1048000,
+      "sourceKeys": [
+        "Argentina"
+      ]
+    },
+    "AS": {
+      "areaKm2": 406000,
+      "sourceKeys": [
+        "American Samoa"
+      ]
+    },
+    "AT": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "AU": {
+      "areaKm2": 7337000,
+      "sourceKeys": [
+        "Australia"
+      ]
+    },
+    "AW": {
+      "areaKm2": 30000,
+      "sourceKeys": [
+        "Aruba"
+      ]
+    },
+    "AX": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "AZ": {
+      "areaKm2": 81000,
+      "sourceKeys": [
+        "Azerbaijan"
+      ]
+    },
+    "BA": {
+      "areaKm2": 10,
+      "sourceKeys": [
+        "Bosnia & Herzegovina"
+      ]
+    },
+    "BB": {
+      "areaKm2": 185000,
+      "sourceKeys": [
+        "Barbados"
+      ]
+    },
+    "BD": {
+      "areaKm2": 109000,
+      "sourceKeys": [
+        "Bangladesh"
+      ]
+    },
+    "BE": {
+      "areaKm2": 3000,
+      "sourceKeys": [
+        "Belgium"
+      ]
+    },
+    "BF": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "BG": {
+      "areaKm2": 35000,
+      "sourceKeys": [
+        "Bulgaria"
+      ]
+    },
+    "BH": {
+      "areaKm2": 7000,
+      "sourceKeys": [
+        "Bahrain"
+      ]
+    },
+    "BI": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "BJ": {
+      "areaKm2": 35000,
+      "sourceKeys": [
+        "Benin"
+      ]
+    },
+    "BL": {
+      "areaKm2": 4000,
+      "sourceKeys": [
+        "St. Barthélemy"
+      ]
+    },
+    "BM": {
+      "areaKm2": 464000,
+      "sourceKeys": [
+        "Bermuda"
+      ]
+    },
+    "BN": {
+      "areaKm2": 43000,
+      "sourceKeys": [
+        "Brunei"
+      ]
+    },
+    "BO": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "BQ": {
+      "areaKm2": 24000,
+      "sourceKeys": [
+        "Bonaire",
+        "Saba",
+        "Sint Eustatius"
+      ],
+      "note": "Aggregate of Bonaire, Saba and Sint Eustatius source rows."
+    },
+    "BR": {
+      "areaKm2": 3662000,
+      "sourceKeys": [
+        "Brazil"
+      ]
+    },
+    "BS": {
+      "areaKm2": 607000,
+      "sourceKeys": [
+        "Bahamas"
+      ]
+    },
+    "BT": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "BV": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "BW": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "BY": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "BZ": {
+      "areaKm2": 33000,
+      "sourceKeys": [
+        "Belize"
+      ]
+    },
+    "CA": {
+      "areaKm2": 5639000,
+      "sourceKeys": [
+        "Canada"
+      ]
+    },
+    "CC": {
+      "areaKm2": 467000,
+      "sourceKeys": [
+        "Cocos (Keeling) Islands"
+      ]
+    },
+    "CD": {
+      "areaKm2": 13000,
+      "sourceKeys": [
+        "Democratic Republic of the Congo"
+      ]
+    },
+    "CF": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "CG": {
+      "areaKm2": 34000,
+      "sourceKeys": [
+        "Republic of the Congo"
+      ]
+    },
+    "CH": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "CI": {
+      "areaKm2": 171000,
+      "sourceKeys": [
+        "Côte d’Ivoire"
+      ]
+    },
+    "CK": {
+      "areaKm2": 1969000,
+      "sourceKeys": [
+        "Cook Islands"
+      ]
+    },
+    "CL": {
+      "areaKm2": 3634000,
+      "sourceKeys": [
+        "Chile"
+      ]
+    },
+    "CM": {
+      "areaKm2": 14000,
+      "sourceKeys": [
+        "Cameroon"
+      ]
+    },
+    "CN": {
+      "areaKm2": 1291000,
+      "sourceKeys": [
+        "China"
+      ]
+    },
+    "CO": {
+      "areaKm2": 708000,
+      "sourceKeys": [
+        "Colombia"
+      ]
+    },
+    "CR": {
+      "areaKm2": 581000,
+      "sourceKeys": [
+        "Costa Rica"
+      ]
+    },
+    "CU": {
+      "areaKm2": 346000,
+      "sourceKeys": [
+        "Cuba"
+      ]
+    },
+    "CV": {
+      "areaKm2": 801000,
+      "sourceKeys": [
+        "Cape Verde"
+      ]
+    },
+    "CW": {
+      "areaKm2": 25000,
+      "sourceKeys": [
+        "Curaçao"
+      ]
+    },
+    "CX": {
+      "areaKm2": 328000,
+      "sourceKeys": [
+        "Christmas Island"
+      ]
+    },
+    "CY": {
+      "areaKm2": 98000,
+      "sourceKeys": [
+        "Cyprus"
+      ]
+    },
+    "CZ": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "DE": {
+      "areaKm2": 53000,
+      "sourceKeys": [
+        "Germany"
+      ]
+    },
+    "DJ": {
+      "areaKm2": 7000,
+      "sourceKeys": [
+        "Djibouti"
+      ]
+    },
+    "DK": {
+      "areaKm2": 103000,
+      "sourceKeys": [
+        "Denmark"
+      ]
+    },
+    "DM": {
+      "areaKm2": 29000,
+      "sourceKeys": [
+        "Dominica"
+      ]
+    },
+    "DO": {
+      "areaKm2": 349000,
+      "sourceKeys": [
+        "Dominican Republic"
+      ]
+    },
+    "DZ": {
+      "areaKm2": 131000,
+      "sourceKeys": [
+        "Algeria"
+      ]
+    },
+    "EC": {
+      "areaKm2": 1050000,
+      "sourceKeys": [
+        "Ecuador"
+      ]
+    },
+    "EE": {
+      "areaKm2": 36000,
+      "sourceKeys": [
+        "Estonia"
+      ]
+    },
+    "EG": {
+      "areaKm2": 241000,
+      "sourceKeys": [
+        "Egypt"
+      ]
+    },
+    "EH": {
+      "areaKm2": null,
+      "sourceKeys": [],
+      "note": "No single unambiguous separate value is supplied because the relevant maritime claims are disputed/overlapping."
+    },
+    "ER": {
+      "areaKm2": 77000,
+      "sourceKeys": [
+        "Eritrea"
+      ]
+    },
+    "ES": {
+      "areaKm2": 1005000,
+      "sourceKeys": [
+        "Spain"
+      ]
+    },
+    "ET": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "FI": {
+      "areaKm2": 79000,
+      "sourceKeys": [
+        "Finland"
+      ]
+    },
+    "FJ": {
+      "areaKm2": 1277000,
+      "sourceKeys": [
+        "Fiji"
+      ]
+    },
+    "FK": {
+      "areaKm2": 545000,
+      "sourceKeys": [
+        "Falkland Islands"
+      ]
+    },
+    "FM": {
+      "areaKm2": 3008000,
+      "sourceKeys": [
+        "Micronesia"
+      ]
+    },
+    "FO": {
+      "areaKm2": 266000,
+      "sourceKeys": [
+        "Faroe Islands"
+      ]
+    },
+    "FR": {
+      "areaKm2": 342000,
+      "sourceKeys": [
+        "France"
+      ]
+    },
+    "GA": {
+      "areaKm2": 199000,
+      "sourceKeys": [
+        "Gabon"
+      ]
+    },
+    "GB": {
+      "areaKm2": 722000,
+      "sourceKeys": [
+        "United Kingdom"
+      ]
+    },
+    "GD": {
+      "areaKm2": 25000,
+      "sourceKeys": [
+        "Grenada"
+      ]
+    },
+    "GE": {
+      "areaKm2": 23000,
+      "sourceKeys": [
+        "Georgia"
+      ]
+    },
+    "GF": {
+      "areaKm2": 131000,
+      "sourceKeys": [
+        "French Guiana"
+      ]
+    },
+    "GG": {
+      "areaKm2": 7000,
+      "sourceKeys": [
+        "Guernsey"
+      ]
+    },
+    "GH": {
+      "areaKm2": 227000,
+      "sourceKeys": [
+        "Ghana"
+      ]
+    },
+    "GI": {
+      "areaKm2": 400,
+      "sourceKeys": [
+        "Gibraltar"
+      ]
+    },
+    "GL": {
+      "areaKm2": 2250000,
+      "sourceKeys": [
+        "Greenland"
+      ]
+    },
+    "GM": {
+      "areaKm2": 22000,
+      "sourceKeys": [
+        "Gambia"
+      ]
+    },
+    "GN": {
+      "areaKm2": 101000,
+      "sourceKeys": [
+        "Guinea"
+      ]
+    },
+    "GP": {
+      "areaKm2": 91000,
+      "sourceKeys": [
+        "Guadeloupe"
+      ]
+    },
+    "GQ": {
+      "areaKm2": 304000,
+      "sourceKeys": [
+        "Equatorial Guinea"
+      ]
+    },
+    "GR": {
+      "areaKm2": 482000,
+      "sourceKeys": [
+        "Greece"
+      ]
+    },
+    "GS": {
+      "areaKm2": 1237000,
+      "sourceKeys": [
+        "South Georgia and South Sandwich Islands"
+      ]
+    },
+    "GT": {
+      "areaKm2": 110000,
+      "sourceKeys": [
+        "Guatemala"
+      ]
+    },
+    "GU": {
+      "areaKm2": 208000,
+      "sourceKeys": [
+        "Guam"
+      ]
+    },
+    "GW": {
+      "areaKm2": 75000,
+      "sourceKeys": [
+        "Guinea-Bissau"
+      ]
+    },
+    "GY": {
+      "areaKm2": 134000,
+      "sourceKeys": [
+        "Guyana"
+      ]
+    },
+    "HK": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "HM": {
+      "areaKm2": 417000,
+      "sourceKeys": [
+        "Heard Island and McDonald Islands"
+      ]
+    },
+    "HN": {
+      "areaKm2": 207000,
+      "sourceKeys": [
+        "Honduras"
+      ]
+    },
+    "HR": {
+      "areaKm2": 55000,
+      "sourceKeys": [
+        "Croatia"
+      ]
+    },
+    "HT": {
+      "areaKm2": 103000,
+      "sourceKeys": [
+        "Haiti"
+      ]
+    },
+    "HU": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "ID": {
+      "areaKm2": 5965000,
+      "sourceKeys": [
+        "Indonesia"
+      ]
+    },
+    "IE": {
+      "areaKm2": 426000,
+      "sourceKeys": [
+        "Ireland"
+      ]
+    },
+    "IL": {
+      "areaKm2": 25000,
+      "sourceKeys": [
+        "Israel"
+      ]
+    },
+    "IM": {
+      "areaKm2": 3949,
+      "sourceKeys": [
+        "Isle of Man"
+      ],
+      "note": "Supplementary value from the 2022 UK fisheries spatial-squeeze report for the Isle of Man maritime area."
+    },
+    "IN": {
+      "areaKm2": 2316000,
+      "sourceKeys": [
+        "India"
+      ]
+    },
+    "IO": {
+      "areaKm2": 649000,
+      "sourceKeys": [
+        "Chagos Archipelago"
+      ],
+      "note": "Mapped from the Chagos Archipelago source row."
+    },
+    "IQ": {
+      "areaKm2": 1000,
+      "sourceKeys": [
+        "Iraq"
+      ]
+    },
+    "IR": {
+      "areaKm2": 215000,
+      "sourceKeys": [
+        "Iran"
+      ]
+    },
+    "IS": {
+      "areaKm2": 760000,
+      "sourceKeys": [
+        "Iceland"
+      ]
+    },
+    "IT": {
+      "areaKm2": 536000,
+      "sourceKeys": [
+        "Italy"
+      ]
+    },
+    "JE": {
+      "areaKm2": 2000,
+      "sourceKeys": [
+        "Jersey"
+      ]
+    },
+    "JM": {
+      "areaKm2": 256000,
+      "sourceKeys": [
+        "Jamaica"
+      ]
+    },
+    "JO": {
+      "areaKm2": 100,
+      "sourceKeys": [
+        "Jordan"
+      ]
+    },
+    "JP": {
+      "areaKm2": 4061000,
+      "sourceKeys": [
+        "Japan"
+      ]
+    },
+    "KE": {
+      "areaKm2": 113000,
+      "sourceKeys": [
+        "Kenya"
+      ]
+    },
+    "KG": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "KH": {
+      "areaKm2": 48000,
+      "sourceKeys": [
+        "Cambodia"
+      ]
+    },
+    "KI": {
+      "areaKm2": 3437000,
+      "sourceKeys": [
+        "Kiribati"
+      ]
+    },
+    "KM": {
+      "areaKm2": 164000,
+      "sourceKeys": [
+        "Comoros"
+      ]
+    },
+    "KN": {
+      "areaKm2": 9000,
+      "sourceKeys": [
+        "St. Kitts & Nevis"
+      ]
+    },
+    "KP": {
+      "areaKm2": 113000,
+      "sourceKeys": [
+        "North Korea"
+      ]
+    },
+    "KR": {
+      "areaKm2": 346000,
+      "sourceKeys": [
+        "South Korea"
+      ]
+    },
+    "KW": {
+      "areaKm2": 11000,
+      "sourceKeys": [
+        "Kuwait"
+      ]
+    },
+    "KY": {
+      "areaKm2": 118000,
+      "sourceKeys": [
+        "Cayman Islands"
+      ]
+    },
+    "KZ": {
+      "areaKm2": 114000,
+      "sourceKeys": [
+        "Kazakhstan"
+      ]
+    },
+    "LA": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "LB": {
+      "areaKm2": 20000,
+      "sourceKeys": [
+        "Lebanon"
+      ]
+    },
+    "LC": {
+      "areaKm2": 15000,
+      "sourceKeys": [
+        "St. Lucia"
+      ]
+    },
+    "LI": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "LK": {
+      "areaKm2": 532000,
+      "sourceKeys": [
+        "Sri Lanka"
+      ]
+    },
+    "LR": {
+      "areaKm2": 251000,
+      "sourceKeys": [
+        "Liberia"
+      ]
+    },
+    "LS": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "LT": {
+      "areaKm2": 7000,
+      "sourceKeys": [
+        "Lithuania"
+      ]
+    },
+    "LU": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "LV": {
+      "areaKm2": 28000,
+      "sourceKeys": [
+        "Latvia"
+      ]
+    },
+    "LY": {
+      "areaKm2": 364000,
+      "sourceKeys": [
+        "Libya"
+      ]
+    },
+    "MA": {
+      "areaKm2": 280000,
+      "sourceKeys": [
+        "Morocco"
+      ]
+    },
+    "MC": {
+      "areaKm2": 300,
+      "sourceKeys": [
+        "Monaco"
+      ]
+    },
+    "MD": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "ME": {
+      "areaKm2": 6000,
+      "sourceKeys": [
+        "Montenegro"
+      ]
+    },
+    "MF": {
+      "areaKm2": 1000,
+      "sourceKeys": [
+        "St. Martin"
+      ]
+    },
+    "MG": {
+      "areaKm2": 1190000,
+      "sourceKeys": [
+        "Madagascar"
+      ]
+    },
+    "MH": {
+      "areaKm2": 1997000,
+      "sourceKeys": [
+        "Marshall Islands"
+      ]
+    },
+    "MK": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "ML": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "MM": {
+      "areaKm2": 491000,
+      "sourceKeys": [
+        "Myanmar"
+      ]
+    },
+    "MN": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "MO": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "MP": {
+      "areaKm2": 764000,
+      "sourceKeys": [
+        "Northern Mariana Islands"
+      ]
+    },
+    "MQ": {
+      "areaKm2": 48000,
+      "sourceKeys": [
+        "Martinique"
+      ]
+    },
+    "MR": {
+      "areaKm2": 173000,
+      "sourceKeys": [
+        "Mauritania"
+      ]
+    },
+    "MS": {
+      "areaKm2": 7000,
+      "sourceKeys": [
+        "Montserrat"
+      ]
+    },
+    "MT": {
+      "areaKm2": 53000,
+      "sourceKeys": [
+        "Malta"
+      ]
+    },
+    "MU": {
+      "areaKm2": 1278000,
+      "sourceKeys": [
+        "Mauritius"
+      ]
+    },
+    "MV": {
+      "areaKm2": 918000,
+      "sourceKeys": [
+        "Maldives"
+      ]
+    },
+    "MW": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "MX": {
+      "areaKm2": 3176000,
+      "sourceKeys": [
+        "Mexico"
+      ]
+    },
+    "MY": {
+      "areaKm2": 505000,
+      "sourceKeys": [
+        "Malaysia"
+      ]
+    },
+    "MZ": {
+      "areaKm2": 562000,
+      "sourceKeys": [
+        "Mozambique"
+      ]
+    },
+    "NA": {
+      "areaKm2": 562000,
+      "sourceKeys": [
+        "Namibia"
+      ]
+    },
+    "NC": {
+      "areaKm2": 1173000,
+      "sourceKeys": [
+        "New Caledonia"
+      ]
+    },
+    "NE": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "NF": {
+      "areaKm2": 431000,
+      "sourceKeys": [
+        "Norfolk Island"
+      ]
+    },
+    "NG": {
+      "areaKm2": 177000,
+      "sourceKeys": [
+        "Nigeria"
+      ]
+    },
+    "NI": {
+      "areaKm2": 213000,
+      "sourceKeys": [
+        "Nicaragua"
+      ]
+    },
+    "NL": {
+      "areaKm2": 62000,
+      "sourceKeys": [
+        "Netherlands"
+      ]
+    },
+    "NO": {
+      "areaKm2": 932000,
+      "sourceKeys": [
+        "Norway"
+      ]
+    },
+    "NP": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "NR": {
+      "areaKm2": 309000,
+      "sourceKeys": [
+        "Nauru"
+      ]
+    },
+    "NU": {
+      "areaKm2": 318000,
+      "sourceKeys": [
+        "Niue"
+      ]
+    },
+    "NZ": {
+      "areaKm2": 4101000,
+      "sourceKeys": [
+        "New Zealand"
+      ]
+    },
+    "OM": {
+      "areaKm2": 555000,
+      "sourceKeys": [
+        "Oman"
+      ]
+    },
+    "PA": {
+      "areaKm2": 329000,
+      "sourceKeys": [
+        "Panama"
+      ]
+    },
+    "PE": {
+      "areaKm2": 846000,
+      "sourceKeys": [
+        "Peru"
+      ]
+    },
+    "PF": {
+      "areaKm2": 4762000,
+      "sourceKeys": [
+        "French Polynesia"
+      ]
+    },
+    "PG": {
+      "areaKm2": 2384000,
+      "sourceKeys": [
+        "Papua New Guinea"
+      ]
+    },
+    "PH": {
+      "areaKm2": 1961000,
+      "sourceKeys": [
+        "Philippines"
+      ]
+    },
+    "PK": {
+      "areaKm2": 223000,
+      "sourceKeys": [
+        "Pakistan"
+      ]
+    },
+    "PL": {
+      "areaKm2": 29000,
+      "sourceKeys": [
+        "Poland"
+      ]
+    },
+    "PM": {
+      "areaKm2": 12000,
+      "sourceKeys": [
+        "St. Pierre & Miquelon"
+      ]
+    },
+    "PN": {
+      "areaKm2": 842000,
+      "sourceKeys": [
+        "Pitcairn Islands"
+      ]
+    },
+    "PR": {
+      "areaKm2": 154000,
+      "sourceKeys": [
+        "Puerto Rico"
+      ]
+    },
+    "PS": {
+      "areaKm2": 1000,
+      "sourceKeys": [
+        "Palestine"
+      ]
+    },
+    "PT": {
+      "areaKm2": 1728000,
+      "sourceKeys": [
+        "Portugal"
+      ]
+    },
+    "PW": {
+      "areaKm2": 614000,
+      "sourceKeys": [
+        "Palau"
+      ]
+    },
+    "PY": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "QA": {
+      "areaKm2": 31000,
+      "sourceKeys": [
+        "Qatar"
+      ]
+    },
+    "RE": {
+      "areaKm2": 315000,
+      "sourceKeys": [
+        "Réunion"
+      ]
+    },
+    "RO": {
+      "areaKm2": 30000,
+      "sourceKeys": [
+        "Romania"
+      ]
+    },
+    "RS": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "RU": {
+      "areaKm2": 7614000,
+      "sourceKeys": [
+        "Russia"
+      ]
+    },
+    "RW": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "SA": {
+      "areaKm2": 219000,
+      "sourceKeys": [
+        "Saudi Arabia"
+      ]
+    },
+    "SB": {
+      "areaKm2": 1598000,
+      "sourceKeys": [
+        "Solomon Islands"
+      ]
+    },
+    "SC": {
+      "areaKm2": 1338000,
+      "sourceKeys": [
+        "Seychelles"
+      ]
+    },
+    "SD": {
+      "areaKm2": 61000,
+      "sourceKeys": [
+        "Sudan"
+      ]
+    },
+    "SE": {
+      "areaKm2": 154000,
+      "sourceKeys": [
+        "Sweden"
+      ]
+    },
+    "SG": {
+      "areaKm2": 1000,
+      "sourceKeys": [
+        "Singapore"
+      ]
+    },
+    "SH": {
+      "areaKm2": 1653000,
+      "sourceKeys": [
+        "Saint Helena",
+        "Ascension",
+        "Tristan da Cunha"
+      ],
+      "note": "Aggregate of Saint Helena, Ascension and Tristan da Cunha source rows."
+    },
+    "SI": {
+      "areaKm2": 200,
+      "sourceKeys": [
+        "Slovenia"
+      ]
+    },
+    "SJ": {
+      "areaKm2": 1054000,
+      "sourceKeys": [
+        "Svalbard",
+        "Jan Mayen"
+      ],
+      "note": "Aggregate of Svalbard and Jan Mayen source rows."
+    },
+    "SK": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "SL": {
+      "areaKm2": 160000,
+      "sourceKeys": [
+        "Sierra Leone"
+      ]
+    },
+    "SM": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "SN": {
+      "areaKm2": 123000,
+      "sourceKeys": [
+        "Senegal"
+      ]
+    },
+    "SO": {
+      "areaKm2": 780000,
+      "sourceKeys": [
+        "Somalia"
+      ]
+    },
+    "SR": {
+      "areaKm2": 133000,
+      "sourceKeys": [
+        "Suriname"
+      ]
+    },
+    "SS": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "ST": {
+      "areaKm2": 131000,
+      "sourceKeys": [
+        "São Tomé & Príncipe"
+      ]
+    },
+    "SV": {
+      "areaKm2": 95000,
+      "sourceKeys": [
+        "El Salvador"
+      ]
+    },
+    "SX": {
+      "areaKm2": 500,
+      "sourceKeys": [
+        "Sint Maarten"
+      ]
+    },
+    "SY": {
+      "areaKm2": 10000,
+      "sourceKeys": [
+        "Syria"
+      ]
+    },
+    "SZ": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "TC": {
+      "areaKm2": 90000,
+      "sourceKeys": [
+        "Turks & Caicos Islands"
+      ]
+    },
+    "TD": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "TF": {
+      "areaKm2": 2266000,
+      "sourceKeys": [
+        "Crozet",
+        "Kerguelen",
+        "St Paul and Amsterdam Islands",
+        "Bassas da India",
+        "Europa Island",
+        "Glorieuse Islands",
+        "Juan de Nova Island",
+        "Tromelin"
+      ],
+      "note": "Aggregate of Crozet, Kerguelen, St Paul/Amsterdam and the listed French Scattered Islands source rows; Antarctic territory is not assigned an EEZ here."
+    },
+    "TG": {
+      "areaKm2": 15000,
+      "sourceKeys": [
+        "Togo"
+      ]
+    },
+    "TH": {
+      "areaKm2": 295000,
+      "sourceKeys": [
+        "Thailand"
+      ]
+    },
+    "TJ": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "TK": {
+      "areaKm2": 321000,
+      "sourceKeys": [
+        "Tokelau"
+      ]
+    },
+    "TL": {
+      "areaKm2": 77000,
+      "sourceKeys": [
+        "Timor-Leste"
+      ]
+    },
+    "TM": {
+      "areaKm2": 61000,
+      "sourceKeys": [
+        "Turkmenistan"
+      ]
+    },
+    "TN": {
+      "areaKm2": 99000,
+      "sourceKeys": [
+        "Tunisia"
+      ]
+    },
+    "TO": {
+      "areaKm2": 664000,
+      "sourceKeys": [
+        "Tonga"
+      ]
+    },
+    "TR": {
+      "areaKm2": 261000,
+      "sourceKeys": [
+        "Türkiye"
+      ]
+    },
+    "TT": {
+      "areaKm2": 76000,
+      "sourceKeys": [
+        "Trinidad & Tobago"
+      ]
+    },
+    "TV": {
+      "areaKm2": 752000,
+      "sourceKeys": [
+        "Tuvalu"
+      ]
+    },
+    "TW": {
+      "areaKm2": null,
+      "sourceKeys": [],
+      "note": "No single value from the selected Marine Regions v11-derived table is used because of overlapping/provisional claim treatment."
+    },
+    "TZ": {
+      "areaKm2": 240000,
+      "sourceKeys": [
+        "Tanzania"
+      ]
+    },
+    "UA": {
+      "areaKm2": 136000,
+      "sourceKeys": [
+        "Ukraine"
+      ]
+    },
+    "UG": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "UM": {
+      "areaKm2": null,
+      "sourceKeys": [],
+      "note": "No complete single ISO-UM value was available in the selected source table; kept explicit as null rather than using a partial sum."
+    },
+    "US": {
+      "areaKm2": 8575000,
+      "sourceKeys": [
+        "United States"
+      ]
+    },
+    "UY": {
+      "areaKm2": 121000,
+      "sourceKeys": [
+        "Uruguay"
+      ]
+    },
+    "UZ": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "VA": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "VC": {
+      "areaKm2": 36000,
+      "sourceKeys": [
+        "St. Vincent & Grenadines"
+      ]
+    },
+    "VE": {
+      "areaKm2": 469000,
+      "sourceKeys": [
+        "Venezuela"
+      ]
+    },
+    "VG": {
+      "areaKm2": 81000,
+      "sourceKeys": [
+        "British Virgin Islands"
+      ]
+    },
+    "VI": {
+      "areaKm2": 38000,
+      "sourceKeys": [
+        "U.S. Virgin Islands"
+      ]
+    },
+    "VN": {
+      "areaKm2": 747000,
+      "sourceKeys": [
+        "Vietnam"
+      ]
+    },
+    "VU": {
+      "areaKm2": 668220,
+      "sourceKeys": [
+        "Vanuatu"
+      ],
+      "note": "Supplementary value from the Pacific Community (SPC) Vanuatu country profile."
+    },
+    "WF": {
+      "areaKm2": 262000,
+      "sourceKeys": [
+        "Wallis & Futuna"
+      ]
+    },
+    "WS": {
+      "areaKm2": 130000,
+      "sourceKeys": [
+        "Samoa"
+      ]
+    },
+    "XK": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "YE": {
+      "areaKm2": 526000,
+      "sourceKeys": [
+        "Yemen"
+      ]
+    },
+    "YT": {
+      "areaKm2": 67000,
+      "sourceKeys": [
+        "Mayotte"
+      ]
+    },
+    "ZA": {
+      "areaKm2": 1547000,
+      "sourceKeys": [
+        "South Africa"
+      ]
+    },
+    "ZM": {
+      "areaKm2": null,
+      "sourceKeys": []
+    },
+    "ZW": {
+      "areaKm2": null,
+      "sourceKeys": []
+    }
+  }
+}

@@ -514,6 +514,121 @@
       min-width: 0;
     }
 
+
+    .nationalDaysPanel {
+      margin-top: 16px;
+      border: 1px solid var(--calendar-grid);
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.025);
+    }
+    .nationalDaysHeader {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--calendar-grid);
+      background: var(--calendar-header);
+    }
+    .nationalDaysHeaderRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .nationalDaysTitle { margin: 0; font-size: 15px; font-weight: 700; }
+    .nationalDaysToggle { flex: 0 0 auto; padding: 6px 9px; font-size: 12px; }
+    .nationalDaysContent[hidden] { display: none !important; }
+    .nationalDaysHelp { padding: 9px 12px 0; font-size: 11px; color: var(--muted); line-height: 1.35; }
+    .worldMapToolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 10px 0;
+    }
+    .worldMapToolbar button { min-width: 34px; padding: 6px 8px; font-size: 13px; line-height: 1; }
+    .worldMapKeyboardHelp { margin-left: 4px; color: var(--muted); font-size: 10px; line-height: 1.25; }
+    .worldMapWrap { padding: 8px 10px 10px; overflow: hidden; }
+    .worldMapSvg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 520px;
+      border: 1px solid rgba(91,80,65,0.18);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.025);
+      cursor: grab;
+      touch-action: none;
+      overscroll-behavior: contain;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .worldMapSvg.is-dragging { cursor: grabbing; }
+    .worldMapSvg.is-dragging .worldMapCountry { cursor: grabbing; }
+    .worldMapSvg:focus-visible { outline: 3px solid #111; outline-offset: 2px; }
+    .worldMapCountry {
+      fill: rgba(105, 83, 53, 0.18);
+      stroke: rgba(91, 80, 65, 0.62);
+      stroke-width: 0.7;
+      vector-effect: non-scaling-stroke;
+      cursor: pointer;
+      transition: fill 0.12s ease, stroke-width 0.12s ease;
+    }
+    .worldMapCountry:hover,
+    .worldMapCountry:focus-visible,
+    .worldMapCountry.is-selected {
+      fill: rgba(132, 91, 36, 0.34);
+      stroke: rgba(17,17,17,0.9);
+      stroke-width: 1.35;
+      outline: none;
+    }
+    .worldMapMarker { stroke-width: 1.1; }
+    .nationalDayDialog {
+      width: min(620px, calc(100vw - 28px));
+      max-height: min(78vh, 720px);
+      overflow: auto;
+      border: 1px solid var(--calendar-grid);
+      border-radius: 12px;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.28);
+    }
+    .nationalDayDialog::backdrop { background: rgba(17,17,17,0.38); }
+    .nationalDayDialogHeader {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px 11px;
+      border-bottom: 1px solid var(--calendar-grid);
+      background: var(--calendar-header);
+    }
+    .nationalDayDialogCountry { margin: 0; font-size: 17px; line-height: 1.25; }
+    .nationalDayClose { flex: 0 0 auto; padding: 6px 9px; font-size: 12px; }
+    .nationalDayDialogBody { padding: 4px 14px 14px; }
+    .nationalDayEntry { padding: 12px 0; }
+    .nationalDayEntry + .nationalDayEntry { border-top: 1px solid rgba(91,80,65,0.22); }
+    .nationalDayDateLine { display: flex; align-items: center; gap: 8px; min-height: 38px; }
+    .nationalDayDateTenpoGlyph { flex: 0 0 auto; font-size: 24px; line-height: 1; }
+    .nationalDayDateLine .nationalDayDateCartouche { font-size: 30px; max-width: 100%; }
+    .nationalDayDateLatin { margin-top: 3px; color: var(--calendar-latin); font-size: 10px; line-height: 1.2; }
+    .nationalDayName { margin-top: 6px; font-size: 14px; font-weight: 650; line-height: 1.35; }
+    .nationalDayNote { margin-top: 5px; font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .nationalDayEmpty { padding: 14px 0 4px; color: var(--muted); font-size: 12px; }
+    .countryStats { border-top: 1px solid rgba(91,80,65,0.22); padding: 11px 0 0; }
+    .countryStatRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 7px 0; }
+    .countryStatValue, .countryStatAsOf { min-width: 0; }
+    .countryStatValue { flex: 1 1 auto; }
+    .countryStatAsOf { flex: 0 1 auto; margin-left: auto; }
+    .countryStatTopLine { display: flex; align-items: center; gap: 7px; min-height: 34px; white-space: nowrap; }
+    .countryStatGlyph { flex: 0 0 auto; font-size: 23px; line-height: 1; }
+    .countryStatCartouche { font-size: 27px; max-width: 100%; }
+    .countryStatUnit { font-size: 12px; white-space: nowrap; }
+    .countryStatLatin { margin-top: 2px; color: var(--calendar-latin); font-size: 9px; line-height: 1.2; white-space: nowrap; }
+    .countryStatsFooter { margin-top: 7px; color: var(--muted); font-size: 8px; line-height: 1.3; }
+
     .printRoot { display: none; }
 
     .printPage {
@@ -751,6 +866,8 @@
       .richDay .holidayDots { left: 2px; right: 2px; bottom: 2px; height: 4px; gap: 2px; }
       .richDay .holidayDot { flex-basis: 4px; width: 4px; height: 4px; }
       .richDay.hasHolidayDots .fullMoonMarker { bottom: 12px; }
+      .nationalDaysPanel,
+      .nationalDayDialog { display: none !important; }
       .holidayList { margin-top: 12px; }
       .holidayListTitle { padding: 9px 10px; font-size: 14px; }
       .holidayMonthHeading { padding: 9px 10px 8px; }
@@ -862,6 +979,39 @@
 
       <div class="help" id="pdfHelp" data-ui="pdfHelp">ilo ni li pana e lipu PDF A4 lon nasin supa. lipu PDF pi tenpo sike li jo e lukin 4 × 3 lon lipu nanpa wan, li jo e lipu wan pi tenpo mun lon lipu 12 ante.</div>
       <div class="status" id="status" role="status" aria-live="polite"></div>
+
+      <section class="nationalDaysPanel" id="nationalDaysPanel" aria-labelledby="nationalDaysTitle">
+        <div class="nationalDaysHeader">
+          <div class="nationalDaysHeaderRow">
+            <h2 class="nationalDaysTitle" id="nationalDaysTitle" data-ui="nationalDaysHeading">tenpo suno ma pi ma ale</h2>
+            <button class="nationalDaysToggle" id="nationalDaysToggleBtn" type="button" aria-controls="nationalDaysContent" aria-expanded="true">o weka e sitelen ma</button>
+          </div>
+        </div>
+        <div class="nationalDaysContent" id="nationalDaysContent">
+          <div class="nationalDaysHelp" id="nationalDaysHelp" data-ui="nationalDaysHelp">o pilin e ma lon sitelen ma tawa lukin e tenpo suno ma.</div>
+          <div class="worldMapToolbar" id="worldMapToolbar" role="group" aria-label="ilo pi sitelen ma">
+            <button id="worldMapZoomInBtn" type="button" title="+">+</button>
+            <button id="worldMapZoomOutBtn" type="button" title="−">−</button>
+            <button id="worldMapPanLeftBtn" type="button" title="←">←</button>
+            <button id="worldMapPanUpBtn" type="button" title="↑">↑</button>
+            <button id="worldMapPanDownBtn" type="button" title="↓">↓</button>
+            <button id="worldMapPanRightBtn" type="button" title="→">→</button>
+            <button id="worldMapResetBtn" type="button" title="0">0</button>
+            <span class="worldMapKeyboardHelp" id="worldMapKeyboardHelp">+ / − · ← ↑ ↓ → · 0</span>
+          </div>
+          <div class="worldMapWrap">
+            <svg id="worldMapSvg" class="worldMapSvg" viewBox="0 0 1000 500" role="group" tabindex="0" aria-label="sitelen ma pi ma ale"></svg>
+          </div>
+        </div>
+      </section>
+
+      <dialog id="nationalDayDialog" class="nationalDayDialog" aria-labelledby="nationalDayDialogCountry">
+        <div class="nationalDayDialogHeader">
+          <h2 id="nationalDayDialogCountry" class="nationalDayDialogCountry"></h2>
+          <button id="nationalDayCloseBtn" class="nationalDayClose" type="button">o pini</button>
+        </div>
+        <div id="nationalDayDialogBody" class="nationalDayDialogBody"></div>
+      </dialog>
       <section id="calendarHost" class="calendarHost" aria-label="lipu tenpo"></section>
 
       <div class="help disclaimer" id="disclaimer" data-ui="disclaimer" style="margin-top:14px;">
@@ -957,11 +1107,30 @@
     const calendarHost = document.getElementById("calendarHost");
     const printRoot = document.getElementById("printRoot");
     const statusEl = document.getElementById("status");
+    const nationalDaysPanel = document.getElementById("nationalDaysPanel");
+    const nationalDaysContent = document.getElementById("nationalDaysContent");
+    const nationalDaysToggleBtn = document.getElementById("nationalDaysToggleBtn");
+    const worldMapToolbar = document.getElementById("worldMapToolbar");
+    const worldMapKeyboardHelp = document.getElementById("worldMapKeyboardHelp");
+    const worldMapSvg = document.getElementById("worldMapSvg");
+    const worldMapZoomInBtn = document.getElementById("worldMapZoomInBtn");
+    const worldMapZoomOutBtn = document.getElementById("worldMapZoomOutBtn");
+    const worldMapPanLeftBtn = document.getElementById("worldMapPanLeftBtn");
+    const worldMapPanUpBtn = document.getElementById("worldMapPanUpBtn");
+    const worldMapPanDownBtn = document.getElementById("worldMapPanDownBtn");
+    const worldMapPanRightBtn = document.getElementById("worldMapPanRightBtn");
+    const worldMapResetBtn = document.getElementById("worldMapResetBtn");
+    const nationalDayDialog = document.getElementById("nationalDayDialog");
+    const nationalDayDialogCountry = document.getElementById("nationalDayDialogCountry");
+    const nationalDayDialogBody = document.getElementById("nationalDayDialogBody");
+    const nationalDayCloseBtn = document.getElementById("nationalDayCloseBtn");
 
     const UI_LANGUAGE_STORAGE_KEY = "nanpaLinjaNCalendarLanguage";
     const UI_LANGUAGE_DEFAULT = "tok";
     const HOLIDAY_COUNTRY_STORAGE_KEY = "nanpaLinjaNCalendarHolidayCountry";
     const HOLIDAY_TYPE_STORAGE_KEY = "nanpaLinjaNCalendarHolidayType";
+    const NATIONAL_DAYS_MAP_VISIBLE_STORAGE_KEY = "nanpaLinjaNCalendarWorldMapVisible";
+    const NATIONAL_DAYS_MAP_VISIBLE_DEFAULT = false;
     const HOLIDAY_COUNTRY_DEFAULT = "US";
     const HOLIDAY_TYPE_DEFAULT = "public";
     const HOLIDAY_DATA_ROOT = "./calendar-holidays";
@@ -970,8 +1139,18 @@
     const HOLIDAY_SHARED_FILE_URLS = Object.freeze({
       "index.json": HOLIDAY_INDEX_URL,
       "toki-pona-name-map.json": `${HOLIDAY_DATA_ROOT}/toki-pona-name-map.json`,
-      "holiday-names.json": `${HOLIDAY_DATA_ROOT}/holiday-names.json`
+      "holiday-names.json": `${HOLIDAY_DATA_ROOT}/holiday-names.json`,
+      "national-days.json": `${HOLIDAY_DATA_ROOT}/national-days.json`,
+      "world-map.json": `${HOLIDAY_DATA_ROOT}/world-map.json`,
+      "eez-areas.json": `${HOLIDAY_DATA_ROOT}/eez-areas.json`,
+      "country-statistics-map.json": `${HOLIDAY_DATA_ROOT}/country-statistics-map.json`
     });
+    const WORLD_BANK_STATS_URL = "https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL;AG.LND.TOTL.K2?source=2&mrnev=1&format=json&per_page=20000";
+    const WORLD_BANK_STATS_CACHE_KEY = "worldBankCountryStats:v1";
+    const WORLD_BANK_STATS_CACHE_SCHEMA_VERSION = 1;
+    const WORLD_BANK_STATS_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+    const WORLD_BANK_POPULATION_INDICATOR = "SP.POP.TOTL";
+    const WORLD_BANK_LAND_AREA_INDICATOR = "AG.LND.TOTL.K2";
     const HOLIDAY_CACHE_DB_NAME = "nanpaLinjaNCalendarHolidayCache";
     const HOLIDAY_CACHE_DB_VERSION = 1;
     const HOLIDAY_CACHE_FILES_STORE = "files";
@@ -1275,6 +1454,23 @@
         holidayPublicOption: "pi jan ale",
         holidayOthersOption: "ante",
         holidaysHeading: "tenpo suno suli",
+        nationalDaysHeading: "tenpo suno ma pi ma ale",
+        nationalDaysHelp: "o pilin e ma lon sitelen ma tawa lukin e tenpo suno ma. + en − li ante e suli; nena nasin li tawa; 0 li pana e lukin ale.",
+        nationalDaysShow: "o pana e sitelen ma",
+        nationalDaysHide: "o weka e sitelen ma",
+        nationalDayClose: "o pini",
+        nationalDayNoData: "sona pi tenpo suno ma li lon ala.",
+        nationalDayMapAria: "sitelen ma pi ma ale",
+        nationalDayDialogAria: "sona pi tenpo suno ma",
+        countryStatsFooter: "telo: EEZ · tan sona: World Bank · Marine Regions / VLIZ",
+        worldMapToolbarAria: "ilo pi sitelen ma",
+        worldMapZoomIn: "o suli e sitelen ma",
+        worldMapZoomOut: "o lili e sitelen ma",
+        worldMapPanLeft: "o tawa poka open",
+        worldMapPanUp: "o tawa sewi",
+        worldMapPanDown: "o tawa anpa",
+        worldMapPanRight: "o tawa poka pini",
+        worldMapReset: "o pana e lukin ale",
         yearLabel: "tenpo sike",
         monthLabel: "tenpo mun",
         allOption: "ale",
@@ -1308,6 +1504,23 @@
         holidayPublicOption: "Public",
         holidayOthersOption: "Others",
         holidaysHeading: "Holidays",
+        nationalDaysHeading: "National days of the world",
+        nationalDaysHelp: "Select a country on the map to view its national-day information. Use +/− to zoom, the arrow controls to pan, and 0 to reset.",
+        nationalDaysShow: "Show world map",
+        nationalDaysHide: "Hide world map",
+        nationalDayClose: "Close",
+        nationalDayNoData: "No national-day information is available for this map area.",
+        nationalDayMapAria: "Interactive world map of national days",
+        nationalDayDialogAria: "National-day information",
+        countryStatsFooter: "telo: EEZ · Sources: World Bank · Marine Regions / VLIZ",
+        worldMapToolbarAria: "World map navigation",
+        worldMapZoomIn: "Zoom in",
+        worldMapZoomOut: "Zoom out",
+        worldMapPanLeft: "Pan left",
+        worldMapPanUp: "Pan up",
+        worldMapPanDown: "Pan down",
+        worldMapPanRight: "Pan right",
+        worldMapReset: "Reset map view",
         yearLabel: "Year",
         monthLabel: "Month",
         allOption: "All",
@@ -1346,7 +1559,26 @@
       catch {}
     }
 
+    function loadNationalDaysMapVisible() {
+      try {
+        const stored = localStorage.getItem(NATIONAL_DAYS_MAP_VISIBLE_STORAGE_KEY);
+        if (stored == null) return NATIONAL_DAYS_MAP_VISIBLE_DEFAULT;
+        return stored === "1" || stored === "true" || stored === "show";
+      } catch { return NATIONAL_DAYS_MAP_VISIBLE_DEFAULT; }
+    }
+
+    function saveNationalDaysMapVisible(value) {
+      try { localStorage.setItem(NATIONAL_DAYS_MAP_VISIBLE_STORAGE_KEY, value ? "1" : "0"); }
+      catch {}
+    }
+
+    function isWorldMapMobileViewport() {
+      try { return window.matchMedia("(max-width: 640px)").matches; }
+      catch { return window.innerWidth <= 640; }
+    }
+
     let uiLanguage = loadUiLanguage();
+    let nationalDaysMapVisible = loadNationalDaysMapVisible();
     let holidayCountries = [];
     let holidayCountryByCode = new Map();
     let holidayLoadGeneration = 0;
@@ -1366,6 +1598,19 @@
       holidayListEntries: [],
       error: null
     };
+    let nationalDayData = null;
+    let nationalDayCountryByCode = new Map();
+    let worldMapData = null;
+    let eezAreaData = null;
+    let countryStatisticsMapData = null;
+    let worldBankCountryStatsCache = null;
+    let worldBankCountryStatsLoadPromise = null;
+    let worldBankStatsAttemptedThisSession = false;
+    let selectedNationalDayCode = null;
+    let worldMapBaseView = { x: 0, y: 0, width: 1000, height: 500 };
+    let worldMapView = { ...worldMapBaseView };
+    let worldMapDragState = null;
+    let suppressWorldMapClickUntil = 0;
 
     function idbRequestResult(request) {
       return new Promise((resolve, reject) => {
@@ -1394,6 +1639,31 @@
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error || new Error("Holiday cache database could not be opened."));
       });
+    }
+
+    async function readHolidayMetadataValue(key) {
+      const db = await openHolidayCacheDb();
+      try {
+        const transaction = db.transaction(HOLIDAY_CACHE_METADATA_STORE, "readonly");
+        const done = idbTransactionComplete(transaction);
+        const value = await idbRequestResult(transaction.objectStore(HOLIDAY_CACHE_METADATA_STORE).get(String(key)));
+        await done;
+        return value;
+      } finally {
+        db.close();
+      }
+    }
+
+    async function writeHolidayMetadataValue(key, value) {
+      const db = await openHolidayCacheDb();
+      try {
+        const transaction = db.transaction(HOLIDAY_CACHE_METADATA_STORE, "readwrite");
+        const done = idbTransactionComplete(transaction);
+        transaction.objectStore(HOLIDAY_CACHE_METADATA_STORE).put(value, String(key));
+        await done;
+      } finally {
+        db.close();
+      }
     }
 
     function completeHolidaySharedFiles(files) {
@@ -2048,12 +2318,20 @@
       try {
         const sharedData = await loadHolidaySharedData();
         const indexData = sharedData.files?.["index.json"];
+        nationalDayData = sharedData.files?.["national-days.json"] || null;
+        worldMapData = sharedData.files?.["world-map.json"] || null;
+        eezAreaData = sharedData.files?.["eez-areas.json"] || null;
+        countryStatisticsMapData = sharedData.files?.["country-statistics-map.json"] || null;
+        const nationalRows = Array.isArray(nationalDayData?.countries) ? nationalDayData.countries : [];
+        nationalDayCountryByCode = new Map(nationalRows.map(row => [String(row?.code || "").toUpperCase(), row]));
         if (!Array.isArray(indexData?.countries)) throw new Error("Holiday country index has no countries array.");
         holidayCountries = indexData.countries
           .filter(country => /^[A-Za-z]{2}$/.test(String(country?.code || "")))
           .map(country => ({ ...country, code: String(country.code).toUpperCase() }));
         holidayCountryByCode = new Map(holidayCountries.map(country => [country.code, country]));
         if (holidayCountries.length === 0) throw new Error("Holiday country index contains no two-letter country codes.");
+        assertNationalDayCoverageData(indexData, nationalDayData, worldMapData);
+        assertCountryStatisticsCoverageData(indexData, eezAreaData, countryStatisticsMapData);
 
         const validCodes = new Set(holidayCountryByCode.keys());
         const savedCountry = loadSavedHolidayCountry();
@@ -2101,6 +2379,8 @@
       const holidayAllOption = holidayTypeSelect?.querySelector('option[value="all"]');
       const holidayPublicOption = holidayTypeSelect?.querySelector('option[value="public"]');
       const holidayOthersOption = holidayTypeSelect?.querySelector('option[value="others"]');
+      const nationalDaysTitle = document.getElementById("nationalDaysTitle");
+      const nationalDaysHelp = document.getElementById("nationalDaysHelp");
 
       if (pageTitle) pageTitle.textContent = uiText("pageTitle");
       if (introHelp) introHelp.innerHTML = uiText("introHelp");
@@ -2131,12 +2411,624 @@
       if (holidayAllOption) holidayAllOption.textContent = uiText("holidayAllOption");
       if (holidayPublicOption) holidayPublicOption.textContent = uiText("holidayPublicOption");
       if (holidayOthersOption) holidayOthersOption.textContent = uiText("holidayOthersOption");
+      if (nationalDaysTitle) nationalDaysTitle.textContent = uiText("nationalDaysHeading");
+      if (nationalDaysHelp) nationalDaysHelp.textContent = uiText("nationalDaysHelp");
+      if (worldMapSvg) worldMapSvg.setAttribute("aria-label", uiText("nationalDayMapAria"));
+      if (worldMapToolbar) worldMapToolbar.setAttribute("aria-label", uiText("worldMapToolbarAria"));
+      if (worldMapZoomInBtn) worldMapZoomInBtn.setAttribute("aria-label", uiText("worldMapZoomIn"));
+      if (worldMapZoomOutBtn) worldMapZoomOutBtn.setAttribute("aria-label", uiText("worldMapZoomOut"));
+      if (worldMapPanLeftBtn) worldMapPanLeftBtn.setAttribute("aria-label", uiText("worldMapPanLeft"));
+      if (worldMapPanUpBtn) worldMapPanUpBtn.setAttribute("aria-label", uiText("worldMapPanUp"));
+      if (worldMapPanDownBtn) worldMapPanDownBtn.setAttribute("aria-label", uiText("worldMapPanDown"));
+      if (worldMapPanRightBtn) worldMapPanRightBtn.setAttribute("aria-label", uiText("worldMapPanRight"));
+      if (worldMapResetBtn) worldMapResetBtn.setAttribute("aria-label", uiText("worldMapReset"));
+      if (nationalDayDialog) nationalDayDialog.setAttribute("aria-label", uiText("nationalDayDialogAria"));
+      if (nationalDayCloseBtn) nationalDayCloseBtn.textContent = uiText("nationalDayClose");
       if (languageSelect) languageSelect.setAttribute("aria-label", uiText("languageLabel"));
       if (countrySelect) countrySelect.setAttribute("aria-label", uiText("countryLabel"));
       if (holidayTypeSelect) holidayTypeSelect.setAttribute("aria-label", uiText("holidayTypeLabel"));
       if (yearSelect) yearSelect.setAttribute("aria-label", uiText("yearLabel"));
       if (monthSelect) monthSelect.setAttribute("aria-label", uiText("monthLabel"));
       refreshCountryOptions();
+      applyNationalDaysMapVisibility({ persist: false });
+      if (worldMapData && nationalDayCountryByCode.size) renderWorldMap();
+      if (nationalDayDialog?.open && selectedNationalDayCode) renderNationalDayDialog(selectedNationalDayCode);
+    }
+
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    function assertNationalDayCoverageData(indexData, dayData, mapData) {
+      const indexCodes = new Set((Array.isArray(indexData?.countries) ? indexData.countries : [])
+        .map(row => String(row?.code || "").toUpperCase()).filter(code => /^[A-Z]{2}$/.test(code)));
+      const dayCodes = new Set((Array.isArray(dayData?.countries) ? dayData.countries : [])
+        .map(row => String(row?.code || "").toUpperCase()).filter(Boolean));
+      const mapList = [
+        ...(Array.isArray(mapData?.paths) ? mapData.paths : []),
+        ...(Array.isArray(mapData?.markers) ? mapData.markers : [])
+      ];
+      const mapCodes = new Set(mapList.map(row => String(row?.code || "").toUpperCase()).filter(Boolean));
+      const missingDays = [...indexCodes].filter(code => !dayCodes.has(code));
+      const missingMap = [...indexCodes].filter(code => !mapCodes.has(code));
+      const extraDays = [...dayCodes].filter(code => !indexCodes.has(code));
+      const extraMap = [...mapCodes].filter(code => !indexCodes.has(code));
+      const duplicateMapCodes = [...mapCodes].filter(code => mapList.filter(row => String(row?.code || "").toUpperCase() === code).length !== 1);
+      if (indexCodes.size !== 250 || missingDays.length || missingMap.length || extraDays.length || extraMap.length || duplicateMapCodes.length) {
+        throw new Error(`National-day/map coverage mismatch: index=${indexCodes.size}; missingDays=${missingDays.join(",")}; missingMap=${missingMap.join(",")}; extraDays=${extraDays.join(",")}; extraMap=${extraMap.join(",")}; duplicateMap=${duplicateMapCodes.join(",")}`);
+      }
+      return { indexCount: indexCodes.size, dayCount: dayCodes.size, mapCount: mapCodes.size };
+    }
+
+    function assertCountryStatisticsCoverageData(indexData, eezData, mappingData) {
+      const indexCodes = new Set((Array.isArray(indexData?.countries) ? indexData.countries : [])
+        .map(row => String(row?.code || "").toUpperCase()).filter(code => /^[A-Z]{2}$/.test(code)));
+      const eezCountries = eezData?.countries && typeof eezData.countries === "object" ? eezData.countries : {};
+      const mappingCountries = mappingData?.countries && typeof mappingData.countries === "object" ? mappingData.countries : {};
+      const eezCodes = new Set(Object.keys(eezCountries).map(code => code.toUpperCase()));
+      const mappingCodes = new Set(Object.keys(mappingCountries).map(code => code.toUpperCase()));
+      const missingEez = [...indexCodes].filter(code => !eezCodes.has(code));
+      const missingMapping = [...indexCodes].filter(code => !mappingCodes.has(code));
+      const extraEez = [...eezCodes].filter(code => !indexCodes.has(code));
+      const extraMapping = [...mappingCodes].filter(code => !indexCodes.has(code));
+      const invalidEez = [...indexCodes].filter(code => {
+        const value = eezCountries?.[code]?.areaKm2;
+        return value != null && (!Number.isFinite(Number(value)) || Number(value) < 0);
+      });
+      const invalidMapping = [...indexCodes].filter(code => {
+        const row = mappingCountries?.[code];
+        return !row || row.eezKey !== code || (row.worldBankIso3 != null && !/^[A-Z]{3}$/.test(String(row.worldBankIso3)));
+      });
+      if (indexCodes.size !== 250 || missingEez.length || missingMapping.length || extraEez.length || extraMapping.length || invalidEez.length || invalidMapping.length) {
+        throw new Error(`Country-statistics coverage mismatch: index=${indexCodes.size}; missingEez=${missingEez.join(",")}; missingMapping=${missingMapping.join(",")}; extraEez=${extraEez.join(",")}; extraMapping=${extraMapping.join(",")}; invalidEez=${invalidEez.join(",")}; invalidMapping=${invalidMapping.join(",")}`);
+      }
+      return { indexCount: indexCodes.size, eezCount: eezCodes.size, mappingCount: mappingCodes.size };
+    }
+
+    function validWorldBankStatsCache(value) {
+      return !!value &&
+        Number(value.schemaVersion) === WORLD_BANK_STATS_CACHE_SCHEMA_VERSION &&
+        Number.isFinite(Number(value.fetchedAt)) &&
+        value.countries && typeof value.countries === "object";
+    }
+
+    function worldBankStatsCacheIsFresh(value, now = Date.now()) {
+      if (!validWorldBankStatsCache(value)) return false;
+      const age = Number(now) - Number(value.fetchedAt);
+      return age >= 0 && age < WORLD_BANK_STATS_TTL_MS;
+    }
+
+    function normalizeWorldBankStatsResponse(payload, fetchedAt = Date.now()) {
+      const rows = Array.isArray(payload?.[1]) ? payload[1] : [];
+      if (!rows.length) throw new Error("World Bank statistics response contains no rows.");
+      const countries = {};
+      for (const row of rows) {
+        const iso3 = String(row?.countryiso3code || "").toUpperCase();
+        const indicatorId = String(row?.indicator?.id || "");
+        const rawValue = row?.value;
+        if (rawValue == null || rawValue === "") continue;
+        const value = Number(rawValue);
+        const year = Number.parseInt(String(row?.date || ""), 10);
+        if (!/^[A-Z]{3}$/.test(iso3) || !Number.isFinite(value) || !Number.isInteger(year)) continue;
+        let field = null;
+        if (indicatorId === WORLD_BANK_POPULATION_INDICATOR) field = "population";
+        if (indicatorId === WORLD_BANK_LAND_AREA_INDICATOR) field = "landAreaKm2";
+        if (!field) continue;
+        if (!countries[iso3]) countries[iso3] = {};
+        const existing = countries[iso3][field];
+        if (!existing || year > existing.year) countries[iso3][field] = { value, year };
+      }
+      if (!Object.keys(countries).length) throw new Error("World Bank statistics response contains no usable country observations.");
+      return {
+        schemaVersion: WORLD_BANK_STATS_CACHE_SCHEMA_VERSION,
+        fetchedAt: Number(fetchedAt),
+        sourceUrl: WORLD_BANK_STATS_URL,
+        countries
+      };
+    }
+
+    async function fetchWorldBankCountryStats() {
+      const response = await fetch(WORLD_BANK_STATS_URL, { cache: "no-store" });
+      if (!response.ok) throw new Error(`World Bank HTTP ${response.status} ${response.statusText}`.trim());
+      const normalized = normalizeWorldBankStatsResponse(await response.json(), Date.now());
+      await writeHolidayMetadataValue(WORLD_BANK_STATS_CACHE_KEY, normalized);
+      worldBankCountryStatsCache = normalized;
+      return normalized;
+    }
+
+    async function loadWorldBankCountryStatsCache() {
+      if (validWorldBankStatsCache(worldBankCountryStatsCache)) return worldBankCountryStatsCache;
+      try {
+        const cached = await readHolidayMetadataValue(WORLD_BANK_STATS_CACHE_KEY);
+        if (validWorldBankStatsCache(cached)) worldBankCountryStatsCache = cached;
+      } catch (error) {
+        console.warn("World Bank statistics cache could not be read:", error);
+      }
+      return worldBankCountryStatsCache;
+    }
+
+    async function ensureWorldBankCountryStats() {
+      if (worldBankCountryStatsLoadPromise) return worldBankCountryStatsLoadPromise;
+      worldBankCountryStatsLoadPromise = (async () => {
+        await loadWorldBankCountryStatsCache();
+        if (worldBankStatsCacheIsFresh(worldBankCountryStatsCache)) return worldBankCountryStatsCache;
+        if (worldBankStatsAttemptedThisSession) return worldBankCountryStatsCache;
+        worldBankStatsAttemptedThisSession = true;
+        try {
+          return await fetchWorldBankCountryStats();
+        } catch (error) {
+          console.warn("World Bank statistics could not be refreshed; using any cached values:", error);
+          return worldBankCountryStatsCache;
+        }
+      })();
+      try {
+        return await worldBankCountryStatsLoadPromise;
+      } finally {
+        worldBankCountryStatsLoadPromise = null;
+      }
+    }
+
+    function compactNanpaMagnitude(value) {
+      if (value == null || value === "") return null;
+      const number = Number(value);
+      if (!Number.isFinite(number)) return null;
+      const abs = Math.abs(number);
+      let divisor = 1;
+      let suffix = "";
+      if (abs >= 1e12) { divisor = 1e12; suffix = "T"; }
+      else if (abs >= 1e9) { divisor = 1e9; suffix = "B"; }
+      else if (abs >= 1e6) { divisor = 1e6; suffix = "M"; }
+      else if (abs >= 1e3) { divisor = 1e3; suffix = "K"; }
+      const scaled = number / divisor;
+      const rounded = Number(scaled.toPrecision(3));
+      if (!Number.isFinite(rounded)) return null;
+      return `${rounded}${suffix}`;
+    }
+
+    function countryStatisticsForCode(code) {
+      const normalized = String(code || "").toUpperCase();
+      const mapping = countryStatisticsMapData?.countries?.[normalized] || null;
+      const iso3 = String(mapping?.worldBankIso3 || "").toUpperCase();
+      const wb = validWorldBankStatsCache(worldBankCountryStatsCache)
+        ? (worldBankCountryStatsCache.countries?.[iso3] || null)
+        : null;
+      const eezKey = String(mapping?.eezKey || normalized).toUpperCase();
+      const eezRecord = eezAreaData?.countries?.[eezKey] || null;
+      const eezValue = eezRecord?.areaKm2 == null ? null : Number(eezRecord.areaKm2);
+      return {
+        population: wb?.population || null,
+        landAreaKm2: wb?.landAreaKm2 || null,
+        eezAreaKm2: Number.isFinite(eezValue) ? eezValue : null
+      };
+    }
+
+    async function ensureCountryStatisticCartouches(code) {
+      const stats = countryStatisticsForCode(code);
+      const values = [];
+      const addObservation = observation => {
+        if (!observation || !Number.isFinite(Number(observation.value))) return;
+        const compact = compactNanpaMagnitude(observation.value);
+        if (compact) values.push(compact);
+        if (Number.isInteger(Number(observation.year))) values.push(String(Number(observation.year)));
+      };
+      addObservation(stats.population);
+      addObservation(stats.landAreaKm2);
+      if (stats.eezAreaKm2 != null && Number.isFinite(Number(stats.eezAreaKm2))) {
+        const compact = compactNanpaMagnitude(stats.eezAreaKm2);
+        if (compact) values.push(compact);
+      }
+      if (values.length) await buildCalendarCartoucheBatch(values, "nanpa");
+    }
+
+    function countryStatisticCartoucheIsPrepared(value) {
+      return cartoucheTextCache.has(cartoucheCacheKey(value, "nanpa"));
+    }
+
+    function makeCountryStatisticGroup(label, value, unit = "") {
+      const compact = compactNanpaMagnitude(value);
+      if (!compact || !countryStatisticCartoucheIsPrepared(compact)) return null;
+      const group = el("div", "countryStatValue");
+      const top = el("div", "countryStatTopLine");
+      top.append(sitelen(label, "countryStatGlyph"));
+      top.append(makeCartouche(compact, "nanpa", "numericCartouche countryStatCartouche"));
+      if (unit) top.append(el("span", "countryStatUnit", unit));
+      group.append(top);
+      group.append(el("div", "countryStatLatin soft", `${label} ${properName(compact, "Nanpa")}`));
+      return group;
+    }
+
+    function makeCountryStatisticYearGroup(year) {
+      const numericYear = Number.parseInt(String(year ?? ""), 10);
+      if (!Number.isInteger(numericYear)) return null;
+      const text = String(numericYear);
+      if (!countryStatisticCartoucheIsPrepared(text)) return null;
+      const group = el("div", "countryStatAsOf");
+      const top = el("div", "countryStatTopLine");
+      top.append(sitelen("lon tenpo sike", "countryStatGlyph"));
+      top.append(makeCartouche(text, "nanpa", "numericCartouche countryStatCartouche"));
+      group.append(top);
+      group.append(el("div", "countryStatLatin soft", `lon tenpo sike ${properName(text, "Nanpa")}`));
+      return group;
+    }
+
+    function appendCountryStatistics(container, code) {
+      const stats = countryStatisticsForCode(code);
+      const rows = [];
+      const addRow = (label, observation, unit = "", year = null) => {
+        const rawValue = observation && typeof observation === "object" ? observation.value : observation;
+        if (rawValue == null || rawValue === "" || !Number.isFinite(Number(rawValue))) return;
+        const row = el("div", "countryStatRow");
+        const valueGroup = makeCountryStatisticGroup(label, Number(rawValue), unit);
+        if (!valueGroup) return;
+        row.append(valueGroup);
+        const observationYear = year ?? (observation && typeof observation === "object" ? observation.year : null);
+        const yearGroup = makeCountryStatisticYearGroup(observationYear);
+        if (yearGroup) row.append(yearGroup);
+        rows.push(row);
+      };
+      addRow("jan", stats.population);
+      addRow("ma", stats.landAreaKm2, "km²");
+      addRow("telo", stats.eezAreaKm2, "km²");
+      if (!rows.length) return false;
+      const section = el("section", "countryStats");
+      for (const row of rows) section.append(row);
+      section.append(el("div", "countryStatsFooter", uiText("countryStatsFooter")));
+      container.append(section);
+      return true;
+    }
+
+    async function refreshCountryStatisticsForOpenDialog(code) {
+      const normalized = String(code || "").toUpperCase();
+      await ensureCountryStatisticCartouches(normalized);
+      if (nationalDayDialog?.open && selectedNationalDayCode === normalized) renderNationalDayDialog(normalized);
+
+      await loadWorldBankCountryStatsCache();
+      await ensureCountryStatisticCartouches(normalized);
+      if (nationalDayDialog?.open && selectedNationalDayCode === normalized) renderNationalDayDialog(normalized);
+
+      const beforeRefresh = Number(worldBankCountryStatsCache?.fetchedAt) || 0;
+      await ensureWorldBankCountryStats();
+      if ((Number(worldBankCountryStatsCache?.fetchedAt) || 0) !== beforeRefresh) {
+        await ensureCountryStatisticCartouches(normalized);
+        if (nationalDayDialog?.open && selectedNationalDayCode === normalized) renderNationalDayDialog(normalized);
+      }
+    }
+
+    function nationalDayCountryRecord(code) {
+      return nationalDayCountryByCode.get(String(code || "").toUpperCase()) || null;
+    }
+
+    function nationalDayCountryDisplayName(record, language = uiLanguage) {
+      if (!record) return "";
+      if (normalizeUiLanguage(language) === "tok") return String(record.tokiPonaName || record.englishName || record.code || "").trim();
+      return String(record.englishName || record.code || "").trim();
+    }
+
+    function nationalDayDisplayName(day, language = uiLanguage) {
+      if (!day) return "";
+      if (normalizeUiLanguage(language) === "tok") return String(day.nameTokiPona || day.nameEnglish || "").trim();
+      return String(day.nameEnglish || "").trim();
+    }
+
+    function nationalDayDisplayNote(day, language = uiLanguage) {
+      if (!day) return "";
+      if (normalizeUiLanguage(language) === "tok") return String(day.noteTokiPona || "").trim();
+      return String(day.noteEnglish || "").trim();
+    }
+
+    function nationalDayDisplayStatus(record, language = uiLanguage) {
+      if (!record) return "";
+      if (normalizeUiLanguage(language) === "tok") return String(record.statusTokiPona || "").trim();
+      return String(record.statusEnglish || "").trim();
+    }
+
+    function applyNationalDaysMapVisibility({ persist = false } = {}) {
+      const mobile = isWorldMapMobileViewport();
+      if (mobile) {
+        if (nationalDayDialog?.open) nationalDayDialog.close();
+        if (nationalDaysContent) nationalDaysContent.hidden = true;
+        if (nationalDaysToggleBtn) nationalDaysToggleBtn.hidden = true;
+        if (nationalDaysPanel) nationalDaysPanel.setAttribute("aria-hidden", "true");
+        return false;
+      }
+      if (nationalDaysPanel) nationalDaysPanel.removeAttribute("aria-hidden");
+      if (nationalDaysToggleBtn) {
+        nationalDaysToggleBtn.hidden = false;
+        nationalDaysToggleBtn.setAttribute("aria-expanded", nationalDaysMapVisible ? "true" : "false");
+        nationalDaysToggleBtn.textContent = uiText(nationalDaysMapVisible ? "nationalDaysHide" : "nationalDaysShow");
+      }
+      if (nationalDaysContent) nationalDaysContent.hidden = !nationalDaysMapVisible;
+      if (persist) saveNationalDaysMapVisible(nationalDaysMapVisible);
+      if (nationalDaysMapVisible) void ensureWorldBankCountryStats();
+      return nationalDaysMapVisible;
+    }
+
+    function setNationalDaysMapVisible(value, { persist = true } = {}) {
+      nationalDaysMapVisible = !!value;
+      return applyNationalDaysMapVisibility({ persist });
+    }
+
+    function setSelectedWorldMapCountry(code) {
+      selectedNationalDayCode = String(code || "").toUpperCase() || null;
+      if (!worldMapSvg) return;
+      for (const node of worldMapSvg.querySelectorAll(".worldMapCountry")) {
+        node.classList.toggle("is-selected", node.dataset.code === selectedNationalDayCode);
+      }
+    }
+
+    function renderNationalDayDialog(code) {
+      const record = nationalDayCountryRecord(code);
+      if (!record || !nationalDayDialogCountry || !nationalDayDialogBody) return false;
+      nationalDayDialogCountry.textContent = nationalDayCountryDisplayName(record);
+      nationalDayDialogBody.replaceChildren();
+      const days = Array.isArray(record.nationalDays) ? record.nationalDays : [];
+      if (!days.length) {
+        const status = nationalDayDisplayStatus(record) || uiText("nationalDayNoData");
+        nationalDayDialogBody.append(el("div", "nationalDayEmpty", status));
+      } else {
+        for (const day of days) {
+          const entry = el("section", "nationalDayEntry");
+          const dateLine = el("div", "nationalDayDateLine");
+          const dateValue = String(day?.date || "").trim();
+          if (/^--\d{2}-\d{2}$/.test(dateValue)) {
+            dateLine.append(sitelen("tenpo", "nationalDayDateTenpoGlyph"));
+            dateLine.append(makeCartouche(dateValue, "suno", "numericCartouche nationalDayDateCartouche"));
+          }
+          entry.append(dateLine);
+          if (/^--\d{2}-\d{2}$/.test(dateValue)) {
+            entry.append(el("div", "nationalDayDateLatin soft", `tenpo ${properName(dateValue, "Suno")}`));
+          }
+          entry.append(el("div", "nationalDayName", nationalDayDisplayName(day)));
+          const note = nationalDayDisplayNote(day);
+          if (note) entry.append(el("div", "nationalDayNote", note));
+          nationalDayDialogBody.append(entry);
+        }
+      }
+      appendCountryStatistics(nationalDayDialogBody, code);
+      applyDynamicCartoucheStyles(nationalDayDialogBody);
+      return true;
+    }
+
+    function openNationalDayDialog(code) {
+      if (isWorldMapMobileViewport()) return false;
+      const normalized = String(code || "").toUpperCase();
+      if (!nationalDayCountryRecord(normalized)) return false;
+      setSelectedWorldMapCountry(normalized);
+      if (!renderNationalDayDialog(normalized)) return false;
+      if (typeof nationalDayDialog?.showModal === "function") {
+        if (!nationalDayDialog.open) nationalDayDialog.showModal();
+      } else if (nationalDayDialog) {
+        nationalDayDialog.setAttribute("open", "");
+      }
+      void refreshCountryStatisticsForOpenDialog(normalized);
+      return true;
+    }
+
+    function parseWorldMapBaseView() {
+      const parts = String(worldMapData?.viewBox || "0 0 1000 500").trim().split(/\s+/).map(Number);
+      if (parts.length !== 4 || parts.some(value => !Number.isFinite(value)) || parts[2] <= 0 || parts[3] <= 0) {
+        return { x: 0, y: 0, width: 1000, height: 500 };
+      }
+      return { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
+    }
+
+    function clampWorldMapView(view) {
+      const base = worldMapBaseView;
+      const minWidth = base.width / 16;
+      const minHeight = base.height / 16;
+      const width = Math.min(base.width, Math.max(minWidth, Number(view?.width) || base.width));
+      const height = Math.min(base.height, Math.max(minHeight, Number(view?.height) || base.height));
+      const x = Math.min(base.x + base.width - width, Math.max(base.x, Number(view?.x) || base.x));
+      const y = Math.min(base.y + base.height - height, Math.max(base.y, Number(view?.y) || base.y));
+      return { x, y, width, height };
+    }
+
+    function applyWorldMapView() {
+      if (!worldMapSvg) return;
+      worldMapView = clampWorldMapView(worldMapView);
+      worldMapSvg.setAttribute("viewBox", `${worldMapView.x.toFixed(3)} ${worldMapView.y.toFixed(3)} ${worldMapView.width.toFixed(3)} ${worldMapView.height.toFixed(3)}`);
+    }
+
+    function resetWorldMapView() {
+      worldMapView = { ...worldMapBaseView };
+      applyWorldMapView();
+    }
+
+    function zoomWorldMapAt(factor, anchor = null) {
+      const f = Number(factor);
+      if (!Number.isFinite(f) || f <= 0) return;
+      const point = anchor && Number.isFinite(Number(anchor.x)) && Number.isFinite(Number(anchor.y))
+        ? { x: Number(anchor.x), y: Number(anchor.y) }
+        : { x: worldMapView.x + worldMapView.width / 2, y: worldMapView.y + worldMapView.height / 2 };
+      const ratioX = worldMapView.width > 0 ? (point.x - worldMapView.x) / worldMapView.width : 0.5;
+      const ratioY = worldMapView.height > 0 ? (point.y - worldMapView.y) / worldMapView.height : 0.5;
+      const width = worldMapView.width * f;
+      const height = worldMapView.height * f;
+      worldMapView = {
+        x: point.x - ratioX * width,
+        y: point.y - ratioY * height,
+        width,
+        height
+      };
+      applyWorldMapView();
+    }
+
+    function zoomWorldMap(factor) {
+      zoomWorldMapAt(factor);
+    }
+
+    function worldMapPointFromClient(clientX, clientY) {
+      if (!worldMapSvg) return null;
+      try {
+        const ctm = worldMapSvg.getScreenCTM?.();
+        if (ctm && typeof DOMPoint === "function") {
+          const point = new DOMPoint(Number(clientX), Number(clientY)).matrixTransform(ctm.inverse());
+          if (Number.isFinite(point.x) && Number.isFinite(point.y)) return { x: point.x, y: point.y };
+        }
+      } catch (_) {}
+      const rect = worldMapSvg.getBoundingClientRect();
+      if (!(rect.width > 0) || !(rect.height > 0)) return null;
+      return {
+        x: worldMapView.x + ((Number(clientX) - rect.left) / rect.width) * worldMapView.width,
+        y: worldMapView.y + ((Number(clientY) - rect.top) / rect.height) * worldMapView.height
+      };
+    }
+
+    function handleWorldMapWheel(event) {
+      if (isWorldMapMobileViewport() || !worldMapSvg || nationalDaysContent?.hidden) return;
+      if (!event.cancelable) return;
+      event.preventDefault();
+      event.stopPropagation();
+      try { worldMapSvg.focus({ preventScroll: true }); } catch (_) { worldMapSvg.focus(); }
+      let delta = Number(event.deltaY) || 0;
+      if (event.deltaMode === 1) delta *= 16;
+      else if (event.deltaMode === 2) delta *= Math.max(1, worldMapSvg.getBoundingClientRect().height);
+      delta = Math.max(-320, Math.min(320, delta));
+      const factor = Math.exp(delta * 0.0018);
+      zoomWorldMapAt(factor, worldMapPointFromClient(event.clientX, event.clientY));
+    }
+
+    function handleWorldMapPointerDown(event) {
+      if (isWorldMapMobileViewport() || !worldMapSvg || nationalDaysContent?.hidden) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      // Do not prevent the initial pointer-down or capture the pointer yet. A
+      // stationary primary-button gesture must remain a normal click on the
+      // country path/marker. Pointer capture begins only after the drag
+      // threshold is crossed. touch-action:none on the SVG contains touch pan.
+      try { worldMapSvg.focus({ preventScroll: true }); } catch (_) { worldMapSvg.focus(); }
+      worldMapDragState = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        view: { ...worldMapView },
+        moved: false,
+        captured: false
+      };
+    }
+
+    function handleWorldMapPointerMove(event) {
+      const drag = worldMapDragState;
+      if (!drag || drag.pointerId !== event.pointerId || !worldMapSvg) return;
+      const rect = worldMapSvg.getBoundingClientRect();
+      if (!(rect.width > 0) || !(rect.height > 0)) return;
+      const dx = Number(event.clientX) - drag.clientX;
+      const dy = Number(event.clientY) - drag.clientY;
+      const distance = Math.hypot(dx, dy);
+      if (!drag.moved) {
+        if (distance < 4) return;
+        drag.moved = true;
+        worldMapSvg.classList.add("is-dragging");
+        try {
+          worldMapSvg.setPointerCapture(event.pointerId);
+          drag.captured = true;
+        } catch (_) {}
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      worldMapView = {
+        ...drag.view,
+        x: drag.view.x - dx * drag.view.width / rect.width,
+        y: drag.view.y - dy * drag.view.height / rect.height
+      };
+      applyWorldMapView();
+    }
+
+    function finishWorldMapPointer(event) {
+      const drag = worldMapDragState;
+      if (!drag || drag.pointerId !== event.pointerId || !worldMapSvg) return;
+      if (drag.moved) {
+        suppressWorldMapClickUntil = performance.now() + 350;
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      worldMapDragState = null;
+      worldMapSvg.classList.remove("is-dragging");
+      if (drag.captured) {
+        try { worldMapSvg.releasePointerCapture(event.pointerId); } catch (_) {}
+      }
+    }
+
+    function panWorldMap(dx, dy) {
+      const stepX = worldMapView.width * 0.12;
+      const stepY = worldMapView.height * 0.12;
+      worldMapView = {
+        ...worldMapView,
+        x: worldMapView.x + Number(dx || 0) * stepX,
+        y: worldMapView.y + Number(dy || 0) * stepY
+      };
+      applyWorldMapView();
+    }
+
+    function handleWorldMapKeydown(event) {
+      if (isWorldMapMobileViewport()) return;
+      let handled = true;
+      if (event.key === "+" || event.key === "=") zoomWorldMap(0.78);
+      else if (event.key === "-" || event.key === "_") zoomWorldMap(1 / 0.78);
+      else if (event.key === "ArrowLeft") panWorldMap(-1, 0);
+      else if (event.key === "ArrowRight") panWorldMap(1, 0);
+      else if (event.key === "ArrowUp") panWorldMap(0, -1);
+      else if (event.key === "ArrowDown") panWorldMap(0, 1);
+      else if (event.key === "0" || event.key === "Home") resetWorldMapView();
+      else handled = false;
+      if (handled) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+
+    function makeWorldMapInteractive(node, code) {
+      const record = nationalDayCountryRecord(code);
+      if (!record) return;
+      node.classList.add("worldMapCountry");
+      node.dataset.code = code;
+      node.setAttribute("tabindex", "0");
+      node.setAttribute("role", "button");
+      node.setAttribute("aria-label", nationalDayCountryDisplayName(record));
+      const title = document.createElementNS(SVG_NS, "title");
+      title.textContent = nationalDayCountryDisplayName(record);
+      node.append(title);
+      const activate = event => {
+        if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
+        if (event.type === "click" && event.detail > 0 && performance.now() < suppressWorldMapClickUntil) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        if (event.type === "keydown") event.preventDefault();
+        openNationalDayDialog(code);
+      };
+      node.addEventListener("click", activate);
+      node.addEventListener("keydown", activate);
+    }
+
+    function renderWorldMap() {
+      if (!worldMapSvg || !worldMapData || !nationalDayCountryByCode.size) return false;
+      worldMapBaseView = parseWorldMapBaseView();
+      worldMapView = { ...worldMapBaseView };
+      worldMapSvg.setAttribute("aria-label", uiText("nationalDayMapAria"));
+      worldMapSvg.replaceChildren();
+      for (const item of (Array.isArray(worldMapData.paths) ? worldMapData.paths : [])) {
+        const code = String(item?.code || "").toUpperCase();
+        const d = String(item?.d || "");
+        if (!code || !d || !nationalDayCountryRecord(code)) continue;
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute("d", d);
+        path.setAttribute("fill-rule", "evenodd");
+        makeWorldMapInteractive(path, code);
+        worldMapSvg.append(path);
+      }
+      for (const item of (Array.isArray(worldMapData.markers) ? worldMapData.markers : [])) {
+        const code = String(item?.code || "").toUpperCase();
+        if (!code || !nationalDayCountryRecord(code)) continue;
+        const circle = document.createElementNS(SVG_NS, "circle");
+        circle.setAttribute("cx", String(Number(item.x)));
+        circle.setAttribute("cy", String(Number(item.y)));
+        circle.setAttribute("r", "4.5");
+        circle.classList.add("worldMapMarker");
+        makeWorldMapInteractive(circle, code);
+        worldMapSvg.append(circle);
+      }
+      applyWorldMapView();
+      setSelectedWorldMapCountry(selectedNationalDayCode);
+      return worldMapSvg.querySelectorAll(".worldMapCountry").length > 0;
     }
 
     let renderGeneration = 0;
@@ -3655,11 +4547,36 @@
     monthSelect.addEventListener("change", renderScreen);
     exportMonthBtn.addEventListener("click", () => exportPdf("month"));
     exportYearBtn.addEventListener("click", () => exportPdf("year"));
-    window.addEventListener("resize", scheduleMobileCalendarSizing, { passive: true });
+    nationalDaysToggleBtn?.addEventListener("click", () => {
+      if (isWorldMapMobileViewport()) return;
+      setNationalDaysMapVisible(!nationalDaysMapVisible, { persist: true });
+    });
+    worldMapZoomInBtn?.addEventListener("click", () => zoomWorldMap(0.78));
+    worldMapZoomOutBtn?.addEventListener("click", () => zoomWorldMap(1 / 0.78));
+    worldMapPanLeftBtn?.addEventListener("click", () => panWorldMap(-1, 0));
+    worldMapPanUpBtn?.addEventListener("click", () => panWorldMap(0, -1));
+    worldMapPanDownBtn?.addEventListener("click", () => panWorldMap(0, 1));
+    worldMapPanRightBtn?.addEventListener("click", () => panWorldMap(1, 0));
+    worldMapResetBtn?.addEventListener("click", resetWorldMapView);
+    worldMapSvg?.addEventListener("keydown", handleWorldMapKeydown);
+    worldMapSvg?.addEventListener("wheel", handleWorldMapWheel, { passive: false, capture: true });
+    worldMapSvg?.addEventListener("pointerdown", handleWorldMapPointerDown);
+    worldMapSvg?.addEventListener("pointermove", handleWorldMapPointerMove);
+    worldMapSvg?.addEventListener("pointerup", finishWorldMapPointer);
+    worldMapSvg?.addEventListener("pointercancel", finishWorldMapPointer);
+    nationalDayCloseBtn?.addEventListener("click", () => nationalDayDialog?.close());
+    nationalDayDialog?.addEventListener("click", event => {
+      if (event.target === nationalDayDialog) nationalDayDialog.close();
+    });
+    window.addEventListener("resize", () => {
+      scheduleMobileCalendarSizing();
+      applyNationalDaysMapVisibility({ persist: false });
+    }, { passive: true });
 
     populateYears();
     setInitialMonth();
     applyUiLanguage(uiLanguage, { persist: false });
+    applyNationalDaysMapVisibility({ persist: false });
 
     async function startCalendar() {
       const holidayInitialization = initializeHolidayControls();
@@ -3690,6 +4607,7 @@
       }
 
       await holidayInitialization;
+      renderWorldMap();
       await renderScreen();
       document.documentElement.classList.remove("fonts-loading");
     }
@@ -3723,6 +4641,25 @@
       cartoucheCanvasFamilyForFontPx,
       ensureCartoucheStyleFontFaces,
       applyDynamicCartoucheStyles,
+      nationalDayCountryRecord,
+      nationalDayCountryDisplayName,
+      nationalDayDisplayName,
+      renderWorldMap,
+      renderNationalDayDialog,
+      openNationalDayDialog,
+      assertNationalDayCoverageData,
+      assertCountryStatisticsCoverageData,
+      compactNanpaMagnitude,
+      countryStatisticsForCode,
+      ensureCountryStatisticCartouches,
+      normalizeWorldBankStatsResponse,
+      worldBankStatsCacheIsFresh,
+      loadWorldBankCountryStatsCache,
+      ensureWorldBankCountryStats,
+      setNationalDaysMapVisible,
+      resetWorldMapView,
+      zoomWorldMap,
+      panWorldMap,
       holidayFileUrl,
       holidayCountryArchiveUrl,
       holidayCountryArchiveMember,

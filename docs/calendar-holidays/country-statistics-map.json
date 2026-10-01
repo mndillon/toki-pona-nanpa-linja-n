@@ -1,0 +1,1016 @@
+{
+  "schemaVersion": 1,
+  "dataVersion": "2026-10-01-001",
+  "countryCount": 250,
+  "worldBank": {
+    "api": "https://api.worldbank.org/v2",
+    "sourceId": 2,
+    "indicators": [
+      "SP.POP.TOTL",
+      "AG.LND.TOTL.K2"
+    ],
+    "refreshDays": 30
+  },
+  "countries": {
+    "AD": {
+      "worldBankIso3": "AND",
+      "eezKey": "AD"
+    },
+    "AE": {
+      "worldBankIso3": "ARE",
+      "eezKey": "AE"
+    },
+    "AF": {
+      "worldBankIso3": "AFG",
+      "eezKey": "AF"
+    },
+    "AG": {
+      "worldBankIso3": "ATG",
+      "eezKey": "AG"
+    },
+    "AI": {
+      "worldBankIso3": "AIA",
+      "eezKey": "AI"
+    },
+    "AL": {
+      "worldBankIso3": "ALB",
+      "eezKey": "AL"
+    },
+    "AM": {
+      "worldBankIso3": "ARM",
+      "eezKey": "AM"
+    },
+    "AO": {
+      "worldBankIso3": "AGO",
+      "eezKey": "AO"
+    },
+    "AQ": {
+      "worldBankIso3": "ATA",
+      "eezKey": "AQ"
+    },
+    "AR": {
+      "worldBankIso3": "ARG",
+      "eezKey": "AR"
+    },
+    "AS": {
+      "worldBankIso3": "ASM",
+      "eezKey": "AS"
+    },
+    "AT": {
+      "worldBankIso3": "AUT",
+      "eezKey": "AT"
+    },
+    "AU": {
+      "worldBankIso3": "AUS",
+      "eezKey": "AU"
+    },
+    "AW": {
+      "worldBankIso3": "ABW",
+      "eezKey": "AW"
+    },
+    "AX": {
+      "worldBankIso3": "ALA",
+      "eezKey": "AX"
+    },
+    "AZ": {
+      "worldBankIso3": "AZE",
+      "eezKey": "AZ"
+    },
+    "BA": {
+      "worldBankIso3": "BIH",
+      "eezKey": "BA"
+    },
+    "BB": {
+      "worldBankIso3": "BRB",
+      "eezKey": "BB"
+    },
+    "BD": {
+      "worldBankIso3": "BGD",
+      "eezKey": "BD"
+    },
+    "BE": {
+      "worldBankIso3": "BEL",
+      "eezKey": "BE"
+    },
+    "BF": {
+      "worldBankIso3": "BFA",
+      "eezKey": "BF"
+    },
+    "BG": {
+      "worldBankIso3": "BGR",
+      "eezKey": "BG"
+    },
+    "BH": {
+      "worldBankIso3": "BHR",
+      "eezKey": "BH"
+    },
+    "BI": {
+      "worldBankIso3": "BDI",
+      "eezKey": "BI"
+    },
+    "BJ": {
+      "worldBankIso3": "BEN",
+      "eezKey": "BJ"
+    },
+    "BL": {
+      "worldBankIso3": "BLM",
+      "eezKey": "BL"
+    },
+    "BM": {
+      "worldBankIso3": "BMU",
+      "eezKey": "BM"
+    },
+    "BN": {
+      "worldBankIso3": "BRN",
+      "eezKey": "BN"
+    },
+    "BO": {
+      "worldBankIso3": "BOL",
+      "eezKey": "BO"
+    },
+    "BQ": {
+      "worldBankIso3": "BES",
+      "eezKey": "BQ"
+    },
+    "BR": {
+      "worldBankIso3": "BRA",
+      "eezKey": "BR"
+    },
+    "BS": {
+      "worldBankIso3": "BHS",
+      "eezKey": "BS"
+    },
+    "BT": {
+      "worldBankIso3": "BTN",
+      "eezKey": "BT"
+    },
+    "BV": {
+      "worldBankIso3": "BVT",
+      "eezKey": "BV"
+    },
+    "BW": {
+      "worldBankIso3": "BWA",
+      "eezKey": "BW"
+    },
+    "BY": {
+      "worldBankIso3": "BLR",
+      "eezKey": "BY"
+    },
+    "BZ": {
+      "worldBankIso3": "BLZ",
+      "eezKey": "BZ"
+    },
+    "CA": {
+      "worldBankIso3": "CAN",
+      "eezKey": "CA"
+    },
+    "CC": {
+      "worldBankIso3": "CCK",
+      "eezKey": "CC"
+    },
+    "CD": {
+      "worldBankIso3": "COD",
+      "eezKey": "CD"
+    },
+    "CF": {
+      "worldBankIso3": "CAF",
+      "eezKey": "CF"
+    },
+    "CG": {
+      "worldBankIso3": "COG",
+      "eezKey": "CG"
+    },
+    "CH": {
+      "worldBankIso3": "CHE",
+      "eezKey": "CH"
+    },
+    "CI": {
+      "worldBankIso3": "CIV",
+      "eezKey": "CI"
+    },
+    "CK": {
+      "worldBankIso3": "COK",
+      "eezKey": "CK"
+    },
+    "CL": {
+      "worldBankIso3": "CHL",
+      "eezKey": "CL"
+    },
+    "CM": {
+      "worldBankIso3": "CMR",
+      "eezKey": "CM"
+    },
+    "CN": {
+      "worldBankIso3": "CHN",
+      "eezKey": "CN"
+    },
+    "CO": {
+      "worldBankIso3": "COL",
+      "eezKey": "CO"
+    },
+    "CR": {
+      "worldBankIso3": "CRI",
+      "eezKey": "CR"
+    },
+    "CU": {
+      "worldBankIso3": "CUB",
+      "eezKey": "CU"
+    },
+    "CV": {
+      "worldBankIso3": "CPV",
+      "eezKey": "CV"
+    },
+    "CW": {
+      "worldBankIso3": "CUW",
+      "eezKey": "CW"
+    },
+    "CX": {
+      "worldBankIso3": "CXR",
+      "eezKey": "CX"
+    },
+    "CY": {
+      "worldBankIso3": "CYP",
+      "eezKey": "CY"
+    },
+    "CZ": {
+      "worldBankIso3": "CZE",
+      "eezKey": "CZ"
+    },
+    "DE": {
+      "worldBankIso3": "DEU",
+      "eezKey": "DE"
+    },
+    "DJ": {
+      "worldBankIso3": "DJI",
+      "eezKey": "DJ"
+    },
+    "DK": {
+      "worldBankIso3": "DNK",
+      "eezKey": "DK"
+    },
+    "DM": {
+      "worldBankIso3": "DMA",
+      "eezKey": "DM"
+    },
+    "DO": {
+      "worldBankIso3": "DOM",
+      "eezKey": "DO"
+    },
+    "DZ": {
+      "worldBankIso3": "DZA",
+      "eezKey": "DZ"
+    },
+    "EC": {
+      "worldBankIso3": "ECU",
+      "eezKey": "EC"
+    },
+    "EE": {
+      "worldBankIso3": "EST",
+      "eezKey": "EE"
+    },
+    "EG": {
+      "worldBankIso3": "EGY",
+      "eezKey": "EG"
+    },
+    "EH": {
+      "worldBankIso3": "ESH",
+      "eezKey": "EH"
+    },
+    "ER": {
+      "worldBankIso3": "ERI",
+      "eezKey": "ER"
+    },
+    "ES": {
+      "worldBankIso3": "ESP",
+      "eezKey": "ES"
+    },
+    "ET": {
+      "worldBankIso3": "ETH",
+      "eezKey": "ET"
+    },
+    "FI": {
+      "worldBankIso3": "FIN",
+      "eezKey": "FI"
+    },
+    "FJ": {
+      "worldBankIso3": "FJI",
+      "eezKey": "FJ"
+    },
+    "FK": {
+      "worldBankIso3": "FLK",
+      "eezKey": "FK"
+    },
+    "FM": {
+      "worldBankIso3": "FSM",
+      "eezKey": "FM"
+    },
+    "FO": {
+      "worldBankIso3": "FRO",
+      "eezKey": "FO"
+    },
+    "FR": {
+      "worldBankIso3": "FRA",
+      "eezKey": "FR"
+    },
+    "GA": {
+      "worldBankIso3": "GAB",
+      "eezKey": "GA"
+    },
+    "GB": {
+      "worldBankIso3": "GBR",
+      "eezKey": "GB"
+    },
+    "GD": {
+      "worldBankIso3": "GRD",
+      "eezKey": "GD"
+    },
+    "GE": {
+      "worldBankIso3": "GEO",
+      "eezKey": "GE"
+    },
+    "GF": {
+      "worldBankIso3": "GUF",
+      "eezKey": "GF"
+    },
+    "GG": {
+      "worldBankIso3": "GGY",
+      "eezKey": "GG"
+    },
+    "GH": {
+      "worldBankIso3": "GHA",
+      "eezKey": "GH"
+    },
+    "GI": {
+      "worldBankIso3": "GIB",
+      "eezKey": "GI"
+    },
+    "GL": {
+      "worldBankIso3": "GRL",
+      "eezKey": "GL"
+    },
+    "GM": {
+      "worldBankIso3": "GMB",
+      "eezKey": "GM"
+    },
+    "GN": {
+      "worldBankIso3": "GIN",
+      "eezKey": "GN"
+    },
+    "GP": {
+      "worldBankIso3": "GLP",
+      "eezKey": "GP"
+    },
+    "GQ": {
+      "worldBankIso3": "GNQ",
+      "eezKey": "GQ"
+    },
+    "GR": {
+      "worldBankIso3": "GRC",
+      "eezKey": "GR"
+    },
+    "GS": {
+      "worldBankIso3": "SGS",
+      "eezKey": "GS"
+    },
+    "GT": {
+      "worldBankIso3": "GTM",
+      "eezKey": "GT"
+    },
+    "GU": {
+      "worldBankIso3": "GUM",
+      "eezKey": "GU"
+    },
+    "GW": {
+      "worldBankIso3": "GNB",
+      "eezKey": "GW"
+    },
+    "GY": {
+      "worldBankIso3": "GUY",
+      "eezKey": "GY"
+    },
+    "HK": {
+      "worldBankIso3": "HKG",
+      "eezKey": "HK"
+    },
+    "HM": {
+      "worldBankIso3": "HMD",
+      "eezKey": "HM"
+    },
+    "HN": {
+      "worldBankIso3": "HND",
+      "eezKey": "HN"
+    },
+    "HR": {
+      "worldBankIso3": "HRV",
+      "eezKey": "HR"
+    },
+    "HT": {
+      "worldBankIso3": "HTI",
+      "eezKey": "HT"
+    },
+    "HU": {
+      "worldBankIso3": "HUN",
+      "eezKey": "HU"
+    },
+    "ID": {
+      "worldBankIso3": "IDN",
+      "eezKey": "ID"
+    },
+    "IE": {
+      "worldBankIso3": "IRL",
+      "eezKey": "IE"
+    },
+    "IL": {
+      "worldBankIso3": "ISR",
+      "eezKey": "IL"
+    },
+    "IM": {
+      "worldBankIso3": "IMN",
+      "eezKey": "IM"
+    },
+    "IN": {
+      "worldBankIso3": "IND",
+      "eezKey": "IN"
+    },
+    "IO": {
+      "worldBankIso3": "IOT",
+      "eezKey": "IO"
+    },
+    "IQ": {
+      "worldBankIso3": "IRQ",
+      "eezKey": "IQ"
+    },
+    "IR": {
+      "worldBankIso3": "IRN",
+      "eezKey": "IR"
+    },
+    "IS": {
+      "worldBankIso3": "ISL",
+      "eezKey": "IS"
+    },
+    "IT": {
+      "worldBankIso3": "ITA",
+      "eezKey": "IT"
+    },
+    "JE": {
+      "worldBankIso3": "JEY",
+      "eezKey": "JE"
+    },
+    "JM": {
+      "worldBankIso3": "JAM",
+      "eezKey": "JM"
+    },
+    "JO": {
+      "worldBankIso3": "JOR",
+      "eezKey": "JO"
+    },
+    "JP": {
+      "worldBankIso3": "JPN",
+      "eezKey": "JP"
+    },
+    "KE": {
+      "worldBankIso3": "KEN",
+      "eezKey": "KE"
+    },
+    "KG": {
+      "worldBankIso3": "KGZ",
+      "eezKey": "KG"
+    },
+    "KH": {
+      "worldBankIso3": "KHM",
+      "eezKey": "KH"
+    },
+    "KI": {
+      "worldBankIso3": "KIR",
+      "eezKey": "KI"
+    },
+    "KM": {
+      "worldBankIso3": "COM",
+      "eezKey": "KM"
+    },
+    "KN": {
+      "worldBankIso3": "KNA",
+      "eezKey": "KN"
+    },
+    "KP": {
+      "worldBankIso3": "PRK",
+      "eezKey": "KP"
+    },
+    "KR": {
+      "worldBankIso3": "KOR",
+      "eezKey": "KR"
+    },
+    "KW": {
+      "worldBankIso3": "KWT",
+      "eezKey": "KW"
+    },
+    "KY": {
+      "worldBankIso3": "CYM",
+      "eezKey": "KY"
+    },
+    "KZ": {
+      "worldBankIso3": "KAZ",
+      "eezKey": "KZ"
+    },
+    "LA": {
+      "worldBankIso3": "LAO",
+      "eezKey": "LA"
+    },
+    "LB": {
+      "worldBankIso3": "LBN",
+      "eezKey": "LB"
+    },
+    "LC": {
+      "worldBankIso3": "LCA",
+      "eezKey": "LC"
+    },
+    "LI": {
+      "worldBankIso3": "LIE",
+      "eezKey": "LI"
+    },
+    "LK": {
+      "worldBankIso3": "LKA",
+      "eezKey": "LK"
+    },
+    "LR": {
+      "worldBankIso3": "LBR",
+      "eezKey": "LR"
+    },
+    "LS": {
+      "worldBankIso3": "LSO",
+      "eezKey": "LS"
+    },
+    "LT": {
+      "worldBankIso3": "LTU",
+      "eezKey": "LT"
+    },
+    "LU": {
+      "worldBankIso3": "LUX",
+      "eezKey": "LU"
+    },
+    "LV": {
+      "worldBankIso3": "LVA",
+      "eezKey": "LV"
+    },
+    "LY": {
+      "worldBankIso3": "LBY",
+      "eezKey": "LY"
+    },
+    "MA": {
+      "worldBankIso3": "MAR",
+      "eezKey": "MA"
+    },
+    "MC": {
+      "worldBankIso3": "MCO",
+      "eezKey": "MC"
+    },
+    "MD": {
+      "worldBankIso3": "MDA",
+      "eezKey": "MD"
+    },
+    "ME": {
+      "worldBankIso3": "MNE",
+      "eezKey": "ME"
+    },
+    "MF": {
+      "worldBankIso3": "MAF",
+      "eezKey": "MF"
+    },
+    "MG": {
+      "worldBankIso3": "MDG",
+      "eezKey": "MG"
+    },
+    "MH": {
+      "worldBankIso3": "MHL",
+      "eezKey": "MH"
+    },
+    "MK": {
+      "worldBankIso3": "MKD",
+      "eezKey": "MK"
+    },
+    "ML": {
+      "worldBankIso3": "MLI",
+      "eezKey": "ML"
+    },
+    "MM": {
+      "worldBankIso3": "MMR",
+      "eezKey": "MM"
+    },
+    "MN": {
+      "worldBankIso3": "MNG",
+      "eezKey": "MN"
+    },
+    "MO": {
+      "worldBankIso3": "MAC",
+      "eezKey": "MO"
+    },
+    "MP": {
+      "worldBankIso3": "MNP",
+      "eezKey": "MP"
+    },
+    "MQ": {
+      "worldBankIso3": "MTQ",
+      "eezKey": "MQ"
+    },
+    "MR": {
+      "worldBankIso3": "MRT",
+      "eezKey": "MR"
+    },
+    "MS": {
+      "worldBankIso3": "MSR",
+      "eezKey": "MS"
+    },
+    "MT": {
+      "worldBankIso3": "MLT",
+      "eezKey": "MT"
+    },
+    "MU": {
+      "worldBankIso3": "MUS",
+      "eezKey": "MU"
+    },
+    "MV": {
+      "worldBankIso3": "MDV",
+      "eezKey": "MV"
+    },
+    "MW": {
+      "worldBankIso3": "MWI",
+      "eezKey": "MW"
+    },
+    "MX": {
+      "worldBankIso3": "MEX",
+      "eezKey": "MX"
+    },
+    "MY": {
+      "worldBankIso3": "MYS",
+      "eezKey": "MY"
+    },
+    "MZ": {
+      "worldBankIso3": "MOZ",
+      "eezKey": "MZ"
+    },
+    "NA": {
+      "worldBankIso3": "NAM",
+      "eezKey": "NA"
+    },
+    "NC": {
+      "worldBankIso3": "NCL",
+      "eezKey": "NC"
+    },
+    "NE": {
+      "worldBankIso3": "NER",
+      "eezKey": "NE"
+    },
+    "NF": {
+      "worldBankIso3": "NFK",
+      "eezKey": "NF"
+    },
+    "NG": {
+      "worldBankIso3": "NGA",
+      "eezKey": "NG"
+    },
+    "NI": {
+      "worldBankIso3": "NIC",
+      "eezKey": "NI"
+    },
+    "NL": {
+      "worldBankIso3": "NLD",
+      "eezKey": "NL"
+    },
+    "NO": {
+      "worldBankIso3": "NOR",
+      "eezKey": "NO"
+    },
+    "NP": {
+      "worldBankIso3": "NPL",
+      "eezKey": "NP"
+    },
+    "NR": {
+      "worldBankIso3": "NRU",
+      "eezKey": "NR"
+    },
+    "NU": {
+      "worldBankIso3": "NIU",
+      "eezKey": "NU"
+    },
+    "NZ": {
+      "worldBankIso3": "NZL",
+      "eezKey": "NZ"
+    },
+    "OM": {
+      "worldBankIso3": "OMN",
+      "eezKey": "OM"
+    },
+    "PA": {
+      "worldBankIso3": "PAN",
+      "eezKey": "PA"
+    },
+    "PE": {
+      "worldBankIso3": "PER",
+      "eezKey": "PE"
+    },
+    "PF": {
+      "worldBankIso3": "PYF",
+      "eezKey": "PF"
+    },
+    "PG": {
+      "worldBankIso3": "PNG",
+      "eezKey": "PG"
+    },
+    "PH": {
+      "worldBankIso3": "PHL",
+      "eezKey": "PH"
+    },
+    "PK": {
+      "worldBankIso3": "PAK",
+      "eezKey": "PK"
+    },
+    "PL": {
+      "worldBankIso3": "POL",
+      "eezKey": "PL"
+    },
+    "PM": {
+      "worldBankIso3": "SPM",
+      "eezKey": "PM"
+    },
+    "PN": {
+      "worldBankIso3": "PCN",
+      "eezKey": "PN"
+    },
+    "PR": {
+      "worldBankIso3": "PRI",
+      "eezKey": "PR"
+    },
+    "PS": {
+      "worldBankIso3": "PSE",
+      "eezKey": "PS"
+    },
+    "PT": {
+      "worldBankIso3": "PRT",
+      "eezKey": "PT"
+    },
+    "PW": {
+      "worldBankIso3": "PLW",
+      "eezKey": "PW"
+    },
+    "PY": {
+      "worldBankIso3": "PRY",
+      "eezKey": "PY"
+    },
+    "QA": {
+      "worldBankIso3": "QAT",
+      "eezKey": "QA"
+    },
+    "RE": {
+      "worldBankIso3": "REU",
+      "eezKey": "RE"
+    },
+    "RO": {
+      "worldBankIso3": "ROU",
+      "eezKey": "RO"
+    },
+    "RS": {
+      "worldBankIso3": "SRB",
+      "eezKey": "RS"
+    },
+    "RU": {
+      "worldBankIso3": "RUS",
+      "eezKey": "RU"
+    },
+    "RW": {
+      "worldBankIso3": "RWA",
+      "eezKey": "RW"
+    },
+    "SA": {
+      "worldBankIso3": "SAU",
+      "eezKey": "SA"
+    },
+    "SB": {
+      "worldBankIso3": "SLB",
+      "eezKey": "SB"
+    },
+    "SC": {
+      "worldBankIso3": "SYC",
+      "eezKey": "SC"
+    },
+    "SD": {
+      "worldBankIso3": "SDN",
+      "eezKey": "SD"
+    },
+    "SE": {
+      "worldBankIso3": "SWE",
+      "eezKey": "SE"
+    },
+    "SG": {
+      "worldBankIso3": "SGP",
+      "eezKey": "SG"
+    },
+    "SH": {
+      "worldBankIso3": "SHN",
+      "eezKey": "SH"
+    },
+    "SI": {
+      "worldBankIso3": "SVN",
+      "eezKey": "SI"
+    },
+    "SJ": {
+      "worldBankIso3": "SJM",
+      "eezKey": "SJ"
+    },
+    "SK": {
+      "worldBankIso3": "SVK",
+      "eezKey": "SK"
+    },
+    "SL": {
+      "worldBankIso3": "SLE",
+      "eezKey": "SL"
+    },
+    "SM": {
+      "worldBankIso3": "SMR",
+      "eezKey": "SM"
+    },
+    "SN": {
+      "worldBankIso3": "SEN",
+      "eezKey": "SN"
+    },
+    "SO": {
+      "worldBankIso3": "SOM",
+      "eezKey": "SO"
+    },
+    "SR": {
+      "worldBankIso3": "SUR",
+      "eezKey": "SR"
+    },
+    "SS": {
+      "worldBankIso3": "SSD",
+      "eezKey": "SS"
+    },
+    "ST": {
+      "worldBankIso3": "STP",
+      "eezKey": "ST"
+    },
+    "SV": {
+      "worldBankIso3": "SLV",
+      "eezKey": "SV"
+    },
+    "SX": {
+      "worldBankIso3": "SXM",
+      "eezKey": "SX"
+    },
+    "SY": {
+      "worldBankIso3": "SYR",
+      "eezKey": "SY"
+    },
+    "SZ": {
+      "worldBankIso3": "SWZ",
+      "eezKey": "SZ"
+    },
+    "TC": {
+      "worldBankIso3": "TCA",
+      "eezKey": "TC"
+    },
+    "TD": {
+      "worldBankIso3": "TCD",
+      "eezKey": "TD"
+    },
+    "TF": {
+      "worldBankIso3": "ATF",
+      "eezKey": "TF"
+    },
+    "TG": {
+      "worldBankIso3": "TGO",
+      "eezKey": "TG"
+    },
+    "TH": {
+      "worldBankIso3": "THA",
+      "eezKey": "TH"
+    },
+    "TJ": {
+      "worldBankIso3": "TJK",
+      "eezKey": "TJ"
+    },
+    "TK": {
+      "worldBankIso3": "TKL",
+      "eezKey": "TK"
+    },
+    "TL": {
+      "worldBankIso3": "TLS",
+      "eezKey": "TL"
+    },
+    "TM": {
+      "worldBankIso3": "TKM",
+      "eezKey": "TM"
+    },
+    "TN": {
+      "worldBankIso3": "TUN",
+      "eezKey": "TN"
+    },
+    "TO": {
+      "worldBankIso3": "TON",
+      "eezKey": "TO"
+    },
+    "TR": {
+      "worldBankIso3": "TUR",
+      "eezKey": "TR"
+    },
+    "TT": {
+      "worldBankIso3": "TTO",
+      "eezKey": "TT"
+    },
+    "TV": {
+      "worldBankIso3": "TUV",
+      "eezKey": "TV"
+    },
+    "TW": {
+      "worldBankIso3": "TWN",
+      "eezKey": "TW"
+    },
+    "TZ": {
+      "worldBankIso3": "TZA",
+      "eezKey": "TZ"
+    },
+    "UA": {
+      "worldBankIso3": "UKR",
+      "eezKey": "UA"
+    },
+    "UG": {
+      "worldBankIso3": "UGA",
+      "eezKey": "UG"
+    },
+    "UM": {
+      "worldBankIso3": "UMI",
+      "eezKey": "UM"
+    },
+    "US": {
+      "worldBankIso3": "USA",
+      "eezKey": "US"
+    },
+    "UY": {
+      "worldBankIso3": "URY",
+      "eezKey": "UY"
+    },
+    "UZ": {
+      "worldBankIso3": "UZB",
+      "eezKey": "UZ"
+    },
+    "VA": {
+      "worldBankIso3": "VAT",
+      "eezKey": "VA"
+    },
+    "VC": {
+      "worldBankIso3": "VCT",
+      "eezKey": "VC"
+    },
+    "VE": {
+      "worldBankIso3": "VEN",
+      "eezKey": "VE"
+    },
+    "VG": {
+      "worldBankIso3": "VGB",
+      "eezKey": "VG"
+    },
+    "VI": {
+      "worldBankIso3": "VIR",
+      "eezKey": "VI"
+    },
+    "VN": {
+      "worldBankIso3": "VNM",
+      "eezKey": "VN"
+    },
+    "VU": {
+      "worldBankIso3": "VUT",
+      "eezKey": "VU"
+    },
+    "WF": {
+      "worldBankIso3": "WLF",
+      "eezKey": "WF"
+    },
+    "WS": {
+      "worldBankIso3": "WSM",
+      "eezKey": "WS"
+    },
+    "XK": {
+      "worldBankIso3": "XKX",
+      "eezKey": "XK"
+    },
+    "YE": {
+      "worldBankIso3": "YEM",
+      "eezKey": "YE"
+    },
+    "YT": {
+      "worldBankIso3": "MYT",
+      "eezKey": "YT"
+    },
+    "ZA": {
+      "worldBankIso3": "ZAF",
+      "eezKey": "ZA"
+    },
+    "ZM": {
+      "worldBankIso3": "ZMB",
+      "eezKey": "ZM"
+    },
+    "ZW": {
+      "worldBankIso3": "ZWE",
+      "eezKey": "ZW"
+    }
+  }
+}
