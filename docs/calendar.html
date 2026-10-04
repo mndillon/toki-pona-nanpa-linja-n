@@ -581,10 +581,20 @@
       outline: none;
     }
     .worldMapMarker { stroke-width: 1.1; }
+    .worldMapCapitalMarker {
+      font-family: "TP-Numeric-Cartouche-Font", sans-serif;
+      font-feature-settings: "liga" 1, "clig" 1, "calt" 1;
+      font-variant-ligatures: common-ligatures contextual;
+      text-anchor: middle;
+      dominant-baseline: central;
+      fill: #111;
+      pointer-events: none;
+      user-select: none;
+    }
     .nationalDayDialog {
-      width: min(620px, calc(100vw - 28px));
-      max-height: min(78vh, 720px);
-      overflow: auto;
+      width: min(960px, calc(100vw - 48px));
+      max-height: none;
+      overflow: visible;
       border: 1px solid var(--calendar-grid);
       border-radius: 12px;
       padding: 0;
@@ -617,6 +627,12 @@
     .nationalDayName { margin-top: 6px; font-size: 14px; font-weight: 650; line-height: 1.35; }
     .nationalDayNote { margin-top: 5px; font-size: 11px; color: var(--muted); line-height: 1.4; }
     .nationalDayEmpty { padding: 14px 0 4px; color: var(--muted); font-size: 12px; }
+    .countryCapital { border-top: 1px solid rgba(91,80,65,0.22); padding: 11px 0 4px; }
+    .countryCapitalRow { padding: 7px 0; }
+    .countryCapitalTopLine { display: flex; align-items: center; gap: 7px; min-height: 34px; white-space: nowrap; }
+    .countryCapitalGlyph { flex: 0 0 auto; font-size: 23px; line-height: 1; }
+    .countryCapitalCartouche { font-size: 27px; max-width: 100%; }
+    .countryCapitalLatin { margin-top: 2px; color: var(--calendar-latin); font-size: 9px; line-height: 1.2; white-space: nowrap; }
     .countryStats { border-top: 1px solid rgba(91,80,65,0.22); padding: 11px 0 0; }
     .countryStatRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 7px 0; }
     .countryStatValue, .countryStatAsOf { min-width: 0; }
@@ -1026,7 +1042,7 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=281";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=283";
 
     const FONT_FAMILY = "TP-Numeric-Cartouche-Font";
     const FONT_URL = "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-punctuation-mapping-fixed-ascii-vulgar-cartouche-only.ttf";
@@ -1144,7 +1160,8 @@
       "national-days.json": `${HOLIDAY_DATA_ROOT}/national-days.json`,
       "world-map.json": `${HOLIDAY_DATA_ROOT}/world-map.json`,
       "eez-areas.json": `${HOLIDAY_DATA_ROOT}/eez-areas.json`,
-      "country-statistics-map.json": `${HOLIDAY_DATA_ROOT}/country-statistics-map.json`
+      "country-statistics-map.json": `${HOLIDAY_DATA_ROOT}/country-statistics-map.json`,
+      "capital-cities.json": `${HOLIDAY_DATA_ROOT}/capital-cities.json`
     });
     const WORLD_BANK_STATS_URL = "https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL;AG.LND.TOTL.K2?source=2&mrnev=1&format=json&per_page=20000";
     const WORLD_BANK_STATS_CACHE_KEY = "worldBankCountryStats:v1";
@@ -1604,6 +1621,7 @@
     let worldMapData = null;
     let eezAreaData = null;
     let countryStatisticsMapData = null;
+    let capitalCityData = null;
     let worldBankCountryStatsCache = null;
     let worldBankCountryStatsLoadPromise = null;
     let worldBankStatsAttemptedThisSession = false;
@@ -2323,6 +2341,7 @@
         worldMapData = sharedData.files?.["world-map.json"] || null;
         eezAreaData = sharedData.files?.["eez-areas.json"] || null;
         countryStatisticsMapData = sharedData.files?.["country-statistics-map.json"] || null;
+        capitalCityData = sharedData.files?.["capital-cities.json"] || null;
         const nationalRows = Array.isArray(nationalDayData?.countries) ? nationalDayData.countries : [];
         nationalDayCountryByCode = new Map(nationalRows.map(row => [String(row?.code || "").toUpperCase(), row]));
         if (!Array.isArray(indexData?.countries)) throw new Error("Holiday country index has no countries array.");
@@ -2333,6 +2352,7 @@
         if (holidayCountries.length === 0) throw new Error("Holiday country index contains no two-letter country codes.");
         assertNationalDayCoverageData(indexData, nationalDayData, worldMapData);
         assertCountryStatisticsCoverageData(indexData, eezAreaData, countryStatisticsMapData);
+        assertCapitalCityCoverageData(indexData, capitalCityData);
 
         const validCodes = new Set(holidayCountryByCode.keys());
         const savedCountry = loadSavedHolidayCountry();
@@ -2484,6 +2504,28 @@
       return { indexCount: indexCodes.size, eezCount: eezCodes.size, mappingCount: mappingCodes.size };
     }
 
+    function assertCapitalCityCoverageData(indexData, capitalData) {
+      const indexCodes = new Set((Array.isArray(indexData?.countries) ? indexData.countries : [])
+        .map(row => String(row?.code || "").toUpperCase()).filter(code => /^[A-Z]{2}$/.test(code)));
+      const countries = capitalData?.countries && typeof capitalData.countries === "object" ? capitalData.countries : {};
+      const capitalCodes = new Set(Object.keys(countries).map(code => String(code).toUpperCase()));
+      const missing = [...indexCodes].filter(code => !capitalCodes.has(code));
+      const extra = [...capitalCodes].filter(code => !indexCodes.has(code));
+      const invalid = [...indexCodes].filter(code => {
+        const row = countries?.[code];
+        if (!row || typeof row !== "object") return true;
+        const lat = row.latitude;
+        const lon = row.longitude;
+        if (lat == null && lon == null) return false;
+        return !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lon)) ||
+          Number(lat) < -90 || Number(lat) > 90 || Number(lon) < -180 || Number(lon) > 180;
+      });
+      if (indexCodes.size !== 250 || missing.length || extra.length || invalid.length) {
+        throw new Error(`Capital-city coverage mismatch: index=${indexCodes.size}; missing=${missing.join(",")}; extra=${extra.join(",")}; invalid=${invalid.join(",")}`);
+      }
+      return { indexCount: indexCodes.size, capitalCount: capitalCodes.size };
+    }
+
     function validWorldBankStatsCache(value) {
       return !!value &&
         Number(value.schemaVersion) === WORLD_BANK_STATS_CACHE_SCHEMA_VERSION &&
@@ -2632,7 +2674,7 @@
       top.append(makeCartouche(compact, "nanpa", "numericCartouche countryStatCartouche"));
       if (unit) top.append(el("span", "countryStatUnit", unit));
       group.append(top);
-      group.append(el("div", "countryStatLatin soft", `${label} ${properName(compact, "Nanpa")}`));
+      group.append(el("div", "countryStatLatin soft", `${label} ${properName(compact, "Nanpa")} (${compact})`));
       return group;
     }
 
@@ -2646,7 +2688,7 @@
       top.append(sitelen("lon tenpo sike", "countryStatGlyph"));
       top.append(makeCartouche(text, "nanpa", "numericCartouche countryStatCartouche"));
       group.append(top);
-      group.append(el("div", "countryStatLatin soft", `lon tenpo sike ${properName(text, "Nanpa")}`));
+      group.append(el("div", "countryStatLatin soft", `lon tenpo sike ${properName(text, "Nanpa")} (${text})`));
       return group;
     }
 
@@ -2676,8 +2718,126 @@
       return true;
     }
 
+    function capitalCityRecord(code) {
+      const normalized = String(code || "").toUpperCase();
+      return capitalCityData?.countries?.[normalized] || null;
+    }
+
+    function capitalCoordinateSource(record) {
+      if (!record) return "";
+      const latitude = Number(record.latitude);
+      const longitude = Number(record.longitude);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return "";
+      return `ma:(${record.latitude}, ${record.longitude})`;
+    }
+
+    function capitalCoordinateProperName(source) {
+      const parsed = NanpaParser.parseNumber(String(source || ""), parserOptions());
+      if (!parsed?.isLatLong || !Array.isArray(parsed.componentValues) || parsed.componentValues.length !== 2) {
+        return "";
+      }
+      const bodies = parsed.componentValues.map(value => {
+        const scalar = String(value ?? "").trim();
+        if (!scalar) return "";
+        const signed = /^[+-]/.test(scalar) ? scalar : `+${scalar}`;
+        const name = properName(signed, "Nanpa");
+        return name.replace(/^Nanpa\s+/i, "").trim();
+      });
+      if (bodies.some(body => !body)) return "";
+      return `Ma ${bodies.join(" Kiwen ")}`;
+    }
+
+    const capitalOrdinaryCartoucheTextCache = new Map();
+
+    async function ensureCapitalOrdinaryCartouche(name) {
+      const source = String(name || "").trim();
+      if (!source || capitalOrdinaryCartoucheTextCache.has(source)) return;
+      const renderer = await getCalendarRenderer();
+      const plan = await renderer.buildRenderPlan({
+        input: `[${source}]`,
+        parser: parserOptions(),
+        layout: { fontPx: 32, paddingPx: 0, align: "left" },
+        fonts: calendarRendererFonts()
+      });
+      const run = Array.from(plan?.lines?.[0]?.runs || []).find(candidate => candidate?.kind === "cartouche");
+      const cps = Array.isArray(run?.renderFullCps) ? run.renderFullCps : null;
+      if (!cps?.length) throw new Error(`Shared renderer did not produce a capital-city cartouche for ${source}.`);
+      capitalOrdinaryCartoucheTextCache.set(source, String.fromCodePoint(...cps));
+    }
+
+    function makeCapitalOrdinaryCartouche(name) {
+      const source = String(name || "").trim();
+      const text = capitalOrdinaryCartoucheTextCache.get(source);
+      if (!text) return null;
+      const node = el("span", "sitelen countryCapitalCartouche", text);
+      node.setAttribute("role", "img");
+      node.setAttribute("aria-label", source);
+      return node;
+    }
+
+    function makeCapitalCoordinateCartouche(source) {
+      const key = cartoucheCacheKey(source, "ma");
+      const text = cartoucheTextCache.get(key);
+      if (!text) return null;
+      const node = el("span", "sitelen numericCartouche countryCapitalCartouche", text);
+      node.setAttribute("role", "img");
+      node.setAttribute("aria-label", capitalCoordinateProperName(source) || source);
+      return node;
+    }
+
+    async function ensureCapitalCityCartouches(code) {
+      const record = capitalCityRecord(code);
+      if (!record) return false;
+      const name = String(record.capitalTokiPonaName || "").trim();
+      const coordinateSource = capitalCoordinateSource(record);
+      const work = [];
+      if (name) work.push(ensureCapitalOrdinaryCartouche(name));
+      if (coordinateSource) work.push(buildCalendarCartoucheBatch([coordinateSource], "ma"));
+      if (work.length) await Promise.all(work);
+      return true;
+    }
+
+    function appendCapitalCityData(container, code) {
+      const record = capitalCityRecord(code);
+      if (!record) return false;
+      const capitalName = String(record.capitalTokiPonaName || "").trim();
+      const englishName = String(record.capitalEnglishName || "").trim();
+      const coordinateSource = capitalCoordinateSource(record);
+      const nameCartouche = capitalName ? makeCapitalOrdinaryCartouche(capitalName) : null;
+      const coordinateCartouche = coordinateSource ? makeCapitalCoordinateCartouche(coordinateSource) : null;
+      if (!nameCartouche && !coordinateCartouche) return false;
+
+      const section = el("section", "countryCapital");
+      if (nameCartouche) {
+        const row = el("div", "countryCapitalRow");
+        const top = el("div", "countryCapitalTopLine");
+        top.append(sitelen("ma tomo lawa", "countryCapitalGlyph"));
+        top.append(nameCartouche);
+        row.append(top);
+        const latin = normalizeUiLanguage(uiLanguage) === "tok"
+          ? `ma tomo lawa ${capitalName}`
+          : (englishName ? `Capital City: ${englishName}` : "");
+        if (latin) row.append(el("div", "countryCapitalLatin soft", latin));
+        section.append(row);
+      }
+      if (coordinateCartouche) {
+        const row = el("div", "countryCapitalRow");
+        const top = el("div", "countryCapitalTopLine");
+        top.append(sitelen("nanpa ma tomo lawa", "countryCapitalGlyph"));
+        top.append(coordinateCartouche);
+        row.append(top);
+        const coordinateName = capitalCoordinateProperName(coordinateSource);
+        if (coordinateName) row.append(el("div", "countryCapitalLatin soft", `${coordinateName} ${coordinateSource.slice(3)}`));
+        section.append(row);
+      }
+      container.append(section);
+      return true;
+    }
+
     async function refreshCountryStatisticsForOpenDialog(code) {
       const normalized = String(code || "").toUpperCase();
+      await ensureCapitalCityCartouches(normalized);
+      if (nationalDayDialog?.open && selectedNationalDayCode === normalized) renderNationalDayDialog(normalized);
       await ensureCountryStatisticCartouches(normalized);
       if (nationalDayDialog?.open && selectedNationalDayCode === normalized) renderNationalDayDialog(normalized);
 
@@ -2747,12 +2907,68 @@
       return applyNationalDaysMapVisibility({ persist });
     }
 
+    const WORLD_MAP_CAPITAL_MARKER_BASE_FONT_SIZE = 13;
+
+    function worldMapMarkerForCode(code) {
+      const normalized = String(code || "").toUpperCase();
+      return (Array.isArray(worldMapData?.markers) ? worldMapData.markers : [])
+        .find(item => String(item?.code || "").toUpperCase() === normalized) || null;
+    }
+
+    function worldMapCapitalPoint(code) {
+      const capital = capitalCityRecord(code);
+      const latitude = Number(capital?.latitude);
+      const longitude = Number(capital?.longitude);
+      const hasCapital = !!String(capital?.capitalEnglishName || capital?.capitalTokiPonaName || "").trim();
+      if (!hasCapital || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+      const marker = worldMapMarkerForCode(code);
+      if (marker && Number.isFinite(Number(marker.x)) && Number.isFinite(Number(marker.y))) {
+        return { x: Number(marker.x), y: Number(marker.y), source: "country-marker" };
+      }
+      const base = worldMapBaseView;
+      return {
+        x: base.x + ((longitude + 180) / 360) * base.width,
+        y: base.y + ((90 - latitude) / 180) * base.height,
+        source: "capital-coordinate"
+      };
+    }
+
+    function updateWorldMapCapitalMarkerScale() {
+      if (!worldMapSvg) return;
+      const marker = worldMapSvg.querySelector(".worldMapCapitalMarker");
+      if (!marker) return;
+      const baseWidth = Math.max(1, Number(worldMapBaseView.width) || 1000);
+      const currentWidth = Math.max(1, Number(worldMapView.width) || baseWidth);
+      const mapUnitFontSize = WORLD_MAP_CAPITAL_MARKER_BASE_FONT_SIZE * currentWidth / baseWidth;
+      marker.setAttribute("font-size", String(mapUnitFontSize));
+    }
+
+    function renderSelectedWorldMapCapitalMarker() {
+      if (!worldMapSvg) return false;
+      worldMapSvg.querySelector(".worldMapCapitalMarker")?.remove();
+      if (!selectedNationalDayCode) return false;
+      const point = worldMapCapitalPoint(selectedNationalDayCode);
+      if (!point) return false;
+      const text = document.createElementNS(SVG_NS, "text");
+      text.classList.add("worldMapCapitalMarker");
+      text.dataset.code = selectedNationalDayCode;
+      text.dataset.positionSource = point.source;
+      text.setAttribute("x", String(point.x));
+      text.setAttribute("y", String(point.y));
+      text.textContent = String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["ma"]));
+      text.setAttribute("aria-hidden", "true");
+      worldMapSvg.append(text);
+      updateWorldMapCapitalMarkerScale();
+      return true;
+    }
+
     function setSelectedWorldMapCountry(code) {
       selectedNationalDayCode = String(code || "").toUpperCase() || null;
       if (!worldMapSvg) return;
       for (const node of worldMapSvg.querySelectorAll(".worldMapCountry")) {
         node.classList.toggle("is-selected", node.dataset.code === selectedNationalDayCode);
       }
+      renderSelectedWorldMapCapitalMarker();
     }
 
     function renderNationalDayDialog(code) {
@@ -2775,7 +2991,7 @@
           }
           entry.append(dateLine);
           if (/^--\d{2}-\d{2}$/.test(dateValue)) {
-            entry.append(el("div", "nationalDayDateLatin soft", `tenpo ${properName(dateValue, "Suno")}`));
+            entry.append(el("div", "nationalDayDateLatin soft", `tenpo ${properName(dateValue, "Suno")} (${dateValue})`));
           }
           entry.append(el("div", "nationalDayName", nationalDayDisplayName(day)));
           const note = nationalDayDisplayNote(day);
@@ -2783,6 +2999,7 @@
           nationalDayDialogBody.append(entry);
         }
       }
+      appendCapitalCityData(nationalDayDialogBody, code);
       appendCountryStatistics(nationalDayDialogBody, code);
       applyDynamicCartoucheStyles(nationalDayDialogBody);
       return true;
@@ -2826,6 +3043,7 @@
       if (!worldMapSvg) return;
       worldMapView = clampWorldMapView(worldMapView);
       worldMapSvg.setAttribute("viewBox", `${worldMapView.x.toFixed(3)} ${worldMapView.y.toFixed(3)} ${worldMapView.width.toFixed(3)} ${worldMapView.height.toFixed(3)}`);
+      updateWorldMapCapitalMarkerScale();
     }
 
     function resetWorldMapView() {
@@ -4650,6 +4868,14 @@
       openNationalDayDialog,
       assertNationalDayCoverageData,
       assertCountryStatisticsCoverageData,
+      assertCapitalCityCoverageData,
+      capitalCityRecord,
+      capitalCoordinateSource,
+      capitalCoordinateProperName,
+      ensureCapitalCityCartouches,
+      worldMapCapitalPoint,
+      renderSelectedWorldMapCapitalMarker,
+      updateWorldMapCapitalMarkerScale,
       compactNanpaMagnitude,
       countryStatisticsForCode,
       ensureCountryStatisticCartouches,

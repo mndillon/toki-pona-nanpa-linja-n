@@ -5973,6 +5973,9 @@ function wireHaloControls() {
       "suno":  0xF1964,
       "tenpo": 0xF196B,
       "toki":  0xF196C,
+      "ma":    0xF1930,
+      "lon":   0xF192C,
+      "kiwen": 0xF191B,
 
       "esun":  0xF190B,
       "en":    0xF190A,
@@ -6011,6 +6014,9 @@ function wireHaloControls() {
     const CP_SUNO  = NANPA_LINJA_N_WORD_TO_CP["suno"];
     const CP_TENPO = NANPA_LINJA_N_WORD_TO_CP["tenpo"];
     const CP_TOKI  = NANPA_LINJA_N_WORD_TO_CP["toki"];
+    const CP_MA    = NANPA_LINJA_N_WORD_TO_CP["ma"];
+    const CP_LON   = NANPA_LINJA_N_WORD_TO_CP["lon"];
+    const CP_KIWEN = NANPA_LINJA_N_WORD_TO_CP["kiwen"];
     const CP_NENA  = NANPA_LINJA_N_WORD_TO_CP["nena"];
     const CP_NASIN = NANPA_LINJA_N_WORD_TO_CP["nasin"];
     const CP_EN    = NANPA_LINJA_N_WORD_TO_CP["en"];
@@ -6076,7 +6082,7 @@ function wireHaloControls() {
       add(CARTOUCHE_VULGAR_SCALE_MARKERS.quarter, [
         "ala", "ike", "uta", "open"
       ]);
-      add(CARTOUCHE_VULGAR_SCALE_MARKERS.third, ["kasi", "kule"]);
+      add(CARTOUCHE_VULGAR_SCALE_MARKERS.third, ["kasi", "kule", "kiwen"]);
       add(CARTOUCHE_VULGAR_SCALE_MARKERS.half, ["kala"]);
       add(CARTOUCHE_VULGAR_SCALE_MARKERS.twoThirds, [
         "ona", "o", "kulupu", "kipisi", "kin"
@@ -6095,7 +6101,7 @@ function wireHaloControls() {
     })();
 
     const NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS = new Set([
-      CP_NANPA, CP_NASA, CP_NOKA, CP_TENPO, CP_SUNO, CP_TOKI
+      CP_NANPA, CP_NASA, CP_NOKA, CP_TENPO, CP_SUNO, CP_TOKI, CP_MA, CP_LON
     ]);
     const NUMERIC_CARTOUCHE_HALF_SCALE_CLOSER_CPS = new Set([
       CP_NANPA, CP_NASA, CP_NOKA
@@ -6113,6 +6119,18 @@ function wireHaloControls() {
       if (
         index === firstInnerIndex + 2 &&
         canonical[firstInnerIndex + 1] === CP_COLON
+      ) return true;
+
+      // Coordinate tuples preserve the same 2/3-scale explicit-positive sign
+      // for every component, not only the first one. Abbreviated components
+      // begin immediately after kiwen; full components begin with nena en after
+      // the fixed full separator nena e kiwen e.
+      if (index > firstInnerIndex && canonical[index - 1] === CP_KIWEN) return true;
+      if (
+        index >= firstInnerIndex + 4 &&
+        canonical[index - 1] === CP_NENA &&
+        canonical[index - 2] === CP_E &&
+        canonical[index - 3] === CP_KIWEN
       ) return true;
 
       // Full uniform positive forms:
@@ -6386,7 +6404,9 @@ function wireHaloControls() {
       CP_NOKA,
       CP_TENPO,
       CP_SUNO,
-      CP_TOKI
+      CP_TOKI,
+      CP_MA,
+      CP_LON
     ]);
 
     function abbreviateNumericCartoucheInfo(cps) {
@@ -6558,6 +6578,98 @@ function wireHaloControls() {
     }
 
 
+    function coordinateParserOptionsForCurrentRenderer(mixedStyle = "short") {
+      return {
+        numericMode: getNanpaLinjanMode(),
+        mixedStyle: mixedStyle === "long" ? "long" : "short",
+        relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanParsing(),
+        relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanRendering(),
+        nanpaColonParsing: getNanpaColonParsing(),
+        nanpaColonRendering: getNanpaColonRendering(),
+        abbreviateNumericCartouches: getAbbreviateNumericCartouches(),
+        numericCartoucheStartGlyph: getNumericCartoucheStartGlyph()
+      };
+    }
+
+    function coordinateDisplaySourceIndices(fullCps, displayCps) {
+      const full = Array.from(fullCps || []).map(Number);
+      const display = Array.from(displayCps || []).map(Number);
+      const out = [];
+      let cursor = 0;
+      for (const cp of display) {
+        let found = -1;
+        for (let i = cursor; i < full.length; i++) {
+          if (full[i] === cp) { found = i; break; }
+        }
+        if (found < 0) {
+          for (let i = 0; i < full.length; i++) {
+            if (full[i] === cp && !out.includes(i)) { found = i; break; }
+          }
+        }
+        if (found < 0) found = Math.min(full.length - 1, Math.max(0, cursor));
+        out.push(found);
+        cursor = Math.min(full.length, found + 1);
+      }
+      return out;
+    }
+
+    function makeCoordinateCartoucheElementFromSemantic(elements, semantic, {
+      fontPx,
+      fgCss,
+      sourceText = null,
+      sourceStart = null,
+      sourceEnd = null,
+      sourceKind = null,
+      sourceSegmentIndex = null,
+      mixedStyle = "short"
+    } = {}) {
+      if (!semantic) return false;
+      const opts = coordinateParserOptionsForCurrentRenderer(mixedStyle);
+      const fullCps = _npCoordinateSemanticToInnerCodepoints(semantic, opts, false);
+      const displayCps = _npCoordinateSemanticToInnerCodepoints(
+        semantic,
+        opts,
+        getAbbreviateNumericCartouches()
+      );
+      if (!fullCps?.length || !displayCps?.length) return false;
+
+      const before = elements.length;
+      makeCartoucheElementFromCodepoints(elements, displayCps, {
+        fontPx,
+        fontFamily: FONT_FAMILY_NUMBER,
+        fgCss,
+        sourceText,
+        sourceStart,
+        sourceEnd,
+        sourceKind,
+        sourceSegmentIndex,
+        audioSourceCps: fullCps.slice(),
+        audioSourceIndices: coordinateDisplaySourceIndices(fullCps, displayCps),
+        fontRole: "number",
+        isNumericCartouche: true
+      });
+
+      for (let i = elements.length - 1; i >= before; i--) {
+        const el = elements[i];
+        if (!el || el.type === "gap") continue;
+        el.isCoordinateCartouche = true;
+        el.coordinateKind = semantic.kind;
+        el.coordinateHead = semantic.head;
+        el.coordinateDimensions = semantic.components?.length || 0;
+        el.coordinateComponents = Array.from(semantic.components || [], component => ({
+          raw: component.raw,
+          caps: component.caps,
+          uniqueBody: component.uniqueBody,
+          displayValue: component.displayValue,
+          decimalPlaces: component.decimalPlaces,
+          explicitPositive: !!component.explicitPositive,
+          explicitNegative: !!component.explicitNegative
+        }));
+        break;
+      }
+      return true;
+    }
+
     function makeHexNumericCartoucheElementFromSemantic(elements, semantic, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, scaleSourceInfo = null } = {}) {
       const normalized = cloneHexSemantic(semantic);
       if (!normalized) return;
@@ -6641,7 +6753,9 @@ function wireHaloControls() {
       NANPA_LINJA_N_WORD_TO_CP["noka"],
       NANPA_LINJA_N_WORD_TO_CP["tenpo"],
       NANPA_LINJA_N_WORD_TO_CP["suno"],
-      NANPA_LINJA_N_WORD_TO_CP["toki"]
+      NANPA_LINJA_N_WORD_TO_CP["toki"],
+      NANPA_LINJA_N_WORD_TO_CP["ma"],
+      NANPA_LINJA_N_WORD_TO_CP["lon"]
     ]);
 
     function uniformizeNanpaLinjanCartoucheCps(cps) {
@@ -8113,6 +8227,30 @@ function wireHaloControls() {
         for (let i = start; i < end; i++) chars[i] = NUMERIC_SCAN_HARD_BOUNDARY_CHAR;
       }
       return chars.join("");
+    }
+
+    function findCoordinateSequences(text, { mixedStyle = "short" } = {}) {
+      const s = String(text ?? "");
+      if (!s) return [];
+      const out = [];
+      const re = /(?:#~)?(?:ma|lon):\([^()\r\n]*\)/g;
+      let m;
+      while ((m = re.exec(s)) !== null) {
+        const raw = String(m[0] || "");
+        const start = m.index | 0;
+        const end = start + raw.length;
+        const before = start > 0 ? s[start - 1] : "";
+        const after = end < s.length ? s[end] : "";
+        if (before && /[A-Za-z0-9_#~]/.test(before)) continue;
+        if (after && /[A-Za-z0-9_]/.test(after)) continue;
+        const semantic = _npTryParseCoordinateInput(raw, {
+          ...coordinateParserOptionsForCurrentRenderer(mixedStyle),
+          nanpaColonParsing: true
+        });
+        if (!semantic) continue;
+        out.push({ kind: "coordinate", match: raw, index: start, end, coordinateSemantic: semantic });
+      }
+      return out;
     }
 
     function findTimeSequencesWithCaps(text) {
@@ -10893,6 +11031,50 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
       nanpaDebugEmit("parse-text:start", { segmentText: s, fontPx, mode, sourceBaseStart, sourceKind, sourceSegmentIndex, mixedStyle });
 
+      // Coordinate tuples own their complete parenthesized span. Claim them
+      // before the ordinary numeric scanners so commas are tuple delimiters,
+      // not thousands separators, and the component numbers are not emitted as
+      // independent cartouches. Adjacency is deliberate: only ma:( / lon:( (or
+      // their #~ forms) activate this grammar.
+      const coordinateHits = findCoordinateSequences(s, { mixedStyle });
+      if (coordinateHits.length) {
+        let coordinatePos = 0;
+        for (const hit of coordinateHits) {
+          if (hit.index > coordinatePos) {
+            parseTextSegmentToElements(s.slice(coordinatePos, hit.index), elements, {
+              fontPx,
+              sourceBaseStart: sourceBaseStart + coordinatePos,
+              sourceKind,
+              sourceSegmentIndex,
+              mixedStyle,
+              allowRawCodepoints: false
+            });
+          }
+          makeCoordinateCartoucheElementFromSemantic(elements, hit.coordinateSemantic, {
+            fontPx,
+            fgCss: getFgHex(),
+            sourceText: s.slice(hit.index, hit.end),
+            sourceStart: sourceBaseStart + hit.index,
+            sourceEnd: sourceBaseStart + hit.end,
+            sourceKind,
+            sourceSegmentIndex,
+            mixedStyle
+          });
+          coordinatePos = hit.end;
+        }
+        if (coordinatePos < s.length) {
+          parseTextSegmentToElements(s.slice(coordinatePos), elements, {
+            fontPx,
+            sourceBaseStart: sourceBaseStart + coordinatePos,
+            sourceKind,
+            sourceSegmentIndex,
+            mixedStyle,
+            allowRawCodepoints: false
+          });
+        }
+        return;
+      }
+
       // Protect the six exact digit-bearing alternative-glyph aliases from
       // every numeric scanner. Then, for non-alias tokens such as ni2 or ni020,
       // create a dedicated hit for the complete numeric suffix, including any
@@ -11337,6 +11519,26 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       // as a numeric value (for example [1½]) remains part of numeric input.
       const scaleSourceInfo = cartoucheVulgarScaleSourceInfo(content);
       const numericContent = scaleSourceInfo.cleanedContent;
+
+      const coordinateSemantic = _npTryParseCoordinateInput(`[${numericContent}]`, {
+        ...coordinateParserOptionsForCurrentRenderer(mixedStyle),
+        nanpaColonParsing: true
+      }) || _npTryParseCoordinateInput(numericContent, {
+        ...coordinateParserOptionsForCurrentRenderer(mixedStyle),
+        nanpaColonParsing: true
+      });
+      if (coordinateSemantic) {
+        if (makeCoordinateCartoucheElementFromSemantic(elements, coordinateSemantic, {
+          fontPx,
+          fgCss,
+          sourceText: content,
+          sourceStart: sourceBaseStart,
+          sourceEnd: sourceBaseStart + content.length,
+          sourceKind,
+          sourceSegmentIndex,
+          mixedStyle
+        })) return;
+      }
 
       if (getEnableBinaryParsing()) {
         const binarySemantic = binaryCartoucheSourceToSemantic(numericContent, {
@@ -13315,6 +13517,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     "suno":  0xF1964,
     "tenpo": 0xF196B,
     "toki":  0xF196C,
+    "ma":    0xF1930,
+    "lon":   0xF192C,
+    "kiwen": 0xF191B,
     "esun":  0xF190B,
     "en":    0xF190A,
     "e":     0xF1909,
@@ -13342,6 +13547,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   };
 
   const _NP_CP_NANPA = _NP_NANPA_LINJA_N_WORD_TO_CP["nanpa"];
+  const _NP_CP_MA    = _NP_NANPA_LINJA_N_WORD_TO_CP["ma"];
+  const _NP_CP_LON   = _NP_NANPA_LINJA_N_WORD_TO_CP["lon"];
+  const _NP_CP_KIWEN = _NP_NANPA_LINJA_N_WORD_TO_CP["kiwen"];
+  const _NP_CP_COLON = _NP_NANPA_LINJA_N_WORD_TO_CP[":"];
   const _NP_CP_NENA  = _NP_NANPA_LINJA_N_WORD_TO_CP["nena"];
   const _NP_CP_NASIN = _NP_NANPA_LINJA_N_WORD_TO_CP["nasin"];
   const _NP_CP_EN    = _NP_NANPA_LINJA_N_WORD_TO_CP["en"];
@@ -13368,7 +13577,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     _NP_NANPA_LINJA_N_WORD_TO_CP["noka"],
     _NP_NANPA_LINJA_N_WORD_TO_CP["tenpo"],
     _NP_NANPA_LINJA_N_WORD_TO_CP["suno"],
-    _NP_NANPA_LINJA_N_WORD_TO_CP["toki"]
+    _NP_NANPA_LINJA_N_WORD_TO_CP["toki"],
+    _NP_NANPA_LINJA_N_WORD_TO_CP["ma"],
+    _NP_NANPA_LINJA_N_WORD_TO_CP["lon"]
   ]);
 
   const _NP_STRICT_DIGIT_TOKENS = new Set(["NI","WE","TE","SE","NA","LE","NU","ME","PE","JE"]);
@@ -15238,6 +15449,415 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return _npTryParseTypedNanpaColonCartouche(raw, opts)?.caps || null;
   }
 
+  function _npCoordinateKindForHead(head) {
+    return String(head || "").toLowerCase() === "ma" ? "latlong" : "coordinates";
+  }
+
+  function _npCoordinateHeadIsValid(head) {
+    const h = String(head || "").toLowerCase();
+    return h === "ma" || h === "lon";
+  }
+
+  function _npCoordinateComponentCountIsValid(head, count) {
+    const n = Number(count);
+    if (!Number.isInteger(n)) return false;
+    return String(head || "").toLowerCase() === "ma" ? n === 2 : n >= 2;
+  }
+
+  function _npCoordinateDecimalPlaces(raw) {
+    const s = String(raw ?? "").trim();
+    const m = /^[+-]?(?:\d+)?\.(\d+)(?:[eE][+-]?\d+)?$/.exec(s);
+    return m ? m[1].length : null;
+  }
+
+  function _npCoordinateSignMetadata(raw) {
+    const s = String(raw ?? "").trim();
+    return {
+      explicitPositive: s.startsWith("+"),
+      explicitNegative: s.startsWith("-")
+    };
+  }
+
+  function _npDecodeCoordinateScalarDecimalCaps(caps, opts = {}) {
+    let tokens;
+    try { tokens = _npTokenizeNanpaCaps(_npCanonicalizeScientificCaps(caps), opts); }
+    catch { return null; }
+    if (tokens.length < 3 || tokens[0] !== "NE" || tokens[tokens.length - 1] !== "N") return null;
+    let i = 1;
+    const end = tokens.length - 1;
+    let sign = "";
+    if (tokens[i] === "NS") { sign = "+"; i += 1; }
+    else if (tokens[i] === "NO" && tokens[i + 1] !== "NE") { sign = "-"; i += 1; }
+
+    let intDigits = "";
+    let fracDigits = "";
+    let inFraction = false;
+    while (i < end) {
+      const t = tokens[i];
+      if (_NP_TOKEN_TO_DIGIT_CHAR[t] != null) {
+        if (inFraction) fracDigits += _NP_TOKEN_TO_DIGIT_CHAR[t];
+        else intDigits += _NP_TOKEN_TO_DIGIT_CHAR[t];
+        i += 1;
+        continue;
+      }
+      if (t === "NO" && tokens[i + 1] === "NE" && !inFraction) {
+        inFraction = true;
+        i += 2;
+        continue;
+      }
+      // NENE grouping spacers preserve digits but are not part of the decimal spelling.
+      if (t === "NE" && tokens[i + 1] === "NE") { i += 2; continue; }
+      // Base-1000 separators between digit groups likewise do not change the digits.
+      if (t === "NE") {
+        let j = i + 1;
+        while (j < end && /^KE(?:KE)*$/.test(tokens[j])) j += 1;
+        if (j > i + 1 && j < end && _NP_TOKEN_TO_DIGIT_CHAR[tokens[j]] != null) {
+          i = j;
+          continue;
+        }
+      }
+      return null;
+    }
+    if (!intDigits) intDigits = "0";
+    return sign + intDigits + (inFraction ? `.${fracDigits || "0"}` : "");
+  }
+
+  function _npCapsToCanonicalUniqueCodeForCoordinate(caps, opts = {}) {
+    const canonicalCaps = _npCanonicalizeScientificCaps(caps);
+    const tokens = _npTokenizeNanpaCaps(canonicalCaps, opts);
+    const parts = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (t === "NE") {
+        if (i === 0 && tokens[i + 1] === "NS") {
+          parts.push("e");
+          i += 1;
+          continue;
+        }
+        let j = i;
+        while (j < tokens.length && tokens[j] === "NE") j++;
+        const count = j - i;
+        const nextToken = tokens[j];
+        const spacerCount = Math.floor(count / 2);
+        if (spacerCount > 0) parts.push("ee".repeat(spacerCount));
+        if ((count % 2) === 1 && nextToken === "KO") {
+          parts.push("eko");
+          i = j;
+        } else {
+          i = j - 1;
+        }
+        continue;
+      }
+      if (t === "N") continue;
+      if (_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]) { parts.push(_NP_TOKEN_TO_NUMBER_CODE_LETTER[t]); continue; }
+      if (t === "NO") { parts.push("o"); continue; }
+      if (t === "NONO") { parts.push("oo"); continue; }
+      if (t === "NONONO") { parts.push("ooo"); continue; }
+      if (t === "NOKO") { parts.push("oko"); continue; }
+      if (t === "KO") { parts.push("ko"); continue; }
+      if (t === "KE") { parts.push("k"); continue; }
+      if (t === "KEKE") { parts.push("kk"); continue; }
+      if (t === "KEKEKE") { parts.push("kkk"); continue; }
+      if (t === "OK") { parts.push("ok"); continue; }
+    }
+    return "#~" + parts.join("");
+  }
+
+  function _npCoordinateComponentFromCaps(caps, raw, opts = {}, sourceFormat = "decimal") {
+    const canonicalCaps = _npCanonicalizeScientificCaps(caps);
+    const displayValue = sourceFormat === "decimal"
+      ? String(raw ?? "").trim()
+      : _npDecodeCoordinateScalarDecimalCaps(canonicalCaps, opts);
+    const uniqueCode = _npCapsToCanonicalUniqueCodeForCoordinate(canonicalCaps, opts);
+    const uniqueBody = uniqueCode.startsWith("#~") ? uniqueCode.slice(2) : uniqueCode;
+    const sign = _npCoordinateSignMetadata(displayValue ?? "");
+    return {
+      raw: String(raw ?? "").trim(),
+      caps: canonicalCaps,
+      uniqueCode,
+      uniqueBody,
+      displayValue,
+      decimalPlaces: displayValue != null ? _npCoordinateDecimalPlaces(displayValue) : null,
+      explicitPositive: sign.explicitPositive,
+      explicitNegative: sign.explicitNegative,
+      sourceFormat
+    };
+  }
+
+  function _npTryParseParenthesizedCoordinateSource(raw, opts = {}) {
+    const source = String(raw ?? "").trim();
+    if (!source) return null;
+    const m = /^(#~)?(ma|lon):\(([^()]*)\)$/.exec(source);
+    if (!m) return null;
+
+    const isUniqueCode = !!m[1];
+    const head = m[2];
+    const inner = m[3];
+    const rawParts = inner.split(",");
+    if (!_npCoordinateComponentCountIsValid(head, rawParts.length)) return null;
+
+    const components = [];
+    for (const rawPart of rawParts) {
+      const part = String(rawPart ?? "").trim();
+      if (!part || /\s/.test(part)) return null;
+      let caps = null;
+      if (isUniqueCode) {
+        if (part.startsWith("#~")) return null;
+        const parsed = _npTryParseNanpaLinjanNumberCodeToCaps(`#~${part}`);
+        if (!parsed?.caps || parsed.semanticKind) return null;
+        caps = parsed.caps;
+      } else {
+        caps = _npDecimalStringToCaps(part, {
+          thousandsChar: "",
+          groupFractionTriplets: true,
+          fractionGroupSize: 3,
+          ...opts,
+          mixedStyle: opts.mixedStyle === "long" ? "long" : "short"
+        });
+      }
+      if (!caps) return null;
+      components.push(_npCoordinateComponentFromCaps(caps, part, opts, isUniqueCode ? "uniqueCode" : "decimal"));
+    }
+
+    return {
+      head,
+      kind: _npCoordinateKindForHead(head),
+      semanticKind: _npCoordinateKindForHead(head),
+      sourceFormat: isUniqueCode ? "uniqueCode" : "decimal",
+      components
+    };
+  }
+
+  function _npSplitCoordinateCartoucheBody(bodyTokens) {
+    const body = Array.from(bodyTokens || []);
+    if (!body.length) return null;
+
+    const fullSeparator = ["nena", "e", "kiwen", "e"];
+    const hasFullSeparator = body.some((_, i) =>
+      i + fullSeparator.length <= body.length &&
+      fullSeparator.every((word, k) => body[i + k] === word)
+    );
+
+    const parts = [];
+    let current = [];
+    let i = 0;
+    while (i < body.length) {
+      if (hasFullSeparator && i + 4 <= body.length &&
+          body[i] === "nena" && body[i + 1] === "e" && body[i + 2] === "kiwen" && body[i + 3] === "e") {
+        if (!current.length) return null;
+        parts.push(current);
+        current = [];
+        i += 4;
+        continue;
+      }
+      if (!hasFullSeparator && body[i] === "kiwen") {
+        if (!current.length) return null;
+        parts.push(current);
+        current = [];
+        i += 1;
+        continue;
+      }
+      if (body[i] === "kiwen") return null; // mixed full/abbreviated separators are invalid
+      current.push(body[i]);
+      i += 1;
+    }
+    if (!current.length) return null;
+    parts.push(current);
+    return { parts, form: hasFullSeparator ? "full" : "abbreviated" };
+  }
+
+  function _npTryParseCoordinateCartoucheSource(raw, opts = {}) {
+    if (!_npNanpaColonParsingFromOpts(opts)) return null;
+    const tokens = _npTokenizeNanpaColonCartoucheSource(raw);
+    if (!tokens || tokens.length < 5 || !_npCoordinateHeadIsValid(tokens[0]) ||
+        tokens[1] !== ":" || tokens[tokens.length - 1] !== "nanpa") return null;
+
+    const head = tokens[0];
+    const split = _npSplitCoordinateCartoucheBody(tokens.slice(2, -1));
+    if (!split || !_npCoordinateComponentCountIsValid(head, split.parts.length)) return null;
+
+    const components = [];
+    for (const words of split.parts) {
+      const scalarSource = `[nanpa: ${words.join(" ")} nanpa]`;
+      const parsed = _npTryParseTypedNanpaColonCartouche(scalarSource, {
+        ...opts,
+        nanpaColonParsing: true
+      });
+      if (!parsed?.caps || parsed.semanticKind) return null;
+      const uniqueCode = _npCapsToCanonicalUniqueCodeForCoordinate(parsed.caps, opts);
+      const uniqueBody = uniqueCode.slice(2);
+      const canonicalCaps = _npCanonicalizeScientificCaps(parsed.caps);
+      const displayValue = _npDecodeCoordinateScalarDecimalCaps(canonicalCaps, opts);
+      components.push({
+        raw: words.join(" "),
+        words: words.slice(),
+        caps: canonicalCaps,
+        uniqueCode,
+        uniqueBody,
+        displayValue,
+        decimalPlaces: displayValue != null ? _npCoordinateDecimalPlaces(displayValue) : null,
+        explicitPositive: uniqueBody.startsWith("e"),
+        explicitNegative: uniqueBody.startsWith("o"),
+        sourceFormat: "cartouche"
+      });
+    }
+
+    return {
+      head,
+      kind: _npCoordinateKindForHead(head),
+      semanticKind: _npCoordinateKindForHead(head),
+      sourceFormat: "cartouche",
+      form: split.form,
+      components
+    };
+  }
+
+  function _npTryParseCoordinateInput(raw, opts = {}) {
+    try {
+      return _npTryParseParenthesizedCoordinateSource(raw, opts) ||
+        _npTryParseCoordinateCartoucheSource(raw, opts);
+    } catch {
+      return null;
+    }
+  }
+
+  function _npCoordinateCapsSign(caps, opts = {}) {
+    let tokens;
+    try { tokens = _npTokenizeNanpaCaps(_npCanonicalizeScientificCaps(caps), opts); }
+    catch { return "unknown"; }
+    if (tokens.length < 3 || tokens[0] !== "NE" || tokens[tokens.length - 1] !== "N") return "unknown";
+    if (tokens[1] === "NS") return "positive";
+    if (tokens[1] === "NO" && tokens[2] !== "NE") return "negative";
+    return "unsigned";
+  }
+
+  function _npCoordinateComponentInnerCodepoints(caps, opts = {}, abbreviated = false, forceExplicitPositive = false) {
+    const mode = ((opts.mode === "traditional") || (opts.numericMode === "traditional")) ? "traditional" : "uniform";
+    let tokens;
+    try { tokens = _npTokenizeNanpaCaps(_npCanonicalizeScientificCaps(caps), opts); }
+    catch { return null; }
+    const hasOk = tokens.includes("OK");
+    const tokensNoOk = tokens.filter(token => token !== "OK");
+    let words = _npNanpaCapsTokensToTpWords(tokensNoOk, {
+      mode,
+      relaxedRendering: _npRelaxedRenderingFromOpts(opts),
+      nanpaColonRendering: _npNanpaColonRenderingFromOpts(opts),
+      semanticKind: null,
+      semanticStartGlyph: "nanpa",
+      numericCartoucheStartGlyph: null
+    });
+    if (hasOk) {
+      const suffixWords = mode === "uniform"
+        ? ["nena", "open", "kipisi", "e"]
+        : ["noka", "open", "kipisi", "e"];
+      const lastNanpa = words.lastIndexOf("nanpa");
+      if (lastNanpa >= 0) words.splice(lastNanpa, 0, ...suffixWords);
+      else words.push(...suffixWords);
+    }
+    let rendered = words.map(word => _NP_NANPA_LINJA_N_WORD_TO_CP[word]);
+    if (rendered.some(cp => cp == null)) return null;
+
+    if (abbreviated) {
+      const drop = new Set([
+        _NP_CP_NANPA,
+        _NP_CP_EN,
+        _NP_CP_E,
+        _NP_CP_NENA,
+        _NP_NANPA_LINJA_N_WORD_TO_CP["esun"],
+        _NP_NANPA_LINJA_N_WORD_TO_CP["nasa"],
+        _NP_NANPA_LINJA_N_WORD_TO_CP["open"],
+        _NP_NANPA_LINJA_N_WORD_TO_CP["ala"],
+        _NP_NANPA_LINJA_N_WORD_TO_CP["ike"],
+        _NP_NANPA_LINJA_N_WORD_TO_CP["uta"]
+      ]);
+      const out = [];
+      let keptHead = false;
+      const fullPositive = rendered.length >= 4 && _NP_NUMERIC_CARTOUCHE_START_CPS.has(rendered[0]) &&
+        ((rendered[1] === _NP_CP_E || rendered[1] === _NP_NANPA_LINJA_N_WORD_TO_CP["esun"] || rendered[1] === _NP_CP_COLON) &&
+         rendered[2] === _NP_CP_NENA && rendered[3] === _NP_CP_EN);
+      for (let i = 0; i < rendered.length; i++) {
+        const cp = rendered[i];
+        const isFinalNanpa = cp === _NP_CP_NANPA && i === rendered.length - 1;
+        if (!keptHead) {
+          out.push(cp);
+          keptHead = true;
+          continue;
+        }
+        if (isFinalNanpa) { out.push(cp); continue; }
+        if (fullPositive && i === 2) {
+          out.push(_NP_CP_EN);
+          i = 3;
+          continue;
+        }
+        if (drop.has(cp)) continue;
+        out.push(cp);
+      }
+      rendered = out;
+    }
+
+    // Strip the scalar's own numeric wrapper. The coordinate tuple owns the
+    // single semantic head/colon and final nanpa terminator.
+    let start = 0;
+    if (_NP_NUMERIC_CARTOUCHE_START_CPS.has(rendered[start])) start += 1;
+    if (rendered[start] === _NP_CP_COLON || rendered[start] === _NP_CP_E ||
+        rendered[start] === _NP_NANPA_LINJA_N_WORD_TO_CP["esun"]) start += 1;
+    let end = rendered.length;
+    if (end > start && rendered[end - 1] === _NP_CP_NANPA) end -= 1;
+    const inner = rendered.slice(start, end);
+
+    // Geographic ma: output is canonical signed latitude/longitude. Parsing
+    // remains permissive (unsigned positive input is accepted), but rendering
+    // always makes a non-negative component explicit: abbreviated uses en,
+    // while full output uses nena en. General lon: coordinates remain
+    // source-faithful and therefore never gain an implicit positive marker.
+    if (forceExplicitPositive && _npCoordinateCapsSign(caps, opts) === "unsigned") {
+      return abbreviated
+        ? [_NP_CP_EN, ...inner]
+        : [_NP_CP_NENA, _NP_CP_EN, ...inner];
+    }
+    return inner;
+  }
+
+  function _npCoordinateSemanticToInnerCodepoints(semantic, opts = {}, abbreviated = false) {
+    if (!semantic || !_npCoordinateHeadIsValid(semantic.head) ||
+        !_npCoordinateComponentCountIsValid(semantic.head, semantic.components?.length)) return null;
+    const requestedHead = _npNumericCartoucheStartGlyphFromOpts(opts);
+    const renderHead = resolveNumericCartoucheStartGlyph(requestedHead, semantic.head);
+    const headCp = _NP_NANPA_LINJA_N_WORD_TO_CP[renderHead];
+    if (headCp == null) return null;
+
+    const out = [headCp, _NP_CP_COLON];
+    for (let i = 0; i < semantic.components.length; i++) {
+      const component = semantic.components[i];
+      const inner = _npCoordinateComponentInnerCodepoints(
+        component.caps,
+        opts,
+        abbreviated,
+        semantic.head === "ma"
+      );
+      if (!inner || !inner.length) return null;
+      if (i > 0) {
+        if (abbreviated) out.push(_NP_CP_KIWEN);
+        else out.push(_NP_CP_NENA, _NP_CP_E, _NP_CP_KIWEN, _NP_CP_E);
+      }
+      out.push(...inner);
+    }
+    out.push(_NP_CP_NANPA);
+    return out;
+  }
+
+  function _npCoordinateSemanticToUniqueCode(semantic, opts = {}) {
+    if (!semantic || !_npCoordinateHeadIsValid(semantic.head)) return null;
+    const bodies = semantic.components.map(component => {
+      const body = component.uniqueBody || _npCapsToCanonicalUniqueCodeForCoordinate(component.caps, opts).slice(2);
+      if (semantic.head === "ma" && _npCoordinateCapsSign(component.caps, opts) === "unsigned") {
+        return "e" + body;
+      }
+      return body;
+    });
+    return `#~${semantic.head}:(${bodies.join(",")})`;
+  }
+
   function _npNanpaColonProperNameFromLegacy(rawLegacyName, { semanticStartGlyph = null } = {}) {
     let body = String(rawLegacyName ?? "").trim().toLowerCase();
     if (!body) return "";
@@ -15265,6 +15885,68 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (input == null || String(input).trim() === "") return null;
     const s = String(input).trim();
+
+    const coordinateSemantic = _npTryParseCoordinateInput(s, {
+      ...opts,
+      numericMode: mode,
+      mixedStyle
+    });
+    if (coordinateSemantic) {
+      const fullInner = _npCoordinateSemanticToInnerCodepoints(coordinateSemantic, {
+        ...opts,
+        numericMode: mode,
+        abbreviateNumericCartouches: false
+      }, false);
+      const abbreviatedInner = _npCoordinateSemanticToInnerCodepoints(coordinateSemantic, {
+        ...opts,
+        numericMode: mode,
+        abbreviateNumericCartouches: true
+      }, true);
+      if (!fullInner || !fullInner.length || !abbreviatedInner || !abbreviatedInner.length) return null;
+
+      const tpWords = _npCodepointsToWords(fullInner);
+      const abbreviatedWords = _npCodepointsToWords(abbreviatedInner);
+      const uniqueCode = _npCoordinateSemanticToUniqueCode(coordinateSemantic, opts);
+      const componentValues = coordinateSemantic.components.map(component => component.displayValue);
+      const displayValue = componentValues.every(value => value != null)
+        ? `${coordinateSemantic.head}:(${componentValues.join(", ")})`
+        : null;
+      const codepoints = _npWrapCartouche(fullInner);
+      return {
+        input: s,
+        kind: coordinateSemantic.kind,
+        semanticKind: coordinateSemantic.semanticKind,
+        coordinateHead: coordinateSemantic.head,
+        semanticStartGlyph: coordinateSemantic.head,
+        renderStartGlyph: tpWords[0] || coordinateSemantic.head,
+        sourceFormat: coordinateSemantic.sourceFormat,
+        form: coordinateSemantic.form || null,
+        isCoordinate: true,
+        isLatLong: coordinateSemantic.head === "ma",
+        dimensions: coordinateSemantic.components.length,
+        components: coordinateSemantic.components.map(component => ({ ...component })),
+        componentCaps: coordinateSemantic.components.map(component => component.caps),
+        componentValues,
+        precision: coordinateSemantic.components.map(component => component.decimalPlaces),
+        caps: null,
+        properName: null,
+        uniqueCode,
+        displayValue,
+        ucsurCodepoints: fullInner.slice(),
+        abbreviatedUcsurCodepoints: abbreviatedInner.slice(),
+        hexCodepoints: codepointsToHexString(fullInner),
+        hexWithCartouche: codepointsToHexString(codepoints),
+        tpWords,
+        abbreviatedWords,
+        words: tpWords.slice(),
+        isTime: false,
+        isDate: false,
+        isTimeLike: false,
+        innerCodepoints: fullInner.slice(),
+        codepoints,
+        numericMode: mode
+      };
+    }
 
     if (opts.enableBinaryParsing === true || opts.enableBinaryRendering === true) {
       const binarySemantic = parseCompleteBinaryInput(s, {
@@ -16279,7 +16961,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   },
 
   getOneThirdCodepointsSet() {
-    return new Set([0xF1917]);
+    return new Set([0xF1917, 0xF191B]);
   },
 
   getTwoThirdsCodepointsSet() {

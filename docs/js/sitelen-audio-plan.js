@@ -1480,7 +1480,7 @@ const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
   'eke', 'eken', 'ekeke', 'ekeken', 'ekekeke', 'ekekeken',
   'keke', 'keken', 'kekeke', 'kekeken',
   'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin',
-  'nanpa', 'nasa', 'noka', 'suno', 'tenpo', 'toki'
+  'nanpa', 'nasa', 'noka', 'suno', 'tenpo', 'toki', 'kiwen', 'ma', 'lon'
 ]);
 
 // A compound is one indivisible rendered visual even though its source words
@@ -1526,11 +1526,14 @@ const AUDIO_CP_NENA = 0xF1940;
 const AUDIO_CP_NANPA = 0xF193D;
 const AUDIO_CP_NASA = 0xF193E;
 const AUDIO_CP_NOKA = 0xF1943;
+const AUDIO_CP_LON = 0xF192C;
+const AUDIO_CP_MA = 0xF1930;
+const AUDIO_CP_KIWEN = 0xF191B;
 const AUDIO_CP_SUNO = 0xF1964;
 const AUDIO_CP_TENPO = 0xF196B;
 const AUDIO_CP_TOKI = 0xF196C;
 const AUDIO_CP_COLON = 0xF199D;
-const AUDIO_TYPED_DECIMAL_HEAD_CPS = new Set([AUDIO_CP_NANPA, AUDIO_CP_NASA, AUDIO_CP_NOKA, AUDIO_CP_SUNO, AUDIO_CP_TENPO, AUDIO_CP_TOKI]);
+const AUDIO_TYPED_DECIMAL_HEAD_CPS = new Set([AUDIO_CP_NANPA, AUDIO_CP_NASA, AUDIO_CP_NOKA, AUDIO_CP_LON, AUDIO_CP_MA, AUDIO_CP_SUNO, AUDIO_CP_TENPO, AUDIO_CP_TOKI]);
 
 function spokenWordTokens(text) {
   return String(text ?? '').match(/[A-Za-z']+/g) || [];
@@ -1552,6 +1555,8 @@ function typedDecimalAudioHeadWordFromCodepoints(cps, options = {}) {
   if (source.length >= 2 && source[1] === AUDIO_CP_COLON) {
     if (source[0] === AUDIO_CP_NASA) return 'Nasa';
     if (source[0] === AUDIO_CP_NOKA) return 'Noka';
+    if (source[0] === AUDIO_CP_MA) return 'Ma';
+    if (source[0] === AUDIO_CP_LON) return 'Lon';
   }
 
   if (!nanpaColonRenderingEnabled(options)) return '';
@@ -1570,6 +1575,8 @@ function typedDecimalAudioHeadWordFromSourceText(text, options = {}) {
   if (words[0] === 'tenpo') return 'Tenpo';
   if (words[0] === 'toki') return 'Toki';
   if (words[0] === 'nanpa') return 'Nanpa';
+  if (words[0] === 'ma') return 'Ma';
+  if (words[0] === 'lon') return 'Lon';
   return '';
 }
 
@@ -1982,6 +1989,400 @@ function tryRenderedBinaryCartoucheToProperName(run, options = {}) {
   return compactSpeechWhitespace(tryRenderedBinaryCartoucheToParsed(run, options)?.properName || '');
 }
 
+function coordinateAudioMetadata(run) {
+  const sources = [run, run?._element, run?.element];
+  for (const source of sources) {
+    if (!source || source.isCoordinateCartouche !== true) continue;
+    const head = String(source.coordinateHead || '').trim().toLowerCase();
+    const components = Array.isArray(source.coordinateComponents) ? source.coordinateComponents : [];
+    if ((head === 'ma' || head === 'lon') && components.length) return { head, components };
+  }
+  return null;
+}
+
+function coordinateCapsWithCanonicalMaSign(caps, head) {
+  const source = String(caps ?? '').trim().toUpperCase();
+  if (head !== 'ma' || !source.startsWith('NE') || !source.endsWith('N')) return source;
+  if (source.startsWith('NENS') || source.startsWith('NENO')) return source;
+  return 'NENS' + source.slice(2);
+}
+
+function stripLeadingNanpaAudioHead(text) {
+  return compactSpeechWhitespace(String(text ?? '').replace(/^Nanpa(?:\s+|$)/, ''));
+}
+
+function tryRenderedCoordinateCartoucheToProperName(run, options = {}) {
+  const metadata = coordinateAudioMetadata(run);
+  if (!metadata) return '';
+
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (!NanpaParser) return '';
+
+  const bodies = [];
+  for (const component of metadata.components) {
+    const caps = coordinateCapsWithCanonicalMaSign(component?.caps, metadata.head);
+    const properName = splitNanpaCapsToAudioProperName(caps, NanpaParser, options);
+    const body = stripLeadingNanpaAudioHead(properName);
+    if (!body) return '';
+    bodies.push(body);
+  }
+
+  if (metadata.head === 'ma' && bodies.length !== 2) return '';
+  if (metadata.head === 'lon' && bodies.length < 2) return '';
+
+  const headWord = metadata.head === 'ma' ? 'Ma' : 'Lon';
+  return compactSpeechWhitespace([headWord, ...bodies.flatMap((body, index) => index ? ['Eke', body] : [body])].join(' '));
+}
+
+
+function coordinateAudioSourceLayout(run, metadata) {
+  const sourceCps = runAudioSourceCodepoints(run);
+  const displayedCps = runCodepointsForAudio(run);
+  const sourceIndices = runAudioSourceIndices(run, displayedCps.length);
+  if (!sourceCps.length || !displayedCps.length || !metadata?.components?.length) return null;
+
+  // Coordinate semantics remain ma/lon even when the caller explicitly
+  // overrides the visible numeric start glyph. Accept the same typed numeric
+  // heads as the rest of the audio planner and let the rendered source decide
+  // which whole opening unit is spoken/highlighted.
+  if (!AUDIO_TYPED_DECIMAL_HEAD_CPS.has(Number(sourceCps[0])) || sourceCps[1] !== AUDIO_CP_COLON) return null;
+  if (sourceCps[sourceCps.length - 1] !== AUDIO_CP_NANPA) return null;
+
+  const separators = [];
+  const finalSourceIndex = sourceCps.length - 1;
+  for (let index = 2; index + 3 < finalSourceIndex; index++) {
+    if (
+      sourceCps[index] === AUDIO_CP_NENA &&
+      sourceCps[index + 1] === AUDIO_CP_E &&
+      sourceCps[index + 2] === AUDIO_CP_KIWEN &&
+      sourceCps[index + 3] === AUDIO_CP_E
+    ) {
+      separators.push({
+        start: index,
+        ekeStart: index + 1,
+        kiwen: index + 2,
+        ekeEnd: index + 4
+      });
+      index += 3;
+    }
+  }
+  if (separators.length !== metadata.components.length - 1) return null;
+
+  const componentRanges = [];
+  let cursor = 2;
+  for (const separator of separators) {
+    if (separator.start <= cursor) return null;
+    componentRanges.push({ start: cursor, end: separator.start });
+    cursor = separator.ekeEnd;
+  }
+  if (cursor >= finalSourceIndex) return null;
+  componentRanges.push({ start: cursor, end: finalSourceIndex });
+  if (componentRanges.length !== metadata.components.length) return null;
+
+  return {
+    sourceCps,
+    displayedCps,
+    sourceIndices,
+    separators,
+    componentRanges,
+    finalSourceIndex
+  };
+}
+
+function coordinateDisplayedIndicesForExactSourceIndex(layout, sourceIndex, expectedCp = null) {
+  const out = [];
+  for (let index = 0; index < layout.displayedCps.length; index++) {
+    if (Number(layout.sourceIndices[index]) !== Number(sourceIndex)) continue;
+    if (expectedCp != null && Number(layout.displayedCps[index]) !== Number(expectedCp)) continue;
+    out.push(index);
+  }
+  return out;
+}
+
+function appendUniqueComponentIndices(target, extra) {
+  const seen = new Set(Array.from(target || []).map(Number).filter(Number.isFinite));
+  for (const value of Array.from(extra || [])) {
+    const index = Number(value);
+    if (!Number.isFinite(index) || seen.has(index)) continue;
+    target.push(index);
+    seen.add(index);
+  }
+  return target;
+}
+
+/**
+ * Build coordinate audio with the same nasal-boundary semantics as every other
+ * nanpa-linja-n cartouche. Each scalar component is first converted through the
+ * ordinary nanpa proper-name splitter, so its terminal N is attached to the
+ * preceding syllable. Between components the full source boundary is NEKE
+ * (nena e kiwen e): the leading N belongs to that preceding syllable and the
+ * remaining EKE is one whole reference-audio/highlight unit. The final closing
+ * nanpa supplies the terminal N of the final component.
+ */
+function buildCoordinateCartoucheSpeechUnits(run, fallbackRunIndex, lineIndex, options = {}) {
+  const metadata = coordinateAudioMetadata(run);
+  if (!metadata) return [];
+  if (metadata.head === 'ma' && metadata.components.length !== 2) return [];
+  if (metadata.head === 'lon' && metadata.components.length < 2) return [];
+
+  const NanpaParser = getNanpaParserFromOptions(options);
+  if (!NanpaParser) return [];
+
+  const bodies = [];
+  for (const component of metadata.components) {
+    const caps = coordinateCapsWithCanonicalMaSign(component?.caps, metadata.head);
+    const properName = splitNanpaCapsToAudioProperName(caps, NanpaParser, options);
+    const body = stripLeadingNanpaAudioHead(properName);
+    if (!body) return [];
+    bodies.push(body);
+  }
+
+  const layout = coordinateAudioSourceLayout(run, metadata);
+  if (!layout) return [];
+
+  const forceOrdinaryCartoucheAudio = options?.cartoucheAudioMode === 'ordinary';
+  const numericCartouche = !forceOrdinaryCartoucheAudio;
+  const numericCartoucheRunId = numericCartouche
+    ? runIdForAudio(run, fallbackRunIndex, lineIndex)
+    : null;
+  const headWord = typedDecimalAudioHeadWordFromCodepoints(layout.sourceCps, options)
+    || (metadata.head === 'ma' ? 'Ma' : 'Lon');
+  const numericCartouchePhrase = compactSpeechWhitespace(
+    [headWord, ...bodies.flatMap((body, index) => index ? ['Eke', body] : [body])].join(' ')
+  );
+
+  const unitsOut = [];
+  let unitIndex = 0;
+  let wordIndex = 0;
+
+  const pushUnit = ({
+    text,
+    word,
+    unitIndexInWord,
+    componentIndices,
+    wholeNumericPunctuationWord = false
+  }) => {
+    const normalizedText = String(text || '');
+    unitsOut.push({
+      text: normalizedText,
+      timingText: normalizedText,
+      timingSyllables: [normalizedText.toLowerCase()],
+      kind: wholeNumericPunctuationWord ? 'numeric-punctuation-word' : 'cartouche-syllable',
+      word,
+      wordIndex,
+      unitIndex,
+      unitIndexInWord,
+      wholeNumericPunctuationWord,
+      suppressActiveHighlight: false,
+      numericCartouche,
+      recognizedNumericCartouche: true,
+      coordinateCartouche: true,
+      coordinateHead: metadata.head,
+      coordinateKind: metadata.head === 'ma' ? 'latlong' : 'coordinates',
+      cartoucheAudioGroupId: options?.cartoucheAudioGroupId || null,
+      cartoucheAudioMode: numericCartouche ? 'numeric' : 'ordinary',
+      forceOrdinarySyllableAudio: !numericCartouche,
+      audioBank: null,
+      audioUnitKey: '',
+      numericCartoucheRunId,
+      numericCartouchePhrase,
+      numericAudioUnitKey: numericCartouche ? normalizeAudioWord(normalizedText) : '',
+      visualTargets: [
+        visualTargetForComponentIndices(
+          run,
+          componentIndices,
+          fallbackRunIndex,
+          lineIndex
+        )
+      ]
+    });
+    unitIndex += 1;
+  };
+
+  // The opening semantic glyph and colon are one purpose-recorded numeric unit.
+  const headIndices = [
+    ...coordinateDisplayedIndicesForExactSourceIndex(layout, 0, layout.sourceCps[0]),
+    ...coordinateDisplayedIndicesForExactSourceIndex(layout, 1, AUDIO_CP_COLON)
+  ];
+  pushUnit({
+    text: headWord,
+    word: headWord,
+    unitIndexInWord: 0,
+    componentIndices: headIndices,
+    wholeNumericPunctuationWord: true
+  });
+  wordIndex += 1;
+
+  for (let componentIndex = 0; componentIndex < bodies.length; componentIndex++) {
+    const componentRange = layout.componentRanges[componentIndex];
+
+    // Reuse the established scalar numeric-cartouche highlight mapping for each
+    // coordinate component instead of proportionally distributing speech
+    // letters across the coordinate's expanded source span. The proportional
+    // mapping can straddle adjacent retained glyphs in abbreviated coordinates
+    // (for example ona+wan or awen+seli), causing two glyphs to highlight as one
+    // syllable on either side of Eke. A scalar run for the same component already
+    // has the correct one-unit-per-visible-glyph behavior in abbreviated output
+    // and the established scaffold grouping in full output.
+    const displayedComponentIndices = [];
+    for (let displayedIndex = 0; displayedIndex < layout.sourceIndices.length; displayedIndex++) {
+      const sourceIndex = Number(layout.sourceIndices[displayedIndex]);
+      if (!Number.isFinite(sourceIndex)) continue;
+      if (sourceIndex >= componentRange.start && sourceIndex < componentRange.end) {
+        displayedComponentIndices.push(displayedIndex);
+      }
+    }
+    if (!displayedComponentIndices.length) return [];
+
+    const scalarSourceBody = layout.sourceCps.slice(componentRange.start, componentRange.end);
+    const scalarDisplayBody = displayedComponentIndices.map(index => layout.displayedCps[index]);
+    if (!scalarSourceBody.length || !scalarDisplayBody.length) return [];
+
+    // Synthetic Nanpa-colon wrapper: only the body mapping is reused. The
+    // coordinate's real Ma/Lon opening and Eke separators remain dedicated units.
+    const scalarSourceCps = [
+      AUDIO_CP_NANPA,
+      AUDIO_CP_COLON,
+      ...scalarSourceBody,
+      AUDIO_CP_NANPA
+    ];
+    const scalarDisplayCps = [
+      AUDIO_CP_NANPA,
+      AUDIO_CP_COLON,
+      ...scalarDisplayBody,
+      AUDIO_CP_NANPA
+    ];
+    const scalarFinalDisplayIndex = scalarDisplayCps.length - 1;
+    const scalarSourceIndices = [
+      0,
+      1,
+      ...displayedComponentIndices.map(displayedIndex =>
+        2 + (Number(layout.sourceIndices[displayedIndex]) - componentRange.start)
+      ),
+      scalarSourceCps.length - 1
+    ];
+
+    const syntheticScalarRun = {
+      id: `${runIdForAudio(run, fallbackRunIndex, lineIndex)}:coordinate-component-${componentIndex}`,
+      runIndex: Number.isFinite(Number(run?.runIndex)) ? Number(run.runIndex) : fallbackRunIndex,
+      kind: 'cartouche',
+      cps: scalarDisplayCps,
+      audioSourceCps: scalarSourceCps,
+      audioSourceIndices: scalarSourceIndices,
+      isNumericCartouche: true,
+      sourceText: ''
+    };
+
+    const scalarUnits = buildCartoucheSpeechUnits(
+      syntheticScalarRun,
+      '',
+      fallbackRunIndex,
+      lineIndex,
+      {
+        ...options,
+        // The synthetic wrapper exists only to isolate the scalar body mapping;
+        // force the same exact two-glyph Nanpa: opening used by the typed numeric
+        // path so it cannot shift the first component unit.
+        nanpaColonParsing: true,
+        nanpaColonRendering: true
+      }
+    );
+    if (!scalarUnits.length) return [];
+
+    const bodyUnits = scalarUnits.filter((unit, index) =>
+      !(index === 0 && normalizeAudioWord(unit?.text) === 'nanpa')
+    );
+    if (!bodyUnits.length) return [];
+
+    const boundaryDisplayIndices = componentIndex < layout.separators.length
+      ? coordinateDisplayedIndicesForExactSourceIndex(
+          layout,
+          layout.separators[componentIndex].start,
+          AUDIO_CP_NENA
+        )
+      : coordinateDisplayedIndicesForExactSourceIndex(
+          layout,
+          layout.finalSourceIndex,
+          AUDIO_CP_NANPA
+        );
+
+    const remapScalarComponentIndices = indices => {
+      const out = [];
+      const seen = new Set();
+      const append = value => {
+        const index = Number(value);
+        if (!Number.isFinite(index) || seen.has(index)) return;
+        out.push(index);
+        seen.add(index);
+      };
+
+      for (const value of Array.from(indices || [])) {
+        const syntheticIndex = Number(value);
+        if (!Number.isFinite(syntheticIndex)) continue;
+
+        // Synthetic body positions 2..N map one-for-one to the actual displayed
+        // coordinate component positions.
+        if (syntheticIndex >= 2 && syntheticIndex < scalarFinalDisplayIndex) {
+          const bodyIndex = syntheticIndex - 2;
+          if (bodyIndex >= 0 && bodyIndex < displayedComponentIndices.length) {
+            append(displayedComponentIndices[bodyIndex]);
+          }
+          continue;
+        }
+
+        // The scalar closing Nanpa supplies the terminal -n. For an intermediate
+        // full coordinate component that -n is represented by the leading nena
+        // of NEKE; in abbreviated output that nena is intentionally hidden. For
+        // the final component it maps to the coordinate's visible closing nanpa.
+        if (syntheticIndex === scalarFinalDisplayIndex) {
+          for (const actualIndex of boundaryDisplayIndices) append(actualIndex);
+        }
+      }
+      return out;
+    };
+
+    let scalarWordIndex = null;
+    for (const scalarUnit of bodyUnits) {
+      if (scalarWordIndex == null) {
+        scalarWordIndex = scalarUnit.wordIndex;
+      } else if (scalarUnit.wordIndex !== scalarWordIndex) {
+        wordIndex += 1;
+        scalarWordIndex = scalarUnit.wordIndex;
+      }
+
+      const sourceTarget = scalarUnit?.visualTargets?.[0];
+      const componentIndices = remapScalarComponentIndices(sourceTarget?.componentIndices);
+      pushUnit({
+        text: scalarUnit.text,
+        word: scalarUnit.word,
+        unitIndexInWord: scalarUnit.unitIndexInWord,
+        componentIndices,
+        wholeNumericPunctuationWord: scalarUnit.wholeNumericPunctuationWord === true
+      });
+    }
+    wordIndex += 1;
+
+    if (componentIndex < layout.separators.length) {
+      const separator = layout.separators[componentIndex];
+      const ekeIndices = coordinateDisplayedIndicesForExactSourceIndex(
+        layout,
+        separator.kiwen,
+        AUDIO_CP_KIWEN
+      );
+      pushUnit({
+        text: 'Eke',
+        word: 'Eke',
+        unitIndexInWord: 0,
+        componentIndices: ekeIndices,
+        wholeNumericPunctuationWord: true
+      });
+      wordIndex += 1;
+    }
+  }
+
+  return unitsOut;
+}
+
 /**
  * Numeric-cartouche audio must follow the renderer's canonical numeric
  * metadata, not legacy source spelling. This matters for accepted compatibility
@@ -1992,6 +2393,8 @@ function tryRenderedBinaryCartoucheToProperName(run, options = {}) {
  */
 function tryRenderedNumericCartoucheToProperName(run, options = {}) {
   if (isRenderedHexCartouche(run) || isRenderedBinaryCartouche(run)) return '';
+  const coordinateProperName = tryRenderedCoordinateCartoucheToProperName(run, options);
+  if (coordinateProperName) return coordinateProperName;
   if (!(
     run?.isNumericCartouche === true ||
     run?._element?.isNumericCartouche === true ||
@@ -2678,6 +3081,14 @@ function buildCartoucheSpeechUnits(run, speech, fallbackRunIndex, lineIndex, opt
     const hexUnits = buildHexCartoucheSpeechUnits(run, hexParsed, fallbackRunIndex, lineIndex, options);
     if (hexUnits.length) return hexUnits;
   }
+
+  const coordinateUnits = buildCoordinateCartoucheSpeechUnits(
+    run,
+    fallbackRunIndex,
+    lineIndex,
+    options
+  );
+  if (coordinateUnits.length) return coordinateUnits;
 
   const renderedNumericProperName = tryRenderedNumericCartoucheToProperName(run, options);
   const sourceNumericProperName = trySourceTextToNanpaProperName(sourceText, options);
@@ -3722,7 +4133,7 @@ async function renderExactNumericCartoucheEntries({
     synthesis_mode: 'reference_audio',
     alreadyPreprocessed: true,
     // Typed Suno/Tenpo/Toki numeric heads use their dedicated whole-word
-    // nanpa_v7 reference units, never the ordinary words/ recordings. The
+    // dedicated whole-word nanpa reference units, never the ordinary words/ recordings. The
     // legacy private option name is retained to avoid changing external callers.
     numericTypedHeadSyllableAudio: true
   });
