@@ -128,16 +128,6 @@
       font-display: swap;
     }
 
-    @font-face {
-      font-family: "TP-Coordinate-Cartouche-Font";
-      src: url("./fonts/nanpa-linja-n-nasin-nanpa-sans-punctuation-mapping-fixed-ascii-vulgar-cartouche-only.ttf") format("truetype");
-      font-display: swap;
-    }
-
-    .nanpaModeTable .coordinateCartoucheGlyph {
-      font-family: "TP-Coordinate-Cartouche-Font";
-    }
-
     /* Digit reference table */
     .digitTable {
       table-layout: auto;          /* natural column sizing */
@@ -280,20 +270,14 @@
       font-size: var(--mode-two-thirds-glyph-size);
     }
 
-    .nanpaModeTable .modeAbbreviatedGlyph {
-  display: inline-block;
-  font-family: "TP-Coordinate-Cartouche-Font";
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.nanpaModeTable .modeReferenceSmallGlyph,
-.nanpaModeTable .modeReferenceTwoThirdsGlyph {
-  display: inline-block;
-  font-family: "TP-Cartouche-Font";
-  line-height: 1;
-  white-space: nowrap;
-}
+    .nanpaModeTable .modeAbbreviatedGlyph,
+    .nanpaModeTable .modeReferenceSmallGlyph,
+    .nanpaModeTable .modeReferenceTwoThirdsGlyph {
+      display: inline-block;
+      font-family: "TP-Cartouche-Font";
+      line-height: 1;
+      white-space: nowrap;
+    }
 
     .nanpaModeTable .modeAbbreviatedGlyph {
       font-size: var(--mode-abbreviated-glyph-size);
@@ -1447,7 +1431,7 @@
       </div>
 
       <div class="help" style="margin-top:10px;">
-        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.   <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=11" target="_blank" rel="noopener noreferrer" data-download-track-type="pdf" data-download-track-name="nanpa-linja-n-cheat-sheet.pdf">
+        Every letter in the Toki Pona Latin alphabet therefore has a distinct function within nanpa-linja-n.   <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=10" target="_blank" rel="noopener noreferrer" data-download-track-type="pdf" data-download-track-name="nanpa-linja-n-cheat-sheet.pdf">
           PDF cheat sheet
         </a>
       </div>
@@ -2216,8 +2200,8 @@
                 <td><code>125</code></td>
                 <td><code>Newatulun</code> <button class="tableAudioButton" type="button" data-numeric-audio="Newatulun" title="Play Newatulun using the numeric voice" aria-label="Play Newatulun using the numeric voice">🤖🔊</button></td>
                 <td><code>Nanpa Watulun</code> <button class="tableAudioButton" type="button" data-numeric-audio="Nanpa Watulun" title="Play Nanpa Watulun using the numeric voice" aria-label="Play Nanpa Watulun using the numeric voice">🤖🔊</button></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative decimal cartouche for 125">&#xF1990;&#xF193D;&#x00BD;&#xF199D;&#x00BD;&#xF1973;&#xF1902;&#x00BC;&#xF196E;&#xF1970;&#x00BC;&#xF192D;&#xF1970;&#x00BC;&#xF193D;&#x00BD;&#xF1991;</span></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative decimal cartouche for 125">&#xF1990;&#xF193D;&#x00BD;&#xF199D;&#x00BD;&#xF1973;&#xF196E;&#xF192D;&#xF193D;&#x00BD;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative decimal cartouche for 125">&#xF1990;&#xF193D;&#xF199D;&#xF1973;&#xF1902;&#xF196E;&#xF1970;&#xF192D;&#xF1970;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative decimal cartouche for 125">&#xF1990;&#xF193D;&#xF199D;&#xF1973;&#xF196E;&#xF192D;&#xF193D;&#xF1991;</span></td>
               </tr>
             </tbody>
           </table>
@@ -2253,7 +2237,7 @@
           aria-controls="alternativeDateTimeNotationContent"
           data-collapsible-toggle
         >
-          <span class="collapsibleSectionToggleTitle">Alternative contextual formats (experimental)</span>
+          <span class="collapsibleSectionToggleTitle">Alternative date/time/telephone format (experimental)</span>
           <span class="collapsibleSectionToggleState" aria-hidden="true">
             <span class="collapsibleSectionToggleIcon">▾</span>
             <span data-collapsible-action>Show</span>
@@ -2263,11 +2247,11 @@
       <div id="alternativeDateTimeNotationContent" class="collapsibleSectionContent" data-collapsible-content hidden>
 
         <div class="help">
-          As an experimental alternative, contextual nanpa-linja-n cartouches can use an explicit opening word to identify their meaning. A time cartouche begins with <strong>Tenpo</strong>, a date cartouche begins with <strong>Suno</strong>, a telephone-number cartouche may begin with <strong>Toki</strong>, a general-coordinate cartouche begins with <strong>Lon</strong>, and a latitude/longitude cartouche begins with <strong>Ma</strong>. The decimal digit syllables and the existing numeric separators do not change.
+          As an experimental alternative, date, time and telephone nanpa-linja-n cartouches can use an explicit opening word to identify their meaning. A time cartouche begins with <strong>Tenpo</strong>, a date cartouche begins with <strong>Suno</strong>, and a telephone-number cartouche may begin with <strong>Toki</strong>. The decimal digit syllables and the existing numeric separators do not change.
         </div>
 
         <div class="help" style="margin-top:10px;">
-          In sitelen pona, the opening <strong>tenpo</strong>, <strong>suno</strong>, <strong>toki</strong>, <strong>lon</strong> or <strong>ma</strong> glyph is followed immediately by a colon. The closing <strong>nanpa</strong> glyph is unchanged. <strong>kasi</strong> continues to separate the components of a date or time, the existing no-value spacer continues to separate groups in a telephone number, and <strong>kiwen</strong> separates coordinate components.
+          In sitelen pona, the opening <strong>tenpo</strong>, <strong>suno</strong> or <strong>toki</strong> glyph is followed immediately by a colon. The closing <strong>nanpa</strong> glyph is unchanged. <strong>kasi</strong> continues to separate the components of a date or time, while the existing no-value spacer continues to separate groups in a telephone number.
         </div>
 
         <div class="help" style="margin-top:10px;">
@@ -2275,10 +2259,10 @@
         </div>
 
         <div class="help" style="margin-top:10px;">
-          This makes the meaning explicit when the same numeric structure could otherwise be ambiguous. For example, <code>12:30</code> is a time and therefore uses <strong>Tenpo</strong>, while <code>--12-30</code> is a yearless month-and-day date and therefore uses <strong>Suno</strong>. A complete date such as <code>2025-12-30</code> also uses <strong>Suno</strong>. The telephone example <code>+1-234-555-6789</code> can use <strong>Toki</strong> when that opening is explicitly present in the parsed proper name. General coordinates such as <code>lon:(23.4,-5.67,+81.2)</code> use <strong>Lon</strong>, while geographic latitude/longitude such as <code>ma:(+12.3,-4.56)</code> use <strong>Ma</strong>.
+          This makes the meaning explicit when the same numeric structure could otherwise be ambiguous. For example, <code>12:30</code> is a time and therefore uses <strong>Tenpo</strong>, while <code>--12-30</code> is a yearless month-and-day date and therefore uses <strong>Suno</strong>. A complete date such as <code>2025-12-30</code> also uses <strong>Suno</strong>. The telephone example <code>+1-234-555-6789</code> can use <strong>Toki</strong> when that opening is explicitly present in the parsed proper name.
         </div>
 
-        <div class="tableWrap nanpaModeWrap" role="region" aria-label="alternative nanpa-linja-n contextual format examples" style="margin-top:10px;">
+        <div class="tableWrap nanpaModeWrap" role="region" aria-label="alternative nanpa-linja-n date, time and telephone format examples" style="margin-top:10px;">
           <table class="digitTable nanpaModeTable">
             <thead>
               <tr>
@@ -2294,64 +2278,39 @@
                 <td><code>12:30</code></td>
                 <td><code>Newatun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Newatun Eke Senin" title="Play Newatun Eke Senin using the numeric voice" aria-label="Play Newatun Eke Senin using the numeric voice">🤖🔊</button></td>
                 <td><code>Tenpo Watun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Tenpo Watun Eke Senin" title="Play Tenpo Watun Eke Senin using the numeric voice" aria-label="Play Tenpo Watun Eke Senin using the numeric voice">🤖🔊</button></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative time cartouche for 12:30">&#xF1990;&#xF196B;&#x00BD;&#xF199D;&#x00BD;&#xF1973;&#xF1902;&#x00BC;&#xF196E;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1917;&#x2153;&#xF1909;&#x00BC;&#xF1957;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF190C;&#xF193D;&#x00BD;&#xF1991;</span></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative time cartouche for 12:30">&#xF1990;&#xF196B;&#x00BD;&#xF199D;&#x00BD;&#xF1973;&#xF196E;&#xF1917;&#x2153;&#xF1957;&#xF190C;&#xF193D;&#x00BD;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative time cartouche for 12:30">&#xF1990;&#xF196B;&#xF199D;&#xF1973;&#xF1902;&#xF196E;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1957;&#xF1909;&#xF1940;&#xF190C;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative time cartouche for 12:30">&#xF1990;&#xF196B;&#xF199D;&#xF1973;&#xF196E;&#xF1917;&#xF1957;&#xF190C;&#xF193D;&#xF1991;</span></td>
               </tr>
               <tr>
                 <td><code>--12-30</code></td>
                 <td><code>Newatun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Newatun Eke Senin" title="Play Newatun Eke Senin using the numeric voice" aria-label="Play Newatun Eke Senin using the numeric voice">🤖🔊</button></td>
                 <td><code>Suno Watun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Suno Watun Eke Senin" title="Play Suno Watun Eke Senin using the numeric voice" aria-label="Play Suno Watun Eke Senin using the numeric voice">🤖🔊</button></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative yearless date cartouche for --12-30">&#xF1990;&#xF1964;&#x00BD;&#xF199D;&#x00BD;&#xF1973;&#xF1902;&#x00BC;&#xF196E;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1917;&#x2153;&#xF1909;&#x00BC;&#xF1957;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF190C;&#xF193D;&#x00BD;&#xF1991;</span></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative yearless date cartouche for --12-30">&#xF1990;&#xF1964;&#x00BD;&#xF199D;&#x00BD;&#xF1973;&#xF196E;&#xF1917;&#x2153;&#xF1957;&#xF190C;&#xF193D;&#x00BD;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative yearless date cartouche for --12-30">&#xF1990;&#xF1964;&#xF199D;&#xF1973;&#xF1902;&#xF196E;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1957;&#xF1909;&#xF1940;&#xF190C;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative yearless date cartouche for --12-30">&#xF1990;&#xF1964;&#xF199D;&#xF1973;&#xF196E;&#xF1917;&#xF1957;&#xF190C;&#xF193D;&#xF1991;</span></td>
               </tr>
               <tr>
                 <td><code>2025-12-30</code></td>
                 <td><code>Netunitulun Eke Watun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Netunitulun Eke Watun Eke Senin" title="Play Netunitulun Eke Watun Eke Senin using the numeric voice" aria-label="Play Netunitulun Eke Watun Eke Senin using the numeric voice">🤖🔊</button></td>
                 <td><code>Suno Tunitulun Eke Watun Eke Senin</code> <button class="tableAudioButton" type="button" data-numeric-audio="Suno Tunitulun Eke Watun Eke Senin" title="Play Suno Tunitulun Eke Watun Eke Senin using the numeric voice" aria-label="Play Suno Tunitulun Eke Watun Eke Senin using the numeric voice">🤖🔊</button></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative date cartouche for 2025-12-30">&#xF1990;&#xF1964;&#x00BD;&#xF199D;&#x00BD;&#xF196E;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF190C;&#xF196E;&#xF1970;&#x00BC;&#xF192D;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1917;&#x2153;&#xF1909;&#x00BC;&#xF1973;&#xF1902;&#x00BC;&#xF196E;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1917;&#x2153;&#xF1909;&#x00BC;&#xF1957;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF190C;&#xF193D;&#x00BD;&#xF1991;</span></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative date cartouche for 2025-12-30">&#xF1990;&#xF1964;&#x00BD;&#xF199D;&#x00BD;&#xF196E;&#xF190C;&#xF196E;&#xF192D;&#xF1917;&#x2153;&#xF1973;&#xF196E;&#xF1917;&#x2153;&#xF1957;&#xF190C;&#xF193D;&#x00BD;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative date cartouche for 2025-12-30">&#xF1990;&#xF1964;&#xF199D;&#xF196E;&#xF1970;&#xF1940;&#xF190C;&#xF196E;&#xF1970;&#xF192D;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1973;&#xF1902;&#xF196E;&#xF1970;&#xF1940;&#xF1909;&#xF1917;&#xF1909;&#xF1957;&#xF1909;&#xF1940;&#xF190C;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative date cartouche for 2025-12-30">&#xF1990;&#xF1964;&#xF199D;&#xF196E;&#xF190C;&#xF196E;&#xF192D;&#xF1917;&#xF1973;&#xF196E;&#xF1917;&#xF1957;&#xF190C;&#xF193D;&#xF1991;</span></td>
               </tr>
               <tr>
                 <td><code>+1-234-555-6789</code></td>
-                <td><code>Nene Wan Ene Tusenan Ene Lululun Ene Numupijon</code> <button class="tableAudioButton" type="button" data-numeric-audio="Nene Wan Ene Tusenan Ene Lululun Ene Numupijon" title="Play Nene Wan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice" aria-label="Play Nene Wan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice">🤖🔊</button></td>
+                <td><code>Nanpa Newan Ene Tusenan Ene Lululun Ene Numupijon</code> <button class="tableAudioButton" type="button" data-numeric-audio="Nanpa Newan Ene Tusenan Ene Lululun Ene Numupijon" title="Play Nanpa Newan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice" aria-label="Play Nanpa Newan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice">🤖🔊</button></td>
                 <td><code>Toki Newan Ene Tusenan Ene Lululun Ene Numupijon</code> <button class="tableAudioButton" type="button" data-numeric-audio="Toki Newan Ene Tusenan Ene Lululun Ene Numupijon" title="Play Toki Newan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice" aria-label="Play Toki Newan Ene Tusenan Ene Lululun Ene Numupijon using the numeric voice">🤖🔊</button></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative telephone cartouche for +1-234-555-6789">&#xF1990;&#xF196C;&#x00BD;&#xF199D;&#x00BD;&#xF1940;&#x00BC;&#xF190A;&#x2154;&#xF1973;&#xF1902;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF196E;&#xF1970;&#x00BC;&#xF1957;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1908;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF192D;&#xF1970;&#x00BC;&#xF192D;&#xF1970;&#x00BC;&#xF192D;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1971;&#xF193A;&#xF1970;&#x00BC;&#xF1951;&#xF190D;&#x00BC;&#xF1913;&#xF1947;&#x00BC;&#xF193D;&#x00BD;&#xF1991;</span></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative telephone cartouche for +1-234-555-6789">&#xF1990;&#xF196C;&#x00BD;&#xF199D;&#x00BD;&#xF190A;&#x2154;&#xF1973;&#xF196E;&#xF1957;&#xF1908;&#xF192D;&#xF192D;&#xF192D;&#xF1971;&#xF193A;&#xF1951;&#xF1913;&#xF193D;&#x00BD;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full alternative telephone cartouche for +1-234-555-6789">&#xF1990;&#xF196C;&#xF199D;&#xF1940;&#xF190A;&#xF1973;&#xF1902;&#xF1940;&#xF1909;&#xF1940;&#xF1909;&#xF196E;&#xF1970;&#xF1957;&#xF1909;&#xF1940;&#xF1908;&#xF1940;&#xF1909;&#xF1940;&#xF1909;&#xF192D;&#xF1970;&#xF192D;&#xF1970;&#xF192D;&#xF1970;&#xF1940;&#xF1909;&#xF1940;&#xF1909;&#xF1940;&#xF1971;&#xF193A;&#xF1970;&#xF1951;&#xF190D;&#xF1913;&#xF1947;&#xF193D;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated alternative telephone cartouche for +1-234-555-6789">&#xF1990;&#xF196C;&#xF199D;&#xF190A;&#xF1973;&#xF1909;&#xF196E;&#xF1957;&#xF1908;&#xF1909;&#xF192D;&#xF192D;&#xF192D;&#xF1909;&#xF1971;&#xF193A;&#xF1951;&#xF1913;&#xF193D;&#xF1991;</span></td>
               </tr>
-            <tr>
-  <td><code>lon:(23.4,-5.67,+81.2)</code></td>
-  <td><code>—</code></td>
-  <td><code>Lon Tusen One Nan Eke Nolun One Numun Eke Nepiwan One Tun</code> <button class="tableAudioButton" type="button" data-numeric-audio="Lon Tusen One Nan Eke Nolun One Numun Eke Nepiwan One Tun" title="Play Lon Tusen One Nan Eke Nolun One Numun Eke Nepiwan One Tun using the numeric voice" aria-label="Play Lon Tusen One Nan Eke Nolun One Numun Eke Nepiwan One Tun using the numeric voice">🤖🔊</button></td>
-
-  <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full general-coordinate cartouche for lon:(23.4,-5.67,+81.2)">&#xF1990;&#xF192C;&#x00BD;&#xF199D;&#x00BD;&#xF196E;&#xF1970;&#x00BC;&#xF1957;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1944;&#x2154;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1908;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF191B;&#x2153;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1946;&#x2154;&#xF192D;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1944;&#x2154;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1971;&#xF193A;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF191B;&#x2153;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF190A;&#x2154;&#xF1951;&#xF190D;&#x00BC;&#xF1973;&#xF1902;&#x00BC;&#xF1940;&#x00BC;&#xF1944;&#x2154;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF196E;&#xF1970;&#x00BC;&#xF193D;&#x00BD;&#xF1991;</span></td>
-
-  <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated general-coordinate cartouche for lon:(23.4,-5.67,+81.2)">&#xF1990;&#xF192C;&#x00BD;&#xF199D;&#x00BD;&#xF196E;&#xF1957;&#xF1944;&#x2154;&#xF1908;&#xF191B;&#x2153;&#xF1946;&#x2154;&#xF192D;&#xF1944;&#x2154;&#xF1971;&#xF193A;&#xF191B;&#x2153;&#xF190A;&#x2154;&#xF1951;&#xF1973;&#xF1944;&#x2154;&#xF196E;&#xF193D;&#x00BD;&#xF1991;</span></td>
-</tr>
-
-<tr>
-  <td><code>ma:(+12.3,-4.56)</code></td>
-  <td><code>—</code></td>
-  <td><code>Ma Newatun One Sen Eke Nonan One Lunun</code> <button class="tableAudioButton" type="button" data-numeric-audio="Ma Newatun One Sen Eke Nonan One Lunun" title="Play Ma Newatun One Sen Eke Nonan One Lunun using the numeric voice" aria-label="Play Ma Newatun One Sen Eke Nonan One Lunun using the numeric voice">🤖🔊</button></td>
-
-  <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full latitude/longitude cartouche for ma:(+12.3,-4.56)">&#xF1990;&#xF1930;&#x00BD;&#xF199D;&#x00BD;&#xF1940;&#x00BC;&#xF190A;&#x2154;&#xF1973;&#xF1902;&#x00BC;&#xF196E;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1944;&#x2154;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF1957;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF191B;&#x2153;&#xF1909;&#x00BC;&#xF1940;&#x00BC;&#xF1946;&#x2154;&#xF1940;&#x00BC;&#xF1908;&#xF1940;&#x00BC;&#xF1944;&#x2154;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF192D;&#xF1970;&#x00BC;&#xF1940;&#x00BC;&#xF1971;&#xF193D;&#x00BD;&#xF1991;</span></td>
-
-  <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated latitude/longitude cartouche for ma:(+12.3,-4.56)">&#xF1990;&#xF1930;&#x00BD;&#xF199D;&#x00BD;&#xF190A;&#x2154;&#xF1973;&#xF196E;&#xF1944;&#x2154;&#xF1957;&#xF191B;&#x2153;&#xF1946;&#x2154;&#xF1908;&#xF1944;&#x2154;&#xF192D;&#xF1971;&#xF193D;&#x00BD;&#xF1991;</span></td>
-</tr>
             </tbody>
           </table>
-        </div>
-
-        <div class="small" style="margin-top:10px;">
-          The coordinate rows use explicit <strong>Lon</strong> and <strong>Ma</strong> contextual forms, so no separate traditional coordinate-specific proper name is shown.
         </div>
 
         <div class="small" style="margin-top:10px;">
           Cartouche source forms for <code>12:30</code> are <code>[tenpo : wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[tenpo : wan tu kasi seli ijo nanpa]</code> for the abbreviated form.<br/>
           Cartouche source forms for <code>--12-30</code> are <code>[suno : wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[suno : wan tu kasi seli ijo nanpa]</code> for the abbreviated form.<br/>
           Cartouche source forms for <code>2025-12-30</code> are <code>[suno : tu uta nena ijo tu uta luka uta nena e kasi e wan ala tu uta nena e kasi e seli e nena ijo nanpa]</code> for the full form and <code>[suno : tu ijo tu luka kasi wan tu kasi seli ijo nanpa]</code> for the abbreviated form.<br/>
-          Cartouche source forms for <code>+1-234-555-6789</code> are <code>[toki : nena en wan ala nena e nena e tu uta seli e nena awen nena e nena e luka uta luka uta luka uta nena e nena e nena utala mun uta pipi ike jo open nanpa]</code> for the full form and <code>[toki : en wan tu seli awen luka luka luka utala mun pipi jo nanpa]</code> for the abbreviated form.<br/>
-          Cartouche source forms for <code>lon:(23.4,-5.67,+81.2)</code> are <code>[lon : tu uta seli e nena o nena e nena awen nena e kiwen e nena ona luka uta nena o nena e nena utala mun uta nena e kiwen e nena en pipi ike wan ala nena o nena e tu uta nanpa]</code> for the full form and <code>[lon : tu seli o awen kiwen ona luka o utala mun kiwen en pipi wan o tu nanpa]</code> for the abbreviated form.<br/>
-          Cartouche source forms for <code>ma:(+12.3,-4.56)</code> are <code>[ma : nena en wan ala tu uta nena o nena e seli e nena e kiwen e nena ona nena awen nena o nena e luka uta nena utala nanpa]</code> for the full form and <code>[ma : en wan tu o seli kiwen ona awen o luka utala nanpa]</code> for the abbreviated form.
+          Cartouche source forms for <code>+1-234-555-6789</code> are <code>[toki : nena en wan ala nena e nena e tu uta seli e nena awen nena e nena e luka uta luka uta luka uta nena e nena e nena utala mun uta pipi ike jo open nanpa]</code> for the full form and <code>[toki : en wan e tu seli awen e luka luka luka e utala mun pipi jo nanpa]</code> for the abbreviated form.
         </div>
       </div>
     </section>
@@ -2471,15 +2430,15 @@
               <tr>
                 <td><code>#AF</code></td>
                 <td><code>Nasa Jatan</code></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full hexadecimal cartouche for AF">&#xF1990;&#xF193E;&#x00BD;&#xF199D;&#x00BD;&#xF1911;&#xF1902;&#x00BC;&#xF1967;&#xF1902;&#x00BC;&#xF193E;&#x00BD;&#xF1991;</span></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated hexadecimal cartouche for AF">&#xF1990;&#xF193E;&#x00BD;&#xF199D;&#x00BD;&#xF1911;&#xF1967;&#xF193E;&#x00BD;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full hexadecimal cartouche for AF">&#xF1990;&#xF193E;&#xF199D;&#xF1911;&#xF1902;&#xF1967;&#xF1902;&#xF193E;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated hexadecimal cartouche for AF">&#xF1990;&#xF193E;&#xF199D;&#xF1911;&#xF1967;&#xF193E;&#xF1991;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Nasa Jatan" title="Play Nasa Jatan using the numeric voice" aria-label="Play Nasa Jatan using the numeric voice">🤖🔊</button></td>
               </tr>
               <tr>
                 <td><code>#C0FFEE</code></td>
                 <td><code>Nasa Manin Eke Tatan Eke Sisin</code></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full hexadecimal cartouche for C0FFEE">&#xF1990;&#xF193E;&#x00BD;&#xF199D;&#x00BD;&#xF1930;&#xF1902;&#x00BC;&#xF1940;&#x00BC;&#xF190C;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF191E;&#x2153;&#xF1909;&#x00BC;&#xF1967;&#xF1902;&#x00BC;&#xF1967;&#xF1902;&#x00BC;&#xF1940;&#x00BC;&#xF1909;&#x00BC;&#xF191E;&#x2153;&#xF1909;&#x00BC;&#xF195C;&#xF190D;&#x00BC;&#xF195C;&#xF190D;&#x00BC;&#xF193E;&#x00BD;&#xF1991;</span></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated hexadecimal cartouche for C0FFEE">&#xF1990;&#xF193E;&#x00BD;&#xF199D;&#x00BD;&#xF1930;&#xF190C;&#xF191E;&#x2153;&#xF1967;&#xF1967;&#xF191E;&#x2153;&#xF195C;&#xF195C;&#xF193E;&#x00BD;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full hexadecimal cartouche for C0FFEE">&#xF1990;&#xF193E;&#xF199D;&#xF1930;&#xF1902;&#xF1940;&#xF190C;&#xF1940;&#xF1909;&#xF191E;&#xF1909;&#xF1967;&#xF1902;&#xF1967;&#xF1902;&#xF1940;&#xF1909;&#xF191E;&#xF1909;&#xF195C;&#xF190D;&#xF195C;&#xF190D;&#xF193E;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated hexadecimal cartouche for C0FFEE">&#xF1990;&#xF193E;&#xF199D;&#xF1930;&#xF190C;&#xF191E;&#xF1967;&#xF1967;&#xF191E;&#xF195C;&#xF195C;&#xF193E;&#xF1991;</span></td>
                 <td class="tableAudioCell"><button class="tableAudioButton" type="button" data-numeric-audio="Nasa Manin Eke Tatan Eke Sisin" title="Play Nasa Manin Eke Tatan Eke Sisin using the numeric voice" aria-label="Play Nasa Manin Eke Tatan Eke Sisin using the numeric voice">🤖🔊</button></td>
               </tr>
             </tbody>
@@ -2621,8 +2580,8 @@
               <tr>
                 <td><code>0b101</code></td>
                 <td><code>Noka Waniwan</code></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full binary cartouche for 0b101">&#xF1990;&#xF1943;&#x00BD;&#xF199D;&#x00BD;&#xF1973;&#xF1902;&#x00BC;&#xF1940;&#x00BC;&#xF190C;&#xF1973;&#xF1902;&#x00BC;&#xF1943;&#x00BD;&#xF1991;</span></td>
-                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated binary cartouche for 0b101">&#xF1990;&#xF1943;&#x00BD;&#xF199D;&#x00BD;&#xF1973;&#xF190C;&#xF1973;&#xF1943;&#x00BD;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="full binary cartouche for 0b101">&#xF1990;&#xF1943;&#xF199D;&#xF1973;&#xF1902;&#xF1940;&#xF190C;&#xF1973;&#xF1902;&#xF1943;&#xF1991;</span></td>
+                <td class="modeGlyphCell"><span class="modeAbbreviatedGlyph" role="img" aria-label="abbreviated binary cartouche for 0b101">&#xF1990;&#xF1943;&#xF199D;&#xF1973;&#xF190C;&#xF1973;&#xF1943;&#xF1991;</span></td>
               </tr>
             </tbody>
           </table>
@@ -3030,7 +2989,7 @@
           nanpa-linja-n main documentation
         </a>
         <br/>
-        <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=11" target="_blank" rel="noopener noreferrer" data-download-track-type="pdf" data-download-track-name="nanpa-linja-n-cheat-sheet.pdf">
+        <a class="repoLink" href="./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=10" target="_blank" rel="noopener noreferrer" data-download-track-type="pdf" data-download-track-name="nanpa-linja-n-cheat-sheet.pdf">
           PDF cheat sheet
         </a>
         <span class="tpLine">lipu sona suli pi nanpa-linja-n</span>
