@@ -2816,7 +2816,7 @@
         row.append(top);
         const latin = normalizeUiLanguage(uiLanguage) === "tok"
           ? `ma tomo lawa ${capitalName}`
-          : (englishName ? `Capital City: ${englishName}` : "");
+          : (englishName ? `ma tomo lawa ${englishName}` : "");
         if (latin) row.append(el("div", "countryCapitalLatin soft", latin));
         section.append(row);
       }
@@ -2827,7 +2827,7 @@
         top.append(coordinateCartouche);
         row.append(top);
         const coordinateName = capitalCoordinateProperName(coordinateSource);
-        if (coordinateName) row.append(el("div", "countryCapitalLatin soft", `${coordinateName} ${coordinateSource.slice(3)}`));
+        if (coordinateName) row.append(el("div", "countryCapitalLatin soft", `nanpa ma tomo lawa ${coordinateName} ${coordinateSource}`));
         section.append(row);
       }
       container.append(section);
