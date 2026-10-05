@@ -535,6 +535,7 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       lbl_default_abbrev_numeric_cartouche_spacers: "Default show spacers in abbreviated cartouches",
       lbl_default_nanpa_linjan_mode: "Default nanpa-linja-n mode",
       lbl_default_nanpa_format: "Default Nanpa format",
+      lbl_default_parse_header_glyphs: "Default parse header glyphs",
       lbl_default_enable_hex_parsing: "Default enable hex parsing",
       lbl_default_enable_binary_parsing: "Default enable binary parsing",
       lbl_default_interpret_double_quotes_as_te_to: "Default interpret double quotes as te/to",
@@ -598,6 +599,7 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       props_abbrev_numeric_cartouche_spacers: "Show spacers in abbreviated cartouches",
       props_nanpa_linjan_mode: "nanpa-linja-n mode",
       props_nanpa_format: "Nanpa format",
+      props_parse_header_glyphs: "Parse header glyphs",
       props_enable_hex_parsing: "Enable hex parsing",
       props_enable_binary_parsing: "Enable binary parsing",
       props_interpret_double_quotes_as_te_to: "Interpret double quotes as te/to",
@@ -840,6 +842,7 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       lbl_default_abbrev_numeric_cartouche_spacers: "o pana e weka lon poki sitelen nanpa lili open",
       lbl_default_nanpa_linjan_mode: "nasin pi nanpa-linja-n open",
       lbl_default_nanpa_format: "nasin Nanpa open",
+      lbl_default_parse_header_glyphs: "nasin pi sona e sitelen open",
       lbl_default_enable_hex_parsing: "o ken lukin e nanpa Hex open",
       lbl_default_enable_binary_parsing: "o ken lukin e nanpa Binary open",
       lbl_default_interpret_double_quotes_as_te_to: "o lukin e sitelen \"\" sama te/to open",
@@ -902,6 +905,7 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
       props_abbrev_numeric_cartouche_spacers: "o pana e weka lon poki sitelen nanpa lili",
       props_nanpa_linjan_mode: "nasin pi nanpa-linja-n",
       props_nanpa_format: "nasin Nanpa",
+      props_parse_header_glyphs: "o sona e sitelen open",
       props_enable_hex_parsing: "o ken lukin e nanpa Hex",
       props_enable_binary_parsing: "o ken lukin e nanpa Binary",
       props_interpret_double_quotes_as_te_to: "o lukin e sitelen \"\" sama te/to",
@@ -1208,6 +1212,7 @@ function scrapbookCartoucheEntryHasNanpaSegment(entry){
     setLabel("defPreserveNumericCartoucheBreaksInAbbreviation", "lbl_default_abbrev_numeric_cartouche_spacers");
     setLabel("defNanpaLinjanMode", "lbl_default_nanpa_linjan_mode");
     setLabel("defNanpaFormat", "lbl_default_nanpa_format");
+    setLabel("defParseHeaderGlyphs", "lbl_default_parse_header_glyphs");
     setLabel("defEnableHexParsing", "lbl_default_enable_hex_parsing");
     setLabel("defEnableBinaryParsing", "lbl_default_enable_binary_parsing");
     setLabel("defInterpretDoubleQuotesAsTeTo", "lbl_default_interpret_double_quotes_as_te_to");
@@ -1491,6 +1496,7 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
     defaultPreserveNumericCartoucheBreaksInAbbreviation: false,
     defaultNanpaLinjanMode: "strict",
     defaultNanpaFormat: false,
+    defaultParseHeaderGlyphs: false,
     defaultEnableHexParsing: false,
     defaultEnableBinaryParsing: false,
     defaultInterpretDoubleQuotesAsTeTo: false,
@@ -1589,6 +1595,8 @@ const FONT_URL_LIBERATION_MONO = "../../fonts/LiberationMono-Regular.ttf";
 
   function getSceneDefaultNanpaFormat(){ return !!(Scene?.stage?.defaultNanpaFormat ?? DEFAULTS.defaultNanpaFormat ?? false); }
   function getElementNanpaFormat(el){ return !!(el?.nanpaFormat ?? false); }
+  function getSceneDefaultParseHeaderGlyphs(){ return !!(Scene?.stage?.defaultParseHeaderGlyphs ?? DEFAULTS.defaultParseHeaderGlyphs ?? false); }
+  function getElementParseHeaderGlyphs(el){ return !!(el?.parseHeaderGlyphs ?? false); }
   function getSceneDefaultEnableHexParsing(){ return !!(Scene?.stage?.defaultEnableHexParsing ?? DEFAULTS.defaultEnableHexParsing ?? false); }
   function getElementEnableHexParsing(el){ return !!(el?.enableHexParsing ?? false); }
   function getSceneDefaultEnableBinaryParsing(){ return !!(Scene?.stage?.defaultEnableBinaryParsing ?? DEFAULTS.defaultEnableBinaryParsing ?? false); }
@@ -2257,7 +2265,7 @@ const stageFontPairController = createSitelenFontPairController({
 
 function ensureSitelenRendererModule(){
   if (!sitelenRendererModulePromise){
-    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=282').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
+    sitelenRendererModulePromise = import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285').then((mod) => mod?.default || mod?.SitelenRenderer || mod);
   }
   return sitelenRendererModulePromise;
 }
@@ -2373,6 +2381,7 @@ function buildRendererInitConfigForElement(el){
       relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       nanpaColonParsing: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
       nanpaColonRendering: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+      enableGenericNumericStartGlyphSyntax: !!(el?.type === ElementType.Sitelen && getElementParseHeaderGlyphs(el)),
       enableHexParsing: !!(el?.type === ElementType.Sitelen && getElementEnableHexParsing(el)),
       enableBinaryParsing: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
       enableBinaryRendering: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
@@ -2435,6 +2444,7 @@ function buildRendererCallConfigForElement(el){
       relaxedNanpaLinjanRendering: !!(el?.type === ElementType.Sitelen && isElementRelaxedNanpaLinjanMode(el)),
       nanpaColonParsing: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
       nanpaColonRendering: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+      enableGenericNumericStartGlyphSyntax: !!(el?.type === ElementType.Sitelen && getElementParseHeaderGlyphs(el)),
       enableHexParsing: !!(el?.type === ElementType.Sitelen && getElementEnableHexParsing(el)),
       enableBinaryParsing: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
       enableBinaryRendering: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
@@ -2588,6 +2598,7 @@ function getElementRendererSignature(el){
     preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
     nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
     nanpaFormat: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+    parseHeaderGlyphs: !!(el?.type === ElementType.Sitelen && getElementParseHeaderGlyphs(el)),
     enableHexParsing: !!(el?.type === ElementType.Sitelen && getElementEnableHexParsing(el)),
     enableBinaryParsing: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
     interpretDoubleQuotesAsTeTo: !!(el?.type === ElementType.Sitelen && getElementInterpretDoubleQuotesAsTeTo(el)),
@@ -2983,6 +2994,7 @@ function normalizeScene(parsed){
     defaultPreserveNumericCartoucheBreaksInAbbreviation: DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation,
     defaultNanpaLinjanMode: DEFAULTS.defaultNanpaLinjanMode,
     defaultNanpaFormat: DEFAULTS.defaultNanpaFormat,
+    defaultParseHeaderGlyphs: DEFAULTS.defaultParseHeaderGlyphs,
     defaultEnableHexParsing: DEFAULTS.defaultEnableHexParsing,
     defaultEnableBinaryParsing: DEFAULTS.defaultEnableBinaryParsing,
     defaultInterpretDoubleQuotesAsTeTo: DEFAULTS.defaultInterpretDoubleQuotesAsTeTo,
@@ -3037,6 +3049,7 @@ function normalizeScene(parsed){
   out.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!(out.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? false);
   out.stage.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(out.stage.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
   out.stage.defaultNanpaFormat = !!(out.stage.defaultNanpaFormat ?? false);
+  out.stage.defaultParseHeaderGlyphs = !!(out.stage.defaultParseHeaderGlyphs ?? false);
   out.stage.defaultEnableHexParsing = !!(out.stage.defaultEnableHexParsing ?? false);
   out.stage.defaultEnableBinaryParsing = !!(out.stage.defaultEnableBinaryParsing ?? false);
   out.stage.defaultInterpretDoubleQuotesAsTeTo = !!(out.stage.defaultInterpretDoubleQuotesAsTeTo ?? false);
@@ -3134,6 +3147,7 @@ function normalizeScene(parsed){
         el.preserveNumericCartoucheBreaksInAbbreviation = (el.preserveNumericCartoucheBreaksInAbbreviation == null) ? false : !!el.preserveNumericCartoucheBreaksInAbbreviation;
         el.nanpaLinjanMode = normalizeNanpaLinjanMode(el.nanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
         el.nanpaFormat = !!(el.nanpaFormat ?? false);
+        el.parseHeaderGlyphs = !!(el.parseHeaderGlyphs ?? false);
         el.enableHexParsing = !!(el.enableHexParsing ?? false);
         el.enableBinaryParsing = !!(el.enableBinaryParsing ?? false);
         el.interpretDoubleQuotesAsTeTo = !!(el.interpretDoubleQuotesAsTeTo ?? false);
@@ -3510,6 +3524,7 @@ function deserializeAssets(serialized){
       defaultPreserveNumericCartoucheBreaksInAbbreviation: DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation,
       defaultNanpaLinjanMode: "relaxed",
       defaultNanpaFormat: true,
+      defaultParseHeaderGlyphs: true,
       defaultEnableHexParsing: true,
       defaultEnableBinaryParsing: true,
       defaultInterpretDoubleQuotesAsTeTo: false,
@@ -3625,6 +3640,7 @@ function deserializeAssets(serialized){
     el.preserveNumericCartoucheBreaksInAbbreviation = getSceneDefaultPreserveNumericCartoucheBreaksInAbbreviation();
     el.nanpaLinjanMode = getSceneDefaultNanpaLinjanMode();
     el.nanpaFormat = getSceneDefaultNanpaFormat();
+    el.parseHeaderGlyphs = getSceneDefaultParseHeaderGlyphs();
     el.enableHexParsing = getSceneDefaultEnableHexParsing();
     el.enableBinaryParsing = getSceneDefaultEnableBinaryParsing();
     el.interpretDoubleQuotesAsTeTo = getSceneDefaultInterpretDoubleQuotesAsTeTo();
@@ -8537,6 +8553,7 @@ if (sitelenOnlyEls.length){
 
   const sharedBoolProps = [
     ["props_nanpa_format", getElementNanpaFormat, "nanpaFormat"],
+    ["props_parse_header_glyphs", getElementParseHeaderGlyphs, "parseHeaderGlyphs"],
     ["props_enable_hex_parsing", getElementEnableHexParsing, "enableHexParsing"],
     ["props_enable_binary_parsing", getElementEnableBinaryParsing, "enableBinaryParsing"],
     ["props_interpret_double_quotes_as_te_to", getElementInterpretDoubleQuotesAsTeTo, "interpretDoubleQuotesAsTeTo"],
@@ -9275,6 +9292,7 @@ if (textField && textField._popoutElementId){
 
       const sharedBoolProps = [
         ["props_nanpa_format", getElementNanpaFormat, "nanpaFormat"],
+        ["props_parse_header_glyphs", getElementParseHeaderGlyphs, "parseHeaderGlyphs"],
         ["props_enable_hex_parsing", getElementEnableHexParsing, "enableHexParsing"],
         ["props_enable_binary_parsing", getElementEnableBinaryParsing, "enableBinaryParsing"],
         ["props_interpret_double_quotes_as_te_to", getElementInterpretDoubleQuotesAsTeTo, "interpretDoubleQuotesAsTeTo"],
@@ -11801,6 +11819,7 @@ function syncStageDefaultsUiFromScene(){
   const dancs = document.getElementById("defPreserveNumericCartoucheBreaksInAbbreviation");
   const dnlm = document.getElementById("defNanpaLinjanMode");
   const dnf = document.getElementById("defNanpaFormat");
+  const dphg = document.getElementById("defParseHeaderGlyphs");
   const dhexp = document.getElementById("defEnableHexParsing");
   const dbinp = document.getElementById("defEnableBinaryParsing");
   const dquote = document.getElementById("defInterpretDoubleQuotesAsTeTo");
@@ -11872,6 +11891,7 @@ function syncStageDefaultsUiFromScene(){
   st.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!(st.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? false);
   st.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
   st.defaultNanpaFormat = !!(st.defaultNanpaFormat ?? false);
+  st.defaultParseHeaderGlyphs = !!(st.defaultParseHeaderGlyphs ?? false);
   st.defaultEnableHexParsing = !!(st.defaultEnableHexParsing ?? false);
   st.defaultEnableBinaryParsing = !!(st.defaultEnableBinaryParsing ?? false);
   st.defaultInterpretDoubleQuotesAsTeTo = !!(st.defaultInterpretDoubleQuotesAsTeTo ?? false);
@@ -11888,6 +11908,7 @@ function syncStageDefaultsUiFromScene(){
   if (dancs) dancs.checked = !!st.defaultPreserveNumericCartoucheBreaksInAbbreviation;
   if (dnlm) dnlm.value = st.defaultNanpaLinjanMode;
   if (dnf) dnf.checked = st.defaultNanpaFormat;
+  if (dphg) dphg.checked = st.defaultParseHeaderGlyphs;
   if (dhexp) dhexp.checked = st.defaultEnableHexParsing;
   if (dbinp) dbinp.checked = st.defaultEnableBinaryParsing;
   if (dquote) dquote.checked = st.defaultInterpretDoubleQuotesAsTeTo;
@@ -13211,6 +13232,7 @@ function wireStageDefaultsUi(){
   const dancs = document.getElementById("defPreserveNumericCartoucheBreaksInAbbreviation");
   const dnlm = document.getElementById("defNanpaLinjanMode");
   const dnf = document.getElementById("defNanpaFormat");
+  const dphg = document.getElementById("defParseHeaderGlyphs");
   const dhexp = document.getElementById("defEnableHexParsing");
   const dbinp = document.getElementById("defEnableBinaryParsing");
   const dquote = document.getElementById("defInterpretDoubleQuotesAsTeTo");
@@ -13352,6 +13374,7 @@ function wireStageDefaultsUi(){
   }
 
   if (dnf) dnf.addEventListener("change", (e) => { Scene.stage.defaultNanpaFormat = !!e.target.checked; scheduleAutosave(); render(); });
+  if (dphg) dphg.addEventListener("change", (e) => { Scene.stage.defaultParseHeaderGlyphs = !!e.target.checked; scheduleAutosave(); render(); });
   if (dhexp) dhexp.addEventListener("change", (e) => { Scene.stage.defaultEnableHexParsing = !!e.target.checked; scheduleAutosave(); render(); });
   if (dbinp) dbinp.addEventListener("change", (e) => { Scene.stage.defaultEnableBinaryParsing = !!e.target.checked; scheduleAutosave(); render(); });
   if (dquote) dquote.addEventListener("change", (e) => { Scene.stage.defaultInterpretDoubleQuotesAsTeTo = !!e.target.checked; scheduleAutosave(); render(); });
@@ -13707,7 +13730,7 @@ document.addEventListener("keydown", (e) => {
 
       // Load cartouche DB page map
       try {
-        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=282');
+        const rendererMod = await import('../../js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285');
         const NanpaParser = rendererMod?.NanpaParser;
         if (NanpaParser && !globalThis.NanpaParser) globalThis.NanpaParser = NanpaParser;
         const cartoucheApi = await CartoucheApi.open({ lookup: true, nanpaParser: NanpaParser });
@@ -14078,6 +14101,7 @@ document.addEventListener("keydown", (e) => {
       defaultPreserveNumericCartoucheBreaksInAbbreviation: !!(d.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? st.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation),
       defaultNanpaLinjanMode: normalizeNanpaLinjanMode(d.defaultNanpaLinjanMode ?? st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode),
       defaultNanpaFormat: !!(d.defaultNanpaFormat ?? st.defaultNanpaFormat ?? DEFAULTS.defaultNanpaFormat),
+      defaultParseHeaderGlyphs: !!(d.defaultParseHeaderGlyphs ?? st.defaultParseHeaderGlyphs ?? DEFAULTS.defaultParseHeaderGlyphs),
       defaultEnableHexParsing: !!(d.defaultEnableHexParsing ?? st.defaultEnableHexParsing ?? DEFAULTS.defaultEnableHexParsing),
       defaultEnableBinaryParsing: !!(d.defaultEnableBinaryParsing ?? st.defaultEnableBinaryParsing ?? DEFAULTS.defaultEnableBinaryParsing),
       defaultInterpretDoubleQuotesAsTeTo: !!(d.defaultInterpretDoubleQuotesAsTeTo ?? st.defaultInterpretDoubleQuotesAsTeTo ?? DEFAULTS.defaultInterpretDoubleQuotesAsTeTo),
@@ -14146,6 +14170,7 @@ document.addEventListener("keydown", (e) => {
     const rawDocumentDefaultsHasAbbrevSpacers = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultPreserveNumericCartoucheBreaksInAbbreviation');
     const rawDocumentDefaultsHasNanpaMode = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultNanpaLinjanMode');
     const rawDocumentDefaultsHasNanpaFormat = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultNanpaFormat');
+    const rawDocumentDefaultsHasParseHeaderGlyphs = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultParseHeaderGlyphs');
     const rawDocumentDefaultsHasEnableHexParsing = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultEnableHexParsing');
     const rawDocumentDefaultsHasEnableBinaryParsing = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultEnableBinaryParsing');
     const rawDocumentDefaultsHasInterpretDoubleQuotesAsTeTo = Object.prototype.hasOwnProperty.call(rawDocumentDefaults, 'defaultInterpretDoubleQuotesAsTeTo');
@@ -14157,6 +14182,7 @@ document.addEventListener("keydown", (e) => {
     if (!rawDocumentDefaultsHasAbbrevSpacers) doc.documentDefaults.defaultPreserveNumericCartoucheBreaksInAbbreviation = false;
     if (!rawDocumentDefaultsHasNanpaMode) doc.documentDefaults.defaultNanpaLinjanMode = "strict";
     if (!rawDocumentDefaultsHasNanpaFormat) doc.documentDefaults.defaultNanpaFormat = false;
+    if (!rawDocumentDefaultsHasParseHeaderGlyphs) doc.documentDefaults.defaultParseHeaderGlyphs = false;
     if (!rawDocumentDefaultsHasEnableHexParsing) doc.documentDefaults.defaultEnableHexParsing = false;
     if (!rawDocumentDefaultsHasEnableBinaryParsing) doc.documentDefaults.defaultEnableBinaryParsing = false;
     if (!rawDocumentDefaultsHasInterpretDoubleQuotesAsTeTo) doc.documentDefaults.defaultInterpretDoubleQuotesAsTeTo = false;
@@ -14783,6 +14809,7 @@ document.addEventListener("keydown", (e) => {
     payload.scene.stage.defaultPreserveNumericCartoucheBreaksInAbbreviation = true;
     payload.scene.stage.defaultNanpaLinjanMode = "relaxed";
     payload.scene.stage.defaultNanpaFormat = true;
+    payload.scene.stage.defaultParseHeaderGlyphs = true;
     payload.scene.stage.defaultEnableHexParsing = true;
     payload.scene.stage.defaultEnableBinaryParsing = true;
     payload.scene.stage.defaultInterpretDoubleQuotesAsTeTo = false;
@@ -14793,6 +14820,7 @@ document.addEventListener("keydown", (e) => {
       defaultPreserveNumericCartoucheBreaksInAbbreviation: true,
       defaultNanpaLinjanMode: "relaxed",
       defaultNanpaFormat: true,
+      defaultParseHeaderGlyphs: true,
       defaultEnableHexParsing: true,
       defaultEnableBinaryParsing: true,
       defaultInterpretDoubleQuotesAsTeTo: false,
@@ -14804,6 +14832,7 @@ document.addEventListener("keydown", (e) => {
       defaultPreserveNumericCartoucheBreaksInAbbreviation: true,
       defaultNanpaLinjanMode: "relaxed",
       defaultNanpaFormat: true,
+      defaultParseHeaderGlyphs: true,
       defaultEnableHexParsing: true,
       defaultEnableBinaryParsing: true,
       defaultInterpretDoubleQuotesAsTeTo: false,
@@ -14854,6 +14883,7 @@ document.addEventListener("keydown", (e) => {
     st.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!(docDefaults.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? st.defaultPreserveNumericCartoucheBreaksInAbbreviation ?? DEFAULTS.defaultPreserveNumericCartoucheBreaksInAbbreviation);
     st.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(docDefaults.defaultNanpaLinjanMode ?? st.defaultNanpaLinjanMode ?? DEFAULTS.defaultNanpaLinjanMode);
     st.defaultNanpaFormat = !!(docDefaults.defaultNanpaFormat ?? st.defaultNanpaFormat ?? DEFAULTS.defaultNanpaFormat);
+    st.defaultParseHeaderGlyphs = !!(docDefaults.defaultParseHeaderGlyphs ?? st.defaultParseHeaderGlyphs ?? DEFAULTS.defaultParseHeaderGlyphs);
     st.defaultEnableHexParsing = !!(docDefaults.defaultEnableHexParsing ?? st.defaultEnableHexParsing ?? DEFAULTS.defaultEnableHexParsing);
     st.defaultEnableBinaryParsing = !!(docDefaults.defaultEnableBinaryParsing ?? st.defaultEnableBinaryParsing ?? DEFAULTS.defaultEnableBinaryParsing);
     st.defaultInterpretDoubleQuotesAsTeTo = !!(docDefaults.defaultInterpretDoubleQuotesAsTeTo ?? st.defaultInterpretDoubleQuotesAsTeTo ?? DEFAULTS.defaultInterpretDoubleQuotesAsTeTo);
@@ -15211,6 +15241,7 @@ document.addEventListener("keydown", (e) => {
       preserveNumericCartoucheBreaksInAbbreviation: !!(el?.type === ElementType.Sitelen && getElementPreserveNumericCartoucheBreaksInAbbreviation(el)),
       nanpaLinjanMode: (el?.type === ElementType.Sitelen) ? getElementNanpaLinjanMode(el) : "strict",
       nanpaFormat: !!(el?.type === ElementType.Sitelen && getElementNanpaFormat(el)),
+      parseHeaderGlyphs: !!(el?.type === ElementType.Sitelen && getElementParseHeaderGlyphs(el)),
       enableHexParsing: !!(el?.type === ElementType.Sitelen && getElementEnableHexParsing(el)),
       enableBinaryParsing: !!(el?.type === ElementType.Sitelen && getElementEnableBinaryParsing(el)),
       interpretDoubleQuotesAsTeTo: !!(el?.type === ElementType.Sitelen && getElementInterpretDoubleQuotesAsTeTo(el)),
@@ -19009,6 +19040,7 @@ ${unknownTextRects}` : nested.inner;
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefAbbrevNumericSpacers" type="checkbox"${defs.defaultPreserveNumericCartoucheBreaksInAbbreviation ? ' checked' : ''}>Default show spacers in abbreviated cartouches</label></div></div>
         <div class="row"><div class="field"><label for="sbDefNanpaLinjanMode">Default nanpa-linja-n mode</label><select id="sbDefNanpaLinjanMode">${optionListHtml(nanpaLinjanModeSelectOptions(), defs.defaultNanpaLinjanMode)}</select></div></div>
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefNanpaFormat" type="checkbox"${defs.defaultNanpaFormat ? ' checked' : ''}>Default Nanpa format</label></div></div>
+        <div class="row"><div class="field"><label class="checkInline"><input id="sbDefParseHeaderGlyphs" type="checkbox"${defs.defaultParseHeaderGlyphs ? ' checked' : ''}>Default parse header glyphs</label></div></div>
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefEnableHexParsing" type="checkbox"${defs.defaultEnableHexParsing ? ' checked' : ''}>Default enable hex parsing</label></div></div>
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefEnableBinaryParsing" type="checkbox"${defs.defaultEnableBinaryParsing ? ' checked' : ''}>Default enable binary parsing</label></div></div>
         <div class="row"><div class="field"><label class="checkInline"><input id="sbDefInterpretDoubleQuotesAsTeTo" type="checkbox"${defs.defaultInterpretDoubleQuotesAsTeTo ? ' checked' : ''}>Default interpret double quotes as te/to</label></div></div>
@@ -19054,6 +19086,7 @@ ${unknownTextRects}` : nested.inner;
     bindChange('sbDefAbbrevNumericSpacers', el => { defs.defaultPreserveNumericCartoucheBreaksInAbbreviation = !!el.checked; });
     bindChange('sbDefNanpaLinjanMode', el => { defs.defaultNanpaLinjanMode = normalizeNanpaLinjanMode(el.value); });
     bindChange('sbDefNanpaFormat', el => { defs.defaultNanpaFormat = !!el.checked; });
+    bindChange('sbDefParseHeaderGlyphs', el => { defs.defaultParseHeaderGlyphs = !!el.checked; });
     bindChange('sbDefEnableHexParsing', el => { defs.defaultEnableHexParsing = !!el.checked; });
     bindChange('sbDefEnableBinaryParsing', el => { defs.defaultEnableBinaryParsing = !!el.checked; });
     bindChange('sbDefInterpretDoubleQuotesAsTeTo', el => { defs.defaultInterpretDoubleQuotesAsTeTo = !!el.checked; });

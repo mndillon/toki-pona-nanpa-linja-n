@@ -1707,6 +1707,7 @@ const SitelenRenderer = (() => {
       nanpaColonParsing: __nanpaColonParsing,
       nanpaColonRendering: __nanpaColonRendering,
       numericCartoucheStartGlyph: __numericCartoucheStartGlyph,
+      enableGenericNumericStartGlyphSyntax: __enableGenericNumericStartGlyphSyntax,
       enableHexParsing: __enableHexParsing,
       enableBinaryParsing: __enableBinaryParsing,
       enableBinaryRendering: __enableBinaryRendering,
@@ -1750,6 +1751,7 @@ const SitelenRenderer = (() => {
     __nanpaColonParsing = !!state.nanpaColonParsing;
     __nanpaColonRendering = !!state.nanpaColonRendering;
     __numericCartoucheStartGlyph = normalizeNumericCartoucheStartGlyph(state.numericCartoucheStartGlyph);
+    __enableGenericNumericStartGlyphSyntax = state.enableGenericNumericStartGlyphSyntax === true;
     __enableHexParsing = !!state.enableHexParsing;
     __enableBinaryParsing = !!state.enableBinaryParsing;
     __enableBinaryRendering = !!state.enableBinaryRendering;
@@ -1807,6 +1809,12 @@ const SitelenRenderer = (() => {
   function resolveNumericCartoucheStartGlyph(requested, semanticDefault = "nanpa") {
     return normalizeNumericCartoucheStartGlyph(requested) || semanticDefault;
   }
+
+  // Generic per-expression numeric start-glyph syntax is opt-in. When enabled,
+  // <glyph>:(<one complete numeric expression>) preserves the inner expression's
+  // semantic type and changes only the rendered nanpa-format starting glyph.
+  // Existing ma:/lon: coordinate tuples are independent and retain precedence.
+  let __enableGenericNumericStartGlyphSyntax = false;
 
   // Hexadecimal recognition is opt-in. This flag affects parsing only; once a
   // source span has been classified as hexadecimal, its semantic run always
@@ -1888,6 +1896,8 @@ const SitelenRenderer = (() => {
   function setNanpaColonRendering(v) { __nanpaColonRendering = !!v; }
   function getNumericCartoucheStartGlyph() { return __numericCartoucheStartGlyph; }
   function setNumericCartoucheStartGlyph(v) { __numericCartoucheStartGlyph = normalizeNumericCartoucheStartGlyph(v); }
+  function getEnableGenericNumericStartGlyphSyntax() { return __enableGenericNumericStartGlyphSyntax === true; }
+  function setEnableGenericNumericStartGlyphSyntax(v) { __enableGenericNumericStartGlyphSyntax = v === true; }
   function getEnableHexParsing() { return !!__enableHexParsing; }
   function setEnableHexParsing(v) { __enableHexParsing = !!v; }
   function getEnableBinaryParsing() { return !!(__enableBinaryParsing || __enableBinaryRendering); }
@@ -2165,6 +2175,9 @@ const SitelenRenderer = (() => {
     if (parser.nanpaColonRendering != null) setNanpaColonRendering(!!parser.nanpaColonRendering);
     if (Object.prototype.hasOwnProperty.call(parser, "numericCartoucheStartGlyph")) {
       setNumericCartoucheStartGlyph(parser.numericCartoucheStartGlyph);
+    }
+    if (parser.enableGenericNumericStartGlyphSyntax != null) {
+      setEnableGenericNumericStartGlyphSyntax(parser.enableGenericNumericStartGlyphSyntax === true);
     }
     if (parser.enableHexParsing != null) setEnableHexParsing(!!parser.enableHexParsing);
     if (parser.enableBinaryParsing != null) setEnableBinaryParsing(!!parser.enableBinaryParsing);
@@ -6107,10 +6120,12 @@ function wireHaloControls() {
       CP_NANPA, CP_NASA, CP_NOKA
     ]);
 
-    function numericCartoucheHasLeadingPositiveEnAt(canonical, index) {
+    function numericCartoucheHasLeadingPositiveEnAt(canonical, index, { allowGenericStartGlyph = false } = {}) {
       const firstInnerIndex = 1;
       const firstInnerCp = canonical[firstInnerIndex];
-      if (!NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(firstInnerCp) || canonical[index] !== CP_EN) return false;
+      const hasStructuralStartGlyph =
+        NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(firstInnerCp) || allowGenericStartGlyph === true;
+      if (!hasStructuralStartGlyph || canonical[index] !== CP_EN) return false;
 
       // Abbreviated positive forms:
       //   head en ...
@@ -6143,7 +6158,7 @@ function wireHaloControls() {
       );
     }
 
-    function numericCartoucheAutoVulgarScaleMarkerForCanonicalIndex(canonicalFullCps, canonicalIndex) {
+    function numericCartoucheAutoVulgarScaleMarkerForCanonicalIndex(canonicalFullCps, canonicalIndex, { allowGenericStartGlyph = false } = {}) {
       const canonical = Array.from(canonicalFullCps || []).map(Number);
       const index = Number(canonicalIndex);
       if (!Number.isInteger(index) || index <= 0 || index >= canonical.length - 1) return null;
@@ -6152,17 +6167,23 @@ function wireHaloControls() {
       const firstInnerIndex = 1;
       const lastInnerIndex = canonical.length - 2;
       const firstInnerCp = canonical[firstInnerIndex];
+      const firstInnerIsHalfScaleHead =
+        NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(firstInnerCp) || allowGenericStartGlyph === true;
 
-      // Numeric structural glyphs are always 1/2 scale for the font-facing
-      // stream: opening nanpa/nasa/noka/tenpo/suno/toki, a colon immediately
-      // following that opening head, and closing nanpa/nasa/noka.
-      if (index === firstInnerIndex && NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(cp)) {
+      // Existing numeric structural heads keep their established 1/2 scale.
+      // When the new generic start-glyph syntax explicitly supplied this head,
+      // that one opening glyph and its immediately following colon use the same
+      // structural 1/2 scale without broadening the rule for ordinary cartouches.
+      if (
+        index === firstInnerIndex &&
+        (NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(cp) || allowGenericStartGlyph === true)
+      ) {
         return CARTOUCHE_VULGAR_SCALE_MARKERS.half;
       }
       if (
         index === firstInnerIndex + 1 &&
         cp === CP_COLON &&
-        NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(firstInnerCp)
+        firstInnerIsHalfScaleHead
       ) {
         return CARTOUCHE_VULGAR_SCALE_MARKERS.half;
       }
@@ -6172,7 +6193,7 @@ function wireHaloControls() {
 
       // The semantic leading positive sign is the one role-specific en. It is
       // 2/3 scale in both full and abbreviated numeric-cartouche forms.
-      if (numericCartoucheHasLeadingPositiveEnAt(canonical, index)) {
+      if (numericCartoucheHasLeadingPositiveEnAt(canonical, index, { allowGenericStartGlyph })) {
         return CARTOUCHE_VULGAR_SCALE_MARKERS.twoThirds;
       }
 
@@ -6266,7 +6287,8 @@ function wireHaloControls() {
 
     function applyCartoucheVulgarScaleMarkersToAdapted(adapted, canonicalFullCps, {
       isNumericCartouche = false,
-      explicitInnerScaleMarkers = null
+      explicitInnerScaleMarkers = null,
+      allowGenericStartGlyph = false
     } = {}) {
       if (!useInlineCartoucheScaleMarkers() || !adapted || !Array.isArray(adapted.renderCps)) return adapted;
 
@@ -6287,7 +6309,7 @@ function wireHaloControls() {
         const explicitMarker = explicit[innerIndex];
         const marker = isCartoucheVulgarScaleMarkerCp(explicitMarker)
           ? explicitMarker
-          : (isNumericCartouche ? numericCartoucheAutoVulgarScaleMarkerForCanonicalIndex(canonical, canonicalIndex) : null);
+          : (isNumericCartouche ? numericCartoucheAutoVulgarScaleMarkerForCanonicalIndex(canonical, canonicalIndex, { allowGenericStartGlyph }) : null);
         if (!isCartoucheVulgarScaleMarkerCp(marker)) continue;
 
         const span = spans[canonicalIndex];
@@ -6398,7 +6420,23 @@ function wireHaloControls() {
     // Every supported semantic/configurable numeric opening glyph must enter
     // the same abbreviation state. The final glyph remains nanpa regardless
     // of which opening head is used.
+    const GENERIC_NUMERIC_CARTOUCHE_START_CPS = new Set(
+      Object.entries(WORD_TO_UCSUR_CP)
+        .filter(([word, cp]) =>
+          /^[a-z][a-z0-9^<>]*$/.test(word) &&
+          Number.isInteger(cp) &&
+          cp >= 0xF1900 && cp <= 0xF19FF &&
+          cp !== 0xF1990 && cp !== 0xF1991 && cp !== 0xF1992 &&
+          cp !== 0xF1993 && cp !== 0xF1994 && cp !== 0xF1995 &&
+          cp !== 0xF1996 && cp !== 0xF1997 && cp !== 0xF1998 &&
+          cp !== 0xF1999 && cp !== 0xF199A && cp !== 0xF199B &&
+          cp !== 0xF199C && cp !== 0xF199D && cp !== 0xF199E
+        )
+        .map(([, cp]) => Number(cp))
+    );
+
     const NUMERIC_CARTOUCHE_ABBREVIATION_START_CPS = new Set([
+      ...GENERIC_NUMERIC_CARTOUCHE_START_CPS,
       CP_NANPA,
       CP_NASA,
       CP_NOKA,
@@ -6530,7 +6568,7 @@ function wireHaloControls() {
       return numericCartoucheDisplayInfo(cps).cps;
     }
 
-    function makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, scaleSourceInfo = null, explicitScaleMarkers = null } = {}) {
+    function makeNumericCartoucheElementFromCodepoints(elements, cps, { fontPx, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, scaleSourceInfo = null, explicitScaleMarkers = null, genericNumericStartGlyph = null } = {}) {
       const inputExplicitScaleMarkers = Array.isArray(explicitScaleMarkers)
         ? explicitScaleMarkers
         : mapExplicitCartoucheScaleMarkersToTarget(scaleSourceInfo, cps);
@@ -6572,6 +6610,7 @@ function wireHaloControls() {
         audioSourceCps: Array.from(cps || []),
         audioSourceIndices: displayInfo.sourceIndices,
         explicitScaleMarkers: displayScaleMarkers,
+        genericNumericStartGlyph,
         fontRole: "number",
         isNumericCartouche: true
       });
@@ -8249,6 +8288,59 @@ function wireHaloControls() {
         });
         if (!semantic) continue;
         out.push({ kind: "coordinate", match: raw, index: start, end, coordinateSemantic: semantic });
+      }
+      return out;
+    }
+
+    function findGenericNumericStartGlyphSequences(text, { mixedStyle = "short" } = {}) {
+      // This syntax is a nanpa-format sub-option: even when its explicit flag is
+      // enabled, it must remain inactive whenever nanpa-format parsing/rendering
+      // is disabled.
+      if (!getNanpaColonParsing() || !getEnableGenericNumericStartGlyphSyntax()) return [];
+      const s = String(text ?? "");
+      if (!s) return [];
+
+      // Generic scalar head syntax:
+      //   <glyph>:(<one complete nanpa-linja-n numeric expression>)
+      // The glyph, colon and opening parenthesis must be contiguous. Existing
+      // ma:/lon: coordinate tuples are claimed earlier and therefore retain
+      // their established comma-separated coordinate semantics.
+      const out = [];
+      const re = /[A-Za-z][A-Za-z0-9_^<>]*:\([^()\r\n]*\)/g;
+      let m;
+      while ((m = re.exec(s)) !== null) {
+        const raw = String(m[0] || "");
+        const start = m.index | 0;
+        const end = start + raw.length;
+        const before = start > 0 ? s[start - 1] : "";
+        const after = end < s.length ? s[end] : "";
+        if (before && /[A-Za-z0-9_#~]/.test(before)) continue;
+        if (after && /[A-Za-z0-9_]/.test(after)) continue;
+
+        const parsed = NanpaParser.parseNumber(raw, {
+          numericMode: getNanpaLinjanMode(),
+          mixedStyle: mixedStyle === "long" ? "long" : "short",
+          relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanParsing(),
+          relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanRendering(),
+          nanpaColonParsing: getNanpaColonParsing(),
+          nanpaColonRendering: getNanpaColonRendering(),
+          abbreviateNumericCartouches: getAbbreviateNumericCartouches(),
+          numericCartoucheStartGlyph: getNumericCartoucheStartGlyph(),
+          enableGenericNumericStartGlyphSyntax: true,
+          enableHexParsing: getEnableHexParsing(),
+          enableBinaryParsing: getEnableBinaryParsing(),
+          enableBinaryRendering: getEnableBinaryRendering()
+        });
+        if (!parsed || parsed.isCoordinate || parsed.isHex || parsed.isBinary || !parsed.caps) continue;
+        if (!Array.isArray(parsed.innerCodepoints) || parsed.innerCodepoints.length === 0) continue;
+
+        out.push({
+          kind: "genericNumericStartGlyph",
+          match: raw,
+          index: start,
+          end,
+          parsed
+        });
       }
       return out;
     }
@@ -10404,7 +10496,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   return finalCanvas;
 }
 
-    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fontRole = null, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false, isNumericCartouche = false, audioSourceCps = null, audioSourceIndices = null, explicitScaleMarkers = null, allowEmptyCartouche = false } = {}) {
+    function makeCartoucheElementFromCodepoints(elements, cps, { fontPx, fontFamily, fontRole = null, fgCss, sourceText = null, sourceStart = null, sourceEnd = null, sourceKind = null, sourceSegmentIndex = null, repairQuotedLatinLeftEdge = false, manualTallies = null, isLiteralCartouche = false, isNumericCartouche = false, audioSourceCps = null, audioSourceIndices = null, explicitScaleMarkers = null, genericNumericStartGlyph = null, allowEmptyCartouche = false } = {}) {
       if (!cps || (cps.length === 0 && !allowEmptyCartouche)) return;
       pushGapIfNeeded(elements, cartoucheLeadGapForPx(fontPx));
 
@@ -10437,7 +10529,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       });
       const adapted = applyCartoucheVulgarScaleMarkersToAdapted(baseAdapted, canonicalFullCps, {
         isNumericCartouche: !!isNumericCartouche,
-        explicitInnerScaleMarkers: explicitScaleMarkers
+        explicitInnerScaleMarkers: explicitScaleMarkers,
+        allowGenericStartGlyph: !!genericNumericStartGlyph
       });
 
       const cart = document.createElement("canvas");
@@ -11066,6 +11159,62 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           parseTextSegmentToElements(s.slice(coordinatePos), elements, {
             fontPx,
             sourceBaseStart: sourceBaseStart + coordinatePos,
+            sourceKind,
+            sourceSegmentIndex,
+            mixedStyle,
+            allowRawCodepoints: false
+          });
+        }
+        return;
+      }
+
+      // Generic <glyph>:(<single numeric expression>) wrappers own their
+      // complete span after coordinate recognition. The wrapped expression is
+      // parsed by NanpaParser without changing its semantic type; only the
+      // first cartouche glyph is overridden by the explicit wrapper head.
+      const genericNumericHeadHits = findGenericNumericStartGlyphSequences(s, { mixedStyle });
+      if (genericNumericHeadHits.length) {
+        let genericPos = 0;
+        for (const hit of genericNumericHeadHits) {
+          if (hit.index > genericPos) {
+            parseTextSegmentToElements(s.slice(genericPos, hit.index), elements, {
+              fontPx,
+              sourceBaseStart: sourceBaseStart + genericPos,
+              sourceKind,
+              sourceSegmentIndex,
+              mixedStyle,
+              allowRawCodepoints: false
+            });
+          }
+
+          const parsed = hit.parsed;
+          const beforeElementCount = elements.length;
+          makeNumericCartoucheElementFromCodepoints(elements, parsed.innerCodepoints, {
+            fontPx,
+            fgCss: getFgHex(),
+            sourceText: s.slice(hit.index, hit.end),
+            sourceStart: sourceBaseStart + hit.index,
+            sourceEnd: sourceBaseStart + hit.end,
+            sourceKind,
+            sourceSegmentIndex,
+            genericNumericStartGlyph: parsed.genericNumericStartGlyph || parsed.renderStartGlyph || null
+          });
+
+          for (let i = elements.length - 1; i >= beforeElementCount; i--) {
+            const el = elements[i];
+            if (!el || el.type === "gap") continue;
+            el.genericNumericStartGlyph = parsed.genericNumericStartGlyph || parsed.renderStartGlyph || null;
+            el.numericSemanticKind = parsed.semanticKind || null;
+            el.isTime = parsed.isTime === true;
+            el.isDate = parsed.isDate === true;
+            break;
+          }
+          genericPos = hit.end;
+        }
+        if (genericPos < s.length) {
+          parseTextSegmentToElements(s.slice(genericPos), elements, {
+            fontPx,
+            sourceBaseStart: sourceBaseStart + genericPos,
             sourceKind,
             sourceSegmentIndex,
             mixedStyle,
@@ -15874,6 +16023,57 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return titled.length ? `${properNameHead} ${titled.join(" ")}` : "";
   }
 
+  function _npTryParseGenericNumericStartGlyphWrapper(raw) {
+    const source = String(raw ?? "").trim();
+    if (!source) return null;
+
+    const match = /^([A-Za-z][A-Za-z0-9_^<>]*):\(([^()\r\n]*)\)$/.exec(source);
+    if (!match) return null;
+
+    const rawHead = match[1];
+    const head = _npResolveTpWordInputKey(rawHead);
+    const headCp = _NP_WORD_TO_UCSUR_CP[head];
+    if (!Number.isInteger(headCp)) return null;
+
+    // A generic start marker must be an actual sitelen pona glyph, not a
+    // punctuation/control helper that happens to have a textual alias.
+    if (headCp < 0xF1900 || headCp > 0xF19FF ||
+        (headCp >= 0xF1990 && headCp <= 0xF199E)) return null;
+
+    const inner = String(match[2] ?? "");
+    if (!inner.trim()) return null;
+    return { source, rawHead, head, headCp, inner };
+  }
+
+  function _npApplyGenericNumericStartGlyph(parsed, wrapper) {
+    if (!parsed || !wrapper || parsed.isCoordinate || parsed.isHex || parsed.isBinary || !parsed.caps) return null;
+    const sourceCps = Array.from(parsed.innerCodepoints ?? parsed.ucsurCodepoints ?? []);
+    if (!sourceCps.length) return null;
+
+    const innerCodepoints = sourceCps.slice();
+    innerCodepoints[0] = wrapper.headCp;
+    const tpWords = _npCodepointsToWords(innerCodepoints);
+    const codepoints = _npWrapCartouche(innerCodepoints);
+
+    return {
+      ...parsed,
+      input: wrapper.source,
+      wrappedNumericInput: wrapper.inner,
+      // Preserve the wrapped expression's semanticStartGlyph (for example a
+      // typed Toki numeric form). The generic wrapper changes presentation only.
+      semanticStartGlyph: parsed.semanticStartGlyph || null,
+      renderStartGlyph: wrapper.head,
+      genericNumericStartGlyph: wrapper.head,
+      ucsurCodepoints: innerCodepoints.slice(),
+      innerCodepoints: innerCodepoints.slice(),
+      codepoints,
+      tpWords,
+      words: tpWords.slice(),
+      hexCodepoints: innerCodepoints.map(cp => Number(cp).toString(16).toUpperCase().padStart(4, "0")).join(" "),
+      hexWithCartouche: codepoints.map(cp => Number(cp).toString(16).toUpperCase().padStart(4, "0")).join(" ")
+    };
+  }
+
   const NanpaParser = Object.freeze({
   parseNumber(input, opts = {}) {
     const mode = ((opts.mode === "traditional") || (opts.numericMode === "traditional"))
@@ -15946,6 +16146,20 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         codepoints,
         numericMode: mode
       };
+    }
+
+    const genericStartGlyphWrapper =
+      _npNanpaColonParsingFromOpts(opts) && opts.enableGenericNumericStartGlyphSyntax === true
+        ? _npTryParseGenericNumericStartGlyphWrapper(s)
+        : null;
+    if (genericStartGlyphWrapper) {
+      // Parse the interior as a complete ordinary numeric expression. The
+      // wrapper is presentation-only: date/time/number semantics and the
+      // numeric value remain exactly those of the inner expression.
+      const innerParsed = this.parseNumber(genericStartGlyphWrapper.inner, opts);
+      const wrapped = _npApplyGenericNumericStartGlyph(innerParsed, genericStartGlyphWrapper);
+      if (wrapped) return wrapped;
+      return null;
     }
 
     if (opts.enableBinaryParsing === true || opts.enableBinaryRendering === true) {

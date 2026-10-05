@@ -523,7 +523,7 @@ textarea.nanpaSourceInputUnchanged {
 </div>
 
 <script type="module">
-import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=282";
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -959,6 +959,7 @@ window.SitelenRenderer = SitelenRenderer;
           preserveNumericCartoucheBreaksInAbbreviation: true,
           nanpaLinjanMode: "relaxed",
           nanpaFormat: true,
+          parseHeaderGlyphs: true,
           enableHexParsing: true,
           enableBinaryParsing: true,
           interpretDoubleQuotesAsTeTo: false,
@@ -1067,6 +1068,7 @@ window.SitelenRenderer = SitelenRenderer;
     const importedDefaultsHadPreserveNumericCartoucheBreaksInAbbreviation = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "preserveNumericCartoucheBreaksInAbbreviation");
     const importedDefaultsHadNanpaLinjanMode = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "nanpaLinjanMode");
     const importedDefaultsHadNanpaFormat = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "nanpaFormat");
+    const importedDefaultsHadParseHeaderGlyphs = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "parseHeaderGlyphs");
     const importedDefaultsHadEnableHexParsing = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "enableHexParsing");
     const importedDefaultsHadEnableBinaryParsing = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "enableBinaryParsing");
     const importedDefaultsHadInterpretDoubleQuotesAsTeTo = Object.prototype.hasOwnProperty.call(importedDefaultsItem, "interpretDoubleQuotesAsTeTo");
@@ -1098,6 +1100,7 @@ window.SitelenRenderer = SitelenRenderer;
       ? normalizeNanpaLinjanMode(project.defaults.item.nanpaLinjanMode)
       : "strict";
     project.defaults.item.nanpaFormat = importedDefaultsHadNanpaFormat ? !!project.defaults.item.nanpaFormat : false;
+    project.defaults.item.parseHeaderGlyphs = importedDefaultsHadParseHeaderGlyphs ? !!project.defaults.item.parseHeaderGlyphs : false;
     project.defaults.item.enableHexParsing = importedDefaultsHadEnableHexParsing ? !!project.defaults.item.enableHexParsing : false;
     project.defaults.item.enableBinaryParsing = importedDefaultsHadEnableBinaryParsing ? !!project.defaults.item.enableBinaryParsing : false;
     project.defaults.item.interpretDoubleQuotesAsTeTo = importedDefaultsHadInterpretDoubleQuotesAsTeTo ? !!project.defaults.item.interpretDoubleQuotesAsTeTo : false;
@@ -1122,6 +1125,7 @@ window.SitelenRenderer = SitelenRenderer;
         const itemHadPreserveNumericCartoucheBreaksInAbbreviation = Object.prototype.hasOwnProperty.call(item, "preserveNumericCartoucheBreaksInAbbreviation");
         const itemHadNanpaLinjanMode = Object.prototype.hasOwnProperty.call(item, "nanpaLinjanMode");
         const itemHadNanpaFormat = Object.prototype.hasOwnProperty.call(item, "nanpaFormat");
+        const itemHadParseHeaderGlyphs = Object.prototype.hasOwnProperty.call(item, "parseHeaderGlyphs");
         const itemHadEnableHexParsing = Object.prototype.hasOwnProperty.call(item, "enableHexParsing");
         const itemHadEnableBinaryParsing = Object.prototype.hasOwnProperty.call(item, "enableBinaryParsing");
         const itemHadInterpretDoubleQuotesAsTeTo = Object.prototype.hasOwnProperty.call(item, "interpretDoubleQuotesAsTeTo");
@@ -1140,6 +1144,7 @@ window.SitelenRenderer = SitelenRenderer;
           ? normalizeNanpaLinjanMode(item.nanpaLinjanMode)
           : "strict";
         item.nanpaFormat = itemHadNanpaFormat ? !!item.nanpaFormat : false;
+        item.parseHeaderGlyphs = itemHadParseHeaderGlyphs ? !!item.parseHeaderGlyphs : false;
         item.enableHexParsing = itemHadEnableHexParsing ? !!item.enableHexParsing : false;
         item.enableBinaryParsing = itemHadEnableBinaryParsing ? !!item.enableBinaryParsing : false;
         item.interpretDoubleQuotesAsTeTo = itemHadInterpretDoubleQuotesAsTeTo ? !!item.interpretDoubleQuotesAsTeTo : false;
@@ -1208,6 +1213,7 @@ window.SitelenRenderer = SitelenRenderer;
         item0.preserveNumericCartoucheBreaksInAbbreviation = !!(item0.preserveNumericCartoucheBreaksInAbbreviation ?? false);
         item0.nanpaLinjanMode = normalizeNanpaLinjanMode(item0.nanpaLinjanMode ?? "strict");
         item0.nanpaFormat = !!(item0.nanpaFormat ?? false);
+        item0.parseHeaderGlyphs = !!(item0.parseHeaderGlyphs ?? false);
         item0.enableHexParsing = !!(item0.enableHexParsing ?? false);
         item0.enableBinaryParsing = !!(item0.enableBinaryParsing ?? false);
         item0.interpretDoubleQuotesAsTeTo = !!(item0.interpretDoubleQuotesAsTeTo ?? false);
@@ -1270,6 +1276,7 @@ window.SitelenRenderer = SitelenRenderer;
       preserveNumericCartoucheBreaksInAbbreviation: !!d.preserveNumericCartoucheBreaksInAbbreviation,
       nanpaLinjanMode: normalizeNanpaLinjanMode(d.nanpaLinjanMode),
       nanpaFormat: !!d.nanpaFormat,
+      parseHeaderGlyphs: !!d.parseHeaderGlyphs,
       enableHexParsing: !!d.enableHexParsing,
       enableBinaryParsing: !!d.enableBinaryParsing,
       interpretDoubleQuotesAsTeTo: !!d.interpretDoubleQuotesAsTeTo,
@@ -1743,6 +1750,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Default show spacers in abbreviated cartouches", makeCheckbox(!!d.preserveNumericCartoucheBreaksInAbbreviation, (checked) => { d.preserveNumericCartoucheBreaksInAbbreviation = checked; defaultsChanged(); })));
     sec.appendChild(makeField("Default nanpa-linja-n mode", makeNanpaLinjanModeSelect(d.nanpaLinjanMode, (v) => { d.nanpaLinjanMode = v; defaultsChanged(); })));
     sec.appendChild(makeField("Default Nanpa format", makeCheckbox(!!d.nanpaFormat, (checked) => { d.nanpaFormat = checked; defaultsChanged(); })));
+    sec.appendChild(makeField("Default parse header glyphs", makeCheckbox(!!d.parseHeaderGlyphs, (checked) => { d.parseHeaderGlyphs = checked; defaultsChanged(); })));
     sec.appendChild(makeField("Default enable hex parsing", makeCheckbox(!!d.enableHexParsing, (checked) => { d.enableHexParsing = checked; defaultsChanged(); })));
     sec.appendChild(makeField("Default enable binary parsing", makeCheckbox(!!d.enableBinaryParsing, (checked) => { d.enableBinaryParsing = checked; defaultsChanged(); })));
     sec.appendChild(makeField("Default interpret double quotes as te/to", makeCheckbox(!!d.interpretDoubleQuotesAsTeTo, (checked) => { d.interpretDoubleQuotesAsTeTo = checked; defaultsChanged(); })));
@@ -1785,6 +1793,7 @@ window.SitelenRenderer = SitelenRenderer;
         item.preserveNumericCartoucheBreaksInAbbreviation = !!d.preserveNumericCartoucheBreaksInAbbreviation;
         item.nanpaLinjanMode = normalizeNanpaLinjanMode(d.nanpaLinjanMode);
         item.nanpaFormat = !!d.nanpaFormat;
+        item.parseHeaderGlyphs = !!d.parseHeaderGlyphs;
         item.enableHexParsing = !!d.enableHexParsing;
         item.enableBinaryParsing = !!d.enableBinaryParsing;
         item.interpretDoubleQuotesAsTeTo = !!d.interpretDoubleQuotesAsTeTo;
@@ -1889,6 +1898,7 @@ window.SitelenRenderer = SitelenRenderer;
     sec.appendChild(makeField("Show spacers in abbreviated cartouches", makeCheckbox(!!item.preserveNumericCartoucheBreaksInAbbreviation, (checked) => patchActiveItem({ preserveNumericCartoucheBreaksInAbbreviation: checked }, true))));
     sec.appendChild(makeField("nanpa-linja-n mode", makeNanpaLinjanModeSelect(getItemNanpaLinjanMode(item), (v) => patchActiveItem({ nanpaLinjanMode: v }, true))));
     sec.appendChild(makeField("Nanpa format", makeCheckbox(!!item.nanpaFormat, (checked) => patchActiveItem({ nanpaFormat: checked }, true))));
+    sec.appendChild(makeField("Parse header glyphs", makeCheckbox(!!item.parseHeaderGlyphs, (checked) => patchActiveItem({ parseHeaderGlyphs: checked }, true))));
     sec.appendChild(makeField("Enable hex parsing", makeCheckbox(!!item.enableHexParsing, (checked) => patchActiveItem({ enableHexParsing: checked }, true))));
     sec.appendChild(makeField("Enable binary parsing", makeCheckbox(!!item.enableBinaryParsing, (checked) => patchActiveItem({ enableBinaryParsing: checked }, true))));
     sec.appendChild(makeField("Interpret double quotes as te/to", makeCheckbox(!!item.interpretDoubleQuotesAsTeTo, (checked) => patchActiveItem({ interpretDoubleQuotesAsTeTo: checked }, true))));
@@ -2841,6 +2851,7 @@ window.SitelenRenderer = SitelenRenderer;
       !!item.preserveNumericCartoucheBreaksInAbbreviation,
       getItemNanpaLinjanMode(item),
       !!item.nanpaFormat,
+      !!item.parseHeaderGlyphs,
       !!item.enableHexParsing,
       !!item.enableBinaryParsing,
       !!item.interpretDoubleQuotesAsTeTo,
@@ -2993,6 +3004,7 @@ window.SitelenRenderer = SitelenRenderer;
         relaxedNanpaLinjanRendering: isItemRelaxedNanpaLinjanMode(item),
         nanpaColonParsing: !!item.nanpaFormat,
         nanpaColonRendering: !!item.nanpaFormat,
+        enableGenericNumericStartGlyphSyntax: !!item.parseHeaderGlyphs,
         enableHexParsing: !!item.enableHexParsing,
         enableBinaryParsing: !!item.enableBinaryParsing,
         enableBinaryRendering: !!item.enableBinaryParsing,

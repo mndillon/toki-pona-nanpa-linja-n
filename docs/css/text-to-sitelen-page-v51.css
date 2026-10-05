@@ -772,6 +772,7 @@ body.shellReady {
 #ctlEnableHexParsing { order: 21; }
 #ctlEnableBinaryParsing { order: 22; }
 #ctlCopyFontSpecificCodes { order: 23; }
+#ctlParseHeaderGlyphs { order: 24; }
 
 @media (max-width: 520px) {
   .renderPrimaryControls {

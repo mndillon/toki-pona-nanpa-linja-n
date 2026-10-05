@@ -1,4 +1,4 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=282";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
@@ -7,7 +7,7 @@ import {
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=178';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=85';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=86';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
@@ -482,7 +482,7 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=282",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285",
   fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=23",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=178",
@@ -1071,6 +1071,7 @@ function buildBaseRendererConfig({ includeHalo = true } = {}) {
       relaxedNanpaLinjanRendering: relaxedNanpaLinjan,
       nanpaColonParsing: getDisplayNanpaFormatEnabled(),
       nanpaColonRendering: getDisplayNanpaFormatEnabled(),
+      enableGenericNumericStartGlyphSyntax: getParseHeaderGlyphsEnabled(),
       nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
       interpretDoubleQuotesAsTeTo: getInterpretDoubleQuotesAsTeToEnabled(),
       breakLinesAtFullStops: getBreakLinesAtFullStopsEnabled(),
@@ -1133,6 +1134,7 @@ function getRendererSignature() {
     preserveNumericCartoucheBreaksInAbbreviation: getNumericCartoucheSpacersEnabled(),
     relaxedNanpaLinjan: getRelaxedNanpaLinjanEnabled(),
     displayNanpaFormat: getDisplayNanpaFormatEnabled(),
+    parseHeaderGlyphs: getParseHeaderGlyphsEnabled(),
     nasinNanpaPona: getNasinNanpaPonaFormattingEnabled(),
     enableHexParsing: getEnableHexParsingEnabled(),
     enableBinaryParsing: getEnableBinaryParsingEnabled(),
@@ -1745,6 +1747,45 @@ function wireDisplayNanpaFormatToggle() {
   el?.addEventListener("change", async () => {
     try {
       setDisplayNanpaFormatEnabled(el.checked);
+      resetTextToSitelenAudio({ announce: false });
+      sitelenRenderer = null;
+      sitelenRendererSignature = "";
+      await renderFromTextarea();
+      updateTextAudioButtons();
+    } catch (error) {
+      showAlertAndAnnounce(error?.message ?? String(error));
+    }
+  });
+}
+
+const PARSE_HEADER_GLYPHS_STORAGE_KEY = "tpParseHeaderGlyphs";
+const PARSE_HEADER_GLYPHS_DEFAULT_ENABLED = true;
+
+function getParseHeaderGlyphsEnabled() {
+  return !!document.getElementById("appParseHeaderGlyphsEnable")?.checked;
+}
+
+function setParseHeaderGlyphsEnabled(value, { persist = true } = {}) {
+  const enabled = !!value;
+  const el = document.getElementById("appParseHeaderGlyphsEnable");
+  if (el) el.checked = enabled;
+  if (persist) saveBooleanFlagToStorage(PARSE_HEADER_GLYPHS_STORAGE_KEY, enabled);
+  return enabled;
+}
+
+function applyParseHeaderGlyphsFromStorage() {
+  setParseHeaderGlyphsEnabled(
+    loadBooleanFlagFromStorage(PARSE_HEADER_GLYPHS_STORAGE_KEY)
+      ?? PARSE_HEADER_GLYPHS_DEFAULT_ENABLED,
+    { persist: false }
+  );
+}
+
+function wireParseHeaderGlyphsToggle() {
+  const el = document.getElementById("appParseHeaderGlyphsEnable");
+  el?.addEventListener("change", async () => {
+    try {
+      setParseHeaderGlyphsEnabled(el.checked);
       resetTextToSitelenAudio({ announce: false });
       sitelenRenderer = null;
       sitelenRendererSignature = "";
@@ -6196,7 +6237,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=282", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -10914,6 +10955,7 @@ async function initializeTextToSitelenPage() {
     applyNumericCartoucheSpacersFromStorage();
     applyNanpaRelaxedModeFromStorage();
     applyDisplayNanpaFormatFromStorage();
+    applyParseHeaderGlyphsFromStorage();
     applyNasinNanpaPonaFormattingFromStorage();
     applyAudioParserFlagsFromStorage();
     applyBreakLinesAtFullStopsFromStorage();
@@ -10966,6 +11008,7 @@ async function initializeTextToSitelenPage() {
     wireNumericCartoucheSpacersToggle();
     wireNanpaRelaxedModeSelect();
     wireDisplayNanpaFormatToggle();
+    wireParseHeaderGlyphsToggle();
     wireNasinNanpaPonaFormattingToggle();
     wireAudioParserFlags();
     wireBreakLinesAtFullStopsToggle();
