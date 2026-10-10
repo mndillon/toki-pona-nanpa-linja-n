@@ -121,7 +121,7 @@
             requirements:{glyphs:['nanpa','wan','tu','seli']}, inputSequence:['nanpa',':','wan','tu','seli','nanpa'],
             rewards:{glyphs:['ona'],setStates:{maintenanceAccess:true}}, skipIfRewardsOwned:true, skipSafe:true,
             alreadyOwnedEffects:{setStates:{maintenanceAccess:true}},
-            ui:{presentation:'fullscreen',canExit:true,title:'First numeric cartouche',instructions:'Construct the abbreviated nanpa-format cartouche for the digit sequence 123. The nanpa glyph is reusable.'}
+            ui:{presentation:'fullscreen',canExit:true,title:'First numeric cartouche',instructions:'Construct the abbreviated nanpa-format cartouche for the digit sequence 123. The nanpa glyph is reusable.',helpLink:{href:'./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=11',label:'nanpa-linja-n PDF cheat sheet',target:'_blank',downloadTrackType:'pdf',downloadTrackName:'nanpa-linja-n-cheat-sheet.pdf'}}
           },
           {
             id:'l1-maintenance-sequence', chain:'power', type:'glyph-key-code', area:'maintenance', sourceClass:'required-state',

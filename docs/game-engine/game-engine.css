@@ -552,6 +552,20 @@ kbd {
 .puzzleSlot.locked { border-style: solid; opacity: .62; }
 .puzzleSlot.wrong { border-color: #8d3d36; background: rgba(141,61,54,.10); }
 .puzzleSlot.correct { border-color: #496f56; background: rgba(73,111,86,.10); }
+/* Levels 1–3 tutorial feedback appears only after an explicit failed Try answer. */
+.puzzleSlot.tutorialConfirmed {
+  border-color: rgba(73,111,86,.66);
+  background: rgba(73,111,86,.09);
+  box-shadow: inset 0 0 0 1px rgba(73,111,86,.18);
+}
+.dialUnit.tutorialConfirmed .dialValue,
+.routeTile.tutorialConfirmed,
+.lightCell.tutorialConfirmed,
+.balanceWeight.tutorialConfirmed {
+  border-color: rgba(73,111,86,.72) !important;
+  box-shadow: inset 0 0 0 2px rgba(73,111,86,.23), 0 0 0 1px rgba(73,111,86,.12);
+}
+.dialUnit.tutorialConfirmed .dialLabel { color:#315f42; }
 .puzzleSlotGlyph {
   min-height: 42px;
   display: flex;

@@ -1076,6 +1076,7 @@
   let selectedPuzzleSlotIndex = null;
   let puzzleMechanismState = null;
   let puzzleDrag = null;
+  let tutorialSubmissionFeedback = null;
   const PUZZLE_DRAG_THRESHOLD = 8;
   let levelRendererPromise = null;
   let pendingGlyphRewards = [];
@@ -2965,6 +2966,7 @@
 
   function placeSelectedPuzzleGlyphIntoSlot(index) {
     if (!Number.isInteger(index) || index < 0 || index >= puzzleSlotValues.length || !selectedPuzzleGlyph) return false;
+    clearTutorialSubmissionFeedback();
     puzzleSlotValues[index] = selectedPuzzleGlyph;
     selectedPuzzleGlyph = null;
     selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(index);
@@ -3259,6 +3261,7 @@
   }
 
   function resetMechanismState(puzzle) {
+    clearTutorialSubmissionFeedback();
     puzzleMechanismState = freshMechanismState(puzzle);
   }
 
@@ -3276,13 +3279,13 @@
     return '';
   }
 
-  function routeConnectivity(puzzle) {
+  function routeConnectivity(puzzle, rotationsOverride=null) {
     const payload = puzzle.ui?.payload || {};
     const width = Number(payload.width) || 4, height = Number(payload.height) || 4;
     const tiles = payload.tiles || [];
     const state = puzzleMechanismState || freshMechanismState(puzzle);
     const byPos = new Map();
-    tiles.forEach((tile,index) => byPos.set(`${tile.x},${tile.y}`, {tile,index,rotation:state.rotations?.[index] ?? tile.rotation ?? 0}));
+    tiles.forEach((tile,index) => byPos.set(`${tile.x},${tile.y}`, {tile,index,rotation:rotationsOverride?.[index] ?? state.rotations?.[index] ?? tile.rotation ?? 0}));
     const sourceRow = Number(payload.sourceRow) || 0;
     const start = byPos.get(`0,${sourceRow}`);
     const connected = new Set();
@@ -3592,6 +3595,100 @@
     }
   }
 
+  function tutorialPuzzleLevel(puzzle) {
+    const match=String(puzzle?.id||'').match(/^l(\d+)-/i);
+    return match ? Number(match[1]) : null;
+  }
+
+  function tutorialFeedbackEnabled(puzzle) {
+    const levelNo=tutorialPuzzleLevel(puzzle);
+    return Number.isInteger(levelNo) && levelNo>=1 && levelNo<=3;
+  }
+
+  function clearTutorialSubmissionFeedback() {
+    tutorialSubmissionFeedback=null;
+  }
+
+  function tutorialFeedbackMatches(puzzle,kind,index) {
+    return Boolean(tutorialSubmissionFeedback && tutorialSubmissionFeedback.puzzleId===puzzle?.id && tutorialSubmissionFeedback.kind===kind && tutorialSubmissionFeedback.correctIndices.includes(Number(index)));
+  }
+
+  function routeBoardTutorialCorrectIndices(puzzle) {
+    const payload=puzzle.ui?.payload||{},tiles=payload.tiles||[],limits=tiles.map(tile=>tile.type==='straight'?2:4);
+    if(!tiles.length) return [];
+    const solutions=[]; const rotations=Array(tiles.length).fill(0);
+    const search=index=>{
+      if(index===rotations.length){if(routeConnectivity(puzzle,rotations).solved)solutions.push(rotations.slice());return;}
+      for(let r=0;r<limits[index];r++){rotations[index]=r;search(index+1);}
+    };
+    search(0);
+    if(!solutions.length) return [];
+    const current=puzzleMechanismState?.rotations||[],confirmed=[];
+    for(let i=0;i<tiles.length;i++){
+      const normalized=((Number(current[i])||0)%limits[i]+limits[i])%limits[i];
+      if(solutions.every(solution=>Number(solution[i])===normalized)) confirmed.push(i);
+    }
+    return confirmed;
+  }
+
+  function balanceTutorialCorrectIndices(puzzle) {
+    const payload=puzzle.ui?.payload||{},weights=(payload.weights||[]).map(Number),target=Number(payload.target),solutions=[];
+    for(let mask=0;mask<(1<<weights.length);mask++){
+      let sum=0; for(let i=0;i<weights.length;i++) if(mask&(1<<i)) sum+=weights[i];
+      if(sum===target) solutions.push(mask);
+    }
+    if(!solutions.length) return [];
+    const selected=puzzleMechanismState?.selected||[],confirmed=[];
+    for(let i=0;i<weights.length;i++) if(selected[i] && solutions.every(mask=>Boolean(mask&(1<<i)))) confirmed.push(i);
+    return confirmed;
+  }
+
+  function buildTutorialSubmissionFeedback(puzzle) {
+    if(!tutorialFeedbackEnabled(puzzle)) return null;
+    const correctIndices=[];
+    if(puzzle.type==='country-cartouche'){
+      const answer=String(puzzle.ui?.payload?.answer||'').toUpperCase().replace(/[^AEIJKLMNOPSTUW]/g,'');
+      [...answer].forEach((letter,index)=>{
+        const word=String(puzzleSlotValues[index]||'');
+        if(WORD_TO_CP[word]!=null && word[0]?.toUpperCase()===letter) correctIndices.push(index);
+      });
+      return {puzzleId:puzzle.id,kind:'slot',correctIndices};
+    }
+    const seq=puzzleSequence(puzzle);
+    if(seq.length){
+      seq.forEach((expected,index)=>{if(puzzleSlotValues[index]===expected) correctIndices.push(index);});
+      return {puzzleId:puzzle.id,kind:'slot',correctIndices};
+    }
+    if(puzzle.type==='dial-bank'){
+      const target=(puzzle.ui?.payload?.targetValues||[]).map(Number),values=puzzleMechanismState?.values||[];
+      target.forEach((value,index)=>{if(Number(values[index])===value) correctIndices.push(index);});
+      return {puzzleId:puzzle.id,kind:'dial',correctIndices};
+    }
+    if(puzzle.type==='route-board') return {puzzleId:puzzle.id,kind:'route',correctIndices:routeBoardTutorialCorrectIndices(puzzle)};
+    if(puzzle.type==='lights-out'){
+      const target=Number(puzzle.ui?.payload?.target??1);
+      (puzzleMechanismState?.lights||[]).forEach((value,index)=>{if(Number(value)===target) correctIndices.push(index);});
+      return {puzzleId:puzzle.id,kind:'light',correctIndices};
+    }
+    if(puzzle.type==='balance-scale') return {puzzleId:puzzle.id,kind:'weight',correctIndices:balanceTutorialCorrectIndices(puzzle)};
+    return null;
+  }
+
+  function tutorialFeedbackMessage(feedback) {
+    const count=feedback?.correctIndices?.length||0;
+    if(!count) return 'That answer did not work. No individual parts are confirmed yet; review the clues and try again.';
+    return `${count} ${count===1?'part is':'parts are'} correctly placed and subtly highlighted. Adjust the rest, then Try answer again.`;
+  }
+
+  function showTutorialFailureFeedback(puzzle) {
+    const feedback=buildTutorialSubmissionFeedback(puzzle);
+    if(!feedback) return false;
+    tutorialSubmissionFeedback=feedback;
+    renderCampaignPuzzle();
+    puzzleStatus.textContent=tutorialFeedbackMessage(feedback);
+    return true;
+  }
+
   const NO_PREVIEW_MECHANISM_TYPES = new Set([
     'dial-bank','route-board','path-grid','lights-out','balance-scale','context-match',
     'equivalence-grid','schedule-order','sliding-grid','nonogram','card-sort','ring-lock',
@@ -3617,13 +3714,13 @@
     const bank=document.createElement('div'); bank.className='dialBank';
     const names=['left','middle','right'];
     (st.values||[]).forEach((value,index)=>{
-      const dial=document.createElement('div'); dial.className='dialUnit';
+      const dial=document.createElement('div'); dial.className=`dialUnit${tutorialFeedbackMatches(puzzle,'dial',index)?' tutorialConfirmed':''}`;
       const label=document.createElement('div'); label.className='dialLabel'; label.textContent=names[index]||`dial ${index+1}`;
       const up=document.createElement('button'); up.type='button'; up.className='dialAdjust'; up.textContent='▲'; up.setAttribute('aria-label',`Increase ${label.textContent}`);
       const display=document.createElement('div'); display.className='dialValue'; display.innerHTML=`<span class="sitelenGlyph">${mechanismDigit(value)}</span><small>${value}</small>`;
       const down=document.createElement('button'); down.type='button'; down.className='dialAdjust'; down.textContent='▼'; down.setAttribute('aria-label',`Decrease ${label.textContent}`);
-      up.addEventListener('click',()=>{st.values[index]=(Number(st.values[index])+1)%10;renderCampaignPuzzle();});
-      down.addEventListener('click',()=>{st.values[index]=(Number(st.values[index])+9)%10;renderCampaignPuzzle();});
+      up.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.values[index]=(Number(st.values[index])+1)%10;renderCampaignPuzzle();});
+      down.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.values[index]=(Number(st.values[index])+9)%10;renderCampaignPuzzle();});
       dial.append(label,up,display,down); bank.appendChild(dial);
     });
     puzzleSlots.append(clues,bank);
@@ -3640,11 +3737,11 @@
       const item=byPos.get(`${x},${y}`);
       if(!item){const empty=document.createElement('div');empty.className='routeTile empty';grid.appendChild(empty);continue;}
       const rot=state.rotations[item.index]??0; const btn=document.createElement('button'); btn.type='button';
-      btn.className=`routeTile${connectivity.connected.has(`${x},${y}`)?' connected':''}`; btn.textContent=routeTileSymbol(item.tile.type,rot);
+      btn.className=`routeTile${connectivity.connected.has(`${x},${y}`)?' connected':''}${tutorialFeedbackMatches(puzzle,'route',item.index)?' tutorialConfirmed':''}`; btn.textContent=routeTileSymbol(item.tile.type,rot);
       if(x===0&&y===Number(payload.sourceRow)) btn.dataset.edge='IN';
       if(x===width-1&&y===Number(payload.sinkRow)) btn.dataset.edge='OUT';
       btn.setAttribute('aria-label',`Rotate relay at column ${x+1}, row ${y+1}${btn.dataset.edge ? `, ${btn.dataset.edge}` : ''}`);
-      btn.addEventListener('click',()=>{state.rotations[item.index]=(rot+1)%(item.tile.type==='straight'?2:4);renderCampaignPuzzle();});
+      btn.addEventListener('click',()=>{clearTutorialSubmissionFeedback();state.rotations[item.index]=(rot+1)%(item.tile.type==='straight'?2:4);renderCampaignPuzzle();});
       grid.appendChild(btn);
     }
     wrap.append(grid); puzzleSlots.appendChild(wrap);
@@ -3668,6 +3765,7 @@
     const move=(dx,dy)=>{
       const nx=st.x+dx, ny=st.y+dy;
       if(nx<0||ny<0||nx>=width||ny>=height||blocks.has(`${nx},${ny}`)){puzzleStatus.textContent='That route is blocked.';blockedTone();return;}
+      clearTutorialSubmissionFeedback();
       st.x=nx; st.y=ny;
       const next=cps[st.nextCheckpoint];
       if(next&&next[0]===nx&&next[1]===ny) st.nextCheckpoint++;
@@ -3684,11 +3782,12 @@
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState; const size=Number(payload.size)||3;
     const grid=document.createElement('div'); grid.className='lightsGrid'; grid.style.setProperty('--lights-cols',String(size));
     const toggle=index=>{
+      clearTutorialSubmissionFeedback();
       const x=index%size,y=Math.floor(index/size);
       for(const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx>=0&&ny>=0&&nx<size&&ny<size){const i=ny*size+nx;st.lights[i]=st.lights[i]?0:1;}}
       renderCampaignPuzzle();
     };
-    st.lights.forEach((on,index)=>{const b=document.createElement('button');b.type='button';b.className=`lightCell${on?' on':''}`;b.setAttribute('aria-label',`Lamp ${index+1}, ${on?'on':'off'}`);b.addEventListener('click',()=>toggle(index));grid.appendChild(b);});
+    st.lights.forEach((on,index)=>{const b=document.createElement('button');b.type='button';b.className=`lightCell${on?' on':''}${tutorialFeedbackMatches(puzzle,'light',index)?' tutorialConfirmed':''}`;b.setAttribute('aria-label',`Lamp ${index+1}, ${on?'on':'off'}`);b.addEventListener('click',()=>toggle(index));grid.appendChild(b);});
     puzzleSlots.appendChild(grid);
     setMechanismStatus(puzzle,mechanismSolved(puzzle)?'All lamps are lit. Press Try answer to confirm the observation panel.':'Make every lamp glow at the same time.');
   }
@@ -3700,7 +3799,7 @@
     const canvas=document.createElement('canvas'); canvas.width=220; canvas.height=68; canvas.className='balanceTargetCanvas';
     target.append(label,canvas); puzzleSlots.appendChild(target); renderNanpaSourceToCanvas(String(payload.target),canvas,36);
     const tray=document.createElement('div'); tray.className='balanceWeights';
-    weights.forEach((weight,index)=>{const b=document.createElement('button');b.type='button';b.className=`balanceWeight${st.selected[index]?' selected':''}`;b.innerHTML=`<span class="sitelenGlyph">${mechanismDigit(weight)}</span><small>${weight}</small>`;b.setAttribute('aria-pressed',String(Boolean(st.selected[index])));b.addEventListener('click',()=>{st.selected[index]=!st.selected[index];renderCampaignPuzzle();});tray.appendChild(b);});
+    weights.forEach((weight,index)=>{const b=document.createElement('button');b.type='button';b.className=`balanceWeight${st.selected[index]?' selected':''}${tutorialFeedbackMatches(puzzle,'weight',index)?' tutorialConfirmed':''}`;b.innerHTML=`<span class="sitelenGlyph">${mechanismDigit(weight)}</span><small>${weight}</small>`;b.setAttribute('aria-pressed',String(Boolean(st.selected[index])));b.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.selected[index]=!st.selected[index];renderCampaignPuzzle();});tray.appendChild(b);});
     const readout=document.createElement('div');readout.className=`balanceReadout${sum===Number(payload.target)?' balanced':''}`;readout.textContent=`selected mass: ${sum}`;
     puzzleSlots.append(tray,readout);
     setMechanismStatus(puzzle,sum===Number(payload.target)?'The scale is balanced. Press Try answer to confirm the machine.':sum>Number(payload.target)?'Too heavy. Remove a weight.':'Too light. Add weight.');
@@ -3713,7 +3812,7 @@
     (payload.choices||[]).forEach((choice,index)=>{
       const b=document.createElement('button');b.type='button';b.className=`contextChoice${Number(st.selectedIndex)===index?' selected':''}`;b.setAttribute('aria-label',`Choice ${index+1}`);
       const tag=document.createElement('span');tag.className='contextChoiceTag';tag.textContent=String.fromCharCode(65+index);
-      const c=document.createElement('canvas');c.width=320;c.height=78;c.className='contextChoiceCanvas';b.append(tag,c);b.addEventListener('click',()=>{st.selectedIndex=index;renderCampaignPuzzle();});choices.appendChild(b);
+      const c=document.createElement('canvas');c.width=320;c.height=78;c.className='contextChoiceCanvas';b.append(tag,c);b.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.selectedIndex=index;renderCampaignPuzzle();});choices.appendChild(b);
       renderNanpaSourceToCanvas(choice.source,c,38);
     });
     puzzleSlots.append(target,choices);
@@ -5308,7 +5407,7 @@
     if (!Array.isArray(puzzleSlotValues) || puzzleSlotValues.length!==answer.length) puzzleSlotValues=Array(answer.length).fill(null);
     if (selectedPuzzleSlotIndex == null && answer.length && puzzleSlotValues.some(v=>!v)) selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(-1);
     [...answer].forEach((letter,index)=>{
-      const slot=document.createElement('button'); slot.type='button'; slot.className=`puzzleSlot fillable ${puzzleSlotValues[index]?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}`; slot.dataset.slotIndex=String(index);
+      const slot=document.createElement('button'); slot.type='button'; slot.className=`puzzleSlot fillable ${puzzleSlotValues[index]?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}${tutorialFeedbackMatches(puzzle,'slot',index)?' tutorialConfirmed':''}`; slot.dataset.slotIndex=String(index);
       const glyph=document.createElement('div'); glyph.className=puzzleSlotValues[index]?'puzzleSlotGlyph sitelenGlyph':'puzzleSlotGlyph'; glyph.textContent=puzzleSlotValues[index]?displayPuzzleToken(puzzleSlotValues[index]):'＋';
       const label=document.createElement('div'); label.className='puzzleSlotLabel'; label.textContent=letter;
       slot.append(glyph,label);
@@ -5428,7 +5527,7 @@
       const key=`${y},${x}`,cell=model.byKey.get(key);
       if(!cell){const block=document.createElement('div');block.className='countryCrosswordCell block';grid.appendChild(block);continue;}
       const index=cell.slotIndex,value=puzzleSlotValues[index];
-      const b=document.createElement('button');b.type='button';b.className=`countryCrosswordCell puzzleSlot fillable ${value?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}`;b.dataset.slotIndex=String(index);
+      const b=document.createElement('button');b.type='button';b.className=`countryCrosswordCell puzzleSlot fillable ${value?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}${tutorialFeedbackMatches(puzzle,'slot',index)?' tutorialConfirmed':''}`;b.dataset.slotIndex=String(index);
       const nums=model.starts.get(key)||[];if(nums.length){const num=document.createElement('span');num.className='countryCrosswordNumberHost countryCrosswordNumberHost--cell';num.dataset.number=String(nums[0]);b.appendChild(num);}
       const glyph=document.createElement('span');glyph.className=value?'countryCrosswordGlyph sitelenGlyph':'countryCrosswordGlyph';glyph.textContent=value?displayPuzzleToken(value):'＋';b.appendChild(glyph);
       b.setAttribute('aria-label',`Crossword cell row ${y+1}, column ${x+1}${nums.length?`, clue ${nums.join(' and ')}`:''}`);
@@ -5467,7 +5566,21 @@
     puzzleCard?.classList.toggle('puzzleCard--mechanism', mechanismPuzzle);
     puzzleEyebrow.textContent = puzzle.type === 'country-cartouche' ? 'country cartouche' : puzzle.type === 'country-crossword' ? 'country crossword' : puzzle.type === 'coordinate-map' ? 'map puzzle' : mechanismPuzzle ? 'mechanism puzzle' : puzzle.type === 'terminal' ? 'campaign terminal' : 'glyph-key puzzle';
     puzzleTitle.textContent = puzzle.ui.title || puzzle.id;
-    puzzleInstructions.textContent = puzzle.ui.instructions || '';
+    puzzleInstructions.textContent = '';
+    const instructionText = String(puzzle.ui.instructions || '');
+    if (instructionText) puzzleInstructions.appendChild(document.createTextNode(instructionText));
+    const helpLink = puzzle.ui?.helpLink;
+    if (helpLink?.href) {
+      if (instructionText) puzzleInstructions.appendChild(document.createTextNode(' '));
+      const link = document.createElement('a');
+      link.href = String(helpLink.href);
+      link.textContent = String(helpLink.label || 'Help');
+      if (helpLink.target) link.target = String(helpLink.target);
+      if (link.target === '_blank') link.rel = 'noopener noreferrer';
+      if (helpLink.downloadTrackType) link.dataset.downloadTrackType = String(helpLink.downloadTrackType);
+      if (helpLink.downloadTrackName) link.dataset.downloadTrackName = String(helpLink.downloadTrackName);
+      puzzleInstructions.appendChild(link);
+    }
     puzzleSlots.textContent = '';
     puzzleTray.textContent = '';
     puzzleStatus.textContent = '';
@@ -5506,7 +5619,7 @@
     }
     if (selectedPuzzleSlotIndex == null && seq.length && puzzleSlotValues.some(v=>!v)) selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(-1);
     seq.forEach((expected,index)=>{
-      const slot=document.createElement('button'); slot.type='button'; slot.className=`puzzleSlot fillable ${puzzleSlotValues[index]?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}`; slot.dataset.slotIndex=String(index); slot.setAttribute('aria-label',`Glyph slot ${index+1}`);
+      const slot=document.createElement('button'); slot.type='button'; slot.className=`puzzleSlot fillable ${puzzleSlotValues[index]?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}${tutorialFeedbackMatches(puzzle,'slot',index)?' tutorialConfirmed':''}`; slot.dataset.slotIndex=String(index); slot.setAttribute('aria-label',`Glyph slot ${index+1}`);
       const glyph=document.createElement('div'); glyph.className=puzzleSlotValues[index]?'puzzleSlotGlyph sitelenGlyph':'puzzleSlotGlyph'; glyph.textContent=puzzleSlotValues[index]?displayPuzzleToken(puzzleSlotValues[index]):'＋';
       const label=document.createElement('div'); label.className='puzzleSlotLabel'; label.textContent=String(index+1);
       slot.append(glyph,label);
@@ -5522,6 +5635,7 @@
 
   function openCampaignPuzzleHost(puzzle) {
     activeCampaignPuzzle = puzzle;
+    clearTutorialSubmissionFeedback();
     puzzleSlotValues = Array(puzzleSequence(puzzle).length).fill(null);
     selectedPuzzleGlyph = null;
     selectedPuzzleFamily = null;
@@ -5538,6 +5652,7 @@
 
   function clearCampaignPuzzleSlots() {
     if (!activeCampaignPuzzle) return;
+    clearTutorialSubmissionFeedback();
     if (isMechanismPuzzle(activeCampaignPuzzle)) { resetMechanismState(activeCampaignPuzzle); renderCampaignPuzzle(); return; }
     puzzleSlotValues = Array(puzzleSequence(activeCampaignPuzzle).length).fill(null);
     selectedPuzzleGlyph = null;
@@ -5577,15 +5692,16 @@
       return;
     }
     if (isMechanismPuzzle(puzzle) && !mechanismSolved(puzzle)) {
-      puzzleStatus.textContent = 'That answer did not work. Review the clues, adjust the mechanism, and try again.';
+      if(!showTutorialFailureFeedback(puzzle)) puzzleStatus.textContent = 'That answer did not work. Review the clues, adjust the mechanism, and try again.';
       blockedTone();
       return;
     }
     if (needsSlots && !validateCampaignPuzzleSlots()) {
-      puzzleStatus.textContent = 'That answer did not work. Review the clues and try again.';
+      if(!showTutorialFailureFeedback(puzzle)) puzzleStatus.textContent = 'That answer did not work. Review the clues and try again.';
       blockedTone();
       return;
     }
+    clearTutorialSubmissionFeedback();
     const id = puzzle.id;
     const title = puzzle.ui.title || id;
     closeModal(puzzleOverlay);
@@ -5599,6 +5715,7 @@
 
   function closeCampaignPuzzleHost() {
     if (activeCampaignPuzzle?.ui?.canExit === false) return;
+    clearTutorialSubmissionFeedback();
     activeCampaignPuzzle = null;
     puzzleSlotValues = [];
     selectedPuzzleGlyph = null;
@@ -5692,6 +5809,7 @@
       if (target) {
         const index = Number(target.dataset.slotIndex);
         if (Number.isFinite(index)) {
+          clearTutorialSubmissionFeedback();
           puzzleSlotValues[index] = word;
           selectedPuzzleGlyph = null;
           selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(index);

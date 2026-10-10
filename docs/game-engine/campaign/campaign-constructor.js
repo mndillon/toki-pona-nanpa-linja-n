@@ -46,7 +46,8 @@
       instructions: src.instructions || '',
       objective: src.objective || '',
       module: src.module || type,
-      payload: clone(src.payload || {})
+      payload: clone(src.payload || {}),
+      helpLink: src.helpLink ? clone(src.helpLink) : null
     };
   }
 

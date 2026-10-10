@@ -704,7 +704,14 @@
             "presentation": "fullscreen",
             "canExit": true,
             "title": "First numeric cartouche",
-            "instructions": "Construct the abbreviated nanpa-format cartouche for the digit sequence 123. The nanpa glyph is reusable."
+            "instructions": "Construct the abbreviated nanpa-format cartouche for the digit sequence 123. The nanpa glyph is reusable.",
+            "helpLink": {
+              "href": "./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=11",
+              "label": "nanpa-linja-n PDF cheat sheet",
+              "target": "_blank",
+              "downloadTrackType": "pdf",
+              "downloadTrackName": "nanpa-linja-n-cheat-sheet.pdf"
+            }
           }
         },
         {

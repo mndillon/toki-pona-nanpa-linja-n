@@ -322,3 +322,8 @@ Implemented late-campaign note: Level 12 ends with an **expert 9×9 Sudoku** as 
 ### Puzzle submission invariant
 
 Puzzle answer controls follow a campaign-wide submission-only rule: ordinary answer puzzles use **Try answer**, the submit control stays available before correctness is known, and configuration/sequence correctness is not signalled by enabling, highlighting, or per-slot green/red feedback before submission. Incomplete or wrong submissions are evaluated only after **Try answer** is pressed and receive neutral whole-answer feedback.
+
+
+## Early-level answer guidance
+
+Levels 1–3 intentionally provide a small amount of tutorial feedback after a failed **Try answer** submission. Correctly placed answer components may receive a subtle positive outline, while incorrect components remain neutral. Nothing is marked correct before submission, and editing the answer clears the confirmation until the next attempt. From Level 4 onward, puzzle submission returns to whole-answer feedback only with no per-component correctness leakage.
