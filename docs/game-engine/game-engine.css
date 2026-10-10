@@ -1699,3 +1699,105 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap) .puzzleStatus{display:none}
 }
 .dualMirrorBeam.beam3{stroke:#2f7b59;stroke-dasharray:4 7}
+
+
+/* v0.66 mobile puzzle-fit pass.
+   Spatial puzzle boards are deliberately smaller on phones so the complete
+   mechanism remains inside the fixed puzzle popup. Desktop dimensions remain
+   unchanged. The data-puzzle-type attribute lets future puzzle-specific
+   mobile tuning stay visual-only rather than changing puzzle logic. */
+@media (pointer: coarse), (max-width: 600px) {
+  .puzzleCard.puzzleCard--map {
+    padding: 7px;
+    gap: 2px;
+  }
+  .puzzleCard.puzzleCard--map > h2 { font-size: 16px; }
+  .puzzleCard.puzzleCard--map > #puzzleInstructions { font-size: 11px; line-height: 1.14; }
+  .coordinatePuzzleCanvas { width: min(100%, 280px); max-height: 52px; }
+  .coordinateMapGrid { width: min(100%, 38dvh, 285px); }
+  .puzzleCard.puzzleCard--map > .overlayButtonRow button:not([hidden]) { min-height: 40px; }
+
+  .puzzleCard.puzzleCard--mechanism {
+    padding: 7px;
+    gap: 3px;
+  }
+  .puzzleCard.puzzleCard--mechanism > h2 { font-size: 17px; line-height: 1.06; }
+  .puzzleCard.puzzleCard--mechanism > #puzzleInstructions { font-size: 11.5px; line-height: 1.15; }
+  .puzzleCard.puzzleCard--mechanism .puzzleSlots { gap: 5px; }
+  .puzzleCard.puzzleCard--mechanism > .overlayButtonRow { gap: 4px; }
+  .puzzleCard.puzzleCard--mechanism > .overlayButtonRow button { min-height: 40px; padding: 5px 7px; }
+  .puzzleCard.puzzleCard--mechanism .puzzleStatus { font-size: 10px; line-height: 1.15; }
+
+  /* L3: route/pipe board and other square mechanisms. */
+  .puzzleCard[data-puzzle-type="route-board"] .routeBoardWrap { width: min(100%, 250px); }
+  .puzzleCard[data-puzzle-type="route-board"] .routeBoard { width: min(100%, 34dvh, 235px); gap: 3px; }
+  .puzzleCard[data-puzzle-type="route-board"] .routeTile { font-size: clamp(30px, 10vw, 36px); }
+  .puzzleCard[data-puzzle-type="path-grid"] .pathGrid { width: min(100%, 35dvh, 245px); }
+  .puzzleCard[data-puzzle-type="lights-out"] .lightsGrid { width: min(100%, 34dvh, 225px); }
+
+  /* L4-L5: keep board-style mechanisms comfortably inside the popup. */
+  .sokobanGrid { grid-template-columns: repeat(var(--soko-cols), 36px); }
+  .sokobanCell { width: 36px; height: 36px; }
+  .sokobanControls { grid-template-columns: repeat(4, 44px); }
+  .sokobanControls button { width: 44px; height: 38px; min-height: 38px; }
+  .slidingGrid { grid-template-columns: repeat(var(--slide-cols), 62px); gap: 5px; }
+  .slidingTile { width: 62px; height: 62px; min-height: 62px; }
+  .slidingTile .sitelenGlyph { font-size: 31px; }
+  .pegLine { grid-template-columns: repeat(8, 38px); gap: 3px; }
+  .pegHole { width: 38px; height: 38px; min-height: 38px; font-size: 20px; }
+  .patternPanel { grid-template-columns: repeat(var(--pattern-cols), 15px); gap: 2px; padding: 4px; }
+  .patternCell { width: 15px; height: 15px; }
+  .patternQuestion { width: 58px; height: 58px; }
+  .nonogramWrap { --nonogram-cell: 34px; grid-template-columns: minmax(52px, auto) auto; gap: 3px; }
+  .nonogramClue.vertical { min-height: 46px; }
+  .nonogramClueNumber { font-size: 18px; }
+
+  /* L6-L7: compact high-density boards while preserving their clues. */
+  .cardSortCanvas { width: 68px; height: 96px; }
+  .airflowGrid { grid-template-columns: repeat(var(--air-cols), 46px); gap: 3px; }
+  .airflowTile { width: 46px; height: 46px; min-height: 46px; font-size: 29px; }
+  .pulseLane { grid-template-columns: 86px minmax(0, 1fr); gap: 4px; }
+  .powerBreaker { min-height: 60px; }
+
+  /* L8: mirror boards and path grids were still too large on phones. */
+  .dualMirrorBoard { grid-template-columns: repeat(var(--mirror-cols), 40px); grid-template-rows: repeat(var(--mirror-rows), 40px); }
+  .dualMirrorCell { width: 40px; height: 40px; }
+  .dualMirrorMirror { font-size: 26px; }
+  .dualMirrorLegend { font-size: 8.5px; }
+  .exactPathGrid { grid-template-columns: repeat(var(--path-cols), 44px); gap: 3px; }
+  .exactPathCell { width: 44px; height: 44px; min-height: 44px; }
+  .exactPathValue { font-size: 23px; }
+
+  /* L9-L11: dense multi-cell mechanisms. */
+  .layerAlignGrid { grid-template-columns: repeat(var(--layer-size), 24px); grid-template-rows: repeat(var(--layer-size), 24px); }
+  .layerAlignCell { width: 24px; height: 24px; }
+  .layerMarker { width: 16px; height: 16px; font-size: 8px; }
+  .callTriangGrid { grid-template-columns: repeat(var(--tri-cols), 42px); grid-template-rows: repeat(var(--tri-rows), 42px); gap: 2px; }
+  .callTriangCell { width: 42px; height: 42px; min-height: 42px; }
+  .callTriangCell .sitelenGlyph { font-size: 20px; }
+
+  /* L12: retain the entire final board and controls without stretching glyphs. */
+  .sudokuGrid { width: min(calc(100vw - 34px), 310px, 35dvh); }
+  .sudokuControls { width: min(100%, 310px); }
+}
+
+/* Short-phone refinement: shrink spatial boards again rather than clipping the
+   puzzle popup. This is visual only; puzzle state, answers and hit logic are unchanged. */
+@media (max-height: 620px) and (pointer: coarse), (max-height: 620px) and (max-width: 760px) {
+  .coordinatePuzzleCanvas { max-height: 40px; }
+  .coordinateMapGrid { width: min(100%, 34dvh, 225px); }
+  .puzzleCard[data-puzzle-type="route-board"] .routeBoard { width: min(100%, 31dvh, 205px); }
+  .puzzleCard[data-puzzle-type="path-grid"] .pathGrid { width: min(100%, 31dvh, 215px); }
+  .puzzleCard[data-puzzle-type="lights-out"] .lightsGrid { width: min(100%, 30dvh, 195px); }
+  .airflowGrid { grid-template-columns: repeat(var(--air-cols), 41px); }
+  .airflowTile { width: 41px; height: 41px; min-height: 41px; font-size: 26px; }
+  .dualMirrorBoard { grid-template-columns: repeat(var(--mirror-cols), 36px); grid-template-rows: repeat(var(--mirror-rows), 36px); }
+  .dualMirrorCell { width: 36px; height: 36px; }
+  .dualMirrorMirror { font-size: 24px; }
+  .exactPathGrid { grid-template-columns: repeat(var(--path-cols), 40px); }
+  .exactPathCell { width: 40px; height: 40px; min-height: 40px; }
+  .callTriangGrid { grid-template-columns: repeat(var(--tri-cols), 38px); grid-template-rows: repeat(var(--tri-rows), 38px); }
+  .callTriangCell { width: 38px; height: 38px; min-height: 38px; }
+  .nonogramWrap { --nonogram-cell: 31px; grid-template-columns: minmax(48px, auto) auto; }
+  .sudokuGrid { width: min(100%, 245px, 32dvh); }
+}

@@ -5438,7 +5438,7 @@
           puzzleStatus.textContent='Correct. A cache has been revealed in the Lower Archive.';
           successTone();
           const id=puzzle.id, title=puzzle.ui.title||id;
-          closeModal(puzzleOverlay); puzzleCard?.classList.remove('puzzleCard--keys','puzzleCard--map','puzzleCard--mechanism'); activeCampaignPuzzle=null; selectedPuzzleSlotIndex=null;
+          closeModal(puzzleOverlay); puzzleCard?.classList.remove('puzzleCard--keys','puzzleCard--map','puzzleCard--mechanism'); if (puzzleCard) delete puzzleCard.dataset.puzzleType; activeCampaignPuzzle=null; selectedPuzzleSlotIndex=null;
           const result=completeCampaignPuzzle(id,`Solved ${title}.`);
           if (result.ok) showMessage('A hidden cache has appeared in the Lower Archive. It is marked on the minimap.');
         } else {
@@ -5618,6 +5618,7 @@
     puzzleCard?.classList.toggle('puzzleCard--keys', usesGlyphKeys && puzzle.type !== 'coordinate-map' && !mechanismPuzzle);
     puzzleCard?.classList.toggle('puzzleCard--map', puzzle.type === 'coordinate-map');
     puzzleCard?.classList.toggle('puzzleCard--mechanism', mechanismPuzzle);
+    if (puzzleCard) puzzleCard.dataset.puzzleType = String(puzzle.type || '');
     puzzleEyebrow.textContent = puzzle.type === 'country-cartouche' ? 'country cartouche' : puzzle.type === 'country-crossword' ? 'country crossword' : puzzle.type === 'coordinate-map' ? 'map puzzle' : mechanismPuzzle ? 'mechanism puzzle' : puzzle.type === 'terminal' ? 'campaign terminal' : 'glyph-key puzzle';
     puzzleTitle.textContent = puzzle.ui.title || puzzle.id;
     puzzleInstructions.textContent = '';
@@ -5760,6 +5761,7 @@
     const title = puzzle.ui.title || id;
     closeModal(puzzleOverlay);
     puzzleCard?.classList.remove('puzzleCard--keys','puzzleCard--map','puzzleCard--mechanism');
+    if (puzzleCard) delete puzzleCard.dataset.puzzleType;
     activeCampaignPuzzle = null;
     puzzleMechanismState = null;
     selectedPuzzleSlotIndex = null;
@@ -5776,6 +5778,7 @@
     selectedPuzzleFamily = null;
     selectedPuzzleSlotIndex = null;
     puzzleCard?.classList.remove('puzzleCard--keys','puzzleCard--map','puzzleCard--mechanism');
+    if (puzzleCard) delete puzzleCard.dataset.puzzleType;
     puzzleMechanismState = null;
     endPuzzleGlyphDrag();
     closeModal(puzzleOverlay);

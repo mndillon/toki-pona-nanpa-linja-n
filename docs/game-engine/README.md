@@ -1,3 +1,7 @@
+## Mobile puzzle fit
+
+Spatial puzzle boards are sized independently from desktop on coarse-pointer / narrow screens. The Level 2 coordinate map, Level 3 route/pipe board, mirror boards, airflow/network grids, path grids, nonogram, Sokoban, sliding/peg boards, triangulation and Sudoku all use smaller mobile dimensions so the full mechanism remains inside the puzzle popup. Puzzle logic and solutions are unchanged.
+
 # v0.42 — playable Level 12 final archive / complete 120-glyph campaign
 
 Level 12 is implemented as the final and deliberately hardest campaign level. It uses four physical floors and five required master trials: a unique ten-switch parity network, a uniquely constrained eight-record identity permutation, a persisted randomized six-glyph totality cipher, a unique three-beam/ten-mirror relation array, and finally an expert 9×9 nanpa-linja-n Sudoku. The Sudoku is physically isolated on the deepest floor and is always the last puzzle; the FINAL hatch appears only after all three preliminary branch states are complete.
