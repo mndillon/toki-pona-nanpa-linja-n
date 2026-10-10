@@ -1047,8 +1047,11 @@
   let saveQueued = false;
   let saveTimer = 0;
   let keys = Object.create(null);
-  const mobileMove = { forward: false, back: false, turnLeft: false, turnRight: false };
+  const mobileMove = { forward: false, back: false, turnLeft: false, turnRight: false, moveStrength: 0, turnStrength: 0 };
   const MOBILE_JOYSTICK_DEAD_RATIO = 0.34;
+  const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.85;
+  const MOBILE_JOYSTICK_TURN_EXPONENT = 2.25;
+  const mobileMapSteer = { active:false, pointerId:null, levelId:null, targetCell:null, path:[], pathIndex:0 };
   let lastTime = performance.now();
   let messageTimer = 0;
   let currentTarget = null;
@@ -1941,6 +1944,16 @@
         mapCtx.strokeRect(-r/2, -r/2, r, r);
         mapCtx.restore();
       }
+    }
+    if (mobileMapSteer.active && mobileMapSteer.levelId === state.levelId && mobileMapSteer.path.length) {
+      mapCtx.save();
+      mapCtx.strokeStyle='rgba(243,223,192,0.72)';mapCtx.lineWidth=Math.max(1.5,cell*0.12);mapCtx.setLineDash([Math.max(2,cell*0.28),Math.max(2,cell*0.22)]);
+      mapCtx.beginPath();mapCtx.moveTo(ox+state.x*cell,oy+state.y*cell);
+      for(let i=mobileMapSteer.pathIndex;i<mobileMapSteer.path.length;i+=1){const point=mobileMapSteer.path[i];mapCtx.lineTo(ox+point.x*cell,oy+point.y*cell);}
+      mapCtx.stroke();mapCtx.setLineDash([]);
+      const target=mobileMapSteer.path[mobileMapSteer.path.length-1];
+      mapCtx.strokeStyle='#f3dfc0';mapCtx.lineWidth=Math.max(1.8,cell*0.16);mapCtx.beginPath();mapCtx.arc(ox+target.x*cell,oy+target.y*cell,Math.max(4,cell*0.34),0,Math.PI*2);mapCtx.stroke();
+      mapCtx.restore();
     }
     mapCtx.fillStyle = '#f3dfc0'; mapCtx.beginPath(); mapCtx.arc(ox + state.x*cell, oy + state.y*cell, Math.max(2.5, cell*0.22), 0, Math.PI*2); mapCtx.fill();
     mapCtx.strokeStyle = '#f3dfc0'; mapCtx.lineWidth = 2; mapCtx.beginPath(); mapCtx.moveTo(ox + state.x*cell, oy + state.y*cell); mapCtx.lineTo(ox + (state.x + Math.cos(state.angle)*0.9)*cell, oy + (state.y + Math.sin(state.angle)*0.9)*cell); mapCtx.stroke();
@@ -5772,6 +5785,7 @@
   function anyModalOpen() { return [levelIntroOverlay, glyphPopup, collectionOverlay, sentenceOverlay, puzzleOverlay, levelCompleteOverlay, resetConfirmOverlay].some(el => el && !el.hidden); }
 
   function transitionLevel(levelId, x, y, angle, message) {
+    cancelMapSteering(true);
     state.levelId = levelId; state.chapter = levels[levelId].chapter; state.x = x; state.y = y; state.angle = angle;
     showMessage(message); stepTone(); saveState(); updateHUD();
   }
@@ -5808,26 +5822,34 @@
     if (modalOpen) {
       currentTarget = null; promptEl.textContent = ''; updateHUD(); return;
     }
-    let turn = 0;
-    if (keys.ArrowLeft || mobileMove.turnLeft) turn -= 1;
-    if (keys.ArrowRight || mobileMove.turnRight) turn += 1;
-    state.angle = normalizeAngle(state.angle + turn * ROTATE_SPEED * dt);
 
-    let forward = 0, strafe = 0;
-    if (keys.KeyW || keys.ArrowUp || mobileMove.forward) forward += 1;
-    if (keys.KeyS || keys.ArrowDown || mobileMove.back) forward -= 1;
-    if (keys.KeyA) strafe -= 1;
-    if (keys.KeyD) strafe += 1;
+    const mapSteering = updateMapSteering(dt);
+    if (!mapSteering) {
+      let turn = 0;
+      if (keys.ArrowLeft) turn -= 1;
+      if (keys.ArrowRight) turn += 1;
+      if (mobileMove.turnLeft) turn -= mobileMove.turnStrength;
+      if (mobileMove.turnRight) turn += mobileMove.turnStrength;
+      state.angle = normalizeAngle(state.angle + turn * ROTATE_SPEED * dt);
 
-    if (forward || strafe) {
-      const len = Math.hypot(forward, strafe) || 1;
-      forward /= len; strafe /= len;
-      const cos = Math.cos(state.angle), sin = Math.sin(state.angle);
-      const ms = isCoarsePointer() ? MOBILE_MOVE_SPEED : MOVE_SPEED;
-      const ss = isCoarsePointer() ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
-      const dx = (cos * forward * ms + -sin * strafe * ss) * dt;
-      const dy = (sin * forward * ms + cos * strafe * ss) * dt;
-      movePlayer(dx, dy);
+      let forward = 0, strafe = 0;
+      if (keys.KeyW || keys.ArrowUp) forward += 1;
+      if (keys.KeyS || keys.ArrowDown) forward -= 1;
+      if (mobileMove.forward) forward += mobileMove.moveStrength;
+      if (mobileMove.back) forward -= mobileMove.moveStrength;
+      if (keys.KeyA) strafe -= 1;
+      if (keys.KeyD) strafe += 1;
+
+      if (forward || strafe) {
+        const len = Math.max(1, Math.hypot(forward, strafe));
+        forward /= len; strafe /= len;
+        const cos = Math.cos(state.angle), sin = Math.sin(state.angle);
+        const ms = isCoarsePointer() ? MOBILE_MOVE_SPEED : MOVE_SPEED;
+        const ss = isCoarsePointer() ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
+        const dx = (cos * forward * ms + -sin * strafe * ss) * dt;
+        const dy = (sin * forward * ms + cos * strafe * ss) * dt;
+        movePlayer(dx, dy);
+      }
     }
 
     currentTarget = findInteractionTarget();
@@ -5951,13 +5973,20 @@
     return true;
   }
 
-  function setMobileJoystickIntent(intent) {
-    for (const k of Object.keys(mobileMove)) mobileMove[k] = false;
+  function setMobileJoystickIntent(intent, moveStrength = 0, turnStrength = 0) {
+    mobileMove.forward = false;
+    mobileMove.back = false;
+    mobileMove.turnLeft = false;
+    mobileMove.turnRight = false;
+    mobileMove.moveStrength = 0;
+    mobileMove.turnStrength = 0;
     if (!intent || intent === 'idle') return;
     if (intent.includes('N')) mobileMove.forward = true;
     if (intent.includes('S')) mobileMove.back = true;
     if (intent.includes('W')) mobileMove.turnLeft = true;
     if (intent.includes('E')) mobileMove.turnRight = true;
+    mobileMove.moveStrength = Math.max(0, Math.min(1, Number(moveStrength) || 0));
+    mobileMove.turnStrength = Math.max(0, Math.min(1, Number(turnStrength) || 0));
   }
 
   function mobileJoystickIntent(dx, dy, deadRadius) {
@@ -5968,9 +5997,18 @@
     return sectors[Math.floor((degrees + 22.5) / 45) % 8];
   }
 
+  function mobileJoystickStrength(radius, deadRadius, outerRadius) {
+    const usable = Math.max(1, outerRadius - deadRadius);
+    const t = Math.max(0, Math.min(1, (radius - deadRadius) / usable));
+    return {
+      move: Math.pow(t, MOBILE_JOYSTICK_MOVE_EXPONENT),
+      turn: Math.pow(t, MOBILE_JOYSTICK_TURN_EXPONENT)
+    };
+  }
+
   function resetMobileJoystickVisual() {
     setMobileJoystickIntent('idle');
-    if (mobileMovePad) mobileMovePad.dataset.sector = 'idle';
+    if (mobileMovePad) { mobileMovePad.dataset.sector = 'idle'; mobileMovePad.style.setProperty('--joystick-strength', '0'); }
     if (mobileJoystickThumb) {
       mobileJoystickThumb.style.left = '50%';
       mobileJoystickThumb.style.top = '50%';
@@ -5987,8 +6025,10 @@
     const outerRadius = Math.max(1, Math.min(rect.width, rect.height) / 2);
     const deadRadius = outerRadius * MOBILE_JOYSTICK_DEAD_RATIO;
     const intent = mobileJoystickIntent(dx, dy, deadRadius);
-    setMobileJoystickIntent(intent);
+    const strength = mobileJoystickStrength(Math.hypot(dx, dy), deadRadius, outerRadius);
+    setMobileJoystickIntent(intent, strength.move, strength.turn);
     mobileMovePad.dataset.sector = intent;
+    mobileMovePad.style.setProperty('--joystick-strength', strength.move.toFixed(3));
     if (mobileJoystickThumb) {
       const radius = Math.hypot(dx, dy) || 1;
       const maxThumbRadius = outerRadius * 0.68;
@@ -6000,9 +6040,162 @@
     }
   }
 
+  function miniMapGeometry() {
+    const map = level().map;
+    const w = miniMap.width, h = miniMap.height;
+    const cell = Math.min(w / map[0].length, h / map.length);
+    return { map, cell, ox:(w - map[0].length * cell) / 2, oy:(h - map.length * cell) / 2 };
+  }
+
+  function mapSteerCellWalkable(x, y) {
+    const map = level().map;
+    if (y < 0 || y >= map.length || x < 0 || x >= map[y].length) return false;
+    const explored = state.explored[state.levelId] || {};
+    const isCurrent = x === Math.floor(state.x) && y === Math.floor(state.y);
+    if (!isCurrent && !explored[`${x},${y}`]) return false;
+    const c = map[y][x];
+    if (c === '#') return false;
+    if (c === 'D' || c === 'P') {
+      const door = doorAtCell(x, y);
+      if (!door?.open) return false;
+    }
+    return canOccupy(x + 0.5, y + 0.5);
+  }
+
+  function mapSteerPathTo(targetX, targetY) {
+    const sx = Math.floor(state.x), sy = Math.floor(state.y);
+    if (!mapSteerCellWalkable(targetX, targetY)) return [];
+    const key = (x,y) => `${x},${y}`;
+    const startKey = key(sx,sy), targetKey = key(targetX,targetY);
+    if (startKey === targetKey) return [{x:targetX + 0.5, y:targetY + 0.5}];
+    const queue = [[sx,sy]], prev = new Map([[startKey,null]]);
+    for (let i=0; i<queue.length; i+=1) {
+      const [x,y] = queue[i];
+      for (const [nx,ny] of [[x+1,y],[x-1,y],[x,y+1],[x,y-1]]) {
+        const k = key(nx,ny);
+        if (prev.has(k) || !mapSteerCellWalkable(nx,ny)) continue;
+        prev.set(k,key(x,y));
+        if (k === targetKey) {
+          const cells = [[nx,ny]];
+          let cursor = key(x,y);
+          while (cursor && cursor !== startKey) {
+            const [cx,cy] = cursor.split(',').map(Number);
+            cells.push([cx,cy]);
+            cursor = prev.get(cursor);
+          }
+          cells.reverse();
+          return cells.map(([cx,cy]) => ({x:cx+0.5,y:cy+0.5}));
+        }
+        queue.push([nx,ny]);
+      }
+    }
+    return [];
+  }
+
+  function mapSteerCellFromPointer(e) {
+    if (!miniMap || !state.mapVisible) return null;
+    const rect = miniMap.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const px = (e.clientX - rect.left) * (miniMap.width / rect.width);
+    const py = (e.clientY - rect.top) * (miniMap.height / rect.height);
+    const {map,cell,ox,oy} = miniMapGeometry();
+    const x = Math.floor((px - ox) / cell), y = Math.floor((py - oy) / cell);
+    if (y < 0 || y >= map.length || x < 0 || x >= map[y].length) return null;
+    return {x,y};
+  }
+
+  function retargetMapSteering(e) {
+    const cell = mapSteerCellFromPointer(e);
+    if (!cell || !mapSteerCellWalkable(cell.x,cell.y)) {
+      mobileMapSteer.targetCell = null;
+      mobileMapSteer.path = [];
+      mobileMapSteer.pathIndex = 0;
+      miniMap.classList.remove('isSteering');
+      return false;
+    }
+    const path = mapSteerPathTo(cell.x,cell.y);
+    if (!path.length) {
+      mobileMapSteer.targetCell = null;
+      mobileMapSteer.path = [];
+      mobileMapSteer.pathIndex = 0;
+      miniMap.classList.remove('isSteering');
+      return false;
+    }
+    mobileMapSteer.levelId = state.levelId;
+    mobileMapSteer.targetCell = cell;
+    mobileMapSteer.path = path;
+    mobileMapSteer.pathIndex = 0;
+    miniMap.classList.add('isSteering');
+    return true;
+  }
+
+  function cancelMapSteering(releaseCapture = true) {
+    if (releaseCapture && mobileMapSteer.pointerId !== null) {
+      try { miniMap.releasePointerCapture?.(mobileMapSteer.pointerId); } catch (_) {}
+    }
+    mobileMapSteer.active = false;
+    mobileMapSteer.pointerId = null;
+    mobileMapSteer.levelId = null;
+    mobileMapSteer.targetCell = null;
+    mobileMapSteer.path = [];
+    mobileMapSteer.pathIndex = 0;
+    miniMap?.classList.remove('isSteering');
+  }
+
+  function updateMapSteering(dt) {
+    if (!mobileMapSteer.active || mobileMapSteer.levelId !== state.levelId || !mobileMapSteer.path.length) return false;
+    while (mobileMapSteer.pathIndex < mobileMapSteer.path.length) {
+      const waypoint = mobileMapSteer.path[mobileMapSteer.pathIndex];
+      const dx = waypoint.x - state.x, dy = waypoint.y - state.y;
+      if (Math.hypot(dx,dy) > 0.11) break;
+      mobileMapSteer.pathIndex += 1;
+    }
+    if (mobileMapSteer.pathIndex >= mobileMapSteer.path.length) return true;
+    const waypoint = mobileMapSteer.path[mobileMapSteer.pathIndex];
+    const dx = waypoint.x - state.x, dy = waypoint.y - state.y;
+    const dist = Math.max(0.0001,Math.hypot(dx,dy));
+    const desired = Math.atan2(dy,dx);
+    const diff = normalizeAngle(desired - state.angle);
+    const maxTurn = ROTATE_SPEED * 1.15 * dt;
+    state.angle = normalizeAngle(state.angle + Math.max(-maxTurn,Math.min(maxTurn,diff)));
+    const facing = Math.max(0,Math.cos(Math.min(Math.PI/2,Math.abs(diff))));
+    if (facing > 0.15) {
+      const step = Math.min(dist, MOBILE_MOVE_SPEED * (0.30 + 0.70*facing) * dt);
+      movePlayer((dx/dist)*step,(dy/dist)*step);
+    }
+    return true;
+  }
+
+  function bindMiniMapSteering() {
+    if (!miniMap) return;
+    const end = (e) => {
+      if (mobileMapSteer.pointerId !== e.pointerId) return;
+      e.preventDefault(); e.stopPropagation();
+      cancelMapSteering(true);
+    };
+    miniMap.addEventListener('pointerdown', e => {
+      if (modalOpen || !state.mapVisible || mobileMapSteer.pointerId !== null) return;
+      e.preventDefault(); e.stopPropagation();
+      resetMobileJoystickVisual();
+      mobileMapSteer.active = true;
+      mobileMapSteer.pointerId = e.pointerId;
+      mobileMapSteer.levelId = state.levelId;
+      miniMap.setPointerCapture?.(e.pointerId);
+      retargetMapSteering(e);
+    }, {passive:false});
+    miniMap.addEventListener('pointermove', e => {
+      if (mobileMapSteer.pointerId !== e.pointerId) return;
+      e.preventDefault(); e.stopPropagation();
+      retargetMapSteering(e);
+    }, {passive:false});
+    miniMap.addEventListener('pointerup', end, {passive:false});
+    miniMap.addEventListener('pointercancel', end, {passive:false});
+  }
+
   function clearMovement() {
     keys = Object.create(null);
     resetMobileJoystickVisual();
+    cancelMapSteering(true);
     dragging = false; dragPointerId = null;
   }
 
@@ -6022,6 +6215,7 @@
       const dy = e.clientY - (rect.top + rect.height / 2);
       if (Math.hypot(dx, dy) > Math.min(rect.width, rect.height) / 2) return;
       e.preventDefault(); e.stopPropagation();
+      cancelMapSteering(true);
       joystickPointerId = e.pointerId;
       mobileMovePad.setPointerCapture?.(e.pointerId);
       updateMobileJoystickFromPointer(e);
@@ -6053,7 +6247,7 @@
     if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) { keys[e.code] = true; e.preventDefault(); }
     if (e.code === 'KeyE' && !e.repeat) { performInteraction(); e.preventDefault(); }
     if (e.code === 'KeyG' && !e.repeat) { openCollection(); e.preventDefault(); }
-    if (e.code === 'KeyM' && !e.repeat) { state.mapVisible = !state.mapVisible; saveState(); updateHUD(); e.preventDefault(); }
+    if (e.code === 'KeyM' && !e.repeat) { cancelMapSteering(true); state.mapVisible = !state.mapVisible; saveState(); updateHUD(); e.preventDefault(); }
     if (e.code === 'KeyX' && !e.repeat && leaveSolvedMazeQuickly()) { e.preventDefault(); }
   });
   document.addEventListener('keyup', e => { keys[e.code] = false; });
@@ -6085,7 +6279,7 @@
   viewportWrap.addEventListener('dblclick', e => { if (!isCoarsePointer()) { e.preventDefault(); performInteraction(); } });
 
   soundBtn.addEventListener('click', () => { state.sound = !state.sound; saveState(); updateHUD(); if (state.sound) softTone(); });
-  mapBtn.addEventListener('click', () => { state.mapVisible = !state.mapVisible; saveState(); updateHUD(); });
+  mapBtn.addEventListener('click', () => { cancelMapSteering(true); state.mapVisible = !state.mapVisible; saveState(); updateHUD(); });
   mazeQuickExitBtn?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); leaveSolvedMazeQuickly(); });
   resetBtn.addEventListener('click', openResetConfirm);
   collectionBtn.addEventListener('click', openCollection);
@@ -6158,7 +6352,7 @@
       } catch (_) {}
     }
 
-    renderLog(); renderCollection(); updateHUD(); bindMobileControls();
+    renderLog(); renderCollection(); updateHUD(); bindMobileControls(); bindMiniMapSteering();
     const restored = saved && saved.version === SAVE_VERSION;
     const restoredLevelNo = campaignAdapter.currentLevel()?.ordinal || state.chapter;
     if (campaignAdapter.isLevelComplete() && campaignAdapter.nextLevel?.()) {

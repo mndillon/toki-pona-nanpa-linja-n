@@ -368,6 +368,16 @@ kbd {
 @media (pointer: coarse) {
   .viewportWrap { --mobile-joystick-size: clamp(138px, 23vw, 164px); }
   .mouseHint { display: none; }
+  #miniMap {
+    width: clamp(112px, 28%, 160px);
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+  }
+  #miniMap.isSteering {
+    border-color: rgba(255,255,255,0.84);
+    box-shadow: 0 0 0 2px rgba(243,223,192,0.18);
+  }
   .mobileMovePad {
     position: absolute;
     z-index: 8;
@@ -426,8 +436,8 @@ kbd {
       rgba(0,0,0,0.34);
   }
   .mobileMovePad[data-sector]:not([data-sector="idle"]) .mobileJoystickThumb {
-    background: rgba(255,255,255,0.94);
-    border-color: rgba(255,255,255,0.96);
+    background: rgba(255,255,255,calc(0.72 + var(--joystick-strength, 0) * 0.22));
+    border-color: rgba(255,255,255,calc(0.78 + var(--joystick-strength, 0) * 0.18));
   }
   .mobileUseBtn {
     position: absolute;
@@ -454,7 +464,7 @@ kbd {
   body { margin: 8px; }
   .card { padding: 10px; }
   .viewportWrap { aspect-ratio: 4 / 3; max-height: none; }
-  #miniMap { width: 28%; top: 8px; right: 8px; }
+  #miniMap { width: clamp(112px, 28%, 154px); top: 8px; right: 8px; }
   .mazeQuickExitBtn { top: auto; bottom: 104px; right: 12px; min-width: 104px; }
   .gameStatusGrid { grid-template-columns: 1fr; }
   .statusBlock + .statusBlock { border-left: 0; border-top: 1px solid var(--border); }

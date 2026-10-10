@@ -42,7 +42,7 @@ Level 10 is followed by the implemented Level 11 sanctuary and Level 12 Final Ar
 
 ## Mobile first-person controls
 
-Touch gameplay uses a circular lower-left joystick with an inner dead zone. North/south move only, east/west rotate only, and diagonal sectors combine movement with rotation. The lower-left viewport is reserved for this control during first-person exploration; required HUD/navigation information must not depend on that area. Full-screen puzzles and modal overlays hide the joystick and USE control so puzzles retain the full mobile viewport. Desktop `A`/`D` strafing is unchanged.
+Touch gameplay uses a circular lower-left joystick with an inner dead zone and a nonlinear radial speed response: movement begins very slowly just outside the dead zone and rises toward full speed at the rim, while turning ramps even more gently. North/south move only, east/west rotate only, and diagonal sectors combine movement with rotation. The lower-left viewport is reserved for this control during first-person exploration; required HUD/navigation information must not depend on that area. On touch devices the minimap also supports press-and-hold steering through already explored walkable cells: hold to move toward the touched point, drag to retarget, and release to stop. Closed doors, walls and unexplored cells are not traversed, and map steering never activates interactions or changes floors automatically. Full-screen puzzles and modal overlays hide the joystick and USE control so puzzles retain the full mobile viewport. Desktop `A`/`D` strafing is unchanged.
 
 
 ## v0.10 Level 2 testing fixes
