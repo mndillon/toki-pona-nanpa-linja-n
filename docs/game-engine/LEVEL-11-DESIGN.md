@@ -51,7 +51,7 @@ There are no progression doors on any Level 11 floor. Route changes use ladders 
 
 ### Three call pylons — required survey state
 
-The player physically visits and records A, B and C. The universal interaction rule applies: being inside interaction range is sufficient for the `E` / `USE` prompt; no camera alignment or line of sight is required.
+The player physically visits and records A, B and C. The universal interaction rule applies: the player must be inside interaction range and have an unobstructed world line of sight to the pylon, but camera alignment is not required. A pylon can therefore expose `E` / `USE` while behind the player, provided simply rotating toward it would reveal it; walls and closed doors block the prompt.
 
 Progress is persistent and exposed as `0/3` through `3/3`.
 
@@ -108,7 +108,7 @@ The known bird-roost and parent-nest systems are distractors with normal changin
 
 ## Interaction / navigation UX requirements
 
-- All Level 11 physical interactions follow the global proximity-only interaction rule.
+- All Level 11 physical interactions follow the global proximity + unobstructed-line-of-sight rule; facing direction is not required.
 - Newly opened routes must be obvious both in-world and on the minimap.
 - The HUD names the next route after each state change and uses ↑/↓ where useful.
 - The player must never have to infer that an apparently closed hatch is secretly usable.

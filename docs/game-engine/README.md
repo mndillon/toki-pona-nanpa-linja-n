@@ -293,7 +293,7 @@ A new **Level 10 design proposal** is recorded in `MASTER-PLAN.md` and expanded 
 
 Level 9 keeps the three-floor structure from v0.30, but the middle labyrinth now branches almost immediately and contains additional cross-connections/loops rather than beginning with a long forced corridor. The entrance ladder is permanently marked on the minimap and visually distinguished in the world.
 
-Interaction discovery is now global and proximity-only across every level: an `E`/`USE` prompt appears whenever the player is within the interaction radius, without requiring the object to be centred, faced, camera-visible, or line-of-sight visible. The nearest in-range interactable is selected.
+Interaction discovery is global across every level and now uses **proximity plus unobstructed world line of sight**. The player does not have to centre or face an object: an in-range object behind the player can still expose its `E`/`USE` prompt because rotating toward it would reveal it. However, walls and closed doors block interaction discovery, so glyphs, panels and other interactables on the far side of maze geometry cannot be selected through the wall. The nearest in-range, unobstructed interactable is selected.
 
 The Level 9 survey also exposes a persistent `0/3`–`3/3` objective count, records marker progress in field notes, and explicitly directs the player back to the Sphinx Court after the third marker.
 

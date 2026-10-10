@@ -1051,6 +1051,9 @@
   const MOBILE_JOYSTICK_DEAD_RATIO = 0.34;
   const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.85;
   const MOBILE_JOYSTICK_TURN_EXPONENT = 2.25;
+  const MOBILE_JOYSTICK_BOOST_START = 0.42;
+  const MOBILE_JOYSTICK_MOVE_MAX = 1.90;
+  const MOBILE_JOYSTICK_TURN_MAX = 1.65;
   const mobileMapSteer = { active:false, pointerId:null, levelId:null, targetCell:null, path:[], pathIndex:0 };
   let lastTime = performance.now();
   let messageTimer = 0;
@@ -1733,13 +1736,20 @@
       }
       case 'mazeGate': {
         const world = campaignWorld();
-        const open = obj.id === 'mazeExit' ? Boolean(world.mazeExitReleased) : Boolean(world.mazeEntranceUnlocked);
+        const isExit = obj.id === 'mazeExit';
+        const unlocked = isExit ? Boolean(world.mazeExitReleased) : Boolean(world.mazeEntranceUnlocked);
+        // Green is reserved for completed/solved state. Merely unlocking the
+        // maze entrance uses an amber/neutral ready state until the maze itself
+        // has been solved and the exit released.
+        const solved = Boolean(world.mazeExitReleased);
         g.fillStyle = '#3b4448'; g.fillRect(18, 14, 92, 108);
-        g.strokeStyle = '#8b979c'; g.lineWidth = 4; g.strokeRect(18, 14, 92, 108);
-        g.fillStyle = open ? '#7bb194' : '#7f6957'; g.fillRect(29, 26, 70, 28);
+        g.strokeStyle = solved ? '#8fd0a4' : '#8b979c'; g.lineWidth = solved ? 5 : 4; g.strokeRect(18, 14, 92, 108);
+        g.fillStyle = solved ? '#56a874' : unlocked ? '#c4a574' : '#7f6957'; g.fillRect(29, 26, 70, 28);
         g.fillStyle = '#14191b'; g.fillRect(30, 66, 68, 42);
         for (let i = 0; i < 3; i++) {
-          g.strokeStyle = open ? '#9bd2b1' : '#c6a977'; g.lineWidth = 3; g.strokeRect(35 + i*21, 76, 15, 20);
+          g.strokeStyle = solved ? '#9bd2b1' : unlocked ? '#d7c28b' : '#8f7359';
+          g.lineWidth = solved ? 4 : 3;
+          g.strokeRect(35 + i*21, 76, 15, 20);
         }
         verticalOffset = 0.03; break;
       }
@@ -2096,9 +2106,28 @@
     }
   }
 
+  function interactionLineOfSightClear(targetX, targetY, endpointAllowance = 0.08) {
+    // Interaction discovery is intentionally independent of camera facing, but walls and
+    // closed doors must block it. This prevents prompts for glyphs/panels on the far side
+    // of maze walls while still allowing an in-range object behind the player to be found
+    // simply by rotating toward it.
+    const dx = targetX - state.x, dy = targetY - state.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= endpointAllowance) return true;
+    const checkDistance = Math.max(0, dist - Math.max(0, endpointAllowance));
+    const step = 0.04;
+    const samples = Math.max(1, Math.ceil(checkDistance / step));
+    for (let i = 1; i <= samples; i += 1) {
+      const d = Math.min(checkDistance, i * step);
+      const t = d / dist;
+      if (isSolidAt(state.x + dx * t, state.y + dy * t)) return false;
+    }
+    return true;
+  }
+
   function findInteractionTarget() {
-    // Global interaction rule: proximity alone exposes and activates an interaction.
-    // Do not require the object to be centred, faced, visible in the camera, or in line of sight.
+    // Global interaction rule: proximity + unobstructed world line of sight.
+    // Facing/camera alignment is NOT required; rotating toward an in-range object is enough.
     const candidates = [];
     const maxDistance = isCoarsePointer() ? MOBILE_INTERACT_DISTANCE : INTERACT_DISTANCE;
     for (const obj of visibleObjects()) {
@@ -2106,14 +2135,19 @@
       const dx = obj.x - state.x, dy = obj.y - state.y;
       const dist = Math.hypot(dx, dy);
       if (dist > maxDistance + (obj.radius || 0)) continue;
+      if (!interactionLineOfSightClear(obj.x, obj.y, 0.08)) continue;
       candidates.push({ kind: 'object', obj, dist });
     }
 
     for (const door of level().doors) {
       if (door.open) continue;
-      const dx = door.x + 0.5 - state.x, dy = door.y + 0.5 - state.y;
+      const targetX = door.x + 0.5, targetY = door.y + 0.5;
+      const dx = targetX - state.x, dy = targetY - state.y;
       const dist = Math.hypot(dx, dy);
       if (dist > maxDistance + 0.4) continue;
+      // Stop the visibility trace before entering the target door cell itself; the door is
+      // supposed to be solid until opened, but an intervening wall/door must still block it.
+      if (!interactionLineOfSightClear(targetX, targetY, 0.74)) continue;
       candidates.push({ kind: 'door', door, dist });
     }
 
@@ -5841,11 +5875,20 @@
       if (keys.KeyD) strafe += 1;
 
       if (forward || strafe) {
-        const len = Math.max(1, Math.hypot(forward, strafe));
-        forward /= len; strafe /= len;
+        const coarse = isCoarsePointer();
+        if (coarse) {
+          // Preserve the joystick's deliberate high-rim boost. Desktop movement
+          // still normalizes diagonals, but mobile forward/back may exceed 1.0
+          // only near the outer rim for faster traversal.
+          forward = Math.max(-MOBILE_JOYSTICK_MOVE_MAX, Math.min(MOBILE_JOYSTICK_MOVE_MAX, forward));
+          strafe = Math.max(-1, Math.min(1, strafe));
+        } else {
+          const len = Math.max(1, Math.hypot(forward, strafe));
+          forward /= len; strafe /= len;
+        }
         const cos = Math.cos(state.angle), sin = Math.sin(state.angle);
-        const ms = isCoarsePointer() ? MOBILE_MOVE_SPEED : MOVE_SPEED;
-        const ss = isCoarsePointer() ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
+        const ms = coarse ? MOBILE_MOVE_SPEED : MOVE_SPEED;
+        const ss = coarse ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
         const dx = (cos * forward * ms + -sin * strafe * ss) * dt;
         const dy = (sin * forward * ms + cos * strafe * ss) * dt;
         movePlayer(dx, dy);
@@ -5985,8 +6028,8 @@
     if (intent.includes('S')) mobileMove.back = true;
     if (intent.includes('W')) mobileMove.turnLeft = true;
     if (intent.includes('E')) mobileMove.turnRight = true;
-    mobileMove.moveStrength = Math.max(0, Math.min(1, Number(moveStrength) || 0));
-    mobileMove.turnStrength = Math.max(0, Math.min(1, Number(turnStrength) || 0));
+    mobileMove.moveStrength = Math.max(0, Math.min(MOBILE_JOYSTICK_MOVE_MAX, Number(moveStrength) || 0));
+    mobileMove.turnStrength = Math.max(0, Math.min(MOBILE_JOYSTICK_TURN_MAX, Number(turnStrength) || 0));
   }
 
   function mobileJoystickIntent(dx, dy, deadRadius) {
@@ -6000,9 +6043,13 @@
   function mobileJoystickStrength(radius, deadRadius, outerRadius) {
     const usable = Math.max(1, outerRadius - deadRadius);
     const t = Math.max(0, Math.min(1, (radius - deadRadius) / usable));
+    const boostT = Math.max(0, Math.min(1, (t - MOBILE_JOYSTICK_BOOST_START) / Math.max(0.001, 1 - MOBILE_JOYSTICK_BOOST_START)));
+    const boostCurve = boostT * boostT;
+    const moveBoost = 1 + (MOBILE_JOYSTICK_MOVE_MAX - 1) * boostCurve;
+    const turnBoost = 1 + (MOBILE_JOYSTICK_TURN_MAX - 1) * boostCurve;
     return {
-      move: Math.pow(t, MOBILE_JOYSTICK_MOVE_EXPONENT),
-      turn: Math.pow(t, MOBILE_JOYSTICK_TURN_EXPONENT)
+      move: Math.pow(t, MOBILE_JOYSTICK_MOVE_EXPONENT) * moveBoost,
+      turn: Math.pow(t, MOBILE_JOYSTICK_TURN_EXPONENT) * turnBoost
     };
   }
 
@@ -6028,7 +6075,7 @@
     const strength = mobileJoystickStrength(Math.hypot(dx, dy), deadRadius, outerRadius);
     setMobileJoystickIntent(intent, strength.move, strength.turn);
     mobileMovePad.dataset.sector = intent;
-    mobileMovePad.style.setProperty('--joystick-strength', strength.move.toFixed(3));
+    mobileMovePad.style.setProperty('--joystick-strength', Math.min(1, strength.move).toFixed(3));
     if (mobileJoystickThumb) {
       const radius = Math.hypot(dx, dy) || 1;
       const maxThumbRadius = outerRadius * 0.68;
