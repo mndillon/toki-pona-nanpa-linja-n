@@ -40,6 +40,11 @@ Level 10 is followed by the implemented Level 11 sanctuary and Level 12 Final Ar
 
 # Toki Pona Rooms — complete 12-level campaign
 
+## Mobile first-person controls
+
+Touch gameplay uses a circular lower-left joystick with an inner dead zone. North/south move only, east/west rotate only, and diagonal sectors combine movement with rotation. The lower-left viewport is reserved for this control during first-person exploration; required HUD/navigation information must not depend on that area. Full-screen puzzles and modal overlays hide the joystick and USE control so puzzles retain the full mobile viewport. Desktop `A`/`D` strafing is unchanged.
+
+
 ## v0.10 Level 2 testing fixes
 
 The Level 2 coordinate-map and hidden-cache chain is now explicit and viewport-safe. The coordinate map fits inside the puzzle viewport without vertical page/modal scrolling, displays compact row/column coordinate labels, and keeps Leave visible. Solving it reports that the cache is in the **Lower Archive** and places a marker on the minimap.

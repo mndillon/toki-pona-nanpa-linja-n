@@ -366,42 +366,69 @@ kbd {
 .mobileMovePad, .mobileUseBtn { display: none; }
 
 @media (pointer: coarse) {
+  .viewportWrap { --mobile-joystick-size: clamp(138px, 23vw, 164px); }
   .mouseHint { display: none; }
   .mobileMovePad {
     position: absolute;
     z-index: 8;
     left: 10px;
     bottom: 10px;
-    display: grid;
-    grid-template-columns: 46px 46px 46px;
-    grid-template-rows: 46px 46px 46px;
-    gap: 5px;
-    padding: 8px;
-    border: 1px solid rgba(255,255,255,0.20);
-    border-radius: 16px;
-    background: rgba(0,0,0,0.28);
-    backdrop-filter: blur(5px);
+    display: block;
+    width: var(--mobile-joystick-size);
+    height: var(--mobile-joystick-size);
+    border-radius: 50%;
+    clip-path: circle(50% at 50% 50%);
+    background: rgba(0,0,0,0.18);
+    backdrop-filter: blur(4px);
     touch-action: none;
+    user-select: none;
   }
-  .mobileMoveBtn, .mobileMoveCenter {
-    width: 46px;
-    height: 46px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .mobileJoystickOuter {
+    position: absolute;
+    inset: 4px;
+    border: 2px solid rgba(255,255,255,0.42);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at center, rgba(255,255,255,0.03) 0 31%, transparent 32%),
+      rgba(0,0,0,0.25);
+    box-shadow: inset 0 0 18px rgba(255,255,255,0.05);
+    pointer-events: none;
   }
-  .mobileMoveBtn {
-    border: 1px solid rgba(255,255,255,0.28);
-    background: rgba(255,255,255,0.72);
-    color: #111;
-    padding: 0;
-    font-size: 18px;
-    touch-action: none;
+  .mobileJoystickInner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 34%;
+    height: 34%;
+    transform: translate(-50%,-50%);
+    border: 2px solid rgba(255,255,255,0.46);
+    border-radius: 50%;
+    background: rgba(255,255,255,0.10);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.18) inset;
   }
-  .mobileMoveBtn.pressed { background: rgba(255,255,255,0.96); }
-  .mobileMoveBtn.empty { visibility: hidden; pointer-events: none; }
-  .mobileMoveCenter { color: rgba(255,255,255,0.48); background: rgba(255,255,255,0.08); }
+  .mobileJoystickThumb {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 26px;
+    height: 26px;
+    transform: translate(-50%,-50%);
+    border: 2px solid rgba(255,255,255,0.72);
+    border-radius: 50%;
+    background: rgba(250,236,215,0.80);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.34);
+    transition: background 80ms ease, border-color 80ms ease;
+  }
+  .mobileMovePad[data-sector]:not([data-sector="idle"]) .mobileJoystickOuter {
+    border-color: rgba(255,255,255,0.78);
+    background:
+      radial-gradient(circle at center, rgba(255,255,255,0.04) 0 31%, transparent 32%),
+      rgba(0,0,0,0.34);
+  }
+  .mobileMovePad[data-sector]:not([data-sector="idle"]) .mobileJoystickThumb {
+    background: rgba(255,255,255,0.94);
+    border-color: rgba(255,255,255,0.96);
+  }
   .mobileUseBtn {
     position: absolute;
     z-index: 8;
@@ -417,7 +444,10 @@ kbd {
     font-weight: 900;
     touch-action: none;
   }
-  .interactionPrompt { bottom: 98px; }
+  /* Lower-left is a permanently reserved gameplay-control zone on touch devices. */
+  .interactionPrompt { bottom: calc(var(--mobile-joystick-size) + 20px); max-width: min(72%, 520px); }
+  .viewportWrap.modalActive .mobileMovePad,
+  .viewportWrap.modalActive .mobileUseBtn { display: none !important; }
 }
 
 @media (max-width: 720px) {

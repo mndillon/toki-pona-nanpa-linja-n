@@ -129,6 +129,7 @@
   const resetConfirmStartBtn = document.getElementById('resetConfirmStartBtn');
 
   const mobileMovePad = document.getElementById('mobileMovePad');
+  const mobileJoystickThumb = document.getElementById('mobileJoystickThumb');
   const mobileUseBtn = document.getElementById('mobileUseBtn');
   const mazeQuickExitBtn = document.getElementById('mazeQuickExitBtn');
 
@@ -173,7 +174,7 @@
         { areaId:'workshop', name:'Workshop', x1:6.0, y1:1, x2:18.9, y2:6.99, instruction:() => state.ballOnTable ? 'pona.' : 'o pana e sike lon supa.', hint:() => state.ballOnTable ? 'The physical mechanism has responded.' : 'Put the ball on the table.' },
         { areaId:'concourse', name:'Lower Concourse', x1:1, y1:8, x2:18.9, y2:10.9, instruction:'o alasa e nasin.', hint:'The maze and upper route branch from here.' }
       ],
-      doors: [{ id:'workshopGate', x:10, y:7, open:false, label:'concourse gate', unlockState:'workshopDoorOpen' }],
+      doors: [{ id:'workshopGate', x:10, y:7, open:false, label:'concourse gate', unlockState:'workshopDoorOpen', autoOpenState:'workshopDoorOpen' }],
       objects: [
         { id:'glyphO', type:'glyph', word:'o', x:3.25, y:3.0, scale:0.58, radius:0.26, interact:'campaignPickup', puzzleId:'l1-intro-o', areaId:'entry' },
         { id:'glyphE', type:'glyph', word:'e', x:4.55, y:5.7, scale:0.58, radius:0.26, interact:'campaignPickup', puzzleId:'l1-intro-e', areaId:'entry' },
@@ -1046,7 +1047,8 @@
   let saveQueued = false;
   let saveTimer = 0;
   let keys = Object.create(null);
-  const mobileMove = { forward: false, back: false, left: false, right: false };
+  const mobileMove = { forward: false, back: false, turnLeft: false, turnRight: false };
+  const MOBILE_JOYSTICK_DEAD_RATIO = 0.34;
   let lastTime = performance.now();
   let messageTimer = 0;
   let currentTarget = null;
@@ -2436,7 +2438,7 @@
         if (state.carrying === 'ball') {
           state.carrying = null; state.ballOnTable = true; spriteCache.clear();
           const result = completeCampaignPuzzle('l1-ball-table', 'Earned by solving: o pana e sike lon supa.');
-          if (result.ok) showMessage('pona! The sike rests on the supa. The concourse gate and maze route are now active.');
+          if (result.ok) showMessage('pona! The sike rests on the supa. The concourse gate opens immediately and the maze route is now active.');
           else showMessage('The sike is correctly placed, but the mechanism still expects the introductory glyph keys.');
         } else if (state.ballOnTable && !campaignSolved('l1-ball-table')) {
           completeCampaignPuzzle('l1-ball-table', 'Earned by solving: o pana e sike lon supa.');
@@ -5760,8 +5762,13 @@
 
   function openModal(el) {
     modalOpen = true; clearMovement(); if (document.pointerLockElement) document.exitPointerLock?.(); el.hidden = false;
+    viewportWrap?.classList.add('modalActive');
   }
-  function closeModal(el) { el.hidden = true; modalOpen = anyModalOpen(); }
+  function closeModal(el) {
+    el.hidden = true;
+    modalOpen = anyModalOpen();
+    viewportWrap?.classList.toggle('modalActive', modalOpen);
+  }
   function anyModalOpen() { return [levelIntroOverlay, glyphPopup, collectionOverlay, sentenceOverlay, puzzleOverlay, levelCompleteOverlay, resetConfirmOverlay].some(el => el && !el.hidden); }
 
   function transitionLevel(levelId, x, y, angle, message) {
@@ -5802,15 +5809,15 @@
       currentTarget = null; promptEl.textContent = ''; updateHUD(); return;
     }
     let turn = 0;
-    if (keys.ArrowLeft) turn -= 1;
-    if (keys.ArrowRight) turn += 1;
+    if (keys.ArrowLeft || mobileMove.turnLeft) turn -= 1;
+    if (keys.ArrowRight || mobileMove.turnRight) turn += 1;
     state.angle = normalizeAngle(state.angle + turn * ROTATE_SPEED * dt);
 
     let forward = 0, strafe = 0;
     if (keys.KeyW || keys.ArrowUp || mobileMove.forward) forward += 1;
     if (keys.KeyS || keys.ArrowDown || mobileMove.back) forward -= 1;
-    if (keys.KeyA || mobileMove.left) strafe -= 1;
-    if (keys.KeyD || mobileMove.right) strafe += 1;
+    if (keys.KeyA) strafe -= 1;
+    if (keys.KeyD) strafe += 1;
 
     if (forward || strafe) {
       const len = Math.hypot(forward, strafe) || 1;
@@ -5944,27 +5951,88 @@
     return true;
   }
 
+  function setMobileJoystickIntent(intent) {
+    for (const k of Object.keys(mobileMove)) mobileMove[k] = false;
+    if (!intent || intent === 'idle') return;
+    if (intent.includes('N')) mobileMove.forward = true;
+    if (intent.includes('S')) mobileMove.back = true;
+    if (intent.includes('W')) mobileMove.turnLeft = true;
+    if (intent.includes('E')) mobileMove.turnRight = true;
+  }
+
+  function mobileJoystickIntent(dx, dy, deadRadius) {
+    const radius = Math.hypot(dx, dy);
+    if (!Number.isFinite(radius) || radius <= deadRadius) return 'idle';
+    const degrees = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+    const sectors = ['N','NE','E','SE','S','SW','W','NW'];
+    return sectors[Math.floor((degrees + 22.5) / 45) % 8];
+  }
+
+  function resetMobileJoystickVisual() {
+    setMobileJoystickIntent('idle');
+    if (mobileMovePad) mobileMovePad.dataset.sector = 'idle';
+    if (mobileJoystickThumb) {
+      mobileJoystickThumb.style.left = '50%';
+      mobileJoystickThumb.style.top = '50%';
+    }
+  }
+
+  function updateMobileJoystickFromPointer(e) {
+    if (!mobileMovePad) return;
+    const rect = mobileMovePad.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const outerRadius = Math.max(1, Math.min(rect.width, rect.height) / 2);
+    const deadRadius = outerRadius * MOBILE_JOYSTICK_DEAD_RATIO;
+    const intent = mobileJoystickIntent(dx, dy, deadRadius);
+    setMobileJoystickIntent(intent);
+    mobileMovePad.dataset.sector = intent;
+    if (mobileJoystickThumb) {
+      const radius = Math.hypot(dx, dy) || 1;
+      const maxThumbRadius = outerRadius * 0.68;
+      const scale = Math.min(1, maxThumbRadius / radius);
+      const tx = dx * scale;
+      const ty = dy * scale;
+      mobileJoystickThumb.style.left = `calc(50% + ${tx.toFixed(1)}px)`;
+      mobileJoystickThumb.style.top = `calc(50% + ${ty.toFixed(1)}px)`;
+    }
+  }
+
   function clearMovement() {
     keys = Object.create(null);
-    for (const k of Object.keys(mobileMove)) mobileMove[k] = false;
-    document.querySelectorAll('.mobileMoveBtn.pressed').forEach(btn => btn.classList.remove('pressed'));
+    resetMobileJoystickVisual();
     dragging = false; dragPointerId = null;
   }
 
   function bindMobileControls() {
     if (!mobileMovePad) return;
-    mobileMovePad.querySelectorAll('[data-move]').forEach(btn => {
-      const dir = btn.dataset.move;
-      const end = (e) => { e.preventDefault(); e.stopPropagation(); mobileMove[dir] = false; btn.classList.remove('pressed'); };
-      btn.addEventListener('pointerdown', (e) => {
-        e.preventDefault(); e.stopPropagation(); btn.setPointerCapture?.(e.pointerId); mobileMove[dir] = true; btn.classList.add('pressed');
-      }, { passive: false });
-      btn.addEventListener('pointerup', end, { passive: false });
-      btn.addEventListener('pointercancel', end, { passive: false });
-      btn.addEventListener('pointerleave', (e) => { if (e.buttons === 0) end(e); }, { passive: false });
-    });
-    mobileMovePad.addEventListener('pointerdown', e => e.stopPropagation(), { passive: false });
-    mobileMovePad.addEventListener('pointermove', e => e.stopPropagation(), { passive: false });
+    let joystickPointerId = null;
+    const endJoystick = (e) => {
+      if (joystickPointerId !== null && e.pointerId !== joystickPointerId) return;
+      e.preventDefault(); e.stopPropagation();
+      try { mobileMovePad.releasePointerCapture?.(e.pointerId); } catch (_) {}
+      joystickPointerId = null;
+      resetMobileJoystickVisual();
+    };
+    mobileMovePad.addEventListener('pointerdown', e => {
+      const rect = mobileMovePad.getBoundingClientRect();
+      const dx = e.clientX - (rect.left + rect.width / 2);
+      const dy = e.clientY - (rect.top + rect.height / 2);
+      if (Math.hypot(dx, dy) > Math.min(rect.width, rect.height) / 2) return;
+      e.preventDefault(); e.stopPropagation();
+      joystickPointerId = e.pointerId;
+      mobileMovePad.setPointerCapture?.(e.pointerId);
+      updateMobileJoystickFromPointer(e);
+    }, { passive: false });
+    mobileMovePad.addEventListener('pointermove', e => {
+      if (joystickPointerId !== e.pointerId) return;
+      e.preventDefault(); e.stopPropagation();
+      updateMobileJoystickFromPointer(e);
+    }, { passive: false });
+    mobileMovePad.addEventListener('pointerup', endJoystick, { passive: false });
+    mobileMovePad.addEventListener('pointercancel', endJoystick, { passive: false });
     mobileUseBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
     mobileUseBtn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); performInteraction(); });
   }
