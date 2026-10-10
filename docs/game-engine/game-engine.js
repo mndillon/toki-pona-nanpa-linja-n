@@ -1052,10 +1052,10 @@
   const VIEWPORT_MOVE_THRESHOLD = 0.36;
   const VIEWPORT_MOVE_EXPONENT = 1.7;
   const MOBILE_JOYSTICK_DEAD_RATIO = 0.34;
-  const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.85;
+  const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.25;
   const MOBILE_JOYSTICK_TURN_EXPONENT = 2.25;
-  const MOBILE_JOYSTICK_BOOST_START = 0.42;
-  const MOBILE_JOYSTICK_MOVE_MAX = 1.90;
+  const MOBILE_JOYSTICK_BOOST_START = 0.20;
+  const MOBILE_JOYSTICK_MOVE_MAX = 2.65;
   const MOBILE_JOYSTICK_TURN_MAX = 1.65;
   const mobileMapSteer = { active:false, pointerId:null, levelId:null, targetCell:null, path:[], pathIndex:0 };
   let lastTime = performance.now();
@@ -1293,11 +1293,37 @@
     return !isSolidAt(x-r, y-r) && !isSolidAt(x+r, y-r) && !isSolidAt(x-r, y+r) && !isSolidAt(x+r, y+r);
   }
 
-  function movePlayer(dx, dy) {
+  // Mobile movement uses the same player radius as desktop, but treats the
+  // player as a circle against the square wall cells. This rounds exposed wall
+  // corners instead of making the mobile player catch on the four corners of
+  // the desktop square collision footprint. Full wall faces, closed doors and
+  // diagonally touching solid cells remain impassable.
+  function canOccupyMobile(x, y) {
+    const r = PLAYER_RADIUS;
+    const minX = Math.floor(x - r), maxX = Math.floor(x + r);
+    const minY = Math.floor(y - r), maxY = Math.floor(y + r);
+    const rr = r * r;
+    for (let iy = minY; iy <= maxY; iy += 1) {
+      for (let ix = minX; ix <= maxX; ix += 1) {
+        if (!isSolidAt(ix + 0.5, iy + 0.5)) continue;
+        const nearestX = Math.max(ix, Math.min(x, ix + 1));
+        const nearestY = Math.max(iy, Math.min(y, iy + 1));
+        const dx = x - nearestX, dy = y - nearestY;
+        if (dx * dx + dy * dy < rr) return false;
+      }
+    }
+    return true;
+  }
+
+  function movePlayer(dx, dy, mobileCornerAssist = false) {
+    const canMoveTo = mobileCornerAssist ? canOccupyMobile : canOccupy;
     const nx = state.x + dx;
     const ny = state.y + dy;
-    if (canOccupy(nx, state.y)) state.x = nx;
-    if (canOccupy(state.x, ny)) state.y = ny;
+    // Preserve the existing axis-separated wall slide. On mobile the circular
+    // occupancy check makes exposed corners forgiving without permitting wall
+    // penetration or changing the maze topology.
+    if (canMoveTo(nx, state.y)) state.x = nx;
+    if (canMoveTo(state.x, ny)) state.y = ny;
   }
 
   function normalizeAngle(a) {
@@ -1662,10 +1688,24 @@
     }
   }
 
+  function level1MazeFullyComplete() {
+    const world = campaignWorld();
+    return Boolean(
+      world.mazeExitReleased &&
+      world.innerMazeDoorUnlocked &&
+      campaignSolved('l1-maze-seli') &&
+      campaignSolved('l1-maze-awen') &&
+      campaignSolved('l1-maze-luka') &&
+      campaignSolved('l1-maze-code') &&
+      campaignSolved('l1-inner-signed-number')
+    );
+  }
+
   function getSprite(obj) {
     const puzzleSolved = Boolean(obj.puzzleId && campaignSolved(obj.puzzleId));
     const individuallyRecorded = Boolean(obj.interact === 'l11CallPylon' && state.l11CallMarkers?.[obj.pylonId]);
-    const key = `${obj.type}:${obj.id || ''}:${obj.puzzleId || ''}:${obj.word || ''}:${obj.panelId || ''}:${state.lowerPowerOn ? 1 : 0}:${state.trapdoorOpen ? 1 : 0}:${puzzleSolved ? 1 : 0}:${individuallyRecorded ? 1 : 0}`;
+    const mazeFullyComplete = obj.type === 'mazeGate' ? level1MazeFullyComplete() : false;
+    const key = `${obj.type}:${obj.id || ''}:${obj.puzzleId || ''}:${obj.word || ''}:${obj.panelId || ''}:${state.lowerPowerOn ? 1 : 0}:${state.trapdoorOpen ? 1 : 0}:${puzzleSolved ? 1 : 0}:${individuallyRecorded ? 1 : 0}:${mazeFullyComplete ? 1 : 0}`;
     if (spriteCache.has(key)) return spriteCache.get(key);
     const c = document.createElement('canvas');
     c.width = 128; c.height = 128;
@@ -1743,10 +1783,10 @@
         const world = campaignWorld();
         const isExit = obj.id === 'mazeExit';
         const unlocked = isExit ? Boolean(world.mazeExitReleased) : Boolean(world.mazeEntranceUnlocked);
-        // Green is reserved for completed/solved state. Merely unlocking the
-        // maze entrance uses an amber/neutral ready state until the maze itself
-        // has been solved and the exit released.
-        const solved = Boolean(world.mazeExitReleased);
+        // Green is reserved for the maze being completely finished, including
+        // the delayed-return inner chamber. Releasing the first exit is only an
+        // intermediate milestone: the gate remains amber while maze work remains.
+        const solved = mazeFullyComplete;
         g.fillStyle = '#3b4448'; g.fillRect(18, 14, 92, 108);
         g.strokeStyle = solved ? '#8fd0a4' : '#8b979c'; g.lineWidth = solved ? 5 : 4; g.strokeRect(18, 14, 92, 108);
         g.fillStyle = solved ? '#56a874' : unlocked ? '#c4a574' : '#7f6957'; g.fillRect(29, 26, 70, 28);
@@ -6025,10 +6065,13 @@
 
       if (forward || strafe) {
         const coarse = isCoarsePointer();
-        if (coarse) {
-          // Preserve the joystick's deliberate high-rim boost. Desktop movement
-          // still normalizes diagonals, but mobile forward/back may exceed 1.0
-          // only near the outer rim for faster traversal.
+        const joystickDriving = mobileMove.forward || mobileMove.back;
+        const mobileMovement = coarse || joystickDriving;
+        if (mobileMovement) {
+          // Joystick travel is intentionally allowed to exceed 1.0 at larger
+          // radii. Key this to active joystick input as well as coarse-pointer
+          // detection so hybrid/mobile browsers cannot accidentally normalize
+          // the outer-rim speed boost away.
           forward = Math.max(-MOBILE_JOYSTICK_MOVE_MAX, Math.min(MOBILE_JOYSTICK_MOVE_MAX, forward));
           strafe = Math.max(-1, Math.min(1, strafe));
         } else {
@@ -6036,11 +6079,11 @@
           forward /= len; strafe /= len;
         }
         const cos = Math.cos(state.angle), sin = Math.sin(state.angle);
-        const ms = coarse ? MOBILE_MOVE_SPEED : MOVE_SPEED;
-        const ss = coarse ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
+        const ms = mobileMovement ? MOBILE_MOVE_SPEED : MOVE_SPEED;
+        const ss = mobileMovement ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
         const dx = (cos * forward * ms + -sin * strafe * ss) * dt;
         const dy = (sin * forward * ms + cos * strafe * ss) * dt;
-        movePlayer(dx, dy);
+        movePlayer(dx, dy, mobileMovement);
       }
     }
 
@@ -6401,7 +6444,7 @@
     const facing = Math.max(0,Math.cos(Math.min(Math.PI/2,Math.abs(diff))));
     if (facing > 0.15) {
       const step = Math.min(dist, MOBILE_MOVE_SPEED * (0.30 + 0.70*facing) * dt);
-      movePlayer((dx/dist)*step,(dy/dist)*step);
+      movePlayer((dx/dist)*step,(dy/dist)*step,true);
     }
     return true;
   }
