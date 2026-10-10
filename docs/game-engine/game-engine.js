@@ -1048,6 +1048,9 @@
   let saveTimer = 0;
   let keys = Object.create(null);
   const mobileMove = { forward: false, back: false, turnLeft: false, turnRight: false, moveStrength: 0, turnStrength: 0 };
+  const viewportMove = { mode:'idle', strength:0 };
+  const VIEWPORT_MOVE_THRESHOLD = 0.36;
+  const VIEWPORT_MOVE_EXPONENT = 1.7;
   const MOBILE_JOYSTICK_DEAD_RATIO = 0.34;
   const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.85;
   const MOBILE_JOYSTICK_TURN_EXPONENT = 2.25;
@@ -3713,7 +3716,7 @@
     });
     puzzleSlots.append(target,choices);
     setMechanismStatus(puzzle,st.selectedIndex==null?'Choose the cartouche whose context is time.':mechanismSolved(puzzle)?'That cartouche matches the time display. Press Try answer to confirm the core.':'That choice is selected. Press Try answer to test it.');
-    puzzleCompleteBtn.disabled = st.selectedIndex == null;
+    puzzleCompleteBtn.disabled = false;
   }
 
   function renderJugTransferPuzzle(puzzle) {
@@ -5017,7 +5020,7 @@
     });
     wrap.append(formula,options);puzzleSlots.appendChild(wrap);
     setMechanismStatus(puzzle,st.selectedIndex==null?'Choose the ratio matching 50% : 25% : 25%.':mechanismSolved(puzzle)?'The dye bath is 2:1:1. Press Try answer to confirm the mixer.':'That ratio does not match the batch card.');
-    puzzleCompleteBtn.disabled=st.selectedIndex==null||!mechanismSolved(puzzle);
+    puzzleCompleteBtn.disabled=false;
   }
 
 
@@ -5046,7 +5049,7 @@
     }
     wrap.append(legend,grid);puzzleSlots.appendChild(wrap);
     setMechanismStatus(puzzle,st.selected==null?'Select the one cell matching all three pylon distances.':mechanismSolved(puzzle)?'All three recorded distances intersect here. Press Try answer to confirm the canopy route.':'That cell does not satisfy all three distances.');
-    puzzleCompleteBtn.disabled=!mechanismSolved(puzzle);
+    puzzleCompleteBtn.disabled=false;
   }
 
   function renderLineageMatchPuzzle(puzzle){
@@ -5312,8 +5315,9 @@
     });
     renderGlyphFamilyPicker();
     puzzleCompleteBtn.hidden=false; puzzleResetBtn.hidden=false; puzzleTrayWrap.hidden=false;
-    puzzleCompleteBtn.disabled=puzzleSlotValues.some(v=>!v);
-    puzzleStatus.textContent='Tap a slot, choose a letter, then choose a glyph. Owned glyphs are reusable.';
+    puzzleCompleteBtn.disabled=false;
+    puzzleCompleteBtn.textContent='Try answer';
+    puzzleStatus.textContent='Tap a slot, choose a letter, then choose a glyph. Press Try answer when ready; correctness is checked only after submission.';
   }
 
 
@@ -5432,8 +5436,9 @@
     scheduleCountryCrosswordIndexRendering(wrap);
     renderGlyphFamilyPicker();
     puzzleTrayWrap.hidden=false;puzzleResetBtn.hidden=false;puzzleCompleteBtn.hidden=false;
-    puzzleCompleteBtn.disabled=puzzleSlotValues.some(v=>!v);
-    puzzleStatus.textContent='Any country name that matches its clue, length and crossings is valid.';
+    puzzleCompleteBtn.disabled=false;
+    puzzleCompleteBtn.textContent='Try answer';
+    puzzleStatus.textContent='Any country name that matches its clue, length and crossings is valid. Press Try answer when ready; correctness is checked only after submission.';
   }
 
   async function renderNanpaSourceToCanvas(source, target, fontPx=48, parserOverrides={}) {
@@ -5468,7 +5473,7 @@
     puzzleResetBtn.textContent = mechanismPuzzle ? 'Reset' : 'Clear';
     puzzleTrayWrap.hidden = false;
     puzzleCompleteBtn.hidden = false;
-    puzzleCompleteBtn.textContent = puzzle.type === 'terminal' ? 'Confirm' : 'Activate';
+    puzzleCompleteBtn.textContent = puzzle.type === 'terminal' ? 'Confirm' : 'Try answer';
     puzzleCloseBtn.hidden = puzzle.ui.canExit === false;
     hidePuzzleLiveCartouchePreview();
 
@@ -5508,8 +5513,9 @@
     });
     renderPuzzleLiveCartouchePreview(puzzle);
     renderGlyphFamilyPicker();
-    puzzleCompleteBtn.disabled = puzzleSlotValues.some(v=>!v);
-    puzzleStatus.textContent = `Tap a slot, choose a letter, then choose a glyph. Fill all ${seq.length} positions.`;
+    puzzleCompleteBtn.disabled = false;
+    puzzleCompleteBtn.textContent = 'Try answer';
+    puzzleStatus.textContent = `Tap a slot, choose a letter, then choose a glyph. Fill all ${seq.length} positions and press Try answer. Correctness is checked only after submission.`;
   }
 
   function openCampaignPuzzleHost(puzzle) {
@@ -5540,52 +5546,41 @@
   function validateCampaignPuzzleSlots() {
     const puzzle = activeCampaignPuzzle;
     if (!puzzle) return false;
-    const slots = [...puzzleSlots.querySelectorAll('.puzzleSlot')];
+    // Submission-only evaluation: never mark individual slots as correct/wrong.
+    // Partial correctness would make sequence/crossword puzzles brute-forceable.
     if (puzzle.type === 'country-cartouche') {
       const answer = String(puzzle.ui?.payload?.answer || '').toUpperCase().replace(/[^AEIJKLMNOPSTUW]/g,'');
-      let ok = answer.length === puzzleSlotValues.length;
-      [...answer].forEach((letter,i)=>{
+      if (answer.length !== puzzleSlotValues.length) return false;
+      return [...answer].every((letter,i)=>{
         const word=String(puzzleSlotValues[i]||'');
-        const good=WORD_TO_CP[word]!=null && word[0]?.toUpperCase()===letter;
-        if(!good) ok=false;
-        const slot=slots.find(x=>Number(x.dataset.slotIndex)===i); if(slot) slot.classList.add(good?'correct':'wrong');
+        return WORD_TO_CP[word]!=null && word[0]?.toUpperCase()===letter;
       });
-      return ok;
     }
     if (puzzle.type === 'country-crossword') {
       const model=countryCrosswordModel(puzzle),letters=crosswordEnteredLetters(model);
-      let ok=model.cells.length===puzzleSlotValues.length && model.cells.every(cell=>Boolean(letters.get(`${cell.row},${cell.col}`)));
-      const entryOk=new Map();
-      for(const entry of model.entries){
-        const entered=crosswordEntryValue(entry,letters);
-        const good=entry.acceptedAnswers.includes(entered);
-        entryOk.set(entry.number,good);if(!good)ok=false;
-      }
-      for(const cell of model.cells){
-        const good=cell.entries.every(ref=>entryOk.get(ref.number)===true);
-        const slot=slots.find(x=>Number(x.dataset.slotIndex)===cell.slotIndex);if(slot)slot.classList.add(good?'correct':'wrong');
-      }
-      return ok;
+      if (model.cells.length!==puzzleSlotValues.length || !model.cells.every(cell=>Boolean(letters.get(`${cell.row},${cell.col}`)))) return false;
+      return model.entries.every(entry=>entry.acceptedAnswers.includes(crosswordEntryValue(entry,letters)));
     }
     const seq = puzzleSequence(puzzle);
-    let ok = true;
-    for (let i=0;i<seq.length;i++) {
-      const good=puzzleSlotValues[i]===seq[i]; if(!good) ok=false;
-      const slot=slots.find(x=>Number(x.dataset.slotIndex)===i); if(slot) slot.classList.add(good?'correct':'wrong');
-    }
-    return ok;
+    return seq.length === puzzleSlotValues.length && seq.every((expected,i)=>puzzleSlotValues[i]===expected);
   }
 
   function completeActiveCampaignPuzzle() {
     const puzzle = activeCampaignPuzzle;
     if (!puzzle) return;
+    const needsSlots = puzzleSequence(puzzle).length || puzzle.type === 'country-cartouche' || puzzle.type === 'country-crossword';
+    if (needsSlots && puzzleSlotValues.some(v=>!v)) {
+      puzzleStatus.textContent = 'Answer incomplete. Fill every required position, then press Try answer.';
+      blockedTone();
+      return;
+    }
     if (isMechanismPuzzle(puzzle) && !mechanismSolved(puzzle)) {
       puzzleStatus.textContent = 'That answer did not work. Review the clues, adjust the mechanism, and try again.';
       blockedTone();
       return;
     }
-    if ((puzzleSequence(puzzle).length || puzzle.type === 'country-cartouche' || puzzle.type === 'country-crossword') && !validateCampaignPuzzleSlots()) {
-      puzzleStatus.textContent = 'The mechanism does not respond. Rearrange the glyph keys and try again.';
+    if (needsSlots && !validateCampaignPuzzleSlots()) {
+      puzzleStatus.textContent = 'That answer did not work. Review the clues and try again.';
       blockedTone();
       return;
     }
@@ -5871,6 +5866,8 @@
       if (keys.KeyS || keys.ArrowDown) forward -= 1;
       if (mobileMove.forward) forward += mobileMove.moveStrength;
       if (mobileMove.back) forward -= mobileMove.moveStrength;
+      if (viewportMove.mode === 'forward') forward += viewportMove.strength;
+      if (viewportMove.mode === 'back') forward -= viewportMove.strength;
       if (keys.KeyA) strafe -= 1;
       if (keys.KeyD) strafe += 1;
 
@@ -6014,6 +6011,50 @@
     clearMovement();
     transitionLevel('main', 3.2, 9.3, 0, 'You return to the maze entrance. The solved maze remains open.');
     return true;
+  }
+
+  function viewportGestureIntent(clientY, rectTop, rectHeight) {
+    const height = Math.max(1, Number(rectHeight) || 1);
+    const centerY = (Number(rectTop) || 0) + height / 2;
+    const normalized = Math.max(-1, Math.min(1, (clientY - centerY) / (height / 2)));
+    const distance = Math.abs(normalized);
+    if (distance <= VIEWPORT_MOVE_THRESHOLD) return { mode:'rotate', strength:0 };
+    const t = Math.max(0, Math.min(1, (distance - VIEWPORT_MOVE_THRESHOLD) / (1 - VIEWPORT_MOVE_THRESHOLD)));
+    return {
+      mode: normalized < 0 ? 'forward' : 'back',
+      strength: Math.pow(t, VIEWPORT_MOVE_EXPONENT)
+    };
+  }
+
+  function resetViewportGesture(releaseCapture = true) {
+    viewportMove.mode = 'idle';
+    viewportMove.strength = 0;
+    if (releaseCapture && dragPointerId !== null) {
+      try { viewportWrap.releasePointerCapture?.(dragPointerId); } catch (_) {}
+    }
+    dragging = false;
+    dragPointerId = null;
+  }
+
+  function updateViewportGestureFromPointer(e, isInitial = false) {
+    const rect = viewportWrap.getBoundingClientRect();
+    const next = viewportGestureIntent(e.clientY, rect.top, rect.height);
+    const previousMode = viewportMove.mode;
+    if (next.mode === 'rotate') {
+      viewportMove.mode = 'rotate';
+      viewportMove.strength = 0;
+      if (!isInitial && previousMode === 'rotate') {
+        const dx = e.clientX - lastPointerX;
+        state.angle = normalizeAngle(state.angle + dx * (isCoarsePointer() ? 0.0052 : 0.008));
+      }
+      // Reset the horizontal reference whenever rotation resumes so crossing
+      // back from a movement zone cannot produce a sudden turn jump.
+      lastPointerX = e.clientX;
+      return;
+    }
+    viewportMove.mode = next.mode;
+    viewportMove.strength = next.strength;
+    lastPointerX = e.clientX;
   }
 
   function setMobileJoystickIntent(intent, moveStrength = 0, turnStrength = 0) {
@@ -6224,6 +6265,7 @@
       if (modalOpen || !state.mapVisible || mobileMapSteer.pointerId !== null) return;
       e.preventDefault(); e.stopPropagation();
       resetMobileJoystickVisual();
+      resetViewportGesture(true);
       mobileMapSteer.active = true;
       mobileMapSteer.pointerId = e.pointerId;
       mobileMapSteer.levelId = state.levelId;
@@ -6243,7 +6285,7 @@
     keys = Object.create(null);
     resetMobileJoystickVisual();
     cancelMapSteering(true);
-    dragging = false; dragPointerId = null;
+    resetViewportGesture(true);
   }
 
   function bindMobileControls() {
@@ -6263,6 +6305,7 @@
       if (Math.hypot(dx, dy) > Math.min(rect.width, rect.height) / 2) return;
       e.preventDefault(); e.stopPropagation();
       cancelMapSteering(true);
+      resetViewportGesture(true);
       joystickPointerId = e.pointerId;
       mobileMovePad.setPointerCapture?.(e.pointerId);
       updateMobileJoystickFromPointer(e);
@@ -6308,21 +6351,30 @@
   document.addEventListener('mousemove', e => { if (pointerLocked && !modalOpen) state.angle = normalizeAngle(state.angle + e.movementX * 0.0027); });
 
   viewportWrap.addEventListener('pointerdown', (e) => {
-    if (e.target.closest?.('.mobileMovePad, .mobileUseBtn, .mazeQuickExitBtn, .campaignContinueBtn')) return;
+    if (e.target.closest?.('.mobileMovePad, .mobileUseBtn, .mazeQuickExitBtn, .campaignContinueBtn, #miniMap')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (modalOpen) return;
-    dragging = true; dragPointerId = e.pointerId; lastPointerX = e.clientX; viewportWrap.setPointerCapture?.(e.pointerId);
+    cancelMapSteering(true);
+    resetMobileJoystickVisual();
+    dragging = true;
+    dragPointerId = e.pointerId;
+    lastPointerX = e.clientX;
+    viewportWrap.setPointerCapture?.(e.pointerId);
+    updateViewportGestureFromPointer(e, true);
   });
   viewportWrap.addEventListener('pointermove', (e) => {
     if (!dragging || dragPointerId !== e.pointerId || pointerLocked || modalOpen) return;
-    const dx = e.clientX - lastPointerX; lastPointerX = e.clientX;
-    state.angle = normalizeAngle(state.angle + dx * (isCoarsePointer() ? 0.0052 : 0.008));
+    updateViewportGestureFromPointer(e, false);
   });
   viewportWrap.addEventListener('pointerup', (e) => {
     if (dragPointerId !== e.pointerId) return;
-    dragging = false; dragPointerId = null; viewportWrap.releasePointerCapture?.(e.pointerId);
+    e.preventDefault();
+    resetViewportGesture(true);
   });
-  viewportWrap.addEventListener('pointercancel', () => { dragging = false; dragPointerId = null; });
+  viewportWrap.addEventListener('pointercancel', (e) => {
+    if (dragPointerId !== null && e.pointerId !== dragPointerId) return;
+    resetViewportGesture(false);
+  });
   viewportWrap.addEventListener('dblclick', e => { if (!isCoarsePointer()) { e.preventDefault(); performInteraction(); } });
 
   soundBtn.addEventListener('click', () => { state.sound = !state.sound; saveState(); updateHUD(); if (state.sound) softTone(); });

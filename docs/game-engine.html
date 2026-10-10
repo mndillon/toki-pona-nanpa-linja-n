@@ -49,7 +49,7 @@
         <div class="crosshair" aria-hidden="true"><span></span><span></span></div>
         <div id="interactionPrompt" class="interactionPrompt" aria-live="polite"></div>
         <div id="messageOverlay" class="messageOverlay" aria-live="polite"></div>
-        <div id="mouseHint" class="mouseHint">click view for mouse look · drag to turn · Esc releases</div>
+        <div id="mouseHint" class="mouseHint">click view for mouse look · center drag turns · hold/drag near top or bottom moves · Esc releases</div>
 
         <div id="mobileMovePad" class="mobileMovePad mobileJoystick" data-sector="idle"
           role="group" aria-label="Movement joystick. Inner circle is a dead zone. Speed increases gradually toward the outer edge; outer ring moves and turns.">
@@ -95,7 +95,7 @@
         <span><kbd>G</kbd> glyph collection</span>
         <span><kbd>M</kbd> map</span>
         <span><kbd>X</kbd> leave solved maze</span>
-        <span>mobile: circular joystick speed increases toward its rim; touch/hold explored map to steer there; drag view also turns; USE interacts</span>
+        <span>mobile: circular joystick speed increases toward its rim; touch/hold explored map to steer there; center-drag view turns; hold/drag near top or bottom moves; USE interacts</span>
       </div>
       <div class="help">
         Only the original 120 glyphs are collectible. Common Sitelen Pona 2026 glyphs outside that 120, plus standard punctuation/support symbols, are available from the start. Full-screen glyph puzzles use the shared letter-family picker. Choose a Toki Pona letter to see every available glyph in that family; punctuation/support symbols have their own key. Tap-first interaction is mobile-safe and glyphs remain reusable.
@@ -179,7 +179,7 @@
       <p id="puzzleStatus" class="puzzleStatus" aria-live="polite"></p>
       <div class="overlayButtonRow">
         <button id="puzzleResetBtn" type="button">Clear</button>
-        <button id="puzzleCompleteBtn" type="button">Activate</button>
+        <button id="puzzleCompleteBtn" type="button">Try answer</button>
         <button id="puzzleCloseBtn" type="button">Leave puzzle</button>
       </div>
     </div>
@@ -220,6 +220,6 @@
   <script src="./game-engine/campaign/campaign-draft-v0.1.js?v=43"></script>
   <script src="./game-engine/campaign/campaign-engine-adapter.js?v=5"></script>
   <script src="./game-engine/game-engine-reset.js?v=42"></script>
-  <script src="./game-engine/game-engine.js?v=52"></script>
+  <script src="./game-engine/game-engine.js?v=54"></script>
 </body>
 </html>
